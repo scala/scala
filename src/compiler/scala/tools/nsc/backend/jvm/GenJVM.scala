@@ -159,7 +159,7 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
       }
 
       val codeGenerator = new BytecodeGenerator(bytecodeWriter)
-      log("Created new bytecode generator for " + classes.size + " classes.")
+      debuglog("Created new bytecode generator for " + classes.size + " classes.")
 
       sortedClasses foreach { c =>
         try codeGenerator.genClass(c)
@@ -210,7 +210,8 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
     
     final val ExcludedForwarderFlags = {
       import Flags._
-      ( CASE | SPECIALIZED | LIFTED | PROTECTED | STATIC | BridgeAndPrivateFlags )
+      // Should include DEFERRED but this breaks findMember.
+      ( CASE | SPECIALIZED | LIFTED | PROTECTED | STATIC | EXPANDEDNAME | BridgeAndPrivateFlags )
     }
 
     // Additional interface parents based on annotations and other cues
@@ -431,7 +432,7 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
     private def addEnclosingMethodAttribute(jclass: JClass, clazz: Symbol) {
       val sym = clazz.originalEnclosingMethod
       if (sym.isMethod) {
-        log("enclosing method for %s is %s (in %s)".format(clazz, sym, sym.enclClass))
+        debuglog("enclosing method for %s is %s (in %s)".format(clazz, sym, sym.enclClass))
         jclass addAttribute fjbgContext.JEnclosingMethodAttribute(
           jclass,
           javaName(sym.enclClass),
@@ -447,7 +448,7 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
             enclClass, clazz)
           )
         else {
-          log("enclosing method for %s is %s (in %s)".format(clazz, sym, enclClass))
+          debuglog("enclosing method for %s is %s (in %s)".format(clazz, sym, enclClass))
           jclass addAttribute fjbgContext.JEnclosingMethodAttribute(
             jclass,
             javaName(enclClass),
@@ -797,7 +798,7 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
 
       val allInners = innerClassBuffer.toList
       if (allInners.nonEmpty) {
-        log(clasz.symbol.fullName('.') + " contains " + allInners.size + " inner classes.")
+        debuglog(clasz.symbol.fullName('.') + " contains " + allInners.size + " inner classes.")
         val innerClassesAttr = jclass.getInnerClasses()
         // sort them so inner classes succeed their enclosing class
         // to satisfy the Eclipse Java compiler
@@ -1225,7 +1226,7 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
       val jtype    = javaType(method).asInstanceOf[JMethodType]
 
       def emit(invoke: String) {
-        log("%s %s %s.%s:%s".format(invoke, receiver.accessString, jowner, jname, jtype))
+        debuglog("%s %s %s.%s:%s".format(invoke, receiver.accessString, jowner, jname, jtype))
         invoke match {
           case "invokeinterface"  => jcode.emitINVOKEINTERFACE(jowner, jname, jtype)
           case "invokevirtual"    => jcode.emitINVOKEVIRTUAL(jowner, jname, jtype)

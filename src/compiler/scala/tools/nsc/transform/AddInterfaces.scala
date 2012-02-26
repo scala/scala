@@ -82,7 +82,9 @@ abstract class AddInterfaces extends InfoTransform {
 
     implClassMap.getOrElse(iface, {
       atPhase(implClassPhase) {
-        log("%s.implClass == %s".format(iface, iface.implClass))
+        if (iface.implClass ne NoSymbol)
+          log("%s.implClass == %s".format(iface, iface.implClass))
+
         val implName = nme.implClassName(iface.name)
         var impl     = if (iface.owner.isClass) iface.owner.info.decl(implName) else NoSymbol
 

@@ -732,7 +732,7 @@ abstract class Erasure extends AddInterfaces
      */
     private def bridgeDefs(owner: Symbol): (List[Tree], immutable.Set[Symbol]) = {
       var toBeRemoved: immutable.Set[Symbol] = immutable.Set()
-      log("computing bridges for " + owner)//DEBUG
+      debuglog("computing bridges for " + owner)//DEBUG
       assert(phase == currentRun.erasurePhase, phase)
       val site = owner.thisType
       val bridgesScope = newScope

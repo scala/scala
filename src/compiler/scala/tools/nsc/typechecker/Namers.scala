@@ -277,12 +277,16 @@ trait Namers extends MethodSynthesis {
     def assignAndEnterFinishedSymbol(tree: MemberDef): Symbol = {
       val sym = assignAndEnterSymbol(tree)
       sym setInfo completerOf(tree)
-      log("[+info] " + sym.fullLocationString)
+      // log("[+info] " + sym.fullLocationString)
       sym
     }
 
     private def logAssignSymbol(tree: Tree, sym: Symbol): Symbol = {
-      log("[+symbol] " + sym.debugLocationString)
+      sym.name.toTermName match {
+        case nme.IMPORT | nme.OUTER | nme.ANON_CLASS_NAME | nme.ANON_FUN_NAME | nme.CONSTRUCTOR => ()
+        case _                                                                                  => 
+          log("[+symbol] " + sym.debugLocationString)
+      }
       tree.symbol = sym
       sym
     }

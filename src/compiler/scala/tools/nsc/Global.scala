@@ -193,10 +193,6 @@ class Global(var currentSettings: Settings, var reporter: Reporter) extends Symb
     if (settings.debug.value)
       body
   }
-  @inline final override def debuglog(msg: => String) {
-    if (settings.debug.value && (settings.log containsPhase globalPhase))
-      inform("[log " + phase + "] " + msg)
-  }
   // Warnings issued only under -Ydebug.  For messages which should reach
   // developer ears, but are not adequately actionable by users.
   @inline final override def debugwarn(msg: => String) {
@@ -230,6 +226,11 @@ class Global(var currentSettings: Settings, var reporter: Reporter) extends Symb
   @inline final def log(msg: => AnyRef): Unit =
     if (shouldLogAtThisPhase)
       inform("[log %s%s] %s".format(globalPhase, atPhaseStackMessage, msg))
+
+  @inline final override def debuglog(msg: => String) {
+    if (settings.debug.value)
+      log(msg)
+  }
 
   def logThrowable(t: Throwable): Unit = globalError(throwableAsString(t))
   def throwableAsString(t: Throwable): String =

@@ -131,7 +131,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
       while (!bcs.isEmpty && sym == NoSymbol) {
         if (settings.debug.value) {
           val other = bcs.head.info.nonPrivateDecl(member.name);
-          log("rebindsuper " + bcs.head + " " + other + " " + other.tpe +
+          debuglog("rebindsuper " + bcs.head + " " + other + " " + other.tpe +
               " " + other.isDeferred)
         }
         sym = member.matchingSymbol(bcs.head, base.thisType).suchThat(sym => !sym.hasFlag(DEFERRED | BRIDGE))
@@ -452,7 +452,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
                   && sym.owner == templ.symbol.owner
                   && !sym.isLazy
                   && !tree.isDef) {
-                log("added use in: " + currentOwner + " -- " + tree)
+                debuglog("added use in: " + currentOwner + " -- " + tree)
                 usedIn(sym) ::= currentOwner
 
               }
@@ -462,7 +462,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
       }
     }
     SingleUseTraverser(templ)
-    log("usedIn: " + usedIn)
+    debuglog("usedIn: " + usedIn)
     usedIn filter {
       case (_, member :: Nil) => member.isValue && member.isLazy
       case _                  => false
@@ -845,7 +845,9 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
         val nulls     = lazyValNullables(lzyVal).toList sortBy (_.id) map nullify
         def syncBody  = init ::: List(mkSetFlag(clazz, offset, lzyVal), UNIT)
 
-        log("nulling fields inside " + lzyVal + ": " + nulls)
+        if (nulls.nonEmpty)
+          log("nulling fields inside " + lzyVal + ": " + nulls)
+
         val result    = gen.mkDoubleCheckedLocking(clazz, cond, syncBody, nulls)
         typedPos(init.head.pos)(BLOCK(result, retVal))
       }
@@ -939,7 +941,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
         private def checkedGetter(lhs: Tree) = {
           val sym = clazz.info decl lhs.symbol.getterName suchThat (_.isGetter)
           if (needsInitAndHasOffset(sym)) {
-            log("adding checked getter for: " + sym + " " + lhs.symbol.defaultFlagString)
+            debuglog("adding checked getter for: " + sym + " " + lhs.symbol.defaultFlagString)
             List(localTyper typed mkSetFlag(clazz, fieldOffset(sym), sym))
           }
           else Nil

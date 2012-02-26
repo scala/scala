@@ -204,7 +204,7 @@ abstract class TailCalls extends Transform {
           fail(reason)
         }
         def rewriteTailCall(recv: Tree): Tree = {
-          log("Rewriting tail recursive call:  " + fun.pos.lineContent.trim)
+          debuglog("Rewriting tail recursive call:  " + fun.pos.lineContent.trim)
 
           ctx.accessed = true
           typedPos(fun.pos)(Apply(Ident(ctx.label), recv :: transformArgs))

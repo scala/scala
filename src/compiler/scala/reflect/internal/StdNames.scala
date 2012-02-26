@@ -94,6 +94,7 @@ trait StdNames extends NameManglers { self: SymbolTable =>
 
     val EMPTY: NameType              = ""
     val ANON_FUN_NAME: NameType      = "$anonfun"
+    val ANON_CLASS_NAME: NameType    = "$anon"
     val EMPTY_PACKAGE_NAME: NameType = "<empty>"
     val IMPORT: NameType             = "<import>"
     val MODULE_VAR_SUFFIX: NameType  = "$module"
@@ -442,7 +443,6 @@ trait StdNames extends NameManglers { self: SymbolTable =>
     protected implicit def createNameType(name: String): TypeName = newTypeNameCached(name)
 
     val REFINE_CLASS_NAME: NameType  = "<refinement>"
-    val ANON_CLASS_NAME: NameType    = "$anon"
   }
 
   /** For fully qualified type names.

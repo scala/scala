@@ -82,7 +82,7 @@ trait MethodSynthesis {
     }
 
     private def finishMethod(method: Symbol, f: Symbol => Tree): Tree =
-      logResult("finishMethod")(localTyper typed ValOrDefDef(method, f(method)))
+      localTyper typed ValOrDefDef(method, f(method))
 
     private def createInternal(name: Name, f: Symbol => Tree, info: Type): Tree = {
       val m = clazz.newMethod(name.toTermName, clazz.pos.focus, newMethodFlags(name))
@@ -200,7 +200,7 @@ trait MethodSynthesis {
                   map (acc => atPos(vd.pos.focus)(acc derive annotations))
             filterNot (_ eq EmptyTree)
         )
-        log(trees.mkString("Accessor trees:\n  ", "\n  ", "\n"))
+        // log(trees.mkString("Accessor trees:\n  ", "\n  ", "\n"))
         if (vd.symbol.isLazy) List(stat)
         else trees
       case _ =>
@@ -282,7 +282,7 @@ trait MethodSynthesis {
         }
       }
       private def logDerived(result: Tree): Tree = {
-        log("[+derived] " + ojoin(mods.defaultFlagString, basisSym.accurateKindString, basisSym.getterName.decode)
+        debuglog("[+derived] " + ojoin(mods.defaultFlagString, basisSym.accurateKindString, basisSym.getterName.decode)
           + " (" + derivedSym + ")\n        " + result)
 
         result

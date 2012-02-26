@@ -1222,7 +1222,7 @@ abstract class RefChecks extends InfoTransform with reflect.internal.transform.R
         else gen.mkAssignAndReturn(vsym, rhs)
       )
       val lazyDef = atPos(tree.pos)(DefDef(lazySym, body.changeOwner(vsym -> lazySym)))
-      log("Made lazy def: " + lazyDef)
+      debuglog("Created lazy accessor: " + lazyDef)
 
       if (hasUnitType) List(typed(lazyDef))
       else List(

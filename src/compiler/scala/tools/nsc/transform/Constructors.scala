@@ -226,11 +226,11 @@ abstract class Constructors extends Transform with ast.TreeDSL {
           tree match {
             case DefDef(_, _, _, _, _, body)
             if (tree.symbol.isOuterAccessor && tree.symbol.owner == clazz && clazz.isEffectivelyFinal) =>
-              log("outerAccessors += " + tree.symbol.fullName)
+              debuglog("outerAccessors += " + tree.symbol.fullName)
               outerAccessors ::= ((tree.symbol, body))
             case Select(_, _) =>
               if (!mustbeKept(tree.symbol)) {
-                log("accessedSyms += " + tree.symbol.fullName)
+                debuglog("accessedSyms += " + tree.symbol.fullName)
                 accessedSyms addEntry tree.symbol
               }
               super.traverse(tree)
