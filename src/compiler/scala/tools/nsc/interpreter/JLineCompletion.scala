@@ -18,7 +18,7 @@ class JLineCompletion(val intp: IMain) extends Completion with CompletionOutput 
   import global._
   import definitions.{ PredefModule, RootClass, AnyClass, AnyRefClass, ScalaPackage, JavaLangPackage, getModuleIfDefined }
   type ExecResult = Any
-  import intp.{ debugging, afterTyper }
+  import intp.{ debugging }
 
   // verbosity goes up with consecutive tabs
   private var verbosity: Int = 0

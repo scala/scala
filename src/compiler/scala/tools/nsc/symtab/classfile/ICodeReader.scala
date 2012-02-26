@@ -179,7 +179,7 @@ abstract class ICodeReader extends ClassfileParser {
     }
     else {
       forceMangledName(name, false)
-      atPhase(currentRun.flattenPhase.next)(definitions.getClass(name))
+      afterFlatten(definitions.getClass(name.toTypeName))
     }
     if (sym.isModule)
       sym.moduleClass

@@ -370,7 +370,7 @@ abstract class UnCurry extends InfoTransform
 
         // when calling into scala varargs, make sure it's a sequence.
         def arrayToSequence(tree: Tree, elemtp: Type) = {
-          atPhase(phase.next) {
+          afterUncurry {
             localTyper.typedPos(pos) {
               val pt = arrayType(elemtp)
               val adaptedTree = // might need to cast to Array[elemtp], as arrays are not covariant
@@ -394,7 +394,7 @@ abstract class UnCurry extends InfoTransform
             else if (tp.bounds.hi ne tp) getManifest(tp.bounds.hi)
             else localTyper.getManifestTree(tree, tp, false)
           }
-          atPhase(phase.next) {
+          afterUncurry {
             localTyper.typedPos(pos) {
               Apply(gen.mkAttributedSelect(tree, toArraySym),
                     List(getManifest(tree.tpe.baseType(TraversableClass).typeArgs.head)))
@@ -419,7 +419,7 @@ abstract class UnCurry extends InfoTransform
             else arrayToSequence(mkArray, varargsElemType)
           }
 
-        atPhase(phase.next) {
+        afterUncurry {
           if (isJava && isPrimitiveArray(suffix.tpe) && isArrayOfSymbol(fun.tpe.params.last.tpe, ObjectClass)) {
             suffix = localTyper.typedPos(pos) {
               gen.mkRuntimeCall(nme.toObjectArray, List(suffix))
@@ -594,7 +594,7 @@ abstract class UnCurry extends InfoTransform
       result setType uncurryTreeType(result.tpe)
     }
 
-    def postTransform(tree: Tree): Tree = atPhase(phase.next) {
+    def postTransform(tree: Tree): Tree = afterUncurry {
       def applyUnary(): Tree = {
         // TODO_NMT: verify that the inner tree of a type-apply also gets parens if the
         // whole tree is a polymorphic nullary method application

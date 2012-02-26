@@ -39,10 +39,10 @@ abstract class SelectiveCPSTransform extends PluginComponent with
     val newtp = transformCPSType(tp)
 
     if (newtp != tp)
-      log("transformInfo changed type for " + sym + " to " + newtp);
+      debuglog("transformInfo changed type for " + sym + " to " + newtp);
 
     if (sym == MethReifyR)
-      log("transformInfo (not)changed type for " + sym + " to " + newtp);
+      debuglog("transformInfo (not)changed type for " + sym + " to " + newtp);
 
     newtp
   }
@@ -83,13 +83,13 @@ abstract class SelectiveCPSTransform extends PluginComponent with
 
         case Apply(TypeApply(fun, targs), args)
         if (fun.symbol == MethShift) =>
-          log("found shift: " + tree)
+          debuglog("found shift: " + tree)
           atPos(tree.pos) {
             val funR = gen.mkAttributedRef(MethShiftR) // TODO: correct?
             //gen.mkAttributedSelect(gen.mkAttributedSelect(gen.mkAttributedSelect(gen.mkAttributedIdent(ScalaPackage),
             //ScalaPackage.tpe.member("util")), ScalaPackage.tpe.member("util").tpe.member("continuations")), MethShiftR)
             //gen.mkAttributedRef(ModCPS.tpe,  MethShiftR) // TODO: correct?
-            log(funR.tpe)
+            debuglog("funR.tpe = " + funR.tpe)
             Apply(
                 TypeApply(funR, targs).setType(appliedType(funR.tpe, targs.map((t:Tree) => t.tpe))),
                 args.map(transform(_))
@@ -98,10 +98,10 @@ abstract class SelectiveCPSTransform extends PluginComponent with
 
         case Apply(TypeApply(fun, targs), args)
         if (fun.symbol == MethShiftUnit) =>
-          log("found shiftUnit: " + tree)
+          debuglog("found shiftUnit: " + tree)
           atPos(tree.pos) {
             val funR = gen.mkAttributedRef(MethShiftUnitR) // TODO: correct?
-            log(funR.tpe)
+            debuglog("funR.tpe = " + funR.tpe)
             Apply(
                 TypeApply(funR, List(targs(0), targs(1))).setType(appliedType(funR.tpe,
                     List(targs(0).tpe, targs(1).tpe))),
@@ -114,7 +114,7 @@ abstract class SelectiveCPSTransform extends PluginComponent with
           log("found reify: " + tree)
           atPos(tree.pos) {
             val funR = gen.mkAttributedRef(MethReifyR) // TODO: correct?
-            log(funR.tpe)
+            debuglog("funR.tpe = " + funR.tpe)
             Apply(
                 TypeApply(funR, targs).setType(appliedType(funR.tpe, targs.map((t:Tree) => t.tpe))),
                 args.map(transform(_))
@@ -258,17 +258,17 @@ abstract class SelectiveCPSTransform extends PluginComponent with
             case vd @ ValDef(mods, name, tpt, rhs)
             if (vd.symbol.hasAnnotation(MarkerCPSSym)) =>
 
-              log("found marked ValDef "+name+" of type " + vd.symbol.tpe)
+              debuglog("found marked ValDef "+name+" of type " + vd.symbol.tpe)
 
               val tpe = vd.symbol.tpe
               val rhs1 = atOwner(vd.symbol) { transform(rhs) }
               rhs1.changeOwner(vd.symbol -> currentOwner) // TODO: don't traverse twice
 
-              log("valdef symbol " + vd.symbol + " has type " + tpe)
-              log("right hand side " + rhs1 + " has type " + rhs1.tpe)
+              debuglog("valdef symbol " + vd.symbol + " has type " + tpe)
+              debuglog("right hand side " + rhs1 + " has type " + rhs1.tpe)
 
-              log("currentOwner: " + currentOwner)
-              log("currentMethod: " + currentMethod)
+              debuglog("currentOwner: " + currentOwner)
+              debuglog("currentMethod: " + currentMethod)
 
               val (bodyStms, bodyExpr) = transBlock(rest, expr)
               // FIXME: result will later be traversed again by TreeSymSubstituter and
@@ -308,12 +308,12 @@ abstract class SelectiveCPSTransform extends PluginComponent with
 
                 // see note about multiple traversals above
 
-                log("fun.symbol: "+fun.symbol)
-                log("fun.symbol.owner: "+fun.symbol.owner)
-                log("arg.owner: "+arg.owner)
+                debuglog("fun.symbol: "+fun.symbol)
+                debuglog("fun.symbol.owner: "+fun.symbol.owner)
+                debuglog("arg.owner: "+arg.owner)
 
-                log("fun.tpe:"+fun.tpe)
-                log("return type of fun:"+body1.tpe)
+                debuglog("fun.tpe:"+fun.tpe)
+                debuglog("return type of fun:"+body1.tpe)
 
                 var methodName = nme.map
 
@@ -324,7 +324,7 @@ abstract class SelectiveCPSTransform extends PluginComponent with
                 else
                   unit.error(rhs.pos, "cannot compute type for CPS-transformed function result")
 
-                log("will use method:"+methodName)
+                debuglog("will use method:"+methodName)
 
                 localTyper.typed(atPos(vd.symbol.pos) {
                   Apply(Select(ctxR, ctxR.tpe.member(methodName)), List(fun))
@@ -335,7 +335,7 @@ abstract class SelectiveCPSTransform extends PluginComponent with
 
               try {
                 if (specialCaseTrivial) {
-                  log("will optimize possible tail call: " + bodyExpr)
+                  debuglog("will optimize possible tail call: " + bodyExpr)
 
                   // FIXME: flatMap impl has become more complicated due to
                   // exceptions. do we need to put a try/catch in the then part??

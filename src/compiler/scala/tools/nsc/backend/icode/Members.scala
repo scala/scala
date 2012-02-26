@@ -212,6 +212,12 @@ trait Members {
     def isStatic: Boolean = symbol.isStaticMember
 
     override def toString() = symbol.fullName
+    
+    def matchesSignature(other: IMethod) = {
+      (symbol.name == other.symbol.name) &&
+      (params corresponds other.params)(_.kind == _.kind) &&
+      (returnType == other.returnType)
+    }
 
     import opcodes._
     def checkLocals(): Unit = {

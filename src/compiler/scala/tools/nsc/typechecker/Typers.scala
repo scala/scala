@@ -3645,8 +3645,7 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
           if (ps.isEmpty)
             ps = site.parents filter (_.typeSymbol.toInterface.name == mix)
           if (ps.isEmpty) {
-            if (settings.debug.value)
-              Console.println(site.parents map (_.typeSymbol.name))//debug
+            debuglog("Fatal: couldn't find site " + site + " in " + site.parents.map(_.typeSymbol.name))
             if (phase.erasedTypes && context.enclClass.owner.isImplClass) {
               // println(qual1)
               // println(clazz)
@@ -4631,7 +4630,7 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
       case None => typed(tree, mode, pt)
     }
 
-    def findManifest(tp: Type, full: Boolean) = atPhase(currentRun.typerPhase) {
+    def findManifest(tp: Type, full: Boolean) = beforeTyper {
       inferImplicit(
         EmptyTree,
         appliedType((if (full) FullManifestClass else PartialManifestClass).typeConstructor, List(tp)),

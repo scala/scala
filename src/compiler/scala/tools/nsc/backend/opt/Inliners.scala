@@ -466,8 +466,10 @@ abstract class Inliners extends SubComponent {
       }
     }
 
-    private def isHigherOrderMethod(sym: Symbol) =
-      sym.isMethod && atPhase(currentRun.erasurePhase.prev)(sym.info.paramTypes exists isFunctionType)
+    private def isHigherOrderMethod(sym: Symbol) = (
+         sym.isMethod
+      && beforeExplicitOuter(sym.info.paramTypes exists isFunctionType) // was "at erasurePhase.prev"
+    )
 
     /** Should method 'sym' being called in 'receiver' be loaded from disk? */
     def shouldLoadImplFor(sym: Symbol, receiver: Symbol): Boolean = {

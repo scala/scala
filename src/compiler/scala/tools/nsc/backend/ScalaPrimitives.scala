@@ -565,7 +565,7 @@ abstract class ScalaPrimitives {
     import definitions._
     val code = getPrimitive(fun)
 
-    def elementType = atPhase(currentRun.typerPhase) {
+    def elementType = beforeTyper {
       val arrayParent = tpe :: tpe.parents collectFirst {
         case TypeRef(_, ArrayClass, elem :: Nil) => elem
       }

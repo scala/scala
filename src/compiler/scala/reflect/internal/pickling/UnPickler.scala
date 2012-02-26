@@ -862,13 +862,12 @@ abstract class UnPickler /*extends reflect.generic.UnPickler*/ {
       override def complete(sym: Symbol) = try {
         super.complete(sym)
         var alias = at(j, readSymbol)
-        if (alias.isOverloaded) {
-          atPhase(picklerPhase) {
-            alias = alias suchThat (alt => sym.tpe =:= sym.owner.thisType.memberType(alt))
-          }
-        }
+        if (alias.isOverloaded)
+          alias = atPhase(picklerPhase)((alias suchThat (alt => sym.tpe =:= sym.owner.thisType.memberType(alt))))
+
         sym.asInstanceOf[TermSymbol].setAlias(alias)
-      } catch {
+      }
+      catch {
         case e: MissingRequirementError => throw toTypeError(e)
       }
     }

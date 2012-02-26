@@ -71,7 +71,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
    *  maps all other types to themselves.
    */
   private def toInterface(tp: Type): Type =
-    atPhase(currentRun.mixinPhase)(tp.typeSymbol.toInterface).tpe
+    beforeMixin(tp.typeSymbol.toInterface).tpe
 
   private def isFieldWithBitmap(field: Symbol) = {
     field.info // ensure that nested objects are transformed
@@ -103,7 +103,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
   private val toInterfaceMap = new TypeMap {
     def apply(tp: Type): Type = mapOver( tp match {
       case TypeRef(pre, sym, args) if (sym.isImplClass) =>
-        typeRef(pre, atPhase(currentRun.mixinPhase)(sym.toInterface), args)
+        typeRef(pre, beforeMixin(sym.toInterface), args)
       case _ => tp
     })
   }
@@ -123,7 +123,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
    *  @param mixinClass The mixin class that produced the superaccessor
    */
   private def rebindSuper(base: Symbol, member: Symbol, mixinClass: Symbol): Symbol =
-    atPhase(currentRun.picklerPhase.next) {
+    afterPickler {
       var bcs = base.info.baseClasses.dropWhile(mixinClass !=).tail
       var sym: Symbol = NoSymbol
       debuglog("starting rebindsuper " + base + " " + member + ":" + member.tpe +
@@ -147,7 +147,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
     member.hasAccessorFlag && (!member.isDeferred || (member hasFlag lateDEFERRED))
 
   /** Is member overridden (either directly or via a bridge) in base class sequence `bcs`? */
-  def isOverriddenAccessor(member: Symbol, bcs: List[Symbol]): Boolean = atPhase(ownPhase) {
+  def isOverriddenAccessor(member: Symbol, bcs: List[Symbol]): Boolean = atOwnPhase {
     def hasOverridingAccessor(clazz: Symbol) = {
       clazz.info.nonPrivateDecl(member.name).alternatives.exists(
         sym =>
@@ -155,8 +155,9 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
           !sym.hasFlag(MIXEDIN) &&
           matchesType(sym.tpe, member.tpe, true))
     }
-    bcs.head != member.owner &&
-    (hasOverridingAccessor(bcs.head) || isOverriddenAccessor(member, bcs.tail))
+    (    bcs.head != member.owner
+      && (hasOverridingAccessor(bcs.head) || isOverriddenAccessor(member, bcs.tail))
+    )
   }
 
   /** Add given member to given class, and mark member as mixed-in.
@@ -241,7 +242,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
    */
   def addMixedinMembers(clazz: Symbol, unit : CompilationUnit) {
     def cloneBeforeErasure(iface: Symbol, clazz: Symbol, imember: Symbol): Symbol = {
-      val newSym = atPhase(currentRun.erasurePhase) {
+      val newSym = beforeErasure {
         val res = imember.cloneSymbol(clazz)
         // since we used the member (imember) from the interface that represents the trait that's being mixed in,
         // have to instantiate the interface type params (that may occur in imember's info) as they are seen from the class
@@ -337,8 +338,8 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
                   case _ => // otherwise mixin a field as well
                     // atPhase: the private field is moved to the implementation class by erasure,
                     // so it can no longer be found in the member's owner (the trait)
-                    val accessed = atPhase(currentRun.picklerPhase)(member.accessed)
-                    val sym = atPhase(currentRun.erasurePhase){ // #3857, need to retain info before erasure when cloning (since cloning only carries over the current entry in the type history)
+                    val accessed = beforePickler(member.accessed)
+                    val sym = beforeErasure { // #3857, need to retain info before erasure when cloning (since cloning only carries over the current entry in the type history)
                       clazz.newValue(nme.getterToLocal(member.name), member.pos).setInfo(member.tpe.resultType) // so we have a type history entry before erasure
                     }
                     sym.updateInfo(member.tpe.resultType) // info at current phase
@@ -349,13 +350,15 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
                                 setAnnotations accessed.annotations)
                 }
             }
-          } else if (member.isSuperAccessor) { // mixin super accessors
+          } 
+          else if (member.isSuperAccessor) { // mixin super accessors
             val member1 = addMember(clazz, member.cloneSymbol(clazz)) setPos clazz.pos
             assert(member1.alias != NoSymbol, member1)
             val alias1 = rebindSuper(clazz, member.alias, mixinClass)
             member1.asInstanceOf[TermSymbol] setAlias alias1
 
-          } else if (member.isMethod && member.isModule && member.hasNoFlags(LIFTED | BRIDGE)) {
+          }
+          else if (member.isMethod && member.isModule && member.hasNoFlags(LIFTED | BRIDGE)) {
             // mixin objects: todo what happens with abstract objects?
             addMember(clazz, member.cloneSymbol(clazz, member.flags & ~(DEFERRED | lateDEFERRED)) setPos clazz.pos)
           }
@@ -383,7 +386,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
       var parents1 = parents
       var decls1 = decls
       if (!clazz.isPackageClass) {
-        atPhase(phase.next)(clazz.owner.info)
+        afterMixin(clazz.owner.info)
         if (clazz.isImplClass) {
           clazz setFlag lateMODULE
           var sourceModule = clazz.owner.info.decls.lookup(sym.name.toTermName)
@@ -515,7 +518,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
       tree match {
         case Template(parents, self, body) =>
           localTyper = erasure.newTyper(rootContext.make(tree, currentOwner))
-          atPhase(phase.next)(currentOwner.owner.info)//todo: needed?
+          afterMixin(currentOwner.owner.info)//todo: needed?
 
           if (!currentOwner.isTrait && !isValueClass(currentOwner))
             addMixedinMembers(currentOwner, unit)
@@ -534,7 +537,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
             else EmptyTree
           }
           else {
-            if (currentOwner.isTrait && sym.isSetter && !atPhase(currentRun.picklerPhase)(sym.isDeferred)) {
+            if (currentOwner.isTrait && sym.isSetter && !beforePickler(sym.isDeferred)) {
               sym.addAnnotation(TraitSetterAnnotationClass)
             }
             tree
@@ -703,13 +706,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
           val rhs0 = (Super(clazz, tpnme.EMPTY) DOT stat.symbol.alias)(vparams map (v => Ident(v.symbol)): _*)
           val rhs1 = localTyped(stat.pos, rhs0, stat.symbol.tpe.resultType)
 
-          debuglog(
-            "complete super acc " + stat.symbol.fullLocationString +
-            " " + rhs1 + " " + stat.symbol.alias.fullLocationString +
-            "/" + stat.symbol.alias.owner.hasFlag(lateINTERFACE)
-          )//debug
-
-          deriveDefDef(stat)(_ => atPhase(currentRun.mixinPhase)(transform(rhs1)))
+          deriveDefDef(stat)(_ => beforeMixin(transform(rhs1)))
         case _ =>
           stat
       }
@@ -740,7 +737,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
 
         def createBitmap: Symbol = {
           val sym = clazz0.newVariable(bitmapName, clazz0.pos) setInfo IntClass.tpe
-          atPhase(currentRun.typerPhase)(sym addAnnotation VolatileAttr)
+          beforeTyper(sym addAnnotation VolatileAttr)
 
           category match {
             case nme.BITMAP_TRANSIENT | nme.BITMAP_CHECKINIT_TRANSIENT => sym addAnnotation TransientAttr
@@ -1129,7 +1126,6 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
      */
     private def postTransform(tree: Tree): Tree = {
       val sym = tree.symbol
-      // assert(tree.tpe ne null, tree.getClass +" : "+ tree +" in "+ localTyper.context.tree)
       // change every node type that refers to an implementation class to its
       // corresponding interface, unless the node's symbol is an implementation class.
       if (tree.tpe.typeSymbol.isImplClass && ((sym eq null) || !sym.isImplClass))
@@ -1236,7 +1232,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
       val tree1 = super.transform(preTransform(tree))
       // localTyper needed when not flattening inner classes. parts after an
       // inner class will otherwise be typechecked with a wrong scope
-      try atPhase(phase.next)(postTransform(tree1))
+      try afterMixin(postTransform(tree1))
       finally localTyper = saved
     }
   }

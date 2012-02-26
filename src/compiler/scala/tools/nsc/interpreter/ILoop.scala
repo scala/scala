@@ -324,7 +324,7 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
   private def implicitsCommand(line: String): Result = {
     val intp = ILoop.this.intp
     import intp._
-    import global.Symbol
+    import global.{ Symbol, afterTyper }
 
     def p(x: Any) = intp.reporter.printMessage("" + x)
 
@@ -348,7 +348,7 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
 
         // This groups the members by where the symbol is defined
         val byOwner = syms groupBy (_.owner)
-        val sortedOwners = byOwner.toList sortBy { case (owner, _) => intp.afterTyper(source.info.baseClasses indexOf owner) }
+        val sortedOwners = byOwner.toList sortBy { case (owner, _) => afterTyper(source.info.baseClasses indexOf owner) }
 
         sortedOwners foreach {
           case (owner, members) =>
@@ -440,7 +440,7 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
     else {
       val tp = intp.typeOfExpression(line, false)
       if (tp == NoType) "" // the error message was already printed
-      else intp.afterTyper(tp.toString)
+      else intp.global.afterTyper(tp.toString)
     }
   }
   private def warningsCommand(): Result = {

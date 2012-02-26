@@ -193,7 +193,7 @@ abstract class AddInterfaces extends InfoTransform {
         case PolyType(_, restpe) =>
           implType(restpe)
       }
-      sym setInfo implType(atPhase(currentRun.erasurePhase)(iface.info))
+      sym setInfo implType(beforeErasure(iface.info))
     }
 
     override def load(clazz: Symbol) { complete(clazz) }
@@ -337,7 +337,7 @@ abstract class AddInterfaces extends InfoTransform {
           val mix1 = mix
             if (mix == tpnme.EMPTY) mix
             else {
-              val ps = atPhase(currentRun.erasurePhase) {
+              val ps = beforeErasure {
                 sym.info.parents dropWhile (p => p.symbol.name != mix)
               }
               assert(!ps.isEmpty, tree);

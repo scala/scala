@@ -23,9 +23,7 @@ trait BytecodeWriters {
   import global._
 
   private def outputDirectory(sym: Symbol): AbstractFile = (
-    settings.outputDirs.outputDirFor {
-      atPhase(currentRun.flattenPhase.prev)(sym.sourceFile)
-    }
+    settings.outputDirs.outputDirFor(beforeFlatten(sym.sourceFile))
   )
   private def getFile(base: AbstractFile, cls: JClass, suffix: String): AbstractFile = {
     var dir = base

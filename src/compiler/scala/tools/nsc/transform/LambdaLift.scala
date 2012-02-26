@@ -128,7 +128,7 @@ abstract class LambdaLift extends InfoTransform {
         if (!ss(sym)) {
           ss addEntry sym
           renamable addEntry sym
-          atPhase(currentRun.picklerPhase) {
+          beforePickler {
             // The param symbol in the MethodType should not be renamed, only the symbol in scope. This way,
             // parameter names for named arguments are not changed. Example: without cloning the MethodType,
             //     def closure(x: Int) = { () => x }
@@ -262,7 +262,7 @@ abstract class LambdaLift extends InfoTransform {
         }
       }
 
-      atPhase(phase.next) {
+      afterOwnPhase {
         for ((owner, freeValues) <- free.toList) {
           val newFlags = SYNTHETIC | ( if (owner.isClass) PARAMACCESSOR | PrivateLocal else PARAM )
           debuglog("free var proxy: %s, %s".format(owner.fullLocationString, freeValues.toList.mkString(", ")))
@@ -498,7 +498,7 @@ abstract class LambdaLift extends InfoTransform {
 
     override def transformUnit(unit: CompilationUnit) {
       computeFreeVars
-      atPhase(phase.next)(super.transformUnit(unit))
+      afterOwnPhase(super.transformUnit(unit))
       assert(liftedDefs.isEmpty, liftedDefs.keys mkString ", ")
     }
   } // class LambdaLifter

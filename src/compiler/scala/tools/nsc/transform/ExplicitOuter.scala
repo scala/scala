@@ -170,7 +170,7 @@ abstract class ExplicitOuter extends InfoTransform
       }
       if (!clazz.isTrait && !parents.isEmpty) {
         for (mc <- clazz.mixinClasses) {
-          val mixinOuterAcc: Symbol = atPhase(phase.next)(outerAccessor(mc))
+          val mixinOuterAcc: Symbol = afterExplicitOuter(outerAccessor(mc))
           if (mixinOuterAcc != NoSymbol) {
             if (decls1 eq decls) decls1 = decls.cloneScope
             val newAcc = mixinOuterAcc.cloneSymbol(clazz, mixinOuterAcc.flags & ~DEFERRED)
@@ -561,7 +561,7 @@ abstract class ExplicitOuter extends InfoTransform
 
     /** The transformation method for whole compilation units */
     override def transformUnit(unit: CompilationUnit) {
-      atPhase(phase.next)(super.transformUnit(unit))
+      afterExplicitOuter(super.transformUnit(unit))
     }
   }
 

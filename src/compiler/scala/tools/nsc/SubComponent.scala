@@ -46,6 +46,9 @@ abstract class SubComponent {
 
   private var ownPhaseCache: WeakReference[Phase] = new WeakReference(null)
   private var ownPhaseRunId = global.NoRunId
+  
+  @inline final def atOwnPhase[T](op: => T) = global.atPhase(ownPhase)(op)
+  @inline final def afterOwnPhase[T](op: => T) = global.afterPhase(ownPhase)(op)
 
   /** The phase corresponding to this subcomponent in the current compiler run */
   def ownPhase: Phase = {
