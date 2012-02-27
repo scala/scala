@@ -129,7 +129,7 @@
           <artifact:pom refid="@{name}.pom" />
           <artifact:remoteRepository url="@{repository}" id="${repository.credentials.id}" />
           <artifact:attach type="jar" file="@{name}/@{name}-src.jar" classifier="sources" />
-          <artifact:attach type="jar" file="@{name}/@{name}-doc.jar" classifier="javadoc" />
+          <artifact:attach type="jar" file="@{name}/@{name}-docs.jar" classifier="javadoc" />
           <extra-attachments />
         </artifact:deploy>
       </sequential>
