@@ -363,6 +363,10 @@ trait Scanners extends ScannersCommon {
             nextChar()
             base = 16
           }
+          else if (ch == 'b' || ch == 'B') {
+            nextChar()
+            base = 2
+          }
           else {
             /** What should leading 0 be in the future? It is potentially dangerous
              *  to let it be base-10 because of history.  Should it be an error? Is
