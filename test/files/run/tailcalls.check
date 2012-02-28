@@ -43,6 +43,7 @@ test TailCall.g1 was successful
 test TailCall.g2 was successful
 test TailCall.g3 was successful
 test TailCall.h1 was successful
+test TailCall.s1 was successful
 
 test NonTailCall.f1 0 1 2 was successful
 test NonTailCall.f2 was successful

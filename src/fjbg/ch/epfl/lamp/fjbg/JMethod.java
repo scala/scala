@@ -194,6 +194,7 @@ public class JMethod extends JFieldOrMethod {
         else if (isNative()) buf.append("native ");
         if (isAbstract()) buf.append("abstract ");
         else if (isFinal()) buf.append("final ");
+        if (isSynchronized()) buf.append("synchronized ");
         return buf.toString();
     }
 }
