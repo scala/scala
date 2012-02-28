@@ -121,10 +121,6 @@ abstract public class JFieldOrMethod extends JMember {
         return (accessFlags & JAccessFlags.ACC_VARARGS) != 0;
     }
 
-    public boolean isSynchronized() {
-        return (accessFlags & JAccessFlags.ACC_SYNCHRONIZED) != 0;
-    }
-
     public void writeTo(DataOutputStream stream) throws IOException {
         if (! frozen) {
             try {

@@ -688,7 +688,7 @@ trait Definitions extends reflect.api.StandardDefinitions {
     lazy val Object_ne = newMethod(ObjectClass, nme.ne, anyrefparam, booltype, FINAL)
     lazy val Object_isInstanceOf = newT1NoParamsMethod(ObjectClass, nme.isInstanceOf_Ob, FINAL | SYNTHETIC)(_ => booltype)
     lazy val Object_asInstanceOf = newT1NoParamsMethod(ObjectClass, nme.asInstanceOf_Ob, FINAL | SYNTHETIC)(_.typeConstructor)
-    lazy val Object_synchronized = newPolyMethod(1, ObjectClass, nme.synchronized_, FINAL)(tps => 
+    lazy val Object_synchronized = newPolyMethod(1, ObjectClass, nme.synchronized_, FINAL)(tps =>
       (Some(List(tps.head.typeConstructor)), tps.head.typeConstructor)
     )
     lazy val String_+ = newMethod(StringClass, nme.raw.PLUS, anyparam, stringtype, FINAL)
@@ -734,7 +734,6 @@ trait Definitions extends reflect.api.StandardDefinitions {
     lazy val ScalaStrictFPAttr          = getRequiredClass("scala.annotation.strictfp")
     lazy val SerializableAttr           = getRequiredClass("scala.annotation.serializable") // @serializable is deprecated
     lazy val SwitchClass                = getRequiredClass("scala.annotation.switch")
-    lazy val SynchronizedAttr           = getRequiredClass("scala.annotation.synchronized")
     lazy val TailrecClass               = getRequiredClass("scala.annotation.tailrec")
     lazy val VarargsClass               = getRequiredClass("scala.annotation.varargs")
     lazy val uncheckedStableClass       = getRequiredClass("scala.annotation.unchecked.uncheckedStable")

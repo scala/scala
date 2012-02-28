@@ -19,7 +19,6 @@ public interface JAccessFlags {
     public static int ACC_STATIC    = 0x0008;
     public static int ACC_FINAL     = 0x0010;
     public static int ACC_SUPER     = 0x0020;
-    public static int ACC_SYNCHRONIZED = 0x0020;
     public static int ACC_VOLATILE  = 0x0040;
     public static int ACC_TRANSIENT = 0x0080;
     public static int ACC_NATIVE    = 0x0100;

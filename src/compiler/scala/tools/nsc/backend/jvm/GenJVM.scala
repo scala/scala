@@ -857,9 +857,6 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
       if (method.native)
         flags |= ACC_NATIVE
 
-      if (m.symbol.isSynchronized)
-        flags |= ACC_SYNCHRONIZED
-
       jmethod = jclass.addNewMethod(flags,
                                     javaName(m.symbol),
                                     resTpe,
@@ -1917,7 +1914,8 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
       if (sym.isStaticMember) ACC_STATIC else 0,
       if (sym.isBridge) ACC_BRIDGE | ACC_SYNTHETIC else 0,
       if (sym.isClass && !sym.isInterface) ACC_SUPER else 0,
-      if (sym.isVarargsMethod) ACC_VARARGS else 0
+      if (sym.isVarargsMethod) ACC_VARARGS else 0,
+      if (sym.hasFlag(Flags.SYNCHRONIZED)) JAVA_ACC_SYNCHRONIZED else 0
     )
   }
   def javaFieldFlags(sym: Symbol) = {

@@ -706,8 +706,8 @@ abstract class Inliners extends SubComponent {
         if (settings.debug.value) icodes.checkValid(caller.m)
       }
 
-      def isStampedForInlining(stack: TypeStack) =
-        !sameSymbols && inc.m.hasCode && shouldInline && isSafeToInline(stack) && !inc.m.symbol.isSynchronized
+      def isStampedForInlining(stackLength: Int) =
+        !sameSymbols && inc.m.hasCode && shouldInline && isSafeToInline(stackLength) && !inc.m.symbol.hasFlag(Flags.SYNCHRONIZED)
 
       def logFailure(stackLength: Int) = log(
         """|inline failed for %s:
@@ -724,8 +724,7 @@ abstract class Inliners extends SubComponent {
 
       def failureReason(stackLength: Int) =
         if (!inc.m.hasCode) "bytecode was unavailable"
-        else if (!isSafeToInline(stack)) "it is unsafe (target may reference private fields)"
-        else if (inc.m.symbol.isSynchronized) "method is synchronized"
+        else if (!isSafeToInline(stackLength)) "it is unsafe (target may reference private fields)"
         else "of a bug (run with -Ylog:inline -Ydebug for more information)"
 
       def canAccess(level: NonPublicRefs.Value) = level match {

@@ -182,8 +182,6 @@ class TailCall[S](s: S) {
   def h1(n: Int, v: Int): Int = hP(n, v);
   private def hP(n: Int, v: Int): Int = if (n == 0) v else hP(n - 1, v - 1);
 
-  final def s1(n: Int, v: Int): Int = synchronized { if (n == 0) v else s1(n - 1, v - 1) }
-
   // !!! test return in non-tail-call position
   // !!! test non-same-instance calls
   // !!! test non-same-type calls
@@ -231,13 +229,11 @@ class NonTailCall {
     Console.print(" " + n)
   }
 
-  final def f2(n: Int): Int = {
-    val next = n - 1
-    synchronized {
-      if (n == 0) 0
-      else f2(next)
-    }
+  final def f2(n: Int): Int = synchronized {
+    if (n == 0) 0
+    else f2(n - 1)
   }
+  
 }
 
 //############################################################################
@@ -370,7 +366,6 @@ object Test {
     check_success("TailCall.g2", TailCall.g2(max, max     ), 0)
     check_success("TailCall.g3", TailCall.g3(max, max, Nil), 0)
     check_success("TailCall.h1", TailCall.h1(max, max     ), 0)
-    check_success("TailCall.s1", TailCall.s1(max, max     ), 0)
     println
     
     val NonTailCall = new NonTailCall
