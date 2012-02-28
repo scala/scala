@@ -614,7 +614,12 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
 
       if (tree.isErrorTyped) tree
       else if ((mode & (PATTERNmode | FUNmode)) == PATTERNmode && tree.isTerm) { // (1)
-        if (sym.isValue) checkStable(tree)
+        if (sym.isValue) {
+          val tree1 = checkStable(tree)
+          // A module reference in a pattern has type Foo.type, not "object Foo"
+          if (sym.isModule && !sym.isMethod) tree1 setType singleType(pre, sym)
+          else tree1
+        }
         else fail()
       } else if ((mode & (EXPRmode | QUALmode)) == EXPRmode && !sym.isValue && !phase.erasedTypes) { // (2)
         fail()
