@@ -144,13 +144,13 @@ abstract class UnCurry extends InfoTransform
      *  todo: maybe clone a pre-existing exception instead?
      *  (but what to do about exceptions that miss their targets?)
      */
-    private def nonLocalReturnThrow(expr: Tree, meth: Symbol) =
-      localTyper.typed {
-        Throw(
-          New(
-            TypeTree(nonLocalReturnExceptionType(expr.tpe)),
-            List(List(Ident(nonLocalReturnKey(meth)), expr))))
-      }
+    private def nonLocalReturnThrow(expr: Tree, meth: Symbol) = localTyper typed {
+      Throw(
+        nonLocalReturnExceptionType(expr.tpe.widen),
+        Ident(nonLocalReturnKey(meth)), 
+        expr
+      )
+    }
 
     /** Transform (body, key) to:
      *
@@ -166,31 +166,18 @@ abstract class UnCurry extends InfoTransform
      *  }
      */
     private def nonLocalReturnTry(body: Tree, key: Symbol, meth: Symbol) = {
-      localTyper.typed {
-        val extpe = nonLocalReturnExceptionType(meth.tpe.finalResultType)
-        val ex = meth.newValue(nme.ex, body.pos) setInfo extpe
-        val pat = Bind(ex,
-                       Typed(Ident(nme.WILDCARD),
-                             AppliedTypeTree(Ident(NonLocalReturnControlClass),
-                                             List(Bind(tpnme.WILDCARD,
-                                                       EmptyTree)))))
-        val rhs =
-          If(
-            Apply(
-              Select(
-                Apply(Select(Ident(ex), "key"), List()),
-                Object_eq),
-              List(Ident(key))),
-            Apply(
-              TypeApply(
-                Select(
-                  Apply(Select(Ident(ex), "value"), List()),
-                  Any_asInstanceOf),
-                List(TypeTree(meth.tpe.finalResultType))),
-              List()),
-            Throw(Ident(ex)))
-        val keyDef = ValDef(key, New(ObjectClass))
-        val tryCatch = Try(body, List(CaseDef(pat, EmptyTree, rhs)), EmptyTree)
+      localTyper typed {
+        val extpe   = nonLocalReturnExceptionType(meth.tpe.finalResultType)
+        val ex      = meth.newValue(body.pos, nme.ex) setInfo extpe
+        val pat     = gen.mkBindForCase(ex, NonLocalReturnControlClass, List(meth.tpe.finalResultType))
+        val rhs = (
+          IF   ((ex DOT nme.key)() OBJ_EQ Ident(key))
+          THEN ((ex DOT nme.value)())
+          ELSE (Throw(Ident(ex)))
+        )
+        val keyDef   = ValDef(key, New(ObjectClass.tpe))
+        val tryCatch = Try(body, pat -> rhs)
+
         Block(List(keyDef), tryCatch)
       }
     }
@@ -357,7 +344,7 @@ abstract class UnCurry extends InfoTransform
         localTyper.typedPos(fun.pos) {
           Block(
             List(ClassDef(anonClass, NoMods, List(List()), List(List()), members, fun.pos)),
-            Typed(New(anonClass), TypeTree(fun.tpe)))
+            Typed(New(anonClass.tpe), TypeTree(fun.tpe)))
         }
       }
     }

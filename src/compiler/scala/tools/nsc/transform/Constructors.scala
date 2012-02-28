@@ -126,7 +126,7 @@ abstract class Constructors extends Transform with ast.TreeDSL {
 
         if (from.name != nme.OUTER) result
         else localTyper.typedPos(to.pos) {
-          IF (from OBJ_EQ NULL) THEN THROW(NullPointerExceptionClass) ELSE result
+          IF (from OBJ_EQ NULL) THEN Throw(NullPointerExceptionClass.tpe) ELSE result
         }
       }
 
@@ -515,7 +515,7 @@ abstract class Constructors extends Transform with ast.TreeDSL {
         }
 
       def delayedInitCall(closure: Tree) = localTyper.typedPos(impl.pos) {
-        gen.mkMethodCall(This(clazz), delayedInitMethod, Nil, List(New(closure.symbol, This(clazz))))
+        gen.mkMethodCall(This(clazz), delayedInitMethod, Nil, List(New(closure.symbol.tpe, This(clazz))))
       }
 
       /** Return a pair consisting of (all statements up to and including superclass and trait constr calls, rest) */

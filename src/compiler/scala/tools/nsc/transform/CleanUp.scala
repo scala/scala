@@ -85,6 +85,11 @@ abstract class CleanUp extends Transform with ast.TreeDSL {
       case "poly-cache" => POLY_CACHE
     }
 
+    def shouldRewriteTry(tree: Try) = {
+      val sym = tree.tpe.typeSymbol
+      forMSIL && (sym != UnitClass) && (sym != NothingClass)
+    }
+
     private def typedWithPos(pos: Position)(tree: Tree) =
       localTyper.typedPos(pos)(tree)
 
@@ -560,8 +565,7 @@ abstract class CleanUp extends Transform with ast.TreeDSL {
        * Hence, we here rewrite all try blocks with a result != {Unit, All} such that they
        * store their result in a local variable. The catch blocks are adjusted as well.
        * The try tree is subsituted by a block whose result expression is read of that variable. */
-      case theTry @ Try(block, catches, finalizer)
-        if theTry.tpe.typeSymbol != definitions.UnitClass && theTry.tpe.typeSymbol != definitions.NothingClass =>
+      case theTry @ Try(block, catches, finalizer) if shouldRewriteTry(theTry) =>
         val tpe = theTry.tpe.widen
         val tempVar = currentOwner.newVariable(mkTerm(nme.EXCEPTION_RESULT_PREFIX), theTry.pos).setInfo(tpe)
         def assignBlock(rhs: Tree) = super.transform(BLOCK(Ident(tempVar) === transform(rhs)))

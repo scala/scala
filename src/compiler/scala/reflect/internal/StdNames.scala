@@ -347,6 +347,7 @@ trait StdNames extends NameManglers { self: SymbolTable =>
     val isInstanceOf_ : NameType       = "isInstanceOf"
     val isInstanceOf_Ob : NameType     = "$isInstanceOf"
     val java: NameType                 = "java"
+    val key: NameType                  = "key"
     val lang: NameType                 = "lang"
     val length: NameType               = "length"
     val lengthCompare: NameType        = "lengthCompare"

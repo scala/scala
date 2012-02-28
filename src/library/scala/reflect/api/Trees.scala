@@ -491,6 +491,10 @@ trait Trees { self: Universe =>
     if (argss.isEmpty) Apply(superRef, Nil)
     else (superRef /: argss) (Apply)
   }
+  /** 0-1 argument list new, based on a type.
+   */
+  def New(tpe: Type, args: Tree*): Tree =
+    New(TypeTree(tpe), List(args.toList))
 
   /** Type annotation, eliminated by explicit outer */
   case class Typed(expr: Tree, tpt: Tree)

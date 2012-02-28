@@ -51,9 +51,8 @@ abstract class TreeGen extends reflect.internal.TreeGen with TreeDSL {
   }
 
   // wrap the given expression in a SoftReference so it can be gc-ed
-  def mkSoftRef(expr: Tree): Tree = atPos(expr.pos) {
-    New(SoftReferenceClass, expr)
-  }
+  def mkSoftRef(expr: Tree): Tree = atPos(expr.pos)(New(SoftReferenceClass.tpe, expr))
+
   // annotate the expression with @unchecked
   def mkUnchecked(expr: Tree): Tree = atPos(expr.pos) {
     // This can't be "Annotated(New(UncheckedClass), expr)" because annotations
@@ -219,6 +218,18 @@ abstract class TreeGen extends reflect.internal.TreeGen with TreeDSL {
   /** Make a synchronized block on 'monitor'. */
   def mkSynchronized(monitor: Tree, body: Tree): Tree =
     Apply(Select(monitor, Object_synchronized), List(body))
+
+  def mkAppliedTypeForCase(clazz: Symbol): Tree = {
+    val numParams = clazz.typeParams.size
+    if (clazz.typeParams.isEmpty) Ident(clazz)
+    else AppliedTypeTree(Ident(clazz), 1 to numParams map (_ => Bind(tpnme.WILDCARD, EmptyTree)) toList)
+  }
+  def mkBindForCase(patVar: Symbol, clazz: Symbol, targs: List[Type]): Tree = {
+    Bind(patVar, Typed(Ident(nme.WILDCARD), 
+      if (targs.isEmpty) mkAppliedTypeForCase(clazz)
+      else AppliedTypeTree(Ident(clazz), targs map TypeTree)
+    ))
+  }
 
   def wildcardStar(tree: Tree) =
     atPos(tree.pos) { Typed(tree, Ident(tpnme.WILDCARD_STAR)) }

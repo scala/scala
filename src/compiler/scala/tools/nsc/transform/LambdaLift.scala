@@ -420,7 +420,7 @@ abstract class LambdaLift extends InfoTransform {
               case Try(block, catches, finalizer) =>
                 Try(refConstr(block), catches map refConstrCase, finalizer)
               case _ => 
-                New(sym, expr)
+                New(sym.tpe, expr)
             }
             def refConstrCase(cdef: CaseDef): CaseDef = 
               CaseDef(cdef.pat, cdef.guard, refConstr(cdef.body))
