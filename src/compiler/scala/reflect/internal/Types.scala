@@ -893,7 +893,7 @@ trait Types extends api.Types { self: SymbolTable =>
     def toLongString = {
       val str = toString
       if (str == "type") widen.toString
-      else if (str endsWith ".type") str + " (with underlying type " + widen + ")"
+      else if ((str endsWith ".type") && !typeSymbol.isModuleClass) str + " (with underlying type " + widen + ")"
       else str
     }
 
