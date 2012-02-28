@@ -551,6 +551,9 @@ abstract class UnCurry extends InfoTransform
           case Assign(lhs, _) if lhs.symbol.owner != currentMethod || lhs.symbol.hasFlag(LAZY | ACCESSOR) =>
             withNeedLift(true) { super.transform(tree) }
 
+          case Return(_) =>
+            withNeedLift(true) { super.transform(tree) }
+
           case Try(block, catches, finalizer) =>
             if (needTryLift || shouldBeLiftedAnyway(tree)) transform(liftTree(tree))
             else super.transform(tree)
