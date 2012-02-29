@@ -5081,6 +5081,16 @@ A type's typeSymbol should never be inspected directly.
   def instantiatedBounds(pre: Type, owner: Symbol, tparams: List[Symbol], targs: List[Type]): List[TypeBounds] =
     tparams map (_.info.asSeenFrom(pre, owner).instantiateTypeParams(tparams, targs).bounds)
 
+  private def findRecursiveBounds(ts: List[Type]): List[(Symbol, Symbol)] = {
+    if (ts.isEmpty) Nil
+    else {
+      val sym = ts.head.typeSymbol
+      require(ts.tail forall (_.typeSymbol == sym), ts)
+      for (p <- sym.typeParams ; in <- sym.typeParams ; if in.info.bounds contains p) yield
+        p -> in
+    }
+  }
+  
 // Lubs and Glbs ---------------------------------------------------------
 
   /** Given a matrix `tsBts` whose columns are basetype sequences (and the symbols `tsParams` that should be interpreted as type parameters in this matrix),
@@ -5097,41 +5107,77 @@ A type's typeSymbol should never be inspected directly.
    *                  (except that type constructors have been applied to their dummyArgs)
    *  @See baseTypeSeq  for a definition of sorted and upwards closed.
    */
-  private def lubList(tsParams: List[List[Symbol]], tsBts: List[List[Type]], depth: Int): List[Type] = {
-    // strip typerefs in ts from their arguments if those refer to type parameters that are meant to be bound
-    // TODO: this only deals with the simplest of type constructors
-    // a better fix would be to actually bind those type parameters that appear free in error, but that would require major changes to the BTS infrastructure
-    // example that only kindasorta works now...
-      // given: trait Container[+T]; trait Template[+CC[X] <: Container[X]]; class C1[T] extends Template[Container] with Container[T]
-    // C1's BTS contains Template[Container] with Container[T], but that should really be [T] => Template[Container] with Container[T]
-    // instead of wrapping it in a polytype, the current approach uses elimHOTparams to patch up this type so that
-    // it looks more like a type ctor: Template[Container] with Container, but this is ill-kinded as Template[Container] is a proper type, whereas Container is not
-    def elimHOTparams(ts: List[Type]) = ts map {
-      case tp@TypeRef(pre, sym, args) if args.nonEmpty && tsParams.contains(args.map(_.typeSymbolDirect)) => tp.typeConstructor
-      case tp => tp
+  //
+  private def lubList(ts: List[Type], depth: Int): List[Type] = {
+    // Matching the type params of one of the initial types means dummies.
+    val initialTypeParams = ts map (_.typeParams)
+    def isHotForTs(xs: List[Type]) = initialTypeParams contains xs.map(_.typeSymbol)
+
+    def elimHigherOrderTypeParam(tp: Type) = tp match {
+      case TypeRef(pre, sym, args) if args.nonEmpty && isHotForTs(args) => tp.typeConstructor
+      case _                                                            => tp
     }
+    var lubListDepth = 0
+    def loop(tsBts: List[List[Type]]): List[Type] = {
+      lubListDepth += 1
 
-    if (tsBts.tail.isEmpty) tsBts.head
-    else if (tsBts exists (_.isEmpty)) List()
-    else {
-      val ts0 = tsBts map (_.head) // ts0 is the 1-dimensional frontier of symbols cutting through 2-dimensional tsBts,
-      // invariant: all symbols "under" (closer to the first row) the frontier are smaller (according to _.isLess) than the ones "on and beyond" the frontier
+      if (tsBts.isEmpty || tsBts.exists(_.isEmpty)) Nil
+      else if (tsBts.tail.isEmpty) tsBts.head
+      else {
+        // ts0 is the 1-dimensional frontier of symbols cutting through 2-dimensional tsBts.
+        // Invariant: all symbols "under" (closer to the first row) the frontier
+        // are smaller (according to _.isLess) than the ones "on and beyond" the frontier
+        val ts0  = tsBts map (_.head)
 
-      // is the frontier made up of types with the same symbol?
-      // --> produce a single type for this frontier by merging the prefixes and arguments of these typerefs that share the same symbol
-      // due to the invariant, that symbol is the current maximal symbol for which this holds, i.e., the one that conveys most information wrt subtyping
-      // before merging, strip type arguments that refer to bound type params (when we're computing the lub of type constructors)
-      // furthermore, the number of types to merge is reduced without losing information by dropping types that are a subtype of some other type
-      val sym0 = ts0.head.typeSymbolDirect
-      if (ts0.tail forall (_.typeSymbolDirect == sym0)){
-        mergePrefixAndArgs(elimSub(elimHOTparams(ts0), depth), 1, depth).toList ::: lubList(tsParams, tsBts map (_.tail), depth)
-      } else {
-        // frontier is not uniform yet, move it beyond the current minimal symbol; lather, rince, repeat
-        val sym = minSym(ts0)
-        lubList(tsParams, tsBts map (ts => if (ts.head.typeSymbolDirect == sym) ts.tail else ts), depth)
+        // Is the frontier made up of types with the same symbol?
+        val isUniformFrontier = (ts0: @unchecked) match {
+          case t :: ts  => ts forall (_.typeSymbol == t.typeSymbol)
+        }
+
+        // Produce a single type for this frontier by merging the prefixes and arguments of those
+        // typerefs that share the same symbol: that symbol is the current maximal symbol for which
+        // the invariant holds, i.e., the one that conveys most information wrt subtyping. Before
+        // merging, strip targs that refer to bound tparams (when we're computing the lub of type
+        // constructors.) Also filter out all types that are a subtype of some other type.
+        if (isUniformFrontier) {
+          if (settings.debug.value || printLubs) {
+            val fbounds = findRecursiveBounds(ts0)
+            if (fbounds.nonEmpty) {
+              println("Encountered " + fbounds.size + " recursive bounds while lubbing " + ts0.size + " types.")
+              for ((p0, p1) <- fbounds) {
+                val desc = if (p0 == p1) "its own bounds" else "the bounds of " + p1
+
+                println("  " + p0.fullLocationString + " appears in " + desc)
+                println("    " + p1 + " " + p1.info.bounds)
+              }
+              println("")
+            }
+          }
+          val tails = tsBts map (_.tail)
+          mergePrefixAndArgs(elimSub(ts0 map elimHigherOrderTypeParam, depth), 1, depth) match {
+            case Some(tp) => tp :: loop(tails)
+            case _        => loop(tails)
+          }
+        }
+        else {
+          // frontier is not uniform yet, move it beyond the current minimal symbol;
+          // lather, rinSe, repeat
+          val sym    = minSym(ts0)
+          val newtps = tsBts map (ts => if (ts.head.typeSymbol == sym) ts.tail else ts)
+          if (printLubs) {
+            val str = (newtps.zipWithIndex map { case (tps, idx) =>
+              tps.map("        " + _ + "\n").mkString("   (" + idx + ")\n", "", "\n")
+            }).mkString("")
+          }
+
+          loop(newtps)
+        }
       }
     }
+
+    loop(ts map (_.baseTypeSeq.toList filter (_.typeSymbol.isPublic)))
   }
+
   // @AM the following problem is solved by elimHOTparams in lublist
   // @PP lubLists gone bad: lubList(List(
   //   List(scala.collection.generic.GenericCompanion[scala.collection.immutable.Seq], ScalaObject, java.lang.Object, Any)
@@ -5311,7 +5357,7 @@ A type's typeSymbol should never be inspected directly.
     }
     def lub1(ts0: List[Type]): Type = {
       val (ts, tparams) = stripExistentialsAndTypeVars(ts0)
-      val lubBaseTypes: List[Type] = lubList(ts map (_.typeParams), ts map (_.baseTypeSeq.toList), depth)
+      val lubBaseTypes: List[Type] = lubList(ts, depth)
       val lubParents = spanningTypes(lubBaseTypes)
       val lubOwner = commonOwner(ts)
       val lubBase = intersectionType(lubParents, lubOwner)
