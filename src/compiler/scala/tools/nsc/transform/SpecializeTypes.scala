@@ -97,7 +97,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
   private val wasSpecializedForTypeVars = perRunCaches.newMap[Symbol, Set[Symbol]]() withDefaultValue Set()
 
   /** Concrete methods that use a specialized type, or override such methods. */
-  private val concreteSpecMethods = perRunCaches.newSet[Symbol]()
+  private val concreteSpecMethods = perRunCaches.newWeakSet[Symbol]()
 
   private def isSpecialized(sym: Symbol)          = sym hasAnnotation SpecializedClass
   private def hasSpecializedFlag(sym: Symbol)     = sym hasFlag SPECIALIZED
