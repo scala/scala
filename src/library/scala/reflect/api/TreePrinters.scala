@@ -55,7 +55,7 @@ trait TreePrinters { self: Universe =>
         print(")")
         if (typesPrinted)
           print(".setType(", tree.tpe, ")")
-      case list: List[_] => 
+      case list: List[_] =>
         print("List(")
         val it = list.iterator
         while (it.hasNext) {
@@ -64,16 +64,16 @@ trait TreePrinters { self: Universe =>
         }
         print(")")
       case mods: Modifiers =>
-        val parts = collection.mutable.ListBuffer[String]() 
+        val parts = collection.mutable.ListBuffer[String]()
         parts += "Set(" + mods.modifiers.map(_.sourceString).mkString(", ") + ")"
         parts += "newTypeName(\"" + mods.privateWithin.toString + "\")"
         parts += "List(" + mods.annotations.map{showRaw}.mkString(", ") + ")"
-        
+
         var keep = 3
         if (keep == 3 && mods.annotations.isEmpty) keep -= 1
         if (keep == 2 && mods.privateWithin == EmptyTypeName) keep -= 1
         if (keep == 1 && mods.modifiers.isEmpty) keep -= 1
-        
+
         print("Modifiers(", parts.take(keep).mkString(", "), ")")
       case name: Name =>
         if (name.isTermName) print("newTermName(\"") else print("newTypeName(\"")

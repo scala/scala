@@ -68,7 +68,7 @@ abstract class ExplicitOuter extends InfoTransform
 
     result
   }
-  
+
   private val innerClassConstructorParamName: TermName = newTermName("arg" + nme.OUTER)
 
   class RemoveBindingsTransformer(toRemove: Set[Symbol]) extends Transformer {
@@ -95,7 +95,7 @@ abstract class ExplicitOuter extends InfoTransform
     val accFlags = SYNTHETIC | METHOD | STABLE | ( if (clazz.isTrait) DEFERRED else 0 )
     val sym      = clazz.newMethodSymbol(nme.OUTER, clazz.pos, accFlags)
     val restpe   = if (clazz.isTrait) clazz.outerClass.tpe else clazz.outerClass.thisType
-    
+
     sym expandName clazz
     sym.referenced = clazz
     sym setInfo MethodType(Nil, restpe)
@@ -163,7 +163,7 @@ abstract class ExplicitOuter extends InfoTransform
         decls1 = decls.cloneScope
         val outerAcc = clazz.newMethod(nme.OUTER, clazz.pos) // 3
         outerAcc expandName clazz
-        
+
         decls1 enter newOuterAccessor(clazz)
         if (hasOuterField(clazz)) //2
           decls1 enter newOuterField(clazz)
@@ -468,7 +468,7 @@ abstract class ExplicitOuter extends InfoTransform
             }
           }
           super.transform(
-            deriveTemplate(tree)(decls => 
+            deriveTemplate(tree)(decls =>
               if (newDefs.isEmpty) decls
               else decls ::: newDefs.toList
             )

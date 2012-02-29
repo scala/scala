@@ -22,10 +22,10 @@ trait NameManglers {
 
     val MODULE_SUFFIX_STRING = NameTransformer.MODULE_SUFFIX_STRING
     val NAME_JOIN_STRING     = NameTransformer.NAME_JOIN_STRING
-    
+
     val MODULE_SUFFIX_NAME: TermName = newTermName(MODULE_SUFFIX_STRING)
     val NAME_JOIN_NAME: TermName     = newTermName(NAME_JOIN_STRING)
-    
+
     def flattenedName(segments: Name*): NameType = compactedString(segments mkString NAME_JOIN_STRING)
 
     /**
@@ -79,7 +79,7 @@ trait NameManglers {
     val SUPER_PREFIX_STRING           = "super$"
     val TRAIT_SETTER_SEPARATOR_STRING = "$_setter_$"
     val SETTER_SUFFIX: TermName = encode("_=")
-    
+
     @deprecated("2.10.0", "Use SPECIALIZED_SUFFIX")
     def SPECIALIZED_SUFFIX_STRING = SPECIALIZED_SUFFIX.toString
     @deprecated("2.10.0", "Use SPECIALIZED_SUFFIX")
@@ -121,13 +121,13 @@ trait NameManglers {
         name.subName(i, name.length)
       } else name
     }
-    
+
     def unspecializedName(name: Name): Name = (
       if (name endsWith SPECIALIZED_SUFFIX)
         name.subName(0, name.lastIndexOf('m') - 1)
       else name
     )
-    
+
     def macroMethodName(name: Name) = {
       val base = if (name.isTypeName) nme.TYPEkw else nme.DEFkw
       base append nme.MACRO append name
@@ -158,7 +158,7 @@ trait NameManglers {
     def getterToLocal(name: TermName): TermName  = name append LOCAL_SUFFIX_STRING
     def getterToSetter(name: TermName): TermName = name append SETTER_SUFFIX
     def localToGetter(name: TermName): TermName  = name dropRight LOCAL_SUFFIX_STRING.length
-    
+
     def dropLocalSuffix(name: Name): Name  = if (name endsWith ' ') name dropRight 1 else name
 
     def setterToGetter(name: TermName): TermName = {

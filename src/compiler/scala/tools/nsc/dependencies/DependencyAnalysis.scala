@@ -146,7 +146,7 @@ trait DependencyAnalysis extends SubComponent with Files {
           d.symbol match {
             case s : ModuleClassSymbol =>
               val isTopLevelModule = afterPickler { !s.isImplClass && !s.isNestedClass }
-              
+
               if (isTopLevelModule && (s.companionModule != NoSymbol)) {
                 dependencies.emits(source, nameToFile(unit.source.file, name))
               }

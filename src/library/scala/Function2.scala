@@ -11,12 +11,12 @@ package scala
 
 
 /** A function of 2 parameters.
- *  
+ *
  *  In the following example, the definition of max is a
  *  shorthand for the anonymous class definition anonfun2:
  *
  *  {{{
- *  object Main extends App { 
+ *  object Main extends App {
  *    val max = (x: Int, y: Int) => if (x < y) y else x
  *
  *    val anonfun2 = new Function2[Int, Int, Int] {
@@ -30,7 +30,7 @@ package scala
  *  be suggested by the existence of [[scala.PartialFunction]]. The only
  *  distinction between `Function1` and `PartialFunction` is that the
  *  latter can specify inputs which it will not handle.
- 
+
  */
 trait Function2[@specialized(scala.Int, scala.Long, scala.Double) -T1, @specialized(scala.Int, scala.Long, scala.Double) -T2, @specialized(scala.Unit, scala.Boolean, scala.Int, scala.Float, scala.Long, scala.Double) +R] extends AnyRef { self =>
   /** Apply the body of this function to the arguments.

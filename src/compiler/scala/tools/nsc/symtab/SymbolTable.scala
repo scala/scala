@@ -9,4 +9,4 @@ package symtab
 import ast.{Trees, TreePrinters, DocComments}
 import util._
 
-abstract class SymbolTable extends reflect.internal.SymbolTable 
+abstract class SymbolTable extends reflect.internal.SymbolTable

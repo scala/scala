@@ -53,9 +53,9 @@ trait HashTable[A, Entry >: Null <: HashEntry[A, Entry]] extends HashTable.HashU
   @transient protected var sizemap: Array[Int] = null
 
   @transient var seedvalue: Int = tableSizeSeed
-  
+
   protected def tableSizeSeed = Integer.bitCount(table.length - 1)
-  
+
   protected def initialSize: Int = HashTable.initialSize
 
   private def lastPopulatedIndex = {
@@ -80,9 +80,9 @@ trait HashTable[A, Entry >: Null <: HashEntry[A, Entry]] extends HashTable.HashU
     val size = in.readInt()
     tableSize = 0
     assert(size >= 0)
-    
+
     seedvalue = in.readInt()
-    
+
     val smDefined = in.readBoolean()
 
     table = new Array(capacity(sizeForThreshold(_loadFactor, size)))
@@ -429,7 +429,7 @@ private[collection] object HashTable {
       // h = h ^ (h >>> 14)
       // h = h + (h << 4)
       // h ^ (h >>> 10)
-      
+
       // the rest of the computation is due to SI-5293
       val rotation = seed % 32
       val rotated = (i >>> rotation) | (i << (32 - rotation))

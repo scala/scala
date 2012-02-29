@@ -53,23 +53,23 @@ abstract class CPSAnnotationChecker extends CPSUtils {
       if ((annots1 corresponds annots2)(_.atp <:< _.atp))
         return true
 
-      // Need to handle uninstantiated type vars specially: 
-      
+      // Need to handle uninstantiated type vars specially:
+
       // g map (x => x)  with expected type List[Int] @cps
       // results in comparison ?That <:< List[Int] @cps
-      
+
       // Instantiating ?That to an annotated type would fail during
       // transformation.
-      
+
       // Instead we force-compare tpe1 <:< tpe2.withoutAnnotations
       // to trigger instantiation of the TypeVar to the base type
-      
+
       // This is a bit unorthodox (we're only supposed to look at
       // annotations here) but seems to work.
-      
+
       if (!annots2.isEmpty && !tpe1.isGround)
         return tpe1 <:< tpe2.withoutAnnotations
-      
+
       false
     }
 
@@ -355,7 +355,7 @@ abstract class CPSAnnotationChecker extends CPSUtils {
             }
             case _ => Nil
           }
-      
+
           val types = cpsParamAnnotation(t.tpe)
           // TODO: check that it has been adapted and if so correctly
           extra ++ (if (types.isEmpty) Nil else List(single(types)))

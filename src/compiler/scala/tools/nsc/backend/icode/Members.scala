@@ -21,7 +21,7 @@ trait Members {
   self: ICodes =>
 
   import global._
-  
+
   object NoCode extends Code(null, "NoCode") {
     override def blocksList: List[BasicBlock] = Nil
   }
@@ -138,7 +138,7 @@ trait Members {
 
   /** Represent a field in ICode */
   class IField(val symbol: Symbol) extends IMember { }
-  
+
   object NoIMethod extends IMethod(NoSymbol) { }
 
   /**
@@ -212,7 +212,7 @@ trait Members {
     def isStatic: Boolean = symbol.isStaticMember
 
     override def toString() = symbol.fullName
-    
+
     def matchesSignature(other: IMethod) = {
       (symbol.name == other.symbol.name) &&
       (params corresponds other.params)(_.kind == _.kind) &&

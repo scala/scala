@@ -31,14 +31,14 @@ trait ContextErrors {
 
   case class NormalTypeError(underlyingTree: Tree, errMsg: String, kind: ErrorKind = ErrorKinds.Normal)
     extends AbsTypeError {
-    
+
     def errPos:Position = underlyingTree.pos
     override def toString() = "[Type error at:" + underlyingTree.pos + "] " + errMsg
   }
 
   case class SymbolTypeError(underlyingSym: Symbol, errMsg: String, kind: ErrorKind = ErrorKinds.Normal)
     extends AbsTypeError {
-    
+
     def errPos = underlyingSym.pos
   }
 
@@ -76,7 +76,7 @@ trait ContextErrors {
     }
 
     def issueTypeError(err: AbsTypeError)(implicit context: Context) { context.issue(err) }
-   
+
     def typeErrorMsg(found: Type, req: Type, possiblyMissingArgs: Boolean) = {
       def missingArgsMsg = if (possiblyMissingArgs) "\n possible cause: missing arguments for method or constructor" else ""
       "type mismatch" + foundReqMsg(found, req) + missingArgsMsg
@@ -143,12 +143,12 @@ trait ContextErrors {
             found
         }
         assert(!found.isErroneous && !req.isErroneous, (found, req))
-        
+
         issueNormalTypeError(tree, withAddendum(tree.pos)(typeErrorMsg(found, req, infer.isPossiblyMissingArgs(found, req))) )
         if (settings.explaintypes.value)
           explainTypes(found, req)
       }
-      
+
       def WithFilterError(tree: Tree, ex: AbsTypeError) = {
         issueTypeError(ex)
         setError(tree)
@@ -177,13 +177,13 @@ trait ContextErrors {
         val calcSimilar = (
           name.length > 2 && (
                startingIdentCx.reportErrors
-            || startingIdentCx.enclClassOrMethod.reportErrors	
+            || startingIdentCx.enclClassOrMethod.reportErrors
           )
         )
-        // avoid calculating if we're in "silent" mode.	
-        // name length check to limit unhelpful suggestions for e.g. "x" and "b1"	
+        // avoid calculating if we're in "silent" mode.
+        // name length check to limit unhelpful suggestions for e.g. "x" and "b1"
         val similar = {
-          if (!calcSimilar) ""	
+          if (!calcSimilar) ""
           else {
             val allowed = (
               startingIdentCx.enclosingContextChain
@@ -672,7 +672,7 @@ trait ContextErrors {
         type ErrorType = Value
         val WrongNumber, NoParams, ArgsDoNotConform = Value
       }
-      
+
       private def ambiguousErrorMsgPos(pos: Position, pre: Type, sym1: Symbol, sym2: Symbol, rest: String) =
         if (sym1.hasDefaultFlag && sym2.hasDefaultFlag && sym1.enclClass == sym2.enclClass) {
           val methodName = nme.defaultGetterToMethod(sym1.name)
@@ -718,11 +718,11 @@ trait ContextErrors {
           "constructor cannot be instantiated to expected type" + foundReqMsg(restpe, pt))
         setError(tree)
       }
- 
+
       def NoBestMethodAlternativeError(tree: Tree, argtpes: List[Type], pt: Type) = {
         issueNormalTypeError(tree,
           applyErrorMsg(tree, " cannot be applied to ", argtpes, pt))
-        // since inferMethodAlternative modifies the state of the tree 
+        // since inferMethodAlternative modifies the state of the tree
         // we have to set the type of tree to ErrorType only in the very last
         // fallback action that is done in the inference (tracking it manually is error prone).
         // This avoids entering infinite loop in doTypeApply.
@@ -842,14 +842,14 @@ trait ContextErrors {
     object NamerErrorGen {
 
       implicit val context0 = context
-      
+
       object SymValidateErrors extends Enumeration {
         val ImplicitConstr, ImplicitNotTerm, ImplicitTopObject,
           OverrideClass, SealedNonClass, AbstractNonClass,
           OverrideConstr, AbstractOverride, LazyAndEarlyInit,
           ByNameParameter, AbstractVar = Value
       }
-      
+
       object DuplicatesErrorKinds extends Enumeration {
         val RenamedTwice, AppearsTwice = Value
       }
@@ -857,7 +857,7 @@ trait ContextErrors {
       import SymValidateErrors._
       import DuplicatesErrorKinds._
       import symtab.Flags
-      
+
       def TypeSigError(tree: Tree, ex: TypeError) = {
         ex match {
           case CyclicReference(sym, info: TypeCompleter) =>
@@ -866,7 +866,7 @@ trait ContextErrors {
             context0.issue(TypeErrorWithUnderlyingTree(tree, ex))
         }
       }
-      
+
       def GetterDefinedTwiceError(getter: Symbol) =
         issueSymbolTypeError(getter, getter+" is defined twice")
 
@@ -909,37 +909,37 @@ trait ContextErrors {
         val msg = errKind match {
           case ImplicitConstr =>
             "`implicit' modifier not allowed for constructors"
-            
+
           case ImplicitNotTerm =>
             "`implicit' modifier can be used only for values, variables and methods"
-            
+
           case ImplicitTopObject =>
             "`implicit' modifier cannot be used for top-level objects"
-            
+
           case OverrideClass =>
             "`override' modifier not allowed for classes"
-            
+
           case SealedNonClass =>
             "`sealed' modifier can be used only for classes"
-            
+
           case AbstractNonClass =>
             "`abstract' modifier can be used only for classes; it should be omitted for abstract members"
-            
+
           case OverrideConstr =>
             "`override' modifier not allowed for constructors"
-            
+
           case AbstractOverride =>
             "`abstract override' modifier only allowed for members of traits"
-            
+
           case LazyAndEarlyInit =>
             "`lazy' definitions may not be initialized early"
-            
+
           case ByNameParameter =>
             "pass-by-name arguments not allowed for case class parameters"
-            
+
           case AbstractVar =>
             "only classes can have declared but undefined members" + abstractVarMessage(sym)
-            
+
         }
         issueSymbolTypeError(sym, msg)
       }

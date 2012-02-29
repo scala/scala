@@ -29,13 +29,13 @@ object ReflectionUtils {
 
   def singletonInstance(className: String, cl: ClassLoader = getClass.getClassLoader): AnyRef = {
     val name = if (className endsWith "$") className else className + "$"
-    val clazz = java.lang.Class.forName(name, true, cl) 
+    val clazz = java.lang.Class.forName(name, true, cl)
     val singleton = clazz getField "MODULE$" get null
     singleton
   }
 
   // Retrieves the MODULE$ field for the given class name.
-  def singletonInstanceOpt(className: String, cl: ClassLoader = getClass.getClassLoader): Option[AnyRef] = 
+  def singletonInstanceOpt(className: String, cl: ClassLoader = getClass.getClassLoader): Option[AnyRef] =
     try Some(singletonInstance(className, cl))
     catch { case _: ClassNotFoundException  => None }
 }

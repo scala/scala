@@ -28,7 +28,7 @@ private[collection] trait RemainsIterator[+T] extends Iterator[T] {
    *  This method doesn't change the state of the iterator.
    */
   def remaining: Int
-  
+
   /** For most collections, this is a cheap operation.
    *  Exceptions can override this method.
    */
@@ -386,22 +386,22 @@ extends AugmentedIterableIterator[T]
    with DelegatedSignalling
 {
 self =>
-  
+
   var signalDelegate: Signalling = IdleSignalling
-  
+
   /** Creates a copy of this iterator. */
   def dup: IterableSplitter[T]
 
   def split: Seq[IterableSplitter[T]]
-  
+
   def splitWithSignalling: Seq[IterableSplitter[T]] = {
     val pits = split
     pits foreach { _.signalDelegate = signalDelegate }
     pits
   }
-  
+
   def shouldSplitFurther[S](coll: ParIterable[S], parallelismLevel: Int) = remaining > thresholdFromSize(coll.size, parallelismLevel)
-  
+
   /** The number of elements this iterator has yet to traverse. This method
    *  doesn't change the state of the iterator.
    *
@@ -554,13 +554,13 @@ self =>
     pits foreach { _.signalDelegate = signalDelegate }
     pits
   }
-  
+
   def psplitWithSignalling(sizes: Int*): Seq[SeqSplitter[T]] = {
     val pits = psplit(sizes: _*)
     pits foreach { _.signalDelegate = signalDelegate }
     pits
   }
-  
+
   /** The number of elements this iterator has yet to traverse. This method
    *  doesn't change the state of the iterator. Unlike the version of this method in the supertrait,
    *  method `remaining` in `ParSeqLike.this.ParIterator` must return an exact number

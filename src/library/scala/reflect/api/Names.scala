@@ -6,7 +6,7 @@ package api
  *  The same string can be a name in both universes.
  *  Two names are equal if they represent the same string and they are
  *  members of the same universe.
- * 
+ *
  *  Names are interned. That is, for two names `name11 and `name2`,
  *  `name1 == name2` implies `name1 eq name2`.
  */
@@ -42,7 +42,7 @@ trait Names {
      *  Example: `foo_$plus$eq` becomes `foo_+=`
      */
     def encoded: String
-    
+
     /** The decoded name, still represented as a name.
      */
     def decodedName: Name

@@ -115,7 +115,7 @@ trait SyntheticMethods extends ast.TreeDSL {
      *    def canEqual(that: Any) = that.isInstanceOf[This]
      */
     def canEqualMethod: Tree = (
-      createMethod(nme.canEqual_, List(AnyClass.tpe), BooleanClass.tpe)(m => 
+      createMethod(nme.canEqual_, List(AnyClass.tpe), BooleanClass.tpe)(m =>
         Ident(m.firstParam) IS_OBJ classExistentialType(clazz))
     )
 
@@ -248,7 +248,7 @@ trait SyntheticMethods extends ast.TreeDSL {
     }
 
     if (phase.id > currentRun.typerPhase.id) templ
-    else deriveTemplate(templ)(body => 
+    else deriveTemplate(templ)(body =>
       if (clazz.isCase) caseTemplateBody()
       else synthesize() match {
         case Nil  => body // avoiding unnecessary copy

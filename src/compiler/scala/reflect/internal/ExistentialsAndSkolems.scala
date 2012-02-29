@@ -14,7 +14,7 @@ import util._
  */
 trait ExistentialsAndSkolems {
   self: SymbolTable =>
-  
+
   /** Map a list of type parameter symbols to skolemized symbols, which
    *  can be deskolemized to the original type parameter. (A skolem is a
    *  representation of a bound variable when viewed inside its scope.)

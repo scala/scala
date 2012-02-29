@@ -18,7 +18,7 @@ trait MethodSynthesis {
   import global._
   import definitions._
   import CODE._
-  
+
   object synthesisUtil {
     type M[T]  = Manifest[T]
     type CM[T] = ClassManifest[T]
@@ -39,7 +39,7 @@ trait MethodSynthesis {
 
       typeRef(container.typeConstructor.prefix, container, args map (_.tpe))
     }
-    
+
     def companionType[T](implicit m: M[T]) =
       getRequiredModule(m.erasure.getName).tpe
 
@@ -71,7 +71,7 @@ trait MethodSynthesis {
   class ClassMethodSynthesis(val clazz: Symbol, localTyper: Typer) {
     private def isOverride(name: TermName) =
       clazzMember(name).alternatives exists (sym => !sym.isDeferred && (sym.owner != clazz))
-    
+
     def newMethodFlags(name: TermName) = {
       val overrideFlag = if (isOverride(name)) OVERRIDE else 0L
       overrideFlag | SYNTHETIC
@@ -344,7 +344,7 @@ trait MethodSynthesis {
         if (mods.isDeferred)
           tpt setOriginal tree.tpt
 
-        // TODO - reconcile this with the DefDef creator in Trees (which 
+        // TODO - reconcile this with the DefDef creator in Trees (which
         //   at this writing presented no way to pass a tree in for tpt.)
         atPos(derivedSym.pos) {
           DefDef(

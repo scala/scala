@@ -50,7 +50,7 @@ abstract class OverridingPairs {
       val result = sym1.isType || (self.memberType(sym1) matches self.memberType(sym2))
       debuglog("overriding-pairs? %s matches %s (%s vs. %s) == %s".format(
         sym1.fullLocationString, sym2.fullLocationString, tp_s(sym1), tp_s(sym2), result))
-      
+
       result
     }
 

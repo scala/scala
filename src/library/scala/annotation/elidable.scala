@@ -52,8 +52,8 @@ import java.util.logging.Level
    // INFO lies between WARNING and FINE
    % scalac -Xelide-below INFO example.scala && scala Test
    Warning! Danger! Warning!
-   I computed a value: 0   
- }}} 
+   I computed a value: 0
+ }}}
  *
  *  @author   Paul Phillips
  *  @since    2.8

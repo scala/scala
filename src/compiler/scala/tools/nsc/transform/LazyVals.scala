@@ -125,7 +125,7 @@ abstract class LazyVals extends Transform with TypingTransformers with ast.TreeD
         }
 
         case ValDef(_, _, _, _) if !sym.owner.isModule && !sym.owner.isClass =>
-          deriveValDef(tree) { rhs0 => 
+          deriveValDef(tree) { rhs0 =>
             val rhs = super.transform(rhs0)
             if (LocalLazyValFinder.find(rhs)) typed(addBitmapDefs(sym, rhs)) else rhs
           }
@@ -133,7 +133,7 @@ abstract class LazyVals extends Transform with TypingTransformers with ast.TreeD
         case l@LabelDef(name0, params0, ifp0@If(_, _, _)) if name0.startsWith(nme.WHILE_PREFIX) =>
           val ifp1 = super.transform(ifp0)
           val If(cond0, thenp0, elsep0) = ifp1
-          
+
           if (LocalLazyValFinder.find(thenp0))
             deriveLabelDef(l)(_ => treeCopy.If(ifp1, cond0, typed(addBitmapDefs(sym.owner, thenp0)), elsep0))
           else

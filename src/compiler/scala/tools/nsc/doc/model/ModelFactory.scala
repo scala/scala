@@ -104,7 +104,7 @@ class ModelFactory(val global: Global, val settings: doc.Settings) {
         case mb: NonTemplateMemberEntity if (mb.useCaseOf.isDefined) =>
           mb.useCaseOf.get.inDefinitionTemplates
         case _ =>
-          if (inTpl == null) 
+          if (inTpl == null)
             makeRootPackage.toList
           else
             makeTemplate(sym.owner) :: (sym.allOverriddenSymbols map { inhSym => makeTemplate(inhSym.owner) })
@@ -123,14 +123,14 @@ class ModelFactory(val global: Global, val settings: doc.Settings) {
         else Public()
       }
     }
-    def flags = { 
+    def flags = {
       val fgs = mutable.ListBuffer.empty[Paragraph]
       if (sym.isImplicit) fgs += Paragraph(Text("implicit"))
       if (sym.isSealed) fgs += Paragraph(Text("sealed"))
       if (!sym.isTrait && (sym hasFlag Flags.ABSTRACT)) fgs += Paragraph(Text("abstract"))
       if (!sym.isTrait && (sym hasFlag Flags.DEFERRED)) fgs += Paragraph(Text("abstract"))
       if (!sym.isModule && (sym hasFlag Flags.FINAL)) fgs += Paragraph(Text("final"))
-      fgs.toList    	
+      fgs.toList
     }
     def deprecation =
       if (sym.isDeprecated)

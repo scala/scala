@@ -71,10 +71,10 @@ object DocStrings {
    *  Every section starts with a `@` and extends to the next `@`, or
    *  to the end of the comment string, but excluding the final two
    *  characters which terminate the comment.
-   *  
-   *  Also take usecases into account - they need to expand until the next 
-   *  usecase or the end of the string, as they might include other sections 
-   *  of their own 
+   *
+   *  Also take usecases into account - they need to expand until the next
+   *  usecase or the end of the string, as they might include other sections
+   *  of their own
    */
   def tagIndex(str: String, p: Int => Boolean = (idx => true)): List[(Int, Int)] =
     findAll(str, 0) (idx => str(idx) == '@' && p(idx)) match {
@@ -84,10 +84,10 @@ object DocStrings {
         idxs2 zip (idxs2.tail ::: List(str.length - 2))
       }
     }
-  
+
   /**
-   * Merge sections following an usecase into the usecase comment, so they 
-   * can override the parent symbol's sections 
+   * Merge sections following an usecase into the usecase comment, so they
+   * can override the parent symbol's sections
    */
   def mergeUsecaseSections(str: String, idxs: List[Int]): List[Int] = {
     idxs.find(str.substring(_).startsWith("@usecase")) match {
@@ -99,7 +99,7 @@ object DocStrings {
         idxs
     }
   }
-  
+
   /** Does interval `iv` start with given `tag`?
    */
   def startsWithTag(str: String, section: (Int, Int), tag: String): Boolean =

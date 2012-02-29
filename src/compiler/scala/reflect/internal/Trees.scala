@@ -121,7 +121,7 @@ trait Trees extends api.Trees { self: SymbolTable =>
         new ChangeOwnerTraverser(oldOwner, newOwner) apply t
       }
     }
-    
+
     def substTreeSyms(pairs: (Symbol, Symbol)*): Tree = {
       val list  = pairs.toList
       val subst = new TreeSymSubstituter(list map (_._1), list map (_._2))

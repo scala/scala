@@ -33,14 +33,14 @@ abstract class CleanUp extends Transform with ast.TreeDSL {
     private def savingStatics[T](body: => T): T = {
       val savedNewStaticMembers : mutable.Buffer[Tree] = newStaticMembers.clone()
       val savedNewStaticInits   : mutable.Buffer[Tree] = newStaticInits.clone()
-      val savedSymbolsStoredAsStatic : mutable.Map[String, Symbol] = symbolsStoredAsStatic.clone()        
+      val savedSymbolsStoredAsStatic : mutable.Map[String, Symbol] = symbolsStoredAsStatic.clone()
       val result = body
 
       clearStatics()
       newStaticMembers      ++= savedNewStaticMembers
       newStaticInits        ++= savedNewStaticInits
       symbolsStoredAsStatic ++= savedSymbolsStoredAsStatic
-      
+
       result
     }
     private def transformTemplate(tree: Tree) = {
@@ -102,7 +102,7 @@ abstract class CleanUp extends Transform with ast.TreeDSL {
     /** The boxed type if it's a primitive; identity otherwise.
      */
     def toBoxedType(tp: Type) = if (isJavaValueType(tp)) boxedClass(tp.typeSymbol).tpe else tp
-    
+
     override def transform(tree: Tree): Tree = tree match {
 
       /* Transforms dynamic calls (i.e. calls to methods that are undefined
@@ -139,7 +139,7 @@ abstract class CleanUp extends Transform with ast.TreeDSL {
       case ad@ApplyDynamic(qual0, params) =>
         if (settings.logReflectiveCalls.value)
           unit.echo(ad.pos, "method invocation uses reflection")
-      
+
         val typedPos = typedWithPos(ad.pos) _
 
         assert(ad.symbol.isPublic)
@@ -151,7 +151,7 @@ abstract class CleanUp extends Transform with ast.TreeDSL {
           val flags = PRIVATE | STATIC | SYNTHETIC | (
             if (isFinal) FINAL else 0
           )
-          
+
           val varSym = currentClass.newVariable(mkTerm("" + forName), ad.pos, flags) setInfoAndEnter forType
           if (!isFinal)
             varSym.addAnnotation(VolatileAttr)
@@ -493,7 +493,7 @@ abstract class CleanUp extends Transform with ast.TreeDSL {
           val t: Tree = ad.symbol.tpe match {
             case MethodType(mparams, resType) =>
               assert(params.length == mparams.length, mparams)
-              
+
               typedPos {
                 val sym = currentOwner.newValue(mkTerm("qual"), ad.pos) setInfo qual0.tpe
                 qual = safeREF(sym)

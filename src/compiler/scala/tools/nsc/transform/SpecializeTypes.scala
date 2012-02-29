@@ -110,7 +110,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
           tp baseType GroupOfSpecializable match {
             case TypeRef(_, GroupOfSpecializable, arg :: Nil) =>
               arg.typeArgs map (_.typeSymbol)
-            case _ => 
+            case _ =>
               List(tp.typeSymbol)
           }
         }
@@ -515,7 +515,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
 
       def cloneInSpecializedClass(member: Symbol, flagFn: Long => Long) =
         member.cloneSymbol(sClass, flagFn(member.flags | SPECIALIZED))
-      
+
       sClass.sourceFile = clazz.sourceFile
       currentRun.symSource(sClass) = clazz.sourceFile // needed later on by mixin
 
@@ -1226,7 +1226,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
     } else NoSymbol
 
   def illegalSpecializedInheritance(clazz: Symbol): Boolean = (
-       hasSpecializedFlag(clazz) 
+       hasSpecializedFlag(clazz)
     && originalClass(clazz).parentSymbols.exists(p => hasSpecializedParams(p) && !p.isTrait)
   )
 
@@ -1291,7 +1291,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
           val specMember = specCandidates suchThat { s =>
             doesConform(symbol, tree.tpe, qual.tpe.memberType(s), env)
           }
-          
+
           debuglog("[specSym] found: " + specCandidates.tpe + ", instantiated as: " + tree.tpe)
           debuglog("[specSym] found specMember: " + specMember)
           if (specMember ne NoSymbol)
@@ -1405,7 +1405,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
             (new CollectMethodBodies)(tree)
           val parents1 = map2(currentOwner.info.parents, parents)((tpe, parent) =>
             TypeTree(tpe) setPos parent.pos)
-          
+
           treeCopy.Template(tree,
             parents1    /*currentOwner.info.parents.map(tpe => TypeTree(tpe) setPos parents.head.pos)*/ ,
             self,
@@ -1419,7 +1419,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
               val superRef: Tree = Select(Super(This(tpnme.EMPTY), tpnme.EMPTY), nme.CONSTRUCTOR)
               forwardCtorCall(tree.pos, superRef, vparamss, symbol.owner)
             }
-            if (symbol.isPrimaryConstructor) 
+            if (symbol.isPrimaryConstructor)
               localTyper.typedPos(symbol.pos)(deriveDefDef(tree)(_ => Block(List(t), Literal(Constant()))))
             else  // duplicate the original constructor
               duplicateBody(ddef, info(symbol).target)

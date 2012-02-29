@@ -30,7 +30,7 @@ abstract class TreeGen extends reflect.internal.TreeGen with TreeDSL {
     else
       tree
   }
-  
+
   /** Builds a fully attributed wildcard import node.
    */
   def mkWildcardImport(pkg: Symbol): Import = {
@@ -160,7 +160,7 @@ abstract class TreeGen extends reflect.internal.TreeGen with TreeDSL {
   def mkModuleVarDef(accessor: Symbol) = {
     val inClass    = accessor.owner.isClass
     val extraFlags = if (inClass) PrivateLocal | SYNTHETIC else 0
-    
+
     val mval = (
       accessor.owner.newVariable(nme.moduleVarName(accessor.name), accessor.pos.focus, MODULEVAR | extraFlags)
         setInfo accessor.tpe.finalResultType
@@ -225,7 +225,7 @@ abstract class TreeGen extends reflect.internal.TreeGen with TreeDSL {
     else AppliedTypeTree(Ident(clazz), 1 to numParams map (_ => Bind(tpnme.WILDCARD, EmptyTree)) toList)
   }
   def mkBindForCase(patVar: Symbol, clazz: Symbol, targs: List[Type]): Tree = {
-    Bind(patVar, Typed(Ident(nme.WILDCARD), 
+    Bind(patVar, Typed(Ident(nme.WILDCARD),
       if (targs.isEmpty) mkAppliedTypeForCase(clazz)
       else AppliedTypeTree(Ident(clazz), targs map TypeTree)
     ))

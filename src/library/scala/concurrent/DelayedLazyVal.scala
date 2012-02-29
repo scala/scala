@@ -26,23 +26,23 @@ package scala.concurrent
 class DelayedLazyVal[T](f: () => T, body: => Unit) {
   @volatile private[this] var _isDone = false
   private[this] lazy val complete = f()
-  
+
   /** Whether the computation is complete.
    *
    *  @return true if the computation is complete.
    */
   def isDone = _isDone
-  
+
   /** The current result of f(), or the final result if complete.
    *
    *  @return the current value
    */
   def apply(): T = if (isDone) complete else f()
-  
+
   // TODO replace with scala.concurrent.future { ... }
   ops.future {
     body
     _isDone = true
   }
-  
+
 }

@@ -18,7 +18,7 @@ trait Symbols { self: Universe =>
     /** A list of annotations attached to this Symbol.
      */
     def annotations: List[self.AnnotationInfo]
-    
+
     /** Whether this symbol carries an annotation for which the given
      *  symbol is its typeSymbol.
      */
@@ -99,7 +99,7 @@ trait Symbols { self: Universe =>
      *  method, or `NoSymbol` if none exists.
      */
     def enclosingMethod: Symbol
-    
+
     /** If this symbol is a package class, this symbol; otherwise the next enclosing
      *  package class, or `NoSymbol` if none exists.
      */
@@ -170,7 +170,7 @@ trait Symbols { self: Universe =>
      *  `C`. Then `C.asType` is the type `C[T]`, but `C.asTypeConstructor` is `C`.
      */
     def asTypeConstructor: Type  // needed by LiftCode
-    
+
     /** If this symbol is a class, the type `C.this`, otherwise `NoPrefix`.
      */
     def thisPrefix: Type
@@ -181,10 +181,10 @@ trait Symbols { self: Universe =>
     def selfType: Type
 
     /** A fresh symbol with given name `name`, position `pos` and flags `flags` that has
-     *  the current symbol as its owner. 
+     *  the current symbol as its owner.
      */
     def newNestedSymbol(name: Name, pos: Position, flags: Long): Symbol // needed by LiftCode
-    
+
     /** Low-level operation to set the symbol's flags
      *  @return the symbol itself
      */

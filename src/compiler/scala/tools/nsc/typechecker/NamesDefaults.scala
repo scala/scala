@@ -428,11 +428,11 @@ trait NamesDefaults { self: Analyzer =>
       }
     } else NoSymbol
   }
-  
+
   private def savingUndeterminedTParams[T](context: Context)(fn: List[Symbol] => T): T = {
     val savedParams    = context.extractUndetparams()
     val savedReporting = context.ambiguousErrors
-    
+
     context.setAmbiguousErrors(false)
     try fn(savedParams)
     finally {
@@ -451,7 +451,7 @@ trait NamesDefaults { self: Analyzer =>
       || (ctx.owner.rawInfo.member(name) != NoSymbol)
     )
   )
-  
+
   /** A full type check is very expensive; let's make sure there's a name
    *  somewhere which could potentially be ambiguous before we go that route.
    */
@@ -519,7 +519,7 @@ trait NamesDefaults { self: Analyzer =>
           def matchesName(param: Symbol) = !param.isSynthetic && (
             (param.name == name) || (param.deprecatedParamName match {
               case Some(`name`) =>
-                context0.unit.deprecationWarning(arg.pos, 
+                context0.unit.deprecationWarning(arg.pos,
                   "the parameter name "+ name +" has been deprecated. Use "+ param.name +" instead.")
                 true
               case _ => false

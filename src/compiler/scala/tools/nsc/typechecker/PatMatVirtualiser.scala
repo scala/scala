@@ -1160,7 +1160,7 @@ class Foo(x: Other) { x._1 } // no error in this order
     def _match(n: Name): SelectStart = matchStrategy DOT n
 
     private lazy val oneSig: Type =
-      typer.typed(_match(vpmName.one), EXPRmode | POLYmode | TAPPmode | FUNmode, WildcardType).tpe  // TODO: error message    
+      typer.typed(_match(vpmName.one), EXPRmode | POLYmode | TAPPmode | FUNmode, WildcardType).tpe  // TODO: error message
   }
 
   trait PureCodegen extends CodegenCore with PureMatchMonadInterface {

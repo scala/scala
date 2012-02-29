@@ -131,7 +131,7 @@ object BitSet extends BitSetFactory[BitSet] {
    *  the capacity of two long values). The constructor wraps an existing
    *  bit mask without copying, thus exposing a mutable part of the internal
    *  implementation. Care needs to be taken not to modify the exposed
-   *  array.  
+   *  array.
    */
   class BitSetN(val elems: Array[Long]) extends BitSet {
     protected def nwords = elems.length

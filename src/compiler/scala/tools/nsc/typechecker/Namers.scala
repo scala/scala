@@ -113,7 +113,7 @@ trait Namers extends MethodSynthesis {
     private def contextFile = context.unit.source.file
     private def typeErrorHandler[T](tree: Tree, alt: T): PartialFunction[Throwable, T] = {
       case ex: TypeError =>
-        // H@ need to ensure that we handle only cyclic references 
+        // H@ need to ensure that we handle only cyclic references
         TypeSigError(tree, ex)
         alt
     }
@@ -284,7 +284,7 @@ trait Namers extends MethodSynthesis {
     private def logAssignSymbol(tree: Tree, sym: Symbol): Symbol = {
       sym.name.toTermName match {
         case nme.IMPORT | nme.OUTER | nme.ANON_CLASS_NAME | nme.ANON_FUN_NAME | nme.CONSTRUCTOR => ()
-        case _                                                                                  => 
+        case _                                                                                  =>
           log("[+symbol] " + sym.debugLocationString)
       }
       tree.symbol = sym
@@ -300,7 +300,7 @@ trait Namers extends MethodSynthesis {
       val pos         = tree.pos
       val isParameter = tree.mods.isParameter
       val flags       = tree.mods.flags & mask
-      
+
       tree match {
         case TypeDef(_, _, _, _) if isParameter     => owner.newTypeParameter(name.toTypeName, pos, flags)
         case TypeDef(_, _, _, _)                    => owner.newTypeSymbol(name.toTypeName, pos, flags)

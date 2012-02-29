@@ -61,7 +61,7 @@ trait Imports {
   def importedTypeSymbols    = importedSymbols collect { case x: TypeSymbol => x }
   def implicitSymbols        = importedSymbols filter (_.isImplicit)
 
-  def importedTermNamed(name: String): Symbol = 
+  def importedTermNamed(name: String): Symbol =
     importedTermSymbols find (_.name.toString == name) getOrElse NoSymbol
 
   /** Tuples of (source, imported symbols) in the order they were imported.

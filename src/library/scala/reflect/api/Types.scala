@@ -140,7 +140,7 @@ trait Types { self: Universe =>
      *  If this is not a singleton type, returns this type itself.
      *
      *  Example:
-     * 
+     *
      *  class Outer { class C ; val x: C }
      *  val o: Outer
      *  <o.x.type>.widen = o.C

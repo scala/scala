@@ -43,19 +43,19 @@ trait FlatHashTable[A] extends FlatHashTable.HashUtils[A] {
   /** The array keeping track of number of elements in 32 element blocks.
    */
   @transient protected var sizemap: Array[Int] = null
-  
+
   @transient var seedvalue: Int = tableSizeSeed
-  
+
   import HashTable.powerOfTwo
-  
+
   protected def capacity(expectedSize: Int) = if (expectedSize == 0) 1 else powerOfTwo(expectedSize)
-  
+
   private def initialCapacity = capacity(initialSize)
-  
+
   protected def randomSeed = seedGenerator.get.nextInt()
-  
+
   protected def tableSizeSeed = Integer.bitCount(table.length - 1)
-  
+
   /**
    * Initializes the collection from the input stream. `f` will be called for each element
    * read from the input stream in the order determined by the stream. This is useful for
@@ -65,22 +65,22 @@ trait FlatHashTable[A] extends FlatHashTable.HashUtils[A] {
    */
   private[collection] def init(in: java.io.ObjectInputStream, f: A => Unit) {
     in.defaultReadObject
-    
+
     _loadFactor = in.readInt()
     assert(_loadFactor > 0)
-    
+
     val size = in.readInt()
     tableSize = 0
     assert(size >= 0)
-    
+
     table = new Array(capacity(sizeForThreshold(size, _loadFactor)))
     threshold = newThreshold(_loadFactor, table.size)
-    
+
     seedvalue = in.readInt()
-    
+
     val smDefined = in.readBoolean()
     if (smDefined) sizeMapInit(table.length) else sizemap = null
-    
+
     var index = 0
     while (index < size) {
       val elem = in.readObject().asInstanceOf[A]
@@ -295,12 +295,12 @@ trait FlatHashTable[A] extends FlatHashTable.HashUtils[A] {
   protected final def index(hcode: Int) = {
     // version 1 (no longer used - did not work with parallel hash tables)
     // improve(hcode) & (table.length - 1)
-    
+
     // version 2 (allows for parallel hash table construction)
     val improved = improve(hcode, seedvalue)
     val ones = table.length - 1
     (improved >>> (32 - java.lang.Integer.bitCount(ones))) & ones
-    
+
     // version 3 (solves SI-5293 in most cases, but such a case would still arise for parallel hash tables)
     // val hc = improve(hcode)
     // val bbp = blockbitpos
@@ -345,17 +345,17 @@ trait FlatHashTable[A] extends FlatHashTable.HashUtils[A] {
 
 
 private[collection] object FlatHashTable {
-  
+
   /** Creates a specific seed to improve hashcode of a hash table instance
    *  and ensure that iteration order vulnerabilities are not 'felt' in other
    *  hash tables.
-   *  
+   *
    *  See SI-5293.
    */
   final def seedGenerator = new ThreadLocal[util.Random] {
     override def initialValue = new util.Random
   }
-  
+
   /** The load factor for the hash table; must be < 500 (0.5)
    */
   def defaultLoadFactor: Int = 450
@@ -396,11 +396,11 @@ private[collection] object FlatHashTable {
       //h = h ^ (h >>> 14)
       //h = h + (h << 4)
       //h ^ (h >>> 10)
-      
+
       var i = hcode * 0x9e3775cd
       i = java.lang.Integer.reverseBytes(i)
       val improved = i * 0x9e3775cd
-      
+
       // for the remainder, see SI-5293
       // to ensure that different bits are used for different hash tables, we have to rotate based on the seed
       val rotation = seed % 32

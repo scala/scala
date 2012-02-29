@@ -84,7 +84,7 @@ trait Scanners extends ScannersCommon {
 
   abstract class Scanner extends CharArrayReader with TokenData with ScannerCommon {
     private def isDigit(c: Char) = java.lang.Character isDigit c
-    
+
     def isAtEnd = charOffset >= buf.length
 
     def flush = { charOffset = offset; nextChar(); this }
@@ -164,7 +164,7 @@ trait Scanners extends ScannersCommon {
      *  RBRACE    if region starts with '{'
      *  ARROW     if region starts with `case'
      *  STRINGLIT if region is a string interpolation expression starting with '${'
-     *            (the STRINGLIT appears twice in succession on the stack iff the 
+     *            (the STRINGLIT appears twice in succession on the stack iff the
      *             expression is a multiline string literal).
      */
     var sepRegions: List[Int] = List()
@@ -173,15 +173,15 @@ trait Scanners extends ScannersCommon {
 
     /** Are we directly in a string interpolation expression?
      */
-    @inline private def inStringInterpolation = 
+    @inline private def inStringInterpolation =
       sepRegions.nonEmpty && sepRegions.head == STRINGLIT
-    
+
     /** Are we directly in a multiline string interpolation expression?
      *  @pre: inStringInterpolation
      */
-    @inline private def inMultiLineInterpolation = 
+    @inline private def inMultiLineInterpolation =
       inStringInterpolation && sepRegions.tail.nonEmpty && sepRegions.tail.head == STRINGPART
-    
+
     /** read next token and return last offset
      */
     def skipToken(): Offset = {
@@ -205,7 +205,7 @@ trait Scanners extends ScannersCommon {
         case CASE =>
           sepRegions = ARROW :: sepRegions
         case RBRACE =>
-          while (!sepRegions.isEmpty && sepRegions.head != RBRACE) 
+          while (!sepRegions.isEmpty && sepRegions.head != RBRACE)
             sepRegions = sepRegions.tail
           if (!sepRegions.isEmpty) sepRegions = sepRegions.tail
           docBuffer = null
@@ -223,7 +223,7 @@ trait Scanners extends ScannersCommon {
             sepRegions = sepRegions.tail
         case _ =>
       }
- 
+
       // Read a token or copy it from `next` tokenData
       if (next.token == EMPTY) {
         lastOffset = charOffset - 1
@@ -327,8 +327,8 @@ trait Scanners extends ScannersCommon {
              'z' =>
           putChar(ch)
           nextChar()
-          getIdentRest()  
-          if (ch == '"' && token == IDENTIFIER && settings.Xexperimental.value) 
+          getIdentRest()
+          if (ch == '"' && token == IDENTIFIER && settings.Xexperimental.value)
             token = INTERPOLATIONID
         case '<' => // is XMLSTART?
           val last = if (charOffset >= 2) buf(charOffset - 2) else ' '
@@ -409,7 +409,7 @@ trait Scanners extends ScannersCommon {
                 token = STRINGLIT
                 strVal = ""
               }
-            } else { 
+            } else {
               getStringLit()
             }
           }
@@ -632,8 +632,8 @@ trait Scanners extends ScannersCommon {
           else finishNamed()
       }
     }
-    
- 
+
+
 // Literals -----------------------------------------------------------------
 
     private def getStringLit() = {
@@ -661,20 +661,20 @@ trait Scanners extends ScannersCommon {
         getRawStringLit()
       }
     }
-   
+
     @annotation.tailrec private def getStringPart(multiLine: Boolean): Unit = {
       def finishStringPart() = {
         setStrVal()
         token = STRINGPART
         next.lastOffset = charOffset - 1
         next.offset = charOffset - 1
-      }   
+      }
       if (ch == '"') {
         nextRawChar()
         if (!multiLine || isTripleQuote()) {
           setStrVal()
           token = STRINGLIT
-        } else 
+        } else
           getStringPart(multiLine)
       } else if (ch == '$') {
         nextRawChar()
@@ -706,12 +706,12 @@ trait Scanners extends ScannersCommon {
         getStringPart(multiLine)
       }
     }
-  
+
     private def fetchStringPart() = {
       offset = charOffset - 1
       getStringPart(multiLine = inMultiLineInterpolation)
     }
-    
+
     private def isTripleQuote(): Boolean =
       if (ch == '"') {
         nextRawChar()
@@ -732,7 +732,7 @@ trait Scanners extends ScannersCommon {
         false
       }
 
-    /** copy current character into cbuf, interpreting any escape sequences, 
+    /** copy current character into cbuf, interpreting any escape sequences,
      *  and advance to next character.
      */
     protected def getLitChar(): Unit =

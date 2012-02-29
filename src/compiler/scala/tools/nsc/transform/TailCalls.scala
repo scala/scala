@@ -228,7 +228,7 @@ abstract class TailCalls extends Transform {
           debuglog("Considering " + dd.name + " for tailcalls")
           val newRHS = transform(rhs0, newCtx)
 
-          deriveDefDef(tree)(rhs => 
+          deriveDefDef(tree)(rhs =>
             if (newCtx.isTransformed) {
               /** We have rewritten the tree, but there may be nested recursive calls remaining.
                *  If @tailrec is given we need to fail those now.

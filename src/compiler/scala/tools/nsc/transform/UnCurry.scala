@@ -147,7 +147,7 @@ abstract class UnCurry extends InfoTransform
     private def nonLocalReturnThrow(expr: Tree, meth: Symbol) = localTyper typed {
       Throw(
         nonLocalReturnExceptionType(expr.tpe.widen),
-        Ident(nonLocalReturnKey(meth)), 
+        Ident(nonLocalReturnKey(meth)),
         expr
       )
     }
@@ -247,7 +247,7 @@ abstract class UnCurry extends InfoTransform
           else List(ObjectClass.tpe, fun.tpe, SerializableClass.tpe)
 
         anonClass setInfo ClassInfoType(parents, newScope, anonClass)
-        val applyMethod = anonClass.newMethod(nme.apply, fun.pos, FINAL) 
+        val applyMethod = anonClass.newMethod(nme.apply, fun.pos, FINAL)
         applyMethod setInfoAndEnter MethodType(applyMethod newSyntheticValueParams formals, restpe)
         anonClass addAnnotation serialVersionUIDAnnotation
 
@@ -451,7 +451,7 @@ abstract class UnCurry extends InfoTransform
           gen.mkZero(tree.tpe) setType tree.tpe
       }
     }
-    
+
     private def isSelfSynchronized(ddef: DefDef) = ddef.rhs match {
       case Apply(fn @ TypeApply(Select(sel, _), _), _) =>
         fn.symbol == Object_synchronized && sel.symbol == ddef.symbol.enclClass && !ddef.symbol.enclClass.isTrait
@@ -516,7 +516,7 @@ abstract class UnCurry extends InfoTransform
         else translateSynchronized(tree) match {
           case dd @ DefDef(mods, name, tparams, vparamss, tpt, rhs) =>
             if (dd.symbol hasAnnotation VarargsClass) saveRepeatedParams(dd)
-            
+
             withNeedLift(false) {
               if (dd.symbol.isClassConstructor) {
                 atOwner(sym) {
@@ -781,7 +781,7 @@ abstract class UnCurry extends InfoTransform
           // add the method to `newMembers`
           newMembers += forwtree
       }
-      
+
       flatdd
     }
   }

@@ -415,7 +415,7 @@ trait TypeDiagnostics {
           "\nIf applicable, you may wish to try moving some members into another object."
         )
     }
-    
+
     /** Report a type error.
      *
      *  @param pos0   The position where to report the error

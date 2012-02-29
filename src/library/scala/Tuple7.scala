@@ -25,5 +25,5 @@ case class Tuple7[+T1, +T2, +T3, +T4, +T5, +T6, +T7](_1: T1, _2: T2, _3: T3, _4:
   extends Product7[T1, T2, T3, T4, T5, T6, T7]
 {
   override def toString() = "(" + _1 + "," + _2 + "," + _3 + "," + _4 + "," + _5 + "," + _6 + "," + _7 + ")"
-  
+
 }

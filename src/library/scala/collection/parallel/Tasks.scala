@@ -171,12 +171,12 @@ trait AdaptiveWorkStealingTasks extends Tasks {
 
     def internal() = {
       var last = spawnSubtasks()
-      
+
       last.body.tryLeaf(None)
       last.release()
       body.result = last.body.result
       body.throwable = last.body.throwable
-      
+
       while (last.next != null) {
         // val lastresult = Option(last.body.result)
         val beforelast = last
@@ -193,7 +193,7 @@ trait AdaptiveWorkStealingTasks extends Tasks {
         body.tryMerge(last.body.repr)
       }
     }
-    
+
     def spawnSubtasks() = {
       var last: TaskImpl[R, Tp] = null
       var head: TaskImpl[R, Tp] = this
@@ -237,7 +237,7 @@ trait ThreadPoolTasks extends Tasks {
     // utb: var future: Future[_] = null
     @volatile var owned = false
     @volatile var completed = false
-    
+
     def start() = synchronized {
       // debuglog("Starting " + body)
       // utb: future = executor.submit(this)
@@ -326,7 +326,7 @@ trait ThreadPoolTasks extends Tasks {
 
     // debuglog("-----------> Executing with wait: " + task)
     t.start()
-    
+
     t.sync()
     t.body.forwardThrowable
     t.body.result

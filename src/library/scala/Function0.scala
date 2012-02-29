@@ -12,12 +12,12 @@ package scala
 
 
 /** A function of 0 parameters.
- *  
+ *
  *  In the following example, the definition of javaVersion is a
  *  shorthand for the anonymous class definition anonfun0:
  *
  *  {{{
- *  object Main extends App { 
+ *  object Main extends App {
  *    val javaVersion = () => sys.props("java.version")
  *
  *    val anonfun0 = new Function0[String] {
@@ -31,13 +31,13 @@ package scala
  *  be suggested by the existence of [[scala.PartialFunction]]. The only
  *  distinction between `Function1` and `PartialFunction` is that the
  *  latter can specify inputs which it will not handle.
- 
+
  */
 trait Function0[@specialized +R] extends AnyRef { self =>
   /** Apply the body of this function to the arguments.
    *  @return   the result of function application.
    */
   def apply(): R
-  
+
   override def toString() = "<function0>"
 }

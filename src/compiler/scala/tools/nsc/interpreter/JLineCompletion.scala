@@ -61,7 +61,7 @@ class JLineCompletion(val intp: IMain) extends Completion with CompletionOutput 
     def packageNames  = packages map tos
     def aliasNames    = aliases map tos
   }
-  
+
   object NoTypeCompletion extends TypeMemberCompletion(NoType) {
     override def memberNamed(s: String) = NoSymbol
     override def members = Nil
@@ -165,11 +165,11 @@ class JLineCompletion(val intp: IMain) extends Completion with CompletionOutput 
     override def follow(id: String): Option[CompletionAware] = {
       if (!completions(0).contains(id))
         return None
-      
+
       val tpe = intp typeOfExpression id
       if (tpe == NoType)
         return None
-      
+
       def default = Some(TypeMemberCompletion(tpe))
 
       // only rebinding vals in power mode for now.

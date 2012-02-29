@@ -48,9 +48,9 @@ object JavaConversions {
         // do nothing
       }
     }
-  
+
   implicit def asExecutionContext(exec: ExecutorService): ExecutionContext = null // TODO
-  
+
   implicit def asExecutionContext(exec: Executor): ExecutionContext = null // TODO
-  
+
 }

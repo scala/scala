@@ -20,7 +20,7 @@ class Statistics extends scala.reflect.internal.util.Statistics {
   val typedSelectCount = new Counter
   val typerNanos = new Timer
   val classReadNanos = new Timer
-  
+
   val failedApplyNanos = new Timer
   val failedOpEqNanos = new Timer
   val failedSilentNanos = new Timer

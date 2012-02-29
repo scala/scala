@@ -154,7 +154,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter) extends Symb
   /** Register top level class (called on entering the class)
    */
   def registerTopLevelSym(sym: Symbol) {}
-  
+
 // ------------------ Reporting -------------------------------------
 
   // not deprecated yet, but a method called "error" imported into
@@ -710,18 +710,18 @@ class Global(var currentSettings: Settings, var reporter: Reporter) extends Symb
   private lazy val unitTimings = mutable.HashMap[CompilationUnit, Long]() withDefaultValue 0L // tracking time spent per unit
   private def unitTimingsFormatted(): String = {
     def toMillis(nanos: Long) = "%.3f" format nanos / 1000000d
-    
+
     val formatter = new util.TableDef[(String, String)] {
       >> ("ms"   -> (_._1)) >+ "  "
       << ("path" -> (_._2))
     }
     "" + (
-      new formatter.Table(unitTimings.toList sortBy (-_._2) map { 
+      new formatter.Table(unitTimings.toList sortBy (-_._2) map {
         case (unit, nanos) => (toMillis(nanos), unit.source.path)
       })
     )
   }
-  
+
   protected def addToPhasesSet(sub: SubComponent, descr: String) {
     phasesSet += sub
     phasesDescMap(sub) = descr
@@ -866,7 +866,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter) extends Symb
   def currentRun: Run              = curRun
   def currentUnit: CompilationUnit = if (currentRun eq null) NoCompilationUnit else currentRun.currentUnit
   def currentSource: SourceFile    = if (currentUnit.exists) currentUnit.source else lastSeenSourceFile
-  
+
   // TODO - trim these to the absolute minimum.
   @inline final def afterErasure[T](op: => T): T = afterPhase(currentRun.erasurePhase)(op)
   @inline final def afterExplicitOuter[T](op: => T): T = afterPhase(currentRun.explicitouterPhase)(op)
@@ -935,7 +935,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter) extends Symb
     /** Counts for certain classes of warnings during this run. */
     var deprecationWarnings: List[(Position, String)] = Nil
     var uncheckedWarnings: List[(Position, String)] = Nil
-    
+
     /** A flag whether macro expansions failed */
     var macroExpansionFailed = false
 
@@ -1082,7 +1082,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter) extends Symb
     }
 
     def cancel() { reporter.cancelled = true }
-    
+
     private def currentProgress   = (phasec * size) + unitc
     private def totalProgress     = (phaseDescriptors.size - 1) * size // -1: drops terminal phase
     private def refreshProgress() = if (size > 0) progress(currentProgress, totalProgress)
@@ -1250,12 +1250,12 @@ class Global(var currentSettings: Settings, var reporter: Reporter) extends Symb
      */
     def compileUnits(units: List[CompilationUnit], fromPhase: Phase) {
       try compileUnitsInternal(units, fromPhase)
-      catch { case ex => 
+      catch { case ex =>
         globalError(supplementErrorMessage("uncaught exception during compilation: " + ex.getClass.getName))
         throw ex
       }
     }
-    
+
     private def compileUnitsInternal(units: List[CompilationUnit], fromPhase: Phase) {
       units foreach addUnit
       if (opt.profileAll) {

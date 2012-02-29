@@ -246,7 +246,7 @@ trait StdNames extends NameManglers { self: SymbolTable =>
     val x_7 : NameType  = "x$7"
     val x_8 : NameType  = "x$8"
     val x_9 : NameType  = "x$9"
-    
+
     @switch def syntheticParamName(i: Int): TermName = i match {
       case 0  => nme.x_0
       case 1  => nme.x_1
@@ -260,9 +260,9 @@ trait StdNames extends NameManglers { self: SymbolTable =>
       case 9  => nme.x_9
       case _  => newTermName("x$" + i)
     }
-    
+
     val ??? = encode("???")
-    
+
     val wrapRefArray: NameType     = "wrapRefArray"
     val wrapByteArray: NameType    = "wrapByteArray"
     val wrapShortArray: NameType   = "wrapShortArray"
@@ -618,7 +618,7 @@ trait StdNames extends NameManglers { self: SymbolTable =>
     val testLessOrEqualThan: NameType    = "testLessOrEqualThan"
     val testLessThan: NameType           = "testLessThan"
     val testNotEqual: NameType           = "testNotEqual"
-    
+
     val isBoxedNumberOrBoolean: NameType = "isBoxedNumberOrBoolean"
     val isBoxedNumber: NameType = "isBoxedNumber"
 
@@ -670,7 +670,7 @@ trait StdNames extends NameManglers { self: SymbolTable =>
       case `toDouble` => toDouble
       case _          => NO_NAME
     }
-    
+
     val reflPolyCacheName: NameType   = "reflPoly$Cache"
     val reflClassCacheName: NameType  = "reflClass$Cache"
     val reflParamsCacheName: NameType = "reflParams$Cache"
