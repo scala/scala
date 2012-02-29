@@ -1,0 +1,20 @@
+[[syntax trees at end of parser]]// Scala source: newSource1
+package <empty> {
+  abstract trait Test extends scala.ScalaObject {
+    def $init$() = {
+      ()
+    };
+    def sth: scala.Unit = {
+      /** Some comment here */
+      object Maybe extends scala.ScalaObject {
+        def <init>() = {
+          super.<init>();
+          ()
+        };
+        /** Some comment inside */
+        def nothing() = ()
+      };
+      ()
+    }
+  }
+}

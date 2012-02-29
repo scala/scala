@@ -8,6 +8,7 @@ package internal
 
 import scala.collection.{ mutable, immutable }
 import util._
+import scala.tools.nsc.util.WeakHashSet
 
 abstract class SymbolTable extends api.Universe
                               with Collections
@@ -266,9 +267,10 @@ abstract class SymbolTable extends api.Universe
       }
     }
 
-    def newWeakMap[K, V]() = recordCache(mutable.WeakHashMap[K, V]())
-    def newMap[K, V]()     = recordCache(mutable.HashMap[K, V]())
-    def newSet[K]()        = recordCache(mutable.HashSet[K]())
+    def newWeakMap[K, V]()        = recordCache(mutable.WeakHashMap[K, V]())
+    def newMap[K, V]()            = recordCache(mutable.HashMap[K, V]())
+    def newSet[K]()               = recordCache(mutable.HashSet[K]())
+    def newWeakSet[K <: AnyRef]() = recordCache(new WeakHashSet[K]())
   }
 
   /** Break into repl debugger if assertion is true. */

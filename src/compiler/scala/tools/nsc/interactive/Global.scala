@@ -1052,7 +1052,6 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "")
 
   def newTyperRun() {
     currentTyperRun = new TyperRun
-    perRunCaches.clearAll()
   }
 
   class TyperResult(val tree: Tree) extends ControlThrowable
