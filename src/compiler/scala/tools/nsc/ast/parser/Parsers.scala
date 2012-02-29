@@ -2967,10 +2967,10 @@ self =>
       val annots = annotations(true)
       val pos = in.offset
       val mods = (localModifiers() | implicitMod) withAnnotations annots
-      val defs =
+      val defs = joinComment( // for SI-5527
         if (!(mods hasFlag ~(Flags.IMPLICIT | Flags.LAZY))) defOrDcl(pos, mods)
-        else List(tmplDef(pos, mods))
-
+        else List(tmplDef(pos, mods)))
+        
       in.token match {
         case RBRACE | CASE  => defs :+ (Literal(Constant()) setPos o2p(in.offset))
         case _              => defs
