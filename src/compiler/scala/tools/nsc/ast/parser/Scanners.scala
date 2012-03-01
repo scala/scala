@@ -670,12 +670,18 @@ trait Scanners extends ScannersCommon {
         next.offset = charOffset - 1
       }
       if (ch == '"') {
-        nextRawChar()
-        if (!multiLine || isTripleQuote()) {
+        if (multiLine) {
+          nextRawChar()
+          if (isTripleQuote()) {
+            setStrVal()
+            token = STRINGLIT
+          } else
+            getStringPart(multiLine)
+        } else {
+          nextChar()
           setStrVal()
           token = STRINGLIT
-        } else
-          getStringPart(multiLine)
+        }
       } else if (ch == '$') {
         nextRawChar()
         if (ch == '$') {
