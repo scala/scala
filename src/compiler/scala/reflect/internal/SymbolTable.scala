@@ -79,7 +79,8 @@ abstract class SymbolTable extends api.Universe
   type RunId = Int
   final val NoRunId = 0
 
-  private var phStack: List[Phase] = Nil
+  // sigh, this has to be public or atPhase doesn't inline.
+  var phStack: List[Phase] = Nil
   private var ph: Phase = NoPhase
   private var per = NoPeriod
 

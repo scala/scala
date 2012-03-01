@@ -210,22 +210,23 @@ class Global(var currentSettings: Settings, var reporter: Reporter) extends Symb
 
   def logError(msg: String, t: Throwable): Unit = ()
 
-  private def atPhaseStackMessage = atPhaseStack match {
-    case Nil    => ""
-    case ps     => ps.reverseMap("->" + _).mkString("(", " ", ")")
-  }
-  private def shouldLogAtThisPhase = (
-       (settings.log.isSetByUser)
-    && ((settings.log containsPhase globalPhase) || (settings.log containsPhase phase))
-  )
-
   def logAfterEveryPhase[T](msg: String)(op: => T) {
     log("Running operation '%s' after every phase.\n".format(msg) + describeAfterEveryPhase(op))
   }
   // Over 200 closure objects are eliminated by inlining this.
-  @inline final def log(msg: => AnyRef): Unit =
+  @inline final def log(msg: => AnyRef): Unit = {
+    def shouldLogAtThisPhase = (
+         (settings.log.isSetByUser)
+      && ((settings.log containsPhase globalPhase) || (settings.log containsPhase phase))
+    )
+    def atPhaseStackMessage = atPhaseStack match {
+      case Nil    => ""
+      case ps     => ps.reverseMap("->" + _).mkString("(", " ", ")")
+    }
+
     if (shouldLogAtThisPhase)
       inform("[log %s%s] %s".format(globalPhase, atPhaseStackMessage, msg))
+  }
 
   @inline final override def debuglog(msg: => String) {
     if (settings.debug.value)
