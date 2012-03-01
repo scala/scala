@@ -1505,10 +1505,10 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
           deriveValDef(newValDef)(transform)
 
         case Apply(sel @ Select(sup @ Super(qual, name), name1), args)
-          if (sup.symbol.info.parents != atPhase(phase.prev)(sup.symbol.info.parents)) =>
+          if (sup.symbol.info.parents != beforePrevPhase(sup.symbol.info.parents)) =>
 
           def parents = sup.symbol.info.parents
-          debuglog(tree + " parents changed from: " + atPhase(phase.prev)(parents) + " to: " + parents)
+          debuglog(tree + " parents changed from: " + beforePrevPhase(parents) + " to: " + parents)
 
           val res = localTyper.typed(
             Apply(Select(Super(qual, name) setPos sup.pos, name1) setPos sel.pos, transformTrees(args)) setPos tree.pos)

@@ -74,6 +74,10 @@ trait Collections {
       index += 1
     }
   }
+  
+  @inline final def findOrElse[A](xs: TraversableOnce[A])(p: A => Boolean)(orElse: => A): A = {
+    xs find p getOrElse orElse
+  }
 
   final def mapWithIndex[A, B](xs: List[A])(f: (A, Int) => B): List[B] = {
     val lb = new ListBuffer[B]

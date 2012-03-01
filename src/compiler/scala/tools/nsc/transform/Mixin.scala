@@ -147,7 +147,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
     member.hasAccessorFlag && (!member.isDeferred || (member hasFlag lateDEFERRED))
 
   /** Is member overridden (either directly or via a bridge) in base class sequence `bcs`? */
-  def isOverriddenAccessor(member: Symbol, bcs: List[Symbol]): Boolean = atOwnPhase {
+  def isOverriddenAccessor(member: Symbol, bcs: List[Symbol]): Boolean = beforeOwnPhase {
     def hasOverridingAccessor(clazz: Symbol) = {
       clazz.info.nonPrivateDecl(member.name).alternatives.exists(
         sym =>
@@ -1160,7 +1160,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
             def implSym = implClass(sym.owner).info.member(sym.name)
             assert(target ne NoSymbol,
               List(sym + ":", sym.tpe, sym.owner, implClass(sym.owner), implSym,
-                  atPhase(phase.prev)(implSym.tpe), phase) mkString " "
+                  beforePrevPhase(implSym.tpe), phase) mkString " "
             )
             typedPos(tree.pos)(Apply(staticRef(target), transformSuper(qual) :: args))
           }
@@ -1185,7 +1185,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
                   val sym1 = sym.overridingSymbol(currentOwner.enclClass)
                   typedPos(tree.pos)((transformSuper(qual) DOT sym1)())
                 } else {
-                  staticCall(atPhase(phase.prev)(sym.overridingSymbol(implClass(sym.owner))))
+                  staticCall(beforePrevPhase(sym.overridingSymbol(implClass(sym.owner))))
                 }
               } else {
                 assert(!currentOwner.enclClass.isImplClass, currentOwner.enclClass)

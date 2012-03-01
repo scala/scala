@@ -724,6 +724,7 @@ abstract class Inliners extends SubComponent {
 
       def failureReason(stackLength: Int) =
         if (!inc.m.hasCode) "bytecode was unavailable"
+        else if (inc.m.symbol.hasFlag(Flags.SYNCHRONIZED)) "method is synchronized"
         else if (!isSafeToInline(stackLength)) "it is unsafe (target may reference private fields)"
         else "of a bug (run with -Ylog:inline -Ydebug for more information)"
 
