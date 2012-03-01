@@ -20,7 +20,7 @@ object Test extends DirectTest {
         }
       }
     }
-  """
+  """.trim
 
   override def show(): Unit = {
     // redirect err to out, for logging
