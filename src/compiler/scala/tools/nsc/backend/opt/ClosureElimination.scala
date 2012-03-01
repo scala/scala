@@ -108,7 +108,7 @@ abstract class ClosureElimination extends SubComponent {
             case LOAD_LOCAL(l) if info.bindings isDefinedAt LocalVar(l) =>
               val t = info.getBinding(l)
               t match {
-                case Deref(LocalVar(_)) | Deref(This) | Const(_) =>
+              	case Deref(This) | Const(_) =>
                   bb.replaceInstruction(i, valueToInstruction(t));
                   log("replaced " + i + " with " + t)
 
