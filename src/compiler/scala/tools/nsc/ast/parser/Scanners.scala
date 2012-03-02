@@ -670,12 +670,18 @@ trait Scanners extends ScannersCommon {
         next.offset = charOffset - 1
       }
       if (ch == '"') {
-        nextRawChar()
-        if (!multiLine || isTripleQuote()) {
+        if (multiLine) {
+          nextRawChar()
+          if (isTripleQuote()) {
+            setStrVal()
+            token = STRINGLIT
+          } else
+            getStringPart(multiLine)
+        } else {
+          nextChar()
           setStrVal()
           token = STRINGLIT
-        } else
-          getStringPart(multiLine)
+        }
       } else if (ch == '$') {
         nextRawChar()
         if (ch == '$') {
@@ -698,12 +704,15 @@ trait Scanners extends ScannersCommon {
         } else {
           syntaxError("invalid string interpolation")
         }
-      } else if ((ch == CR || ch == LF || ch == SU) && !isUnicodeEscape) {
-        syntaxError("unclosed string literal")
       } else {
-        putChar(ch)
-        nextRawChar()
-        getStringPart(multiLine)
+        val isUnclosedLiteral = !isUnicodeEscape && (ch == SU || (!multiLine && (ch == CR || ch == LF)))
+        if (isUnclosedLiteral) {
+          syntaxError(if (!multiLine) "unclosed string literal" else "unclosed multi-line string literal")
+        } else {
+          putChar(ch)
+          nextRawChar()
+          getStringPart(multiLine)
+        }
       }
     }
 
