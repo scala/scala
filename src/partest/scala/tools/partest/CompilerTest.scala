@@ -19,7 +19,7 @@ abstract class CompilerTest extends DirectTest {
 
   lazy val global: Global = newCompiler()
   lazy val units = compilationUnits(global)(sources: _ *)
-  
+
   override def extraSettings = "-usejavacp -d " + testOutput.path
 
   def sources: List[String] = List(code)

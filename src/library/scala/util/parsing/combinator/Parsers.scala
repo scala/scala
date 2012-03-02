@@ -487,7 +487,7 @@ trait Parsers {
     }
 
     /** Changes the error message produced by a parser.
-     * 
+     *
      *  This doesn't change the behavior of a parser on neither
      *  success nor failure, just on error. The semantics are
      *  slightly different than those obtained by doing `| error(msg)`,

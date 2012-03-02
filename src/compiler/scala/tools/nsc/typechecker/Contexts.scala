@@ -21,7 +21,7 @@ trait Contexts { self: Analyzer =>
     outer      = this
     enclClass  = this
     enclMethod = this
-    
+
     override def nextEnclosing(p: Context => Boolean): Context = this
     override def enclosingContextChain: List[Context] = Nil
     override def implicitss: List[List[ImplicitInfo]] = Nil
@@ -128,7 +128,7 @@ trait Contexts { self: Analyzer =>
 
     var typingIndentLevel: Int = 0
     def typingIndent = "  " * typingIndentLevel
-    
+
     var buffer: Set[AbsTypeError] = _
 
     def enclClassOrMethod: Context =
@@ -179,7 +179,7 @@ trait Contexts { self: Analyzer =>
       buffer.clear()
       current
     }
-    
+
     def logError(err: AbsTypeError) = buffer += err
 
     def withImplicitsDisabled[T](op: => T): T = {
@@ -240,7 +240,7 @@ trait Contexts { self: Analyzer =>
       c.implicitsEnabled = true
       c
     }
-    
+
     def makeNewImport(sym: Symbol): Context =
       makeNewImport(gen.mkWildcardImport(sym))
 

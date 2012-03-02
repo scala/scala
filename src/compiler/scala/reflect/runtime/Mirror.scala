@@ -16,12 +16,12 @@ class Mirror extends Universe with RuntimeTypes with TreeBuildUtil with ToolBoxe
     val clazz = javaClass(name, defaultReflectiveClassLoader())
     classToScala(clazz)
   }
-  
+
   def companionInstance(clazz: Symbol): AnyRef = {
     val singleton = ReflectionUtils.singletonInstance(clazz.fullName, defaultReflectiveClassLoader())
     singleton
   }
-  
+
   def symbolOfInstance(obj: Any): Symbol = classToScala(obj.getClass)
   def typeOfInstance(obj: Any): Type = typeToScala(obj.getClass)
   // to do add getClass/getType for instances of primitive types, probably like this:
@@ -41,8 +41,8 @@ class Mirror extends Universe with RuntimeTypes with TreeBuildUtil with ToolBoxe
         case nme.update => return Array.set(receiver, args(0).asInstanceOf[Int], args(1))
       }
     }
-    
-    val jmeth = methodToJava(meth) 
+
+    val jmeth = methodToJava(meth)
     jmeth.invoke(receiver, args.asInstanceOf[Seq[AnyRef]]: _*)
   }
 
@@ -51,7 +51,7 @@ class Mirror extends Universe with RuntimeTypes with TreeBuildUtil with ToolBoxe
 
   override def typeToClass(tpe: Type): java.lang.Class[_] = typeToJavaClass(tpe)
   override def symbolToClass(sym: Symbol): java.lang.Class[_] = classToJava(sym)
-  
+
   override def inReflexiveMirror = true
 }
 

@@ -38,11 +38,11 @@ trait Scopes extends api.Scopes { self: SymbolTable =>
   }
 
   /** Note: constructor is protected to force everyone to use the factory methods newScope or newNestedScope instead.
-   *  This is necessary because when run from reflection every scope needs to have a 
-   *  SynchronizedScope as mixin. 
+   *  This is necessary because when run from reflection every scope needs to have a
+   *  SynchronizedScope as mixin.
    */
   class Scope protected[Scopes] (initElems: ScopeEntry = null) extends Iterable[Symbol] {
-    
+
     protected[Scopes] def this(base: Scope) = {
       this(base.elems)
       nestinglevel = base.nestinglevel + 1
@@ -319,7 +319,7 @@ trait Scopes extends api.Scopes { self: SymbolTable =>
 
   /** Create a new scope */
   def newScope: Scope = new Scope()
-  
+
   /** Create a new scope nested in another one with which it shares its elements */
   def newNestedScope(outer: Scope): Scope = new Scope(outer)
 

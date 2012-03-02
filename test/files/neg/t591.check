@@ -1,4 +1,4 @@
-t591.scala:38: error: method input_= is defined twice
+t591.scala:38: error: method input_= is defined twice in t591.scala
     def input_=(in : Input) = {}
         ^
 one error found

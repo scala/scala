@@ -204,7 +204,7 @@ abstract class TailCalls extends Transform {
           fail(reason)
         }
         def rewriteTailCall(recv: Tree): Tree = {
-          log("Rewriting tail recursive call:  " + fun.pos.lineContent.trim)
+          debuglog("Rewriting tail recursive call:  " + fun.pos.lineContent.trim)
 
           ctx.accessed = true
           typedPos(fun.pos)(Apply(Ident(ctx.label), recv :: transformArgs))
@@ -228,7 +228,7 @@ abstract class TailCalls extends Transform {
           debuglog("Considering " + dd.name + " for tailcalls")
           val newRHS = transform(rhs0, newCtx)
 
-          deriveDefDef(tree)(rhs => 
+          deriveDefDef(tree)(rhs =>
             if (newCtx.isTransformed) {
               /** We have rewritten the tree, but there may be nested recursive calls remaining.
                *  If @tailrec is given we need to fail those now.
@@ -262,11 +262,7 @@ abstract class TailCalls extends Transform {
           )
 
         case CaseDef(pat, guard, body) =>
-          treeCopy.CaseDef(tree,
-            pat,
-            guard,
-            transform(body)
-          )
+          deriveCaseDef(tree)(transform)
 
         case If(cond, thenp, elsep) =>
           treeCopy.If(tree,

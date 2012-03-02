@@ -62,22 +62,22 @@ final class ListBuffer[A]
   private var len = 0
 
   protected def underlying: immutable.Seq[A] = start
-  
+
   private def writeObject(out: ObjectOutputStream) {
     // write start
     var xs: List[A] = start
     while (!xs.isEmpty) { out.writeObject(xs.head); xs = xs.tail }
     out.writeObject(ListSerializeEnd)
-    
+
     // no need to write last0
-    
+
     // write if exported
     out.writeBoolean(exported)
-    
+
     // write the length
     out.writeInt(len)
   }
-  
+
   private def readObject(in: ObjectInputStream) {
     // read start, set last0 appropriately
     var elem: A = in.readObject.asInstanceOf[A]
@@ -97,14 +97,14 @@ final class ListBuffer[A]
       last0 = current
       start
     }
-    
+
     // read if exported
     exported = in.readBoolean()
-    
+
     // read the length
     len = in.readInt()
   }
-  
+
   /** The current length of the buffer.
    *
    *  This operation takes constant time.

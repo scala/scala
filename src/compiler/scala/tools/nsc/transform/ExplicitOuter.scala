@@ -68,7 +68,7 @@ abstract class ExplicitOuter extends InfoTransform
 
     result
   }
-  
+
   private val innerClassConstructorParamName: TermName = newTermName("arg" + nme.OUTER)
 
   class RemoveBindingsTransformer(toRemove: Set[Symbol]) extends Transformer {
@@ -89,13 +89,13 @@ abstract class ExplicitOuter extends InfoTransform
   def outerAccessor(clazz: Symbol): Symbol = {
     val firstTry = clazz.info.decl(nme.expandedName(nme.OUTER, clazz))
     if (firstTry != NoSymbol && firstTry.outerSource == clazz) firstTry
-    else clazz.info.decls find (_.outerSource == clazz) getOrElse NoSymbol
-   }
+    else findOrElse(clazz.info.decls)(_.outerSource == clazz)(NoSymbol)
+  }
   def newOuterAccessor(clazz: Symbol) = {
     val accFlags = SYNTHETIC | METHOD | STABLE | ( if (clazz.isTrait) DEFERRED else 0 )
     val sym      = clazz.newMethodSymbol(nme.OUTER, clazz.pos, accFlags)
     val restpe   = if (clazz.isTrait) clazz.outerClass.tpe else clazz.outerClass.thisType
-    
+
     sym expandName clazz
     sym.referenced = clazz
     sym setInfo MethodType(Nil, restpe)
@@ -163,14 +163,14 @@ abstract class ExplicitOuter extends InfoTransform
         decls1 = decls.cloneScope
         val outerAcc = clazz.newMethod(nme.OUTER, clazz.pos) // 3
         outerAcc expandName clazz
-        
+
         decls1 enter newOuterAccessor(clazz)
         if (hasOuterField(clazz)) //2
           decls1 enter newOuterField(clazz)
       }
       if (!clazz.isTrait && !parents.isEmpty) {
         for (mc <- clazz.mixinClasses) {
-          val mixinOuterAcc: Symbol = atPhase(phase.next)(outerAccessor(mc))
+          val mixinOuterAcc: Symbol = afterExplicitOuter(outerAccessor(mc))
           if (mixinOuterAcc != NoSymbol) {
             if (decls1 eq decls) decls1 = decls.cloneScope
             val newAcc = mixinOuterAcc.cloneSymbol(clazz, mixinOuterAcc.flags & ~DEFERRED)
@@ -468,8 +468,10 @@ abstract class ExplicitOuter extends InfoTransform
             }
           }
           super.transform(
-            treeCopy.Template(tree, parents, self,
-                          if (newDefs.isEmpty) decls else decls ::: newDefs.toList)
+            deriveTemplate(tree)(decls =>
+              if (newDefs.isEmpty) decls
+              else decls ::: newDefs.toList
+            )
           )
         case DefDef(_, _, _, vparamss, _, rhs) =>
           if (sym.isClassConstructor) {
@@ -559,7 +561,7 @@ abstract class ExplicitOuter extends InfoTransform
 
     /** The transformation method for whole compilation units */
     override def transformUnit(unit: CompilationUnit) {
-      atPhase(phase.next)(super.transformUnit(unit))
+      afterExplicitOuter(super.transformUnit(unit))
     }
   }
 

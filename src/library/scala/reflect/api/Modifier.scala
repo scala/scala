@@ -69,7 +69,7 @@ object Modifier extends immutable.Set[Modifier] {
   val parameter        = SymbolModifier("parameter")
   val preSuper         = SymbolModifier("preSuper")
   val static           = SymbolModifier("static")
-  
+
   val sourceModifiers: Set[SourceModifier] = SourceModifier.all.toSet
   val symbolModifiers: Set[SymbolModifier] = SymbolModifier.all.toSet
   val allModifiers: Set[Modifier]          = sourceModifiers ++ symbolModifiers

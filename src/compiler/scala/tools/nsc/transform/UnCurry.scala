@@ -144,13 +144,13 @@ abstract class UnCurry extends InfoTransform
      *  todo: maybe clone a pre-existing exception instead?
      *  (but what to do about exceptions that miss their targets?)
      */
-    private def nonLocalReturnThrow(expr: Tree, meth: Symbol) =
-      localTyper.typed {
-        Throw(
-          New(
-            TypeTree(nonLocalReturnExceptionType(expr.tpe)),
-            List(List(Ident(nonLocalReturnKey(meth)), expr))))
-      }
+    private def nonLocalReturnThrow(expr: Tree, meth: Symbol) = localTyper typed {
+      Throw(
+        nonLocalReturnExceptionType(expr.tpe.widen),
+        Ident(nonLocalReturnKey(meth)),
+        expr
+      )
+    }
 
     /** Transform (body, key) to:
      *
@@ -166,31 +166,18 @@ abstract class UnCurry extends InfoTransform
      *  }
      */
     private def nonLocalReturnTry(body: Tree, key: Symbol, meth: Symbol) = {
-      localTyper.typed {
-        val extpe = nonLocalReturnExceptionType(meth.tpe.finalResultType)
-        val ex = meth.newValue(nme.ex, body.pos) setInfo extpe
-        val pat = Bind(ex,
-                       Typed(Ident(nme.WILDCARD),
-                             AppliedTypeTree(Ident(NonLocalReturnControlClass),
-                                             List(Bind(tpnme.WILDCARD,
-                                                       EmptyTree)))))
-        val rhs =
-          If(
-            Apply(
-              Select(
-                Apply(Select(Ident(ex), "key"), List()),
-                Object_eq),
-              List(Ident(key))),
-            Apply(
-              TypeApply(
-                Select(
-                  Apply(Select(Ident(ex), "value"), List()),
-                  Any_asInstanceOf),
-                List(TypeTree(meth.tpe.finalResultType))),
-              List()),
-            Throw(Ident(ex)))
-        val keyDef = ValDef(key, New(ObjectClass))
-        val tryCatch = Try(body, List(CaseDef(pat, EmptyTree, rhs)), EmptyTree)
+      localTyper typed {
+        val extpe   = nonLocalReturnExceptionType(meth.tpe.finalResultType)
+        val ex      = meth.newValue(body.pos, nme.ex) setInfo extpe
+        val pat     = gen.mkBindForCase(ex, NonLocalReturnControlClass, List(meth.tpe.finalResultType))
+        val rhs = (
+          IF   ((ex DOT nme.key)() OBJ_EQ Ident(key))
+          THEN ((ex DOT nme.value)())
+          ELSE (Throw(Ident(ex)))
+        )
+        val keyDef   = ValDef(key, New(ObjectClass.tpe))
+        val tryCatch = Try(body, pat -> rhs)
+
         Block(List(keyDef), tryCatch)
       }
     }
@@ -260,7 +247,7 @@ abstract class UnCurry extends InfoTransform
           else List(ObjectClass.tpe, fun.tpe, SerializableClass.tpe)
 
         anonClass setInfo ClassInfoType(parents, newScope, anonClass)
-        val applyMethod = anonClass.newMethod(nme.apply, fun.pos, FINAL) 
+        val applyMethod = anonClass.newMethod(nme.apply, fun.pos, FINAL)
         applyMethod setInfoAndEnter MethodType(applyMethod newSyntheticValueParams formals, restpe)
         anonClass addAnnotation serialVersionUIDAnnotation
 
@@ -357,7 +344,7 @@ abstract class UnCurry extends InfoTransform
         localTyper.typedPos(fun.pos) {
           Block(
             List(ClassDef(anonClass, NoMods, List(List()), List(List()), members, fun.pos)),
-            Typed(New(anonClass), TypeTree(fun.tpe)))
+            Typed(New(anonClass.tpe), TypeTree(fun.tpe)))
         }
       }
     }
@@ -370,7 +357,7 @@ abstract class UnCurry extends InfoTransform
 
         // when calling into scala varargs, make sure it's a sequence.
         def arrayToSequence(tree: Tree, elemtp: Type) = {
-          atPhase(phase.next) {
+          afterUncurry {
             localTyper.typedPos(pos) {
               val pt = arrayType(elemtp)
               val adaptedTree = // might need to cast to Array[elemtp], as arrays are not covariant
@@ -394,7 +381,7 @@ abstract class UnCurry extends InfoTransform
             else if (tp.bounds.hi ne tp) getManifest(tp.bounds.hi)
             else localTyper.getManifestTree(tree, tp, false)
           }
-          atPhase(phase.next) {
+          afterUncurry {
             localTyper.typedPos(pos) {
               Apply(gen.mkAttributedSelect(tree, toArraySym),
                     List(getManifest(tree.tpe.baseType(TraversableClass).typeArgs.head)))
@@ -419,7 +406,7 @@ abstract class UnCurry extends InfoTransform
             else arrayToSequence(mkArray, varargsElemType)
           }
 
-        atPhase(phase.next) {
+        afterUncurry {
           if (isJava && isPrimitiveArray(suffix.tpe) && isArrayOfSymbol(fun.tpe.params.last.tpe, ObjectClass)) {
             suffix = localTyper.typedPos(pos) {
               gen.mkRuntimeCall(nme.toObjectArray, List(suffix))
@@ -465,6 +452,25 @@ abstract class UnCurry extends InfoTransform
       }
     }
 
+    private def isSelfSynchronized(ddef: DefDef) = ddef.rhs match {
+      case Apply(fn @ TypeApply(Select(sel, _), _), _) =>
+        fn.symbol == Object_synchronized && sel.symbol == ddef.symbol.enclClass && !ddef.symbol.enclClass.isTrait
+      case _ => false
+    }
+
+    /** If an eligible method is entirely wrapped in a call to synchronized
+     *  locked on the same instance, remove the synchronized scaffolding and
+     *  mark the method symbol SYNCHRONIZED for bytecode generation.
+     */
+    private def translateSynchronized(tree: Tree) = tree match {
+      case dd @ DefDef(_, _, _, _, _, Apply(fn, body :: Nil)) if isSelfSynchronized(dd) =>
+        log("Translating " + dd.symbol.defString + " into synchronized method")
+        dd.symbol setFlag SYNCHRONIZED
+        deriveDefDef(dd)(_ => body)
+      case _ => tree
+    }
+    def isNonLocalReturn(ret: Return) = ret.symbol != currentOwner.enclMethod || currentOwner.isLazy
+
 // ------ The tree transformers --------------------------------------------------------
 
     def mainTransform(tree: Tree): Tree = {
@@ -508,9 +514,10 @@ abstract class UnCurry extends InfoTransform
         // breakage until a reasonable interface is settled upon.
         if ((sym ne null) && (sym.elisionLevel.exists (_ < settings.elidebelow.value || settings.noassertions.value)))
           replaceElidableTree(tree)
-        else tree match {
+        else translateSynchronized(tree) match {
           case dd @ DefDef(mods, name, tparams, vparamss, tpt, rhs) =>
             if (dd.symbol hasAnnotation VarargsClass) saveRepeatedParams(dd)
+
             withNeedLift(false) {
               if (dd.symbol.isClassConstructor) {
                 atOwner(sym) {
@@ -525,11 +532,11 @@ abstract class UnCurry extends InfoTransform
                       treeCopy.Block(rhs, presupers ::: supercalls ::: others, transform(expr))
                   }
                   treeCopy.DefDef(
-                    tree, mods, name, transformTypeDefs(tparams),
+                    dd, mods, name, transformTypeDefs(tparams),
                     transformValDefss(vparamss), transform(tpt), rhs1)
                 }
               } else {
-                super.transform(tree)
+                super.transform(dd)
               }
             }
           case ValDef(_, _, _, rhs) =>
@@ -564,6 +571,9 @@ abstract class UnCurry extends InfoTransform
           case Assign(lhs, _) if lhs.symbol.owner != currentMethod || lhs.symbol.hasFlag(LAZY | ACCESSOR) =>
             withNeedLift(true) { super.transform(tree) }
 
+          case ret @ Return(_) if (isNonLocalReturn(ret)) =>
+            withNeedLift(true) { super.transform(ret) }
+
           case Try(block, catches, finalizer) =>
             if (needTryLift || shouldBeLiftedAnyway(tree)) transform(liftTree(tree))
             else super.transform(tree)
@@ -594,7 +604,7 @@ abstract class UnCurry extends InfoTransform
       result setType uncurryTreeType(result.tpe)
     }
 
-    def postTransform(tree: Tree): Tree = atPhase(phase.next) {
+    def postTransform(tree: Tree): Tree = afterUncurry {
       def applyUnary(): Tree = {
         // TODO_NMT: verify that the inner tree of a type-apply also gets parens if the
         // whole tree is a polymorphic nullary method application
@@ -620,13 +630,11 @@ abstract class UnCurry extends InfoTransform
          * In particular, this case will add:
          * - synthetic Java varargs forwarders for repeated parameters
          */
-        case Template(parents, self, body) =>
+        case Template(_, _, _) =>
           localTyper = typer.atOwner(tree, currentClass)
-          val tmpl = if (!forMSIL || forMSIL) {
-            treeCopy.Template(tree, parents, self, transformTrees(newMembers.toList) ::: body)
-          } else super.transform(tree).asInstanceOf[Template]
-          newMembers.clear
-          tmpl
+          try deriveTemplate(tree)(transformTrees(newMembers.toList) ::: _)
+          finally newMembers.clear()
+
         case dd @ DefDef(_, _, _, vparamss0, _, rhs0) =>
           val flatdd = copyDefDef(dd)(
             vparamss = List(vparamss0.flatten),
@@ -671,9 +679,9 @@ abstract class UnCurry extends InfoTransform
           applyUnary()
         case Select(_, _) | TypeApply(_, _) =>
           applyUnary()
-        case Return(expr) if (tree.symbol != currentOwner.enclMethod || currentOwner.isLazy) =>
-          debuglog("non local return in "+tree.symbol+" from "+currentOwner.enclMethod)
-          atPos(tree.pos)(nonLocalReturnThrow(expr, tree.symbol))
+        case ret @ Return(expr) if (isNonLocalReturn(ret)) =>
+          debuglog("non local return in "+ret.symbol+" from "+currentOwner.enclMethod)
+          atPos(ret.pos)(nonLocalReturnThrow(expr, ret.symbol))
         case TypeTree() =>
           tree
         case _ =>
@@ -777,7 +785,7 @@ abstract class UnCurry extends InfoTransform
           // add the method to `newMembers`
           newMembers += forwtree
       }
-      
+
       flatdd
     }
   }

@@ -82,7 +82,9 @@ abstract class AddInterfaces extends InfoTransform {
 
     implClassMap.getOrElse(iface, {
       atPhase(implClassPhase) {
-        log("%s.implClass == %s".format(iface, iface.implClass))
+        if (iface.implClass ne NoSymbol)
+          log("%s.implClass == %s".format(iface, iface.implClass))
+
         val implName = nme.implClassName(iface.name)
         var impl     = if (iface.owner.isClass) iface.owner.info.decl(implName) else NoSymbol
 
@@ -193,7 +195,7 @@ abstract class AddInterfaces extends InfoTransform {
         case PolyType(_, restpe) =>
           implType(restpe)
       }
-      sym setInfo implType(atPhase(currentRun.erasurePhase)(iface.info))
+      sym setInfo implType(beforeErasure(iface.info))
     }
 
     override def load(clazz: Symbol) { complete(clazz) }
@@ -316,9 +318,9 @@ abstract class AddInterfaces extends InfoTransform {
     override def transform(tree: Tree): Tree = {
       val sym = tree.symbol
       val tree1 = tree match {
-        case ClassDef(mods, name, tparams, impl) if (sym.needsImplClass) =>
+        case ClassDef(mods, _, _, impl) if sym.needsImplClass =>
           implClass(sym).initialize // to force lateDEFERRED flags
-          treeCopy.ClassDef(tree, mods | INTERFACE, name, tparams, ifaceTemplate(impl))
+          copyClassDef(tree)(mods = mods | INTERFACE, impl = ifaceTemplate(impl))
         case DefDef(_,_,_,_,_,_) if sym.isClassConstructor && sym.isPrimaryConstructor && sym.owner != ArrayClass =>
           deriveDefDef(tree)(addMixinConstructorCalls(_, sym.owner)) // (3)
         case Template(parents, self, body) =>
@@ -337,7 +339,7 @@ abstract class AddInterfaces extends InfoTransform {
           val mix1 = mix
             if (mix == tpnme.EMPTY) mix
             else {
-              val ps = atPhase(currentRun.erasurePhase) {
+              val ps = beforeErasure {
                 sym.info.parents dropWhile (p => p.symbol.name != mix)
               }
               assert(!ps.isEmpty, tree);

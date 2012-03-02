@@ -176,7 +176,7 @@ self: ParIterableLike[T, Repr, Sequential] =>
   def hasDefiniteSize = true
 
   def nonEmpty = size != 0
-  
+
   /** Creates a new parallel iterator used to traverse the elements of this parallel collection.
    *  This iterator is more specific than the iterator of the returned by `iterator`, and augmented
    *  with additional accessor and transformer methods.
@@ -246,7 +246,7 @@ self: ParIterableLike[T, Repr, Sequential] =>
   trait SignallingOps[PI <: DelegatedSignalling] {
     def assign(cntx: Signalling): PI
   }
-  
+
   /* convenience task operations wrapper */
   protected implicit def task2ops[R, Tp](tsk: SSCTask[R, Tp]) = new TaskOps[R, Tp] {
     def mapResult[R1](mapping: R => R1): ResultMapping[R, Tp, R1] = new ResultMapping[R, Tp, R1](tsk) {
@@ -274,7 +274,7 @@ self: ParIterableLike[T, Repr, Sequential] =>
       it
     }
   }
-  
+
   protected implicit def builder2ops[Elem, To](cb: Builder[Elem, To]) = new BuilderOps[Elem, To] {
     def ifIs[Cmb](isbody: Cmb => Unit) = new Otherwise[Cmb] {
       def otherwise(notbody: => Unit)(implicit m: ClassManifest[Cmb]) {
@@ -284,12 +284,12 @@ self: ParIterableLike[T, Repr, Sequential] =>
     def isCombiner = cb.isInstanceOf[Combiner[_, _]]
     def asCombiner = cb.asInstanceOf[Combiner[Elem, To]]
   }
-  
+
   protected[this] def bf2seq[S, That](bf: CanBuildFrom[Repr, S, That]) = new CanBuildFrom[Sequential, S, That] {
     def apply(from: Sequential) = bf.apply(from.par.asInstanceOf[Repr]) // !!! we only use this on `this.seq`, and know that `this.seq.par.getClass == this.getClass`
     def apply() = bf.apply()
   }
-  
+
   protected[this] def sequentially[S, That <: Parallel](b: Sequential => Parallelizable[S, That]) = b(seq).par.asInstanceOf[Repr]
 
   def mkString(start: String, sep: String, end: String): String = seq.mkString(start, sep, end)
@@ -299,7 +299,7 @@ self: ParIterableLike[T, Repr, Sequential] =>
   def mkString: String = seq.mkString("")
 
   override def toString = seq.mkString(stringPrefix + "(", ", ", ")")
-  
+
   def canEqual(other: Any) = true
 
   /** Reduces the elements of this sequence using the specified associative binary operator.
@@ -336,7 +336,7 @@ self: ParIterableLike[T, Repr, Sequential] =>
    *                 the elements if the collection is nonempty, and `None` otherwise.
    */
   def reduceOption[U >: T](op: (U, U) => U): Option[U] = if (isEmpty) None else Some(reduce(op))
-  
+
   /** Folds the elements of this sequence using the specified associative binary operator.
    *  The order in which the elements are reduced is unspecified and may be nondeterministic.
    *
@@ -387,11 +387,11 @@ self: ParIterableLike[T, Repr, Sequential] =>
   def aggregate[S](z: S)(seqop: (S, T) => S, combop: (S, S) => S): S = {
     tasksupport.executeAndWaitResult(new Aggregate(z, seqop, combop, splitter))
   }
-  
+
   def foldLeft[S](z: S)(op: (S, T) => S): S = seq.foldLeft(z)(op)
-  
+
   def foldRight[S](z: S)(op: (T, S) => S): S = seq.foldRight(z)(op)
-  
+
   def reduceLeft[U >: T](op: (U, T) => U): U = seq.reduceLeft(op)
 
   def reduceRight[U >: T](op: (T, U) => U): U = seq.reduceRight(op)
@@ -440,7 +440,7 @@ self: ParIterableLike[T, Repr, Sequential] =>
 
     reduce((x, y) => if (cmp.lteq(f(x), f(y))) x else y)
   }
-  
+
   def map[S, That](f: T => S)(implicit bf: CanBuildFrom[Repr, S, That]): That = if (bf(repr).isCombiner) {
     tasksupport.executeAndWaitResult(new Map[S, That](f, combinerFactory(() => bf(repr).asCombiner), splitter) mapResult { _.resultWithTaskSupport })
   } else setTaskSupport(seq.map(f)(bf2seq(bf)), tasksupport)
@@ -498,11 +498,11 @@ self: ParIterableLike[T, Repr, Sequential] =>
   def find(pred: T => Boolean): Option[T] = {
     tasksupport.executeAndWaitResult(new Find(pred, splitter assign new DefaultSignalling with VolatileAbort))
   }
-  
+
   /** Creates a combiner factory. Each combiner factory instance is used
    *  once per invocation of a parallel transformer method for a single
    *  collection.
-   *  
+   *
    *  The default combiner factory creates a new combiner every time it
    *  is requested, unless the combiner is thread-safe as indicated by its
    *  `canBeShared` method. In this case, the method returns a factory which
@@ -522,7 +522,7 @@ self: ParIterableLike[T, Repr, Sequential] =>
       def doesShareCombiners = false
     }
   }
-  
+
   protected[this] def combinerFactory[S, That](cbf: () => Combiner[S, That]) = {
     val combiner = cbf()
     combiner.combinerTaskSupport = tasksupport
@@ -535,7 +535,7 @@ self: ParIterableLike[T, Repr, Sequential] =>
       def doesShareCombiners = false
     }
   }
-  
+
   def filter(pred: T => Boolean): Repr = {
     tasksupport.executeAndWaitResult(new Filter(pred, combinerFactory, splitter) mapResult { _.resultWithTaskSupport })
   }
@@ -906,9 +906,9 @@ self: ParIterableLike[T, Repr, Sequential] =>
     }
     override def requiresStrictSplitters = inner.requiresStrictSplitters
   }
-  
+
   protected trait Transformer[R, Tp] extends Accessor[R, Tp]
-  
+
   protected[this] class Foreach[S](op: T => S, protected[this] val pit: IterableSplitter[T])
   extends Accessor[Unit, Foreach[S]] {
     @volatile var result: Unit = ()
@@ -925,7 +925,7 @@ self: ParIterableLike[T, Repr, Sequential] =>
     override def merge(that: Count) = result = result + that.result
     // override def toString = "CountTask(" + pittxt + ")"
   }
-  
+
   protected[this] class Reduce[U >: T](op: (U, U) => U, protected[this] val pit: IterableSplitter[T])
   extends Accessor[Option[U], Reduce[U]] {
     @volatile var result: Option[U] = None
@@ -1334,7 +1334,7 @@ self: ParIterableLike[T, Repr, Sequential] =>
     } else result = that.result
     override def requiresStrictSplitters = true
   }
-  
+
   protected[this] class FromScanTree[U >: T, That]
   (tree: ScanTree[U], z: U, op: (U, U) => U, cbf: CombinerFactory[U, That])
   extends StrictSplitterCheckTask[Combiner[U, That], FromScanTree[U, That]] {
@@ -1410,13 +1410,13 @@ self: ParIterableLike[T, Repr, Sequential] =>
     def rightmost = this
     def print(depth: Int) = println((" " * depth) + this)
   }
-  
+
   /* alias methods */
-  
+
   def /:[S](z: S)(op: (S, T) => S): S = foldLeft(z)(op);
-  
+
   def :\[S](z: S)(op: (T, S) => S): S = foldRight(z)(op);
-  
+
   /* debug information */
 
   private[parallel] def debugInformation = "Parallel collection: " + this.getClass

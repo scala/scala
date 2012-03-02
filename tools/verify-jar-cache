@@ -1,0 +1,33 @@
+#!/bin/sh
+#
+# Discovers files whose sha sum does not match the
+# sha embedded in their directory name from ~/.sbt/cache/scala.
+# Pass -f to remove them, otherwise it just prints them.
+
+set -e
+cd ~/.sbt/cache/scala
+unset failed
+
+unset removal
+[[ $1 == "-f" ]] && removal=true
+
+for file in $(find . -type f); do
+  sha=$(echo "${file:2}" | sed 's/\/.*$//')
+  sum=$(shasum "$file" | sed 's/ .*$//')
+  if [[ $sum != $sha ]]; then
+    failed=true
+    if [[ -n $removal ]]; then
+      echo "Removing corrupt file $file, shasum=$sum"
+      rm -rf $sha
+    else
+      echo "Found corrupt file $file, shasum=$sum."
+    fi
+  fi
+done
+
+if [[ -z $failed ]]; then
+  echo "All cached files match their shas."
+elif [[ -z $removal ]]; then
+  echo ""
+  echo "Run again with -f to remove the corrupt files."
+fi

@@ -73,7 +73,7 @@ trait Names extends api.Names {
   /** Create a term name from the characters in cs[offset..offset+len-1]. */
   def newTermName(cs: Array[Char], offset: Int, len: Int): TermName =
     newTermName(cs, offset, len, cachedString = null)
-  
+
   def newTermName(cs: Array[Char]): TermName = newTermName(cs, 0, cs.length)
   def newTypeName(cs: Array[Char]): TypeName = newTypeName(cs, 0, cs.length)
 
@@ -87,7 +87,7 @@ trait Names extends api.Names {
     var n = termHashtable(h)
     while ((n ne null) && (n.length != len || !equals(n.start, cs, offset, len)))
       n = n.next
-    
+
     if (n ne null) n
     else {
       // The logic order here is future-proofing against the possibility
@@ -135,7 +135,7 @@ trait Names extends api.Names {
 
   /** The name class.
    *  TODO - resolve schizophrenia regarding whether to treat Names as Strings
-   *  or Strings as Names.  Give names the key functions the absence of which 
+   *  or Strings as Names.  Give names the key functions the absence of which
    *  make people want Strings all the time.
    */
   sealed abstract class Name(protected val index: Int, protected val len: Int) extends AbsName with Function1[Int, Char] {
@@ -166,7 +166,7 @@ trait Names extends api.Names {
 
     /** Return a new name of the same variety. */
     def newName(str: String): ThisNameType
-    
+
     /** Return a new name based on string transformation. */
     def mapName(f: String => String): ThisNameType = newName(f(toString))
 
@@ -357,7 +357,7 @@ trait Names extends api.Names {
 
     def dropRight(n: Int) = subName(0, len - n)
     def drop(n: Int) = subName(n, len)
-    
+
     def indexOf(ch: Char) = {
       val idx = pos(ch)
       if (idx == length) -1 else idx
@@ -382,7 +382,7 @@ trait Names extends api.Names {
       }
       newTermName(cs, 0, len)
     }
-    
+
     /** TODO - reconcile/fix that encode returns a Name but
      *  decode returns a String.
      */
@@ -393,7 +393,7 @@ trait Names extends api.Names {
     def encoded: String = "" + encode
     // def decodedName: ThisNameType = newName(decoded)
     def encodedName: ThisNameType = encode
-    
+
     /** Replace operator symbols by corresponding $op_name. */
     def encode: ThisNameType = {
       val str = toString
@@ -425,7 +425,7 @@ trait Names extends api.Names {
     def longString: String      = nameKind + " " + decode
     def debugString = { val s = decode ; if (isTypeName) s + "!" else s }
   }
-  
+
   /** A name that contains no operator chars nor dollar signs.
    *  TODO - see if it's any faster to do something along these lines.
    */
@@ -461,7 +461,7 @@ trait Names extends api.Names {
   sealed abstract class TermName(index0: Int, len0: Int, hash: Int) extends Name(index0, len0) {
     type ThisNameType = TermName
     protected[this] def thisName: TermName = this
-    
+
     var next: TermName = termHashtable(hash)
     termHashtable(hash) = this
     def isTermName: Boolean = true
@@ -488,7 +488,7 @@ trait Names extends api.Names {
   sealed abstract class TypeName(index0: Int, len0: Int, hash: Int) extends Name(index0, len0) {
     type ThisNameType = TypeName
     protected[this] def thisName: TypeName = this
-    
+
     var next: TypeName = typeHashtable(hash)
     typeHashtable(hash) = this
     def isTermName: Boolean = false

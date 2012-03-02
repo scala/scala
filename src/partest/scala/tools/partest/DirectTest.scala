@@ -63,7 +63,7 @@ abstract class DirectTest extends App {
     global.reporter.reset()
     f(new global.Run)
   }
-  
+
   // compile the code, optionally first adding to the settings
   def compile(args: String*) = compileString(newCompiler(args: _*))(code)
 

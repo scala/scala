@@ -94,6 +94,7 @@ trait StdNames extends NameManglers { self: SymbolTable =>
 
     val EMPTY: NameType              = ""
     val ANON_FUN_NAME: NameType      = "$anonfun"
+    val ANON_CLASS_NAME: NameType    = "$anon"
     val EMPTY_PACKAGE_NAME: NameType = "<empty>"
     val IMPORT: NameType             = "<import>"
     val MODULE_VAR_SUFFIX: NameType  = "$module"
@@ -245,7 +246,7 @@ trait StdNames extends NameManglers { self: SymbolTable =>
     val x_7 : NameType  = "x$7"
     val x_8 : NameType  = "x$8"
     val x_9 : NameType  = "x$9"
-    
+
     @switch def syntheticParamName(i: Int): TermName = i match {
       case 0  => nme.x_0
       case 1  => nme.x_1
@@ -259,9 +260,9 @@ trait StdNames extends NameManglers { self: SymbolTable =>
       case 9  => nme.x_9
       case _  => newTermName("x$" + i)
     }
-    
+
     val ??? = encode("???")
-    
+
     val wrapRefArray: NameType     = "wrapRefArray"
     val wrapByteArray: NameType    = "wrapByteArray"
     val wrapShortArray: NameType   = "wrapShortArray"
@@ -346,6 +347,7 @@ trait StdNames extends NameManglers { self: SymbolTable =>
     val isInstanceOf_ : NameType       = "isInstanceOf"
     val isInstanceOf_Ob : NameType     = "$isInstanceOf"
     val java: NameType                 = "java"
+    val key: NameType                  = "key"
     val lang: NameType                 = "lang"
     val length: NameType               = "length"
     val lengthCompare: NameType        = "lengthCompare"
@@ -442,7 +444,6 @@ trait StdNames extends NameManglers { self: SymbolTable =>
     protected implicit def createNameType(name: String): TypeName = newTypeNameCached(name)
 
     val REFINE_CLASS_NAME: NameType  = "<refinement>"
-    val ANON_CLASS_NAME: NameType    = "$anon"
   }
 
   /** For fully qualified type names.
@@ -617,7 +618,7 @@ trait StdNames extends NameManglers { self: SymbolTable =>
     val testLessOrEqualThan: NameType    = "testLessOrEqualThan"
     val testLessThan: NameType           = "testLessThan"
     val testNotEqual: NameType           = "testNotEqual"
-    
+
     val isBoxedNumberOrBoolean: NameType = "isBoxedNumberOrBoolean"
     val isBoxedNumber: NameType = "isBoxedNumber"
 
@@ -669,7 +670,7 @@ trait StdNames extends NameManglers { self: SymbolTable =>
       case `toDouble` => toDouble
       case _          => NO_NAME
     }
-    
+
     val reflPolyCacheName: NameType   = "reflPoly$Cache"
     val reflClassCacheName: NameType  = "reflClass$Cache"
     val reflParamsCacheName: NameType = "reflParams$Cache"

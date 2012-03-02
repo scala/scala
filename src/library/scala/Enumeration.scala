@@ -55,7 +55,7 @@ abstract class Enumeration (initial: Int) extends Serializable {
   thisenum =>
 
   def this() = this(0)
-    
+
   @deprecated("Names should be specified individually or discovered via reflection", "2.10.0")
   def this(initial: Int, names: String*) = {
     this(initial)
@@ -201,7 +201,7 @@ abstract class Enumeration (initial: Int) extends Serializable {
       case _                        => false
     }
     override def hashCode: Int = id.##
-    
+
     /** Create a ValueSet which contains this value and another one */
     def + (v: Value) = ValueSet(this, v)
   }
@@ -266,7 +266,7 @@ abstract class Enumeration (initial: Int) extends Serializable {
      *  new array of longs */
     def toBitMask: Array[Long] = nnIds.toBitMask
   }
-                                
+
   /** A factory object for value sets */
   object ValueSet {
     import generic.CanBuildFrom

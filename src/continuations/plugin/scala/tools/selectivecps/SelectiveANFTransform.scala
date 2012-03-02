@@ -47,20 +47,20 @@ abstract class SelectiveANFTransform extends PluginComponent with Transform with
         // ValDef case here.
 
         case dd @ DefDef(mods, name, tparams, vparamss, tpt, rhs) =>
-          log("transforming " + dd.symbol)
+          debuglog("transforming " + dd.symbol)
 
           atOwner(dd.symbol) {
             val rhs1 = transExpr(rhs, None, getExternalAnswerTypeAnn(tpt.tpe))
 
-            log("result "+rhs1)
-            log("result is of type "+rhs1.tpe)
+            debuglog("result "+rhs1)
+            debuglog("result is of type "+rhs1.tpe)
 
             treeCopy.DefDef(dd, mods, name, transformTypeDefs(tparams), transformValDefss(vparamss),
                         transform(tpt), rhs1)
           }
 
         case ff @ Function(vparams, body) =>
-          log("transforming anon function " + ff.symbol)
+          debuglog("transforming anon function " + ff.symbol)
 
           atOwner(ff.symbol) {
 
@@ -88,14 +88,14 @@ abstract class SelectiveANFTransform extends PluginComponent with Transform with
                 transExpr(body, None, ext)
             }
 
-            log("result "+body1)
-            log("result is of type "+body1.tpe)
+            debuglog("result "+body1)
+            debuglog("result is of type "+body1.tpe)
 
             treeCopy.Function(ff, transformValDefs(vparams), body1)
           }
 
         case vd @ ValDef(mods, name, tpt, rhs) => // object-level valdefs
-          log("transforming valdef " + vd.symbol)
+          debuglog("transforming valdef " + vd.symbol)
 
           atOwner(vd.symbol) {
 
@@ -298,8 +298,8 @@ abstract class SelectiveANFTransform extends PluginComponent with Transform with
 
         if (!expr.isEmpty && (expr.tpe.typeSymbol ne NothingClass)) {
           // must convert!
-          log("cps type conversion (has: " + cpsA + "/" + spc + "/" + expr.tpe  + ")")
-          log("cps type conversion (expected: " + cpsR.get + "): " + expr)
+          debuglog("cps type conversion (has: " + cpsA + "/" + spc + "/" + expr.tpe  + ")")
+          debuglog("cps type conversion (expected: " + cpsR.get + "): " + expr)
 
           if (!hasPlusMarker(expr.tpe))
             unit.warning(tree.pos, "expression " + tree + " is cps-transformed unexpectedly")
@@ -322,7 +322,7 @@ abstract class SelectiveANFTransform extends PluginComponent with Transform with
 
       } else if (!cpsR.isDefined && bot.isDefined) {
         // error!
-        log("cps type error: " + expr)
+        debuglog("cps type error: " + expr)
         //println("cps type error: " + expr + "/" + expr.tpe + "/" + getAnswerTypeAnn(expr.tpe))
 
         //println(cpsR + "/" + spc + "/" + bot)

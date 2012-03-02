@@ -24,7 +24,7 @@ case class Tuple3[+T1, +T2, +T3](_1: T1, _2: T2, _3: T3)
   extends Product3[T1, T2, T3]
 {
   override def toString() = "(" + _1 + "," + _2 + "," + _3 + ")"
-  
+
 
   @deprecated("Use `zipped` instead.", "2.9.0")
   def zip[Repr1, El1, El2, El3, To](implicit w1:   T1 => TLike[El1, Repr1],

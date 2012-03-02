@@ -93,7 +93,7 @@ abstract class LazyVals extends Transform with TypingTransformers with ast.TreeD
           deriveDefDef(tree)(_ => if (LocalLazyValFinder.find(res)) typed(addBitmapDefs(sym, res)) else res)
         }
 
-        case Template(parents, self, body) => atOwner(currentOwner) {
+        case Template(_, _, body) => atOwner(currentOwner) {
           val body1 = super.transformTrees(body)
           var added = false
           val stats =
@@ -105,8 +105,8 @@ abstract class LazyVals extends Transform with TypingTransformers with ast.TreeD
                   added = true
                   typed(addBitmapDefs(sym, stat))
                 } else stat
-              case ValDef(mods, name, tpt, rhs) =>
-                typed(treeCopy.ValDef(stat, mods, name, tpt, addBitmapDefs(stat.symbol, rhs)))
+              case ValDef(_, _, _, _) =>
+                typed(deriveValDef(stat)(addBitmapDefs(stat.symbol, _)))
               case _ =>
                 stat
             }
@@ -121,29 +121,29 @@ abstract class LazyVals extends Transform with TypingTransformers with ast.TreeD
                 })
                 toAdd0
             } else List()
-          treeCopy.Template(tree, parents, self, innerClassBitmaps ++ stats)
+          deriveTemplate(tree)(_ => innerClassBitmaps ++ stats)
         }
 
-        case ValDef(mods, name, tpt, rhs0) if (!sym.owner.isModule && !sym.owner.isClass) =>
-          val rhs = super.transform(rhs0)
-          treeCopy.ValDef(tree, mods, name, tpt,
-                  if (LocalLazyValFinder.find(rhs)) typed(addBitmapDefs(sym, rhs)) else rhs)
+        case ValDef(_, _, _, _) if !sym.owner.isModule && !sym.owner.isClass =>
+          deriveValDef(tree) { rhs0 =>
+            val rhs = super.transform(rhs0)
+            if (LocalLazyValFinder.find(rhs)) typed(addBitmapDefs(sym, rhs)) else rhs
+          }
 
         case l@LabelDef(name0, params0, ifp0@If(_, _, _)) if name0.startsWith(nme.WHILE_PREFIX) =>
           val ifp1 = super.transform(ifp0)
           val If(cond0, thenp0, elsep0) = ifp1
+
           if (LocalLazyValFinder.find(thenp0))
-            treeCopy.LabelDef(l, name0, params0,
-                    treeCopy.If(ifp1, cond0, typed(addBitmapDefs(sym.owner, thenp0)), elsep0))
+            deriveLabelDef(l)(_ => treeCopy.If(ifp1, cond0, typed(addBitmapDefs(sym.owner, thenp0)), elsep0))
           else
             l
 
-        case l@LabelDef(name0, params0, block@Block(stats0, _))
+        case l@LabelDef(name0, params0, block@Block(stats0, expr))
           if name0.startsWith(nme.WHILE_PREFIX) || name0.startsWith(nme.DO_WHILE_PREFIX) =>
           val stats1 = super.transformTrees(stats0)
           if (LocalLazyValFinder.find(stats1))
-            treeCopy.LabelDef(l, name0, params0,
-                    treeCopy.Block(block, typed(addBitmapDefs(sym.owner, stats1.head))::stats1.tail, block.expr))
+            deriveLabelDef(l)(_ => treeCopy.Block(block, typed(addBitmapDefs(sym.owner, stats1.head))::stats1.tail, expr))
           else
             l
 
@@ -168,9 +168,9 @@ abstract class LazyVals extends Transform with TypingTransformers with ast.TreeD
       def isMatch(params: List[Ident]) = (params.tail corresponds methSym.tpe.params)(_.tpe == _.tpe)
 
       if (bmps.isEmpty) rhs else rhs match {
-        case Block(assign, l @ LabelDef(name, params, rhs1))
+        case Block(assign, l @ LabelDef(name, params, _))
           if name.toString == ("_" + methSym.name) && isMatch(params) =>
-            Block(assign, treeCopy.LabelDef(l, name, params, typed(prependStats(bmps, rhs1))))
+            Block(assign, deriveLabelDef(l)(rhs => typed(prependStats(bmps, rhs))))
 
         case _ => prependStats(bmps, rhs)
       }
@@ -242,7 +242,7 @@ abstract class LazyVals extends Transform with TypingTransformers with ast.TreeD
         bmps(n)
       else {
         val sym = meth.newVariable(nme.newBitmapName(nme.BITMAP_NORMAL, n), meth.pos).setInfo(IntClass.tpe)
-        atPhase(currentRun.typerPhase) {
+        beforeTyper {
           sym addAnnotation VolatileAttr
         }
 

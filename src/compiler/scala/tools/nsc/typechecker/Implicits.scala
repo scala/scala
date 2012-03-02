@@ -215,7 +215,7 @@ trait Implicits {
   object HasMethodMatching {
     val dummyMethod = NoSymbol.newTermSymbol(newTermName("typer$dummy"))
     def templateArgType(argtpe: Type) = new BoundedWildcardType(TypeBounds.lower(argtpe))
-    
+
     def apply(name: Name, argtpes: List[Type], restpe: Type): Type = {
       val mtpe = MethodType(dummyMethod.newSyntheticValueParams(argtpes map templateArgType), restpe)
       memberWildcardType(name, mtpe)
@@ -571,7 +571,7 @@ trait Implicits {
         else {
           val tvars = undetParams map freshVar
           def ptInstantiated = pt.instantiateTypeParams(undetParams, tvars)
-          
+
           printInference("[search] considering %s (pt contains %s) trying %s against pt=%s".format(
             if (undetParams.isEmpty) "no tparams" else undetParams.map(_.name).mkString(", "),
             typeVarsInType(ptInstantiated) filterNot (_.isGround) match { case Nil => "no tvars" ; case tvs => tvs.mkString(", ") },
@@ -594,7 +594,7 @@ trait Implicits {
             // we must be conservative in leaving type params in undetparams
             // prototype == WildcardType: want to remove all inferred Nothings
             val AdjustedTypeArgs(okParams, okArgs) = adjustTypeArgs(undetParams, tvars, targs)
-            
+
             val subst: TreeTypeSubstituter =
               if (okParams.isEmpty) EmptyTreeTypeSubstituter
               else {
@@ -621,7 +621,7 @@ trait Implicits {
               case Apply(TypeApply(fun, args), _) => typedTypeApply(itree2, EXPRmode, fun, args) // t2421c
               case t                              => t
             }
-            
+
             if (context.hasErrors)
               fail("typing TypeApply reported errors for the implicit tree")
             else {
@@ -780,13 +780,13 @@ trait Implicits {
               val newPending = undoLog undo {
                 is filterNot (alt => alt == i || {
                   try improves(i, alt)
-                  catch { 
-                    case e: CyclicReference => 
+                  catch {
+                    case e: CyclicReference =>
                       if (printInfers) {
                         println(i+" discarded because cyclic reference occurred")
                         e.printStackTrace()
                       }
-                      true 
+                      true
                   }
                 })
               }

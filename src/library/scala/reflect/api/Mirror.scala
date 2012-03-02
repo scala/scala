@@ -13,11 +13,11 @@ trait Mirror extends Universe with RuntimeTypes with TreeBuildUtil {
    *  to do: throws anything else?
    */
   def symbolForName(name: String): Symbol
-  
+
   /** Return a reference to the companion object of the given class symbol.
    */
   def companionInstance(clazz: Symbol): AnyRef
-  
+
   /** The Scala class symbol corresponding to the runtime class of the given instance.
    *  @param    instance    The instance
    *  @return               The class Symbol for the instance

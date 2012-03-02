@@ -1,7 +1,7 @@
 /*
  * Written by Doug Lea with assistance from members of JCP JSR-166
  * Expert Group and released to the public domain, as explained at
- * http://creativecommons.org/licenses/publicdomain
+ * http://creativecommons.org/publicdomain/zero/1.0/
  */
 
 
@@ -15,7 +15,7 @@
  * Threads. However, when applicable, they typically provide
  * significantly greater performance on multiprocessor platforms.
  *
- * <p> Candidates for fork/join processing mainly include those that
+ * <p>Candidates for fork/join processing mainly include those that
  * can be expressed using parallel divide-and-conquer techniques: To
  * solve a problem, break it in two (or more) parts, and then solve
  * those parts in parallel, continuing on in this way until the
@@ -24,6 +24,5 @@
  * available to other threads (normally one per CPU), that help
  * complete the tasks.  In general, the most efficient ForkJoinTasks
  * are those that directly implement this algorithmic design pattern.
- *
  */
 package scala.concurrent.forkjoin;

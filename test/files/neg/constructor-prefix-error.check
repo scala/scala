@@ -1,0 +1,4 @@
+constructor-prefix-error.scala:6: error: Outer is not a legal prefix for a constructor
+  val x = new Outer#Inner
+                    ^
+one error found

@@ -1,5 +1,5 @@
 t414.scala:5: error: pattern type is incompatible with expected type;
- found   : object Empty
+ found   : Empty.type
  required: IntMap[a]
 Note: if you intended to match against the class, try `case _: Empty[_]` or `case Empty()`
                 case Empty =>

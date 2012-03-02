@@ -150,7 +150,7 @@ abstract class RefChecks extends InfoTransform with reflect.internal.transform.R
     }
 
 // Override checking ------------------------------------------------------------
-    
+
     def isJavaVarargsAncestor(clazz: Symbol) = (
          clazz.isClass
       && clazz.isJavaDefined
@@ -167,14 +167,14 @@ abstract class RefChecks extends InfoTransform with reflect.internal.transform.R
         log("Found java varargs ancestor in " + clazz.fullLocationString + ".")
         val self = clazz.thisType
         val bridges = new ListBuffer[Tree]
-    
+
         def varargBridge(member: Symbol, bridgetpe: Type): Tree = {
           log("Generating varargs bridge for " + member.fullLocationString + " of type " + bridgetpe)
-          
+
           val bridge = member.cloneSymbolImpl(clazz, member.flags | VBRIDGE) setPos clazz.pos
           bridge.setInfo(bridgetpe.cloneInfo(bridge))
           clazz.info.decls enter bridge
-         
+
           val params  = bridge.paramss.head
           val elemtp  = params.last.tpe.typeArgs.head
           val idents  = params map Ident
@@ -183,7 +183,7 @@ abstract class RefChecks extends InfoTransform with reflect.internal.transform.R
 
           localTyper typed DefDef(bridge, body)
         }
-    
+
         // For all concrete non-private members that have a (Scala) repeated parameter:
         //   compute the corresponding method type `jtpe` with a Java repeated parameter
         //   if a method with type `jtpe` exists and that method is not a varargs bridge
@@ -203,7 +203,7 @@ abstract class RefChecks extends InfoTransform with reflect.internal.transform.R
             }
           }
         }
-    
+
         bridges.toList
       }
       else Nil
@@ -277,7 +277,7 @@ abstract class RefChecks extends InfoTransform with reflect.internal.transform.R
        */
       def checkOverride(member: Symbol, other: Symbol) {
         debuglog("Checking validity of %s overriding %s".format(member.fullLocationString, other.fullLocationString))
-        
+
         def memberTp = self.memberType(member)
         def otherTp  = self.memberType(other)
         def noErrorType = other.tpe != ErrorType && member.tpe != ErrorType
@@ -337,7 +337,7 @@ abstract class RefChecks extends InfoTransform with reflect.internal.transform.R
           def deferredCheck        = member.isDeferred || !other.isDeferred
           def subOther(s: Symbol)  = s isSubClass other.owner
           def subMember(s: Symbol) = s isSubClass member.owner
-          
+
           if (subOther(member.owner) && deferredCheck) {
             //Console.println(infoString(member) + " shadows1 " + infoString(other) " in " + clazz);//DEBUG
             return
@@ -430,12 +430,12 @@ abstract class RefChecks extends InfoTransform with reflect.internal.transform.R
 
             if( !(sameLength(member.typeParams, other.typeParams) && (memberTp.substSym(member.typeParams, other.typeParams) =:= otherTp)) ) // (1.6)
               overrideTypeError();
-          } 
+          }
           else if (other.isAbstractType) {
             //if (!member.typeParams.isEmpty) // (1.7)  @MAT
             //  overrideError("may not be parameterized");
             val otherTp = self.memberInfo(other)
-            
+
             if (!(otherTp.bounds containsType memberTp)) { // (1.7.1)
               overrideTypeError(); // todo: do an explaintypes with bounds here
               explainTypes(_.bounds containsType _, otherTp, memberTp)
@@ -528,13 +528,13 @@ abstract class RefChecks extends InfoTransform with reflect.internal.transform.R
               def uncurryAndErase(tp: Type) = erasure.erasure(sym, uncurry.transformInfo(sym, tp))
               val tp1 = uncurryAndErase(clazz.thisType.memberType(sym))
               val tp2 = uncurryAndErase(clazz.thisType.memberType(other))
-              atPhase(currentRun.erasurePhase.next)(tp1 matches tp2)
+              afterErasure(tp1 matches tp2)
             })
 
         def ignoreDeferred(member: Symbol) = (
           (member.isAbstractType && !member.isFBounded) || (
             member.isJavaDefined &&
-            // the test requires atPhase(erasurePhase.next) so shouldn't be
+            // the test requires afterErasure so shouldn't be
             // done if the compiler has no erasure phase available
             (currentRun.erasurePhase == NoPhase || javaErasedOverridingSym(member) != NoSymbol)
           )
@@ -1175,7 +1175,7 @@ abstract class RefChecks extends InfoTransform with reflect.internal.transform.R
           case vsym     => ValDef(vsym)
         }
       }
-      def createStaticModuleAccessor() = atPhase(phase.next) {
+      def createStaticModuleAccessor() = afterRefchecks {
         val method = (
           sym.owner.newMethod(sym.name.toTermName, sym.pos, (sym.flags | STABLE) & ~MODULE)
             setInfoAndEnter NullaryMethodType(sym.moduleClass.tpe)
@@ -1186,7 +1186,7 @@ abstract class RefChecks extends InfoTransform with reflect.internal.transform.R
         vdef,
         localTyper.typedPos(tree.pos) {
           val vsym = vdef.symbol
-          atPhase(phase.next) {
+          afterRefchecks {
             val rhs  = gen.newModule(sym, vsym.tpe)
             val body = if (sym.owner.isTrait) rhs else gen.mkAssignAndReturn(vsym, rhs)
             DefDef(sym, body.changeOwner(vsym -> sym))
@@ -1222,12 +1222,12 @@ abstract class RefChecks extends InfoTransform with reflect.internal.transform.R
         else gen.mkAssignAndReturn(vsym, rhs)
       )
       val lazyDef = atPos(tree.pos)(DefDef(lazySym, body.changeOwner(vsym -> lazySym)))
-      log("Made lazy def: " + lazyDef)
+      debuglog("Created lazy accessor: " + lazyDef)
 
       if (hasUnitType) List(typed(lazyDef))
       else List(
         typed(ValDef(vsym)),
-        atPhase(phase.next)(typed(lazyDef))
+        afterRefchecks(typed(lazyDef))
       )
     }
 
@@ -1548,8 +1548,7 @@ abstract class RefChecks extends InfoTransform with reflect.internal.transform.R
             checkOverloadedRestrictions(currentOwner)
             val bridges = addVarargBridges(currentOwner)
             checkAllOverrides(currentOwner)
-            if (bridges.nonEmpty) treeCopy.Template(tree, parents, self, body ::: bridges)
-            else tree
+            if (bridges.nonEmpty) deriveTemplate(tree)(_ ::: bridges) else tree
 
           case dc@TypeTreeWithDeferredRefCheck() => assert(false, "adapt should have turned dc: TypeTreeWithDeferredRefCheck into tpt: TypeTree, with tpt.original == dc"); dc
           case tpt@TypeTree() =>

@@ -145,10 +145,8 @@ trait DependencyAnalysis extends SubComponent with Files {
           val name = d.toString
           d.symbol match {
             case s : ModuleClassSymbol =>
-              val isTopLevelModule =
-                  atPhase (currentRun.picklerPhase.next) {
-                    !s.isImplClass && !s.isNestedClass
-                  }
+              val isTopLevelModule = afterPickler { !s.isImplClass && !s.isNestedClass }
+
               if (isTopLevelModule && (s.companionModule != NoSymbol)) {
                 dependencies.emits(source, nameToFile(unit.source.file, name))
               }
@@ -182,16 +180,18 @@ trait DependencyAnalysis extends SubComponent with Files {
                   || (tree.symbol.sourceFile.path != file.path))
               && (!tree.symbol.isClassConstructor)) {
             updateReferences(tree.symbol.fullName)
-            atPhase(currentRun.uncurryPhase.prev) {
-              checkType(tree.symbol.tpe)
-            }
+            // was "at uncurryPhase.prev", which is actually non-deterministic
+            // because the continuations plugin may or may not supply uncurry's
+            // immediately preceding phase.
+            beforeRefchecks(checkType(tree.symbol.tpe))
           }
 
           tree match {
             case cdef: ClassDef if !cdef.symbol.hasPackageFlag &&
                                    !cdef.symbol.isAnonymousFunction =>
               if (cdef.symbol != NoSymbol) buf += cdef.symbol
-              atPhase(currentRun.erasurePhase.prev) {
+              // was "at erasurePhase.prev"
+              beforeExplicitOuter {
                 for (s <- cdef.symbol.info.decls)
                   s match {
                     case ts: TypeSymbol if !ts.isClass =>
@@ -202,9 +202,8 @@ trait DependencyAnalysis extends SubComponent with Files {
               super.traverse(tree)
 
             case ddef: DefDef =>
-              atPhase(currentRun.typerPhase.prev) {
-                checkType(ddef.symbol.tpe)
-              }
+              // was "at typer.prev"
+              beforeTyper { checkType(ddef.symbol.tpe) }
               super.traverse(tree)
             case a @ Select(q, n) if ((a.symbol != NoSymbol) && (q.symbol != null)) => // #2556
               if (!a.symbol.isConstructor &&

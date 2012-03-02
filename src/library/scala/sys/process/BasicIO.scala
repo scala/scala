@@ -97,7 +97,7 @@ object BasicIO {
     *
     * @param withIn True if the process input should be attached to stdin.
     * @param buffer A `StringBuffer` which will receive the process normal
-    *               output. 
+    *               output.
     * @param log    An optional `ProcessLogger` to which the output should be
     *               sent. If `None`, output will be sent to stderr.
     * @return A `ProcessIO` with the characteristics above.

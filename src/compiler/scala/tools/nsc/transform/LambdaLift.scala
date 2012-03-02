@@ -18,7 +18,7 @@ abstract class LambdaLift extends InfoTransform {
 
   /** the following two members override abstract members in Transform */
   val phaseName: String = "lambdalift"
-    
+
   /** Converts types of captured variables to *Ref types.
    */
   def boxIfCaptured(sym: Symbol, tpe: Type, erasedTypes: Boolean) =
@@ -75,10 +75,10 @@ abstract class LambdaLift extends InfoTransform {
 
     /** Buffers for lifted out classes and methods */
     private val liftedDefs = new LinkedHashMap[Symbol, List[Tree]]
-    
+
     /** True if we are transforming under a ReferenceToBoxed node */
     private var isBoxedRef = false
-    
+
     private type SymSet = TreeSet[Symbol]
 
     private def newSymSet = new TreeSet[Symbol](_ isLess _)
@@ -128,7 +128,7 @@ abstract class LambdaLift extends InfoTransform {
         if (!ss(sym)) {
           ss addEntry sym
           renamable addEntry sym
-          atPhase(currentRun.picklerPhase) {
+          beforePickler {
             // The param symbol in the MethodType should not be renamed, only the symbol in scope. This way,
             // parameter names for named arguments are not changed. Example: without cloning the MethodType,
             //     def closure(x: Int) = { () => x }
@@ -221,7 +221,7 @@ abstract class LambdaLift extends InfoTransform {
         for (caller <- called.keys ; callee <- called(caller) ; fvs <- free get callee ; fv <- fvs)
           markFree(fv, caller)
       } while (changedFreeVars)
-      
+
       def renameSym(sym: Symbol) {
         val originalName = sym.name
         val base = sym.name + nme.NAME_JOIN_STRING + (
@@ -245,7 +245,7 @@ abstract class LambdaLift extends InfoTransform {
 
         debuglog("renaming impl class in step with %s: %s => %s".format(traitSym, originalImplName, implSym.name))
       }
-      
+
       for (sym <- renamable) {
         // If we renamed a trait from Foo to Foo$1, we must rename the implementation
         // class from Foo$class to Foo$1$class.  (Without special consideration it would
@@ -262,7 +262,7 @@ abstract class LambdaLift extends InfoTransform {
         }
       }
 
-      atPhase(phase.next) {
+      afterOwnPhase {
         for ((owner, freeValues) <- free.toList) {
           val newFlags = SYNTHETIC | ( if (owner.isClass) PARAMACCESSOR | PrivateLocal else PARAM )
           debuglog("free var proxy: %s, %s".format(owner.fullLocationString, freeValues.toList.mkString(", ")))
@@ -324,9 +324,9 @@ abstract class LambdaLift extends InfoTransform {
             val addParams = cloneSymbols(ps).map(_.setFlag(PARAM))
             sym.updateInfo(
               lifted(MethodType(sym.info.params ::: addParams, sym.info.resultType)))
-            
+
             copyDefDef(tree)(vparamss = List(vparams ++ freeParams))
-          case ClassDef(mods, name, tparams, impl @ Template(parents, self, body)) =>
+          case ClassDef(_, _, _, _) =>
             // Disabled attempt to to add getters to freeParams
             // this does not work yet. Problem is that local symbols need local names
             // and references to local symbols need to be transformed into
@@ -338,8 +338,7 @@ abstract class LambdaLift extends InfoTransform {
             //   DefDef(getter, rhs) setPos tree.pos setType NoType
             // }
             // val newDefs = if (sym.isTrait) freeParams ::: (ps map paramGetter) else freeParams
-            treeCopy.ClassDef(tree, mods, name, tparams,
-                              treeCopy.Template(impl, parents, self, body ::: freeParams))
+            deriveClassDef(tree)(impl => deriveTemplate(impl)(_ ::: freeParams))
         }
       case None =>
         tree
@@ -420,10 +419,10 @@ abstract class LambdaLift extends InfoTransform {
             def refConstr(expr: Tree): Tree = expr match {
               case Try(block, catches, finalizer) =>
                 Try(refConstr(block), catches map refConstrCase, finalizer)
-              case _ => 
-                New(sym, expr)
+              case _ =>
+                New(sym.tpe, expr)
             }
-            def refConstrCase(cdef: CaseDef): CaseDef = 
+            def refConstrCase(cdef: CaseDef): CaseDef =
               CaseDef(cdef.pat, cdef.guard, refConstr(cdef.body))
             treeCopy.ValDef(tree, mods, name, tpt1, typer.typedPos(rhs.pos) {
               refConstr(constructorArg)
@@ -468,7 +467,7 @@ abstract class LambdaLift extends InfoTransform {
           tree
       }
     }
-    
+
     private def preTransform(tree: Tree) = super.transform(tree) setType lifted(tree.tpe)
 
     override def transform(tree: Tree): Tree = tree match {
@@ -477,19 +476,18 @@ abstract class LambdaLift extends InfoTransform {
       case _ =>
         postTransform(preTransform(tree))
     }
-      
+
     /** Transform statements and add lifted definitions to them. */
     override def transformStats(stats: List[Tree], exprOwner: Symbol): List[Tree] = {
       def addLifted(stat: Tree): Tree = stat match {
-        case ClassDef(mods, name, tparams, impl @ Template(parents, self, body)) =>
+        case ClassDef(_, _, _, _) =>
           val lifted = liftedDefs get stat.symbol match {
             case Some(xs) => xs reverseMap addLifted
             case _        => log("unexpectedly no lifted defs for " + stat.symbol) ; Nil
           }
-          val result = treeCopy.ClassDef(
-            stat, mods, name, tparams, treeCopy.Template(impl, parents, self, body ::: lifted))
-          liftedDefs -= stat.symbol
-          result
+          try deriveClassDef(stat)(impl => deriveTemplate(impl)(_ ::: lifted))
+          finally liftedDefs -= stat.symbol
+
         case DefDef(_, _, _, _, _, Block(Nil, expr)) if !stat.symbol.isConstructor =>
           deriveDefDef(stat)(_ => expr)
         case _ =>
@@ -500,7 +498,7 @@ abstract class LambdaLift extends InfoTransform {
 
     override def transformUnit(unit: CompilationUnit) {
       computeFreeVars
-      atPhase(phase.next)(super.transformUnit(unit))
+      afterOwnPhase(super.transformUnit(unit))
       assert(liftedDefs.isEmpty, liftedDefs.keys mkString ", ")
     }
   } // class LambdaLifter

@@ -1125,7 +1125,7 @@ abstract class GenMSIL extends SubComponent {
               }
 
               // method: implicit view(FunctionX[PType0, PType1, ...,PTypeN, ResType]):DelegateType
-              val (isDelegateView, paramType, resType) = atPhase(currentRun.typerPhase) {
+              val (isDelegateView, paramType, resType) = beforeTyper {
                 msym.tpe match {
                   case MethodType(params, resultType)
                   if (params.length == 1 && msym.name == nme.view_) =>
@@ -1954,7 +1954,7 @@ abstract class GenMSIL extends SubComponent {
     } // createClassMembers0
 
     private def isTopLevelModule(sym: Symbol): Boolean =
-      atPhase (currentRun.refchecksPhase) {
+      beforeRefchecks {
         sym.isModuleClass && !sym.isImplClass && !sym.isNestedClass
       }
 

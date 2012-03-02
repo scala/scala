@@ -225,9 +225,9 @@ abstract class DeadCodeElimination extends SubComponent {
 
       m foreachBlock { bb =>
         assert(bb.closed, "Open block in computeCompensations")
-        for ((i, idx) <- bb.toList.zipWithIndex) {
+        foreachWithIndex(bb.toList) { (i, idx) =>
           if (!useful(bb)(idx)) {
-            for ((consumedType, depth) <- i.consumedTypes.reverse.zipWithIndex) {
+            foreachWithIndex(i.consumedTypes.reverse) { (consumedType, depth) =>
               log("Finding definitions of: " + i + "\n\t" + consumedType + " at depth: " + depth)
               val defs = rdef.findDefs(bb, idx, 1, depth)
               for (d <- defs) {

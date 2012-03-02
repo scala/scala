@@ -21,7 +21,7 @@ trait Definitions extends reflect.api.StandardDefinitions {
    *  methods.
    */
   private type PolyMethodCreator = List[Symbol] => (Option[List[Type]], Type)
-  
+
   private def newClass(owner: Symbol, name: TypeName, parents: List[Type], flags: Long = 0L): Symbol = {
     val clazz = owner.newClassSymbol(name, NoPosition, flags)
     clazz setInfoAndEnter ClassInfoType(parents, newScope, clazz)
@@ -164,7 +164,7 @@ trait Definitions extends reflect.api.StandardDefinitions {
 
     lazy val RuntimePackage       = getRequiredModule("scala.runtime")
     lazy val RuntimePackageClass  = RuntimePackage.moduleClass
-    
+
     lazy val JavaLangEnumClass = getRequiredClass("java.lang.Enum")
 
     // convenient one-argument parameter lists
@@ -176,10 +176,10 @@ trait Definitions extends reflect.api.StandardDefinitions {
     private def booltype    = BooleanClass.typeConstructor
     private def inttype     = IntClass.typeConstructor
     private def stringtype  = StringClass.typeConstructor
-    
+
     // Java types
     def javaTypeName(jclazz: Class[_]): TypeName = newTypeName(jclazz.getName)
-    
+
     def javaTypeToValueClass(jtype: Class[_]): Symbol = jtype match {
       case java.lang.Void.TYPE      => UnitClass
       case java.lang.Byte.TYPE      => ByteClass
@@ -213,7 +213,7 @@ trait Definitions extends reflect.api.StandardDefinitions {
     // Note: this is not the type alias AnyRef, it's a companion-like
     // object used by the @specialize annotation.
     lazy val AnyRefModule = getMember(ScalaPackageClass, nme.AnyRef)
-    @deprecated("Use AnyRefModule", "2.10.0") 
+    @deprecated("Use AnyRefModule", "2.10.0")
     def Predef_AnyRef = AnyRefModule
 
     // bottom types
@@ -269,13 +269,13 @@ trait Definitions extends reflect.api.StandardDefinitions {
 
     lazy val PredefModule: Symbol = getRequiredModule("scala.Predef")
     lazy val PredefModuleClass = PredefModule.moduleClass
-      
+
       def Predef_classOf = getMember(PredefModule, nme.classOf)
       def Predef_identity = getMember(PredefModule, nme.identity)
       def Predef_conforms = getMember(PredefModule, nme.conforms)
       def Predef_wrapRefArray = getMember(PredefModule, nme.wrapRefArray)
       def Predef_??? = getMember(PredefModule, nme.???)
-      
+
     /** Is `sym` a member of Predef with the given name?
      *  Note: DON't replace this by sym == Predef_conforms/etc, as Predef_conforms is a `def`
      *  which does a member lookup (it can't be a lazy val because we might reload Predef
@@ -284,7 +284,7 @@ trait Definitions extends reflect.api.StandardDefinitions {
     def isPredefMemberNamed(sym: Symbol, name: Name) = (
       (sym.name == name) && (sym.owner == PredefModule.moduleClass)
     )
-    
+
     /** Specialization.
      */
     lazy val SpecializableModule  = getRequiredModule("scala.Specializable")
@@ -429,7 +429,7 @@ trait Definitions extends reflect.api.StandardDefinitions {
       case m: ClassManifest[_] =>
         val sym  = manifestToSymbol(m)
         val args = m.typeArguments
-      
+
         if ((sym eq NoSymbol) || args.isEmpty) sym.tpe
         else appliedType(sym.typeConstructor, args map manifestToType)
       case _ =>
@@ -439,7 +439,7 @@ trait Definitions extends reflect.api.StandardDefinitions {
     def manifestToSymbol(m: ClassManifest[_]): Symbol = m match {
       case x: scala.reflect.AnyValManifest[_] =>
         getMember(ScalaPackageClass, newTypeName("" + x))
-      case _                                  => 
+      case _                                  =>
         val name = m.erasure.getName
         if (name endsWith nme.MODULE_SUFFIX_STRING)
           getModuleIfDefined(name stripSuffix nme.MODULE_SUFFIX_STRING)
@@ -499,7 +499,7 @@ trait Definitions extends reflect.api.StandardDefinitions {
       case DoubleClass  => nme.wrapDoubleArray
       case BooleanClass => nme.wrapBooleanArray
       case UnitClass    => nme.wrapUnitArray
-      case _        => 
+      case _        =>
         if ((elemtp <:< AnyRefClass.tpe) && !isPhantomClass(elemtp.typeSymbol)) nme.wrapRefArray
         else nme.genericWrapArray
     }
@@ -605,7 +605,7 @@ trait Definitions extends reflect.api.StandardDefinitions {
     def ClassType(arg: Type) =
       if (phase.erasedTypes || forMSIL) ClassClass.tpe
       else appliedType(ClassClass.typeConstructor, List(arg))
-    
+
     def vmClassType(arg: Type): Type = ClassType(arg)
     def vmSignature(sym: Symbol, info: Type): String = signature(info)    // !!!
 
@@ -658,7 +658,7 @@ trait Definitions extends reflect.api.StandardDefinitions {
         case _ => false
       })
     }
-    
+
     // members of class scala.Any
     lazy val Any_==       = newMethod(AnyClass, nme.EQ, anyparam, booltype, FINAL)
     lazy val Any_!=       = newMethod(AnyClass, nme.NE, anyparam, booltype, FINAL)
@@ -688,7 +688,7 @@ trait Definitions extends reflect.api.StandardDefinitions {
     lazy val Object_ne = newMethod(ObjectClass, nme.ne, anyrefparam, booltype, FINAL)
     lazy val Object_isInstanceOf = newT1NoParamsMethod(ObjectClass, nme.isInstanceOf_Ob, FINAL | SYNTHETIC)(_ => booltype)
     lazy val Object_asInstanceOf = newT1NoParamsMethod(ObjectClass, nme.asInstanceOf_Ob, FINAL | SYNTHETIC)(_.typeConstructor)
-    lazy val Object_synchronized = newPolyMethod(1, ObjectClass, nme.synchronized_, FINAL)(tps => 
+    lazy val Object_synchronized = newPolyMethod(1, ObjectClass, nme.synchronized_, FINAL)(tps =>
       (Some(List(tps.head.typeConstructor)), tps.head.typeConstructor)
     )
     lazy val String_+ = newMethod(StringClass, nme.raw.PLUS, anyparam, stringtype, FINAL)
@@ -796,10 +796,10 @@ trait Definitions extends reflect.api.StandardDefinitions {
       while (result.isAliasType) result = result.info.typeSymbol
       result
     }
-    
+
     def getRequiredModule(fullname: String): Symbol =
       getModule(newTermNameCached(fullname))
-    def getRequiredClass(fullname: String): Symbol = 
+    def getRequiredClass(fullname: String): Symbol =
       getClass(newTypeNameCached(fullname))
 
     def getClassIfDefined(fullname: String): Symbol =
@@ -813,6 +813,9 @@ trait Definitions extends reflect.api.StandardDefinitions {
     def getModuleIfDefined(fullname: Name): Symbol =
       try getModule(fullname.toTermName)
       catch { case _: MissingRequirementError => NoSymbol }
+
+    def termMember(owner: Symbol, name: String): Symbol = owner.info.member(newTermName(name))
+    def typeMember(owner: Symbol, name: String): Symbol = owner.info.member(newTypeName(name))
 
     def getMember(owner: Symbol, name: Name): Symbol = {
       if (owner == NoSymbol) NoSymbol
@@ -848,15 +851,15 @@ trait Definitions extends reflect.api.StandardDefinitions {
 
     private def newAlias(owner: Symbol, name: TypeName, alias: Type): Symbol =
       owner.newAliasType(name) setInfoAndEnter alias
-    
+
     private def specialPolyClass(name: TypeName, flags: Long)(parentFn: Symbol => Type): Symbol = {
       val clazz   = newClass(ScalaPackageClass, name, Nil)
       val tparam  = clazz.newSyntheticTypeParam("T0", flags)
       val parents = List(AnyRefClass.tpe, parentFn(tparam))
-      
+
       clazz setInfo polyType(List(tparam), ClassInfoType(parents, newScope, clazz))
     }
-    
+
     def newPolyMethod(typeParamCount: Int, owner: Symbol, name: TermName, flags: Long)(createFn: PolyMethodCreator): Symbol = {
       val msym    = owner.newMethod(name.encode, NoPosition, flags)
       val tparams = msym.newSyntheticTypeParams(typeParamCount)
@@ -867,7 +870,7 @@ trait Definitions extends reflect.api.StandardDefinitions {
 
       msym setInfoAndEnter polyType(tparams, mtpe)
     }
-    
+
     /** T1 means one type parameter.
      */
     def newT1NullaryMethod(owner: Symbol, name: TermName, flags: Long)(createFn: Symbol => Type): Symbol = {
@@ -974,7 +977,7 @@ trait Definitions extends reflect.api.StandardDefinitions {
 
       RootClass.info.decls enter EmptyPackage
       RootClass.info.decls enter RootPackage
-      
+
       val forced = List( // force initialization of every symbol that is entered as a side effect
         AnnotationDefaultAttr, // #2264
         RepeatedParamClass,

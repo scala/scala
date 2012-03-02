@@ -33,21 +33,21 @@ abstract class CleanUp extends Transform with ast.TreeDSL {
     private def savingStatics[T](body: => T): T = {
       val savedNewStaticMembers : mutable.Buffer[Tree] = newStaticMembers.clone()
       val savedNewStaticInits   : mutable.Buffer[Tree] = newStaticInits.clone()
-      val savedSymbolsStoredAsStatic : mutable.Map[String, Symbol] = symbolsStoredAsStatic.clone()        
+      val savedSymbolsStoredAsStatic : mutable.Map[String, Symbol] = symbolsStoredAsStatic.clone()
       val result = body
 
       clearStatics()
       newStaticMembers      ++= savedNewStaticMembers
       newStaticInits        ++= savedNewStaticInits
       symbolsStoredAsStatic ++= savedSymbolsStoredAsStatic
-      
+
       result
     }
     private def transformTemplate(tree: Tree) = {
       val Template(parents, self, body) = tree
       clearStatics()
       val newBody = transformTrees(body)
-      val templ   = treeCopy.Template(tree, parents, self, transformTrees(newStaticMembers.toList) ::: newBody)
+      val templ   = deriveTemplate(tree)(_ => transformTrees(newStaticMembers.toList) ::: newBody)
       try addStaticInits(templ) // postprocess to include static ctors
       finally clearStatics()
     }
@@ -85,6 +85,11 @@ abstract class CleanUp extends Transform with ast.TreeDSL {
       case "poly-cache" => POLY_CACHE
     }
 
+    def shouldRewriteTry(tree: Try) = {
+      val sym = tree.tpe.typeSymbol
+      forMSIL && (sym != UnitClass) && (sym != NothingClass)
+    }
+
     private def typedWithPos(pos: Position)(tree: Tree) =
       localTyper.typedPos(pos)(tree)
 
@@ -97,7 +102,7 @@ abstract class CleanUp extends Transform with ast.TreeDSL {
     /** The boxed type if it's a primitive; identity otherwise.
      */
     def toBoxedType(tp: Type) = if (isJavaValueType(tp)) boxedClass(tp.typeSymbol).tpe else tp
-    
+
     override def transform(tree: Tree): Tree = tree match {
 
       /* Transforms dynamic calls (i.e. calls to methods that are undefined
@@ -134,7 +139,7 @@ abstract class CleanUp extends Transform with ast.TreeDSL {
       case ad@ApplyDynamic(qual0, params) =>
         if (settings.logReflectiveCalls.value)
           unit.echo(ad.pos, "method invocation uses reflection")
-      
+
         val typedPos = typedWithPos(ad.pos) _
 
         assert(ad.symbol.isPublic)
@@ -146,7 +151,7 @@ abstract class CleanUp extends Transform with ast.TreeDSL {
           val flags = PRIVATE | STATIC | SYNTHETIC | (
             if (isFinal) FINAL else 0
           )
-          
+
           val varSym = currentClass.newVariable(mkTerm("" + forName), ad.pos, flags) setInfoAndEnter forType
           if (!isFinal)
             varSym.addAnnotation(VolatileAttr)
@@ -488,7 +493,7 @@ abstract class CleanUp extends Transform with ast.TreeDSL {
           val t: Tree = ad.symbol.tpe match {
             case MethodType(mparams, resType) =>
               assert(params.length == mparams.length, mparams)
-              
+
               typedPos {
                 val sym = currentOwner.newValue(mkTerm("qual"), ad.pos) setInfo qual0.tpe
                 qual = safeREF(sym)
@@ -560,8 +565,7 @@ abstract class CleanUp extends Transform with ast.TreeDSL {
        * Hence, we here rewrite all try blocks with a result != {Unit, All} such that they
        * store their result in a local variable. The catch blocks are adjusted as well.
        * The try tree is subsituted by a block whose result expression is read of that variable. */
-      case theTry @ Try(block, catches, finalizer)
-        if theTry.tpe.typeSymbol != definitions.UnitClass && theTry.tpe.typeSymbol != definitions.NothingClass =>
+      case theTry @ Try(block, catches, finalizer) if shouldRewriteTry(theTry) =>
         val tpe = theTry.tpe.widen
         val tempVar = currentOwner.newVariable(mkTerm(nme.EXCEPTION_RESULT_PREFIX), theTry.pos).setInfo(tpe)
         def assignBlock(rhs: Tree) = super.transform(BLOCK(Ident(tempVar) === transform(rhs)))
@@ -686,7 +690,7 @@ abstract class CleanUp extends Transform with ast.TreeDSL {
 
             localTyper.typedPos(template.pos)(DefDef(staticCtorSym, rhs))
         }
-        treeCopy.Template(template, template.parents, template.self, newCtor :: template.body)
+        deriveTemplate(template)(newCtor :: _)
       }
     }
 

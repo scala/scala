@@ -253,13 +253,14 @@ trait PatMatVirtualiser extends ast.TreeDSL { self: Analyzer =>
         withSubPats(typeTestTreeMaker :+ extractor.treeMaker(patBinderOrCasted, pos), extractor.subBindersAndPatterns: _*)
       }
 
-      /** Decompose the pattern in `tree`, of shape C(p_1, ..., p_N), into a list of N symbols, and a list of its N sub-trees
-        * The list of N symbols contains symbols for every bound name as well as the un-named sub-patterns (fresh symbols are generated here for these)
-        *
-        * @arg patBinder  symbol used to refer to the result of the previous pattern's extractor (will later be replaced by the outer tree with the correct tree to refer to that patterns result)
-        */
+
       object MaybeBoundTyped {
-        // the returned type is the one inferred by inferTypedPattern (`owntype`)
+        /** Decompose the pattern in `tree`, of shape C(p_1, ..., p_N), into a list of N symbols, and a list of its N sub-trees
+          * The list of N symbols contains symbols for every bound name as well as the un-named sub-patterns (fresh symbols are generated here for these).
+          * The returned type is the one inferred by inferTypedPattern (`owntype`)
+          *
+          * @arg patBinder  symbol used to refer to the result of the previous pattern's extractor (will later be replaced by the outer tree with the correct tree to refer to that patterns result)
+        */
         def unapply(tree: Tree): Option[(Symbol, Type)] = tree match {
           case Bound(subpatBinder, typed@Typed(expr, tpt)) => Some((subpatBinder, typed.tpe))
           case Bind(_, typed@Typed(expr, tpt))             => Some((patBinder, typed.tpe))
@@ -1159,7 +1160,7 @@ class Foo(x: Other) { x._1 } // no error in this order
     def _match(n: Name): SelectStart = matchStrategy DOT n
 
     private lazy val oneSig: Type =
-      typer.typed(_match(vpmName.one), EXPRmode | POLYmode | TAPPmode | FUNmode, WildcardType).tpe  // TODO: error message    
+      typer.typed(_match(vpmName.one), EXPRmode | POLYmode | TAPPmode | FUNmode, WildcardType).tpe  // TODO: error message
   }
 
   trait PureCodegen extends CodegenCore with PureMatchMonadInterface {

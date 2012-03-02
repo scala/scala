@@ -123,10 +123,10 @@ class Scaladoc extends ScalaMatchingTask {
 
   /** Instruct the compiler to generate unchecked information. */
   private var unchecked: Boolean = false
-  
+
   /** Instruct the ant task not to fail in the event of errors */
   private var nofail: Boolean = false
-  
+
 /*============================================================================*\
 **                             Properties setters                             **
 \*============================================================================*/
@@ -356,7 +356,7 @@ class Scaladoc extends ScalaMatchingTask {
   def setDocUncompilable(input: String) {
     docUncompilable = Some(input)
   }
-  
+
   /** Set the `nofail` info attribute.
    *
    *  @param input One of the flags `yes/no` or `on/off`. Default if no/off.
@@ -569,7 +569,7 @@ class Scaladoc extends ScalaMatchingTask {
   }
 
   def safeBuildError(message: String): Unit = if (nofail) log(message) else buildError(message)
-  
+
   /** Performs the compilation. */
   override def execute() = {
     val Pair(docSettings, sourceFiles) = initialize

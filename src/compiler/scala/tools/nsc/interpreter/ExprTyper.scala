@@ -92,7 +92,7 @@ trait ExprTyper {
         case _          => NoType
       }
     }
-    
+
     def evaluate(): Type = {
       typeOfExpressionDepth += 1
       try typeOfTerm(expr) orElse asModule orElse asExpr orElse asQualifiedImport

@@ -145,7 +145,7 @@ trait TypeKinds { self: ICodes =>
      *  Here we make the adjustment by rewinding to a pre-erasure state and
      *  sifting through the parents for a class type.
      */
-    def lub0(tk1: TypeKind, tk2: TypeKind): Type = atPhase(currentRun.uncurryPhase) {
+    def lub0(tk1: TypeKind, tk2: TypeKind): Type = beforeUncurry {
       import definitions._
       val tp = global.lub(List(tk1.toType, tk2.toType))
       val (front, rest) = tp.parents span (_.typeSymbol.hasTraitFlag)

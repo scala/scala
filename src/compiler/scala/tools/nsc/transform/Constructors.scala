@@ -126,7 +126,7 @@ abstract class Constructors extends Transform with ast.TreeDSL {
 
         if (from.name != nme.OUTER) result
         else localTyper.typedPos(to.pos) {
-          IF (from OBJ_EQ NULL) THEN THROW(NullPointerExceptionClass) ELSE result
+          IF (from OBJ_EQ NULL) THEN Throw(NullPointerExceptionClass.tpe) ELSE result
         }
       }
 
@@ -175,7 +175,7 @@ abstract class Constructors extends Transform with ast.TreeDSL {
               else if (stat.symbol.isConstructor) auxConstructorBuf += stat
               else defBuf += stat
           }
-        case ValDef(mods, name, tpt, rhs) =>
+        case ValDef(_, _, _, rhs) =>
           // val defs with constant right-hand sides are eliminated.
           // for all other val defs, an empty valdef goes into the template and
           // the initializer goes as an assignment into the constructor
@@ -188,7 +188,7 @@ abstract class Constructors extends Transform with ast.TreeDSL {
               (if (canBeMoved(stat)) constrPrefixBuf else constrStatBuf) += mkAssign(
                 stat.symbol, rhs1)
             }
-            defBuf += treeCopy.ValDef(stat, mods, name, tpt, EmptyTree)
+            defBuf += deriveValDef(stat)(_ => EmptyTree)
           }
         case ClassDef(_, _, _, _) =>
           // classes are treated recursively, and left in the template
@@ -226,11 +226,11 @@ abstract class Constructors extends Transform with ast.TreeDSL {
           tree match {
             case DefDef(_, _, _, _, _, body)
             if (tree.symbol.isOuterAccessor && tree.symbol.owner == clazz && clazz.isEffectivelyFinal) =>
-              log("outerAccessors += " + tree.symbol.fullName)
+              debuglog("outerAccessors += " + tree.symbol.fullName)
               outerAccessors ::= ((tree.symbol, body))
             case Select(_, _) =>
               if (!mustbeKept(tree.symbol)) {
-                log("accessedSyms += " + tree.symbol.fullName)
+                debuglog("accessedSyms += " + tree.symbol.fullName)
                 accessedSyms addEntry tree.symbol
               }
               super.traverse(tree)
@@ -515,7 +515,7 @@ abstract class Constructors extends Transform with ast.TreeDSL {
         }
 
       def delayedInitCall(closure: Tree) = localTyper.typedPos(impl.pos) {
-        gen.mkMethodCall(This(clazz), delayedInitMethod, Nil, List(New(closure.symbol, This(clazz))))
+        gen.mkMethodCall(This(clazz), delayedInitMethod, Nil, List(New(closure.symbol.tpe, This(clazz))))
       }
 
       /** Return a pair consisting of (all statements up to and including superclass and trait constr calls, rest) */
@@ -560,14 +560,13 @@ abstract class Constructors extends Transform with ast.TreeDSL {
         clazz.info.decls unlink sym
 
       // Eliminate all field definitions that can be dropped from template
-      treeCopy.Template(impl, impl.parents, impl.self,
-        defBuf.toList filter (stat => mustbeKept(stat.symbol)))
+      deriveTemplate(impl)(_ => defBuf.toList filter (stat => mustbeKept(stat.symbol)))
     } // transformClassTemplate
 
     override def transform(tree: Tree): Tree =
       tree match {
-        case ClassDef(mods, name, tparams, impl) if !tree.symbol.isInterface && !isValueClass(tree.symbol) =>
-          treeCopy.ClassDef(tree, mods, name, tparams, transformClassTemplate(impl))
+        case ClassDef(_,_,_,_) if !tree.symbol.isInterface && !isValueClass(tree.symbol) =>
+          deriveClassDef(tree)(transformClassTemplate)
         case _ =>
           super.transform(tree)
       }

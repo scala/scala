@@ -177,7 +177,7 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
         case ModuleDef(_, _, _) =>
           checkCompanionNameClashes(sym)
           super.transform(tree)
-        case Template(parents, self, body) =>
+        case Template(_, _, body) =>
           val ownAccDefs = new ListBuffer[Tree]
           accDefs(currentOwner) = ownAccDefs
 
@@ -189,7 +189,7 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
           val body1 = atOwner(currentOwner)(transformTrees(body))
           accDefs -= currentOwner
           ownAccDefs ++= body1
-          treeCopy.Template(tree, parents, self, ownAccDefs.toList)
+          deriveTemplate(tree)(_ => ownAccDefs.toList)
 
         case TypeApply(sel @ Select(This(_), name), args) =>
           mayNeedProtectedAccessor(sel, args, false)
@@ -334,7 +334,7 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
       }
       val selection = Select(This(clazz), protAcc)
       def mkApply(fn: Tree) = Apply(fn, qual :: Nil)
-      val res = atPos(tree.pos) { 
+      val res = atPos(tree.pos) {
         targs.head match {
           case EmptyTree  => mkApply(selection)
           case _          => mkApply(TypeApply(selection, targs))
@@ -376,18 +376,18 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
       val clazz = hostForAccessorOf(field, currentOwner.enclClass)
       assert(clazz != NoSymbol, field)
       debuglog("Decided for host class: " + clazz)
-      
+
       val accName = nme.protSetterName(field.originalName)
       val protectedAccessor = clazz.info decl accName orElse {
         val protAcc      = clazz.newMethod(accName, field.pos)
         val paramTypes   = List(clazz.typeOfThis, field.tpe)
         val params       = protAcc newSyntheticValueParams paramTypes
         val accessorType = MethodType(params, UnitClass.tpe)
-        
+
         protAcc setInfoAndEnter accessorType
         val obj :: value :: Nil = params
         storeAccessorDefinition(clazz, DefDef(protAcc, Assign(Select(Ident(obj), field.name), Ident(value))))
-      
+
         protAcc
       }
       atPos(tree.pos)(Select(This(clazz), protectedAccessor))

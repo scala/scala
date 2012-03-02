@@ -360,7 +360,7 @@ object ClassfileConstants {
       res |= translateFlag(jflags & JAVA_ACC_INTERFACE)
       res
     }
-      
+
     def classFlags(jflags: Int): Long = {
       initFields(jflags)
       isClass = true
@@ -376,11 +376,11 @@ object ClassfileConstants {
     }
   }
   object FlagTranslation extends FlagTranslation { }
-  
+
   def toScalaMethodFlags(flags: Int): Long = FlagTranslation methodFlags flags
   def toScalaClassFlags(flags: Int): Long  = FlagTranslation classFlags flags
   def toScalaFieldFlags(flags: Int): Long  = FlagTranslation fieldFlags flags
-  
+
   @deprecated("Use another method in this object", "2.10.0")
   def toScalaFlags(flags: Int, isClass: Boolean = false, isField: Boolean = false): Long = (
     if (isClass) toScalaClassFlags(flags)

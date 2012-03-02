@@ -121,7 +121,7 @@ with collection.mutable.FlatHashTable.HashUtils[T] {
   private var mask = ParHashSetCombiner.discriminantmask
   private var nonmasklen = ParHashSetCombiner.nonmasklength
   private var seedvalue = 27
-  
+
   def +=(elem: T) = {
     sz += 1
     val hc = improve(elemHashCode(elem), seedvalue)

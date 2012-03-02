@@ -185,9 +185,9 @@ self =>
   } otherwise seq.sameElements(that)
 
   /** Tests whether this $coll ends with the given parallel sequence.
-   *  
+   *
    *  $abortsignalling
-   *  
+   *
    *  @tparam S       the type of the elements of `that` sequence
    *  @param that     the sequence to test
    *  @return         `true` if this $coll has `that` as a suffix, `false` otherwise

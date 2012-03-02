@@ -48,7 +48,7 @@ class RefinedBuildManager(val settings: Settings) extends Changes with BuildMana
   protected def newCompiler(settings: Settings) = new BuilderGlobal(settings)
 
   val compiler = newCompiler(settings)
-  import compiler.{Symbol, Type, atPhase, currentRun}
+  import compiler.{ Symbol, Type, beforeErasure }
   import compiler.dependencyAnalysis.Inherited
 
   private case class SymWithHistory(sym: Symbol, befErasure: Type)
@@ -160,10 +160,8 @@ class RefinedBuildManager(val settings: Settings) extends Changes with BuildMana
                     isCorrespondingSym(s.sym, sym)) match {
               case Some(SymWithHistory(oldSym, info)) =>
                 val changes = changeSet(oldSym.info, sym)
-                val changesErasure =
-                    atPhase(currentRun.erasurePhase.prev) {
-                        changeSet(info, sym)
-                    }
+                val changesErasure = beforeErasure(changeSet(info, sym))
+
                 changesOf(oldSym) = (changes ++ changesErasure).distinct
               case _ =>
                 // a new top level definition
@@ -333,11 +331,7 @@ class RefinedBuildManager(val settings: Settings) extends Changes with BuildMana
     for (src <- files; localDefs = compiler.dependencyAnalysis.definitions(src)) {
       definitions(src) = (localDefs map (s => {
         this.classes += s.fullName -> src
-        SymWithHistory(
-          s.cloneSymbol,
-          atPhase(currentRun.erasurePhase.prev) {
-            s.info.cloneInfo(s)
-          })
+        SymWithHistory(s.cloneSymbol, beforeErasure(s.info.cloneInfo(s)))
       }))
     }
     this.references = compiler.dependencyAnalysis.references

@@ -128,9 +128,11 @@ if [[ -z "$cygwin$mingw" ]]; then
   usebootcp="true"
 fi
 
+# If using the boot classpath, also pass an empty classpath
+# to java to suppress "." from materializing.
 classpathArgs () {
   if [[ -n $usebootcp ]]; then
-    echo "-Xbootclasspath/a:$TOOL_CLASSPATH"
+    echo "-Xbootclasspath/a:$TOOL_CLASSPATH -classpath \"\""
   else
     echo "-classpath $TOOL_CLASSPATH"
   fi

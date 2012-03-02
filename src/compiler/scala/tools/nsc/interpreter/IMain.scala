@@ -230,9 +230,6 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
   } with MemberHandlers
   import memberHandlers._
 
-  def atPickler[T](op: => T): T = atPhase(currentRun.picklerPhase)(op)
-  def afterTyper[T](op: => T): T = atPhase(currentRun.typerPhase.next)(op)
-
   /** Temporarily be quiet */
   def beQuietDuring[T](body: => T): T = {
     val saved = printResults
@@ -787,10 +784,6 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
     }
 
     def compile(source: String): Boolean = compileAndSaveRun("<console>", source)
-    def lineAfterTyper[T](op: => T): T = {
-      assert(lastRun != null, "Internal error: trying to use atPhase, but Run is null." + this)
-      atPhase(lastRun.typerPhase.next)(op)
-    }
 
     /** The innermost object inside the wrapper, found by
       * following accessPath into the outer one.
@@ -799,7 +792,7 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
       val readRoot  = getRequiredModule(readPath)   // the outermost wrapper
       (accessPath split '.').foldLeft(readRoot) { (sym, name) =>
         if (name == "") sym else
-        lineAfterTyper(sym.info member newTermName(name))
+        afterTyper(sym.info member newTermName(name))
       }
     }
     /** We get a bunch of repeated warnings for reasons I haven't
@@ -842,7 +835,6 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
   // private
   class Request(val line: String, val trees: List[Tree]) {
     val lineRep = new ReadEvalPrint()
-    import lineRep.lineAfterTyper
 
     private var _originalLine: String = null
     def withOriginalLine(s: String): this.type = { _originalLine = s ; this }
@@ -961,7 +953,7 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
     }
 
     lazy val resultSymbol = lineRep.resolvePathToSymbol(accessPath)
-    def applyToResultMember[T](name: Name, f: Symbol => T) = lineAfterTyper(f(resultSymbol.info.nonPrivateDecl(name)))
+    def applyToResultMember[T](name: Name, f: Symbol => T) = afterTyper(f(resultSymbol.info.nonPrivateDecl(name)))
 
     /* typeOf lookup with encoding */
     def lookupTypeOf(name: Name) = typeOf.getOrElse(name, typeOf(global.encode(name.toString)))

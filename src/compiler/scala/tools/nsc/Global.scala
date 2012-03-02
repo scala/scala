@@ -59,7 +59,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter) extends Symb
   type AbstractFileType = scala.tools.nsc.io.AbstractFile
 
   def mkAttributedQualifier(tpe: Type, termSym: Symbol): Tree = gen.mkAttributedQualifier(tpe, termSym)
-
+  
   def picklerPhase: Phase = if (currentRun.isDefined) currentRun.picklerPhase else NoPhase
 
   // platform specific elements
@@ -154,7 +154,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter) extends Symb
   /** Register top level class (called on entering the class)
    */
   def registerTopLevelSym(sym: Symbol) {}
-  
+
 // ------------------ Reporting -------------------------------------
 
   // not deprecated yet, but a method called "error" imported into
@@ -193,10 +193,6 @@ class Global(var currentSettings: Settings, var reporter: Reporter) extends Symb
     if (settings.debug.value)
       body
   }
-  @inline final override def debuglog(msg: => String) {
-    if (settings.debug.value && (settings.log containsPhase globalPhase))
-      inform("[log " + phase + "] " + msg)
-  }
   // Warnings issued only under -Ydebug.  For messages which should reach
   // developer ears, but are not adequately actionable by users.
   @inline final override def debugwarn(msg: => String) {
@@ -213,10 +209,29 @@ class Global(var currentSettings: Settings, var reporter: Reporter) extends Symb
   def informTime(msg: String, start: Long) = informProgress(elapsedMessage(msg, start))
 
   def logError(msg: String, t: Throwable): Unit = ()
+
+  def logAfterEveryPhase[T](msg: String)(op: => T) {
+    log("Running operation '%s' after every phase.\n".format(msg) + describeAfterEveryPhase(op))
+  }
+  
+  def shouldLogAtThisPhase = (
+       (settings.log.isSetByUser)
+    && ((settings.log containsPhase globalPhase) || (settings.log containsPhase phase))
+  )
+  def atPhaseStackMessage = atPhaseStack match {
+    case Nil    => ""
+    case ps     => ps.reverseMap("->" + _).mkString("(", " ", ")")
+  }
   // Over 200 closure objects are eliminated by inlining this.
-  @inline final def log(msg: => AnyRef): Unit =
-    if (settings.log containsPhase globalPhase)
-      inform("[log " + phase + "] " + msg)
+  @inline final def log(msg: => AnyRef) {
+    if (shouldLogAtThisPhase)
+      inform("[log %s%s] %s".format(globalPhase, atPhaseStackMessage, msg))
+  }
+
+  @inline final override def debuglog(msg: => String) {
+    if (settings.debug.value)
+      log(msg)
+  }
 
   def logThrowable(t: Throwable): Unit = globalError(throwableAsString(t))
   def throwableAsString(t: Throwable): String =
@@ -696,18 +711,18 @@ class Global(var currentSettings: Settings, var reporter: Reporter) extends Symb
   private lazy val unitTimings = mutable.HashMap[CompilationUnit, Long]() withDefaultValue 0L // tracking time spent per unit
   private def unitTimingsFormatted(): String = {
     def toMillis(nanos: Long) = "%.3f" format nanos / 1000000d
-    
+
     val formatter = new util.TableDef[(String, String)] {
       >> ("ms"   -> (_._1)) >+ "  "
       << ("path" -> (_._2))
     }
     "" + (
-      new formatter.Table(unitTimings.toList sortBy (-_._2) map { 
+      new formatter.Table(unitTimings.toList sortBy (-_._2) map {
         case (unit, nanos) => (toMillis(nanos), unit.source.path)
       })
     )
   }
-  
+
   protected def addToPhasesSet(sub: SubComponent, descr: String) {
     phasesSet += sub
     phasesDescMap(sub) = descr
@@ -753,6 +768,51 @@ class Global(var currentSettings: Settings, var reporter: Reporter) extends Symb
     }
     line1 :: line2 :: descs mkString
   }
+
+  /** Returns List of (phase, value) pairs, including only those
+   *  where the value compares unequal to the previous phase's value.
+   */
+  def afterEachPhase[T](op: => T): List[(Phase, T)] = {
+    phaseDescriptors.map(_.ownPhase).foldLeft(List[(Phase, T)]()) { (res, ph) =>
+      val value = afterPhase(ph)(op)
+      if (res.nonEmpty && res.head._2 == value) res
+      else ((ph, value)) :: res
+    } reverse
+  }
+
+  /** Returns List of ChangeAfterPhase objects, encapsulating those
+   *  phase transitions where the result of the operation gave a different
+   *  list than it had when run during the previous phase.
+   */
+  def changesAfterEachPhase[T](op: => List[T]): List[ChangeAfterPhase[T]] = {
+    val ops = ((NoPhase, Nil)) :: afterEachPhase(op)
+
+    ops sliding 2 map {
+      case (_, before) :: (ph, after) :: Nil =>
+        val lost   = before filterNot (after contains _)
+        val gained = after filterNot (before contains _)
+        ChangeAfterPhase(ph, lost, gained)
+      case _ => ???
+    } toList
+  }
+  private def numberedPhase(ph: Phase) = "%2d/%s".format(ph.id, ph.name)
+
+  case class ChangeAfterPhase[+T](ph: Phase, lost: List[T], gained: List[T]) {
+    private def mkStr(what: String, xs: List[_]) = (
+      if (xs.isEmpty) ""
+      else xs.mkString(what + " after " + numberedPhase(ph) + " {\n  ", "\n  ", "\n}\n")
+    )
+    override def toString = mkStr("Lost", lost) + mkStr("Gained", gained)
+  }
+
+  def describeAfterEachPhase[T](op: => T): List[String] =
+    afterEachPhase(op) map { case (ph, t) => "[after %-15s] %s".format(numberedPhase(ph), t) }
+
+  def describeAfterEveryPhase[T](op: => T): String =
+    describeAfterEachPhase(op) map ("  " + _ + "\n") mkString
+
+  def printAfterEachPhase[T](op: => T): Unit =
+    describeAfterEachPhase(op) foreach (m => println("  " + m))
 
   // ----------- Runs ---------------------------------------
 
@@ -807,10 +867,28 @@ class Global(var currentSettings: Settings, var reporter: Reporter) extends Symb
   def currentRun: Run              = curRun
   def currentUnit: CompilationUnit = if (currentRun eq null) NoCompilationUnit else currentRun.currentUnit
   def currentSource: SourceFile    = if (currentUnit.exists) currentUnit.source else lastSeenSourceFile
-  
-  @inline final def afterTyper[T](op: => T): T = afterPhase(currentRun.typerPhase)(op)
-  @inline final def beforeErasure[T](op: => T): T = beforePhase(currentRun.erasurePhase)(op)
-  @inline final def afterErasure[T](op: => T): T = afterPhase(currentRun.erasurePhase)(op)
+
+  // TODO - trim these to the absolute minimum.
+  @inline final def afterErasure[T](op: => T): T        = afterPhase(currentRun.erasurePhase)(op)
+  @inline final def afterExplicitOuter[T](op: => T): T  = afterPhase(currentRun.explicitouterPhase)(op)
+  @inline final def afterFlatten[T](op: => T): T        = afterPhase(currentRun.flattenPhase)(op)
+  @inline final def afterIcode[T](op: => T): T          = afterPhase(currentRun.icodePhase)(op)
+  @inline final def afterMixin[T](op: => T): T          = afterPhase(currentRun.mixinPhase)(op)
+  @inline final def afterPickler[T](op: => T): T        = afterPhase(currentRun.picklerPhase)(op)
+  @inline final def afterRefchecks[T](op: => T): T      = afterPhase(currentRun.refchecksPhase)(op)
+  @inline final def afterSpecialize[T](op: => T): T     = afterPhase(currentRun.specializePhase)(op)
+  @inline final def afterTyper[T](op: => T): T          = afterPhase(currentRun.typerPhase)(op)
+  @inline final def afterUncurry[T](op: => T): T        = afterPhase(currentRun.uncurryPhase)(op)
+  @inline final def beforeErasure[T](op: => T): T       = beforePhase(currentRun.erasurePhase)(op)
+  @inline final def beforeExplicitOuter[T](op: => T): T = beforePhase(currentRun.explicitouterPhase)(op)
+  @inline final def beforeFlatten[T](op: => T): T       = beforePhase(currentRun.flattenPhase)(op)
+  @inline final def beforeIcode[T](op: => T): T         = beforePhase(currentRun.icodePhase)(op)
+  @inline final def beforeMixin[T](op: => T): T         = beforePhase(currentRun.mixinPhase)(op)
+  @inline final def beforePickler[T](op: => T): T       = beforePhase(currentRun.picklerPhase)(op)
+  @inline final def beforeRefchecks[T](op: => T): T     = beforePhase(currentRun.refchecksPhase)(op)
+  @inline final def beforeSpecialize[T](op: => T): T    = beforePhase(currentRun.specializePhase)(op)
+  @inline final def beforeTyper[T](op: => T): T         = beforePhase(currentRun.typerPhase)(op)
+  @inline final def beforeUncurry[T](op: => T): T       = beforePhase(currentRun.uncurryPhase)(op)
 
   /** Don't want to introduce new errors trying to report errors,
    *  so swallow exceptions.
@@ -858,7 +936,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter) extends Symb
     /** Counts for certain classes of warnings during this run. */
     var deprecationWarnings: List[(Position, String)] = Nil
     var uncheckedWarnings: List[(Position, String)] = Nil
-    
+
     /** A flag whether macro expansions failed */
     var macroExpansionFailed = false
 
@@ -919,16 +997,18 @@ class Global(var currentSettings: Settings, var reporter: Reporter) extends Symb
       // Each subcomponent supplies a phase, which are chained together.
       //   If -Ystop:phase is given, neither that phase nor any beyond it is added.
       //   If -Yskip:phase is given, that phase will be skipped.
-      val lastPhase = phaseDescriptors.tail .
-        takeWhile (pd => !stopPhase(pd.phaseName)) .
-        filterNot (pd =>  skipPhase(pd.phaseName)) .
-        foldLeft (parserPhase) ((chain, ph) => ph newPhase chain)
-
-      // Ensure there is a terminal phase at the end, since -Ystop may have limited the phases.
-      terminalPhase =
-        if (lastPhase.name == "terminal") lastPhase
-        else terminal newPhase lastPhase
-
+      val phaseLinks = {
+        val phs = (
+          phaseDescriptors.tail
+            takeWhile (pd => !stopPhase(pd.phaseName))
+            filterNot (pd =>  skipPhase(pd.phaseName))
+        )
+        // Ensure there is a terminal phase at the end, since -Ystop may have limited the phases.
+        if (phs.isEmpty || (phs.last ne terminal)) phs :+ terminal
+        else phs
+      }
+      // Link them together.
+      phaseLinks.foldLeft(parserPhase)((chain, ph) => ph newPhase chain)
       parserPhase
     }
 
@@ -1005,37 +1085,45 @@ class Global(var currentSettings: Settings, var reporter: Reporter) extends Symb
     }
 
     def cancel() { reporter.cancelled = true }
-    
+
     private def currentProgress   = (phasec * size) + unitc
     private def totalProgress     = (phaseDescriptors.size - 1) * size // -1: drops terminal phase
     private def refreshProgress() = if (size > 0) progress(currentProgress, totalProgress)
 
     // ----- finding phases --------------------------------------------
 
-    def phaseNamed(name: String): Phase = {
-      var p: Phase = firstPhase
-      while (p.next != p && p.name != name) p = p.next
-      if (p.name != name) NoPhase else p
-    }
-
-    val parserPhase        = phaseNamed("parser")
-    val namerPhase         = phaseNamed("namer")
-    // packageobjects
-    val typerPhase         = phaseNamed("typer")
-    // superaccessors
-    val picklerPhase       = phaseNamed("pickler")
-    val refchecksPhase     = phaseNamed("refchecks")
-    val uncurryPhase       = phaseNamed("uncurry")
-    // tailcalls, specialize
-    val explicitouterPhase = phaseNamed("explicitouter")
-    val erasurePhase       = phaseNamed("erasure")
-    // lazyvals, lambdalift, constructors
-    val flattenPhase       = phaseNamed("flatten")
-    val mixinPhase         = phaseNamed("mixin")
-    val cleanupPhase       = phaseNamed("cleanup")
-    val icodePhase         = phaseNamed("icode")
-    // inliner, closelim, dce
-    val jvmPhase           = phaseNamed("jvm")
+    def phaseNamed(name: String): Phase =
+      findOrElse(firstPhase.iterator)(_.name == name)(NoPhase)
+    
+    /** All phases as of 3/2012 here for handiness; the ones in
+     *  active use uncommented.
+     */
+    val parserPhase                  = phaseNamed("parser")
+    val namerPhase                   = phaseNamed("namer")
+    // val packageobjectsPhase          = phaseNamed("packageobjects")
+    val typerPhase                   = phaseNamed("typer")
+    // val superaccessorsPhase          = phaseNamed("superaccessors")
+    val picklerPhase                 = phaseNamed("pickler")
+    val refchecksPhase               = phaseNamed("refchecks")
+    // val selectiveanfPhase            = phaseNamed("selectiveanf")
+    // val selectivecpsPhase            = phaseNamed("selectivecps")
+    val uncurryPhase                 = phaseNamed("uncurry")
+    // val tailcallsPhase               = phaseNamed("tailcalls")
+    val specializePhase              = phaseNamed("specialize")
+    val explicitouterPhase           = phaseNamed("explicitouter")
+    val erasurePhase                 = phaseNamed("erasure")
+    // val lazyvalsPhase                = phaseNamed("lazyvals")
+    val lambdaliftPhase              = phaseNamed("lambdalift")
+    // val constructorsPhase            = phaseNamed("constructors")
+    val flattenPhase                 = phaseNamed("flatten")
+    val mixinPhase                   = phaseNamed("mixin")
+    val cleanupPhase                 = phaseNamed("cleanup")
+    val icodePhase                   = phaseNamed("icode")
+    // val inlinerPhase                 = phaseNamed("inliner")
+    // val inlineExceptionHandlersPhase = phaseNamed("inlineExceptionHandlers")
+    // val closelimPhase                = phaseNamed("closelim")
+    // val dcePhase                     = phaseNamed("dce")
+    val jvmPhase                     = phaseNamed("jvm")
 
     def runIsAt(ph: Phase)   = globalPhase.id == ph.id
     def runIsPast(ph: Phase) = globalPhase.id > ph.id
@@ -1171,12 +1259,12 @@ class Global(var currentSettings: Settings, var reporter: Reporter) extends Symb
      */
     def compileUnits(units: List[CompilationUnit], fromPhase: Phase) {
       try compileUnitsInternal(units, fromPhase)
-      catch { case ex => 
+      catch { case ex =>
         globalError(supplementErrorMessage("uncaught exception during compilation: " + ex.getClass.getName))
         throw ex
       }
     }
-    
+
     private def compileUnitsInternal(units: List[CompilationUnit], fromPhase: Phase) {
       units foreach addUnit
       if (opt.profileAll) {
@@ -1189,7 +1277,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter) extends Symb
       checkDeprecatedSettings(unitbuf.head)
       globalPhase = fromPhase
 
-     while (globalPhase != terminalPhase && !reporter.hasErrors) {
+     while (globalPhase.hasNext && !reporter.hasErrors) {
         val startTime = currentTime
         phase = globalPhase
 
@@ -1310,19 +1398,13 @@ class Global(var currentSettings: Settings, var reporter: Reporter) extends Symb
     /** Compile abstract file until `globalPhase`, but at least to phase "namer".
      */
     def compileLate(unit: CompilationUnit) {
-      def stop(ph: Phase) = ph == null || ph.id >= (globalPhase.id max typerPhase.id)
-      def loop(ph: Phase) {
-        if (stop(ph)) refreshProgress
-        else {
-          atPhase(ph)(ph.asInstanceOf[GlobalPhase] applyPhase unit)
-          loop(ph.next match {
-            case `ph`   => null   // ph == ph.next implies terminal, and null ends processing
-            case x      => x
-          })
-        }
-      }
+      val maxId = math.max(globalPhase.id, typerPhase.id)
       addUnit(unit)
-      loop(firstPhase)
+
+      firstPhase.iterator takeWhile (_.id < maxId) foreach (ph =>
+        atPhase(ph)(ph.asInstanceOf[GlobalPhase] applyPhase unit)
+      )
+      refreshProgress
     }
 
     /**

@@ -368,7 +368,7 @@ abstract class ClassfileParser {
         case arr: Type     => Constant(arr)
       }
     }
-    
+
     private def getSubArray(bytes: Array[Byte]): Array[Byte] = {
       val decodedLength = ByteCodecs.decode(bytes)
       val arr           = new Array[Byte](decodedLength)
@@ -424,19 +424,21 @@ abstract class ClassfileParser {
   def forceMangledName(name: Name, module: Boolean): Symbol = {
     val parts = name.decode.toString.split(Array('.', '$'))
     var sym: Symbol = definitions.RootClass
-    atPhase(currentRun.flattenPhase.prev) {
+
+    // was "at flatten.prev"
+    beforeFlatten {
       for (part0 <- parts; if !(part0 == ""); part = newTermName(part0)) {
-        val sym1 = atPhase(currentRun.icodePhase) {
+        val sym1 = beforeIcode {
           sym.linkedClassOfClass.info
           sym.info.decl(part.encode)
         }//.suchThat(module == _.isModule)
-        if (sym1 == NoSymbol)
-          sym = sym.info.decl(part.encode.toTypeName)
-        else
-          sym = sym1
+
+        sym = (
+          if (sym1 ne NoSymbol) sym1
+          else sym.info.decl(part.encode.toTypeName)
+        )
       }
     }
-//    println("found: " + sym)
     sym
   }
 
@@ -719,7 +721,7 @@ abstract class ClassfileParser {
                       index += 1
                       val bounds = variance match {
                         case '+' => TypeBounds.upper(objToAny(sig2type(tparams, skiptvs)))
-                        case '-' => 
+                        case '-' =>
                           val tp = sig2type(tparams, skiptvs)
                           // sig2type seems to return AnyClass regardless of the situation:
                           // we don't want Any as a LOWER bound.
@@ -1205,11 +1207,11 @@ abstract class ClassfileParser {
               // if loading during initialization of `definitions` typerPhase is not yet set.
               // in that case we simply load the member at the current phase
               if (currentRun.typerPhase != null)
-                atPhase(currentRun.typerPhase)(getMember(sym, innerName.toTypeName))
+                beforeTyper(getMember(sym, innerName.toTypeName))
               else
                 getMember(sym, innerName.toTypeName)
 
-            assert(s ne NoSymbol, 
+            assert(s ne NoSymbol,
               "" + ((externalName, outerName, innerName, sym.fullLocationString)) + " / " +
               " while parsing " + ((in.file, busy)) +
               sym + "." + innerName + " linkedModule: " + sym.companionModule + sym.companionModule.info.members

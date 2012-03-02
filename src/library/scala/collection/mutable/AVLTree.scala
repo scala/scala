@@ -12,9 +12,9 @@ package mutable
 
 /**
  * An immutable AVL Tree implementation used by mutable.TreeSet
- * 
+ *
  * @author Lucien Pereira
- * 
+ *
  */
 private[mutable] sealed trait AVLTree[+A] extends Serializable {
   def balance: Int
@@ -28,28 +28,28 @@ private[mutable] sealed trait AVLTree[+A] extends Serializable {
   /**
    * Returns a new tree containing the given element.
    * Thows an IllegalArgumentException if element is already present.
-   * 
+   *
    */
   def insert[B >: A](value: B, ordering: Ordering[B]): AVLTree[B] = Node(value, Leaf, Leaf)
 
   /**
    * Return a new tree which not contains given element.
-   * 
+   *
    */
   def remove[B >: A](value: B, ordering: Ordering[B]): AVLTree[A] =
     throw new NoSuchElementException(String.valueOf(value))
-  
+
   /**
    * Return a tuple containing the smallest element of the provided tree
    * and a new tree from which this element has been extracted.
-   * 
+   *
    */
   def removeMin[B >: A]: (B, AVLTree[B]) = sys.error("Should not happen.")
-  
+
   /**
    * Return a tuple containing the biggest element of the provided tree
    * and a new tree from which this element has been extracted.
-   * 
+   *
    */
   def removeMax[B >: A]: (B, AVLTree[B]) = sys.error("Should not happen.")
 
@@ -90,7 +90,7 @@ private case class Node[A](val data: A, val left: AVLTree[A], val right: AVLTree
   /**
    * Returns a new tree containing the given element.
    * Thows an IllegalArgumentException if element is already present.
-   * 
+   *
    */
   override def insert[B >: A](value: B, ordering: Ordering[B]) = {
     val ord = ordering.compare(value, data)
@@ -104,7 +104,7 @@ private case class Node[A](val data: A, val left: AVLTree[A], val right: AVLTree
 
   /**
    * Return a new tree which not contains given element.
-   * 
+   *
    */
   override def remove[B >: A](value: B, ordering: Ordering[B]): AVLTree[A] = {
     val ord = ordering.compare(value, data)
@@ -130,7 +130,7 @@ private case class Node[A](val data: A, val left: AVLTree[A], val right: AVLTree
   /**
    * Return a tuple containing the smallest element of the provided tree
    * and a new tree from which this element has been extracted.
-   * 
+   *
    */
   override def removeMin[B >: A]: (B, AVLTree[B]) = {
     if (Leaf == left)
@@ -144,7 +144,7 @@ private case class Node[A](val data: A, val left: AVLTree[A], val right: AVLTree
   /**
    * Return a tuple containing the biggest element of the provided tree
    * and a new tree from which this element has been extracted.
-   * 
+   *
    */
   override def removeMax[B >: A]: (B, AVLTree[B]) = {
     if (Leaf == right)
@@ -154,7 +154,7 @@ private case class Node[A](val data: A, val left: AVLTree[A], val right: AVLTree
       (max, Node(data, left, newRight).rebalance)
     }
   }
-  
+
   override def rebalance[B >: A] = {
     if (-2 == balance) {
       if (1 == left.balance)

@@ -8,7 +8,7 @@ package util
 
 object EditDistance {
   import java.lang.Character.{ toLowerCase => lower }
-  
+
   def similarString(name: String, allowed: TraversableOnce[String]): String = {
     val suggested = suggestions(name, allowed.toSeq, maxDistance = 1, maxSuggestions = 2)
     if (suggested.isEmpty) ""

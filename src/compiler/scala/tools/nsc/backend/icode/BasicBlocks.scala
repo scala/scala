@@ -18,7 +18,7 @@ trait BasicBlocks {
   import opcodes._
   import global.{ ifDebug, settings, log, nme }
   import nme.isExceptionResultName
-  
+
   object NoBasicBlock extends BasicBlock(-1, null)
 
   /** This class represents a basic block. Each
@@ -182,7 +182,7 @@ trait BasicBlocks {
     final def foreach[U](f: Instruction => U) = {
       if (!closed) dumpMethodAndAbort(method, this)
       else instrs foreach f
-      
+
       // !!! If I replace "instrs foreach f" with the following:
       // var i = 0
       // val len = instrs.length

@@ -16,7 +16,7 @@ trait Specializable extends SpecializableCompanion
 object Specializable {
   // No type parameter in @specialized annotation.
   trait SpecializedGroup { }
-  
+
   // Smuggle a list of types by way of a tuple upon which Group is parameterized.
   class Group[T >: Null](value: T) extends SpecializedGroup { }
 

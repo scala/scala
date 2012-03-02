@@ -491,6 +491,10 @@ trait Trees { self: Universe =>
     if (argss.isEmpty) Apply(superRef, Nil)
     else (superRef /: argss) (Apply)
   }
+  /** 0-1 argument list new, based on a type.
+   */
+  def New(tpe: Type, args: Tree*): Tree =
+    New(TypeTree(tpe), List(args.toList))
 
   /** Type annotation, eliminated by explicit outer */
   case class Typed(expr: Tree, tpt: Tree)
@@ -680,11 +684,74 @@ trait Trees { self: Universe =>
     case t =>
       sys.error("Not a DefDef: " + t + "/" + t.getClass)
   }
+  def copyValDef(tree: Tree)(
+    mods: Modifiers = null,
+    name: Name      = null,
+    tpt: Tree       = null,
+    rhs: Tree       = null
+  ): ValDef = tree match {
+    case ValDef(mods0, name0, tpt0, rhs0) =>
+      treeCopy.ValDef(tree,
+        if (mods eq null) mods0 else mods,
+        if (name eq null) name0 else name,
+        if (tpt eq null) tpt0 else tpt,
+        if (rhs eq null) rhs0 else rhs
+      )
+    case t =>
+      sys.error("Not a ValDef: " + t + "/" + t.getClass)
+  }
+  def copyClassDef(tree: Tree)(
+    mods: Modifiers        = null,
+    name: Name             = null,
+    tparams: List[TypeDef] = null,
+    impl: Template         = null
+  ): ClassDef = tree match {
+    case ClassDef(mods0, name0, tparams0, impl0) =>
+      treeCopy.ClassDef(tree,
+        if (mods eq null) mods0 else mods,
+        if (name eq null) name0 else name,
+        if (tparams eq null) tparams0 else tparams,
+        if (impl eq null) impl0 else impl
+      )
+    case t =>
+      sys.error("Not a ClassDef: " + t + "/" + t.getClass)
+  }
+
   def deriveDefDef(ddef: Tree)(applyToRhs: Tree => Tree): DefDef = ddef match {
     case DefDef(mods0, name0, tparams0, vparamss0, tpt0, rhs0) =>
       treeCopy.DefDef(ddef, mods0, name0, tparams0, vparamss0, tpt0, applyToRhs(rhs0))
     case t =>
       sys.error("Not a DefDef: " + t + "/" + t.getClass)
+  }
+  def deriveValDef(vdef: Tree)(applyToRhs: Tree => Tree): ValDef = vdef match {
+    case ValDef(mods0, name0, tpt0, rhs0) =>
+      treeCopy.ValDef(vdef, mods0, name0, tpt0, applyToRhs(rhs0))
+    case t =>
+      sys.error("Not a ValDef: " + t + "/" + t.getClass)
+  }
+  def deriveTemplate(templ: Tree)(applyToBody: List[Tree] => List[Tree]): Template = templ match {
+    case Template(parents0, self0, body0) =>
+      treeCopy.Template(templ, parents0, self0, applyToBody(body0))
+    case t =>
+      sys.error("Not a Template: " + t + "/" + t.getClass)
+  }
+  def deriveClassDef(cdef: Tree)(applyToImpl: Template => Template): ClassDef = cdef match {
+    case ClassDef(mods0, name0, tparams0, impl0) =>
+      treeCopy.ClassDef(cdef, mods0, name0, tparams0, applyToImpl(impl0))
+    case t =>
+      sys.error("Not a ClassDef: " + t + "/" + t.getClass)
+  }
+  def deriveCaseDef(cdef: Tree)(applyToBody: Tree => Tree): CaseDef = cdef match {
+    case CaseDef(pat0, guard0, body0) =>
+      treeCopy.CaseDef(cdef, pat0, guard0, applyToBody(body0))
+    case t =>
+      sys.error("Not a CaseDef: " + t + "/" + t.getClass)
+  }
+  def deriveLabelDef(ldef: Tree)(applyToRhs: Tree => Tree): LabelDef = ldef match {
+    case LabelDef(name0, params0, rhs0) =>
+      treeCopy.LabelDef(ldef, name0, params0, applyToRhs(rhs0))
+    case t =>
+      sys.error("Not a LabelDef: " + t + "/" + t.getClass)
   }
 
   class Traverser {

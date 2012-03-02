@@ -25,7 +25,7 @@ import Specializable._
  *  @since 2.8
  */
 // class tspecialized[T](group: Group[T]) extends annotation.StaticAnnotation {
- 
+
 class specialized(group: SpecializedGroup) extends annotation.StaticAnnotation {
   def this(types: Specializable*) = this(new Group(types.toList))
   def this() = this(Everything)
