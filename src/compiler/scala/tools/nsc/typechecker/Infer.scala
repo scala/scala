@@ -1068,7 +1068,7 @@ trait Infer {
           try {
             // debuglog("TVARS "+ (tvars map (_.constr)))
             // look at the argument types of the primary constructor corresponding to the pattern
-            val variances  = undetparams map varianceInType(ctorTp)
+            val variances  = undetparams map varianceInType(ctorTp.paramTypes.headOption getOrElse ctorTp)
             val targs      = solvedTypes(tvars, undetparams, variances, true, lubDepth(List(resTp, pt)))
             // checkBounds(tree, NoPrefix, NoSymbol, undetparams, targs, "inferred ")
             // no checkBounds here. If we enable it, test bug602 fails.
