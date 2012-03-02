@@ -79,7 +79,8 @@ abstract class SymbolTable extends api.Universe
   type RunId = Int
   final val NoRunId = 0
 
-  private var phStack: List[Phase] = Nil
+  // sigh, this has to be public or atPhase doesn't inline.
+  var phStack: List[Phase] = Nil
   private var ph: Phase = NoPhase
   private var per = NoPeriod
 
@@ -91,6 +92,16 @@ abstract class SymbolTable extends api.Universe
     assert((p ne null) && p != NoPhase, p)
     ph = p
     per = period(currentRunId, p.id)
+  }
+  final def pushPhase(ph: Phase): Phase = {
+    val current = phase
+    phase = ph
+    phStack ::= ph
+    current
+  }
+  final def popPhase(ph: Phase) {
+    phStack = phStack.tail
+    phase = ph
   }
 
   /** The current compiler run identifier. */
@@ -119,20 +130,19 @@ abstract class SymbolTable extends api.Universe
 
   /** Perform given operation at given phase. */
   @inline final def atPhase[T](ph: Phase)(op: => T): T = {
-    val current = phase
-    phase = ph
-    phStack ::= ph
+    val saved = pushPhase(ph)
     try op
-    finally {
-      phase = current
-      phStack = phStack.tail
-    }
+    finally popPhase(saved)
   }
+  
+
   /** Since when it is to be "at" a phase is inherently ambiguous,
    *  a couple unambiguously named methods.
    */
   @inline final def beforePhase[T](ph: Phase)(op: => T): T = atPhase(ph)(op)
   @inline final def afterPhase[T](ph: Phase)(op: => T): T  = atPhase(ph.next)(op)
+  @inline final def afterCurrentPhase[T](op: => T): T      = atPhase(phase.next)(op)
+  @inline final def beforePrevPhase[T](op: => T): T        = atPhase(phase.prev)(op)
 
   @inline final def atPhaseNotLaterThan[T](target: Phase)(op: => T): T =
     if (target != NoPhase && phase.id > target.id) atPhase(target)(op) else op

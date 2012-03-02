@@ -707,7 +707,8 @@ abstract class Inliners extends SubComponent {
       }
 
       def isStampedForInlining(stackLength: Int) =
-        !sameSymbols && inc.m.hasCode && shouldInline && isSafeToInline(stackLength) && !inc.m.symbol.hasFlag(Flags.SYNCHRONIZED)
+        !sameSymbols && inc.m.hasCode && shouldInline &&
+        isSafeToInline(stackLength) // `isSafeToInline()` must be invoked last in this AND expr bc it mutates the `knownSafe` and `knownUnsafe` maps for good.
 
       def logFailure(stackLength: Int) = log(
         """|inline failed for %s:
@@ -724,6 +725,7 @@ abstract class Inliners extends SubComponent {
 
       def failureReason(stackLength: Int) =
         if (!inc.m.hasCode) "bytecode was unavailable"
+        else if (inc.m.symbol.hasFlag(Flags.SYNCHRONIZED)) "method is synchronized"
         else if (!isSafeToInline(stackLength)) "it is unsafe (target may reference private fields)"
         else "of a bug (run with -Ylog:inline -Ydebug for more information)"
 
@@ -764,8 +766,8 @@ abstract class Inliners extends SubComponent {
             true
           }
 
-        if (!inc.m.hasCode || inc.isRecursive)
-          return false
+        if (!inc.m.hasCode || inc.isRecursive)        { return false }
+        if (inc.m.symbol.hasFlag(Flags.SYNCHRONIZED)) { return false }
 
         val accessNeeded = usesNonPublics.getOrElseUpdate(inc.m, {
           // Avoiding crashing the compiler if there are open blocks.

@@ -8,8 +8,14 @@
 
 package scala.concurrent
 
+
+
+import java.util.concurrent.{ Executors, ExecutorService }
+import scala.concurrent.forkjoin.ForkJoinPool
 import scala.util.{ Duration, Try, Success, Failure }
 import ConcurrentPackageObject._
+
+
 
 /** This package object contains primitives for concurrent and parallel programming.
  */
@@ -17,13 +23,15 @@ abstract class ConcurrentPackageObject {
   /** A global execution environment for executing lightweight tasks.
    */
   lazy val executionContext =
-    new impl.ExecutionContextImpl(java.util.concurrent.Executors.newCachedThreadPool())
+    new impl.ExecutionContextImpl(getExecutorService)
 
-  /** A global service for scheduling tasks for execution.
-   */
-  // lazy val scheduler =
-  //   new default.SchedulerImpl
-
+  private[concurrent] def getExecutorService: AnyRef =
+    if (util.Properties.isJavaAtLeast("1.6")) {
+      val vendor = util.Properties.javaVmVendor
+      if ((vendor contains "Oracle") || (vendor contains "Sun") || (vendor contains "Apple")) new ForkJoinPool
+      else Executors.newCachedThreadPool()
+    } else Executors.newCachedThreadPool()
+  
   val handledFutureException: PartialFunction[Throwable, Throwable] = {
     case t: Throwable if isFutureThrowable(t) => t
   }

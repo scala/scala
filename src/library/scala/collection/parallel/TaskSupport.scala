@@ -11,15 +11,26 @@ package scala.collection.parallel
 
 
 
-
+import java.util.concurrent.ThreadPoolExecutor
+import scala.concurrent.forkjoin.ForkJoinPool
+import scala.concurrent.ExecutionContext
 
 
 
 trait TaskSupport extends Tasks
 
-private[collection] class ForkJoinTaskSupport extends TaskSupport with AdaptiveWorkStealingForkJoinTasks
 
-private[collection] class ThreadPoolTaskSupport extends TaskSupport with AdaptiveWorkStealingThreadPoolTasks
+private[collection] class ForkJoinTaskSupport(val environment: ForkJoinPool = ForkJoinTasks.defaultForkJoinPool)
+extends TaskSupport with AdaptiveWorkStealingForkJoinTasks
+
+
+private[collection] class ThreadPoolTaskSupport(val environment: ThreadPoolExecutor = ThreadPoolTasks.defaultThreadPool)
+extends TaskSupport with AdaptiveWorkStealingThreadPoolTasks
+
+
+private[collection] class ExecutionContextTaskSupport(val environment: ExecutionContext = scala.concurrent.executionContext)
+extends TaskSupport with ExecutionContextTasks
+
 
 
 

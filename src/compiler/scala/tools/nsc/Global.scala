@@ -59,7 +59,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter) extends Symb
   type AbstractFileType = scala.tools.nsc.io.AbstractFile
 
   def mkAttributedQualifier(tpe: Type, termSym: Symbol): Tree = gen.mkAttributedQualifier(tpe, termSym)
-
+  
   def picklerPhase: Phase = if (currentRun.isDefined) currentRun.picklerPhase else NoPhase
 
   // platform specific elements
@@ -210,22 +210,23 @@ class Global(var currentSettings: Settings, var reporter: Reporter) extends Symb
 
   def logError(msg: String, t: Throwable): Unit = ()
 
-  private def atPhaseStackMessage = atPhaseStack match {
-    case Nil    => ""
-    case ps     => ps.reverseMap("->" + _).mkString("(", " ", ")")
-  }
-  private def shouldLogAtThisPhase = (
-       (settings.log.isSetByUser)
-    && ((settings.log containsPhase globalPhase) || (settings.log containsPhase phase))
-  )
-
   def logAfterEveryPhase[T](msg: String)(op: => T) {
     log("Running operation '%s' after every phase.\n".format(msg) + describeAfterEveryPhase(op))
   }
+  
+  def shouldLogAtThisPhase = (
+       (settings.log.isSetByUser)
+    && ((settings.log containsPhase globalPhase) || (settings.log containsPhase phase))
+  )
+  def atPhaseStackMessage = atPhaseStack match {
+    case Nil    => ""
+    case ps     => ps.reverseMap("->" + _).mkString("(", " ", ")")
+  }
   // Over 200 closure objects are eliminated by inlining this.
-  @inline final def log(msg: => AnyRef): Unit =
+  @inline final def log(msg: => AnyRef) {
     if (shouldLogAtThisPhase)
       inform("[log %s%s] %s".format(globalPhase, atPhaseStackMessage, msg))
+  }
 
   @inline final override def debuglog(msg: => String) {
     if (settings.debug.value)
@@ -868,26 +869,26 @@ class Global(var currentSettings: Settings, var reporter: Reporter) extends Symb
   def currentSource: SourceFile    = if (currentUnit.exists) currentUnit.source else lastSeenSourceFile
 
   // TODO - trim these to the absolute minimum.
-  @inline final def afterErasure[T](op: => T): T = afterPhase(currentRun.erasurePhase)(op)
-  @inline final def afterExplicitOuter[T](op: => T): T = afterPhase(currentRun.explicitouterPhase)(op)
-  @inline final def afterFlatten[T](op: => T): T = afterPhase(currentRun.flattenPhase)(op)
-  @inline final def afterIcode[T](op: => T): T = afterPhase(currentRun.icodePhase)(op)
-  @inline final def afterMixin[T](op: => T): T = afterPhase(currentRun.mixinPhase)(op)
-  @inline final def afterPickler[T](op: => T): T = afterPhase(currentRun.picklerPhase)(op)
-  @inline final def afterRefchecks[T](op: => T): T = afterPhase(currentRun.refchecksPhase)(op)
-  @inline final def afterSpecialize[T](op: => T): T = afterPhase(currentRun.specializePhase)(op)
-  @inline final def afterTyper[T](op: => T): T = afterPhase(currentRun.typerPhase)(op)
-  @inline final def afterUncurry[T](op: => T): T = afterPhase(currentRun.uncurryPhase)(op)
-  @inline final def beforeErasure[T](op: => T): T = beforePhase(currentRun.erasurePhase)(op)
+  @inline final def afterErasure[T](op: => T): T        = afterPhase(currentRun.erasurePhase)(op)
+  @inline final def afterExplicitOuter[T](op: => T): T  = afterPhase(currentRun.explicitouterPhase)(op)
+  @inline final def afterFlatten[T](op: => T): T        = afterPhase(currentRun.flattenPhase)(op)
+  @inline final def afterIcode[T](op: => T): T          = afterPhase(currentRun.icodePhase)(op)
+  @inline final def afterMixin[T](op: => T): T          = afterPhase(currentRun.mixinPhase)(op)
+  @inline final def afterPickler[T](op: => T): T        = afterPhase(currentRun.picklerPhase)(op)
+  @inline final def afterRefchecks[T](op: => T): T      = afterPhase(currentRun.refchecksPhase)(op)
+  @inline final def afterSpecialize[T](op: => T): T     = afterPhase(currentRun.specializePhase)(op)
+  @inline final def afterTyper[T](op: => T): T          = afterPhase(currentRun.typerPhase)(op)
+  @inline final def afterUncurry[T](op: => T): T        = afterPhase(currentRun.uncurryPhase)(op)
+  @inline final def beforeErasure[T](op: => T): T       = beforePhase(currentRun.erasurePhase)(op)
   @inline final def beforeExplicitOuter[T](op: => T): T = beforePhase(currentRun.explicitouterPhase)(op)
-  @inline final def beforeFlatten[T](op: => T): T = beforePhase(currentRun.flattenPhase)(op)
-  @inline final def beforeIcode[T](op: => T): T = beforePhase(currentRun.icodePhase)(op)
-  @inline final def beforeMixin[T](op: => T): T = beforePhase(currentRun.mixinPhase)(op)
-  @inline final def beforePickler[T](op: => T): T = beforePhase(currentRun.picklerPhase)(op)
-  @inline final def beforeRefchecks[T](op: => T): T = beforePhase(currentRun.refchecksPhase)(op)
-  @inline final def beforeSpecialize[T](op: => T): T = beforePhase(currentRun.specializePhase)(op)
-  @inline final def beforeTyper[T](op: => T): T = beforePhase(currentRun.typerPhase)(op)
-  @inline final def beforeUncurry[T](op: => T): T = beforePhase(currentRun.uncurryPhase)(op)
+  @inline final def beforeFlatten[T](op: => T): T       = beforePhase(currentRun.flattenPhase)(op)
+  @inline final def beforeIcode[T](op: => T): T         = beforePhase(currentRun.icodePhase)(op)
+  @inline final def beforeMixin[T](op: => T): T         = beforePhase(currentRun.mixinPhase)(op)
+  @inline final def beforePickler[T](op: => T): T       = beforePhase(currentRun.picklerPhase)(op)
+  @inline final def beforeRefchecks[T](op: => T): T     = beforePhase(currentRun.refchecksPhase)(op)
+  @inline final def beforeSpecialize[T](op: => T): T    = beforePhase(currentRun.specializePhase)(op)
+  @inline final def beforeTyper[T](op: => T): T         = beforePhase(currentRun.typerPhase)(op)
+  @inline final def beforeUncurry[T](op: => T): T       = beforePhase(currentRun.uncurryPhase)(op)
 
   /** Don't want to introduce new errors trying to report errors,
    *  so swallow exceptions.
@@ -996,16 +997,18 @@ class Global(var currentSettings: Settings, var reporter: Reporter) extends Symb
       // Each subcomponent supplies a phase, which are chained together.
       //   If -Ystop:phase is given, neither that phase nor any beyond it is added.
       //   If -Yskip:phase is given, that phase will be skipped.
-      val lastPhase = phaseDescriptors.tail .
-        takeWhile (pd => !stopPhase(pd.phaseName)) .
-        filterNot (pd =>  skipPhase(pd.phaseName)) .
-        foldLeft (parserPhase) ((chain, ph) => ph newPhase chain)
-
-      // Ensure there is a terminal phase at the end, since -Ystop may have limited the phases.
-      terminalPhase =
-        if (lastPhase.name == "terminal") lastPhase
-        else terminal newPhase lastPhase
-
+      val phaseLinks = {
+        val phs = (
+          phaseDescriptors.tail
+            takeWhile (pd => !stopPhase(pd.phaseName))
+            filterNot (pd =>  skipPhase(pd.phaseName))
+        )
+        // Ensure there is a terminal phase at the end, since -Ystop may have limited the phases.
+        if (phs.isEmpty || (phs.last ne terminal)) phs :+ terminal
+        else phs
+      }
+      // Link them together.
+      phaseLinks.foldLeft(parserPhase)((chain, ph) => ph newPhase chain)
       parserPhase
     }
 
@@ -1089,32 +1092,38 @@ class Global(var currentSettings: Settings, var reporter: Reporter) extends Symb
 
     // ----- finding phases --------------------------------------------
 
-    def phaseNamed(name: String): Phase = {
-      var p: Phase = firstPhase
-      while (p.next != p && p.name != name) p = p.next
-      if (p.name != name) NoPhase else p
-    }
-
-    val parserPhase        = phaseNamed("parser")
-    val namerPhase         = phaseNamed("namer")
-    // packageobjects
-    val typerPhase         = phaseNamed("typer")
-    // superaccessors
-    val picklerPhase       = phaseNamed("pickler")
-    val refchecksPhase     = phaseNamed("refchecks")
-    val uncurryPhase       = phaseNamed("uncurry")
-    // tailcalls, specialize
-    val specializePhase    = phaseNamed("specialize")
-    val explicitouterPhase = phaseNamed("explicitouter")
-    val erasurePhase       = phaseNamed("erasure")
-    // lazyvals, lambdalift, constructors
-    val lambdaLiftPhase    = phaseNamed("lambdalift")
-    val flattenPhase       = phaseNamed("flatten")
-    val mixinPhase         = phaseNamed("mixin")
-    val cleanupPhase       = phaseNamed("cleanup")
-    val icodePhase         = phaseNamed("icode")
-    // inliner, closelim, dce
-    val jvmPhase           = phaseNamed("jvm")
+    def phaseNamed(name: String): Phase =
+      findOrElse(firstPhase.iterator)(_.name == name)(NoPhase)
+    
+    /** All phases as of 3/2012 here for handiness; the ones in
+     *  active use uncommented.
+     */
+    val parserPhase                  = phaseNamed("parser")
+    val namerPhase                   = phaseNamed("namer")
+    // val packageobjectsPhase          = phaseNamed("packageobjects")
+    val typerPhase                   = phaseNamed("typer")
+    // val superaccessorsPhase          = phaseNamed("superaccessors")
+    val picklerPhase                 = phaseNamed("pickler")
+    val refchecksPhase               = phaseNamed("refchecks")
+    // val selectiveanfPhase            = phaseNamed("selectiveanf")
+    // val selectivecpsPhase            = phaseNamed("selectivecps")
+    val uncurryPhase                 = phaseNamed("uncurry")
+    // val tailcallsPhase               = phaseNamed("tailcalls")
+    val specializePhase              = phaseNamed("specialize")
+    val explicitouterPhase           = phaseNamed("explicitouter")
+    val erasurePhase                 = phaseNamed("erasure")
+    // val lazyvalsPhase                = phaseNamed("lazyvals")
+    val lambdaliftPhase              = phaseNamed("lambdalift")
+    // val constructorsPhase            = phaseNamed("constructors")
+    val flattenPhase                 = phaseNamed("flatten")
+    val mixinPhase                   = phaseNamed("mixin")
+    val cleanupPhase                 = phaseNamed("cleanup")
+    val icodePhase                   = phaseNamed("icode")
+    // val inlinerPhase                 = phaseNamed("inliner")
+    // val inlineExceptionHandlersPhase = phaseNamed("inlineExceptionHandlers")
+    // val closelimPhase                = phaseNamed("closelim")
+    // val dcePhase                     = phaseNamed("dce")
+    val jvmPhase                     = phaseNamed("jvm")
 
     def runIsAt(ph: Phase)   = globalPhase.id == ph.id
     def runIsPast(ph: Phase) = globalPhase.id > ph.id
@@ -1268,7 +1277,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter) extends Symb
       checkDeprecatedSettings(unitbuf.head)
       globalPhase = fromPhase
 
-     while (globalPhase != terminalPhase && !reporter.hasErrors) {
+     while (globalPhase.hasNext && !reporter.hasErrors) {
         val startTime = currentTime
         phase = globalPhase
 
@@ -1389,19 +1398,13 @@ class Global(var currentSettings: Settings, var reporter: Reporter) extends Symb
     /** Compile abstract file until `globalPhase`, but at least to phase "namer".
      */
     def compileLate(unit: CompilationUnit) {
-      def stop(ph: Phase) = ph == null || ph.id >= (globalPhase.id max typerPhase.id)
-      def loop(ph: Phase) {
-        if (stop(ph)) refreshProgress
-        else {
-          atPhase(ph)(ph.asInstanceOf[GlobalPhase] applyPhase unit)
-          loop(ph.next match {
-            case `ph`   => null   // ph == ph.next implies terminal, and null ends processing
-            case x      => x
-          })
-        }
-      }
+      val maxId = math.max(globalPhase.id, typerPhase.id)
       addUnit(unit)
-      loop(firstPhase)
+
+      firstPhase.iterator takeWhile (_.id < maxId) foreach (ph =>
+        atPhase(ph)(ph.asInstanceOf[GlobalPhase] applyPhase unit)
+      )
+      refreshProgress
     }
 
     /**

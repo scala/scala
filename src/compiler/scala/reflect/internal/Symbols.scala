@@ -1166,7 +1166,13 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
       abort("typeConstructor inapplicable for " + this)
 
     /** The logic approximately boils down to finding the most recent phase
-     *  which immediately follows any of namer, typer, or erasure.
+     *  which immediately follows any of parser, namer, typer, or erasure.
+     *  In effect that means this will return one of:
+     *
+     *    - packageobjects (follows namer) 
+     *    - superaccessors (follows typer)
+     *    - lazyvals       (follows erasure)
+     *    - null
      */
     private def unsafeTypeParamPhase = {
       var ph = phase
@@ -2752,5 +2758,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     assert(validFrom != NoPeriod)
     override def toString() =
       "TypeHistory(" + phaseOf(validFrom)+":"+runId(validFrom) + "," + info + "," + prev + ")"
+    
+    def toList: List[TypeHistory] = this :: ( if (prev eq null) Nil else prev.toList )
   }
 }

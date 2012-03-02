@@ -8,10 +8,15 @@
 
 package scala.collection.parallel.mutable
 
+
+
 import collection.generic._
 import collection.mutable.FlatHashTable
 import collection.parallel.Combiner
 import collection.mutable.UnrolledBuffer
+import collection.parallel.Task
+
+
 
 /** A parallel hash set.
  *
@@ -113,7 +118,6 @@ private[mutable] abstract class ParHashSetCombiner[T](private val tableLoadFacto
 extends collection.parallel.BucketCombiner[T, ParHashSet[T], Any, ParHashSetCombiner[T]](ParHashSetCombiner.numblocks)
 with collection.mutable.FlatHashTable.HashUtils[T] {
 //self: EnvironmentPassingCombiner[T, ParHashSet[T]] =>
-  import collection.parallel.tasksupport._
   private var mask = ParHashSetCombiner.discriminantmask
   private var nonmasklen = ParHashSetCombiner.nonmasklength
   private var seedvalue = 27
@@ -139,7 +143,7 @@ with collection.mutable.FlatHashTable.HashUtils[T] {
   private def parPopulate: FlatHashTable.Contents[T] = {
     // construct it in parallel
     val table = new AddingFlatHashTable(size, tableLoadFactor, seedvalue)
-    val (inserted, leftovers) = executeAndWaitResult(new FillBlocks(buckets, table, 0, buckets.length))
+    val (inserted, leftovers) = combinerTaskSupport.executeAndWaitResult(new FillBlocks(buckets, table, 0, buckets.length))
     var leftinserts = 0
     for (elem <- leftovers) leftinserts += table.insertEntry(0, table.tableLength, elem.asInstanceOf[T])
     table.setSize(leftinserts + inserted)
@@ -304,7 +308,7 @@ with collection.mutable.FlatHashTable.HashUtils[T] {
       // the total number of successfully inserted elements is adjusted accordingly
       result = (this.result._1 + that.result._1 + inserted, remainingLeftovers concat that.result._2)
     }
-    def shouldSplitFurther = howmany > collection.parallel.thresholdFromSize(ParHashMapCombiner.numblocks, parallelismLevel)
+    def shouldSplitFurther = howmany > collection.parallel.thresholdFromSize(ParHashMapCombiner.numblocks, combinerTaskSupport.parallelismLevel)
   }
 
 }

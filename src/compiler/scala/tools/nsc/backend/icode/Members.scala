@@ -183,12 +183,7 @@ trait Members {
       this
     }
 
-    def addLocal(l: Local): Local =
-      locals find (_ == l) getOrElse {
-        locals ::= l
-        l
-      }
-
+    def addLocal(l: Local): Local = findOrElse(locals)(_ == l) { locals ::= l ; l }
 
     def addParam(p: Local): Unit =
       if (params contains p) ()

@@ -97,13 +97,17 @@ abstract class SelectiveANFTransform extends PluginComponent with Transform with
         case vd @ ValDef(mods, name, tpt, rhs) => // object-level valdefs
           debuglog("transforming valdef " + vd.symbol)
 
-          atOwner(vd.symbol) {
+          if (getExternalAnswerTypeAnn(tpt.tpe).isEmpty) {
+            
+            atOwner(vd.symbol) {
 
-            assert(getExternalAnswerTypeAnn(tpt.tpe) == None)
+              val rhs1 = transExpr(rhs, None, None)
 
-            val rhs1 = transExpr(rhs, None, None)
-
-            treeCopy.ValDef(vd, mods, name, transform(tpt), rhs1)
+              treeCopy.ValDef(vd, mods, name, transform(tpt), rhs1)
+            }
+          } else {
+            unit.error(tree.pos, "cps annotations not allowed on by-value parameters or value definitions")
+            super.transform(tree)
           }
 
         case TypeTree() =>

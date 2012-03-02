@@ -47,7 +47,6 @@ extends GenIterableView[T, Coll]
    with ParIterableLike[T, This, ThisSeq]
 {
 self =>
-  import tasksupport._
 
   override def foreach[U](f: T => U): Unit = super[ParIterableLike].foreach(f)
   override protected[this] def newCombiner: Combiner[T, This] = throw new UnsupportedOperationException(this + ".newCombiner");
@@ -135,7 +134,7 @@ self =>
     newZippedAllTryParSeq(that, thisElem, thatElem).asInstanceOf[That]
 
   override def force[U >: T, That](implicit bf: CanBuildFrom[Coll, U, That]) = bf ifParallel { pbf =>
-    executeAndWaitResult(new Force(pbf, splitter).mapResult(_.result).asInstanceOf[Task[That, ResultMapping[_, Force[U, That], That]]])
+    tasksupport.executeAndWaitResult(new Force(pbf, splitter).mapResult(_.result).asInstanceOf[Task[That, ResultMapping[_, Force[U, That], That]]])
   } otherwise {
     val b = bf(underlying)
     b ++= this.iterator
