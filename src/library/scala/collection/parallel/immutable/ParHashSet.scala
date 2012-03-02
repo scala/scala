@@ -8,6 +8,8 @@
 
 package scala.collection.parallel.immutable
 
+
+
 import scala.collection.parallel.ParSetLike
 import scala.collection.parallel.Combiner
 import scala.collection.parallel.IterableSplitter
@@ -19,6 +21,9 @@ import scala.collection.generic.GenericParTemplate
 import scala.collection.generic.GenericParCompanion
 import scala.collection.generic.GenericCompanion
 import scala.collection.immutable.{ HashSet, TrieIterator }
+import collection.parallel.Task
+
+
 
 /** Immutable parallel hash set, based on hash tries.
  *
@@ -127,7 +132,6 @@ private[immutable] abstract class HashSetCombiner[T]
 extends collection.parallel.BucketCombiner[T, ParHashSet[T], Any, HashSetCombiner[T]](HashSetCombiner.rootsize) {
 //self: EnvironmentPassingCombiner[T, ParHashSet[T]] =>
   import HashSetCombiner._
-  import collection.parallel.tasksupport._
   val emptyTrie = HashSet.empty[T]
 
   def +=(elem: T) = {
@@ -147,7 +151,7 @@ extends collection.parallel.BucketCombiner[T, ParHashSet[T], Any, HashSetCombine
     val bucks = buckets.filter(_ != null).map(_.headPtr)
     val root = new Array[HashSet[T]](bucks.length)
 
-    executeAndWaitResult(new CreateTrie(bucks, root, 0, bucks.length))
+    combinerTaskSupport.executeAndWaitResult(new CreateTrie(bucks, root, 0, bucks.length))
 
     var bitmap = 0
     var i = 0
@@ -202,7 +206,7 @@ extends collection.parallel.BucketCombiner[T, ParHashSet[T], Any, HashSetCombine
       val fp = howmany / 2
       List(new CreateTrie(bucks, root, offset, fp), new CreateTrie(bucks, root, offset + fp, howmany - fp))
     }
-    def shouldSplitFurther = howmany > collection.parallel.thresholdFromSize(root.length, parallelismLevel)
+    def shouldSplitFurther = howmany > collection.parallel.thresholdFromSize(root.length, combinerTaskSupport.parallelismLevel)
   }
 }
 

@@ -11,20 +11,25 @@ package scala.concurrent.impl
 
 
 import java.util.concurrent.{Callable, ExecutorService}
+import scala.concurrent.forkjoin._
 import scala.concurrent.{ExecutionContext, resolver, Awaitable, body2awaitable}
 import scala.util.{ Duration, Try, Success, Failure }
 import scala.collection.mutable.Stack
 
 
 
-class ExecutionContextImpl(executorService: ExecutorService) extends ExecutionContext {
+class ExecutionContextImpl(val executorService: AnyRef) extends ExecutionContext {
   import ExecutionContextImpl._
 
   def execute(runnable: Runnable): Unit = executorService match {
-    // case fj: ForkJoinPool =>
-    //   TODO fork if more applicable
-    //   executorService execute runnable
-    case _ =>
+    case fj: ForkJoinPool =>
+      if (Thread.currentThread.isInstanceOf[ForkJoinWorkerThread]) {
+        val fjtask = ForkJoinTask.adapt(runnable)
+        fjtask.fork
+      } else {
+        fj.execute(runnable)
+      }
+    case executorService: ExecutorService =>
       executorService execute runnable
   }
 
