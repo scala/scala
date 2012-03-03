@@ -1843,9 +1843,7 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
      * method. *Does not assume the parameters come first!*
      */
     def computeLocalVarsIndex(m: IMethod) {
-      var idx = 1
-      if (m.symbol.isStaticMember)
-        idx = 0;
+      var idx = if (m.symbol.isStaticMember) 0 else 1;
 
       for (l <- m.params) {
         debuglog("Index value for " + l + "{" + l.## + "}: " + idx)
