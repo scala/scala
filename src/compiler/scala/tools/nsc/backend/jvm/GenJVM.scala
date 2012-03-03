@@ -40,16 +40,16 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
   private def outputDirectory(sym: Symbol): AbstractFile =
     settings.outputDirs outputDirFor beforeFlatten(sym.sourceFile)
 
-  private def getFile(base: AbstractFile, cls: JClass, suffix: String): AbstractFile = {
+  private def getFile(base: AbstractFile, clsName: String, suffix: String): AbstractFile = {
     var dir = base
-    val pathParts = cls.getName().split("[./]").toList
+    val pathParts = clsName.split("[./]").toList
     for (part <- pathParts.init) {
       dir = dir.subdirectoryNamed(part)
     }
     dir.fileNamed(pathParts.last + suffix)
   }
-  private def getFile(sym: Symbol, cls: JClass, suffix: String): AbstractFile =
-    getFile(outputDirectory(sym), cls, suffix)
+  private def getFile(sym: Symbol, clsName: String, suffix: String): AbstractFile =
+    getFile(outputDirectory(sym), clsName, suffix)
 
   /** JVM code generation phase
    */
