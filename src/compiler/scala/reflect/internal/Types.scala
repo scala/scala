@@ -1118,7 +1118,14 @@ trait Types extends api.Types { self: SymbolTable =>
       underlying.baseTypeSeq prepend this
     }
     override def isHigherKinded = false // singleton type classifies objects, thus must be kind *
-    override def safeToString: String = prefixString + "type"
+    override def safeToString: String = {
+      // Avoiding printing Predef.type and scala.package.type as "type",
+      // since in all other cases we omit those prefixes.
+      val pre = underlying.typeSymbol.skipPackageObject
+      if (pre.isOmittablePrefix) pre.fullName + ".type"
+      else prefixString + "type"
+    }
+
 /*
     override def typeOfThis: Type = typeSymbol.typeOfThis
     override def bounds: TypeBounds = TypeBounds(this, this)
