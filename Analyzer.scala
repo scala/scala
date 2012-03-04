@@ -130,10 +130,19 @@ abstract class Compat
 		def LOCALCHILD = sourceCompatibilityOnly
 
 		def NullaryMethodType = NullaryMethodTpe
+
+		def MACRO = DummyValue
 	}
 	// in 2.9, NullaryMethodType was added to Type
 	object NullaryMethodTpe {
 		def unapply(t: Type): Option[Type] = None
+	}
+
+	val DummyValue = 0
+	def hasMacro(s: Symbol): Boolean =
+	{
+		val MACRO = Flags.MACRO // will be DummyValue for versions before 2.10
+	  MACRO != DummyValue && s.hasFlag(MACRO)
 	}
 
 	private[this] def sourceCompatibilityOnly: Nothing = throw new RuntimeException("For source compatibility only: should not get here.")
