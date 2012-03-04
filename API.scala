@@ -273,9 +273,9 @@ final class API(val global: Global, val callback: xsbti.AnalysisCallback) extend
 	}
 	private def getModifiers(s: Symbol): xsbti.api.Modifiers =
 	{
-		import Flags._
+		import Flags._; val MACRO = 0x00008000 // From Flags.MACRO in 2.10.0+
 		new xsbti.api.Modifiers(s.hasFlag(ABSTRACT) || s.hasFlag(DEFERRED), s.hasFlag(OVERRIDE),
-			s.isFinal, s.hasFlag(SEALED), isImplicit(s), s.hasFlag(LAZY))
+			s.isFinal, s.hasFlag(SEALED), isImplicit(s), s.hasFlag(LAZY), s.hasFlag(MACRO))
 	}
 
 	private def isImplicit(s: Symbol) = s.hasFlag(Flags.IMPLICIT)
