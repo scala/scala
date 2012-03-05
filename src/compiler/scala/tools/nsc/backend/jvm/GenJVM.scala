@@ -1135,625 +1135,625 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
         case x :: y :: ys => nextBlock = y; genBlock(x); genBlocks(y :: ys)
       }
 
-    /** Generate exception handlers for the current method. */
-    def genExceptionHandlers() {
+      /** Generate exception handlers for the current method. */
+      def genExceptionHandlers() {
 
-      /** Return a list of pairs of intervals where the handler is active.
-       *  The intervals in the list have to be inclusive in the beginning and
-       *  exclusive in the end: [start, end).
-       */
-      def ranges(e: ExceptionHandler): List[(Int, Int)] = {
-        var covered = e.covered
-        var ranges: List[(Int, Int)] = Nil
-        var start = -1
-        var end = -1
-
-        linearization foreach { b =>
-          if (! (covered contains b) ) {
-            if (start >= 0) { // we're inside a handler range
-              end = labels(b).getAnchor()
-              ranges ::= ((start, end))
-              start = -1
-            }
-          } else {
-            if (start < 0)  // we're not inside a handler range
-              start = labels(b).getAnchor()
-
-            end = endPC(b)
-            covered -= b
-          }
-        }
-
-        /* Add the last interval. Note that since the intervals are
-         * open-ended to the right, we have to give a number past the actual
-         * code!
+        /** Return a list of pairs of intervals where the handler is active.
+         *  The intervals in the list have to be inclusive in the beginning and
+         *  exclusive in the end: [start, end).
          */
-        if (start >= 0) {
-          ranges ::= ((start, jcode.getPC()))
+        def ranges(e: ExceptionHandler): List[(Int, Int)] = {
+          var covered = e.covered
+          var ranges: List[(Int, Int)] = Nil
+          var start = -1
+          var end = -1
+
+          linearization foreach { b =>
+            if (! (covered contains b) ) {
+              if (start >= 0) { // we're inside a handler range
+                end = labels(b).getAnchor()
+                ranges ::= ((start, end))
+                start = -1
+              }
+            } else {
+              if (start < 0)  // we're not inside a handler range
+                start = labels(b).getAnchor()
+
+              end = endPC(b)
+              covered -= b
+            }
+          }
+
+          /* Add the last interval. Note that since the intervals are
+           * open-ended to the right, we have to give a number past the actual
+           * code!
+           */
+          if (start >= 0) {
+            ranges ::= ((start, jcode.getPC()))
+          }
+
+          if (!covered.isEmpty)
+            debuglog("Some covered blocks were not found in method: " + method +
+                  " covered: " + covered + " not in " + linearization)
+          ranges
         }
 
-        if (!covered.isEmpty)
-          debuglog("Some covered blocks were not found in method: " + method +
-                " covered: " + covered + " not in " + linearization)
-        ranges
-      }
-
-      for (e <- this.method.exh ; p <- ranges(e).sortBy(_._1)) {
-        if (p._1 < p._2) {
-          debuglog("Adding exception handler " + e + "at block: " + e.startBlock + " for " + method +
-                " from: " + p._1 + " to: " + p._2 + " catching: " + e.cls);
-          val cls = if (e.cls == NoSymbol || e.cls == ThrowableClass) null
-                    else javaName(e.cls)
-          jcode.addExceptionHandler(p._1, p._2,
-                                    labels(e.startBlock).getAnchor(),
-                                    cls)
-        } else
-          log("Empty exception range: " + p)
-      }
-    }
-
-    def isAccessibleFrom(target: Symbol, site: Symbol): Boolean = {
-      target.isPublic || target.isProtected && {
-        (site.enclClass isSubClass target.enclClass) ||
-        (site.enclosingPackage == target.privateWithin)
-      }
-    }
-
-    def genCallMethod(call: CALL_METHOD) {
-      val CALL_METHOD(method, style) = call
-      val siteSymbol  = clasz.symbol
-      val hostSymbol  = call.hostClass
-      val methodOwner = method.owner
-      // info calls so that types are up to date; erasure may add lateINTERFACE to traits
-      hostSymbol.info ; methodOwner.info
-
-      def isInterfaceCall(sym: Symbol) = (
-           sym.isInterface && methodOwner != ObjectClass
-        || sym.isJavaDefined && sym.isNonBottomSubClass(ClassfileAnnotationClass)
-      )
-      // whether to reference the type of the receiver or
-      // the type of the method owner (if not an interface!)
-      val useMethodOwner = (
-           style != Dynamic
-        || !isInterfaceCall(hostSymbol) && isAccessibleFrom(methodOwner, siteSymbol)
-        || hostSymbol.isBottomClass
-      )
-      val receiver = if (useMethodOwner) methodOwner else hostSymbol
-      val jowner   = javaName(receiver)
-      val jname    = javaName(method)
-      val jtype    = javaType(method).asInstanceOf[JMethodType]
-
-      def emit(invoke: String) {
-        debuglog("%s %s %s.%s:%s".format(invoke, receiver.accessString, jowner, jname, jtype))
-        invoke match {
-          case "invokeinterface"  => jcode.emitINVOKEINTERFACE(jowner, jname, jtype)
-          case "invokevirtual"    => jcode.emitINVOKEVIRTUAL(jowner, jname, jtype)
-          case "invokespecial"    => jcode.emitINVOKESPECIAL(jowner, jname, jtype)
-          case "invokestatic"     => jcode.emitINVOKESTATIC(jowner, jname, jtype)
-        }
-      }
-      def initModule() {
-        // we initialize the MODULE$ field immediately after the super ctor
-        if (isStaticModule(siteSymbol) && !isModuleInitialized &&
-            jmethod.getName() == JMethod.INSTANCE_CONSTRUCTOR_NAME &&
-            jname == JMethod.INSTANCE_CONSTRUCTOR_NAME) {
-          isModuleInitialized = true
-          jcode.emitALOAD_0()
-          jcode.emitPUTSTATIC(jclass.getName(),
-                              nme.MODULE_INSTANCE_FIELD.toString,
-                              jclass.getType())
+        for (e <- this.method.exh ; p <- ranges(e).sortBy(_._1)) {
+          if (p._1 < p._2) {
+            debuglog("Adding exception handler " + e + "at block: " + e.startBlock + " for " + method +
+                  " from: " + p._1 + " to: " + p._2 + " catching: " + e.cls);
+            val cls = if (e.cls == NoSymbol || e.cls == ThrowableClass) null
+                      else javaName(e.cls)
+            jcode.addExceptionHandler(p._1, p._2,
+                                      labels(e.startBlock).getAnchor(),
+                                      cls)
+          } else
+            log("Empty exception range: " + p)
         }
       }
 
-      style match {
-        case Static(true)                         => emit("invokespecial")
-        case Static(false)                        => emit("invokestatic")
-        case Dynamic if isInterfaceCall(receiver) => emit("invokeinterface")
-        case Dynamic                              => emit("invokevirtual")
-        case SuperCall(_)                         => emit("invokespecial") ; initModule()
+      def isAccessibleFrom(target: Symbol, site: Symbol): Boolean = {
+        target.isPublic || target.isProtected && {
+          (site.enclClass isSubClass target.enclClass) ||
+          (site.enclosingPackage == target.privateWithin)
+        }
       }
-    }
 
-    def genBlock(b: BasicBlock) {
-      labels(b).anchorToNext()
+      def genCallMethod(call: CALL_METHOD) {
+        val CALL_METHOD(method, style) = call
+        val siteSymbol  = clasz.symbol
+        val hostSymbol  = call.hostClass
+        val methodOwner = method.owner
+        // info calls so that types are up to date; erasure may add lateINTERFACE to traits
+        hostSymbol.info ; methodOwner.info
 
-      debuglog("Generating code for block: " + b + " at pc: " + labels(b).getAnchor())
-      var lastMappedPC = 0
-      var lastLineNr = 0
-      var crtPC = 0
+        def isInterfaceCall(sym: Symbol) = (
+             sym.isInterface && methodOwner != ObjectClass
+          || sym.isJavaDefined && sym.isNonBottomSubClass(ClassfileAnnotationClass)
+        )
+        // whether to reference the type of the receiver or
+        // the type of the method owner (if not an interface!)
+        val useMethodOwner = (
+             style != Dynamic
+          || !isInterfaceCall(hostSymbol) && isAccessibleFrom(methodOwner, siteSymbol)
+          || hostSymbol.isBottomClass
+        )
+        val receiver = if (useMethodOwner) methodOwner else hostSymbol
+        val jowner   = javaName(receiver)
+        val jname    = javaName(method)
+        val jtype    = javaType(method).asInstanceOf[JMethodType]
 
-      /** local variables whose scope appears in this block. */
-      val varsInBlock: mutable.Set[Local] = new mutable.HashSet
-
-      for (instr <- b) {
-
-        instr match {
-          case THIS(clasz) =>
+        def emit(invoke: String) {
+          debuglog("%s %s %s.%s:%s".format(invoke, receiver.accessString, jowner, jname, jtype))
+          invoke match {
+            case "invokeinterface"  => jcode.emitINVOKEINTERFACE(jowner, jname, jtype)
+            case "invokevirtual"    => jcode.emitINVOKEVIRTUAL(jowner, jname, jtype)
+            case "invokespecial"    => jcode.emitINVOKESPECIAL(jowner, jname, jtype)
+            case "invokestatic"     => jcode.emitINVOKESTATIC(jowner, jname, jtype)
+          }
+        }
+        def initModule() {
+          // we initialize the MODULE$ field immediately after the super ctor
+          if (isStaticModule(siteSymbol) && !isModuleInitialized &&
+              jmethod.getName() == JMethod.INSTANCE_CONSTRUCTOR_NAME &&
+              jname == JMethod.INSTANCE_CONSTRUCTOR_NAME) {
+            isModuleInitialized = true
             jcode.emitALOAD_0()
+            jcode.emitPUTSTATIC(jclass.getName(),
+                                nme.MODULE_INSTANCE_FIELD.toString,
+                                jclass.getType())
+          }
+        }
 
-          case CONSTANT(const) =>
-            genConstant(jcode, const)
+        style match {
+          case Static(true)                         => emit("invokespecial")
+          case Static(false)                        => emit("invokestatic")
+          case Dynamic if isInterfaceCall(receiver) => emit("invokeinterface")
+          case Dynamic                              => emit("invokevirtual")
+          case SuperCall(_)                         => emit("invokespecial") ; initModule()
+        }
+      }
 
-          case LOAD_ARRAY_ITEM(kind) =>
-            jcode.emitALOAD(javaType(kind))
+      def genBlock(b: BasicBlock) {
+        labels(b).anchorToNext()
 
-          case LOAD_LOCAL(local) =>
-            jcode.emitLOAD(indexOf(local), javaType(local.kind))
+        debuglog("Generating code for block: " + b + " at pc: " + labels(b).getAnchor())
+        var lastMappedPC = 0
+        var lastLineNr = 0
+        var crtPC = 0
 
-          case lf @ LOAD_FIELD(field, isStatic) =>
-            var owner = javaName(lf.hostClass)
-            debuglog("LOAD_FIELD with owner: " + owner +
-                  " flags: " + Flags.flagsToString(field.owner.flags))
-            if (isStatic)
-              jcode.emitGETSTATIC(owner,
-                                  javaName(field),
-                                  javaType(field))
-            else
-              jcode.emitGETFIELD(owner,
-                                  javaName(field),
-                                  javaType(field))
+        /** local variables whose scope appears in this block. */
+        val varsInBlock: mutable.Set[Local] = new mutable.HashSet
 
-          case LOAD_MODULE(module) =>
-//            assert(module.isModule, "Expected module: " + module)
-            debuglog("generating LOAD_MODULE for: " + module + " flags: " +
-                  Flags.flagsToString(module.flags));
-            if (clasz.symbol == module.moduleClass && jmethod.getName() != nme.readResolve.toString)
+        for (instr <- b) {
+
+          instr match {
+            case THIS(clasz) =>
               jcode.emitALOAD_0()
-            else
-              jcode.emitGETSTATIC(javaName(module) /* + "$" */ ,
-                                  nme.MODULE_INSTANCE_FIELD.toString,
-                                  javaType(module))
 
-          case STORE_ARRAY_ITEM(kind) =>
-            jcode emitASTORE javaType(kind)
+            case CONSTANT(const) =>
+              genConstant(jcode, const)
 
-          case STORE_LOCAL(local) =>
-            jcode.emitSTORE(indexOf(local), javaType(local.kind))
+            case LOAD_ARRAY_ITEM(kind) =>
+              jcode.emitALOAD(javaType(kind))
 
-          case STORE_THIS(_) =>
-            // this only works for impl classes because the self parameter comes first
-            // in the method signature. If that changes, this code has to be revisited.
-            jcode.emitASTORE_0()
+            case LOAD_LOCAL(local) =>
+              jcode.emitLOAD(indexOf(local), javaType(local.kind))
 
-          case STORE_FIELD(field, isStatic) =>
-            val owner = javaName(field.owner)
-            if (isStatic)
-              jcode.emitPUTSTATIC(owner,
-                                  javaName(field),
-                                  javaType(field))
-            else
-              jcode.emitPUTFIELD(owner,
-                                  javaName(field),
-                                  javaType(field))
+            case lf @ LOAD_FIELD(field, isStatic) =>
+              var owner = javaName(lf.hostClass)
+              debuglog("LOAD_FIELD with owner: " + owner +
+                    " flags: " + Flags.flagsToString(field.owner.flags))
+              if (isStatic)
+                jcode.emitGETSTATIC(owner,
+                                    javaName(field),
+                                    javaType(field))
+              else
+                jcode.emitGETFIELD(owner,
+                                    javaName(field),
+                                    javaType(field))
 
-          case CALL_PRIMITIVE(primitive) =>
-            genPrimitive(primitive, instr.pos)
+            case LOAD_MODULE(module) =>
+  //            assert(module.isModule, "Expected module: " + module)
+              debuglog("generating LOAD_MODULE for: " + module + " flags: " +
+                    Flags.flagsToString(module.flags));
+              if (clasz.symbol == module.moduleClass && jmethod.getName() != nme.readResolve.toString)
+                jcode.emitALOAD_0()
+              else
+                jcode.emitGETSTATIC(javaName(module) /* + "$" */ ,
+                                    nme.MODULE_INSTANCE_FIELD.toString,
+                                    javaType(module))
 
-          /** Special handling to access native Array.clone() */
-          case call @ CALL_METHOD(definitions.Array_clone, Dynamic) =>
-            val target: String = javaType(call.targetTypeKind).getSignature()
-            jcode.emitINVOKEVIRTUAL(target, "clone", arrayCloneType)
+            case STORE_ARRAY_ITEM(kind) =>
+              jcode emitASTORE javaType(kind)
 
-          case call @ CALL_METHOD(method, style) =>
-            genCallMethod(call)
+            case STORE_LOCAL(local) =>
+              jcode.emitSTORE(indexOf(local), javaType(local.kind))
 
-          case BOX(kind) =>
-            val boxedType = definitions.boxedClass(kind.toType.typeSymbol)
-            val mtype = new JMethodType(javaType(boxedType), Array(javaType(kind)))
-            jcode.emitINVOKESTATIC(BoxesRunTime, "boxTo" + boxedType.decodedName, mtype)
+            case STORE_THIS(_) =>
+              // this only works for impl classes because the self parameter comes first
+              // in the method signature. If that changes, this code has to be revisited.
+              jcode.emitASTORE_0()
 
-          case UNBOX(kind) =>
-            val mtype = new JMethodType(javaType(kind), Array(JAVA_LANG_OBJECT))
-            jcode.emitINVOKESTATIC(BoxesRunTime, "unboxTo" + kind.toType.typeSymbol.decodedName, mtype)
+            case STORE_FIELD(field, isStatic) =>
+              val owner = javaName(field.owner)
+              if (isStatic)
+                jcode.emitPUTSTATIC(owner,
+                                    javaName(field),
+                                    javaType(field))
+              else
+                jcode.emitPUTFIELD(owner,
+                                    javaName(field),
+                                    javaType(field))
 
-          case NEW(REFERENCE(cls)) =>
-            val className = javaName(cls)
-            jcode emitNEW className
+            case CALL_PRIMITIVE(primitive) =>
+              genPrimitive(primitive, instr.pos)
 
-          case CREATE_ARRAY(elem, 1) => elem match {
-            case REFERENCE(_) | ARRAY(_) =>
-              jcode emitANEWARRAY javaType(elem).asInstanceOf[JReferenceType]
-            case _ =>
-              jcode emitNEWARRAY javaType(elem)
-          }
+            /** Special handling to access native Array.clone() */
+            case call @ CALL_METHOD(definitions.Array_clone, Dynamic) =>
+              val target: String = javaType(call.targetTypeKind).getSignature()
+              jcode.emitINVOKEVIRTUAL(target, "clone", arrayCloneType)
 
-          case CREATE_ARRAY(elem, dims) =>
-            jcode.emitMULTIANEWARRAY(javaType(ArrayN(elem, dims)).asInstanceOf[JReferenceType], dims)
+            case call @ CALL_METHOD(method, style) =>
+              genCallMethod(call)
 
-          case IS_INSTANCE(tpe) =>
-            tpe match {
-              case REFERENCE(cls) =>
-                jcode emitINSTANCEOF new JObjectType(javaName(cls))
-              case ARRAY(elem) =>
-                jcode emitINSTANCEOF new JArrayType(javaType(elem))
-              case _ =>
-                abort("Unknown reference type in IS_INSTANCE: " + tpe)
-            }
+            case BOX(kind) =>
+              val boxedType = definitions.boxedClass(kind.toType.typeSymbol)
+              val mtype = new JMethodType(javaType(boxedType), Array(javaType(kind)))
+              jcode.emitINVOKESTATIC(BoxesRunTime, "boxTo" + boxedType.decodedName, mtype)
 
-          case CHECK_CAST(tpe) =>
-            tpe match {
-              case REFERENCE(cls) =>
-                // No need to checkcast for Objects
-                if (cls != ObjectClass)
-                  jcode emitCHECKCAST new JObjectType(javaName(cls))
-              case ARRAY(elem) =>
-                jcode emitCHECKCAST new JArrayType(javaType(elem))
-              case _ =>
-                abort("Unknown reference type in IS_INSTANCE: " + tpe)
-            }
+            case UNBOX(kind) =>
+              val mtype = new JMethodType(javaType(kind), Array(JAVA_LANG_OBJECT))
+              jcode.emitINVOKESTATIC(BoxesRunTime, "unboxTo" + kind.toType.typeSymbol.decodedName, mtype)
 
-          case SWITCH(tags, branches) =>
-            val tagArray = new Array[Array[Int]](tags.length)
-            var caze = tags
-            var i = 0
+            case NEW(REFERENCE(cls)) =>
+              val className = javaName(cls)
+              jcode emitNEW className
 
-            while (i < tagArray.length) {
-              tagArray(i) = new Array[Int](caze.head.length)
-              caze.head.copyToArray(tagArray(i), 0)
-              i += 1
-              caze = caze.tail
-            }
-            val branchArray = jcode.newLabels(tagArray.length)
-            i = 0
-            while (i < branchArray.length) {
-              branchArray(i) = labels(branches(i))
-              i += 1
-            }
-            debuglog("Emitting SWITCH:\ntags: " + tags + "\nbranches: " + branches)
-            jcode.emitSWITCH(tagArray,
-                             branchArray,
-                             labels(branches.last),
-                             MIN_SWITCH_DENSITY)
-            ()
-
-          case JUMP(whereto) =>
-            if (nextBlock != whereto)
-              jcode.emitGOTO_maybe_W(labels(whereto), false) // default to short jumps
-
-          case CJUMP(success, failure, cond, kind) =>
-            kind match {
-              case BOOL | BYTE | CHAR | SHORT | INT =>
-                if (nextBlock == success) {
-                  jcode.emitIF_ICMP(conds(negate(cond)), labels(failure))
-                  // .. and fall through to success label
-                } else {
-                  jcode.emitIF_ICMP(conds(cond), labels(success))
-                  if (nextBlock != failure)
-                    jcode.emitGOTO_maybe_W(labels(failure), false)
-                }
-
+            case CREATE_ARRAY(elem, 1) => elem match {
               case REFERENCE(_) | ARRAY(_) =>
-                if (nextBlock == success) {
-                  jcode.emitIF_ACMP(conds(negate(cond)), labels(failure))
-                  // .. and fall through to success label
-                } else {
-                  jcode.emitIF_ACMP(conds(cond), labels(success))
-                  if (nextBlock != failure)
-                    jcode.emitGOTO_maybe_W(labels(failure), false)
-                }
-
+                jcode emitANEWARRAY javaType(elem).asInstanceOf[JReferenceType]
               case _ =>
-                (kind: @unchecked) match {
-                  case LONG   => jcode.emitLCMP()
-                  case FLOAT  =>
-                    if (cond == LT || cond == LE) jcode.emitFCMPG()
-                    else jcode.emitFCMPL()
-                  case DOUBLE =>
-                    if (cond == LT || cond == LE) jcode.emitDCMPG()
-                    else jcode.emitDCMPL()
-                }
-                if (nextBlock == success) {
-                  jcode.emitIF(conds(negate(cond)), labels(failure))
-                  // .. and fall through to success label
-                } else {
-                  jcode.emitIF(conds(cond), labels(success));
-                  if (nextBlock != failure)
-                    jcode.emitGOTO_maybe_W(labels(failure), false)
-                }
+                jcode emitNEWARRAY javaType(elem)
             }
 
-          case CZJUMP(success, failure, cond, kind) =>
-            kind match {
-              case BOOL | BYTE | CHAR | SHORT | INT =>
-                if (nextBlock == success) {
-                  jcode.emitIF(conds(negate(cond)), labels(failure))
-                } else {
-                  jcode.emitIF(conds(cond), labels(success))
-                  if (nextBlock != failure)
-                    jcode.emitGOTO_maybe_W(labels(failure), false)
-                }
+            case CREATE_ARRAY(elem, dims) =>
+              jcode.emitMULTIANEWARRAY(javaType(ArrayN(elem, dims)).asInstanceOf[JReferenceType], dims)
 
-              case REFERENCE(_) | ARRAY(_) =>
-                val Success = success
-                val Failure = failure
-                (cond, nextBlock) match {
-                  case (EQ, Success) =>
-                    jcode emitIFNONNULL labels(failure)
-                  case (NE, Failure) =>
-                    jcode emitIFNONNULL labels(success)
-                  case (EQ, Failure) =>
-                    jcode emitIFNULL labels(success)
-                  case (NE, Success) =>
-                    jcode emitIFNULL labels(failure)
-                  case (EQ, _) =>
-                    jcode emitIFNULL labels(success)
-                    jcode.emitGOTO_maybe_W(labels(failure), false)
-                  case (NE, _) =>
-                    jcode emitIFNONNULL labels(success)
-                    jcode.emitGOTO_maybe_W(labels(failure), false)
-                }
-
-              case _ =>
-                (kind: @unchecked) match {
-                  case LONG   =>
-                    jcode.emitLCONST_0(); jcode.emitLCMP()
-                  case FLOAT  =>
-                    jcode.emitFCONST_0()
-                    if (cond == LT || cond == LE) jcode.emitFCMPG()
-                    else jcode.emitFCMPL()
-                  case DOUBLE =>
-                    jcode.emitDCONST_0()
-                    if (cond == LT || cond == LE) jcode.emitDCMPG()
-                    else jcode.emitDCMPL()
-                }
-                if (nextBlock == success) {
-                  jcode.emitIF(conds(negate(cond)), labels(failure))
-                } else {
-                  jcode.emitIF(conds(cond), labels(success))
-                  if (nextBlock != failure)
-                    jcode.emitGOTO_maybe_W(labels(failure), false)
-                }
-            }
-
-          case RETURN(kind) =>
-            jcode emitRETURN javaType(kind)
-
-          case THROW(_) =>
-            jcode.emitATHROW()
-
-          case DROP(kind) =>
-            kind match {
-              case LONG | DOUBLE => jcode.emitPOP2()
-              case _ => jcode.emitPOP()
-            }
-
-          case DUP(kind) =>
-            kind match {
-              case LONG | DOUBLE => jcode.emitDUP2()
-              case _ => jcode.emitDUP()
-            }
-
-          case MONITOR_ENTER() =>
-            jcode.emitMONITORENTER()
-
-          case MONITOR_EXIT() =>
-            jcode.emitMONITOREXIT()
-
-          case SCOPE_ENTER(lv) =>
-            varsInBlock += lv
-            lv.start = jcode.getPC()
-
-          case SCOPE_EXIT(lv) =>
-            if (varsInBlock(lv)) {
-              lv.ranges = (lv.start, jcode.getPC()) :: lv.ranges
-              varsInBlock -= lv
-            }
-            else if (b.varsInScope(lv)) {
-              lv.ranges = (labels(b).getAnchor(), jcode.getPC()) :: lv.ranges
-              b.varsInScope -= lv
-            }
-            else dumpMethodAndAbort(method, "Illegal local var nesting")
-
-          case LOAD_EXCEPTION(_) =>
-            ()
-        }
-
-        crtPC = jcode.getPC()
-
-//        assert(instr.pos.source.isEmpty || instr.pos.source.get == (clasz.cunit.source), "sources don't match")
-//        val crtLine = instr.pos.line.get(lastLineNr);
-
-        val crtLine = try {
-          if (instr.pos == NoPosition) lastLineNr else (instr.pos).line // check NoPosition to avoid costly exception
-        } catch {
-          case _: UnsupportedOperationException =>
-            log("Warning: wrong position in: " + method)
-            lastLineNr
-        }
-
-        if (b.lastInstruction == instr)
-          endPC(b) = jcode.getPC()
-
-        //System.err.println("CRTLINE: " + instr.pos + " " +
-        //           /* (if (instr.pos < clasz.cunit.source.content.length) clasz.cunit.source.content(instr.pos) else '*') + */ " " + crtLine);
-
-        if (crtPC > lastMappedPC) {
-          jcode.completeLineNumber(lastMappedPC, crtPC, crtLine)
-          lastMappedPC = crtPC
-          lastLineNr   = crtLine
-        }
-      }
-
-      // local vars that survived this basic block
-      for (lv <- varsInBlock) {
-        lv.ranges = (lv.start, jcode.getPC()) :: lv.ranges
-      }
-      for (lv <- b.varsInScope) {
-        lv.ranges = (labels(b).getAnchor(), jcode.getPC()) :: lv.ranges
-      }
-    }
-
-
-    /**
-     *  @param primitive ...
-     *  @param pos       ...
-     */
-    def genPrimitive(primitive: Primitive, pos: Position) {
-      primitive match {
-        case Negation(kind) =>
-          kind match {
-            case BOOL | BYTE | CHAR | SHORT | INT =>
-              jcode.emitINEG()
-            case LONG   => jcode.emitLNEG()
-            case FLOAT  => jcode.emitFNEG()
-            case DOUBLE => jcode.emitDNEG()
-            case _ => abort("Impossible to negate a " + kind)
-          }
-
-        case Arithmetic(op, kind) =>
-          op match {
-            case ADD => jcode.emitADD(javaType(kind))
-            case SUB =>
-              (kind: @unchecked) match {
-                case BOOL | BYTE | CHAR | SHORT | INT =>
-                  jcode.emitISUB()
-                case LONG   => jcode.emitLSUB()
-                case FLOAT  => jcode.emitFSUB()
-                case DOUBLE => jcode.emitDSUB()
+            case IS_INSTANCE(tpe) =>
+              tpe match {
+                case REFERENCE(cls) =>
+                  jcode emitINSTANCEOF new JObjectType(javaName(cls))
+                case ARRAY(elem) =>
+                  jcode emitINSTANCEOF new JArrayType(javaType(elem))
+                case _ =>
+                  abort("Unknown reference type in IS_INSTANCE: " + tpe)
               }
 
-            case MUL =>
-              (kind: @unchecked) match {
-                case BOOL | BYTE | CHAR | SHORT | INT =>
-                  jcode.emitIMUL()
-                case LONG   => jcode.emitLMUL()
-                case FLOAT  => jcode.emitFMUL()
-                case DOUBLE => jcode.emitDMUL()
+            case CHECK_CAST(tpe) =>
+              tpe match {
+                case REFERENCE(cls) =>
+                  // No need to checkcast for Objects
+                  if (cls != ObjectClass)
+                    jcode emitCHECKCAST new JObjectType(javaName(cls))
+                case ARRAY(elem) =>
+                  jcode emitCHECKCAST new JArrayType(javaType(elem))
+                case _ =>
+                  abort("Unknown reference type in IS_INSTANCE: " + tpe)
               }
 
-            case DIV =>
-              (kind: @unchecked) match {
-                case BOOL | BYTE | CHAR | SHORT | INT =>
-                  jcode.emitIDIV()
-                case LONG   => jcode.emitLDIV()
-                case FLOAT  => jcode.emitFDIV()
-                case DOUBLE => jcode.emitDDIV()
-              }
+            case SWITCH(tags, branches) =>
+              val tagArray = new Array[Array[Int]](tags.length)
+              var caze = tags
+              var i = 0
 
-            case REM =>
-              (kind: @unchecked) match {
-                case BOOL | BYTE | CHAR | SHORT | INT =>
-                  jcode.emitIREM()
-                case LONG   => jcode.emitLREM()
-                case FLOAT  => jcode.emitFREM()
-                case DOUBLE => jcode.emitDREM()
+              while (i < tagArray.length) {
+                tagArray(i) = new Array[Int](caze.head.length)
+                caze.head.copyToArray(tagArray(i), 0)
+                i += 1
+                caze = caze.tail
               }
+              val branchArray = jcode.newLabels(tagArray.length)
+              i = 0
+              while (i < branchArray.length) {
+                branchArray(i) = labels(branches(i))
+                i += 1
+              }
+              debuglog("Emitting SWITCH:\ntags: " + tags + "\nbranches: " + branches)
+              jcode.emitSWITCH(tagArray,
+                               branchArray,
+                               labels(branches.last),
+                               MIN_SWITCH_DENSITY)
+              ()
 
-            case NOT =>
+            case JUMP(whereto) =>
+              if (nextBlock != whereto)
+                jcode.emitGOTO_maybe_W(labels(whereto), false) // default to short jumps
+
+            case CJUMP(success, failure, cond, kind) =>
               kind match {
                 case BOOL | BYTE | CHAR | SHORT | INT =>
-                  jcode.emitPUSH(-1)
-                  jcode.emitIXOR()
-                case LONG   =>
-                  jcode.emitPUSH(-1l)
-                  jcode.emitLXOR()
+                  if (nextBlock == success) {
+                    jcode.emitIF_ICMP(conds(negate(cond)), labels(failure))
+                    // .. and fall through to success label
+                  } else {
+                    jcode.emitIF_ICMP(conds(cond), labels(success))
+                    if (nextBlock != failure)
+                      jcode.emitGOTO_maybe_W(labels(failure), false)
+                  }
+
+                case REFERENCE(_) | ARRAY(_) =>
+                  if (nextBlock == success) {
+                    jcode.emitIF_ACMP(conds(negate(cond)), labels(failure))
+                    // .. and fall through to success label
+                  } else {
+                    jcode.emitIF_ACMP(conds(cond), labels(success))
+                    if (nextBlock != failure)
+                      jcode.emitGOTO_maybe_W(labels(failure), false)
+                  }
+
                 case _ =>
-                  abort("Impossible to negate an " + kind)
+                  (kind: @unchecked) match {
+                    case LONG   => jcode.emitLCMP()
+                    case FLOAT  =>
+                      if (cond == LT || cond == LE) jcode.emitFCMPG()
+                      else jcode.emitFCMPL()
+                    case DOUBLE =>
+                      if (cond == LT || cond == LE) jcode.emitDCMPG()
+                      else jcode.emitDCMPL()
+                  }
+                  if (nextBlock == success) {
+                    jcode.emitIF(conds(negate(cond)), labels(failure))
+                    // .. and fall through to success label
+                  } else {
+                    jcode.emitIF(conds(cond), labels(success));
+                    if (nextBlock != failure)
+                      jcode.emitGOTO_maybe_W(labels(failure), false)
+                  }
               }
 
-            case _ =>
-              abort("Unknown arithmetic primitive " + primitive)
+            case CZJUMP(success, failure, cond, kind) =>
+              kind match {
+                case BOOL | BYTE | CHAR | SHORT | INT =>
+                  if (nextBlock == success) {
+                    jcode.emitIF(conds(negate(cond)), labels(failure))
+                  } else {
+                    jcode.emitIF(conds(cond), labels(success))
+                    if (nextBlock != failure)
+                      jcode.emitGOTO_maybe_W(labels(failure), false)
+                  }
+
+                case REFERENCE(_) | ARRAY(_) =>
+                  val Success = success
+                  val Failure = failure
+                  (cond, nextBlock) match {
+                    case (EQ, Success) =>
+                      jcode emitIFNONNULL labels(failure)
+                    case (NE, Failure) =>
+                      jcode emitIFNONNULL labels(success)
+                    case (EQ, Failure) =>
+                      jcode emitIFNULL labels(success)
+                    case (NE, Success) =>
+                      jcode emitIFNULL labels(failure)
+                    case (EQ, _) =>
+                      jcode emitIFNULL labels(success)
+                      jcode.emitGOTO_maybe_W(labels(failure), false)
+                    case (NE, _) =>
+                      jcode emitIFNONNULL labels(success)
+                      jcode.emitGOTO_maybe_W(labels(failure), false)
+                  }
+
+                case _ =>
+                  (kind: @unchecked) match {
+                    case LONG   =>
+                      jcode.emitLCONST_0(); jcode.emitLCMP()
+                    case FLOAT  =>
+                      jcode.emitFCONST_0()
+                      if (cond == LT || cond == LE) jcode.emitFCMPG()
+                      else jcode.emitFCMPL()
+                    case DOUBLE =>
+                      jcode.emitDCONST_0()
+                      if (cond == LT || cond == LE) jcode.emitDCMPG()
+                      else jcode.emitDCMPL()
+                  }
+                  if (nextBlock == success) {
+                    jcode.emitIF(conds(negate(cond)), labels(failure))
+                  } else {
+                    jcode.emitIF(conds(cond), labels(success))
+                    if (nextBlock != failure)
+                      jcode.emitGOTO_maybe_W(labels(failure), false)
+                  }
+              }
+
+            case RETURN(kind) =>
+              jcode emitRETURN javaType(kind)
+
+            case THROW(_) =>
+              jcode.emitATHROW()
+
+            case DROP(kind) =>
+              kind match {
+                case LONG | DOUBLE => jcode.emitPOP2()
+                case _ => jcode.emitPOP()
+              }
+
+            case DUP(kind) =>
+              kind match {
+                case LONG | DOUBLE => jcode.emitDUP2()
+                case _ => jcode.emitDUP()
+              }
+
+            case MONITOR_ENTER() =>
+              jcode.emitMONITORENTER()
+
+            case MONITOR_EXIT() =>
+              jcode.emitMONITOREXIT()
+
+            case SCOPE_ENTER(lv) =>
+              varsInBlock += lv
+              lv.start = jcode.getPC()
+
+            case SCOPE_EXIT(lv) =>
+              if (varsInBlock(lv)) {
+                lv.ranges = (lv.start, jcode.getPC()) :: lv.ranges
+                varsInBlock -= lv
+              }
+              else if (b.varsInScope(lv)) {
+                lv.ranges = (labels(b).getAnchor(), jcode.getPC()) :: lv.ranges
+                b.varsInScope -= lv
+              }
+              else dumpMethodAndAbort(method, "Illegal local var nesting")
+
+            case LOAD_EXCEPTION(_) =>
+              ()
           }
 
-        case Logical(op, kind) => (op, kind) match {
-          case (AND, LONG) =>
-            jcode.emitLAND()
-          case (AND, INT) =>
-            jcode.emitIAND()
-          case (AND, _) =>
-            jcode.emitIAND()
-            if (kind != BOOL)
-              jcode.emitT2T(javaType(INT), javaType(kind));
+          crtPC = jcode.getPC()
 
-          case (OR, LONG) =>
-            jcode.emitLOR()
-          case (OR, INT) =>
-            jcode.emitIOR()
-          case (OR, _) =>
-            jcode.emitIOR()
-            if (kind != BOOL)
-              jcode.emitT2T(javaType(INT), javaType(kind));
+  //        assert(instr.pos.source.isEmpty || instr.pos.source.get == (clasz.cunit.source), "sources don't match")
+  //        val crtLine = instr.pos.line.get(lastLineNr);
 
-          case (XOR, LONG) =>
-            jcode.emitLXOR()
-          case (XOR, INT) =>
-            jcode.emitIXOR()
-          case (XOR, _) =>
-            jcode.emitIXOR()
-            if (kind != BOOL)
-              jcode.emitT2T(javaType(INT), javaType(kind));
-        }
-
-        case Shift(op, kind) => (op, kind) match {
-          case (LSL, LONG) =>
-            jcode.emitLSHL()
-          case (LSL, INT) =>
-            jcode.emitISHL()
-          case (LSL, _) =>
-            jcode.emitISHL()
-            jcode.emitT2T(javaType(INT), javaType(kind))
-
-          case (ASR, LONG) =>
-            jcode.emitLSHR()
-          case (ASR, INT) =>
-            jcode.emitISHR()
-          case (ASR, _) =>
-            jcode.emitISHR()
-            jcode.emitT2T(javaType(INT), javaType(kind))
-
-          case (LSR, LONG) =>
-            jcode.emitLUSHR()
-          case (LSR, INT) =>
-            jcode.emitIUSHR()
-          case (LSR, _) =>
-            jcode.emitIUSHR()
-            jcode.emitT2T(javaType(INT), javaType(kind))
-        }
-
-        case Comparison(op, kind) => ((op, kind): @unchecked) match {
-          case (CMP, LONG)    => jcode.emitLCMP()
-          case (CMPL, FLOAT)  => jcode.emitFCMPL()
-          case (CMPG, FLOAT)  => jcode.emitFCMPG()
-          case (CMPL, DOUBLE) => jcode.emitDCMPL()
-          case (CMPG, DOUBLE) => jcode.emitDCMPL()
-        }
-
-        case Conversion(src, dst) =>
-          debuglog("Converting from: " + src + " to: " + dst)
-          if (dst == BOOL) {
-            println("Illegal conversion at: " + clasz +
-                    " at: " + pos.source + ":" + pos.line)
-          } else
-            jcode.emitT2T(javaType(src), javaType(dst))
-
-        case ArrayLength(_) =>
-          jcode.emitARRAYLENGTH()
-
-        case StartConcat =>
-          jcode emitNEW StringBuilderClassName
-          jcode.emitDUP()
-          jcode.emitINVOKESPECIAL(StringBuilderClassName,
-                                  JMethod.INSTANCE_CONSTRUCTOR_NAME,
-                                  JMethodType.ARGLESS_VOID_FUNCTION)
-
-        case StringConcat(el) =>
-          val jtype = el match {
-            case REFERENCE(_) | ARRAY(_) => JAVA_LANG_OBJECT
-            case _ => javaType(el)
+          val crtLine = try {
+            if (instr.pos == NoPosition) lastLineNr else (instr.pos).line // check NoPosition to avoid costly exception
+          } catch {
+            case _: UnsupportedOperationException =>
+              log("Warning: wrong position in: " + method)
+              lastLineNr
           }
-          jcode.emitINVOKEVIRTUAL(StringBuilderClassName,
-                                  "append",
-                                  new JMethodType(StringBuilderType,
-                                  Array(jtype)))
-        case EndConcat =>
-          jcode.emitINVOKEVIRTUAL(StringBuilderClassName,
-                                  "toString",
-                                  toStringType)
 
-        case _ =>
-          abort("Unimplemented primitive " + primitive)
+          if (b.lastInstruction == instr)
+            endPC(b) = jcode.getPC()
+
+          //System.err.println("CRTLINE: " + instr.pos + " " +
+          //           /* (if (instr.pos < clasz.cunit.source.content.length) clasz.cunit.source.content(instr.pos) else '*') + */ " " + crtLine);
+
+          if (crtPC > lastMappedPC) {
+            jcode.completeLineNumber(lastMappedPC, crtPC, crtLine)
+            lastMappedPC = crtPC
+            lastLineNr   = crtLine
+          }
+        }
+
+        // local vars that survived this basic block
+        for (lv <- varsInBlock) {
+          lv.ranges = (lv.start, jcode.getPC()) :: lv.ranges
+        }
+        for (lv <- b.varsInScope) {
+          lv.ranges = (labels(b).getAnchor(), jcode.getPC()) :: lv.ranges
+        }
       }
-    }
+
+
+      /**
+       *  @param primitive ...
+       *  @param pos       ...
+       */
+      def genPrimitive(primitive: Primitive, pos: Position) {
+        primitive match {
+          case Negation(kind) =>
+            kind match {
+              case BOOL | BYTE | CHAR | SHORT | INT =>
+                jcode.emitINEG()
+              case LONG   => jcode.emitLNEG()
+              case FLOAT  => jcode.emitFNEG()
+              case DOUBLE => jcode.emitDNEG()
+              case _ => abort("Impossible to negate a " + kind)
+            }
+
+          case Arithmetic(op, kind) =>
+            op match {
+              case ADD => jcode.emitADD(javaType(kind))
+              case SUB =>
+                (kind: @unchecked) match {
+                  case BOOL | BYTE | CHAR | SHORT | INT =>
+                    jcode.emitISUB()
+                  case LONG   => jcode.emitLSUB()
+                  case FLOAT  => jcode.emitFSUB()
+                  case DOUBLE => jcode.emitDSUB()
+                }
+
+              case MUL =>
+                (kind: @unchecked) match {
+                  case BOOL | BYTE | CHAR | SHORT | INT =>
+                    jcode.emitIMUL()
+                  case LONG   => jcode.emitLMUL()
+                  case FLOAT  => jcode.emitFMUL()
+                  case DOUBLE => jcode.emitDMUL()
+                }
+
+              case DIV =>
+                (kind: @unchecked) match {
+                  case BOOL | BYTE | CHAR | SHORT | INT =>
+                    jcode.emitIDIV()
+                  case LONG   => jcode.emitLDIV()
+                  case FLOAT  => jcode.emitFDIV()
+                  case DOUBLE => jcode.emitDDIV()
+                }
+
+              case REM =>
+                (kind: @unchecked) match {
+                  case BOOL | BYTE | CHAR | SHORT | INT =>
+                    jcode.emitIREM()
+                  case LONG   => jcode.emitLREM()
+                  case FLOAT  => jcode.emitFREM()
+                  case DOUBLE => jcode.emitDREM()
+                }
+
+              case NOT =>
+                kind match {
+                  case BOOL | BYTE | CHAR | SHORT | INT =>
+                    jcode.emitPUSH(-1)
+                    jcode.emitIXOR()
+                  case LONG   =>
+                    jcode.emitPUSH(-1l)
+                    jcode.emitLXOR()
+                  case _ =>
+                    abort("Impossible to negate an " + kind)
+                }
+
+              case _ =>
+                abort("Unknown arithmetic primitive " + primitive)
+            }
+
+          case Logical(op, kind) => (op, kind) match {
+            case (AND, LONG) =>
+              jcode.emitLAND()
+            case (AND, INT) =>
+              jcode.emitIAND()
+            case (AND, _) =>
+              jcode.emitIAND()
+              if (kind != BOOL)
+                jcode.emitT2T(javaType(INT), javaType(kind));
+
+            case (OR, LONG) =>
+              jcode.emitLOR()
+            case (OR, INT) =>
+              jcode.emitIOR()
+            case (OR, _) =>
+              jcode.emitIOR()
+              if (kind != BOOL)
+                jcode.emitT2T(javaType(INT), javaType(kind));
+
+            case (XOR, LONG) =>
+              jcode.emitLXOR()
+            case (XOR, INT) =>
+              jcode.emitIXOR()
+            case (XOR, _) =>
+              jcode.emitIXOR()
+              if (kind != BOOL)
+                jcode.emitT2T(javaType(INT), javaType(kind));
+          }
+
+          case Shift(op, kind) => (op, kind) match {
+            case (LSL, LONG) =>
+              jcode.emitLSHL()
+            case (LSL, INT) =>
+              jcode.emitISHL()
+            case (LSL, _) =>
+              jcode.emitISHL()
+              jcode.emitT2T(javaType(INT), javaType(kind))
+
+            case (ASR, LONG) =>
+              jcode.emitLSHR()
+            case (ASR, INT) =>
+              jcode.emitISHR()
+            case (ASR, _) =>
+              jcode.emitISHR()
+              jcode.emitT2T(javaType(INT), javaType(kind))
+
+            case (LSR, LONG) =>
+              jcode.emitLUSHR()
+            case (LSR, INT) =>
+              jcode.emitIUSHR()
+            case (LSR, _) =>
+              jcode.emitIUSHR()
+              jcode.emitT2T(javaType(INT), javaType(kind))
+          }
+
+          case Comparison(op, kind) => ((op, kind): @unchecked) match {
+            case (CMP, LONG)    => jcode.emitLCMP()
+            case (CMPL, FLOAT)  => jcode.emitFCMPL()
+            case (CMPG, FLOAT)  => jcode.emitFCMPG()
+            case (CMPL, DOUBLE) => jcode.emitDCMPL()
+            case (CMPG, DOUBLE) => jcode.emitDCMPL()
+          }
+
+          case Conversion(src, dst) =>
+            debuglog("Converting from: " + src + " to: " + dst)
+            if (dst == BOOL) {
+              println("Illegal conversion at: " + clasz +
+                      " at: " + pos.source + ":" + pos.line)
+            } else
+              jcode.emitT2T(javaType(src), javaType(dst))
+
+          case ArrayLength(_) =>
+            jcode.emitARRAYLENGTH()
+
+          case StartConcat =>
+            jcode emitNEW StringBuilderClassName
+            jcode.emitDUP()
+            jcode.emitINVOKESPECIAL(StringBuilderClassName,
+                                    JMethod.INSTANCE_CONSTRUCTOR_NAME,
+                                    JMethodType.ARGLESS_VOID_FUNCTION)
+
+          case StringConcat(el) =>
+            val jtype = el match {
+              case REFERENCE(_) | ARRAY(_) => JAVA_LANG_OBJECT
+              case _ => javaType(el)
+            }
+            jcode.emitINVOKEVIRTUAL(StringBuilderClassName,
+                                    "append",
+                                    new JMethodType(StringBuilderType,
+                                    Array(jtype)))
+          case EndConcat =>
+            jcode.emitINVOKEVIRTUAL(StringBuilderClassName,
+                                    "toString",
+                                    toStringType)
+
+          case _ =>
+            abort("Unimplemented primitive " + primitive)
+        }
+      }
 
       // genCode starts here
       genBlocks(linearization)
