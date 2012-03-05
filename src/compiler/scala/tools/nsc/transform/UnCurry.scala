@@ -465,6 +465,8 @@ abstract class UnCurry extends InfoTransform with TypingTransformers with ast.Tr
       }
     }
 
+    def isNonLocalReturn(ret: Return) = ret.symbol != currentOwner.enclMethod || currentOwner.isLazy
+
 // ------ The tree transformers --------------------------------------------------------
 
     def mainTransform(tree: Tree): Tree = {
@@ -580,6 +582,9 @@ abstract class UnCurry extends InfoTransform with TypingTransformers with ast.Tr
         case Assign(lhs, _) if lhs.symbol.owner != currentMethod || lhs.symbol.hasFlag(LAZY | ACCESSOR) =>
           withNeedLift(true) { super.transform(tree) }
 
+        case ret @ Return(_) if (isNonLocalReturn(ret)) =>
+          withNeedLift(true) { super.transform(ret) }
+
         case Try(block, catches, finalizer) =>
           if (needTryLift || shouldBeLiftedAnyway(tree)) transform(liftTree(tree))
           else super.transform(tree)
@@ -685,9 +690,9 @@ abstract class UnCurry extends InfoTransform with TypingTransformers with ast.Tr
           applyUnary()
         case Select(_, _) | TypeApply(_, _) =>
           applyUnary()
-        case Return(expr) if (tree.symbol != currentOwner.enclMethod || currentOwner.isLazy) =>
-          if (settings.debug.value) log("non local return in "+tree.symbol+" from "+currentOwner.enclMethod)
-          atPos(tree.pos)(nonLocalReturnThrow(expr, tree.symbol))
+        case ret @ Return(expr) if (isNonLocalReturn(ret)) =>
+          if (settings.debug.value) log("non local return in "+ret.symbol+" from "+currentOwner.enclMethod)
+          atPos(ret.pos)(nonLocalReturnThrow(expr, ret.symbol))
         case TypeTree() =>
           tree
         case _ =>
