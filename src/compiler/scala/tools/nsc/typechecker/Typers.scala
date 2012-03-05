@@ -1195,23 +1195,26 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
 
     private def validateDerivedValueClass(clazz: Symbol, body: List[Tree]) = {
       if (clazz.isTrait)
-        unit.error(clazz.pos, "Only classes (not traits) are allowed to extend AnyVal")
+        unit.error(clazz.pos, "only classes (not traits) are allowed to extend AnyVal")
       if (!clazz.isStatic)
-        unit.error(clazz.pos, "Value class may not be a "+
+        unit.error(clazz.pos, "value class may not be a "+
           (if (clazz.owner.isTerm) "local class" else "member of another class"))
+      val constr = clazz.primaryConstructor
+      if ((constr hasFlag (PRIVATE | PROTECTED)) || constr.privateWithin != NoSymbol)
+        unit.error(constr.pos, "value class must have public primary constructor")
       clazz.info.decls.toList.filter(acc => acc.isMethod && (acc hasFlag PARAMACCESSOR)) match {
         case List(acc) =>
           def isUnderlyingAcc(sym: Symbol) =
             sym == acc || acc.hasAccessorFlag && sym == acc.accessed
           if (acc.accessBoundary(clazz) != RootClass)
-            unit.error(acc.pos, "Value class needs to have a publicly accessible val parameter")
+            unit.error(acc.pos, "value class needs to have a publicly accessible val parameter")
           for (stat <- body)
             if (!treeInfo.isAllowedInUniversalTrait(stat) && !isUnderlyingAcc(stat.symbol))
               unit.error(stat.pos,
-                if (stat.symbol hasFlag PARAMACCESSOR) "Illegal parameter for value class"
-                else "This statement is not allowed in value class: "+stat)
+                if (stat.symbol hasFlag PARAMACCESSOR) "illegal parameter for value class"
+                else "this statement is not allowed in value class: "+stat)
         case x =>
-          unit.error(clazz.pos, "Value class needs to have exactly one public val parameter")
+          unit.error(clazz.pos, "value class needs to have exactly one public val parameter")
       }
       for (tparam <- clazz.typeParams)
         if (tparam hasAnnotation definitions.SpecializedClass)
