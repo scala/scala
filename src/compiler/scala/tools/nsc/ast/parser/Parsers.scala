@@ -658,7 +658,8 @@ self =>
             DocDef(doc, t) setPos {
               if (t.pos.isDefined) {
                 val pos = doc.pos.withEnd(t.pos.endOrPoint)
-                if (t.pos.isOpaqueRange) pos else pos.makeTransparent
+                // always make the position transparent
+                pos.makeTransparent
               } else {
                 t.pos
               }
@@ -2967,9 +2968,9 @@ self =>
       val annots = annotations(true)
       val pos = in.offset
       val mods = (localModifiers() | implicitMod) withAnnotations annots
-      val defs = joinComment( // for SI-5527
+      val defs =
         if (!(mods hasFlag ~(Flags.IMPLICIT | Flags.LAZY))) defOrDcl(pos, mods)
-        else List(tmplDef(pos, mods)))
+        else List(tmplDef(pos, mods))
 
       in.token match {
         case RBRACE | CASE  => defs :+ (Literal(Constant()) setPos o2p(in.offset))
