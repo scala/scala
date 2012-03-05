@@ -5846,7 +5846,7 @@ trait Types extends api.Types { self: SymbolTable =>
       }
     }
 
-    val initialBTSes = ts map (_.baseTypeSeq.toList filter (_.typeSymbol.isPublic))
+    val initialBTSes = ts map (_.baseTypeSeq.toList)
     if (printLubs)
       printLubMatrix(ts zip initialBTSes toMap, depth)
 
