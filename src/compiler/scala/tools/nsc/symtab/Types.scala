@@ -5175,7 +5175,7 @@ A type's typeSymbol should never be inspected directly.
       }
     }
 
-    loop(ts map (_.baseTypeSeq.toList filter (_.typeSymbol.isPublic)))
+    loop(ts map (_.baseTypeSeq.toList))
   }
 
   // @AM the following problem is solved by elimHOTparams in lublist
