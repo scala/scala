@@ -10,6 +10,8 @@ import scala.tools.nsc.io.AbstractFile
 import scala.tools.nsc.util.{SourceFile, Position, WorkScheduler}
 import scala.tools.nsc.symtab._
 import scala.tools.nsc.ast._
+import scala.tools.nsc.util.FailedInterrupt
+import scala.tools.nsc.util.EmptyAction
 
 /** Interface of interactive compiler to a client such as an IDE
  *  The model the presentation compiler consists of the following parts:
@@ -48,7 +50,7 @@ trait CompilerControl { self: Global =>
   /** The scheduler by which client and compiler communicate
    *  Must be initialized before starting compilerRunner
    */
-  protected[interactive] val scheduler = new WorkScheduler
+  @volatile protected[interactive] var scheduler = new WorkScheduler
 
   /** Return the compilation unit attached to a source file, or None
    *  if source is not loaded.
@@ -372,6 +374,25 @@ trait CompilerControl { self: Global =>
 
     def raiseMissing() =
       response raise new MissingResponse
+  }
+
+  /** A do-nothing work scheduler that responds immediately with MissingResponse.
+   *
+   *  Used during compiler shutdown.
+   */
+  class NoWorkScheduler extends WorkScheduler {
+
+    override def postWorkItem(action: Action) = synchronized {
+      action match {
+        case w: WorkItem => w.raiseMissing()
+        case e: EmptyAction => // do nothing
+        case _ => println("don't know what to do with this " + action.getClass)
+      }
+    }
+    
+    override def doQuickly[A](op: () => A): A = {
+      throw new FailedInterrupt(new Exception("Posted a work item to a compiler that's shutting down"))
+    }
   }
 
 }
