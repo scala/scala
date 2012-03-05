@@ -702,6 +702,7 @@ abstract class Erasure extends AddInterfaces
      *    but their erased types are the same.
      */
     private def checkNoDoubleDefs(root: Symbol) {
+      def afterErasure[T](op: => T): T = atPhase(phase.next.next)(op)
       def doubleDefError(sym1: Symbol, sym2: Symbol) {
         // the .toString must also be computed at the earlier phase
         def atRefc[T](op: => T) = atPhase[T](currentRun.refchecksPhase.next)(op)
@@ -718,7 +719,7 @@ abstract class Erasure extends AddInterfaces
           sym2 + ":" + atRefc(tpe2.toString) +
             (if (sym2.owner == root) " at line " + (sym2.pos).line else sym2.locationString) +
           "\nhave same type" +
-          (if (atRefc(tpe1 =:= tpe2)) "" else " after erasure: " + atPhase(phase.next)(sym1.tpe)))
+          (if (atRefc(tpe1 =:= tpe2)) "" else " after erasure: " + afterErasure(sym1.tpe)))
         sym1.setInfo(ErrorType)
       }
 
@@ -728,7 +729,7 @@ abstract class Erasure extends AddInterfaces
         if (e.sym.isTerm) {
           var e1 = decls.lookupNextEntry(e)
           while (e1 ne null) {
-            if (atPhase(phase.next)(e1.sym.info =:= e.sym.info)) doubleDefError(e.sym, e1.sym)
+            if (afterErasure(e1.sym.info =:= e.sym.info)) doubleDefError(e.sym, e1.sym)
             e1 = decls.lookupNextEntry(e1)
           }
         }
