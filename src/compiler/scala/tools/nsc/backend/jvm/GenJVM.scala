@@ -1275,7 +1275,19 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
               genConstant(jcode, const)
 
             case LOAD_ARRAY_ITEM(kind) =>
-              jcode.emitALOAD(javaType(kind))
+              if(kind.isRefOrArrayType) { jcode.emitAALOAD() }
+              else {
+                (kind: @unchecked) match {
+                  case UNIT            => throw new IllegalArgumentException("invalid type for aload " + kind)
+                  case BOOL | BYTE     => jcode.emitBALOAD()
+                  case SHORT           => jcode.emitSALOAD()
+                  case CHAR            => jcode.emitCALOAD()
+                  case INT             => jcode.emitIALOAD()
+                  case LONG            => jcode.emitLALOAD()
+                  case FLOAT           => jcode.emitFALOAD()
+                  case DOUBLE          => jcode.emitDALOAD()
+                }
+              }
 
             case LOAD_LOCAL(local) =>
               jcode.emitLOAD(indexOf(local), javaType(local.kind))
@@ -1294,7 +1306,7 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
                                     javaType(field))
 
             case LOAD_MODULE(module) =>
-  //            assert(module.isModule, "Expected module: " + module)
+              // assert(module.isModule, "Expected module: " + module)
               debuglog("generating LOAD_MODULE for: " + module + " flags: " +
                     Flags.flagsToString(module.flags));
               if (clasz.symbol == module.moduleClass && jmethod.getName() != nme.readResolve.toString)
@@ -1305,7 +1317,19 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
                                     javaType(module))
 
             case STORE_ARRAY_ITEM(kind) =>
-              jcode emitASTORE javaType(kind)
+              if(kind.isRefOrArrayType) { jcode.emitAASTORE() }
+              else {
+                (kind: @unchecked) match {
+                  case UNIT            => throw new IllegalArgumentException("invalid type for astore " + kind)
+                  case BOOL | BYTE     => jcode.emitBASTORE()
+                  case SHORT           => jcode.emitSASTORE()
+                  case CHAR            => jcode.emitCASTORE()
+                  case INT             => jcode.emitIASTORE()
+                  case LONG            => jcode.emitLASTORE()
+                  case FLOAT           => jcode.emitFASTORE()
+                  case DOUBLE          => jcode.emitDASTORE()
+                }
+              }
 
             case STORE_LOCAL(local) =>
               jcode.emitSTORE(indexOf(local), javaType(local.kind))
