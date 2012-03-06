@@ -319,6 +319,7 @@ trait Contexts { self: Analyzer =>
     }
 
     def issueAmbiguousError(pre: Type, sym1: Symbol, sym2: Symbol, err: AbsTypeError) {
+      if (settings.debug.value) println("issue ambiguous error: " + err.errMsg)
       if (ambiguousErrors) {
         if (!pre.isErroneous && !sym1.isErroneous && !sym2.isErroneous)
           unitError(err.errPos, err.errMsg)
@@ -327,6 +328,7 @@ trait Contexts { self: Analyzer =>
     }
 
     def issueAmbiguousError(err: AbsTypeError) {
+      if (settings.debug.value) println("issue ambiguous error: " + err.errMsg)
       if (ambiguousErrors)
         unitError(err.errPos, addDiagString(err.errMsg))
       else if (bufferErrors) { buffer += err }
