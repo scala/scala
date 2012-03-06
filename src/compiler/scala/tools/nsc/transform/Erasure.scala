@@ -642,8 +642,10 @@ abstract class Erasure extends AddInterfaces
         tree match {
           case InjectDerivedValue(arg) =>
             val clazz = tree.symbol
-            util.trace("transforming inject "+arg+":"+underlyingOfValueClass(clazz)+"/"+ErasedValueType(clazz))(
-                typed1(arg, mode, underlyingOfValueClass(clazz)) setType ErasedValueType(clazz))
+            val result = typed1(arg, mode, underlyingOfValueClass(clazz)) setType ErasedValueType(clazz)
+            log("transforming inject "+arg+":"+underlyingOfValueClass(clazz)+"/"+ErasedValueType(clazz)+" = "+result)
+            return result
+
           case _ =>
             super.typed1(adaptMember(tree), mode, pt)
         }

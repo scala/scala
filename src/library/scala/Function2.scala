@@ -11,12 +11,12 @@ package scala
 
 
 /** A function of 2 parameters.
- *
+ *  
  *  In the following example, the definition of max is a
  *  shorthand for the anonymous class definition anonfun2:
  *
  *  {{{
- *  object Main extends Application {
+ *  object Main extends App { 
  *    val max = (x: Int, y: Int) => if (x < y) y else x
  *
  *    val anonfun2 = new Function2[Int, Int, Int] {
@@ -31,7 +31,7 @@ trait Function2[@specialized(scala.Int, scala.Long, scala.Double) -T1, @speciali
    *  @return   the result of function application.
    */
   def apply(v1: T1, v2: T2): R
-
+  
   /** Creates a curried version of this function.
    *
    *  @return   a function `f` such that `f(x1)(x2) == apply(x1, x2)`

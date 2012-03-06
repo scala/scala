@@ -1,10 +1,10 @@
-anyval-anyref-parent.scala:2: error: Only classes (not traits) are allowed to extend AnyVal
+anyval-anyref-parent.scala:2: error: only classes (not traits) are allowed to extend AnyVal
 trait Foo2 extends AnyVal // fail
       ^
 anyval-anyref-parent.scala:5: error: Any does not have a constructor
 class Bar1 extends Any      // fail
            ^
-anyval-anyref-parent.scala:6: error: Value class needs to have exactly one public val parameter
+anyval-anyref-parent.scala:6: error: value class needs to have exactly one public val parameter
 class Bar2(x: Int) extends AnyVal // fail
       ^
 anyval-anyref-parent.scala:10: error: illegal inheritance; superclass Any
@@ -17,7 +17,7 @@ anyval-anyref-parent.scala:11: error: illegal inheritance; superclass AnyVal
  of the mixin trait Immutable
 trait Foo5 extends AnyVal with Immutable   // fail
                                ^
-anyval-anyref-parent.scala:11: error: Only classes (not traits) are allowed to extend AnyVal
+anyval-anyref-parent.scala:11: error: only classes (not traits) are allowed to extend AnyVal
 trait Foo5 extends AnyVal with Immutable   // fail
       ^
 6 errors found

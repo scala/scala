@@ -6,18 +6,18 @@
 **                          |/                                          **
 \*                                                                      */
 // GENERATED CODE: DO NOT EDIT.
-// genprod generated these sources at: Sun Jul 31 00:37:30 CEST 2011
+// genprod generated these sources at: Tue Mar 06 13:49:54 CET 2012
 
 package scala
 
 
 /** A function of 0 parameters.
- *
+ *  
  *  In the following example, the definition of javaVersion is a
  *  shorthand for the anonymous class definition anonfun0:
  *
  *  {{{
- *  object Main extends Application {
+ *  object Main extends App { 
  *    val javaVersion = () => sys.props("java.version")
  *
  *    val anonfun0 = new Function0[String] {
@@ -32,6 +32,6 @@ trait Function0[@specialized +R] extends AnyRef { self =>
    *  @return   the result of function application.
    */
   def apply(): R
-
+  
   override def toString() = "<function0>"
 }
