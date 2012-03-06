@@ -773,7 +773,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter) extends Symb
    *  where the value compares unequal to the previous phase's value.
    */
   def afterEachPhase[T](op: => T): List[(Phase, T)] = {
-    phaseDescriptors.map(_.ownPhase).foldLeft(List[(Phase, T)]()) { (res, ph) =>
+    phaseDescriptors.map(_.ownPhase).filterNot(_ eq NoPhase).foldLeft(List[(Phase, T)]()) { (res, ph) =>
       val value = afterPhase(ph)(op)
       if (res.nonEmpty && res.head._2 == value) res
       else ((ph, value)) :: res

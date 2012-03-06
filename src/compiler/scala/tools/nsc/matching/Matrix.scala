@@ -198,6 +198,10 @@ trait Matrix extends MatrixAdditions {
     class PatternVar(val lhs: Symbol, val rhs: Tree, val checked: Boolean) {
       def sym = lhs
       def tpe = lhs.tpe
+      if (checked)
+        lhs resetFlag NO_EXHAUSTIVE
+      else
+        lhs setFlag NO_EXHAUSTIVE
 
       // See #1427 for an example of a crash which occurs unless we retype:
       // in that instance there is an existential in the pattern.
@@ -206,11 +210,6 @@ trait Matrix extends MatrixAdditions {
 
       override def toString() = "%s: %s = %s".format(lhs, tpe, rhs)
     }
-
-    /** Sets the rhs to EmptyTree, which makes the valDef ignored in Scrutinee.
-     */
-    def specialVar(lhs: Symbol, checked: Boolean) =
-      new PatternVar(lhs, EmptyTree, checked)
 
     /** Given a tree, creates a new synthetic variable of the same type
      *  and assigns the tree to it.

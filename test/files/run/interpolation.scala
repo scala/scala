@@ -23,4 +23,10 @@ object Test extends App {
   test2(10.0f)
   test2(13.345f)
 
+  println(s"")
+  println(s"${0}")
+  println(s"${0}${0}")
+  println(f"")
+  println(f"${0}")
+  println(f"${0}${0}")
 }

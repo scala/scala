@@ -357,6 +357,7 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "")
             checkNoResponsesOutstanding()
 
             log.flush();
+            scheduler = new NoWorkScheduler
             throw ShutdownReq
           }
 
@@ -609,6 +610,15 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "")
         }
         response raise ex
         throw ex
+
+      case ex @ ShutdownReq =>
+        if (debugIDE) {
+          println("ShutdownReq thrown during response")
+          ex.printStackTrace()
+        }
+        response raise ex
+        throw ex
+
       case ex =>
         if (debugIDE) {
           println("exception thrown during response: "+ex)
