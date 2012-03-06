@@ -1464,7 +1464,7 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
 
             case CJUMP(success, failure, cond, kind) =>
               kind match {
-                case BOOL | BYTE | CHAR | SHORT | INT =>
+                case BOOL | BYTE | CHAR | SHORT | INT => // TODO Miguel says: if(kind.isIntSizedType)
                   if (nextBlock == success) {
                     jcode.emitIF_ICMP(conds(negate(cond)), labels(failure))
                     // .. and fall through to success label
@@ -1506,7 +1506,7 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
 
             case CZJUMP(success, failure, cond, kind) =>
               kind match {
-                case BOOL | BYTE | CHAR | SHORT | INT =>
+                case BOOL | BYTE | CHAR | SHORT | INT => // TODO Miguel says: if(kind.isIntSizedType)
                   if (nextBlock == success) {
                     jcode.emitIF(conds(negate(cond)), labels(failure))
                   } else {
@@ -1643,13 +1643,14 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
       def genPrimitive(primitive: Primitive, pos: Position) {
         primitive match {
           case Negation(kind) =>
-            kind match {
-              case BOOL | BYTE | CHAR | SHORT | INT =>
-                jcode.emitINEG()
-              case LONG   => jcode.emitLNEG()
-              case FLOAT  => jcode.emitFNEG()
-              case DOUBLE => jcode.emitDNEG()
-              case _ => abort("Impossible to negate a " + kind)
+            if(kind.isIntSizedType) { jcode.emitINEG() }
+            else {
+              kind match {
+                case LONG   => jcode.emitLNEG()
+                case FLOAT  => jcode.emitFNEG()
+                case DOUBLE => jcode.emitDNEG()
+                case _ => abort("Impossible to negate a " + kind)
+              }
             }
 
           case Arithmetic(op, kind) =>
@@ -1665,51 +1666,54 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
                 }
 
               case SUB =>
-                (kind: @unchecked) match {
-                  case BOOL | BYTE | CHAR | SHORT | INT =>
-                    jcode.emitISUB()
-                  case LONG   => jcode.emitLSUB()
-                  case FLOAT  => jcode.emitFSUB()
-                  case DOUBLE => jcode.emitDSUB()
+                if(kind.isIntSizedType) { jcode.emitISUB() }
+                else {
+                  (kind: @unchecked) match {
+                    case LONG   => jcode.emitLSUB()
+                    case FLOAT  => jcode.emitFSUB()
+                    case DOUBLE => jcode.emitDSUB()
+                  }
                 }
 
               case MUL =>
-                (kind: @unchecked) match {
-                  case BOOL | BYTE | CHAR | SHORT | INT =>
-                    jcode.emitIMUL()
-                  case LONG   => jcode.emitLMUL()
-                  case FLOAT  => jcode.emitFMUL()
-                  case DOUBLE => jcode.emitDMUL()
+                if(kind.isIntSizedType) { jcode.emitIMUL() }
+                else {
+                  (kind: @unchecked) match {
+                    case LONG   => jcode.emitLMUL()
+                    case FLOAT  => jcode.emitFMUL()
+                    case DOUBLE => jcode.emitDMUL()
+                  }
                 }
 
               case DIV =>
-                (kind: @unchecked) match {
-                  case BOOL | BYTE | CHAR | SHORT | INT =>
-                    jcode.emitIDIV()
-                  case LONG   => jcode.emitLDIV()
-                  case FLOAT  => jcode.emitFDIV()
-                  case DOUBLE => jcode.emitDDIV()
+                if(kind.isIntSizedType) { jcode.emitIDIV() }
+                else {
+                  (kind: @unchecked) match {
+                    case LONG   => jcode.emitLDIV()
+                    case FLOAT  => jcode.emitFDIV()
+                    case DOUBLE => jcode.emitDDIV()
+                  }
                 }
 
               case REM =>
-                (kind: @unchecked) match {
-                  case BOOL | BYTE | CHAR | SHORT | INT =>
-                    jcode.emitIREM()
-                  case LONG   => jcode.emitLREM()
-                  case FLOAT  => jcode.emitFREM()
-                  case DOUBLE => jcode.emitDREM()
+                if(kind.isIntSizedType) { jcode.emitIREM() }
+                else {
+                  (kind: @unchecked) match {
+                    case LONG   => jcode.emitLREM()
+                    case FLOAT  => jcode.emitFREM()
+                    case DOUBLE => jcode.emitDREM()
+                  }
                 }
 
               case NOT =>
-                kind match {
-                  case BOOL | BYTE | CHAR | SHORT | INT =>
-                    jcode.emitPUSH(-1)
-                    jcode.emitIXOR()
-                  case LONG   =>
-                    jcode.emitPUSH(-1l)
-                    jcode.emitLXOR()
-                  case _ =>
-                    abort("Impossible to negate an " + kind)
+                if(kind.isIntSizedType) {
+                  jcode.emitPUSH(-1)
+                  jcode.emitIXOR()
+                } else if(kind == LONG) {
+                  jcode.emitPUSH(-1l)
+                  jcode.emitLXOR()
+                } else {
+                  abort("Impossible to negate an " + kind)
                 }
 
               case _ =>
