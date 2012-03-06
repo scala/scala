@@ -231,11 +231,47 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
       vp
     }
 
+    private def helperBoxTo(kind: ValueTypeKind): Tuple2[String, JMethodType] = {
+      val boxedType = definitions.boxedClass(kind.toType.typeSymbol)
+      val mtype = new JMethodType(javaType(boxedType), Array(javaType(kind)))
+
+      Pair("boxTo" + boxedType.decodedName, mtype)
+    }
+
+    private val jBoxTo: Map[TypeKind, Tuple2[String, JMethodType]] = Map(
+      BOOL   -> helperBoxTo(BOOL)  ,
+      BYTE   -> helperBoxTo(BYTE)  ,
+      CHAR   -> helperBoxTo(CHAR)  ,
+      SHORT  -> helperBoxTo(SHORT) ,
+      INT    -> helperBoxTo(INT)   ,
+      LONG   -> helperBoxTo(LONG)  ,
+      FLOAT  -> helperBoxTo(FLOAT) ,
+      DOUBLE -> helperBoxTo(DOUBLE)
+    )
+
+    private def helperUnboxTo(kind: ValueTypeKind): Tuple2[String, JMethodType] = {
+      val mtype = new JMethodType(javaType(kind), Array(JAVA_LANG_OBJECT))
+      val mname = "unboxTo" + kind.toType.typeSymbol.decodedName
+
+      Pair(mname, mtype)
+    }
+
+    private val jUnboxTo: Map[TypeKind, Tuple2[String, JMethodType]] = Map(
+      BOOL   -> helperUnboxTo(BOOL)  ,
+      BYTE   -> helperUnboxTo(BYTE)  ,
+      CHAR   -> helperUnboxTo(CHAR)  ,
+      SHORT  -> helperUnboxTo(SHORT) ,
+      INT    -> helperUnboxTo(INT)   ,
+      LONG   -> helperUnboxTo(LONG)  ,
+      FLOAT  -> helperUnboxTo(FLOAT) ,
+      DOUBLE -> helperUnboxTo(DOUBLE)
+    )
+
     var clasz: IClass = _
     var method: IMethod = _
     var jclass: JClass = _
     var jmethod: JMethod = _
-//    var jcode: JExtendedCode = _
+    // var jcode: JExtendedCode = _
 
     def isParcelableClass = isAndroidParcelableClass(clasz.symbol)
     def isRemoteClass = clasz.symbol hasAnnotation RemoteAttr
@@ -1355,13 +1391,12 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
               genCallMethod(call)
 
             case BOX(kind) =>
-              val boxedType = definitions.boxedClass(kind.toType.typeSymbol)
-              val mtype = new JMethodType(javaType(boxedType), Array(javaType(kind)))
-              jcode.emitINVOKESTATIC(BoxesRunTime, "boxTo" + boxedType.decodedName, mtype)
+              val Pair(mname, mtype) = jBoxTo(kind)
+              jcode.emitINVOKESTATIC(BoxesRunTime, mname, mtype)
 
             case UNBOX(kind) =>
-              val mtype = new JMethodType(javaType(kind), Array(JAVA_LANG_OBJECT))
-              jcode.emitINVOKESTATIC(BoxesRunTime, "unboxTo" + kind.toType.typeSymbol.decodedName, mtype)
+              val Pair(mname, mtype) = jUnboxTo(kind)
+              jcode.emitINVOKESTATIC(BoxesRunTime, mname, mtype)
 
             case NEW(REFERENCE(cls)) =>
               val className = javaName(cls)
