@@ -333,7 +333,7 @@ trait Definitions extends reflect.api.StandardDefinitions {
     lazy val TypeConstraintClass   = getRequiredClass("scala.annotation.TypeConstraint")
     lazy val SingletonClass        = enterNewClass(ScalaPackageClass, tpnme.Singleton, anyparam, ABSTRACT | TRAIT | FINAL)
     lazy val SerializableClass     = getRequiredClass("scala.Serializable")
-    lazy val JavaSerializableClass = getClass(sn.JavaSerializable)
+    lazy val JavaSerializableClass = getClass(sn.JavaSerializable) modifyInfo fixupAsAnyTrait
     lazy val ComparableClass       = getRequiredClass("java.lang.Comparable") modifyInfo fixupAsAnyTrait
     lazy val JavaCloneableClass    = getRequiredClass("java.lang.Cloneable")
     lazy val RemoteInterfaceClass  = getRequiredClass("java.rmi.Remote")
@@ -1071,7 +1071,8 @@ trait Definitions extends reflect.api.StandardDefinitions {
         Object_isInstanceOf,
         Object_asInstanceOf,
         String_+,
-        ComparableClass
+        ComparableClass,
+        JavaSerializableClass
       )
 
       isInitialized = true
