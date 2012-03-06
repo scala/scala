@@ -604,6 +604,7 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
      *  1. Check that non-function pattern expressions are stable
      *  2. Check that packages and static modules are not used as values
      *  3. Turn tree type into stable type if possible and required by context.
+     *  4. Give getClass calls a more precise type based on the type of the target of the call.
      */
     private def stabilize(tree: Tree, pre: Type, mode: Int, pt: Type): Tree = {
       if (tree.symbol.isOverloaded && !inFunMode(mode))
@@ -627,7 +628,18 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
         if (sym.isStable && pre.isStable && !isByNameParamType(tree.tpe) &&
             (isStableContext(tree, mode, pt) || sym.isModule && !sym.isMethod))
           tree.setType(singleType(pre, sym))
-        else tree
+        // To fully benefit from special casing the return type of
+        // getClass, we have to catch it immediately so expressions
+        // like x.getClass().newInstance() are typed with the type of x.
+        else if (  tree.symbol.name == nme.getClass_
+                && tree.tpe.params.isEmpty
+                // TODO: If the type of the qualifier is inaccessible, we can cause private types
+                // to escape scope here, e.g. pos/t1107.  I'm not sure how to properly handle this
+                // so for now it requires the type symbol be public.
+                && pre.typeSymbol.isPublic)
+          tree setType MethodType(Nil, erasure.getClassReturnType(pre))
+        else
+          tree
       }
     }
 
@@ -3802,7 +3814,7 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
           if (settings.warnSelectNullable.value && isPotentialNullDeference && unit != null)
             unit.warning(tree.pos, "potential null pointer dereference: "+tree)
 
-          val selection = result match {
+          result match {
             // could checkAccessible (called by makeAccessible) potentially have skipped checking a type application in qual?
             case SelectFromTypeTree(qual@TypeTree(), name) if qual.tpe.typeArgs nonEmpty => // TODO: somehow the new qual is not checked in refchecks
               treeCopy.SelectFromTypeTree(
@@ -3824,22 +3836,6 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
             case _ =>
               result
           }
-          // To fully benefit from special casing the return type of
-          // getClass, we have to catch it immediately so expressions
-          // like x.getClass().newInstance() are typed with the type of x.
-          val isRefinableGetClass = (
-            !selection.isErrorTyped
-            && selection.symbol.name == nme.getClass_
-            && selection.tpe.params.isEmpty
-            // TODO: If the type of the qualifier is inaccessible, we can cause private types
-            // to escape scope here, e.g. pos/t1107.  I'm not sure how to properly handle this
-            // so for now it requires the type symbol be public.
-            && qual.tpe.typeSymbol.isPublic
-          )
-          if (isRefinableGetClass)
-            selection setType MethodType(Nil, erasure.getClassReturnType(qual.tpe))
-          else
-            selection
         }
       }
 
