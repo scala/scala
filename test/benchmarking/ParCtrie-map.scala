@@ -10,7 +10,7 @@ object Map extends testing.Benchmark {
   val par = sys.props("par").toInt
   val parctrie = ParCtrie((0 until length) zip (0 until length): _*)
   
-  collection.parallel.ForkJoinTasks.defaultForkJoinPool.setParallelism(par)
+  parctrie.tasksupport = new collection.parallel.ForkJoinTaskSupport(new scala.concurrent.forkjoin.ForkJoinPool(par))
   
   def run = {
     parctrie map {
