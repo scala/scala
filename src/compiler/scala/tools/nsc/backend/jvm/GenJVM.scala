@@ -1602,8 +1602,8 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
 
           crtPC = jcode.getPC()
 
-  //        assert(instr.pos.source.isEmpty || instr.pos.source.get == (clasz.cunit.source), "sources don't match")
-  //        val crtLine = instr.pos.line.get(lastLineNr);
+          // assert(instr.pos.source.isEmpty || instr.pos.source.get == (clasz.cunit.source), "sources don't match")
+          // val crtLine = instr.pos.line.get(lastLineNr);
 
           val crtLine = try {
             if (instr.pos == NoPosition) lastLineNr else (instr.pos).line // check NoPosition to avoid costly exception
@@ -1708,28 +1708,22 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
             }
 
           case Logical(op, kind) => (op, kind) match {
-            case (AND, LONG) =>
-              jcode.emitLAND()
-            case (AND, INT) =>
-              jcode.emitIAND()
-            case (AND, _) =>
+            case (AND, LONG) => jcode.emitLAND()
+            case (AND, INT)  => jcode.emitIAND()
+            case (AND, _)    =>
               jcode.emitIAND()
               if (kind != BOOL)
                 jcode.emitT2T(javaType(INT), javaType(kind));
 
-            case (OR, LONG) =>
-              jcode.emitLOR()
-            case (OR, INT) =>
-              jcode.emitIOR()
+            case (OR, LONG) => jcode.emitLOR()
+            case (OR, INT)  => jcode.emitIOR()
             case (OR, _) =>
               jcode.emitIOR()
               if (kind != BOOL)
                 jcode.emitT2T(javaType(INT), javaType(kind));
 
-            case (XOR, LONG) =>
-              jcode.emitLXOR()
-            case (XOR, INT) =>
-              jcode.emitIXOR()
+            case (XOR, LONG) => jcode.emitLXOR()
+            case (XOR, INT)  => jcode.emitIXOR()
             case (XOR, _) =>
               jcode.emitIXOR()
               if (kind != BOOL)
@@ -1737,26 +1731,20 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
           }
 
           case Shift(op, kind) => (op, kind) match {
-            case (LSL, LONG) =>
-              jcode.emitLSHL()
-            case (LSL, INT) =>
-              jcode.emitISHL()
+            case (LSL, LONG) => jcode.emitLSHL()
+            case (LSL, INT)  => jcode.emitISHL()
             case (LSL, _) =>
               jcode.emitISHL()
               jcode.emitT2T(javaType(INT), javaType(kind))
 
-            case (ASR, LONG) =>
-              jcode.emitLSHR()
-            case (ASR, INT) =>
-              jcode.emitISHR()
+            case (ASR, LONG) => jcode.emitLSHR()
+            case (ASR, INT)  => jcode.emitISHR()
             case (ASR, _) =>
               jcode.emitISHR()
               jcode.emitT2T(javaType(INT), javaType(kind))
 
-            case (LSR, LONG) =>
-              jcode.emitLUSHR()
-            case (LSR, INT) =>
-              jcode.emitIUSHR()
+            case (LSR, LONG) => jcode.emitLUSHR()
+            case (LSR, INT)  => jcode.emitIUSHR()
             case (LSR, _) =>
               jcode.emitIUSHR()
               jcode.emitT2T(javaType(INT), javaType(kind))
@@ -1773,8 +1761,7 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
           case Conversion(src, dst) =>
             debuglog("Converting from: " + src + " to: " + dst)
             if (dst == BOOL) {
-              println("Illegal conversion at: " + clasz +
-                      " at: " + pos.source + ":" + pos.line)
+              println("Illegal conversion at: " + clasz + " at: " + pos.source + ":" + pos.line)
             } else
               jcode.emitT2T(javaType(src), javaType(dst))
 
