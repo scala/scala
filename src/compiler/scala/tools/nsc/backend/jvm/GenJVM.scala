@@ -274,10 +274,13 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
         // TODO: some beforeFlatten { ... } which accounts for
         // being nested in parameterized classes (if we're going to selectively flatten.)
         val x = innerClassSymbolFor(s)
-        val isInner = x.isClass && !x.rawowner.isPackageClass
-        if (isInner) {
-          innerClassBuffer += x
-          collectInnerClass(x.rawowner)
+        if(x ne NoSymbol) {
+          assert(x.isClass, "not an inner-class symbol")
+          val isInner = !x.rawowner.isPackageClass
+          if (isInner) {
+            innerClassBuffer += x
+            collectInnerClass(x.rawowner)
+          }
         }
       }
       collectInnerClass(sym)
