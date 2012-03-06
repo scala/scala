@@ -1,0 +1,54 @@
+t5553_1.scala:18: error: ambiguous reference to overloaded definition,
+both method apply in object Foo1 of type (z: String)Base[T]
+and  method apply in object Foo1 of type (a: Int)Base[T]
+match expected type ?
+  def test1[T] = Foo1[T]
+                     ^
+t5553_1.scala:19: error: type mismatch;
+ found   : [T](z: String)Base[T] <and> (a: Int)Base[T]
+ required: Int
+  def test2[T]: Int = Foo1[T]
+                          ^
+t5553_1.scala:20: error: type mismatch;
+ found   : [T(in method apply)](z: String)Base[T(in method apply)] <and> (a: Int)Base[T(in method apply)]
+ required: Base[T(in method test3)]
+  def test3[T]: Base[T] = Foo1[T]
+                              ^
+t5553_1.scala:24: error: ambiguous reference to overloaded definition,
+both method apply in object Foo2 of type (z: String)Base[T]
+and  method apply in object Foo2 of type (a: Int)Base[T]
+match expected type ?
+  def test4[T] = Foo2[T]
+                     ^
+t5553_1.scala:25: error: type mismatch;
+ found   : [T](z: String)Base[T] <and> (a: Int)Base[T]
+ required: Int
+  def test5[T]: Int = Foo2[T]
+                          ^
+t5553_1.scala:26: error: type mismatch;
+ found   : [T(in method apply)](z: String)Base[T(in method apply)] <and> (a: Int)Base[T(in method apply)]
+ required: Base[T(in method test6)]
+  def test6[T]: Base[T] = Foo2[T]
+                              ^
+t5553_1.scala:30: error: ambiguous reference to overloaded definition,
+both method apply in object Foo3 of type (z: String)String
+and  method apply in object Foo3 of type (a: Int)Base[T]
+match expected type ?
+  def test7[T] = Foo3[T]
+                     ^
+t5553_1.scala:31: error: type mismatch;
+ found   : [T](z: String)String <and> (a: Int)Base[T]
+ required: String
+  def test8[T]: String = Foo3[T]
+                             ^
+t5553_1.scala:32: error: type mismatch;
+ found   : [T](z: String)String <and> (a: Int)Base[T]
+ required: Int
+  def test9[T]: Int = Foo3[T]
+                          ^
+t5553_1.scala:33: error: type mismatch;
+ found   : [T(in method apply)](z: String)String <and> (a: Int)Base[T(in method apply)]
+ required: Base[T(in method test10)]
+  def test10[T]: Base[T] = Foo3[T]
+                               ^
+10 errors found
