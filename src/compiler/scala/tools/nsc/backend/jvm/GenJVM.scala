@@ -1296,14 +1296,10 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
               var owner = javaName(lf.hostClass)
               debuglog("LOAD_FIELD with owner: " + owner +
                     " flags: " + Flags.flagsToString(field.owner.flags))
-              if (isStatic)
-                jcode.emitGETSTATIC(owner,
-                                    javaName(field),
-                                    javaType(field))
-              else
-                jcode.emitGETFIELD(owner,
-                                    javaName(field),
-                                    javaType(field))
+              val fieldJName = javaName(field)
+              val fieldJType = javaType(field)
+              if (isStatic) jcode.emitGETSTATIC(owner, fieldJName, fieldJType)
+              else          jcode.emitGETFIELD( owner, fieldJName, fieldJType)
 
             case LOAD_MODULE(module) =>
               // assert(module.isModule, "Expected module: " + module)
@@ -1341,14 +1337,10 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
 
             case STORE_FIELD(field, isStatic) =>
               val owner = javaName(field.owner)
-              if (isStatic)
-                jcode.emitPUTSTATIC(owner,
-                                    javaName(field),
-                                    javaType(field))
-              else
-                jcode.emitPUTFIELD(owner,
-                                    javaName(field),
-                                    javaType(field))
+              val fieldJName = javaName(field)
+              val fieldJType = javaType(field)
+              if (isStatic) jcode.emitPUTSTATIC(owner, fieldJName, fieldJType)
+              else          jcode.emitPUTFIELD( owner, fieldJName, fieldJType)
 
             case CALL_PRIMITIVE(primitive) =>
               genPrimitive(primitive, instr.pos)
