@@ -1655,12 +1655,13 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
           case Arithmetic(op, kind) =>
             op match {
               case ADD =>
-                (kind: @unchecked) match {
-                  case BOOL | BYTE | CHAR | SHORT | INT =>
-                    jcode.emitIADD()
-                  case LONG   => jcode.emitLADD()
-                  case FLOAT  => jcode.emitFADD()
-                  case DOUBLE => jcode.emitDADD()
+                if(kind.isIntSizedType) { jcode.emitIADD() }
+                else {
+                  (kind: @unchecked) match {
+                    case LONG   => jcode.emitLADD()
+                    case FLOAT  => jcode.emitFADD()
+                    case DOUBLE => jcode.emitDADD()
+                  }
                 }
 
               case SUB =>
