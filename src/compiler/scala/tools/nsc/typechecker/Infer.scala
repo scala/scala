@@ -1385,9 +1385,10 @@ trait Infer {
               case _ =>
             }
           }
+          // todo: missing test case
           NoBestExprAlternativeError(tree, pt)
         } else if (!competing.isEmpty) {
-          if (secondTry) NoBestExprAlternativeError(tree, pt)
+          if (secondTry) { NoBestExprAlternativeError(tree, pt); setError(tree) }
           else if (!pt.isErroneous) AmbiguousExprAlternativeError(tree, pre, best, competing.head, pt)
         } else {
 //          val applicable = alts1 filter (alt =>
