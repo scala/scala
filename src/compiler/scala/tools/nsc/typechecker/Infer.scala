@@ -1090,7 +1090,15 @@ trait Infer {
           inferFor(pt.instantiateTypeParams(ptparams, ptparams map (x => WildcardType))) flatMap { targs =>
             val ctorTpInst = tree.tpe.instantiateTypeParams(undetparams, targs)
             val resTpInst  = skipImplicit(ctorTpInst.finalResultType)
-            val ptvars     = ptparams map freshVar
+            val ptvars     =
+              ptparams map {
+                // since instantiateTypeVar wants to modify the skolem that corresponds to the method's type parameter,
+                // and it uses the TypeVar's origin to locate it, deskolemize the existential skolem to the method tparam skolem
+                // (the existential skolem was created by adaptConstrPattern to introduce the type slack necessary to soundly deal with variant type parameters)
+                case skolem if skolem.isExistentialSkolem => freshVar(skolem.deSkolemize.asInstanceOf[TypeSymbol])
+                case p => freshVar(p)
+              }
+
             val ptV        = pt.instantiateTypeParams(ptparams, ptvars)
 
             if (isPopulated(resTpInst, ptV)) {
