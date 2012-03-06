@@ -263,7 +263,7 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
     private def innerClassSymbolFor(s: Symbol): Symbol =
       if (s.isClass) s else if (s.isModule) s.moduleClass else NoSymbol
 
-    override def javaName(sym: Symbol): String = {
+    override def javaName(sym: Symbol): String = { // TODO Miguel says: check whether a single pass over `icodes.classes` can populate `innerClassBuffer` faster.
       /**
        * Checks if given symbol corresponds to inner class/object and add it to innerClassBuffer
        *
@@ -1226,15 +1226,10 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
         val jname    = javaName(method)
         val jtype    = javaType(method).asInstanceOf[JMethodType]
 
-        def emit(invoke: String) {
+        def debugMsg(invoke: String) {
           debuglog("%s %s %s.%s:%s".format(invoke, receiver.accessString, jowner, jname, jtype))
-          invoke match {
-            case "invokeinterface"  => jcode.emitINVOKEINTERFACE(jowner, jname, jtype)
-            case "invokevirtual"    => jcode.emitINVOKEVIRTUAL(jowner, jname, jtype)
-            case "invokespecial"    => jcode.emitINVOKESPECIAL(jowner, jname, jtype)
-            case "invokestatic"     => jcode.emitINVOKESTATIC(jowner, jname, jtype)
-          }
         }
+
         def initModule() {
           // we initialize the MODULE$ field immediately after the super ctor
           if (isStaticModule(siteSymbol) && !isModuleInitialized &&
@@ -1249,11 +1244,14 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
         }
 
         style match {
-          case Static(true)                         => emit("invokespecial")
-          case Static(false)                        => emit("invokestatic")
-          case Dynamic if isInterfaceCall(receiver) => emit("invokeinterface")
-          case Dynamic                              => emit("invokevirtual")
-          case SuperCall(_)                         => emit("invokespecial") ; initModule()
+          case Static(true)                         => jcode.emitINVOKESPECIAL  (jowner, jname, jtype) ; debugMsg("invokespecial")
+          case Static(false)                        => jcode.emitINVOKESTATIC   (jowner, jname, jtype) ; debugMsg("invokestatic")
+          case Dynamic if isInterfaceCall(receiver) => jcode.emitINVOKEINTERFACE(jowner, jname, jtype) ; debugMsg("invokinterface")
+          case Dynamic                              => jcode.emitINVOKEVIRTUAL  (jowner, jname, jtype) ; debugMsg("invokevirtual")
+          case SuperCall(_)                         =>
+            jcode.emitINVOKESPECIAL(jowner, jname, jtype)
+            initModule()
+            debugMsg("invokespecial")
         }
       }
 
