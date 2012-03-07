@@ -1449,7 +1449,7 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
             case CJUMP(success, failure, cond, kind) =>
               if(kind.isIntSizedType) { // BOOL, BYTE, CHAR, SHORT, or INT
                 if (nextBlock == success) {
-                  jcode.emitIF_ICMP(conds(negate(cond)), labels(failure))
+                  jcode.emitIF_ICMP(conds(cond.negate()), labels(failure))
                   // .. and fall through to success label
                 } else {
                   jcode.emitIF_ICMP(conds(cond), labels(success))
@@ -1458,7 +1458,7 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
                 }
               } else if(kind.isRefOrArrayType) { // REFERENCE(_) | ARRAY(_)
                 if (nextBlock == success) {
-                  jcode.emitIF_ACMP(conds(negate(cond)), labels(failure))
+                  jcode.emitIF_ACMP(conds(cond.negate()), labels(failure))
                   // .. and fall through to success label
                 } else {
                   jcode.emitIF_ACMP(conds(cond), labels(success))
@@ -1476,7 +1476,7 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
                     else jcode.emitDCMPL()
                 }
                 if (nextBlock == success) {
-                  jcode.emitIF(conds(negate(cond)), labels(failure))
+                  jcode.emitIF(conds(cond.negate()), labels(failure))
                   // .. and fall through to success label
                 } else {
                   jcode.emitIF(conds(cond), labels(success));
@@ -1488,7 +1488,7 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
             case CZJUMP(success, failure, cond, kind) =>
               if(kind.isIntSizedType) { // BOOL, BYTE, CHAR, SHORT, or INT
                 if (nextBlock == success) {
-                  jcode.emitIF(conds(negate(cond)), labels(failure))
+                  jcode.emitIF(conds(cond.negate()), labels(failure))
                 } else {
                   jcode.emitIF(conds(cond), labels(success))
                   if (nextBlock != failure)
@@ -1524,7 +1524,7 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
                     else jcode.emitDCMPL()
                 }
                 if (nextBlock == success) {
-                  jcode.emitIF(conds(negate(cond)), labels(failure))
+                  jcode.emitIF(conds(cond.negate()), labels(failure))
                 } else {
                   jcode.emitIF(conds(cond), labels(success))
                   if (nextBlock != failure)

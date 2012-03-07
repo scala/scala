@@ -54,14 +54,6 @@ trait GenJVMUtil {
       LE -> JExtendedCode.COND_LE,
       GE -> JExtendedCode.COND_GE
     )
-    val negate = immutable.Map[TestOp, TestOp](
-      EQ -> NE,
-      NE -> EQ,
-      LT -> GE,
-      GT -> LE,
-      LE -> GT,
-      GE -> LT
-    )
 
     /** Specialized array conversion to prevent calling
      *  java.lang.reflect.Array.newInstance via TraversableOnce.toArray
