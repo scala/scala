@@ -1564,16 +1564,12 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
               jcode.emitATHROW()
 
             case DROP(kind) =>
-              kind match {
-                case LONG | DOUBLE => jcode.emitPOP2()
-                case _ => jcode.emitPOP()
-              }
+              if(kind.isWideType) jcode.emitPOP2()
+              else                jcode.emitPOP()
 
             case DUP(kind) =>
-              kind match {
-                case LONG | DOUBLE => jcode.emitDUP2()
-                case _ => jcode.emitDUP()
-              }
+              if(kind.isWideType) jcode.emitDUP2()
+              else                jcode.emitDUP()
 
             case MONITOR_ENTER() =>
               jcode.emitMONITORENTER()
@@ -1875,10 +1871,7 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
 
     def sizeOf(sym: Symbol): Int = sizeOf(toTypeKind(sym.tpe))
 
-    def sizeOf(k: TypeKind): Int = k match {
-      case DOUBLE | LONG => 2
-      case _ => 1
-    }
+    def sizeOf(k: TypeKind): Int = if(k.isWideType) 2 else 1
 
     def indexOf(m: IMethod, sym: Symbol): Int = {
       val Some(local) = m lookupLocal sym

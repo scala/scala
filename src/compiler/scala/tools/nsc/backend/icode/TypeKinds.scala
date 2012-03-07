@@ -80,9 +80,7 @@ trait TypeKinds { self: ICodes =>
      */
     def isIntSizedType: Boolean = false
 
-    /** On the JVM,
-     *  similar to isIntSizedType except that BOOL isn't integral while LONG is.
-     */
+    /** On the JVM, similar to isIntSizedType except that BOOL isn't integral while LONG is. */
     def isIntegralType: Boolean = false
 
     /** On the JVM, FLOAT and DOUBLE. */
@@ -96,9 +94,7 @@ trait TypeKinds { self: ICodes =>
       case _                          => this eq other
     })
 
-    /** Is this type a category 2 type in JVM terms?
-     *  (ie, is is LONG or DOUBLE?)
-     */
+    /** Is this type a category 2 type in JVM terms? (ie, is it LONG or DOUBLE?) */
     def isWideType: Boolean = false
 
     /** The number of dimensions for array types. */
