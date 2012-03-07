@@ -1496,56 +1496,50 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
               }
 
             case CZJUMP(success, failure, cond, kind) =>
-              kind match {
-                case BOOL | BYTE | CHAR | SHORT | INT => // TODO Miguel says: if(kind.isIntSizedType)
-                  if (nextBlock == success) {
-                    jcode.emitIF(conds(negate(cond)), labels(failure))
-                  } else {
-                    jcode.emitIF(conds(cond), labels(success))
-                    if (nextBlock != failure)
-                      jcode.emitGOTO_maybe_W(labels(failure), false)
-                  }
-
-                case REFERENCE(_) | ARRAY(_) =>
-                  val Success = success
-                  val Failure = failure
-                  (cond, nextBlock) match {
-                    case (EQ, Success) =>
-                      jcode emitIFNONNULL labels(failure)
-                    case (NE, Failure) =>
-                      jcode emitIFNONNULL labels(success)
-                    case (EQ, Failure) =>
-                      jcode emitIFNULL labels(success)
-                    case (NE, Success) =>
-                      jcode emitIFNULL labels(failure)
-                    case (EQ, _) =>
-                      jcode emitIFNULL labels(success)
-                      jcode.emitGOTO_maybe_W(labels(failure), false)
-                    case (NE, _) =>
-                      jcode emitIFNONNULL labels(success)
-                      jcode.emitGOTO_maybe_W(labels(failure), false)
-                  }
-
-                case _ =>
-                  (kind: @unchecked) match {
-                    case LONG   =>
-                      jcode.emitLCONST_0(); jcode.emitLCMP()
-                    case FLOAT  =>
-                      jcode.emitFCONST_0()
-                      if (cond == LT || cond == LE) jcode.emitFCMPG()
-                      else jcode.emitFCMPL()
-                    case DOUBLE =>
-                      jcode.emitDCONST_0()
-                      if (cond == LT || cond == LE) jcode.emitDCMPG()
-                      else jcode.emitDCMPL()
-                  }
-                  if (nextBlock == success) {
-                    jcode.emitIF(conds(negate(cond)), labels(failure))
-                  } else {
-                    jcode.emitIF(conds(cond), labels(success))
-                    if (nextBlock != failure)
-                      jcode.emitGOTO_maybe_W(labels(failure), false)
-                  }
+              if(kind.isIntSizedType) { // BOOL, BYTE, CHAR, SHORT, or INT
+                if (nextBlock == success) {
+                  jcode.emitIF(conds(negate(cond)), labels(failure))
+                } else {
+                  jcode.emitIF(conds(cond), labels(success))
+                  if (nextBlock != failure)
+                    jcode.emitGOTO_maybe_W(labels(failure), false)
+                }
+              } else if(kind.isRefOrArrayType) { // REFERENCE(_) | ARRAY(_)
+                val Success = success
+                val Failure = failure
+                (cond, nextBlock) match {
+                  case (EQ, Success) => jcode emitIFNONNULL labels(failure)
+                  case (NE, Failure) => jcode emitIFNONNULL labels(success)
+                  case (EQ, Failure) => jcode emitIFNULL    labels(success)
+                  case (NE, Success) => jcode emitIFNULL    labels(failure)
+                  case (EQ, _) =>
+                    jcode emitIFNULL labels(success)
+                    jcode.emitGOTO_maybe_W(labels(failure), false)
+                  case (NE, _) =>
+                    jcode emitIFNONNULL labels(success)
+                    jcode.emitGOTO_maybe_W(labels(failure), false)
+                }
+              } else {
+                (kind: @unchecked) match {
+                  case LONG   =>
+                    jcode.emitLCONST_0()
+                    jcode.emitLCMP()
+                  case FLOAT  =>
+                    jcode.emitFCONST_0()
+                    if (cond == LT || cond == LE) jcode.emitFCMPG()
+                    else jcode.emitFCMPL()
+                  case DOUBLE =>
+                    jcode.emitDCONST_0()
+                    if (cond == LT || cond == LE) jcode.emitDCMPG()
+                    else jcode.emitDCMPL()
+                }
+                if (nextBlock == success) {
+                  jcode.emitIF(conds(negate(cond)), labels(failure))
+                } else {
+                  jcode.emitIF(conds(cond), labels(success))
+                  if (nextBlock != failure)
+                    jcode.emitGOTO_maybe_W(labels(failure), false)
+                }
               }
 
             case RETURN(kind) =>
