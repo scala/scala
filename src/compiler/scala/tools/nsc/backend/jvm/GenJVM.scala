@@ -1905,7 +1905,7 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
          ((sym.rawflags & (Flags.FINAL | Flags.MODULE)) != 0)
       && !sym.enclClass.isInterface
       && !sym.isClassConstructor
-      && (sym.isLazy || sym.getter.isPrivate || !sym.isMutable)  // fix for SI-3569, is it sufficient?
+      && (sym.isLazy || sym.isPrivate || !sym.isMutable)  // fix for SI-3569, is it sufficient?
     )
 
     mkFlags(
