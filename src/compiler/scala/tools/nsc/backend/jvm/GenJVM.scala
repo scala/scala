@@ -1402,24 +1402,18 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
               val className = javaName(cls)
               jcode emitNEW className
 
-            case CREATE_ARRAY(elem, 1) => elem match {
-              case REFERENCE(_) | ARRAY(_) =>
-                jcode emitANEWARRAY javaType(elem).asInstanceOf[JReferenceType]
-              case _ =>
-                jcode emitNEWARRAY javaType(elem)
-            }
+            case CREATE_ARRAY(elem, 1) =>
+              if(elem.isRefOrArrayType) { jcode emitANEWARRAY javaType(elem).asInstanceOf[JReferenceType] }
+              else                      { jcode emitNEWARRAY  javaType(elem) }
 
             case CREATE_ARRAY(elem, dims) =>
               jcode.emitMULTIANEWARRAY(javaType(ArrayN(elem, dims)).asInstanceOf[JReferenceType], dims)
 
             case IS_INSTANCE(tpe) =>
               tpe match {
-                case REFERENCE(cls) =>
-                  jcode emitINSTANCEOF new JObjectType(javaName(cls))
-                case ARRAY(elem) =>
-                  jcode emitINSTANCEOF new JArrayType(javaType(elem))
-                case _ =>
-                  abort("Unknown reference type in IS_INSTANCE: " + tpe)
+                case REFERENCE(cls) => jcode emitINSTANCEOF new JObjectType(javaName(cls))
+                case ARRAY(elem)    => jcode emitINSTANCEOF new JArrayType(javaType(elem))
+                case _              => abort("Unknown reference type in IS_INSTANCE: " + tpe)
               }
 
             case CHECK_CAST(tpe) =>
