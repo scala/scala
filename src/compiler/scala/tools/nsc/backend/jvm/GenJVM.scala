@@ -1301,6 +1301,7 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
 
         /** local variables whose scope appears in this block. */
         val varsInBlock: mutable.Set[Local] = new mutable.HashSet
+        val lastInstr = b.lastInstruction
 
         for (instr <- b) {
 
@@ -1579,8 +1580,7 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
               lastLineNr
           }
 
-          if (b.lastInstruction == instr)
-            endPC(b) = jcode.getPC()
+          if (instr eq lastInstr) { endPC(b) = jcode.getPC() }
 
           //System.err.println("CRTLINE: " + instr.pos + " " +
           //           /* (if (instr.pos < clasz.cunit.source.content.length) clasz.cunit.source.content(instr.pos) else '*') + */ " " + crtLine);
