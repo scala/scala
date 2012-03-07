@@ -1542,11 +1542,9 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
                 }
               }
 
-            case RETURN(kind) =>
-              jcode emitRETURN javaType(kind)
+            case RETURN(kind) => jcode emitRETURN javaType(kind)
 
-            case THROW(_) =>
-              jcode.emitATHROW()
+            case THROW(_)     => jcode.emitATHROW()
 
             case DROP(kind) =>
               if(kind.isWideType) jcode.emitPOP2()
@@ -1556,11 +1554,9 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
               if(kind.isWideType) jcode.emitDUP2()
               else                jcode.emitDUP()
 
-            case MONITOR_ENTER() =>
-              jcode.emitMONITORENTER()
+            case MONITOR_ENTER() => jcode.emitMONITORENTER()
 
-            case MONITOR_EXIT() =>
-              jcode.emitMONITOREXIT()
+            case MONITOR_EXIT()  => jcode.emitMONITOREXIT()
 
             case SCOPE_ENTER(lv) =>
               varsInBlock += lv
