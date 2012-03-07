@@ -726,7 +726,6 @@ trait ContextErrors {
         // we have to set the type of tree to ErrorType only in the very last
         // fallback action that is done in the inference (tracking it manually is error prone).
         // This avoids entering infinite loop in doTypeApply.
-        // TODO: maybe we should do the same thing with inferExprAlternative.
         if (implicitly[Context].reportErrors) setError(tree)
       }
 
@@ -736,6 +735,8 @@ trait ContextErrors {
           "argument types " + argtpes.mkString("(", ",", ")") +
          (if (pt == WildcardType) "" else " and expected result type " + pt)
         val (pos, msg) = ambiguousErrorMsgPos(tree.pos, pre, best, firstCompeting, msg0)
+        // discover last attempt in a similar way as for NoBestMethodAlternativeError
+        if (implicitly[Context].ambiguousErrors) setError(tree)
         issueAmbiguousTypeError(pre, best, firstCompeting, AmbiguousTypeError(tree, pos, msg))
       }
 
