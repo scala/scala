@@ -1305,11 +1305,9 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
         for (instr <- b) {
 
           instr match {
-            case THIS(clasz) =>
-              jcode.emitALOAD_0()
+            case THIS(clasz)           => jcode.emitALOAD_0()
 
-            case CONSTANT(const) =>
-              genConstant(jcode, const)
+            case CONSTANT(const)       => genConstant(jcode, const)
 
             case LOAD_ARRAY_ITEM(kind) =>
               if(kind.isRefOrArrayType) { jcode.emitAALOAD() }
@@ -1326,8 +1324,7 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
                 }
               }
 
-            case LOAD_LOCAL(local) =>
-              jcode.emitLOAD(indexOf(local), javaType(local.kind))
+            case LOAD_LOCAL(local)     => jcode.emitLOAD(indexOf(local), javaType(local.kind))
 
             case lf @ LOAD_FIELD(field, isStatic) =>
               var owner = javaName(lf.hostClass)
@@ -1340,8 +1337,7 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
 
             case LOAD_MODULE(module) =>
               // assert(module.isModule, "Expected module: " + module)
-              debuglog("generating LOAD_MODULE for: " + module + " flags: " +
-                    Flags.flagsToString(module.flags));
+              debuglog("generating LOAD_MODULE for: " + module + " flags: " + Flags.flagsToString(module.flags));
               if (clasz.symbol == module.moduleClass && jmethod.getName() != nme.readResolve.toString)
                 jcode.emitALOAD_0()
               else
@@ -1379,16 +1375,14 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
               if (isStatic) jcode.emitPUTSTATIC(owner, fieldJName, fieldJType)
               else          jcode.emitPUTFIELD( owner, fieldJName, fieldJType)
 
-            case CALL_PRIMITIVE(primitive) =>
-              genPrimitive(primitive, instr.pos)
+            case CALL_PRIMITIVE(primitive) => genPrimitive(primitive, instr.pos)
 
             /** Special handling to access native Array.clone() */
             case call @ CALL_METHOD(definitions.Array_clone, Dynamic) =>
               val target: String = javaType(call.targetTypeKind).getSignature()
               jcode.emitINVOKEVIRTUAL(target, "clone", arrayCloneType)
 
-            case call @ CALL_METHOD(method, style) =>
-              genCallMethod(call)
+            case call @ CALL_METHOD(method, style) => genCallMethod(call)
 
             case BOX(kind) =>
               val Pair(mname, mtype) = jBoxTo(kind)
@@ -1418,14 +1412,9 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
 
             case CHECK_CAST(tpe) =>
               tpe match {
-                case REFERENCE(cls) =>
-                  // No need to checkcast for Objects
-                  if (cls != ObjectClass)
-                    jcode emitCHECKCAST new JObjectType(javaName(cls))
-                case ARRAY(elem) =>
-                  jcode emitCHECKCAST new JArrayType(javaType(elem))
-                case _ =>
-                  abort("Unknown reference type in IS_INSTANCE: " + tpe)
+                case REFERENCE(cls) => if (cls != ObjectClass) { jcode emitCHECKCAST new JObjectType(javaName(cls)) } // No need to checkcast for Objects
+                case ARRAY(elem)    => jcode emitCHECKCAST new JArrayType(javaType(elem))
+                case _              => abort("Unknown reference type in IS_INSTANCE: " + tpe)
               }
 
             case SWITCH(tags, branches) =>
