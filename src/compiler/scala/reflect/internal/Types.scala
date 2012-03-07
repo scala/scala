@@ -4579,7 +4579,7 @@ trait Types extends api.Types { self: SymbolTable =>
         var rebind0 = pre.findMember(sym.name, BRIDGE, 0, true)
         if (rebind0 == NoSymbol) {
           if (sym.isAliasType) throw missingAliasException
-          if (settings.debug.value) println(pre+"."+sym+" does no longer exist, phase = "+phase)
+          debugwarn(pre+"."+sym+" does no longer exist, phase = "+phase)
           throw new MissingTypeControl // For build manager and presentation compiler purposes
           //assert(false, pre+"."+sym+" does no longer exist, phase = "+phase)
         }
@@ -4635,7 +4635,7 @@ trait Types extends api.Types { self: SymbolTable =>
             if ((pre1 eq pre) && (sym1 eq sym) && (args1 eq args)/* && sym.isExternal*/) {
               tp
             } else if (sym1 == NoSymbol) {
-              if (settings.debug.value) println("adapt fail: "+pre+" "+pre1+" "+sym)
+              debugwarn("adapt fail: "+pre+" "+pre1+" "+sym)
               tp
             } else {
               copyTypeRef(tp, pre1, sym1, args1)
