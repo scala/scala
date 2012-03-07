@@ -1,0 +1,50 @@
+t5553_2.scala:27: error: type mismatch;
+ found   : Base[T]
+ required: Int
+  def test4[T]: Int     = Foo1[T](1)
+                                 ^
+t5553_2.scala:34: error: type mismatch;
+ found   : String
+ required: Base[T]
+  def test7[T]: Base[T] = Foo2[T]
+                              ^
+t5553_2.scala:35: error: type mismatch;
+ found   : String
+ required: Int
+  def test8[T]: Int     = Foo2[T]
+                              ^
+t5553_2.scala:40: error: type mismatch;
+ found   : String
+ required: Int
+  def test9[T]: Int     = Foo3[T]
+                              ^
+t5553_2.scala:41: error: type mismatch;
+ found   : String
+ required: Base[T]
+  def test10[T]: Base[T] = Foo3[T]
+                               ^
+t5553_2.scala:47: error: could not find implicit value for parameter z: String
+  def test13[T]: Int     = Foo3[T]
+                               ^
+t5553_2.scala:48: error: could not find implicit value for parameter z: String
+  def test14[T]: Base[T] = Foo3[T]
+                               ^
+t5553_2.scala:49: error: could not find implicit value for parameter z: String
+  def test15[T]: String = Foo3[T]
+                              ^
+t5553_2.scala:50: error: could not find implicit value for parameter z: String
+  def test16[T]         = Foo3[T]
+                              ^
+t5553_2.scala:54: error: ambiguous reference to overloaded definition,
+both method apply in object Foo4 of type (x: Int)(implicit z: String)Base[T]
+and  method apply in object Foo4 of type (x: Int)Base[T]
+match argument types (Int)
+  def test17[T]          = Foo4[T](1)
+                               ^
+t5553_2.scala:55: error: ambiguous reference to overloaded definition,
+both method apply in object Foo4 of type (x: Int)(implicit z: String)Base[T]
+and  method apply in object Foo4 of type (x: Int)Base[T]
+match argument types (Int) and expected result type Base[T]
+  def test18[T]: Base[T] = Foo4[T](1)
+                               ^
+11 errors found
