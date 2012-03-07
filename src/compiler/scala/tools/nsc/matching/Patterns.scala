@@ -49,7 +49,7 @@ trait Patterns extends ast.TreeDSL {
 
   // 8.1.1 (b)
   case class WildcardPattern() extends Pattern {
-    val tree = EmptyTree
+    def tree = EmptyTree
     override def covers(sym: Symbol) = true
     override def isDefault = true
     override def description = "_"
