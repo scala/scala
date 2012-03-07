@@ -1457,45 +1457,42 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
                 jcode.emitGOTO_maybe_W(labels(whereto), false) // default to short jumps
 
             case CJUMP(success, failure, cond, kind) =>
-              kind match {
-                case BOOL | BYTE | CHAR | SHORT | INT => // TODO Miguel says: if(kind.isIntSizedType)
-                  if (nextBlock == success) {
-                    jcode.emitIF_ICMP(conds(negate(cond)), labels(failure))
-                    // .. and fall through to success label
-                  } else {
-                    jcode.emitIF_ICMP(conds(cond), labels(success))
-                    if (nextBlock != failure)
-                      jcode.emitGOTO_maybe_W(labels(failure), false)
-                  }
-
-                case REFERENCE(_) | ARRAY(_) =>
-                  if (nextBlock == success) {
-                    jcode.emitIF_ACMP(conds(negate(cond)), labels(failure))
-                    // .. and fall through to success label
-                  } else {
-                    jcode.emitIF_ACMP(conds(cond), labels(success))
-                    if (nextBlock != failure)
-                      jcode.emitGOTO_maybe_W(labels(failure), false)
-                  }
-
-                case _ =>
-                  (kind: @unchecked) match {
-                    case LONG   => jcode.emitLCMP()
-                    case FLOAT  =>
-                      if (cond == LT || cond == LE) jcode.emitFCMPG()
-                      else jcode.emitFCMPL()
-                    case DOUBLE =>
-                      if (cond == LT || cond == LE) jcode.emitDCMPG()
-                      else jcode.emitDCMPL()
-                  }
-                  if (nextBlock == success) {
-                    jcode.emitIF(conds(negate(cond)), labels(failure))
-                    // .. and fall through to success label
-                  } else {
-                    jcode.emitIF(conds(cond), labels(success));
-                    if (nextBlock != failure)
-                      jcode.emitGOTO_maybe_W(labels(failure), false)
-                  }
+              if(kind.isIntSizedType) { // BOOL, BYTE, CHAR, SHORT, or INT
+                if (nextBlock == success) {
+                  jcode.emitIF_ICMP(conds(negate(cond)), labels(failure))
+                  // .. and fall through to success label
+                } else {
+                  jcode.emitIF_ICMP(conds(cond), labels(success))
+                  if (nextBlock != failure)
+                    jcode.emitGOTO_maybe_W(labels(failure), false)
+                }
+              } else if(kind.isRefOrArrayType) { // REFERENCE(_) | ARRAY(_)
+                if (nextBlock == success) {
+                  jcode.emitIF_ACMP(conds(negate(cond)), labels(failure))
+                  // .. and fall through to success label
+                } else {
+                  jcode.emitIF_ACMP(conds(cond), labels(success))
+                  if (nextBlock != failure)
+                    jcode.emitGOTO_maybe_W(labels(failure), false)
+                }
+              } else {
+                (kind: @unchecked) match {
+                  case LONG   => jcode.emitLCMP()
+                  case FLOAT  =>
+                    if (cond == LT || cond == LE) jcode.emitFCMPG()
+                    else jcode.emitFCMPL()
+                  case DOUBLE =>
+                    if (cond == LT || cond == LE) jcode.emitDCMPG()
+                    else jcode.emitDCMPL()
+                }
+                if (nextBlock == success) {
+                  jcode.emitIF(conds(negate(cond)), labels(failure))
+                  // .. and fall through to success label
+                } else {
+                  jcode.emitIF(conds(cond), labels(success));
+                  if (nextBlock != failure)
+                    jcode.emitGOTO_maybe_W(labels(failure), false)
+                }
               }
 
             case CZJUMP(success, failure, cond, kind) =>
