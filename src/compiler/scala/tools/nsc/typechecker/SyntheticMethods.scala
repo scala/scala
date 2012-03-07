@@ -217,7 +217,7 @@ trait SyntheticMethods extends ast.TreeDSL {
       List(
         Product_productPrefix   -> (() => constantNullary(nme.productPrefix, clazz.name.decode)),
         Product_productArity    -> (() => constantNullary(nme.productArity, arity)),
-        Product_productElement  -> (() => perElementMethod(nme.productElement, accessorLub)(Ident)),
+        Product_productElement  -> (() => perElementMethod(nme.productElement, accessorLub)(Select(This(clazz), _))),
         Product_iterator        -> (() => productIteratorMethod),
         Product_canEqual        -> (() => canEqualMethod)
         // This is disabled pending a reimplementation which doesn't add any
@@ -226,10 +226,19 @@ trait SyntheticMethods extends ast.TreeDSL {
       )
     }
 
+    def valueClassMethods = List(
+      Any_hashCode -> (() => hashCodeDerivedValueClassMethod),
+      Any_equals -> (() => equalsDerivedValueClassMethod)
+    )
+
     def caseClassMethods = productMethods ++ productNMethods ++ Seq(
       Object_hashCode -> (() => forwardToRuntime(Object_hashCode)),
       Object_toString -> (() => forwardToRuntime(Object_toString)),
       Object_equals   -> (() => equalsCaseClassMethod)
+    )
+
+    def valueCaseClassMethods = productMethods ++ productNMethods ++ valueClassMethods ++ Seq(
+      Any_toString -> (() => forwardToRuntime(Object_toString))
     )
 
     def caseObjectMethods = productMethods ++ Seq(
@@ -237,11 +246,6 @@ trait SyntheticMethods extends ast.TreeDSL {
       Object_toString -> (() => constantMethod(nme.toString_, clazz.name.decode))
       // Not needed, as reference equality is the default.
       // Object_equals   -> (() => createMethod(Object_equals)(m => This(clazz) ANY_EQ Ident(m.firstParam)))
-    )
-
-    def inlineClassMethods = List(
-      Any_hashCode -> (() => hashCodeDerivedValueClassMethod),
-      Any_equals -> (() => equalsDerivedValueClassMethod)
     )
 
     /** If you serialize a singleton and then deserialize it twice,
@@ -258,10 +262,12 @@ trait SyntheticMethods extends ast.TreeDSL {
 
     def synthesize(): List[Tree] = {
       val methods = (
-        if (clazz.isDerivedValueClass) inlineClassMethods
-        else if (!clazz.isCase) Nil
-        else if (clazz.isModuleClass) caseObjectMethods
-        else caseClassMethods
+        if (clazz.isCase)
+          if (clazz.isDerivedValueClass) valueCaseClassMethods
+          else if (clazz.isModuleClass) caseObjectMethods
+          else caseClassMethods
+        else if (clazz.isDerivedValueClass) valueClassMethods
+        else Nil
       )
 
       def impls = for ((m, impl) <- methods ; if !hasOverridingImplementation(m)) yield impl()
