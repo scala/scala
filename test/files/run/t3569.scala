@@ -1,15 +1,23 @@
 object Test {
+  final val bippy1 = 1
+  final lazy val bippy2 = 2
+  
   lazy val lv = scala.util.Random.nextInt()
   
   class X(final var x: Int)  {
-    final private[this] var x2: Int = 0
-    final var x3: Int = 0
-    private[this] var x4: Int = 0
-    final private[this] var x5: Int = 0
-    final lazy val x6: Int = 0
-    final private[this] lazy val x7: Int = 0
+    final var var1: Int = 0
+    final private var var2: Int = 0
+    final private[this] var var3: Int = 0
+
+    final val val1: Int = 1
+    final private val val2: Int = 1
+    final private[this] val val3: Int = 1
+    
+    final lazy val lval1: Int = 2
+    final private lazy val lval2: Int = 2
+    final private[this] lazy val lval3: Int = 2
   }
-  case class Y(final var x: Int, final private var y: Int, var z1: Int, private var z2: Int) { }
+  case class Y(final var x: Int, final private var y: Int, final val z1: Int, final private val z2: Int) { }
   
   def f = new X(0).x += 1
   def main(args: Array[String]) {
