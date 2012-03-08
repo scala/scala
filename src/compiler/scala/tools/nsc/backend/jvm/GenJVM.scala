@@ -863,6 +863,7 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
 
     def genField(f: IField) {
       debuglog("Adding field: " + f.symbol.fullName)
+      
       val jfield = jclass.addNewField(
         javaFlags(f.symbol) | javaFieldFlags(f.symbol),
         javaName(f.symbol),
@@ -1917,6 +1918,7 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
          ((sym.rawflags & (Flags.FINAL | Flags.MODULE)) != 0)
       && !sym.enclClass.isInterface
       && !sym.isClassConstructor
+      && (sym.isLazy || sym.isPrivate || !sym.isMutable)  // fix for SI-3569, is it sufficient?
     )
 
     mkFlags(

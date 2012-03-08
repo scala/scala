@@ -1,0 +1,67 @@
+t5554.scala:14: error: ambiguous reference to overloaded definition,
+both method apply in object Foo1 of type (x: Int)(implicit z: String)String
+and  method apply in object Foo1 of type (x: Int)Base[T]
+match argument types (Int)
+  def test1[T]: Int = Foo1[T](1)
+                          ^
+t5554.scala:16: error: ambiguous reference to overloaded definition,
+both method apply in object Foo1 of type (x: Int)(implicit z: String)String
+and  method apply in object Foo1 of type (x: Int)Base[T]
+match argument types (Int)
+  def test3[T]: String = Foo1[T](1)
+                             ^
+t5554.scala:17: error: ambiguous reference to overloaded definition,
+both method apply in object Foo1 of type (x: Int)(implicit z: String)String
+and  method apply in object Foo1 of type (x: Int)Base[T]
+match argument types (Int)
+  def test4[T] = Foo1[T](1)
+                     ^
+t5554.scala:22: error: ambiguous reference to overloaded definition,
+both method apply in object Foo1 of type (x: Int)(implicit z: String)String
+and  method apply in object Foo1 of type (x: Int)Base[T]
+match argument types (Int)
+  def test5[T]: Int = Foo1[T](1)
+                          ^
+t5554.scala:25: error: ambiguous reference to overloaded definition,
+both method apply in object Foo1 of type (x: Int)(implicit z: String)String
+and  method apply in object Foo1 of type (x: Int)Base[T]
+match argument types (Int)
+  def test8[T] = Foo1[T](1)
+                     ^
+t5554.scala:29: error: ambiguous reference to overloaded definition,
+both method apply in object Foo2 of type (x: Int)(implicit z: String)Base[T]
+and  method apply in object Foo2 of type (x: Int)Base[T]
+match argument types (Int)
+  def test9[T]: String = Foo2[T](1)
+                             ^
+t5554.scala:30: error: ambiguous reference to overloaded definition,
+both method apply in object Foo2 of type (x: Int)(implicit z: String)Base[T]
+and  method apply in object Foo2 of type (x: Int)Base[T]
+match argument types (Int) and expected result type Base[T]
+  def test10[T]: Base[T] = Foo2[T](1)
+                               ^
+t5554.scala:31: error: ambiguous reference to overloaded definition,
+both method apply in object Foo2 of type (x: Int)(implicit z: String)Base[T]
+and  method apply in object Foo2 of type (x: Int)Base[T]
+match argument types (Int)
+  def test11[T] = Foo2[T](1)
+                      ^
+t5554.scala:36: error: ambiguous reference to overloaded definition,
+both method apply in object Foo2 of type (x: Int)(implicit z: String)Base[T]
+and  method apply in object Foo2 of type (x: Int)Base[T]
+match argument types (Int)
+  def test12[T]: String = Foo2[T](1)
+                              ^
+t5554.scala:37: error: ambiguous reference to overloaded definition,
+both method apply in object Foo2 of type (x: Int)(implicit z: String)Base[T]
+and  method apply in object Foo2 of type (x: Int)Base[T]
+match argument types (Int) and expected result type Base[T]
+  def test13[T]: Base[T] = Foo2[T](1)
+                               ^
+t5554.scala:38: error: ambiguous reference to overloaded definition,
+both method apply in object Foo2 of type (x: Int)(implicit z: String)Base[T]
+and  method apply in object Foo2 of type (x: Int)Base[T]
+match argument types (Int)
+  def test14[T] = Foo2[T](1)
+                      ^
+11 errors found

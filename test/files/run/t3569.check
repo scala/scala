@@ -1,0 +1,14 @@
+1
+private final int Test$X.x2
+private final int Test$X.x3
+private final int Test$X.x5
+private final int Test$X.x6
+private final int Test$X.x7
+private int Test$X.x4
+private volatile int Test$X.bitmap$priv$0
+public int Test$X.x
+public volatile int Test$X.bitmap$0
+private int Test$Y.z1
+public int Test$Y.x
+public int Test$Y.y
+public int Test$Y.z2

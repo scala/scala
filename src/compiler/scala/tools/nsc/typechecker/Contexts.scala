@@ -312,13 +312,14 @@ trait Contexts { self: Analyzer =>
       unit.error(pos, if (checking) "\n**** ERROR DURING INTERNAL CHECKING ****\n" + msg else msg)
 
     def issue(err: AbsTypeError) {
-      if (settings.debug.value) println("issue error: " + err.errMsg)
+      debugwarn("issue error: " + err.errMsg)
       if (reportErrors) unitError(err.errPos, addDiagString(err.errMsg))
       else if (bufferErrors) { buffer += err }
       else throw new TypeError(err.errPos, err.errMsg)
     }
 
     def issueAmbiguousError(pre: Type, sym1: Symbol, sym2: Symbol, err: AbsTypeError) {
+      debugwarn("issue ambiguous error: " + err.errMsg)
       if (ambiguousErrors) {
         if (!pre.isErroneous && !sym1.isErroneous && !sym2.isErroneous)
           unitError(err.errPos, err.errMsg)
@@ -327,6 +328,7 @@ trait Contexts { self: Analyzer =>
     }
 
     def issueAmbiguousError(err: AbsTypeError) {
+      debugwarn("issue ambiguous error: " + err.errMsg)
       if (ambiguousErrors)
         unitError(err.errPos, addDiagString(err.errMsg))
       else if (bufferErrors) { buffer += err }

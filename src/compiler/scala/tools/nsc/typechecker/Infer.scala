@@ -1493,14 +1493,12 @@ trait Infer {
             if (improves(alt, best)) alt else best)
           val competing = applicable.dropWhile(alt => best == alt || improves(best, alt))
           if (best == NoSymbol) {
-            if (pt == WildcardType)
-              NoBestMethodAlternativeError(tree, argtpes, pt)
-            else
-              inferMethodAlternative(tree, undetparams, argtpes, WildcardType)
+            if (pt == WildcardType) NoBestMethodAlternativeError(tree, argtpes, pt)
+            else inferMethodAlternative(tree, undetparams, argtpes, WildcardType)
           } else if (!competing.isEmpty) {
             if (!(argtpes exists (_.isErroneous)) && !pt.isErroneous)
               AmbiguousMethodAlternativeError(tree, pre, best, competing.head, argtpes, pt)
-            setError(tree)
+            else setError(tree)
             ()
           } else {
 //            checkNotShadowed(tree.pos, pre, best, applicable)
