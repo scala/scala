@@ -215,10 +215,10 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
     }
 
     // Additional interface parents based on annotations and other cues
-    def newParentForAttr(attr: Symbol): Option[Type] = attr match {
-      case SerializableAttr => Some(SerializableClass.tpe)
-      case CloneableAttr    => Some(JavaCloneableClass.tpe)
-      case RemoteAttr       => Some(RemoteInterfaceClass.tpe)
+    def newParentForAttr(attr: Symbol): Option[Symbol] = attr match {
+      case SerializableAttr => Some(SerializableClass)
+      case CloneableAttr    => Some(JavaCloneableClass)
+      case RemoteAttr       => Some(RemoteInterfaceClass)
       case _                => None
     }
 
@@ -378,38 +378,44 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
 
     private var innerClassBuffer = mutable.LinkedHashSet[Symbol]()
 
-    /** Drop redundant interfaces (ones which are implemented by some
-     *  other parent) from the immediate parents.  This is important on
-     *  android because there is otherwise an interface explosion.
+    /** Drop redundant interfaces (ones which are implemented by some other parent) from the immediate parents.
+     *  This is important on Android because there is otherwise an interface explosion.
      */
-    private def minimizeInterfaces(interfaces: List[Symbol]): List[Symbol] = (
-      interfaces filterNot (int1 =>
-        interfaces exists (int2 =>
-          (int1 ne int2) && (int2 isSubClass int1)
-        )
-      )
-    )
+    private def minimizeInterfaces(interfaces: List[Symbol]): List[Symbol] = {
+      var rest   = interfaces
+      var leaves = List.empty[Symbol]
+      while(!rest.isEmpty) {
+        val candidate = rest.head
+        val nonLeaf = leaves exists { lsym => lsym isSubClass candidate }
+        if(!nonLeaf) {
+          leaves = candidate :: (leaves filterNot { lsym => candidate isSubClass lsym })
+        }
+        rest = rest.tail
+      }
+
+      leaves
+    }
 
     def genClass(c: IClass) {
       clasz = c
       innerClassBuffer.clear()
 
       val name    = javaName(c.symbol)
-      val superClass :: superInterfaces = {
-        val parents0 = c.symbol.info.parents match {
-          case Nil  => List(ObjectClass.tpe)
-          case ps   => ps
-        }
-        parents0 ++ c.symbol.annotations.flatMap(ann => newParentForAttr(ann.symbol)) distinct
-      }
-      val ifaces = superInterfaces match {
-        case Nil => JClass.NO_INTERFACES
-        case _   => mkArray(minimizeInterfaces(superInterfaces map (_.typeSymbol)) map javaName)
-      }
+
+      val ps = c.symbol.info.parents
+
+      val superClass: Symbol = if(ps.isEmpty) ObjectClass else ps.head.typeSymbol;
+
+      val superInterfaces0: List[Symbol] = if(ps.isEmpty) Nil else c.symbol.mixinClasses;
+      val superInterfaces = superInterfaces0 ++ c.symbol.annotations.flatMap(ann => newParentForAttr(ann.symbol)) distinct
+
+      val ifaces =
+        if(superInterfaces.isEmpty) JClass.NO_INTERFACES
+        else mkArray(minimizeInterfaces(superInterfaces) map javaName)
 
       jclass = fjbgContext.JClass(javaFlags(c.symbol),
                                   name,
-                                  javaName(superClass.typeSymbol),
+                                  javaName(superClass),
                                   ifaces,
                                   c.cunit.source.toString)
 
