@@ -198,7 +198,7 @@ object Utility extends AnyRef with parsing.TokenTests {
     preserveWhitespace: Boolean = false,
     minimizeTags: Boolean = false): StringBuilder =
   {
-    serialize(x, pscope, sb, stripComments, decodeEntities, preserveWhitespace, if (minimizeTags) MinimizeMode.Always else Mini
+    serialize(x, pscope, sb, stripComments, decodeEntities, preserveWhitespace, if (minimizeTags) MinimizeMode.Always else MinimizeMode.Never)
   }
 
   /**
