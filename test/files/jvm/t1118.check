@@ -1,0 +1,10 @@
+<hi/> <!-- literal short -->
+<there></there> <!-- literal long -->
+<guys who="you all"></guys> <!-- literal long with attribute-->
+<hows it="going"/> <!-- literal short with attribute -->
+<this>scala stuff is pretty cool</this> <!-- literal not empty -->
+
+<bob></bob> <!--programmatic long-->
+<dobbs/> <!--programmatic short-->
+<is really="yep"/> <!--programmatic short with attribute-->
+<slack sing="it"></slack> <!--programmatic long with attribute-->
