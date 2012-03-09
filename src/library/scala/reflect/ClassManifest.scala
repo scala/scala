@@ -46,7 +46,9 @@ trait ClassManifest[T] extends OptManifest[T] with Equals with Serializable {
 
   /** The Scala type described by this manifest.
    */
-  lazy val tpe: mirror.Type = reflect.mirror.classToType(erasure)
+  lazy val tpe: mirror.Type = mirror.classToType(erasure)
+
+  def symbol: mirror.Symbol = mirror.classToSymbol(erasure)
 
   private def subtype(sub: jClass[_], sup: jClass[_]): Boolean = {
     def loop(left: Set[jClass[_]], seen: Set[jClass[_]]): Boolean = {

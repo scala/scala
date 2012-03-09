@@ -76,6 +76,8 @@ abstract class AnyValManifest[T <: AnyVal](override val toString: String) extend
  *  in client code.
  */
 object Manifest {
+  import mirror.{ definitions => mdefs }
+
   def valueManifests: List[AnyValManifest[_]] =
     List(Byte, Short, Char, Int, Long, Float, Double, Boolean, Unit)
 
@@ -152,34 +154,40 @@ object Manifest {
   }
 
   val Any: Manifest[scala.Any] = new PhantomManifest[scala.Any]("Any") {
+    override def symbol = mdefs.AnyClass
     override def <:<(that: ClassManifest[_]): Boolean = (that eq this)
     private def readResolve(): Any = Manifest.Any
   }
 
   val Object: Manifest[java.lang.Object] = new PhantomManifest[java.lang.Object]("Object") {
+    override def symbol = mdefs.ObjectClass
     override def <:<(that: ClassManifest[_]): Boolean = (that eq this) || (that eq Any)
     private def readResolve(): Any = Manifest.Object
   }
 
   val AnyVal: Manifest[scala.AnyVal] = new PhantomManifest[scala.AnyVal]("AnyVal") {
+    override def symbol = mdefs.AnyValClass
     override def <:<(that: ClassManifest[_]): Boolean = (that eq this) || (that eq Any)
     private def readResolve(): Any = Manifest.AnyVal
   }
 
   val Null: Manifest[scala.Null] = new PhantomManifest[scala.Null]("Null") {
+    override def symbol = mdefs.NullClass
     override def <:<(that: ClassManifest[_]): Boolean =
       (that ne null) && (that ne Nothing) && !(that <:< AnyVal)
     private def readResolve(): Any = Manifest.Null
   }
 
   val Nothing: Manifest[scala.Nothing] = new PhantomManifest[scala.Nothing]("Nothing") {
+    override def symbol = mdefs.NothingClass
     override def <:<(that: ClassManifest[_]): Boolean = (that ne null)
     private def readResolve(): Any = Manifest.Nothing
   }
 
   private class SingletonTypeManifest[T <: AnyRef](value: AnyRef) extends Manifest[T] {
     lazy val erasure = value.getClass
-    override lazy val tpe = mirror.SingleType(mirror.NoPrefix, InstanceRefSymbol(value)) // todo: change to freevar
+    override lazy val symbol = InstanceRefSymbol(value) // todo: change to freevar
+    override lazy val tpe = mirror.SingleType(mirror.NoPrefix, symbol)
     override lazy val toString = value.toString + ".type"
   }
 
@@ -208,8 +216,12 @@ object Manifest {
   def classType[T](prefix: Manifest[_], clazz: Predef.Class[_], args: Manifest[_]*): Manifest[T] =
     new ClassTypeManifest[T](Some(prefix), clazz, args.toList)
 
+  /** Phantom types have no runtime representation; they all erase to Object,
+   *  but the Symbol preserves their identity.
+   */
   private abstract class PhantomManifest[T](override val toString: String) extends ClassTypeManifest[T](None, classOf[java.lang.Object], Nil) {
-    override def equals(that: Any): Boolean = this eq that.asInstanceOf[AnyRef]
+    override lazy val tpe = namedType(mirror.NoPrefix, symbol, Nil)
+    override def equals(that: Any) = this eq that.asInstanceOf[AnyRef]
     override val hashCode = System.identityHashCode(this)
   }
 
@@ -218,13 +230,13 @@ object Manifest {
   private class ClassTypeManifest[T](prefix: Option[Manifest[_]],
                                      val erasure: Predef.Class[_],
                                      override val typeArguments: List[Manifest[_]]) extends Manifest[T] {
+
     override lazy val tpe = {
-      val clazz = classToSymbol(erasure)
       val pre = prefix match {
         case Some(pm) => pm.tpe
-        case None     => clazz.owner.thisPrefix
+        case None     => symbol.owner.thisPrefix
       }
-      namedType(pre, clazz, typeArguments map (_.tpe))
+      namedType(pre, symbol, typeArguments map (_.tpe))
     }
 
     override def toString =
@@ -282,8 +294,9 @@ object Manifest {
    *  instead of in scala-compiler.jar.
    */
   def apply[T](_tpe: mirror.Type): Manifest[T] = new Manifest[T] {
+    override def symbol   = _tpe.typeSymbol
     override lazy val tpe = _tpe
-    override def erasure = mirror.typeToClass(_tpe.erasedType)
+    override def erasure  = mirror.typeToClass(_tpe.erasedType)
     override def toString = _tpe.toString
   }
 }
