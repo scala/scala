@@ -195,8 +195,8 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
     val StringBuilderClassName = javaName(definitions.StringBuilderClass)
     val BoxesRunTime = "scala.runtime.BoxesRunTime"
 
-    val StringBuilderType = new JObjectType(StringBuilderClassName)
-    val toStringType      = new JMethodType(JAVA_LANG_STRING, JType.EMPTY_ARRAY)
+    val StringBuilderType = new JObjectType(StringBuilderClassName)               // TODO use ASMType.getObjectType
+    val toStringType      = new JMethodType(JAVA_LANG_STRING, JType.EMPTY_ARRAY)  // TODO use ASMType.getMethodType
     val arrayCloneType    = new JMethodType(JAVA_LANG_OBJECT, JType.EMPTY_ARRAY)
     val MethodTypeType    = new JObjectType("java.dyn.MethodType")
     val JavaLangClassType = new JObjectType("java.lang.Class")
