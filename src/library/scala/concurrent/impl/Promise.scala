@@ -80,8 +80,10 @@ object Promise {
   def EmptyPending[T](): FState[T] = emptyPendingValue.asInstanceOf[FState[T]]
 
   /** Represents the internal state.
+   *
+   * [adriaan] it's unsound to make FState covariant (tryComplete won't type check)
    */
-  sealed trait FState[+T] { def value: Option[Try[T]] }
+  sealed trait FState[T] { def value: Option[Try[T]] }
 
   case class Pending[T](listeners: List[Try[T] => Any] = Nil) extends FState[T] {
     def value: Option[Try[T]] = None
@@ -155,7 +157,11 @@ object Promise {
           def tryComplete(v: Try[T]): List[Try[T] => Any] = {
             getState match {
               case cur @ Pending(listeners) =>
-                if (updateState(cur, if (v.isFailure) Failure(Some(v.asInstanceOf[util.Failure[T]])) else Success(Some(v.asInstanceOf[util.Success[T]])))) listeners
+                val newState =
+                  if (v.isFailure) Failure(Some(v.asInstanceOf[util.Failure[T]]))
+                  else Success(Some(v.asInstanceOf[util.Success[T]]))
+
+                if (updateState(cur, newState)) listeners
                 else tryComplete(v)
               case _ => null
             }

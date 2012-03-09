@@ -794,7 +794,7 @@ trait Parsers {
    */
   def chainl1[T, U](first: => Parser[T], p: => Parser[U], q: => Parser[(T, U) => T]): Parser[T]
     = first ~ rep(q ~ p) ^^ {
-        case x ~ xs => xs.foldLeft(x){(_, _) match {case (a, f ~ b) => f(a, b)}}
+        case x ~ xs => xs.foldLeft(x: T){case (a, f ~ b) => f(a, b)} // x's type annotation is needed to deal with changed type inference due to SI-5189
       }
 
   /** A parser generator that generalises the `rep1sep` generator so that `q`,
@@ -812,8 +812,7 @@ trait Parsers {
    */
   def chainr1[T, U](p: => Parser[T], q: => Parser[(T, U) => U], combine: (T, U) => U, first: U): Parser[U]
     = p ~ rep(q ~ p) ^^ {
-        case x ~ xs => (new ~(combine, x) :: xs).
-                            foldRight(first){(_, _) match {case (f ~ a, b) => f(a, b)}}
+        case x ~ xs => (new ~(combine, x) :: xs).foldRight(first){case (f ~ a, b) => f(a, b)}
       }
 
   /** A parser generator for optional sub-phrases.

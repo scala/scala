@@ -161,7 +161,7 @@ object TypeRep {
   }).asInstanceOf[TypeRep[Option[A]]]
 
   def getType[A](x: List[A])(implicit rep: TypeRep[A]): TypeRep[List[A]] = (x match {
-    case h :: t => ListRep(getType(h))
+    case h :: t => ListRep(rep)
     case Nil    => NilRep
   }).asInstanceOf[TypeRep[List[A]]]
 

@@ -864,6 +864,33 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
         }
       }
 
+      /**
+       * To deal with the type slack between actual (run-time) types and statically known types, for each abstract type T,
+       * reflect its variance as a skolem that is upper-bounded by T (covariant position), or lower-bounded by T (contravariant).
+       *
+       * Consider the following example:
+       *
+       *  class AbsWrapperCov[+A]
+       *  case class Wrapper[B](x: Wrapped[B]) extends AbsWrapperCov[B]
+       *
+       *  def unwrap[T](x: AbsWrapperCov[T]): Wrapped[T] = x match {
+       *    case Wrapper(wrapped) => // Wrapper's type parameter must not be assumed to be equal to T, it's *upper-bounded* by it
+       *      wrapped // : Wrapped[_ <: T]
+       *  }
+       *
+       * this method should type check if and only if Wrapped is covariant in its type parameter
+       *
+       * when inferring Wrapper's type parameter B from x's type AbsWrapperCov[T],
+       * we must take into account that x's actual type is AbsWrapperCov[Tactual] forSome {type Tactual <: T}
+       * as AbsWrapperCov is covariant in A -- in other words, we must not assume we know T exactly, all we know is its upper bound
+       *
+       * since method application is the only way to generate this slack between run-time and compile-time types (TODO: right!?),
+       * we can simply replace skolems that represent method type parameters as seen from the method's body
+       * by other skolems that are (upper/lower)-bounded by that type-parameter skolem
+       * (depending on the variance position of the skolem in the statically assumed type of the scrutinee, pt)
+       *
+       * see test/files/../t5189*.scala
+       */
       def adaptConstrPattern(): Tree = { // (5)
         val extractor = tree.symbol.filter(sym => reallyExists(unapplyMember(sym.tpe)))
         if (extractor != NoSymbol) {
@@ -877,7 +904,32 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
             val tree1 = TypeTree(clazz.primaryConstructor.tpe.asSeenFrom(prefix, clazz.owner))
               .setOriginal(tree)
 
-            inferConstructorInstance(tree1, clazz.typeParams, pt)
+            val skolems = new mutable.ListBuffer[TypeSymbol]
+            object variantToSkolem extends VariantTypeMap {
+              def apply(tp: Type) = mapOver(tp) match {
+                case TypeRef(NoPrefix, tpSym, Nil) if variance != 0 && tpSym.isTypeParameterOrSkolem && tpSym.owner.isTerm =>
+                  val bounds = if (variance == 1) TypeBounds.upper(tpSym.tpe) else TypeBounds.lower(tpSym.tpe)
+                  val skolem = context.owner.newExistentialSkolem(tpSym, tpSym, unit.freshTypeName("?"+tpSym.name), bounds)
+                  // println("mapping "+ tpSym +" to "+ skolem + " : "+ bounds +" -- pt= "+ pt)
+                  skolems += skolem
+                  skolem.tpe
+                case tp1 => tp1
+              }
+            }
+
+            // have to open up the existential and put the skolems in scope
+            // can't simply package up pt in an ExistentialType, because that takes us back to square one (List[_ <: T] == List[T] due to covariance)
+            val ptSafe   = variantToSkolem(pt) // TODO: pt.skolemizeExistential(context.owner, tree) ?
+            val freeVars = skolems.toList
+
+            // use "tree" for the context, not context.tree: don't make another CaseDef context,
+            // as instantiateTypeVar's bounds would end up there
+            val ctorContext = context.makeNewScope(tree, context.owner)
+            freeVars foreach ctorContext.scope.enter
+            newTyper(ctorContext).infer.inferConstructorInstance(tree1, clazz.typeParams, ptSafe)
+
+            // tree1's type-slack skolems will be deskolemized (to the method type parameter skolems)
+            // once the containing CaseDef has been type checked (see typedCase)
             tree1
           } else {
             tree
@@ -1998,15 +2050,35 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
       val guard1: Tree = if (cdef.guard == EmptyTree) EmptyTree
                          else typed(cdef.guard, BooleanClass.tpe)
       var body1: Tree = typed(cdef.body, pt)
-      if (!context.savedTypeBounds.isEmpty) {
-        body1.tpe = context.restoreTypeBounds(body1.tpe)
-        if (isFullyDefined(pt) && !(body1.tpe <:< pt)) {
-          // @M no need for pt.normalize here, is done in erasure
+
+      val contextWithTypeBounds = context.nextEnclosing(_.tree.isInstanceOf[CaseDef])
+      if (contextWithTypeBounds.savedTypeBounds nonEmpty) {
+        body1.tpe = contextWithTypeBounds restoreTypeBounds body1.tpe
+
+        // insert a cast if something typechecked under the GADT constraints,
+        // but not in real life (i.e., now that's we've reset the method's type skolems'
+        //   infos back to their pre-GADT-constraint state)
+        if (isFullyDefined(pt) && !(body1.tpe <:< pt))
           body1 = typedPos(body1.pos)(gen.mkCast(body1, pt))
+
+      }
+
+//    body1 = checkNoEscaping.locals(context.scope, pt, body1)
+      val treeWithSkolems = treeCopy.CaseDef(cdef, pat1, guard1, body1) setType body1.tpe
+
+      // undo adaptConstrPattern's evil deeds, as they confuse the old pattern matcher
+      // TODO: Paul, can we do the deskolemization lazily in the old pattern matcher
+      object deskolemizeOnce extends TypeMap {
+        def apply(tp: Type): Type = mapOver(tp) match {
+          case TypeRef(pre, sym, args) if sym.isExistentialSkolem && sym.deSkolemize.isSkolem && sym.deSkolemize.owner.isTerm =>
+            typeRef(NoPrefix, sym.deSkolemize, args)
+          case tp1 => tp1
         }
       }
-//    body1 = checkNoEscaping.locals(context.scope, pt, body1)
-      treeCopy.CaseDef(cdef, pat1, guard1, body1) setType body1.tpe
+
+      new TypeMapTreeSubstituter(deskolemizeOnce).traverse(treeWithSkolems)
+
+      treeWithSkolems // now without skolems, actually
     }
 
     def typedCases(cases: List[CaseDef], pattp: Type, pt: Type): List[CaseDef] =

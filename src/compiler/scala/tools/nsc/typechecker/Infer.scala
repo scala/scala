@@ -1051,48 +1051,73 @@ trait Infer {
      *  @param pt          the expected result type of the instance
      */
     def inferConstructorInstance(tree: Tree, undetparams: List[Symbol], pt0: Type) {
-      val pt = widen(pt0)
-      //println("infer constr inst "+tree+"/"+undetparams+"/"+pt0)
-      var restpe = tree.tpe.finalResultType
-      var tvars = undetparams map freshVar
+      val pt       = widen(pt0)
+      val ptparams = freeTypeParamsOfTerms.collect(pt)
+      val ctorTp   = tree.tpe
+      val resTp    = ctorTp.finalResultType
 
-      /** Compute type arguments for undetermined params and substitute them in given tree.
+      debuglog("infer constr inst "+ tree +"/"+ undetparams +"/ pt= "+ pt +" pt0= "+ pt0 +" resTp: "+ resTp)
+
+      /** Compute type arguments for undetermined params
        */
-      def computeArgs =
-        try {
-          val targs = solvedTypes(tvars, undetparams, undetparams map varianceInType(restpe),
-                                  true, lubDepth(List(restpe, pt)))
-//          checkBounds(tree, NoPrefix, NoSymbol, undetparams, targs, "inferred ")
-//          no checkBounds here. If we enable it, test bug602 fails.
-          new TreeTypeSubstituter(undetparams, targs).traverse(tree)
-        } catch ifNoInstance{ msg =>
-          NoConstructorInstanceError(tree, restpe, pt, msg)
+      def inferFor(pt: Type): Option[List[Type]] = {
+        val tvars   = undetparams map freshVar
+        val resTpV  = resTp.instantiateTypeParams(undetparams, tvars)
+
+        if (resTpV <:< pt) {
+          try {
+            // debuglog("TVARS "+ (tvars map (_.constr)))
+            // look at the argument types of the primary constructor corresponding to the pattern
+            val variances  = undetparams map varianceInType(ctorTp.paramTypes.headOption getOrElse ctorTp)
+            val targs      = solvedTypes(tvars, undetparams, variances, true, lubDepth(List(resTp, pt)))
+            // checkBounds(tree, NoPrefix, NoSymbol, undetparams, targs, "inferred ")
+            // no checkBounds here. If we enable it, test bug602 fails.
+            // TODO: reinstate checkBounds, return params that fail to meet their bounds to undetparams
+            Some(targs)
+          } catch ifNoInstance { msg =>
+            debuglog("NO INST "+ (tvars, tvars map (_.constr)))
+            NoConstructorInstanceError(tree, resTp, pt, msg)
+            None
+          }
+        } else {
+          debuglog("not a subtype: "+ resTpV +" </:< "+ pt)
+          None
         }
-      def instError = {
-        if (settings.debug.value) Console.println("ici " + tree + " " + undetparams + " " + pt)
-        if (settings.explaintypes.value) explainTypes(restpe.instantiateTypeParams(undetparams, tvars), pt)
-        ConstrInstantiationError(tree, restpe, pt)
       }
-      if (restpe.instantiateTypeParams(undetparams, tvars) <:< pt) {
-        computeArgs
-      } else if (isFullyDefined(pt)) {
-        debuglog("infer constr " + tree + ":" + restpe + ", pt = " + pt)
-        var ptparams = freeTypeParamsOfTerms.collect(pt)
-        debuglog("free type params = " + ptparams)
-        val ptWithWildcards = pt.instantiateTypeParams(ptparams, ptparams map (ptparam => WildcardType))
-        tvars = undetparams map freshVar
-        if (restpe.instantiateTypeParams(undetparams, tvars) <:< ptWithWildcards) {
-          computeArgs
-          restpe = skipImplicit(tree.tpe.resultType)
-          debuglog("new tree = " + tree + ":" + restpe)
-          val ptvars = ptparams map freshVar
-          val pt1 = pt.instantiateTypeParams(ptparams, ptvars)
-          if (isPopulated(restpe, pt1)) {
-            ptvars foreach instantiateTypeVar
-          } else { if (settings.debug.value) Console.println("no instance: "); instError }
-        } else { if (settings.debug.value) Console.println("not a subtype " + restpe.instantiateTypeParams(undetparams, tvars) + " of " + ptWithWildcards); instError }
-      } else { if (settings.debug.value) Console.println("not fully defined: " + pt); instError }
+
+      def inferForApproxPt =
+        if (isFullyDefined(pt)) {
+          inferFor(pt.instantiateTypeParams(ptparams, ptparams map (x => WildcardType))) flatMap { targs =>
+            val ctorTpInst = tree.tpe.instantiateTypeParams(undetparams, targs)
+            val resTpInst  = skipImplicit(ctorTpInst.finalResultType)
+            val ptvars     =
+              ptparams map {
+                // since instantiateTypeVar wants to modify the skolem that corresponds to the method's type parameter,
+                // and it uses the TypeVar's origin to locate it, deskolemize the existential skolem to the method tparam skolem
+                // (the existential skolem was created by adaptConstrPattern to introduce the type slack necessary to soundly deal with variant type parameters)
+                case skolem if skolem.isExistentialSkolem => freshVar(skolem.deSkolemize.asInstanceOf[TypeSymbol])
+                case p => freshVar(p)
+              }
+
+            val ptV        = pt.instantiateTypeParams(ptparams, ptvars)
+
+            if (isPopulated(resTpInst, ptV)) {
+              ptvars foreach instantiateTypeVar
+              debuglog("isPopulated "+ resTpInst +", "+ ptV +" vars= "+ ptvars)
+              Some(targs)
+            } else None
+          }
+        } else None
+
+      (inferFor(pt) orElse inferForApproxPt) map { targs =>
+        new TreeTypeSubstituter(undetparams, targs).traverse(tree)
+      } getOrElse {
+        debugwarn("failed inferConstructorInstance for "+ tree  +" : "+ tree.tpe +" under "+ undetparams +" pt = "+ pt +(if(isFullyDefined(pt)) " (fully defined)" else " (not fully defined)"))
+        // if (settings.explaintypes.value) explainTypes(resTp.instantiateTypeParams(undetparams, tvars), pt)
+        ConstrInstantiationError(tree, resTp, pt)
+      }
     }
+
 
     def instBounds(tvar: TypeVar): (Type, Type) = {
       val tparam = tvar.origin.typeSymbol
