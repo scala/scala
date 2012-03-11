@@ -69,7 +69,7 @@ object JavaConversions {
    * @return A Java Iterator view of the argument.
    */
   implicit def asJavaIterator[A](it: Iterator[A]): ju.Iterator[A] = it match {
-    case JIteratorWrapper(wrapped) => wrapped
+    case JIteratorWrapper(wrapped) => wrapped.asInstanceOf[ju.Iterator[A]]
     case _ => IteratorWrapper(it)
   }
 
@@ -87,7 +87,7 @@ object JavaConversions {
    * @return A Java Enumeration view of the argument.
    */
   implicit def asJavaEnumeration[A](it: Iterator[A]): ju.Enumeration[A] = it match {
-    case JEnumerationWrapper(wrapped) => wrapped
+    case JEnumerationWrapper(wrapped) => wrapped.asInstanceOf[ju.Enumeration[A]]
     case _ => IteratorWrapper(it)
   }
 
@@ -105,7 +105,7 @@ object JavaConversions {
    * @return A Java Iterable view of the argument.
    */
   implicit def asJavaIterable[A](i: Iterable[A]): jl.Iterable[A] = i match {
-    case JIterableWrapper(wrapped) => wrapped
+    case JIterableWrapper(wrapped) => wrapped.asInstanceOf[jl.Iterable[A]]
     case _ => IterableWrapper(i)
   }
 
@@ -121,7 +121,7 @@ object JavaConversions {
    * @return A Java Collection view of the argument.
    */
   implicit def asJavaCollection[A](it: Iterable[A]): ju.Collection[A] = it match {
-    case JCollectionWrapper(wrapped) => wrapped
+    case JCollectionWrapper(wrapped) => wrapped.asInstanceOf[ju.Collection[A]]
     case _ => new IterableWrapper(it)
   }
 
@@ -179,7 +179,7 @@ object JavaConversions {
    * @return A Java List view of the argument.
    */
   implicit def seqAsJavaList[A](seq: Seq[A]): ju.List[A] = seq match {
-    case JListWrapper(wrapped) => wrapped
+    case JListWrapper(wrapped) => wrapped.asInstanceOf[ju.List[A]]
     case _ => new SeqWrapper(seq)
   }
 
@@ -286,7 +286,7 @@ object JavaConversions {
    */
   implicit def mapAsJavaMap[A, B](m: Map[A, B]): ju.Map[A, B] = m match {
     //case JConcurrentMapWrapper(wrapped) => wrapped
-    case JMapWrapper(wrapped) => wrapped
+    case JMapWrapper(wrapped) => wrapped.asInstanceOf[ju.Map[A, B]]
     case _ => new MapWrapper(m)
   }
 

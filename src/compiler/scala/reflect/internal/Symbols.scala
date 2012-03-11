@@ -269,9 +269,9 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     /** Create a new existential type skolem with this symbol its owner,
      *  based on the given symbol and origin.
      */
-    def newExistentialSkolem(basis: Symbol, origin: AnyRef): TypeSkolem = {
-      val skolem = newTypeSkolemSymbol(basis.name.toTypeName, origin, basis.pos, (basis.flags | EXISTENTIAL) & ~PARAM)
-      skolem setInfo (basis.info cloneInfo skolem)
+    def newExistentialSkolem(basis: Symbol, origin: AnyRef, name: TypeName = null, info: Type = null): TypeSkolem = {
+      val skolem = newTypeSkolemSymbol(if (name eq null) basis.name.toTypeName else name, origin, basis.pos, (basis.flags | EXISTENTIAL) & ~PARAM)
+      skolem setInfo (if (info eq null) basis.info cloneInfo skolem else info)
     }
 
     final def newExistential(name: TypeName, pos: Position = NoPosition, newFlags: Long = 0L): Symbol =
