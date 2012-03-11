@@ -1,0 +1,4 @@
+t3275.scala:2: error: @tailrec annotated method contains no recursive calls
+  @annotation.tailrec def foo() = 5
+                          ^
+one error found
