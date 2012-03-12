@@ -186,9 +186,8 @@ object Utility extends AnyRef with parsing.TokenTests {
    * <p/>
    * Note that calling this source-compatible method will result in the same old, arguably almost universally unwanted,
    * behaviour.
-   * @deprecated please use {@link #serialize} instead and specify a minimizeTags parameter.
    */
-  @deprecated
+  @deprecated(since="2.10", message="please use `serialize` instead and specify a `minimizeTags` parameter")
   def toXML(
     x: Node,
     pscope: NamespaceBinding = TopScope,
@@ -204,11 +203,9 @@ object Utility extends AnyRef with parsing.TokenTests {
   /**
    * Serialize an XML Node to a StringBuilder.
    *
-   * This is essentially a minor rework of {@link #toXML} that can't have the same name due to an unfortunate
+   * This is essentially a minor rework of `toXML` that can't have the same name due to an unfortunate
    * combination of named/default arguments and overloading.
    *
-   * @todo seriously consider just changing the default to {@link MinimizeMode#Default} so that the serialization is
-   *       transparent by default
    * @todo use a Writer instead
    */
   def serialize(

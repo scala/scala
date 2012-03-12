@@ -28,13 +28,13 @@ object Source
 }
 
 /**
- * Governs how empty elements (i.e. those without children) should be serialized.
+ * Governs how empty elements (i.e. those without child elements) should be serialized.
  */
 object MinimizeMode extends Enumeration {
-  /** Minimize empty tags if they were originally empty when parsed, or if they were constructed with {@link Elem#minimizeEmpty} == true */
+  /** Minimize empty tags if they were originally empty when parsed, or if they were constructed with [[scala.xml.Elem]]`#minimizeEmpty` == true */
   val Default = Value
 
-  /** Always minimize empty tags.  Note that this may be problematic for XHTML, in which case {@link Xhtml#toXhtml} should be used instead. */
+  /** Always minimize empty tags.  Note that this may be problematic for XHTML, in which case [[scala.xml.Xhtml]]`#toXhtml` should be used instead. */
   val Always = Value
 
   /** Never minimize empty tags. */
