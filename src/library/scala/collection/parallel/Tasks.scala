@@ -359,7 +359,7 @@ object ThreadPoolTasks {
 
 
 /** An implementation of tasks objects based on the Java thread pooling API and synchronization using futures. */
-@deprecated("This implementation is not used.")
+@deprecated("This implementation is not used.", "2.10.0")
 trait FutureThreadPoolTasks extends Tasks {
   import java.util.concurrent._
 
