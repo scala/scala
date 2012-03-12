@@ -37,7 +37,7 @@ abstract class SymbolTable extends api.Universe
   def log(msg: => AnyRef): Unit
   def abort(msg: String): Nothing = throw new FatalError(supplementErrorMessage(msg))
 
-  @deprecated("2.10.0", "Give us a reason")
+  @deprecated("Give us a reason", "2.10.0")
   def abort(): Nothing = abort("unknown error")
 
   /** Override with final implementation for inlining. */
