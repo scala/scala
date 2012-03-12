@@ -853,8 +853,8 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     )
     /** These should be moved somewhere like JavaPlatform.
      */
-    def javaSimpleName: String = addModuleSuffix(nme.dropLocalSuffix(simpleName)).toString
-    def javaBinaryName: String = addModuleSuffix(fullNameInternal('/')).toString
+    def javaSimpleName: Name = addModuleSuffix(nme.dropLocalSuffix(simpleName))
+    def javaBinaryName: Name = addModuleSuffix(fullNameInternal('/'))
     def javaClassName: String  = addModuleSuffix(fullNameInternal('.')).toString
 
     /** The encoded full path name of this symbol, where outer names and inner names

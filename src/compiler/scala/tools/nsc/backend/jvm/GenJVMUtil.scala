@@ -54,14 +54,6 @@ trait GenJVMUtil {
       LE -> JExtendedCode.COND_LE,
       GE -> JExtendedCode.COND_GE
     )
-    val negate = immutable.Map[TestOp, TestOp](
-      EQ -> NE,
-      NE -> EQ,
-      LT -> GE,
-      GT -> LE,
-      LE -> GT,
-      GE -> LT
-    )
 
     /** Specialized array conversion to prevent calling
      *  java.lang.reflect.Array.newInstance via TraversableOnce.toArray
@@ -85,12 +77,10 @@ trait GenJVMUtil {
      */
     def javaName(sym: Symbol): String =
       javaNameCache.getOrElseUpdate(sym, {
-        sym.name.newName(
-          if (sym.isClass || (sym.isModule && !sym.isMethod))
-            sym.javaBinaryName
-          else
-            sym.javaSimpleName
-        )
+        if (sym.isClass || (sym.isModule && !sym.isMethod))
+          sym.javaBinaryName
+        else
+          sym.javaSimpleName
       }).toString
 
     def javaType(t: TypeKind): JType = (t: @unchecked) match {
