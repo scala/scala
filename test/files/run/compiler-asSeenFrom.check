@@ -1,0 +1,323 @@
+class C {
+  type                       seen from prefix           is
+  ----                       ----------------           --
+  C[List[T3]]#I[T1]          D[A1]                      C[List[T3]]#I[A1]
+  C[List[T3]]#I[T1]          D[T3]                      C[List[T3]]#I[T3]
+  C[List[T3]]#J[T1]          D[A1]                      C[List[T3]]#J[A1]
+  C[List[T3]]#J[T1]          D[T3]                      C[List[T3]]#J[T3]
+  C[T1]#I[Int]               C[List[T3]]                C[List[T3]]#I[Int]
+  C[T1]#I[Int]               D[A1]                      C[A1]#I[Int]
+  C[T1]#I[Int]               D[T3]                      C[T3]#I[Int]
+  C[T1]#I[List[Int]]         C[List[T3]]                C[List[T3]]#I[List[Int]]
+  C[T1]#I[List[Int]]         D[A1]                      C[A1]#I[List[Int]]
+  C[T1]#I[List[Int]]         D[T3]                      C[T3]#I[List[Int]]
+  C[T1]#I[T1]                C[List[T3]]                C[List[T3]]#I[List[T3]]
+  C[T1]#I[T1]                D[A1]                      C[A1]#I[A1]
+  C[T1]#I[T1]                D[T3]                      C[T3]#I[T3]
+  C[T1]#I[T2]                C[List[T3]]                C[List[T3]]#I[T2]
+  C[T1]#I[T2]                D[A1]                      C[A1]#I[T2]
+  C[T1]#I[T2]                D[T3]                      C[T3]#I[T2]
+  C[T1]#I[T3]                C[List[T3]]                C[List[T3]]#I[T3]
+  C[T1]#I[T3]                D[A1]                      C[A1]#I[T3]
+  C[T1]#I[T3]                D[T3]                      C[T3]#I[T3]
+  C[T1]#I[T4]                C[List[T3]]                C[List[T3]]#I[T4]
+  C[T1]#I[T4]                D[A1]                      C[A1]#I[T4]
+  C[T1]#I[T4]                D[T3]                      C[T3]#I[T4]
+  C[T1]#J[Int]               C[List[T3]]                C[List[T3]]#J[Int]
+  C[T1]#J[Int]               D[A1]                      C[A1]#J[Int]
+  C[T1]#J[Int]               D[T3]                      C[T3]#J[Int]
+  C[T1]#J[List[Int]]         C[List[T3]]                C[List[T3]]#J[List[Int]]
+  C[T1]#J[List[Int]]         D[A1]                      C[A1]#J[List[Int]]
+  C[T1]#J[List[Int]]         D[T3]                      C[T3]#J[List[Int]]
+  C[T1]#J[T1]                C[List[T3]]                C[List[T3]]#J[List[T3]]
+  C[T1]#J[T1]                D[A1]                      C[A1]#J[A1]
+  C[T1]#J[T1]                D[T3]                      C[T3]#J[T3]
+  C[T1]#J[T2]                C[List[T3]]                C[List[T3]]#J[T2]
+  C[T1]#J[T2]                D[A1]                      C[A1]#J[T2]
+  C[T1]#J[T2]                D[T3]                      C[T3]#J[T2]
+  C[T1]#J[T3]                C[List[T3]]                C[List[T3]]#J[T3]
+  C[T1]#J[T3]                D[A1]                      C[A1]#J[T3]
+  C[T1]#J[T3]                D[T3]                      C[T3]#J[T3]
+  C[T1]#J[T4]                C[List[T3]]                C[List[T3]]#J[T4]
+  C[T1]#J[T4]                D[A1]                      C[A1]#J[T4]
+  C[T1]#J[T4]                D[T3]                      C[T3]#J[T4]
+  D[T3]#J[T1]                C[List[T3]]                D[T3]#J[List[T3]]
+  D[T3]#J[T1]                D[A1]                      D[T3]#J[A1]
+  D[A1]#J[T1]                C[List[T3]]                D[A1]#J[List[T3]]
+  D[A1]#J[T1]                D[T3]                      D[A1]#J[T3]
+}
+class D {
+  type                       seen from prefix           is
+  ----                       ----------------           --
+  C[List[T3]]#I[Int]         D[A1]                      C[List[A1]]#I[Int]
+  C[List[T3]]#I[List[Int]]   D[A1]                      C[List[A1]]#I[List[Int]]
+  C[List[T3]]#I[T1]          D[A1]                      C[List[A1]]#I[T1]
+  C[List[T3]]#I[T2]          D[A1]                      C[List[A1]]#I[T2]
+  C[List[T3]]#I[T3]          D[A1]                      C[List[A1]]#I[A1]
+  C[List[T3]]#I[T4]          D[A1]                      C[List[A1]]#I[T4]
+  C[List[T3]]#J[Int]         D[A1]                      C[List[A1]]#J[Int]
+  C[List[T3]]#J[List[Int]]   D[A1]                      C[List[A1]]#J[List[Int]]
+  C[List[T3]]#J[T1]          D[A1]                      C[List[A1]]#J[T1]
+  C[List[T3]]#J[T2]          D[A1]                      C[List[A1]]#J[T2]
+  C[List[T3]]#J[T3]          D[A1]                      C[List[A1]]#J[A1]
+  C[List[T3]]#J[T4]          D[A1]                      C[List[A1]]#J[T4]
+  C[T1]#I[T3]                D[A1]                      C[T1]#I[A1]
+  C[T1]#J[T3]                D[A1]                      C[T1]#J[A1]
+  D[T3]#J[Int]               D[A1]                      D[A1]#J[Int]
+  D[T3]#J[List[Int]]         D[A1]                      D[A1]#J[List[Int]]
+  D[T3]#J[T1]                D[A1]                      D[A1]#J[T1]
+  D[T3]#J[T2]                D[A1]                      D[A1]#J[T2]
+  D[T3]#J[T3]                D[A1]                      D[A1]#J[A1]
+  D[T3]#J[T4]                D[A1]                      D[A1]#J[T4]
+}
+class I {
+  type                       seen from prefix           is
+  ----                       ----------------           --
+  C[List[T3]]#I[T1]          D.this.J[T4]               C[List[T3]]#I[List[T3]]
+  C[List[T3]]#I[T1]          Z.dZ.J[A2]                 C[List[T3]]#I[List[A1]]
+  C[List[T3]]#I[T1]          Z.dZ.J[P]                  C[List[T3]]#I[List[A1]]
+  C[List[T3]]#I[T2]          D.this.J[T4]               C[List[T3]]#I[T4]
+  C[List[T3]]#I[T2]          Z.dZ.J[A2]                 C[List[T3]]#I[A2]
+  C[List[T3]]#I[T2]          Z.dZ.J[P]                  C[List[T3]]#I[P]
+  C[List[T3]]#J[T1]          D.this.J[T4]               C[List[T3]]#J[List[T3]]
+  C[List[T3]]#J[T1]          Z.dZ.J[A2]                 C[List[T3]]#J[List[A1]]
+  C[List[T3]]#J[T1]          Z.dZ.J[P]                  C[List[T3]]#J[List[A1]]
+  C[List[T3]]#J[T2]          D.this.J[T4]               C[List[T3]]#J[T4]
+  C[List[T3]]#J[T2]          Z.dZ.J[A2]                 C[List[T3]]#J[A2]
+  C[List[T3]]#J[T2]          Z.dZ.J[P]                  C[List[T3]]#J[P]
+  C[T1]#I[Int]               D.this.J[T4]               C[List[T3]]#I[Int]
+  C[T1]#I[Int]               Z.dZ.J[A2]                 C[List[A1]]#I[Int]
+  C[T1]#I[Int]               Z.dZ.J[P]                  C[List[A1]]#I[Int]
+  C[T1]#I[List[Int]]         D.this.J[T4]               C[List[T3]]#I[List[Int]]
+  C[T1]#I[List[Int]]         Z.dZ.J[A2]                 C[List[A1]]#I[List[Int]]
+  C[T1]#I[List[Int]]         Z.dZ.J[P]                  C[List[A1]]#I[List[Int]]
+  C[T1]#I[T1]                D.this.J[T4]               C[List[T3]]#I[List[T3]]
+  C[T1]#I[T1]                Z.dZ.J[A2]                 C[List[A1]]#I[List[A1]]
+  C[T1]#I[T1]                Z.dZ.J[P]                  C[List[A1]]#I[List[A1]]
+  C[T1]#I[T2]                D.this.J[T4]               C[List[T3]]#I[T4]
+  C[T1]#I[T2]                Z.dZ.J[A2]                 C[List[A1]]#I[A2]
+  C[T1]#I[T2]                Z.dZ.J[P]                  C[List[A1]]#I[P]
+  C[T1]#I[T3]                D.this.J[T4]               C[List[T3]]#I[T3]
+  C[T1]#I[T3]                Z.dZ.J[A2]                 C[List[A1]]#I[T3]
+  C[T1]#I[T3]                Z.dZ.J[P]                  C[List[A1]]#I[T3]
+  C[T1]#I[T4]                D.this.J[T4]               C[List[T3]]#I[T4]
+  C[T1]#I[T4]                Z.dZ.J[A2]                 C[List[A1]]#I[T4]
+  C[T1]#I[T4]                Z.dZ.J[P]                  C[List[A1]]#I[T4]
+  C[T1]#J[Int]               D.this.J[T4]               C[List[T3]]#J[Int]
+  C[T1]#J[Int]               Z.dZ.J[A2]                 C[List[A1]]#J[Int]
+  C[T1]#J[Int]               Z.dZ.J[P]                  C[List[A1]]#J[Int]
+  C[T1]#J[List[Int]]         D.this.J[T4]               C[List[T3]]#J[List[Int]]
+  C[T1]#J[List[Int]]         Z.dZ.J[A2]                 C[List[A1]]#J[List[Int]]
+  C[T1]#J[List[Int]]         Z.dZ.J[P]                  C[List[A1]]#J[List[Int]]
+  C[T1]#J[T1]                D.this.J[T4]               C[List[T3]]#J[List[T3]]
+  C[T1]#J[T1]                Z.dZ.J[A2]                 C[List[A1]]#J[List[A1]]
+  C[T1]#J[T1]                Z.dZ.J[P]                  C[List[A1]]#J[List[A1]]
+  C[T1]#J[T2]                D.this.J[T4]               C[List[T3]]#J[T4]
+  C[T1]#J[T2]                Z.dZ.J[A2]                 C[List[A1]]#J[A2]
+  C[T1]#J[T2]                Z.dZ.J[P]                  C[List[A1]]#J[P]
+  C[T1]#J[T3]                D.this.J[T4]               C[List[T3]]#J[T3]
+  C[T1]#J[T3]                Z.dZ.J[A2]                 C[List[A1]]#J[T3]
+  C[T1]#J[T3]                Z.dZ.J[P]                  C[List[A1]]#J[T3]
+  C[T1]#J[T4]                D.this.J[T4]               C[List[T3]]#J[T4]
+  C[T1]#J[T4]                Z.dZ.J[A2]                 C[List[A1]]#J[T4]
+  C[T1]#J[T4]                Z.dZ.J[P]                  C[List[A1]]#J[T4]
+  D[T3]#J[T1]                D.this.J[T4]               D[T3]#J[List[T3]]
+  D[T3]#J[T1]                Z.dZ.J[A2]                 D[T3]#J[List[A1]]
+  D[T3]#J[T1]                Z.dZ.J[P]                  D[T3]#J[List[A1]]
+  D[T3]#J[T2]                D.this.J[T4]               D[T3]#J[T4]
+  D[T3]#J[T2]                Z.dZ.J[A2]                 D[T3]#J[A2]
+  D[T3]#J[T2]                Z.dZ.J[P]                  D[T3]#J[P]
+  D[A1]#J[T1]                D.this.J[T4]               D[A1]#J[List[T3]]
+  D[A1]#J[T1]                Z.dZ.J[A2]                 D[A1]#J[List[A1]]
+  D[A1]#J[T1]                Z.dZ.J[P]                  D[A1]#J[List[A1]]
+  D[A1]#J[T2]                D.this.J[T4]               D[A1]#J[T4]
+  D[A1]#J[T2]                Z.dZ.J[A2]                 D[A1]#J[A2]
+  D[A1]#J[T2]                Z.dZ.J[P]                  D[A1]#J[P]
+}
+class J {
+  type                       seen from prefix           is
+  ----                       ----------------           --
+  C[List[T3]]#I[Int]         Z.dZ.J[A2]                 C[List[A1]]#I[Int]
+  C[List[T3]]#I[Int]         Z.dZ.J[P]                  C[List[A1]]#I[Int]
+  C[List[T3]]#I[List[Int]]   Z.dZ.J[A2]                 C[List[A1]]#I[List[Int]]
+  C[List[T3]]#I[List[Int]]   Z.dZ.J[P]                  C[List[A1]]#I[List[Int]]
+  C[List[T3]]#I[T1]          Z.dZ.J[A2]                 C[List[A1]]#I[T1]
+  C[List[T3]]#I[T1]          Z.dZ.J[P]                  C[List[A1]]#I[T1]
+  C[List[T3]]#I[T2]          Z.dZ.J[A2]                 C[List[A1]]#I[T2]
+  C[List[T3]]#I[T2]          Z.dZ.J[P]                  C[List[A1]]#I[T2]
+  C[List[T3]]#I[T3]          Z.dZ.J[A2]                 C[List[A1]]#I[A1]
+  C[List[T3]]#I[T3]          Z.dZ.J[P]                  C[List[A1]]#I[A1]
+  C[List[T3]]#I[T4]          Z.dZ.J[A2]                 C[List[A1]]#I[A2]
+  C[List[T3]]#I[T4]          Z.dZ.J[P]                  C[List[A1]]#I[P]
+  C[List[T3]]#J[Int]         Z.dZ.J[A2]                 C[List[A1]]#J[Int]
+  C[List[T3]]#J[Int]         Z.dZ.J[P]                  C[List[A1]]#J[Int]
+  C[List[T3]]#J[List[Int]]   Z.dZ.J[A2]                 C[List[A1]]#J[List[Int]]
+  C[List[T3]]#J[List[Int]]   Z.dZ.J[P]                  C[List[A1]]#J[List[Int]]
+  C[List[T3]]#J[T1]          Z.dZ.J[A2]                 C[List[A1]]#J[T1]
+  C[List[T3]]#J[T1]          Z.dZ.J[P]                  C[List[A1]]#J[T1]
+  C[List[T3]]#J[T2]          Z.dZ.J[A2]                 C[List[A1]]#J[T2]
+  C[List[T3]]#J[T2]          Z.dZ.J[P]                  C[List[A1]]#J[T2]
+  C[List[T3]]#J[T3]          Z.dZ.J[A2]                 C[List[A1]]#J[A1]
+  C[List[T3]]#J[T3]          Z.dZ.J[P]                  C[List[A1]]#J[A1]
+  C[List[T3]]#J[T4]          Z.dZ.J[A2]                 C[List[A1]]#J[A2]
+  C[List[T3]]#J[T4]          Z.dZ.J[P]                  C[List[A1]]#J[P]
+  C[T1]#I[T3]                Z.dZ.J[A2]                 C[T1]#I[A1]
+  C[T1]#I[T3]                Z.dZ.J[P]                  C[T1]#I[A1]
+  C[T1]#I[T4]                Z.dZ.J[A2]                 C[T1]#I[A2]
+  C[T1]#I[T4]                Z.dZ.J[P]                  C[T1]#I[P]
+  C[T1]#J[T3]                Z.dZ.J[A2]                 C[T1]#J[A1]
+  C[T1]#J[T3]                Z.dZ.J[P]                  C[T1]#J[A1]
+  C[T1]#J[T4]                Z.dZ.J[A2]                 C[T1]#J[A2]
+  C[T1]#J[T4]                Z.dZ.J[P]                  C[T1]#J[P]
+  D[T3]#J[Int]               Z.dZ.J[A2]                 D[A1]#J[Int]
+  D[T3]#J[Int]               Z.dZ.J[P]                  D[A1]#J[Int]
+  D[T3]#J[List[Int]]         Z.dZ.J[A2]                 D[A1]#J[List[Int]]
+  D[T3]#J[List[Int]]         Z.dZ.J[P]                  D[A1]#J[List[Int]]
+  D[T3]#J[T1]                Z.dZ.J[A2]                 D[A1]#J[T1]
+  D[T3]#J[T1]                Z.dZ.J[P]                  D[A1]#J[T1]
+  D[T3]#J[T2]                Z.dZ.J[A2]                 D[A1]#J[T2]
+  D[T3]#J[T2]                Z.dZ.J[P]                  D[A1]#J[T2]
+  D[T3]#J[T3]                Z.dZ.J[A2]                 D[A1]#J[A1]
+  D[T3]#J[T3]                Z.dZ.J[P]                  D[A1]#J[A1]
+  D[T3]#J[T4]                Z.dZ.J[A2]                 D[A1]#J[A2]
+  D[T3]#J[T4]                Z.dZ.J[P]                  D[A1]#J[P]
+  D[A1]#J[T3]                Z.dZ.J[A2]                 D[A1]#J[A1]
+  D[A1]#J[T3]                Z.dZ.J[P]                  D[A1]#J[A1]
+  D[A1]#J[T4]                Z.dZ.J[A2]                 D[A1]#J[A2]
+  D[A1]#J[T4]                Z.dZ.J[P]                  D[A1]#J[P]
+}
+class D { // after parser
+  private val cD: ll.C[List[T3]]
+  val cD: ll.C[List[T3]]
+}
+
+class D { // after uncurry
+  private val cD: ll.C[List[T3]]
+  val cD(): ll.C[List[T3]]
+}
+
+class D { // after erasure
+  private val cD: ll.C
+  val cD(): ll.C
+}
+
+object Z { // after parser
+  def kz[P <: ll.Z.dZ.J[ll.A2]]: ll.Z.dZ.J[P]
+  private val jZ: ll.Z.dZ.J[ll.A2]
+  val jZ: ll.Z.dZ.J[ll.A2]
+  private val dZ: ll.D[ll.A1]
+  val dZ: ll.D[ll.A1]
+}
+
+object Z { // after uncurry
+  def kz[P <: ll.Z.dZ.J[ll.A2]](): ll.Z.dZ.J[P]
+  private val jZ: ll.Z.dZ.J[ll.A2]
+  val jZ(): ll.Z.dZ.J[ll.A2]
+  private val dZ: ll.D[ll.A1]
+  val dZ(): ll.D[ll.A1]
+}
+
+object Z { // after erasure
+  def kz(): ll.D#J
+  private val jZ: ll.D#J
+  val jZ(): ll.D#J
+  private val dZ: ll.D
+  val dZ(): ll.D
+}
+
+object Z { // after flatten
+  def kz(): ll.D#D$J
+  private val jZ: ll.D#D$J
+  val jZ(): ll.D#D$J
+  private val dZ: ll.D
+  val dZ(): ll.D
+}
+
+value dZ { // after parser
+  private val cD: ll.C[List[T3]]
+  val cD: ll.C[List[T3]]
+}
+
+value dZ { // after parser
+  private val cD: ll.C[List[T3]]
+  val cD: ll.C[List[T3]]
+}
+
+value dZ { // after uncurry
+  private val cD: ll.C[List[T3]]
+  val cD(): ll.C[List[T3]]
+}
+
+value dZ { // after erasure
+  private val cD: ll.C
+  val cD(): ll.C
+}
+
+value jZ { // after parser
+  def thisI(): I.this.type
+  def thisC(): C.this.type
+  def t2(): T2
+  def t1(): T1
+}
+
+value jZ { // after parser
+  def thisI(): I.this.type
+  def thisC(): C.this.type
+  def t2(): T2
+  def t1(): T1
+}
+
+value jZ { // after explicitouter
+  protected val $outer: D.this.type
+  val ll$D$J$$$outer(): D.this.type
+  val ll$C$I$$$outer(): C.this.type
+  def thisI(): I.this.type
+  def thisC(): C.this.type
+  def t2(): T2
+  def t1(): T1
+}
+
+value jZ { // after erasure
+  protected val $outer: ll.D
+  val ll$D$J$$$outer(): ll.D
+  protected val $outer: ll.C
+  val ll$C$I$$$outer(): ll.C
+  def thisI(): ll.C#I
+  def thisC(): ll.C
+  def t2(): Object
+  def t1(): Object
+}
+
+value jZ { // after flatten
+  protected val $outer: ll.D
+  val ll$D$J$$$outer(): ll.D
+  protected val $outer: ll.C
+  val ll$C$I$$$outer(): ll.C
+  def thisI(): ll.C#C$I
+  def thisC(): ll.C
+  def t2(): Object
+  def t1(): Object
+}
+
+method kz { // after parser
+  def thisI(): I.this.type
+  def thisC(): C.this.type
+  def t2(): T2
+  def t1(): T1
+}
+
+value $outer { // after parser
+  private val cD: ll.C[List[T3]]
+  val cD: ll.C[List[T3]]
+}
+
+value $outer { // after uncurry
+  private val cD: ll.C[List[T3]]
+  val cD(): ll.C[List[T3]]
+}
+
+value $outer { // after erasure
+  private val cD: ll.C
+  val cD(): ll.C
+}
+
