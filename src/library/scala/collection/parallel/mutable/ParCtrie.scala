@@ -115,6 +115,18 @@ extends ParMap[K, V]
     override def merge(that: Size) = result = result + that.result
   }
 
+  /* serialization */
+
+  private def writeObject(out: java.io.ObjectOutputStream) {
+    out.defaultWriteObject
+  }
+
+  private def readObject(in: java.io.ObjectInputStream) {
+    in.defaultReadObject
+    
+    initTaskSupport()
+  }
+
 }
 
 
