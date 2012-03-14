@@ -154,6 +154,8 @@ PROPERTIES
 
   <!-- Loads custom properties definitions -->
   <property file="${basedir}/build.properties"/>
+  <!-- Generating version number -->
+  <property file="${basedir}/build.number"/>
 
   <!-- Additional command line arguments for scalac. They are added to all build targets -->
   <property name="scalac.args" value=""/>
@@ -212,16 +214,27 @@ INITIALISATION
   </target>
 
   <!-- Determines OSGi string + maven extension. -->
+  <target name="init.hasbuildnum">
+    <condition property="version.hasbuildnum">
+      <not><equals arg1="${version.bnum}" arg2="0"/></not>
+    </condition>
+  </target>
   <target name="init.build.snapshot" unless="build.release">
-    <property name="version.suffix" value="DEV"/>
+    <property name="version.suffix" value="dev"/>
     <property name="maven.version.suffix" value="-SNAPSHOT"/>
   </target>
-  <target name="init.build.release" if="build.release">
-    <property name="version.suffix" value="FINAL"/>
+  <target name="init.build.release" if="build.release" unless="version.hasbuildnum" depends="init.hasbuildnum">
+    <property name="version.suffix" value="v0"/>
     <property name="maven.version.suffix" value=""/>
   </target>
+  <!-- funny thing, ant is.  Can only specify *one* property in if check.  Guaranteed that both are true here,
+       since properties are immutable.  -->
+  <target name="init.build.patch.release" if="version.hasbuildnum" depends="init.hasbuildnum, init.build.snapshot">
+    <property name="version.suffix" value="v${version.bnum}"/>
+    <property name="maven.version.suffix" value="-${version.bnum}"/>
+  </target>
 
-  <target name="init.build.suffix.done" depends="init.build.snapshot, init.build.release"/>
+  <target name="init.build.suffix.done" depends="init.build.snapshot, init.build.release, init.build.patch.release"/>
 
   <target name="init" depends="init.starr, init.build.suffix.done">
   <!-- scalac.args.optimise is selectively overridden in certain antcall tasks. -->
@@ -250,8 +263,6 @@ INITIALISATION
 
     <property name="init.avail" value="yes"/>
 
-    <!-- Generating version number -->
-    <property file="${basedir}/build.number"/>
     <!-- We use the git describe to determine the OSGi modifier for our build. -->
     <property
       name="version.number"
