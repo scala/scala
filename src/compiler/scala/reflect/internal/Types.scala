@@ -1118,7 +1118,14 @@ trait Types extends api.Types { self: SymbolTable =>
       underlying.baseTypeSeq prepend this
     }
     override def isHigherKinded = false // singleton type classifies objects, thus must be kind *
-    override def safeToString: String = prefixString + "type"
+    override def safeToString: String = {
+      // Avoiding printing Predef.type and scala.package.type as "type",
+      // since in all other cases we omit those prefixes.
+      val pre = underlying.typeSymbol.skipPackageObject
+      if (pre.isOmittablePrefix) pre.fullName + ".type"
+      else prefixString + "type"
+    }
+
 /*
     override def typeOfThis: Type = typeSymbol.typeOfThis
     override def bounds: TypeBounds = TypeBounds(this, this)
@@ -4572,7 +4579,7 @@ trait Types extends api.Types { self: SymbolTable =>
         var rebind0 = pre.findMember(sym.name, BRIDGE, 0, true)
         if (rebind0 == NoSymbol) {
           if (sym.isAliasType) throw missingAliasException
-          if (settings.debug.value) println(pre+"."+sym+" does no longer exist, phase = "+phase)
+          debugwarn(pre+"."+sym+" does no longer exist, phase = "+phase)
           throw new MissingTypeControl // For build manager and presentation compiler purposes
           //assert(false, pre+"."+sym+" does no longer exist, phase = "+phase)
         }
@@ -4628,7 +4635,7 @@ trait Types extends api.Types { self: SymbolTable =>
             if ((pre1 eq pre) && (sym1 eq sym) && (args1 eq args)/* && sym.isExternal*/) {
               tp
             } else if (sym1 == NoSymbol) {
-              if (settings.debug.value) println("adapt fail: "+pre+" "+pre1+" "+sym)
+              debugwarn("adapt fail: "+pre+" "+pre1+" "+sym)
               tp
             } else {
               copyTypeRef(tp, pre1, sym1, args1)
@@ -5839,7 +5846,7 @@ trait Types extends api.Types { self: SymbolTable =>
       }
     }
 
-    val initialBTSes = ts map (_.baseTypeSeq.toList filter (_.typeSymbol.isPublic))
+    val initialBTSes = ts map (_.baseTypeSeq.toList)
     if (printLubs)
       printLubMatrix(ts zip initialBTSes toMap, depth)
 

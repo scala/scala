@@ -131,23 +131,11 @@ trait MatrixAdditions extends ast.TreeDSL {
 
       import Flags.{ MUTABLE, ABSTRACT, SEALED }
 
-      private case class Combo(index: Int, sym: Symbol) {
-        val isBaseClass = sym.tpe.baseClasses.toSet
-
-        // is this combination covered by the given pattern?
-        def isCovered(p: Pattern) = {
-          def coversSym = isBaseClass(decodedEqualsType(p.tpe).typeSymbol)
-
-          cond(p.tree) {
-            case _: UnApply | _: ArrayValue => true
-            case x                          => p.isDefault || coversSym
-          }
-        }
-      }
+      private case class Combo(index: Int, sym: Symbol) { }
 
       /* True if the patterns in 'row' cover the given type symbol combination, and has no guard. */
       private def rowCoversCombo(row: Row, combos: List[Combo]) =
-        row.guard.isEmpty && (combos forall (c => c isCovered row.pats(c.index)))
+        row.guard.isEmpty && combos.forall(c => row.pats(c.index) covers c.sym)
 
       private def requiresExhaustive(sym: Symbol) = {
          (sym.isMutable) &&                 // indicates that have not yet checked exhaustivity

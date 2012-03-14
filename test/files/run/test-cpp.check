@@ -1,0 +1,73 @@
+37c37
+<   locals: value args, value x, value y
+---
+>   locals: value args
+42,43d41
+<     52	CONSTANT(2)
+<     52	STORE_LOCAL(value x)
+45,46d42
+<     53	LOAD_LOCAL(value x)
+<     53	STORE_LOCAL(value y)
+49c45
+<     54	LOAD_LOCAL(value y)
+---
+>     54	CONSTANT(2)
+92c88
+<   locals: value args, value x, value y
+---
+>   locals: value args, value x
+101,102d96
+<     82	LOAD_LOCAL(value x)
+<     82	STORE_LOCAL(value y)
+105c99
+<     83	LOAD_LOCAL(value y)
+---
+>     83	LOAD_LOCAL(value x)
+135c129
+<   locals: value args, value x, value y
+---
+>   locals: value args
+140,141d133
+<     66	THIS(TestAliasChainDerefThis)
+<     66	STORE_LOCAL(value x)
+143,144d134
+<     67	LOAD_LOCAL(value x)
+<     67	STORE_LOCAL(value y)
+147c137
+<     68	LOAD_LOCAL(value y)
+---
+>     68	THIS(Object)
+176c166
+<   locals: value x, value y
+---
+>   locals: value x
+181,182d170
+<     29	LOAD_LOCAL(value x)
+<     29	STORE_LOCAL(value y)
+185c173
+<     30	LOAD_LOCAL(value y)
+---
+>     30	LOAD_LOCAL(value x)
+223,224d210
+<     97	LOAD_LOCAL(variable x)
+<     97	STORE_LOCAL(variable y)
+227c213
+<     98	LOAD_LOCAL(variable y)
+---
+>     98	LOAD_LOCAL(variable x)
+233,234d218
+<     101	LOAD_LOCAL(variable y)
+<     101	STORE_LOCAL(variable x)
+236c220
+<     102	LOAD_LOCAL(variable x)
+---
+>     102	LOAD_LOCAL(variable y)
+345c329
+<     41	THIS(TestSetterInline)
+---
+>     41	THIS(Object)
+347c331
+<     41	CALL_METHOD TestSetterInline._postSetHook_$eq (static-instance)
+---
+>     41	STORE_FIELD variable _postSetHook (dynamic)
+

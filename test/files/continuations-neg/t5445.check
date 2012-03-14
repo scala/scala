@@ -1,0 +1,4 @@
+t5445.scala:4: error: cps annotations not allowed on by-value parameters or value definitions
+  def foo(block: Unit @suspendable ): Unit @suspendable = {}
+          ^
+one error found

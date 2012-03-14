@@ -511,7 +511,17 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
        *  was both already used for a map and mucho long.  So "sClass" is the
        *  specialized subclass of "clazz" throughout this file.
        */
-      val sClass = clazz.owner.newClass(specializedName(clazz, env0).toTypeName, clazz.pos, (clazz.flags | SPECIALIZED) & ~CASE)
+      
+      // SI-5545: Eliminate classes with the same name loaded from the bytecode already present - all we need to do is
+      // to force .info on them, as their lazy type will be evaluated and the symbols will be eliminated. Unfortunately
+      // evaluating the info after creating the specialized class will mess the specialized class signature, so we'd
+      // better evaluate it before creating the new class symbol 
+      val clazzName = specializedName(clazz, env0).toTypeName
+      val bytecodeClazz = clazz.owner.info.decl(clazzName)      
+      debuglog("Specializing " + clazz + " found " + bytecodeClazz + " already there")
+      bytecodeClazz.info
+      
+      val sClass = clazz.owner.newClass(clazzName, clazz.pos, (clazz.flags | SPECIALIZED) & ~CASE)
 
       def cloneInSpecializedClass(member: Symbol, flagFn: Long => Long) =
         member.cloneSymbol(sClass, flagFn(member.flags | SPECIALIZED))

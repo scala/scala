@@ -2010,9 +2010,28 @@ STABLE REFERENCE (STARR)
         <include name="forkjoin.jar"/>
       </fileset>
     </copy>
+    <!-- remove SHA1 files for no starr, so we don't loose artifacts. -->
+    <delete>
+      <fileset dir="${lib.dir}">
+        <include name="fjbg.jar.desired.sha1"/>
+        <include name="msil.jar.desired.sha1"/>
+        <include name="forkjoin.jar.desired.sha1"/>
+      </fileset>
+    </delete>
   </target>
 
-  <target name="starr.done" depends="starr.libs"/>
+  <target name="starr.removesha1" depends="starr.libs">
+    <!-- remove SHA1 files for no starr, so we don't loose artifacts. -->
+    <delete>
+      <fileset dir="${lib.dir}">
+        <include name="scala-compiler.jar.desired.sha1"/>
+        <include name="scala-library.jar.desired.sha1"/>
+        <include name="scala-library-src.jar.desired.sha1"/>
+      </fileset>
+    </delete>
+  </target>
+
+  <target name="starr.done" depends="starr.libs, starr.removesha1"/>
 
 <!-- ===========================================================================
 FORWARDED TARGETS FOR PACKAGING

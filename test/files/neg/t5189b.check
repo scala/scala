@@ -1,0 +1,8 @@
+t5189b.scala:25: error: type mismatch;
+ found   : TestNeg.Wrapped[?T2] where type ?T2 <: T
+ required: TestNeg.Wrapped[T]
+Note: ?T2 <: T, but class Wrapped is invariant in type W.
+You may wish to define W as +W instead. (SLS 4.5)
+    case Wrapper/*[_ <: T ]*/(wrapped) => wrapped // : Wrapped[_ <: T], which is a subtype of Wrapped[T] if and only if Wrapped is covariant in its type parameter
+                                          ^
+one error found

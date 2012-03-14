@@ -1,4 +1,7 @@
-tailrec-2.scala:6: error: could not optimize @tailrec annotated method f: it contains a recursive call targetting a supertype
+tailrec-2.scala:8: error: could not optimize @tailrec annotated method f: it contains a recursive call targetting a supertype
   @annotation.tailrec final def f[B >: A](mem: List[B]): List[B] = (null: Super[A]).f(mem)
                                                                                     ^
-one error found
+tailrec-2.scala:9: error: @tailrec annotated method contains no recursive calls
+  @annotation.tailrec final def f1[B >: A](mem: List[B]): List[B] = this.g(mem)
+                                ^
+two errors found

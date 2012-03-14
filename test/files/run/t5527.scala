@@ -11,14 +11,80 @@ object Test extends DirectTest {
 
   override def code = """
     // SI-5527
-    trait Test {
-      def sth {
+    object UselessComments {
+
+      var z = 0
+
+      def test1 = {
         /** Some comment here */
         object Maybe {
           /** Some comment inside */
           def nothing() = ()
         }
       }
+
+      def test2 = {
+        var x = 4
+        if (true) {
+          /** Testing 123 */
+          x = 5
+          val y = 6
+        }
+      }
+
+      def test3 = {
+        if (true)
+         z = 3
+
+        /** Calculate this result. */
+        val t = 4
+        for (i <- 0 to 4)
+          println(i)
+      }
+
+      val test4 = ('a') match {
+        /** Another digit is a giveaway. */
+        case '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9'  =>
+          true
+        case _ =>
+          false
+      }
+    }
+
+    /** comments that we should keep */
+    object UsefulComments {
+      /** class A */
+      class A {
+        /** f */
+        def f(i: Int) = i
+        /** v */
+        val v = 1
+        /** u */
+        var u = 2
+      }     
+      /** trait B */
+      trait B {
+        /** T */
+        type T
+        /** f */
+        def f(i: Int)
+        /** v */
+        val v = 1
+        /** u */
+        var u = 2
+      }     
+      /** object C */
+      object C {
+        /** f */
+        def f(i: Int) = i
+        /** v */
+        val v = 1
+        /** u */
+        var u = 2
+      }
+      /** class D */
+      @deprecated("use ... instead", "2.10.0")
+      class D
     }
   """.trim
 

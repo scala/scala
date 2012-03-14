@@ -223,8 +223,25 @@ abstract class TailCalls extends Transform {
       }
 
       tree match {
-        case dd @ DefDef(_, _, _, vparamss0, _, rhs0) =>
+        case ValDef(_, _, _, _) =>
+          if (tree.symbol.isLazy && tree.symbol.hasAnnotation(TailrecClass))
+            unit.error(tree.pos, "lazy vals are not tailcall transformed")
+
+          super.transform(tree)
+
+        case dd @ DefDef(_, _, _, vparamss0, _, rhs0) if !dd.symbol.hasAccessorFlag =>
           val newCtx = new Context(dd)
+          def isRecursiveCall(t: Tree) = {
+            val sym = t.symbol
+            (sym != null) && {
+              sym.isMethod && (dd.symbol.name == sym.name) && (dd.symbol.enclClass isSubClass sym.enclClass)
+            }
+          }
+          if (newCtx.isMandatory) {
+            if (!rhs0.exists(isRecursiveCall)) {
+              unit.error(tree.pos, "@tailrec annotated method contains no recursive calls")
+            }
+          }
           debuglog("Considering " + dd.name + " for tailcalls")
           val newRHS = transform(rhs0, newCtx)
 
@@ -248,7 +265,7 @@ abstract class TailCalls extends Transform {
               ))
             }
             else {
-              if (newCtx.isMandatory)
+              if (newCtx.isMandatory && newRHS.exists(isRecursiveCall))
                 newCtx.tailrecFailure()
 
               newRHS

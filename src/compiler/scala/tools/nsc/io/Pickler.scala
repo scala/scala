@@ -165,7 +165,7 @@ object Pickler {
   def pkl[T: Pickler] = implicitly[Pickler[T]]
 
   /** A class represenenting `~`-pairs */
-  case class ~[S, T](fst: S, snd: T)
+  case class ~[+S, +T](fst: S, snd: T)
 
   /** A wrapper class to be able to use `~` s an infix method */
   class TildeDecorator[S](x: S) {

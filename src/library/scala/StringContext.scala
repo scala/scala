@@ -46,10 +46,10 @@ case class StringContext(parts: String*) {
     checkLengths(args: _*)
     val pi = parts.iterator
     val ai = args.iterator
-    val bldr = new java.lang.StringBuilder(treatEscapes(pi.next))
+    val bldr = new java.lang.StringBuilder(treatEscapes(pi.next()))
     while (ai.hasNext) {
       bldr append ai.next
-      bldr append treatEscapes(pi.next)
+      bldr append treatEscapes(pi.next())
     }
     bldr.toString
   }
@@ -89,11 +89,12 @@ case class StringContext(parts: String*) {
     val bldr = new java.lang.StringBuilder
     val args1 = new ArrayBuffer[Any]
     def copyString(first: Boolean): Unit = {
-      val str = treatEscapes(pi.next)
+      val str = treatEscapes(pi.next())
+      val strIsEmpty = str.length == 0
       var start = 0
       var idx = 0
       if (!first) {
-        if ((str charAt 0) != '%')
+        if (strIsEmpty || (str charAt 0) != '%')
           bldr append "%s"
         idx = 1
       }
@@ -106,11 +107,11 @@ case class StringContext(parts: String*) {
         }
         idx += 1
       }
-      bldr append (str substring (start, idx))
+      if (!strIsEmpty) bldr append (str substring (start, idx))
     }
     copyString(first = true)
     while (pi.hasNext) {
-      args1 += ai.next
+      args1 += ai.next()
       copyString(first = false)
     }
     bldr.toString format (args1: _*)
