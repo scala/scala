@@ -587,7 +587,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
               " => " + sClass.defStringSeenAs(sClass.typeOfThis)
           )
         }
-        polyType(newClassTParams, ClassInfoType(parents ::: extraSpecializedMixins, decls1, sClass))
+        GenPolyType(newClassTParams, ClassInfoType(parents ::: extraSpecializedMixins, decls1, sClass))
       }
 
       afterSpecialize(sClass setInfo specializedInfoType)
@@ -818,7 +818,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
 
           // the cloneInfo is necessary so that method parameter symbols are cloned at the new owner
           val methodType = sym.info.resultType.instantiateTypeParams(keys ++ tps, vals ++ tps1.map(_.tpe)).cloneInfo(specMember)
-          specMember setInfo polyType(tps1, methodType)
+          specMember setInfo GenPolyType(tps1, methodType)
 
           debuglog("expanded member: " + sym  + ": " + sym.info +
             " -> " + specMember +
@@ -1130,7 +1130,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
         )
         val newScope = newScopeWith(specializeClass(clazz, typeEnv(clazz)) ++ specialOverrides(clazz): _*)
         // If tparams.isEmpty, this is just the ClassInfoType.
-        polyType(tparams, ClassInfoType(parents1, newScope, clazz))
+        GenPolyType(tparams, ClassInfoType(parents1, newScope, clazz))
       case _ =>
         tpe
     }

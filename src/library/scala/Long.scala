@@ -590,7 +590,7 @@ final class Long extends AnyVal {
   */
   def %(x: Double): Double = sys.error("stub")
 
-  def getClass(): Class[Long] = sys.error("stub")
+  override def getClass(): Class[Long] = sys.error("stub")
 }
 
 object Long extends AnyValCompanion {

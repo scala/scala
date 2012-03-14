@@ -145,7 +145,6 @@ trait StdNames extends NameManglers { self: SymbolTable =>
     final val Object: NameType          = "Object"
     final val PartialFunction: NameType = "PartialFunction"
     final val Product: NameType         = "Product"
-    final val ScalaObject: NameType     = "ScalaObject"
     final val Serializable: NameType    = "Serializable"
     final val Singleton: NameType       = "Singleton"
     final val String: NameType          = "String"

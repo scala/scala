@@ -590,7 +590,7 @@ final class Int extends AnyVal {
   */
   def %(x: Double): Double = sys.error("stub")
 
-  def getClass(): Class[Int] = sys.error("stub")
+  override def getClass(): Class[Int] = sys.error("stub")
 }
 
 object Int extends AnyValCompanion {

@@ -453,24 +453,30 @@ class Global(var currentSettings: Settings, var reporter: Reporter) extends Symb
     val global: Global.this.type = Global.this
   } with Analyzer
 
+  object extensionMethods extends {
+    val global: Global.this.type = Global.this
+    val runsAfter = List("typer")
+    val runsRightAfter = None
+  } with ExtensionMethods
+
   // phaseName = "superaccessors"
   object superAccessors extends {
     val global: Global.this.type = Global.this
-    val runsAfter = List[String]("typer")
+    val runsAfter = List("typer")
     val runsRightAfter = None
   } with SuperAccessors
 
   // phaseName = "pickler"
   object pickler extends {
     val global: Global.this.type = Global.this
-    val runsAfter = List[String]("superaccessors")
+    val runsAfter = List("superaccessors")
     val runsRightAfter = None
   } with Pickler
 
   // phaseName = "refchecks"
   override object refChecks extends {
     val global: Global.this.type = Global.this
-    val runsAfter = List[String]("pickler")
+    val runsAfter = List("pickler")
     val runsRightAfter = None
   } with RefChecks
 
@@ -484,28 +490,28 @@ class Global(var currentSettings: Settings, var reporter: Reporter) extends Symb
   // phaseName = "tailcalls"
   object tailCalls extends {
     val global: Global.this.type = Global.this
-    val runsAfter = List[String]("uncurry")
+    val runsAfter = List("uncurry")
     val runsRightAfter = None
   } with TailCalls
 
   // phaseName = "explicitouter"
   object explicitOuter extends {
     val global: Global.this.type = Global.this
-    val runsAfter = List[String]("tailcalls")
+    val runsAfter = List("tailcalls")
     val runsRightAfter = None
   } with ExplicitOuter
 
   // phaseName = "specialize"
   object specializeTypes extends {
     val global: Global.this.type = Global.this
-    val runsAfter = List[String]("")
+    val runsAfter = List("")
     val runsRightAfter = Some("tailcalls")
   } with SpecializeTypes
 
   // phaseName = "erasure"
   override object erasure extends {
     val global: Global.this.type = Global.this
-    val runsAfter = List[String]("explicitouter")
+    val runsAfter = List("explicitouter")
     val runsRightAfter = Some("explicitouter")
   } with Erasure
 
@@ -513,84 +519,84 @@ class Global(var currentSettings: Settings, var reporter: Reporter) extends Symb
   object lazyVals extends {
     final val FLAGS_PER_WORD = 32
     val global: Global.this.type = Global.this
-    val runsAfter = List[String]("erasure")
+    val runsAfter = List("erasure")
     val runsRightAfter = None
   } with LazyVals
 
   // phaseName = "lambdalift"
   object lambdaLift extends {
     val global: Global.this.type = Global.this
-    val runsAfter = List[String]("lazyvals")
+    val runsAfter = List("lazyvals")
     val runsRightAfter = None
   } with LambdaLift
 
   // phaseName = "constructors"
   object constructors extends {
     val global: Global.this.type = Global.this
-    val runsAfter = List[String]("lambdalift")
+    val runsAfter = List("lambdalift")
     val runsRightAfter = None
   } with Constructors
 
   // phaseName = "flatten"
   object flatten extends {
     val global: Global.this.type = Global.this
-    val runsAfter = List[String]("constructors")
+    val runsAfter = List("constructors")
     val runsRightAfter = None
   } with Flatten
 
   // phaseName = "mixin"
   object mixer extends {
     val global: Global.this.type = Global.this
-    val runsAfter = List[String]("flatten", "constructors")
+    val runsAfter = List("flatten", "constructors")
     val runsRightAfter = None
   } with Mixin
 
   // phaseName = "cleanup"
   object cleanup extends {
     val global: Global.this.type = Global.this
-    val runsAfter = List[String]("mixin")
+    val runsAfter = List("mixin")
     val runsRightAfter = None
   } with CleanUp
 
   // phaseName = "icode"
   object genicode extends {
     val global: Global.this.type = Global.this
-    val runsAfter = List[String]("cleanup")
+    val runsAfter = List("cleanup")
     val runsRightAfter = None
   } with GenICode
 
   // phaseName = "inliner"
   object inliner extends {
     val global: Global.this.type = Global.this
-    val runsAfter = List[String]("icode")
+    val runsAfter = List("icode")
     val runsRightAfter = None
   } with Inliners
 
   // phaseName = "inlineExceptionHandlers"
   object inlineExceptionHandlers extends {
     val global: Global.this.type = Global.this
-    val runsAfter = List[String]("inliner")
+    val runsAfter = List("inliner")
     val runsRightAfter = None
   } with InlineExceptionHandlers
 
   // phaseName = "closelim"
   object closureElimination extends {
     val global: Global.this.type = Global.this
-    val runsAfter = List[String]("inlineExceptionHandlers")
+    val runsAfter = List("inlineExceptionHandlers")
     val runsRightAfter = None
   } with ClosureElimination
 
   // phaseName = "dce"
   object deadCode extends {
     val global: Global.this.type = Global.this
-    val runsAfter = List[String]("closelim")
+    val runsAfter = List("closelim")
     val runsRightAfter = None
   } with DeadCodeElimination
 
   // phaseName = "jvm"
   object genJVM extends {
     val global: Global.this.type = Global.this
-    val runsAfter = List[String]("dce")
+    val runsAfter = List("dce")
     val runsRightAfter = None
   } with GenJVM
 
@@ -606,7 +612,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter) extends Symb
   object terminal extends {
     val global: Global.this.type = Global.this
     val phaseName = "terminal"
-    val runsAfter = List[String]("jvm", "msil")
+    val runsAfter = List("jvm", "msil")
     val runsRightAfter = None
   } with SubComponent {
     private var cache: Option[GlobalPhase] = None
@@ -660,6 +666,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter) extends Symb
       analyzer.packageObjects -> "load package objects",
       analyzer.typerFactory   -> "the meat and potatoes: type the trees",
       superAccessors          -> "add super accessors in traits and nested classes",
+      extensionMethods        -> "add extension methods for inline classes",
       pickler                 -> "serialize symbol tables",
       refChecks               -> "reference/override checking, translate nested objects",
       uncurry                 -> "uncurry, translate function values to anonymous classes",
@@ -1102,6 +1109,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter) extends Symb
     val namerPhase                   = phaseNamed("namer")
     // val packageobjectsPhase          = phaseNamed("packageobjects")
     val typerPhase                   = phaseNamed("typer")
+    val inlineclassesPhase           = phaseNamed("inlineclasses")
     // val superaccessorsPhase          = phaseNamed("superaccessors")
     val picklerPhase                 = phaseNamed("pickler")
     val refchecksPhase               = phaseNamed("refchecks")
@@ -1433,7 +1441,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter) extends Symb
 
     /**
      * Re-orders the source files to
-     *  1. ScalaObject
+     *  1. This Space Intentionally Left Blank
      *  2. LowPriorityImplicits / EmbeddedControls (i.e. parents of Predef)
      *  3. the rest
      *
@@ -1461,7 +1469,6 @@ class Global(var currentSettings: Settings, var reporter: Reporter) extends Symb
       def rank(f: SourceFile) = {
         if (f.file.container.name != "scala") goLast
         else f.file.name match {
-          case "ScalaObject.scala"            => 1
           case "LowPriorityImplicits.scala"   => 2
           case "StandardEmbeddings.scala"     => 2
           case "EmbeddedControls.scala"       => 2

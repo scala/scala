@@ -296,27 +296,27 @@ object Test extends Properties("HtmlFactory") {
       case _ => false
     }
   }
-
-  property("Trac #484 - refinements and existentials") = {
-    val files = createTemplates("Trac484.scala")
-    val lines = """
-        |type Bar = AnyRef { type Dingus <: T forSome { type T <: String } }
-        |type Foo = AnyRef { ... /* 3 definitions in type refinement */ }
-        |def g(x: T forSome { type T <: String }): String
-        |def h(x: Float): AnyRef { def quux(x: Int,y: Int): Int }
-        |def hh(x: Float): AnyRef { def quux(x: Int,y: Int): Int }
-        |def j(x: Int): Bar
-        |def k(): AnyRef { type Dingus <: T forSome { type T <: String } }
-      """.stripMargin.trim.lines map (_.trim)
-
-    files("RefinementAndExistentials.html") match {
-      case node: scala.xml.Node => {
-        val s = node.text.replaceAll("\\s+", " ")
-        lines forall (s contains _)
-      }
-      case _ => false
-    }
-  }
+  // 
+  // property("Trac #484 - refinements and existentials") = {
+  //   val files = createTemplates("Trac484.scala")
+  //   val lines = """
+  //       |type Bar = AnyRef { type Dingus <: T forSome { type T <: String } }
+  //       |type Foo = AnyRef { ... /* 3 definitions in type refinement */ }
+  //       |def g(x: T forSome { type T <: String }): String
+  //       |def h(x: Float): AnyRef { def quux(x: Int,y: Int): Int }
+  //       |def hh(x: Float): AnyRef { def quux(x: Int,y: Int): Int }
+  //       |def j(x: Int): Bar
+  //       |def k(): AnyRef { type Dingus <: T forSome { type T <: String } }
+  //     """.stripMargin.trim.lines map (_.trim)
+  // 
+  //   files("RefinementAndExistentials.html") match {
+  //     case node: scala.xml.Node => {
+  //       val s = node.text.replaceAll("\\s+", " ")
+  //       lines forall (s contains _)
+  //     }
+  //     case _ => false
+  //   }
+  // }
 
   property("Trac #4289") = {
     val files = createTemplates("Trac4289.scala")

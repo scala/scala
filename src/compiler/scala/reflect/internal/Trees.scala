@@ -11,6 +11,18 @@ import api.Modifier
 
 trait Trees extends api.Trees { self: SymbolTable =>
 
+  // Belongs in TreeInfo but then I can't reach it from TreePrinters.
+  def isReferenceToScalaMember(t: Tree, Id: Name) = t match {
+    case Ident(Id)                                          => true
+    case Select(Ident(nme.scala_), Id)                      => true
+    case Select(Select(Ident(nme.ROOTPKG), nme.scala_), Id) => true
+    case _                                                  => false
+  }
+  /** Is the tree Predef, scala.Predef, or _root_.scala.Predef?
+   */
+  def isReferenceToPredef(t: Tree) = isReferenceToScalaMember(t, nme.Predef)
+  def isReferenceToAnyVal(t: Tree) = isReferenceToScalaMember(t, tpnme.AnyVal)
+
   // --- modifiers implementation ---------------------------------------
 
   /** @param privateWithin the qualifier for a private (a type name)
@@ -121,12 +133,15 @@ trait Trees extends api.Trees { self: SymbolTable =>
         new ChangeOwnerTraverser(oldOwner, newOwner) apply t
       }
     }
+    
+    def substTreeSyms(pairs: (Symbol, Symbol)*): Tree =
+      substTreeSyms(pairs.map(_._1).toList, pairs.map(_._2).toList)
 
-    def substTreeSyms(pairs: (Symbol, Symbol)*): Tree = {
-      val list  = pairs.toList
-      val subst = new TreeSymSubstituter(list map (_._1), list map (_._2))
-      subst(tree)
-    }
+    def substTreeSyms(from: List[Symbol], to: List[Symbol]): Tree =
+      new TreeSymSubstituter(from, to)(tree)
+
+    def substTreeThis(clazz: Symbol, to: Tree): Tree = new ThisSubstituter(clazz, to) transform tree
+
     def shallowDuplicate: Tree = new ShallowDuplicator(tree) transform tree
     def shortClass: String = tree.getClass.getName split "[.$]" last
 
@@ -340,6 +355,13 @@ trait Trees extends api.Trees { self: SymbolTable =>
         super.transform(tree)
     }
     override def toString = substituterString("Symbol", "Tree", from, to)
+  }
+
+  class ThisSubstituter(clazz: Symbol, to: => Tree) extends Transformer {
+    override def transform(tree: Tree) = tree match {
+      case This(_) if tree.symbol == clazz => to
+      case _ => super.transform(tree)
+    }
   }
 
   class TypeMapTreeSubstituter(val typeMap: TypeMap) extends Traverser {

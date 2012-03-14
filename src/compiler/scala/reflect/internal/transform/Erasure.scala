@@ -63,6 +63,13 @@ trait Erasure {
     if (cls.owner.isClass) cls.owner.tpe else pre // why not cls.isNestedClass?
   }
 
+  protected def unboxInlineType(clazz: Symbol): Type =
+    clazz.primaryConstructor.info.params.head.tpe
+
+  protected def eraseInlineClassRef(clazz: Symbol): Type = {
+    scalaErasure(unboxInlineType(clazz))
+  }
+
   abstract class ErasureMap extends TypeMap {
     def mergeParents(parents: List[Type]): Type
 
@@ -80,6 +87,7 @@ trait Erasure {
           else if (sym == AnyClass || sym == AnyValClass || sym == SingletonClass || sym == NotNullClass) erasedTypeRef(ObjectClass)
           else if (sym == UnitClass) erasedTypeRef(BoxedUnitClass)
           else if (sym.isRefinementClass) apply(mergeParents(tp.parents))
+          //else if (sym.isInlineClass) eraseInlineClassRef(sym)
           else if (sym.isClass) typeRef(apply(rebindInnerClass(pre, sym)), sym, List())  // #2585
           else apply(sym.info) // alias type or abstract type
         case PolyType(tparams, restpe) =>
@@ -101,7 +109,7 @@ trait Erasure {
           ClassInfoType(
             if (clazz == ObjectClass || isValueClass(clazz)) Nil
             else if (clazz == ArrayClass) List(erasedTypeRef(ObjectClass))
-            else removeDoubleObject(parents map this),
+            else removeLaterObjects(parents map this),
             decls, clazz)
         case _ =>
           mapOver(tp)
@@ -217,15 +225,7 @@ trait Erasure {
 
   /** Type reference after erasure */
   def erasedTypeRef(sym: Symbol): Type =
-    typeRef(erasure(sym, sym.owner.tpe), sym, List())
-
-  /** Remove duplicate references to class Object in a list of parent classes */
-  private def removeDoubleObject(tps: List[Type]): List[Type] = tps match {
-    case List() => List()
-    case tp :: tps1 =>
-      if (tp.typeSymbol == ObjectClass) tp :: tps1.filter(_.typeSymbol != ObjectClass)
-      else tp :: removeDoubleObject(tps1)
-  }
+    typeRef(erasure(sym, sym.owner.tpe), sym, Nil)
 
   /**  The symbol's erased info. This is the type's erasure, except for the following symbols:
    *

@@ -596,7 +596,7 @@ abstract class Erasure extends AddInterfaces
           Console.println("exception when typing " + tree)
           Console.println(er.msg + " in file " + context.owner.sourceFile)
           er.printStackTrace
-          abort()
+          abort("unrecoverable error")
         case ex: Exception =>
           //if (settings.debug.value)
           try Console.println("exception when typing " + tree)
@@ -740,7 +740,7 @@ abstract class Erasure extends AddInterfaces
       var bridges: List[Tree] = List()
       val opc = beforeExplicitOuter {
         new overridingPairs.Cursor(owner) {
-          override def parents: List[Type] = List(owner.info.parents.head)
+          override def parents: List[Type] = List(owner.info.firstParent)
           override def exclude(sym: Symbol): Boolean =
             !sym.isMethod || sym.isPrivate || super.exclude(sym)
         }
@@ -924,6 +924,10 @@ abstract class Erasure extends AddInterfaces
             tree
 
         case Apply(fn, args) =>
+          def qualifier = fn match {
+            case Select(qual, _) => qual
+            case TypeApply(Select(qual, _), _) => qual
+          }
           if (fn.symbol == Any_asInstanceOf)
             (fn: @unchecked) match {
               case TypeApply(Select(qual, _), List(targ)) =>
@@ -973,20 +977,13 @@ abstract class Erasure extends AddInterfaces
                 }
               case _ => tree
             }
-          }
-          else {
-            def doDynamic(fn: Tree, qual: Tree): Tree = {
-              if (fn.symbol.owner.isRefinementClass && !fn.symbol.isOverridingSymbol)
-                ApplyDynamic(qual, args) setSymbol fn.symbol setPos tree.pos
-              else tree
-            }
-            fn match {
-              case Select(qual, _) => doDynamic(fn, qual)
-              case TypeApply(fni@Select(qual, _), _) => doDynamic(fni, qual)// type parameters are irrelevant in case of dynamic call
-              case _ =>
+          } else if (fn.symbol.owner.isRefinementClass && !fn.symbol.isOverridingSymbol) {
+            ApplyDynamic(qualifier, args) setSymbol fn.symbol setPos tree.pos
+          } else if (fn.symbol.owner.isInlineClass && extensionMethods.hasExtension(fn.symbol)) {
+            Apply(gen.mkAttributedRef(extensionMethods.extensionMethod(fn.symbol)), qualifier :: args)
+          } else {
                 tree
             }
-          }
 
         case Select(qual, name) =>
           val owner = tree.symbol.owner

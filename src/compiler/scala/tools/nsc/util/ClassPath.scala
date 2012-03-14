@@ -23,7 +23,7 @@ import java.net.MalformedURLException
  *  @author Stepan Koltsov
  */
 object ClassPath {
-  def scalaLibrary  = locate[ScalaObject]
+  def scalaLibrary  = locate[Option[_]]
   def scalaCompiler = locate[Global]
 
   def infoFor[T](value: T)        = info(value.getClass)

@@ -440,15 +440,6 @@ abstract class TreeInfo {
       EmptyTree
   }
 
-  /** Is the tree Predef, scala.Predef, or _root_.scala.Predef?
-   */
-  def isPredefExpr(t: Tree) = t match {
-    case Ident(nme.Predef)                                          => true
-    case Select(Ident(nme.scala_), nme.Predef)                      => true
-    case Select(Select(Ident(nme.ROOTPKG), nme.scala_), nme.Predef) => true
-    case _                                                          => false
-  }
-
   /** Does list of trees start with a definition of
    *  a class of module with given name (ignoring imports)
    */
@@ -468,7 +459,7 @@ abstract class TreeInfo {
     // Top-level definition whose leading imports include Predef.
     def containsLeadingPredefImport(defs: List[Tree]): Boolean = defs match {
       case PackageDef(_, defs1) :: _ => containsLeadingPredefImport(defs1)
-      case Import(expr, _) :: rest   => isPredefExpr(expr) || containsLeadingPredefImport(rest)
+      case Import(expr, _) :: rest   => isReferenceToPredef(expr) || containsLeadingPredefImport(rest)
       case _                         => false
     }
 
@@ -479,7 +470,6 @@ abstract class TreeInfo {
     }
 
     (  isUnitInScala(body, nme.Predef)
-    || isUnitInScala(body, tpnme.ScalaObject)
     || containsLeadingPredefImport(List(body)))
   }
 

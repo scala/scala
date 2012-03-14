@@ -29,12 +29,13 @@ abstract class TreeBuilder {
   def rootId(name: Name)       = gen.rootId(name)
   def rootScalaDot(name: Name) = gen.rootScalaDot(name)
   def scalaDot(name: Name)     = gen.scalaDot(name)
-  def scalaAnyRefConstr        = gen.scalaAnyRefConstr
-  def scalaUnitConstr          = gen.scalaUnitConstr
-  def scalaScalaObjectConstr   = gen.scalaScalaObjectConstr
-  def productConstr            = gen.productConstr
+  def scalaAnyRefConstr        = scalaDot(tpnme.AnyRef)
+  def scalaAnyValConstr        = scalaDot(tpnme.AnyVal)
+  def scalaAnyConstr           = scalaDot(tpnme.Any)
+  def scalaUnitConstr          = scalaDot(tpnme.Unit)
+  def productConstr            = scalaDot(tpnme.Product)
   def productConstrN(n: Int)   = scalaDot(newTypeName("Product" + n))
-  def serializableConstr       = gen.serializableConstr
+  def serializableConstr       = scalaDot(tpnme.Serializable)
 
   def convertToTypeName(t: Tree) = gen.convertToTypeName(t)
 

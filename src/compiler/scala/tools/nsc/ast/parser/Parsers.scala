@@ -290,11 +290,11 @@ self =>
       inScalaPackage = false
       currentPackage = ""
     }
-    private lazy val anyValNames: Set[Name] = tpnme.ScalaValueNames.toSet + tpnme.AnyVal
+    private lazy val primitiveNames: Set[Name] = tpnme.ScalaValueNames.toSet
 
     private def inScalaRootPackage       = inScalaPackage && currentPackage == "scala"
     private def isScalaArray(name: Name) = inScalaRootPackage && name == tpnme.Array
-    private def isAnyValType(name: Name) = inScalaRootPackage && anyValNames(name)
+    private def isPrimitiveType(name: Name) = inScalaRootPackage && primitiveNames(name)
 
     def parseStartRule: () => Tree
 
@@ -392,7 +392,7 @@ self =>
 
       // object Main
       def moduleName  = newTermName(ScriptRunner scriptMain settings)
-      def moduleBody  = Template(List(scalaScalaObjectConstr), emptyValDef, List(emptyInit, mainDef))
+      def moduleBody  = Template(List(scalaAnyRefConstr), emptyValDef, List(emptyInit, mainDef))
       def moduleDef   = ModuleDef(NoMods, moduleName, moduleBody)
 
       // package <empty> { ... }
@@ -2753,16 +2753,24 @@ self =>
 
       val tstart0 = if (body.isEmpty && in.lastOffset < tstart) in.lastOffset else tstart
       atPos(tstart0) {
-        if (isAnyValType(name)) {
-          val parent = if (name == tpnme.AnyVal) tpnme.Any else tpnme.AnyVal
-          Template(List(scalaDot(parent)), self, body)
+        if (inScalaPackage && name == tpnme.AnyVal) {
+          // Not a well-formed constructor, has to be finished later - see note
+          // regarding AnyVal constructor in AddInterfaces.
+          val constructor = DefDef(NoMods, nme.CONSTRUCTOR, Nil, List(Nil), TypeTree(), Block(Nil, Literal(Constant())))
+          Template(parents0, self, constructor :: body)
+        }
+        else if (isPrimitiveType(name))
+          Template(List(scalaAnyValConstr), self, body)
+        else if (parents0 exists isReferenceToAnyVal) {
+          // @inline and other restrictions enforced in refchecks
+          Template(parents0, self, body)
         }
         else {
-          val parents = (
-            if (!isInterface(mods, body) && !isScalaArray(name)) parents0 :+ scalaScalaObjectConstr
-            else if (parents0.isEmpty) List(scalaAnyRefConstr)
-            else parents0
-          ) ++ caseParents()
+          val casePs = caseParents()
+          val parents = parents0 match {
+            case Nil if casePs.isEmpty  => List(scalaAnyRefConstr)
+            case _                      => parents0 ++ casePs
+          }
           Template(parents, self, constrMods, vparamss, argss, body, o2p(tstart))
         }
       }

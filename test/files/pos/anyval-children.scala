@@ -1,0 +1,1 @@
+@inline class Bippy extends AnyVal

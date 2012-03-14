@@ -41,7 +41,7 @@ package scala.collection
  *  @author Aleksandar Prokopec
  *  @since 2.9
  */
-trait GenTraversableOnce[+A] {
+trait GenTraversableOnce[+A] extends AnyRef {
 
   def foreach[U](f: A => U): Unit
 

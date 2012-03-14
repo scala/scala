@@ -499,6 +499,8 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     // class C extends D( { class E { ... } ... } ). Here, E is a class local to a constructor
     final def isClassLocalToConstructor = isClass && hasFlag(INCONSTRUCTOR)
 
+    final def isInlineClass = isClass && hasAnnotation(ScalaInlineClass)
+
     final def isAnonymousClass             = isClass && (name containsName tpnme.ANON_CLASS_NAME)
     final def isAnonymousFunction          = isSynthetic && (name containsName tpnme.ANON_FUN_NAME)
     final def isAnonOrRefinementClass      = isAnonymousClass || isRefinementClass
@@ -2509,8 +2511,8 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     final override def isNonClassType = false
     final override def isAbstractType = false
     final override def isAliasType = false
-
-    override def existentialBound = polyType(this.typeParams, TypeBounds.upper(this.classBound))
+    
+    override def existentialBound = GenPolyType(this.typeParams, TypeBounds.upper(this.classBound))
 
     override def sourceFile =
       if (owner.isPackageClass) source
@@ -2742,7 +2744,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
   /** An exception for cyclic references of symbol definitions */
   case class CyclicReference(sym: Symbol, info: Type)
   extends TypeError("illegal cyclic reference involving " + sym) {
-    // printStackTrace() // debug
+    if (settings.debug.value) printStackTrace()
   }
 
   case class InvalidCompanions(sym1: Symbol, sym2: Symbol) extends Throwable(

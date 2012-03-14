@@ -1,13 +1,13 @@
 [[syntax trees at end of parser]]// Scala source: newSource1
 package <empty> {
-  object UselessComments extends scala.ScalaObject {
+  object UselessComments extends scala.AnyRef {
     def <init>() = {
       super.<init>();
       ()
     };
     var z = 0;
     def test1 = {
-      object Maybe extends scala.ScalaObject {
+      object Maybe extends scala.AnyRef {
         def <init>() = {
           super.<init>();
           ()
@@ -42,13 +42,13 @@ package <empty> {
     }
   };
   /** comments that we should keep */
-  object UsefulComments extends scala.ScalaObject {
+  object UsefulComments extends scala.AnyRef {
     def <init>() = {
       super.<init>();
       ()
     };
     /** class A */
-    class A extends scala.ScalaObject {
+    class A extends scala.AnyRef {
       def <init>() = {
         super.<init>();
         ()
@@ -61,7 +61,7 @@ package <empty> {
       var u = 2
     };
     /** trait B */
-    abstract trait B extends scala.ScalaObject {
+    abstract trait B extends scala.AnyRef {
       def $init$() = {
         ()
       };
@@ -75,7 +75,7 @@ package <empty> {
       var u = 2
     };
     /** object C */
-    object C extends scala.ScalaObject {
+    object C extends scala.AnyRef {
       def <init>() = {
         super.<init>();
         ()
@@ -88,7 +88,7 @@ package <empty> {
       var u = 2
     };
     /** class D */
-    @new deprecated("use ... instead", "2.10.0") class D extends scala.ScalaObject {
+    @new deprecated("use ... instead", "2.10.0") class D extends scala.AnyRef {
       def <init>() = {
         super.<init>();
         ()
