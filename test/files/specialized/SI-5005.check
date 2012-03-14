@@ -1,6 +1,6 @@
 [[syntax trees at end of specialize]]// Scala source: newSource1
 package <empty> {
-  class C2[@specialized(scala.Boolean) U >: Nothing <: Any] extends Object with ScalaObject {
+  class C2[@specialized(scala.Boolean) U >: Nothing <: Any] extends Object {
     def <init>(): C2[U] = {
       C2.super.<init>();
       ()
@@ -8,7 +8,7 @@ package <empty> {
     def apply(x: U): U = x;
     <specialized> def apply$mcZ$sp(x: Boolean): Boolean = C2.this.apply(x.asInstanceOf[U]()).asInstanceOf[Boolean]()
   };
-  class B extends Object with ScalaObject {
+  class B extends Object {
     def <init>(): B = {
       B.super.<init>();
       ()
