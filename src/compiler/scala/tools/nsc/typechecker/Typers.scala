@@ -637,7 +637,7 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
                 // to escape scope here, e.g. pos/t1107.  I'm not sure how to properly handle this
                 // so for now it requires the type symbol be public.
                 && pre.typeSymbol.isPublic)
-          tree setType MethodType(Nil, erasure.getClassReturnType(pre))
+          tree setType MethodType(Nil, getClassReturnType(pre))
         else
           tree
       }

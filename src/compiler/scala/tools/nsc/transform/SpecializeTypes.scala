@@ -348,7 +348,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
    */
   def specializesClass(sym: Symbol): Symbol = {
     val c = sym.companionClass
-    if (isValueClass(c)) c else AnyRefClass
+    if (isPrimitiveValueClass(c)) c else AnyRefClass
   }
 
   /** Return the types `sym` should be specialized at. This may be some of the primitive types
