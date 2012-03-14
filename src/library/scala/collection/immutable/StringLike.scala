@@ -12,6 +12,7 @@ package immutable
 import generic._
 import mutable.Builder
 import scala.util.matching.Regex
+import scala.util.matching.NoImplicitAnchors
 import scala.math.ScalaNumber
 
 /** A companion object for the `StringLike` containing some constants.
@@ -210,6 +211,12 @@ self =>
    *  """A\w*""".r   is the regular expression for identifiers starting with `A`.
    */
   def r: Regex = new Regex(toString)
+
+  /** You can follow a string with `.qr`, turning it into a `Regex with NoImplictAnchors`. E.g.
+   *
+   *  """A\w*""".qr   is the regular expression for extracting identifiers starting with `A`.
+   */
+  def qr: Regex with NoImplicitAnchors = new Regex(toString) with NoImplicitAnchors
 
   def toBoolean: Boolean = parseBoolean(toString)
   def toByte: Byte       = java.lang.Byte.parseByte(toString)
