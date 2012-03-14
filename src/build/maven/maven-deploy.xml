@@ -246,7 +246,7 @@
   </target>
 
   <target name="deploy.release.local" depends="deploy.local.init" description="Deploys the bundled files as a release into the local Maven repository">
-    <deploy-local-all version="${version.number}" repository="${local.release.repository}" />
+    <deploy-local-all version="${maven.version.number}" repository="${local.release.repository}" />
   </target>
 
   <!-- Remote Targets -->
@@ -255,7 +255,7 @@
   </target>
 
   <target name="deploy.signed.release" depends="deploy.remote.init" description="Deploys the bundled files as a release into the desired remote Maven repository">
-    <deploy-remote-signed-all version="${version.number}" repository="${remote.release.repository}" />
+    <deploy-remote-signed-all version="${maven.version.number}" repository="${remote.release.repository}" />
   </target>
 
   <target name="deploy.snapshot" depends="deploy.remote.init" description="Deploys the bundled files as a snapshot into the desired remote Maven repository">
@@ -263,6 +263,6 @@
   </target>
 
   <target name="deploy.release" depends="deploy.remote.init" description="Deploys the bundled files as a release into the desired remote Maven repository">
-    <deploy-remote-all version="${version.number}" repository="${remote.release.repository}" />
+    <deploy-remote-all version="${maven.version.number}" repository="${remote.release.repository}" />
   </target>
 </project>
