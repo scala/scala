@@ -672,9 +672,11 @@ self =>
 
   private def readObject(in: java.io.ObjectInputStream) {
     in.defaultReadObject
-
+    
     // get raw array from arrayseq
     array = arrayseq.array.asInstanceOf[Array[Any]]
+    
+    initTaskSupport()
   }
 
 }

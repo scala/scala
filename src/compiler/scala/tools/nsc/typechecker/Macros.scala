@@ -139,7 +139,7 @@ trait Macros { self: Analyzer =>
               sym.fullName + suffix
             case sym =>
               val separator = if (sym.owner.isModuleClass) "" else "$"
-              recur(sym.owner) + separator + sym.javaSimpleName
+              recur(sym.owner) + separator + sym.javaSimpleName.toString
           }
 
           if (sym.isClass || sym.isModule) recur(sym)

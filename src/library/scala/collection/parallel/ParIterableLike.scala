@@ -58,7 +58,7 @@ import annotation.unchecked.uncheckedStable
  *  }}}
  *
  *  which returns an instance of `IterableSplitter[T]`, which is a subtype of `Splitter[T]`.
- *  Parallel iterators have a method `remaining` to check the remaining number of elements,
+ *  Splitters have a method `remaining` to check the remaining number of elements,
  *  and method `split` which is defined by splitters. Method `split` divides the splitters
  *  iterate over into disjunct subsets:
  *
@@ -96,7 +96,7 @@ import annotation.unchecked.uncheckedStable
  *  The combination of methods `toMap`, `toSeq` or `toSet` along with `par` and `seq` is a flexible
  *  way to change between different collection types.
  *
- *  Since this trait extends the `Iterable` trait, methods like `size` must also
+ *  Since this trait extends the `GenIterable` trait, methods like `size` must also
  *  be implemented in concrete collections, while `iterator` forwards to `splitter` by
  *  default.
  *
@@ -116,7 +116,7 @@ import annotation.unchecked.uncheckedStable
  *  which do not know the number of elements remaining. To do this, the new collection implementation must override
  *  `isStrictSplitterCollection` to `false`. This will make some operations unavailable.
  *
- *  To create a new parallel collection, extend the `ParIterable` trait, and implement `size`, `parallelIterator`,
+ *  To create a new parallel collection, extend the `ParIterable` trait, and implement `size`, `splitter`,
  *  `newCombiner` and `seq`. Having an implicit combiner factory requires extending this trait in addition, as
  *  well as providing a companion object, as with regular collections.
  *
@@ -158,6 +158,10 @@ self: ParIterableLike[T, Repr, Sequential] =>
   @transient
   @volatile
   private var _tasksupport = defaultTaskSupport
+  
+  protected def initTaskSupport() {
+    _tasksupport = defaultTaskSupport
+  }
   
   def tasksupport = {
     val ts = _tasksupport

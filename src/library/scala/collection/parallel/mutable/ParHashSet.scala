@@ -84,6 +84,8 @@ extends ParSet[T]
 
   private def readObject(in: java.io.ObjectInputStream) {
     init(in, x => x)
+    
+    initTaskSupport()
   }
 
   import collection.DebugUtils._

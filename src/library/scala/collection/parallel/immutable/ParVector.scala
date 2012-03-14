@@ -78,6 +78,18 @@ extends ParSeq[T]
       splitted.map(v => new ParVector(v).splitter.asInstanceOf[ParVectorIterator])
     }
   }
+  
+  /* serialization */
+  
+  private def writeObject(out: java.io.ObjectOutputStream) {
+    out.defaultWriteObject
+  }
+
+  private def readObject(in: java.io.ObjectInputStream) {
+    in.defaultReadObject
+    
+    initTaskSupport()
+  }
 
 }
 
