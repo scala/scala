@@ -5,15 +5,14 @@ import reflect.runtime.Mirror.ToolBox
 object Test extends App {
   def foo[T](ys: List[T]): Int => Int = {
     class Foo[T](ys: List[T]) {
-      val fun: reflect.Code[Int => Int] = x => {
+      val fun = reflect.Code.lift{(x: Int) => {
         x + ys.length
-      }
+      }}
     }
 
     val reporter = new ConsoleReporter(new Settings)
     val toolbox = new ToolBox(reporter)
-    val ttree = toolbox.typeCheck(new Foo(ys).fun.tree)
-    val dyn = toolbox.runExpr(ttree)
+    val dyn = toolbox.runExpr(new Foo(ys).fun.tree)
     dyn.asInstanceOf[Int => Int]
   }
 

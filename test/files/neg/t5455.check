@@ -1,0 +1,4 @@
+t5455.scala:4: error: lazy vals are not tailcall transformed
+  @annotation.tailrec final lazy val bar: Thing[Int] = {
+                                     ^
+one error found

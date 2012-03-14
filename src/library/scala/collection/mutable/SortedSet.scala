@@ -13,12 +13,12 @@ import generic._
 
 /**
  * Base trait for mutable sorted set.
- * 
+ *
  * @define Coll mutable.SortedSet
  * @define coll mutable sorted set
  *
  * @author Lucien Pereira
- * 
+ *
  */
 trait SortedSet[A] extends collection.SortedSet[A] with collection.SortedSetLike[A,SortedSet[A]]
   with mutable.Set[A] with mutable.SetLike[A, SortedSet[A]] {
@@ -39,11 +39,11 @@ trait SortedSet[A] extends collection.SortedSet[A] with collection.SortedSetLike
  *   Standard `CanBuildFrom` instance for sorted sets.
  *
  * @author Lucien Pereira
- * 
+ *
  */
 object SortedSet extends MutableSortedSetFactory[SortedSet] {
   implicit def canBuildFrom[A](implicit ord: Ordering[A]): CanBuildFrom[Coll, A, SortedSet[A]] = new SortedSetCanBuildFrom[A]
-  
+
   def empty[A](implicit ord: Ordering[A]): SortedSet[A] = TreeSet.empty[A]
-  
+
 }

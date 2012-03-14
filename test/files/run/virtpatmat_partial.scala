@@ -4,6 +4,29 @@ object Test extends App {
 
   val res = a collect {case (p, Some(a)) => (p, a)}
 
+  final val GT = 79
+  final val GTGT = 93
+  final val GTGTGT = 94
+  final val GTEQ = 81
+  final val GTGTEQ = 113
+  final val GTGTGTEQ = 114
+  final val ASSIGN = 75
+
+  def acceptClosingAngle(in: Int) {
+    val closers: PartialFunction[Int, Int] = {
+      case GTGTGTEQ => GTGTEQ
+      case GTGTGT   => GTGT
+      case GTGTEQ   => GTEQ
+      case GTGT     => GT
+      case GTEQ     => ASSIGN
+    }
+    if (closers isDefinedAt in) println(closers(in))
+    else println("undefined")
+  }
+
+  acceptClosingAngle(GTGT)
+  acceptClosingAngle(ASSIGN)
+
   // should uncurry to:
   // val res: Map[String,Int] = a.collect[(String, Int), Map[String,Int]](
   //   new PartialFunction[(String, Option[Int]),(String, Int)]  {

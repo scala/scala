@@ -141,6 +141,6 @@ object ProxyReportRunner {
     s.processArguments(args.toList.tail, true)
     val g = new ProxyGlobal(s)
     val run = new g.Run()
-    g.atPhase(run.typerPhase.next)(g.proxyReport.generate(dir))
+    g.afterTyper(g.proxyReport.generate(dir))
   }
 }

@@ -13,7 +13,7 @@ import collection.mutable.ArrayBuffer
 /** A class to support string interpolation.
  *  This class supports string interpolation as outlined in Scala SIP-11.
  *  It needs to be fully documented once the SIP is accepted.
- * 
+ *
  *  @param   parts  The parts that make up the interpolated string,
  *                  without the expressions that get inserted by interpolation.
  */
@@ -26,13 +26,13 @@ case class StringContext(parts: String*) {
    *  @param `args` The arguments to be checked.
    *  @throws An `IllegalArgumentException` if this is not the case.
    */
-  def checkLengths(args: Any*): Unit = 
+  def checkLengths(args: Any*): Unit =
     if (parts.length != args.length + 1)
       throw new IllegalArgumentException("wrong number of arguments for interpolated string")
 
 
   /** The simple string interpolator.
-   * 
+   *
    *  It inserts its arguments between corresponding parts of the string context.
    *  It also treats standard escape sequences as defined in the Scala specification.
    *  @param `args` The arguments to be inserted into the resulting string.
@@ -46,30 +46,30 @@ case class StringContext(parts: String*) {
     checkLengths(args: _*)
     val pi = parts.iterator
     val ai = args.iterator
-    val bldr = new java.lang.StringBuilder(treatEscapes(pi.next))
+    val bldr = new java.lang.StringBuilder(treatEscapes(pi.next()))
     while (ai.hasNext) {
       bldr append ai.next
-      bldr append treatEscapes(pi.next)
+      bldr append treatEscapes(pi.next())
     }
     bldr.toString
   }
 
   /** The formatted string interpolator.
-   * 
+   *
    *  It inserts its arguments between corresponding parts of the string context.
    *  It also treats standard escape sequences as defined in the Scala specification.
    *  Finally, if an interpolated expression is followed by a `parts` string
    *  that starts with a formatting specifier, the expression is formatted according to that
    *  specifier. All specifiers allowed in Java format strings are handled, and in the same
    *  way they are treated in Java.
-   * 
+   *
    *  @param `args` The arguments to be inserted into the resulting string.
    *  @throws An `IllegalArgumentException`
    *          if the number of `parts` in the enclosing `StringContext` does not exceed
    *          the number of arguments `arg` by exactly 1.
    *  @throws A `StringContext.InvalidEscapeException` if a `parts` string contains a backslash (`\`) character
    *          that does not start a valid escape sequence.
-   * 
+   *
    *  Note: The `f` method works by assembling a format string from all the `parts` strings and using
    *  `java.lang.String.format` to format all arguments with that format string. The format string is
    *  obtained by concatenating all `parts` strings, and performing two transformations:
@@ -89,11 +89,12 @@ case class StringContext(parts: String*) {
     val bldr = new java.lang.StringBuilder
     val args1 = new ArrayBuffer[Any]
     def copyString(first: Boolean): Unit = {
-      val str = treatEscapes(pi.next)
+      val str = treatEscapes(pi.next())
+      val strIsEmpty = str.length == 0
       var start = 0
       var idx = 0
       if (!first) {
-        if ((str charAt 0) != '%')
+        if (strIsEmpty || (str charAt 0) != '%')
           bldr append "%s"
         idx = 1
       }
@@ -106,11 +107,11 @@ case class StringContext(parts: String*) {
         }
         idx += 1
       }
-      bldr append (str substring (start, idx))
+      if (!strIsEmpty) bldr append (str substring (start, idx))
     }
     copyString(first = true)
     while (pi.hasNext) {
-      args1 += ai.next
+      args1 += ai.next()
       copyString(first = false)
     }
     bldr.toString format (args1: _*)
@@ -125,14 +126,14 @@ object StringContext {
    *  @param  idx   The index of the offending backslash character in `str`.
    */
   class InvalidEscapeException(str: String, idx: Int)
-    extends IllegalArgumentException("invalid escape character at index "+idx+" in \""+str+"\"") 
+    extends IllegalArgumentException("invalid escape character at index "+idx+" in \""+str+"\"")
 
   /** Expands standard Scala escape sequences in a string.
    *  Escape sequences are:
    *   control: `\b`, `\t`, `\n`, `\f`, `\r`
    *   escape:  `\\`, `\"`, `\'`
    *   octal:   `\d` `\dd` `\ddd` where `d` is an octal digit between `0` and `7`.
-   *   
+   *
    *  @param  A string that may contain escape sequences
    *  @return The string with all escape sequences expanded.
    */

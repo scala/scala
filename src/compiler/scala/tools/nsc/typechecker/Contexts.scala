@@ -21,7 +21,7 @@ trait Contexts { self: Analyzer =>
     outer      = this
     enclClass  = this
     enclMethod = this
-    
+
     override def nextEnclosing(p: Context => Boolean): Context = this
     override def enclosingContextChain: List[Context] = Nil
     override def implicitss: List[List[ImplicitInfo]] = Nil
@@ -128,6 +128,8 @@ trait Contexts { self: Analyzer =>
     var typingIndentLevel: Int = 0
     def typingIndent = "  " * typingIndentLevel
 
+    var buffer: Set[AbsTypeError] = _
+
     def enclClassOrMethod: Context =
       if ((owner eq NoSymbol) || (owner.isClass) || (owner.isMethod)) this
       else outer.enclClassOrMethod
@@ -145,7 +147,6 @@ trait Contexts { self: Analyzer =>
     }
 
     private[this] var mode = 0
-    private[this] val buffer = LinkedHashSet[AbsTypeError]()
 
     def errBuffer = buffer
     def hasErrors = buffer.nonEmpty
@@ -160,7 +161,7 @@ trait Contexts { self: Analyzer =>
 
     def setReportErrors()    = mode = (ReportErrors | AmbiguousErrors)
     def setBufferErrors()    = {
-      assert(bufferErrors || !hasErrors, "When entering the buffer state, context has to be clean. Current buffer: " + buffer)
+      //assert(bufferErrors || !hasErrors, "When entering the buffer state, context has to be clean. Current buffer: " + buffer)
       mode = BufferErrors
     }
     def setThrowErrors()     = mode &= (~AllMask)
@@ -177,7 +178,7 @@ trait Contexts { self: Analyzer =>
       buffer.clear()
       current
     }
-    
+
     def logError(err: AbsTypeError) = buffer += err
 
     def withImplicitsDisabled[T](op: => T): T = {
@@ -225,6 +226,7 @@ trait Contexts { self: Analyzer =>
       c.checking = this.checking
       c.retyping = this.retyping
       c.openImplicits = this.openImplicits
+      c.buffer = if (this.buffer == null) LinkedHashSet[AbsTypeError]() else this.buffer // need to initialize
       registerContext(c.asInstanceOf[analyzer.Context])
       debuglog("[context] ++ " + c.unit + " / " + tree.summaryString)
       c
@@ -237,7 +239,7 @@ trait Contexts { self: Analyzer =>
       c.implicitsEnabled = true
       c
     }
-    
+
     def makeNewImport(sym: Symbol): Context =
       makeNewImport(gen.mkWildcardImport(sym))
 
@@ -265,6 +267,7 @@ trait Contexts { self: Analyzer =>
       val c = make(newtree)
       c.setBufferErrors()
       c.setAmbiguousErrors(reportAmbiguousErrors)
+      c.buffer = new LinkedHashSet[AbsTypeError]()
       c
     }
 
@@ -308,12 +311,14 @@ trait Contexts { self: Analyzer =>
       unit.error(pos, if (checking) "\n**** ERROR DURING INTERNAL CHECKING ****\n" + msg else msg)
 
     def issue(err: AbsTypeError) {
+      debugwarn("issue error: " + err.errMsg)
       if (reportErrors) unitError(err.errPos, addDiagString(err.errMsg))
       else if (bufferErrors) { buffer += err }
       else throw new TypeError(err.errPos, err.errMsg)
     }
 
     def issueAmbiguousError(pre: Type, sym1: Symbol, sym2: Symbol, err: AbsTypeError) {
+      debugwarn("issue ambiguous error: " + err.errMsg)
       if (ambiguousErrors) {
         if (!pre.isErroneous && !sym1.isErroneous && !sym2.isErroneous)
           unitError(err.errPos, err.errMsg)
@@ -322,6 +327,7 @@ trait Contexts { self: Analyzer =>
     }
 
     def issueAmbiguousError(err: AbsTypeError) {
+      debugwarn("issue ambiguous error: " + err.errMsg)
       if (ambiguousErrors)
         unitError(err.errPos, addDiagString(err.errMsg))
       else if (bufferErrors) { buffer += err }

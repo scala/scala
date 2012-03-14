@@ -18,7 +18,7 @@ trait MethodSynthesis {
   import global._
   import definitions._
   import CODE._
-  
+
   object synthesisUtil {
     type M[T]  = Manifest[T]
     type CM[T] = ClassManifest[T]
@@ -39,7 +39,7 @@ trait MethodSynthesis {
 
       typeRef(container.typeConstructor.prefix, container, args map (_.tpe))
     }
-    
+
     def companionType[T](implicit m: M[T]) =
       getRequiredModule(m.erasure.getName).tpe
 
@@ -71,7 +71,7 @@ trait MethodSynthesis {
   class ClassMethodSynthesis(val clazz: Symbol, localTyper: Typer) {
     private def isOverride(name: TermName) =
       clazzMember(name).alternatives exists (sym => !sym.isDeferred && (sym.owner != clazz))
-    
+
     def newMethodFlags(name: TermName) = {
       val overrideFlag = if (isOverride(name)) OVERRIDE else 0L
       overrideFlag | SYNTHETIC
@@ -82,7 +82,7 @@ trait MethodSynthesis {
     }
 
     private def finishMethod(method: Symbol, f: Symbol => Tree): Tree =
-      logResult("finishMethod")(localTyper typed ValOrDefDef(method, f(method)))
+      localTyper typed ValOrDefDef(method, f(method))
 
     private def createInternal(name: Name, f: Symbol => Tree, info: Type): Tree = {
       val m = clazz.newMethod(name.toTermName, clazz.pos.focus, newMethodFlags(name))
@@ -200,7 +200,7 @@ trait MethodSynthesis {
                   map (acc => atPos(vd.pos.focus)(acc derive annotations))
             filterNot (_ eq EmptyTree)
         )
-        log(trees.mkString("Accessor trees:\n  ", "\n  ", "\n"))
+        // log(trees.mkString("Accessor trees:\n  ", "\n  ", "\n"))
         if (vd.symbol.isLazy) List(stat)
         else trees
       case _ =>
@@ -282,7 +282,7 @@ trait MethodSynthesis {
         }
       }
       private def logDerived(result: Tree): Tree = {
-        log("[+derived] " + ojoin(mods.defaultFlagString, basisSym.accurateKindString, basisSym.getterName.decode)
+        debuglog("[+derived] " + ojoin(mods.defaultFlagString, basisSym.accurateKindString, basisSym.getterName.decode)
           + " (" + derivedSym + ")\n        " + result)
 
         result
@@ -326,22 +326,35 @@ trait MethodSynthesis {
 
         super.validate()
       }
-      // keep type tree of original abstract field
-      private def fixTypeTree(dd: DefDef): DefDef = {
-        dd.tpt match {
-          case tt: TypeTree if dd.rhs == EmptyTree  =>
-            tt setOriginal tree.tpt
-          case tpt =>
-            tpt setPos tree.tpt.pos.focus
-        }
-        dd
-      }
       override def derivedTree: DefDef = {
-        fixTypeTree {
-          DefDef(derivedSym,
-            if (mods.isDeferred) EmptyTree
-            else gen.mkCheckInit(fieldSelection)
-          )
+        // For existentials, don't specify a type for the getter, even one derived
+        // from the symbol! This leads to incompatible existentials for the field and
+        // the getter. Let the typer do all the work. You might think "why only for
+        // existentials, why not always," and you would be right, except: a single test
+        // fails, but it looked like some work to deal with it. Test neg/t0606.scala
+        // starts compiling (instead of failing like it's supposed to) because the typer
+        // expects to be able to identify escaping locals in typedDefDef, and fails to
+        // spot that brand of them. In other words it's an artifact of the implementation.
+        val tpt = derivedSym.tpe.finalResultType match {
+          case ExistentialType(_, _)  => TypeTree()
+          case tp                     => TypeTree(tp)
+        }
+        tpt setPos focusPos(derivedSym.pos)
+        // keep type tree of original abstract field
+        if (mods.isDeferred)
+          tpt setOriginal tree.tpt
+
+        // TODO - reconcile this with the DefDef creator in Trees (which
+        //   at this writing presented no way to pass a tree in for tpt.)
+        atPos(derivedSym.pos) {
+          DefDef(
+            Modifiers(derivedSym.flags),
+            derivedSym.name.toTermName,
+            Nil,
+            Nil,
+            tpt,
+            if (mods.isDeferred) EmptyTree else gen.mkCheckInit(fieldSelection)
+          ) setSymbol derivedSym
         }
       }
     }
@@ -363,7 +376,7 @@ trait MethodSynthesis {
       override def keepClean = !mods.isParamAccessor
       override def derivedTree = (
         if (mods.isDeferred) EmptyTree
-        else treeCopy.ValDef(tree, mods | flagsExtra, name, tree.tpt, tree.rhs)
+        else copyValDef(tree)(mods = mods | flagsExtra, name = this.name)
       )
     }
     case class Param(tree: ValDef) extends DerivedFromValDef {

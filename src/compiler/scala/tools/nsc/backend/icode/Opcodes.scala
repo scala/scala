@@ -350,6 +350,7 @@ trait Opcodes { self: ICodes =>
     }
 
     case class BOX(boxType: TypeKind) extends Instruction {
+      assert(boxType.isValueType && (boxType ne UNIT)) // documentation
       override def toString(): String = "BOX " + boxType
       override def consumed = 1
       override def consumedTypes = boxType :: Nil
@@ -357,6 +358,7 @@ trait Opcodes { self: ICodes =>
     }
 
     case class UNBOX(boxType: TypeKind) extends Instruction {
+      assert(boxType.isValueType && (boxType ne UNIT)) // documentation
       override def toString(): String = "UNBOX " + boxType
       override def consumed = 1
       override def consumedTypes = ObjectReference :: Nil

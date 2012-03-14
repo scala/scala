@@ -19,7 +19,9 @@ import scala.collection.generic.CanBuildFrom
 import scala.collection.generic.ParFactory
 import scala.collection.generic.Sizing
 import scala.collection.parallel.Combiner
+import scala.collection.parallel.SeqSplitter
 import scala.collection.parallel.ParSeqLike
+import scala.collection.parallel.Task
 import scala.collection.parallel.CHECK_RATE
 import scala.collection.mutable.ArraySeq
 import scala.collection.mutable.Builder
@@ -55,7 +57,6 @@ extends ParSeq[T]
    with Serializable
 {
 self =>
-  import collection.parallel.tasksupport._
 
   @transient private var array: Array[Any] = arrayseq.array.asInstanceOf[Array[Any]]
 
@@ -74,17 +75,13 @@ self =>
 
   override def seq = arrayseq
 
-  type SCPI = SignalContextPassingIterator[ParArrayIterator]
-
   protected[parallel] def splitter: ParArrayIterator = {
-    val pit = new ParArrayIterator with SCPI
+    val pit = new ParArrayIterator
     pit
   }
 
   class ParArrayIterator(var i: Int = 0, val until: Int = length, val arr: Array[Any] = array)
-  extends super.ParIterator {
-  me: SignalContextPassingIterator[ParArrayIterator] =>
-
+  extends SeqSplitter[T] {
     def hasNext = i < until
 
     def next = {
@@ -95,9 +92,9 @@ self =>
 
     def remaining = until - i
 
-    def dup = new ParArrayIterator(i, until, arr) with SCPI
+    def dup = new ParArrayIterator(i, until, arr)
 
-    def psplit(sizesIncomplete: Int*): Seq[ParIterator] = {
+    def psplit(sizesIncomplete: Int*): Seq[ParArrayIterator] = {
       var traversed = i
       val total = sizesIncomplete.reduceLeft(_ + _)
       val left = remaining
@@ -106,19 +103,19 @@ self =>
         val start = traversed
         val end = (traversed + sz) min until
         traversed = end
-        new ParArrayIterator(start, end, arr) with SCPI
+        new ParArrayIterator(start, end, arr)
       } else {
-        new ParArrayIterator(traversed, traversed, arr) with SCPI
+        new ParArrayIterator(traversed, traversed, arr)
       }
     }
 
-    override def split: Seq[ParIterator] = {
+    override def split: Seq[ParArrayIterator] = {
       val left = remaining
       if (left >= 2) {
         val splitpoint = left / 2
         val sq = Seq(
-          new ParArrayIterator(i, i + splitpoint, arr) with SCPI,
-          new ParArrayIterator(i + splitpoint, until, arr) with SCPI)
+          new ParArrayIterator(i, i + splitpoint, arr),
+          new ParArrayIterator(i + splitpoint, until, arr))
         i = until
         sq
       } else {
@@ -587,22 +584,22 @@ self =>
     val targetarr = targarrseq.array.asInstanceOf[Array[Any]]
 
     // fill it in parallel
-    executeAndWaitResult(new Map[S](f, targetarr, 0, length))
+    tasksupport.executeAndWaitResult(new Map[S](f, targetarr, 0, length))
 
     // wrap it into a parallel array
     (new ParArray[S](targarrseq)).asInstanceOf[That]
   } else super.map(f)(bf)
 
   override def scan[U >: T, That](z: U)(op: (U, U) => U)(implicit cbf: CanBuildFrom[ParArray[T], U, That]): That =
-    if (parallelismLevel > 1 && buildsArray(cbf(repr))) {
+    if (tasksupport.parallelismLevel > 1 && buildsArray(cbf(repr))) {
       // reserve an array
       val targarrseq = new ArraySeq[U](length + 1)
       val targetarr = targarrseq.array.asInstanceOf[Array[Any]]
       targetarr(0) = z
 
       // do a parallel prefix scan
-      if (length > 0) executeAndWaitResult(new CreateScanTree[U](0, size, z, op, splitter) mapResult {
-        tree => executeAndWaitResult(new ScanToArray(tree, z, op, targetarr))
+      if (length > 0) tasksupport.executeAndWaitResult(new CreateScanTree[U](0, size, z, op, splitter) mapResult {
+        tree => tasksupport.executeAndWaitResult(new ScanToArray(tree, z, op, targetarr))
       })
 
       // wrap the array into a parallel array
@@ -664,7 +661,7 @@ self =>
       val fp = howmany / 2
       List(new Map(f, targetarr, offset, fp), new Map(f, targetarr, offset + fp, howmany - fp))
     }
-    def shouldSplitFurther = howmany > collection.parallel.thresholdFromSize(length, parallelismLevel)
+    def shouldSplitFurther = howmany > collection.parallel.thresholdFromSize(length, tasksupport.parallelismLevel)
   }
 
   /* serialization */

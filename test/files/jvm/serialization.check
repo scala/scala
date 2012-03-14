@@ -156,8 +156,8 @@ x = BitSet(0, 8, 9)
 y = BitSet(0, 8, 9)
 x equals y: true, y equals x: true
 
-x = Map(C -> 3, B -> 2, A -> 1)
-y = Map(C -> 3, A -> 1, B -> 2)
+x = Map(A -> 1, C -> 3, B -> 2)
+y = Map(A -> 1, C -> 3, B -> 2)
 x equals y: true, y equals x: true
 
 x = Set(buffers, title, layers)
@@ -190,6 +190,10 @@ x equals y: true, y equals x: true
 
 x = TreeSet(1, 2, 3)
 y = TreeSet(1, 2, 3)
+x equals y: true, y equals x: true
+
+x = Ctrie(1 -> one, 2 -> two, 3 -> three)
+y = Ctrie(1 -> one, 2 -> two, 3 -> three)
 x equals y: true, y equals x: true
 
 x =  xml:src="hello"
@@ -279,8 +283,12 @@ x = ParArray(abc, def, etc)
 y = ParArray(abc, def, etc)
 x equals y: true, y equals x: true
 
-x = ParHashMap(1 -> 2, 2 -> 4)
-y = ParHashMap(1 -> 2, 2 -> 4)
+x = ParHashMap(2 -> 4, 1 -> 2)
+y = ParHashMap(2 -> 4, 1 -> 2)
+x equals y: true, y equals x: true
+
+x = ParCtrie(1 -> 2, 2 -> 4)
+y = ParCtrie(1 -> 2, 2 -> 4)
 x equals y: true, y equals x: true
 
 x = ParHashSet(1, 2, 3)

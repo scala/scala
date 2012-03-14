@@ -56,10 +56,10 @@ abstract class Reporter {
    */
   def echo(msg: String): Unit                                = info(NoPosition, msg, true)
   def echo(pos: Position, msg: String): Unit                 = info(pos, msg, true)
-  
+
   /** Informational messages, suppressed unless -verbose or force=true. */
   def info(pos: Position, msg: String, force: Boolean): Unit = info0(pos, msg, INFO, force)
-  
+
   /** Warnings and errors. */
   def warning(pos: Position, msg: String): Unit              = withoutTruncating(info0(pos, msg, WARNING, false))
   def error(pos: Position, msg: String): Unit                = withoutTruncating(info0(pos, msg, ERROR, false))

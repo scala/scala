@@ -15,6 +15,9 @@ scala> val f = new Foo
 <console>:8: warning: class Foo is deprecated: foooo
        val f = new Foo
                    ^
+<console>:5: warning: class Foo is deprecated: foooo
+  lazy val $result = `f`
+           ^
 f: Foo = Bippy
 
 scala> 

@@ -5,14 +5,13 @@ import scala.tools.nsc.Settings
 import reflect.runtime.Mirror.ToolBox
 
 trait Eval {
-  def eval(code: Code[_]): Any = eval(code.tree)
+  def eval(code: Code): Any = eval(code.tree)
 
   def eval(tree: Tree): Any = {
     val settings = new Settings
     val reporter = new ConsoleReporter(settings)
     val toolbox = new ToolBox(reporter)
-    val ttree = toolbox.typeCheck(tree)
-    toolbox.runExpr(ttree)
+    toolbox.runExpr(tree)
   }
 }
 

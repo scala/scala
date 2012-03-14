@@ -26,6 +26,8 @@ abstract class Phase(val prev: Phase) {
   if ((prev ne null) && (prev ne NoPhase)) prev.nx = this
 
   def next: Phase = nx
+  def hasNext = next != this
+  def iterator = Iterator.iterate(this)(_.next) takeWhile (p => p.next != p)
 
   def name: String
   def description: String = name
@@ -37,7 +39,7 @@ abstract class Phase(val prev: Phase) {
   def refChecked: Boolean = false
 
   /** This is used only in unsafeTypeParams, and at this writing is
-   *  overridden to false in namer, typer, and erasure. (And NoPhase.)
+   *  overridden to false in parser, namer, typer, and erasure. (And NoPhase.)
    */
   def keepsTypeParams = true
   def run(): Unit

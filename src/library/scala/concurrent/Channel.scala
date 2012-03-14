@@ -46,4 +46,5 @@ class Channel[A] {
     written = written.next
     x
   }
+
 }

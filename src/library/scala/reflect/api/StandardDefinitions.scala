@@ -11,14 +11,11 @@ trait StandardDefinitions { self: Universe =>
   val definitions: AbsDefinitions
 
   abstract class AbsDefinitions {
-    // outer packages and their classes
-    def RootPackage: Symbol // under consideration
+    // packages
+    def RootPackage: Symbol
     def RootClass: Symbol
     def EmptyPackage: Symbol
-    def EmptyPackageClass: Symbol
-
     def ScalaPackage: Symbol
-    def ScalaPackageClass: Symbol
 
     // top types
     def AnyClass   : Symbol
@@ -54,17 +51,19 @@ trait StandardDefinitions { self: Universe =>
     // fundamental modules
     def PredefModule: Symbol
 
-    // fundamental type constructions
-    def ClassType(arg: Type): Type
+    /** Given a type T, returns the type corresponding to the VM's
+     *  representation: ClassClass's type constructor applied to `arg`.
+     */
+    def vmClassType(arg: Type): Type    // !!! better name?
 
     /** The string representation used by the given type in the VM.
      */
-    def signature(tp: Type): String
+    def vmSignature(sym: Symbol, info: Type): String
 
     /** Is symbol one of the value classes? */
-    def isValueClass(sym: Symbol): Boolean
+    def isValueClass(sym: Symbol): Boolean        // !!! better name?
 
     /** Is symbol one of the numeric value classes? */
-    def isNumericValueClass(sym: Symbol): Boolean
+    def isNumericValueClass(sym: Symbol): Boolean   // !!! better name?
   }
 }

@@ -29,12 +29,12 @@ trait BaseTypeSeqs {
   this: SymbolTable =>
   import definitions._
 
-  protected def newBaseTypeSeq(parents: List[Type], elems: Array[Type]) = 
+  protected def newBaseTypeSeq(parents: List[Type], elems: Array[Type]) =
     new BaseTypeSeq(parents, elems)
 
   /** Note: constructor is protected to force everyone to use the factory method newBaseTypeSeq instead.
-   *  This is necessary because when run from reflection every base type sequence needs to have a 
-   *  SynchronizedBaseTypeSeq as mixin. 
+   *  This is necessary because when run from reflection every base type sequence needs to have a
+   *  SynchronizedBaseTypeSeq as mixin.
    */
   class BaseTypeSeq protected[BaseTypeSeqs] (private[BaseTypeSeqs] val parents: List[Type], private[BaseTypeSeqs] val elems: Array[Type]) {
   self =>
@@ -242,7 +242,7 @@ trait BaseTypeSeqs {
 //    Console.println("computed baseTypeSeq of " + tsym.tpe + " " + parents + ": "+elems.toString)//DEBUG
     newBaseTypeSeq(parents, elems)
   }
-  
+
   class MappedBaseTypeSeq(orig: BaseTypeSeq, f: Type => Type) extends BaseTypeSeq(orig.parents map f, orig.elems) {
     override def apply(i: Int) = f(orig.apply(i))
     override def rawElem(i: Int) = f(orig.rawElem(i))
@@ -254,7 +254,7 @@ trait BaseTypeSeqs {
     override def exists(p: Type => Boolean) = elems exists (x => p(f(x)))
     override protected def maxDepthOfElems: Int = elems map (x => maxDpth(f(x))) max
     override def toString = elems.mkString("MBTS(", ",", ")")
-  } 
-  
+  }
+
   val CyclicInheritance = new Throwable
 }

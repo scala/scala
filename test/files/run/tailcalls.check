@@ -45,8 +45,7 @@ test TailCall.g3 was successful
 test TailCall.h1 was successful
 
 test NonTailCall.f1 0 1 2 was successful
-test NonTailCall.f2 was successful
-
+test NonTailCall.f2
 test TailCall.b1 was successful
 test TailCall.b2 was successful
 test FancyTailCalls.tcTryLocal was successful

@@ -38,13 +38,8 @@ class ForkJoinScheduler(val initCoreSize: Int, val maxSize: Int, daemon: Boolean
   }
 
   private def makeNewPool(): DrainableForkJoinPool = {
-    val p = new DrainableForkJoinPool()
-    // enable locally FIFO scheduling mode
-    p.setAsyncMode(true)
-    p.setParallelism(initCoreSize)
-    p.setMaximumPoolSize(maxSize)
+    val p = new DrainableForkJoinPool(initCoreSize, maxSize)
     Debug.info(this+": parallelism "+p.getParallelism())
-    Debug.info(this+": max pool size "+p.getMaximumPoolSize())
     p
   }
 
@@ -144,7 +139,7 @@ class ForkJoinScheduler(val initCoreSize: Int, val maxSize: Int, daemon: Boolean
     ForkJoinPool.managedBlock(new ForkJoinPool.ManagedBlocker {
       def block = blocker.block()
       def isReleasable() = blocker.isReleasable
-    }, true)
+    })
   }
 
   /** Suspends the scheduler. All threads that were in use by the

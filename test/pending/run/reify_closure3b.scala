@@ -7,15 +7,14 @@ object Test extends App {
     class Foo(y: Int) {
       def y1 = y
 
-      val fun: reflect.Code[Int => Int] = x => {
+      val fun = reflect.Code.lift{(x: Int) => {
         x + y1
-      }
+      }}
     }
 
     val reporter = new ConsoleReporter(new Settings)
     val toolbox = new ToolBox(reporter)
-    val ttree = toolbox.typeCheck(new Foo(y).fun.tree)
-    val dyn = toolbox.runExpr(ttree)
+    val dyn = toolbox.runExpr(new Foo(y).fun.tree)
     dyn.asInstanceOf[Int => Int]
   }
 

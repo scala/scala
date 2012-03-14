@@ -21,7 +21,7 @@ trait Members {
   self: ICodes =>
 
   import global._
-  
+
   object NoCode extends Code(null, "NoCode") {
     override def blocksList: List[BasicBlock] = Nil
   }
@@ -138,7 +138,7 @@ trait Members {
 
   /** Represent a field in ICode */
   class IField(val symbol: Symbol) extends IMember { }
-  
+
   object NoIMethod extends IMethod(NoSymbol) { }
 
   /**
@@ -177,19 +177,13 @@ trait Members {
     /** method parameters */
     var params: List[Local] = Nil
 
-    // TODO - see how null is stil arriving here
-    def hasCode = (code ne NoCode) && (code ne null)
+    def hasCode = code ne NoCode
     def setCode(code: Code): IMethod = {
       this.code = code;
       this
     }
 
-    def addLocal(l: Local): Local =
-      locals find (_ == l) getOrElse {
-        locals ::= l
-        l
-      }
-
+    def addLocal(l: Local): Local = findOrElse(locals)(_ == l) { locals ::= l ; l }
 
     def addParam(p: Local): Unit =
       if (params contains p) ()
@@ -213,6 +207,12 @@ trait Members {
     def isStatic: Boolean = symbol.isStaticMember
 
     override def toString() = symbol.fullName
+
+    def matchesSignature(other: IMethod) = {
+      (symbol.name == other.symbol.name) &&
+      (params corresponds other.params)(_.kind == _.kind) &&
+      (returnType == other.returnType)
+    }
 
     import opcodes._
     def checkLocals(): Unit = {

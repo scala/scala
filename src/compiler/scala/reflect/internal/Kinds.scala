@@ -128,7 +128,7 @@ trait Kinds {
       // @M sometimes hkargs != arg.typeParams, the symbol and the type may
       // have very different type parameters
       val hkparams = param.typeParams
-      
+
       def kindCheck(cond: Boolean, f: KindErrors => KindErrors) {
         if (!cond)
           kindErrors = f(kindErrors)

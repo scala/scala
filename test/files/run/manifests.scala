@@ -46,11 +46,20 @@ object Test
   def showsContravariance[T, U, CC[_]](implicit ev1: Manifest[T], ev2: Manifest[U], ev3: Manifest[CC[T]], ev4: Manifest[CC[U]]) =
     new VarianceTester[T, U, CC](CONTRA) showsExpectedVariance
   
-  def typeCompare[T, U](implicit ev1: Manifest[T], ev2: Manifest[U]) = (ev1 <:< ev2, ev2 <:< ev1) match {
-    case (true, true)   => SAME
-    case (true, false)  => SUB
-    case (false, true)  => SUPER
-    case (false, false) => NONE
+  def typeCompare[T, U](implicit ev1: Manifest[T], ev2: Manifest[U]) = {
+    // checking types as well
+    if ((ev1 <:< ev2) != (ev1.tpe <:< ev2.tpe))
+      println("Failed! " + ((ev1, ev2)))
+
+    if ((ev2 <:< ev1) != (ev2.tpe <:< ev1.tpe))
+      println("Failed! " + ((ev2, ev1)))
+
+    (ev1 <:< ev2, ev2 <:< ev1) match {
+      case (true, true)   => SAME
+      case (true, false)  => SUB
+      case (false, true)  => SUPER
+      case (false, false) => NONE
+    }
   }
   
   def assertAnyRef[T: Manifest] = List(

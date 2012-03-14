@@ -105,11 +105,9 @@ abstract class ReachingDefinitions {
     def genAndKill(b: BasicBlock): (ListSet[Definition], ListSet[Local]) = {
       var genSet  = ListSet[Definition]()
       var killSet = ListSet[Local]()
-      for ((i, idx) <- b.toList.zipWithIndex) i match {
-        case STORE_LOCAL(local) =>
-          killSet = killSet + local
-          genSet  = updateReachingDefinition(b, idx, genSet)
-        case _ => ()
+      for ((STORE_LOCAL(local), idx) <- b.toList.zipWithIndex) {
+        killSet = killSet + local
+        genSet  = updateReachingDefinition(b, idx, genSet)
       }
       (genSet, killSet)
     }

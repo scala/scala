@@ -11,6 +11,9 @@ PROPERTIES
 ============================================================================ -->
   
   <property name="sbaz.universe" value="http://www.scala-lang.org/downloads/packages"/>
+  <property file="${basedir}/build.number.maven"/>
+  <!-- the maven stuff requires version.major, version.minor and version.patch properties.
+       the "get-scala-revision" script only returns "version.number" -->
   
 <!-- ===========================================================================
 MAIN DISTRIBUTION PACKAGING
@@ -248,23 +251,50 @@ MAIN DISTRIBUTION SBAZ
   </target>
 
   <target name="pack-maven.srcs" depends="pack-maven.libs">
+    <!-- Add missing src jars. -->
     <jar destfile="${dists.dir}/maven/${version.number}/jline/jline-src.jar"
          basedir="${src.dir}/jline/src/main/java">
+      <include name="**/*"/>
+    </jar>
+
+
+    <!-- Continuations plugin -->
+    <jar destfile="${dists.dir}/maven/${version.number}/plugins/continuations/continuations-src.jar"
+         basedir="${src.dir}/continuations/plugin">
       <include name="**/*"/>
     </jar>
   </target>
 
   <target name="pack-maven.docs" depends="pack-maven.libs, pack-maven.plugins">
+    <jar destfile="${dists.dir}/maven/${version.number}/jline/jline-docs.jar"
+         basedir="${build-docs.dir}/jline">
+      <include name="**/*"/>
+    </jar>
     <jar destfile="${dists.dir}/maven/${version.number}/scala-library/scala-library-docs.jar"
          basedir="${build-docs.dir}/library">
       <include name="**/*"/>
     </jar>
-    <!-- scala-swing api is included in main library api
-    <jar destfile="${dists.dir}/maven/${version.number}/scala-swing/scala-swing-docs.jar"
-         basedir="${build-docs.dir}/swing">
+    <jar destfile="${dists.dir}/maven/${version.number}/scala-compiler/scala-compiler-docs.jar"
+         basedir="${build-docs.dir}/compiler">
       <include name="**/*"/>
     </jar>
-    -->
+    <jar destfile="${dists.dir}/maven/${version.number}/scalap/scalap-docs.jar"
+         basedir="${build-docs.dir}/scalap">
+      <include name="**/*"/>
+    </jar>
+    <jar destfile="${dists.dir}/maven/${version.number}/scala-partest/scala-partest-docs.jar"
+         basedir="${build-docs.dir}/scala-partest">
+      <include name="**/*"/>
+    </jar>
+    <jar destfile="${dists.dir}/maven/${version.number}/plugins/continuations/continuations-docs.jar"
+         basedir="${build-docs.dir}/continuations-plugin">
+      <include name="**/*"/>
+    </jar>
+    <!-- TODO - Scala swing, dbc should maybe have thier own jar, but creating it is SLOW. -->
+    <copy tofile="${dists.dir}/maven/${version.number}/scala-swing/scala-swing-docs.jar"
+          file="${dists.dir}/maven/${version.number}/scala-library/scala-library-docs.jar"/>
+    <copy tofile="${dists.dir}/maven/${version.number}/scala-dbc/scala-dbc-docs.jar"
+          file="${dists.dir}/maven/${version.number}/scala-library/scala-library-docs.jar"/>
   </target>
 
   <target name="pack-maven.latest.unix" depends="pack-maven.docs" unless="os.win">

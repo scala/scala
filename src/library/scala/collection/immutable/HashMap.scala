@@ -138,8 +138,10 @@ object HashMap extends ImmutableMapFactory[HashMap] with BitOperations.Int {
 
     override def updated0[B1 >: B](key: A, hash: Int, level: Int, value: B1, kv: (A, B1), merger: Merger[B1]): HashMap[A, B1] =
       if (hash == this.hash && key == this.key ) {
-        if (merger eq null) new HashMap1(key, hash, value, kv)
-        else new HashMap1(key, hash, value, merger(this.kv, kv))
+        if (merger eq null) {
+          if(this.value.asInstanceOf[AnyRef] eq value.asInstanceOf[AnyRef]) this
+          else new HashMap1(key, hash, value, kv)
+        } else new HashMap1(key, hash, value, merger(this.kv, kv))
       } else {
         var thatindex = (hash >>> level) & 0x1f
         var thisindex = (this.hash >>> level) & 0x1f
@@ -271,13 +273,15 @@ object HashMap extends ImmutableMapFactory[HashMap] with BitOperations.Int {
       val mask = (1 << index)
       val offset = Integer.bitCount(bitmap & (mask-1))
       if ((bitmap & mask) != 0) {
-        val elemsNew = new Array[HashMap[A,B1]](elems.length)
-        Array.copy(elems, 0, elemsNew, 0, elems.length)
         val sub = elems(offset)
         // TODO: might be worth checking if sub is HashTrieMap (-> monomorphic call site)
         val subNew = sub.updated0(key, hash, level + 5, value, kv, merger)
-        elemsNew(offset) = subNew
-        new HashTrieMap(bitmap, elemsNew, size + (subNew.size - sub.size))
+        if(subNew eq sub) this else {
+          val elemsNew = new Array[HashMap[A,B1]](elems.length)
+          Array.copy(elems, 0, elemsNew, 0, elems.length)
+          elemsNew(offset) = subNew
+          new HashTrieMap(bitmap, elemsNew, size + (subNew.size - sub.size))
+        }
       } else {
         val elemsNew = new Array[HashMap[A,B1]](elems.length + 1)
         Array.copy(elems, 0, elemsNew, 0, offset)
@@ -295,7 +299,8 @@ object HashMap extends ImmutableMapFactory[HashMap] with BitOperations.Int {
         val sub = elems(offset)
         // TODO: might be worth checking if sub is HashTrieMap (-> monomorphic call site)
         val subNew = sub.removed0(key, hash, level + 5)
-        if (subNew.isEmpty) {
+        if (subNew eq sub) this
+        else if (subNew.isEmpty) {
           val bitmapNew = bitmap ^ mask
           if (bitmapNew != 0) {
             val elemsNew = new Array[HashMap[A,B]](elems.length - 1)

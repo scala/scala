@@ -95,8 +95,7 @@ class MutableSettings(val errorFn: String => Unit)
    */
   def copy(): Settings = {
     val s = new Settings()
-    val xs = userSetSettings flatMap (_.unparse)
-    s.processArguments(xs.toList, true)
+    s.processArguments(recreateArgs, true)
     s
   }
 
@@ -534,7 +533,7 @@ class MutableSettings(val errorFn: String => Unit)
       Some(rest)
     }
     override def tryToSetColon(args: List[String]) = tryToSet(args)
-    override def tryToSetFromPropertyValue(s: String) = tryToSet(s.trim.split(" +").toList)
+    override def tryToSetFromPropertyValue(s: String) = tryToSet(s.trim.split(',').toList)
     def unparse: List[String] = value map { name + ":" + _ }
 
     withHelpSyntax(name + ":<" + arg + ">")

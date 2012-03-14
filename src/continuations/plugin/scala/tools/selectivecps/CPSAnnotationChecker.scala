@@ -50,7 +50,27 @@ abstract class CPSAnnotationChecker extends CPSUtils {
 
       // @plus @cps will fall through and compare the @cps type args
       // @cps parameters must match exactly
-      (annots1 corresponds annots2)(_.atp <:< _.atp)
+      if ((annots1 corresponds annots2)(_.atp <:< _.atp))
+        return true
+
+      // Need to handle uninstantiated type vars specially:
+
+      // g map (x => x)  with expected type List[Int] @cps
+      // results in comparison ?That <:< List[Int] @cps
+
+      // Instantiating ?That to an annotated type would fail during
+      // transformation.
+
+      // Instead we force-compare tpe1 <:< tpe2.withoutAnnotations
+      // to trigger instantiation of the TypeVar to the base type
+
+      // This is a bit unorthodox (we're only supposed to look at
+      // annotations here) but seems to work.
+
+      if (!annots2.isEmpty && !tpe1.isGround)
+        return tpe1 <:< tpe2.withoutAnnotations
+
+      false
     }
 
     /** Refine the computed least upper bound of a list of types.
@@ -222,6 +242,9 @@ abstract class CPSAnnotationChecker extends CPSUtils {
         case OverloadedType(pre, alts) =>
           OverloadedType(pre, alts.map((sym: Symbol) => updateAttributes(pre.memberType(sym), annots)))
         */
+        case OverloadedType(pre, alts) => tpe   //reconstruct correct annotations later
+        case MethodType(params, restpe) => tpe
+        case PolyType(params, restpe) => tpe
         case _ =>
           assert(childAnnots forall (_ matches MarkerCPSTypes), childAnnots)
           /*
@@ -229,7 +252,7 @@ abstract class CPSAnnotationChecker extends CPSUtils {
             plus + [] = plus
             cps + [] = cps
             plus cps + [] = plus cps
-            minus cps + [] = minus cp
+            minus cps + [] = minus cps
             synth cps + [] = synth cps // <- synth on left - does it happen?
 
             [] + cps = cps
@@ -313,18 +336,34 @@ abstract class CPSAnnotationChecker extends CPSUtils {
     def single(xs: List[AnnotationInfo]) = xs match {
       case List(x) => x
       case _ =>
-        global.globalError("not a single cps annotation: " + xs)// FIXME: error message
+        global.globalError("not a single cps annotation: " + xs)
         xs(0)
     }
+    
+    def emptyOrSingleList(xs: List[AnnotationInfo]) = if (xs.isEmpty) Nil else List(single(xs))
 
     def transChildrenInOrder(tree: Tree, tpe: Type, childTrees: List[Tree], byName: List[Tree]) = {
-      val children = childTrees.flatMap { t =>
+      def inspect(t: Tree): List[AnnotationInfo] = {
         if (t.tpe eq null) Nil else {
+          val extra: List[AnnotationInfo] = t.tpe match {
+            case _: MethodType | _: PolyType | _: OverloadedType =>
+              // method types, poly types and overloaded types do not obtain cps annotions by propagation
+              // need to reconstruct transitively from their children.
+              t match {
+                case Select(qual, name) => inspect(qual)
+                case Apply(fun, args) => (fun::(transArgList(fun,args).flatten)) flatMap inspect
+                case TypeApply(fun, args) => (fun::(transArgList(fun,args).flatten)) flatMap inspect
+                case _ => Nil
+              }
+            case _ => Nil
+          }
+
           val types = cpsParamAnnotation(t.tpe)
           // TODO: check that it has been adapted and if so correctly
-          if (types.isEmpty) Nil else List(single(types))
+          extra ++ emptyOrSingleList(types)
         }
       }
+      val children = childTrees flatMap inspect
 
       val newtpe = updateAttributesFromChildren(tpe, children, byName)
 
@@ -359,9 +398,15 @@ abstract class CPSAnnotationChecker extends CPSUtils {
 
           transChildrenInOrder(tree, tpe, qual::(transArgList(fun, args).flatten), Nil)
 
+        case Apply(TypeApply(fun @ Select(qual, name), targs), args) if fun.isTyped => // not trigge
+
+          vprintln("[checker] checking select apply type-apply " + tree + "/" + tpe)
+
+          transChildrenInOrder(tree, tpe, qual::(transArgList(fun, args).flatten), Nil)
+
         case TypeApply(fun @ Select(qual, name), args) if fun.isTyped =>
           def stripNullaryMethodType(tp: Type) = tp match { case NullaryMethodType(restpe) => restpe case tp => tp }
-          vprintln("[checker] checking select apply " + tree + "/" + tpe)
+          vprintln("[checker] checking select type-apply " + tree + "/" + tpe)
 
           transChildrenInOrder(tree, stripNullaryMethodType(tpe), List(qual, fun), Nil)
 
@@ -373,7 +418,7 @@ abstract class CPSAnnotationChecker extends CPSUtils {
 
         case TypeApply(fun, args) =>
 
-          vprintln("[checker] checking type apply " + tree + "/" + tpe)
+          vprintln("[checker] checking unknown type apply " + tree + "/" + tpe)
 
           transChildrenInOrder(tree, tpe, List(fun), Nil)
 

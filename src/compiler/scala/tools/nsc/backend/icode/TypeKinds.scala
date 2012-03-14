@@ -74,22 +74,19 @@ trait TypeKinds { self: ICodes =>
       case _                                                => false
     }
 
-    /** On the JVM, these types are like Ints for the
-     *  purposes of calculating the lub.
+    /** On the JVM,
+     *    BOOL, BYTE, CHAR, SHORT, and INT
+     *  are like Ints for the purposes of calculating the lub.
      */
-    def isIntSizedType: Boolean = this match {
-      case BOOL | CHAR | BYTE | SHORT | INT => true
-      case _                                => false
-    }
-    def isIntegralType: Boolean = this match {
-      case BYTE | SHORT | INT | LONG | CHAR => true
-      case _                                => false
-    }
-    def isRealType: Boolean = this match {
-      case FLOAT | DOUBLE => true
-      case _              => false
-    }
-    def isNumericType: Boolean = isIntegralType | isRealType
+    def isIntSizedType: Boolean = false
+
+    /** On the JVM, similar to isIntSizedType except that BOOL isn't integral while LONG is. */
+    def isIntegralType: Boolean = false
+
+    /** On the JVM, FLOAT and DOUBLE. */
+    def isRealType: Boolean = false
+
+    final def isNumericType: Boolean = isIntegralType | isRealType
 
     /** Simple subtyping check */
     def <:<(other: TypeKind): Boolean = (this eq other) || (this match {
@@ -97,11 +94,8 @@ trait TypeKinds { self: ICodes =>
       case _                          => this eq other
     })
 
-    /** Is this type a category 2 type in JVM terms? */
-    def isWideType: Boolean = this match {
-      case DOUBLE | LONG  => true
-      case _              => false
-    }
+    /** Is this type a category 2 type in JVM terms? (ie, is it LONG or DOUBLE?) */
+    def isWideType: Boolean = false
 
     /** The number of dimensions for array types. */
     def dimensions: Int = 0
@@ -145,7 +139,7 @@ trait TypeKinds { self: ICodes =>
      *  Here we make the adjustment by rewinding to a pre-erasure state and
      *  sifting through the parents for a class type.
      */
-    def lub0(tk1: TypeKind, tk2: TypeKind): Type = atPhase(currentRun.uncurryPhase) {
+    def lub0(tk1: TypeKind, tk2: TypeKind): Type = beforeUncurry {
       import definitions._
       val tp = global.lub(List(tk1.toType, tk2.toType))
       val (front, rest) = tp.parents span (_.typeSymbol.hasTraitFlag)
@@ -182,6 +176,7 @@ trait TypeKinds { self: ICodes =>
 
   /** A boolean value */
   case object BOOL extends ValueTypeKind {
+    override def isIntSizedType = true
     def maxType(other: TypeKind) = other match {
       case BOOL | REFERENCE(NothingClass)   => BOOL
       case _                                => uncomparable(other)
@@ -195,6 +190,8 @@ trait TypeKinds { self: ICodes =>
 
   /** A 1-byte signed integer */
   case object BYTE extends ValueTypeKind {
+    override def isIntSizedType = true
+    override def isIntegralType = true
     def maxType(other: TypeKind) = {
       if (other == BYTE || other.isNothingType) BYTE
       else if (other == CHAR) INT
@@ -205,6 +202,8 @@ trait TypeKinds { self: ICodes =>
 
   /** A 2-byte signed integer */
   case object SHORT extends ValueTypeKind {
+    override def isIntSizedType = true
+    override def isIntegralType = true
     override def maxType(other: TypeKind) = other match {
       case BYTE | SHORT | REFERENCE(NothingClass) => SHORT
       case CHAR                                   => INT
@@ -215,6 +214,8 @@ trait TypeKinds { self: ICodes =>
 
   /** A 2-byte UNSIGNED integer */
   case object CHAR extends ValueTypeKind {
+    override def isIntSizedType = true
+    override def isIntegralType = true
     override def maxType(other: TypeKind) = other match {
       case CHAR | REFERENCE(NothingClass) => CHAR
       case BYTE | SHORT                   => INT
@@ -225,6 +226,8 @@ trait TypeKinds { self: ICodes =>
 
   /** A 4-byte signed integer */
   case object INT extends ValueTypeKind {
+    override def isIntSizedType = true
+    override def isIntegralType = true
     override def maxType(other: TypeKind) = other match {
       case BYTE | SHORT | CHAR | INT | REFERENCE(NothingClass)  => INT
       case LONG | FLOAT | DOUBLE                                => other
@@ -234,6 +237,8 @@ trait TypeKinds { self: ICodes =>
 
   /** An 8-byte signed integer */
   case object LONG extends ValueTypeKind {
+    override def isIntegralType = true
+    override def isWideType = true
     override def maxType(other: TypeKind): TypeKind =
       if (other.isIntegralType || other.isNothingType) LONG
       else if (other.isRealType) DOUBLE
@@ -242,6 +247,7 @@ trait TypeKinds { self: ICodes =>
 
   /** A 4-byte floating point number */
   case object FLOAT extends ValueTypeKind {
+    override def isRealType = true
     override def maxType(other: TypeKind): TypeKind =
       if (other == DOUBLE) DOUBLE
       else if (other.isNumericType || other.isNothingType) FLOAT
@@ -250,6 +256,8 @@ trait TypeKinds { self: ICodes =>
 
   /** An 8-byte floating point number */
   case object DOUBLE extends ValueTypeKind {
+    override def isRealType = true
+    override def isWideType = true
     override def maxType(other: TypeKind): TypeKind =
       if (other.isNumericType || other.isNothingType) DOUBLE
       else uncomparable(other)

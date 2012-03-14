@@ -44,11 +44,11 @@ trait ToolBoxes extends { self: Universe =>
         // !!! Why is this is in the empty package? If it's only to make
         // it inaccessible then please put it somewhere designed for that
         // rather than polluting the empty package with synthetics.
-        trace("typing: ")(showAttributed(tree))
+        trace("typing: ")(showAttributed(tree, true, true, settings.Yshowsymkinds.value))
         val ownerClass = EmptyPackageClass.newClassWithInfo(newTypeName("<expression-owner>"), List(ObjectClass.tpe), newScope)
         val owner      = ownerClass.newLocalDummy(tree.pos)
         val ttree = typer.atOwner(tree, owner).typed(tree, analyzer.EXPRmode, pt)
-        trace("typed: ")(showAttributed(ttree))
+        trace("typed: ")(showAttributed(ttree, true, true, settings.Yshowsymkinds.value))
         ttree
       }
 
@@ -64,7 +64,7 @@ trait ToolBoxes extends { self: Universe =>
         obj setInfo obj.moduleClass.tpe
         val meth = obj.moduleClass.newMethod(newTermName(wrapperMethodName))
         def makeParam(fv: Symbol) = meth.newValueParameter(fv.name.toTermName) setInfo fv.tpe
-        meth setInfo MethodType(fvs map makeParam, expr.tpe)
+        meth setInfo MethodType(fvs map makeParam, AnyClass.tpe)
         minfo.decls enter meth
         trace("wrapping ")(defOwner(expr) -> meth)
         val methdef = DefDef(meth, expr changeOwner (defOwner(expr) -> meth))
@@ -78,9 +78,9 @@ trait ToolBoxes extends { self: Universe =>
                 List(List()),
                 List(methdef),
                 NoPosition))
-        trace("wrapped: ")(showAttributed(moduledef))
+        trace("wrapped: ")(showAttributed(moduledef, true, true, settings.Yshowsymkinds.value))
         val cleanedUp = resetLocalAttrs(moduledef)
-        trace("cleaned up: ")(showAttributed(cleanedUp))
+        trace("cleaned up: ")(showAttributed(cleanedUp, true, true, settings.Yshowsymkinds.value))
         cleanedUp
       }
 
@@ -94,6 +94,20 @@ trait ToolBoxes extends { self: Universe =>
       }
 
       def compileExpr(expr: Tree, fvs: List[Symbol]): String = {
+        // Previously toolboxes used to typecheck their inputs before compiling.
+        // Actually, the initial demo by Martin first typechecked the reified tree,
+        // then ran it, which typechecked it again, and only then launched the
+        // reflective compiler.
+        //
+        // However, as observed in https://issues.scala-lang.org/browse/SI-5464
+        // current implementation typechecking is not always idempotent.
+        // That's why we cannot allow inputs of toolboxes to be typechecked,
+        // at least not until the aforementioned issue is closed.
+        val typed = expr filter (t => t.tpe != null && t.tpe != NoType && !t.isInstanceOf[TypeTree])
+        if (!typed.isEmpty) {
+          throw new Error("cannot compile trees that are already typed")
+        }
+
         val mdef = wrapInObject(expr, fvs)
         val pdef = wrapInPackage(mdef)
         val unit = wrapInCompilationUnit(pdef)
@@ -106,7 +120,6 @@ trait ToolBoxes extends { self: Universe =>
         jclazz.getDeclaredMethods.find(_.getName == name).get
 
       def runExpr(expr: Tree): Any = {
-        val etpe = expr.tpe
         val fvs = (expr filter isFree map (_.symbol)).distinct
 
         reporter.reset()
@@ -164,7 +177,13 @@ trait ToolBoxes extends { self: Universe =>
       }
 
       command.settings.outputDirs setSingleOutput virtualDirectory
-      new ToolBoxGlobal(command.settings, reporter)
+      val instance = new ToolBoxGlobal(command.settings, reporter)
+
+      // need to establish a run an phase because otherwise we run into an assertion in TypeHistory
+      // that states that the period must be different from NoPeriod
+      val run = new instance.Run
+      instance.phase = run.refchecksPhase
+      instance
     }
 
     lazy val importer = new compiler.Importer {
@@ -175,22 +194,13 @@ trait ToolBoxes extends { self: Universe =>
 
     lazy val classLoader = new AbstractFileClassLoader(virtualDirectory, defaultReflectiveClassLoader)
 
-    private def importAndTypeCheck(tree: rm.Tree, expectedType: rm.Type): compiler.Tree = {
-      // need to establish a run an phase because otherwise we run into an assertion in TypeHistory
-      // that states that the period must be different from NoPeriod
-      val run = new compiler.Run
-      compiler.phase = run.refchecksPhase
-      val ctree: compiler.Tree = importer.importTree(tree.asInstanceOf[Tree])
-      val pt: compiler.Type = importer.importType(expectedType.asInstanceOf[Type])
-//      val typer = compiler.typer.atOwner(ctree, if (owner.isModule) cowner.moduleClass else cowner)
-      val ttree: compiler.Tree = compiler.typedTopLevelExpr(ctree, pt)
-      ttree
-    }
-
     def typeCheck(tree: rm.Tree, expectedType: rm.Type): rm.Tree = {
       if (compiler.settings.verbose.value) println("typing "+tree+", pt = "+expectedType)
-      val ttree = importAndTypeCheck(tree, expectedType)
-      exporter.importTree(ttree).asInstanceOf[rm.Tree]
+      val ctree: compiler.Tree = importer.importTree(tree.asInstanceOf[Tree])
+      val pt: compiler.Type = importer.importType(expectedType.asInstanceOf[Type])
+      val ttree: compiler.Tree = compiler.typedTopLevelExpr(ctree, pt)
+      val rmttree = exporter.importTree(ttree).asInstanceOf[rm.Tree]
+      rmttree
     }
 
     def typeCheck(tree: rm.Tree): rm.Tree =
@@ -199,11 +209,10 @@ trait ToolBoxes extends { self: Universe =>
     def showAttributed(tree: rm.Tree, printTypes: Boolean = true, printIds: Boolean = true, printKinds: Boolean = false): String =
       compiler.showAttributed(importer.importTree(tree.asInstanceOf[Tree]), printTypes, printIds, printKinds)
 
-    def runExpr(tree: rm.Tree, expectedType: rm.Type): Any = {
-      val ttree = importAndTypeCheck(tree, expectedType)
-      compiler.runExpr(ttree)
+    def runExpr(tree: rm.Tree): Any = {
+      if (compiler.settings.verbose.value) println("running "+tree)
+      val ctree: compiler.Tree = importer.importTree(tree.asInstanceOf[Tree])
+      compiler.runExpr(ctree)
     }
-
-    def runExpr(tree: rm.Tree): Any = runExpr(tree, WildcardType.asInstanceOf[rm.Type])
   }
 }

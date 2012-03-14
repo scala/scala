@@ -71,34 +71,39 @@ abstract class NodePrinters {
         def nodeinfo(tree: Tree): String =
           if (infolevel == InfoLevel.Quiet) ""
           else {
-            val buf = new StringBuilder(" // sym=" + tree.symbol)
-            if (tree.hasSymbol) {
-              if (tree.symbol.isPrimaryConstructor)
-                buf.append(", isPrimaryConstructor")
-              else if (tree.symbol.isConstructor)
-                buf.append(", isConstructor")
-              if (tree.symbol != NoSymbol)
-                buf.append(", sym.owner=" + tree.symbol.owner)
-              buf.append(", sym.tpe=" + tree.symbol.tpe)
-            }
-            buf.append(", tpe=" + tree.tpe)
-            if (tree.tpe != null) {
-              var sym = tree.tpe.termSymbol
-              if (sym == NoSymbol) sym = tree.tpe.typeSymbol
-              buf.append(", tpe.sym=" + sym)
-              if (sym != NoSymbol) {
-                buf.append(", tpe.sym.owner=" + sym.owner)
-                if ((infolevel > InfoLevel.Normal) &&
-                    !(sym.owner eq definitions.ScalaPackageClass) &&
-                    !sym.isModuleClass && !sym.isPackageClass &&
-                    !sym.isJavaDefined) {
-                  val members = for (m <- tree.tpe.decls)
-                    yield m.toString() + ": " + m.tpe + ", "
-                  buf.append(", tpe.decls=" + members)
+            try {
+              val buf = new StringBuilder(" // sym=" + tree.symbol)
+              if (tree.hasSymbol) {
+                if (tree.symbol.isPrimaryConstructor)
+                  buf.append(", isPrimaryConstructor")
+                else if (tree.symbol.isConstructor)
+                  buf.append(", isConstructor")
+                if (tree.symbol != NoSymbol)
+                  buf.append(", sym.owner=" + tree.symbol.owner)
+                buf.append(", sym.tpe=" + tree.symbol.tpe)
+              }
+              buf.append(", tpe=" + tree.tpe)
+              if (tree.tpe != null) {
+                var sym = tree.tpe.termSymbol
+                if (sym == NoSymbol) sym = tree.tpe.typeSymbol
+                buf.append(", tpe.sym=" + sym)
+                if (sym != NoSymbol) {
+                  buf.append(", tpe.sym.owner=" + sym.owner)
+                  if ((infolevel > InfoLevel.Normal) &&
+                      !(sym.owner eq definitions.ScalaPackageClass) &&
+                      !sym.isModuleClass && !sym.isPackageClass &&
+                      !sym.isJavaDefined) {
+                    val members = for (m <- tree.tpe.decls)
+                      yield m.toString() + ": " + m.tpe + ", "
+                    buf.append(", tpe.decls=" + members)
+                  }
                 }
               }
+              buf.toString
+            } catch {
+              case ex: Throwable =>
+                return " // sym= <error> " + ex.getMessage
             }
-            buf.toString
           }
         def nodeinfo2(tree: Tree): String =
           (if (comma) "," else "") + nodeinfo(tree)

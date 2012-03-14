@@ -20,16 +20,14 @@ abstract class Flatten extends InfoTransform {
 
   /** Updates the owning scope with the given symbol; returns the old symbol.
    */
-  private def replaceSymbolInCurrentScope(sym: Symbol): Symbol = {
-    atPhase(phase.next) {
-      val scope = sym.owner.info.decls
-      val old   = scope lookup sym.name
-      if (old ne NoSymbol)
-        scope unlink old
+  private def replaceSymbolInCurrentScope(sym: Symbol): Symbol = afterFlatten {
+    val scope = sym.owner.info.decls
+    val old   = scope lookup sym.name
+    if (old ne NoSymbol)
+      scope unlink old
 
-      scope enter sym
-      old
-    }
+    scope enter sym
+    old
   }
 
   private def liftClass(sym: Symbol) {
@@ -53,24 +51,26 @@ abstract class Flatten extends InfoTransform {
     val clazz = pre.typeSymbol
     clazz.isClass && !clazz.isPackageClass && {
       // Cannot flatten here: class A[T] { object B }
-      atPhase(currentRun.erasurePhase.prev)(clazz.typeParams.isEmpty)
+      // was "at erasurePhase.prev"
+      beforeErasure(clazz.typeParams.isEmpty)
     }
   }
 
   private val flattened = new TypeMap {
     def apply(tp: Type): Type = tp match {
       case TypeRef(pre, sym, args) if isFlattenablePrefix(pre) =>
-        assert(args.isEmpty && sym.toplevelClass != NoSymbol, sym.ownerChain)
-        typeRef(sym.toplevelClass.owner.thisType, sym, Nil)
+        assert(args.isEmpty && sym.enclosingTopLevelClass != NoSymbol, sym.ownerChain)
+        typeRef(sym.enclosingTopLevelClass.owner.thisType, sym, Nil)
       case ClassInfoType(parents, decls, clazz) =>
         var parents1 = parents
         val decls1 = scopeTransform(clazz) {
           val decls1 = newScope
           if (clazz.isPackageClass) {
-            atPhase(phase.next)(decls foreach (decls1 enter _))
-          } else {
+            afterFlatten { decls foreach (decls1 enter _) }
+          }
+          else {
             val oldowner = clazz.owner
-            atPhase(phase.next)(oldowner.info)
+            afterFlatten { oldowner.info }
             parents1 = parents mapConserve (this)
 
             for (sym <- decls) {
@@ -102,7 +102,7 @@ abstract class Flatten extends InfoTransform {
 
   class Flattener extends Transformer {
     /** Buffers for lifted out classes */
-    private val liftedDefs = new mutable.HashMap[Symbol, ListBuffer[Tree]]
+    private val liftedDefs = perRunCaches.newMap[Symbol, ListBuffer[Tree]]()
 
     override def transform(tree: Tree): Tree = {
       tree match {
@@ -119,14 +119,10 @@ abstract class Flatten extends InfoTransform {
       val sym = tree.symbol
       val tree1 = tree match {
         case ClassDef(_, _, _, _) if sym.isNestedClass =>
-          liftedDefs(sym.toplevelClass.owner) += tree
+          liftedDefs(sym.enclosingTopLevelClass.owner) += tree
           EmptyTree
         case Select(qual, name) if (sym.isStaticModule && !sym.owner.isPackageClass) =>
-          atPhase(phase.next) {
-            atPos(tree.pos) {
-              gen.mkAttributedRef(sym)
-            }
-          }
+          afterFlatten(atPos(tree.pos)(gen.mkAttributedRef(sym)))
         case _ =>
           tree
       }

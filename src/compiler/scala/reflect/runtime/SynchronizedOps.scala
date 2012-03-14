@@ -1,22 +1,22 @@
 package scala.reflect
 package runtime
 
-trait SynchronizedOps extends internal.SymbolTable 
+trait SynchronizedOps extends internal.SymbolTable
                          with SynchronizedSymbols
                          with SynchronizedTypes { self: SymbolTable =>
-                           
+
 // Names
-                           
+
   private lazy val nameLock = new Object
-  
+
   override def newTermName(s: String): TermName = nameLock.synchronized { super.newTermName(s) }
   override def newTypeName(s: String): TypeName = nameLock.synchronized { super.newTypeName(s) }
-  
+
 // BaseTypeSeqs
- 
-  override protected def newBaseTypeSeq(parents: List[Type], elems: Array[Type]) = 
+
+  override protected def newBaseTypeSeq(parents: List[Type], elems: Array[Type]) =
     new BaseTypeSeq(parents, elems) with SynchronizedBaseTypeSeq
-    
+
   trait SynchronizedBaseTypeSeq extends BaseTypeSeq {
     override def apply(i: Int): Type = synchronized { super.apply(i) }
     override def rawElem(i: Int) = synchronized { super.rawElem(i) }
@@ -30,9 +30,9 @@ trait SynchronizedOps extends internal.SymbolTable
 
     override def lateMap(f: Type => Type): BaseTypeSeq = new MappedBaseTypeSeq(this, f) with SynchronizedBaseTypeSeq
   }
-  
+
 // Scopes
-  
+
   override def newScope = new Scope() with SynchronizedScope
   override def newNestedScope(outer: Scope): Scope = new Scope(outer) with SynchronizedScope
 

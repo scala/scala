@@ -14,9 +14,15 @@ object Test extends App {
     case 'b' => "got b"
     case _ => "got some letter"
   }
+
+  def byteSwitch(x: Byte) = x match {
+    case 'a' => "got a"
+    case 'b' => "got b"
+    case _ => "got some letter"
+  }
   
   println(charSwitch('a'))
-  println(charSwitch('b'))
+  println(byteSwitch('b'))
   println(charSwitch('z'))
   
   def implicitDefault(x: Int) = x match {

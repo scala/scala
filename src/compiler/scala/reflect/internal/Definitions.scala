@@ -72,8 +72,7 @@ trait Definitions extends reflect.api.StandardDefinitions {
       tpnme.Float   -> FLOAT_TAG,
       tpnme.Double  -> DOUBLE_TAG,
       tpnme.Boolean -> BOOL_TAG,
-      tpnme.Unit    -> VOID_TAG,
-      tpnme.Object  -> TVAR_TAG
+      tpnme.Unit    -> VOID_TAG
     )
 
     private def classesMap[T](f: Name => T) = symbolsMap(ScalaValueClassesNoUnit, f)
@@ -82,7 +81,7 @@ trait Definitions extends reflect.api.StandardDefinitions {
 
     private def boxedName(name: Name) = sn.Boxed(name.toTypeName)
 
-    lazy val abbrvTag         = symbolsMap(ObjectClass :: ScalaValueClasses, nameToTag)
+    lazy val abbrvTag         = symbolsMap(ScalaValueClasses, nameToTag) withDefaultValue OBJECT_TAG
     lazy val numericWeight    = symbolsMapFilt(ScalaValueClasses, nameToWeight.keySet, nameToWeight)
     lazy val boxedModule      = classesMap(x => getModule(boxedName(x)))
     lazy val boxedClass       = classesMap(x => getClass(boxedName(x)))
@@ -129,6 +128,7 @@ trait Definitions extends reflect.api.StandardDefinitions {
       FloatClass,
       DoubleClass
     )
+    def ScalaValueClassCompanions: List[Symbol] = ScalaValueClasses map (_.companionSymbol)
   }
 
   object definitions extends AbsDefinitions with ValueClassDefinitions {
@@ -222,8 +222,12 @@ trait Definitions extends reflect.api.StandardDefinitions {
     lazy val AnyClass             = enterNewClass(ScalaPackageClass, tpnme.Any, Nil, ABSTRACT)
     lazy val AnyRefClass          = newAlias(ScalaPackageClass, tpnme.AnyRef, ObjectClass.typeConstructor)
     lazy val ObjectClass          = getClass(sn.Object)
-    lazy val AnyCompanionClass    = getRequiredClass("scala.AnyCompanion") initFlags (SEALED | ABSTRACT | TRAIT)
-    lazy val AnyValCompanionClass = getRequiredClass("scala.AnyValCompanion") initFlags (SEALED | ABSTRACT | TRAIT)
+
+    // Note: this is not the type alias AnyRef, it's a companion-like
+    // object used by the @specialize annotation.
+    lazy val AnyRefModule = getMember(ScalaPackageClass, nme.AnyRef)
+    @deprecated("Use AnyRefModule", "2.10.0")
+    def Predef_AnyRef = AnyRefModule
 
     lazy val AnyValClass = ScalaPackageClass.info member tpnme.AnyVal orElse {
       val anyval    = enterNewClass(ScalaPackageClass, tpnme.AnyVal, List(AnyClass.tpe, NotNullClass.tpe), 0L)
@@ -285,13 +289,12 @@ trait Definitions extends reflect.api.StandardDefinitions {
 
     lazy val PredefModule: Symbol = getRequiredModule("scala.Predef")
     lazy val PredefModuleClass = PredefModule.moduleClass
-      // Note: this is not the type alias AnyRef, it's a val defined in Predef
-      // used by the @specialize annotation.
-      def Predef_AnyRef = getMember(PredefModule, nme.AnyRef)
+
       def Predef_classOf = getMember(PredefModule, nme.classOf)
       def Predef_identity = getMember(PredefModule, nme.identity)
       def Predef_conforms = getMember(PredefModule, nme.conforms)
       def Predef_wrapRefArray = getMember(PredefModule, nme.wrapRefArray)
+      def Predef_??? = getMember(PredefModule, nme.???)
 
     /** Is `sym` a member of Predef with the given name?
      *  Note: DON't replace this by sym == Predef_conforms/etc, as Predef_conforms is a `def`
@@ -301,6 +304,11 @@ trait Definitions extends reflect.api.StandardDefinitions {
     def isPredefMemberNamed(sym: Symbol, name: Name) = (
       (sym.name == name) && (sym.owner == PredefModule.moduleClass)
     )
+
+    /** Specialization.
+     */
+    lazy val SpecializableModule  = getRequiredModule("scala.Specializable")
+    lazy val GroupOfSpecializable = SpecializableModule.info.member(newTypeName("Group"))
 
     lazy val ConsoleModule: Symbol      = getRequiredModule("scala.Console")
     lazy val ScalaRunTimeModule: Symbol = getRequiredModule("scala.runtime.ScalaRunTime")
@@ -422,9 +430,6 @@ trait Definitions extends reflect.api.StandardDefinitions {
     lazy val FullManifestModule    = getRequiredModule("scala.reflect.Manifest")
     lazy val OptManifestClass      = getRequiredClass("scala.reflect.OptManifest")
     lazy val NoManifest            = getRequiredModule("scala.reflect.NoManifest")
-    lazy val CodeClass             = getClass(sn.Code)
-    lazy val CodeModule            = getModule(sn.Code)
-      lazy val Code_lift = getMember(CodeModule, nme.lift_)
 
     lazy val ScalaSignatureAnnotation = getRequiredClass("scala.reflect.ScalaSignature")
     lazy val ScalaLongSignatureAnnotation = getRequiredClass("scala.reflect.ScalaLongSignature")
@@ -609,14 +614,6 @@ trait Definitions extends reflect.api.StandardDefinitions {
       case _                                    => NoType
     }
 
-    /** To avoid unchecked warnings on polymorphic classes, translate
-     *  a Foo[T] into a Foo[_] for use in the pattern matcher.
-     */
-    def typeCaseType(clazz: Symbol) = clazz.tpe.normalize match {
-      case TypeRef(_, sym, args) if args.nonEmpty => newExistentialType(sym.typeParams, clazz.tpe)
-      case tp                                     => tp
-    }
-
     def seqType(arg: Type)       = appliedType(SeqClass.typeConstructor, List(arg))
     def arrayType(arg: Type)     = appliedType(ArrayClass.typeConstructor, List(arg))
     def byNameType(arg: Type)    = appliedType(ByNameParamClass.typeConstructor, List(arg))
@@ -628,6 +625,29 @@ trait Definitions extends reflect.api.StandardDefinitions {
     def ClassType(arg: Type) =
       if (phase.erasedTypes || forMSIL) ClassClass.tpe
       else appliedType(ClassClass.typeConstructor, List(arg))
+
+    def vmClassType(arg: Type): Type = ClassType(arg)
+    def vmSignature(sym: Symbol, info: Type): String = signature(info)    // !!!
+
+    /** Given a class symbol C with type parameters T1, T2, ... Tn
+     *  which have upper/lower bounds LB1/UB1, LB1/UB2, ..., LBn/UBn,
+     *  returns an existential type of the form
+     *
+     *    C[E1, ..., En] forSome { E1 >: LB1 <: UB1 ... en >: LBn <: UBn }.
+     */
+    def classExistentialType(clazz: Symbol): Type =
+      newExistentialType(clazz.typeParams, clazz.tpe)
+
+    /** Given type U, creates a Type representing Class[_ <: U].
+     */
+    def boundedClassType(upperBound: Type) =
+      appliedTypeAsUpperBounds(ClassClass.typeConstructor, List(upperBound))
+
+    /** To avoid unchecked warnings on polymorphic classes, translate
+     *  a Foo[T] into a Foo[_] for use in the pattern matcher.
+     */
+    @deprecated("Use classExistentialType", "2.10.0")
+    def typeCaseType(clazz: Symbol): Type = classExistentialType(clazz)
 
     //
     // .NET backend
@@ -881,6 +901,9 @@ trait Definitions extends reflect.api.StandardDefinitions {
       try getModule(fullname.toTermName)
       catch { case _: MissingRequirementError => NoSymbol }
 
+    def termMember(owner: Symbol, name: String): Symbol = owner.info.member(newTermName(name))
+    def typeMember(owner: Symbol, name: String): Symbol = owner.info.member(newTypeName(name))
+
     def getMember(owner: Symbol, name: Name): Symbol = {
       if (owner == NoSymbol) NoSymbol
       else owner.info.nonPrivateMember(name) match {
@@ -964,8 +987,9 @@ trait Definitions extends reflect.api.StandardDefinitions {
     def isPrimitiveValueClass(sym: Symbol) = scalaValueClassesSet(sym)
 
     /** Is symbol a value class? */
-    def isValueClass(sym: Symbol) = scalaValueClassesSet(sym)
-    def isNonUnitValueClass(sym: Symbol) = (sym != UnitClass) && isValueClass(sym)
+    def isValueClass(sym: Symbol)         = scalaValueClassesSet(sym)
+    def isNonUnitValueClass(sym: Symbol)  = isValueClass(sym) && (sym != UnitClass)
+    def isSpecializableClass(sym: Symbol) = isValueClass(sym) || (sym == AnyRefClass)
     def isScalaValueType(tp: Type) = scalaValueClassesSet(tp.typeSymbol)
 
     /** Is symbol a boxed value class, e.g. java.lang.Integer? */

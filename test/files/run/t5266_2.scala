@@ -11,7 +11,6 @@ object Test extends App {
 
   val reporter = new ConsoleReporter(new Settings)
   val toolbox = new ToolBox(reporter)
-  val ttree = toolbox.typeCheck(code.tree)
-  val evaluated = toolbox.runExpr(ttree)
+  val evaluated = toolbox.runExpr(code.tree)
   println("evaluated = " + evaluated)
 }

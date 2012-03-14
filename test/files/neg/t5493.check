@@ -1,0 +1,4 @@
+t5493.scala:2: error: not found: value iDontExist
+  def meh(xs: Any): Any = xs :: iDontExist :: Nil
+                                ^
+one error found

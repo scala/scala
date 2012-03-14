@@ -142,7 +142,7 @@ private[scala] trait PropertiesTrait {
    */
   def isWin                 = osName startsWith "Windows"
   def isMac                 = javaVendor startsWith "Apple"
-  
+
   // This is looking for javac, tools.jar, etc.
   // Tries JDK_HOME first, then the more common but likely jre JAVA_HOME,
   // and finally the system property based javaHome.

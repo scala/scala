@@ -745,7 +745,7 @@ trait ParallelMatching extends ast.TreeDSL
           (others.head :: _column.tail, make(_tvars, _rows))
 
         def mix() = {
-          val newScrut = new Scrutinee(specialVar(_pv.sym, _pv.checked))
+          val newScrut = new Scrutinee(new PatternVar(_pv.sym, EmptyTree, _pv.checked))
           PatternMatch(newScrut, _ncol) mkRule _nrep
         }
       }

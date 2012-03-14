@@ -11,40 +11,175 @@
 // for process debugging output.
 //
 package scala.sys {
-  /**
-    * This package is used to create process pipelines, similar to Unix command pipelines.
+  /** This package handles the execution of external processes.  The contents of
+    * this package can be divided in three groups, according to their
+    * responsibilities:
     *
-    * The key concept is that one builds a [[scala.sys.process.Process]] that will run and return an exit
-    * value.  This `Process` is usually composed of one or more [[scala.sys.process.ProcessBuilder]], fed by a
-    * [[scala.sys.process.ProcessBuilder.Source]] and feeding a [[scala.sys.process.ProcessBuilder.Sink]]. A
-    * `ProcessBuilder` itself is both a `Source` and a `Sink`.
+    *   - Indicating what to run and how to run it.
+    *   - Handling a process input and output.
+    *   - Running the process.
     *
-    * As `ProcessBuilder`, `Sink` and `Source` are abstract, one usually creates them with `apply` methods on
-    * the companion object of [[scala.sys.process.Process]], or through implicit conversions available in this
-    * package object from `String` and other types. The pipe is composed through unix-like pipeline and I/O
-    * redirection operators available on [[scala.sys.process.ProcessBuilder]].
-    *
-    * The example below shows how to build and combine such commands. It searches for `null` uses in the `src`
-    * directory, printing a message indicating whether they were found or not. The first command pipes its
-    * output to the second command, whose exit value is then used to choose between the third or fourth
-    * commands. This same example is explained in greater detail on [[scala.sys.process.ProcessBuilder]].
+    * For simple uses, the only group that matters is the first one. Running an
+    * external command can be as simple as `"ls".!`, or as complex as building a
+    * pipeline of commands such as this:
     *
     * {{{
     * import scala.sys.process._
-    * (
-    *     "find src -name *.scala -exec grep null {} ;"
-    *     #|  "xargs test -z"
-    *     #&&  "echo null-free"  #||  "echo null detected"
-    * ) !
+    * "ls" #| "grep .scala" #&& "scalac *.scala" #|| "echo nothing found" lines
     * }}}
     *
-    * Other implicits available here are for [[scala.sys.process.ProcessBuilder.FileBuilder]], which extends
-    * both `Sink` and `Source`, and for [[scala.sys.process.ProcessBuilder.URLBuilder]], which extends
-    * `Source` alone.
+    * We describe below the general concepts and architecture of the package,
+    * and then take a closer look at each of the categories mentioned above.
     *
-    * One can even create a `Process` solely out of these, without running any command. For example, this will
-    * download from a URL to a file:
+    * ==Concepts and Architecture==
     *
+    * The underlying basis for the whole package is Java's `Process` and
+    * `ProcessBuilder` classes. While there's no need to use these Java classes,
+    * they impose boundaries on what is possible. One cannot, for instance,
+    * retrieve a ''process id'' for whatever is executing.
+    *
+    * When executing an external process, one can provide a command's name,
+    * arguments to it, the directory in which it will be executed and what
+    * environment variables will be set. For each executing process, one can
+    * feed its standard input through a `java.io.OutputStream`, and read from
+    * its standard output and standard error through a pair of
+    * `java.io.InputStream`. One can wait until a process finishes execution and
+    * then retrieve its return value, or one can kill an executing process.
+    * Everything else must be built on those features.
+    *
+    * This package provides a DSL for running and chaining such processes,
+    * mimicking Unix shells ability to pipe output from one process to the input
+    * of another, or control the execution of further processes based on the
+    * return status of the previous one.
+    *
+    * In addition to this DSL, this package also provides a few ways of
+    * controlling input and output of these processes, going from simple and
+    * easy to use to complex and flexible.
+    *
+    * When processes are composed, a new `ProcessBuilder` is created which, when
+    * run, will execute the `ProcessBuilder` instances it is composed of
+    * according to the manner of the composition. If piping one process to
+    * another, they'll be executed simultaneously, and each will be passed a
+    * `ProcessIO` that will copy the output of one to the input of the other.
+    *
+    * ==What to Run and How==
+    *
+    * The central component of the process execution DSL is the
+    * [[scala.sys.process.ProcessBuilder]] trait. It is `ProcessBuilder` that
+    * implements the process execution DSL, that creates the
+    * [[scala.sys.process.Process]] that will handle the execution, and return
+    * the results of such execution to the caller. We can see that DSL in the
+    * introductory example: `#|`, `#&&` and `#!!` are methods on
+    * `ProcessBuilder` used to create a new `ProcessBuilder` through
+    * composition.
+    *
+    * One creates a `ProcessBuilder` either through factories on the
+    * [[scala.sys.process.Process]]'s companion object, or through implicit
+    * conversions available in this package object itself.  Implicitly, each
+    * process is created either out of a `String`, with arguments separated by
+    * spaces -- no escaping of spaces is possible -- or out of a
+    * [[scala.collection.Seq]], where the first element represents the command
+    * name, and the remaining elements are arguments to it. In this latter case,
+    * arguments may contain spaces.  One can also implicitly convert
+    * [[scala.xml.Elem]] and `java.lang.ProcessBuilder` into a `ProcessBuilder`.
+    * In the introductory example, the strings were converted into
+    * `ProcessBuilder` implicitly.
+    *
+    * To further control what how the process will be run, such as specifying
+    * the directory in which it will be run, see the factories on
+    * [[scala.sys.process.Process]]'s object companion.
+    *
+    * Once the desired `ProcessBuilder` is available, it can be executed in
+    * different ways, depending on how one desires to control its I/O, and what
+    * kind of result one wishes for:
+    *
+    *   - Return status of the process (`!` methods)
+    *   - Output of the process as a `String` (`!!` methods)
+    *   - Continuous output of the process as a `Stream[String]` (`lines` methods)
+    *   - The `Process` representing it (`run` methods)
+    *
+    * Some simple examples of these methods:
+    * {{{
+    * import scala.sys.process._
+    *
+    * // This uses ! to get the exit code
+    * def fileExists(name: String) = Seq("test", "-f", name).! == 0
+    *
+    * // This uses !! to get the whole result as a string
+    * val dirContents = "ls".!!
+    *
+    * // This "fire-and-forgets" the method, which can be lazily read through
+    * // a Stream[String]
+    * def sourceFilesAt(baseDir: String): Stream[String] = {
+    *   val cmd = Seq("find", baseDir, "-name", "*.scala", "-type", "f")
+    *   cmd.lines
+    * }
+    * }}}
+    *
+    * We'll see more details about controlling I/O of the process in the next
+    * section.
+    *
+    * ==Handling Input and Output==
+    *
+    * In the underlying Java model, once a `Process` has been started, one can
+    * get `java.io.InputStream` and `java.io.OutpuStream` representing its
+    * output and input respectively. That is, what one writes to an
+    * `OutputStream` is turned into input to the process, and the output of a
+    * process can be read from an `InputStream` -- of which there are two, one
+    * representing normal output, and the other representing error output.
+    *
+    * This model creates a difficulty, which is that the code responsible for
+    * actually running the external processes is the one that has to take
+    * decisions about how to handle its I/O.
+    *
+    * This package presents an alternative model: the I/O of a running process
+    * is controlled by a [[scala.sys.process.ProcessIO]] object, which can be
+    * passed _to_ the code that runs the external process. A `ProcessIO` will
+    * have direct access to the java streams associated with the process I/O. It
+    * must, however, close these streams afterwards.
+    *
+    * Simpler abstractions are available, however. The components of this
+    * package that handle I/O are:
+    *
+    *   - [[scala.sys.process.ProcessIO]]: provides the low level abstraction.
+    *   - [[scala.sys.process.ProcessLogger]]: provides a higher level abstraction
+    *   for output, and can be created through its object companion
+    *   - [[scala.sys.process.BasicIO]]: a library of helper methods for the
+    *   creation of `ProcessIO`.
+    *   - This package object itself, with a few implicit conversions.
+    *
+    * Some examples of I/O handling:
+    * {{{
+    * import scala.sys.process._
+    *
+    * // An overly complex way of computing size of a compressed file
+    * def gzFileSize(name: String) = {
+    *   val cat = Seq("zcat", "name")
+    *   var count = 0
+    *   def byteCounter(input: java.io.InputStream) = {
+    *     while(input.read() != -1) count += 1
+    *     input.close()
+    *   }
+    *   cat ! new ProcessIO(_.close(), byteCounter, _.close())
+    *   count
+    * }
+    *
+    * // This "fire-and-forgets" the method, which can be lazily read through
+    * // a Stream[String], and accumulates all errors on a StringBuffer
+    * def sourceFilesAt(baseDir: String): (Stream[String], StringBuffer) = {
+    *   val buffer = new StringBuffer()
+    *   val cmd = Seq("find", baseDir, "-name", "*.scala", "-type", "f")
+    *   val lines = cmd lines_! ProcessLogger(buffer append _)
+    *   (lines, buffer)
+    * }
+    * }}}
+    *
+    * Instances of the java classes `java.io.File` and `java.net.URL` can both
+    * be used directly as input to other processes, and `java.io.File` can be
+    * used as output as well. One can even pipe one to the other directly
+    * without any intervening process, though that's not a design goal or
+    * recommended usage. For example, the following code will copy a web page to
+    * a file:
     * {{{
     * import java.io.File
     * import java.net.URL
@@ -52,26 +187,33 @@ package scala.sys {
     * new URL("http://www.scala-lang.org/") #> new File("scala-lang.html") !
     * }}}
     *
-    * One may use a `Process` directly through `ProcessBuilder`'s `run` method, which starts the process in
-    * the background, and returns a `Process`. If background execution is not desired, one can get a
-    * `ProcessBuilder` to execute through a method such as `!`, `lines`, `run` or variations thereof. That
-    * will create the `Process` to execute the commands, and return either the exit value or the output, maybe
-    * throwing an exception.
+    * More information about the other ways of controlling I/O can be looked at
+    * in the scaladoc for the associated objects, traits and classes.
     *
-    * Finally, when executing a `ProcessBuilder`, one may pass a [[scala.sys.process.ProcessLogger]] to
-    * capture stdout and stderr of the executing processes. A `ProcessLogger` may be created through its
-    * companion object from functions of type `(String) => Unit`, or one might redirect it to a file, using
-    * [[scala.sys.process.FileProcessLogger]], which can also be created through `ProcessLogger`'s object
-    * companion.
+    * ==Running the Process==
+    *
+    * Paradoxically, this is the simplest component of all, and the one least
+    * likely to be interacted with. It consists solely of
+    * [[scala.sys.process.Process]], and it provides only two methods:
+    *
+    *   - `exitValue()`: blocks until the process exit, and then returns the exit
+    *   value. This is what happens when one uses the `!` method of
+    *   `ProcessBuilder`.
+    *   - `destroy()`: this will kill the external process and close the streams
+    *   associated with it.
     */
   package object process extends ProcessImplicits {
+    /** The arguments passed to `java` when creating this process */
     def javaVmArguments: List[String] = {
       import collection.JavaConversions._
 
       java.lang.management.ManagementFactory.getRuntimeMXBean().getInputArguments().toList
     }
+    /** The input stream of this process */
     def stdin  = java.lang.System.in
+    /** The output stream of this process */
     def stdout = java.lang.System.out
+    /** The error stream of this process */
     def stderr = java.lang.System.err
   }
   // private val shell: String => Array[String] =

@@ -393,8 +393,7 @@ trait JavaParsers extends ast.parser.ParsersCommon with JavaScanners {
       // assumed true unless we see public/private/protected
       var isPackageAccess = true
       var annots: List[Tree] = Nil
-      def addAnnot(sym: Symbol) =
-        annots :+= New(TypeTree(sym.tpe), List(Nil))
+      def addAnnot(sym: Symbol) = annots :+= New(sym.tpe)
 
       while (true) {
         in.token match {
@@ -654,15 +653,12 @@ trait JavaParsers extends ast.parser.ParsersCommon with JavaScanners {
     // leaves auxiliary constructors unable to access members of the companion object
     // as unqualified identifiers.
     def addCompanionObject(statics: List[Tree], cdef: ClassDef): List[Tree] = {
-      def implWithImport(importStmt: Tree) = {
-        import cdef.impl._
-        treeCopy.Template(cdef.impl, parents, self, importStmt :: body)
-      }
+      def implWithImport(importStmt: Tree) = deriveTemplate(cdef.impl)(importStmt :: _)
       // if there are no statics we can use the original cdef, but we always
       // create the companion so import A._ is not an error (see ticket #1700)
       val cdefNew =
         if (statics.isEmpty) cdef
-        else treeCopy.ClassDef(cdef, cdef.mods, cdef.name, cdef.tparams, implWithImport(importCompanionObject(cdef)))
+        else deriveClassDef(cdef)(_ => implWithImport(importCompanionObject(cdef)))
 
       List(makeCompanionObject(cdefNew, statics), cdefNew)
     }

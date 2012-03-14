@@ -86,7 +86,7 @@ abstract class ParallelIterableCheck[T](collName: String) extends Properties(col
     println("Collection debug info: ")
     coll.printDebugBuffer
     println("Task debug info: ")
-    println(tasksupport.debugMessages.mkString("\n"))
+    println(coll.tasksupport.debugMessages.mkString("\n"))
   }
   
   def printComparison(t: Traversable[_], coll: ParIterable[_], tf: Traversable[_], cf: ParIterable[_], ind: Int) {

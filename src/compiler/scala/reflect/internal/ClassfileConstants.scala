@@ -88,6 +88,7 @@ object ClassfileConstants {
   final val ARRAY_TAG  = '['
   final val VOID_TAG   = 'V'
   final val TVAR_TAG   = 'T'
+  final val OBJECT_TAG = 'L'
   final val ANNOTATION_TAG = '@'
   final val SCALA_NOTHING = "scala.runtime.Nothing$"
   final val SCALA_NULL = "scala.runtime.Null$"
@@ -359,7 +360,7 @@ object ClassfileConstants {
       res |= translateFlag(jflags & JAVA_ACC_INTERFACE)
       res
     }
-      
+
     def classFlags(jflags: Int): Long = {
       initFields(jflags)
       isClass = true
@@ -375,11 +376,11 @@ object ClassfileConstants {
     }
   }
   object FlagTranslation extends FlagTranslation { }
-  
+
   def toScalaMethodFlags(flags: Int): Long = FlagTranslation methodFlags flags
   def toScalaClassFlags(flags: Int): Long  = FlagTranslation classFlags flags
   def toScalaFieldFlags(flags: Int): Long  = FlagTranslation fieldFlags flags
-  
+
   @deprecated("Use another method in this object", "2.10.0")
   def toScalaFlags(flags: Int, isClass: Boolean = false, isField: Boolean = false): Long = (
     if (isClass) toScalaClassFlags(flags)

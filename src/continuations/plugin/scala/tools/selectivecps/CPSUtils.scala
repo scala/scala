@@ -12,7 +12,7 @@ trait CPSUtils {
   var cpsEnabled = true
   val verbose: Boolean = System.getProperty("cpsVerbose", "false") == "true"
   def vprintln(x: =>Any): Unit = if (verbose) println(x)
-  
+
   object cpsNames {
     val catches         = newTermName("$catches")
     val ex              = newTermName("$ex")

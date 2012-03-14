@@ -9,15 +9,12 @@
     <!-- Pull in properties from build -->
     <property file="build.properties" />
     <!-- Initialize specific properties -->
-    <!--<property name="remote.snapshot.repository" value="http://scala-tools.org:8081/nexus/content/repositories/snapshots" />
-    <property name="remote.release.repository" value="http://scala-tools.org:8081/nexus/content/repositories/releases" />-->
-
-    <property name="remote.snapshot.repository" value="http://nexus.scala-tools.org/content/repositories/snapshots" />
-    <property name="remote.release.repository" value="http://nexus.scala-tools.org/content/repositories/releases" />
+    <property name="remote.snapshot.repository" value="https://oss.sonatype.org/content/repositories/snapshots" />
+    <property name="remote.release.repository" value="https://oss.sonatype.org/service/local/staging/deploy/maven2" />
 
     <property name="local.snapshot.repository" value="${user.home}/.m2/repository" />
     <property name="local.release.repository" value="${user.home}/.m2/repository" />
-    <property name="repository.credentials.id" value="scala-tools.org" />
+    <property name="repository.credentials.id" value="sonatype-nexus" />
     <property name="settings.file" value="${user.home}/.m2/settings.xml" />
 
     <echo>Using server[${repository.credentials.id}] for maven repository credentials.
@@ -30,6 +27,7 @@
     <!-- Add our maven ant tasks -->
     <path id="maven-ant-tasks.classpath" path="maven-ant-tasks-2.1.1.jar" />
     <typedef resource="org/apache/maven/artifact/ant/antlib.xml" uri="urn:maven-artifact-ant" classpathref="maven-ant-tasks.classpath" />
+
     <!-- simplify fixing pom versions -->
     <macrodef name="make-pom">
       <attribute name="name" />
@@ -60,13 +58,6 @@
         <artifact:pom id="plugin-@{name}.pom" file="plugins/@{name}/@{name}-pom-fixed.xml" />
       </sequential>
     </macrodef>
-    <!-- Simply attaching documentation -->
-    <macrodef name="attach-doc">
-      <attribute name="name" />
-      <sequential>
-        <artifact:attach type="jar" file="@{name}/@{name}-docs.jar" classifier="javadoc" />
-      </sequential>
-    </macrodef>
   </target>
   <!-- macros for local deployment -->
   <target name="deploy.local.init" depends="init.maven">
@@ -82,6 +73,7 @@
           <artifact:pom refid="@{name}.pom" />
           <artifact:localRepository path="@{repository}" id="${repository.credentials.id}" />
           <artifact:attach type="jar" file="@{name}/@{name}-src.jar" classifier="sources" />
+          <artifact:attach type="jar" file="@{name}/@{name}-docs.jar" classifier="javadoc" />
           <extra-attachments />
         </artifact:install>
       </sequential>
@@ -97,6 +89,8 @@
           <make-pom-plugin name="@{name}" version="@{version}" />
           <artifact:install file="plugins/@{name}/@{name}.jar">
             <artifact:pom refid="plugin-@{name}.pom" />
+            <artifact:attach type="jar" file="plugins/@{name}/@{name}-src.jar" classifier="sources" />
+            <artifact:attach type="jar" file="plugins/@{name}/@{name}-docs.jar" classifier="javadoc" />
             <artifact:localRepository path="@{repository}" id="${repository.credentials.id}" />
             <extra-attachments />
           </artifact:install>
@@ -109,24 +103,14 @@
       <attribute name="repository" />
       <attribute name="version" />
       <sequential>
-        <deploy-local name="scala-library" version="@{version}" repository="@{repository}">
-          <extra-attachments>
-            <artifact:attach type="jar" file="scala-library/scala-library-docs.jar" classifier="javadoc" />
-          </extra-attachments>
-        </deploy-local>
-      	<deploy-local name="jline" version="@{version}" repository="@{repository}"/>
+        <deploy-local name="scala-library" version="@{version}" repository="@{repository}" />
         <deploy-local name="scala-compiler" version="@{version}" repository="@{repository}" />
+        <deploy-local-plugin name="continuations" version="@{version}" repository="@{repository}"/>
         <deploy-local name="scala-dbc" version="@{version}" repository="@{repository}" />
         <deploy-local name="scala-swing" version="@{version}" repository="@{repository}"/>
       	<deploy-local name="scalap" version="@{version}" repository="@{repository}"/>
       	<deploy-local name="scala-partest" version="@{version}" repository="@{repository}"/>
-        <deploy-local-plugin name="continuations" version="@{version}" repository="@{repository}"/>
-        <!-- scala swing api is included in main library api
-          <extra-attachments>
-            <artifact:attach type="jar" file="scala-swing/scala-swing-docs.jar" classifier="javadoc" />
-          </extra-attachments>
-        </deploy-local>
-        -->
+      	<deploy-local name="jline" version="@{version}" repository="@{repository}"/>
       </sequential>
     </macrodef>
   </target>
@@ -145,13 +129,13 @@
           <artifact:pom refid="@{name}.pom" />
           <artifact:remoteRepository url="@{repository}" id="${repository.credentials.id}" />
           <artifact:attach type="jar" file="@{name}/@{name}-src.jar" classifier="sources" />
+          <artifact:attach type="jar" file="@{name}/@{name}-docs.jar" classifier="javadoc" />
           <extra-attachments />
         </artifact:deploy>
       </sequential>
     </macrodef>
 
-
-        <!-- Deploy compiler plugins -->
+    <!-- Deploy compiler plugins -->
     <macrodef name="deploy-remote-plugin">
         <attribute name="name" />
         <attribute name="version" />
@@ -161,6 +145,8 @@
           <make-pom-plugin name="@{name}" version="@{version}" />
           <artifact:deploy file="plugins/@{name}/@{name}.jar" settingsFile="${settings.file}">
             <artifact:pom refid="plugin-@{name}.pom" />
+            <artifact:attach type="jar" file="plugins/@{name}/@{name}-src.jar" classifier="sources" />
+            <artifact:attach type="jar" file="plugins/@{name}/@{name}-docs.jar" classifier="javadoc" />
             <artifact:remoteRepository url="@{repository}" id="${repository.credentials.id}" />
             <extra-attachments />
           </artifact:deploy>
@@ -184,12 +170,72 @@
       	<deploy-remote name="scalap" version="@{version}" repository="@{repository}"/>
       	<deploy-remote name="scala-partest" version="@{version}" repository="@{repository}"/>
         <deploy-remote-plugin name="continuations" version="@{version}" repository="@{repository}"/> 
-        <!-- scala swing api is included in main library api
-          <extra-attachments>
-            <artifact:attach type="jar" file="scala-swing/scala-swing-docs.jar" classifier="javadoc" />
-          </extra-attachments>
-        </deploy-remote>
-        -->
+      </sequential>
+    </macrodef>
+
+    <!-- PGP Signed deployment -->
+    <macrodef name="deploy-remote-signed-single">
+      <attribute name="pom" />
+      <attribute name="repository" />
+      <attribute name="jar" />
+      <attribute name="srcjar" />
+      <attribute name="docjar" />
+      <sequential>
+        <artifact:mvn>
+          <arg value="org.apache.maven.plugins:maven-gpg-plugin:1.3:sign-and-deploy-file" />
+          <arg value="-Durl=@{repository}" />
+          <arg value="-DrepositoryId=${repository.credentials.id}" />
+          <arg value="-DpomFile=@{pom}" />
+          <arg value="-Dfile=@{jar}" />
+          <arg value="-Dsources=@{srcjar}" />
+          <arg value="-Djavadoc=@{docjar}" />
+          <arg value="-Pgpg" />
+          <arg value="-Dgpg.useagent=true" />
+        </artifact:mvn>
+      </sequential>
+    </macrodef>
+    <macrodef name="deploy-remote-signed">
+      <attribute name="name" />
+      <attribute name="repository" />
+      <attribute name="version" />
+      <element name="extra-attachments" optional="yes" />
+      <sequential>
+        <make-pom name="@{name}" version="@{version}" />
+        <deploy-remote-signed-single
+           pom="@{name}/@{name}-pom-fixed.xml"
+           repository="@{repository}"
+           jar="@{name}/@{name}.jar"
+           srcjar="@{name}/@{name}-src.jar"
+           docjar="@{name}/@{name}-docs.jar" />
+      </sequential>
+    </macrodef>
+    <macrodef name="deploy-remote-plugin-signed">
+      <attribute name="name" />
+      <attribute name="repository" />
+      <attribute name="version" />
+      <element name="extra-attachments" optional="yes" />
+      <sequential>
+        <make-pom-plugin name="@{name}" version="@{version}" />
+        <deploy-remote-signed-single
+           pom="plugins/@{name}/@{name}-pom-fixed.xml"
+           repository="@{repository}"
+           jar="plugins/@{name}/@{name}.jar"
+           srcjar="plugins/@{name}/@{name}-src.jar"
+           docjar="plugins/@{name}/@{name}-docs.jar" />
+      </sequential>
+    </macrodef>
+    <macrodef name="deploy-remote-signed-all">
+      <attribute name="repository" />
+      <attribute name="version" />
+      <sequential>
+        <deploy-remote-plugin-signed name="continuations" version="@{version}" repository="@{repository}"/> 
+      	<deploy-remote-signed name="scala-library" version="@{version}" repository="@{repository}"/>
+      	<deploy-remote-signed name="jline" version="@{version}" repository="@{repository}"/>
+        <deploy-remote-signed name="scala-compiler" version="@{version}" repository="@{repository}" />
+        <deploy-remote-signed name="scala-dbc" version="@{version}" repository="@{repository}" />
+        <deploy-remote-signed name="scala-swing" version="@{version}" repository="@{repository}"/>
+      	<deploy-remote-signed name="scalap" version="@{version}" repository="@{repository}"/>
+      	<deploy-remote-signed name="scala-partest" version="@{version}" repository="@{repository}"/>
       </sequential>
     </macrodef>
   </target>
@@ -204,6 +250,14 @@
   </target>
 
   <!-- Remote Targets -->
+  <target name="deploy.signed.snapshot" depends="deploy.remote.init" description="Deploys the bundled files as a snapshot into the desired remote Maven repository">
+      <deploy-remote-signed-all version="${maven.snapshot.version.number}" repository="${remote.snapshot.repository}" />
+  </target>
+
+  <target name="deploy.signed.release" depends="deploy.remote.init" description="Deploys the bundled files as a release into the desired remote Maven repository">
+    <deploy-remote-signed-all version="${version.number}" repository="${remote.release.repository}" />
+  </target>
+
   <target name="deploy.snapshot" depends="deploy.remote.init" description="Deploys the bundled files as a snapshot into the desired remote Maven repository">
       <deploy-remote-all version="${maven.snapshot.version.number}" repository="${remote.snapshot.repository}" />
   </target>

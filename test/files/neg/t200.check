@@ -1,4 +1,4 @@
-t200.scala:7: error: method foo is defined twice
+t200.scala:7: error: method foo is defined twice in t200.scala
   def foo: Int;
       ^
 one error found

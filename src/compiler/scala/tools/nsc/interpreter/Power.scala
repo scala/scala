@@ -15,6 +15,31 @@ import scala.io.Codec
 import java.net.{ URL, MalformedURLException }
 import io.{ Path }
 
+/** Collecting some power mode examples.
+
+scala> trait F[@specialized(Int) T] { def f: T = ??? }
+defined trait F
+
+scala> trait G[@specialized(Long, Int) T] extends F[T] { override def f: T = super.f }
+defined trait G
+
+scala> changesAfterEachPhase(intp("G").info.members filter (_.name.toString contains "super")) >
+Gained after  1/parser {
+  method super$f
+}
+
+Gained after 12/specialize {
+  method super$f$mcJ$sp
+  method super$f$mcI$sp
+}
+
+Lost after 18/flatten {
+  method super$f$mcJ$sp
+  method super$f$mcI$sp
+  method super$f
+}
+*/
+
 /** A class for methods to be injected into the intp in power mode.
  */
 class Power[ReplValsImpl <: ReplVals : Manifest](val intp: IMain, replVals: ReplValsImpl) {
@@ -130,7 +155,7 @@ class Power[ReplValsImpl <: ReplVals : Manifest](val intp: IMain, replVals: Repl
 
     ( rutil.info[ReplValsImpl].membersDeclared
         filter (m => m.isPublic && !m.hasModuleFlag && !m.isConstructor)
-        sortBy (_.decodedName) 
+        sortBy (_.decodedName)
            map to_str
       mkString ("Name and type of values imported into the repl in power mode.\n\n", "\n", "")
     )
@@ -140,7 +165,7 @@ class Power[ReplValsImpl <: ReplVals : Manifest](val intp: IMain, replVals: Repl
     implicit def apply[T: Manifest] : InternalInfo[T] = new InternalInfo[T](None)
   }
   object InternalInfo extends LowPriorityInternalInfo { }
-  
+
   /** Now dealing with the problem of acidentally calling a method on Type
    *  when you're holding a Symbol and seeing the Symbol converted to the
    *  type of Symbol rather than the type of the thing represented by the
@@ -151,7 +176,7 @@ class Power[ReplValsImpl <: ReplVals : Manifest](val intp: IMain, replVals: Repl
     implicit def apply[T: Manifest] : InternalInfoWrapper[T] = new InternalInfoWrapper[T](None)
   }
   object InternalInfoWrapper extends LowPriorityInternalInfoWrapper {
-    
+
   }
   class InternalInfoWrapper[T: Manifest](value: Option[T] = None) {
     def ? : InternalInfo[T] = new InternalInfo[T](value)
@@ -165,7 +190,7 @@ class Power[ReplValsImpl <: ReplVals : Manifest](val intp: IMain, replVals: Repl
     private def newInfo[U: Manifest](value: U): InternalInfo[U] = new InternalInfo[U](Some(value))
     private def isSpecialized(s: Symbol) = s.name.toString contains "$mc"
     private def isImplClass(s: Symbol)   = s.name.toString endsWith "$class"
-    
+
     /** Standard noise reduction filter. */
     def excludeMember(s: Symbol) = (
          isSpecialized(s)
@@ -193,7 +218,7 @@ class Power[ReplValsImpl <: ReplVals : Manifest](val intp: IMain, replVals: Repl
     def membersInherited  = members filterNot (membersDeclared contains _)
     def memberTypes       = members filter (_.name.isTypeName)
     def memberMethods     = members filter (_.isMethod)
-    
+
     def pkg             = symbol.enclosingPackage
     def pkgName         = pkg.fullName
     def pkgClass        = symbol.enclosingPackageClass
@@ -318,12 +343,12 @@ class Power[ReplValsImpl <: ReplVals : Manifest](val intp: IMain, replVals: Repl
     def sigs  = syms map (_.defString)
     def infos = syms map (_.info)
   }
-  
+
   trait Implicits1 {
     // fallback
     implicit def replPrinting[T](x: T)(implicit pretty: Prettifier[T] = Prettifier.default[T]) =
       new SinglePrettifierClass[T](x)
-    
+
     implicit def liftToTypeName(s: String): TypeName = newTypeName(s)
   }
   trait Implicits2 extends Implicits1 {
@@ -350,7 +375,7 @@ class Power[ReplValsImpl <: ReplVals : Manifest](val intp: IMain, replVals: Repl
 
     implicit def replInputStream(in: InputStream)(implicit codec: Codec) = new RichInputStream(in)
     implicit def replEnhancedURLs(url: URL)(implicit codec: Codec): RichReplURL = new RichReplURL(url)(codec)
-    
+
     implicit def liftToTermName(s: String): TermName = newTermName(s)
     implicit def replListOfSymbols(xs: List[Symbol]) = new RichSymbolList(xs)
   }

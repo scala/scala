@@ -318,7 +318,7 @@ trait GenTraversableLike[+A, +Repr] extends GenTraversableOnce[A] with Paralleli
    *  $orderDependent
    *
    *  @param from   the lowest index to include from this $coll.
-   *  @param until  the highest index to EXCLUDE from this $coll.
+   *  @param until  the lowest index to EXCLUDE from this $coll.
    *  @return  a $coll containing the elements greater than or equal to
    *           index `from` extending up to (but not including) index `until`
    *           of this $coll.

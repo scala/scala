@@ -146,7 +146,7 @@ abstract class TreeInfo {
 
     true
   }
-  
+
   /**
    * Selects the correct parameter list when there are nested applications.
    * Given Apply(fn, args), args might correspond to any of fn.symbol's parameter
@@ -175,7 +175,7 @@ abstract class TreeInfo {
   }
   def foreachMethodParamAndArg(t: Tree)(f: (Symbol, Tree) => Unit): Unit = t match {
     case Apply(fn, args) => foreachMethodParamAndArg(applyMethodParameters(fn), args)(f)
-    case _               => 
+    case _               =>
   }
 
   /** Is symbol potentially a getter of a variable?

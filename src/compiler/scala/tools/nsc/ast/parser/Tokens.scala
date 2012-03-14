@@ -58,7 +58,7 @@ object Tokens extends Tokens {
   final val BACKQUOTED_IDENT = 11
   def isIdentifier(code: Int) =
     code >= IDENTIFIER && code <= BACKQUOTED_IDENT
-    
+
   @switch def canBeginExpression(code: Int) = code match {
     case IDENTIFIER|BACKQUOTED_IDENT|USCORE       => true
     case LBRACE|LPAREN|LBRACKET|COMMENT           => true

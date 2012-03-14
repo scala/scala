@@ -205,6 +205,16 @@ sealed abstract class List[+A] extends AbstractSeq[A]
     these
   }
 
+  /**
+   *  @example {{{
+   *  // Given a list
+   *  val letters = List('a','b','c','d','e')
+   *
+   *  // `slice` returns all elements beginning at index `from` and afterwards,
+   *  // up until index `until` (excluding index `until`.)
+   *  letters.slice(1,3) // Returns List('b','c')
+   *  }}}
+   */
   override def slice(from: Int, until: Int): List[A] = {
     val lo = math.max(from, 0)
     if (until <= lo || isEmpty) Nil
@@ -316,13 +326,13 @@ final case class ::[B](private var hd: B, private[scala] var tl: List[B]) extend
   override def head : B = hd
   override def tail : List[B] = tl
   override def isEmpty: Boolean = false
-  
+
   private def writeObject(out: ObjectOutputStream) {
     out.writeObject(ListSerializeStart) // needed to differentiate with the legacy `::` serialization
     out.writeObject(this.hd)
     out.writeObject(this.tl)
   }
-  
+
   private def readObject(in: ObjectInputStream) {
     val obj = in.readObject()
     if (obj == ListSerializeStart) {
@@ -330,7 +340,7 @@ final case class ::[B](private var hd: B, private[scala] var tl: List[B]) extend
       this.tl = in.readObject().asInstanceOf[List[B]]
     } else oldReadObject(in, obj)
   }
-  
+
   /* The oldReadObject method exists here for compatibility reasons.
    * :: objects used to be serialized by serializing all the elements to
    * the output stream directly, but this was broken (see SI-5374).
@@ -349,13 +359,13 @@ final case class ::[B](private var hd: B, private[scala] var tl: List[B]) extend
         current = list
     }
   }
-  
+
   private def oldWriteObject(out: ObjectOutputStream) {
     var xs: List[B] = this
     while (!xs.isEmpty) { out.writeObject(xs.head); xs = xs.tail }
     out.writeObject(ListSerializeEnd)
   }
-  
+
 }
 
 /** $factoryInfo

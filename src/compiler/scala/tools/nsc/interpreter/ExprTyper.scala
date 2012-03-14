@@ -62,7 +62,7 @@ trait ExprTyper {
       else Some(trees)
     }
   }
-  def tokens(line: String) = beSilentDuring(codeParser.tokens(line))
+  def tokens(line: String) = beQuietDuring(codeParser.tokens(line))
 
   // TODO: integrate these into a CodeHandler[Type].
 
@@ -92,7 +92,7 @@ trait ExprTyper {
         case _          => NoType
       }
     }
-    
+
     def evaluate(): Type = {
       typeOfExpressionDepth += 1
       try typeOfTerm(expr) orElse asModule orElse asExpr orElse asQualifiedImport

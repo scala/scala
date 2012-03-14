@@ -22,23 +22,19 @@ package immutable {
     override def seq = throw new UnsupportedOperationException
     def update(idx: Int, elem: T) = throw new UnsupportedOperationException
 
-    type SCPI = SignalContextPassingIterator[ParIterator]
-
-    class ParIterator(var i: Int = 0, val until: Int = length, elem: T = self.elem) extends super.ParIterator {
-      me: SignalContextPassingIterator[ParIterator] =>
-
+    class ParIterator(var i: Int = 0, val until: Int = length, elem: T = self.elem) extends SeqSplitter[T] {
       def remaining = until - i
       def hasNext = i < until
       def next = { i += 1; elem }
-      def dup = new ParIterator(i, until, elem) with SCPI
+      def dup = new ParIterator(i, until, elem)
       def psplit(sizes: Int*) = {
         val incr = sizes.scanLeft(0)(_ + _)
-        for ((start, end) <- incr.init zip incr.tail) yield new ParIterator(i + start, (i + end) min until, elem) with SCPI
+        for ((start, end) <- incr.init zip incr.tail) yield new ParIterator(i + start, (i + end) min until, elem)
       }
       def split = psplit(remaining / 2, remaining - remaining / 2)
     }
 
-    def splitter = new ParIterator with SCPI
+    def splitter = new ParIterator
   }
 }
 

@@ -277,12 +277,16 @@ trait Namers extends MethodSynthesis {
     def assignAndEnterFinishedSymbol(tree: MemberDef): Symbol = {
       val sym = assignAndEnterSymbol(tree)
       sym setInfo completerOf(tree)
-      log("[+info] " + sym.fullLocationString)
+      // log("[+info] " + sym.fullLocationString)
       sym
     }
 
     private def logAssignSymbol(tree: Tree, sym: Symbol): Symbol = {
-      log("[+symbol] " + sym.hasFlagsToString(-1L) + " " + sym)
+      sym.name.toTermName match {
+        case nme.IMPORT | nme.OUTER | nme.ANON_CLASS_NAME | nme.ANON_FUN_NAME | nme.CONSTRUCTOR => ()
+        case _                                                                                  =>
+          log("[+symbol] " + sym.debugLocationString)
+      }
       tree.symbol = sym
       sym
     }
@@ -1315,7 +1319,7 @@ trait Namers extends MethodSynthesis {
         catch typeErrorHandler(tree, ErrorType)
 
       result match {
-        case PolyType(tparams @ (tp :: _), _) if tp.owner.isTerm => typer.deskolemizeTypeParams(tparams)(result)
+        case PolyType(tparams @ (tp :: _), _) if tp.owner.isTerm => deskolemizeTypeParams(tparams)(result)
         case _                                                   => result
       }
     }
@@ -1478,8 +1482,11 @@ trait Namers extends MethodSynthesis {
     private val ownerSym    = owner.symbol
     override val typeParams = tparams map (_.symbol) //@M
     override val tree       = restp.tree
-    if (ownerSym.isTerm)
-      typer skolemizeTypeParams tparams
+
+    if (ownerSym.isTerm) {
+      val skolems = deriveFreshSkolems(tparams map (_.symbol))
+      map2(tparams, skolems)(_ setSymbol _)
+    }
 
     def completeImpl(sym: Symbol) = {
       // @M an abstract type's type parameters are entered.

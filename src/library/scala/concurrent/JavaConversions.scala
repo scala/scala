@@ -17,6 +17,7 @@ import java.util.concurrent.{ExecutorService, Executor}
  */
 object JavaConversions {
 
+  @deprecated("Use `asExecutionContext` instead.", "2.10.0")
   implicit def asTaskRunner(exec: ExecutorService): FutureTaskRunner =
     new ThreadPoolRunner {
       override protected def executor =
@@ -26,6 +27,7 @@ object JavaConversions {
         exec.shutdown()
     }
 
+  @deprecated("Use `asExecutionContext` instead.", "2.10.0")
   implicit def asTaskRunner(exec: Executor): TaskRunner =
     new TaskRunner {
       type Task[T] = Runnable
@@ -46,4 +48,9 @@ object JavaConversions {
         // do nothing
       }
     }
+
+  implicit def asExecutionContext(exec: ExecutorService): ExecutionContext = null // TODO
+
+  implicit def asExecutionContext(exec: Executor): ExecutionContext = null // TODO
+
 }

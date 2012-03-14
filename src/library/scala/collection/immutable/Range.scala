@@ -77,9 +77,9 @@ extends collection.AbstractSeq[Int]
   }
   final val lastElement     = start + (numRangeElements - 1) * step
   final val terminalElement = start + numRangeElements * step
-  
+
   override def last = if (isEmpty) Nil.last else lastElement
-  
+
   protected def copy(start: Int, end: Int, step: Int): Range = new Range(start, end, step)
 
   /** Create a new range with the `start` and `end` values of this range and
@@ -93,14 +93,14 @@ extends collection.AbstractSeq[Int]
 
   override def size = length
   override def length = if (numRangeElements < 0) fail() else numRangeElements
-  
+
   private def description = "%d %s %d by %s".format(start, if (isInclusive) "to" else "until", end, step)
   private def fail() = throw new IllegalArgumentException(description + ": seqs cannot contain more than Int.MaxValue elements.")
   private def validateMaxLength() {
     if (numRangeElements < 0)
       fail()
   }
-  
+
   def validateRangeBoundaries(f: Int => Any): Boolean = {
     validateMaxLength()
 
@@ -121,7 +121,7 @@ extends collection.AbstractSeq[Int]
     if (idx < 0 || idx >= numRangeElements) throw new IndexOutOfBoundsException(idx.toString)
     else start + (step * idx)
   }
-  
+
   @inline final override def foreach[@specialized(Unit) U](f: Int => U) {
     if (validateRangeBoundaries(f)) {
       var i = start
@@ -309,7 +309,7 @@ object Range {
       // number of full-sized jumps.
       val hasStub      = isInclusive || (gap % step != 0)
       val result: Long = jumps + ( if (hasStub) 1 else 0 )
-    
+
       if (result > scala.Int.MaxValue) -1
       else result.toInt
     }
@@ -405,4 +405,3 @@ object Range {
 //      super.foreach(f)
   }
 }
- 
