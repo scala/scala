@@ -11,7 +11,6 @@ import scala.collection.{ mutable, immutable }
 import scala.collection.mutable
 import scala.tools.nsc.util.FreshNameCreator
 import scala.runtime.ScalaRunTime.{ isAnyVal, isTuple }
-import sun.tools.tree.OrExpression
 
 /**
  * Perform Step 1 in the inline classes SIP: Creates extension methods for all
