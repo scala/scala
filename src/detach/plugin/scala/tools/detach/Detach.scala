@@ -746,8 +746,7 @@ abstract class Detach extends PluginComponent
           // Variant 1: rebind/unbind
           val cparents = List(UnicastRemoteObjectClass.tpe, iface.tpe, UnreferencedClass.tpe)
           // Variant 2: un-/exportObject
-          //val cparents = List(ObjectClass.tpe, iface.tpe,
-          //                    UnreferencedClass.tpe, ScalaObjectClass.tpe)
+          //val cparents = List(ObjectClass.tpe, iface.tpe, UnreferencedClass.tpe)
           iclaz setInfo ClassInfoType(cparents, newScope, iclaz)
           val proxy = (iface, iclaz, new mutable.HashMap[Symbol, Symbol])
           proxies(clazz) = proxy

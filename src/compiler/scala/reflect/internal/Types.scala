@@ -5879,14 +5879,6 @@ trait Types extends api.Types { self: SymbolTable =>
     loop(initialBTSes)
   }
 
-  // @AM the following problem is solved by elimHOTparams in lublist
-  // @PP lubLists gone bad: lubList(List(
-  //   List(scala.collection.generic.GenericCompanion[scala.collection.immutable.Seq], ScalaObject, java.lang.Object, Any)
-  //   List(scala.collection.generic.GenericCompanion[scala.collection.mutable.Seq], ScalaObject, java.lang.Object, Any)
-  // )) == (
-  //   List(scala.collection.generic.GenericCompanion[Seq**[Any]**], ScalaObject, java.lang.Object, Any)
-  // )
-
   /** The minimal symbol (wrt Symbol.isLess) of a list of types */
   private def minSym(tps: List[Type]): Symbol =
     (tps.head.typeSymbol /: tps.tail) {
