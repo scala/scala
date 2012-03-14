@@ -8,13 +8,15 @@
 
 package scala.runtime
 
-final class StringAdd(self: Any) {
+/** A wrapper class that adds string concatenation `+` to any value */
+final class StringAdd(val self: Any) {
+
+  // Note: The implicit conversion from Any to StringAdd is one of two
+  // implicit conversions from Any to AnyRef in Predef. It is important to have at least
+  // two such conversions, so that silent conversions from value types to AnyRef
+  // are avoided. If StringFormat should become a value class, another
+  // implicit conversion from Any to AnyRef has to be introduced in Predef
 
   def +(other: String) = String.valueOf(self) + other
 
-  /** Returns string formatted according to given `format` string.
-   *  Format strings are as for `String.format`
-   *  (@see java.lang.String.format).
-   */
-  def formatted(fmtstr: String): String = fmtstr format self
 }

@@ -73,7 +73,7 @@ trait Namers extends MethodSynthesis {
     classAndNamerOfModule.clear()
   }
 
-  abstract class Namer(val context: Context) extends MethodSynth with NamerContextErrors {
+  abstract class Namer(val context: Context) extends MethodSynth with NamerContextErrors { thisNamer =>
 
     import NamerErrorGen._
     val typer = newTyper(context)
@@ -98,6 +98,13 @@ trait Namers extends MethodSynthesis {
 
       owner.unsafeTypeParams foreach (paramContext.scope enter _)
       newNamer(paramContext)
+    }
+    
+    def enclosingNamerWithScope(scope: Scope) = {
+      var cx = context
+      while (cx != NoContext && cx.scope != scope) cx = cx.outer
+      if (cx == NoContext || cx == context) thisNamer
+      else newNamer(cx)
     }
 
     def enterValueParams(vparamss: List[List[ValDef]]): List[List[Symbol]] = {
@@ -709,17 +716,17 @@ trait Namers extends MethodSynthesis {
         if (needsCycleCheck && !typer.checkNonCyclic(tree.pos, tp))
           sym setInfo ErrorType
       }
-      tree match {
-        case ClassDef(_, _, _, impl) =>
-          val parentsOK = (
-               treeInfo.isInterface(sym, impl.body)
-            || (sym eq ArrayClass)
-            || (sym isSubClass AnyValClass)
-          )
-          if (!parentsOK)
-            ensureParent(sym, AnyRefClass)
-        case _ => ()
-      }
+      // tree match {
+      //   case ClassDef(_, _, _, impl) =>
+      //     val parentsOK = (
+      //          treeInfo.isInterface(sym, impl.body)
+      //       || (sym eq ArrayClass)
+      //       || (sym isSubClass AnyValClass)
+      //     )
+      //     if (!parentsOK)
+      //       ensureParent(sym, AnyRefClass)
+      //   case _ => ()
+      // }
     }
 
     def moduleClassTypeCompleter(tree: Tree) = {
@@ -1267,7 +1274,10 @@ trait Namers extends MethodSynthesis {
           val clazz = tree.symbol
           val result = createNamer(tree).classSig(tparams, impl)
           clazz setInfo result
-          if (clazz.isInlineClass) ensureCompanionObject(cdef)
+          if (clazz.isDerivedValueClass) {
+            clazz setFlag FINAL
+            enclosingNamerWithScope(clazz.owner.info.decls).ensureCompanionObject(cdef)
+          }
           result
 
         case ModuleDef(_, _, impl) =>
@@ -1416,13 +1426,6 @@ trait Namers extends MethodSynthesis {
         fail(LazyAndEarlyInit)
       if (sym.info.typeSymbol == FunctionClass(0) && sym.isValueParameter && sym.owner.isCaseClass)
         fail(ByNameParameter)
-
-     if (sym.isClass && sym.hasAnnotation(ScalaInlineClass) && !phase.erasedTypes) {
-        if (!sym.isSubClass(AnyValClass))
-          ensureParent(sym, NotNullClass)
-
-        sym setFlag FINAL
-      }
 
       if (sym.isDeferred) {
         // Is this symbol type always allowed the deferred flag?

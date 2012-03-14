@@ -196,6 +196,10 @@ trait Infer {
 
     /* -- Error Messages --------------------------------------------------- */
     def setError[T <: Tree](tree: T): T = {
+      if (settings.debug.value) { // DEBUG
+        println("set error: "+tree);
+        throw new Error()
+      }
       def name        = newTermName("<error: " + tree.symbol + ">")
       def errorClass  = if (context.reportErrors) context.owner.newErrorClass(name.toTypeName) else stdErrorClass
       def errorValue  = if (context.reportErrors) context.owner.newErrorValue(name) else stdErrorValue

@@ -608,7 +608,7 @@ object {className} {{
 /** {className} is a cartesian product of {i} component{s}.
  *  @since 2.3
  */
-trait {className}{covariantArgs} extends Product {{
+trait {className}{covariantArgs} extends Any with Product {{
   /** The arity of this product.
    *  @return {i}
    */

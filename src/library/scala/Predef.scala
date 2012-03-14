@@ -215,7 +215,7 @@ object Predef extends LowPriorityImplicits {
       throw new IllegalArgumentException("requirement failed: "+ message)
   }
 
-  final class Ensuring[A](val __resultOfEnsuring: A) {
+  final class Ensuring[A](val __resultOfEnsuring: A) extends AnyVal {
     // `__resultOfEnsuring` must be a public val to allow inlining.
     // See comments in ArrowAssoc for more.
     @deprecated("Use __resultOfEnsuring instead", "2.10.0")
@@ -226,7 +226,7 @@ object Predef extends LowPriorityImplicits {
     def ensuring(cond: A => Boolean): A = { assert(cond(__resultOfEnsuring)); __resultOfEnsuring }
     def ensuring(cond: A => Boolean, msg: => Any): A = { assert(cond(__resultOfEnsuring), msg); __resultOfEnsuring }
   }
-  implicit def any2Ensuring[A](x: A): Ensuring[A] = new Ensuring(x)
+  @inline implicit def any2Ensuring[A](x: A): Ensuring[A] = new Ensuring(x)
 
   /** `???` can be used for marking methods that remain to be implemented.
    *  @throws  A `NotImplementedError`
@@ -247,7 +247,7 @@ object Predef extends LowPriorityImplicits {
     def unapply[A, B, C](x: Tuple3[A, B, C]): Option[Tuple3[A, B, C]] = Some(x)
   }
 
-  final class ArrowAssoc[A](val __leftOfArrow: A) {
+  final class ArrowAssoc[A](val __leftOfArrow: A) extends AnyVal {
     // `__leftOfArrow` must be a public val to allow inlining. The val
     // used to be called `x`, but now goes by `__leftOfArrow`, as that
     // reduces the chances of a user's writing `foo.__leftOfArrow` and
@@ -260,7 +260,7 @@ object Predef extends LowPriorityImplicits {
     @inline def -> [B](y: B): Tuple2[A, B] = Tuple2(__leftOfArrow, y)
     def →[B](y: B): Tuple2[A, B] = ->(y)
   }
-  implicit def any2ArrowAssoc[A](x: A): ArrowAssoc[A] = new ArrowAssoc(x)
+  @inline implicit def any2ArrowAssoc[A](x: A): ArrowAssoc[A] = new ArrowAssoc(x)
 
   // printing and reading -----------------------------------------------
 
@@ -386,7 +386,8 @@ object Predef extends LowPriorityImplicits {
   // Strings and CharSequences --------------------------------------------------------------
 
   implicit def any2stringadd(x: Any) = new runtime.StringAdd(x)
-  implicit def augmentString(x: String): StringOps = new StringOps(x)
+  @inline implicit def any2stringfmt(x: Any) = new runtime.StringFormat(x)
+  @inline implicit def augmentString(x: String): StringOps = new StringOps(x)
   implicit def unaugmentString(x: StringOps): String = x.repr
 
   implicit def stringCanBuildFrom: CanBuildFrom[String, Char, String] =

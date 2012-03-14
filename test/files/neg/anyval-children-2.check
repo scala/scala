@@ -1,4 +1,0 @@
-anyval-children-2.scala:1: error: Only classes (not traits) are allowed to extend AnyVal
-@inline trait NotOkDingus1 extends AnyVal // fail
-              ^
-one error found

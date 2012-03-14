@@ -453,12 +453,6 @@ class Global(var currentSettings: Settings, var reporter: Reporter) extends Symb
     val global: Global.this.type = Global.this
   } with Analyzer
 
-  object extensionMethods extends {
-    val global: Global.this.type = Global.this
-    val runsAfter = List("typer")
-    val runsRightAfter = None
-  } with ExtensionMethods
-
   // phaseName = "superaccessors"
   object superAccessors extends {
     val global: Global.this.type = Global.this
@@ -466,10 +460,17 @@ class Global(var currentSettings: Settings, var reporter: Reporter) extends Symb
     val runsRightAfter = None
   } with SuperAccessors
 
+  // phaseName = "extmethods"
+  object extensionMethods extends {
+    val global: Global.this.type = Global.this
+    val runsAfter = List("superaccessors")
+    val runsRightAfter = None
+  } with ExtensionMethods
+
   // phaseName = "pickler"
   object pickler extends {
     val global: Global.this.type = Global.this
-    val runsAfter = List("superaccessors")
+    val runsAfter = List("extmethods")
     val runsRightAfter = None
   } with Pickler
 
@@ -483,7 +484,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter) extends Symb
   // phaseName = "uncurry"
   override object uncurry extends {
     val global: Global.this.type = Global.this
-    val runsAfter = List[String]("refchecks")
+    val runsAfter = List("refchecks")
     val runsRightAfter = None
   } with UnCurry
 
@@ -514,6 +515,13 @@ class Global(var currentSettings: Settings, var reporter: Reporter) extends Symb
     val runsAfter = List("explicitouter")
     val runsRightAfter = Some("explicitouter")
   } with Erasure
+
+  // phaseName = "posterasure"
+  object postErasure extends {
+    val global: Global.this.type = Global.this
+    val runsAfter = List("erasure")
+    val runsRightAfter = Some("erasure")
+  } with PostErasure
 
   // phaseName = "lazyvals"
   object lazyVals extends {
@@ -674,6 +682,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter) extends Symb
       specializeTypes         -> "@specialized-driven class and method specialization",
       explicitOuter           -> "this refs to outer pointers, translate patterns",
       erasure                 -> "erase types, add interfaces for traits",
+      postErasure             -> "clean up erased inline classes",
       lazyVals                -> "allocate bitmaps, translate lazy vals into lazified defs",
       lambdaLift              -> "move nested functions to top level",
       constructors            -> "move field definitions into constructors",

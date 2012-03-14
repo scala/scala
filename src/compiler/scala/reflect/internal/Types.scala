@@ -65,8 +65,8 @@ import util.Statistics._
     // inst is the instantiation and constr is a list of bounds.
   case DeBruijnIndex(level, index)
     // for dependent method types: a type referring to a method parameter.
-  case ErasedInlineType(tp)
-    // only used during erasure of inline classes.
+  case ErasedValueType(tp)
+    // only used during erasure of derived value classes.
 */
 
 trait Types extends api.Types { self: SymbolTable =>
@@ -411,7 +411,7 @@ trait Types extends api.Types { self: SymbolTable =>
      *  inherited by typerefs, singleton types, and refinement types,
      *  The empty list for all other types */
     def parents: List[Type] = List()
-    
+
     /** For a class with nonEmpty parents, the first parent.
      *  Otherwise some specific fixed top type.
      */
@@ -1424,7 +1424,7 @@ trait Types extends api.Types { self: SymbolTable =>
 
     // override def isNullable: Boolean =
     // parents forall (p => p.isNullable && !p.typeSymbol.isAbstractType);
-    
+
     override def safeToString: String = parentsString(parents) + (
       (if (settings.debug.value || parents.isEmpty || (decls.elems ne null))
         decls.mkString("{", "; ", "}") else "")
@@ -2106,7 +2106,7 @@ trait Types extends api.Types { self: SymbolTable =>
       !sym.isTypeParameter && pre.isTrivial && args.forall(_.isTrivial)
 
     override def isNotNull =
-      sym.isModuleClass || sym == NothingClass || isValueClass(sym) || super.isNotNull
+      sym.isModuleClass || sym == NothingClass || (sym isNonBottomSubClass NotNullClass) || super.isNotNull
 
     override def parents: List[Type] = {
       val cache = parentsCache
@@ -2155,7 +2155,7 @@ trait Types extends api.Types { self: SymbolTable =>
       )
       else ""
     )
-      
+
     private def finishPrefix(rest: String) = (
       if (sym.isPackageClass) packagePrefix + rest
       else if (sym.isModuleClass) objectPrefix + rest
@@ -3094,14 +3094,16 @@ trait Types extends api.Types { self: SymbolTable =>
       "De Bruijn "+kind+"("+(pnames mkString ",")+";"+(ptypes mkString ",")+";"+restpe+")"
     }
   }
-  
-  abstract case class ErasedInlineType(sym: Symbol) extends Type 
-  
-  final class UniqueErasedInlineType(sym: Symbol) extends ErasedInlineType(sym) with UniqueType
-  
-  object ErasedInlineType {
-    def apply(sym: Symbol): Type = 
-      unique(new UniqueErasedInlineType(sym))
+
+  abstract case class ErasedValueType(sym: Symbol) extends Type {
+    override def safeToString = sym.name+"$unboxed"
+  }
+
+  final class UniqueErasedValueType(sym: Symbol) extends ErasedValueType(sym) with UniqueType
+
+  object ErasedValueType {
+    def apply(sym: Symbol): Type =
+      unique(new UniqueErasedValueType(sym))
   }
 
   /** A class representing an as-yet unevaluated type.
@@ -5445,8 +5447,7 @@ trait Types extends api.Types { self: SymbolTable =>
           case NullClass =>
             tp2 match {
               case TypeRef(_, sym2, _) =>
-                sym2.isClass && (sym2 isNonBottomSubClass ObjectClass) &&
-                !(tp2.normalize.typeSymbol isNonBottomSubClass NotNullClass)
+                containsNull(sym2)
               case _ =>
                 isSingleType(tp2) && tp1 <:< tp2.widen
             }
@@ -5477,6 +5478,11 @@ trait Types extends api.Types { self: SymbolTable =>
     firstTry
   }
 
+  private def containsNull(sym: Symbol): Boolean =
+    sym.isClass && sym != NothingClass &&
+    !(sym isNonBottomSubClass AnyValClass) &&
+    !(sym isNonBottomSubClass NotNullClass)
+
   /** Are `tps1` and `tps2` lists of equal length such that all elements
    *  of `tps1` conform to corresponding elements of `tps2`?
    */
@@ -5488,7 +5494,7 @@ trait Types extends api.Types { self: SymbolTable =>
    */
   def specializesSym(tp: Type, sym: Symbol): Boolean =
     tp.typeSymbol == NothingClass ||
-    tp.typeSymbol == NullClass && (sym.owner isSubClass ObjectClass) ||
+    tp.typeSymbol == NullClass && containsNull(sym.owner) ||
     (tp.nonPrivateMember(sym.name).alternatives exists
       (alt => sym == alt || specializesSym(tp.narrow, alt, sym.owner.thisType, sym)))
 
@@ -6328,7 +6334,7 @@ trait Types extends api.Types { self: SymbolTable =>
           } else {
             val args = argss map (_.head)
             if (args.tail forall (_ =:= args.head)) Some(typeRef(pre, sym, List(args.head)))
-            else if (args exists (arg => isValueClass(arg.typeSymbol))) Some(ObjectClass.tpe)
+            else if (args exists (arg => isPrimitiveValueClass(arg.typeSymbol))) Some(ObjectClass.tpe)
             else Some(typeRef(pre, sym, List(lub(args))))
           }
         }

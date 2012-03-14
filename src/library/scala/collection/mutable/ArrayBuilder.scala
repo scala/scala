@@ -76,7 +76,7 @@ object ArrayBuilder {
       this
     }
 
-    override def ++=(xs: TraversableOnce[T]): this.type = (xs: AnyRef) match {
+    override def ++=(xs: TraversableOnce[T]): this.type = (xs.asInstanceOf[AnyRef]) match {
       case xs: WrappedArray.ofRef[_] =>
         ensureSize(this.size + xs.length)
         Array.copy(xs.array, 0, elems, this.size, xs.length)

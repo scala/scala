@@ -1094,7 +1094,11 @@ trait Implicits {
       /** Creates a tree that calls the factory method called constructor in object reflect.Manifest */
       def manifestFactoryCall(constructor: String, tparg: Type, args: Tree*): Tree =
         if (args contains EmptyTree) EmptyTree
-        else typedPos(tree.pos.focus)(gen.mkManifestFactoryCall(full, constructor, tparg, args.toList))
+        else typedPos(tree.pos.focus) {
+          val mani = gen.mkManifestFactoryCall(full, constructor, tparg, args.toList)
+          if (settings.debug.value) println("generated manifest: "+mani) // DEBUG
+          mani
+        }
 
       /** Creates a tree representing one of the singleton manifests.*/
       def findSingletonManifest(name: String) = typedPos(tree.pos.focus) {
@@ -1119,7 +1123,7 @@ trait Implicits {
           case ConstantType(value) =>
             manifestOfType(tp1.deconst, full)
           case TypeRef(pre, sym, args) =>
-            if (isValueClass(sym) || isPhantomClass(sym)) {
+            if (isPrimitiveValueClass(sym) || isPhantomClass(sym)) {
               findSingletonManifest(sym.name.toString)
             } else if (sym == ObjectClass || sym == AnyRefClass) {
               findSingletonManifest("Object")

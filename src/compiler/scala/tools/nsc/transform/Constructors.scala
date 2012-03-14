@@ -46,7 +46,7 @@ abstract class Constructors extends Transform with ast.TreeDSL {
       val constrInfo: ConstrInfo = {
         stats find (_.symbol.isPrimaryConstructor) match {
           case Some(ddef @ DefDef(_, _, _, List(vparams), _, rhs @ Block(_, _))) =>
-            ConstrInfo(ddef, vparams map (_.symbol), rhs)
+        ConstrInfo(ddef, vparams map (_.symbol), rhs)
           case x =>
             // AnyVal constructor is OK
             assert(clazz eq AnyValClass, "no constructor in template: impl = " + impl)
@@ -568,7 +568,7 @@ abstract class Constructors extends Transform with ast.TreeDSL {
 
     override def transform(tree: Tree): Tree =
       tree match {
-        case ClassDef(_,_,_,_) if !tree.symbol.isInterface && !isValueClass(tree.symbol) =>
+        case ClassDef(_,_,_,_) if !tree.symbol.isInterface && !isPrimitiveValueClass(tree.symbol) =>
           deriveClassDef(tree)(transformClassTemplate)
         case _ =>
           super.transform(tree)

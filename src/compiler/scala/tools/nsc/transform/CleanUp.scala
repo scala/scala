@@ -94,7 +94,7 @@ abstract class CleanUp extends Transform with ast.TreeDSL {
       localTyper.typedPos(pos)(tree)
 
     /** A value class is defined to be only Java-compatible values: unit is
-      * not part of it, as opposed to isValueClass in definitions. scala.Int is
+      * not part of it, as opposed to isPrimitiveValueClass in definitions. scala.Int is
       * a value class, java.lang.Integer is not. */
     def isJavaValueClass(sym: Symbol) = boxedClass contains sym
     def isJavaValueType(tp: Type) = isJavaValueClass(tp.typeSymbol)
@@ -551,7 +551,7 @@ abstract class CleanUp extends Transform with ast.TreeDSL {
       case Literal(c) if (c.tag == ClassTag) && !forMSIL=>
         val tpe = c.typeValue
         typedWithPos(tree.pos) {
-          if (isValueClass(tpe.typeSymbol)) {
+          if (isPrimitiveValueClass(tpe.typeSymbol)) {
             if (tpe.typeSymbol == UnitClass)
               REF(BoxedUnit_TYPE)
             else

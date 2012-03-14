@@ -17,13 +17,13 @@ object Product5 {
 /** Product5 is a cartesian product of 5 components.
  *  @since 2.3
  */
-trait Product5[+T1, +T2, +T3, +T4, +T5] extends Product {
+trait Product5[+T1, +T2, +T3, +T4, +T5] extends Any with Product {
   /** The arity of this product.
    *  @return 5
    */
   override def productArity = 5
 
-
+  
   /** Returns the n-th projection of this product if 0 < n <= productArity,
    *  otherwise throws an `IndexOutOfBoundsException`.
    *
@@ -33,7 +33,7 @@ trait Product5[+T1, +T2, +T3, +T4, +T5] extends Product {
    */
 
   @throws(classOf[IndexOutOfBoundsException])
-  override def productElement(n: Int) = n match {
+  override def productElement(n: Int) = n match { 
     case 0 => _1
     case 1 => _2
     case 2 => _3

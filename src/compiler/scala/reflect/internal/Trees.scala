@@ -133,7 +133,7 @@ trait Trees extends api.Trees { self: SymbolTable =>
         new ChangeOwnerTraverser(oldOwner, newOwner) apply t
       }
     }
-    
+
     def substTreeSyms(pairs: (Symbol, Symbol)*): Tree =
       substTreeSyms(pairs.map(_._1).toList, pairs.map(_._2).toList)
 
@@ -318,10 +318,14 @@ trait Trees extends api.Trees { self: SymbolTable =>
   }
 
   class ChangeOwnerTraverser(val oldowner: Symbol, val newowner: Symbol) extends Traverser {
-    def changeOwner(tree: Tree) = {
-      if ((tree.isDef || tree.isInstanceOf[Function]) &&
-          tree.symbol != NoSymbol && tree.symbol.owner == oldowner)
-        tree.symbol.owner = newowner
+    def changeOwner(tree: Tree) = tree match {
+      case Return(expr) =>
+        if (tree.symbol == oldowner)
+          tree.symbol = newowner
+      case _: DefTree | _: Function =>
+        if (tree.symbol != NoSymbol && tree.symbol.owner == oldowner)
+          tree.symbol.owner = newowner
+      case _ =>
     }
     override def traverse(tree: Tree) {
       changeOwner(tree)
@@ -357,10 +361,16 @@ trait Trees extends api.Trees { self: SymbolTable =>
     override def toString = substituterString("Symbol", "Tree", from, to)
   }
 
+  /** Substitute clazz.this with `to`. `to` must be an attributed tree. 
+   */
   class ThisSubstituter(clazz: Symbol, to: => Tree) extends Transformer {
-    override def transform(tree: Tree) = tree match {
-      case This(_) if tree.symbol == clazz => to
-      case _ => super.transform(tree)
+    val newtpe = to.tpe
+    override def transform(tree: Tree) = {
+      if (tree.tpe ne null) tree.tpe = tree.tpe.substThis(clazz, newtpe)
+      tree match {
+        case This(_) if tree.symbol == clazz => to
+        case _ => super.transform(tree)
+      }
     }
   }
 

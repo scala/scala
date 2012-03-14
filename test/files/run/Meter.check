@@ -1,0 +1,21 @@
+2.0
+4.0m
+false
+x.isInstanceOf[Meter]: true
+x.hashCode: 1072693248
+x == 1: false
+x == y: true
+a == b: true
+testing native arrays
+Array(1.0m, 2.0m)
+1.0m
+>>>1.0m<<< 1.0m
+>>>2.0m<<< 2.0m
+testing wrapped arrays
+FlatArray(1.0m, 2.0m)
+1.0m
+>>>1.0m<<< 1.0m
+>>>2.0m<<< 2.0m
+FlatArray(2.0m, 3.0m)
+ArrayBuffer(1.0, 2.0)
+FlatArray(0.3048ft, 0.6096ft)
