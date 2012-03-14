@@ -67,10 +67,11 @@ private[scala] trait PropertiesTrait {
    *  it is an RC, Beta, etc. or was built from source, or if the version
    *  cannot be read.
    */
-  val releaseVersion = scalaPropOrNone("version.number") flatMap { s =>
-    val segments = s split '.'
-    if (segments.size == 4 && segments.last == "final") Some(segments take 3 mkString ".") else None
-  }
+  val releaseVersion = 
+    for {
+      v <- scalaPropOrNone("maven.version.number")
+      if !(v endsWith "-SNAPSHOT")
+    } yield v
 
   /** The development scala version, if this is not a final release.
    *  The precise contents are not guaranteed, but it aims to provide a
@@ -80,20 +81,18 @@ private[scala] trait PropertiesTrait {
    *  @return Some(version) if this is a non-final version, None if this
    *  is a final release or the version cannot be read.
    */
-  val developmentVersion = scalaPropOrNone("version.number") flatMap { s =>
-    val segments = s split '.'
-    if (segments.isEmpty || segments.last == "final")
-      None
-    else if (segments.last startsWith "r")
-      Some(s takeWhile (ch => ch != '-'))    // Cutting e.g. 2.10.0.r24774-b20110417125606 to 2.10.0.r24774
-    else
-      Some(s)
-  }
+  val developmentVersion = 
+    for {
+      v <- scalaPropOrNone("maven.version.number")
+      if v endsWith "-SNAPSHOT"
+      ov <- scalaPropOrNone("version.number")
+    } yield ov
 
   /** The version number of the jar this was loaded from plus "version " prefix,
    *  or "version (unknown)" if it cannot be determined.
    */
-  val versionString         = "version " + scalaPropOrElse("version.number", "(unknown)")
+  val versionString         = "version " + scalaPropOrElse("version.number", "(unknown)") + 
+                              scalaPropOrNone("maven.version.number").map(v => "(" + v + ")").getOrElse("")
   val copyrightString       = scalaPropOrElse("copyright.string", "(c) 2002-2011 LAMP/EPFL")
 
   /** This is the encoding to use reading in source files, overridden with -encoding
