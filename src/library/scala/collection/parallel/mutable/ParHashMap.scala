@@ -106,6 +106,8 @@ self =>
 
   private def readObject(in: java.io.ObjectInputStream) {
     init[V](in, new Entry(_, _))
+    
+    initTaskSupport()
   }
 
   private[parallel] override def brokenInvariants = {
