@@ -1,6 +1,6 @@
 package a {
   case class Meter(underlying: Double) extends AnyVal with _root_.b.Printable {
-    def + (other: Meter): Meter = 
+    def + (other: Meter): Meter =
       new Meter(this.underlying + other.underlying)
     def / (other: Meter): Double = this.underlying / other.underlying
     def / (factor: Double): Meter = new Meter(this.underlying / factor)
@@ -10,7 +10,7 @@ package a {
   }
 
   object Meter extends (Double => Meter) {
-    
+
     implicit val boxings = new BoxingConversions[Meter, Double] {
       def box(x: Double) = new Meter(x)
       def unbox(m: Meter) = m.underlying
@@ -18,7 +18,7 @@ package a {
   }
 
   class Foot(val unbox: Double) extends AnyVal {
-    def + (other: Foot): Foot = 
+    def + (other: Foot): Foot =
       new Foot(this.unbox + other.unbox)
     override def toString = unbox.toString+"ft"
   }
@@ -31,8 +31,8 @@ package a {
 
 }
 package b {
-  trait Printable extends Any { 
-    def print: Unit = Console.print(this) 
+  trait Printable extends Any {
+    def print: Unit = Console.print(this)
     protected def proprint = Console.print("<<<")
   }
 }
@@ -62,7 +62,7 @@ object Test extends App {
   println("x == 1: "+(x == 1))
   println("x == y: "+(x == y))
   assert(x.hashCode == (1.0).hashCode)
-  
+
   val a: Any = x
   val b: Any = y
   println("a == b: "+(a == b))

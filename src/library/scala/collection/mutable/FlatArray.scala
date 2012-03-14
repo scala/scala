@@ -76,8 +76,8 @@ object FlatArray {
     new Bldr[Boxed, Unboxed](boxings, elemManifest)
 
   implicit def canBuildFrom[Boxed, Unboxed](
-    implicit 
-      boxings: BoxingConversions[Boxed, Unboxed], 
+    implicit
+      boxings: BoxingConversions[Boxed, Unboxed],
       elemManifest: ClassManifest[Unboxed]): CanBuildFrom[FlatArray[_], Boxed, FlatArray[Boxed]] =
     new CanBuildFrom[FlatArray[_], Boxed, FlatArray[Boxed]] {
       def apply(from: FlatArray[_]): Builder[Boxed, FlatArray[Boxed]] =
@@ -129,7 +129,7 @@ object FlatArray {
   }
 
   private class Impl[Boxed, Unboxed](
-    elems: Array[Unboxed], 
+    elems: Array[Unboxed],
     boxings: BoxingConversions[Boxed, Unboxed],
     elemManifest: ClassManifest[Unboxed]) extends FlatArray[Boxed] {
 
