@@ -49,7 +49,7 @@ trait PatMatVirtualiser extends ast.TreeDSL { self: Analyzer =>
   }
 
   object MatchTranslator {
-    def apply(typer: Typer): MatchTranslation = {
+    def apply(typer: Typer): MatchTranslation with CodegenCore = {
       import typer._
       // typing `_match` to decide which MatchTranslator to create adds 4% to quick.comp.timer
       newTyper(context.makeImplicit(reportAmbiguousErrors = false)).silent(_.typed(Ident(vpmName._match), EXPRmode, WildcardType), reportAmbiguousErrors = false) match {
@@ -116,10 +116,6 @@ trait PatMatVirtualiser extends ast.TreeDSL { self: Analyzer =>
 
   trait MatchTranslation extends MatchMonadInterface { self: TreeMakers with CodegenCore =>
     import typer.{typed, context, silent, reallyExists}
-    private def repeatedToSeq(tp: Type): Type = (tp baseType RepeatedParamClass) match {
-      case TypeRef(_, RepeatedParamClass, args) => appliedType(SeqClass.typeConstructor, args)
-      case _ => tp
-    }
 
     /** Implement a pattern match by turning its cases (including the implicit failure case)
       * into the corresponding (monadic) extractors, and combining them with the `orElse` combinator.
@@ -131,18 +127,15 @@ trait PatMatVirtualiser extends ast.TreeDSL { self: Analyzer =>
       *   thus, you must typecheck the result (and that will in turn translate nested matches)
       *   this could probably optimized... (but note that the matchStrategy must be solved for each nested patternmatch)
       */
-    def translateMatch(scrut: Tree, cases: List[CaseDef], pt: Type): Tree = {
+    def translateMatch(scrut: Tree, cases: List[CaseDef], pt: Type, scrutType: Type, matchFailGenOverride: Option[Tree => Tree] = None): Tree = {
       // we don't transform after typers
       // (that would require much more sophistication when generating trees,
       //  and the only place that emits Matches after typers is for exception handling anyway)
       assert(phase.id <= currentRun.typerPhase.id, phase)
 
-      val scrutType = repeatedToSeq(elimAnonymousClass(scrut.tpe.widen))
-
-      val scrutSym  = freshSym(scrut.pos, pureType(scrutType))
-      val okPt = repeatedToSeq(pt)
+      val scrutSym  = freshSym(scrut.pos, pureType(scrutType)) setFlag (Flags.CASE | SYNTHETIC) // the flags allow us to detect generated matches by looking at the scrutinee's symbol (needed to avoid recursing endlessly on generated switches)
       // pt = Any* occurs when compiling test/files/pos/annotDepMethType.scala  with -Xexperimental
-      combineCases(scrut, scrutSym, cases map translateCase(scrutSym, okPt), okPt, matchOwner)
+      combineCases(scrut, scrutSym, cases map translateCase(scrutSym, pt), pt, matchOwner, matchFailGenOverride)
     }
 
     // return list of typed CaseDefs that are supported by the backend (typed/bind/wildcard)
@@ -154,13 +147,12 @@ trait PatMatVirtualiser extends ast.TreeDSL { self: Analyzer =>
       // if they're already simple enough to be handled by the back-end, we're done
       if (caseDefs forall treeInfo.isCatchCase) caseDefs
       else {
-        val okPt = repeatedToSeq(pt)
         val switch = {
           val bindersAndCases = caseDefs map { caseDef =>
             // generate a fresh symbol for each case, hoping we'll end up emitting a type-switch (we don't have a global scrut there)
             // if we fail to emit a fine-grained switch, have to do translateCase again with a single scrutSym (TODO: uniformize substitution on treemakers so we can avoid this)
             val caseScrutSym = freshSym(pos, pureType(ThrowableClass.tpe))
-            (caseScrutSym, propagateSubstitution(translateCase(caseScrutSym, okPt)(caseDef), EmptySubstitution))
+            (caseScrutSym, propagateSubstitution(translateCase(caseScrutSym, pt)(caseDef), EmptySubstitution))
           }
 
           (emitTypeSwitch(bindersAndCases, pt) map (_.map(fixerUpper(matchOwner, pos).apply(_).asInstanceOf[CaseDef])))
@@ -168,7 +160,7 @@ trait PatMatVirtualiser extends ast.TreeDSL { self: Analyzer =>
 
         val catches = switch getOrElse {
           val scrutSym = freshSym(pos, pureType(ThrowableClass.tpe))
-          val casesNoSubstOnly = caseDefs map { caseDef => (propagateSubstitution(translateCase(scrutSym, okPt)(caseDef), EmptySubstitution))}
+          val casesNoSubstOnly = caseDefs map { caseDef => (propagateSubstitution(translateCase(scrutSym, pt)(caseDef), EmptySubstitution))}
 
           val exSym = freshSym(pos, pureType(ThrowableClass.tpe), "ex")
 
@@ -177,7 +169,7 @@ trait PatMatVirtualiser extends ast.TreeDSL { self: Analyzer =>
                 CaseDef(
                   Bind(exSym, Ident(nme.WILDCARD)), // TODO: does this need fixing upping?
                   EmptyTree,
-                  combineCasesNoSubstOnly(CODE.REF(exSym), scrutSym, casesNoSubstOnly, pt, matchOwner, casegen => scrut => Throw(CODE.REF(exSym)))
+                  combineCasesNoSubstOnly(CODE.REF(exSym), scrutSym, casesNoSubstOnly, pt, matchOwner, Some(scrut => Throw(CODE.REF(exSym))))
                 )
               })
         }
@@ -706,10 +698,10 @@ class Foo(x: Other) { x._1 } // no error in this order
     def optimizeCases(prevBinder: Symbol, cases: List[List[TreeMaker]], pt: Type): (List[List[TreeMaker]], List[Tree]) =
       (cases, Nil)
 
-    def emitSwitch(scrut: Tree, scrutSym: Symbol, cases: List[List[TreeMaker]], pt: Type): Option[Tree] =
+    def emitSwitch(scrut: Tree, scrutSym: Symbol, cases: List[List[TreeMaker]], pt: Type, matchFailGenOverride: Option[Tree => Tree]): Option[Tree] =
       None
 
-    // for catch
+    // for catch (no need to customize match failure)
     def emitTypeSwitch(bindersAndCases: List[(Symbol, List[TreeMaker])], pt: Type): Option[List[CaseDef]] =
       None
 
@@ -925,7 +917,7 @@ class Foo(x: Other) { x._1 } // no error in this order
             ((casegen: Casegen) => combineExtractors(altTreeMakers :+ TrivialTreeMaker(casegen.one(TRUE)))(casegen))
           )
 
-          val findAltMatcher = codegenAlt.matcher(EmptyTree, NoSymbol, BooleanClass.tpe)(combinedAlts, Some((casegen: Casegen) => x => casegen.one(FALSE)))
+          val findAltMatcher = codegenAlt.matcher(EmptyTree, NoSymbol, BooleanClass.tpe)(combinedAlts, Some(x => FALSE))
           codegenAlt.ifThenElseZero(findAltMatcher, substitution(next))
         }
       }
@@ -935,6 +927,12 @@ class Foo(x: Other) { x._1 } // no error in this order
       def chainBefore(next: Tree)(casegen: Casegen): Tree = casegen.flatMapGuard(substitution(guardTree), next)
       override def toString = "G("+ guardTree +")"
     }
+
+    // combineExtractors changes the current substitution's of the tree makers in `treeMakers`
+    // requires propagateSubstitution(treeMakers) has been called
+    def combineExtractors(treeMakers: List[TreeMaker])(casegen: Casegen): Tree =
+      treeMakers.foldRight(EmptyTree: Tree)((a, b) => a.chainBefore(b)(casegen))
+
 
     def removeSubstOnly(makers: List[TreeMaker]) = makers filterNot (_.isInstanceOf[SubstOnlyTreeMaker])
 
@@ -950,42 +948,42 @@ class Foo(x: Other) { x._1 } // no error in this order
     }
 
     // calls propagateSubstitution on the treemakers
-    def combineCases(scrut: Tree, scrutSym: Symbol, casesRaw: List[List[TreeMaker]], pt: Type, owner: Symbol): Tree = {
-      val casesNoSubstOnly = casesRaw map (propagateSubstitution(_, EmptySubstitution)) // drops SubstOnlyTreeMakers, since their effect is now contained in the TreeMakers that follow them
-      combineCasesNoSubstOnly(scrut, scrutSym, casesNoSubstOnly, pt, owner, casegen => CODE.MATCHERROR(_))
+    def combineCases(scrut: Tree, scrutSym: Symbol, casesRaw: List[List[TreeMaker]], pt: Type, owner: Symbol, matchFailGenOverride: Option[Tree => Tree]): Tree = {
+      // drops SubstOnlyTreeMakers, since their effect is now contained in the TreeMakers that follow them
+      val casesNoSubstOnly = casesRaw map (propagateSubstitution(_, EmptySubstitution))
+      combineCasesNoSubstOnly(scrut, scrutSym, casesNoSubstOnly, pt, owner, matchFailGenOverride)
     }
 
-    def combineCasesNoSubstOnly(scrut: Tree, scrutSym: Symbol, casesNoSubstOnly: List[List[TreeMaker]], pt: Type, owner: Symbol, matchFail: Casegen => Tree => Tree): Tree = fixerUpper(owner, scrut.pos){
-      val ptDefined = if (isFullyDefined(pt)) pt else NoType
+    def combineCasesNoSubstOnly(scrut: Tree, scrutSym: Symbol, casesNoSubstOnly: List[List[TreeMaker]], pt: Type, owner: Symbol, matchFailGenOverride: Option[Tree => Tree]): Tree =
+      fixerUpper(owner, scrut.pos){
+        val ptDefined    = if (isFullyDefined(pt)) pt else NoType
+        def matchFailGen = (matchFailGenOverride orElse Some(CODE.MATCHERROR(_: Tree)))
 
-      emitSwitch(scrut, scrutSym, casesNoSubstOnly, pt).getOrElse{
-        if (casesNoSubstOnly nonEmpty) {
-          // check casesNoSubstOnly for presence of a default case, since DCE will eliminate trivial cases like `case _ =>`, even if they're the last one
-          // exhaustivity and reachability must be checked before optimization as well
-          // TODO: improve, a trivial type test before the body still makes for a default case
-          // ("trivial" depends on whether we're emitting a straight match or an exception, or more generally, any supertype of scrutSym.tpe is a no-op)
-          val catchAll =
-            if (casesNoSubstOnly.nonEmpty && {
-                  val nonTrivLast = casesNoSubstOnly.last
-                  nonTrivLast.nonEmpty && nonTrivLast.head.isInstanceOf[BodyTreeMaker]
-                }) None
-            else Some(matchFail)
+        emitSwitch(scrut, scrutSym, casesNoSubstOnly, pt, matchFailGenOverride).getOrElse{
+          if (casesNoSubstOnly nonEmpty) {
+            // before optimizing, check casesNoSubstOnly for presence of a default case,
+            // since DCE will eliminate trivial cases like `case _ =>`, even if they're the last one
+            // exhaustivity and reachability must be checked before optimization as well
+            // TODO: improve notion of trivial/irrefutable -- a trivial type test before the body still makes for a default case
+            //   ("trivial" depends on whether we're emitting a straight match or an exception, or more generally, any supertype of scrutSym.tpe is a no-op)
+            //   irrefutability checking should use the approximation framework also used for CSE, unreachability and exhaustivity checking
+            val synthCatchAll =
+              if (casesNoSubstOnly.nonEmpty && {
+                    val nonTrivLast = casesNoSubstOnly.last
+                    nonTrivLast.nonEmpty && nonTrivLast.head.isInstanceOf[BodyTreeMaker]
+                  }) None
+              else matchFailGen
 
-          val (cases, toHoist) = optimizeCases(scrutSym, casesNoSubstOnly, pt)
+            val (cases, toHoist) = optimizeCases(scrutSym, casesNoSubstOnly, pt)
 
-          val matchRes = codegen.matcher(scrut, scrutSym, pt)(cases map combineExtractors, catchAll)
+            val matchRes = codegen.matcher(scrut, scrutSym, pt)(cases map combineExtractors, synthCatchAll)
 
-          if (toHoist isEmpty) matchRes else Block(toHoist, matchRes)
-        } else {
-          codegen.matcher(scrut, scrutSym, pt)(Nil, Some(matchFail))
+            if (toHoist isEmpty) matchRes else Block(toHoist, matchRes)
+          } else {
+            codegen.matcher(scrut, scrutSym, pt)(Nil, matchFailGen)
+          }
         }
       }
-    }
-
-    // combineExtractors changes the current substitution's of the tree makers in `treeMakers`
-    // requires propagateSubstitution(treeMakers) has been called
-    def combineExtractors(treeMakers: List[TreeMaker])(casegen: Casegen): Tree =
-      treeMakers.foldRight(EmptyTree: Tree)((a, b) => a.chainBefore(b)(casegen))
 
     // TODO: do this during tree construction, but that will require tracking the current owner in treemakers
     // TODO: assign more fine-grained positions
@@ -1043,7 +1041,7 @@ class Foo(x: Other) { x._1 } // no error in this order
 
     // codegen relevant to the structure of the translation (how extractors are combined)
     trait AbsCodegen {
-      def matcher(scrut: Tree, scrutSym: Symbol, restpe: Type)(cases: List[Casegen => Tree], catchAllGen: Option[Casegen => Tree => Tree]): Tree
+      def matcher(scrut: Tree, scrutSym: Symbol, restpe: Type)(cases: List[Casegen => Tree], matchFailGen: Option[Tree => Tree]): Tree
 
       // local / context-free
       def _asInstanceOf(b: Symbol, tp: Type): Tree
@@ -1136,13 +1134,13 @@ class Foo(x: Other) { x._1 } // no error in this order
       //// methods in MatchingStrategy (the monad companion) -- used directly in translation
       // __match.runOrElse(`scrut`)(`scrutSym` => `matcher`)
       // TODO: consider catchAll, or virtualized matching will break in exception handlers
-      def matcher(scrut: Tree, scrutSym: Symbol, restpe: Type)(cases: List[Casegen => Tree], catchAllGen: Option[Casegen => Tree => Tree]): Tree =
+      def matcher(scrut: Tree, scrutSym: Symbol, restpe: Type)(cases: List[Casegen => Tree], matchFailGen: Option[Tree => Tree]): Tree =
         _match(vpmName.runOrElse) APPLY (scrut) APPLY (fun(scrutSym, cases map (f => f(this)) reduceLeft typedOrElse))
 
       // __match.one(`res`)
       def one(res: Tree): Tree = (_match(vpmName.one)) (res)
       // __match.zero
-      def zero: Tree = _match(vpmName.zero)
+      protected def zero: Tree = _match(vpmName.zero)
       // __match.guard(`c`, `then`)
       def guard(c: Tree, then: Tree): Tree = _match(vpmName.guard) APPLY (c, then)
 
@@ -1517,7 +1515,7 @@ class Foo(x: Other) { x._1 } // no error in this order
       }
     }
 
-    class RegularSwitchMaker(scrutSym: Symbol) extends SwitchMaker {
+    class RegularSwitchMaker(scrutSym: Symbol, matchFailGenOverride: Option[Tree => Tree]) extends SwitchMaker {
       val switchableTpe = Set(ByteClass.tpe, ShortClass.tpe, IntClass.tpe, CharClass.tpe)
       val alternativesSupported = true
 
@@ -1540,14 +1538,14 @@ class Foo(x: Other) { x._1 } // no error in this order
       }
 
       def defaultSym: Symbol = scrutSym
-      def defaultBody: Tree  = { import CODE._; MATCHERROR(REF(scrutSym)) }
+      def defaultBody: Tree  = { import CODE._; matchFailGenOverride map (gen => gen(REF(scrutSym))) getOrElse MATCHERROR(REF(scrutSym)) }
       def defaultCase(scrutSym: Symbol = defaultSym, body: Tree = defaultBody): CaseDef = { import CODE._; atPos(body.pos) {
         DEFAULT ==> body
       }}
     }
 
-    override def emitSwitch(scrut: Tree, scrutSym: Symbol, cases: List[List[TreeMaker]], pt: Type): Option[Tree] = { import CODE._
-      val regularSwitchMaker = new RegularSwitchMaker(scrutSym)
+    override def emitSwitch(scrut: Tree, scrutSym: Symbol, cases: List[List[TreeMaker]], pt: Type, matchFailGenOverride: Option[Tree => Tree]): Option[Tree] = { import CODE._
+      val regularSwitchMaker = new RegularSwitchMaker(scrutSym, matchFailGenOverride)
       // TODO: if patterns allow switch but the type of the scrutinee doesn't, cast (type-test) the scrutinee to the corresponding switchable type and switch on the result
       if (regularSwitchMaker.switchableTpe(scrutSym.tpe)) {
         val caseDefsWithDefault = regularSwitchMaker(cases map {c => (scrutSym, c)}, pt)
@@ -1555,7 +1553,7 @@ class Foo(x: Other) { x._1 } // no error in this order
         else {
           // match on scrutSym -- converted to an int if necessary -- not on scrut directly (to avoid duplicating scrut)
           val scrutToInt: Tree =
-            if(scrutSym.tpe =:= IntClass.tpe) REF(scrutSym)
+            if (scrutSym.tpe =:= IntClass.tpe) REF(scrutSym)
             else (REF(scrutSym) DOT (nme.toInt))
           Some(BLOCK(
             VAL(scrutSym) === scrut,
@@ -1631,7 +1629,7 @@ class Foo(x: Other) { x._1 } // no error in this order
        * the matcher's optional result is encoded as a flag, keepGoing, where keepGoing == true encodes result.isEmpty,
        * if keepGoing is false, the result Some(x) of the naive translation is encoded as matchRes == x
        */
-      def matcher(scrut: Tree, scrutSym: Symbol, restpe: Type)(cases: List[Casegen => Tree], catchAllGen: Option[Casegen => Tree => Tree]): Tree = {
+      def matcher(scrut: Tree, scrutSym: Symbol, restpe: Type)(cases: List[Casegen => Tree], matchFailGen: Option[Tree => Tree]): Tree = {
         val matchEnd = NoSymbol.newLabel(freshName("matchEnd"), NoPosition) setFlag (SYNTHETIC | Flags.CASE)
         val matchRes = NoSymbol.newValueParameter(newTermName("x"), NoPosition, SYNTHETIC) setInfo restpe
         matchEnd setInfo MethodType(List(matchRes), restpe)
@@ -1645,38 +1643,35 @@ class Foo(x: Other) { x._1 } // no error in this order
           LabelDef(currCase, Nil, mkCase(casegen))
         }
 
-        def catchAll = catchAllGen map { catchAllGen =>
-          val casegen = new OptimizedCasegen(matchEnd, NoSymbol)
-          val scrutRef = if(scrutSym eq NoSymbol) EmptyTree else REF(scrutSym)
-          LabelDef(nextCase, Nil, catchAllGen(casegen)(scrutRef))
+        def catchAll = matchFailGen map { matchFailGen =>
+          val scrutRef = if(scrutSym ne NoSymbol) REF(scrutSym) else EmptyTree // for alternatives
+          LabelDef(nextCase, Nil, matchEnd APPLY (matchFailGen(scrutRef))) // need to jump to matchEnd with result generated by matchFailGen (could be `FALSE` for isDefinedAt)
         } toList
+        // catchAll.isEmpty iff no synthetic default case needed (the (last) user-defined case is a default)
+        // if the last user-defined case is a default, it will never jump to the next case; it will go immediately to matchEnd
 
         // the generated block is taken apart in TailCalls under the following assumptions
           // the assumption is once we encounter a case, the remainder of the block will consist of cases
           // the prologue may be empty, usually it is the valdef that stores the scrut
           // val (prologue, cases) = stats span (s => !s.isInstanceOf[LabelDef])
 
-        val prologue = if(scrutSym ne NoSymbol) List(VAL(scrutSym)  === scrut) else Nil
+        // scrutSym == NoSymbol when generating an alternatives matcher
+        val scrutDef = if(scrutSym ne NoSymbol) List(VAL(scrutSym)  === scrut) else Nil // for alternatives
         Block(
-          prologue ++ (cases map caseDef) ++ catchAll,
+          scrutDef ++ (cases map caseDef) ++ catchAll,
           LabelDef(matchEnd, List(matchRes), REF(matchRes))
         )
       }
 
       class OptimizedCasegen(matchEnd: Symbol, nextCase: Symbol) extends CommonCodegen with Casegen {
-        def matcher(scrut: Tree, scrutSym: Symbol, restpe: Type)(cases: List[Casegen => Tree], catchAllGen: Option[Casegen => Tree => Tree]): Tree =
-          optimizedCodegen.matcher(scrut, scrutSym, restpe)(cases, catchAllGen)
-
-        def zero: Tree   = nextCase APPLY ()
+        def matcher(scrut: Tree, scrutSym: Symbol, restpe: Type)(cases: List[Casegen => Tree], matchFailGen: Option[Tree => Tree]): Tree =
+          optimizedCodegen.matcher(scrut, scrutSym, restpe)(cases, matchFailGen)
 
         // only used to wrap the RHS of a body
         // res: T
         // returns MatchMonad[T]
         def one(res: Tree): Tree = matchEnd APPLY (res)
-
-
-        override def ifThenElseZero(c: Tree, then: Tree): Tree =
-          IF (c) THEN then ELSE zero
+        protected def zero: Tree = nextCase APPLY ()
 
         // prev: MatchMonad[T]
         // b: T
