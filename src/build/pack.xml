@@ -299,7 +299,7 @@ MAIN DISTRIBUTION SBAZ
 
   <target name="pack-maven.latest.unix" depends="pack-maven.docs" unless="os.win">
     <symlink link="${dists.dir}/maven/latest"
-             resource="${dists.dir}/maven/${version.number}"
+             resource="${version.number}"
              overwrite="yes"/>
   </target>
 
