@@ -16,6 +16,47 @@ import scala.reflect.internal.Flags.TRAIT
 
 trait Trees extends reflect.internal.Trees { self: Global =>
 
+  def treeLine(t: Tree): String =
+    if (t.pos.isDefined && t.pos.isRange) t.pos.lineContent.drop(t.pos.column - 1).take(t.pos.end - t.pos.start + 1)
+    else t.summaryString
+
+  def treeStatus(t: Tree, enclosingTree: Tree = null) = {
+    val parent = if (enclosingTree eq null) "        " else " P#%5s".format(enclosingTree.id)
+
+    "[L%4s%8s] #%-6s %-15s %-10s // %s".format(t.pos.safeLine, parent, t.id, t.pos.show, t.shortClass, treeLine(t))
+  }
+  def treeSymStatus(t: Tree) = {
+    val line = if (t.pos.isDefined) "line %-4s".format(t.pos.safeLine) else "         "
+    "#%-5s %s %-10s // %s".format(t.id, line, t.shortClass,
+      if (t.symbol ne NoSymbol) "(" + t.symbol.fullLocationString + ")"
+      else treeLine(t)
+    )
+  }
+
+  class ValidatingPosAssigner extends PosAssigner {
+    var pos: Position = _
+    override def traverse(t: Tree) {
+      if (t eq EmptyTree) ()
+      else if (t.pos == NoPosition) super.traverse(t setPos pos)
+      else if (globalPhase.id <= currentRun.picklerPhase.id) {
+        // When we prune due to encountering a position, traverse the
+        // pruned children so we can warn about those lacking positions.
+        t.children foreach { c =>
+          if ((c eq EmptyTree) || (c eq emptyValDef)) ()
+          else if (c.pos == NoPosition) {
+            reporter.warning(t.pos, " Positioned tree has unpositioned child in phase " + globalPhase)
+            inform("parent: " + treeSymStatus(t))
+            inform(" child: " + treeSymStatus(c) + "\n")
+          }
+        }
+      }
+    }
+  }
+
+  override protected[this] lazy val posAssigner: PosAssigner =
+    if (settings.Yrangepos.value && settings.debug.value || settings.Yposdebug.value) new ValidatingPosAssigner
+    else new DefaultPosAssigner
+
   // --- additional cases --------------------------------------------------------
   /** Only used during parsing */
   case class Parens(args: List[Tree]) extends Tree

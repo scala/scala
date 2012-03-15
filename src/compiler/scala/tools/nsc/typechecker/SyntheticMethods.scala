@@ -51,11 +51,9 @@ trait SyntheticMethods extends ast.TreeDSL {
 
     if (clazz0 == AnyValClass || isPrimitiveValueClass(clazz0)) return {
       if (clazz0.info member nme.getClass_ isDeferred) {
-        val getClassMethod = createMethod(nme.getClass_, getClassReturnType(clazz.tpe)) { sym =>
-          // XXX dummy implementation for now
-          NULL
-        }
-        treeCopy.Template(templ, templ.parents, templ.self, templ.body :+ getClassMethod)
+        // XXX dummy implementation for now
+        val getClassMethod = createMethod(nme.getClass_, getClassReturnType(clazz.tpe))(_ => NULL)
+        deriveTemplate(templ)(_ :+ getClassMethod)
       }
       else templ
     }
@@ -89,7 +87,7 @@ trait SyntheticMethods extends ast.TreeDSL {
     )
 
     def forwardToRuntime(method: Symbol): Tree =
-      forwardMethod(method, getMember(ScalaRunTimeModule, method.name prepend "_"))(This(clazz) :: _)
+      forwardMethod(method, getMember(ScalaRunTimeModule, method.name prepend "_"))(mkThis :: _)
 
     // Any member, including private
     def hasConcreteImpl(name: Name) =
@@ -109,7 +107,7 @@ trait SyntheticMethods extends ast.TreeDSL {
     }
     def productIteratorMethod = {
       createMethod(nme.productIterator, iteratorOfType(accessorLub))(_ =>
-        gen.mkMethodCall(ScalaRunTimeModule, nme.typedProductIterator, List(accessorLub), List(This(clazz)))
+        gen.mkMethodCall(ScalaRunTimeModule, nme.typedProductIterator, List(accessorLub), List(mkThis))
       )
     }
     def projectionMethod(accessor: Symbol, num: Int) = {
@@ -157,8 +155,8 @@ trait SyntheticMethods extends ast.TreeDSL {
     def equalsCore(eqmeth: Symbol, accessors: List[Symbol]) = {
       val otherName = context.unit.freshTermName(clazz.name + "$")
       val otherSym  = eqmeth.newValue(otherName, eqmeth.pos, SYNTHETIC) setInfo clazz.tpe
-      val pairwise  = accessors map (acc => fn(Select(This(clazz), acc), acc.tpe member nme.EQ, Select(Ident(otherSym), acc)))
-      val canEq     = gen.mkMethodCall(otherSym, nme.canEqual_, Nil, List(This(clazz)))
+      val pairwise  = accessors map (acc => fn(Select(mkThis, acc), acc.tpe member nme.EQ, Select(Ident(otherSym), acc)))
+      val canEq     = gen.mkMethodCall(otherSym, nme.canEqual_, Nil, List(mkThis))
       val tests     = if (clazz.isDerivedValueClass || clazz.isFinal && syntheticCanEqual) pairwise else pairwise :+ canEq
 
       thatTest(eqmeth) AND Block(
@@ -181,9 +179,9 @@ trait SyntheticMethods extends ast.TreeDSL {
     def equalsCaseClassMethod: Tree = createMethod(nme.equals_, List(AnyClass.tpe), BooleanClass.tpe) { m =>
       if (accessors.isEmpty)
         if (clazz.isFinal) thatTest(m)
-        else thatTest(m) AND ((thatCast(m) DOT nme.canEqual_)(This(clazz)))
+        else thatTest(m) AND ((thatCast(m) DOT nme.canEqual_)(mkThis))
       else
-        (This(clazz) ANY_EQ Ident(m.firstParam)) OR equalsCore(m, accessors)
+        (mkThis ANY_EQ Ident(m.firstParam)) OR equalsCore(m, accessors)
     }
 
     /** The equality method for value classes
@@ -200,9 +198,7 @@ trait SyntheticMethods extends ast.TreeDSL {
      * def hashCode(): Int = this.underlying.hashCode
      */
     def hashCodeDerivedValueClassMethod: Tree = createMethod(nme.hashCode_, Nil, IntClass.tpe) { m =>
-      Select(
-        Select(This(clazz), clazz.firstParamAccessor),
-        nme.hashCode_)
+      Select(mkThisSelect(clazz.firstParamAccessor), nme.hashCode_)
     }
 
     /** The _1, _2, etc. methods to implement ProductN.
@@ -217,7 +213,7 @@ trait SyntheticMethods extends ast.TreeDSL {
       List(
         Product_productPrefix   -> (() => constantNullary(nme.productPrefix, clazz.name.decode)),
         Product_productArity    -> (() => constantNullary(nme.productArity, arity)),
-        Product_productElement  -> (() => perElementMethod(nme.productElement, accessorLub)(Select(This(clazz), _))),
+        Product_productElement  -> (() => perElementMethod(nme.productElement, accessorLub)(mkThisSelect)),
         Product_iterator        -> (() => productIteratorMethod),
         Product_canEqual        -> (() => canEqualMethod)
         // This is disabled pending a reimplementation which doesn't add any

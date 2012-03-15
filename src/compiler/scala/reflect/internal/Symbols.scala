@@ -500,8 +500,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     final def isClassLocalToConstructor = isClass && hasFlag(INCONSTRUCTOR)
 
     final def isDerivedValueClass =
-      isClass && info.parents.headOption.getOrElse(AnyClass.tpe).typeSymbol == AnyValClass &&
-      !isPrimitiveValueClass
+      isClass && info.firstParent.typeSymbol == AnyValClass && !isPrimitiveValueClass
 
     final def isMethodWithExtension =
       isMethod && owner.isDerivedValueClass && !isParamAccessor && !isConstructor && !hasFlag(SUPERACCESSOR)

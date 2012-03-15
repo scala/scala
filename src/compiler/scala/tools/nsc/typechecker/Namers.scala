@@ -456,7 +456,7 @@ trait Namers extends MethodSynthesis {
       // The object Foo is still in scope, but because it is not compiled in current run
       // it should be ditched and a new one created.
       if (m != NoSymbol && currentRun.compiles(m)) m
-      else enterSyntheticSym(creator(cdef))
+      else enterSyntheticSym(atPos(cdef.pos.focus)(creator(cdef)))
     }
 
     private def checkSelectors(tree: Import): Unit = {
@@ -1270,11 +1270,12 @@ trait Namers extends MethodSynthesis {
       if (sym.isModule) annotate(sym.moduleClass)
 
       def getSig = tree match {
-        case cdef @ ClassDef(_, _, tparams, impl) =>
+        case cdef @ ClassDef(_, name, tparams, impl) =>
           val clazz = tree.symbol
           val result = createNamer(tree).classSig(tparams, impl)
           clazz setInfo result
           if (clazz.isDerivedValueClass) {
+            log("Ensuring companion for derived value class " + name + " at " + cdef.pos.show)
             clazz setFlag FINAL
             enclosingNamerWithScope(clazz.owner.info.decls).ensureCompanionObject(cdef)
           }

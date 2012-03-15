@@ -283,10 +283,16 @@ trait Trees extends api.Trees { self: SymbolTable =>
     }
   }
 
-  private object posAssigner extends Traverser {
+  trait PosAssigner extends Traverser {
+    var pos: Position
+  }
+  protected[this] lazy val posAssigner: PosAssigner = new DefaultPosAssigner
+
+  protected class DefaultPosAssigner extends PosAssigner {
     var pos: Position = _
     override def traverse(t: Tree) {
-      if (t != EmptyTree && t.pos == NoPosition) {
+      if (t eq EmptyTree) ()
+      else if (t.pos == NoPosition) {
         t.setPos(pos)
         super.traverse(t)   // TODO: bug? shouldn't the traverse be outside of the if?
         // @PP: it's pruning whenever it encounters a node with a

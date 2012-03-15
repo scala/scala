@@ -1295,7 +1295,7 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
     }
 
     def parentTypes(templ: Template): List[Tree] =
-      if (templ.parents.isEmpty) List(TypeTree(AnyRefClass.tpe))
+      if (templ.parents.isEmpty) List(atPos(templ.pos.focus)(TypeTree(AnyRefClass.tpe)))
       else try {
         val clazz = context.owner
         // Normalize supertype and mixins so that supertype is always a class, not a trait.
@@ -1723,7 +1723,7 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
      *  @param rhs      ...
      */
     def computeParamAliases(clazz: Symbol, vparamss: List[List[ValDef]], rhs: Tree) {
-      debuglog("computing param aliases for "+clazz+":"+clazz.primaryConstructor.tpe+":"+rhs)//debug
+      log("computing param aliases for "+clazz+":"+clazz.primaryConstructor.tpe+":"+rhs)//debug
       def decompose(call: Tree): (Tree, List[Tree]) = call match {
         case Apply(fn, args) =>
           val (superConstr, args1) = decompose(fn)
@@ -1902,11 +1902,12 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
           transformedOrTyped(ddef.rhs, EXPRmode, tpt1.tpe)
         }
 
-      if (meth.isPrimaryConstructor && meth.isClassConstructor && !isPastTyper && !reporter.hasErrors && !meth.owner.isSubClass(AnyValClass)) {
-        // At this point in AnyVal there is no supercall, which will blow up
-        // in computeParamAliases; there's nothing to be computed for Anyval anyway.
-        computeParamAliases(meth.owner, vparamss1, rhs1)
-      }
+        if (meth.isPrimaryConstructor && meth.isClassConstructor && !isPastTyper && !reporter.hasErrors && !meth.owner.isSubClass(AnyValClass)) {
+          // At this point in AnyVal there is no supercall, which will blow up
+          // in computeParamAliases; there's nothing to be computed for Anyval anyway.
+          computeParamAliases(meth.owner, vparamss1, rhs1)
+        }
+
       if (tpt1.tpe.typeSymbol != NothingClass && !context.returnsSeen && rhs1.tpe.typeSymbol != NothingClass)
         rhs1 = checkDead(rhs1)
 
@@ -1925,6 +1926,7 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
       }
       if (meth.isStructuralRefinementMember)
         checkMethodStructuralCompatible(meth)
+
       treeCopy.DefDef(ddef, typedMods, ddef.name, tparams1, vparamss1, tpt1, rhs1) setType NoType
     }
 
@@ -3264,6 +3266,7 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
       }
 
       def typedAnnotated(ann: Tree, arg1: Tree): Tree = {
+        def mkTypeTree(tpe: Type) = TypeTree(tpe) setOriginal tree setPos tree.pos.focus
         /** mode for typing the annotation itself */
         val annotMode = mode & ~TYPEmode | EXPRmode
 
@@ -3309,19 +3312,20 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
               arg1  // simply drop erroneous annotations
             else {
               ann.tpe = atype
-              TypeTree(atype) setOriginal tree
+              mkTypeTree(atype)
             }
           } else {
             // the annotation was typechecked before
-            TypeTree(ann.tpe) setOriginal tree
+            mkTypeTree(ann.tpe)
           }
-        } else {
+        }
+        else {
           if (ann.tpe == null) {
             val annotInfo = typedAnnotation(ann, annotMode)
             ann.tpe = arg1.tpe.withAnnotation(annotInfo)
           }
           val atype = ann.tpe
-          Typed(arg1, TypeTree(atype) setOriginal tree setPos tree.pos.focus) setPos tree.pos setType atype
+          Typed(arg1, mkTypeTree(atype)) setPos tree.pos setType atype
         }
       }
 

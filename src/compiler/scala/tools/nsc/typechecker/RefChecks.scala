@@ -1523,16 +1523,11 @@ abstract class RefChecks extends InfoTransform with reflect.internal.transform.R
         case _ => ()
     }
 
-    // verify classes extending AnyVal meet the requirements
-    // (whatever those are to be, but at least: @inline annotation)
+    // Verify classes extending AnyVal meet the requirements
     private def checkAnyValSubclass(clazz: Symbol) = {
-      if ((clazz isSubClass AnyValClass) && (clazz ne AnyValClass) && !isPrimitiveValueClass(clazz)) {
+      if ((clazz isSubClass AnyValClass) && !isPrimitiveValueClass(clazz)) {
         if (clazz.isTrait)
           unit.error(clazz.pos, "Only classes (not traits) are allowed to extend AnyVal")
-      /* [Martin] That one is already taken care of by Typers
-        if (clazz.tpe <:< AnyRefClass.tpe)
-          unit.error(clazz.pos, "Classes which extend AnyVal may not have an ancestor which inherits AnyRef")
-          */
       }
     }
 

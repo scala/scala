@@ -394,7 +394,7 @@ self =>
 
       // object Main
       def moduleName  = newTermName(ScriptRunner scriptMain settings)
-      def moduleBody  = Template(List(scalaAnyRefConstr), emptyValDef, List(emptyInit, mainDef))
+      def moduleBody  = Template(List(atPos(o2p(in.offset))(scalaAnyRefConstr)), emptyValDef, List(emptyInit, mainDef))
       def moduleDef   = ModuleDef(NoMods, moduleName, moduleBody)
 
       // package <empty> { ... }
@@ -2738,7 +2738,7 @@ self =>
       def anyrefParents() = {
         val caseParents = if (mods.isCase) List(productConstr, serializableConstr) else Nil
         parents0 ::: caseParents match {
-          case Nil  => List(scalaAnyRefConstr)
+          case Nil  => List(atPos(o2p(in.offset))(scalaAnyRefConstr))
           case ps   => ps
         }
       }

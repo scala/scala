@@ -264,11 +264,10 @@ abstract class AddInterfaces extends InfoTransform { self: Erasure =>
     else DefDef(clazz.primaryConstructor, Block(List(), Literal(Constant()))) :: stats
 
   private def implTemplate(clazz: Symbol, templ: Template): Template = atPos(templ.pos) {
-    val templ1 = atPos(templ.pos) {
-      Template(templ.parents, emptyValDef,
-               addMixinConstructorDef(clazz, templ.body map implMemberDef))
-        .setSymbol(clazz.newLocalDummy(templ.pos))
-    }
+    val templ1 = (
+      Template(templ.parents, emptyValDef, addMixinConstructorDef(clazz, templ.body map implMemberDef))
+        setSymbol clazz.newLocalDummy(templ.pos)
+    )
     templ1.changeOwner(templ.symbol.owner -> clazz, templ.symbol -> templ1.symbol)
     templ1
   }
