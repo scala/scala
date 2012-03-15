@@ -1651,6 +1651,11 @@ class Foo(x: Other) { x._1 } // no error in this order
           LabelDef(nextCase, Nil, catchAllGen(casegen)(scrutRef))
         } toList
 
+        // the generated block is taken apart in TailCalls under the following assumptions
+          // the assumption is once we encounter a case, the remainder of the block will consist of cases
+          // the prologue may be empty, usually it is the valdef that stores the scrut
+          // val (prologue, cases) = stats span (s => !s.isInstanceOf[LabelDef])
+
         val prologue = if(scrutSym ne NoSymbol) List(VAL(scrutSym)  === scrut) else Nil
         Block(
           prologue ++ (cases map caseDef) ++ catchAll,
