@@ -249,6 +249,8 @@ self =>
   final val InBlock = 1
   final val InTemplate = 2
 
+  lazy val ScalaValueClassNames: Set[Name] = definitions.scalaValueClassesSet map (_.name)
+
   import nme.raw
 
   abstract class Parser extends ParserCommon {
@@ -290,11 +292,11 @@ self =>
       inScalaPackage = false
       currentPackage = ""
     }
-    private lazy val anyValNames: Set[Name] = tpnme.ScalaValueNames.toSet + tpnme.AnyVal
+    private lazy val primitiveNames: Set[Name] = tpnme.ScalaValueNames.toSet
 
     private def inScalaRootPackage       = inScalaPackage && currentPackage == "scala"
     private def isScalaArray(name: Name) = inScalaRootPackage && name == tpnme.Array
-    private def isAnyValType(name: Name) = inScalaRootPackage && anyValNames(name)
+    private def isPrimitiveType(name: Name) = inScalaRootPackage && primitiveNames(name)
 
     def parseStartRule: () => Tree
 
@@ -392,7 +394,7 @@ self =>
 
       // object Main
       def moduleName  = newTermName(ScriptRunner scriptMain settings)
-      def moduleBody  = Template(List(scalaScalaObjectConstr), emptyValDef, List(emptyInit, mainDef))
+      def moduleBody  = Template(List(scalaAnyRefConstr), emptyValDef, List(emptyInit, mainDef))
       def moduleDef   = ModuleDef(NoMods, moduleName, moduleBody)
 
       // package <empty> { ... }
@@ -2722,23 +2724,6 @@ self =>
      *  }}}
      */
     def templateOpt(mods: Modifiers, name: Name, constrMods: Modifiers, vparamss: List[List[ValDef]], tstart: Int): Template = {
-      /** Extra parents for case classes. */
-      def caseParents() = (
-        if (mods.isCase) {
-          val arity = if (vparamss.isEmpty || vparamss.head.isEmpty) 0 else vparamss.head.size
-          productConstr :: serializableConstr :: {
-            Nil
-            // if (arity == 0 || settings.YnoProductN.value) Nil
-            // else List(
-            //   AppliedTypeTree(
-            //     productConstrN(arity),
-            //     vparamss.head map (vd => vd.tpt.duplicate setPos vd.tpt.pos.focus)
-            //   )
-            // )
-          }
-        }
-        else Nil
-      )
       val (parents0, argss, self, body) = (
         if (in.token == EXTENDS || in.token == SUBTYPE && mods.hasTraitFlag) {
           in.nextToken()
@@ -2750,21 +2735,27 @@ self =>
           (List(), List(List()), self, body)
         }
       )
-
+      def anyrefParents() = {
+        val caseParents = if (mods.isCase) List(productConstr, serializableConstr) else Nil
+        parents0 ::: caseParents match {
+          case Nil  => List(scalaAnyRefConstr)
+          case ps   => ps
+        }
+      }
+      def anyvalConstructor() = (
+        // Not a well-formed constructor, has to be finished later - see note
+        // regarding AnyVal constructor in AddInterfaces.
+        DefDef(NoMods, nme.CONSTRUCTOR, Nil, List(Nil), TypeTree(), Block(Nil, Literal(Constant())))
+      )
       val tstart0 = if (body.isEmpty && in.lastOffset < tstart) in.lastOffset else tstart
+
       atPos(tstart0) {
-        if (isAnyValType(name)) {
-          val parent = if (name == tpnme.AnyVal) tpnme.Any else tpnme.AnyVal
-          Template(List(scalaDot(parent)), self, body)
-        }
-        else {
-          val parents = (
-            if (!isInterface(mods, body) && !isScalaArray(name)) parents0 :+ scalaScalaObjectConstr
-            else if (parents0.isEmpty) List(scalaAnyRefConstr)
-            else parents0
-          ) ++ caseParents()
-          Template(parents, self, constrMods, vparamss, argss, body, o2p(tstart))
-        }
+        // [Martin to Paul: This needs to be refined. We should only include the 9 primitive classes,
+        // not any other value classes that happen to be defined in the Scala package.
+        if (inScalaRootPackage && (name == tpnme.AnyVal || (ScalaValueClassNames contains name)))
+          Template(parents0, self, anyvalConstructor :: body)
+        else
+          Template(anyrefParents, self, constrMods, vparamss, argss, body, o2p(tstart))
       }
     }
 

@@ -11,7 +11,7 @@ import Flags._
 import scala.collection.{ mutable, immutable }
 import collection.mutable.ListBuffer
 
-abstract class AddInterfaces extends InfoTransform {
+abstract class AddInterfaces extends InfoTransform { self: Erasure =>
   import global._                  // the global environment
   import definitions._             // standard classes and methods
 
@@ -20,14 +20,6 @@ abstract class AddInterfaces extends InfoTransform {
    *  methods in such traits.
    */
   override def phaseNewFlags: Long = lateDEFERRED | lateINTERFACE
-
-  /** Type reference after erasure; defined in Erasure.
-   */
-  def erasedTypeRef(sym: Symbol): Type
-
-  /** Erasure calculation; defined in Erasure.
-   */
-  def erasure(sym: Symbol, tpe: Type): Type
 
   /** A lazily constructed map that associates every non-interface trait with
    *  its implementation class.
@@ -176,14 +168,14 @@ abstract class AddInterfaces extends InfoTransform {
       /** If `tp` refers to a non-interface trait, return a
        *  reference to its implementation class. Otherwise return `tp`.
        */
-      def mixinToImplClass(tp: Type): Type = erasure(sym,
+      def mixinToImplClass(tp: Type): Type = erasure(sym) {
         tp match { //@MATN: no normalize needed (comes after erasure)
           case TypeRef(pre, sym, _) if sym.needsImplClass =>
             typeRef(pre, implClass(sym), Nil)
           case _ =>
             tp
         }
-      )
+      }
       def implType(tp: Type): Type = tp match {
         case ClassInfoType(parents, decls, _) =>
           assert(phase == implClassPhase, tp)
@@ -299,14 +291,22 @@ abstract class AddInterfaces extends InfoTransform {
     }
     val mixinConstructorCalls: List[Tree] = {
       for (mc <- clazz.mixinClasses.reverse
-           if mc.hasFlag(lateINTERFACE) && mc != ScalaObjectClass)
+           if mc.hasFlag(lateINTERFACE))
       yield mixinConstructorCall(implClass(mc))
     }
-    (tree: @unchecked) match {
+    tree match {
+      case Block(Nil, expr) =>
+        // AnyVal constructor - have to provide a real body so the
+        // jvm doesn't throw a VerifyError. But we can't add the
+        // body until now, because the typer knows that Any has no
+        // constructor and won't accept a call to super.init.
+        assert((clazz isSubClass AnyValClass) || clazz.info.parents.isEmpty, clazz)
+        val superCall = Apply(Select(Super(This(tpnme.EMPTY), tpnme.EMPTY), nme.CONSTRUCTOR), Nil)
+        Block(List(superCall), expr)
+
       case Block(stats, expr) =>
         // needs `hasSymbol` check because `supercall` could be a block (named / default args)
         val (presuper, supercall :: rest) = stats span (t => t.hasSymbolWhich(_ hasFlag PRESUPER))
-        // assert(supercall.symbol.isClassConstructor, supercall)
         treeCopy.Block(tree, presuper ::: (supercall :: mixinConstructorCalls ::: rest), expr)
     }
   }

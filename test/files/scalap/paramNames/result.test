@@ -1,4 +1,4 @@
-class ParamNames extends java.lang.Object with scala.ScalaObject {
+class ParamNames extends java.lang.Object {
   def this() = { /* compiled code */ }
   def foo(s : => scala.Seq[scala.Int], s2 : => scala.Seq[scala.Any]) : scala.Unit = { /* compiled code */ }
 }

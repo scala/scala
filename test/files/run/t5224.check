@@ -1,5 +1,5 @@
 {
-  @new Foo(bar = "qwe") class C extends Object with ScalaObject {
+  @new Foo(bar = "qwe") class C extends scala.AnyRef {
     def <init>() = {
       super.<init>();
       ()

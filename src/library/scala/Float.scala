@@ -356,7 +356,7 @@ final class Float extends AnyVal {
   */
   def %(x: Double): Double = sys.error("stub")
 
-  def getClass(): Class[Float] = sys.error("stub")
+  override def getClass(): Class[Float] = sys.error("stub")
 }
 
 object Float extends AnyValCompanion {

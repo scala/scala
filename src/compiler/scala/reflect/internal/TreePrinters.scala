@@ -242,6 +242,10 @@ trait TreePrinters extends api.TreePrinters { self: SymbolTable =>
        case Template(parents, self, body) =>
           val currentOwner1 = currentOwner
           if (tree.symbol != NoSymbol) currentOwner = tree.symbol.owner
+//          if (parents exists isReferenceToAnyVal) {
+//            print("AnyVal")
+//          }
+//          else {
           printRow(parents, " with ")
           if (!body.isEmpty) {
             if (self.name != nme.WILDCARD) {
@@ -253,6 +257,7 @@ trait TreePrinters extends api.TreePrinters { self: SymbolTable =>
             }
             printColumn(body, "", ";", "}")
           }
+//          }
           currentOwner = currentOwner1
 
         case Block(stats, expr) =>

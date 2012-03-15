@@ -531,7 +531,7 @@ trait ContextErrors {
         NormalTypeError(parent, "illegal inheritance from final "+mixin)
 
       def ParentSealedInheritanceError(parent: Tree, psym: Symbol) =
-        NormalTypeError(parent, "illegal inheritance from sealed " + psym + ": " + context.unit.source.file.canonicalPath + " != " + psym.sourceFile.canonicalPath)
+        NormalTypeError(parent, "illegal inheritance from sealed " + psym )
 
       def ParentSelfTypeConformanceError(parent: Tree, selfType: Type) =
         NormalTypeError(parent,
@@ -770,7 +770,7 @@ trait ContextErrors {
       def PolymorphicExpressionInstantiationError(tree: Tree, undetparams: List[Symbol], pt: Type) =
         issueNormalTypeError(tree,
           "polymorphic expression cannot be instantiated to expected type" +
-          foundReqMsg(polyType(undetparams, skipImplicit(tree.tpe)), pt))
+          foundReqMsg(GenPolyType(undetparams, skipImplicit(tree.tpe)), pt))
 
       //checkCheckable
       def TypePatternOrIsInstanceTestError(tree: Tree, tp: Type) =

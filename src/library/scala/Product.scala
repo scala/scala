@@ -17,7 +17,7 @@ package scala
  *  @version 1.0
  *  @since   2.3
  */
-trait Product extends Equals {
+trait Product extends Any with Equals {
   /** The n^th^ element of this product, 0-based.  In other words, for a
    *  product `A(x,,1,,, ..., x,,k,,)`, returns `x,,(n+1),, where `0 < n < k`.
    *

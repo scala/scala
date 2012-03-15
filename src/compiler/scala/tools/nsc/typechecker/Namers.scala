@@ -73,7 +73,7 @@ trait Namers extends MethodSynthesis {
     classAndNamerOfModule.clear()
   }
 
-  abstract class Namer(val context: Context) extends MethodSynth with NamerContextErrors {
+  abstract class Namer(val context: Context) extends MethodSynth with NamerContextErrors { thisNamer =>
 
     import NamerErrorGen._
     val typer = newTyper(context)
@@ -98,6 +98,13 @@ trait Namers extends MethodSynthesis {
 
       owner.unsafeTypeParams foreach (paramContext.scope enter _)
       newNamer(paramContext)
+    }
+    
+    def enclosingNamerWithScope(scope: Scope) = {
+      var cx = context
+      while (cx != NoContext && cx.scope != scope) cx = cx.outer
+      if (cx == NoContext || cx == context) thisNamer
+      else newNamer(cx)
     }
 
     def enterValueParams(vparamss: List[List[ValDef]]): List[List[Symbol]] = {
@@ -709,6 +716,17 @@ trait Namers extends MethodSynthesis {
         if (needsCycleCheck && !typer.checkNonCyclic(tree.pos, tp))
           sym setInfo ErrorType
       }
+      // tree match {
+      //   case ClassDef(_, _, _, impl) =>
+      //     val parentsOK = (
+      //          treeInfo.isInterface(sym, impl.body)
+      //       || (sym eq ArrayClass)
+      //       || (sym isSubClass AnyValClass)
+      //     )
+      //     if (!parentsOK)
+      //       ensureParent(sym, AnyRefClass)
+      //   case _ => ()
+      // }
     }
 
     def moduleClassTypeCompleter(tree: Tree) = {
@@ -840,6 +858,7 @@ trait Namers extends MethodSynthesis {
       }
 
       val parents = typer.parentTypes(templ) map checkParent
+
       enterSelf(templ.self)
 
       val decls = newScope
@@ -890,7 +909,7 @@ trait Namers extends MethodSynthesis {
       val tparams0   = typer.reenterTypeParams(tparams)
       val resultType = templateSig(impl)
 
-      polyType(tparams0, resultType)
+      GenPolyType(tparams0, resultType)
     }
 
     private def methodSig(ddef: DefDef, mods: Modifiers, tparams: List[TypeDef],
@@ -933,7 +952,7 @@ trait Namers extends MethodSynthesis {
         // DEPMETTODO: check not needed when they become on by default
         checkDependencies(restpe)
 
-        polyType(
+        GenPolyType(
           tparamSyms, // deSkolemized symbols  -- TODO: check that their infos don't refer to method args?
           if (vparamSymss.isEmpty) NullaryMethodType(restpe)
           // vparamss refer (if they do) to skolemized tparams
@@ -1187,7 +1206,7 @@ trait Namers extends MethodSynthesis {
       // However, separate compilation requires the symbol info to be
       // loaded to do this check, but loading the info will probably
       // lead to spurious cyclic errors.  So omit the check.
-      polyType(tparamSyms, tp)
+      GenPolyType(tparamSyms, tp)
     }
 
     /** Given a case class
@@ -1251,8 +1270,15 @@ trait Namers extends MethodSynthesis {
       if (sym.isModule) annotate(sym.moduleClass)
 
       def getSig = tree match {
-        case ClassDef(_, _, tparams, impl) =>
-          createNamer(tree).classSig(tparams, impl)
+        case cdef @ ClassDef(_, _, tparams, impl) =>
+          val clazz = tree.symbol
+          val result = createNamer(tree).classSig(tparams, impl)
+          clazz setInfo result
+          if (clazz.isDerivedValueClass) {
+            clazz setFlag FINAL
+            enclosingNamerWithScope(clazz.owner.info.decls).ensureCompanionObject(cdef)
+          }
+          result
 
         case ModuleDef(_, _, impl) =>
           val clazz = sym.moduleClass
@@ -1306,6 +1332,22 @@ trait Namers extends MethodSynthesis {
         case PolyType(tparams @ (tp :: _), _) if tp.owner.isTerm => deskolemizeTypeParams(tparams)(result)
         case _                                                   => result
       }
+    }
+
+    def includeParent(tpe: Type, parent: Symbol): Type = tpe match {
+      case PolyType(tparams, restpe) =>
+        PolyType(tparams, includeParent(restpe, parent))
+      case ClassInfoType(parents, decls, clazz) =>
+        if (parents exists (_.typeSymbol == parent)) tpe
+        else ClassInfoType(parents :+ parent.tpe, decls, clazz)
+      case _ =>
+        tpe
+    }
+
+    def ensureParent(clazz: Symbol, parent: Symbol) = {
+      val info0 = clazz.info
+      val info1 = includeParent(info0, parent)
+      if (info0 ne info1) clazz setInfo info1
     }
 
     class LogTransitions[S](onEnter: S => String, onExit: S => String) {
@@ -1411,7 +1453,7 @@ trait Namers extends MethodSynthesis {
       checkNoConflict(PRIVATE, PROTECTED)
       // checkNoConflict(PRIVATE, OVERRIDE) // this one leads to bad error messages like #4174, so catch in refchecks
       // checkNoConflict(PRIVATE, FINAL)    // can't do this because FINAL also means compile-time constant
-      checkNoConflict(ABSTRACT, FINAL)
+      // checkNoConflict(ABSTRACT, FINAL)   // this one gives a bad error for non-@inline classes which extend AnyVal
       // @PP: I added this as a sanity check because these flags are supposed to be
       // converted to ABSOVERRIDE before arriving here.
       checkNoConflict(ABSTRACT, OVERRIDE)

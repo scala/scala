@@ -183,7 +183,7 @@ trait MemberHandlers {
     // TODO: Need to track these specially to honor Predef masking attempts,
     // because they must be the leading imports in the code generated for each
     // line.  We can use the same machinery as Contexts now, anyway.
-    def isPredefImport = treeInfo.isPredefExpr(expr)
+    def isPredefImport = isReferenceToPredef(expr)
 
     // wildcard imports, e.g. import foo._
     private def selectorWild    = selectors filter (_.name == nme.USCOREkw)

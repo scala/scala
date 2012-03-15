@@ -11,6 +11,18 @@ import api.Modifier
 
 trait Trees extends api.Trees { self: SymbolTable =>
 
+  // Belongs in TreeInfo but then I can't reach it from TreePrinters.
+  def isReferenceToScalaMember(t: Tree, Id: Name) = t match {
+    case Ident(Id)                                          => true
+    case Select(Ident(nme.scala_), Id)                      => true
+    case Select(Select(Ident(nme.ROOTPKG), nme.scala_), Id) => true
+    case _                                                  => false
+  }
+  /** Is the tree Predef, scala.Predef, or _root_.scala.Predef?
+   */
+  def isReferenceToPredef(t: Tree) = isReferenceToScalaMember(t, nme.Predef)
+  def isReferenceToAnyVal(t: Tree) = isReferenceToScalaMember(t, tpnme.AnyVal)
+
   // --- modifiers implementation ---------------------------------------
 
   /** @param privateWithin the qualifier for a private (a type name)
@@ -122,11 +134,14 @@ trait Trees extends api.Trees { self: SymbolTable =>
       }
     }
 
-    def substTreeSyms(pairs: (Symbol, Symbol)*): Tree = {
-      val list  = pairs.toList
-      val subst = new TreeSymSubstituter(list map (_._1), list map (_._2))
-      subst(tree)
-    }
+    def substTreeSyms(pairs: (Symbol, Symbol)*): Tree =
+      substTreeSyms(pairs.map(_._1).toList, pairs.map(_._2).toList)
+
+    def substTreeSyms(from: List[Symbol], to: List[Symbol]): Tree =
+      new TreeSymSubstituter(from, to)(tree)
+
+    def substTreeThis(clazz: Symbol, to: Tree): Tree = new ThisSubstituter(clazz, to) transform tree
+
     def shallowDuplicate: Tree = new ShallowDuplicator(tree) transform tree
     def shortClass: String = tree.getClass.getName split "[.$]" last
 
@@ -303,10 +318,14 @@ trait Trees extends api.Trees { self: SymbolTable =>
   }
 
   class ChangeOwnerTraverser(val oldowner: Symbol, val newowner: Symbol) extends Traverser {
-    def changeOwner(tree: Tree) = {
-      if ((tree.isDef || tree.isInstanceOf[Function]) &&
-          tree.symbol != NoSymbol && tree.symbol.owner == oldowner)
-        tree.symbol.owner = newowner
+    def changeOwner(tree: Tree) = tree match {
+      case Return(expr) =>
+        if (tree.symbol == oldowner)
+          tree.symbol = newowner
+      case _: DefTree | _: Function =>
+        if (tree.symbol != NoSymbol && tree.symbol.owner == oldowner)
+          tree.symbol.owner = newowner
+      case _ =>
     }
     override def traverse(tree: Tree) {
       changeOwner(tree)
@@ -340,6 +359,19 @@ trait Trees extends api.Trees { self: SymbolTable =>
         super.transform(tree)
     }
     override def toString = substituterString("Symbol", "Tree", from, to)
+  }
+
+  /** Substitute clazz.this with `to`. `to` must be an attributed tree. 
+   */
+  class ThisSubstituter(clazz: Symbol, to: => Tree) extends Transformer {
+    val newtpe = to.tpe
+    override def transform(tree: Tree) = {
+      if (tree.tpe ne null) tree.tpe = tree.tpe.substThis(clazz, newtpe)
+      tree match {
+        case This(_) if tree.symbol == clazz => to
+        case _ => super.transform(tree)
+      }
+    }
   }
 
   class TypeMapTreeSubstituter(val typeMap: TypeMap) extends Traverser {

@@ -525,7 +525,8 @@ abstract class RefChecks extends InfoTransform with reflect.internal.transform.R
             !other.isDeferred && other.isJavaDefined && {
               // #3622: erasure operates on uncurried types --
               // note on passing sym in both cases: only sym.isType is relevant for uncurry.transformInfo
-              def uncurryAndErase(tp: Type) = erasure.erasure(sym, uncurry.transformInfo(sym, tp))
+              // !!! erasure.erasure(sym, uncurry.transformInfo(sym, tp)) gives erreneous of inaccessible type - check whether that's still the case!
+              def uncurryAndErase(tp: Type) = erasure.erasure(sym)(uncurry.transformInfo(sym, tp))
               val tp1 = uncurryAndErase(clazz.thisType.memberType(sym))
               val tp2 = uncurryAndErase(clazz.thisType.memberType(other))
               afterErasure(tp1 matches tp2)
@@ -693,8 +694,10 @@ abstract class RefChecks extends InfoTransform with reflect.internal.transform.R
 
         if (abstractErrors.nonEmpty)
           unit.error(clazz.pos, abstractErrorMessage)
-      } else if (clazz.isTrait) {
-        // prevent abstract methods in interfaces that override final members in Object; see #4431
+      }
+      else if (clazz.isTrait && !(clazz isSubClass AnyValClass)) {
+        // For non-AnyVal classes, prevent abstract methods in interfaces that override
+        // final members in Object; see #4431
         for (decl <- clazz.info.decls.iterator) {
           val overridden = decl.overriddenSymbol(ObjectClass)
           if (overridden.isFinal)
@@ -1061,7 +1064,7 @@ abstract class RefChecks extends InfoTransform with reflect.internal.transform.R
         def isBoolean(s: Symbol) = unboxedValueClass(s) == BooleanClass
         def isUnit(s: Symbol)    = unboxedValueClass(s) == UnitClass
         def isNumeric(s: Symbol) = isNumericValueClass(unboxedValueClass(s)) || (s isSubClass ScalaNumberClass)
-        def isSpecial(s: Symbol) = isValueClass(unboxedValueClass(s)) || (s isSubClass ScalaNumberClass) || isMaybeValue(s)
+        def isSpecial(s: Symbol) = isPrimitiveValueClass(unboxedValueClass(s)) || (s isSubClass ScalaNumberClass) || isMaybeValue(s)
         def possibleNumericCount = onSyms(_ filter (x => isNumeric(x) || isMaybeValue(x)) size)
         val nullCount            = onSyms(_ filter (_ == NullClass) size)
 
@@ -1082,7 +1085,7 @@ abstract class RefChecks extends InfoTransform with reflect.internal.transform.R
         if (nullCount == 2)
           nonSensible("", true)  // null == null
         else if (nullCount == 1) {
-          if (onSyms(_ exists isValueClass)) // null == 5
+          if (onSyms(_ exists isPrimitiveValueClass)) // null == 5
             nonSensible("", false)
           else if (onTrees( _ exists isNew)) // null == new AnyRef
             nonSensibleWarning("a fresh object", false)
@@ -1122,7 +1125,7 @@ abstract class RefChecks extends InfoTransform with reflect.internal.transform.R
           // warn only if they have no common supertype below Object
           else {
             val common = global.lub(List(actual.tpe, receiver.tpe))
-            if (common.typeSymbol == ScalaObjectClass || (ObjectClass.tpe <:< common))
+            if (ObjectClass.tpe <:< common)
               unrelatedTypes()
           }
         }
@@ -1470,7 +1473,10 @@ abstract class RefChecks extends InfoTransform with reflect.internal.transform.R
       if (settings.Xmigration28.value)
         checkMigration(sym, tree.pos)
 
-      if (currentClass != sym.owner && sym.hasLocalFlag) {
+      if (sym eq NoSymbol) {
+        unit.warning(tree.pos, "Select node has NoSymbol! " + tree + " / " + tree.tpe)
+      }
+      else if (currentClass != sym.owner && sym.hasLocalFlag) {
         var o = currentClass
         var hidden = false
         while (!hidden && o != sym.owner && o != sym.owner.moduleClass && !o.isPackage) {
@@ -1517,6 +1523,19 @@ abstract class RefChecks extends InfoTransform with reflect.internal.transform.R
         case _ => ()
     }
 
+    // verify classes extending AnyVal meet the requirements
+    // (whatever those are to be, but at least: @inline annotation)
+    private def checkAnyValSubclass(clazz: Symbol) = {
+      if ((clazz isSubClass AnyValClass) && (clazz ne AnyValClass) && !isPrimitiveValueClass(clazz)) {
+        if (clazz.isTrait)
+          unit.error(clazz.pos, "Only classes (not traits) are allowed to extend AnyVal")
+      /* [Martin] That one is already taken care of by Typers
+        if (clazz.tpe <:< AnyRefClass.tpe)
+          unit.error(clazz.pos, "Classes which extend AnyVal may not have an ancestor which inherits AnyRef")
+          */
+      }
+    }
+
     override def transform(tree: Tree): Tree = {
       val savedLocalTyper = localTyper
       val savedCurrentApplication = currentApplication
@@ -1548,6 +1567,7 @@ abstract class RefChecks extends InfoTransform with reflect.internal.transform.R
             checkOverloadedRestrictions(currentOwner)
             val bridges = addVarargBridges(currentOwner)
             checkAllOverrides(currentOwner)
+            checkAnyValSubclass(currentOwner)
             if (bridges.nonEmpty) deriveTemplate(tree)(_ ::: bridges) else tree
 
           case dc@TypeTreeWithDeferredRefCheck() => assert(false, "adapt should have turned dc: TypeTreeWithDeferredRefCheck into tpt: TypeTree, with tpt.original == dc"); dc

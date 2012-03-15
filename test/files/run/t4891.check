@@ -5,4 +5,3 @@ test.generic.C1
 test.generic.C2
   (m) public void test.generic.C1.m1()
 null
-interface scala.ScalaObject

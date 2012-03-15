@@ -66,7 +66,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
 
   import definitions.{
     RootClass, BooleanClass, UnitClass, ArrayClass,
-    ScalaValueClasses, isValueClass, isScalaValueType,
+    ScalaValueClasses, isPrimitiveValueClass, isScalaValueType,
     SpecializedClass, RepeatedParamClass, JavaRepeatedParamClass,
     AnyRefClass, ObjectClass, AnyRefModule,
     GroupOfSpecializable, uncheckedVarianceClass, ScalaInlineClass
@@ -123,14 +123,14 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
   // then pos/spec-List.scala fails - why? Does this kind of check fail
   // for similar reasons? Does `sym.isAbstractType` make a difference?
   private def isSpecializedAnyRefSubtype(tp: Type, sym: Symbol) = {
-    specializedOn(sym).exists(s => !isValueClass(s)) &&
-    !isValueClass(tp.typeSymbol) &&
+    specializedOn(sym).exists(s => !isPrimitiveValueClass(s)) &&
+    !isPrimitiveValueClass(tp.typeSymbol) &&
     isBoundedGeneric(tp)
     //(tp <:< AnyRefClass.tpe)
   }
   private def isBoundedGeneric(tp: Type) = tp match {
     case TypeRef(_, sym, _) if sym.isAbstractType => (tp <:< AnyRefClass.tpe)
-    case TypeRef(_, sym, _)                       => !isValueClass(sym)
+    case TypeRef(_, sym, _)                       => !isPrimitiveValueClass(sym)
     case _                                        => false
   }
 
@@ -348,7 +348,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
    */
   def specializesClass(sym: Symbol): Symbol = {
     val c = sym.companionClass
-    if (isValueClass(c)) c else AnyRefClass
+    if (isPrimitiveValueClass(c)) c else AnyRefClass
   }
 
   /** Return the types `sym` should be specialized at. This may be some of the primitive types
@@ -587,7 +587,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
               " => " + sClass.defStringSeenAs(sClass.typeOfThis)
           )
         }
-        polyType(newClassTParams, ClassInfoType(parents ::: extraSpecializedMixins, decls1, sClass))
+        GenPolyType(newClassTParams, ClassInfoType(parents ::: extraSpecializedMixins, decls1, sClass))
       }
 
       afterSpecialize(sClass setInfo specializedInfoType)
@@ -818,7 +818,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
 
           // the cloneInfo is necessary so that method parameter symbols are cloned at the new owner
           val methodType = sym.info.resultType.instantiateTypeParams(keys ++ tps, vals ++ tps1.map(_.tpe)).cloneInfo(specMember)
-          specMember setInfo polyType(tps1, methodType)
+          specMember setInfo GenPolyType(tps1, methodType)
 
           debuglog("expanded member: " + sym  + ": " + sym.info +
             " -> " + specMember +
@@ -994,7 +994,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
   private def unify(tp1: Type, tp2: Type, env: TypeEnv, strict: Boolean): TypeEnv = (tp1, tp2) match {
     case (TypeRef(_, sym1, _), _) if isSpecialized(sym1) =>
       debuglog("Unify - basic case: " + tp1 + ", " + tp2)
-      if (isValueClass(tp2.typeSymbol))
+      if (isPrimitiveValueClass(tp2.typeSymbol) || isSpecializedAnyRefSubtype(tp2, sym1))
         env + ((sym1, tp2))
       else if (isSpecializedAnyRefSubtype(tp2, sym1))
         env + ((sym1, tp2)) // env + ((sym1, AnyRefClass.tpe))
@@ -1130,7 +1130,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
         )
         val newScope = newScopeWith(specializeClass(clazz, typeEnv(clazz)) ++ specialOverrides(clazz): _*)
         // If tparams.isEmpty, this is just the ClassInfoType.
-        polyType(tparams, ClassInfoType(parents1, newScope, clazz))
+        GenPolyType(tparams, ClassInfoType(parents1, newScope, clazz))
       case _ =>
         tpe
     }
@@ -1342,7 +1342,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
 
               val env = typeEnv(specMember)
               val residualTargs = symbol.info.typeParams zip targs collect {
-                case (tvar, targ) if !env.contains(tvar) || !isValueClass(env(tvar).typeSymbol) => targ
+                case (tvar, targ) if !env.contains(tvar) || !isPrimitiveValueClass(env(tvar).typeSymbol) => targ
               }
 
               ifDebug(assert(residualTargs.length == specMember.info.typeParams.length,

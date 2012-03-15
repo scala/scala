@@ -1,4 +1,4 @@
-T<java.lang.Object> interface scala.ScalaObject
+T<java.lang.Object>
 List(A, char, class java.lang.Object)
 a
 public <T> java.lang.Object Arr.arr4(java.lang.Object[],scala.reflect.Manifest<T>)

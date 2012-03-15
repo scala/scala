@@ -3,8 +3,8 @@ compiling Set(A.scala, B.scala, C.scala)
 Changes: Map()
 builder > A.scala
 compiling Set(A.scala)
-Changes: Map(class A -> List(), class B -> List(Changed(Class(B))[List((A,Object), (ScalaObject,ScalaObject))]))
-invalidate C.scala because parents have changed [Changed(Class(B))[List((A,Object), (ScalaObject,ScalaObject))]]
+Changes: Map(class A -> List(), class B -> List(Changed(Class(B))[List((A,Object))]))
+invalidate C.scala because parents have changed [Changed(Class(B))[List((A,Object))]]
 invalidate B.scala because it references invalid (no longer inherited) definition [ParentChanged(Class(C))]
 compiling Set(B.scala, C.scala)
 B.scala:3: error: type mismatch;

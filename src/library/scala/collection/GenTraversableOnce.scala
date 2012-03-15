@@ -41,7 +41,7 @@ package scala.collection
  *  @author Aleksandar Prokopec
  *  @since 2.9
  */
-trait GenTraversableOnce[+A] {
+trait GenTraversableOnce[+A] extends Any {
 
   def foreach[U](f: A => U): Unit
 
@@ -124,6 +124,7 @@ trait GenTraversableOnce[+A] {
    *      scala> val b = (a /:\ 5)(_+_)
    *      b: Int = 15
    * }}}*/
+  @deprecated("use fold instead")
   def /:\[A1 >: A](z: A1)(op: (A1, A1) => A1): A1 = fold(z)(op)
 
   /** Applies a binary operator to a start value and all elements of this $coll,
