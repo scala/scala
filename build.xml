@@ -1930,7 +1930,7 @@ DISTRIBUTION
   </target>
 
   <target name="dist.latest.unix" depends="dist.src" unless="os.win">
-    <symlink link="${dists.dir}/latest" resource="${dist.dir}" overwrite="yes"/>
+    <symlink link="${dists.dir}/latest" resource="${dist.name}" overwrite="yes"/>
   </target>
 
   <target name="dist.latest.win" depends="dist.src" if="os.win">
