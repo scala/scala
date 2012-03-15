@@ -86,6 +86,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
    *        nor do they have a setter (not if they are vals anyway). The usual
    *        logic for setting bitmaps does therefor not work for such fields.
    *        That's why they are excluded.
+   *  Note: The `checkinit` option does not check if transient fields are initialized.
    */
   private def needsInitFlag(sym: Symbol) = (
         settings.checkInit.value
@@ -95,6 +96,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
      && !sym.accessed.hasFlag(PRESUPER)
      && !sym.isOuterAccessor
      && !(sym.owner isSubClass DelayedInitClass)
+     && !(sym.isGetter && (sym.accessed hasAnnotation TransientAttr))
   )
 
   /** Maps all parts of this type that refer to implementation classes to
