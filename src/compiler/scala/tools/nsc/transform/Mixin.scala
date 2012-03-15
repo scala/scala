@@ -96,7 +96,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
      && !sym.accessed.hasFlag(PRESUPER)
      && !sym.isOuterAccessor
      && !(sym.owner isSubClass DelayedInitClass)
-     && !(sym hasAnnotation TransientAttr)
+     && !(sym.isGetter && (sym.accessed hasAnnotation TransientAttr))
   )
 
   /** Maps all parts of this type that refer to implementation classes to
