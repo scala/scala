@@ -2077,12 +2077,6 @@ FORWARDED TARGETS FOR NIGHTLY BUILDS
     <ant antfile="${src.dir}/build/pack.xml" target="pack-all.done" inheritall="yes" inheritrefs="yes"/>
   </target>
 
-  <target name="nightly.checkinit">
-    <antcall target="nightly-nopt">
-      <param name="scalac.args.optimise" value="-Xcheckinit"/>
-    </antcall>
-  </target>
-
   <target name="nightly.checkall">
     <antcall target="nightly-nopt">
       <param name="partest.scalacopts" value="-Ycheck:all"/>
