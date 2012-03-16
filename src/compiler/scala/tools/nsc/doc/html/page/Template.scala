@@ -438,7 +438,9 @@ class Template(tpl: DocTemplateEntity) extends HtmlPage {
           if(!comment.throws.isEmpty) {
             <dt>Exceptions thrown</dt>
             <dd>{
-              val exceptionsXml: Iterable[scala.xml.NodeSeq] = (for(exception <- comment.throws ) yield <span class="cmt">{Text(exception._1) ++ bodyToHtml(exception._2)}</span> )
+              val exceptionsXml: Iterable[scala.xml.NodeSeq] =
+                for(exception <- comment.throws.toList.sortBy(_._1) ) yield
+                  <span class="cmt">{Text(exception._1) ++ bodyToHtml(exception._2)}</span>
               exceptionsXml.reduceLeft(_ ++ Text("") ++ _)
             }</dd>
           } else NodeSeq.Empty

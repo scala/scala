@@ -19,6 +19,8 @@ import scala.collection.mutable
  */
 trait DocComments { self: Global =>
 
+  var cookedDocComments = Map[Symbol, String]()
+
   def reporter: Reporter
 
   /** The raw doc comment map */
@@ -50,21 +52,29 @@ trait DocComments { self: Global =>
     else sym.owner.ancestors map (sym overriddenSymbol _) filter (_ != NoSymbol)
   }
 
-  /** The raw doc comment of symbol `sym`, minus @usecase and @define sections, augmented by
+  /** The raw doc comment of symbol `sym`, minus usecase and define sections, augmented by
    *  missing sections of an inherited doc comment.
    *  If a symbol does not have a doc comment but some overridden version of it does,
    *  the doc comment of the overridden version is copied instead.
    */
-  def cookedDocComment(sym: Symbol, docStr: String = ""): String = {
-    val ownComment = if (docStr.length == 0) docComments get sym map (_.template) getOrElse ""
-                     else DocComment(docStr).template
-    superComment(sym) match {
-      case None =>
-        ownComment
-      case Some(sc) =>
-        if (ownComment == "") sc
-        else merge(sc, ownComment, sym)
-    }
+  def cookedDocComment(sym: Symbol, docStr: String = ""): String = cookedDocComments.get(sym) match {
+    case Some(comment) =>
+      comment
+    case None =>
+      val ownComment = if (docStr.length == 0) docComments get sym map (_.template) getOrElse ""
+                       else DocComment(docStr).template
+      val comment = superComment(sym) match {
+        case None =>
+          if (ownComment.indexOf("@inheritdoc") != -1)
+            reporter.warning(sym.pos, "The comment for " + sym +
+                " contains @inheritdoc, but no parent comment is available to inherit from.")
+          ownComment.replaceAllLiterally("@inheritdoc", "<invalid inheritdoc annotation>")
+        case Some(sc) =>
+          if (ownComment == "") sc
+          else expandInheritdoc(sc, merge(sc, ownComment, sym), sym)
+      }
+      cookedDocComments += (sym -> comment)
+      comment
   }
 
   /** The cooked doc comment of symbol `sym` after variable expansion, or "" if missing.
@@ -99,10 +109,18 @@ trait DocComments { self: Global =>
    */
   def useCases(sym: Symbol, site: Symbol): List[(Symbol, String, Position)] = {
     def getUseCases(dc: DocComment) = {
-      for (uc <- dc.useCases; defn <- uc.expandedDefs(sym, site)) yield
-        (defn,
-         expandVariables(merge(cookedDocComment(sym), uc.comment.raw, defn), sym, site),
-         uc.pos)
+      val fullSigComment = cookedDocComment(sym)
+      for (uc <- dc.useCases; defn <- uc.expandedDefs(sym, site)) yield {
+        // use cases comments go through a series of transformations:
+        // 1 - filling in missing sections from the full signature
+        // 2 - expanding explicit inheritance @inheritdoc tags
+        // 3 - expanding variables like $COLL
+        val useCaseCommentRaw        = uc.comment.raw
+        val useCaseCommentMerged     = merge(fullSigComment, useCaseCommentRaw, defn)
+        val useCaseCommentInheritdoc = expandInheritdoc(fullSigComment, useCaseCommentMerged, sym)
+        val useCaseCommentVariables  = expandVariables(useCaseCommentInheritdoc, sym, site)
+        (defn, useCaseCommentVariables, uc.pos)
+      }
     }
     getDocComment(sym) map getUseCases getOrElse List()
   }
@@ -200,6 +218,80 @@ trait DocComments { self: Global =>
       out.toString
     }
   }
+
+  /**
+   * Expand inheritdoc tags
+   *  - for the main comment we transform the inheritdoc into the super variable,
+   *  and the variable expansion can expand it further
+   *  - for the param, tparam and throws sections we must replace comments on the spot
+   *
+   * This is done separately, for two reasons:
+   * 1. It takes longer to run compared to merge
+   * 2. The inheritdoc annotation should not be used very often, as building the comment from pieces severely
+   * impacts performance
+   */
+  def expandInheritdoc(src: String, dst: String, sym: Symbol): String =
+    if (dst.indexOf("@inheritdoc") == -1)
+      dst
+    else {
+      val srcSections    = tagIndex(src)
+      val dstSections    = tagIndex(dst)
+      val srcTagMap      = sectionTagMap(src, srcSections)
+      val srcNamedParams = Map() +
+        ("@param"  -> paramDocs(src, "@param", srcSections)) +
+        ("@tparam" -> paramDocs(src, "@tparam", srcSections)) +
+        ("@throws" -> paramDocs(src, "@throws", srcSections))
+
+      val out         = new StringBuilder
+
+      def replaceInheritdoc(src: String, dst: String) =
+        if (dst.indexOf("@inheritdoc") == -1)
+          dst
+        else
+          dst.replaceAllLiterally("@inheritdoc", src)
+
+      def getSourceSection(section: (Int, Int)): String = {
+
+        def getSectionHeader = extractSectionTag(dst, section) match {
+          case param@("@param"|"@tparam"|"@throws")  => param + " "  + extractSectionParam(dst, section)
+          case other     => other
+        }
+
+        def sectionString(param: String, paramMap: Map[String, (Int, Int)]): String =
+          paramMap.get(param) match {
+            case Some(section) =>
+              // Cleanup the section tag and parameter
+              val sectionTextBounds = extractSectionText(src, section)
+              cleanupSectionText(src.substring(sectionTextBounds._1, sectionTextBounds._2))
+            case None =>
+              reporter.info(sym.pos, "The \"" + getSectionHeader + "\" annotation of the " + sym +
+                  " comment contains @inheritdoc, but the corresponding section in the parent is not defined.", true)
+              "<invalid inheritdoc annotation>"
+          }
+
+        dst.substring(section._1, section._1 + 7) match {
+          case param@("@param "|"@tparam"|"@throws") => sectionString(extractSectionParam(dst, section), srcNamedParams(param.trim))
+          case _                                     => sectionString(extractSectionTag(dst, section), srcTagMap)
+        }
+      }
+
+      def mainComment(str: String, sections: List[(Int, Int)]): String =
+        if (str.trim.length > 3)
+          str.trim.substring(3, startTag(str, sections))
+        else
+          ""
+
+      // Append main comment
+      out.append("/**")
+      out.append(replaceInheritdoc(mainComment(src, srcSections), mainComment(dst, dstSections)))
+
+      // Append sections
+      for (section <- dstSections)
+        out.append(replaceInheritdoc(getSourceSection(section), dst.substring(section._1, section._2)))
+
+      out.append("*/")
+      out.toString
+    }
 
   /** Maps symbols to the variable -> replacement maps that are defined
    *  in their doc comments

@@ -26,6 +26,14 @@ object DocStrings {
     if (start < str.length && isIdentifierPart(str charAt start)) skipIdent(str, start + 1)
     else start
 
+  /** Returns index of string `str` following `start` skipping
+   *  sequence of identifier characters.
+   */
+  def skipTag(str: String, start: Int): Int =
+    if (start < str.length && (str charAt start) == '@') skipIdent(str, start + 1)
+    else start
+
+
   /** Returns index of string `str` after `start` skipping longest
    *  sequence of space and tab characters, possibly also containing
    *  a single `*` character or the `/``**` sequence.
@@ -68,37 +76,45 @@ object DocStrings {
 
   /** Produces a string index, which is a list of ``sections'', i.e
    *  pairs of start/end positions of all tagged sections in the string.
-   *  Every section starts with a `@` and extends to the next `@`, or
-   *  to the end of the comment string, but excluding the final two
+   *  Every section starts with an at sign and extends to the next at sign,
+   *  or to the end of the comment string, but excluding the final two
    *  characters which terminate the comment.
    *
    *  Also take usecases into account - they need to expand until the next
    *  usecase or the end of the string, as they might include other sections
    *  of their own
    */
-  def tagIndex(str: String, p: Int => Boolean = (idx => true)): List[(Int, Int)] =
-    findAll(str, 0) (idx => str(idx) == '@' && p(idx)) match {
+  def tagIndex(str: String, p: Int => Boolean = (idx => true)): List[(Int, Int)] = {
+    var indices = findAll(str, 0) (idx => str(idx) == '@' && p(idx))
+    indices = mergeUsecaseSections(str, indices)
+    indices = mergeInheritdocSections(str, indices)
+
+    indices match {
       case List() => List()
-      case idxs => {
-        val idxs2 = mergeUsecaseSections(str, idxs)
-        idxs2 zip (idxs2.tail ::: List(str.length - 2))
-      }
+      case idxs   => idxs zip (idxs.tail ::: List(str.length - 2))
     }
+  }
 
   /**
    * Merge sections following an usecase into the usecase comment, so they
    * can override the parent symbol's sections
    */
   def mergeUsecaseSections(str: String, idxs: List[Int]): List[Int] = {
-    idxs.find(str.substring(_).startsWith("@usecase")) match {
-      case Some(firstUC) =>
-        val commentSections = idxs.take(idxs.indexOf(firstUC))
-        val usecaseSections = idxs.drop(idxs.indexOf(firstUC)).filter(str.substring(_).startsWith("@usecase"))
+    idxs.indexWhere(str.substring(_).startsWith("@usecase")) match {
+      case firstUCIndex if firstUCIndex != -1 =>
+        val commentSections = idxs.take(firstUCIndex)
+        val usecaseSections = idxs.drop(firstUCIndex).filter(str.substring(_).startsWith("@usecase"))
         commentSections ::: usecaseSections
-      case None =>
+      case _ =>
         idxs
     }
   }
+
+  /**
+   * Merge the inheritdoc sections, as they never make sense on their own
+   */
+  def mergeInheritdocSections(str: String, idxs: List[Int]): List[Int] =
+    idxs.filterNot(str.substring(_).startsWith("@inheritdoc"))
 
   /** Does interval `iv` start with given `tag`?
    */
@@ -108,12 +124,11 @@ object DocStrings {
   def startsWithTag(str: String, start: Int, tag: String): Boolean =
     str.startsWith(tag, start) && !isIdentifierPart(str charAt (start + tag.length))
 
-
   /** The first start tag of a list of tag intervals,
    *  or the end of the whole comment string - 2 if list is empty
    */
   def startTag(str: String, sections: List[(Int, Int)]) = sections match {
-    case List() => str.length - 2
+    case Nil             => str.length - 2
     case (start, _) :: _ => start
   }
 
@@ -155,4 +170,46 @@ object DocStrings {
       idx
     }
   }
+
+  /** A map from the section tag to section parameters */
+  def sectionTagMap(str: String, sections: List[(Int, Int)]): Map[String, (Int, Int)] =
+    Map() ++ {
+      for (section <- sections) yield
+        extractSectionTag(str, section) -> section
+    }
+
+  /** Extract the section tag, treating the section tag as an indentifier */
+  def extractSectionTag(str: String, section: (Int, Int)): String =
+    str.substring(section._1, skipTag(str, section._1))
+
+  /** Extract the section parameter */
+  def extractSectionParam(str: String, section: (Int, Int)): String = {
+    assert(str.substring(section._1).startsWith("@param") ||
+           str.substring(section._1).startsWith("@tparam") ||
+           str.substring(section._1).startsWith("@throws"))
+
+    val start = skipWhitespace(str, skipTag(str, section._1))
+    val finish = skipIdent(str, start)
+
+    str.substring(start, finish)
+  }
+
+  /** Extract the section text, except for the tag and comment newlines */
+  def extractSectionText(str: String, section: (Int, Int)): (Int, Int) = {
+    if (str.substring(section._1).startsWith("@param") ||
+        str.substring(section._1).startsWith("@tparam") ||
+        str.substring(section._1).startsWith("@throws"))
+      (skipWhitespace(str, skipIdent(str, skipWhitespace(str, skipTag(str, section._1)))), section._2)
+    else
+      (skipWhitespace(str, skipTag(str, section._1)), section._2)
+  }
+
+  /** Cleanup section text */
+  def cleanupSectionText(str: String) = {
+    var result = str.trim.replaceAll("\n\\s+\\*\\s+", " \n")
+    while (result.endsWith("\n"))
+      result = result.substring(0, str.length - 1)
+    result
+  }
+
 }
