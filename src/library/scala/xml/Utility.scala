@@ -187,7 +187,7 @@ object Utility extends AnyRef with parsing.TokenTests {
    * Note that calling this source-compatible method will result in the same old, arguably almost universally unwanted,
    * behaviour.
    */
-  @deprecated(since="2.10", message="please use `serialize` instead and specify a `minimizeTags` parameter")
+  @deprecated("Please use `serialize` instead and specify a `minimizeTags` parameter", "2.10")
   def toXML(
     x: Node,
     pscope: NamespaceBinding = TopScope,
