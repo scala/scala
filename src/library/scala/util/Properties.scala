@@ -101,8 +101,7 @@ private[scala] trait PropertiesTrait {
   /** The version number of the jar this was loaded from plus "version " prefix,
    *  or "version (unknown)" if it cannot be determined.
    */
-  val versionString         = "version " + scalaPropOrElse("version.number", "(unknown)") + 
-                              scalaPropOrNone("maven.version.number").map(v => "(" + v + ")").getOrElse("")
+  val versionString         = "version " + scalaPropOrElse("version.number", "(unknown)")
   val copyrightString       = scalaPropOrElse("copyright.string", "(c) 2002-2011 LAMP/EPFL")
 
   /** This is the encoding to use reading in source files, overridden with -encoding
