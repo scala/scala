@@ -126,7 +126,7 @@ self =>
   val global: Global
   import global._
 
-  case class OpInfo(operand: Tree, operator: Name, targs: List[Tree], offset: Offset)
+  case class OpInfo(operand: Tree, operator: Name, offset: Offset)
 
   class SourceFileParser(val source: SourceFile) extends Parser {
 
@@ -789,7 +789,7 @@ self =>
         val rPos = top.pos
         val end = if (rPos.isDefined) rPos.endOrPoint else opPos.endOrPoint
         top = atPos(start, opinfo.offset, end) {
-          makeBinop(isExpr, opinfo.operand, opinfo.operator, top, opPos, opinfo.targs)
+          makeBinop(isExpr, opinfo.operand, opinfo.operator, top, opPos)
         }
       }
       top
@@ -1440,17 +1440,6 @@ self =>
       }
     }
 
-    def advanceStack(base: List[OpInfo], top: Tree): Tree = {
-      val newTop = reduceStack(true, base, top, precedence(in.name), treeInfo.isLeftAssoc(in.name))
-      val op     = in.name
-      val pos    = in.offset
-      ident()
-      val targs = if (in.token == LBRACKET) exprTypeArgs() else Nil
-      opstack ::= OpInfo(newTop, op, targs, pos)
-
-      newTop
-    }
-
     /** {{{
      *  PostfixExpr   ::= InfixExpr [Id [nl]]
      *  InfixExpr     ::= PrefixExpr
@@ -1462,21 +1451,22 @@ self =>
       var top = prefixExpr()
 
       while (isIdent) {
-        top = advanceStack(base, top)
+        top = reduceStack(true, base, top, precedence(in.name), treeInfo.isLeftAssoc(in.name))
+        val op = in.name
+        opstack = OpInfo(top, op, in.offset) :: opstack
+        ident()
         newLineOptWhenFollowing(isExprIntroToken)
-
         if (isExprIntro) {
           val next = prefixExpr()
           if (next == EmptyTree)
             return reduceStack(true, base, top, 0, true)
           top = next
-        }
-        else {
+        } else {
           val topinfo = opstack.head
           opstack = opstack.tail
           val od = stripParens(reduceStack(true, base, topinfo.operand, 0, true))
           return atPos(od.pos.startOrPoint, topinfo.offset) {
-            applyTypeArgs(Select(od, topinfo.operator.encode), topinfo.targs)
+            Select(od, topinfo.operator.encode)
           }
         }
       }
@@ -1816,7 +1806,7 @@ self =>
           top = reduceStack(
             false, base, top, precedence(in.name), treeInfo.isLeftAssoc(in.name))
           val op = in.name
-          opstack = OpInfo(top, op, Nil, in.offset) :: opstack
+          opstack = OpInfo(top, op, in.offset) :: opstack
           ident()
           top = simplePattern()
         }
@@ -1905,11 +1895,6 @@ self =>
     def startAnnotType() = outPattern.annotType()
     def exprTypeArgs()   = outPattern.typeArgs()
     def exprSimpleType() = outPattern.simpleType()
-
-    def applyTypeArgs(sel: Tree, targs: List[Tree]): Tree = (
-      if (targs.isEmpty) sel
-      else atPos(sel.pos)(TypeApply(sel, targs))
-    )
 
     /** Default entry points into some pattern contexts. */
     def pattern(): Tree = noSeq.pattern()
