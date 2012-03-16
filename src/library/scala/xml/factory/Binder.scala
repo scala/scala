@@ -43,13 +43,13 @@ abstract class Binder(val preserveWS: Boolean) extends ValidatingMarkupHandler {
       result &+ text(0, x.data)
     case x:EntityRef =>
       result &+ entityRef(0, x.entityName)
-    case _ =>
-      elemStart(0, n.prefix, n.label, n.attributes, n.scope)
+    case x:Elem =>
+      elemStart(0, x.prefix, x.label, x.attributes, x.scope)
       val old = result
       result = new NodeBuffer()
-      for (m <- n.child) traverse(m)
-      result = old &+ elem(0, n.prefix, n.label, n.attributes, n.scope, NodeSeq.fromSeq(result)).toList;
-      elemEnd(0, n.prefix, n.label)
+      for (m <- x.child) traverse(m)
+      result = old &+ elem(0, x.prefix, x.label, x.attributes, x.scope, x.minimizeEmpty, NodeSeq.fromSeq(result)).toList;
+      elemEnd(0, x.prefix, x.label)
   }
 
   final def validate(n: Node): Node = {

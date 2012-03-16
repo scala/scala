@@ -569,7 +569,7 @@ trait MarkupParser extends MarkupParserCommon with TokenTests
         tmp
       }
     }
-    val res = handle.elem(pos, pre, local, aMap, scope, ts)
+    val res = handle.elem(pos, pre, local, aMap, scope, ts == NodeSeq.Empty, ts)
     handle.elemEnd(pos, pre, local)
     res
   }
