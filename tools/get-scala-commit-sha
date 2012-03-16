@@ -5,7 +5,7 @@
 # If no dir is given, current working dir is used.
 #
 # Example build version string:
-#   g6f1c486d0b
+#   6f1c486d0ba
 #
 
 [[ $# -eq 0 ]] || cd "$1"
@@ -35,5 +35,6 @@ tag=$(git describe --tags --match 'v2*' --abbrev=0)
 described=$(git describe --tags --match 'v2*' --abbrev=10)
 suffix="${described##${tag}-}"
 hash=$(echo $suffix | cut -d - -f 2)
+hash=${hash#g}
 
 echo "$hash"

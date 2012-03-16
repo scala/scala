@@ -276,7 +276,7 @@ INITIALISATION
       value="${maven.version.number}-${git.commit.date}-${git.commit.drift}-${git.commit.sha}"/>
     <property
       name="osgi.version.number"
-      value="${version.major}.${version.minor}.${version.patch}.r${git.commit.date}${version.suffix}-${git.commit.sha}"/>
+      value="${version.major}.${version.minor}.${version.patch}.v${git.commit.date}${version.suffix}-${git.commit.sha}"/>
 
 
     <!-- Local libs (developer use.) -->
