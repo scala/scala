@@ -26,7 +26,7 @@ class ParCollProperties extends Properties("Parallel collections") {
   include(mutable.IntIntParallelHashMapCheck)
   
   // parallel ctrie
-  include(mutable.IntIntParallelCtrieCheck)
+  include(mutable.IntIntParallelConcurrentTrieMapCheck)
   
   // parallel mutable hash sets (tables)
   include(mutable.IntParallelHashSetCheck)

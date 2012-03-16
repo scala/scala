@@ -75,10 +75,11 @@ abstract class MarkupHandler extends Logged
    *  @param pre      the prefix
    *  @param label    the local name
    *  @param attrs    the attributes (metadata)
+   *  @param empty    `true` if the element was previously empty; `false` otherwise.
    *  @param args     the children of this element
    *  @return         ...
    */
-  def elem(pos: Int, pre: String, label: String, attrs: MetaData, scope: NamespaceBinding, args: NodeSeq): NodeSeq
+  def elem(pos: Int, pre: String, label: String, attrs: MetaData, scope: NamespaceBinding, empty: Boolean, args: NodeSeq): NodeSeq
 
   /** callback method invoked by MarkupParser after parsing PI.
    */

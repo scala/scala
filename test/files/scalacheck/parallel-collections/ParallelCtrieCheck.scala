@@ -15,25 +15,25 @@ import scala.collection.parallel.ops._
 
 
 
-abstract class ParallelCtrieCheck[K, V](tp: String) extends ParallelMapCheck[K, V]("mutable.ParCtrie[" + tp + "]") {
+abstract class ParallelConcurrentTrieMapCheck[K, V](tp: String) extends ParallelMapCheck[K, V]("mutable.ParConcurrentTrieMap[" + tp + "]") {
   // ForkJoinTasks.defaultForkJoinPool.setMaximumPoolSize(Runtime.getRuntime.availableProcessors * 2)
   // ForkJoinTasks.defaultForkJoinPool.setParallelism(Runtime.getRuntime.availableProcessors * 2)
   
-  type CollType = ParCtrie[K, V]
+  type CollType = ParConcurrentTrieMap[K, V]
   
   def isCheckingViews = false
   
   def hasStrictOrder = false
 
   def ofSize(vals: Seq[Gen[(K, V)]], sz: Int) = {  
-    val ct = new mutable.Ctrie[K, V]
+    val ct = new mutable.ConcurrentTrieMap[K, V]
     val gen = vals(rnd.nextInt(vals.size))
     for (i <- 0 until sz) ct += sample(gen)
     ct
   }
   
   def fromTraversable(t: Traversable[(K, V)]) = {
-    val pct = new ParCtrie[K, V]
+    val pct = new ParConcurrentTrieMap[K, V]
     var i = 0
     for (kv <- t.toList) {
       pct += kv
@@ -45,7 +45,7 @@ abstract class ParallelCtrieCheck[K, V](tp: String) extends ParallelMapCheck[K, 
 }
 
 
-object IntIntParallelCtrieCheck extends ParallelCtrieCheck[Int, Int]("Int, Int")
+object IntIntParallelConcurrentTrieMapCheck extends ParallelConcurrentTrieMapCheck[Int, Int]("Int, Int")
 with PairOperators[Int, Int]
 with PairValues[Int, Int]
 {
@@ -58,7 +58,7 @@ with PairValues[Int, Int]
   def koperators = intoperators
   
   override def printDataStructureDebugInfo(ds: AnyRef) = ds match {
-    case pm: ParCtrie[k, v] =>
+    case pm: ParConcurrentTrieMap[k, v] =>
       println("Mutable parallel ctrie")
     case _ =>
       println("could not match data structure type: " + ds.getClass)

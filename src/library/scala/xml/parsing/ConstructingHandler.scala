@@ -21,8 +21,8 @@ abstract class ConstructingHandler extends MarkupHandler
   val preserveWS: Boolean
 
   def elem(pos: Int, pre: String, label: String, attrs: MetaData,
-           pscope: NamespaceBinding, nodes: NodeSeq): NodeSeq =
-    Elem(pre, label, attrs, pscope, nodes:_*)
+           pscope: NamespaceBinding, empty: Boolean, nodes: NodeSeq): NodeSeq =
+    Elem(pre, label, attrs, pscope, empty, nodes:_*)
 
   def procInstr(pos: Int, target: String, txt: String) =
     ProcInstr(target, txt)

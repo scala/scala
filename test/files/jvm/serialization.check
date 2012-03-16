@@ -192,8 +192,8 @@ x = TreeSet(1, 2, 3)
 y = TreeSet(1, 2, 3)
 x equals y: true, y equals x: true
 
-x = Ctrie(1 -> one, 2 -> two, 3 -> three)
-y = Ctrie(1 -> one, 2 -> two, 3 -> three)
+x = ConcurrentTrieMap(1 -> one, 2 -> two, 3 -> three)
+y = ConcurrentTrieMap(1 -> one, 2 -> two, 3 -> three)
 x equals y: true, y equals x: true
 
 x =  xml:src="hello"
@@ -287,8 +287,8 @@ x = ParHashMap(2 -> 4, 1 -> 2)
 y = ParHashMap(2 -> 4, 1 -> 2)
 x equals y: true, y equals x: true
 
-x = ParCtrie(1 -> 2, 2 -> 4)
-y = ParCtrie(1 -> 2, 2 -> 4)
+x = ParConcurrentTrieMap(1 -> 2, 2 -> 4)
+y = ParConcurrentTrieMap(1 -> 2, 2 -> 4)
 x equals y: true, y equals x: true
 
 x = ParHashSet(1, 2, 3)

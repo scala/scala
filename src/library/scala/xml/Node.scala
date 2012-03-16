@@ -159,7 +159,7 @@ abstract class Node extends NodeSeq {
    * @return ...
    */
   def buildString(stripComments: Boolean): String =
-    Utility.toXML(this, stripComments = stripComments).toString
+    Utility.serialize(this, stripComments = stripComments).toString
 
   /**
    * Same as `toString('''false''')`.
