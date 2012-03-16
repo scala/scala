@@ -20,12 +20,12 @@ import scala.collection.mutable.LNode
 import scala.collection.mutable.CNode
 import scala.collection.mutable.SNode
 import scala.collection.mutable.INode
-import scala.collection.mutable.Ctrie
-import scala.collection.mutable.CtrieIterator
+import scala.collection.mutable.ConcurrentTrieMap
+import scala.collection.mutable.ConcurrentTrieMapIterator
 
 
 
-/** Parallel Ctrie collection.
+/** Parallel ConcurrentTrieMap collection.
  *
  *  It has its bulk operations parallelized, but uses the snapshot operation
  *  to create the splitter. This means that parallel bulk operations can be
@@ -34,24 +34,24 @@ import scala.collection.mutable.CtrieIterator
  *  @author Aleksandar Prokopec
  *  @since 2.10
  */
-final class ParCtrie[K, V] private[collection] (private val ctrie: Ctrie[K, V])
+final class ParConcurrentTrieMap[K, V] private[collection] (private val ctrie: ConcurrentTrieMap[K, V])
 extends ParMap[K, V]
-   with GenericParMapTemplate[K, V, ParCtrie]
-   with ParMapLike[K, V, ParCtrie[K, V], Ctrie[K, V]]
-   with ParCtrieCombiner[K, V]
+   with GenericParMapTemplate[K, V, ParConcurrentTrieMap]
+   with ParMapLike[K, V, ParConcurrentTrieMap[K, V], ConcurrentTrieMap[K, V]]
+   with ParConcurrentTrieMapCombiner[K, V]
    with Serializable
 {
-  def this() = this(new Ctrie)
+  def this() = this(new ConcurrentTrieMap)
 
-  override def mapCompanion: GenericParMapCompanion[ParCtrie] = ParCtrie
+  override def mapCompanion: GenericParMapCompanion[ParConcurrentTrieMap] = ParConcurrentTrieMap
 
-  override def empty: ParCtrie[K, V] = ParCtrie.empty
+  override def empty: ParConcurrentTrieMap[K, V] = ParConcurrentTrieMap.empty
 
-  protected[this] override def newCombiner = ParCtrie.newCombiner
+  protected[this] override def newCombiner = ParConcurrentTrieMap.newCombiner
 
   override def seq = ctrie
 
-  def splitter = new ParCtrieSplitter(0, ctrie.readOnlySnapshot().asInstanceOf[Ctrie[K, V]], true)
+  def splitter = new ParConcurrentTrieMapSplitter(0, ctrie.readOnlySnapshot().asInstanceOf[ConcurrentTrieMap[K, V]], true)
 
   override def clear() = ctrie.clear()
 
@@ -87,11 +87,11 @@ extends ParMap[K, V]
     }
   }
 
-  override def stringPrefix = "ParCtrie"
+  override def stringPrefix = "ParConcurrentTrieMap"
 
   /* tasks */
 
-  /** Computes Ctrie size in parallel. */
+  /** Computes ConcurrentTrieMap size in parallel. */
   class Size(offset: Int, howmany: Int, array: Array[BasicNode]) extends Task[Int, Size] {
     var result = -1
     def leaf(prev: Option[Int]) = {
@@ -118,15 +118,15 @@ extends ParMap[K, V]
 }
 
 
-private[collection] class ParCtrieSplitter[K, V](lev: Int, ct: Ctrie[K, V], mustInit: Boolean)
-extends CtrieIterator[K, V](lev, ct, mustInit)
+private[collection] class ParConcurrentTrieMapSplitter[K, V](lev: Int, ct: ConcurrentTrieMap[K, V], mustInit: Boolean)
+extends ConcurrentTrieMapIterator[K, V](lev, ct, mustInit)
    with IterableSplitter[(K, V)]
 {
   // only evaluated if `remaining` is invoked (which is not used by most tasks)
   lazy val totalsize = ct.par.size
   var iterated = 0
 
-  protected override def newIterator(_lev: Int, _ct: Ctrie[K, V], _mustInit: Boolean) = new ParCtrieSplitter[K, V](_lev, _ct, _mustInit)
+  protected override def newIterator(_lev: Int, _ct: ConcurrentTrieMap[K, V], _mustInit: Boolean) = new ParConcurrentTrieMapSplitter[K, V](_lev, _ct, _mustInit)
 
   override def shouldSplitFurther[S](coll: collection.parallel.ParIterable[S], parallelismLevel: Int) = {
     val maxsplits = 3 + Integer.highestOneBit(parallelismLevel)
@@ -153,15 +153,15 @@ extends CtrieIterator[K, V](lev, ct, mustInit)
 }
 
 
-/** Only used within the `ParCtrie`. */
-private[mutable] trait ParCtrieCombiner[K, V] extends Combiner[(K, V), ParCtrie[K, V]] {
+/** Only used within the `ParConcurrentTrieMap`. */
+private[mutable] trait ParConcurrentTrieMapCombiner[K, V] extends Combiner[(K, V), ParConcurrentTrieMap[K, V]] {
 
-  def combine[N <: (K, V), NewTo >: ParCtrie[K, V]](other: Combiner[N, NewTo]): Combiner[N, NewTo] = if (this eq other) this else {
+  def combine[N <: (K, V), NewTo >: ParConcurrentTrieMap[K, V]](other: Combiner[N, NewTo]): Combiner[N, NewTo] = if (this eq other) this else {
     throw new UnsupportedOperationException("This shouldn't have been called in the first place.")
 
-    val thiz = this.asInstanceOf[ParCtrie[K, V]]
-    val that = other.asInstanceOf[ParCtrie[K, V]]
-    val result = new ParCtrie[K, V]
+    val thiz = this.asInstanceOf[ParConcurrentTrieMap[K, V]]
+    val that = other.asInstanceOf[ParConcurrentTrieMap[K, V]]
+    val result = new ParConcurrentTrieMap[K, V]
 
     result ++= thiz.iterator
     result ++= that.iterator
@@ -174,13 +174,13 @@ private[mutable] trait ParCtrieCombiner[K, V] extends Combiner[(K, V), ParCtrie[
 }
 
 
-object ParCtrie extends ParMapFactory[ParCtrie] {
+object ParConcurrentTrieMap extends ParMapFactory[ParConcurrentTrieMap] {
 
-  def empty[K, V]: ParCtrie[K, V] = new ParCtrie[K, V]
+  def empty[K, V]: ParConcurrentTrieMap[K, V] = new ParConcurrentTrieMap[K, V]
 
-  def newCombiner[K, V]: Combiner[(K, V), ParCtrie[K, V]] = new ParCtrie[K, V]
+  def newCombiner[K, V]: Combiner[(K, V), ParConcurrentTrieMap[K, V]] = new ParConcurrentTrieMap[K, V]
 
-  implicit def canBuildFrom[K, V]: CanCombineFrom[Coll, (K, V), ParCtrie[K, V]] = new CanCombineFromMap[K, V]
+  implicit def canBuildFrom[K, V]: CanCombineFrom[Coll, (K, V), ParConcurrentTrieMap[K, V]] = new CanCombineFromMap[K, V]
 
 }
 
