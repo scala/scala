@@ -1295,7 +1295,7 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
     }
 
     def parentTypes(templ: Template): List[Tree] =
-      if (templ.parents.isEmpty) List(atPos(templ.pos.focus)(TypeTree(AnyRefClass.tpe)))
+      if (templ.parents.isEmpty) List(atPos(templ.pos)(TypeTree(AnyRefClass.tpe)))
       else try {
         val clazz = context.owner
         // Normalize supertype and mixins so that supertype is always a class, not a trait.

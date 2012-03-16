@@ -216,7 +216,7 @@ abstract class TreeBuilder {
   def makeNew(parents: List[Tree], self: ValDef, stats: List[Tree], argss: List[List[Tree]],
               npos: Position, cpos: Position): Tree =
     if (parents.isEmpty)
-      makeNew(List(atPos(npos union cpos)(scalaAnyRefConstr)), self, stats, argss, npos, cpos)
+      makeNew(List(scalaAnyRefConstr), self, stats, argss, npos, cpos)
     else if (parents.tail.isEmpty && stats.isEmpty)
       atPos(npos union cpos) { New(parents.head, argss) }
     else {
