@@ -220,21 +220,21 @@ INITIALISATION
     </condition>
   </target>
   <target name="init.build.snapshot" unless="build.release">
-    <property name="version.suffix" value="dev"/>
     <property name="maven.version.suffix" value="-SNAPSHOT"/>
   </target>
-  <target name="init.build.release" if="build.release" unless="version.hasbuildnum" depends="init.hasbuildnum">
-    <property name="version.suffix" value="v0"/>
+  <target name="init.build.release" if="build.release" depends="init.hasbuildnum, init.build.snapshot">
     <property name="maven.version.suffix" value=""/>
+  </target>
+  <target name="init.build.nopatch.release" unless="version.hasbuildnum" depends="init.hasbuildnum">
+    <property name="version.suffix" value=""/>
   </target>
   <!-- funny thing, ant is.  Can only specify *one* property in if check.  Guaranteed that both are true here,
        since properties are immutable.  -->
-  <target name="init.build.patch.release" if="version.hasbuildnum" depends="init.hasbuildnum, init.build.snapshot">
-    <property name="version.suffix" value="v${version.bnum}"/>
-    <property name="maven.version.suffix" value="-${version.bnum}"/>
+  <target name="init.build.patch.release" if="version.hasbuildnum" depends="init.build.nopatch.release">
+    <property name="version.suffix" value="-${version.bnum}"/>
   </target>
 
-  <target name="init.build.suffix.done" depends="init.build.snapshot, init.build.release, init.build.patch.release"/>
+  <target name="init.build.suffix.done" depends="init.build.release, init.build.patch.release"/>
 
   <target name="init" depends="init.starr, init.build.suffix.done">
   <!-- scalac.args.optimise is selectively overridden in certain antcall tasks. -->
@@ -256,8 +256,12 @@ INITIALISATION
       <os family="windows"/>
     </condition>
     
-    <exec osfamily="unix" executable="tools/get-scala-revision" outputproperty="git.describe" failifexecutionfails="false" />
-    <exec osfamily="windows" executable="tools/get-scala-revision.bat" outputproperty="git.describe" failifexecutionfails="false" />
+    <exec osfamily="unix" executable="tools/get-scala-commit-sha" outputproperty="git.commit.sha" failifexecutionfails="false" />
+    <exec osfamily="windows" executable="tools/get-scala-commit-sha.bat" outputproperty="git.commit.sha" failifexecutionfails="false" />
+    <exec osfamily="unix" executable="tools/get-scala-commit-date" outputproperty="git.commit.date" failifexecutionfails="false" />
+    <exec osfamily="windows" executable="tools/get-scala-commit-date.bat" outputproperty="git.commit.date" failifexecutionfails="false" />
+    <exec osfamily="unix" executable="tools/get-scala-commit-drift" outputproperty="git.commit.drift" failifexecutionfails="false" />
+    <exec osfamily="windows" executable="tools/get-scala-commit-drift.bat" outputproperty="git.commit.drift" failifexecutionfails="false" />
     <!-- some default in case something went wrong getting the revision -->
     <property name="git.describe" value="-unknown-"/>
 
@@ -265,12 +269,15 @@ INITIALISATION
 
     <!-- We use the git describe to determine the OSGi modifier for our build. -->
     <property
-      name="version.number"
-      value="${version.major}.${version.minor}.${version.patch}.${version.suffix}-${git.describe}"/>
-    <!-- TODO - Use "DEV" vs. "FINAL" to determine if we're in release mode. -->
-    <property
       name="maven.version.number"
-      value="${version.major}.${version.minor}.${version.patch}${maven.version.suffix}"/>
+      value="${version.major}.${version.minor}.${version.patch}${version.suffix}${maven.version.suffix}"/>
+    <property
+      name="version.number"
+      value="${maven.version.number}-${git.commit.date}-${git.commit.drift}-${git.commit.sha}"/>
+    <property
+      name="osgi.version.number"
+      value="${version.major}.${version.minor}.${version.patch}.r${git.commit.date}${version.suffix}-${git.commit.sha}"/>
+
 
     <!-- Local libs (developer use.) -->
     <mkdir dir="${lib-extra.dir}"/>
@@ -301,7 +308,8 @@ INITIALISATION
     <echo message="       javac args: ${javac.args}" />
     <echo message="      scalac args: ${scalac.args}" />
     <echo message="    maven version: ${maven.version.number}"/>
-    <echo message="     OSGi version: ${version.number}" />
+    <echo message="     OSGi version: ${osgi.version.number}" />
+    <echo message="canonical version: ${version.number}" />
 
   <!-- Define tasks that can be run with Starr -->
     <path id="starr.classpath">
@@ -369,6 +377,7 @@ LOCAL REFERENCE BUILD (LOCKER)
     <propertyfile file="${build-locker.dir}/classes/library/library.properties">
       <entry key="version.number" value="${version.number}"/>
       <entry key="maven.version.number" value="${maven.version.number}"/>
+      <entry key="osgi.version.number" value="${osgi.version.number}"/>
       <entry key="copyright.string" value="${copyright.string}"/>
     </propertyfile>
     <copy todir="${build-locker.dir}/classes/library">
@@ -409,6 +418,7 @@ LOCAL REFERENCE BUILD (LOCKER)
     <propertyfile file="${build-locker.dir}/classes/compiler/compiler.properties">
       <entry key="version.number" value="${version.number}"/>
       <entry key="maven.version.number" value="${maven.version.number}"/>
+      <entry key="osgi.version.number" value="${osgi.version.number}"/>
       <entry key="copyright.string" value="${copyright.string}"/>
     </propertyfile>
     <copy todir="${build-locker.dir}/classes/compiler">
@@ -566,6 +576,7 @@ QUICK BUILD (QUICK)
     <propertyfile file="${build-quick.dir}/classes/library/library.properties">
       <entry key="version.number" value="${version.number}"/>
       <entry key="maven.version.number" value="${maven.version.number}"/>
+      <entry key="osgi.version.number" value="${osgi.version.number}"/>
       <entry key="copyright.string" value="${copyright.string}"/>
     </propertyfile>
     <copy todir="${build-quick.dir}/classes/library">
@@ -626,6 +637,7 @@ QUICK BUILD (QUICK)
     <propertyfile file="${build-quick.dir}/classes/compiler/compiler.properties">
       <entry key="version.number" value="${version.number}"/>
       <entry key="maven.version.number" value="${maven.version.number}"/>
+      <entry key="osgi.version.number" value="${osgi.version.number}"/>
       <entry key="copyright.string" value="${copyright.string}"/>
     </propertyfile>
     <copy todir="${build-quick.dir}/classes/compiler">
@@ -1101,6 +1113,7 @@ BOOTSTRAPPING BUILD (STRAP)
     <propertyfile file="${build-strap.dir}/classes/library/library.properties">
       <entry key="version.number" value="${version.number}"/>
       <entry key="maven.version.number" value="${maven.version.number}"/>
+      <entry key="osgi.version.number" value="${osgi.version.number}"/>
       <entry key="copyright.string" value="${copyright.string}"/>
     </propertyfile>
     <copy todir="${build-strap.dir}/classes/library">
@@ -1141,6 +1154,7 @@ BOOTSTRAPPING BUILD (STRAP)
     <propertyfile file="${build-strap.dir}/classes/compiler/compiler.properties">
       <entry key="version.number" value="${version.number}"/>
       <entry key="maven.version.number" value="${maven.version.number}"/>
+      <entry key="osgi.version.number" value="${osgi.version.number}"/>
       <entry key="copyright.string" value="${copyright.string}"/>
     </propertyfile>
     <copy todir="${build-strap.dir}/classes/compiler">
