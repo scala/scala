@@ -309,9 +309,6 @@ MAIN DISTRIBUTION SBAZ
     <copy tofile="${dists.dir}/maven/${version.number}/build.xml"
           file="${src.dir}/build/maven/maven-deploy.xml"/>
     <!-- export properties for use when deploying -->
-    <!-- TODO - Fix this setup, now that we have a final maven-version... ->
-    <property name="maven.snapshot.version.number"
-              value="${version.major}.${version.minor}.${version.patch}-SNAPSHOT"/>
     <echoproperties destfile="${dists.dir}/maven/${version.number}/build.properties"/>
   </target>
 
