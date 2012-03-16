@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+#
+# Usage: get-scala-commit-date [dir]
+# Figures out current commit date of a git clone.
+# If no dir is given, current working dir is used.
+#
+# Example build version string:
+#   20120312
+#
+
+[[ $# -eq 0 ]] || cd "$1"
+
+lastcommitdate=$(git log --format="%ci" HEAD | head -n 1 | cut -d ' ' -f 1)
+
+# 20120324
+echo "${lastcommitdate//-/}"
