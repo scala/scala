@@ -37,7 +37,7 @@ private final class DelegatingReporter(warnFatal: Boolean, delegate: xsbti.Repor
 		val severity = if(warnFatal && rawSeverity == WARNING) ERROR else rawSeverity
 		delegate.log(convert(pos), msg, convert(severity))
 	}
-	private[this] def convert(posIn: Position): xsbti.Position =
+	def convert(posIn: Position): xsbti.Position =
 	{
 		val pos =
 			posIn match

@@ -3,7 +3,7 @@
  */
 package xsbt
 
-import xsbti.{AnalysisCallback,Logger,Problem,Reporter}
+import xsbti.{AnalysisCallback,Logger,Problem,Reporter,Severity}
 import scala.tools.nsc.{Phase, SubComponent}
 import Log.debug
 
@@ -17,10 +17,10 @@ class CompilerInterface
 
 		val settings = new Settings(Log.settingsError(log))
 		val command = Command(args.toList, settings)
-		val reporter = DelegatingReporter(settings, delegate)
-		def noErrors = !reporter.hasErrors && command.ok
+		val dreporter = DelegatingReporter(settings, delegate)
+		def noErrors = !dreporter.hasErrors && command.ok
 
-		object compiler extends Global(command.settings, reporter)
+		object compiler extends Global(command.settings, dreporter)
 		{
 			object dummy // temporary fix for #4426
 			object sbtAnalyzer extends
@@ -65,10 +65,24 @@ class CompilerInterface
 				meth.setAccessible(true)
 				meth.invoke(this).asInstanceOf[List[SubComponent]]
 			}
+			def logUnreportedWarnings(seq: List[(Position,String)]): Unit = // Scala 2.10.x and later
+			{
+				for( (pos, msg) <- seq) yield
+					callback.problem(dreporter.convert(pos), msg, Severity.Warn, false)
+			}
+			def logUnreportedWarnings(count: Boolean): Unit = () // for source compatibility with Scala 2.8.x
+			def logUnreportedWarnings(count: Int): Unit = () // for source compatibility with Scala 2.9.x
+		}
+		def processUnreportedWarnings(run: compiler.Run)
+		{
+				implicit def listToBoolean[T](l: List[T]): Boolean = error("source compatibility only, should never be called")
+				implicit def listToInt[T](l: List[T]): Int = error("source compatibility only, should never be called")
+			compiler.logUnreportedWarnings(run.deprecationWarnings)
+			compiler.logUnreportedWarnings(run.uncheckedWarnings)
 		}
 		if(command.shouldStopWithInfo)
 		{
-			reporter.info(null, command.getInfoMessage(compiler), true)
+			dreporter.info(null, command.getInfoMessage(compiler), true)
 			throw new InterfaceCompileFailed(args, Array(), "Compiler option supplied that disabled actual compilation.")
 		}
 		if(noErrors)
@@ -76,12 +90,14 @@ class CompilerInterface
 			val run = new compiler.Run
 			debug(log, args.mkString("Calling Scala compiler with arguments  (CompilerInterface):\n\t", "\n\t", ""))
 			run compile command.files
+			processUnreportedWarnings(run)
+			dreporter.problems foreach { p => callback.problem(p.position, p.message, p.severity, true) }
 		}
-		reporter.printSummary()
+		dreporter.printSummary()
 		if(!noErrors)
 		{
 			debug(log, "Compilation failed (CompilerInterface)")
-			throw new InterfaceCompileFailed(args, reporter.problems, "Compilation failed")
+			throw new InterfaceCompileFailed(args, dreporter.problems, "Compilation failed")
 		}
 	}
 }
