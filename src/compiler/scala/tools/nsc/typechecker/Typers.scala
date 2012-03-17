@@ -3566,7 +3566,15 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
         } else {
           var thenp1 = typed(thenp, pt)
           var elsep1 = typed(elsep, pt)
-          val (owntype, needAdapt) = ptOrLub(List(thenp1.tpe, elsep1.tpe))
+
+          lazy val thenTp = packedType(thenp1, context.owner)
+          lazy val elseTp = packedType(elsep1, context.owner)
+          val (owntype, needAdapt) =
+            // virtpatmat needs more aggressive unification of skolemized types, but lub is not robust enough --> middle ground
+            if (opt.virtPatmat && !isPastTyper && thenTp =:= elseTp) (thenTp, true) // this breaks src/library/scala/collection/immutable/TrieIterator.scala
+            // TODO: skolemize (lub of packed types) when that no longer crashes on files/pos/t4070b.scala
+            else ptOrLub(List(thenp1.tpe, elsep1.tpe))
+
           if (needAdapt) { //isNumericValueType(owntype)) {
             thenp1 = adapt(thenp1, mode, owntype)
             elsep1 = adapt(elsep1, mode, owntype)
