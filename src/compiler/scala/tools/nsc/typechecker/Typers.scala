@@ -2140,7 +2140,11 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
 
     def typedCases(cases: List[CaseDef], pattp: Type, pt: Type): List[CaseDef] =
       cases mapConserve { cdef =>
-        newTyper(context.makeNewScope(cdef, context.owner)).typedCase(cdef, pattp, pt)
+        val caseTyped = newTyper(context.makeNewScope(cdef, context.owner)).typedCase(cdef, pattp, pt)
+        if (opt.virtPatmat) {
+          val tpPacked  = packedType(caseTyped, context.owner)
+          caseTyped setType tpPacked
+        } else caseTyped
       }
 
     def adaptCase(cdef: CaseDef, mode: Int, tpe: Type): CaseDef = deriveCaseDef(cdef)(adapt(_, mode, tpe))

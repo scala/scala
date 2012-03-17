@@ -1037,7 +1037,7 @@ class Foo(x: Other) { x._1 } // no error in this order
 
     // assert(owner ne null); assert(owner ne NoSymbol)
     def freshSym(pos: Position, tp: Type = NoType, prefix: String = "x") =
-      NoSymbol.newTermSymbol(freshName(prefix), pos) setInfo repackExistential(tp)
+      NoSymbol.newTermSymbol(freshName(prefix), pos) setInfo /*repackExistential*/(tp)
 
     // codegen relevant to the structure of the translation (how extractors are combined)
     trait AbsCodegen {
@@ -1079,18 +1079,18 @@ class Foo(x: Other) { x._1 } // no error in this order
       def and(a: Tree, b: Tree): Tree                  = a AND b
 
       // the force is needed mainly to deal with the GADT typing hack (we can't detect it otherwise as tp nor pt need contain an abstract type, we're just casting wildly)
-      def _asInstanceOf(t: Tree, tp: Type, force: Boolean = false): Tree      = { val tpX = repackExistential(tp)
+      def _asInstanceOf(t: Tree, tp: Type, force: Boolean = false): Tree      = { val tpX = /*repackExistential*/(tp)
         if (!force && (t.tpe ne NoType) && t.isTyped && typesConform(t.tpe, tpX))  t //{ println("warning: emitted redundant asInstanceOf: "+(t, t.tpe, tp)); t } //.setType(tpX)
         else gen.mkAsInstanceOf(t, tpX, true, false)
       }
 
-      def _isInstanceOf(b: Symbol, tp: Type): Tree    = gen.mkIsInstanceOf(REF(b), repackExistential(tp), true, false)
-      // { val tpX = repackExistential(tp)
+      def _isInstanceOf(b: Symbol, tp: Type): Tree    = gen.mkIsInstanceOf(REF(b), /*repackExistential*/(tp), true, false)
+      // { val tpX = /*repackExistential*/(tp)
       //   if (typesConform(b.info, tpX)) { println("warning: emitted spurious isInstanceOf: "+(b, tp)); TRUE }
       //   else gen.mkIsInstanceOf(REF(b), tpX, true, false)
       // }
 
-      def _asInstanceOf(b: Symbol, tp: Type): Tree    = { val tpX = repackExistential(tp)
+      def _asInstanceOf(b: Symbol, tp: Type): Tree    = { val tpX = /*repackExistential*/(tp)
         if (typesConform(b.info, tpX)) REF(b) //{ println("warning: emitted redundant asInstanceOf: "+(b, b.info, tp)); REF(b) } //.setType(tpX)
         else gen.mkAsInstanceOf(REF(b), tpX, true, false)
       }

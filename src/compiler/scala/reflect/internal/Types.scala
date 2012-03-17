@@ -2617,15 +2617,6 @@ trait Types extends api.Types { self: SymbolTable =>
     }
   }
 
-  // TODO: I don't really know why this happens -- maybe because
-  // the owner hierarchy changes? the other workaround (besides
-  // repackExistential) is to explicitly pass expectedTp as the type
-  // argument for the call to guard, but repacking the existential
-  // somehow feels more robust
-  //
-  // TODO: check if optimization makes a difference, try something else
-  // if necessary (cache?)
-
   /** Repack existential types, otherwise they sometimes get unpacked in the
    *  wrong location (type inference comes up with an unexpected skolem)
    */
