@@ -904,6 +904,20 @@ trait Definitions extends reflect.api.StandardDefinitions {
     def termMember(owner: Symbol, name: String): Symbol = owner.info.member(newTermName(name))
     def typeMember(owner: Symbol, name: String): Symbol = owner.info.member(newTypeName(name))
 
+    def findMemberFromRoot(fullName: Name): Symbol = {
+      val segs = nme.segments(fullName.toString, fullName.isTermName)
+      if (segs.isEmpty) NoSymbol
+      else findNamedMember(segs.tail, definitions.RootClass.info member segs.head)
+    }
+    def findNamedMember(fullName: Name, root: Symbol): Symbol = {
+      val segs = nme.segments(fullName.toString, fullName.isTermName)
+      if (segs.isEmpty || segs.head != root.simpleName) NoSymbol
+      else findNamedMember(segs.tail, root)
+    }
+    def findNamedMember(segs: List[Name], root: Symbol): Symbol =
+      if (segs.isEmpty) root
+      else findNamedMember(segs.tail, root.info member segs.head)
+
     def getMember(owner: Symbol, name: Name): Symbol = {
       if (owner == NoSymbol) NoSymbol
       else owner.info.nonPrivateMember(name) match {
@@ -911,6 +925,7 @@ trait Definitions extends reflect.api.StandardDefinitions {
         case result   => result
       }
     }
+    
     def packageExists(packageName: String): Boolean =
       getModuleIfDefined(packageName).isPackage
 

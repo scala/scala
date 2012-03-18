@@ -3,7 +3,7 @@
 
 
 import collection._
-import collection.mutable.Ctrie
+import collection.mutable.ConcurrentTrieMap
 
 
 
@@ -11,7 +11,7 @@ object IteratorSpec extends Spec {
   
   def test() {
     "work for an empty trie" in {
-      val ct = new Ctrie
+      val ct = new ConcurrentTrieMap
       val it = ct.iterator
       
       it.hasNext shouldEqual (false)
@@ -19,7 +19,7 @@ object IteratorSpec extends Spec {
     }
     
     def nonEmptyIteratorCheck(sz: Int) {
-      val ct = new Ctrie[Wrap, Int]
+      val ct = new ConcurrentTrieMap[Wrap, Int]
       for (i <- 0 until sz) ct.put(new Wrap(i), i)
       
       val it = ct.iterator
@@ -84,7 +84,7 @@ object IteratorSpec extends Spec {
     }
     
     def nonEmptyCollideCheck(sz: Int) {
-      val ct = new Ctrie[DumbHash, Int]
+      val ct = new ConcurrentTrieMap[DumbHash, Int]
       for (i <- 0 until sz) ct.put(new DumbHash(i), i)
       
       val it = ct.iterator
@@ -144,7 +144,7 @@ object IteratorSpec extends Spec {
       val W = 15
       val S = 5
       val checks = 5
-      val ct = new Ctrie[Wrap, Int]
+      val ct = new ConcurrentTrieMap[Wrap, Int]
       for (i <- 0 until sz) ct.put(new Wrap(i), i)
       
       class Modifier extends Thread {
@@ -156,7 +156,7 @@ object IteratorSpec extends Spec {
         }
       }
       
-      def consistentIteration(ct: Ctrie[Wrap, Int], checks: Int) {
+      def consistentIteration(ct: ConcurrentTrieMap[Wrap, Int], checks: Int) {
         class Iter extends Thread {
           override def run() {
             val snap = ct.readOnlySnapshot()
@@ -185,7 +185,7 @@ object IteratorSpec extends Spec {
       val sgroupsize = 10
       val sgroupnum = 5
       val removerslowdown = 50
-      val ct = new Ctrie[Wrap, Int]
+      val ct = new ConcurrentTrieMap[Wrap, Int]
       for (i <- 0 until sz) ct.put(new Wrap(i), i)
       
       class Remover extends Thread {
@@ -227,7 +227,7 @@ object IteratorSpec extends Spec {
       val sgroupsize = 10
       val sgroupnum = 10
       val inserterslowdown = 50
-      val ct = new Ctrie[Wrap, Int]
+      val ct = new ConcurrentTrieMap[Wrap, Int]
       
       class Inserter extends Thread {
         override def run() {
@@ -265,7 +265,7 @@ object IteratorSpec extends Spec {
     
     "work on a yet unevaluated snapshot" in {
       val sz = 50000
-      val ct = new Ctrie[Wrap, Int]
+      val ct = new ConcurrentTrieMap[Wrap, Int]
       for (i <- 0 until sz) ct.update(new Wrap(i), i)
       
       val snap = ct.snapshot()
@@ -276,7 +276,7 @@ object IteratorSpec extends Spec {
     
     "be duplicated" in {
       val sz = 50
-      val ct = collection.parallel.mutable.ParCtrie((0 until sz) zip (0 until sz): _*)
+      val ct = collection.parallel.mutable.ParConcurrentTrieMap((0 until sz) zip (0 until sz): _*)
       val it = ct.splitter
       for (_ <- 0 until (sz / 2)) it.next()
       val dupit = it.dup

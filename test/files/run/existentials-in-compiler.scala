@@ -6,7 +6,7 @@ object Test extends CompilerTest {
   import global._
   import definitions._
 
-  def code = """
+  override def code = """
 package extest {
   trait Bippy[A <: AnyRef, B] { }     // wildcards
   trait BippyLike[A <: AnyRef, B <: List[A], This <: BippyLike[A, B, This] with Bippy[A, B]]  // no wildcards

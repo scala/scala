@@ -44,6 +44,8 @@ class Global(var currentSettings: Settings, var reporter: Reporter) extends Symb
                                                                       with symtab.Positions {
 
   override def settings = currentSettings
+  
+  import definitions.{ findNamedMember, findMemberFromRoot }
 
   // alternate constructors ------------------------------------------
 
@@ -1493,21 +1495,6 @@ class Global(var currentSettings: Settings, var reporter: Reporter) extends Symb
     print("[[syntax trees at end of " + phase + "]]")
     afterPhase(phase) { currentRun.units foreach (treePrinter.print(_)) }
   }
-
-  private def findMemberFromRoot(fullName: Name): Symbol = {
-    val segs = nme.segments(fullName.toString, fullName.isTermName)
-    if (segs.isEmpty) NoSymbol
-    else findNamedMember(segs.tail, definitions.RootClass.info member segs.head)
-  }
-
-  private def findNamedMember(fullName: Name, root: Symbol): Symbol = {
-    val segs = nme.segments(fullName.toString, fullName.isTermName)
-    if (segs.isEmpty || segs.head != root.simpleName) NoSymbol
-    else findNamedMember(segs.tail, root)
-  }
-  private def findNamedMember(segs: List[Name], root: Symbol): Symbol =
-    if (segs.isEmpty) root
-    else findNamedMember(segs.tail, root.info member segs.head)
 
   /** We resolve the class/object ambiguity by passing a type/term name.
    */

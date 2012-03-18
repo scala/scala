@@ -81,7 +81,7 @@ extends collection.AbstractIterator[XMLEvent]
     // memory usage optimization return one <ignore/> for top level to satisfy
     // MarkupParser.document() otherwise NodeSeq.Empty
     private var ignoreWritten = false
-    final def elem(pos: Int, pre: String, label: String, attrs: MetaData, pscope: NamespaceBinding, nodes: NodeSeq): NodeSeq =
+    final def elem(pos: Int, pre: String, label: String, attrs: MetaData, pscope: NamespaceBinding, empty: Boolean, nodes: NodeSeq): NodeSeq =
       if (level == 1 && !ignoreWritten) {ignoreWritten = true; <ignore/> } else NodeSeq.Empty
 
     def procInstr(pos: Int, target: String, txt: String)  = setEvent(EvProcInstr(target, txt))

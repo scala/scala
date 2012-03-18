@@ -1,7 +1,7 @@
 
 
 
-import collection.mutable.Ctrie
+import collection.mutable.ConcurrentTrieMap
 
 
 object ConcurrentMapSpec extends Spec {
@@ -11,13 +11,13 @@ object ConcurrentMapSpec extends Spec {
   
   def test() {
     "support put" in {
-      val ct = new Ctrie[Wrap, Int]
+      val ct = new ConcurrentTrieMap[Wrap, Int]
       for (i <- 0 until initsz) assert(ct.put(new Wrap(i), i) == None)
       for (i <- 0 until initsz) assert(ct.put(new Wrap(i), -i) == Some(i))
     }
     
     "support put if absent" in {
-      val ct = new Ctrie[Wrap, Int]
+      val ct = new ConcurrentTrieMap[Wrap, Int]
       for (i <- 0 until initsz) ct.update(new Wrap(i), i)
       for (i <- 0 until initsz) assert(ct.putIfAbsent(new Wrap(i), -i) == Some(i))
       for (i <- 0 until initsz) assert(ct.putIfAbsent(new Wrap(i), -i) == Some(i))
@@ -26,7 +26,7 @@ object ConcurrentMapSpec extends Spec {
     }
     
     "support remove if mapped to a specific value" in {
-      val ct = new Ctrie[Wrap, Int]
+      val ct = new ConcurrentTrieMap[Wrap, Int]
       for (i <- 0 until initsz) ct.update(new Wrap(i), i)
       for (i <- 0 until initsz) assert(ct.remove(new Wrap(i), -i - 1) == false)
       for (i <- 0 until initsz) assert(ct.remove(new Wrap(i), i) == true)
@@ -34,7 +34,7 @@ object ConcurrentMapSpec extends Spec {
     }
     
     "support replace if mapped to a specific value" in {
-      val ct = new Ctrie[Wrap, Int]
+      val ct = new ConcurrentTrieMap[Wrap, Int]
       for (i <- 0 until initsz) ct.update(new Wrap(i), i)
       for (i <- 0 until initsz) assert(ct.replace(new Wrap(i), -i - 1, -i - 2) == false)
       for (i <- 0 until initsz) assert(ct.replace(new Wrap(i), i, -i - 2) == true)
@@ -43,7 +43,7 @@ object ConcurrentMapSpec extends Spec {
     }
     
     "support replace if present" in {
-      val ct = new Ctrie[Wrap, Int]
+      val ct = new ConcurrentTrieMap[Wrap, Int]
       for (i <- 0 until initsz) ct.update(new Wrap(i), i)
       for (i <- 0 until initsz) assert(ct.replace(new Wrap(i), -i) == Some(i))
       for (i <- 0 until initsz) assert(ct.replace(new Wrap(i), i) == Some(-i))
@@ -56,7 +56,7 @@ object ConcurrentMapSpec extends Spec {
     }
     
     "support replace if mapped to a specific value, using several threads" in {
-      val ct = new Ctrie[Wrap, Int]
+      val ct = new ConcurrentTrieMap[Wrap, Int]
       val sz = 55000
       for (i <- 0 until sz) ct.update(new Wrap(i), i)
       
@@ -89,7 +89,7 @@ object ConcurrentMapSpec extends Spec {
     }
     
     "support put if absent, several threads" in {
-      val ct = new Ctrie[Wrap, Int]
+      val ct = new ConcurrentTrieMap[Wrap, Int]
       val sz = 110000
       
       class Updater(offs: Int) extends Thread {
@@ -110,7 +110,7 @@ object ConcurrentMapSpec extends Spec {
     }
     
     "support remove if mapped to a specific value, several threads" in {
-      val ct = new Ctrie[Wrap, Int]
+      val ct = new ConcurrentTrieMap[Wrap, Int]
       val sz = 55000
       for (i <- 0 until sz) ct.update(new Wrap(i), i)
       
@@ -132,7 +132,7 @@ object ConcurrentMapSpec extends Spec {
     }
     
     "have all or none of the elements depending on the oddity" in {
-      val ct = new Ctrie[Wrap, Int]
+      val ct = new ConcurrentTrieMap[Wrap, Int]
       val sz = 65000
       for (i <- 0 until sz) ct(new Wrap(i)) = i
       
@@ -165,7 +165,7 @@ object ConcurrentMapSpec extends Spec {
     }
     
     "compute size correctly" in {
-      val ct = new Ctrie[Wrap, Int]
+      val ct = new ConcurrentTrieMap[Wrap, Int]
       val sz = 36450
       for (i <- 0 until sz) ct(new Wrap(i)) = i
       
@@ -174,7 +174,7 @@ object ConcurrentMapSpec extends Spec {
     }
     
     "compute size correctly in parallel" in {
-      val ct = new Ctrie[Wrap, Int]
+      val ct = new ConcurrentTrieMap[Wrap, Int]
       val sz = 36450
       for (i <- 0 until sz) ct(new Wrap(i)) = i
       val pct = ct.par

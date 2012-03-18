@@ -89,7 +89,7 @@ object Test {
       assert(" a=\"2\" g=\"3\" j=\"2\" oo=\"2\"" == xml.Utility.sort(q.attributes).toString)
 
       val pp = new xml.PrettyPrinter(80,5)
-      assert("<a a=\"2\" g=\"3\" j=\"2\" oo=\"2\"></a>" == pp.format(q))
+      assert("<a a=\"2\" g=\"3\" j=\"2\" oo=\"2\"/>" == pp.format(q))
 
       <hi>
         <there/>

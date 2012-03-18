@@ -101,7 +101,8 @@ abstract class SymbolicXMLBuilder(p: Parsers#Parser, preserveWS: Boolean) {
     pre: Tree,
     label: Tree,
     attrs: Tree,
-    scope:Tree,
+    scope: Tree,
+    empty: Boolean,
     children: Seq[Tree]): Tree =
   {
     def starArgs =
@@ -109,7 +110,7 @@ abstract class SymbolicXMLBuilder(p: Parsers#Parser, preserveWS: Boolean) {
       else List(Typed(makeXMLseq(pos, children), wildStar))
 
     def pat    = Apply(_scala_xml__Elem, List(pre, label, wild, wild) ::: convertToTextPat(children))
-    def nonpat = New(_scala_xml_Elem, List(List(pre, label, attrs, scope) ::: starArgs))
+    def nonpat = New(_scala_xml_Elem, List(List(pre, label, attrs, scope, if (empty) Literal(Constant(true)) else Literal(Constant(false))) ::: starArgs))
 
     atPos(pos) { if (isPattern) pat else nonpat }
   }
@@ -140,7 +141,7 @@ abstract class SymbolicXMLBuilder(p: Parsers#Parser, preserveWS: Boolean) {
       case (Some(pre), rest)  => (const(pre), const(rest))
       case _                  => (wild, const(n))
     }
-    mkXML(pos, true, prepat, labpat, null, null, args)
+    mkXML(pos, true, prepat, labpat, null, null, false, args)
   }
 
   protected def convertToTextPat(t: Tree): Tree = t match {
@@ -188,7 +189,7 @@ abstract class SymbolicXMLBuilder(p: Parsers#Parser, preserveWS: Boolean) {
   def unparsed(pos: Position, str: String): Tree =
     atPos(pos)( New(_scala_xml_Unparsed, LL(const(str))) )
 
-  def element(pos: Position, qname: String, attrMap: mutable.Map[String, Tree], args: Seq[Tree]): Tree = {
+  def element(pos: Position, qname: String, attrMap: mutable.Map[String, Tree], empty: Boolean, args: Seq[Tree]): Tree = {
     def handleNamespaceBinding(pre: String, z: String): Tree = {
       def mkAssign(t: Tree): Tree = Assign(
         Ident(_tmpscope),
@@ -259,6 +260,7 @@ abstract class SymbolicXMLBuilder(p: Parsers#Parser, preserveWS: Boolean) {
       const(newlabel),
       makeSymbolicAttrs,
       Ident(_scope),
+      empty,
       args
     )
 

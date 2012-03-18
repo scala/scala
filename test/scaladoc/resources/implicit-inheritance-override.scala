@@ -2,12 +2,12 @@
 class Base {
   /**
    * The base comment. And another sentence...
-   * 
-   * @param arg1 The T term comment
-   * @param arg2 The string comment
+   *
+   * @param  arg1 The T term comment
+   * @param  arg2 The string comment
    * @tparam T the type of the first argument
    * @return The return comment
-   */ 
+   */
   def function[T](arg1: T, arg2: String): Double = 0.0d
 }
 
