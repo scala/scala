@@ -57,13 +57,14 @@ trait DirectRunner {
     // for example, see how it's done in ReflectiveRunner
     //val consFM = new ConsoleFileManager
     //import consFM.{ latestCompFile, latestLibFile, latestPartestFile }
-    val latestCompFile = new File(fileManager.LATEST_COMP);
-    val latestLibFile = new File(fileManager.LATEST_LIB);
-    val latestPartestFile = new File(fileManager.LATEST_PARTEST);
+    val latestCompFile = new File(fileManager.LATEST_COMP)
+    val latestLibFile = new File(fileManager.LATEST_LIB)
+    val latestPartestFile = new File(fileManager.LATEST_PARTEST)
+    val latestActorsFile = new File(fileManager.LATEST_ACTORS)
 
     val scalacheckURL = PathSettings.scalaCheck.toURL
     val scalaCheckParentClassLoader = ScalaClassLoader.fromURLs(
-      List(scalacheckURL, latestCompFile.toURI.toURL, latestLibFile.toURI.toURL, latestPartestFile.toURI.toURL)
+      scalacheckURL :: (List(latestCompFile, latestLibFile, latestActorsFile, latestPartestFile).map(_.toURI.toURL))
     )
     Output.init()
 
