@@ -11,16 +11,18 @@ package interpreter
  */
 trait Naming {
   def unmangle(str: String): String = {
+    val ESC = '\u001b'
     val cleaned = removeIWPackages(removeLineWrapper(str))
-    var ctrlChars = 0
-    cleaned map { ch =>
-      if (ch.isControl && !ch.isWhitespace) {
-        ctrlChars += 1
-        if (ctrlChars > 5) return "[line elided for control chars: possibly a scala signature]"
-        else '?'
-      }
-      else ch
-    }
+    // Looking to exclude binary data which hoses the terminal, but
+    // let through the subset of it we need, like whitespace and also
+    // <ESC> for ansi codes.
+    val binaryChars = cleaned count (ch => ch < 32 && !ch.isWhitespace && ch != ESC)
+    // Lots of binary chars - translate all supposed whitespace into spaces
+    if (binaryChars > 5)
+      cleaned map (ch => if (ch.isWhitespace) ' ' else if (ch < 32) '?' else ch)
+    // Not lots - preserve whitespace and ESC
+    else
+      cleaned map (ch => if (ch.isWhitespace || ch == ESC) ch else if (ch < 32) '?' else ch)
   }
 
   // The two name forms this is catching are the two sides of this assignment:
