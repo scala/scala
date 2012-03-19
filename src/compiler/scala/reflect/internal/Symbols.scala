@@ -269,10 +269,16 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     /** Create a new existential type skolem with this symbol its owner,
      *  based on the given symbol and origin.
      */
-    def newExistentialSkolem(basis: Symbol, origin: AnyRef, name: TypeName = null, info: Type = null): TypeSkolem = {
-      val skolem = newTypeSkolemSymbol(if (name eq null) basis.name.toTypeName else name, origin, basis.pos, (basis.flags | EXISTENTIAL) & ~PARAM)
-      skolem setInfo (if (info eq null) basis.info cloneInfo skolem else info)
+    def newExistentialSkolem(basis: Symbol, origin: AnyRef): TypeSkolem = {
+      val skolem = newTypeSkolemSymbol(basis.name.toTypeName, origin, basis.pos, (basis.flags | EXISTENTIAL) & ~PARAM)
+      skolem setInfo (basis.info cloneInfo skolem)
     }
+
+    // flags set up to maintain TypeSkolem's invariant: origin.isInstanceOf[Symbol] == !hasFlag(EXISTENTIAL)
+    // CASEACCESSOR | SYNTHETIC used to single this symbol out in deskolemizeGADT
+    def newGADTSkolem(name: TypeName, origin: Symbol, info: Type): TypeSkolem =
+      newTypeSkolemSymbol(name, origin, origin.pos, origin.flags & ~(EXISTENTIAL | PARAM) | CASEACCESSOR | SYNTHETIC) setInfo info
+
 
     final def newExistential(name: TypeName, pos: Position = NoPosition, newFlags: Long = 0L): Symbol =
       newAbstractType(name, pos, EXISTENTIAL | newFlags)
@@ -495,6 +501,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     // List[T] forSome { type T }
     final def isExistentialSkolem     = isExistentiallyBound && isSkolem
     final def isExistentialQuantified = isExistentiallyBound && !isSkolem
+    final def isGADTSkolem            = isSkolem && hasFlag(CASEACCESSOR | SYNTHETIC)
 
     // class C extends D( { class E { ... } ... } ). Here, E is a class local to a constructor
     final def isClassLocalToConstructor = isClass && hasFlag(INCONSTRUCTOR)
@@ -2130,12 +2137,17 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
       else if (owner.isRefinementClass) ExplicitFlags & ~OVERRIDE
       else ExplicitFlags
 
+    // make the error message more googlable
+    def flagsExplanationString =
+      if (isGADTSkolem) " (this is a GADT skolem)"
+      else ""
+
     def accessString = hasFlagsToString(PRIVATE | PROTECTED | LOCAL)
     def defaultFlagString = hasFlagsToString(defaultFlagMask)
     private def defStringCompose(infoString: String) = compose(
       defaultFlagString,
       keyString,
-      varianceString + nameString + infoString
+      varianceString + nameString + infoString + flagsExplanationString
     )
     /** String representation of symbol's definition.  It uses the
      *  symbol's raw info to avoid forcing types.
@@ -2478,7 +2490,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
    *  where the skolem was introduced (this is important for knowing when to pack it
    *  again into ab Existential). origin is `null` only in skolemizeExistentials called
    *  from <:< or isAsSpecific, because here its value does not matter.
-   *  I elieve the following invariant holds:
+   *  I believe the following invariant holds:
    *
    *     origin.isInstanceOf[Symbol] == !hasFlag(EXISTENTIAL)
    */

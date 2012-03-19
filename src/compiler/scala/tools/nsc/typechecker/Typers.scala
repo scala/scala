@@ -909,8 +909,9 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
               def apply(tp: Type) = mapOver(tp) match {
                 case TypeRef(NoPrefix, tpSym, Nil) if variance != 0 && tpSym.isTypeParameterOrSkolem && tpSym.owner.isTerm =>
                   val bounds = if (variance == 1) TypeBounds.upper(tpSym.tpe) else TypeBounds.lower(tpSym.tpe)
-                  val skolem = context.owner.newExistentialSkolem(tpSym, tpSym, unit.freshTypeName("?"+tpSym.name), bounds)
-                  // println("mapping "+ tpSym +" to "+ skolem + " : "+ bounds +" -- pt= "+ pt)
+                  // origin must be the type param so we can deskolemize
+                  val skolem = context.owner.newGADTSkolem(unit.freshTypeName("?"+tpSym.name), tpSym, bounds)
+                  // println("mapping "+ tpSym +" to "+ skolem + " : "+ bounds +" -- pt= "+ pt +" in "+ context.owner +" at "+ context.tree )
                   skolems += skolem
                   skolem.tpe
                 case tp1 => tp1
@@ -928,9 +929,19 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
             freeVars foreach ctorContext.scope.enter
             newTyper(ctorContext).infer.inferConstructorInstance(tree1, clazz.typeParams, ptSafe)
 
-            // tree1's type-slack skolems will be deskolemized (to the method type parameter skolems)
-            // once the containing CaseDef has been type checked (see typedCase)
-            tree1
+            // simplify types without losing safety,
+            // so that error messages don't unnecessarily refer to skolems
+            val extrapolate = new ExistentialExtrapolation(freeVars) extrapolate (_: Type)
+            val extrapolated = tree1.tpe match {
+              case MethodType(ctorArgs, res) => // ctorArgs are actually in a covariant position, since this is the type of the subpatterns of the pattern represented by this Apply node
+                ctorArgs foreach (p => p.info = extrapolate(p.info)) // no need to clone, this is OUR method type
+                copyMethodType(tree1.tpe, ctorArgs, extrapolate(res))
+              case tp => tp
+            }
+
+            // once the containing CaseDef has been type checked (see typedCase),
+            // tree1's remaining type-slack skolems will be deskolemized (to the method type parameter skolems)
+            tree1 setType extrapolated
           } else {
             tree
           }
@@ -1095,7 +1106,7 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
               val found = tree.tpe
               val req = pt
               if (!found.isErroneous && !req.isErroneous) {
-                if (!context.reportErrors && isPastTyper && req.existentialSkolems.nonEmpty) {
+                if (!context.reportErrors && isPastTyper && req.skolemsExceptMethodTypeParams.nonEmpty) {
                   // Ignore type errors raised in later phases that are due to mismatching types with existential skolems
                   // We have lift crashing in 2.9 with an adapt failure in the pattern matcher.
                   // Here's my hypothsis why this happens. The pattern matcher defines a variable of type
@@ -1112,7 +1123,7 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
                   //
                   //   val x = expr
                   context.unit.warning(tree.pos, "recovering from existential Skolem type error in tree \n" + tree + "\nwith type " + tree.tpe + "\n expected type = " + pt + "\n context = " + context.tree)
-                  adapt(tree, mode, deriveTypeWithWildcards(pt.existentialSkolems)(pt))
+                  adapt(tree, mode, deriveTypeWithWildcards(pt.skolemsExceptMethodTypeParams)(pt))
                 } else {
                   // create an actual error
                   AdaptTypeError(tree, found, req)
@@ -2112,19 +2123,19 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
 //    body1 = checkNoEscaping.locals(context.scope, pt, body1)
       val treeWithSkolems = treeCopy.CaseDef(cdef, pat1, guard1, body1) setType body1.tpe
 
-      // undo adaptConstrPattern's evil deeds, as they confuse the old pattern matcher
-      // TODO: Paul, can we do the deskolemization lazily in the old pattern matcher
-      object deskolemizeOnce extends TypeMap {
-        def apply(tp: Type): Type = mapOver(tp) match {
-          case TypeRef(pre, sym, args) if sym.isExistentialSkolem && sym.deSkolemize.isSkolem && sym.deSkolemize.owner.isTerm =>
-            typeRef(NoPrefix, sym.deSkolemize, args)
-          case tp1 => tp1
-        }
-      }
-
-      new TypeMapTreeSubstituter(deskolemizeOnce).traverse(treeWithSkolems)
+      new TypeMapTreeSubstituter(deskolemizeGADTSkolems).traverse(treeWithSkolems)
 
       treeWithSkolems // now without skolems, actually
+    }
+
+    // undo adaptConstrPattern's evil deeds, as they confuse the old pattern matcher
+    // the flags are used to avoid accidentally deskolemizing unrelated skolems of skolems
+    object deskolemizeGADTSkolems extends TypeMap {
+      def apply(tp: Type): Type = mapOver(tp) match {
+        case TypeRef(pre, sym, args) if sym.isGADTSkolem =>
+          typeRef(NoPrefix, sym.deSkolemize, args)
+        case tp1 => tp1
+      }
     }
 
     def typedCases(cases: List[CaseDef], pattp: Type, pt: Type): List[CaseDef] =
