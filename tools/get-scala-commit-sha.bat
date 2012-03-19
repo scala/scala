@@ -15,7 +15,7 @@ if "%*"=="" (
 cd %_DIR%
 
 rem  TODO - truncate chars.
-git log -1 --format="%T"
+git log -1 --format="%H
 
 :end
 @endlocal
