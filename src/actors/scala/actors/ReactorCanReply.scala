@@ -16,7 +16,7 @@ package scala.actors
  * @author Philipp Haller
  */
 private[actors] trait ReactorCanReply extends CanReply[Any, Any] {
-  _: ReplyReactor =>
+  _: InternalReplyReactor =>
 
   type Future[+P] = scala.actors.Future[P]
 

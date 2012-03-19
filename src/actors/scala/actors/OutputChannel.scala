@@ -43,5 +43,5 @@ trait OutputChannel[-Msg] {
   /**
    * Returns the `Actor` that is receiving from this $actor.
    */
-  def receiver: Actor
+  def receiver: InternalActor
 }
