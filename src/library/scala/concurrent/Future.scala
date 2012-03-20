@@ -17,7 +17,8 @@ import java.util.{ LinkedList => JLinkedList }
 import java.{ lang => jl }
 import java.util.concurrent.atomic.{ AtomicReferenceFieldUpdater, AtomicInteger, AtomicBoolean }
 
-import scala.util.{ Timeout, Duration, Try, Success, Failure }
+import scala.util.{ Try, Success, Failure }
+import scala.concurrent.util.Duration
 import scala.Option
 
 import scala.annotation.tailrec
