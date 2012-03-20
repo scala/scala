@@ -20,7 +20,7 @@ package scala.actors
  * @author Philipp Haller
  * @author Erik Engbrecht
  */
-case class UncaughtException(actor: Actor,
+case class UncaughtException(actor: InternalActor,
                              message: Option[Any],
                              sender: Option[OutputChannel[Any]],
                              thread: Thread,

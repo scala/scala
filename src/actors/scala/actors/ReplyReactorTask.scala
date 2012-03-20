@@ -17,13 +17,13 @@ package scala.actors
  *  changes to the underlying var invisible.) I can't figure out what's supposed
  *  to happen, so I renamed the constructor parameter to at least be less confusing.
  */
-private[actors] class ReplyReactorTask(replyReactor: ReplyReactor,
+private[actors] class ReplyReactorTask(replyReactor: InternalReplyReactor,
                                        fun: () => Unit,
                                        handler: PartialFunction[Any, Any],
                                        msg: Any)
   extends ReactorTask(replyReactor, fun, handler, msg) {
 
-  var saved: ReplyReactor = _
+  var saved: InternalReplyReactor = _
 
   protected override def beginExecution() {
     saved = Actor.tl.get

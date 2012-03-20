@@ -253,7 +253,7 @@ trait Reactor[Msg >: Null] extends OutputChannel[Msg] with Combinators {
       _state
   }
 
-  implicit def mkBody[A](body: => A) = new Actor.Body[A] {
+  implicit def mkBody[A](body: => A) = new InternalActor.Body[A] {
     def andThen[B](other: => B): Unit = Reactor.this.seq(body, other)
   }
 
