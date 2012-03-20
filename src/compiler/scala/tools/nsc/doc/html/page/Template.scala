@@ -11,13 +11,19 @@ package page
 import model._
 import scala.xml.{ NodeSeq, Text, UnprefixedAttribute }
 
-class Template(tpl: DocTemplateEntity) extends HtmlPage {
+class Template(universe: doc.Universe, tpl: DocTemplateEntity) extends HtmlPage {
 
   val path =
     templateToPath(tpl)
 
-  val title =
-    tpl.qualifiedName
+  def title = {
+    val s = universe.settings
+
+    tpl.name +
+    ( if (!s.doctitle.isDefault) " - " + s.doctitle.value else "" ) +
+    ( if (!s.docversion.isDefault) (" " + s.docversion.value) else "" ) +
+    " - " + tpl.qualifiedName
+  }
 
   val headers =
     <xml:group>
