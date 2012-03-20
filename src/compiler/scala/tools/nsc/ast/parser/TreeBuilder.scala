@@ -262,29 +262,25 @@ abstract class TreeBuilder {
     else if (stats.length == 1) stats.head
     else Block(stats.init, stats.last)
 
+  def makeFilter(tree: Tree, condition: Tree, scrutineeName: String): Tree = {
+    val cases = List(
+      CaseDef(condition, EmptyTree, Literal(Constant(true))),
+      CaseDef(Ident(nme.WILDCARD), EmptyTree, Literal(Constant(false)))
+    )
+    val matchTree = makeVisitor(cases, false, scrutineeName)
+
+    atPos(tree.pos)(Apply(Select(tree, nme.filter), matchTree :: Nil))
+  }
+
   /** Create tree for for-comprehension generator <val pat0 <- rhs0> */
   def makeGenerator(pos: Position, pat: Tree, valeq: Boolean, rhs: Tree): Enumerator = {
     val pat1 = patvarTransformer.transform(pat)
     val rhs1 =
-      if (valeq) rhs
-      else matchVarPattern(pat1) match {
-        case Some(_) =>
-          rhs
-        case None =>
-          atPos(rhs.pos) {
-            Apply(
-              Select(rhs, nme.filter),
-              List(
-                makeVisitor(
-                  List(
-                    CaseDef(pat1.duplicate, EmptyTree, Literal(Constant(true))),
-                    CaseDef(Ident(nme.WILDCARD), EmptyTree, Literal(Constant(false)))),
-                  false,
-                  nme.CHECK_IF_REFUTABLE_STRING
-                )))
-          }
-      }
-    if (valeq) ValEq(pos, pat1, rhs1) else ValFrom(pos, pat1, rhs1)
+      if (valeq || treeInfo.isVariablePattern(pat)) rhs
+      else makeFilter(rhs, pat1.duplicate, nme.CHECK_IF_REFUTABLE_STRING)
+
+    if (valeq) ValEq(pos, pat1, rhs1)
+    else ValFrom(pos, pat1, rhs1)
   }
 
   def makeParam(pname: TermName, tpe: Tree) =
