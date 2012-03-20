@@ -119,7 +119,7 @@ class HtmlFactory(val universe: doc.Universe, index: doc.Index) {
 
     def writeTemplate(tpl: DocTemplateEntity) {
       if (!(written contains tpl)) {
-        writeForThis(new page.Template(tpl))
+        writeForThis(new page.Template(universe, tpl))
         written += tpl
         tpl.templates map writeTemplate
       }

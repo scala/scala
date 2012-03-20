@@ -12,7 +12,7 @@ package scala.actors
 /**
  * @author Philipp Haller
  */
-private[actors] class ReactChannel[Msg](receiver: ReplyReactor) extends InputChannel[Msg] {
+private[actors] class ReactChannel[Msg](receiver: InternalReplyReactor) extends InputChannel[Msg] {
 
   private case class SendToReactor(channel: ReactChannel[Msg], msg: Msg)
 

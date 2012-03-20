@@ -18,7 +18,7 @@ import scala.concurrent.SyncVar
  * @author Philipp Haller
  */
 private[actors] trait ActorCanReply extends ReactorCanReply {
-  this: AbstractActor with ReplyReactor =>
+  this: AbstractActor with InternalReplyReactor =>
 
   override def !?(msg: Any): Any = {
     val replyCh = new Channel[Any](Actor.self(scheduler))

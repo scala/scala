@@ -16,7 +16,7 @@ private[actors] trait Combinators {
    * Enables the composition of suspendable closures using `andThen`,
    * `loop`, `loopWhile`, etc.
    */
-  implicit def mkBody[a](body: => a): Actor.Body[a]
+  implicit def mkBody[a](body: => a): InternalActor.Body[a]
 
   /**
    * Repeatedly executes `body`.

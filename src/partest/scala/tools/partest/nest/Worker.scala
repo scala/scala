@@ -55,6 +55,7 @@ class ScalaCheckFileManager(val origmanager: FileManager) extends FileManager {
   var LATEST_LIB: String = origmanager.LATEST_LIB
   var LATEST_COMP: String = origmanager.LATEST_COMP
   var LATEST_PARTEST: String = origmanager.LATEST_PARTEST
+  var LATEST_ACTORS: String = origmanager.LATEST_ACTORS
 }
 
 object Output {

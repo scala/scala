@@ -157,7 +157,7 @@ trait TypeDiagnostics {
   }
 
   // todo: use also for other error messages
-  def existentialContext(tp: Type) = tp.existentialSkolems match {
+  def existentialContext(tp: Type) = tp.skolemsExceptMethodTypeParams match {
     case Nil  => ""
     case xs   => " where " + (disambiguate(xs map (_.existentialToString)) mkString ", ")
   }

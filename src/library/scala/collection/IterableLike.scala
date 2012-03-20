@@ -67,6 +67,7 @@ self =>
    *    Subclasses should re-implement this method if a more efficient implementation exists.
    *
    *  @usecase def foreach(f: A => Unit): Unit
+   *    @inheritdoc
    */
   def foreach[U](f: A => U): Unit =
     iterator.foreach(f)
