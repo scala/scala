@@ -219,24 +219,24 @@ private[html] object SyntaxHigh {
           parse(" ", i+1)
         case '&' =>
           parse("&amp;", i+1)
-        case '<' =>
+        case '<' if i+1 < buf.length =>
           val ch = buf(i+1).toChar
           if (ch == '-' || ch == ':' || ch == '%')
             parse("<span class=\"kw\">&lt;"+ch+"</span>", i+2)
           else
             parse("&lt;", i+1)
         case '>' =>
-          if (buf(i+1) == ':')
+          if (i+1 < buf.length && buf(i+1) == ':')
             parse("<span class=\"kw\">&gt;:</span>", i+2)
           else
             parse("&gt;", i+1)
         case '=' =>
-          if (buf(i+1) == '>')
+          if (i+1 < buf.length && buf(i+1) == '>')
             parse("<span class=\"kw\">=&gt;</span>", i+2)
           else
             parse(buf(i).toChar.toString, i+1)
         case '/' =>
-          if (buf(i+1) == '/' || buf(i+1) == '*') {
+          if (i+1 < buf.length && (buf(i+1) == '/' || buf(i+1) == '*')) {
             val c = comment(i+1)
             parse("<span class=\"cmt\">"+c+"</span>", i+c.length)
           } else
@@ -257,9 +257,9 @@ private[html] object SyntaxHigh {
           else
             parse(buf(i).toChar.toString, i+1)
         case _ =>
-          if (i == 0 || !Character.isJavaIdentifierPart(buf(i-1).toChar)) {
+          if (i == 0 || (i >= 1 && !Character.isJavaIdentifierPart(buf(i-1).toChar))) {
             if (Character.isDigit(buf(i)) ||
-                (buf(i) == '.' && Character.isDigit(buf(i+1)))) {
+                (buf(i) == '.' && i + 1 < buf.length && Character.isDigit(buf(i+1)))) {
               val s = numlit(i)
               parse("<span class=\"num\">"+s+"</span>", i+s.length)
             } else {
