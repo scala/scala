@@ -31,7 +31,7 @@ trait ScalaSettings extends AbsScalaSettings
   protected def defaultClasspath = sys.env.getOrElse("CLASSPATH", ".")
 
   /** Enabled under -Xexperimental. */
-  protected def experimentalSettings = List[BooleanSetting](YmethodInfer, overrideObjects)
+  protected def experimentalSettings = List[BooleanSetting](YmethodInfer, overrideObjects, overrideVars)
 
   /** Enabled under -Xfuture. */
   protected def futureSettings = List[BooleanSetting]()
@@ -117,6 +117,7 @@ trait ScalaSettings extends AbsScalaSettings
    * -Y "Private" settings
    */
   val overrideObjects = BooleanSetting ("-Yoverride-objects", "Allow member objects to be overridden.")
+  val overrideVars  = BooleanSetting    ("-Yoverride-vars", "Allow vars to be overridden.")
   val Yhelp         = BooleanSetting    ("-Y", "Print a synopsis of private options.")
   val browse        = PhasesSetting     ("-Ybrowse", "Browse the abstract syntax tree after")
   val check         = PhasesSetting     ("-Ycheck", "Check the tree at the end of")
