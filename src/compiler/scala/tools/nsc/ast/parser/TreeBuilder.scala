@@ -269,7 +269,7 @@ abstract class TreeBuilder {
     )
     val matchTree = makeVisitor(cases, false, scrutineeName)
 
-    atPos(tree.pos)(Apply(Select(tree, nme.filter), matchTree :: Nil))
+    atPos(tree.pos)(Apply(Select(tree, nme.withFilter), matchTree :: Nil))
   }
 
   /** Create tree for for-comprehension generator <val pat0 <- rhs0> */
