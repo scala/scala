@@ -410,13 +410,6 @@ trait SeqLike[+A, +Repr] extends Any with IterableLike[A, Repr] with GenSeqLike[
 
   /** Produces a new sequence which contains all elements of this $coll and also all elements of
    *  a given sequence. `xs union ys`  is equivalent to `xs ++ ys`.
-   *  $willNotTerminateInf
-   *
-   *  Another way to express this
-   *  is that `xs union ys` computes the order-presevring multi-set union of `xs` and `ys`.
-   *  `union` is hence a counter-part of `diff` and `intersect` which also work on multi-sets.
-   *
-   *  $willNotTerminateInf
    *
    *  @param that   the sequence to add.
    *  @tparam B     the element type of the returned $coll.
@@ -425,14 +418,21 @@ trait SeqLike[+A, +Repr] extends Any with IterableLike[A, Repr] with GenSeqLike[
    *  @return       a new collection of type `That` which contains all elements of this $coll
    *                followed by all elements of `that`.
    *  @usecase def union(that: Seq[A]): $Coll[A]
-   *  @return       a new $coll which contains all elements of this $coll
-   *                followed by all elements of `that`.
+   *    @inheritdoc
+   *
+   *    Another way to express this
+   *    is that `xs union ys` computes the order-presevring multi-set union of `xs` and `ys`.
+   *    `union` is hence a counter-part of `diff` and `intersect` which also work on multi-sets.
+   *
+   *    $willNotTerminateInf
+   *
+   *    @return       a new $coll which contains all elements of this $coll
+   *                  followed by all elements of `that`.
    */
   override def union[B >: A, That](that: GenSeq[B])(implicit bf: CanBuildFrom[Repr, B, That]): That =
     this ++ that
 
   /** Computes the multiset difference between this $coll and another sequence.
-   *  $willNotTerminateInf
    *
    *  @param that   the sequence of elements to remove
    *  @tparam B     the element type of the returned $coll.
@@ -444,11 +444,15 @@ trait SeqLike[+A, +Repr] extends Any with IterableLike[A, Repr] with GenSeqLike[
    *                ''n'' times in `that`, then the first ''n'' occurrences of `x` will not form
    *                part of the result, but any following occurrences will.
    *  @usecase def diff(that: Seq[A]): $Coll[A]
-   *  @return       a new $coll which contains all elements of this $coll
-   *                except some of occurrences of elements that also appear in `that`.
-   *                If an element value `x` appears
-   *                ''n'' times in `that`, then the first ''n'' occurrences of `x` will not form
-   *                part of the result, but any following occurrences will.
+   *    @inheritdoc
+   *
+   *    $willNotTerminateInf
+   *
+   *    @return       a new $coll which contains all elements of this $coll
+   *                  except some of occurrences of elements that also appear in `that`.
+   *                  If an element value `x` appears
+   *                  ''n'' times in `that`, then the first ''n'' occurrences of `x` will not form
+   *                  part of the result, but any following occurrences will.
    */
   def diff[B >: A](that: GenSeq[B]): Repr = {
     val occ = occCounts(that.seq)
@@ -463,7 +467,6 @@ trait SeqLike[+A, +Repr] extends Any with IterableLike[A, Repr] with GenSeqLike[
   def diff[B >: A](that: Seq[B]): Repr = diff(that: GenSeq[B])
 
   /** Computes the multiset intersection between this $coll and another sequence.
-   *  $mayNotTerminateInf
    *
    *  @param that   the sequence of elements to intersect with.
    *  @tparam B     the element type of the returned $coll.
@@ -475,11 +478,15 @@ trait SeqLike[+A, +Repr] extends Any with IterableLike[A, Repr] with GenSeqLike[
    *                ''n'' times in `that`, then the first ''n'' occurrences of `x` will be retained
    *                in the result, but any following occurrences will be omitted.
    *  @usecase def intersect(that: Seq[A]): $Coll[A]
-   *  @return       a new $coll which contains all elements of this $coll
-   *                which also appear in `that`.
-   *                If an element value `x` appears
-   *                ''n'' times in `that`, then the first ''n'' occurrences of `x` will be retained
-   *                in the result, but any following occurrences will be omitted.
+   *    @inheritdoc
+   *
+   *    $mayNotTerminateInf
+   *
+   *    @return       a new $coll which contains all elements of this $coll
+   *                  which also appear in `that`.
+   *                  If an element value `x` appears
+   *                  ''n'' times in `that`, then the first ''n'' occurrences of `x` will be retained
+   *                  in the result, but any following occurrences will be omitted.
    */
   def intersect[B >: A](that: GenSeq[B]): Repr = {
     val occ = occCounts(that.seq)

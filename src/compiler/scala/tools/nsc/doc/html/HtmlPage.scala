@@ -22,6 +22,16 @@ abstract class HtmlPage extends Page { thisPage =>
   /** The title of this page. */
   protected def title: String
 
+  /** The page description */
+  protected def description: String = 
+    // unless overwritten, will display the title in a spaced format, keeping - and .
+    title.replaceAll("[^a-zA-Z0-9\\.\\-]+", " ").replaceAll("\\-+", " - ").replaceAll(" +", " ")
+
+  /** The page keywords */
+  protected def keywords: String =
+    // unless overwritten, same as description, minus the " - "
+    description.replaceAll(" - ", " ")
+
   /** Additional header elements (links, scripts, meta tags, etc.) required for this page. */
   protected def headers: NodeSeq
 
@@ -35,6 +45,8 @@ abstract class HtmlPage extends Page { thisPage =>
       <html>
         <head>
           <title>{ title }</title>
+          <meta name="description" content={ description }/>
+          <meta name="keywords" content={ keywords }/>
           <meta http-equiv="content-type" content={ "text/html; charset=" + site.encoding }/>
           { headers }
         </head>
