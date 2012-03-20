@@ -45,21 +45,20 @@ abstract class NodePrinters {
     def flagColor    = Red
     def literalColor = Green
     
-    override def showFlags(tree: MemberDef) = "" + (
+    override def showFlags(tree: MemberDef) =
       super.showFlags(tree) in flagColor.bright
-    )
-    override def showDefTreeName(tree: DefTree) = "" + (
+
+    override def showDefTreeName(tree: DefTree) =
       if (tree.name.isTermName) tree.name.decode in termColor.bright
       else tree.name.decode in typeColor.bright
-    )
-    override def showName(name: Name): String = "" + (
+
+    override def showName(name: Name) =
       if (name == nme.EMPTY || name == tpnme.EMPTY) "<empty>" in keywordColor
       else if (name.isTermName) name.decode in termColor
       else name.decode in typeColor
-    )
-    override def showLiteral(lit: Literal) = "" + (
+
+    override def showLiteral(lit: Literal) =
       super.showLiteral(lit) in literalColor.bright
-    )
   }
 
   trait DefaultPrintAST extends PrintAST {
