@@ -134,7 +134,7 @@ trait MarkupParser extends MarkupParserCommon with TokenTests
   //
 
   /** {{{
-   *  &lt;? prolog ::= xml S ... ?&gt;
+   *  <? prolog ::= xml S ... ?>
    *  }}} */
   def xmlProcInstr(): MetaData = {
     xToken("xml")
@@ -195,7 +195,7 @@ trait MarkupParser extends MarkupParserCommon with TokenTests
   }
 
   /** {{{
-   *  &lt;? prolog ::= xml S?
+   *  <? prolog ::= xml S?
    *  // this is a bit more lenient than necessary...
    *  }}} */
   def prolog(): (Option[String], Option[String], Option[Boolean]) =
@@ -355,7 +355,7 @@ trait MarkupParser extends MarkupParserCommon with TokenTests
   }
 
   /** {{{
-   *  '&lt;! CharData ::= [CDATA[ ( {char} - {char}"]]&gt;"{char} ) ']]&gt;'
+   *  '<! CharData ::= [CDATA[ ( {char} - {char}"]]>"{char} ) ']]>'
    *
    *  see [15]
    *  }}} */
@@ -369,7 +369,7 @@ trait MarkupParser extends MarkupParserCommon with TokenTests
   }
 
   /** {{{
-   *  Comment ::= '&lt;!--' ((Char - '-') | ('-' (Char - '-')))* '--&gt;'
+   *  Comment ::= '<!--' ((Char - '-') | ('-' (Char - '-')))* '-->'
    *
    * see [15]
    *  }}} */
@@ -399,7 +399,7 @@ trait MarkupParser extends MarkupParserCommon with TokenTests
   }
 
   /** {{{
-   *  '&lt;' content1 ::=  ...
+   *  '<' content1 ::=  ...
    *  }}} */
   def content1(pscope: NamespaceBinding, ts: NodeBuffer) {
     ch match {
@@ -420,7 +420,7 @@ trait MarkupParser extends MarkupParserCommon with TokenTests
   }
 
   /** {{{
-   *  content1 ::=  '&lt;' content1 | '&amp;' charref ...
+   *  content1 ::=  '<' content1 | '&' charref ...
    *  }}} */
   def content(pscope: NamespaceBinding): NodeSeq = {
     var ts = new NodeBuffer
@@ -490,7 +490,7 @@ trait MarkupParser extends MarkupParserCommon with TokenTests
   /** parses document type declaration and assigns it to instance variable
    *  dtd.
    *  {{{
-   *  &lt;! parseDTD ::= DOCTYPE name ... >
+   *  <! parseDTD ::= DOCTYPE name ... >
    *  }}} */
   def parseDTD() { // dirty but fast
     var extID: ExternalID = null
@@ -545,8 +545,8 @@ trait MarkupParser extends MarkupParserCommon with TokenTests
   }
 
   /** {{{
-   *  '&lt;' element ::= xmlTag1 '&gt;'  { xmlExpr | '{' simpleExpr '}' } ETag
-   *               | xmlTag1 '/' '&gt;'
+   *  '<' element ::= xmlTag1 '>'  { xmlExpr | '{' simpleExpr '}' } ETag
+   *               | xmlTag1 '/' '>'
    *  }}} */
   def element1(pscope: NamespaceBinding): NodeSeq = {
     val pos = this.pos
@@ -778,7 +778,7 @@ trait MarkupParser extends MarkupParserCommon with TokenTests
   }
 
   /** {{{
-   *  &lt;! attlist := ATTLIST
+   *  <! attlist := ATTLIST
    *  }}} */
   def attrDecl() = {
     xToken("TTLIST")
@@ -824,7 +824,7 @@ trait MarkupParser extends MarkupParserCommon with TokenTests
   }
 
   /** {{{
-   *  &lt;! element := ELEMENT
+   *  <! element := ELEMENT
    *  }}} */
   def entityDecl() = {
     var isParameterEntity = false

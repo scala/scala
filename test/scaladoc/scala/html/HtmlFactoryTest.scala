@@ -580,7 +580,24 @@ object Test extends Properties("HtmlFactory") {
             """, true)
       )    
   }
-    
+
+  property("Indentation normalization for code blocks") = {
+    val files = createTemplates("code-indent.scala")
+
+    files("C.html") match {
+      case node: scala.xml.Node => {
+        val s = node.toString
+        s.contains("<pre>a typicial indented\ncomment on multiple\ncomment lines</pre>") &&
+        s.contains("<pre>one liner</pre>") &&
+        s.contains("<pre>two lines, one useful</pre>") &&
+        s.contains("<pre>line1\nline2\nline3\nline4</pre>") &&
+        s.contains("<pre>a ragged example\na (condition)\n  the t h e n branch\nan alternative\n  the e l s e branch</pre>") &&
+        s.contains("<pre>l1\n\nl2\n\nl3\n\nl4\n\nl5</pre>")
+      }
+      case _ => false
+    }
+  }
+
   {
     val files = createTemplates("basic.scala")
     //println(files)
