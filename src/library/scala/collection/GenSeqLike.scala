@@ -115,20 +115,20 @@ trait GenSeqLike[+A, +Repr] extends Any with GenIterableLike[A, Repr] with Equal
 
   /** Finds index of first occurrence of some value in this $coll.
    *
-   *  $mayNotTerminateInf
-   *
    *  @param   elem   the element value to search for.
    *  @tparam  B      the type of the element `elem`.
    *  @return  the index of the first element of this $coll that is equal (wrt `==`)
    *           to `elem`, or `-1`, if none exists.
    *
    *  @usecase def indexOf(elem: A): Int
+   *    @inheritdoc
+   *
+   *    $mayNotTerminateInf
+   *
    */
   def indexOf[B >: A](elem: B): Int = indexOf(elem, 0)
 
   /** Finds index of first occurrence of some value in this $coll after or at some start index.
-   *
-   *  $mayNotTerminateInf
    *
    *  @param   elem   the element value to search for.
    *  @tparam  B      the type of the element `elem`.
@@ -137,12 +137,14 @@ trait GenSeqLike[+A, +Repr] extends Any with GenIterableLike[A, Repr] with Equal
    *           to `elem`, or `-1`, if none exists.
    *
    *  @usecase def indexOf(elem: A, from: Int): Int
+   *    @inheritdoc
+   *    
+   *    $mayNotTerminateInf
+   *
    */
   def indexOf[B >: A](elem: B, from: Int): Int = indexWhere(elem ==, from)
 
   /** Finds index of last occurrence of some value in this $coll.
-   *
-   *  $willNotTerminateInf
    *
    *  @param   elem   the element value to search for.
    *  @tparam  B      the type of the element `elem`.
@@ -150,6 +152,10 @@ trait GenSeqLike[+A, +Repr] extends Any with GenIterableLike[A, Repr] with Equal
    *           to `elem`, or `-1`, if none exists.
    *
    *  @usecase def lastIndexOf(elem: A): Int
+   *    @inheritdoc
+   *
+   *    $willNotTerminateInf
+   *
    */
   def lastIndexOf[B >: A](elem: B): Int = lastIndexWhere(elem ==)
 
@@ -162,6 +168,7 @@ trait GenSeqLike[+A, +Repr] extends Any with GenIterableLike[A, Repr] with Equal
    *           to `elem`, or `-1`, if none exists.
    *
    *  @usecase def lastIndexOf(elem: A, end: Int): Int
+   *    @inheritdoc
    */
   def lastIndexOf[B >: A](elem: B, end: Int): Int = lastIndexWhere(elem ==, end)
 
@@ -195,10 +202,6 @@ trait GenSeqLike[+A, +Repr] extends Any with GenIterableLike[A, Repr] with Equal
    *  Builds a new collection by applying a function to all elements of this $coll and
    *  collecting the results in reversed order.
    *
-   *  $willNotTerminateInf
-   *
-   *  Note: `xs.reverseMap(f)` is the same as `xs.reverse.map(f)` but might be more efficient.
-   *
    *  @param f      the function to apply to each element.
    *  @tparam B     the element type of the returned collection.
    *  @tparam That  $thatinfo
@@ -207,10 +210,14 @@ trait GenSeqLike[+A, +Repr] extends Any with GenIterableLike[A, Repr] with Equal
    *                `f` to each element of this $coll and collecting the results in reversed order.
    *
    *  @usecase def reverseMap[B](f: A => B): $Coll[B]
+   *    @inheritdoc
    *
-   *  Note: `xs.reverseMap(f)` is the same as `xs.reverse.map(f)` but might be more efficient.
-   *  @return       a new $coll resulting from applying the given function
-   *                `f` to each element of this $coll and collecting the results in reversed order.
+   *    $willNotTerminateInf
+   *
+   *    Note: `xs.reverseMap(f)` is the same as `xs.reverse.map(f)` but might be more efficient.
+   *
+   *    @return       a new $coll resulting from applying the given function
+   *                  `f` to each element of this $coll and collecting the results in reversed order.
    */
   def reverseMap[B, That](f: A => B)(implicit bf: CanBuildFrom[Repr, B, That]): That
 
@@ -254,10 +261,13 @@ trait GenSeqLike[+A, +Repr] extends Any with GenIterableLike[A, Repr] with Equal
    *  @return          a new $coll consisting of all elements of this $coll
    *                   except that `replaced` elements starting from `from` are replaced
    *                   by `patch`.
+   *
    *  @usecase def patch(from: Int, that: GenSeq[A], replaced: Int): $Coll[A]
-   *  @return          a new $coll consisting of all elements of this $coll
-   *                   except that `replaced` elements starting from `from` are replaced
-   *                   by `patch`.
+   *    @inheritdoc
+   *
+   *    @return          a new $coll consisting of all elements of this $coll
+   *                     except that `replaced` elements starting from `from` are replaced
+   *                     by `patch`.
    */
   def patch[B >: A, That](from: Int, patch: GenSeq[B], replaced: Int)(implicit bf: CanBuildFrom[Repr, B, That]): That
 
@@ -268,20 +278,33 @@ trait GenSeqLike[+A, +Repr] extends Any with GenIterableLike[A, Repr] with Equal
    *  @tparam That     $thatinfo
    *  @param bf        $bfinfo
    *  @return a new $coll` which is a copy of this $coll with the element at position `index` replaced by `elem`.
+   *
    *  @usecase def updated(index: Int, elem: A): $Coll[A]
-   *  @return a copy of this $coll with the element at position `index` replaced by `elem`.
+   *    @inheritdoc
+   *
+   *    @return a copy of this $coll with the element at position `index` replaced by `elem`.
    */
   def updated[B >: A, That](index: Int, elem: B)(implicit bf: CanBuildFrom[Repr, B, That]): That
 
   /** A copy of the $coll with an element prepended.
    *
-   * Note that :-ending operators are right associative (see example).
-   * A mnemonic for `+:` vs. `:+` is: the COLon goes on the COLlection side.
+   *  @param  elem   the prepended element
+   *  @tparam B      the element type of the returned $coll.
+   *  @tparam That   $thatinfo
+   *  @param bf      $bfinfo
+   *  @return a new collection of type `That` consisting of `elem` followed
+   *          by all elements of this $coll.
    *
-   * Also, the original $coll is not modified, so you will want to capture the result.
+   *  @usecase def +:(elem: A): $Coll[A]
+   *    @inheritdoc
    *
-   *  Example:
-   *  {{{
+   *    Note that :-ending operators are right associative (see example).
+   *    A mnemonic for `+:` vs. `:+` is: the COLon goes on the COLlection side.
+   *
+   *    Also, the original $coll is not modified, so you will want to capture the result.
+   *
+   *    Example:
+   *    {{{
    *      scala> val x = LinkedList(1)
    *      x: scala.collection.mutable.LinkedList[Int] = LinkedList(1)
    *
@@ -290,17 +313,10 @@ trait GenSeqLike[+A, +Repr] extends Any with GenIterableLike[A, Repr] with Equal
    *
    *      scala> println(x)
    *      LinkedList(1)
-   *  }}}
+   *    }}}
    *
-   *  @param  elem   the prepended element
-   *  @tparam B      the element type of the returned $coll.
-   *  @tparam That   $thatinfo
-   *  @param bf      $bfinfo
-   *  @return a new collection of type `That` consisting of `elem` followed
-   *          by all elements of this $coll.
-   *  @usecase def +:(elem: A): $Coll[A]
-   *  @return a new $coll consisting of `elem` followed
-   *          by all elements of this $coll.
+   *    @return a new $coll consisting of `elem` followed
+   *            by all elements of this $coll.
    */
   def +:[B >: A, That](elem: B)(implicit bf: CanBuildFrom[Repr, B, That]): That
 
@@ -308,18 +324,20 @@ trait GenSeqLike[+A, +Repr] extends Any with GenIterableLike[A, Repr] with Equal
    *
    *  A mnemonic for `+:` vs. `:+` is: the COLon goes on the COLlection side.
    *
-   *  $willNotTerminateInf
    *  @param  elem   the appended element
    *  @tparam B      the element type of the returned $coll.
    *  @tparam That   $thatinfo
    *  @param bf      $bfinfo
    *  @return a new collection of type `That` consisting of
    *          all elements of this $coll followed by `elem`.
+   *
    *  @usecase def :+(elem: A): $Coll[A]
-   *  @return a new $coll consisting of
-   *          all elements of this $coll followed by `elem`.
-   *  @example
-   *  {{{
+   *    @inheritdoc
+   *
+   *    $willNotTerminateInf
+   *
+   *    Example:
+   *    {{{
    *       scala> import scala.collection.mutable.LinkedList
    *       import scala.collection.mutable.LinkedList
    *
@@ -331,7 +349,10 @@ trait GenSeqLike[+A, +Repr] extends Any with GenIterableLike[A, Repr] with Equal
    *
    *       scala> println(a)
    *       LinkedList(1)
-   *  }}}
+   *    }}}
+   *
+   *    @return a new $coll consisting of
+   *            all elements of this $coll followed by `elem`.
    */
   def :+[B >: A, That](elem: B)(implicit bf: CanBuildFrom[Repr, B, That]): That
 
@@ -346,9 +367,11 @@ trait GenSeqLike[+A, +Repr] extends Any with GenIterableLike[A, Repr] with Equal
    *          all elements of this $coll followed by the minimal number of occurrences of `elem` so
    *          that the resulting collection has a length of at least `len`.
    *  @usecase def padTo(len: Int, elem: A): $Coll[A]
-   *  @return a new $coll consisting of
-   *          all elements of this $coll followed by the minimal number of occurrences of `elem` so
-   *          that the resulting $coll has a length of at least `len`.
+   *    @inheritdoc
+   *
+   *    @return a new $coll consisting of
+   *            all elements of this $coll followed by the minimal number of occurrences of `elem` so
+   *            that the resulting $coll has a length of at least `len`.
    */
   def padTo[B >: A, That](len: Int, elem: B)(implicit bf: CanBuildFrom[Repr, B, That]): That
 
@@ -368,13 +391,6 @@ trait GenSeqLike[+A, +Repr] extends Any with GenIterableLike[A, Repr] with Equal
 
   /** Produces a new sequence which contains all elements of this $coll and also all elements of
    *  a given sequence. `xs union ys`  is equivalent to `xs ++ ys`.
-   *  $willNotTerminateInf
-   *
-   *  Another way to express this
-   *  is that `xs union ys` computes the order-presevring multi-set union of `xs` and `ys`.
-   *  `union` is hence a counter-part of `diff` and `intersect` which also work on multi-sets.
-   *
-   *  $willNotTerminateInf
    *
    *  @param that   the sequence to add.
    *  @tparam B     the element type of the returned $coll.
@@ -382,9 +398,18 @@ trait GenSeqLike[+A, +Repr] extends Any with GenIterableLike[A, Repr] with Equal
    *  @param bf     $bfinfo
    *  @return       a new collection of type `That` which contains all elements of this $coll
    *                followed by all elements of `that`.
+   *
    *  @usecase def union(that: GenSeq[A]): $Coll[A]
-   *  @return       a new $coll which contains all elements of this $coll
-   *                followed by all elements of `that`.
+   *    @inheritdoc
+   *
+   *    Another way to express this
+   *    is that `xs union ys` computes the order-presevring multi-set union of `xs` and `ys`.
+   *    `union` is hence a counter-part of `diff` and `intersect` which also work on multi-sets.
+   *
+   *    $willNotTerminateInf
+   *
+   *    @return       a new $coll which contains all elements of this $coll
+   *                  followed by all elements of `that`.
    */
   def union[B >: A, That](that: GenSeq[B])(implicit bf: CanBuildFrom[Repr, B, That]): That = this ++ that
 
@@ -393,7 +418,6 @@ trait GenSeqLike[+A, +Repr] extends Any with GenIterableLike[A, Repr] with Equal
     union(that: GenSeq[B])(bf)
 
   /** Computes the multiset difference between this $coll and another sequence.
-   *  $willNotTerminateInf
    *
    *  @param that   the sequence of elements to remove
    *  @tparam B     the element type of the returned $coll.
@@ -404,17 +428,21 @@ trait GenSeqLike[+A, +Repr] extends Any with GenIterableLike[A, Repr] with Equal
    *                If an element value `x` appears
    *                ''n'' times in `that`, then the first ''n'' occurrences of `x` will not form
    *                part of the result, but any following occurrences will.
+   *
    *  @usecase def diff(that: GenSeq[A]): $Coll[A]
-   *  @return       a new $coll which contains all elements of this $coll
-   *                except some of occurrences of elements that also appear in `that`.
-   *                If an element value `x` appears
-   *                ''n'' times in `that`, then the first ''n'' occurrences of `x` will not form
-   *                part of the result, but any following occurrences will.
+   *    @inheritdoc
+   *
+   *    $willNotTerminateInf
+   *
+   *    @return       a new $coll which contains all elements of this $coll
+   *                  except some of occurrences of elements that also appear in `that`.
+   *                  If an element value `x` appears
+   *                  ''n'' times in `that`, then the first ''n'' occurrences of `x` will not form
+   *                  part of the result, but any following occurrences will.
    */
   def diff[B >: A](that: GenSeq[B]): Repr
 
   /** Computes the multiset intersection between this $coll and another sequence.
-   *  $mayNotTerminateInf
    *
    *  @param that   the sequence of elements to intersect with.
    *  @tparam B     the element type of the returned $coll.
@@ -425,12 +453,17 @@ trait GenSeqLike[+A, +Repr] extends Any with GenIterableLike[A, Repr] with Equal
    *                If an element value `x` appears
    *                ''n'' times in `that`, then the first ''n'' occurrences of `x` will be retained
    *                in the result, but any following occurrences will be omitted.
+   *
    *  @usecase def intersect(that: GenSeq[A]): $Coll[A]
-   *  @return       a new $coll which contains all elements of this $coll
-   *                which also appear in `that`.
-   *                If an element value `x` appears
-   *                ''n'' times in `that`, then the first ''n'' occurrences of `x` will be retained
-   *                in the result, but any following occurrences will be omitted.
+   *    @inheritdoc
+   *
+   *    $mayNotTerminateInf
+   *
+   *    @return       a new $coll which contains all elements of this $coll
+   *                  which also appear in `that`.
+   *                  If an element value `x` appears
+   *                  ''n'' times in `that`, then the first ''n'' occurrences of `x` will be retained
+   *                  in the result, but any following occurrences will be omitted.
    */
   def intersect[B >: A](that: GenSeq[B]): Repr
 
