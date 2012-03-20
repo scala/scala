@@ -9,7 +9,7 @@
 package scala.concurrent
 package default
 
-import scala.util.Duration
+import scala.concurrent.util.Duration
 
 private[concurrent] final class SchedulerImpl extends Scheduler {
   private val timer =
