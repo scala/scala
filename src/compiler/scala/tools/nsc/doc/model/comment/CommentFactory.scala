@@ -491,7 +491,7 @@ trait CommentFactory { thisFactory: ModelFactory with CommentFactory =>
       else
         jump("}}}")
       blockEnded("code block")
-      Code(getRead)
+      Code(normalizeIndentation(getRead))
     }
 
     /** {{{ title ::= ('=' inline '=' | "==" inline "==" | ...) '\n' }}} */
@@ -730,6 +730,64 @@ trait CommentFactory { thisFactory: ModelFactory with CommentFactory =>
       }
       while (char == endOfLine)
         nextChar()
+    }
+
+    /** 
+     *  Eliminates the (common) leading spaces in all lines, based on the first line 
+     *  For indented pieces of code, it reduces the indent to the least whitespace prefix:
+     *    {{{
+     *       indented example
+     *       another indented line
+     *       if (condition)
+     *         then do something;
+     *       ^ this is the least whitespace prefix
+     *    }}}
+     */
+    def normalizeIndentation(_code: String): String = {
+
+      var code = _code.trim
+      var maxSkip = Integer.MAX_VALUE
+      var crtSkip = 0
+      var wsArea = true
+      var index = 0
+      var firstLine = true
+      var emptyLine = true
+
+      while (index < code.length) {
+        code(index) match {
+          case ' ' =>
+            if (wsArea) 
+              crtSkip += 1
+          case c =>
+            wsArea = (c == '\n')
+            maxSkip = if (firstLine || emptyLine) maxSkip else if (maxSkip <= crtSkip) maxSkip else crtSkip 
+            crtSkip = if (c == '\n') 0 else crtSkip
+            firstLine = if (c == '\n') false else firstLine
+            emptyLine = if (c == '\n') true else false
+        }
+        index += 1
+      }
+
+      if (maxSkip == 0)
+        code
+      else {
+        index = 0
+        val builder = new StringBuilder
+        while (index < code.length) {
+          builder.append(code(index))
+          if (code(index) == '\n') {
+            // we want to skip as many spaces are available, if there are less spaces (like on empty lines, do not
+            // over-consume them)
+            index += 1
+            val limit = index + maxSkip
+            while ((index < code.length) && (code(index) == ' ') && index < limit)
+              index += 1
+          }
+          else
+            index += 1
+        }
+        builder.toString
+      }
     }
 
     def checkParaEnded(): Boolean = {
