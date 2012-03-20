@@ -18,7 +18,7 @@ import scala.collection.mutable.Stack
 
 
 
-class ExecutionContextImpl(val executorService: AnyRef) extends ExecutionContext {
+private[scala] class ExecutionContextImpl(val executorService: AnyRef) extends ExecutionContext {
   import ExecutionContextImpl._
 
   def execute(runnable: Runnable): Unit = executorService match {
