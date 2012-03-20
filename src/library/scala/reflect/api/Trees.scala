@@ -165,11 +165,12 @@ trait Trees { self: Universe =>
     def foreach(f: Tree => Unit) { new ForeachTreeTraverser(f).traverse(this) }
 
     /** Find all subtrees matching predicate `p` */
-    def filter(f: Tree => Boolean): List[Tree] = {
+    def withFilter(f: Tree => Boolean): List[Tree] = {
       val ft = new FilterTreeTraverser(f)
       ft.traverse(this)
       ft.hits.toList
     }
+    def filter(f: Tree => Boolean): List[Tree] = withFilter(f)
 
     /** Returns optionally first tree (in a preorder traversal) which satisfies predicate `p`,
      *  or None if none exists.

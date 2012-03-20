@@ -2078,47 +2078,32 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
       case s    => " in " + s
     }
     def fullLocationString: String = toString + locationString
-    def signatureString: String = if (hasRawInfo) infoString(rawInfo) else "<_>"
+    def signatureString: String    = if (hasRawInfo) infoString(rawInfo) else "<_>"
 
     /** String representation of symbol's definition following its name */
     final def infoString(tp: Type): String = {
-      def typeParamsString: String = tp match {
-        case PolyType(tparams, _) if tparams.nonEmpty =>
-          (tparams map (_.defString)).mkString("[", ",", "]")
-        case _ =>
-          ""
+      def parents = (
+        if (settings.debug.value) parentsString(tp.parents)
+        else briefParentsString(tp.parents)
+      )
+      if (isType) typeParamsString(tp) + (
+        if (isClass) " extends " + parents
+        else if (isAliasType) " = " + tp.resultType
+        else tp.resultType match {
+          case rt @ TypeBounds(_, _) => "" + rt
+          case rt                    => " <: " + rt
+        }
+      )
+      else if (isModule) moduleClass.infoString(tp)
+      else tp match {
+        case PolyType(tparams, res)  => typeParamsString(tp) + infoString(res)
+        case NullaryMethodType(res)  => infoString(res)
+        case MethodType(params, res) => valueParamsString(tp) + infoString(res)
+        case _                       => ": " + tp
       }
-      if (isClass)
-        typeParamsString + " extends " + tp.resultType
-      else if (isAliasType)
-        typeParamsString + " = " + tp.resultType
-      else if (isAbstractType)
-        typeParamsString + {
-          tp.resultType match {
-            case TypeBounds(lo, hi) =>
-              (if (lo.typeSymbol == NothingClass) "" else " >: " + lo) +
-              (if (hi.typeSymbol == AnyClass) "" else " <: " + hi)
-            case rtp =>
-              "<: " + rtp
-          }
-        }
-      else if (isModule)
-        moduleClass.infoString(tp)
-      else
-        tp match {
-          case PolyType(tparams, res) =>
-            typeParamsString + infoString(res)
-          case NullaryMethodType(res) =>
-            infoString(res)
-          case MethodType(params, res) =>
-            params.map(_.defString).mkString("(", ",", ")") + infoString(res)
-          case _ =>
-            ": " + tp
-        }
     }
 
-    def infosString = infos.toString()
-
+    def infosString = infos.toString
     def debugLocationString = fullLocationString + " " + debugFlagString
     def debugFlagString = hasFlagsToString(-1L)
     def hasFlagsToString(mask: Long): String = flagsToString(
@@ -2684,7 +2669,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     override def rawInfo: Type = NoType
     protected def doCookJavaRawInfo() {}
     override def accessBoundary(base: Symbol): Symbol = RootClass
-    def cloneSymbolImpl(owner: Symbol, newFlags: Long): Symbol = abort()
+    def cloneSymbolImpl(owner: Symbol, newFlags: Long): Symbol = abort("NoSymbol.clone()")
     override def originalEnclosingMethod = this
 
     override def owner: Symbol =

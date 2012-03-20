@@ -49,9 +49,15 @@ trait Kinds {
     private def kindMessage(a: Symbol, p: Symbol)(f: (String, String) => String): String =
       f(a+qualify(a,p), p+qualify(p,a))
 
+    // Normally it's nicer to print nothing rather than '>: Nothing <: Any' all over
+    // the place, but here we need it for the message to make sense.
     private def strictnessMessage(a: Symbol, p: Symbol) =
-      kindMessage(a, p)("%s's bounds %s are stricter than %s's declared bounds %s".format(
-        _, a.info, _, p.info))
+      kindMessage(a, p)("%s's bounds%s are stricter than %s's declared bounds%s".format(
+        _, a.info, _, p.info match {
+          case tb @ TypeBounds(_, _) if tb.isEmptyBounds  => " >: Nothing <: Any"
+          case tb                                         => "" + tb
+        })
+      )
 
     private def varianceMessage(a: Symbol, p: Symbol) =
       kindMessage(a, p)("%s is %s, but %s is declared %s".format(_, varStr(a), _, varStr(p)))
@@ -62,11 +68,16 @@ trait Kinds {
         _, countAsString(p.typeParams.length))
       )
 
+    private def buildMessage(xs: List[SymPair], f: (Symbol, Symbol) => String) = (
+      if (xs.isEmpty) ""
+      else xs map f.tupled mkString ("\n", ", ", "")
+    )
+
     def errorMessage(targ: Type, tparam: Symbol): String = (
-        (targ+"'s type parameters do not match "+tparam+"'s expected parameters: ")
-      + (arity map { case (a, p) => arityMessage(a, p) } mkString ", ")
-      + (variance map { case (a, p) => varianceMessage(a, p) } mkString ", ")
-      + (strictness map { case (a, p) => strictnessMessage(a, p) } mkString ", ")
+        (targ+"'s type parameters do not match "+tparam+"'s expected parameters:")
+      + buildMessage(arity, arityMessage)
+      + buildMessage(variance, varianceMessage)
+      + buildMessage(strictness, strictnessMessage)
     )
   }
   val NoKindErrors = KindErrors(Nil, Nil, Nil)

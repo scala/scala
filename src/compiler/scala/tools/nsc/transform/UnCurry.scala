@@ -168,7 +168,7 @@ abstract class UnCurry extends InfoTransform
     private def nonLocalReturnTry(body: Tree, key: Symbol, meth: Symbol) = {
       localTyper typed {
         val extpe   = nonLocalReturnExceptionType(meth.tpe.finalResultType)
-        val ex      = meth.newValue(body.pos, nme.ex) setInfo extpe
+        val ex      = meth.newValue(nme.ex, body.pos) setInfo extpe
         val pat     = gen.mkBindForCase(ex, NonLocalReturnControlClass, List(meth.tpe.finalResultType))
         val rhs = (
           IF   ((ex DOT nme.key)() OBJ_EQ Ident(key))

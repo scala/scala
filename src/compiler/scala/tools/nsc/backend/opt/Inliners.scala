@@ -262,7 +262,7 @@ abstract class Inliners extends SubComponent {
       def inlineWithoutTFA(inputBlocks: Traversable[BasicBlock], callsites: Function1[BasicBlock, List[opcodes.CALL_METHOD]]): Int = {
         var inlineCount = 0
         import scala.util.control.Breaks._
-        for(x <- inputBlocks; val easyCake = callsites(x); if easyCake.nonEmpty) {
+        for(x <- inputBlocks; easyCake = callsites(x); if easyCake.nonEmpty) {
           breakable {
             for(ocm <- easyCake) {
               assert(ocm.method.isEffectivelyFinal && ocm.method.owner.isEffectivelyFinal)

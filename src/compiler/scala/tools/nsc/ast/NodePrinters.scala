@@ -65,7 +65,7 @@ abstract class NodePrinters {
     def showDefTreeName(tree: DefTree) = showName(tree.name)
     def showFlags(tree: MemberDef)     = flagsToString(tree.symbol.flags | tree.mods.flags)
     def showLiteral(lit: Literal)      = lit.value.escapedStringValue
-    def showTypeTree(tt: TypeTree)     = "<tpt>" + showAttributes(tt)
+    def showTypeTree(tt: TypeTree)     = "<tpt>" + emptyOrComment(showType(tt))
     def showName(name: Name)           = name match {
       case nme.EMPTY | tpnme.EMPTY => "<empty>"
       case name                    => "\"" + name + "\""
@@ -74,18 +74,18 @@ abstract class NodePrinters {
     def showSymbol(tree: Tree): String = {
       val sym = tree.symbol
       if (sym == null || sym == NoSymbol) ""
-      else " sym/owner/tpe=%s %s/%s/%s".format(sym.accurateKindString, sym.name, sym.owner, sym.tpe)
+      else sym.defString + sym.locationString
     }
     def showType(tree: Tree): String = {
       val tpe = tree.tpe
       if (tpe == null || tpe == NoType) ""
-      else " tree.tpe=" + tpe
+      else "tree.tpe=" + tpe
     }
   
     def showAttributes(tree: Tree): String = {
       if (infolevel == InfoLevel.Quiet) ""
       else {
-        try   { showSymbol(tree) + showType(tree) trim }
+        try   { List(showSymbol(tree), showType(tree)) filterNot (_ == "") mkString ", " trim }
         catch { case ex: Throwable => "sym= <error> " + ex.getMessage }
       }
     }
@@ -115,12 +115,10 @@ abstract class NodePrinters {
         case Select(_, _)             => prefix0 + "."
         case _                        => ""
       })
-      def attrs = showAttributes(tree) match {
-        case "" => ""
-        case s  => " // " + s
-      }
-      prefix + showName(tree.name) + attrs
+      prefix + showName(tree.name) + emptyOrComment(showAttributes(tree))
     }
+
+    def emptyOrComment(s: String) = if (s == "") "" else " // " + s
 
     def stringify(tree: Tree): String = {
       buf.clear()
@@ -141,7 +139,10 @@ abstract class NodePrinters {
       buf append "  " * level
       buf append value
       if (comment != "") {
-        buf append " // "
+        if (value != "")
+          buf append " "
+
+        buf append "// "
         buf append comment
       }
       buf append EOL
@@ -179,7 +180,7 @@ abstract class NodePrinters {
     def applyCommon(tree: Tree, fun: Tree, args: List[Tree]) {
       printMultiline(tree) {
         traverse(fun)
-        traverseList("Nil", _ + " arguments(s)")(args)
+        traverseList("Nil", "argument")(args)
       }
     }
     
@@ -191,17 +192,26 @@ abstract class NodePrinters {
       indent(body)
       println(")")
     }
+
     @inline private def indent[T](body: => T): T = {
       level += 1
       try body
       finally level -= 1
     }
 
-    def traverseList(ifEmpty: String, comment: Int => String)(trees: List[Tree]) {
+    def traverseList(ifEmpty: String, what: String)(trees: List[Tree]) {
       if (trees.isEmpty)
         println(ifEmpty)
-      else
-        printMultiline("List", comment(trees.length))(trees foreach traverse)
+      else if (trees.tail.isEmpty)
+        traverse(trees.head)
+      else {
+        printLine("", trees.length + " " + what + "s")
+        trees foreach traverse
+      }
+    }
+
+    def printSingle(tree: Tree, name: Name) {
+      println(tree.printingPrefix + "(" + showName(name) + ")" + showAttributes(tree))
     }
 
     def traverse(tree: Tree) {
@@ -210,16 +220,44 @@ abstract class NodePrinters {
         case ApplyDynamic(fun, args)    => applyCommon(tree, fun, args)
         case Apply(fun, args)           => applyCommon(tree, fun, args)
 
+        case Throw(Ident(name)) =>
+          printSingle(tree, name)
+
+        case Function(vparams, body) =>
+          printMultiline(tree) {
+            traverseList("()", "parameter")(vparams)
+            traverse(body)
+          }
+        case Try(block, catches, finalizer) =>
+          printMultiline(tree) {
+            traverse(block)
+            traverseList("{}", "case")(catches)
+            if (finalizer ne EmptyTree)
+              traverse(finalizer)
+          }
+
+        case Match(selector, cases) =>
+          printMultiline(tree) {
+            traverse(selector)
+            traverseList("", "case")(cases)
+          }
+        case CaseDef(pat, guard, body) =>
+          printMultiline(tree) {
+            traverse(pat)
+            if (guard ne EmptyTree)
+              traverse(guard)
+            traverse(body)
+          }
         case Block(stats, expr) =>
           printMultiline(tree) {
-            traverseList("{}", _ + " statement(s)")(stats)
+            traverseList("{}", "statement")(stats)
             traverse(expr)
           }
         case cd @ ClassDef(mods, name, tparams, impl) =>
           printMultiline(tree) {
             printModifiers(cd)
             println(showDefTreeName(cd))
-            traverseList("[]", _ + " type parameter(s)")(tparams)
+            traverseList("[]", "type parameter")(tparams)
             traverse(impl)
           }
         case md @ ModuleDef(mods, name, impl) =>
@@ -232,14 +270,16 @@ abstract class NodePrinters {
           printMultiline(tree) {
             printModifiers(dd)
             println(showDefTreeName(dd))
-            traverseList("[]", _ + " type parameter(s)")(tparams)
+            traverseList("[]", "type parameter")(tparams)
             vparamss match {
               case Nil        => println("Nil")
               case Nil :: Nil => println("List(Nil)")
-              case xss        =>
-                printMultiline("List", xss.length + " parameter list(s)") {
-                  xss foreach (xs => traverseList("()", _ + " parameter(s)")(xs))
-                }
+              case ps  :: Nil =>
+                printLine("", "1 parameter list")
+                ps foreach traverse
+              case pss        =>
+                printLine("", pss.length + " parameter lists")
+                pss foreach (ps => traverseList("()", "parameter")(ps))
             }
             traverse(tpt)
             traverse(rhs)
@@ -268,14 +308,14 @@ abstract class NodePrinters {
             }
             printLine(ps0 mkString ", ", "parents")
             traverse(self)
-            traverseList("{}", _ + " statements in body")(body)
+            traverseList("{}", "statement")(body)
           }
         case This(qual) =>
-          println("This(\"" + showName(qual) + "\")" + showAttributes(tree))
+          printSingle(tree, qual)
         case TypeApply(fun, args) =>
           printMultiline(tree) {
             traverse(fun)
-            traverseList("[]", _ + " type argument(s)")(args)
+            traverseList("[]", "type argument")(args)
           }
         case tt @ TypeTree() =>
           println(showTypeTree(tt))
@@ -296,7 +336,7 @@ abstract class NodePrinters {
           printMultiline(tree) {
             printModifiers(td)
             println(showDefTreeName(td))
-            traverseList("[]", _ + " type parameter(s)")(tparams)
+            traverseList("[]", "type parameter")(tparams)
             traverse(rhs)
           }
         

@@ -124,7 +124,7 @@ trait GenTraversableOnce[+A] extends Any {
    *      scala> val b = (a /:\ 5)(_+_)
    *      b: Int = 15
    * }}}*/
-  @deprecated("use fold instead")
+  @deprecated("use fold instead", "2.10.0")
   def /:\[A1 >: A](z: A1)(op: (A1, A1) => A1): A1 = fold(z)(op)
 
   /** Applies a binary operator to a start value and all elements of this $coll,
