@@ -93,8 +93,12 @@ sealed abstract class List[+A] extends AbstractSeq[A]
    *  @param x the element to prepend.
    *  @return  a list which contains `x` as first element and
    *           which continues with this list.
-   *  @example `1 :: List(2, 3) = List(2, 3).::(1) = List(1, 2, 3)`
+   *
    *  @usecase def ::(x: A): List[A]
+   *    @inheritdoc
+   *    
+   *    Example:
+   *    {{{1 :: List(2, 3) = List(2, 3).::(1) = List(1, 2, 3)}}}
    */
   def ::[B >: A] (x: B): List[B] =
     new scala.collection.immutable.::(x, this)
@@ -103,8 +107,12 @@ sealed abstract class List[+A] extends AbstractSeq[A]
    *  @param prefix  The list elements to prepend.
    *  @return a list resulting from the concatenation of the given
    *    list `prefix` and this list.
-   *  @example `List(1, 2) ::: List(3, 4) = List(3, 4).:::(List(1, 2)) = List(1, 2, 3, 4)`
+   *
    *  @usecase def :::(prefix: List[A]): List[A]
+   *    @inheritdoc
+   *
+   *    Example:
+   *    {{{List(1, 2) ::: List(3, 4) = List(3, 4).:::(List(1, 2)) = List(1, 2, 3, 4)}}}
    */
   def :::[B >: A](prefix: List[B]): List[B] =
     if (isEmpty) prefix
@@ -117,7 +125,9 @@ sealed abstract class List[+A] extends AbstractSeq[A]
    *
    *  @param prefix the prefix to reverse and then prepend
    *  @return       the concatenation of the reversed prefix and the current list.
+   *
    *  @usecase def reverse_:::(prefix: List[A]): List[A]
+   *    @inheritdoc
    */
   def reverse_:::[B >: A](prefix: List[B]): List[B] = {
     var these: List[B] = this
@@ -137,7 +147,9 @@ sealed abstract class List[+A] extends AbstractSeq[A]
    *  @tparam B     the element type of the returned collection.
    *  @return       a list resulting from applying the given function
    *                `f` to each element of this list and collecting the results.
+   *
    *  @usecase def mapConserve(f: A => A): List[A]
+   *    @inheritdoc
    */
   def mapConserve[B >: A <: AnyRef](f: A => B): List[B] = {
     @tailrec
