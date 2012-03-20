@@ -12,7 +12,8 @@ package scala.concurrent
 
 import java.util.concurrent.{ Executors, ExecutorService }
 import scala.concurrent.forkjoin.ForkJoinPool
-import scala.util.{ Duration, Try, Success, Failure }
+import scala.util.{ Try, Success, Failure }
+import scala.concurrent.util.Duration
 import ConcurrentPackageObject._
 
 
@@ -26,8 +27,8 @@ abstract class ConcurrentPackageObject {
     new impl.ExecutionContextImpl(getExecutorService)
 
   private[concurrent] def getExecutorService: AnyRef =
-    if (util.Properties.isJavaAtLeast("1.6")) {
-      val vendor = util.Properties.javaVmVendor
+    if (scala.util.Properties.isJavaAtLeast("1.6")) {
+      val vendor = scala.util.Properties.javaVmVendor
       if ((vendor contains "Oracle") || (vendor contains "Sun") || (vendor contains "Apple")) new ForkJoinPool
       else Executors.newCachedThreadPool()
     } else Executors.newCachedThreadPool()

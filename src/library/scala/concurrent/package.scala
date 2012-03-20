@@ -8,7 +8,8 @@
 
 package scala
 
-import scala.util.{ Duration, Try, Success, Failure }
+import scala.util.{ Try, Success, Failure }
+import scala.concurrent.util.Duration
 
 /** This package object contains primitives for concurrent and parallel programming.
  */

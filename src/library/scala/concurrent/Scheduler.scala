@@ -8,7 +8,7 @@
 
 package scala.concurrent
 
-import scala.util.Duration
+import scala.concurrent.util.Duration
 
 /** A service for scheduling tasks and thunks for one-time, or periodic execution.
  */
