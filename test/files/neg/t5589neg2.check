@@ -1,0 +1,9 @@
+t5589neg2.scala:7: error: constructor cannot be instantiated to expected type;
+ found   : (T1, T2)
+ required: String
+    for (((((a, (b, (c, (d1, d2)))), es), fs), gs) <- x) yield (d :: es).mkString(", ") // not ok
+                        ^
+t5589neg2.scala:7: error: not found: value d
+    for (((((a, (b, (c, (d1, d2)))), es), fs), gs) <- x) yield (d :: es).mkString(", ") // not ok
+                                                                ^
+two errors found

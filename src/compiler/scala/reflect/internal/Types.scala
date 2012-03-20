@@ -1041,8 +1041,8 @@ trait Types extends api.Types { self: SymbolTable =>
         baseClasses.head.newOverloaded(this, members.toList)
       }
     }
-    /** The existential skolems and existentially quantified variables which are free in this type */
-    def existentialSkolems: List[Symbol] = {
+    /** The (existential or otherwise) skolems and existentially quantified variables which are free in this type */
+    def skolemsExceptMethodTypeParams: List[Symbol] = {
       var boundSyms: List[Symbol] = List()
       var skolems: List[Symbol] = List()
       for (t <- this) {
@@ -1050,7 +1050,8 @@ trait Types extends api.Types { self: SymbolTable =>
           case ExistentialType(quantified, qtpe) =>
             boundSyms = boundSyms ::: quantified
           case TypeRef(_, sym, _) =>
-            if ((sym hasFlag EXISTENTIAL) && !(boundSyms contains sym) && !(skolems contains sym))
+            if ((sym.isExistentialSkolem || sym.isGADTSkolem) && // treat GADT skolems like existential skolems
+                !((boundSyms contains sym) || (skolems contains sym)))
               skolems = sym :: skolems
           case _ =>
         }

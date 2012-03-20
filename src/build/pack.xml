@@ -114,8 +114,8 @@ MAIN DISTRIBUTION SBAZ
       version="${version.number}"
       desc="The Scala library. This is the minimal requirement to run any Scala program."
       link="${sbaz.universe}/scala-library-${version.number}.sbp">
-      <libset dir="${dist.dir}/lib" includes="scala-library.jar,scala-dbc.jar,scala-swing.jar"/>
-      <srcset dir="${dist.dir}/src" includes="scala-library-src.jar,scala-dbc-src.jar,scala-swing-src.jar"/>
+      <libset dir="${dist.dir}/lib" includes="scala-library.jar,scala-dbc.jar,scala-swing.jar,scala-actors.jar"/>
+      <srcset dir="${dist.dir}/src" includes="scala-library-src.jar,scala-dbc-src.jar,scala-swing-src.jar,scala-actors-src.jar"/>
       <looseset destination="doc">
         <fileset dir="${dist.dir}/doc" includes="LICENSE,README"/>
       </looseset>
@@ -228,6 +228,7 @@ MAIN DISTRIBUTION SBAZ
     <mvn-copy-lib mvn.artifact.name="scala-compiler"/>
     <mvn-copy-lib mvn.artifact.name="scala-dbc"/>
     <mvn-copy-lib mvn.artifact.name="scala-swing"/>
+    <mvn-copy-lib mvn.artifact.name="scala-actors"/>
     <mvn-copy-lib mvn.artifact.name="scala-partest"/>
     <mvn-copy-lib mvn.artifact.name="scalap"/>
   </target>
@@ -290,10 +291,12 @@ MAIN DISTRIBUTION SBAZ
          basedir="${build-docs.dir}/continuations-plugin">
       <include name="**/*"/>
     </jar>
-    <!-- TODO - Scala swing, dbc should maybe have thier own jar, but creating it is SLOW. -->
+    <!-- TODO - Scala swing, dbc and actors should maybe have thier own jar, but creating it is SLOW. -->
     <copy tofile="${dists.dir}/maven/${version.number}/scala-swing/scala-swing-docs.jar"
           file="${dists.dir}/maven/${version.number}/scala-library/scala-library-docs.jar"/>
     <copy tofile="${dists.dir}/maven/${version.number}/scala-dbc/scala-dbc-docs.jar"
+          file="${dists.dir}/maven/${version.number}/scala-library/scala-library-docs.jar"/>
+    <copy tofile="${dists.dir}/maven/${version.number}/scala-actors/scala-actors-docs.jar"
           file="${dists.dir}/maven/${version.number}/scala-library/scala-library-docs.jar"/>
   </target>
 

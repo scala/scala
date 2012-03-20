@@ -15,6 +15,7 @@ object SBTRunner extends DirectRunner {
     var LATEST_LIB: String     = _
     var LATEST_COMP: String     = _
     var LATEST_PARTEST: String     = _
+    var LATEST_ACTORS: String     = _
     val testRootPath: String   = "test"
     val testRootDir: Directory = Directory(testRootPath)
   }
@@ -60,6 +61,9 @@ object SBTRunner extends DirectRunner {
     fileManager.LATEST_COMP = comp getOrElse sys.error("No scala-compiler found! Classpath = " + fileManager.CLASSPATH)
     val partest: Option[String] = (fileManager.CLASSPATH split File.pathSeparator filter (_ matches ".*scala-partest.*\\.jar")).headOption
     fileManager.LATEST_PARTEST = partest getOrElse sys.error("No scala-partest found! Classpath = " + fileManager.CLASSPATH)
+    val actors: Option[String] = (fileManager.CLASSPATH split File.pathSeparator filter (_ matches ".*scala-actors.*\\.jar")).headOption
+    fileManager.LATEST_ACTORS = actors getOrElse sys.error("No scala-actors found! Classpath = " + fileManager.CLASSPATH)
+
     // TODO - Do something useful here!!!
     fileManager.JAVAC_CMD = "javac"
     fileManager.failed      = config.justFailedTests

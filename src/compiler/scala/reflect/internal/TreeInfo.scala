@@ -17,7 +17,7 @@ abstract class TreeInfo {
   val global: SymbolTable
 
   import global._
-  import definitions.{ isVarArgsList, isCastSymbol, ThrowableClass }
+  import definitions.{ isVarArgsList, isCastSymbol, ThrowableClass, TupleClass }
 
   /* Does not seem to be used. Not sure what it does anyway.
   def isOwnerDefinition(tree: Tree): Boolean = tree match {
@@ -310,6 +310,24 @@ abstract class TreeInfo {
     case AppliedTypeTree(constr, args)           => mayBeTypePat(constr) || args.exists(_.isInstanceOf[Bind])
     case SelectFromTypeTree(tp, _)               => mayBeTypePat(tp)
     case _                                       => false
+  }
+
+  /** Is this tree comprised of nothing but identifiers,
+   *  but possibly in bindings or tuples? For instance
+   *
+   *    foo @ (bar, (baz, quux))
+   *
+   *  is a variable pattern; if the structure matches,
+   *  then the remainder is inevitable.
+   */
+  def isVariablePattern(tree: Tree): Boolean = tree match {
+    case Bind(name, pat)  => isVariablePattern(pat)
+    case Ident(name)      => true
+    case Apply(sel, args) =>
+      (    isReferenceToScalaMember(sel, TupleClass(args.size).name.toTermName)
+        && (args forall isVariablePattern)
+      )
+    case _ => false
   }
 
   /** Is this argument node of the form <expr> : _* ?

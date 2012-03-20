@@ -76,6 +76,12 @@ trait Trees { self: Universe =>
 
     private[this] var rawpos: Position = NoPosition
 
+    /** Prefix under which to print this tree type.  Defaults to product
+     *  prefix (e.g. DefTree) but because that is used in reification
+     *  it cannot be altered without breaking reflection.
+     */
+    def printingPrefix = productPrefix
+
     def pos = rawpos
     def pos_=(pos: Position) = rawpos = pos
     def setPos(pos: Position): this.type = { rawpos = pos; this }
@@ -249,6 +255,7 @@ trait Trees { self: Universe =>
    *  are in DefTrees.
    */
   trait RefTree extends SymTree {
+    def qualifier: Tree    // empty for Idents
     def name: Name
   }
 
@@ -489,16 +496,14 @@ trait Trees { self: Universe =>
   /** Factory method for object creation `new tpt(args_1)...(args_n)`
    *  A `New(t, as)` is expanded to: `(new t).<init>(as)`
    */
-  def New(tpt: Tree, argss: List[List[Tree]]): Tree = {
-    // todo. we need to expose names in scala.reflect.api
-    val superRef: Tree = Select(New(tpt), nme.CONSTRUCTOR)
-    if (argss.isEmpty) Apply(superRef, Nil)
-    else (superRef /: argss) (Apply)
+  def New(tpt: Tree, argss: List[List[Tree]]): Tree = argss match {
+    case Nil        => new ApplyConstructor(tpt, Nil)
+    case xs :: rest => rest.foldLeft(new ApplyConstructor(tpt, xs): Tree)(Apply)
   }
   /** 0-1 argument list new, based on a type.
    */
   def New(tpe: Type, args: Tree*): Tree =
-    New(TypeTree(tpe), List(args.toList))
+    new ApplyConstructor(TypeTree(tpe), args.toList)
 
   /** Type annotation, eliminated by explicit outer */
   case class Typed(expr: Tree, tpt: Tree)
@@ -536,6 +541,10 @@ trait Trees { self: Universe =>
   class ApplyToImplicitArgs(fun: Tree, args: List[Tree]) extends Apply(fun, args)
 
   class ApplyImplicitView(fun: Tree, args: List[Tree]) extends Apply(fun, args)
+
+  class ApplyConstructor(tpt: Tree, args: List[Tree]) extends Apply(Select(New(tpt), nme.CONSTRUCTOR), args) {
+    override def printingPrefix = "ApplyConstructor"
+  }
 
   /** Dynamic value application.
    *  In a dynamic application   q.f(as)
@@ -575,7 +584,9 @@ trait Trees { self: Universe =>
     Select(qualifier, sym.name) setSymbol sym
 
   /** Identifier <name> */
-  case class Ident(name: Name) extends RefTree
+  case class Ident(name: Name) extends RefTree {
+    def qualifier: Tree = EmptyTree
+  }
 
   def Ident(name: String): Ident =
     Ident(newTermName(name))
