@@ -13,7 +13,7 @@ import scala.concurrent.promise
 import scala.concurrent.blocking
 import scala.util.{ Try, Success, Failure }
 
-import scala.util.Duration
+import scala.concurrent.util.Duration
 
 
 trait TestBase {
