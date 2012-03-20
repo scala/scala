@@ -137,10 +137,7 @@ self =>
    *  @return     the value associated with the given key, or the result of the
    *              map's `default` method, if none exists.
    */
-  def apply(key: A): B = get(key) match {
-    case None => default(key)
-    case Some(value) => value
-  }
+  def apply(key: A): B = get(key).getOrElse(default(key))
 
   /** Tests whether this map contains a binding for a key.
    *
