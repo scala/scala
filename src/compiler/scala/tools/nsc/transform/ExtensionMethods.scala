@@ -28,6 +28,9 @@ abstract class ExtensionMethods extends Transform with TypingTransformers {
   /** the following two members override abstract members in Transform */
   val phaseName: String = "extmethods"
 
+  /** The following flags may be set by this phase: */
+  override def phaseNewFlags: Long = notPRIVATE
+
   def newTransformer(unit: CompilationUnit): Transformer =
     new Extender(unit)
 
@@ -101,6 +104,7 @@ abstract class ExtensionMethods extends Transform with TypingTransformers {
         case Template(_, _, _) =>
           if (currentOwner.isDerivedValueClass) {
             extensionDefs(currentOwner.companionModule) = new mutable.ListBuffer[Tree]
+            currentOwner.primaryConstructor.makeNotPrivate(NoSymbol)
             super.transform(tree)
           } else if (currentOwner.isStaticOwner) {
             super.transform(tree)
