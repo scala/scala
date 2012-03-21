@@ -68,7 +68,7 @@ abstract class ExtensionMethods extends Transform with TypingTransformers {
 
   private def normalize(stpe: Type, clazz: Symbol): Type = stpe match {
     case PolyType(tparams, restpe) =>
-      GenPolyType(tparams dropRight clazz.typeParams.length, normalize(restpe, clazz))
+      GenPolyType(tparams dropRight clazz.typeParams.length, normalize(restpe.substSym(tparams takeRight clazz.typeParams.length, clazz.typeParams), clazz))
     case MethodType(tparams, restpe) =>
       restpe
     case _ =>
