@@ -77,6 +77,7 @@ trait NameManglers {
     val PROTECTED_SET_PREFIX          = PROTECTED_PREFIX + "set"
     val SINGLETON_SUFFIX              = ".type"
     val SUPER_PREFIX_STRING           = "super$"
+    val INIT_DEFAULT_PREFIX           = "init$"
     val TRAIT_SETTER_SEPARATOR_STRING = "$_setter_$"
     val SETTER_SUFFIX: TermName = encode("_=")
 
@@ -170,13 +171,15 @@ trait NameManglers {
     }
 
     def defaultGetterName(name: Name, pos: Int): TermName = {
-      val prefix = if (isConstructorName(name)) "init" else name
+      val prefix = if (isConstructorName(name)) INIT_DEFAULT_PREFIX else name
       newTermName(prefix + DEFAULT_GETTER_STRING + pos)
     }
     def defaultGetterToMethod(name: Name): TermName = {
       val p = name.pos(DEFAULT_GETTER_STRING)
-      if (p < name.length) name.toTermName.subName(0, p)
-      else name.toTermName
+      if (p < name.length) {
+        val q = name.toTermName.subName(0, p)
+        if (q.decoded == INIT_DEFAULT_PREFIX) CONSTRUCTOR else q
+      } else name.toTermName
     }
 
     // This isn't needed at the moment since I fixed $class$1 but
