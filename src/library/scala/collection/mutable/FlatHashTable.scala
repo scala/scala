@@ -231,7 +231,7 @@ trait FlatHashTable[A] extends FlatHashTable.HashUtils[A] {
     else java.util.Arrays.fill(sizemap, 0)
   }
 
-  private[collection] final def totalSizeMapBuckets = if (sizeMapBucketSize < table.length) 1 else table.length / sizeMapBucketSize
+  private[collection] final def totalSizeMapBuckets = (table.length - 1) / sizeMapBucketSize + 1
 
   protected def calcSizeMapSize(tableLength: Int) = (tableLength >> sizeMapBucketBitSize) + 1
 
@@ -264,7 +264,11 @@ trait FlatHashTable[A] extends FlatHashTable.HashUtils[A] {
   }
 
   private[collection] def printSizeMap() {
-    println(sizemap.toList)
+    println(sizemap.mkString("szmap: [", ", ", "]"))
+  }
+
+  private[collection] def printContents() {
+    println(table.mkString("[", ", ", "]"))
   }
 
   protected def sizeMapDisable() = sizemap = null
