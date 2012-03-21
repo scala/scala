@@ -97,4 +97,7 @@ class Settings(error: String => Unit) extends scala.tools.nsc.Settings(error) {
     docformat, doctitle, docfooter, docversion, docUncompilable, docsourceurl, docgenerator
   )
   val isScaladocSpecific: String => Boolean = scaladocSpecific map (_.name)
+
+  // SI-5593: set the default classpath to "" instead of "."
+  override protected def fallbackClasspath = ""
 }

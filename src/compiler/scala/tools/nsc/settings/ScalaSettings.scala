@@ -28,7 +28,8 @@ trait ScalaSettings extends AbsScalaSettings
    *  - Otherwise, if CLASSPATH is set, it is that
    *  - If neither of those, then "." is used.
    */
-  protected def defaultClasspath = sys.env.getOrElse("CLASSPATH", ".")
+  def fallbackClasspath = "."
+  def defaultClasspath = sys.env.getOrElse("CLASSPATH", fallbackClasspath)
 
   /** Disable a setting */
   def disable(s: Setting) = allSettings -= s
