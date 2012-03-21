@@ -1158,6 +1158,7 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
       val qtpe = qual.tpe.widen
       (    !isPastTyper
         && qual.isTerm
+        && !qual.isInstanceOf[Super]
         && ((qual.symbol eq null) || !qual.symbol.isTerm || qual.symbol.isValue)
         && !qtpe.isError
         && !qtpe.typeSymbol.isBottomClass
@@ -1173,12 +1174,7 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
       )
     }
 
-    def adaptToMember(qual: Tree, searchTemplate: Type): Tree =
-      adaptToMember(qual, searchTemplate, true, true)
-    def adaptToMember(qual: Tree, searchTemplate: Type, reportAmbiguous: Boolean): Tree =
-      adaptToMember(qual, searchTemplate, reportAmbiguous, true)
-
-    def adaptToMember(qual: Tree, searchTemplate: Type, reportAmbiguous: Boolean, saveErrors: Boolean): Tree = {
+    def adaptToMember(qual: Tree, searchTemplate: Type, reportAmbiguous: Boolean = true, saveErrors: Boolean = true): Tree = {
       if (isAdaptableWithView(qual)) {
         qual.tpe.widen.normalize match {
           case et: ExistentialType =>
