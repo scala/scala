@@ -65,6 +65,12 @@ abstract class TreeGen extends reflect.internal.TreeGen with TreeDSL {
     case _                      => tree
   }
 
+  def mkSynthSwitchSelector(expr: Tree): Tree = atPos(expr.pos) {
+    // This can't be "Annotated(New(SwitchClass), expr)" because annotations
+    // are very picky about things and it crashes the compiler with "unexpected new".
+    Annotated(Ident(nme.synthSwitch), expr)
+  }
+
   // must be kept in synch with the codegen in PatMatVirtualiser
   object VirtualCaseDef {
     def unapply(b: Block): Option[(Assign, Tree, Tree)] = b match {
@@ -72,6 +78,8 @@ abstract class TreeGen extends reflect.internal.TreeGen with TreeDSL {
       case _ => None
     }
   }
+
+  def hasSynthCaseSymbol(t: Tree) = (t.symbol ne null) && (t.symbol hasFlag (CASE | SYNTHETIC))
 
   // TODO: would be so much nicer if we would know during match-translation (i.e., type checking)
   // whether we should emit missingCase-style apply (and isDefinedAt), instead of transforming trees post-factum

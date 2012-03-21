@@ -32,6 +32,8 @@ trait PatMatVirtualiser extends ast.TreeDSL { self: Analyzer =>
   import global._
   import definitions._
 
+  val SYNTH_CASE = Flags.CASE | SYNTHETIC
+
   object vpmName {
     val one       = newTermName("one")
     val drop      = newTermName("drop")
@@ -133,7 +135,7 @@ trait PatMatVirtualiser extends ast.TreeDSL { self: Analyzer =>
       //  and the only place that emits Matches after typers is for exception handling anyway)
       assert(phase.id <= currentRun.typerPhase.id, phase)
 
-      val scrutSym  = freshSym(scrut.pos, pureType(scrutType)) setFlag (Flags.CASE | SYNTHETIC) // the flags allow us to detect generated matches by looking at the scrutinee's symbol (needed to avoid recursing endlessly on generated switches)
+      val scrutSym  = freshSym(scrut.pos, pureType(scrutType)) setFlag SYNTH_CASE
       // pt = Any* occurs when compiling test/files/pos/annotDepMethType.scala  with -Xexperimental
       combineCases(scrut, scrutSym, cases map translateCase(scrutSym, pt), pt, matchOwner, matchFailGenOverride)
     }
@@ -1557,7 +1559,7 @@ class Foo(x: Other) { x._1 } // no error in this order
             else (REF(scrutSym) DOT (nme.toInt))
           Some(BLOCK(
             VAL(scrutSym) === scrut,
-            Match(scrutToInt, caseDefsWithDefault)
+            Match(gen.mkSynthSwitchSelector(scrutToInt), caseDefsWithDefault) // add switch annotation
           ))
         }
       } else None
@@ -1630,11 +1632,11 @@ class Foo(x: Other) { x._1 } // no error in this order
        * if keepGoing is false, the result Some(x) of the naive translation is encoded as matchRes == x
        */
       def matcher(scrut: Tree, scrutSym: Symbol, restpe: Type)(cases: List[Casegen => Tree], matchFailGen: Option[Tree => Tree]): Tree = {
-        val matchEnd = NoSymbol.newLabel(freshName("matchEnd"), NoPosition) setFlag (SYNTHETIC | Flags.CASE)
+        val matchEnd = NoSymbol.newLabel(freshName("matchEnd"), NoPosition) setFlag SYNTH_CASE
         val matchRes = NoSymbol.newValueParameter(newTermName("x"), NoPosition, SYNTHETIC) setInfo restpe
         matchEnd setInfo MethodType(List(matchRes), restpe)
 
-        def newCaseSym = NoSymbol.newLabel(freshName("case"), NoPosition) setInfo MethodType(Nil, restpe) setFlag (SYNTHETIC | Flags.CASE)
+        def newCaseSym = NoSymbol.newLabel(freshName("case"), NoPosition) setInfo MethodType(Nil, restpe) setFlag SYNTH_CASE
         var nextCase = newCaseSym
         def caseDef(mkCase: Casegen => Tree): Tree = {
           val currCase = nextCase
