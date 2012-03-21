@@ -1284,8 +1284,6 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
         unit.error(clazz.pos, "value class may not be a "+
           (if (clazz.owner.isTerm) "local class" else "member of another class"))
       val constr = clazz.primaryConstructor
-      if ((constr hasFlag (PRIVATE | PROTECTED)) || constr.privateWithin != NoSymbol)
-        unit.error(constr.pos, "value class must have public primary constructor")
       clazz.info.decls.toList.filter(acc => acc.isMethod && (acc hasFlag PARAMACCESSOR)) match {
         case List(acc) =>
           def isUnderlyingAcc(sym: Symbol) =

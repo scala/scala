@@ -1872,7 +1872,8 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     def unpackLocation: AnyRef = null
 
     /** Remove private modifier from symbol `sym`s definition. If `sym` is a
-     *  term symbol rename it by expanding its name to avoid name clashes
+     *  is not a constructor nor a static module rename it by expanding its name to avoid name clashes
+     *  @param base  the fully qualified name of this class will be appended if name expansion is needed 
      */
     final def makeNotPrivate(base: Symbol) {
       if (this.isPrivate) {
