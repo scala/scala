@@ -36,7 +36,7 @@ abstract class TailCalls extends Transform {
     }
   }
 
-  private def hasSynthCaseSymbol(t: Tree) = (t.symbol ne null) && (t.symbol hasFlag (Flags.CASE | Flags.SYNTHETIC))
+  import gen.hasSynthCaseSymbol
 
   /**
    * A Tail Call Transformer
