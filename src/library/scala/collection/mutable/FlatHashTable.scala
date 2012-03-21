@@ -267,10 +267,6 @@ trait FlatHashTable[A] extends FlatHashTable.HashUtils[A] {
     println(sizemap.mkString("szmap: [", ", ", "]"))
   }
 
-  private[collection] def printContents() {
-    println(table.mkString("[", ", ", "]"))
-  }
-
   protected def sizeMapDisable() = sizemap = null
 
   protected def isSizeMapDefined = sizemap ne null
