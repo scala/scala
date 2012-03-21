@@ -309,7 +309,7 @@ trait ParallelMatching extends ast.TreeDSL
       }
 
       lazy val cases =
-        for ((tag, indices) <- literalMap.toList) yield {
+        for ((tag, indices) <- literalMap.toList.sortBy(_._1)) yield {
           val newRows = indices map (i => addDefaultVars(i)(rest rows i))
           val r       = remake(newRows ++ defaultRows, includeScrut = false)
           val r2      = make(r.tvars, r.rows map (x => x rebind bindVars(tag, x.subst)))
