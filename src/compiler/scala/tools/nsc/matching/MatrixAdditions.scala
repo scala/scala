@@ -20,7 +20,7 @@ trait MatrixAdditions extends ast.TreeDSL {
   import CODE._
   import Debug._
   import treeInfo._
-  import definitions.{ isValueClass }
+  import definitions.{ isPrimitiveValueClass }
 
   /** The Squeezer, responsible for all the squeezing.
    */
@@ -141,7 +141,7 @@ trait MatrixAdditions extends ast.TreeDSL {
          (sym.isMutable) &&                 // indicates that have not yet checked exhaustivity
         !(sym hasFlag NO_EXHAUSTIVE) &&     // indicates @unchecked
          (sym.tpe.typeSymbol.isSealed) &&
-        !isValueClass(sym.tpe.typeSymbol)   // make sure it's not a primitive, else (5: Byte) match { case 5 => ... } sees no Byte
+        !isPrimitiveValueClass(sym.tpe.typeSymbol)   // make sure it's not a primitive, else (5: Byte) match { case 5 => ... } sees no Byte
       }
 
       private lazy val inexhaustives: List[List[Combo]] = {
@@ -155,7 +155,7 @@ trait MatrixAdditions extends ast.TreeDSL {
             pv.tpe.typeSymbol.sealedDescendants.toList sortBy (_.sealedSortName)
             // symbols which are both sealed and abstract need not be covered themselves, because
             // all of their children must be and they cannot otherwise be created.
-            filterNot (x => x.isSealed && x.isAbstractClass && !isValueClass(x))
+            filterNot (x => x.isSealed && x.isAbstractClass && !isPrimitiveValueClass(x))
             // have to filter out children which cannot match: see ticket #3683 for an example
             filter (_.tpe matchesPattern pv.tpe)
           )

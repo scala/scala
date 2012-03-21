@@ -80,9 +80,9 @@ trait NameManglers {
     val TRAIT_SETTER_SEPARATOR_STRING = "$_setter_$"
     val SETTER_SUFFIX: TermName = encode("_=")
 
-    @deprecated("2.10.0", "Use SPECIALIZED_SUFFIX")
+    @deprecated("Use SPECIALIZED_SUFFIX", "2.10.0")
     def SPECIALIZED_SUFFIX_STRING = SPECIALIZED_SUFFIX.toString
-    @deprecated("2.10.0", "Use SPECIALIZED_SUFFIX")
+    @deprecated("Use SPECIALIZED_SUFFIX", "2.10.0")
     def SPECIALIZED_SUFFIX_NAME: TermName = SPECIALIZED_SUFFIX.toTermName
 
     def isConstructorName(name: Name)       = name == CONSTRUCTOR || name == MIXIN_CONSTRUCTOR

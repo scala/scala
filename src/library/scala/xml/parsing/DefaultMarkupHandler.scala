@@ -16,7 +16,7 @@ package parsing
 abstract class DefaultMarkupHandler extends MarkupHandler {
 
   def elem(pos: Int, pre: String, label: String, attrs: MetaData,
-           scope:NamespaceBinding, args: NodeSeq) = NodeSeq.Empty
+           scope:NamespaceBinding, empty: Boolean, args: NodeSeq) = NodeSeq.Empty
 
   def procInstr(pos: Int, target: String, txt: String) = NodeSeq.Empty
 

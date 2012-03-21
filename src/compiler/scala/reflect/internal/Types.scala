@@ -65,6 +65,8 @@ import util.Statistics._
     // inst is the instantiation and constr is a list of bounds.
   case DeBruijnIndex(level, index)
     // for dependent method types: a type referring to a method parameter.
+  case ErasedValueType(tp)
+    // only used during erasure of derived value classes.
 */
 
 trait Types extends api.Types { self: SymbolTable =>
@@ -409,6 +411,11 @@ trait Types extends api.Types { self: SymbolTable =>
      *  inherited by typerefs, singleton types, and refinement types,
      *  The empty list for all other types */
     def parents: List[Type] = List()
+
+    /** For a class with nonEmpty parents, the first parent.
+     *  Otherwise some specific fixed top type.
+     */
+    def firstParent = if (parents.nonEmpty) parents.head else ObjectClass.tpe
 
     /** For a typeref or single-type, the prefix of the normalized type (@see normalize).
      *  NoType for all other types. */
@@ -1418,14 +1425,14 @@ trait Types extends api.Types { self: SymbolTable =>
     // override def isNullable: Boolean =
     // parents forall (p => p.isNullable && !p.typeSymbol.isAbstractType);
 
-    override def safeToString: String =
-      parents.mkString(" with ") +
+    override def safeToString: String = parentsString(parents) + (
       (if (settings.debug.value || parents.isEmpty || (decls.elems ne null))
         decls.mkString("{", "; ", "}") else "")
+    )
   }
 
   protected def defineBaseTypeSeqOfCompoundType(tpe: CompoundType) = {
-    val period = tpe.baseTypeSeqPeriod;
+    val period = tpe.baseTypeSeqPeriod
     if (period != currentPeriod) {
       tpe.baseTypeSeqPeriod = currentPeriod
       if (!isValidForBaseClasses(period)) {
@@ -1483,7 +1490,7 @@ trait Types extends api.Types { self: SymbolTable =>
       else {
         //Console.println("computing base classes of " + typeSymbol + " at phase " + phase);//DEBUG
         // optimized, since this seems to be performance critical
-        val superclazz = tpe.parents.head
+        val superclazz = tpe.firstParent
         var mixins = tpe.parents.tail
         val sbcs = superclazz.baseClasses
         var bcs = sbcs
@@ -1530,7 +1537,7 @@ trait Types extends api.Types { self: SymbolTable =>
     )
 
     override def typeParams =
-      if (isHigherKinded) parents.head.typeParams
+      if (isHigherKinded) firstParent.typeParams
       else super.typeParams
 
     //@M may result in an invalid type (references to higher-order args become dangling )
@@ -2099,7 +2106,7 @@ trait Types extends api.Types { self: SymbolTable =>
       !sym.isTypeParameter && pre.isTrivial && args.forall(_.isTrivial)
 
     override def isNotNull =
-      sym.isModuleClass || sym == NothingClass || isValueClass(sym) || super.isNotNull
+      sym.isModuleClass || sym == NothingClass || (sym isNonBottomSubClass NotNullClass) || super.isNotNull
 
     override def parents: List[Type] = {
       val cache = parentsCache
@@ -2148,12 +2155,12 @@ trait Types extends api.Types { self: SymbolTable =>
       )
       else ""
     )
+
     private def finishPrefix(rest: String) = (
       if (sym.isPackageClass) packagePrefix + rest
       else if (sym.isModuleClass) objectPrefix + rest
       else if (!sym.isInitialized) rest
-      else if (sym.isAnonymousClass && !phase.erasedTypes)
-        thisInfo.parents.mkString("", " with ", refinementString)
+      else if (sym.isAnonymousClass && !phase.erasedTypes) parentsString(thisInfo.parents) + refinementString
       else if (sym.isRefinementClass) "" + thisInfo
       else rest
     )
@@ -3088,6 +3095,17 @@ trait Types extends api.Types { self: SymbolTable =>
     }
   }
 
+  abstract case class ErasedValueType(sym: Symbol) extends Type {
+    override def safeToString = sym.name+"$unboxed"
+  }
+
+  final class UniqueErasedValueType(sym: Symbol) extends ErasedValueType(sym) with UniqueType
+
+  object ErasedValueType {
+    def apply(sym: Symbol): Type =
+      unique(new UniqueErasedValueType(sym))
+  }
+
   /** A class representing an as-yet unevaluated type.
    */
   abstract class LazyType extends Type {
@@ -3234,11 +3252,21 @@ trait Types extends api.Types { self: SymbolTable =>
    *  comment or in the code?
    */
   def intersectionType(tps: List[Type], owner: Symbol): Type = tps match {
-    case List(tp) =>
-      tp
-    case _ =>
-       refinedType(tps, owner)
-/*
+    case tp :: Nil => tp
+    case _         => refinedType(tps, owner)
+  }
+  /** A creator for intersection type where intersections of a single type are
+   *  replaced by the type itself.
+   */
+  def intersectionType(tps: List[Type]): Type = tps match {
+    case tp :: Nil  => tp
+    case _          => refinedType(tps, commonOwner(tps))
+  }
+
+/**** This implementation to merge parents was checked in in commented-out
+      form and has languished unaltered for five years.  I think we should
+      use it or lose it.
+
       def merge(tps: List[Type]): List[Type] = tps match {
         case tp :: tps1 =>
           val tps1a = tps1 filter (_.typeSymbol.==(tp.typeSymbol))
@@ -3253,14 +3281,6 @@ trait Types extends api.Types { self: SymbolTable =>
       }
       refinedType(merge(tps), owner)
 */
-  }
-
-  /** A creator for intersection type where intersections of a single type are
-   *  replaced by the type itself. */
-  def intersectionType(tps: List[Type]): Type = tps match {
-    case List(tp) => tp
-    case _ => refinedType(tps, commonOwner(tps))
-  }
 
   /** A creator for type applications */
   def appliedType(tycon: Type, args: List[Type]): Type =
@@ -3299,7 +3319,7 @@ trait Types extends api.Types { self: SymbolTable =>
     }
   }
 
-  /** A creator for type parameterizations that strips empty type parameter lists.
+  /** A creator and extractor for type parameterizations that strips empty type parameter lists.
    *  Use this factory method to indicate the type has kind * (it's a polymorphic value)
    *  until we start tracking explicit kinds equivalent to typeFun (except that the latter requires tparams nonEmpty).
    *
@@ -3308,9 +3328,18 @@ trait Types extends api.Types { self: SymbolTable =>
    *  can we instead say this is the canonical creator for polyTypes which
    *  may or may not be poly? (It filched the standard "canonical creator" name.)
    */
-  def polyType(tparams: List[Symbol], tpe: Type): Type =
+  object GenPolyType {
+    def apply(tparams: List[Symbol], tpe: Type): Type =
     if (tparams nonEmpty) typeFun(tparams, tpe)
     else tpe // it's okay to be forgiving here
+    def unapply(tpe: Type): Option[(List[Symbol], Type)] = tpe match {
+      case PolyType(tparams, restpe) => Some(tparams, restpe)
+      case _ => Some(List(), tpe)
+    }
+  }
+
+  @deprecated("use GenPolyType(...) instead")
+  def polyType(params: List[Symbol], tpe: Type): Type = GenPolyType(params, tpe)
 
   /** A creator for anonymous type functions, where the symbol for the type function still needs to be created.
    *
@@ -3762,6 +3791,7 @@ trait Types extends api.Types { self: SymbolTable =>
       case WildcardType => tp
       case NoType => tp
       case NoPrefix => tp
+      case ErasedSingleType(sym) => tp
 */
       case _ =>
         tp
@@ -4519,9 +4549,7 @@ trait Types extends api.Types { self: SymbolTable =>
     else {
       commonOwnerMap.clear()
       tps foreach (commonOwnerMap traverse _)
-      val result = if (commonOwnerMap.result ne null) commonOwnerMap.result else NoSymbol
-      debuglog(tps.mkString("commonOwner(", ", ", ") == " + result))
-      result
+      if (commonOwnerMap.result ne null) commonOwnerMap.result else NoSymbol
     }
   }
 
@@ -5419,8 +5447,7 @@ trait Types extends api.Types { self: SymbolTable =>
           case NullClass =>
             tp2 match {
               case TypeRef(_, sym2, _) =>
-                sym2.isClass && (sym2 isNonBottomSubClass ObjectClass) &&
-                !(tp2.normalize.typeSymbol isNonBottomSubClass NotNullClass)
+                containsNull(sym2)
               case _ =>
                 isSingleType(tp2) && tp1 <:< tp2.widen
             }
@@ -5451,6 +5478,11 @@ trait Types extends api.Types { self: SymbolTable =>
     firstTry
   }
 
+  private def containsNull(sym: Symbol): Boolean =
+    sym.isClass && sym != NothingClass &&
+    !(sym isNonBottomSubClass AnyValClass) &&
+    !(sym isNonBottomSubClass NotNullClass)
+
   /** Are `tps1` and `tps2` lists of equal length such that all elements
    *  of `tps1` conform to corresponding elements of `tps2`?
    */
@@ -5462,7 +5494,7 @@ trait Types extends api.Types { self: SymbolTable =>
    */
   def specializesSym(tp: Type, sym: Symbol): Boolean =
     tp.typeSymbol == NothingClass ||
-    tp.typeSymbol == NullClass && (sym.owner isSubClass ObjectClass) ||
+    tp.typeSymbol == NullClass && containsNull(sym.owner) ||
     (tp.nonPrivateMember(sym.name).alternatives exists
       (alt => sym == alt || specializesSym(tp.narrow, alt, sym.owner.thisType, sym)))
 
@@ -5852,14 +5884,6 @@ trait Types extends api.Types { self: SymbolTable =>
 
     loop(initialBTSes)
   }
-
-  // @AM the following problem is solved by elimHOTparams in lublist
-  // @PP lubLists gone bad: lubList(List(
-  //   List(scala.collection.generic.GenericCompanion[scala.collection.immutable.Seq], ScalaObject, java.lang.Object, Any)
-  //   List(scala.collection.generic.GenericCompanion[scala.collection.mutable.Seq], ScalaObject, java.lang.Object, Any)
-  // )) == (
-  //   List(scala.collection.generic.GenericCompanion[Seq**[Any]**], ScalaObject, java.lang.Object, Any)
-  // )
 
   /** The minimal symbol (wrt Symbol.isLess) of a list of types */
   private def minSym(tps: List[Type]): Symbol =
@@ -6310,7 +6334,7 @@ trait Types extends api.Types { self: SymbolTable =>
           } else {
             val args = argss map (_.head)
             if (args.tail forall (_ =:= args.head)) Some(typeRef(pre, sym, List(args.head)))
-            else if (args exists (arg => isValueClass(arg.typeSymbol))) Some(ObjectClass.tpe)
+            else if (args exists (arg => isPrimitiveValueClass(arg.typeSymbol))) Some(ObjectClass.tpe)
             else Some(typeRef(pre, sym, List(lub(args))))
           }
         }
@@ -6441,7 +6465,9 @@ trait Types extends api.Types { self: SymbolTable =>
   // but that would be a big change. Left for further refactoring.
   /** An exception for cyclic references from which we can recover */
   case class RecoverableCyclicReference(sym: Symbol)
-    extends TypeError("illegal cyclic reference involving " + sym)
+    extends TypeError("illegal cyclic reference involving " + sym) {
+    if (settings.debug.value) printStackTrace()
+  }
 
   class NoCommonType(tps: List[Type]) extends Throwable(
     "lub/glb of incompatible types: " + tps.mkString("", " and ", "")) with ControlThrowable

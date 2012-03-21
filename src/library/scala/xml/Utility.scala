@@ -181,6 +181,13 @@ object Utility extends AnyRef with parsing.TokenTests {
   //   sb.toString()
   // }
 
+  /**
+   * Serialize the provided Node to the provided StringBuilder.
+   * <p/>
+   * Note that calling this source-compatible method will result in the same old, arguably almost universally unwanted,
+   * behaviour.
+   */
+  @deprecated("Please use `serialize` instead and specify a `minimizeTags` parameter", "2.10")
   def toXML(
     x: Node,
     pscope: NamespaceBinding = TopScope,
@@ -190,29 +197,51 @@ object Utility extends AnyRef with parsing.TokenTests {
     preserveWhitespace: Boolean = false,
     minimizeTags: Boolean = false): StringBuilder =
   {
+    serialize(x, pscope, sb, stripComments, decodeEntities, preserveWhitespace, if (minimizeTags) MinimizeMode.Always else MinimizeMode.Never)
+  }
+
+  /**
+   * Serialize an XML Node to a StringBuilder.
+   *
+   * This is essentially a minor rework of `toXML` that can't have the same name due to an unfortunate
+   * combination of named/default arguments and overloading.
+   *
+   * @todo use a Writer instead
+   */
+  def serialize(
+    x: Node,
+    pscope: NamespaceBinding = TopScope,
+    sb: StringBuilder = new StringBuilder,
+    stripComments: Boolean = false,
+    decodeEntities: Boolean = true,
+    preserveWhitespace: Boolean = false,
+    minimizeTags: MinimizeMode.Value = MinimizeMode.Default): StringBuilder =
+  {
     x match {
-      case c: Comment => if (!stripComments) c buildString sb else sb
-      case x: SpecialNode => x buildString sb
-      case g: Group =>
-        g.nodes foreach {toXML(_, x.scope, sb, stripComments, decodeEntities, preserveWhitespace, minimizeTags)}
-        sb
-      case _  =>
+      case c: Comment if !stripComments => c buildString sb
+      case s: SpecialNode               => s buildString sb
+      case g: Group                     => for (c <- g.nodes) serialize(c, g.scope, sb, minimizeTags = minimizeTags) ; sb
+      case el: Elem  =>
         // print tag with namespace declarations
         sb.append('<')
-        x.nameToString(sb)
-        if (x.attributes ne null) x.attributes.buildString(sb)
-        x.scope.buildString(sb, pscope)
-        if (x.child.isEmpty && minimizeTags) {
+        el.nameToString(sb)
+        if (el.attributes ne null) el.attributes.buildString(sb)
+        el.scope.buildString(sb, pscope)
+        if (el.child.isEmpty &&
+                (minimizeTags == MinimizeMode.Always ||
+                (minimizeTags == MinimizeMode.Default && el.minimizeEmpty)))
+        {
           // no children, so use short form: <xyz .../>
-          sb.append(" />")
+          sb.append("/>")
         } else {
           // children, so use long form: <xyz ...>...</xyz>
           sb.append('>')
-          sequenceToXML(x.child, x.scope, sb, stripComments, decodeEntities, preserveWhitespace, minimizeTags)
+          sequenceToXML(el.child, el.scope, sb, stripComments)
           sb.append("</")
-          x.nameToString(sb)
+          el.nameToString(sb)
           sb.append('>')
         }
+      case _ => throw new IllegalArgumentException("Don't know how to serialize a " + x.getClass.getName)
     }
   }
 
@@ -223,20 +252,20 @@ object Utility extends AnyRef with parsing.TokenTests {
     stripComments: Boolean = false,
     decodeEntities: Boolean = true,
     preserveWhitespace: Boolean = false,
-    minimizeTags: Boolean = false): Unit =
+    minimizeTags: MinimizeMode.Value = MinimizeMode.Default): Unit =
   {
     if (children.isEmpty) return
     else if (children forall isAtomAndNotText) { // add space
       val it = children.iterator
       val f = it.next
-      toXML(f, pscope, sb, stripComments, decodeEntities, preserveWhitespace, minimizeTags)
+      serialize(f, pscope, sb, stripComments, decodeEntities, preserveWhitespace, minimizeTags)
       while (it.hasNext) {
         val x = it.next
         sb.append(' ')
-        toXML(x, pscope, sb, stripComments, decodeEntities, preserveWhitespace, minimizeTags)
+        serialize(x, pscope, sb, stripComments, decodeEntities, preserveWhitespace, minimizeTags)
       }
     }
-    else children foreach { toXML(_, pscope, sb, stripComments, decodeEntities, preserveWhitespace, minimizeTags) }
+    else children foreach { serialize(_, pscope, sb, stripComments, decodeEntities, preserveWhitespace, minimizeTags) }
   }
 
   /**

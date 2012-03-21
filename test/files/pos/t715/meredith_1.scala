@@ -3,7 +3,7 @@ package com.sap.dspace.model.othello;
 import scala.xml._
 
 trait XMLRenderer {
-  type T <: {def getClass() : java.lang.Class[_]}
+  type T <: Any {def getClass() : java.lang.Class[_]}
   val valueTypes =
     List(
       classOf[java.lang.Boolean],

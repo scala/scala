@@ -442,7 +442,6 @@ trait ContextErrors {
       def UnexpectedTreeAnnotationError(tree: Tree, unexpected: Tree) =
         NormalTypeError(tree, "unexpected tree after typing annotation: "+ unexpected)
 
-      // TODO no test case
       //typedExistentialTypeTree
       def AbstractionFromVolatileTypeError(vd: ValDef) =
         issueNormalTypeError(vd, "illegal abstraction from value with volatile type "+vd.symbol.tpe)
@@ -465,8 +464,7 @@ trait ContextErrors {
       def TooManyArgsNamesDefaultsError(tree: Tree, fun: Tree) =
         NormalTypeError(tree, "too many arguments for "+treeSymTypeMsg(fun))
 
-      // can it still happen? see test case neg/t960.scala
-      // TODO no test case
+      // can it still happen? see test case neg/overloaded-unapply.scala
       def OverloadedUnapplyError(tree: Tree) =
         issueNormalTypeError(tree, "cannot resolve overloaded unapply")
 
@@ -499,7 +497,6 @@ trait ContextErrors {
       }
 
       //doTypedApply - patternMode
-      // TODO: missing test case
       def TooManyArgsPatternError(fun: Tree) =
         NormalTypeError(fun, "too many arguments for unapply pattern, maximum = "+definitions.MaxTupleArity)
 
@@ -534,14 +531,13 @@ trait ContextErrors {
         NormalTypeError(parent, "illegal inheritance from final "+mixin)
 
       def ParentSealedInheritanceError(parent: Tree, psym: Symbol) =
-        NormalTypeError(parent, "illegal inheritance from sealed " + psym + ": " + context.unit.source.file.canonicalPath + " != " + psym.sourceFile.canonicalPath)
+        NormalTypeError(parent, "illegal inheritance from sealed " + psym )
 
       def ParentSelfTypeConformanceError(parent: Tree, selfType: Type) =
         NormalTypeError(parent,
           "illegal inheritance;\n self-type "+selfType+" does not conform to "+
           parent +"'s selftype "+parent.tpe.typeOfThis)
 
-      // TODO: missing test case
       def ParentInheritedTwiceError(parent: Tree, parentSym: Symbol) =
         NormalTypeError(parent, parentSym+" is inherited twice")
 
@@ -572,7 +568,6 @@ trait ContextErrors {
         setError(tree)
       }
 
-      //TODO Needs test case
       def ConstructorPrefixError(tree: Tree, restpe: Type) = {
         issueNormalTypeError(tree, restpe.prefix+" is not a legal prefix for a constructor")
         setError(tree)
@@ -597,7 +592,6 @@ trait ContextErrors {
         setError(tree)
       }
 
-      // TODO needs test case
       // cases where we do not necessarily return trees
       def DependentMethodTpeConversionToFunctionError(tree: Tree, tp: Type) =
         issueNormalTypeError(tree, "method with dependent type "+tp+" cannot be converted to function value")
@@ -606,11 +600,9 @@ trait ContextErrors {
       def StarPatternWithVarargParametersError(tree: Tree) =
         issueNormalTypeError(tree, "star patterns must correspond with varargs parameters")
 
-      // TODO missing test case
       def FinitaryError(tparam: Symbol) =
         issueSymbolTypeError(tparam, "class graph is not finitary because type parameter "+tparam.name+" is expansively recursive")
 
-      // TODO missing test case for a second case
       def QualifyingClassError(tree: Tree, qual: Name) = {
         issueNormalTypeError(tree,
           if (qual.isEmpty) tree + " can be used only in a class, object, or template"
@@ -778,7 +770,7 @@ trait ContextErrors {
       def PolymorphicExpressionInstantiationError(tree: Tree, undetparams: List[Symbol], pt: Type) =
         issueNormalTypeError(tree,
           "polymorphic expression cannot be instantiated to expected type" +
-          foundReqMsg(polyType(undetparams, skipImplicit(tree.tpe)), pt))
+          foundReqMsg(GenPolyType(undetparams, skipImplicit(tree.tpe)), pt))
 
       //checkCheckable
       def TypePatternOrIsInstanceTestError(tree: Tree, tp: Type) =

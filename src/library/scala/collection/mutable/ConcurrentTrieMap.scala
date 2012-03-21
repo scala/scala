@@ -13,7 +13,7 @@ package mutable
 
 import java.util.concurrent.atomic._
 import collection.immutable.{ ListMap => ImmutableListMap }
-import collection.parallel.mutable.ParCtrie
+import collection.parallel.mutable.ParConcurrentTrieMap
 import generic._
 import annotation.tailrec
 import annotation.switch
@@ -31,16 +31,16 @@ private[collection] final class INode[K, V](bn: MainNode[K, V], g: Gen) extends 
 
   @inline final def CAS(old: MainNode[K, V], n: MainNode[K, V]) = INodeBase.updater.compareAndSet(this, old, n)
 
-  final def gcasRead(ct: Ctrie[K, V]): MainNode[K, V] = GCAS_READ(ct)
+  final def gcasRead(ct: ConcurrentTrieMap[K, V]): MainNode[K, V] = GCAS_READ(ct)
 
-  @inline final def GCAS_READ(ct: Ctrie[K, V]): MainNode[K, V] = {
+  @inline final def GCAS_READ(ct: ConcurrentTrieMap[K, V]): MainNode[K, V] = {
     val m = /*READ*/mainnode
     val prevval = /*READ*/m.prev
     if (prevval eq null) m
     else GCAS_Complete(m, ct)
   }
 
-  @tailrec private def GCAS_Complete(m: MainNode[K, V], ct: Ctrie[K, V]): MainNode[K, V] = if (m eq null) null else {
+  @tailrec private def GCAS_Complete(m: MainNode[K, V], ct: ConcurrentTrieMap[K, V]): MainNode[K, V] = if (m eq null) null else {
     // complete the GCAS
     val prev = /*READ*/m.prev
     val ctr = ct.readRoot(true)
@@ -72,7 +72,7 @@ private[collection] final class INode[K, V](bn: MainNode[K, V], g: Gen) extends 
     }
   }
 
-  @inline final def GCAS(old: MainNode[K, V], n: MainNode[K, V], ct: Ctrie[K, V]): Boolean = {
+  @inline final def GCAS(old: MainNode[K, V], n: MainNode[K, V], ct: ConcurrentTrieMap[K, V]): Boolean = {
     n.WRITE_PREV(old)
     if (CAS(old, n)) {
       GCAS_Complete(n, ct)
@@ -86,7 +86,7 @@ private[collection] final class INode[K, V](bn: MainNode[K, V], g: Gen) extends 
     nin
   }
 
-  final def copyToGen(ngen: Gen, ct: Ctrie[K, V]) = {
+  final def copyToGen(ngen: Gen, ct: ConcurrentTrieMap[K, V]) = {
     val nin = new INode[K, V](ngen)
     val main = GCAS_READ(ct)
     nin.WRITE(main)
@@ -97,7 +97,7 @@ private[collection] final class INode[K, V](bn: MainNode[K, V], g: Gen) extends 
    *
    *  @return        true if successful, false otherwise
    */
-  @tailrec final def rec_insert(k: K, v: V, hc: Int, lev: Int, parent: INode[K, V], startgen: Gen, ct: Ctrie[K, V]): Boolean = {
+  @tailrec final def rec_insert(k: K, v: V, hc: Int, lev: Int, parent: INode[K, V], startgen: Gen, ct: ConcurrentTrieMap[K, V]): Boolean = {
     val m = GCAS_READ(ct) // use -Yinline!
 
     m match {
@@ -143,7 +143,7 @@ private[collection] final class INode[K, V](bn: MainNode[K, V], g: Gen) extends 
    *  @param cond        null - don't care if the key was there; KEY_ABSENT - key wasn't there; KEY_PRESENT - key was there; other value `v` - key must be bound to `v`
    *  @return            null if unsuccessful, Option[V] otherwise (indicating previous value bound to the key)
    */
-  @tailrec final def rec_insertif(k: K, v: V, hc: Int, cond: AnyRef, lev: Int, parent: INode[K, V], startgen: Gen, ct: Ctrie[K, V]): Option[V] = {
+  @tailrec final def rec_insertif(k: K, v: V, hc: Int, cond: AnyRef, lev: Int, parent: INode[K, V], startgen: Gen, ct: ConcurrentTrieMap[K, V]): Option[V] = {
     val m = GCAS_READ(ct)  // use -Yinline!
 
     m match {
@@ -233,7 +233,7 @@ private[collection] final class INode[K, V](bn: MainNode[K, V], g: Gen) extends 
    *
    *  @return          null if no value has been found, RESTART if the operation wasn't successful, or any other value otherwise
    */
-  @tailrec final def rec_lookup(k: K, hc: Int, lev: Int, parent: INode[K, V], startgen: Gen, ct: Ctrie[K, V]): AnyRef = {
+  @tailrec final def rec_lookup(k: K, hc: Int, lev: Int, parent: INode[K, V], startgen: Gen, ct: ConcurrentTrieMap[K, V]): AnyRef = {
     val m = GCAS_READ(ct) // use -Yinline!
 
     m match {
@@ -276,7 +276,7 @@ private[collection] final class INode[K, V](bn: MainNode[K, V], g: Gen) extends 
    *  @param v         if null, will remove the key irregardless of the value; otherwise removes only if binding contains that exact key and value
    *  @return          null if not successful, an Option[V] indicating the previous value otherwise
    */
-  final def rec_remove(k: K, v: V, hc: Int, lev: Int, parent: INode[K, V], startgen: Gen, ct: Ctrie[K, V]): Option[V] = {
+  final def rec_remove(k: K, v: V, hc: Int, lev: Int, parent: INode[K, V], startgen: Gen, ct: ConcurrentTrieMap[K, V]): Option[V] = {
     val m = GCAS_READ(ct) // use -Yinline!
 
     m match {
@@ -352,7 +352,7 @@ private[collection] final class INode[K, V](bn: MainNode[K, V], g: Gen) extends 
     }
   }
 
-  private def clean(nd: INode[K, V], ct: Ctrie[K, V], lev: Int) {
+  private def clean(nd: INode[K, V], ct: ConcurrentTrieMap[K, V], lev: Int) {
     val m = nd.GCAS_READ(ct)
     m match {
       case cn: CNode[K, V] => nd.GCAS(cn, cn.toCompressed(ct, lev, gen), ct)
@@ -360,9 +360,9 @@ private[collection] final class INode[K, V](bn: MainNode[K, V], g: Gen) extends 
     }
   }
 
-  final def isNullInode(ct: Ctrie[K, V]) = GCAS_READ(ct) eq null
+  final def isNullInode(ct: ConcurrentTrieMap[K, V]) = GCAS_READ(ct) eq null
 
-  final def cachedSize(ct: Ctrie[K, V]): Int = {
+  final def cachedSize(ct: ConcurrentTrieMap[K, V]): Int = {
     val m = GCAS_READ(ct)
     m.cachedSize(ct)
   }
@@ -438,7 +438,7 @@ extends MainNode[K, V] {
     if (updmap.size > 1) new LNode(updmap)
     else {
       val (k, v) = updmap.iterator.next
-      new TNode(k, v, Ctrie.computeHash(k)) // create it tombed so that it gets compressed on subsequent accesses
+      new TNode(k, v, ConcurrentTrieMap.computeHash(k)) // create it tombed so that it gets compressed on subsequent accesses
     }
   }
   def get(k: K) = listmap.get(k)
@@ -455,7 +455,7 @@ extends CNodeBase[K, V] {
     val currsz = READ_SIZE()
     if (currsz != -1) currsz
     else {
-      val sz = computeSize(ct.asInstanceOf[Ctrie[K, V]])
+      val sz = computeSize(ct.asInstanceOf[ConcurrentTrieMap[K, V]])
       while (READ_SIZE() == -1) CAS_SIZE(-1, sz)
       READ_SIZE()
     }
@@ -466,7 +466,7 @@ extends CNodeBase[K, V] {
   // => if there are concurrent size computations, they start
   //    at different positions, so they are more likely to
   //    to be independent
-  private def computeSize(ct: Ctrie[K, V]): Int = {
+  private def computeSize(ct: ConcurrentTrieMap[K, V]): Int = {
     var i = 0
     var sz = 0
     val offset = math.abs(util.Random.nextInt()) % array.length
@@ -511,7 +511,7 @@ extends CNodeBase[K, V] {
   /** Returns a copy of this cnode such that all the i-nodes below it are copied
    *  to the specified generation `ngen`.
    */
-  final def renewed(ngen: Gen, ct: Ctrie[K, V]) = {
+  final def renewed(ngen: Gen, ct: ConcurrentTrieMap[K, V]) = {
     var i = 0
     val arr = array
     val len = arr.length
@@ -542,7 +542,7 @@ extends CNodeBase[K, V] {
   //   returns the version of this node with at least some null-inodes
   //   removed (those existing when the op began)
   // - if there are only null-i-nodes below, returns null
-  final def toCompressed(ct: Ctrie[K, V], lev: Int, gen: Gen) = {
+  final def toCompressed(ct: ConcurrentTrieMap[K, V], lev: Int, gen: Gen) = {
     var bmp = bitmap
     var i = 0
     val arr = array
@@ -594,7 +594,7 @@ private[mutable] object CNode {
     val yidx = (yhc >>> lev) & 0x1f
     val bmp = (1 << xidx) | (1 << yidx)
     if (xidx == yidx) {
-      val subinode = new INode[K, V](gen)//(Ctrie.inodeupdater)
+      val subinode = new INode[K, V](gen)//(ConcurrentTrieMap.inodeupdater)
       subinode.mainnode = dual(x, xhc, y, yhc, lev + 5, gen)
       new CNode(bmp, Array(subinode), gen)
     } else {
@@ -613,7 +613,7 @@ private[mutable] case class RDCSS_Descriptor[K, V](old: INode[K, V], expectedmai
 }
 
 
-/** A concurrent hash-trie or Ctrie is a concurrent thread-safe lock-free
+/** A concurrent hash-trie or ConcurrentTrieMap is a concurrent thread-safe lock-free
  *  implementation of a hash array mapped trie. It is used to implement the
  *  concurrent map abstraction. It has particularly scalable concurrent insert
  *  and remove operations and is memory-efficient. It supports O(1), atomic,
@@ -627,20 +627,20 @@ private[mutable] case class RDCSS_Descriptor[K, V](old: INode[K, V], expectedmai
  *  @since 2.10
  */
 @SerialVersionUID(0L - 6402774413839597105L)
-final class Ctrie[K, V] private (r: AnyRef, rtupd: AtomicReferenceFieldUpdater[Ctrie[K, V], AnyRef])
+final class ConcurrentTrieMap[K, V] private (r: AnyRef, rtupd: AtomicReferenceFieldUpdater[ConcurrentTrieMap[K, V], AnyRef])
 extends ConcurrentMap[K, V]
-   with MapLike[K, V, Ctrie[K, V]]
-   with CustomParallelizable[(K, V), ParCtrie[K, V]]
+   with MapLike[K, V, ConcurrentTrieMap[K, V]]
+   with CustomParallelizable[(K, V), ParConcurrentTrieMap[K, V]]
    with Serializable
 {
-  import Ctrie.computeHash
+  import ConcurrentTrieMap.computeHash
 
   private var rootupdater = rtupd
   @volatile var root = r
 
   def this() = this(
     INode.newRootNode,
-    AtomicReferenceFieldUpdater.newUpdater(classOf[Ctrie[K, V]], classOf[AnyRef], "root")
+    AtomicReferenceFieldUpdater.newUpdater(classOf[ConcurrentTrieMap[K, V]], classOf[AnyRef], "root")
   )
 
   /* internal methods */
@@ -652,22 +652,22 @@ extends ConcurrentMap[K, V]
       out.writeObject(k)
       out.writeObject(v)
     }
-    out.writeObject(CtrieSerializationEnd)
+    out.writeObject(ConcurrentTrieMapSerializationEnd)
   }
 
   private def readObject(in: java.io.ObjectInputStream) {
     root = INode.newRootNode
-    rootupdater = AtomicReferenceFieldUpdater.newUpdater(classOf[Ctrie[K, V]], classOf[AnyRef], "root")
+    rootupdater = AtomicReferenceFieldUpdater.newUpdater(classOf[ConcurrentTrieMap[K, V]], classOf[AnyRef], "root")
 
     var obj: AnyRef = null
     do {
       obj = in.readObject()
-      if (obj != CtrieSerializationEnd) {
+      if (obj != ConcurrentTrieMapSerializationEnd) {
         val k = obj.asInstanceOf[K]
         val v = in.readObject().asInstanceOf[V]
         update(k, v)
       }
-    } while (obj != CtrieSerializationEnd)
+    } while (obj != ConcurrentTrieMapSerializationEnd)
   }
 
   @inline final def CAS_ROOT(ov: AnyRef, nv: AnyRef) = rootupdater.compareAndSet(this, ov, nv)
@@ -760,37 +760,37 @@ extends ConcurrentMap[K, V]
 
   override def seq = this
 
-  override def par = new ParCtrie(this)
+  override def par = new ParConcurrentTrieMap(this)
 
-  override def empty: Ctrie[K, V] = new Ctrie[K, V]
+  override def empty: ConcurrentTrieMap[K, V] = new ConcurrentTrieMap[K, V]
 
   final def isReadOnly = rootupdater eq null
 
   final def nonReadOnly = rootupdater ne null
 
-  /** Returns a snapshot of this Ctrie.
+  /** Returns a snapshot of this ConcurrentTrieMap.
    *  This operation is lock-free and linearizable.
    *
    *  The snapshot is lazily updated - the first time some branch
-   *  in the snapshot or this Ctrie are accessed, they are rewritten.
+   *  in the snapshot or this ConcurrentTrieMap are accessed, they are rewritten.
    *  This means that the work of rebuilding both the snapshot and this
-   *  Ctrie is distributed across all the threads doing updates or accesses
+   *  ConcurrentTrieMap is distributed across all the threads doing updates or accesses
    *  subsequent to the snapshot creation.
    */
-  @tailrec final def snapshot(): Ctrie[K, V] = {
+  @tailrec final def snapshot(): ConcurrentTrieMap[K, V] = {
     val r = RDCSS_READ_ROOT()
     val expmain = r.gcasRead(this)
-    if (RDCSS_ROOT(r, expmain, r.copyToGen(new Gen, this))) new Ctrie(r.copyToGen(new Gen, this), rootupdater)
+    if (RDCSS_ROOT(r, expmain, r.copyToGen(new Gen, this))) new ConcurrentTrieMap(r.copyToGen(new Gen, this), rootupdater)
     else snapshot()
   }
 
-  /** Returns a read-only snapshot of this Ctrie.
+  /** Returns a read-only snapshot of this ConcurrentTrieMap.
    *  This operation is lock-free and linearizable.
    *
    *  The snapshot is lazily updated - the first time some branch
-   *  of this Ctrie are accessed, it is rewritten. The work of creating
+   *  of this ConcurrentTrieMap are accessed, it is rewritten. The work of creating
    *  the snapshot is thus distributed across subsequent updates
-   *  and accesses on this Ctrie by all threads.
+   *  and accesses on this ConcurrentTrieMap by all threads.
    *  Note that the snapshot itself is never rewritten unlike when calling
    *  the `snapshot` method, but the obtained snapshot cannot be modified.
    *
@@ -799,7 +799,7 @@ extends ConcurrentMap[K, V]
   @tailrec final def readOnlySnapshot(): collection.Map[K, V] = {
     val r = RDCSS_READ_ROOT()
     val expmain = r.gcasRead(this)
-    if (RDCSS_ROOT(r, expmain, r.copyToGen(new Gen, this))) new Ctrie(r, null)
+    if (RDCSS_ROOT(r, expmain, r.copyToGen(new Gen, this))) new ConcurrentTrieMap(r, null)
     else readOnlySnapshot()
   }
 
@@ -872,7 +872,7 @@ extends ConcurrentMap[K, V]
 
   def iterator: Iterator[(K, V)] =
     if (nonReadOnly) readOnlySnapshot().iterator
-    else new CtrieIterator(0, this)
+    else new ConcurrentTrieMapIterator(0, this)
 
   private def cachedSize() = {
     val r = RDCSS_READ_ROOT()
@@ -883,17 +883,17 @@ extends ConcurrentMap[K, V]
     if (nonReadOnly) readOnlySnapshot().size
     else cachedSize()
 
-  override def stringPrefix = "Ctrie"
+  override def stringPrefix = "ConcurrentTrieMap"
 
 }
 
 
-object Ctrie extends MutableMapFactory[Ctrie] {
+object ConcurrentTrieMap extends MutableMapFactory[ConcurrentTrieMap] {
   val inodeupdater = AtomicReferenceFieldUpdater.newUpdater(classOf[INodeBase[_, _]], classOf[MainNode[_, _]], "mainnode")
 
-  implicit def canBuildFrom[K, V]: CanBuildFrom[Coll, (K, V), Ctrie[K, V]] = new MapCanBuildFrom[K, V]
+  implicit def canBuildFrom[K, V]: CanBuildFrom[Coll, (K, V), ConcurrentTrieMap[K, V]] = new MapCanBuildFrom[K, V]
 
-  def empty[K, V]: Ctrie[K, V] = new Ctrie[K, V]
+  def empty[K, V]: ConcurrentTrieMap[K, V] = new ConcurrentTrieMap[K, V]
 
   @inline final def computeHash[K](k: K): Int = {
     var hcode = k.hashCode
@@ -905,7 +905,7 @@ object Ctrie extends MutableMapFactory[Ctrie] {
 }
 
 
-private[collection] class CtrieIterator[K, V](var level: Int, private var ct: Ctrie[K, V], mustInit: Boolean = true) extends Iterator[(K, V)] {
+private[collection] class ConcurrentTrieMapIterator[K, V](var level: Int, private var ct: ConcurrentTrieMap[K, V], mustInit: Boolean = true) extends Iterator[(K, V)] {
   var stack = new Array[Array[BasicNode]](7)
   var stackpos = new Array[Int](7)
   var depth = -1
@@ -971,9 +971,9 @@ private[collection] class CtrieIterator[K, V](var level: Int, private var ct: Ct
     }
   } else current = null
 
-  protected def newIterator(_lev: Int, _ct: Ctrie[K, V], _mustInit: Boolean) = new CtrieIterator[K, V](_lev, _ct, _mustInit)
+  protected def newIterator(_lev: Int, _ct: ConcurrentTrieMap[K, V], _mustInit: Boolean) = new ConcurrentTrieMapIterator[K, V](_lev, _ct, _mustInit)
 
-  protected def dupTo(it: CtrieIterator[K, V]) = {
+  protected def dupTo(it: ConcurrentTrieMapIterator[K, V]) = {
     it.level = this.level
     it.ct = this.ct
     it.depth = this.depth
@@ -993,7 +993,7 @@ private[collection] class CtrieIterator[K, V](var level: Int, private var ct: Ct
   }
 
   /** Returns a sequence of iterators over subsets of this iterator.
-   *  It's used to ease the implementation of splitters for a parallel version of the Ctrie.
+   *  It's used to ease the implementation of splitters for a parallel version of the ConcurrentTrieMap.
    */
   protected def subdivide(): Seq[Iterator[(K, V)]] = if (subiter ne null) {
     // the case where an LNode is being iterated
@@ -1043,7 +1043,7 @@ private[mutable] object RestartException extends util.control.ControlThrowable
 
 /** Only used for ctrie serialization. */
 @SerialVersionUID(0L - 7237891413820527142L)
-private[mutable] case object CtrieSerializationEnd
+private[mutable] case object ConcurrentTrieMapSerializationEnd
 
 
 private[mutable] object Debug {

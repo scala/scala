@@ -1,0 +1,46 @@
+valueclasses.scala:3: error: only classes (not traits) are allowed to extend AnyVal
+trait T extends AnyVal // fail
+      ^
+valueclasses.scala:6: error: value class may not be a member of another class
+  class Bar(x: Int) extends AnyVal // fail
+        ^
+valueclasses.scala:8: error: value class may not be a local class
+    class Baz(x: Int) extends AnyVal // fail
+          ^
+valueclasses.scala:12: error: value class needs to have exactly one public val parameter
+class V1 extends AnyVal // fail
+      ^
+valueclasses.scala:14: error: value class needs to have a publicly accessible val parameter
+class V2(private[test] val x: Int) extends AnyVal // fail
+                           ^
+valueclasses.scala:15: error: value class needs to have a publicly accessible val parameter
+class V3(protected[test] val x: Int) extends AnyVal // fail
+                             ^
+valueclasses.scala:16: error: value class needs to have a publicly accessible val parameter
+class V4(protected val x: Int) extends AnyVal // fail
+                       ^
+valueclasses.scala:17: error: value class needs to have a publicly accessible val parameter
+class V5(private val x: Int) extends AnyVal // fail
+                     ^
+valueclasses.scala:19: error: value class needs to have exactly one public val parameter
+class V6(val x: Int, val y: String) extends AnyVal // fail
+      ^
+valueclasses.scala:20: error: illegal parameter for value class
+class V7(val x: Int, private[this] val y: String) extends AnyVal // fail
+                                       ^
+valueclasses.scala:21: error: value class needs to have exactly one public val parameter
+class V8(var x: Int) extends AnyVal // fail
+      ^
+valueclasses.scala:24: error: this statement is not allowed in value class: private[this] val y: Int = V9.this.x
+  val y = x    // fail
+      ^
+valueclasses.scala:29: error: type parameter of value class may not be specialized
+class V12[@specialized T, U](val x: (T, U)) extends AnyVal // fail
+                       ^
+valueclasses.scala:31: error: value class needs to have exactly one public val parameter
+class V13(x: Int) extends AnyVal // fail
+      ^
+valueclasses.scala:45: error: value class must have public primary constructor
+final class TOD private (val secondsOfDay: Int) extends AnyVal { // should fail with private constructor
+                ^
+15 errors found

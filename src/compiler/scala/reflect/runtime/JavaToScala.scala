@@ -186,7 +186,7 @@ trait JavaToScala extends ConversionUtil { self: SymbolTable =>
       } finally {
         parentsLevel -= 1
       }
-      clazz setInfo polyType(tparams, new ClassInfoType(parents, newScope, clazz))
+      clazz setInfo GenPolyType(tparams, new ClassInfoType(parents, newScope, clazz))
       if (module != NoSymbol) {
         module.moduleClass setInfo new ClassInfoType(List(), newScope, module.moduleClass)
       }
@@ -534,7 +534,7 @@ trait JavaToScala extends ConversionUtil { self: SymbolTable =>
   }
 
   private def setMethType(meth: Symbol, tparams: List[Symbol], paramtpes: List[Type], restpe: Type) = {
-    meth setInfo polyType(tparams, MethodType(meth.owner.newSyntheticValueParams(paramtpes map objToAny), restpe))
+    meth setInfo GenPolyType(tparams, MethodType(meth.owner.newSyntheticValueParams(paramtpes map objToAny), restpe))
   }
 
   /**
@@ -572,7 +572,7 @@ trait JavaToScala extends ConversionUtil { self: SymbolTable =>
     val tparams = jconstr.getTypeParameters.toList map createTypeParameter
     val paramtpes = jconstr.getGenericParameterTypes.toList map typeToScala
     setMethType(constr, tparams, paramtpes, clazz.tpe)
-    constr setInfo polyType(tparams, MethodType(clazz.newSyntheticValueParams(paramtpes), clazz.tpe))
+    constr setInfo GenPolyType(tparams, MethodType(clazz.newSyntheticValueParams(paramtpes), clazz.tpe))
     copyAnnotations(constr, jconstr)
     constr
   }

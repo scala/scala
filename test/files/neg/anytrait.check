@@ -1,0 +1,7 @@
+anytrait.scala:3: error: this statement is not allowed in universal trait extending from class Any: private[this] var x: Int = 1
+  var x = 1
+      ^
+anytrait.scala:5: error: this statement is not allowed in universal trait extending from class Any: T.this.x_=(T.this.x.+(1))
+  { x += 1 }
+      ^
+two errors found

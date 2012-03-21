@@ -266,6 +266,9 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
           }
           transformSuperSelect(sel)
 
+        case DefDef(mods, name, tparams, vparamss, tpt, rhs) if tree.symbol.isMethodWithExtension =>
+          treeCopy.DefDef(tree, mods, name, tparams, vparamss, tpt, withInvalidOwner(transform(rhs)))
+
         case TypeApply(sel @ Select(qual, name), args) =>
           mayNeedProtectedAccessor(sel, args, true)
 

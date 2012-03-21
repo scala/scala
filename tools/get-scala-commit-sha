@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 #
-# Usage: get-scala-revision [dir]
-# Figures out current scala revision of a git clone.
+# Usage: get-scala-commit-sha [dir]
+# Figures out current commit sha of a git clone.
 # If no dir is given, current working dir is used.
 #
 # Example build version string:
-#   v2.10.0-M1-0098-g6f1c486d0b-2012-02-01
+#   6f1c486d0ba
 #
 
 [[ $# -eq 0 ]] || cd "$1"
@@ -34,11 +34,7 @@ tag=$(git describe --tags --match 'v2*' --abbrev=0)
 # so we're stuck disassembling it.
 described=$(git describe --tags --match 'v2*' --abbrev=10)
 suffix="${described##${tag}-}"
-counter=$(echo $suffix | cut -d - -f 1)
 hash=$(echo $suffix | cut -d - -f 2)
+hash=${hash#g}
 
-# remove any alphabetic characters before the version number
-tag=$(echo $tag | sed "s/\([a-z_A-Z]*\)\(.*\)/\2/")
-
-# 2.10.0-M1-0098-g6f1c486d0b-2012-02-01
-printf "%s-%04d-%s-%s\n" "$tag" "$counter" "$hash" $(date "+%Y-%m-%d")
+echo "$hash"

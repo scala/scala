@@ -37,7 +37,7 @@ abstract class SymbolTable extends api.Universe
   def log(msg: => AnyRef): Unit
   def abort(msg: String): Nothing = throw new FatalError(supplementErrorMessage(msg))
 
-  @deprecated("2.10.0", "Give us a reason")
+  @deprecated("Give us a reason", "2.10.0")
   def abort(): Nothing = abort("unknown error")
 
   /** Override with final implementation for inlining. */
@@ -128,6 +128,10 @@ abstract class SymbolTable extends api.Universe
   final def period(rid: RunId, pid: Phase#Id): Period =
     (rid << 8) + pid
 
+  /** Are we later than given phase in compilation? */
+  final def isAtPhaseAfter(p: Phase) =
+    p != NoPhase && phase.id > p.id
+
   /** Perform given operation at given phase. */
   @inline final def atPhase[T](ph: Phase)(op: => T): T = {
     val saved = pushPhase(ph)
@@ -145,7 +149,7 @@ abstract class SymbolTable extends api.Universe
   @inline final def beforePrevPhase[T](op: => T): T        = atPhase(phase.prev)(op)
 
   @inline final def atPhaseNotLaterThan[T](target: Phase)(op: => T): T =
-    if (target != NoPhase && phase.id > target.id) atPhase(target)(op) else op
+    if (isAtPhaseAfter(target)) atPhase(target)(op) else op
 
   final def isValid(period: Period): Boolean =
     period != 0 && runId(period) == currentRunId && {
@@ -184,7 +188,7 @@ abstract class SymbolTable extends api.Universe
     }
     // enter decls of parent classes
     for (p <- container.parentSymbols) {
-      if (p != definitions.ObjectClass && p != definitions.ScalaObjectClass) {
+      if (p != definitions.ObjectClass) {
         openPackageModule(p, dest)
       }
     }

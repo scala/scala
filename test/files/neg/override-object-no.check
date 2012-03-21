@@ -1,13 +1,13 @@
 override-object-no.scala:14: error: overriding object Bar in trait Foo with object Bar in trait Foo2:
 an overriding object must conform to the overridden object's class bound;
- found   : case1.Bippy with ScalaObject
- required: case1.Bippy with case1.Bippo with ScalaObject
+ found   : case1.Bippy
+ required: case1.Bippy with case1.Bippo
     override object Bar extends Bippy {  // err
                     ^
 override-object-no.scala:21: error: overriding object Bar in trait Quux1 with object Bar in trait Quux2:
 an overriding object must conform to the overridden object's class bound;
- found   : Object with ScalaObject{def g: String}
- required: Object with ScalaObject{def g: Int}
+ found   : Object{def g: String}
+ required: Object{def g: Int}
   trait Quux2 extends Quux1 { override object Bar { def g = "abc" } } // err
                                               ^
 override-object-no.scala:25: error: overriding object Bar in trait Quux3 of type object Quux4.this.Bar;
@@ -16,8 +16,8 @@ override-object-no.scala:25: error: overriding object Bar in trait Quux3 of type
                                               ^
 override-object-no.scala:43: error: overriding object A in class Foo with object A in class P2:
 an overriding object must conform to the overridden object's class bound;
- found   : case2.Bar[List[String]] with ScalaObject
- required: case2.Bar[Traversable[String]] with ScalaObject
+ found   : case2.Bar[List[String]]
+ required: case2.Bar[Traversable[String]]
     override object A extends Bar[List[String]]  // err
                     ^
 four errors found

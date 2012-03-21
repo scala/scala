@@ -1,7 +1,7 @@
 @echo off
 rem
-rem Usage: get-scala-revison.bat [dir]
-rem Figures out current scala revision of a git clone.
+rem Usage: get-scala-commit-drift.bat [dir]
+rem Figures out current scala commit drift, of a clone.
 rem
 rem If no dir is given, current working dir is used.
 
@@ -14,9 +14,8 @@ if "%*"=="" (
 )
 cd %_DIR%
 
-if exist .git\NUL (
-  git describe --abbrev=10 --always --tags
-)
+rem  TODO - truncate chars.
+git log -1 --format="%T"
 
 :end
 @endlocal

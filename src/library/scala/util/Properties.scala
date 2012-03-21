@@ -15,7 +15,7 @@ import java.util.jar.Attributes.{ Name => AttributeName }
 /** Loads `library.properties` from the jar. */
 object Properties extends PropertiesTrait {
   protected def propCategory    = "library"
-  protected def pickJarBasedOn  = classOf[ScalaObject]
+  protected def pickJarBasedOn  = classOf[Option[_]]
 
   /** Scala manifest attributes.
    */
@@ -72,10 +72,11 @@ private[scala] trait PropertiesTrait {
    *  it is an RC, Beta, etc. or was built from source, or if the version
    *  cannot be read.
    */
-  val releaseVersion = scalaPropOrNone("version.number") flatMap { s =>
-    val segments = s split '.'
-    if (segments.size == 4 && segments.last == "final") Some(segments take 3 mkString ".") else None
-  }
+  val releaseVersion = 
+    for {
+      v <- scalaPropOrNone("maven.version.number")
+      if !(v endsWith "-SNAPSHOT")
+    } yield v
 
   /** The development Scala version, if this is not a final release.
    *  The precise contents are not guaranteed, but it aims to provide a
@@ -85,15 +86,12 @@ private[scala] trait PropertiesTrait {
    *  @return Some(version) if this is a non-final version, None if this
    *  is a final release or the version cannot be read.
    */
-  val developmentVersion = scalaPropOrNone("version.number") flatMap { s =>
-    val segments = s split '.'
-    if (segments.isEmpty || segments.last == "final")
-      None
-    else if (segments.last startsWith "r")
-      Some(s takeWhile (ch => ch != '-'))    // Cutting e.g. 2.10.0.r24774-b20110417125606 to 2.10.0.r24774
-    else
-      Some(s)
-  }
+  val developmentVersion = 
+    for {
+      v <- scalaPropOrNone("maven.version.number")
+      if v endsWith "-SNAPSHOT"
+      ov <- scalaPropOrNone("version.number")
+    } yield ov
 
   /** Either the development or release version if known, otherwise
    *  the empty string.

@@ -1,4 +1,4 @@
-class ClassWithExistential extends java.lang.Object with scala.ScalaObject {
+class ClassWithExistential extends java.lang.Object {
   def this() = { /* compiled code */ }
   def foo[A, B] : scala.Function1[A, B forSome {type A <: scala.Seq[scala.Int]; type B >: scala.Predef.String}] = { /* compiled code */ }
 }

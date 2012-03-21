@@ -590,7 +590,7 @@ final class Short extends AnyVal {
   */
   def %(x: Double): Double = sys.error("stub")
 
-  def getClass(): Class[Short] = sys.error("stub")
+  override def getClass(): Class[Short] = sys.error("stub")
 }
 
 object Short extends AnyValCompanion {

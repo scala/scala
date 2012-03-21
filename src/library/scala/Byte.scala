@@ -590,7 +590,7 @@ final class Byte extends AnyVal {
   */
   def %(x: Double): Double = sys.error("stub")
 
-  def getClass(): Class[Byte] = sys.error("stub")
+  override def getClass(): Class[Byte] = sys.error("stub")
 }
 
 object Byte extends AnyValCompanion {

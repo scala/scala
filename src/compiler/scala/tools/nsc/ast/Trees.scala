@@ -16,6 +16,47 @@ import scala.reflect.internal.Flags.TRAIT
 
 trait Trees extends reflect.internal.Trees { self: Global =>
 
+  def treeLine(t: Tree): String =
+    if (t.pos.isDefined && t.pos.isRange) t.pos.lineContent.drop(t.pos.column - 1).take(t.pos.end - t.pos.start + 1)
+    else t.summaryString
+
+  def treeStatus(t: Tree, enclosingTree: Tree = null) = {
+    val parent = if (enclosingTree eq null) "        " else " P#%5s".format(enclosingTree.id)
+
+    "[L%4s%8s] #%-6s %-15s %-10s // %s".format(t.pos.safeLine, parent, t.id, t.pos.show, t.shortClass, treeLine(t))
+  }
+  def treeSymStatus(t: Tree) = {
+    val line = if (t.pos.isDefined) "line %-4s".format(t.pos.safeLine) else "         "
+    "#%-5s %s %-10s // %s".format(t.id, line, t.shortClass,
+      if (t.symbol ne NoSymbol) "(" + t.symbol.fullLocationString + ")"
+      else treeLine(t)
+    )
+  }
+
+  class ValidatingPosAssigner extends PosAssigner {
+    var pos: Position = _
+    override def traverse(t: Tree) {
+      if (t eq EmptyTree) ()
+      else if (t.pos == NoPosition) super.traverse(t setPos pos)
+      else if (globalPhase.id <= currentRun.picklerPhase.id) {
+        // When we prune due to encountering a position, traverse the
+        // pruned children so we can warn about those lacking positions.
+        t.children foreach { c =>
+          if ((c eq EmptyTree) || (c eq emptyValDef)) ()
+          else if (c.pos == NoPosition) {
+            reporter.warning(t.pos, " Positioned tree has unpositioned child in phase " + globalPhase)
+            inform("parent: " + treeSymStatus(t))
+            inform(" child: " + treeSymStatus(c) + "\n")
+          }
+        }
+      }
+    }
+  }
+
+  override protected[this] lazy val posAssigner: PosAssigner =
+    if (settings.Yrangepos.value && settings.debug.value || settings.Yposdebug.value) new ValidatingPosAssigner
+    else new DefaultPosAssigner
+
   // --- additional cases --------------------------------------------------------
   /** Only used during parsing */
   case class Parens(args: List[Tree]) extends Tree
@@ -33,6 +74,12 @@ trait Trees extends reflect.internal.Trees { self: Global =>
  /** Array selection <qualifier> . <name> only used during erasure */
   case class SelectFromArray(qualifier: Tree, name: Name, erasure: Type)
        extends TermTree with RefTree
+
+  /** Derived value class injection (equivalent to: new C(arg) after easure); only used during erasure
+   *  The class C is stored as the symbol of the tree node.
+   */
+  case class InjectDerivedValue(arg: Tree)
+       extends SymTree
 
   /** emitted by typer, eliminated by refchecks */
   case class TypeTreeWithDeferredRefCheck()(val check: () => TypeTree) extends TypTree
@@ -149,6 +196,8 @@ trait Trees extends reflect.internal.Trees { self: Global =>
       traverser.traverse(definition)
     case SelectFromArray(qualifier, selector, erasure) =>
       traverser.traverse(qualifier)
+    case InjectDerivedValue(arg) =>
+      traverser.traverse(arg)
     case ReferenceToBoxed(idt) =>
       traverser.traverse(idt)
     case TypeTreeWithDeferredRefCheck() =>
@@ -159,6 +208,7 @@ trait Trees extends reflect.internal.Trees { self: Global =>
   trait TreeCopier extends super.TreeCopierOps {
     def DocDef(tree: Tree, comment: DocComment, definition: Tree): DocDef
     def SelectFromArray(tree: Tree, qualifier: Tree, selector: Name, erasure: Type): SelectFromArray
+    def InjectDerivedValue(tree: Tree, arg: Tree): InjectDerivedValue
     def ReferenceToBoxed(tree: Tree, idt: Ident): ReferenceToBoxed
     def TypeTreeWithDeferredRefCheck(tree: Tree): TypeTreeWithDeferredRefCheck
   }
@@ -171,6 +221,8 @@ trait Trees extends reflect.internal.Trees { self: Global =>
       new DocDef(comment, definition).copyAttrs(tree)
     def SelectFromArray(tree: Tree, qualifier: Tree, selector: Name, erasure: Type) =
       new SelectFromArray(qualifier, selector, erasure).copyAttrs(tree)
+    def InjectDerivedValue(tree: Tree, arg: Tree) =
+      new InjectDerivedValue(arg)
     def ReferenceToBoxed(tree: Tree, idt: Ident) =
       new ReferenceToBoxed(idt).copyAttrs(tree)
     def TypeTreeWithDeferredRefCheck(tree: Tree) = tree match {
@@ -188,6 +240,11 @@ trait Trees extends reflect.internal.Trees { self: Global =>
       case t @ SelectFromArray(qualifier0, selector0, _)
       if (qualifier0 == qualifier) && (selector0 == selector) => t
       case _ => this.treeCopy.SelectFromArray(tree, qualifier, selector, erasure)
+    }
+    def InjectDerivedValue(tree: Tree, arg: Tree) = tree match {
+      case t @ InjectDerivedValue(arg0)
+      if (arg0 == arg) => t
+      case _ => this.treeCopy.InjectDerivedValue(tree, arg)
     }
     def ReferenceToBoxed(tree: Tree, idt: Ident) = tree match {
       case t @ ReferenceToBoxed(idt0)
@@ -217,6 +274,9 @@ trait Trees extends reflect.internal.Trees { self: Global =>
     case SelectFromArray(qualifier, selector, erasure) =>
       transformer.treeCopy.SelectFromArray(
         tree, transformer.transform(qualifier), selector, erasure)
+    case InjectDerivedValue(arg) =>
+      transformer.treeCopy.InjectDerivedValue(
+        tree, transformer.transform(arg))
     case ReferenceToBoxed(idt) =>
       transformer.treeCopy.ReferenceToBoxed(
         tree, transformer.transform(idt) match { case idt1: Ident => idt1 })
@@ -333,6 +393,7 @@ trait Trees extends reflect.internal.Trees { self: Global =>
    case DocDef(comment, defn) =>                                   (eliminated by typer)
    case TypeTreeWithDeferredRefCheck() =>                          (created and eliminated by typer)
    case SelectFromArray(_, _, _) =>                                (created and eliminated by erasure)
+   case InjectDerivedValue(_) =>                                   (created and eliminated by erasure)
 
   */
 

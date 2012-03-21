@@ -1,0 +1,9 @@
+#Tue Sep 11 19:21:09 CEST 2007
+version.major=2
+version.minor=10
+version.patch=0
+# This is the -N part of a version.  if it's 0, it's dropped from maven versions.
+version.bnum=0
+
+# Note: To build a release run ant with -Dbuild.release=true
+# To build an RC, run ant with -Dmaven.version.suffix=-RCN

@@ -9,7 +9,7 @@ t4877.scala:6: error: type mismatch;
   def foo3: AnyRef { def bar(x: Int): Int } = new AnyRef { def bar(x: Int) = "abc" }
                                               ^
 t4877.scala:7: error: type mismatch;
- found   : Object with C{def bar(x: Int): Int}
+ found   : C{def bar(x: Int): Int}
  required: C{def bar(x: Int): Int; def quux(x: Int): Int}
   def foo4: C { def bar(x: Int): Int ; def quux(x: Int): Int } = new C { def bar(x: Int) = 5 }
                                                                  ^

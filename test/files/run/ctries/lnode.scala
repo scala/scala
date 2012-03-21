@@ -1,7 +1,7 @@
 
 
 
-import collection.mutable.Ctrie
+import collection.mutable.ConcurrentTrieMap
 
 
 object LNodeSpec extends Spec {
@@ -11,19 +11,19 @@ object LNodeSpec extends Spec {
   
   def test() {
     "accept elements with the same hash codes" in {
-      val ct = new Ctrie[DumbHash, Int]
+      val ct = new ConcurrentTrieMap[DumbHash, Int]
       for (i <- 0 until initsz) ct.update(new DumbHash(i), i)
     }
     
     "lookup elements with the same hash codes" in {
-      val ct = new Ctrie[DumbHash, Int]
+      val ct = new ConcurrentTrieMap[DumbHash, Int]
       for (i <- 0 until initsz) ct.update(new DumbHash(i), i)
       for (i <- 0 until initsz) assert(ct.get(new DumbHash(i)) == Some(i))
       for (i <- initsz until secondsz) assert(ct.get(new DumbHash(i)) == None)
     }
     
     "remove elements with the same hash codes" in {
-      val ct = new Ctrie[DumbHash, Int]
+      val ct = new ConcurrentTrieMap[DumbHash, Int]
       for (i <- 0 until initsz) ct.update(new DumbHash(i), i)
       for (i <- 0 until initsz) {
         val remelem = ct.remove(new DumbHash(i))
@@ -33,7 +33,7 @@ object LNodeSpec extends Spec {
     }
     
     "put elements with the same hash codes if absent" in {
-      val ct = new Ctrie[DumbHash, Int]
+      val ct = new ConcurrentTrieMap[DumbHash, Int]
       for (i <- 0 until initsz) ct.put(new DumbHash(i), i)
       for (i <- 0 until initsz) assert(ct.lookup(new DumbHash(i)) == i)
       for (i <- 0 until initsz) assert(ct.putIfAbsent(new DumbHash(i), i) == Some(i))
@@ -42,7 +42,7 @@ object LNodeSpec extends Spec {
     }
     
     "replace elements with the same hash codes" in {
-      val ct = new Ctrie[DumbHash, Int]
+      val ct = new ConcurrentTrieMap[DumbHash, Int]
       for (i <- 0 until initsz) assert(ct.put(new DumbHash(i), i) == None)
       for (i <- 0 until initsz) assert(ct.lookup(new DumbHash(i)) == i)
       for (i <- 0 until initsz) assert(ct.replace(new DumbHash(i), -i) == Some(i))
@@ -51,7 +51,7 @@ object LNodeSpec extends Spec {
     }
     
     "remove elements with the same hash codes if mapped to a specific value" in {
-      val ct = new Ctrie[DumbHash, Int]
+      val ct = new ConcurrentTrieMap[DumbHash, Int]
       for (i <- 0 until initsz) assert(ct.put(new DumbHash(i), i) == None)
       for (i <- 0 until initsz) assert(ct.remove(new DumbHash(i), i) == true)
     }

@@ -17,13 +17,13 @@ object Product2 {
 /** Product2 is a cartesian product of 2 components.
  *  @since 2.3
  */
-trait Product2[@specialized(Int, Long, Double) +T1, @specialized(Int, Long, Double) +T2] extends Product {
+trait Product2[@specialized(Int, Long, Double) +T1, @specialized(Int, Long, Double) +T2] extends Any with Product {
   /** The arity of this product.
    *  @return 2
    */
   override def productArity = 2
 
-
+  
   /** Returns the n-th projection of this product if 0 < n <= productArity,
    *  otherwise throws an `IndexOutOfBoundsException`.
    *
@@ -33,7 +33,7 @@ trait Product2[@specialized(Int, Long, Double) +T1, @specialized(Int, Long, Doub
    */
 
   @throws(classOf[IndexOutOfBoundsException])
-  override def productElement(n: Int) = n match {
+  override def productElement(n: Int) = n match { 
     case 0 => _1
     case 1 => _2
     case _ => throw new IndexOutOfBoundsException(n.toString())

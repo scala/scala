@@ -309,7 +309,7 @@ trait Trees { self: Universe =>
    *  quite frequently called modules to reduce ambiguity.
    */
   case class ModuleDef(mods: Modifiers, name: TermName, impl: Template)
-       extends ImplDef
+        extends ImplDef
 
   /** A common base class for ValDefs and DefDefs.
    */
@@ -319,8 +319,13 @@ trait Trees { self: Universe =>
     def rhs: Tree
   }
 
-  /** A value definition (this includes vars as well, which differ from
-   *  vals only in having the MUTABLE flag set in their Modifiers.)
+  /** Broadly speaking, a value definition.  All these are encoded as ValDefs:
+   *
+   *   - immutable values, e.g. "val x"
+   *   - mutable values, e.g. "var x" - the MUTABLE flag set in mods
+   *   - lazy values, e.g. "lazy val x" - the LAZY flag set in mods
+   *   - method parameters, see vparamss in DefDef - the PARAM flag is set in mods
+   *   - explicit self-types, e.g. class A { self: Bar => } - !!! not sure what is set.
    */
   case class ValDef(mods: Modifiers, name: TermName, tpt: Tree, rhs: Tree) extends ValOrDefDef
 
@@ -390,7 +395,6 @@ trait Trees { self: Universe =>
     //   {
     //      def bar  // owner is local dummy
     //   }
-    // System.err.println("TEMPLATE: " + parents)
   }
 
   /** Block of expressions (semicolon separated expressions) */
@@ -740,6 +744,12 @@ trait Trees { self: Universe =>
       treeCopy.ClassDef(cdef, mods0, name0, tparams0, applyToImpl(impl0))
     case t =>
       sys.error("Not a ClassDef: " + t + "/" + t.getClass)
+  }
+  def deriveModuleDef(mdef: Tree)(applyToImpl: Template => Template): ModuleDef = mdef match {
+    case ModuleDef(mods0, name0, impl0) =>
+      treeCopy.ModuleDef(mdef, mods0, name0, applyToImpl(impl0))
+    case t =>
+      sys.error("Not a ModuleDef: " + t + "/" + t.getClass)
   }
   def deriveCaseDef(cdef: Tree)(applyToBody: Tree => Tree): CaseDef = cdef match {
     case CaseDef(pat0, guard0, body0) =>

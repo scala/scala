@@ -86,6 +86,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
    *        nor do they have a setter (not if they are vals anyway). The usual
    *        logic for setting bitmaps does therefor not work for such fields.
    *        That's why they are excluded.
+   *  Note: The `checkinit` option does not check if transient fields are initialized.
    */
   private def needsInitFlag(sym: Symbol) = (
         settings.checkInit.value
@@ -95,6 +96,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
      && !sym.accessed.hasFlag(PRESUPER)
      && !sym.isOuterAccessor
      && !(sym.owner isSubClass DelayedInitClass)
+     && !(sym.accessed hasAnnotation TransientAttr)
   )
 
   /** Maps all parts of this type that refer to implementation classes to
@@ -448,7 +450,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
               if ((sym.hasAccessorFlag || (sym.isTerm && !sym.isMethod))
                   && sym.isPrivate
                   && !(currentOwner.isGetter && currentOwner.accessed == sym) // getter
-                  && !definitions.isValueClass(sym.tpe.resultType.typeSymbol)
+                  && !definitions.isPrimitiveValueClass(sym.tpe.resultType.typeSymbol)
                   && sym.owner == templ.symbol.owner
                   && !sym.isLazy
                   && !tree.isDef) {
@@ -520,7 +522,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
           localTyper = erasure.newTyper(rootContext.make(tree, currentOwner))
           afterMixin(currentOwner.owner.info)//todo: needed?
 
-          if (!currentOwner.isTrait && !isValueClass(currentOwner))
+          if (!currentOwner.isTrait && !isPrimitiveValueClass(currentOwner))
             addMixedinMembers(currentOwner, unit)
           else if (currentOwner hasFlag lateINTERFACE)
             addLateInterfaceMembers(currentOwner)

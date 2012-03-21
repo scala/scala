@@ -61,7 +61,7 @@ trait StandardDefinitions { self: Universe =>
     def vmSignature(sym: Symbol, info: Type): String
 
     /** Is symbol one of the value classes? */
-    def isValueClass(sym: Symbol): Boolean        // !!! better name?
+    def isPrimitiveValueClass(sym: Symbol): Boolean        // !!! better name?
 
     /** Is symbol one of the numeric value classes? */
     def isNumericValueClass(sym: Symbol): Boolean   // !!! better name?

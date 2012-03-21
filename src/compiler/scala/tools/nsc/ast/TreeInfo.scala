@@ -6,6 +6,7 @@
 package scala.tools.nsc
 package ast
 
+import reflect.internal.HasFlags
 import reflect.internal.Flags._
 import symtab._
 
@@ -40,5 +41,15 @@ abstract class TreeInfo extends reflect.internal.TreeInfo {
   override def firstDefinesClassOrObject(trees: List[Tree], name: Name): Boolean = trees match {
     case ClassDef(_, `name`, _, _) :: Nil => true
     case _ => super.firstDefinesClassOrObject(trees, name)
+  }
+
+  def isInterface(mods: HasFlags, body: List[Tree]) =
+    mods.hasTraitFlag && (body forall isInterfaceMember)
+
+  def isAllowedInUniversalTrait(stat: Tree): Boolean = stat match {
+    case _: ValDef => false
+    case Import(_, _) | EmptyTree => true
+    case _: DefTree => true
+    case _ => false
   }
 }

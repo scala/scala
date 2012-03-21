@@ -38,7 +38,7 @@ trait CommentFactory { thisFactory: ModelFactory with CommentFactory =>
     val key = (sym, inTpl)
     if (commentCache isDefinedAt key)
       Some(commentCache(key))
-    else { // not reached for use-case comments
+    else {
       val c = defineComment(sym, inTpl)
       if (c isDefined) commentCache += (sym, inTpl) -> c.get
       c
