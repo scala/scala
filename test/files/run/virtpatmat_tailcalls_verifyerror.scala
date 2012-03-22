@@ -5,7 +5,8 @@ object Test extends App {
     Some("a") match {
       case x =>
         x match {
-          case _ => if(meh) test(false) else false
+          case Some(_) => if(meh) test(false) else false
+          case _ => test(false)
         }
     }
   }

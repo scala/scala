@@ -868,6 +868,13 @@ abstract class GenICode extends SubComponent  {
                   abort("Unknown label target: " + sym + " at: " + (fun.pos) + ": ctx: " + ctx)
               }
             })
+            // note: when one of the args to genLoadLabelArguments is a jump to a label,
+            // it will call back into genLoad and arrive at this case, which will then set ctx1.bb.ignore to true,
+            // this is okay, since we're jumping unconditionally, so the loads and jumps emitted by the outer
+            // call to genLoad (by calling genLoadLabelArguments and emitOnly) can safely be ignored,
+            // however, as emitOnly will close the block, which reverses its instructions (when it's still open),
+            // we better not reverse when the block has already been closed but is in ignore mode
+            // (if it's not in ignore mode, double-closing is an error)
             val ctx1 = genLoadLabelArguments(args, label, ctx)
             ctx1.bb.emitOnly(if (label.anchored) JUMP(label.block) else PJUMP(label))
             ctx1.bb.enterIgnoreMode
