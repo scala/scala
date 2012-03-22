@@ -341,13 +341,18 @@ abstract class TailCalls extends Transform {
           else if (fun.symbol.isLabel && args.nonEmpty && args.tail.isEmpty && ctx.tailLabels(fun.symbol)) {
             // this is to detect tailcalls in translated matches
             // it's a one-argument call to a label that is in a tailposition and that looks like label(x) {x}
-            // thus, the argument to the call is in tailposition and we don't need to jump to the label, tail jump instead
+            // thus, the argument to the call is in tailposition
             val saved = ctx.tailPos
             ctx.tailPos = true
             debuglog("in tailpos label: "+ args.head)
             val res = transform(args.head)
             ctx.tailPos = saved
-            if (res ne args.head) res // we tail-called -- TODO: shield from false-positives where we rewrite but don't tail-call
+            if (res ne args.head) {
+              // we tail-called -- TODO: shield from false-positives where we rewrite but don't tail-call
+              // must leave the jump to the original tailpos-label (fun)!
+              // there might be *a* tailcall *in* res, but it doesn't mean res *always* tailcalls
+              treeCopy.Apply(tree, fun, List(res))
+            }
             else rewriteApply(fun, fun, Nil, args)
           } else rewriteApply(fun, fun, Nil, args)
 
