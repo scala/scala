@@ -345,6 +345,17 @@ class Template(universe: doc.Universe, tpl: DocTemplateEntity) extends HtmlPage 
       }
     }
 
+    val fullSignature: Seq[scala.xml.Node] = {
+      mbr match {
+        case nte: NonTemplateMemberEntity if nte.isUseCase =>
+          <div class="full-signature-block toggleContainer">
+            <span class="toggle">Full Signature</span>
+            <div class="hiddenContent full-signature-usecase">{ signature(nte.useCaseOf.get,true) }</div>
+          </div>
+        case _ => NodeSeq.Empty
+      }
+    }    
+
     val selfType: Seq[scala.xml.Node] = mbr match {
       case dtpl: DocTemplateEntity if (isSelf && !dtpl.selfType.isEmpty && !isReduced) =>
         <dt>Self Type</dt>
@@ -466,7 +477,7 @@ class Template(universe: doc.Universe, tpl: DocTemplateEntity) extends HtmlPage 
     }
     // end attributes block vals ---
 
-    val attributesInfo = attributes ++ definitionClasses ++ selfType ++ annotations ++ deprecation ++ migration ++ sourceLink ++ mainComment
+    val attributesInfo = attributes ++ definitionClasses ++ fullSignature ++ selfType ++ annotations ++ deprecation ++ migration ++ sourceLink ++ mainComment
     val attributesBlock =
       if (attributesInfo.isEmpty)
         NodeSeq.Empty
