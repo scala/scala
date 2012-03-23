@@ -2203,7 +2203,7 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
       import CODE._
 
       // need to duplicate the cases before typing them to generate the apply method, or the symbols will be all messed up
-      val casesTrue = if (isPartial) cases map (c => deriveCaseDef(c)(x => TRUE).duplicate) else Nil
+      val casesTrue = if (isPartial) cases map (c => deriveCaseDef(c)(x => TRUE_typed).duplicate) else Nil
 
       val applyMethod = {
         // rig the show so we can get started typing the method body -- later we'll correct the infos...
@@ -2241,7 +2241,7 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
         methodSym setInfoAndEnter MethodType(paramSyms, BooleanClass.tpe)
 
         val (selector1, selectorTp, casesAdapted, resTp, doTranslation) = methodBodyTyper.prepareTranslateMatch(selector, casesTrue, mode, BooleanClass.tpe)
-        val body = methodBodyTyper.translateMatch(selector1, selectorTp, casesAdapted, resTp, doTranslation, Some(scrutinee => FALSE))
+        val body = methodBodyTyper.translateMatch(selector1, selectorTp, casesAdapted, resTp, doTranslation, Some(scrutinee => FALSE_typed))
 
         DefDef(methodSym, body)
       }
