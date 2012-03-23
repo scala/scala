@@ -44,6 +44,11 @@ trait TreeDSL {
     def NULL          = LIT(null)
     def UNIT          = LIT(())
 
+    // for those preferring boring, predictable lives, without the thrills of tree-sharing
+    // (but with the perk of typed trees)
+    def TRUE_typed  = LIT(true) setType ConstantType(Constant(true))
+    def FALSE_typed = LIT(false) setType ConstantType(Constant(false))
+
     object WILD {
       def empty               = Ident(nme.WILDCARD)
       def apply(tpe: Type)    = Ident(nme.WILDCARD) setType tpe
