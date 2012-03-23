@@ -149,7 +149,7 @@ trait PatMatVirtualiser extends ast.TreeDSL { self: Analyzer =>
       // if they're already simple enough to be handled by the back-end, we're done
       if (caseDefs forall treeInfo.isCatchCase) caseDefs
       else {
-        val switch = {
+        val swatches = { // switch-catches
           val bindersAndCases = caseDefs map { caseDef =>
             // generate a fresh symbol for each case, hoping we'll end up emitting a type-switch (we don't have a global scrut there)
             // if we fail to emit a fine-grained switch, have to do translateCase again with a single scrutSym (TODO: uniformize substitution on treemakers so we can avoid this)
@@ -157,10 +157,12 @@ trait PatMatVirtualiser extends ast.TreeDSL { self: Analyzer =>
             (caseScrutSym, propagateSubstitution(translateCase(caseScrutSym, pt)(caseDef), EmptySubstitution))
           }
 
-          (emitTypeSwitch(bindersAndCases, pt) map (_.map(fixerUpper(matchOwner, pos).apply(_).asInstanceOf[CaseDef])))
+          for(cases <- emitTypeSwitch(bindersAndCases, pt) toList;
+              if cases forall treeInfo.isCatchCase; // must check again, since it's not guaranteed -- TODO: can we eliminate this? e.g., a type test could test for a trait or a non-trivial prefix, which are not handled by the back-end
+              cse <- cases) yield fixerUpper(matchOwner, pos)(cse).asInstanceOf[CaseDef]
         }
 
-        val catches = switch getOrElse {
+        val catches = if (swatches nonEmpty) swatches else {
           val scrutSym = freshSym(pos, pureType(ThrowableClass.tpe))
           val casesNoSubstOnly = caseDefs map { caseDef => (propagateSubstitution(translateCase(scrutSym, pt)(caseDef), EmptySubstitution))}
 
