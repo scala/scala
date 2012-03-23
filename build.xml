@@ -208,6 +208,9 @@ PROPERTIES
       name="scalacfork.jvmargs"
       value="${env.ANT_OPTS} ${jvm.opts}"/>
 
+  <!-- unless specifically set to yes, scaladoc failures won't break the build -->
+  <property name="scaladoc.noFail" value="yes"/>
+
 <!-- ===========================================================================
 INITIALISATION
 ============================================================================ -->
@@ -1610,7 +1613,8 @@ DOCUMENTATION
       sourcepath="${src.dir}"
       classpathref="pack.classpath"
       addparams="${scalac.args.all}"
-      docRootContent="${src.dir}/library/rootdoc.txt">
+      docRootContent="${src.dir}/library/rootdoc.txt"
+      noFail="${scaladoc.noFail}">
       <src>
         <files includes="${src.dir}/actors"/>
         <files includes="${src.dir}/library/scala"/>
@@ -1691,7 +1695,8 @@ DOCUMENTATION
       classpathref="pack.classpath"
       srcdir="${src.dir}/compiler"
       docRootContent="${src.dir}/compiler/rootdoc.txt"
-      addparams="${scalac.args.all}"> 
+      addparams="${scalac.args.all}"
+      nofail="${scaladoc.nofail}"> 
       <include name="**/*.scala"/>
     </scaladoc>
     <touch file="${build-docs.dir}/compiler.complete" verbose="no"/>
@@ -1712,7 +1717,8 @@ DOCUMENTATION
       sourcepath="${src.dir}"
       classpathref="pack.classpath"
       srcdir="${src.dir}/jline/src/main/java"
-      addparams="${scalac.args.all}"> 
+      addparams="${scalac.args.all}"
+      nofail="${scaladoc.noFail}"> 
       <include name="**/*.scala"/>
       <include name="**/*.java"/>
     </scaladoc>
@@ -1735,7 +1741,8 @@ DOCUMENTATION
       sourcepath="${src.dir}"
       classpathref="pack.classpath"
       srcdir="${src.dir}/scalap"
-      addparams="${scalac.args.all}"> 
+      addparams="${scalac.args.all}"
+      nofail="${scaladoc.noFail}"> 
       <include name="**/*.scala"/>
     </scaladoc>
     <touch file="${build-docs.dir}/scalap.complete" verbose="no"/>
@@ -1756,7 +1763,8 @@ DOCUMENTATION
       sourcepath="${src.dir}"
       classpathref="pack.classpath"
       srcdir="${src.dir}/partest"
-      addparams="${scalac.args.all}"> 
+      addparams="${scalac.args.all}" 
+      nofail="${scaladoc.noFail}"> 
       <include name="**/*.scala"/>
     </scaladoc>
     <touch file="${build-docs.dir}/partest.complete" verbose="no"/>
@@ -1777,7 +1785,8 @@ DOCUMENTATION
       sourcepath="${src.dir}"
       classpathref="pack.classpath"
       srcdir="${src.dir}/continuations/plugin"
-      addparams="${scalac.args.all}"> 
+      addparams="${scalac.args.all}" 
+      nofail="${scaladoc.noFail}"> 
       <include name="**/*.scala"/>
     </scaladoc>
     <touch file="${build-docs.dir}/continuations-plugin.complete" verbose="no"/>
@@ -1905,7 +1914,8 @@ BOOTRAPING TEST AND TEST SUITE
     </partest>
   </target>
 
-  <target name="test.done" depends="test.suite, test.continuations.suite, test.scaladoc, test.stability"/>
+  <!-- test.scaladoc is separate from test.done to avoid breaking the build -->
+  <target name="test.done" depends="test.suite, test.continuations.suite, test.stability"/>
 
 <!-- ===========================================================================
 DISTRIBUTION
