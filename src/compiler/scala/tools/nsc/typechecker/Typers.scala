@@ -2215,9 +2215,10 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
         val methodBodyTyper = newTyper(context.makeNewScope(context.tree, methodSym)) // should use the DefDef for the context's tree, but it doesn't exist yet (we need the typer we're creating to create it)
         paramSyms foreach (methodBodyTyper.context.scope enter _)
 
-        val (selector1, selectorTp, casesAdapted, resTp, doTranslation) = methodBodyTyper.prepareTranslateMatch(selector, cases, mode, ptRes)
+        val (selector1, selectorTp, casesAdapted, resTpSkolemized, doTranslation) = methodBodyTyper.prepareTranslateMatch(selector, cases, mode, ptRes)
+        val resTp = repackExistential(resTpSkolemized)
 
-        val formalTypes = paramSyms map (_.tpe)
+        val formalTypes = paramSyms map (p => repackExistential(p.tpe))
         val parents =
           if (isPartial) List(appliedType(AbstractPartialFunctionClass.typeConstructor, List(formalTypes.head, resTp)), SerializableClass.tpe)
           else           List(appliedType(AbstractFunctionClass(arity).typeConstructor, formalTypes :+ resTp), SerializableClass.tpe)
@@ -2247,6 +2248,7 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
       }
 
       val members = if (!isPartial) List(applyMethod) else List(applyMethod, isDefinedAtMethod)
+
       typed(Block(List(ClassDef(anonClass, NoMods, List(List()), List(List()), members, tree.pos)), New(anonClass.tpe)), mode, pt)
     }
 
