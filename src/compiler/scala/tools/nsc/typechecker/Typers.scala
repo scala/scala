@@ -2134,11 +2134,7 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
 
     def typedCases(cases: List[CaseDef], pattp: Type, pt: Type): List[CaseDef] =
       cases mapConserve { cdef =>
-        val caseTyped = newTyper(context.makeNewScope(cdef, context.owner)).typedCase(cdef, pattp, pt)
-        if (opt.virtPatmat) {
-          val tpPacked  = packedType(caseTyped, context.owner)
-          caseTyped setType tpPacked
-        } else caseTyped
+        newTyper(context.makeNewScope(cdef, context.owner)).typedCase(cdef, pattp, pt)
       }
 
     def adaptCase(cdef: CaseDef, mode: Int, tpe: Type): CaseDef = deriveCaseDef(cdef)(adapt(_, mode, tpe))
@@ -2151,7 +2147,9 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
       val selector1            = checkDead(typed(selector, EXPRmode | BYVALmode, WildcardType))
       val selectorTp           = packCaptured(selector1.tpe.widen)
       val casesTyped           = typedCases(cases, selectorTp, resTp)
-      val (ownType, needAdapt) = if (isFullyDefined(resTp)) (resTp, false) else weakLub(casesTyped map (_.tpe.deconst))
+      val caseTypes                = casesTyped map (c => packedType(c, context.owner).deconst)
+      val (ownType0, needAdapt)    = if (isFullyDefined(resTp)) (resTp, false) else weakLub(caseTypes)
+      val ownType                  = ownType0.skolemizeExistential(context.owner, context.tree)
       val casesAdapted         = if (!needAdapt) casesTyped else casesTyped map (adaptCase(_, mode, ownType))
       // val (owntype0, needAdapt) = ptOrLub(casesTyped map (x => repackExistential(x.tpe)))
       // val owntype               = elimAnonymousClass(owntype0)
@@ -2205,7 +2203,7 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
       import CODE._
 
       // need to duplicate the cases before typing them to generate the apply method, or the symbols will be all messed up
-      val casesTrue = if (isPartial) cases map (c => deriveCaseDef(c)(x => TRUE).duplicate) else Nil
+      val casesTrue = if (isPartial) cases map (c => deriveCaseDef(c)(x => TRUE_typed).duplicate) else Nil
 
       val applyMethod = {
         // rig the show so we can get started typing the method body -- later we'll correct the infos...
@@ -2227,7 +2225,10 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
         anonClass setInfo ClassInfoType(parents, newScope, anonClass)
         methodSym setInfoAndEnter MethodType(paramSyms, resTp)
 
-        val body = methodBodyTyper.translateMatch(selector1, selectorTp, casesAdapted, resTp, doTranslation, if (isPartial) Some(scrut => (funThis DOT nme.missingCase) (scrut)) else None)
+        // use apply's parameter since the scrut's type has been widened
+        def missingCase(scrut_ignored: Tree) = (funThis DOT nme.missingCase) (REF(paramSyms.head))
+
+        val body = methodBodyTyper.translateMatch(selector1, selectorTp, casesAdapted, resTp, doTranslation, if (isPartial) Some(missingCase) else None)
 
         DefDef(methodSym, body)
       }
@@ -2240,7 +2241,7 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
         methodSym setInfoAndEnter MethodType(paramSyms, BooleanClass.tpe)
 
         val (selector1, selectorTp, casesAdapted, resTp, doTranslation) = methodBodyTyper.prepareTranslateMatch(selector, casesTrue, mode, BooleanClass.tpe)
-        val body = methodBodyTyper.translateMatch(selector1, selectorTp, casesAdapted, resTp, doTranslation, Some(scrutinee => FALSE))
+        val body = methodBodyTyper.translateMatch(selector1, selectorTp, casesAdapted, resTp, doTranslation, Some(scrutinee => FALSE_typed))
 
         DefDef(methodSym, body)
       }
@@ -3537,8 +3538,11 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
           lazy val thenTp = packedType(thenp1, context.owner)
           lazy val elseTp = packedType(elsep1, context.owner)
           val (owntype, needAdapt) =
-            // virtpatmat needs more aggressive unification of skolemized types, but lub is not robust enough --> middle ground
-            if (opt.virtPatmat && !isPastTyper && thenTp =:= elseTp) (thenTp, true) // this breaks src/library/scala/collection/immutable/TrieIterator.scala
+            // in principle we should pack the types of each branch before lubbing, but lub doesn't really work for existentials anyway
+            // in the special (though common) case where the types are equal, it pays to pack before comparing
+            // especially virtpatmat needs more aggressive unification of skolemized types
+            // this breaks src/library/scala/collection/immutable/TrieIterator.scala
+            if (opt.virtPatmat && !isPastTyper && thenTp =:= elseTp) (thenp1.tpe, false) // use unpacked type
             // TODO: skolemize (lub of packed types) when that no longer crashes on files/pos/t4070b.scala
             else ptOrLub(List(thenp1.tpe, elsep1.tpe))
 

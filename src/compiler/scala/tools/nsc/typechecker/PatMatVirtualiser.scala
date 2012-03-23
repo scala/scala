@@ -258,9 +258,9 @@ trait PatMatVirtualiser extends ast.TreeDSL { self: Analyzer =>
           * @arg patBinder  symbol used to refer to the result of the previous pattern's extractor (will later be replaced by the outer tree with the correct tree to refer to that patterns result)
         */
         def unapply(tree: Tree): Option[(Symbol, Type)] = tree match {
-          case Bound(subpatBinder, typed@Typed(expr, tpt)) => Some((subpatBinder, typed.tpe))
-          case Bind(_, typed@Typed(expr, tpt))             => Some((patBinder, typed.tpe))
-          case Typed(expr, tpt)                            => Some((patBinder, tree.tpe))
+          case Bound(subpatBinder, typed@Typed(expr, tpt)) if typed.tpe ne null => Some((subpatBinder, typed.tpe))
+          case Bind(_, typed@Typed(expr, tpt))             if typed.tpe ne null => Some((patBinder, typed.tpe))
+          case Typed(expr, tpt)                            if tree.tpe ne null  => Some((patBinder, tree.tpe))
           case _                                           => None
         }
       }
@@ -918,10 +918,10 @@ class Foo(x: Other) { x._1 } // no error in this order
           // one alternative may still generate multiple trees (e.g., an extractor call + equality test)
           // (for now,) alternatives may not bind variables (except wildcards), so we don't care about the final substitution built internally by makeTreeMakers
           val combinedAlts = altss map (altTreeMakers =>
-            ((casegen: Casegen) => combineExtractors(altTreeMakers :+ TrivialTreeMaker(casegen.one(TRUE)))(casegen))
+            ((casegen: Casegen) => combineExtractors(altTreeMakers :+ TrivialTreeMaker(casegen.one(TRUE_typed)))(casegen))
           )
 
-          val findAltMatcher = codegenAlt.matcher(EmptyTree, NoSymbol, BooleanClass.tpe)(combinedAlts, Some(x => FALSE))
+          val findAltMatcher = codegenAlt.matcher(EmptyTree, NoSymbol, BooleanClass.tpe)(combinedAlts, Some(x => FALSE_typed))
           codegenAlt.ifThenElseZero(findAltMatcher, substitution(next))
         }
       }
@@ -1643,7 +1643,7 @@ class Foo(x: Other) { x._1 } // no error in this order
         def caseDef(mkCase: Casegen => Tree): Tree = {
           val currCase = nextCase
           nextCase = newCaseSym
-          val casegen = new OptimizedCasegen(matchEnd, nextCase)
+          val casegen = new OptimizedCasegen(matchEnd, nextCase, restpe)
           LabelDef(currCase, Nil, mkCase(casegen))
         }
 
@@ -1667,14 +1667,14 @@ class Foo(x: Other) { x._1 } // no error in this order
         )
       }
 
-      class OptimizedCasegen(matchEnd: Symbol, nextCase: Symbol) extends CommonCodegen with Casegen {
+      class OptimizedCasegen(matchEnd: Symbol, nextCase: Symbol, restpe: Type) extends CommonCodegen with Casegen {
         def matcher(scrut: Tree, scrutSym: Symbol, restpe: Type)(cases: List[Casegen => Tree], matchFailGen: Option[Tree => Tree]): Tree =
           optimizedCodegen.matcher(scrut, scrutSym, restpe)(cases, matchFailGen)
 
         // only used to wrap the RHS of a body
         // res: T
         // returns MatchMonad[T]
-        def one(res: Tree): Tree = matchEnd APPLY (res)
+        def one(res: Tree): Tree = matchEnd APPLY (_asInstanceOf(res, restpe)) // need cast for GADT magic
         protected def zero: Tree = nextCase APPLY ()
 
         // prev: MatchMonad[T]
@@ -1713,7 +1713,7 @@ class Foo(x: Other) { x._1 } // no error in this order
 
         def flatMapCondStored(cond: Tree, condSym: Symbol, res: Tree, nextBinder: Symbol, next: Tree): Tree =
           ifThenElseZero(cond, BLOCK(
-            condSym    === TRUE,
+            condSym    === TRUE_typed,
             nextBinder === res,
             next
           ))
