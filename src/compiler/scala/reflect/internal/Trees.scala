@@ -324,14 +324,10 @@ trait Trees extends api.Trees { self: SymbolTable =>
   }
 
   class ChangeOwnerTraverser(val oldowner: Symbol, val newowner: Symbol) extends Traverser {
-    def changeOwner(tree: Tree) = tree match {
-      case Return(expr) =>
-        if (tree.symbol == oldowner)
-          tree.symbol = newowner
-      case _: DefTree | _: Function =>
-        if (tree.symbol != NoSymbol && tree.symbol.owner == oldowner)
-          tree.symbol.owner = newowner
-      case _ =>
+    def changeOwner(tree: Tree) = {
+      if ((tree.isDef || tree.isInstanceOf[Function]) &&
+          tree.symbol != NoSymbol && tree.symbol.owner == oldowner)
+        tree.symbol.owner = newowner
     }
     override def traverse(tree: Tree) {
       changeOwner(tree)
