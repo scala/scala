@@ -44,7 +44,7 @@ object ScalaBuild extends Build with Layers {
           </license>
         </licenses>
         <scm>
-          <connection>scm:svn:http://lampsvn.epfl.ch/svn-repos/scala/scala/trunk</connection>
+          <connection>scm:git:git://github.com/scala/scala.git</connection>
         </scm>
         <issueManagement>
           <system>jira</system>
@@ -92,7 +92,7 @@ object ScalaBuild extends Build with Layers {
         </license>
       </licenses>
       <scm>
-        <connection>scm:svn:http://lampsvn.epfl.ch/svn-repos/scala/scala/trunk</connection>
+        <connection>scm:git:git://github.com/scala/scala.git</connection>
       </scm>
       <issueManagement>
         <system>jira</system>
