@@ -442,8 +442,9 @@ object Test extends Properties("HtmlFactory") {
 
   property("Use cases should override their original members") =
      checkText("SI_5054_q1.scala")(
-       (None,"""def test(): Int""", true),
-       (None,"""def test(implicit lost: Int): Int""", false)
+       (None,"""def test(): Int""", true)
+       //Disabled because the full signature is now displayed
+       //(None,"""def test(implicit lost: Int): Int""", false)
      )
 
   property("Use cases should keep their flags - final should not be lost") =
@@ -599,8 +600,9 @@ object Test extends Properties("HtmlFactory") {
           T       StartT the type of the first argument EndT
           arg1    Start1 The T term comment End1
           arg2    Start2 The string comment End2
-          returns StartRet The return comment EndRet
-        Definition Classes InheritDocDerived → InheritDocBase
+          returns StartRet The return comment EndRet""", true),
+    (Some("InheritDocDerived"),
+     """Definition Classes InheritDocDerived → InheritDocBase
         Example:   StartExample function[Int](3, "something") EndExample
         Version    StartVer 0.0.2 EndVer
         Since      StartSince 0.0.1 EndSince
@@ -624,8 +626,9 @@ object Test extends Properties("HtmlFactory") {
           T       StartT the type of the first argument EndT
           arg1    Start1 The T term comment End1
           arg2    Start2 The string comment End2
-          returns StartRet The return comment EndRet
-        Example:   StartExample function[Int](3,"something") EndExample
+          returns StartRet The return comment EndRet""", true),
+    (Some("UseCaseInheritDoc"),
+     """Example:   StartExample function[Int](3,"something") EndExample
         Version    StartVer 0.0.2 EndVer
         Since      StartSince 0.0.1 EndSince
         Exceptions thrown
