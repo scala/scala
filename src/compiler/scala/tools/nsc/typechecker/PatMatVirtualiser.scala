@@ -1643,7 +1643,7 @@ class Foo(x: Other) { x._1 } // no error in this order
         def caseDef(mkCase: Casegen => Tree): Tree = {
           val currCase = nextCase
           nextCase = newCaseSym
-          val casegen = new OptimizedCasegen(matchEnd, nextCase)
+          val casegen = new OptimizedCasegen(matchEnd, nextCase, restpe)
           LabelDef(currCase, Nil, mkCase(casegen))
         }
 
@@ -1667,14 +1667,14 @@ class Foo(x: Other) { x._1 } // no error in this order
         )
       }
 
-      class OptimizedCasegen(matchEnd: Symbol, nextCase: Symbol) extends CommonCodegen with Casegen {
+      class OptimizedCasegen(matchEnd: Symbol, nextCase: Symbol, restpe: Type) extends CommonCodegen with Casegen {
         def matcher(scrut: Tree, scrutSym: Symbol, restpe: Type)(cases: List[Casegen => Tree], matchFailGen: Option[Tree => Tree]): Tree =
           optimizedCodegen.matcher(scrut, scrutSym, restpe)(cases, matchFailGen)
 
         // only used to wrap the RHS of a body
         // res: T
         // returns MatchMonad[T]
-        def one(res: Tree): Tree = matchEnd APPLY (res)
+        def one(res: Tree): Tree = matchEnd APPLY (_asInstanceOf(res, restpe)) // need cast for GADT magic
         protected def zero: Tree = nextCase APPLY ()
 
         // prev: MatchMonad[T]
