@@ -2144,15 +2144,15 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
         case Annotated(Ident(nme.synthSwitch), selector) => (selector, false)
         case s => (s, true)
       }
-      val selector1            = checkDead(typed(selector, EXPRmode | BYVALmode, WildcardType))
-      val selectorTp           = packCaptured(selector1.tpe.widen)
-      val casesTyped           = typedCases(cases, selectorTp, resTp)
+      val selector1                = checkDead(typed(selector, EXPRmode | BYVALmode, WildcardType))
+      val selectorTp               = packCaptured(selector1.tpe.widen)
+
+      val casesTyped               = typedCases(cases, selectorTp, resTp)
       val caseTypes                = casesTyped map (c => packedType(c, context.owner).deconst)
-      val (ownType0, needAdapt)    = if (isFullyDefined(resTp)) (resTp, false) else weakLub(caseTypes)
-      val ownType                  = ownType0.skolemizeExistential(context.owner, context.tree)
-      val casesAdapted         = if (!needAdapt) casesTyped else casesTyped map (adaptCase(_, mode, ownType))
-      // val (owntype0, needAdapt) = ptOrLub(casesTyped map (x => repackExistential(x.tpe)))
-      // val owntype               = elimAnonymousClass(owntype0)
+      val (ownType, needAdapt)     = if (isFullyDefined(resTp)) (resTp, false) else weakLub(caseTypes)
+
+      val casesAdapted             = if (!needAdapt) casesTyped else casesTyped map (adaptCase(_, mode, ownType))
+
       (selector1, selectorTp, casesAdapted, ownType, doTranslation)
     }
 
@@ -2166,7 +2166,10 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
         Match(selector1, casesAdapted) setType ownType // setType of the Match to avoid recursing endlessly
       } else {
         val scrutType = repeatedToSeq(elimAnonymousClass(selectorTp))
-        MatchTranslator(this).translateMatch(selector1, casesAdapted, repeatedToSeq(ownType), scrutType, matchFailGen)
+        // we've packed the type for each case in prepareTranslateMatch so that if all cases have the same existential case, we get a clean lub
+        // here, we should open up the existential again
+        // relevant test cases: pos/existentials-harmful.scala, pos/gadt-gilles.scala, pos/t2683.scala, pos/virtpatmat_exist4.scala
+        MatchTranslator(this).translateMatch(selector1, casesAdapted, repeatedToSeq(ownType.skolemizeExistential(context.owner, context.tree)), scrutType, matchFailGen)
       }
     }
 
@@ -2247,6 +2250,7 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
       }
 
       val members = if (!isPartial) List(applyMethod) else List(applyMethod, isDefinedAtMethod)
+
       typed(Block(List(ClassDef(anonClass, NoMods, List(List()), List(List()), members, tree.pos)), New(anonClass.tpe)), mode, pt)
     }
 
