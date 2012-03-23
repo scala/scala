@@ -395,7 +395,7 @@ abstract class RefChecks extends InfoTransform with reflect.internal.transform.R
           } else if (other.isAbstractOverride && other.isIncompleteIn(clazz) && !member.isAbstractOverride) {
             overrideError("needs `abstract override' modifiers")
           } else if (member.isAnyOverride && (other hasFlag ACCESSOR) && other.accessed.isVariable && !other.accessed.isLazy) {
-            overrideError("cannot override a mutable variable")
+            overrideError("cannot override a mutable variable") // !?! this is not covered by the spec. We need to resolve this either by changing the spec or removing the test here.
           } else if (member.isAnyOverride &&
                      !(member.owner.thisType.baseClasses exists (_ isSubClass other.owner)) &&
                      !member.isDeferred && !other.isDeferred &&
@@ -1241,6 +1241,12 @@ abstract class RefChecks extends InfoTransform with reflect.internal.transform.R
         if (tree.symbol.isLazy)
           makeLazyAccessor(tree, rhs)
         else {
+          if (tree.symbol.isVariable) 
+            tree.symbol resetFlag FINAL 
+             // FINAL means the wrong thing in the bytecode. Note that FINAL is currently redundant for variables
+             // because we can't override them anyway (search for !?! in this file). Also override checks
+             // affect the accessor, not the field, so it is always safe to remove FINAL for fields, no matter
+             // how the "can override mutable variable"? issue is resolved.
           val lazySym = tree.symbol.lazyAccessorOrSelf
           if (lazySym.isLocal && index <= currentLevel.maxindex) {
             debuglog("refsym = " + currentLevel.refsym)
