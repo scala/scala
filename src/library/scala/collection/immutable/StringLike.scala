@@ -218,7 +218,7 @@ self =>
    *  and provides its subcomponents through groups named "month", "day" and
    *  "year".
    *
-   *  @param groupNames The name of the groups in the pattern, in the order they appear.
+   *  @param groupNames The names of the groups in the pattern, in the order they appear.
    */
   def r(groupNames: String*): Regex = new Regex(toString, groupNames: _*)
 
