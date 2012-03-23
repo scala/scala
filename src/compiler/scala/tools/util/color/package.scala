@@ -18,4 +18,5 @@ package object color {
     case x: AnsiForeground  => x.flip
   }
   implicit def implicitCStringOps(str: String): CStringOps = new CStringOps(str)
+  implicit def implicitCString(str: String): CString = new CString(str, str)
 }

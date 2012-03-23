@@ -17,7 +17,7 @@ package scala.actors
  *  changes to the underlying var invisible.) I can't figure out what's supposed
  *  to happen, so I renamed the constructor parameter to at least be less confusing.
  */
-private[actors] class ActorTask(actor: Actor,
+private[actors] class ActorTask(actor: InternalActor,
                                 fun: () => Unit,
                                 handler: PartialFunction[Any, Any],
                                 initialMsg: Any)
@@ -32,7 +32,7 @@ private[actors] class ActorTask(actor: Actor,
   }
 
   protected override def terminateExecution(e: Throwable) {
-    val senderInfo = try { Some(actor.sender) } catch {
+    val senderInfo = try { Some(actor.internalSender) } catch {
       case _: Exception => None
     }
     // !!! If this is supposed to be setting the current contents of the
@@ -45,13 +45,16 @@ private[actors] class ActorTask(actor: Actor,
                                      e)
 
     val todo = actor.synchronized {
-      if (!actor.links.isEmpty)
+      val res = if (!actor.links.isEmpty)
         actor.exitLinked(uncaught)
       else {
         super.terminateExecution(e)
         () => {}
       }
+      actor.internalPostStop
+      res
     }
+
     todo()
   }
 

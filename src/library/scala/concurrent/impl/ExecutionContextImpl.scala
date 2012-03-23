@@ -13,7 +13,8 @@ package scala.concurrent.impl
 import java.util.concurrent.{Callable, ExecutorService}
 import scala.concurrent.forkjoin._
 import scala.concurrent.{ExecutionContext, resolver, Awaitable, body2awaitable}
-import scala.util.{ Duration, Try, Success, Failure }
+import scala.util.{ Try, Success, Failure }
+import scala.concurrent.util.{ Duration }
 import scala.collection.mutable.Stack
 
 

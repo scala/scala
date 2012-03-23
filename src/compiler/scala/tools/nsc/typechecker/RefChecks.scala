@@ -266,7 +266,7 @@ abstract class RefChecks extends InfoTransform with reflect.internal.transform.R
         (if (showLocation)
           sym1.locationString +
           (if (sym1.isAliasType) ", which equals "+self.memberInfo(sym1)
-           else if (sym1.isAbstractType) " with bounds "+self.memberInfo(sym1)
+           else if (sym1.isAbstractType) " with bounds"+self.memberInfo(sym1)
            else if (sym1.isTerm) " of type "+self.memberInfo(sym1)
            else "")
          else "")
@@ -1445,7 +1445,7 @@ abstract class RefChecks extends InfoTransform with reflect.internal.transform.R
 
     private def transformApply(tree: Apply): Tree = tree match {
       case Apply(
-        Select(qual, nme.filter),
+        Select(qual, nme.filter | nme.withFilter),
         List(Function(
           List(ValDef(_, pname, tpt, _)),
           Match(_, CaseDef(pat1, _, _) :: _))))

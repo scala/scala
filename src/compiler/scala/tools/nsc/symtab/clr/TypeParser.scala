@@ -108,7 +108,7 @@ abstract class TypeParser {
     val method = new ConstructorInfo(declType, attrs, Array[MSILType]())
     val flags = Flags.JAVA
     val owner = clazz
-    val methodSym = owner.newMethod(NoPosition, nme.CONSTRUCTOR).setFlag(flags)
+    val methodSym = owner.newMethod(nme.CONSTRUCTOR, NoPosition, flags)
     val rettype = clazz.tpe
     val mtype = methodType(Array[MSILType](), rettype);
     val mInfo = mtype(methodSym)
@@ -224,14 +224,14 @@ abstract class TypeParser {
 
     if (canBeTakenAddressOf) {
       clazzBoxed.setInfo( if (ownTypeParams.isEmpty) classInfoAsInMetadata
-                          else polyType(ownTypeParams, classInfoAsInMetadata) )
+                          else genPolyType(ownTypeParams, classInfoAsInMetadata) )
       clazzBoxed.setFlag(flags)
       val rawValueInfoType = ClassInfoType(definitions.anyvalparam, instanceDefs, clazz)
       clazz.setInfo( if (ownTypeParams.isEmpty) rawValueInfoType
-                     else polyType(ownTypeParams, rawValueInfoType) )
+                     else genPolyType(ownTypeParams, rawValueInfoType) )
     } else {
       clazz.setInfo( if (ownTypeParams.isEmpty) classInfoAsInMetadata
-                     else polyType(ownTypeParams, classInfoAsInMetadata) )
+                     else genPolyType(ownTypeParams, classInfoAsInMetadata) )
     }
 
     // TODO I don't remember if statics.setInfo and staticModule.setInfo should also know about type params
@@ -284,7 +284,7 @@ abstract class TypeParser {
 	    else
 	      getCLRType(field.FieldType)
       val owner = if (field.IsStatic()) statics else clazz;
-      val sym = owner.newValue(NoPosition, name).setFlag(flags).setInfo(fieldType);
+      val sym = owner.newValue(name, NoPosition, flags).setInfo(fieldType);
         // TODO: set private within!!! -> look at typechecker/Namers.scala
         (if (field.IsStatic()) staticDefs else instanceDefs).enter(sym);
       clrTypes.fields(sym) = field;
@@ -313,7 +313,7 @@ abstract class TypeParser {
 	    val name: Name = if (gparamsLength == 0) prop.Name else nme.apply;
 	    val flags = translateAttributes(getter);
 	    val owner: Symbol = if (getter.IsStatic) statics else clazz;
-	    val methodSym = owner.newMethod(NoPosition, name).setFlag(flags)
+            val methodSym = owner.newMethod(name, NoPosition, flags)
       val mtype: Type = if (gparamsLength == 0) NullaryMethodType(propType) // .NET properties can't be polymorphic
                         else methodType(getter, getter.ReturnType)(methodSym)
         methodSym.setInfo(mtype);
@@ -337,7 +337,7 @@ abstract class TypeParser {
 	    val flags = translateAttributes(setter);
 	    val mtype = methodType(setter, definitions.UnitClass.tpe);
 	    val owner: Symbol = if (setter.IsStatic) statics else clazz;
-	    val methodSym = owner.newMethod(NoPosition, name).setFlag(flags)
+            val methodSym = owner.newMethod(name, NoPosition, flags)
         methodSym.setInfo(mtype(methodSym))
 	    methodSym.setFlag(Flags.ACCESSOR);
 	    (if (setter.IsStatic) staticDefs else instanceDefs).enter(methodSym);
@@ -424,14 +424,14 @@ abstract class TypeParser {
 
       val flags = Flags.JAVA | Flags.FINAL
       for (cmpName <- ENUM_CMP_NAMES) {
-        val enumCmp = clazz.newMethod(NoPosition, cmpName)
+        val enumCmp = clazz.newMethod(cmpName)
         val enumCmpType = JavaMethodType(enumCmp.newSyntheticValueParams(List(clazz.tpe)), definitions.BooleanClass.tpe)
         enumCmp.setFlag(flags).setInfo(enumCmpType)
         instanceDefs.enter(enumCmp)
       }
 
       for (bitLogName <- ENUM_BIT_LOG_NAMES) {
-        val enumBitLog = clazz.newMethod(NoPosition, bitLogName)
+        val enumBitLog = clazz.newMethod(bitLogName)
         val enumBitLogType = JavaMethodType(enumBitLog.newSyntheticValueParams(List(clazz.tpe)), clazz.tpe /* was classInfo, infinite typer */)
         enumBitLog.setFlag(flags).setInfo(enumBitLogType)
         instanceDefs.enter(enumBitLog)
@@ -469,7 +469,7 @@ abstract class TypeParser {
 
     val flags = translateAttributes(method);
     val owner = if (method.IsStatic()) statics else clazz;
-    val methodSym = owner.newMethod(NoPosition, getName(method)).setFlag(flags)
+    val methodSym = owner.newMethod(getName(method), NoPosition, flags)
     /* START CLR generics (snippet 3) */
     val newMethodTParams = populateMethodTParams(method, methodSym)
     /* END CLR generics (snippet 3) */
@@ -480,7 +480,7 @@ abstract class TypeParser {
     val mtype = methodType(method, rettype);
     if (mtype == null) return;
 /* START CLR generics (snippet 4) */
-    val mInfo = if (method.IsGeneric) polyType(newMethodTParams, mtype(methodSym))
+    val mInfo = if (method.IsGeneric) genPolyType(newMethodTParams, mtype(methodSym))
                 else mtype(methodSym)
 /* END CLR generics (snippet 4) */
 /* START CLR non-generics (snippet 4)
@@ -500,7 +500,7 @@ abstract class TypeParser {
   }
 
   private def createMethod(name: Name, flags: Long, mtype: Symbol => Type, method: MethodInfo, statik: Boolean): Symbol = {
-    val methodSym: Symbol = (if (statik)  statics else clazz).newMethod(NoPosition, name)
+    val methodSym: Symbol = (if (statik)  statics else clazz).newMethod(name)
     methodSym.setFlag(flags).setInfo(mtype(methodSym))
     (if (statik) staticDefs else instanceDefs).enter(methodSym)
     if (method != null)

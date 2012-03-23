@@ -1041,8 +1041,8 @@ trait Types extends api.Types { self: SymbolTable =>
         baseClasses.head.newOverloaded(this, members.toList)
       }
     }
-    /** The existential skolems and existentially quantified variables which are free in this type */
-    def existentialSkolems: List[Symbol] = {
+    /** The (existential or otherwise) skolems and existentially quantified variables which are free in this type */
+    def skolemsExceptMethodTypeParams: List[Symbol] = {
       var boundSyms: List[Symbol] = List()
       var skolems: List[Symbol] = List()
       for (t <- this) {
@@ -1050,7 +1050,8 @@ trait Types extends api.Types { self: SymbolTable =>
           case ExistentialType(quantified, qtpe) =>
             boundSyms = boundSyms ::: quantified
           case TypeRef(_, sym, _) =>
-            if ((sym hasFlag EXISTENTIAL) && !(boundSyms contains sym) && !(skolems contains sym))
+            if ((sym.isExistentialSkolem || sym.isGADTSkolem) && // treat GADT skolems like existential skolems
+                !((boundSyms contains sym) || (skolems contains sym)))
               skolems = sym :: skolems
           case _ =>
         }
@@ -1336,9 +1337,14 @@ trait Types extends api.Types { self: SymbolTable =>
       case TypeBounds(_, _) => that <:< this
       case _                => lo <:< that && that <:< hi
     }
-    def isEmptyBounds = (lo.typeSymbolDirect eq NothingClass) && (hi.typeSymbolDirect eq AnyClass)
+    private def lowerString = if (emptyLowerBound) "" else " >: " + lo
+    private def upperString = if (emptyUpperBound) "" else " <: " + hi
+    private def emptyLowerBound = lo.typeSymbolDirect eq NothingClass
+    private def emptyUpperBound = hi.typeSymbolDirect eq AnyClass
+    def isEmptyBounds = emptyLowerBound && emptyUpperBound
+
     // override def isNullable: Boolean = NullClass.tpe <:< lo;
-    override def safeToString = ">: " + lo + " <: " + hi
+    override def safeToString = lowerString + upperString
     override def kind = "TypeBoundsType"
   }
 
@@ -2616,15 +2622,6 @@ trait Types extends api.Types { self: SymbolTable =>
     }
   }
 
-  // TODO: I don't really know why this happens -- maybe because
-  // the owner hierarchy changes? the other workaround (besides
-  // repackExistential) is to explicitly pass expectedTp as the type
-  // argument for the call to guard, but repacking the existential
-  // somehow feels more robust
-  //
-  // TODO: check if optimization makes a difference, try something else
-  // if necessary (cache?)
-
   /** Repack existential types, otherwise they sometimes get unpacked in the
    *  wrong location (type inference comes up with an unexpected skolem)
    */
@@ -3329,16 +3326,18 @@ trait Types extends api.Types { self: SymbolTable =>
    *  may or may not be poly? (It filched the standard "canonical creator" name.)
    */
   object GenPolyType {
-    def apply(tparams: List[Symbol], tpe: Type): Type =
-    if (tparams nonEmpty) typeFun(tparams, tpe)
-    else tpe // it's okay to be forgiving here
+    def apply(tparams: List[Symbol], tpe: Type): Type = (
+      if (tparams nonEmpty) typeFun(tparams, tpe)
+      else tpe // it's okay to be forgiving here
+    )
     def unapply(tpe: Type): Option[(List[Symbol], Type)] = tpe match {
-      case PolyType(tparams, restpe) => Some(tparams, restpe)
-      case _ => Some(List(), tpe)
+      case PolyType(tparams, restpe) => Some((tparams, restpe))
+      case _                         => Some((Nil, tpe))
     }
   }
+  def genPolyType(params: List[Symbol], tpe: Type): Type = GenPolyType(params, tpe)
 
-  @deprecated("use GenPolyType(...) instead")
+  @deprecated("use genPolyType(...) instead", "2.10.0")
   def polyType(params: List[Symbol], tpe: Type): Type = GenPolyType(params, tpe)
 
   /** A creator for anonymous type functions, where the symbol for the type function still needs to be created.

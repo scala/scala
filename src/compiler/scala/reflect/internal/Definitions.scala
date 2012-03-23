@@ -764,8 +764,24 @@ trait Definitions extends reflect.api.StandardDefinitions {
       else
         removeRedundantObjects(parents)
     }
+
+    def typeStringNoPackage(tp: Type) =
+      "" + tp stripPrefix tp.typeSymbol.enclosingPackage.fullName + "."
+
+    def briefParentsString(parents: List[Type]) =
+      normalizedParents(parents) map typeStringNoPackage mkString " with "
+
     def parentsString(parents: List[Type]) =
       normalizedParents(parents) mkString " with "
+
+    def typeParamsString(tp: Type) = tp match {
+      case PolyType(tparams, _) => tparams map (_.defString) mkString ("[", ",", "]")
+      case _                    => ""
+    }
+    def valueParamsString(tp: Type) = tp match {
+      case MethodType(params, _) => params map (_.defString) mkString ("(", ",", ")")
+      case _                     => ""
+    }
 
     // members of class java.lang.{ Object, String }
     lazy val Object_## = enterNewMethod(ObjectClass, nme.HASHHASH, Nil, inttype, FINAL)
@@ -970,7 +986,7 @@ trait Definitions extends reflect.api.StandardDefinitions {
         case (_, restpe)             => NullaryMethodType(restpe)
       }
 
-      msym setInfoAndEnter polyType(tparams, mtpe)
+      msym setInfoAndEnter genPolyType(tparams, mtpe)
     }
 
     /** T1 means one type parameter.

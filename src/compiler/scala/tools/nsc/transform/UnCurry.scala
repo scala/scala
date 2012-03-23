@@ -168,7 +168,7 @@ abstract class UnCurry extends InfoTransform
     private def nonLocalReturnTry(body: Tree, key: Symbol, meth: Symbol) = {
       localTyper typed {
         val extpe   = nonLocalReturnExceptionType(meth.tpe.finalResultType)
-        val ex      = meth.newValue(body.pos, nme.ex) setInfo extpe
+        val ex      = meth.newValue(nme.ex, body.pos) setInfo extpe
         val pat     = gen.mkBindForCase(ex, NonLocalReturnControlClass, List(meth.tpe.finalResultType))
         val rhs = (
           IF   ((ex DOT nme.key)() OBJ_EQ Ident(key))
@@ -237,8 +237,10 @@ abstract class UnCurry extends InfoTransform
       def targs = fun.tpe.typeArgs
       def isPartial = fun.tpe.typeSymbol == PartialFunctionClass
 
+      // if the function was eta-expanded, it's not a match without a selector
       if (fun1 ne fun) fun1
       else {
+        assert(!(opt.virtPatmat && isPartial)) // empty-selector matches have already been translated into instantiations of anonymous (partial) functions
         val (formals, restpe) = (targs.init, targs.last)
         val anonClass = owner.newAnonymousFunctionClass(fun.pos, inConstructorFlag)
         def parents =
@@ -286,52 +288,54 @@ abstract class UnCurry extends InfoTransform
 
               def defaultCase = CaseDef(Ident(nme.WILDCARD), EmptyTree, Literal(Constant(false)))
 
-              val casesNoSynthCatchAll = dropSyntheticCatchAll(cases)
+//              val casesNoSynthCatchAll = dropSyntheticCatchAll(cases)
 
               gen.mkUncheckedMatch(
-                if (casesNoSynthCatchAll exists treeInfo.isDefaultCase) Literal(Constant(true))
-                else substTree(wrap(Match(selector, (casesNoSynthCatchAll map transformCase) :+ defaultCase)).duplicate)
+                if (cases exists treeInfo.isDefaultCase) Literal(Constant(true))
+                else substTree(wrap(Match(selector, (cases map transformCase) :+ defaultCase)).duplicate)
               )
             }
 
-            override def caseVirtualizedMatch(orig: Tree, _match: Tree, targs: List[Tree], scrut: Tree, matcher: Tree): Tree = {
-              object noOne extends Transformer {
-                override val treeCopy = newStrictTreeCopier // must duplicate everything
-                val one = _match.tpe member newTermName("one")
-                override def transform(tree: Tree): Tree = tree match {
-                  case Apply(fun, List(a)) if fun.symbol == one =>
-                    // blow one's argument away since all we want to know is whether the match succeeds or not
-                    // (the alternative, making `one` CBN, would entail moving away from Option)
-                    Apply(fun.duplicate, List(gen.mkZeroContravariantAfterTyper(a.tpe)))
-                  case _ =>
-                    super.transform(tree)
-                }
-              }
-              substTree(Apply(Apply(TypeApply(Select(_match.duplicate, _match.tpe.member(newTermName("isSuccess"))), targs map (_.duplicate)), List(scrut.duplicate)), List(noOne.transform(matcher))))
-            }
+            override def caseVirtualizedMatch(orig: Tree, _match: Tree, targs: List[Tree], scrut: Tree, matcher: Tree): Tree = {assert(false); orig}
+            // {
+            //   object noOne extends Transformer {
+            //     override val treeCopy = newStrictTreeCopier // must duplicate everything
+            //     val one = _match.tpe member newTermName("one")
+            //     override def transform(tree: Tree): Tree = tree match {
+            //       case Apply(fun, List(a)) if fun.symbol == one =>
+            //         // blow one's argument away since all we want to know is whether the match succeeds or not
+            //         // (the alternative, making `one` CBN, would entail moving away from Option)
+            //         Apply(fun.duplicate, List(gen.mkZeroContravariantAfterTyper(a.tpe)))
+            //       case _ =>
+            //         super.transform(tree)
+            //     }
+            //   }
+            //   substTree(Apply(Apply(TypeApply(Select(_match.duplicate, _match.tpe.member(newTermName("isSuccess"))), targs map (_.duplicate)), List(scrut.duplicate)), List(noOne.transform(matcher))))
+            // }
 
-            override def caseVirtualizedMatchOpt(orig: Tree, zero: ValDef, x: ValDef, matchRes: ValDef, keepGoing: ValDef, stats: List[Tree], epilogue: Tree, wrap: Tree => Tree) = {
-              object dropMatchResAssign extends Transformer {
-                // override val treeCopy = newStrictTreeCopier // will duplicate below
-                override def transform(tree: Tree): Tree = tree match {
-                  // don't compute the result of the match -- remove the block for the RHS (emitted by pmgen.one), except for the assignment to keepGoing
-                  case gen.VirtualCaseDef(assignKeepGoing, matchRes, zero) if assignKeepGoing.lhs.symbol eq keepGoing.symbol =>
-                    Block(List(assignKeepGoing), zero)
-                  case _ =>
-                    super.transform(tree)
-                }
-              }
-              val statsNoMatchRes: List[Tree] = stats map (dropMatchResAssign.transform) toList
-              val idaBlock = wrap(Block(
-                zero ::
-                x ::
-                /* drop matchRes def */
-                keepGoing ::
-                statsNoMatchRes,
-                NOT(REF(keepGoing.symbol)) // replace `if (keepGoing) throw new MatchError(...) else matchRes` epilogue by `!keepGoing`
-              ))
-              substTree(idaBlock.duplicate) // duplicate on block as a whole to ensure valdefs are properly cloned and substed
-            }
+            override def caseVirtualizedMatchOpt(orig: Tree, zero: ValDef, x: ValDef, matchRes: ValDef, keepGoing: ValDef, stats: List[Tree], epilogue: Tree, wrap: Tree => Tree) = {assert(false); orig}
+            // {
+            //   object dropMatchResAssign extends Transformer {
+            //     // override val treeCopy = newStrictTreeCopier // will duplicate below
+            //     override def transform(tree: Tree): Tree = tree match {
+            //       // don't compute the result of the match -- remove the block for the RHS (emitted by pmgen.one), except for the assignment to keepGoing
+            //       case gen.VirtualCaseDef(assignKeepGoing, matchRes, zero) if assignKeepGoing.lhs.symbol eq keepGoing.symbol =>
+            //         Block(List(assignKeepGoing), zero)
+            //       case _ =>
+            //         super.transform(tree)
+            //     }
+            //   }
+            //   val statsNoMatchRes: List[Tree] = stats map (dropMatchResAssign.transform) toList
+            //   val idaBlock = wrap(Block(
+            //     zero ::
+            //     x ::
+            //     /* drop matchRes def */
+            //     keepGoing ::
+            //     statsNoMatchRes,
+            //     NOT(REF(keepGoing.symbol)) // replace `if (keepGoing) throw new MatchError(...) else matchRes` epilogue by `!keepGoing`
+            //   ))
+            //   substTree(idaBlock.duplicate) // duplicate on block as a whole to ensure valdefs are properly cloned and substed
+            // }
           }
 
           DefDef(m, isDefinedAtTransformer(fun.body))

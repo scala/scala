@@ -83,6 +83,7 @@ class ConsoleFileManager extends FileManager {
 
       latestFile        = testClassesDir.parent / "bin"
       latestLibFile     = testClassesDir / "library"
+      latestActorsFile  = testClassesDir / "library" / "actors"
       latestCompFile    = testClassesDir / "compiler"
       latestPartestFile = testClassesDir / "partest"
       latestFjbgFile    = testParent / "lib" / "fjbg.jar"
@@ -92,6 +93,7 @@ class ConsoleFileManager extends FileManager {
       NestUI.verbose("Running on "+dir)
       latestFile        = dir / "bin"
       latestLibFile     = dir / "lib/scala-library.jar"
+      latestActorsFile  = dir / "lib/scala-actors.jar"
       latestCompFile    = dir / "lib/scala-compiler.jar"
       latestPartestFile = dir / "lib/scala-partest.jar"
     }
@@ -100,6 +102,7 @@ class ConsoleFileManager extends FileManager {
         NestUI.verbose("Running build/quick")
         latestFile        = prefixFile("build/quick/bin")
         latestLibFile     = prefixFile("build/quick/classes/library")
+        latestActorsFile  = prefixFile("build/quick/classes/library/actors")
         latestCompFile    = prefixFile("build/quick/classes/compiler")
         latestPartestFile = prefixFile("build/quick/classes/partest")
       }
@@ -109,6 +112,7 @@ class ConsoleFileManager extends FileManager {
         val p = testParent.getParentFile
         latestFile        = prefixFileWith(p, "bin")
         latestLibFile     = prefixFileWith(p, "lib/scala-library.jar")
+        latestActorsFile  = prefixFileWith(p, "lib/scala-actors.jar")
         latestCompFile    = prefixFileWith(p, "lib/scala-compiler.jar")
         latestPartestFile = prefixFileWith(p, "lib/scala-partest.jar")
       }
@@ -117,6 +121,7 @@ class ConsoleFileManager extends FileManager {
         NestUI.verbose("Running dists/latest")
         latestFile        = prefixFile("dists/latest/bin")
         latestLibFile     = prefixFile("dists/latest/lib/scala-library.jar")
+        latestActorsFile  = prefixFile("dists/latest/lib/scala-actors.jar")
         latestCompFile    = prefixFile("dists/latest/lib/scala-compiler.jar")
         latestPartestFile = prefixFile("dists/latest/lib/scala-partest.jar")
       }
@@ -125,6 +130,7 @@ class ConsoleFileManager extends FileManager {
         NestUI.verbose("Running build/pack")
         latestFile        = prefixFile("build/pack/bin")
         latestLibFile     = prefixFile("build/pack/lib/scala-library.jar")
+        latestActorsFile  = prefixFile("build/pack/lib/scala-actors.jar")
         latestCompFile    = prefixFile("build/pack/lib/scala-compiler.jar")
         latestPartestFile = prefixFile("build/pack/lib/scala-partest.jar")
       }
@@ -159,14 +165,17 @@ class ConsoleFileManager extends FileManager {
     LATEST_LIB = latestLibFile.getAbsolutePath
     LATEST_COMP = latestCompFile.getAbsolutePath
     LATEST_PARTEST = latestPartestFile.getAbsolutePath
+    LATEST_ACTORS = latestActorsFile.getAbsolutePath
   }
 
   var LATEST_LIB: String = ""
   var LATEST_COMP: String = ""
   var LATEST_PARTEST: String = ""
+  var LATEST_ACTORS: String = ""
 
   var latestFile: File = _
   var latestLibFile: File = _
+  var latestActorsFile: File = _
   var latestCompFile: File = _
   var latestPartestFile: File = _
   var latestFjbgFile: File = _

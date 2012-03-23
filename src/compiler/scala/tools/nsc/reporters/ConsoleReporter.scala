@@ -8,7 +8,7 @@ package reporters
 
 import java.io.{ BufferedReader, IOException, PrintWriter }
 import util._
-import scala.tools.util.StringOps.countElementsAsString
+import scala.tools.util.StringOps
 
 /**
  * This class implements a Reporter that displays messages on a text
@@ -40,7 +40,7 @@ class ConsoleReporter(val settings: Settings, reader: BufferedReader, writer: Pr
    *  @return         ...
    */
   private def getCountString(severity: Severity): String =
-    countElementsAsString((severity).count, label(severity))
+    StringOps.countElementsAsString((severity).count, label(severity))
 
   /** Prints the message. */
   def printMessage(msg: String) { writer.print(msg + "\n"); writer.flush() }

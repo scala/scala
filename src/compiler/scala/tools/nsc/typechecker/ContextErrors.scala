@@ -684,7 +684,7 @@ trait ContextErrors {
         def errMsg = {
           val location = if (sym.isClassConstructor) owner0 else pre.widen
 
-          underlying(sym).fullLocationString + " cannot be accessed in " +
+          underlyingSymbol(sym).fullLocationString + " cannot be accessed in " +
           location + explanation
         }
         NormalTypeError(tree, errMsg, ErrorKinds.Access)

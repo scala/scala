@@ -5,7 +5,20 @@ class TestPos {
   def unwrap[T](x: AbsWrapperCov[T]): T = x match {
     case Wrapper/*[_ <: T ]*/(x) => x // _ <: T, which is a subtype of T
   }
+
+  def unwrapOption[T](x: Option[T]): T = x match {
+    case Some(xs) => xs
+  }
+
+
+  case class Down[+T](x: T)
+  case class Up[-T](f: T => Unit)
+
+  def f1[T](x1: Down[T])(x2: Up[T]) = ((x1, x2)) match {
+    case (Down(x), Up(f)) => f(x)
+  }
 }
+
 
 object TestNeg extends App {
   class AbsWrapperCov[+A]
@@ -33,6 +46,11 @@ object TestNeg extends App {
   // val w = new Wrapped(new A)
   // unwrap[Any](Wrapper(w)).cell = new B
   // w.cell.imNotAB
+
+  def unwrapOption[T](x: Option[T]): T = x match {
+    case Some(xs) => xs.foo // the error message should not refer to a skolem (testing extrapolation)
+  }
+
 }
 
 // class TestPos1 {

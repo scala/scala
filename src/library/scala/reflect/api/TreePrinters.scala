@@ -41,7 +41,7 @@ trait TreePrinters { self: Universe =>
         else if (tree.original != null)
           print(".setOriginal(", tree.original, ")")
       case tree: Tree =>
-        print(tree.productPrefix+"(")
+        print(tree.printingPrefix+"(")
         val it = tree.productIterator
         while (it.hasNext) {
           it.next() match {

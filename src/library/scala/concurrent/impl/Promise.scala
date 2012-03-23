@@ -14,7 +14,7 @@ import java.util.concurrent.TimeUnit.{ NANOSECONDS, MILLISECONDS }
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater
 import scala.concurrent.{Awaitable, ExecutionContext, resolve, resolver, blocking, CanAwait, TimeoutException}
 //import scala.util.continuations._
-import scala.util.Duration
+import scala.concurrent.util.Duration
 import scala.util.Try
 import scala.util
 import scala.annotation.tailrec

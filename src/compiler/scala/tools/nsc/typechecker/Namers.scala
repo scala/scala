@@ -665,6 +665,10 @@ trait Namers extends MethodSynthesis {
           "If possible, define " + tree.symbol + " in " + owner.skipPackageObject + " instead."
         )
       }
+      
+      // Suggested location only.
+      if (mods.isImplicit)
+        enterImplicitClass(tree)
     }
 
     // this logic is needed in case typer was interrupted half

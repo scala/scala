@@ -34,7 +34,7 @@ case class ! [a](ch: Channel[a], msg: a)
  * @define actor channel
  * @define channel channel
  */
-class Channel[Msg](val receiver: Actor) extends InputChannel[Msg] with OutputChannel[Msg] with CanReply[Msg, Any] {
+class Channel[Msg](val receiver: InternalActor) extends InputChannel[Msg] with OutputChannel[Msg] with CanReply[Msg, Any] {
 
   type Future[+P] = scala.actors.Future[P]
 

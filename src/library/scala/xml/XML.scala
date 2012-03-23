@@ -15,8 +15,7 @@ import java.io.{ InputStream, Reader, StringReader, Writer }
 import java.nio.channels.Channels
 import scala.util.control.Exception.ultimately
 
-object Source
-{
+object Source {
   def fromFile(file: File)              = new InputSource(new FileInputStream(file))
   def fromFile(fd: FileDescriptor)      = new InputSource(new FileInputStream(fd))
   def fromFile(name: String)            = new InputSource(new FileInputStream(name))
@@ -31,13 +30,18 @@ object Source
  * Governs how empty elements (i.e. those without child elements) should be serialized.
  */
 object MinimizeMode extends Enumeration {
-  /** Minimize empty tags if they were originally empty when parsed, or if they were constructed with [[scala.xml.Elem]]`#minimizeEmpty` == true */
+  /** Minimize empty tags if they were originally empty when parsed, or if they were constructed
+   *  with [[scala.xml.Elem]]`#minimizeEmpty` == true
+   */
   val Default = Value
 
-  /** Always minimize empty tags.  Note that this may be problematic for XHTML, in which case [[scala.xml.Xhtml]]`#toXhtml` should be used instead. */
+  /** Always minimize empty tags.  Note that this may be problematic for XHTML, in which
+   * case [[scala.xml.Xhtml]]`#toXhtml` should be used instead.
+   */
   val Always = Value
 
-  /** Never minimize empty tags. */
+  /** Never minimize empty tags.
+   */
   val Never = Value
 }
 
@@ -50,8 +54,7 @@ import Source._
  *  @author  Burak Emir
  *  @version 1.0, 25/04/2005
  */
-object XML extends XMLLoader[Elem]
-{
+object XML extends XMLLoader[Elem] {
   val xml       = "xml"
   val xmlns     = "xmlns"
   val namespace = "http://www.w3.org/XML/1998/namespace"

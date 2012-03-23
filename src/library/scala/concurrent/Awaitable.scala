@@ -11,7 +11,7 @@ package scala.concurrent
 
 
 import scala.annotation.implicitNotFound
-import scala.util.Duration
+import scala.concurrent.util.Duration
 
 
 

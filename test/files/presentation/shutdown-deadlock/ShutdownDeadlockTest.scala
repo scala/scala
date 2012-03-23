@@ -20,7 +20,7 @@ object Test extends InteractiveTest {
 		} 
 
 		for ((j, i) <- jobs1.zipWithIndex) {
-			j.get(5000) match {
+			j.get(40000) match {
 				case None => 
 					println(i + ": TIMEOUT")
 					exit(1) // no need to delay the test any longer

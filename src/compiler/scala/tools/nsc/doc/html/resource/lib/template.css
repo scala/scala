@@ -340,6 +340,30 @@ div.members > ol > li:last-child {
   color: darkgreen;
 }
 
+.full-signature-usecase h4 span {
+  font-size: 10pt;
+}
+
+.full-signature-usecase > #signature {
+  padding-top: 0px;
+}
+
+#template .full-signature-usecase > .signature.closed {
+  background: none;
+}
+
+#template .full-signature-usecase > .signature.opened {
+  background: none;
+}
+
+.full-signature-block {
+  padding: 5px 0 0;
+  border-top: 1px solid #EBEBEB;
+  margin-top: 5px;
+  margin-bottom: 5px;
+}
+
+
 /* Comments text formating */
 
 .cmt {}

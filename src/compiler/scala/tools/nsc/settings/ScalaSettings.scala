@@ -204,4 +204,7 @@ trait ScalaSettings extends AbsScalaSettings
    */
   val pluginOptions = MultiStringSetting("-P", "plugin:opt", "Pass an option to a plugin") .
                         withHelpSyntax("-P:<plugin>:<opt>")
+
+  /** Test whether this is scaladoc we're looking at */
+  def isScaladoc = false
 }

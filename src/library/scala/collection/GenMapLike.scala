@@ -41,6 +41,8 @@ trait GenMapLike[A, +B, +Repr] extends GenIterableLike[(A, B), Repr] with Equals
    *   @return  the value associated with `key` if it exists,
    *            otherwise the result of the `default` computation.
    *   @usecase def getOrElse(key: A, default: => B): B
+   *     @inheritdoc
+   *     @tparam  B        the result type of the default computation.
    */
   def getOrElse[B1 >: B](key: A, default: => B1): B1
 
