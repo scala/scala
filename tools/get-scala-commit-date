@@ -11,6 +11,7 @@
 [[ $# -eq 0 ]] || cd "$1"
 
 lastcommitdate=$(git log --format="%ci" HEAD | head -n 1 | cut -d ' ' -f 1)
+lastcommithours=$(git log --format="%ci" HEAD | head -n 1 | cut -d ' ' -f 2)
 
 # 20120324
-echo "${lastcommitdate//-/}"
+echo "${lastcommitdate//-/}-${lastcommithours//:/}"
