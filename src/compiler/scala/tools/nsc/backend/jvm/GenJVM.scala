@@ -739,7 +739,7 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
             clasz.cunit.warning(sym.pos,
                 """|compiler bug: created invalid generic signature for %s in %s
                    |signature: %s
-                   |if this is reproducible, please report bug at http://lampsvn.epfl.ch/trac/scala
+                   |if this is reproducible, please report bug at https://issues.scala-lang.org/
                 """.trim.stripMargin.format(sym, sym.owner.skipPackageObject.fullName, sig))
             return
           }
@@ -753,7 +753,7 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
                      |original type: %s
                      |normalized type: %s
                      |erasure type: %s
-                     |if this is reproducible, please report bug at http://lampsvn.epfl.ch/trac/scala
+                     |if this is reproducible, please report bug at https://issues.scala-lang.org/
                   """.trim.stripMargin.format(sym, sym.owner.skipPackageObject.fullName, sig, memberTpe, normalizedTpe, bytecodeTpe))
                return
             }
