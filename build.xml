@@ -1539,7 +1539,7 @@ DOCUMENTATION
     <taskdef name="genman"
              classname="scala.tools.docutil.ManMaker"
              classpathref="manual.classpath"/>
-    <genman command="fsc, sbaz, scala, scalac, scaladoc, scalap"
+    <genman command="fsc, scala, scalac, scaladoc, scalap"
             htmlout="${build-docs.dir}/manual/html"
             manout="${build-docs.dir}/manual/genman"/>
     <!-- On Windows source and target files can't be the same ! -->
