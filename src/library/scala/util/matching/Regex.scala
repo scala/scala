@@ -139,7 +139,7 @@ import java.util.regex.{ Pattern, Matcher }
  *  interpreted as a reference to a group in the matched pattern, with numbers
  *  1 through 9 corresponding to the first nine groups, and 0 standing for the
  *  whole match. Any other character is an error. The backslash (`\`) character
- *  will be interpreted as a escape character, and can be used to escape the
+ *  will be interpreted as an escape character, and can be used to escape the
  *  dollar sign. One can use [[scala.util.matching.Regex]]'s `quoteReplacement`
  *  to automatically escape these characters.
  */
@@ -591,7 +591,7 @@ object Regex {
    *
    *  Replacement methods give special meaning to backslashes (`\`) and
    *  dollar signs (`$`) in replacement strings, so they are not treated
-   *  as literals. This methods escapes these characters so the resulting
+   *  as literals. This method escapes these characters so the resulting
    *  string can be used as a literal replacement representing the input
    *  string.
    *
