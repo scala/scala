@@ -258,10 +258,10 @@ trait PatMatVirtualiser extends ast.TreeDSL { self: Analyzer =>
           * @arg patBinder  symbol used to refer to the result of the previous pattern's extractor (will later be replaced by the outer tree with the correct tree to refer to that patterns result)
         */
         def unapply(tree: Tree): Option[(Symbol, Type)] = tree match {
-          case Bound(subpatBinder, typed@Typed(expr, tpt)) => Some((subpatBinder, typed.tpe))
-          case Bind(_, typed@Typed(expr, tpt))             => Some((patBinder, typed.tpe))
-          case Typed(expr, tpt)                            => Some((patBinder, tree.tpe))
-          case _                                           => None
+          case Bound(subpatBinder, typed@Typed(expr, tpt)) if typed.tpe ne null => Some((subpatBinder, typed.tpe))
+          case Bind(_, typed@Typed(expr, tpt))             if typed.tpe ne null => Some((patBinder, typed.tpe))
+          case Typed(expr, tpt)                            if tree.tpe ne null  => Some((patBinder, tree.tpe))
+          case _ => None
         }
       }
 
