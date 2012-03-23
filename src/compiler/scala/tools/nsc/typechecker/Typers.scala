@@ -2134,11 +2134,7 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
 
     def typedCases(cases: List[CaseDef], pattp: Type, pt: Type): List[CaseDef] =
       cases mapConserve { cdef =>
-        val caseTyped = newTyper(context.makeNewScope(cdef, context.owner)).typedCase(cdef, pattp, pt)
-        if (opt.virtPatmat) {
-          val tpPacked  = packedType(caseTyped, context.owner)
-          caseTyped setType tpPacked
-        } else caseTyped
+        newTyper(context.makeNewScope(cdef, context.owner)).typedCase(cdef, pattp, pt)
       }
 
     def adaptCase(cdef: CaseDef, mode: Int, tpe: Type): CaseDef = deriveCaseDef(cdef)(adapt(_, mode, tpe))
@@ -2148,11 +2144,13 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
         case Annotated(Ident(nme.synthSwitch), selector) => (selector, false)
         case s => (s, true)
       }
-      val selector1            = checkDead(typed(selector, EXPRmode | BYVALmode, WildcardType))
-      val selectorTp           = packCaptured(selector1.tpe.widen)
-      val casesTyped           = typedCases(cases, selectorTp, resTp)
-      val (ownType, needAdapt) = if (isFullyDefined(resTp)) (resTp, false) else weakLub(casesTyped map (_.tpe.deconst))
-      val casesAdapted         = if (!needAdapt) casesTyped else casesTyped map (adaptCase(_, mode, ownType))
+      val selector1                = checkDead(typed(selector, EXPRmode | BYVALmode, WildcardType))
+      val selectorTp               = packCaptured(selector1.tpe.widen)
+      val casesTyped               = typedCases(cases, selectorTp, resTp)
+      val caseTypes                = casesTyped map (_.tpe.deconst) //map (c => packedType(c, context.owner).deconst)
+      val (ownType, needAdapt)    = if (isFullyDefined(resTp)) (resTp, false) else weakLub(caseTypes)
+      // val ownType                  = ownType0.skolemizeExistential(context.owner, context.tree)
+      val casesAdapted             = if (!needAdapt) casesTyped else casesTyped map (adaptCase(_, mode, ownType))
       // val (owntype0, needAdapt) = ptOrLub(casesTyped map (x => repackExistential(x.tpe)))
       // val owntype               = elimAnonymousClass(owntype0)
       (selector1, selectorTp, casesAdapted, ownType, doTranslation)
@@ -3540,8 +3538,11 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
           lazy val thenTp = packedType(thenp1, context.owner)
           lazy val elseTp = packedType(elsep1, context.owner)
           val (owntype, needAdapt) =
-            // virtpatmat needs more aggressive unification of skolemized types, but lub is not robust enough --> middle ground
-            if (opt.virtPatmat && !isPastTyper && thenTp =:= elseTp) (thenTp, true) // this breaks src/library/scala/collection/immutable/TrieIterator.scala
+            // in principle we should pack the types of each branch before lubbing, but lub doesn't really work for existentials anyway
+            // in the special (though common) case where the types are equal, it pays to pack before comparing
+            // especially virtpatmat needs more aggressive unification of skolemized types
+            // this breaks src/library/scala/collection/immutable/TrieIterator.scala
+            if (opt.virtPatmat && !isPastTyper && thenTp =:= elseTp) (thenp1.tpe, true) // use unpacked type
             // TODO: skolemize (lub of packed types) when that no longer crashes on files/pos/t4070b.scala
             else ptOrLub(List(thenp1.tpe, elsep1.tpe))
 
