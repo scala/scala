@@ -2,8 +2,7 @@
 Scala Software Distributions
 ----------------------------
 
-- scala-<major>.<minor>.<patch>.tar.bz2     Unix distribution
-- scala-<major>.<minor>.<patch>.tar.gz      Unix distribution
+- scala-<major>.<minor>.<patch>.tgz         Unix distribution
 - scala-<major>.<minor>.<patch>.zip         Windows distribution
 
 The standard distributions require Java 1.5 or above. If you don't
@@ -32,15 +31,10 @@ directly accessible.
 
 You may test the distribution by running the following commands:
 
-$ ./bin/sbaz install scala-devel-docs
-$ ./bin/scalac doc/scala-devel-docs/examples/sort.scala
-$ ./bin/scala examples.sort
-[6,2,8,5,1]
-[1,2,5,6,8]
 $ ./bin/scala
-scala> examples.sort.main(null)
-[6,2,8,5,1]
-[1,2,5,6,8]
+scala> Array(4,3,2,1).sorted
+res0: Array[Int] = Array(1, 2, 3, 4)
+
 scala>:quit
 $
 
