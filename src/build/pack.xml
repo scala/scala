@@ -78,6 +78,7 @@ MAIN DISTRIBUTION PACKAGING
         <exclude name="logs/**"/>
         <exclude name="sandbox/**"/>
         <exclude name="test/partest"/>
+        <exclude name=".git"/>
       </tarfileset>
       <tarfileset dir="${basedir}" prefix="${dist.name}-sources" filemode="755">
         <include name="test/partest"/>
