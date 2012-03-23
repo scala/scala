@@ -199,13 +199,13 @@ class Regex(regex: String, groupNames: String*) extends Serializable {
    *
    *  @param source The text to match against.
    *  @return       A [[scala.collection.Iterator]] of [[scala.util.matching.Regex.Match]] for all matches.
-   *  @example      {{{for (words <- """\w+""".r findAllIn "A simple example.") yield words.start}}}
+   *  @example      {{{for (words <- """\w+""".r findAllMatchIn "A simple example.") yield words.start}}}
    */
-  def findAllMatchIn(source: java.lang.CharSequence): Iterator[MatchData] = {
+  def findAllMatchIn(source: java.lang.CharSequence): Iterator[Match] = {
     val matchIterator = findAllIn(source)
-    new Iterator[MatchData] {
+    new Iterator[Match] {
       def hasNext = matchIterator.hasNext
-      def next = {
+      def next: Match = {
         matchIterator.next;
         new Match(matchIterator.source, matchIterator.matcher, matchIterator.groupNames).force
       }
