@@ -407,6 +407,103 @@ abstract class Erasure extends AddInterfaces
     }
   }
 
+  class ComputeBridges(owner: Symbol) {
+    assert(phase == currentRun.erasurePhase, phase)
+
+    var toBeRemoved  = immutable.Set[Symbol]()
+    val site         = owner.thisType
+    val bridgesScope = newScope
+    val bridgeTarget = mutable.HashMap[Symbol, Symbol]()
+    var bridges      = List[Tree]()
+
+    val opc = beforeExplicitOuter {
+      new overridingPairs.Cursor(owner) {
+        override def parents              = List(owner.info.firstParent)
+        override def exclude(sym: Symbol) = !sym.isMethod || sym.isPrivate || super.exclude(sym)
+      }
+    }
+
+    def compute(): (List[Tree], immutable.Set[Symbol]) = {
+      while (opc.hasNext) {
+        val member = opc.overriding
+        val other  = opc.overridden
+        //println("bridge? " + member + ":" + member.tpe + member.locationString + " to " + other + ":" + other.tpe + other.locationString)//DEBUG
+        if (beforeExplicitOuter(!member.isDeferred))
+          checkPair(member, other)
+
+        opc.next
+      }
+      (bridges, toBeRemoved)
+    }
+
+    def checkPair(member: Symbol, other: Symbol) {
+      val otpe = erasure(owner)(other.tpe)
+      val bridgeNeeded = afterErasure (
+        !(other.tpe =:= member.tpe) &&
+        !(deconstMap(other.tpe) =:= deconstMap(member.tpe)) &&
+        { var e = bridgesScope.lookupEntry(member.name)
+          while ((e ne null) && !((e.sym.tpe =:= otpe) && (bridgeTarget(e.sym) == member)))
+            e = bridgesScope.lookupNextEntry(e)
+          (e eq null)
+        }
+      )
+      if (!bridgeNeeded)
+        return
+
+      val newFlags = (member.flags | BRIDGE) & ~(ACCESSOR | DEFERRED | LAZY | lateDEFERRED)
+      val bridge   = other.cloneSymbolImpl(owner, newFlags) setPos owner.pos
+
+      debuglog("generating bridge from %s (%s): %s to %s: %s".format(
+        other, flagsToString(newFlags),
+        otpe + other.locationString, member,
+        erasure(owner)(member.tpe) + member.locationString)
+      )
+
+      // the parameter symbols need to have the new owner
+      bridge setInfo (otpe cloneInfo bridge)
+      bridgeTarget(bridge) = member
+      afterErasure(owner.info.decls enter bridge)
+      if (other.owner == owner) {
+        afterErasure(owner.info.decls.unlink(other))
+        toBeRemoved += other
+      }
+      bridgesScope enter bridge
+      bridges ::= makeBridgeDefDef(bridge, member, other)
+    }
+
+    def makeBridgeDefDef(bridge: Symbol, member: Symbol, other: Symbol) = afterErasure {
+      // type checking ensures we can safely call `other`, but unless `member.tpe <:< other.tpe`,
+      // calling `member` is not guaranteed to succeed in general, there's
+      // nothing we can do about this, except for an unapply: when this subtype test fails,
+      // return None without calling `member`
+      //
+      // TODO: should we do this for user-defined unapplies as well?
+      // does the first argument list have exactly one argument -- for user-defined unapplies we can't be sure
+      def maybeWrap(bridgingCall: Tree): Tree = {
+        val canReturnNone = afterErasure(
+              member.isSynthetic
+          && (member.name == nme.unapply || member.name == nme.unapplySeq)
+          && !(member.tpe <:< other.tpe)  // no static guarantees (TODO: is the subtype test ever true?)
+        )
+        if (canReturnNone) {
+          import CODE._
+          val typeTest = gen.mkIsInstanceOf(REF(bridge.firstParam), member.tpe.params.head.tpe)
+          IF (typeTest) THEN bridgingCall ELSE REF(NoneModule)
+        }
+        else bridgingCall
+      }
+      val rhs = member.tpe match {
+        case MethodType(Nil, ConstantType(c)) => Literal(c)
+        case _                                =>
+          val sel: Tree    = Select(This(owner), member)
+          val bridgingCall = (sel /: bridge.paramss)((fun, vparams) => Apply(fun, vparams map Ident))
+
+          maybeWrap(bridgingCall)
+      }
+      atPos(bridge.pos)(DefDef(bridge, rhs))
+    }
+  }
+
   /** The modifier typer which retypes with erased types. */
   class Eraser(_context: Context) extends Typer(_context) {
 
@@ -790,93 +887,10 @@ abstract class Erasure extends AddInterfaces
      *   type of `m1` in the template.
      */
     private def bridgeDefs(owner: Symbol): (List[Tree], immutable.Set[Symbol]) = {
-      var toBeRemoved: immutable.Set[Symbol] = immutable.Set()
-      debuglog("computing bridges for " + owner)//DEBUG
       assert(phase == currentRun.erasurePhase, phase)
-      val site = owner.thisType
-      val bridgesScope = newScope
-      val bridgeTarget = new mutable.HashMap[Symbol, Symbol]
-      var bridges: List[Tree] = List()
-      val opc = beforeExplicitOuter {
-        new overridingPairs.Cursor(owner) {
-          override def parents: List[Type] = List(owner.info.firstParent)
-          override def exclude(sym: Symbol): Boolean =
-            !sym.isMethod || sym.isPrivate || super.exclude(sym)
-        }
-      }
-      while (opc.hasNext) {
-        val member = opc.overriding
-        val other = opc.overridden
-        //println("bridge? " + member + ":" + member.tpe + member.locationString + " to " + other + ":" + other.tpe + other.locationString)//DEBUG
-        if (beforeExplicitOuter(!member.isDeferred)) {
-          val otpe = erasure(owner)(other.tpe)
-          val bridgeNeeded = afterErasure (
-            !(other.tpe =:= member.tpe) &&
-            !(deconstMap(other.tpe) =:= deconstMap(member.tpe)) &&
-            { var e = bridgesScope.lookupEntry(member.name)
-              while ((e ne null) && !((e.sym.tpe =:= otpe) && (bridgeTarget(e.sym) == member)))
-                e = bridgesScope.lookupNextEntry(e)
-              (e eq null)
-            }
-          );
-          if (bridgeNeeded) {
-            val newFlags = (member.flags | BRIDGE) & ~(ACCESSOR | DEFERRED | LAZY | lateDEFERRED)
-            val bridge   = other.cloneSymbolImpl(owner, newFlags) setPos owner.pos
-            // the parameter symbols need to have the new owner
-            bridge.setInfo(otpe.cloneInfo(bridge))
-            bridgeTarget(bridge) = member
-            afterErasure { owner.info.decls.enter(bridge) }
-            if (other.owner == owner) {
-              //println("bridge to same: "+other+other.locationString)//DEBUG
-              afterErasure { owner.info.decls.unlink(other) }
-              toBeRemoved += other
-            }
-            bridgesScope enter bridge
-            bridges =
-              afterErasure {
-                atPos(bridge.pos) {
-                  val bridgeDef =
-                    DefDef(bridge,
-                      member.tpe match {
-                        case MethodType(List(), ConstantType(c)) => Literal(c)
-                        case _ =>
-                          val bridgingCall = (((Select(This(owner), member): Tree) /: bridge.paramss)
-                             ((fun, vparams) => Apply(fun, vparams map Ident)))
-                          // type checking ensures we can safely call `other`, but unless `member.tpe <:< other.tpe`, calling `member` is not guaranteed to succeed
-                          // in general, there's nothing we can do about this, except for an unapply: when this subtype test fails, return None without calling `member`
-                          if (  member.isSynthetic // TODO: should we do this for user-defined unapplies as well?
-                             && ((member.name == nme.unapply) || (member.name == nme.unapplySeq))
-                             // && (bridge.paramss.nonEmpty && bridge.paramss.head.nonEmpty && bridge.paramss.head.tail.isEmpty) // does the first argument list has exactly one argument -- for user-defined unapplies we can't be sure
-                             && !(afterErasure(member.tpe <:< other.tpe))) { // no static guarantees (TODO: is the subtype test ever true?)
-                            import CODE._
-                            val typeTest = gen.mkIsInstanceOf(REF(bridge.firstParam), member.tpe.params.head.tpe, any = true, wrapInApply = true) // any = true since we're before erasure (?), wrapInapply is true since we're after uncurry
-                            // println("unapp type test: "+ typeTest)
-                            IF (typeTest) THEN bridgingCall ELSE REF(NoneModule)
-                          } else bridgingCall
-                      });
-                  debuglog("generating bridge from " + other + "(" + Flags.flagsToString(bridge.flags)  + ")" + ":" + otpe + other.locationString + " to " + member + ":" + erasure(owner)(member.tpe) + member.locationString + " =\n " + bridgeDef);
-                  bridgeDef
-                }
-              } :: bridges
-          }
-        }
-        opc.next
-      }
-      (bridges, toBeRemoved)
+      debuglog("computing bridges for " + owner)
+      new ComputeBridges(owner) compute()
     }
-/*
-      for (bc <- site.baseClasses.tail; other <- bc.info.decls.toList) {
-        if (other.isMethod && !other.isConstructor) {
-          for (member <- site.nonPrivateMember(other.name).alternatives) {
-            if (member != other &&
-                !(member hasFlag DEFERRED) &&
-                (site.memberType(member) matches site.memberType(other)) &&
-                !(site.parents exists (p =>
-                  (p.symbol isSubClass member.owner) && (p.symbol isSubClass other.owner)))) {
-...
-             }
-          }
-*/
 
     def addBridges(stats: List[Tree], base: Symbol): List[Tree] =
       if (base.isTrait) stats
