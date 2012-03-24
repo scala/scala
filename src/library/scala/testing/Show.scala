@@ -11,7 +11,7 @@
 package scala.testing
 
 /** Classes inheriting trait `Show` can test their member methods using the
- *  notattion `meth(arg,,1,,, ..., arg,,n,,)`, where `meth` is the name of
+ *  notation `meth(arg,,1,,, ..., arg,,n,,)`, where `meth` is the name of
  *  the method and `arg,,1,,,...,arg,,n,,` are the arguments.
  *
  *  The only difference to a normal method call is the leading quote

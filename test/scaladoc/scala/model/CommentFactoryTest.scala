@@ -83,6 +83,13 @@ object Test extends Properties("CommentFactory") {
       Chain(List(Text("hello "), Superscript(Text("world"))))
   )
 
+  property("Trac #4361 - ,,...,,") = parse(
+      """
+/**
+ * hello ,,world,, */""",
+      Chain(List(Text("hello "), Subscript(Text("world"))))
+  )
+
   property("Trac #4361 - single ^ symbol") = parse(
       """
 /**
