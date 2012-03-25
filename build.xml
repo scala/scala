@@ -257,13 +257,10 @@ INITIALISATION
     </condition>
     
     <exec osfamily="unix" executable="tools/get-scala-commit-sha" outputproperty="git.commit.sha" failifexecutionfails="false" />
-    <exec osfamily="windows" executable="tools/get-scala-commit-sha.bat" outputproperty="git.commit.sha" failifexecutionfails="false" />
     <exec osfamily="unix" executable="tools/get-scala-commit-date" outputproperty="git.commit.date" failifexecutionfails="false" />
-    <exec osfamily="windows" executable="tools/get-scala-commit-date.bat" outputproperty="git.commit.date" failifexecutionfails="false" />
-    <exec osfamily="unix" executable="tools/get-scala-commit-drift" outputproperty="git.commit.drift" failifexecutionfails="false" />
-    <exec osfamily="windows" executable="tools/get-scala-commit-drift.bat" outputproperty="git.commit.drift" failifexecutionfails="false" />
     <!-- some default in case something went wrong getting the revision -->
-    <property name="git.describe" value="-unknown-"/>
+    <property name="git.commit.sha" value="unknown"/>
+    <property name="git.commit.date" value="unknown"/>
 
     <property name="init.avail" value="yes"/>
 
@@ -273,7 +270,7 @@ INITIALISATION
       value="${version.major}.${version.minor}.${version.patch}${version.suffix}${maven.version.suffix}"/>
     <property
       name="version.number"
-      value="${maven.version.number}-${git.commit.date}-${git.commit.drift}-${git.commit.sha}"/>
+      value="${version.major}.${version.minor}.${version.patch}${version.suffix}-${git.commit.date}-${git.commit.sha}"/>
     <property
       name="osgi.version.number"
       value="${version.major}.${version.minor}.${version.patch}.v${git.commit.date}${version.suffix}-${git.commit.sha}"/>
@@ -307,6 +304,8 @@ INITIALISATION
     <echo message="        java args: ${env.ANT_OPTS} ${jvm.opts}" />
     <echo message="       javac args: ${javac.args}" />
     <echo message="      scalac args: ${scalac.args}" />
+    <echo message="         git date: ${git.commit.date}" />
+    <echo message="         git hash: ${git.commit.sha}" />
     <echo message="    maven version: ${maven.version.number}"/>
     <echo message="     OSGi version: ${osgi.version.number}" />
     <echo message="canonical version: ${version.number}" />
@@ -1555,7 +1554,7 @@ DOCUMENTATION
     <taskdef name="genman"
              classname="scala.tools.docutil.ManMaker"
              classpathref="manual.classpath"/>
-    <genman command="fsc, sbaz, scala, scalac, scaladoc, scalap"
+    <genman command="fsc, scala, scalac, scaladoc, scalap"
             htmlout="${build-docs.dir}/manual/html"
             manout="${build-docs.dir}/manual/genman"/>
     <!-- On Windows source and target files can't be the same ! -->

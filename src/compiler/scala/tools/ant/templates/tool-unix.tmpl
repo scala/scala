@@ -25,8 +25,8 @@ function restoreSttySettings() {
 function onExit() {
   if [[ "$saved_stty" != "" ]]; then
     restoreSttySettings
-    exit $scala_exit_status
   fi
+  exit $scala_exit_status
 }
 
 # to reenable echo if we are interrupted before completing.

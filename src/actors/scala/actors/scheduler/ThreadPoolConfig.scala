@@ -45,7 +45,7 @@ private[actors] object ThreadPoolConfig {
 
         // on IBM J9 1.6 do not use ForkJoinPool
         // XXX this all needs to go into Properties.
-        isJavaAtLeast("1.6") && ((javaVmVendor contains "Sun") || (javaVmVendor contains "Apple"))
+        isJavaAtLeast("1.6") && ((javaVmVendor contains "Oracle") || (javaVmVendor contains "Sun") || (javaVmVendor contains "Apple"))
       })
     catch {
       case _: SecurityException => false
