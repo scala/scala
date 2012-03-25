@@ -108,15 +108,18 @@ trait Scopes {
      *
      *  @param e ...
      */
-    def enter(e: ScopeEntry) {
+    protected def enter(e: ScopeEntry) {
       elemsCache = null
-      if (hashtable ne null) {
-        val i = e.sym.name.start & HASHMASK
-        elems.tail = hashtable(i)
-        hashtable(i) = elems
-      } else if (size >= MIN_HASH) {
+      if (hashtable ne null)
+        enterInHash(e)
+      else if (size >= MIN_HASH)
         createHash()
-      }
+    }
+
+    private def enterInHash(e: ScopeEntry): Unit = {
+      val i = e.sym.name.start & HASHMASK
+      e.tail = hashtable(i)
+      hashtable(i) = e
     }
 
     /** enter a symbol
@@ -136,15 +139,23 @@ trait Scopes {
 
     private def createHash() {
       hashtable = new Array[ScopeEntry](HASHSIZE)
-      enterInHash(elems)
+      enterAllInHash(elems)
     }
 
-    private def enterInHash(e: ScopeEntry) {
+    private def enterAllInHash(e: ScopeEntry, n: Int = 0) {
       if (e ne null) {
-        enterInHash(e.next)
-        val i = e.sym.name.start & HASHMASK
-        e.tail = hashtable(i)
-        hashtable(i) = e
+        if (n < maxRecursions) {
+          enterAllInHash(e.next, n + 1)
+          enterInHash(e)
+        } else {
+          var entries: List[ScopeEntry] = List()
+          var ee = e
+          while (ee ne null) {
+            entries = ee :: entries
+            ee = ee.next
+          }
+          entries foreach enterInHash
+        }
       }
     }
 
@@ -332,5 +343,8 @@ trait Scopes {
   /** The error scope.
    */
   class ErrorScope(owner: Symbol) extends Scope(null: ScopeEntry)
+
+  private final val maxRecursions = 1000
+
 }
 
