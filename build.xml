@@ -1584,6 +1584,21 @@ DOCUMENTATION
         </uptodate>
       </sequential>
     </macrodef>
+
+    <!-- Set the github commit scaladoc sources point to -->
+    <!-- For releases, look for the tag with the same name as the maven version -->
+    <condition property="scaladoc.git.commit" value="v${maven.version.number}">
+      <isset property="build.release"/>
+    </condition>
+    <!-- For snapshots, if we know the commit, point scaladoc to that particular commit instead of master -->
+    <condition property="scaladoc.git.commit" value="${git.commit.sha}">
+      <not><equals arg1="${git.commit.sha}" arg2="unknown"/></not>
+    </condition>
+    <!-- Fallback: point scaladoc to master -->
+    <property name="scaladoc.git.commit" value="master"/>
+    <!-- Compute the URL and show it -->
+    <property name="scaladoc.url" value="https://github.com/scala/scala/tree/${scaladoc.git.commit}/src"/>
+    <echo message="Scaladoc will point to ${scaladoc.url} for source files."/>
   </target>
   
   <target name="docs.pre-lib" depends="docs.start">
@@ -1605,7 +1620,7 @@ DOCUMENTATION
       doctitle="Scala Standard Library API (Scaladoc)"
       docversion="${version.number}"
       docfooter="epfl" 
-      docsourceurl="https://lampsvn.epfl.ch/trac/scala/browser/scala/trunk/src/€{FILE_PATH}.scala#L1"
+      docsourceurl="${scaladoc.url}€{FILE_PATH}.scala#L1"
       docUncompilable="${src.dir}/library-aux"
       sourcepath="${src.dir}"
       classpathref="pack.classpath"
@@ -1686,7 +1701,7 @@ DOCUMENTATION
       destdir="${build-docs.dir}/compiler"
       doctitle="Scala Compiler"
       docversion="${version.number}"
-      docsourceurl="https://lampsvn.epfl.ch/trac/scala/browser/scala/trunk/src/€{FILE_PATH}.scala#L1"
+      docsourceurl="${scaladoc.url}€{FILE_PATH}.scala#L1"
       sourcepath="${src.dir}"
       classpathref="pack.classpath"
       srcdir="${src.dir}/compiler"
@@ -1731,7 +1746,7 @@ DOCUMENTATION
       destdir="${build-docs.dir}/scalap"
       doctitle="Scalap"
       docversion="${version.number}"
-      docsourceurl="https://lampsvn.epfl.ch/trac/scala/browser/scala/trunk/src/€{FILE_PATH}.scala#L1"
+      docsourceurl="${scaladoc.url}€{FILE_PATH}.scala#L1"
       sourcepath="${src.dir}"
       classpathref="pack.classpath"
       srcdir="${src.dir}/scalap"
