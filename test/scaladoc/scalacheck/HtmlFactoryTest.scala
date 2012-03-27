@@ -50,7 +50,7 @@ object Test extends Properties("HtmlFactory") {
   def createTemplates(basename: String) = {
     val result = scala.collection.mutable.Map[String, scala.xml.NodeSeq]()
 
-    createFactory.makeUniverse(List(RESOURCES+basename)) match {
+    createFactory.makeUniverse(Left(List(RESOURCES+basename))) match {
       case Some(universe) => {
         val index = IndexModelFactory.makeIndex(universe)
         (new HtmlFactory(universe, index)).writeTemplates((page) => {
@@ -64,7 +64,7 @@ object Test extends Properties("HtmlFactory") {
   }
 
   def createReferenceIndex(basename: String) = {
-    createFactory.makeUniverse(List(RESOURCES+basename)) match {
+    createFactory.makeUniverse(Left(List(RESOURCES+basename))) match {
       case Some(universe) => {
         val index = IndexModelFactory.makeIndex(universe)
         val pages = index.firstLetterIndex.map({

@@ -156,7 +156,7 @@ trait GenTraversableOnce[+A] extends Any {
    *  @return  the result of inserting `op` between consecutive elements of this $coll,
    *           going left to right with the start value `z` on the left:
    *           {{{
-   *             op(...op(op(z, x1), x2), ..., xn)
+   *             op(...op(op(z, x_1), x_2), ..., x_n)
    *           }}}
    *           where `x,,1,,, ..., x,,n,,` are the elements of this $coll.
    */
@@ -191,7 +191,7 @@ trait GenTraversableOnce[+A] extends Any {
    *  @return  the result of inserting `op` between consecutive elements of this $coll,
    *           going right to left with the start value `z` on the right:
    *           {{{
-   *             op(x1, op(x2, ... op(xn, z)...))
+   *             op(x_1, op(x_2, ... op(x_n, z)...))
    *           }}}
    *           where `x,,1,,, ..., x,,n,,` are the elements of this $coll.
    */
@@ -209,7 +209,7 @@ trait GenTraversableOnce[+A] extends Any {
    *  @return  the result of inserting `op` between consecutive elements of this $coll,
    *           going left to right with the start value `z` on the left:
    *           {{{
-   *             op(...op(z, x1), x2, ..., xn)
+   *             op(...op(z, x_1), x_2, ..., x_n)
    *           }}}
    *           where `x,,1,,, ..., x,,n,,` are the elements of this $coll.
    */
@@ -226,7 +226,7 @@ trait GenTraversableOnce[+A] extends Any {
    *  @return  the result of inserting `op` between consecutive elements of this $coll,
    *           going right to left with the start value `z` on the right:
    *           {{{
-   *             op(x1, op(x2, ... op(xn, z)...))
+   *             op(x_1, op(x_2, ... op(x_n, z)...))
    *           }}}
    *           where `x,,1,,, ..., x,,n,,` are the elements of this $coll.
    */
@@ -271,7 +271,7 @@ trait GenTraversableOnce[+A] extends Any {
    *  @return  the result of inserting `op` between consecutive elements of this $coll,
    *           going right to left:
    *           {{{
-   *             op(x,,1,,, op(x,,2,,, ..., op(x,,n-1,,, x,,n,,)...))
+   *             op(x_1, op(x_2, ..., op(x_{n-1}, x_n)...))
    *           }}}
    *           where `x,,1,,, ..., x,,n,,` are the elements of this $coll.
    *  @throws `UnsupportedOperationException` if this $coll is empty.

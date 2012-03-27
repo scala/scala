@@ -2144,15 +2144,15 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
         case Annotated(Ident(nme.synthSwitch), selector) => (selector, false)
         case s => (s, true)
       }
-      val selector1            = checkDead(typed(selector, EXPRmode | BYVALmode, WildcardType))
-      val selectorTp           = packCaptured(selector1.tpe.widen)
-      val casesTyped           = typedCases(cases, selectorTp, resTp)
+      val selector1                = checkDead(typed(selector, EXPRmode | BYVALmode, WildcardType))
+      val selectorTp               = packCaptured(selector1.tpe.widen)
+
+      val casesTyped               = typedCases(cases, selectorTp, resTp)
       val caseTypes                = casesTyped map (c => packedType(c, context.owner).deconst)
-      val (ownType0, needAdapt)    = if (isFullyDefined(resTp)) (resTp, false) else weakLub(caseTypes)
-      val ownType                  = ownType0.skolemizeExistential(context.owner, context.tree)
-      val casesAdapted         = if (!needAdapt) casesTyped else casesTyped map (adaptCase(_, mode, ownType))
-      // val (owntype0, needAdapt) = ptOrLub(casesTyped map (x => repackExistential(x.tpe)))
-      // val owntype               = elimAnonymousClass(owntype0)
+      val (ownType, needAdapt)     = if (isFullyDefined(resTp)) (resTp, false) else weakLub(caseTypes)
+
+      val casesAdapted             = if (!needAdapt) casesTyped else casesTyped map (adaptCase(_, mode, ownType))
+
       (selector1, selectorTp, casesAdapted, ownType, doTranslation)
     }
 
@@ -2166,14 +2166,17 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
         Match(selector1, casesAdapted) setType ownType // setType of the Match to avoid recursing endlessly
       } else {
         val scrutType = repeatedToSeq(elimAnonymousClass(selectorTp))
-        MatchTranslator(this).translateMatch(selector1, casesAdapted, repeatedToSeq(ownType), scrutType, matchFailGen)
+        // we've packed the type for each case in prepareTranslateMatch so that if all cases have the same existential case, we get a clean lub
+        // here, we should open up the existential again
+        // relevant test cases: pos/existentials-harmful.scala, pos/gadt-gilles.scala, pos/t2683.scala, pos/virtpatmat_exist4.scala
+        MatchTranslator(this).translateMatch(selector1, casesAdapted, repeatedToSeq(ownType.skolemizeExistential(context.owner, context.tree)), scrutType, matchFailGen)
       }
     }
 
     def typedMatchAnonFun(tree: Tree, cases: List[CaseDef], mode: Int, pt0: Type, selOverride: Option[(List[ValDef], Tree)] = None) = {
       val pt          = deskolemizeGADTSkolems(pt0)
       val targs       = pt.normalize.typeArgs
-      val arity       = if (isFunctionType(pt)) targs.length - 1 else 1
+      val arity       = if (isFunctionType(pt)) targs.length - 1 else 1 // TODO pt should always be a (Partial)Function, right?
       val ptRes       = if (targs.isEmpty) WildcardType else targs.last // may not be fully defined
 
       val isPartial   = pt.typeSymbol == PartialFunctionClass
@@ -2185,6 +2188,7 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
 
       def mkParams(methodSym: Symbol) = {
         selOverride match {
+          case None if targs.isEmpty => MissingParameterTypeAnonMatchError(tree, pt); (Nil, EmptyTree)
           case None =>
             val ps  = methodSym newSyntheticValueParams targs.init // is there anything we can do if targs.isEmpty??
             val ids = ps map (p => Ident(p.name))
@@ -2210,44 +2214,52 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
         anonClass setInfo ClassInfoType(List(ObjectClass.tpe, pt, SerializableClass.tpe), newScope, anonClass)
         val methodSym = anonClass.newMethod(nme.apply, tree.pos, FINAL)
         val (paramSyms, selector) = mkParams(methodSym)
-        methodSym setInfoAndEnter MethodType(paramSyms, AnyClass.tpe)
 
-        val methodBodyTyper = newTyper(context.makeNewScope(context.tree, methodSym)) // should use the DefDef for the context's tree, but it doesn't exist yet (we need the typer we're creating to create it)
-        paramSyms foreach (methodBodyTyper.context.scope enter _)
+        if (selector eq EmptyTree) EmptyTree
+        else {
+          methodSym setInfoAndEnter MethodType(paramSyms, AnyClass.tpe)
 
-        val (selector1, selectorTp, casesAdapted, resTp, doTranslation) = methodBodyTyper.prepareTranslateMatch(selector, cases, mode, ptRes)
+          val methodBodyTyper = newTyper(context.makeNewScope(context.tree, methodSym)) // should use the DefDef for the context's tree, but it doesn't exist yet (we need the typer we're creating to create it)
+          paramSyms foreach (methodBodyTyper.context.scope enter _)
 
-        val formalTypes = paramSyms map (_.tpe)
-        val parents =
-          if (isPartial) List(appliedType(AbstractPartialFunctionClass.typeConstructor, List(formalTypes.head, resTp)), SerializableClass.tpe)
-          else           List(appliedType(AbstractFunctionClass(arity).typeConstructor, formalTypes :+ resTp), SerializableClass.tpe)
+          val (selector1, selectorTp, casesAdapted, resTp, doTranslation) = methodBodyTyper.prepareTranslateMatch(selector, cases, mode, ptRes)
 
-        anonClass setInfo ClassInfoType(parents, newScope, anonClass)
-        methodSym setInfoAndEnter MethodType(paramSyms, resTp)
+          val formalTypes = paramSyms map (_.tpe)
+          val parents =
+            if (isPartial) List(appliedType(AbstractPartialFunctionClass.typeConstructor, List(formalTypes.head, resTp)), SerializableClass.tpe)
+            else           List(appliedType(AbstractFunctionClass(arity).typeConstructor, formalTypes :+ resTp), SerializableClass.tpe)
 
-        // use apply's parameter since the scrut's type has been widened
-        def missingCase(scrut_ignored: Tree) = (funThis DOT nme.missingCase) (REF(paramSyms.head))
+          anonClass setInfo ClassInfoType(parents, newScope, anonClass)
+          methodSym setInfoAndEnter MethodType(paramSyms, resTp)
 
-        val body = methodBodyTyper.translateMatch(selector1, selectorTp, casesAdapted, resTp, doTranslation, if (isPartial) Some(missingCase) else None)
+          // use apply's parameter since the scrut's type has been widened
+          def missingCase(scrut_ignored: Tree) = (funThis DOT nme.missingCase) (REF(paramSyms.head))
 
-        DefDef(methodSym, body)
+          val body = methodBodyTyper.translateMatch(selector1, selectorTp, casesAdapted, resTp, doTranslation, if (isPartial) Some(missingCase) else None)
+
+          DefDef(methodSym, body)
+        }
       }
 
       def isDefinedAtMethod = {
         val methodSym = anonClass.newMethod(nme._isDefinedAt, tree.pos, FINAL)
         val (paramSyms, selector) = mkParams(methodSym)
-        val methodBodyTyper = newTyper(context.makeNewScope(context.tree, methodSym)) // should use the DefDef for the context's tree, but it doesn't exist yet (we need the typer we're creating to create it)
-        paramSyms foreach (methodBodyTyper.context.scope enter _)
-        methodSym setInfoAndEnter MethodType(paramSyms, BooleanClass.tpe)
+        if (selector eq EmptyTree) EmptyTree
+        else {
+          val methodBodyTyper = newTyper(context.makeNewScope(context.tree, methodSym)) // should use the DefDef for the context's tree, but it doesn't exist yet (we need the typer we're creating to create it)
+          paramSyms foreach (methodBodyTyper.context.scope enter _)
+          methodSym setInfoAndEnter MethodType(paramSyms, BooleanClass.tpe)
 
-        val (selector1, selectorTp, casesAdapted, resTp, doTranslation) = methodBodyTyper.prepareTranslateMatch(selector, casesTrue, mode, BooleanClass.tpe)
-        val body = methodBodyTyper.translateMatch(selector1, selectorTp, casesAdapted, resTp, doTranslation, Some(scrutinee => FALSE_typed))
+          val (selector1, selectorTp, casesAdapted, resTp, doTranslation) = methodBodyTyper.prepareTranslateMatch(selector, casesTrue, mode, BooleanClass.tpe)
+          val body = methodBodyTyper.translateMatch(selector1, selectorTp, casesAdapted, resTp, doTranslation, Some(scrutinee => FALSE_typed))
 
-        DefDef(methodSym, body)
+          DefDef(methodSym, body)
+        }
       }
 
       val members = if (!isPartial) List(applyMethod) else List(applyMethod, isDefinedAtMethod)
-      typed(Block(List(ClassDef(anonClass, NoMods, List(List()), List(List()), members, tree.pos)), New(anonClass.tpe)), mode, pt)
+      if (members.head eq EmptyTree) setError(tree)
+      else typed(Block(List(ClassDef(anonClass, NoMods, List(List()), List(List()), members, tree.pos)), New(anonClass.tpe)), mode, pt)
     }
 
     /**
