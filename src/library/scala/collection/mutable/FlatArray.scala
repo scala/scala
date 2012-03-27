@@ -60,8 +60,15 @@ extends AbstractSeq[T]
  */
 object FlatArray {
 
-  def empty[Boxed, Unboxed](elems: Boxed*)
-      (implicit boxings: BoxingConversions[Boxed, Unboxed], elemManifest: ClassManifest[Unboxed]): FlatArray[Boxed] = apply()
+  def ofDim[Boxed, Unboxed](size:Int)
+      (implicit boxings: BoxingConversions[Boxed, Unboxed],
+       manifest: ClassManifest[Unboxed]): FlatArray[Boxed] = {
+    val elems = Array.ofDim[Unboxed](size)
+    new FlatArray.Impl(elems, boxings, manifest)
+  }
+
+  def empty[Boxed, Unboxed](implicit boxings: BoxingConversions[Boxed, Unboxed],
+                            elemManifest: ClassManifest[Unboxed]): FlatArray[Boxed] = apply()
 
   def apply[Boxed, Unboxed](elems: Boxed*)
       (implicit boxings: BoxingConversions[Boxed, Unboxed], elemManifest: ClassManifest[Unboxed]): FlatArray[Boxed] = {
