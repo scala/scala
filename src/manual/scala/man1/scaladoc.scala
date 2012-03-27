@@ -137,7 +137,6 @@ object scaladoc extends Command {
   val seeAlso = Section("SEE ALSO",
 
     Link(Bold("fsc") & "(1)", "fsc.html") & ", " &
-    Link(Bold("sbaz") & "(1)", "sbaz.html") & ", " &
     Link(Bold("scala") & "(1)", "scala.html") & ", " &
     Link(Bold("scalac") & "(1)", "scalac.html") & ", " &
     Link(Bold("scalap") & "(1)", "scalap.html"))

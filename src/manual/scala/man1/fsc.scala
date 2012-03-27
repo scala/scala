@@ -141,7 +141,6 @@ object fsc extends Command {
 
   val seeAlso = Section("SEE ALSO",
 
-    Link(Bold("sbaz") & "(1)", "sbaz.html") & ", " &
     Link(Bold("scala") & "(1)", "scala.html") & ", " &
     Link(Bold("scalac") & "(1)", "scalac.html") & ", " &
     Link(Bold("scaladoc") & "(1)", "scaladoc.html") & ", " &
@@ -149,9 +148,9 @@ object fsc extends Command {
 
   def manpage = new Document {
     title = command
-    date = "January 2007"
+    date = "March 2012"
     author = "Lex Spoon"
-    version = "0.4"
+    version = "0.5"
     sections = List(
       name,
       synopsis,
