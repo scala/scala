@@ -125,8 +125,7 @@ class ScalaTool extends ScalaMatchingTask {
    * Adds an Ant Path reference to the tool's classpath.
    * Note that all entries in the path must exist either relative to the project
    * basedir or with an absolute path to a file in the filesystem.  As a result,
-   * this is not a mechanism for setting the classpath for more general use scripts,
-   * such as those distributed within sbaz distribution packages.
+   * this is not a mechanism for setting the classpath for more general use scripts.
    */
   def setClassPathRef(input: Reference) {
     val tmpPath = emptyPath

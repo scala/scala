@@ -1,6 +1,4 @@
 <antlib>
-    <!--<taskdef name="scala"
-             classname="scala.tools.ant.Scala"/>-->
     <taskdef name="classloadVerify"
              classname="scala.tools.ant.ClassloadVerify"/>
     <taskdef name="fsc"
@@ -9,16 +7,12 @@
              classname="scala.tools.ant.Scalac"/>
     <taskdef name="scalascript"
              classname="scala.tools.ant.ScalaTool"/>
-    <taskdef name="sbaz"
-             classname="scala.tools.ant.ScalaBazaar"/>
     <taskdef name="scaladoc"
              classname="scala.tools.ant.Scaladoc"/>
     <taskdef name="scalatool"
              classname="scala.tools.ant.ScalaTool"/>
     <taskdef name="same"
              classname="scala.tools.ant.Same"/>
-    <!--<taskdef name="scalatest"
-             classname="scala.tools.ant.ScalaDoc"/>-->
     <taskdef name="pack200"
              classname="scala.tools.ant.Pack200Task"/>
 </antlib>
