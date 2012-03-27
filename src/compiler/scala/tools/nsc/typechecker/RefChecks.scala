@@ -1625,12 +1625,18 @@ abstract class RefChecks extends InfoTransform with reflect.internal.transform.R
 
           case _ => tree
         }
+        // skip refchecks in patterns....
         result = result match {
           case CaseDef(pat, guard, body) =>
             inPattern = true
             val pat1 = transform(pat)
             inPattern = false
             treeCopy.CaseDef(tree, pat1, transform(guard), transform(body))
+          case LabelDef(_, _, _) if gen.hasSynthCaseSymbol(result) =>
+            inPattern = true
+            val res = deriveLabelDef(result)(transform)
+            inPattern = false
+            res
           case _ =>
             super.transform(result)
         }
