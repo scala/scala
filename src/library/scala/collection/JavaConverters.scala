@@ -16,7 +16,7 @@ import convert._
 // additions.  Would be nice to have in one place.
 
 
-/** A collection of decorators that allow to convert between
+/** A collection of decorators that allow converting between
  *  Scala and Java collections using `asScala` and `asJava` methods.
  *
  *  The following conversions are supported via `asJava`, `asScala`
