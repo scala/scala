@@ -19,21 +19,21 @@ abstract class ParallelConcurrentTrieMapCheck[K, V](tp: String) extends Parallel
   // ForkJoinTasks.defaultForkJoinPool.setMaximumPoolSize(Runtime.getRuntime.availableProcessors * 2)
   // ForkJoinTasks.defaultForkJoinPool.setParallelism(Runtime.getRuntime.availableProcessors * 2)
   
-  type CollType = ParConcurrentTrieMap[K, V]
+  type CollType = ParTrieMap[K, V]
   
   def isCheckingViews = false
   
   def hasStrictOrder = false
 
   def ofSize(vals: Seq[Gen[(K, V)]], sz: Int) = {  
-    val ct = new mutable.ConcurrentTrieMap[K, V]
+    val ct = new concurrent.TrieMap[K, V]
     val gen = vals(rnd.nextInt(vals.size))
     for (i <- 0 until sz) ct += sample(gen)
     ct
   }
   
   def fromTraversable(t: Traversable[(K, V)]) = {
-    val pct = new ParConcurrentTrieMap[K, V]
+    val pct = new ParTrieMap[K, V]
     var i = 0
     for (kv <- t.toList) {
       pct += kv
@@ -58,7 +58,7 @@ with PairValues[Int, Int]
   def koperators = intoperators
   
   override def printDataStructureDebugInfo(ds: AnyRef) = ds match {
-    case pm: ParConcurrentTrieMap[k, v] =>
+    case pm: ParTrieMap[k, v] =>
       println("Mutable parallel ctrie")
     case _ =>
       println("could not match data structure type: " + ds.getClass)

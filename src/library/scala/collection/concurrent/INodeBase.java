@@ -6,30 +6,30 @@
 **                          |/                                          **
 \*                                                                      */
 
-package scala.collection.mutable;
+package scala.collection.concurrent;
 
 
 
-import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
+import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
 
 
-abstract class CNodeBase<K, V> extends MainNode<K, V> {
+abstract class INodeBase<K, V> extends BasicNode {
     
-    public static final AtomicIntegerFieldUpdater<CNodeBase> updater = AtomicIntegerFieldUpdater.newUpdater(CNodeBase.class, "csize");
+    public static final AtomicReferenceFieldUpdater<INodeBase, MainNode> updater = AtomicReferenceFieldUpdater.newUpdater(INodeBase.class, MainNode.class, "mainnode");
     
-    public volatile int csize = -1;
+    public static final Object RESTART = new Object();
     
-    public boolean CAS_SIZE(int oldval, int nval) {
-	return updater.compareAndSet(this, oldval, nval);
+    public volatile MainNode<K, V> mainnode = null;
+    
+    public final Gen gen;
+    
+    public INodeBase(Gen generation) {
+	gen = generation;
     }
     
-    public void WRITE_SIZE(int nval) {
-	updater.set(this, nval);
-    }
-    
-    public int READ_SIZE() {
-	return updater.get(this);
+    public BasicNode prev() {
+	return null;
     }
     
 }
