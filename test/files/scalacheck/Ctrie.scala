@@ -5,7 +5,7 @@ import org.scalacheck._
 import Prop._
 import org.scalacheck.Gen._
 import collection._
-import collection.mutable.ConcurrentTrieMap
+import collection.concurrent.TrieMap
 
 
 
@@ -16,7 +16,7 @@ case class Wrap(i: Int) {
 
 /** A check mainly oriented towards checking snapshot correctness.
  */
-object Test extends Properties("ConcurrentTrieMap") {
+object Test extends Properties("concurrent.TrieMap") {
   
   /* generators */
   
@@ -102,7 +102,7 @@ object Test extends Properties("ConcurrentTrieMap") {
     (numThreads, numElems) =>
     val p = 3 //numThreads
     val sz = 102 //numElems
-    val ct = new ConcurrentTrieMap[Wrap, Int]
+    val ct = new TrieMap[Wrap, Int]
     
     // checker
     val checker = spawn {
@@ -134,7 +134,7 @@ object Test extends Properties("ConcurrentTrieMap") {
   
   property("update") = forAll(sizes) {
     (n: Int) =>
-    val ct = new ConcurrentTrieMap[Int, Int]
+    val ct = new TrieMap[Int, Int]
     for (i <- 0 until n) ct(i) = i
     (0 until n) forall {
       case i => ct(i) == i
@@ -143,7 +143,7 @@ object Test extends Properties("ConcurrentTrieMap") {
   
   property("concurrent update") = forAll(threadCountsAndSizes) {
     case (p, sz) =>
-      val ct = new ConcurrentTrieMap[Wrap, Int]
+      val ct = new TrieMap[Wrap, Int]
       
       inParallel(p) {
         idx =>
@@ -158,7 +158,7 @@ object Test extends Properties("ConcurrentTrieMap") {
   
   property("concurrent remove") = forAll(threadCounts, sizes) {
     (p, sz) =>
-    val ct = new ConcurrentTrieMap[Wrap, Int]
+    val ct = new TrieMap[Wrap, Int]
     for (i <- 0 until sz) ct(Wrap(i)) = i
     
     inParallel(p) {
@@ -174,7 +174,7 @@ object Test extends Properties("ConcurrentTrieMap") {
   
   property("concurrent putIfAbsent") = forAll(threadCounts, sizes) {
     (p, sz) =>
-    val ct = new ConcurrentTrieMap[Wrap, Int]
+    val ct = new TrieMap[Wrap, Int]
     
     val results = inParallel(p) {
       idx =>

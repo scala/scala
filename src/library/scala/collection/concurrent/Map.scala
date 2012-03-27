@@ -6,8 +6,7 @@
 **                          |/                                          **
 \*                                                                      */
 
-package scala.collection
-package mutable
+package scala.collection.concurrent
 
 /** A template trait for mutable maps that allow concurrent access.
  *
@@ -32,8 +31,7 @@ package mutable
  *  @define atomicop
  *  This is an atomic operation.
  */
-@deprecated("Use `scala.collection.concurrent.Map` instead.", "2.10.0")
-trait ConcurrentMap[A, B] extends Map[A, B] {
+trait Map[A, B] extends scala.collection.mutable.Map[A, B] {
 
   /**
    * Associates the given key with a given value, unless the key was already
