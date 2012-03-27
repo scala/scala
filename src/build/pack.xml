@@ -78,6 +78,7 @@ MAIN DISTRIBUTION PACKAGING
         <exclude name="logs/**"/>
         <exclude name="sandbox/**"/>
         <exclude name="test/partest"/>
+        <exclude name=".git"/>
       </tarfileset>
       <tarfileset dir="${basedir}" prefix="${dist.name}-sources" filemode="755">
         <include name="test/partest"/>
@@ -95,8 +96,22 @@ MAIN DISTRIBUTION PACKAGING
       </fileset>
     </checksum>
   </target>
+
+  <target name="pack-archives.latest.unix" depends="pack-archives.src" unless="os.win">
+    <symlink link="${dists.dir}/archives/scala-latest-sources.tgz"
+             resource="${dists.dir}/archives/scala-${version.number}-sources.tgz"
+             overwrite="yes"/>
+  </target>
+
+  <target name="pack-archives.latest.win" depends="pack-archives.src" if="os.win">
+    <copy tofile="${dists.dir}/archives/scala-latest-sources.tgz">
+      <fileset dir="${dists.dir}/archives">
+         <include name="scala-${version.number}-sources.tgz"/>
+      </fileset>
+    </copy>
+  </target>
   
-  <target name="pack-archives.done" depends="pack-archives.src"/>
+  <target name="pack-archives.done" depends="pack-archives.src, pack-archives.latest.win, pack-archives.latest.unix"/>
   
 <!-- ===========================================================================
 MAIN DISTRIBUTION SBAZ
