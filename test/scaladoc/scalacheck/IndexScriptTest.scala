@@ -24,7 +24,7 @@ object Test extends Properties("IndexScript") {
   val indexModelFactory = doc.model.IndexModelFactory
 
   def createIndexScript(path: String) =
-    docFactory.makeUniverse(List(path)) match {
+    docFactory.makeUniverse(Left(List(path))) match {
       case Some(universe) => {
         val index = new IndexScript(universe,
                                     indexModelFactory.makeIndex(universe))
