@@ -293,24 +293,30 @@ object JavaConversions {
   @deprecated("use mapAsJavaMap instead", "2.9.0")
   def asJavaMap[A, B](m : Map[A, B]): ju.Map[A, B] = mapAsJavaMap[A, B](m)
 
+  @deprecated("Use `concurrent.Map` instead of `mutable.ConcurrentMap`", "2.10.0")
+  def asJavaConcurrentMap[A, B](m: mutable.ConcurrentMap[A, B]): juc.ConcurrentMap[A, B] = m match {
+    case JConcurrentMapWrapper(wrapped) => wrapped
+    case _ => new ConcurrentMapWrapper(m)
+  }
+
   /**
-   * Implicitly converts a Scala mutable `ConcurrentMap` to a Java
+   * Implicitly converts a Scala mutable `concurrent.Map` to a Java
    * `ConcurrentMap`.
    *
    * The returned Java `ConcurrentMap` is backed by the provided Scala
-   * `ConcurrentMap` and any side-effects of using it via the Java interface
+   * `concurrent.Map` and any side-effects of using it via the Java interface
    * will be visible via the Scala interface and vice versa.
    *
-   * If the Scala `ConcurrentMap` was previously obtained from an implicit or
-   * explicit call of `asConcurrentMap(java.util.concurrect.ConcurrentMap)`
+   * If the Scala `concurrent.Map` was previously obtained from an implicit or
+   * explicit call of `javaConcurrentMapAsScalaConcurrentMap(java.util.concurrect.ConcurrentMap)`
    * then the original Java ConcurrentMap will be returned.
    *
-   * @param m The `ConcurrentMap` to be converted.
+   * @param m The `concurrent.Map` to be converted.
    * @return A Java `ConcurrentMap` view of the argument.
    */
-  implicit def asJavaConcurrentMap[A, B](m: mutable.ConcurrentMap[A, B]): juc.ConcurrentMap[A, B] = m match {
-    case JConcurrentMapWrapper(wrapped) => wrapped
-    case _ => new ConcurrentMapWrapper(m)
+  implicit def asJavaConcurrentMap[A, B](m: concurrent.Map[A, B]): juc.ConcurrentMap[A, B] = m match {
+    case JavaConcurrentMapWrapper(wrapped) => wrapped
+    case _ => new ScalaConcurrentMapWrapper(m)
   }
 
   // Java => Scala
@@ -451,6 +457,12 @@ object JavaConversions {
   @deprecated("use mapAsScalaMap instead", "2.9.0")
   def asScalaMap[A, B](m: ju.Map[A, B]): mutable.Map[A, B] = mapAsScalaMap[A, B](m)
 
+  @deprecated("Use `javaConcurrentMapAsScalaConcurrentMap` instead.", "2.10.0")
+  def asScalaConcurrentMap[A, B](m: juc.ConcurrentMap[A, B]): mutable.ConcurrentMap[A, B] = m match {
+    case cmw: ConcurrentMapWrapper[a, b] => cmw.underlying
+    case _                               => new JConcurrentMapWrapper(m)
+  }
+
   /**
    * Implicitly converts a Java ConcurrentMap to a Scala mutable ConcurrentMap.
    * The returned Scala ConcurrentMap is backed by the provided Java
@@ -464,10 +476,11 @@ object JavaConversions {
    * @param m The ConcurrentMap to be converted.
    * @return A Scala mutable ConcurrentMap view of the argument.
    */
-  implicit def asScalaConcurrentMap[A, B](m: juc.ConcurrentMap[A, B]): mutable.ConcurrentMap[A, B] = m match {
-    case cmw: ConcurrentMapWrapper[a, b] => cmw.underlying
-    case _                               => new JConcurrentMapWrapper(m)
+  implicit def javaConcurrentMapAsScalaConcurrentMap[A, B](m: juc.ConcurrentMap[A, B]): concurrent.Map[A, B] = m match {
+    case cmw: ScalaConcurrentMapWrapper[a, b] => cmw.underlying
+    case _                                    => new JavaConcurrentMapWrapper(m)
   }
+
 
   /**
    * Implicitly converts a Java `Dictionary` to a Scala mutable
@@ -765,6 +778,7 @@ object JavaConversions {
     override def empty = JMapWrapper(new ju.HashMap[A, B])
   }
 
+  // will be removed in 2.11
   class ConcurrentMapWrapper[A, B](override val underlying: mutable.ConcurrentMap[A, B])
   extends MutableMapWrapper[A, B](underlying) with juc.ConcurrentMap[A, B] {
 
@@ -788,6 +802,30 @@ object JavaConversions {
     def replace(k: A, oldval: B, newval: B) = underlying.replace(k, oldval, newval)
   }
 
+  class ScalaConcurrentMapWrapper[A, B](override val underlying: concurrent.Map[A, B])
+  extends MutableMapWrapper[A, B](underlying) with juc.ConcurrentMap[A, B] {
+
+    def putIfAbsent(k: A, v: B) = underlying.putIfAbsent(k, v) match {
+      case Some(v) => v
+      case None => null.asInstanceOf[B]
+    }
+
+    def remove(k: AnyRef, v: AnyRef) = try {
+      underlying.remove(k.asInstanceOf[A], v.asInstanceOf[B])
+    } catch {
+      case ex: ClassCastException =>
+        false
+    }
+
+    def replace(k: A, v: B): B = underlying.replace(k, v) match {
+      case Some(v) => v
+      case None => null.asInstanceOf[B]
+    }
+
+    def replace(k: A, oldval: B, newval: B) = underlying.replace(k, oldval, newval)
+  }
+
+  // will be removed in 2.11
   case class JConcurrentMapWrapper[A, B](val underlying: juc.ConcurrentMap[A, B])
   extends mutable.AbstractMap[A, B] with JMapWrapperLike[A, B, JConcurrentMapWrapper[A, B]] with mutable.ConcurrentMap[A, B] {
     override def get(k: A) = {
@@ -814,6 +852,32 @@ object JavaConversions {
       underlying.replace(k, oldvalue, newvalue)
   }
 
+  case class JavaConcurrentMapWrapper[A, B](val underlying: juc.ConcurrentMap[A, B])
+  extends mutable.AbstractMap[A, B] with JMapWrapperLike[A, B, JConcurrentMapWrapper[A, B]] with concurrent.Map[A, B] {
+    override def get(k: A) = {
+      val v = underlying get k
+      if (v != null) Some(v)
+      else None
+    }
+
+    override def empty = new JConcurrentMapWrapper(new juc.ConcurrentHashMap[A, B])
+
+    def putIfAbsent(k: A, v: B): Option[B] = {
+      val r = underlying.putIfAbsent(k, v)
+      if (r != null) Some(r) else None
+    }
+
+    def remove(k: A, v: B): Boolean = underlying.remove(k, v)
+
+    def replace(k: A, v: B): Option[B] = {
+      val prev = underlying.replace(k, v)
+      if (prev != null) Some(prev) else None
+    }
+
+    def replace(k: A, oldvalue: B, newvalue: B): Boolean =
+      underlying.replace(k, oldvalue, newvalue)
+  }
+  
   case class DictionaryWrapper[A, B](underlying: mutable.Map[A, B])
   extends ju.Dictionary[A, B] {
     def size: Int = underlying.size
