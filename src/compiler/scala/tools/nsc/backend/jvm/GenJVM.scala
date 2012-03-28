@@ -756,8 +756,9 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
       }
 
       var flags = javaFlags(f.symbol)
-      if (!f.symbol.isMutable)
-        flags |= ACC_FINAL
+      // Make sure ACC_FINAL is only on eager vals.
+      if (f.symbol.isMutable) flags &= ~ACC_FINAL
+      else flags |= ACC_FINAL
 
       val jfield =
         jclass.addNewField(flags | attributes,
