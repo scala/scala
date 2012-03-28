@@ -23,4 +23,3 @@ List('lambda, List('x), List('+, List('*, 'x, 'x), 1))
 faculty(10) = 3628800
 faculty(10) = 3628800
 foobar = ("a" "bc" "def" "z")
-
