@@ -144,7 +144,7 @@ object StringContext {
     var cur = 0
     var idx = 0
     def output(ch: Char) = {
-      bldr append str substring (start, cur)
+      bldr append str.substring (start, cur)
       bldr append ch
       start = idx
     }
