@@ -79,7 +79,7 @@ case class StringContext(parts: String*) {
    *      start a format specifier), then the string format specifier `%s` is inserted.
    *
    *   2. Any `%` characters not in formatting positions are left in the resulting
-   *      string literally. This is achieved by replacing each such occurrence by the string
+   *      string literally. This is achieved by replacing each such occurrence by the
    *      format specifier `%%`.
    */
   def f(args: Any*) = {
