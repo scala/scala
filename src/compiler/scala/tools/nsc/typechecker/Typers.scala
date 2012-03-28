@@ -2233,7 +2233,7 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
           methodSym setInfoAndEnter MethodType(paramSyms, resTp)
 
           // use apply's parameter since the scrut's type has been widened
-          def missingCase(scrut_ignored: Tree) = (funThis DOT nme.missingCase) (REF(paramSyms.head))
+          def missingCase(scrut_ignored: Tree) = (funThis DOT newTermName("missingCase")) (REF(paramSyms.head))
 
           val body = methodBodyTyper.translateMatch(selector1, selectorTp, casesAdapted, resTp, doTranslation, if (isPartial) Some(missingCase) else None)
 
@@ -2242,7 +2242,7 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
       }
 
       def isDefinedAtMethod = {
-        val methodSym = anonClass.newMethod(nme._isDefinedAt, tree.pos, FINAL)
+        val methodSym = anonClass.newMethod(nme.isDefinedAt, tree.pos, FINAL)
         val (paramSyms, selector) = mkParams(methodSym)
         if (selector eq EmptyTree) EmptyTree
         else {
