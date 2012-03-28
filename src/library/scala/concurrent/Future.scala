@@ -235,8 +235,8 @@ self =>
    *  val f = future { 5 }
    *  val g = f filter { _ % 2 == 1 }
    *  val h = f filter { _ % 2 == 0 }
-   *  await(0) g // evaluates to 5
-   *  await(0) h // throw a NoSuchElementException
+   *  await(g, 0) // evaluates to 5
+   *  await(h, 0) // throw a NoSuchElementException
    *  }}}
    */
   def filter(pred: T => Boolean): Future[T] = {
@@ -272,8 +272,8 @@ self =>
    *  val h = f collect {
    *    case x if x > 0 => x * 2
    *  }
-   *  await(0) g // evaluates to 5
-   *  await(0) h // throw a NoSuchElementException
+   *  await(g, 0) // evaluates to 5
+   *  await(h, 0) // throw a NoSuchElementException
    *  }}}
    */
   def collect[S](pf: PartialFunction[T, S]): Future[S] = {
@@ -383,7 +383,7 @@ self =>
    *  val f = future { sys.error("failed") }
    *  val g = future { 5 }
    *  val h = f orElse g
-   *  await(0) h // evaluates to 5
+   *  await(h, 0) // evaluates to 5
    *  }}}
    */
   def fallbackTo[U >: T](that: Future[U]): Future[U] = {
@@ -445,7 +445,7 @@ self =>
    *  val f = future { sys.error("failed") }
    *  val g = future { 5 }
    *  val h = f either g
-   *  await(0) h // evaluates to either 5 or throws a runtime exception
+   *  await(h, 0) // evaluates to either 5 or throws a runtime exception
    *  }}}
    */
   def either[U >: T](that: Future[U]): Future[U] = {
@@ -466,26 +466,15 @@ self =>
 
 
 
-/** TODO some docs
+/** Future companion object.
  *
  *  @define nonDeterministic
  *  Note: using this method yields nondeterministic dataflow programs.
  */
 object Future {
-
-  // TODO make more modular by encoding all other helper methods within the execution context
-  /** TODO some docs
-   */
-  def all[T, Coll[X] <: Traversable[X]](futures: Coll[Future[T]])(implicit cbf: CanBuildFrom[Coll[_], T, Coll[T]], ec: ExecutionContext): Future[Coll[T]] =
-    ec.all[T, Coll](futures)
-
-  // move this to future companion object
-  @inline def apply[T](body: =>T)(implicit executor: ExecutionContext): Future[T] = executor.future(body)
-
-  def any[T](futures: Traversable[Future[T]])(implicit ec: ExecutionContext): Future[T] = ec.any(futures)
-
-  def find[T](futures: Traversable[Future[T]])(predicate: T => Boolean)(implicit ec: ExecutionContext): Future[Option[T]] = ec.find(futures)(predicate)
-
+  
+  def apply[T](body: =>T)(implicit executor: ExecutionContext): Future[T] = impl.Future(body)
+  
 }
 
 
