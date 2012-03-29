@@ -18,7 +18,7 @@ object testLogged extends Application {
         with scala.util.logging.ConsoleLogger
 
   Console.println("Start")
-  val doc = x.load(new java.net.URL("http://lampsvn.epfl.ch/svn-repos/scala/scala/trunk/build.xml"))
+  val doc = x.load(new java.net.URL("http://example.com/file.xml"))
   Console.println("End")
   Console.println(doc)
 }

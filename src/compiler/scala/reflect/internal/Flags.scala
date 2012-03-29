@@ -84,7 +84,7 @@ import scala.collection.{ mutable, immutable }
  */
 class ModifierFlags {
   final val IMPLICIT      = 0x00000200
-  final val FINAL         = 0x00000020
+  final val FINAL         = 0x00000020    // May not be overridden. Note that java final implies much more than scala final.
   final val PRIVATE       = 0x00000004
   final val PROTECTED     = 0x00000001
 

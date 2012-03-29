@@ -3,7 +3,7 @@
 
 
 import collection._
-import collection.mutable.ConcurrentTrieMap
+import collection.concurrent.TrieMap
 
 
 
@@ -11,11 +11,11 @@ object SnapshotSpec extends Spec {
   
   def test() {
     "support snapshots" in {
-      val ctn = new ConcurrentTrieMap
+      val ctn = new TrieMap
       ctn.snapshot()
       ctn.readOnlySnapshot()
       
-      val ct = new ConcurrentTrieMap[Int, Int]
+      val ct = new TrieMap[Int, Int]
       for (i <- 0 until 100) ct.put(i, i)
       ct.snapshot()
       ct.readOnlySnapshot()
@@ -24,7 +24,7 @@ object SnapshotSpec extends Spec {
     "empty 2 quiescent snapshots in isolation" in {
       val sz = 4000
       
-      class Worker(trie: ConcurrentTrieMap[Wrap, Int]) extends Thread {
+      class Worker(trie: TrieMap[Wrap, Int]) extends Thread {
         override def run() {
           for (i <- 0 until sz) {
             assert(trie.remove(new Wrap(i)) == Some(i))
@@ -35,7 +35,7 @@ object SnapshotSpec extends Spec {
         }
       }
       
-      val ct = new ConcurrentTrieMap[Wrap, Int]
+      val ct = new TrieMap[Wrap, Int]
       for (i <- 0 until sz) ct.put(new Wrap(i), i)
       val snapt = ct.snapshot()
       
@@ -96,7 +96,7 @@ object SnapshotSpec extends Spec {
     }
     
     // traverses the trie `rep` times and modifies each entry
-    class Modifier(trie: ConcurrentTrieMap[Wrap, Int], index: Int, rep: Int, sz: Int) extends Thread {
+    class Modifier(trie: TrieMap[Wrap, Int], index: Int, rep: Int, sz: Int) extends Thread {
       setName("Modifier %d".format(index))
       
       override def run() {
@@ -110,7 +110,7 @@ object SnapshotSpec extends Spec {
     }
     
     // removes all the elements from the trie
-    class Remover(trie: ConcurrentTrieMap[Wrap, Int], index: Int, totremovers: Int, sz: Int) extends Thread {
+    class Remover(trie: TrieMap[Wrap, Int], index: Int, totremovers: Int, sz: Int) extends Thread {
       setName("Remover %d".format(index))
       
       override def run() {
@@ -123,7 +123,7 @@ object SnapshotSpec extends Spec {
       val N = 100
       val W = 10
       
-      val ct = new ConcurrentTrieMap[Wrap, Int]
+      val ct = new TrieMap[Wrap, Int]
       for (i <- 0 until sz) ct(new Wrap(i)) = i
       val readonly = ct.readOnlySnapshot()
       val threads = for (i <- 0 until W) yield new Modifier(ct, i, N, sz)
@@ -141,7 +141,7 @@ object SnapshotSpec extends Spec {
       val W = 100
       val S = 5000
       
-      val ct = new ConcurrentTrieMap[Wrap, Int]
+      val ct = new TrieMap[Wrap, Int]
       for (i <- 0 until sz) ct(new Wrap(i)) = i
       val threads = for (i <- 0 until W) yield new Remover(ct, i, W, sz)
       
@@ -156,7 +156,7 @@ object SnapshotSpec extends Spec {
       val W = 10
       val S = 7000
       
-      val ct = new ConcurrentTrieMap[Wrap, Int]
+      val ct = new TrieMap[Wrap, Int]
       for (i <- 0 until sz) ct(new Wrap(i)) = i
       val threads = for (i <- 0 until W) yield new Modifier(ct, i, N, sz)
       
@@ -165,7 +165,7 @@ object SnapshotSpec extends Spec {
       threads.foreach(_.join())
     }
     
-    def consistentNonReadOnly(name: String, trie: ConcurrentTrieMap[Wrap, Int], sz: Int, N: Int) {
+    def consistentNonReadOnly(name: String, trie: TrieMap[Wrap, Int], sz: Int, N: Int) {
       @volatile var e: Exception = null
       
       // reads possible entries once and stores them
@@ -223,7 +223,7 @@ object SnapshotSpec extends Spec {
       val W = 10
       val S = 400
       
-      val ct = new ConcurrentTrieMap[Wrap, Int]
+      val ct = new TrieMap[Wrap, Int]
       for (i <- 0 until sz) ct(new Wrap(i)) = i
       val threads = for (i <- 0 until W) yield new Modifier(ct, i, N, sz)
       
@@ -241,7 +241,7 @@ object SnapshotSpec extends Spec {
       val S = 10
       val modifytimes = 1200
       val snaptimes = 600
-      val ct = new ConcurrentTrieMap[Wrap, Int]
+      val ct = new TrieMap[Wrap, Int]
       for (i <- 0 until sz) ct(new Wrap(i)) = i
       
       class Snapshooter extends Thread {

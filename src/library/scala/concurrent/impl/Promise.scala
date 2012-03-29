@@ -22,7 +22,7 @@ import scala.annotation.tailrec
 
 
 
-trait Promise[T] extends scala.concurrent.Promise[T] with Future[T] {
+private[concurrent] trait Promise[T] extends scala.concurrent.Promise[T] with Future[T] {
 
   def future = this
 

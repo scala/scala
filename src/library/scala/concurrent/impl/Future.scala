@@ -12,7 +12,7 @@ import scala.concurrent.{Awaitable, ExecutionContext}
 import scala.util.{ Try, Success, Failure }
 //import scala.util.continuations._
 
-trait Future[+T] extends scala.concurrent.Future[T] with Awaitable[T] {
+private[concurrent] trait Future[+T] extends scala.concurrent.Future[T] with Awaitable[T] {
 
   implicit def executor: ExecutionContextImpl
 

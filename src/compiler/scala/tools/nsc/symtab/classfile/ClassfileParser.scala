@@ -446,7 +446,11 @@ abstract class ClassfileParser {
   def classNameToSymbol(name: Name): Symbol = {
     def loadClassSymbol(name: Name): Symbol = {
       val file = global.classPath findSourceFile ("" +name) getOrElse {
-        warning("Class " + name + " not found - continuing with a stub.")
+        // SI-5593 Scaladoc's current strategy is to visit all packages in search of user code that can be documented
+        // therefore, it will rummage through the classpath triggering errors whenever it encounters package objects
+        // that are not in their correct place (see bug for details)
+        if (!settings.isScaladoc)
+          warning("Class " + name + " not found - continuing with a stub.")
         return NoSymbol.newClass(name.toTypeName)
       }
       val completer     = new global.loaders.ClassfileLoader(file)

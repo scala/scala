@@ -3,14 +3,13 @@
 <project name="sabbus-pack">
 
   <description>
-    SuperSabbus extension for packaging a distribution to Sbaz or other distribution methods. THIS FILE IS NOT STAND-ALONE AND SHOULD ONLY BE USED THROUGH ENTRY POINTS IN SUPERSABBUS.
+    SuperSabbus extension for packaging a distribution. THIS FILE IS NOT STAND-ALONE AND SHOULD ONLY BE USED THROUGH ENTRY POINTS IN SUPERSABBUS.
   </description>
   
 <!-- ===========================================================================
 PROPERTIES
 ============================================================================ -->
   
-  <property name="sbaz.universe" value="http://www.scala-lang.org/downloads/packages"/>
   <property file="${basedir}/build.number.maven"/>
   <!-- the maven stuff requires version.major, version.minor and version.patch properties.
        the "get-scala-revision" script only returns "version.number" -->
@@ -78,6 +77,7 @@ MAIN DISTRIBUTION PACKAGING
         <exclude name="logs/**"/>
         <exclude name="sandbox/**"/>
         <exclude name="test/partest"/>
+        <exclude name=".git"/>
       </tarfileset>
       <tarfileset dir="${basedir}" prefix="${dist.name}-sources" filemode="755">
         <include name="test/partest"/>
@@ -95,111 +95,22 @@ MAIN DISTRIBUTION PACKAGING
       </fileset>
     </checksum>
   </target>
-  
-  <target name="pack-archives.done" depends="pack-archives.src"/>
-  
-<!-- ===========================================================================
-MAIN DISTRIBUTION SBAZ
-============================================================================ -->
-  
-  <target name="pack-sbaz.start">
-    <mkdir dir="${dists.dir}/sbaz"/>
-  </target>
-  
-  <target name="pack-sbaz.lib" depends="pack-sbaz.start">
-    <sbaz
-      file="${dists.dir}/sbaz/scala-library-${version.number}.sbp"
-      adfile="${dists.dir}/sbaz/scala-library-${version.number}.advert"
-      name="scala-library"
-      version="${version.number}"
-      desc="The Scala library. This is the minimal requirement to run any Scala program."
-      link="${sbaz.universe}/scala-library-${version.number}.sbp">
-      <libset dir="${dist.dir}/lib" includes="scala-library.jar,scala-dbc.jar,scala-swing.jar,scala-actors.jar"/>
-      <srcset dir="${dist.dir}/src" includes="scala-library-src.jar,scala-dbc-src.jar,scala-swing-src.jar,scala-actors-src.jar"/>
-      <looseset destination="doc">
-        <fileset dir="${dist.dir}/doc" includes="LICENSE,README"/>
-      </looseset>
-    </sbaz>
-  </target>
-  
-  <target name="pack-sbaz.comp" depends="pack-sbaz.lib">
-    <sbaz
-      file="${dists.dir}/sbaz/scala-devel-${version.number}.sbp"
-      adfile="${dists.dir}/sbaz/scala-devel-${version.number}.advert"
-      name="scala-devel"
-      version="${version.number}"
-      desc="The Scala developer tools. This contains everything that is required to write, test and document new Scala programs."
-      depends="scala-library"
-      link="${sbaz.universe}/scala-devel-${version.number}.sbp">
-      <binset
-          dir="${dist.dir}/bin"
-          includes="scala,scala.bat,scalac,scalac.bat,scaladoc,scaladoc.bat,fsc,fsc.bat"/>
-      <libset dir="${dist.dir}/lib" includes="scala-compiler.jar,jline.jar"/>
-      <miscset dir="${dist.dir}/misc/scala-devel"
-        includes="plugins/continuations.jar"/>
-      <manset dir="${dist.dir}/man" includes="**"/>
-      <srcset dir="${dist.dir}/src" includes="scala-compiler-src.jar"/>
-    </sbaz>
+
+  <target name="pack-archives.latest.unix" depends="pack-archives.src" unless="os.win">
+    <symlink link="${dists.dir}/archives/scala-latest-sources.tgz"
+             resource="${dists.dir}/archives/scala-${version.number}-sources.tgz"
+             overwrite="yes"/>
   </target>
 
-  <target name="pack-sbaz.test" depends="pack-sbaz.comp">
-    <sbaz
-      file="${dists.dir}/sbaz/scala-test-${version.number}.sbp"
-      adfile="${dists.dir}/sbaz/scala-test-${version.number}.advert"
-      name="scala-test"
-      version="${version.number}"
-      desc="The Scala test package contains everything needed to test Scala."
-      link="${sbaz.universe}/scala-test-${version.number}.sbp">
-      <binset dir="${basedir}/test"
-        includes="clitest,diff/diff.*,diff/lib*.dll,partest,partest.bat"/>
-      <miscset dir="${basedir}/test"
-        includes="files/**/*.args,files/**/*.check,files/**/*.dll,files/**/*.jar,files/**/*.java,files/**/*.scala,files/**/*.flags,files/cli/**/*.check.*,files/jvm/*.so,files/shootout/*.javaopts,files/shootout/*.runner,files/shootout/*.txt,files/specialized/*.txt,files/**/*.test"
-        excludes="files/presentation"/>
-        <!-- <srcset dir="${dist.dir}/src" includes="scala-partest-src.jar"/> -->
-      <libset dir="${dist.dir}/lib" includes="scala-partest.jar"/>
-      <libset dir="${lib.dir}" includes="scalacheck.jar"/>
-    </sbaz>
-  </target>
-
-  <target name="pack-sbaz.scalap" depends="pack-sbaz.test">
-    <sbaz
-      file="${dists.dir}/sbaz/scalap-${version.number}.sbp"
-      adfile="${dists.dir}/sbaz/scalap-${version.number}.advert"
-      name="scalap"
-      version="${version.number}"
-      desc="The scalap package contains the Scala classfile decoder."
-      link="${sbaz.universe}/scalap-${version.number}.sbp">
-      <binset dir="${dist.dir}/bin"
-        includes="scalap,scalap.bat"/>
-      <libset dir="${dist.dir}/lib" includes="scalap.jar"/>
-    </sbaz>
+  <target name="pack-archives.latest.win" depends="pack-archives.src" if="os.win">
+    <copy tofile="${dists.dir}/archives/scala-latest-sources.tgz">
+      <fileset dir="${dists.dir}/archives">
+         <include name="scala-${version.number}-sources.tgz"/>
+      </fileset>
+    </copy>
   </target>
   
-  <target name="pack-sbaz.doc" depends="pack-sbaz.scalap">
-    <sbaz
-      file="${dists.dir}/sbaz/scala-devel-docs-${version.number}.sbp"
-      adfile="${dists.dir}/sbaz/scala-devel-docs-${version.number}.advert"
-      name="scala-devel-docs"
-      version="${version.number}"
-      desc="The Scala developer documentation. This contains all developer documentation."
-      link="${sbaz.universe}/scala-devel-docs-${version.number}.sbp">
-      <docset dir="${dist.dir}/doc/scala-devel-docs"/>
-    </sbaz>
-  </target>
-
-  <target name="pack-sbaz.all" depends="pack-sbaz.doc">
-    <sbaz
-      file="${dists.dir}/sbaz/${dist.name}.sbp"
-      adfile="${dists.dir}/sbaz/${dist.name}.advert"
-      name="scala"
-      version="${version.number}"
-      desc="The base Scala package that contains everything needed to start using Scala."
-      depends="scala-library,scala-devel"
-      link="${sbaz.universe}/${dist.name}.sbp"/>
-  </target>
-
-  
-  <target name="pack-sbaz.done" depends="pack-sbaz.all"/>
+  <target name="pack-archives.done" depends="pack-archives.src, pack-archives.latest.win, pack-archives.latest.unix"/>
 
   <target name="pack-maven.start">
     <mkdir dir="${dists.dir}/maven/${version.number}"/>
@@ -327,7 +238,7 @@ MAIN DISTRIBUTION SBAZ
 MISCELLANEOUS
 ============================================================================ -->
 
-  <target name="pack-all.done" depends="pack-archives.done, pack-sbaz.done, pack-maven.done"/>
+  <target name="pack-all.done" depends="pack-archives.done, pack-maven.done"/>
 
 <!-- ===========================================================================
 MISCELLANEOUS

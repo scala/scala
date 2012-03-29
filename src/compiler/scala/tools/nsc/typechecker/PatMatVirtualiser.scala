@@ -32,6 +32,8 @@ trait PatMatVirtualiser extends ast.TreeDSL { self: Analyzer =>
   import global._
   import definitions._
 
+  val SYNTH_CASE = Flags.CASE | SYNTHETIC
+
   object vpmName {
     val one       = newTermName("one")
     val drop      = newTermName("drop")
@@ -133,7 +135,7 @@ trait PatMatVirtualiser extends ast.TreeDSL { self: Analyzer =>
       //  and the only place that emits Matches after typers is for exception handling anyway)
       assert(phase.id <= currentRun.typerPhase.id, phase)
 
-      val scrutSym  = freshSym(scrut.pos, pureType(scrutType)) setFlag (Flags.CASE | SYNTHETIC) // the flags allow us to detect generated matches by looking at the scrutinee's symbol (needed to avoid recursing endlessly on generated switches)
+      val scrutSym  = freshSym(scrut.pos, pureType(scrutType)) setFlag SYNTH_CASE
       // pt = Any* occurs when compiling test/files/pos/annotDepMethType.scala  with -Xexperimental
       combineCases(scrut, scrutSym, cases map translateCase(scrutSym, pt), pt, matchOwner, matchFailGenOverride)
     }
@@ -147,7 +149,7 @@ trait PatMatVirtualiser extends ast.TreeDSL { self: Analyzer =>
       // if they're already simple enough to be handled by the back-end, we're done
       if (caseDefs forall treeInfo.isCatchCase) caseDefs
       else {
-        val switch = {
+        val swatches = { // switch-catches
           val bindersAndCases = caseDefs map { caseDef =>
             // generate a fresh symbol for each case, hoping we'll end up emitting a type-switch (we don't have a global scrut there)
             // if we fail to emit a fine-grained switch, have to do translateCase again with a single scrutSym (TODO: uniformize substitution on treemakers so we can avoid this)
@@ -155,10 +157,12 @@ trait PatMatVirtualiser extends ast.TreeDSL { self: Analyzer =>
             (caseScrutSym, propagateSubstitution(translateCase(caseScrutSym, pt)(caseDef), EmptySubstitution))
           }
 
-          (emitTypeSwitch(bindersAndCases, pt) map (_.map(fixerUpper(matchOwner, pos).apply(_).asInstanceOf[CaseDef])))
+          for(cases <- emitTypeSwitch(bindersAndCases, pt) toList;
+              if cases forall treeInfo.isCatchCase; // must check again, since it's not guaranteed -- TODO: can we eliminate this? e.g., a type test could test for a trait or a non-trivial prefix, which are not handled by the back-end
+              cse <- cases) yield fixerUpper(matchOwner, pos)(cse).asInstanceOf[CaseDef]
         }
 
-        val catches = switch getOrElse {
+        val catches = if (swatches nonEmpty) swatches else {
           val scrutSym = freshSym(pos, pureType(ThrowableClass.tpe))
           val casesNoSubstOnly = caseDefs map { caseDef => (propagateSubstitution(translateCase(scrutSym, pt)(caseDef), EmptySubstitution))}
 
@@ -254,9 +258,9 @@ trait PatMatVirtualiser extends ast.TreeDSL { self: Analyzer =>
           * @arg patBinder  symbol used to refer to the result of the previous pattern's extractor (will later be replaced by the outer tree with the correct tree to refer to that patterns result)
         */
         def unapply(tree: Tree): Option[(Symbol, Type)] = tree match {
-          case Bound(subpatBinder, typed@Typed(expr, tpt)) => Some((subpatBinder, typed.tpe))
-          case Bind(_, typed@Typed(expr, tpt))             => Some((patBinder, typed.tpe))
-          case Typed(expr, tpt)                            => Some((patBinder, tree.tpe))
+          case Bound(subpatBinder, typed@Typed(expr, tpt)) if typed.tpe ne null => Some((subpatBinder, typed.tpe))
+          case Bind(_, typed@Typed(expr, tpt))             if typed.tpe ne null => Some((patBinder, typed.tpe))
+          case Typed(expr, tpt)                            if tree.tpe ne null  => Some((patBinder, tree.tpe))
           case _                                           => None
         }
       }
@@ -914,10 +918,10 @@ class Foo(x: Other) { x._1 } // no error in this order
           // one alternative may still generate multiple trees (e.g., an extractor call + equality test)
           // (for now,) alternatives may not bind variables (except wildcards), so we don't care about the final substitution built internally by makeTreeMakers
           val combinedAlts = altss map (altTreeMakers =>
-            ((casegen: Casegen) => combineExtractors(altTreeMakers :+ TrivialTreeMaker(casegen.one(TRUE)))(casegen))
+            ((casegen: Casegen) => combineExtractors(altTreeMakers :+ TrivialTreeMaker(casegen.one(TRUE_typed)))(casegen))
           )
 
-          val findAltMatcher = codegenAlt.matcher(EmptyTree, NoSymbol, BooleanClass.tpe)(combinedAlts, Some(x => FALSE))
+          val findAltMatcher = codegenAlt.matcher(EmptyTree, NoSymbol, BooleanClass.tpe)(combinedAlts, Some(x => FALSE_typed))
           codegenAlt.ifThenElseZero(findAltMatcher, substitution(next))
         }
       }
@@ -1557,7 +1561,7 @@ class Foo(x: Other) { x._1 } // no error in this order
             else (REF(scrutSym) DOT (nme.toInt))
           Some(BLOCK(
             VAL(scrutSym) === scrut,
-            Match(scrutToInt, caseDefsWithDefault)
+            Match(gen.mkSynthSwitchSelector(scrutToInt), caseDefsWithDefault) // add switch annotation
           ))
         }
       } else None
@@ -1630,22 +1634,22 @@ class Foo(x: Other) { x._1 } // no error in this order
        * if keepGoing is false, the result Some(x) of the naive translation is encoded as matchRes == x
        */
       def matcher(scrut: Tree, scrutSym: Symbol, restpe: Type)(cases: List[Casegen => Tree], matchFailGen: Option[Tree => Tree]): Tree = {
-        val matchEnd = NoSymbol.newLabel(freshName("matchEnd"), NoPosition) setFlag (SYNTHETIC | Flags.CASE)
+        val matchEnd = NoSymbol.newLabel(freshName("matchEnd"), NoPosition) setFlag SYNTH_CASE
         val matchRes = NoSymbol.newValueParameter(newTermName("x"), NoPosition, SYNTHETIC) setInfo restpe
         matchEnd setInfo MethodType(List(matchRes), restpe)
 
-        def newCaseSym = NoSymbol.newLabel(freshName("case"), NoPosition) setInfo MethodType(Nil, restpe) setFlag (SYNTHETIC | Flags.CASE)
+        def newCaseSym = NoSymbol.newLabel(freshName("case"), NoPosition) setInfo MethodType(Nil, restpe) setFlag SYNTH_CASE
         var nextCase = newCaseSym
         def caseDef(mkCase: Casegen => Tree): Tree = {
           val currCase = nextCase
           nextCase = newCaseSym
-          val casegen = new OptimizedCasegen(matchEnd, nextCase)
+          val casegen = new OptimizedCasegen(matchEnd, nextCase, restpe)
           LabelDef(currCase, Nil, mkCase(casegen))
         }
 
         def catchAll = matchFailGen map { matchFailGen =>
           val scrutRef = if(scrutSym ne NoSymbol) REF(scrutSym) else EmptyTree // for alternatives
-          LabelDef(nextCase, Nil, matchEnd APPLY (matchFailGen(scrutRef))) // need to jump to matchEnd with result generated by matchFailGen (could be `FALSE` for isDefinedAt)
+          LabelDef(nextCase, Nil, matchEnd APPLY (_asInstanceOf(matchFailGen(scrutRef), restpe))) // need to jump to matchEnd with result generated by matchFailGen (could be `FALSE` for isDefinedAt)
         } toList
         // catchAll.isEmpty iff no synthetic default case needed (the (last) user-defined case is a default)
         // if the last user-defined case is a default, it will never jump to the next case; it will go immediately to matchEnd
@@ -1663,14 +1667,14 @@ class Foo(x: Other) { x._1 } // no error in this order
         )
       }
 
-      class OptimizedCasegen(matchEnd: Symbol, nextCase: Symbol) extends CommonCodegen with Casegen {
+      class OptimizedCasegen(matchEnd: Symbol, nextCase: Symbol, restpe: Type) extends CommonCodegen with Casegen {
         def matcher(scrut: Tree, scrutSym: Symbol, restpe: Type)(cases: List[Casegen => Tree], matchFailGen: Option[Tree => Tree]): Tree =
           optimizedCodegen.matcher(scrut, scrutSym, restpe)(cases, matchFailGen)
 
         // only used to wrap the RHS of a body
         // res: T
         // returns MatchMonad[T]
-        def one(res: Tree): Tree = matchEnd APPLY (res)
+        def one(res: Tree): Tree = matchEnd APPLY (_asInstanceOf(res, restpe)) // need cast for GADT magic
         protected def zero: Tree = nextCase APPLY ()
 
         // prev: MatchMonad[T]
@@ -1709,7 +1713,7 @@ class Foo(x: Other) { x._1 } // no error in this order
 
         def flatMapCondStored(cond: Tree, condSym: Symbol, res: Tree, nextBinder: Symbol, next: Tree): Tree =
           ifThenElseZero(cond, BLOCK(
-            condSym    === TRUE,
+            condSym    === TRUE_typed,
             nextBinder === res,
             next
           ))

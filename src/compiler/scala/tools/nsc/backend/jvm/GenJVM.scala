@@ -739,7 +739,7 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
             clasz.cunit.warning(sym.pos,
                 """|compiler bug: created invalid generic signature for %s in %s
                    |signature: %s
-                   |if this is reproducible, please report bug at http://lampsvn.epfl.ch/trac/scala
+                   |if this is reproducible, please report bug at https://issues.scala-lang.org/
                 """.trim.stripMargin.format(sym, sym.owner.skipPackageObject.fullName, sig))
             return
           }
@@ -753,7 +753,7 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
                      |original type: %s
                      |normalized type: %s
                      |erasure type: %s
-                     |if this is reproducible, please report bug at http://lampsvn.epfl.ch/trac/scala
+                     |if this is reproducible, please report bug at https://issues.scala-lang.org/
                   """.trim.stripMargin.format(sym, sym.owner.skipPackageObject.fullName, sig, memberTpe, normalizedTpe, bytecodeTpe))
                return
             }
@@ -871,7 +871,7 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
       debuglog("Adding field: " + f.symbol.fullName)
       
       val jfield = jclass.addNewField(
-        javaFlags(f.symbol) | javaFieldFlags(f.symbol),
+        javaFieldFlags(f.symbol),
         javaName(f.symbol),
         javaType(f.symbol.tpe)
       )
@@ -1915,16 +1915,30 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
     val privateFlag =
       sym.isPrivate || (sym.isPrimaryConstructor && isTopLevelModule(sym.owner))
 
-    // This does not check .isFinal (which checks flags for the FINAL flag),
-    // instead checking rawflags for that flag so as to exclude symbols which
-    // received lateFINAL.  These symbols are eligible for inlining, but to
-    // avoid breaking proxy software which depends on subclassing, we avoid
-    // insisting on their finality in the bytecode.
+    // Final: the only fields which can receive ACC_FINAL are eager vals.
+    // Neither vars nor lazy vals can, because:
+    //
+    // Source: http://docs.oracle.com/javase/specs/jls/se7/html/jls-17.html#jls-17.5.3
+    // "Another problem is that the specification allows aggressive
+    // optimization of final fields. Within a thread, it is permissible to
+    // reorder reads of a final field with those modifications of a final
+    // field that do not take place in the constructor."
+    //
+    // A var or lazy val which is marked final still has meaning to the
+    // scala compiler.  The word final is heavily overloaded unfortunately;
+    // for us it means "not overridable".  At present you can't override
+    // vars regardless; this may change.
+    //
+    // The logic does not check .isFinal (which checks flags for the FINAL flag,
+    // and includes symbols marked lateFINAL) instead inspecting rawflags so
+    // we can exclude lateFINAL.  Such symbols are eligible for inlining, but to
+    // avoid breaking proxy software which depends on subclassing, we do not
+    // emit ACC_FINAL.
     val finalFlag = (
          ((sym.rawflags & (Flags.FINAL | Flags.MODULE)) != 0)
       && !sym.enclClass.isInterface
       && !sym.isClassConstructor
-      && !sym.isMutable  // fix for SI-3569, it is too broad?
+      && !sym.isMutable   // lazy vals and vars both
     )
 
     mkFlags(
@@ -1939,13 +1953,13 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
       if (sym.hasFlag(Flags.SYNCHRONIZED)) JAVA_ACC_SYNCHRONIZED else 0
     )
   }
-  def javaFieldFlags(sym: Symbol) = {
-    mkFlags(
+  def javaFieldFlags(sym: Symbol) = (
+    javaFlags(sym) | mkFlags(
       if (sym hasAnnotation TransientAttr) ACC_TRANSIENT else 0,
       if (sym hasAnnotation VolatileAttr) ACC_VOLATILE else 0,
       if (sym.isMutable) 0 else ACC_FINAL
     )
-  }
+  )
 
   def isTopLevelModule(sym: Symbol): Boolean =
     afterPickler { sym.isModuleClass && !sym.isImplClass && !sym.isNestedClass }

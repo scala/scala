@@ -32,6 +32,7 @@ package mutable
  *  @define atomicop
  *  This is an atomic operation.
  */
+@deprecated("Use `scala.collection.concurrent.Map` instead.", "2.10.0")
 trait ConcurrentMap[A, B] extends Map[A, B] {
 
   /**

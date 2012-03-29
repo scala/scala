@@ -6,7 +6,7 @@
 **                          |/                                          **
 \*                                                                      */
 
-package scala.collection.mutable;
+package scala.collection.concurrent;
 
 
 

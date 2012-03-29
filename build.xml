@@ -282,9 +282,7 @@ INITIALISATION
     </condition>
     
     <exec osfamily="unix" executable="tools/get-scala-commit-sha" outputproperty="git.commit.sha" failifexecutionfails="false" />
-    <exec osfamily="windows" executable="tools/get-scala-commit-sha.bat" outputproperty="git.commit.sha" failifexecutionfails="false" />
     <exec osfamily="unix" executable="tools/get-scala-commit-date" outputproperty="git.commit.date" failifexecutionfails="false" />
-    <exec osfamily="windows" executable="tools/get-scala-commit-date.bat" outputproperty="git.commit.date" failifexecutionfails="false" />
     <!-- some default in case something went wrong getting the revision -->
     <property name="git.commit.sha" value="unknown"/>
     <property name="git.commit.date" value="unknown"/>
@@ -1586,6 +1584,21 @@ DOCUMENTATION
         </uptodate>
       </sequential>
     </macrodef>
+
+    <!-- Set the github commit scaladoc sources point to -->
+    <!-- For releases, look for the tag with the same name as the maven version -->
+    <condition property="scaladoc.git.commit" value="v${maven.version.number}">
+      <isset property="build.release"/>
+    </condition>
+    <!-- For snapshots, if we know the commit, point scaladoc to that particular commit instead of master -->
+    <condition property="scaladoc.git.commit" value="${git.commit.sha}">
+      <not><equals arg1="${git.commit.sha}" arg2="unknown"/></not>
+    </condition>
+    <!-- Fallback: point scaladoc to master -->
+    <property name="scaladoc.git.commit" value="master"/>
+    <!-- Compute the URL and show it -->
+    <property name="scaladoc.url" value="https://github.com/scala/scala/tree/${scaladoc.git.commit}/src"/>
+    <echo message="Scaladoc will point to ${scaladoc.url} for source files."/>
   </target>
   
   <target name="docs.pre-lib" depends="docs.start">
@@ -1607,7 +1620,7 @@ DOCUMENTATION
       doctitle="Scala Standard Library API (Scaladoc)"
       docversion="${version.number}"
       docfooter="epfl" 
-      docsourceurl="https://lampsvn.epfl.ch/trac/scala/browser/scala/trunk/src/€{FILE_PATH}.scala#L1"
+      docsourceurl="${scaladoc.url}€{FILE_PATH}.scala#L1"
       docUncompilable="${src.dir}/library-aux"
       sourcepath="${src.dir}"
       classpathref="pack.classpath"
@@ -1658,7 +1671,7 @@ DOCUMENTATION
     <taskdef name="genman"
              classname="scala.tools.docutil.ManMaker"
              classpathref="manual.classpath"/>
-    <genman command="fsc, sbaz, scala, scalac, scaladoc, scalap"
+    <genman command="fsc, scala, scalac, scaladoc, scalap"
             htmlout="${build-docs.dir}/manual/html"
             manout="${build-docs.dir}/manual/genman"/>
     <!-- On Windows source and target files can't be the same ! -->
@@ -1688,7 +1701,7 @@ DOCUMENTATION
       destdir="${build-docs.dir}/compiler"
       doctitle="Scala Compiler"
       docversion="${version.number}"
-      docsourceurl="https://lampsvn.epfl.ch/trac/scala/browser/scala/trunk/src/€{FILE_PATH}.scala#L1"
+      docsourceurl="${scaladoc.url}€{FILE_PATH}.scala#L1"
       sourcepath="${src.dir}"
       classpathref="pack.classpath"
       srcdir="${src.dir}/compiler"
@@ -1733,7 +1746,7 @@ DOCUMENTATION
       destdir="${build-docs.dir}/scalap"
       doctitle="Scalap"
       docversion="${version.number}"
-      docsourceurl="https://lampsvn.epfl.ch/trac/scala/browser/scala/trunk/src/€{FILE_PATH}.scala#L1"
+      docsourceurl="${scaladoc.url}€{FILE_PATH}.scala#L1"
       sourcepath="${src.dir}"
       classpathref="pack.classpath"
       srcdir="${src.dir}/scalap"
@@ -1903,7 +1916,8 @@ BOOTRAPING TEST AND TEST SUITE
         <path refid="pack.classpath"/>
         <fileset dir="${partest.dir}/files/lib" includes="*.jar" />
       </compilationpath>
-      <scalachecktests dir="${partest.dir}/scaladoc/scala" includes="**/*.scala" />
+      <runtests        dir="${partest.dir}/scaladoc/run"        includes="*.scala" />
+      <scalachecktests dir="${partest.dir}/scaladoc/scalacheck" includes="*.scala" />
     </partest>
   </target>
 

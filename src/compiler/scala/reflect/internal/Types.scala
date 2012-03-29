@@ -97,7 +97,7 @@ trait Types extends api.Types { self: SymbolTable =>
    */
   private final val propagateParameterBoundsToTypeVars = sys.props contains "scalac.debug.prop-constraints"
 
-  protected val enableTypeVarExperimentals = settings.Xexperimental.value
+  protected val enableTypeVarExperimentals = settings.Xexperimental.value || settings.YvirtPatmat.value
 
   /** Empty immutable maps to avoid allocations. */
   private val emptySymMap   = immutable.Map[Symbol, Symbol]()
@@ -448,7 +448,7 @@ trait Types extends api.Types { self: SymbolTable =>
     def resultType(actuals: List[Type]) = this
 
     /** Only used for dependent method types. */
-    def resultApprox: Type = ApproximateDependentMap(resultType) // if (!settings.YdepMethTpes.value) resultType else
+    def resultApprox: Type = ApproximateDependentMap(resultType)
 
     /** If this is a TypeRef `clazz`[`T`], return the argument `T`
      *  otherwise return this type
@@ -2268,7 +2268,7 @@ trait Types extends api.Types { self: SymbolTable =>
     override def isTrivial: Boolean = isTrivial0 && (resultType eq resultType.withoutAnnotations)
     private lazy val isTrivial0 =
       resultType.isTrivial && params.forall{p => p.tpe.isTrivial &&  (
-        /*!settings.YdepMethTpes.value ||*/ !(params.exists(_.tpe.contains(p)) || resultType.contains(p)))
+        !(params.exists(_.tpe.contains(p)) || resultType.contains(p)))
       }
 
     def isImplicit = params.nonEmpty && params.head.isImplicit
@@ -2292,8 +2292,9 @@ trait Types extends api.Types { self: SymbolTable =>
       }
       else existentialAbstraction(params, resultType)
 
-    // implicit args can only be depended on in result type: TODO this may be generalised so that the only constraint is dependencies are acyclic
-    def approximate: MethodType = MethodType(params, resultApprox) // if (!settings.YdepMethTpes.value) this else
+    // implicit args can only be depended on in result type:
+    //TODO this may be generalised so that the only constraint is dependencies are acyclic
+    def approximate: MethodType = MethodType(params, resultApprox)
 
     override def finalResultType: Type = resultType.finalResultType
 

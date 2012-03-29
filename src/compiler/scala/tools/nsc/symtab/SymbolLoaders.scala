@@ -126,9 +126,13 @@ abstract class SymbolLoaders {
         ok = false
         if (settings.debug.value) ex.printStackTrace()
         val msg = ex.getMessage()
-        globalError(
-          if (msg eq null) "i/o error while loading " + root.name
-          else "error while loading " + root.name + ", " + msg);
+        // SI-5593 Scaladoc's current strategy is to visit all packages in search of user code that can be documented
+        // therefore, it will rummage through the classpath triggering errors whenever it encounters package objects
+        // that are not in their correct place (see bug for details)
+        if (!settings.isScaladoc)
+          globalError(
+            if (msg eq null) "i/o error while loading " + root.name
+            else "error while loading " + root.name + ", " + msg);
       }
       try {
         val start = currentTime

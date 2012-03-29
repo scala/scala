@@ -8,11 +8,14 @@
 
 package scala.parallel
 
+
+
 /** A future is a function without parameters that will block the caller if
  *  the parallel computation associated with the function is not completed.
  *
  *  @since 2.9
  */
+@deprecated("Use `scala.concurrent.Future` instead.", "2.10.0")
 trait Future[@specialized +R] extends (() => R) {
   /** Returns a result once the parallel computation completes. If the
    *  computation produced an exception, an exception is forwarded.

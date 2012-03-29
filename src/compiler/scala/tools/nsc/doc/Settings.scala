@@ -97,4 +97,6 @@ class Settings(error: String => Unit) extends scala.tools.nsc.Settings(error) {
     docformat, doctitle, docfooter, docversion, docUncompilable, docsourceurl, docgenerator
   )
   val isScaladocSpecific: String => Boolean = scaladocSpecific map (_.name)
+
+  override def isScaladoc = true
 }

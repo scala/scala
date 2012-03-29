@@ -205,17 +205,13 @@ trait MethodSynthesis {
       enterBeans(tree)
     }
     def finishGetterSetter(typer: Typer, stat: Tree): List[Tree] = stat match {
-      case vd @ ValDef(mods, name, tpt, rhs) if !noFinishGetterSetter(vd) =>
+      case vd @ ValDef(mods, name, tpt, rhs) if !noFinishGetterSetter(vd) && !vd.symbol.isLazy =>
         // If we don't save the annotations, they seem to wander off.
         val annotations = stat.symbol.initialize.annotations
-        val trees = (
-          allValDefDerived(vd)
-                  map (acc => atPos(vd.pos.focus)(acc derive annotations))
-            filterNot (_ eq EmptyTree)
+        ( allValDefDerived(vd)
+                map (acc => atPos(vd.pos.focus)(acc derive annotations))
+          filterNot (_ eq EmptyTree)
         )
-        // log(trees.mkString("Accessor trees:\n  ", "\n  ", "\n"))
-        if (vd.symbol.isLazy) List(stat)
-        else trees
       case _ =>
         List(stat)
     }
