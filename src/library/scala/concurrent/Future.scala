@@ -274,6 +274,18 @@ self =>
     p.future
   }
 
+  /** Used by for-comprehensions.
+   */
+  final def withFilter(p: T => Boolean): Future[T] = filter(p)
+  // final def withFilter(p: T => Boolean) = new FutureWithFilter[T](this, p)
+
+  // final class FutureWithFilter[+S](self: Future[S], p: S => Boolean) {
+  //   def foreach(f: S => Unit): Unit = self filter p foreach f
+  //   def map[R](f: S => R) = self filter p map f
+  //   def flatMap[R](f: S => Future[R]) = self filter p flatMap f
+  //   def withFilter(q: S => Boolean): FutureWithFilter[S] = new FutureWithFilter[S](self, x => p(x) && q(x))
+  // }
+
   /** Creates a new future by mapping the value of the current future if the given partial function is defined at that value.
    *
    *  If the current future contains a value for which the partial function is defined, the new future will also hold that value.
@@ -417,7 +429,26 @@ self =>
 
     p.future
   }
-
+  
+  /** Creates a new `Future[S]` which is completed with this `Future`'s result if
+   *  that conforms to `S`'s erased type or a `ClassCastException` otherwise.
+   */
+  def mapTo[S](implicit m: Manifest[S]): Future[S] = {
+    val p = newPromise[S]
+    
+    onComplete {
+      case l: Failure[_] => p complete l.asInstanceOf[Try[S]]
+      case Success(t) =>
+        p complete (try {
+          Success(impl.Future.boxedType(m.erasure).cast(t).asInstanceOf[S])
+        } catch {
+          case e: ClassCastException => Failure(e)
+        })
+    }
+    
+    p.future
+  }
+  
   /** Applies the side-effecting function to the result of this future, and returns
    *  a new future with the result of this future.
    *
