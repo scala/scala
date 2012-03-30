@@ -236,7 +236,42 @@ INITIALISATION
 
   <target name="init.build.suffix.done" depends="init.build.release, init.build.patch.release"/>
 
-  <target name="init" depends="init.starr, init.build.suffix.done">
+  <target name="init.version.git" depends="init.build.suffix.done">
+    <!-- Find out whether we are running on Windows -->
+    <condition property="os.win">
+      <os family="windows"/>
+    </condition>
+    
+    <exec osfamily="unix" executable="tools/get-scala-commit-sha" outputproperty="git.commit.sha" failifexecutionfails="false" />
+    <exec osfamily="unix" executable="tools/get-scala-commit-date" outputproperty="git.commit.date" failifexecutionfails="false" />
+    <!-- some default in case something went wrong getting the revision -->
+    <property name="git.commit.sha" value="unknown"/>
+    <property name="git.commit.date" value="unknown"/>
+
+    <!-- We use the git describe to determine the OSGi modifier for our build. -->
+    <property
+      name="maven.version.number"
+      value="${version.major}.${version.minor}.${version.patch}${version.suffix}${maven.version.suffix}"/>
+    <property
+      name="osgi.version.number"
+      value="${version.major}.${version.minor}.${version.patch}.v${git.commit.date}${version.suffix}-${git.commit.sha}"/>
+  </target>
+
+  <target name="init.version.snapshot" unless="build.release" depends="init.version.git">
+     <property
+      name="version.number"
+      value="${version.major}.${version.minor}.${version.patch}${version.suffix}-${git.commit.date}-${git.commit.sha}"/>
+  </target>
+
+  <target name="init.version.release" if="build.release" depends="init.version.git">
+     <property
+      name="version.number"
+      value="${maven.version.number}"/>
+  </target>
+
+  <target name="init.version.done" depends="init.version.release, init.version.snapshot"/>
+
+  <target name="init" depends="init.starr, init.version.done">
   <!-- scalac.args.optimise is selectively overridden in certain antcall tasks. -->
     <property name="scalac.args.optimise" value=""/>
   <!-- scalac.args.quickonly are added to quick.* targets but not others (particularly, locker.)
@@ -251,29 +286,8 @@ INITIALISATION
       <format property="human" pattern="d MMMM yyyy, HH:mm:ss"/>
       <format property="short" pattern="yyyyMMddHHmmss"/>
     </tstamp>
-    <!-- Find out whether we are running on Windows -->
-    <condition property="os.win">
-      <os family="windows"/>
-    </condition>
-    
-    <exec osfamily="unix" executable="tools/get-scala-commit-sha" outputproperty="git.commit.sha" failifexecutionfails="false" />
-    <exec osfamily="unix" executable="tools/get-scala-commit-date" outputproperty="git.commit.date" failifexecutionfails="false" />
-    <!-- some default in case something went wrong getting the revision -->
-    <property name="git.commit.sha" value="unknown"/>
-    <property name="git.commit.date" value="unknown"/>
 
     <property name="init.avail" value="yes"/>
-
-    <!-- We use the git describe to determine the OSGi modifier for our build. -->
-    <property
-      name="maven.version.number"
-      value="${version.major}.${version.minor}.${version.patch}${version.suffix}${maven.version.suffix}"/>
-    <property
-      name="version.number"
-      value="${version.major}.${version.minor}.${version.patch}${version.suffix}-${git.commit.date}-${git.commit.sha}"/>
-    <property
-      name="osgi.version.number"
-      value="${version.major}.${version.minor}.${version.patch}.v${git.commit.date}${version.suffix}-${git.commit.sha}"/>
 
 
     <!-- Local libs (developer use.) -->
