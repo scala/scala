@@ -543,7 +543,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     /** Conditions where we omit the prefix when printing a symbol, to avoid
      *  unpleasantries like Predef.String, $iw.$iw.Foo and <empty>.Bippy.
      */
-    final def isOmittablePrefix = !settings.debug.value && (
+    final def isOmittablePrefix = /*!settings.debug.value &&*/ (
          UnqualifiedOwners(skipPackageObject)
       || isEmptyPrefix
     )
@@ -1191,9 +1191,9 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
       var ph = phase
       while (ph.prev.keepsTypeParams)
         ph = ph.prev
-
-      if (ph ne phase)
-        debuglog("checking unsafeTypeParams(" + this + ") at: " + phase + " reading at: " + ph)
+      //
+      // if (ph ne phase)
+      //   debuglog("checking unsafeTypeParams(" + this + ") at: " + phase + " reading at: " + ph)
 
       ph
     }
@@ -2119,7 +2119,8 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
       else ""
 
     def defaultFlagMask =
-      if (settings.debug.value) -1L
+      if (isAbstractType) ExplicitFlags
+      else if (settings.debug.value) -1L
       else if (owner.isRefinementClass) ExplicitFlags & ~OVERRIDE
       else ExplicitFlags
 
