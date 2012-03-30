@@ -261,21 +261,7 @@ INITIALISATION
 
   <target name="init.build.suffix.done" depends="init.build.release, init.build.patch.release"/>
 
-  <target name="init" depends="init.jars, init.build.suffix.done">
-  <!-- scalac.args.optimise is selectively overridden in certain antcall tasks. -->
-    <property name="scalac.args.optimise" value=""/>
-  <!-- scalac.args.quickonly are added to quick.* targets but not others (particularly, locker.)
-       This is to facilitate testing new command line options which do not yet exist in starr. -->
-    <property name="scalac.args.quickonly" value=""/>
-    <property name="scalac.args.all" value="${scalac.args} ${scalac.args.optimise}"/>
-    <property name="scalac.args.quick" value="${scalac.args.all} ${scalac.args.quickonly}"/>
-    <!-- Setting-up Ant contrib tasks -->
-    <taskdef resource="net/sf/antcontrib/antlib.xml" classpath="${lib.dir}/ant/ant-contrib.jar"/>
-    <!-- This is the start time for the distribution -->
-    <tstamp prefix="time">
-      <format property="human" pattern="d MMMM yyyy, HH:mm:ss" locale="en,US"/>
-      <format property="short" pattern="yyyyMMddHHmmss"/>
-    </tstamp>
+  <target name="init.version.git" depends="init.build.suffix.done">
     <!-- Find out whether we are running on Windows -->
     <condition property="os.win">
       <os family="windows"/>
@@ -292,14 +278,44 @@ INITIALISATION
       name="maven.version.number"
       value="${version.major}.${version.minor}.${version.patch}${version.suffix}${maven.version.suffix}"/>
     <property
-      name="version.number"
-      value="${version.major}.${version.minor}.${version.patch}${version.suffix}-${git.commit.date}-${git.commit.sha}"/>
-    <property
       name="osgi.version.number"
       value="${version.major}.${version.minor}.${version.patch}.v${git.commit.date}${version.suffix}-${git.commit.sha}"/>
+  </target>
+
+  <target name="init.version.snapshot" unless="build.release" depends="init.version.git">
+     <property
+      name="version.number"
+      value="${version.major}.${version.minor}.${version.patch}${version.suffix}-${git.commit.date}-${git.commit.sha}"/>
+  </target>
+
+  <target name="init.version.release" if="build.release" depends="init.version.git">
+     <property
+      name="version.number"
+      value="${maven.version.number}"/>
+  </target>
+
+  <target name="init.version.done" depends="init.version.release, init.version.snapshot"/>
+
+  <target name="init" depends="init.jars, init.version.done">
+  <!-- scalac.args.optimise is selectively overridden in certain antcall tasks. -->
+    <property name="scalac.args.optimise" value=""/>
+  <!-- scalac.args.quickonly are added to quick.* targets but not others (particularly, locker.)
+       This is to facilitate testing new command line options which do not yet exist in starr. -->
+    <property name="scalac.args.quickonly" value=""/>
+    <property name="scalac.args.all" value="${scalac.args} ${scalac.args.optimise}"/>
+    <property name="scalac.args.quick" value="${scalac.args.all} ${scalac.args.quickonly}"/>
+    <!-- Setting-up Ant contrib tasks -->
+    <taskdef resource="net/sf/antcontrib/antlib.xml" classpath="${lib.dir}/ant/ant-contrib.jar"/>
+    <!-- This is the start time for the distribution -->
+    <tstamp prefix="time">
+      <format property="human" pattern="d MMMM yyyy, HH:mm:ss" locale="en,US"/>
+      <format property="short" pattern="yyyyMMddHHmmss"/>
+    </tstamp>
+
     <!-- some default in case something went wrong getting the revision -->
     <property name="version.number" value="-unknown-"/>
     <property name="init.avail" value="yes"/>
+
 
     <!-- Local libs (developer use.) -->
     <mkdir dir="${lib-extra.dir}"/>
