@@ -10,8 +10,8 @@ package scala.concurrent
 
 
 
-import java.util.concurrent.{ Executors, ExecutorService }
-import scala.concurrent.forkjoin.ForkJoinPool
+import java.util.concurrent.{ Executors, ExecutorService, ThreadFactory }
+import scala.concurrent.forkjoin.{ ForkJoinPool, ForkJoinWorkerThread }
 import scala.util.{ Try, Success, Failure }
 import scala.concurrent.util.Duration
 import ConcurrentPackageObject._
@@ -24,14 +24,9 @@ abstract class ConcurrentPackageObject {
   /** A global execution environment for executing lightweight tasks.
    */
   lazy val executionContext =
-    new impl.ExecutionContextImpl(getExecutorService)
+    new impl.ExecutionContextImpl()
 
-  private[concurrent] def getExecutorService: AnyRef =
-    if (scala.util.Properties.isJavaAtLeast("1.6")) {
-      val vendor = scala.util.Properties.javaVmVendor
-      if ((vendor contains "Oracle") || (vendor contains "Sun") || (vendor contains "Apple")) new ForkJoinPool
-      else Executors.newCachedThreadPool()
-    } else Executors.newCachedThreadPool()
+  private val currentExecutionContext = new ThreadLocal[ExecutionContext]
   
   val handledFutureException: PartialFunction[Throwable, Throwable] = {
     case t: Throwable if isFutureThrowable(t) => t
@@ -58,10 +53,10 @@ abstract class ConcurrentPackageObject {
 
   /* concurrency constructs */
 
-  def future[T](body: =>T)(implicit execCtx: ExecutionContext = executionContext): Future[T] =
+  def future[T](body: =>T)(implicit execctx: ExecutionContext = executionContext): Future[T] =
     Future[T](body)
 
-  def promise[T]()(implicit execCtx: ExecutionContext = executionContext): Promise[T] =
+  def promise[T]()(implicit execctx: ExecutionContext = executionContext): Promise[T] =
     Promise[T]()
 
   /** Wraps a block of code into an awaitable object. */
@@ -82,8 +77,8 @@ abstract class ConcurrentPackageObject {
    *  - InterruptedException - in the case that a wait within the blockable object was interrupted
    *  - TimeoutException - in the case that the blockable object timed out
    */
-  def blocking[T](body: =>T)(implicit execCtx: ExecutionContext): T =
-    executionContext.blocking(body)
+  def blocking[T](body: =>T): T =
+    blocking(body2awaitable(body), Duration.fromNanos(0))
 
   /** Blocks on an awaitable object.
    *
@@ -94,8 +89,11 @@ abstract class ConcurrentPackageObject {
    *  - InterruptedException - in the case that a wait within the blockable object was interrupted
    *  - TimeoutException - in the case that the blockable object timed out
    */
-  def blocking[T](awaitable: Awaitable[T], atMost: Duration)(implicit execCtx: ExecutionContext = executionContext): T =
-    executionContext.blocking(awaitable, atMost)
+  def blocking[T](awaitable: Awaitable[T], atMost: Duration): T =
+    currentExecutionContext.get match {
+      case null => Await.result(awaitable, atMost)
+      case ec => ec.internalBlockingCall(awaitable, atMost)
+    }
 
   @inline implicit final def int2durationops(x: Int): DurationOps = new DurationOps(x)
 }
