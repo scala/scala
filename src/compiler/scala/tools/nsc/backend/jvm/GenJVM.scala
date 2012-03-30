@@ -121,6 +121,9 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
       if (settings.debug.value)
         inform("[running phase " + name + " on icode]")
 
+      if (settings.Xverify.value && !SigParser.isParserAvailable)
+        global.warning("signature verification requested by signature parser unavailable: signatures not checked")
+
       if (settings.Xdce.value)
         for ((sym, cls) <- icodes.classes if inliner.isClosureClass(sym) && !deadCode.liveClosures(sym))
           icodes.classes -= sym
@@ -284,6 +287,15 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
     val emitSource = debugLevel >= 1
     val emitLines  = debugLevel >= 2
     val emitVars   = debugLevel >= 3
+
+    // bug had phase with wrong name; leaving enabled for brief pseudo deprecation
+    private val checkSignatures = (
+         (settings.check containsName phaseName)
+      || (settings.check.value contains "genjvm") && {
+            global.warning("This option will be removed: please use -Ycheck:%s, not -Ycheck:genjvm." format phaseName)
+            true
+         }
+    )
 
     /** For given symbol return a symbol corresponding to a class that should be declared as inner class.
      *
@@ -726,10 +738,10 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
     def addGenericSignature(jmember: JMember, sym: Symbol, owner: Symbol) {
       if (needsGenericSignature(sym)) {
         val memberTpe = beforeErasure(owner.thisType.memberInfo(sym))
-        // println("addGenericSignature sym: " + sym.fullName + " : " + memberTpe + " sym.info: " + sym.info)
-        // println("addGenericSignature: "+ (sym.ownerChain map (x => (x.name, x.isImplClass))))
+
         erasure.javaSig(sym, memberTpe) foreach { sig =>
-          debuglog("sig(" + jmember.getName + ", " + sym + ", " + owner + ")      " + sig)
+          // This seems useful enough in the general case.
+          log(sig)
           /** Since we're using a sun internal class for signature validation,
            *  we have to allow for it not existing or otherwise malfunctioning:
            *  in which case we treat every signature as valid.  Medium term we
@@ -743,7 +755,7 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
                 """.trim.stripMargin.format(sym, sym.owner.skipPackageObject.fullName, sig))
             return
           }
-          if ((settings.check.value contains "genjvm")) {
+          if (checkSignatures) {
             val normalizedTpe = beforeErasure(erasure.prepareSigMap(memberTpe))
             val bytecodeTpe = owner.thisType.memberInfo(sym)
             if (!sym.isType && !sym.isConstructor && !(erasure.erasure(sym)(normalizedTpe) =:= bytecodeTpe)) {
