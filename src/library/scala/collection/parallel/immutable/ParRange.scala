@@ -25,6 +25,8 @@ import scala.collection.Iterator
  *
  *  @author Aleksandar Prokopec
  *  @since 2.9
+ *  @see  [[http://docs.scala-lang.org/overviews/parallel-collections/concrete-parallel-collections.html#parallel_range Scala's Parallel Collections Library overview]]
+ *  section on `ParRange` for more information.
  *
  *  @define Coll immutable.ParRange
  *  @define coll immutable parallel range
