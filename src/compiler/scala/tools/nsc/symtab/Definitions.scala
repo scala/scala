@@ -471,8 +471,8 @@ trait Definitions extends reflect.generic.StandardDefinitions {
 
     def isFunctionType(tp: Type): Boolean = tp.normalize match {
       case TypeRef(_, sym, args) if args.nonEmpty =>
-        val len = args.length
-        len < MaxFunctionArity && sym == FunctionClass(len - 1)
+        val arity = args.length - 1   // -1 is the return type
+        arity <= MaxFunctionArity && sym == FunctionClass(arity)
       case _ =>
         false
     }
