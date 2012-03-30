@@ -2186,17 +2186,24 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
 
       anonClass addAnnotation serialVersionUIDAnnotation
 
-      def mkParams(methodSym: Symbol) = {
+      def deriveFormals =
+        selOverride match {
+          case None if targs.isEmpty => Nil
+          case None => targs.init // is there anything we can do if targs.isEmpty??
+          case Some((vparams, _)) =>
+            vparams map {p => if(p.tpt.tpe == null) typedType(p.tpt).tpe else p.tpt.tpe}
+        }
+
+      def mkParams(methodSym: Symbol, formals: List[Type] = deriveFormals) = {
         selOverride match {
           case None if targs.isEmpty => MissingParameterTypeAnonMatchError(tree, pt); (Nil, EmptyTree)
           case None =>
-            val ps  = methodSym newSyntheticValueParams targs.init // is there anything we can do if targs.isEmpty??
+            val ps  = methodSym newSyntheticValueParams formals // is there anything we can do if targs.isEmpty??
             val ids = ps map (p => Ident(p.name))
             val sel = atPos(tree.pos.focusStart) { if (arity == 1) ids.head else gen.mkTuple(ids) }
             (ps, sel)
           case Some((vparams, sel)) =>
-            val newParamSyms = vparams map {p =>
-              val tp = if(p.tpt.tpe == null) typedType(p.tpt).tpe else p.tpt.tpe
+            val newParamSyms = (vparams, formals).zipped map {(p, tp) =>
               methodSym.newValueParameter(p.name, focusPos(p.pos), SYNTHETIC) setInfo tp
             }
 
@@ -2209,7 +2216,7 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
       // need to duplicate the cases before typing them to generate the apply method, or the symbols will be all messed up
       val casesTrue = if (isPartial) cases map (c => deriveCaseDef(c)(x => TRUE_typed).duplicate) else Nil
 
-      val applyMethod = {
+      def applyMethod = {
         // rig the show so we can get started typing the method body -- later we'll correct the infos...
         anonClass setInfo ClassInfoType(List(ObjectClass.tpe, pt, SerializableClass.tpe), newScope, anonClass)
         val methodSym = anonClass.newMethod(nme.apply, tree.pos, FINAL)
@@ -2224,25 +2231,59 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
 
           val (selector1, selectorTp, casesAdapted, resTp, doTranslation) = methodBodyTyper.prepareTranslateMatch(selector, cases, mode, ptRes)
 
-          val formalTypes = paramSyms map (_.tpe)
-          val parents =
-            if (isPartial) List(appliedType(AbstractPartialFunctionClass.typeConstructor, List(formalTypes.head, resTp)), SerializableClass.tpe)
-            else           List(appliedType(AbstractFunctionClass(arity).typeConstructor, formalTypes :+ resTp), SerializableClass.tpe)
+          val methFormals = paramSyms map (_.tpe)
+          val parents = List(appliedType(AbstractFunctionClass(arity).typeConstructor, methFormals :+ resTp), SerializableClass.tpe)
 
           anonClass setInfo ClassInfoType(parents, newScope, anonClass)
           methodSym setInfoAndEnter MethodType(paramSyms, resTp)
 
-          // use apply's parameter since the scrut's type has been widened
-          def missingCase(scrut_ignored: Tree) = (funThis DOT nme.missingCase) (REF(paramSyms.head))
+          DefDef(methodSym, methodBodyTyper.translateMatch(selector1, selectorTp, casesAdapted, resTp, doTranslation))
+        }
+      }
 
-          val body = methodBodyTyper.translateMatch(selector1, selectorTp, casesAdapted, resTp, doTranslation, if (isPartial) Some(missingCase) else None)
+      // def applyOrElse[A1 <: A, B1 >: B](x: A1, default: A1 => B1): B1 =
+      def applyOrElseMethodDef = {
+        // rig the show so we can get started typing the method body -- later we'll correct the infos...
+        // targs were type arguments for PartialFunction, so we know they will work for AbstractPartialFunction as well
+        def parents(targs: List[Type]) = List(appliedType(AbstractPartialFunctionClass.typeConstructor, targs), SerializableClass.tpe)
+
+        anonClass setInfo ClassInfoType(parents(targs), newScope, anonClass)
+        val methodSym = anonClass.newMethod(nme.applyOrElse, tree.pos, FINAL | OVERRIDE)
+
+        // create the parameter that corresponds to the function's parameter
+        val List(argTp)         = deriveFormals
+        val A1                  = methodSym newTypeParameter(newTypeName("A1")) setInfo TypeBounds.upper(argTp)
+        val (List(x), selector) = mkParams(methodSym, List(A1.tpe))
+
+        if (selector eq EmptyTree) EmptyTree
+        else {
+          // applyOrElse's default parameter:
+          val B1        = methodSym newTypeParameter(newTypeName("B1")) setInfo TypeBounds.empty //lower(resTp)
+          val default   = methodSym newValueParameter(newTermName("default"), focusPos(tree.pos), SYNTHETIC) setInfo functionType(List(A1.tpe), B1.tpe)
+
+          val paramSyms = List(x, default)
+          methodSym setInfoAndEnter polyType(List(A1, B1), MethodType(paramSyms, B1.tpe))
+
+          val methodBodyTyper = newTyper(context.makeNewScope(context.tree, methodSym)) // should use the DefDef for the context's tree, but it doesn't exist yet (we need the typer we're creating to create it)
+          paramSyms foreach (methodBodyTyper.context.scope enter _)
+
+          val (selector1, selectorTp, casesAdapted, resTp, doTranslation) = methodBodyTyper.prepareTranslateMatch(selector, cases, mode, ptRes)
+
+          anonClass setInfo ClassInfoType(parents(List(argTp, resTp)), newScope, anonClass)
+          B1 setInfo TypeBounds.lower(resTp)
+          anonClass.info.decls enter methodSym // methodSym's info need not change (B1's bound has been updated instead)
+
+          // use applyOrElse's first parameter since the scrut's type has been widened
+          def doDefault(scrut_ignored: Tree) = REF(default) APPLY (REF(x))
+
+          val body = methodBodyTyper.translateMatch(selector1, selectorTp, casesAdapted, B1.tpe, doTranslation, Some(doDefault))
 
           DefDef(methodSym, body)
         }
       }
 
       def isDefinedAtMethod = {
-        val methodSym = anonClass.newMethod(nme._isDefinedAt, tree.pos, FINAL)
+        val methodSym = anonClass.newMethod(nme.isDefinedAt, tree.pos, FINAL)
         val (paramSyms, selector) = mkParams(methodSym)
         if (selector eq EmptyTree) EmptyTree
         else {
@@ -2257,7 +2298,7 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
         }
       }
 
-      val members = if (!isPartial) List(applyMethod) else List(applyMethod, isDefinedAtMethod)
+      val members = if (!isPartial) List(applyMethod) else List(applyOrElseMethodDef, isDefinedAtMethod)
       if (members.head eq EmptyTree) setError(tree)
       else typed(Block(List(ClassDef(anonClass, NoMods, List(List()), List(List()), members, tree.pos)), New(anonClass.tpe)), mode, pt)
     }
@@ -4142,7 +4183,7 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
           var defEntry: ScopeEntry = null // the scope entry of defSym, if defined in a local scope
 
           var cx = startingIdentContext
-          while (defSym == NoSymbol && cx != NoContext) {
+          while (defSym == NoSymbol && cx != NoContext && (cx.scope ne null)) { // cx.scope eq null arises during FixInvalidSyms in Duplicators
             // !!! Shouldn't the argument to compileSourceFor be cx, not context?
             // I can't tell because those methods do nothing in the standard compiler,
             // presumably they are overridden in the IDE.
