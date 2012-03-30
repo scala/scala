@@ -34,6 +34,8 @@ import immutable.VectorIterator
  *
  *  @author Aleksandar Prokopec
  *  @since 2.9
+ *  @see  [[http://docs.scala-lang.org/overviews/parallel-collections/concrete-parallel-collections.html#parallel_vector Scala's Parallel Collections Library overview]]
+ *  section on `ParVector` for more information.
  *
  *  @define Coll immutable.ParVector
  *  @define coll immutable parallel vector

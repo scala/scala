@@ -74,7 +74,7 @@ trait FutureCallbacks extends TestBase {
       done()
       throw new Exception
     }
-    f onSuccess { 
+    f onSuccess {
       case _ => assert(false)
     }
   }

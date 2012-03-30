@@ -134,8 +134,26 @@ self =>
   /** Creates a new promise.
    */
   def newPromise[S]: Promise[S]
-
-
+  
+  /** Returns whether the future has already been completed with
+   *  a value or an exception.
+   *  
+   *  $nonDeterministic
+   *  
+   *  @return    `true` if the future is already completed, `false` otherwise
+   */
+  def isCompleted: Boolean
+  
+  /** The value of this `Future`.
+   *  
+   *  If the future is not completed the returned value will be `None`.
+   *  If the future is completed the value will be `Some(Success(t))`
+   *  if it contains a valid result, or `Some(Failure(error))` if it contains
+   *  an exception.
+   */
+  def value: Option[Try[T]]
+  
+  
   /* Projections */
 
   /** Returns a failed projection of this future.
@@ -235,8 +253,8 @@ self =>
    *  val f = future { 5 }
    *  val g = f filter { _ % 2 == 1 }
    *  val h = f filter { _ % 2 == 0 }
-   *  await(0) g // evaluates to 5
-   *  await(0) h // throw a NoSuchElementException
+   *  await(g, 0) // evaluates to 5
+   *  await(h, 0) // throw a NoSuchElementException
    *  }}}
    */
   def filter(pred: T => Boolean): Future[T] = {
@@ -272,8 +290,8 @@ self =>
    *  val h = f collect {
    *    case x if x > 0 => x * 2
    *  }
-   *  await(0) g // evaluates to 5
-   *  await(0) h // throw a NoSuchElementException
+   *  await(g, 0) // evaluates to 5
+   *  await(h, 0) // throw a NoSuchElementException
    *  }}}
    */
   def collect[S](pf: PartialFunction[T, S]): Future[S] = {
@@ -383,7 +401,7 @@ self =>
    *  val f = future { sys.error("failed") }
    *  val g = future { 5 }
    *  val h = f orElse g
-   *  await(0) h // evaluates to 5
+   *  await(h, 0) // evaluates to 5
    *  }}}
    */
   def fallbackTo[U >: T](that: Future[U]): Future[U] = {
@@ -445,7 +463,7 @@ self =>
    *  val f = future { sys.error("failed") }
    *  val g = future { 5 }
    *  val h = f either g
-   *  await(0) h // evaluates to either 5 or throws a runtime exception
+   *  await(h, 0) // evaluates to either 5 or throws a runtime exception
    *  }}}
    */
   def either[U >: T](that: Future[U]): Future[U] = {
@@ -466,26 +484,102 @@ self =>
 
 
 
-/** TODO some docs
+/** Future companion object.
  *
  *  @define nonDeterministic
  *  Note: using this method yields nondeterministic dataflow programs.
  */
 object Future {
+  
+  def apply[T](body: =>T)(implicit executor: ExecutionContext): Future[T] = impl.Future(body)
 
-  // TODO make more modular by encoding all other helper methods within the execution context
-  /** TODO some docs
+  import scala.collection.mutable.Builder
+  import scala.collection.generic.CanBuildFrom
+
+  /** Simple version of `Futures.traverse`. Transforms a `Traversable[Future[A]]` into a `Future[Traversable[A]]`.
+   *  Useful for reducing many `Future`s into a single `Future`.
    */
-  def all[T, Coll[X] <: Traversable[X]](futures: Coll[Future[T]])(implicit cbf: CanBuildFrom[Coll[_], T, Coll[T]], ec: ExecutionContext): Future[Coll[T]] =
-    ec.all[T, Coll](futures)
+  def sequence[A, M[_] <: Traversable[_]](in: M[Future[A]])(implicit cbf: CanBuildFrom[M[Future[A]], A, M[A]], executor: ExecutionContext): Future[M[A]] = {
+    in.foldLeft(Promise.successful(cbf(in)).future) {
+      (fr, fa) => for (r <- fr; a <- fa.asInstanceOf[Future[A]]) yield (r += a)
+    } map (_.result)
+  }
 
-  // move this to future companion object
-  @inline def apply[T](body: =>T)(implicit executor: ExecutionContext): Future[T] = executor.future(body)
+  /** Returns a `Future` to the result of the first future in the list that is completed.
+   */
+  def firstCompletedOf[T](futures: Traversable[Future[T]])(implicit executor: ExecutionContext): Future[T] = {
+    val p = Promise[T]()
 
-  def any[T](futures: Traversable[Future[T]])(implicit ec: ExecutionContext): Future[T] = ec.any(futures)
+    val completeFirst: Try[T] => Unit = p tryComplete _
+    futures.foreach(_ onComplete completeFirst)
 
-  def find[T](futures: Traversable[Future[T]])(predicate: T => Boolean)(implicit ec: ExecutionContext): Future[Option[T]] = ec.find(futures)(predicate)
+    p.future
+  }
 
+  /** Returns a `Future` that will hold the optional result of the first `Future` with a result that matches the predicate.
+   */
+  def find[T](futures: Traversable[Future[T]])(predicate: T => Boolean)(implicit executor: ExecutionContext): Future[Option[T]] = {
+    if (futures.isEmpty) Promise.successful[Option[T]](None).future
+    else {
+      val result = Promise[Option[T]]()
+      val ref = new AtomicInteger(futures.size)
+      val search: Try[T] => Unit = v => try {
+        v match {
+          case Success(r) => if (predicate(r)) result tryComplete Success(Some(r))
+          case _        =>
+        }
+      } finally {
+        if (ref.decrementAndGet == 0)
+          result tryComplete Success(None)
+      }
+
+      futures.foreach(_ onComplete search)
+
+      result.future
+    }
+  }
+
+  /** A non-blocking fold over the specified futures, with the start value of the given zero.
+   *  The fold is performed on the thread where the last future is completed,
+   *  the result will be the first failure of any of the futures, or any failure in the actual fold,
+   *  or the result of the fold.
+   *  
+   *  Example:
+   *  {{{
+   *    val result = Await.result(Future.fold(futures)(0)(_ + _), 5 seconds)
+   *  }}}
+   */
+  def fold[T, R](futures: Traversable[Future[T]])(zero: R)(foldFun: (R, T) => R)(implicit executor: ExecutionContext): Future[R] = {
+    if (futures.isEmpty) Promise.successful(zero).future
+    else sequence(futures).map(_.foldLeft(zero)(foldFun))
+  }
+
+  /** Initiates a fold over the supplied futures where the fold-zero is the result value of the `Future` that's completed first.
+   *  
+   *  Example:
+   *  {{{
+   *    val result = Await.result(Futures.reduce(futures)(_ + _), 5 seconds)
+   *  }}}
+   */
+  def reduce[T, R >: T](futures: Traversable[Future[T]])(op: (R, T) => R)(implicit executor: ExecutionContext): Future[R] = {
+    if (futures.isEmpty) Promise[R].failure(new NoSuchElementException("reduce attempted on empty collection")).future
+    else sequence(futures).map(_ reduceLeft op)
+  }
+  
+  /** Transforms a `Traversable[A]` into a `Future[Traversable[B]]` using the provided function `A => Future[B]`.
+   *  This is useful for performing a parallel map. For example, to apply a function to all items of a list
+   *  in parallel:
+   *  
+   *  {{{
+   *    val myFutureList = Future.traverse(myList)(x => Future(myFunc(x)))
+   *  }}}
+   */
+  def traverse[A, B, M[_] <: Traversable[_]](in: M[A])(fn: A => Future[B])(implicit cbf: CanBuildFrom[M[A], B, M[B]], executor: ExecutionContext): Future[M[B]] =
+    in.foldLeft(Promise.successful(cbf(in)).future) { (fr, a) =>
+      val fb = fn(a.asInstanceOf[A])
+      for (r <- fr; b <- fb) yield (r += b)
+    }.map(_.result)
+  
 }
 
 

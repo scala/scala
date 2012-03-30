@@ -44,7 +44,7 @@ object Stack extends SeqFactory[Stack] {
  *  @author  Martin Odersky
  *  @version 2.8
  *  @since   1
- *  @see [[http://docs.scala-lang.org/overviews/collections/concrete-mutable-collection-classes.html#stacks"Scala's Collection Library overview"]]
+ *  @see [[http://docs.scala-lang.org/overviews/collections/concrete-mutable-collection-classes.html#stacks "Scala's Collection Library overview"]]
  *  section on `Stacks` for more information.
  *  @define Coll Stack
  *  @define coll stack

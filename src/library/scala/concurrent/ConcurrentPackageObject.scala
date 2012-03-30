@@ -59,14 +59,18 @@ abstract class ConcurrentPackageObject {
   /* concurrency constructs */
 
   def future[T](body: =>T)(implicit execCtx: ExecutionContext = executionContext): Future[T] =
-    execCtx future body
+    Future[T](body)
 
   def promise[T]()(implicit execCtx: ExecutionContext = executionContext): Promise[T] =
-    execCtx promise
+    Promise[T]()
 
   /** Wraps a block of code into an awaitable object. */
   def body2awaitable[T](body: =>T) = new Awaitable[T] {
-    def await(atMost: Duration)(implicit cb: CanAwait) = body
+    def ready(atMost: Duration)(implicit permit: CanAwait) = {
+      body
+      this
+    }
+    def result(atMost: Duration)(implicit permit: CanAwait) = body
   }
 
   /** Used to block on a piece of code which potentially blocks.
@@ -78,8 +82,8 @@ abstract class ConcurrentPackageObject {
    *  - InterruptedException - in the case that a wait within the blockable object was interrupted
    *  - TimeoutException - in the case that the blockable object timed out
    */
-  def blocking[T](atMost: Duration)(body: =>T)(implicit execCtx: ExecutionContext): T =
-    executionContext.blocking(atMost)(body)
+  def blocking[T](body: =>T)(implicit execCtx: ExecutionContext): T =
+    executionContext.blocking(body)
 
   /** Blocks on an awaitable object.
    *
