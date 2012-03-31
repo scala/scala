@@ -253,22 +253,23 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
     /** Check that `tpt` refers to a class type with a stable prefix. */
     def checkStablePrefixClassType(tpt: Tree): Boolean = {
       val tpe = unwrapToStableClass(tpt.tpe)
-
       def prefixIsStable = {
         def checkPre = tpe match {
           case TypeRef(pre, _, _) => pre.isStable || errorNotStable(tpt, pre)
-          case _                  => true
+          case _                  => false
         }
         // A type projection like X#Y can get by the stable check if the
         // prefix is singleton-bounded, so peek at the tree too.
         def checkTree = tpt match {
-          case SelectFromTypeTree(qual, _)  => isSingleType(qual.tpe) || errorNotStable(tpt, qual.tpe)
+          case SelectFromTypeTree(qual, _)  => isSingleType(qual.tpe) || errorNotClass(tpt, tpe)
           case _                            => true
         }
         checkPre && checkTree
       }
 
-      isNonRefinementClassType(tpe) && (isPastTyper || prefixIsStable)
+      (    (isNonRefinementClassType(tpe) || errorNotClass(tpt, tpe))
+        && (isPastTyper || prefixIsStable)
+      )
     }
 
     /** Check that type <code>tp</code> is not a subtype of itself.

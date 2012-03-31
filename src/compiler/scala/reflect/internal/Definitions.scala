@@ -138,26 +138,47 @@ trait Definitions extends reflect.api.StandardDefinitions {
     // symbols related to packages
     var emptypackagescope: Scope = null //debug
 
-    // This is the package _root_.  The actual root cannot be referenced at
-    // the source level, but _root_ is essentially a function () => <root>.
-    lazy val RootPackage: Symbol = {
-      val rp = (
-        NoSymbol.newValue(nme.ROOTPKG, NoPosition, FINAL | MODULE | PACKAGE | JAVA)
-          setInfo NullaryMethodType(RootClass.tpe)
-      )
-      RootClass.sourceModule = rp
-      rp
+    sealed trait WellKnownSymbol extends Symbol {
+      this initFlags TopLevelCreationFlags
     }
+    // Features common to RootClass and RootPackage, the roots of all
+    // type and term symbols respectively.
+    sealed trait RootSymbol extends WellKnownSymbol {
+      final override def isRootSymbol = true
+    }
+    // This is the package _root_.  The actual root cannot be referenced at
+    // the source level, but _root_ is essentially a function => <root>.
+    final object RootPackage extends ModuleSymbol(NoSymbol, NoPosition, nme.ROOTPKG) with RootSymbol {
+      this setInfo NullaryMethodType(RootClass.tpe)
+      RootClass.sourceModule = this
 
-    // This is the actual root of everything, including the package _root_.
-    lazy val RootClass: ModuleClassSymbol = (
-      NoSymbol.newModuleClassSymbol(tpnme.ROOT, NoPosition, FINAL | MODULE | PACKAGE | JAVA)
-        setInfo rootLoader
-    )
+      override def isRootPackage = true
+    }
+    // This is <root>, the actual root of everything except the package _root_.
+    // <root> and _root_ (RootPackage and RootClass) should be the only "well known"
+    // symbols owned by NoSymbol.  All owner chains should go through RootClass,
+    // although it is probable that some symbols are created as direct children
+    // of NoSymbol to ensure they will not be stumbled upon.  (We should designate
+    // a better encapsulated place for that.)
+    final object RootClass extends ModuleClassSymbol(NoSymbol, NoPosition, tpnme.ROOT) with RootSymbol {
+      this setInfo rootLoader
+
+      override def isRoot            = true
+      override def isEffectiveRoot   = true
+      override def isStatic          = true
+      override def isNestedClass     = false
+      override def ownerOfNewSymbols = EmptyPackageClass
+    }
     // The empty package, which holds all top level types without given packages.
-    lazy val EmptyPackage       = RootClass.newPackage(nme.EMPTY_PACKAGE_NAME, NoPosition, FINAL)
-    lazy val EmptyPackageClass  = EmptyPackage.moduleClass
-
+    final object EmptyPackage extends ModuleSymbol(RootClass, NoPosition, nme.EMPTY_PACKAGE_NAME) with WellKnownSymbol {
+      override def isEmptyPackage = true
+    }
+    final object EmptyPackageClass extends ModuleClassSymbol(RootClass, NoPosition, tpnme.EMPTY_PACKAGE_NAME) with WellKnownSymbol {
+      override def isEffectiveRoot     = true
+      override def isEmptyPackageClass = true
+    }
+    // It becomes tricky to create dedicated objects for other symbols because
+    // of initialization order issues.
     lazy val JavaLangPackage      = getModule(sn.JavaLang)
     lazy val JavaLangPackageClass = JavaLangPackage.moduleClass
     lazy val ScalaPackage         = getModule(nme.scala_)
@@ -542,6 +563,12 @@ trait Definitions extends reflect.api.StandardDefinitions {
 
     // Checks whether the given type is true for the given condition,
     // or if it is a specialized subtype of a type for which it is true.
+    //
+    // Origins notes:
+    // An issue was introduced with specialization in that the implementation
+    // of "isTupleType" in Definitions relied upon sym == TupleClass(elems.length).
+    // This test is untrue for specialized tuples, causing mysterious behavior
+    // because only some tuples are specialized.
     def isPossiblySpecializedType(tp: Type)(cond: Type => Boolean) = {
       cond(tp) || (tp match {
         case TypeRef(pre, sym, args) if sym hasFlag SPECIALIZED =>
@@ -1112,8 +1139,13 @@ trait Definitions extends reflect.api.StandardDefinitions {
     def init() {
       if (isInitialized) return
 
+      // Still fiddling with whether it's cleaner to do some of this setup here
+      // or from constructors.  The latter approach tends to invite init order issues.
       EmptyPackageClass setInfo ClassInfoType(Nil, newPackageScope(EmptyPackageClass), EmptyPackageClass)
       EmptyPackage setInfo EmptyPackageClass.tpe
+
+      connectModuleToClass(EmptyPackage, EmptyPackageClass)
+      connectModuleToClass(RootPackage, RootClass)
 
       RootClass.info.decls enter EmptyPackage
       RootClass.info.decls enter RootPackage

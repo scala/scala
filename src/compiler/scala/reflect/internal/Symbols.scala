@@ -451,12 +451,23 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     final def isVarargsMethod      = isMethod && hasFlag(VARARGS)
 
     /** Package tests */
-    final def isEmptyPackage      = isPackage && name == nme.EMPTY_PACKAGE_NAME
-    final def isEmptyPackageClass = isPackageClass && name == tpnme.EMPTY_PACKAGE_NAME
     final def isPackage           = isModule && hasFlag(PACKAGE)
     final def isPackageClass      = isClass && hasFlag(PACKAGE)
-    final def isRoot              = isPackageClass && owner == NoSymbol
-    final def isRootPackage       = isPackage && owner == NoSymbol
+
+    /** Overridden in custom objects in Definitions */
+    def isRoot              = false
+    def isRootPackage       = false
+    def isRootSymbol        = false   // RootPackage and RootClass.  TODO: also NoSymbol.
+    def isEmptyPackage      = false
+    def isEmptyPackageClass = false
+
+    /** Is this symbol an effective root for fullname string?
+     */
+    def isEffectiveRoot = false
+
+    /** For RootClass, EmptyPackageClass.  For all other symbols, itself.
+     */
+    def ownerOfNewSymbols = this
 
     /** Does this symbol denote a wrapper created by the repl? */
     final def isInterpreterWrapper = (
@@ -464,9 +475,6 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
       && owner.isPackageClass
       && nme.isReplWrapperName(name)
     )
-    /** Is this symbol an effective root for fullname string?
-     */
-    def isEffectiveRoot = isRoot || isEmptyPackageClass
 
     /** Term symbols with the exception of static parts of Java classes and packages.
      */
@@ -652,8 +660,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     final def isModuleVar = hasFlag(MODULEVAR)
 
     /** Is this symbol static (i.e. with no outer instance)? */
-    final def isStatic: Boolean =
-      hasFlag(STATIC) || isRoot || owner.isStaticOwner
+    def isStatic = (this hasFlag STATIC) || owner.isStaticOwner
 
     /** Is this symbol a static constructor? */
     final def isStaticConstructor: Boolean =
@@ -685,8 +692,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     final def isConstant: Boolean = isStable && isConstantType(tpe.resultType)
 
     /** Is this class nested in another class or module (not a package)? */
-    final def isNestedClass: Boolean =
-      isClass && !isRoot && !owner.isPackageClass
+    def isNestedClass = isClass && !owner.isPackageClass
 
     /** Is this class locally defined?
      *  A class is local, if
@@ -2045,7 +2051,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
 
     def fullNameString: String = {
       def recur(sym: Symbol): String = {
-        if (sym.isRoot || sym.isRootPackage || sym == NoSymbol) sym.nameString
+        if (sym.isRootSymbol || sym == NoSymbol) sym.nameString
         else if (sym.owner.isEffectiveRoot) sym.nameString
         else recur(sym.effectiveOwner.enclClass) + "." + sym.nameString
       }
@@ -2095,7 +2101,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
           case rt                    => " <: " + rt
         }
       )
-      else if (isModule) moduleClass.infoString(tp)
+      else if (isModule) "" //  avoid "object X of type X.type"
       else tp match {
         case PolyType(tparams, res)  => typeParamsString(tp) + infoString(res)
         case NullaryMethodType(res)  => infoString(res)

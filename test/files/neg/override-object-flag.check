@@ -1,4 +1,4 @@
-override-object-flag.scala:3: error: overriding object Foo in trait A of type object B.this.Foo;
+override-object-flag.scala:3: error: overriding object Foo in trait A;
  object Foo cannot override final member
 trait B extends A  { override object Foo }
                                      ^
