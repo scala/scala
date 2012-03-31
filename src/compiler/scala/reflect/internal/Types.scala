@@ -3616,6 +3616,23 @@ trait Types extends api.Types { self: SymbolTable =>
     }
   }
 
+  class TypeUnwrapper(poly: Boolean, existential: Boolean, annotated: Boolean, nullary: Boolean) extends (Type => Type) {
+    def apply(tp: Type): Type = tp match {
+      case AnnotatedType(_, underlying, _) if annotated   => apply(underlying)
+      case ExistentialType(_, underlying) if existential  => apply(underlying)
+      case PolyType(_, underlying) if poly                => apply(underlying)
+      case NullaryMethodType(underlying) if nullary       => apply(underlying)
+      case tp                                             => tp
+    }
+  }
+  class ClassUnwrapper(existential: Boolean) extends TypeUnwrapper(poly = true, existential, annotated = true, nullary = false) {
+    override def apply(tp: Type) = super.apply(tp.normalize)
+  }
+
+  object        unwrapToClass extends ClassUnwrapper(existential = true) { }
+  object  unwrapToStableClass extends ClassUnwrapper(existential = false) { }
+  object   unwrapWrapperTypes extends  TypeUnwrapper(true, true, true, true) { }
+
   trait AnnotationFilter extends TypeMap {
     def keepAnnotation(annot: AnnotationInfo): Boolean
 
