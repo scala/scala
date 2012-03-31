@@ -246,7 +246,7 @@ INITIALISATION
 
   <!-- Resolve maven dependencies -->
   <target name="init.maven.jars" depends="init.maven.tasks">
-    <artifact:dependencies pathId="dependency.classpath">
+    <artifact:dependencies pathId="dependency.classpath" filesetId="dependency.fileset">
       <dependency groupId="org.skife.com.typesafe.config" artifactId="typesafe-config" version="0.3.0"/>
     </artifact:dependencies>
   </target>
@@ -1016,6 +1016,11 @@ PACKED QUICK BUILD (PACK)
 
   <target name="pack.lib" depends="pack.pre-lib" unless="pack.lib.available">
     <mkdir dir="${build-pack.dir}/lib"/>
+    <!-- First copy maven dependencies -->
+    <copy todir="${build-pack.dir}/lib">
+      <fileset refid="dependency.fileset" />
+      <mapper type="flatten" />
+    </copy>
     <jar destfile="${build-pack.dir}/lib/scala-library.jar">
       <fileset dir="${build-quick.dir}/classes/library">
         <exclude name="scala/dbc/**"/>
