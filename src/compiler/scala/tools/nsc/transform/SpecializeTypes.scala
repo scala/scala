@@ -134,16 +134,6 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
     case _                                        => false
   }
 
-  def unspecializedSymbol(sym: Symbol): Symbol = {
-    if (sym hasFlag SPECIALIZED) {
-      // add initialization from its generic class constructor
-      val genericName = nme.unspecializedName(sym.name)
-      val member = sym.owner.info.decl(genericName.toTypeName)
-      member
-    }
-    else NoSymbol
-  }
-
   object TypeEnv {
     /** Return a new type environment binding specialized type parameters of sym to
      *  the given args. Expects the lists to have the same length.

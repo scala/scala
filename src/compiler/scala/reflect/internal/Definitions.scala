@@ -524,26 +524,48 @@ trait Definitions extends reflect.api.StandardDefinitions {
         else nme.genericWrapArray
     }
 
-    def tupleField(n: Int, j: Int) = getMember(TupleClass(n), nme.productAccessorName(j))
-    def isTupleType(tp: Type): Boolean = isTupleType(tp, false)
-    def isTupleTypeOrSubtype(tp: Type): Boolean = isTupleType(tp, true)
-      private def isTupleType(tp: Type, subtypeOK: Boolean) = tp.normalize match {
-        case TypeRef(_, sym, args) if args.nonEmpty =>
-          val len = args.length
-          len <= MaxTupleArity && {
-            val tsym = TupleClass(len)
-            (sym == tsym) || (subtypeOK && !tp.isHigherKinded && sym.isSubClass(tsym))
-          }
-        case _ => false
-      }
+    @deprecated("Use isTupleType", "2.10.0")
+    def isTupleTypeOrSubtype(tp: Type): Boolean = isTupleType(tp)
 
-      def tupleType(elems: List[Type]) = {
-        val len = elems.length
-        if (len <= MaxTupleArity) {
-          val sym = TupleClass(len)
-          typeRef(sym.typeConstructor.prefix, sym, elems)
-        } else NoType
+    def tupleField(n: Int, j: Int) = getMember(TupleClass(n), nme.productAccessorName(j))
+    def isTupleSymbol(sym: Symbol) = TupleClass contains unspecializedSymbol(sym)
+
+    def unspecializedSymbol(sym: Symbol): Symbol = {
+      if (sym hasFlag SPECIALIZED) {
+        // add initialization from its generic class constructor
+        val genericName = nme.unspecializedName(sym.name)
+        val member = sym.owner.info.decl(genericName.toTypeName)
+        member
       }
+      else sym
+    }
+
+    // Checks whether the given type is true for the given condition,
+    // or if it is a specialized subtype of a type for which it is true.
+    def isPossiblySpecializedType(tp: Type)(cond: Type => Boolean) = {
+      cond(tp) || (tp match {
+        case TypeRef(pre, sym, args) if sym hasFlag SPECIALIZED =>
+          cond(tp baseType unspecializedSymbol(sym))
+        case _ =>
+          false
+      })
+    }
+    // No normalization.
+    def isTupleTypeDirect(tp: Type) = isPossiblySpecializedType(tp) {
+      case TypeRef(_, sym, args) if args.nonEmpty =>
+        val len = args.length
+        len <= MaxTupleArity && sym == TupleClass(len)
+      case _ => false
+    }
+    def isTupleType(tp: Type) = isTupleTypeDirect(tp.normalize)
+
+    def tupleType(elems: List[Type]) = {
+      val len = elems.length
+      if (len <= MaxTupleArity) {
+        val sym = TupleClass(len)
+        typeRef(sym.typeConstructor.prefix, sym, elems)
+      } else NoType
+    }
 
     lazy val ProductRootClass: Symbol = getRequiredClass("scala.Product")
       def Product_productArity = getMember(ProductRootClass, nme.productArity)

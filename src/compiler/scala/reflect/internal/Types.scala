@@ -2174,13 +2174,14 @@ trait Types extends api.Types { self: SymbolTable =>
       case TypeRef(_, RepeatedParamClass, arg :: _) => arg + "*"
       case TypeRef(_, ByNameParamClass, arg :: _)   => "=> " + arg
       case _ =>
+        def targs = normalize.typeArgs
+
         if (isFunctionType(this)) {
-          val targs = normalize.typeArgs
           // Aesthetics: printing Function1 as T => R rather than (T) => R
           // ...but only if it's not a tuple, so ((T1, T2)) => R is distinguishable
           // from (T1, T2) => R.
           targs match {
-            case in :: out :: Nil if !isTupleTypeOrSubtype(in) =>
+            case in :: out :: Nil if !isTupleType(in) =>
               // A => B => C should be (A => B) => C or A => (B => C)
               val in_s  = if (isFunctionType(in)) "(" + in + ")" else "" + in
               val out_s = if (isFunctionType(out)) "(" + out + ")" else "" + out
@@ -2189,9 +2190,9 @@ trait Types extends api.Types { self: SymbolTable =>
               xs.init.mkString("(", ", ", ")") + " => " + xs.last
           }
         }
-        else if (isTupleTypeOrSubtype(this))
-          normalize.typeArgs.mkString("(", ", ", if (hasLength(normalize.typeArgs, 1)) ",)" else ")")
-        else if (sym.isAliasType && prefixChain.exists(_.termSymbol.isSynthetic) && (normalize ne this))
+        else if (isTupleType(this))
+          targs.mkString("(", ", ", if (hasLength(targs, 1)) ",)" else ")")
+        else if (sym.isAliasType && prefixChain.exists(_.termSymbol.isSynthetic) && (this ne this.normalize))
           "" + normalize
         else
           ""
