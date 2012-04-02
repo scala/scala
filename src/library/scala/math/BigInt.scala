@@ -20,6 +20,7 @@ object BigInt {
   private val minCached = -1024
   private val maxCached = 1024
   private val cache = new Array[BigInt](maxCached - minCached + 1)
+  private val minusOne = BigInteger.valueOf(-1)
 
   @deprecated("Use Long.MinValue", "2.9.0")
   val MinLong = BigInt(Long.MinValue)
@@ -122,6 +123,8 @@ class BigInt(val bigInteger: BigInteger) extends ScalaNumber with ScalaNumericCo
   override def equals(that: Any): Boolean = that match {
     case that: BigInt     => this equals that
     case that: BigDecimal => that.toBigIntExact exists (this equals _)
+    case that: Double     => isValidDouble && toDouble == that
+    case that: Float      => isValidFloat && toFloat == that
     case x                => isValidLong && unifiedPrimitiveEquals(x)
   }
   override def isValidByte  = this >= Byte.MinValue && this <= Byte.MaxValue
@@ -129,6 +132,41 @@ class BigInt(val bigInteger: BigInteger) extends ScalaNumber with ScalaNumericCo
   override def isValidChar  = this >= Char.MinValue && this <= Char.MaxValue
   override def isValidInt   = this >= Int.MinValue && this <= Int.MaxValue
            def isValidLong  = this >= Long.MinValue && this <= Long.MaxValue
+  /** Returns `true` iff this can be represented exactly by [[scala.Float]]; otherwise returns `false`.
+    */
+  def isValidFloat = {
+    val bitLen = bitLength
+    (bitLen <= 24 ||
+      {
+        val lowest = lowestSetBit
+        bitLen <= java.lang.Float.MAX_EXPONENT + 1 && // exclude this < -2^128 && this >= 2^128
+        lowest >= bitLen - 24 &&
+        lowest < java.lang.Float.MAX_EXPONENT + 1 // exclude this == -2^128
+      }
+    ) && !bitLengthOverflow
+  }
+  /** Returns `true` iff this can be represented exactly by [[scala.Double]]; otherwise returns `false`.
+    */
+  def isValidDouble = {
+    val bitLen = bitLength
+    (bitLen <= 53 ||
+      {
+        val lowest = lowestSetBit
+        bitLen <= java.lang.Double.MAX_EXPONENT + 1 && // exclude this < -2^1024 && this >= 2^1024
+        lowest >= bitLen - 53 &&
+        lowest < java.lang.Double.MAX_EXPONENT + 1 // exclude this == -2^1024
+      }
+    ) && !bitLengthOverflow
+  }
+  /** Some implementations of java.math.BigInteger allow huge values with bit length greater than Int.MaxValue .
+   * The BigInteger.bitLength method returns truncated bit length in this case .
+   * This method tests if result of bitLength is valid. 
+   * This method will become unnecessary if BigInt constructors reject huge BigIntegers.
+   */
+  private def bitLengthOverflow = {
+    val shifted = bigInteger.shiftRight(Int.MaxValue)
+    (shifted.signum != 0) && !(shifted equals BigInt.minusOne)
+  }
 
   protected[math] def isWhole = true
   def underlying = bigInteger

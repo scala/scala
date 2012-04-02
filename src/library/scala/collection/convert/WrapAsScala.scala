@@ -154,9 +154,28 @@ trait WrapAsScala {
    * @param m The ConcurrentMap to be converted.
    * @return A Scala mutable ConcurrentMap view of the argument.
    */
-  implicit def asScalaConcurrentMap[A, B](m: juc.ConcurrentMap[A, B]): mutable.ConcurrentMap[A, B] = m match {
-    case cmw: ConcurrentMapWrapper[a, b] => cmw.underlying
-    case _                               => new JConcurrentMapWrapper(m)
+  @deprecated("Use `mapAsScalaConcurrentMap` instead, and use `concurrent.Map` instead of `ConcurrentMap`.", "2.10.0")
+  def asScalaConcurrentMap[A, B](m: juc.ConcurrentMap[A, B]): mutable.ConcurrentMap[A, B] = m match {
+    case cmw: ConcurrentMapDeprecatedWrapper[a, b] => cmw.underlying
+    case _                                         => new JConcurrentMapDeprecatedWrapper(m)
+  }
+
+  /**
+   * Implicitly converts a Java ConcurrentMap to a Scala mutable ConcurrentMap.
+   * The returned Scala ConcurrentMap is backed by the provided Java
+   * ConcurrentMap and any side-effects of using it via the Scala interface will
+   * be visible via the Java interface and vice versa.
+   *
+   * If the Java ConcurrentMap was previously obtained from an implicit or
+   * explicit call of `asConcurrentMap(scala.collection.mutable.ConcurrentMap)`
+   * then the original Scala ConcurrentMap will be returned.
+   *
+   * @param m The ConcurrentMap to be converted.
+   * @return A Scala mutable ConcurrentMap view of the argument.
+   */
+  implicit def mapAsScalaConcurrentMap[A, B](m: juc.ConcurrentMap[A, B]): concurrent.Map[A, B] = m match {
+    case cmw: ConcurrentMapWrapper[a, b]      => cmw.underlying
+    case _                                    => new JConcurrentMapWrapper(m)
   }
 
   /**
