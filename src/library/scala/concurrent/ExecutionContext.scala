@@ -26,10 +26,8 @@ trait ExecutionContext {
 
   def execute[U](body: () => U): Unit
 
-  def blocking[T](body: =>T): T
-
-  def blocking[T](awaitable: Awaitable[T], atMost: Duration): T
-
+  def internalBlockingCall[T](awaitable: Awaitable[T], atMost: Duration): T
+  
   def reportFailure(t: Throwable): Unit
 
   /* implementations follow */
