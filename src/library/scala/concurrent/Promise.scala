@@ -30,8 +30,6 @@ import scala.util.{ Try, Success, Failure }
  */
 trait Promise[T] {
 
-  import nondeterministic._
-
   /** Future containing the value of this promise.
    */
   def future: Future[T]
@@ -114,12 +112,18 @@ trait Promise[T] {
 
 object Promise {
 
-  def kept[T](result: T)(implicit execctx: ExecutionContext): Promise[T] =
-    execctx keptPromise result
+  /** Creates a new promise.
+   */
+  def apply[T]()(implicit executor: ExecutionContext): Promise[T] = new impl.Promise.DefaultPromise[T]()
 
-  def broken[T](t: Throwable)(implicit execctx: ExecutionContext): Promise[T] =
-    execctx brokenPromise t
+  /** Creates an already completed Promise with the specified exception
+   */
+  def failed[T](exception: Throwable)(implicit executor: ExecutionContext): Promise[T] = new impl.Promise.KeptPromise[T](Failure(exception))
 
+  /** Creates an already completed Promise with the specified result
+   */
+  def successful[T](result: T)(implicit executor: ExecutionContext): Promise[T] = new impl.Promise.KeptPromise[T](Success(result))
+  
 }
 
 

@@ -23,12 +23,12 @@ object Elem {
    * @deprecated This factory method is retained for backward compatibility; please use the other one, with which you
    *             can specify your own preference for minimizeEmpty.
    */
-  @deprecated
-  def apply(prefix: String,label: String, attributes: MetaData, scope: NamespaceBinding, child: Node*): Elem =
+  @deprecated("Use the other apply method in this object", "2.10.0")
+  def apply(prefix: String, label: String, attributes: MetaData, scope: NamespaceBinding, child: Node*): Elem =
     apply(prefix, label, attributes, scope, child.isEmpty, child: _*)
 
-  def apply(prefix: String,label: String, attributes: MetaData, scope: NamespaceBinding, minimizeEmpty: Boolean, child: Node*): Elem =
-    new Elem(prefix,label,attributes,scope, minimizeEmpty, child:_*)
+  def apply(prefix: String, label: String, attributes: MetaData, scope: NamespaceBinding, minimizeEmpty: Boolean, child: Node*): Elem =
+    new Elem(prefix, label, attributes, scope, minimizeEmpty, child: _*)
 
   def unapplySeq(n: Node) = n match {
     case _: SpecialNode | _: Group  => None

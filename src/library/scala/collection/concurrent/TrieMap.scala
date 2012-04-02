@@ -1027,7 +1027,7 @@ private[collection] class TrieMapIterator[K, V](var level: Int, private var ct: 
     Seq(this)
   }
 
-  def printDebug {
+  def printDebug() {
     println("ctrie iterator")
     println(stackpos.mkString(","))
     println("depth: " + depth)

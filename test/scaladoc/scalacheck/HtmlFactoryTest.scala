@@ -50,7 +50,7 @@ object Test extends Properties("HtmlFactory") {
   def createTemplates(basename: String) = {
     val result = scala.collection.mutable.Map[String, scala.xml.NodeSeq]()
 
-    createFactory.makeUniverse(List(RESOURCES+basename)) match {
+    createFactory.makeUniverse(Left(List(RESOURCES+basename))) match {
       case Some(universe) => {
         val index = IndexModelFactory.makeIndex(universe)
         (new HtmlFactory(universe, index)).writeTemplates((page) => {
@@ -64,7 +64,7 @@ object Test extends Properties("HtmlFactory") {
   }
 
   def createReferenceIndex(basename: String) = {
-    createFactory.makeUniverse(List(RESOURCES+basename)) match {
+    createFactory.makeUniverse(Left(List(RESOURCES+basename))) match {
       case Some(universe) => {
         val index = IndexModelFactory.makeIndex(universe)
         val pages = index.firstLetterIndex.map({
@@ -442,8 +442,9 @@ object Test extends Properties("HtmlFactory") {
 
   property("Use cases should override their original members") =
      checkText("SI_5054_q1.scala")(
-       (None,"""def test(): Int""", true),
-       (None,"""def test(implicit lost: Int): Int""", false)
+       (None,"""def test(): Int""", true)
+       //Disabled because the full signature is now displayed
+       //(None,"""def test(implicit lost: Int): Int""", false)
      )
 
   property("Use cases should keep their flags - final should not be lost") =
@@ -599,8 +600,9 @@ object Test extends Properties("HtmlFactory") {
           T       StartT the type of the first argument EndT
           arg1    Start1 The T term comment End1
           arg2    Start2 The string comment End2
-          returns StartRet The return comment EndRet
-        Definition Classes InheritDocDerived → InheritDocBase
+          returns StartRet The return comment EndRet""", true),
+    (Some("InheritDocDerived"),
+     """Definition Classes InheritDocDerived → InheritDocBase
         Example:   StartExample function[Int](3, "something") EndExample
         Version    StartVer 0.0.2 EndVer
         Since      StartSince 0.0.1 EndSince
@@ -624,8 +626,9 @@ object Test extends Properties("HtmlFactory") {
           T       StartT the type of the first argument EndT
           arg1    Start1 The T term comment End1
           arg2    Start2 The string comment End2
-          returns StartRet The return comment EndRet
-        Example:   StartExample function[Int](3,"something") EndExample
+          returns StartRet The return comment EndRet""", true),
+    (Some("UseCaseInheritDoc"),
+     """Example:   StartExample function[Int](3,"something") EndExample
         Version    StartVer 0.0.2 EndVer
         Since      StartSince 0.0.1 EndSince
         Exceptions thrown
@@ -670,6 +673,23 @@ object Test extends Properties("HtmlFactory") {
        """, true)
       // traits E, F and H shouldn't crash scaladoc but we don't need to check the output
     )
+
+  property("Indentation normalization for code blocks") = {
+    val files = createTemplates("code-indent.scala")
+
+    files("C.html") match {
+      case node: scala.xml.Node => {
+        val s = node.toString
+        s.contains("<pre>a typicial indented\ncomment on multiple\ncomment lines</pre>") &&
+        s.contains("<pre>one liner</pre>") &&
+        s.contains("<pre>two lines, one useful</pre>") &&
+        s.contains("<pre>line1\nline2\nline3\nline4</pre>") &&
+        s.contains("<pre>a ragged example\na (condition)\n  the t h e n branch\nan alternative\n  the e l s e branch</pre>") &&
+        s.contains("<pre>l1\n\nl2\n\nl3\n\nl4\n\nl5</pre>")
+      }
+      case _ => false
+    }
+  }
 
   {
     val files = createTemplates("basic.scala")

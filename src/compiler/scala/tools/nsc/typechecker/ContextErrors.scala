@@ -317,7 +317,7 @@ trait ContextErrors {
           }
           withAddendum(qual.pos)(
               if (name == nme.CONSTRUCTOR) target + " does not have a constructor"
-              else nameString + " is not a member of " + targetKindString + target + addendum
+              else nameString + " is not a member of " + targetKindString + target.directObjectString + addendum
             )
         }
         issueNormalTypeError(sel, errMsg)
@@ -376,21 +376,16 @@ trait ContextErrors {
         setError(tree)
       }
 
-      def MissingParameterTypeError(fun: Tree, vparam: ValDef, pt: Type) = {
-        def anonMessage = (
-          "\nThe argument types of an anonymous function must be fully known. (SLS 8.5)" +
-          "\nExpected type was: " + pt.toLongString
-        )
+      def MissingParameterTypeError(fun: Tree, vparam: ValDef, pt: Type) =
+        if (vparam.mods.isSynthetic) fun match {
+          case Function(_, Match(_, _)) => MissingParameterTypeAnonMatchError(vparam, pt)
+          case _                        => issueNormalTypeError(vparam, "missing parameter type for expanded function " + fun)
+        } else issueNormalTypeError(vparam, "missing parameter type")
 
-        val suffix =
-          if (!vparam.mods.isSynthetic) ""
-          else " for expanded function" + (fun match {
-            case Function(_, Match(_, _)) => anonMessage
-            case _                        => " " + fun
-          })
-
-        issueNormalTypeError(vparam, "missing parameter type" + suffix)
-      }
+      def MissingParameterTypeAnonMatchError(vparam: Tree, pt: Type) =
+        issueNormalTypeError(vparam, "missing parameter type for expanded function\n"+
+          "The argument types of an anonymous function must be fully known. (SLS 8.5)\n"+
+          "Expected type was: " + pt.toLongString)
 
       def ConstructorsOrderError(tree: Tree) = {
         issueNormalTypeError(tree, "called constructor's definition must precede calling constructor's definition")
@@ -682,9 +677,9 @@ trait ContextErrors {
 
       def AccessError(tree: Tree, sym: Symbol, pre: Type, owner0: Symbol, explanation: String) = {
         def errMsg = {
-          val location = if (sym.isClassConstructor) owner0 else pre.widen
+          val location = if (sym.isClassConstructor) owner0 else pre.widen.directObjectString
 
-          underlying(sym).fullLocationString + " cannot be accessed in " +
+          underlyingSymbol(sym).fullLocationString + " cannot be accessed in " +
           location + explanation
         }
         NormalTypeError(tree, errMsg, ErrorKinds.Access)

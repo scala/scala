@@ -1,6 +1,7 @@
 package scala.reflect
 package runtime
 
+import scala.tools.nsc
 import scala.tools.nsc.reporters.Reporter
 import scala.tools.nsc.reporters.StoreReporter
 import scala.tools.nsc.reporters.AbstractReporter
@@ -21,8 +22,7 @@ trait ToolBoxes extends { self: Universe =>
 
   class ToolBox(val reporter: Reporter = new StoreReporter, val options: String = "") {
 
-    class ToolBoxGlobal(settings: scala.tools.nsc.Settings, reporter: scala.tools.nsc.reporters.Reporter)
-    extends ReflectGlobal(settings, reporter) {
+    class ToolBoxGlobal(settings0: nsc.Settings, reporter0: nsc.reporters.Reporter) extends ReflectGlobal(settings0, reporter0) {
       import definitions._
 
       private val trace = scala.tools.nsc.util.trace when settings.debug.value

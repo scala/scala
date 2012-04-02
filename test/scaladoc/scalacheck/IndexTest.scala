@@ -37,7 +37,7 @@ object Test extends Properties("Index") {
       //val original = Console.out
       //Console.setOut(stream)
 
-      val result = docFactory.makeUniverse(List(path))
+      val result = docFactory.makeUniverse(Left(List(path)))
 
       // assert(stream.toString == "model contains 2 documentable templates\n")
       //Console.setOut(original)

@@ -79,7 +79,17 @@ abstract class Duplicators extends Analyzer {
 
       override def mapOver(tpe: Type): Type = tpe match {
         case TypeRef(NoPrefix, sym, args) if sym.isTypeParameterOrSkolem =>
-          val sym1 = context.scope.lookup(sym.name)
+          var sym1 = context.scope.lookup(sym.name)
+          if (sym1 eq NoSymbol) {
+            // try harder (look in outer scopes)
+            // with virtpatmat, this can happen when the sym is referenced in the scope of a LabelDef but is defined in the scope of an outer DefDef (e.g., in AbstractPartialFunction's andThen)
+            BodyDuplicator.super.silent(_.typedType(Ident(sym.name))) match {
+              case SilentResultValue(t) =>
+                sym1 = t.symbol
+                debuglog("fixed by trying harder: "+(sym, sym1, context))
+              case _ =>
+            }
+          }
 //          assert(sym1 ne NoSymbol, tpe)
           if ((sym1 ne NoSymbol) && (sym1 ne sym)) {
             debuglog("fixing " + sym + " -> " + sym1)
@@ -255,9 +265,21 @@ abstract class Duplicators extends Analyzer {
 
         case ldef @ LabelDef(name, params, rhs) =>
           // log("label def: " + ldef)
+          // in case the rhs contains any definitions -- TODO: is this necessary?
+          invalidate(rhs)
           ldef.tpe = null
-          val params1 = params map (p => Ident(updateSym(p.symbol)))
-          super.typed(treeCopy.LabelDef(tree, name, params1, rhs), mode, pt)
+
+          // since typer does not create the symbols for a LabelDef's params,
+          // we do that manually here -- we should really refactor LabelDef to be a subclass of DefDef
+          def newParam(p: Tree): Ident = {
+            val newsym = p.symbol.cloneSymbol //(context.owner) // TODO owner?
+            Ident(newsym.setInfo(fixType(p.symbol.info)))
+          }
+          val params1 = params map newParam
+          val rhs1 = (new TreeSubstituter(params map (_.symbol), params1) transform rhs) // TODO: duplicate?
+          rhs1.tpe = null
+
+          super.typed(treeCopy.LabelDef(tree, name, params1, rhs1), mode, pt)
 
         case Bind(name, _) =>
           // log("bind: " + tree)

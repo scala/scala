@@ -247,7 +247,7 @@ class ModelFactory(val global: Global, val settings: doc.Settings) {
 
     protected lazy val memberSyms =
        // Only this class's constructors are part of its members, inherited constructors are not.
-      sym.info.members.filter(s => localShouldDocument(s) && (!s.isConstructor || s.owner == sym))
+      sym.info.members.filter(s => localShouldDocument(s) && (!s.isConstructor || s.owner == sym) && !isPureBridge(sym) )
 
     val members       = memberSyms flatMap (makeMember(_, this))
     val templates     = members collect { case c: DocTemplateEntity => c }
@@ -620,7 +620,7 @@ class ModelFactory(val global: Global, val settings: doc.Settings) {
         case tp: TypeRef if definitions.isByNameParamType(tp) =>
           nameBuffer append "⇒ "
           appendType0(tp.args.head)
-        case tp: TypeRef if definitions.isTupleTypeOrSubtype(tp) =>
+        case tp: TypeRef if definitions.isTupleType(tp) =>
           val args = tp.normalize.typeArgs
           nameBuffer append '('
           appendTypes0(args, ", ")
@@ -705,4 +705,7 @@ class ModelFactory(val global: Global, val settings: doc.Settings) {
   def localShouldDocument(aSym: Symbol): Boolean = {
     !aSym.isPrivate && (aSym.isProtected || aSym.privateWithin == NoSymbol) && !aSym.isSynthetic
   }
+
+  /** Filter '@bridge' methods only if *they don't override non-bridge methods*. See SI-5373 for details */
+  def isPureBridge(sym: Symbol) = sym.isBridge && sym.allOverriddenSymbols.forall(_.isBridge)
 }

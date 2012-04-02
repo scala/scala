@@ -40,9 +40,8 @@ class DelayedLazyVal[T](f: () => T, body: => Unit) {
   def apply(): T = if (isDone) complete else f()
 
   // TODO replace with scala.concurrent.future { ... }
-  ops.future {
+  future {
     body
     _isDone = true
   }
-
 }

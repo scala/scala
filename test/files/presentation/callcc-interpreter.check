@@ -52,7 +52,7 @@ retrieved 64 members
 `method wait(x$1: Long, x$2: Int)Unit`
 `method x=> callccInterpreter.type`
 `method →[B](y: B)(callccInterpreter.type, B)`
-`object Wrongobject callccInterpreter.Wrong`
+`object WrongcallccInterpreter.Wrong.type`
 `trait TermcallccInterpreter.Term`
 `trait ValuecallccInterpreter.Value`
 `type AnswercallccInterpreter.Answer`

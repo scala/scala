@@ -196,10 +196,12 @@ trait Infer {
 
     /* -- Error Messages --------------------------------------------------- */
     def setError[T <: Tree](tree: T): T = {
-      if (settings.debug.value) { // DEBUG
-        println("set error: "+tree);
-        throw new Error()
-      }
+      debuglog("set error: "+ tree)
+      // this breaks -Ydebug pretty radically
+      // if (settings.debug.value) { // DEBUG
+      //   println("set error: "+tree);
+      //   throw new Error()
+      // }
       def name        = newTermName("<error: " + tree.symbol + ">")
       def errorClass  = if (context.reportErrors) context.owner.newErrorClass(name.toTypeName) else stdErrorClass
       def errorValue  = if (context.reportErrors) context.owner.newErrorValue(name) else stdErrorValue
@@ -1099,7 +1101,7 @@ trait Infer {
                 // since instantiateTypeVar wants to modify the skolem that corresponds to the method's type parameter,
                 // and it uses the TypeVar's origin to locate it, deskolemize the existential skolem to the method tparam skolem
                 // (the existential skolem was created by adaptConstrPattern to introduce the type slack necessary to soundly deal with variant type parameters)
-                case skolem if skolem.isExistentialSkolem => freshVar(skolem.deSkolemize.asInstanceOf[TypeSymbol])
+                case skolem if skolem.isGADTSkolem => freshVar(skolem.deSkolemize.asInstanceOf[TypeSymbol])
                 case p => freshVar(p)
               }
 

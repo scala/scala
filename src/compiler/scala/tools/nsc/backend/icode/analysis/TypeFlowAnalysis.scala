@@ -645,7 +645,7 @@ abstract class TypeFlowAnalysis {
       } while(!done)
 
       lastInstruction.clear()
-      for(b <- isOnPerimeter; val lastIns = b.toList.reverse find isOnWatchlist) {
+      for (b <- isOnPerimeter; lastIns = b.toList.reverse find isOnWatchlist) {
         lastInstruction += (b -> lastIns.get.asInstanceOf[opcodes.CALL_METHOD])
       }
 

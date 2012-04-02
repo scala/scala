@@ -84,7 +84,7 @@ import scala.collection.{ mutable, immutable }
  */
 class ModifierFlags {
   final val IMPLICIT      = 0x00000200
-  final val FINAL         = 0x00000020
+  final val FINAL         = 0x00000020    // May not be overridden. Note that java final implies much more than scala final.
   final val PRIVATE       = 0x00000004
   final val PROTECTED     = 0x00000001
 
@@ -107,7 +107,7 @@ class ModifierFlags {
                                           // pre: PRIVATE or PROTECTED are also set
   final val JAVA          = 0x00100000    // symbol was defined by a Java class
   final val STATIC        = 0x00800000    // static field, method or class
-  final val CASEACCESSOR  = 0x01000000    // symbol is a case parameter (or its accessor)
+  final val CASEACCESSOR  = 0x01000000    // symbol is a case parameter (or its accessor, or a GADT skolem)
   final val TRAIT         = 0x02000000    // symbol is a trait
   final val DEFAULTPARAM  = 0x02000000    // the parameter has a default value
   final val PARAMACCESSOR = 0x20000000    // for field definitions generated for primary constructor

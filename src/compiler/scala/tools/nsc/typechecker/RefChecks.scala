@@ -266,7 +266,8 @@ abstract class RefChecks extends InfoTransform with reflect.internal.transform.R
         (if (showLocation)
           sym1.locationString +
           (if (sym1.isAliasType) ", which equals "+self.memberInfo(sym1)
-           else if (sym1.isAbstractType) " with bounds "+self.memberInfo(sym1)
+           else if (sym1.isAbstractType) " with bounds"+self.memberInfo(sym1)
+           else if (sym1.isModule) ""
            else if (sym1.isTerm) " of type "+self.memberInfo(sym1)
            else "")
          else "")
@@ -394,9 +395,14 @@ abstract class RefChecks extends InfoTransform with reflect.internal.transform.R
                 overrideError("needs `override' modifier")
           } else if (other.isAbstractOverride && other.isIncompleteIn(clazz) && !member.isAbstractOverride) {
             overrideError("needs `abstract override' modifiers")
-          } else if (member.isAnyOverride && (other hasFlag ACCESSOR) && other.accessed.isVariable && !other.accessed.isLazy) {
-            overrideError("cannot override a mutable variable")
-          } else if (member.isAnyOverride &&
+          }
+          else if (member.isAnyOverride && (other hasFlag ACCESSOR) && other.accessed.isVariable && !other.accessed.isLazy) {
+            // !?! this is not covered by the spec. We need to resolve this either by changing the spec or removing the test here.
+            // !!! is there a !?! convention? I'm !!!ing this to make sure it turns up on my searches.
+            if (!settings.overrideVars.value)
+              overrideError("cannot override a mutable variable")
+          }
+          else if (member.isAnyOverride &&
                      !(member.owner.thisType.baseClasses exists (_ isSubClass other.owner)) &&
                      !member.isDeferred && !other.isDeferred &&
                      intersectionIsEmpty(member.extendedOverriddenSymbols, other.extendedOverriddenSymbols)) {
@@ -1248,9 +1254,9 @@ abstract class RefChecks extends InfoTransform with reflect.internal.transform.R
           }
           List(tree1)
         }
-      case Import(_, _) => Nil
+      case Import(_, _)                                        => Nil
       case DefDef(mods, _, _, _, _, _) if (mods hasFlag MACRO) => Nil
-      case _            => List(transform(tree))
+      case _                                                   => List(transform(tree))
     }
 
     /* Check whether argument types conform to bounds of type parameters */
@@ -1445,7 +1451,7 @@ abstract class RefChecks extends InfoTransform with reflect.internal.transform.R
 
     private def transformApply(tree: Apply): Tree = tree match {
       case Apply(
-        Select(qual, nme.filter),
+        Select(qual, nme.filter | nme.withFilter),
         List(Function(
           List(ValDef(_, pname, tpt, _)),
           Match(_, CaseDef(pat1, _, _) :: _))))
@@ -1625,12 +1631,18 @@ abstract class RefChecks extends InfoTransform with reflect.internal.transform.R
 
           case _ => tree
         }
+        // skip refchecks in patterns....
         result = result match {
           case CaseDef(pat, guard, body) =>
             inPattern = true
             val pat1 = transform(pat)
             inPattern = false
             treeCopy.CaseDef(tree, pat1, transform(guard), transform(body))
+          case LabelDef(_, _, _) if gen.hasSynthCaseSymbol(result) =>
+            inPattern = true
+            val res = deriveLabelDef(result)(transform)
+            inPattern = false
+            res
           case _ =>
             super.transform(result)
         }

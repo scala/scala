@@ -668,8 +668,9 @@ self: ParIterableLike[T, Repr, Sequential] =>
    *  @return           a collection containing the prefix scan of the elements in the original collection
    *
    *  @usecase def scan(z: T)(op: (T, T) => T): $Coll[T]
+   *    @inheritdoc
    *
-   *  @return           a new $coll containing the prefix scan of the elements in this $coll
+   *    @return           a new $coll containing the prefix scan of the elements in this $coll
    */
   def scan[U >: T, That](z: U)(op: (U, U) => U)(implicit bf: CanBuildFrom[Repr, U, That]): That = if (bf(repr).isCombiner) {
     if (tasksupport.parallelismLevel > 1) {

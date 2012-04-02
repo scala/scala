@@ -11,13 +11,18 @@ package scala.concurrent
 
 
 import scala.annotation.implicitNotFound
-import scala.util.Duration
+import scala.concurrent.util.Duration
 
 
 
 trait Awaitable[+T] {
-  @implicitNotFound(msg = "Waiting must be done by calling `blocking(timeout) b`, where `b` is the `Awaitable` object or a potentially blocking piece of code.")
-  def await(atMost: Duration)(implicit canawait: CanAwait): T
+  def ready(atMost: Duration)(implicit permit: CanAwait): this.type
+  
+  /**
+   * Throws exceptions if cannot produce a T within the specified time
+   * This method should not be called directly.
+   */
+  def result(atMost: Duration)(implicit permit: CanAwait): T
 }
 
 

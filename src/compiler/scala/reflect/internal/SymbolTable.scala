@@ -55,6 +55,12 @@ abstract class SymbolTable extends api.Universe
     log(msg + ": " + result)
     result
   }
+  private[scala] def logResultIf[T](msg: String, cond: T => Boolean)(result: T): T = {
+    if (cond(result))
+      log(msg + ": " + result)
+
+    result
+  }
 
   /** Are we compiling for Java SE? */
   // def forJVM: Boolean

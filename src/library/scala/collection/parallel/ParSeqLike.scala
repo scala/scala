@@ -285,7 +285,6 @@ self =>
   }
 
   /** Computes the multiset intersection between this $coll and another sequence.
-   *  $mayNotTerminateInf
    *
    *  @param that   the sequence of elements to intersect with.
    *  @tparam B     the element type of the returned $coll.
@@ -296,12 +295,17 @@ self =>
    *                If an element value `x` appears
    *                ''n'' times in `that`, then the first ''n'' occurrences of `x` will be retained
    *                in the result, but any following occurrences will be omitted.
+   *
    *  @usecase def intersect(that: Seq[T]): $Coll[T]
-   *  @return       a new $coll which contains all elements of this $coll
-   *                which also appear in `that`.
-   *                If an element value `x` appears
-   *                ''n'' times in `that`, then the first ''n'' occurrences of `x` will be retained
-   *                in the result, but any following occurrences will be omitted.
+   *    @inheritdoc
+   *
+   *    $mayNotTerminateInf
+   *
+   *    @return       a new $coll which contains all elements of this $coll
+   *                  which also appear in `that`.
+   *                  If an element value `x` appears
+   *                  ''n'' times in `that`, then the first ''n'' occurrences of `x` will be retained
+   *                  in the result, but any following occurrences will be omitted.
    */
   def intersect[U >: T](that: GenSeq[U]) = sequentially {
     _ intersect that

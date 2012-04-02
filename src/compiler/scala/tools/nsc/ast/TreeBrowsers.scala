@@ -352,144 +352,17 @@ abstract class TreeBrowsers {
    *  Tree.
    */
   object TreeInfo {
-
     /** Return the case class name and the Name, if the node defines one */
-    def treeName(t: Tree): (String, Name) = t match {
-      case ProgramTree(units) =>
-        ("Program", EMPTY)
-
-      case UnitTree(unit) =>
-        ("CompilationUnit", newTermName("" + unit))
-
-      case DocDef(comment, definition) =>
-        ("DocDef", EMPTY)
-
-      case ClassDef(mods, name, tparams, impl) =>
-        ("ClassDef", name)
-
-      case PackageDef(packaged, impl) =>
-        ("PackageDef", EMPTY)
-
-      case ModuleDef(mods, name, impl) =>
-        ("ModuleDef", name)
-
-      case ValDef(mods, name, tpe, rhs) =>
-        ("ValDef", name)
-
-      case DefDef(mods, name, tparams, vparams, tpe, rhs) =>
-        ("DefDef", name)
-
-      case TypeDef(mods, name, tparams, rhs) =>
-        ("TypeDef", name)
-
-      case Import(expr, selectors) =>
-        ("Import", EMPTY)
-
-      case CaseDef(pat, guard, body) =>
-        ("CaseDef", EMPTY)
-
-      case Template(parents, self, body) =>
-        ("Template", EMPTY)
-
-      case LabelDef(name, params, rhs) =>
-        ("LabelDef", name)
-
-      case Block(stats, expr) =>
-        ("Block", EMPTY)
-
-      case Alternative(trees) =>
-        ("Alternative", EMPTY)
-
-      case Bind(name, rhs) =>
-        ("Bind", name)
-
-      case UnApply(fun, args) =>
-        ("UnApply", EMPTY)
-
-      case Match(selector, cases) =>
-        ("Visitor", EMPTY)
-
-      case Function(vparams, body) =>
-        ("Function", EMPTY)
-
-      case Assign(lhs, rhs) =>
-        ("Assign", EMPTY)
-
-      case If(cond, thenp, elsep) =>
-        ("If", EMPTY)
-
-      case Return(expr) =>
-        ("Return", EMPTY)
-
-      case Throw(expr) =>
-        ("Throw", EMPTY)
-
-      case New(init) =>
-        ("New", EMPTY)
-
-      case Typed(expr, tpe) =>
-        ("Typed", EMPTY)
-
-      case TypeApply(fun, args) =>
-        ("TypeApply", EMPTY)
-
-      case Apply(fun, args) =>
-        ("Apply", EMPTY)
-
-      case ApplyDynamic(qual, args) =>
-        ("Apply", EMPTY)
-
-      case Super(qualif, mix) =>
-        ("Super", newTermName("mix: " + mix))
-
-      case This(qualifier) =>
-        ("This", qualifier)
-
-      case Select(qualifier, selector) =>
-        ("Select", selector)
-
-      case Ident(name) =>
-        ("Ident", name)
-
-      case Literal(value) =>
-        ("Literal", EMPTY)
-
-      case TypeTree() =>
-        ("TypeTree", EMPTY)
-
-      case Annotated(annot, arg) =>
-        ("Annotated", EMPTY)
-
-      case SingletonTypeTree(ref) =>
-        ("SingletonType", EMPTY)
-
-      case SelectFromTypeTree(qualifier, selector) =>
-        ("SelectFromType", selector)
-
-      case CompoundTypeTree(template) =>
-        ("CompoundType", EMPTY)
-
-      case AppliedTypeTree(tpe, args) =>
-        ("AppliedType", EMPTY)
-
-      case TypeBoundsTree(lo, hi) =>
-        ("TypeBoundsTree", EMPTY)
-
-      case ExistentialTypeTree(tpt, whereClauses) =>
-        ("ExistentialTypeTree", EMPTY)
-
-      case Try(block, catcher, finalizer) =>
-        ("Try", EMPTY)
-
-      case EmptyTree =>
-        ("Empty", EMPTY)
-
-      case ArrayValue(elemtpt, trees) =>
-        ("ArrayValue", EMPTY)
-
-      case Star(t) =>
-        ("Star", EMPTY)
-    }
+    def treeName(t: Tree): (String, Name) = ((t.printingPrefix, t match {
+      case UnitTree(unit)                  => newTermName("" + unit)
+      case Super(_, mix)                   => newTermName("mix: " + mix)
+      case This(qual)                      => qual
+      case Select(_, selector)             => selector
+      case Ident(name)                     => name
+      case SelectFromTypeTree(_, selector) => selector
+      case x: DefTree                      => x.name
+      case _                               => EMPTY
+    }))
 
     /** Return a list of children for the given tree node */
     def children(t: Tree): List[Tree] = t match {

@@ -261,12 +261,47 @@ INITIALISATION
 
   <target name="init.build.suffix.done" depends="init.build.release, init.build.patch.release"/>
 
-  <target name="init" depends="init.jars, init.build.suffix.done">
+  <target name="init.version.git" depends="init.build.suffix.done">
+    <!-- Find out whether we are running on Windows -->
+    <condition property="os.win">
+      <os family="windows"/>
+    </condition>
+    
+    <exec osfamily="unix" executable="tools/get-scala-commit-sha" outputproperty="git.commit.sha" failifexecutionfails="false" />
+    <exec osfamily="unix" executable="tools/get-scala-commit-date" outputproperty="git.commit.date" failifexecutionfails="false" />
+    <!-- some default in case something went wrong getting the revision -->
+    <property name="git.commit.sha" value="unknown"/>
+    <property name="git.commit.date" value="unknown"/>
+
+    <!-- We use the git describe to determine the OSGi modifier for our build. -->
+    <property
+      name="maven.version.number"
+      value="${version.major}.${version.minor}.${version.patch}${version.suffix}${maven.version.suffix}"/>
+    <property
+      name="osgi.version.number"
+      value="${version.major}.${version.minor}.${version.patch}.v${git.commit.date}${version.suffix}-${git.commit.sha}"/>
+  </target>
+
+  <target name="init.version.snapshot" unless="build.release" depends="init.version.git">
+     <property
+      name="version.number"
+      value="${version.major}.${version.minor}.${version.patch}${version.suffix}-${git.commit.date}-${git.commit.sha}"/>
+  </target>
+
+  <target name="init.version.release" if="build.release" depends="init.version.git">
+     <property
+      name="version.number"
+      value="${maven.version.number}"/>
+  </target>
+
+  <target name="init.version.done" depends="init.version.release, init.version.snapshot"/>
+
+  <target name="init" depends="init.jars, init.version.done">
   <!-- scalac.args.optimise is selectively overridden in certain antcall tasks. -->
     <property name="scalac.args.optimise" value=""/>
   <!-- scalac.args.quickonly are added to quick.* targets but not others (particularly, locker.)
        This is to facilitate testing new command line options which do not yet exist in starr. -->
-  <property name="scalac.args.quickonly" value=""/>
+    <property name="scalac.args.quickonly" value=""/>
     <property name="scalac.args.all" value="${scalac.args} ${scalac.args.optimise}"/>
     <property name="scalac.args.quick" value="${scalac.args.all} ${scalac.args.quickonly}"/>
     <!-- Setting-up Ant contrib tasks -->
@@ -276,33 +311,11 @@ INITIALISATION
       <format property="human" pattern="d MMMM yyyy, HH:mm:ss" locale="en,US"/>
       <format property="short" pattern="yyyyMMddHHmmss"/>
     </tstamp>
-    <!-- Find out whether we are running on Windows -->
-    <condition property="os.win">
-      <os family="windows"/>
-    </condition>
-    
-    <exec osfamily="unix" executable="tools/get-scala-commit-sha" outputproperty="git.commit.sha" failifexecutionfails="false" />
-    <exec osfamily="windows" executable="tools/get-scala-commit-sha.bat" outputproperty="git.commit.sha" failifexecutionfails="false" />
-    <exec osfamily="unix" executable="tools/get-scala-commit-date" outputproperty="git.commit.date" failifexecutionfails="false" />
-    <exec osfamily="windows" executable="tools/get-scala-commit-date.bat" outputproperty="git.commit.date" failifexecutionfails="false" />
-    <exec osfamily="unix" executable="tools/get-scala-commit-drift" outputproperty="git.commit.drift" failifexecutionfails="false" />
-    <exec osfamily="windows" executable="tools/get-scala-commit-drift.bat" outputproperty="git.commit.drift" failifexecutionfails="false" />
-    <!-- some default in case something went wrong getting the revision -->
-    <property name="git.describe" value="-unknown-"/>
 
-    <!-- We use the git describe to determine the OSGi modifier for our build. -->
-    <property
-      name="maven.version.number"
-      value="${version.major}.${version.minor}.${version.patch}${version.suffix}${maven.version.suffix}"/>
-    <property
-      name="version.number"
-      value="${maven.version.number}-${git.commit.date}-${git.commit.drift}-${git.commit.sha}"/>
-    <property
-      name="osgi.version.number"
-      value="${version.major}.${version.minor}.${version.patch}.v${git.commit.date}${version.suffix}-${git.commit.sha}"/>
     <!-- some default in case something went wrong getting the revision -->
     <property name="version.number" value="-unknown-"/>
     <property name="init.avail" value="yes"/>
+
 
     <!-- Local libs (developer use.) -->
     <mkdir dir="${lib-extra.dir}"/>
@@ -331,7 +344,9 @@ INITIALISATION
     <echo message="     java version: ${java.vm.name} ${java.version}" />
     <echo message="        java args: ${env.ANT_OPTS} ${jvm.opts}" />
     <echo message="       javac args: ${javac.args}" />
-    <echo message="      scalac args: ${scalac.args}" />
+    <echo message="      scalac args: ${scalac.args.all}" />
+    <echo message="         git date: ${git.commit.date}" />
+    <echo message="         git hash: ${git.commit.sha}" />
     <echo message="    maven version: ${maven.version.number}"/>
     <echo message="     OSGi version: ${osgi.version.number}" />
     <echo message="canonical version: ${version.number}" />
@@ -610,9 +625,9 @@ QUICK BUILD (QUICK)
       <srcfiles dir="${src.dir}">
         <include name="library/**"/>
         <include name="dbc/**"/>
-        <include name="actors/**"/>
         <include name="continuations/**"/>
         <include name="swing/**"/>
+        <include name="actors/**"/>
       </srcfiles>
     </uptodate>
   </target>
@@ -991,6 +1006,7 @@ PACKED QUICK BUILD (PACK)
       <fileset dir="${build-quick.dir}/classes/library">
         <exclude name="scala/dbc/**"/>
         <exclude name="scala/swing/**"/>
+        <exclude name="scala/actors/**"/>
       </fileset>
       <zipfileset dirmode="755" filemode="644" src="${forkjoin.jar}"/>
     </jar>
@@ -1004,6 +1020,11 @@ PACKED QUICK BUILD (PACK)
         <include name="scala/swing/**"/>
       </fileset>
     </jar>
+  <jar destfile="${build-pack.dir}/lib/scala-actors.jar">
+      <fileset dir="${build-quick.dir}/classes/library">
+        <include name="scala/actors/**"/>
+      </fileset>
+  </jar>
   </target>
   
   <target name="pack.pre-comp" depends="pack.lib">
@@ -1133,6 +1154,7 @@ PACKED QUICK BUILD (PACK)
       <pathelement location="${build-pack.dir}/lib/scala-compiler.jar"/>
       <pathelement location="${build-pack.dir}/lib/scala-partest.jar"/>
       <pathelement location="${build-pack.dir}/lib/scalap.jar"/>
+      <pathelement location="${build-pack.dir}/lib/scala-actors.jar"/>
       <pathelement location="${ant.jar}"/>
       <pathelement location="${jline.jar}"/>
       <path refid="lib.extra"/>
@@ -1156,8 +1178,8 @@ BOOTSTRAPPING BUILD (STRAP)
       <srcfiles dir="${src.dir}">
         <include name="library/**"/>
         <include name="dbc/**"/>
-        <include name="actors/**"/>
         <include name="swing/**"/>
+        <include name="actors/**"/>
       </srcfiles>
     </uptodate>
   </target>
@@ -1578,6 +1600,21 @@ DOCUMENTATION
         </uptodate>
       </sequential>
     </macrodef>
+
+    <!-- Set the github commit scaladoc sources point to -->
+    <!-- For releases, look for the tag with the same name as the maven version -->
+    <condition property="scaladoc.git.commit" value="v${maven.version.number}">
+      <isset property="build.release"/>
+    </condition>
+    <!-- For snapshots, if we know the commit, point scaladoc to that particular commit instead of master -->
+    <condition property="scaladoc.git.commit" value="${git.commit.sha}">
+      <not><equals arg1="${git.commit.sha}" arg2="unknown"/></not>
+    </condition>
+    <!-- Fallback: point scaladoc to master -->
+    <property name="scaladoc.git.commit" value="master"/>
+    <!-- Compute the URL and show it -->
+    <property name="scaladoc.url" value="https://github.com/scala/scala/tree/${scaladoc.git.commit}/src"/>
+    <echo message="Scaladoc will point to ${scaladoc.url} for source files."/>
   </target>
   
   <target name="docs.pre-lib" depends="docs.start">
@@ -1585,8 +1622,8 @@ DOCUMENTATION
       <source-includes>
         <include name="library/**"/>
         <include name="dbc/**"/>
-        <include name="actors/**"/>
         <include name="swing/**"/>
+        <include name="actors/**"/>
       </source-includes>
     </doc-uptodate-check>
   </target>
@@ -1596,15 +1633,15 @@ DOCUMENTATION
     <mkdir dir="${build-docs.dir}/library"/>
     <scaladoc
       destdir="${build-docs.dir}/library"
-      doctitle="Scala Standard Library"
+      doctitle="Scala Standard Library API (Scaladoc)"
       docversion="${version.number}"
       docfooter="epfl" 
-      docsourceurl="https://lampsvn.epfl.ch/trac/scala/browser/scala/trunk/src/€{FILE_PATH}.scala#L1"
+      docsourceurl="${scaladoc.url}€{FILE_PATH}.scala#L1"
       docUncompilable="${src.dir}/library-aux"
       sourcepath="${src.dir}"
       classpathref="pack.classpath"
       addparams="${scalac.args.all}"
-      docRootContent="${src.dir}/library/rootdoc.txt"> 
+      docRootContent="${src.dir}/library/rootdoc.txt">
       <src>
         <files includes="${src.dir}/actors"/>
         <files includes="${src.dir}/library/scala"/>
@@ -1650,7 +1687,7 @@ DOCUMENTATION
     <taskdef name="genman"
              classname="scala.tools.docutil.ManMaker"
              classpathref="manual.classpath"/>
-    <genman command="fsc, sbaz, scala, scalac, scaladoc, scalap"
+    <genman command="fsc, scala, scalac, scaladoc, scalap"
             htmlout="${build-docs.dir}/manual/html"
             manout="${build-docs.dir}/manual/genman"/>
     <!-- On Windows source and target files can't be the same ! -->
@@ -1680,7 +1717,7 @@ DOCUMENTATION
       destdir="${build-docs.dir}/compiler"
       doctitle="Scala Compiler"
       docversion="${version.number}"
-      docsourceurl="https://lampsvn.epfl.ch/trac/scala/browser/scala/trunk/src/€{FILE_PATH}.scala#L1"
+      docsourceurl="${scaladoc.url}€{FILE_PATH}.scala#L1"
       sourcepath="${src.dir}"
       classpathref="pack.classpath"
       srcdir="${src.dir}/compiler"
@@ -1725,7 +1762,7 @@ DOCUMENTATION
       destdir="${build-docs.dir}/scalap"
       doctitle="Scalap"
       docversion="${version.number}"
-      docsourceurl="https://lampsvn.epfl.ch/trac/scala/browser/scala/trunk/src/€{FILE_PATH}.scala#L1"
+      docsourceurl="${scaladoc.url}€{FILE_PATH}.scala#L1"
       sourcepath="${src.dir}"
       classpathref="pack.classpath"
       srcdir="${src.dir}/scalap"
@@ -1895,7 +1932,8 @@ BOOTRAPING TEST AND TEST SUITE
         <path refid="pack.classpath"/>
         <fileset dir="${partest.dir}/files/lib" includes="*.jar" />
       </compilationpath>
-      <scalachecktests dir="${partest.dir}/scaladoc/scala" includes="**/*.scala" />
+      <runtests        dir="${partest.dir}/scaladoc/run"        includes="*.scala" />
+      <scalachecktests dir="${partest.dir}/scaladoc/scalacheck" includes="*.scala" />
     </partest>
   </target>
 
@@ -1963,7 +2001,6 @@ DISTRIBUTION
     <mkdir dir="${dist.dir}/src"/>
     <jar destfile="${dist.dir}/src/scala-library-src.jar">
       <fileset dir="${src.dir}/library"/>
-      <fileset dir="${src.dir}/actors"/>
       <fileset dir="${src.dir}/continuations/library"/>
     </jar>
     <jar destfile="${dist.dir}/src/scala-dbc-src.jar">
@@ -1974,6 +2011,9 @@ DISTRIBUTION
     </jar>
     <jar destfile="${dist.dir}/src/scala-compiler-src.jar">
       <fileset dir="${src.dir}/compiler"/>
+    </jar>
+    <jar destfile="${dist.dir}/src/scala-actors-src.jar">
+      <fileset dir="${src.dir}/actors"/>
     </jar>
     <jar destfile="${dist.dir}/src/scalap-src.jar">
       <fileset dir="${src.dir}/scalap"/>
@@ -2051,8 +2091,8 @@ STABLE REFERENCE (STARR)
   <target name="starr.src" depends="starr.comp">
     <jar destfile="${basedir}/lib/scala-library-src.jar">
       <fileset dir="${basedir}/src/library"/>
-      <fileset dir="${basedir}/src/actors"/>
       <fileset dir="${basedir}/src/swing"/>
+      <fileset dir="${basedir}/src/actors"/>
       <fileset dir="${basedir}/src/dbc"/>
     </jar>
   </target>

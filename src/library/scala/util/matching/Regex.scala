@@ -133,6 +133,15 @@ import java.util.regex.{ Pattern, Matcher }
  *
  *  @param regex      A string representing a regular expression
  *  @param groupNames A mapping from names to indices in capture groups
+ *
+ *  @define replacementString
+ *  In the replacement String, a dollar sign (`$`) followed by a number will be
+ *  interpreted as a reference to a group in the matched pattern, with numbers
+ *  1 through 9 corresponding to the first nine groups, and 0 standing for the
+ *  whole match. Any other character is an error. The backslash (`\`) character
+ *  will be interpreted as an escape character, and can be used to escape the
+ *  dollar sign. One can use [[scala.util.matching.Regex]]'s `quoteReplacement`
+ *  to automatically escape these characters.
  */
 @SerialVersionUID(-2094783597747625537L)
 class Regex(regex: String, groupNames: String*) extends Serializable {
@@ -180,7 +189,7 @@ class Regex(regex: String, groupNames: String*) extends Serializable {
       None
   }
 
-  /** Return all matches of this regexp in given character sequence as a [[scala.util.mathcing.Regex.MatchIterator]],
+  /** Return all matches of this regexp in given character sequence as a [[scala.util.matching.Regex.MatchIterator]],
    *  which is a special [[scala.collection.Iterator]] that returns the
    *  matched strings, but can also be converted into a normal iterator
    *  that returns objects of type [[scala.util.matching.Regex.Match]]
@@ -192,6 +201,25 @@ class Regex(regex: String, groupNames: String*) extends Serializable {
    *  @example      {{{for (words <- """\w+""".r findAllIn "A simple example.") yield words}}}
    */
   def findAllIn(source: java.lang.CharSequence) = new Regex.MatchIterator(source, this, groupNames)
+
+
+  /** Return all matches of this regexp in given character sequence as a
+   *  [[scala.collection.Iterator]] of [[scala.util.matching.Regex.Match].
+   *
+   *  @param source The text to match against.
+   *  @return       A [[scala.collection.Iterator]] of [[scala.util.matching.Regex.Match]] for all matches.
+   *  @example      {{{for (words <- """\w+""".r findAllMatchIn "A simple example.") yield words.start}}}
+   */
+  def findAllMatchIn(source: java.lang.CharSequence): Iterator[Match] = {
+    val matchIterator = findAllIn(source)
+    new Iterator[Match] {
+      def hasNext = matchIterator.hasNext
+      def next: Match = {
+        matchIterator.next;
+        new Match(matchIterator.source, matchIterator.matcher, matchIterator.groupNames).force
+      }
+    }
+  }
 
   /** Return optionally first matching string of this regexp in given character sequence,
    *  or None if it does not exist.
@@ -258,6 +286,8 @@ class Regex(regex: String, groupNames: String*) extends Serializable {
 
   /** Replaces all matches by a string.
    *
+   *  $replacementString
+   *
    *  @param target      The string to match
    *  @param replacement The string that will replace each match
    *  @return            The resulting string
@@ -280,6 +310,8 @@ class Regex(regex: String, groupNames: String*) extends Serializable {
    * val repl = datePattern replaceAllIn (text, m => m.group("month")+"/"+m.group("day"))
    * }}}
    *
+   * $replacementString
+   *
    * @param target      The string to match.
    * @param replacer    The function which maps a match to another string.
    * @return            The target string after replacements.
@@ -298,12 +330,14 @@ class Regex(regex: String, groupNames: String*) extends Serializable {
    * {{{
    * import scala.util.matching.Regex._
    *
-   * val map = Map("x" -> "a var", "y" -> "another var")
+   * val map = Map("x" -> "a var", "y" -> """some $ and \ signs""")
    * val text = "A text with variables %x, %y and %z."
    * val varPattern = """%(\w+)""".r
-   * val mapper = (m: Match) => map get (m group 1)
+   * val mapper = (m: Match) => map get (m group 1) map (quoteReplacement(_))
    * val repl = varPattern replaceSomeIn (text, mapper)
    * }}}
+   *
+   * $replacementString
    *
    * @param target      The string to match.
    * @param replacer    The function which optionally maps a match to another string.
@@ -318,6 +352,8 @@ class Regex(regex: String, groupNames: String*) extends Serializable {
   }
 
   /** Replaces the first match by a string.
+   *
+   *  $replacementString
    *
    *  @param target      The string to match
    *  @param replacement The string that will replace the match
@@ -505,7 +541,7 @@ object Regex {
   class MatchIterator(val source: java.lang.CharSequence, val regex: Regex, val groupNames: Seq[String])
   extends AbstractIterator[String] with Iterator[String] with MatchData { self =>
 
-    protected val matcher = regex.pattern.matcher(source)
+    protected[Regex] val matcher = regex.pattern.matcher(source)
     private var nextSeen = false
 
     /** Is there another match? */
@@ -569,4 +605,18 @@ object Regex {
 
     def replace(rs: String) = matcher.appendReplacement(sb, rs)
   }
+
+  /** Quotes replacement strings to be used in replacement methods.
+   *
+   *  Replacement methods give special meaning to backslashes (`\`) and
+   *  dollar signs (`$`) in replacement strings, so they are not treated
+   *  as literals. This method escapes these characters so the resulting
+   *  string can be used as a literal replacement representing the input
+   *  string.
+   *
+   *  @param text The string one wishes to use as literal replacement.
+   *  @return A string that can be used to replace matches with `text`.
+   *  @example {{{"CURRENCY".r.replaceAllIn(input, Regex quoteReplacement "US$")}}}
+   */
+  def quoteReplacement(text: String): String = Matcher quoteReplacement text
 }

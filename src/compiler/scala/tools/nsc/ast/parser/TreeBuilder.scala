@@ -262,29 +262,25 @@ abstract class TreeBuilder {
     else if (stats.length == 1) stats.head
     else Block(stats.init, stats.last)
 
+  def makeFilter(tree: Tree, condition: Tree, scrutineeName: String): Tree = {
+    val cases = List(
+      CaseDef(condition, EmptyTree, Literal(Constant(true))),
+      CaseDef(Ident(nme.WILDCARD), EmptyTree, Literal(Constant(false)))
+    )
+    val matchTree = makeVisitor(cases, false, scrutineeName)
+
+    atPos(tree.pos)(Apply(Select(tree, nme.withFilter), matchTree :: Nil))
+  }
+
   /** Create tree for for-comprehension generator <val pat0 <- rhs0> */
   def makeGenerator(pos: Position, pat: Tree, valeq: Boolean, rhs: Tree): Enumerator = {
     val pat1 = patvarTransformer.transform(pat)
     val rhs1 =
-      if (valeq) rhs
-      else matchVarPattern(pat1) match {
-        case Some(_) =>
-          rhs
-        case None =>
-          atPos(rhs.pos) {
-            Apply(
-              Select(rhs, nme.filter),
-              List(
-                makeVisitor(
-                  List(
-                    CaseDef(pat1.duplicate, EmptyTree, Literal(Constant(true))),
-                    CaseDef(Ident(nme.WILDCARD), EmptyTree, Literal(Constant(false)))),
-                  false,
-                  nme.CHECK_IF_REFUTABLE_STRING
-                )))
-          }
-      }
-    if (valeq) ValEq(pos, pat1, rhs1) else ValFrom(pos, pat1, rhs1)
+      if (valeq || treeInfo.isVariablePattern(pat)) rhs
+      else makeFilter(rhs, pat1.duplicate, nme.CHECK_IF_REFUTABLE_STRING)
+
+    if (valeq) ValEq(pos, pat1, rhs1)
+    else ValFrom(pos, pat1, rhs1)
   }
 
   def makeParam(pname: TermName, tpe: Tree) =
@@ -508,37 +504,6 @@ abstract class TreeBuilder {
   /** Create tree for pattern definition <val pat0 = rhs> */
   def makePatDef(pat: Tree, rhs: Tree): List[Tree] =
     makePatDef(Modifiers(0), pat, rhs)
-
-  /** For debugging only.  Desugar a match statement like so:
-   *  val x = scrutinee
-   *  x match {
-   *    case case1 => ...
-   *    case _ => x match {
-   *       case case2 => ...
-   *       case _ => x match ...
-   *    }
-   *  }
-   *
-   *  This way there are never transitions between nontrivial casedefs.
-   *  Of course many things break: exhaustiveness and unreachable checking
-   *  do not work, no switches will be generated, etc.
-   */
-  def makeSequencedMatch(selector: Tree, cases: List[CaseDef]): Tree = {
-    require(cases.nonEmpty)
-
-    val selectorName = freshTermName()
-    val valdef = atPos(selector.pos)(ValDef(Modifiers(PrivateLocal | SYNTHETIC), selectorName, TypeTree(), selector))
-    val nselector = Ident(selectorName)
-
-    def loop(cds: List[CaseDef]): Match = {
-      def mkNext = CaseDef(Ident(nme.WILDCARD), EmptyTree, loop(cds.tail))
-
-      if (cds.size == 1) Match(nselector, cds)
-      else Match(selector, List(cds.head, mkNext))
-    }
-
-    Block(List(valdef), loop(cases))
-  }
 
   /** Create tree for pattern definition <mods val pat0 = rhs> */
   def makePatDef(mods: Modifiers, pat: Tree, rhs: Tree): List[Tree] = matchVarPattern(pat) match {

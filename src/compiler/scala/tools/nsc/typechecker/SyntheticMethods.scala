@@ -136,7 +136,7 @@ trait SyntheticMethods extends ast.TreeDSL {
      *  where that is the given methods first parameter.
      */
     def thatTest(eqmeth: Symbol): Tree =
-      gen.mkIsInstanceOf(Ident(eqmeth.firstParam), typeCaseType(clazz), true, false)
+      gen.mkIsInstanceOf(Ident(eqmeth.firstParam), classExistentialType(clazz), true, false)
 
     /** (that.asInstanceOf[this.C])
      *  where that is the given methods first parameter.

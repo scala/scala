@@ -38,8 +38,8 @@ private[actors] object Reactor {
     }
   }
 
-  val waitingForNone: PartialFunction[Any, Unit] = new scala.runtime.AbstractPartialFunction[Any, Unit] {
-    def _isDefinedAt(x: Any) = false
+  val waitingForNone: PartialFunction[Any, Unit] = new PartialFunction[Any, Unit] {
+    def isDefinedAt(x: Any) = false
     def apply(x: Any) {}
   }
 }
@@ -253,7 +253,7 @@ trait Reactor[Msg >: Null] extends OutputChannel[Msg] with Combinators {
       _state
   }
 
-  implicit def mkBody[A](body: => A) = new Actor.Body[A] {
+  implicit def mkBody[A](body: => A) = new InternalActor.Body[A] {
     def andThen[B](other: => B): Unit = Reactor.this.seq(body, other)
   }
 

@@ -33,6 +33,16 @@ object Position {
   }
 }
 
+/**
+ * A tree does not directly store a Position. It stores a TreeAnnotation, which /typically/ is a Position.
+ *
+ * A TreeAnnotion may encompass more than just a Position, though, depending on the exact subclass of TreeAnnotation.
+ */
+trait TreeAnnotation {
+  def pos: Position
+}
+
+
 /** The Position class and its subclasses represent positions of ASTs and symbols.
  *  Except for NoPosition and FakePos, every position refers to a SourceFile
  *  and to an offset in the sourcefile (its `point`). For batch compilation,
@@ -77,7 +87,8 @@ object Position {
  *  pos.makeTransparent converts an opaque range position into a transparent one.
  *                      returns all other positions unchanged.
  */
-trait Position {
+trait Position extends TreeAnnotation {
+  def pos: Position = this
 
   /** An optional value containing the source file referred to by this position, or
    *  None if not defined.

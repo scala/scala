@@ -124,7 +124,7 @@ trait GenTraversableOnce[+A] extends Any {
    *      scala> val b = (a /:\ 5)(_+_)
    *      b: Int = 15
    * }}}*/
-  @deprecated("use fold instead")
+  @deprecated("use fold instead", "2.10.0")
   def /:\[A1 >: A](z: A1)(op: (A1, A1) => A1): A1 = fold(z)(op)
 
   /** Applies a binary operator to a start value and all elements of this $coll,
@@ -156,7 +156,7 @@ trait GenTraversableOnce[+A] extends Any {
    *  @return  the result of inserting `op` between consecutive elements of this $coll,
    *           going left to right with the start value `z` on the left:
    *           {{{
-   *             op(...op(op(z, x1), x2), ..., xn)
+   *             op(...op(op(z, x_1), x_2), ..., x_n)
    *           }}}
    *           where `x,,1,,, ..., x,,n,,` are the elements of this $coll.
    */
@@ -191,7 +191,7 @@ trait GenTraversableOnce[+A] extends Any {
    *  @return  the result of inserting `op` between consecutive elements of this $coll,
    *           going right to left with the start value `z` on the right:
    *           {{{
-   *             op(x1, op(x2, ... op(xn, z)...))
+   *             op(x_1, op(x_2, ... op(x_n, z)...))
    *           }}}
    *           where `x,,1,,, ..., x,,n,,` are the elements of this $coll.
    */
@@ -209,7 +209,7 @@ trait GenTraversableOnce[+A] extends Any {
    *  @return  the result of inserting `op` between consecutive elements of this $coll,
    *           going left to right with the start value `z` on the left:
    *           {{{
-   *             op(...op(z, x1), x2, ..., xn)
+   *             op(...op(z, x_1), x_2, ..., x_n)
    *           }}}
    *           where `x,,1,,, ..., x,,n,,` are the elements of this $coll.
    */
@@ -226,7 +226,7 @@ trait GenTraversableOnce[+A] extends Any {
    *  @return  the result of inserting `op` between consecutive elements of this $coll,
    *           going right to left with the start value `z` on the right:
    *           {{{
-   *             op(x1, op(x2, ... op(xn, z)...))
+   *             op(x_1, op(x_2, ... op(x_n, z)...))
    *           }}}
    *           where `x,,1,,, ..., x,,n,,` are the elements of this $coll.
    */
@@ -271,7 +271,7 @@ trait GenTraversableOnce[+A] extends Any {
    *  @return  the result of inserting `op` between consecutive elements of this $coll,
    *           going right to left:
    *           {{{
-   *             op(x,,1,,, op(x,,2,,, ..., op(x,,n-1,,, x,,n,,)...))
+   *             op(x_1, op(x_2, ..., op(x_{n-1}, x_n)...))
    *           }}}
    *           where `x,,1,,, ..., x,,n,,` are the elements of this $coll.
    *  @throws `UnsupportedOperationException` if this $coll is empty.
@@ -316,11 +316,12 @@ trait GenTraversableOnce[+A] extends Any {
    *   @return       the sum of all elements of this $coll with respect to the `+` operator in `num`.
    *
    *   @usecase def sum: A
+   *     @inheritdoc
    *
-   *   @return       the sum of all elements in this $coll of numbers of type `Int`.
-   *   Instead of `Int`, any other type `T` with an implicit `Numeric[T]` implementation
-   *   can be used as element type of the $coll and as result type of `sum`.
-   *   Examples of such types are: `Long`, `Float`, `Double`, `BigInt`.
+   *     @return       the sum of all elements in this $coll of numbers of type `Int`.
+   *     Instead of `Int`, any other type `T` with an implicit `Numeric[T]` implementation
+   *     can be used as element type of the $coll and as result type of `sum`.
+   *     Examples of such types are: `Long`, `Float`, `Double`, `BigInt`.
    *
    */
   def sum[A1 >: A](implicit num: Numeric[A1]): A1
@@ -333,11 +334,12 @@ trait GenTraversableOnce[+A] extends Any {
    *   @return       the product of all elements of this $coll with respect to the `*` operator in `num`.
    *
    *   @usecase def product: A
+   *     @inheritdoc
    *
-   *   @return       the product of all elements in this $coll of numbers of type `Int`.
-   *   Instead of `Int`, any other type `T` with an implicit `Numeric[T]` implementation
-   *   can be used as element type of the $coll and as result type of `product`.
-   *   Examples of such types are: `Long`, `Float`, `Double`, `BigInt`.
+   *     @return       the product of all elements in this $coll of numbers of type `Int`.
+   *     Instead of `Int`, any other type `T` with an implicit `Numeric[T]` implementation
+   *     can be used as element type of the $coll and as result type of `product`.
+   *     Examples of such types are: `Long`, `Float`, `Double`, `BigInt`.
    */
   def product[A1 >: A](implicit num: Numeric[A1]): A1
 
@@ -348,7 +350,9 @@ trait GenTraversableOnce[+A] extends Any {
    *  @return   the smallest element of this $coll with respect to the ordering `cmp`.
    *
    *  @usecase def min: A
-   *  @return   the smallest element of this $coll
+   *    @inheritdoc
+   *
+   *    @return   the smallest element of this $coll
    */
   def min[A1 >: A](implicit ord: Ordering[A1]): A
 
@@ -359,7 +363,9 @@ trait GenTraversableOnce[+A] extends Any {
    *  @return   the largest element of this $coll with respect to the ordering `cmp`.
    *
    *  @usecase def max: A
-   *  @return   the largest element of this $coll.
+   *    @inheritdoc
+   *
+   *    @return   the largest element of this $coll.
    */
   def max[A1 >: A](implicit ord: Ordering[A1]): A
 
@@ -387,12 +393,13 @@ trait GenTraversableOnce[+A] extends Any {
    *  Copying will stop once either the end of the current $coll is reached,
    *  or the end of the array is reached.
    *
-   *  $willNotTerminateInf
-   *
    *  @param  xs     the array to fill.
    *  @tparam B      the type of the elements of the array.
    *
    *  @usecase def copyToArray(xs: Array[A]): Unit
+   *    @inheritdoc
+   *
+   *    $willNotTerminateInf
    */
   def copyToArray[B >: A](xs: Array[B]): Unit
 
@@ -401,13 +408,14 @@ trait GenTraversableOnce[+A] extends Any {
    *  Copying will stop once either the end of the current $coll is reached,
    *  or the end of the array is reached.
    *
-   *  $willNotTerminateInf
-   *
    *  @param  xs     the array to fill.
    *  @param  start  the starting index.
    *  @tparam B      the type of the elements of the array.
    *
    *  @usecase def copyToArray(xs: Array[A], start: Int): Unit
+   *    @inheritdoc
+   *
+   *    $willNotTerminateInf
    */
   def copyToArray[B >: A](xs: Array[B], start: Int): Unit
 
@@ -450,15 +458,18 @@ trait GenTraversableOnce[+A] extends Any {
   def mkString: String
 
   /** Converts this $coll to an array.
-   *  $willNotTerminateInf
    *
    *  @tparam B the type of the elements of the array. A `ClassManifest` for
    *            this type must be available.
    *  @return   an array containing all elements of this $coll.
    *
    *  @usecase def toArray: Array[A]
-   *  @return  an array containing all elements of this $coll.
-   *           A `ClassManifest` must be available for the element type of this $coll.
+   *    @inheritdoc
+   *
+   *    $willNotTerminateInf
+   *
+   *    @return  an array containing all elements of this $coll.
+   *             A `ClassManifest` must be available for the element type of this $coll.
    */
   def toArray[A1 >: A: ClassManifest]: Array[A1]
 
@@ -530,11 +541,13 @@ trait GenTraversableOnce[+A] extends Any {
    *  pair in the map.  Duplicate keys will be overwritten by later keys:
    *  if this is an unordered collection, which key is in the resulting map
    *  is undefined.
-   *  $willNotTerminateInf
    *  @return    a map containing all elements of this $coll.
+   *
    *  @usecase   def toMap[T, U]: Map[T, U]
-   *  @return    a map of type `immutable.Map[T, U]`
-   *             containing all key/value pairs of type `(T, U)` of this $coll.
+   *    @inheritdoc
+   *    $willNotTerminateInf
+   *    @return    a map of type `immutable.Map[T, U]`
+   *               containing all key/value pairs of type `(T, U)` of this $coll.
    */
   def toMap[K, V](implicit ev: A <:< (K, V)): GenMap[K, V]
 }

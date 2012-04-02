@@ -8,7 +8,8 @@
 
 package scala
 
-import scala.util.{ Duration, Try, Success, Failure }
+import scala.util.{ Try, Success, Failure }
+import scala.concurrent.util.Duration
 
 /** This package object contains primitives for concurrent and parallel programming.
  */
@@ -19,26 +20,16 @@ package object concurrent extends scala.concurrent.ConcurrentPackageObject {
 }
 
 package concurrent {
-  object await {
-    def ready[T](atMost: Duration)(awaitable: Awaitable[T])(implicit execCtx: ExecutionContext = executionContext): Awaitable[T] = {
-      try blocking(awaitable, atMost)
-      catch { case _ => }
-      awaitable
-    }
-
-    def result[T](atMost: Duration)(awaitable: Awaitable[T])(implicit execCtx: ExecutionContext = executionContext): T = {
-      blocking(awaitable, atMost)
-    }
+  
+  sealed trait CanAwait
+  
+  object Await {
+    private[concurrent] implicit val canAwaitEvidence = new CanAwait {}
+    
+    def ready[T](awaitable: Awaitable[T], atMost: Duration): Awaitable[T] = awaitable.ready(atMost)
+    
+    def result[T](awaitable: Awaitable[T], atMost: Duration): T = awaitable.result(atMost)
   }
-
-  /** Importing this object allows using some concurrency primitives
-   *  on futures and promises that can yield nondeterministic programs.
-   *
-   *  While program determinism is broken when using these primitives,
-   *  some programs cannot be written without them (e.g. multiple client threads
-   *  cannot send requests to a server thread through regular promises and futures).
-   */
-  object nondeterministic { }
 
   /** A timeout exception.
    *
