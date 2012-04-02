@@ -30,15 +30,11 @@ abstract class SymbolLoaders {
     member
   }
 
-  private def realOwner(root: Symbol): Symbol = {
-    if (root.isRoot) definitions.EmptyPackageClass else root
-  }
-
   /** Enter class with given `name` into scope of `root`
    *  and give them `completer` as type.
    */
   def enterClass(root: Symbol, name: String, completer: SymbolLoader): Symbol = {
-    val owner = realOwner(root)
+    val owner = root.ownerOfNewSymbols
     val clazz = owner.newClass(newTypeName(name))
     clazz setInfo completer
     enterIfNew(owner, clazz, completer)
@@ -48,7 +44,7 @@ abstract class SymbolLoaders {
    *  and give them `completer` as type.
    */
   def enterModule(root: Symbol, name: String, completer: SymbolLoader): Symbol = {
-    val owner = realOwner(root)
+    val owner = root.ownerOfNewSymbols
     val module = owner.newModule(newTermName(name))
     module setInfo completer
     module.moduleClass setInfo moduleClassLoader

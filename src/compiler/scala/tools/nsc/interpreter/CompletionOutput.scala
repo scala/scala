@@ -15,7 +15,7 @@ trait CompletionOutput {
   val global: Global
 
   import global._
-  import definitions.{ isTupleTypeOrSubtype, isFunctionType, isRepeatedParamType }
+  import definitions.{ isTupleType, isFunctionType, isRepeatedParamType }
 
   /** Reducing fully qualified noise for some common packages.
    */
@@ -48,11 +48,11 @@ trait CompletionOutput {
 
     def typeToString(tp: Type): String = relativize(
       tp match {
-        case x if isFunctionType(x)           => functionString(x)
-        case x if isTupleTypeOrSubtype(x)     => tupleString(x)
-        case x if isRepeatedParamType(x)      => typeToString(x.typeArgs.head) + "*"
-        case mt @ MethodType(_, _)            => methodTypeToString(mt)
-        case x                                => x.toString
+        case x if isFunctionType(x)      => functionString(x)
+        case x if isTupleType(x)         => tupleString(x)
+        case x if isRepeatedParamType(x) => typeToString(x.typeArgs.head) + "*"
+        case mt @ MethodType(_, _)       => methodTypeToString(mt)
+        case x                           => x.toString
       }
     )
 

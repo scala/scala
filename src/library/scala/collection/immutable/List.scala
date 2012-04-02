@@ -58,7 +58,7 @@ import java.io._
  *  @author  Martin Odersky and others
  *  @version 2.8
  *  @since   1.0
- *  @see  [["http://docs.scala-lang.org/overviews/collections/concrete-immutable-collection-classes.html#lists" "Scala's Collection Library overview"]]
+ *  @see  [[http://docs.scala-lang.org/overviews/collections/concrete-immutable-collection-classes.html#lists "Scala's Collection Library overview"]]
  *  section on `Lists` for more information.
  *
  *  @define coll list

@@ -315,9 +315,10 @@ trait Namers extends MethodSynthesis {
         case DefDef(_, _, _, _, _, _)               => owner.newMethod(name.toTermName, pos, flags)
         case ClassDef(_, _, _, _)                   => owner.newClassSymbol(name.toTypeName, pos, flags)
         case ModuleDef(_, _, _)                     => owner.newModule(name, pos, flags)
-        case ValDef(_, _, _, _) if isParameter      => owner.newValueParameter(name, pos, flags)
         case PackageDef(pid, _)                     => createPackageSymbol(pos, pid)
-        case ValDef(_, _, _, _)                     => owner.newValue(name, pos, flags)
+        case ValDef(_, _, _, _)                     =>
+          if (isParameter) owner.newValueParameter(name, pos, flags)
+          else owner.newValue(name, pos, flags)
       }
     }
     private def createFieldSymbol(tree: ValDef): TermSymbol =

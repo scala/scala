@@ -620,7 +620,7 @@ class ModelFactory(val global: Global, val settings: doc.Settings) {
         case tp: TypeRef if definitions.isByNameParamType(tp) =>
           nameBuffer append "⇒ "
           appendType0(tp.args.head)
-        case tp: TypeRef if definitions.isTupleTypeOrSubtype(tp) =>
+        case tp: TypeRef if definitions.isTupleType(tp) =>
           val args = tp.normalize.typeArgs
           nameBuffer append '('
           appendTypes0(args, ", ")

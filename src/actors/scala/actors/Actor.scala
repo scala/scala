@@ -1,3 +1,5 @@
+
+
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
 **    / __/ __// _ | / /  / _ |    (c) 2005-2011, LAMP/EPFL             **
@@ -246,8 +248,8 @@ object Actor extends Combinators {
     rawSelf.react(new RecursiveProxyHandler(rawSelf, f))
 
   private class RecursiveProxyHandler(a: InternalReplyReactor, f: PartialFunction[Any, Unit])
-          extends scala.runtime.AbstractPartialFunction[Any, Unit] {
-    def _isDefinedAt(m: Any): Boolean =
+          extends PartialFunction[Any, Unit] {
+    def isDefinedAt(m: Any): Boolean =
       true // events are immediately removed from the mailbox
     def apply(m: Any) {
       if (f.isDefinedAt(m)) f(m)
@@ -404,5 +406,5 @@ trait Actor extends InternalActor with ReplyReactor {
     this
   }
 
-}
+  }
 

@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<project name="sabbus" default="build">
+<project name="sabbus" default="build" xmlns:artifact="urn:maven-artifact-ant">
   <description>
 SuperSabbus for Scala core, builds the scala library and compiler. It can also package it as a simple distribution, tests it for stable bootstrapping and against the Scala test suite.
   </description>
@@ -238,6 +238,19 @@ INITIALISATION
     </touch>
   </target>
 
+  <!-- Add our maven ant tasks -->
+  <target name="init.maven.tasks" depends="init.jars.check">
+    <path id="maven-ant-tasks.classpath" path="${lib.dir}/ant/maven-ant-tasks-2.1.1.jar" />
+    <typedef resource="org/apache/maven/artifact/ant/antlib.xml" uri="urn:maven-artifact-ant" classpathref="maven-ant-tasks.classpath" />
+  </target>
+
+  <!-- Resolve maven dependencies -->
+  <target name="init.maven.jars" depends="init.maven.tasks">
+    <artifact:dependencies pathId="dependency.classpath" filesetId="dependency.fileset">
+      <dependency groupId="org.skife.com.typesafe.config" artifactId="typesafe-config" version="0.3.0"/>
+    </artifact:dependencies>
+  </target>
+
   <!-- Determines OSGi string + maven extension. -->
   <target name="init.hasbuildnum">
     <condition property="version.hasbuildnum">
@@ -261,21 +274,7 @@ INITIALISATION
 
   <target name="init.build.suffix.done" depends="init.build.release, init.build.patch.release"/>
 
-  <target name="init" depends="init.jars, init.build.suffix.done">
-  <!-- scalac.args.optimise is selectively overridden in certain antcall tasks. -->
-    <property name="scalac.args.optimise" value=""/>
-  <!-- scalac.args.quickonly are added to quick.* targets but not others (particularly, locker.)
-       This is to facilitate testing new command line options which do not yet exist in starr. -->
-    <property name="scalac.args.quickonly" value=""/>
-    <property name="scalac.args.all" value="${scalac.args} ${scalac.args.optimise}"/>
-    <property name="scalac.args.quick" value="${scalac.args.all} ${scalac.args.quickonly}"/>
-    <!-- Setting-up Ant contrib tasks -->
-    <taskdef resource="net/sf/antcontrib/antlib.xml" classpath="${lib.dir}/ant/ant-contrib.jar"/>
-    <!-- This is the start time for the distribution -->
-    <tstamp prefix="time">
-      <format property="human" pattern="d MMMM yyyy, HH:mm:ss" locale="en,US"/>
-      <format property="short" pattern="yyyyMMddHHmmss"/>
-    </tstamp>
+  <target name="init.version.git" depends="init.build.suffix.done">
     <!-- Find out whether we are running on Windows -->
     <condition property="os.win">
       <os family="windows"/>
@@ -292,14 +291,44 @@ INITIALISATION
       name="maven.version.number"
       value="${version.major}.${version.minor}.${version.patch}${version.suffix}${maven.version.suffix}"/>
     <property
-      name="version.number"
-      value="${version.major}.${version.minor}.${version.patch}${version.suffix}-${git.commit.date}-${git.commit.sha}"/>
-    <property
       name="osgi.version.number"
       value="${version.major}.${version.minor}.${version.patch}.v${git.commit.date}${version.suffix}-${git.commit.sha}"/>
+  </target>
+
+  <target name="init.version.snapshot" unless="build.release" depends="init.version.git">
+     <property
+      name="version.number"
+      value="${version.major}.${version.minor}.${version.patch}${version.suffix}-${git.commit.date}-${git.commit.sha}"/>
+  </target>
+
+  <target name="init.version.release" if="build.release" depends="init.version.git">
+     <property
+      name="version.number"
+      value="${maven.version.number}"/>
+  </target>
+
+  <target name="init.version.done" depends="init.version.release, init.version.snapshot"/>
+
+  <target name="init" depends="init.jars, init.maven.jars, init.version.done">
+  <!-- scalac.args.optimise is selectively overridden in certain antcall tasks. -->
+    <property name="scalac.args.optimise" value=""/>
+  <!-- scalac.args.quickonly are added to quick.* targets but not others (particularly, locker.)
+       This is to facilitate testing new command line options which do not yet exist in starr. -->
+    <property name="scalac.args.quickonly" value=""/>
+    <property name="scalac.args.all" value="${scalac.args} ${scalac.args.optimise}"/>
+    <property name="scalac.args.quick" value="${scalac.args.all} ${scalac.args.quickonly}"/>
+    <!-- Setting-up Ant contrib tasks -->
+    <taskdef resource="net/sf/antcontrib/antlib.xml" classpath="${lib.dir}/ant/ant-contrib.jar"/>
+    <!-- This is the start time for the distribution -->
+    <tstamp prefix="time">
+      <format property="human" pattern="d MMMM yyyy, HH:mm:ss" locale="en,US"/>
+      <format property="short" pattern="yyyyMMddHHmmss"/>
+    </tstamp>
+
     <!-- some default in case something went wrong getting the revision -->
     <property name="version.number" value="-unknown-"/>
     <property name="init.avail" value="yes"/>
+
 
     <!-- Local libs (developer use.) -->
     <mkdir dir="${lib-extra.dir}"/>
@@ -321,6 +350,7 @@ INITIALISATION
       </fileset>
       <pathelement location="${ant.jar}"/>
       <path refid="lib.extra"/>
+      <path refid="dependency.classpath"/>
     </path>
 
     <!-- And print-out what we are building -->
@@ -986,6 +1016,11 @@ PACKED QUICK BUILD (PACK)
 
   <target name="pack.lib" depends="pack.pre-lib" unless="pack.lib.available">
     <mkdir dir="${build-pack.dir}/lib"/>
+    <!-- First copy maven dependencies -->
+    <copy todir="${build-pack.dir}/lib">
+      <fileset refid="dependency.fileset" />
+      <mapper type="flatten" />
+    </copy>
     <jar destfile="${build-pack.dir}/lib/scala-library.jar">
       <fileset dir="${build-quick.dir}/classes/library">
         <exclude name="scala/dbc/**"/>

@@ -433,10 +433,7 @@ abstract class ClassfileParser {
           sym.info.decl(part.encode)
         }//.suchThat(module == _.isModule)
 
-        sym = (
-          if (sym1 ne NoSymbol) sym1
-          else sym.info.decl(part.encode.toTypeName)
-        )
+        sym = sym1 orElse sym.info.decl(part.encode.toTypeName)
       }
     }
     sym

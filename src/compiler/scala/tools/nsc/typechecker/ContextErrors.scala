@@ -317,7 +317,7 @@ trait ContextErrors {
           }
           withAddendum(qual.pos)(
               if (name == nme.CONSTRUCTOR) target + " does not have a constructor"
-              else nameString + " is not a member of " + targetKindString + target + addendum
+              else nameString + " is not a member of " + targetKindString + target.directObjectString + addendum
             )
         }
         issueNormalTypeError(sel, errMsg)
@@ -677,7 +677,7 @@ trait ContextErrors {
 
       def AccessError(tree: Tree, sym: Symbol, pre: Type, owner0: Symbol, explanation: String) = {
         def errMsg = {
-          val location = if (sym.isClassConstructor) owner0 else pre.widen
+          val location = if (sym.isClassConstructor) owner0 else pre.widen.directObjectString
 
           underlyingSymbol(sym).fullLocationString + " cannot be accessed in " +
           location + explanation

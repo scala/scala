@@ -10,7 +10,7 @@ an overriding object must conform to the overridden object's class bound;
  required: Object{def g: Int}
   trait Quux2 extends Quux1 { override object Bar { def g = "abc" } } // err
                                               ^
-override-object-no.scala:25: error: overriding object Bar in trait Quux3 of type object Quux4.this.Bar;
+override-object-no.scala:25: error: overriding object Bar in trait Quux3;
  object Bar cannot override final member
   trait Quux4 extends Quux3 { override object Bar  } // err
                                               ^
