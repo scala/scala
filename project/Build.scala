@@ -23,7 +23,7 @@ object ScalaBuild extends Build with Layers {
   lazy val buildFixed = AttributeKey[Boolean]("build-uri-fixed")
 
   // Build wide settings:
-  override lazy val settings = super.settings ++ Seq(
+  override lazy val settings = super.settings ++ Versions.settings ++ Seq(
     autoScalaLibrary := false,
     resolvers += Resolver.url(
       "Typesafe nightlies", 
@@ -34,7 +34,7 @@ object ScalaBuild extends Build with Layers {
       ScalaToolsSnapshots
     ),
     organization := "org.scala-lang",
-    version := "2.10.0-SNAPSHOT",
+    version <<= Versions.mavenVersion,
     pomExtra := <xml:group>
       <inceptionYear>2002</inceptionYear>
         <licenses>
@@ -111,7 +111,7 @@ object ScalaBuild extends Build with Layers {
   )
 
   // Settings for root project.  These are aggregate tasks against the rest of the build.
-  def projectSettings: Seq[Setting[_]] = publishSettings ++ Versions.settings ++ Seq(
+  def projectSettings: Seq[Setting[_]] = publishSettings ++ Seq(
     doc in Compile <<= (doc in documentation in Compile).identity,
     // These next two aggregate commands on several projects and return results that are to be ignored by remaining tasks.
     compile in Compile <<= compiledProjects.map(p => compile in p in Compile).join.map(_.head),
