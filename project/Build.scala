@@ -111,7 +111,7 @@ object ScalaBuild extends Build with Layers {
   )
 
   // Settings for root project.  These are aggregate tasks against the rest of the build.
-  def projectSettings: Seq[Setting[_]] = publishSettings ++ Seq(
+  def projectSettings: Seq[Setting[_]] = publishSettings ++ Versions.settings ++ Seq(
     doc in Compile <<= (doc in documentation in Compile).identity,
     // These next two aggregate commands on several projects and return results that are to be ignored by remaining tasks.
     compile in Compile <<= compiledProjects.map(p => compile in p in Compile).join.map(_.head),
