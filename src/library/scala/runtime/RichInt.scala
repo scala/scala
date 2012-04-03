@@ -77,4 +77,12 @@ final class RichInt(val self: Int) extends ScalaNumberProxy[Int] with RangedProx
   def toBinaryString: String = java.lang.Integer.toBinaryString(self)
   def toHexString: String = java.lang.Integer.toHexString(self)
   def toOctalString: String = java.lang.Integer.toOctalString(self)
+
+  override def isValidByte = self.toByte.toInt == self
+  override def isValidShort = self.toShort.toInt == self
+  override def isValidChar = self.toChar.toInt == self
+  override def isValidInt = true
+  override def isValidLong = true
+  override def isValidFloat = self.toFloat.toInt == self && self != Int.MaxValue
+  override def isValidDouble = true
 }
