@@ -2199,7 +2199,7 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
             vparams map {p => if(p.tpt.tpe == null) typedType(p.tpt).tpe else p.tpt.tpe}
         }
 
-      def mkParams(methodSym: Symbol, formals: List[Type] = deriveFormals) = {
+      def mkParams(methodSym: Symbol, formals: List[Type]/* = deriveFormals*/) = {
         selOverride match {
           case None if targs.isEmpty => MissingParameterTypeAnonMatchError(tree, pt); (Nil, EmptyTree)
           case None =>
@@ -2225,7 +2225,7 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
         // rig the show so we can get started typing the method body -- later we'll correct the infos...
         anonClass setInfo ClassInfoType(List(ObjectClass.tpe, pt, SerializableClass.tpe), newScope, anonClass)
         val methodSym = anonClass.newMethod(nme.apply, tree.pos, FINAL)
-        val (paramSyms, selector) = mkParams(methodSym)
+        val (paramSyms, selector) = mkParams(methodSym, deriveFormals)
 
         if (selector eq EmptyTree) EmptyTree
         else {
@@ -2289,7 +2289,7 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
 
       def isDefinedAtMethod = {
         val methodSym = anonClass.newMethod(nme.isDefinedAt, tree.pos, FINAL)
-        val (paramSyms, selector) = mkParams(methodSym)
+        val (paramSyms, selector) = mkParams(methodSym, deriveFormals)
         if (selector eq EmptyTree) EmptyTree
         else {
           val methodBodyTyper = newTyper(context.makeNewScope(context.tree, methodSym)) // should use the DefDef for the context's tree, but it doesn't exist yet (we need the typer we're creating to create it)
