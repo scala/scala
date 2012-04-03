@@ -11,10 +11,7 @@ package scala.concurrent.impl
 
 
 import scala.concurrent.{Awaitable, ExecutionContext}
-import scala.util.{ Try, Success, Failure }
 import scala.collection.mutable.Stack
-
-
 
 private[concurrent] trait Future[+T] extends scala.concurrent.Future[T] with Awaitable[T] {
 
@@ -36,9 +33,9 @@ private[concurrent] trait Future[+T] extends scala.concurrent.Future[T] with Awa
    *  if it contains a valid result, or Some(Left(error)) if it contains
    *  an exception.
    */
-  def value: Option[Try[T]]
+  def value: Option[Either[Throwable, T]]
 
-  def onComplete[U](func: Try[T] => U): this.type
+  def onComplete[U](func: Either[Throwable, T] => U): this.type
 
 }
 
@@ -67,7 +64,7 @@ object Future {
       def run = {
         promise complete {
           try {
-            Success(body)
+            Right(body)
           } catch {
             case e => scala.concurrent.resolver(e)
           }
