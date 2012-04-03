@@ -13,7 +13,6 @@ package scala.concurrent
 import java.util.concurrent.atomic.{ AtomicInteger }
 import java.util.concurrent.{ Executors, Future => JFuture, Callable }
 import scala.concurrent.util.Duration
-import scala.util.{ Try, Success, Failure }
 import scala.concurrent.forkjoin.{ ForkJoinPool, RecursiveTask => FJTask, RecursiveAction, ForkJoinWorkerThread }
 import scala.collection.generic.CanBuildFrom
 import collection._
