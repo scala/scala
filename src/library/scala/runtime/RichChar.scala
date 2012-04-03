@@ -45,4 +45,12 @@ final class RichChar(val self: Char) extends IntegralProxy[Char] {
   // public static boolean isDefined(char ch)
   // public static boolean isJavaIdentifierStart(char ch)
   // public static boolean isJavaIdentifierPart(char ch)
+
+  override def isValidByte = self.toByte.toInt == self.toInt
+  override def isValidShort = self.toShort.toInt == self.toInt
+  override def isValidChar = true
+  override def isValidInt = true
+  override def isValidLong = true
+  override def isValidFloat = true
+  override def isValidDouble = true
 }

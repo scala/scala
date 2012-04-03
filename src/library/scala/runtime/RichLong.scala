@@ -12,4 +12,12 @@ final class RichLong(val self: Long) extends IntegralProxy[Long] {
   def toBinaryString: String = java.lang.Long.toBinaryString(self)
   def toHexString: String = java.lang.Long.toHexString(self)
   def toOctalString: String = java.lang.Long.toOctalString(self)
+
+  override def isValidByte = self.toByte.toLong == self
+  override def isValidShort = self.toShort.toLong == self
+  override def isValidChar = self.toChar.toLong == self
+  override def isValidInt = self.toInt.toLong == self
+  override def isValidLong = true
+  override def isValidFloat = self.toFloat.toLong == self && self != Long.MaxValue
+  override def isValidDouble = self.toDouble.toLong == self && self != Long.MaxValue
 }

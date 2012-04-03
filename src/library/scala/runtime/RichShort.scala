@@ -8,4 +8,12 @@
 
 package scala.runtime
 
-final class RichShort(val self: Short) extends ScalaWholeNumberProxy[Short] { }
+final class RichShort(val self: Short) extends ScalaWholeNumberProxy[Short] {
+  override def isValidByte = self.toByte.toInt == self.toInt
+  override def isValidShort = true
+  override def isValidChar = self.toChar.toInt == self.toInt
+  override def isValidInt = true
+  override def isValidLong = true
+  override def isValidFloat = true
+  override def isValidDouble = true
+}

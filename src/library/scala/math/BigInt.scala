@@ -123,18 +123,16 @@ class BigInt(val bigInteger: BigInteger) extends ScalaNumber with ScalaNumericCo
   override def equals(that: Any): Boolean = that match {
     case that: BigInt     => this equals that
     case that: BigDecimal => that.toBigIntExact exists (this equals _)
-    case that: Double     => isValidDouble && toDouble == that
-    case that: Float      => isValidFloat && toFloat == that
-    case x                => isValidLong && unifiedPrimitiveEquals(x)
+    case _                => unifiedPrimitiveEquals(that)
   }
   override def isValidByte  = this >= Byte.MinValue && this <= Byte.MaxValue
   override def isValidShort = this >= Short.MinValue && this <= Short.MaxValue
   override def isValidChar  = this >= Char.MinValue && this <= Char.MaxValue
   override def isValidInt   = this >= Int.MinValue && this <= Int.MaxValue
-           def isValidLong  = this >= Long.MinValue && this <= Long.MaxValue
+  override def isValidLong  = this >= Long.MinValue && this <= Long.MaxValue
   /** Returns `true` iff this can be represented exactly by [[scala.Float]]; otherwise returns `false`.
     */
-  def isValidFloat = {
+  override def isValidFloat = {
     val bitLen = bitLength
     (bitLen <= 24 ||
       {
@@ -147,7 +145,7 @@ class BigInt(val bigInteger: BigInteger) extends ScalaNumber with ScalaNumericCo
   }
   /** Returns `true` iff this can be represented exactly by [[scala.Double]]; otherwise returns `false`.
     */
-  def isValidDouble = {
+  override def isValidDouble = {
     val bitLen = bitLength
     (bitLen <= 53 ||
       {

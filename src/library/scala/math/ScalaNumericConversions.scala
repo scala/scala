@@ -52,22 +52,41 @@ trait ScalaNumericConversions extends ScalaNumber {
   /** Returns `true` iff this has a zero fractional part, and is within the
     * range of [[scala.Byte]] MinValue and MaxValue; otherwise returns `false`.
     */
-  def isValidByte  = isWhole && (toInt == toByte)
+  def isValidByte  = isValidInt && (toInt == toByte)
 
   /** Returns `true` iff this has a zero fractional part, and is within the
     * range of [[scala.Short]] MinValue and MaxValue; otherwise returns `false`.
     */
-  def isValidShort = isWhole && (toInt == toShort)
-
-  /** Returns `true` iff this has a zero fractional part, and is within the
-    * range of [[scala.Int]] MinValue and MaxValue; otherwise returns `false`.
-    */
-  def isValidInt   = isWhole && (toLong == toInt)
+  def isValidShort = isValidInt && (toInt == toShort)
 
   /** Returns `true` iff this has a zero fractional part, and is within the
     * range of [[scala.Char]] MinValue and MaxValue; otherwise returns `false`.
     */
-  def isValidChar  = isWhole && (toInt >= Char.MinValue && toInt <= Char.MaxValue)
+  def isValidChar  = isValidInt && (toInt == toChar)
+
+  /** Returns `true` iff this has a zero fractional part, and is within the
+    * range of [[scala.Int]] MinValue and MaxValue; otherwise returns `false`.
+    */
+  def isValidInt   = isValidLong && (toLong == toInt)
+
+  /** Returns `true` iff this has a zero fractional part, and is within the
+    * range of [[scala.Long]] MinValue and MaxValue; otherwise returns `false`.
+    */
+  def isValidLong: Boolean
+
+  /** Returns `true` iff this can be represented exactly by [[scala.Float]]; otherwise returns `false`.
+    * Special cases:
+    *   returns 'true' when this is infinity
+    *   returns 'false' when this is NaN.
+    */
+  def isValidFloat = isValidDouble && (toDouble == toFloat)
+
+  /** Returns `true` iff this can be represented exactly by [[scala.Double]]; otherwise returns `false`.
+    * Special cases:
+    *   returns 'true' when this is infinity
+    *   returns 'false' when this is NaN.
+    */
+  def isValidDouble: Boolean
 
   protected def unifiedPrimitiveHashcode() = {
     val lv = toLong
@@ -80,23 +99,15 @@ trait ScalaNumericConversions extends ScalaNumber {
    *  anywhere else after checking against the primitives
    *  to avoid infinite recursion between equals and this on
    *  unknown "Number" variants.
-   *
-   *  Additionally, this should only be called if the numeric
-   *  type is happy to be converted to Long, Float, and Double.
-   *  If for instance a BigInt much larger than the Long range is
-   *  sent here, it will claim equality with whatever Long is left
-   *  in its lower 64 bits.  Or a BigDecimal with more precision
-   *  than Double can hold: same thing.  There's no way given the
-   *  interface available here to prevent this error.
    */
   protected def unifiedPrimitiveEquals(x: Any) = x match {
     case x: Char    => isValidChar && (toInt == x.toInt)
     case x: Byte    => isValidByte && (toByte == x)
     case x: Short   => isValidShort && (toShort == x)
     case x: Int     => isValidInt && (toInt == x)
-    case x: Long    => toLong == x
-    case x: Float   => toFloat == x
-    case x: Double  => toDouble == x
+    case x: Long    => isValidLong && (toLong == x)
+    case x: Float   => isValidFloat && (toFloat == x)
+    case x: Double  => isValidDouble && (toDouble == x)
     case _          => false
   }
 }
