@@ -170,7 +170,7 @@ object ScalaBuild extends Build with Layers {
                              skip in Compile <<= lockFile.map(_  exists),
                              lock <<= lockFile map { f => IO.touch(f) },
                              unlock <<= lockFile map IO.delete
-                            )
+                            ) ++ CheatingCompilerSettings.settings
 
   // --------------------------------------------------------------
   //  Libraries used by Scalac that change infrequently
