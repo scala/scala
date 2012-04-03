@@ -8,11 +8,6 @@
 
 package scala.concurrent
 
-import scala.util.{ Try, Success, Failure }
-
-
-
-
 /** Promise is an object which can be completed with a value or failed
  *  with an exception.
  *
@@ -40,7 +35,7 @@ trait Promise[T] {
    *
    *  $promiseCompletion
    */
-  def complete(result:Try[T]): this.type = if (tryComplete(result)) this else throwCompleted
+  def complete(result: Either[Throwable, T]): this.type = if (tryComplete(result)) this else throwCompleted
 
   /** Tries to complete the promise with either a value or the exception.
    *
@@ -48,7 +43,7 @@ trait Promise[T] {
    *
    *  @return    If the promise has already been completed returns `false`, or `true` otherwise.
    */
-  def tryComplete(result: Try[T]): Boolean
+  def tryComplete(result: Either[Throwable, T]): Boolean
 
   /** Completes this promise with the specified future, once that future is completed.
    *
@@ -75,7 +70,7 @@ trait Promise[T] {
    *
    *  @return    If the promise has already been completed returns `false`, or `true` otherwise.
    */
-  def trySuccess(value: T): Boolean = tryComplete(Success(value))
+  def trySuccess(value: T): Boolean = tryComplete(Right(value))
 
   /** Completes the promise with an exception.
    *
@@ -93,7 +88,7 @@ trait Promise[T] {
    *
    *  @return    If the promise has already been completed returns `false`, or `true` otherwise.
    */
-  def tryFailure(t: Throwable): Boolean = tryComplete(Failure(t))
+  def tryFailure(t: Throwable): Boolean = tryComplete(Left(t))
 
   /** Wraps a `Throwable` in an `ExecutionException` if necessary. TODO replace with `resolver` from scala.concurrent
    *
@@ -118,11 +113,11 @@ object Promise {
 
   /** Creates an already completed Promise with the specified exception
    */
-  def failed[T](exception: Throwable)(implicit executor: ExecutionContext): Promise[T] = new impl.Promise.KeptPromise[T](Failure(exception))
+  def failed[T](exception: Throwable)(implicit executor: ExecutionContext): Promise[T] = new impl.Promise.KeptPromise[T](Left(exception))
 
   /** Creates an already completed Promise with the specified result
    */
-  def successful[T](result: T)(implicit executor: ExecutionContext): Promise[T] = new impl.Promise.KeptPromise[T](Success(result))
+  def successful[T](result: T)(implicit executor: ExecutionContext): Promise[T] = new impl.Promise.KeptPromise[T](Right(result))
   
 }
 

@@ -291,6 +291,26 @@ trait DecorateAsJava {
    * @return An object with an `asJava` method that returns a Java
    *         `ConcurrentMap` view of the argument.
    */
+  @deprecated("Use `concurrent.Map` instead of `ConcurrentMap`.", "2.10.0")
   implicit def asJavaConcurrentMapConverter[A, B](m: mutable.ConcurrentMap[A, B]): AsJava[juc.ConcurrentMap[A, B]] =
+    new AsJava(asJavaConcurrentMap(m))
+
+  /**
+   * Adds an `asJava` method that implicitly converts a Scala mutable
+   * `concurrent.Map` to a Java `ConcurrentMap`.
+   *
+   * The returned Java `ConcurrentMap` is backed by the provided Scala
+   * `concurrent.Map` and any side-effects of using it via the Java interface
+   * will be visible via the Scala interface and vice versa.
+   *
+   * If the Scala `concurrent.Map` was previously obtained from an implicit or
+   * explicit call of `asConcurrentMap(java.util.concurrect.ConcurrentMap)`
+   * then the original Java `ConcurrentMap` will be returned.
+   *
+   * @param m The Scala `concurrent.Map` to be converted.
+   * @return An object with an `asJava` method that returns a Java
+   *         `ConcurrentMap` view of the argument.
+   */
+  implicit def asJavaConcurrentMapConverter[A, B](m: concurrent.Map[A, B]): AsJava[juc.ConcurrentMap[A, B]] =
     new AsJava(asJavaConcurrentMap(m))
 }
