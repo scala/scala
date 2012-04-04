@@ -11,7 +11,7 @@ package scala.concurrent
 
 
 import java.util.concurrent.atomic.{ AtomicInteger }
-import java.util.concurrent.{ Executors, Future => JFuture, Callable }
+import java.util.concurrent.{ Executors, Future => JFuture, Callable, ExecutorService, Executor }
 import scala.concurrent.util.Duration
 import scala.concurrent.forkjoin.{ ForkJoinPool, RecursiveTask => FJTask, RecursiveAction, ForkJoinWorkerThread }
 import scala.collection.generic.CanBuildFrom
@@ -36,5 +36,20 @@ trait ExecutionContext {
 }
 
 
+/** Contains factory methods for creating execution contexts.
+ */
+object ExecutionContext {
+  
+  implicit def defaultExecutionContext: ExecutionContext = scala.concurrent.defaultExecutionContext
+  
+  /** Creates an `ExecutionContext` from the given `ExecutorService`.
+   */
+  def fromExecutorService(e: ExecutorService): ExecutionContext with Executor = new impl.ExecutionContextImpl(e)
+  
+  /** Creates an `ExecutionContext` from the given `Executor`.
+   */
+  def fromExecutor(e: Executor): ExecutionContext with Executor = new impl.ExecutionContextImpl(e)
+  
+}
 
 
