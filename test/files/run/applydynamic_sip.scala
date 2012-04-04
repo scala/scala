@@ -29,9 +29,9 @@ object Test extends App {
   qual.sel[T](a)
   qual.sel[T](a)(a2)
 
-  // If qual.sel is followed by a potential type argument list [Ts] 
+  // If qual.sel is followed by a potential type argument list [Ts]
   // and a non-empty named argument list (x1 = arg1, …, xn = argn) where some name prefixes xi = might be missing:
-  //  qual.applyDynamicNamed(“sel”)(xs1 -> arg1, …, xsn -> argn) 
+  //  qual.applyDynamicNamed(“sel”)(xs1 -> arg1, …, xsn -> argn)
   qual.sel(arg = a)
   qual.sel[T](arg = a)
   qual.sel(a, arg2 = "a2")

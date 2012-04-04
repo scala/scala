@@ -3517,15 +3517,23 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
               case t => (t, Nil)
           }
 
+          @inline def hasNamedArg(as: List[Tree]) = as collectFirst {case AssignOrNamedArg(lhs, rhs) =>} nonEmpty
+
           // note: context.tree includes at most one Apply node
           // thus, we can't use it to detect we're going to receive named args in expressions such as:
           //   qual.sel(a)(a2, arg2 = "a2")
           val oper = outer match {
-            case Apply(`tree`, as) => if (as collectFirst {case AssignOrNamedArg(lhs, rhs) =>} nonEmpty)
-                                         nme.applyDynamicNamed
-                                    else nme.applyDynamic
-            case Assign(`tree`, _)   =>  nme.updateDynamic
-            case _                   =>  nme.selectDynamic
+            case Apply(`tree`, as) =>
+              val oper =
+                if (hasNamedArg(as))  nme.applyDynamicNamed
+                else                  nme.applyDynamic
+              // not supported: foo.bar(a1,..., an: _*)
+              if (treeInfo.isWildcardStarArgList(as)) {
+               DynamicVarArgUnsupported(tree, oper)
+               return Some(setError(tree))
+              } else oper
+            case Assign(`tree`, _) => nme.updateDynamic
+            case _                 => nme.selectDynamic
           }
 
           val dynSel  = Select(qual, oper)
