@@ -130,6 +130,18 @@ sealed abstract class Option[+A] extends Product with Serializable {
   @inline final def map[B](f: A => B): Option[B] =
     if (isEmpty) None else Some(f(this.get))
 
+  /** Returns the result of applying $f to this $option's
+   *  value if the $option is nonempty.  Otherwise, evaluates
+   *  expression $ifEmpty.
+   *
+   *  @note This is equivalent to `$option map f getOrElse ifEmpty`.
+   *
+   *  @param  ifEmpty the expression to evaluate if empty.
+   *  @param  f       the function to apply if nonempty.
+   */
+  @inline final def fold[B](ifEmpty: => B)(f: A => B): B =
+    if (isEmpty) ifEmpty else f(this.get)
+
   /** Returns the result of applying $f to this $option's value if
    * this $option is nonempty.
    * Returns $none if this $option is empty.
