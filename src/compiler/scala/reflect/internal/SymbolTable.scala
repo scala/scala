@@ -62,6 +62,11 @@ abstract class SymbolTable extends api.Universe
     result
   }
 
+  final val traceSymbolActivity = sys.props contains "scalac.debug.syms"
+  object traceSymbols extends {
+    val global: SymbolTable.this.type = SymbolTable.this
+  } with util.TraceSymbolActivity
+
   /** Are we compiling for Java SE? */
   // def forJVM: Boolean
 
