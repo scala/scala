@@ -11,7 +11,7 @@ trait Positions { self: Universe =>
    * Typically, positionToAnnotation is the identity, and annotationToPosition returns annot.pos
    */
   type TreeAnnotation // <: { def pos: Position }
-  val NoTreeAnnotation: TreeAnnotation
+  def NoTreeAnnotation: TreeAnnotation
   implicit def positionToAnnotation(pos: Position): TreeAnnotation  // = pos
   def annotationToPosition(annot: TreeAnnotation): Position         // = annot.pos
   def _checkSetAnnotation(tree: Tree, annot: TreeAnnotation): Unit = () // check that annot may overwrite tree.annot
