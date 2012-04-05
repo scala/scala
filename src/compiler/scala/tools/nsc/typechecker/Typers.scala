@@ -2089,7 +2089,10 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
       for (Apply(_, xs) <- cdef.pat ; x <- xs dropRight 1 ; if treeInfo isStar x)
         StarPositionInPatternError(x)
 
-      val pat1 = typedPattern(cdef.pat, pattpe)
+      // withoutAnnotations - see continuations-run/z1673.scala
+      // This adjustment is awfully specific to continuations, but AFAICS the
+      // whole AnnotationChecker framework is.
+      val pat1 = typedPattern(cdef.pat, pattpe.withoutAnnotations)
       // When case classes have more than two parameter lists, the pattern ends
       // up typed as a method.  We only pattern match on the first parameter
       // list, so substitute the final result type of the method, i.e. the type
