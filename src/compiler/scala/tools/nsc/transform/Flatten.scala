@@ -108,7 +108,7 @@ abstract class Flatten extends InfoTransform {
       tree match {
         case PackageDef(_, _) =>
           liftedDefs(tree.symbol.moduleClass) = new ListBuffer
-        case Template(_, _, _) if tree.symbol.owner.hasPackageFlag =>
+        case Template(_, _, _) if tree.symbol.isDefinedInPackage =>
           liftedDefs(tree.symbol.owner) = new ListBuffer
         case _ =>
       }

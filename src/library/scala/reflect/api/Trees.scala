@@ -298,7 +298,6 @@ trait Trees { self: Universe =>
       case ValDef(mods, _, _, _)    => if (mods hasModifier Modifier.mutable) "var" else "val"
       case _ => ""
     }
-    // final def hasFlag(mask: Long): Boolean = mods hasFlag mask
   }
 
   /** A packaging, such as `package pid { stats }`

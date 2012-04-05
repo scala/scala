@@ -699,7 +699,7 @@ trait Infer {
               case NamedType(name, _) => Some(name)
               case _ => None
             })._1
-            if (missing forall (_.hasDefaultFlag)) {
+            if (missing forall (_.hasDefault)) {
               // add defaults as named arguments
               val argtpes1 = argtpes0 ::: (missing map (p => NamedType(p.name, p.tpe)))
               isApplicable(undetparams, ftpe, argtpes1, pt)

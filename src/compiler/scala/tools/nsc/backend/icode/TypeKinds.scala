@@ -142,7 +142,7 @@ trait TypeKinds { self: ICodes =>
     def lub0(tk1: TypeKind, tk2: TypeKind): Type = beforeUncurry {
       import definitions._
       val tp = global.lub(List(tk1.toType, tk2.toType))
-      val (front, rest) = tp.parents span (_.typeSymbol.hasTraitFlag)
+      val (front, rest) = tp.parents span (_.typeSymbol.isTrait)
 
       if (front.isEmpty || rest.isEmpty || rest.head.typeSymbol == ObjectClass) tp
       else rest.head

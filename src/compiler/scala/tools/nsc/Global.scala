@@ -220,10 +220,6 @@ class Global(var currentSettings: Settings, var reporter: Reporter) extends Symb
        (settings.log.isSetByUser)
     && ((settings.log containsPhase globalPhase) || (settings.log containsPhase phase))
   )
-  def atPhaseStackMessage = atPhaseStack match {
-    case Nil    => ""
-    case ps     => ps.reverseMap("->" + _).mkString("(", " ", ")")
-  }
   // Over 200 closure objects are eliminated by inlining this.
   @inline final def log(msg: => AnyRef) {
     if (shouldLogAtThisPhase)

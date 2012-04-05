@@ -17,7 +17,7 @@ trait SynchronizedSymbols extends internal.Symbols { self: SymbolTable =>
   override def newFreeVar(name: TermName, tpe: Type, value: Any, newFlags: Long = 0L): FreeVar =
     new FreeVar(name, value) with SynchronizedTermSymbol initFlags newFlags setInfo tpe
 
-  override protected def makeNoSymbol = new NoSymbol with SynchronizedSymbol
+  override protected def makeNoSymbol: NoSymbol = new NoSymbol with SynchronizedSymbol
 
   trait SynchronizedSymbol extends Symbol {
 
@@ -55,32 +55,45 @@ trait SynchronizedSymbols extends internal.Symbols { self: SymbolTable =>
 
 // ------ creators -------------------------------------------------------------------
 
-    override def newTermSymbol(name: TermName, pos: Position = NoPosition, newFlags: Long = 0L): TermSymbol =
-      new TermSymbol(this, pos, name) with SynchronizedTermSymbol initFlags newFlags
+    override protected def createTypeSymbol(name: TypeName, pos: Position, newFlags: Long): TypeSymbol =
+      new TypeSymbol(this, pos, name) with SynchronizedTypeSymbol initFlags newFlags
 
-    override def newAbstractTypeSymbol(name: TypeName, pos: Position = NoPosition, newFlags: Long = 0L): AbstractTypeSymbol =
+    override protected def createAbstractTypeSymbol(name: TypeName, pos: Position, newFlags: Long): AbstractTypeSymbol =
       new AbstractTypeSymbol(this, pos, name) with SynchronizedTypeSymbol initFlags newFlags
 
-    override def newAliasTypeSymbol(name: TypeName, pos: Position = NoPosition, newFlags: Long = 0L): AliasTypeSymbol =
+    override protected def createAliasTypeSymbol(name: TypeName, pos: Position, newFlags: Long): AliasTypeSymbol =
       new AliasTypeSymbol(this, pos, name) with SynchronizedTypeSymbol initFlags newFlags
 
-    override def newModuleSymbol(name: TermName, pos: Position = NoPosition, newFlags: Long = 0L): ModuleSymbol =
-      new ModuleSymbol(this, pos, name) with SynchronizedTermSymbol initFlags newFlags
+    override protected def createTypeSkolemSymbol(name: TypeName, origin: AnyRef, pos: Position, newFlags: Long): TypeSkolem =
+      new TypeSkolem(this, pos, name, origin) with SynchronizedTypeSymbol initFlags newFlags
 
-    override def newMethodSymbol(name: TermName, pos: Position = NoPosition, newFlags: Long = 0L): MethodSymbol =
-      new MethodSymbol(this, pos, name) with SynchronizedMethodSymbol initFlags newFlags
-
-    override def newClassSymbol(name: TypeName, pos: Position = NoPosition, newFlags: Long = 0L): ClassSymbol =
+    override protected def createClassSymbol(name: TypeName, pos: Position, newFlags: Long): ClassSymbol =
       new ClassSymbol(this, pos, name) with SynchronizedClassSymbol initFlags newFlags
 
-    override def newModuleClassSymbol(name: TypeName, pos: Position = NoPosition, newFlags: Long = 0L): ModuleClassSymbol =
+    override protected def createModuleClassSymbol(name: TypeName, pos: Position, newFlags: Long): ModuleClassSymbol =
       new ModuleClassSymbol(this, pos, name) with SynchronizedModuleClassSymbol initFlags newFlags
 
-    override def newTypeSkolemSymbol(name: TypeName, origin: AnyRef, pos: Position = NoPosition, newFlags: Long = 0L): TypeSkolem =
-      if ((newFlags & DEFERRED) == 0L)
-        new TypeSkolem(this, pos, name, origin) with SynchronizedTypeSymbol initFlags newFlags
-      else
-        new TypeSkolem(this, pos, name, origin) with AbstractTypeMixin with SynchronizedTypeSymbol initFlags newFlags
+    override protected def createPackageClassSymbol(name: TypeName, pos: Position, newFlags: Long): PackageClassSymbol =
+      new PackageClassSymbol(this, pos, name) with SynchronizedModuleClassSymbol initFlags newFlags
+
+    override protected def createRefinementClassSymbol(pos: Position, newFlags: Long): RefinementClassSymbol =
+      new RefinementClassSymbol(this, pos) with SynchronizedClassSymbol initFlags newFlags
+
+    override protected def createTermSymbol(name: TermName, pos: Position, newFlags: Long): TermSymbol =
+      new TermSymbol(this, pos, name) with SynchronizedTermSymbol initFlags newFlags
+
+    override protected def createMethodSymbol(name: TermName, pos: Position, newFlags: Long): MethodSymbol =
+      new MethodSymbol(this, pos, name) with SynchronizedMethodSymbol initFlags newFlags
+
+    override protected def createModuleSymbol(name: TermName, pos: Position, newFlags: Long): ModuleSymbol =
+      new ModuleSymbol(this, pos, name) with SynchronizedTermSymbol initFlags newFlags
+
+    override protected def createPackageSymbol(name: TermName, pos: Position, newFlags: Long): PackageSymbol =
+      new PackageSymbol(this, pos, name) with SynchronizedTermSymbol initFlags newFlags
+
+    // TODO
+    // override protected def createValueParameterSymbol(name: TermName, pos: Position, newFlags: Long)
+    // override protected def createValueMemberSymbol(name: TermName, pos: Position, newFlags: Long)
   }
 
 // ------- subclasses ---------------------------------------------------------------------

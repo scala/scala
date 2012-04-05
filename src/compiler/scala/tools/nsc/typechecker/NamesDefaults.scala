@@ -377,7 +377,7 @@ trait NamesDefaults { self: Analyzer =>
                   pos: util.Position, context: Context): (List[Tree], List[Symbol]) = {
     if (givenArgs.length < params.length) {
       val (missing, positional) = missingParams(givenArgs, params)
-      if (missing forall (_.hasDefaultFlag)) {
+      if (missing forall (_.hasDefault)) {
         val defaultArgs = missing flatMap (p => {
           val defGetter = defaultGetter(p, context)
           // TODO #3649 can create spurious errors when companion object is gone (because it becomes unlinked from scope)
@@ -399,7 +399,7 @@ trait NamesDefaults { self: Analyzer =>
           }
         })
         (givenArgs ::: defaultArgs, Nil)
-      } else (givenArgs, missing filterNot (_.hasDefaultFlag))
+      } else (givenArgs, missing filterNot (_.hasDefault))
     } else (givenArgs, Nil)
   }
 

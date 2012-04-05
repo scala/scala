@@ -199,7 +199,7 @@ trait Reifiers { self: Global =>
         ValDef(NoMods, localName(sym), TypeTree(),
           Apply(
             Select(reify(sym.owner), "newNestedSymbol"),
-            List(reify(sym.name), reify(sym.pos), Literal(Constant(sym.flags)))
+            List(reify(sym.name), reify(sym.pos), Literal(Constant(sym.flags)), Literal(Constant(sym.isClass)))
           )
         )
       }

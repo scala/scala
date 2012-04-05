@@ -2600,7 +2600,6 @@ self =>
       in.nextToken
       val nameOffset = in.offset
       val name = identForType()
-      def isTrait = mods.hasTraitFlag
 
       atPos(start, if (name == tpnme.ERROR) start else nameOffset) {
         savingClassContextBounds {
@@ -2608,16 +2607,16 @@ self =>
           val tparams = typeParamClauseOpt(name, contextBoundBuf)
           classContextBounds = contextBoundBuf.toList
           val tstart = in.offset :: classContextBounds.map(_.pos.startOrPoint) min;
-          if (!classContextBounds.isEmpty && isTrait) {
+          if (!classContextBounds.isEmpty && mods.isTrait) {
             syntaxError("traits cannot have type parameters with context bounds `: ...' nor view bounds `<% ...'", false)
             classContextBounds = List()
           }
           val constrAnnots = constructorAnnotations()
           val (constrMods, vparamss) =
-            if (isTrait) (Modifiers(Flags.TRAIT), List())
+            if (mods.isTrait) (Modifiers(Flags.TRAIT), List())
             else (accessModifierOpt(), paramClauses(name, classContextBounds, mods.isCase))
           var mods1 = mods
-          if (isTrait) {
+          if (mods.isTrait) {
             if (settings.YvirtClasses && in.token == SUBTYPE) mods1 |= Flags.DEFERRED
           } else if (in.token == SUBTYPE) {
             syntaxError("classes are not allowed to be virtual", false)
@@ -2709,7 +2708,7 @@ self =>
     }
 
     def isInterface(mods: Modifiers, body: List[Tree]): Boolean =
-      mods.hasTraitFlag && (body forall treeInfo.isInterfaceMember)
+      mods.isTrait && (body forall treeInfo.isInterfaceMember)
 
     /** {{{
      *  ClassTemplateOpt ::= `extends' ClassTemplate | [[`extends'] TemplateBody]
@@ -2719,9 +2718,9 @@ self =>
      */
     def templateOpt(mods: Modifiers, name: Name, constrMods: Modifiers, vparamss: List[List[ValDef]], tstart: Int): Template = {
       val (parents0, argss, self, body) = (
-        if (in.token == EXTENDS || in.token == SUBTYPE && mods.hasTraitFlag) {
+        if (in.token == EXTENDS || in.token == SUBTYPE && mods.isTrait) {
           in.nextToken()
-          template(mods.hasTraitFlag)
+          template(mods.isTrait)
         }
         else {
           newLineOptWhenFollowedBy(LBRACE)

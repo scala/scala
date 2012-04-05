@@ -1922,7 +1922,7 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
         rhs1 = checkDead(rhs1)
 
       if (!isPastTyper && meth.owner.isClass &&
-          meth.paramss.exists(ps => ps.exists(_.hasDefaultFlag) && isRepeatedParamType(ps.last.tpe)))
+          meth.paramss.exists(ps => ps.exists(_.hasDefault) && isRepeatedParamType(ps.last.tpe)))
         StarWithDefaultError(meth)
 
       if (!isPastTyper) {
@@ -2492,7 +2492,7 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
                     (e.sym.isType || inBlock || (e.sym.tpe matches e1.sym.tpe) || e.sym.isMacro && e1.sym.isMacro))
                   // default getters are defined twice when multiple overloads have defaults. an
                   // error for this is issued in RefChecks.checkDefaultsInOverloaded
-                  if (!e.sym.isErroneous && !e1.sym.isErroneous && !e.sym.hasDefaultFlag &&
+                  if (!e.sym.isErroneous && !e1.sym.isErroneous && !e.sym.hasDefault &&
                       !e.sym.hasAnnotation(BridgeClass) && !e1.sym.hasAnnotation(BridgeClass)) {
                     log("Double definition detected:\n  " +
                       ((e.sym.getClass, e.sym.info, e.sym.ownerChain)) + "\n  " +
@@ -3106,7 +3106,7 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
             for (sym <- names) {
               // make sure the flags are up to date before erroring (jvm/t3415 fails otherwise)
               sym.initialize
-              if (!sym.hasAnnotation(AnnotationDefaultAttr) && !sym.hasDefaultFlag)
+              if (!sym.hasAnnotation(AnnotationDefaultAttr) && !sym.hasDefault)
                 reportAnnotationError(AnnotationMissingArgError(ann, annType, sym))
             }
 

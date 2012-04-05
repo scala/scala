@@ -93,7 +93,7 @@ abstract class ExplicitOuter extends InfoTransform
   }
   def newOuterAccessor(clazz: Symbol) = {
     val accFlags = SYNTHETIC | METHOD | STABLE | ( if (clazz.isTrait) DEFERRED else 0 )
-    val sym      = clazz.newMethodSymbol(nme.OUTER, clazz.pos, accFlags)
+    val sym      = clazz.newMethod(nme.OUTER, clazz.pos, accFlags)
     val restpe   = if (clazz.isTrait) clazz.outerClass.tpe else clazz.outerClass.thisType
 
     sym expandName clazz

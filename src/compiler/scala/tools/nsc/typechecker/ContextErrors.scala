@@ -661,7 +661,7 @@ trait ContextErrors {
       }
 
       private def ambiguousErrorMsgPos(pos: Position, pre: Type, sym1: Symbol, sym2: Symbol, rest: String) =
-        if (sym1.hasDefaultFlag && sym2.hasDefaultFlag && sym1.enclClass == sym2.enclClass) {
+        if (sym1.hasDefault && sym2.hasDefault && sym1.enclClass == sym2.enclClass) {
           val methodName = nme.defaultGetterToMethod(sym1.name)
           (sym1.enclClass.pos,
            "in "+ sym1.enclClass +", multiple overloaded alternatives of " + methodName +

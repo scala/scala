@@ -529,7 +529,7 @@ trait Namers extends MethodSynthesis {
     def enterCopyMethodOrGetter(tree: Tree, tparams: List[TypeDef]): Symbol = {
       val sym          = tree.symbol
       val lazyType     = completerOf(tree, tparams)
-      def completeCopyFirst = sym.isSynthetic && (!sym.hasDefaultFlag || sym.owner.info.member(nme.copy).isSynthetic)
+      def completeCopyFirst = sym.isSynthetic && (!sym.hasDefault || sym.owner.info.member(nme.copy).isSynthetic)
       def completeCopyMethod(clazz: Symbol) {
         // the 'copy' method of case classes needs a special type completer to make
         // bug0054.scala (and others) work. the copy method has to take exactly the same
@@ -1045,7 +1045,7 @@ trait Namers extends MethodSynthesis {
           }
         )
         // #2382: return type of default getters are always @uncheckedVariance
-        if (meth.hasDefaultFlag)
+        if (meth.hasDefault)
           rt.withAnnotation(AnnotationInfo(uncheckedVarianceClass.tpe, List(), List()))
         else rt
       })
@@ -1095,8 +1095,8 @@ trait Namers extends MethodSynthesis {
         for (vparam <- vparams) {
           val sym = vparam.symbol
           // true if the corresponding parameter of the base class has a default argument
-          val baseHasDefault = overrides && baseParams.head.hasDefaultFlag
-          if (sym.hasDefaultFlag) {
+          val baseHasDefault = overrides && baseParams.head.hasDefault
+          if (sym.hasDefault) {
             // generate a default getter for that argument
             val oflag = if (baseHasDefault) OVERRIDE else 0
             val name = nme.defaultGetterName(meth.name, posCounter)

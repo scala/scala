@@ -138,6 +138,12 @@ trait Definitions extends reflect.api.StandardDefinitions {
     // symbols related to packages
     var emptypackagescope: Scope = null //debug
 
+    // TODO - having these as objects means they elude the attempt to
+    // add synchronization in SynchronizedSymbols.  But we should either
+    // flip on object overrides or find some other accomodation, because
+    // lazy vals are unnecessarily expensive relative to objects and it
+    // is very beneficial for a handful of bootstrap symbols to have
+    // first class identities
     sealed trait WellKnownSymbol extends Symbol {
       this initFlags TopLevelCreationFlags
     }
@@ -148,7 +154,7 @@ trait Definitions extends reflect.api.StandardDefinitions {
     }
     // This is the package _root_.  The actual root cannot be referenced at
     // the source level, but _root_ is essentially a function => <root>.
-    final object RootPackage extends ModuleSymbol(NoSymbol, NoPosition, nme.ROOTPKG) with RootSymbol {
+    final object RootPackage extends PackageSymbol(NoSymbol, NoPosition, nme.ROOTPKG) with RootSymbol {
       this setInfo NullaryMethodType(RootClass.tpe)
       RootClass.sourceModule = this
 
@@ -160,7 +166,7 @@ trait Definitions extends reflect.api.StandardDefinitions {
     // although it is probable that some symbols are created as direct children
     // of NoSymbol to ensure they will not be stumbled upon.  (We should designate
     // a better encapsulated place for that.)
-    final object RootClass extends ModuleClassSymbol(NoSymbol, NoPosition, tpnme.ROOT) with RootSymbol {
+    final object RootClass extends PackageClassSymbol(NoSymbol, NoPosition, tpnme.ROOT) with RootSymbol {
       this setInfo rootLoader
 
       override def isRoot            = true
@@ -170,10 +176,10 @@ trait Definitions extends reflect.api.StandardDefinitions {
       override def ownerOfNewSymbols = EmptyPackageClass
     }
     // The empty package, which holds all top level types without given packages.
-    final object EmptyPackage extends ModuleSymbol(RootClass, NoPosition, nme.EMPTY_PACKAGE_NAME) with WellKnownSymbol {
+    final object EmptyPackage extends PackageSymbol(RootClass, NoPosition, nme.EMPTY_PACKAGE_NAME) with WellKnownSymbol {
       override def isEmptyPackage = true
     }
-    final object EmptyPackageClass extends ModuleClassSymbol(RootClass, NoPosition, tpnme.EMPTY_PACKAGE_NAME) with WellKnownSymbol {
+    final object EmptyPackageClass extends PackageClassSymbol(RootClass, NoPosition, tpnme.EMPTY_PACKAGE_NAME) with WellKnownSymbol {
       override def isEffectiveRoot     = true
       override def isEmptyPackageClass = true
     }

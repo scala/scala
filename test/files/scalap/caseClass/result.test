@@ -14,3 +14,9 @@ case class CaseClass[A <: scala.Seq[scala.Int]](i : A, s : scala.Predef.String) 
   override def toString() : java.lang.String = { /* compiled code */ }
   override def equals(x$1 : scala.Any) : scala.Boolean = { /* compiled code */ }
 }
+object CaseClass extends scala.AnyRef with scala.Serializable {
+  def this() = { /* compiled code */ }
+  final override def toString() : java.lang.String = { /* compiled code */ }
+  def apply[A <: scala.Seq[scala.Int]](i : A, s : scala.Predef.String) : CaseClass[A] = { /* compiled code */ }
+  def unapply[A <: scala.Seq[scala.Int]](x$0 : CaseClass[A]) : scala.Option[scala.Tuple2[A, scala.Predef.String]] = { /* compiled code */ }
+}

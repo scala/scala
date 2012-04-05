@@ -183,7 +183,7 @@ trait Symbols { self: Universe =>
     /** A fresh symbol with given name `name`, position `pos` and flags `flags` that has
      *  the current symbol as its owner.
      */
-    def newNestedSymbol(name: Name, pos: Position, flags: Long): Symbol // needed by LiftCode
+    def newNestedSymbol(name: Name, pos: Position, flags: Long, isClass: Boolean): Symbol // needed by LiftCode
 
     /** Low-level operation to set the symbol's flags
      *  @return the symbol itself

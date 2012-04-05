@@ -13,7 +13,9 @@ import scala.tools.nsc.util.WeakHashSet
 abstract class SymbolTable extends api.Universe
                               with Collections
                               with Names
+                              with SymbolCreations
                               with Symbols
+                              with SymbolFlags
                               with Types
                               with Kinds
                               with ExistentialsAndSkolems
@@ -62,6 +64,8 @@ abstract class SymbolTable extends api.Universe
     result
   }
 
+  /** Dump each symbol to stdout after shutdown.
+   */
   final val traceSymbolActivity = sys.props contains "scalac.debug.syms"
   object traceSymbols extends {
     val global: SymbolTable.this.type = SymbolTable.this
@@ -97,6 +101,11 @@ abstract class SymbolTable extends api.Universe
 
   final def atPhaseStack: List[Phase] = phStack
   final def phase: Phase = ph
+
+  def atPhaseStackMessage = atPhaseStack match {
+    case Nil    => ""
+    case ps     => ps.reverseMap("->" + _).mkString("(", " ", ")")
+  }
 
   final def phase_=(p: Phase) {
     //System.out.println("setting phase to " + p)
