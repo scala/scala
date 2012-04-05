@@ -310,15 +310,23 @@ abstract class SelectiveANFTransform extends PluginComponent with Transform with
 
           try {
             val Some((a, b)) = cpsR
-
-            val res = localTyper.typed(atPos(tree.pos) {
-                    Apply(TypeApply(gen.mkAttributedRef(MethShiftUnit),
-                      List(TypeTree(plainTpe), TypeTree(a), TypeTree(b))),
-                       List(expr))
-            })
-            return (stms, res)
-
-          } catch {
+            /** Since shiftUnit is bounded [A,B,C>:B] this may not typecheck
+             *  if C is overly specific.  So if !(B <:< C), call shiftUnit0
+             *  instead, which takes only two type arguments.
+             */
+            val conforms = a <:< b
+            val call = localTyper.typedPos(tree.pos)(
+              Apply(
+                TypeApply(
+                  gen.mkAttributedRef( if (conforms) MethShiftUnit else MethShiftUnit0 ),
+                  List(TypeTree(plainTpe), TypeTree(a)) ++ ( if (conforms) List(TypeTree(b)) else Nil )
+                ),
+                List(expr)
+              )
+            )
+            return ((stms, call))
+          }
+          catch {
             case ex:TypeError =>
               unit.error(ex.pos, "cannot cps-transform expression " + tree + ": " + ex.msg)
           }
