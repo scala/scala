@@ -1171,7 +1171,7 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
         && !qtpe.typeSymbol.isBottomClass
         && qtpe != WildcardType
         && !qual.isInstanceOf[ApplyImplicitView] // don't chain views
-        && context.implicitsEnabled
+        && (context.implicitsEnabled || context.enrichmentEnabled)
         // Elaborating `context.implicitsEnabled`:
         // don't try to adapt a top-level type that's the subject of an implicit search
         // this happens because, if isView, typedImplicit tries to apply the "current" implicit value to
@@ -4063,7 +4063,10 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
           } else {
             member(qual, name)
           }
-        if (sym == NoSymbol && name != nme.CONSTRUCTOR && (mode & EXPRmode) != 0) {
+
+        // symbol not found? --> try to convert implicitly to a type that does have the required member
+        // added `| PATTERNmode` to allow enrichment in patterns (so we can add e.g., an xml member to StringContext, which in turn has an unapply[Seq] method)
+        if (sym == NoSymbol && name != nme.CONSTRUCTOR && (mode & (EXPRmode | PATTERNmode)) != 0) {
           val qual1 =
             if (member(qual, name) != NoSymbol) qual
             else adaptToMemberWithArgs(tree, qual, name, mode, true, true)
@@ -4071,6 +4074,7 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
           if (qual1 ne qual)
             return typed(treeCopy.Select(tree, qual1, name), mode, pt)
         }
+
         if (!reallyExists(sym)) {
           if (context.owner.enclosingTopLevelClass.isJavaDefined && name.isTypeName) {
             val tree1 = atPos(tree.pos) { gen.convertToSelectFromType(qual, name)  }
@@ -4806,6 +4810,8 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
             ptLine("typing %s: pt = %s".format(ptTree(tree), pt),
               "undetparams"      -> context.undetparams,
               "implicitsEnabled" -> context.implicitsEnabled,
+              "enrichmentEnabled"   -> context.enrichmentEnabled,
+              "mode"             -> modeString(mode),
               "silent"           -> context.bufferErrors,
               "context.owner"    -> context.owner
             )
@@ -4909,7 +4915,22 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
       // We disable implicits because otherwise some constructs will
       // type check which should not.  The pattern matcher does not
       // perform implicit conversions in an attempt to consummate a match.
-      context.withImplicitsDisabled(typed(tree, PATTERNmode, pt))
+
+      // on the one hand,
+      //   "abc" match { case Seq('a', 'b', 'c') => true }
+      // should be ruled out statically, otherwise this is a runtime
+      // error both because there is an implicit from String to Seq
+      // (even though such implicits are not used by the matcher) and
+      // because the typer is fine with concluding that "abc" might
+      // be of type "String with Seq[T]" and thus eligible for a call
+      // to unapplySeq.
+
+      // on the other hand, we want to be able to use implicits to add members retro-actively (e.g., add xml to StringContext)
+
+      // as a compromise, context.enrichmentEnabled tells adaptToMember to go ahead and enrich,
+      // but arbitrary conversions (in adapt) are disabled
+      // TODO: can we achieve the pattern matching bit of the string interpolation SIP without this?
+      context.withImplicitsDisabledAllowEnrichment(typed(tree, PATTERNmode, pt))
     }
 
     /** Types a (fully parameterized) type tree */
