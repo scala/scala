@@ -23,7 +23,7 @@ import util.Statistics._
  *  @author  Martin Odersky
  *  @version 1.0
  */
-trait Implicits {
+trait Implicits extends SourceLocations {
   self: Analyzer =>
 
   import global._
@@ -1222,8 +1222,15 @@ trait Implicits {
         result = implicitManifestOrOfExpectedType(pt)
 
         if (result == SearchFailure) {
-          context.updateBuffer(previousErrs)
-          stopTimer(oftypeFailNanos, failstart)
+          pt.dealias match {
+            case TypeRef(_, SourceLocationClass, _) =>
+              result = sourceLocation(this, tree)
+              stopTimer(oftypeSucceedNanos, succstart)
+              incCounter(oftypeImplicitHits)
+            case _ =>
+              context.updateBuffer(previousErrs)
+              stopTimer(oftypeFailNanos, failstart)
+          }
         } else {
           stopTimer(oftypeSucceedNanos, succstart)
           incCounter(oftypeImplicitHits)
