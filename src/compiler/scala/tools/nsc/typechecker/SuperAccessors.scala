@@ -121,7 +121,7 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
       if (sym.isDeferred) {
         val member = sym.overridingSymbol(clazz);
         if (mix != tpnme.EMPTY || member == NoSymbol ||
-            !((member hasFlag ABSOVERRIDE) && member.isIncompleteIn(clazz)))
+            !(member.isAbstractOverride && member.isIncompleteIn(clazz)))
           unit.error(sel.pos, ""+sym.fullLocationString+" is accessed from super. It may not be abstract "+
                                "unless it is overridden by a member declared `abstract' and `override'");
       }
