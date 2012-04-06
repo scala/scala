@@ -10,6 +10,8 @@ import scala.annotation.tailrec
 import mutable.ListBuffer
 
 /** Profiler driven changes.
+ *  TODO - inlining doesn't work from here because of the bug that
+ *  methods in traits aren't inlined.
  */
 trait Collections {
   /** True if all three arguments have the same number of elements and
@@ -75,7 +77,8 @@ trait Collections {
     }
   }
   
-  @inline final def findOrElse[A](xs: TraversableOnce[A])(p: A => Boolean)(orElse: => A): A = {
+  // @inline
+  final def findOrElse[A](xs: TraversableOnce[A])(p: A => Boolean)(orElse: => A): A = {
     xs find p getOrElse orElse
   }
 
