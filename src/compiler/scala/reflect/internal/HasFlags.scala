@@ -7,7 +7,6 @@ import Flags._
  *  with Trees) and Symbol.
  */
 trait HasFlags {
-  type FlagsType
   type AccessBoundaryType
   type AnnotationType
 
@@ -16,12 +15,7 @@ trait HasFlags {
    *  flag methods through accessors and disallow raw flag manipulation.
    *  And after that, perhaps, on some magical day: a typesafe enumeration.
    */
-  protected def flags: FlagsType
-
-  /** The printable representation of this entity's flags and access boundary,
-   *  restricted to flags in the given mask.
-   */
-  def hasFlagsToString(mask: FlagsType): String
+  protected def flags: Long
 
   /** Access level encoding: there are three scala flags (PRIVATE, PROTECTED,
    *  and LOCAL) which combine with value privateWithin (the "foo" in private[foo])
@@ -66,6 +60,23 @@ trait HasFlags {
   /** Whether this entity has NONE of the flags in the given mask.
    */
   def hasNoFlags(mask: Long): Boolean = !hasFlag(mask)
+
+  /** The printable representation of this entity's flags and access boundary,
+   *  restricted to flags in the given mask.
+   */
+  def flagString: String = flagString(flagMask)
+  def flagString(mask: Long): String = calculateFlagString(flags & mask)
+  
+  /** The default mask determining which flags to display.
+   */
+  def flagMask: Long = AllFlags
+
+  /** The string representation of a single bit, seen from this
+   *  flag carrying entity.
+   */
+  def resolveOverloadedFlag(flag: Long): String = Flags.flagToString(flag)
+  
+  def privateWithinString = if (hasAccessBoundary) privateWithin.toString else ""
 
   protected def isSetting(f: Long, mask: Long)  = !hasFlag(f) && ((mask & f) != 0L)
   protected def isClearing(f: Long, mask: Long) =  hasFlag(f) && ((mask & f) != 0L)
@@ -129,6 +140,49 @@ trait HasFlags {
   // Name
   def isJavaDefined = hasFlag(JAVA)
 
+  def flagBitsToString(bits: Long): String = {
+    // Fast path for common case
+    if (bits == 0L) "" else {
+      var sb: StringBuilder = null
+      var i = 0
+      while (i <= MaxBitPosition) {
+        val flag = Flags.rawFlagPickledOrder(i)
+        if ((bits & flag) != 0L) {
+          val s = resolveOverloadedFlag(flag)
+          if (s.length > 0) {
+            if (sb eq null) sb = new StringBuilder append s
+            else if (sb.length == 0) sb append s
+            else sb append " " append s
+          }
+        }
+        i += 1
+      }
+      if (sb eq null) "" else sb.toString
+    }
+  }
+
+  def accessString: String = {
+    val pw = privateWithinString
+    
+    if (pw == "") {
+      if (hasAllFlags(PrivateLocal)) "private[this]"
+      else if (hasAllFlags(ProtectedLocal)) "protected[this]"
+      else if (hasFlag(PRIVATE)) "private"
+      else if (hasFlag(PROTECTED)) "protected"
+      else ""
+    }
+    else if (hasFlag(PROTECTED)) "protected[" + pw + "]"
+    else "private[" + pw + "]"
+  }
+  protected def calculateFlagString(basis: Long): String = {
+    val access    = accessString
+    val nonAccess = flagBitsToString(basis & ~AccessFlags)
+    
+    if (access == "") nonAccess
+    else if (nonAccess == "") access
+    else nonAccess + " " + access
+  }
+
   // Backward compat section
   @deprecated( "Use isTrait", "2.10.0")
   def hasTraitFlag = hasFlag(TRAIT)
@@ -138,4 +192,8 @@ trait HasFlags {
   def isAbstract = hasFlag(ABSTRACT)
   @deprecated("Use isValueParameter or isTypeParameter", "2.10.0")
   def isParameter = hasFlag(PARAM)
+  @deprecated("Use flagString", "2.10.0")
+  def defaultFlagString = flagString
+  @deprecated("Use flagString(mask)", "2.10.0")
+  def hasFlagsToString(mask: Long): String = flagString(mask)
 }

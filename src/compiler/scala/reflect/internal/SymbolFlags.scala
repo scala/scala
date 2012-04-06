@@ -20,9 +20,7 @@ trait SymbolFlags {
 
   /** Not mixed in under normal conditions; a powerful debugging aid.
    */
-  trait FlagVerifier extends SymbolFlagLogic {
-    this: Symbol =>
-
+  trait FlagVerifier extends Symbol {
     private def assert0(cond: Boolean, message: => Any) {
       if (!cond) {
         Console.err.println("[flag verification failure]\n%s\n%s\n".format(atPhaseStackMessage, message))
@@ -71,29 +69,29 @@ trait SymbolFlags {
         assert0(!hasRaw, symbolCreationString + "\n   never=%s, what=%s".format(flagsToString(neverHasFlags), what))
       }
     }
-    override def initFlags(mask: Long): this.type = {
+    abstract override def initFlags(mask: Long): this.type = {
       super.initFlags(mask)
       verifyFlags("initFlags(" + flagsToString(mask) + ")")
       this
     }
-    override def setFlag(mask: Long): this.type = {
+    abstract override def setFlag(mask: Long): this.type = {
       verifyChange(true, mask, rawflags)
       super.setFlag(mask)
       verifyFlags("setFlag(" + flagsToString(mask) + ")")
       this
     }
-    override def resetFlag(mask: Long): this.type = {
+    abstract override def resetFlag(mask: Long): this.type = {
       verifyChange(false, mask, rawflags)
       super.resetFlag(mask)
       verifyFlags("resetFlag(" + flagsToString(mask) + ")")
       this
     }
-    override def flags_=(fs: Long) {
+    abstract override def flags_=(fs: Long) {
       if ((fs & ~rawflags) != 0)
         verifyChange(true, fs & ~rawflags, rawflags)
       if ((rawflags & ~fs) != 0)
         verifyChange(false, rawflags & ~fs, rawflags)
-
+    
       super.flags_=(fs)
       verifyFlags("flags_=(" + flagsToString(fs) + ")")
     }
@@ -113,58 +111,25 @@ trait SymbolFlags {
   trait SymbolFlagLogic {
     this: Symbol =>
 
+    // Forced for performance reasons to define all the flag manipulation
+    // methods alongside the field being manipulated.
+    def getFlag(mask: Long): Long
+    def hasFlag(mask: Long): Boolean
+    def hasAllFlags(mask: Long): Boolean
+    def setFlag(mask: Long): this.type
+    def resetFlag(mask: Long): this.type
+    def initFlags(mask: Long): this.type
+    def resetFlags(): Unit
+
+    protected def resolveOverloadedFlag(flag: Long): String
+    protected def calculateFlagString(basis: Long): String
+
     protected def alwaysHasFlags: Long = 0L
     protected def neverHasFlags: Long = METHOD | MODULE
 
-    def flagStringFn(flag: Long): String = {
-      val res = flag match {
-        // "<bynameparam/captured/covariant>"
-        case BYNAMEPARAM =>
-          if (this.isValueParameter) "<bynameparam>"
-          else if (this.isTypeParameter) "<covariant>"
-          else "<captured>"
-        // "<contravariant/inconstructor/label>"
-        case CONTRAVARIANT =>
-          if (this.isLabel) "<label>"
-          else if (this.isTypeParameter) "<contravariant>"
-          else "<inconstructor>"
-        // "<defaultparam/trait>"
-        case DEFAULTPARAM =>
-          if (this.isTerm && (this hasFlag PARAM)) "<defaultparam>"
-          else "<trait>"
-        // "<existential/mixedin>"
-        case EXISTENTIAL =>
-          if (this.isType) "<existential>"
-          else "<mixedin>"
-        // "<implclass/presuper>"
-        case IMPLCLASS  =>
-          if (this.isClass) "<implclass>"
-          else "<presuper>"
-        case _ => ""
-      }
-      if (res == "") Flags.flagToString(flag)
-      else res + ":overloaded-flag"
-    }
-
-    private def calculateFlagString(basis: Long): String = {
-      val nonAccess = nonAccessString(basis)(flagStringFn)
-      val access    = Flags.accessString(basis, pwString)
-
-      ojoin(nonAccess, access)
-    }
-
-    def flagString(mask: Long): String    = calculateFlagString(flags & mask)
-    def flagString: String                = flagString(defaultFlagMask)
     def rawFlagString(mask: Long): String = calculateFlagString(rawflags & mask)
-    def rawFlagString: String             = rawFlagString(defaultFlagMask)
-    def flaggedString(mask: Long): String = flagString(mask)
-    def flaggedString: String             = flaggedString(defaultFlagMask)
-
-    def accessString      = calculateFlagString(flags & AccessFlags)
-    def debugFlagString   = flaggedString(AllFlags)
-    def defaultFlagString = flaggedString(defaultFlagMask)
-
-    def hasFlagsToString(mask: Long) = flagString(mask)
+    def rawFlagString: String             = rawFlagString(flagMask)
+    def debugFlagString: String           = flagString(AllFlags)
 
     /** String representation of symbol's variance */
     def varianceString: String =
@@ -172,7 +137,7 @@ trait SymbolFlags {
       else if (variance == -1) "-"
       else ""
 
-    def defaultFlagMask =
+    override def flagMask =
       if (settings.debug.value && !isAbstractType) AllFlags
       else if (owner.isRefinementClass) ExplicitFlags & ~OVERRIDE
       else ExplicitFlags
@@ -181,37 +146,6 @@ trait SymbolFlags {
     def flagsExplanationString =
       if (isGADTSkolem) " (this is a GADT skolem)"
       else ""
-
-    private def pwString = if (hasAccessBoundary) privateWithin.toString else ""
-    private var _rawflags: FlagsType = 0L
-    protected def rawflags_=(x: FlagsType) { _rawflags = x }
-    def rawflags = _rawflags
-
-    final def flags: Long = {
-      val fs = rawflags & phase.flagMask
-      (fs | ((fs & LateFlags) >>> LateShift)) & ~(fs >>> AntiShift)
-    }
-    def flags_=(fs: Long) = rawflags = fs
-
-    /** Set the symbol's flags to the given value, asserting
-     *  that the previous value was 0.
-     */
-    def initFlags(mask: Long): this.type = {
-      assert(rawflags == 0L, symbolCreationString)
-      rawflags = mask
-      this
-    }
-    def reinitFlags(mask: Long): this.type = {
-      rawflags = mask
-      this
-    }
-    def setFlag(mask: Long): this.type   = { rawflags |= mask ; this }
-    def resetFlag(mask: Long): this.type = { rawflags &= ~mask ; this }
-    def resetFlags() { rawflags &= (TopLevelCreationFlags | alwaysHasFlags) }
-
-    def getFlag(mask: Long): Long
-    def hasFlag(mask: Long): Boolean
-    def hasAllFlags(mask: Long): Boolean
 
     /** If the given flag is set on this symbol, also set the corresponding
      *  notFLAG.  For instance if flag is PRIVATE, the notPRIVATE flag will

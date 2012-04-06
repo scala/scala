@@ -25,7 +25,7 @@ trait SynchronizedSymbols extends internal.Symbols { self: SymbolTable =>
     override def rawname = synchronized { super.rawname }
     override def rawflags = synchronized { super.rawflags }
 
-    override def rawflags_=(x: FlagsType) = synchronized { super.rawflags_=(x) }
+    override def rawflags_=(x: Long) = synchronized { super.rawflags_=(x) }
     override def name_=(x: Name) = synchronized { super.name_=(x) }
     override def owner_=(owner: Symbol) = synchronized { super.owner_=(owner) }
 

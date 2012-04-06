@@ -106,7 +106,10 @@ abstract class AddInterfaces extends InfoTransform { self: Erasure =>
         }
         if (currentRun.compiles(iface)) currentRun.symSource(impl) = iface.sourceFile
         impl setPos iface.pos
-        impl.flags = implClassFlags
+        if (impl.flags != implClassFlags) {
+          log("!!! Directly setting impl class flags from %s to %s".format(flagsToString(impl.flags), flagsToString(implClassFlags)))
+          impl.flags = implClassFlags
+        }
         impl setInfo new LazyImplClassType(iface)
         implClassMap(iface) = impl
         debuglog(
