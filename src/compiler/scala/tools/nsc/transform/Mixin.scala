@@ -121,7 +121,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
    *  @param member     The symbol statically referred to by the superaccessor in the trait
    *  @param mixinClass The mixin class that produced the superaccessor
    */
-  private def rebindSuper(base: Symbol, member: Symbol, mixinClass: Symbol): Option[Symbol] =
+  private def rebindSuper(base: Symbol, member: Symbol, mixinClass: Symbol): Symbol =
     afterPickler {
       var bcs = base.info.baseClasses.dropWhile(mixinClass !=).tail
       var sym: Symbol = NoSymbol
@@ -136,7 +136,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
         sym = member.matchingSymbol(bcs.head, base.thisType).suchThat(sym => !sym.hasFlag(DEFERRED | BRIDGE))
         bcs = bcs.tail
       }
-      if (sym != NoSymbol) Some(sym) else None
+      sym
     }
 
 // --------- type transformation -----------------------------------------------
@@ -338,9 +338,13 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
         else if (mixinMember.isSuperAccessor) { // mixin super accessors
           val superAccessor = addMember(clazz, mixinMember.cloneSymbol(clazz)) setPos clazz.pos
           assert(superAccessor.alias != NoSymbol, superAccessor)
+
           rebindSuper(clazz, mixinMember.alias, mixinClass) match {
-            case Some(alias1) => superAccessor.asInstanceOf[TermSymbol] setAlias alias1
-            case None => unit.error(clazz.pos, "Member "+ mixinMember.alias +" of mixin "+ mixinClass +" is missing a concrete super implementation.")
+            case NoSymbol =>
+              unit.error(clazz.pos, "Member %s of mixin %s is missing a concrete super implementation.".format(
+                mixinMember.alias, mixinClass))
+            case alias1 =>
+              superAccessor.asInstanceOf[TermSymbol] setAlias alias1
           }
         }
         else if (mixinMember.isMethod && mixinMember.isModule && mixinMember.hasNoFlags(LIFTED | BRIDGE)) {
