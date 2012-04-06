@@ -166,7 +166,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     // with the proper specific type.
     def rawname: NameType
     def name: NameType
-    def name_=(n: NameType): Unit
+    def name_=(n: Name): Unit
     def asNameType(n: Name): NameType
 
     private[this] var _rawowner = initOwner // Syncnote: need not be protected, as only assignment happens in owner_=, which is not exposed to api
@@ -381,14 +381,15 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     final def newModuleClass(name: TypeName, pos: Position = NoPosition, newFlags: Long = 0L) =
       newModuleClassSymbol(name, pos, newFlags | MODULE)
 
-    final def newAnonymousClass(pos: Position) =
-      newClassSymbol(tpnme.ANON_CLASS_NAME, pos)
-
-    final def newAnonymousFunctionClass(pos: Position, newFlags: Long = 0L) =
+    final def newAnonymousFunctionClass(pos: Position = NoPosition, newFlags: Long = 0L) =
       newClassSymbol(tpnme.ANON_FUN_NAME, pos, FINAL | SYNTHETIC | newFlags)
 
     final def newAnonymousFunctionValue(pos: Position, newFlags: Long = 0L) =
       newTermSymbol(nme.ANON_FUN_NAME, pos, SYNTHETIC | newFlags) setInfo NoType
+
+    def newImplClass(name: TypeName, pos: Position = NoPosition, newFlags: Long = 0L): ClassSymbol = {
+      newClassSymbol(name, pos, newFlags | IMPLCLASS)
+    }
 
     /** Refinement types P { val x: String; type T <: Number }
      *  also have symbols, they are refinementClasses
@@ -520,21 +521,23 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     def isAbstractClass         = false
     def isAnonOrRefinementClass = false
     def isAnonymousClass        = false
+    def isCaseClass             = false
     def isConcreteClass         = false
     def isImplClass             = false   // the implementation class of a trait
+    def isJavaInterface         = false
     def isModuleClass           = false
     def isNumericValueClass     = false
     def isPrimitiveValueClass   = false
     def isRefinementClass       = false
-    override def isTrait = false
+    override def isTrait        = false
 
     /** Qualities of Types, always false for TermSymbols.
      */
     def isContravariant         = false
     def isCovariant             = false
+    def isExistentialQuantified = false
     def isExistentialSkolem     = false
     def isExistentiallyBound    = false
-    def isExistentialQuantified = false
     def isGADTSkolem            = false
     def isTypeParameter         = false
     def isTypeParameterOrSkolem = false
@@ -542,12 +545,23 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
 
     /** Qualities of Terms, always false for TypeSymbols.
      */
-    override def hasDefault  = false
-    def isBridge             = false
-    def isEarlyInitialized   = false
-    def isModule             = false
-    def isOverloaded         = false
-    def isValueParameter     = false
+    def isAccessor          = false
+    def isBridge            = false
+    def isCapturedVariable  = false
+    def isClassConstructor  = false
+    def isConstructor       = false
+    def isEarlyInitialized  = false
+    def isGetter            = false
+    def isLocalDummy        = false
+    def isMixinConstructor  = false
+    def isModule            = false
+    def isOverloaded        = false
+    def isSetter            = false
+    def isSetterParameter   = false
+    def isValue             = false
+    def isValueParameter    = false
+    def isVariable          = false
+    override def hasDefault = false
 
     /** Qualities of MethodSymbols, always false for TypeSymbols
      *  and other TermSymbols.
@@ -558,13 +572,13 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     def isMethod             = false
     def isSourceMethod       = false
     def isVarargsMethod      = false
+    override def isLabel     = false
 
     /** Package/package object tests */
     def isPackage              = false
     def isPackageClass         = false
     def isPackageObject        = false
     def isPackageObjectClass   = false
-
     def isPackageObjectOrClass = isPackageObject || isPackageObjectClass
     def isModuleOrModuleClass  = isModule || isModuleClass
 
@@ -625,26 +639,9 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     def flags_=(fs: Long) = _rawflags = fs
     def rawflags_=(x: Long) { _rawflags = x }
 
-    /** Term symbols with the exception of static parts of Java classes and packages.
-     */
-    final def isValue    = isTerm && !(isModule && hasFlag(PACKAGE | JAVA))
-    final def isVariable = isTerm && isMutable && !isMethod
-
-    // interesting only for lambda lift. Captured variables are accessed from inner lambdas.
-    final def isCapturedVariable  = isVariable && hasFlag(CAPTURED)
-
-    final def isGetter = isTerm && hasAccessorFlag && !nme.isSetterName(name)
-    // todo: make independent of name, as this can be forged.
-    final def isSetter = isTerm && hasAccessorFlag && nme.isSetterName(name)
-    def isSetterParameter = isValueParameter && owner.isSetter
-
     final def hasGetter = isTerm && nme.isLocalName(name)
 
     final def isInitializedToDefault = !isType && hasAllFlags(DEFAULTINIT | ACCESSOR)
-    final def isLocalDummy = isTerm && nme.isLocalDummyName(name)
-    final def isClassConstructor = isTerm && (name == nme.CONSTRUCTOR)
-    final def isMixinConstructor = isTerm && (name == nme.MIXIN_CONSTRUCTOR)
-    final def isConstructor = isTerm && nme.isConstructorName(name)
     final def isStaticModule = isModule && isStatic && !isMethod
     final def isThisSym = isTerm && owner.thisSym == this
     final def isError = hasFlag(IS_ERROR)
@@ -663,7 +660,6 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
 
     final def isAnonymousFunction = isSynthetic && (name containsName tpnme.ANON_FUN_NAME)
     final def isDefinedInPackage  = effectiveOwner.isPackageClass
-    final def isJavaInterface     = isJavaDefined && isTrait
     final def needsFlatClasses    = phase.flatClasses && rawowner != NoSymbol && !rawowner.isPackageClass
 
     /** change name by appending $$<fully-qualified-name-of-class `base`>
@@ -681,7 +677,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
 
     /** If this is a package object or its implementing class, its owner: otherwise this.
      */
-    def skipPackageObject: Symbol = if (this.isPackageObjectOrClass) owner else this
+    def skipPackageObject: Symbol = this
 
     /** If this is a constructor, its owner: otherwise this.
      */
@@ -752,16 +748,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     }
 
     /** Does this symbol denote a stable value? */
-    final def isStable =
-      isTerm &&
-      !isMutable &&
-      (!hasFlag(METHOD | BYNAMEPARAM) || hasFlag(STABLE)) &&
-      !(tpe.isVolatile && !hasAnnotation(uncheckedStableClass))
-
-    // def isVirtualClass = hasFlag(DEFERRED) && isClass
-    // def isVirtualTrait = hasFlag(DEFERRED) && isTrait
-    // def isLiftedMethod = hasAllFlags(METHOD | LIFTED)
-    def isCaseClass    = isClass && isCase
+    def isStable = false
 
     /** Does this symbol denote the primary constructor of its enclosing class? */
     final def isPrimaryConstructor =
@@ -776,20 +763,20 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
       isMethod && isCase && isSynthetic
 
     /** Is this symbol a trait which needs an implementation class? */
-    final def needsImplClass: Boolean =
-      isTrait && (!isInterface || hasFlag(lateINTERFACE)) && !isImplClass
+    final def needsImplClass = (
+         isTrait
+      && (!isInterface || hasFlag(lateINTERFACE))
+      && !isImplClass
+    )
 
     /** Is this a symbol which exists only in the implementation class, not in its trait? */
-    final def isImplOnly: Boolean =
-      hasFlag(PRIVATE) ||
-      (owner.isImplClass || owner.isTrait) &&
-      ((hasFlag(notPRIVATE | LIFTED) && !hasFlag(ACCESSOR | SUPERACCESSOR | MODULE) || isConstructor) ||
-       (hasFlag(LIFTED) && isModule && isMethod))
-
-    /** Is this symbol a module variable?
-     *  This used to have to test for MUTABLE to distinguish the overloaded
-     *  MODULEVAR/SYNTHETICMETH flag, but now SYNTHETICMETH is gone.
-     */
+    final def isImplOnly = isPrivate || (
+       (owner.isTrait || owner.isImplClass) && (
+            hasAllFlags(LIFTED | MODULE | METHOD)
+         || isConstructor
+         || hasFlag(notPRIVATE | LIFTED) && !hasFlag(ACCESSOR | SUPERACCESSOR | MODULE)
+       )
+    )
     final def isModuleVar = hasFlag(MODULEVAR)
 
     /** Is this symbol static (i.e. with no outer instance)? */
@@ -882,7 +869,6 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
       if (isCovariant) 1
       else if (isContravariant) -1
       else 0
-
 
     /** The sequence number of this parameter symbol among all type
      *  and value parameters of symbol's owner. -1 if symbol does not
@@ -1030,6 +1016,12 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
 
     protected def createRefinementClassSymbol(pos: Position, newFlags: Long): RefinementClassSymbol =
       new RefinementClassSymbol(this, pos) initFlags newFlags
+
+    protected def createPackageObjectClassSymbol(pos: Position, newFlags: Long): PackageObjectClassSymbol =
+      new PackageObjectClassSymbol(this, pos) initFlags newFlags
+
+    protected def createImplClassSymbol(name: TypeName, pos: Position, newFlags: Long): ClassSymbol =
+      new ClassSymbol(this, pos, name) with ImplClassSymbol initFlags newFlags
 
     protected def createTermSymbol(name: TermName, pos: Position, newFlags: Long): TermSymbol =
       new TermSymbol(this, pos, name) initFlags newFlags
@@ -1529,6 +1521,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
       )
       if (clone.thisSym != clone)
         clone.typeOfThis = (clone.typeOfThis cloneInfo clone)
+
       if (newName ne null)
         clone setName asNameType(newName)
 
@@ -1604,8 +1597,6 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
      *  is not updated when a module is cloned), or NoSymbol if this is not a ModuleClass.
      */
     def sourceModule: Symbol = NoSymbol
-    // if (isModuleClass) companionModule else NoSymbol
-    // NoSymbol
 
     /** The implementation class of a trait.  If available it will be the
      *  symbol with the same owner, and the name of this symbol with $class
@@ -1830,18 +1821,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
      *     This only works for implementation classes owned by other classes or traits.
      *     !!! Why?
      */
-    final def toInterface: Symbol =
-      if (isImplClass) {
-        val result =
-          if (phase.next.erasedTypes) {
-            assert(!tpe.parents.isEmpty, this)
-            tpe.parents.last.typeSymbol
-          } else {
-            owner.info.decl(nme.interfaceName(name))
-          }
-        assert(result != NoSymbol, this)
-        result
-      } else this
+    def toInterface: Symbol = this
 
     /** The module class corresponding to this module.
      */
@@ -2222,15 +2202,25 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     private[this] var _rawname: TermName = initName
     def rawname = _rawname
     def name = _rawname
-    def name_=(name: TermName) {
+    def name_=(name: Name) {
       if (name != rawname) {
+        log("Renaming %s %s %s to %s".format(shortSymbolClass, debugFlagString, rawname, name))
         changeNameInOwners(name)
-        _rawname = name
+        _rawname = name.toTermName
       }
     }
     final def asNameType(n: Name) = n.toTermName
 
     final override def isTerm = true
+
+    /** Term symbols with the exception of static parts of Java classes and packages.
+     */
+    override def isValue    = !(isModule && hasFlag(PACKAGE | JAVA))
+    override def isVariable = isMutable && !isMethod
+
+    // interesting only for lambda lift. Captured variables are accessed from inner lambdas.
+    override def isCapturedVariable = hasAllFlags(MUTABLE | CAPTURED) && !hasFlag(METHOD)
+
     override def companionSymbol: Symbol = companionClass
     override def moduleClass = if (isModule) referenced else NoSymbol
 
@@ -2243,7 +2233,22 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     override def isPackage          = this hasFlag PACKAGE
     override def isValueParameter   = this hasFlag PARAM
 
+    override def isSetterParameter  = isValueParameter && owner.isSetter
+    override def isAccessor         = this hasFlag ACCESSOR
+    override def isGetter           = isAccessor && !isSetter
+    override def isSetter           = isAccessor && nme.isSetterName(name)  // todo: make independent of name, as this can be forged.
+    override def isLocalDummy       = nme.isLocalDummyName(name)
+    override def isClassConstructor = name == nme.CONSTRUCTOR
+    override def isMixinConstructor = name == nme.MIXIN_CONSTRUCTOR
+    override def isConstructor      = nme.isConstructorName(name)
+
     override def isPackageObject  = isModule && (name == nme.PACKAGE)
+    override def isStable = !isUnstable
+    private def isUnstable = (
+         isMutable
+      || (hasFlag(METHOD | BYNAMEPARAM) && !hasFlag(STABLE))
+      || (tpe.isVolatile && !hasAnnotation(uncheckedStableClass))
+    )
 
     // The name in comments is what it is being disambiguated from.
     // TODO - rescue CAPTURED from BYNAMEPARAM so we can see all the names.
@@ -2285,7 +2290,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     }
 
     override def outerSource: Symbol =
-      if (name endsWith nme.OUTER) initialize.referenced
+      if (originalName == nme.OUTER) initialize.referenced
       else NoSymbol
 
     def setModuleClass(clazz: Symbol): TermSymbol = {
@@ -2399,9 +2404,11 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     private[this] var mtpeInfo: Type   = _
 
     override def isMethod        = true
+    override def isLabel         = this hasFlag LABEL
     override def isMacro         = this hasFlag MACRO
     override def isVarargsMethod = this hasFlag VARARGS
     override def isLiftedMethod  = this hasFlag LIFTED
+
     // TODO - this seems a strange definition for "isSourceMethod", given that
     // it does not make any specific effort to exclude synthetics.  Figure out what
     // this method is really for and what logic makes sense.
@@ -2487,18 +2494,15 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
      */
     def existentialBound: Type = abort("unexpected type: "+this.getClass+ " "+debugLocationString)
 
-    // a type symbol bound by an existential type, for instance the T in
-    // List[T] forSome { type T }
-
     // TODO - don't allow names to be renamed in this unstructured a fashion.
     // Rename as little as possible.  Enforce invariants on all renames.
-    def name_=(name: TypeName) {
+    def name_=(name: Name) {
       if (name != rawname) {
+        log("Renaming %s %s %s to %s".format(shortSymbolClass, debugFlagString, rawname, name))
         changeNameInOwners(name)
-        _rawname = name
+        _rawname = name.toTypeName
       }
     }
-
 
     private def newPrefix = if (this hasFlag EXISTENTIAL | PARAM) NoPrefix else owner.thisType
     private def newTypeRef(targs: List[Type]) = typeRef(newPrefix, this, targs)
@@ -2618,9 +2622,11 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
 
     final override def isSkolem = true
 
+    // a type symbol bound by an existential type, for instance the T in
+    // List[T] forSome { type T }
+    override def isExistentialSkolem = this hasFlag EXISTENTIAL
     override def isGADTSkolem        = this hasFlag CASEACCESSOR | SYNTHETIC
     override def isTypeSkolem        = this hasFlag PARAM
-    override def isExistentialSkolem = this hasFlag EXISTENTIAL
     override def isAbstractType      = this hasFlag DEFERRED
 
     override def isExistentialQuantified = false
@@ -2657,15 +2663,14 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
 
     private[this] var thisTypeCache: Type      = _
     private[this] var thisTypePeriod           = NoPeriod
-    private[this] var typeOfThisCache: Type    = _
-    private[this] var typeOfThisPeriod         = NoPeriod
 
     override protected def alwaysHasFlags: Long = 0L
     override protected def neverHasFlags: Long = 0L
 
     override def resolveOverloadedFlag(flag: Long) = flag match {
-      case INCONSTRUCTOR => "<inconstructor>" // CONTRAVARIANT / LABEL
-      case EXISTENTIAL   => "<existential>"   // MIXEDIN
+      case INCONSTRUCTOR => "<inconstructor>" // INCONSTRUCTOR / CONTRAVARIANT / LABEL
+      case EXISTENTIAL   => "<existential>"   // EXISTENTIAL / MIXEDIN
+      case IMPLCLASS     => "<implclass>"     // IMPLCLASS / PRESUPER
       case _             => super.resolveOverloadedFlag(flag)
     }
 
@@ -2675,23 +2680,31 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     final override def isAliasType = false
 
     override def isAbstractClass           = this hasFlag ABSTRACT
+    override def isCaseClass               = this hasFlag CASE
     override def isClassLocalToConstructor = this hasFlag INCONSTRUCTOR
     override def isImplClass               = this hasFlag IMPLCLASS
     override def isModuleClass             = this hasFlag MODULE
     override def isPackageClass            = this hasFlag PACKAGE
     override def isTrait                   = this hasFlag TRAIT
 
-    override def isConcreteClass      = !(this hasFlag ABSTRACT | TRAIT)
-    override def isPackageObjectClass = isModuleClass && (name == tpnme.PACKAGE)
-
-    def isTraitOrImplClass   = this hasFlag TRAIT | IMPLCLASS
-    def isNonImplModuleClass = isModuleClass && !isImplClass
-
-    override def isAnonymousClass        = name containsName tpnme.ANON_CLASS_NAME
     override def isAnonOrRefinementClass = isAnonymousClass || isRefinementClass
+    override def isAnonymousClass        = name containsName tpnme.ANON_CLASS_NAME
+    override def isConcreteClass         = !(this hasFlag ABSTRACT | TRAIT)
+    override def isJavaInterface         = hasAllFlags(JAVA | TRAIT)
     override def isNestedClass           = !owner.isPackageClass
     override def isNumericValueClass     = definitions.isNumericValueClass(this)
+    override def isPackageObjectClass    = isModuleClass && (name == tpnme.PACKAGE)
     override def isPrimitiveValueClass   = definitions.isPrimitiveValueClass(this)
+
+    // The corresponding interface is the last parent by convention.
+    private def lastParent = if (tpe.parents.isEmpty) NoSymbol else tpe.parents.last.typeSymbol
+    override def toInterface: Symbol = (
+      if (isImplClass) {
+        if (phase.next.erasedTypes) lastParent
+        else owner.info.decl(nme.interfaceName(name))
+      }
+      else super.toInterface
+    )
 
     /** Is this class locally defined?
      *  A class is local, if
@@ -2734,9 +2747,11 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     override def companionSymbol    = companionModule0
     override def linkedClassOfClass = companionModule.moduleClass
 
+    override def sourceModule       = if (isModuleClass) companionModule else NoSymbol
+
     override def existentialBound = GenPolyType(this.typeParams, TypeBounds.upper(this.classBound))
 
-    def primaryConstructorName = if (isTraitOrImplClass) nme.MIXIN_CONSTRUCTOR else nme.CONSTRUCTOR
+    def primaryConstructorName = if (this hasFlag TRAIT | IMPLCLASS) nme.MIXIN_CONSTRUCTOR else nme.CONSTRUCTOR
 
     override def primaryConstructor = {
       val c = info decl primaryConstructorName
@@ -2761,21 +2776,6 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
         if (!isValid(period)) thisTypeCache = ThisType(this)
       }
       thisTypeCache
-    }
-
-    /** the self type of an object foo is foo.type, not class<foo>.this.type
-     */
-    override def typeOfThis: Type = {
-      if (isNonImplModuleClass && owner != NoSymbol) {
-        val period = typeOfThisPeriod
-        if (period != currentPeriod) {
-          typeOfThisPeriod = currentPeriod
-          if (!isValid(period))
-            typeOfThisCache = singleType(owner.thisType, sourceModule)
-        }
-        typeOfThisCache
-      }
-      else thisSym.tpe
     }
 
     override def owner: Symbol =
@@ -2808,9 +2808,6 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
       clone
     }
 
-    // Must have this line.
-    override def sourceModule = if (isModuleClass) companionModule else NoSymbol
-
     override def firstParamAccessor =
       info.decls.find(_ hasAllFlags PARAMACCESSOR | METHOD) getOrElse NoSymbol
 
@@ -2827,15 +2824,30 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
    */
   class ModuleClassSymbol protected[Symbols] (owner: Symbol, pos: Position, name: TypeName)
   extends ClassSymbol(owner, pos, name) with DistinguishingFlag {
+    private[this] var module: Symbol        = _
+    private[this] var typeOfThisCache: Type = _
+    private[this] var typeOfThisPeriod      = NoPeriod
+
     def distinguishingFlag = MODULE
 
-    private var module: Symbol = null
     private var implicitMembersCacheValue: List[Symbol] = Nil
     private var implicitMembersCacheKey1: Type = NoType
     private var implicitMembersCacheKey2: ScopeEntry = null
 
     override def isModuleClass = true
     override def linkedClassOfClass = companionClass
+
+    /** the self type of an object foo is foo.type, not class<foo>.this.type
+     */
+    override def typeOfThis = {
+      val period = typeOfThisPeriod
+      if (period != currentPeriod) {
+        typeOfThisPeriod = currentPeriod
+        if (!isValid(period))
+          typeOfThisCache = singleType(owner.thisType, sourceModule)
+      }
+      typeOfThisCache
+    }
 
     def implicitMembers: List[Symbol] = {
       val tp = info
@@ -2850,8 +2862,25 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
       }
       implicitMembersCacheValue
     }
-    override def sourceModule = module
+    // The null check seems to be necessary for the reifier.
+    override def sourceModule = if (module ne null) module else companionModule
     override def sourceModule_=(module: Symbol) { this.module = module }
+  }
+
+  class PackageObjectClassSymbol protected[Symbols] (owner0: Symbol, pos0: Position)
+  extends ModuleClassSymbol(owner0, pos0, tpnme.PACKAGE) {
+    final override def isPackageObjectClass   = true
+    final override def isPackageObjectOrClass = true
+    final override def skipPackageObject      = owner
+    final override def setName(name: Name): this.type = {
+      abort("Can't rename a package object to " + name)
+    }
+  }
+  
+  trait ImplClassSymbol extends ClassSymbol {
+    override def sourceModule = companionModule
+    // override def isImplClass = true
+    override def typeOfThis  = thisSym.tpe // don't use the ModuleClassSymbol typeOfThisCache.
   }
 
   class PackageClassSymbol protected[Symbols] (owner0: Symbol, pos0: Position, name0: TypeName)
@@ -2864,7 +2893,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
 
   class RefinementClassSymbol protected[Symbols] (owner0: Symbol, pos0: Position)
   extends ClassSymbol(owner0, pos0, tpnme.REFINE_CLASS_NAME) {
-    override def name_=(name: TypeName) {
+    override def name_=(name: Name) {
       assert(false, "Cannot set name of RefinementClassSymbol to " + name)
       super.name_=(name)
     }
@@ -2899,7 +2928,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     def asNameType(n: Name) = n.toTermName
     def rawname = nme.NO_NAME
     def name = nme.NO_NAME
-    def name_=(n: TermName) = abort("Cannot set name to " + n)
+    def name_=(n: Name) = abort("Cannot set NoSymbol's name to " + n)
 
     synchronized {
       setInfo(NoType)

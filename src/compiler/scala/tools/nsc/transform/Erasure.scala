@@ -1134,10 +1134,10 @@ abstract class Erasure extends AddInterfaces
      */
     override def transform(tree: Tree): Tree = {
       val tree1 = preTransformer.transform(tree)
-      log("tree after pretransform: "+tree1)
+      // log("tree after pretransform: "+tree1)
       afterErasure {
         val tree2 = mixinTransformer.transform(tree1)
-        debuglog("tree after addinterfaces: \n" + tree2)
+        // debuglog("tree after addinterfaces: \n" + tree2)
 
         newTyper(rootContext(unit, tree, true)).typed(tree2)
       }

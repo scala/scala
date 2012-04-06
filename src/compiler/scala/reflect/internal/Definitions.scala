@@ -151,6 +151,8 @@ trait Definitions extends reflect.api.StandardDefinitions {
     // type and term symbols respectively.
     sealed trait RootSymbol extends WellKnownSymbol {
       final override def isRootSymbol = true
+      override def owner              = NoSymbol
+      override def typeOfThis         = thisSym.tpe
     }
     // This is the package _root_.  The actual root cannot be referenced at
     // the source level, but _root_ is essentially a function => <root>.

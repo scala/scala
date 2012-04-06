@@ -179,9 +179,6 @@ trait NameManglers {
       else name.toTermName
     }
 
-    // This isn't needed at the moment since I fixed $class$1 but
-    // I expect it will be at some point.
-    //
     // def anonNumberSuffix(name: Name): Name = {
     //   ("" + name) lastIndexOf '$' match {
     //     case -1   => nme.EMPTY
@@ -191,6 +188,18 @@ trait NameManglers {
     //       else nme.EMPTY
     //   }
     // }
+
+    // If the name ends with $nn where nn are
+    // all digits, strip the $ and the digits.
+    // Otherwise return the argument.
+    def stripAnonNumberSuffix(name: Name): Name = {
+      var pos = name.length
+      while (pos > 0 && name(pos - 1).isDigit)
+        pos -= 1
+
+      if (pos <= 0 || pos == name.length || name(pos - 1) != '$') name
+      else name.subName(0, pos - 1)
+    }
 
     def stripModuleSuffix(name: Name): Name = (
       if (isModuleName(name)) name dropRight MODULE_SUFFIX_STRING.length else name

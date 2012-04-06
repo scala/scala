@@ -45,6 +45,8 @@ trait SymbolCreations {
     protected def createModuleClassSymbol(name: TypeName, pos: Position, newFlags: Long): ModuleClassSymbol
     protected def createPackageClassSymbol(name: TypeName, pos: Position, newFlags: Long): PackageClassSymbol
     protected def createRefinementClassSymbol(pos: Position, newFlags: Long): RefinementClassSymbol
+    protected def createImplClassSymbol(name: TypeName, pos: Position, newFlags: Long): ClassSymbol
+    protected def createPackageObjectClassSymbol(pos: Position, newFlags: Long): PackageObjectClassSymbol
 
     // Distinguished term categories include methods, modules, packages, package objects,
     // value parameters, and values (including vals, vars, and lazy vals.)
@@ -88,8 +90,12 @@ trait SymbolCreations {
         createRefinementClassSymbol(pos, newFlags)
       else if ((newFlags & PACKAGE) != 0)
         createPackageClassSymbol(name, pos, newFlags | PackageFlags)
+      else if (name == tpnme.PACKAGE)
+        createPackageObjectClassSymbol(pos, newFlags)
       else if ((newFlags & MODULE) != 0)
         createModuleClassSymbol(name, pos, newFlags)
+      else if ((newFlags & IMPLCLASS) != 0)
+        createImplClassSymbol(name, pos, newFlags)
       else
         createClassSymbol(name, pos, newFlags)
     }

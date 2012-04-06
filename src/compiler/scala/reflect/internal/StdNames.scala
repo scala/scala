@@ -529,6 +529,9 @@ trait StdNames extends NameManglers { self: SymbolTable =>
     def expandedName(name: TermName, base: Symbol, separator: String = EXPAND_SEPARATOR_STRING): TermName =
       newTermNameCached(base.fullName('$') + separator + name)
 
+    def isModuleVarName(name: Name): Boolean =
+      stripAnonNumberSuffix(name) endsWith MODULE_VAR_SUFFIX
+
     def moduleVarName(name: TermName): TermName =
       newTermNameCached("" + name + MODULE_VAR_SUFFIX)
 

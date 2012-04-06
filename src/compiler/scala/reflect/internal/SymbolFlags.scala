@@ -97,6 +97,11 @@ trait SymbolFlags {
     }
   }
 
+  /** Flags which should always be present on a particular class of
+   *  Symbol, and never be present on any others.
+   */
+  def AllDistinguishingFlags: Long = METHOD | MODULE | IMPLCLASS
+
   /** A distinguishing flag is one which the mixing class must always
    *  have, and which no other symbol class is allowed to have.
    */
@@ -125,7 +130,7 @@ trait SymbolFlags {
     protected def calculateFlagString(basis: Long): String
 
     protected def alwaysHasFlags: Long = 0L
-    protected def neverHasFlags: Long = METHOD | MODULE
+    protected def neverHasFlags: Long = AllDistinguishingFlags
 
     def rawFlagString(mask: Long): String = calculateFlagString(rawflags & mask)
     def rawFlagString: String             = rawFlagString(flagMask)
