@@ -121,9 +121,9 @@ class ModifierFlags {
   // Overridden.
   def flagToString(flag: Long): String = ""
 
-  final val PrivateLocal: Long   = PRIVATE | LOCAL
-  final val ProtectedLocal: Long = PROTECTED | LOCAL
-  final val AccessFlags: Long    = PRIVATE | PROTECTED | LOCAL
+  final val PrivateLocal   = PRIVATE | LOCAL
+  final val ProtectedLocal = PROTECTED | LOCAL
+  final val AccessFlags    = PRIVATE | PROTECTED | LOCAL
 }
 object ModifierFlags extends ModifierFlags
 
@@ -216,22 +216,22 @@ class Flags extends ModifierFlags {
   /** These flags can be set when class or module symbol is first created.
    *  They are the only flags to survive a call to resetFlags().
    */
-  final val TopLevelCreationFlags: Long =
+  final val TopLevelCreationFlags =
     MODULE | PACKAGE | FINAL | JAVA
 
   // TODO - there's no call to slap four flags onto every package.
-  final val PackageFlags: Long = TopLevelCreationFlags
+  final val PackageFlags = TopLevelCreationFlags
 
   // FINAL not included here due to possibility of object overriding.
   // In fact, FINAL should not be attached regardless.  We should be able
   // to reconstruct whether an object was marked final in source.
-  final val ModuleFlags: Long = MODULE
+  final val ModuleFlags = MODULE
 
   /** These modifiers can be set explicitly in source programs.  This is
    *  used only as the basis for the default flag mask (which ones to display
    *  when printing a normal message.)
    */
-  final val ExplicitFlags: Long =
+  final val ExplicitFlags =
     PRIVATE | PROTECTED | ABSTRACT | FINAL | SEALED |
     OVERRIDE | CASE | IMPLICIT | ABSOVERRIDE | LAZY
 
@@ -240,7 +240,7 @@ class Flags extends ModifierFlags {
   final val BridgeAndPrivateFlags = BridgeFlags | PRIVATE
 
   /** These modifiers appear in TreePrinter output. */
-  final val PrintableFlags: Long =
+  final val PrintableFlags =
     ExplicitFlags | BridgeFlags | LOCAL | SYNTHETIC | STABLE | CASEACCESSOR | MACRO |
     ACCESSOR | SUPERACCESSOR | PARAMACCESSOR | STATIC | SPECIALIZED | SYNCHRONIZED
 
@@ -248,7 +248,7 @@ class Flags extends ModifierFlags {
    *  from Modifiers.  Others which may be applied at creation time are:
    *  PRIVATE, LOCAL.
    */
-  final val FieldFlags: Long =
+  final val FieldFlags =
     MUTABLE | CASEACCESSOR | PARAMACCESSOR | STATIC | FINAL | PRESUPER | LAZY
 
   /** Masks for getters and setters, where the flags are derived from those
@@ -262,24 +262,23 @@ class Flags extends ModifierFlags {
    *  flags from the method with the default.  Other flags applied at creation
    *  time are SYNTHETIC, DEFAULTPARAM, and possibly OVERRIDE.
    */
-  final val DefaultGetterFlags: Long =
-    PRIVATE | PROTECTED | FINAL
+  final val DefaultGetterFlags = PRIVATE | PROTECTED | FINAL
 
   /** When a symbol for a method parameter is created, only these flags survive
    *  from Modifiers.  Others which may be applied at creation time are:
    *  SYNTHETIC.
    */
-  final val ValueParameterFlags: Long = BYNAMEPARAM | IMPLICIT | DEFAULTPARAM
-  final val BeanPropertyFlags         = DEFERRED | OVERRIDE | STATIC
-  final val VarianceFlags             = COVARIANT | CONTRAVARIANT
+  final val ValueParameterFlags = BYNAMEPARAM | IMPLICIT | DEFAULTPARAM
+  final val BeanPropertyFlags   = DEFERRED | OVERRIDE | STATIC
+  final val VarianceFlags       = COVARIANT | CONTRAVARIANT
 
   /** These appear to be flags which should be transferred from owner symbol
    *  to a newly created constructor symbol.
    */
-  final val ConstrFlags: Long         = JAVA
+  final val ConstrFlags = JAVA
 
   /** Module flags inherited by their module-class */
-  final val ModuleToClassFlags: Long = AccessFlags | TopLevelCreationFlags | CASE | SYNTHETIC
+  final val ModuleToClassFlags = AccessFlags | TopLevelCreationFlags | CASE | SYNTHETIC
 
   def getterFlags(fieldFlags: Long): Long = ACCESSOR + (
     if ((fieldFlags & MUTABLE) != 0) fieldFlags & ~MUTABLE & ~PRESUPER
@@ -309,7 +308,7 @@ class Flags extends ModifierFlags {
 
   private final val PKL_MASK       = 0x00000FFF
 
-  final val PickledFlags: Long  = 0xFFFFFFFFL
+  final val PickledFlags  = 0xFFFFFFFFL
 
   private def rawPickledCorrespondence = Array(
     (IMPLICIT, IMPLICIT_PKL),
@@ -421,8 +420,8 @@ class Flags extends ModifierFlags {
     case 0x8000000000000000L => ""                                    // (1L << 63)
     case _ => ""
   }
-
-  def accessString(flags: Long, privateWithin: String)= (
+  
+  private def accessString(flags: Long, privateWithin: String)= (
     if (privateWithin == "") {
       if ((flags & PrivateLocal) == PrivateLocal) "private[this]"
       else if ((flags & ProtectedLocal) == ProtectedLocal) "protected[this]"
@@ -433,37 +432,16 @@ class Flags extends ModifierFlags {
     else if ((flags & PROTECTED) != 0) "protected[" + privateWithin + "]"
     else "private[" + privateWithin + "]"
   )
-  def nonAccessString(flags0: Long)(flagStringFn: Long => String): String = {
-    val flags = flags0 & ~AccessFlags
-    // Fast path for common case
-    if (flags == 0L) "" else {
-      var sb: StringBuilder = null
-      var i = 0
-      while (i <= MaxBitPosition) {
-        val mask = rawFlagPickledOrder(i)
-        if ((flags & mask) != 0L) {
-          val s = flagStringFn(mask)
-          if (s.length > 0) {
-            if (sb eq null) sb = new StringBuilder append s
-            else if (sb.length == 0) sb append s
-            else sb append " " append s
-          }
-        }
-        i += 1
-      }
-      if (sb eq null) "" else sb.toString
-    }
-  }
-
+  
+  @deprecated("Use flagString on the flag-carrying member", "2.10.0")
   def flagsToString(flags: Long, privateWithin: String): String = {
-    val access = accessString(flags, privateWithin)
+    val access    = accessString(flags, privateWithin)
     val nonAccess = flagsToString(flags & ~AccessFlags)
+
     List(nonAccess, access) filterNot (_ == "") mkString " "
   }
 
-  // List of the raw flags, in pickled order
-  protected final val MaxBitPosition = 62
-
+  @deprecated("Use flagString on the flag-carrying member", "2.10.0")
   def flagsToString(flags: Long): String = {
     // Fast path for common case
     if (flags == 0L) "" else {
@@ -491,13 +469,16 @@ class Flags extends ModifierFlags {
   def pickledToRawFlags(pflags: Long): Long =
     (pflags & ~PKL_MASK) | p2r(pflags.toInt & PKL_MASK)
 
-  protected final val pickledListOrder: List[Long] = {
+  // List of the raw flags, in pickled order
+  final val MaxBitPosition = 62
+
+  final val pickledListOrder: List[Long] = {
     val all   = 0 to MaxBitPosition map (1L << _)
     val front = rawFlags map (_.toLong)
 
     front.toList ++ (all filterNot (front contains _))
   }
-  protected final val rawFlagPickledOrder: Array[Long] = pickledListOrder.toArray
+  final val rawFlagPickledOrder: Array[Long] = pickledListOrder.toArray
 
   def flagOfModifier(mod: Modifier): Long = mod match {
     case Modifier.`protected`      => PROTECTED

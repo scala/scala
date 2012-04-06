@@ -389,11 +389,14 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
           var sourceModule = clazz.owner.info.decls.lookup(sym.name.toTermName)
           if (sourceModule != NoSymbol) {
             sourceModule setPos sym.pos
-            sourceModule.flags = MODULE | FINAL
+            if (sourceModule.flags != MODULE) {
+              log("!!! Directly setting sourceModule flags from %s to MODULE".format(flagsToString(sourceModule.flags)))
+              sourceModule.flags = MODULE
+            }
           }
           else {
             sourceModule = (
-              clazz.owner.newModuleSymbol(sym.name.toTermName, sym.pos, MODULE | FINAL)
+              clazz.owner.newModuleSymbol(sym.name.toTermName, sym.pos, MODULE)
                 setModuleClass sym.asInstanceOf[ClassSymbol]
             )
             clazz.owner.info.decls enter sourceModule
@@ -935,7 +938,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
         private def checkedGetter(lhs: Tree) = {
           val sym = clazz.info decl lhs.symbol.getterName suchThat (_.isGetter)
           if (needsInitAndHasOffset(sym)) {
-            debuglog("adding checked getter for: " + sym + " " + lhs.symbol.defaultFlagString)
+            debuglog("adding checked getter for: " + sym + " " + lhs.symbol.flagString)
             List(localTyper typed mkSetFlag(clazz, fieldOffset(sym), sym))
           }
           else Nil

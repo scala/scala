@@ -42,7 +42,6 @@ trait Trees extends api.Trees { self: SymbolTable =>
     }
 
     /* Abstract types from HasFlags. */
-    type FlagsType          = Long
     type AccessBoundaryType = Name
     type AnnotationType     = Tree
 
@@ -57,11 +56,7 @@ trait Trees extends api.Trees { self: SymbolTable =>
     def hasAccessBoundary = privateWithin != tpnme.EMPTY
     def hasAllFlags(mask: Long): Boolean = (flags & mask) == mask
     def hasFlag(flag: Long) = (flag & flags) != 0L
-    def hasFlagsToString(mask: Long): String = flagsToString(
-      flags & mask,
-      if (hasAccessBoundary) privateWithin.toString else ""
-    )
-    def defaultFlagString = hasFlagsToString(-1L)
+
     def & (flag: Long): Modifiers = {
       val flags1 = flags & flag
       if (flags1 == flags) this
@@ -91,7 +86,7 @@ trait Trees extends api.Trees { self: SymbolTable =>
     override def mapAnnotations(f: List[Tree] => List[Tree]): Modifiers =
       Modifiers(flags, privateWithin, f(annotations)) setPositions positions
 
-    override def toString = "Modifiers(%s, %s, %s)".format(defaultFlagString, annotations mkString ", ", positions)
+    override def toString = "Modifiers(%s, %s, %s)".format(flagString, annotations mkString ", ", positions)
   }
 
   def Modifiers(flags: Long, privateWithin: Name): Modifiers = Modifiers(flags, privateWithin, List())

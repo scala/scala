@@ -523,10 +523,9 @@ trait DocComments { self: Global =>
       }
 
       for (defn <- defined) yield {
-        val useCase = defn.cloneSymbol
-        useCase.owner = sym.owner
-        useCase.flags = sym.flags
-        useCase.setFlag(Flags.SYNTHETIC).setInfo(substAliases(defn.info).asSeenFrom(site.thisType, sym.owner))
+        defn.cloneSymbol(sym.owner, sym.flags | Flags.SYNTHETIC) modifyInfo (info =>
+          substAliases(info).asSeenFrom(site.thisType, sym.owner)
+        )
       }
     }
   }

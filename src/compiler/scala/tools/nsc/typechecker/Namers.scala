@@ -1362,7 +1362,7 @@ trait Namers extends MethodSynthesis {
       }
     }
     private val logDefinition = new LogTransitions[Symbol](
-      sym => "[define] >> " + sym.defaultFlagString + " " + sym.fullLocationString,
+      sym => "[define] >> " + sym.flagString + " " + sym.fullLocationString,
       sym => "[define] << " + sym
     )
     private def logAndValidate(sym: Symbol)(body: => Unit) {

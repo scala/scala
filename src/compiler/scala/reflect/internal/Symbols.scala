@@ -151,18 +151,19 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
              with HasFlags
              with SymbolFlagLogic
              with SymbolCreator
-             // with FlagVerifier
+             // with FlagVerifier   // DEBUG
              with Annotatable[Symbol] {
 
-    type FlagsType          = Long
     type AccessBoundaryType = Symbol
     type AnnotationType     = AnnotationInfo
 
     private[this] var _rawowner = initOwner // Syncnote: need not be protected, as only assignment happens in owner_=, which is not exposed to api
     private[this] var _rawname  = initName
+    private[this] var _rawflags: Long = _
 
     def rawowner = _rawowner
-    def rawname = _rawname
+    def rawname  = _rawname
+    def rawflags = _rawflags
 
     private var rawpos = initPos
 
@@ -407,7 +408,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     // True if the symbol is locked but still below the allowed recursion depth.
     // False otherwise
     private[scala] def lockOK: Boolean = {
-      ((rawflags & LOCKED) == 0L) ||
+      ((_rawflags & LOCKED) == 0L) ||
       ((settings.Yrecursion.value != 0) &&
        (recursionTable get this match {
          case Some(n) => (n <= settings.Yrecursion.value)
@@ -416,7 +417,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
 
     // Lock a symbol, using the handler if the recursion depth becomes too great.
     private[scala] def lock(handler: => Unit): Boolean = {
-      if ((rawflags & LOCKED) != 0L) {
+      if ((_rawflags & LOCKED) != 0L) {
         if (settings.Yrecursion.value != 0) {
           recursionTable get this match {
             case Some(n) =>
@@ -433,7 +434,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
           }
         } else { handler; false }
       } else {
-        rawflags |= LOCKED
+        _rawflags |= LOCKED
         true
 //        activeLocks += 1
 //        lockedSyms += this
@@ -442,10 +443,10 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
 
     // Unlock a symbol
     private[scala] def unlock() = {
-      if ((rawflags & LOCKED) != 0L) {
+      if ((_rawflags & LOCKED) != 0L) {
 //        activeLocks -= 1
 //        lockedSyms -= this
-        rawflags &= ~LOCKED
+        _rawflags &= ~LOCKED
         if (settings.Yrecursion.value != 0)
           recursionTable -= this
       }
@@ -562,6 +563,32 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     @inline final override def hasFlag(mask: Long): Boolean = (flags & mask) != 0
     /** Does symbol have ALL the flags in `mask` set? */
     @inline final override def hasAllFlags(mask: Long): Boolean = (flags & mask) == mask
+    
+    override def setFlag(mask: Long): this.type   = { _rawflags |= mask ; this }
+    override def resetFlag(mask: Long): this.type = { _rawflags &= ~mask ; this }
+    override def resetFlags() { rawflags &= (TopLevelCreationFlags | alwaysHasFlags) }
+    
+    /** Default implementation calls the generic string function, which
+     *  will print overloaded flags as <flag1/flag2/flag3>.  Subclasses
+     *  of Symbol refine.
+     */
+    override def resolveOverloadedFlag(flag: Long): String = Flags.flagToString(flag)
+
+    /** Set the symbol's flags to the given value, asserting
+     *  that the previous value was 0.
+     */
+    override def initFlags(mask: Long): this.type = {
+      assert(rawflags == 0L, symbolCreationString)
+      _rawflags = mask
+      this
+    }
+    
+    final def flags: Long = {
+      val fs = _rawflags & phase.flagMask
+      (fs | ((fs & LateFlags) >>> LateShift)) & ~(fs >>> AntiShift)
+    }
+    def flags_=(fs: Long) = _rawflags = fs
+    def rawflags_=(x: Long) { _rawflags = x }
 
     /** Term symbols with the exception of static parts of Java classes and packages.
      */
@@ -1067,13 +1094,13 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
         val tp = infos.info
         //if (settings.debug.value) System.out.println("completing " + this.rawname + tp.getClass());//debug
 
-        if ((rawflags & LOCKED) != 0L) { // rolled out once for performance
+        if ((_rawflags & LOCKED) != 0L) { // rolled out once for performance
           lock {
             setInfo(ErrorType)
             throw CyclicReference(this, tp)
           }
         } else {
-          rawflags |= LOCKED
+          _rawflags |= LOCKED
 //          activeLocks += 1
  //         lockedSyms += this
         }
@@ -1474,7 +1501,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
 
     /** A clone of this symbol, but with given owner. */
     final def cloneSymbol(newOwner: Symbol): Symbol =
-      cloneSymbol(newOwner, this.rawflags)
+      cloneSymbol(newOwner, _rawflags)
     final def cloneSymbol(newOwner: Symbol, newFlags: Long): Symbol =
       cloneSymbol(newOwner, newFlags, nme.NO_NAME)
     final def cloneSymbol(newOwner: Symbol, newFlags: Long, newName: Name): Symbol = {
@@ -2140,7 +2167,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     def debugLocationString = fullLocationString + " " + debugFlagString
 
     private def defStringCompose(infoString: String) = compose(
-      defaultFlagString,
+      flagString,
       keyString,
       varianceString + nameString + infoString + flagsExplanationString
     )
@@ -2188,6 +2215,17 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     override def isValueParameter   = this hasFlag PARAM
 
     override def isPackageObject  = isModule && (name == nme.PACKAGE)
+
+    // The name in comments is what it is being disambiguated from.
+    // TODO - rescue CAPTURED from BYNAMEPARAM so we can see all the names.
+    override def resolveOverloadedFlag(flag: Long) = flag match {
+      case DEFAULTPARAM => "<defaultparam>" // TRAIT
+      case MIXEDIN      => "<mixedin>"      // EXISTENTIAL
+      case LABEL        => "<label>"        // CONTRAVARIANT / INCONSTRUCTOR
+      case PRESUPER     => "<presuper>"     // IMPLCLASS
+      case BYNAMEPARAM  => if (this.isValueParameter) "<bynameparam>" else "<captured>" // COVARIANT
+      case _            => super.resolveOverloadedFlag(flag)
+    }
 
     def referenced: Symbol = _referenced
     def referenced_=(x: Symbol) { _referenced = x }
@@ -2380,6 +2418,14 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
 
     final override def isType   = true
     override def isNonClassType = true
+    
+    override def resolveOverloadedFlag(flag: Long) = flag match {
+      case TRAIT         => "<trait>"         // DEFAULTPARAM
+      case EXISTENTIAL   => "<existential>"   // MIXEDIN
+      case COVARIANT     => "<covariant>"     // BYNAMEPARAM / CAPTURED
+      case CONTRAVARIANT => "<contravariant>" // LABEL / INCONSTRUCTOR (overridden again in ClassSymbol)
+      case _             => super.resolveOverloadedFlag(flag)
+    }
 
     private var tyconCache: Type = null
     private var tyconRunId = NoRunId
@@ -2565,6 +2611,12 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
 
     override protected def alwaysHasFlags: Long = 0L
     override protected def neverHasFlags: Long = 0L
+
+    override def resolveOverloadedFlag(flag: Long) = flag match {
+      case INCONSTRUCTOR => "<inconstructor>" // CONTRAVARIANT / LABEL
+      case EXISTENTIAL   => "<existential>"   // MIXEDIN
+      case _             => super.resolveOverloadedFlag(flag)
+    }
 
     final override def isClass = true
     final override def isNonClassType = false
@@ -2799,7 +2851,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
       unlock()
       validTo = currentPeriod
     }
-    override def defaultFlagMask = AllFlags
+    override def flagMask = AllFlags
     override def exists = false
     override def isHigherOrderTypeParameter = false
     override def companionClass = NoSymbol
