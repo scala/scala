@@ -15,7 +15,7 @@ self: scala.tools.nsc.symtab.SymbolTable =>
   val NoPosition = scala.tools.nsc.util.NoPosition
 
   type TreeAnnotation = scala.tools.nsc.util.TreeAnnotation
-  val NoTreeAnnotation: TreeAnnotation                      = NoPosition
+  def NoTreeAnnotation: TreeAnnotation                      = NoPosition
   def positionToAnnotation(pos: Position): TreeAnnotation   = pos
   def annotationToPosition(annot: TreeAnnotation): Position = annot.pos
   override def _checkSetAnnotation(tree: Tree, annot: TreeAnnotation): Unit = {

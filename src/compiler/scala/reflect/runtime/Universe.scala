@@ -40,7 +40,7 @@ class Universe extends SymbolTable {
   definitions.AnyValClass // force it.
 
   type TreeAnnotation = Position
-  val NoTreeAnnotation: TreeAnnotation = NoPosition
+  def NoTreeAnnotation: TreeAnnotation = NoPosition
   def positionToAnnotation(pos: Position): TreeAnnotation = pos // TODO
   def annotationToPosition(annot: TreeAnnotation): Position = annot //TODO
 
