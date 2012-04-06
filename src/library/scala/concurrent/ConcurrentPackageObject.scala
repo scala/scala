@@ -20,8 +20,7 @@ import ConcurrentPackageObject._
 abstract class ConcurrentPackageObject {
   /** A global execution environment for executing lightweight tasks.
    */
-  lazy val executionContext =
-    new impl.ExecutionContextImpl()
+  lazy val defaultExecutionContext = new impl.ExecutionContextImpl(null)
 
   private val currentExecutionContext = new ThreadLocal[ExecutionContext]
   
@@ -42,7 +41,7 @@ abstract class ConcurrentPackageObject {
     case Left(t: scala.util.control.ControlThrowable)    => Left(new ExecutionException("Boxed ControlThrowable", t))
     case Left(t: InterruptedException)                   => Left(new ExecutionException("Boxed InterruptedException", t))
     case Left(e: Error)                                  => Left(new ExecutionException("Boxed Error", e))
-    case _                                                  => source
+    case _                                               => source
   }
 
   private[concurrent] def resolver[T] =
@@ -50,10 +49,10 @@ abstract class ConcurrentPackageObject {
 
   /* concurrency constructs */
 
-  def future[T](body: =>T)(implicit execctx: ExecutionContext = executionContext): Future[T] =
+  def future[T](body: =>T)(implicit execctx: ExecutionContext = defaultExecutionContext): Future[T] =
     Future[T](body)
 
-  def promise[T]()(implicit execctx: ExecutionContext = executionContext): Promise[T] =
+  def promise[T]()(implicit execctx: ExecutionContext = defaultExecutionContext): Promise[T] =
     Promise[T]()
 
   /** Wraps a block of code into an awaitable object. */

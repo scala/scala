@@ -10,20 +10,20 @@ package scala.concurrent.impl
 
 
 
-import java.util.concurrent.{Callable, ExecutorService, Executors, ThreadFactory}
+import java.util.concurrent.{Callable, Executor, ExecutorService, Executors, ThreadFactory}
 import scala.concurrent.forkjoin._
 import scala.concurrent.{ExecutionContext, resolver, Awaitable, body2awaitable}
 import scala.concurrent.util.{ Duration }
 
 
 
-private[scala] class ExecutionContextImpl() extends ExecutionContext {
+private[scala] class ExecutionContextImpl(es: AnyRef) extends ExecutionContext with Executor {
   import ExecutionContextImpl._
   
-  val executorService: AnyRef = getExecutorService
+  val executorService: AnyRef = if (es eq null) getExecutorService else es
   
   // to ensure that the current execution context thread local is properly set
-  private def executorsThreadFactory = new ThreadFactory {
+  def executorsThreadFactory = new ThreadFactory {
     def newThread(r: Runnable) = new Thread(new Runnable {
       override def run() {
         currentExecutionContext.set(ExecutionContextImpl.this)
@@ -33,7 +33,7 @@ private[scala] class ExecutionContextImpl() extends ExecutionContext {
   }
   
   // to ensure that the current execution context thread local is properly set
-  private def forkJoinPoolThreadFactory = new ForkJoinPool.ForkJoinWorkerThreadFactory {
+  def forkJoinPoolThreadFactory = new ForkJoinPool.ForkJoinWorkerThreadFactory {
     def newThread(fjp: ForkJoinPool) = new ForkJoinWorkerThread(fjp) {
       override def onStart() {
         currentExecutionContext.set(ExecutionContextImpl.this)
@@ -41,7 +41,7 @@ private[scala] class ExecutionContextImpl() extends ExecutionContext {
     }
   }
   
-  private def getExecutorService: AnyRef =
+  def getExecutorService: AnyRef =
     if (scala.util.Properties.isJavaAtLeast("1.6")) {
       val vendor = scala.util.Properties.javaVmVendor
       if ((vendor contains "Oracle") || (vendor contains "Sun") || (vendor contains "Apple"))
@@ -62,8 +62,8 @@ private[scala] class ExecutionContextImpl() extends ExecutionContext {
       } else {
         fj.execute(runnable)
       }
-    case executorService: ExecutorService =>
-      executorService execute runnable
+    case executor: Executor =>
+      executor execute runnable
   }
 
   def execute[U](body: () => U): Unit = execute(new Runnable {
@@ -86,7 +86,7 @@ private[scala] class ExecutionContextImpl() extends ExecutionContext {
 
 object ExecutionContextImpl {
 
-  private[concurrent] def currentExecutionContext: ThreadLocal[ExecutionContextImpl] = new ThreadLocal[ExecutionContextImpl] {
+  private[concurrent] def currentExecutionContext: ThreadLocal[ExecutionContext] = new ThreadLocal[ExecutionContext] {
     override protected def initialValue = null
   }
 
