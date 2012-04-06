@@ -1281,7 +1281,7 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
         val jname    = javaName(method)
         val jtype    = javaType(method).asInstanceOf[JMethodType]
 
-        def debugMsg(invoke: String) {
+        def dbg(invoke: String) {
           debuglog("%s %s %s.%s:%s".format(invoke, receiver.accessString, jowner, jname, jtype))
         }
 
@@ -1299,14 +1299,14 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
         }
 
         style match {
-          case Static(true)                         => jcode.emitINVOKESPECIAL  (jowner, jname, jtype) ; debugMsg("invokespecial")
-          case Static(false)                        => jcode.emitINVOKESTATIC   (jowner, jname, jtype) ; debugMsg("invokestatic")
-          case Dynamic if isInterfaceCall(receiver) => jcode.emitINVOKEINTERFACE(jowner, jname, jtype) ; debugMsg("invokinterface")
-          case Dynamic                              => jcode.emitINVOKEVIRTUAL  (jowner, jname, jtype) ; debugMsg("invokevirtual")
+          case Static(true)                         => dbg("invokespecial");    jcode.emitINVOKESPECIAL(jowner, jname, jtype)
+          case Static(false)                        => dbg("invokestatic");      jcode.emitINVOKESTATIC(jowner, jname, jtype)
+          case Dynamic if isInterfaceCall(receiver) => dbg("invokinterface"); jcode.emitINVOKEINTERFACE(jowner, jname, jtype)
+          case Dynamic                              => dbg("invokevirtual");    jcode.emitINVOKEVIRTUAL(jowner, jname, jtype)
           case SuperCall(_)                         =>
+            dbg("invokespecial")
             jcode.emitINVOKESPECIAL(jowner, jname, jtype)
             initModule()
-            debugMsg("invokespecial")
         }
       }
 

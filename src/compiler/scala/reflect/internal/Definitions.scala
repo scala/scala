@@ -863,7 +863,8 @@ trait Definitions extends reflect.api.StandardDefinitions {
     // boxed classes
     lazy val ObjectRefClass         = getRequiredClass("scala.runtime.ObjectRef")
     lazy val VolatileObjectRefClass = getRequiredClass("scala.runtime.VolatileObjectRef")
-    lazy val BoxesRunTimeClass      = getRequiredModule("scala.runtime.BoxesRunTime")
+    lazy val BoxesRunTimeModule     = getRequiredModule("scala.runtime.BoxesRunTime")
+    lazy val BoxesRunTimeClass      = BoxesRunTimeModule.moduleClass
     lazy val BoxedNumberClass       = getClass(sn.BoxedNumber)
     lazy val BoxedCharacterClass    = getClass(sn.BoxedCharacter)
     lazy val BoxedBooleanClass      = getClass(sn.BoxedBoolean)
@@ -873,6 +874,9 @@ trait Definitions extends reflect.api.StandardDefinitions {
     lazy val BoxedLongClass         = getRequiredClass("java.lang.Long")
     lazy val BoxedFloatClass        = getRequiredClass("java.lang.Float")
     lazy val BoxedDoubleClass       = getRequiredClass("java.lang.Double")
+
+    lazy val Boxes_isNumberOrBool = getDecl(BoxesRunTimeClass, nme.isBoxedNumberOrBoolean)
+    lazy val Boxes_isNumber       = getDecl(BoxesRunTimeClass, nme.isBoxedNumber)
 
     lazy val BoxedUnitClass         = getRequiredClass("scala.runtime.BoxedUnit")
     lazy val BoxedUnitModule        = getRequiredModule("scala.runtime.BoxedUnit")
@@ -990,12 +994,24 @@ trait Definitions extends reflect.api.StandardDefinitions {
       else findNamedMember(segs.tail, root.info member segs.head)
 
     def getMember(owner: Symbol, name: Name): Symbol = {
-      if (owner == NoSymbol) NoSymbol
-      else owner.info.nonPrivateMember(name) match {
-        case NoSymbol => throw new FatalError(owner + " does not have a member " + name)
-        case result   => result
+      getMemberIfDefined(owner, name) orElse {
+        throw new FatalError(owner + " does not have a member " + name)
       }
     }
+    def getMemberIfDefined(owner: Symbol, name: Name): Symbol =
+      owner.info.nonPrivateMember(name)
+
+    /** Using getDecl rather than getMember may avoid issues with
+     *  OverloadedTypes turning up when you don't want them, if you
+     *  know the method in question is uniquely declared in the given owner.
+     */
+    def getDecl(owner: Symbol, name: Name): Symbol = {
+      getDeclIfDefined(owner, name) orElse {
+        throw new FatalError(owner + " does not have a decl " + name)
+      }
+    }
+    def getDeclIfDefined(owner: Symbol, name: Name): Symbol =
+      owner.info.nonPrivateDecl(name)
     
     def packageExists(packageName: String): Boolean =
       getModuleIfDefined(packageName).isPackage

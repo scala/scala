@@ -1002,7 +1002,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter) extends Symb
       /** Set phase to a newly created syntaxAnalyzer and call definitions.init. */
       val parserPhase: Phase = syntaxAnalyzer.newPhase(NoPhase)
       phase = parserPhase
-      definitions.init
+      definitions.init()
 
       // Flush the cache in the terminal phase: the chain could have been built
       // before without being used. (This happens in the interpreter.)

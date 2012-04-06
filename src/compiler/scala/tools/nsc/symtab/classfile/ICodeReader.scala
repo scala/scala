@@ -625,11 +625,11 @@ abstract class ICodeReader extends ClassfileParser {
    *  such as Int.box(5).
    */
   def isBox(m: Symbol): Boolean =
-    (m.owner == definitions.BoxesRunTimeClass.moduleClass
+    (m.owner == definitions.BoxesRunTimeClass
         && m.name.startsWith("boxTo"))
 
   def isUnbox(m: Symbol): Boolean =
-    (m.owner == definitions.BoxesRunTimeClass.moduleClass
+    (m.owner == definitions.BoxesRunTimeClass
         && m.name.startsWith("unboxTo"))
 
   /** Return the icode class that should include members with the given flags.
