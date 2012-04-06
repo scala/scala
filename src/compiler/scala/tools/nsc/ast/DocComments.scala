@@ -495,8 +495,7 @@ trait DocComments { self: Global =>
               val tpe = getType(repl.trim)
               if (tpe != NoType) tpe
               else {
-                val alias1 = alias.cloneSymbol(definitions.RootClass)
-                alias1.name = newTypeName(repl)
+                val alias1 = alias.cloneSymbol(definitions.RootClass, alias.rawflags, newTypeName(repl))
                 typeRef(NoPrefix, alias1, Nil)
               }
             case None =>

@@ -28,8 +28,9 @@ trait SymbolCreations {
    */
   trait SymbolCreatorInterface {
     // Fallbacks; more precise creators should normally be called.
-    protected def createTypeSymbol(name: TypeName, pos: Position, newFlags: Long): TypeSymbol
     protected def createTermSymbol(name: TermName, pos: Position, newFlags: Long): TermSymbol
+    // This in fact does not exist anymore in the interests of better typed TypeSymbols.
+    // protected def createTypeSymbol(name: TypeName, pos: Position, newFlags: Long): TypeSymbol
 
     // I believe all but rogue TypeSymbols are one of: ClassSymbol, AbstractTypeSymbol, AliasTypeSymbol, or TypeSkolem.
     protected def createAbstractTypeSymbol(name: TypeName, pos: Position, newFlags: Long): AbstractTypeSymbol

@@ -157,12 +157,22 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     type AccessBoundaryType = Symbol
     type AnnotationType     = AnnotationInfo
 
+    // TODO - don't allow names to be renamed in this unstructured a fashion.
+    // Rename as little as possible.  Enforce invariants on all renames.
+    type NameType >: Null <: Name
+    type TypeOfClonedSymbol >: Null <: Symbol { type NameType = Symbol.this.NameType }
+
+    // Abstract here so TypeSymbol and TermSymbol can have a private[this] field
+    // with the proper specific type.
+    def rawname: NameType
+    def name: NameType
+    def name_=(n: NameType): Unit
+    def asNameType(n: Name): NameType
+
     private[this] var _rawowner = initOwner // Syncnote: need not be protected, as only assignment happens in owner_=, which is not exposed to api
-    private[this] var _rawname  = initName
     private[this] var _rawflags: Long = _
 
     def rawowner = _rawowner
-    def rawname  = _rawname
     def rawflags = _rawflags
 
     private var rawpos = initPos
@@ -178,6 +188,18 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
 
     def pos = rawpos
     def setPos(pos: Position): this.type = { this.rawpos = pos; this }
+    def setName(name: Name): this.type = { this.name = asNameType(name) ; this }
+
+    // Update the surrounding scopes
+    protected[this] def changeNameInOwners(name: Name) {
+      if (owner.isClass) {
+        var ifs = owner.infos
+        while (ifs != null) {
+          ifs.info.decls.rehash(this, name)
+          ifs = ifs.prev
+        }
+      }
+    }
 
     /** !!! The logic after "hasFlag" is far too opaque to be unexplained.
      *  I'm guessing it's attempting to compensate for flag overloading,
@@ -236,8 +258,9 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
       newModule(name, pos, PackageFlags | newFlags)
     }
 
-    final def newThisSym(pos: Position) =
-      newTermSymbol(nme.this_, pos, SYNTHETIC)
+    final def newThisSym(name: TermName = nme.this_, pos: Position = NoPosition) =
+      newTermSymbol(name, pos, SYNTHETIC)
+
     final def newImport(pos: Position) =
       newTermSymbol(nme.IMPORT, pos)
 
@@ -383,6 +406,18 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     final def newErrorSymbol(name: Name): Symbol = name match {
       case x: TypeName  => newErrorClass(x)
       case x: TermName  => newErrorValue(x)
+    }
+
+    /** To overcome the crazy challenge of more specific types appearing
+     *  in incoming positions.  Don't need this much.
+     */
+    def asTypeSymbol: TypeSymbol = this match {
+      case x: TypeSymbol  => x
+      case x              => throw new FatalError(this + " is not a TypeSymbol")
+    }
+    def asTermSymbol: TermSymbol = this match {
+      case x: TermSymbol  => x
+      case x              => throw new FatalError(this + " is not a TermSymbol")
     }
 
     @deprecated("Use the other signature", "2.10.0")
@@ -913,23 +948,6 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
 
 // ------ name attribute --------------------------------------------------------------
 
-    def name: Name = rawname
-
-    // TODO - don't allow names to be renamed in this unstructured a fashion.
-    // Rename as little as possible.  Enforce invariants on all renames.
-    def name_=(name: Name) {
-      if (name != rawname) {
-        if (owner.isClass) {
-          var ifs = owner.infos
-          while (ifs != null) {
-            ifs.info.decls.rehash(this, name)
-            ifs = ifs.prev
-          }
-        }
-        _rawname = name
-      }
-    }
-
     /** If this symbol has an expanded name, its original name, otherwise its name itself.
      *  @see expandName
      */
@@ -991,8 +1009,6 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     /**
      *  Symbol creation implementations.
      */
-    protected def createTypeSymbol(name: TypeName, pos: Position, newFlags: Long): TypeSymbol =
-      new TypeSymbol(this, pos, name) { } initFlags newFlags
 
     protected def createAbstractTypeSymbol(name: TypeName, pos: Position, newFlags: Long): AbstractTypeSymbol =
       new AbstractTypeSymbol(this, pos, name) initFlags newFlags
@@ -1496,15 +1512,15 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
 // ------ cloneing -------------------------------------------------------------------
 
     /** A clone of this symbol. */
-    final def cloneSymbol: Symbol =
+    final def cloneSymbol: TypeOfClonedSymbol =
       cloneSymbol(owner)
 
     /** A clone of this symbol, but with given owner. */
-    final def cloneSymbol(newOwner: Symbol): Symbol =
+    final def cloneSymbol(newOwner: Symbol): TypeOfClonedSymbol =
       cloneSymbol(newOwner, _rawflags)
-    final def cloneSymbol(newOwner: Symbol, newFlags: Long): Symbol =
-      cloneSymbol(newOwner, newFlags, nme.NO_NAME)
-    final def cloneSymbol(newOwner: Symbol, newFlags: Long, newName: Name): Symbol = {
+    final def cloneSymbol(newOwner: Symbol, newFlags: Long): TypeOfClonedSymbol =
+      cloneSymbol(newOwner, newFlags, null)
+    final def cloneSymbol(newOwner: Symbol, newFlags: Long, newName: Name): TypeOfClonedSymbol = {
       val clone = cloneSymbolImpl(newOwner, newFlags)
       ( clone
           setPrivateWithin privateWithin
@@ -1513,14 +1529,14 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
       )
       if (clone.thisSym != clone)
         clone.typeOfThis = (clone.typeOfThis cloneInfo clone)
-      if (newName != nme.NO_NAME)
-        clone.name = newName
+      if (newName ne null)
+        clone setName asNameType(newName)
 
       clone
     }
 
     /** Internal method to clone a symbol's implementation with the given flags and no info. */
-    def cloneSymbolImpl(owner: Symbol, newFlags: Long): Symbol
+    def cloneSymbolImpl(owner: Symbol, newFlags: Long): TypeOfClonedSymbol
 
 // ------ access to related symbols --------------------------------------------------
 
@@ -2200,8 +2216,21 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     private[this] var _referenced: Symbol = NoSymbol
     privateWithin = NoSymbol
 
+    final type NameType = TermName
+    type TypeOfClonedSymbol = TermSymbol
+
+    private[this] var _rawname: TermName = initName
+    def rawname = _rawname
+    def name = _rawname
+    def name_=(name: TermName) {
+      if (name != rawname) {
+        changeNameInOwners(name)
+        _rawname = name
+      }
+    }
+    final def asNameType(n: Name) = n.toTermName
+
     final override def isTerm = true
-    override def name: TermName = rawname.toTermName
     override def companionSymbol: Symbol = companionClass
     override def moduleClass = if (isModule) referenced else NoSymbol
 
@@ -2232,7 +2261,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
 
     def existentialBound = singletonBounds(this.tpe)
 
-    def cloneSymbolImpl(owner: Symbol, newFlags: Long): Symbol =
+    def cloneSymbolImpl(owner: Symbol, newFlags: Long): TermSymbol =
       owner.newTermSymbol(name, pos, newFlags).copyAttrsFrom(this)
 
     def copyAttrsFrom(original: TermSymbol): this.type = {
@@ -2328,7 +2357,6 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
   class ModuleSymbol protected[Symbols] (initOwner: Symbol, initPos: Position, initName: TermName)
   extends TermSymbol(initOwner, initPos, initName) with DistinguishingFlag {
     def distinguishingFlag = MODULE
-
     private var flatname: TermName = null
 
     override def isModule = true
@@ -2347,7 +2375,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
 
         flatname
       }
-      else rawname.toTermName
+      else rawname
     )
   }
 
@@ -2400,13 +2428,19 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
 
   class AliasTypeSymbol protected[Symbols] (initOwner: Symbol, initPos: Position, initName: TypeName)
   extends TypeSymbol(initOwner, initPos, initName) {
+    type TypeOfClonedSymbol = TypeSymbol
     final override def isAliasType = true
+    override def cloneSymbolImpl(owner: Symbol, newFlags: Long): TypeSymbol =
+      owner.newNonClassSymbol(name, pos, newFlags)
   }
 
   class AbstractTypeSymbol protected[Symbols] (initOwner: Symbol, initPos: Position, initName: TypeName)
   extends TypeSymbol(initOwner, initPos, initName) {
+    type TypeOfClonedSymbol = TypeSymbol
     final override def isAbstractType = true
     override def existentialBound = this.info
+    override def cloneSymbolImpl(owner: Symbol, newFlags: Long): TypeSymbol =
+      owner.newNonClassSymbol(name, pos, newFlags)
   }
 
   /** A class of type symbols. Alias and abstract types are direct instances
@@ -2415,6 +2449,15 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
   abstract class TypeSymbol protected[Symbols] (initOwner: Symbol, initPos: Position, initName: TypeName)
   extends Symbol(initOwner, initPos, initName) {
     privateWithin = NoSymbol
+    private[this] var _rawname: TypeName = initName
+
+    final type NameType = TypeName
+    type TypeOfClonedSymbol >: Null <: TypeSymbol
+    // cloneSymbolImpl still abstract in TypeSymbol.
+
+    def rawname = _rawname
+    def name = _rawname
+    final def asNameType(n: Name) = n.toTypeName
 
     final override def isType   = true
     override def isNonClassType = true
@@ -2447,7 +2490,16 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     // a type symbol bound by an existential type, for instance the T in
     // List[T] forSome { type T }
 
-    override def name: TypeName = super.name.toTypeName
+    // TODO - don't allow names to be renamed in this unstructured a fashion.
+    // Rename as little as possible.  Enforce invariants on all renames.
+    def name_=(name: TypeName) {
+      if (name != rawname) {
+        changeNameInOwners(name)
+        _rawname = name
+      }
+    }
+
+
     private def newPrefix = if (this hasFlag EXISTENTIAL | PARAM) NoPrefix else owner.thisType
     private def newTypeRef(targs: List[Type]) = typeRef(newPrefix, this, targs)
 
@@ -2542,10 +2594,6 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
       }
     }
 
-    /** Default implementation. */
-    def cloneSymbolImpl(owner: Symbol, newFlags: Long): Symbol =
-      owner.newNonClassSymbol(name, pos, newFlags)
-
     incCounter(typeSymbolCount)
   }
 
@@ -2564,6 +2612,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
    */
   class TypeSkolem protected[Symbols] (initOwner: Symbol, initPos: Position, initName: TypeName, origin: AnyRef)
   extends TypeSymbol(initOwner, initPos, initName) {
+    type TypeOfClonedSymbol = TypeSkolem
     /** The skolemization level in place when the skolem was constructed */
     val level = skolemizationLevel
 
@@ -2589,7 +2638,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     //@M! (not deSkolemize.typeParams!!), also can't leave superclass definition: use info, not rawInfo
     override def typeParams = info.typeParams
 
-    override def cloneSymbolImpl(owner: Symbol, newFlags: Long): Symbol =
+    override def cloneSymbolImpl(owner: Symbol, newFlags: Long): TypeSkolem =
       owner.newTypeSkolemSymbol(name, origin, pos, newFlags)
 
     override def nameString: String =
@@ -2600,6 +2649,8 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
   /** A class for class symbols */
   class ClassSymbol protected[Symbols] (initOwner: Symbol, initPos: Position, initName: TypeName)
   extends TypeSymbol(initOwner, initPos, initName) {
+    type TypeOfClonedSymbol = ClassSymbol
+
     private[this] var flatname: TypeName       = _
     private[this] var source: AbstractFileType = _
     private[this] var thissym: Symbol          = this
@@ -2737,7 +2788,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
 
         flatname
       }
-      else rawname.toTypeName
+      else rawname
     )
 
     /** A symbol carrying the self type of the class as its type */
@@ -2745,14 +2796,14 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
 
     /** Sets the self type of the class */
     override def typeOfThis_=(tp: Type) {
-      thissym = newThisSym(pos).setInfo(tp)
+      thissym = newThisSym(nme.this_, pos).setInfo(tp)
     }
 
     override def cloneSymbolImpl(owner: Symbol, newFlags: Long): ClassSymbol = {
       val clone = owner.newClassSymbol(name, pos, newFlags)
       if (thisSym != this) {
         clone.typeOfThis = typeOfThis
-        clone.thisSym.name = thisSym.name
+        clone.thisSym setName thisSym.name
       }
       clone
     }
@@ -2813,7 +2864,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
 
   class RefinementClassSymbol protected[Symbols] (owner0: Symbol, pos0: Position)
   extends ClassSymbol(owner0, pos0, tpnme.REFINE_CLASS_NAME) {
-    override def name_=(name: Name) {
+    override def name_=(name: TypeName) {
       assert(false, "Cannot set name of RefinementClassSymbol to " + name)
       super.name_=(name)
     }
@@ -2842,6 +2893,14 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
 
   /** An object representing a missing symbol */
   class NoSymbol protected[Symbols]() extends Symbol(null, NoPosition, nme.NO_NAME) {
+    final type NameType = TermName
+    type TypeOfClonedSymbol = NoSymbol
+
+    def asNameType(n: Name) = n.toTermName
+    def rawname = nme.NO_NAME
+    def name = nme.NO_NAME
+    def name_=(n: TermName) = abort("Cannot set name to " + n)
+
     synchronized {
       setInfo(NoType)
       privateWithin = this
@@ -2876,7 +2935,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     override def rawInfo: Type = NoType
     protected def doCookJavaRawInfo() {}
     override def accessBoundary(base: Symbol): Symbol = RootClass
-    def cloneSymbolImpl(owner: Symbol, newFlags: Long): Symbol = abort("NoSymbol.clone()")
+    def cloneSymbolImpl(owner: Symbol, newFlags: Long) = abort("NoSymbol.clone()")
     override def originalEnclosingMethod = this
 
     override def owner: Symbol =

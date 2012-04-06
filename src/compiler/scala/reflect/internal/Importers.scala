@@ -72,7 +72,7 @@ trait Importers { self: SymbolTable =>
             symMap(x) = mysym
             if (sym.thisSym != sym) {
               mysym.typeOfThis = importType(sym.typeOfThis)
-              mysym.thisSym.name = importName(sym.thisSym.name)
+              mysym.thisSym setName importName(sym.thisSym.name)
             }
             mysym
           case x: from.TypeSymbol =>

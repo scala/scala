@@ -66,8 +66,9 @@ abstract class AddInterfaces extends InfoTransform { self: Erasure =>
 
   /** Return the implementation class of a trait; create a new one of one does not yet exist */
   def implClass(iface: Symbol): Symbol = {
-    iface.info
     def implClassFlags = iface.flags & ~(INTERFACE | lateINTERFACE) | IMPLCLASS
+
+    iface.info
 
     implClassMap.getOrElse(iface, {
       atPhase(implClassPhase) {
@@ -98,8 +99,7 @@ abstract class AddInterfaces extends InfoTransform { self: Erasure =>
           else log("not unlinking existing " + impl + " as the impl class is not visible on the classpath.")
         }
         if (impl == NoSymbol) {
-          impl = iface.cloneSymbolImpl(iface.owner, implClassFlags)
-          impl.name = implName
+          impl = iface.cloneSymbolImpl(iface.owner, implClassFlags) setName implName
           impl.sourceFile = iface.sourceFile
           if (iface.owner.isClass)
             iface.owner.info.decls enter impl

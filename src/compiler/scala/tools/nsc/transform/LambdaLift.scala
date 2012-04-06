@@ -229,10 +229,10 @@ abstract class LambdaLift extends InfoTransform {
             sym.owner.name + nme.NAME_JOIN_STRING
           else ""
         )
-        sym.name =
+        sym setName (
           if (sym.name.isTypeName) unit.freshTypeName(base)
           else unit.freshTermName(base)
-
+        )
         debuglog("renaming in %s: %s => %s".format(sym.owner.fullLocationString, originalName, sym.name))
       }
 
@@ -241,7 +241,7 @@ abstract class LambdaLift extends InfoTransform {
       def renameTrait(traitSym: Symbol, implSym: Symbol) {
         val originalImplName = implSym.name
         renameSym(traitSym)
-        implSym.name = nme.implClassName(traitSym.name)
+        implSym setName nme.implClassName(traitSym.name)
 
         debuglog("renaming impl class in step with %s: %s => %s".format(traitSym, originalImplName, implSym.name))
       }

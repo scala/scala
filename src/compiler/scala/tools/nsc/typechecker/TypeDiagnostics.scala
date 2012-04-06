@@ -270,8 +270,7 @@ trait TypeDiagnostics {
     private val savedName = sym.name
     def restoreName()     = sym.name = savedName
     def isAltered         = sym.name != savedName
-    def modifyName(f: String => String) =
-      sym.name = newTypeName(f(sym.name.toString))
+    def modifyName(f: String => String) = sym setName newTypeName(f(sym.name.toString))
 
     /** Prepend java.lang, scala., or Predef. if this type originated
      *  in one of those.

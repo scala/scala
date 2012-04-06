@@ -664,7 +664,7 @@ trait Contexts { self: Analyzer =>
       case List(ImportSelector(nme.WILDCARD, _, _, _)) => List(sym)
       case ImportSelector(from, _, to, _) :: _ if from == sym.name =>
         if (to == nme.WILDCARD) List()
-        else { val sym1 = sym.cloneSymbol; sym1.name = to; List(sym1) }
+        else List(sym.cloneSymbol(sym.owner, sym.rawflags, to))
       case _ :: rest => transformImport(rest, sym)
     }
 

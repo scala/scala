@@ -831,19 +831,17 @@ trait Namers extends MethodSynthesis {
       if (!hasType)
         tpt defineType NoType
 
-      if (hasType || hasName) {
-        owner.typeOfThis =
-          if (hasType) selfTypeCompleter(tpt)
-          else owner.tpe
-      }
       val sym = (
-        if (hasType) owner.thisSym setPos self.pos
-        else if (hasName) owner.thisSym
-        else owner.newThisSym(self.pos) setInfo owner.tpe
+        if (hasType || hasName) {
+          owner.typeOfThis = if (hasType) selfTypeCompleter(tpt) else owner.tpe
+          val selfSym = owner.thisSym setPos self.pos
+          if (hasName) selfSym setName name else selfSym
+        }
+        else {
+          val symName = if (name != nme.WILDCARD) name else nme.this_
+          owner.newThisSym(symName, owner.pos) setInfo owner.tpe
+        }
       )
-      if (hasName)
-        sym.name = name
-
       self.symbol = context.scope enter sym
     }
 

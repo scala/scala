@@ -22,11 +22,9 @@ trait SynchronizedSymbols extends internal.Symbols { self: SymbolTable =>
   trait SynchronizedSymbol extends Symbol {
 
     override def rawowner = synchronized { super.rawowner }
-    override def rawname = synchronized { super.rawname }
     override def rawflags = synchronized { super.rawflags }
 
     override def rawflags_=(x: Long) = synchronized { super.rawflags_=(x) }
-    override def name_=(x: Name) = synchronized { super.name_=(x) }
     override def owner_=(owner: Symbol) = synchronized { super.owner_=(owner) }
 
     override def validTo = synchronized { super.validTo }
@@ -54,9 +52,6 @@ trait SynchronizedSymbols extends internal.Symbols { self: SymbolTable =>
 
 
 // ------ creators -------------------------------------------------------------------
-
-    override protected def createTypeSymbol(name: TypeName, pos: Position, newFlags: Long): TypeSymbol =
-      new TypeSymbol(this, pos, name) with SynchronizedTypeSymbol initFlags newFlags
 
     override protected def createAbstractTypeSymbol(name: TypeName, pos: Position, newFlags: Long): AbstractTypeSymbol =
       new AbstractTypeSymbol(this, pos, name) with SynchronizedTypeSymbol initFlags newFlags
@@ -99,6 +94,8 @@ trait SynchronizedSymbols extends internal.Symbols { self: SymbolTable =>
 // ------- subclasses ---------------------------------------------------------------------
 
   trait SynchronizedTermSymbol extends TermSymbol with SynchronizedSymbol {
+    override def name_=(x: TermName) = synchronized { super.name_=(x) }
+    override def rawname = synchronized { super.rawname }
     override def referenced: Symbol = synchronized { super.referenced }
     override def referenced_=(x: Symbol) = synchronized { super.referenced_=(x) }
   }
@@ -108,6 +105,8 @@ trait SynchronizedSymbols extends internal.Symbols { self: SymbolTable =>
   }
 
   trait SynchronizedTypeSymbol extends TypeSymbol with SynchronizedSymbol {
+    override def name_=(x: TypeName) = synchronized { super.name_=(x) }
+    override def rawname = synchronized { super.rawname }
     override def typeConstructor: Type = synchronized { super.typeConstructor }
     override def tpe: Type = synchronized { super.tpe }
   }
