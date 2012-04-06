@@ -546,7 +546,7 @@ public final class BoxesRunTime
     public static Object takeOr(Object arg1, Object arg2) throws NoSuchMethodException {
         if ((arg1 instanceof Boolean) || (arg2 instanceof Boolean)) {
             if ((arg1 instanceof Boolean) && (arg2 instanceof Boolean))
-                return boxToBoolean(((java.lang.Boolean) arg1).booleanValue() & ((java.lang.Boolean) arg2).booleanValue());
+                return boxToBoolean(((java.lang.Boolean) arg1).booleanValue() | ((java.lang.Boolean) arg2).booleanValue());
             else
                 throw new NoSuchMethodException();
         }
@@ -566,7 +566,7 @@ public final class BoxesRunTime
     public static Object takeXor(Object arg1, Object arg2) throws NoSuchMethodException {
         if ((arg1 instanceof Boolean) || (arg2 instanceof Boolean)) {
             if ((arg1 instanceof Boolean) && (arg2 instanceof Boolean))
-                return boxToBoolean(((java.lang.Boolean) arg1).booleanValue() & ((java.lang.Boolean) arg2).booleanValue());
+                return boxToBoolean(((java.lang.Boolean) arg1).booleanValue() ^ ((java.lang.Boolean) arg2).booleanValue());
             else
                 throw new NoSuchMethodException();
         }
