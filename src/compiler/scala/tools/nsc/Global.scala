@@ -1356,6 +1356,9 @@ class Global(var currentSettings: Settings, var reporter: Reporter) extends Symb
         inform(unitTimingsFormatted)
       }
 
+      if (traceSymbolActivity)
+        units map (_.body) foreach (traceSymbols recordSymbolsInTree _)
+
       // In case no phase was specified for -Xshow-class/object, show it now for sure.
       if (opt.noShow)
         showMembers()

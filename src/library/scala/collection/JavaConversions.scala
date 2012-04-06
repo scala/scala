@@ -127,3 +127,5 @@ object JavaConversions extends WrapAsScala with WrapAsJava {
   @deprecated("use propertiesAsScalaMap instead", "2.9.0")
   def asScalaMap(p: ju.Properties): mutable.Map[String, String] = propertiesAsScalaMap(p)
 }
+
+

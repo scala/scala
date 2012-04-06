@@ -3,7 +3,6 @@
  * @author  Martin Odersky
  */
 
-
 package scala.reflect
 package internal
 
@@ -166,8 +165,10 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     private var rawpos = initPos
 
     val id = nextId() // identity displayed when -uniqid
-
     private[this] var _validTo: Period = NoPeriod
+
+    if (traceSymbolActivity)
+      traceSymbols.recordNewSymbol(this)
 
     def validTo = _validTo
     def validTo_=(x: Period) { _validTo = x}
@@ -863,6 +864,8 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
         else originalOwner(this) = rawowner
       }
       assert(!inReflexiveMirror, "owner_= is not thread-safe; cannot be run in reflexive code")
+      if (traceSymbolActivity)
+        traceSymbols.recordNewSymbolOwner(this, owner)
       _rawowner = owner
     }
 

@@ -5059,6 +5059,8 @@ trait Types extends api.Types { self: SymbolTable =>
                  case (_, tv @ TypeVar(_,_)) => tv.registerTypeSelection(tr2.sym, tr1)
                  case _ => false
                })
+          case _: SingleType =>
+            return isSameType2(tp2, tp1)  // put singleton type on the left, caught below
           case _ =>
         }
       case tt1: ThisType =>
@@ -5071,6 +5073,8 @@ trait Types extends api.Types { self: SymbolTable =>
         tp2 match {
           case st2: SingleType =>
             if (equalSymsAndPrefixes(st1.sym, st1.pre, st2.sym, st2.pre)) return true
+          case TypeRef(pre2, sym2, Nil) =>
+            if (sym2.isModuleClass && equalSymsAndPrefixes(st1.sym, st1.pre, sym2.sourceModule, pre2)) return true
           case _ =>
         }
       case ct1: ConstantType =>
@@ -5481,7 +5485,7 @@ trait Types extends api.Types { self: SymbolTable =>
      *   - handle typerefs, refined types, notnull and singleton types.
      */
     def fourthTry = tp1 match {
-      case tr1 @ TypeRef(_, sym1, _) =>
+      case tr1 @ TypeRef(pre1, sym1, _) =>
         sym1 match {
           case NothingClass => true
           case NullClass =>
@@ -5495,8 +5499,8 @@ trait Types extends api.Types { self: SymbolTable =>
             if (isRaw(sym1, tr1.args))
               isSubType(rawToExistential(tp1), tp2, depth)
             else if (sym1.isModuleClass) tp2 match {
-              case SingleType(_, sym2)  => sym1 == sym2
-              case _                    => false
+              case SingleType(pre2, sym2) => equalSymsAndPrefixes(sym1.sourceModule, pre1, sym2, pre2)
+              case _                      => false
             }
             else if (sym1.isRefinementClass)
               isSubType(sym1.info, tp2, depth)

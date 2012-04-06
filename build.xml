@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<project name="sabbus" default="build">
+<project name="sabbus" default="build" xmlns:artifact="urn:maven-artifact-ant">
   <description>
 SuperSabbus for Scala core, builds the scala library and compiler. It can also package it as a simple distribution, tests it for stable bootstrapping and against the Scala test suite.
   </description>
@@ -238,6 +238,21 @@ INITIALISATION
     </touch>
   </target>
 
+  <!-- Add our maven ant tasks -->
+  <target name="init.maven.tasks" depends="init.jars.check" unless="init.maven.tasks.finished">
+    <path id="maven-ant-tasks.classpath" path="${lib.dir}/ant/maven-ant-tasks-2.1.1.jar" />
+    <typedef resource="org/apache/maven/artifact/ant/antlib.xml" uri="urn:maven-artifact-ant" classpathref="maven-ant-tasks.classpath" />
+
+    <property name="init.maven.tasks.finished" value="true" />
+  </target>
+
+  <!-- Resolve maven dependencies -->
+  <target name="init.maven.jars" depends="init.maven.tasks">
+    <artifact:dependencies pathId="dependency.classpath" filesetId="dependency.fileset">
+      <dependency groupId="org.skife.com.typesafe.config" artifactId="typesafe-config" version="0.3.0"/>
+    </artifact:dependencies>
+  </target>
+
   <!-- Determines OSGi string + maven extension. -->
   <target name="init.hasbuildnum">
     <condition property="version.hasbuildnum">
@@ -296,7 +311,7 @@ INITIALISATION
 
   <target name="init.version.done" depends="init.version.release, init.version.snapshot"/>
 
-  <target name="init" depends="init.jars, init.version.done">
+  <target name="init" depends="init.jars, init.maven.jars, init.version.done">
   <!-- scalac.args.optimise is selectively overridden in certain antcall tasks. -->
     <property name="scalac.args.optimise" value=""/>
   <!-- scalac.args.quickonly are added to quick.* targets but not others (particularly, locker.)
@@ -337,6 +352,7 @@ INITIALISATION
       </fileset>
       <pathelement location="${ant.jar}"/>
       <path refid="lib.extra"/>
+      <path refid="dependency.classpath"/>
     </path>
 
     <!-- And print-out what we are building -->
@@ -1002,6 +1018,11 @@ PACKED QUICK BUILD (PACK)
 
   <target name="pack.lib" depends="pack.pre-lib" unless="pack.lib.available">
     <mkdir dir="${build-pack.dir}/lib"/>
+    <!-- First copy maven dependencies -->
+    <copy todir="${build-pack.dir}/lib">
+      <fileset refid="dependency.fileset" />
+      <mapper type="flatten" />
+    </copy>
     <jar destfile="${build-pack.dir}/lib/scala-library.jar">
       <fileset dir="${build-quick.dir}/classes/library">
         <exclude name="scala/dbc/**"/>

@@ -11,10 +11,7 @@ package scala.concurrent.impl
 
 
 import scala.concurrent.{Awaitable, ExecutionContext}
-import scala.util.{ Try, Success, Failure }
 import scala.collection.mutable.Stack
-
-
 
 private[concurrent] trait Future[+T] extends scala.concurrent.Future[T] with Awaitable[T] {
 
@@ -36,39 +33,9 @@ private[concurrent] trait Future[+T] extends scala.concurrent.Future[T] with Awa
    *  if it contains a valid result, or Some(Left(error)) if it contains
    *  an exception.
    */
-  def value: Option[Try[T]]
+  def value: Option[Either[Throwable, T]]
 
-  def onComplete[U](func: Try[T] => U): this.type
-
-  /** Creates a new Future[A] which is completed with this Future's result if
-   *  that conforms to A's erased type or a ClassCastException otherwise.
-   */
-  final def mapTo[T](implicit m: Manifest[T]) = {
-    val p = new Promise.DefaultPromise[T]
-
-    onComplete {
-      case f @ Failure(t) => p complete f.asInstanceOf[Try[T]]
-      case Success(v) =>
-        p complete (try {
-          Success(Future.boxedType(m.erasure).cast(v).asInstanceOf[T])
-        } catch {
-          case e: ClassCastException => Failure(e)
-        })
-    }
-
-    p.future
-  }
-
-  /** Used by for-comprehensions.
-   */
-  final def withFilter(p: T => Boolean) = new FutureWithFilter[T](this, p)
-
-  final class FutureWithFilter[+A](self: Future[A], p: A => Boolean) {
-    def foreach(f: A => Unit): Unit = self filter p foreach f
-    def map[B](f: A => B) = self filter p map f
-    def flatMap[B](f: A => Future[B]) = self filter p flatMap f
-    def withFilter(q: A => Boolean): FutureWithFilter[A] = new FutureWithFilter[A](self, x ⇒ p(x) && q(x))
-  }
+  def onComplete[U](func: Either[Throwable, T] => U): this.type
 
 }
 
@@ -97,7 +64,7 @@ object Future {
       def run = {
         promise complete {
           try {
-            Success(body)
+            Right(body)
           } catch {
             case e => scala.concurrent.resolver(e)
           }

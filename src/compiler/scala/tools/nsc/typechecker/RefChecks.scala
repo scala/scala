@@ -951,17 +951,20 @@ abstract class RefChecks extends InfoTransform with reflect.internal.transform.R
 
       override def traverse(tree: Tree) {
         tree match {
-          case ClassDef(_, _, _, _) |
-               TypeDef(_, _, _, _) =>
+          case ClassDef(_, _, _, _) | TypeDef(_, _, _, _) =>
             validateVariance(tree.symbol)
             super.traverse(tree)
           // ModuleDefs need not be considered because they have been eliminated already
           case ValDef(_, _, _, _) =>
-            validateVariance(tree.symbol)
+            if (!tree.symbol.hasLocalFlag)
+              validateVariance(tree.symbol)
           case DefDef(_, _, tparams, vparamss, _, _) =>
-            validateVariance(tree.symbol)
-            traverseTrees(tparams)
-            traverseTreess(vparamss)
+            // No variance check for object-private/protected methods/values.
+            if (!tree.symbol.hasLocalFlag) {
+              validateVariance(tree.symbol)
+              traverseTrees(tparams)
+              traverseTreess(vparamss)
+            }
           case Template(_, _, _) =>
             super.traverse(tree)
           case _ =>
