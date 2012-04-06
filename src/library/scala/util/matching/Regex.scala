@@ -373,6 +373,66 @@ class Regex(regex: String, groupNames: String*) extends Serializable {
   def split(toSplit: java.lang.CharSequence): Array[String] =
     pattern.split(toSplit)
 
+  /** Splits the provided character sequence around matches of this regexp.
+   *
+   *  The parameter `limit`, if greater than zero, controls the maximum size of
+   *  the resulting array. That means a pattern is applied at most `limit - 1`
+   *  times.
+   *
+   *  If the parameter `limit` is less than or equal to zero, there will be no
+   *  limit in the size of the returned array, and the pattern will be applied
+   *  as many times as possible. If limit is zero, trailing empty strings will
+   *  then be discarded from the result.
+   *
+   *  For example:
+   *
+   *  {{{
+   *  val gecos = """|name,office,work number,home number
+   *                 |Joe,New York,,
+   *                 |Mary,Los Angeles,555-5555,
+   *                 |John,,,
+   *                 |""".stripMargin.lines.toList
+   *  val separator = ", *".r
+   *
+   *  // This will have arrays of sizes 2
+   *  val nameAndContact = gecos map (separator split (_, 2))
+   *
+   *  // This will have arrays of size 1, 2, 3 and 4
+   *  val data = gecos map (separator split (_, 0))
+   *
+   *  // This will have arrays of size 4:
+   *  val csv = gecos map (separator split (_, -1))
+   *
+   *  nameAndContact foreach (line => println(line mkString "#"))
+   *  // Prints:
+   *  // name#office, work number, home number
+   *  // Joe#New York,,
+   *  // Mary#Los Angeles, 555-5555,
+   *  // John#,,
+   *
+   *  data foreach (line => println(line mkString "#"))
+   *  // Prints:
+   *  // name#office#work number#home number
+   *  // Joe#New York
+   *  // Mary#Los Angeles#555-5555
+   *  // John
+   *
+   *  csv foreach (line => println(line mkString "#"))
+   *  // Prints:
+   *  // name#office#work number#home number
+   *  // Joe#New York##
+   *  // Mary#Los Angeles#555-5555#
+   *  // John###
+   *  }}}
+   *
+   *  @param toSplit The character sequence to split
+   *  @param limit   Maximum size of resulting array, or trailing empty-strings control.
+   *  @return        The array of strings computed by splitting the
+   *                 input around matches of this regexp
+   */
+  def split(toSplit: java.lang.CharSequence, limit: Int): Array[String] =
+    pattern.split(toSplit, limit)
+
   /** The string defining the regular expression */
   override def toString = regex
 }
