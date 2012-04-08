@@ -44,14 +44,6 @@ public final class BoxesRunTime
         return OTHER;
     }
 
-    private static int eqTypeCode(Number a) {
-        int code = typeCode(a);
-        if (code == CHAR)
-            return OTHER;
-        else
-            return code;
-    }
-
     private static String boxDescription(Object a) {
       return "" + a.getClass().getSimpleName() + "(" + a + ")";
     }
@@ -160,8 +152,8 @@ public final class BoxesRunTime
     }
 
     public static boolean equalsNumNum(java.lang.Number xn, java.lang.Number yn) {
-        int xcode = eqTypeCode(xn);
-        int ycode = eqTypeCode(yn);
+        int xcode = typeCode(xn);
+        int ycode = typeCode(yn);
         switch (ycode > xcode ? ycode : xcode) {
         case INT:
             return xn.intValue() == yn.intValue();
@@ -197,7 +189,7 @@ public final class BoxesRunTime
             return xn == null;
 
         char ch = yc.charValue();
-        switch (eqTypeCode(xn)) {
+        switch (typeCode(xn)) {
         case INT:
             return xn.intValue() == ch;
         case LONG:
