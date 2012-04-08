@@ -434,6 +434,7 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "")
   private def newRunnerThread(): Thread = {
     threadId += 1
     compileRunner = new PresentationCompilerThread(this, projectName)
+    compileRunner.setDaemon(true)
     compileRunner.start()
     compileRunner
   }
