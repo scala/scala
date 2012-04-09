@@ -220,7 +220,7 @@ abstract class SymbolTable extends api.Universe
   def arrayToRepeated(tp: Type): Type = tp match {
     case MethodType(params, rtpe) =>
       val formals = tp.paramTypes
-      assert(formals.last.typeSymbol == definitions.ArrayClass)
+      assert(formals.last.typeSymbol == definitions.ArrayClass, formals)
       val method = params.last.owner
       val elemtp = formals.last.typeArgs.head match {
         case RefinedType(List(t1, t2), _) if (t1.typeSymbol.isAbstractType && t2.typeSymbol == definitions.ObjectClass) =>
@@ -228,8 +228,7 @@ abstract class SymbolTable extends api.Universe
         case t =>
           t
       }
-      val newParams = method.newSyntheticValueParams(
-        formals.init :+ appliedType(definitions.JavaRepeatedParamClass.typeConstructor, List(elemtp)))
+      val newParams = method.newSyntheticValueParams(formals.init :+ definitions.javaRepeatedType(elemtp))
       MethodType(newParams, rtpe)
     case PolyType(tparams, rtpe) =>
       PolyType(tparams, arrayToRepeated(rtpe))

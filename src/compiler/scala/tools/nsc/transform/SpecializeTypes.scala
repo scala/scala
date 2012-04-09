@@ -67,8 +67,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
   import definitions.{
     RootClass, BooleanClass, UnitClass, ArrayClass,
     ScalaValueClasses, isPrimitiveValueClass, isScalaValueType,
-    SpecializedClass, RepeatedParamClass, JavaRepeatedParamClass,
-    AnyRefClass, ObjectClass, AnyRefModule,
+    SpecializedClass, AnyRefClass, ObjectClass, AnyRefModule,
     GroupOfSpecializable, uncheckedVarianceClass, ScalaInlineClass
   }
 
@@ -125,11 +124,6 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
     !isPrimitiveValueClass(tp.typeSymbol) &&
     isBoundedGeneric(tp)
     //(tp <:< AnyRefClass.tpe)
-  }
-  private def isBoundedGeneric(tp: Type) = tp match {
-    case TypeRef(_, sym, _) if sym.isAbstractType => (tp <:< AnyRefClass.tpe)
-    case TypeRef(_, sym, _)                       => !isPrimitiveValueClass(sym)
-    case _                                        => false
   }
 
   object TypeEnv {

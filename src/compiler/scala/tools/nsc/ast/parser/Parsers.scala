@@ -249,7 +249,7 @@ self =>
   final val InBlock = 1
   final val InTemplate = 2
 
-  lazy val ScalaValueClassNames: Set[Name] = definitions.scalaValueClassesSet map (_.name)
+  lazy val ScalaValueClassNames = tpnme.AnyVal :: definitions.ScalaValueClasses.map(_.name)
 
   import nme.raw
 
@@ -2743,9 +2743,8 @@ self =>
       val tstart0 = if (body.isEmpty && in.lastOffset < tstart) in.lastOffset else tstart
 
       atPos(tstart0) {
-        // [Martin to Paul: This needs to be refined. We should only include the 9 primitive classes,
-        // not any other value classes that happen to be defined in the Scala package.
-        if (inScalaRootPackage && (name == tpnme.AnyVal || (ScalaValueClassNames contains name)))
+        // Exclude only the 9 primitives plus AnyVal.
+        if (inScalaRootPackage && ScalaValueClassNames.contains(name))
           Template(parents0, self, anyvalConstructor :: body)
         else
           Template(anyrefParents, self, constrMods, vparamss, argss, body, o2p(tstart))

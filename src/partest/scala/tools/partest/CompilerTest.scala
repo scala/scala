@@ -35,7 +35,7 @@ abstract class CompilerTest extends DirectTest {
   class MkType(sym: Symbol) {
     def apply[M](implicit m1: Manifest[M]): Type =
       if (sym eq NoSymbol) NoType
-      else appliedType(sym.typeConstructor, List(m1) map (x => manifestToType(x)))
+      else appliedType(sym, manifestToType(m1))
   }
   implicit def mkMkType(sym: Symbol) = new MkType(sym)
 

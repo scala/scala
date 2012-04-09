@@ -37,7 +37,7 @@ trait MethodSynthesis {
       require(container.owner.isPackageClass, "Container must be a top-level class in a package: " + container)
       require(tparams.size == args.size, "Arguments must match type constructor arity: " + tparams + ", " + args)
 
-      typeRef(container.typeConstructor.prefix, container, args map (_.tpe))
+      appliedType(container, args map (_.tpe): _*)
     }
 
     def companionType[T](implicit m: M[T]) =

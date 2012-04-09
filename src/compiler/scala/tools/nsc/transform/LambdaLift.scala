@@ -27,7 +27,7 @@ abstract class LambdaLift extends InfoTransform {
       def refType(valueRef: Map[Symbol, Symbol], objectRefClass: Symbol) =
         if (isPrimitiveValueClass(symClass) && symClass != UnitClass) valueRef(symClass).tpe
         else if (erasedTypes) objectRefClass.tpe
-        else appliedType(objectRefClass.typeConstructor, List(tpe))
+        else appliedType(objectRefClass, tpe)
       if (sym.hasAnnotation(VolatileAttr)) refType(volatileRefClass, VolatileObjectRefClass)
       else refType(refClass, ObjectRefClass)
     } else tpe

@@ -63,11 +63,11 @@ object ReplVals {
     class AppliedTypeFromManifests(sym: Symbol) {
       def apply[M](implicit m1: Manifest[M]): Type =
         if (sym eq NoSymbol) NoType
-        else appliedType(sym.typeConstructor, List(m1) map (x => manifestToType(x).asInstanceOf[Type]))
+        else appliedType(sym, manifestToType(m1).asInstanceOf[Type])
 
       def apply[M1, M2](implicit m1: Manifest[M1], m2: Manifest[M2]): Type =
         if (sym eq NoSymbol) NoType
-        else appliedType(sym.typeConstructor, List(m1, m2) map (x => manifestToType(x).asInstanceOf[Type]))
+        else appliedType(sym, manifestToType(m1).asInstanceOf[Type], manifestToType(m2).asInstanceOf[Type])
     }
 
     (sym: Symbol) => new AppliedTypeFromManifests(sym)

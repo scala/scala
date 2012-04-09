@@ -126,7 +126,7 @@ abstract class UnCurry extends InfoTransform
 
     /** The type of a non-local return expression with given argument type */
     private def nonLocalReturnExceptionType(argtype: Type) =
-      appliedType(NonLocalReturnControlClass.typeConstructor, List(argtype))
+      appliedType(NonLocalReturnControlClass, argtype)
 
     /** A hashmap from method symbols to non-local return keys */
     private val nonLocalReturnKeys = perRunCaches.newMap[Symbol, Symbol]()
@@ -244,7 +244,7 @@ abstract class UnCurry extends InfoTransform
 
           def parents =
             if (isFunctionType(fun.tpe)) List(abstractFunctionForFunctionType(fun.tpe), SerializableClass.tpe)
-            else if (isPartial) List(appliedType(AbstractPartialFunctionClass.typeConstructor, targs), SerializableClass.tpe)
+            else if (isPartial) List(appliedType(AbstractPartialFunctionClass, targs: _*), SerializableClass.tpe)
             else List(ObjectClass.tpe, fun.tpe, SerializableClass.tpe)
 
           val anonClass = owner newAnonymousFunctionClass(fun.pos, inConstructorFlag) addAnnotation serialVersionUIDAnnotation

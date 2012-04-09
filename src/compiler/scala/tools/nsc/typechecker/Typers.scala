@@ -186,7 +186,7 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
           }
           val result = wrapImplicit(from)
           if (result != EmptyTree) result
-          else wrapImplicit(appliedType(ByNameParamClass.typeConstructor, List(from)))
+          else wrapImplicit(byNameType(from))
       }
     }
 
@@ -2166,8 +2166,8 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
 
     def translateMatch(selector1: Tree, selectorTp: Type, casesAdapted: List[CaseDef], ownType: Type, doTranslation: Boolean, matchFailGen: Option[Tree => Tree] = None) = {
       def repeatedToSeq(tp: Type): Type = (tp baseType RepeatedParamClass) match {
-        case TypeRef(_, RepeatedParamClass, args) => appliedType(SeqClass.typeConstructor, args)
-        case _ => tp
+        case TypeRef(_, RepeatedParamClass, arg :: Nil) => seqType(arg)
+        case _                                          => tp
       }
 
       if (!doTranslation) { // a switch
@@ -2240,7 +2240,7 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
           val (selector1, selectorTp, casesAdapted, resTp, doTranslation) = methodBodyTyper.prepareTranslateMatch(selector, cases, mode, ptRes)
 
           val methFormals = paramSyms map (_.tpe)
-          val parents = List(appliedType(AbstractFunctionClass(arity).typeConstructor, methFormals :+ resTp), SerializableClass.tpe)
+          val parents = List(abstractFunctionType(methFormals, resTp), SerializableClass.tpe)
 
           anonClass setInfo ClassInfoType(parents, newScope, anonClass)
           methodSym setInfoAndEnter MethodType(paramSyms, resTp)
@@ -3555,7 +3555,7 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
         treeCopy.ArrayValue(tree, elemtpt1, elems1)
           .setType(
             (if (isFullyDefined(pt) && !phase.erasedTypes) pt
-             else appliedType(ArrayClass.typeConstructor, List(elemtpt1.tpe))).notNull)
+             else arrayType(elemtpt1.tpe)).notNull)
       }
 
       def typedAssign(lhs: Tree, rhs: Tree): Tree = {

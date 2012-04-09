@@ -3332,6 +3332,10 @@ trait Types extends api.Types { self: SymbolTable =>
       case _                                              => abort(debugString(tycon))
     }
 
+  /** Very convenient. */
+  def appliedType(tyconSym: Symbol, args: Type*): Type =
+    appliedType(tyconSym.typeConstructor, args.toList)
+
   /** A creator for existential types where the type arguments,
    *  rather than being applied directly, are interpreted as the
    *  upper bounds of unknown types.  For instance if the type argument
@@ -6553,6 +6557,16 @@ trait Types extends api.Types { self: SymbolTable =>
   def withTypesExplained[A](op: => A): A = {
     val s = explainSwitch
     try { explainSwitch = true; op } finally { explainSwitch = s }
+  }
+
+  def isUnboundedGeneric(tp: Type) = tp match {
+    case t @ TypeRef(_, sym, _) => sym.isAbstractType && !(t <:< AnyRefClass.tpe)
+    case _                      => false
+  }
+  def isBoundedGeneric(tp: Type) = tp match {
+    case TypeRef(_, sym, _) if sym.isAbstractType => (tp <:< AnyRefClass.tpe)
+    case TypeRef(_, sym, _)                       => !isPrimitiveValueClass(sym)
+    case _                                        => false
   }
 
   def objToAny(tp: Type): Type =

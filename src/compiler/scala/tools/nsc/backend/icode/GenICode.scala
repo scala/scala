@@ -1533,7 +1533,7 @@ abstract class GenICode extends SubComponent  {
      */
     def genEqEqPrimitive(l: Tree, r: Tree, ctx: Context)(thenCtx: Context, elseCtx: Context): Unit = {
       def getTempLocal = ctx.method.lookupLocal(nme.EQEQ_LOCAL_VAR) getOrElse {
-        ctx.makeLocal(l.pos, AnyRefClass.typeConstructor, nme.EQEQ_LOCAL_VAR)
+        ctx.makeLocal(l.pos, AnyRefClass.tpe, nme.EQEQ_LOCAL_VAR)
       }
 
       /** True if the equality comparison is between values that require the use of the rich equality
