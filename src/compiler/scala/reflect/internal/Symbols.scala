@@ -512,6 +512,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
 
     /** The bottom classes are Nothing and Null, found in Definitions. */
     def isBottomClass  = false
+    def isSpecialized = this hasFlag SPECIALIZED
 
     /** These are all tests for varieties of ClassSymbol, which has these subclasses:
      *  - ModuleClassSymbol
