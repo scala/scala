@@ -600,7 +600,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     def ownerOfNewSymbols = this
 
     final def isLazyAccessor       = isLazy && lazyAccessor != NoSymbol
-    final def isOverridableMember  = !(isClass || isEffectivelyFinal) && owner.isClass
+    final def isOverridableMember  = !(isClass || isEffectivelyFinal) && (this ne NoSymbol) && owner.isClass
 
     /** Does this symbol denote a wrapper created by the repl? */
     final def isInterpreterWrapper = (

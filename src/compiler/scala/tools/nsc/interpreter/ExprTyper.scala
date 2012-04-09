@@ -124,7 +124,7 @@ trait ExprTyper {
           val decls = sym.tpe.decls.toList filterNot (x => x.isConstructor || x.isPrivate || (x.name.toString contains "$"))
           repltrace("decls: " + decls)
           if (decls.isEmpty) NoType
-          else typeCleanser(sym, decls.last.name)
+          else cleanMemberDecl(sym, decls.last.name)
         }
       case _          =>
         NoType

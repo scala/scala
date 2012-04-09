@@ -31,6 +31,7 @@ class StdReplVals(final val r: ILoop) extends ReplVals {
       power.unit("").asInstanceOf[analyzer.global.CompilationUnit]
     )
   )
+  def lastRequest = intp.lastRequest
 
   final lazy val replImplicits = new power.Implicits2 {
     import intp.global._
