@@ -33,7 +33,7 @@ object Test extends InteractiveTest {
     new BatchSourceFile(AbstractFile.getFile(name))
 
   def memoryConsumptionTest() {
-    val N = 10
+    val N = 50
     val filename = "usedmem-%tF.txt".format(Calendar.getInstance.getTime)
 
     val typerUnit = AbstractFile.getFile(baseDir.parent.parent.parent.parent / "src/compiler/scala/tools/nsc/typechecker/Typers.scala")
@@ -56,18 +56,10 @@ object Test extends InteractiveTest {
         typeCheckWith(typerUnit, src)
       }
 
-//      println("UsedMem:\t%d\t%d".format(i, usedMem / mega))
       usedMem / mega // report size in MB
     }
-
-  //  println("=" * 80)
     
-    val outputFile = new PrintWriter(new FileOutputStream(filename))
-    outputFile.println("\tusedMem")
-    for ((dataPoint, i) <- usedMem.zipWithIndex) {
-      outputFile.println("%d\t%d".format(i, dataPoint))
-    }
-    outputFile.close()
+    //dumpDataToFile(filename, usedMem)
     // drop the first two measurements, since the compiler needs some memory when initializing
     val (a, b) = linearModel((3L to N).toSeq, usedMem.drop(2))
     //println("LinearModel: constant: %.4f\tslope:%.4f".format(a, b))
@@ -82,6 +74,15 @@ object Test extends InteractiveTest {
     val sourceFile = new BatchSourceFile(file, src.toCharArray)
     askReload(Seq(sourceFile))
     askLoadedTyped(sourceFile).get // block until it's here
+  }
+
+  private def dumpDataToFile(filename: String, usedMem: Seq[Long]) {
+    val outputFile = new PrintWriter(new FileOutputStream(filename))
+    outputFile.println("\tusedMem")
+    for ((dataPoint, i) <- usedMem.zipWithIndex) {
+      outputFile.println("%d\t%d".format(i, dataPoint))
+    }
+    outputFile.close()
   }
   
   
