@@ -23,5 +23,5 @@ trait NoStackTrace extends Throwable {
 }
 
 object NoStackTrace {
-  final val noSuppression = sys.SystemProperties.noTraceSupression.value
+  final def noSuppression = sys.SystemProperties.noTraceSupression.value
 }
