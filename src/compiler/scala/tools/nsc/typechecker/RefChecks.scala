@@ -1053,10 +1053,17 @@ abstract class RefChecks extends InfoTransform with reflect.internal.transform.R
         /** Symbols which limit the warnings we can issue since they may be value types */
         val isMaybeValue = Set(AnyClass, AnyRefClass, AnyValClass, ObjectClass, ComparableClass, JavaSerializableClass)
 
-        // Whether def equals(other: Any) is overridden or synthetic
+        // Whether def equals(other: Any) has known behavior: it is the default
+        // inherited from java.lang.Object, or it is a synthetically generated
+        // case equals.  TODO - more cases are warnable if the target is a synthetic
+        // equals.
         def isUsingWarnableEquals = {
           val m = receiver.info.member(nme.equals_)
-          (m == Object_equals) || (m == Any_equals) || (m.isSynthetic && m.owner.isCase)
+          def n = actual.info.member(nme.equals_)
+          (   (m == Object_equals)
+           || (m == Any_equals)
+           || (m.isSynthetic && m.owner.isCase && !n.owner.isCase)
+          )
         }
         // Whether this == or != is one of those defined in Any/AnyRef or an overload from elsewhere.
         def isUsingDefaultScalaOp = {
