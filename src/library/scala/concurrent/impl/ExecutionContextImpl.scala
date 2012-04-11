@@ -17,17 +17,19 @@ import scala.concurrent.util.{ Duration }
 
 
 
-private[scala] class ExecutionContextImpl(es: AnyRef) extends ExecutionContext with Executor {
+private[scala] class ExecutionContextImpl(es: AnyRef /* AnyRef? */) extends ExecutionContext with Executor {
   import ExecutionContextImpl._
   
   val executorService: AnyRef = if (es eq null) getExecutorService else es
   
   // to ensure that the current execution context thread local is properly set
+  //FIXME Not configurable
   def executorsThreadFactory = new ThreadFactory {
     def newThread(r: Runnable) = new Thread(new Runnable {
       override def run() {
         currentExecutionContext.set(ExecutionContextImpl.this)
         r.run()
+        //FIXME Doesn't clear out the currentExecutionContext
       }
     })
   }
@@ -36,7 +38,7 @@ private[scala] class ExecutionContextImpl(es: AnyRef) extends ExecutionContext w
   def forkJoinPoolThreadFactory = new ForkJoinPool.ForkJoinWorkerThreadFactory {
     def newThread(fjp: ForkJoinPool) = new ForkJoinWorkerThread(fjp) {
       override def onStart() {
-        currentExecutionContext.set(ExecutionContextImpl.this)
+        currentExecutionContext.set(ExecutionContextImpl.this)//FIXME Doesn't clear out the currentExecutionContext
       }
     }
   }
@@ -49,15 +51,15 @@ private[scala] class ExecutionContextImpl(es: AnyRef) extends ExecutionContext w
           Runtime.getRuntime.availableProcessors(),
           forkJoinPoolThreadFactory,
           null,
-          false)
+          false) //FIXME ForkJoinPool Should most definitely still be an ExecutorService, unless someone can put forth convincing arguments to the contrary.
       else
         Executors.newCachedThreadPool(executorsThreadFactory)
     } else Executors.newCachedThreadPool(executorsThreadFactory)
 
   def execute(runnable: Runnable): Unit = executorService match {
     case fj: ForkJoinPool =>
-      if (Thread.currentThread.isInstanceOf[ForkJoinWorkerThread]) {
-        val fjtask = ForkJoinTask.adapt(runnable)
+      if (Thread.currentThread.isInstanceOf[ForkJoinWorkerThread]) { // Needs to check the the FJWT's pool is the same instance as "fj", no?
+        val fjtask = ForkJoinTask.adapt(runnable) //Shouldn't adapt if it's already a FJT
         fjtask.fork
       } else {
         fj.execute(runnable)
@@ -66,7 +68,7 @@ private[scala] class ExecutionContextImpl(es: AnyRef) extends ExecutionContext w
       executor execute runnable
   }
 
-  def execute[U](body: () => U): Unit = execute(new Runnable {
+  def execute[U](body: () => U): Unit = execute(new Runnable { // Should be dropped in favor of an implicit/explicit from Function0 to Runnable
     def run() = body()
   })
 
@@ -84,7 +86,7 @@ private[scala] class ExecutionContextImpl(es: AnyRef) extends ExecutionContext w
 }
 
 
-object ExecutionContextImpl {
+object ExecutionContextImpl { // Shouldn't this be private[concurrent]?
 
   private[concurrent] def currentExecutionContext: ThreadLocal[ExecutionContext] = new ThreadLocal[ExecutionContext] {
     override protected def initialValue = null

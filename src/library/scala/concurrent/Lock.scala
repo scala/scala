@@ -15,8 +15,9 @@ package scala.concurrent
  *  @author  Martin Odersky
  *  @version 1.0, 10/03/2003
  */
+ //Deprecate this perhaps?
 class Lock {
-  var available = true
+  var available = true //This is public, so not thread safe (visibility)
 
   def acquire() = synchronized {
     while (!available) wait()

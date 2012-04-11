@@ -51,7 +51,7 @@ trait Promise[T] {
    */
   final def completeWith(other: Future[T]): this.type = {
     other onComplete {
-      this complete _
+      this complete _ // <--- This should be tryComplete as someone else might have completed this Promise
     }
     this
   }
@@ -62,7 +62,7 @@ trait Promise[T] {
    *
    *  $promiseCompletion
    */
-  def success(v: T): this.type = if (trySuccess(v)) this else throwCompleted
+  def success(v: T): this.type = if (trySuccess(v)) this else throwCompleted //DRY complete(Right(v))
 
   /** Tries to complete the promise with a value.
    *
@@ -80,7 +80,7 @@ trait Promise[T] {
    *
    *  $promiseCompletion
    */
-  def failure(t: Throwable): this.type = if (tryFailure(t)) this else throwCompleted
+  def failure(t: Throwable): this.type = if (tryFailure(t)) this else throwCompleted //DRY complete(Left(t))
 
   /** Tries to complete the promise with an exception.
    *
@@ -94,12 +94,13 @@ trait Promise[T] {
    *
    *  $allowedThrowables
    */
+   // This ties into the comment on putting the resolver in a single place so that it doesn't need to be remembered at all call-sites internally
   protected def wrap(t: Throwable): Throwable = t match {
     case t: Throwable if isFutureThrowable(t) => t
     case _ => new ExecutionException(t)
   }
 
-  private def throwCompleted = throw new IllegalStateException("Promise already completed.")
+  private def throwCompleted = throw new IllegalStateException("Promise already completed.") //This then becomes obsolete because the only place where it's thrown is in complete
 
 }
 
@@ -107,7 +108,7 @@ trait Promise[T] {
 
 object Promise {
 
-  /** Creates a new promise.
+  /** Creates a new uncompleted promise.
    */
   def apply[T]()(implicit executor: ExecutionContext): Promise[T] = new impl.Promise.DefaultPromise[T]()
 

@@ -29,6 +29,7 @@ abstract class ConcurrentPackageObject {
   }
 
   // TODO rename appropriately and make public
+  // FIXME Why is this here and not in object Future?
   private[concurrent] def isFutureThrowable(t: Throwable) = t match {
     case e: Error                               => false
     case t: scala.util.control.ControlThrowable => false
@@ -36,6 +37,7 @@ abstract class ConcurrentPackageObject {
     case _                                      => true
   }
 
+  // FIXME Why is this here and not in object Future?
   private[concurrent] def resolve[T](source: Either[Throwable, T]): Either[Throwable, T] = source match {
     case Left(t: scala.runtime.NonLocalReturnControl[_]) => Right(t.value.asInstanceOf[T])
     case Left(t: scala.util.control.ControlThrowable)    => Left(new ExecutionException("Boxed ControlThrowable", t))
@@ -49,13 +51,17 @@ abstract class ConcurrentPackageObject {
 
   /* concurrency constructs */
 
+  // FIXME Why is this here and not in object Future?
   def future[T](body: =>T)(implicit execctx: ExecutionContext = defaultExecutionContext): Future[T] =
     Future[T](body)
 
+  // FIXME Why is this here and not in object Future?
   def promise[T]()(implicit execctx: ExecutionContext = defaultExecutionContext): Promise[T] =
     Promise[T]()
 
   /** Wraps a block of code into an awaitable object. */
+  // FIXME For me this does not make any sense. It body call will be invoked every time someone blocks on it.
+  // It also does not document what it's for.
   def body2awaitable[T](body: =>T) = new Awaitable[T] {
     def ready(atMost: Duration)(implicit permit: CanAwait) = {
       body
@@ -73,6 +79,8 @@ abstract class ConcurrentPackageObject {
    *  - InterruptedException - in the case that a wait within the blockable object was interrupted
    *  - TimeoutException - in the case that the blockable object timed out
    */
+  //FIXME Does not describe the semantics, i.e. which ExecutionContext is used etc? 
+  // Also there's no way to use it from Java
   def blocking[T](body: =>T): T =
     blocking(body2awaitable(body), Duration.fromNanos(0))
 
@@ -85,12 +93,14 @@ abstract class ConcurrentPackageObject {
    *  - InterruptedException - in the case that a wait within the blockable object was interrupted
    *  - TimeoutException - in the case that the blockable object timed out
    */
+  //FIXME Does not describe the semantics
   def blocking[T](awaitable: Awaitable[T], atMost: Duration): T =
     currentExecutionContext.get match {
       case null => Await.result(awaitable, atMost)
       case ec => ec.internalBlockingCall(awaitable, atMost)
     }
 
+  //FIXME Doesn't have any docs
   @inline implicit final def int2durationops(x: Int): DurationOps = new DurationOps(x)
 }
 
@@ -100,11 +110,19 @@ private[concurrent] object ConcurrentPackageObject {
   // compiling a subset of sources; it seems that the wildcard is not
   // properly handled, and you get messages like "type _$1 defined twice".
   // This is consistent with other package object breakdowns.
+  // Why is this a val and not a def?
+  // In Akka:
+  /*protected final def resolve[X](source: Either[Throwable, X]): Either[Throwable, X] = source match {
+    case Left(t: scala.runtime.NonLocalReturnControl[_]) ⇒ Right(t.value.asInstanceOf[X])
+    case Left(t: InterruptedException) ⇒ Left(new RuntimeException("Boxed InterruptedException", t))
+    case _ ⇒ source
+  }*/
+
   private val resolverFunction: PartialFunction[Throwable, Either[Throwable, _]] = {
     case t: scala.runtime.NonLocalReturnControl[_] => Right(t.value)
     case t: scala.util.control.ControlThrowable    => Left(new ExecutionException("Boxed ControlThrowable", t))
     case t: InterruptedException                   => Left(new ExecutionException("Boxed InterruptedException", t))
-    case e: Error                                  => Left(new ExecutionException("Boxed Error", e))
+    case e: Error                                  => Left(new ExecutionException("Boxed Error", e)) // <-- Why box errors?
     case t                                         => Left(t)
   }
 }

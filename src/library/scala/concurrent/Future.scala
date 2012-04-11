@@ -132,7 +132,7 @@ self =>
 
   /** Creates a new promise.
    */
-  def newPromise[S]: Promise[S]
+  def newPromise[S]: Promise[S] // FIXME Why is it public, what semantics does the method have?
   
   /** Returns whether the future has already been completed with
    *  a value or an exception.
@@ -168,14 +168,11 @@ self =>
    *  and throws a corresponding exception if the original future fails.
    */
   def failed: Future[Throwable] = {
-    def noSuchElem(v: T) =
-      new NoSuchElementException("Future.failed not completed with a throwable. Instead completed with: " + v)
-
     val p = newPromise[Throwable]
 
     onComplete {
       case Left(t) => p success t
-      case Right(v) => p failure noSuchElem(v)
+      case Right(v) => p failure new NoSuchElementException("Future.failed not completed with a throwable. Instead completed with: " + v)
     }
 
     p.future
@@ -207,7 +204,8 @@ self =>
       case Right(v) =>
         try p success f(v)
         catch {
-          case t => p complete resolver(t)
+          case t => // Anywhere we catch, we need to use NonFatal á la Akka and also report it to the EC via reportFailure: https://github.com/akka/akka/blob/master/akka-actor/src/main/scala/akka/dispatch/Future.scala#L197
+          p complete resolver(t) // I strongly suggest putting resolver inside complete, otherwise it's easy to forget it on all callsites.
         }
     }
 
@@ -233,7 +231,7 @@ self =>
             case Right(v) => p success v
           }
         } catch {
-          case t: Throwable => p complete resolver(t)
+          case t: Throwable => p complete resolver(t) // NonFatal + reportFailure
         }
     }
 
@@ -338,9 +336,7 @@ self =>
     val p = newPromise[U]
 
     onComplete {
-      case Left(t) if pf isDefinedAt t =>
-        try { p success pf(t) }
-        catch { case t: Throwable => p complete resolver(t) }
+      case Left(t) if pf isDefinedAt t => p.complete(try { Right(pf(t)) } catch { case NonFatal(x) ⇒ Left(x) })
       case otherwise => p complete otherwise
     }
 
@@ -389,14 +385,10 @@ self =>
 
     this onComplete {
       case Left(t)  => p failure t
-      case Right(r) => that onSuccess {
-        case r2 => p success ((r, r2))
-      }
+      case Right(r) => that onSuccess { case r2 => p success ((r, r2)) }
     }
 
-    that onFailure {
-      case f => p failure f
-    }
+    that onFailure { case f => p failure f } // Needs to be tryComplete since "this" might have completed "p" already
 
     p.future
   }
@@ -411,10 +403,20 @@ self =>
    *  {{{
    *  val f = future { sys.error("failed") }
    *  val g = future { 5 }
-   *  val h = f orElse g
+   *  val h = f orElse g <--- orElse???
    *  await(h, 0) // evaluates to 5
    *  }}}
    */
+/* This is the Akka version
+def fallbackTo[U >: T](that: Future[U]): Future[U] = {
+    val p = Promise[U]()
+    onComplete {
+      case r @ Right(_) ⇒ p complete r
+      case _            ⇒ p completeWith that
+    }
+    p.future
+  }*/
+
   def fallbackTo[U >: T](that: Future[U]): Future[U] = {
     val p = newPromise[U]
 
@@ -497,7 +499,7 @@ self =>
    *  }}}
    */
   def either[U >: T](that: Future[U]): Future[U] = {
-    val p = self.newPromise[U]
+    val p = self.newPromise[U] //Why (self.)newPromise here?
 
     val completePromise: PartialFunction[Either[Throwable, U], _] = {
       case Left(t) => p tryFailure t
