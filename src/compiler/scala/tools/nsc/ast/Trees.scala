@@ -81,6 +81,8 @@ trait Trees extends reflect.internal.Trees { self: Global =>
   case class InjectDerivedValue(arg: Tree)
        extends SymTree
 
+  class PostfixSelect(qual: Tree, name: Name) extends Select(qual, name)
+
   /** emitted by typer, eliminated by refchecks */
   case class TypeTreeWithDeferredRefCheck()(val check: () => TypeTree) extends TypTree
 

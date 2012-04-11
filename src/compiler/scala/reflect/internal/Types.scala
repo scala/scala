@@ -2493,26 +2493,33 @@ trait Types extends api.Types { self: SymbolTable =>
      *   - where there is a 1-to-1 correspondence between underlying's typeargs and quantified
      *   - and none of the existential parameters is referenced from anywhere else in the type
      *   - and none of the existential parameters are singleton types
+     *   - @param checkBounds  if set returns false for situations like
+     *                         (S, T) forSome { type S; type T <: S }
+     *                         If not set returns true. The reason for this mode is to
+     *                         avoid cyclic reference errors when the method is called
+     *                         early (e.g. from Typers # checkExistentialsFeature)
      */
-    private def isRepresentableWithWildcards = !settings.debug.value && {
+    def isRepresentableWithWildcards(checkBounds: Boolean) = {
       val qset = quantified.toSet
-      !qset.exists(_.isSingletonExistential) && (underlying match {
+      underlying match {
         case TypeRef(_, sym, args) =>
           sameLength(args, quantified) && {
             args forall { arg =>
-              qset(arg.typeSymbol) && !qset.exists(arg.typeSymbol.info.bounds contains _)
+              qset(arg.typeSymbol) &&
+              (!checkBounds || !qset.exists(arg.typeSymbol.info.bounds contains _))
             }
           }
         case _ => false
-      })
+      }
     }
+
     override def safeToString: String = {
       def clauses = {
         val str = quantified map (_.existentialToString) mkString (" forSome { ", "; ", " }")
         if (settings.explaintypes.value) "(" + str + ")" else str
       }
       underlying match {
-        case TypeRef(pre, sym, args) if isRepresentableWithWildcards =>
+        case TypeRef(pre, sym, args) if !settings.debug.value && isRepresentableWithWildcards(checkBounds = true) =>
           "" + TypeRef(pre, sym, Nil) + wildcardArgsString(quantified.toSet, args).mkString("[", ", ", "]")
         case MethodType(_, _) | NullaryMethodType(_) | PolyType(_, _) =>
           "(" + underlying + ")" + clauses

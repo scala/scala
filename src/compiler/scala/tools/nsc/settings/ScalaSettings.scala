@@ -62,6 +62,7 @@ trait ScalaSettings extends AbsScalaSettings
   val classpath     = PathSetting       ("-classpath", "Specify where to find user class files.", defaultClasspath) withAbbreviation "-cp"
   val d             = OutputSetting     (outputDirs, ".")
   val nospecialization = BooleanSetting    ("-no-specialization", "Ignore @specialize annotations.")
+  val feature       = MultiStringSetting("-language", "feature", "Enable one or more language features.")
 
   /**
    * -X "Advanced" settings

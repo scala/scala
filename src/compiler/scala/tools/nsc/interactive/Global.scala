@@ -529,6 +529,7 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "")
     unit.defined.clear()
     unit.synthetics.clear()
     unit.toCheck.clear()
+    unit.checkedFeatures = Set()
     unit.targetPos = NoPosition
     unit.contexts.clear()
     unit.problems.clear()

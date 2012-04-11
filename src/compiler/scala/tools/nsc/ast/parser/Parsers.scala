@@ -1456,11 +1456,12 @@ self =>
             return reduceStack(true, base, top, 0, true)
           top = next
         } else {
+          // postfix expression
           val topinfo = opstack.head
           opstack = opstack.tail
           val od = stripParens(reduceStack(true, base, topinfo.operand, 0, true))
           return atPos(od.pos.startOrPoint, topinfo.offset) {
-            Select(od, topinfo.operator.encode)
+            new PostfixSelect(od, topinfo.operator.encode)
           }
         }
       }
