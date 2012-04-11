@@ -905,7 +905,9 @@ trait Definitions extends reflect.api.StandardDefinitions {
     lazy val GetterTargetClass          = getMetaAnnotation("getter")
     lazy val ParamTargetClass           = getMetaAnnotation("param")
     lazy val SetterTargetClass          = getMetaAnnotation("setter")
-    // TODO: module, moduleClass? package, packageObject?
+    lazy val ClassTargetClass           = getMetaAnnotation("companionClass")
+    lazy val ObjectTargetClass          = getMetaAnnotation("companionObject")
+    lazy val MethodTargetClass          = getMetaAnnotation("companionMethod")    // TODO: module, moduleClass? package, packageObject?
 
     private def getMetaAnnotation(name: String) = getRequiredClass("scala.annotation.meta." + name)
     def isMetaAnnotation(sym: Symbol): Boolean = metaAnnotations(sym) || (
