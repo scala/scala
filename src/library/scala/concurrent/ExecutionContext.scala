@@ -23,15 +23,15 @@ trait ExecutionContext {
 
   def execute(runnable: Runnable): Unit
 
-  def execute[U](body: () => U): Unit
+  def execute[U](body: () => U): Unit // <--- This should not be there, use a converter from Funtion0 to Runnable if desired.
 
-  def internalBlockingCall[T](awaitable: Awaitable[T], atMost: Duration): T
+  def internalBlockingCall[T](awaitable: Awaitable[T], atMost: Duration): T // <--- has no description or semantics
   
   def reportFailure(t: Throwable): Unit
 
   /* implementations follow */
 
-  private implicit val executionContext = this
+  private implicit val executionContext = this // What is this used for?
 
 }
 
@@ -44,11 +44,12 @@ object ExecutionContext {
   
   /** Creates an `ExecutionContext` from the given `ExecutorService`.
    */
-  def fromExecutorService(e: ExecutorService): ExecutionContext with Executor = new impl.ExecutionContextImpl(e)
+  //FIXME This should be returning something that is a compound ExecutorService with ExecutionContext, not Executor, since ExecutorService extends Executor already
+  def fromExecutorService(e: ExecutorService): ExecutionContext with Executor = new impl.ExecutionContextImpl(e) // You'll need to create a compound trait, Java cant use the X with Y stuff AFAIK
   
   /** Creates an `ExecutionContext` from the given `Executor`.
    */
-  def fromExecutor(e: Executor): ExecutionContext with Executor = new impl.ExecutionContextImpl(e)
+  def fromExecutor(e: Executor): ExecutionContext with Executor = new impl.ExecutionContextImpl(e) // You'll need to create a compound trait, Java cant use the X with Y stuff AFAIK
   
 }
 

@@ -83,6 +83,8 @@ object Promise {
    *
    * [adriaan] it's unsound to make FState covariant (tryComplete won't type check)
    */
+  // DefaultPromise should be replaced by the current implementation in akka-actor.jar
+  // It doesn't need FState at all, so it has one level less indirection and eats less memory
   sealed trait FState[T] { def value: Option[Either[Throwable, T]] }
 
   case class Pending[T](listeners: List[Either[Throwable, T] => Any] = Nil) extends FState[T] {
@@ -104,7 +106,17 @@ object Promise {
   class DefaultPromise[T](implicit val executor: ExecutionContext) extends AbstractPromise with Promise[T] {
   self =>
 
-    updater.set(this, Promise.EmptyPending())
+    updater.set(this, Promise.EmptyPending()) // Why waste cycles here? Works perfectly in Akka to do:
+
+    /*
+      abstract class AbstractPromise {
+        private volatile Object _ref = DefaultPromise.EmptyPending();
+        protected final static AtomicReferenceFieldUpdater<AbstractPromise, Object> updater =
+            AtomicReferenceFieldUpdater.newUpdater(AbstractPromise.class, Object.class, "_ref");
+      }
+
+      I think we should consider to drop the AtomicReferenceFieldUpdater and use Unsafe instead.
+    */
 
     protected final def tryAwait(atMost: Duration): Boolean = {
       @tailrec
