@@ -684,7 +684,7 @@ trait Namers extends MethodSynthesis {
           val acc = sym.lazyAccessor
           if (acc != NoSymbol) enterIfNotThere(acc)
         }
-        defaultParametersOfMethod(sym) foreach enterIfNotThere
+        defaultParametersOfMethod(sym) foreach { symRef => enterIfNotThere(symRef()) }
       }
       this.context
     }
@@ -1161,7 +1161,7 @@ trait Namers extends MethodSynthesis {
               // if compiling the same local block several times (which can happen in interactive mode)
               // we might otherwise not find the default symbol, because the second time it the
               // method symbol will be re-entered in the scope but the default parameter will not.
-              defaultParametersOfMethod(meth) += default
+              defaultParametersOfMethod(meth) += new WeakReference(default)
             }
           } else if (baseHasDefault) {
             // the parameter does not have a default itself, but the
