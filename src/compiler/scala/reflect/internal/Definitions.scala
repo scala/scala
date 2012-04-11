@@ -10,9 +10,28 @@ import annotation.{ switch }
 import scala.collection.{ mutable, immutable }
 import Flags._
 import PartialFunction._
+import scala.reflect.{ mirror => rm }
 
 trait Definitions extends reflect.api.StandardDefinitions {
   self: SymbolTable =>
+
+  // [Eugene] find a way to make these non-lazy
+  lazy val ByteTpe    = definitions.ByteClass.asType
+  lazy val ShortTpe   = definitions.ShortClass.asType
+  lazy val CharTpe    = definitions.CharClass.asType
+  lazy val IntTpe     = definitions.IntClass.asType
+  lazy val LongTpe    = definitions.LongClass.asType
+  lazy val FloatTpe   = definitions.FloatClass.asType
+  lazy val DoubleTpe  = definitions.DoubleClass.asType
+  lazy val BooleanTpe = definitions.BooleanClass.asType
+  lazy val UnitTpe    = definitions.UnitClass.asType
+  lazy val AnyTpe     = definitions.AnyClass.asType
+  lazy val ObjectTpe  = definitions.ObjectClass.asType
+  lazy val AnyValTpe  = definitions.AnyValClass.asType
+  lazy val AnyRefTpe  = definitions.AnyRefClass.asType
+  lazy val NothingTpe = definitions.NothingClass.asType
+  lazy val NullTpe    = definitions.NullClass.asType
+  lazy val StringTpe  = definitions.StringClass.asType
 
   /** Since both the value parameter types and the result type may
    *  require access to the type parameter symbols, we model polymorphic
@@ -129,6 +148,7 @@ trait Definitions extends reflect.api.StandardDefinitions {
       DoubleClass
     )
     def ScalaValueClassCompanions: List[Symbol] = ScalaValueClasses map (_.companionSymbol)
+    def ScalaPrimitiveValueClasses: List[Symbol] = ScalaValueClasses
   }
 
   object definitions extends AbsDefinitions with ValueClassDefinitions {
@@ -446,19 +466,38 @@ trait Definitions extends reflect.api.StandardDefinitions {
       def methodCache_add   = getMember(MethodCacheClass, nme.add_)
 
     // scala.reflect
-    lazy val ReflectApiUniverse = getRequiredClass("scala.reflect.api.Universe")
-    lazy val ReflectMacroContext = getRequiredClass("scala.reflect.macro.Context")
-    lazy val ReflectRuntimeMirror = getRequiredModule("scala.reflect.runtime.Mirror")
-      def freeValueMethod = getMember(ReflectRuntimeMirror, nme.freeValue)
+    lazy val ReflectPackageClass = getMember(ScalaPackageClass, nme.reflect)
     lazy val ReflectPackage = getPackageObject("scala.reflect")
       def Reflect_mirror = getMember(ReflectPackage, nme.mirror)
 
-    lazy val PartialManifestClass  = getRequiredClass("scala.reflect.ClassManifest")
-    lazy val PartialManifestModule = getRequiredModule("scala.reflect.ClassManifest")
-    lazy val FullManifestClass     = getRequiredClass("scala.reflect.Manifest")
-    lazy val FullManifestModule    = getRequiredModule("scala.reflect.Manifest")
-    lazy val OptManifestClass      = getRequiredClass("scala.reflect.OptManifest")
-    lazy val NoManifest            = getRequiredModule("scala.reflect.NoManifest")
+    lazy val ExprClass     = getMember(getRequiredClass("scala.reflect.api.Exprs"), tpnme.Expr)
+         def ExprTree      = getMember(ExprClass, nme.tree)
+         def ExprTpe       = getMember(ExprClass, nme.tpe)
+         def ExprEval      = getMember(ExprClass, nme.eval)
+         def ExprValue     = getMember(ExprClass, nme.value)
+    lazy val ExprModule    = getMember(getRequiredClass("scala.reflect.api.Exprs"), nme.Expr)
+
+    lazy val ClassTagClass       = getRequiredClass("scala.reflect.ClassTag")
+         def ClassTagErasure     = getMember(ClassTagClass, nme.erasure)
+         def ClassTagTpe         = getMember(ClassTagClass, nme.tpe)
+    lazy val ClassTagModule      = getRequiredModule("scala.reflect.ClassTag")
+    lazy val TypeTagsClass       = getRequiredClass("scala.reflect.api.TypeTags")
+    lazy val TypeTagClass        = getMember(TypeTagsClass, tpnme.TypeTag)
+         def TypeTagTpe          = getMember(TypeTagClass, nme.tpe)
+    lazy val TypeTagModule       = getMember(TypeTagsClass, nme.TypeTag)
+    lazy val GroundTypeTagClass  = getMember(TypeTagsClass, tpnme.GroundTypeTag)
+    lazy val GroundTypeTagModule = getMember(TypeTagsClass, nme.GroundTypeTag)
+
+    lazy val MacroContextClass                        = getRequiredClass("scala.reflect.makro.Context")
+         def MacroContextPrefix                       = getMember(MacroContextClass, nme.prefix)
+         def MacroContextPrefixType                   = getMember(MacroContextClass, tpnme.PrefixType)
+         def MacroContextMirror                       = getMember(MacroContextClass, nme.mirror)
+         def MacroContextReify                        = getMember(MacroContextClass, nme.reify)
+    lazy val MacroImplAnnotation                      = getRequiredClass("scala.reflect.makro.internal.macroImpl")
+    lazy val MacroInternalPackage                     = getPackageObject("scala.reflect.makro.internal")
+         def MacroInternal_materializeClassTag        = getMember(MacroInternalPackage, nme.materializeClassTag)
+         def MacroInternal_materializeTypeTag         = getMember(MacroInternalPackage, nme.materializeTypeTag)
+         def MacroInternal_materializeGroundTypeTag   = getMember(MacroInternalPackage, nme.materializeGroundTypeTag)
 
     lazy val ScalaSignatureAnnotation = getRequiredClass("scala.reflect.ScalaSignature")
     lazy val ScalaLongSignatureAnnotation = getRequiredClass("scala.reflect.ScalaLongSignature")
@@ -467,33 +506,15 @@ trait Definitions extends reflect.api.StandardDefinitions {
     lazy val OptionClass: Symbol = getRequiredClass("scala.Option")
     lazy val SomeClass: Symbol   = getRequiredClass("scala.Some")
     lazy val NoneModule: Symbol  = getRequiredModule("scala.None")
+    lazy val SomeModule: Symbol  = getRequiredModule("scala.Some")
 
-    /** Note: don't use this manifest/type function for anything important,
-     *  as it is incomplete.  Would love to have things like existential types
-     *  working, but very unfortunately the manifests just stuff the relevant
-     *  information into the toString method.
-     */
-    def manifestToType(m: OptManifest[_]): Type = m match {
-      case m: ClassManifest[_] =>
-        val sym  = manifestToSymbol(m)
-        val args = m.typeArguments
+    // [Eugene] how do I make this work without casts?
+    // private lazy val importerFromRm = self.mkImporter(rm)
+    private lazy val importerFromRm = self.mkImporter(rm).asInstanceOf[self.Importer { val from: rm.type }]
 
-        if ((sym eq NoSymbol) || args.isEmpty) sym.tpe
-        else appliedType(sym, args map manifestToType: _*)
-      case _ =>
-        NoType
-    }
+    def manifestToType(m: Manifest[_]): Type = importerFromRm.importType(m.tpe)
 
-    def manifestToSymbol(m: ClassManifest[_]): Symbol = m match {
-      case x: scala.reflect.AnyValManifest[_] =>
-        getMember(ScalaPackageClass, newTypeName("" + x))
-      case _                                  =>
-        val name = m.erasure.getName
-        if (name endsWith nme.MODULE_SUFFIX_STRING)
-          getModuleIfDefined(name stripSuffix nme.MODULE_SUFFIX_STRING)
-        else
-          getClassIfDefined(name)
-    }
+    def manifestToSymbol(m: Manifest[_]): Symbol = importerFromRm.importSymbol(m.tpe.typeSymbol)
 
     // The given symbol represents either String.+ or StringAdd.+
     def isStringAddition(sym: Symbol) = sym == String_+ || sym == StringAdd_+
@@ -527,11 +548,6 @@ trait Definitions extends reflect.api.StandardDefinitions {
     }
 
     val MaxTupleArity, MaxProductArity, MaxFunctionArity = 22
-    /** The maximal dimensions of a generic array creation.
-     *  I.e. new Array[Array[Array[Array[Array[T]]]]] creates a 5 times
-     *  nested array. More is not allowed.
-     */
-    val MaxArrayDims = 5
     lazy val ProductClass          = { val arr = mkArityArray("Product", MaxProductArity) ; arr(0) = UnitClass ; arr }
     lazy val TupleClass            = mkArityArray("Tuple", MaxTupleArity)
     lazy val FunctionClass         = mkArityArray("Function", MaxFunctionArity, 0)
@@ -993,7 +1009,7 @@ trait Definitions extends reflect.api.StandardDefinitions {
     }
     def getDeclIfDefined(owner: Symbol, name: Name): Symbol =
       owner.info.nonPrivateDecl(name)
-    
+
     def packageExists(packageName: String): Boolean =
       getModuleIfDefined(packageName).isPackage
 

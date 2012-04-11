@@ -121,7 +121,7 @@ trait GenJVMUtil {
         case DoubleTag  => jcode emitPUSH const.doubleValue
         case StringTag  => jcode emitPUSH const.stringValue
         case NullTag    => jcode.emitACONST_NULL()
-        case ClassTag   =>
+        case ClazzTag   =>
           val kind = toTypeKind(const.typeValue)
           val toPush =
             if (kind.isValueType) classLiteral(kind)

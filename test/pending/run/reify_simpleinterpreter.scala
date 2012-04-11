@@ -1,9 +1,7 @@
-import scala.tools.nsc.reporters._
-import scala.tools.nsc.Settings
-import reflect.runtime.Mirror.ToolBox
+import scala.reflect.mirror._
 
 object Test extends App {
-  val code = scala.reflect.Code.lift{
+  reify {
     case class M[A](value: A) {
       def bind[B](k: A => M[B]): M[B] =  k(value)
       def map[B](f: A => B): M[B] =  bind(x => unitM(f(x)))
@@ -73,9 +71,5 @@ object Test extends App {
 
     println(test(term0))
     println(test(term1))
-  };
-
-  val reporter = new ConsoleReporter(new Settings)
-  val toolbox = new ToolBox(reporter)
-  toolbox.runExpr(code.tree)
+  }.eval
 }

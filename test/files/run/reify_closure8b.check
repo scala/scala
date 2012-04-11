@@ -1,0 +1,3 @@
+scala.reflect.runtime.ToolBoxes$ToolBox$ToolBoxError: reflective compilation has failed: 
+
+value y is not a member of Test.Foo

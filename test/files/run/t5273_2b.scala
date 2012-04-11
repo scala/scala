@@ -1,15 +1,9 @@
-import scala.tools.nsc.reporters._
-import scala.tools.nsc.Settings
-import reflect.runtime.Mirror.ToolBox
+import scala.reflect.mirror._
 
 object Test extends App {
-  val code = scala.reflect.Code.lift{
+  reify {
     val RegexParser = """(.*) \d+([A-Z]+) \| (.*) \|.*""".r
     val RegexParser(name, shortname, value) = "American Dollar 1USD | 2,8567 | sometext"
     println("name = %s, shortname = %s, value = %s".format(name, shortname, value))
-  };
-
-  val reporter = new ConsoleReporter(new Settings)
-  val toolbox = new ToolBox(reporter)
-  toolbox.runExpr(code.tree)
+  }.eval
 }

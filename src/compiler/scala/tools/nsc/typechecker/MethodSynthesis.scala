@@ -28,6 +28,7 @@ trait MethodSynthesis {
       else DefDef(sym, body)
 
     def applyTypeInternal(manifests: List[M[_]]): Type = {
+      // [Eugene to Paul] needs review!!
       val symbols = manifests map manifestToSymbol
       val container :: args = symbols
       val tparams = container.typeConstructor.typeParams
@@ -58,12 +59,13 @@ trait MethodSynthesis {
 
     def newMethodType[F](owner: Symbol)(implicit m: Manifest[F]): Type = {
       val fnSymbol = manifestToSymbol(m)
-      assert(fnSymbol isSubClass FunctionClass(m.typeArguments.size - 1), (owner, m))
-      val symbols = m.typeArguments map (m => manifestToSymbol(m))
-      val formals = symbols.init map (_.typeConstructor)
+      assert(fnSymbol isSubClass FunctionClass(m.tpe.typeArguments.size - 1), (owner, m))
+      // [Eugene to Paul] needs review!!
+      // val symbols = m.typeArguments map (m => manifestToSymbol(m))
+      // val formals = symbols.init map (_.typeConstructor)
+      val formals = manifestToType(m).typeArguments
       val params  = owner newSyntheticValueParams formals
-
-      MethodType(params, symbols.last.typeConstructor)
+      MethodType(params, formals.last)
     }
   }
   import synthesisUtil._
@@ -373,7 +375,7 @@ trait MethodSynthesis {
           case ExistentialType(_, _)  => TypeTree()
           case tp                     => TypeTree(tp)
         }
-        tpt setPos focusPos(derivedSym.pos)
+        tpt setPos derivedSym.pos.focus
         // keep type tree of original abstract field
         if (mods.isDeferred)
           tpt setOriginal tree.tpt

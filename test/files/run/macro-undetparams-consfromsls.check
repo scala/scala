@@ -1,0 +1,5 @@
+A = GroundTypeTag[Int]
+B = GroundTypeTag[Nothing]
+List(1)
+A = GroundTypeTag[Any]
+List(abc, 1)

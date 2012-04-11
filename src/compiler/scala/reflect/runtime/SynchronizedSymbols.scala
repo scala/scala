@@ -14,8 +14,11 @@ trait SynchronizedSymbols extends internal.Symbols { self: SymbolTable =>
   override def connectModuleToClass(m: ModuleSymbol, moduleClass: ClassSymbol): ModuleSymbol =
     synchronized { super.connectModuleToClass(m, moduleClass) }
 
-  override def newFreeVar(name: TermName, tpe: Type, value: Any, newFlags: Long = 0L): FreeVar =
-    new FreeVar(name, value) with SynchronizedTermSymbol initFlags newFlags setInfo tpe
+  override def newFreeTerm(name: TermName, info: Type, value: => Any, origin: String = null, newFlags: Long = 0L): FreeTerm =
+    new FreeTerm(name, value, origin) with SynchronizedTermSymbol initFlags newFlags setInfo info
+
+  override def newFreeType(name: TypeName, info: Type, value: => Any, origin: String = null, newFlags: Long = 0L): FreeType =
+    new FreeType(name, value, origin) with SynchronizedTypeSymbol initFlags newFlags setInfo info
 
   override protected def makeNoSymbol: NoSymbol = new NoSymbol with SynchronizedSymbol
 

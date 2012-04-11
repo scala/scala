@@ -39,8 +39,8 @@ abstract class ArrayOps[T] extends ArrayLike[T, Array[T]] with CustomParalleliza
 
   private def rowBuilder[U]: Builder[U, Array[U]] =
     Array.newBuilder(
-      ClassManifest.fromClass(
-        repr.getClass.getComponentType.getComponentType.asInstanceOf[Predef.Class[U]]))
+      ClassManifest[U](
+        repr.getClass.getComponentType.getComponentType))
 
   override def copyToArray[U >: T](xs: Array[U], start: Int, len: Int) {
     var l = math.min(len, repr.length)
@@ -87,8 +87,8 @@ abstract class ArrayOps[T] extends ArrayLike[T, Array[T]] with CustomParalleliza
       }
     }
     val bb: Builder[Array[U], Array[Array[U]]] = Array.newBuilder(
-      ClassManifest.fromClass(
-        repr.getClass.getComponentType.asInstanceOf[Predef.Class[Array[U]]]))
+      ClassManifest[Array[U]](
+        repr.getClass.getComponentType))
     for (b <- bs) bb += b.result
     bb.result
   }
@@ -110,7 +110,7 @@ object ArrayOps {
     override protected[this] def thisCollection: WrappedArray[T] = new WrappedArray.ofRef[T](repr)
     override protected[this] def toCollection(repr: Array[T]): WrappedArray[T] = new WrappedArray.ofRef[T](repr)
     override protected[this] def newBuilder = new ArrayBuilder.ofRef[T]()(
-      ClassManifest.classType[T](repr.getClass.getComponentType))
+      ClassManifest[T](repr.getClass.getComponentType))
 
     def length: Int = repr.length
     def apply(index: Int): T = repr(index)

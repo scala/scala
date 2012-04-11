@@ -10,6 +10,7 @@ import java.lang.{ reflect => r }
 import r.TypeVariable
 import scala.reflect.NameTransformer
 import NameTransformer._
+import scala.reflect.{mirror => rm}
 
 /** Logic for turning a type into a String.  The goal is to be
  *  able to take some arbitrary object 'x' and obtain the most precise
@@ -72,8 +73,12 @@ trait TypeStrings {
     brackets(clazz.getTypeParameters map tvarString: _*)
   }
 
-  private def tparamString[T: Manifest] : String =
-    brackets(manifest[T].typeArguments map (m => tvarString(List(m.erasure))): _*)
+  private def tparamString[T: Manifest] : String = {
+    // [Eugene to Paul] needs review!!
+    def typeArguments: List[rm.Type] = manifest[T].tpe.typeArguments
+    def typeVariables: List[java.lang.Class[_]] = typeArguments map (targ => rm.typeToClass(targ))
+    brackets(typeArguments map (jc => tvarString(List(jc))): _*)
+  }
 
   /** Going for an overabundance of caution right now.  Later these types
    *  can be a lot more precise, but right now the manifests have a habit of

@@ -58,7 +58,7 @@ object ReplVals {
      *  I have this forwarder which widens the type and then cast the result back
      *  to the dependent type.
      */
-    def manifestToType(m: OptManifest[_]): Global#Type =
+    def manifestToType(m: Manifest[_]): Global#Type =
       definitions.manifestToType(m)
 
     class AppliedTypeFromManifests(sym: Symbol) {

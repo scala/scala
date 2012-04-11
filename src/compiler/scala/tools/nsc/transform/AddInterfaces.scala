@@ -179,7 +179,7 @@ abstract class AddInterfaces extends InfoTransform { self: Erasure =>
       /** If `tp` refers to a non-interface trait, return a
        *  reference to its implementation class. Otherwise return `tp`.
        */
-      def mixinToImplClass(tp: Type): Type = erasure(implSym) {
+      def mixinToImplClass(tp: Type): Type = AddInterfaces.this.erasure(implSym) {
         tp match { //@MATN: no normalize needed (comes after erasure)
           case TypeRef(pre, sym, _) if sym.needsImplClass =>
             typeRef(pre, implClass(sym), Nil)

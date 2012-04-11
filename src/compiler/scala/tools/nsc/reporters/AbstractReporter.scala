@@ -35,17 +35,22 @@ abstract class AbstractReporter extends Reporter {
       else _severity
 
     if (severity == INFO) {
-      if (isVerbose || force)
+      if (isVerbose || force) {
+        severity.count += 1
         display(pos, msg, severity)
+      }
     }
     else {
       val hidden = testAndLog(pos, severity)
       if (severity == WARNING && noWarnings) ()
       else {
-        if (!hidden || isPromptSet)
+        if (!hidden || isPromptSet) {
+          severity.count += 1
           display(pos, msg, severity)
-        else if (settings.debug.value)
+        } else if (settings.debug.value) {
+          severity.count += 1
           display(pos, "[ suppressed ] " + msg, severity)
+        }
 
         if (isPromptSet)
           displayPrompt

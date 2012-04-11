@@ -105,8 +105,8 @@ trait Contexts { self: Analyzer =>
                                                     // not inherited to child contexts
     var depth: Int = 0
     var imports: List[ImportInfo] = List()   // currently visible imports
-    var openImplicits: List[(Type,Symbol)] = List()   // types for which implicit arguments
-                                             // are currently searched
+    var openImplicits: List[(Type,Tree)] = List()   // types for which implicit arguments
+                                                    // are currently searched
     // for a named application block (Tree) the corresponding NamedApplyInfo
     var namedApplyBlockInfo: Option[(Tree, NamedApplyInfo)] = None
     var prefix: Type = NoPrefix
@@ -119,6 +119,7 @@ trait Contexts { self: Analyzer =>
 
     var diagnostic: List[String] = Nil      // these messages are printed when issuing an error
     var implicitsEnabled = false
+    var macrosEnabled = true
     var checking = false
     var retyping = false
 
@@ -181,11 +182,32 @@ trait Contexts { self: Analyzer =>
 
     def logError(err: AbsTypeError) = buffer += err
 
+    def withImplicitsEnabled[T](op: => T): T = {
+      val saved = implicitsEnabled
+      implicitsEnabled = true
+      try op
+      finally implicitsEnabled = saved
+    }
+
     def withImplicitsDisabled[T](op: => T): T = {
       val saved = implicitsEnabled
       implicitsEnabled = false
       try op
       finally implicitsEnabled = saved
+    }
+
+    def withMacrosEnabled[T](op: => T): T = {
+      val saved = macrosEnabled
+      macrosEnabled = true
+      try op
+      finally macrosEnabled = saved
+    }
+
+    def withMacrosDisabled[T](op: => T): T = {
+      val saved = macrosEnabled
+      macrosEnabled = false
+      try op
+      finally macrosEnabled = saved
     }
 
     def make(unit: CompilationUnit, tree: Tree, owner: Symbol,
@@ -223,6 +245,7 @@ trait Contexts { self: Analyzer =>
       c.diagnostic = this.diagnostic
       c.typingIndentLevel = typingIndentLevel
       c.implicitsEnabled = this.implicitsEnabled
+      c.macrosEnabled = this.macrosEnabled
       c.checking = this.checking
       c.retyping = this.retyping
       c.openImplicits = this.openImplicits
@@ -237,6 +260,7 @@ trait Contexts { self: Analyzer =>
       val c = make(unit, EmptyTree, owner, scope, imports)
       c.setReportErrors()
       c.implicitsEnabled = true
+      c.macrosEnabled = true
       c
     }
 
@@ -312,6 +336,7 @@ trait Contexts { self: Analyzer =>
 
     def issue(err: AbsTypeError) {
       debugwarn("issue error: " + err.errMsg)
+      if (settings.Yissuedebug.value) (new Exception).printStackTrace()
       if (reportErrors) unitError(err.errPos, addDiagString(err.errMsg))
       else if (bufferErrors) { buffer += err }
       else throw new TypeError(err.errPos, err.errMsg)
@@ -319,6 +344,7 @@ trait Contexts { self: Analyzer =>
 
     def issueAmbiguousError(pre: Type, sym1: Symbol, sym2: Symbol, err: AbsTypeError) {
       debugwarn("issue ambiguous error: " + err.errMsg)
+      if (settings.Yissuedebug.value) (new Exception).printStackTrace()
       if (ambiguousErrors) {
         if (!pre.isErroneous && !sym1.isErroneous && !sym2.isErroneous)
           unitError(err.errPos, err.errMsg)
@@ -328,6 +354,7 @@ trait Contexts { self: Analyzer =>
 
     def issueAmbiguousError(err: AbsTypeError) {
       debugwarn("issue ambiguous error: " + err.errMsg)
+      if (settings.Yissuedebug.value) (new Exception).printStackTrace()
       if (ambiguousErrors)
         unitError(err.errPos, addDiagString(err.errMsg))
       else if (bufferErrors) { buffer += err }

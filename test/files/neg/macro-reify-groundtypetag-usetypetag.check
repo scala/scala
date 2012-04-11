@@ -1,0 +1,7 @@
+Test.scala:5: error: No GroundTypeTag available for T
+    println(implicitly[GroundTypeTag[T]])
+                      ^
+Test.scala:6: error: No GroundTypeTag available for List[T]
+    println(implicitly[GroundTypeTag[List[T]]])
+                      ^
+two errors found
