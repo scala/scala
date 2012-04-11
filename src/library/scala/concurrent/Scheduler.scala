@@ -23,6 +23,15 @@ trait Scheduler {
    */
   def schedule(delay: Duration, frequency: Duration)(thunk: => Unit): Cancellable
 
+  /** Schedules a thunk for repeated execution with an initial delay and a frequency.
+   *
+   *  @param delay      the initial delay after which the thunk should be executed
+   *                    the first time
+   *  @param frequency  the frequency with which the thunk should be executed,
+   *                    as a time period between subsequent executions
+   */
+  def schedule(delay: Duration, frequency: Duration, task: Runnable): Cancellable
+
   /** Schedules a task for execution after a given delay.
    *
    *  @param delay  the duration after which the task should be executed
