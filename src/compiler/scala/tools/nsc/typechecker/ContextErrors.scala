@@ -832,7 +832,7 @@ trait ContextErrors {
       implicit val context0 = context
 
       object SymValidateErrors extends Enumeration {
-        val ImplicitConstr, ImplicitNotTerm, ImplicitTopObject,
+        val ImplicitConstr, ImplicitNotTermOrClass, ImplicitAtToplevel,
           OverrideClass, SealedNonClass, AbstractNonClass,
           OverrideConstr, AbstractOverride, LazyAndEarlyInit,
           ByNameParameter, AbstractVar = Value
@@ -898,10 +898,10 @@ trait ContextErrors {
           case ImplicitConstr =>
             "`implicit' modifier not allowed for constructors"
 
-          case ImplicitNotTerm =>
-            "`implicit' modifier can be used only for values, variables and methods"
+          case ImplicitNotTermOrClass =>
+            "`implicit' modifier can be used only for values, variables, methods and classes"
 
-          case ImplicitTopObject =>
+          case ImplicitAtToplevel =>
             "`implicit' modifier cannot be used for top-level objects"
 
           case OverrideClass =>

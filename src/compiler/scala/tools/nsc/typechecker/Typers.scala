@@ -1653,7 +1653,7 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
 
       val body =
         if (isPastTyper || reporter.hasErrors) templ.body
-        else templ.body flatMap rewrappingWrapperTrees(namer.finishGetterSetter(Typer.this, _))
+        else templ.body flatMap rewrappingWrapperTrees(namer.addDerivedTrees(Typer.this, _))
 
       val body1 = typedStats(body, templ.symbol)
 
@@ -2474,54 +2474,53 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
         || (looker.hasAccessorFlag && !accessed.hasAccessorFlag && accessed.isPrivate)
       )
 
-      def checkNoDoubleDefsAndAddSynthetics(stats: List[Tree]): List[Tree] = {
+      def checkNoDoubleDefs(stats: List[Tree]): Unit = {
         val scope = if (inBlock) context.scope else context.owner.info.decls
-        var newStats = new ListBuffer[Tree]
-        var needsCheck = true
-        var moreToAdd = true
-        while (moreToAdd) {
-          val initSize = scope.size
-          var e = scope.elems
-          while ((e ne null) && e.owner == scope) {
+        var e = scope.elems
+        while ((e ne null) && e.owner == scope) {
+          var e1 = scope.lookupNextEntry(e)
+          while ((e1 ne null) && e1.owner == scope) {
+            if (!accesses(e.sym, e1.sym) && !accesses(e1.sym, e.sym) &&
+                (e.sym.isType || inBlock || (e.sym.tpe matches e1.sym.tpe)))
+              // default getters are defined twice when multiple overloads have defaults. an
+              // error for this is issued in RefChecks.checkDefaultsInOverloaded
+              if (!e.sym.isErroneous && !e1.sym.isErroneous && !e.sym.hasDefaultFlag &&
+                  !e.sym.hasAnnotation(BridgeClass) && !e1.sym.hasAnnotation(BridgeClass)) {
+                log("Double definition detected:\n  " +
+                    ((e.sym.getClass, e.sym.info, e.sym.ownerChain)) + "\n  " +
+                    ((e1.sym.getClass, e1.sym.info, e1.sym.ownerChain)))
 
-            // check no double def
-            if (needsCheck) {
-              var e1 = scope.lookupNextEntry(e)
-              while ((e1 ne null) && e1.owner == scope) {
-                if (!accesses(e.sym, e1.sym) && !accesses(e1.sym, e.sym) &&
-                    (e.sym.isType || inBlock || (e.sym.tpe matches e1.sym.tpe) || e.sym.isMacro && e1.sym.isMacro))
-                  // default getters are defined twice when multiple overloads have defaults. an
-                  // error for this is issued in RefChecks.checkDefaultsInOverloaded
-                  if (!e.sym.isErroneous && !e1.sym.isErroneous && !e.sym.hasDefault &&
-                      !e.sym.hasAnnotation(BridgeClass) && !e1.sym.hasAnnotation(BridgeClass)) {
-                    log("Double definition detected:\n  " +
-                      ((e.sym.getClass, e.sym.info, e.sym.ownerChain)) + "\n  " +
-                      ((e1.sym.getClass, e1.sym.info, e1.sym.ownerChain)))
-
-                    DefDefinedTwiceError(e.sym, e1.sym)
-                    scope.unlink(e1) // need to unlink to avoid later problems with lub; see #2779
-                  }
-                e1 = scope.lookupNextEntry(e1)
+                DefDefinedTwiceError(e.sym, e1.sym)
+                scope.unlink(e1) // need to unlink to avoid later problems with lub; see #2779
               }
-            }
-
-          // add synthetics
-          context.unit.synthetics get e.sym foreach { tree =>
-            newStats += typedStat(tree) // might add even more synthetics to the scope
-            context.unit.synthetics -= e.sym
+              e1 = scope.lookupNextEntry(e1)
           }
-
           e = e.next
         }
-        needsCheck = false
-        // the type completer of a synthetic might add more synthetics. example: if the
-        // factory method of a case class (i.e. the constructor) has a default.
-        moreToAdd = initSize != scope.size
+      }
+
+      def addSynthetics(stats: List[Tree]): List[Tree] = {
+        val scope = if (inBlock) context.scope else context.owner.info.decls
+        var newStats = new ListBuffer[Tree]
+        var moreToAdd = true
+        while (moreToAdd) {
+          val initElems = scope.elems
+          for (sym <- scope)
+            for (tree <- context.unit.synthetics get sym) {
+              newStats += typedStat(tree) // might add even more synthetics to the scope
+              context.unit.synthetics -= sym
+            }
+          // the type completer of a synthetic might add more synthetics. example: if the
+          // factory method of a case class (i.e. the constructor) has a default.
+          moreToAdd = scope.elems ne initElems
         }
         if (newStats.isEmpty) stats
         else {
           // put default getters next to the method they belong to,
           // same for companion objects. fixes #2489 and #4036.
+          // [Martin] This is pretty ugly. I think we could avoid
+          // this code by associating defaults and companion objects
+          // with the original tree instead of the new symbol.
           def matches(stat: Tree, synt: Tree) = (stat, synt) match {
             case (DefDef(_, statName, _, _, _, _), DefDef(mods, syntName, _, _, _, _)) =>
               mods.hasDefaultFlag && syntName.toString.startsWith(statName.toString)
@@ -2551,7 +2550,10 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
       }
       context.updateBuffer(statsErrors)
       if (phase.erasedTypes) stats1
-      else checkNoDoubleDefsAndAddSynthetics(stats1)
+      else {
+        checkNoDoubleDefs(stats1)
+        addSynthetics(stats1)
+      }
     }
 
     def typedArg(arg: Tree, mode: Int, newmode: Int, pt: Type): Tree = {

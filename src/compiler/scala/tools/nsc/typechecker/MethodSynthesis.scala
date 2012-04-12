@@ -65,7 +65,24 @@ trait MethodSynthesis {
 
       MethodType(params, symbols.last.typeConstructor)
     }
-  }
+
+      /** The annotations amongst those found on the original symbol which
+       *  should be propagated to this kind of accessor.
+       */
+      def deriveAnnotations(initial: List[AnnotationInfo], category: Symbol, keepClean: Boolean): List[AnnotationInfo] = {
+        initial filter { ann =>
+          // There are no meta-annotation arguments attached to `ann`
+          if (ann.metaAnnotations.isEmpty) {
+            // A meta-annotation matching `annotKind` exists on `ann`'s definition.
+            (ann.defaultTargets contains category) ||
+            // `ann`'s definition has no meta-annotations, and `keepClean` is true.
+            (ann.defaultTargets.isEmpty && keepClean)
+          }
+          // There are meta-annotation arguments, and one of them matches `annotKind`
+          else ann.metaAnnotations exists (_ matches category)
+        }
+      }
+   }
   import synthesisUtil._
 
   class ClassMethodSynthesis(val clazz: Symbol, localTyper: Typer) {
@@ -155,28 +172,23 @@ trait MethodSynthesis {
 
   /** There are two key methods in here.
    *
-   *   1) enterGetterSetter is called from Namer with a ValDef which
-   *   may need accessors.  Some setup is performed.  In general this
-   *   creates symbols and enters them into the scope of the owner.
+   *   1) Enter methods such as enterGetterSetterare called
+   *   from Namer with a tree which may generate further trees such as accessors or
+   *   implicit wrappers. Some setup is performed.  In general this creates symbols
+   *   and enters them into the scope of the owner.
    *
-   *   2) finishGetterSetter is called from Typer when a Template is typed.
+   *   2) addDerivedTrees is called from Typer when a Template is typed.
    *   It completes the job, returning a list of trees with their symbols
-   *   set to those created in enterGetterSetter.  Those trees then become
+   *   set to those created in the enter methods.  Those trees then become
    *   part of the typed template.
    */
   trait MethodSynth {
     self: Namer =>
 
     import NamerErrorGen._
-    
-    /** TODO - synthesize method.
-     */
-    def enterImplicitClass(tree: ClassDef) {
-      /** e.g.
-      val ClassDef(mods, name, tparams, impl) = tree
-      val converter = ImplicitClassConverter(tree).createAndEnterSymbol()
-      ...
-      */
+
+    def enterImplicitWrapper(tree: ClassDef) {
+      ImplicitClassWrapper(tree).createAndEnterSymbol()
     }
 
     def enterGetterSetter(tree: ValDef) {
@@ -203,7 +215,8 @@ trait MethodSynthesis {
 
       enterBeans(tree)
     }
-    def finishGetterSetter(typer: Typer, stat: Tree): List[Tree] = stat match {
+
+    def addDerivedTrees(typer: Typer, stat: Tree): List[Tree] = stat match {
       case vd @ ValDef(mods, name, tpt, rhs) if !noFinishGetterSetter(vd) && !vd.symbol.isLazy =>
         // If we don't save the annotations, they seem to wander off.
         val annotations = stat.symbol.initialize.annotations
@@ -211,9 +224,19 @@ trait MethodSynthesis {
                 map (acc => atPos(vd.pos.focus)(acc derive annotations))
           filterNot (_ eq EmptyTree)
         )
+      case cd @ ClassDef(mods, _, _, _) if mods.isImplicit =>
+        val annotations = stat.symbol.initialize.annotations
+        // TODO: need to shuffle annotations between wrapper and class.
+        val wrapper = ImplicitClassWrapper(cd)
+        val meth = wrapper.derivedSym
+        val mdef = context.unit.synthetics(meth)
+        context.unit.synthetics -= meth
+        meth setAnnotations deriveAnnotations(annotations, MethodTargetClass, false)
+        cd.symbol setAnnotations deriveAnnotations(annotations, ClassTargetClass, true)
+        List(cd, mdef)
       case _ =>
         List(stat)
-    }
+      }
 
     def standardAccessors(vd: ValDef): List[DerivedFromValDef] = (
       if (vd.mods.isMutable && !vd.mods.isLazy) List(Getter(vd), Setter(vd))
@@ -234,35 +257,59 @@ trait MethodSynthesis {
       field ::: standardAccessors(vd) ::: beanAccessors(vd)
     }
 
+    /** This trait assembles what's needed for synthesizing derived methods.
+     *  Important: Typically, instances of this trait are created TWICE for each derived
+     *  symbol; once form Namers in an enter method, and once from Typers in addDerivedTrees.
+     *  So it's important that creating an instance of Derived does not have a side effect,
+     *  or if it has a side effect, control that it is done only once.
+     */
     trait Derived {
-      /** The tree from which we are deriving a synthetic member. */
+
+      /** The tree from which we are deriving a synthetic member. Typically, that's
+       *  given as an argument of the instance. */
       def tree: Tree
+
+      /** The name of the method */
       def name: TermName
+
+      /** The flags that are retained from the original symbol */
+
       def flagsMask: Long
+
+      /** The flags that the derived symbol has in addition to those retained from
+       *  the original symbol*/
       def flagsExtra: Long
-      
-      /** The tree, symbol, and type completer for the synthetic member. */
+
+      /** type completer for the synthetic member.
+       */
       def completer(sym: Symbol): Type
+
+      /** The derived symbol. It is assumed that this symbol already exists and has been
+       *  entered in the parent scope when derivedSym is called */
       def derivedSym: Symbol
+
+      /** The definition tree of the derived symbol. */
       def derivedTree: Tree
     }
-    
+
     trait DerivedFromMemberDef extends Derived {
       def tree: MemberDef
-      
+      def enclClass: Symbol
+
       // Final methods to make the rest easier to reason about.
       final def mods               = tree.mods
       final def basisSym           = tree.symbol
-      final def enclClass          = basisSym.enclClass
       final def derivedFlags: Long = basisSym.flags & flagsMask | flagsExtra
     }
-    
+
     trait DerivedFromClassDef extends DerivedFromMemberDef {
       def tree: ClassDef
+      final def enclClass = basisSym.owner.enclClass
     }
 
     trait DerivedFromValDef extends DerivedFromMemberDef {
       def tree: ValDef
+      final def enclClass = basisSym.enclClass
 
       /** Which meta-annotation is associated with this kind of entity.
        *  Presently one of: field, getter, setter, beanGetter, beanSetter, param.
@@ -286,22 +333,6 @@ trait MethodSynthesis {
         enterInScope(sym)
         sym setInfo completer(sym)
       }
-      /** The annotations amongst those found on the original symbol which
-       *  should be propagated to this kind of accessor.
-       */
-      private def deriveAnnotations(initial: List[AnnotationInfo]): List[AnnotationInfo] = {
-        initial filter { ann =>
-          // There are no meta-annotation arguments attached to `ann`
-          if (ann.metaAnnotations.isEmpty) {
-            // A meta-annotation matching `annotKind` exists on `ann`'s definition.
-            (ann.defaultTargets contains category) ||
-            // `ann`'s definition has no meta-annotations, and `keepClean` is true.
-            (ann.defaultTargets.isEmpty && keepClean)
-          }
-          // There are meta-annotation arguments, and one of them matches `annotKind`
-          else ann.metaAnnotations exists (_ matches category)
-        }
-      }
       private def logDerived(result: Tree): Tree = {
         debuglog("[+derived] " + ojoin(mods.flagString, basisSym.accurateKindString, basisSym.getterName.decode)
           + " (" + derivedSym + ")\n        " + result)
@@ -310,7 +341,7 @@ trait MethodSynthesis {
       }
       final def derive(initial: List[AnnotationInfo]): Tree = {
         validate()
-        derivedSym setAnnotations deriveAnnotations(initial)
+        derivedSym setAnnotations deriveAnnotations(initial, category, keepClean)
         logDerived(derivedTree)
       }
     }
@@ -334,15 +365,21 @@ trait MethodSynthesis {
     /** A synthetic method which performs the implicit conversion implied by
      *  the declaration of an implicit class.  Yet to be written.
      */
-    case class ImplicitClassConverter(tree: ClassDef) extends DerivedFromClassDef {
-      def completer(sym: Symbol): Type = ???
-      def derivedSym: Symbol           = ???
-      def derivedTree: DefDef          = ???
-      def flagsExtra: Long             = ???
-      def flagsMask: Long              = ???
-      def name: TermName               = ???
+    case class ImplicitClassWrapper(tree: ClassDef) extends DerivedFromClassDef {
+      def completer(sym: Symbol): Type = ??? // not needed
+      def createAndEnterSymbol(): Symbol = enterSyntheticSym(derivedTree)
+      def derivedSym: Symbol = {
+        val result = enclClass.info decl name
+        assert(result != NoSymbol, "not found: "+name+" in "+enclClass+" "+enclClass.info.decls)
+        result
+      }
+      def derivedTree: DefDef          =
+        factoryMeth(mods & flagsMask | flagsExtra, name, tree, symbolic = false)
+      def flagsExtra: Long             = METHOD | IMPLICIT
+      def flagsMask: Long              = AccessFlags
+      def name: TermName               = tree.name.toTermName
     }
-    
+
     case class Getter(tree: ValDef) extends DerivedGetter {
       def name       = tree.name
       def category   = GetterTargetClass
