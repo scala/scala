@@ -65,7 +65,24 @@ trait MethodSynthesis {
 
       MethodType(params, symbols.last.typeConstructor)
     }
-  }
+
+      /** The annotations amongst those found on the original symbol which
+       *  should be propagated to this kind of accessor.
+       */
+      def deriveAnnotations(initial: List[AnnotationInfo], category: Symbol, keepClean: Boolean): List[AnnotationInfo] = {
+        initial filter { ann =>
+          // There are no meta-annotation arguments attached to `ann`
+          if (ann.metaAnnotations.isEmpty) {
+            // A meta-annotation matching `annotKind` exists on `ann`'s definition.
+            (ann.defaultTargets contains category) ||
+            // `ann`'s definition has no meta-annotations, and `keepClean` is true.
+            (ann.defaultTargets.isEmpty && keepClean)
+          }
+          // There are meta-annotation arguments, and one of them matches `annotKind`
+          else ann.metaAnnotations exists (_ matches category)
+        }
+      }
+   }
   import synthesisUtil._
 
   class ClassMethodSynthesis(val clazz: Symbol, localTyper: Typer) {
@@ -207,9 +224,18 @@ trait MethodSynthesis {
                 map (acc => atPos(vd.pos.focus)(acc derive annotations))
           filterNot (_ eq EmptyTree)
         )
+      case cd @ ClassDef(mods, _, _, _) if mods.isImplicit =>
+        val annotations = stat.symbol.initialize.annotations
+        // TODO: need to shuffle annotations between wrapper and class.
+        val wrapper = ImplicitClassWrapper(cd)
+        val meth = wrapper.derivedSym
+        val mdef = context.unit.synthetics(meth)
+        meth setAnnotations deriveAnnotations(annotations, MethodTargetClass, false)
+        cd.symbol setAnnotations deriveAnnotations(annotations, ClassTargetClass, true)
+        List(cd, mdef)
       case _ =>
         List(stat)
-    }
+      }
 
     def standardAccessors(vd: ValDef): List[DerivedFromValDef] = (
       if (vd.mods.isMutable && !vd.mods.isLazy) List(Getter(vd), Setter(vd))
@@ -306,22 +332,6 @@ trait MethodSynthesis {
         enterInScope(sym)
         sym setInfo completer(sym)
       }
-      /** The annotations amongst those found on the original symbol which
-       *  should be propagated to this kind of accessor.
-       */
-      private def deriveAnnotations(initial: List[AnnotationInfo]): List[AnnotationInfo] = {
-        initial filter { ann =>
-          // There are no meta-annotation arguments attached to `ann`
-          if (ann.metaAnnotations.isEmpty) {
-            // A meta-annotation matching `annotKind` exists on `ann`'s definition.
-            (ann.defaultTargets contains category) ||
-            // `ann`'s definition has no meta-annotations, and `keepClean` is true.
-            (ann.defaultTargets.isEmpty && keepClean)
-          }
-          // There are meta-annotation arguments, and one of them matches `annotKind`
-          else ann.metaAnnotations exists (_ matches category)
-        }
-      }
       private def logDerived(result: Tree): Tree = {
         debuglog("[+derived] " + ojoin(mods.flagString, basisSym.accurateKindString, basisSym.getterName.decode)
           + " (" + derivedSym + ")\n        " + result)
@@ -330,7 +340,7 @@ trait MethodSynthesis {
       }
       final def derive(initial: List[AnnotationInfo]): Tree = {
         validate()
-        derivedSym setAnnotations deriveAnnotations(initial)
+        derivedSym setAnnotations deriveAnnotations(initial, category, keepClean)
         logDerived(derivedTree)
       }
     }
@@ -362,12 +372,11 @@ trait MethodSynthesis {
         assert(result != NoSymbol, "not found: "+name+" in "+enclClass+" "+enclClass.info.decls)
         result
       }
-      def derivedTree: DefDef          = util.trace("derivedTree = ")(
+      def derivedTree: DefDef          =
         factoryMeth(mods & flagsMask | flagsExtra, name, tree, symbolic = false)
-      )
       def flagsExtra: Long             = METHOD | IMPLICIT
       def flagsMask: Long              = AccessFlags
-      def name: TermName               = nme.implicitWrapperName(tree.name)
+      def name: TermName               = tree.name.toTermName
     }
 
     case class Getter(tree: ValDef) extends DerivedGetter {

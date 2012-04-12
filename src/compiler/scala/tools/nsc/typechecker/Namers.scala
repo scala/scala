@@ -669,7 +669,7 @@ trait Namers extends MethodSynthesis {
 
       // Suggested location only.
       if (mods.isImplicit) {
-        println("enter implicit wrapper "+tree+", owner = "+owner)
+        log("enter implicit wrapper "+tree+", owner = "+owner)
         enterImplicitWrapper(tree)
       }
     }

@@ -101,7 +101,6 @@ trait StdNames extends NameManglers { self: SymbolTable =>
     val ROOT: NameType               = "<root>"
     val PACKAGE: NameType            = "package"
     val SPECIALIZED_SUFFIX: NameType = "$sp"
-    val WRAPPER_SUFFIX: NameType     = "$wrapper"
 
     // value types (and AnyRef) are all used as terms as well
     // as (at least) arguments to the @specialize annotation.
@@ -535,9 +534,6 @@ trait StdNames extends NameManglers { self: SymbolTable =>
 
     def moduleVarName(name: TermName): TermName =
       newTermNameCached("" + name + MODULE_VAR_SUFFIX)
-
-    def implicitWrapperName(name: TypeName): TermName =
-      newTermNameCached("" + name + WRAPPER_SUFFIX)
 
     val ROOTPKG: TermName       = "_root_"
 

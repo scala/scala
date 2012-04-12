@@ -4,7 +4,7 @@ object Test extends App {
     def nElems = s.length
   }
 
-  "abc".nElems
+  assert("abc".nElems == 3)
 
 }
 
