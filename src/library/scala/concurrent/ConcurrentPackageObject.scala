@@ -36,33 +36,41 @@ abstract class ConcurrentPackageObject {
     case _                                      => true
   }
 
-  private[concurrent] def resolve[T](source: Either[Throwable, T]): Either[Throwable, T] = source match {
-    case Left(t: scala.runtime.NonLocalReturnControl[_]) => Right(t.value.asInstanceOf[T])
-    case Left(t: scala.util.control.ControlThrowable)    => Left(new ExecutionException("Boxed ControlThrowable", t))
-    case Left(t: InterruptedException)                   => Left(new ExecutionException("Boxed InterruptedException", t))
-    case Left(e: Error)                                  => Left(new ExecutionException("Boxed Error", e))
-    case _                                               => source
+  private[concurrent] def resolveEither[T](source: Either[Throwable, T]): Either[Throwable, T] = source match {
+    case Left(t) => resolver(t)
+    case _       => source
   }
 
-  private[concurrent] def resolver[T] =
-    resolverFunction.asInstanceOf[PartialFunction[Throwable, Either[Throwable, T]]]
-
+  private[concurrent] def resolver[T](throwable: Throwable): Either[Throwable, T] = throwable match {
+    case t: scala.runtime.NonLocalReturnControl[_] => Right(t.value.asInstanceOf[T])
+    case t: scala.util.control.ControlThrowable    => Left(new ExecutionException("Boxed ControlThrowable", t))
+    case t: InterruptedException                   => Left(new ExecutionException("Boxed InterruptedException", t))
+    case e: Error                                  => Left(new ExecutionException("Boxed Error", e))
+    case t                                         => Left(t)
+  }
+  
   /* concurrency constructs */
 
+  /** Starts an asynchronous computation and returns a `Future` object with the result of that computation.
+   *  
+   *  The result becomes available once the asynchronous computation is completed.
+   *  
+   *  @tparam T       the type of the result
+   *  @param body     the asychronous computation
+   *  @param execctx  the execution context on which the future is run
+   *  @return         the `Future` holding the result of the computation
+   */
   def future[T](body: =>T)(implicit execctx: ExecutionContext = defaultExecutionContext): Future[T] =
     Future[T](body)
 
+  /** Creates a promise object which can be completed with a value.
+   *  
+   *  @tparam T       the type of the value in the promise
+   *  @param execctx  the execution context on which the promise is created on
+   *  @return         the newly created `Promise` object
+   */
   def promise[T]()(implicit execctx: ExecutionContext = defaultExecutionContext): Promise[T] =
     Promise[T]()
-
-  /** Wraps a block of code into an awaitable object. */
-  def body2awaitable[T](body: =>T) = new Awaitable[T] {
-    def ready(atMost: Duration)(implicit permit: CanAwait) = {
-      body
-      this
-    }
-    def result(atMost: Duration)(implicit permit: CanAwait) = body
-  }
 
   /** Used to block on a piece of code which potentially blocks.
    *
@@ -74,7 +82,7 @@ abstract class ConcurrentPackageObject {
    *  - TimeoutException - in the case that the blockable object timed out
    */
   def blocking[T](body: =>T): T =
-    blocking(body2awaitable(body), Duration.fromNanos(0))
+    blocking(impl.Future.body2awaitable(body), Duration.fromNanos(0))
 
   /** Blocks on an awaitable object.
    *
@@ -100,11 +108,11 @@ private[concurrent] object ConcurrentPackageObject {
   // compiling a subset of sources; it seems that the wildcard is not
   // properly handled, and you get messages like "type _$1 defined twice".
   // This is consistent with other package object breakdowns.
-  private val resolverFunction: PartialFunction[Throwable, Either[Throwable, _]] = {
-    case t: scala.runtime.NonLocalReturnControl[_] => Right(t.value)
-    case t: scala.util.control.ControlThrowable    => Left(new ExecutionException("Boxed ControlThrowable", t))
-    case t: InterruptedException                   => Left(new ExecutionException("Boxed InterruptedException", t))
-    case e: Error                                  => Left(new ExecutionException("Boxed Error", e))
-    case t                                         => Left(t)
-  }
+  // private val resolverFunction: PartialFunction[Throwable, Either[Throwable, _]] = {
+  //   case t: scala.runtime.NonLocalReturnControl[_] => Right(t.value)
+  //   case t: scala.util.control.ControlThrowable    => Left(new ExecutionException("Boxed ControlThrowable", t))
+  //   case t: InterruptedException                   => Left(new ExecutionException("Boxed InterruptedException", t))
+  //   case e: Error                                  => Left(new ExecutionException("Boxed Error", e))
+  //   case t                                         => Left(t)
+  // }
 }

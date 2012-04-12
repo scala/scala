@@ -512,6 +512,15 @@ trait Future[+T] extends Awaitable[T] {
  */
 object Future {
   
+  /** Starts an asynchronous computation and returns a `Future` object with the result of that computation.
+   *  
+   *  The result becomes available once the asynchronous computation is completed.
+   *  
+   *  @tparam T       the type of the result
+   *  @param body     the asychronous computation
+   *  @param execctx  the execution context on which the future is run
+   *  @return         the `Future` holding the result of the computation
+   */
   def apply[T](body: =>T)(implicit executor: ExecutionContext): Future[T] = impl.Future(body)
 
   import scala.collection.mutable.Builder
