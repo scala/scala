@@ -231,6 +231,12 @@ trait Scanners extends ScannersCommon {
           lastOffset -= 1
         }
         if (inStringInterpolation) fetchStringPart() else fetchToken()
+        if(token == ERROR) {
+          if (inMultiLineInterpolation)
+            sepRegions = sepRegions.tail.tail
+          else if (inStringInterpolation)
+            sepRegions = sepRegions.tail
+        }
       } else {
         this copyFrom next
         next.token = EMPTY
@@ -328,7 +334,7 @@ trait Scanners extends ScannersCommon {
           putChar(ch)
           nextChar()
           getIdentRest()
-          if (ch == '"' && token == IDENTIFIER && settings.Xexperimental.value)
+          if (ch == '"' && token == IDENTIFIER)
             token = INTERPOLATIONID
         case '<' => // is XMLSTART?
           val last = if (charOffset >= 2) buf(charOffset - 2) else ' '
@@ -697,7 +703,7 @@ trait Scanners extends ScannersCommon {
           do {
             putChar(ch)
             nextRawChar()
-          } while (Character.isUnicodeIdentifierPart(ch))
+          } while (ch != SU && Character.isUnicodeIdentifierPart(ch))
           next.token = IDENTIFIER
           next.name = newTermName(cbuf.toString)
           cbuf.clear()
