@@ -31,16 +31,6 @@ package concurrent {
     def result[T](awaitable: Awaitable[T], atMost: Duration): T = awaitable.result(atMost)
   }
 
-  /** A timeout exception.
-   *
-   *  Futures are failed with a timeout exception when their timeout expires.
-   *
-   *  Each timeout exception contains an origin future which originally timed out.
-   */
-  class FutureTimeoutException(origin: Future[_], message: String) extends TimeoutException(message) {
-    def this(origin: Future[_]) = this(origin, "Future timed out.")
-  }
-
   final class DurationOps private[concurrent] (x: Int) {
     // TODO ADD OTHERS
     def ns = util.Duration.fromNanos(0)
