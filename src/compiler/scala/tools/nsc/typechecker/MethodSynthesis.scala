@@ -230,6 +230,7 @@ trait MethodSynthesis {
         val wrapper = ImplicitClassWrapper(cd)
         val meth = wrapper.derivedSym
         val mdef = context.unit.synthetics(meth)
+        context.unit.synthetics -= meth
         meth setAnnotations deriveAnnotations(annotations, MethodTargetClass, false)
         cd.symbol setAnnotations deriveAnnotations(annotations, ClassTargetClass, true)
         List(cd, mdef)
