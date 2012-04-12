@@ -52,6 +52,13 @@ abstract class SymbolTable extends api.Universe
 
   /** Overridden when we know more about what was happening during a failure. */
   def supplementErrorMessage(msg: String): String = msg
+  
+  private[scala] def printCaller[T](msg: String)(result: T) = {
+    Console.err.println(msg + ": " + result)
+    Console.err.println("Called from:")
+    (new Throwable).getStackTrace.drop(2).take(15).foreach(Console.err.println)
+    result
+  }
 
   private[scala] def printResult[T](msg: String)(result: T) = {
     Console.err.println(msg + ": " + result)
