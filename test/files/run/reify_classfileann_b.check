@@ -1,0 +1,20 @@
+{
+  class C extends Object {
+    def <init>() = {
+      super.<init>();
+      ()
+    };
+    def x: Int = 2: @ann(bar = "1",quux = Array("2", "3"),baz = new ann(bar = "4"))
+  };
+  ()
+}
+{
+  class C extends Object {
+    def <init>(): C = {
+      C.super.<init>();
+      ()
+    };
+    def x: Int = (2: Int(2) @ann(bar = "1", quux = ["2", "3"], baz = ann(bar = "4")))
+  };
+  ()
+}

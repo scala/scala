@@ -96,6 +96,7 @@ class ConsoleFileManager extends FileManager {
       latestActorsFile  = dir / "lib/scala-actors.jar"
       latestCompFile    = dir / "lib/scala-compiler.jar"
       latestPartestFile = dir / "lib/scala-partest.jar"
+      latestFjbgFile    = testParent / "lib" / "fjbg.jar"
     }
     else {
       def setupQuick() {

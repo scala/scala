@@ -1,9 +1,7 @@
-import scala.tools.nsc.reporters._
-import scala.tools.nsc.Settings
-import reflect.runtime.Mirror.ToolBox
+import scala.reflect.mirror._
 
 object Test extends App {
-  val code = scala.reflect.Code.lift{
+  reify {
     def fact(n: Int): BigInt =
       if (n == 0) 1 else fact(n-1) * n
     class Factorizer(n: Int) {
@@ -12,9 +10,5 @@ object Test extends App {
     implicit def int2fact(n: Int) = new Factorizer(n)
 
     println("10! = " + (10!))
-  };
-
-  val reporter = new ConsoleReporter(new Settings)
-  val toolbox = new ToolBox(reporter)
-  toolbox.runExpr(code.tree)
+  }.eval
 }

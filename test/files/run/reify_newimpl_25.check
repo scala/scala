@@ -1,0 +1,21 @@
+Type in expressions to have them evaluated.
+Type :help for more information.
+
+scala> 
+
+scala> import scala.reflect.mirror._
+import scala.reflect.mirror._
+
+scala> {
+  val x = "2"
+  val tt = implicitly[TypeTag[x.type]]
+  println(tt)
+}
+<console>:13: free term: Ident(newTermName("x")) defined by res0  in <console>:12:21
+                val tt = implicitly[TypeTag[x.type]]
+                                   ^
+ConcreteTypeTag[x.type]
+
+scala> 
+
+scala> 

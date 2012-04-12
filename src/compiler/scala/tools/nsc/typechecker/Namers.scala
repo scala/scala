@@ -624,11 +624,6 @@ trait Namers extends MethodSynthesis {
           enterCopyMethodOrGetter(tree, tparams)
         else
           sym setInfo completerOf(tree, tparams)
-
-        if (mods hasFlag MACRO) {
-          if (!(sym.owner.isClass && sym.owner.isStatic))
-            context.error(tree.pos, "macro definition must appear in globally accessible class")
-        }
     }
 
     def enterClassDef(tree: ClassDef) {
@@ -650,14 +645,6 @@ trait Namers extends MethodSynthesis {
       if (hasDefault) {
         val m = ensureCompanionObject(tree)
         classAndNamerOfModule(m) = (tree, null)
-      }
-      val hasMacro = impl.body exists {
-        case DefDef(mods, _, _, _, _, _) => mods hasFlag MACRO
-        case _                           => false
-      }
-      if (hasMacro) {
-        val m = ensureCompanionObject(tree)
-        classOfModuleClass(m.moduleClass) = new WeakReference(tree)
       }
       val owner = tree.symbol.owner
       if (owner.isPackageObjectClass) {
@@ -809,7 +796,9 @@ trait Namers extends MethodSynthesis {
      */
     private def assignTypeToTree(tree: ValOrDefDef, defnTyper: Typer, pt: Type): Type = {
       // compute result type from rhs
-      val typedBody = defnTyper.computeType(tree.rhs, pt)
+      val typedBody =
+        if (tree.symbol.isTermMacro) defnTyper.computeMacroDefType(tree, pt)
+        else defnTyper.computeType(tree.rhs, pt)
       val sym       = if (owner.isMethod) owner else tree.symbol
       val typedDefn = widenIfNecessary(sym, typedBody, pt)
       assignTypeToTree(tree, typedDefn)
@@ -871,10 +860,8 @@ trait Namers extends MethodSynthesis {
         Namers.this.classOfModuleClass get clazz foreach { cdefRef =>
           val cdef = cdefRef()
           if (cdef.mods.isCase) addApplyUnapply(cdef, templateNamer)
-          if (settings.Xmacros.value) addMacroMethods(cdef.impl, templateNamer)
           classOfModuleClass -= clazz
         }
-        if (settings.Xmacros.value) addMacroMethods(templ, templateNamer)
       }
 
       // add the copy method to case classes; this needs to be done here, not in SyntheticMethods, because
@@ -1029,12 +1016,20 @@ trait Namers extends MethodSynthesis {
       }
       addDefaultGetters(meth, vparamss, tparams, overriddenSymbol)
 
+      // macro defs need to be typechecked in advance
+      // because @macroImpl annotation only gets assigned during typechecking
+      // otherwise we might find ourselves in the situation when we specified -Xmacro-fallback-classpath
+      // but macros still don't expand
+      // that might happen because macro def doesn't have its link a macro impl yet
+      if (ddef.symbol.isTermMacro) {
+        val pt = resultPt.substSym(tparamSyms, tparams map (_.symbol))
+        typer.computeMacroDefType(ddef, pt)
+      }
+
       thisMethodType({
         val rt = (
           if (!tpt.isEmpty) {
             typer.typedType(tpt).tpe
-          } else if (meth.isMacro) {
-            assignTypeToTree(ddef, AnyClass.tpe)
           } else {
             // replace deSkolemized symbols with skolemized ones
             // (for resultPt computed by looking at overridden symbol, right?)

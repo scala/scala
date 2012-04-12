@@ -1125,7 +1125,8 @@ trait Scanners extends ScannersCommon {
     nme.SUPERTYPEkw -> SUPERTYPE,
     nme.HASHkw      -> HASH,
     nme.ATkw        -> AT
-  )
+  ) ++
+  (if (settings.Xmacros.value) List(nme.MACROkw -> MACRO) else List())
 
   private var kwOffset: Int = -1
   private val kwArray: Array[Int] = {

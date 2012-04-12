@@ -1,0 +1,10 @@
+Macros_2.scala:3: error: ';' expected but '.' found.
+    def foo(x: Int): Int = macro Impls.foo_impl
+                                      ^
+Macros_2.scala:5: error: ';' expected but '.' found.
+  def bar(x: Int): Int = macro Impls.bar_impl
+                                    ^
+Macros_2.scala:9: error: ';' expected but '.' found.
+  def quux(x: Int): Int = macro Impls.quux_impl
+                                     ^
+three errors found

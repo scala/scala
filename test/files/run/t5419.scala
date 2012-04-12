@@ -1,9 +1,8 @@
-import scala.reflect._
-import scala.reflect.api._
+import scala.reflect.mirror._
 
 class Foo extends StaticAnnotation
 
 object Test extends App {
-  val tree = scala.reflect.Code.lift{5: @Foo}.tree
+  val tree = reify{(5: @Foo).asInstanceOf[Int]}.tree
   println(tree.toString)
 }

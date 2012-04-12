@@ -254,7 +254,9 @@ trait Types extends api.Types { self: SymbolTable =>
   case object UnmappableTree extends TermTree {
     override def toString = "<unmappable>"
     super.tpe_=(NoType)
-    override def tpe_=(t: Type) = if (t != NoType) throw new UnsupportedOperationException("tpe_=("+t+") inapplicable for <empty>")
+    override def tpe_=(t: Type) = if (t != NoType) {
+      throw new UnsupportedOperationException("tpe_=("+t+") inapplicable for <empty>")
+    }
   }
 
   abstract class AbsTypeImpl extends AbsType { this: Type =>
@@ -262,7 +264,7 @@ trait Types extends api.Types { self: SymbolTable =>
     def nonPrivateDeclaration(name: Name): Symbol = nonPrivateDecl(name)
     def declarations = decls
     def typeArguments = typeArgs
-    def erasedType = transformedType(this)
+    def erasure = transformedType(this)
     def substituteTypes(from: List[Symbol], to: List[Type]): Type = subst(from, to)
   }
 
@@ -722,6 +724,9 @@ trait Types extends api.Types { self: SymbolTable =>
 
     /** Apply `f` to each part of this type */
     def foreach(f: Type => Unit) { new ForEachTypeTraverser(f).traverse(this) }
+
+    /** Apply `pf' to each part of this type on which the function is defined */
+    def collect[T](pf: PartialFunction[Type, T]): List[T] = new CollectTypeCollector(pf).collect(this)
 
     /** Apply `f` to each part of this type; children get mapped before their parents */
     def map(f: Type => Type): Type = new TypeMap {
@@ -1193,6 +1198,8 @@ trait Types extends api.Types { self: SymbolTable =>
     override def safeToString: String = "?" + bounds
     override def kind = "BoundedWildcardType"
   }
+
+  object BoundedWildcardType extends BoundedWildcardTypeExtractor
 
   /** An object representing a non-existing type */
   case object NoType extends Type {
@@ -1822,7 +1829,35 @@ trait Types extends api.Types { self: SymbolTable =>
 
   object ConstantType extends ConstantTypeExtractor {
     def apply(value: Constant): ConstantType = {
-      unique(new UniqueConstantType(value)).asInstanceOf[ConstantType]
+      val tpe = new UniqueConstantType(value)
+      if (value.tag == ClazzTag) {
+        // if we carry a classOf, we might be in trouble
+        // http://groups.google.com/group/scala-internals/browse_thread/thread/45185b341aeb6a30
+        // I don't have time for a thorough fix, so I put a hacky workaround here
+        val alreadyThere = uniques findEntry tpe
+        if ((alreadyThere ne null) && (alreadyThere ne tpe) && (alreadyThere.toString != tpe.toString)) {
+          // we need to remove a stale type that has the same hashcode as we do
+          // HashSet doesn't support removal, and this makes our task non-trivial
+          // also we cannot simply recreate it, because that'd skew hashcodes (that change over time, omg!)
+          // the only solution I can see is getting into the underlying array and sneakily manipulating it
+          val ftable = uniques.getClass.getDeclaredFields().find(f => f.getName endsWith "table").get
+          ftable.setAccessible(true)
+          val table = ftable.get(uniques).asInstanceOf[Array[AnyRef]]
+          def overwrite(hc: Int, x: Type) {
+            def index(x: Int): Int = math.abs(x % table.length)
+            var h = index(hc)
+            var entry = table(h)
+            while (entry ne null) {
+              if (x == entry)
+                table(h) = x
+              h = index(h + 1)
+              entry = table(h)
+            }
+          }
+          overwrite(tpe.##, tpe)
+        }
+      }
+      unique(tpe).asInstanceOf[ConstantType]
     }
   }
 
@@ -3751,6 +3786,8 @@ trait Types extends api.Types { self: SymbolTable =>
     }
   }
 
+  // todo. move these into scala.reflect.api
+
   /** A prototype for mapping a function over all possible types
    */
   abstract class TypeMap extends (Type => Type) {
@@ -4559,6 +4596,16 @@ trait Types extends api.Types { self: SymbolTable =>
 
     def traverse(tp: Type) {
       if (p(tp)) result ::= tp
+      mapOver(tp)
+    }
+  }
+
+  /** A map to implement the `collect` method. */
+  class CollectTypeCollector[T](pf: PartialFunction[Type, T]) extends TypeCollector[List[T]](Nil) {
+    override def collect(tp: Type) = super.collect(tp).reverse
+
+    def traverse(tp: Type) {
+      if (pf.isDefinedAt(tp)) result ::= pf(tp)
       mapOver(tp)
     }
   }

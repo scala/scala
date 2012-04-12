@@ -16,6 +16,7 @@ abstract class SymbolTable extends api.Universe
                               with SymbolCreations
                               with Symbols
                               with SymbolFlags
+                              with FreeVars
                               with Types
                               with Kinds
                               with ExistentialsAndSkolems
@@ -34,6 +35,9 @@ abstract class SymbolTable extends api.Universe
                               with TypeDebugging
                               with Importers
                               with Required
+                              with TreeBuildUtil
+                              with Reporters
+                              with CapturedVariables
 {
   def rootLoader: LazyType
   def log(msg: => AnyRef): Unit
@@ -158,7 +162,7 @@ abstract class SymbolTable extends api.Universe
     try op
     finally popPhase(saved)
   }
-  
+
 
   /** Since when it is to be "at" a phase is inherently ambiguous,
    *  a couple unambiguously named methods.

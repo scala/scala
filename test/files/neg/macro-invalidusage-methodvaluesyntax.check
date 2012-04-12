@@ -1,0 +1,4 @@
+Macros_Test_2.scala:6: error: macros cannot be eta-expanded
+  val firstClassFoo = Macros.foo _
+                             ^
+one error found

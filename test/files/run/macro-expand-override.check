@@ -1,0 +1,15 @@
+(fooBString,Expr[Nothing](Test.this.dd),42)
+(fooDInt,Expr[Nothing](Test.this.dd),42)
+fooBBoolean
+(fooBString,Expr[Nothing](Test.this.db),42)
+(fooBInt,Expr[Nothing](Test.this.db),42)
+fooBBoolean
+(fooZString,Expr[Nothing](Test.this.zz),42)
+(fooDInt,Expr[Nothing](Test.this.zz),42)
+fooZBoolean
+(fooBString,Expr[Nothing](Test.this.zd),42)
+(fooDInt,Expr[Nothing](Test.this.zd),42)
+fooZBoolean
+(fooBString,Expr[Nothing](Test.this.zb),42)
+(fooBInt,Expr[Nothing](Test.this.zb),42)
+fooZBoolean

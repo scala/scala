@@ -1,0 +1,6 @@
+(fooObjectString,Expr[Nothing](Macros),42)
+(fooObjectInt,Expr[Nothing](Macros),42)
+fooObjectBoolean
+(fooClassString,Expr[Nothing](new Macros()),42)
+(fooClassInt,Expr[Nothing](new Macros()),42)
+fooClassBoolean

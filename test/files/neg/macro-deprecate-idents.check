@@ -1,0 +1,50 @@
+Macros_Bind_12.scala:2: warning: in future versions of Scala "macro" will be a keyword. consider using a different name.
+  val Some(macro) = Some(42)
+           ^
+Macros_Bind_12.scala:4: warning: in future versions of Scala "macro" will be a keyword. consider using a different name.
+    case macro => println(macro)
+         ^
+Macros_Class_4.scala:3: warning: in future versions of Scala "macro" will be a keyword. consider using a different name.
+class macro
+      ^
+Macros_Class_5.scala:2: warning: in future versions of Scala "macro" will be a keyword. consider using a different name.
+  class macro
+        ^
+Macros_Def_13.scala:2: warning: in future versions of Scala "macro" will be a keyword. consider using a different name.
+  def macro = 2
+      ^
+Macros_Object_6.scala:3: warning: in future versions of Scala "macro" will be a keyword. consider using a different name.
+object macro
+       ^
+Macros_Object_7.scala:2: warning: in future versions of Scala "macro" will be a keyword. consider using a different name.
+  object macro
+         ^
+Macros_Package_10.scala:1: warning: in future versions of Scala "macro" will be a keyword. consider using a different name.
+package macro
+        ^
+Macros_Package_10.scala:3: warning: in future versions of Scala "macro" will be a keyword. consider using a different name.
+package macro.bar
+        ^
+Macros_Package_11.scala:3: warning: in future versions of Scala "macro" will be a keyword. consider using a different name.
+package macro.foo
+        ^
+Macros_Trait_8.scala:3: warning: in future versions of Scala "macro" will be a keyword. consider using a different name.
+trait macro
+      ^
+Macros_Trait_9.scala:2: warning: in future versions of Scala "macro" will be a keyword. consider using a different name.
+  trait macro
+        ^
+Macros_Type_3.scala:2: warning: in future versions of Scala "macro" will be a keyword. consider using a different name.
+  type macro = Int
+       ^
+Macros_Val_1.scala:2: warning: in future versions of Scala "macro" will be a keyword. consider using a different name.
+  val macro = ???
+      ^
+Macros_Var_2.scala:2: warning: in future versions of Scala "macro" will be a keyword. consider using a different name.
+  var macro = ???
+      ^
+Main.scala:2: error: Unmatched closing brace '}' ignored here
+}
+^
+15 warnings found
+one error found

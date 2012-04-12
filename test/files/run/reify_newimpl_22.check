@@ -1,0 +1,23 @@
+Type in expressions to have them evaluated.
+Type :help for more information.
+
+scala> 
+
+scala> import scala.reflect.mirror._
+import scala.reflect.mirror._
+
+scala> {
+  val x = 2
+  val code = reify {
+    x
+  }
+  println(code.eval)
+}
+<console>:13: free term: Ident(newTermName("x")) defined by res0  in <console>:12:21
+                val code = reify {
+                                 ^
+2
+
+scala> 
+
+scala> 

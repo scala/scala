@@ -7,6 +7,10 @@ trait Symbols { self: Universe =>
 
   abstract class AbsSymbol { this: Symbol =>
 
+    /** The position of this symbol
+     */
+    def pos: Position
+
     /** The modifiers of this symbol
      */
     def modifiers: Set[Modifier]
@@ -46,6 +50,10 @@ trait Symbols { self: Universe =>
 
     /** An id number which is unique for all symbols in this universe */
     def id: Int
+
+    /** ...
+     */
+    def orElse[T](alt: => Symbol): Symbol
 
     /**
      * Set when symbol has a modifier of the form private[X], NoSymbol otherwise.
@@ -112,6 +120,20 @@ trait Symbols { self: Universe =>
      */
     def isTerm         : Boolean
 
+    /** Does this symbol represent the definition of method?
+     *  If yes, `isTerm` is also guaranteed to be true.
+     */
+    def isMethod       : Boolean
+
+    /** Is this symbol an overloaded method?
+     */
+    def isOverloaded   : Boolean
+
+    /** Does this symbol represent a free term captured by reification?
+     */
+    // needed for ones who wish to inspect reified trees
+    def isFreeTerm     : Boolean
+
     /** Does this symbol represent the definition of type?
      *  Note that every symbol is either a term or a type.
      *  So for every symbol `sym`, either `sym.isTerm` is true
@@ -124,6 +146,17 @@ trait Symbols { self: Universe =>
      */
     def isClass        : Boolean
 
+    /** Does this symbol represent the definition of a primitive class?
+     *  Namely, is it one of [[scala.Double]], [[scala.Float]], [[scala.Long]], [[scala.Int]], [[scala.Char]],
+     *  [[scala.Short]], [[scala.Byte]], [[scala.Unit]] or [[scala.Boolean]]?
+     */
+    def isPrimitiveValueClass: Boolean
+
+    /** Does this symbol represent the definition of a custom value class?
+     *  Namely, is AnyVal among its parent classes?
+     */
+    def isDerivedValueClass: Boolean
+
     /** Does this symbol represent the definition of a type alias?
      *  If yes, `isType` is also guaranteed to be true.
      */
@@ -134,9 +167,28 @@ trait Symbols { self: Universe =>
      */
     def isAbstractType : Boolean
 
-    /** Is this symbol an overloaded method?
+    /** Does this symbol represent the definition of a skolem?
+     *  Skolems are used during typechecking to represent type parameters viewed from inside their scopes.
+     *  If yes, `isType` is also guaranteed to be true.
      */
-    def isOverloaded: Boolean
+    def isSkolem       : Boolean
+
+    /** Does this symbol represent a free type captured by reification?
+     */
+    // needed for ones who wish to inspect reified trees
+    def isFreeType     : Boolean
+
+    /** Is the type parameter represented by this symbol contravariant?
+     */
+    def isContravariant : Boolean
+
+    /** Is the type parameter represented by this symbol contravariant?
+     */
+    def isCovariant     : Boolean
+
+    /** Does this symbol or its underlying type represent a typechecking error?
+     */
+    def isErroneous : Boolean
 
     /** The type signature of this symbol.
      *  Note if the symbol is a member of a class, one almost always is interested
@@ -192,7 +244,7 @@ trait Symbols { self: Universe =>
     /** A fresh symbol with given name `name`, position `pos` and flags `flags` that has
      *  the current symbol as its owner.
      */
-    def newNestedSymbol(name: Name, pos: Position, flags: Long, isClass: Boolean): Symbol // needed by LiftCode
+    def newNestedSymbol(name: Name, pos: Position, flags: Long, isClass: Boolean): Symbol // needed by LiftCode   !!! not enough reason to have in the api
 
     /** Low-level operation to set the symbol's flags
      *  @return the symbol itself
@@ -207,6 +259,9 @@ trait Symbols { self: Universe =>
     /** Set symbol's annotations to given annotations `annots`.
      */
     def setAnnotations(annots: AnnotationInfo*): this.type // needed by LiftCode       !!! not enough reason to have in the api
+
+    /** The kind of this symbol; used for debugging */
+    def kind: String
   }
 
   val NoSymbol: Symbol
