@@ -1341,11 +1341,9 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
               val residualTargs = symbol.info.typeParams zip targs collect {
                 case (tvar, targ) if !env.contains(tvar) || !isPrimitiveValueClass(env(tvar).typeSymbol) => targ
               }
-              if (specMember.info.typeParams.isEmpty) {
-                // See SI-5583.  Don't know why it happens now if it didn't before.
-                if (residualTargs.nonEmpty)
-                  log("!!! Type args to be applied, but symbol says no parameters: " + ((specMember.defString, residualTargs)))
-
+              // See SI-5583.  Don't know why it happens now if it didn't before.
+              if (specMember.info.typeParams.isEmpty && residualTargs.nonEmpty) {
+                log("!!! Type args to be applied, but symbol says no parameters: " + ((specMember.defString, residualTargs)))
                 localTyper.typed(sel)
               }
               else {
