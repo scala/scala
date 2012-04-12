@@ -3483,7 +3483,6 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
             else
               tree
           original setType ann.tpe
-          original setPos tree.pos.focus
           TypeTree(tpe) setOriginal original setPos tree.pos.focus
         }
 
@@ -3542,7 +3541,7 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
             ann.tpe = arg1.tpe.withAnnotation(annotInfo)
           }
           val atype = ann.tpe
-          Typed(arg1, resultingTypeTree(atype)) setPos tree.pos.focus setType atype
+          Typed(arg1, resultingTypeTree(atype)) setPos tree.pos setType atype
         }
       }
 
