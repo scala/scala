@@ -99,7 +99,7 @@ trait Namers extends MethodSynthesis {
       owner.unsafeTypeParams foreach (paramContext.scope enter _)
       newNamer(paramContext)
     }
-    
+
     def enclosingNamerWithScope(scope: Scope) = {
       var cx = context
       while (cx != NoContext && cx.scope != scope) cx = cx.outer
@@ -666,10 +666,12 @@ trait Namers extends MethodSynthesis {
           "If possible, define " + tree.symbol + " in " + owner.skipPackageObject + " instead."
         )
       }
-      
+
       // Suggested location only.
-      if (mods.isImplicit)
-        enterImplicitClass(tree)
+      if (mods.isImplicit) {
+        println("enter implicit wrapper "+tree+", owner = "+owner)
+        enterImplicitWrapper(tree)
+      }
     }
 
     // this logic is needed in case typer was interrupted half
@@ -1404,10 +1406,10 @@ trait Namers extends MethodSynthesis {
       if (sym.isImplicit) {
         if (sym.isConstructor)
           fail(ImplicitConstr)
-        if (!sym.isTerm)
-          fail(ImplicitNotTerm)
+        if (!(sym.isTerm || (sym.isClass && !sym.isTrait)))
+          fail(ImplicitNotTermOrClass)
         if (sym.owner.isPackageClass)
-          fail(ImplicitTopObject)
+          fail(ImplicitAtToplevel)
       }
       if (sym.isClass) {
         if (sym.isAnyOverride && !sym.hasFlag(TRAIT))
