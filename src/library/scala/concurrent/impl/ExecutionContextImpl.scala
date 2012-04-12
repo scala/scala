@@ -73,7 +73,23 @@ private[scala] class ExecutionContextImpl(es: AnyRef) extends ExecutionContext w
   def internalBlockingCall[T](awaitable: Awaitable[T], atMost: Duration): T = {
     Future.releaseStack(this)
     
-    awaitable.result(atMost)(scala.concurrent.Await.canAwaitEvidence)
+    executorService match {
+      case fj: ForkJoinPool =>
+        var result: T = null.asInstanceOf[T]
+        val managedBlocker = new ForkJoinPool.ManagedBlocker {
+          @volatile var isdone = false
+          def block() = {
+            result = awaitable.result(atMost)(scala.concurrent.Await.canAwaitEvidence)
+            isdone = true
+            true
+          }
+          def isReleasable = isdone
+        }
+        ForkJoinPool.managedBlock(managedBlocker)
+        result
+      case _ =>
+        awaitable.result(atMost)(scala.concurrent.Await.canAwaitEvidence)
+    }
   }
 
   def reportFailure(t: Throwable) = t match {
