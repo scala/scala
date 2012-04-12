@@ -17,4 +17,5 @@ package scala
  * @author Lex Spoon
  * @version 1.0, 2007-5-21
  */
+@annotation.meta.companionMethod
 class inline extends annotation.StaticAnnotation
