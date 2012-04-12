@@ -1,9 +1,7 @@
-import scala.tools.nsc.reporters._
-import scala.tools.nsc.Settings
-import reflect.runtime.Mirror.ToolBox
+import scala.reflect.mirror._
 
 object Test extends App {
-  val code = scala.reflect.Code.lift{
+  val code = reify {
     object C {
       val x = 2
     }
@@ -11,8 +9,7 @@ object Test extends App {
     println(C.x)
   };
 
-  val reporter = new ConsoleReporter(new Settings)
-  val toolbox = new ToolBox(reporter)
+  val toolbox = mkToolBox()
   val evaluated = toolbox.runExpr(code.tree)
   println("evaluated = " + evaluated)
 }

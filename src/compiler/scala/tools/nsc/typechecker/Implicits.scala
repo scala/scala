@@ -32,7 +32,10 @@ trait Implicits {
   import global.typer.{ printTyping, deindentTyping, indentTyping, printInference }
 
   def inferImplicit(tree: Tree, pt: Type, reportAmbiguous: Boolean, isView: Boolean, context: Context): SearchResult =
-    inferImplicit(tree, pt, reportAmbiguous, isView, context, true)
+    inferImplicit(tree, pt, reportAmbiguous, isView, context, true, NoPosition)
+
+  def inferImplicit(tree: Tree, pt: Type, reportAmbiguous: Boolean, isView: Boolean, context: Context, saveAmbiguousDivergent: Boolean): SearchResult =
+    inferImplicit(tree, pt, reportAmbiguous, isView, context, saveAmbiguousDivergent, NoPosition)
 
   /** Search for an implicit value. See the comment on `result` at the end of class `ImplicitSearch`
    *  for more info how the search is conducted.
@@ -48,9 +51,12 @@ trait Implicits {
    *  @param saveAmbiguousDivergent  False if any divergent/ambiguous errors should be ignored after
    *                                 implicits search,
    *                                 true if they should be reported (used in further typechecking).
+   *  @param pos                     Position that is should be used for tracing and error reporting
+   *                                 (useful when we infer synthetic stuff and pass EmptyTree in the `tree` argument)
+   *                                 If it's set NoPosition, then position-based services will use `tree.pos`
    *  @return                        A search result
    */
-  def inferImplicit(tree: Tree, pt: Type, reportAmbiguous: Boolean, isView: Boolean, context: Context, saveAmbiguousDivergent: Boolean): SearchResult = {
+  def inferImplicit(tree: Tree, pt: Type, reportAmbiguous: Boolean, isView: Boolean, context: Context, saveAmbiguousDivergent: Boolean, pos: Position): SearchResult = {
     printInference("[infer %s] %s with pt=%s in %s".format(
       if (isView) "view" else "implicit",
       tree, pt, context.owner.enclClass)
@@ -71,9 +77,11 @@ trait Implicits {
     if (printInfers && !tree.isEmpty && !context.undetparams.isEmpty)
       printTyping("typing implicit: %s %s".format(tree, context.undetparamsString))
     val implicitSearchContext = context.makeImplicit(reportAmbiguous)
-    val result = new ImplicitSearch(tree, pt, isView, implicitSearchContext).bestImplicit
-    if (saveAmbiguousDivergent && implicitSearchContext.hasErrors)
+    val result = new ImplicitSearch(tree, pt, isView, implicitSearchContext, pos).bestImplicit
+    if (saveAmbiguousDivergent && implicitSearchContext.hasErrors) {
       context.updateBuffer(implicitSearchContext.errBuffer.filter(err => err.kind == ErrorKinds.Ambiguous || err.kind == ErrorKinds.Divergent))
+      debugwarn("update buffer: " + implicitSearchContext.errBuffer)
+    }
     printInference("[infer implicit] inferred " + result)
     context.undetparams = context.undetparams filterNot result.subst.from.contains
 
@@ -99,8 +107,6 @@ trait Implicits {
     infoMapCache.clear()
     improvesCache.clear()
   }
-
-  private val ManifestSymbols = Set(PartialManifestClass, FullManifestClass, OptManifestClass)
 
   /* Map a polytype to one in which all type parameters and argument-dependent types are replaced by wildcards.
    * Consider `implicit def b(implicit x: A): x.T = error("")`. We need to approximate DebruijnIndex types
@@ -251,8 +257,11 @@ trait Implicits {
    *  @param pt               The original expected type of the implicit.
    *  @param isView           We are looking for a view
    *  @param context0         The context used for the implicit search
+   *  @param pos0             Position that is preferable for use in tracing and error reporting
+   *                          (useful when we infer synthetic stuff and pass EmptyTree in the `tree` argument)
+   *                          If it's set to NoPosition, then position-based services will use `tree.pos`
    */
-  class ImplicitSearch(tree: Tree, pt: Type, isView: Boolean, context0: Context)
+  class ImplicitSearch(tree: Tree, pt: Type, isView: Boolean, context0: Context, pos0: Position = NoPosition)
     extends Typer(context0) with ImplicitsContextErrors {
       printTyping(
         ptBlock("new ImplicitSearch",
@@ -264,6 +273,13 @@ trait Implicits {
         )
       )
 //    assert(tree.isEmpty || tree.pos.isDefined, tree)
+    def pos = if (pos0 != NoPosition) pos0 else tree.pos
+
+    def failure(what: Any, reason: String, pos: Position = this.pos): SearchResult = {
+      if (settings.XlogImplicits.value)
+        reporter.echo(pos, what+" is not a valid implicit value for "+pt+" because:\n"+reason)
+      SearchFailure
+    }
 
     import infer._
     /** Is implicit info `info1` better than implicit info `info2`?
@@ -351,13 +367,13 @@ trait Implicits {
      *  @pre           `info.tpe` does not contain an error
      */
     private def typedImplicit(info: ImplicitInfo, ptChecked: Boolean): SearchResult = {
-      (context.openImplicits find { case (tp, sym) => sym == tree.symbol && dominates(pt, tp)}) match {
+      (context.openImplicits find { case (tp, tree1) => tree1.symbol == tree.symbol && dominates(pt, tp)}) match {
          case Some(pending) =>
            // println("Pending implicit "+pending+" dominates "+pt+"/"+undetParams) //@MDEBUG
            throw DivergentImplicit
          case None =>
            try {
-             context.openImplicits = (pt, tree.symbol) :: context.openImplicits
+             context.openImplicits = (pt, tree) :: context.openImplicits
              // println("  "*context.openImplicits.length+"typed implicit "+info+" for "+pt) //@MDEBUG
              typedImplicit0(info, ptChecked)
            } catch {
@@ -515,7 +531,7 @@ trait Implicits {
     private def typedImplicit1(info: ImplicitInfo): SearchResult = {
       incCounter(matchingImplicits)
 
-      val itree = atPos(tree.pos.focus) {
+      val itree = atPos(pos.focus) {
         if (info.pre == NoPrefix) Ident(info.name)
         else Select(gen.mkAttributedQualifier(info.pre), info.name)
       }
@@ -523,11 +539,7 @@ trait Implicits {
         typeDebug.ptTree(itree), wildPt, info.name, info.tpe)
       )
 
-      def fail(reason: String): SearchResult = {
-        if (settings.XlogImplicits.value)
-          inform(itree+" is not a valid implicit value for "+pt+" because:\n"+reason)
-        SearchFailure
-      }
+      def fail(reason: String): SearchResult = failure(itree, reason)
       try {
         val itree1 =
           if (isView) {
@@ -707,6 +719,7 @@ trait Implicits {
            info.isCyclicOrErroneous
         || isView && isPredefMemberNamed(info.sym, nme.conforms)
         || isShadowed(info.name)
+        || (!context.macrosEnabled && info.sym.isTermMacro)
       )
 
       /** True if a given ImplicitInfo (already known isValid) is eligible.
@@ -825,7 +838,7 @@ trait Implicits {
             throw DivergentImplicit
 
           if (invalidImplicits.nonEmpty)
-            setAddendum(tree.pos, () =>
+            setAddendum(pos, () =>
               "\n Note: implicit "+invalidImplicits.head+" is not applicable here"+
               " because it comes after the application point and it lacks an explicit result type")
         }
@@ -1085,111 +1098,58 @@ trait Implicits {
         implicitInfoss1
     }
 
-    /** Creates a tree that calls the relevant factory method in object
-      * reflect.Manifest for type 'tp'. An EmptyTree is returned if
-      * no manifest is found. todo: make this instantiate take type params as well?
-      */
-    private def manifestOfType(tp: Type, full: Boolean): SearchResult = {
+    // these should be lazy, otherwise we wouldn't be able to compile scala-library with starr
+    private val TagSymbols = Set(ClassTagClass, TypeTagClass, ConcreteTypeTagClass)
+    private val TagMaterializers = Map(
+      ClassTagClass -> MacroInternal_materializeClassTag,
+      TypeTagClass -> MacroInternal_materializeTypeTag,
+      ConcreteTypeTagClass -> MacroInternal_materializeConcreteTypeTag
+    )
 
-      /** Creates a tree that calls the factory method called constructor in object reflect.Manifest */
-      def manifestFactoryCall(constructor: String, tparg: Type, args: Tree*): Tree =
-        if (args contains EmptyTree) EmptyTree
-        else typedPos(tree.pos.focus) {
-          val mani = gen.mkManifestFactoryCall(full, constructor, tparg, args.toList)
-          if (settings.debug.value) println("generated manifest: "+mani) // DEBUG
-          mani
+    def tagOfType(pre: Type, tp: Type, tagClass: Symbol): SearchResult = {
+      def success(arg: Tree) =
+        try {
+          val tree1 = typed(atPos(pos.focus)(arg))
+          def isErroneous = tree exists (_.isErroneous)
+          if (context.hasErrors) failure(tp, "failed to typecheck the materialized typetag: %n%s".format(context.errBuffer.head.errMsg), context.errBuffer.head.errPos)
+          else new SearchResult(tree1, EmptyTreeTypeSubstituter)
+        } catch {
+          case ex: TypeError =>
+            failure(arg, "failed to typecheck the materialized typetag: %n%s".format(ex.msg), ex.pos)
         }
 
-      /** Creates a tree representing one of the singleton manifests.*/
-      def findSingletonManifest(name: String) = typedPos(tree.pos.focus) {
-        Select(gen.mkAttributedRef(FullManifestModule), name)
+      val prefix = (tagClass, pre) match {
+        // ClassTags only exist for scala.reflect.mirror, so their materializer doesn't care about prefixes
+        case (ClassTagClass, _) =>
+          gen.mkAttributedRef(Reflect_mirror) setType singleType(Reflect_mirror.owner.thisPrefix, Reflect_mirror)
+        // [Eugene to Martin] this is the crux of the interaction between implicits and reifiers
+        // here we need to turn a (supposedly path-dependent) type into a tree that will be used as a prefix
+        // I'm not sure if I've done this right - please, review
+        case (_, SingleType(prePre, preSym)) =>
+          gen.mkAttributedRef(prePre, preSym) setType pre
+        // necessary only to compile typetags used inside the Universe cake
+        case (_, ThisType(thisSym)) =>
+          gen.mkAttributedThis(thisSym)
+        case _ =>
+          // if ``pre'' is not a PDT, e.g. if someone wrote
+          //   implicitly[scala.reflect.makro.Context#TypeTag[Int]]
+          // then we need to fail, because we don't know the prefix to use during type reification
+          return failure(tp, "tag error: unsupported prefix type %s (%s)".format(pre, pre.kind))
       }
 
-      /** Re-wraps a type in a manifest before calling inferImplicit on the result */
-      def findManifest(tp: Type, manifestClass: Symbol = if (full) FullManifestClass else PartialManifestClass) =
-        inferImplicit(tree, appliedType(manifestClass, tp), true, false, context).tree
-
-      def findSubManifest(tp: Type) = findManifest(tp, if (full) FullManifestClass else OptManifestClass)
-      def mot(tp0: Type, from: List[Symbol], to: List[Type]): SearchResult = {
-        implicit def wrapResult(tree: Tree): SearchResult =
-          if (tree == EmptyTree) SearchFailure else new SearchResult(tree, if (from.isEmpty) EmptyTreeTypeSubstituter else new TreeTypeSubstituter(from, to))
-
-        val tp1 = tp0.normalize
-        tp1 match {
-          case ThisType(_) | SingleType(_, _) =>
-            // can't generate a reference to a value that's abstracted over by an existential
-            if (containsExistential(tp1)) EmptyTree
-            else manifestFactoryCall("singleType", tp, gen.mkAttributedQualifier(tp1))
-          case ConstantType(value) =>
-            manifestOfType(tp1.deconst, full)
-          case TypeRef(pre, sym, args) =>
-            if (isPrimitiveValueClass(sym) || isPhantomClass(sym)) {
-              findSingletonManifest(sym.name.toString)
-            } else if (sym == ObjectClass || sym == AnyRefClass) {
-              findSingletonManifest("Object")
-            } else if (sym == RepeatedParamClass || sym == ByNameParamClass) {
-              EmptyTree
-            } else if (sym == ArrayClass && args.length == 1) {
-              manifestFactoryCall("arrayType", args.head, findManifest(args.head))
-            } else if (sym.isClass) {
-              val classarg0 = gen.mkClassOf(tp1)
-              val classarg = tp match {
-                case _: ExistentialType => gen.mkCast(classarg0, ClassType(tp))
-                case _                  => classarg0
-              }
-              val suffix = classarg :: (args map findSubManifest)
-              manifestFactoryCall(
-                "classType", tp,
-                (if ((pre eq NoPrefix) || pre.typeSymbol.isStaticOwner) suffix
-                 else findSubManifest(pre) :: suffix): _*)
-            } else if (sym.isExistentiallyBound && full) {
-              manifestFactoryCall("wildcardType", tp,
-                                  findManifest(tp.bounds.lo), findManifest(tp.bounds.hi))
-            }
-            // looking for a manifest of a type parameter that hasn't been inferred by now,
-            // can't do much, but let's not fail
-            else if (undetParams contains sym) {
-              // #3859: need to include the mapping from sym -> NothingClass.tpe in the SearchResult
-              mot(NothingClass.tpe, sym :: from, NothingClass.tpe :: to)
-            } else {
-              // a manifest should have been found by normal searchImplicit
-              EmptyTree
-            }
-          case RefinedType(parents, decls) => // !!! not yet: if !full || decls.isEmpty =>
-            // refinement is not generated yet
-            if (hasLength(parents, 1)) findManifest(parents.head)
-            else if (full) manifestFactoryCall("intersectionType", tp, parents map findSubManifest: _*)
-            else mot(erasure.intersectionDominator(parents), from, to)
-          case ExistentialType(tparams, result) =>
-            mot(tp1.skolemizeExistential, from, to)
-          case _ =>
-            EmptyTree
-/*          !!! the following is almost right, but we have to splice nested manifest
- *          !!! types into this type. This requires a substantial extension of
- *          !!! reifiers.
-            val reifier = new Reifier()
-            val rtree = reifier.reifyTopLevel(tp1)
-            manifestFactoryCall("apply", tp, rtree)
-*/
-          }
-      }
-
-      mot(tp, Nil, Nil)
+      // todo. migrate hardcoded materialization in Implicits to corresponding implicit macros
+      var materializer = atPos(pos.focus)(Apply(TypeApply(Ident(TagMaterializers(tagClass)), List(TypeTree(tp))), List(prefix)))
+      if (settings.XlogImplicits.value) println("materializing requested %s.%s[%s] using %s".format(pre, tagClass.name, tp, materializer))
+      success(materializer)
     }
-
-    def wrapResult(tree: Tree): SearchResult =
-      if (tree == EmptyTree) SearchFailure else new SearchResult(tree, EmptyTreeTypeSubstituter)
 
     /** The manifest corresponding to type `pt`, provided `pt` is an instance of Manifest.
      */
-    private def implicitManifestOrOfExpectedType(pt: Type): SearchResult = pt.dealias match {
-      case TypeRef(_, sym, args) if ManifestSymbols(sym) =>
-        manifestOfType(args.head, sym == FullManifestClass) match {
-          case SearchFailure if sym == OptManifestClass => wrapResult(gen.mkAttributedRef(NoManifest))
-          case result                                   => result
-        }
+    private def implicitTagOrOfExpectedType(pt: Type): SearchResult = pt.dealias match {
+      case TypeRef(pre, sym, args) if TagSymbols(sym) =>
+        tagOfType(pre, args.head, sym)
       case tp@TypeRef(_, sym, _) if sym.isAbstractType =>
-        implicitManifestOrOfExpectedType(tp.bounds.lo) // #3977: use tp (==pt.dealias), not pt (if pt is a type alias, pt.bounds.lo == pt)
+        implicitTagOrOfExpectedType(tp.bounds.lo) // #3977: use tp (==pt.dealias), not pt (if pt is a type alias, pt.bounds.lo == pt)
       case _ =>
         searchImplicit(implicitsOfExpectedType, false)
         // shouldn't we pass `pt` to `implicitsOfExpectedType`, or is the recursive case
@@ -1199,7 +1159,9 @@ trait Implicits {
     /** The result of the implicit search:
      *  First search implicits visible in current context.
      *  If that fails, search implicits in expected type `pt`.
-     *  If that fails, and `pt` is an instance of Manifest, try to construct a manifest.
+     *  // [Eugene] the following two lines should be deleted after we migrate delegate manifest materialization to implicit macros
+     *  If that fails, and `pt` is an instance of a ClassTag, try to construct a class tag.
+     *  If that fails, and `pt` is an instance of a TypeTag, try to construct a type tag.
      *  If all fails return SearchFailure
      */
     def bestImplicit: SearchResult = {
@@ -1219,7 +1181,7 @@ trait Implicits {
         val failstart = startTimer(oftypeFailNanos)
         val succstart = startTimer(oftypeSucceedNanos)
 
-        result = implicitManifestOrOfExpectedType(pt)
+        result = implicitTagOrOfExpectedType(pt)
 
         if (result == SearchFailure) {
           context.updateBuffer(previousErrs)

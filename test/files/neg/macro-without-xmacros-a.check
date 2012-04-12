@@ -1,0 +1,10 @@
+Macros_2.scala:5: error: not found: value macro
+    def foo(x: Int): Int = macro foo_impl
+                           ^
+Macros_2.scala:7: error: not found: value macro
+  def bar(x: Int): Int = macro bar_impl
+                         ^
+Macros_2.scala:11: error: not found: value macro
+  def quux(x: Int): Int = macro quux_impl
+                          ^
+three errors found

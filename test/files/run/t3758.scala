@@ -1,10 +1,10 @@
 object Test {
   def main(args: Array[String]): Unit = {
-    assert(classManifest[Array[String]].typeArguments contains classManifest[String])
-    assert(classManifest[Array[Int]].typeArguments contains classManifest[Int])
-    assert(classManifest[Array[Float]].typeArguments contains classManifest[Float])
-    assert(manifest[Array[String]].typeArguments contains manifest[String])
-    assert(manifest[Array[Int]].typeArguments contains manifest[Int])
-    assert(manifest[Array[Float]].typeArguments contains manifest[Float])
+    println(classManifest[Array[String]].tpe.typeArguments)
+    println(classManifest[Array[Int]].tpe.typeArguments)
+    println(classManifest[Array[Float]].tpe.typeArguments)
+    println(manifest[Array[String]].tpe.typeArguments)
+    println(manifest[Array[Int]].tpe.typeArguments)
+    println(manifest[Array[Float]].tpe.typeArguments)
   }
 }

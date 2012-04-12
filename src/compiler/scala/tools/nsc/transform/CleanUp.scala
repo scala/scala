@@ -542,7 +542,7 @@ abstract class CleanUp extends Transform with ast.TreeDSL {
         if (forMSIL) savingStatics( transformTemplate(tree) )
         else transformTemplate(tree)
 
-      case Literal(c) if (c.tag == ClassTag) && !forMSIL=>
+      case Literal(c) if (c.tag == ClazzTag) && !forMSIL=>
         val tpe = c.typeValue
         typedWithPos(tree.pos) {
           if (isPrimitiveValueClass(tpe.typeSymbol)) {

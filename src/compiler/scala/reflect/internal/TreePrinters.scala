@@ -23,6 +23,7 @@ trait TreePrinters extends api.TreePrinters { self: SymbolTable =>
     else s
   }
   def quotedName(name: Name): String = quotedName(name, false)
+  def quotedName(name: String): String = quotedName(newTermName(name), false)
 
   private def symNameInternal(tree: Tree, name: Name, decoded: Boolean): String = {
     val sym = tree.symbol
@@ -31,7 +32,7 @@ trait TreePrinters extends api.TreePrinters { self: SymbolTable =>
       var suffix = ""
       if (settings.uniqid.value) suffix += ("#" + sym.id)
       if (settings.Yshowsymkinds.value) suffix += ("#" + sym.abbreviatedKindString)
-      prefix + tree.symbol.decodedName + suffix
+      prefix + quotedName(tree.symbol.decodedName) + suffix
     } else {
       quotedName(name, decoded)
     }
@@ -64,7 +65,7 @@ trait TreePrinters extends api.TreePrinters { self: SymbolTable =>
     def indent() = indentMargin += indentStep
     def undent() = indentMargin -= indentStep
 
-    def printPosition(tree: Tree) = if (doPrintPositions) print(showPos(tree.pos))
+    def printPosition(tree: Tree) = if (doPrintPositions) print(tree.pos.show)
 
     def println() {
       out.println()

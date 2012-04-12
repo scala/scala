@@ -7,7 +7,7 @@ package scala.tools.nsc
 package interpreter
 
 class RichClass[T](val clazz: Class[T]) {
-  def toManifest: Manifest[T] = Manifest.classType(clazz)
+  def toManifest: Manifest[T] = Manifest[T](ClassManifest[T](clazz).tpe)
   def toTypeString: String = TypeStrings.fromClazz(clazz)
 
   // Sadly isAnonymousClass does not return true for scala anonymous

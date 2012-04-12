@@ -1,0 +1,4 @@
+classtags_contextbound_a.scala:2: error: No ClassTag available for T
+  def foo[T] = Array[T]()
+                       ^
+one error found

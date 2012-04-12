@@ -1,0 +1,21 @@
+{
+  class Tree[A >: Nothing <: Any, B >: Nothing <: Any] extends Object {
+    @new inline @getter() final <paramaccessor> val key: A = _;
+    def <init>(key: A) = {
+      super.<init>();
+      ()
+    }
+  };
+  ()
+}
+{
+  class Tree[A, B] extends Object {
+    final <paramaccessor> private[this] val key: A = _;
+    @inline @scala.annotation.meta.getter final <stable> <accessor> <paramaccessor> def key: A = Tree.this.key;
+    def <init>(key: A): Tree[A,B] = {
+      Tree.super.<init>();
+      ()
+    }
+  };
+  ()
+}

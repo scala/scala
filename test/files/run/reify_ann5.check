@@ -1,0 +1,22 @@
+{
+  class C extends Object {
+    @new inline @beanGetter() @new BeanProperty() <paramaccessor> val x: Int = _;
+    def <init>(x: Int) = {
+      super.<init>();
+      ()
+    }
+  };
+  ()
+}
+{
+  class C extends Object {
+    @scala.beans.BeanProperty <paramaccessor> private[this] val x: Int = _;
+    <stable> <accessor> <paramaccessor> def x: Int = C.this.x;
+    def <init>(x: Int): C = {
+      C.super.<init>();
+      ()
+    };
+    @inline @scala.annotation.meta.beanGetter def getX(): Int = C.this.x
+  };
+  ()
+}
