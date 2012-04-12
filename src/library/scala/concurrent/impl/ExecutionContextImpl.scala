@@ -84,7 +84,7 @@ private[scala] class ExecutionContextImpl(es: AnyRef) extends ExecutionContext w
 }
 
 
-object ExecutionContextImpl {
+private[concurrent] object ExecutionContextImpl {
 
   private[concurrent] def currentExecutionContext: ThreadLocal[ExecutionContext] = new ThreadLocal[ExecutionContext] {
     override protected def initialValue = null
