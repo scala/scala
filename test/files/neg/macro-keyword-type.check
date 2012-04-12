@@ -1,0 +1,4 @@
+macro-keyword-type.scala:2: error: identifier expected but 'macro' found.
+  type macro = Int
+       ^
+one error found

@@ -1,0 +1,7 @@
+macro-keyword-val.scala:2: error: illegal start of simple pattern
+  val macro = ???
+      ^
+macro-keyword-val.scala:3: error: '=' expected but '}' found.
+}
+^
+two errors found

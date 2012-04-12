@@ -1,0 +1,4 @@
+macro-keyword-object1.scala:3: error: identifier expected but 'macro' found.
+object macro
+       ^
+one error found
