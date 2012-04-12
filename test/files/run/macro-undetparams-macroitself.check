@@ -1,2 +1,2 @@
-GroundTypeTag[Int]
-GroundTypeTag[String]
+ConcreteTypeTag[Int]
+ConcreteTypeTag[String]

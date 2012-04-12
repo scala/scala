@@ -877,7 +877,7 @@ trait Macros { self: Analyzer =>
       tpe
     }) map (tpe => {
       val ttag = TypeTag(tpe)
-      if (ttag.isGround) ttag.toGround else ttag
+      if (ttag.isConcrete) ttag.toConcrete else ttag
     })
     argss = argss.dropRight(1) :+ (evidences ++ argss.last)
 

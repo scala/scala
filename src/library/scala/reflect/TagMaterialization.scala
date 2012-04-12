@@ -18,13 +18,13 @@ object TagMaterialization {
   def materializeTypeTag[T: c.TypeTag](c: Context { type PrefixType = Universe }): c.Expr[c.prefix.value.TypeTag[T]] = {
     import c.mirror._
     val tpe = implicitly[c.TypeTag[T]].tpe
-    c.materializeTypeTag(tpe, requireGroundTypeTag = false)
+    c.materializeTypeTag(tpe, requireConcreteTypeTag = false)
   }
 
-  def materializeGroundTypeTag[T: c.TypeTag](c: Context { type PrefixType = Universe }): c.Expr[c.prefix.value.GroundTypeTag[T]] = {
+  def materializeConcreteTypeTag[T: c.TypeTag](c: Context { type PrefixType = Universe }): c.Expr[c.prefix.value.ConcreteTypeTag[T]] = {
     import c.mirror._
     val tpe = implicitly[c.TypeTag[T]].tpe
-    c.materializeTypeTag(tpe, requireGroundTypeTag = true)
+    c.materializeTypeTag(tpe, requireConcreteTypeTag = true)
   }
 
   private implicit def context2utils(c0: Context) : Utils { val c: c0.type } = new { val c: c0.type = c0 } with Utils
@@ -52,17 +52,17 @@ object TagMaterialization {
       NothingClass.asType -> newTermName("Nothing"),
       NullClass.asType -> newTermName("Null"))
 
-    val ReflectPackage      = staticModule("scala.reflect.package")
-    val Reflect_mirror      = selectTerm(ReflectPackage, "mirror")
-    val ClassTagClass       = staticClass("scala.reflect.ClassTag")
-    val ClassTagErasure     = selectTerm(ClassTagClass, "erasure")
-    val ClassTagModule      = staticModule("scala.reflect.ClassTag")
-    val TypeTagsClass       = staticClass("scala.reflect.api.TypeTags")
-    val TypeTagClass        = selectType(TypeTagsClass, "TypeTag")
-    val TypeTagTpe          = selectTerm(TypeTagClass, "tpe")
-    val TypeTagModule       = selectTerm(TypeTagsClass, "TypeTag")
-    val GroundTypeTagClass  = selectType(TypeTagsClass, "GroundTypeTag")
-    val GroundTypeTagModule = selectTerm(TypeTagsClass, "GroundTypeTag")
+    val ReflectPackage        = staticModule("scala.reflect.package")
+    val Reflect_mirror        = selectTerm(ReflectPackage, "mirror")
+    val ClassTagClass         = staticClass("scala.reflect.ClassTag")
+    val ClassTagErasure       = selectTerm(ClassTagClass, "erasure")
+    val ClassTagModule        = staticModule("scala.reflect.ClassTag")
+    val TypeTagsClass         = staticClass("scala.reflect.api.TypeTags")
+    val TypeTagClass          = selectType(TypeTagsClass, "TypeTag")
+    val TypeTagTpe            = selectTerm(TypeTagClass, "tpe")
+    val TypeTagModule         = selectTerm(TypeTagsClass, "TypeTag")
+    val ConcreteTypeTagClass  = selectType(TypeTagsClass, "ConcreteTypeTag")
+    val ConcreteTypeTagModule = selectTerm(TypeTagsClass, "ConcreteTypeTag")
 
     def materializeClassTag(tpe: Type): Tree = {
       val prefix = gen.mkAttributedRef(Reflect_mirror) setType singleType(Reflect_mirror.owner.thisPrefix, Reflect_mirror)
@@ -70,8 +70,8 @@ object TagMaterialization {
     }
 
     def materializeClassTag(prefix: Tree, tpe: Type): Tree = {
-      val typetagInScope = c.inferImplicitValue(appliedType(typeRef(prefix.tpe, TypeTagClass, Nil), List(tpe)))
-      def typetagIsSynthetic(tree: Tree) = tree.isInstanceOf[Block] || (tree exists (sub => sub.symbol == TypeTagModule || sub.symbol == GroundTypeTagModule))
+      val typetagInScope = c.inferImplicitValue(appliedType(typeRef(prefix.tpe, ConcreteTypeTagClass, Nil), List(tpe)))
+      def typetagIsSynthetic(tree: Tree) = tree.isInstanceOf[Block] || (tree exists (sub => sub.symbol == TypeTagModule || sub.symbol == ConcreteTypeTagModule))
       typetagInScope match {
         case success if !success.isEmpty && !typetagIsSynthetic(success) =>
           val factory = TypeApply(Select(Ident(ClassTagModule), newTermName("apply")), List(TypeTree(tpe)))
@@ -104,19 +104,19 @@ object TagMaterialization {
       }
     }
 
-    def materializeTypeTag(tpe: Type, requireGroundTypeTag: Boolean): Tree = {
+    def materializeTypeTag(tpe: Type, requireConcreteTypeTag: Boolean): Tree = {
       def prefix: Tree = ??? // todo. needs to be synthesized from c.prefix
-      materializeTypeTag(prefix, tpe, requireGroundTypeTag)
+      materializeTypeTag(prefix, tpe, requireConcreteTypeTag)
     }
 
-    def materializeTypeTag(prefix: Tree, tpe: Type, requireGroundTypeTag: Boolean): Tree = {
-      val tagModule = if (requireGroundTypeTag) GroundTypeTagModule else TypeTagModule
+    def materializeTypeTag(prefix: Tree, tpe: Type, requireConcreteTypeTag: Boolean): Tree = {
+      val tagModule = if (requireConcreteTypeTag) ConcreteTypeTagModule else TypeTagModule
       val result =
         tpe match {
           case coreTpe if coreTags contains coreTpe =>
             Select(Select(prefix, tagModule.name), coreTags(coreTpe))
           case _ =>
-            try c.reifyType(prefix, tpe, dontSpliceAtTopLevel = true, requireGroundTypeTag = requireGroundTypeTag)
+            try c.reifyType(prefix, tpe, dontSpliceAtTopLevel = true, requireConcreteTypeTag = requireConcreteTypeTag)
             catch {
               case ex: Throwable =>
                 // [Eugene] cannot pattern match on an abstract type, so had to do this

@@ -21,6 +21,6 @@ trait Aliases {
   /** incantations for summoning tags */
   def tag[T](implicit ttag: TypeTag[T]) = ttag
   def typeTag[T](implicit ttag: TypeTag[T]) = ttag
-  def groundTag[T](implicit gttag: GroundTypeTag[T]) = gttag
-  def groundTypeTag[T](implicit gttag: GroundTypeTag[T]) = gttag
+  def concreteTag[T](implicit cttag: ConcreteTypeTag[T]) = cttag
+  def concreteTypeTag[T](implicit cttag: ConcreteTypeTag[T]) = cttag
 }

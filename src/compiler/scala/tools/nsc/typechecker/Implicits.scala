@@ -1099,11 +1099,11 @@ trait Implicits {
     }
 
     // these should be lazy, otherwise we wouldn't be able to compile scala-library with starr
-    private val TagSymbols = Set(ClassTagClass, TypeTagClass, GroundTypeTagClass)
+    private val TagSymbols = Set(ClassTagClass, TypeTagClass, ConcreteTypeTagClass)
     private val TagMaterializers = Map(
       ClassTagClass -> MacroInternal_materializeClassTag,
       TypeTagClass -> MacroInternal_materializeTypeTag,
-      GroundTypeTagClass -> MacroInternal_materializeGroundTypeTag
+      ConcreteTypeTagClass -> MacroInternal_materializeConcreteTypeTag
     )
 
     def tagOfType(pre: Type, tp: Type, tagClass: Symbol): SearchResult = {

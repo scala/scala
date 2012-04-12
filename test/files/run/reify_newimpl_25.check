@@ -14,7 +14,7 @@ scala> {
 <console>:13: free term: Ident(newTermName("x")) defined by res0  in <console>:12:21
                 val tt = implicitly[TypeTag[x.type]]
                                    ^
-GroundTypeTag[x.type]
+ConcreteTypeTag[x.type]
 
 scala> 
 

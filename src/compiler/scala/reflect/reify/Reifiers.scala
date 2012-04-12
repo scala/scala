@@ -21,7 +21,7 @@ abstract class Reifier extends Phases
   val prefix: Tree
   val reifee: Any
   val dontSpliceAtTopLevel: Boolean
-  val requireGroundTypeTag: Boolean
+  val requireConcreteTypeTag: Boolean
 
   /**
    *  For ``reifee'' and other reification parameters, generate a tree of the form
@@ -74,7 +74,7 @@ abstract class Reifier extends Phases
 
           val manifestedType = typer.packedType(tree, NoSymbol)
           val manifestedRtype = reifyType(manifestedType)
-          val tagModule = if (definitelyGround) GroundTypeTagModule else TypeTagModule
+          val tagModule = if (definitelyConcrete) ConcreteTypeTagModule else TypeTagModule
           var typeTagCtor = TypeApply(Select(Ident(nme.MIRROR_SHORT), tagModule.name), List(TypeTree(manifestedType)))
           var exprCtor = TypeApply(Select(Ident(nme.MIRROR_SHORT), ExprModule.name), List(TypeTree(manifestedType)))
           Apply(Apply(exprCtor, List(rtree)), List(Apply(typeTagCtor, List(manifestedRtype))))
@@ -85,7 +85,7 @@ abstract class Reifier extends Phases
           val rtree = reify(tpe)
 
           val manifestedType = tpe
-          var tagModule = if (definitelyGround) GroundTypeTagModule else TypeTagModule
+          var tagModule = if (definitelyConcrete) ConcreteTypeTagModule else TypeTagModule
           var ctor = TypeApply(Select(Ident(nme.MIRROR_SHORT), tagModule.name), List(TypeTree(manifestedType)))
           Apply(ctor, List(rtree))
 

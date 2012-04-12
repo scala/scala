@@ -21,16 +21,16 @@ trait Reifiers {
   def reifyTree(prefix: Tree, tree: Tree): Tree =
     reifyTopLevel(prefix, tree)
 
-  def reifyType(prefix: Tree, tpe: Type, dontSpliceAtTopLevel: Boolean = false, noTypeVariablesInResult: Boolean = false): Tree =
-    reifyTopLevel(prefix, tpe, dontSpliceAtTopLevel, noTypeVariablesInResult)
+  def reifyType(prefix: Tree, tpe: Type, dontSpliceAtTopLevel: Boolean = false, requireConcreteTypeTag: Boolean = false): Tree =
+    reifyTopLevel(prefix, tpe, dontSpliceAtTopLevel, requireConcreteTypeTag)
 
   def unreifyTree(tree: Tree): Tree =
     Select(tree, definitions.ExprEval)
 
-  def reifyTopLevel(prefix: Tree, reifee: Any, dontSpliceAtTopLevel: Boolean = false, requireGroundTypeTag: Boolean = false): Tree = {
+  def reifyTopLevel(prefix: Tree, reifee: Any, dontSpliceAtTopLevel: Boolean = false, requireConcreteTypeTag: Boolean = false): Tree = {
     // [Eugene] the plumbing is not very pretty, but anyways factoring out the reifier seems like a necessary step to me
     import scala.reflect.reify._
-    val reifier = mkReifier(mirror)(callsiteTyper, prefix, reifee, dontSpliceAtTopLevel, requireGroundTypeTag)
+    val reifier = mkReifier(mirror)(callsiteTyper, prefix, reifee, dontSpliceAtTopLevel, requireConcreteTypeTag)
 
     try {
       val result = reifier.reified

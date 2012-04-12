@@ -5020,7 +5020,7 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
     def resolveTypeTag(tree: Tree, pre: Type, tp: Type, full: Boolean): Tree = beforeTyper {
       inferImplicit(
         EmptyTree,
-        appliedType(singleType(pre, pre member (if (full) GroundTypeTagClass else TypeTagClass).name), List(tp)),
+        appliedType(singleType(pre, pre member (if (full) ConcreteTypeTagClass else TypeTagClass).name), List(tp)),
         /*reportAmbiguous =*/ true,
         /*isView =*/ false,
         /*context =*/ context,

@@ -1,7 +1,7 @@
-Test.scala:5: error: No GroundTypeTag available for C[T]
-    println(implicitly[GroundTypeTag[C[T]]])
+Test.scala:5: error: No ConcreteTypeTag available for C[T]
+    println(implicitly[ConcreteTypeTag[C[T]]])
                       ^
-Test.scala:6: error: No GroundTypeTag available for List[C[T]]
-    println(implicitly[GroundTypeTag[List[C[T]]]])
+Test.scala:6: error: No ConcreteTypeTag available for List[C[T]]
+    println(implicitly[ConcreteTypeTag[List[C[T]]]])
                       ^
 two errors found

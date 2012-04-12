@@ -1,2 +1,2 @@
-GroundTypeTag[Boolean] GroundTypeTag[Int]
-GroundTypeTag[Boolean] GroundTypeTag[String]
+ConcreteTypeTag[Boolean] ConcreteTypeTag[Int]
+ConcreteTypeTag[Boolean] ConcreteTypeTag[String]

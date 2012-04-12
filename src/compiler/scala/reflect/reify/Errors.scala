@@ -33,8 +33,8 @@ trait Errors {
     throw new ReificationError(defaultErrorPosition, msg)
   }
 
-  def CannotReifyGroundTypeTagHavingUnresolvedTypeParameters(tpe: Type) = {
-    val msg = "cannot reify GroundTypeTag having unresolved type parameter %s".format(tpe)
+  def CannotReifyConcreteTypeTagHavingUnresolvedTypeParameters(tpe: Type) = {
+    val msg = "cannot reify ConcreteTypeTag having unresolved type parameter %s".format(tpe)
     throw new ReificationError(defaultErrorPosition, msg)
   }
 

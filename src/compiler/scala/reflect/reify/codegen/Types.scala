@@ -67,8 +67,8 @@ trait Types {
   private var spliceTypesEnabled = !dontSpliceAtTopLevel
 
   /** Keeps track of whether this reification contains abstract type parameters */
-  var maybeGround = true
-  var definitelyGround = true
+  var maybeConcrete = true
+  var definitelyConcrete = true
 
   def eligibleForSplicing(tpe: Type): Boolean = {
     // [Eugene] is this comprehensive?
@@ -88,7 +88,7 @@ trait Types {
       if (reifyDebug) println("splicing " + tpe)
 
       if (spliceTypesEnabled) {
-        var tagClass = if (requireGroundTypeTag) GroundTypeTagClass else TypeTagClass
+        var tagClass = if (requireConcreteTypeTag) ConcreteTypeTagClass else TypeTagClass
         val tagTpe = singleType(prefix.tpe, prefix.tpe member tagClass.name)
 
         // [Eugene] this should be enough for an abstract type, right?
@@ -99,16 +99,16 @@ trait Types {
           // to find out the whereabouts of the error run scalac with -Ydebug
           if (reifyDebug) println("launching implicit search for %s.%s[%s]".format(prefix, tagClass.name, tpe))
           val positionBearer = mirror.analyzer.openMacros.find(c => c.macroApplication.pos != NoPosition).map(_.macroApplication).getOrElse(EmptyTree).asInstanceOf[Tree]
-          typer.resolveTypeTag(positionBearer, prefix.tpe, tpe, requireGroundTypeTag) match {
+          typer.resolveTypeTag(positionBearer, prefix.tpe, tpe, requireConcreteTypeTag) match {
             case failure if failure.isEmpty =>
               if (reifyDebug) println("implicit search was fruitless")
-              definitelyGround &= false
-              maybeGround &= false
+              definitelyConcrete &= false
+              maybeConcrete &= false
               EmptyTree
             case success =>
               if (reifyDebug) println("implicit search has produced a result: " + success)
-              definitelyGround |= requireGroundTypeTag
-              maybeGround |= true
+              definitelyConcrete |= requireConcreteTypeTag
+              maybeConcrete |= true
               var splice = Select(success, nme.tpe)
               splice match {
                 case InlinedTypeSplice(_, inlinedSymbolTable, tpe) =>
@@ -126,8 +126,8 @@ trait Types {
         if (reifyDebug) println("splicing has been cancelled: spliceTypesEnabled = false")
       }
 
-      if (requireGroundTypeTag)
-        CannotReifyGroundTypeTagHavingUnresolvedTypeParameters(tpe)
+      if (requireConcreteTypeTag)
+        CannotReifyConcreteTypeTagHavingUnresolvedTypeParameters(tpe)
     }
 
     spliceTypesEnabled = true

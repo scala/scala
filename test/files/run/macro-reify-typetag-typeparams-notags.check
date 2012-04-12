@@ -1,2 +1,2 @@
-GroundTypeTag[T]
-GroundTypeTag[List[T]]
+ConcreteTypeTag[T]
+ConcreteTypeTag[List[T]]

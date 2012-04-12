@@ -113,8 +113,8 @@ trait StandardDefinitions { self: Universe =>
     def ClassTagModule: Symbol
     def TypeTagClass: Symbol
     def TypeTagModule: Symbol
-    def GroundTypeTagClass: Symbol
-    def GroundTypeTagModule: Symbol
+    def ConcreteTypeTagClass: Symbol
+    def ConcreteTypeTagModule: Symbol
 
     /** Given a type T, returns the type corresponding to the VM's
      *  representation: ClassClass's type constructor applied to `arg`.

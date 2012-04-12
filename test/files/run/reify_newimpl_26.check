@@ -16,7 +16,7 @@ scala> def foo[T]{
 foo: [T]=> Unit
 
 scala> foo[Int]
-GroundTypeTag[List[T]]
+ConcreteTypeTag[List[T]]
 
 scala> 
 

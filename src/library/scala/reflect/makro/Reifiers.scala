@@ -46,7 +46,7 @@ trait Reifiers {
    *  The produced tree will be bound to the mirror specified by ``prefix'' (also see ``reflectMirrorPrefix'').
    *  For more information and examples see the documentation for ``Context.reifyTree'' and ``Universe.reify''.
    */
-  def reifyType(prefix: Tree, tpe: Type, dontSpliceAtTopLevel: Boolean = false, requireGroundTypeTag: Boolean = false): Tree
+  def reifyType(prefix: Tree, tpe: Type, dontSpliceAtTopLevel: Boolean = false, requireConcreteTypeTag: Boolean = false): Tree
 
   /** Undoes reification of a tree.
    *

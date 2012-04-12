@@ -103,12 +103,12 @@ object Predef extends LowPriorityImplicits {
   type ClassManifest[T] = scala.reflect.ClassManifest[T]
   @deprecated("OptManifest is no longer supported and using it may lead to incorrect results, use `@scala.reflect.TypeTag` instead", "2.10.0")
   type OptManifest[T]   = scala.reflect.OptManifest[T]
-  @deprecated("Use `@scala.reflect.GroundTypeTag` instead", "2.10.0")
+  @deprecated("Use `@scala.reflect.ConcreteTypeTag` instead", "2.10.0")
   type Manifest[T]      = scala.reflect.Manifest[T]
   @deprecated("Use `@scala.reflect.ClassTag` instead", "2.10.0")
   val ClassManifest     = scala.reflect.ClassManifest
   // [Paul to Eugene] No lazy vals in Predef.  Too expensive.  Have to work harder on breaking initialization dependencies.
-  @deprecated("Use `@scala.reflect.GroundTypeTag` instead", "2.10.0")
+  @deprecated("Use `@scala.reflect.ConcreteTypeTag` instead", "2.10.0")
   lazy val Manifest     = scala.reflect.Manifest // needs to be lazy, because requires scala.reflect.mirror instance
   @deprecated("NoManifest is no longer supported and using it may lead to incorrect results, use `@scala.reflect.TypeTag` instead", "2.10.0")
   lazy val NoManifest   = scala.reflect.NoManifest // needs to be lazy, because requires scala.reflect.mirror instance
@@ -118,20 +118,20 @@ object Predef extends LowPriorityImplicits {
   def optManifest[T](implicit m: OptManifest[T])     = m
 
   // Tag types and companions, and incantations for summoning
-  type ClassTag[T]       = scala.reflect.ClassTag[T]
-  type TypeTag[T]        = scala.reflect.TypeTag[T]
-  type GroundTypeTag[T]  = scala.reflect.GroundTypeTag[T]
-  val ClassTag           = scala.reflect.ClassTag // doesn't need to be lazy, because it's not a path-dependent type
+  type ClassTag[T]         = scala.reflect.ClassTag[T]
+  type TypeTag[T]          = scala.reflect.TypeTag[T]
+  type ConcreteTypeTag[T]  = scala.reflect.ConcreteTypeTag[T]
+  val ClassTag             = scala.reflect.ClassTag // doesn't need to be lazy, because it's not a path-dependent type
   // [Paul to Eugene] No lazy vals in Predef.  Too expensive.  Have to work harder on breaking initialization dependencies.
-  lazy val TypeTag       = scala.reflect.TypeTag // needs to be lazy, because requires scala.reflect.mirror instance
-  lazy val GroundTypeTag = scala.reflect.GroundTypeTag
+  lazy val TypeTag         = scala.reflect.TypeTag // needs to be lazy, because requires scala.reflect.mirror instance
+  lazy val ConcreteTypeTag = scala.reflect.ConcreteTypeTag
 
   // [Eugene to Martin] it's really tedious to type "implicitly[...]" all the time, so I'm reintroducing these shortcuts
-  def classTag[T](implicit ctag: ClassTag[T])            = ctag
-  def tag[T](implicit ttag: TypeTag[T])                  = ttag
-  def typeTag[T](implicit ttag: TypeTag[T])              = ttag
-  def groundTag[T](implicit gttag: GroundTypeTag[T])     = gttag
-  def groundTypeTag[T](implicit gttag: GroundTypeTag[T]) = gttag
+  def classTag[T](implicit ctag: ClassTag[T])                = ctag
+  def tag[T](implicit ttag: TypeTag[T])                      = ttag
+  def typeTag[T](implicit ttag: TypeTag[T])                  = ttag
+  def concreteTag[T](implicit cttag: ConcreteTypeTag[T])     = cttag
+  def concreteTypeTag[T](implicit cttag: ConcreteTypeTag[T]) = cttag
 
   // Minor variations on identity functions
   def identity[A](x: A): A         = x    // @see `conforms` for the implicit version

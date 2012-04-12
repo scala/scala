@@ -16,14 +16,14 @@ package object internal {
 
   /** This method is required by the compiler and <b>should not be used in client code</b>. */
   def materializeTypeTag_impl[T: c.TypeTag](c: Context)(u: c.Expr[Universe]): c.Expr[u.value.TypeTag[T]] =
-    c.Expr[Nothing](c.materializeTypeTag(u.tree, implicitly[c.TypeTag[T]].tpe, requireGroundTypeTag = false))(c.TypeTag.Nothing)
+    c.Expr[Nothing](c.materializeTypeTag(u.tree, implicitly[c.TypeTag[T]].tpe, requireConcreteTypeTag = false))(c.TypeTag.Nothing)
 
   /** This method is required by the compiler and <b>should not be used in client code</b>. */
-  def materializeGroundTypeTag[T](u: Universe): u.GroundTypeTag[T] = macro materializeGroundTypeTag_impl[T]
+  def materializeConcreteTypeTag[T](u: Universe): u.ConcreteTypeTag[T] = macro materializeConcreteTypeTag_impl[T]
 
   /** This method is required by the compiler and <b>should not be used in client code</b>. */
-  def materializeGroundTypeTag_impl[T: c.TypeTag](c: Context)(u: c.Expr[Universe]): c.Expr[u.value.GroundTypeTag[T]] =
-    c.Expr[Nothing](c.materializeTypeTag(u.tree, implicitly[c.TypeTag[T]].tpe, requireGroundTypeTag = true))(c.TypeTag.Nothing)
+  def materializeConcreteTypeTag_impl[T: c.TypeTag](c: Context)(u: c.Expr[Universe]): c.Expr[u.value.ConcreteTypeTag[T]] =
+    c.Expr[Nothing](c.materializeTypeTag(u.tree, implicitly[c.TypeTag[T]].tpe, requireConcreteTypeTag = true))(c.TypeTag.Nothing)
 
   /** This method is required by the compiler and <b>should not be used in client code</b>. */
   private[scala] implicit def context2utils(c0: Context) : Utils { val c: c0.type } = new { val c: c0.type = c0 } with Utils
@@ -54,8 +54,8 @@ package internal {
       NullClass.asType -> newTermName("Null"))
 
     def materializeClassTag(prefix: Tree, tpe: Type): Tree = {
-      val typetagInScope = c.inferImplicitValue(appliedType(typeRef(prefix.tpe, TypeTagClass, Nil), List(tpe)))
-      def typetagIsSynthetic(tree: Tree) = tree.isInstanceOf[Block] || (tree exists (sub => sub.symbol == TypeTagModule || sub.symbol == GroundTypeTagModule))
+      val typetagInScope = c.inferImplicitValue(appliedType(typeRef(prefix.tpe, ConcreteTypeTagClass, Nil), List(tpe)))
+      def typetagIsSynthetic(tree: Tree) = tree.isInstanceOf[Block] || (tree exists (sub => sub.symbol == TypeTagModule || sub.symbol == ConcreteTypeTagModule))
       typetagInScope match {
         case success if !success.isEmpty && !typetagIsSynthetic(success) =>
           val factory = TypeApply(Select(Ident(ClassTagModule), newTermName("apply")), List(TypeTree(tpe)))
@@ -88,14 +88,14 @@ package internal {
       }
     }
 
-    def materializeTypeTag(prefix: Tree, tpe: Type, requireGroundTypeTag: Boolean): Tree = {
-      val tagModule = if (requireGroundTypeTag) GroundTypeTagModule else TypeTagModule
+    def materializeTypeTag(prefix: Tree, tpe: Type, requireConcreteTypeTag: Boolean): Tree = {
+      val tagModule = if (requireConcreteTypeTag) ConcreteTypeTagModule else TypeTagModule
       val result =
         tpe match {
           case coreTpe if coreTags contains coreTpe =>
             Select(Select(prefix, tagModule.name), coreTags(coreTpe))
           case _ =>
-            try c.reifyType(prefix, tpe, dontSpliceAtTopLevel = true, requireGroundTypeTag = requireGroundTypeTag)
+            try c.reifyType(prefix, tpe, dontSpliceAtTopLevel = true, requireConcreteTypeTag = requireConcreteTypeTag)
             catch {
               case ex: Throwable =>
                 // [Eugene] cannot pattern match on an abstract type, so had to do this

@@ -4,11 +4,20 @@ import java.lang.{ Class => jClass }
 import scala.reflect.{ mirror => rm }
 
 /** A `ClassTag[T]` wraps a Java class, which can be accessed via the `erasure` method.
+ *
  *  This is useful in itself, but also enables very important use case.
  *  Having this knowledge ClassTag can instantiate `Arrays`
  *  in those cases where the element type is unknown at compile time.
  *  Hence, ClassTag[T] conforms to the ArrayTag[T] trait.
- */
+ *
+ *  If an implicit value of type u.ClassTag[T] is required, the compiler will make one up on demand.
+ *  The implicitly created value contains in its erasure field the Java class that is the result of erasing type T.
+ *  In that value, any occurrences of type parameters or abstract types U which come themselves with a ClassTag
+ *  or a reflect.mirror.ConcreteTypeTag are represented by the type referenced by that tag.
+ *  If the type T contains unresolved references to type parameters or abstract types, a static error results.
+ *
+ *  A ConcreteTypeTag member of the reflect.mirror object is convertible to a ClassTag via an implicit conversion
+ *  (this is not possible to do in all reflection universes because an operation that converts a type to a Java class might not be available). */
 // please, don't add any APIs here, like it was with `newWrappedArray` and `newArrayBuilder`
 // class tags, and all tags in general, should be as minimalistic as possible
 @annotation.implicitNotFound(msg = "No ClassTag available for ${T}")
@@ -20,7 +29,7 @@ abstract case class ClassTag[T](erasure: jClass[_]) extends ArrayTag[T] {
 
   /** A Scala reflection type representing T.
    *  For ClassTags this representation is lossy (in their case tpe is retrospectively constructed from erasure).
-   *  For TypeTags and GroundTypeTags the representation is almost precise, because it uses reification
+   *  For TypeTags and ConcreteTypeTags the representation is almost precise, because they use reification
    *  (information is lost only when T refers to non-locatable symbols, which are then reified as free variables). */
   def tpe: rm.Type = rm.classToType(erasure)
 
@@ -153,6 +162,6 @@ class DeprecatedClassManifestApis[T](ctag: ClassTag[T]) {
   @deprecated("Use `@scala.collection.mutable.ArrayBuilder` object instead", "2.10.0")
   def newArrayBuilder(): ArrayBuilder[T] = ArrayBuilder.make[T]()(ctag)
 
-  @deprecated("`typeArguments` is no longer supported, and will always return an empty list. Use `@scala.reflect.TypeTag` or `@scala.reflect.GroundTypeTag` to capture and analyze type arguments", "2.10.0")
+  @deprecated("`typeArguments` is no longer supported, and will always return an empty list. Use `@scala.reflect.TypeTag` or `@scala.reflect.ConcreteTypeTag` to capture and analyze type arguments", "2.10.0")
   def typeArguments: List[OptManifest[_]] = List()
 }
