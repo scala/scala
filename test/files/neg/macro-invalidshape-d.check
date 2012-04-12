@@ -1,0 +1,4 @@
+Macros_Test_2.scala:2: error: illegal start of statement
+  def foo(x: Any) = {2; macro Impls.foo}
+                        ^
+one error found

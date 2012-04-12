@@ -33,8 +33,22 @@ object ArrayBuilder {
    *  @tparam T     type of the elements for the array builder, with a `ClassManifest` context bound.
    *  @return       a new empty array builder.
    */
-  def make[T: ClassManifest](): ArrayBuilder[T] =
-    implicitly[ClassManifest[T]].newArrayBuilder()
+  def make[T: ClassManifest](): ArrayBuilder[T] = {
+    val manifest = implicitly[ClassManifest[T]]
+    val erasure = manifest.erasure
+    erasure match {
+      case java.lang.Byte.TYPE      => new ArrayBuilder.ofByte().asInstanceOf[ArrayBuilder[T]]
+      case java.lang.Short.TYPE     => new ArrayBuilder.ofShort().asInstanceOf[ArrayBuilder[T]]
+      case java.lang.Character.TYPE => new ArrayBuilder.ofChar().asInstanceOf[ArrayBuilder[T]]
+      case java.lang.Integer.TYPE   => new ArrayBuilder.ofInt().asInstanceOf[ArrayBuilder[T]]
+      case java.lang.Long.TYPE      => new ArrayBuilder.ofLong().asInstanceOf[ArrayBuilder[T]]
+      case java.lang.Float.TYPE     => new ArrayBuilder.ofFloat().asInstanceOf[ArrayBuilder[T]]
+      case java.lang.Double.TYPE    => new ArrayBuilder.ofDouble().asInstanceOf[ArrayBuilder[T]]
+      case java.lang.Boolean.TYPE   => new ArrayBuilder.ofBoolean().asInstanceOf[ArrayBuilder[T]]
+      case java.lang.Void.TYPE      => new ArrayBuilder.ofUnit().asInstanceOf[ArrayBuilder[T]]
+      case _                        => new ArrayBuilder.ofRef[T with AnyRef]()(manifest.asInstanceOf[ClassManifest[T with AnyRef]]).asInstanceOf[ArrayBuilder[T]]
+    }
+  }
 
   /** A class for array builders for arrays of reference types.
    *

@@ -734,7 +734,7 @@ abstract class Erasure extends AddInterfaces
 
     /** A replacement for the standard typer's `typed1` method.
      */
-    override protected def typed1(tree: Tree, mode: Int, pt: Type): Tree = {
+    override def typed1(tree: Tree, mode: Int, pt: Type): Tree = {
       val tree1 = try {
         tree match {
           case InjectDerivedValue(arg) =>
@@ -1090,7 +1090,7 @@ abstract class Erasure extends AddInterfaces
         case Match(selector, cases) =>
           Match(Typed(selector, TypeTree(selector.tpe)), cases)
 
-        case Literal(ct) if ct.tag == ClassTag
+        case Literal(ct) if ct.tag == ClazzTag
                          && ct.typeValue.typeSymbol != definitions.UnitClass =>
           val erased = ct.typeValue match {
             case TypeRef(pre, clazz, args) if clazz.isDerivedValueClass => scalaErasure.eraseNormalClassRef(pre, clazz)

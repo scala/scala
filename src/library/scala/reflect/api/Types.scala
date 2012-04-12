@@ -105,7 +105,8 @@ trait Types { self: Universe =>
     /** The erased type corresponding to this type after
      *  all transformations from Scala to Java have been performed.
      */
-    def erasedType: Type    // !!! "erasedType", compare with "widen" (so "erase") or "underlying" (so "erased")
+    def erasure: Type    // !!! "erasedType", compare with "widen" (so "erase") or "underlying" (so "erased")
+                         // why not name it "erasure"?
 
    /** Apply `f` to each part of this type, returning
     *  a new type. children get mapped before their parents */
@@ -146,6 +147,33 @@ trait Types { self: Universe =>
      *  <o.x.type>.widen = o.C
      */
     def widen: Type
+
+    /** The kind of this type; used for debugging */
+    def kind: String
+  }
+
+  /** An object representing an unknown type, used during type inference.
+   *  If you see WildcardType outside of inference it is almost certainly a bug.
+   */
+  val WildcardType: Type
+
+  /** BoundedWildcardTypes, used only during type inference, are created in
+   *  two places that I can find:
+   *
+   *    1. If the expected type of an expression is an existential type,
+   *       its hidden symbols are replaced with bounded wildcards.
+   *    2. When an implicit conversion is being sought based in part on
+   *       the name of a method in the converted type, a HasMethodMatching
+   *       type is created: a MethodType with parameters typed as
+   *       BoundedWildcardTypes.
+   */
+  type BoundedWildcardType >: Null <: Type
+
+  val BoundedWildcardType: BoundedWildcardTypeExtractor
+
+  abstract class BoundedWildcardTypeExtractor {
+    def apply(bounds: TypeBounds): BoundedWildcardType
+    def unapply(tpe: BoundedWildcardType): Option[TypeBounds]
   }
 
   /** The type of Scala types, and also Scala type signatures.
@@ -424,5 +452,66 @@ trait Types { self: Universe =>
 
     /** The greatest lower bound wrt <:< of a list of types */
   def glb(ts: List[Type]): Type
+
+  // Creators ---------------------------------------------------------------
+  // too useful and too non-trivial to be left out of public API
+  // [Eugene to Paul] needs review!
+
+  /** The canonical creator for single-types */
+  def singleType(pre: Type, sym: Symbol): Type
+
+  /** the canonical creator for a refined type with a given scope */
+  def refinedType(parents: List[Type], owner: Symbol, decls: Scope, pos: Position): Type
+
+  /** The canonical creator for a refined type with an initially empty scope.
+   *
+   *  @param parents ...
+   *  @param owner   ...
+   *  @return        ...
+   */
+  def refinedType(parents: List[Type], owner: Symbol): Type
+
+  /** The canonical creator for typerefs
+   */
+  def typeRef(pre: Type, sym: Symbol, args: List[Type]): Type
+
+  /** A creator for intersection type where intersections of a single type are
+   *  replaced by the type itself. */
+  def intersectionType(tps: List[Type]): Type
+
+  /** A creator for intersection type where intersections of a single type are
+   *  replaced by the type itself, and repeated parent classes are merged.
+   *
+   *  !!! Repeated parent classes are not merged - is this a bug in the
+   *  comment or in the code?
+   */
+  def intersectionType(tps: List[Type], owner: Symbol): Type
+
+  /** A creator for type applications */
+  def appliedType(tycon: Type, args: List[Type]): Type
+
+  /** A creator for type parameterizations that strips empty type parameter lists.
+   *  Use this factory method to indicate the type has kind * (it's a polymorphic value)
+   *  until we start tracking explicit kinds equivalent to typeFun (except that the latter requires tparams nonEmpty).
+   */
+  def polyType(tparams: List[Symbol], tpe: Type): Type
+
+  /** A creator for existential types. This generates:
+   *
+   *  tpe1 where { tparams }
+   *
+   *  where `tpe1` is the result of extrapolating `tpe` wrt to `tparams`.
+   *  Extrapolating means that type variables in `tparams` occurring
+   *  in covariant positions are replaced by upper bounds, (minus any
+   *  SingletonClass markers), type variables in `tparams` occurring in
+   *  contravariant positions are replaced by upper bounds, provided the
+   *  resulting type is legal wrt to stability, and does not contain any type
+   *  variable in `tparams`.
+   *
+   *  The abstraction drops all type parameters that are not directly or
+   *  indirectly referenced by type `tpe1`. If there are no remaining type
+   *  parameters, simply returns result type `tpe`.
+   */
+  def existentialAbstraction(tparams: List[Symbol], tpe0: Type): Type
 }
 

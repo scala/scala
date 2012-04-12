@@ -110,6 +110,7 @@ object Tokens extends Tokens {
   final val MATCH = 58
   final val FORSOME = 59
   final val LAZY = 61
+  final val MACRO = 62
 
   def isKeyword(code: Int) =
     code >= IF && code <= LAZY

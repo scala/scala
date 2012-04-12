@@ -227,6 +227,8 @@ abstract class RefChecks extends InfoTransform with reflect.internal.transform.R
      *    1.8.1  M's type is a subtype of O's type, or
      *    1.8.2  M is of type []S, O is of type ()T and S <: T, or
      *    1.8.3  M is of type ()S, O is of type []T and S <: T, or
+     *    1.9.  If M is a macro def, O cannot be deferred.
+     *    1.10. If M is not a macro def, O cannot be a macro def.
      *  2. Check that only abstract classes have deferred members
      *  3. Check that concrete classes do not have deferred definitions
      *     that are not implemented in a subclass.
@@ -416,6 +418,10 @@ abstract class RefChecks extends InfoTransform with reflect.internal.transform.R
           } else if (other.isValue && other.isLazy && !other.isSourceMethod && !other.isDeferred &&
                      member.isValue && !member.isLazy) {
             overrideError("must be declared lazy to override a concrete lazy value")
+          } else if (other.isDeferred && member.isTermMacro) { // (1.9)
+            overrideError("cannot override an abstract method")
+          } else if (other.isTermMacro && !member.isTermMacro) { // (1.10)
+            overrideError("cannot override a macro")
           } else {
             checkOverrideTypes()
             if (settings.warnNullaryOverride.value) {
