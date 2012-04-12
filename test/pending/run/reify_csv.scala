@@ -1,6 +1,4 @@
-import scala.tools.nsc.reporters._
-import scala.tools.nsc.Settings
-import reflect.runtime.Mirror.ToolBox
+import scala.reflect.mirror._
 
 object Test extends App {
   val csv = """
@@ -18,7 +16,7 @@ object Test extends App {
   val fields = csv.head.split(";").map{_.trim()}.toList
   println(fields)
 
-  val code = scala.reflect.Code.lift({
+  reify({
     object Csv {
       case class record(`phase name`: String, id: String, description: String)
 
@@ -33,9 +31,5 @@ object Test extends App {
     }
 
     Csv.record.parse(csv) foreach println
-  })
-
-  val reporter = new ConsoleReporter(new Settings)
-  val toolbox = new ToolBox(reporter)
-  toolbox.runExpr(code.tree)
+  }).eval
 }

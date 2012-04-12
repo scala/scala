@@ -12,6 +12,7 @@ trait ConversionUtil { self: SymbolTable =>
   /** A cache that maintains a bijection between Java reflection type `J`
    *  and Scala reflection type `S`.
    */
+  // todo. should be weak
   protected class TwoWayCache[J, S] {
 
     private val toScalaMap = new HashMap[J, S]

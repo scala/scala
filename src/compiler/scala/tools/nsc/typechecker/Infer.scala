@@ -67,7 +67,7 @@ trait Infer {
    */
   def freshVar(tparam: Symbol): TypeVar = TypeVar(tparam)
 
-  private class NoInstance(msg: String) extends Throwable(msg) with ControlThrowable { }
+  class NoInstance(msg: String) extends Throwable(msg) with ControlThrowable { }
   private class DeferredNoInstance(getmsg: () => String) extends NoInstance("") {
     override def getMessage(): String = getmsg()
   }
@@ -267,6 +267,16 @@ trait Infer {
           setError(tree)
         }
         else {
+          if (context.owner.isTermMacro && (sym1 hasFlag LOCKED)) {
+            // we must not let CyclicReference to be thrown from sym1.info
+            // because that would mark sym1 erroneous, which it is not
+            // but if it's a true CyclicReference then macro def will report it
+            // see comments to TypeSigError for an explanation of this special case
+            // [Eugene] is there a better way?
+            val dummy = new TypeCompleter { val tree = EmptyTree; override def complete(sym: Symbol) {} }
+            throw CyclicReference(sym1, dummy)
+          }
+
           if (sym1.isTerm)
             sym1.cookJavaRawInfo() // xform java rawtypes into existentials
 
@@ -310,6 +320,8 @@ trait Infer {
 
     /** Like weakly compatible but don't apply any implicit conversions yet.
      *  Used when comparing the result type of a method with its prototype.
+     *  [Martin] I think Infer is also created by Erasure, with the default
+     *  implementation of isCoercible
      */
     def isConservativelyCompatible(tp: Type, pt: Type): Boolean =
       context.withImplicitsDisabled(isWeaklyCompatible(tp, pt))
@@ -426,6 +438,9 @@ trait Infer {
         tvars map (tvar => WildcardType)
     }
 
+    /** [Martin] Can someone comment this please? I have no idea what it's for
+     *  and the code is not exactly readable.
+     */
     object AdjustedTypeArgs {
       val Result = collection.mutable.LinkedHashMap
       type Result = collection.mutable.LinkedHashMap[Symbol, Option[Type]]
@@ -992,6 +1007,7 @@ trait Infer {
           PolymorphicExpressionInstantiationError(tree, undetparams, pt)
       } else {
         new TreeTypeSubstituter(undetparams, targs).traverse(tree)
+        notifyUndetparamsInferred(undetparams, targs)
       }
     }
 
@@ -1028,6 +1044,7 @@ trait Infer {
           if (checkBounds(fn, NoPrefix, NoSymbol, undetparams, allargs, "inferred ")) {
             val treeSubst = new TreeTypeSubstituter(okparams, okargs)
             treeSubst traverseTrees fn :: args
+            notifyUndetparamsInferred(okparams, okargs)
 
             leftUndet match {
               case Nil  => Nil
@@ -1116,6 +1133,7 @@ trait Infer {
 
       (inferFor(pt) orElse inferForApproxPt) map { targs =>
         new TreeTypeSubstituter(undetparams, targs).traverse(tree)
+        notifyUndetparamsInferred(undetparams, targs)
       } getOrElse {
         debugwarn("failed inferConstructorInstance for "+ tree  +" : "+ tree.tpe +" under "+ undetparams +" pt = "+ pt +(if(isFullyDefined(pt)) " (fully defined)" else " (not fully defined)"))
         // if (settings.explaintypes.value) explainTypes(resTp.instantiateTypeParams(undetparams, tvars), pt)
@@ -1568,9 +1586,9 @@ trait Infer {
       else infer
     }
 
-    /** Assign <code>tree</code> the type of unique polymorphic alternative
+    /** Assign <code>tree</code> the type of all polymorphic alternatives
      *  with <code>nparams</code> as the number of type parameters, if it exists.
-     *  If several or none such polymorphic alternatives exist, error.
+     *  If no such polymorphic alternative exist, error.
      *
      *  @param tree ...
      *  @param nparams ...

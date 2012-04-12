@@ -184,7 +184,7 @@ trait Trees extends api.Trees { self: SymbolTable =>
   def ValDef(sym: Symbol, rhs: Tree): ValDef =
     atPos(sym.pos) {
       ValDef(Modifiers(sym.flags), sym.name.toTermName,
-             TypeTree(sym.tpe) setPos focusPos(sym.pos),
+             TypeTree(sym.tpe) setPos sym.pos.focus,
              rhs) setSymbol sym
     }
 
@@ -203,7 +203,7 @@ trait Trees extends api.Trees { self: SymbolTable =>
              sym.name.toTermName,
              sym.typeParams map TypeDef,
              vparamss,
-             TypeTree(sym.tpe.finalResultType) setPos focusPos(sym.pos),
+             TypeTree(sym.tpe.finalResultType) setPos sym.pos.focus,
              rhs) setSymbol sym
     }
 
@@ -235,7 +235,8 @@ trait Trees extends api.Trees { self: SymbolTable =>
     }
 
   /** casedef shorthand */
-  def CaseDef(pat: Tree, body: Tree): CaseDef = CaseDef(pat, EmptyTree, body)
+  def CaseDef(pat: Tree, body: Tree): CaseDef =
+    CaseDef(pat, EmptyTree, body)
 
   def Bind(sym: Symbol, body: Tree): Bind =
     Bind(sym.name, body) setSymbol sym
@@ -249,10 +250,39 @@ trait Trees extends api.Trees { self: SymbolTable =>
   def Apply(sym: Symbol, args: Tree*): Tree =
     Apply(Ident(sym), args.toList)
 
+  /** Factory method for object creation `new tpt(args_1)...(args_n)`
+   *  A `New(t, as)` is expanded to: `(new t).<init>(as)`
+   */
+  def New(tpt: Tree, argss: List[List[Tree]]): Tree = argss match {
+    case Nil        => new ApplyConstructor(tpt, Nil)
+    case xs :: rest => rest.foldLeft(new ApplyConstructor(tpt, xs): Tree)(Apply)
+  }
+
+  /** 0-1 argument list new, based on a type.
+   */
+  def New(tpe: Type, args: Tree*): Tree =
+    new ApplyConstructor(TypeTree(tpe), args.toList)
+
   def New(sym: Symbol, args: Tree*): Tree =
     New(sym.tpe, args: _*)
 
-  def Super(sym: Symbol, mix: TypeName): Tree = Super(This(sym), mix)
+  def Super(sym: Symbol, mix: TypeName): Tree =
+    Super(This(sym), mix)
+
+  def This(sym: Symbol): Tree =
+    This(sym.name.toTypeName) setSymbol sym
+
+  def Select(qualifier: Tree, name: String): Select =
+    Select(qualifier, newTermName(name))
+
+  def Select(qualifier: Tree, sym: Symbol): Select =
+    Select(qualifier, sym.name) setSymbol sym
+
+  def Ident(name: String): Ident =
+    Ident(newTermName(name))
+
+  def Ident(sym: Symbol): Ident =
+    Ident(sym.name) setSymbol sym
 
   /** Block factory that flattens directly nested blocks.
    */
@@ -266,6 +296,7 @@ trait Trees extends api.Trees { self: SymbolTable =>
   }
 
   // --- specific traversers and transformers
+  // todo. move these into scala.reflect.api
 
   protected[scala] def duplicateTree(tree: Tree): Tree = duplicator transform tree
 
@@ -273,42 +304,9 @@ trait Trees extends api.Trees { self: SymbolTable =>
     override val treeCopy = newStrictTreeCopier
     override def transform(t: Tree) = {
       val t1 = super.transform(t)
-      if ((t1 ne t) && isRangePos(t1.pos)) t1 setPos focusPos(t.pos)
+      if ((t1 ne t) && t1.pos.isRange) t1 setPos t.pos.focus
       t1
     }
-  }
-
-  trait PosAssigner extends Traverser {
-    var pos: Position
-  }
-  protected[this] lazy val posAssigner: PosAssigner = new DefaultPosAssigner
-
-  protected class DefaultPosAssigner extends PosAssigner {
-    var pos: Position = _
-    override def traverse(t: Tree) {
-      if (t eq EmptyTree) ()
-      else if (t.pos == NoPosition) {
-        t.setPos(pos)
-        super.traverse(t)   // TODO: bug? shouldn't the traverse be outside of the if?
-        // @PP: it's pruning whenever it encounters a node with a
-        // position, which I interpret to mean that (in the author's
-        // mind at least) either the children of a positioned node will
-        // already be positioned, or the children of a positioned node
-        // do not merit positioning.
-        //
-        // Whatever the author's rationale, it does seem like a bad idea
-        // to press on through a positioned node to find unpositioned
-        // children beneath it and then to assign whatever happens to
-        // be in `pos` to such nodes. There are supposed to be some
-        // position invariants which I can't imagine surviving that.
-      }
-    }
-  }
-
-  def atPos[T <: Tree](pos: Position)(tree: T): T = {
-    posAssigner.pos = pos
-    posAssigner.traverse(tree)
-    tree
   }
 
   class ForeachPartialTreeTraverser(pf: PartialFunction[Tree, Tree]) extends Traverser {
@@ -363,7 +361,7 @@ trait Trees extends api.Trees { self: SymbolTable =>
     override def toString = substituterString("Symbol", "Tree", from, to)
   }
 
-  /** Substitute clazz.this with `to`. `to` must be an attributed tree. 
+  /** Substitute clazz.this with `to`. `to` must be an attributed tree.
    */
   class ThisSubstituter(clazz: Symbol, to: => Tree) extends Transformer {
     val newtpe = to.tpe
@@ -430,4 +428,3 @@ trait Trees extends api.Trees { self: SymbolTable =>
     override def toString() = "TreeSymSubstituter/" + substituterString("Symbol", "Symbol", from, to)
   }
 }
-

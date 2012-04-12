@@ -28,7 +28,7 @@ class MutableSettings(val errorFn: String => Unit)
     settings
   }
 
-  protected def copyInto(settings: MutableSettings) {
+  def copyInto(settings: MutableSettings) {
     allSettings foreach { thisSetting =>
       val otherSetting = settings.allSettings find { _.name == thisSetting.name }
       otherSetting foreach { otherSetting =>

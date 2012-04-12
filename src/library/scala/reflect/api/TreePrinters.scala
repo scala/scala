@@ -29,17 +29,21 @@ trait TreePrinters { self: Universe =>
   def newTreePrinter(out: PrintWriter): TreePrinter
 
   // emits more or less verbatim representation of the provided tree
-  // todo. when LiftCode becomes a macro, throw this code away and use that macro
   class RawTreePrinter(out: PrintWriter) extends TreePrinter {
+    val EmptyValDef = self.emptyValDef
     def print(args: Any*): Unit = args foreach {
       case EmptyTree =>
         print("EmptyTree")
+      case EmptyValDef =>
+        print("emptyValDef")
       case tree @ TypeTree() =>
         print("TypeTree()")
         if (tree.tpe != null)
           print(".setType(", tree.tpe, ")")
         else if (tree.original != null)
           print(".setOriginal(", tree.original, ")")
+      case Literal(Constant(s: String)) =>
+        print("Literal(Constant(\"" + s + "\"))")
       case tree: Tree =>
         print(tree.printingPrefix+"(")
         val it = tree.productIterator

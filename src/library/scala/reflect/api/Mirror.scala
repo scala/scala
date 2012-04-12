@@ -5,7 +5,22 @@ package api
  *  runtime entities such as class names and object instances
  *  with a reflexive universe.
  */
-trait Mirror extends Universe with RuntimeTypes with TreeBuildUtil {
+trait Mirror extends Universe {
+
+  /** Class loader that is a mastermind behind the reflexive mirror.
+   *
+   *  By default it is set to system classloader (more precisely, to the classloader that loads the `scala.reflect.package` class).
+   *  However, sometimes it is useful to have a mirror services by a custom classloader.
+   *
+   *  There are two ways to customize the `classLoader`:
+   *    1) Create a new mirror using the `scala.reflect.mkMirror(classLoader: ClassLoader)` method
+   *    2) Set `classLoader` to the new value
+   *
+   *  The first, immutable, way should be strongly preferred in most situation.
+   *  However sometimes it is necessary to migrate the default reflexive mirror (`scala.reflect.mirror`) to a new classloader.
+   *  In that and only that case, use the setter, but be very careful not to introduce inconsistencies.
+   */
+  var classLoader: ClassLoader
 
   /** The Scala class symbol that has given fully qualified name
    *  @param name  The fully qualified name of the class to be returned

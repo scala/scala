@@ -1,0 +1,22 @@
+Type in expressions to have them evaluated.
+Type :help for more information.
+
+scala> 
+
+scala> import scala.reflect.mirror._
+import scala.reflect.mirror._
+
+scala> def foo[T]{
+  val code = reify {
+    List[T]()
+  }
+  println(code.eval)
+}
+<console>:11: free type: Ident(newTypeName("T")) defined by foo in <console>:10:16
+         val code = reify {
+                          ^
+foo: [T]=> Unit
+
+scala> 
+
+scala> 

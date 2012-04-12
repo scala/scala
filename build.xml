@@ -170,7 +170,7 @@ PROPERTIES
   <property file="${basedir}/build.number"/>
 
   <!-- Additional command line arguments for scalac. They are added to all build targets -->
-  <property name="scalac.args" value=""/>
+  <property name="scalac.args" value="-Xmacros"/>
   <property name="javac.args" value=""/>
 
   <!-- Sets location of pre-compiled libraries -->

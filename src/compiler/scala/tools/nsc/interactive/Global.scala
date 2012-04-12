@@ -957,7 +957,7 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "")
         if (ownerTpe.isErroneous) List()
         else new ImplicitSearch(
           tree, functionType(List(ownerTpe), AnyClass.tpe), isView = true,
-          context.makeImplicit(reportAmbiguousErrors = false)).allImplicits
+          context0 = context.makeImplicit(reportAmbiguousErrors = false)).allImplicits
       for (view <- applicableViews) {
         val vtree = viewApply(view)
         val vpre = stabilizedType(vtree)

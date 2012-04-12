@@ -1,0 +1,5 @@
+hey, i've been called from SourceLocation1(null,Test_2.scala,11,251)
+hey, i've been called from SourceLocation1(SourceLocation1(null,Test_2.scala,11,251),Test_2.scala,8,222)
+hey, i've been called from SourceLocation1(SourceLocation1(SourceLocation1(null,Test_2.scala,11,251),Test_2.scala,8,222),Test_2.scala,8,222)
+hey, i've been called from SourceLocation1(SourceLocation1(SourceLocation1(SourceLocation1(null,Test_2.scala,11,251),Test_2.scala,8,222),Test_2.scala,8,222),Test_2.scala,6,180)
+2

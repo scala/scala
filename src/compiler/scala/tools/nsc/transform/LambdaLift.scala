@@ -19,19 +19,6 @@ abstract class LambdaLift extends InfoTransform {
   /** the following two members override abstract members in Transform */
   val phaseName: String = "lambdalift"
 
-  /** Converts types of captured variables to *Ref types.
-   */
-  def boxIfCaptured(sym: Symbol, tpe: Type, erasedTypes: Boolean) =
-    if (sym.isCapturedVariable) {
-      val symClass = tpe.typeSymbol
-      def refType(valueRef: Map[Symbol, Symbol], objectRefClass: Symbol) =
-        if (isPrimitiveValueClass(symClass) && symClass != UnitClass) valueRef(symClass).tpe
-        else if (erasedTypes) objectRefClass.tpe
-        else appliedType(objectRefClass, tpe)
-      if (sym.hasAnnotation(VolatileAttr)) refType(volatileRefClass, VolatileObjectRefClass)
-      else refType(refClass, ObjectRefClass)
-    } else tpe
-
   private val lifted = new TypeMap {
     def apply(tp: Type): Type = tp match {
       case TypeRef(NoPrefix, sym, Nil) if sym.isClass && !sym.isPackageClass =>
@@ -46,7 +33,8 @@ abstract class LambdaLift extends InfoTransform {
   }
 
   def transformInfo(sym: Symbol, tp: Type): Type =
-    boxIfCaptured(sym, lifted(tp), erasedTypes = true)
+    if (sym.isCapturedVariable) capturedVariableType(sym, tpe = lifted(tp), erasedTypes = true)
+    else lifted(tp)
 
   protected def newTransformer(unit: CompilationUnit): Transformer =
     new LambdaLifter(unit)
@@ -471,6 +459,8 @@ abstract class LambdaLift extends InfoTransform {
     private def preTransform(tree: Tree) = super.transform(tree) setType lifted(tree.tpe)
 
     override def transform(tree: Tree): Tree = tree match {
+      case Select(ReferenceToBoxed(idt), elem) if elem == nme.elem =>
+        postTransform(preTransform(idt), isBoxedRef = false)
       case ReferenceToBoxed(idt) =>
         postTransform(preTransform(idt), isBoxedRef = true)
       case _ =>

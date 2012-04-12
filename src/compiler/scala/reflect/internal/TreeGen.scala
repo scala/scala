@@ -1,7 +1,7 @@
 package scala.reflect
 package internal
 
-abstract class TreeGen {
+abstract class TreeGen extends api.AbsTreeGen {
   val global: SymbolTable
 
   import global._
