@@ -115,13 +115,13 @@ object Promise {
       }
 
     def value: Option[Either[Throwable, T]] = getState match {
-      case _: List[_]      ⇒ None
-      case c: Either[_, _] ⇒ Some(c.asInstanceOf[Either[Throwable, T]])
+      case c: Either[_, _] => Some(c.asInstanceOf[Either[Throwable, T]])
+      case _               => None
     }
 
     override def isCompleted(): Boolean = getState match { // Cheaper than boxing result into Option due to "def value"
-      case _: Either[_, _] ⇒ true
-      case _               ⇒ false
+      case _: Either[_, _] => true
+      case _               => false
     }
 
     @inline
@@ -134,15 +134,15 @@ object Promise {
     protected final def getState: AnyRef = updater.get(this)
 
     def tryComplete(value: Either[Throwable, T]): Boolean = {
-      val callbacks: List[Either[Throwable, T] ⇒ Unit] = {
+      val callbacks: List[Either[Throwable, T] => Unit] = {
         try {
           @tailrec
-          def tryComplete(v: Either[Throwable, T]): List[Either[Throwable, T] ⇒ Unit] = {
+          def tryComplete(v: Either[Throwable, T]): List[Either[Throwable, T] => Unit] = {
             getState match {
-              case raw: List[_] ⇒
-                val cur = raw.asInstanceOf[List[Either[Throwable, T] ⇒ Unit]]
+              case raw: List[_] =>
+                val cur = raw.asInstanceOf[List[Either[Throwable, T] => Unit]]
                 if (updateState(cur, v)) cur else tryComplete(v)
-              case _ ⇒ null
+              case _ => null
             }
           }
           tryComplete(resolveEither(value))
@@ -152,26 +152,26 @@ object Promise {
       }
 
       callbacks match {
-        case null             ⇒ false
-        case cs if cs.isEmpty ⇒ true
-        case cs               ⇒ Future.dispatchFuture(executor, () ⇒ cs.foreach(f ⇒ notifyCompleted(f, value))); true
+        case null             => false
+        case cs if cs.isEmpty => true
+        case cs               => Future.dispatchFuture(executor, () => cs.foreach(f => notifyCompleted(f, value))); true
       }
     }
 
-    def onComplete[U](func: Either[Throwable, T] ⇒ U): this.type = {
+    def onComplete[U](func: Either[Throwable, T] => U): this.type = {
       @tailrec //Returns whether the future has already been completed or not
       def tryAddCallback(): Either[Throwable, T] = {
         val cur = getState
         cur match {
-          case r: Either[_, _]    ⇒ r.asInstanceOf[Either[Throwable, T]]
-          case listeners: List[_] ⇒ if (updateState(listeners, func :: listeners)) null else tryAddCallback()
+          case r: Either[_, _]    => r.asInstanceOf[Either[Throwable, T]]
+          case listeners: List[_] => if (updateState(listeners, func :: listeners)) null else tryAddCallback()
         }
       }
 
       tryAddCallback() match {
-        case null ⇒ this
-        case completed ⇒
-          Future.dispatchFuture(executor, () ⇒ notifyCompleted(func, completed))
+        case null => this
+        case completed =>
+          Future.dispatchFuture(executor, () => notifyCompleted(func, completed))
           this
       }
     }
