@@ -140,7 +140,7 @@ object Utility extends AnyRef with parsing.TokenTests {
    * @return    `'''null'''` if `ref` was not a predefined entity.
    */
   final def unescape(ref: String, s: StringBuilder): StringBuilder =
-    (unescMap get ref) map (s append _) orNull
+    ((unescMap get ref) map (s append _)).orNull
 
   /**
    * Returns a set of all namespaces used in a sequence of nodes

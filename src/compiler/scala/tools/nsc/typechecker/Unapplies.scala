@@ -200,7 +200,7 @@ trait Unapplies extends ast.TreeDSL
   def caseClassCopyMeth(cdef: ClassDef): Option[DefDef] = {
     def isDisallowed(vd: ValDef) = isRepeatedParamType(vd.tpt) || isByNameParamType(vd.tpt)
     val cparamss  = constrParamss(cdef)
-    val flat      = cparamss flatten
+    val flat      = cparamss.flatten
 
     if (cdef.symbol.hasAbstractFlag || (flat exists isDisallowed)) None
     else {

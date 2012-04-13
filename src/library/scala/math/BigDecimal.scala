@@ -293,7 +293,7 @@ extends ScalaNumber with ScalaNumericConversions with Serializable {
 
   /** Returns the absolute value of this BigDecimal
    */
-  def abs: BigDecimal = this.bigDecimal abs
+  def abs: BigDecimal = this.bigDecimal.abs
 
   /** Returns the sign of this BigDecimal, i.e.
    *   -1 if it is less than 0,

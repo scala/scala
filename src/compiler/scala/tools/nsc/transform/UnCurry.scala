@@ -8,6 +8,7 @@ package transform
 
 import symtab.Flags._
 import scala.collection.{ mutable, immutable }
+import language.postfixOps
 
 /*<export> */
 /** - uncurry all symbol and tree types (@see UnCurryPhase) -- this includes normalizing all proper types.

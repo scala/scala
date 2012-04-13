@@ -360,7 +360,7 @@ abstract class InlineExceptionHandlers extends SubComponent {
           val caughtException = toTypeKind(caughtClass.tpe)
           // copy the exception handler code once again, dropping the LOAD_EXCEPTION
           val copy = handler.code.newBlock
-          copy.emitOnly(handler.iterator drop dropCount toSeq: _*)
+          copy.emitOnly((handler.iterator drop dropCount).toSeq: _*)
 
           // extend the handlers of the handler to the copy
           for (parentHandler <- handler.method.exh ; if parentHandler covers handler) {

@@ -10,6 +10,7 @@ import transform.ExplicitOuter
 import ast.{ TreePrinters, Trees }
 import java.io.{ StringWriter, PrintWriter }
 import annotation.elidable
+import language.postfixOps
 
 /** Ancillary bits of ParallelMatching which are better off
  *  out of the way.

@@ -240,7 +240,7 @@ trait TraversableOnce[+A] extends Any with GenTraversableOnce[A] {
 
   def toTraversable: Traversable[A]
 
-  def toList: List[A] = new ListBuffer[A] ++= seq toList
+  def toList: List[A] = (new ListBuffer[A] ++= seq).toList
 
   def toIterable: Iterable[A] = toStream
 

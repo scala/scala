@@ -15,6 +15,7 @@ import scala.tools.nsc.symtab._
 import ch.epfl.lamp.compiler.msil.{Type => MsilType, _}
 import ch.epfl.lamp.compiler.msil.emit._
 import ch.epfl.lamp.compiler.msil.util.PECustomMod
+import language.postfixOps
 
 abstract class GenMSIL extends SubComponent {
   import global._

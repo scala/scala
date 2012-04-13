@@ -487,7 +487,7 @@ trait TraversableLike[+A, +Repr] extends Any
     if (n <= 0) {
       val b = newBuilder
       b.sizeHint(this)
-      b ++= thisCollection result
+      (b ++= thisCollection).result
     }
     else sliceWithKnownDelta(n, Int.MaxValue, -n)
 
@@ -775,6 +775,6 @@ trait TraversableLike[+A, +Repr] extends Any
   // A helper for tails and inits.
   private def iterateUntilEmpty(f: Traversable[A @uV] => Traversable[A @uV]): Iterator[Repr] = {
     val it = Iterator.iterate(thisCollection)(f) takeWhile (x => !x.isEmpty)
-    it ++ Iterator(Nil) map (newBuilder ++= _ result)
+    it ++ Iterator(Nil) map (x => (newBuilder ++= x).result)
   }
 }

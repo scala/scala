@@ -97,6 +97,6 @@ abstract class Liveness {
       }
     }
     override def toString() =
-      method.blocks map (b => "\nlive-in(%s)=%s\nlive-out(%s)=%s".format(b, in(b), b, out(b))) mkString
+      (method.blocks map (b => "\nlive-in(%s)=%s\nlive-out(%s)=%s".format(b, in(b), b, out(b)))).mkString
   } /* Liveness analysis */
 }

@@ -79,7 +79,7 @@ trait ScratchPadMaker { self: Global =>
                 addSandbox(stat)
               } else {
                 val resName = nextRes()
-                val dispResName = resName filter ('$' !=)
+                val dispResName = resName filter ('$' != _)
                 patches += Patch(stat.pos.start, "val " + resName + " = ")
                 addSandbox(stat)
                 toPrint += resultString(nameType(dispResName, stat.tpe), resName)

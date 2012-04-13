@@ -357,7 +357,7 @@ abstract class ExplicitOuter extends InfoTransform
      */
     def mixinOuterAccessorDef(mixinClass: Symbol): Tree = {
       val outerAcc    = outerAccessor(mixinClass) overridingSymbol currentClass
-      def mixinPrefix = currentClass.thisType baseType mixinClass prefix;
+      def mixinPrefix = (currentClass.thisType baseType mixinClass).prefix
       assert(outerAcc != NoSymbol, "No outer accessor for inner mixin " + mixinClass + " in " + currentClass)
       // I added the mixinPrefix.typeArgs.nonEmpty condition to address the
       // crash in SI-4970.  I feel quite sure this can be improved.

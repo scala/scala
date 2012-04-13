@@ -2625,7 +2625,7 @@ self =>
           val contextBoundBuf = new ListBuffer[Tree]
           val tparams = typeParamClauseOpt(name, contextBoundBuf)
           classContextBounds = contextBoundBuf.toList
-          val tstart = in.offset :: classContextBounds.map(_.pos.startOrPoint) min;
+          val tstart = (in.offset :: classContextBounds.map(_.pos.startOrPoint)).min
           if (!classContextBounds.isEmpty && mods.isTrait) {
             syntaxError("traits cannot have type parameters with context bounds `: ...' nor view bounds `<% ...'", false)
             classContextBounds = List()

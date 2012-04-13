@@ -31,6 +31,7 @@ import backend.{ ScalaPrimitives, Platform, MSILPlatform, JavaPlatform }
 import backend.jvm.GenJVM
 import backend.opt.{ Inliners, InlineExceptionHandlers, ClosureElimination, DeadCodeElimination }
 import backend.icode.analysis._
+import language.postfixOps
 
 class Global(var currentSettings: Settings, var reporter: NscReporter) extends SymbolTable
                                                                           with ClassLoaders

@@ -1145,7 +1145,7 @@ trait Scanners extends ScannersCommon {
     arr
   }
 
-  final val token2name = allKeywords map (_.swap) toMap
+  final val token2name = (allKeywords map (_.swap)).toMap
 
 // Token representation ----------------------------------------------------
 

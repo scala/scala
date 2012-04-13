@@ -16,10 +16,10 @@ import scala.io.Source
 
 object ConstructingParser {
   def fromFile(inp: File, preserveWS: Boolean) =
-    new ConstructingParser(Source.fromFile(inp), preserveWS) initialize
+    new ConstructingParser(Source.fromFile(inp), preserveWS).initialize
 
   def fromSource(inp: Source, preserveWS: Boolean) =
-    new ConstructingParser(inp, preserveWS) initialize
+    new ConstructingParser(inp, preserveWS).initialize
 }
 
 /** An xml parser. parses XML and invokes callback methods of a MarkupHandler.

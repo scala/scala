@@ -118,7 +118,7 @@ class Random(val self: java.util.Random) {
       swap(n - 1, k)
     }
 
-    bf(xs) ++= buf result
+    (bf(xs) ++= buf).result
   }
 
   /** Returns a Stream of pseudorandomly chosen alphanumeric characters,

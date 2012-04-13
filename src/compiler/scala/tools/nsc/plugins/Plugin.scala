@@ -138,7 +138,7 @@ object Plugin {
     } yield entry)).distinct
 
     val loader = loaderFor(alljars)
-    alljars map (loadFrom(_, loader)) flatten
+    (alljars map (loadFrom(_, loader))).flatten
   }
 
   /** Instantiate a plugin class, given the class and

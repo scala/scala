@@ -50,7 +50,7 @@ trait SyntheticMethods extends ast.TreeDSL {
     import synthesizer._
 
     if (clazz0 == AnyValClass || isPrimitiveValueClass(clazz0)) return {
-      if (clazz0.info member nme.getClass_ isDeferred) {
+      if ((clazz0.info member nme.getClass_).isDeferred) {
         // XXX dummy implementation for now
         val getClassMethod = createMethod(nme.getClass_, getClassReturnType(clazz.tpe))(_ => NULL)
         deriveTemplate(templ)(_ :+ getClassMethod)
@@ -303,7 +303,7 @@ trait SyntheticMethods extends ast.TreeDSL {
         lb += logResult("case accessor new")(newAcc)
       }
 
-      lb ++= templ.body ++= synthesize() toList
+      (lb ++= templ.body ++= synthesize()).toList
     }
 
     if (phase.id > currentRun.typerPhase.id) templ

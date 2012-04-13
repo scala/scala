@@ -822,7 +822,7 @@ self =>
    */
   override def distinct: Stream[A] =
     if (isEmpty) this
-    else cons(head, tail.filter(head !=).distinct)
+    else cons(head, tail.filter(head != _).distinct)
 
   /** Returns a new sequence of given length containing the elements of this
    * sequence followed by zero or more occurrences of given elements.

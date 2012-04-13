@@ -44,7 +44,7 @@ trait Members {
     def blocksList: List[BasicBlock] = blocks.toList
     def instructions                 = blocksList flatMap (_.iterator)
     def blockCount                   = blocks.size
-    def instructionCount             = blocks map (_.length) sum
+    def instructionCount             = (blocks map (_.length)).sum
 
     def touched = _touched
     def touched_=(b: Boolean): Unit = {

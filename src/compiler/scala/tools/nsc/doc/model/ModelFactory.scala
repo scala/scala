@@ -674,9 +674,9 @@ class ModelFactory(val global: Global, val settings: doc.Settings) {
           nameBuffer append '⇒'
           appendType0(result)
         /* Polymorphic types */
-        case PolyType(tparams, result) => assert(tparams nonEmpty)
+        case PolyType(tparams, result) => assert(tparams.nonEmpty)
 //          throw new Error("Polymorphic type '" + tpe + "' cannot be printed as a type")
-          def typeParamsToString(tps: List[Symbol]): String = if(tps isEmpty) "" else
+          def typeParamsToString(tps: List[Symbol]): String = if (tps.isEmpty) "" else
             tps.map{tparam =>
               tparam.varianceString + tparam.name + typeParamsToString(tparam.typeParams)
             }.mkString("[", ", ", "]")

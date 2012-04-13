@@ -82,7 +82,7 @@ class LinkedHashSet[A] extends AbstractSet[A]
 
   private def readObject(in: java.io.ObjectInputStream) {
     ordered = new ListBuffer[A]
-    init(in, ordered += )
+    init(in, ordered += _)
   }
 }
 

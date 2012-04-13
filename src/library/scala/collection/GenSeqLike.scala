@@ -142,7 +142,7 @@ trait GenSeqLike[+A, +Repr] extends Any with GenIterableLike[A, Repr] with Equal
    *    $mayNotTerminateInf
    *
    */
-  def indexOf[B >: A](elem: B, from: Int): Int = indexWhere(elem ==, from)
+  def indexOf[B >: A](elem: B, from: Int): Int = indexWhere(elem == _, from)
 
   /** Finds index of last occurrence of some value in this $coll.
    *
@@ -157,7 +157,7 @@ trait GenSeqLike[+A, +Repr] extends Any with GenIterableLike[A, Repr] with Equal
    *    $willNotTerminateInf
    *
    */
-  def lastIndexOf[B >: A](elem: B): Int = lastIndexWhere(elem ==)
+  def lastIndexOf[B >: A](elem: B): Int = lastIndexWhere(elem == _)
 
   /** Finds index of last occurrence of some value in this $coll before or at a given end index.
    *
@@ -170,7 +170,7 @@ trait GenSeqLike[+A, +Repr] extends Any with GenIterableLike[A, Repr] with Equal
    *  @usecase def lastIndexOf(elem: A, end: Int): Int
    *    @inheritdoc
    */
-  def lastIndexOf[B >: A](elem: B, end: Int): Int = lastIndexWhere(elem ==, end)
+  def lastIndexOf[B >: A](elem: B, end: Int): Int = lastIndexWhere(elem == _, end)
 
   /** Finds index of last element satisfying some predicate.
    *

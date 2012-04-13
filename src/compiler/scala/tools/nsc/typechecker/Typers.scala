@@ -750,7 +750,7 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
             if (!(currentRun.reportedFeature contains featureTrait))
               raw += "\nThis can be achieved by adding the import clause 'import language." + featureName + "'\n" +
                 "or by setting the compiler option -language:" + featureName + ".\n" +
-                "See the Scala docs for value scala.language." + featureName + "for a discussion\n" +
+                "See the Scala docs for value scala.language." + featureName + " for a discussion\n" +
                 "why the feature " + req + " be explicitly enabled."
             currentRun.reportedFeature += featureTrait
             val msg = raw replace ("#", construct)
@@ -805,7 +805,7 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
     protected def adapt(tree: Tree, mode: Int, pt: Type, original: Tree = EmptyTree): Tree = {
 
       def adaptToImplicitMethod(mt: MethodType): Tree = {
-        if (context.undetparams nonEmpty) { // (9) -- should revisit dropped condition `(mode & POLYmode) == 0`
+        if (context.undetparams.nonEmpty) { // (9) -- should revisit dropped condition `(mode & POLYmode) == 0`
           // dropped so that type args of implicit method are inferred even if polymorphic expressions are allowed
           // needed for implicits in 2.8 collection library -- maybe once #3346 is fixed, we can reinstate the condition?
             context.undetparams = inferExprInstance(tree, context.extractUndetparams(), pt,
@@ -2157,7 +2157,7 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
       var body1: Tree = typed(cdef.body, pt)
 
       val contextWithTypeBounds = context.nextEnclosing(_.tree.isInstanceOf[CaseDef])
-      if (contextWithTypeBounds.savedTypeBounds nonEmpty) {
+      if (contextWithTypeBounds.savedTypeBounds.nonEmpty) {
         body1.tpe = contextWithTypeBounds restoreTypeBounds body1.tpe
 
         // insert a cast if something typechecked under the GADT constraints,
@@ -4188,7 +4188,7 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
 
           result match {
             // could checkAccessible (called by makeAccessible) potentially have skipped checking a type application in qual?
-            case SelectFromTypeTree(qual@TypeTree(), name) if qual.tpe.typeArgs nonEmpty => // TODO: somehow the new qual is not checked in refchecks
+            case SelectFromTypeTree(qual@TypeTree(), name) if qual.tpe.typeArgs.nonEmpty => // TODO: somehow the new qual is not checked in refchecks
               treeCopy.SelectFromTypeTree(
                 result,
                 (TypeTreeWithDeferredRefCheck(){ () => val tp = qual.tpe; val sym = tp.typeSymbolDirect
@@ -4751,6 +4751,8 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
             else
               typedSelect(qual1, name)
 
+          if (tree.isInstanceOf[PostfixSelect])
+            checkFeature(tree.pos, PostfixOpsFeature, name.decode)
           if (tree1.symbol != null && tree1.symbol.isOnlyRefinementMember)
             checkFeature(tree1.pos, ReflectiveCallsFeature, tree1.symbol.toString)
 

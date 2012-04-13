@@ -543,14 +543,14 @@ trait Macros { self: Analyzer =>
 
       val implCtxParam = if (implParamss.length > 0 && implParamss(0).length > 0) implParamss(0)(0) else null
       def implParamToDefParam(implParam: Symbol): Symbol = {
-        val indices = (implParamss drop 1 zipWithIndex) map { case (implParams, index) => (index, implParams indexOf implParam) } filter (_._2 != -1) headOption;
+        val indices = (((implParamss drop 1).zipWithIndex) map { case (implParams, index) => (index, implParams indexOf implParam) } filter (_._2 != -1)).headOption
         val defParam = indices flatMap {
           case (plistIndex, pIndex) =>
             if (defParamss.length <= plistIndex) None
             else if (defParamss(plistIndex).length <= pIndex) None
             else Some(defParamss(plistIndex)(pIndex))
         }
-        defParam orNull
+        defParam.orNull
       }
 
       class UnsigmaTypeMap extends TypeMap {
