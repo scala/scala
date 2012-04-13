@@ -2787,7 +2787,7 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
             val lencmp = compareLengths(args, formals)
 
             def checkNotMacro() = {
-              if (fun.symbol != null && fun.symbol.filter(sym => sym != null && sym.isTermMacro) != NoSymbol)
+              if (fun.symbol != null && fun.symbol.filter(sym => sym != null && sym.isTermMacro && !sym.isErroneous) != NoSymbol)
                 duplErrorTree(NamedAndDefaultArgumentsNotSupportedForMacros(tree, fun))
             }
 
@@ -3525,7 +3525,6 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
             else
               tree
           original setType ann.tpe
-          original setPos tree.pos.focus
           TypeTree(tpe) setOriginal original setPos tree.pos.focus
         }
 
@@ -3584,7 +3583,7 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
             ann.tpe = arg1.tpe.withAnnotation(annotInfo)
           }
           val atype = ann.tpe
-          Typed(arg1, resultingTypeTree(atype)) setPos tree.pos.focus setType atype
+          Typed(arg1, resultingTypeTree(atype)) setPos tree.pos setType atype
         }
       }
 
@@ -4616,7 +4615,7 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
           // A: solely for robustness reasons. this mechanism might change in the future, which might break unprotected code
           val expr1 = context.withMacrosDisabled(typed1(expr, mode, pt))
           expr1 match {
-            case macroDef if macroDef.symbol.isTermMacro =>
+            case macroDef if macroDef.symbol != null && macroDef.symbol.isTermMacro && !macroDef.symbol.isErroneous =>
               MacroEtaError(expr1)
             case _ =>
               typedEta(checkDead(expr1))

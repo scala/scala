@@ -20,19 +20,22 @@ import collection._
 
 
 trait ExecutionContext {
-
+  
+  /** Runs a block of code on this execution context.
+   */
   def execute(runnable: Runnable): Unit
-
-  def execute[U](body: () => U): Unit
-
+  
+  /** Used internally by the framework - blocks execution for at most `atMost` time while waiting
+   *  for an `awaitable` object to become ready.
+   *  
+   *  Clients should use `scala.concurrent.blocking` instead.
+   */
   def internalBlockingCall[T](awaitable: Awaitable[T], atMost: Duration): T
   
+  /** Reports that an asynchronous computation failed.
+   */
   def reportFailure(t: Throwable): Unit
-
-  /* implementations follow */
-
-  private implicit val executionContext = this
-
+  
 }
 
 

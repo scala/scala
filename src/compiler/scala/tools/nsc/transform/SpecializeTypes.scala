@@ -1328,7 +1328,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
             }
           } else super.transform(tree)
 
-        case TypeApply(Select(qual, name), targs)
+        case TypeApply(sel @ Select(qual, name), targs)
                 if (!specializedTypeVars(symbol.info).isEmpty && name != nme.CONSTRUCTOR) =>
           debuglog("checking typeapp for rerouting: " + tree + " with sym.tpe: " + symbol.tpe + " tree.tpe: " + tree.tpe)
           val qual1 = transform(qual)
@@ -1342,14 +1342,20 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
               val residualTargs = symbol.info.typeParams zip targs collect {
                 case (tvar, targ) if !env.contains(tvar) || !isPrimitiveValueClass(env(tvar).typeSymbol) => targ
               }
+              // See SI-5583.  Don't know why it happens now if it didn't before.
+              if (specMember.info.typeParams.isEmpty && residualTargs.nonEmpty) {
+                log("!!! Type args to be applied, but symbol says no parameters: " + ((specMember.defString, residualTargs)))
+                localTyper.typed(sel)
+              }
+              else {
+                ifDebug(assert(residualTargs.length == specMember.info.typeParams.length,
+                  "residual: %s, tparams: %s, env: %s".format(residualTargs, specMember.info.typeParams, env))
+                )
 
-              ifDebug(assert(residualTargs.length == specMember.info.typeParams.length,
-                "residual: %s, tparams: %s, env: %s".format(residualTargs, symbol.info.typeParams, env))
-              )
-
-              val tree1 = gen.mkTypeApply(Select(qual1, specMember), residualTargs)
-              debuglog("rewrote " + tree + " to " + tree1)
-              localTyper.typedOperator(atPos(tree.pos)(tree1)) // being polymorphic, it must be a method
+                val tree1 = gen.mkTypeApply(Select(qual1, specMember), residualTargs)
+                debuglog("rewrote " + tree + " to " + tree1)
+                localTyper.typedOperator(atPos(tree.pos)(tree1)) // being polymorphic, it must be a method
+              }
 
             case None => super.transform(tree)
           }

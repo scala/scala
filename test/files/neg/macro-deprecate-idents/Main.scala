@@ -1,2 +1,0 @@
-object Test extends App
-}

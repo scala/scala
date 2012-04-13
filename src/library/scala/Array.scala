@@ -467,6 +467,19 @@ object Array extends FallbackArrayBuilding {
  *  @version 1.0
  *  @see [[http://www.scala-lang.org/docu/files/collections-api/collections_38.html#anchor "The Scala 2.8 Collections' API"]]
  *  section on `Array` by Martin Odersky for more information.
+ *  @define coll array
+ *  @define Coll Array
+ *  @define orderDependent
+ *  @define orderDependentFold
+ *  @define mayNotTerminateInf
+ *  @define willNotTerminateInf
+ *  @define collectExample
+ *  @define undefinedorder
+ *  @define thatinfo the class of the returned collection. In the standard library configuration,
+ *    `That` is either `Array[B]` if a ClassManifest is available for B or `ArraySeq[B]` otherwise.
+ *  @define zipthatinfo $thatinfo
+ *  @define bfinfo an implicit value of class `CanBuildFrom` which determines the result class `That` from the current
+ *    representation type `Repr` and the new element type `B`.
  */
 final class Array[T](_length: Int) extends java.io.Serializable with java.lang.Cloneable {
 

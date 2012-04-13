@@ -9,6 +9,7 @@ import scala.collection.mutable.ListBuffer
 import scala.compat.Platform.EOL
 import scala.reflect.makro.runtime.{Context => MacroContext}
 import scala.reflect.runtime.Mirror
+import util.Statistics._
 
 /**
  *  Code to deal with macros, namely with:
@@ -1002,159 +1003,165 @@ trait Macros { self: Analyzer =>
         delayed += expandee -> (typer.context, undetparams)
         Delay(expandee)
       } else {
-        val macroDef = expandee.symbol
-        macroRuntime(macroDef) match {
-          case Some(runtime) =>
-            val savedInfolevel = nodePrinters.infolevel
-            try {
-              // InfoLevel.Verbose examines and prints out infos of symbols
-              // by the means of this'es these symbols can climb up the lexical scope
-              // when these symbols will be examined by a node printer
-              // they will enumerate and analyze their children (ask for infos and tpes)
-              // if one of those children involves macro expansion, things might get nasty
-              // that's why I'm temporarily turning this behavior off
-              nodePrinters.infolevel = nodePrinters.InfoLevel.Quiet
-              val args = macroArgs(typer, expandee)
-              args match {
-                case Some(args) =>
-                  // adding stuff to openMacros is easy, but removing it is a nightmare
-                  // it needs to be sprinkled over several different code locations
-                  val (context: MacroContext) :: _ = args
-                  openMacros = context :: openMacros
-                  val expanded: MacroExpansionResult = try {
-                    val prevNumErrors = reporter.ERROR.count
-                    val expanded = runtime(args)
-                    val currNumErrors = reporter.ERROR.count
-                    if (currNumErrors != prevNumErrors) {
-                      fail(typer, expandee) // errors have been reported by the macro itself
-                    } else {
-                      expanded match {
-                        case expanded: Expr[_] =>
-                          if (macroDebug || macroCopypaste) {
-                            if (macroDebug) println("original:")
-                            println(expanded.tree)
-                            println(showRaw(expanded.tree))
-                          }
+        val start = startTimer(macroExpandNanos)
+        incCounter(macroExpandCount)
+        try {
+          val macroDef = expandee.symbol
+          macroRuntime(macroDef) match {
+            case Some(runtime) =>
+              val savedInfolevel = nodePrinters.infolevel
+              try {
+                // InfoLevel.Verbose examines and prints out infos of symbols
+                // by the means of this'es these symbols can climb up the lexical scope
+                // when these symbols will be examined by a node printer
+                // they will enumerate and analyze their children (ask for infos and tpes)
+                // if one of those children involves macro expansion, things might get nasty
+                // that's why I'm temporarily turning this behavior off
+                nodePrinters.infolevel = nodePrinters.InfoLevel.Quiet
+                val args = macroArgs(typer, expandee)
+                args match {
+                  case Some(args) =>
+                    // adding stuff to openMacros is easy, but removing it is a nightmare
+                    // it needs to be sprinkled over several different code locations
+                    val (context: MacroContext) :: _ = args
+                    openMacros = context :: openMacros
+                    val expanded: MacroExpansionResult = try {
+                      val prevNumErrors = reporter.ERROR.count
+                      val expanded = runtime(args)
+                      val currNumErrors = reporter.ERROR.count
+                      if (currNumErrors != prevNumErrors) {
+                        fail(typer, expandee) // errors have been reported by the macro itself
+                      } else {
+                        expanded match {
+                          case expanded: Expr[_] =>
+                            if (macroDebug || macroCopypaste) {
+                              if (macroDebug) println("original:")
+                              println(expanded.tree)
+                              println(showRaw(expanded.tree))
+                            }
 
-                          freeTerms(expanded.tree) foreach (fte => typer.context.error(expandee.pos,
-                              ("macro expansion contains free term variable %s %s. "+
-                              "have you forgot to use eval when splicing this variable into a reifee? " +
-                              "if you have troubles tracking free term variables, consider using -Xlog-free-terms").format(fte.name, fte.origin)))
-                          freeTypes(expanded.tree) foreach (fty => typer.context.error(expandee.pos,
-                              ("macro expansion contains free type variable %s %s. "+
-                              "have you forgot to use c.TypeTag annotation for this type parameter? " +
-                              "if you have troubles tracking free type variables, consider using -Xlog-free-types").format(fty.name, fty.origin)))
+                            freeTerms(expanded.tree) foreach (fte => typer.context.error(expandee.pos,
+                                ("macro expansion contains free term variable %s %s. "+
+                                "have you forgot to use eval when splicing this variable into a reifee? " +
+                                "if you have troubles tracking free term variables, consider using -Xlog-free-terms").format(fte.name, fte.origin)))
+                            freeTypes(expanded.tree) foreach (fty => typer.context.error(expandee.pos,
+                                ("macro expansion contains free type variable %s %s. "+
+                                "have you forgot to use c.TypeTag annotation for this type parameter? " +
+                                "if you have troubles tracking free type variables, consider using -Xlog-free-types").format(fty.name, fty.origin)))
 
-                          val currNumErrors = reporter.ERROR.count
-                          if (currNumErrors != prevNumErrors) {
-                            fail(typer, expandee)
-                          } else {
-                            // inherit the position from the first position-ful expandee in macro callstack
-                            // this is essential for sane error messages
-                            var tree = expanded.tree
-                            var position = openMacros.find(c => c.expandee.pos != NoPosition).map(_.expandee.pos).getOrElse(NoPosition)
-                            tree = atPos(position.focus)(tree)
+                            val currNumErrors = reporter.ERROR.count
+                            if (currNumErrors != prevNumErrors) {
+                              fail(typer, expandee)
+                            } else {
+                              // inherit the position from the first position-ful expandee in macro callstack
+                              // this is essential for sane error messages
+                              var tree = expanded.tree
+                              var position = openMacros.find(c => c.expandee.pos != NoPosition).map(_.expandee.pos).getOrElse(NoPosition)
+                              tree = atPos(position.focus)(tree)
 
-                            // now macro expansion gets typechecked against the macro definition return type
-                            // however, this happens in macroExpand, not here in macroExpand1
-                            Success(tree)
-                          }
-                        case expanded if expanded.isInstanceOf[Expr[_]] =>
-                          val msg = "macro must return a compiler-specific expr; returned value is Expr, but it doesn't belong to this compiler's universe"
-                          fail(typer, expandee, msg)
-                        case expanded =>
-                          val msg = "macro must return a compiler-specific expr; returned value is of class: %s".format(expanded.getClass)
-                          fail(typer, expandee, msg)
-                      }
-                    }
-                  } catch {
-                    case ex: Throwable =>
-                      openMacros = openMacros.tail
-                      throw ex
-                  }
-                  if (!expanded.isInstanceOf[Success]) openMacros = openMacros.tail
-                  expanded
-                case None =>
-                  fail(typer, expandee) // error has been reported by macroArgs
-              }
-            } catch {
-              case ex =>
-                // [Eugene] any ideas about how to improve this one?
-                val realex = ReflectionUtils.unwrapThrowable(ex)
-                realex match {
-                  case realex: reflect.makro.runtime.AbortMacroException =>
-                    if (macroDebug || macroCopypaste) println("macro expansion has failed: %s".format(realex.msg))
-                    fail(typer, expandee) // error has been reported by abort
-                  case _ =>
-                    val message = {
-                      try {
-                        // the most reliable way of obtaining currently executing method
-                        // http://stackoverflow.com/questions/442747/getting-the-name-of-the-current-executing-method
-                        val currentMethodName = new Object(){}.getClass().getEnclosingMethod().getName
-                        val relevancyThreshold = realex.getStackTrace().indexWhere(este => este.getMethodName == currentMethodName)
-                        if (relevancyThreshold == -1) None
-                        else {
-                          var relevantElements = realex.getStackTrace().take(relevancyThreshold + 1)
-                          var framesTillReflectiveInvocationOfMacroImpl = relevantElements.reverse.indexWhere(_.isNativeMethod) + 1
-                          relevantElements = relevantElements dropRight framesTillReflectiveInvocationOfMacroImpl
-
-                          realex.setStackTrace(relevantElements)
-                          val message = new java.io.StringWriter()
-                          realex.printStackTrace(new java.io.PrintWriter(message))
-                          Some(EOL + message)
+                              // now macro expansion gets typechecked against the macro definition return type
+                              // however, this happens in macroExpand, not here in macroExpand1
+                              Success(tree)
+                            }
+                          case expanded if expanded.isInstanceOf[Expr[_]] =>
+                            val msg = "macro must return a compiler-specific expr; returned value is Expr, but it doesn't belong to this compiler's universe"
+                            fail(typer, expandee, msg)
+                          case expanded =>
+                            val msg = "macro must return a compiler-specific expr; returned value is of class: %s".format(expanded.getClass)
+                            fail(typer, expandee, msg)
                         }
-                      } catch {
-                        // if the magic above goes boom, just fall back to uninformative, but better than nothing, getMessage
-                        case ex: Throwable =>
-                          None
                       }
-                    } getOrElse realex.getMessage
-                    fail(typer, expandee, "exception during macro expansion: " + message)
+                    } catch {
+                      case ex: Throwable =>
+                        openMacros = openMacros.tail
+                        throw ex
+                    }
+                    if (!expanded.isInstanceOf[Success]) openMacros = openMacros.tail
+                    expanded
+                  case None =>
+                    fail(typer, expandee) // error has been reported by macroArgs
                 }
-            } finally {
-              nodePrinters.infolevel = savedInfolevel
-            }
-          case None =>
-            def notFound() = {
-              typer.context.error(expandee.pos, "macro implementation not found: " + macroDef.name + " " +
-                "(the most common reason for that is that you cannot use macro implementations in the same compilation run that defines them)\n" +
-                "if you do need to define macro implementations along with the rest of your program, consider two-phase compilation with -Xmacro-fallback-classpath " +
-                "in the second phase pointing to the output of the first phase")
-              None
-            }
-            def fallBackToOverridden(tree: Tree): Option[Tree] = {
-              tree match {
-                case Select(qual, name) if (macroDef.isTermMacro) =>
-                  macroDef.allOverriddenSymbols match {
-                    case first :: _ =>
-                      Some(Select(qual, name) setPos tree.pos setSymbol first)
+              } catch {
+                case ex =>
+                  // [Eugene] any ideas about how to improve this one?
+                  val realex = ReflectionUtils.unwrapThrowable(ex)
+                  realex match {
+                    case realex: reflect.makro.runtime.AbortMacroException =>
+                      if (macroDebug || macroCopypaste) println("macro expansion has failed: %s".format(realex.msg))
+                      fail(typer, expandee) // error has been reported by abort
                     case _ =>
-                      macroTrace("macro is not overridden: ")(tree)
-                      notFound()
+                      val message = {
+                        try {
+                          // the most reliable way of obtaining currently executing method
+                          // http://stackoverflow.com/questions/442747/getting-the-name-of-the-current-executing-method
+                          val currentMethodName = new Object(){}.getClass().getEnclosingMethod().getName
+                          val relevancyThreshold = realex.getStackTrace().indexWhere(este => este.getMethodName == currentMethodName)
+                          if (relevancyThreshold == -1) None
+                          else {
+                            var relevantElements = realex.getStackTrace().take(relevancyThreshold + 1)
+                            var framesTillReflectiveInvocationOfMacroImpl = relevantElements.reverse.indexWhere(_.isNativeMethod) + 1
+                            relevantElements = relevantElements dropRight framesTillReflectiveInvocationOfMacroImpl
+
+                            realex.setStackTrace(relevantElements)
+                            val message = new java.io.StringWriter()
+                            realex.printStackTrace(new java.io.PrintWriter(message))
+                            Some(EOL + message)
+                          }
+                        } catch {
+                          // if the magic above goes boom, just fall back to uninformative, but better than nothing, getMessage
+                          case ex: Throwable =>
+                            None
+                        }
+                      } getOrElse realex.getMessage
+                      fail(typer, expandee, "exception during macro expansion: " + message)
                   }
-                case Apply(fn, args) =>
-                  fallBackToOverridden(fn) match {
-                    case Some(fn1) => Some(Apply(fn1, args) setPos tree.pos)
-                    case _         => None
-                  }
-                case TypeApply(fn, args) =>
-                  fallBackToOverridden(fn) match {
-                    case Some(fn1) => Some(TypeApply(fn1, args) setPos tree.pos)
-                    case _         => None
-                  }
-                case _ =>
-                  macroTrace("unexpected tree in fallback: ")(tree)
-                  notFound()
+              } finally {
+                nodePrinters.infolevel = savedInfolevel
               }
-            }
-            fallBackToOverridden(expandee) match {
-              case Some(tree1) =>
-                macroTrace("falling back to ")(tree1)
-                currentRun.macroExpansionFailed = true
-                Fallback(tree1)
-              case None =>
-                fail(typer, expandee)
-            }
+            case None =>
+              def notFound() = {
+                typer.context.error(expandee.pos, "macro implementation not found: " + macroDef.name + " " +
+                  "(the most common reason for that is that you cannot use macro implementations in the same compilation run that defines them)\n" +
+                  "if you do need to define macro implementations along with the rest of your program, consider two-phase compilation with -Xmacro-fallback-classpath " +
+                  "in the second phase pointing to the output of the first phase")
+                None
+              }
+              def fallBackToOverridden(tree: Tree): Option[Tree] = {
+                tree match {
+                  case Select(qual, name) if (macroDef.isTermMacro) =>
+                    macroDef.allOverriddenSymbols match {
+                      case first :: _ =>
+                        Some(Select(qual, name) setPos tree.pos setSymbol first)
+                      case _ =>
+                        macroTrace("macro is not overridden: ")(tree)
+                        notFound()
+                    }
+                  case Apply(fn, args) =>
+                    fallBackToOverridden(fn) match {
+                      case Some(fn1) => Some(Apply(fn1, args) setPos tree.pos)
+                      case _         => None
+                    }
+                  case TypeApply(fn, args) =>
+                    fallBackToOverridden(fn) match {
+                      case Some(fn1) => Some(TypeApply(fn1, args) setPos tree.pos)
+                      case _         => None
+                    }
+                  case _ =>
+                    macroTrace("unexpected tree in fallback: ")(tree)
+                    notFound()
+                }
+              }
+              fallBackToOverridden(expandee) match {
+                case Some(tree1) =>
+                  macroTrace("falling back to ")(tree1)
+                  currentRun.macroExpansionFailed = true
+                  Fallback(tree1)
+                case None =>
+                  fail(typer, expandee)
+              }
+          }
+        } finally {
+          stopTimer(macroExpandNanos, start)
         }
       }
     } else {

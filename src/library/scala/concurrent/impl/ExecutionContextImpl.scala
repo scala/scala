@@ -12,7 +12,7 @@ package scala.concurrent.impl
 
 import java.util.concurrent.{Callable, Executor, ExecutorService, Executors, ThreadFactory}
 import scala.concurrent.forkjoin._
-import scala.concurrent.{ExecutionContext, resolver, Awaitable, body2awaitable}
+import scala.concurrent.{ExecutionContext, resolver, Awaitable}
 import scala.concurrent.util.{ Duration }
 
 
@@ -56,24 +56,40 @@ private[scala] class ExecutionContextImpl(es: AnyRef) extends ExecutionContext w
 
   def execute(runnable: Runnable): Unit = executorService match {
     case fj: ForkJoinPool =>
-      if (Thread.currentThread.isInstanceOf[ForkJoinWorkerThread]) {
-        val fjtask = ForkJoinTask.adapt(runnable)
-        fjtask.fork
-      } else {
-        fj.execute(runnable)
+      Thread.currentThread match {
+        case fjw: ForkJoinWorkerThread if fjw.getPool eq fj =>
+          val fjtask = runnable match {
+            case fjt: ForkJoinTask[_] => fjt
+            case _ => ForkJoinTask.adapt(runnable)
+          }
+          fjtask.fork
+        case _ =>
+          fj.execute(runnable)
       }
     case executor: Executor =>
       executor execute runnable
   }
 
-  def execute[U](body: () => U): Unit = execute(new Runnable {
-    def run() = body()
-  })
-
   def internalBlockingCall[T](awaitable: Awaitable[T], atMost: Duration): T = {
     Future.releaseStack(this)
     
-    awaitable.result(atMost)(scala.concurrent.Await.canAwaitEvidence)
+    executorService match {
+      case fj: ForkJoinPool =>
+        var result: T = null.asInstanceOf[T]
+        val managedBlocker = new ForkJoinPool.ManagedBlocker {
+          @volatile var isdone = false
+          def block() = {
+            result = awaitable.result(atMost)(scala.concurrent.Await.canAwaitEvidence)
+            isdone = true
+            true
+          }
+          def isReleasable = isdone
+        }
+        ForkJoinPool.managedBlock(managedBlocker)
+        result
+      case _ =>
+        awaitable.result(atMost)(scala.concurrent.Await.canAwaitEvidence)
+    }
   }
 
   def reportFailure(t: Throwable) = t match {

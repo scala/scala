@@ -1,0 +1,4 @@
+macro-keyword-trait1.scala:3: error: identifier expected but 'macro' found.
+trait macro
+      ^
+one error found

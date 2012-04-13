@@ -1,14 +1,10 @@
-Macros_Package_10.scala:1: warning: in future versions of Scala "macro" will be a keyword. consider using a different name.
-package `macro`
+macro-deprecate-dont-touch-backquotedidents.scala:37: error: in future versions of Scala "macro" will be a keyword. consider using a different name.
+package `macro` {
         ^
-Macros_Package_10.scala:3: warning: in future versions of Scala "macro" will be a keyword. consider using a different name.
-package `macro`.bar
-        ^
-Macros_Package_11.scala:3: warning: in future versions of Scala "macro" will be a keyword. consider using a different name.
-package `macro`.foo
-        ^
-Main.scala:2: error: Unmatched closing brace '}' ignored here
-}
-^
-three warnings found
-one error found
+macro-deprecate-dont-touch-backquotedidents.scala:38: error: in future versions of Scala "macro" will be a keyword. consider using a different name.
+  package `macro`.bar {
+          ^
+macro-deprecate-dont-touch-backquotedidents.scala:43: error: in future versions of Scala "macro" will be a keyword. consider using a different name.
+  package `macro`.foo {
+          ^
+three errors found

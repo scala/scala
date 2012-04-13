@@ -12,7 +12,7 @@ package scala.concurrent.impl
 
 import java.util.concurrent.TimeUnit.{ NANOSECONDS, MILLISECONDS }
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater
-import scala.concurrent.{Awaitable, ExecutionContext, resolve, resolver, blocking, CanAwait, TimeoutException}
+import scala.concurrent.{Awaitable, ExecutionContext, resolveEither, resolver, blocking, CanAwait, TimeoutException}
 //import scala.util.continuations._
 import scala.concurrent.util.Duration
 import scala.util
@@ -126,7 +126,7 @@ object Promise {
           value.isDefined
       }
 
-      blocking(concurrent.body2awaitable(awaitUnsafe(dur2long(atMost))), atMost)
+      blocking(Future.body2awaitable(awaitUnsafe(dur2long(atMost))), atMost)
     }
 
     def ready(atMost: Duration)(implicit permit: CanAwait): this.type =
@@ -166,7 +166,7 @@ object Promise {
               case _ => null
             }
           }
-          tryComplete(resolve(value))
+          tryComplete(resolveEither(value))
         } finally {
           synchronized { notifyAll() } // notify any blockers from `tryAwait`
         }
@@ -220,7 +220,7 @@ object Promise {
    */
   final class KeptPromise[T](suppliedValue: Either[Throwable, T])(implicit val executor: ExecutionContext) extends Promise[T] {
 
-    val value = Some(resolve(suppliedValue))
+    val value = Some(resolveEither(suppliedValue))
 
     def tryComplete(value: Either[Throwable, T]): Boolean = false
 
