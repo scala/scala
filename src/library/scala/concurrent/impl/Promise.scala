@@ -180,7 +180,7 @@ object Promise {
       try {
         func(result)
       } catch {
-        case /*NonFatal(*/e/*)*/ => executor.reportFailure(e)
+        case NonFatal(e) => executor reportFailure e
       }
     }
   }

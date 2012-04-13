@@ -77,7 +77,9 @@ object Future {
           try {
             Right(body)
           } catch {
-            case e => scala.concurrent.resolver(e)
+            case NonFatal(e) =>
+              executor.reportFailure(e)
+              scala.concurrent.resolver(e)
           }
         }
       }
@@ -115,13 +117,7 @@ object Future {
             _taskStack set taskStack
             while (taskStack.nonEmpty) {
               val next = taskStack.pop()
-              try {
-                next.apply()
-              } catch {
-                case e =>
-                  // TODO catching all and continue isn't good for OOME
-                  executor.reportFailure(e)
-              }
+              try next() catch { case NonFatal(e) => executor reportFailure e }
             }
           } finally {
             _taskStack.remove()

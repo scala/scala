@@ -18,6 +18,7 @@ import java.{ lang => jl }
 import java.util.concurrent.atomic.{ AtomicReferenceFieldUpdater, AtomicInteger, AtomicBoolean }
 
 import scala.concurrent.util.Duration
+import scala.concurrent.impl.NonFatal
 import scala.Option
 
 import scala.annotation.tailrec
@@ -203,7 +204,7 @@ trait Future[+T] extends Awaitable[T] {
       case Right(v) =>
         try p success f(v)
         catch {
-          case t => p complete resolver(t)
+          case NonFatal(t) => p complete resolver(t)
         }
     }
 
@@ -229,7 +230,7 @@ trait Future[+T] extends Awaitable[T] {
             case Right(v) => p success v
           }
         } catch {
-          case t: Throwable => p complete resolver(t)
+          case NonFatal(t) => p complete resolver(t)
         }
     }
 
@@ -262,7 +263,7 @@ trait Future[+T] extends Awaitable[T] {
           if (pred(v)) p success v
           else p failure new NoSuchElementException("Future.filter predicate is not satisfied by: " + v)
         } catch {
-          case t: Throwable => p complete resolver(t)
+          case NonFatal(t) => p complete resolver(t)
         }
     }
 
@@ -336,7 +337,7 @@ trait Future[+T] extends Awaitable[T] {
     onComplete {
       case Left(t) if pf isDefinedAt t =>
         try { p success pf(t) }
-        catch { case t: Throwable => p complete resolver(t) }
+        catch { case NonFatal(t) => p complete resolver(t) }
       case otherwise => p complete otherwise
     }
 
@@ -364,7 +365,7 @@ trait Future[+T] extends Awaitable[T] {
         try {
           p completeWith pf(t)
         } catch {
-          case t: Throwable => p complete resolver(t)
+          case NonFatal(t) => p complete resolver(t)
         }
       case otherwise => p complete otherwise
     }
