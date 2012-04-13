@@ -2238,10 +2238,10 @@ trait Types extends api.Types { self: SymbolTable =>
         parentsString(thisInfo.parents) + refinementString
       else rest
     )
-    private def customToString = this match {
-      case TypeRef(_, RepeatedParamClass, arg :: _) => arg + "*"
-      case TypeRef(_, ByNameParamClass, arg :: _)   => "=> " + arg
-      case _ =>
+    private def customToString = sym match {
+      case RepeatedParamClass => args.head + "*"
+      case ByNameParamClass   => "=> " + args.head
+      case _                  =>
         def targs = normalize.typeArgs
 
         if (isFunctionType(this)) {
