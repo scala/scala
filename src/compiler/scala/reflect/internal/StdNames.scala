@@ -268,8 +268,6 @@ trait StdNames extends NameManglers { self: SymbolTable =>
       case _  => newTermName("x$" + i)
     }
 
-    // [Eugene to Paul] see comments in StandardNames.scala to find out why's this here
-    val QQQ = ???
     val ??? = encode("???")
 
     val wrapRefArray: NameType     = "wrapRefArray"
@@ -641,14 +639,9 @@ trait StdNames extends NameManglers { self: SymbolTable =>
     val ZOR      = encode("||")
 
     // unary operators
-    // [Eugene to Paul] see comments in StandardNames.scala to find out why's this here
-    val UNARY_TILDE = UNARY_~
     val UNARY_~ = encode("unary_~")
-    val UNARY_PLUS = UNARY_+
     val UNARY_+ = encode("unary_+")
-    val UNARY_MINUS = UNARY_-
     val UNARY_- = encode("unary_-")
-    val UNARY_NOT = UNARY_!
     val UNARY_! = encode("unary_!")
 
     // Grouped here so Cleanup knows what tests to perform.

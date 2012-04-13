@@ -93,18 +93,13 @@ trait StandardNames { self: Universe =>
     val ZOR: TermName
 
     // [Eugene] this doesn't compile. why?!
-//    val UNARY_~: TermName
-//    val UNARY_+: TermName
-//    val UNARY_-: TermName
-//    val UNARY_!: TermName
-    val UNARY_TILDE: TermName
-    val UNARY_PLUS: TermName
-    val UNARY_MINUS: TermName
-    val UNARY_NOT: TermName
+   val UNARY_~ : TermName
+   val UNARY_+ : TermName
+   val UNARY_- : TermName
+   val UNARY_! : TermName
 
     // [Eugene] this doesn't compile. why?!
-//    val ???: TermName
-    val QQQ: TermName
+    val ??? : TermName
 
     val MODULE_SUFFIX_NAME: TermName
     val NAME_JOIN_NAME: TermName
