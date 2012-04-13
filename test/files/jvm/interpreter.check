@@ -97,6 +97,7 @@ scala> case class Bar(n: Int)
 defined class Bar
 
 scala> implicit def foo2bar(foo: Foo) = Bar(foo.n)
+warning: there were 1 feature warnings; re-run with -feature for details
 foo2bar: (foo: Foo)Bar
 
 scala> val bar: Bar = Foo(3)
@@ -270,6 +271,8 @@ scala> xs map (x => x)
 res6: scala.collection.mutable.ArraySeq[_] = ArraySeq(1, 2)
 
 scala> xs map (x => (x, x))
+warning: there were 1 feature warnings; re-run with -feature for details
+warning: there were 1 feature warnings; re-run with -feature for details
 res7: Array[(_$1, _$1)] forSome { type _$1 } = Array((1,1), (2,2))
 
 scala> 

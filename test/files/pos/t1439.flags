@@ -1,1 +1,1 @@
--unchecked -Xfatal-warnings -language:higher-kinds
+-unchecked -Xfatal-warnings -language:higherKinds
