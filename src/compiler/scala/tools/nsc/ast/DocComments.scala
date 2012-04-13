@@ -252,7 +252,7 @@ trait DocComments { self: Global =>
       def replaceInheritdoc(childSection: String, parentSection: => String) =
         if (childSection.indexOf("@inheritdoc") == -1)
           childSection
-        else 
+        else
           childSection.replaceAllLiterally("@inheritdoc", parentSection)
 
       def getParentSection(section: (Int, Int)): String = {
@@ -275,9 +275,9 @@ trait DocComments { self: Global =>
           }
 
         child.substring(section._1, section._1 + 7) match {
-          case param@("@param "|"@tparam"|"@throws") => 
+          case param@("@param "|"@tparam"|"@throws") =>
             sectionString(extractSectionParam(child, section), parentNamedParams(param.trim))
-          case _                                     => 
+          case _                                     =>
             sectionString(extractSectionTag(child, section), parentTagMap)
         }
       }
@@ -367,7 +367,7 @@ trait DocComments { self: Global =>
             case vname  =>
               lookupVariable(vname, site) match {
                 case Some(replacement) => replaceWith(replacement)
-                case None              => reporter.warning(sym.pos, "Variable " + vname + " undefined in comment for " + sym)
+                case None              => reporter.warning(sym.pos, "Variable " + vname + " undefined in comment for " + sym + " in " + site)
               }
             }
         }
