@@ -34,12 +34,12 @@ trait Names {
     def toTypeName: TypeName
 
     /** Replaces all occurrences of $op_names in this name by corresponding operator symbols.
-     *  Example: `foo_+=` becomes `foo_$plus$eq`.
+     *  Example: `foo_$plus$eq` becomes `foo_+=`
      */
     def decoded: String
 
     /** Replaces all occurrences of operator symbols in this name by corresponding $op_names.
-     *  Example: `foo_$plus$eq` becomes `foo_+=`
+     *  Example: `foo_+=` becomes `foo_$plus$eq`.
      */
     def encoded: String
 
