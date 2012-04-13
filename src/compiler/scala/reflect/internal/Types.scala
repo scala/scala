@@ -915,14 +915,10 @@ trait Types extends api.Types { self: SymbolTable =>
      */
     def directObjectString = safeToString
 
-    /** A test whether a type contains any unification type variables. */
+    /** A test whether a type contains any unification type variables.
+     *  Overridden with custom logic except where trivially true.
+     */
     def isGround: Boolean = this match {
-      case tv@TypeVar(_, _) =>
-        tv.untouchable || (tv.instValid && tv.constr.inst.isGround)
-      case TypeRef(pre, sym, args) =>
-        sym.isPackageClass || pre.isGround && (args forall (_.isGround))
-      case SingleType(pre, sym) =>
-        sym.isPackageClass || pre.isGround
       case ThisType(_) | NoPrefix | WildcardType | NoType | ErrorType | ConstantType(_) =>
         true
       case _ =>
@@ -1258,6 +1254,8 @@ trait Types extends api.Types { self: SymbolTable =>
    */
   abstract case class SingleType(pre: Type, sym: Symbol) extends SingletonType {
     override val isTrivial: Boolean = pre.isTrivial
+    override def isGround = sym.isPackageClass || pre.isGround
+
     // override def isNullable = underlying.isNullable
     override def isNotNull = underlying.isNotNull
     private[reflect] var underlyingCache: Type = NoType
@@ -2143,6 +2141,11 @@ trait Types extends api.Types { self: SymbolTable =>
       }
     }
 
+    override def isGround = (
+         sym.isPackageClass
+      || pre.isGround && args.forall(_.isGround)
+    )
+    
     def etaExpand: Type = {
       // must initialise symbol, see test/files/pos/ticket0137.scala
       val tpars = initializedTypeParams
@@ -2675,22 +2678,35 @@ trait Types extends api.Types { self: SymbolTable =>
       else new TypeConstraint
     }
     def unapply(tv: TypeVar): Some[(Type, TypeConstraint)]   = Some((tv.origin, tv.constr))
+    def untouchable(tparam: Symbol): TypeVar                 = createTypeVar(tparam, untouchable = true)
+    def apply(tparam: Symbol): TypeVar                       = createTypeVar(tparam, untouchable = false)
     def apply(origin: Type, constr: TypeConstraint): TypeVar = apply(origin, constr, Nil, Nil)
-    def apply(tparam: Symbol): TypeVar                       = apply(tparam.tpeHK, deriveConstraint(tparam), Nil, tparam.typeParams)
-    def apply(tparam: Symbol, untouchable: Boolean): TypeVar = apply(tparam.tpeHK, deriveConstraint(tparam), Nil, tparam.typeParams, untouchable)
+    def apply(origin: Type, constr: TypeConstraint, args: List[Type], params: List[Symbol]): TypeVar =
+      createTypeVar(origin, constr, args, params, untouchable = false)
 
     /** This is the only place TypeVars should be instantiated.
      */
-    def apply(origin: Type, constr: TypeConstraint, args: List[Type], params: List[Symbol], untouchable: Boolean = false): TypeVar = {
+    private def createTypeVar(origin: Type, constr: TypeConstraint, args: List[Type], params: List[Symbol], untouchable: Boolean): TypeVar = {
       val tv = (
-        if (args.isEmpty && params.isEmpty)   new TypeVar(origin, constr, untouchable)
-        else if (args.size == params.size)    new AppliedTypeVar(origin, constr, untouchable, params zip args)
-        else if (args.isEmpty)                new HKTypeVar(origin, constr, untouchable, params)
+        if (args.isEmpty && params.isEmpty) {
+          if (untouchable) new TypeVar(origin, constr) with UntouchableTypeVar
+          else new TypeVar(origin, constr)
+        }
+        else if (args.size == params.size) {
+          if (untouchable) new AppliedTypeVar(origin, constr, params zip args) with UntouchableTypeVar
+          else new AppliedTypeVar(origin, constr, params zip args)
+        }
+        else if (args.isEmpty) {
+          if (untouchable) new HKTypeVar(origin, constr, params) with UntouchableTypeVar
+          else new HKTypeVar(origin, constr, params)
+        }
         else throw new Error("Invalid TypeVar construction: " + ((origin, constr, args, params)))
       )
 
       trace("create", "In " + tv.originLocation)(tv)
     }
+    private def createTypeVar(tparam: Symbol, untouchable: Boolean): TypeVar =
+      createTypeVar(tparam.tpeHK, deriveConstraint(tparam), Nil, tparam.typeParams, untouchable)
   }
 
   /** Repack existential types, otherwise they sometimes get unpacked in the
@@ -2713,9 +2729,8 @@ trait Types extends api.Types { self: SymbolTable =>
   class HKTypeVar(
     _origin: Type,
     _constr: TypeConstraint,
-    _untouchable: Boolean,
     override val params: List[Symbol]
-  ) extends TypeVar(_origin, _constr, _untouchable) {
+  ) extends TypeVar(_origin, _constr) {
 
     require(params.nonEmpty, this)
     override def isHigherKinded          = true
@@ -2727,9 +2742,8 @@ trait Types extends api.Types { self: SymbolTable =>
   class AppliedTypeVar(
     _origin: Type,
     _constr: TypeConstraint,
-    _untouchable: Boolean,
     zippedArgs: List[(Symbol, Type)]
-  ) extends TypeVar(_origin, _constr, _untouchable) {
+  ) extends TypeVar(_origin, _constr) {
 
     require(zippedArgs.nonEmpty, this)
 
@@ -2739,6 +2753,23 @@ trait Types extends api.Types { self: SymbolTable =>
     override protected def typeVarString = (
       zippedArgs map { case (p, a) => p.name + "=" + a } mkString (origin + "[", ", ", "]")
     )
+  }
+  
+  trait UntouchableTypeVar extends TypeVar {
+    override def untouchable = true
+    override def isGround = true
+    override def registerTypeEquality(tp: Type, typeVarLHS: Boolean) = tp match {
+      case t: TypeVar if !t.untouchable =>
+        t.registerTypeEquality(this, !typeVarLHS)
+      case _ =>
+        super.registerTypeEquality(tp, typeVarLHS)
+    }
+    override def registerBound(tp: Type, isLowerBound: Boolean, isNumericBound: Boolean = false): Boolean = tp match {
+      case t: TypeVar if !t.untouchable =>
+        t.registerBound(this, !isLowerBound, isNumericBound)
+      case _ =>
+        super.registerBound(tp, isLowerBound, isNumericBound)
+    }
   }
 
   /** A class representing a type variable: not used after phase `typer`.
@@ -2752,9 +2783,9 @@ trait Types extends api.Types { self: SymbolTable =>
    */
   class TypeVar(
     val origin: Type,
-    val constr0: TypeConstraint,
-    val untouchable: Boolean = false // by other typevars
+    val constr0: TypeConstraint
   ) extends Type {
+    def untouchable = false   // by other typevars
     override def params: List[Symbol] = Nil
     override def typeArgs: List[Type] = Nil
     override def isHigherKinded = false
@@ -2767,6 +2798,7 @@ trait Types extends api.Types { self: SymbolTable =>
      */
     var constr = constr0
     def instValid = constr.instValid
+    override def isGround = instValid && constr.inst.isGround
 
     /** The variable's skolemization level */
     val level = skolemizationLevel
@@ -2941,9 +2973,7 @@ trait Types extends api.Types { self: SymbolTable =>
       // to fall back on the individual base types. This warrants eventual re-examination.
 
       // AM: I think we could use the `suspended` flag to avoid side-effecting during unification
-
-      if (tp.isInstanceOf[TypeVar] && untouchable && !tp.asInstanceOf[TypeVar].untouchable) tp.asInstanceOf[TypeVar].registerBound(this, !isLowerBound, isNumericBound)
-      else if (suspended)         // constraint accumulation is disabled
+      if (suspended)         // constraint accumulation is disabled
         checkSubtype(tp, origin)
       else if (constr.instValid)  // type var is already set
         checkSubtype(tp, constr.inst)
@@ -2967,8 +2997,7 @@ trait Types extends api.Types { self: SymbolTable =>
         if(typeVarLHS) constr.inst =:= tp
         else           tp          =:= constr.inst
 
-      if (tp.isInstanceOf[TypeVar] && untouchable && !tp.asInstanceOf[TypeVar].untouchable) tp.asInstanceOf[TypeVar].registerTypeEquality(this, !typeVarLHS)
-      else if (suspended) tp =:= origin
+      if (suspended) tp =:= origin
       else if (constr.instValid) checkIsSameType(tp)
       else isRelatable(tp) && {
         val newInst = wildcardToTypeVarMap(tp)
