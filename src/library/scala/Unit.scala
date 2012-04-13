@@ -16,11 +16,11 @@ package scala
  *  runtime system. A method with return type `Unit` is analogous to a Java
  *  method which is declared `void`.
  */
-final class Unit extends AnyVal {
+final class Unit private extends AnyVal {
   override def getClass(): Class[Unit] = sys.error("stub")
 }
 
-object Unit extends AnyValCompanion {
+object Unit  extends AnyValCompanion {
 
   /** Transform a value type into a boxed reference type.
    *
