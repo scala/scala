@@ -19,6 +19,11 @@ trait TypesUser extends TypesAPI {
   def shouldNotCrash(tp: Type): Unit = {
     tp match {
       case TypeRef(x) => println("TypeRef") 
+      // the above checks tp.isInstanceOf[TypeRef], which is erased to tp.isInstanceOf[Type]
+      //   before calling TypeRef.unapply(tp), which will then crash unless tp.isInstanceOf[TypesImpl#TypeRef] (which is not implied by tp.isInstanceOf[Type])
+      // tp.isInstanceOf[TypesImpl#TypeRef] is equivalent to classOf[TypesImpl#TypeRef].isAssignableFrom(tp.getClass)
+      // this is equivalent to manifest
+      // it is NOT equivalent to manifest[Type] <:< typeRefMani
       case MethodType(x) => println("MethodType")
       case _ => println("none of the above")
     }

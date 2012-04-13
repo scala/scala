@@ -22,7 +22,7 @@ import language.postfixOps
   *  - Array patterns
   *  - implement spec more closely (see TODO's)
   *  - DCE
-  *  - use manifests for type testing
+  *  - use TypeTags for type testing
   *
   * (longer-term) TODO:
   *  - user-defined unapplyProd
@@ -119,6 +119,7 @@ trait PatMatVirtualiser extends ast.TreeDSL { self: Analyzer =>
 
   trait MatchTranslation extends MatchMonadInterface { self: TreeMakers with CodegenCore =>
     import typer.{typed, context, silent, reallyExists}
+    // import typer.infer.containsUnchecked
 
     /** Implement a pattern match by turning its cases (including the implicit failure case)
       * into the corresponding (monadic) extractors, and combining them with the `orElse` combinator.
@@ -820,13 +821,34 @@ class Foo(x: Other) { x._1 } // no error in this order
         cond
     }
 
-    // TODO: also need to test when erasing pt loses crucial information (and if we can recover it using a manifest)
-    def needsTypeTest(tp: Type, pt: Type) = !(tp <:< pt)
-    private def typeTest(binder: Symbol, pt: Type) = maybeWithOuterCheck(binder, pt)(codegen._isInstanceOf(binder, pt))
+    // containsUnchecked: also need to test when erasing pt loses crucial information (maybe we can recover it using a TypeTag)
+    def needsTypeTest(tp: Type, pt: Type): Boolean = !(tp <:< pt) // || containsUnchecked(pt)
+    // TODO: try to find the TypeTag for the binder's type and the expected type, and if they exists,
+    // check that the TypeTag of the binder's type conforms to the TypeTag of the expected type
+    private def typeTest(binderToTest: Symbol, expectedTp: Type, disableOuterCheck: Boolean = false, dynamic: Boolean = false): Tree = { import CODE._
+      // def coreTest =
+      if (disableOuterCheck) codegen._isInstanceOf(binderToTest, expectedTp) else maybeWithOuterCheck(binderToTest, expectedTp)(codegen._isInstanceOf(binderToTest, expectedTp))
+      // if (opt.experimental && containsUnchecked(expectedTp)) {
+      //   if (dynamic) {
+      //     val expectedTpTagTree = findManifest(expectedTp, true)
+      //     if (!expectedTpTagTree.isEmpty)
+      //       ((expectedTpTagTree DOT "erasure".toTermName) DOT "isAssignableFrom".toTermName)(REF(binderToTest) DOT nme.getClass_)
+      //     else
+      //       coreTest
+      //   } else {
+      //     val expectedTpTagTree = findManifest(expectedTp, true)
+      //     val binderTpTagTree   = findManifest(binderToTest.info, true)
+      //     if(!(expectedTpTagTree.isEmpty || binderTpTagTree.isEmpty))
+      //       coreTest AND (binderTpTagTree DOT nme.CONFORMS)(expectedTpTagTree)
+      //     else
+      //       coreTest
+      //   }
+      // } else coreTest
+    }
 
     // need to substitute since binder may be used outside of the next extractor call (say, in the body of the case)
     case class TypeTestTreeMaker(prevBinder: Symbol, nextBinderTp: Type, pos: Position) extends CondTreeMaker {
-      val cond = typeTest(prevBinder, nextBinderTp)
+      val cond = typeTest(prevBinder, nextBinderTp, dynamic = true)
       val res  = codegen._asInstanceOf(prevBinder, nextBinderTp)
       override def toString = "TT"+(prevBinder, nextBinderTp)
     }
@@ -866,7 +888,7 @@ class Foo(x: Other) { x._1 } // no error in this order
          // TODO: `null match { x : T }` will yield a check that (indirectly) tests whether `null ne null`
          // don't bother (so that we don't end up with the warning "comparing values of types Null and Null using `ne' will always yield false")
         def genEqualsAndInstanceOf(sym: Symbol): Tree
-          = codegen._equals(REF(sym), patBinder) AND codegen._isInstanceOf(patBinder, pt.widen)
+          = codegen._equals(REF(sym), patBinder) AND typeTest(patBinder, pt.widen, disableOuterCheck = true)
 
         def isRefTp(tp: Type) = tp <:< AnyRefClass.tpe
 
@@ -874,7 +896,7 @@ class Foo(x: Other) { x._1 } // no error in this order
         def isMatchUnlessNull = isRefTp(pt) && !needsTypeTest(patBinderTp, pt)
 
         // TODO: [SPEC] type test for Array
-        // TODO: use manifests to improve tests (for erased types we can do better when we have a manifest)
+        // TODO: use TypeTags to improve tests (for erased types we can do better when we have a TypeTag)
         pt match {
             case SingleType(_, sym) /*this implies sym.isStable*/ => genEqualsAndInstanceOf(sym) // TODO: [SPEC] the spec requires `eq` instead of `==` here
             case ThisType(sym) if sym.isModule                    => genEqualsAndInstanceOf(sym) // must use == to support e.g. List() == Nil
