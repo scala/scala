@@ -75,6 +75,11 @@ class Scaladoc extends ScalaMatchingTask {
    */
   object Flag extends PermissibleValue {
     val values = List("yes", "no", "on", "off")
+    def getBooleanValue(value: String, flagName: String): Boolean =
+      if (Flag.isPermissible(value))
+        return ("yes".equals(value) || "on".equals(value))
+      else
+        buildError("Unknown " + flagName + " flag '" + value + "'")
   }
 
   /** The directories that contain source files to compile. */
@@ -126,6 +131,25 @@ class Scaladoc extends ScalaMatchingTask {
 
   /** Instruct the ant task not to fail in the event of errors */
   private var nofail: Boolean = false
+
+  /** Instruct the scaladoc tool to document implicit conversions */
+  private var docImplicits: Boolean = false
+
+  /** Instruct the scaladoc tool to document all (including impossible) implicit conversions */
+  private var docImplicitsShowAll: Boolean = false
+
+  /** Instruct the scaladoc tool to output implicits debugging information */
+  private var docImplicitsDebug: Boolean = false
+
+  /** Instruct the scaladoc tool to create diagrams */
+  private var docDiagrams: Boolean = false
+
+  /** Instruct the scaladoc tool to output diagram creation debugging information */
+  private var docDiagramsDebug: Boolean = false
+
+  /** Instruct the scaladoc tool to use the binary given to create diagrams */
+  private var docDiagramsDotPath: Option[String] = None
+
 
 /*============================================================================*\
 **                             Properties setters                             **
@@ -361,12 +385,39 @@ class Scaladoc extends ScalaMatchingTask {
    *
    *  @param input One of the flags `yes/no` or `on/off`. Default if no/off.
    */
-  def setNoFail(input: String) {
-    if (Flag.isPermissible(input))
-      nofail = "yes".equals(input) || "on".equals(input)
-    else
-      buildError("Unknown nofail flag '" + input + "'")
-  }
+  def setNoFail(input: String) =
+      nofail = Flag.getBooleanValue(input, "nofail")
+
+  /** Set the `implicits` info attribute.
+   *  @param input One of the flags `yes/no` or `on/off`. Default if no/off. */
+  def setImplicits(input: String) =
+    docImplicits = Flag.getBooleanValue(input, "implicits")
+
+  /** Set the `implicitsShowAll` info attribute to enable scaladoc to show all implicits, including those impossible to
+   *  convert to from the default scope
+   *  @param input One of the flags `yes/no` or `on/off`. Default if no/off. */
+  def setImplicitsShowAll(input: String) =
+    docImplicitsShowAll = Flag.getBooleanValue(input, "implicitsShowAll")
+
+  /** Set the `implicitsDebug` info attribute so scaladoc outputs implicit conversion debug information
+   *  @param input One of the flags `yes/no` or `on/off`. Default if no/off. */
+  def setImplicitsDebug(input: String) =
+    docImplicitsDebug = Flag.getBooleanValue(input, "implicitsDebug")
+
+  /** Set the `diagrams` bit so Scaladoc adds diagrams to the documentation
+   *  @param input One of the flags `yes/no` or `on/off`. Default if no/off. */
+  def setDiagrams(input: String) =
+    docDiagrams = Flag.getBooleanValue(input, "diagrams")
+
+  /** Set the `diagramsDebug` bit so Scaladoc outputs diagram building debug information
+   *  @param input One of the flags `yes/no` or `on/off`. Default if no/off. */
+  def setDiagramsDebug(input: String) =
+    docDiagramsDebug = Flag.getBooleanValue(input, "diagramsDebug")
+
+  /** Set the `diagramsDotPath` attribute to the path where graphviz dot can be found (including the binary file name,
+   *  eg: /usr/bin/dot) */
+  def setDiagramsDotPath(input: String) =
+    docDiagramsDotPath = Some(input)
 
 /*============================================================================*\
 **                             Properties getters                             **
@@ -560,6 +611,13 @@ class Scaladoc extends ScalaMatchingTask {
 
     docSettings.deprecation.value = deprecation
     docSettings.unchecked.value = unchecked
+    docSettings.docImplicits.value = docImplicits
+    docSettings.docImplicitsDebug.value = docImplicitsDebug
+    docSettings.docImplicitsShowAll.value = docImplicitsShowAll
+    docSettings.docDiagrams.value = docDiagrams
+    docSettings.docDiagramsDebug.value = docDiagramsDebug
+    if(!docDiagramsDotPath.isEmpty) docSettings.docDiagramsDotPath.value = docDiagramsDotPath.get
+
     if (!docgenerator.isEmpty) docSettings.docgenerator.value = docgenerator.get
     if (!docrootcontent.isEmpty) docSettings.docRootContent.value = docrootcontent.get.getAbsolutePath()
     log("Scaladoc params = '" + addParams + "'", Project.MSG_DEBUG)

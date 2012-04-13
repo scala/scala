@@ -52,7 +52,7 @@ trait TreeFactory { thisTreeFactory: ModelFactory with TreeFactory =>
                 if (asym.isSetter) asym = asym.getter(asym.owner)
                 makeTemplate(asym.owner) match {
                   case docTmpl: DocTemplateImpl =>
-                    val mbrs: List[MemberImpl] = makeMember(asym,docTmpl)
+                    val mbrs: List[MemberImpl] = makeMember(asym, null, docTmpl)
                     mbrs foreach { mbr => refs += ((start, (mbr,end))) }
                   case _ =>
                 }
