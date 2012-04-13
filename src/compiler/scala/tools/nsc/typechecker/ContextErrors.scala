@@ -504,6 +504,9 @@ trait ContextErrors {
       def ApplyWithoutArgsError(tree: Tree, fun: Tree) =
         NormalTypeError(tree, fun.tpe+" does not take parameters")
 
+      def DynamicVarArgUnsupported(tree: Tree, name: String) =
+        issueNormalTypeError(tree, name+ " does not support passing a vararg parameter")
+
       //checkClassType
       def TypeNotAStablePrefixError(tpt: Tree, pre: Type) = {
         issueNormalTypeError(tpt, "type "+pre+" is not a stable prefix")

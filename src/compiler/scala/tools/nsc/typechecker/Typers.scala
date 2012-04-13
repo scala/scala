@@ -675,7 +675,7 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
       }
       if (tree.tpe.isInstanceOf[MethodType] && pre.isStable && sym.tpe.params.isEmpty &&
           (isStableContext(tree, mode, pt) || sym.isModule))
-        tree.setType(MethodType(List(), singleType(pre, sym)))
+        tree.setType(MethodType(List(), singleType(pre, sym))) // TODO: should this be a NullaryMethodType?
       else tree
     }
 
@@ -2817,7 +2817,8 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
               (args exists isNamed) ||        // uses a named argument
               isNamedApplyBlock(fun)) {       // fun was transformed to a named apply block =>
                                               // integrate this application into the block
-            tryNamesDefaults
+            if (dyna.isApplyDynamicNamed(fun)) dyna.typedNamedApply(tree, fun, args, mode, pt)
+            else tryNamesDefaults
           } else {
             val tparams = context.extractUndetparams()
             if (tparams.isEmpty) { // all type params are defined
@@ -3438,7 +3439,108 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
       case ErrorType =>
         setError(treeCopy.TypeApply(tree, fun, args))
       case _ =>
-        TypedApplyDoesNotTakeTpeParametersError(tree, fun)
+        fun match {
+          // drop the application for an applyDynamic or selectDynamic call since it has been pushed down
+          case treeInfo.DynamicApplication(_, _) => fun
+          case _ => TypedApplyDoesNotTakeTpeParametersError(tree, fun)
+        }
+    }
+
+    object dyna {
+      import treeInfo.{isApplyDynamicName, DynamicUpdate, DynamicApplicationNamed}
+
+      def acceptsApplyDynamic(tp: Type) = tp.typeSymbol isNonBottomSubClass DynamicClass
+
+      /** Returns `Some(t)` if `name` can be selected dynamically on `qual`, `None` if not.
+       * `t` specifies the type to be passed to the applyDynamic/selectDynamic call (unless it is NoType)
+       * NOTE: currently either returns None or Some(NoType) (scala-virtualized extends this to Some(t) for selections on staged Structs)
+       */
+      def acceptsApplyDynamicWithType(qual: Tree, name: Name): Option[Type] =
+        // don't selectDynamic selectDynamic, do select dynamic at unknown type,
+        // in scala-virtualized, we may return a Some(tp) where tp ne NoType
+        if (!isApplyDynamicName(name) && acceptsApplyDynamic(qual.tpe.widen)) Some(NoType)
+        else None
+
+      def isDynamicallyUpdatable(tree: Tree) = tree match {
+        case DynamicUpdate(qual, name) =>
+          // if the qualifier is a Dynamic, that's all we need to know
+          acceptsApplyDynamic(qual.tpe)
+        case _ => false
+      }
+
+      def isApplyDynamicNamed(fun: Tree): Boolean = fun match {
+        case DynamicApplicationNamed(qual, _) if acceptsApplyDynamic(qual.tpe.widen) => true
+        case _ => false
+          // look deeper?
+          // val methPart = treeInfo.methPart(fun)
+          // println("methPart of "+ fun +" is "+ methPart)
+          // if (methPart ne fun) isApplyDynamicNamed(methPart)
+          // else false
+      }
+
+      def typedNamedApply(orig: Tree, fun: Tree, args: List[Tree], mode: Int, pt: Type): Tree = {
+        def argToBinding(arg: Tree): Tree = arg match {
+          case AssignOrNamedArg(Ident(name), rhs) => gen.mkTuple(List(CODE.LIT(name.toString), rhs))
+          case _ => gen.mkTuple(List(CODE.LIT(""), arg))
+        }
+        typed(treeCopy.Apply(orig, fun, args map argToBinding), mode, pt)
+      }
+
+      /** Translate selection that does not typecheck according to the normal rules into a selectDynamic/applyDynamic.
+       *
+       * foo.method("blah")  ~~> foo.applyDynamic("method")("blah")
+       * foo.method(x = "blah")  ~~> foo.applyDynamicNamed("method")(("x", "blah"))
+       * foo.varia = 10      ~~> foo.updateDynamic("varia")(10)
+       * foo.field           ~~> foo.selectDynamic("field")
+       * foo.arr(10) = 13    ~~> foo.selectDynamic("arr").update(10, 13)
+       *
+       * what if we want foo.field == foo.selectDynamic("field") == 1, but `foo.field = 10` == `foo.selectDynamic("field").update(10)` == ()
+       * what would the signature for selectDynamic be? (hint: it needs to depend on whether an update call is coming or not)
+       *
+       * need to distinguish selectDynamic and applyDynamic somehow: the former must return the selected value, the latter must accept an apply or an update
+       *  - could have only selectDynamic and pass it a boolean whether more is to come,
+       *    so that it can either return the bare value or something that can handle the apply/update
+       *      HOWEVER that makes it hard to return unrelated values for the two cases
+       *      --> selectDynamic's return type is now dependent on the boolean flag whether more is to come
+       *  - simplest solution: have two method calls
+       *
+       */
+      def mkInvoke(cxTree: Tree, tree: Tree, qual: Tree, name: Name): Option[Tree] =
+        acceptsApplyDynamicWithType(qual, name) map { tp =>
+          // tp eq NoType => can call xxxDynamic, but not passing any type args (unless specified explicitly by the user)
+          // in scala-virtualized, when not NoType, tp is passed as type argument (for selection on a staged Struct)
+
+          // strip off type application -- we're not doing much with outer, so don't bother preserving cxTree's attributes etc
+          val (outer, explicitTargs) = cxTree match {
+              case TypeApply(fun, targs) => (fun, targs)
+              case Apply(TypeApply(fun, targs), args) => (Apply(fun, args), targs)
+              case t => (t, Nil)
+          }
+
+          @inline def hasNamedArg(as: List[Tree]) = as collectFirst {case AssignOrNamedArg(lhs, rhs) =>} nonEmpty
+
+          // note: context.tree includes at most one Apply node
+          // thus, we can't use it to detect we're going to receive named args in expressions such as:
+          //   qual.sel(a)(a2, arg2 = "a2")
+          val oper = outer match {
+            case Apply(`tree`, as) =>
+              val oper =
+                if (hasNamedArg(as))  nme.applyDynamicNamed
+                else                  nme.applyDynamic
+              // not supported: foo.bar(a1,..., an: _*)
+              if (treeInfo.isWildcardStarArgList(as)) {
+               DynamicVarArgUnsupported(tree, oper)
+               return Some(setError(tree))
+              } else oper
+            case Assign(`tree`, _) => nme.updateDynamic
+            case _                 => nme.selectDynamic
+          }
+
+          val dynSel  = Select(qual, oper)
+          val tappSel = if (explicitTargs nonEmpty) TypeApply(dynSel, explicitTargs) else dynSel
+
+          atPos(qual.pos)(Apply(tappSel, List(Literal(Constant(name.decode)))))
+        }
     }
 
     @inline final def deindentTyping() = context.typingIndentLevel -= 2
@@ -3611,9 +3713,16 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
             case _ =>
           }
         }
+//      if (varsym.isVariable ||
+//        // setter-rewrite has been done above, so rule out methods here, but, wait a minute, why are we assigning to non-variables after erasure?!
+//        (phase.erasedTypes && varsym.isValue && !varsym.isMethod)) {
         if (varsym.isVariable || varsym.isValue && phase.erasedTypes) {
           val rhs1 = typed(rhs, EXPRmode | BYVALmode, lhs1.tpe)
           treeCopy.Assign(tree, lhs1, checkDead(rhs1)) setType UnitClass.tpe
+        }
+        else if(dyna.isDynamicallyUpdatable(lhs1)) {
+          val rhs1 = typed(rhs, EXPRmode | BYVALmode, WildcardType)
+          typed1(Apply(lhs1, List(rhs1)), mode, pt)
         }
         else fail()
       }
@@ -4077,16 +4186,10 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
           }
 
           // try to expand according to Dynamic rules.
-
-          if (settings.Xexperimental.value && (qual.tpe.widen.typeSymbol isNonBottomSubClass DynamicClass)) {
-            var dynInvoke = Apply(Select(qual, nme.applyDynamic), List(Literal(Constant(name.decode))))
-            context.tree match {
-              case Apply(tree1, args) if tree1 eq tree =>
-                ;
-              case _ =>
-                dynInvoke = Apply(dynInvoke, List())
-            }
-            return typed1(util.trace("dynatype: ")(dynInvoke), mode, pt)
+          dyna.mkInvoke(context.tree, tree, qual, name) match {
+            case Some(invocation) =>
+              return typed1(invocation, mode, pt)
+            case _ =>
           }
 
           if (settings.debug.value) {
