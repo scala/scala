@@ -92,9 +92,15 @@ getJarSha() {
   local jar=$1
   if [[ ! -f "$jar" ]]; then
     echo ""
-  else
+  elif which sha1sum 2>/dev/null >/dev/null; then
     shastring=$(sha1sum "$jar")
-    echo "${shastring:0:$(expr index "$shastring" " ")-1}"
+    echo "$shastring" | sed 's/ .*//'
+  elif which shasum 2>/dev/null >/dev/null; then
+    shastring=$(shasum "$jar")
+    echo "$shastring" | sed 's/ .*//'
+  else
+    shastring=$(openssl sha1 "$jar")
+    echo "$shastring" | sed 's/^.*= //'
   fi
 }
 
