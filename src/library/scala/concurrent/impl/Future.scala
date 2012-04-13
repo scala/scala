@@ -28,7 +28,7 @@ private[concurrent] trait Future[+T] extends scala.concurrent.Future[T] with Awa
 
   /** Tests whether this Future has been completed.
    */
-  final def isCompleted: Boolean = value.isDefined
+  def isCompleted: Boolean
 
   /** The contained value of this Future. Before this Future is completed
    *  the value will be None. After completion the value will be Some(Right(t))
