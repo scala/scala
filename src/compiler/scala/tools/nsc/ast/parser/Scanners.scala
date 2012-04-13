@@ -115,17 +115,16 @@ trait Scanners extends ScannersCommon {
     /** Clear buffer and set name and token */
     private def finishNamed(idtoken: Int = IDENTIFIER) {
       name = newTermName(cbuf.toString)
+      cbuf.clear()
       token = idtoken
-      val idx = name.start - kwOffset
-      if (idx >= 0 && idx < kwArray.length) {
-        token = kwArray(idx)
-        if (token == IDENTIFIER) {
-          if (idtoken == IDENTIFIER && allowIdent != name)
+      if (idtoken == IDENTIFIER) {
+        val idx = name.start - kwOffset
+        if (idx >= 0 && idx < kwArray.length) {
+          token = kwArray(idx)
+          if (token == IDENTIFIER && allowIdent != name)
             deprecationWarning(name+" is now a reserved word; usage as an identifier is deprecated")
-          token = idtoken
         }
       }
-      cbuf.clear()
     }
 
     /** Clear buffer and set string */
