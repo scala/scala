@@ -520,7 +520,7 @@ object Future {
   *  @param execctx  the execution context on which the future is run
   *  @return         the `Future` holding the result of the computation
   */
-  def apply[T](body: =>T)(implicit executor: ExecutionContext): Future[T] = impl.Future(body)
+  def apply[T](body: =>T)(implicit execctx: ExecutionContext): Future[T] = impl.Future(body)
 
   import scala.collection.mutable.Builder
   import scala.collection.generic.CanBuildFrom
