@@ -1773,21 +1773,7 @@ self =>
        */
       def pattern2(): Tree = {
         val nameOffset = in.offset
-        def warnIfMacro(tree: Tree): Unit = {
-          def check(name: Name): Unit = if (name.toString == nme.MACROkw.toString)
-            warning(nameOffset, "in future versions of Scala \"macro\" will be a keyword. consider using a different name.")
-          tree match {
-            case _: BackQuotedIdent =>
-              ;
-            case Ident(name) =>
-              check(name)
-            case _ =>
-              ;
-          }
-        }
-
         val p = pattern3()
-        warnIfMacro(p)
 
         if (in.token != AT) p
         else p match {
@@ -2463,8 +2449,6 @@ self =>
         val nameOffset = in.offset
         val isBackquoted = in.token == BACKQUOTED_IDENT
         val name = ident()
-        if (name.toString == nme.MACROkw.toString && !isBackquoted)
-          warning(nameOffset, "in future versions of Scala \"macro\" will be a keyword. consider using a different name.")
         funDefRest(start, nameOffset, mods, name)
       }
     }
@@ -2480,7 +2464,7 @@ self =>
         val vparamss = paramClauses(name, contextBoundBuf.toList, false)
         newLineOptWhenFollowedBy(LBRACE)
         var restype = fromWithinReturnType(typedOpt())
-         val rhs =
+        val rhs =
           if (isStatSep || in.token == RBRACE) {
             if (restype.isEmpty) restype = scalaUnitConstr
             newmods |= Flags.DEFERRED
@@ -2489,11 +2473,15 @@ self =>
             restype = scalaUnitConstr
             blockExpr()
           } else {
-            accept(EQUALS)
-            if (settings.Xmacros.value && in.token == MACRO || // [Martin] Xmacros can be retired now
-                in.token == IDENTIFIER && in.name == nme.MACROkw) {
-              in.nextToken()
-              newmods |= Flags.MACRO
+            if (in.token == EQUALS) {
+              in.nextTokenAllow(nme.MACROkw)
+              if (settings.Xmacros.value && in.token == MACRO || // [Martin] Xmacros can be retired now
+                  in.token == IDENTIFIER && in.name == nme.MACROkw) {
+                in.nextToken()
+                newmods |= Flags.MACRO
+              }
+            } else {
+              accept(EQUALS)
             }
             expr()
           }
@@ -2556,8 +2544,6 @@ self =>
         val nameOffset = in.offset
         val isBackquoted = in.token == BACKQUOTED_IDENT
         val name = identForType()
-        if (name.toString == nme.MACROkw.toString && !isBackquoted)
-          warning(nameOffset, "in future versions of Scala \"macro\" will be a keyword. consider using a different name.")
         // @M! a type alias as well as an abstract type may declare type parameters
         val tparams = typeParamClauseOpt(name, null)
         in.token match {
@@ -2617,9 +2603,6 @@ self =>
       val nameOffset = in.offset
       val isBackquoted = in.token == BACKQUOTED_IDENT
       val name = identForType()
-      if (name.toString == nme.MACROkw.toString && !isBackquoted)
-        warning(nameOffset, "in future versions of Scala \"macro\" will be a keyword. consider using a different name.")
-
       atPos(start, if (name == tpnme.ERROR) start else nameOffset) {
         savingClassContextBounds {
           val contextBoundBuf = new ListBuffer[Tree]
@@ -2661,8 +2644,6 @@ self =>
       val nameOffset = in.offset
       val isBackquoted = in.token == BACKQUOTED_IDENT
       val name = ident()
-      if (name.toString == nme.MACROkw.toString && !isBackquoted)
-        warning(nameOffset, "in future versions of Scala \"macro\" will be a keyword. consider using a different name.")
       val tstart = in.offset
       atPos(start, if (name == nme.ERROR) start else nameOffset) {
         val mods1 = if (in.token == SUBTYPE) mods | Flags.DEFERRED else mods
@@ -2841,24 +2822,7 @@ self =>
      */
     def packaging(start: Int): Tree = {
       val nameOffset = in.offset
-      def warnIfMacro(tree: Tree): Unit = {
-        def check(name: Name): Unit = if (name.toString == nme.MACROkw.toString)
-          warning(nameOffset, "in future versions of Scala \"macro\" will be a keyword. consider using a different name.")
-        tree match {
-          case _: BackQuotedIdent =>
-            ;
-          case Ident(name) =>
-            check(name)
-          case Select(qual, name) =>
-            warnIfMacro(qual)
-            check(name)
-          case _ =>
-            ;
-        }
-      }
-
       val pkg = pkgQualId()
-      warnIfMacro(pkg)
       val stats = inBracesOrNil(topStatSeq())
       makePackaging(start, pkg, stats)
     }
@@ -3061,27 +3025,8 @@ self =>
             }
           } else {
             val nameOffset = in.offset
-            def warnIfMacro(tree: Tree): Unit = {
-              def check(name: Name): Unit = if (name.toString == nme.MACROkw.toString)
-                warning(nameOffset, "in future versions of Scala \"macro\" will be a keyword. consider using a different name.")
-              tree match {
-                // [Eugene] pkgQualId never returns BackQuotedIdents
-                // this means that we'll get spurious warnings even if we wrap macro package name in backquotes
-                case _: BackQuotedIdent =>
-                  ;
-                case Ident(name) =>
-                  check(name)
-                case Select(qual, name) =>
-                  warnIfMacro(qual)
-                  check(name)
-                case _ =>
-                  ;
-              }
-            }
-
             in.flushDoc
             val pkg = pkgQualId()
-            warnIfMacro(pkg)
 
             if (in.token == EOF) {
               ts += makePackaging(start, pkg, List())

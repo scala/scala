@@ -113,20 +113,19 @@ trait Scanners extends ScannersCommon {
     }
 
     /** Clear buffer and set name and token */
-    private def finishNamed() {
+    private def finishNamed(idtoken: Int = IDENTIFIER) {
       name = newTermName(cbuf.toString)
-      token = name2token(name)
-      cbuf.clear()
-    }
-
-    /** Convert name to token */
-    private def name2token(name: Name) = {
+      token = idtoken
       val idx = name.start - kwOffset
       if (idx >= 0 && idx < kwArray.length) {
-        val token = kwArray(idx)
-        if (token == IDENTIFIER) deprecationWarning(name+" is now a reserved word; usage as an identifier is deprecated")
-        token
-      } else IDENTIFIER
+        token = kwArray(idx)
+        if (token == IDENTIFIER) {
+          if (idtoken == IDENTIFIER && allowIdent != name)
+            deprecationWarning(name+" is now a reserved word; usage as an identifier is deprecated")
+          token = idtoken
+        }
+      }
+      cbuf.clear()
     }
 
     /** Clear buffer and set string */
@@ -198,6 +197,20 @@ trait Scanners extends ScannersCommon {
       val off = offset
       nextToken()
       off
+    }
+
+    /** Allow an otherwise deprecated ident here */
+    private var allowIdent: Name = nme.EMPTY
+
+    /** Get next token, and allow the otherwise deprecated ident `name`  */
+    def nextTokenAllow(name: Name) = {
+      val prev = allowIdent
+      allowIdent = name
+      try {
+        nextToken()
+      } finally {
+        allowIdent = prev
+      }
     }
 
     /** Produce next token, filling TokenData fields of Scanner.
@@ -572,9 +585,8 @@ trait Scanners extends ScannersCommon {
       getLitChars('`')
       if (ch == '`') {
         nextChar()
-        finishNamed()
+        finishNamed(BACKQUOTED_IDENT)
         if (name.length == 0) syntaxError("empty quoted identifier")
-        token = BACKQUOTED_IDENT
       }
       else syntaxError("unclosed quoted identifier")
     }

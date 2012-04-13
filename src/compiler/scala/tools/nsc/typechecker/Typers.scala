@@ -743,7 +743,7 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
           def hasOption = settings.language.value contains featureName
           if (!hasImport && !hasOption) {
             val Some(AnnotationInfo(_, List(Literal(Constant(featureDesc: String)), Literal(Constant(required: Boolean))), _)) =
-              featureTrait getAnnotation LanguageFeatureClass
+              featureTrait getAnnotation LanguageFeatureAnnot
             val req = if (required) "needs to" else "should"
             var raw = featureDesc + " " + req + " be enabled\n" +
               "by making the implicit value language." + featureName + " visible."

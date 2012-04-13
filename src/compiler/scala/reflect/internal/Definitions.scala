@@ -924,17 +924,18 @@ trait Definitions extends reflect.api.StandardDefinitions {
     lazy val ClassTargetClass           = getMetaAnnotation("companionClass")
     lazy val ObjectTargetClass          = getMetaAnnotation("companionObject")
     lazy val MethodTargetClass          = getMetaAnnotation("companionMethod")    // TODO: module, moduleClass? package, packageObject?
-    lazy val LanguageFeatureClass       = getMetaAnnotation("languageFeature")
+    lazy val LanguageFeatureAnnot       = getMetaAnnotation("languageFeature")
 
     // Language features
     lazy val languageFeatureModule      = getRequiredModule("scala.languageFeature")
-    lazy val MacrosFeature              = getRequiredClass("scala.languageFeature.experimental.macros")
-    lazy val DynamicsFeature            = getRequiredClass("scala.languageFeature.dynamics")
-    lazy val PostfixOpsFeature          = getRequiredClass("scala.languageFeature.postfixOps")
-    lazy val ReflectiveCallsFeature     = getRequiredClass("scala.languageFeature.reflectiveCalls")
-    lazy val ImplicitConversionsFeature = getRequiredClass("scala.languageFeature.implicitConversions")
-    lazy val HigherKindsFeature         = getRequiredClass("scala.languageFeature.higherKinds")
-    lazy val ExistentialsFeature        = getRequiredClass("scala.languageFeature.existentials")
+    lazy val experimentalModule         = getMember(languageFeatureModule, newTermName("experimental"))
+    lazy val MacrosFeature              = getLanguageFeature("macros", experimentalModule)
+    lazy val DynamicsFeature            = getLanguageFeature("dynamics")
+    lazy val PostfixOpsFeature          = getLanguageFeature("postfixOps")
+    lazy val ReflectiveCallsFeature     = getLanguageFeature("reflectiveCalls")
+    lazy val ImplicitConversionsFeature = getLanguageFeature("implicitConversions")
+    lazy val HigherKindsFeature         = getLanguageFeature("higherKinds")
+    lazy val ExistentialsFeature        = getLanguageFeature("existentials")
 
     private def getMetaAnnotation(name: String) = getRequiredClass("scala.annotation.meta." + name)
     def isMetaAnnotation(sym: Symbol): Boolean = metaAnnotations(sym) || (
@@ -986,6 +987,9 @@ trait Definitions extends reflect.api.StandardDefinitions {
       try getModule(fullname.toTermName)
       catch { case _: MissingRequirementError => NoSymbol }
 
+    def getLanguageFeature(name: String, owner: Symbol = languageFeatureModule) =
+      getMember(owner, newTypeName(name))
+
     def termMember(owner: Symbol, name: String): Symbol = owner.info.member(newTermName(name))
     def typeMember(owner: Symbol, name: String): Symbol = owner.info.member(newTypeName(name))
 
@@ -1005,7 +1009,13 @@ trait Definitions extends reflect.api.StandardDefinitions {
 
     def getMember(owner: Symbol, name: Name): Symbol = {
       getMemberIfDefined(owner, name) orElse {
-        throw new FatalError(owner + " does not have a member " + name)
+        if (phase.flatClasses && name.isTypeName && !owner.isPackageObjectOrClass) {
+          val pkg = owner.owner
+          val flatname = nme.flattenedName(owner.name, name)
+          getMember(pkg, flatname)
+        } else {
+          throw new FatalError(owner + " does not have a member " + name)
+        }
       }
     }
     def getMemberIfDefined(owner: Symbol, name: Name): Symbol =
@@ -1022,7 +1032,7 @@ trait Definitions extends reflect.api.StandardDefinitions {
     }
     def getDeclIfDefined(owner: Symbol, name: Name): Symbol =
       owner.info.nonPrivateDecl(name)
-    
+
     def packageExists(packageName: String): Boolean =
       getModuleIfDefined(packageName).isPackage
 
