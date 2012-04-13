@@ -776,7 +776,8 @@ abstract class ClassfileParser {
           // with arrays of primitive types.
           if (elemtp.typeSymbol.isAbstractType && !(elemtp <:< definitions.ObjectClass.tpe))
             elemtp = intersectionType(List(elemtp, definitions.ObjectClass.tpe))
-          appliedType(definitions.ArrayClass.tpe, List(elemtp))
+
+          definitions.arrayType(elemtp)
         case '(' =>
           // we need a method symbol. given in line 486 by calling getType(methodSym, ..)
           assert(sym ne null, sig)

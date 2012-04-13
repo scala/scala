@@ -1,0 +1,4 @@
+Macros_Test_2.scala:3: error: wrong number of type parameters for method foo: [T, U, V](c: scala.reflect.makro.Context)(implicit evidence$1: c.TypeTag[T], implicit evidence$2: c.TypeTag[U], implicit V: c.TypeTag[V])c.Expr[Unit]
+    def foo[V] = macro Impls.foo[V]
+                                ^
+one error found

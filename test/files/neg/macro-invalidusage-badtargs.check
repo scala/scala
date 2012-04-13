@@ -1,0 +1,4 @@
+Macros_Test_2.scala:7: error: macro method foo: (x: Int)Int does not take type parameters.
+  val s: String = foo[String](42)
+                     ^
+one error found

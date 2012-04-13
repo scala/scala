@@ -10,18 +10,23 @@ package scala.concurrent
 
 
 
-import scala.annotation.implicitNotFound
 import scala.concurrent.util.Duration
 
 
 
 trait Awaitable[+T] {
+  /**
+   * Should throw [[scala.concurrent.TimeoutException]] if it times out
+   * This method should not be called directly.
+   */
+  @throws(classOf[TimeoutException])
   def ready(atMost: Duration)(implicit permit: CanAwait): this.type
   
   /**
-   * Throws exceptions if cannot produce a T within the specified time
+   * Throws exceptions if it cannot produce a T within the specified time.
    * This method should not be called directly.
    */
+  @throws(classOf[Exception])
   def result(atMost: Duration)(implicit permit: CanAwait): T
 }
 

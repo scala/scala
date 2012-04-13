@@ -14,6 +14,20 @@ import util.returning
 abstract class TreeCheckers extends Analyzer {
   import global._
 
+  private val everything = ListBuffer[(Phase, Map[Tree, (Symbol, Type)])]()
+  private val currentTrees = mutable.Map[Tree, (Symbol, Type)]()
+
+  if (settings.debug.value) {
+    sys addShutdownHook {
+      for ((ph, map) <- everything.toList) {
+        println("\n>>>> " + ph + "\n")
+        for ((tree, (sym, tpe)) <- map.toList.sortBy(_._1.summaryString)) {
+          println("%20s %20s %s".format(sym, tpe, ("" + tree) take 50))
+        }
+      }
+    }
+  }
+
   private def classstr(x: AnyRef) = x.getClass.getName split """\\.|\\$""" last;
   private def typestr(x: Type)    = " (tpe = " + x + ")"
   private def treestr(t: Tree)    = t + " [" + classstr(t) + "]" + typestr(t.tpe)
@@ -92,11 +106,16 @@ abstract class TreeCheckers extends Analyzer {
       if (maps.isEmpty || maps.last._1 != ph)
         maps += ((ph, new PhaseMap))
 
+      currentTrees.clear()
       traverse(unit.body)
+      everything += ((ph, currentTrees.toMap))
+
       reportChanges()
     }
     override def traverse(tree: Tree): Unit = {
       val sym    = tree.symbol
+      currentTrees(tree) = ((sym, tree.tpe))
+
       if (sym != null && sym != NoSymbol) {
         record(sym, tree)
         tree match {

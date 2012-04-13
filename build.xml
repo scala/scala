@@ -170,7 +170,7 @@ PROPERTIES
   <property file="${basedir}/build.number"/>
 
   <!-- Additional command line arguments for scalac. They are added to all build targets -->
-  <property name="scalac.args" value=""/>
+  <property name="scalac.args" value="-Xmacros"/>
   <property name="javac.args" value=""/>
 
   <!-- Sets location of pre-compiled libraries -->
@@ -283,7 +283,9 @@ INITIALISATION
     </condition>
     
     <exec osfamily="unix" executable="tools/get-scala-commit-sha" outputproperty="git.commit.sha" failifexecutionfails="false" />
+    <exec osfamily="windows" executable="tools/get-scala-commit-sha.bat" outputproperty="git.commit.sha" failifexecutionfails="false" />
     <exec osfamily="unix" executable="tools/get-scala-commit-date" outputproperty="git.commit.date" failifexecutionfails="false" />
+    <exec osfamily="windows" executable="tools/get-scala-commit-date.bat" outputproperty="git.commit.date" failifexecutionfails="false" />
     <!-- some default in case something went wrong getting the revision -->
     <property name="git.commit.sha" value="unknown"/>
     <property name="git.commit.date" value="unknown"/>
@@ -824,7 +826,7 @@ QUICK BUILD (QUICK)
     <scalacfork
       destdir="${build-quick.dir}/classes/library"
       compilerpathref="quick.classpath"
-      params="${scalac.args.quick} -Xplugin-require:continuations"
+      params="${scalac.args.quick} -Xplugin-require:continuations -P:continuations:enable"
       srcdir="${src.dir}/continuations/library"
       jvmargs="${scalacfork.jvmargs}">
       <include name="**/*.scala"/>
@@ -1361,7 +1363,7 @@ BOOTSTRAPPING BUILD (STRAP)
     <scalacfork
       destdir="${build-strap.dir}/classes/library"
       compilerpathref="pack.classpath"
-      params="${scalac.args.all} -Xplugin-require:continuations"
+      params="${scalac.args.all} -Xplugin-require:continuations -P:continuations:enable"
       srcdir="${src.dir}/continuations/library"
       jvmargs="${scalacfork.jvmargs}">
       <include name="**/*.scala"/>
@@ -1935,7 +1937,7 @@ BOOTRAPING TEST AND TEST SUITE
     <partest showlog="yes" erroronfailed="yes" javacmd="${java.home}/bin/java"
              timeout="2400000"
              srcdir="${partest.srcdir}"
-             scalacopts="${scalac.args.optimise} -Xplugin-require:continuations">
+             scalacopts="${scalac.args.optimise} -Xplugin-require:continuations -P:continuations:enable">
       <compilerarg value="-Xpluginsdir"/>
       <compilerarg file="${build-quick.dir}/misc/scala-devel/plugins"/>
       <compilationpath>

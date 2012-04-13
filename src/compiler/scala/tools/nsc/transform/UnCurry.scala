@@ -126,7 +126,7 @@ abstract class UnCurry extends InfoTransform
 
     /** The type of a non-local return expression with given argument type */
     private def nonLocalReturnExceptionType(argtype: Type) =
-      appliedType(NonLocalReturnControlClass.typeConstructor, List(argtype))
+      appliedType(NonLocalReturnControlClass, argtype)
 
     /** A hashmap from method symbols to non-local return keys */
     private val nonLocalReturnKeys = perRunCaches.newMap[Symbol, Symbol]()
@@ -244,7 +244,7 @@ abstract class UnCurry extends InfoTransform
 
           def parents =
             if (isFunctionType(fun.tpe)) List(abstractFunctionForFunctionType(fun.tpe), SerializableClass.tpe)
-            else if (isPartial) List(appliedType(AbstractPartialFunctionClass.typeConstructor, targs), SerializableClass.tpe)
+            else if (isPartial) List(appliedType(AbstractPartialFunctionClass, targs: _*), SerializableClass.tpe)
             else List(ObjectClass.tpe, fun.tpe, SerializableClass.tpe)
 
           val anonClass = owner newAnonymousFunctionClass(fun.pos, inConstructorFlag) addAnnotation serialVersionUIDAnnotation
@@ -358,18 +358,18 @@ abstract class UnCurry extends InfoTransform
         def sequenceToArray(tree: Tree) = {
           val toArraySym = tree.tpe member nme.toArray
           assert(toArraySym != NoSymbol)
-          def getManifest(tp: Type): Tree = {
-            val manifestOpt = localTyper.findManifest(tp, false)
+          def getClassTag(tp: Type): Tree = {
+            val tag = localTyper.resolveClassTag(tree, tp)
             // Don't want bottom types getting any further than this (SI-4024)
-            if (tp.typeSymbol.isBottomClass) getManifest(AnyClass.tpe)
-            else if (!manifestOpt.tree.isEmpty) manifestOpt.tree
-            else if (tp.bounds.hi ne tp) getManifest(tp.bounds.hi)
-            else localTyper.getManifestTree(tree, tp, false)
+            if (tp.typeSymbol.isBottomClass) getClassTag(AnyClass.tpe)
+            else if (!tag.isEmpty) tag
+            else if (tp.bounds.hi ne tp) getClassTag(tp.bounds.hi)
+            else localTyper.TyperErrorGen.MissingClassTagError(tree, tp)
           }
           afterUncurry {
             localTyper.typedPos(pos) {
               Apply(gen.mkAttributedSelect(tree, toArraySym),
-                    List(getManifest(tree.tpe.baseType(TraversableClass).typeArgs.head)))
+                    List(getClassTag(tree.tpe.baseType(TraversableClass).typeArgs.head)))
             }
           }
         }
@@ -494,6 +494,12 @@ abstract class UnCurry extends InfoTransform
       }
 
       val sym = tree.symbol
+      // Take a pass looking for @specialize annotations and set all
+      // their SPECIALIZE flags for cheaper recognition.
+      if ((sym ne null) && (sym.isClass || sym.isMethod)) {
+        for (tp <- sym.typeParams ; if tp hasAnnotation SpecializedClass)
+          tp setFlag SPECIALIZED
+      }
       val result = (
         // TODO - settings.noassertions.value temporarily retained to avoid
         // breakage until a reasonable interface is settled upon.

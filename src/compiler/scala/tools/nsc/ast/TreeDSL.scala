@@ -292,7 +292,7 @@ trait TreeDSL {
     def TRY(tree: Tree)   = new TryStart(tree, Nil, EmptyTree)
     def BLOCK(xs: Tree*)  = Block(xs.init.toList, xs.last)
     def NOT(tree: Tree)   = Select(tree, Boolean_not)
-    def SOME(xs: Tree*)   = Apply(SomeModule, makeTupleTerm(xs.toList, true))
+    def SOME(xs: Tree*)   = Apply(SomeClass.companionSymbol, makeTupleTerm(xs.toList, true))
 
     /** Typed trees from symbols. */
     def THIS(sym: Symbol)             = gen.mkAttributedThis(sym)

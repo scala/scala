@@ -1,9 +1,7 @@
-import scala.tools.nsc.reporters._
-import scala.tools.nsc.Settings
-import reflect.runtime.Mirror.ToolBox
+import scala.reflect.mirror._
 
 object Test extends App {
-  val code = scala.reflect.Code.lift{
+  reify {
     object Persons {
       /** A list of persons. To create a list, we use Predef.List
        *  which takes a variable number of arguments and constructs
@@ -98,9 +96,5 @@ object Test extends App {
 
     val ys = List(2.0, 1.0, 3.0)
     println("scalProd(" + xs + ", " + ys +") = " + scalProd(xs, ys))
-  };
-
-  val reporter = new ConsoleReporter(new Settings)
-  val toolbox = new ToolBox(reporter)
-  toolbox.runExpr(code.tree)
+  }.eval
 }

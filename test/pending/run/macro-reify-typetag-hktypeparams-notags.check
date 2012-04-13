@@ -1,0 +1,2 @@
+TypeTag(C[T])
+TypeTag(List[C[T]])

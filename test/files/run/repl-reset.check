@@ -28,7 +28,7 @@ val x3 = 3
 case class BippyBungus()
 x1 + x2 + x3
 
-Forgetting all expression results and named terms: BippyBungus, x1, x2, x3
+Forgetting all expression results and named terms: $intp, BippyBungus, x1, x2, x3
 Forgetting defined types: BippyBungus
 
 scala> x1 + x2 + x3

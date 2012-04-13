@@ -81,7 +81,7 @@ abstract class Enumeration (initial: Int) extends Serializable {
 
   /** The cache listing all values of this enumeration. */
   @transient private var vset: ValueSet = null
-  @transient private var vsetDefined = false
+  @transient @volatile private var vsetDefined = false
 
   /** The mapping from the integer used to identify values to their
     * names. */

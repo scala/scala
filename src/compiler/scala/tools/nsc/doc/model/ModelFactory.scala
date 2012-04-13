@@ -474,7 +474,7 @@ class ModelFactory(val global: Global, val settings: doc.Settings) {
           if (bSym == definitions.Object_synchronized) {
             val cSymInfo = (bSym.info: @unchecked) match {
               case PolyType(ts, MethodType(List(bp), mt)) =>
-                val cp = bp.cloneSymbol.setInfo(appliedType(definitions.ByNameParamClass.typeConstructor, List(bp.info)))
+                val cp = bp.cloneSymbol.setInfo(definitions.byNameType(bp.info))
                 PolyType(ts, MethodType(List(cp), mt))
             }
             bSym.cloneSymbol.setInfo(cSymInfo)

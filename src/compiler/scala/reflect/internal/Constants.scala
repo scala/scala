@@ -26,7 +26,7 @@ trait Constants extends api.Constants {
   final val DoubleTag  = 9
   final val StringTag  = 10
   final val NullTag    = 11
-  final val ClassTag   = 12
+  final val ClazzTag   = 12
   // For supporting java enumerations inside java annotations (see ClassfileParser)
   final val EnumTag    = 13
 
@@ -43,7 +43,7 @@ trait Constants extends api.Constants {
       case x: Double    => DoubleTag
       case x: String    => StringTag
       case x: Char      => CharTag
-      case x: Type      => ClassTag
+      case x: Type      => ClazzTag
       case x: Symbol    => EnumTag
       case _            => throw new Error("bad constant value: " + value + " of class " + value.getClass)
     }
@@ -70,7 +70,7 @@ trait Constants extends api.Constants {
       case DoubleTag  => DoubleClass.tpe
       case StringTag  => StringClass.tpe
       case NullTag    => NullClass.tpe
-      case ClassTag   => ClassType(value.asInstanceOf[Type])
+      case ClazzTag   => ClassType(value.asInstanceOf[Type])
       case EnumTag    =>
         // given (in java): "class A { enum E { VAL1 } }"
         //  - symbolValue: the symbol of the actual enumeration value (VAL1)
@@ -201,7 +201,7 @@ trait Constants extends api.Constants {
 
     def stringValue: String =
       if (value == null) "null"
-      else if (tag == ClassTag) signature(typeValue)
+      else if (tag == ClazzTag) signature(typeValue)
       else value.toString()
 
     @switch def escapedChar(ch: Char): String = ch match {
@@ -221,7 +221,7 @@ trait Constants extends api.Constants {
       tag match {
         case NullTag   => "null"
         case StringTag => "\"" + escape(stringValue) + "\""
-        case ClassTag  => "classOf[" + signature(typeValue) + "]"
+        case ClazzTag  => "classOf[" + signature(typeValue) + "]"
         case CharTag   => "'" + escapedChar(charValue) + "'"
         case LongTag   => longValue.toString() + "L"
         case _         => String.valueOf(value)

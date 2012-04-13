@@ -13,7 +13,10 @@ import scala.tools.nsc.util.WeakHashSet
 abstract class SymbolTable extends api.Universe
                               with Collections
                               with Names
+                              with SymbolCreations
                               with Symbols
+                              with SymbolFlags
+                              with FreeVars
                               with Types
                               with Kinds
                               with ExistentialsAndSkolems
@@ -32,6 +35,9 @@ abstract class SymbolTable extends api.Universe
                               with TypeDebugging
                               with Importers
                               with Required
+                              with TreeBuildUtil
+                              with Reporters
+                              with CapturedVariables
 {
   def rootLoader: LazyType
   def log(msg: => AnyRef): Unit
@@ -62,6 +68,8 @@ abstract class SymbolTable extends api.Universe
     result
   }
 
+  /** Dump each symbol to stdout after shutdown.
+   */
   final val traceSymbolActivity = sys.props contains "scalac.debug.syms"
   object traceSymbols extends {
     val global: SymbolTable.this.type = SymbolTable.this
@@ -97,6 +105,11 @@ abstract class SymbolTable extends api.Universe
 
   final def atPhaseStack: List[Phase] = phStack
   final def phase: Phase = ph
+
+  def atPhaseStackMessage = atPhaseStack match {
+    case Nil    => ""
+    case ps     => ps.reverseMap("->" + _).mkString("(", " ", ")")
+  }
 
   final def phase_=(p: Phase) {
     //System.out.println("setting phase to " + p)
@@ -149,7 +162,7 @@ abstract class SymbolTable extends api.Universe
     try op
     finally popPhase(saved)
   }
-  
+
 
   /** Since when it is to be "at" a phase is inherently ambiguous,
    *  a couple unambiguously named methods.
@@ -211,7 +224,7 @@ abstract class SymbolTable extends api.Universe
   def arrayToRepeated(tp: Type): Type = tp match {
     case MethodType(params, rtpe) =>
       val formals = tp.paramTypes
-      assert(formals.last.typeSymbol == definitions.ArrayClass)
+      assert(formals.last.typeSymbol == definitions.ArrayClass, formals)
       val method = params.last.owner
       val elemtp = formals.last.typeArgs.head match {
         case RefinedType(List(t1, t2), _) if (t1.typeSymbol.isAbstractType && t2.typeSymbol == definitions.ObjectClass) =>
@@ -219,8 +232,7 @@ abstract class SymbolTable extends api.Universe
         case t =>
           t
       }
-      val newParams = method.newSyntheticValueParams(
-        formals.init :+ appliedType(definitions.JavaRepeatedParamClass.typeConstructor, List(elemtp)))
+      val newParams = method.newSyntheticValueParams(formals.init :+ definitions.javaRepeatedType(elemtp))
       MethodType(newParams, rtpe)
     case PolyType(tparams, rtpe) =>
       PolyType(tparams, arrayToRepeated(rtpe))

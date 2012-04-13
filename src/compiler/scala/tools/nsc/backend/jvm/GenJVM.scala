@@ -651,7 +651,7 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
             case StringTag  =>
               buf put 's'.toByte
               buf putShort cpool.addUtf8(const.stringValue).toShort
-            case ClassTag   =>
+            case ClazzTag   =>
               buf put 'c'.toByte
               buf putShort cpool.addUtf8(javaType(const.typeValue).getSignature()).toShort
             case EnumTag =>
@@ -1022,7 +1022,7 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
           serialVUID foreach { value =>
             import Flags._, definitions._
             val fieldName = "serialVersionUID"
-            val fieldSymbol = clasz.symbol.newValue(newTermName(fieldName), NoPosition, STATIC | FINAL) setInfo longType
+            val fieldSymbol = clasz.symbol.newValue(newTermName(fieldName), NoPosition, STATIC | FINAL) setInfo LongClass.tpe
             clasz addField new IField(fieldSymbol)
             lastBlock emit CONSTANT(Constant(value))
             lastBlock emit STORE_FIELD(fieldSymbol, true)
@@ -1281,7 +1281,7 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
         val jname    = javaName(method)
         val jtype    = javaType(method).asInstanceOf[JMethodType]
 
-        def debugMsg(invoke: String) {
+        def dbg(invoke: String) {
           debuglog("%s %s %s.%s:%s".format(invoke, receiver.accessString, jowner, jname, jtype))
         }
 
@@ -1299,14 +1299,14 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
         }
 
         style match {
-          case Static(true)                         => jcode.emitINVOKESPECIAL  (jowner, jname, jtype) ; debugMsg("invokespecial")
-          case Static(false)                        => jcode.emitINVOKESTATIC   (jowner, jname, jtype) ; debugMsg("invokestatic")
-          case Dynamic if isInterfaceCall(receiver) => jcode.emitINVOKEINTERFACE(jowner, jname, jtype) ; debugMsg("invokinterface")
-          case Dynamic                              => jcode.emitINVOKEVIRTUAL  (jowner, jname, jtype) ; debugMsg("invokevirtual")
+          case Static(true)                         => dbg("invokespecial");    jcode.emitINVOKESPECIAL(jowner, jname, jtype)
+          case Static(false)                        => dbg("invokestatic");      jcode.emitINVOKESTATIC(jowner, jname, jtype)
+          case Dynamic if isInterfaceCall(receiver) => dbg("invokinterface"); jcode.emitINVOKEINTERFACE(jowner, jname, jtype)
+          case Dynamic                              => dbg("invokevirtual");    jcode.emitINVOKEVIRTUAL(jowner, jname, jtype)
           case SuperCall(_)                         =>
+            dbg("invokespecial")
             jcode.emitINVOKESPECIAL(jowner, jname, jtype)
             initModule()
-            debugMsg("invokespecial")
         }
       }
 

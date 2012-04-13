@@ -69,6 +69,9 @@ trait Erasure {
     clazz.firstParamAccessor.tpe.resultType
 
   abstract class ErasureMap extends TypeMap {
+    private lazy val ObjectArray  = arrayType(ObjectClass.tpe)
+    private lazy val ErasedObject = erasedTypeRef(ObjectClass)
+
     def mergeParents(parents: List[Type]): Type
 
     def eraseNormalClassRef(pre: Type, clazz: Symbol): Type =
@@ -87,7 +90,7 @@ trait Erasure {
           if (unboundedGenericArrayLevel(tp) == 1) ObjectClass.tpe
           else if (args.head.typeSymbol.isBottomClass) ObjectArray
           else typeRef(apply(pre), sym, args map applyInArray)
-        else if (sym == AnyClass || sym == AnyValClass || sym == SingletonClass || sym == NotNullClass) erasedTypeRef(ObjectClass)
+        else if (sym == AnyClass || sym == AnyValClass || sym == SingletonClass || sym == NotNullClass) ErasedObject
         else if (sym == UnitClass) erasedTypeRef(BoxedUnitClass)
         else if (sym.isRefinementClass) apply(mergeParents(tp.parents))
         else if (sym.isDerivedValueClass) eraseDerivedValueClassRef(sym)
@@ -111,7 +114,7 @@ trait Erasure {
       case ClassInfoType(parents, decls, clazz) =>
         ClassInfoType(
           if (clazz == ObjectClass || isPrimitiveValueClass(clazz)) Nil
-          else if (clazz == ArrayClass) List(erasedTypeRef(ObjectClass))
+          else if (clazz == ArrayClass) List(ErasedObject)
           else removeLaterObjects(parents map this),
           decls, clazz)
       case _ =>

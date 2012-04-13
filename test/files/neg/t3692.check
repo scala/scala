@@ -1,4 +1,11 @@
+t3692.scala:11: warning: type Manifest in object Predef is deprecated: Use `@scala.reflect.ConcreteTypeTag` instead
+  private final def toJavaMap[T, V](map: Map[T, V])(implicit m1: Manifest[T], m2: Manifest[V]): java.util.Map[_, _] = {
+                                                                 ^
+t3692.scala:11: warning: type Manifest in object Predef is deprecated: Use `@scala.reflect.ConcreteTypeTag` instead
+  private final def toJavaMap[T, V](map: Map[T, V])(implicit m1: Manifest[T], m2: Manifest[V]): java.util.Map[_, _] = {
+                                                                                  ^
 t3692.scala:15: error: unreachable code
       case m2: Map[T, Int] => new java.util.HashMap[T, Integer]
                               ^
+two warnings found
 one error found

@@ -7,7 +7,7 @@ package scala.tools.nsc
 package ast
 
 import symtab._
-import reporters.Reporter
+import reporters.{Reporter => NscReporter}
 import util.{Position, NoPosition}
 import util.DocStrings._
 import scala.reflect.internal.Chars._
@@ -21,7 +21,7 @@ trait DocComments { self: Global =>
 
   var cookedDocComments = Map[Symbol, String]()
 
-  def reporter: Reporter
+  def reporter: NscReporter
 
   /** The raw doc comment map */
   val docComments = mutable.HashMap[Symbol, DocComment]()
@@ -495,8 +495,7 @@ trait DocComments { self: Global =>
               val tpe = getType(repl.trim)
               if (tpe != NoType) tpe
               else {
-                val alias1 = alias.cloneSymbol(definitions.RootClass)
-                alias1.name = newTypeName(repl)
+                val alias1 = alias.cloneSymbol(definitions.RootClass, alias.rawflags, newTypeName(repl))
                 typeRef(NoPrefix, alias1, Nil)
               }
             case None =>
@@ -523,10 +522,9 @@ trait DocComments { self: Global =>
       }
 
       for (defn <- defined) yield {
-        val useCase = defn.cloneSymbol
-        useCase.owner = sym.owner
-        useCase.flags = sym.flags
-        useCase.setFlag(Flags.SYNTHETIC).setInfo(substAliases(defn.info).asSeenFrom(site.thisType, sym.owner))
+        defn.cloneSymbol(sym.owner, sym.flags | Flags.SYNTHETIC) modifyInfo (info =>
+          substAliases(info).asSeenFrom(site.thisType, sym.owner)
+        )
       }
     }
   }

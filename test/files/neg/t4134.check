@@ -1,0 +1,4 @@
+t4134.scala:22: error: Member method f of mixin trait T2 is missing a concrete super implementation.
+class Konkret extends T3
+      ^
+one error found

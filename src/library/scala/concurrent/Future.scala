@@ -82,7 +82,6 @@ import scala.collection.generic.CanBuildFrom
  *  }}}
  */
 trait Future[+T] extends Awaitable[T] {
-self =>
 
   /* Callbacks */
 
@@ -132,7 +131,7 @@ self =>
 
   /** Creates a new promise.
    */
-  def newPromise[S]: Promise[S]
+  protected def newPromise[S]: Promise[S]
   
   /** Returns whether the future has already been completed with
    *  a value or an exception.
@@ -168,14 +167,11 @@ self =>
    *  and throws a corresponding exception if the original future fails.
    */
   def failed: Future[Throwable] = {
-    def noSuchElem(v: T) =
-      new NoSuchElementException("Future.failed not completed with a throwable. Instead completed with: " + v)
-
     val p = newPromise[Throwable]
 
     onComplete {
       case Left(t) => p success t
-      case Right(v) => p failure noSuchElem(v)
+      case Right(v) => p failure (new NoSuchElementException("Future.failed not completed with a throwable. Instead completed with: " + v))
     }
 
     p.future
@@ -411,21 +407,16 @@ self =>
    *  {{{
    *  val f = future { sys.error("failed") }
    *  val g = future { 5 }
-   *  val h = f orElse g
+   *  val h = f fallbackTo g
    *  await(h, 0) // evaluates to 5
    *  }}}
    */
   def fallbackTo[U >: T](that: Future[U]): Future[U] = {
     val p = newPromise[U]
-
     onComplete {
-      case Left(t) => that onComplete {
-        case Left(_) => p failure t
-        case Right(v) => p success v
-      }
-      case Right(v) => p success v
+      case r @ Right(_) ⇒ p complete r
+      case _            ⇒ p completeWith that
     }
-
     p.future
   }
   
@@ -497,14 +488,14 @@ self =>
    *  }}}
    */
   def either[U >: T](that: Future[U]): Future[U] = {
-    val p = self.newPromise[U]
+    val p = newPromise[U]
 
     val completePromise: PartialFunction[Either[Throwable, U], _] = {
       case Left(t) => p tryFailure t
       case Right(v) => p trySuccess v
     }
 
-    self onComplete completePromise
+    this onComplete completePromise
     that onComplete completePromise
 
     p.future

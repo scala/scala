@@ -20,22 +20,14 @@ object Test {
   def numericBigIntRanges = rangeData.map(r => if (r.inclusive) NumericRange.inclusive(BigInt(r.start), BigInt(r.end), BigInt(r.step)) else NumericRange(BigInt(r.start), BigInt(r.end), BigInt(r.step)))
 
   def main(args: Array[String]) {
-    // We drop the first two tests for all ranges which don't have a decent sum implementation,
-    // because it is just too slow.
     println("Ranges:")
     ranges.foreach{range => println(range.sum)}
     println("IntRanges:")
-    println("Disabled #1")
-    println("Disabled #2")
-    numericIntRanges.drop(2).foreach{range => println(range.sum)}
+    numericIntRanges.foreach{range => println(range.sum)}
     println("LongRanges:")
-    println("Disabled #1")
-    println("Disabled #2")
-    numericLongRanges.drop(2).foreach{range => println(range.sum)}
+    numericLongRanges.foreach{range => println(range.sum)}
     println("BigIntRanges:")
-    println("Disabled #1")
-    println("Disabled #2")
-    numericBigIntRanges.drop(2).foreach{range => println(range.sum)}
+    numericBigIntRanges.foreach{range => println(range.sum)}
   }
 
 }

@@ -257,12 +257,11 @@ abstract class UnPickler /*extends reflect.generic.UnPickler*/ {
         }
 
       def isModuleFlag = (flags & MODULE) != 0L
-      def isMethodFlag = (flags & METHOD) != 0L
       def isClassRoot  = (name == classRoot.name) && (owner == classRoot.owner)
       def isModuleRoot = (name == moduleRoot.name) && (owner == moduleRoot.owner)
+      def pflags       = flags & PickledFlags
 
       def finishSym(sym: Symbol): Symbol = {
-        sym.flags         = flags & PickledFlags
         sym.privateWithin = privateWithin
         sym.info = (
           if (atEnd) {
@@ -282,27 +281,27 @@ abstract class UnPickler /*extends reflect.generic.UnPickler*/ {
       }
 
       finishSym(tag match {
-        case TYPEsym  => owner.newAbstractType(name.toTypeName)
-        case ALIASsym => owner.newAliasType(name.toTypeName)
+        case TYPEsym  | ALIASsym =>
+          owner.newNonClassSymbol(name.toTypeName, NoPosition, pflags)
         case CLASSsym =>
-          val sym = (isClassRoot, isModuleFlag) match {
-            case (true, true)   => moduleRoot.moduleClass
-            case (true, false)  => classRoot
-            case (false, true)  => owner.newModuleClass(name.toTypeName)
-            case (false, false) => owner.newClass(name.toTypeName)
-          }
+          val sym = (
+            if (isClassRoot) {
+              if (isModuleFlag) moduleRoot.moduleClass setFlag pflags
+              else classRoot setFlag pflags
+            }
+            else owner.newClassSymbol(name.toTypeName, NoPosition, pflags)
+          )
           if (!atEnd)
             sym.typeOfThis = newLazyTypeRef(readNat())
 
           sym
         case MODULEsym =>
           val clazz = at(inforef, () => readType()).typeSymbol // after the NMT_TRANSITION period, we can leave off the () => ... ()
-          if (isModuleRoot) moduleRoot
-          else owner.newLinkedModule(clazz)
+          if (isModuleRoot) moduleRoot setFlag pflags
+          else owner.newLinkedModule(clazz, pflags)
         case VALsym =>
           if (isModuleRoot) { assert(false); NoSymbol }
-          else if (isMethodFlag) owner.newMethod(name.toTermName)
-          else owner.newValue(name.toTermName)
+          else owner.newTermSymbol(name.toTermName, NoPosition, pflags)
 
         case _ =>
           errorBadSignature("bad symbol tag: " + tag)

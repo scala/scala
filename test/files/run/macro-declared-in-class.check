@@ -1,0 +1,2 @@
+prefix = Expr[Nothing](new Macros())
+it works
