@@ -170,19 +170,19 @@ trait TypeTags { self: Universe =>
 
     implicit def toClassTag[T](ttag: rm.ConcreteTypeTag[T]): ClassTag[T] = ClassTag[T](rm.typeToClass(ttag.tpe.erasure))
 
-    implicit def toDeprecatedManifestApis[T](ttag: rm.ConcreteTypeTag[T]): DeprecatedManifestApis[T] = new DeprecatedManifestApis[T](ttag)
+    // implicit def toDeprecatedManifestApis[T](ttag: rm.ConcreteTypeTag[T]): DeprecatedManifestApis[T] = new DeprecatedManifestApis[T](ttag)
 
-    // this class should not be used directly in client code
-    class DeprecatedManifestApis[T](ttag: rm.ConcreteTypeTag[T]) extends DeprecatedClassManifestApis[T](toClassTag(ttag)) {
-      @deprecated("Use `tpe` to analyze the underlying type", "2.10.0")
-      def <:<(that: Manifest[_]): Boolean = ttag.tpe <:< that.tpe
+    // // this class should not be used directly in client code
+    // class DeprecatedManifestApis[T](ttag: rm.ConcreteTypeTag[T]) extends DeprecatedClassManifestApis[T](toClassTag(ttag)) {
+    //   @deprecated("Use `tpe` to analyze the underlying type", "2.10.0")
+    //   def <:<(that: Manifest[_]): Boolean = ttag.tpe <:< that.tpe
 
-      @deprecated("Use `tpe` to analyze the underlying type", "2.10.0")
-      def >:>(that: Manifest[_]): Boolean = that <:< ttag
+    //   @deprecated("Use `tpe` to analyze the underlying type", "2.10.0")
+    //   def >:>(that: Manifest[_]): Boolean = that <:< ttag
 
-      @deprecated("Use `tpe` to analyze the type arguments", "2.10.0")
-      override def typeArguments: List[Manifest[_]] = ttag.tpe.typeArguments map (targ => rm.ConcreteTypeTag(targ))
-    }
+    //   @deprecated("Use `tpe` to analyze the type arguments", "2.10.0")
+    //   override def typeArguments: List[Manifest[_]] = ttag.tpe.typeArguments map (targ => rm.ConcreteTypeTag(targ))
+    // }
   }
 
   // incantations for summoning

@@ -5,21 +5,24 @@ import scala.reflect.api.Universe
 /** This package is required by the compiler and <b>should not be used in client code</b>. */
 package object internal {
   /** This method is required by the compiler and <b>should not be used in client code</b>. */
-  def materializeClassTag[T](u: Universe): ClassTag[T] = macro materializeClassTag_impl[T]
+  // def materializeClassTag[T](u: Universe): ClassTag[T] = macro materializeClassTag_impl[T]
+  def materializeClassTag[T](u: Universe): ClassTag[T] = ???
 
   /** This method is required by the compiler and <b>should not be used in client code</b>. */
   def materializeClassTag_impl[T: c.TypeTag](c: Context)(u: c.Expr[Universe]): c.Expr[ClassTag[T]] =
     c.Expr[Nothing](c.materializeClassTag(u.tree, implicitly[c.TypeTag[T]].tpe))(c.TypeTag.Nothing)
 
   /** This method is required by the compiler and <b>should not be used in client code</b>. */
-  def materializeTypeTag[T](u: Universe): u.TypeTag[T] = macro materializeTypeTag_impl[T]
+  // def materializeTypeTag[T](u: Universe): u.TypeTag[T] = macro materializeTypeTag_impl[T]
+  def materializeTypeTag[T](u: Universe): u.TypeTag[T] = ???
 
   /** This method is required by the compiler and <b>should not be used in client code</b>. */
   def materializeTypeTag_impl[T: c.TypeTag](c: Context)(u: c.Expr[Universe]): c.Expr[u.value.TypeTag[T]] =
     c.Expr[Nothing](c.materializeTypeTag(u.tree, implicitly[c.TypeTag[T]].tpe, requireConcreteTypeTag = false))(c.TypeTag.Nothing)
 
   /** This method is required by the compiler and <b>should not be used in client code</b>. */
-  def materializeConcreteTypeTag[T](u: Universe): u.ConcreteTypeTag[T] = macro materializeConcreteTypeTag_impl[T]
+  // def materializeConcreteTypeTag[T](u: Universe): u.ConcreteTypeTag[T] = macro materializeConcreteTypeTag_impl[T]
+  def materializeConcreteTypeTag[T](u: Universe): u.ConcreteTypeTag[T] = ???
 
   /** This method is required by the compiler and <b>should not be used in client code</b>. */
   def materializeConcreteTypeTag_impl[T: c.TypeTag](c: Context)(u: c.Expr[Universe]): c.Expr[u.value.ConcreteTypeTag[T]] =

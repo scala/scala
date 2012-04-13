@@ -26,7 +26,7 @@ trait Context extends Aliases
   val prefix: Expr[PrefixType]
 
   /** Alias to the underlying mirror's reify */
-  def reify[T](expr: T): Expr[T] = macro Context.reify[T]
+  // def reify[T](expr: T): Expr[T] = macro Context.reify[T]
 }
 
 object Context {
