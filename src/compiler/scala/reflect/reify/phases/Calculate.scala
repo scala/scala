@@ -8,14 +8,12 @@ trait Calculate {
   import definitions._
   import treeInfo._
 
-  implicit def sym2richSym(sym: Symbol): RichSymbol = new RichSymbol(sym)
-  class RichSymbol(sym: Symbol) {
+  implicit class RichSymbol(sym: Symbol) {
     def metalevel: Int = { assert(sym != NoSymbol); localSymbols.getOrElse(sym, 0) }
     def isLocalToReifee = (localSymbols contains sym) // [Eugene] how do I account for local skolems?
   }
 
-  implicit def tpe2richTpe(tpe: Type): RichType = new RichType(tpe)
-  class RichType(tpe: Type) {
+  implicit class RichType(tpe: Type) {
     def isLocalToReifee = tpe != null && (tpe exists (tp => (localSymbols contains tp.typeSymbol) || (localSymbols contains tp.termSymbol)))
   }
 

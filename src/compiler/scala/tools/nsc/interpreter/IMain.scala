@@ -24,6 +24,7 @@ import scala.collection.{ mutable, immutable }
 import scala.util.control.Exception.{ ultimately }
 import IMain._
 import java.util.concurrent.Future
+import language.implicitConversions
 
 /** directory to save .class files to */
 private class ReplVirtualDirectory(out: JPrintWriter) extends VirtualDirectory("(memory)", None) {
@@ -203,8 +204,7 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
     }).toList
   }
 
-  implicit def installReplTypeOps(tp: Type): ReplTypeOps = new ReplTypeOps(tp)
-  class ReplTypeOps(tp: Type) {
+  implicit class ReplTypeOps(tp: Type) {
     def orElse(other: => Type): Type    = if (tp ne NoType) tp else other
     def andAlso(fn: Type => Type): Type = if (tp eq NoType) tp else fn(tp)
   }
@@ -825,7 +825,7 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
     }
     def lastWarnings: List[(Position, String)] = (
       if (lastRun == null) Nil
-      else removeDupWarnings(lastRun.deprecationWarnings.reverse) ++ lastRun.uncheckedWarnings.reverse
+      else removeDupWarnings(lastRun.allConditionalWarnings flatMap (_.warnings))
     )
     private var lastRun: Run = _
     private def evalMethod(name: String) = evalClass.getMethods filter (_.getName == name) match {

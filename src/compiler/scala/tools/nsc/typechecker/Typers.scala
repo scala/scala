@@ -737,24 +737,25 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
       if (!isPastTyper) {
         val nestedOwners =
           featureTrait.owner.ownerChain.takeWhile(_ != languageFeatureModule.moduleClass).reverse
-        val featureName = (nestedOwners map (_ + ".")).mkString + featureTrait.name
+        val featureName = (nestedOwners map (_.name + ".")).mkString + featureTrait.name
         unit.toCheck += { () =>
-          if (!(unit.checkedFeatures contains featureTrait)) {
-            def hasImport = inferImplicit(EmptyTree: Tree, featureTrait.tpe, true, false, context) != SearchFailure
-            def hasOption = settings.feature.value contains featureName
-            if (!hasImport && !hasOption) {
-              val Some(AnnotationInfo(_, List(Literal(Constant(featureDesc: String)), Literal(Constant(required: Boolean))), _)) =
-                featureTrait getAnnotation LanguageFeatureClass
-              val req = if (required) "needs to" else "should"
-              val raw = featureDesc + " " + req + " be enabled by making\n" +
-                "the implicit value language." + featureName + " visible. This can be achieved by adding the import\n" +
-                "import language." + featureName + " or by setting the compiler option -language:" + featureName + ".\n" +
+          def hasImport = inferImplicit(EmptyTree: Tree, featureTrait.tpe, true, false, context) != SearchFailure
+          def hasOption = settings.language.value contains featureName
+          if (!hasImport && !hasOption) {
+            val Some(AnnotationInfo(_, List(Literal(Constant(featureDesc: String)), Literal(Constant(required: Boolean))), _)) =
+              featureTrait getAnnotation LanguageFeatureClass
+            val req = if (required) "needs to" else "should"
+            var raw = featureDesc + " " + req + " be enabled\n" +
+              "by making the implicit value language." + featureName + " visible."
+            if (!(currentRun.reportedFeature contains featureTrait))
+              raw += "\nThis can be achieved by adding the import clause 'import language." + featureName + "'\n" +
+                "or by setting the compiler option -language:" + featureName + ".\n" +
                 "See the Scala docs for value scala.language." + featureName + "for a discussion\n" +
                 "why the feature " + req + " be explicitly enabled."
-              val msg = raw replace ("#", construct)
-              if (required) unit.error(pos, msg) else unit.warning(pos, msg)
-              unit.checkedFeatures += featureTrait
-            }
+            currentRun.reportedFeature += featureTrait
+            val msg = raw replace ("#", construct)
+            if (required) unit.error(pos, msg)
+            else currentRun.featureWarnings.warn(pos, msg)
           }
         }
       }
@@ -1972,9 +1973,8 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
       if (meth.isStructuralRefinementMember)
         checkMethodStructuralCompatible(meth)
 
-      if (meth.isImplicit) meth.info.paramss match {
+      if (meth.isImplicit && !meth.isSynthetic) meth.info.paramss match {
         case List(param) :: _ if !param.isImplicit =>
-          println("check implicit +"+meth+" "+isPastTyper)
           checkFeature(ddef.pos, ImplicitConversionsFeature, meth.toString)
         case _ =>
       }
@@ -4751,9 +4751,8 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
             else
               typedSelect(qual1, name)
 
-          val sym = tree1.symbol
-          if (sym != null && sym.isTerm && sym.owner.isRefinementClass && !sym.isConstant)
-            checkFeature(tree1.pos, ReflectiveCallsFeature, sym.toString)
+          if (tree1.symbol != null && tree1.symbol.isOnlyRefinementMember)
+            checkFeature(tree1.pos, ReflectiveCallsFeature, tree1.symbol.toString)
 
           if (qual1.symbol == RootPackage) treeCopy.Ident(tree1, name)
           else tree1

@@ -11,6 +11,7 @@ package process
 
 import processInternal._
 import ProcessBuilder._
+import language.implicitConversions
 
 /** Represents a process that is running or has finished running.
  *  It may be a compound process with several underlying native processes (such as `a #&& b`).

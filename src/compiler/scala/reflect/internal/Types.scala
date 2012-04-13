@@ -712,7 +712,9 @@ trait Types extends api.Types { self: SymbolTable =>
 
     /** Returns all parts of this type which satisfy predicate `p` */
     def filter(p: Type => Boolean): List[Type] = new FilterTypeCollector(p) collect this
-    def withFilter(p: Type => Boolean) = new FilterTypeCollector(p) {
+    def withFilter(p: Type => Boolean) = new FilterMapForeach(p)
+
+    class FilterMapForeach(p: Type => Boolean) extends FilterTypeCollector(p){
       def foreach[U](f: Type => U): Unit = collect(Type.this) foreach f
       def map[T](f: Type => T): List[T]  = collect(Type.this) map f
     }
@@ -2538,12 +2540,11 @@ trait Types extends api.Types { self: SymbolTable =>
       val qset = quantified.toSet
       underlying match {
         case TypeRef(_, sym, args) =>
-          sameLength(args, quantified) && {
-            args forall { arg =>
-              qset(arg.typeSymbol) &&
-              (!checkBounds || !qset.exists(arg.typeSymbol.info.bounds contains _))
-            }
-          }
+          def isQuantified(tpe: Type) = tpe exists (t => quantified contains t.typeSymbol)
+          val (wildcardArgs, otherArgs) = args partition (arg => qset contains arg.typeSymbol)
+          wildcardArgs.distinct == wildcardArgs &&
+          !(otherArgs exists (arg => isQuantified(arg))) &&
+          !(wildcardArgs exists (arg => isQuantified(arg.typeSymbol.info.bounds)))
         case _ => false
       }
     }

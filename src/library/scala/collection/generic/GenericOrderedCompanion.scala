@@ -10,6 +10,7 @@ package scala.collection
 package generic
 
 import mutable.Builder
+import language.higherKinds
 
 /** This class represents companions of classes which require the ordered trait
  *  for their element types.

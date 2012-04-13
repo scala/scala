@@ -8,6 +8,8 @@
 
 package scala.math
 
+import language.implicitConversions
+
 /** A trait for data that have a single, natural ordering.  See
  *  [[scala.math.Ordering]] before using this trait for
  *  more information about whether to use [[scala.math.Ordering]] instead.

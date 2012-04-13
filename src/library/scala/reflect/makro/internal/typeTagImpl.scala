@@ -1,6 +1,8 @@
 package scala.reflect.makro
 
 import scala.reflect.api.Universe
+import language.implicitConversions
+import language.experimental.macros
 
 /** This package is required by the compiler and <b>should not be used in client code</b>. */
 package object internal {

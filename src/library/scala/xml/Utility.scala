@@ -10,6 +10,7 @@ package scala.xml
 
 import scala.collection.mutable
 import parsing.XhtmlEntities
+import language.implicitConversions
 
 /**
  * The `Utility` object provides utility functions for processing instances
@@ -20,6 +21,8 @@ import parsing.XhtmlEntities
 object Utility extends AnyRef with parsing.TokenTests {
   final val SU = '\u001A'
 
+  // [Martin] This looks dubious. We don't convert StringBuilders to
+  // Strings anywhere else, why do it here?
   implicit def implicitSbToString(sb: StringBuilder) = sb.toString()
 
   // helper for the extremely oft-repeated sequence of creating a

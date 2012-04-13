@@ -8,6 +8,7 @@ package scala.tools.nsc
 import java.util.concurrent.{ Future, Callable }
 import java.util.{ Timer, TimerTask }
 import java.util.jar.{ Attributes }
+import language.implicitConversions
 
 package object io {
   type JManifest = java.util.jar.Manifest

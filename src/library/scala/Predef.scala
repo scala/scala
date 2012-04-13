@@ -14,6 +14,7 @@ import mutable.ArrayOps
 import generic.CanBuildFrom
 import annotation.{ elidable, implicitNotFound }
 import annotation.elidable.ASSERTION
+import language.{implicitConversions, existentials}
 
 /** The `Predef` object provides definitions that are accessible in all Scala
  *  compilation units without explicit qualification.

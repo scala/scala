@@ -8,7 +8,7 @@
 
 package scala.collection
 package generic
-
+import language.higherKinds
 /**
  * @since 2.8
  */

@@ -12,6 +12,7 @@ import generic._
 import mutable.{ Builder, ArrayBuffer }
 import TraversableView.NoBuilder
 import annotation.migration
+import language.implicitConversions
 
 trait ViewMkString[+A] {
   self: Traversable[A] =>

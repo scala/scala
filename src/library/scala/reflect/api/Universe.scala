@@ -1,5 +1,6 @@
 package scala.reflect
 package api
+import language.experimental.macros
 
 abstract class Universe extends Symbols
                            with FreeVars

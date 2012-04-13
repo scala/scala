@@ -5,6 +5,7 @@
 
 package scala.reflect
 package api
+import language.implicitConversions
 
 trait Exprs { self: Universe =>
 
@@ -38,10 +39,12 @@ trait Exprs { self: Universe =>
   // and turns off typechecking whenever it's involved
   // that'd allow us to splice trees into quasiquotes and still have these qqs to be partially typechecked
   // see some exploration of these ideas here: https://github.com/xeno-by/alphakeplerdemo
+  // [Martin] I have some doubts whether it's god to have implicit conversions.
   implicit def tree2expr(tree: Tree): Expr[Nothing] = Expr[Nothing](tree)(TypeTag.Nothing)
   implicit def expr2tree(expr: Expr[_]): Tree = expr.tree
 
   // [Eugene] good idea?
+  // [Martin] probably not.
   implicit def trees2exprs(trees: List[Tree]): List[Expr[Nothing]] = trees map tree2expr
   implicit def exprs2trees(exprs: List[Expr[_]]): List[Tree] = exprs map expr2tree
 }

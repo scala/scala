@@ -850,6 +850,16 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     final def isStructuralRefinement: Boolean =
       (isClass || isType || isModule) && info.normalize/*.underlying*/.isStructuralRefinement
 
+    /** Is this a term symbol only defined in a refinement (so that it needs
+     *  to be accessed by reflection)?
+     */
+    def isOnlyRefinementMember: Boolean =
+       isTerm && // type members are not affected
+       owner.isRefinementClass && // owner must be a refinement class
+       (owner.info decl name) == this && // symbol must be explicitly declared in the refinement (not synthesized from glb)
+       allOverriddenSymbols.isEmpty && // symbol must not override a symbol in a base class
+       !isConstant // symbol must not be a constant. Question: Can we exclude @inline methods as well?
+
     final def isStructuralRefinementMember = owner.isStructuralRefinement && isPossibleInRefinement && isPublic
     final def isPossibleInRefinement       = !isConstructor && !isOverridingSymbol
 
@@ -1751,7 +1761,8 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
       } else owner.enclosingTopLevelClass
 
     /** Is this symbol defined in the same scope and compilation unit as `that` symbol? */
-    def isCoDefinedWith(that: Symbol) = (
+    def isCoDefinedWith(that: Symbol) = {
+      import language.reflectiveCalls
       (this.rawInfo ne NoType) &&
       (this.effectiveOwner == that.effectiveOwner) && {
         !this.effectiveOwner.isPackageClass ||
@@ -1770,7 +1781,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
           false
         }
       }
-    )
+    }
 
     /** The internal representation of classes and objects:
      *
@@ -3093,10 +3104,11 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     if (settings.debug.value) printStackTrace()
   }
 
-  case class InvalidCompanions(sym1: Symbol, sym2: Symbol) extends Throwable(
+  case class InvalidCompanions(sym1: Symbol, sym2: Symbol) extends Throwable({
+    import language.reflectiveCalls
     "Companions '" + sym1 + "' and '" + sym2 + "' must be defined in same file:\n" +
     "  Found in " + sym1.sourceFile.canonicalPath + " and " + sym2.sourceFile.canonicalPath
-  ) {
+  }) {
       override def toString = getMessage
   }
 

@@ -12,6 +12,7 @@ package scala.math
 import java.{ lang => jl }
 import java.math.{ MathContext, BigDecimal => BigDec }
 import scala.collection.immutable.NumericRange
+import language.implicitConversions
 
 
 /**

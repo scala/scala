@@ -32,6 +32,7 @@ trait StandardScalaSettings {
   val deprecation =    BooleanSetting ("-deprecation", "Emit warning and location for usages of deprecated APIs.")
   val encoding =        StringSetting ("-encoding", "encoding", "Specify character encoding used by source files.", Properties.sourceEncoding)
   val explaintypes =   BooleanSetting ("-explaintypes", "Explain type errors in more detail.")
+  val feature =        BooleanSetting ("-feature", "Emit warning and location for usages of features that should be imported explicitly.")
   val g =               ChoiceSetting ("-g", "level", "Set level of generated debugging info.", List("none", "source", "line", "vars", "notailcalls"), "vars")
   val help =           BooleanSetting ("-help", "Print a synopsis of standard options")
   val make =            ChoiceSetting ("-make", "policy", "Recompilation detection policy", List("all", "changed", "immediate", "transitive", "transitivenocp"), "all")

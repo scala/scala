@@ -9,6 +9,9 @@
 package scala
 
 object Option {
+
+  import language.implicitConversions
+
   /** An implicit conversion that converts an option to an iterable value
    */
   implicit def option2Iterable[A](xo: Option[A]): Iterable[A] = xo.toList

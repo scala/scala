@@ -24,6 +24,7 @@ import scala.annotation.tailrec
 import scala.collection.mutable.Stack
 import scala.collection.mutable.Builder
 import scala.collection.generic.CanBuildFrom
+import language.higherKinds
 
 
 

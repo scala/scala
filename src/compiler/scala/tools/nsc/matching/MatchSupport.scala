@@ -29,11 +29,10 @@ trait MatchSupport extends ast.TreeDSL { self: ParallelMatching =>
 
   object Types {
     import definitions._
-    implicit def enrichType(x: Type): RichType = new RichType(x)
 
     val subrangeTypes = Set(ByteClass, ShortClass, CharClass, IntClass)
 
-    class RichType(undecodedTpe: Type) {
+    implicit class RichType(undecodedTpe: Type) {
       def tpe = decodedEqualsType(undecodedTpe)
       def isAnyRef = tpe <:< AnyRefClass.tpe
 

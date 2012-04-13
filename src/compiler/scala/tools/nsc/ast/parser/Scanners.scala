@@ -119,6 +119,16 @@ trait Scanners extends ScannersCommon {
       cbuf.clear()
     }
 
+    /** Convert name to token */
+    private def name2token(name: Name) = {
+      val idx = name.start - kwOffset
+      if (idx >= 0 && idx < kwArray.length) {
+        val token = kwArray(idx)
+        if (token == IDENTIFIER) deprecationWarning(name+" is now a reserved word; usage as an identifier is deprecated")
+        token
+      } else IDENTIFIER
+    }
+
     /** Clear buffer and set string */
     private def setStrVal() {
       strVal = cbuf.toString
@@ -1124,9 +1134,9 @@ trait Scanners extends ScannersCommon {
     nme.VIEWBOUNDkw -> VIEWBOUND,
     nme.SUPERTYPEkw -> SUPERTYPE,
     nme.HASHkw      -> HASH,
-    nme.ATkw        -> AT
-  ) ++
-  (if (settings.Xmacros.value) List(nme.MACROkw -> MACRO) else List())
+    nme.ATkw        -> AT,
+    nme.MACROkw     -> IDENTIFIER,
+    nme.THENkw      -> IDENTIFIER)
 
   private var kwOffset: Int = -1
   private val kwArray: Array[Int] = {
@@ -1136,13 +1146,6 @@ trait Scanners extends ScannersCommon {
   }
 
   final val token2name = allKeywords map (_.swap) toMap
-
-  /** Convert name to token */
-  final def name2token(name: Name) = {
-    val idx = name.start - kwOffset
-    if (idx >= 0 && idx < kwArray.length) kwArray(idx)
-    else IDENTIFIER
-  }
 
 // Token representation ----------------------------------------------------
 

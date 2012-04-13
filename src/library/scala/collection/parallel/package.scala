@@ -13,6 +13,7 @@ import scala.collection.generic.CanCombineFrom
 import scala.collection.parallel.mutable.ParArray
 import scala.collection.mutable.UnrolledBuffer
 import annotation.unchecked.uncheckedVariance
+import language.implicitConversions
 
 /** Package object for parallel collections.
  */

@@ -183,9 +183,9 @@ trait Macros { self: Analyzer =>
   def typedMacroBody(typer: Typer, ddef: DefDef): Tree = {
     import typer.context
     if (macroDebug) println("typechecking macro def %s at %s".format(ddef.symbol, ddef.pos))
+    typer.checkFeature(ddef.pos, MacrosFeature)
 
-    implicit def augmentString(s: String) = new AugmentedString(s)
-    class AugmentedString(s: String) {
+    implicit class AugmentedString(s: String) {
       def abbreviateCoreAliases: String = { // hack!
         var result = s
         result = result.replace("c.mirror.TypeTag", "c.TypeTag")

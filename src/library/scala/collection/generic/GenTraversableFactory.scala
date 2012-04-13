@@ -10,6 +10,8 @@
 package scala.collection
 package generic
 
+import language.higherKinds
+
 /** A template for companion objects of `Traversable` and subclasses thereof.
  *  This class provides a set of operations to create `$Coll` objects.
  *  It is typically inherited by companion objects of subclasses of `Traversable`.

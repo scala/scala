@@ -11,6 +11,7 @@ import java.util.jar._
 import collection.JavaConverters._
 import Attributes.Name
 import util.ClassPath
+import language.implicitConversions
 
 // Attributes.Name instances:
 //

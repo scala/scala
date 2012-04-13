@@ -11,6 +11,7 @@ package scala.xml
 import collection.{ mutable, immutable, generic, SeqLike, AbstractSeq }
 import mutable.{ Builder, ListBuffer }
 import generic.{ CanBuildFrom }
+import language.implicitConversions
 
 /** This object ...
  *

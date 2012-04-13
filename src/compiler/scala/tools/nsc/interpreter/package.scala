@@ -5,6 +5,8 @@
 
 package scala.tools.nsc
 
+import language.implicitConversions
+
 /** The main REPL related classes and values are as follows.
  *  In addition to standard compiler classes Global and Settings, there are:
  *

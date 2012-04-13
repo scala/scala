@@ -2490,7 +2490,8 @@ self =>
             blockExpr()
           } else {
             accept(EQUALS)
-            if (settings.Xmacros.value && in.token == MACRO) {
+            if (settings.Xmacros.value && in.token == MACRO || // [Martin] Xmacros can be retired now
+                in.token == IDENTIFIER && in.name == nme.MACROkw) {
               in.nextToken()
               newmods |= Flags.MACRO
             }

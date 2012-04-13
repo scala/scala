@@ -5,6 +5,7 @@
 
 package scala.tools.nsc
 package doc
+import language.implicitConversions
 
 /** Some glue between DocParser (which reads source files which can't be compiled)
  *  and the scaladoc model.
