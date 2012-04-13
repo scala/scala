@@ -58,7 +58,7 @@ abstract class Universe extends Symbols
    *    * Since reified trees can be compiled outside of the scope they've been created in,
    *      special measures are taken to ensure that all members accessed in the reifee remain visible
    */
-  def reify[T](expr: T): Expr[T] = macro Universe.reify[T]
+  // def reify[T](expr: T): Expr[T] = macro Universe.reify[T]
 }
 
 object Universe {
