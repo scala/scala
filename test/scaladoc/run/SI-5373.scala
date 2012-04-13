@@ -1,9 +1,9 @@
 import scala.tools.nsc.doc.model._
 import scala.tools.partest.ScaladocModelTest
 
-object Test extends ScaladocModelTest {  
+object Test extends ScaladocModelTest {
 
-  def code = """
+  override def code = """
         import scala.annotation.bridge
 
         package scala.test {
@@ -23,7 +23,7 @@ object Test extends ScaladocModelTest {
 
   // no need for special settings
   def scaladocSettings = ""
-    
+
   def testModel(rootPackage: Package) = {
     // get the quick access implicit defs in scope (_package(s), _class(es), _trait(s), object(s) _method(s), _value(s))
     import access._

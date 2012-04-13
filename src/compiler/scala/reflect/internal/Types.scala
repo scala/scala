@@ -917,8 +917,8 @@ trait Types extends api.Types { self: SymbolTable =>
 
     /** A test whether a type contains any unification type variables. */
     def isGround: Boolean = this match {
-      case TypeVar(_, constr) =>
-        constr.instValid && constr.inst.isGround
+      case tv@TypeVar(_, _) =>
+        tv.untouchable || (tv.instValid && tv.constr.inst.isGround)
       case TypeRef(pre, sym, args) =>
         sym.isPackageClass || pre.isGround && (args forall (_.isGround))
       case SingleType(pre, sym) =>
@@ -2677,14 +2677,15 @@ trait Types extends api.Types { self: SymbolTable =>
     def unapply(tv: TypeVar): Some[(Type, TypeConstraint)]   = Some((tv.origin, tv.constr))
     def apply(origin: Type, constr: TypeConstraint): TypeVar = apply(origin, constr, Nil, Nil)
     def apply(tparam: Symbol): TypeVar                       = apply(tparam.tpeHK, deriveConstraint(tparam), Nil, tparam.typeParams)
+    def apply(tparam: Symbol, untouchable: Boolean): TypeVar = apply(tparam.tpeHK, deriveConstraint(tparam), Nil, tparam.typeParams, untouchable)
 
     /** This is the only place TypeVars should be instantiated.
      */
-    def apply(origin: Type, constr: TypeConstraint, args: List[Type], params: List[Symbol]): TypeVar = {
+    def apply(origin: Type, constr: TypeConstraint, args: List[Type], params: List[Symbol], untouchable: Boolean = false): TypeVar = {
       val tv = (
-        if (args.isEmpty && params.isEmpty)   new TypeVar(origin, constr)
-        else if (args.size == params.size)    new AppliedTypeVar(origin, constr, params zip args)
-        else if (args.isEmpty)                new HKTypeVar(origin, constr, params)
+        if (args.isEmpty && params.isEmpty)   new TypeVar(origin, constr, untouchable)
+        else if (args.size == params.size)    new AppliedTypeVar(origin, constr, untouchable, params zip args)
+        else if (args.isEmpty)                new HKTypeVar(origin, constr, untouchable, params)
         else throw new Error("Invalid TypeVar construction: " + ((origin, constr, args, params)))
       )
 
@@ -2712,8 +2713,9 @@ trait Types extends api.Types { self: SymbolTable =>
   class HKTypeVar(
     _origin: Type,
     _constr: TypeConstraint,
+    _untouchable: Boolean,
     override val params: List[Symbol]
-  ) extends TypeVar(_origin, _constr) {
+  ) extends TypeVar(_origin, _constr, _untouchable) {
 
     require(params.nonEmpty, this)
     override def isHigherKinded          = true
@@ -2725,8 +2727,9 @@ trait Types extends api.Types { self: SymbolTable =>
   class AppliedTypeVar(
     _origin: Type,
     _constr: TypeConstraint,
+    _untouchable: Boolean,
     zippedArgs: List[(Symbol, Type)]
-  ) extends TypeVar(_origin, _constr) {
+  ) extends TypeVar(_origin, _constr, _untouchable) {
 
     require(zippedArgs.nonEmpty, this)
 
@@ -2749,7 +2752,8 @@ trait Types extends api.Types { self: SymbolTable =>
    */
   class TypeVar(
     val origin: Type,
-    val constr0: TypeConstraint
+    val constr0: TypeConstraint,
+    val untouchable: Boolean = false // by other typevars
   ) extends Type {
     override def params: List[Symbol] = Nil
     override def typeArgs: List[Type] = Nil
@@ -2931,14 +2935,15 @@ trait Types extends api.Types { self: SymbolTable =>
       // would be pointless. In this case, each check we perform causes us to lose specificity: in
       // the end the best we'll do is the least specific type we tested against, since the typevar
       // does not see these checks as "probes" but as requirements to fulfill.
-      // TODO: the `suspended` flag can be used to poke around with leaving a trace
+      // TODO: can the `suspended` flag be used to poke around without leaving a trace?
       //
       // So the strategy used here is to test first the type, then the direct parents, and finally
       // to fall back on the individual base types. This warrants eventual re-examination.
 
       // AM: I think we could use the `suspended` flag to avoid side-effecting during unification
 
-      if (suspended)              // constraint accumulation is disabled
+      if (tp.isInstanceOf[TypeVar] && untouchable && !tp.asInstanceOf[TypeVar].untouchable) tp.asInstanceOf[TypeVar].registerBound(this, !isLowerBound, isNumericBound)
+      else if (suspended)         // constraint accumulation is disabled
         checkSubtype(tp, origin)
       else if (constr.instValid)  // type var is already set
         checkSubtype(tp, constr.inst)
@@ -2962,7 +2967,8 @@ trait Types extends api.Types { self: SymbolTable =>
         if(typeVarLHS) constr.inst =:= tp
         else           tp          =:= constr.inst
 
-      if (suspended) tp =:= origin
+      if (tp.isInstanceOf[TypeVar] && untouchable && !tp.asInstanceOf[TypeVar].untouchable) tp.asInstanceOf[TypeVar].registerTypeEquality(this, !typeVarLHS)
+      else if (suspended) tp =:= origin
       else if (constr.instValid) checkIsSameType(tp)
       else isRelatable(tp) && {
         val newInst = wildcardToTypeVarMap(tp)
@@ -3036,7 +3042,7 @@ trait Types extends api.Types { self: SymbolTable =>
     override def safeToString = (
       if ((constr eq null) || (constr.inst eq null)) "TVar<" + originName + "=null>"
       else if (constr.inst ne NoType) "" + constr.inst
-      else "?" + levelString + originName
+      else (if(untouchable) "!?" else "?") + levelString + originName
     )
     override def kind = "TypeVar"
 
@@ -4733,7 +4739,7 @@ trait Types extends api.Types { self: SymbolTable =>
           val sym1 = adaptToNewRun(sym.owner.thisType, sym)
           if (sym1 == sym) tp else ThisType(sym1)
         } catch {
-        	case ex: MissingTypeControl =>
+          case ex: MissingTypeControl =>
             tp
         }
       case SingleType(pre, sym) =>
@@ -6044,8 +6050,9 @@ trait Types extends api.Types { self: SymbolTable =>
     def stripType(tp: Type) = tp match {
       case ExistentialType(_, res) =>
         res
-      case TypeVar(_, constr) =>
-        if (constr.instValid) constr.inst
+      case tv@TypeVar(_, constr) =>
+        if (tv.instValid) constr.inst
+        else if (tv.untouchable) tv
         else abort("trying to do lub/glb of typevar "+tp)
       case t => t
     }
