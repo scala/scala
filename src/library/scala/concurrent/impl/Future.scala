@@ -109,7 +109,7 @@ object Future {
 
   private[impl] def dispatchFuture(executor: ExecutionContext, task: () => Unit, force: Boolean = false): Unit =
     _taskStack.get match {
-      case stack if (stack ne null) && !force => stack push task
+      case stack if (stack ne null) && !force => stack push task // FIXME we can't mix tasks aimed for different ExecutionContexts see: https://github.com/akka/akka/blob/v2.0.1/akka-actor/src/main/scala/akka/dispatch/Future.scala#L373
       case _ => executor.execute(new Runnable {
         def run() {
           try {
