@@ -10,8 +10,10 @@ package scala.concurrent.impl
 
 
 
-import scala.concurrent.{Awaitable, ExecutionContext}
+import scala.concurrent.util.Duration
+import scala.concurrent.{Awaitable, ExecutionContext, CanAwait}
 import scala.collection.mutable.Stack
+
 
 private[concurrent] trait Future[+T] extends scala.concurrent.Future[T] with Awaitable[T] {
 
@@ -54,6 +56,15 @@ object Future {
     classOf[Unit]    -> classOf[scala.runtime.BoxedUnit]
   )
 
+  /** Wraps a block of code into an awaitable object. */
+  private[concurrent] def body2awaitable[T](body: =>T) = new Awaitable[T] {
+    def ready(atMost: Duration)(implicit permit: CanAwait) = {
+      body
+      this
+    }
+    def result(atMost: Duration)(implicit permit: CanAwait) = body
+  }
+  
   def boxedType(c: Class[_]): Class[_] = {
     if (c.isPrimitive) toBoxed(c) else c
   }

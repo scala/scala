@@ -90,25 +90,25 @@ object Test extends App {
     }
   }
 
-  def testOnFailureWhenFutureTimeoutException(): Unit = once {
-    done =>
-    val f = future[Unit] {
-      output(8, "hai world")
-      throw new FutureTimeoutException(null)
-    }
-    f onSuccess { case _ =>
-      output(8, "onoes")
-      done()
-    }
-    f onFailure {
-      case e: FutureTimeoutException =>
-        output(8, "im in yr loop")
-        done()
-      case other =>
-        output(8, "onoes: " + other)
-        done()
-    }
-  }
+  // def testOnFailureWhenFutureTimeoutException(): Unit = once {
+  //   done =>
+  //   val f = future[Unit] {
+  //     output(8, "hai world")
+  //     throw new FutureTimeoutException(null)
+  //   }
+  //   f onSuccess { case _ =>
+  //     output(8, "onoes")
+  //     done()
+  //   }
+  //   f onFailure {
+  //     case e: FutureTimeoutException =>
+  //       output(8, "im in yr loop")
+  //       done()
+  //     case other =>
+  //       output(8, "onoes: " + other)
+  //       done()
+  //   }
+  // }
 
   testOnSuccess()
   testOnSuccessWhenCompleted()
@@ -117,6 +117,6 @@ object Test extends App {
   testOnFailureWhenSpecialThrowable(5, new Error)
   testOnFailureWhenSpecialThrowable(6, new scala.util.control.ControlThrowable { })
   testOnFailureWhenSpecialThrowable(7, new InterruptedException)
-  testOnFailureWhenFutureTimeoutException()
+  // testOnFailureWhenFutureTimeoutException()
 
 }
