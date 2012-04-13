@@ -347,7 +347,7 @@ class Global(var currentSettings: Settings, var reporter: NscReporter) extends S
   override protected val etaExpandKeepsStar = settings.etaExpandKeepsStar.value
   // Here comes another one...
   override protected val enableTypeVarExperimentals = (
-    settings.Xexperimental.value || settings.YvirtPatmat.value
+    settings.Xexperimental.value || !settings.XoldPatmat.value
   )
 
   // True if -Xscript has been set, indicating a script run.

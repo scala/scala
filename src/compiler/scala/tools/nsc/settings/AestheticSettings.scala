@@ -31,7 +31,7 @@ trait AestheticSettings {
   def target          = settings.target.value
   def unchecked       = settings.unchecked.value
   def verbose         = settings.verbose.value
-  def virtPatmat      = settings.YvirtPatmat.value
+  def virtPatmat      = !settings.XoldPatmat.value
 
   /** Derived values */
   def jvm           = target startsWith "jvm"

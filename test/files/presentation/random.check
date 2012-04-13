@@ -4,7 +4,8 @@ askType at Random.scala(18,14)
 ================================================================================
 [response] askTypeAt at (18,14)
 val filter: Int => Boolean = try {
-  java.this.lang.Integer.parseInt(args.apply(0)) match {
+  case <synthetic> val x1: Int = java.this.lang.Integer.parseInt(args.apply(0));
+  x1 match {
     case 1 => ((x: Int) => x.%(2).!=(0))
     case 2 => ((x: Int) => x.%(2).==(0))
     case _ => ((x: Int) => x.!=(0))
