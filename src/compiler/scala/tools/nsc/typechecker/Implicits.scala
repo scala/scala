@@ -166,7 +166,7 @@ trait Implicits {
     }
 
     def isCyclicOrErroneous =
-      try containsError(tpe)
+      try sym.hasFlag(LOCKED) || containsError(tpe)
       catch { case _: CyclicReference => true }
 
     var useCountArg: Int = 0

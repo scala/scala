@@ -22,7 +22,7 @@ import language.postfixOps
   *  - Array patterns
   *  - implement spec more closely (see TODO's)
   *  - DCE
-  *  - use manifests for type testing
+  *  - use TypeTags for type testing
   *
   * (longer-term) TODO:
   *  - user-defined unapplyProd
@@ -119,6 +119,7 @@ trait PatMatVirtualiser extends ast.TreeDSL { self: Analyzer =>
 
   trait MatchTranslation extends MatchMonadInterface { self: TreeMakers with CodegenCore =>
     import typer.{typed, context, silent, reallyExists}
+    // import typer.infer.containsUnchecked
 
     /** Implement a pattern match by turning its cases (including the implicit failure case)
       * into the corresponding (monadic) extractors, and combining them with the `orElse` combinator.
@@ -131,10 +132,10 @@ trait PatMatVirtualiser extends ast.TreeDSL { self: Analyzer =>
       *   this could probably optimized... (but note that the matchStrategy must be solved for each nested patternmatch)
       */
     def translateMatch(scrut: Tree, cases: List[CaseDef], pt: Type, scrutType: Type, matchFailGenOverride: Option[Tree => Tree] = None): Tree = {
-      // we don't transform after typers
-      // (that would require much more sophistication when generating trees,
+      // we don't transform after uncurry
+      // (that would require more sophistication when generating trees,
       //  and the only place that emits Matches after typers is for exception handling anyway)
-      assert(phase.id <= currentRun.typerPhase.id, phase)
+      assert(phase.id < currentRun.uncurryPhase.id, phase)
 
       val scrutSym  = freshSym(scrut.pos, pureType(scrutType)) setFlag SYNTH_CASE
       // pt = Any* occurs when compiling test/files/pos/annotDepMethType.scala  with -Xexperimental
@@ -820,13 +821,34 @@ class Foo(x: Other) { x._1 } // no error in this order
         cond
     }
 
-    // TODO: also need to test when erasing pt loses crucial information (and if we can recover it using a manifest)
-    def needsTypeTest(tp: Type, pt: Type) = !(tp <:< pt)
-    private def typeTest(binder: Symbol, pt: Type) = maybeWithOuterCheck(binder, pt)(codegen._isInstanceOf(binder, pt))
+    // containsUnchecked: also need to test when erasing pt loses crucial information (maybe we can recover it using a TypeTag)
+    def needsTypeTest(tp: Type, pt: Type): Boolean = !(tp <:< pt) // || containsUnchecked(pt)
+    // TODO: try to find the TypeTag for the binder's type and the expected type, and if they exists,
+    // check that the TypeTag of the binder's type conforms to the TypeTag of the expected type
+    private def typeTest(binderToTest: Symbol, expectedTp: Type, disableOuterCheck: Boolean = false, dynamic: Boolean = false): Tree = { import CODE._
+      // def coreTest =
+      if (disableOuterCheck) codegen._isInstanceOf(binderToTest, expectedTp) else maybeWithOuterCheck(binderToTest, expectedTp)(codegen._isInstanceOf(binderToTest, expectedTp))
+      // if (opt.experimental && containsUnchecked(expectedTp)) {
+      //   if (dynamic) {
+      //     val expectedTpTagTree = findManifest(expectedTp, true)
+      //     if (!expectedTpTagTree.isEmpty)
+      //       ((expectedTpTagTree DOT "erasure".toTermName) DOT "isAssignableFrom".toTermName)(REF(binderToTest) DOT nme.getClass_)
+      //     else
+      //       coreTest
+      //   } else {
+      //     val expectedTpTagTree = findManifest(expectedTp, true)
+      //     val binderTpTagTree   = findManifest(binderToTest.info, true)
+      //     if(!(expectedTpTagTree.isEmpty || binderTpTagTree.isEmpty))
+      //       coreTest AND (binderTpTagTree DOT nme.CONFORMS)(expectedTpTagTree)
+      //     else
+      //       coreTest
+      //   }
+      // } else coreTest
+    }
 
     // need to substitute since binder may be used outside of the next extractor call (say, in the body of the case)
     case class TypeTestTreeMaker(prevBinder: Symbol, nextBinderTp: Type, pos: Position) extends CondTreeMaker {
-      val cond = typeTest(prevBinder, nextBinderTp)
+      val cond = typeTest(prevBinder, nextBinderTp, dynamic = true)
       val res  = codegen._asInstanceOf(prevBinder, nextBinderTp)
       override def toString = "TT"+(prevBinder, nextBinderTp)
     }
@@ -866,7 +888,7 @@ class Foo(x: Other) { x._1 } // no error in this order
          // TODO: `null match { x : T }` will yield a check that (indirectly) tests whether `null ne null`
          // don't bother (so that we don't end up with the warning "comparing values of types Null and Null using `ne' will always yield false")
         def genEqualsAndInstanceOf(sym: Symbol): Tree
-          = codegen._equals(REF(sym), patBinder) AND codegen._isInstanceOf(patBinder, pt.widen)
+          = codegen._equals(REF(sym), patBinder) AND typeTest(patBinder, pt.widen, disableOuterCheck = true)
 
         def isRefTp(tp: Type) = tp <:< AnyRefClass.tpe
 
@@ -874,7 +896,7 @@ class Foo(x: Other) { x._1 } // no error in this order
         def isMatchUnlessNull = isRefTp(pt) && !needsTypeTest(patBinderTp, pt)
 
         // TODO: [SPEC] type test for Array
-        // TODO: use manifests to improve tests (for erased types we can do better when we have a manifest)
+        // TODO: use TypeTags to improve tests (for erased types we can do better when we have a TypeTag)
         pt match {
             case SingleType(_, sym) /*this implies sym.isStable*/ => genEqualsAndInstanceOf(sym) // TODO: [SPEC] the spec requires `eq` instead of `==` here
             case ThisType(sym) if sym.isModule                    => genEqualsAndInstanceOf(sym) // must use == to support e.g. List() == Nil
@@ -1083,22 +1105,14 @@ class Foo(x: Other) { x._1 } // no error in this order
       def _equals(checker: Tree, binder: Symbol): Tree = checker MEMBER_== REF(binder)          // NOTE: checker must be the target of the ==, that's the patmat semantics for ya
       def and(a: Tree, b: Tree): Tree                  = a AND b
 
+      // drop annotations generated by CPS plugin etc, since its annotationchecker rejects T @cps[U] <: Any
+      // let's assume for now annotations don't affect casts, drop them there, and bring them back using the outer Typed tree
+      private def mkCast(t: Tree, tp: Type) = Typed(gen.mkAsInstanceOf(t, tp.withoutAnnotations, true, false), TypeTree() setType tp)
       // the force is needed mainly to deal with the GADT typing hack (we can't detect it otherwise as tp nor pt need contain an abstract type, we're just casting wildly)
-      def _asInstanceOf(t: Tree, tp: Type, force: Boolean = false): Tree      = { val tpX = /*repackExistential*/(tp)
-        if (!force && (t.tpe ne NoType) && t.isTyped && typesConform(t.tpe, tpX))  t //{ println("warning: emitted redundant asInstanceOf: "+(t, t.tpe, tp)); t } //.setType(tpX)
-        else gen.mkAsInstanceOf(t, tpX, true, false)
-      }
-
-      def _isInstanceOf(b: Symbol, tp: Type): Tree    = gen.mkIsInstanceOf(REF(b), /*repackExistential*/(tp), true, false)
-      // { val tpX = /*repackExistential*/(tp)
+      def _asInstanceOf(t: Tree, tp: Type, force: Boolean = false): Tree = if (!force && (t.tpe ne NoType) && t.isTyped && typesConform(t.tpe, tp)) t else mkCast(t, tp)
+      def _asInstanceOf(b: Symbol, tp: Type): Tree = if (typesConform(b.info, tp)) REF(b) else mkCast(REF(b), tp)
+      def _isInstanceOf(b: Symbol, tp: Type): Tree = gen.mkIsInstanceOf(REF(b), tp.withoutAnnotations, true, false)
       //   if (typesConform(b.info, tpX)) { println("warning: emitted spurious isInstanceOf: "+(b, tp)); TRUE }
-      //   else gen.mkIsInstanceOf(REF(b), tpX, true, false)
-      // }
-
-      def _asInstanceOf(b: Symbol, tp: Type): Tree    = { val tpX = /*repackExistential*/(tp)
-        if (typesConform(b.info, tpX)) REF(b) //{ println("warning: emitted redundant asInstanceOf: "+(b, b.info, tp)); REF(b) } //.setType(tpX)
-        else gen.mkAsInstanceOf(REF(b), tpX, true, false)
-      }
 
       // duplicated out of frustration with cast generation
       def mkZero(tp: Type): Tree = {
@@ -1636,7 +1650,7 @@ class Foo(x: Other) { x._1 } // no error in this order
        */
       def matcher(scrut: Tree, scrutSym: Symbol, restpe: Type)(cases: List[Casegen => Tree], matchFailGen: Option[Tree => Tree]): Tree = {
         val matchEnd = NoSymbol.newLabel(freshName("matchEnd"), NoPosition) setFlag SYNTH_CASE
-        val matchRes = NoSymbol.newValueParameter(newTermName("x"), NoPosition, SYNTHETIC) setInfo restpe
+        val matchRes = NoSymbol.newValueParameter(newTermName("x"), NoPosition, SYNTHETIC) setInfo restpe.withoutAnnotations //
         matchEnd setInfo MethodType(List(matchRes), restpe)
 
         def newCaseSym = NoSymbol.newLabel(freshName("case"), NoPosition) setInfo MethodType(Nil, restpe) setFlag SYNTH_CASE
@@ -1650,7 +1664,11 @@ class Foo(x: Other) { x._1 } // no error in this order
 
         def catchAll = matchFailGen map { matchFailGen =>
           val scrutRef = if(scrutSym ne NoSymbol) REF(scrutSym) else EmptyTree // for alternatives
-          LabelDef(nextCase, Nil, matchEnd APPLY (_asInstanceOf(matchFailGen(scrutRef), restpe))) // need to jump to matchEnd with result generated by matchFailGen (could be `FALSE` for isDefinedAt)
+          // must jump to matchEnd, use result generated by matchFailGen (could be `FALSE` for isDefinedAt)
+          LabelDef(nextCase, Nil, matchEnd APPLY (matchFailGen(scrutRef)))
+          // don't cast the arg to matchEnd when using PartialFun synth in uncurry, since it won't detect the throw (see gen.withDefaultCase)
+          // the cast is necessary when using typedMatchAnonFun-style PartialFun synth:
+          // (_asInstanceOf(matchFailGen(scrutRef), restpe))
         } toList
         // catchAll.isEmpty iff no synthetic default case needed (the (last) user-defined case is a default)
         // if the last user-defined case is a default, it will never jump to the next case; it will go immediately to matchEnd

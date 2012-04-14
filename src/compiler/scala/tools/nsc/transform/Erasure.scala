@@ -480,11 +480,10 @@ abstract class Erasure extends AddInterfaces
       // TODO: should we do this for user-defined unapplies as well?
       // does the first argument list have exactly one argument -- for user-defined unapplies we can't be sure
       def maybeWrap(bridgingCall: Tree): Tree = {
-        val canReturnNone = afterErasure(
-              member.isSynthetic
-          && (member.name == nme.unapply || member.name == nme.unapplySeq)
-          && !(member.tpe <:< other.tpe)  // no static guarantees (TODO: is the subtype test ever true?)
-        )
+        val canReturnNone = ( // can't statically know which member is going to be selected, so don't let this depend on member.isSynthetic
+             (member.name == nme.unapply || member.name == nme.unapplySeq)
+          && !afterErasure((member.tpe <:< other.tpe))) // no static guarantees (TODO: is the subtype test ever true?)
+
         if (canReturnNone) {
           import CODE._
           val typeTest = gen.mkIsInstanceOf(REF(bridge.firstParam), member.tpe.params.head.tpe)

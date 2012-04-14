@@ -15,7 +15,7 @@ import scala.tools.nsc.ast._
  * In methods marked @cps, CPS-transform assignments introduced by ANF-transform phase.
  */
 abstract class SelectiveCPSTransform extends PluginComponent with
-  InfoTransform with TypingTransformers with CPSUtils {
+  InfoTransform with TypingTransformers with CPSUtils with TreeDSL {
   // inherits abstract value `global` and class `Phase` from Transform
 
   import global._                  // the global environment
@@ -203,12 +203,16 @@ abstract class SelectiveCPSTransform extends PluginComponent with
             rhs.changeOwner(currentOwner -> fun.symbol)
 
             val exSym = currentOwner.newValueParameter(cpsNames.ex, pos).setInfo(ThrowableClass.tpe)
-            val catch2 = { localTyper.typedCases(List(
-              CaseDef(Bind(exSym, Typed(Ident("_"), TypeTree(ThrowableClass.tpe))),
-                Apply(Select(Ident(funSym), nme.isDefinedAt), List(Ident(exSym))),
-                Apply(Ident(funSym), List(Ident(exSym))))
-            ), ThrowableClass.tpe, targettp) }
 
+            import CODE._
+            // generate a case that is supported directly by the back-end
+            val catchIfDefined = CaseDef(
+                  Bind(exSym, Ident(nme.WILDCARD)),
+                  EmptyTree,
+                  IF ((REF(funSym) DOT nme.isDefinedAt)(REF(exSym))) THEN (REF(funSym) APPLY (REF(exSym))) ELSE Throw(REF(exSym))
+                )
+
+            val catch2 = localTyper.typedCases(List(catchIfDefined), ThrowableClass.tpe, targettp)
             //typedCases(tree, catches, ThrowableClass.tpe, pt)
 
             localTyper.typed(Block(List(funDef), treeCopy.Try(tree, treeCopy.Block(block1, stms, expr2), catch2, finalizer1)))

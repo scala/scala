@@ -70,6 +70,9 @@ trait ParsersCommon extends ScannersCommon {
 
     @inline final def inBracesOrNil[T](body: => List[T]): List[T] = inBracesOrError(body, Nil)
     @inline final def inBracesOrUnit[T](body: => Tree): Tree = inBracesOrError(body, Literal(Constant()))
+    @inline final def dropAnyBraces[T](body: => T): T =
+      if (in.token == LBRACE) inBraces(body)
+      else body
 
     @inline final def inBrackets[T](body: => T): T = {
       accept(LBRACKET)
@@ -1106,7 +1109,7 @@ self =>
      *  }}}
      *  @note  The returned tree does not yet have a position
      */
-    def literal(isNegated: Boolean = false): Tree = {
+    def literal(isNegated: Boolean = false, inPattern: Boolean = false): Tree = {
       def finish(value: Any): Tree = {
         val t = Literal(Constant(value))
         in.nextToken()
@@ -1115,7 +1118,7 @@ self =>
       if (in.token == SYMBOLLIT)
         Apply(scalaDot(nme.Symbol), List(finish(in.strVal)))
       else if (in.token == INTERPOLATIONID)
-        interpolatedString()
+        interpolatedString(inPattern)
       else finish(in.token match {
         case CHARLIT   => in.charVal
         case INTLIT    => in.intVal(isNegated).toInt
@@ -1141,7 +1144,7 @@ self =>
       }
     }
 
-    private def interpolatedString(): Tree = atPos(in.offset) {
+    private def interpolatedString(inPattern: Boolean = false): Tree = atPos(in.offset) {
       val start = in.offset
       val interpolator = in.name
 
@@ -1151,8 +1154,11 @@ self =>
       while (in.token == STRINGPART) {
         partsBuf += literal()
         exprBuf += {
-          if (in.token == IDENTIFIER) atPos(in.offset)(Ident(ident()))
-          else expr()
+          if (inPattern) dropAnyBraces(pattern())
+          else {
+            if (in.token == IDENTIFIER) atPos(in.offset)(Ident(ident()))
+            else expr()
+          }
         }
       }
       if (in.token == STRINGLIT) partsBuf += literal()
@@ -1837,7 +1843,7 @@ self =>
               case INTLIT | LONGLIT | FLOATLIT | DOUBLELIT =>
                 t match {
                   case Ident(nme.MINUS) =>
-                    return atPos(start) { literal(isNegated = true) }
+                    return atPos(start) { literal(isNegated = true, inPattern = true) }
                   case _ =>
                 }
               case _ =>
@@ -1855,7 +1861,7 @@ self =>
             atPos(start, start) { Ident(nme.WILDCARD) }
           case CHARLIT | INTLIT | LONGLIT | FLOATLIT | DOUBLELIT |
                STRINGLIT | INTERPOLATIONID | SYMBOLLIT | TRUE | FALSE | NULL =>
-            atPos(start) { literal() }
+            atPos(start) { literal(inPattern = true) }
           case LPAREN =>
             atPos(start)(makeParens(noSeq.patterns()))
           case XMLSTART =>
