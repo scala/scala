@@ -1568,7 +1568,7 @@ class Foo(x: Other) { x._1 } // no error in this order
       // TODO: if patterns allow switch but the type of the scrutinee doesn't, cast (type-test) the scrutinee to the corresponding switchable type and switch on the result
       if (regularSwitchMaker.switchableTpe(scrutSym.tpe)) {
         val caseDefsWithDefault = regularSwitchMaker(cases map {c => (scrutSym, c)}, pt)
-        if (caseDefsWithDefault isEmpty) None
+        if (caseDefsWithDefault.length <= 2) None // not worth emitting a switch... also, the optimizer has trouble digesting tiny switches, apparently, so let's be nice and not generate them
         else {
           // match on scrutSym -- converted to an int if necessary -- not on scrut directly (to avoid duplicating scrut)
           val scrutToInt: Tree =
