@@ -137,8 +137,8 @@ trait ModelFactoryImplicitSupport {
 
       // Members inherited by implicit conversions cannot override actual members
       memberSyms = memberSyms.filterNot((sym1: Symbol) =>
-        existingMembers.exists(sym2 => sym1.name == sym2.name &&
-          isSameType(toType.memberInfo(sym1), sym.info.memberInfo(sym2))))
+        existingMembers.exists(sym2 => sym1.name == sym2.name && 
+          !isDistinguishableFrom(toType.memberInfo(sym1), sym.info.memberInfo(sym2))))
 
       debug("   -> full type: " + toType)
       if (constraints.length != 0) {
@@ -498,4 +498,22 @@ trait ModelFactoryImplicitSupport {
     (aSym.isMethod || aSym.isGetter || aSym.isSetter) &&
     (aSym.nameString != "getClass")
   }
+
+  /* To put it very bluntly: checks if you can call implicitly added method with t1 when t2 is already there in the
+   * class. We suppose the name of the two members coincides
+   *
+   * The trick here is that the resultType does not matter - the condition for removal it that paramss have the same
+   * structure (A => B => C may not override (A, B) => C) and that all the types involved are 
+   * of the implcit conversion's member are subtypes of the parent members' parameters */
+  def isDistinguishableFrom(t1: Type, t2: Type): Boolean = 
+    if (t1.paramss.map(_.length) == t2.paramss.map(_.length)) {
+      for ((t1p, t2p) <- t1.paramss.flatten zip t2.paramss.flatten)
+        if (!isSubType(t1 memberInfo t1p, t2 memberInfo t2p))
+          return true // if on the corresponding parameter you give a type that is in t1 but not in t2 
+                      // example: 
+                      // def foo(a: Either[Int, Double]): Int = 3
+                      // def foo(b: Left[T1]): Int = 6
+                      // a.foo(Right(4.5d)) prints out 3 :)
+      false
+    } else true // the member structure is different foo(3, 5) vs foo(3)(5)
 }
