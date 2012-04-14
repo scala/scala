@@ -32,9 +32,9 @@
    </issueManagement>
    <dependencies>
       <dependency>
-         <groupId>org.skife.com.typesafe.config</groupId>
-         <artifactId>typesafe-config</artifactId>
-         <version>0.3.0</version>
+         <groupId>com.typesafe</groupId>
+         <artifactId>config</artifactId>
+         <version>0.4.0</version>
      </dependency>
    </dependencies>
    <distributionManagement>
