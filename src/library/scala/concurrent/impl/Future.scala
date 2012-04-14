@@ -28,7 +28,7 @@ private[concurrent] trait Future[+T] extends scala.concurrent.Future[T] with Awa
 
   /** Tests whether this Future has been completed.
    */
-  final def isCompleted: Boolean = value.isDefined
+  def isCompleted: Boolean
 
   /** The contained value of this Future. Before this Future is completed
    *  the value will be None. After completion the value will be Some(Right(t))
@@ -77,7 +77,9 @@ object Future {
           try {
             Right(body)
           } catch {
-            case e => scala.concurrent.resolver(e)
+            case NonFatal(e) =>
+              executor.reportFailure(e)
+              scala.concurrent.resolver(e)
           }
         }
       }
@@ -107,7 +109,7 @@ object Future {
 
   private[impl] def dispatchFuture(executor: ExecutionContext, task: () => Unit, force: Boolean = false): Unit =
     _taskStack.get match {
-      case stack if (stack ne null) && !force => stack push task
+      case stack if (stack ne null) && !force => stack push task // FIXME we can't mix tasks aimed for different ExecutionContexts see: https://github.com/akka/akka/blob/v2.0.1/akka-actor/src/main/scala/akka/dispatch/Future.scala#L373
       case _ => executor.execute(new Runnable {
         def run() {
           try {
@@ -115,13 +117,7 @@ object Future {
             _taskStack set taskStack
             while (taskStack.nonEmpty) {
               val next = taskStack.pop()
-              try {
-                next.apply()
-              } catch {
-                case e =>
-                  // TODO catching all and continue isn't good for OOME
-                  executor.reportFailure(e)
-              }
+              try next() catch { case NonFatal(e) => executor reportFailure e }
             }
           } finally {
             _taskStack.remove()
