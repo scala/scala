@@ -733,15 +733,27 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
       }
     }
 
-    def checkFeature(pos: Position, featureTrait: Symbol, construct: => String = "") =
-      if (!isPastTyper) {
+    /** Check whether feature given by `featureTrait` is enabled.
+     *  If it is not, issue an error or a warning depending on whether the feature is required.
+     *  @param  construct  A string expression that is substituted for "#" in the feature description string
+     *  @param  immediate  When set, feature check is run immediately, otherwise it is run
+     *                     at the end of the typechecking run for the enclosing unit. This
+     *                     is done to avoid potential cyclic reference errors by implicits
+     *                     that are forced too early.
+     *  @return if feature check is run immediately: true if feature is enabled, false otherwise
+     *          if feature check is delayed or suppressed because we are past typer: true
+     */
+    def checkFeature(pos: Position, featureTrait: Symbol, construct: => String = "", immediate: Boolean = false): Boolean =
+      if (isPastTyper) true
+      else {
         val nestedOwners =
           featureTrait.owner.ownerChain.takeWhile(_ != languageFeatureModule.moduleClass).reverse
         val featureName = (nestedOwners map (_.name + ".")).mkString + featureTrait.name
-        unit.toCheck += { () =>
+        def action(): Boolean = {
           def hasImport = inferImplicit(EmptyTree: Tree, featureTrait.tpe, true, false, context) != SearchFailure
           def hasOption = settings.language.value contains featureName
-          if (!hasImport && !hasOption) {
+          val OK = hasImport || hasOption
+          if (!OK) {
             val Some(AnnotationInfo(_, List(Literal(Constant(featureDesc: String)), Literal(Constant(required: Boolean))), _)) =
               featureTrait getAnnotation LanguageFeatureAnnot
             val req = if (required) "needs to" else "should"
@@ -757,6 +769,13 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
             if (required) unit.error(pos, msg)
             else currentRun.featureWarnings.warn(pos, msg)
           }
+          OK
+        }
+        if (immediate) {
+          action()
+        } else {
+          unit.toCheck += action
+          true
         }
       }
 

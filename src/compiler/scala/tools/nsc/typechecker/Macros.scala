@@ -185,16 +185,7 @@ trait Macros { self: Analyzer =>
     import typer.context
     if (macroDebug) println("typechecking macro def %s at %s".format(ddef.symbol, ddef.pos))
 
-    typer.checkFeature(ddef.pos, MacrosFeature)
-
-    // [Eugene to Martin] todo. copy/pasted this from checkFeature, because don't know a better way
-    // this is necessary to prevent macros from typechecking/expanding when they are not enabled
-    // `checkFeature` call alone is not enough, because it merely posts validation callback to unit.toCheck
-    def hasImport = inferImplicit(EmptyTree: Tree, MacrosFeature.tpe, true, false, typer.context) != SearchFailure
-    val nestedOwners = MacrosFeature.owner.ownerChain.takeWhile(_ != languageFeatureModule.moduleClass).reverse
-    val featureName = (nestedOwners map (_.name + ".")).mkString + MacrosFeature.name
-    def hasOption = settings.language.value contains featureName
-    if (!hasImport && !hasOption) {
+    if (!typer.checkFeature(ddef.pos, MacrosFeature, immediate = true)) {
       ddef.symbol setFlag IS_ERROR
       return EmptyTree
     }
