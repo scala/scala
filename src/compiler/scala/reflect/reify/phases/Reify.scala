@@ -9,6 +9,7 @@ trait Reify extends Symbols
                with Types
                with Names
                with Trees
+               with AnnotationInfos
                with Positions
                with Util {
 
@@ -30,6 +31,9 @@ trait Reify extends Symbols
     case tpe: Type                => reifyType(tpe)
     case name: Name               => reifyName(name)
     case tree: Tree               => reifyTree(tree)
+    // disabled because this is a very special case that I plan to remove later
+    // why do I dislike annotations? see comments to `reifyAnnotationInfo`
+//    case ann: AnnotationInfo      => reifyAnnotationInfo(ann)
     case pos: Position            => reifyPosition(pos)
     case mods: mirror.Modifiers   => reifyModifiers(mods)
     case xs: List[_]              => reifyList(xs)

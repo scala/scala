@@ -11,11 +11,11 @@ object Test {
 
   def f8 = { trait A ; trait B extends A ; class C extends B with ToS; new C { } }
   def f9 = { trait A ; trait B ; class C extends B with A with ToS; new C { } }
-  
+
   def f10 = { class A { type T1 } ; List[A#T1]() }
   def f11 = { abstract class A extends Seq[Int] ; List[A]() }
   def f12 = { abstract class A extends Seq[U forSome { type U <: Int }] ; List[A]() }
-  
+
   val g1 = { case class Bar() extends ToS; Bar }
   val g2 = { case class Bar() extends ToS; Bar() }
   val g3 = { class Bar() extends ToS; object Bar extends ToS; Bar }
@@ -30,10 +30,16 @@ object Test {
   val g10 = { class A { type T1 } ; List[A#T1]() }
   val g11 = { abstract class A extends Seq[Int] ; List[A]() }
   val g12 = { abstract class A extends Seq[U forSome { type U <: Int }] ; List[A]() }
-  
-  def m[T: Manifest](x: T) = println(manifest[T])
-  
+
+  def printTag(t: TypeTag[_]) = {
+    val s = if (t.sym.isFreeType) t.sym.typeSignature.toString else t.sym.toString
+    println("%s, t=%s, s=%s".format(t, t.tpe.kind, s))
+  }
+  def m[T: ConcreteTypeTag](x: T) = printTag(concreteTypeTag[T])
+  def m2[T: TypeTag](x: T) = printTag(typeTag[T])
+
   // manifests don't work for f10/g10
+  // oh, they do now :)
   def main(args: Array[String]): Unit = {
     m(f1)
     m(f2)
@@ -44,7 +50,7 @@ object Test {
     m(f7)
     m(f8)
     m(f9)
-    // m(f10)
+    m2(f10)
     m(f11)
     m(f12)
     m(g1)
@@ -56,7 +62,7 @@ object Test {
     m(g7)
     m(g8)
     m(g9)
-    // m(g10)
+    m2(g10)
     m(g11)
     m(g12)
   }

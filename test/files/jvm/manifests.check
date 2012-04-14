@@ -1,0 +1,56 @@
+x=(), m=ConcreteTypeTag[Unit], k=TypeRef, s=class Unit
+x=true, m=ConcreteTypeTag[Boolean], k=TypeRef, s=class Boolean
+x=a, m=ConcreteTypeTag[Char], k=TypeRef, s=class Char
+x=1, m=ConcreteTypeTag[Int], k=TypeRef, s=class Int
+x=abc, m=ConcreteTypeTag[String], k=TypeRef, s=class String
+x='abc, m=ConcreteTypeTag[Symbol], k=TypeRef, s=class Symbol
+
+x=List(()), m=ConcreteTypeTag[List[Unit]], k=TypeRef, s=class List
+x=List(true), m=ConcreteTypeTag[List[Boolean]], k=TypeRef, s=class List
+x=List(1), m=ConcreteTypeTag[List[Int]], k=TypeRef, s=class List
+x=List(abc), m=ConcreteTypeTag[List[String]], k=TypeRef, s=class List
+x=List('abc), m=ConcreteTypeTag[List[Symbol]], k=TypeRef, s=class List
+
+x=[Z, m=ConcreteTypeTag[Array[Boolean]], k=TypeRef, s=class Array
+x=[C, m=ConcreteTypeTag[Array[Char]], k=TypeRef, s=class Array
+x=[I, m=ConcreteTypeTag[Array[Int]], k=TypeRef, s=class Array
+x=[Ljava.lang.String;, m=ConcreteTypeTag[Array[String]], k=TypeRef, s=class Array
+x=[Lscala.Symbol;, m=ConcreteTypeTag[Array[Symbol]], k=TypeRef, s=class Array
+
+x=((),()), m=ConcreteTypeTag[(Unit, Unit)], k=TypeRef, s=class Tuple2
+x=(true,false), m=ConcreteTypeTag[(Boolean, Boolean)], k=TypeRef, s=class Tuple2
+x=(1,2), m=ConcreteTypeTag[(Int, Int)], k=TypeRef, s=class Tuple2
+x=(abc,xyz), m=ConcreteTypeTag[(String, String)], k=TypeRef, s=class Tuple2
+x=('abc,'xyz), m=ConcreteTypeTag[(Symbol, Symbol)], k=TypeRef, s=class Tuple2
+
+
+x=Foo, m=ConcreteTypeTag[Foo[Int]], k=TypeRef, s=class Foo
+x=Foo, m=ConcreteTypeTag[Foo[List[Int]]], k=TypeRef, s=class Foo
+x=Foo, m=ConcreteTypeTag[Foo[Foo[Int]]], k=TypeRef, s=class Foo
+x=Foo, m=ConcreteTypeTag[Foo[List[Foo[Int]]]], k=TypeRef, s=class Foo
+
+x=Test1$$anon$1, m=ConcreteTypeTag[Bar[String]], k=RefinedType, s=<local Test1>
+x=Test1$$anon$2, m=ConcreteTypeTag[Bar[String]], k=RefinedType, s=<local Test1>
+
+()=()
+true=true
+a=a
+1=1
+'abc='abc
+
+List(())=List(())
+List(true)=List(true)
+List('abc)=List('abc)
+
+Array()=Array()
+Array(true)=Array(true)
+Array(a)=Array(a)
+Array(1)=Array(1)
+
+((),())=((),())
+(true,false)=(true,false)
+
+List(List(1), List(2))=List(List(1), List(2))
+
+Array(Array(1), Array(2))=Array(Array(1), Array(2))
+

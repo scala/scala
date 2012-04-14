@@ -134,6 +134,8 @@ trait Metalevels {
       // FreeRef(_, _) check won't work, because metalevels of symbol table and body are different, hence, freerefs in symbol table look different from freerefs in body
       // todo. also perform garbage collection on local symbols
       // so that local symbols used only in type signatures of free vars get removed
+      // todo. same goes for auxiliary symbol defs reified to support tough types
+      // some of them need to be rebuilt, some of them need to be removed, because they're no longer necessary
       case FreeRef(mr, name) if freedefsToInline contains name =>
         if (reifyDebug) println("inlineable free ref: %s in %s".format(name, showRaw(tree)))
         val freedef @ FreeDef(_, _, binding, _) = freedefsToInline(name)

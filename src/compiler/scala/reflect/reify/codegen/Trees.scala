@@ -8,6 +8,11 @@ trait Trees {
   import definitions._
   import treeInfo._
 
+  // unfortunately, these are necessary to reify AnnotatedTypes
+  // I'd gladly got rid of them, but I don't fancy making a metaprogramming API that doesn't work with annotated types
+  var reifyTreeSymbols = false
+  var reifyTreeTypes = false
+
   /**
    *  Reify a tree.
    *  For internal use only, use ``reified'' instead.
@@ -59,6 +64,17 @@ trait Trees {
         reifyProduct(tree)
     }
 
+    // usually we don't reify symbols/types, because they can be re-inferred during subsequent reflective compilation
+    // however, reification of AnnotatedTypes is special. see ``reifyType'' to find out why.
+    if (reifyTreeSymbols && tree.hasSymbol) {
+      if (reifyDebug) println("reifying symbol %s for tree %s".format(tree.symbol, tree))
+      rtree = Apply(Select(rtree, nme.setSymbol), List(reifySymRef(tree.symbol)))
+    }
+    if (reifyTreeTypes && tree.tpe != null) {
+      if (reifyDebug) println("reifying type %s for tree %s".format(tree.tpe, tree))
+      rtree = Apply(Select(rtree, nme.setType), List(reifyType(tree.tpe)))
+    }
+
     rtree
   }
 
@@ -82,7 +98,7 @@ trait Trees {
             case InlinedTreeSplice(_, inlinedSymbolTable, tree, _) =>
               if (reifyDebug) println("inlining the splicee")
               // all free vars local to the enclosing reifee should've already been inlined by ``Metalevels''
-              inlinedSymbolTable foreach { case freedef @ FreeDef(_, _, binding, _) => assert(!binding.symbol.isLocalToReifee, freedef) }
+              inlinedSymbolTable collect { case freedef @ FreeDef(_, _, binding, _) if binding.symbol.isLocalToReifee => assert(false, freedef) }
               symbolTable ++= inlinedSymbolTable
               tree
             case tree =>
@@ -152,7 +168,7 @@ trait Trees {
         val tpe = tpe0.dealias
         if (reifyDebug) println("reifying bound type %s (underlying type is %s, dealiased is %s)".format(sym0, tpe0, tpe))
 
-        if (eligibleForSplicing(tpe)) {
+        if (tpe.isSpliceable) {
           val spliced = spliceType(tpe)
           if (spliced == EmptyTree) {
             if (reifyDebug) println("splicing failed: reify as is")

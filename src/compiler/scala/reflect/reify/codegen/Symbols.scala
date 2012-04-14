@@ -46,13 +46,8 @@ trait Symbols {
       }
     } else {
       // todo. make sure that free methods and free local defs work correctly
-      if (sym.isTerm) {
-        if (reifyDebug) println("Free term" + (if (sym.isCapturedVariable) " (captured)" else "") + ": " + sym)
-        reifyFreeTerm(sym, Ident(sym))
-      } else {
-        if (reifyDebug) println("Free type: " + sym)
-        reifyFreeType(sym, Ident(sym))
-      }
+      if (sym.isTerm) reifyFreeTerm(sym, Ident(sym))
+      else reifyFreeType(sym, Ident(sym))
     }
   }
 
@@ -61,13 +56,16 @@ trait Symbols {
       case Some(reified) =>
         reified
       case None =>
+        if (reifyDebug) println("Free term" + (if (sym.isCapturedVariable) " (captured)" else "") + ": " + sym + "(" + sym.accurateKindString + ")")
+        var name = newTermName(nme.MIRROR_FREE_PREFIX + sym.name)
+        if (sym.isType) name = name.append(nme.MIRROR_FREE_THIS_SUFFIX)
         if (sym.isCapturedVariable) {
           assert(value.isInstanceOf[Ident], showRaw(value))
           val capturedTpe = capturedVariableType(sym)
           val capturedValue = referenceCapturedVariable(sym)
-          locallyReify(sym, mirrorCall(nme.newFreeTerm, reify(sym.name.toString), reify(capturedTpe), capturedValue, reify(origin(sym))))
+          locallyReify(sym, name, mirrorCall(nme.newFreeTerm, reify(sym.name.toString), reify(capturedTpe), capturedValue, reify(origin(sym))))
         } else {
-          locallyReify(sym, mirrorCall(nme.newFreeTerm, reify(sym.name.toString), reify(sym.tpe), value, reify(origin(sym))))
+          locallyReify(sym, name, mirrorCall(nme.newFreeTerm, reify(sym.name.toString), reify(sym.tpe), value, reify(origin(sym))))
         }
     }
 
@@ -76,36 +74,104 @@ trait Symbols {
       case Some(reified) =>
         reified
       case None =>
+        if (reifyDebug) println("Free type: %s (%s)".format(sym, sym.accurateKindString))
+        var name = newTermName(nme.MIRROR_FREE_PREFIX + sym.name)
         val phantomTypeTag = Apply(TypeApply(Select(Ident(nme.MIRROR_SHORT), nme.TypeTag), List(value)), List(Literal(Constant(null))))
         // todo. implement info reification for free types: type bounds, HK-arity, whatever else that can be useful
-        locallyReify(sym, mirrorCall(nme.newFreeType, reify(sym.name.toString), reify(sym.info), phantomTypeTag, reify(origin(sym))))
+        locallyReify(sym, name, mirrorCall(nme.newFreeType, reify(sym.name.toString), reify(sym.info), phantomTypeTag, reify(origin(sym))))
     }
 
+  def reifySymDef(sym: Symbol): Tree =
+    locallyReified get sym match {
+      case Some(reified) =>
+        reified
+      case None =>
+        if (reifyDebug) println("Sym def: %s (%s)".format(sym, sym.accurateKindString))
+        assert(!sym.isLocatable, sym) // if this assertion fires, then tough type reification needs to be rethought
+        sym.owner.ownersIterator find (!_.isLocatable) foreach reifySymDef
+        var name = newTermName(nme.MIRROR_SYMDEF_PREFIX + sym.name)
+        locallyReify(sym, name, Apply(Select(reify(sym.owner), nme.newNestedSymbol), List(reify(sym.name), reify(sym.pos), reify(sym.flags), reify(sym.isClass))))
+    }
+
+  // todo. very brittle abstraction, needs encapsulation
   import scala.collection.mutable._
-  private val localReifications = ArrayBuffer[ValDef]()
+  private val localReifications = ArrayBuffer[Tree]()
   private val locallyReified = Map[Symbol, Tree]()
-  def symbolTable: List[ValDef] = localReifications.toList
-  def symbolTable_=(newSymbolTable: List[ValDef]): Unit = {
+  private var filledIn = false
+  def symbolTable: List[Tree] = { fillInSymbolTable(); localReifications.toList }
+  def symbolTable_=(newSymbolTable: List[Tree]): Unit = {
     localReifications.clear()
     locallyReified.clear()
+    filledIn = false
     newSymbolTable foreach {
-      case freedef @ FreeDef(_, name, binding, _) =>
-        if (!(locallyReified contains binding.symbol)) {
-          localReifications += freedef
-          locallyReified(binding.symbol) = Ident(name)
+      case entry =>
+        val att = entry.attachment
+        att match {
+          case sym: Symbol =>
+            // don't duplicate reified symbols when merging inlined reifee
+            if (!(locallyReified contains sym)) {
+              val ValDef(_, name, _, _) = entry
+              localReifications += entry
+              locallyReified(sym) = Ident(name)
+            }
+          case other =>
+            // do nothing => symbol table fill-ins will be repopulated later
         }
     }
   }
 
-  private def locallyReify(sym: Symbol, reificode: => Tree): Tree = {
+  private def localName(name0: TermName): TermName = {
+    var name = name0.toString
+    name = name.replace(".type", "$type")
+    name = name.replace(" ", "$")
+    val fresh = typer.context.unit.fresh
+    newTermName(fresh.newName(name))
+  }
+
+  private def locallyReify(sym: Symbol, name0: TermName, reificode: => Tree): Tree = {
     val reified = reificode
-    val Apply(Select(_, flavor), _) = reified
-    // [Eugene] name clashes are impossible, right?
-    var name = newTermName(nme.MIRROR_FREE_PREFIX + sym.name)
-    if (flavor == nme.newFreeTerm && sym.isType) name = name.append(nme.MIRROR_FREE_THIS_SUFFIX);
-    // todo. also reify annotations for free vars
-    localReifications += ValDef(NoMods, name, TypeTree(), reified)
+    val name = localName(name0)
+    // todo. tried to declare a private class here to carry an attachment, but it's path-dependent
+    // so got troubles with exchanging free variables between nested and enclosing quasiquotes
+    // attaching just Symbol isn't good either, so we need to think of a principled solution
+    val local = ValDef(NoMods, name, TypeTree(), reified) setAttachment sym
+    localReifications += local
+    filledIn = false
     locallyReified(sym) = Ident(name)
     locallyReified(sym)
+  }
+
+  /** Sets type signatures and annotations for locally reified symbols */
+  private def fillInSymbolTable() = {
+    if (!filledIn) {
+      val fillIns = new ArrayBuffer[Tree]
+      var i = 0
+      while (i < localReifications.length) {
+        // fillInSymbol might create new locallyReified symbols, that's why this is done iteratively
+        val reified = localReifications(i)
+        reified.attachment match {
+          case sym: Symbol => fillIns += fillInSymbol(sym)
+          case other => // do nothing
+        }
+        i += 1
+      }
+
+      filledIn = true
+      localReifications ++= fillIns.toList
+    }
+  }
+
+  /** Generate code to add type and annotation info to a reified symbol */
+  private def fillInSymbol(sym: Symbol): Tree = {
+    if (reifyDebug) println("Filling in: %s (%s)".format(sym, sym.accurateKindString))
+    val isFree = locallyReified(sym) match { case Ident(name) => name startsWith nme.MIRROR_FREE_PREFIX }
+    if (isFree) {
+      if (sym.annotations.isEmpty) EmptyTree
+      else Apply(Select(locallyReified(sym), nme.setAnnotations), List(reify(sym.annotations)))
+    } else {
+      val rset = Apply(Select(locallyReified(sym), nme.setTypeSignature), List(reifyType(sym.info)))
+      if (sym.annotations.isEmpty) rset
+      else Apply(Select(rset, nme.setAnnotations), List(reify(sym.annotations)))
+    }
   }
 }

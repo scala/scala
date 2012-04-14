@@ -206,6 +206,7 @@ trait StdNames extends NameManglers { self: SymbolTable =>
     val MIRROR_FREE_PREFIX: NameType        = "free$"
     val MIRROR_FREE_THIS_SUFFIX: NameType   = "$this"
     val MIRROR_FREE_VALUE_SUFFIX: NameType  = "$value"
+    val MIRROR_SYMDEF_PREFIX: NameType      = "symdef$"
     val MIXIN_CONSTRUCTOR: NameType         = "$init$"
     val MODULE_INSTANCE_FIELD: NameType     = NameTransformer.MODULE_INSTANCE_NAME  // "MODULE$"
     val OUTER: NameType                     = "$outer"

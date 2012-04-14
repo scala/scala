@@ -1,4 +1,0 @@
-macro-keyword-class2.scala:2: error: identifier expected but 'macro' found.
-  class macro
-        ^
-one error found

@@ -5,11 +5,11 @@ class A {
   def m = b.c
 }
 
-object Test {
+object Test extends App {
   var a: A = new A // mutable
   val c /*: object _1.b.c forSome { val _1: A } */ = a.m // widening using existential
-  
-  def mani[T: Manifest](x: T) = ()
+
+  def mani[T: Manifest](x: T) = println(manifest[T])
   mani/*[object _1.b.c]*/(c) // kaboom in manifestOfType / TreeGen.mkAttributedQualifier
   // --> _1 is not in scope here
 }
