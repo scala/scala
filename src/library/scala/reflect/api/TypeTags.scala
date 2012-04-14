@@ -61,9 +61,8 @@ trait TypeTags { self: Universe =>
     // assert(tpe != null)
 
     def sym = tpe.typeSymbol
-
-    def isConcrete = !isNotConcrete
-    def isNotConcrete = tpe exists (_.typeSymbol.isAbstractType)
+    def isConcrete = tpe.isConcrete
+    def notConcrete = !isConcrete
     def toConcrete: ConcreteTypeTag[T] = ConcreteTypeTag[T](tpe)
 
     override def toString = {
@@ -124,7 +123,7 @@ trait TypeTags { self: Universe =>
     // it's unsafe to use assert here, because we might run into deadlocks with Predef
     // also see comments in ClassTags.scala
     //assert(isConcrete, tpe)
-    if (isNotConcrete) throw new Error("%s (%s) is not concrete and cannot be used to construct a concrete type tag".format(tpe, tpe.kind))
+    if (notConcrete) throw new Error("%s (%s) is not concrete and cannot be used to construct a concrete type tag".format(tpe, tpe.kind))
     override def productPrefix = "ConcreteTypeTag"
   }
 

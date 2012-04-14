@@ -6,8 +6,8 @@ object Test {
   val f1 = f()
   val g1 = g()
   val h1 = h()
-  
-  def m[T: Manifest](x: T) = println(manifest[T])
+
+  def m[T: Manifest](x: T) = println(manifest[T] + ", underlying = " + manifest[T].sym.typeSignature)
 
   def main(args: Array[String]): Unit = {
     m(f)

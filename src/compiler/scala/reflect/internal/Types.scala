@@ -266,6 +266,35 @@ trait Types extends api.Types { self: SymbolTable =>
     def typeArguments = typeArgs
     def erasure = transformedType(this)
     def substituteTypes(from: List[Symbol], to: List[Type]): Type = subst(from, to)
+
+    // [Eugene] to be discussed and refactored
+    def isConcrete = {
+      def notConcreteSym(sym: Symbol) =
+        sym.isAbstractType && !sym.isExistential
+
+      def notConcreteTpe(tpe: Type): Boolean = tpe match {
+        case ThisType(_) => false
+        case SuperType(_, _) => false
+        case SingleType(pre, sym) => notConcreteSym(sym)
+        case ConstantType(_) => false
+        case TypeRef(_, sym, _) => notConcreteSym(sym)
+        case RefinedType(_, _) => false
+        case ExistentialType(_, _) => false
+        case AnnotatedType(_, tp, _) => notConcreteTpe(tp)
+        case _ => true
+      }
+
+      !notConcreteTpe(this)
+    }
+
+    // [Eugene] is this comprehensive?
+    // the only thingies that we want to splice are: 1) type parameters, 2) type members
+    // the thingies that we don't want to splice are: 1) concrete types (obviously), 2) existential skolems
+    // this check seems to cover them all, right?
+    // todo. after we discuss this, move the check to subclasses
+    def isSpliceable = {
+      this.isInstanceOf[TypeRef] && typeSymbol.isAbstractType && !typeSymbol.isExistential
+    }
   }
 
   /** The base class for all types */
@@ -2147,7 +2176,7 @@ trait Types extends api.Types { self: SymbolTable =>
          sym.isPackageClass
       || pre.isGround && args.forall(_.isGround)
     )
-    
+
     def etaExpand: Type = {
       // must initialise symbol, see test/files/pos/ticket0137.scala
       val tpars = initializedTypeParams
@@ -2763,7 +2792,7 @@ trait Types extends api.Types { self: SymbolTable =>
       zippedArgs map { case (p, a) => p.name + "=" + a } mkString (origin + "[", ", ", "]")
     )
   }
-  
+
   trait UntouchableTypeVar extends TypeVar {
     override def untouchable = true
     override def isGround = true

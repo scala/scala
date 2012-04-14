@@ -64,6 +64,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     this: Symbol =>
 
     def kind: String = kindString
+    def isExistential: Boolean = this.isExistentiallyBound
 
     def newNestedSymbol(name: Name, pos: Position, newFlags: Long, isClass: Boolean): Symbol = name match {
       case n: TermName => newTermSymbol(n, pos, newFlags)
@@ -897,8 +898,10 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
 
       if (!owner.isLocatable) return false
       if (owner.isTerm) return false
+      if (isLocalDummy) return false
 
       if (isType && isNonClassType) return false
+      if (isRefinementClass) return false
       return true
     }
 
@@ -2965,7 +2968,6 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     override def isFreeTerm = true
   }
 
-  // [Eugene] the NoSymbol origin works for type parameters. what about existential free types?
   class FreeType(name0: TypeName, value0: => Any, val origin: String) extends TypeSkolem(NoSymbol, NoPosition, name0, NoSymbol) {
     def value = value0
     override def isFreeType = true
