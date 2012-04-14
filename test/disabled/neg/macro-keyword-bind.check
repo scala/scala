@@ -1,7 +1,0 @@
-macro-keyword-bind.scala:2: error: illegal start of simple pattern
-  val Some(macro) = Some(42)
-           ^
-macro-keyword-bind.scala:6: error: ')' expected but '}' found.
-}
-^
-two errors found
