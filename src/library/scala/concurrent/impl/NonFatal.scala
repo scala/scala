@@ -6,7 +6,8 @@
 **                          |/                                          **
 \*                                                                      */
 
-package scala.concurrent.impl
+package scala.concurrent
+package impl
 
 /**
  * Extractor of non-fatal Throwables. Will not match fatal errors
@@ -23,7 +24,7 @@ package scala.concurrent.impl
  *   }
  * }}}
  */
-object NonFatal {
+private[concurrent] object NonFatal {
 
   def unapply(t: Throwable): Option[Throwable] = t match {
     case e: StackOverflowError ⇒ Some(e) // StackOverflowError ok even though it is a VirtualMachineError

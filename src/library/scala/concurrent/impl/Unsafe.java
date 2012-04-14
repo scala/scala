@@ -7,11 +7,11 @@
 \*                                                                      */
 
 
-package scala.concurrent.impl;
+package scala.concurrent;
 
 import java.lang.reflect.Field;
 
-public final class Unsafe {
+final class Unsafe {
     public final static sun.misc.Unsafe instance;
     static {
         try {

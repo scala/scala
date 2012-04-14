@@ -159,7 +159,7 @@ object Promise {
     }
 
     def onComplete[U](func: Either[Throwable, T] => U): this.type = {
-      @tailrec //Returns whether the future has already been completed or not
+      @tailrec //Returns the future's results if it has already been completed, or null otherwise. 
       def tryAddCallback(): Either[Throwable, T] = {
         val cur = getState
         cur match {

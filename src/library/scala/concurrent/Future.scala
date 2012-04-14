@@ -117,7 +117,7 @@ trait Future[+T] extends Awaitable[T] {
     case Right(v) => // do nothing
   }
 
-  /** When this future is completed, either through an exception, a timeout, or a value,
+  /** When this future is completed, either through an exception, or a value,
    *  apply the provided function.
    *
    *  If the future has already been completed,
@@ -242,7 +242,7 @@ trait Future[+T] extends Awaitable[T] {
    *  If the current future contains a value which satisfies the predicate, the new future will also hold that value.
    *  Otherwise, the resulting future will fail with a `NoSuchElementException`.
    *
-   *  If the current future fails or times out, the resulting future also fails or times out, respectively.
+   *  If the current future fails, then the resulting future also fails.
    *
    *  Example:
    *  {{{
@@ -282,12 +282,12 @@ trait Future[+T] extends Awaitable[T] {
   //   def withFilter(q: S => Boolean): FutureWithFilter[S] = new FutureWithFilter[S](self, x => p(x) && q(x))
   // }
 
-  /** Creates a new future by mapping the value of the current future if the given partial function is defined at that value.
+  /** Creates a new future by mapping the value of the current future, if the given partial function is defined at that value.
    *
    *  If the current future contains a value for which the partial function is defined, the new future will also hold that value.
    *  Otherwise, the resulting future will fail with a `NoSuchElementException`.
    *
-   *  If the current future fails or times out, the resulting future also fails or times out, respectively.
+   *  If the current future fails, then the resulting future also fails.
    *
    *  Example:
    *  {{{
