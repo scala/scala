@@ -1,5 +1,6 @@
 import scala.tools.nsc.doc.model._
 import scala.tools.partest.ScaladocModelTest
+import language._
 
 object Test extends ScaladocModelTest {
 
