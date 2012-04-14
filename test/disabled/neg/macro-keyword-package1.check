@@ -1,4 +1,0 @@
-macro-keyword-package1.scala:1: error: identifier expected but 'macro' found.
-package macro
-        ^
-one error found
