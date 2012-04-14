@@ -44,12 +44,12 @@ package foo {
   }
 }
 
-object Test12 {
-  val Some(`macro`) = Some(42)
-  `macro` match {
-    case `macro` => println(`macro`)
-  }
-}
+//object Test12 {
+//  val Some(`macro`) = Some(42)
+//  `macro` match {
+//    case `macro` => println(`macro`)
+//  }
+//}
 
 object Test13 {
   def `macro` = 2
