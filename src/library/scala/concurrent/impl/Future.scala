@@ -71,14 +71,18 @@ object Future {
   
   def apply[T](body: =>T)(implicit executor: ExecutionContext): Future[T] = {
     val promise = new Promise.DefaultPromise[T]()
+
+    //TODO: shouldn't the following be:
+    //dispatchFuture(executor, () => { promise complete Right(body) })
+
     executor.execute(new Runnable {
       def run = {
         promise complete {
           try {
             Right(body)
           } catch {
-            case NonFatal(e) =>
-              executor.reportFailure(e)
+            case e =>
+              //executor.reportFailure(e)
               scala.concurrent.resolver(e)
           }
         }

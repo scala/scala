@@ -312,7 +312,7 @@ trait Future[+T] extends Awaitable[T] {
           if (pf.isDefinedAt(v)) p success pf(v)
           else p failure new NoSuchElementException("Future.collect partial function is not defined at: " + v)
         } catch {
-          case t: Throwable => p complete resolver(t)
+          case NonFatal(t) => p complete resolver(t)
         }
     }
 

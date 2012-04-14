@@ -64,7 +64,7 @@ trait FutureCallbacks extends TestBase {
       }
     }
   }
-  
+
   def testOnSuccessWhenFailed(): Unit = once {
     done =>
     val f = future[Unit] {
@@ -94,7 +94,7 @@ trait FutureCallbacks extends TestBase {
         assert(x == 1)
     }
   }
-  
+
   def testOnFailureWhenSpecialThrowable(num: Int, cause: Throwable): Unit = once {
     done =>
     val f = future[Unit] {
@@ -289,6 +289,9 @@ trait FutureCombinators extends TestBase {
       }
   }
 
+  /* TODO: Test for NonFatal in collect (more of a regression test at this point).
+   */
+
   def testForeachSuccess(): Unit = once {
     done =>
       val p = promise[Int]()
@@ -473,8 +476,8 @@ trait FutureCombinators extends TestBase {
   def testFallbackToFailure(): Unit = once {
     done =>
     val cause = new Exception
-    val f = future { throw cause }
-    val g = future { sys.error("failed") }
+    val f = future { /*throw cause*/ sys.error("failed") }
+    val g = future { /*sys.error("failed")*/ throw cause }
     val h = f fallbackTo g
 
     h onSuccess {
