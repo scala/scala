@@ -33,15 +33,15 @@ trait AnyValReps {
     def unaryOps = {
       val ops = List(
         Op("+", "/**\n" +
-                " * @return this value, unmodified\n" +
+                " * Returns this value, unmodified.\n" +
                 " */"),
         Op("-", "/**\n" +
-                " * @return the negation of this value\n" +
+                " * Returns the negation of this value.\n" +
                 " */"))
 
       if(isCardinal)
         Op("~", "/**\n" +
-                " * @return the bitwise negation of this value\n" +
+                " * Returns the bitwise negation of this value.\n" +
                 " * @example {{{\n" +
                 " * ~5 == -6\n" +
                 " * // in binary: ~00000101 ==\n" +
@@ -55,7 +55,7 @@ trait AnyValReps {
       if (isCardinal)
         List(
           Op("|", "/**\n" +
-                     "  * @return the bitwise OR of this value and x\n" +
+                     "  * Returns the bitwise OR of this value and `x`.\n" +
                      "  * @example {{{\n" +
                      "  * (0xf0 | 0xaa) == 0xfa\n" +
                      "  * // in binary:   11110000\n" +
@@ -65,7 +65,7 @@ trait AnyValReps {
                      "  * }}}\n" +
                      "  */"),
           Op("&", "/**\n" +
-                     "  * @return the bitwise AND of this value and x\n" +
+                     "  * Returns the bitwise AND of this value and `x`.\n" +
                      "  * @example {{{\n" +
                      "  * (0xf0 & 0xaa) == 0xa0\n" +
                      "  * // in binary:   11110000\n" +
@@ -75,7 +75,7 @@ trait AnyValReps {
                      "  * }}}\n" +
                      "  */"),
           Op("^", "/**\n" +
-                     "  * @return the bitwise XOR of this value and x\n" +
+                     "  * Returns the bitwise XOR of this value and `x`.\n" +
                      "  * @example {{{\n" +
                      "  * (0xf0 ^ 0xaa) == 0x5a\n" +
                      "  * // in binary:   11110000\n" +
@@ -90,13 +90,13 @@ trait AnyValReps {
       if (isCardinal)
         List(
           Op("<<",  "/**\n" +
-                       "  * @return this value bit-shifted left by the specified number of bits,\n" +
+                       "  * Returns this value bit-shifted left by the specified number of bits,\n" +
                        "  *         filling in the new right bits with zeroes.\n" +
                        "  * @example {{{ 6 << 3 == 48 // in binary: 0110 << 3 == 0110000 }}}\n" +
                        "  */"),
 
           Op(">>>", "/**\n" +
-                       "  * @return this value bit-shifted right by the specified number of bits,\n" +
+                       "  * Returns this value bit-shifted right by the specified number of bits,\n" +
                        "  *         filling the new left bits with zeroes.\n" +
                        "  * @example {{{ 21 >>> 3 == 2 // in binary: 010101 >>> 3 == 010 }}}\n" +
                        "  * @example {{{\n" +
@@ -107,7 +107,7 @@ trait AnyValReps {
                        "  */"),
 
           Op(">>",  "/**\n" +
-                       "  * @return this value bit-shifted left by the specified number of bits,\n" +
+                       "  * Returns this value bit-shifted left by the specified number of bits,\n" +
                        "  *         filling in the right bits with the same value as the left-most bit of this.\n" +
                        "  *         The effect of this is to retain the sign of the value.\n" +
                        "  * @example {{{\n" +
@@ -119,19 +119,19 @@ trait AnyValReps {
       else Nil
 
     def comparisonOps       = List(
-      Op("==", "/**\n  * @return `true` if this value is equal x, `false` otherwise\n  */"),
-      Op("!=", "/**\n  * @return `true` if this value is not equal to x, `false` otherwise\n  */"),
-      Op("<",  "/**\n  * @return `true` if this value is less than x, `false` otherwise\n  */"),
-      Op("<=", "/**\n  * @return `true` if this value is less than or equal to x, `false` otherwise\n  */"),
-      Op(">",  "/**\n  * @return `true` if this value is greater than x, `false` otherwise\n  */"),
-      Op(">=", "/**\n  * @return `true` if this value is greater than or equal to x, `false` otherwise\n  */"))
+      Op("==", "/**\n  * Returns `true` if this value is equal to x, `false` otherwise.\n  */"),
+      Op("!=", "/**\n  * Returns `true` if this value is not equal to x, `false` otherwise.\n  */"),
+      Op("<",  "/**\n  * Returns `true` if this value is less than x, `false` otherwise.\n  */"),
+      Op("<=", "/**\n  * Returns `true` if this value is less than or equal to x, `false` otherwise.\n  */"),
+      Op(">",  "/**\n  * Returns `true` if this value is greater than x, `false` otherwise.\n  */"),
+      Op(">=", "/**\n  * Returns `true` if this value is greater than or equal to x, `false` otherwise.\n  */"))
 
     def otherOps = List(
-      Op("+", "/**\n  * @return the sum of this value and x\n  */"),
-      Op("-", "/**\n  * @return the difference of this value and x\n  */"),
-      Op("*", "/**\n  * @return the product of this value and x\n  */"),
-      Op("/", "/**\n  * @return the quotient of this value and x\n  */"),
-      Op("%", "/**\n  * @return the remainder of the division of this value by x\n  */"))
+      Op("+", "/**\n  * Returns the sum of this value and `x`.\n  */"),
+      Op("-", "/**\n  * Returns the difference of this value and `x`.\n  */"),
+      Op("*", "/**\n  * Returns the product of this value and `x`.\n  */"),
+      Op("/", "/**\n  * Returns the quotient of this value and `x`.\n  */"),
+      Op("%", "/**\n  * Returns the remainder of the division of this value by `x`.\n  */"))
 
     // Given two numeric value types S and T , the operation type of S and T is defined as follows:
     // If both S and T are subrange types then the operation type of S and T is Int.
@@ -238,8 +238,8 @@ trait AnyValReps {
     def classDoc  = interpolate(classDocTemplate)
     def objectDoc = ""
     def mkImports = ""
-    def mkClass   = assemble("final class", "AnyVal", classLines) + "\n"
-    def mkObject  = assemble("object", "AnyValCompanion", objectLines) + "\n"
+    def mkClass   = assemble("final class", "private", "AnyVal", classLines) + "\n"
+    def mkObject  = assemble("object", "", "AnyValCompanion", objectLines) + "\n"
     def make()    = List[String](
       headerTemplate,
       mkImports,
@@ -249,8 +249,8 @@ trait AnyValReps {
       mkObject
     ) mkString ""
 
-    def assemble(what: String, parent: String, lines: List[String]): String = {
-      val decl = "%s %s extends %s ".format(what, name, parent)
+    def assemble(what: String, ctor: String, parent: String, lines: List[String]): String = {
+      val decl = "%s %s %s extends %s ".format(what, name, ctor, parent)
       val body = if (lines.isEmpty) "{ }\n\n" else lines map indent mkString ("{\n", "\n", "\n}\n")
 
       decl + body

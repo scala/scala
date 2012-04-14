@@ -2,6 +2,7 @@
  *  Testing scaladoc implicit scopes - looking for implicits in the right places
  */
 package scala.test.scaladoc.implicits.scopes
+import language.implicitConversions // according to SIP18
 
 // TEST1 - In package object
 package object test1 {

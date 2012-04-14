@@ -17,7 +17,7 @@ package scala
  *  There is an implicit conversion from [[scala.Boolean]] => [[scala.runtime.RichBoolean]]
  *  which provides useful non-primitive operations.
  */
-final class Boolean extends AnyVal {
+final class Boolean private extends AnyVal {
   /**
    * Negates a Boolean expression.
    *
@@ -110,7 +110,7 @@ final class Boolean extends AnyVal {
   override def getClass(): Class[Boolean] = sys.error("stub")
 }
 
-object Boolean extends AnyValCompanion {
+object Boolean  extends AnyValCompanion {
 
   /** Transform a value type into a boxed reference type.
    *
