@@ -13,7 +13,10 @@ class RichClass[T](val clazz: Class[T]) {
   // Sadly isAnonymousClass does not return true for scala anonymous
   // classes because our naming scheme is not doing well against the
   // jvm's many assumptions.
-  def isScalaAnonymous = clazz.isAnonymousClass || (clazz.getName contains "$anon$")
+  def isScalaAnonymous = (
+    try clazz.isAnonymousClass || (clazz.getName contains "$anon$")
+    catch { case _: java.lang.InternalError => false }  // good ol' "Malformed class name"
+  )
 
   /** It's not easy... to be... me... */
   def supermans: List[Manifest[_]] = supers map (_.toManifest)

@@ -27,7 +27,8 @@ class StdReplVals(final val r: ILoop) extends ReplVals {
   final lazy val phased                   = power.phased
   final lazy val analyzer                 = global.analyzer
 
-  final lazy val treedsl = new { val global: intp.global.type = intp.global } with ast.TreeDSL { }
+  object treedsl extends { val global: intp.global.type = intp.global } with ast.TreeDSL { }
+
   final lazy val typer = analyzer.newTyper(
     analyzer.rootContext(
       power.unit("").asInstanceOf[analyzer.global.CompilationUnit]
@@ -35,12 +36,14 @@ class StdReplVals(final val r: ILoop) extends ReplVals {
   )
   def lastRequest = intp.lastRequest
 
-  final lazy val replImplicits = new power.Implicits2 {
+  class ReplImplicits extends power.Implicits2 {
     import intp.global._
 
     private val manifestFn = ReplVals.mkManifestToType[intp.global.type](global)
     implicit def mkManifestToType(sym: Symbol) = manifestFn(sym)
   }
+
+  final lazy val replImplicits = new ReplImplicits
 
   def typed[T <: analyzer.global.Tree](tree: T): T = typer.typed(tree).asInstanceOf[T]
 }

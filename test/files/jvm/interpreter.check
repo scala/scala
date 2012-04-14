@@ -316,9 +316,8 @@ scala> /*
   */
 */
 
-scala> 
 
-scala> 
+You typed two blank lines.  Starting a new command.
 
 scala> // multi-line string
 
@@ -326,7 +325,7 @@ scala> """
 hello
 there
 """
-res9: String = 
+res12: String = 
 "
 hello
 there

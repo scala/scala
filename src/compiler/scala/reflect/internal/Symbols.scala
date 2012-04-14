@@ -707,7 +707,10 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
       || isAnonOrRefinementClass              // has uninteresting <anon> or <refinement> prefix
       || nme.isReplWrapperName(name)          // has ugly $iw. prefix (doesn't call isInterpreterWrapper due to nesting)
     )
-    def isFBounded = info.baseTypeSeq exists (_ contains this)
+    def isFBounded = info match {
+      case TypeBounds(_, _) => info.baseTypeSeq exists (_ contains this)
+      case _                => false
+    }
 
     /** Is symbol a monomorphic type?
      *  assumption: if a type starts out as monomorphic, it will not acquire
@@ -1205,8 +1208,9 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
 
     /** Set new info valid from start of this phase. */
     def updateInfo(info: Type): Symbol = {
-      assert(phaseId(infos.validFrom) <= phase.id)
-      if (phaseId(infos.validFrom) == phase.id) infos = infos.prev
+      val pid = phaseId(infos.validFrom)
+      assert(pid <= phase.id, (pid, phase.id))
+      if (pid == phase.id) infos = infos.prev
       infos = TypeHistory(currentPeriod, info, infos)
       _validTo = if (info.isComplete) currentPeriod else NoPeriod
       this

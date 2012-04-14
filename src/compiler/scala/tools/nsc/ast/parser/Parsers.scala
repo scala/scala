@@ -317,7 +317,7 @@ self =>
      *  by compilationUnit().
      */
     def scriptBody(): Tree = {
-      val stmts = templateStatSeq(false)._2
+      val stmts = templateStats()
       accept(EOF)
 
       def mainModuleName = newTermName(settings.script.value)
@@ -2867,6 +2867,13 @@ self =>
         acceptStatSepOpt()
       }
       stats.toList
+    }
+
+    /** Informal - for the repl and other direct parser accessors.
+     */
+    def templateStats(): List[Tree] = templateStatSeq(false)._2 match {
+      case Nil    => List(EmptyTree)
+      case stats  => stats
     }
 
     /** {{{

@@ -292,7 +292,7 @@ trait Definitions extends reflect.api.StandardDefinitions {
 
     sealed abstract class BottomClassSymbol(name: TypeName, parent: Symbol) extends ClassSymbol(ScalaPackageClass, NoPosition, name) {
       locally {
-        this initFlags ABSTRACT | TRAIT | FINAL
+        this initFlags ABSTRACT | FINAL
         this setInfoAndEnter ClassInfoType(List(parent.tpe), newScope, this)
       }
       final override def isBottomClass = true
@@ -1014,9 +1014,9 @@ trait Definitions extends reflect.api.StandardDefinitions {
           val flatname = nme.flattenedName(owner.name, name)
           getMember(pkg, flatname)
         } else {
-          throw new FatalError(owner + " does not have a member " + name)
-        }
+        throw new FatalError(owner + " does not have a member " + name)
       }
+    }
     }
     def getMemberIfDefined(owner: Symbol, name: Name): Symbol =
       owner.info.nonPrivateMember(name)
