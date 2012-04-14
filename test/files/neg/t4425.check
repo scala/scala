@@ -1,4 +1,4 @@
-t4425.scala:3: error: erroneous or inaccessible type
+t4425.scala:3: error: isInstanceOf cannot test if value types are references.
   42 match { case _ X _ => () }
                     ^
 one error found

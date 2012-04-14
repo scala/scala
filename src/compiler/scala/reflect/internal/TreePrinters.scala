@@ -103,6 +103,16 @@ trait TreePrinters extends api.TreePrinters { self: SymbolTable =>
       }
     }
 
+    def printLabelParams(ps: List[Ident]) {
+      print("(")
+      printSeq(ps){printLabelParam}{print(", ")}
+      print(")")
+    }
+
+    def printLabelParam(p: Ident) {
+      print(symName(p, p.name)); printOpt(": ", TypeTree() setType p.tpe)
+    }
+
     def printValueParams(ts: List[ValDef]) {
       print("(")
       if (!ts.isEmpty) printFlags(ts.head.mods.flags & IMPLICIT, "")
@@ -219,7 +229,7 @@ trait TreePrinters extends api.TreePrinters { self: SymbolTable =>
           }
 
         case LabelDef(name, params, rhs) =>
-          print(symName(tree, name)); printRow(params, "(", ",", ")"); printBlock(rhs)
+          print(symName(tree, name)); printLabelParams(params); printBlock(rhs)
 
         case Import(expr, selectors) =>
           // Is this selector remapping a name (i.e, {name1 => name2})
