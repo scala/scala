@@ -1,14 +1,21 @@
 package scala.reflect
 /**
- * A dynamic proxy which redirect method calls and attribute access to a given
+ * A dynamic proxy which redirects method calls and attribute access to a given
  * target object at runtime using reflection.
- * A usage example can be found in test/files/run/dynamic-reflect.scala
+ * 
+ * Usage example:
+ * 
+ *  object x{ def hello = "hello world" }
+ *  val d = new DynamicProxy{ val dynamicProxyTarget = x }
+ *  assert( d.hello == "hello world" )
+ * 
  * Not supported (yet):
  *   - implicit conversions and parameters
  *   - multiple arguments lists
  *   - explicit type arguments
  */
 trait DynamicProxy extends Dynamic{
+  /** Method calls on DynamicProxy are redirected to this object. Needs to be defined in a subclass. */
   val dynamicProxyTarget : AnyRef
 
   import scala.reflect.mirror._
