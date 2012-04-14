@@ -1,0 +1,10 @@
+applydynamic_sip.scala:7: error: applyDynamic does not support passing a vararg parameter
+  qual.sel(a, a2: _*)
+       ^
+applydynamic_sip.scala:8: error: applyDynamicNamed does not support passing a vararg parameter
+  qual.sel(arg = a, a2: _*)
+       ^
+applydynamic_sip.scala:9: error: applyDynamicNamed does not support passing a vararg parameter
+  qual.sel(arg, arg2 = "a2", a2: _*)
+       ^
+three errors found

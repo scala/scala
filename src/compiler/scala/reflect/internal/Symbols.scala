@@ -1885,7 +1885,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
       site.nonPrivateMemberAdmitting(name, admit).filter(sym =>
         !sym.isTerm || (site.memberType(this) matches site.memberType(sym)))
 
-    /** The symbol overridden by this symbol in given class `ofclazz`.
+    /** The symbol, in class `ofclazz`, that is overridden by this symbol.
      *
      *  @param ofclazz is a base class of this symbol's owner.
      */
