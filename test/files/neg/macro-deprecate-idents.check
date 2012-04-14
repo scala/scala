@@ -1,0 +1,52 @@
+macro-deprecate-idents.scala:2: error: macro is now a reserved word; usage as an identifier is deprecated
+  val macro = ???
+      ^
+macro-deprecate-idents.scala:6: error: macro is now a reserved word; usage as an identifier is deprecated
+  var macro = ???
+      ^
+macro-deprecate-idents.scala:10: error: macro is now a reserved word; usage as an identifier is deprecated
+  type macro = Int
+       ^
+macro-deprecate-idents.scala:14: error: macro is now a reserved word; usage as an identifier is deprecated
+  class macro
+        ^
+macro-deprecate-idents.scala:18: error: macro is now a reserved word; usage as an identifier is deprecated
+  class macro
+        ^
+macro-deprecate-idents.scala:22: error: macro is now a reserved word; usage as an identifier is deprecated
+  object macro
+         ^
+macro-deprecate-idents.scala:26: error: macro is now a reserved word; usage as an identifier is deprecated
+  object macro
+         ^
+macro-deprecate-idents.scala:30: error: macro is now a reserved word; usage as an identifier is deprecated
+  trait macro
+        ^
+macro-deprecate-idents.scala:34: error: macro is now a reserved word; usage as an identifier is deprecated
+  trait macro
+        ^
+macro-deprecate-idents.scala:37: error: macro is now a reserved word; usage as an identifier is deprecated
+package macro {
+        ^
+macro-deprecate-idents.scala:38: error: macro is now a reserved word; usage as an identifier is deprecated
+  package macro.bar {
+          ^
+macro-deprecate-idents.scala:43: error: macro is now a reserved word; usage as an identifier is deprecated
+  package macro.foo {
+          ^
+macro-deprecate-idents.scala:48: error: macro is now a reserved word; usage as an identifier is deprecated
+  val Some(macro) = Some(42)
+           ^
+macro-deprecate-idents.scala:49: error: macro is now a reserved word; usage as an identifier is deprecated
+  macro match {
+  ^
+macro-deprecate-idents.scala:50: error: macro is now a reserved word; usage as an identifier is deprecated
+    case macro => println(macro)
+         ^
+macro-deprecate-idents.scala:50: error: macro is now a reserved word; usage as an identifier is deprecated
+    case macro => println(macro)
+                          ^
+macro-deprecate-idents.scala:55: error: macro is now a reserved word; usage as an identifier is deprecated
+  def macro = 2
+      ^
+17 errors found
