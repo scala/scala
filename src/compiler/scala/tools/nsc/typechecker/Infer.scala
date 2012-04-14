@@ -446,7 +446,7 @@ trait Infer {
       type Result = collection.mutable.LinkedHashMap[Symbol, Option[Type]]
 
       def unapply(m: Result): Some[(List[Symbol], List[Type])] = Some(toLists(
-        m collect {case (p, Some(a)) => (p, a)} unzip  ))
+        (m collect {case (p, Some(a)) => (p, a)}).unzip  ))
 
       object Undets {
         def unapply(m: Result): Some[(List[Symbol], List[Type], List[Symbol])] = Some(toLists{
@@ -766,7 +766,7 @@ trait Infer {
         isAsSpecific(res, ftpe2)
       case mt: MethodType if mt.isImplicit =>
         isAsSpecific(ftpe1.resultType, ftpe2)
-      case MethodType(params, _) if params nonEmpty =>
+      case MethodType(params, _) if params.nonEmpty =>
         var argtpes = params map (_.tpe)
         if (isVarArgsList(params) && isVarArgsList(ftpe2.params))
           argtpes = argtpes map (argtpe =>
@@ -776,7 +776,7 @@ trait Infer {
         isAsSpecific(PolyType(tparams, res), ftpe2)
       case PolyType(tparams, mt: MethodType) if mt.isImplicit =>
         isAsSpecific(PolyType(tparams, mt.resultType), ftpe2)
-      case PolyType(_, MethodType(params, _)) if params nonEmpty =>
+      case PolyType(_, MethodType(params, _)) if params.nonEmpty =>
         isApplicable(List(), ftpe2, params map (_.tpe), WildcardType)
       // case NullaryMethodType(res) =>
       //   isAsSpecific(res, ftpe2)

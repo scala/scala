@@ -2,6 +2,7 @@ package scala.reflect
 
 import java.lang.{ Class => jClass }
 import scala.reflect.{ mirror => rm }
+import language.{implicitConversions, existentials}
 
 /** A `ClassTag[T]` wraps a Java class, which can be accessed via the `erasure` method.
  *

@@ -48,7 +48,7 @@ trait NamesDefaults { self: Analyzer =>
   /** @param pos maps indices from new to old (!) */
   def reorderArgsInv[T: ClassManifest](args: List[T], pos: Int => Int): List[T] = {
     val argsArray = args.toArray
-    argsArray.indices map (i => argsArray(pos(i))) toList
+    (argsArray.indices map (i => argsArray(pos(i)))).toList
   }
 
   /** returns `true` if every element is equal to its index */

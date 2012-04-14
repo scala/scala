@@ -12,6 +12,7 @@ import scala.collection.{ mutable, immutable, generic }
 import mutable.WrappedArray
 import immutable.WrappedString
 import generic.CanBuildFrom
+import language.implicitConversions
 
 /** The `LowPriorityImplicits` class provides implicit values that
  *  are valid in all Scala compilation units without explicit qualification,

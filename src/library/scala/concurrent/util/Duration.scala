@@ -7,6 +7,7 @@ package scala.concurrent.util
 import java.util.concurrent.TimeUnit
 import TimeUnit._
 import java.lang.{ Double ⇒ JDouble }
+import language.implicitConversions
 
 case class Deadline private (time: Duration) {
   def +(other: Duration): Deadline = copy(time = time + other)

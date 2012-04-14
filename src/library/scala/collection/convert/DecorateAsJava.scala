@@ -12,6 +12,8 @@ package convert
 import java.{ lang => jl, util => ju }, java.util.{ concurrent => juc }
 import Decorators._
 import WrapAsJava._
+import language.implicitConversions
+
 
 /** A collection of decorators that allow to convert between
  *  Scala and Java collections using `asScala` and `asJava` methods.

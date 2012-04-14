@@ -854,7 +854,7 @@ abstract class Inliners extends SubComponent {
     def lookupIMethod(meth: Symbol, receiver: Symbol): Option[IMethod] = {
       def tryParent(sym: Symbol) = icodes icode sym flatMap (_ lookupMethod meth)
 
-      receiver.info.baseClasses.iterator map tryParent find (_.isDefined) flatten
+      (receiver.info.baseClasses.iterator map tryParent find (_.isDefined)).flatten
     }
   } /* class Inliner */
 } /* class Inliners */

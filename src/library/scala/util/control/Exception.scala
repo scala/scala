@@ -10,6 +10,8 @@ package scala.util.control
 
 import collection.immutable.List
 import java.lang.reflect.InvocationTargetException
+import language.implicitConversions
+
 
 /** Classes representing the components of exception handling.
  *  Each class is independently composable.  Some example usages:

@@ -11,6 +11,7 @@ package settings
 import annotation.elidable
 import scala.tools.util.PathResolver.Defaults
 import scala.collection.mutable
+import language.{implicitConversions, existentials}
 
 trait ScalaSettings extends AbsScalaSettings
                        with StandardScalaSettings
@@ -62,6 +63,7 @@ trait ScalaSettings extends AbsScalaSettings
   val classpath     = PathSetting       ("-classpath", "Specify where to find user class files.", defaultClasspath) withAbbreviation "-cp"
   val d             = OutputSetting     (outputDirs, ".")
   val nospecialization = BooleanSetting    ("-no-specialization", "Ignore @specialize annotations.")
+  val language      = MultiStringSetting("-language", "feature", "Enable one or more language features.")
 
   /**
    * -X "Advanced" settings
@@ -203,7 +205,7 @@ trait ScalaSettings extends AbsScalaSettings
   val Xexperimental = BooleanSetting("-Xexperimental", "Enable experimental extensions.") enabling experimentalSettings
 
   // Feature extensions
-  val Xmacros                 = BooleanSetting("-Xmacros", "Enable macros.")
+  val Xmacros                 = BooleanSetting("-Xmacros", "Enable macros.") // [Martin] Can be retired now.
   val XmacroSettings          = MultiStringSetting("-Xmacro-settings", "option", "Custom settings for macros.")
   val XmacroPrimaryClasspath  = PathSetting("-Xmacro-primary-classpath", "Classpath to load macros implementations from, defaults to compilation classpath (aka \"library classpath\".", "")
   val XmacroFallbackClasspath = PathSetting("-Xmacro-fallback-classpath", "Classpath to load macros implementations from if they cannot be loaded from library classpath.", "")

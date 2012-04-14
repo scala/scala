@@ -512,7 +512,6 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
       res
     }
 
-
     /** The typer for a label definition. If this is part of a template we
      *  first have to enter the label definition.
      */
@@ -734,6 +733,39 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
       }
     }
 
+    def checkFeature(pos: Position, featureTrait: Symbol, construct: => String = "") =
+      if (!isPastTyper) {
+        val nestedOwners =
+          featureTrait.owner.ownerChain.takeWhile(_ != languageFeatureModule.moduleClass).reverse
+        val featureName = (nestedOwners map (_.name + ".")).mkString + featureTrait.name
+        unit.toCheck += { () =>
+          def hasImport = inferImplicit(EmptyTree: Tree, featureTrait.tpe, true, false, context) != SearchFailure
+          def hasOption = settings.language.value contains featureName
+          if (!hasImport && !hasOption) {
+            val Some(AnnotationInfo(_, List(Literal(Constant(featureDesc: String)), Literal(Constant(required: Boolean))), _)) =
+              featureTrait getAnnotation LanguageFeatureAnnot
+            val req = if (required) "needs to" else "should"
+            var raw = featureDesc + " " + req + " be enabled\n" +
+              "by making the implicit value language." + featureName + " visible."
+            if (!(currentRun.reportedFeature contains featureTrait))
+              raw += "\nThis can be achieved by adding the import clause 'import language." + featureName + "'\n" +
+                "or by setting the compiler option -language:" + featureName + ".\n" +
+                "See the Scala docs for value scala.language." + featureName + " for a discussion\n" +
+                "why the feature " + req + " be explicitly enabled."
+            currentRun.reportedFeature += featureTrait
+            val msg = raw replace ("#", construct)
+            if (required) unit.error(pos, msg)
+            else currentRun.featureWarnings.warn(pos, msg)
+          }
+        }
+      }
+
+    def checkExistentialsFeature(pos: Position, tpe: Type, prefix: String) = tpe match {
+      case extp: ExistentialType if !extp.isRepresentableWithWildcards =>
+        checkFeature(pos, ExistentialsFeature, prefix+" "+tpe)
+      case _ =>
+    }
+
     /** Perform the following adaptations of expression, pattern or type `tree` wrt to
      *  given mode `mode` and given prototype `pt`:
      *  (-1) For expressions with annotated types, let AnnotationCheckers decide what to do
@@ -773,7 +805,7 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
     protected def adapt(tree: Tree, mode: Int, pt: Type, original: Tree = EmptyTree): Tree = {
 
       def adaptToImplicitMethod(mt: MethodType): Tree = {
-        if (context.undetparams nonEmpty) { // (9) -- should revisit dropped condition `(mode & POLYmode) == 0`
+        if (context.undetparams.nonEmpty) { // (9) -- should revisit dropped condition `(mode & POLYmode) == 0`
           // dropped so that type args of implicit method are inferred even if polymorphic expressions are allowed
           // needed for implicits in 2.8 collection library -- maybe once #3346 is fixed, we can reinstate the condition?
             context.undetparams = inferExprInstance(tree, context.extractUndetparams(), pt,
@@ -1941,6 +1973,12 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
       if (meth.isStructuralRefinementMember)
         checkMethodStructuralCompatible(meth)
 
+      if (meth.isImplicit && !meth.isSynthetic) meth.info.paramss match {
+        case List(param) :: _ if !param.isImplicit =>
+          checkFeature(ddef.pos, ImplicitConversionsFeature, meth.toString)
+        case _ =>
+      }
+
       treeCopy.DefDef(ddef, typedMods, ddef.name, tparams1, vparamss1, tpt1, rhs1) setType NoType
     }
 
@@ -1972,6 +2010,10 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
           case TypeBounds(lo1, hi1) if (!(lo1 <:< hi1)) => LowerBoundError(tdef, lo1, hi1)
           case _                                        => ()
         }
+
+      if (tdef.symbol.isDeferred && tdef.symbol.info.isHigherKinded)
+        checkFeature(tdef.pos, HigherKindsFeature)
+
       treeCopy.TypeDef(tdef, typedMods, tdef.name, tparams1, rhs1) setType NoType
     }
 
@@ -2115,7 +2157,7 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
       var body1: Tree = typed(cdef.body, pt)
 
       val contextWithTypeBounds = context.nextEnclosing(_.tree.isInstanceOf[CaseDef])
-      if (contextWithTypeBounds.savedTypeBounds nonEmpty) {
+      if (contextWithTypeBounds.savedTypeBounds.nonEmpty) {
         body1.tpe = contextWithTypeBounds restoreTypeBounds body1.tpe
 
         // insert a cast if something typechecked under the GADT constraints,
@@ -4145,7 +4187,7 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
 
           result match {
             // could checkAccessible (called by makeAccessible) potentially have skipped checking a type application in qual?
-            case SelectFromTypeTree(qual@TypeTree(), name) if qual.tpe.typeArgs nonEmpty => // TODO: somehow the new qual is not checked in refchecks
+            case SelectFromTypeTree(qual@TypeTree(), name) if qual.tpe.typeArgs.nonEmpty => // TODO: somehow the new qual is not checked in refchecks
               treeCopy.SelectFromTypeTree(
                 result,
                 (TypeTreeWithDeferredRefCheck(){ () => val tp = qual.tpe; val sym = tp.typeSymbolDirect
@@ -4708,6 +4750,11 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
             else
               typedSelect(qual1, name)
 
+          if (tree.isInstanceOf[PostfixSelect])
+            checkFeature(tree.pos, PostfixOpsFeature, name.decode)
+          if (tree1.symbol != null && tree1.symbol.isOnlyRefinementMember)
+            checkFeature(tree1.pos, ReflectiveCallsFeature, tree1.symbol.toString)
+
           if (qual1.symbol == RootPackage) treeCopy.Ident(tree1, name)
           else tree1
 
@@ -4753,9 +4800,11 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
           treeCopy.TypeBoundsTree(tree, lo1, hi1) setType TypeBounds(lo1.tpe, hi1.tpe)
 
         case etpt @ ExistentialTypeTree(_, _) =>
-          typerWithLocalContext(context.makeNewScope(tree, context.owner)){
+          val tree1 = typerWithLocalContext(context.makeNewScope(tree, context.owner)){
             _.typedExistentialTypeTree(etpt, mode)
           }
+          checkExistentialsFeature(tree1.pos, tree1.tpe, "the existential type")
+          tree1
 
         case dc@TypeTreeWithDeferredRefCheck() => dc // TODO: should we re-type the wrapped tree? then we need to change TypeTreeWithDeferredRefCheck's representation to include the wrapped tree explicitly (instead of in its closure)
         case tpt @ TypeTree() =>
@@ -4965,7 +5014,9 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
       assert(!context.owner.isTermMacro, context.owner)
       val tree1 = typed(tree, pt)
       transformed(tree) = tree1
-      packedType(tree1, context.owner)
+      val tpe = packedType(tree1, context.owner)
+      checkExistentialsFeature(tree.pos, tpe, "inferred existential type")
+      tpe
     }
 
     def computeMacroDefType(tree: Tree, pt: Type): Type = {

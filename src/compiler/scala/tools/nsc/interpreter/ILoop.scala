@@ -23,6 +23,7 @@ import scala.reflect.NameTransformer._
 import util.ScalaClassLoader
 import ScalaClassLoader._
 import scala.tools.util._
+import language.{implicitConversions, existentials}
 
 /** The Scala interactive shell.  It provides a read-eval-print loop
  *  around the Interpreter class.

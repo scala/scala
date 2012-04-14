@@ -103,9 +103,7 @@ trait Trees extends api.Trees { self: SymbolTable =>
 
   // --- extension methods --------------------------------------------------------
 
-  implicit def treeOps(tree: Tree): TreeOps = new TreeOps(tree)
-
-  class TreeOps(tree: Tree) {
+  implicit class TreeOps(tree: Tree) {
     def isErroneous = (tree.tpe ne null) && tree.tpe.isErroneous
     def isTyped     = (tree.tpe ne null) && !tree.tpe.isErroneous
 

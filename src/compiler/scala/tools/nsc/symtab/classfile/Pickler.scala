@@ -149,7 +149,7 @@ abstract class Pickler extends SubComponent {
 
             putChildren(sym, children.toList sortBy (_.sealedSortName))
           }
-          for (annot <- sym.annotations filter (ann => ann.isStatic && !ann.isErroneous) reverse)
+          for (annot <- (sym.annotations filter (ann => ann.isStatic && !ann.isErroneous)).reverse)
             putAnnotation(sym, annot)
         }
         else if (sym != NoSymbol) {

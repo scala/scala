@@ -5,6 +5,8 @@
 
 package scala.tools.nsc
 package doc
+import language.implicitConversions
+import language.postfixOps
 
 /** Some glue between DocParser (which reads source files which can't be compiled)
  *  and the scaladoc model.

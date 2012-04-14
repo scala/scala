@@ -107,5 +107,5 @@ extends Node with Serializable
 
   /** Returns concatenation of `text(n)` for each child `n`.
    */
-  override def text = child map (_.text) mkString
+  override def text = (child map (_.text)).mkString
 }

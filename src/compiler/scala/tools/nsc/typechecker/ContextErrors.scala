@@ -483,7 +483,7 @@ trait ContextErrors {
               val keep = missing take 3 map (_.name)
               ".\nUnspecified value parameter%s %s".format(
                 if (missing.tail.isEmpty) "" else "s",
-                if (missing drop 3 nonEmpty) (keep :+ "...").mkString(", ")
+                if ((missing drop 3).nonEmpty) (keep :+ "...").mkString(", ")
                 else keep.mkString("", ", ", ".")
               )
             }
@@ -644,7 +644,7 @@ trait ContextErrors {
     private def applyErrorMsg(tree: Tree, msg: String, argtpes: List[Type], pt: Type) = {
       def asParams(xs: List[Any]) = xs.mkString("(", ", ", ")")
 
-      def resType   = if (pt isWildcard) "" else " with expected result type " + pt
+      def resType   = if (pt.isWildcard) "" else " with expected result type " + pt
       def allTypes  = (alternatives(tree) flatMap (_.paramTypes)) ++ argtpes :+ pt
       def locals    = alternatives(tree) flatMap (_.typeParams)
 

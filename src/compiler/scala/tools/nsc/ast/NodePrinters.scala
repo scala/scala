@@ -8,6 +8,7 @@ package ast
 
 import compat.Platform.EOL
 import symtab.Flags._
+import language.postfixOps
 
 /** The object `nodePrinter` converts the internal tree
  *  representation to a string.

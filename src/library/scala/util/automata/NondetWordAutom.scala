@@ -50,8 +50,8 @@ abstract class NondetWordAutom[T <: AnyRef] {
   override def toString = {
 
     val finalString = Map(finalStates map (j => j -> finals(j)) : _*).toString
-    val deltaString = (0 until nstates) .
-      map (i => "   %d->%s\n    _>%s\n".format(i, delta(i), default(i))) mkString
+    val deltaString = (0 until nstates) 
+      .map(i => "   %d->%s\n    _>%s\n".format(i, delta(i), default(i))).mkString
 
     "[NondetWordAutom  nstates=%d  finals=%s  delta=\n%s".format(nstates, finalString, deltaString)
   }

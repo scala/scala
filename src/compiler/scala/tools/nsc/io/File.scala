@@ -15,6 +15,7 @@ import java.io.{
   BufferedInputStream, BufferedOutputStream, IOException, PrintStream, PrintWriter, Closeable => JCloseable }
 import java.nio.channels.{ Channel, FileChannel }
 import scala.io.Codec
+import language.{reflectiveCalls, implicitConversions}
 
 object File {
   def pathSeparator = java.io.File.pathSeparator

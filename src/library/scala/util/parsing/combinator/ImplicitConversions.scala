@@ -9,6 +9,8 @@
 
 package scala.util.parsing.combinator
 
+import language.implicitConversions
+
 /** This object contains implicit conversions that come in handy when using the `^^` combinator.
  *
  *  Refer to [[scala.util.parsing.combinator.Parsers]] to construct an AST from the concrete syntax.

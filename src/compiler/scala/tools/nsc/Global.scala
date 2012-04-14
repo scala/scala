@@ -31,6 +31,7 @@ import backend.{ ScalaPrimitives, Platform, MSILPlatform, JavaPlatform }
 import backend.jvm.GenJVM
 import backend.opt.{ Inliners, InlineExceptionHandlers, ClosureElimination, DeadCodeElimination }
 import backend.icode.analysis._
+import language.postfixOps
 
 class Global(var currentSettings: Settings, var reporter: NscReporter) extends SymbolTable
                                                                           with ClassLoaders
@@ -938,6 +939,17 @@ class Global(var currentSettings: Settings, var reporter: NscReporter) extends S
       inform("[running phase " + ph.name + " on " + currentRun.size +  " compilation units]")
   }
 
+  /** Collects for certain classes of warnings during this run. */
+  class ConditionalWarning(what: String, option: Settings#BooleanSetting) {
+    val warnings = new mutable.ListBuffer[(Position, String)]
+    def warn(pos: Position, msg: String) =
+      if (option.value) reporter.warning(pos, msg)
+      else warnings += ((pos, msg))
+    def summarize() =
+      if (option.isDefault && warnings.nonEmpty)
+        reporter.warning(NoPosition, "there were %d %s warnings; re-run with %s for details".format(warnings.size, what, option.name))
+  }
+
   /** A Run is a single execution of the compiler on a sets of units
    */
   class Run {
@@ -949,9 +961,12 @@ class Global(var currentSettings: Settings, var reporter: NscReporter) extends S
     /** The currently compiled unit; set from GlobalPhase */
     var currentUnit: CompilationUnit = NoCompilationUnit
 
-    /** Counts for certain classes of warnings during this run. */
-    var deprecationWarnings: List[(Position, String)] = Nil
-    var uncheckedWarnings: List[(Position, String)] = Nil
+    val deprecationWarnings = new ConditionalWarning("deprecation", settings.deprecation)
+    val uncheckedWarnings = new ConditionalWarning("unchecked", settings.unchecked)
+    val featureWarnings = new ConditionalWarning("feature", settings.feature)
+    val allConditionalWarnings = List(deprecationWarnings, uncheckedWarnings, featureWarnings)
+
+    var reportedFeature = Set[Symbol]()
 
     /** A flag whether macro expansions failed */
     var macroExpansionFailed = false
@@ -1241,12 +1256,8 @@ class Global(var currentSettings: Settings, var reporter: NscReporter) extends S
         }
       }
       else {
-        def warn(count: Int, what: String, option: Settings#BooleanSetting) = (
-          if (option.isDefault && count > 0)
-            warning("there were %d %s warnings; re-run with %s for details".format(count, what, option.name))
-        )
-        warn(deprecationWarnings.size, "deprecation", settings.deprecation)
-        warn(uncheckedWarnings.size, "unchecked", settings.unchecked)
+        allConditionalWarnings foreach (_.summarize)
+
         if (macroExpansionFailed)
           warning("some macros could not be expanded and code fell back to overridden methods;"+
                   "\nrecompiling with generated classfiles on the classpath might help.")

@@ -60,7 +60,7 @@ self =>
     val end   = until min length
 
     if (start >= end) newBuilder.result
-    else newBuilder ++= toString.substring(start, end) result
+    else (newBuilder ++= toString.substring(start, end)).result
   }
 
   /** Return the current string concatenated `n` times.

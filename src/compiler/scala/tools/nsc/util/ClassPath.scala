@@ -29,7 +29,7 @@ object ClassPath {
   def infoFor[T](value: T)        = info(value.getClass)
   def info[T](clazz: Class[T])    = new ClassAndJarInfo()(ClassManifest[T](clazz))
   def info[T: ClassManifest]      = new ClassAndJarInfo[T]
-  def locate[T: ClassManifest]    = info[T] rootClasspath
+  def locate[T: ClassManifest]    = info[T].rootClasspath
   def locateJar[T: ClassManifest] = info[T].rootPossibles find (x => isJarOrZip(x)) map (x => File(x))
   def locateDir[T: ClassManifest] = info[T].rootPossibles find (_.isDirectory) map (_.toDirectory)
 
@@ -373,7 +373,7 @@ extends ClassPath[T] {
     this(entries.toIndexedSeq, context)
 
   def name = entries.head.name
-  def asURLs = entries flatMap (_.asURLs) toList
+  def asURLs = (entries flatMap (_.asURLs)).toList
   lazy val sourcepaths: IndexedSeq[AbstractFile] = entries flatMap (_.sourcepaths)
 
   override def origin = Some(entries map (x => x.origin getOrElse x.name) mkString ("Merged(", ", ", ")"))

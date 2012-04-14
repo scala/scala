@@ -8,8 +8,11 @@ package scala.tools.nsc
 import java.util.concurrent.{ Future, Callable }
 import java.util.{ Timer, TimerTask }
 import java.util.jar.{ Attributes }
+import language.implicitConversions
 
 package object io {
+  implicit def postfixOps = language.postfixOps // make all postfix ops in this package compile without warning
+
   type JManifest = java.util.jar.Manifest
   type JFile = java.io.File
 

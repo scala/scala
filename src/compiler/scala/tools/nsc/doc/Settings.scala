@@ -8,6 +8,7 @@ package doc
 
 import java.io.File
 import java.lang.System
+import language.postfixOps
 
 /** An extended version of compiler settings, with additional Scaladoc-specific options.
   * @param error A function that prints a string to the appropriate error stream. */

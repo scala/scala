@@ -18,6 +18,7 @@ import scala.concurrent.Lock
 import scala.text._
 import symtab.Flags._
 import symtab.SymbolTable
+import language.implicitConversions
 
 /**
  * Tree browsers can show the AST in a graphical and interactive

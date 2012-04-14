@@ -36,8 +36,8 @@ object ContentModel extends WordExp {
     def traverse(r: RegExp): Set[String] = r match { // !!! check for match translation problem
       case Letter(ElemName(name)) => Set(name)
       case Star(  x @ _  ) => traverse( x ) // bug if x@_*
-      case Sequ( xs @ _* ) => Set(xs map traverse flatten: _*)
-      case Alt(  xs @ _* ) => Set(xs map traverse flatten: _*)
+      case Sequ( xs @ _* ) => Set(xs flatMap traverse: _*)
+      case Alt(  xs @ _* ) => Set(xs flatMap traverse: _*)
     }
 
     traverse(r)

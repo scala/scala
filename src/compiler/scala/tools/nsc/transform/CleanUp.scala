@@ -9,6 +9,7 @@ package transform
 import symtab._
 import Flags._
 import scala.collection._
+import language.postfixOps
 
 abstract class CleanUp extends Transform with ast.TreeDSL {
   import global._

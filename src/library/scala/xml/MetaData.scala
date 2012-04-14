@@ -167,7 +167,7 @@ extends AbstractIterable[MetaData]
   /** Returns a Map containing the attributes stored as key/value pairs.
    */
   def asAttrMap: Map[String, String] =
-    iterator map (x => (x.prefixedKey, x.value.text)) toMap
+    (iterator map (x => (x.prefixedKey, x.value.text))).toMap
 
   /** returns Null or the next MetaData item */
   def next: MetaData

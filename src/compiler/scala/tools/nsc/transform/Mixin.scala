@@ -123,7 +123,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
    */
   private def rebindSuper(base: Symbol, member: Symbol, mixinClass: Symbol): Symbol =
     afterPickler {
-      var bcs = base.info.baseClasses.dropWhile(mixinClass !=).tail
+      var bcs = base.info.baseClasses.dropWhile(mixinClass != _).tail
       var sym: Symbol = NoSymbol
       debuglog("starting rebindsuper " + base + " " + member + ":" + member.tpe +
             " " + mixinClass + " " + base.info.baseClasses + "/" + bcs)
@@ -778,7 +778,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
           val fields0 = usedBits(cl)
 
           if (requiredBitmaps(fields0) < bitmapNum) {
-            val fields1 = cl.info.decls filter isNonLocalFieldWithBitmap size;
+            val fields1 = (cl.info.decls filter isNonLocalFieldWithBitmap).size
             return {
               if (requiredBitmaps(fields0 + fields1) >= bitmapNum)
                 Some(bitmapFor(cl, offset, valSym, false))

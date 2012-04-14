@@ -1519,7 +1519,7 @@ trait Trees { self: Universe =>
     def transformStats(stats: List[Tree], exprOwner: Symbol): List[Tree] =
       stats mapConserve (stat =>
         if (exprOwner != currentOwner && stat.isTerm) atOwner(exprOwner)(transform(stat))
-        else transform(stat)) filter (EmptyTree !=)
+        else transform(stat)) filter (EmptyTree != _)
     def transformModifiers(mods: Modifiers): Modifiers =
       mods.mapAnnotations(transformTrees)
 

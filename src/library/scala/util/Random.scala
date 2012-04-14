@@ -11,6 +11,7 @@ package scala.util
 import collection.mutable.ArrayBuffer
 import collection.generic.CanBuildFrom
 import scala.collection.immutable.{ List, Stream }
+import language.{implicitConversions, higherKinds}
 
 /**
  *  @author Stephane Micheloud
@@ -117,7 +118,7 @@ class Random(val self: java.util.Random) {
       swap(n - 1, k)
     }
 
-    bf(xs) ++= buf result
+    (bf(xs) ++= buf).result
   }
 
   /** Returns a Stream of pseudorandomly chosen alphanumeric characters,

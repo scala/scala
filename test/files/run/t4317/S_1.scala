@@ -1,3 +1,5 @@
+import language.existentials
+
 object S_1 {
   def foo1(x: Class[_ <: AnyRef]) = 0
   def foo2(x: Class[_ <: AnyRef], y: Int) = 99

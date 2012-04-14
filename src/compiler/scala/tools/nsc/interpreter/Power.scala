@@ -13,6 +13,7 @@ import session.{ History }
 import scala.io.Codec
 import java.net.{ URL, MalformedURLException }
 import io.{ Path }
+import language.implicitConversions
 
 /** Collecting some power mode examples.
 

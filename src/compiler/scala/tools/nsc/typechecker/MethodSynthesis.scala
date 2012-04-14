@@ -8,6 +8,7 @@ package typechecker
 import symtab.Flags._
 import scala.collection.{ mutable, immutable }
 import scala.tools.util.StringOps.{ ojoin }
+import language.higherKinds
 
 /** Logic related to method synthesis which involves cooperation between
  *  Namer and Typer.
@@ -377,7 +378,7 @@ trait MethodSynthesis {
       }
       def derivedTree: DefDef          =
         factoryMeth(mods & flagsMask | flagsExtra, name, tree, symbolic = false)
-      def flagsExtra: Long             = METHOD | IMPLICIT
+      def flagsExtra: Long             = METHOD | IMPLICIT | SYNTHETIC
       def flagsMask: Long              = AccessFlags
       def name: TermName               = tree.name.toTermName
     }

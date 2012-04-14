@@ -7,6 +7,7 @@ package scala.reflect
 package api
 
 import scala.reflect.{ mirror => rm }
+import language.implicitConversions
 
 /**
  * Type tags encapsulate a representation of type T.

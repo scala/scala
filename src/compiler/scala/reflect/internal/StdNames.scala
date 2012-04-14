@@ -9,12 +9,13 @@ package internal
 import scala.collection.immutable
 import NameTransformer.MODULE_SUFFIX_STRING
 import annotation.switch
+import language.implicitConversions
 
 trait StdNames extends NameManglers { self: SymbolTable =>
 
   def encode(str: String): TermName = newTermNameCached(NameTransformer.encode(str))
 
-  implicit def lowerTermNames(n: TermName): String = "" + n
+  implicit def lowerTermNames(n: TermName): String = n.toString
 
   // implicit def stringToTermName(s: String): TermName = newTermName(s)
 
@@ -56,6 +57,7 @@ trait StdNames extends NameManglers { self: SymbolTable =>
     final val RETURNkw: TermName    = kw("return")
     final val SEALEDkw: TermName    = kw("sealed")
     final val SUPERkw: TermName     = kw("super")
+    final val THENkw: TermName      = kw("then")
     final val THISkw: TermName      = kw("this")
     final val THROWkw: TermName     = kw("throw")
     final val TRAITkw: TermName     = kw("trait")

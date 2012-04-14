@@ -113,10 +113,18 @@ trait Scanners extends ScannersCommon {
     }
 
     /** Clear buffer and set name and token */
-    private def finishNamed() {
+    private def finishNamed(idtoken: Int = IDENTIFIER) {
       name = newTermName(cbuf.toString)
-      token = name2token(name)
       cbuf.clear()
+      token = idtoken
+      if (idtoken == IDENTIFIER) {
+        val idx = name.start - kwOffset
+        if (idx >= 0 && idx < kwArray.length) {
+          token = kwArray(idx)
+          if (token == IDENTIFIER && allowIdent != name)
+            deprecationWarning(name+" is now a reserved word; usage as an identifier is deprecated")
+        }
+      }
     }
 
     /** Clear buffer and set string */
@@ -188,6 +196,20 @@ trait Scanners extends ScannersCommon {
       val off = offset
       nextToken()
       off
+    }
+
+    /** Allow an otherwise deprecated ident here */
+    private var allowIdent: Name = nme.EMPTY
+
+    /** Get next token, and allow the otherwise deprecated ident `name`  */
+    def nextTokenAllow(name: Name) = {
+      val prev = allowIdent
+      allowIdent = name
+      try {
+        nextToken()
+      } finally {
+        allowIdent = prev
+      }
     }
 
     /** Produce next token, filling TokenData fields of Scanner.
@@ -568,9 +590,8 @@ trait Scanners extends ScannersCommon {
       getLitChars('`')
       if (ch == '`') {
         nextChar()
-        finishNamed()
+        finishNamed(BACKQUOTED_IDENT)
         if (name.length == 0) syntaxError("empty quoted identifier")
-        token = BACKQUOTED_IDENT
       }
       else syntaxError("unclosed quoted identifier")
     }
@@ -1130,9 +1151,9 @@ trait Scanners extends ScannersCommon {
     nme.VIEWBOUNDkw -> VIEWBOUND,
     nme.SUPERTYPEkw -> SUPERTYPE,
     nme.HASHkw      -> HASH,
-    nme.ATkw        -> AT
-  ) ++
-  (if (settings.Xmacros.value) List(nme.MACROkw -> MACRO) else List())
+    nme.ATkw        -> AT,
+    nme.MACROkw     -> IDENTIFIER,
+    nme.THENkw      -> IDENTIFIER)
 
   private var kwOffset: Int = -1
   private val kwArray: Array[Int] = {
@@ -1141,14 +1162,7 @@ trait Scanners extends ScannersCommon {
     arr
   }
 
-  final val token2name = allKeywords map (_.swap) toMap
-
-  /** Convert name to token */
-  final def name2token(name: Name) = {
-    val idx = name.start - kwOffset
-    if (idx >= 0 && idx < kwArray.length) kwArray(idx)
-    else IDENTIFIER
-  }
+  final val token2name = (allKeywords map (_.swap)).toMap
 
 // Token representation ----------------------------------------------------
 

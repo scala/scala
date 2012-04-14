@@ -11,6 +11,7 @@ package generic
 
 import mutable.Builder
 import annotation.unchecked.uncheckedVariance
+import language.higherKinds
 
 /** This trait represents collections classes which require class
  *  manifests for their element types.

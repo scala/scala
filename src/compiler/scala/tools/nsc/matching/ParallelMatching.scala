@@ -14,6 +14,7 @@ import transform.ExplicitOuter
 import symtab.Flags
 import mutable.ListBuffer
 import annotation.elidable
+import language.postfixOps
 
 trait ParallelMatching extends ast.TreeDSL
       with MatchSupport

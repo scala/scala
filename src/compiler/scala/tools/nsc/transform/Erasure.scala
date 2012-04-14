@@ -210,7 +210,7 @@ abstract class Erasure extends AddInterfaces
         }
         else parents
       )
-      ps map boxedSig mkString
+      (ps map boxedSig).mkString
     }
     def boxedSig(tp: Type) = jsig(tp, primitiveOK = false)
     def boundsSig(bounds: List[Type]) = traceSig("boundsSig", bounds) {

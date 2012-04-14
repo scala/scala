@@ -7,6 +7,7 @@ package scala.tools.nsc
 package interpreter
 
 import NamedParam._
+import language.implicitConversions
 
 trait NamedParamCreator {
   protected def freshName: () => String

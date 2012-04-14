@@ -93,7 +93,7 @@ class CompileSocket extends CompileOutputCommon {
 
   /** Start a new server. */
   private def startNewServer(vmArgs: String) = {
-    val cmd = serverCommand(vmArgs split " " toSeq)
+    val cmd = serverCommand((vmArgs split " ").toSeq)
     info("[Executing command: %s]" format cmd.mkString(" "))
 
     // Hiding inadequate daemonized implementation from public API for now
@@ -206,7 +206,7 @@ class CompileSocket extends CompileOutputCommon {
       Thread sleep 100
       ff.length
     }
-    if (Iterator continually check take 50 find (_ > 0) isEmpty) {
+    if ((Iterator continually check take 50 find (_ > 0)).isEmpty) {
       ff.delete()
       fatal("Unable to establish connection to server.")
     }

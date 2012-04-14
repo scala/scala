@@ -9,6 +9,7 @@ package interpreter
 import scala.collection.{ mutable, immutable }
 import scala.PartialFunction.cond
 import scala.reflect.internal.Chars
+import language.implicitConversions
 
 trait MemberHandlers {
   val intp: IMain

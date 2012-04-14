@@ -8,6 +8,7 @@ package typechecker
 
 import symtab._
 import Flags.{MUTABLE, METHOD, LABEL, SYNTHETIC}
+import language.postfixOps
 
 /** Translate pattern matching into method calls (these methods form a zero-plus monad), similar in spirit to how for-comprehensions are compiled.
   *
@@ -157,12 +158,12 @@ trait PatMatVirtualiser extends ast.TreeDSL { self: Analyzer =>
             (caseScrutSym, propagateSubstitution(translateCase(caseScrutSym, pt)(caseDef), EmptySubstitution))
           }
 
-          for(cases <- emitTypeSwitch(bindersAndCases, pt) toList;
+          for(cases <- emitTypeSwitch(bindersAndCases, pt).toList;
               if cases forall treeInfo.isCatchCase; // must check again, since it's not guaranteed -- TODO: can we eliminate this? e.g., a type test could test for a trait or a non-trivial prefix, which are not handled by the back-end
               cse <- cases) yield fixerUpper(matchOwner, pos)(cse).asInstanceOf[CaseDef]
         }
 
-        val catches = if (swatches nonEmpty) swatches else {
+        val catches = if (swatches.nonEmpty) swatches else {
           val scrutSym = freshSym(pos, pureType(ThrowableClass.tpe))
           val casesNoSubstOnly = caseDefs map { caseDef => (propagateSubstitution(translateCase(scrutSym, pt)(caseDef), EmptySubstitution))}
 

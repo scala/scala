@@ -188,7 +188,7 @@ abstract class Source extends Iterator[Char] {
   var nerrors = 0
   var nwarnings = 0
 
-  private def lineNum(line: Int): String = getLines() drop (line - 1) take 1 mkString
+  private def lineNum(line: Int): String = (getLines() drop (line - 1) take 1).mkString
 
   class LineIterator extends AbstractIterator[String] with Iterator[String] {
     private[this] val sb = new StringBuilder

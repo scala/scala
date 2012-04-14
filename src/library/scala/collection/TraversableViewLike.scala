@@ -12,13 +12,14 @@ import generic._
 import mutable.{ Builder, ArrayBuffer }
 import TraversableView.NoBuilder
 import annotation.migration
+import language.implicitConversions
 
 trait ViewMkString[+A] {
   self: Traversable[A] =>
 
   // It is necessary to use thisSeq rather than toSeq to avoid cycles in the
   // eager evaluation of vals in transformed view subclasses, see #4558.
-  protected[this] def thisSeq: Seq[A] = new ArrayBuffer[A] ++= self result
+  protected[this] def thisSeq: Seq[A] = (new ArrayBuffer[A] ++= self).result
 
   // Have to overload all three to work around #4299.  The overload
   // is because mkString should force a view but toString should not.

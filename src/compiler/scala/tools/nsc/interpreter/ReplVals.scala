@@ -6,6 +6,8 @@
 package scala.tools.nsc
 package interpreter
 
+import language.implicitConversions
+
 /** A class which the repl utilizes to expose predefined objects.
  *  The base implementation is empty; the standard repl implementation
  *  is StdReplVals.

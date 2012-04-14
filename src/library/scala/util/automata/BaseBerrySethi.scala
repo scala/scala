@@ -78,7 +78,7 @@ abstract class BaseBerrySethi {
    *  @return     ...
    */
   protected def compFollow1(fol1: Set[Int], r: RegExp): Set[Int] = r match {
-    case x: Alt     => Set(x.rs reverseMap (compFollow1(fol1, _)) flatten: _*)
+    case x: Alt     => Set((x.rs reverseMap (compFollow1(fol1, _))).flatten: _*)
     case x: Meta    => compFollow1(fol1, x.r)
     case x: Star    => compFollow1(fol1 ++ compFirst(x.r), x.r)
     case x: Sequ    =>

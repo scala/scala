@@ -1,5 +1,7 @@
 package scala.reflect.makro
 
+import language.experimental.macros
+
 // todo. introduce context hierarchy
 // the most lightweight context should just expose the stuff from the SIP
 // the full context should include all traits from scala.reflect.makro (and probably reside in scala-compiler.jar)

@@ -5,6 +5,7 @@ import java.util.concurrent.ExecutionException
 import java.lang.reflect.{ InvocationTargetException, UndeclaredThrowableException }
 import io.{ Sources, Fileish }
 import scala.tools.util.StringOps._
+import language.implicitConversions
 
 /** A simple throwable wrapper so it looks more like a parade of
  *  glittering frame-shaped beauties than the other thing.

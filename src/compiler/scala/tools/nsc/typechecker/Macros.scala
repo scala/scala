@@ -184,9 +184,9 @@ trait Macros { self: Analyzer =>
   def typedMacroBody(typer: Typer, ddef: DefDef): Tree = {
     import typer.context
     if (macroDebug) println("typechecking macro def %s at %s".format(ddef.symbol, ddef.pos))
+    typer.checkFeature(ddef.pos, MacrosFeature)
 
-    implicit def augmentString(s: String) = new AugmentedString(s)
-    class AugmentedString(s: String) {
+    implicit class AugmentedString(s: String) {
       def abbreviateCoreAliases: String = { // hack!
         var result = s
         result = result.replace("c.mirror.TypeTag", "c.TypeTag")
@@ -544,14 +544,14 @@ trait Macros { self: Analyzer =>
 
       val implCtxParam = if (implParamss.length > 0 && implParamss(0).length > 0) implParamss(0)(0) else null
       def implParamToDefParam(implParam: Symbol): Symbol = {
-        val indices = (implParamss drop 1 zipWithIndex) map { case (implParams, index) => (index, implParams indexOf implParam) } filter (_._2 != -1) headOption;
+        val indices = (((implParamss drop 1).zipWithIndex) map { case (implParams, index) => (index, implParams indexOf implParam) } filter (_._2 != -1)).headOption
         val defParam = indices flatMap {
           case (plistIndex, pIndex) =>
             if (defParamss.length <= plistIndex) None
             else if (defParamss(plistIndex).length <= pIndex) None
             else Some(defParamss(plistIndex)(pIndex))
         }
-        defParam orNull
+        defParam.orNull
       }
 
       class UnsigmaTypeMap extends TypeMap {

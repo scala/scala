@@ -3,6 +3,9 @@ Type :help for more information.
 
 scala> 
 
+scala> import language.experimental.macros
+import language.experimental.macros
+
 scala> import scala.reflect.makro.{Context => Ctx}
 import scala.reflect.makro.{Context=>Ctx}
 

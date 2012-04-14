@@ -2,6 +2,7 @@ package scala.reflect
 
 import api.Universe
 import makro.Context
+import language.implicitConversions
 
 // todo. unfortunately, current type inferencer doesn't infer type parameters of implicit values
 // this means that during macro expansion these macros will get Nothing instead of real T

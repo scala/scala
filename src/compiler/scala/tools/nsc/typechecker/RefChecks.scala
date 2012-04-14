@@ -10,6 +10,7 @@ import symtab.Flags._
 import collection.{ mutable, immutable }
 import transform.InfoTransform
 import scala.collection.mutable.ListBuffer
+import language.postfixOps
 
 /** <p>
  *    Post-attribution checking and transformation.
@@ -358,7 +359,7 @@ abstract class RefChecks extends InfoTransform with reflect.internal.transform.R
         /** Is the intersection between given two lists of overridden symbols empty?
          */
         def intersectionIsEmpty(syms1: List[Symbol], syms2: List[Symbol]) =
-          !(syms1 exists (syms2 contains))
+          !(syms1 exists (syms2 contains _))
 
         if (typesOnly) checkOverrideTypes()
         else {

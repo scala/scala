@@ -7,6 +7,7 @@ package scala.tools.nsc
 package interpreter
 
 import scala.collection.{ mutable, immutable }
+import language.implicitConversions
 
 /** Mix this into an object and use it as a phasing
  *  swiss army knife.

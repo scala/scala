@@ -10,6 +10,7 @@ package page
 
 import model._
 import scala.xml.{ NodeSeq, Text, UnprefixedAttribute }
+import language.postfixOps
 
 class Template(universe: doc.Universe, tpl: DocTemplateEntity) extends HtmlPage {
 
