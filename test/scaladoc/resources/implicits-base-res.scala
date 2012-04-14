@@ -28,6 +28,8 @@ class A[T] {
 }
 /** Companion object with implicit transformations  */
 object A {
+  import language.implicitConversions // according to SIP18
+
   implicit def pimpA0[V](a: A[V]) = new PimpedA(a)
   implicit def pimpA1[ZBUR: Numeric](a: A[ZBUR]) = new NumericA[ZBUR](a)
   implicit def pimpA2(a: A[Int]) = new IntA(a)

@@ -3,6 +3,8 @@
  */
 package scala.test.scaladoc.implicits {
 
+  import language.implicitConversions // according to SIP18
+
   // the classes involved
   case class Z[U](a: U)
   case class Intermediate[T, U](t: T, u: U)
