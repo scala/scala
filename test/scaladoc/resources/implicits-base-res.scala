@@ -11,23 +11,27 @@ trait MyNumeric[R]
  *  - tests the complete type inference
  *  - the following inherited methods should appear:
  * {{{
- * def convToGtColonDoubleA: Double    // pimpA3: with a constraint that T <: Double
- * def convToIntA: Int                 // pimpA2: with a constraint that T = Int
- * def convToManifestA: T              // pimpA7: with 2 constraints: T: Manifest and T <: Double
- * def convToMyNumericA: T             // pimpA6: with a constraint that there is x: MyNumeric[T] implicit in scope
- * def convToNumericA: T               // pimpA1: with a constraint that there is x: Numeric[T] implicit in scope
- * def convToPimpedA: Bar[Foo[T]]      // pimpA5: no constraints
- * def convToPimpedA: S                // pimpA4: with 3 constraints: T = Foo[Bar[S]], S: Foo and S: Bar
- * def convToTraversableOps: T         // pimpA7: with 2 constraints: T: Manifest and T <: Double
- *                                     // should not be abstract!
+ * def convToGtColonDoubleA(x: Double)    // pimpA3: with a constraint that T <: Double
+ * def convToIntA(x: Int)                 // pimpA2: with a constraint that T = Int
+ * def convToManifestA(x: T)              // pimpA7: with 2 constraints: T: Manifest and T <: Double
+ * def convToMyNumericA(x: T)             // pimpA6: with a constraint that there is x: MyNumeric[T] implicit in scope
+ * def convToNumericA(x: T)               // pimpA1: with a constraint that there is x: Numeric[T] implicit in scope
+ * def convToPimpedA(x: Bar[Foo[T]])      // pimpA5: no constraints
+ * def convToPimpedA(x: S)                // pimpA4: with 3 constraints: T = Foo[Bar[S]], S: Foo and S: Bar
+ * def convToTraversableOps(x: T)         // pimpA7: with 2 constraints: T: Manifest and T <: Double
+ *                                        // should not be abstract!
  * }}}
  */
 class A[T] {
   /** This should prevent the implicitly inherited `def convToPimpedA: T` from `pimpA0` from showing up */
-  def convToPimpedA: T = sys.error("Let's check it out!")
+  def convToPimpedA(x: T): T = sys.error("Let's check it out!")
+  /** This should check implicit member elimination in the case of subtyping */
+  def foo(a: T, b: AnyRef): T
 }
 /** Companion object with implicit transformations  */
 object A {
+  import language.implicitConversions // according to SIP18
+
   implicit def pimpA0[V](a: A[V]) = new PimpedA(a)
   implicit def pimpA1[ZBUR: Numeric](a: A[ZBUR]) = new NumericA[ZBUR](a)
   implicit def pimpA2(a: A[Int]) = new IntA(a)
@@ -36,7 +40,7 @@ object A {
   implicit def pimpA5[Z](a: A[Z]): PimpedA[Bar[Foo[Z]]] = sys.error("not implemented")
   implicit def pimpA6[Z: MyNumeric](a: A[Z]) = new MyNumericA[Z](a)
   // TODO: Add H <: Double and see why it crashes for C and D -- context bounds, need to check!
-  implicit def pimpA7[H <: Double : Manifest](a: A[H]) = new ManifestA[H](a) with MyTraversableOps[H] { def convToTraversableOps: H = sys.error("no") }
+  implicit def pimpA7[H <: Double : Manifest](a: A[H]) = new ManifestA[H](a) with MyTraversableOps[H] { def convToTraversableOps(x: H): H = sys.error("no") }
 }
 
 
@@ -44,13 +48,13 @@ object A {
  *  - tests the existential type solving
  *  - the following inherited methods should appear:
  * {{{
- * def convToGtColonDoubleA: Double    // pimpA3: no constraints
- * def convToManifestA: Double         // pimpA7: no constraints
- * def convToMyNumericA: Double        // pimpA6: (if showAll is set) with a constraint that there is x: MyNumeric[Double] implicit in scope
- * def convToNumericA: Double          // pimpA1: no constraintsd
- * def convToPimpedA: Bar[Foo[Double]] // pimpA5: no constraints
- * def convToTraversableOps: Double    // pimpA7: no constraints
- *                                     // should not be abstract!
+ * def convToGtColonDoubleA(x: Double)    // pimpA3: no constraints
+ * def convToManifestA(x: Double)         // pimpA7: no constraints
+ * def convToMyNumericA(x: Double)        // pimpA6: (if showAll is set) with a constraint that there is x: MyNumeric[Double] implicit in scope
+ * def convToNumericA(x: Double)          // pimpA1: no constraintsd
+ * def convToPimpedA(x: Bar[Foo[Double]]) // pimpA5: no constraints
+ * def convToTraversableOps(x: Double)    // pimpA7: no constraints
+ *                                       // should not be abstract!
  * }}}
  */
 class B extends A[Double]
@@ -61,10 +65,10 @@ object B extends A
  *  - tests asSeenFrom
  *  - the following inherited methods should appear:
  * {{{
- * def convToIntA: Int                 // pimpA2: no constraints
- * def convToMyNumericA: Int           // pimpA6: (if showAll is set) with a constraint that there is x: MyNumeric[Int] implicit in scope
- * def convToNumericA: Int             // pimpA1: no constraints
- * def convToPimpedA: Bar[Foo[Int]]    // pimpA5: no constraints
+ * def convToIntA(x: Int)                 // pimpA2: no constraints
+ * def convToMyNumericA(x: Int)           // pimpA6: (if showAll is set) with a constraint that there is x: MyNumeric[Int] implicit in scope
+ * def convToNumericA(x: Int)             // pimpA1: no constraints
+ * def convToPimpedA(x: Bar[Foo[Int]])    // pimpA5: no constraints
  * }}}
  */
 class C extends A[Int]
@@ -75,9 +79,9 @@ object C extends A
  *  - tests implicit elimination
  *  - the following inherited methods should appear:
  * {{{
- * def convToMyNumericA: String        // pimpA6: (if showAll is set) with a constraint that there is x: MyNumeric[String] implicit in scope
- * def convToNumericA: String          // pimpA1: (if showAll is set) with a constraint that there is x: Numeric[String] implicit in scope
- * def convToPimpedA: Bar[Foo[String]] // pimpA5: no constraints
+ * def convToMyNumericA(x: String)        // pimpA6: (if showAll is set) with a constraint that there is x: MyNumeric[String] implicit in scope
+ * def convToNumericA(x: String)          // pimpA1: (if showAll is set) with a constraint that there is x: Numeric[String] implicit in scope
+ * def convToPimpedA(x: Bar[Foo[String]]) // pimpA5: no constraints
  * }}}
  */
 class D extends A[String]
@@ -90,7 +94,7 @@ object D extends A
  *  - A, B and C should be implicitly converted to this */
 class PimpedA[V](a: A[V]) {
   /** The convToPimpedA: V documentation... */
-  def convToPimpedA: V = sys.error("Not implemented")
+  def convToPimpedA(x: V): V = sys.error("Not implemented")
 }
 
 /** NumericA class <br/>
@@ -98,7 +102,7 @@ class PimpedA[V](a: A[V]) {
  *  - A, B and C should be implicitly converted to this */
 class NumericA[U: Numeric](a: A[U]) {
   /** The convToNumericA: U documentation... */
-  def convToNumericA: U = implicitly[Numeric[U]].zero
+  def convToNumericA(x: U): U = implicitly[Numeric[U]].zero
 }
 
 /** IntA class <br/>
@@ -106,7 +110,7 @@ class NumericA[U: Numeric](a: A[U]) {
  *  - A and C should be implicitly converted to this */
 class IntA(a: A[Int]) {
   /** The convToIntA: Int documentation... */
-  def convToIntA: Int = 0
+  def convToIntA(x: Int): Int = 0
 }
 
 /** GtColonDoubleA class <br/>
@@ -114,7 +118,7 @@ class IntA(a: A[Int]) {
  *  - A and B should be implicitly converted to this */
 class GtColonDoubleA(a: A[T] forSome { type T <: Double }) {
   /** The convToGtColonDoubleA: Double documentation... */
-  def convToGtColonDoubleA: Double = 0
+  def convToGtColonDoubleA(x: Double): Double = 0
 }
 
 /** MyNumericA class <br/>
@@ -122,7 +126,7 @@ class GtColonDoubleA(a: A[T] forSome { type T <: Double }) {
  *  - A should be implicitly converted to this */
 class MyNumericA[U: MyNumeric](a: A[U]) {
   /** The convToMyNumericA: U documentation... */
-  def convToMyNumericA: U = sys.error("dunno")
+  def convToMyNumericA(x: U): U = sys.error("dunno")
 }
 
 /** ManifestA class <br/>
@@ -130,7 +134,7 @@ class MyNumericA[U: MyNumeric](a: A[U]) {
  *  - A, B, C, D should be implicitly converted to this */
 class ManifestA[W: Manifest](a: A[W]) {
   /** The convToManifestA: W documentation... */
-  def convToManifestA: W = sys.error("dunno")
+  def convToManifestA(x: W): W = sys.error("dunno")
 }
 
 /** MyTraversableOps class <br/>
@@ -138,6 +142,6 @@ class ManifestA[W: Manifest](a: A[W]) {
  */
 trait MyTraversableOps[S] {
   /** The convToTraversableOps: S documentation... */
-  def convToTraversableOps: S
+  def convToTraversableOps(x: S): S
 }
 
