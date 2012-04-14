@@ -401,5 +401,6 @@ object Float extends AnyValCompanion {
   /** The String representation of the scala.Float companion object.
    */
   override def toString = "object scala.Float"
+  implicit def float2double(x: Float): Double = x.toDouble
 }
 

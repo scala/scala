@@ -14,6 +14,20 @@ trait AnyValReps {
   sealed abstract class AnyValNum(name: String, repr: Option[String], javaEquiv: String) extends AnyValRep(name,repr,javaEquiv) {
 
     case class Op(val op : String, val doc : String)
+    
+    private def companionCoercions(tos: String*) = {
+      tos.toList map (to =>
+        """implicit def %s2%s(x: %s): %s = x.to%s""".format(javaEquiv, to, name, to.capitalize, to.capitalize)
+      )
+    }
+    def implicitCoercions: List[String] = javaEquiv match {
+      case "byte"           => companionCoercions("short", "int", "long", "float", "double")
+      case "short" | "char" => companionCoercions("int", "long", "float", "double")
+      case "int"            => companionCoercions("long", "float", "double")
+      case "long"           => companionCoercions("float", "double")
+      case "float"          => companionCoercions("double")
+      case _                => Nil
+    }
 
     def isCardinal: Boolean = isIntegerType(this)
     def unaryOps = {
@@ -160,7 +174,7 @@ trait AnyValReps {
     }
     def objectLines = {
       val comp = if (isCardinal) cardinalCompanion else floatingCompanion
-      (comp + allCompanions).trim.lines map interpolate toList
+      ((comp + allCompanions).trim.lines map interpolate).toList ++ implicitCoercions
     }
 
     /** Makes a set of binary operations based on the given set of ops, args, and resultFn.

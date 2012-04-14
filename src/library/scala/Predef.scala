@@ -349,30 +349,30 @@ object Predef extends LowPriorityImplicits {
 
   // Primitive Widenings --------------------------------------------------------------
 
-  implicit def byte2short(x: Byte): Short = x.toShort
-  implicit def byte2int(x: Byte): Int = x.toInt
-  implicit def byte2long(x: Byte): Long = x.toLong
-  implicit def byte2float(x: Byte): Float = x.toFloat
-  implicit def byte2double(x: Byte): Double = x.toDouble
+  @deprecated("Use a method in an AnyVal's companion object", "2.10.0") def byte2short(x: Byte): Short = x.toShort
+  @deprecated("Use a method in an AnyVal's companion object", "2.10.0") def byte2int(x: Byte): Int = x.toInt
+  @deprecated("Use a method in an AnyVal's companion object", "2.10.0") def byte2long(x: Byte): Long = x.toLong
+  @deprecated("Use a method in an AnyVal's companion object", "2.10.0") def byte2float(x: Byte): Float = x.toFloat
+  @deprecated("Use a method in an AnyVal's companion object", "2.10.0") def byte2double(x: Byte): Double = x.toDouble
 
-  implicit def short2int(x: Short): Int = x.toInt
-  implicit def short2long(x: Short): Long = x.toLong
-  implicit def short2float(x: Short): Float = x.toFloat
-  implicit def short2double(x: Short): Double = x.toDouble
+  @deprecated("Use a method in an AnyVal's companion object", "2.10.0") def short2int(x: Short): Int = x.toInt
+  @deprecated("Use a method in an AnyVal's companion object", "2.10.0") def short2long(x: Short): Long = x.toLong
+  @deprecated("Use a method in an AnyVal's companion object", "2.10.0") def short2float(x: Short): Float = x.toFloat
+  @deprecated("Use a method in an AnyVal's companion object", "2.10.0") def short2double(x: Short): Double = x.toDouble
 
-  implicit def char2int(x: Char): Int = x.toInt
-  implicit def char2long(x: Char): Long = x.toLong
-  implicit def char2float(x: Char): Float = x.toFloat
-  implicit def char2double(x: Char): Double = x.toDouble
+  @deprecated("Use a method in an AnyVal's companion object", "2.10.0") def char2int(x: Char): Int = x.toInt
+  @deprecated("Use a method in an AnyVal's companion object", "2.10.0") def char2long(x: Char): Long = x.toLong
+  @deprecated("Use a method in an AnyVal's companion object", "2.10.0") def char2float(x: Char): Float = x.toFloat
+  @deprecated("Use a method in an AnyVal's companion object", "2.10.0") def char2double(x: Char): Double = x.toDouble
 
-  implicit def int2long(x: Int): Long = x.toLong
-  implicit def int2float(x: Int): Float = x.toFloat
-  implicit def int2double(x: Int): Double = x.toDouble
+  @deprecated("Use a method in an AnyVal's companion object", "2.10.0") def int2long(x: Int): Long = x.toLong
+  @deprecated("Use a method in an AnyVal's companion object", "2.10.0") def int2float(x: Int): Float = x.toFloat
+  @deprecated("Use a method in an AnyVal's companion object", "2.10.0") def int2double(x: Int): Double = x.toDouble
 
-  implicit def long2float(x: Long): Float = x.toFloat
-  implicit def long2double(x: Long): Double = x.toDouble
+  @deprecated("Use a method in an AnyVal's companion object", "2.10.0") def long2float(x: Long): Float = x.toFloat
+  @deprecated("Use a method in an AnyVal's companion object", "2.10.0") def long2double(x: Long): Double = x.toDouble
 
-  implicit def float2double(x: Float): Double = x.toDouble
+  @deprecated("Use a method in an AnyVal's companion object", "2.10.0") def float2double(x: Float): Double = x.toDouble
 
   // "Autoboxing" and "Autounboxing" ---------------------------------------------------
 

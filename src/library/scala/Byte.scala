@@ -622,5 +622,10 @@ object Byte extends AnyValCompanion {
   /** The String representation of the scala.Byte companion object.
    */
   override def toString = "object scala.Byte"
+  implicit def byte2short(x: Byte): Short = x.toShort
+  implicit def byte2int(x: Byte): Int = x.toInt
+  implicit def byte2long(x: Byte): Long = x.toLong
+  implicit def byte2float(x: Byte): Float = x.toFloat
+  implicit def byte2double(x: Byte): Double = x.toDouble
 }
 

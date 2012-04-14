@@ -622,5 +622,7 @@ object Long extends AnyValCompanion {
   /** The String representation of the scala.Long companion object.
    */
   override def toString = "object scala.Long"
+  implicit def long2float(x: Long): Float = x.toFloat
+  implicit def long2double(x: Long): Double = x.toDouble
 }
 

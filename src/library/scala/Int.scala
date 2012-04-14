@@ -622,5 +622,8 @@ object Int extends AnyValCompanion {
   /** The String representation of the scala.Int companion object.
    */
   override def toString = "object scala.Int"
+  implicit def int2long(x: Int): Long = x.toLong
+  implicit def int2float(x: Int): Float = x.toFloat
+  implicit def int2double(x: Int): Double = x.toDouble
 }
 

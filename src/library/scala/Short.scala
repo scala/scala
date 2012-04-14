@@ -622,5 +622,9 @@ object Short extends AnyValCompanion {
   /** The String representation of the scala.Short companion object.
    */
   override def toString = "object scala.Short"
+  implicit def short2int(x: Short): Int = x.toInt
+  implicit def short2long(x: Short): Long = x.toLong
+  implicit def short2float(x: Short): Float = x.toFloat
+  implicit def short2double(x: Short): Double = x.toDouble
 }
 
