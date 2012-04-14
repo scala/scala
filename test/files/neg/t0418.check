@@ -4,4 +4,7 @@ t0418.scala:2: error: not found: value Foo12340771
 t0418.scala:2: error: not found: value x
   null match { case Foo12340771.Bar(x) => x }
                                           ^
-two errors found
+t0418.scala:2: error: Could not typecheck extractor call: case class <none> with arguments List((x @ _))
+  null match { case Foo12340771.Bar(x) => x }
+                                   ^
+three errors found

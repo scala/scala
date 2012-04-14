@@ -3,4 +3,7 @@ t112706A.scala:5: error: constructor cannot be instantiated to expected type;
  required: String
     case Tuple2(node,_) =>   
          ^
-one error found
+t112706A.scala:5: error: Could not typecheck extractor call: case class Tuple2 with arguments List((node @ _), _)
+    case Tuple2(node,_) =>   
+               ^
+two errors found

@@ -18,7 +18,7 @@ object Test {
   }
 
   
-  def main(args: Array[String]): Any = {
+  def main(args: Array[String]): Unit = {
     println(reset(test1()))
     println(reset(test2()))
   }
