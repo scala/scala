@@ -294,18 +294,24 @@ trait Trees { self: Universe =>
     override var symbol: Symbol = NoSymbol
   }
 
+  /** A tree with a name - effectively, a DefTree or RefTree.
+   */
+  trait NameTree extends Tree {
+    def name: Name
+  }
+
   /** A tree which references a symbol-carrying entity.
    *  References one, as opposed to defining one; definitions
    *  are in DefTrees.
    */
-  trait RefTree extends SymTree {
+  trait RefTree extends SymTree with NameTree {
     def qualifier: Tree    // empty for Idents
     def name: Name
   }
 
   /** A tree which defines a symbol-carrying entity.
    */
-  abstract class DefTree extends SymTree {
+  abstract class DefTree extends SymTree with NameTree {
     def name: Name
     override def isDef = true
   }
