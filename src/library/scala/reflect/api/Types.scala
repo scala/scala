@@ -57,6 +57,10 @@ trait Types { self: Universe =>
      */
     def isHigherKinded: Boolean   // !!! This should be called "isTypeConstructor", no?
 
+    /** Does this type refer to abstract types or is an abstract type?
+     */
+    def isConcrete: Boolean
+
     /**
      *  Expands type aliases and converts higher-kinded TypeRefs to PolyTypes.
      *  Functions on types are also implemented as PolyTypes.

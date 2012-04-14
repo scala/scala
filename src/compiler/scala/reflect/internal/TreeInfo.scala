@@ -590,7 +590,7 @@ abstract class TreeInfo {
   }
 
   object Reified {
-    def unapply(tree: Tree): Option[(Tree, List[ValDef], Tree)] = tree match {
+    def unapply(tree: Tree): Option[(Tree, List[Tree], Tree)] = tree match {
       case ReifiedTree(reifee, symbolTable, reified, _) =>
         Some(reifee, symbolTable, reified)
       case ReifiedType(reifee, symbolTable, reified) =>
@@ -601,16 +601,16 @@ abstract class TreeInfo {
   }
 
   object ReifiedTree {
-    def unapply(tree: Tree): Option[(Tree, List[ValDef], Tree, Tree)] = tree match {
+    def unapply(tree: Tree): Option[(Tree, List[Tree], Tree, Tree)] = tree match {
       case reifee @ Block((mrDef @ ValDef(_, _, _, _)) :: symbolTable, Apply(Apply(_, List(tree)), List(Apply(_, List(tpe))))) if mrDef.name == nme.MIRROR_SHORT =>
-        Some(reifee, symbolTable map (_.asInstanceOf[ValDef]), tree, tpe)
+        Some(reifee, symbolTable, tree, tpe)
       case _ =>
         None
     }
   }
 
   object InlineableTreeSplice {
-    def unapply(tree: Tree): Option[(Tree, List[ValDef], Tree, Tree, Symbol)] = tree match {
+    def unapply(tree: Tree): Option[(Tree, List[Tree], Tree, Tree, Symbol)] = tree match {
       case select @ Select(ReifiedTree(splicee, symbolTable, tree, tpe), _) if select.symbol == ExprEval || select.symbol == ExprValue =>
         Some(splicee, symbolTable, tree, tpe, select.symbol)
       case _ =>
@@ -619,7 +619,7 @@ abstract class TreeInfo {
   }
 
   object InlinedTreeSplice {
-    def unapply(tree: Tree): Option[(Tree, List[ValDef], Tree, Tree)] = tree match {
+    def unapply(tree: Tree): Option[(Tree, List[Tree], Tree, Tree)] = tree match {
       case Select(ReifiedTree(splicee, symbolTable, tree, tpe), name) if name == ExprTree.name =>
         Some(splicee, symbolTable, tree, tpe)
       case _ =>
@@ -628,16 +628,16 @@ abstract class TreeInfo {
   }
 
   object ReifiedType {
-    def unapply(tree: Tree): Option[(Tree, List[ValDef], Tree)] = tree match {
+    def unapply(tree: Tree): Option[(Tree, List[Tree], Tree)] = tree match {
       case reifee @ Block((mrDef @ ValDef(_, _, _, _)) :: symbolTable, Apply(_, List(tpe))) if mrDef.name == nme.MIRROR_SHORT =>
-        Some(reifee, symbolTable map (_.asInstanceOf[ValDef]), tpe)
+        Some(reifee, symbolTable, tpe)
       case _ =>
         None
     }
   }
 
   object InlinedTypeSplice {
-    def unapply(tree: Tree): Option[(Tree, List[ValDef], Tree)] = tree match {
+    def unapply(tree: Tree): Option[(Tree, List[Tree], Tree)] = tree match {
       case Select(ReifiedType(splicee, symbolTable, tpe), name) if name == TypeTagTpe.name =>
         Some(splicee, symbolTable, tpe)
       case _ =>

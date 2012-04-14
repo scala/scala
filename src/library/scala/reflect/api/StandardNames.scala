@@ -44,6 +44,7 @@ trait StandardNames { self: Universe =>
     val MIRROR_FREE_PREFIX: TermName
     val MIRROR_FREE_THIS_SUFFIX: TermName
     val MIRROR_FREE_VALUE_SUFFIX: TermName
+    val MIRROR_SYMDEF_PREFIX: TermName
     val MIXIN_CONSTRUCTOR: TermName
     val MODULE_INSTANCE_FIELD: TermName
     val OUTER: TermName

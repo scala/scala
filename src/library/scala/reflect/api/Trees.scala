@@ -85,10 +85,18 @@ trait Trees { self: Universe =>
     def pos_=(pos: Position): Unit = rawatt = (rawatt withPos pos) // the "withPos" part is crucial to robustness
     def setPos(newpos: Position): this.type = { pos = newpos; this }
 
-    private[this] var rawatt: Attachment = NoPosition
-    def attachment: Attachment = rawatt
-    def attachment_=(att: Attachment): Unit = rawatt = att
-    def setAttachment(att: Attachment): this.type = { rawatt = att; this }
+    private var rawatt: Attachment = NoPosition
+    private case class NontrivialAttachment(pos: api.Position, payload: Any) extends Attachment {
+      def withPos(newPos: api.Position) = copy(pos = newPos, payload = payload)
+      def withPayload(newPayload: Any) = copy(pos = pos, payload = newPayload)
+    }
+    // todo. annotate T with ClassTag and make pattern matcher use it
+    // todo. support multiple attachments, and remove the assignment. only leave attach/detach
+//    def attachment[T]: T = rawatt.payload.asInstanceOf[T]
+//    def attachmentOpt[T]: Option[T] = try { Some(rawatt.payload.asInstanceOf[T]) } catch { case _: Throwable => None }
+    def attachment: Any = rawatt.payload
+    def attachment_=(att: Any): Unit = rawatt = NontrivialAttachment(pos, att)
+    def setAttachment(att: Any): this.type = { attachment = att; this }
 
     private[this] var rawtpe: Type = _
 
@@ -238,7 +246,7 @@ trait Trees { self: Universe =>
       duplicateTree(this).asInstanceOf[this.type]
 
     private[scala] def copyAttrs(tree: Tree): this.type = {
-      attachment = tree.attachment
+      rawatt = tree.rawatt
       tpe = tree.tpe
       if (hasSymbol) symbol = tree.symbol
       this

@@ -40,7 +40,15 @@ trait Position extends scala.reflect.api.Position with scala.reflect.api.Attachm
 
   /** A bit weird method that is necessary to safely update positions without destroying custom attachments */
   // necessary for conformance with Attachment
-  def withPos(pos: scala.reflect.api.Position) = pos
+  def withPos(newPos: scala.reflect.api.Position): scala.reflect.api.Attachment = newPos
+
+  /** Exposes itself as payload of Attachment */
+  // necessary for conformance with Attachment
+  def payload: Position = this
+
+  /** A bit weird method that is necessary to safely update positions without destroying custom attachments */
+  // necessary for conformance with Attachment
+  def withPayload(newPos: Any): scala.reflect.api.Attachment = newPos.asInstanceOf[Position]
 
   /** Java file corresponding to the source file of this position.
    */

@@ -173,6 +173,11 @@ trait Symbols { self: Universe =>
      */
     def isSkolem       : Boolean
 
+    /** Does this symbol represent an existentially bound type?
+     *  If yes, `isType` is also guaranteed to be true.
+     */
+    def isExistential  : Boolean
+
     /** Does this symbol represent a free type captured by reification?
      */
     // needed for ones who wish to inspect reified trees
