@@ -67,6 +67,7 @@ trait Contexts { self: Analyzer =>
     val c = sc.make(unit, tree, sc.owner, sc.scope, sc.imports)
     if (erasedTypes) c.setThrowErrors() else c.setReportErrors()
     c.implicitsEnabled = !erasedTypes
+    c.enrichmentEnabled = c.implicitsEnabled
     c
   }
 
@@ -106,7 +107,7 @@ trait Contexts { self: Analyzer =>
     var depth: Int = 0
     var imports: List[ImportInfo] = List()   // currently visible imports
     var openImplicits: List[(Type,Tree)] = List()   // types for which implicit arguments
-                                                    // are currently searched
+                                             // are currently searched
     // for a named application block (Tree) the corresponding NamedApplyInfo
     var namedApplyBlockInfo: Option[(Tree, NamedApplyInfo)] = None
     var prefix: Type = NoPrefix
@@ -120,6 +121,7 @@ trait Contexts { self: Analyzer =>
     var diagnostic: List[String] = Nil      // these messages are printed when issuing an error
     var implicitsEnabled = false
     var macrosEnabled = true
+    var enrichmentEnabled = false // to selectively allow enrichment in patterns, where other kinds of implicit conversions are not allowed
     var checking = false
     var retyping = false
 
@@ -192,8 +194,25 @@ trait Contexts { self: Analyzer =>
     def withImplicitsDisabled[T](op: => T): T = {
       val saved = implicitsEnabled
       implicitsEnabled = false
+      val savedP = enrichmentEnabled
+      enrichmentEnabled = false
       try op
-      finally implicitsEnabled = saved
+      finally {
+        implicitsEnabled = saved
+        enrichmentEnabled = savedP
+      }
+    }
+
+    def withImplicitsDisabledAllowEnrichment[T](op: => T): T = {
+      val saved = implicitsEnabled
+      implicitsEnabled = false
+      val savedP = enrichmentEnabled
+      enrichmentEnabled = true
+      try op
+      finally {
+        implicitsEnabled = saved
+        enrichmentEnabled = savedP
+      }
     }
 
     def withMacrosEnabled[T](op: => T): T = {
@@ -246,6 +265,7 @@ trait Contexts { self: Analyzer =>
       c.typingIndentLevel = typingIndentLevel
       c.implicitsEnabled = this.implicitsEnabled
       c.macrosEnabled = this.macrosEnabled
+      c.enrichmentEnabled = this.enrichmentEnabled
       c.checking = this.checking
       c.retyping = this.retyping
       c.openImplicits = this.openImplicits
@@ -298,6 +318,7 @@ trait Contexts { self: Analyzer =>
     def makeImplicit(reportAmbiguousErrors: Boolean) = {
       val c = makeSilent(reportAmbiguousErrors)
       c.implicitsEnabled = false
+      c.enrichmentEnabled = false
       c
     }
 
