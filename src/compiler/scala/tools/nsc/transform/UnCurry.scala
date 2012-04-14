@@ -446,8 +446,10 @@ abstract class UnCurry extends InfoTransform
           }
 
           val members =
-            if (isPartial) List(applyOrElseMethodDef, isDefinedAtMethodDef)
-            else List(applyMethodDef)
+            if (isPartial) {
+              assert(!opt.virtPatmat, "PartialFunction should have been synthesized during typer "+ fun);
+              List(applyOrElseMethodDef, isDefinedAtMethodDef)
+            } else List(applyMethodDef)
 
           // println("MEMBERS "+ members)
           val res = localTyper.typedPos(fun.pos) {

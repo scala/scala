@@ -190,32 +190,29 @@ abstract class SelectiveCPSTransform extends PluginComponent with
 
           val targettp = transformCPSType(tree.tpe)
 
-//          val expr2 = if (catches.nonEmpty) {
-            val pos = catches.head.pos
-            val argSym = currentOwner.newValueParameter(cpsNames.ex, pos).setInfo(ThrowableClass.tpe)
-            val rhs = Match(Ident(argSym), catches1)
-            val fun = Function(List(ValDef(argSym)), rhs)
-            val funSym = currentOwner.newValueParameter(cpsNames.catches, pos).setInfo(appliedType(PartialFunctionClass.tpe, List(ThrowableClass.tpe, targettp)))
-            val funDef = localTyper.typed(atPos(pos) { ValDef(funSym, fun) })
-            val expr2 = localTyper.typed(atPos(pos) { Apply(Select(expr1, expr1.tpe.member(cpsNames.flatMapCatch)), List(Ident(funSym))) })
+          val pos = catches.head.pos
+          val funSym = currentOwner.newValueParameter(cpsNames.catches, pos).setInfo(appliedType(PartialFunctionClass.tpe, List(ThrowableClass.tpe, targettp)))
+          val funDef = localTyper.typed(atPos(pos) {
+            ValDef(funSym, Match(EmptyTree, catches1))
+          })
+          val expr2 = localTyper.typed(atPos(pos) {
+            Apply(Select(expr1, expr1.tpe.member(cpsNames.flatMapCatch)), List(Ident(funSym)))
+          })
 
-            argSym.owner = fun.symbol
-            rhs.changeOwner(currentOwner -> fun.symbol)
+          val exSym = currentOwner.newValueParameter(cpsNames.ex, pos).setInfo(ThrowableClass.tpe)
 
-            val exSym = currentOwner.newValueParameter(cpsNames.ex, pos).setInfo(ThrowableClass.tpe)
+          import CODE._
+          // generate a case that is supported directly by the back-end
+          val catchIfDefined = CaseDef(
+                Bind(exSym, Ident(nme.WILDCARD)),
+                EmptyTree,
+                IF ((REF(funSym) DOT nme.isDefinedAt)(REF(exSym))) THEN (REF(funSym) APPLY (REF(exSym))) ELSE Throw(REF(exSym))
+              )
 
-            import CODE._
-            // generate a case that is supported directly by the back-end
-            val catchIfDefined = CaseDef(
-                  Bind(exSym, Ident(nme.WILDCARD)),
-                  EmptyTree,
-                  IF ((REF(funSym) DOT nme.isDefinedAt)(REF(exSym))) THEN (REF(funSym) APPLY (REF(exSym))) ELSE Throw(REF(exSym))
-                )
+          val catch2 = localTyper.typedCases(List(catchIfDefined), ThrowableClass.tpe, targettp)
+          //typedCases(tree, catches, ThrowableClass.tpe, pt)
 
-            val catch2 = localTyper.typedCases(List(catchIfDefined), ThrowableClass.tpe, targettp)
-            //typedCases(tree, catches, ThrowableClass.tpe, pt)
-
-            localTyper.typed(Block(List(funDef), treeCopy.Try(tree, treeCopy.Block(block1, stms, expr2), catch2, finalizer1)))
+          localTyper.typed(Block(List(funDef), treeCopy.Try(tree, treeCopy.Block(block1, stms, expr2), catch2, finalizer1)))
 
 
 /*

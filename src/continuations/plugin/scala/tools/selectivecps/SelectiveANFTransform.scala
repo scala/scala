@@ -457,11 +457,13 @@ abstract class SelectiveANFTransform extends PluginComponent with Transform with
       val (anfStats, anfExpr) = rec(stms, cpsA, List())
       // println("\nanf-block:\n"+ ((stms :+ expr) mkString ("{", "\n", "}")) +"\nBECAME\n"+ ((anfStats :+ anfExpr) mkString ("{", "\n", "}")))
 
-      if (anfStats.nonEmpty && (anfStats forall gen.hasSynthCaseSymbol)) {
+      // SUPER UGLY HACK: handle virtpatmat-style matches, whose labels have already been turned into DefDefs
+      if (anfStats.nonEmpty && (anfStats forall (t => !t.isDef || gen.hasSynthCaseSymbol(t)))) {
         val (prologue, rest) = (anfStats :+ anfExpr) span (s => !s.isInstanceOf[DefDef]) // find first case
         // val (defs, calls) = rest partition (_.isInstanceOf[DefDef])
         if (rest nonEmpty){
-          val stats = prologue ++ rest.reverse // ++ calls
+          // the filter drops the ()'s emitted when transValue encountered a LabelDef
+          val stats = prologue ++ (rest filter (_.isInstanceOf[DefDef])).reverse // ++ calls
           // println("REVERSED "+ (stats mkString ("{", "\n", "}")))
           (stats, localTyper.typed{Apply(Ident(rest.head.symbol), List())}) // call first label to kick-start the match
         } else (anfStats, anfExpr)
