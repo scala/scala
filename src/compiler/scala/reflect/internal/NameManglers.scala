@@ -128,12 +128,7 @@ trait NameManglers {
       else name
     )
 
-    def macroMethodName(name: Name) = {
-      val base = if (name.isTypeName) nme.TYPEkw else nme.DEFkw
-      base append nme.MACRO append name
-    }
-
-    /** Return the original name and the types on which this name
+   /** Return the original name and the types on which this name
      *  is specialized. For example,
      *  {{{
      *     splitSpecializedName("foo$mIcD$sp") == ('foo', "I", "D")

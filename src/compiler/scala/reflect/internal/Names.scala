@@ -8,6 +8,7 @@ package internal
 
 import scala.io.Codec
 import java.security.MessageDigest
+import language.implicitConversions
 
 /** The class Names ...
  *

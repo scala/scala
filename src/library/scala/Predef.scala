@@ -14,6 +14,7 @@ import mutable.ArrayOps
 import generic.CanBuildFrom
 import annotation.{ elidable, implicitNotFound }
 import annotation.elidable.ASSERTION
+import language.{implicitConversions, existentials}
 
 /** The `Predef` object provides definitions that are accessible in all Scala
  *  compilation units without explicit qualification.
@@ -99,16 +100,39 @@ object Predef extends LowPriorityImplicits {
   // def AnyRef = scala.AnyRef
 
   // Manifest types, companions, and incantations for summoning
+  @deprecated("Use `@scala.reflect.ClassTag` instead", "2.10.0")
   type ClassManifest[T] = scala.reflect.ClassManifest[T]
-  type Manifest[T]      = scala.reflect.Manifest[T]
+  @deprecated("OptManifest is no longer supported and using it may lead to incorrect results, use `@scala.reflect.TypeTag` instead", "2.10.0")
   type OptManifest[T]   = scala.reflect.OptManifest[T]
+  @deprecated("Use `@scala.reflect.ConcreteTypeTag` instead", "2.10.0")
+  type Manifest[T]      = scala.reflect.Manifest[T]
+  @deprecated("Use `@scala.reflect.ClassTag` instead", "2.10.0")
   val ClassManifest     = scala.reflect.ClassManifest
-  val Manifest          = scala.reflect.Manifest
-  val NoManifest        = scala.reflect.NoManifest
+  // [Paul to Eugene] No lazy vals in Predef.  Too expensive.  Have to work harder on breaking initialization dependencies.
+  @deprecated("Use `@scala.reflect.ConcreteTypeTag` instead", "2.10.0")
+  lazy val Manifest     = scala.reflect.Manifest // needs to be lazy, because requires scala.reflect.mirror instance
+  @deprecated("NoManifest is no longer supported and using it may lead to incorrect results, use `@scala.reflect.TypeTag` instead", "2.10.0")
+  lazy val NoManifest   = scala.reflect.NoManifest // needs to be lazy, because requires scala.reflect.mirror instance
 
   def manifest[T](implicit m: Manifest[T])           = m
   def classManifest[T](implicit m: ClassManifest[T]) = m
   def optManifest[T](implicit m: OptManifest[T])     = m
+
+  // Tag types and companions, and incantations for summoning
+  type ClassTag[T]         = scala.reflect.ClassTag[T]
+  type TypeTag[T]          = scala.reflect.TypeTag[T]
+  type ConcreteTypeTag[T]  = scala.reflect.ConcreteTypeTag[T]
+  val ClassTag             = scala.reflect.ClassTag // doesn't need to be lazy, because it's not a path-dependent type
+  // [Paul to Eugene] No lazy vals in Predef.  Too expensive.  Have to work harder on breaking initialization dependencies.
+  lazy val TypeTag         = scala.reflect.TypeTag // needs to be lazy, because requires scala.reflect.mirror instance
+  lazy val ConcreteTypeTag = scala.reflect.ConcreteTypeTag
+
+  // [Eugene to Martin] it's really tedious to type "implicitly[...]" all the time, so I'm reintroducing these shortcuts
+  def classTag[T](implicit ctag: ClassTag[T])                = ctag
+  def tag[T](implicit ttag: TypeTag[T])                      = ttag
+  def typeTag[T](implicit ttag: TypeTag[T])                  = ttag
+  def concreteTag[T](implicit cttag: ConcreteTypeTag[T])     = cttag
+  def concreteTypeTag[T](implicit cttag: ConcreteTypeTag[T]) = cttag
 
   // Minor variations on identity functions
   def identity[A](x: A): A         = x    // @see `conforms` for the implicit version
@@ -325,30 +349,30 @@ object Predef extends LowPriorityImplicits {
 
   // Primitive Widenings --------------------------------------------------------------
 
-  implicit def byte2short(x: Byte): Short = x.toShort
-  implicit def byte2int(x: Byte): Int = x.toInt
-  implicit def byte2long(x: Byte): Long = x.toLong
-  implicit def byte2float(x: Byte): Float = x.toFloat
-  implicit def byte2double(x: Byte): Double = x.toDouble
+  @deprecated("Use a method in an AnyVal's companion object", "2.10.0") def byte2short(x: Byte): Short = x.toShort
+  @deprecated("Use a method in an AnyVal's companion object", "2.10.0") def byte2int(x: Byte): Int = x.toInt
+  @deprecated("Use a method in an AnyVal's companion object", "2.10.0") def byte2long(x: Byte): Long = x.toLong
+  @deprecated("Use a method in an AnyVal's companion object", "2.10.0") def byte2float(x: Byte): Float = x.toFloat
+  @deprecated("Use a method in an AnyVal's companion object", "2.10.0") def byte2double(x: Byte): Double = x.toDouble
 
-  implicit def short2int(x: Short): Int = x.toInt
-  implicit def short2long(x: Short): Long = x.toLong
-  implicit def short2float(x: Short): Float = x.toFloat
-  implicit def short2double(x: Short): Double = x.toDouble
+  @deprecated("Use a method in an AnyVal's companion object", "2.10.0") def short2int(x: Short): Int = x.toInt
+  @deprecated("Use a method in an AnyVal's companion object", "2.10.0") def short2long(x: Short): Long = x.toLong
+  @deprecated("Use a method in an AnyVal's companion object", "2.10.0") def short2float(x: Short): Float = x.toFloat
+  @deprecated("Use a method in an AnyVal's companion object", "2.10.0") def short2double(x: Short): Double = x.toDouble
 
-  implicit def char2int(x: Char): Int = x.toInt
-  implicit def char2long(x: Char): Long = x.toLong
-  implicit def char2float(x: Char): Float = x.toFloat
-  implicit def char2double(x: Char): Double = x.toDouble
+  @deprecated("Use a method in an AnyVal's companion object", "2.10.0") def char2int(x: Char): Int = x.toInt
+  @deprecated("Use a method in an AnyVal's companion object", "2.10.0") def char2long(x: Char): Long = x.toLong
+  @deprecated("Use a method in an AnyVal's companion object", "2.10.0") def char2float(x: Char): Float = x.toFloat
+  @deprecated("Use a method in an AnyVal's companion object", "2.10.0") def char2double(x: Char): Double = x.toDouble
 
-  implicit def int2long(x: Int): Long = x.toLong
-  implicit def int2float(x: Int): Float = x.toFloat
-  implicit def int2double(x: Int): Double = x.toDouble
+  @deprecated("Use a method in an AnyVal's companion object", "2.10.0") def int2long(x: Int): Long = x.toLong
+  @deprecated("Use a method in an AnyVal's companion object", "2.10.0") def int2float(x: Int): Float = x.toFloat
+  @deprecated("Use a method in an AnyVal's companion object", "2.10.0") def int2double(x: Int): Double = x.toDouble
 
-  implicit def long2float(x: Long): Float = x.toFloat
-  implicit def long2double(x: Long): Double = x.toDouble
+  @deprecated("Use a method in an AnyVal's companion object", "2.10.0") def long2float(x: Long): Float = x.toFloat
+  @deprecated("Use a method in an AnyVal's companion object", "2.10.0") def long2double(x: Long): Double = x.toDouble
 
-  implicit def float2double(x: Float): Double = x.toDouble
+  @deprecated("Use a method in an AnyVal's companion object", "2.10.0") def float2double(x: Float): Double = x.toDouble
 
   // "Autoboxing" and "Autounboxing" ---------------------------------------------------
 

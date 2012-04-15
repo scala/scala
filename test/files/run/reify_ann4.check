@@ -1,0 +1,32 @@
+{
+  class D extends StaticAnnotation {
+    def <init>() = {
+      super.<init>();
+      ()
+    }
+  };
+  class C extends Object {
+    def <init>() = {
+      super.<init>();
+      ()
+    }
+  };
+  val c1 = new C @D();
+  ()
+}
+{
+  class D extends scala.annotation.Annotation with scala.annotation.StaticAnnotation {
+    def <init>(): D = {
+      D.super.<init>();
+      ()
+    }
+  };
+  class C extends Object {
+    def <init>(): C = {
+      C.super.<init>();
+      ()
+    }
+  };
+  val c1: C = new C @D();
+  ()
+}

@@ -75,7 +75,6 @@ class ConsoleReporter(val settings: Settings, reader: BufferedReader, writer: Pr
   }
 
   def display(pos: Position, msg: String, severity: Severity) {
-    severity.count += 1
     if (severity != ERROR || severity.count <= ERROR_LIMIT)
       print(pos, msg, severity)
   }

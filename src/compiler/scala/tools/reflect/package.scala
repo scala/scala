@@ -27,7 +27,7 @@ package object reflect {
     }
   }
 
-  def zeroOfClass(clazz: Class[_]) = zeroOf(Manifest.classType(clazz))
+  def zeroOfClass(clazz: Class[_]) = zeroOf(Manifest(ClassManifest(clazz).tpe))
   def zeroOf[T](implicit m: Manifest[T]): AnyRef = {
     if (m == manifest[Boolean] || m == manifest[jl.Boolean]) false: jl.Boolean
     else if (m == manifest[Unit] || m == manifest[jl.Void] || m == manifest[scala.runtime.BoxedUnit]) scala.runtime.BoxedUnit.UNIT

@@ -97,7 +97,7 @@ trait Types extends api.Types { self: SymbolTable =>
    */
   private final val propagateParameterBoundsToTypeVars = sys.props contains "scalac.debug.prop-constraints"
 
-  protected val enableTypeVarExperimentals = settings.Xexperimental.value || settings.YvirtPatmat.value
+  protected val enableTypeVarExperimentals = settings.Xexperimental.value || !settings.XoldPatmat.value
 
   /** Empty immutable maps to avoid allocations. */
   private val emptySymMap   = immutable.Map[Symbol, Symbol]()
@@ -254,7 +254,9 @@ trait Types extends api.Types { self: SymbolTable =>
   case object UnmappableTree extends TermTree {
     override def toString = "<unmappable>"
     super.tpe_=(NoType)
-    override def tpe_=(t: Type) = if (t != NoType) throw new UnsupportedOperationException("tpe_=("+t+") inapplicable for <empty>")
+    override def tpe_=(t: Type) = if (t != NoType) {
+      throw new UnsupportedOperationException("tpe_=("+t+") inapplicable for <empty>")
+    }
   }
 
   abstract class AbsTypeImpl extends AbsType { this: Type =>
@@ -262,8 +264,37 @@ trait Types extends api.Types { self: SymbolTable =>
     def nonPrivateDeclaration(name: Name): Symbol = nonPrivateDecl(name)
     def declarations = decls
     def typeArguments = typeArgs
-    def erasedType = transformedType(this)
+    def erasure = transformedType(this)
     def substituteTypes(from: List[Symbol], to: List[Type]): Type = subst(from, to)
+
+    // [Eugene] to be discussed and refactored
+    def isConcrete = {
+      def notConcreteSym(sym: Symbol) =
+        sym.isAbstractType && !sym.isExistential
+
+      def notConcreteTpe(tpe: Type): Boolean = tpe match {
+        case ThisType(_) => false
+        case SuperType(_, _) => false
+        case SingleType(pre, sym) => notConcreteSym(sym)
+        case ConstantType(_) => false
+        case TypeRef(_, sym, _) => notConcreteSym(sym)
+        case RefinedType(_, _) => false
+        case ExistentialType(_, _) => false
+        case AnnotatedType(_, tp, _) => notConcreteTpe(tp)
+        case _ => true
+      }
+
+      !notConcreteTpe(this)
+    }
+
+    // [Eugene] is this comprehensive?
+    // the only thingies that we want to splice are: 1) type parameters, 2) type members
+    // the thingies that we don't want to splice are: 1) concrete types (obviously), 2) existential skolems
+    // this check seems to cover them all, right?
+    // todo. after we discuss this, move the check to subclasses
+    def isSpliceable = {
+      this.isInstanceOf[TypeRef] && typeSymbol.isAbstractType && !typeSymbol.isExistential
+    }
   }
 
   /** The base class for all types */
@@ -710,7 +741,9 @@ trait Types extends api.Types { self: SymbolTable =>
 
     /** Returns all parts of this type which satisfy predicate `p` */
     def filter(p: Type => Boolean): List[Type] = new FilterTypeCollector(p) collect this
-    def withFilter(p: Type => Boolean) = new FilterTypeCollector(p) {
+    def withFilter(p: Type => Boolean) = new FilterMapForeach(p)
+
+    class FilterMapForeach(p: Type => Boolean) extends FilterTypeCollector(p){
       def foreach[U](f: Type => U): Unit = collect(Type.this) foreach f
       def map[T](f: Type => T): List[T]  = collect(Type.this) map f
     }
@@ -722,6 +755,9 @@ trait Types extends api.Types { self: SymbolTable =>
 
     /** Apply `f` to each part of this type */
     def foreach(f: Type => Unit) { new ForEachTypeTraverser(f).traverse(this) }
+
+    /** Apply `pf' to each part of this type on which the function is defined */
+    def collect[T](pf: PartialFunction[Type, T]): List[T] = new CollectTypeCollector(pf).collect(this)
 
     /** Apply `f` to each part of this type; children get mapped before their parents */
     def map(f: Type => Type): Type = new TypeMap {
@@ -910,14 +946,10 @@ trait Types extends api.Types { self: SymbolTable =>
      */
     def directObjectString = safeToString
 
-    /** A test whether a type contains any unification type variables. */
+    /** A test whether a type contains any unification type variables.
+     *  Overridden with custom logic except where trivially true.
+     */
     def isGround: Boolean = this match {
-      case TypeVar(_, constr) =>
-        constr.instValid && constr.inst.isGround
-      case TypeRef(pre, sym, args) =>
-        sym.isPackageClass || pre.isGround && (args forall (_.isGround))
-      case SingleType(pre, sym) =>
-        sym.isPackageClass || pre.isGround
       case ThisType(_) | NoPrefix | WildcardType | NoType | ErrorType | ConstantType(_) =>
         true
       case _ =>
@@ -1194,6 +1226,8 @@ trait Types extends api.Types { self: SymbolTable =>
     override def kind = "BoundedWildcardType"
   }
 
+  object BoundedWildcardType extends BoundedWildcardTypeExtractor
+
   /** An object representing a non-existing type */
   case object NoType extends Type {
     override def isTrivial: Boolean = true
@@ -1251,6 +1285,8 @@ trait Types extends api.Types { self: SymbolTable =>
    */
   abstract case class SingleType(pre: Type, sym: Symbol) extends SingletonType {
     override val isTrivial: Boolean = pre.isTrivial
+    override def isGround = sym.isPackageClass || pre.isGround
+
     // override def isNullable = underlying.isNullable
     override def isNotNull = underlying.isNotNull
     private[reflect] var underlyingCache: Type = NoType
@@ -1822,7 +1858,35 @@ trait Types extends api.Types { self: SymbolTable =>
 
   object ConstantType extends ConstantTypeExtractor {
     def apply(value: Constant): ConstantType = {
-      unique(new UniqueConstantType(value)).asInstanceOf[ConstantType]
+      val tpe = new UniqueConstantType(value)
+      if (value.tag == ClazzTag) {
+        // if we carry a classOf, we might be in trouble
+        // http://groups.google.com/group/scala-internals/browse_thread/thread/45185b341aeb6a30
+        // I don't have time for a thorough fix, so I put a hacky workaround here
+        val alreadyThere = uniques findEntry tpe
+        if ((alreadyThere ne null) && (alreadyThere ne tpe) && (alreadyThere.toString != tpe.toString)) {
+          // we need to remove a stale type that has the same hashcode as we do
+          // HashSet doesn't support removal, and this makes our task non-trivial
+          // also we cannot simply recreate it, because that'd skew hashcodes (that change over time, omg!)
+          // the only solution I can see is getting into the underlying array and sneakily manipulating it
+          val ftable = uniques.getClass.getDeclaredFields().find(f => f.getName endsWith "table").get
+          ftable.setAccessible(true)
+          val table = ftable.get(uniques).asInstanceOf[Array[AnyRef]]
+          def overwrite(hc: Int, x: Type) {
+            def index(x: Int): Int = math.abs(x % table.length)
+            var h = index(hc)
+            var entry = table(h)
+            while (entry ne null) {
+              if (x == entry)
+                table(h) = x
+              h = index(h + 1)
+              entry = table(h)
+            }
+          }
+          overwrite(tpe.##, tpe)
+        }
+      }
+      unique(tpe).asInstanceOf[ConstantType]
     }
   }
 
@@ -2108,6 +2172,11 @@ trait Types extends api.Types { self: SymbolTable =>
       }
     }
 
+    override def isGround = (
+         sym.isPackageClass
+      || pre.isGround && args.forall(_.isGround)
+    )
+
     def etaExpand: Type = {
       // must initialise symbol, see test/files/pos/ticket0137.scala
       val tpars = initializedTypeParams
@@ -2200,10 +2269,10 @@ trait Types extends api.Types { self: SymbolTable =>
         parentsString(thisInfo.parents) + refinementString
       else rest
     )
-    private def customToString = this match {
-      case TypeRef(_, RepeatedParamClass, arg :: _) => arg + "*"
-      case TypeRef(_, ByNameParamClass, arg :: _)   => "=> " + arg
-      case _ =>
+    private def customToString = sym match {
+      case RepeatedParamClass => args.head + "*"
+      case ByNameParamClass   => "=> " + args.head
+      case _                  =>
         def targs = normalize.typeArgs
 
         if (isFunctionType(this)) {
@@ -2480,39 +2549,46 @@ trait Types extends api.Types { self: SymbolTable =>
     override def skolemizeExistential(owner: Symbol, origin: AnyRef) =
       deriveType(quantified, tparam => (owner orElse tparam.owner).newExistentialSkolem(tparam, origin))(underlying)
 
-    private def wildcardArgsString(available: Set[Symbol], args: List[Type]): List[String] = args match {
-      case TypeRef(_, sym, _) :: args1 if (available contains sym) =>
-        ("_"+sym.infoString(sym.info)) :: wildcardArgsString(available - sym, args1)
-      case arg :: args1 if !(quantified exists (arg contains _)) =>
-        arg.toString :: wildcardArgsString(available, args1)
-      case _ =>
-        List()
+    private def wildcardArgsString(qset: Set[Symbol], args: List[Type]): List[String] = args map {
+      case TypeRef(_, sym, _) if (qset contains sym) =>
+        "_"+sym.infoString(sym.info)
+      case arg =>
+        arg.toString
     }
+
     /** An existential can only be printed with wildcards if:
      *   - the underlying type is a typeref
-     *   - where there is a 1-to-1 correspondence between underlying's typeargs and quantified
-     *   - and none of the existential parameters is referenced from anywhere else in the type
-     *   - and none of the existential parameters are singleton types
+     *   - every quantified variable appears at most once as a type argument and
+     *     nowhere inside a type argument
+     *   - no quantified type argument contains a quantified variable in its bound
+     *   - the typeref's symbol is not itself quantified
+     *   - the prefix is not quanitified
      */
-    private def isRepresentableWithWildcards = !settings.debug.value && {
+    def isRepresentableWithWildcards = {
       val qset = quantified.toSet
-      !qset.exists(_.isSingletonExistential) && (underlying match {
-        case TypeRef(_, sym, args) =>
-          sameLength(args, quantified) && {
-            args forall { arg =>
-              qset(arg.typeSymbol) && !qset.exists(arg.typeSymbol.info.bounds contains _)
-            }
+      underlying match {
+        case TypeRef(pre, sym, args) =>
+          def isQuantified(tpe: Type): Boolean = {
+            (tpe exists (t => qset contains t.typeSymbol)) ||
+            tpe.typeSymbol.isRefinementClass && (tpe.parents exists isQuantified)
           }
+          val (wildcardArgs, otherArgs) = args partition (arg => qset contains arg.typeSymbol)
+          wildcardArgs.distinct == wildcardArgs &&
+          !(otherArgs exists (arg => isQuantified(arg))) &&
+          !(wildcardArgs exists (arg => isQuantified(arg.typeSymbol.info.bounds))) &&
+          !(qset contains sym) &&
+          !isQuantified(pre)
         case _ => false
-      })
+      }
     }
+
     override def safeToString: String = {
       def clauses = {
         val str = quantified map (_.existentialToString) mkString (" forSome { ", "; ", " }")
         if (settings.explaintypes.value) "(" + str + ")" else str
       }
       underlying match {
-        case TypeRef(pre, sym, args) if isRepresentableWithWildcards =>
+        case TypeRef(pre, sym, args) if !settings.debug.value && isRepresentableWithWildcards =>
           "" + TypeRef(pre, sym, Nil) + wildcardArgsString(quantified.toSet, args).mkString("[", ", ", "]")
         case MethodType(_, _) | NullaryMethodType(_) | PolyType(_, _) =>
           "(" + underlying + ")" + clauses
@@ -2640,21 +2716,35 @@ trait Types extends api.Types { self: SymbolTable =>
       else new TypeConstraint
     }
     def unapply(tv: TypeVar): Some[(Type, TypeConstraint)]   = Some((tv.origin, tv.constr))
+    def untouchable(tparam: Symbol): TypeVar                 = createTypeVar(tparam, untouchable = true)
+    def apply(tparam: Symbol): TypeVar                       = createTypeVar(tparam, untouchable = false)
     def apply(origin: Type, constr: TypeConstraint): TypeVar = apply(origin, constr, Nil, Nil)
-    def apply(tparam: Symbol): TypeVar                       = apply(tparam.tpeHK, deriveConstraint(tparam), Nil, tparam.typeParams)
+    def apply(origin: Type, constr: TypeConstraint, args: List[Type], params: List[Symbol]): TypeVar =
+      createTypeVar(origin, constr, args, params, untouchable = false)
 
     /** This is the only place TypeVars should be instantiated.
      */
-    def apply(origin: Type, constr: TypeConstraint, args: List[Type], params: List[Symbol]): TypeVar = {
+    private def createTypeVar(origin: Type, constr: TypeConstraint, args: List[Type], params: List[Symbol], untouchable: Boolean): TypeVar = {
       val tv = (
-        if (args.isEmpty && params.isEmpty)   new TypeVar(origin, constr)
-        else if (args.size == params.size)    new AppliedTypeVar(origin, constr, params zip args)
-        else if (args.isEmpty)                new HKTypeVar(origin, constr, params)
+        if (args.isEmpty && params.isEmpty) {
+          if (untouchable) new TypeVar(origin, constr) with UntouchableTypeVar
+          else new TypeVar(origin, constr)
+        }
+        else if (args.size == params.size) {
+          if (untouchable) new AppliedTypeVar(origin, constr, params zip args) with UntouchableTypeVar
+          else new AppliedTypeVar(origin, constr, params zip args)
+        }
+        else if (args.isEmpty) {
+          if (untouchable) new HKTypeVar(origin, constr, params) with UntouchableTypeVar
+          else new HKTypeVar(origin, constr, params)
+        }
         else throw new Error("Invalid TypeVar construction: " + ((origin, constr, args, params)))
       )
 
       trace("create", "In " + tv.originLocation)(tv)
     }
+    private def createTypeVar(tparam: Symbol, untouchable: Boolean): TypeVar =
+      createTypeVar(tparam.tpeHK, deriveConstraint(tparam), Nil, tparam.typeParams, untouchable)
   }
 
   /** Repack existential types, otherwise they sometimes get unpacked in the
@@ -2703,6 +2793,23 @@ trait Types extends api.Types { self: SymbolTable =>
     )
   }
 
+  trait UntouchableTypeVar extends TypeVar {
+    override def untouchable = true
+    override def isGround = true
+    override def registerTypeEquality(tp: Type, typeVarLHS: Boolean) = tp match {
+      case t: TypeVar if !t.untouchable =>
+        t.registerTypeEquality(this, !typeVarLHS)
+      case _ =>
+        super.registerTypeEquality(tp, typeVarLHS)
+    }
+    override def registerBound(tp: Type, isLowerBound: Boolean, isNumericBound: Boolean = false): Boolean = tp match {
+      case t: TypeVar if !t.untouchable =>
+        t.registerBound(this, !isLowerBound, isNumericBound)
+      case _ =>
+        super.registerBound(tp, isLowerBound, isNumericBound)
+    }
+  }
+
   /** A class representing a type variable: not used after phase `typer`.
    *
    *  A higher-kinded TypeVar has params (Symbols) and typeArgs (Types).
@@ -2716,6 +2823,7 @@ trait Types extends api.Types { self: SymbolTable =>
     val origin: Type,
     val constr0: TypeConstraint
   ) extends Type {
+    def untouchable = false   // by other typevars
     override def params: List[Symbol] = Nil
     override def typeArgs: List[Type] = Nil
     override def isHigherKinded = false
@@ -2728,6 +2836,7 @@ trait Types extends api.Types { self: SymbolTable =>
      */
     var constr = constr0
     def instValid = constr.instValid
+    override def isGround = instValid && constr.inst.isGround
 
     /** The variable's skolemization level */
     val level = skolemizationLevel
@@ -2896,14 +3005,13 @@ trait Types extends api.Types { self: SymbolTable =>
       // would be pointless. In this case, each check we perform causes us to lose specificity: in
       // the end the best we'll do is the least specific type we tested against, since the typevar
       // does not see these checks as "probes" but as requirements to fulfill.
-      // TODO: the `suspended` flag can be used to poke around with leaving a trace
+      // TODO: can the `suspended` flag be used to poke around without leaving a trace?
       //
       // So the strategy used here is to test first the type, then the direct parents, and finally
       // to fall back on the individual base types. This warrants eventual re-examination.
 
       // AM: I think we could use the `suspended` flag to avoid side-effecting during unification
-
-      if (suspended)              // constraint accumulation is disabled
+      if (suspended)         // constraint accumulation is disabled
         checkSubtype(tp, origin)
       else if (constr.instValid)  // type var is already set
         checkSubtype(tp, constr.inst)
@@ -3001,7 +3109,7 @@ trait Types extends api.Types { self: SymbolTable =>
     override def safeToString = (
       if ((constr eq null) || (constr.inst eq null)) "TVar<" + originName + "=null>"
       else if (constr.inst ne NoType) "" + constr.inst
-      else "?" + levelString + originName
+      else (if(untouchable) "!?" else "?") + levelString + originName
     )
     override def kind = "TypeVar"
 
@@ -3750,6 +3858,8 @@ trait Types extends api.Types { self: SymbolTable =>
         super.mapOver(tp)
     }
   }
+
+  // todo. move these into scala.reflect.api
 
   /** A prototype for mapping a function over all possible types
    */
@@ -4563,6 +4673,16 @@ trait Types extends api.Types { self: SymbolTable =>
     }
   }
 
+  /** A map to implement the `collect` method. */
+  class CollectTypeCollector[T](pf: PartialFunction[Type, T]) extends TypeCollector[List[T]](Nil) {
+    override def collect(tp: Type) = super.collect(tp).reverse
+
+    def traverse(tp: Type) {
+      if (pf.isDefinedAt(tp)) result ::= pf(tp)
+      mapOver(tp)
+    }
+  }
+
   class ForEachTypeTraverser(f: Type => Unit) extends TypeTraverser {
     def traverse(tp: Type) {
       f(tp)
@@ -4686,7 +4806,7 @@ trait Types extends api.Types { self: SymbolTable =>
           val sym1 = adaptToNewRun(sym.owner.thisType, sym)
           if (sym1 == sym) tp else ThisType(sym1)
         } catch {
-        	case ex: MissingTypeControl =>
+          case ex: MissingTypeControl =>
             tp
         }
       case SingleType(pre, sym) =>
@@ -5997,8 +6117,9 @@ trait Types extends api.Types { self: SymbolTable =>
     def stripType(tp: Type) = tp match {
       case ExistentialType(_, res) =>
         res
-      case TypeVar(_, constr) =>
-        if (constr.instValid) constr.inst
+      case tv@TypeVar(_, constr) =>
+        if (tv.instValid) constr.inst
+        else if (tv.untouchable) tv
         else abort("trying to do lub/glb of typevar "+tp)
       case t => t
     }

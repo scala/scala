@@ -8,6 +8,8 @@
 
 package scala.sys
 
+import language.implicitConversions
+
 /** A few additional conveniences for Boolean properties.
  */
 trait BooleanProp extends Prop[Boolean] {

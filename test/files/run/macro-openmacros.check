@@ -1,0 +1,3 @@
+List(MacroContext(foo@source-Test_2.scala,line-2,offset=35 +0))
+List(MacroContext(foo@source-Test_2.scala,line-2,offset=35 +1), MacroContext(foo@source-Test_2.scala,line-2,offset=35 +0))
+List(MacroContext(foo@source-Test_2.scala,line-2,offset=35 +2), MacroContext(foo@source-Test_2.scala,line-2,offset=35 +1), MacroContext(foo@source-Test_2.scala,line-2,offset=35 +0))

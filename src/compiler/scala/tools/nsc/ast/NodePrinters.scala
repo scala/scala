@@ -8,6 +8,7 @@ package ast
 
 import compat.Platform.EOL
 import symtab.Flags._
+import language.postfixOps
 
 /** The object `nodePrinter` converts the internal tree
  *  representation to a string.
@@ -27,24 +28,24 @@ abstract class NodePrinters {
   def nodeToString: Tree => String =
     if (sys.props contains "scala.colors") nodeToColorizedString
     else nodeToRegularString
-  
+
   object nodeToRegularString extends DefaultPrintAST with (Tree => String) {
     def apply(tree: Tree) = stringify(tree)
   }
-  
+
   object nodeToColorizedString extends ColorPrintAST with (Tree => String) {
     def apply(tree: Tree) = stringify(tree)
   }
 
   trait ColorPrintAST extends DefaultPrintAST {
     import scala.tools.util.color._
-    
+
     def keywordColor = Cyan
     def typeColor    = Yellow
     def termColor    = Blue
     def flagColor    = Red
     def literalColor = Green
-    
+
     override def showFlags(tree: MemberDef) =
       super.showFlags(tree) in flagColor.bright
 
@@ -81,7 +82,7 @@ abstract class NodePrinters {
       if (tpe == null || tpe == NoType) ""
       else "tree.tpe=" + tpe
     }
-  
+
     def showAttributes(tree: Tree): String = {
       if (infolevel == InfoLevel.Quiet) ""
       else {
@@ -90,7 +91,7 @@ abstract class NodePrinters {
       }
     }
   }
-  
+
   trait PrintAST {
     private val buf = new StringBuilder
     private var level = 0
@@ -101,7 +102,7 @@ abstract class NodePrinters {
     def showLiteral(lit: Literal): String
     def showTypeTree(tt: TypeTree): String
     def showAttributes(tree: Tree): String  // symbol and type
-    
+
     def showRefTreeName(tree: Tree): String = tree match {
       case SelectFromTypeTree(qual, name) => showRefTreeName(qual) + "#" + showName(name)
       case Select(qual, name)             => showRefTreeName(qual) + "." + showName(name)
@@ -122,8 +123,14 @@ abstract class NodePrinters {
 
     def stringify(tree: Tree): String = {
       buf.clear()
-      level = 0
-      traverse(tree)
+      if (settings.XshowtreesStringified.value) buf.append(tree.toString + EOL)
+      if (settings.XshowtreesCompact.value) {
+        // todo. colors for compact representation
+        buf.append(showRaw(tree))
+      } else {
+        level = 0
+        traverse(tree)
+      }
       buf.toString
     }
     def traverseAny(x: Any) {
@@ -134,7 +141,7 @@ abstract class NodePrinters {
       }
     }
     def println(s: String) = printLine(s, "")
-    
+
     def printLine(value: String, comment: String) {
       buf append "  " * level
       buf append value
@@ -183,7 +190,7 @@ abstract class NodePrinters {
         traverseList("Nil", "argument")(args)
       }
     }
-    
+
     def printMultiline(tree: Tree)(body: => Unit) {
       printMultiline(tree.printingPrefix, showAttributes(tree))(body)
     }
@@ -299,7 +306,7 @@ abstract class NodePrinters {
           }
         case Template(parents, self, body) =>
           printMultiline(tree) {
-            val ps0 = parents map { p => 
+            val ps0 = parents map { p =>
               if (p.tpe eq null) p match {
                 case x: RefTree => showRefTree(x)
                 case x          => "" + x
@@ -339,7 +346,7 @@ abstract class NodePrinters {
             traverseList("[]", "type parameter")(tparams)
             traverse(rhs)
           }
-        
+
         case PackageDef(pid, stats) =>
           printMultiline("PackageDef", "")(pid :: stats foreach traverse)
 

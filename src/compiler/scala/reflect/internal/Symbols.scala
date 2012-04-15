@@ -45,10 +45,15 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     m
   }
 
-  /** Create a new free variable.  Its owner is NoSymbol.
+  /** Create a new free term.  Its owner is NoSymbol.
    */
-  def newFreeVar(name: TermName, tpe: Type, value: Any, newFlags: Long = 0L): FreeVar =
-    new FreeVar(name, value) initFlags newFlags setInfo tpe
+  def newFreeTerm(name: TermName, info: Type, value: => Any, origin: String, newFlags: Long = 0L): FreeTerm =
+    new FreeTerm(name, value, origin) initFlags newFlags setInfo info
+
+  /** Create a new free type.  Its owner is NoSymbol.
+   */
+  def newFreeType(name: TypeName, info: Type, value: => Any, origin: String, newFlags: Long = 0L): FreeType =
+    new FreeType(name, value, origin) initFlags newFlags setInfo info
 
   /** The original owner of a class. Used by the backend to generate
    *  EnclosingMethod attributes.
@@ -57,6 +62,9 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
 
   abstract class AbsSymbolImpl extends AbsSymbol {
     this: Symbol =>
+
+    def kind: String = kindString
+    def isExistential: Boolean = this.isExistentiallyBound
 
     def newNestedSymbol(name: Name, pos: Position, newFlags: Long, isClass: Boolean): Symbol = name match {
       case n: TermName => newTermSymbol(n, pos, newFlags)
@@ -324,7 +332,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     final def newSyntheticValueParamss(argtypess: List[List[Type]]): List[List[Symbol]] = {
       var cnt = 0
       def freshName() = { cnt += 1; nme.syntheticParamName(cnt) }
-      mmap(argtypess)(tp => newValueParameter(freshName(), focusPos(owner.pos), SYNTHETIC) setInfo tp)
+      mmap(argtypess)(tp => newValueParameter(freshName(), owner.pos.focus, SYNTHETIC) setInfo tp)
     }
 
     def newSyntheticTypeParam(): Symbol                             = newSyntheticTypeParam("T0", 0L)
@@ -543,6 +551,8 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     def isTypeParameter         = false
     def isTypeParameterOrSkolem = false
     def isTypeSkolem            = false
+    def isTypeMacro             = false
+    def isFreeType              = false
 
     /** Qualities of Terms, always false for TypeSymbols.
      */
@@ -563,13 +573,14 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     def isValueParameter    = false
     def isVariable          = false
     override def hasDefault = false
+    def isTermMacro         = false
+    def isFreeTerm          = false
 
     /** Qualities of MethodSymbols, always false for TypeSymbols
      *  and other TermSymbols.
      */
     def isCaseAccessorMethod = false
     def isLiftedMethod       = false
-    def isMacro              = false
     def isMethod             = false
     def isSourceMethod       = false
     def isVarargsMethod      = false
@@ -613,11 +624,11 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     @inline final override def hasFlag(mask: Long): Boolean = (flags & mask) != 0
     /** Does symbol have ALL the flags in `mask` set? */
     @inline final override def hasAllFlags(mask: Long): Boolean = (flags & mask) == mask
-    
+
     override def setFlag(mask: Long): this.type   = { _rawflags |= mask ; this }
     override def resetFlag(mask: Long): this.type = { _rawflags &= ~mask ; this }
     override def resetFlags() { rawflags &= (TopLevelCreationFlags | alwaysHasFlags) }
-    
+
     /** Default implementation calls the generic string function, which
      *  will print overloaded flags as <flag1/flag2/flag3>.  Subclasses
      *  of Symbol refine.
@@ -632,7 +643,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
       _rawflags = mask
       this
     }
-    
+
     final def flags: Long = {
       val fs = _rawflags & phase.flagMask
       (fs | ((fs & LateFlags) >>> LateShift)) & ~(fs >>> AntiShift)
@@ -780,7 +791,11 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     )
     final def isModuleVar = hasFlag(MODULEVAR)
 
-    /** Is this symbol static (i.e. with no outer instance)? */
+    /** Is this symbol static (i.e. with no outer instance)?
+     *  Q: When exactly is a sym marked as STATIC?
+     *  A: If it's a member of a toplevel object, or of an object contained in a toplevel object, or any number of levels deep.
+     *  http://groups.google.com/group/scala-internals/browse_thread/thread/d385bcd60b08faf6
+     */
     def isStatic = (this hasFlag STATIC) || owner.isStaticOwner
 
     /** Is this symbol a static constructor? */
@@ -836,6 +851,16 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     final def isStructuralRefinement: Boolean =
       (isClass || isType || isModule) && info.normalize/*.underlying*/.isStructuralRefinement
 
+    /** Is this a term symbol only defined in a refinement (so that it needs
+     *  to be accessed by reflection)?
+     */
+    def isOnlyRefinementMember: Boolean =
+       isTerm && // type members are not affected
+       owner.isRefinementClass && // owner must be a refinement class
+       (owner.info decl name) == this && // symbol must be explicitly declared in the refinement (not synthesized from glb)
+       allOverriddenSymbols.isEmpty && // symbol must not override a symbol in a base class
+       !isConstant // symbol must not be a constant. Question: Can we exclude @inline methods as well?
+
     final def isStructuralRefinementMember = owner.isStructuralRefinement && isPossibleInRefinement && isPublic
     final def isPossibleInRefinement       = !isConstructor && !isOverridingSymbol
 
@@ -864,6 +889,25 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
 
     final def isInitialized: Boolean =
       validTo != NoPeriod
+
+    // [Eugene] is this correct?
+    /** Determines whether this symbol can be loaded by subsequent reflective compilation */
+    final def isLocatable: Boolean = {
+      if (this == NoSymbol) return false
+      if (isRoot || isRootPackage) return true
+
+      if (!owner.isLocatable) return false
+      if (owner.isTerm) return false
+      if (isLocalDummy) return false
+
+      if (isType && isNonClassType) return false
+      if (isRefinementClass) return false
+      return true
+    }
+
+    // [Eugene] is it a good idea to add ``dealias'' to Symbol?
+    /** Expands type aliases */
+    def dealias: Symbol = this
 
     /** The variance of this symbol as an integer */
     final def variance: Int =
@@ -1292,7 +1336,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
      *  which immediately follows any of parser, namer, typer, or erasure.
      *  In effect that means this will return one of:
      *
-     *    - packageobjects (follows namer) 
+     *    - packageobjects (follows namer)
      *    - superaccessors (follows typer)
      *    - lazyvals       (follows erasure)
      *    - null
@@ -1720,7 +1764,8 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
       } else owner.enclosingTopLevelClass
 
     /** Is this symbol defined in the same scope and compilation unit as `that` symbol? */
-    def isCoDefinedWith(that: Symbol) = (
+    def isCoDefinedWith(that: Symbol) = {
+      import language.reflectiveCalls
       (this.rawInfo ne NoType) &&
       (this.effectiveOwner == that.effectiveOwner) && {
         !this.effectiveOwner.isPackageClass ||
@@ -1739,7 +1784,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
           false
         }
       }
-    )
+    }
 
     /** The internal representation of classes and objects:
      *
@@ -1843,7 +1888,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
       site.nonPrivateMemberAdmitting(name, admit).filter(sym =>
         !sym.isTerm || (site.memberType(this) matches site.memberType(sym)))
 
-    /** The symbol overridden by this symbol in given class `ofclazz`.
+    /** The symbol, in class `ofclazz`, that is overridden by this symbol.
      *
      *  @param ofclazz is a base class of this symbol's owner.
      */
@@ -1946,7 +1991,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
 
     /** Remove private modifier from symbol `sym`s definition. If `sym` is a
      *  is not a constructor nor a static module rename it by expanding its name to avoid name clashes
-     *  @param base  the fully qualified name of this class will be appended if name expansion is needed 
+     *  @param base  the fully qualified name of this class will be appended if name expansion is needed
      */
     final def makeNotPrivate(base: Symbol) {
       if (this.isPrivate) {
@@ -2032,8 +2077,10 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
 
     private case class SymbolKind(accurate: String, sanitized: String, abbreviation: String)
     private def symbolKind: SymbolKind = {
-      val kind =
-        if (isInstanceOf[FreeVar]) ("free variable", "free variable", "FV")
+      var kind =
+        if (isTermMacro) ("macro method", "macro method", "MAC")
+        else if (isInstanceOf[FreeTerm]) ("free term", "free term", "FTE")
+        else if (isInstanceOf[FreeType]) ("free type", "free type", "FTY")
         else if (isPackage) ("package", "package", "PK")
         else if (isPackageClass) ("package class", "package", "PKC")
         else if (isPackageObject) ("package object", "package", "PKO")
@@ -2054,6 +2101,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
         else if (isSourceMethod) ("method", "method", "METH")
         else if (isTerm) ("value", "value", "VAL")
         else ("", "", "???")
+      if (isSkolem) kind = (kind._1, kind._2, kind._3 + "#SKO")
       SymbolKind(kind._1, kind._2, kind._3)
     }
 
@@ -2216,8 +2264,9 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
 
     /** Term symbols with the exception of static parts of Java classes and packages.
      */
-    override def isValue    = !(isModule && hasFlag(PACKAGE | JAVA))
-    override def isVariable = isMutable && !isMethod
+    override def isValue     = !(isModule && hasFlag(PACKAGE | JAVA))
+    override def isVariable  = isMutable && !isMethod
+    override def isTermMacro = hasFlag(MACRO)
 
     // interesting only for lambda lift. Captured variables are accessed from inner lambdas.
     override def isCapturedVariable = hasAllFlags(MUTABLE | CAPTURED) && !hasFlag(METHOD)
@@ -2406,7 +2455,6 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
 
     override def isMethod        = true
     override def isLabel         = this hasFlag LABEL
-    override def isMacro         = this hasFlag MACRO
     override def isVarargsMethod = this hasFlag VARARGS
     override def isLiftedMethod  = this hasFlag LIFTED
 
@@ -2438,6 +2486,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
   extends TypeSymbol(initOwner, initPos, initName) {
     type TypeOfClonedSymbol = TypeSymbol
     final override def isAliasType = true
+    final override def dealias = info.typeSymbol.dealias
     override def cloneSymbolImpl(owner: Symbol, newFlags: Long): TypeSymbol =
       owner.newNonClassSymbol(name, pos, newFlags)
   }
@@ -2469,7 +2518,8 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
 
     final override def isType   = true
     override def isNonClassType = true
-    
+    override def isTypeMacro    = hasFlag(MACRO)
+
     override def resolveOverloadedFlag(flag: Long) = flag match {
       case TRAIT         => "<trait>"         // DEFAULTPARAM
       case EXISTENTIAL   => "<existential>"   // MIXEDIN
@@ -2877,7 +2927,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
       abort("Can't rename a package object to " + name)
     }
   }
-  
+
   trait ImplClassSymbol extends ClassSymbol {
     override def sourceModule = companionModule
     // override def isImplClass = true
@@ -2913,12 +2963,14 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     )
   }
 
-  class FreeVar(name0: TermName, val value: Any) extends TermSymbol(NoSymbol, NoPosition, name0) {
-    override def hashCode = if (value == null) 0 else value.hashCode
-    override def equals(other: Any): Boolean = other match {
-      case that: FreeVar => this.value.asInstanceOf[AnyRef] eq that.value.asInstanceOf[AnyRef]
-      case _             => false
-    }
+  class FreeTerm(name0: TermName, value0: => Any, val origin: String) extends TermSymbol(NoSymbol, NoPosition, name0) {
+    def value = value0
+    override def isFreeTerm = true
+  }
+
+  class FreeType(name0: TypeName, value0: => Any, val origin: String) extends TypeSkolem(NoSymbol, NoPosition, name0, NoSymbol) {
+    def value = value0
+    override def isFreeType = true
   }
 
   /** An object representing a missing symbol */
@@ -3054,10 +3106,11 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     if (settings.debug.value) printStackTrace()
   }
 
-  case class InvalidCompanions(sym1: Symbol, sym2: Symbol) extends Throwable(
+  case class InvalidCompanions(sym1: Symbol, sym2: Symbol) extends Throwable({
+    import language.reflectiveCalls
     "Companions '" + sym1 + "' and '" + sym2 + "' must be defined in same file:\n" +
     "  Found in " + sym1.sourceFile.canonicalPath + " and " + sym2.sourceFile.canonicalPath
-  ) {
+  }) {
       override def toString = getMessage
   }
 
@@ -3068,7 +3121,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
 
     override def toString() =
       "TypeHistory(" + phaseOf(validFrom)+":"+runId(validFrom) + "," + info + "," + prev + ")"
-    
+
     def toList: List[TypeHistory] = this :: ( if (prev eq null) Nil else prev.toList )
   }
 }

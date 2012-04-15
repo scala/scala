@@ -566,8 +566,8 @@ abstract class CopyPropagation {
       method.blocks map { b =>
         "\nIN(%s):\t Bindings: %s".format(b.label, in(b).bindings) +
         "\nIN(%s):\t Stack: %s".format(b.label, in(b).stack)
-      } mkString
-    )
+      } 
+    ).mkString
 
   } /* class CopyAnalysis */
 }

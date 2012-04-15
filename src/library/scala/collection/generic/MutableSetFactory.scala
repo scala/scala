@@ -10,6 +10,7 @@ package scala.collection
 package generic
 
 import mutable.{ Builder, GrowingBuilder }
+import language.higherKinds
 
 abstract class MutableSetFactory[CC[X] <: mutable.Set[X] with mutable.SetLike[X, CC[X]]]
   extends SetFactory[CC] {

@@ -73,7 +73,7 @@ fish: S = fish
 
 scala> // Test that arrays pretty print nicely.
 
-scala> val arr = Array("What's", "up", "doc?") 
+scala> val arr = Array("What's", "up", "doc?")
 arr: Array[String] = Array(What's, up, doc?)
 
 scala> // Test that arrays pretty print nicely, even when we give them type Any
@@ -97,6 +97,7 @@ scala> case class Bar(n: Int)
 defined class Bar
 
 scala> implicit def foo2bar(foo: Foo) = Bar(foo.n)
+warning: there were 1 feature warnings; re-run with -feature for details
 foo2bar: (foo: Foo)Bar
 
 scala> val bar: Bar = Foo(3)
@@ -270,6 +271,8 @@ scala> xs map (x => x)
 res6: scala.collection.mutable.ArraySeq[_] = ArraySeq(1, 2)
 
 scala> xs map (x => (x, x))
+warning: there were 1 feature warnings; re-run with -feature for details
+warning: there were 1 feature warnings; re-run with -feature for details
 res7: Array[(_$1, _$1)] forSome { type _$1 } = Array((1,1), (2,2))
 
 scala> 
@@ -338,10 +341,10 @@ You typed two blank lines.  Starting a new command.
 
 scala> // defining and using quoted names should work (ticket #323)
 
-scala> def `match` = 1 
+scala> def `match` = 1
 match: Int
 
-scala> val x = `match` 
+scala> val x = `match`
 x: Int = 1
 
 scala> 

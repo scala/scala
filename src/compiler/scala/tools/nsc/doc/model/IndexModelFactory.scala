@@ -8,6 +8,7 @@ package doc
 package model
 
 import scala.collection._
+import language.reflectiveCalls
 
 object IndexModelFactory {
 
@@ -15,7 +16,7 @@ object IndexModelFactory {
 
     lazy val firstLetterIndex: Map[Char, SymbolMap] = {
 
-      val result = new mutable.HashMap[Char,SymbolMap] {
+      object result extends mutable.HashMap[Char,SymbolMap] {
 
         /* Owner template ordering */
         implicit def orderingSet = math.Ordering.String.on { x: MemberEntity => x.name.toLowerCase }

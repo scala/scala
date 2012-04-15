@@ -10,6 +10,7 @@ package scala.collection
 package generic
 
 import scala.collection.mutable.{ Builder, GrowingBuilder }
+import language.higherKinds
 
 /**
  * @define Coll mutable.SortedSet

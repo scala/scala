@@ -70,6 +70,9 @@ trait ParsersCommon extends ScannersCommon {
 
     @inline final def inBracesOrNil[T](body: => List[T]): List[T] = inBracesOrError(body, Nil)
     @inline final def inBracesOrUnit[T](body: => Tree): Tree = inBracesOrError(body, Literal(Constant()))
+    @inline final def dropAnyBraces[T](body: => T): T =
+      if (in.token == LBRACE) inBraces(body)
+      else body
 
     @inline final def inBrackets[T](body: => T): T = {
       accept(LBRACKET)
@@ -1106,7 +1109,7 @@ self =>
      *  }}}
      *  @note  The returned tree does not yet have a position
      */
-    def literal(isNegated: Boolean = false): Tree = {
+    def literal(isNegated: Boolean = false, inPattern: Boolean = false): Tree = {
       def finish(value: Any): Tree = {
         val t = Literal(Constant(value))
         in.nextToken()
@@ -1115,7 +1118,7 @@ self =>
       if (in.token == SYMBOLLIT)
         Apply(scalaDot(nme.Symbol), List(finish(in.strVal)))
       else if (in.token == INTERPOLATIONID)
-        interpolatedString()
+        interpolatedString(inPattern)
       else finish(in.token match {
         case CHARLIT   => in.charVal
         case INTLIT    => in.intVal(isNegated).toInt
@@ -1141,7 +1144,7 @@ self =>
       }
     }
 
-    private def interpolatedString(): Tree = atPos(in.offset) {
+    private def interpolatedString(inPattern: Boolean = false): Tree = atPos(in.offset) {
       val start = in.offset
       val interpolator = in.name
 
@@ -1151,8 +1154,11 @@ self =>
       while (in.token == STRINGPART) {
         partsBuf += literal()
         exprBuf += {
-          if (in.token == IDENTIFIER) atPos(in.offset)(Ident(ident()))
-          else expr()
+          if (inPattern) dropAnyBraces(pattern())
+          else {
+            if (in.token == IDENTIFIER) atPos(in.offset)(Ident(ident()))
+            else expr()
+          }
         }
       }
       if (in.token == STRINGLIT) partsBuf += literal()
@@ -1456,11 +1462,12 @@ self =>
             return reduceStack(true, base, top, 0, true)
           top = next
         } else {
+          // postfix expression
           val topinfo = opstack.head
           opstack = opstack.tail
           val od = stripParens(reduceStack(true, base, topinfo.operand, 0, true))
           return atPos(od.pos.startOrPoint, topinfo.offset) {
-            Select(od, topinfo.operator.encode)
+            new PostfixSelect(od, topinfo.operator.encode)
           }
         }
       }
@@ -1771,7 +1778,9 @@ self =>
        *  }}}
        */
       def pattern2(): Tree = {
+        val nameOffset = in.offset
         val p = pattern3()
+
         if (in.token != AT) p
         else p match {
           case Ident(nme.WILDCARD) =>
@@ -1834,7 +1843,7 @@ self =>
               case INTLIT | LONGLIT | FLOATLIT | DOUBLELIT =>
                 t match {
                   case Ident(nme.MINUS) =>
-                    return atPos(start) { literal(isNegated = true) }
+                    return atPos(start) { literal(isNegated = true, inPattern = true) }
                   case _ =>
                 }
               case _ =>
@@ -1852,7 +1861,7 @@ self =>
             atPos(start, start) { Ident(nme.WILDCARD) }
           case CHARLIT | INTLIT | LONGLIT | FLOATLIT | DOUBLELIT |
                STRINGLIT | INTERPOLATIONID | SYMBOLLIT | TRUE | FALSE | NULL =>
-            atPos(start) { literal() }
+            atPos(start) { literal(inPattern = true) }
           case LPAREN =>
             atPos(start)(makeParens(noSeq.patterns()))
           case XMLSTART =>
@@ -2421,10 +2430,10 @@ self =>
      */
 
     /** {{{
-     *  FunDef ::= FunSig `:' Type `=' Expr
-     *           | FunSig [nl] `{' Block `}'
-     *           | this ParamClause ParamClauses (`=' ConstrExpr | [nl] ConstrBlock)
-     *           | `macro' FunSig [`:' Type] `=' Expr
+     *  FunDef ::= FunSig [`:' Type] `=' [`macro'] Expr
+     *          |  FunSig [nl] `{' Block `}'
+     *          |  `this' ParamClause ParamClauses
+     *                 (`=' ConstrExpr | [nl] ConstrBlock)
      *  FunDcl ::= FunSig [`:' Type]
      *  FunSig ::= id [FunTypeParamClause] ParamClauses
      *  }}}
@@ -2444,18 +2453,14 @@ self =>
       }
       else {
         val nameOffset = in.offset
+        val isBackquoted = in.token == BACKQUOTED_IDENT
         val name = ident()
-        if (name == nme.macro_ && isIdent && settings.Xmacros.value)
-          funDefRest(start, in.offset, mods | Flags.MACRO, ident())
-        else
-          funDefRest(start, nameOffset, mods, name)
+        funDefRest(start, nameOffset, mods, name)
       }
     }
 
     def funDefRest(start: Int, nameOffset: Int, mods: Modifiers, name: Name): Tree = {
       val result = atPos(start, if (name.toTermName == nme.ERROR) start else nameOffset) {
-        val isMacro = mods hasFlag Flags.MACRO
-        val isTypeMacro = isMacro && name.isTypeName
         var newmods = mods
         // contextBoundBuf is for context bounded type parameters of the form
         // [T : B] or [T : => B]; it contains the equivalent implicit parameter type,
@@ -2463,12 +2468,10 @@ self =>
         val contextBoundBuf = new ListBuffer[Tree]
         val tparams = typeParamClauseOpt(name, contextBoundBuf)
         val vparamss = paramClauses(name, contextBoundBuf.toList, false)
-        if (!isMacro) newLineOptWhenFollowedBy(LBRACE)
-        var restype = if (isTypeMacro) TypeTree() else fromWithinReturnType(typedOpt())
+        newLineOptWhenFollowedBy(LBRACE)
+        var restype = fromWithinReturnType(typedOpt())
         val rhs =
-          if (isMacro)
-            equalsExpr()
-          else if (isStatSep || in.token == RBRACE) {
+          if (isStatSep || in.token == RBRACE) {
             if (restype.isEmpty) restype = scalaUnitConstr
             newmods |= Flags.DEFERRED
             EmptyTree
@@ -2476,10 +2479,17 @@ self =>
             restype = scalaUnitConstr
             blockExpr()
           } else {
-            if (name == nme.macro_ && isIdent && in.token != EQUALS) {
-              warning("this syntactically invalid code resembles a macro definition. have you forgotten to enable -Xmacros?")
+            if (in.token == EQUALS) {
+              in.nextTokenAllow(nme.MACROkw)
+              if (settings.Xmacros.value && in.token == MACRO || // [Martin] Xmacros can be retired now
+                  in.token == IDENTIFIER && in.name == nme.MACROkw) {
+                in.nextToken()
+                newmods |= Flags.MACRO
+              }
+            } else {
+              accept(EQUALS)
             }
-            equalsExpr()
+            expr()
           }
         DefDef(newmods, name, tparams, vparamss, restype, rhs)
       }
@@ -2529,7 +2539,7 @@ self =>
 
     /** {{{
      *  TypeDef ::= type Id [TypeParamClause] `=' Type
-     *            | `macro' FunSig `=' Expr
+     *            | FunSig `=' Expr
      *  TypeDcl ::= type Id [TypeParamClause] TypeBounds
      *  }}}
      */
@@ -2537,22 +2547,20 @@ self =>
       in.nextToken()
       newLinesOpt()
       atPos(start, in.offset) {
+        val nameOffset = in.offset
+        val isBackquoted = in.token == BACKQUOTED_IDENT
         val name = identForType()
-        if (name == nme.macro_.toTypeName && isIdent && settings.Xmacros.value) {
-          funDefRest(start, in.offset, mods | Flags.MACRO, identForType())
-        } else {
-          // @M! a type alias as well as an abstract type may declare type parameters
-          val tparams = typeParamClauseOpt(name, null)
-          in.token match {
-            case EQUALS =>
-              in.nextToken()
-              TypeDef(mods, name, tparams, typ())
-            case SUPERTYPE | SUBTYPE | SEMI | NEWLINE | NEWLINES | COMMA | RBRACE =>
-              TypeDef(mods | Flags.DEFERRED, name, tparams, typeBounds())
-            case _ =>
-              syntaxErrorOrIncomplete("`=', `>:', or `<:' expected", true)
-              EmptyTree
-          }
+        // @M! a type alias as well as an abstract type may declare type parameters
+        val tparams = typeParamClauseOpt(name, null)
+        in.token match {
+          case EQUALS =>
+            in.nextToken()
+            TypeDef(mods, name, tparams, typ())
+          case SUPERTYPE | SUBTYPE | SEMI | NEWLINE | NEWLINES | COMMA | RBRACE =>
+            TypeDef(mods | Flags.DEFERRED, name, tparams, typeBounds())
+          case _ =>
+            syntaxErrorOrIncomplete("`=', `>:', or `<:' expected", true)
+            EmptyTree
         }
       }
     }
@@ -2599,14 +2607,14 @@ self =>
     def classDef(start: Int, mods: Modifiers): ClassDef = {
       in.nextToken
       val nameOffset = in.offset
+      val isBackquoted = in.token == BACKQUOTED_IDENT
       val name = identForType()
-
       atPos(start, if (name == tpnme.ERROR) start else nameOffset) {
         savingClassContextBounds {
           val contextBoundBuf = new ListBuffer[Tree]
           val tparams = typeParamClauseOpt(name, contextBoundBuf)
           classContextBounds = contextBoundBuf.toList
-          val tstart = in.offset :: classContextBounds.map(_.pos.startOrPoint) min;
+          val tstart = (in.offset :: classContextBounds.map(_.pos.startOrPoint)).min
           if (!classContextBounds.isEmpty && mods.isTrait) {
             syntaxError("traits cannot have type parameters with context bounds `: ...' nor view bounds `<% ...'", false)
             classContextBounds = List()
@@ -2640,6 +2648,7 @@ self =>
     def objectDef(start: Int, mods: Modifiers): ModuleDef = {
       in.nextToken
       val nameOffset = in.offset
+      val isBackquoted = in.token == BACKQUOTED_IDENT
       val name = ident()
       val tstart = in.offset
       atPos(start, if (name == nme.ERROR) start else nameOffset) {
@@ -2818,6 +2827,7 @@ self =>
      *  }}}
      */
     def packaging(start: Int): Tree = {
+      val nameOffset = in.offset
       val pkg = pkgQualId()
       val stats = inBracesOrNil(topStatSeq())
       makePackaging(start, pkg, stats)
@@ -3020,8 +3030,10 @@ self =>
               ts ++= topStatSeq()
             }
           } else {
+            val nameOffset = in.offset
             in.flushDoc
             val pkg = pkgQualId()
+
             if (in.token == EOF) {
               ts += makePackaging(start, pkg, List())
             } else if (isStatSep) {

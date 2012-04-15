@@ -6,6 +6,8 @@
 package scala.tools.nsc
 package interpreter
 
+import language.implicitConversions
+
 /** A class which the repl utilizes to expose predefined objects.
  *  The base implementation is empty; the standard repl implementation
  *  is StdReplVals.
@@ -58,7 +60,7 @@ object ReplVals {
      *  I have this forwarder which widens the type and then cast the result back
      *  to the dependent type.
      */
-    def manifestToType(m: OptManifest[_]): Global#Type =
+    def manifestToType(m: Manifest[_]): Global#Type =
       definitions.manifestToType(m)
 
     class AppliedTypeFromManifests(sym: Symbol) {

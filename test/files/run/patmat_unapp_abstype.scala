@@ -19,6 +19,11 @@ trait TypesUser extends TypesAPI {
   def shouldNotCrash(tp: Type): Unit = {
     tp match {
       case TypeRef(x) => println("TypeRef") 
+      // the above checks tp.isInstanceOf[TypeRef], which is erased to tp.isInstanceOf[Type]
+      //   before calling TypeRef.unapply(tp), which will then crash unless tp.isInstanceOf[TypesImpl#TypeRef] (which is not implied by tp.isInstanceOf[Type])
+      // tp.isInstanceOf[TypesImpl#TypeRef] is equivalent to classOf[TypesImpl#TypeRef].isAssignableFrom(tp.getClass)
+      // this is equivalent to manifest
+      // it is NOT equivalent to manifest[Type] <:< typeRefMani
       case MethodType(x) => println("MethodType")
       case _ => println("none of the above")
     }
@@ -32,8 +37,47 @@ trait TypesImpl extends TypesAPI {
   //lazy val typeRefMani = manifest[TypeRef]
 }
 
-object Test extends TypesImpl with TypesUser with App {
-  shouldNotCrash(TypeRef(10)) // should and does print "TypeRef"
-  // once  #1697/#2337 are fixed, this should generate the correct output
-  shouldNotCrash(MethodType(10)) // should print "MethodType" but prints "none of the above" -- good one, pattern matcher!
+trait Foos {
+ trait Bar
+ type Foo <: Bar
+ trait FooExtractor {
+   def unapply(foo: Foo): Option[Int]
+ }
+ val Foo: FooExtractor
+}
+
+trait RealFoos extends Foos {
+ class Foo(val x: Int) extends Bar
+ object Foo extends FooExtractor {
+   def unapply(foo: Foo): Option[Int] = Some(foo.x)
+ }
+}
+
+trait Intermed extends Foos {
+ def crash(bar: Bar): Unit =
+   bar match {
+     case Foo(x) => println("Foo")
+     case _ => println("Bar")
+   }
+}
+
+object TestUnappStaticallyKnownSynthetic extends TypesImpl with TypesUser {
+  def test() = {
+    shouldNotCrash(TypeRef(10)) // should and does print "TypeRef"
+    // once  #1697/#2337 are fixed, this should generate the correct output
+    shouldNotCrash(MethodType(10)) // should print "MethodType" but prints "none of the above" -- good one, pattern matcher!
+  }
+}
+
+object TestUnappDynamicSynth extends RealFoos with Intermed {
+ case class FooToo(n: Int) extends Bar
+ def test() = {
+   crash(FooToo(10))
+   crash(new Foo(5))
+ }
+}
+
+object Test extends App {
+  TestUnappStaticallyKnownSynthetic.test()
+  TestUnappDynamicSynth.test()
 }

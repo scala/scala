@@ -12,7 +12,7 @@ import java.util.concurrent.{ Executors, ExecutorService, ThreadFactory }
 import scala.concurrent.forkjoin.{ ForkJoinPool, ForkJoinWorkerThread }
 import scala.concurrent.util.Duration
 import ConcurrentPackageObject._
-
+import language.implicitConversions
 
 
 /** This package object contains primitives for concurrent and parallel programming.

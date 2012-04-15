@@ -13,8 +13,7 @@ package generic
 
 import mutable.Builder
 import annotation.unchecked.uncheckedVariance
-
-
+import language.higherKinds
 
 /** This trait represents collections classes which require
  *  ordered element types.

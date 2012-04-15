@@ -1,2 +1,2 @@
-Object with Test$A with Test$B
-Object with Test$A with Test$B
+ConcreteTypeTag[Test.A with Test.B]
+ConcreteTypeTag[Test.A with Test.B]

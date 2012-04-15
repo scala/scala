@@ -9,6 +9,7 @@ package interpreter
 import scala.collection.{ mutable, immutable }
 import scala.PartialFunction.cond
 import scala.reflect.internal.Chars
+import language.implicitConversions
 
 trait MemberHandlers {
   val intp: IMain
@@ -120,7 +121,7 @@ trait MemberHandlers {
     private def vparamss = member.vparamss
     private def isMacro = member.mods.hasFlag(scala.reflect.internal.Flags.MACRO)
     // true if not a macro and 0-arity
-    override def definesValue = !isMacro && (vparamss.isEmpty || vparamss.head.isEmpty)
+    override def definesValue = !isMacro && (vparamss.isEmpty || vparamss.head.isEmpty && vparamss.tail.isEmpty)
     override def resultExtractionCode(req: Request) =
       if (mods.isPublic) codegenln(name, ": ", req.typeOf(name)) else ""
   }

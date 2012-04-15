@@ -1,9 +1,7 @@
-import scala.tools.nsc.reporters._
-import scala.tools.nsc.Settings
-import reflect.runtime.Mirror.ToolBox
+import scala.reflect.mirror._
 
 object Test extends App {
-  val code = scala.reflect.Code.lift{
+  reify {
     val colors = Map("red" -> 0xFF0000,
                      "turquoise" -> 0x00FFFF,
                      "black" -> 0x000000,
@@ -17,9 +15,5 @@ object Test extends App {
           "Unknown color: " + name
       }
     )
-  };
-
-  val reporter = new ConsoleReporter(new Settings)
-  val toolbox = new ToolBox(reporter)
-  toolbox.runExpr(code.tree)
+  }.eval
 }

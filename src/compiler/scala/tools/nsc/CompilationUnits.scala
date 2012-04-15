@@ -61,6 +61,9 @@ trait CompilationUnits { self: Global =>
     /** things to check at end of compilation unit */
     val toCheck = new ListBuffer[() => Unit]
 
+    /** The features that were already checked for this unit */
+    var checkedFeatures = Set[Symbol]()
+
     def position(pos: Int) = source.position(pos)
 
     /** The position of a targeted type check
@@ -85,12 +88,10 @@ trait CompilationUnits { self: Global =>
       reporter.warning(pos, msg)
 
     def deprecationWarning(pos: Position, msg: String) =
-      if (opt.deprecation) warning(pos, msg)
-      else currentRun.deprecationWarnings ::= ((pos, msg))
+      currentRun.deprecationWarnings.warn(pos, msg)
 
     def uncheckedWarning(pos: Position, msg: String) =
-      if (opt.unchecked) warning(pos, msg)
-      else currentRun.uncheckedWarnings ::= ((pos, msg))
+      currentRun.uncheckedWarnings.warn(pos, msg)
 
     def incompleteInputError(pos: Position, msg:String) =
       reporter.incompleteInputError(pos, msg)
@@ -104,10 +105,14 @@ trait CompilationUnits { self: Global =>
     override def toString() = source.toString()
 
     def clear() {
-      fresh = null
-      body = null
+      fresh = new FreshNameCreator.Default
+      body = EmptyTree
       depends.clear()
       defined.clear()
+      synthetics.clear()
+      toCheck.clear()
+      checkedFeatures = Set()
+      icode.clear()
     }
   }
 }

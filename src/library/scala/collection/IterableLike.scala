@@ -134,7 +134,7 @@ self =>
       it.next
       i += 1
     }
-    b ++= it result
+    (b ++= it).result
   }
 
   override /*TraversableLike*/ def takeWhile(p: A => Boolean): Repr = {

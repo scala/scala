@@ -4,7 +4,7 @@ object Test {
   import scala.tools.nsc._
   import interpreter._
   import java.io.{ OutputStream, BufferedReader, StringReader, PrintWriter, Writer, OutputStreamWriter}
-  
+
   val code = """
     def foo = {
       var q: Boolean = false
@@ -22,11 +22,11 @@ object Test {
         else 20
       }
       else 30
-    
+
       (x == 5) || !q || true
     }
-  """  
-  
+  """
+
   class NullOutputStream extends OutputStream { def write(b: Int) { } }
 
   def main(args: Array[String]) {
@@ -35,7 +35,8 @@ object Test {
     settings.Ycompacttrees.value = true
 
     val intp = new IMain(settings, new PrintWriter(new NullOutputStream))
-    val power = new Power(intp, new ReplVals { })
+    val vals = new ReplVals { }
+    val power = new Power(intp, vals)
     intp.interpret("""def initialize = "Have to interpret something or we get errors." """)
     power trees code foreach println
   }

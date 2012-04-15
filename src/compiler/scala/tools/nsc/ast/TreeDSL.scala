@@ -9,6 +9,7 @@ package ast
 
 import PartialFunction._
 import symtab.Flags
+import language.implicitConversions
 
 /** A DSL for generating scala code.  The goal is that the
  *  code generating code should look a lot like the code it

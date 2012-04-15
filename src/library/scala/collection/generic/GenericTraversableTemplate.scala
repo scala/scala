@@ -14,6 +14,7 @@ package generic
 import mutable.Builder
 import annotation.migration
 import annotation.unchecked.uncheckedVariance
+import language.higherKinds
 
 /** A template class for companion objects of ``regular`` collection classes
  *  that represent an unconstrained higher-kinded type.

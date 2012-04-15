@@ -11,6 +11,7 @@ package convert
 
 import java.{ lang => jl, util => ju }, java.util.{ concurrent => juc }
 import Wrappers._
+import language.implicitConversions
 
 trait WrapAsJava {
   /**

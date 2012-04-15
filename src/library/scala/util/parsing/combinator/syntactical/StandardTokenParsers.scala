@@ -13,6 +13,7 @@ package syntactical
 
 import token._
 import lexical.StdLexical
+import language.implicitConversions
 
 /** This component provides primitive parsers for the standard tokens defined in `StdTokens`.
 *

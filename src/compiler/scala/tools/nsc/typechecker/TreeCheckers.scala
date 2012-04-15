@@ -14,8 +14,9 @@ import util.returning
 abstract class TreeCheckers extends Analyzer {
   import global._
 
-  private val everything = ListBuffer[(Phase, Map[Tree, (Symbol, Type)])]()
+  private val everything   = ListBuffer[(Phase, Map[Tree, (Symbol, Type)])]()
   private val currentTrees = mutable.Map[Tree, (Symbol, Type)]()
+  private val tpeOfTree    = mutable.HashMap[Tree, Type]()
 
   if (settings.debug.value) {
     sys addShutdownHook {
@@ -28,7 +29,7 @@ abstract class TreeCheckers extends Analyzer {
     }
   }
 
-  private def classstr(x: AnyRef) = x.getClass.getName split """\\.|\\$""" last;
+  private def classstr(x: AnyRef) = (x.getClass.getName split """\\.|\\$""").last
   private def typestr(x: Type)    = " (tpe = " + x + ")"
   private def treestr(t: Tree)    = t + " [" + classstr(t) + "]" + typestr(t.tpe)
   private def ownerstr(s: Symbol) = "'" + s + "'" + s.locationString
@@ -49,12 +50,13 @@ abstract class TreeCheckers extends Analyzer {
   object SymbolTracker extends Traverser {
     type PhaseMap = mutable.HashMap[Symbol, List[Tree]]
 
+    val defSyms       = mutable.HashMap[Symbol, List[DefTree]]() withDefaultValue Nil
+    val newSyms       = mutable.HashSet[Symbol]()
     val maps          = ListBuffer[(Phase, PhaseMap)]()
+    val movedMsgs     = ListBuffer[String]()
+
     def prev          = maps.init.last._2
     def latest        = maps.last._2
-    val defSyms       = mutable.HashMap[Symbol, List[DefTree]]()
-    val newSyms       = mutable.HashSet[Symbol]()
-    val movedMsgs     = new ListBuffer[String]
     def sortedNewSyms = newSyms.toList.distinct sortBy (_.name.toString)
 
     def inPrev(sym: Symbol) = {
@@ -119,18 +121,14 @@ abstract class TreeCheckers extends Analyzer {
       if (sym != null && sym != NoSymbol) {
         record(sym, tree)
         tree match {
-          case x: DefTree =>
-            if (defSyms contains sym) defSyms(sym) = defSyms(sym) :+ x
-            else defSyms(sym) = List(x)
-          case _ => ()
+          case x: DefTree => defSyms(sym) :+= x
+          case _          => ()
         }
       }
 
       super.traverse(tree)
     }
   }
-
-  lazy val tpeOfTree = mutable.HashMap[Tree, Type]()
 
   def posstr(p: Position) =
     try p.source.path + ":" + p.line
@@ -147,9 +145,7 @@ abstract class TreeCheckers extends Analyzer {
     if (!cond) errorFn(msg)
 
   def checkTrees() {
-    if (settings.verbose.value)
-      Console.println("[consistency check at the beginning of phase " + phase + "]")
-
+    informFn("[consistency check at the beginning of phase " + phase + "]")
     currentRun.units foreach check
   }
 
@@ -172,7 +168,7 @@ abstract class TreeCheckers extends Analyzer {
     informProgress("checking "+unit)
     val context = rootContext(unit)
     context.checking = true
-    tpeOfTree.clear
+    tpeOfTree.clear()
     SymbolTracker.check(phase, unit)
     val checker = new TreeChecker(context)
     runWithUnit(unit) {

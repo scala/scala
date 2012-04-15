@@ -16,6 +16,7 @@ abstract class SymbolTable extends api.Universe
                               with SymbolCreations
                               with Symbols
                               with SymbolFlags
+                              with FreeVars
                               with Types
                               with Kinds
                               with ExistentialsAndSkolems
@@ -34,6 +35,9 @@ abstract class SymbolTable extends api.Universe
                               with TypeDebugging
                               with Importers
                               with Required
+                              with TreeBuildUtil
+                              with Reporters
+                              with CapturedVariables
 {
   def rootLoader: LazyType
   def log(msg: => AnyRef): Unit
@@ -48,6 +52,13 @@ abstract class SymbolTable extends api.Universe
 
   /** Overridden when we know more about what was happening during a failure. */
   def supplementErrorMessage(msg: String): String = msg
+  
+  private[scala] def printCaller[T](msg: String)(result: T) = {
+    Console.err.println(msg + ": " + result)
+    Console.err.println("Called from:")
+    (new Throwable).getStackTrace.drop(2).take(15).foreach(Console.err.println)
+    result
+  }
 
   private[scala] def printResult[T](msg: String)(result: T) = {
     Console.err.println(msg + ": " + result)
@@ -158,7 +169,7 @@ abstract class SymbolTable extends api.Universe
     try op
     finally popPhase(saved)
   }
-  
+
 
   /** Since when it is to be "at" a phase is inherently ambiguous,
    *  a couple unambiguously named methods.
@@ -255,6 +266,8 @@ abstract class SymbolTable extends api.Universe
   object perRunCaches {
     import java.lang.ref.WeakReference
     import scala.runtime.ScalaRunTime.stringOf
+
+    import language.reflectiveCalls
 
     // We can allow ourselves a structural type, these methods
     // amount to a few calls per run at most.  This does suggest

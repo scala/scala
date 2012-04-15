@@ -1,0 +1,4 @@
+Macros_Test_2.scala:3: error: macro implementation reference needs type arguments
+    def foo[V] = macro Impls.foo
+                             ^
+one error found

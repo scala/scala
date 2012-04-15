@@ -1,0 +1,17 @@
+import scala.reflect.mirror._
+
+object Test extends App {
+  {
+    var _x = 42
+    def x = { val x0 = _x; _x += 1; x0 }
+    var _y = 1
+    def y = { val y0 = _y + _x; _y += y0; y0 }
+    val code = reify {
+      def foo = y // ensures that y is the first freevar we find
+      println(x)
+      println(y)
+      println(x)
+    }
+    code.eval
+  }
+}

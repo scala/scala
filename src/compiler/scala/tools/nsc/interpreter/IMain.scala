@@ -13,6 +13,7 @@ import scala.sys.BooleanProp
 import io.VirtualDirectory
 import scala.tools.nsc.io.AbstractFile
 import reporters._
+import reporters.{Reporter => NscReporter}
 import symtab.Flags
 import scala.reflect.internal.Names
 import scala.tools.util.PathResolver
@@ -23,6 +24,7 @@ import scala.collection.{ mutable, immutable }
 import scala.util.control.Exception.{ ultimately }
 import IMain._
 import java.util.concurrent.Future
+import language.implicitConversions
 
 /** directory to save .class files to */
 private class ReplVirtualDirectory(out: JPrintWriter) extends VirtualDirectory("(memory)", None) {
@@ -202,8 +204,7 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
     }).toList
   }
 
-  implicit def installReplTypeOps(tp: Type): ReplTypeOps = new ReplTypeOps(tp)
-  class ReplTypeOps(tp: Type) {
+  implicit class ReplTypeOps(tp: Type) {
     def orElse(other: => Type): Type    = if (tp ne NoType) tp else other
     def andAlso(fn: Type => Type): Type = if (tp eq NoType) tp else fn(tp)
   }
@@ -274,7 +275,7 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
   protected def createLineManager(classLoader: ClassLoader): Line.Manager = new Line.Manager(classLoader)
 
   /** Instantiate a compiler.  Overridable. */
-  protected def newCompiler(settings: Settings, reporter: Reporter) = {
+  protected def newCompiler(settings: Settings, reporter: NscReporter) = {
     settings.outputDirs setSingleOutput virtualDirectory
     settings.exposeEmptyPackage.value = true
 
@@ -340,7 +341,14 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
   def getInterpreterClassLoader() = classLoader
 
   // Set the current Java "context" class loader to this interpreter's class loader
-  def setContextClassLoader() = classLoader.setAsContext()
+  def setContextClassLoader() = {
+    classLoader.setAsContext()
+
+    // this is risky, but it's our only possibility to make default reflexive mirror to work with REPL
+    // so far we have only used the default mirror to create a few manifests for the compiler
+    // so it shouldn't be in conflict with our classloader, especially since it respects its parent
+    scala.reflect.mirror.classLoader = classLoader
+  }
 
   /** Given a simple repl-defined name, returns the real name of
    *  the class representing it, e.g. for "Bippy" it may return
@@ -817,7 +825,7 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
     }
     def lastWarnings: List[(Position, String)] = (
       if (lastRun == null) Nil
-      else removeDupWarnings(lastRun.deprecationWarnings.reverse) ++ lastRun.uncheckedWarnings.reverse
+      else removeDupWarnings(lastRun.allConditionalWarnings flatMap (_.warnings))
     )
     private var lastRun: Run = _
     private def evalMethod(name: String) = evalClass.getMethods filter (_.getName == name) match {

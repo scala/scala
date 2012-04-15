@@ -6,7 +6,6 @@
 package scala.tools.nsc
 package interpreter
 
-import scala.reflect.AnyValManifest
 import scala.collection.{ mutable, immutable }
 import scala.util.matching.Regex
 import scala.tools.nsc.util.{ BatchSourceFile }
@@ -14,6 +13,7 @@ import session.{ History }
 import scala.io.Codec
 import java.net.{ URL, MalformedURLException }
 import io.{ Path }
+import language.implicitConversions
 
 /** Collecting some power mode examples.
 

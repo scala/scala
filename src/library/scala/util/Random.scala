@@ -11,6 +11,7 @@ package scala.util
 import collection.mutable.ArrayBuffer
 import collection.generic.CanBuildFrom
 import scala.collection.immutable.{ List, Stream }
+import language.{implicitConversions, higherKinds}
 
 /**
  *  @author Stephane Micheloud
@@ -117,17 +118,8 @@ class Random(val self: java.util.Random) {
       swap(n - 1, k)
     }
 
-    bf(xs) ++= buf result
+    (bf(xs) ++= buf).result
   }
-
-}
-
-/** The object `Random` offers a default implementation
- *  of scala.util.Random and random-related convenience methods.
- *
- *  @since 2.8
- */
-object Random extends Random {
 
   /** Returns a Stream of pseudorandomly chosen alphanumeric characters,
    *  equally chosen from A-Z, a-z, and 0-9.
@@ -139,5 +131,16 @@ object Random extends Random {
 
     Stream continually nextPrintableChar filter isAlphaNum
   }
+
+}
+
+/** The object `Random` offers a default implementation
+ *  of scala.util.Random and random-related convenience methods.
+ *
+ *  @since 2.8
+ */
+object Random extends Random {
+
+  implicit def javaRandomToRandom(r: java.util.Random): Random = new Random(r)
 
 }

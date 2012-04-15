@@ -28,7 +28,7 @@ class MutableSettings(val errorFn: String => Unit)
     settings
   }
 
-  protected def copyInto(settings: MutableSettings) {
+  def copyInto(settings: MutableSettings) {
     allSettings foreach { thisSetting =>
       val otherSetting = settings.allSettings find { _.name == thisSetting.name }
       otherSetting foreach { otherSetting =>
@@ -136,7 +136,7 @@ class MutableSettings(val errorFn: String => Unit)
       val (p, args) = StringOps.splitWhere(s, _ == ':', true) getOrElse (return None)
 
       // any non-Nil return value means failure and we return s unmodified
-      tryToSetIfExists(p, args split "," toList, (s: Setting) => s.tryToSetColon _)
+      tryToSetIfExists(p, (args split ",").toList, (s: Setting) => s.tryToSetColon _)
     }
 
     // if arg is of form -Xfoo or -Xfoo bar (name = "-Xfoo")

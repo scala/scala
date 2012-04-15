@@ -13,6 +13,7 @@ import generic._
 import mutable.{Builder, StringBuilder, LazyBuilder, ListBuffer}
 import scala.annotation.tailrec
 import Stream.cons
+import language.implicitConversions
 
 /** The class `Stream` implements lazy lists where elements
  *  are only evaluated when they are needed. Here is an example:
@@ -821,7 +822,7 @@ self =>
    */
   override def distinct: Stream[A] =
     if (isEmpty) this
-    else cons(head, tail.filter(head !=).distinct)
+    else cons(head, tail.filter(head != _).distinct)
 
   /** Returns a new sequence of given length containing the elements of this
    * sequence followed by zero or more occurrences of given elements.

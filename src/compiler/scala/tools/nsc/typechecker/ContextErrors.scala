@@ -277,11 +277,6 @@ trait ContextErrors {
         setError(tree)
       }
 
-      def MultiDimensionalArrayError(tree: Tree) = {
-        issueNormalTypeError(tree, "cannot create a generic multi-dimensional array of more than "+ definitions.MaxArrayDims+" dimensions")
-        setError(tree)
-      }
-
       //typedSuper
       def MixinMissingParentClassNameError(tree: Tree, mix: Name, clazz: Symbol) =
         issueNormalTypeError(tree, mix+" does not name a parent class of "+clazz)
@@ -341,6 +336,11 @@ trait ContextErrors {
       //typedEta
       def UnderscoreEtaError(tree: Tree) = {
         issueNormalTypeError(tree, "_ must follow method; cannot follow " + tree.tpe)
+        setError(tree)
+      }
+
+      def MacroEtaError(tree: Tree) = {
+        issueNormalTypeError(tree, "macros cannot be eta-expanded")
         setError(tree)
       }
 
@@ -453,6 +453,9 @@ trait ContextErrors {
 
       // doTypeApply
       //tryNamesDefaults
+      def NamedAndDefaultArgumentsNotSupportedForMacros(tree: Tree, fun: Tree) =
+        NormalTypeError(tree, "macros application do not support named and/or default arguments")
+
       def WrongNumberOfArgsError(tree: Tree, fun: Tree) =
         NormalTypeError(tree, "wrong number of arguments for "+ treeSymTypeMsg(fun))
 
@@ -480,7 +483,7 @@ trait ContextErrors {
               val keep = missing take 3 map (_.name)
               ".\nUnspecified value parameter%s %s".format(
                 if (missing.tail.isEmpty) "" else "s",
-                if (missing drop 3 nonEmpty) (keep :+ "...").mkString(", ")
+                if ((missing drop 3).nonEmpty) (keep :+ "...").mkString(", ")
                 else keep.mkString("", ", ", ".")
               )
             }
@@ -500,6 +503,9 @@ trait ContextErrors {
 
       def ApplyWithoutArgsError(tree: Tree, fun: Tree) =
         NormalTypeError(tree, fun.tpe+" does not take parameters")
+
+      def DynamicVarArgUnsupported(tree: Tree, name: String) =
+        issueNormalTypeError(tree, name+ " does not support passing a vararg parameter")
 
       //checkClassType
       def TypeNotAStablePrefixError(tpt: Tree, pre: Type) = {
@@ -581,9 +587,9 @@ trait ContextErrors {
       def AbstractExistentiallyOverParamerizedTpeError(tree: Tree, tp: Type) =
         issueNormalTypeError(tree, "can't existentially abstract over parameterized type " + tp)
 
-      //manifestTreee
-      def MissingManifestError(tree: Tree, full: Boolean, tp: Type) = {
-        issueNormalTypeError(tree, "cannot find "+(if (full) "" else "class ")+"manifest for element type "+tp)
+      // classTagTree
+      def MissingClassTagError(tree: Tree, tp: Type) = {
+        issueNormalTypeError(tree, "cannot find class tag for element type "+tp)
         setError(tree)
       }
 
@@ -622,7 +628,6 @@ trait ContextErrors {
       def DefDefinedTwiceError(sym0: Symbol, sym1: Symbol) = {
         val isBug = sym0.isAbstractType && sym1.isAbstractType && (sym0.name startsWith "_$")
         issueSymbolTypeError(sym0, sym1+" is defined twice in " + context0.unit
-          + ( if (sym0.isMacro && sym1.isMacro) "\n(note that macros cannot be overloaded)" else "" )
           + ( if (isBug) "\n(this error is likely due to a bug in the scala compiler involving wildcards in package objects)" else "" )
         )
       }
@@ -642,7 +647,7 @@ trait ContextErrors {
     private def applyErrorMsg(tree: Tree, msg: String, argtpes: List[Type], pt: Type) = {
       def asParams(xs: List[Any]) = xs.mkString("(", ", ", ")")
 
-      def resType   = if (pt isWildcard) "" else " with expected result type " + pt
+      def resType   = if (pt.isWildcard) "" else " with expected result type " + pt
       def allTypes  = (alternatives(tree) flatMap (_.paramTypes)) ++ argtpes :+ pt
       def locals    = alternatives(tree) flatMap (_.typeParams)
 
@@ -832,7 +837,7 @@ trait ContextErrors {
       implicit val context0 = context
 
       object SymValidateErrors extends Enumeration {
-        val ImplicitConstr, ImplicitNotTerm, ImplicitTopObject,
+        val ImplicitConstr, ImplicitNotTermOrClass, ImplicitAtToplevel,
           OverrideClass, SealedNonClass, AbstractNonClass,
           OverrideConstr, AbstractOverride, LazyAndEarlyInit,
           ByNameParameter, AbstractVar = Value
@@ -848,6 +853,19 @@ trait ContextErrors {
 
       def TypeSigError(tree: Tree, ex: TypeError) = {
         ex match {
+          case CyclicReference(_, _) if tree.symbol.isTermMacro =>
+            // say, we have a macro def `foo` and its macro impl `impl`
+            // if impl: 1) omits return type, 2) has anything implicit in its body, 3) sees foo
+            //
+            // then implicit search will trigger an error
+            // (note that this is not a compilation error, it's an artifact of implicit search algorithm)
+            // normally, such "errors" are discarded by `isCyclicOrErroneous` in Implicits.scala
+            // but in our case this won't work, because isCyclicOrErroneous catches CyclicReference exceptions
+            // while our error will manifest itself as a "recursive method needs a return type"
+            //
+            // hence we (together with reportTypeError in TypeDiagnostics) make sure that this CyclicReference
+            // evades all the handlers on its way and successfully reaches `isCyclicOrErroneous` in Implicits
+            throw ex
           case CyclicReference(sym, info: TypeCompleter) =>
             issueNormalTypeError(tree, typer.cyclicReferenceMessage(sym, info.tree) getOrElse ex.getMessage())
           case _ =>
@@ -898,10 +916,10 @@ trait ContextErrors {
           case ImplicitConstr =>
             "`implicit' modifier not allowed for constructors"
 
-          case ImplicitNotTerm =>
-            "`implicit' modifier can be used only for values, variables and methods"
+          case ImplicitNotTermOrClass =>
+            "`implicit' modifier can be used only for values, variables, methods and classes"
 
-          case ImplicitTopObject =>
+          case ImplicitAtToplevel =>
             "`implicit' modifier cannot be used for top-level objects"
 
           case OverrideClass =>

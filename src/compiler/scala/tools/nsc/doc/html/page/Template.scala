@@ -10,6 +10,7 @@ package page
 
 import model._
 import scala.xml.{ NodeSeq, Text, UnprefixedAttribute }
+import language.postfixOps
 
 class Template(universe: doc.Universe, tpl: DocTemplateEntity) extends HtmlPage {
 
@@ -88,21 +89,42 @@ class Template(universe: doc.Universe, tpl: DocTemplateEntity) extends HtmlPage 
 
       <div id="mbrsel">
         <div id='textfilter'><span class='pre'/><span class='input'><input type='text' accesskey='/'/></span><span class='post'/></div>
-        { if (tpl.linearizationTemplates.isEmpty) NodeSeq.Empty else
+        { if (tpl.linearizationTemplates.isEmpty && tpl.conversions.isEmpty) NodeSeq.Empty else
             <div id="order">
               <span class="filtertype">Ordering</span>
               <ol><li class="alpha in"><span>Alphabetic</span></li><li class="inherit out"><span>By inheritance</span></li></ol>
             </div>
         }
-        { if (tpl.linearizationTemplates.isEmpty) NodeSeq.Empty else
-            <div id="ancestors">
-              <span class="filtertype">Inherited</span>
-              <ol><li class="hideall out"><span>Hide All</span></li>
-              <li class="showall in"><span>Show all</span></li></ol>
-              <ol id="linearization">{
-                (tpl :: tpl.linearizationTemplates) map { wte => <li class="in" name={ wte.qualifiedName }><span>{ wte.name }</span></li> }
-              }</ol>
-            </div>
+        { if (tpl.linearizationTemplates.isEmpty && tpl.conversions.isEmpty) NodeSeq.Empty else
+          {
+            if (!tpl.linearization.isEmpty)
+              <div id="ancestors">
+                <span class="filtertype">Inherited<br/>
+                </span>
+                <ol id="linearization">
+                  { (tpl :: tpl.linearizationTemplates).map(wte => <li class="in" name={ wte.qualifiedName }><span>{ wte.name }</span></li>) }
+                </ol>
+              </div>
+            else NodeSeq.Empty
+          } ++ {
+            if (!tpl.conversions.isEmpty)
+              <div id="ancestors">
+                <span class="filtertype">Implicitly<br/>
+                </span>
+                <ol id="implicits">
+                  { tpl.conversions.map(conv => <li class="in" name={ conv.conversionQualifiedName }><span>{ "by " + conv.conversionShortName }</span></li>) }
+                </ol>
+              </div>
+            else NodeSeq.Empty
+          } ++
+          <div id="ancestors">
+            <span class="filtertype"></span>
+            <ol>
+              <li class="hideall out"><span>Hide All</span></li>
+              <li class="showall in"><span>Show all</span></li>
+            </ol>
+            <a href="docs.scala-lang.org/overviews/scaladoc/usage.html#members" target="_blank">Learn more about member selection</a>
+          </div>
         }
         {
           <div id="visbl">
@@ -152,20 +174,22 @@ class Template(universe: doc.Universe, tpl: DocTemplateEntity) extends HtmlPage 
 
         <div id="inheritedMembers">
         {
+          // linearization
           NodeSeq fromSeq (for ((superTpl, superType) <- (tpl.linearizationTemplates zip tpl.linearizationTypes)) yield
             <div class="parent" name={ superTpl.qualifiedName }>
               <h3>Inherited from {
-                if (tpl.universe.settings.useStupidTypes.value)
-                  superTpl match {
-                    case dtpl: DocTemplateEntity =>
-                      val sig = signature(dtpl, false, true) \ "_"
-                      sig
-                    case tpl: TemplateEntity =>
-                      tpl.name
-                  }
-                else
-                  typeToHtml(superType, true)
+                typeToHtmlWithStupidTypes(tpl, superTpl, superType)
               }</h3>
+            </div>
+          )
+        }
+        {
+          // implicitly inherited
+          NodeSeq fromSeq (for (conversion <- (tpl.conversions)) yield
+            <div class="conversion" name={ conversion.conversionQualifiedName }>
+              <h3>Inherited by implicit conversion { conversion.conversionShortName } from
+                { typeToHtml(tpl.resultType, true) } to { typeToHtml(conversion.targetType, true) }
+              </h3>
             </div>
           )
         }
@@ -219,11 +243,12 @@ class Template(universe: doc.Universe, tpl: DocTemplateEntity) extends HtmlPage 
       case d:MemberEntity with Def => defParamsToString(d)
       case _ => ""
     }
+    val memberComment = memberToCommentHtml(mbr, false)
     <li name={ mbr.definitionName } visbl={ if (mbr.visibility.isProtected) "prt" else "pub" }
-      data-isabs={ mbr.isAbstract.toString }>
+      data-isabs={ mbr.isAbstract.toString } fullComment={ if(memberComment.isEmpty) "no" else "yes" }>
       <a id={ mbr.name +defParamsString +":"+ mbr.resultType.name}/>
       { signature(mbr, false) }
-      { memberToCommentHtml(mbr, false) }
+      { memberComment }
     </li>
   }
 
@@ -275,6 +300,7 @@ class Template(universe: doc.Universe, tpl: DocTemplateEntity) extends HtmlPage 
     <p class="comment cmt">{ inlineToHtml(mbr.comment.get.short) }</p>
 
   def memberToCommentBodyHtml(mbr: MemberEntity, isSelf: Boolean, isReduced: Boolean = false): NodeSeq = {
+
     val memberComment =
       if (mbr.comment.isEmpty) NodeSeq.Empty
       else <div class="comment cmt">{ commentToHtml(mbr.comment) }</div>
@@ -326,6 +352,45 @@ class Template(universe: doc.Universe, tpl: DocTemplateEntity) extends HtmlPage 
       }
     }
 
+    val implicitInformation = mbr.byConversion match {
+      case Some(conv) =>
+        <dt class="implicit">Implicit information</dt> ++
+        {
+          val targetType = typeToHtml(conv.targetType, true)
+          val conversionMethod = conv.convertorMethod match {
+            case Left(member) => Text(member.name)
+            case Right(name)  => Text(name)
+          }
+
+          // strip off the package object endings, they make things harder to follow
+          val conversionOwnerQualifiedNane = conv.convertorOwner.qualifiedName.stripSuffix(".package")
+          val conversionOwner = templateToHtml(conv.convertorOwner, conversionOwnerQualifiedNane)
+
+          val constraintText = conv.constraints match {
+            case Nil =>
+              NodeSeq.Empty
+            case List(constraint) =>
+              xml.Text("This conversion will take place only if ") ++ constraintToHtml(constraint) ++ xml.Text(".")
+            case List(constraint1, constraint2) =>
+              xml.Text("This conversion will take place only if ") ++ constraintToHtml(constraint1) ++
+                xml.Text(" and at the same time ") ++ constraintToHtml(constraint2) ++ xml.Text(".")
+            case constraints =>
+              <br/> ++ "This conversion will take place only if all of the following constraints are met:" ++ <br/> ++ {
+                var index = 0
+                constraints map { constraint => xml.Text({ index += 1; index } + ". ") ++ constraintToHtml(constraint) ++ <br/> }
+              }
+          }
+
+          <dd>
+            This member is added by an implicit conversion from { typeToHtml(mbr.inTemplate.resultType, true) } to
+            { targetType } performed by method { conversionMethod } in { conversionOwner }.
+            { constraintText }
+          </dd>
+        }
+      case _ =>
+        NodeSeq.Empty
+    }
+
     // --- start attributes block vals
     val attributes: Seq[scala.xml.Node] = {
       val fvs: List[comment.Paragraph] = visibility(mbr).toList
@@ -354,7 +419,7 @@ class Template(universe: doc.Universe, tpl: DocTemplateEntity) extends HtmlPage 
           </div>
         case _ => NodeSeq.Empty
       }
-    }    
+    }
 
     val selfType: Seq[scala.xml.Node] = mbr match {
       case dtpl: DocTemplateEntity if (isSelf && !dtpl.selfType.isEmpty && !isReduced) =>
@@ -477,7 +542,7 @@ class Template(universe: doc.Universe, tpl: DocTemplateEntity) extends HtmlPage 
     }
     // end attributes block vals ---
 
-    val attributesInfo = attributes ++ definitionClasses ++ fullSignature ++ selfType ++ annotations ++ deprecation ++ migration ++ sourceLink ++ mainComment
+    val attributesInfo = implicitInformation ++ attributes ++ definitionClasses ++ fullSignature ++ selfType ++ annotations ++ deprecation ++ migration ++ sourceLink ++ mainComment
     val attributesBlock =
       if (attributesInfo.isEmpty)
         NodeSeq.Empty
@@ -561,12 +626,13 @@ class Template(universe: doc.Universe, tpl: DocTemplateEntity) extends HtmlPage 
       </span>
       <span class="symbol">
         {
+          val nameClass = if (mbr.byConversion.isDefined) "implicit" else "name"
           val nameHtml = {
             val value = if (mbr.isConstructor) tpl.name else mbr.name
             val span = if (mbr.deprecation.isDefined)
-              <span class={"name deprecated"} title={"Deprecated: "+bodyToStr(mbr.deprecation.get)}>{ value }</span>
+              <span class={ nameClass + " deprecated"} title={"Deprecated: "+bodyToStr(mbr.deprecation.get)}>{ value }</span>
             else
-              <span class={"name"}>{ value }</span>
+              <span class={ nameClass }>{ value }</span>
             val encoded = scala.reflect.NameTransformer.encode(value)
             if (encoded != value) {
               span % new UnprefixedAttribute("title",
@@ -763,6 +829,45 @@ class Template(universe: doc.Universe, tpl: DocTemplateEntity) extends HtmlPage 
     case comment.Text(text) => text
     case comment.Summary(in) => inlineToStr(in)
     case _ => inl.toString
+  }
+
+  private def typeToHtmlWithStupidTypes(tpl: TemplateEntity, superTpl: TemplateEntity, superType: TypeEntity): NodeSeq =
+    if (tpl.universe.settings.useStupidTypes.value)
+      superTpl match {
+        case dtpl: DocTemplateEntity =>
+          val sig = signature(dtpl, false, true) \ "_"
+          sig
+        case tpl: TemplateEntity =>
+          Text(tpl.name)
+      }
+  else
+    typeToHtml(superType, true)
+
+  private def constraintToHtml(constraint: Constraint): NodeSeq = constraint match {
+    case ktcc: KnownTypeClassConstraint =>
+      xml.Text(ktcc.typeExplanation(ktcc.typeParamName) + " (" + ktcc.typeParamName + ": ") ++
+        templateToHtml(ktcc.typeClassEntity) ++ xml.Text(")")
+    case tcc: TypeClassConstraint =>
+      xml.Text(tcc.typeParamName + " is ") ++
+        <a href="http://stackoverflow.com/questions/2982276/what-is-a-context-bound-in-scala" target="_blank">
+        context-bounded</a> ++ xml.Text(" by " + tcc.typeClassEntity.qualifiedName + " (" + tcc.typeParamName + ": ") ++
+        templateToHtml(tcc.typeClassEntity) ++ xml.Text(")")
+    case impl: ImplicitInScopeConstraint =>
+      xml.Text("an implicit value of type ") ++ typeToHtml(impl.implicitType, true) ++ xml.Text(" is in scope")
+    case eq: EqualTypeParamConstraint =>
+      xml.Text(eq.typeParamName + " is " + eq.rhs.name + " (" + eq.typeParamName + " =:= ") ++
+        typeToHtml(eq.rhs, true) ++ xml.Text(")")
+    case bt: BoundedTypeParamConstraint =>
+      xml.Text(bt.typeParamName + " is a superclass of " + bt.lowerBound.name + " and a subclass of " +
+        bt.upperBound.name + " (" + bt.typeParamName + " >: ") ++
+        typeToHtml(bt.lowerBound, true) ++ xml.Text(" <: ") ++
+        typeToHtml(bt.upperBound, true) ++ xml.Text(")")
+    case lb: LowerBoundedTypeParamConstraint =>
+      xml.Text(lb.typeParamName + " is a superclass of " + lb.lowerBound.name + " (" + lb.typeParamName + " >: ") ++
+        typeToHtml(lb.lowerBound, true) ++ xml.Text(")")
+    case ub: UpperBoundedTypeParamConstraint =>
+      xml.Text(ub.typeParamName + " is a subclass of " + ub.upperBound.name + " (" + ub.typeParamName + " <: ") ++
+        typeToHtml(ub.upperBound, true) ++ xml.Text(")")
   }
 
 }

@@ -57,6 +57,9 @@ class Statistics extends scala.reflect.internal.util.Statistics {
   val counter2: SubCounter = new SubCounter(subtypeCount)
   val timer1: Timer = new Timer
   val timer2: Timer = new Timer
+
+  val macroExpandCount = new Counter
+  val macroExpandNanos = new Timer
 }
 
 object Statistics extends Statistics
@@ -125,34 +128,36 @@ abstract class StatisticsInfo {
       inform("ms type-flow-analysis: " + analysis.timer.millis)
 
       if (phase.name == "typer") {
-        inform("time spent typechecking  : "+showRelTyper(typerNanos))
-        inform("time classfilereading    : "+showRelTyper(classReadNanos))
-        inform("time spent in implicits  : "+showRelTyper(implicitNanos))
-        inform("    successful in scope  : "+showRelTyper(inscopeSucceedNanos))
-        inform("        failed in scope  : "+showRelTyper(inscopeFailNanos))
-        inform("     successful of type  : "+showRelTyper(oftypeSucceedNanos))
-        inform("         failed of type  : "+showRelTyper(oftypeFailNanos))
-        inform("       assembling parts  : "+showRelTyper(subtypeETNanos))
-        inform("              matchesPT  : "+showRelTyper(matchesPtNanos))
-        inform("implicit cache hits      : "+showRelative(implicitCacheHits.value + implicitCacheMisses.value)(implicitCacheHits.value))
-        inform("time spent in failed     : "+showRelTyper(failedSilentNanos))
-        inform("       failed apply      : "+showRelTyper(failedApplyNanos))
-        inform("       failed op=        : "+showRelTyper(failedOpEqNanos))
-        inform("time spent ref scanning  : "+showRelTyper(isReferencedNanos))
-        inform("micros by tree node      : "+showCounts(microsByType))
-        inform("#visits by tree node     : "+showCounts(visitsByType))
+        inform("time spent typechecking    : " + showRelTyper(typerNanos))
+        inform("time classfilereading      : " + showRelTyper(classReadNanos))
+        inform("time spent in implicits    : " + showRelTyper(implicitNanos))
+        inform("    successful in scope    : " + showRelTyper(inscopeSucceedNanos))
+        inform("        failed in scope    : " + showRelTyper(inscopeFailNanos))
+        inform("     successful of type    : " + showRelTyper(oftypeSucceedNanos))
+        inform("         failed of type    : " + showRelTyper(oftypeFailNanos))
+        inform("       assembling parts    : " + showRelTyper(subtypeETNanos))
+        inform("              matchesPT    : " + showRelTyper(matchesPtNanos))
+        inform("implicit cache hits        : " + showRelative(implicitCacheHits.value + implicitCacheMisses.value)(implicitCacheHits.value))
+        inform("time spent in failed       : " + showRelTyper(failedSilentNanos))
+        inform("       failed apply        : " + showRelTyper(failedApplyNanos))
+        inform("       failed op=          : " + showRelTyper(failedOpEqNanos))
+        inform("time spent ref scanning    : " + showRelTyper(isReferencedNanos))
+        inform("micros by tree node        : " + showCounts(microsByType))
+        inform("#visits by tree node       : " + showCounts(visitsByType))
         val average = new ClassCounts
         for (c <- microsByType.keysIterator) average(c) = microsByType(c)/visitsByType(c)
-        inform("avg micros by tree node  : "+showCounts(average))
-        inform("time spent in <:<        : "+showRelTyper(subtypeNanos))
-        inform("time spent in findmember : "+showRelTyper(findMemberNanos))
-        inform("time spent in asSeenFrom : "+showRelTyper(asSeenFromNanos))
-        inform("#implicit searches       : " + implicitSearchCount)
+        inform("avg micros by tree node    : " + showCounts(average))
+        inform("time spent in <:<          : " + showRelTyper(subtypeNanos))
+        inform("time spent in findmember   : " + showRelTyper(findMemberNanos))
+        inform("time spent in asSeenFrom   : " + showRelTyper(asSeenFromNanos))
+        inform("#implicit searches         : " + implicitSearchCount)
         inform("#tried, plausible, matching, typed, found implicits: "+triedImplicits+", "+plausiblyCompatibleImplicits+", "+matchingImplicits+", "+typedImplicits+", "+foundImplicits)
-        inform("#implicit improves tests : " + improvesCount)
-        inform("#implicit improves cached: " + improvesCachedCount)
-        inform("#implicit inscope hits   : " + inscopeImplicitHits)
-        inform("#implicit oftype hits    : " + oftypeImplicitHits)
+        inform("#implicit improves tests   : " + improvesCount)
+        inform("#implicit improves cached  : " + improvesCachedCount)
+        inform("#implicit inscope hits     : " + inscopeImplicitHits)
+        inform("#implicit oftype hits      : " + oftypeImplicitHits)
+        inform("#macro expansions          : " + macroExpandCount)
+        inform("#time spent in macroExpand : " + showRelTyper(macroExpandNanos))
       }
 
       if (ctr1 != null)     inform("#ctr1                    : " + ctr1)

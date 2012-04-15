@@ -1,13 +1,11 @@
-import scala.tools.nsc.reporters._
-import scala.tools.nsc.Settings
-import reflect.runtime.Mirror.ToolBox
+import scala.reflect.mirror._
 
 object Test extends App {
   var q = 0
-  def foo[T](ys: List[T]): Int => Int = {
+  def foo[T: TypeTag](ys: List[T]): Int => Int = {
     val z = 1
     var y = 0
-    val fun = reflect.Code.lift{(x: Int) => {
+    val fun = reify{(x: Int) => {
       y += 1
       q += 1
       println("q = " + q)
@@ -15,13 +13,14 @@ object Test extends App {
       x + ys.length * z + q + y
     }}
 
-    val reporter = new ConsoleReporter(new Settings)
-    val toolbox = new ToolBox(reporter)
+    val toolbox = mkToolBox()
     val dyn = toolbox.runExpr(fun.tree)
     dyn.asInstanceOf[Int => Int]
   }
 
-  println("first invocation = " + foo(List(1, 2, 3))(10))
-  println("second invocation = " + foo(List(1, 2, 3, 4))(10))
+  val fun1 = foo(List(1, 2, 3))
+  println("first invocation = " + fun1(10))
+  val fun2 = foo(List(1, 2, 3, 4))
+  println("second invocation = " + fun2(10))
   println("q after second invocation = " + q)
 }

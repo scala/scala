@@ -35,7 +35,7 @@ trait AbsSettings extends scala.reflect.internal.settings.AbsSettings {
     case s: AbsSettings => this.userSetSettings == s.userSetSettings
     case _              => false
   }
-  override def toString() = "Settings {\n%s}\n" format (userSetSettings map ("  " + _ + "\n") mkString)
+  override def toString() = "Settings {\n%s}\n" format (userSetSettings map ("  " + _ + "\n")).mkString
   def toConciseString = userSetSettings.mkString("(", " ", ")")
 
   def checkDependencies =

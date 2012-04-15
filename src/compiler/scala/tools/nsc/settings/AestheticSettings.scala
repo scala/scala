@@ -23,6 +23,7 @@ trait AestheticSettings {
   def deprecation     = settings.deprecation.value
   def experimental    = settings.Xexperimental.value
   def fatalWarnings   = settings.fatalWarnings.value
+  def feature         = settings.feature.value
   def future          = settings.future.value
   def logClasspath    = settings.Ylogcp.value
   def printStats      = settings.Ystatistics.value
@@ -30,7 +31,7 @@ trait AestheticSettings {
   def target          = settings.target.value
   def unchecked       = settings.unchecked.value
   def verbose         = settings.verbose.value
-  def virtPatmat      = settings.YvirtPatmat.value
+  def virtPatmat      = !settings.XoldPatmat.value
 
   /** Derived values */
   def jvm           = target startsWith "jvm"

@@ -13,6 +13,7 @@ import scala.collection._
 import scala.util.matching.Regex
 import scala.annotation.switch
 import util.{NoPosition, Position}
+import language.postfixOps
 
 /** The comment parser transforms raw comment strings into `Comment` objects.
   * Call `parse` to run the parser. Note that the parser is stateless and

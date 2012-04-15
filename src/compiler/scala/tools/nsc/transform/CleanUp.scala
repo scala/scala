@@ -9,6 +9,7 @@ package transform
 import symtab._
 import Flags._
 import scala.collection._
+import language.postfixOps
 
 abstract class CleanUp extends Transform with ast.TreeDSL {
   import global._
@@ -542,7 +543,7 @@ abstract class CleanUp extends Transform with ast.TreeDSL {
         if (forMSIL) savingStatics( transformTemplate(tree) )
         else transformTemplate(tree)
 
-      case Literal(c) if (c.tag == ClassTag) && !forMSIL=>
+      case Literal(c) if (c.tag == ClazzTag) && !forMSIL=>
         val tpe = c.typeValue
         typedWithPos(tree.pos) {
           if (isPrimitiveValueClass(tpe.typeSymbol)) {

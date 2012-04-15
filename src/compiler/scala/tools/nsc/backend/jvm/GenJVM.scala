@@ -19,6 +19,7 @@ import JAccessFlags._
 import JObjectType.{ JAVA_LANG_STRING, JAVA_LANG_OBJECT }
 import java.util.jar.{ JarEntry, JarOutputStream }
 import scala.tools.nsc.io.AbstractFile
+import language.postfixOps
 
 /** This class ...
  *
@@ -651,7 +652,7 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
             case StringTag  =>
               buf put 's'.toByte
               buf putShort cpool.addUtf8(const.stringValue).toShort
-            case ClassTag   =>
+            case ClazzTag   =>
               buf put 'c'.toByte
               buf putShort cpool.addUtf8(javaType(const.typeValue).getSignature()).toShort
             case EnumTag =>

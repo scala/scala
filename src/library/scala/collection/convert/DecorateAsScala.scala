@@ -12,6 +12,7 @@ package convert
 import java.{ lang => jl, util => ju }, java.util.{ concurrent => juc }
 import Decorators._
 import WrapAsScala._
+import language.implicitConversions
 
 trait DecorateAsScala {
   /**

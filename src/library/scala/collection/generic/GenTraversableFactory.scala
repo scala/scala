@@ -10,6 +10,8 @@
 package scala.collection
 package generic
 
+import language.higherKinds
+
 /** A template for companion objects of `Traversable` and subclasses thereof.
  *  This class provides a set of operations to create `$Coll` objects.
  *  It is typically inherited by companion objects of subclasses of `Traversable`.
@@ -71,7 +73,7 @@ abstract class GenTraversableFactory[CC[X] <: GenTraversable[X] with GenericTrav
     val b = newBuilder[A]
     // At present we're using IndexedSeq as a proxy for "has a cheap size method".
     if (xss forall (_.isInstanceOf[IndexedSeq[_]]))
-      b.sizeHint(xss map (_.size) sum)
+      b.sizeHint(xss.map(_.size).sum)
 
     for (xs <- xss.seq) b ++= xs
     b.result

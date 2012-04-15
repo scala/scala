@@ -9,6 +9,8 @@ import java.io.{ OutputStream, PrintStream, ByteArrayOutputStream, PrintWriter, 
 
 package object util {
 
+  implicit def postfixOps = language.postfixOps // make all postfix ops in this package compile without warning
+
   // forwarder for old code that builds against 2.9 and 2.10
   val Chars = scala.reflect.internal.Chars
 
