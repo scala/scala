@@ -110,20 +110,14 @@ object Promise {
     }
 
     def onComplete[U](func: Either[Throwable, T] => U): this.type = {
-      @tailrec //Returns null if callback was added and the result if the promise was already completed
-      def tryAddCallback(): Either[Throwable, T] =
+      @tailrec //Tries to add the callback, if already completed, it dispatches the callback to be executed
+      def dispatchOrAddCallback(): Unit =
         getState match {
-          case r: Either[_, _]    => r.asInstanceOf[Either[Throwable, T]]
-          case listeners: List[_] => if (updateState(listeners, func :: listeners)) null else tryAddCallback()
+          case r: Either[_, _]    => Future.dispatchFuture(executor, () => notifyCompleted(func, r.asInstanceOf[Either[Throwable, T]]))
+          case listeners: List[_] => if (updateState(listeners, func :: listeners)) () else dispatchOrAddCallback()
         }
-
-
-      tryAddCallback() match {
-        case null => this
-        case completed =>
-          Future.dispatchFuture(executor, () => notifyCompleted(func, completed))
-          this
-      }
+      dispatchOrAddCallback()
+      this
     }
 
     private final def notifyCompleted(func: Either[Throwable, T] => Any, result: Either[Throwable, T]) {
