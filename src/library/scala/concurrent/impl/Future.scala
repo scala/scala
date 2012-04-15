@@ -42,20 +42,6 @@ private[concurrent] trait Future[+T] extends scala.concurrent.Future[T] with Awa
 }
 
 object Future {
-  import java.{ lang => jl }
-
-  private val toBoxed = Map[Class[_], Class[_]](
-    classOf[Boolean] -> classOf[jl.Boolean],
-    classOf[Byte]    -> classOf[jl.Byte],
-    classOf[Char]    -> classOf[jl.Character],
-    classOf[Short]   -> classOf[jl.Short],
-    classOf[Int]     -> classOf[jl.Integer],
-    classOf[Long]    -> classOf[jl.Long],
-    classOf[Float]   -> classOf[jl.Float],
-    classOf[Double]  -> classOf[jl.Double],
-    classOf[Unit]    -> classOf[scala.runtime.BoxedUnit]
-  )
-
   /** Wraps a block of code into an awaitable object. */
   private[concurrent] def body2awaitable[T](body: =>T) = new Awaitable[T] {
     def ready(atMost: Duration)(implicit permit: CanAwait) = {
@@ -65,23 +51,18 @@ object Future {
     def result(atMost: Duration)(implicit permit: CanAwait) = body
   }
   
-  def boxedType(c: Class[_]): Class[_] = {
-    if (c.isPrimitive) toBoxed(c) else c
-  }
-  
   def apply[T](body: =>T)(implicit executor: ExecutionContext): Future[T] = {
     val promise = new Promise.DefaultPromise[T]()
 
-    //TODO: shouldn't the following be:
-    //dispatchFuture(executor, () => { promise complete Right(body) })
-
+    //TODO: use `dispatchFuture`?
     executor.execute(new Runnable {
       def run = {
         promise complete {
           try {
             Right(body)
           } catch {
-            case e =>
+            case NonFatal(e) =>
+              // Commenting out reporting for now, since it produces too much output in the tests
               //executor.reportFailure(e)
               scala.concurrent.resolver(e)
           }

@@ -93,12 +93,10 @@ private[scala] class ExecutionContextImpl(es: AnyRef) extends ExecutionContext w
   }
 
   def reportFailure(t: Throwable) = t match {
-    /*TODO: clarify that resolver should wrap Errors, in which case we do not want
-      Error to be re-thrown here */
-    case e: Error => throw e // rethrow serious errors
-    case t =>
-      //println(t.toString)
-      t.printStackTrace()
+    // `Error`s are currently wrapped by `resolver`.
+    // Also, re-throwing `Error`s here causes an exception handling test to fail.
+    //case e: Error => throw e
+    case t => t.printStackTrace()
   }
 
 }

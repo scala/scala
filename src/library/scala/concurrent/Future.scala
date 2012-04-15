@@ -426,13 +426,30 @@ trait Future[+T] extends Awaitable[T] {
    *  that conforms to `S`'s erased type or a `ClassCastException` otherwise.
    */
   def mapTo[S](implicit m: Manifest[S]): Future[S] = {
+    import java.{ lang => jl }
+    val toBoxed = Map[Class[_], Class[_]](
+      classOf[Boolean] -> classOf[jl.Boolean],
+      classOf[Byte]    -> classOf[jl.Byte],
+      classOf[Char]    -> classOf[jl.Character],
+      classOf[Short]   -> classOf[jl.Short],
+      classOf[Int]     -> classOf[jl.Integer],
+      classOf[Long]    -> classOf[jl.Long],
+      classOf[Float]   -> classOf[jl.Float],
+      classOf[Double]  -> classOf[jl.Double],
+      classOf[Unit]    -> classOf[scala.runtime.BoxedUnit]
+    )
+
+    def boxedType(c: Class[_]): Class[_] = {
+      if (c.isPrimitive) toBoxed(c) else c
+    }
+
     val p = newPromise[S]
     
     onComplete {
       case l: Left[Throwable, _] => p complete l.asInstanceOf[Either[Throwable, S]]
       case Right(t) =>
         p complete (try {
-          Right(impl.Future.boxedType(m.erasure).cast(t).asInstanceOf[S])
+          Right(boxedType(m.erasure).cast(t).asInstanceOf[S])
         } catch {
           case e: ClassCastException => Left(e)
         })
