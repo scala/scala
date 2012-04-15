@@ -400,6 +400,8 @@ trait Definitions extends reflect.api.StandardDefinitions {
     lazy val EqualsPatternClass     = specialPolyClass(tpnme.EQUALS_PATTERN_NAME, 0L)(_ => AnyClass.tpe)
     lazy val JavaRepeatedParamClass = specialPolyClass(tpnme.JAVA_REPEATED_PARAM_CLASS_NAME, COVARIANT)(tparam => arrayType(tparam.tpe))
     lazy val RepeatedParamClass     = specialPolyClass(tpnme.REPEATED_PARAM_CLASS_NAME, COVARIANT)(tparam => seqType(tparam.tpe))
+  
+    lazy val MarkerCPSTypes = getClassIfDefined("scala.util.continuations.cpsParam")
 
     def isByNameParamType(tp: Type)        = tp.typeSymbol == ByNameParamClass
     def isScalaRepeatedParamType(tp: Type) = tp.typeSymbol == RepeatedParamClass
@@ -653,6 +655,11 @@ trait Definitions extends reflect.api.StandardDefinitions {
         arity <= MaxFunctionArity && sym == FunctionClass(arity)
       case _ =>
         false
+    }
+
+    def isPartialFunctionType(tp: Type): Boolean = {
+      val sym = tp.typeSymbol
+      (sym eq PartialFunctionClass) || (sym eq AbstractPartialFunctionClass)
     }
 
     def isSeqType(tp: Type) = elementType(SeqClass, tp.normalize) != NoType
