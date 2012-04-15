@@ -89,24 +89,20 @@ object Promise {
     protected final def getState: AnyRef = updater.get(this)
 
     def tryComplete(value: Either[Throwable, T]): Boolean = {
-      val callbacks: List[Either[Throwable, T] => Unit] = {
-        try {
-          @tailrec
-          def tryComplete(v: Either[Throwable, T]): List[Either[Throwable, T] => Unit] = {
-            getState match {
-              case raw: List[_] =>
-                val cur = raw.asInstanceOf[List[Either[Throwable, T] => Unit]]
-                if (updateState(cur, v)) cur else tryComplete(v)
-              case _ => null
-            }
+      (try {
+        @tailrec
+        def tryComplete(v: Either[Throwable, T]): List[Either[Throwable, T] => Unit] = {
+          getState match {
+            case raw: List[_] =>
+              val cur = raw.asInstanceOf[List[Either[Throwable, T] => Unit]]
+              if (updateState(cur, v)) cur else tryComplete(v)
+            case _ => null
           }
-          tryComplete(resolveEither(value))
-        } finally {
-          synchronized { notifyAll() } //Notify any evil blockers
         }
-      }
-
-      callbacks match {
+        tryComplete(resolveEither(value))
+      } finally {
+        synchronized { notifyAll() } //Notify any evil blockers
+      }) match {
         case null             => false
         case cs if cs.isEmpty => true
         case cs               => Future.dispatchFuture(executor, () => cs.foreach(f => notifyCompleted(f, value))); true
