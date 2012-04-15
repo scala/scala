@@ -4,9 +4,9 @@ package runtime
 trait Typers {
   self: Context =>
 
-  val openMacros: List[Context] = this :: mirror.analyzer.openMacros
+  def openMacros: List[Context] = this :: mirror.analyzer.openMacros
 
-  val openImplicits: List[(Type, Tree)] = callsiteTyper.context.openImplicits
+  def openImplicits: List[(Type, Tree)] = callsiteTyper.context.openImplicits
 
   def typeCheck(tree: Tree, pt: Type = mirror.WildcardType, silent: Boolean = false, withImplicitViewsDisabled: Boolean = false, withMacrosDisabled: Boolean = false): Tree = {
     def trace(msg: Any) = if (mirror.settings.Ymacrodebug.value) println(msg)
@@ -34,7 +34,7 @@ trait Typers {
     def trace(msg: Any) = if (mirror.settings.Ymacrodebug.value) println(msg)
     trace("inferring implicit value of type %s, macros = %s".format(pt, !withMacrosDisabled))
     import mirror.analyzer.SearchResult
-    val context = callsiteTyper.context.makeImplicit(true)
+    val context = callsiteTyper.context
     val wrapper1 = if (!withMacrosDisabled) (context.withMacrosEnabled[SearchResult] _) else (context.withMacrosDisabled[SearchResult] _)
     def wrapper (inference: => SearchResult) = wrapper1(inference)
     wrapper(mirror.analyzer.inferImplicit(mirror.EmptyTree, pt, true, false, context, !silent, pos)) match {
@@ -51,12 +51,12 @@ trait Typers {
     def trace(msg: Any) = if (mirror.settings.Ymacrodebug.value) println(msg)
     trace("inferring implicit view from %s to %s for %s, macros = %s, reportAmbiguous = %s".format(from, to, tree, !withMacrosDisabled, reportAmbiguous))
     import mirror.analyzer.SearchResult
-    val context = callsiteTyper.context.makeImplicit(reportAmbiguous)
+    val context = callsiteTyper.context
     val wrapper1 = if (!withMacrosDisabled) (context.withMacrosEnabled[SearchResult] _) else (context.withMacrosDisabled[SearchResult] _)
     def wrapper (inference: => SearchResult) = wrapper1(inference)
     val fun1 = mirror.definitions.FunctionClass(1)
     val viewTpe = mirror.TypeRef(fun1.typeConstructor.prefix, fun1, List(from, to))
-    wrapper(mirror.analyzer.inferImplicit(mirror.EmptyTree, viewTpe, reportAmbiguous, true, context, !silent, pos)) match {
+    wrapper(mirror.analyzer.inferImplicit(tree, viewTpe, reportAmbiguous, true, context, !silent, pos)) match {
       case failure if failure.tree.isEmpty =>
         trace("implicit search has failed. to find out the reason, turn on -Xlog-implicits")
         if (context.hasErrors) throw new mirror.TypeError(context.errBuffer.head.errPos, context.errBuffer.head.errMsg)

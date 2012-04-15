@@ -38,6 +38,7 @@ abstract class SymbolTable extends api.Universe
                               with TreeBuildUtil
                               with Reporters
                               with CapturedVariables
+                              with StdAttachments
 {
   def rootLoader: LazyType
   def log(msg: => AnyRef): Unit
