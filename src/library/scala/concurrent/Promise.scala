@@ -51,6 +51,15 @@ trait Promise[T] {
    *  @return   This promise
    */
   final def completeWith(other: Future[T]): this.type = {
+    other onComplete { this complete _ }
+    this
+  }
+  
+  /** Attempts to complete this promise with the specified future, once that future is completed.
+   *
+   *  @return   This promise
+   */
+  final def tryCompleteWith(other: Future[T]): this.type = {
     other onComplete { this tryComplete _ }
     this
   }
