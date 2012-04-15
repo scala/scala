@@ -110,14 +110,13 @@ object Promise {
     }
 
     def onComplete[U](func: Either[Throwable, T] => U): this.type = {
-      @tailrec //Returns whether the future has already been completed or not
-      def tryAddCallback(): Either[Throwable, T] = {
-        val cur = getState
-        cur match {
+      @tailrec //Returns null if callback was added and the result if the promise was already completed
+      def tryAddCallback(): Either[Throwable, T] =
+        getState match {
           case r: Either[_, _]    => r.asInstanceOf[Either[Throwable, T]]
           case listeners: List[_] => if (updateState(listeners, func :: listeners)) null else tryAddCallback()
         }
-      }
+
 
       tryAddCallback() match {
         case null => this
