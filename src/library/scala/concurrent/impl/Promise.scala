@@ -22,54 +22,7 @@ import scala.annotation.tailrec
 
 
 private[concurrent] trait Promise[T] extends scala.concurrent.Promise[T] with Future[T] {
-
-  def future = this
-
-  def newPromise[S]: scala.concurrent.Promise[S] = new Promise.DefaultPromise()
-
-  // TODO refine answer and return types here from Any to type parameters
-  // then move this up in the hierarchy
-  /*
-  final def <<(value: T): Future[T] @cps[Future[Any]] = shift {
-    cont: (Future[T] => Future[Any]) =>
-    cont(complete(Right(value)))
-  }
-
-  final def <<(other: Future[T]): Future[T] @cps[Future[Any]] = shift {
-    cont: (Future[T] => Future[Any]) =>
-    val p = executor.promise[Any]
-    val thisPromise = this
-
-    thisPromise completeWith other
-    thisPromise onComplete { v =>
-      try {
-        p completeWith cont(thisPromise)
-      } catch {
-        case e => p complete resolver(e)
-      }
-    }
-
-    p.future
-  }
-  */
-  // TODO finish this once we introduce something like dataflow streams
-
-  /*
-  final def <<(stream: PromiseStreamOut[T]): Future[T] @cps[Future[Any]] = shift { cont: (Future[T] => Future[Any]) =>
-    val fr = executor.promise[Any]
-    val f = stream.dequeue(this)
-    f.onComplete { _ =>
-      try {
-        fr completeWith cont(f)
-      } catch {
-        case e =>
-          fr failure e
-      }
-    }
-    fr
-  }
-  */
-
+  def future: scala.concurrent.Future[T] = this
 }
 
 
@@ -78,6 +31,8 @@ object Promise {
    */
   class DefaultPromise[T](implicit val executor: ExecutionContext) extends AbstractPromise with Promise[T] { self =>
     updater.set(this, Nil) // Start at "No callbacks" //FIXME switch to Unsafe instead of ARFU
+
+    def newPromise[S]: scala.concurrent.Promise[S] = new Promise.DefaultPromise()
 
     protected final def tryAwait(atMost: Duration): Boolean = {
       @tailrec
@@ -194,6 +149,8 @@ object Promise {
     val value = Some(resolveEither(suppliedValue))
 
     override def isCompleted(): Boolean = true
+
+    def newPromise[S]: scala.concurrent.Promise[S] = new Promise.DefaultPromise()
 
     def tryComplete(value: Either[Throwable, T]): Boolean = false
 
