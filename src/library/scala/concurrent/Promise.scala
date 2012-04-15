@@ -97,13 +97,6 @@ trait Promise[T] {
    *  @return    If the promise has already been completed returns `false`, or `true` otherwise.
    */
   def tryFailure(t: Throwable): Boolean = tryComplete(Left(t))
-
-  /** Wraps a `Throwable` in an `ExecutionException` if necessary. TODO replace with `resolver` from scala.concurrent
-   *
-   *  $allowedThrowables
-   */
-  protected def wrap(t: Throwable): Throwable = 
-    if (isFutureThrowable(t)) t else new ExecutionException(t)
 }
 
 
