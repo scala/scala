@@ -35,7 +35,8 @@ trait Promise[T] {
    *
    *  $promiseCompletion
    */
-  def complete(result: Either[Throwable, T]): this.type = if (tryComplete(result)) this else throwCompleted
+  def complete(result: Either[Throwable, T]): this.type =
+    if (tryComplete(result)) this else throw new IllegalStateException("Promise already completed.")
 
   /** Tries to complete the promise with either a value or the exception.
    *
@@ -50,9 +51,7 @@ trait Promise[T] {
    *  @return   This promise
    */
   final def completeWith(other: Future[T]): this.type = {
-    other onComplete {
-      this complete _
-    }
+    other onComplete { this tryComplete _ }
     this
   }
 
@@ -62,7 +61,7 @@ trait Promise[T] {
    *
    *  $promiseCompletion
    */
-  def success(v: T): this.type = if (trySuccess(v)) this else throwCompleted
+  def success(v: T): this.type = complete(Right(v))
 
   /** Tries to complete the promise with a value.
    *
@@ -80,7 +79,7 @@ trait Promise[T] {
    *
    *  $promiseCompletion
    */
-  def failure(t: Throwable): this.type = if (tryFailure(t)) this else throwCompleted
+  def failure(t: Throwable): this.type = complete(Left(t))
 
   /** Tries to complete the promise with an exception.
    *
@@ -94,13 +93,8 @@ trait Promise[T] {
    *
    *  $allowedThrowables
    */
-  protected def wrap(t: Throwable): Throwable = t match {
-    case t: Throwable if isFutureThrowable(t) => t
-    case _ => new ExecutionException(t)
-  }
-
-  private def throwCompleted = throw new IllegalStateException("Promise already completed.")
-
+  protected def wrap(t: Throwable): Throwable = 
+    if (isFutureThrowable(t)) t else new ExecutionException(t)
 }
 
 
