@@ -63,9 +63,9 @@ trait Symbols {
           assert(value.isInstanceOf[Ident], showRaw(value))
           val capturedTpe = capturedVariableType(sym)
           val capturedValue = referenceCapturedVariable(sym)
-          locallyReify(sym, name, mirrorCall(nme.newFreeTerm, reify(sym.name.toString), reify(capturedTpe), capturedValue, reify(origin(sym))))
+          locallyReify(sym, name, mirrorCall(nme.newFreeTerm, reify(sym.name.toString), reify(capturedTpe), capturedValue, reify(sym.flags), reify(origin(sym))))
         } else {
-          locallyReify(sym, name, mirrorCall(nme.newFreeTerm, reify(sym.name.toString), reify(sym.tpe), value, reify(origin(sym))))
+          locallyReify(sym, name, mirrorCall(nme.newFreeTerm, reify(sym.name.toString), reify(sym.tpe), value, reify(sym.flags), reify(origin(sym))))
         }
     }
 
@@ -77,8 +77,8 @@ trait Symbols {
         if (reifyDebug) println("Free type: %s (%s)".format(sym, sym.accurateKindString))
         var name = newTermName(nme.MIRROR_FREE_PREFIX + sym.name)
         val phantomTypeTag = Apply(TypeApply(Select(Ident(nme.MIRROR_SHORT), nme.TypeTag), List(value)), List(Literal(Constant(null))))
-        // todo. implement info reification for free types: type bounds, HK-arity, whatever else that can be useful
-        locallyReify(sym, name, mirrorCall(nme.newFreeType, reify(sym.name.toString), reify(sym.info), phantomTypeTag, reify(origin(sym))))
+        val flavor = if (sym.isExistential) nme.newFreeExistential else nme.newFreeType
+        locallyReify(sym, name, mirrorCall(flavor, reify(sym.name.toString), reify(sym.info), phantomTypeTag, reify(sym.flags), reify(origin(sym))))
     }
 
   def reifySymDef(sym: Symbol): Tree =
@@ -169,7 +169,7 @@ trait Symbols {
       if (sym.annotations.isEmpty) EmptyTree
       else Apply(Select(locallyReified(sym), nme.setAnnotations), List(reify(sym.annotations)))
     } else {
-      val rset = Apply(Select(locallyReified(sym), nme.setTypeSignature), List(reifyType(sym.info)))
+      val rset = Apply(Select(locallyReified(sym), nme.setTypeSignature), List(reify(sym.info)))
       if (sym.annotations.isEmpty) rset
       else Apply(Select(rset, nme.setAnnotations), List(reify(sym.annotations)))
     }

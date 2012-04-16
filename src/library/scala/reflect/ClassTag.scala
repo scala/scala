@@ -117,6 +117,10 @@ object ClassTag {
       case _             => apply[T](rm.typeToClass(tpe.erasure))
     }
 
+  def apply[T](ttag: rm.ConcreteTypeTag[T]): ClassTag[T] =
+    if (ttag.erasure != null) ClassTag[T](ttag.erasure)
+    else ClassTag[T](ttag.tpe)
+
   implicit def toDeprecatedClassManifestApis[T](ctag: ClassTag[T]): DeprecatedClassManifestApis[T] = new DeprecatedClassManifestApis[T](ctag)
 }
 

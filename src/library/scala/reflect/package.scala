@@ -64,7 +64,7 @@ package object reflect {
   @deprecated("Use `@scala.reflect.ConcreteTypeTag` instead", "2.10.0")
   lazy val Manifest     = ConcreteTypeTag
   @deprecated("NoManifest is no longer supported, and using it may lead to incorrect results, Use `@scala.reflect.TypeTag` instead", "2.10.0")
-  object NoManifest extends OptManifest[Nothing](scala.reflect.mirror.definitions.NothingClass.asType) with Serializable
+  object NoManifest extends OptManifest[Nothing](scala.reflect.mirror.TypeTag.Nothing.tpe)
 
   // ClassTag class is defined separately from the mirror
   type TypeTag[T]          = scala.reflect.mirror.TypeTag[T]

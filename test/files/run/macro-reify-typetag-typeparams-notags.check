@@ -1,2 +1,2 @@
-ConcreteTypeTag[T]
-ConcreteTypeTag[List[T]]
+TypeTag[T]
+TypeTag[List[T]]

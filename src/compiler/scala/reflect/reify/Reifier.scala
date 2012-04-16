@@ -47,6 +47,15 @@ abstract class Reifier extends Phases
       if (prefix exists (_.isErroneous)) CannotReifyErroneousPrefix(prefix)
       if (prefix.tpe == null) CannotReifyUntypedPrefix(prefix)
 
+      def reifyErasure(tpe: Type): Tree = {
+        val result = typer.resolveClassTag(positionBearer, tpe)
+        if (result == EmptyTree) throw new Error("cannot reify erasure for %s: ".format(tpe))
+        result match {
+          case Apply(TypeApply(Select(_, _), _), List(clazz)) => clazz
+          case _ => Select(result, nme.erasure)
+        }
+      }
+
       val rtree = reifee match {
         case tree: Tree =>
           reifyTrace("reifying = ")(if (opt.showTrees) "\n" + nodePrinters.nodeToString(tree).trim else tree.toString)
@@ -73,11 +82,11 @@ abstract class Reifier extends Phases
             CannotReifyReifeeThatHasTypeLocalToReifee(tree)
 
           val manifestedType = typer.packedType(tree, NoSymbol)
-          val manifestedRtype = reifyType(manifestedType)
           val tagModule = if (definitelyConcrete) ConcreteTypeTagModule else TypeTagModule
-          var typeTagCtor = TypeApply(Select(Ident(nme.MIRROR_SHORT), tagModule.name), List(TypeTree(manifestedType)))
-          var exprCtor = TypeApply(Select(Ident(nme.MIRROR_SHORT), ExprModule.name), List(TypeTree(manifestedType)))
-          Apply(Apply(exprCtor, List(rtree)), List(Apply(typeTagCtor, List(manifestedRtype))))
+          val tagCtor = TypeApply(Select(Ident(nme.MIRROR_SHORT), tagModule.name), List(TypeTree(manifestedType)))
+          val exprCtor = TypeApply(Select(Ident(nme.MIRROR_SHORT), ExprModule.name), List(TypeTree(manifestedType)))
+          val tagArgs = if (definitelyConcrete) List(reify(manifestedType), reifyErasure(manifestedType)) else List(reify(manifestedType))
+          Apply(Apply(exprCtor, List(rtree)), List(Apply(tagCtor, tagArgs)))
 
         case tpe: Type =>
           reifyTrace("reifying = ")(tpe.toString)
@@ -85,9 +94,10 @@ abstract class Reifier extends Phases
           val rtree = reify(tpe)
 
           val manifestedType = tpe
-          var tagModule = if (definitelyConcrete) ConcreteTypeTagModule else TypeTagModule
-          var ctor = TypeApply(Select(Ident(nme.MIRROR_SHORT), tagModule.name), List(TypeTree(manifestedType)))
-          Apply(ctor, List(rtree))
+          val tagModule = if (definitelyConcrete) ConcreteTypeTagModule else TypeTagModule
+          val ctor = TypeApply(Select(Ident(nme.MIRROR_SHORT), tagModule.name), List(TypeTree(manifestedType)))
+          val args = if (definitelyConcrete) List(rtree, reifyErasure(manifestedType)) else List(rtree)
+          Apply(ctor, args)
 
         case _ =>
           throw new Error("reifee %s of type %s is not supported".format(reifee, if (reifee == null) "null" else reifee.getClass.toString))
@@ -126,7 +136,7 @@ abstract class Reifier extends Phases
       // 3) local freeterm inlining in Metalevels
       // 4) trivial tree splice inlining in Reify (Trees.scala)
       // 5) trivial type splice inlining in Reify (Types.scala)
-      val freevarBindings = symbolTable collect { case freedef @ FreeDef(_, _, binding, _) => binding.symbol } toSet
+      val freevarBindings = symbolTable collect { case entry @ FreeDef(_, _, binding, _, _) => binding.symbol } toSet
       val untyped = resetAllAttrs(wrapped, leaveAlone = {
         case ValDef(_, mr, _, _) if mr == nme.MIRROR_SHORT => true
         case tree if freevarBindings contains tree.symbol => true

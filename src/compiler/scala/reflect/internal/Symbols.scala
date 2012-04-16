@@ -47,13 +47,13 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
 
   /** Create a new free term.  Its owner is NoSymbol.
    */
-  def newFreeTerm(name: TermName, info: Type, value: => Any, origin: String, newFlags: Long = 0L): FreeTerm =
-    new FreeTerm(name, value, origin) initFlags newFlags setInfo info
+  def newFreeTermSymbol(name: TermName, info: Type, value: => Any, flags: Long = 0L, origin: String): FreeTerm =
+    new FreeTerm(name, value, origin) initFlags flags setInfo info
 
   /** Create a new free type.  Its owner is NoSymbol.
    */
-  def newFreeType(name: TypeName, info: Type, value: => Any, origin: String, newFlags: Long = 0L): FreeType =
-    new FreeType(name, value, origin) initFlags newFlags setInfo info
+  def newFreeTypeSymbol(name: TypeName, info: Type, value: => Any, flags: Long = 0L, origin: String): FreeType =
+    new FreeType(name, value, origin) initFlags flags setInfo info
 
   /** The original owner of a class. Used by the backend to generate
    *  EnclosingMethod attributes.
