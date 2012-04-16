@@ -93,6 +93,9 @@ trait CompilationUnits { self: Global =>
     def uncheckedWarning(pos: Position, msg: String) =
       currentRun.uncheckedWarnings.warn(pos, msg)
 
+    def inlinerWarning(pos: Position, msg: String) =
+      currentRun.inlinerWarnings.warn(pos, msg)
+
     def incompleteInputError(pos: Position, msg:String) =
       reporter.incompleteInputError(pos, msg)
 
