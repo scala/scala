@@ -55,49 +55,22 @@ package internal {
       NothingClass.asType -> newTermName("Nothing"),
       NullClass.asType -> newTermName("Null"))
 
-    def materializeClassTag(prefix: Tree, tpe: Type): Tree = {
-      val typetagInScope = c.inferImplicitValue(appliedType(typeRef(prefix.tpe, ConcreteTypeTagClass, Nil), List(tpe)))
-      def typetagIsSynthetic(tree: Tree) = tree.isInstanceOf[Block] || (tree exists (sub => sub.symbol == TypeTagModule || sub.symbol == ConcreteTypeTagModule))
-      typetagInScope match {
-        case success if !success.isEmpty && !typetagIsSynthetic(success) =>
-          val factory = TypeApply(Select(Ident(ClassTagModule), newTermName("apply")), List(TypeTree(tpe)))
-          Apply(factory, List(Select(typetagInScope, newTermName("tpe"))))
-        case _ =>
-          val result =
-            tpe match {
-              case coreTpe if coreTags contains coreTpe =>
-                Select(Ident(ClassTagModule), coreTags(coreTpe))
-              case _ =>
-                if (tpe.typeSymbol == ArrayClass) {
-                  val componentTpe = tpe.typeArguments(0)
-                  val classtagInScope = c.inferImplicitValue(appliedType(typeRef(NoPrefix, ClassTagClass, Nil), List(componentTpe)))
-                  val componentTag = classtagInScope orElse materializeClassTag(prefix, componentTpe)
-                  Select(componentTag, newTermName("wrap"))
-                } else {
-                  // [Eugene] what's the intended behavior? there's no spec on ClassManifests
-                  // for example, should we ban Array[T] or should we tag them with Array[AnyRef]?
-                  // if its the latter, what should be the result of tagging Array[T] where T <: Int?
-                  if (tpe.typeSymbol.isAbstractType) fail("tpe is an abstract type")
-                  val erasure =
-                    if (tpe.typeSymbol.isDerivedValueClass) tpe // [Eugene to Martin] is this correct?
-                    else tpe.erasure.normalize // necessary to deal with erasures of HK types
-                  val factory = TypeApply(Select(Ident(ClassTagModule), newTermName("apply")), List(TypeTree(tpe)))
-                  Apply(factory, List(TypeApply(Ident(newTermName("classOf")), List(TypeTree(erasure)))))
-                }
-            }
-          try c.typeCheck(result)
-          catch { case terr @ c.TypeError(pos, msg) => fail(terr) }
-      }
-    }
+    def materializeClassTag(prefix: Tree, tpe: Type): Tree =
+      materializeTag(prefix, tpe, ClassTagModule, c.reifyErasure(tpe))
 
     def materializeTypeTag(prefix: Tree, tpe: Type, requireConcreteTypeTag: Boolean): Tree = {
       val tagModule = if (requireConcreteTypeTag) ConcreteTypeTagModule else TypeTagModule
+      materializeTag(prefix, tpe, tagModule, c.reifyType(prefix, tpe, dontSpliceAtTopLevel = true, requireConcreteTypeTag = requireConcreteTypeTag))
+    }
+
+    private def materializeTag(prefix: Tree, tpe: Type, tagModule: Symbol, materializer: => Tree): Tree = {
       val result =
         tpe match {
           case coreTpe if coreTags contains coreTpe =>
-            Select(Select(prefix, tagModule.name), coreTags(coreTpe))
+            val ref = if (tagModule.owner.isPackageClass) Ident(tagModule) else Select(prefix, tagModule.name)
+            Select(ref, coreTags(coreTpe))
           case _ =>
-            try c.reifyType(prefix, tpe, dontSpliceAtTopLevel = true, requireConcreteTypeTag = requireConcreteTypeTag)
+            try materializer
             catch {
               case ex: Throwable =>
                 // [Eugene] cannot pattern match on an abstract type, so had to do this

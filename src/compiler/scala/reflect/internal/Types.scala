@@ -277,7 +277,7 @@ trait Types extends api.Types { self: SymbolTable =>
         case SuperType(_, _) => false
         case SingleType(pre, sym) => notConcreteSym(sym)
         case ConstantType(_) => false
-        case TypeRef(_, sym, _) => notConcreteSym(sym)
+        case TypeRef(_, sym, args) => notConcreteSym(sym) || (args exists (arg => notConcreteTpe(arg)))
         case RefinedType(_, _) => false
         case ExistentialType(_, _) => false
         case AnnotatedType(_, tp, _) => notConcreteTpe(tp)

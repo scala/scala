@@ -48,6 +48,10 @@ trait Reifiers {
    */
   def reifyType(prefix: Tree, tpe: Type, dontSpliceAtTopLevel: Boolean = false, requireConcreteTypeTag: Boolean = false): Tree
 
+  /** Given a type, generate a tree that when compiled and executed produces the erasure of the original type.
+   */
+  def reifyErasure(tpe: Type): Tree
+
   /** Undoes reification of a tree.
    *
    *  This reversion doesn't simply restore the original tree (that would lose the context of reification),

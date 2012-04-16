@@ -7,6 +7,7 @@ trait Trees {
   import mirror._
   import definitions._
   import treeInfo._
+  import scala.reflect.api.Modifier
 
   // unfortunately, these are necessary to reify AnnotatedTypes
   // I'd gladly got rid of them, but I don't fancy making a metaprogramming API that doesn't work with annotated types
@@ -46,7 +47,7 @@ trait Trees {
         reifyMirrorObject(EmptyTree)
       case mirror.emptyValDef =>
         mirrorSelect(nme.emptyValDef)
-      case FreeDef(_, _, _, _) =>
+      case FreeDef(_, _, _, _, _) =>
         reifyNestedFreeDef(tree)
       case FreeRef(_, _) =>
         reifyNestedFreeRef(tree)
@@ -57,6 +58,28 @@ trait Trees {
       case NestedExpr(_, _, _) =>
         reifyNestedExpr(tree)
       case Literal(const @ Constant(_)) =>
+        // [Eugene] was necessary when we reified erasures as normalized tycons
+        // now, when we do existentialAbstraction on normalizations, everything works great
+        // todo. find an explanation
+//        if (const.tag == ClazzTag) {
+////          def preprocess(tpe: Type): Type = tpe.typeSymbol match {
+////            case ArrayClass => appliedType(ArrayClass, preprocess(tpe.typeArgs.head))
+////            case _ => tpe.typeConstructor
+////          }
+////          val tpe = preprocess(const.typeValue)
+//          val tpe = const.typeValue
+//          var reified = reify(tpe)
+//          reified = mirrorCall(nme.Literal, mirrorCall(nme.Constant, reified))
+////          val skolems = ClassClass.typeParams map (_ => newTypeName(typer.context.unit.fresh.newName("_$")))
+////          var existential = mirrorCall(nme.AppliedTypeTree, mirrorCall(nme.TypeTree, reify(ClassClass.typeConstructor)), mkList(skolems map (skolem => mirrorCall(nme.Ident, reify(skolem)))))
+////          existential = mirrorCall(nme.ExistentialTypeTree, existential, reify(skolems map (skolem => TypeDef(Modifiers(Set(Modifier.deferred: Modifier)), skolem, Nil, TypeBoundsTree(Ident(NothingClass) setType NothingClass.tpe, Ident(AnyClass) setType AnyClass.tpe)))))
+////          reified = mirrorCall(nme.TypeApply, mirrorCall(nme.Select, reified, reify(nme.asInstanceOf_)), mkList(List(existential)))
+//          // why is this required??
+////          reified = mirrorCall(nme.TypeApply, mirrorCall(nme.Select, reified, reify(nme.asInstanceOf_)), mkList(List(mirrorCall(nme.TypeTree, reify(appliedType(ClassClass.tpe, List(AnyClass.tpe)))))))
+//          reified
+//        } else {
+//          mirrorCall(nme.Literal, reifyProduct(const))
+//        }
         mirrorCall(nme.Literal, reifyProduct(const))
       case Import(expr, selectors) =>
         mirrorCall(nme.Import, reify(expr), mkList(selectors map reifyProduct))
@@ -68,11 +91,11 @@ trait Trees {
     // however, reification of AnnotatedTypes is special. see ``reifyType'' to find out why.
     if (reifyTreeSymbols && tree.hasSymbol) {
       if (reifyDebug) println("reifying symbol %s for tree %s".format(tree.symbol, tree))
-      rtree = Apply(Select(rtree, nme.setSymbol), List(reifySymRef(tree.symbol)))
+      rtree = Apply(Select(rtree, nme.setSymbol), List(reify(tree.symbol)))
     }
     if (reifyTreeTypes && tree.tpe != null) {
       if (reifyDebug) println("reifying type %s for tree %s".format(tree.tpe, tree))
-      rtree = Apply(Select(rtree, nme.setType), List(reifyType(tree.tpe)))
+      rtree = Apply(Select(rtree, nme.setType), List(reify(tree.tpe)))
     }
 
     rtree
@@ -98,7 +121,7 @@ trait Trees {
             case InlinedTreeSplice(_, inlinedSymbolTable, tree, _) =>
               if (reifyDebug) println("inlining the splicee")
               // all free vars local to the enclosing reifee should've already been inlined by ``Metalevels''
-              inlinedSymbolTable collect { case freedef @ FreeDef(_, _, binding, _) if binding.symbol.isLocalToReifee => assert(false, freedef) }
+              inlinedSymbolTable collect { case freedef @ FreeDef(_, _, binding, _, _) if binding.symbol.isLocalToReifee => assert(false, freedef) }
               symbolTable ++= inlinedSymbolTable
               tree
             case tree =>
@@ -172,7 +195,7 @@ trait Trees {
           val spliced = spliceType(tpe)
           if (spliced == EmptyTree) {
             if (reifyDebug) println("splicing failed: reify as is")
-            mirrorCall(nme.TypeTree, reifyType(tpe))
+            mirrorCall(nme.TypeTree, reify(tpe))
           } else {
             spliced match {
               case TypeRefToFreeType(freeType) =>
@@ -189,7 +212,7 @@ trait Trees {
             mirrorCall(nme.Ident, reify(sym))
           } else {
             if (reifyDebug) println("tpe is an alias, but not a locatable: reify as TypeTree(%s)".format(tpe))
-            mirrorCall(nme.TypeTree, reifyType(tpe))
+            mirrorCall(nme.TypeTree, reify(tpe))
           }
         }
       }
