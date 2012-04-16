@@ -410,8 +410,8 @@ class Power[ReplValsImpl <: ReplVals : Manifest](val intp: IMain, replVals: Repl
   lazy val phased: Phased       = new { val global: intp.global.type = intp.global } with Phased { }
 
   def context(code: String)    = analyzer.rootContext(unit(code))
-  def source(code: String)     = new BatchSourceFile("<console>", code)
-  def unit(code: String)       = new CompilationUnit(source(code))
+  def source(code: String)     = newSourceFile(code)
+  def unit(code: String)       = newCompilationUnit(code)
   def trees(code: String)      = parse(code) getOrElse Nil
   def typeOf(id: String)       = intp.typeOfExpression(id)
 

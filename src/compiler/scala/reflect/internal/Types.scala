@@ -2082,7 +2082,7 @@ trait Types extends api.Types { self: SymbolTable =>
         // TODO: is there another way a typeref's symbol can refer to a symbol defined in its pre?
         case _                                           => sym
       }
-
+    override def kind = "AliasTypeRef"
   }
 
   trait AbstractTypeRef extends NonClassTypeRef {
@@ -2135,6 +2135,7 @@ trait Types extends api.Types { self: SymbolTable =>
     override def bounds   = thisInfo.bounds
     // def transformInfo(tp: Type): Type = appliedType(tp.asSeenFrom(pre, sym.owner), typeArgsOrDummies)
     override protected[Types] def baseTypeSeqImpl: BaseTypeSeq = transform(bounds.hi).baseTypeSeq prepend this
+    override def kind = "AbstractTypeRef"
   }
 
   /** A class for named types of the form
@@ -2579,7 +2580,7 @@ trait Types extends api.Types { self: SymbolTable =>
           !(qset contains sym) &&
           !isQuantified(pre)
         case _ => false
-      }
+    }
     }
 
     override def safeToString: String = {

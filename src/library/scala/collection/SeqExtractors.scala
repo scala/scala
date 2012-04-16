@@ -19,3 +19,6 @@ object :+ {
     if(t.isEmpty) None
     else Some(t.init -> t.last)
 }
+
+// Dummy to fool ant
+private abstract class SeqExtractors

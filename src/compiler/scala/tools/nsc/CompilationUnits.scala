@@ -5,7 +5,7 @@
 
 package scala.tools.nsc
 
-import util.{ FreshNameCreator, Position, NoPosition, SourceFile, NoSourceFile }
+import util.{ FreshNameCreator, Position, NoPosition, BatchSourceFile, SourceFile, NoSourceFile }
 import scala.collection.mutable
 import scala.collection.mutable.{ LinkedHashSet, ListBuffer }
 

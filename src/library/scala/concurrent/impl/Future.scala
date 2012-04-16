@@ -28,7 +28,7 @@ private[concurrent] trait Future[+T] extends scala.concurrent.Future[T] with Awa
 
   /** Tests whether this Future has been completed.
    */
-  final def isCompleted: Boolean = value.isDefined
+  def isCompleted: Boolean
 
   /** The contained value of this Future. Before this Future is completed
    *  the value will be None. After completion the value will be Some(Right(t))
@@ -42,20 +42,6 @@ private[concurrent] trait Future[+T] extends scala.concurrent.Future[T] with Awa
 }
 
 object Future {
-  import java.{ lang => jl }
-
-  private val toBoxed = Map[Class[_], Class[_]](
-    classOf[Boolean] -> classOf[jl.Boolean],
-    classOf[Byte]    -> classOf[jl.Byte],
-    classOf[Char]    -> classOf[jl.Character],
-    classOf[Short]   -> classOf[jl.Short],
-    classOf[Int]     -> classOf[jl.Integer],
-    classOf[Long]    -> classOf[jl.Long],
-    classOf[Float]   -> classOf[jl.Float],
-    classOf[Double]  -> classOf[jl.Double],
-    classOf[Unit]    -> classOf[scala.runtime.BoxedUnit]
-  )
-
   /** Wraps a block of code into an awaitable object. */
   private[concurrent] def body2awaitable[T](body: =>T) = new Awaitable[T] {
     def ready(atMost: Duration)(implicit permit: CanAwait) = {
@@ -65,19 +51,20 @@ object Future {
     def result(atMost: Duration)(implicit permit: CanAwait) = body
   }
   
-  def boxedType(c: Class[_]): Class[_] = {
-    if (c.isPrimitive) toBoxed(c) else c
-  }
-  
   def apply[T](body: =>T)(implicit executor: ExecutionContext): Future[T] = {
     val promise = new Promise.DefaultPromise[T]()
+
+    //TODO: use `dispatchFuture`?
     executor.execute(new Runnable {
       def run = {
         promise complete {
           try {
             Right(body)
           } catch {
-            case e => scala.concurrent.resolver(e)
+            case NonFatal(e) =>
+              // Commenting out reporting for now, since it produces too much output in the tests
+              //executor.reportFailure(e)
+              scala.concurrent.resolver(e)
           }
         }
       }
@@ -107,7 +94,7 @@ object Future {
 
   private[impl] def dispatchFuture(executor: ExecutionContext, task: () => Unit, force: Boolean = false): Unit =
     _taskStack.get match {
-      case stack if (stack ne null) && !force => stack push task
+      case stack if (stack ne null) && !force => stack push task // FIXME we can't mix tasks aimed for different ExecutionContexts see: https://github.com/akka/akka/blob/v2.0.1/akka-actor/src/main/scala/akka/dispatch/Future.scala#L373
       case _ => executor.execute(new Runnable {
         def run() {
           try {
@@ -115,13 +102,7 @@ object Future {
             _taskStack set taskStack
             while (taskStack.nonEmpty) {
               val next = taskStack.pop()
-              try {
-                next.apply()
-              } catch {
-                case e =>
-                  // TODO catching all and continue isn't good for OOME
-                  executor.reportFailure(e)
-              }
+              try next() catch { case NonFatal(e) => executor reportFailure e }
             }
           } finally {
             _taskStack.remove()
