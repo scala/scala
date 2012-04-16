@@ -71,9 +71,9 @@ trait Importers { self: SymbolTable =>
           case x: from.ModuleSymbol =>
             linkReferenced(myowner.newModuleSymbol(myname, mypos, myflags), x, importSymbol)
           case x: from.FreeTerm =>
-            newFreeTerm(importName(x.name).toTermName, importType(x.info), x.value, x.origin, myflags)
+            newFreeTermSymbol(importName(x.name).toTermName, importType(x.info), x.value, x.flags, x.origin)
           case x: from.FreeType =>
-            newFreeType(importName(x.name).toTypeName, importType(x.info), x.value, x.origin, myflags)
+            newFreeTypeSymbol(importName(x.name).toTypeName, importType(x.info), x.value, x.flags, x.origin)
           case x: from.TermSymbol =>
             linkReferenced(myowner.newValue(myname, mypos, myflags), x, importSymbol)
           case x: from.TypeSkolem =>

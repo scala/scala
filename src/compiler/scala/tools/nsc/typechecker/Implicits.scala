@@ -1161,7 +1161,8 @@ trait Implicits {
       // todo. migrate hardcoded materialization in Implicits to corresponding implicit macros
       var materializer = atPos(pos.focus)(Apply(TypeApply(Ident(TagMaterializers(tagClass)), List(TypeTree(tp))), List(prefix)))
       if (settings.XlogImplicits.value) println("materializing requested %s.%s[%s] using %s".format(pre, tagClass.name, tp, materializer))
-      success(materializer)
+      if (context.macrosEnabled) success(materializer)
+      else failure(materializer, "macros are disabled")
     }
 
     /** The manifest corresponding to type `pt`, provided `pt` is an instance of Manifest.

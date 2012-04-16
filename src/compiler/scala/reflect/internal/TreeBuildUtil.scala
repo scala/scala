@@ -1,6 +1,8 @@
 package scala.reflect
 package internal
 
+import Flags._
+
 trait TreeBuildUtil extends api.TreeBuildUtil { self: SymbolTable =>
 
   // ``staticClass'' and ``staticModule'' rely on ClassLoaders
@@ -51,9 +53,11 @@ trait TreeBuildUtil extends api.TreeBuildUtil { self: SymbolTable =>
     try selectOverloadedMethod(owner, name, index)
     catch { case _: MissingRequirementError => NoSymbol }
 
-  def newFreeTerm(name: String, info: Type, value: => Any, origin: String) = newFreeTerm(newTermName(name), info, value, origin)
+  def newFreeTerm(name: String, info: Type, value: => Any, flags: Long = 0L, origin: String = null) = newFreeTermSymbol(newTermName(name), info, value, flags, origin)
 
-  def newFreeType(name: String, info: Type, value: => Any, origin: String) = newFreeType(newTypeName(name), info, value, origin)
+  def newFreeType(name: String, info: Type, value: => Any, flags: Long = 0L, origin: String = null) = newFreeTypeSymbol(newTypeName(name), info, value, (if (flags == 0L) PARAM else flags) | DEFERRED, origin)
+
+  def newFreeExistential(name: String, info: Type, value: => Any, flags: Long = 0L, origin: String = null) = newFreeTypeSymbol(newTypeName(name), info, value, (if (flags == 0L) EXISTENTIAL else flags) | DEFERRED, origin)
 
   def modifiersFromInternalFlags(flags: Long, privateWithin: Name, annotations: List[Tree]): Modifiers =
     Modifiers(flags, privateWithin, annotations)

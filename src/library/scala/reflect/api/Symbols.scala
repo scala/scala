@@ -120,6 +120,11 @@ trait Symbols { self: Universe =>
      */
     def isTerm         : Boolean
 
+    /** Does this symbol represent a package?
+     *  If yes, `isTerm` is also guaranteed to be true.
+     */
+    def isPackage      : Boolean
+
     /** Does this symbol represent the definition of method?
      *  If yes, `isTerm` is also guaranteed to be true.
      */
@@ -145,6 +150,11 @@ trait Symbols { self: Universe =>
      *  If yes, `isType` is also guaranteed to be true.
      */
     def isClass        : Boolean
+
+    /** Does this symbol represent a package class?
+     *  If yes, `isClass` is also guaranteed to be true.
+     */
+    def isPackageClass  : Boolean
 
     /** Does this symbol represent the definition of a primitive class?
      *  Namely, is it one of [[scala.Double]], [[scala.Float]], [[scala.Long]], [[scala.Int]], [[scala.Char]],

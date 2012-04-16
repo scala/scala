@@ -7,6 +7,7 @@ package scala.reflect
 package api
 
 import scala.reflect.{ mirror => rm }
+import java.lang.{ Class => jClass }
 import language.implicitConversions
 
 /**
@@ -119,7 +120,7 @@ trait TypeTags { self: Universe =>
    * @see [[scala.reflect.api.TypeTags]]
    */
   @annotation.implicitNotFound(msg = "No ConcreteTypeTag available for ${T}")
-  class ConcreteTypeTag[T](tpe: Type) extends TypeTag[T](tpe) {
+  abstract class ConcreteTypeTag[T](tpe: Type, val erasure: jClass[_]) extends TypeTag[T](tpe) {
     // it's unsafe to use assert here, because we might run into deadlocks with Predef
     // also see comments in ClassTags.scala
     //assert(isConcrete, tpe)
@@ -128,24 +129,24 @@ trait TypeTags { self: Universe =>
   }
 
   object ConcreteTypeTag {
-    val Byte    : ConcreteTypeTag[scala.Byte]       = new ConcreteTypeTag[scala.Byte](ByteTpe) { private def readResolve() = ConcreteTypeTag.Byte }
-    val Short   : ConcreteTypeTag[scala.Short]      = new ConcreteTypeTag[scala.Short](ShortTpe) { private def readResolve() = ConcreteTypeTag.Short }
-    val Char    : ConcreteTypeTag[scala.Char]       = new ConcreteTypeTag[scala.Char](CharTpe) { private def readResolve() = ConcreteTypeTag.Char }
-    val Int     : ConcreteTypeTag[scala.Int]        = new ConcreteTypeTag[scala.Int](IntTpe) { private def readResolve() = ConcreteTypeTag.Int }
-    val Long    : ConcreteTypeTag[scala.Long]       = new ConcreteTypeTag[scala.Long](LongTpe) { private def readResolve() = ConcreteTypeTag.Long }
-    val Float   : ConcreteTypeTag[scala.Float]      = new ConcreteTypeTag[scala.Float](FloatTpe) { private def readResolve() = ConcreteTypeTag.Float }
-    val Double  : ConcreteTypeTag[scala.Double]     = new ConcreteTypeTag[scala.Double](DoubleTpe) { private def readResolve() = ConcreteTypeTag.Double }
-    val Boolean : ConcreteTypeTag[scala.Boolean]    = new ConcreteTypeTag[scala.Boolean](BooleanTpe) { private def readResolve() = ConcreteTypeTag.Boolean }
-    val Unit    : ConcreteTypeTag[scala.Unit]       = new ConcreteTypeTag[scala.Unit](UnitTpe) { private def readResolve() = ConcreteTypeTag.Unit }
-    val Any     : ConcreteTypeTag[scala.Any]        = new ConcreteTypeTag[scala.Any](AnyTpe) { private def readResolve() = ConcreteTypeTag.Any }
-    val Object  : ConcreteTypeTag[java.lang.Object] = new ConcreteTypeTag[java.lang.Object](ObjectTpe) { private def readResolve() = ConcreteTypeTag.Object }
-    val AnyVal  : ConcreteTypeTag[scala.AnyVal]     = new ConcreteTypeTag[scala.AnyVal](AnyValTpe) { private def readResolve() = ConcreteTypeTag.AnyVal }
-    val AnyRef  : ConcreteTypeTag[scala.AnyRef]     = new ConcreteTypeTag[scala.AnyRef](AnyRefTpe) { private def readResolve() = ConcreteTypeTag.AnyRef }
-    val Nothing : ConcreteTypeTag[scala.Nothing]    = new ConcreteTypeTag[scala.Nothing](NothingTpe) { private def readResolve() = ConcreteTypeTag.Nothing }
-    val Null    : ConcreteTypeTag[scala.Null]       = new ConcreteTypeTag[scala.Null](NullTpe) { private def readResolve() = ConcreteTypeTag.Null }
-    val String  : ConcreteTypeTag[java.lang.String] = new ConcreteTypeTag[java.lang.String](StringTpe) { private def readResolve() = ConcreteTypeTag.String }
+    val Byte    : ConcreteTypeTag[scala.Byte]       = new ConcreteTypeTag[scala.Byte](ByteTpe, ClassTag.Byte.erasure) { private def readResolve() = ConcreteTypeTag.Byte }
+    val Short   : ConcreteTypeTag[scala.Short]      = new ConcreteTypeTag[scala.Short](ShortTpe, ClassTag.Short.erasure) { private def readResolve() = ConcreteTypeTag.Short }
+    val Char    : ConcreteTypeTag[scala.Char]       = new ConcreteTypeTag[scala.Char](CharTpe, ClassTag.Char.erasure) { private def readResolve() = ConcreteTypeTag.Char }
+    val Int     : ConcreteTypeTag[scala.Int]        = new ConcreteTypeTag[scala.Int](IntTpe, ClassTag.Int.erasure) { private def readResolve() = ConcreteTypeTag.Int }
+    val Long    : ConcreteTypeTag[scala.Long]       = new ConcreteTypeTag[scala.Long](LongTpe, ClassTag.Long.erasure) { private def readResolve() = ConcreteTypeTag.Long }
+    val Float   : ConcreteTypeTag[scala.Float]      = new ConcreteTypeTag[scala.Float](FloatTpe, ClassTag.Float.erasure) { private def readResolve() = ConcreteTypeTag.Float }
+    val Double  : ConcreteTypeTag[scala.Double]     = new ConcreteTypeTag[scala.Double](DoubleTpe, ClassTag.Double.erasure) { private def readResolve() = ConcreteTypeTag.Double }
+    val Boolean : ConcreteTypeTag[scala.Boolean]    = new ConcreteTypeTag[scala.Boolean](BooleanTpe, ClassTag.Boolean.erasure) { private def readResolve() = ConcreteTypeTag.Boolean }
+    val Unit    : ConcreteTypeTag[scala.Unit]       = new ConcreteTypeTag[scala.Unit](UnitTpe, ClassTag.Unit.erasure) { private def readResolve() = ConcreteTypeTag.Unit }
+    val Any     : ConcreteTypeTag[scala.Any]        = new ConcreteTypeTag[scala.Any](AnyTpe, ClassTag.Any.erasure) { private def readResolve() = ConcreteTypeTag.Any }
+    val Object  : ConcreteTypeTag[java.lang.Object] = new ConcreteTypeTag[java.lang.Object](ObjectTpe, ClassTag.Object.erasure) { private def readResolve() = ConcreteTypeTag.Object }
+    val AnyVal  : ConcreteTypeTag[scala.AnyVal]     = new ConcreteTypeTag[scala.AnyVal](AnyValTpe, ClassTag.AnyVal.erasure) { private def readResolve() = ConcreteTypeTag.AnyVal }
+    val AnyRef  : ConcreteTypeTag[scala.AnyRef]     = new ConcreteTypeTag[scala.AnyRef](AnyRefTpe, ClassTag.AnyRef.erasure) { private def readResolve() = ConcreteTypeTag.AnyRef }
+    val Nothing : ConcreteTypeTag[scala.Nothing]    = new ConcreteTypeTag[scala.Nothing](NothingTpe, ClassTag.Nothing.erasure) { private def readResolve() = ConcreteTypeTag.Nothing }
+    val Null    : ConcreteTypeTag[scala.Null]       = new ConcreteTypeTag[scala.Null](NullTpe, ClassTag.Null.erasure) { private def readResolve() = ConcreteTypeTag.Null }
+    val String  : ConcreteTypeTag[java.lang.String] = new ConcreteTypeTag[java.lang.String](StringTpe, ClassTag.String.erasure) { private def readResolve() = ConcreteTypeTag.String }
 
-    def apply[T](tpe: Type): ConcreteTypeTag[T] =
+    def apply[T](tpe: Type, erasure: jClass[_] = null): ConcreteTypeTag[T] =
       tpe match {
         case ByteTpe    => ConcreteTypeTag.Byte.asInstanceOf[ConcreteTypeTag[T]]
         case ShortTpe   => ConcreteTypeTag.Short.asInstanceOf[ConcreteTypeTag[T]]
@@ -163,12 +164,12 @@ trait TypeTags { self: Universe =>
         case NothingTpe => ConcreteTypeTag.Nothing.asInstanceOf[ConcreteTypeTag[T]]
         case NullTpe    => ConcreteTypeTag.Null.asInstanceOf[ConcreteTypeTag[T]]
         case StringTpe  => ConcreteTypeTag.String.asInstanceOf[ConcreteTypeTag[T]]
-        case _          => new ConcreteTypeTag[T](tpe) {}
+        case _          => new ConcreteTypeTag[T](tpe, erasure) {}
       }
 
     def unapply[T](ttag: TypeTag[T]): Option[Type] = if (ttag.isConcrete) Some(ttag.tpe) else None
 
-    implicit def toClassTag[T](ttag: rm.ConcreteTypeTag[T]): ClassTag[T] = ClassTag[T](rm.typeToClass(ttag.tpe.erasure))
+    implicit def toClassTag[T](ttag: rm.ConcreteTypeTag[T]): ClassTag[T] = ClassTag[T](ttag)
 
     implicit def toDeprecatedManifestApis[T](ttag: rm.ConcreteTypeTag[T]): DeprecatedManifestApis[T] = new DeprecatedManifestApis[T](ttag)
 
