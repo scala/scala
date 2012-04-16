@@ -964,7 +964,8 @@ class Global(var currentSettings: Settings, var reporter: NscReporter) extends S
     val deprecationWarnings = new ConditionalWarning("deprecation", settings.deprecation)
     val uncheckedWarnings = new ConditionalWarning("unchecked", settings.unchecked)
     val featureWarnings = new ConditionalWarning("feature", settings.feature)
-    val allConditionalWarnings = List(deprecationWarnings, uncheckedWarnings, featureWarnings)
+    val inlinerWarnings = new ConditionalWarning("inliner", settings.YinlinerWarnings)
+    val allConditionalWarnings = List(deprecationWarnings, uncheckedWarnings, featureWarnings, inlinerWarnings)
 
     var reportedFeature = Set[Symbol]()
 
