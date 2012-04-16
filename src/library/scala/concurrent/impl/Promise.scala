@@ -89,6 +89,7 @@ object Promise {
     protected final def getState: AnyRef = updater.get(this)
 
     def tryComplete(value: Either[Throwable, T]): Boolean = {
+      val resolved = resolveEither(value)
       (try {
         @tailrec
         def tryComplete(v: Either[Throwable, T]): List[Either[Throwable, T] => Unit] = {
@@ -99,13 +100,13 @@ object Promise {
             case _ => null
           }
         }
-        tryComplete(resolveEither(value))
+        tryComplete(resolved)
       } finally {
         synchronized { notifyAll() } //Notify any evil blockers
       }) match {
         case null             => false
         case cs if cs.isEmpty => true
-        case cs               => Future.dispatchFuture(executor, () => cs.foreach(f => notifyCompleted(f, value))); true
+        case cs               => Future.dispatchFuture(executor, () => cs.foreach(f => notifyCompleted(f, resolved))); true
       }
     }
 

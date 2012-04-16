@@ -50,7 +50,7 @@ private[concurrent] object Future {
   def apply[T](body: =>T)(implicit executor: ExecutionContext): Future[T] = {
     val promise = new Promise.DefaultPromise[T]()
     executor.execute(new Runnable {
-      def run = promise complete { try Right(body) catch { case NonFatal(e) => Left(e) } }
+      def run = promise complete { try Right(body) catch { case e => Left(e) } }
     })
     promise.future
   }
