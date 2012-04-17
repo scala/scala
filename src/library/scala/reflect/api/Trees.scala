@@ -85,18 +85,39 @@ trait Trees { self: Universe =>
     def pos_=(pos: Position): Unit = rawatt = (rawatt withPos pos) // the "withPos" part is crucial to robustness
     def setPos(newpos: Position): this.type = { pos = newpos; this }
 
+    // [Eugene] can we make this more type-safe
     private var rawatt: Attachment = NoPosition
-    private case class NontrivialAttachment(pos: api.Position, payload: Any) extends Attachment {
-      def withPos(newPos: api.Position) = copy(pos = newPos, payload = payload)
-      def withPayload(newPayload: Any) = copy(pos = pos, payload = newPayload)
-    }
-    // todo. annotate T with ClassTag and make pattern matcher use it
-    // todo. support multiple attachments, and remove the assignment. only leave attach/detach
-//    def attachment[T]: T = rawatt.payload.asInstanceOf[T]
-//    def attachmentOpt[T]: Option[T] = try { Some(rawatt.payload.asInstanceOf[T]) } catch { case _: Throwable => None }
-    def attachment: Any = rawatt.payload
-    def attachment_=(att: Any): Unit = rawatt = NontrivialAttachment(pos, att)
-    def setAttachment(att: Any): this.type = { attachment = att; this }
+    def attach(att: Any): Unit =
+      rawatt match {
+        case NontrivialAttachment(pos, payload) =>
+          val index = payload.indexWhere(p => p.getClass == att.getClass)
+          if (index == -1) payload += att
+          else payload(index) = att
+        case _ =>
+          rawatt = NontrivialAttachment(pos, collection.mutable.ListBuffer[Any](att))
+      }
+    def withAttachment(att: Any): this.type = { attach(att); this }
+    def detach(att: Any): Unit =
+      detach(att.getClass)
+    def detach(clazz: java.lang.Class[_]): Unit =
+      rawatt match {
+        case NontrivialAttachment(pos, payload) =>
+          val index = payload.indexWhere(p => p.getClass == clazz)
+          if (index != -1) payload.remove(index)
+        case _ =>
+          // do nothing
+      }
+    def withoutAttachment(att: Any): this.type = { detach(att); this }
+    def attachment[T: ClassTag]: T = attachmentOpt[T] getOrElse { throw new Error("no attachment of type %s".format(classTag[T].erasure)) }
+    def attachmentOpt[T: ClassTag]: Option[T] =
+      rawatt match {
+        case NontrivialAttachment(pos, payload) =>
+          val index = payload.indexWhere(p => p.getClass == classTag[T].erasure)
+          if (index != -1) Some(payload(index).asInstanceOf[T])
+          else None
+        case _ =>
+          None
+      }
 
     private[this] var rawtpe: Type = _
 

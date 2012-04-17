@@ -117,52 +117,101 @@ object ClassTag {
       case _             => apply[T](rm.typeToClass(tpe.erasure))
     }
 
+  def apply[T](ttag: rm.ConcreteTypeTag[T]): ClassTag[T] =
+    if (ttag.erasure != null) ClassTag[T](ttag.erasure)
+    else ClassTag[T](ttag.tpe)
+
   implicit def toDeprecatedClassManifestApis[T](ctag: ClassTag[T]): DeprecatedClassManifestApis[T] = new DeprecatedClassManifestApis[T](ctag)
+
+  /** Manifest for the singleton type `value.type'. */
+  @deprecated("Manifests aka type tags now support arbitrary types. Build a manifest directly from the type instead", "2.10.0")
+  def singleType[T <: AnyRef](value: AnyRef): Manifest[T] = ???
+
+  /** ClassManifest for the class type `clazz', where `clazz' is
+    * a top-level or static class.
+    * @note This no-prefix, no-arguments case is separate because we
+    *       it's called from ScalaRunTime.boxArray itself. If we
+    *       pass varargs as arrays into this, we get an infinitely recursive call
+    *       to boxArray. (Besides, having a separate case is more efficient)
+    */
+  @deprecated("Manifests aka type tags now support arbitrary types. Build a manifest directly from the type instead", "2.10.0")
+  def classType[T <: AnyRef](clazz: jClass[_]): ClassManifest[T] = ClassTag[T](clazz)
+
+  /** ClassManifest for the class type `clazz[args]', where `clazz' is
+    * a top-level or static class and `args` are its type arguments */
+  @deprecated("Manifests aka type tags now support arbitrary types. Build a manifest directly from the type instead", "2.10.0")
+  def classType[T <: AnyRef](clazz: jClass[_], arg1: OptManifest[_], args: OptManifest[_]*): ClassManifest[T] = ClassTag[T](clazz)
+
+  /** ClassManifest for the class type `clazz[args]', where `clazz' is
+    * a class with non-package prefix type `prefix` and type arguments `args`.
+    */
+  @deprecated("Manifests aka type tags now support arbitrary types. Build a manifest directly from the type instead", "2.10.0")
+  def classType[T <: AnyRef](prefix: OptManifest[_], clazz: jClass[_], args: OptManifest[_]*): ClassManifest[T] = ClassTag[T](clazz)
+
+  @deprecated("Manifests aka type tags now support arbitrary types. Build a manifest directly from the type instead", "2.10.0")
+  def arrayType[T](arg: OptManifest[_]): ClassManifest[Array[T]] = arg match {
+    case x: ConcreteTypeTag[_] => ClassManifest[Array[T]](x.erasure)
+    case _ => Object.asInstanceOf[ClassManifest[Array[T]]] // was there in 2.9.x
+  }
+
+  /** ClassManifest for the abstract type `prefix # name'. `upperBound' is not
+    * strictly necessary as it could be obtained by reflection. It was
+    * added so that erasure can be calculated without reflection. */
+  @deprecated("Manifests aka type tags now support arbitrary types. Build a manifest directly from the type instead", "2.10.0")
+  def abstractType[T](prefix: OptManifest[_], name: String, clazz: jClass[_], args: OptManifest[_]*): ClassManifest[T] = ClassTag[T](clazz)
+
+  /** ClassManifest for the abstract type `prefix # name'. `upperBound' is not
+    * strictly necessary as it could be obtained by reflection. It was
+    * added so that erasure can be calculated without reflection.
+    * todo: remove after next boostrap
+    */
+  @deprecated("Manifests aka type tags now support arbitrary types. Build a manifest directly from the type instead", "2.10.0")
+  def abstractType[T](prefix: OptManifest[_], name: String, upperbound: ClassManifest[_], args: OptManifest[_]*): ClassManifest[T] = ClassTag[T](upperbound.erasure)
+
+  class DeprecatedClassManifestApis[T](ctag: ClassTag[T]) {
+    import scala.collection.mutable.{ WrappedArray, ArrayBuilder }
+
+    @deprecated("Use `tpe` to analyze the underlying type", "2.10.0")
+    def <:<(that: ClassManifest[_]): Boolean = ctag.tpe <:< that.tpe
+
+    @deprecated("Use `tpe` to analyze the underlying type", "2.10.0")
+    def >:>(that: ClassManifest[_]): Boolean = that <:< ctag
+
+    @deprecated("Use `wrap` instead", "2.10.0")
+    def arrayManifest: ClassManifest[Array[T]] = ctag.wrap
+
+    @deprecated("Use a combination of `wrap` and `newArray` instead", "2.10.0")
+    def newArray2(len: Int): Array[Array[T]] = ctag.wrap.newArray(len)
+
+    @deprecated("Use a combination of `wrap` and `newArray` instead", "2.10.0")
+    def newArray3(len: Int): Array[Array[Array[T]]] = ctag.wrap.wrap.newArray(len)
+
+    @deprecated("Use a combination of `wrap` and `newArray` instead", "2.10.0")
+    def newArray4(len: Int): Array[Array[Array[Array[T]]]] = ctag.wrap.wrap.wrap.newArray(len)
+
+    @deprecated("Use a combination of `wrap` and `newArray` instead", "2.10.0")
+    def newArray5(len: Int): Array[Array[Array[Array[Array[T]]]]] = ctag.wrap.wrap.wrap.wrap.newArray(len)
+
+    @deprecated("Use `@scala.collection.mutable.WrappedArray` object instead", "2.10.0")
+    def newWrappedArray(len: Int): WrappedArray[T] =
+      ctag.erasure match {
+        case java.lang.Byte.TYPE      => new WrappedArray.ofByte(new Array[Byte](len)).asInstanceOf[WrappedArray[T]]
+        case java.lang.Short.TYPE     => new WrappedArray.ofShort(new Array[Short](len)).asInstanceOf[WrappedArray[T]]
+        case java.lang.Character.TYPE => new WrappedArray.ofChar(new Array[Char](len)).asInstanceOf[WrappedArray[T]]
+        case java.lang.Integer.TYPE   => new WrappedArray.ofInt(new Array[Int](len)).asInstanceOf[WrappedArray[T]]
+        case java.lang.Long.TYPE      => new WrappedArray.ofLong(new Array[Long](len)).asInstanceOf[WrappedArray[T]]
+        case java.lang.Float.TYPE     => new WrappedArray.ofFloat(new Array[Float](len)).asInstanceOf[WrappedArray[T]]
+        case java.lang.Double.TYPE    => new WrappedArray.ofDouble(new Array[Double](len)).asInstanceOf[WrappedArray[T]]
+        case java.lang.Boolean.TYPE   => new WrappedArray.ofBoolean(new Array[Boolean](len)).asInstanceOf[WrappedArray[T]]
+        case java.lang.Void.TYPE      => new WrappedArray.ofUnit(new Array[Unit](len)).asInstanceOf[WrappedArray[T]]
+        case _                        => new WrappedArray.ofRef[T with AnyRef](ctag.newArray(len).asInstanceOf[Array[T with AnyRef]]).asInstanceOf[WrappedArray[T]]
+      }
+
+    @deprecated("Use `@scala.collection.mutable.ArrayBuilder` object instead", "2.10.0")
+    def newArrayBuilder(): ArrayBuilder[T] = ArrayBuilder.make[T]()(ctag)
+
+    @deprecated("`typeArguments` is no longer supported, and will always return an empty list. Use `@scala.reflect.TypeTag` or `@scala.reflect.ConcreteTypeTag` to capture and analyze type arguments", "2.10.0")
+    def typeArguments: List[OptManifest[_]] = List()
+  }
 }
 
-// this class should not be used directly in client code
-class DeprecatedClassManifestApis[T](ctag: ClassTag[T]) {
-  import scala.collection.mutable.{ WrappedArray, ArrayBuilder }
-
-  @deprecated("Use `tpe` to analyze the underlying type", "2.10.0")
-  def <:<(that: ClassManifest[_]): Boolean = ctag.tpe <:< that.tpe
-
-  @deprecated("Use `tpe` to analyze the underlying type", "2.10.0")
-  def >:>(that: ClassManifest[_]): Boolean = that <:< ctag
-
-  @deprecated("Use `wrap` instead", "2.10.0")
-  def arrayManifest: ClassManifest[Array[T]] = ctag.wrap
-
-  @deprecated("Use a combination of `wrap` and `newArray` instead", "2.10.0")
-  def newArray2(len: Int): Array[Array[T]] = ctag.wrap.newArray(len)
-
-  @deprecated("Use a combination of `wrap` and `newArray` instead", "2.10.0")
-  def newArray3(len: Int): Array[Array[Array[T]]] = ctag.wrap.wrap.newArray(len)
-
-  @deprecated("Use a combination of `wrap` and `newArray` instead", "2.10.0")
-  def newArray4(len: Int): Array[Array[Array[Array[T]]]] = ctag.wrap.wrap.wrap.newArray(len)
-
-  @deprecated("Use a combination of `wrap` and `newArray` instead", "2.10.0")
-  def newArray5(len: Int): Array[Array[Array[Array[Array[T]]]]] = ctag.wrap.wrap.wrap.wrap.newArray(len)
-
-  @deprecated("Use `@scala.collection.mutable.WrappedArray` object instead", "2.10.0")
-  def newWrappedArray(len: Int): WrappedArray[T] =
-    ctag.erasure match {
-      case java.lang.Byte.TYPE      => new WrappedArray.ofByte(new Array[Byte](len)).asInstanceOf[WrappedArray[T]]
-      case java.lang.Short.TYPE     => new WrappedArray.ofShort(new Array[Short](len)).asInstanceOf[WrappedArray[T]]
-      case java.lang.Character.TYPE => new WrappedArray.ofChar(new Array[Char](len)).asInstanceOf[WrappedArray[T]]
-      case java.lang.Integer.TYPE   => new WrappedArray.ofInt(new Array[Int](len)).asInstanceOf[WrappedArray[T]]
-      case java.lang.Long.TYPE      => new WrappedArray.ofLong(new Array[Long](len)).asInstanceOf[WrappedArray[T]]
-      case java.lang.Float.TYPE     => new WrappedArray.ofFloat(new Array[Float](len)).asInstanceOf[WrappedArray[T]]
-      case java.lang.Double.TYPE    => new WrappedArray.ofDouble(new Array[Double](len)).asInstanceOf[WrappedArray[T]]
-      case java.lang.Boolean.TYPE   => new WrappedArray.ofBoolean(new Array[Boolean](len)).asInstanceOf[WrappedArray[T]]
-      case java.lang.Void.TYPE      => new WrappedArray.ofUnit(new Array[Unit](len)).asInstanceOf[WrappedArray[T]]
-      case _                        => new WrappedArray.ofRef[T with AnyRef](ctag.newArray(len).asInstanceOf[Array[T with AnyRef]]).asInstanceOf[WrappedArray[T]]
-    }
-
-  @deprecated("Use `@scala.collection.mutable.ArrayBuilder` object instead", "2.10.0")
-  def newArrayBuilder(): ArrayBuilder[T] = ArrayBuilder.make[T]()(ctag)
-
-  @deprecated("`typeArguments` is no longer supported, and will always return an empty list. Use `@scala.reflect.TypeTag` or `@scala.reflect.ConcreteTypeTag` to capture and analyze type arguments", "2.10.0")
-  def typeArguments: List[OptManifest[_]] = List()
-}

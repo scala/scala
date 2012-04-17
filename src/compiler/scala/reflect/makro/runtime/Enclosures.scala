@@ -11,7 +11,7 @@ trait Enclosures {
 
   val macroApplication: Tree = expandee
 
-  val enclosingMacros: List[Context] = this :: mirror.analyzer.openMacros
+  val enclosingMacros: List[Context] = this :: mirror.analyzer.openMacros // include self
 
   val enclosingImplicits: List[(Type, Tree)] = callsiteTyper.context.openImplicits
 

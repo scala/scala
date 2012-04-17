@@ -78,12 +78,6 @@ trait Reshape {
           if (reifyDebug) println("unapplying unapply: " + tree)
           val fun1 = extractExtractor(fun)
           Apply(fun1, args).copyAttrs(unapply)
-        case Literal(const @ Constant(tpe: Type)) =>
-          // todo. implement this
-          ???
-        case Literal(const @ Constant(sym: Symbol)) =>
-          // todo. implement this
-          ???
         case _ =>
           tree
       }
