@@ -27,7 +27,7 @@ trait Reifiers {
 
   def reifyErasure(tpe: Type): Tree = {
     val positionBearer = enclosingMacros.find(c => c.macroApplication.pos != NoPosition).map(_.macroApplication).getOrElse(EmptyTree).asInstanceOf[Tree]
-    val typetagInScope = callsiteTyper.context.withMacrosDisabled(callsiteTyper.resolveTypeTag(positionBearer, gen.mkAttributedRef(Reflect_mirror).tpe, tpe, full = true))
+    val typetagInScope = callsiteTyper.context.withMacrosDisabled(callsiteTyper.resolveTypeTag(positionBearer, singleType(Reflect_mirror.owner.thisPrefix, Reflect_mirror), tpe, full = true))
     def typetagIsSynthetic(tree: Tree) = tree.isInstanceOf[Block] || (tree exists (sub => sub.symbol == TypeTagModule || sub.symbol == ConcreteTypeTagModule))
     typetagInScope match {
       case success if !success.isEmpty && !typetagIsSynthetic(success) =>
