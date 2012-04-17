@@ -67,9 +67,13 @@ trait TypeTags { self: Universe =>
     def toConcrete: ConcreteTypeTag[T] = ConcreteTypeTag[T](tpe)
 
     override def toString = {
-      var prefix = if (isConcrete) "ConcreteTypeTag" else "TypeTag"
-      if (prefix != this.productPrefix) prefix = "*" + prefix
-      prefix + "[" + tpe + "]"
+      if (!self.isInstanceOf[DummyMirror]) {
+        var prefix = if (isConcrete) "ConcreteTypeTag" else "TypeTag"
+        if (prefix != this.productPrefix) prefix = "*" + prefix
+        prefix + "[" + tpe + "]"
+      } else {
+        this.productPrefix + "[?]"
+      }
     }
   }
 
@@ -121,10 +125,12 @@ trait TypeTags { self: Universe =>
    */
   @annotation.implicitNotFound(msg = "No ConcreteTypeTag available for ${T}")
   abstract class ConcreteTypeTag[T](tpe: Type, val erasure: jClass[_]) extends TypeTag[T](tpe) {
-    // it's unsafe to use assert here, because we might run into deadlocks with Predef
-    // also see comments in ClassTags.scala
-    //assert(isConcrete, tpe)
-    if (notConcrete) throw new Error("%s (%s) is not concrete and cannot be used to construct a concrete type tag".format(tpe, tpe.kind))
+    if (!self.isInstanceOf[DummyMirror]) {
+//      it's unsafe to use assert here, because we might run into deadlocks with Predef
+//      also see comments in ClassTags.scala
+//      assert(isConcrete, tpe)
+      if (notConcrete) throw new Error("%s (%s) is not concrete and cannot be used to construct a concrete type tag".format(tpe, tpe.kind))
+    }
     override def productPrefix = "ConcreteTypeTag"
   }
 

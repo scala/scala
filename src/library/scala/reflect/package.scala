@@ -11,17 +11,18 @@ package object reflect {
   // initialization, but in response to a doomed attempt to utilize it.
 
   // todo. default mirror (a static object) might become a source for memory leaks (because it holds a strong reference to a classloader)!
-  lazy val mirror: api.Mirror = mkMirror(defaultReflectionClassLoader)
+  lazy val mirror: api.Mirror =
+    try mkMirror(defaultReflectionClassLoader)
+    catch {
+      case ex: UnsupportedOperationException =>
+        new DummyMirror(defaultReflectionClassLoader)
+    }
 
-  private def mirrorDiagnostics(cl: ClassLoader): String = """
+  private[scala] def mirrorDiagnostics(cl: ClassLoader): String = """
     |
     | This error has happened because `scala.reflect.runtime.package` located in
     | scala-compiler.jar cannot be loaded. Classloader you are using is:
     | %s.
-    |
-    | In Scala 2.10.0 M3, scala-compiler.jar is required to be on the classpath
-    | for manifests and type tags to function. This will change in the final release,
-    | but for now you need to adjust your scripts or the build system to proceed.
     |
     | For the instructions for some of the situations that might be relevant
     | visit our knowledge base at https://gist.github.com/2391081.
