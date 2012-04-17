@@ -261,7 +261,7 @@ object Either {
    *     case ex => Left(ex)
    *   }
    *
-   * // this will only be executed if interactWithDB returns a Some
+   * // this will only be executed if interactWithDB returns a Right
    * val report =
    *   for (r <- interactWithDB(someQuery).right) yield generateReport(r)
    * if (report.isRight)
