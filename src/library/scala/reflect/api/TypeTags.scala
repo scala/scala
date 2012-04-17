@@ -180,7 +180,7 @@ trait TypeTags { self: Universe =>
     implicit def toDeprecatedManifestApis[T](ttag: rm.ConcreteTypeTag[T]): DeprecatedManifestApis[T] = new DeprecatedManifestApis[T](ttag)
 
     // this class should not be used directly in client code
-    class DeprecatedManifestApis[T](ttag: rm.ConcreteTypeTag[T]) extends DeprecatedClassManifestApis[T](toClassTag(ttag)) {
+    class DeprecatedManifestApis[T](ttag: rm.ConcreteTypeTag[T]) extends ClassTag.DeprecatedClassManifestApis[T](toClassTag(ttag)) {
       @deprecated("Use `tpe` to analyze the underlying type", "2.10.0")
       def <:<(that: Manifest[_]): Boolean = ttag.tpe <:< that.tpe
 
@@ -190,6 +190,49 @@ trait TypeTags { self: Universe =>
       @deprecated("Use `tpe` to analyze the type arguments", "2.10.0")
       override def typeArguments: List[Manifest[_]] = ttag.tpe.typeArguments map (targ => rm.ConcreteTypeTag(targ))
     }
+
+    /** Manifest for the singleton type `value.type'. */
+    @deprecated("Manifests aka type tags now support arbitrary types. Build a manifest directly from the type instead", "2.10.0")
+    def singleType[T <: AnyRef](value: AnyRef): Manifest[T] = Manifest[T](???, value.getClass)
+
+    /** Manifest for the class type `clazz[args]', where `clazz' is
+      * a top-level or static class.
+      * @note This no-prefix, no-arguments case is separate because we
+      *       it's called from ScalaRunTime.boxArray itself. If we
+      *       pass varargs as arrays into this, we get an infinitely recursive call
+      *       to boxArray. (Besides, having a separate case is more efficient)
+      */
+    @deprecated("Manifests aka type tags now support arbitrary types. Build a manifest directly from the type instead", "2.10.0")
+    def classType[T](clazz: Predef.Class[_]): Manifest[T] = Manifest[T](???, clazz)
+
+    /** Manifest for the class type `clazz', where `clazz' is
+      * a top-level or static class and args are its type arguments. */
+    @deprecated("Manifests aka type tags now support arbitrary types. Build a manifest directly from the type instead", "2.10.0")
+    def classType[T](clazz: Predef.Class[T], arg1: Manifest[_], args: Manifest[_]*): Manifest[T] = Manifest[T](???, clazz)
+
+    /** Manifest for the class type `clazz[args]', where `clazz' is
+      * a class with non-package prefix type `prefix` and type arguments `args`.
+      */
+    @deprecated("Manifests aka type tags now support arbitrary types. Build a manifest directly from the type instead", "2.10.0")
+    def classType[T](prefix: Manifest[_], clazz: Predef.Class[_], args: Manifest[_]*): Manifest[T] = Manifest[T](???, clazz)
+
+    @deprecated("Manifests aka type tags now support arbitrary types. Build a manifest directly from the type instead", "2.10.0")
+    def arrayType[T](arg: Manifest[_]): Manifest[Array[T]] = Manifest[Array[T]](???, arg.asInstanceOf[Manifest[T]].arrayManifest.erasure)
+
+    /** Manifest for the abstract type `prefix # name'. `upperBound' is not
+      * strictly necessary as it could be obtained by reflection. It was
+      * added so that erasure can be calculated without reflection. */
+    @deprecated("Manifests aka type tags now support arbitrary types. Build a manifest directly from the type instead", "2.10.0")
+    def abstractType[T](prefix: Manifest[_], name: String, clazz: Predef.Class[_], args: Manifest[_]*): Manifest[T] = Manifest[T](???, clazz)
+
+    /** Manifest for the unknown type `_ >: L <: U' in an existential.
+      */
+    @deprecated("Manifests aka type tags now support arbitrary types. Build a manifest directly from the type instead", "2.10.0")
+    def wildcardType[T](lowerBound: Manifest[_], upperBound: Manifest[_]): Manifest[T] = Manifest[T](???, upperBound.erasure)
+
+    /** Manifest for the intersection type `parents_0 with ... with parents_n'. */
+    @deprecated("Manifests aka type tags now support arbitrary types. Build a manifest directly from the type instead", "2.10.0")
+    def intersectionType[T](parents: Manifest[_]*): Manifest[T] = Manifest[T](???, parents.head.erasure)
   }
 
   // incantations for summoning
