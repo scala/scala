@@ -63,9 +63,9 @@ trait Symbols {
           assert(value.isInstanceOf[Ident], showRaw(value))
           val capturedTpe = capturedVariableType(sym)
           val capturedValue = referenceCapturedVariable(sym)
-          locallyReify(sym, name, mirrorCall(nme.newFreeTerm, reify(sym.name.toString), reify(capturedTpe), capturedValue, reify(origin(sym))))
+          locallyReify(sym, name, mirrorCall(nme.newFreeTerm, reify(sym.name.toString), reify(capturedTpe), capturedValue, reify(sym.flags), reify(origin(sym))))
         } else {
-          locallyReify(sym, name, mirrorCall(nme.newFreeTerm, reify(sym.name.toString), reify(sym.tpe), value, reify(origin(sym))))
+          locallyReify(sym, name, mirrorCall(nme.newFreeTerm, reify(sym.name.toString), reify(sym.tpe), value, reify(sym.flags), reify(origin(sym))))
         }
     }
 
@@ -77,8 +77,8 @@ trait Symbols {
         if (reifyDebug) println("Free type: %s (%s)".format(sym, sym.accurateKindString))
         var name = newTermName(nme.MIRROR_FREE_PREFIX + sym.name)
         val phantomTypeTag = Apply(TypeApply(Select(Ident(nme.MIRROR_SHORT), nme.TypeTag), List(value)), List(Literal(Constant(null))))
-        // todo. implement info reification for free types: type bounds, HK-arity, whatever else that can be useful
-        locallyReify(sym, name, mirrorCall(nme.newFreeType, reify(sym.name.toString), reify(sym.info), phantomTypeTag, reify(origin(sym))))
+        val flavor = if (sym.isExistential) nme.newFreeExistential else nme.newFreeType
+        locallyReify(sym, name, mirrorCall(flavor, reify(sym.name.toString), reify(sym.info), phantomTypeTag, reify(sym.flags), reify(origin(sym))))
     }
 
   def reifySymDef(sym: Symbol): Tree =
@@ -105,9 +105,9 @@ trait Symbols {
     filledIn = false
     newSymbolTable foreach {
       case entry =>
-        val att = entry.attachment
+        val att = entry.attachmentOpt[ReifyAttachment]
         att match {
-          case sym: Symbol =>
+          case Some(ReifyAttachment(sym)) =>
             // don't duplicate reified symbols when merging inlined reifee
             if (!(locallyReified contains sym)) {
               val ValDef(_, name, _, _) = entry
@@ -134,7 +134,7 @@ trait Symbols {
     // todo. tried to declare a private class here to carry an attachment, but it's path-dependent
     // so got troubles with exchanging free variables between nested and enclosing quasiquotes
     // attaching just Symbol isn't good either, so we need to think of a principled solution
-    val local = ValDef(NoMods, name, TypeTree(), reified) setAttachment sym
+    val local = ValDef(NoMods, name, TypeTree(), reified) withAttachment ReifyAttachment(sym)
     localReifications += local
     filledIn = false
     locallyReified(sym) = Ident(name)
@@ -149,8 +149,9 @@ trait Symbols {
       while (i < localReifications.length) {
         // fillInSymbol might create new locallyReified symbols, that's why this is done iteratively
         val reified = localReifications(i)
-        reified.attachment match {
-          case sym: Symbol => fillIns += fillInSymbol(sym)
+        val att = reified.attachmentOpt[ReifyAttachment]
+        att match {
+          case Some(ReifyAttachment(sym)) => fillIns += fillInSymbol(sym)
           case other => // do nothing
         }
         i += 1
@@ -169,9 +170,15 @@ trait Symbols {
       if (sym.annotations.isEmpty) EmptyTree
       else Apply(Select(locallyReified(sym), nme.setAnnotations), List(reify(sym.annotations)))
     } else {
-      val rset = Apply(Select(locallyReified(sym), nme.setTypeSignature), List(reifyType(sym.info)))
-      if (sym.annotations.isEmpty) rset
-      else Apply(Select(rset, nme.setAnnotations), List(reify(sym.annotations)))
+     import scala.reflect.internal.Flags._
+     if (sym hasFlag LOCKED) {
+       // [Eugene] better to have a symbol without a type signature, than to crash with a CyclicReference
+       EmptyTree
+     } else {
+       val rset = Apply(Select(locallyReified(sym), nme.setTypeSignature), List(reify(sym.info)))
+       if (sym.annotations.isEmpty) rset
+       else Apply(Select(rset, nme.setAnnotations), List(reify(sym.annotations)))
+     }
     }
   }
 }

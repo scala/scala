@@ -1082,10 +1082,10 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
           }
           if (tree.isType)
             adaptType()
-          else if (context.macrosEnabled &&                            // when macros are enabled
-                   inExprModeButNot(mode, FUNmode) && !tree.isDef &&   // and typechecking application
-                   tree.symbol != null && tree.symbol.isTermMacro)     // of a term macro
-            macroExpand(this, tree, pt)
+          else if (
+              inExprModeButNot(mode, FUNmode) && !tree.isDef &&   // typechecking application
+              tree.symbol != null && tree.symbol.isTermMacro)     // of a macro
+            macroExpand(this, tree, mode, pt)
           else if ((mode & (PATTERNmode | FUNmode)) == (PATTERNmode | FUNmode))
             adaptConstrPattern()
           else if (inAllModes(mode, EXPRmode | FUNmode) &&

@@ -91,7 +91,7 @@ trait CompilationUnits { self: Global =>
       currentRun.deprecationWarnings.warn(pos, msg)
 
     def uncheckedWarning(pos: Position, msg: String) =
-      currentRun.uncheckedWarnings.warn(pos, msg)
+      currentRun.uncheckedWarnings0.warn(pos, msg)
 
     def inlinerWarning(pos: Position, msg: String) =
       currentRun.inlinerWarnings.warn(pos, msg)

@@ -32,10 +32,10 @@ trait Implicits {
   import global.typer.{ printTyping, deindentTyping, indentTyping, printInference }
 
   def inferImplicit(tree: Tree, pt: Type, reportAmbiguous: Boolean, isView: Boolean, context: Context): SearchResult =
-    inferImplicit(tree, pt, reportAmbiguous, isView, context, true, NoPosition)
+    inferImplicit(tree, pt, reportAmbiguous, isView, context, true, tree.pos)
 
   def inferImplicit(tree: Tree, pt: Type, reportAmbiguous: Boolean, isView: Boolean, context: Context, saveAmbiguousDivergent: Boolean): SearchResult =
-    inferImplicit(tree, pt, reportAmbiguous, isView, context, saveAmbiguousDivergent, NoPosition)
+    inferImplicit(tree, pt, reportAmbiguous, isView, context, saveAmbiguousDivergent, tree.pos)
 
   /** Search for an implicit value. See the comment on `result` at the end of class `ImplicitSearch`
    *  for more info how the search is conducted.
@@ -633,6 +633,7 @@ trait Implicits {
               else {
                 val subst = new TreeTypeSubstituter(okParams, okArgs)
                 subst traverse itree2
+                notifyUndetparamsInferred(okParams, okArgs)
                 subst
               }
 
@@ -1161,7 +1162,8 @@ trait Implicits {
       // todo. migrate hardcoded materialization in Implicits to corresponding implicit macros
       var materializer = atPos(pos.focus)(Apply(TypeApply(Ident(TagMaterializers(tagClass)), List(TypeTree(tp))), List(prefix)))
       if (settings.XlogImplicits.value) println("materializing requested %s.%s[%s] using %s".format(pre, tagClass.name, tp, materializer))
-      success(materializer)
+      if (context.macrosEnabled) success(materializer)
+      else failure(materializer, "macros are disabled")
     }
 
     /** The manifest corresponding to type `pt`, provided `pt` is an instance of Manifest.

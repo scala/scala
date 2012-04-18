@@ -65,8 +65,16 @@ trait Types {
   private var spliceTypesEnabled = !dontSpliceAtTopLevel
 
   /** Keeps track of whether this reification contains abstract type parameters */
-  var maybeConcrete = true
-  var definitelyConcrete = true
+  private var _definitelyConcrete = true
+  def definitelyConcrete = _definitelyConcrete
+  def definitelyConcrete_=(value: Boolean) {
+    _definitelyConcrete = value
+    if (!value && requireConcreteTypeTag) {
+      assert(current.isInstanceOf[Type], current)
+      val offender = current.asInstanceOf[Type]
+      CannotReifyConcreteTypeTagHavingUnresolvedTypeParameters(offender)
+    }
+  }
 
   private type SpliceCacheKey = (Symbol, Symbol)
   private lazy val spliceCache: collection.mutable.Map[SpliceCacheKey, Tree] = {
@@ -75,7 +83,9 @@ trait Types {
   }
 
   def spliceType(tpe: Type): Tree = {
-    if (tpe.isSpliceable) {
+    // [Eugene] it seems that depending on the context the very same symbol can be either a spliceable tparam or a quantified existential. very weird!
+    val quantified = currents collect { case ExistentialType(quantified, _) => quantified } flatMap identity
+    if (tpe.isSpliceable && !(quantified contains tpe.typeSymbol)) {
       if (reifyDebug) println("splicing " + tpe)
 
       if (spliceTypesEnabled) {
@@ -89,22 +99,18 @@ trait Types {
           // if this fails, it might produce the dreaded "erroneous or inaccessible type" error
           // to find out the whereabouts of the error run scalac with -Ydebug
           if (reifyDebug) println("launching implicit search for %s.%s[%s]".format(prefix, tagClass.name, tpe))
-          val positionBearer = mirror.analyzer.openMacros.find(c => c.macroApplication.pos != NoPosition).map(_.macroApplication).getOrElse(EmptyTree).asInstanceOf[Tree]
           typer.resolveTypeTag(positionBearer, prefix.tpe, tpe, requireConcreteTypeTag) match {
             case failure if failure.isEmpty =>
               if (reifyDebug) println("implicit search was fruitless")
-              definitelyConcrete &= false
-              maybeConcrete &= false
               EmptyTree
             case success =>
               if (reifyDebug) println("implicit search has produced a result: " + success)
-              definitelyConcrete |= requireConcreteTypeTag
-              maybeConcrete |= true
+              definitelyConcrete &= requireConcreteTypeTag
               var splice = Select(success, nme.tpe)
               splice match {
                 case InlinedTypeSplice(_, inlinedSymbolTable, tpe) =>
                   // all free vars local to the enclosing reifee should've already been inlined by ``Metalevels''
-                  inlinedSymbolTable collect { case freedef @ FreeDef(_, _, binding, _) if binding.symbol.isLocalToReifee => assert(false, freedef) }
+                  inlinedSymbolTable collect { case freedef @ FreeDef(_, _, binding, _, _) if binding.symbol.isLocalToReifee => assert(false, freedef) }
                   symbolTable ++= inlinedSymbolTable
                   reifyTrace("inlined the splicee: ")(tpe)
                 case tpe =>
@@ -117,8 +123,7 @@ trait Types {
         if (reifyDebug) println("splicing has been cancelled: spliceTypesEnabled = false")
       }
 
-      if (requireConcreteTypeTag)
-        CannotReifyConcreteTypeTagHavingUnresolvedTypeParameters(tpe)
+      definitelyConcrete = false
     }
 
     spliceTypesEnabled = true

@@ -8,7 +8,6 @@ package scala.tools.nsc
 import java.io.{ File, FileOutputStream, PrintWriter, IOException, FileNotFoundException }
 import java.nio.charset.{ Charset, CharsetDecoder, IllegalCharsetNameException, UnsupportedCharsetException }
 import compat.Platform.currentTime
-
 import scala.tools.util.{ Profiling, PathResolver }
 import scala.collection.{ mutable, immutable }
 import io.{ SourceReader, AbstractFile, Path }
@@ -16,7 +15,6 @@ import reporters.{ Reporter => NscReporter, ConsoleReporter }
 import util.{ NoPosition, Exceptional, ClassPath, SourceFile, NoSourceFile, Statistics, StatisticsInfo, BatchSourceFile, ScriptSourceFile, ShowPickled, ScalaClassLoader, returning }
 import scala.reflect.internal.pickling.{ PickleBuffer, PickleFormat }
 import settings.{ AestheticSettings }
-
 import symtab.{ Flags, SymbolTable, SymbolLoaders, SymbolTrackers }
 import symtab.classfile.Pickler
 import dependencies.DependencyAnalysis
@@ -25,13 +23,13 @@ import ast._
 import ast.parser._
 import typechecker._
 import transform._
-
 import backend.icode.{ ICodes, GenICode, ICodeCheckers }
 import backend.{ ScalaPrimitives, Platform, MSILPlatform, JavaPlatform }
 import backend.jvm.GenJVM
 import backend.opt.{ Inliners, InlineExceptionHandlers, ClosureElimination, DeadCodeElimination }
 import backend.icode.analysis._
 import language.postfixOps
+import reflect.internal.StdAttachments
 
 class Global(var currentSettings: Settings, var reporter: NscReporter) extends SymbolTable
                                                                           with ClassLoaders
@@ -133,6 +131,16 @@ class Global(var currentSettings: Settings, var reporter: NscReporter) extends S
     val global: Global.this.type = Global.this
   } with NodePrinters {
     infolevel = InfoLevel.Verbose
+  }
+
+  def withInfoLevel[T](infolevel: nodePrinters.InfoLevel.Value)(op: => T) = {
+    val saved = nodePrinters.infolevel
+    try {
+      nodePrinters.infolevel = infolevel
+      op
+    } finally {
+      nodePrinters.infolevel = saved
+    }
   }
 
   /** Representing ASTs as graphs */
@@ -967,10 +975,15 @@ class Global(var currentSettings: Settings, var reporter: NscReporter) extends S
     var currentUnit: CompilationUnit = NoCompilationUnit
 
     val deprecationWarnings = new ConditionalWarning("deprecation", settings.deprecation)
-    val uncheckedWarnings = new ConditionalWarning("unchecked", settings.unchecked)
+    // This change broke sbt; I gave it the thrilling name of uncheckedWarnings0 so
+    // as to recover uncheckedWarnings for its ever-fragile compiler interface.
+    val uncheckedWarnings0 = new ConditionalWarning("unchecked", settings.unchecked)
     val featureWarnings = new ConditionalWarning("feature", settings.feature)
     val inlinerWarnings = new ConditionalWarning("inliner", settings.YinlinerWarnings)
-    val allConditionalWarnings = List(deprecationWarnings, uncheckedWarnings, featureWarnings, inlinerWarnings)
+    val allConditionalWarnings = List(deprecationWarnings, uncheckedWarnings0, featureWarnings, inlinerWarnings)
+
+    // for sbt's benefit
+    def uncheckedWarnings: List[(Position, String)] = uncheckedWarnings0.warnings.toList
 
     var reportedFeature = Set[Symbol]()
 
