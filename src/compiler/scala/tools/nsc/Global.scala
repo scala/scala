@@ -974,16 +974,17 @@ class Global(var currentSettings: Settings, var reporter: NscReporter) extends S
     /** The currently compiled unit; set from GlobalPhase */
     var currentUnit: CompilationUnit = NoCompilationUnit
 
-    val deprecationWarnings = new ConditionalWarning("deprecation", settings.deprecation)
     // This change broke sbt; I gave it the thrilling name of uncheckedWarnings0 so
     // as to recover uncheckedWarnings for its ever-fragile compiler interface.
+    val deprecationWarnings0 = new ConditionalWarning("deprecation", settings.deprecation)
     val uncheckedWarnings0 = new ConditionalWarning("unchecked", settings.unchecked)
     val featureWarnings = new ConditionalWarning("feature", settings.feature)
     val inlinerWarnings = new ConditionalWarning("inliner", settings.YinlinerWarnings)
-    val allConditionalWarnings = List(deprecationWarnings, uncheckedWarnings0, featureWarnings, inlinerWarnings)
+    val allConditionalWarnings = List(deprecationWarnings0, uncheckedWarnings0, featureWarnings, inlinerWarnings)
 
     // for sbt's benefit
     def uncheckedWarnings: List[(Position, String)] = uncheckedWarnings0.warnings.toList
+    def deprecationWarnings: List[(Position, String)] = deprecationWarnings0.warnings.toList
 
     var reportedFeature = Set[Symbol]()
 

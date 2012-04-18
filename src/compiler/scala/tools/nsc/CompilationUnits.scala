@@ -88,7 +88,7 @@ trait CompilationUnits { self: Global =>
       reporter.warning(pos, msg)
 
     def deprecationWarning(pos: Position, msg: String) =
-      currentRun.deprecationWarnings.warn(pos, msg)
+      currentRun.deprecationWarnings0.warn(pos, msg)
 
     def uncheckedWarning(pos: Position, msg: String) =
       currentRun.uncheckedWarnings0.warn(pos, msg)
