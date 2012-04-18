@@ -7,7 +7,7 @@ ConcreteTypeTag[() => Test.ToS], t=TypeRef, s=class Function0
 ConcreteTypeTag[() => Test.ToS], t=TypeRef, s=class Function0
 ConcreteTypeTag[$anon], t=TypeRef, s= <: B with Test.ToS
 ConcreteTypeTag[$anon], t=TypeRef, s= <: B with A with Test.ToS
-ConcreteTypeTag[List[Object{type T1}#T1]], t=TypeRef, s=class List
+TypeTag[List[Object{type T1}#T1]], t=TypeRef, s=class List
 ConcreteTypeTag[List[Seq[Int]]], t=TypeRef, s=class List
 ConcreteTypeTag[List[Seq[U forSome { type U <: Int }]]], t=TypeRef, s=class List
 ConcreteTypeTag[Bar.type], t=TypeRef, s= <: scala.runtime.AbstractFunction0[Bar] with Serializable{case def unapply(x$0: Bar): Boolean} with Singleton
@@ -19,6 +19,6 @@ ConcreteTypeTag[() => Test.ToS], t=TypeRef, s=class Function0
 ConcreteTypeTag[() => Test.ToS], t=TypeRef, s=class Function0
 ConcreteTypeTag[$anon], t=TypeRef, s= <: B with Test.ToS
 ConcreteTypeTag[$anon], t=TypeRef, s= <: B with A with Test.ToS
-ConcreteTypeTag[List[Object{type T1}#T1]], t=TypeRef, s=class List
+TypeTag[List[Object{type T1}#T1]], t=TypeRef, s=class List
 ConcreteTypeTag[List[Seq[Int]]], t=TypeRef, s=class List
 ConcreteTypeTag[List[Seq[U forSome { type U <: Int }]]], t=TypeRef, s=class List

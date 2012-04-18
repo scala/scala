@@ -14,6 +14,8 @@ trait Util {
   object reifiedNodePrinters extends { val global: mirror.type = mirror } with tools.nsc.ast.NodePrinters with NodePrinters
   val reifiedNodeToString = reifiedNodePrinters.reifiedNodeToString
 
+  val positionBearer = mirror.analyzer.openMacros.find(c => c.macroApplication.pos != NoPosition).map(_.macroApplication).getOrElse(EmptyTree).asInstanceOf[Tree]
+
   def reifyList(xs: List[Any]): Tree =
     mkList(xs map reify)
 

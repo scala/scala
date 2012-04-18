@@ -11,62 +11,21 @@ package object reflect {
   // initialization, but in response to a doomed attempt to utilize it.
 
   // todo. default mirror (a static object) might become a source for memory leaks (because it holds a strong reference to a classloader)!
-  lazy val mirror: api.Mirror = mkMirror(defaultReflectionClassLoader)
+  lazy val mirror: api.Mirror =
+    try mkMirror(defaultReflectionClassLoader)
+    catch {
+      case ex: UnsupportedOperationException =>
+        new DummyMirror(defaultReflectionClassLoader)
+    }
 
-  private def mirrorDiagnostics(cl: ClassLoader): String = """
+  private[scala] def mirrorDiagnostics(cl: ClassLoader): String = """
     |
     | This error has happened because `scala.reflect.runtime.package` located in
     | scala-compiler.jar cannot be loaded. Classloader you are using is:
     | %s.
     |
-    | In Scala 2.10.0 M3, scala-compiler.jar is required to be on the classpath
-    | for manifests and type tags to function. This will change in the final release,
-    | but for now you need to adjust your scripts or build system to proceed.
-    | Here are the instructions for some of the situations that might be relevant.
-    |
-    | If you compile your application directly from the command line
-    | or a hand-rolled script, this is a bug. Please, report it.
-    |
-    | If you compile your application with Maven using the maven-scala plugin,
-    | set its "fork" configuration entry to "false:
-    |
-    |   <plugin>
-    |     <groupId>org.scala-tools</groupId>
-    |     <artifactId>maven-scala-plugin</artifactId>
-    |     <version>2.15.0</version>
-    |     <executions>
-    |       <execution>
-    |         <goals>
-    |           ...
-    |         </goals>
-    |         <configuration>
-    |          <fork>false</fork>
-    |          ...
-    |        </configuration>
-    |      </execution>
-    |    </executions>
-    |  </plugin>
-    |
-    | If you compile your application with SBT,
-    | <to be implemented: release SBT for 2.10.0 M3>
-    |
-    | If you compile your application in Scala IDE,
-    | <to be implemented: release Scala IDE for 2.10.0 M3>.
-    |
-    | If you launch your application directly from the command line
-    | or a hand-rolled script, add `scala-compiler.jar` to the classpath:
-    |
-    |   scalac HelloWorld.scala
-    |   scala HelloWorld -cp path/to/scala-compiler.jar
-    |
-    | If you launch your application with Maven using the maven-scala plugin,
-    | set its "fork" configuration entry to "false as shown above.
-    |
-    | If you launch your application with SBT, make sure that you use
-    | <to be implemented: release SBT for 2.10.0 M3>
-    |
-    | If you launch your application in Scala IDE, make sure that both scala-library.jar and scala-compiler.jar
-    | are in bootstrap entries on the classpath of your launch configuration.
+    | For the instructions for some of the situations that might be relevant
+    | visit our knowledge base at https://gist.github.com/2391081.
   """.stripMargin('|').format(show(cl))
 
   def mkMirror(classLoader: ClassLoader): api.Mirror = {
@@ -106,7 +65,7 @@ package object reflect {
   @deprecated("Use `@scala.reflect.ConcreteTypeTag` instead", "2.10.0")
   lazy val Manifest     = ConcreteTypeTag
   @deprecated("NoManifest is no longer supported, and using it may lead to incorrect results, Use `@scala.reflect.TypeTag` instead", "2.10.0")
-  object NoManifest extends OptManifest[Nothing](scala.reflect.mirror.definitions.NothingClass.asType) with Serializable
+  object NoManifest extends OptManifest[Nothing](scala.reflect.mirror.TypeTag.Nothing.tpe)
 
   // ClassTag class is defined separately from the mirror
   type TypeTag[T]          = scala.reflect.mirror.TypeTag[T]

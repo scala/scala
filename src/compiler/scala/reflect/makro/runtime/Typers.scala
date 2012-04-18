@@ -34,9 +34,9 @@ trait Typers {
     def trace(msg: Any) = if (mirror.settings.Ymacrodebug.value) println(msg)
     trace("inferring implicit value of type %s, macros = %s".format(pt, !withMacrosDisabled))
     import mirror.analyzer.SearchResult
-    val wrapper1 = if (!withMacrosDisabled) (callsiteTyper.context.withMacrosEnabled[SearchResult] _) else (callsiteTyper.context.withMacrosDisabled[SearchResult] _)
-    def wrapper (inference: => SearchResult) = wrapper1(inference)
     val context = callsiteTyper.context.makeImplicit(true)
+    val wrapper1 = if (!withMacrosDisabled) (context.withMacrosEnabled[SearchResult] _) else (context.withMacrosDisabled[SearchResult] _)
+    def wrapper (inference: => SearchResult) = wrapper1(inference)
     wrapper(mirror.analyzer.inferImplicit(mirror.EmptyTree, pt, true, false, context, !silent, pos)) match {
       case failure if failure.tree.isEmpty =>
         trace("implicit search has failed. to find out the reason, turn on -Xlog-implicits")
@@ -51,11 +51,11 @@ trait Typers {
     def trace(msg: Any) = if (mirror.settings.Ymacrodebug.value) println(msg)
     trace("inferring implicit view from %s to %s for %s, macros = %s, reportAmbiguous = %s".format(from, to, tree, !withMacrosDisabled, reportAmbiguous))
     import mirror.analyzer.SearchResult
-    val wrapper1 = if (!withMacrosDisabled) (callsiteTyper.context.withMacrosEnabled[SearchResult] _) else (callsiteTyper.context.withMacrosDisabled[SearchResult] _)
+    val context = callsiteTyper.context.makeImplicit(reportAmbiguous)
+    val wrapper1 = if (!withMacrosDisabled) (context.withMacrosEnabled[SearchResult] _) else (context.withMacrosDisabled[SearchResult] _)
     def wrapper (inference: => SearchResult) = wrapper1(inference)
     val fun1 = mirror.definitions.FunctionClass(1)
     val viewTpe = mirror.TypeRef(fun1.typeConstructor.prefix, fun1, List(from, to))
-    val context = callsiteTyper.context.makeImplicit(reportAmbiguous)
     wrapper(mirror.analyzer.inferImplicit(mirror.EmptyTree, viewTpe, reportAmbiguous, true, context, !silent, pos)) match {
       case failure if failure.tree.isEmpty =>
         trace("implicit search has failed. to find out the reason, turn on -Xlog-implicits")
