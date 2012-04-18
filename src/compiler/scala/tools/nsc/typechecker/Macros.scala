@@ -76,7 +76,7 @@ trait Macros { self: Analyzer =>
                 case ThisType(sym) if sym == macroDef.owner =>
                   SingleType(SingleType(SingleType(NoPrefix, paramsCtx(0)), MacroContextPrefix), ExprValue)
                 case SingleType(NoPrefix, sym) =>
-                  vparamss.flatten.find(_.symbol == sym) match {
+                  mfind(vparamss)(_.symbol == sym) match {
                     case Some(macroDefParam) =>
                       SingleType(SingleType(NoPrefix, param(macroDefParam)), ExprValue)
                     case _ =>
@@ -121,7 +121,7 @@ trait Macros { self: Analyzer =>
       val paramsCtx = List(ctxParam)
       val paramsThis = List(makeParam(nme.macroThis, macroDef.pos, implType(false, ownerTpe), SYNTHETIC))
       val paramsTparams = tparams map param
-      val paramssParams = vparamss map (_ map param)
+      val paramssParams = mmap(vparamss)(param)
 
       var paramsss = List[List[List[Symbol]]]()
       // tparams are no longer part of a signature, they get into macro implementations via context bounds
@@ -544,7 +544,7 @@ trait Macros { self: Analyzer =>
     def unsigma(tpe: Type): Type = {
       // unfortunately, we cannot dereference ``paramss'', because we're in the middle of inferring a type for ``macroDef''
 //      val defParamss = macroDef.paramss
-      val defParamss = macroDdef.vparamss map (_ map (_.symbol))
+      val defParamss = mmap(macroDdef.vparamss)(_.symbol)
       var implParamss = macroImpl.paramss
       implParamss = transformTypeTagEvidenceParams(implParamss, (param, tparam) => None)
 

@@ -718,13 +718,8 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
      */
     final def isMonomorphicType =
       isType && {
-        var is = infos
-        (is eq null) || {
-          while (is.prev ne null) { is = is.prev }
-          is.info.isComplete && !is.info.isHigherKinded // was: is.info.typeParams.isEmpty.
-          // YourKit listed the call to PolyType.typeParams as a hot spot but it is likely an artefact.
-          // The change to isHigherKinded did not reduce the total running time.
-        }
+        val info = originalInfo
+        info.isComplete && !info.isHigherKinded
       }
 
     def isStrictFP          = hasAnnotation(ScalaStrictFPAttr) || (enclClass hasAnnotation ScalaStrictFPAttr)
@@ -1126,6 +1121,14 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
 // ------ info and type -------------------------------------------------------------------
 
     private[Symbols] var infos: TypeHistory = null
+    def originalInfo = {
+      if (infos eq null) null
+      else {
+        var is = infos
+        while (is.prev ne null) { is = is.prev }
+        is.info
+      }
+    }
 
     /** Get type. The type of a symbol is:
      *  for a type symbol, the type corresponding to the symbol itself,

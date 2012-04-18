@@ -326,7 +326,7 @@ trait Importers { self: SymbolTable =>
         case from.ValDef(mods, name, tpt, rhs) =>
           new ValDef(importModifiers(mods), importName(name).toTermName, importTree(tpt), importTree(rhs))
         case from.DefDef(mods, name, tparams, vparamss, tpt, rhs) =>
-          new DefDef(importModifiers(mods), importName(name).toTermName, tparams map importTypeDef, vparamss map (_ map importValDef), importTree(tpt), importTree(rhs))
+          new DefDef(importModifiers(mods), importName(name).toTermName, tparams map importTypeDef, mmap(vparamss)(importValDef), importTree(tpt), importTree(rhs))
         case from.TypeDef(mods, name, tparams, rhs) =>
           new TypeDef(importModifiers(mods), importName(name).toTypeName, tparams map importTypeDef, importTree(rhs))
         case from.LabelDef(name, params, rhs) =>

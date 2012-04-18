@@ -24,18 +24,21 @@ trait Collections {
   )
 
   /** All these mm methods are "deep map" style methods for
-   *  mapping etc. on a list of lists.
+   *  mapping etc. on a list of lists while avoiding unnecessary
+   *  intermediate structures like those created via flatten.
    */
   final def mexists[A](xss: List[List[A]])(p: A => Boolean) =
     xss exists (_ exists p)
+  final def mforall[A](xss: List[List[A]])(p: A => Boolean) =
+    xss forall (_ forall p)
   final def mmap[A, B](xss: List[List[A]])(f: A => B) =
     xss map (_ map f)
   final def mforeach[A](xss: List[List[A]])(f: A => Unit) =
     xss foreach (_ foreach f)
   final def mfind[A](xss: List[List[A]])(p: A => Boolean): Option[A] = {
-    for (xs <- xss; x <- xs)
-      if (p(x)) return Some(x)
-    None
+    var res: Option[A] = null
+    mforeach(xss)(x => if ((res eq null) && p(x)) res = Some(x))
+    if (res eq null) None else res
   }
   final def mfilter[A](xss: List[List[A]])(p: A => Boolean) =
     for (xs <- xss; x <- xs; if p(x)) yield x
@@ -65,6 +68,10 @@ trait Collections {
       ys2 = ys2.tail
     }
     lb.toList
+  }
+  
+  @tailrec final def flattensToEmpty(xss: Seq[Seq[_]]): Boolean = {
+    xss.isEmpty || xss.head.isEmpty && flattensToEmpty(xss.tail)
   }
 
   final def foreachWithIndex[A, B](xs: List[A])(f: (A, Int) => Unit) {

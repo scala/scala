@@ -120,7 +120,7 @@ trait Definitions extends reflect.api.StandardDefinitions {
       numericWeight contains sym
 
     def isGetClass(sym: Symbol) =
-      (sym.name == nme.getClass_) && (sym.paramss.isEmpty || sym.paramss.head.isEmpty)
+      (sym.name == nme.getClass_) && flattensToEmpty(sym.paramss)
 
     lazy val UnitClass    = valueCache(tpnme.Unit)
     lazy val ByteClass    = valueCache(tpnme.Byte)
