@@ -415,7 +415,7 @@ LOCAL REFERENCE BUILD (LOCKER)
       classpath="${build-locker.dir}/classes/library"
       includes="**/*.java"
       target="1.5" source="1.5">
-        <compilerarg line="${javac.args}"/>
+        <compilerarg line="${javac.args} -XDignore.symbol.file"/>
     </javac>
     <!-- NOTE: Potential problem with maximal command line length on Windows
          (32768 characters for XP, since executed with Java's "exec"). See
@@ -660,7 +660,7 @@ QUICK BUILD (QUICK)
       classpath="${build-quick.dir}/classes/library"
       includes="**/*.java"
       target="1.5" source="1.5">
-      <compilerarg line="${javac.args}"/>
+      <compilerarg line="${javac.args} -XDignore.symbol.file"/>
     </javac>
     <javac
       srcdir="${src.dir}/actors"
@@ -1217,7 +1217,7 @@ BOOTSTRAPPING BUILD (STRAP)
       classpath="${build-strap.dir}/classes/library"
       includes="**/*.java"
       target="1.5" source="1.5">
-      <compilerarg line="${javac.args}"/>
+      <compilerarg line="${javac.args} -XDignore.symbol.file"/>
     </javac>
     <javac
       srcdir="${src.dir}/actors"
