@@ -1358,8 +1358,6 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
         val lastInstr = b.lastInstruction
 
         for (instr <- b) {
-          println(instr.getClass)
-
           instr match {
             case call @ CALL_METHOD(method, style) =>
               /** Special handling to access native Array.clone() */

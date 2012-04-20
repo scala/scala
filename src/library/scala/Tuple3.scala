@@ -53,17 +53,6 @@ case class Tuple3[+T1, +T2, +T3](_1: T1, _2: T2, _3: T3)
                                                           w3: T3 => ILike[El3, Repr3]): Zipped[Repr1, El1, Repr2, El2, Repr3, El3]
     = new Zipped[Repr1, El1, Repr2, El2, Repr3, El3](_1, _2, _3)
 
-  /**
-   *  @define coll zipped
-   *  @define Coll Zipped
-   *  @define orderDependent
-   *  @define orderDependentFold
-   *  @define mayNotTerminateInf
-   *  @define willNotTerminateInf
-   *  @define collectExample
-   *  @define undefinedorder
-   *  @define thatInfo The class of the returned collection.
-   */
   class Zipped[+Repr1, +El1, +Repr2, +El2, +Repr3, +El3](coll1: TLike[El1, Repr1],
                                                          coll2: ILike[El2, Repr2],
                                                          coll3: ILike[El3, Repr3]) {

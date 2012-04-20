@@ -78,7 +78,7 @@ trait PartialFunction[-A, +B] extends (A => B) { self =>
    *   @return a partial function with the same domain as this partial function, which maps
    *           arguments `x` to `k(this(x))`.
    */
-  override def andThen[C](k: B => C) : PartialFunction[A, C] = new PartialFunction[A, C] {
+  def andThen[C](k: B => C) : PartialFunction[A, C] = new PartialFunction[A, C] {
     def isDefinedAt(x: A): Boolean = self isDefinedAt x
     def apply(x: A): C = k(self(x))
   }
