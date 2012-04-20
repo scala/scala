@@ -39,7 +39,11 @@ abstract case class ClassTag[T](erasure: jClass[_]) extends ArrayTag[T] {
 
   /** Produces a `ClassTag` that knows how to build `Array[Array[T]]` */
   def wrap: ClassTag[Array[T]] = {
-    val arrayClazz = java.lang.reflect.Array.newInstance(erasure, 0).getClass.asInstanceOf[jClass[Array[T]]]
+    // newInstance throws an exception if the erasure is Void.TYPE
+    // see SI-5680
+    val arrayClazz =
+      if (erasure == java.lang.Void.TYPE) classOf[Array[Unit]]
+      else java.lang.reflect.Array.newInstance(erasure, 0).getClass.asInstanceOf[jClass[Array[T]]]
     ClassTag[Array[T]](arrayClazz)
   }
 
