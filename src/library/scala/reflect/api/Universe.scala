@@ -19,7 +19,7 @@ abstract class Universe extends Symbols
                            with ClassLoaders
                            with TreeBuildUtil
                            with ToolBoxes
-                           with Reporters
+                           with FrontEnds
                            with Importers {
 
   /** Given an expression, generate a tree that when compiled and executed produces the original tree.

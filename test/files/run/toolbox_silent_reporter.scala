@@ -11,6 +11,6 @@ object Test extends App {
     Utils.foo
   })
   println("============compiler messages============")
-  toolbox.reporter.infos.foreach(println(_))
+  toolbox.frontEnd.infos.foreach(println(_))
   println("=========================================")
 }

@@ -1,21 +1,21 @@
 package scala.reflect.makro
 package runtime
 
-trait Reporters {
+trait FrontEnds {
   self: Context =>
 
   import mirror._
 
-  def reporter: mirror.Reporter = wrapNscReporter(mirror.reporter)
+  def frontEnd: FrontEnd = wrapReporter(mirror.reporter)
 
-  def setReporter(reporter: mirror.Reporter): this.type = {
-    mirror.reporter = wrapApiReporter(reporter)
+  def setFrontEnd(frontEnd: FrontEnd): this.type = {
+    mirror.reporter = wrapFrontEnd(frontEnd)
     this
   }
 
-  def withReporter[T](reporter: Reporter)(op: => T): T = {
+  def withFrontEnd[T](frontEnd: FrontEnd)(op: => T): T = {
     val old = mirror.reporter
-    setReporter(reporter)
+    setFrontEnd(frontEnd)
     try op
     finally mirror.reporter = old
   }
