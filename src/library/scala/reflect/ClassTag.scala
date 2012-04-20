@@ -123,6 +123,9 @@ object ClassTag {
 
   implicit def toDeprecatedClassManifestApis[T](ctag: ClassTag[T]): DeprecatedClassManifestApis[T] = new DeprecatedClassManifestApis[T](ctag)
 
+  @deprecated("Use apply instead", "2.10.0")
+  def fromClass[T](clazz: jClass[T]): ClassManifest[T] = apply(clazz)
+
   /** Manifest for the singleton type `value.type'. */
   @deprecated("Manifests aka type tags now support arbitrary types. Build a manifest directly from the type instead", "2.10.0")
   def singleType[T <: AnyRef](value: AnyRef): Manifest[T] = ???
