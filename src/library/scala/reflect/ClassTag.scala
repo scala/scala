@@ -39,7 +39,11 @@ abstract case class ClassTag[T](erasure: jClass[_]) extends ArrayTag[T] {
 
   /** Produces a `ClassTag` that knows how to build `Array[Array[T]]` */
   def wrap: ClassTag[Array[T]] = {
-    val arrayClazz = java.lang.reflect.Array.newInstance(erasure, 0).getClass.asInstanceOf[jClass[Array[T]]]
+    // newInstance throws an exception if the erasure is Void.TYPE
+    // see SI-5680
+    val arrayClazz =
+      if (erasure == java.lang.Void.TYPE) classOf[Array[Unit]]
+      else java.lang.reflect.Array.newInstance(erasure, 0).getClass.asInstanceOf[jClass[Array[T]]]
     ClassTag[Array[T]](arrayClazz)
   }
 
@@ -122,6 +126,9 @@ object ClassTag {
     else ClassTag[T](ttag.tpe)
 
   implicit def toDeprecatedClassManifestApis[T](ctag: ClassTag[T]): DeprecatedClassManifestApis[T] = new DeprecatedClassManifestApis[T](ctag)
+
+  @deprecated("Use apply instead", "2.10.0")
+  def fromClass[T](clazz: jClass[T]): ClassManifest[T] = apply(clazz)
 
   /** Manifest for the singleton type `value.type'. */
   @deprecated("Manifests aka type tags now support arbitrary types. Build a manifest directly from the type instead", "2.10.0")
