@@ -1311,6 +1311,40 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
         }
       }
 
+      // Collected frequency of opcdes to determine case ordering:
+      //
+      // 47514 CALL_METHOD
+      // 43434 LOAD_LOCAL
+      // 38572 THIS
+      // 31207 RETURN
+      // 5832 JUMP
+      // 5395 CONSTANT
+      // 5010 LOAD_FIELD
+      // 4731 STORE_LOCAL
+      // 4252 DUP
+      // 3612 NEW
+      // 3519 CZJUMP
+      // 2938 SCOPE_ENTER
+      // 2900 CALL_PRIMITIVE
+      // 2884 STORE_FIELD
+      // 2881 CHECK_CAST
+      // 2459 LOAD_MODULE
+      // 1783 SCOPE_EXIT
+      // 1315 CJUMP
+      // 1305 THROW
+      // 1030 DROP
+      //  485 BOX
+      //  468 UNBOX
+      //  464 MONITOR_EXIT
+      //  434 IS_INSTANCE
+      //  428 STORE_ARRAY_ITEM
+      //  329 LOAD_ARRAY_ITEM
+      //  280 CREATE_ARRAY
+      //  253 LOAD_EXCEPTION
+      //  232 MONITOR_ENTER
+      //   37 STORE_THIS
+      //   19 SWITCH
+
       def genBlock(b: BasicBlock) {
         labels(b).anchorToNext()
 
@@ -1324,11 +1358,43 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
         val lastInstr = b.lastInstruction
 
         for (instr <- b) {
+          println(instr.getClass)
 
           instr match {
-            case THIS(clasz)           => jcode.emitALOAD_0()
+            case call @ CALL_METHOD(method, style) =>
+              /** Special handling to access native Array.clone() */
+              if (method == definitions.Array_clone && style == Dynamic) {
+                val target = javaType(call.targetTypeKind).getSignature()
+                jcode.emitINVOKEVIRTUAL(target, "clone", arrayCloneType)
+              }
+              else genCallMethod(call)
 
-            case CONSTANT(const)       => genConstant(jcode, const)
+            case LOAD_LOCAL(local) => jcode.emitLOAD(indexOf(local), javaType(local.kind))
+            case THIS(clasz)       => jcode.emitALOAD_0()
+            case RETURN(kind)      => jcode emitRETURN javaType(kind)
+
+            case CONSTANT(const)   => genConstant(jcode, const)
+            case JUMP(whereto) =>
+              if (nextBlock != whereto)
+                jcode.emitGOTO_maybe_W(labels(whereto), false) // default to short jumps
+
+            case lf @ LOAD_FIELD(field, isStatic) =>
+              var owner = javaName(lf.hostClass)
+              debuglog("LOAD_FIELD with owner: " + owner + " flags: " + Flags.flagsToString(field.owner.flags))
+              val fieldJName = javaName(field)
+              val fieldJType = javaType(field)
+              if (isStatic) jcode.emitGETSTATIC(owner, fieldJName, fieldJType)
+              else          jcode.emitGETFIELD( owner, fieldJName, fieldJType)
+
+            case STORE_LOCAL(local) =>
+              jcode.emitSTORE(indexOf(local), javaType(local.kind))
+
+            case DUP(kind) =>
+              if(kind.isWideType) jcode.emitDUP2()
+              else                jcode.emitDUP()
+
+            case NEW(REFERENCE(cls)) =>
+              jcode emitNEW javaName(cls)
 
             case LOAD_ARRAY_ITEM(kind) =>
               if(kind.isRefOrArrayType) { jcode.emitAALOAD() }
@@ -1344,17 +1410,6 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
                   case DOUBLE          => jcode.emitDALOAD()
                 }
               }
-
-            case LOAD_LOCAL(local)     => jcode.emitLOAD(indexOf(local), javaType(local.kind))
-
-            case lf @ LOAD_FIELD(field, isStatic) =>
-              var owner = javaName(lf.hostClass)
-              debuglog("LOAD_FIELD with owner: " + owner +
-                    " flags: " + Flags.flagsToString(field.owner.flags))
-              val fieldJName = javaName(field)
-              val fieldJType = javaType(field)
-              if (isStatic) jcode.emitGETSTATIC(owner, fieldJName, fieldJType)
-              else          jcode.emitGETFIELD( owner, fieldJName, fieldJType)
 
             case LOAD_MODULE(module) =>
               // assert(module.isModule, "Expected module: " + module)
@@ -1381,9 +1436,6 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
                 }
               }
 
-            case STORE_LOCAL(local) =>
-              jcode.emitSTORE(indexOf(local), javaType(local.kind))
-
             case STORE_THIS(_) =>
               // this only works for impl classes because the self parameter comes first
               // in the method signature. If that changes, this code has to be revisited.
@@ -1398,13 +1450,6 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
 
             case CALL_PRIMITIVE(primitive) => genPrimitive(primitive, instr.pos)
 
-            /** Special handling to access native Array.clone() */
-            case call @ CALL_METHOD(definitions.Array_clone, Dynamic) =>
-              val target: String = javaType(call.targetTypeKind).getSignature()
-              jcode.emitINVOKEVIRTUAL(target, "clone", arrayCloneType)
-
-            case call @ CALL_METHOD(method, style) => genCallMethod(call)
-
             case BOX(kind) =>
               val Pair(mname, mtype) = jBoxTo(kind)
               jcode.emitINVOKESTATIC(BoxesRunTime, mname, mtype)
@@ -1412,10 +1457,6 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
             case UNBOX(kind) =>
               val Pair(mname, mtype) = jUnboxTo(kind)
               jcode.emitINVOKESTATIC(BoxesRunTime, mname, mtype)
-
-            case NEW(REFERENCE(cls)) =>
-              val className = javaName(cls)
-              jcode emitNEW className
 
             case CREATE_ARRAY(elem, 1) =>
               if(elem.isRefOrArrayType) { jcode emitANEWARRAY javaType(elem).asInstanceOf[JReferenceType] }
@@ -1461,10 +1502,6 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
                                labels(branches.last),
                                MIN_SWITCH_DENSITY)
               ()
-
-            case JUMP(whereto) =>
-              if (nextBlock != whereto)
-                jcode.emitGOTO_maybe_W(labels(whereto), false) // default to short jumps
 
             case CJUMP(success, failure, cond, kind) =>
               if(kind.isIntSizedType) { // BOOL, BYTE, CHAR, SHORT, or INT
@@ -1552,17 +1589,12 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
                 }
               }
 
-            case RETURN(kind) => jcode emitRETURN javaType(kind)
 
             case THROW(_)     => jcode.emitATHROW()
 
             case DROP(kind) =>
               if(kind.isWideType) jcode.emitPOP2()
               else                jcode.emitPOP()
-
-            case DUP(kind) =>
-              if(kind.isWideType) jcode.emitDUP2()
-              else                jcode.emitDUP()
 
             case MONITOR_ENTER() => jcode.emitMONITORENTER()
 
