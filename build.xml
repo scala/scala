@@ -643,7 +643,6 @@ QUICK BUILD (QUICK)
     <uptodate property="quick.lib.available" targetfile="${build-quick.dir}/library.complete">
       <srcfiles dir="${src.dir}">
         <include name="library/**"/>
-        <include name="dbc/**"/>
         <include name="continuations/**"/>
         <include name="swing/**"/>
         <include name="actors/**"/>
@@ -685,15 +684,6 @@ QUICK BUILD (QUICK)
       compilerpathref="locker.classpath"
       params="${scalac.args.quick}"
       srcdir="${src.dir}/actors"
-      jvmargs="${scalacfork.jvmargs}">
-      <include name="**/*.scala"/>
-      <compilationpath refid="quick.compilation.path"/>
-    </scalacfork>
-    <scalacfork
-      destdir="${build-quick.dir}/classes/library"
-      compilerpathref="locker.classpath"
-      params="${scalac.args.quick}"
-      srcdir="${src.dir}/dbc"
       jvmargs="${scalacfork.jvmargs}">
       <include name="**/*.scala"/>
       <compilationpath refid="quick.compilation.path"/>
@@ -1028,16 +1018,10 @@ PACKED QUICK BUILD (PACK)
     </copy>
     <jar destfile="${build-pack.dir}/lib/scala-library.jar">
       <fileset dir="${build-quick.dir}/classes/library">
-        <exclude name="scala/dbc/**"/>
         <exclude name="scala/swing/**"/>
         <exclude name="scala/actors/**"/>
       </fileset>
       <zipfileset dirmode="755" filemode="644" src="${forkjoin.jar}"/>
-    </jar>
-    <jar destfile="${build-pack.dir}/lib/scala-dbc.jar">
-      <fileset dir="${build-quick.dir}/classes/library">
-        <include name="scala/dbc/**"/>
-      </fileset>
     </jar>
     <jar destfile="${build-pack.dir}/lib/scala-swing.jar">
       <fileset dir="${build-quick.dir}/classes/library">
@@ -1201,7 +1185,6 @@ BOOTSTRAPPING BUILD (STRAP)
     <uptodate property="strap.lib.available" targetfile="${build-strap.dir}/library.complete">
       <srcfiles dir="${src.dir}">
         <include name="library/**"/>
-        <include name="dbc/**"/>
         <include name="swing/**"/>
         <include name="actors/**"/>
       </srcfiles>
@@ -1242,15 +1225,6 @@ BOOTSTRAPPING BUILD (STRAP)
       compilerpathref="pack.classpath"
       params="${scalac.args.all}"
       srcdir="${src.dir}/actors"
-      jvmargs="${scalacfork.jvmargs}">
-      <include name="**/*.scala"/>
-      <compilationpath refid="strap.compilation.path"/>
-    </scalacfork>
-    <scalacfork
-      destdir="${build-strap.dir}/classes/library"
-      compilerpathref="pack.classpath"
-      params="${scalac.args.all}"
-      srcdir="${src.dir}/dbc"
       jvmargs="${scalacfork.jvmargs}">
       <include name="**/*.scala"/>
       <compilationpath refid="strap.compilation.path"/>
@@ -1645,7 +1619,6 @@ DOCUMENTATION
     <doc-uptodate-check name="library" srcdir="${src.dir}">
       <source-includes>
         <include name="library/**"/>
-        <include name="dbc/**"/>
         <include name="swing/**"/>
         <include name="actors/**"/>
       </source-includes>
@@ -2033,9 +2006,6 @@ DISTRIBUTION
       <fileset dir="${src.dir}/library"/>
       <fileset dir="${src.dir}/continuations/library"/>
     </jar>
-    <jar destfile="${dist.dir}/src/scala-dbc-src.jar">
-      <fileset dir="${src.dir}/dbc"/>
-    </jar>
     <jar destfile="${dist.dir}/src/scala-swing-src.jar">
       <fileset dir="${src.dir}/swing"/>
     </jar>
@@ -2123,7 +2093,6 @@ STABLE REFERENCE (STARR)
       <fileset dir="${basedir}/src/library"/>
       <fileset dir="${basedir}/src/swing"/>
       <fileset dir="${basedir}/src/actors"/>
-      <fileset dir="${basedir}/src/dbc"/>
     </jar>
   </target>
 
@@ -2224,9 +2193,6 @@ POSITIONS
     </antcall>
     <antcall target="test.positions.sub" inheritRefs="true">
       <param name="test.srcs" value="${src.dir}/actors"/>
-    </antcall>
-    <antcall target="test.positions.sub" inheritRefs="true">
-      <param name="test.srcs" value="${src.dir}/dbc"/>
     </antcall>
     <antcall target="test.positions.sub" inheritRefs="true">
       <param name="test.srcs" value="${src.dir}/swing"/>
