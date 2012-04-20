@@ -1020,7 +1020,7 @@ trait Macros { self: Analyzer =>
   private def Failure(expandee: Tree) = Other(expandee)
   private def fail(typer: Typer, expandee: Tree, msg: String = null) = {
     if (macroDebug || macroCopypaste) {
-      var msg1 = if (msg contains "exception during macro expansion") msg.split(EOL).drop(1).headOption.getOrElse("?") else msg
+      var msg1 = if (msg != null && (msg contains "exception during macro expansion")) msg.split(EOL).drop(1).headOption.getOrElse("?") else msg
       if (macroDebug) println("macro expansion has failed: %s".format(msg1))
     }
     val pos = if (expandee.pos != NoPosition) expandee.pos else openMacros.find(c => c.expandee.pos != NoPosition).map(_.expandee.pos).getOrElse(NoPosition)
