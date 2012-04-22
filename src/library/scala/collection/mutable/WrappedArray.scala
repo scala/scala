@@ -45,7 +45,7 @@ extends AbstractSeq[T]
   def elemTag: ArrayTag[T]
 
   @deprecated("use elemTag instead", "2.10.0")
-  def elemManifest: ClassManifest[T] = ClassManifest[T](arrayElementClass(elemTag))
+  def elemManifest: ClassManifest[T] = ClassManifest.fromClass[T](arrayElementClass(elemTag).asInstanceOf[Class[T]])
 
   /** The length of the array */
   def length: Int
