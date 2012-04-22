@@ -9,6 +9,10 @@ import language.implicitConversions
 // Oh how much I'd love to implement this now, but I have to postpone this until we have a solution for type inference
 
 /** This object is required by the compiler and <b>should not be used in client code</b>. */
+
+ /** !!! Some of this code is copy-pasted four places.  This situation
+  *  should be resolved ASAP.
+  */
 object TagMaterialization {
   def materializeClassTag[T: c.TypeTag](c: Context): c.Expr[ClassTag[T]] = {
     import c.mirror._

@@ -232,7 +232,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
       newTermSymbol(name, pos, PARAM | newFlags)
 
     /** Create local dummy for template (owner of local blocks) */
-    final def newLocalDummy(pos: Position) =
+    final def newLocalDummy(pos: Position): TermSymbol =
       newTermSymbol(nme.localDummyName(this), pos) setInfo NoType
     final def newMethod(name: TermName, pos: Position = NoPosition, newFlags: Long = 0L): MethodSymbol =
       createMethodSymbol(name, pos, METHOD | newFlags)
@@ -240,15 +240,15 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
       newMethod(name, pos, LABEL)
 
     /** Propagates ConstrFlags (JAVA, specifically) from owner to constructor. */
-    final def newConstructor(pos: Position, newFlags: Long = 0L) =
+    final def newConstructor(pos: Position, newFlags: Long = 0L): MethodSymbol =
       newMethod(nme.CONSTRUCTOR, pos, getFlag(ConstrFlags) | newFlags)
 
     /** Static constructor with info set. */
-    def newStaticConstructor(pos: Position) =
+    def newStaticConstructor(pos: Position): MethodSymbol =
       newConstructor(pos, STATIC) setInfo UnitClass.tpe
 
     /** Instance constructor with info set. */
-    def newClassConstructor(pos: Position) =
+    def newClassConstructor(pos: Position): MethodSymbol =
       newConstructor(pos) setInfo MethodType(Nil, this.tpe)
 
     def newLinkedModule(clazz: Symbol, newFlags: Long = 0L): ModuleSymbol = {
@@ -266,10 +266,10 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
       newModule(name, pos, PackageFlags | newFlags)
     }
 
-    final def newThisSym(name: TermName = nme.this_, pos: Position = NoPosition) =
+    final def newThisSym(name: TermName = nme.this_, pos: Position = NoPosition): TermSymbol =
       newTermSymbol(name, pos, SYNTHETIC)
 
-    final def newImport(pos: Position) =
+    final def newImport(pos: Position): TermSymbol =
       newTermSymbol(nme.IMPORT, pos)
 
     final def newModuleSymbol(name: TermName, pos: Position = NoPosition, newFlags: Long = 0L): ModuleSymbol =
@@ -299,45 +299,45 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
      *
      *    pre.memberType(m)
      */
-    final def newOverloaded(pre: Type, alternatives: List[Symbol]): Symbol = (
+    final def newOverloaded(pre: Type, alternatives: List[Symbol]): TermSymbol = (
       newTermSymbol(alternatives.head.name.toTermName, alternatives.head.pos, OVERLOADED)
         setInfo OverloadedType(pre, alternatives)
     )
 
-    final def newErrorValue(name: TermName) =
+    final def newErrorValue(name: TermName): TermSymbol =
       newTermSymbol(name, pos, SYNTHETIC | IS_ERROR) setInfo ErrorType
 
     /** Symbol of a type definition  type T = ...
      */
-    final def newAliasType(name: TypeName, pos: Position = NoPosition, newFlags: Long = 0L): Symbol =
+    final def newAliasType(name: TypeName, pos: Position = NoPosition, newFlags: Long = 0L): AliasTypeSymbol =
       createAliasTypeSymbol(name, pos, newFlags)
 
     /** Symbol of an abstract type  type T >: ... <: ...
      */
-    final def newAbstractType(name: TypeName, pos: Position = NoPosition, newFlags: Long = 0L): Symbol =
+    final def newAbstractType(name: TypeName, pos: Position = NoPosition, newFlags: Long = 0L): AbstractTypeSymbol =
       createAbstractTypeSymbol(name, pos, DEFERRED | newFlags)
 
     /** Symbol of a type parameter
      */
-    final def newTypeParameter(name: TypeName, pos: Position = NoPosition, newFlags: Long = 0L) =
+    final def newTypeParameter(name: TypeName, pos: Position = NoPosition, newFlags: Long = 0L): TypeSymbol =
       newAbstractType(name, pos, PARAM | newFlags)
 
     /** Symbol of an existential type T forSome { ... }
      */
-    final def newExistential(name: TypeName, pos: Position = NoPosition, newFlags: Long = 0L): Symbol =
+    final def newExistential(name: TypeName, pos: Position = NoPosition, newFlags: Long = 0L): TypeSymbol =
       newAbstractType(name, pos, EXISTENTIAL | newFlags)
 
     /** Synthetic value parameters when parameter symbols are not available
      */
-    final def newSyntheticValueParamss(argtypess: List[List[Type]]): List[List[Symbol]] = {
+    final def newSyntheticValueParamss(argtypess: List[List[Type]]): List[List[TermSymbol]] = {
       var cnt = 0
       def freshName() = { cnt += 1; nme.syntheticParamName(cnt) }
       mmap(argtypess)(tp => newValueParameter(freshName(), owner.pos.focus, SYNTHETIC) setInfo tp)
     }
 
-    def newSyntheticTypeParam(): Symbol                             = newSyntheticTypeParam("T0", 0L)
-    def newSyntheticTypeParam(name: String, newFlags: Long): Symbol = newTypeParameter(newTypeName(name), NoPosition, newFlags) setInfo TypeBounds.empty
-    def newSyntheticTypeParams(num: Int): List[Symbol]              = (0 until num).toList map (n => newSyntheticTypeParam("T" + n, 0L))
+    def newSyntheticTypeParam(): TypeSymbol                             = newSyntheticTypeParam("T0", 0L)
+    def newSyntheticTypeParam(name: String, newFlags: Long): TypeSymbol = newTypeParameter(newTypeName(name), NoPosition, newFlags) setInfo TypeBounds.empty
+    def newSyntheticTypeParams(num: Int): List[TypeSymbol]              = (0 until num).toList map (n => newSyntheticTypeParam("T" + n, 0L))
 
     /** Create a new existential type skolem with this symbol its owner,
      *  based on the given symbol and origin.
@@ -352,13 +352,13 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     def newGADTSkolem(name: TypeName, origin: Symbol, info: Type): TypeSkolem =
       newTypeSkolemSymbol(name, origin, origin.pos, origin.flags & ~(EXISTENTIAL | PARAM) | CASEACCESSOR | SYNTHETIC) setInfo info
 
-    final def freshExistential(suffix: String): Symbol =
+    final def freshExistential(suffix: String): TypeSymbol =
       newExistential(freshExistentialName(suffix), pos)
 
     /** Synthetic value parameters when parameter symbols are not available.
      *  Calling this method multiple times will re-use the same parameter names.
      */
-    final def newSyntheticValueParams(argtypes: List[Type]): List[Symbol] =
+    final def newSyntheticValueParams(argtypes: List[Type]): List[TermSymbol] =
       newSyntheticValueParamss(List(argtypes)).head
 
     /** Synthetic value parameter when parameter symbol is not available.
@@ -372,27 +372,27 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
      *  with name `T` in its typeParams list. While type checking the parameters, result type and
      *  body of the method, there's a local copy of `T` which is a TypeSkolem.
      */
-    final def newTypeSkolem: Symbol =
+    final def newTypeSkolem: TypeSkolem =
       owner.newTypeSkolemSymbol(name.toTypeName, this, pos, flags)
 
-    final def newClass(name: TypeName, pos: Position = NoPosition, newFlags: Long = 0L) =
+    final def newClass(name: TypeName, pos: Position = NoPosition, newFlags: Long = 0L): ClassSymbol =
       newClassSymbol(name, pos, newFlags)
 
     /** A new class with its info set to a ClassInfoType with given scope and parents. */
-    def newClassWithInfo(name: TypeName, parents: List[Type], scope: Scope, pos: Position = NoPosition, newFlags: Long = 0L) = {
+    def newClassWithInfo(name: TypeName, parents: List[Type], scope: Scope, pos: Position = NoPosition, newFlags: Long = 0L): ClassSymbol = {
       val clazz = newClass(name, pos, newFlags)
       clazz setInfo ClassInfoType(parents, scope, clazz)
     }
-    final def newErrorClass(name: TypeName) =
+    final def newErrorClass(name: TypeName): ClassSymbol =
       newClassWithInfo(name, Nil, new ErrorScope(this), pos, SYNTHETIC | IS_ERROR)
 
-    final def newModuleClass(name: TypeName, pos: Position = NoPosition, newFlags: Long = 0L) =
+    final def newModuleClass(name: TypeName, pos: Position = NoPosition, newFlags: Long = 0L): ModuleClassSymbol =
       newModuleClassSymbol(name, pos, newFlags | MODULE)
 
-    final def newAnonymousFunctionClass(pos: Position = NoPosition, newFlags: Long = 0L) =
+    final def newAnonymousFunctionClass(pos: Position = NoPosition, newFlags: Long = 0L): ClassSymbol =
       newClassSymbol(tpnme.ANON_FUN_NAME, pos, FINAL | SYNTHETIC | newFlags)
 
-    final def newAnonymousFunctionValue(pos: Position, newFlags: Long = 0L) =
+    final def newAnonymousFunctionValue(pos: Position, newFlags: Long = 0L): TermSymbol =
       newTermSymbol(nme.ANON_FUN_NAME, pos, SYNTHETIC | newFlags) setInfo NoType
 
     def newImplClass(name: TypeName, pos: Position = NoPosition, newFlags: Long = 0L): ClassSymbol = {
@@ -402,11 +402,12 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     /** Refinement types P { val x: String; type T <: Number }
      *  also have symbols, they are refinementClasses
      */
-    final def newRefinementClass(pos: Position) = createRefinementClassSymbol(pos, 0L)
+    final def newRefinementClass(pos: Position): RefinementClassSymbol =
+      createRefinementClassSymbol(pos, 0L)
 
     /** Create a new getter for current symbol (which must be a field)
      */
-    final def newGetter: Symbol = (
+    final def newGetter: MethodSymbol = (
       owner.newMethod(nme.getterName(name.toTermName), NoPosition, getterFlags(flags))
         setPrivateWithin privateWithin
         setInfo MethodType(Nil, tpe)
@@ -1654,7 +1655,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
      *  symbol with the same owner, and the name of this symbol with $class
      *  appended to it.
      */
-    final def implClass: Symbol = owner.info.decl(nme.implClassName(name))
+    final def implClass: Symbol = owner.info.decl(tpnme.implClassName(name))
 
     /** The class that is logically an outer class of given `clazz`.
      *  This is the enclosing class, except for classes defined locally to constructors,
@@ -2242,13 +2243,13 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     /** String representation of existentially bound variable */
     def existentialToString =
       if (isSingletonExistential && !settings.debug.value)
-        "val " + nme.dropSingletonName(name) + ": " + dropSingletonType(info.bounds.hi)
+        "val " + tpnme.dropSingletonName(name) + ": " + dropSingletonType(info.bounds.hi)
       else defString
   }
 
   /** A class for term symbols */
   class TermSymbol protected[Symbols] (initOwner: Symbol, initPos: Position, initName: TermName)
-  extends Symbol(initOwner, initPos, initName) {
+  extends Symbol(initOwner, initPos, initName) with TermSymbolApi {
     private[this] var _referenced: Symbol = NoSymbol
     privateWithin = NoSymbol
 
@@ -2417,7 +2418,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
 
   /** A class for module symbols */
   class ModuleSymbol protected[Symbols] (initOwner: Symbol, initPos: Position, initName: TermName)
-  extends TermSymbol(initOwner, initPos, initName) with DistinguishingFlag {
+  extends TermSymbol(initOwner, initPos, initName) with DistinguishingFlag with ModuleSymbolApi {
     def distinguishingFlag = MODULE
     private var flatname: TermName = null
 
@@ -2442,14 +2443,14 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
   }
 
   class PackageSymbol protected[Symbols] (owner0: Symbol, pos0: Position, name0: TermName)
-  extends ModuleSymbol(owner0, pos0, name0) with DistinguishingFlag {
+  extends ModuleSymbol(owner0, pos0, name0) with DistinguishingFlag with PackageSymbolApi {
     override def distinguishingFlag = super.distinguishingFlag | PACKAGE
     override def isPackage = true
   }
 
   /** A class for method symbols */
   class MethodSymbol protected[Symbols] (initOwner: Symbol, initPos: Position, initName: TermName)
-  extends TermSymbol(initOwner, initPos, initName) with DistinguishingFlag {
+  extends TermSymbol(initOwner, initPos, initName) with DistinguishingFlag with MethodSymbolApi {
     def distinguishingFlag = METHOD
     // MethodSymbols pick up MODULE when trait-owned object accessors are cloned
     // during mixin composition.
@@ -2511,7 +2512,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
    *  of this class. Classes are instances of a subclass.
    */
   abstract class TypeSymbol protected[Symbols] (initOwner: Symbol, initPos: Position, initName: TypeName)
-  extends Symbol(initOwner, initPos, initName) {
+  extends Symbol(initOwner, initPos, initName) with TypeSymbolApi {
     privateWithin = NoSymbol
     private[this] var _rawname: TypeName = initName
 
@@ -2712,7 +2713,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
 
   /** A class for class symbols */
   class ClassSymbol protected[Symbols] (initOwner: Symbol, initPos: Position, initName: TypeName)
-  extends TypeSymbol(initOwner, initPos, initName) {
+  extends TypeSymbol(initOwner, initPos, initName) with ClassSymbolApi {
     type TypeOfClonedSymbol = ClassSymbol
 
     private[this] var flatname: TypeName       = _
@@ -2759,7 +2760,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     override def toInterface: Symbol = (
       if (isImplClass) {
         if (phase.next.erasedTypes) lastParent
-        else owner.info.decl(nme.interfaceName(name))
+        else owner.info.decl(tpnme.interfaceName(name))
       }
       else super.toInterface
     )

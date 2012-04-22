@@ -196,8 +196,9 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
 
   import global._
   import definitions.{
-    ScalaPackage, JavaLangPackage, PredefModule, RootClass,
-    getClassIfDefined, getModuleIfDefined, getRequiredModule, getRequiredClass
+    ScalaPackage, JavaLangPackage, RootClass,
+    getClassIfDefined, getModuleIfDefined, getRequiredModule, getRequiredClass,
+    termMember, typeMember
   }
 
   private implicit def privateTreeOps(t: Tree): List[Tree] = {
@@ -806,9 +807,9 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
       */
     def resolvePathToSymbol(accessPath: String): Symbol = {
       val readRoot  = getRequiredModule(readPath)   // the outermost wrapper
-      (accessPath split '.').foldLeft(readRoot) { (sym, name) =>
-        if (name == "") sym else
-        afterTyper(sym.info member newTermName(name))
+      (accessPath split '.').foldLeft(readRoot: Symbol) {
+        case (sym, "")    => sym
+        case (sym, name)  => afterTyper(termMember(sym, name))
       }
     }
     /** We get a bunch of repeated warnings for reasons I haven't

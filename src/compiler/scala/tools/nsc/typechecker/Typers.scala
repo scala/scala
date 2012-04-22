@@ -3322,7 +3322,7 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
       val typeParams: List[Symbol] = rawSyms map { sym =>
         val name = sym.name match {
           case x: TypeName  => x
-          case x            => nme.singletonName(x)
+          case x            => tpnme.singletonName(x)
         }
         val bound      = allBounds(sym)
         val sowner     = if (isRawParameter(sym)) context.owner else sym.owner

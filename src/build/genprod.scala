@@ -578,7 +578,7 @@ class Product(val i: Int) extends Group("Product") with Arity {
    *  otherwise throws an `IndexOutOfBoundsException`.
    *
    *  @param n number of the projection to be returned
-   *  @return  same as `._(n+1)`, for example `productElement(1)` is the same as `._1`.
+   *  @return  same as `._(n+1)`, for example `productElement(0)` is the same as `._1`.
    *  @throws  IndexOutOfBoundsException
    */
 """

@@ -48,6 +48,9 @@ abstract class TreeGen extends api.AbsTreeGen {
   def mkMethodCall(target: Tree, targs: List[Type], args: List[Tree]): Tree =
     Apply(mkTypeApply(target, targs map TypeTree), args)
 
+  def mkNullaryCall(method: Symbol, targs: List[Type]): Tree =
+    mkTypeApply(mkAttributedRef(method), targs map TypeTree)
+
   /** Builds a reference to value whose type is given stable prefix.
    *  The type must be suitable for this.  For example, it
    *  must not be a TypeRef pointing to an abstract type variable.

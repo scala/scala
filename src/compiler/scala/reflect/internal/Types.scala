@@ -2310,7 +2310,7 @@ trait Types extends api.Types { self: SymbolTable =>
       else if (sym.isPackageClass || sym.isPackageObjectOrClass)
         sym.skipPackageObject.fullName + "."
       else if (isStable && nme.isSingletonName(sym.name))
-        nme.dropSingletonName(sym.name) + "."
+        tpnme.dropSingletonName(sym.name) + "."
       else
         super.prefixString
     )
