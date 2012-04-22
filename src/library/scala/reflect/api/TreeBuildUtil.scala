@@ -138,4 +138,22 @@ trait AbsTreeGen {
 
   /** Builds a typed Select with an underlying symbol. */
   def mkAttributedSelect(qual: Tree, sym: Symbol): Tree
+
+  /** A creator for method calls, e.g. fn[T1, T2, ...](v1, v2, ...)
+   *  There are a number of variations.
+   *
+   *  @param    receiver    symbol of the method receiver
+   *  @param    methodName  name of the method to call
+   *  @param    targs       type arguments (if Nil, no TypeApply node will be generated)
+   *  @param    args        value arguments
+   *  @return               the newly created trees.
+   */
+  def mkMethodCall(receiver: Symbol, methodName: Name, targs: List[Type], args: List[Tree]): Tree
+  def mkMethodCall(method: Symbol, targs: List[Type], args: List[Tree]): Tree
+  def mkMethodCall(method: Symbol, args: List[Tree]): Tree
+  def mkMethodCall(target: Tree, args: List[Tree]): Tree
+  def mkMethodCall(receiver: Symbol, methodName: Name, args: List[Tree]): Tree
+  def mkMethodCall(receiver: Tree, method: Symbol, targs: List[Type], args: List[Tree]): Tree
+  def mkMethodCall(target: Tree, targs: List[Type], args: List[Tree]): Tree
+  def mkNullaryCall(method: Symbol, targs: List[Type]): Tree
 }
