@@ -53,20 +53,6 @@ package object reflect {
   @deprecated("Use `@scala.beans.ScalaBeanInfo` instead", "2.10.0")
   type ScalaBeanInfo = scala.beans.ScalaBeanInfo
 
-  @deprecated("Use `@scala.reflect.ClassTag` instead", "2.10.0")
-  type ClassManifest[T] = ClassTag[T]
-  @deprecated("OptManifest is no longer supported, and using it may lead to incorrect results, Use `@scala.reflect.TypeTag` instead", "2.10.0")
-  type OptManifest[T]   = TypeTag[T]
-  @deprecated("Use `@scala.reflect.ConcreteTypeTag` instead", "2.10.0")
-  type Manifest[T]      = ConcreteTypeTag[T]
-
-  @deprecated("Use `@scala.reflect.ClassTag` instead", "2.10.0")
-  val ClassManifest     = ClassTag
-  @deprecated("Use `@scala.reflect.ConcreteTypeTag` instead", "2.10.0")
-  lazy val Manifest     = ConcreteTypeTag
-  @deprecated("NoManifest is no longer supported, and using it may lead to incorrect results, Use `@scala.reflect.TypeTag` instead", "2.10.0")
-  lazy val NoManifest   = TypeTag.Nothing
-
   // ArrayTag trait is defined separately from the mirror
   // ErasureTag trait is defined separately from the mirror
   // ConcreteErasureTag trait is defined separately from the mirror
