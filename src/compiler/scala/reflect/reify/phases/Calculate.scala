@@ -46,6 +46,7 @@ trait Calculate {
         bindRelatedSymbol(tree.symbol.companionClass, "companionClass")
         bindRelatedSymbol(tree.symbol.companionModule, "companionModule")
         Some(tree.symbol) collect { case termSymbol: TermSymbol => bindRelatedSymbol(termSymbol.referenced, "referenced") }
+        Some(tree) collect { case labelDef: LabelDef => labelDef.params foreach (param => bindRelatedSymbol(param.symbol, "labelParam")) }
         def bindRelatedSymbol(related: Symbol, name: String): Unit =
           if (related != null && related != NoSymbol) {
             if (reifyDebug) println("boundSym (" + name + "): " + related)
