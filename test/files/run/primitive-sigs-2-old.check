@@ -1,0 +1,7 @@
+T<java.lang.Object>
+List(A, char, class java.lang.Object)
+a
+public <T> java.lang.Object Arr.arr4(java.lang.Object[],scala.reflect.Manifest<T>)
+public float[] Arr.arr3(float[][])
+public scala.collection.immutable.List<java.lang.Character> Arr.arr2(java.lang.Character[])
+public scala.collection.immutable.List<java.lang.Object> Arr.arr1(int[])

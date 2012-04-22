@@ -100,19 +100,12 @@ object Predef extends LowPriorityImplicits {
   // def AnyRef = scala.AnyRef
 
   // Manifest types, companions, and incantations for summoning
-  @deprecated("Use `@scala.reflect.ClassTag` instead", "2.10.0")
   type ClassManifest[T] = scala.reflect.ClassManifest[T]
-  @deprecated("OptManifest is no longer supported and using it may lead to incorrect results, use `@scala.reflect.TypeTag` instead", "2.10.0")
   type OptManifest[T]   = scala.reflect.OptManifest[T]
-  @deprecated("Use `@scala.reflect.ConcreteTypeTag` instead", "2.10.0")
   type Manifest[T]      = scala.reflect.Manifest[T]
-  @deprecated("Use `@scala.reflect.ClassTag` instead", "2.10.0")
   val ClassManifest     = scala.reflect.ClassManifest
-  // [Paul to Eugene] No lazy vals in Predef.  Too expensive.  Have to work harder on breaking initialization dependencies.
-  @deprecated("Use `@scala.reflect.ConcreteTypeTag` instead", "2.10.0")
-  lazy val Manifest     = scala.reflect.Manifest // needs to be lazy, because requires scala.reflect.mirror instance
-  @deprecated("NoManifest is no longer supported and using it may lead to incorrect results, use `@scala.reflect.TypeTag` instead", "2.10.0")
-  lazy val NoManifest   = scala.reflect.NoManifest // needs to be lazy, because requires scala.reflect.mirror instance
+  val Manifest          = scala.reflect.Manifest
+  val NoManifest        = scala.reflect.NoManifest
 
   def manifest[T](implicit m: Manifest[T])           = m
   def classManifest[T](implicit m: ClassManifest[T]) = m
