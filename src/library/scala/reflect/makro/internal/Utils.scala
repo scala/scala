@@ -97,10 +97,20 @@ package internal {
             val ref = if (tagModule.owner.isPackageClass) Ident(tagModule) else Select(prefix, tagModule.name)
             Select(ref, coreTags(coreTpe))
           case _ =>
-            translatingReificationErrors(materializer)
+            val manifestInScope = nonSyntheticManifestInScope(tpe)
+            if (manifestInScope.isEmpty) translatingReificationErrors(materializer)
+            else gen.mkMethodCall(staticModule("scala.reflect.package"), newTermName("manifestToConcreteTypeTag"), List(tpe), List(manifestInScope))
         }
       try c.typeCheck(result)
       catch { case terr @ c.TypeError(pos, msg) => failTag(terr) }
+    }
+
+    private def nonSyntheticManifestInScope(tpe: Type) = {
+      val ManifestClass = staticClass("scala.reflect.Manifest")
+      val ManifestModule = staticModule("scala.reflect.Manifest")
+      val manifest = c.inferImplicitValue(appliedType(ManifestClass.asTypeConstructor, List(tpe)))
+      val notOk = manifest.isEmpty || (manifest exists (sub => sub.symbol != null && (sub.symbol == ManifestModule || sub.symbol.owner == ManifestModule)))
+      if (notOk) EmptyTree else manifest
     }
 
     def materializeExpr(prefix: Tree, expr: Tree): Tree = {

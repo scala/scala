@@ -564,6 +564,7 @@ trait StdNames {
     val argv : NameType                = "argv"
     val arrayClass: NameType           = "arrayClass"
     val arrayElementClass: NameType    = "arrayElementClass"
+    val arrayTagToClassManifest: NameType = "arrayTagToClassManifest"
     val arrayValue: NameType           = "arrayValue"
     val array_apply : NameType         = "array_apply"
     val array_clone : NameType         = "array_clone"
@@ -581,6 +582,7 @@ trait StdNames {
     val checkInitialized: NameType     = "checkInitialized"
     val classOf: NameType              = "classOf"
     val clone_ : NameType              = if (forMSIL) "MemberwiseClone" else "clone" // sn.OClone causes checkinit failure
+    val concreteTypeTagToManifest: NameType = "concreteTypeTagToManifest"
     val conforms: NameType             = "conforms"
     val copy: NameType                 = "copy"
     val definitions: NameType          = "definitions"
@@ -629,6 +631,7 @@ trait StdNames {
     val macroContext : NameType        = "c"
     val main: NameType                 = "main"
     val manifest: NameType             = "manifest"
+    val manifestToConcreteTypeTag: NameType = "manifestToConcreteTypeTag"
     val map: NameType                  = "map"
     val materializeArrayTag: NameType  = "materializeArrayTag"
     val materializeClassTag: NameType  = "materializeClassTag"

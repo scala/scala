@@ -1265,7 +1265,16 @@ trait Implicits {
           }
       }
 
-      mot(tp, Nil, Nil)
+      val tagInScope =
+        if (full) context.withMacrosDisabled(resolveTypeTag(pos, ReflectMirrorPrefix.tpe, tp, true))
+        else context.withMacrosDisabled(resolveArrayTag(pos, tp))
+      if (tagInScope.isEmpty) mot(tp, Nil, Nil)
+      else {
+        val interop =
+          if (full) gen.mkMethodCall(ReflectPackage, nme.concreteTypeTagToManifest, List(tp), List(tagInScope))
+          else gen.mkMethodCall(ReflectPackage, nme.arrayTagToClassManifest, List(tp), List(tagInScope))
+        wrapResult(interop)
+      }
     }
 
     def wrapResult(tree: Tree): SearchResult =
