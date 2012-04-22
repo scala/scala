@@ -1,0 +1,28 @@
+t5702-neg-bad-and-wild.scala:10: error: bad use of _* (a sequence pattern must be the last pattern)
+      case List(1, _*,) => // bad use of _* (a sequence pattern must be the last pattern)
+                     ^
+t5702-neg-bad-and-wild.scala:10: error: illegal start of simple pattern
+      case List(1, _*,) => // bad use of _* (a sequence pattern must be the last pattern)
+                      ^
+t5702-neg-bad-and-wild.scala:12: error: illegal start of simple pattern
+      case List(1, _*3,) => // illegal start of simple pattern
+                       ^
+t5702-neg-bad-and-wild.scala:14: error: use _* to match a sequence
+      case List(1, x*) => // use _* to match a sequence
+                     ^
+t5702-neg-bad-and-wild.scala:15: error: trailing * is not a valid pattern
+      case List(x*, 1) => // trailing * is not a valid pattern
+                  ^
+t5702-neg-bad-and-wild.scala:16: error: trailing * is not a valid pattern
+      case (1, x*) => // trailing * is not a valid pattern
+                 ^
+t5702-neg-bad-and-wild.scala:17: error: bad use of _* (sequence pattern not allowed)
+      case (1, x@_*) => // bad use of _* (sequence pattern not allowed)
+                   ^
+t5702-neg-bad-and-wild.scala:23: error: bad use of _* (a sequence pattern must be the last pattern)
+    val K(ns @ _*, x) = k // bad use of _* (a sequence pattern must be the last pattern)
+                 ^
+t5702-neg-bad-and-wild.scala:24: error: bad use of _* (sequence pattern not allowed)
+    val (b, _ * ) = Pair(5,6) // bad use of _* (sequence pattern not allowed)
+                ^
+9 errors found
