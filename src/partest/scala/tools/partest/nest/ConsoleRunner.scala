@@ -213,7 +213,12 @@ class ConsoleRunner extends DirectRunner {
    * @return (success count, failure count)
    */
   def testCheckAll(enabledSets: List[TestSet]): (Int, Int) = {
-    def kindOf(f: File) = (srcDir relativize Path(f).toCanonical).segments.head
+    def kindOf(f: File) = {
+      (srcDir relativize Path(f).toCanonical).segments match {
+        case (".." :: "scaladoc" :: xs) => xs.head
+        case xs => xs.head
+      }
+    }
 
     val (valid, invalid) = testFiles partition (x => testSetKinds contains kindOf(x))
     invalid foreach (x => NestUI.failure(
