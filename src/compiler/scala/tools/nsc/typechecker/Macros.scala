@@ -427,7 +427,7 @@ trait Macros { self: Analyzer =>
       var actparamss = macroImpl.paramss
       actparamss = transformTypeTagEvidenceParams(actparamss, (param, tparam) => None)
 
-      val rettpe = if (ddef.tpt.tpe != null) ddef.tpt.tpe else computeMacroDefTypeFromMacroImpl(ddef, macroDef, macroImpl)
+      val rettpe = if (!ddef.tpt.isEmpty) typer.typedType(ddef.tpt).tpe else computeMacroDefTypeFromMacroImpl(ddef, macroDef, macroImpl)
       val (reqparamsss0, reqres0) = macroImplSigs(macroDef, ddef.tparams, ddef.vparamss, rettpe)
       var reqparamsss = reqparamsss0
 
