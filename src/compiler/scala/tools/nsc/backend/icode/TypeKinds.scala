@@ -420,7 +420,7 @@ trait TypeKinds { self: ICodes =>
     // between "object PackratParsers$class" and "trait PackratParsers"
     if (sym.isImplClass) {
       // pos/spec-List.scala is the sole failure if we don't check for NoSymbol
-      val traitSym = sym.owner.info.decl(nme.interfaceName(sym.name))
+      val traitSym = sym.owner.info.decl(tpnme.interfaceName(sym.name))
       if (traitSym != NoSymbol)
         return REFERENCE(traitSym)
     }

@@ -1121,10 +1121,10 @@ trait Implicits {
     }
 
     // these should be lazy, otherwise we wouldn't be able to compile scala-library with starr
-    private val TagSymbols = Set(ClassTagClass, TypeTagClass, ConcreteTypeTagClass)
-    private val TagMaterializers = Map(
-      ClassTagClass -> MacroInternal_materializeClassTag,
-      TypeTagClass -> MacroInternal_materializeTypeTag,
+    private val TagSymbols = Set[Symbol](ClassTagClass, TypeTagClass, ConcreteTypeTagClass)
+    private val TagMaterializers = Map[Symbol, MethodSymbol](
+      ClassTagClass        -> MacroInternal_materializeClassTag,
+      TypeTagClass         -> MacroInternal_materializeTypeTag,
       ConcreteTypeTagClass -> MacroInternal_materializeConcreteTypeTag
     )
 
@@ -1140,27 +1140,34 @@ trait Implicits {
             failure(arg, "failed to typecheck the materialized typetag: %n%s".format(ex.msg), ex.pos)
         }
 
-      val prefix = (tagClass, pre) match {
-        // ClassTags only exist for scala.reflect.mirror, so their materializer doesn't care about prefixes
-        case (ClassTagClass, _) =>
-          gen.mkAttributedRef(Reflect_mirror) setType singleType(Reflect_mirror.owner.thisPrefix, Reflect_mirror)
-        // [Eugene to Martin] this is the crux of the interaction between implicits and reifiers
-        // here we need to turn a (supposedly path-dependent) type into a tree that will be used as a prefix
-        // I'm not sure if I've done this right - please, review
-        case (_, SingleType(prePre, preSym)) =>
-          gen.mkAttributedRef(prePre, preSym) setType pre
-        // necessary only to compile typetags used inside the Universe cake
-        case (_, ThisType(thisSym)) =>
-          gen.mkAttributedThis(thisSym)
-        case _ =>
-          // if ``pre'' is not a PDT, e.g. if someone wrote
-          //   implicitly[scala.reflect.makro.Context#TypeTag[Int]]
-          // then we need to fail, because we don't know the prefix to use during type reification
-          return failure(tp, "tag error: unsupported prefix type %s (%s)".format(pre, pre.kind))
-      }
-
+      val prefix = (
+        // ClassTags only exist for scala.reflect.mirror, so their materializer
+        // doesn't care about prefixes
+        if (tagClass eq ClassTagClass) (
+          gen.mkAttributedRef(Reflect_mirror)
+            setType singleType(Reflect_mirror.owner.thisPrefix, Reflect_mirror)
+        )
+        else pre match {
+          // [Eugene to Martin] this is the crux of the interaction between
+          // implicits and reifiers here we need to turn a (supposedly
+          // path-dependent) type into a tree that will be used as a prefix I'm
+          // not sure if I've done this right - please, review
+          case SingleType(prePre, preSym) =>
+            gen.mkAttributedRef(prePre, preSym) setType pre
+          // necessary only to compile typetags used inside the Universe cake
+          case ThisType(thisSym) =>
+            gen.mkAttributedThis(thisSym)
+          case _ =>
+            // if ``pre'' is not a PDT, e.g. if someone wrote
+            //   implicitly[scala.reflect.makro.Context#TypeTag[Int]]
+            // then we need to fail, because we don't know the prefix to use during type reification
+            return failure(tp, "tag error: unsupported prefix type %s (%s)".format(pre, pre.kind))
+        }
+      )
       // todo. migrate hardcoded materialization in Implicits to corresponding implicit macros
-      var materializer = atPos(pos.focus)(Apply(TypeApply(Ident(TagMaterializers(tagClass)), List(TypeTree(tp))), List(prefix)))
+      var materializer = atPos(pos.focus)(
+        gen.mkMethodCall(TagMaterializers(tagClass), List(tp), List(prefix))
+      )
       if (settings.XlogImplicits.value) println("materializing requested %s.%s[%s] using %s".format(pre, tagClass.name, tp, materializer))
       if (context.macrosEnabled) success(materializer)
       else failure(materializer, "macros are disabled")
@@ -1169,8 +1176,8 @@ trait Implicits {
     /** The manifest corresponding to type `pt`, provided `pt` is an instance of Manifest.
      */
     private def implicitTagOrOfExpectedType(pt: Type): SearchResult = pt.dealias match {
-      case TypeRef(pre, sym, args) if TagSymbols(sym) =>
-        tagOfType(pre, args.head, sym)
+      case TypeRef(pre, sym, arg :: Nil) if TagSymbols(sym) =>
+        tagOfType(pre, arg, sym)
       case tp@TypeRef(_, sym, _) if sym.isAbstractType =>
         implicitTagOrOfExpectedType(tp.bounds.lo) // #3977: use tp (==pt.dealias), not pt (if pt is a type alias, pt.bounds.lo == pt)
       case _ =>

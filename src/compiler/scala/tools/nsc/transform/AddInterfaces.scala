@@ -66,7 +66,7 @@ abstract class AddInterfaces extends InfoTransform { self: Erasure =>
 
   private def newImplClass(iface: Symbol): Symbol = {
     val inClass   = iface.owner.isClass
-    val implName  = nme.implClassName(iface.name)
+    val implName  = tpnme.implClassName(iface.name)
     val implFlags = (iface.flags & ~(INTERFACE | lateINTERFACE)) | IMPLCLASS
 
     val impl0 = (

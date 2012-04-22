@@ -113,7 +113,7 @@ trait Scopes extends api.Scopes { self: SymbolTable =>
      *
      *  @param sym ...
      */
-    def enter(sym: Symbol): Symbol = { enter(newScopeEntry(sym, this)); sym }
+    def enter[T <: Symbol](sym: T): T = { enter(newScopeEntry(sym, this)); sym }
 
     /** enter a symbol, asserting that no symbol with same name exists in scope
      *

@@ -12,6 +12,37 @@ trait Reifiers {
   import mirror._
   import definitions._
 
+  private lazy val ClassTagModule = ClassTagClass.companionSymbol
+
+  // [Eugene] imho this logic should be moved into `erasure`
+  private def calculateTagErasure(tpe: Type) = tpe match {
+    case tpe if tpe.typeSymbol.isDerivedValueClass => tpe // [Eugene to Martin] is this correct?
+    case ConstantType(value) => tpe.widen.erasure
+    case _ =>
+      // [Eugene] magikz. needs review
+      // necessary to deal with erasures of HK types, typeConstructor won't work
+      tpe.erasure.normalize match {
+        // we don't want undets in the result
+        case PolyType(undets, underlying) => existentialAbstraction(undets, underlying)
+        case result                       => result
+      }
+  }
+  private def classTagFromArgument(tpe: Type, arg: Tree) = {
+    gen.mkMethodCall(ClassTagModule, nme.apply, List(tpe), List(arg))
+    // val factory = TypeApply(Select(Ident(ClassTagModule), nme.apply), List(TypeTree(tpe)))
+    // Apply(factory, List(typeArg))
+  }
+  private def classTagFromErasure(tpe: Type) = {
+    val erasure = calculateTagErasure(tpe)
+    classTagFromArgument(tpe, gen.mkNullaryCall(Predef_classOf, List(erasure)))
+    // val targ    = TypeApply(Select(Ident(PredefModule), nme.classOf), List(TypeTree(erasure)))
+    // classTagFromArgument(tpe, targ)
+  }
+  private def typetagIsSynthetic(tree: Tree) = tree match {
+    case Block(_, _)  => true
+    case _            => tree exists (_ hasSymbolWhich Set(TypeTagModule, ConcreteTypeTagModule))
+  }
+
   lazy val reflectMirrorPrefix: Tree = {
     // [Eugene] how do I typecheck this without undergoing this tiresome (and, in general, incorrect) procedure?
     val prefix: Tree = Select(Select(Ident(definitions.ScalaPackage), newTermName("reflect")), newTermName("mirror"))
@@ -26,40 +57,36 @@ trait Reifiers {
     reifyTopLevel(prefix, tpe, dontSpliceAtTopLevel, requireConcreteTypeTag)
 
   def reifyErasure(tpe: Type): Tree = {
-    val positionBearer = enclosingMacros.find(c => c.macroApplication.pos != NoPosition).map(_.macroApplication).getOrElse(EmptyTree).asInstanceOf[Tree]
-    val typetagInScope = callsiteTyper.context.withMacrosDisabled(callsiteTyper.resolveTypeTag(positionBearer, singleType(Reflect_mirror.owner.thisPrefix, Reflect_mirror), tpe, full = true))
-    def typetagIsSynthetic(tree: Tree) = tree.isInstanceOf[Block] || (tree exists (sub => sub.symbol == TypeTagModule || sub.symbol == ConcreteTypeTagModule))
+    val positionBearer = (enclosingMacros.find(_.macroApplication.pos != NoPosition) match {
+      case None     => EmptyTree
+      case Some(m)  => m.macroApplication
+    }).asInstanceOf[Tree]
+
+    val typetagInScope = callsiteTyper.context.withMacrosDisabled(
+      callsiteTyper.resolveTypeTag(
+        positionBearer,
+        singleType(Reflect_mirror.owner.thisPrefix, Reflect_mirror),
+        tpe,
+        full = true
+      )
+    )
     typetagInScope match {
       case success if !success.isEmpty && !typetagIsSynthetic(success) =>
-        val factory = TypeApply(Select(Ident(ClassTagModule), nme.apply), List(TypeTree(tpe)))
-        Apply(factory, List(typetagInScope))
+        classTagFromArgument(tpe, typetagInScope)
       case _ =>
         if (tpe.typeSymbol == ArrayClass) {
           val componentTpe = tpe.typeArguments(0)
           val componentTag = callsiteTyper.resolveClassTag(positionBearer, componentTpe)
           Select(componentTag, nme.wrap)
-        } else {
-          // [Eugene] what's the intended behavior? there's no spec on ClassManifests
-          // for example, should we ban Array[T] or should we tag them with Array[AnyRef]?
-          // if its the latter, what should be the result of tagging Array[T] where T <: Int?
-          if (tpe.isSpliceable) throw new ReificationError(enclosingPosition, "tpe %s is an unresolved spliceable type".format(tpe))
-          // [Eugene] imho this logic should be moved into `erasure`
-          var erasure = tpe match {
-            case tpe if tpe.typeSymbol.isDerivedValueClass => tpe // [Eugene to Martin] is this correct?
-            case ConstantType(value) => tpe.widen.erasure
-            case _ => {
-              // [Eugene] magikz. needs review
-              var result = tpe.erasure.normalize // necessary to deal with erasures of HK types, typeConstructor won't work
-              result = result match {
-                case PolyType(undets, underlying) => existentialAbstraction(undets, underlying) // we don't want undets in the result
-                case _ => result
-              }
-              result
-            }
-          }
-          val factory = TypeApply(Select(Ident(ClassTagModule), nme.apply), List(TypeTree(tpe)))
-          Apply(factory, List(TypeApply(Select(Ident(PredefModule), nme.classOf), List(TypeTree(erasure)))))
         }
+        // [Eugene] what's the intended behavior? there's no spec on ClassManifests
+        // for example, should we ban Array[T] or should we tag them with Array[AnyRef]?
+        // if its the latter, what should be the result of tagging Array[T] where T <: Int?
+        else if (tpe.isSpliceable) {
+          throw new ReificationError(enclosingPosition,
+            "tpe %s is an unresolved spliceable type".format(tpe))
+        }
+        else classTagFromErasure(tpe)
     }
  }
 

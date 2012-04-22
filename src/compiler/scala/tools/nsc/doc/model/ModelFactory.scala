@@ -42,7 +42,7 @@ class ModelFactory(val global: Global, val settings: doc.Settings) {
     memberSym.isOmittablePrefix || (closestPackage(memberSym) == closestPackage(templateSym))
   }
 
-  private lazy val noSubclassCache = Set(AnyClass, AnyRefClass, ObjectClass)
+  private lazy val noSubclassCache = Set[Symbol](AnyClass, AnyRefClass, ObjectClass)
 
   /**  */
   def makeModel: Option[Universe] = {
@@ -675,7 +675,7 @@ class ModelFactory(val global: Global, val settings: doc.Settings) {
           }
         /* Refined types */
         case RefinedType(parents, defs) =>
-          val ignoreParents = Set(AnyClass, ObjectClass)
+          val ignoreParents = Set[Symbol](AnyClass, ObjectClass)
           val filtParents = parents filterNot (x => ignoreParents(x.typeSymbol)) match {
             case Nil    => parents
             case ps     => ps
