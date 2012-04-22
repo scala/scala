@@ -5,9 +5,10 @@ import scala.reflect.api.Attachment
 import scala.reflect.api.Modifier
 import scala.reflect.api.Universe
 
+// todo. make Dummy objects not equal to themselves
 class DummyMirror(cl: ClassLoader) extends api.Mirror {
   // Members declared in scala.reflect.api.AnnotationInfos
-  implicit def classfileAnnotArgManifest: scala.reflect.ClassManifest[ClassfileAnnotArg] = notSupported()
+  implicit def classfileAnnotArgTag: scala.reflect.ClassTag[ClassfileAnnotArg] = notSupported()
   type AnnotationInfo = DummyAnnotationInfo.type
   object DummyAnnotationInfo
   val AnnotationInfo: AnnotationInfoExtractor = DummyAnnotationInfoExtractor
@@ -429,6 +430,8 @@ class DummyMirror(cl: ClassLoader) extends api.Mirror {
     def fullName: String = notSupported()
     def id: Int = notSupported()
     def orElse[T](alt: => Symbol): Symbol = notSupported()
+    def filter(cond: Symbol => Boolean): Symbol = notSupported()
+    def suchThat(cond: Symbol => Boolean): Symbol = notSupported()
     def privateWithin: Symbol = notSupported()
     def companionSymbol: Symbol = notSupported()
     def moduleClass: Symbol = notSupported()

@@ -351,7 +351,7 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
     classLoader.setAsContext()
 
     // this is risky, but it's our only possibility to make default reflexive mirror to work with REPL
-    // so far we have only used the default mirror to create a few manifests for the compiler
+    // so far we have only used the default mirror to create a few tags for the compiler
     // so it shouldn't be in conflict with our classloader, especially since it respects its parent
     scala.reflect.mirror.classLoader = classLoader
   }
@@ -667,7 +667,7 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
     result
   }
   def directBind(p: NamedParam): IR.Result                       = directBind(p.name, p.tpe, p.value)
-  def directBind[T: Manifest](name: String, value: T): IR.Result = directBind((name, value))
+  def directBind[T: ClassTag](name: String, value: T): IR.Result = directBind((name, value))
 
   def rebind(p: NamedParam): IR.Result = {
     val name     = p.name
@@ -683,12 +683,12 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
     if (ids.isEmpty) IR.Success
     else interpret("import " + ids.mkString(", "))
 
-  def quietBind(p: NamedParam): IR.Result                  = beQuietDuring(bind(p))
-  def bind(p: NamedParam): IR.Result                       = bind(p.name, p.tpe, p.value)
-  def bind[T: Manifest](name: String, value: T): IR.Result = bind((name, value))
-  def bindSyntheticValue(x: Any): IR.Result                = bindValue(freshInternalVarName(), x)
-  def bindValue(x: Any): IR.Result                         = bindValue(freshUserVarName(), x)
-  def bindValue(name: String, x: Any): IR.Result           = bind(name, TypeStrings.fromValue(x), x)
+  def quietBind(p: NamedParam): IR.Result                 = beQuietDuring(bind(p))
+  def bind(p: NamedParam): IR.Result                      = bind(p.name, p.tpe, p.value)
+  def bind[T: TypeTag](name: String, value: T): IR.Result = bind((name, value))
+  def bindSyntheticValue(x: Any): IR.Result               = bindValue(freshInternalVarName(), x)
+  def bindValue(x: Any): IR.Result                        = bindValue(freshUserVarName(), x)
+  def bindValue(name: String, x: Any): IR.Result          = bind(name, TypeStrings.fromValue(x), x)
 
   /** Reset this interpreter, forgetting all user-specified requests. */
   def reset() {
@@ -1185,9 +1185,10 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
     val termname = newTypeName(name)
     findName(termname) orElse getModuleIfDefined(termname)
   }
-  def types[T: ClassManifest] : Symbol = types(classManifest[T].erasure.getName)
-  def terms[T: ClassManifest] : Symbol = terms(classManifest[T].erasure.getName)
-  def apply[T: ClassManifest] : Symbol = apply(classManifest[T].erasure.getName)
+  // [Eugene to Paul] possibly you could make use of TypeTags here
+  def types[T: ClassTag] : Symbol = types(classTag[T].erasure.getName)
+  def terms[T: ClassTag] : Symbol = terms(classTag[T].erasure.getName)
+  def apply[T: ClassTag] : Symbol = apply(classTag[T].erasure.getName)
 
   def classSymbols  = allDefSymbols collect { case x: ClassSymbol => x }
   def methodSymbols = allDefSymbols collect { case x: MethodSymbol => x }

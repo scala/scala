@@ -55,6 +55,14 @@ trait Symbols { self: Universe =>
      */
     def orElse[T](alt: => Symbol): Symbol
 
+    /** ...
+     */
+    def filter(cond: Symbol => Boolean): Symbol
+
+    /** ...
+     */
+    def suchThat(cond: Symbol => Boolean): Symbol
+
     /**
      * Set when symbol has a modifier of the form private[X], NoSymbol otherwise.
      *

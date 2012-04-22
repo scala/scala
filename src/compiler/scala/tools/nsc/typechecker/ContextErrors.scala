@@ -861,7 +861,7 @@ trait ContextErrors {
             // (note that this is not a compilation error, it's an artifact of implicit search algorithm)
             // normally, such "errors" are discarded by `isCyclicOrErroneous` in Implicits.scala
             // but in our case this won't work, because isCyclicOrErroneous catches CyclicReference exceptions
-            // while our error will manifest itself as a "recursive method needs a return type"
+            // while our error will present itself as a "recursive method needs a return type"
             //
             // hence we (together with reportTypeError in TypeDiagnostics) make sure that this CyclicReference
             // evades all the handlers on its way and successfully reaches `isCyclicOrErroneous` in Implicits

@@ -46,7 +46,7 @@ trait TraversableOnceMethods[+A] {
   def copyToBuffer[B >: A](dest: mutable.Buffer[B]): Unit
 
   // conversions
-  def toArray[B >: A : ClassManifest]: Array[B]
+  def toArray[B >: A : ArrayTag]: Array[B]
   def toBuffer[B >: A]: mutable.Buffer[B]
   def toIndexedSeq: immutable.IndexedSeq[A]
   def toIterable: Iterable[A]

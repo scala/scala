@@ -135,7 +135,7 @@ object Actor extends ListenerManagement {
    *   val actor = actorOf[MyActor].start()
    *  </pre>
    */
-  def actorOf[T <: Actor: Manifest]: ActorRef = actorOf(manifest[T].erasure.asInstanceOf[Class[_ <: Actor]])
+  def actorOf[T <: Actor: ClassTag]: ActorRef = actorOf(classTag[T].erasure.asInstanceOf[Class[_ <: Actor]])
 
   /** Creates an ActorRef out of the Actor of the specified Class.
    *  <pre>
@@ -481,7 +481,7 @@ private[actor] class AnyOptionAsTypedOption(anyOption: Option[Any]) {
   /** Convenience helper to cast the given Option of Any to an Option of the given type. Will swallow a possible
    *  ClassCastException and return None in that case.
    */
-  def asSilently[T: Manifest]: Option[T] = narrowSilently[T](anyOption)
+  def asSilently[T: ClassTag]: Option[T] = narrowSilently[T](anyOption)
 }
 
 /** Marker interface for proxyable actors (such as typed actor).

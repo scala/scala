@@ -26,7 +26,7 @@ import util.Statistics._
  *  @author  Martin Odersky
  *  @version 1.0
  */
-trait Typers extends Modes with Adaptations with PatMatVirtualiser {
+trait Typers extends Modes with Adaptations with Taggings with PatMatVirtualiser {
   self: Analyzer =>
 
   import global._
@@ -83,7 +83,7 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
 
   private def isPastTyper = phase.id > currentRun.typerPhase.id
 
-  abstract class Typer(context0: Context) extends TyperDiagnostics with Adaptation with TyperContextErrors {
+  abstract class Typer(context0: Context) extends TyperDiagnostics with Adaptation with Tagging with TyperContextErrors {
     import context0.unit
     import typeDebug.{ ptTree, ptBlock, ptLine }
     import TyperErrorGen._
@@ -830,11 +830,7 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
             context.undetparams = inferExprInstance(tree, context.extractUndetparams(), pt,
               // approximate types that depend on arguments since dependency on implicit argument is like dependency on type parameter
               mt.approximate,
-              // if we are looking for a manifest, instantiate type to Nothing anyway,
-              // as we would get ambiguity errors otherwise. Example
-              // Looking for a manifest of Nil: This has many potential types,
-              // so we need to instantiate to minimal type List[Nothing].
-              keepNothings = false, // retract Nothing's that indicate failure, ambiguities in manifests are dealt with in manifestOfType
+              keepNothings = false,
               useWeaklyCompatible = true) // #3808
         }
 
@@ -3103,7 +3099,7 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
           if (annInfo.atp.isErroneous) { hasError = true; None }
           else Some(NestedAnnotArg(annInfo))
 
-        // use of Array.apply[T: ClassManifest](xs: T*): Array[T]
+        // use of Array.apply[T: ArrayTag](xs: T*): Array[T]
         // and    Array.apply(x: Int, xs: Int*): Array[Int]       (and similar)
         case Apply(fun, args) =>
           val typedFun = typed(fun, forFunMode(mode), WildcardType)
@@ -4840,12 +4836,12 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
               // [Eugene] no more MaxArrayDims. ClassTags are flexible enough to allow creation of arrays of arbitrary dimensionality (w.r.t JVM restrictions)
               val Some((level, componentType)) = erasure.GenericArray.unapply(tpt.tpe)
               val tagType = List.iterate(componentType, level)(tpe => appliedType(ArrayClass.asType, List(tpe))).last
-                val newArrayApp = atPos(tree.pos) {
-                val tag = resolveClassTag(tree, tagType)
+              val newArrayApp = atPos(tree.pos) {
+                val tag = resolveArrayTag(tree.pos, tagType)
                 if (tag.isEmpty) MissingClassTagError(tree, tagType)
                 else new ApplyToImplicitArgs(Select(tag, nme.newArray), args)
-                }
-                typed(newArrayApp, mode, pt)
+              }
+              typed(newArrayApp, mode, pt)
             case tree1 =>
               tree1
           }
@@ -5208,36 +5204,6 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
     def transformedOrTyped(tree: Tree, mode: Int, pt: Type): Tree = transformed.get(tree) match {
       case Some(tree1) => transformed -= tree; tree1
       case None => typed(tree, mode, pt)
-    }
-
-    // `tree` is only necessary here for its position
-    // but that's invaluable for error reporting, so I decided to include it into this method's contract
-    // before passing EmptyTree, please, consider passing something meaningful first
-    def resolveClassTag(tree: Tree, tp: Type): Tree = beforeTyper {
-      inferImplicit(
-        EmptyTree,
-        appliedType(ClassTagClass.typeConstructor, List(tp)),
-        /*reportAmbiguous =*/ true,
-        /*isView =*/ false,
-        /*context =*/ context,
-        /*saveAmbiguousDivergent =*/ true,
-        /*pos =*/ tree.pos
-      ).tree
-    }
-
-    // `tree` is only necessary here for its position
-    // but that's invaluable for error reporting, so I decided to include it into this method's contract
-    // before passing EmptyTree, please, consider passing something meaningful first
-    def resolveTypeTag(tree: Tree, pre: Type, tp: Type, full: Boolean): Tree = beforeTyper {
-      inferImplicit(
-        EmptyTree,
-        appliedType(singleType(pre, pre member (if (full) ConcreteTypeTagClass else TypeTagClass).name), List(tp)),
-        /*reportAmbiguous =*/ true,
-        /*isView =*/ false,
-        /*context =*/ context,
-        /*saveAmbiguousDivergent =*/ true,
-        /*pos =*/ tree.pos
-      ).tree
     }
 
 /*

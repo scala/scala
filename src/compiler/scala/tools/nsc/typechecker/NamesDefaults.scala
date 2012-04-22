@@ -39,14 +39,14 @@ trait NamesDefaults { self: Analyzer =>
   def isNamed(arg: Tree) = nameOf(arg).isDefined
 
   /** @param pos maps indices from old to new */
-  def reorderArgs[T: ClassManifest](args: List[T], pos: Int => Int): List[T] = {
+  def reorderArgs[T: ArrayTag](args: List[T], pos: Int => Int): List[T] = {
     val res = new Array[T](args.length)
     foreachWithIndex(args)((arg, index) => res(pos(index)) = arg)
     res.toList
   }
 
   /** @param pos maps indices from new to old (!) */
-  def reorderArgsInv[T: ClassManifest](args: List[T], pos: Int => Int): List[T] = {
+  def reorderArgsInv[T: ArrayTag](args: List[T], pos: Int => Int): List[T] = {
     val argsArray = args.toArray
     (argsArray.indices map (i => argsArray(pos(i)))).toList
   }

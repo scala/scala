@@ -447,7 +447,7 @@ abstract class UnPickler /*extends reflect.generic.UnPickler*/ {
     private def readArrayAnnot() = {
       readByte() // skip the `annotargarray` tag
       val end = readNat() + readIndex
-      until(end, () => readClassfileAnnotArg(readNat())).toArray(classfileAnnotArgManifest)
+      until(end, () => readClassfileAnnotArg(readNat())).toArray(classfileAnnotArgTag)
     }
     protected def readClassfileAnnotArg(i: Int): ClassfileAnnotArg = bytes(index(i)) match {
       case ANNOTINFO     => NestedAnnotArg(at(i, readAnnotation))
@@ -849,7 +849,7 @@ abstract class UnPickler /*extends reflect.generic.UnPickler*/ {
         atPhase(p) (sym setInfo tp)
         if (currentRunId != definedAtRunId)
           sym.setInfo(adaptToNewRunMap(tp))
-      } 
+      }
       catch {
         case e: MissingRequirementError => throw toTypeError(e)
       }
