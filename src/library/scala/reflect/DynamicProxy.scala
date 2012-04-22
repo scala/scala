@@ -43,7 +43,7 @@ trait DynamicProxy extends Dynamic{
   def applyDynamicNamed( method:String )( args:(String,DynamicReflectBoxed)* ) : Any = {
     val class_ = dynamicProxyTarget.getClass
     var i = 0
-    val toolbox = mkToolBox(mkConsoleReporter(),"")
+    val toolbox = mkToolBox(mkConsoleFrontEnd(),"")
     val symbol = classToType( dynamicProxyTarget.getClass ).member( newTermName(method).encodedName )
     if(args.size == 0){
       invoke( dynamicProxyTarget, symbol )()

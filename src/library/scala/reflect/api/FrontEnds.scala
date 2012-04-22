@@ -1,9 +1,9 @@
 package scala.reflect
 package api
 
-trait Reporters { self: Universe =>
+trait FrontEnds { self: Universe =>
 
-  trait Reporter {
+  trait FrontEnd {
     object severity extends Enumeration
     class Severity(val id: Int) extends severity.Value {
       var count: Int = 0
@@ -17,6 +17,9 @@ trait Reporters { self: Universe =>
     val INFO    = new Severity(0)
     val WARNING = new Severity(1)
     val ERROR   = new Severity(2)
+
+    def hasErrors   = ERROR.count > 0
+    def hasWarnings = WARNING.count > 0
 
     case class Info(val pos: Position, val msg: String, val severity: Severity)
     val infos = new collection.mutable.LinkedHashSet[Info]
@@ -46,14 +49,14 @@ trait Reporters { self: Universe =>
     }
   }
 
-  class SilentReporter extends Reporter {
+  class SilentFrontEnd extends FrontEnd {
     def display(info: Info) {}
     def interactive() {}
   }
 
   /** Creates a UI-less reporter that simply accumulates all the messages
    */
-  def mkSilentReporter(): Reporter = new SilentReporter()
+  def mkSilentFrontEnd(): FrontEnd = new SilentFrontEnd()
 
   /** Creates a reporter that prints messages to the console according to the settings.
    *
@@ -61,5 +64,5 @@ trait Reporters { self: Universe =>
    *  0 stands for INFO, 1 stands for WARNING and 2 stands for ERROR.
    */
   // todo. untangle warningsAsErrors from Reporters. I don't feel like moving this flag here!
-  def mkConsoleReporter(minSeverity: Int = 1): Reporter
+  def mkConsoleFrontEnd(minSeverity: Int = 1): FrontEnd
 }

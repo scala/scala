@@ -1,14 +1,14 @@
 package scala.reflect.makro
 
-trait Reporters {
+trait FrontEnds {
   self: Context =>
 
   import mirror._
 
   /** Exposes means to control the compiler UI */
-  def reporter: Reporter
-  def setReporter(reporter: Reporter): this.type
-  def withReporter[T](reporter: Reporter)(op: => T): T
+  def frontEnd: FrontEnd
+  def setFrontEnd(frontEnd: FrontEnd): this.type
+  def withFrontEnd[T](frontEnd: FrontEnd)(op: => T): T
 
   /** For sending a message which should not be labeled as a warning/error,
    *  but also shouldn't require -verbose to be visible.

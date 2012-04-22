@@ -13,7 +13,6 @@ import scala.sys.BooleanProp
 import io.VirtualDirectory
 import scala.tools.nsc.io.AbstractFile
 import reporters._
-import reporters.{Reporter => NscReporter}
 import symtab.Flags
 import scala.reflect.internal.Names
 import scala.tools.util.PathResolver
@@ -283,7 +282,7 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
   protected def createLineManager(classLoader: ClassLoader): Line.Manager = new Line.Manager(classLoader)
 
   /** Instantiate a compiler.  Overridable. */
-  protected def newCompiler(settings: Settings, reporter: NscReporter): ReplGlobal = {
+  protected def newCompiler(settings: Settings, reporter: Reporter): ReplGlobal = {
     settings.outputDirs setSingleOutput virtualDirectory
     settings.exposeEmptyPackage.value = true
     new Global(settings, reporter) with ReplGlobal

@@ -7,7 +7,7 @@ package scala.tools.nsc
 package ast
 
 import symtab._
-import reporters.{Reporter => NscReporter}
+import reporters._
 import util.{Position, NoPosition}
 import util.DocStrings._
 import scala.reflect.internal.Chars._
@@ -20,8 +20,6 @@ import scala.collection.mutable
 trait DocComments { self: Global =>
 
   var cookedDocComments = Map[Symbol, String]()
-
-  def reporter: NscReporter
 
   /** The raw doc comment map */
   val docComments = mutable.HashMap[Symbol, DocComment]()

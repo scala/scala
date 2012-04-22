@@ -5,17 +5,17 @@ trait ToolBoxes { self: Universe =>
 
   type ToolBox <: AbsToolBox
 
-  def mkToolBox(reporter: Reporter = mkSilentReporter(), options: String = ""): AbsToolBox
+  def mkToolBox(frontEnd: FrontEnd = mkSilentFrontEnd(), options: String = ""): AbsToolBox
 
   // [Eugene] what do you think about the interface? namely about the ``freeTypes'' part.
   trait AbsToolBox {
 
-    /** UI of the toolbox.
+    /** Front end of the toolbox.
      *
      *  Accumulates and displays warnings and errors, can drop to interactive mode (if supported).
      *  The latter can be useful to study the typechecker or to debug complex macros.
      */
-    def reporter: Reporter
+    def frontEnd: FrontEnd
 
     /** Typechecks a tree using this ToolBox.
      *  This populates symbols and types of the tree and possibly transforms it to reflect certain desugarings.

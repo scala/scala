@@ -36,7 +36,7 @@ abstract class SymbolTable extends api.Universe
                               with Importers
                               with Required
                               with TreeBuildUtil
-                              with Reporters
+                              with FrontEnds
                               with CapturedVariables
                               with StdAttachments
 {
@@ -53,7 +53,7 @@ abstract class SymbolTable extends api.Universe
 
   /** Overridden when we know more about what was happening during a failure. */
   def supplementErrorMessage(msg: String): String = msg
-  
+
   private[scala] def printCaller[T](msg: String)(result: T) = {
     Console.err.println(msg + ": " + result)
     Console.err.println("Called from:")

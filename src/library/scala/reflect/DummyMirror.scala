@@ -161,8 +161,8 @@ class DummyMirror(cl: ClassLoader) extends api.Mirror {
   def wrappingPos(trees: List[Tree]): Position = notSupported()
   def wrappingPos(default: Position,trees: List[Tree]): Position = notSupported()
 
-  // Members declared in scala.reflect.api.Reporters
-  def mkConsoleReporter(minSeverity: Int): Reporter = notSupported()
+  // Members declared in scala.reflect.api.FrontEnds
+  def mkConsoleFrontEnd(minSeverity: Int): FrontEnd = notSupported()
 
   // Members declared in scala.reflect.api.Scopes
   type Scope = DummyScope.type
@@ -472,7 +472,7 @@ class DummyMirror(cl: ClassLoader) extends api.Mirror {
   }
 
   // Members declared in scala.reflect.api.ToolBoxes
-  def mkToolBox(reporter: Reporter,options: String): AbsToolBox = notSupported()
+  def mkToolBox(frontEnd: FrontEnd, options: String): AbsToolBox = notSupported()
 
   // Members declared in scala.reflect.api.TreeBuildUtil
   // type TreeGen = DummyTreeGen.type // [Eugene] cannot compile if uncomment this

@@ -12,7 +12,7 @@ trait Context extends Aliases
                  with Infrastructure
                  with Names
                  with Reifiers
-                 with Reporters
+                 with FrontEnds
                  with Settings
                  with Symbols
                  with Typers
