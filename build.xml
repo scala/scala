@@ -274,7 +274,26 @@ INITIALISATION
     <property name="version.suffix" value="-${version.bnum}"/>
   </target>
 
-  <target name="init.build.suffix.done" depends="init.build.release, init.build.patch.release"/>
+  <target name="init.hasmavensuffix" if="build.release" depends="init.build.patch.release, init.build.release">
+    <condition property="version.hasmavensuffix">
+      <not><equals arg1="${maven.version.suffix}" arg2=""/></not>
+    </condition>
+  </target>
+
+  <target name="init.osgi.suffix" if="version.hasmavensuffix" depends="init.hasmavensuffix">
+    <property name="osgi.version.suffix" value="${maven.version.suffix}"/>
+  </target>
+
+  <target name="init.osgi.suffix.final" if="build.release" unless="version.hasmavensuffix" depends="init.hasmavensuffix">
+    <property name="osgi.version.suffix" value="-VFINAL"/>
+  </target>
+
+
+  <target name="init.osgi.suffix.snapshot" unless="build.release" depends="init.hasmavensuffix">
+    <property name="osgi.version.suffix" value=""/>
+  </target>
+
+  <target name="init.build.suffix.done" depends="init.build.release, init.build.patch.release, init.osgi.suffix, init.osgi.suffix.final, init.osgi.suffix.snapshot"/>
 
   <target name="init.version.git" depends="init.build.suffix.done">
     <!-- Find out whether we are running on Windows -->
@@ -296,7 +315,7 @@ INITIALISATION
       value="${version.major}.${version.minor}.${version.patch}${version.suffix}${maven.version.suffix}"/>
     <property
       name="osgi.version.number"
-      value="${version.major}.${version.minor}.${version.patch}.v${git.commit.date}${version.suffix}-${git.commit.sha}"/>
+      value="${version.major}.${version.minor}.${version.patch}.v${git.commit.date}${version.suffix}${osgi.version.suffix}-${git.commit.sha}"/>
   </target>
 
   <target name="init.version.snapshot" unless="build.release" depends="init.version.git">
