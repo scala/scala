@@ -119,20 +119,24 @@ object Predef extends LowPriorityImplicits {
   def optManifest[T](implicit m: OptManifest[T])     = m
 
   // Tag types and companions, and incantations for summoning
-  type ClassTag[T]         = scala.reflect.ClassTag[T]
-  type TypeTag[T]          = scala.reflect.TypeTag[T]
-  type ConcreteTypeTag[T]  = scala.reflect.ConcreteTypeTag[T]
-  val ClassTag             = scala.reflect.ClassTag // doesn't need to be lazy, because it's not a path-dependent type
+  type ArrayTag[T]           = scala.reflect.ArrayTag[T]
+  type ErasureTag[T]         = scala.reflect.ErasureTag[T]
+  type ClassTag[T]           = scala.reflect.ClassTag[T]
+  type TypeTag[T]            = scala.reflect.TypeTag[T]
+  type ConcreteTypeTag[T]    = scala.reflect.ConcreteTypeTag[T]
+  val ClassTag               = scala.reflect.ClassTag // doesn't need to be lazy, because it's not a path-dependent type
   // [Paul to Eugene] No lazy vals in Predef.  Too expensive.  Have to work harder on breaking initialization dependencies.
-  lazy val TypeTag         = scala.reflect.TypeTag // needs to be lazy, because requires scala.reflect.mirror instance
-  lazy val ConcreteTypeTag = scala.reflect.ConcreteTypeTag
+  lazy val TypeTag           = scala.reflect.TypeTag // needs to be lazy, because requires scala.reflect.mirror instance
+  lazy val ConcreteTypeTag   = scala.reflect.ConcreteTypeTag
 
   // [Eugene to Martin] it's really tedious to type "implicitly[...]" all the time, so I'm reintroducing these shortcuts
-  def classTag[T](implicit ctag: ClassTag[T])                = ctag
-  def tag[T](implicit ttag: TypeTag[T])                      = ttag
-  def typeTag[T](implicit ttag: TypeTag[T])                  = ttag
-  def concreteTag[T](implicit cttag: ConcreteTypeTag[T])     = cttag
-  def concreteTypeTag[T](implicit cttag: ConcreteTypeTag[T]) = cttag
+  def arrayTag[T](implicit atag: ArrayTag[T])                      = atag
+  def erasureTag[T](implicit etag: ErasureTag[T])                  = etag
+  def classTag[T](implicit ctag: ClassTag[T])                      = ctag
+  def tag[T](implicit ttag: TypeTag[T])                            = ttag
+  def typeTag[T](implicit ttag: TypeTag[T])                        = ttag
+  def concreteTag[T](implicit cttag: ConcreteTypeTag[T])           = cttag
+  def concreteTypeTag[T](implicit cttag: ConcreteTypeTag[T])       = cttag
 
   // Minor variations on identity functions
   def identity[A](x: A): A         = x    // @see `conforms` for the implicit version

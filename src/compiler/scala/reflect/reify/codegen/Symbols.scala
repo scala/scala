@@ -76,7 +76,7 @@ trait Symbols {
       case None =>
         if (reifyDebug) println("Free type: %s (%s)".format(sym, sym.accurateKindString))
         var name = newTermName(nme.MIRROR_FREE_PREFIX + sym.name)
-        val phantomTypeTag = Apply(TypeApply(Select(Ident(nme.MIRROR_SHORT), nme.TypeTag), List(value)), List(Literal(Constant(null))))
+        val phantomTypeTag = Apply(TypeApply(Select(Ident(nme.MIRROR_SHORT), nme.TypeTag), List(value)), List(Literal(Constant(null)), Literal(Constant(null))))
         val flavor = if (sym.isExistential) nme.newFreeExistential else nme.newFreeType
         locallyReify(sym, name, mirrorCall(flavor, reify(sym.name.toString), reify(sym.info), phantomTypeTag, reify(sym.flags), reify(origin(sym))))
     }

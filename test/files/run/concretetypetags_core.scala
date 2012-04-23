@@ -29,4 +29,6 @@ object Test extends App {
   println(implicitly[ConcreteTypeTag[Null]])
   println(implicitly[ConcreteTypeTag[Nothing]] eq ConcreteTypeTag.Nothing)
   println(implicitly[ConcreteTypeTag[Nothing]])
+  println(implicitly[ConcreteTypeTag[String]] eq ConcreteTypeTag.String)
+  println(implicitly[ConcreteTypeTag[String]])
 }

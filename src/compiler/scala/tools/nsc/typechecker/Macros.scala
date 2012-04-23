@@ -155,7 +155,7 @@ trait Macros { self: Analyzer =>
       case TypeRef(SingleType(NoPrefix, contextParam), sym, List(tparam)) =>
         var wannabe = sym
         while (wannabe.isAliasType) wannabe = wannabe.info.typeSymbol
-        if (wannabe != definitions.TypeTagClass)
+        if (wannabe != definitions.TypeTagClass && wannabe != definitions.ConcreteTypeTagClass)
           List(param)
         else
           transform(param, tparam.typeSymbol) map (_ :: Nil) getOrElse Nil
@@ -353,6 +353,16 @@ trait Macros { self: Analyzer =>
         if (actparamss.length != reqparamss.length)
           compatibilityError("number of parameter sections differ")
 
+        def checkSubType(slot: String, reqtpe: Type, acttpe: Type): Unit = {
+          val ok = if (macroDebug) {
+            if (reqtpe eq acttpe) println(reqtpe + " <: " + acttpe + "?" + EOL + "true")
+            withTypesExplained(reqtpe <:< acttpe)
+          } else reqtpe <:< acttpe
+          if (!ok) {
+            compatibilityError("type mismatch for %s: %s does not conform to %s".format(slot, reqtpe.toString.abbreviateCoreAliases, acttpe.toString.abbreviateCoreAliases))
+          }
+        }
+
         if (!hasErrors) {
           try {
             for ((rparams, aparams) <- reqparamss zip actparamss) {
@@ -378,27 +388,19 @@ trait Macros { self: Analyzer =>
                     compatibilityError("types incompatible for parameter "+aparam.name+": corresponding is not a vararg parameter")
                   if (!hasErrors) {
                     var atpe = aparam.tpe.substSym(flatactparams, flatreqparams).instantiateTypeParams(tparams, tvars)
-
                     // strip the { type PrefixType = ... } refinement off the Context or otherwise we get compatibility errors
                     atpe = atpe match {
                       case RefinedType(List(tpe), Scope(sym)) if tpe == MacroContextClass.tpe && sym.allOverriddenSymbols.contains(MacroContextPrefixType) => tpe
                       case _ => atpe
                     }
-
-                    val ok = if (macroDebug) withTypesExplained(rparam.tpe <:< atpe) else rparam.tpe <:< atpe
-                    if (!ok) {
-                      compatibilityError("type mismatch for parameter "+rparam.name+": "+rparam.tpe.toString.abbreviateCoreAliases+" does not conform to "+atpe)
-                    }
+                    checkSubType("parameter " + rparam.name, rparam.tpe, atpe)
                   }
                 }
               }
             }
             if (!hasErrors) {
               val atpe = actres.substSym(flatactparams, flatreqparams).instantiateTypeParams(tparams, tvars)
-              val ok = if (macroDebug) withTypesExplained(atpe <:< reqres) else atpe <:< reqres
-              if (!ok) {
-                compatibilityError("type mismatch for return type : "+reqres.toString.abbreviateCoreAliases+" does not conform to "+(if (ddef.tpt.tpe != null) atpe.toString else atpe.toString.abbreviateCoreAliases))
-              }
+              checkSubType("return type", atpe, reqres)
             }
             if (!hasErrors) {
               val targs = solvedTypes(tvars, tparams, tparams map varianceInType(actres), false,
@@ -873,9 +875,8 @@ trait Macros { self: Analyzer =>
     // then T and U need to be inferred from the lexical scope of the call using ``asSeenFrom''
     // whereas V won't be resolved by asSeenFrom and need to be loaded directly from ``expandee'' which needs to contain a TypeApply node
     // also, macro implementation reference may contain a regular type as a type argument, then we pass it verbatim
-    paramss = transformTypeTagEvidenceParams(paramss, (param, tparam) => Some(tparam))
-    if (paramss.lastOption map (params => !params.isEmpty && params.forall(_.isType)) getOrElse false) argss = argss :+ Nil
-    val evidences = paramss.last takeWhile (_.isType) map (tparam => {
+    val resolved = collection.mutable.Map[Symbol, Type]()
+    paramss = transformTypeTagEvidenceParams(paramss, (param, tparam) => {
       val TypeApply(_, implRefTargs) = ann.args(0)
       var implRefTarg = implRefTargs(tparam.paramPos).tpe.typeSymbol
       val tpe = if (implRefTarg.isTypeParameterOrSkolem) {
@@ -892,12 +893,27 @@ trait Macros { self: Analyzer =>
       } else
         implRefTarg.tpe
       if (macroDebug) println("resolved tparam %s as %s".format(tparam, tpe))
-      tpe
-    }) map (tpe => {
-      val ttag = TypeTag(tpe)
+      resolved(tparam) = tpe
+      param.tpe.typeSymbol match {
+        case sym if sym == definitions.TypeTagClass =>
+          // do nothing
+        case sym if sym == definitions.ConcreteTypeTagClass =>
+          if (!tpe.isConcrete) context.abort(context.enclosingPosition, "cannot create ConcreteTypeTag from a type %s having unresolved type parameters".format(tpe))
+          // otherwise do nothing
+        case _ =>
+          throw new Error("unsupported tpe: %s".format(tpe))
+      }
+      Some(tparam)
+    })
+    val tags = paramss.last takeWhile (_.isType) map (resolved(_)) map (tpe => {
+      // generally speaking, it's impossible to calculate erasure from a tpe here
+      // the tpe might be compiled by this run, so its jClass might not exist yet
+      // hence I just pass `null` instead and leave this puzzle to macro programmers
+      val ttag = TypeTag(tpe, null)
       if (ttag.isConcrete) ttag.toConcrete else ttag
     })
-    argss = argss.dropRight(1) :+ (evidences ++ argss.last)
+    if (paramss.lastOption map (params => !params.isEmpty && params.forall(_.isType)) getOrElse false) argss = argss :+ Nil
+    argss = argss.dropRight(1) :+ (tags ++ argss.last) // todo. add support for context bounds in argss
 
     assert(argss.length == paramss.length, "argss: %s, paramss: %s".format(argss, paramss))
     val rawArgss = for ((as, ps) <- argss zip paramss) yield {

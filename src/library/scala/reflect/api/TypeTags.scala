@@ -6,7 +6,6 @@
 package scala.reflect
 package api
 
-import scala.reflect.{ mirror => rm }
 import java.lang.{ Class => jClass }
 import language.implicitConversions
 
@@ -15,22 +14,41 @@ import language.implicitConversions
  * They are supposed to replace the pre-2.10 concept of a [[scala.reflect.Manifest]].
  * TypeTags are much better integrated with reflection than manifests are, and are consequently much simpler.
  *
- * Type tags are organized in a hierarchy of two classes:
+ * === Overview ===
+ *
+ * Type tags are organized in a hierarchy of five classes:
+ * [[scala.reflect.ArrayTag]], [[scala.reflect.ErasureTag]], [[scala.reflect.ClassTag]],
  * [[scala.reflect.api.Universe#TypeTag]] and [[scala.reflect.api.Universe#ConcreteTypeTag]].
+ *
+ * An [[scala.reflect.ArrayTag]] value carries knowledge about how to build an array of elements of type T.
+ * Typically such operation is performed by storing an erasure and instantiating arrays via Java reflection,
+ * but [[scala.reflect.ArrayTag]] only defines an interface, not an implementation, hence it only contains the factory methods
+ * `newArray` and `wrap` that can be used to build, correspondingly, single-dimensional and multi-dimensional arrays.
+ *
+ * An [[scala.reflect.ErasureTag]] value wraps a Java class, which can be accessed via the `erasure` method.
+ * This notion, previously embodied in a [[scala.reflect.ClassManifest]] together with the notion of array creation,
+ * deserves a concept of itself. Quite often (e.g. for serialization or classloader introspection) it's useful to
+ * know an erasure, and only it, so we've implemented this notion in [[scala.reflect.ErasureTag]].
+ *
+ * A [[scala.reflect.ClassTag]] is a standard implementation of both [[scala.reflect.ArrayTag]] and [[scala.reflect.ErasureTag]].
+ * It guarantees that the source type T did not to contain any references to type parameters or abstract types.
+ * [[scala.reflect.ClassTag]] corresponds to a previous notion of [[scala.reflect.ClassManifest]].
+ *
  * A [[scala.reflect.api.Universe#TypeTag]] value wraps a full Scala type in its tpe field.
- * A [[scala.reflect.api.Universe#ConcreteTypeTag]] value is a type tag that is guaranteed not to contain any references to type parameters or abstract types.
+ * A [[scala.reflect.api.Universe#ConcreteTypeTag]] value is a [[scala.reflect.api.Universe#TypeTag]]
+ * that is guaranteed not to contain any references to type parameters or abstract types.
+ * Both flavors of TypeTags also carry an erasure, so [[scala.reflect.api.Universe#TypeTag]] is also an [[scala.reflect.ErasureTag]],
+ * and [[scala.reflect.api.Universe#ConcreteTypeTag]] is additionally an [[scala.reflect.ArrayTag]] and a [[scala.reflect.ClassTag]]
  *
- * It is also possible to capture Java classes by using a different kind of tag.
- * A [[scala.reflect.ClassTag]] value wraps a Java class, which can be accessed via the erasure method.
+ * It is recommended to use the tag supertypes of to precisely express your intent, i.e.:
+ * use ArrayTag when you want to construct arrays,
+ * use ErasureTag when you need an erasure and don't mind it being generated for untagged abstract types,
+ * use ClassTag only when you need an erasure of a type that doesn't refer to untagged abstract types.
  *
- * TypeTags correspond loosely to Manifests. More precisely:
- * The previous notion of a [[scala.reflect.ClassManifest]] corresponds to a scala.reflect.ClassTag,
- * The previous notion of a [[scala.reflect.Manifest]] corresponds to scala.reflect.mirror.ConcreteTypeTag,
- * Whereas scala.reflect.mirror.TypeTag is approximated by the previous notion of [[scala.reflect.OptManifest]].
+ * === Splicing ===
  *
- * Implicit in the contract for all Tag classes is that the reified type tpe represents the type parameter T.
- * Tags are typically created by the compiler, which makes sure that this contract is kept.
- *
+ * Tags can be spliced, i.e. if compiler generates a tag for a type that contains references to tagged
+ * type parameters or abstract type members, it will retrieve the corresponding tag and embed it into the result.
  * An example that illustrates the TypeTag embedding, consider the following function:
  *
  *   import reflect.mirror._
@@ -44,6 +62,54 @@ import language.implicitConversions
  *   TypeTag(<[ String => U ]>).
  *
  * Note that T has been replaced by String, because it comes with a TypeTag in f, whereas U was left as a type parameter.
+ *
+ * === ErasureTag vs ClassTag and TypeTag vs ConcreteTypeTag ===
+ *
+ * Be careful with ErasureTag and TypeTag, because they will reify types even if these types are abstract.
+ * This makes it easy to forget to tag one of the methods in the call chain and discover it much later in the runtime
+ * by getting cryptic errors far away from their source. For example, consider the following snippet:
+ *
+ *   def bind[T: TypeTag](name: String, value: T): IR.Result = bind((name, value))
+ *   def bind(p: NamedParam): IR.Result                      = bind(p.name, p.tpe, p.value)
+ *   object NamedParam {
+ *     implicit def namedValue[T: TypeTag](name: String, x: T): NamedParam = apply(name, x)
+ *     def apply[T: TypeTag](name: String, x: T): NamedParam = new Typed[T](name, x)
+ *   }
+ *
+ * This fragment of Scala REPL implementation defines a `bind` function that carries a named value along with its type
+ * into the heart of the REPL. Using a [[scala.reflect.api.Universe#TypeTag]] here is reasonable, because it is desirable
+ * to work with all types, even if they are type parameters or abstract type members.
+ *
+ * However if any of the three `TypeTag` context bounds is omitted, the resulting code will be incorrect,
+ * because the missing `TypeTag` will be transparently generated by the compiler, carrying meaningless information.
+ * Most likely, this problem will manifest itself elsewhere, making debugging complicated.
+ * If `TypeTag` context bounds were replaced with `ConcreteTypeTag`, then such errors would be reported statically.
+ * But in that case we wouldn't be able to use `bind` in arbitrary contexts.
+ *
+ * === Backward compatibility ===
+ *
+ * TypeTags correspond loosely to Manifests. More precisely:
+ * The previous notion of a [[scala.reflect.ClassManifest]] corresponds to a scala.reflect.ClassTag,
+ * The previous notion of a [[scala.reflect.Manifest]] corresponds to scala.reflect.mirror.ConcreteTypeTag,
+ * Whereas scala.reflect.mirror.TypeTag is approximated by the previous notion of [[scala.reflect.OptManifest]].
+ *
+ * In Scala 2.10, manifests are deprecated, so it's adviseable to migrate them to tags,
+ * because manifests might be removed in the next major release.
+ *
+ * In most cases it will be enough to replace ClassManifests with ClassTags and Manifests with ConcreteTypeTags,
+ * however there are a few caveats:
+ *
+ * 1) The notion of OptManifest is no longer supported. Tags can reify arbitrary types, so they are always available.
+ *    // [Eugene] it might be useful, though, to guard against abstractness of the incoming type.
+ *
+ * 2) There's no equivalent for AnyValManifest. Consider comparing your tag with one of the core tags
+ *    (defined in the corresponding companion objects) to find out whether it represents a primitive value class.
+ *
+ * 3) There's no replacement for factory methods defined in `ClassManifest` and `Manifest` companion objects.
+ *    Consider assembling corresponding types using reflection API provided by Java (for classes) and Scala (for types).
+ *
+ * 4) Certain manifest functions (such as `<:<`, `>:>` and `typeArguments`) weren't included in the tag API.
+ *    Consider using reflection API provided by Java (for classes) and Scala (for types) instead.
  */
 trait TypeTags { self: Universe =>
 
@@ -56,25 +122,20 @@ trait TypeTags { self: Universe =>
    * @see [[scala.reflect.api.TypeTags]]
    */
   @annotation.implicitNotFound(msg = "No TypeTag available for ${T}")
-  abstract case class TypeTag[T](tpe: Type) {
-    // it's unsafe to use assert here, because we might run into deadlocks with Predef
-    // also see comments in ClassTags.scala
-    // assert(tpe != null)
+  trait TypeTag[T] extends ErasureTag[T] with Equals with Serializable {
 
-    def sym = tpe.typeSymbol
-    def isConcrete = tpe.isConcrete
-    def notConcrete = !isConcrete
-    def toConcrete: ConcreteTypeTag[T] = ConcreteTypeTag[T](tpe)
+    def tpe: Type
+    def sym: Symbol = tpe.typeSymbol
 
-    override def toString = {
-      if (!self.isInstanceOf[DummyMirror]) {
-        var prefix = if (isConcrete) "ConcreteTypeTag" else "TypeTag"
-        if (prefix != this.productPrefix) prefix = "*" + prefix
-        prefix + "[" + tpe + "]"
-      } else {
-        this.productPrefix + "[?]"
-      }
-    }
+    def isConcrete: Boolean = tpe.isConcrete
+    def notConcrete: Boolean = !isConcrete
+    def toConcrete: ConcreteTypeTag[T] = ConcreteTypeTag[T](tpe, erasure)
+
+    /** case class accessories */
+    override def canEqual(x: Any) = x.isInstanceOf[TypeTag[_]]
+    override def equals(x: Any) = x.isInstanceOf[TypeTag[_]] && this.tpe == x.asInstanceOf[TypeTag[_]].tpe
+    override def hashCode = scala.runtime.ScalaRunTime.hash(tpe)
+    override def toString = if (!self.isInstanceOf[DummyMirror]) (if (isConcrete) "*ConcreteTypeTag" else "TypeTag") + "[" + tpe + "]" else "TypeTag[?]"
   }
 
   object TypeTag {
@@ -95,8 +156,10 @@ trait TypeTags { self: Universe =>
     val Null    : TypeTag[scala.Null]       = ConcreteTypeTag.Null
     val String  : TypeTag[java.lang.String] = ConcreteTypeTag.String
 
-    def apply[T](tpe: Type): TypeTag[T] =
-      tpe match {
+    // todo. uncomment after I redo the starr
+    // def apply[T](tpe1: Type, erasure1: jClass[_]): TypeTag[T] =
+    def apply[T](tpe1: Type, erasure1: jClass[_]): TypeTag[T] =
+      tpe1 match {
         case ByteTpe    => TypeTag.Byte.asInstanceOf[TypeTag[T]]
         case ShortTpe   => TypeTag.Short.asInstanceOf[TypeTag[T]]
         case CharTpe    => TypeTag.Char.asInstanceOf[TypeTag[T]]
@@ -113,8 +176,10 @@ trait TypeTags { self: Universe =>
         case NothingTpe => TypeTag.Nothing.asInstanceOf[TypeTag[T]]
         case NullTpe    => TypeTag.Null.asInstanceOf[TypeTag[T]]
         case StringTpe  => TypeTag.String.asInstanceOf[TypeTag[T]]
-        case _          => new TypeTag[T](tpe) {}
+        case _          => new TypeTag[T]{ def tpe = tpe1; def erasure = erasure1 }
       }
+
+    def unapply[T](ttag: TypeTag[T]): Option[Type] = Some(ttag.tpe)
   }
 
   /**
@@ -124,36 +189,40 @@ trait TypeTags { self: Universe =>
    * @see [[scala.reflect.api.TypeTags]]
    */
   @annotation.implicitNotFound(msg = "No ConcreteTypeTag available for ${T}")
-  abstract class ConcreteTypeTag[T](tpe: Type, val erasure: jClass[_]) extends TypeTag[T](tpe) {
+  trait ConcreteTypeTag[T] extends TypeTag[T] with ClassTag[T] with Equals with Serializable {
     if (!self.isInstanceOf[DummyMirror]) {
-//      it's unsafe to use assert here, because we might run into deadlocks with Predef
-//      also see comments in ClassTags.scala
-//      assert(isConcrete, tpe)
       if (notConcrete) throw new Error("%s (%s) is not concrete and cannot be used to construct a concrete type tag".format(tpe, tpe.kind))
     }
-    override def productPrefix = "ConcreteTypeTag"
+
+    /** case class accessories */
+    override def canEqual(x: Any) = x.isInstanceOf[TypeTag[_]] // this is done on purpose. TypeTag(tpe) and ConcreteTypeTag(tpe) should be equal if tpe's are equal
+    override def equals(x: Any) = x.isInstanceOf[TypeTag[_]] && this.tpe == x.asInstanceOf[TypeTag[_]].tpe
+    override def hashCode = scala.runtime.ScalaRunTime.hash(tpe)
+    override def toString = if (!self.isInstanceOf[DummyMirror]) "ConcreteTypeTag[" + tpe + "]" else "ConcreteTypeTag[?]"
   }
 
   object ConcreteTypeTag {
-    val Byte    : ConcreteTypeTag[scala.Byte]       = new ConcreteTypeTag[scala.Byte](ByteTpe, ClassTag.Byte.erasure) { private def readResolve() = ConcreteTypeTag.Byte }
-    val Short   : ConcreteTypeTag[scala.Short]      = new ConcreteTypeTag[scala.Short](ShortTpe, ClassTag.Short.erasure) { private def readResolve() = ConcreteTypeTag.Short }
-    val Char    : ConcreteTypeTag[scala.Char]       = new ConcreteTypeTag[scala.Char](CharTpe, ClassTag.Char.erasure) { private def readResolve() = ConcreteTypeTag.Char }
-    val Int     : ConcreteTypeTag[scala.Int]        = new ConcreteTypeTag[scala.Int](IntTpe, ClassTag.Int.erasure) { private def readResolve() = ConcreteTypeTag.Int }
-    val Long    : ConcreteTypeTag[scala.Long]       = new ConcreteTypeTag[scala.Long](LongTpe, ClassTag.Long.erasure) { private def readResolve() = ConcreteTypeTag.Long }
-    val Float   : ConcreteTypeTag[scala.Float]      = new ConcreteTypeTag[scala.Float](FloatTpe, ClassTag.Float.erasure) { private def readResolve() = ConcreteTypeTag.Float }
-    val Double  : ConcreteTypeTag[scala.Double]     = new ConcreteTypeTag[scala.Double](DoubleTpe, ClassTag.Double.erasure) { private def readResolve() = ConcreteTypeTag.Double }
-    val Boolean : ConcreteTypeTag[scala.Boolean]    = new ConcreteTypeTag[scala.Boolean](BooleanTpe, ClassTag.Boolean.erasure) { private def readResolve() = ConcreteTypeTag.Boolean }
-    val Unit    : ConcreteTypeTag[scala.Unit]       = new ConcreteTypeTag[scala.Unit](UnitTpe, ClassTag.Unit.erasure) { private def readResolve() = ConcreteTypeTag.Unit }
-    val Any     : ConcreteTypeTag[scala.Any]        = new ConcreteTypeTag[scala.Any](AnyTpe, ClassTag.Any.erasure) { private def readResolve() = ConcreteTypeTag.Any }
-    val Object  : ConcreteTypeTag[java.lang.Object] = new ConcreteTypeTag[java.lang.Object](ObjectTpe, ClassTag.Object.erasure) { private def readResolve() = ConcreteTypeTag.Object }
-    val AnyVal  : ConcreteTypeTag[scala.AnyVal]     = new ConcreteTypeTag[scala.AnyVal](AnyValTpe, ClassTag.AnyVal.erasure) { private def readResolve() = ConcreteTypeTag.AnyVal }
-    val AnyRef  : ConcreteTypeTag[scala.AnyRef]     = new ConcreteTypeTag[scala.AnyRef](AnyRefTpe, ClassTag.AnyRef.erasure) { private def readResolve() = ConcreteTypeTag.AnyRef }
-    val Nothing : ConcreteTypeTag[scala.Nothing]    = new ConcreteTypeTag[scala.Nothing](NothingTpe, ClassTag.Nothing.erasure) { private def readResolve() = ConcreteTypeTag.Nothing }
-    val Null    : ConcreteTypeTag[scala.Null]       = new ConcreteTypeTag[scala.Null](NullTpe, ClassTag.Null.erasure) { private def readResolve() = ConcreteTypeTag.Null }
-    val String  : ConcreteTypeTag[java.lang.String] = new ConcreteTypeTag[java.lang.String](StringTpe, ClassTag.String.erasure) { private def readResolve() = ConcreteTypeTag.String }
+    val Byte    : ConcreteTypeTag[scala.Byte]       = new ConcreteTypeTag[scala.Byte]{ def tpe = ByteTpe; def erasure = ClassTag.Byte.erasure; private def readResolve() = ConcreteTypeTag.Byte }
+    val Short   : ConcreteTypeTag[scala.Short]      = new ConcreteTypeTag[scala.Short]{ def tpe = ShortTpe; def erasure = ClassTag.Short.erasure; private def readResolve() = ConcreteTypeTag.Short }
+    val Char    : ConcreteTypeTag[scala.Char]       = new ConcreteTypeTag[scala.Char]{ def tpe = CharTpe; def erasure = ClassTag.Char.erasure; private def readResolve() = ConcreteTypeTag.Char }
+    val Int     : ConcreteTypeTag[scala.Int]        = new ConcreteTypeTag[scala.Int]{ def tpe = IntTpe; def erasure = ClassTag.Int.erasure; private def readResolve() = ConcreteTypeTag.Int }
+    val Long    : ConcreteTypeTag[scala.Long]       = new ConcreteTypeTag[scala.Long]{ def tpe = LongTpe; def erasure = ClassTag.Long.erasure; private def readResolve() = ConcreteTypeTag.Long }
+    val Float   : ConcreteTypeTag[scala.Float]      = new ConcreteTypeTag[scala.Float]{ def tpe = FloatTpe; def erasure = ClassTag.Float.erasure; private def readResolve() = ConcreteTypeTag.Float }
+    val Double  : ConcreteTypeTag[scala.Double]     = new ConcreteTypeTag[scala.Double]{ def tpe = DoubleTpe; def erasure = ClassTag.Double.erasure; private def readResolve() = ConcreteTypeTag.Double }
+    val Boolean : ConcreteTypeTag[scala.Boolean]    = new ConcreteTypeTag[scala.Boolean]{ def tpe = BooleanTpe; def erasure = ClassTag.Boolean.erasure; private def readResolve() = ConcreteTypeTag.Boolean }
+    val Unit    : ConcreteTypeTag[scala.Unit]       = new ConcreteTypeTag[scala.Unit]{ def tpe = UnitTpe; def erasure = ClassTag.Unit.erasure; private def readResolve() = ConcreteTypeTag.Unit }
+    val Any     : ConcreteTypeTag[scala.Any]        = new ConcreteTypeTag[scala.Any]{ def tpe = AnyTpe; def erasure = ClassTag.Any.erasure; private def readResolve() = ConcreteTypeTag.Any }
+    val Object  : ConcreteTypeTag[java.lang.Object] = new ConcreteTypeTag[java.lang.Object]{ def tpe = ObjectTpe; def erasure = ClassTag.Object.erasure; private def readResolve() = ConcreteTypeTag.Object }
+    val AnyVal  : ConcreteTypeTag[scala.AnyVal]     = new ConcreteTypeTag[scala.AnyVal]{ def tpe = AnyValTpe; def erasure = ClassTag.AnyVal.erasure; private def readResolve() = ConcreteTypeTag.AnyVal }
+    val AnyRef  : ConcreteTypeTag[scala.AnyRef]     = new ConcreteTypeTag[scala.AnyRef]{ def tpe = AnyRefTpe; def erasure = ClassTag.AnyRef.erasure; private def readResolve() = ConcreteTypeTag.AnyRef }
+    val Nothing : ConcreteTypeTag[scala.Nothing]    = new ConcreteTypeTag[scala.Nothing]{ def tpe = NothingTpe; def erasure = ClassTag.Nothing.erasure; private def readResolve() = ConcreteTypeTag.Nothing }
+    val Null    : ConcreteTypeTag[scala.Null]       = new ConcreteTypeTag[scala.Null]{ def tpe = NullTpe; def erasure = ClassTag.Null.erasure; private def readResolve() = ConcreteTypeTag.Null }
+    val String  : ConcreteTypeTag[java.lang.String] = new ConcreteTypeTag[java.lang.String]{ def tpe = StringTpe; def erasure = ClassTag.String.erasure; private def readResolve() = ConcreteTypeTag.String }
 
-    def apply[T](tpe: Type, erasure: jClass[_] = null): ConcreteTypeTag[T] =
-      tpe match {
+    // todo. uncomment after I redo the starr
+    // def apply[T](tpe1: Type, erasure1: jClass[_]): ConcreteTypeTag[T] =
+    def apply[T](tpe1: Type, erasure1: jClass[_] = null): ConcreteTypeTag[T] =
+      tpe1 match {
         case ByteTpe    => ConcreteTypeTag.Byte.asInstanceOf[ConcreteTypeTag[T]]
         case ShortTpe   => ConcreteTypeTag.Short.asInstanceOf[ConcreteTypeTag[T]]
         case CharTpe    => ConcreteTypeTag.Char.asInstanceOf[ConcreteTypeTag[T]]
@@ -170,69 +239,10 @@ trait TypeTags { self: Universe =>
         case NothingTpe => ConcreteTypeTag.Nothing.asInstanceOf[ConcreteTypeTag[T]]
         case NullTpe    => ConcreteTypeTag.Null.asInstanceOf[ConcreteTypeTag[T]]
         case StringTpe  => ConcreteTypeTag.String.asInstanceOf[ConcreteTypeTag[T]]
-        case _          => new ConcreteTypeTag[T](tpe, erasure) {}
+        case _          => new ConcreteTypeTag[T]{ def tpe = tpe1; def erasure = erasure1 }
       }
 
     def unapply[T](ttag: TypeTag[T]): Option[Type] = if (ttag.isConcrete) Some(ttag.tpe) else None
-
-    implicit def toClassTag[T](ttag: rm.ConcreteTypeTag[T]): ClassTag[T] = ClassTag[T](ttag)
-
-    implicit def toDeprecatedManifestApis[T](ttag: rm.ConcreteTypeTag[T]): DeprecatedManifestApis[T] = new DeprecatedManifestApis[T](ttag)
-
-    // this class should not be used directly in client code
-    class DeprecatedManifestApis[T](ttag: rm.ConcreteTypeTag[T]) extends ClassTag.DeprecatedClassManifestApis[T](toClassTag(ttag)) {
-      @deprecated("Use `tpe` to analyze the underlying type", "2.10.0")
-      def <:<(that: Manifest[_]): Boolean = ttag.tpe <:< that.tpe
-
-      @deprecated("Use `tpe` to analyze the underlying type", "2.10.0")
-      def >:>(that: Manifest[_]): Boolean = that <:< ttag
-
-      @deprecated("Use `tpe` to analyze the type arguments", "2.10.0")
-      override def typeArguments: List[Manifest[_]] = ttag.tpe.typeArguments map (targ => rm.ConcreteTypeTag(targ))
-    }
-
-    /** Manifest for the singleton type `value.type'. */
-    @deprecated("Manifests aka type tags now support arbitrary types. Build a manifest directly from the type instead", "2.10.0")
-    def singleType[T <: AnyRef](value: AnyRef): Manifest[T] = Manifest[T](???, value.getClass)
-
-    /** Manifest for the class type `clazz[args]', where `clazz' is
-      * a top-level or static class.
-      * @note This no-prefix, no-arguments case is separate because we
-      *       it's called from ScalaRunTime.boxArray itself. If we
-      *       pass varargs as arrays into this, we get an infinitely recursive call
-      *       to boxArray. (Besides, having a separate case is more efficient)
-      */
-    @deprecated("Manifests aka type tags now support arbitrary types. Build a manifest directly from the type instead", "2.10.0")
-    def classType[T](clazz: Predef.Class[_]): Manifest[T] = Manifest[T](???, clazz)
-
-    /** Manifest for the class type `clazz', where `clazz' is
-      * a top-level or static class and args are its type arguments. */
-    @deprecated("Manifests aka type tags now support arbitrary types. Build a manifest directly from the type instead", "2.10.0")
-    def classType[T](clazz: Predef.Class[T], arg1: Manifest[_], args: Manifest[_]*): Manifest[T] = Manifest[T](???, clazz)
-
-    /** Manifest for the class type `clazz[args]', where `clazz' is
-      * a class with non-package prefix type `prefix` and type arguments `args`.
-      */
-    @deprecated("Manifests aka type tags now support arbitrary types. Build a manifest directly from the type instead", "2.10.0")
-    def classType[T](prefix: Manifest[_], clazz: Predef.Class[_], args: Manifest[_]*): Manifest[T] = Manifest[T](???, clazz)
-
-    @deprecated("Manifests aka type tags now support arbitrary types. Build a manifest directly from the type instead", "2.10.0")
-    def arrayType[T](arg: Manifest[_]): Manifest[Array[T]] = Manifest[Array[T]](???, arg.asInstanceOf[Manifest[T]].arrayManifest.erasure)
-
-    /** Manifest for the abstract type `prefix # name'. `upperBound' is not
-      * strictly necessary as it could be obtained by reflection. It was
-      * added so that erasure can be calculated without reflection. */
-    @deprecated("Manifests aka type tags now support arbitrary types. Build a manifest directly from the type instead", "2.10.0")
-    def abstractType[T](prefix: Manifest[_], name: String, clazz: Predef.Class[_], args: Manifest[_]*): Manifest[T] = Manifest[T](???, clazz)
-
-    /** Manifest for the unknown type `_ >: L <: U' in an existential.
-      */
-    @deprecated("Manifests aka type tags now support arbitrary types. Build a manifest directly from the type instead", "2.10.0")
-    def wildcardType[T](lowerBound: Manifest[_], upperBound: Manifest[_]): Manifest[T] = Manifest[T](???, upperBound.erasure)
-
-    /** Manifest for the intersection type `parents_0 with ... with parents_n'. */
-    @deprecated("Manifests aka type tags now support arbitrary types. Build a manifest directly from the type instead", "2.10.0")
-    def intersectionType[T](parents: Manifest[_]*): Manifest[T] = Manifest[T](???, parents.head.erasure)
   }
 
   // incantations for summoning

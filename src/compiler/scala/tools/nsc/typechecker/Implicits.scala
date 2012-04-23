@@ -1120,9 +1120,10 @@ trait Implicits {
         implicitInfoss1
     }
 
-    // these should be lazy, otherwise we wouldn't be able to compile scala-library with starr
-    private val TagSymbols = Set[Symbol](ClassTagClass, TypeTagClass, ConcreteTypeTagClass)
-    private val TagMaterializers = Map[Symbol, MethodSymbol](
+    private def TagSymbols =  TagMaterializers.keySet
+    private val TagMaterializers = Map[Symbol, Symbol](
+      ArrayTagClass        -> MacroInternal_materializeArrayTag,
+      ErasureTagClass      -> MacroInternal_materializeErasureTag,
       ClassTagClass        -> MacroInternal_materializeClassTag,
       TypeTagClass         -> MacroInternal_materializeTypeTag,
       ConcreteTypeTagClass -> MacroInternal_materializeConcreteTypeTag
@@ -1143,10 +1144,7 @@ trait Implicits {
       val prefix = (
         // ClassTags only exist for scala.reflect.mirror, so their materializer
         // doesn't care about prefixes
-        if (tagClass eq ClassTagClass) (
-          gen.mkAttributedRef(Reflect_mirror)
-            setType singleType(Reflect_mirror.owner.thisPrefix, Reflect_mirror)
-        )
+        if ((tagClass eq ArrayTagClass) || (tagClass eq ErasureTagClass) || (tagClass eq ClassTagClass)) ReflectMirrorPrefix
         else pre match {
           // [Eugene to Martin] this is the crux of the interaction between
           // implicits and reifiers here we need to turn a (supposedly
@@ -1173,7 +1171,7 @@ trait Implicits {
       else failure(materializer, "macros are disabled")
     }
 
-    /** The manifest corresponding to type `pt`, provided `pt` is an instance of Manifest.
+    /** The tag corresponding to type `pt`, provided `pt` is a flavor of a tag.
      */
     private def implicitTagOrOfExpectedType(pt: Type): SearchResult = pt.dealias match {
       case TypeRef(pre, sym, arg :: Nil) if TagSymbols(sym) =>
@@ -1183,13 +1181,13 @@ trait Implicits {
       case _ =>
         searchImplicit(implicitsOfExpectedType, false)
         // shouldn't we pass `pt` to `implicitsOfExpectedType`, or is the recursive case
-        // for an abstract type really only meant for manifests?
+        // for an abstract type really only meant for tags?
     }
 
     /** The result of the implicit search:
      *  First search implicits visible in current context.
      *  If that fails, search implicits in expected type `pt`.
-     *  // [Eugene] the following two lines should be deleted after we migrate delegate manifest materialization to implicit macros
+     *  // [Eugene] the following two lines should be deleted after we migrate delegate tag materialization to implicit macros
      *  If that fails, and `pt` is an instance of a ClassTag, try to construct a class tag.
      *  If that fails, and `pt` is an instance of a TypeTag, try to construct a type tag.
      *  If all fails return SearchFailure

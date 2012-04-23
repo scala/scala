@@ -6,8 +6,10 @@
 package scala.tools.nsc
 package interpreter
 
+import scala.reflect.{mirror => rm}
+
 class RichClass[T](val clazz: Class[T]) {
-  def toManifest: Manifest[T] = Manifest[T](ClassManifest[T](clazz).tpe)
+  def toManifest: Manifest[T] = Manifest[T](rm.classToType(clazz))
   def toTypeString: String = TypeStrings.fromClazz(clazz)
 
   // Sadly isAnonymousClass does not return true for scala anonymous
