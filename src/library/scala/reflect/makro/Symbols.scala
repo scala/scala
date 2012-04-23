@@ -14,4 +14,11 @@ trait Symbols {
    *  With `isLocatable' it's possible to check whether a tree can be retained as is, or it needs special treatment.
    */
   def isLocatable(sym: Symbol): Boolean
+
+  /** Is this symbol static (i.e. with no outer instance)?
+   *  Q: When exactly is a sym marked as STATIC?
+   *  A: If it's a member of a toplevel object, or of an object contained in a toplevel object, or any number of levels deep.
+   *  http://groups.google.com/group/scala-internals/browse_thread/thread/d385bcd60b08faf6
+   */
+  def isStatic(sym: Symbol): Boolean
 }
