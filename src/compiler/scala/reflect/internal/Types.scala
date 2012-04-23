@@ -264,7 +264,23 @@ trait Types extends api.Types { self: SymbolTable =>
     def nonPrivateDeclaration(name: Name): Symbol = nonPrivateDecl(name)
     def declarations = decls
     def typeArguments = typeArgs
-    def erasure = transformedType(this)
+    def erasure = this match {
+      case ConstantType(value) => widen.erasure // [Eugene to Martin] constant types are unaffected by erasure. weird.
+      case _ =>
+        var result = transformedType(this)
+        result = result.normalize match { // necessary to deal with erasures of HK types, typeConstructor won't work
+          case PolyType(undets, underlying) => existentialAbstraction(undets, underlying) // we don't want undets in the result
+          case _ => result
+        }
+        // [Eugene] erasure screws up all ThisTypes for modules into PackageTypeRefs
+        // we need to unscrew them, or certain typechecks will fail mysteriously
+        // http://groups.google.com/group/scala-internals/browse_thread/thread/6d3277ae21b6d581
+        result = result.map(tpe => tpe match {
+          case tpe: PackageTypeRef => ThisType(tpe.sym)
+          case _ => tpe
+        })
+        result
+    }
     def substituteTypes(from: List[Symbol], to: List[Type]): Type = subst(from, to)
 
     // [Eugene] to be discussed and refactored
@@ -1342,7 +1358,8 @@ trait Types extends api.Types { self: SymbolTable =>
     if (period != currentPeriod) {
       tpe.underlyingPeriod = currentPeriod
       if (!isValid(period)) {
-        tpe.underlyingCache = tpe.pre.memberType(tpe.sym).resultType;
+        // [Eugene to Paul] needs review
+        tpe.underlyingCache = if (tpe.sym == NoSymbol) ThisType(RootClass) else tpe.pre.memberType(tpe.sym).resultType;
         assert(tpe.underlyingCache ne tpe, tpe)
       }
     }

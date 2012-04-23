@@ -41,13 +41,13 @@ private[html] object SyntaxHigh {
   /** Standard library classes/objects, sorted alphabetically */
   val standards = Array (
     "Any", "AnyRef", "AnyVal", "App", "Application", "Array",
-    "Boolean", "Byte", "Char", "Class", "Console", "Double",
-    "Enumeration", "Float", "Function", "Int",
+    "Boolean", "Byte", "Char", "Class", "ClassTag", "ClassManifest", "ConcreteTypeTag",
+    "Console", "Double", "Enumeration", "Float", "Function", "Int",
     "List", "Long", "Manifest", "Map",
-    "None", "Nothing", "Null", "Object", "Option",
+    "NoManifest", "None", "Nothing", "Null", "Object", "Option", "OptManifest",
     "Pair", "Predef",
     "Seq", "Set", "Short", "Some", "String", "Symbol",
-    "Triple", "Unit")
+    "Triple", "TypeTag", "Unit")
 
   def apply(data: String): NodeSeq = {
     val buf = data.getBytes

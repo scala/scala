@@ -562,6 +562,9 @@ trait StdNames {
     val applyOrElse: NameType          = "applyOrElse"
     val args : NameType                = "args"
     val argv : NameType                = "argv"
+    val arrayClass: NameType           = "arrayClass"
+    val arrayElementClass: NameType    = "arrayElementClass"
+    val arrayTagToClassManifest: NameType = "arrayTagToClassManifest"
     val arrayValue: NameType           = "arrayValue"
     val array_apply : NameType         = "array_apply"
     val array_clone : NameType         = "array_clone"
@@ -579,6 +582,7 @@ trait StdNames {
     val checkInitialized: NameType     = "checkInitialized"
     val classOf: NameType              = "classOf"
     val clone_ : NameType              = if (forMSIL) "MemberwiseClone" else "clone" // sn.OClone causes checkinit failure
+    val concreteTypeTagToManifest: NameType = "concreteTypeTagToManifest"
     val conforms: NameType             = "conforms"
     val copy: NameType                 = "copy"
     val definitions: NameType          = "definitions"
@@ -627,10 +631,13 @@ trait StdNames {
     val macroContext : NameType        = "c"
     val main: NameType                 = "main"
     val manifest: NameType             = "manifest"
+    val manifestToConcreteTypeTag: NameType = "manifestToConcreteTypeTag"
     val map: NameType                  = "map"
+    val materializeArrayTag: NameType  = "materializeArrayTag"
     val materializeClassTag: NameType  = "materializeClassTag"
-    val materializeTypeTag: NameType   = "materializeTypeTag"
     val materializeConcreteTypeTag: NameType = "materializeConcreteTypeTag"
+    val materializeErasureTag: NameType= "materializeErasureTag"
+    val materializeTypeTag: NameType   = "materializeTypeTag"
     val mirror : NameType              = "mirror"
     val moduleClass : NameType         = "moduleClass"
     val name: NameType                 = "name"
@@ -813,10 +820,11 @@ trait StdNames {
     val ROOTPKG: TermName        = "_root_"
     val EQEQ_LOCAL_VAR: TermName = "eqEqTemp$"
 
-    def getCause   = sn.GetCause
-    def getClass_  = sn.GetClass
-    def getMethod_ = sn.GetMethod
-    def invoke_    = sn.Invoke
+    def getCause         = sn.GetCause
+    def getClass_        = sn.GetClass
+    def getComponentType = sn.GetComponentType
+    def getMethod_       = sn.GetMethod
+    def invoke_          = sn.Invoke
 
     val ADD      = encode("+")
     val AND      = encode("&")
@@ -1005,6 +1013,7 @@ trait StdNames {
     val ForName             : TermName
     val GetCause            : TermName
     val GetClass            : TermName
+    val GetComponentType    : TermName
     val GetMethod           : TermName
     val Invoke              : TermName
     val JavaLang            : TermName
@@ -1090,12 +1099,13 @@ trait StdNames {
     final val Throwable: TypeName          = "java.lang.Throwable"
     final val ValueType: TypeName          = tpnme.NO_NAME
 
-    final val ForName: TermName   = newTermName("forName")
-    final val GetCause: TermName  = newTermName("getCause")
-    final val GetClass: TermName  = newTermName("getClass")
-    final val GetMethod: TermName = newTermName("getMethod")
-    final val Invoke: TermName    = newTermName("invoke")
-    final val JavaLang: TermName  = newTermName("java.lang")
+    final val ForName: TermName          = newTermName("forName")
+    final val GetCause: TermName         = newTermName("getCause")
+    final val GetClass: TermName         = newTermName("getClass")
+    final val GetComponentType: TermName = newTermName("getComponentType")
+    final val GetMethod: TermName        = newTermName("getMethod")
+    final val Invoke: TermName           = newTermName("invoke")
+    final val JavaLang: TermName         = newTermName("java.lang")
 
     val Boxed = immutable.Map[TypeName, TypeName](
       tpnme.Boolean -> BoxedBoolean,
@@ -1127,12 +1137,13 @@ trait StdNames {
     final val Throwable: TypeName           = "System.Exception"
     final val ValueType: TypeName           = "System.ValueType"
 
-    final val ForName: TermName   = newTermName("GetType")
-    final val GetCause: TermName  = newTermName("InnerException") /* System.Reflection.TargetInvocationException.InnerException */
-    final val GetClass: TermName  = newTermName("GetType")
-    final val GetMethod: TermName = newTermName("GetMethod")
-    final val Invoke: TermName    = newTermName("Invoke")
-    final val JavaLang: TermName  = newTermName("System")
+    final val ForName: TermName          = newTermName("GetType")
+    final val GetCause: TermName         = newTermName("InnerException") /* System.Reflection.TargetInvocationException.InnerException */
+    final val GetClass: TermName         = newTermName("GetType")
+    final val GetComponentType: TermName = newTermName("GetElementType")
+    final val GetMethod: TermName        = newTermName("GetMethod")
+    final val Invoke: TermName           = newTermName("Invoke")
+    final val JavaLang: TermName         = newTermName("System")
 
     val Boxed = immutable.Map[TypeName, TypeName](
       tpnme.Boolean -> "System.Boolean",

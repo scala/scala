@@ -67,8 +67,8 @@ trait ScalaClassLoader extends JClassLoader {
     result
   }
 
-  def constructorsOf[T <: AnyRef : Manifest]: List[Constructor[T]] =
-    manifest[T].erasure.getConstructors.toList map (_.asInstanceOf[Constructor[T]])
+  def constructorsOf[T <: AnyRef : ClassTag]: List[Constructor[T]] =
+    classTag[T].erasure.getConstructors.toList map (_.asInstanceOf[Constructor[T]])
 
   /** The actual bytes for a class file, or an empty array if it can't be found. */
   def classBytes(className: String): Array[Byte] = classAsStream(className) match {
@@ -125,9 +125,9 @@ object ScalaClassLoader {
   def bootLoader    = apply(null)
   def contextChain  = loaderChain(contextLoader)
 
-  def pathToErasure[T: ClassManifest] = pathToClass(classManifest[T].erasure)
-  def pathToClass(clazz: Class[_])    = clazz.getName.replace('.', JFile.separatorChar) + ".class"
-  def locate[T: ClassManifest]        = contextLoader getResource pathToErasure[T]
+  def pathToErasure[T: ClassTag]   = pathToClass(classTag[T].erasure)
+  def pathToClass(clazz: Class[_]) = clazz.getName.replace('.', JFile.separatorChar) + ".class"
+  def locate[T: ClassTag]          = contextLoader getResource pathToErasure[T]
 
   /** Tries to guess the classpath by type matching the context classloader
    *  and its parents, looking for any classloaders which will reveal their

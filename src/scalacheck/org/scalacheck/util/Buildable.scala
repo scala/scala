@@ -30,7 +30,7 @@ object Buildable {
     def builder = (new mutable.ListBuffer[T]).mapResult(_.toStream)
   }
 
-  implicit def buildableArray[T](implicit cm: ClassManifest[T]) =
+  implicit def buildableArray[T](implicit t: ClassTag[T]) =
     new Buildable[T,Array] {
       def builder = mutable.ArrayBuilder.make[T]
     }

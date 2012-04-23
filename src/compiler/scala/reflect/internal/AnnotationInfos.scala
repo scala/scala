@@ -260,8 +260,7 @@ trait AnnotationInfos extends api.AnnotationInfos { self: SymbolTable =>
     }
   }
 
-  lazy val classfileAnnotArgManifest: ClassManifest[ClassfileAnnotArg] =
-    reflect.ClassManifest[ClassfileAnnotArg](classOf[ClassfileAnnotArg])
+  lazy val classfileAnnotArgTag: ArrayTag[ClassfileAnnotArg] = arrayTag[ClassfileAnnotArg]
 
   object UnmappableAnnotation extends CompleteAnnotationInfo(NoType, Nil, Nil)
 }

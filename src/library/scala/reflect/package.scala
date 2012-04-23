@@ -53,20 +53,9 @@ package object reflect {
   @deprecated("Use `@scala.beans.ScalaBeanInfo` instead", "2.10.0")
   type ScalaBeanInfo = scala.beans.ScalaBeanInfo
 
-  @deprecated("Use `@scala.reflect.ClassTag` instead", "2.10.0")
-  type ClassManifest[T] = ClassTag[T]
-  @deprecated("OptManifest is no longer supported, and using it may lead to incorrect results, Use `@scala.reflect.TypeTag` instead", "2.10.0")
-  type OptManifest[T]   = TypeTag[T]
-  @deprecated("Use `@scala.reflect.ConcreteTypeTag` instead", "2.10.0")
-  type Manifest[T]      = ConcreteTypeTag[T]
-
-  @deprecated("Use `@scala.reflect.ClassTag` instead", "2.10.0")
-  val ClassManifest     = ClassTag
-  @deprecated("Use `@scala.reflect.ConcreteTypeTag` instead", "2.10.0")
-  lazy val Manifest     = ConcreteTypeTag
-  @deprecated("NoManifest is no longer supported, and using it may lead to incorrect results, Use `@scala.reflect.TypeTag` instead", "2.10.0")
-  object NoManifest extends OptManifest[Nothing](scala.reflect.mirror.TypeTag.Nothing.tpe)
-
+  // ArrayTag trait is defined separately from the mirror
+  // ErasureTag trait is defined separately from the mirror
+  // ConcreteErasureTag trait is defined separately from the mirror
   // ClassTag class is defined separately from the mirror
   type TypeTag[T]          = scala.reflect.mirror.TypeTag[T]
   type ConcreteTypeTag[T]  = scala.reflect.mirror.ConcreteTypeTag[T]
@@ -74,4 +63,8 @@ package object reflect {
   // ClassTag object is defined separately from the mirror
   lazy val TypeTag         = scala.reflect.mirror.TypeTag
   lazy val ConcreteTypeTag = scala.reflect.mirror.ConcreteTypeTag
+
+  def arrayTagToClassManifest[T](tag: ArrayTag[T]): ClassManifest[T] = TagInterop.arrayTagToClassManifest[T](tag)
+  def concreteTypeTagToManifest[T](tag: ConcreteTypeTag[T]): Manifest[T] = TagInterop.concreteTypeTagToManifest[T](tag)
+  def manifestToConcreteTypeTag[T](tag: Manifest[T]): ConcreteTypeTag[T] = TagInterop.manifestToConcreteTypeTag[T](tag)
 }

@@ -153,11 +153,11 @@ retrieved 131 members
 `method spawn(clazz: Class[_ <: akka.actor.Actor])akka.actor.ActorRef`
 `method spawnLink(clazz: Class[_ <: akka.actor.Actor])akka.actor.ActorRef`
 `method spawnLinkRemote(clazz: Class[_ <: akka.actor.Actor], hostname: String, port: Int, timeout: Long)akka.actor.ActorRef`
-`method spawnLinkRemote[T <: akka.actor.Actor](hostname: String, port: Int, timeout: Long)(implicit evidence$4: Manifest[T])akka.actor.ActorRef`
-`method spawnLink[T <: akka.actor.Actor](implicit evidence$3: Manifest[T])akka.actor.ActorRef`
+`method spawnLinkRemote[T <: akka.actor.Actor](hostname: String, port: Int, timeout: Long)(implicit evidence$4: ClassTag[T])akka.actor.ActorRef`
+`method spawnLink[T <: akka.actor.Actor](implicit evidence$3: ClassTag[T])akka.actor.ActorRef`
 `method spawnRemote(clazz: Class[_ <: akka.actor.Actor], hostname: String, port: Int, timeout: Long)akka.actor.ActorRef`
-`method spawnRemote[T <: akka.actor.Actor](hostname: String, port: Int, timeout: Long)(implicit evidence$2: Manifest[T])akka.actor.ActorRef`
-`method spawn[T <: akka.actor.Actor](implicit evidence$1: Manifest[T])akka.actor.ActorRef`
+`method spawnRemote[T <: akka.actor.Actor](hostname: String, port: Int, timeout: Long)(implicit evidence$2: ClassTag[T])akka.actor.ActorRef`
+`method spawn[T <: akka.actor.Actor](implicit evidence$1: ClassTag[T])akka.actor.ActorRef`
 `method start()akka.actor.ActorRef`
 `method startLink(actorRef: akka.actor.ActorRef)Unit`
 `method stop()Unit`
@@ -286,11 +286,11 @@ retrieved 131 members
 `method spawn(clazz: Class[_ <: akka.actor.Actor])akka.actor.ActorRef`
 `method spawnLink(clazz: Class[_ <: akka.actor.Actor])akka.actor.ActorRef`
 `method spawnLinkRemote(clazz: Class[_ <: akka.actor.Actor], hostname: String, port: Int, timeout: Long)akka.actor.ActorRef`
-`method spawnLinkRemote[T <: akka.actor.Actor](hostname: String, port: Int, timeout: Long)(implicit evidence$4: Manifest[T])akka.actor.ActorRef`
-`method spawnLink[T <: akka.actor.Actor](implicit evidence$3: Manifest[T])akka.actor.ActorRef`
+`method spawnLinkRemote[T <: akka.actor.Actor](hostname: String, port: Int, timeout: Long)(implicit evidence$4: ClassTag[T])akka.actor.ActorRef`
+`method spawnLink[T <: akka.actor.Actor](implicit evidence$3: ClassTag[T])akka.actor.ActorRef`
 `method spawnRemote(clazz: Class[_ <: akka.actor.Actor], hostname: String, port: Int, timeout: Long)akka.actor.ActorRef`
-`method spawnRemote[T <: akka.actor.Actor](hostname: String, port: Int, timeout: Long)(implicit evidence$2: Manifest[T])akka.actor.ActorRef`
-`method spawn[T <: akka.actor.Actor](implicit evidence$1: Manifest[T])akka.actor.ActorRef`
+`method spawnRemote[T <: akka.actor.Actor](hostname: String, port: Int, timeout: Long)(implicit evidence$2: ClassTag[T])akka.actor.ActorRef`
+`method spawn[T <: akka.actor.Actor](implicit evidence$1: ClassTag[T])akka.actor.ActorRef`
 `method start()akka.actor.ActorRef`
 `method startLink(actorRef: akka.actor.ActorRef)Unit`
 `method stop()Unit`
@@ -419,11 +419,11 @@ retrieved 131 members
 `method spawn(clazz: Class[_ <: akka.actor.Actor])akka.actor.ActorRef`
 `method spawnLink(clazz: Class[_ <: akka.actor.Actor])akka.actor.ActorRef`
 `method spawnLinkRemote(clazz: Class[_ <: akka.actor.Actor], hostname: String, port: Int, timeout: Long)akka.actor.ActorRef`
-`method spawnLinkRemote[T <: akka.actor.Actor](hostname: String, port: Int, timeout: Long)(implicit evidence$4: Manifest[T])akka.actor.ActorRef`
-`method spawnLink[T <: akka.actor.Actor](implicit evidence$3: Manifest[T])akka.actor.ActorRef`
+`method spawnLinkRemote[T <: akka.actor.Actor](hostname: String, port: Int, timeout: Long)(implicit evidence$4: ClassTag[T])akka.actor.ActorRef`
+`method spawnLink[T <: akka.actor.Actor](implicit evidence$3: ClassTag[T])akka.actor.ActorRef`
 `method spawnRemote(clazz: Class[_ <: akka.actor.Actor], hostname: String, port: Int, timeout: Long)akka.actor.ActorRef`
-`method spawnRemote[T <: akka.actor.Actor](hostname: String, port: Int, timeout: Long)(implicit evidence$2: Manifest[T])akka.actor.ActorRef`
-`method spawn[T <: akka.actor.Actor](implicit evidence$1: Manifest[T])akka.actor.ActorRef`
+`method spawnRemote[T <: akka.actor.Actor](hostname: String, port: Int, timeout: Long)(implicit evidence$2: ClassTag[T])akka.actor.ActorRef`
+`method spawn[T <: akka.actor.Actor](implicit evidence$1: ClassTag[T])akka.actor.ActorRef`
 `method start()akka.actor.ActorRef`
 `method startLink(actorRef: akka.actor.ActorRef)Unit`
 `method stop()Unit`

@@ -5,7 +5,7 @@
 package akka.actor
 
 import scala.collection.mutable.{ ListBuffer, Map }
-import scala.reflect.Manifest
+import scala.reflect.ArrayTag
 
 import java.util.concurrent.{ ConcurrentSkipListSet, ConcurrentHashMap }
 import java.util.{ Set => JSet }
@@ -74,10 +74,10 @@ final class ActorRegistry private[actor] () extends ListenerManagement {
   }
 
   /**
-   * Finds all actors that are subtypes of the class passed in as the Manifest argument and supporting passed message.
+   * Finds all actors that are subtypes of the class passed in as the ClassTag argument and supporting passed message.
    */
-  def actorsFor[T <: Actor](message: Any)(implicit manifest: Manifest[T]): Array[ActorRef] =
-    filter(a => manifest.erasure.isAssignableFrom(a.actor.getClass) && a.isDefinedAt(message))
+  def actorsFor[T <: Actor](message: Any)(implicit classTag: ClassTag[T]): Array[ActorRef] =
+    filter(a => classTag.erasure.isAssignableFrom(a.actor.getClass) && a.isDefinedAt(message))
 
   /**
    * Finds all actors that satisfy a predicate.
@@ -93,16 +93,16 @@ final class ActorRegistry private[actor] () extends ListenerManagement {
   }
 
   /**
-   * Finds all actors that are subtypes of the class passed in as the Manifest argument.
+   * Finds all actors that are subtypes of the class passed in as the ClassTag argument.
    */
-  def actorsFor[T <: Actor](implicit manifest: Manifest[T]): Array[ActorRef] =
-    actorsFor[T](manifest.erasure.asInstanceOf[Class[T]])
+  def actorsFor[T <: Actor](implicit classTag: ClassTag[T]): Array[ActorRef] =
+    actorsFor[T](classTag.erasure.asInstanceOf[Class[T]])
 
   /**
    * Finds any actor that matches T. Very expensive, traverses ALL alive actors.
    */
-  def actorFor[T <: Actor](implicit manifest: Manifest[T]): Option[ActorRef] =
-    find({ case a: ActorRef if manifest.erasure.isAssignableFrom(a.actor.getClass) => a })
+  def actorFor[T <: Actor](implicit classTag: ClassTag[T]): Option[ActorRef] =
+    find({ case a: ActorRef if classTag.erasure.isAssignableFrom(a.actor.getClass) => a })
 
   /**
    * Finds all actors of type or sub-type specified by the class passed in as the Class argument.
@@ -166,21 +166,21 @@ final class ActorRegistry private[actor] () extends ListenerManagement {
   }
 
   /**
-   * Finds all typed actors that are subtypes of the class passed in as the Manifest argument.
+   * Finds all typed actors that are subtypes of the class passed in as the ClassTag argument.
    */
-  def typedActorsFor[T <: AnyRef](implicit manifest: Manifest[T]): Array[AnyRef] = {
+  def typedActorsFor[T <: AnyRef](implicit classTag: ClassTag[T]): Array[AnyRef] = {
     TypedActorModule.ensureEnabled
-    typedActorsFor[T](manifest.erasure.asInstanceOf[Class[T]])
+    typedActorsFor[T](classTag.erasure.asInstanceOf[Class[T]])
   }
 
   /**
    * Finds any typed actor that matches T.
    */
-  def typedActorFor[T <: AnyRef](implicit manifest: Manifest[T]): Option[AnyRef] = {
+  def typedActorFor[T <: AnyRef](implicit classTag: ClassTag[T]): Option[AnyRef] = {
     TypedActorModule.ensureEnabled
     def predicate(proxy: AnyRef): Boolean = {
       val actorRef = TypedActorModule.typedActorObjectInstance.get.actorFor(proxy)
-      actorRef.isDefined && manifest.erasure.isAssignableFrom(actorRef.get.actor.getClass)
+      actorRef.isDefined && classTag.erasure.isAssignableFrom(actorRef.get.actor.getClass)
     }
     findTypedActor({ case a: Some[AnyRef] if predicate(a.get) => a })
   }
@@ -279,7 +279,7 @@ final class ActorRegistry private[actor] () extends ListenerManagement {
  *
  * @author Viktor Klang
  */
-class Index[K <: AnyRef, V <: AnyRef: Manifest] {
+class Index[K <: AnyRef, V <: AnyRef: ArrayTag] {
   private val Naught = Array[V]() //Nil for Arrays
   private val container = new ConcurrentHashMap[K, JSet[V]]
   private val emptySet = new ConcurrentSkipListSet[V]

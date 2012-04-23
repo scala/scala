@@ -416,7 +416,7 @@ object Pickler {
     iterPickler[T] .wrapped { Vector() ++ _ } { _.iterator } .labelled ("scala.Vector")
 
   /** A pickler for array values */
-  implicit def array[T : ClassManifest : Pickler]: Pickler[Array[T]] =
+  implicit def array[T : ClassTag : Pickler]: Pickler[Array[T]] =
     iterPickler[T] .wrapped { _.toArray} { _.iterator } .labelled ("scala.Array")
 }
 
