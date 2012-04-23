@@ -1053,11 +1053,11 @@ object ILoop {
 
   // provide the enclosing type T
   // in order to set up the interpreter's classpath and parent class loader properly
-  def breakIf[T: Manifest](assertion: => Boolean, args: NamedParam*): Unit =
+  def breakIf[T: ClassTag](assertion: => Boolean, args: NamedParam*): Unit =
     if (assertion) break[T](args.toList)
 
   // start a repl, binding supplied args
-  def break[T: Manifest](args: List[NamedParam]): Unit = savingContextLoader {
+  def break[T: ClassTag](args: List[NamedParam]): Unit = savingContextLoader {
     val msg = if (args.isEmpty) "" else "  Binding " + args.size + " value%s.".format(
       if (args.size == 1) "" else "s"
     )

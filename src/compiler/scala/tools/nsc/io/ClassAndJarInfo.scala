@@ -13,9 +13,9 @@ import collection.JavaConverters._
 /** A convenience class for finding the jar with the bytecode for
  *  a given Class object and similar common tasks.
  */
-class ClassAndJarInfo[T: ClassManifest] {
-  val man          = classManifest[T]
-  def clazz        = man.erasure
+class ClassAndJarInfo[T: ClassTag] {
+  val tag          = classTag[T]
+  def clazz        = tag.erasure
   def internalName = clazz.getName.replace('.', '/')
 
   def resourceURL = new URLClassLoader(Array[URL]()) getResource internalName + ".class"

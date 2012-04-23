@@ -6,9 +6,9 @@
 **                          |/                                          **
 \*                                                                      */
 
-package scala.runtime
 /* INSTRUMENTED VERSION */
 
+package scala.runtime
 
 import scala.collection.{ Seq, IndexedSeq, TraversableView, AbstractIterator }
 import scala.collection.mutable.WrappedArray
@@ -33,10 +33,7 @@ object ScalaRunTime {
     clazz.isArray && (atLevel == 1 || isArrayClass(clazz.getComponentType, atLevel - 1))
 
   def isValueClass(clazz: Class[_]) = clazz.isPrimitive()
-  var arrayApplyCount = 0
-  var arrayUpdateCount = 0
-
-  def isTuple(x: Any) = tupleNames(x.getClass.getName)
+  def isTuple(x: Any) = x != null && tupleNames(x.getClass.getName)
   def isAnyVal(x: Any) = x match {
     case _: Byte | _: Short | _: Char | _: Int | _: Long | _: Float | _: Double | _: Boolean | _: Unit => true
     case _                                                                                             => false
@@ -52,56 +49,68 @@ object ScalaRunTime {
     names.toSet
   }
 
+  /** Return the class object representing an array with element class `clazz`.
+   */
+  def arrayClass(clazz: Class[_]): Class[_] = {
+    // newInstance throws an exception if the erasure is Void.TYPE. see SI-5680
+    if (clazz == java.lang.Void.TYPE) classOf[Array[Unit]]
+    else java.lang.reflect.Array.newInstance(clazz, 0).getClass
+  }
+
+  /** Return the class object representing elements in arrays described by a given schematic.
+   */
+  def arrayElementClass(schematic: Any): Class[_] = schematic match {
+    case cls: Class[_] => cls.getComponentType
+    case tag: ClassTag[_] => tag.erasure
+    case tag: ArrayTag[_] => tag.newArray(0).getClass.getComponentType
+    case _ => throw new UnsupportedOperationException("unsupported schematic %s (%s)".format(schematic, if (schematic == null) "null" else schematic.getClass))
+  }
+
   /** Return the class object representing an unboxed value type,
    *  e.g. classOf[int], not classOf[java.lang.Integer].  The compiler
    *  rewrites expressions like 5.getClass to come here.
    */
-  def anyValClass[T <: AnyVal](value: T): Class[T] = (value match {
-    case x: Byte    => java.lang.Byte.TYPE
-    case x: Short   => java.lang.Short.TYPE
-    case x: Char    => java.lang.Character.TYPE
-    case x: Int     => java.lang.Integer.TYPE
-    case x: Long    => java.lang.Long.TYPE
-    case x: Float   => java.lang.Float.TYPE
-    case x: Double  => java.lang.Double.TYPE
-    case x: Boolean => java.lang.Boolean.TYPE
-    case x: Unit    => java.lang.Void.TYPE
-  }).asInstanceOf[Class[T]]
+  def anyValClass[T <: AnyVal : ClassTag](value: T): Class[T] =
+    classTag[T].erasure.asInstanceOf[Class[T]]
+
+  var arrayApplyCount = 0
 
   /** Retrieve generic array element */
   def array_apply(xs: AnyRef, idx: Int): Any = {
     arrayApplyCount += 1
     xs match {
-    case x: Array[AnyRef]  => x(idx).asInstanceOf[Any]
-    case x: Array[Int]     => x(idx).asInstanceOf[Any]
-    case x: Array[Double]  => x(idx).asInstanceOf[Any]
-    case x: Array[Long]    => x(idx).asInstanceOf[Any]
-    case x: Array[Float]   => x(idx).asInstanceOf[Any]
-    case x: Array[Char]    => x(idx).asInstanceOf[Any]
-    case x: Array[Byte]    => x(idx).asInstanceOf[Any]
-    case x: Array[Short]   => x(idx).asInstanceOf[Any]
-    case x: Array[Boolean] => x(idx).asInstanceOf[Any]
-    case x: Array[Unit]    => x(idx).asInstanceOf[Any]
-    case null => throw new NullPointerException
+      case x: Array[AnyRef]  => x(idx).asInstanceOf[Any]
+      case x: Array[Int]     => x(idx).asInstanceOf[Any]
+      case x: Array[Double]  => x(idx).asInstanceOf[Any]
+      case x: Array[Long]    => x(idx).asInstanceOf[Any]
+      case x: Array[Float]   => x(idx).asInstanceOf[Any]
+      case x: Array[Char]    => x(idx).asInstanceOf[Any]
+      case x: Array[Byte]    => x(idx).asInstanceOf[Any]
+      case x: Array[Short]   => x(idx).asInstanceOf[Any]
+      case x: Array[Boolean] => x(idx).asInstanceOf[Any]
+      case x: Array[Unit]    => x(idx).asInstanceOf[Any]
+      case null => throw new NullPointerException
+    }
   }
-  }
+
+  var arrayUpdateCount = 0
 
   /** update generic array element */
   def array_update(xs: AnyRef, idx: Int, value: Any): Unit = {
     arrayUpdateCount += 1
     xs match {
-    case x: Array[AnyRef]  => x(idx) = value.asInstanceOf[AnyRef]
-    case x: Array[Int]     => x(idx) = value.asInstanceOf[Int]
-    case x: Array[Double]  => x(idx) = value.asInstanceOf[Double]
-    case x: Array[Long]    => x(idx) = value.asInstanceOf[Long]
-    case x: Array[Float]   => x(idx) = value.asInstanceOf[Float]
-    case x: Array[Char]    => x(idx) = value.asInstanceOf[Char]
-    case x: Array[Byte]    => x(idx) = value.asInstanceOf[Byte]
-    case x: Array[Short]   => x(idx) = value.asInstanceOf[Short]
-    case x: Array[Boolean] => x(idx) = value.asInstanceOf[Boolean]
-    case x: Array[Unit]    => x(idx) = value.asInstanceOf[Unit]
-    case null => throw new NullPointerException
-  }
+      case x: Array[AnyRef]  => x(idx) = value.asInstanceOf[AnyRef]
+      case x: Array[Int]     => x(idx) = value.asInstanceOf[Int]
+      case x: Array[Double]  => x(idx) = value.asInstanceOf[Double]
+      case x: Array[Long]    => x(idx) = value.asInstanceOf[Long]
+      case x: Array[Float]   => x(idx) = value.asInstanceOf[Float]
+      case x: Array[Char]    => x(idx) = value.asInstanceOf[Char]
+      case x: Array[Byte]    => x(idx) = value.asInstanceOf[Byte]
+      case x: Array[Short]   => x(idx) = value.asInstanceOf[Short]
+      case x: Array[Boolean] => x(idx) = value.asInstanceOf[Boolean]
+      case x: Array[Unit]    => x(idx) = value.asInstanceOf[Unit]
+      case null => throw new NullPointerException
+    }
   }
 
   /** Get generic array length */
@@ -340,14 +349,14 @@ object ScalaRunTime {
       case null                         => "null"
       case ""                           => "\"\""
       case x: String                    => if (x.head.isWhitespace || x.last.isWhitespace) "\"" + x + "\"" else x
-      case x if useOwnToString(x)       => x toString
+      case x if useOwnToString(x)       => x.toString
       case x: AnyRef if isArray(x)      => arrayToString(x)
       case x: collection.Map[_, _]      => x.iterator take maxElements map mapInner mkString (x.stringPrefix + "(", ", ", ")")
       case x: Iterable[_]               => x.iterator take maxElements map inner mkString (x.stringPrefix + "(", ", ", ")")
       case x: Traversable[_]            => x take maxElements map inner mkString (x.stringPrefix + "(", ", ", ")")
       case x: Product1[_] if isTuple(x) => "(" + inner(x._1) + ",)" // that special trailing comma
       case x: Product if isTuple(x)     => x.productIterator map inner mkString ("(", ",", ")")
-      case x                            => x toString
+      case x                            => x.toString
     }
 
     // The try/catch is defense against iterables which aren't actually designed

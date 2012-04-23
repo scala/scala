@@ -134,26 +134,26 @@ trait Future[+T] extends Awaitable[T] {
   /** Creates a new promise.
    */
   protected def newPromise[S]: Promise[S]
-  
+
   /** Returns whether the future has already been completed with
    *  a value or an exception.
-   *  
+   *
    *  $nonDeterministic
-   *  
+   *
    *  @return    `true` if the future is already completed, `false` otherwise
    */
   def isCompleted: Boolean
-  
+
   /** The value of this `Future`.
-   *  
+   *
    *  If the future is not completed the returned value will be `None`.
    *  If the future is completed the value will be `Some(Success(t))`
    *  if it contains a valid result, or `Some(Failure(error))` if it contains
    *  an exception.
    */
   def value: Option[Either[Throwable, T]]
-  
-  
+
+
   /* Projections */
 
   /** Returns a failed projection of this future.
@@ -421,11 +421,11 @@ trait Future[+T] extends Awaitable[T] {
     }
     p.future
   }
-  
+
   /** Creates a new `Future[S]` which is completed with this `Future`'s result if
    *  that conforms to `S`'s erased type or a `ClassCastException` otherwise.
    */
-  def mapTo[S](implicit m: Manifest[S]): Future[S] = {
+  def mapTo[S](implicit tag: ClassTag[S]): Future[S] = {
     import java.{ lang => jl }
     val toBoxed = Map[Class[_], Class[_]](
       classOf[Boolean] -> classOf[jl.Boolean],
@@ -444,20 +444,20 @@ trait Future[+T] extends Awaitable[T] {
     }
 
     val p = newPromise[S]
-    
+
     onComplete {
       case l: Left[Throwable, _] => p complete l.asInstanceOf[Either[Throwable, S]]
       case Right(t) =>
         p complete (try {
-          Right(boxedType(m.erasure).cast(t).asInstanceOf[S])
+          Right(boxedType(tag.erasure).cast(t).asInstanceOf[S])
         } catch {
           case e: ClassCastException => Left(e)
         })
     }
-    
+
     p.future
   }
-  
+
   /** Applies the side-effecting function to the result of this future, and returns
    *  a new future with the result of this future.
    *
@@ -591,7 +591,7 @@ object Future {
    *  The fold is performed on the thread where the last future is completed,
    *  the result will be the first failure of any of the futures, or any failure in the actual fold,
    *  or the result of the fold.
-   *  
+   *
    *  Example:
    *  {{{
    *    val result = Await.result(Future.fold(futures)(0)(_ + _), 5 seconds)
@@ -603,7 +603,7 @@ object Future {
   }
 
   /** Initiates a fold over the supplied futures where the fold-zero is the result value of the `Future` that's completed first.
-   *  
+   *
    *  Example:
    *  {{{
    *    val result = Await.result(Futures.reduce(futures)(_ + _), 5 seconds)
@@ -613,11 +613,11 @@ object Future {
     if (futures.isEmpty) Promise[R].failure(new NoSuchElementException("reduce attempted on empty collection")).future
     else sequence(futures).map(_ reduceLeft op)
   }
-  
+
   /** Transforms a `Traversable[A]` into a `Future[Traversable[B]]` using the provided function `A => Future[B]`.
    *  This is useful for performing a parallel map. For example, to apply a function to all items of a list
    *  in parallel:
-   *  
+   *
    *  {{{
    *    val myFutureList = Future.traverse(myList)(x => Future(myFunc(x)))
    *  }}}
@@ -627,7 +627,7 @@ object Future {
       val fb = fn(a.asInstanceOf[A])
       for (r <- fr; b <- fb) yield (r += b)
     }.map(_.result)
-  
+
 }
 
 

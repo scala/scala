@@ -5,6 +5,7 @@
 
 package scala.reflect
 
+import java.lang.{Class => jClass}
 import java.lang.reflect.{ InvocationTargetException, UndeclaredThrowableException }
 
 /** A few java-reflection oriented utility functions useful during reflection bootstrapping.

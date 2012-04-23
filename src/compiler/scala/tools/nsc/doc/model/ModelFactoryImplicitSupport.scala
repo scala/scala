@@ -137,7 +137,7 @@ trait ModelFactoryImplicitSupport {
 
       // Members inherited by implicit conversions cannot override actual members
       memberSyms = memberSyms.filterNot((sym1: Symbol) =>
-        existingMembers.exists(sym2 => sym1.name == sym2.name && 
+        existingMembers.exists(sym2 => sym1.name == sym2.name &&
           !isDistinguishableFrom(toType.memberInfo(sym1), sym.info.memberInfo(sym2))))
 
       debug("   -> full type: " + toType)
@@ -199,12 +199,12 @@ trait ModelFactoryImplicitSupport {
    * What? in details:
    *  - say we start from a class A[T1, T2, T3, T4]
    *  - we have an implicit function (view) in scope:
-   *     def pimpA[T3 <: Long, T4](a: A[Int, Foo[Bar[X]], T3, T4])(implicit ev1: Manifest[T4], ev2: Numeric[T4]): PimpedA
+   *     def pimpA[T3 <: Long, T4](a: A[Int, Foo[Bar[X]], T3, T4])(implicit ev1: TypeTag[T4], ev2: Numeric[T4]): PimpedA
    *  - A is converted to PimpedA ONLY if a couple of constraints are satisfied:
    *     * T1 must be equal to Int
    *     * T2 must be equal to Foo[Bar[X]]
    *     * T3 must be upper bounded by Long
-   *     * there must be evidence of Numeric[T4] and a Mainfest[T4] within scope
+   *     * there must be evidence of Numeric[T4] and a TypeTag[T4] within scope
    *  - the final type is PimpedA and A therefore inherits a couple of members from pimpedA
    *
    * How?
@@ -504,14 +504,14 @@ trait ModelFactoryImplicitSupport {
    * class. We suppose the name of the two members coincides
    *
    * The trick here is that the resultType does not matter - the condition for removal it that paramss have the same
-   * structure (A => B => C may not override (A, B) => C) and that all the types involved are 
+   * structure (A => B => C may not override (A, B) => C) and that all the types involved are
    * of the implcit conversion's member are subtypes of the parent members' parameters */
-  def isDistinguishableFrom(t1: Type, t2: Type): Boolean = 
+  def isDistinguishableFrom(t1: Type, t2: Type): Boolean =
     if (t1.paramss.map(_.length) == t2.paramss.map(_.length)) {
       for ((t1p, t2p) <- t1.paramss.flatten zip t2.paramss.flatten)
         if (!isSubType(t1 memberInfo t1p, t2 memberInfo t2p))
-          return true // if on the corresponding parameter you give a type that is in t1 but not in t2 
-                      // example: 
+          return true // if on the corresponding parameter you give a type that is in t1 but not in t2
+                      // example:
                       // def foo(a: Either[Int, Double]): Int = 3
                       // def foo(b: Left[T1]): Int = 6
                       // a.foo(Right(4.5d)) prints out 3 :)

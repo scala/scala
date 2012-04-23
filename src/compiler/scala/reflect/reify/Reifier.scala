@@ -2,6 +2,8 @@ package scala.reflect
 package reify
 
 import scala.tools.nsc.Global
+import scala.reflect.makro.ReificationError
+import scala.reflect.makro.UnexpectedReificationError
 
 /** Given a tree or a type, generate a tree that when executed at runtime produces the original tree or type.
  *  See more info in the comments to ``reify'' in scala.reflect.api.Universe.
@@ -21,7 +23,7 @@ abstract class Reifier extends Phases
   val prefix: Tree
   val reifee: Any
   val dontSpliceAtTopLevel: Boolean
-  val requireConcreteTypeTag: Boolean
+  val concrete: Boolean
 
   /**
    *  For ``reifee'' and other reification parameters, generate a tree of the form
@@ -46,15 +48,6 @@ abstract class Reifier extends Phases
       // [Eugene] conventional way of doing this?
       if (prefix exists (_.isErroneous)) CannotReifyErroneousPrefix(prefix)
       if (prefix.tpe == null) CannotReifyUntypedPrefix(prefix)
-
-      def reifyErasure(tpe: Type): Tree = {
-        val result = typer.resolveClassTag(positionBearer, tpe)
-        if (result == EmptyTree) throw new Error("cannot reify erasure for %s: ".format(tpe))
-        result match {
-          case Apply(TypeApply(Select(_, _), _), List(clazz)) => clazz
-          case _ => Select(result, nme.erasure)
-        }
-      }
 
       val rtree = reifee match {
         case tree: Tree =>
@@ -81,11 +74,11 @@ abstract class Reifier extends Phases
           if (tree.tpe exists (sub => sub.typeSymbol.isLocalToReifee))
             CannotReifyReifeeThatHasTypeLocalToReifee(tree)
 
-          val manifestedType = typer.packedType(tree, NoSymbol)
-          val tagModule = if (definitelyConcrete) ConcreteTypeTagModule else TypeTagModule
-          val tagCtor = TypeApply(Select(Ident(nme.MIRROR_SHORT), tagModule.name), List(TypeTree(manifestedType)))
-          val exprCtor = TypeApply(Select(Ident(nme.MIRROR_SHORT), ExprModule.name), List(TypeTree(manifestedType)))
-          val tagArgs = if (definitelyConcrete) List(reify(manifestedType), reifyErasure(manifestedType)) else List(reify(manifestedType))
+          val taggedType = typer.packedType(tree, NoSymbol)
+          val tagModule = if (reificationIsConcrete) ConcreteTypeTagModule else TypeTagModule
+          val tagCtor = TypeApply(Select(Ident(nme.MIRROR_SHORT), tagModule.name), List(TypeTree(taggedType)))
+          val exprCtor = TypeApply(Select(Ident(nme.MIRROR_SHORT), ExprModule.name), List(TypeTree(taggedType)))
+          val tagArgs = List(reify(taggedType), reifyErasure(mirror)(typer, taggedType, concrete = false))
           Apply(Apply(exprCtor, List(rtree)), List(Apply(tagCtor, tagArgs)))
 
         case tpe: Type =>
@@ -93,10 +86,10 @@ abstract class Reifier extends Phases
           reifyTrace("prefix = ")(prefix)
           val rtree = reify(tpe)
 
-          val manifestedType = tpe
-          val tagModule = if (definitelyConcrete) ConcreteTypeTagModule else TypeTagModule
-          val ctor = TypeApply(Select(Ident(nme.MIRROR_SHORT), tagModule.name), List(TypeTree(manifestedType)))
-          val args = if (definitelyConcrete) List(rtree, reifyErasure(manifestedType)) else List(rtree)
+          val taggedType = tpe
+          val tagModule = if (reificationIsConcrete) ConcreteTypeTagModule else TypeTagModule
+          val ctor = TypeApply(Select(Ident(nme.MIRROR_SHORT), tagModule.name), List(TypeTree(taggedType)))
+          val args = List(rtree, reifyErasure(mirror)(typer, taggedType, concrete = false))
           Apply(ctor, args)
 
         case _ =>
@@ -137,9 +130,16 @@ abstract class Reifier extends Phases
       // 4) trivial tree splice inlining in Reify (Trees.scala)
       // 5) trivial type splice inlining in Reify (Types.scala)
       val freevarBindings = symbolTable collect { case entry @ FreeDef(_, _, binding, _, _) => binding.symbol } toSet
+      // [Eugene] yeah, ugly and extremely brittle, but we do need to do resetAttrs. will be fixed later
+      var importantSymbols = Set[Symbol](PredefModule, ScalaRunTimeModule)
+      importantSymbols ++= importantSymbols map (_.companionSymbol)
+      importantSymbols ++= importantSymbols map (_.moduleClass)
+      importantSymbols ++= importantSymbols map (_.linkedClassOfClass)
+      def importantSymbol(sym: Symbol): Boolean = sym != null && sym != NoSymbol && importantSymbols(sym)
       val untyped = resetAllAttrs(wrapped, leaveAlone = {
         case ValDef(_, mr, _, _) if mr == nme.MIRROR_SHORT => true
         case tree if freevarBindings contains tree.symbol => true
+        case tree if importantSymbol(tree.symbol) => true
         case _ => false
       })
 

@@ -65,11 +65,11 @@ trait Types {
   private var spliceTypesEnabled = !dontSpliceAtTopLevel
 
   /** Keeps track of whether this reification contains abstract type parameters */
-  private var _definitelyConcrete = true
-  def definitelyConcrete = _definitelyConcrete
-  def definitelyConcrete_=(value: Boolean) {
-    _definitelyConcrete = value
-    if (!value && requireConcreteTypeTag) {
+  private var _reificationIsConcrete = true
+  def reificationIsConcrete = _reificationIsConcrete
+  def reificationIsConcrete_=(value: Boolean) {
+    _reificationIsConcrete = value
+    if (!value && concrete) {
       assert(current.isInstanceOf[Type], current)
       val offender = current.asInstanceOf[Type]
       CannotReifyConcreteTypeTagHavingUnresolvedTypeParameters(offender)
@@ -89,7 +89,7 @@ trait Types {
       if (reifyDebug) println("splicing " + tpe)
 
       if (spliceTypesEnabled) {
-        var tagClass = if (requireConcreteTypeTag) ConcreteTypeTagClass else TypeTagClass
+        var tagClass = if (concrete) ConcreteTypeTagClass else TypeTagClass
         val tagTpe = singleType(prefix.tpe, prefix.tpe member tagClass.name)
 
         // [Eugene] this should be enough for an abstract type, right?
@@ -99,13 +99,13 @@ trait Types {
           // if this fails, it might produce the dreaded "erroneous or inaccessible type" error
           // to find out the whereabouts of the error run scalac with -Ydebug
           if (reifyDebug) println("launching implicit search for %s.%s[%s]".format(prefix, tagClass.name, tpe))
-          typer.resolveTypeTag(positionBearer, prefix.tpe, tpe, requireConcreteTypeTag) match {
+          typer.resolveTypeTag(positionBearer.pos, prefix.tpe, tpe, concrete) match {
             case failure if failure.isEmpty =>
               if (reifyDebug) println("implicit search was fruitless")
               EmptyTree
             case success =>
               if (reifyDebug) println("implicit search has produced a result: " + success)
-              definitelyConcrete &= requireConcreteTypeTag
+              reificationIsConcrete &= concrete
               var splice = Select(success, nme.tpe)
               splice match {
                 case InlinedTypeSplice(_, inlinedSymbolTable, tpe) =>
@@ -123,7 +123,7 @@ trait Types {
         if (reifyDebug) println("splicing has been cancelled: spliceTypesEnabled = false")
       }
 
-      definitelyConcrete = false
+      reificationIsConcrete = false
     }
 
     spliceTypesEnabled = true

@@ -380,6 +380,8 @@ trait Definitions extends reflect.api.StandardDefinitions {
       def arrayCloneMethod = getMember(ScalaRunTimeModule, nme.array_clone)
       def ensureAccessibleMethod = getMember(ScalaRunTimeModule, nme.ensureAccessible)
       def scalaRuntimeSameElements = getMember(ScalaRunTimeModule, nme.sameElements)
+      def arrayClassMethod = getMember(ScalaRunTimeModule, nme.arrayClass)
+      def arrayElementClassMethod = getMember(ScalaRunTimeModule, nme.arrayElementClass)
 
     // classes with special meanings
     lazy val StringAddClass   = getRequiredClass("scala.runtime.StringAdd")
@@ -409,7 +411,7 @@ trait Definitions extends reflect.api.StandardDefinitions {
     lazy val EqualsPatternClass     = specialPolyClass(tpnme.EQUALS_PATTERN_NAME, 0L)(_ => AnyClass.tpe)
     lazy val JavaRepeatedParamClass = specialPolyClass(tpnme.JAVA_REPEATED_PARAM_CLASS_NAME, COVARIANT)(tparam => arrayType(tparam.tpe))
     lazy val RepeatedParamClass     = specialPolyClass(tpnme.REPEATED_PARAM_CLASS_NAME, COVARIANT)(tparam => seqType(tparam.tpe))
-  
+
     lazy val MarkerCPSTypes = getClassIfDefined("scala.util.continuations.cpsParam")
 
     def isByNameParamType(tp: Type)        = tp.typeSymbol == ByNameParamClass
@@ -479,7 +481,16 @@ trait Definitions extends reflect.api.StandardDefinitions {
     // scala.reflect
     lazy val ReflectPackageClass = getMember(ScalaPackageClass, nme.reflect)
     lazy val ReflectPackage = getPackageObject("scala.reflect")
-      def Reflect_mirror = getMember(ReflectPackage, nme.mirror)
+      def ReflectMirror = getMember(ReflectPackage, nme.mirror)
+      // [Eugene] is this a good place for ReflectMirrorPrefix?
+      def ReflectMirrorPrefix = gen.mkAttributedRef(ReflectMirror) setType singleType(ReflectMirror.owner.thisPrefix, ReflectMirror)
+
+    lazy val PartialManifestClass  = getRequiredClass("scala.reflect.ClassManifest")
+    lazy val PartialManifestModule = getRequiredModule("scala.reflect.ClassManifest")
+    lazy val FullManifestClass     = getRequiredClass("scala.reflect.Manifest")
+    lazy val FullManifestModule    = getRequiredModule("scala.reflect.Manifest")
+    lazy val OptManifestClass      = getRequiredClass("scala.reflect.OptManifest")
+    lazy val NoManifest            = getRequiredModule("scala.reflect.NoManifest")
 
     lazy val ExprClass     = getMember(getRequiredClass("scala.reflect.api.Exprs"), tpnme.Expr)
          def ExprTree      = getMemberClass(ExprClass, nme.tree)
@@ -488,6 +499,8 @@ trait Definitions extends reflect.api.StandardDefinitions {
          def ExprValue     = getMember(ExprClass, nme.value)
     lazy val ExprModule    = getMember(getRequiredClass("scala.reflect.api.Exprs"), nme.Expr)
 
+    lazy val ArrayTagClass         = requiredClass[scala.reflect.ArrayTag[_]]
+    lazy val ErasureTagClass       = requiredClass[scala.reflect.ErasureTag[_]]
     lazy val ClassTagModule        = requiredModule[scala.reflect.ClassTag[_]]
     lazy val ClassTagClass         = requiredClass[scala.reflect.ClassTag[_]]
     lazy val TypeTagsClass         = requiredClass[scala.reflect.api.TypeTags]
@@ -496,7 +509,9 @@ trait Definitions extends reflect.api.StandardDefinitions {
     lazy val ConcreteTypeTagClass  = getMemberClass(TypeTagsClass, tpnme.ConcreteTypeTag)
     lazy val ConcreteTypeTagModule = getMemberModule(TypeTagsClass, nme.ConcreteTypeTag)
 
-         def ClassTagErasure       = getMemberMethod(ClassTagClass, nme.erasure)
+         def ArrayTagWrap          = getMemberMethod(ArrayTagClass, nme.wrap)
+         def ArrayTagNewArray      = getMemberMethod(ArrayTagClass, nme.newArray)
+         def ErasureTagErasure     = getMemberMethod(ErasureTagClass, nme.erasure)
          def ClassTagTpe           = getMemberMethod(ClassTagClass, nme.tpe)
          def TypeTagTpe            = getMemberMethod(TypeTagClass, nme.tpe)
 
@@ -507,6 +522,8 @@ trait Definitions extends reflect.api.StandardDefinitions {
          def MacroContextReify                        = getMember(MacroContextClass, nme.reify)
     lazy val MacroImplAnnotation                      = getRequiredClass("scala.reflect.makro.internal.macroImpl")
     lazy val MacroInternalPackage                     = getPackageObject("scala.reflect.makro.internal")
+         def MacroInternal_materializeArrayTag        = getMemberMethod(MacroInternalPackage, nme.materializeArrayTag)
+         def MacroInternal_materializeErasureTag      = getMemberMethod(MacroInternalPackage, nme.materializeErasureTag)
          def MacroInternal_materializeClassTag        = getMemberMethod(MacroInternalPackage, nme.materializeClassTag)
          def MacroInternal_materializeTypeTag         = getMemberMethod(MacroInternalPackage, nme.materializeTypeTag)
          def MacroInternal_materializeConcreteTypeTag = getMemberMethod(MacroInternalPackage, nme.materializeConcreteTypeTag)
@@ -524,9 +541,9 @@ trait Definitions extends reflect.api.StandardDefinitions {
     // private lazy val importerFromRm = self.mkImporter(rm)
     private lazy val importerFromRm = self.mkImporter(rm).asInstanceOf[self.Importer { val from: rm.type }]
 
-    def manifestToType(m: Manifest[_]): Type = importerFromRm.importType(m.tpe)
+    def compilerTypeFromTag(t: rm.TypeTag[_]): Type = importerFromRm.importType(t.tpe)
 
-    def manifestToSymbol(m: Manifest[_]): Symbol = importerFromRm.importSymbol(m.tpe.typeSymbol)
+    def compilerSymbolFromTag(t: rm.TypeTag[_]): Symbol = importerFromRm.importSymbol(t.sym)
 
     // The given symbol represents either String.+ or StringAdd.+
     def isStringAddition(sym: Symbol) = sym == String_+ || sym == StringAdd_+

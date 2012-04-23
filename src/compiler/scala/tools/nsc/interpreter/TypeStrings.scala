@@ -192,8 +192,8 @@ trait TypeStrings {
       else enclClass.getName + "." + (name stripPrefix enclPre)
     )
   }
-  def scalaName(m: ClassManifest[_]): String = scalaName(m.erasure)
-  def anyClass(x: Any): JClass               = if (x == null) null else x.getClass
+  def scalaName(m: ClassTag[_]): String = scalaName(m.erasure)
+  def anyClass(x: Any): JClass          = if (x == null) null else x.getClass
 
   private def brackets(tps: String*): String =
     if (tps.isEmpty) ""
@@ -209,25 +209,25 @@ trait TypeStrings {
     brackets(clazz.getTypeParameters map tvarString: _*)
   }
 
-  private def tparamString[T: Manifest] : String = {
+  private def tparamString[T: TypeTag] : String = {
     // [Eugene to Paul] needs review!!
-    def typeArguments: List[rm.Type] = manifest[T].tpe.typeArguments
+    def typeArguments: List[rm.Type] = typeTag[T].tpe.typeArguments
     def typeVariables: List[java.lang.Class[_]] = typeArguments map (targ => rm.typeToClass(targ))
     brackets(typeArguments map (jc => tvarString(List(jc))): _*)
   }
 
   /** Going for an overabundance of caution right now.  Later these types
-   *  can be a lot more precise, but right now the manifests have a habit of
+   *  can be a lot more precise, but right now the tags have a habit of
    *  introducing material which is not syntactically valid as scala source.
    *  When this happens it breaks the repl.  It would be nice if we mandated
-   *  that manifest toString methods (or some other method, since it's bad
+   *  that tag toString methods (or some other method, since it's bad
    *  practice to rely on toString for correctness) generated the VALID string
    *  representation of the type.
    */
-  def fromTypedValue[T: Manifest](x: T): String = fromManifest[T]
-  def fromValue(value: Any): String             = if (value == null) "Null" else fromClazz(anyClass(value))
-  def fromClazz(clazz: JClass): String          = scalaName(clazz) + tparamString(clazz)
-  def fromManifest[T: Manifest] : String        = scalaName(manifest[T].erasure) + tparamString[T]
+  def fromTypedValue[T: TypeTag](x: T): String = fromTag[T]
+  def fromValue(value: Any): String            = if (value == null) "Null" else fromClazz(anyClass(value))
+  def fromClazz(clazz: JClass): String         = scalaName(clazz) + tparamString(clazz)
+  def fromTag[T: TypeTag] : String             = scalaName(typeTag[T].erasure) + tparamString[T]
 
   /** Reducing fully qualified noise for some common packages.
    */

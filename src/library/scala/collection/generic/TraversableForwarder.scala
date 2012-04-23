@@ -57,7 +57,7 @@ trait TraversableForwarder[+A] extends Traversable[A] {
   override def copyToArray[B >: A](xs: Array[B], start: Int, len: Int) = underlying.copyToArray(xs, start, len)
   override def copyToArray[B >: A](xs: Array[B], start: Int) = underlying.copyToArray(xs, start)
   override def copyToArray[B >: A](xs: Array[B]) = underlying.copyToArray(xs)
-  override def toArray[B >: A: ClassManifest]: Array[B] = underlying.toArray
+  override def toArray[B >: A: ArrayTag]: Array[B] = underlying.toArray
   override def toList: List[A] = underlying.toList
   override def toIterable: Iterable[A] = underlying.toIterable
   override def toSeq: Seq[A] = underlying.toSeq

@@ -1,0 +1,5 @@
+{
+  val $mr: reflect.mirror.type = scala.reflect.`package`.mirror;
+  $mr.Expr.apply[Array[Int]]($mr.Apply.apply($mr.Select.apply($mr.Select.apply($mr.Ident($mr.staticModule("scala")), $mr.newTermName("Array")), $mr.newTermName("apply")), scala.collection.immutable.List.apply[$mr.Literal]($mr.Literal.apply($mr.Constant.apply(2)))))($mr.ConcreteTypeTag.apply[Array[Int]]($mr.TypeRef.apply($mr.thisModuleType("scala"), $mr.staticClass("scala.Array"), scala.collection.immutable.List.apply[$mr.Type]($mr.staticClass("scala.Int").asTypeConstructor)), ScalaRunTime.this.arrayClass(classOf[scala.Int])))
+}
+mr.reify[Array[Int]](scala.Array.apply(2))
