@@ -1020,7 +1020,12 @@ class Foo(x: Other) { x._1 } // no error in this order
 
       override def traverse(t: Tree) {
         if (t != EmptyTree && t.pos == NoPosition) {
-          t.setPos(pos)
+          t setPos pos
+          // During a recursive descent traversal which prunes when it sees
+          // a position, one can't assign the position and THEN recurse.
+          // Ensuring that all children have compliant range positions.
+          for (t1 <- t ; if t1 ne t)
+            t1 setPos pos.makeTransparent
         }
         t match {
           case Function(_, _) if t.symbol == NoSymbol =>
