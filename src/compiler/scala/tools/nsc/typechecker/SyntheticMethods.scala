@@ -74,7 +74,7 @@ trait SyntheticMethods extends ast.TreeDSL {
     //    Option[Int] { def productIterator: Iterator[String] }
     //
     // appearing legitimately, but this breaks invariant places
-    // like Manifests and Arrays which are not robust and infer things
+    // like Tags and Arrays which are not robust and infer things
     // which they shouldn't.
     val accessorLub  = (
       if (opt.experimental) {

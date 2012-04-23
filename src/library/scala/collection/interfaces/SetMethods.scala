@@ -11,7 +11,6 @@ package interfaces
 
 import generic._
 import mutable.Buffer
-import scala.reflect.ClassManifest
 import annotation.unchecked.uncheckedVariance
 
 /**

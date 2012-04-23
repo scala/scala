@@ -828,6 +828,7 @@ class Foo(x: Other) { x._1 } // no error in this order
     private def typeTest(binderToTest: Symbol, expectedTp: Type, disableOuterCheck: Boolean = false, dynamic: Boolean = false): Tree = { import CODE._
       // def coreTest =
       if (disableOuterCheck) codegen._isInstanceOf(binderToTest, expectedTp) else maybeWithOuterCheck(binderToTest, expectedTp)(codegen._isInstanceOf(binderToTest, expectedTp))
+      // [Eugene to Adriaan] use `resolveErasureTag` instead of `findManifest`. please, provide a meaningful position
       // if (opt.experimental && containsUnchecked(expectedTp)) {
       //   if (dynamic) {
       //     val expectedTpTagTree = findManifest(expectedTp, true)

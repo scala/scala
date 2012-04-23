@@ -16,7 +16,7 @@ class Invoked private (val proxy: AnyRef, val m: Method, val args: List[AnyRef])
   def name                 = m.getName
   def arity                = m.getParameterTypes.size
   def returnType           = m.getReturnType
-  def returns[T: Manifest] = returnType == manifest[T].erasure
+  def returns[T: ClassTag] = returnType == classTag[T].erasure
 
   def invokeOn(target: AnyRef) = m.invoke(target, args: _*)
   def isObjectMethod = Set("toString", "equals", "hashCode") contains name

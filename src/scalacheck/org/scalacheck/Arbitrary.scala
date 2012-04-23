@@ -263,7 +263,7 @@ object Arbitrary {
   ): Arbitrary[C[T]] = Arbitrary(containerOf[C,T](arbitrary[T]))
 
   /** Arbitrary instance of any array. */
-  implicit def arbArray[T](implicit a: Arbitrary[T], c: ClassManifest[T]
+  implicit def arbArray[T](implicit a: Arbitrary[T], c: ClassTag[T]
   ): Arbitrary[Array[T]] = Arbitrary(containerOf[Array,T](arbitrary[T]))
 
 

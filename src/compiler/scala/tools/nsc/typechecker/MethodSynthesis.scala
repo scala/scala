@@ -8,6 +8,7 @@ package typechecker
 import symtab.Flags._
 import scala.collection.{ mutable, immutable }
 import scala.tools.util.StringOps.{ ojoin }
+import scala.reflect.{ mirror => rm }
 import language.higherKinds
 
 /** Logic related to method synthesis which involves cooperation between
@@ -21,50 +22,51 @@ trait MethodSynthesis {
   import CODE._
 
   object synthesisUtil {
-    type M[T]  = Manifest[T]
-    type CM[T] = ClassManifest[T]
+    type CTT[T]  = rm.ConcreteTypeTag[T]
+    type CT[T] = ClassTag[T]
 
     def ValOrDefDef(sym: Symbol, body: Tree) =
       if (sym.isLazy) ValDef(sym, body)
       else DefDef(sym, body)
 
-    def applyTypeInternal(manifests: List[M[_]]): Type = {
+    def applyTypeInternal(tags: List[CTT[_]]): Type = {
       // [Eugene to Paul] needs review!!
-      val symbols = manifests map manifestToSymbol
+      val symbols = tags map compilerSymbolFromTag
       val container :: args = symbols
       val tparams = container.typeConstructor.typeParams
 
       // Conservative at present - if manifests were more usable this could do a lot more.
-      require(symbols forall (_ ne NoSymbol), "Must find all manifests: " + symbols)
+      // [Eugene to Paul] all right, they are now. what do you have in mind?
+      require(symbols forall (_ ne NoSymbol), "Must find all tags: " + symbols)
       require(container.owner.isPackageClass, "Container must be a top-level class in a package: " + container)
       require(tparams.size == args.size, "Arguments must match type constructor arity: " + tparams + ", " + args)
 
       appliedType(container, args map (_.tpe): _*)
     }
 
-    def companionType[T](implicit m: M[T]) =
+    def companionType[T](implicit m: CTT[T]) =
       getRequiredModule(m.erasure.getName).tpe
 
     // Use these like `applyType[List, Int]` or `applyType[Map, Int, String]`
-    def applyType[CC](implicit m1: M[CC]): Type =
+    def applyType[CC](implicit m1: CTT[CC]): Type =
       applyTypeInternal(List(m1))
 
-    def applyType[CC[X1], X1](implicit m1: M[CC[_]], m2: M[X1]): Type =
+    def applyType[CC[X1], X1](implicit m1: CTT[CC[_]], m2: CTT[X1]): Type =
       applyTypeInternal(List(m1, m2))
 
-    def applyType[CC[X1, X2], X1, X2](implicit m1: M[CC[_,_]], m2: M[X1], m3: M[X2]): Type =
+    def applyType[CC[X1, X2], X1, X2](implicit m1: CTT[CC[_,_]], m2: CTT[X1], m3: CTT[X2]): Type =
       applyTypeInternal(List(m1, m2, m3))
 
-    def applyType[CC[X1, X2, X3], X1, X2, X3](implicit m1: M[CC[_,_,_]], m2: M[X1], m3: M[X2], m4: M[X3]): Type =
+    def applyType[CC[X1, X2, X3], X1, X2, X3](implicit m1: CTT[CC[_,_,_]], m2: CTT[X1], m3: CTT[X2], m4: CTT[X3]): Type =
       applyTypeInternal(List(m1, m2, m3, m4))
 
-    def newMethodType[F](owner: Symbol)(implicit m: Manifest[F]): Type = {
-      val fnSymbol = manifestToSymbol(m)
-      assert(fnSymbol isSubClass FunctionClass(m.tpe.typeArguments.size - 1), (owner, m))
+    def newMethodType[F](owner: Symbol)(implicit t: CTT[F]): Type = {
+      val fnSymbol = compilerSymbolFromTag(t)
+      assert(fnSymbol isSubClass FunctionClass(t.tpe.typeArguments.size - 1), (owner, t))
       // [Eugene to Paul] needs review!!
       // val symbols = m.typeArguments map (m => manifestToSymbol(m))
       // val formals = symbols.init map (_.typeConstructor)
-      val formals = manifestToType(m).typeArguments
+      val formals = compilerTypeFromTag(t).typeArguments
       val params  = owner newSyntheticValueParams formals
       MethodType(params, formals.last)
     }

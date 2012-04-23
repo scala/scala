@@ -12,7 +12,7 @@ trait AnnotationInfos { self: Universe =>
   }
 
   type ClassfileAnnotArg <: AnyRef
-  implicit def classfileAnnotArgManifest: ClassManifest[ClassfileAnnotArg] // need a precise manifest to pass to UnPickle's toArray call
+  implicit def classfileAnnotArgTag: ArrayTag[ClassfileAnnotArg] // need a precise tag to pass to UnPickle's toArray call
 
   type LiteralAnnotArg <: ClassfileAnnotArg
   val LiteralAnnotArg: LiteralAnnotArgExtractor

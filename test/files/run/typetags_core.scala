@@ -29,4 +29,6 @@ object Test extends App {
   println(implicitly[TypeTag[Null]])
   println(implicitly[TypeTag[Nothing]] eq TypeTag.Nothing)
   println(implicitly[TypeTag[Nothing]])
+  println(implicitly[TypeTag[String]] eq TypeTag.String)
+  println(implicitly[TypeTag[String]])
 }

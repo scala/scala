@@ -206,8 +206,8 @@ abstract class RemoteSupport extends ListenerManagement with RemoteServerModule 
    * </pre>
    */
   @deprecated("Will be removed after 1.1", "1.1")
-  def actorOf[T <: Actor: Manifest](host: String, port: Int): ActorRef =
-    clientManagedActorOf(() => createActorFromClass(manifest.erasure), host, port)
+  def actorOf[T <: Actor: ClassTag](host: String, port: Int): ActorRef =
+    clientManagedActorOf(() => createActorFromClass(classTag[T].erasure), host, port)
 
   protected def createActorFromClass(clazz: Class[_]): Actor = {
     import ReflectiveAccess.{ createInstance, noParams, noArgs }

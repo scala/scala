@@ -11,7 +11,8 @@
 package scala.collection
 package mutable
 
-import scala.reflect.ClassManifest
+import scala.reflect.ArrayTag
+import scala.runtime.ScalaRunTime._
 import scala.collection.generic._
 import scala.collection.parallel.mutable.ParArray
 
@@ -40,8 +41,11 @@ extends AbstractSeq[T]
   override protected[this] def thisCollection: WrappedArray[T] = this
   override protected[this] def toCollection(repr: WrappedArray[T]): WrappedArray[T] = repr
 
-  /** The manifest of the element type */
-  def elemManifest: ClassManifest[T]
+  /** The tag of the element type */
+  def elemTag: ArrayTag[T]
+
+  @deprecated("use elemTag instead", "2.10.0")
+  def elemManifest: ClassManifest[T] = ClassManifest.fromClass[T](arrayElementClass(elemTag).asInstanceOf[Class[T]])
 
   /** The length of the array */
   def length: Int
@@ -57,11 +61,16 @@ extends AbstractSeq[T]
 
   override def par = ParArray.handoff(array)
 
-  override def toArray[U >: T : ClassManifest]: Array[U] =
-    if (implicitly[ClassManifest[U]].erasure eq array.getClass.getComponentType)
+  private def elementClass: Class[_] =
+    arrayElementClass(repr.getClass)
+
+  override def toArray[U >: T : ArrayTag]: Array[U] = {
+    val thatElementClass = arrayElementClass(implicitly[ArrayTag[U]])
+    if (elementClass eq thatElementClass)
       array.asInstanceOf[Array[U]]
     else
       super.toArray[U]
+  }
 
   override def stringPrefix = "WrappedArray"
 
@@ -71,7 +80,7 @@ extends AbstractSeq[T]
   /** Creates new builder for this collection ==> move to subclasses
    */
   override protected[this] def newBuilder: Builder[T, WrappedArray[T]] =
-    new WrappedArrayBuilder[T](elemManifest)
+    new WrappedArrayBuilder[T](elemTag)
 
 }
 
@@ -101,7 +110,7 @@ object WrappedArray {
     case x: Array[Unit]    => new ofUnit(x)
   }).asInstanceOf[WrappedArray[T]]
 
-  implicit def canBuildFrom[T](implicit m: ClassManifest[T]): CanBuildFrom[WrappedArray[_], T, WrappedArray[T]] =
+  implicit def canBuildFrom[T](implicit m: ArrayTag[T]): CanBuildFrom[WrappedArray[_], T, WrappedArray[T]] =
     new CanBuildFrom[WrappedArray[_], T, WrappedArray[T]] {
       def apply(from: WrappedArray[_]): Builder[T, WrappedArray[T]] =
         ArrayBuilder.make[T]()(m) mapResult WrappedArray.make[T]
@@ -112,70 +121,70 @@ object WrappedArray {
   def newBuilder[A]: Builder[A, IndexedSeq[A]] = new ArrayBuffer
 
   final class ofRef[T <: AnyRef](val array: Array[T]) extends WrappedArray[T] with Serializable {
-    lazy val elemManifest = ClassManifest[T](array.getClass.getComponentType)
+    lazy val elemTag = ClassTag[T](arrayElementClass(array.getClass))
     def length: Int = array.length
     def apply(index: Int): T = array(index).asInstanceOf[T]
     def update(index: Int, elem: T) { array(index) = elem }
   }
 
   final class ofByte(val array: Array[Byte]) extends WrappedArray[Byte] with Serializable {
-    def elemManifest = ClassManifest.Byte
+    def elemTag = ClassTag.Byte
     def length: Int = array.length
     def apply(index: Int): Byte = array(index)
     def update(index: Int, elem: Byte) { array(index) = elem }
   }
 
   final class ofShort(val array: Array[Short]) extends WrappedArray[Short] with Serializable {
-    def elemManifest = ClassManifest.Short
+    def elemTag = ClassTag.Short
     def length: Int = array.length
     def apply(index: Int): Short = array(index)
     def update(index: Int, elem: Short) { array(index) = elem }
   }
 
   final class ofChar(val array: Array[Char]) extends WrappedArray[Char] with Serializable {
-    def elemManifest = ClassManifest.Char
+    def elemTag = ClassTag.Char
     def length: Int = array.length
     def apply(index: Int): Char = array(index)
     def update(index: Int, elem: Char) { array(index) = elem }
   }
 
   final class ofInt(val array: Array[Int]) extends WrappedArray[Int] with Serializable {
-    def elemManifest = ClassManifest.Int
+    def elemTag = ClassTag.Int
     def length: Int = array.length
     def apply(index: Int): Int = array(index)
     def update(index: Int, elem: Int) { array(index) = elem }
   }
 
   final class ofLong(val array: Array[Long]) extends WrappedArray[Long] with Serializable {
-    def elemManifest = ClassManifest.Long
+    def elemTag = ClassTag.Long
     def length: Int = array.length
     def apply(index: Int): Long = array(index)
     def update(index: Int, elem: Long) { array(index) = elem }
   }
 
   final class ofFloat(val array: Array[Float]) extends WrappedArray[Float] with Serializable {
-    def elemManifest = ClassManifest.Float
+    def elemTag = ClassTag.Float
     def length: Int = array.length
     def apply(index: Int): Float = array(index)
     def update(index: Int, elem: Float) { array(index) = elem }
   }
 
   final class ofDouble(val array: Array[Double]) extends WrappedArray[Double] with Serializable {
-    def elemManifest = ClassManifest.Double
+    def elemTag = ClassTag.Double
     def length: Int = array.length
     def apply(index: Int): Double = array(index)
     def update(index: Int, elem: Double) { array(index) = elem }
   }
 
   final class ofBoolean(val array: Array[Boolean]) extends WrappedArray[Boolean] with Serializable {
-    def elemManifest = ClassManifest.Boolean
+    def elemTag = ClassTag.Boolean
     def length: Int = array.length
     def apply(index: Int): Boolean = array(index)
     def update(index: Int, elem: Boolean) { array(index) = elem }
   }
 
   final class ofUnit(val array: Array[Unit]) extends WrappedArray[Unit] with Serializable {
-    def elemManifest = ClassManifest.Unit
+    def elemTag = ClassTag.Unit
     def length: Int = array.length
     def apply(index: Int): Unit = array(index)
     def update(index: Int, elem: Unit) { array(index) = elem }

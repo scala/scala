@@ -25,7 +25,7 @@ class Mirror(var classLoader: ClassLoader) extends Universe with api.Mirror {
   def symbolOfInstance(obj: Any): Symbol = classToScala(obj.getClass)
   def typeOfInstance(obj: Any): Type = typeToScala(obj.getClass)
   // to do add getClass/getType for instances of primitive types, probably like this:
-  // def getClass[T <: AnyVal : Manifest](x: T): Symbol = manifest[T].getClass
+  // def getClass[T <: AnyVal : ClassTag](x: T): Symbol = classTag[T].sym
 
   def getValueOfField(receiver: AnyRef, field: Symbol): Any = {
     fieldToJava(field).get(receiver)

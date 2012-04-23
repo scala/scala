@@ -5,9 +5,10 @@ import scala.reflect.api.Attachment
 import scala.reflect.api.Modifier
 import scala.reflect.api.Universe
 
+// todo. make Dummy objects not equal to themselves
 class DummyMirror(cl: ClassLoader) extends api.Mirror {
   // Members declared in scala.reflect.api.AnnotationInfos
-  implicit def classfileAnnotArgManifest: scala.reflect.ClassManifest[ClassfileAnnotArg] = notSupported()
+  implicit def classfileAnnotArgTag: scala.reflect.ClassTag[ClassfileAnnotArg] = notSupported()
   type AnnotationInfo = DummyAnnotationInfo.type
   object DummyAnnotationInfo
   val AnnotationInfo: AnnotationInfoExtractor = DummyAnnotationInfoExtractor
@@ -430,6 +431,8 @@ class DummyMirror(cl: ClassLoader) extends api.Mirror {
     def fullName: String = notSupported()
     def id: Int = notSupported()
     def orElse[T](alt: => Symbol): Symbol = notSupported()
+    def filter(cond: Symbol => Boolean): Symbol = notSupported()
+    def suchThat(cond: Symbol => Boolean): Symbol = notSupported()
     def privateWithin: Symbol = notSupported()
     def companionSymbol: Symbol = notSupported()
     def moduleClass: Symbol = notSupported()
@@ -497,6 +500,7 @@ class DummyMirror(cl: ClassLoader) extends api.Mirror {
     type TreeGenTree = global.Tree
     type TreeGenType = global.Type
     type TreeGenSymbol = global.Symbol
+    type TreeGenName = global.Name
     def mkAttributedQualifier(tpe: TreeGenType): TreeGenTree = notSupported()
     def mkAttributedQualifier(tpe: TreeGenType, termSym: TreeGenSymbol): TreeGenTree = notSupported()
     def mkAttributedRef(pre: TreeGenType, sym: TreeGenSymbol): TreeGenTree = notSupported()
@@ -504,6 +508,14 @@ class DummyMirror(cl: ClassLoader) extends api.Mirror {
     def mkAttributedThis(sym: TreeGenSymbol): TreeGenTree = notSupported()
     def mkAttributedIdent(sym: TreeGenSymbol): TreeGenTree = notSupported()
     def mkAttributedSelect(qual: TreeGenTree, sym: TreeGenSymbol): TreeGenTree = notSupported()
+    def mkMethodCall(target: TreeGenTree,targs: List[TreeGenType],args: List[TreeGenTree]): TreeGenTree = notSupported()
+    def mkMethodCall(receiver: TreeGenTree,method: TreeGenSymbol,targs: List[TreeGenType],args: List[TreeGenTree]): TreeGenTree = notSupported()
+    def mkMethodCall(receiver: TreeGenSymbol,methodName: TreeGenName,args: List[TreeGenTree]): TreeGenTree = notSupported()
+    def mkMethodCall(target: TreeGenTree,args: List[TreeGenTree]): TreeGenTree = notSupported()
+    def mkMethodCall(method: TreeGenSymbol,args: List[TreeGenTree]): TreeGenTree = notSupported()
+    def mkMethodCall(method: TreeGenSymbol,targs: List[TreeGenType],args: List[TreeGenTree]): TreeGenTree = notSupported()
+    def mkMethodCall(receiver: TreeGenSymbol,methodName: TreeGenName,targs: List[TreeGenType],args: List[TreeGenTree]): TreeGenTree = notSupported()
+    def mkNullaryCall(method: TreeGenSymbol,targs: List[TreeGenType]): TreeGenTree = notSupported()
   }
 
   // Members declared in scala.reflect.api.TreePrinters
