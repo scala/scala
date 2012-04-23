@@ -115,8 +115,8 @@ object EventHandler extends ListenerManagement {
       notifyListeners(event)
   }
 
-  def notify[T <: Event: ClassManifest](event: => T) {
-    if (level >= levelFor(classManifest[T].erasure.asInstanceOf[Class[_ <: Event]])) notifyListeners(event)
+  def notify[T <: Event: ClassTag](event: => T) {
+    if (level >= levelFor(classTag[T].erasure.asInstanceOf[Class[_ <: Event]])) notifyListeners(event)
   }
 
   def error(cause: Throwable, instance: AnyRef, message: => String) {

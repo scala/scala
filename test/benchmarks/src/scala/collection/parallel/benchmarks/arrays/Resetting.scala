@@ -4,19 +4,19 @@ package scala.collection.parallel.benchmarks.arrays
 import scala.collection.parallel.benchmarks._
 
 
-abstract class Resetting[T: Manifest](elemcreate: Int => T, sz: Int, p: Int, what: String)
+abstract class Resetting[T: ClassTag](elemcreate: Int => T, sz: Int, p: Int, what: String)
 extends Bench {
   val size = sz
   val parallelism = p
   val runWhat = what
-  
+
   var anyarray: Array[Any] = null
   var castarray: AnyRef = null
   var gencastarray: Array[T] = null
   var manifarray: Array[T] = null
-  
+
   reset
-  
+
   def reset = what match {
     case "any" =>
       anyarray = new Array[Any](sz)

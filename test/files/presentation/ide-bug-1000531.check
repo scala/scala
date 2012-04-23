@@ -99,7 +99,7 @@ retrieved 123 members
 `method synchronized[T0](x$1: T0)T0`
 `method take(n: Int)Iterator[B]`
 `method takeWhile(p: B => Boolean)Iterator[B]`
-`method toArray[B >: B](implicit evidence$1: ClassManifest[B])Array[B]`
+`method toArray[B >: B](implicit evidence$1: ArrayTag[B])Array[B]`
 `method toBuffer[B >: B]=> scala.collection.mutable.Buffer[B]`
 `method toIndexedSeq=> scala.collection.immutable.IndexedSeq[B]`
 `method toIterable=> Iterable[B]`

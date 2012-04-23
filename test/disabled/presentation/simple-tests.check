@@ -244,7 +244,7 @@ TypeMember(method disable,(s: Tester.this.settings.Setting)scala.collection.muta
 TypeMember(value disable,Tester.this.settings.MultiStringSetting,false,true,<none>)
 TypeMember(value elidebelow,Tester.this.settings.IntSetting,false,true,<none>)
 TypeMember(method embeddedDefaults,(loader: java.lang.ClassLoader)Unit,true,true,<none>)
-TypeMember(method embeddedDefaults,[T](implicit evidence$1: Manifest[T])Unit,true,true,<none>)
+TypeMember(method embeddedDefaults,[T](implicit evidence$1: ClassTag[T])Unit,true,true,<none>)
 TypeMember(value encoding,Tester.this.settings.StringSetting,false,true,<none>)
 TypeMember(method ensuring,(cond: (scala.tools.nsc.Settings) => Boolean,msg: => Any)scala.tools.nsc.Settings,true,false,method any2Ensuring)
 TypeMember(method ensuring,(cond: (scala.tools.nsc.Settings) => Boolean)scala.tools.nsc.Settings,true,false,method any2Ensuring)

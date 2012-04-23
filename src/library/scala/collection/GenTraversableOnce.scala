@@ -459,7 +459,7 @@ trait GenTraversableOnce[+A] extends Any {
 
   /** Converts this $coll to an array.
    *
-   *  @tparam B the type of the elements of the array. A `ClassManifest` for
+   *  @tparam B the type of the elements of the array. An `ArrayTag` for
    *            this type must be available.
    *  @return   an array containing all elements of this $coll.
    *
@@ -469,9 +469,9 @@ trait GenTraversableOnce[+A] extends Any {
    *    $willNotTerminateInf
    *
    *    @return  an array containing all elements of this $coll.
-   *             A `ClassManifest` must be available for the element type of this $coll.
+   *             An `ArrayTag` must be available for the element type of this $coll.
    */
-  def toArray[A1 >: A: ClassManifest]: Array[A1]
+  def toArray[A1 >: A: ArrayTag]: Array[A1]
 
   /** Converts this $coll to a list.
    *  $willNotTerminateInf

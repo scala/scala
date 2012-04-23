@@ -116,20 +116,20 @@ class Channel protected (socket: Socket) {
    *         the expected type.
    */
   @throws(classOf[ChannelException])
-  def receive[T](implicit expected: reflect.Manifest[T]): T = {
-    val found = in.readObject().asInstanceOf[reflect.Manifest[_]]
+  def receive[T](implicit expected: reflect.ClassTag[T]): T = {
+    val found = in.readObject().asInstanceOf[reflect.ClassTag[_]]
     info("receive: found="+found+", expected="+expected)
-    import scala.reflect.Manifest
+    import scala.reflect.ClassTag
     val x = found match {
-      case Manifest.Unit    => ()
-      case Manifest.Boolean => in.readBoolean()
-      case Manifest.Byte    => in.readByte()
-      case Manifest.Char    => in.readChar()
-      case Manifest.Short   => in.readShort()
-      case Manifest.Int     => in.readInt()
-      case Manifest.Long    => in.readLong()
-      case Manifest.Float   => in.readFloat()
-      case Manifest.Double  => in.readDouble()
+      case ClassTag.Unit    => ()
+      case ClassTag.Boolean => in.readBoolean()
+      case ClassTag.Byte    => in.readByte()
+      case ClassTag.Char    => in.readChar()
+      case ClassTag.Short   => in.readShort()
+      case ClassTag.Int     => in.readInt()
+      case ClassTag.Long    => in.readLong()
+      case ClassTag.Float   => in.readFloat()
+      case ClassTag.Double  => in.readDouble()
       case _                => in.readObject()
     }
     val res = if (found <:< expected)
@@ -144,12 +144,12 @@ class Channel protected (socket: Socket) {
   /** <code>?</code> method may throw either an
    *  <code>ClassNotFoundException</code> or an <code>IOException</code>.
    */
-  def ?[T](implicit m: reflect.Manifest[T]): T = receive[T](m)
+  def ?[T](implicit t: reflect.ClassTag[T]): T = receive[T](t)
 
   /** <code>send</code> method may throw an <code>IOException</code>.
    */
-  def send[T](x: T)(implicit m: reflect.Manifest[T]) {
-    out writeObject m
+  def send[T](x: T)(implicit t: reflect.ClassTag[T]) {
+    out writeObject t
     x match {
       case x: Unit    => // nop
       case x: Boolean => out writeBoolean x
@@ -168,7 +168,7 @@ class Channel protected (socket: Socket) {
 
   /** <code>!</code> method may throw an <code>IOException</code>.
    */
-  def ![T](x: T)(implicit m: reflect.Manifest[T]) { send(x)(m) }
+  def ![T](x: T)(implicit m: reflect.ClassTag[T]) { send(x)(m) }
 
   def close() {
     try { socket.close() }
