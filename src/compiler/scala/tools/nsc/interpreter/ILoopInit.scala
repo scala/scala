@@ -100,7 +100,7 @@ trait ILoopInit {
       withLock { while (!initIsComplete) initLoopCondition.await() }
   }
   // private def warningsThunks = List(
-  //   () => intp.bind("lastWarnings", "" + manifest[List[(Position, String)]], intp.lastWarnings _),
+  //   () => intp.bind("lastWarnings", "" + typeTag[List[(Position, String)]], intp.lastWarnings _),
   // )
 
   protected def postInitThunks = List[Option[() => Unit]](

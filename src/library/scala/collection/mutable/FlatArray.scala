@@ -11,7 +11,7 @@
 package scala.collection
 package mutable
 
-import scala.reflect.ClassManifest
+import scala.reflect.ArrayTag
 import generic.CanBuildFrom
 
 /**
@@ -62,16 +62,16 @@ object FlatArray {
 
   def ofDim[Boxed, Unboxed](size:Int)
       (implicit boxings: BoxingConversions[Boxed, Unboxed],
-       manifest: ClassManifest[Unboxed]): FlatArray[Boxed] = {
+       tag: ArrayTag[Unboxed]): FlatArray[Boxed] = {
     val elems = Array.ofDim[Unboxed](size)
-    new FlatArray.Impl(elems, boxings, manifest)
+    new FlatArray.Impl(elems, boxings, tag)
   }
 
   def empty[Boxed, Unboxed](implicit boxings: BoxingConversions[Boxed, Unboxed],
-                            elemManifest: ClassManifest[Unboxed]): FlatArray[Boxed] = apply()
+                            elemTag: ArrayTag[Unboxed]): FlatArray[Boxed] = apply()
 
   def apply[Boxed, Unboxed](elems: Boxed*)
-      (implicit boxings: BoxingConversions[Boxed, Unboxed], elemManifest: ClassManifest[Unboxed]): FlatArray[Boxed] = {
+      (implicit boxings: BoxingConversions[Boxed, Unboxed], elemTag: ArrayTag[Unboxed]): FlatArray[Boxed] = {
     val b = newBuilder[Boxed, Unboxed]
     b.sizeHint(elems.length)
     b ++= elems
@@ -79,13 +79,13 @@ object FlatArray {
   }
 
   def newBuilder[Boxed, Unboxed]
-      (implicit boxings: BoxingConversions[Boxed, Unboxed], elemManifest: ClassManifest[Unboxed]): Builder[Boxed, FlatArray[Boxed]] =
-    new Bldr[Boxed, Unboxed](boxings, elemManifest)
+      (implicit boxings: BoxingConversions[Boxed, Unboxed], elemTag: ArrayTag[Unboxed]): Builder[Boxed, FlatArray[Boxed]] =
+    new Bldr[Boxed, Unboxed](boxings, elemTag)
 
   implicit def canBuildFrom[Boxed, Unboxed](
     implicit
       boxings: BoxingConversions[Boxed, Unboxed],
-      elemManifest: ClassManifest[Unboxed]): CanBuildFrom[FlatArray[_], Boxed, FlatArray[Boxed]] =
+      elemTag: ArrayTag[Unboxed]): CanBuildFrom[FlatArray[_], Boxed, FlatArray[Boxed]] =
     new CanBuildFrom[FlatArray[_], Boxed, FlatArray[Boxed]] {
       def apply(from: FlatArray[_]): Builder[Boxed, FlatArray[Boxed]] =
         newBuilder[Boxed, Unboxed]
@@ -93,14 +93,14 @@ object FlatArray {
         newBuilder[Boxed, Unboxed]
     }
 
-  private class Bldr[Boxed, Unboxed](boxings: BoxingConversions[Boxed, Unboxed], manifest: ClassManifest[Unboxed]) extends Builder[Boxed, FlatArray[Boxed]] {
+  private class Bldr[Boxed, Unboxed](boxings: BoxingConversions[Boxed, Unboxed], tag: ArrayTag[Unboxed]) extends Builder[Boxed, FlatArray[Boxed]] {
 
     private var elems: Array[Unboxed] = _
     private var capacity: Int = 0
     private var size: Int = 0
 
     private def resize(size: Int) {
-      val newelems = manifest.newArray(size)
+      val newelems = tag.newArray(size)
       if (this.size > 0) Array.copy(elems, 0, newelems, 0, this.size)
       elems = newelems
       capacity = size
@@ -131,14 +131,14 @@ object FlatArray {
 
     def result(): FlatArray[Boxed] = {
       if (capacity == 0 || capacity != size) resize(size)
-      new FlatArray.Impl(elems, boxings, manifest)
+      new FlatArray.Impl(elems, boxings, tag)
     }
   }
 
   private class Impl[Boxed, Unboxed](
     elems: Array[Unboxed],
     boxings: BoxingConversions[Boxed, Unboxed],
-    elemManifest: ClassManifest[Unboxed]) extends FlatArray[Boxed] {
+    elemTag: ArrayTag[Unboxed]) extends FlatArray[Boxed] {
 
     def length = elems.length
 
@@ -149,9 +149,9 @@ object FlatArray {
     /** Creates new builder for this collection ==> move to subclasses
      */
     override protected[this] def newBuilder: Builder[Boxed, FlatArray[Boxed]] =
-      new Bldr[Boxed, Unboxed](boxings, elemManifest)
+      new Bldr[Boxed, Unboxed](boxings, elemTag)
 
     /** Clones this object, including the underlying Array. */
-    override def clone: FlatArray[Boxed] = new Impl[Boxed, Unboxed](elems.clone(), boxings, elemManifest)
+    override def clone: FlatArray[Boxed] = new Impl[Boxed, Unboxed](elems.clone(), boxings, elemTag)
   }
 }

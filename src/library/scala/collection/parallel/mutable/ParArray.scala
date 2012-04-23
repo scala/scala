@@ -676,7 +676,7 @@ self =>
 
   private def readObject(in: java.io.ObjectInputStream) {
     in.defaultReadObject
-    
+
     // get raw array from arrayseq
     array = arrayseq.array.asInstanceOf[Array[Any]]
   }
@@ -706,7 +706,7 @@ object ParArray extends ParFactory[ParArray] {
     case _ => new ParArray[T](new ExposedArraySeq[T](runtime.ScalaRunTime.toObjectArray(arr), sz))
   }
 
-  def createFromCopy[T <: AnyRef : ClassManifest](arr: Array[T]): ParArray[T] = {
+  def createFromCopy[T <: AnyRef : ArrayTag](arr: Array[T]): ParArray[T] = {
     val newarr = new Array[T](arr.length)
     Array.copy(arr, 0, newarr, 0, arr.length)
     handoff(newarr)

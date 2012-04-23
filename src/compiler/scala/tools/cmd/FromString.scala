@@ -7,19 +7,19 @@ package scala.tools
 package cmd
 
 import nsc.io.{ Path, File, Directory }
-import scala.reflect.Manifest
+import scala.reflect.TypeTag
 
 /** A general mechanism for defining how a command line argument
  *  (always a String) is transformed into an arbitrary type.  A few
  *  example instances are in the companion object, but in general
  *  either IntFromString will suffice or you'll want custom transformers.
  */
-abstract class FromString[+T](implicit m: Manifest[T]) extends PartialFunction[String, T] {
+abstract class FromString[+T](implicit t: TypeTag[T]) extends PartialFunction[String, T] {
   def apply(s: String): T
   def isDefinedAt(s: String): Boolean = true
   def zero: T = apply("")
 
-  def targetString: String = m.toString
+  def targetString: String = t.toString
 }
 
 object FromString {

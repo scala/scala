@@ -534,9 +534,9 @@ trait Definitions extends reflect.api.StandardDefinitions {
     // private lazy val importerFromRm = self.mkImporter(rm)
     private lazy val importerFromRm = self.mkImporter(rm).asInstanceOf[self.Importer { val from: rm.type }]
 
-    def manifestToType(m: Manifest[_]): Type = importerFromRm.importType(m.tpe)
+    def compilerTypeFromTag(t: rm.TypeTag[_]): Type = importerFromRm.importType(t.tpe)
 
-    def manifestToSymbol(m: Manifest[_]): Symbol = importerFromRm.importSymbol(m.tpe.typeSymbol)
+    def compilerSymbolFromTag(t: rm.TypeTag[_]): Symbol = importerFromRm.importSymbol(t.sym)
 
     // The given symbol represents either String.+ or StringAdd.+
     def isStringAddition(sym: Symbol) = sym == String_+ || sym == StringAdd_+
