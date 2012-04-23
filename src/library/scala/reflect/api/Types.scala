@@ -269,6 +269,7 @@ trait Types { self: Universe =>
    *     (T # x).type             SingleType(T, x)
    *     p.x.type                 SingleType(p.type, x)
    *     x.type                   SingleType(NoPrefix, x)
+   *  }}}
    */
   type SingleType <: SingletonType
 
