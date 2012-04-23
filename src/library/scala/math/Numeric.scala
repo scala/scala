@@ -36,8 +36,8 @@ object Numeric {
     def fromInt(x: Int): BigInt = BigInt(x)
     def toInt(x: BigInt): Int = x.intValue
     def toLong(x: BigInt): Long = x.longValue
-    def toFloat(x: BigInt): Float = x.longValue.toFloat
-    def toDouble(x: BigInt): Double = x.longValue.toDouble
+    def toFloat(x: BigInt): Float = x.floatValue
+    def toDouble(x: BigInt): Double = x.doubleValue
   }
   implicit object BigIntIsIntegral extends BigIntIsIntegral with Ordering.BigIntOrdering
 
