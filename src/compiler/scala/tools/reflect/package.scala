@@ -7,6 +7,7 @@ package scala.tools
 
 import java.lang.reflect.Method
 import java.{ lang => jl }
+import scala.reflect.{mirror => rm}
 
 package object reflect {
   def nameAndArity(m: Method) = (m.getName, m.getParameterTypes.size)
@@ -27,7 +28,7 @@ package object reflect {
     }
   }
 
-  def zeroOfClass(clazz: Class[_]) = zeroOf(Manifest(ClassManifest(clazz).tpe))
+  def zeroOfClass(clazz: Class[_]) = zeroOf(Manifest(rm.classToType(clazz)))
   def zeroOf[T](implicit m: Manifest[T]): AnyRef = {
     if (m == manifest[Boolean] || m == manifest[jl.Boolean]) false: jl.Boolean
     else if (m == manifest[Unit] || m == manifest[jl.Void] || m == manifest[scala.runtime.BoxedUnit]) scala.runtime.BoxedUnit.UNIT

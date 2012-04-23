@@ -6,9 +6,7 @@
 **                          |/                                          **
 \*                                                                      */
 
-
 /* INSTRUMENTED VERSION */
-
 
 package scala.runtime;
 
@@ -33,14 +31,16 @@ public final class BoxesRunTime
 {
     private static final int CHAR = 0, BYTE = 1, SHORT = 2, INT = 3, LONG = 4, FLOAT = 5, DOUBLE = 6, OTHER = 7;
 
+    /** We don't need to return BYTE and SHORT, as everything which might
+     *  care widens to INT.
+     */
     private static int typeCode(Object a) {
         if (a instanceof java.lang.Integer) return INT;
-        if (a instanceof java.lang.Byte) return BYTE;
-        if (a instanceof java.lang.Character) return CHAR;
-        if (a instanceof java.lang.Long) return LONG;
         if (a instanceof java.lang.Double) return DOUBLE;
-        if (a instanceof java.lang.Short) return SHORT;
+        if (a instanceof java.lang.Long) return LONG;
+        if (a instanceof java.lang.Character) return CHAR;
         if (a instanceof java.lang.Float) return FLOAT;
+        if ((a instanceof java.lang.Byte) || (a instanceof java.lang.Short)) return INT;
         return OTHER;
     }
 
@@ -49,7 +49,6 @@ public final class BoxesRunTime
     }
 
 /* BOXING ... BOXING ... BOXING ... BOXING ... BOXING ... BOXING ... BOXING ... BOXING */
-
     public static int booleanBoxCount = 0;
     public static int characterBoxCount = 0;
     public static int byteBoxCount = 0;
@@ -58,46 +57,46 @@ public final class BoxesRunTime
     public static int longBoxCount = 0;
     public static int floatBoxCount = 0;
     public static int doubleBoxCount = 0;
-    
+
     public static java.lang.Boolean boxToBoolean(boolean b) {
-	booleanBoxCount++;
+        booleanBoxCount += 1;
         return java.lang.Boolean.valueOf(b);
     }
 
     public static java.lang.Character boxToCharacter(char c) {
-	characterBoxCount++;
+        characterBoxCount += 1;
         return java.lang.Character.valueOf(c);
     }
 
     public static java.lang.Byte boxToByte(byte b) {
-	byteBoxCount++;
+        byteBoxCount += 1;
         return java.lang.Byte.valueOf(b);
     }
 
     public static java.lang.Short boxToShort(short s) {
-	shortBoxCount++;
+        shortBoxCount += 1;
         return java.lang.Short.valueOf(s);
     }
 
     public static java.lang.Integer boxToInteger(int i) {
-	integerBoxCount++;
+        integerBoxCount += 1;
         return java.lang.Integer.valueOf(i);
     }
 
     public static java.lang.Long boxToLong(long l) {
-	longBoxCount++;
+        longBoxCount += 1;
         return java.lang.Long.valueOf(l);
     }
 
     public static java.lang.Float boxToFloat(float f) {
-	floatBoxCount++;
+        floatBoxCount += 1;
         return java.lang.Float.valueOf(f);
     }
 
     public static java.lang.Double boxToDouble(double d) {
-	doubleBoxCount++;
         // System.out.println("box " + d);
         // (new Throwable()).printStackTrace();
+        doubleBoxCount += 1;
         return java.lang.Double.valueOf(d);
     }
 
@@ -138,15 +137,6 @@ public final class BoxesRunTime
 
     /* COMPARISON ... COMPARISON ... COMPARISON ... COMPARISON ... COMPARISON ... COMPARISON */
 
-    private static int eqTypeCode(Number a) {
-        if ((a instanceof java.lang.Integer) || (a instanceof java.lang.Byte)) return INT;
-        if (a instanceof java.lang.Long) return LONG;
-        if (a instanceof java.lang.Double) return DOUBLE;
-        if (a instanceof java.lang.Short) return INT;
-        if (a instanceof java.lang.Float) return FLOAT;
-        return OTHER;
-    }
-
     public static boolean equals(Object x, Object y) {
         if (x == y) return true;
         return equals2(x, y);
@@ -178,8 +168,8 @@ public final class BoxesRunTime
     }
 
     public static boolean equalsNumNum(java.lang.Number xn, java.lang.Number yn) {
-        int xcode = eqTypeCode(xn);
-        int ycode = eqTypeCode(yn);
+        int xcode = typeCode(xn);
+        int ycode = typeCode(yn);
         switch (ycode > xcode ? ycode : xcode) {
         case INT:
             return xn.intValue() == yn.intValue();
@@ -211,8 +201,11 @@ public final class BoxesRunTime
     }
 
     private static boolean equalsNumChar(java.lang.Number xn, java.lang.Character yc) {
+        if (yc == null)
+            return xn == null;
+
         char ch = yc.charValue();
-        switch (eqTypeCode(xn)) {
+        switch (typeCode(xn)) {
         case INT:
             return xn.intValue() == ch;
         case LONG:
@@ -222,9 +215,6 @@ public final class BoxesRunTime
         case DOUBLE:
             return xn.doubleValue() == ch;
         default:
-            if (xn == null)
-                return yc == null;
-
             return xn.equals(yc);
         }
     }
@@ -290,6 +280,31 @@ public final class BoxesRunTime
       else return a.hashCode();
     }
 
+    private static int unboxCharOrInt(Object arg1, int code) {
+      if (code == CHAR)
+        return ((java.lang.Character) arg1).charValue();
+      else
+        return ((java.lang.Number) arg1).intValue();
+    }
+    private static long unboxCharOrLong(Object arg1, int code) {
+      if (code == CHAR)
+        return ((java.lang.Character) arg1).charValue();
+      else
+        return ((java.lang.Number) arg1).longValue();
+    }
+    private static float unboxCharOrFloat(Object arg1, int code) {
+      if (code == CHAR)
+        return ((java.lang.Character) arg1).charValue();
+      else
+        return ((java.lang.Number) arg1).floatValue();
+    }
+    private static double unboxCharOrDouble(Object arg1, int code) {
+      if (code == CHAR)
+        return ((java.lang.Character) arg1).charValue();
+      else
+        return ((java.lang.Number) arg1).doubleValue();
+    }
+
 /* OPERATORS ... OPERATORS ... OPERATORS ... OPERATORS ... OPERATORS ... OPERATORS ... OPERATORS ... OPERATORS */
 
     /** arg1 + arg2 */
@@ -298,24 +313,16 @@ public final class BoxesRunTime
         int code2 = typeCode(arg2);
         int maxcode = (code1 < code2) ? code2 : code1;
         if (maxcode <= INT) {
-            int val1 = (code1 == CHAR) ? ((java.lang.Character) arg1).charValue() : ((java.lang.Number) arg1).intValue();
-            int val2 = (code2 == CHAR) ? ((java.lang.Character) arg2).charValue() : ((java.lang.Number) arg2).intValue();
-            return boxToInteger(val1 + val2);
+            return boxToInteger(unboxCharOrInt(arg1, code1) + unboxCharOrInt(arg2, code2));
         }
         if (maxcode <= LONG) {
-            long val1 = (code1 == CHAR) ? ((java.lang.Character) arg1).charValue() : ((java.lang.Number) arg1).longValue();
-            long val2 = (code2 == CHAR) ? ((java.lang.Character) arg2).charValue() : ((java.lang.Number) arg2).longValue();
-            return boxToLong(val1 + val2);
+            return boxToLong(unboxCharOrLong(arg1, code1) + unboxCharOrLong(arg2, code2));
         }
         if (maxcode <= FLOAT) {
-            float val1 = (code1 == CHAR) ? ((java.lang.Character) arg1).charValue() : ((java.lang.Number) arg1).floatValue();
-            float val2 = (code2 == CHAR) ? ((java.lang.Character) arg2).charValue() : ((java.lang.Number) arg2).floatValue();
-            return boxToFloat(val1 + val2);
+            return boxToFloat(unboxCharOrFloat(arg1, code1) + unboxCharOrFloat(arg2, code2));
         }
         if (maxcode <= DOUBLE) {
-            double val1 = (code1 == CHAR) ? ((java.lang.Character) arg1).charValue() : ((java.lang.Number) arg1).doubleValue();
-            double val2 = (code2 == CHAR) ? ((java.lang.Character) arg2).charValue() : ((java.lang.Number) arg2).doubleValue();
-            return boxToDouble(val1 + val2);
+            return boxToDouble(unboxCharOrDouble(arg1, code1) + unboxCharOrDouble(arg2, code2));
         }
         throw new NoSuchMethodException();
     }
@@ -326,24 +333,16 @@ public final class BoxesRunTime
         int code2 = typeCode(arg2);
         int maxcode = (code1 < code2) ? code2 : code1;
         if (maxcode <= INT) {
-            int val1 = (code1 == CHAR) ? ((java.lang.Character) arg1).charValue() : ((java.lang.Number) arg1).intValue();
-            int val2 = (code2 == CHAR) ? ((java.lang.Character) arg2).charValue() : ((java.lang.Number) arg2).intValue();
-            return boxToInteger(val1 - val2);
+            return boxToInteger(unboxCharOrInt(arg1, code1) - unboxCharOrInt(arg2, code2));
         }
         if (maxcode <= LONG) {
-            long val1 = (code1 == CHAR) ? ((java.lang.Character) arg1).charValue() : ((java.lang.Number) arg1).longValue();
-            long val2 = (code2 == CHAR) ? ((java.lang.Character) arg2).charValue() : ((java.lang.Number) arg2).longValue();
-            return boxToLong(val1 - val2);
+            return boxToLong(unboxCharOrLong(arg1, code1) - unboxCharOrLong(arg2, code2));
         }
         if (maxcode <= FLOAT) {
-            float val1 = (code1 == CHAR) ? ((java.lang.Character) arg1).charValue() : ((java.lang.Number) arg1).floatValue();
-            float val2 = (code2 == CHAR) ? ((java.lang.Character) arg2).charValue() : ((java.lang.Number) arg2).floatValue();
-            return boxToFloat(val1 - val2);
+            return boxToFloat(unboxCharOrFloat(arg1, code1) - unboxCharOrFloat(arg2, code2));
         }
         if (maxcode <= DOUBLE) {
-            double val1 = (code1 == CHAR) ? ((java.lang.Character) arg1).charValue() : ((java.lang.Number) arg1).doubleValue();
-            double val2 = (code2 == CHAR) ? ((java.lang.Character) arg2).charValue() : ((java.lang.Number) arg2).doubleValue();
-            return boxToDouble(val1 - val2);
+            return boxToDouble(unboxCharOrDouble(arg1, code1) - unboxCharOrDouble(arg2, code2));
         }
         throw new NoSuchMethodException();
     }
@@ -354,24 +353,16 @@ public final class BoxesRunTime
         int code2 = typeCode(arg2);
         int maxcode = (code1 < code2) ? code2 : code1;
         if (maxcode <= INT) {
-            int val1 = (code1 == CHAR) ? ((java.lang.Character) arg1).charValue() : ((java.lang.Number) arg1).intValue();
-            int val2 = (code2 == CHAR) ? ((java.lang.Character) arg2).charValue() : ((java.lang.Number) arg2).intValue();
-            return boxToInteger(val1 * val2);
+            return boxToInteger(unboxCharOrInt(arg1, code1) * unboxCharOrInt(arg2, code2));
         }
         if (maxcode <= LONG) {
-            long val1 = (code1 == CHAR) ? ((java.lang.Character) arg1).charValue() : ((java.lang.Number) arg1).longValue();
-            long val2 = (code2 == CHAR) ? ((java.lang.Character) arg2).charValue() : ((java.lang.Number) arg2).longValue();
-            return boxToLong(val1 * val2);
+            return boxToLong(unboxCharOrLong(arg1, code1) * unboxCharOrLong(arg2, code2));
         }
         if (maxcode <= FLOAT) {
-            float val1 = (code1 == CHAR) ? ((java.lang.Character) arg1).charValue() : ((java.lang.Number) arg1).floatValue();
-            float val2 = (code2 == CHAR) ? ((java.lang.Character) arg2).charValue() : ((java.lang.Number) arg2).floatValue();
-            return boxToFloat(val1 * val2);
+            return boxToFloat(unboxCharOrFloat(arg1, code1) * unboxCharOrFloat(arg2, code2));
         }
         if (maxcode <= DOUBLE) {
-            double val1 = (code1 == CHAR) ? ((java.lang.Character) arg1).charValue() : ((java.lang.Number) arg1).doubleValue();
-            double val2 = (code2 == CHAR) ? ((java.lang.Character) arg2).charValue() : ((java.lang.Number) arg2).doubleValue();
-            return boxToDouble(val1 * val2);
+            return boxToDouble(unboxCharOrDouble(arg1, code1) * unboxCharOrDouble(arg2, code2));
         }
         throw new NoSuchMethodException();
     }
@@ -381,26 +372,16 @@ public final class BoxesRunTime
         int code1 = typeCode(arg1);
         int code2 = typeCode(arg2);
         int maxcode = (code1 < code2) ? code2 : code1;
-        if (maxcode <= INT) {
-            int val1 = (code1 == CHAR) ? ((java.lang.Character) arg1).charValue() : ((java.lang.Number) arg1).intValue();
-            int val2 = (code2 == CHAR) ? ((java.lang.Character) arg2).charValue() : ((java.lang.Number) arg2).intValue();
-            return boxToInteger(val1 / val2);
-        }
-        if (maxcode <= LONG) {
-            long val1 = (code1 == CHAR) ? ((java.lang.Character) arg1).charValue() : ((java.lang.Number) arg1).longValue();
-            long val2 = (code2 == CHAR) ? ((java.lang.Character) arg2).charValue() : ((java.lang.Number) arg2).longValue();
-            return boxToLong(val1 / val2);
-        }
-        if (maxcode <= FLOAT) {
-            float val1 = (code1 == CHAR) ? ((java.lang.Character) arg1).charValue() : ((java.lang.Number) arg1).floatValue();
-            float val2 = (code2 == CHAR) ? ((java.lang.Character) arg2).charValue() : ((java.lang.Number) arg2).floatValue();
-            return boxToFloat(val1 / val2);
-        }
-        if (maxcode <= DOUBLE) {
-            double val1 = (code1 == CHAR) ? ((java.lang.Character) arg1).charValue() : ((java.lang.Number) arg1).doubleValue();
-            double val2 = (code2 == CHAR) ? ((java.lang.Character) arg2).charValue() : ((java.lang.Number) arg2).doubleValue();
-            return boxToDouble(val1 / val2);
-        }
+
+        if (maxcode <= INT)
+            return boxToInteger(unboxCharOrInt(arg1, code1) / unboxCharOrInt(arg2, code2));
+        if (maxcode <= LONG)
+            return boxToLong(unboxCharOrLong(arg1, code1) / unboxCharOrLong(arg2, code2));
+        if (maxcode <= FLOAT)
+            return boxToFloat(unboxCharOrFloat(arg1, code1) / unboxCharOrFloat(arg2, code2));
+        if (maxcode <= DOUBLE)
+            return boxToDouble(unboxCharOrDouble(arg1, code1) / unboxCharOrDouble(arg2, code2));
+
         throw new NoSuchMethodException();
     }
 
@@ -409,26 +390,16 @@ public final class BoxesRunTime
         int code1 = typeCode(arg1);
         int code2 = typeCode(arg2);
         int maxcode = (code1 < code2) ? code2 : code1;
-        if (maxcode <= INT) {
-            int val1 = (code1 == CHAR) ? ((java.lang.Character) arg1).charValue() : ((java.lang.Number) arg1).intValue();
-            int val2 = (code2 == CHAR) ? ((java.lang.Character) arg2).charValue() : ((java.lang.Number) arg2).intValue();
-            return boxToInteger(val1 % val2);
-        }
-        if (maxcode <= LONG) {
-            long val1 = (code1 == CHAR) ? ((java.lang.Character) arg1).charValue() : ((java.lang.Number) arg1).longValue();
-            long val2 = (code2 == CHAR) ? ((java.lang.Character) arg2).charValue() : ((java.lang.Number) arg2).longValue();
-            return boxToLong(val1 % val2);
-        }
-        if (maxcode <= FLOAT) {
-            float val1 = (code1 == CHAR) ? ((java.lang.Character) arg1).charValue() : ((java.lang.Number) arg1).floatValue();
-            float val2 = (code2 == CHAR) ? ((java.lang.Character) arg2).charValue() : ((java.lang.Number) arg2).floatValue();
-            return boxToFloat(val1 % val2);
-        }
-        if (maxcode <= DOUBLE) {
-            double val1 = (code1 == CHAR) ? ((java.lang.Character) arg1).charValue() : ((java.lang.Number) arg1).doubleValue();
-            double val2 = (code2 == CHAR) ? ((java.lang.Character) arg2).charValue() : ((java.lang.Number) arg2).doubleValue();
-            return boxToDouble(val1 % val2);
-        }
+
+        if (maxcode <= INT)
+            return boxToInteger(unboxCharOrInt(arg1, code1) % unboxCharOrInt(arg2, code2));
+        if (maxcode <= LONG)
+            return boxToLong(unboxCharOrLong(arg1, code1) % unboxCharOrLong(arg2, code2));
+        if (maxcode <= FLOAT)
+            return boxToFloat(unboxCharOrFloat(arg1, code1) % unboxCharOrFloat(arg2, code2));
+        if (maxcode <= DOUBLE)
+            return boxToDouble(unboxCharOrDouble(arg1, code1) % unboxCharOrDouble(arg2, code2));
+
         throw new NoSuchMethodException();
     }
 
@@ -437,24 +408,24 @@ public final class BoxesRunTime
         int code1 = typeCode(arg1);
         int code2 = typeCode(arg2);
         if (code1 <= INT) {
-            int val1 = (code1 == CHAR) ? ((java.lang.Character) arg1).charValue() : ((java.lang.Number) arg1).intValue();
+            int val1 = unboxCharOrInt(arg1, code1);
             if (code2 <= INT) {
-                int val2 = (code2 == CHAR) ? ((java.lang.Character) arg2).charValue() : ((java.lang.Number) arg2).intValue();
+                int val2 = unboxCharOrInt(arg2, code2);
                 return boxToInteger(val1 >> val2);
             }
             if (code2 <= LONG) {
-                long val2 = (code2 == CHAR) ? ((java.lang.Character) arg2).charValue() : ((java.lang.Number) arg2).longValue();
+                long val2 = unboxCharOrLong(arg2, code2);
                 return boxToInteger(val1 >> val2);
             }
         }
         if (code1 <= LONG) {
-            long val1 = (code1 == CHAR) ? ((java.lang.Character) arg1).charValue() : ((java.lang.Number) arg1).longValue();
+            long val1 = unboxCharOrLong(arg1, code1);
             if (code2 <= INT) {
-                int val2 = (code2 == CHAR) ? ((java.lang.Character) arg2).charValue() : ((java.lang.Number) arg2).intValue();
+                int val2 = unboxCharOrInt(arg2, code2);
                 return boxToLong(val1 >> val2);
             }
             if (code2 <= LONG) {
-                long val2 = (code2 == CHAR) ? ((java.lang.Character) arg2).charValue() : ((java.lang.Number) arg2).longValue();
+                long val2 = unboxCharOrLong(arg2, code2);
                 return boxToLong(val1 >> val2);
             }
         }
@@ -466,24 +437,24 @@ public final class BoxesRunTime
         int code1 = typeCode(arg1);
         int code2 = typeCode(arg2);
         if (code1 <= INT) {
-            int val1 = (code1 == CHAR) ? ((java.lang.Character) arg1).charValue() : ((java.lang.Number) arg1).intValue();
+            int val1 = unboxCharOrInt(arg1, code1);
             if (code2 <= INT) {
-                int val2 = (code2 == CHAR) ? ((java.lang.Character) arg2).charValue() : ((java.lang.Number) arg2).intValue();
+                int val2 = unboxCharOrInt(arg2, code2);
                 return boxToInteger(val1 << val2);
             }
             if (code2 <= LONG) {
-                long val2 = (code2 == CHAR) ? ((java.lang.Character) arg2).charValue() : ((java.lang.Number) arg2).longValue();
+                long val2 = unboxCharOrLong(arg2, code2);
                 return boxToInteger(val1 << val2);
             }
         }
         if (code1 <= LONG) {
-            long val1 = (code1 == CHAR) ? ((java.lang.Character) arg1).charValue() : ((java.lang.Number) arg1).longValue();
+            long val1 = unboxCharOrLong(arg1, code1);
             if (code2 <= INT) {
-                int val2 = (code2 == CHAR) ? ((java.lang.Character) arg2).charValue() : ((java.lang.Number) arg2).intValue();
+                int val2 = unboxCharOrInt(arg2, code2);
                 return boxToLong(val1 << val2);
             }
             if (code2 <= LONG) {
-                long val2 = (code2 == CHAR) ? ((java.lang.Character) arg2).charValue() : ((java.lang.Number) arg2).longValue();
+                long val2 = unboxCharOrLong(arg2, code2);
                 return boxToLong(val1 << val2);
             }
         }
@@ -495,24 +466,24 @@ public final class BoxesRunTime
         int code1 = typeCode(arg1);
         int code2 = typeCode(arg2);
         if (code1 <= INT) {
-            int val1 = (code1 == CHAR) ? ((java.lang.Character) arg1).charValue() : ((java.lang.Number) arg1).intValue();
+            int val1 = unboxCharOrInt(arg1, code1);
             if (code2 <= INT) {
-                int val2 = (code2 == CHAR) ? ((java.lang.Character) arg2).charValue() : ((java.lang.Number) arg2).intValue();
+                int val2 = unboxCharOrInt(arg2, code2);
                 return boxToInteger(val1 >>> val2);
             }
             if (code2 <= LONG) {
-                long val2 = (code2 == CHAR) ? ((java.lang.Character) arg2).charValue() : ((java.lang.Number) arg2).longValue();
+                long val2 = unboxCharOrLong(arg2, code2);
                 return boxToInteger(val1 >>> val2);
             }
         }
         if (code1 <= LONG) {
-            long val1 = (code1 == CHAR) ? ((java.lang.Character) arg1).charValue() : ((java.lang.Number) arg1).longValue();
+            long val1 = unboxCharOrLong(arg1, code1);
             if (code2 <= INT) {
-                int val2 = (code2 == CHAR) ? ((java.lang.Character) arg2).charValue() : ((java.lang.Number) arg2).intValue();
+                int val2 = unboxCharOrInt(arg2, code2);
                 return boxToLong(val1 >>> val2);
             }
             if (code2 <= LONG) {
-                long val2 = (code2 == CHAR) ? ((java.lang.Character) arg2).charValue() : ((java.lang.Number) arg2).longValue();
+                long val2 = unboxCharOrLong(arg2, code2);
                 return boxToLong(val1 >>> val2);
             }
         }
@@ -523,19 +494,19 @@ public final class BoxesRunTime
     public static Object negate(Object arg) throws NoSuchMethodException {
         int code = typeCode(arg);
         if (code <= INT) {
-            int val = (code == CHAR) ? ((java.lang.Character) arg).charValue() : ((java.lang.Number) arg).intValue();
+            int val = unboxCharOrInt(arg, code);
             return boxToInteger(-val);
         }
         if (code <= LONG) {
-            long val = (code == CHAR) ? ((java.lang.Character) arg).charValue() : ((java.lang.Number) arg).longValue();
+            long val = unboxCharOrLong(arg, code);
             return boxToLong(-val);
         }
         if (code <= FLOAT) {
-            float val = (code == CHAR) ? ((java.lang.Character) arg).charValue() : ((java.lang.Number) arg).floatValue();
+            float val = unboxCharOrFloat(arg, code);
             return boxToFloat(-val);
         }
         if (code <= DOUBLE) {
-            double val = (code == CHAR) ? ((java.lang.Character) arg).charValue() : ((java.lang.Number) arg).doubleValue();
+            double val = unboxCharOrDouble(arg, code);
             return boxToDouble(-val);
         }
         throw new NoSuchMethodException();
@@ -545,20 +516,16 @@ public final class BoxesRunTime
     public static Object positive(Object arg) throws NoSuchMethodException {
         int code = typeCode(arg);
         if (code <= INT) {
-            int val = (code == CHAR) ? ((java.lang.Character) arg).charValue() : ((java.lang.Number) arg).intValue();
-            return boxToInteger(+val);
+            return boxToInteger(+unboxCharOrInt(arg, code));
         }
         if (code <= LONG) {
-            long val = (code == CHAR) ? ((java.lang.Character) arg).charValue() : ((java.lang.Number) arg).longValue();
-            return boxToLong(+val);
+            return boxToLong(+unboxCharOrLong(arg, code));
         }
         if (code <= FLOAT) {
-            float val = (code == CHAR) ? ((java.lang.Character) arg).charValue() : ((java.lang.Number) arg).floatValue();
-            return boxToFloat(+val);
+            return boxToFloat(+unboxCharOrFloat(arg, code));
         }
         if (code <= DOUBLE) {
-            double val = (code == CHAR) ? ((java.lang.Character) arg).charValue() : ((java.lang.Number) arg).doubleValue();
-            return boxToDouble(+val);
+            return boxToDouble(+unboxCharOrDouble(arg, code));
         }
         throw new NoSuchMethodException();
     }
@@ -566,72 +533,60 @@ public final class BoxesRunTime
     /** arg1 & arg2 */
     public static Object takeAnd(Object arg1, Object arg2) throws NoSuchMethodException {
         if ((arg1 instanceof Boolean) || (arg2 instanceof Boolean)) {
-            if (!((arg1 instanceof Boolean) && (arg2 instanceof Boolean))) {
+            if ((arg1 instanceof Boolean) && (arg2 instanceof Boolean))
+                return boxToBoolean(((java.lang.Boolean) arg1).booleanValue() & ((java.lang.Boolean) arg2).booleanValue());
+            else
                 throw new NoSuchMethodException();
-            }
-            return boxToBoolean(((java.lang.Boolean) arg1).booleanValue() & ((java.lang.Boolean) arg2).booleanValue());
         }
         int code1 = typeCode(arg1);
         int code2 = typeCode(arg2);
         int maxcode = (code1 < code2) ? code2 : code1;
-        if (maxcode <= INT) {
-            int val1 = (code1 == CHAR) ? ((java.lang.Character) arg1).charValue() : ((java.lang.Number) arg1).intValue();
-            int val2 = (code2 == CHAR) ? ((java.lang.Character) arg2).charValue() : ((java.lang.Number) arg2).intValue();
-            return boxToInteger(val1 & val2);
-        }
-        if (maxcode <= LONG) {
-            long val1 = (code1 == CHAR) ? ((java.lang.Character) arg1).charValue() : ((java.lang.Number) arg1).longValue();
-            long val2 = (code2 == CHAR) ? ((java.lang.Character) arg2).charValue() : ((java.lang.Number) arg2).longValue();
-            return boxToLong(val1 & val2);
-        }
+
+        if (maxcode <= INT)
+            return boxToInteger(unboxCharOrInt(arg1, code1) & unboxCharOrInt(arg2, code2));
+        if (maxcode <= LONG)
+            return boxToLong(unboxCharOrLong(arg1, code1) & unboxCharOrLong(arg2, code2));
+
         throw new NoSuchMethodException();
     }
 
     /** arg1 | arg2 */
     public static Object takeOr(Object arg1, Object arg2) throws NoSuchMethodException {
         if ((arg1 instanceof Boolean) || (arg2 instanceof Boolean)) {
-            if (!((arg1 instanceof Boolean) && (arg2 instanceof Boolean))) {
+            if ((arg1 instanceof Boolean) && (arg2 instanceof Boolean))
+                return boxToBoolean(((java.lang.Boolean) arg1).booleanValue() | ((java.lang.Boolean) arg2).booleanValue());
+            else
                 throw new NoSuchMethodException();
-            }
-            return boxToBoolean(((java.lang.Boolean) arg1).booleanValue() | ((java.lang.Boolean) arg2).booleanValue());
         }
         int code1 = typeCode(arg1);
         int code2 = typeCode(arg2);
         int maxcode = (code1 < code2) ? code2 : code1;
-        if (maxcode <= INT) {
-            int val1 = (code1 == CHAR) ? ((java.lang.Character) arg1).charValue() : ((java.lang.Number) arg1).intValue();
-            int val2 = (code2 == CHAR) ? ((java.lang.Character) arg2).charValue() : ((java.lang.Number) arg2).intValue();
-            return boxToInteger(val1 | val2);
-        }
-        if (maxcode <= LONG) {
-            long val1 = (code1 == CHAR) ? ((java.lang.Character) arg1).charValue() : ((java.lang.Number) arg1).longValue();
-            long val2 = (code2 == CHAR) ? ((java.lang.Character) arg2).charValue() : ((java.lang.Number) arg2).longValue();
-            return boxToLong(val1 | val2);
-        }
+
+        if (maxcode <= INT)
+            return boxToInteger(unboxCharOrInt(arg1, code1) | unboxCharOrInt(arg2, code2));
+        if (maxcode <= LONG)
+            return boxToLong(unboxCharOrLong(arg1, code1) | unboxCharOrLong(arg2, code2));
+
         throw new NoSuchMethodException();
     }
 
     /** arg1 ^ arg2 */
     public static Object takeXor(Object arg1, Object arg2) throws NoSuchMethodException {
         if ((arg1 instanceof Boolean) || (arg2 instanceof Boolean)) {
-            if (!((arg1 instanceof Boolean) && (arg2 instanceof Boolean))) {
+            if ((arg1 instanceof Boolean) && (arg2 instanceof Boolean))
+                return boxToBoolean(((java.lang.Boolean) arg1).booleanValue() ^ ((java.lang.Boolean) arg2).booleanValue());
+            else
                 throw new NoSuchMethodException();
-            }
-            return boxToBoolean(((java.lang.Boolean) arg1).booleanValue() ^ ((java.lang.Boolean) arg2).booleanValue());
         }
         int code1 = typeCode(arg1);
         int code2 = typeCode(arg2);
         int maxcode = (code1 < code2) ? code2 : code1;
-        if (maxcode <= INT) {
-            int val1 = (code1 == CHAR) ? ((java.lang.Character) arg1).charValue() : ((java.lang.Number) arg1).intValue();
-            int val2 = (code2 == CHAR) ? ((java.lang.Character) arg2).charValue() : ((java.lang.Number) arg2).intValue();
-            return boxToInteger(val1 ^ val2);
-        }
-        if (maxcode <= LONG) {
-            long val1 = (code1 == CHAR) ? ((java.lang.Character) arg1).charValue() : ((java.lang.Number) arg1).longValue();
-            long val2 = (code2 == CHAR) ? ((java.lang.Character) arg2).charValue() : ((java.lang.Number) arg2).longValue();
-            return boxToLong(val1 ^ val2);
-        }
+
+        if (maxcode <= INT)
+            return boxToInteger(unboxCharOrInt(arg1, code1) ^ unboxCharOrInt(arg2, code2));
+        if (maxcode <= LONG)
+            return boxToLong(unboxCharOrLong(arg1, code1) ^ unboxCharOrLong(arg2, code2));
+
         throw new NoSuchMethodException();
     }
 
@@ -655,12 +610,10 @@ public final class BoxesRunTime
     public static Object complement(Object arg) throws NoSuchMethodException {
         int code = typeCode(arg);
         if (code <= INT) {
-            int val = (code == CHAR) ? ((java.lang.Character) arg).charValue() : ((java.lang.Number) arg).intValue();
-            return boxToInteger(~val);
+            return boxToInteger(~unboxCharOrInt(arg, code));
         }
         if (code <= LONG) {
-            long val = (code == CHAR) ? ((java.lang.Character) arg).charValue() : ((java.lang.Number) arg).longValue();
-            return boxToLong(~val);
+            return boxToLong(~unboxCharOrLong(arg, code));
         }
         throw new NoSuchMethodException();
     }
@@ -686,23 +639,23 @@ public final class BoxesRunTime
         int code2 = typeCode(arg2);
         int maxcode = (code1 < code2) ? code2 : code1;
         if (maxcode <= INT) {
-            int val1 = (code1 == CHAR) ? ((java.lang.Character) arg1).charValue() : ((java.lang.Number) arg1).intValue();
-            int val2 = (code2 == CHAR) ? ((java.lang.Character) arg2).charValue() : ((java.lang.Number) arg2).intValue();
+            int val1 = unboxCharOrInt(arg1, code1);
+            int val2 = unboxCharOrInt(arg2, code2);
             return boxToBoolean(val1 < val2);
         }
         if (maxcode <= LONG) {
-            long val1 = (code1 == CHAR) ? ((java.lang.Character) arg1).charValue() : ((java.lang.Number) arg1).longValue();
-            long val2 = (code2 == CHAR) ? ((java.lang.Character) arg2).charValue() : ((java.lang.Number) arg2).longValue();
+            long val1 = unboxCharOrLong(arg1, code1);
+            long val2 = unboxCharOrLong(arg2, code2);
             return boxToBoolean(val1 < val2);
         }
         if (maxcode <= FLOAT) {
-            float val1 = (code1 == CHAR) ? ((java.lang.Character) arg1).charValue() : ((java.lang.Number) arg1).floatValue();
-            float val2 = (code2 == CHAR) ? ((java.lang.Character) arg2).charValue() : ((java.lang.Number) arg2).floatValue();
+            float val1 = unboxCharOrFloat(arg1, code1);
+            float val2 = unboxCharOrFloat(arg2, code2);
             return boxToBoolean(val1 < val2);
         }
         if (maxcode <= DOUBLE) {
-            double val1 = (code1 == CHAR) ? ((java.lang.Character) arg1).charValue() : ((java.lang.Number) arg1).doubleValue();
-            double val2 = (code2 == CHAR) ? ((java.lang.Character) arg2).charValue() : ((java.lang.Number) arg2).doubleValue();
+            double val1 = unboxCharOrDouble(arg1, code1);
+            double val2 = unboxCharOrDouble(arg2, code2);
             return boxToBoolean(val1 < val2);
         }
         throw new NoSuchMethodException();
@@ -713,23 +666,23 @@ public final class BoxesRunTime
         int code2 = typeCode(arg2);
         int maxcode = (code1 < code2) ? code2 : code1;
         if (maxcode <= INT) {
-            int val1 = (code1 == CHAR) ? ((java.lang.Character) arg1).charValue() : ((java.lang.Number) arg1).intValue();
-            int val2 = (code2 == CHAR) ? ((java.lang.Character) arg2).charValue() : ((java.lang.Number) arg2).intValue();
+            int val1 = unboxCharOrInt(arg1, code1);
+            int val2 = unboxCharOrInt(arg2, code2);
             return boxToBoolean(val1 <= val2);
         }
         if (maxcode <= LONG) {
-            long val1 = (code1 == CHAR) ? ((java.lang.Character) arg1).charValue() : ((java.lang.Number) arg1).longValue();
-            long val2 = (code2 == CHAR) ? ((java.lang.Character) arg2).charValue() : ((java.lang.Number) arg2).longValue();
+            long val1 = unboxCharOrLong(arg1, code1);
+            long val2 = unboxCharOrLong(arg2, code2);
             return boxToBoolean(val1 <= val2);
         }
         if (maxcode <= FLOAT) {
-            float val1 = (code1 == CHAR) ? ((java.lang.Character) arg1).charValue() : ((java.lang.Number) arg1).floatValue();
-            float val2 = (code2 == CHAR) ? ((java.lang.Character) arg2).charValue() : ((java.lang.Number) arg2).floatValue();
+            float val1 = unboxCharOrFloat(arg1, code1);
+            float val2 = unboxCharOrFloat(arg2, code2);
             return boxToBoolean(val1 <= val2);
         }
         if (maxcode <= DOUBLE) {
-            double val1 = (code1 == CHAR) ? ((java.lang.Character) arg1).charValue() : ((java.lang.Number) arg1).doubleValue();
-            double val2 = (code2 == CHAR) ? ((java.lang.Character) arg2).charValue() : ((java.lang.Number) arg2).doubleValue();
+            double val1 = unboxCharOrDouble(arg1, code1);
+            double val2 = unboxCharOrDouble(arg2, code2);
             return boxToBoolean(val1 <= val2);
         }
         throw new NoSuchMethodException();
@@ -740,23 +693,23 @@ public final class BoxesRunTime
         int code2 = typeCode(arg2);
         int maxcode = (code1 < code2) ? code2 : code1;
         if (maxcode <= INT) {
-            int val1 = (code1 == CHAR) ? ((java.lang.Character) arg1).charValue() : ((java.lang.Number) arg1).intValue();
-            int val2 = (code2 == CHAR) ? ((java.lang.Character) arg2).charValue() : ((java.lang.Number) arg2).intValue();
+            int val1 = unboxCharOrInt(arg1, code1);
+            int val2 = unboxCharOrInt(arg2, code2);
             return boxToBoolean(val1 >= val2);
         }
         if (maxcode <= LONG) {
-            long val1 = (code1 == CHAR) ? ((java.lang.Character) arg1).charValue() : ((java.lang.Number) arg1).longValue();
-            long val2 = (code2 == CHAR) ? ((java.lang.Character) arg2).charValue() : ((java.lang.Number) arg2).longValue();
+            long val1 = unboxCharOrLong(arg1, code1);
+            long val2 = unboxCharOrLong(arg2, code2);
             return boxToBoolean(val1 >= val2);
         }
         if (maxcode <= FLOAT) {
-            float val1 = (code1 == CHAR) ? ((java.lang.Character) arg1).charValue() : ((java.lang.Number) arg1).floatValue();
-            float val2 = (code2 == CHAR) ? ((java.lang.Character) arg2).charValue() : ((java.lang.Number) arg2).floatValue();
+            float val1 = unboxCharOrFloat(arg1, code1);
+            float val2 = unboxCharOrFloat(arg2, code2);
             return boxToBoolean(val1 >= val2);
         }
         if (maxcode <= DOUBLE) {
-            double val1 = (code1 == CHAR) ? ((java.lang.Character) arg1).charValue() : ((java.lang.Number) arg1).doubleValue();
-            double val2 = (code2 == CHAR) ? ((java.lang.Character) arg2).charValue() : ((java.lang.Number) arg2).doubleValue();
+            double val1 = unboxCharOrDouble(arg1, code1);
+            double val2 = unboxCharOrDouble(arg2, code2);
             return boxToBoolean(val1 >= val2);
         }
         throw new NoSuchMethodException();
@@ -767,33 +720,30 @@ public final class BoxesRunTime
         int code2 = typeCode(arg2);
         int maxcode = (code1 < code2) ? code2 : code1;
         if (maxcode <= INT) {
-            int val1 = (code1 == CHAR) ? ((java.lang.Character) arg1).charValue() : ((java.lang.Number) arg1).intValue();
-            int val2 = (code2 == CHAR) ? ((java.lang.Character) arg2).charValue() : ((java.lang.Number) arg2).intValue();
+            int val1 = unboxCharOrInt(arg1, code1);
+            int val2 = unboxCharOrInt(arg2, code2);
             return boxToBoolean(val1 > val2);
         }
         if (maxcode <= LONG) {
-            long val1 = (code1 == CHAR) ? ((java.lang.Character) arg1).charValue() : ((java.lang.Number) arg1).longValue();
-            long val2 = (code2 == CHAR) ? ((java.lang.Character) arg2).charValue() : ((java.lang.Number) arg2).longValue();
+            long val1 = unboxCharOrLong(arg1, code1);
+            long val2 = unboxCharOrLong(arg2, code2);
             return boxToBoolean(val1 > val2);
         }
         if (maxcode <= FLOAT) {
-            float val1 = (code1 == CHAR) ? ((java.lang.Character) arg1).charValue() : ((java.lang.Number) arg1).floatValue();
-            float val2 = (code2 == CHAR) ? ((java.lang.Character) arg2).charValue() : ((java.lang.Number) arg2).floatValue();
+            float val1 = unboxCharOrFloat(arg1, code1);
+            float val2 = unboxCharOrFloat(arg2, code2);
             return boxToBoolean(val1 > val2);
         }
         if (maxcode <= DOUBLE) {
-            double val1 = (code1 == CHAR) ? ((java.lang.Character) arg1).charValue() : ((java.lang.Number) arg1).doubleValue();
-            double val2 = (code2 == CHAR) ? ((java.lang.Character) arg2).charValue() : ((java.lang.Number) arg2).doubleValue();
+            double val1 = unboxCharOrDouble(arg1, code1);
+            double val2 = unboxCharOrDouble(arg2, code2);
             return boxToBoolean(val1 > val2);
         }
         throw new NoSuchMethodException();
     }
-    
+
     public static boolean isBoxedNumberOrBoolean(Object arg) {
-      if (arg instanceof java.lang.Boolean)
-        return true;
-      else
-        return isBoxedNumber(arg);
+      return (arg instanceof java.lang.Boolean) || isBoxedNumber(arg);
     }
     public static boolean isBoxedNumber(Object arg) {
       return  (

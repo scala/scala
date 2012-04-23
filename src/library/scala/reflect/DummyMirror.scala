@@ -430,6 +430,8 @@ class DummyMirror(cl: ClassLoader) extends api.Mirror {
     def fullName: String = notSupported()
     def id: Int = notSupported()
     def orElse[T](alt: => Symbol): Symbol = notSupported()
+    def filter(cond: Symbol => Boolean): Symbol = notSupported()
+    def suchThat(cond: Symbol => Boolean): Symbol = notSupported()
     def privateWithin: Symbol = notSupported()
     def companionSymbol: Symbol = notSupported()
     def moduleClass: Symbol = notSupported()
