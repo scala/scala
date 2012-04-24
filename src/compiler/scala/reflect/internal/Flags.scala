@@ -83,40 +83,40 @@ import scala.collection.{ mutable, immutable }
 /** Flags set on Modifiers instances in the parsing stage.
  */
 class ModifierFlags {
-  final val IMPLICIT      = 0x00000200
-  final val FINAL         = 0x00000020    // May not be overridden. Note that java final implies much more than scala final.
-  final val PRIVATE       = 0x00000004
-  final val PROTECTED     = 0x00000001
+  final val IMPLICIT      = 1 << 9
+  final val FINAL         = 1 << 5    // May not be overridden. Note that java final implies much more than scala final.
+  final val PRIVATE       = 1 << 2
+  final val PROTECTED     = 1 << 0
 
-  final val SEALED        = 0x00000400
-  final val OVERRIDE      = 0x00000002
-  final val CASE          = 0x00000800
-  final val ABSTRACT      = 0x00000008    // abstract class, or used in conjunction with abstract override.
+  final val SEALED        = 1 << 10
+  final val OVERRIDE      = 1 << 1
+  final val CASE          = 1 << 11
+  final val ABSTRACT      = 1 << 3        // abstract class, or used in conjunction with abstract override.
                                           // Note difference to DEFERRED!
-  final val DEFERRED      = 0x00000010    // was `abstract' for members | trait is virtual
-  final val INTERFACE     = 0x00000080    // symbol is an interface (i.e. a trait which defines only abstract methods)
-  final val MUTABLE       = 0x00001000    // symbol is a mutable variable.
-  final val PARAM         = 0x00002000    // symbol is a (value or type) parameter to a method
-  final val MACRO         = 0x00008000    // symbol is a macro definition
+  final val DEFERRED      = 1 << 4        // was `abstract' for members | trait is virtual
+  final val INTERFACE     = 1 << 7        // symbol is an interface (i.e. a trait which defines only abstract methods)
+  final val MUTABLE       = 1 << 12       // symbol is a mutable variable.
+  final val PARAM         = 1 << 13       // symbol is a (value or type) parameter to a method
+  final val MACRO         = 1 << 15       // symbol is a macro definition
 
-  final val COVARIANT     = 0x00010000    // symbol is a covariant type variable
-  final val BYNAMEPARAM   = 0x00010000    // parameter is by name
-  final val CONTRAVARIANT = 0x00020000    // symbol is a contravariant type variable
-  final val ABSOVERRIDE   = 0x00040000    // combination of abstract & override
-  final val LOCAL         = 0x00080000    // symbol is local to current class (i.e. private[this] or protected[this]
+  final val COVARIANT     = 1 << 16       // symbol is a covariant type variable
+  final val BYNAMEPARAM   = 1 << 16       // parameter is by name
+  final val CONTRAVARIANT = 1 << 17       // symbol is a contravariant type variable
+  final val ABSOVERRIDE   = 1 << 18       // combination of abstract & override
+  final val LOCAL         = 1 << 19       // symbol is local to current class (i.e. private[this] or protected[this]
                                           // pre: PRIVATE or PROTECTED are also set
-  final val JAVA          = 0x00100000    // symbol was defined by a Java class
-  final val STATIC        = 0x00800000    // static field, method or class
-  final val CASEACCESSOR  = 0x01000000    // symbol is a case parameter (or its accessor, or a GADT skolem)
-  final val TRAIT         = 0x02000000    // symbol is a trait
-  final val DEFAULTPARAM  = 0x02000000    // the parameter has a default value
-  final val PARAMACCESSOR = 0x20000000    // for field definitions generated for primary constructor
+  final val JAVA          = 1 << 20       // symbol was defined by a Java class
+  final val STATIC        = 1 << 23       // static field, method or class
+  final val CASEACCESSOR  = 1 << 24       // symbol is a case parameter (or its accessor, or a GADT skolem)
+  final val TRAIT         = 1 << 25       // symbol is a trait
+  final val DEFAULTPARAM  = 1 << 25       // the parameter has a default value
+  final val PARAMACCESSOR = 1 << 29       // for field definitions generated for primary constructor
                                           //   parameters (no matter if it's a 'val' parameter or not)
                                           // for parameters of a primary constructor ('val' or not)
                                           // for the accessor methods generated for 'val' or 'var' parameters
-  final val LAZY          = 0x80000000L   // symbol is a lazy val. can't have MUTABLE unless transformed by typer
-  final val PRESUPER      = 0x2000000000L // value is evaluated before super call
-  final val DEFAULTINIT   = 0x20000000000L// symbol is initialized to the default value: used by -Xcheckinit
+  final val LAZY          = 1L << 31      // symbol is a lazy val. can't have MUTABLE unless transformed by typer
+  final val PRESUPER      = 1L << 37      // value is evaluated before super call
+  final val DEFAULTINIT   = 1L << 41      // symbol is initialized to the default value: used by -Xcheckinit
 
   // Overridden.
   def flagToString(flag: Long): String = ""
@@ -129,43 +129,43 @@ object ModifierFlags extends ModifierFlags
 
 /** All flags and associated operatins */
 class Flags extends ModifierFlags {
-  final val METHOD        = 0x00000040    // a method
-  final val MODULE        = 0x00000100    // symbol is module or class implementing a module
-  final val PACKAGE       = 0x00004000    // symbol is a java package
+  final val METHOD        = 1 << 6        // a method
+  final val MODULE        = 1 << 8        // symbol is module or class implementing a module
+  final val PACKAGE       = 1 << 14       // symbol is a java package
 
-  final val CAPTURED      = 0x00010000    // variable is accessed from nested function.  Set by LambdaLift.
-  final val LABEL         = 0x00020000    // method symbol is a label. Set by TailCall
-  final val INCONSTRUCTOR = 0x00020000    // class symbol is defined in this/superclass constructor.
-  final val SYNTHETIC     = 0x00200000    // symbol is compiler-generated
-  final val STABLE        = 0x00400000    // functions that are assumed to be stable
+  final val CAPTURED      = 1 << 16       // variable is accessed from nested function.  Set by LambdaLift.
+  final val LABEL         = 1 << 17       // method symbol is a label. Set by TailCall
+  final val INCONSTRUCTOR = 1 << 17       // class symbol is defined in this/superclass constructor.
+  final val SYNTHETIC     = 1 << 21       // symbol is compiler-generated
+  final val STABLE        = 1 << 22       // functions that are assumed to be stable
                                           // (typically, access methods for valdefs)
                                           // or classes that do not contain abstract types.
-  final val BRIDGE        = 0x04000000    // function is a bridge method. Set by Erasure
-  final val ACCESSOR      = 0x08000000    // a value or variable accessor (getter or setter)
+  final val BRIDGE        = 1 << 26       // function is a bridge method. Set by Erasure
+  final val ACCESSOR      = 1 << 27       // a value or variable accessor (getter or setter)
 
-  final val SUPERACCESSOR = 0x10000000    // a super accessor
-  final val MODULEVAR     = 0x40000000    // for variables: is the variable caching a module value
+  final val SUPERACCESSOR = 1 << 28       // a super accessor
+  final val MODULEVAR     = 1 << 30       // for variables: is the variable caching a module value
 
-  final val IS_ERROR      = 0x100000000L  // symbol is an error symbol
-  final val OVERLOADED    = 0x200000000L  // symbol is overloaded
-  final val LIFTED        = 0x400000000L  // class has been lifted out to package level
+  final val IS_ERROR      = 1L << 32      // symbol is an error symbol
+  final val OVERLOADED    = 1L << 33      // symbol is overloaded
+  final val LIFTED        = 1L << 34      // class has been lifted out to package level
                                           // local value has been lifted out to class level
                                           // todo: make LIFTED = latePRIVATE?
-  final val MIXEDIN       = 0x800000000L  // term member has been mixed in
-  final val EXISTENTIAL   = 0x800000000L  // type is an existential parameter or skolem
-  final val EXPANDEDNAME  = 0x1000000000L // name has been expanded with class suffix
-  final val IMPLCLASS     = 0x2000000000L // symbol is an implementation class
-  final val TRANS_FLAG    = 0x4000000000L // transient flag guaranteed to be reset after each phase.
+  final val MIXEDIN       = 1L << 35      // term member has been mixed in
+  final val EXISTENTIAL   = 1L << 35      // type is an existential parameter or skolem
+  final val EXPANDEDNAME  = 1L << 36      // name has been expanded with class suffix
+  final val IMPLCLASS     = 1L << 37      // symbol is an implementation class
+  final val TRANS_FLAG    = 1L << 38      // transient flag guaranteed to be reset after each phase.
 
-  final val LOCKED        = 0x8000000000L // temporary flag to catch cyclic dependencies
-  final val SPECIALIZED   = 0x10000000000L// symbol is a generated specialized member
-  final val VBRIDGE       = 0x40000000000L// symbol is a varargs bridge
+  final val LOCKED        = 1L << 39      // temporary flag to catch cyclic dependencies
+  final val SPECIALIZED   = 1L << 40      // symbol is a generated specialized member
+  final val VBRIDGE       = 1L << 42      // symbol is a varargs bridge
 
-  final val VARARGS       = 0x80000000000L// symbol is a Java-style varargs method
-  final val TRIEDCOOKING  = 0x100000000000L // ``Cooking'' has been tried on this symbol
-                                            // A Java method's type is ``cooked'' by transforming raw types to existentials
+  final val VARARGS       = 1L << 43      // symbol is a Java-style varargs method
+  final val TRIEDCOOKING  = 1L << 44      // ``Cooking'' has been tried on this symbol
+                                          // A Java method's type is ``cooked'' by transforming raw types to existentials
 
-  final val SYNCHRONIZED  = 0x200000000000L // symbol is a method which should be marked ACC_SYNCHRONIZED
+  final val SYNCHRONIZED  = 1L << 45      // symbol is a method which should be marked ACC_SYNCHRONIZED
   // ------- shift definitions -------------------------------------------------------
 
   final val InitialFlags  = 0x0001FFFFFFFFFFFFL // flags that are enabled from phase 1.
