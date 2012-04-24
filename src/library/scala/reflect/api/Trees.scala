@@ -663,10 +663,17 @@ trait Trees { self: Universe =>
 
   def Apply(sym: Symbol, args: Tree*): Tree
 
+  // TODO remove this class, add a tree attachment to Apply to track whether implicits were involved
+  // copying trees will all too easily forget to distinguish subclasses
   class ApplyToImplicitArgs(fun: Tree, args: List[Tree]) extends Apply(fun, args)
 
+  // TODO remove this class, add a tree attachment to Apply to track whether implicits were involved
+  // copying trees will all too easily forget to distinguish subclasses
   class ApplyImplicitView(fun: Tree, args: List[Tree]) extends Apply(fun, args)
 
+  // TODO: use a factory method, not a class (???)
+  // as a case in point of the comment that should go here by similarity to ApplyToImplicitArgs,
+  // this tree is considered in importers, but not in treecopier
   class ApplyConstructor(tpt: Tree, args: List[Tree]) extends Apply(Select(New(tpt), nme.CONSTRUCTOR), args) {
     override def printingPrefix = "ApplyConstructor"
   }
@@ -718,6 +725,8 @@ trait Trees { self: Universe =>
 
   def Ident(sym: Symbol): Ident
 
+  // TODO remove this class, add a tree attachment to Ident to track whether it was backquoted
+  // copying trees will all too easily forget to distinguish subclasses
   class BackQuotedIdent(name: Name) extends Ident(name)
 
   /** Marks underlying reference to id as boxed.
@@ -1157,9 +1166,10 @@ trait Trees { self: Universe =>
     def TypeApply(tree: Tree, fun: Tree, args: List[Tree]) =
       new TypeApply(fun, args).copyAttrs(tree)
     def Apply(tree: Tree, fun: Tree, args: List[Tree]) =
-      (tree match {
+      (tree match { // TODO: use a tree attachment to track whether this is an apply to implicit args or a view
         case _: ApplyToImplicitArgs => new ApplyToImplicitArgs(fun, args)
         case _: ApplyImplicitView => new ApplyImplicitView(fun, args)
+        // TODO: ApplyConstructor ???
         case _ => new Apply(fun, args)
       }).copyAttrs(tree)
     def ApplyDynamic(tree: Tree, qual: Tree, args: List[Tree]) =
@@ -1171,7 +1181,7 @@ trait Trees { self: Universe =>
     def Select(tree: Tree, qualifier: Tree, selector: Name) =
       new Select(qualifier, selector).copyAttrs(tree)
     def Ident(tree: Tree, name: Name) =
-      (tree match {
+      (tree match { // TODO: use a tree attachment to track whether this identifier was backquoted
         case _ : BackQuotedIdent => new BackQuotedIdent(name)
         case _ => new Ident(name)
       }).copyAttrs(tree)
