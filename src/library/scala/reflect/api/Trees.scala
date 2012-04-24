@@ -1171,7 +1171,10 @@ trait Trees { self: Universe =>
     def Select(tree: Tree, qualifier: Tree, selector: Name) =
       new Select(qualifier, selector).copyAttrs(tree)
     def Ident(tree: Tree, name: Name) =
-      new Ident(name).copyAttrs(tree)
+      (tree match {
+        case _ : BackQuotedIdent => new BackQuotedIdent(name)
+        case _ => new Ident(name)
+      }).copyAttrs(tree)
     def ReferenceToBoxed(tree: Tree, idt: Ident) =
       new ReferenceToBoxed(idt).copyAttrs(tree)
     def Literal(tree: Tree, value: Constant) =

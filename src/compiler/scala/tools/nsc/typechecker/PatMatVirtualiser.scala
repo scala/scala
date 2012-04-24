@@ -136,7 +136,7 @@ trait PatMatVirtualiser extends ast.TreeDSL { self: Analyzer =>
       // (that would require more sophistication when generating trees,
       //  and the only place that emits Matches after typers is for exception handling anyway)
       if(phase.id >= currentRun.uncurryPhase.id) debugwarn("running translateMatch at "+ phase +" on "+ scrut +" match "+ cases)
-
+      // println("translating "+ cases.mkString("{", "\n", "}"))
       val scrutSym  = freshSym(scrut.pos, pureType(scrutType)) setFlag SYNTH_CASE
       // pt = Any* occurs when compiling test/files/pos/annotDepMethType.scala  with -Xexperimental
       combineCases(scrut, scrutSym, cases map translateCase(scrutSym, pt), pt, matchOwner, matchFailGenOverride)
@@ -987,6 +987,7 @@ class Foo(x: Other) { x._1 } // no error in this order
       fixerUpper(owner, scrut.pos){
         val ptDefined    = if (isFullyDefined(pt)) pt else NoType
         def matchFailGen = (matchFailGenOverride orElse Some(CODE.MATCHERROR(_: Tree)))
+        // println("combining cases: "+ (casesNoSubstOnly.map(_.mkString(" >> ")).mkString("{", "\n", "}")))
 
         emitSwitch(scrut, scrutSym, casesNoSubstOnly, pt, matchFailGenOverride).getOrElse{
           if (casesNoSubstOnly nonEmpty) {
