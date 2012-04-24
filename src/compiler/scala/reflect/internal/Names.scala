@@ -397,14 +397,14 @@ trait Names extends api.Names {
     // def decodedName: ThisNameType = newName(decoded)
     def encodedName: ThisNameType = encode
 
-    /** Replace operator symbols by corresponding $op_name. */
+    /** Replace operator symbols by corresponding \$op_name. */
     def encode: ThisNameType = {
       val str = toString
       val res = NameTransformer.encode(str)
       if (res == str) thisName else newName(res)
     }
 
-    /** Replace $op_name by corresponding operator symbol. */
+    /** Replace \$op_name by corresponding operator symbol. */
     def decode: String = {
       if (this containsChar '$') {
         val str = toString
