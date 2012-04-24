@@ -113,7 +113,7 @@ trait ToolBoxes extends { self: Universe =>
               override def transform(tree: Tree): Tree =
                 tree match {
                   case Ident(name) if reversedFreeTermNames contains name =>
-                    Ident(reversedFreeTermNames(name))
+                    Ident(reversedFreeTermNames(name)) setType tree.tpe
                   case _ =>
                     super.transform(tree)
                 }
