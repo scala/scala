@@ -521,11 +521,29 @@ abstract class TreeBuilder {
       //                  val/var x_1 = t$._1
       //                  ...
       //                  val/var x_N = t$._N
-      val pat1 = patvarTransformer.transform(pat)
+
+      val rhsUnchecked = gen.mkUnchecked(rhs)
+
+      // TODO: clean this up -- there is too much information packked into makePatDef's `pat` argument
+      // when it's a simple identifier (case Some((name, tpt)) -- above),
+      // pat should have the type ascription that was specified by the user
+      // however, in `case None` (here), we must be careful not to generate illegal pattern trees (such as `(a, b): Tuple2[Int, String]`)
+      // i.e., this must hold: pat1 match { case Typed(expr, tp) => assert(expr.isInstanceOf[Ident]) case _ => }
+      // if we encounter such an erroneous pattern, we strip off the type ascription from pat and propagate the type information to rhs
+      val (pat1, rhs1) = patvarTransformer.transform(pat) match {
+        // move the Typed ascription to the rhs
+        case Typed(expr, tpt) if !expr.isInstanceOf[Ident] =>
+          val rhsTypedUnchecked =
+            if (tpt.isEmpty) rhsUnchecked
+            else Typed(rhsUnchecked, tpt) setPos (rhs.pos union tpt.pos)
+          (expr, rhsTypedUnchecked)
+        case ok =>
+          (ok, rhsUnchecked)
+      }
       val vars = getVariables(pat1)
       val matchExpr = atPos((pat1.pos union rhs.pos).makeTransparent) {
         Match(
-          gen.mkUnchecked(rhs),
+          rhs1,
           List(
             atPos(pat1.pos) {
               CaseDef(pat1, EmptyTree, makeTupleTerm(vars map (_._1) map Ident, true))

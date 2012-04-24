@@ -2288,6 +2288,7 @@ trait Typers extends Modes with Adaptations with Taggings with PatMatVirtualiser
 
       // need to duplicate the cases before typing them to generate the apply method, or the symbols will be all messed up
       val casesTrue = if (isPartial) cases map (c => deriveCaseDef(c)(x => TRUE_typed).duplicate) else Nil
+      // println("casesTrue "+ casesTrue)
       def parentsPartial(targs: List[Type]) = List(appliedType(AbstractPartialFunctionClass.typeConstructor, targs), SerializableClass.tpe)
 
       def applyMethod = {
@@ -2373,6 +2374,7 @@ trait Typers extends Modes with Adaptations with Taggings with PatMatVirtualiser
       }
 
       val members = if (isPartial) {
+        // TODO: don't check for MarkerCPSTypes -- check whether all targs are subtype of any (which they are not under CPS)
         if ((MarkerCPSTypes ne NoSymbol) && (targs exists (_ hasAnnotation MarkerCPSTypes))) List(applyMethod, isDefinedAtMethod)
         else List(applyOrElseMethodDef, isDefinedAtMethod)
       } else List(applyMethod)
