@@ -1509,7 +1509,8 @@ trait Types extends api.Types { self: SymbolTable =>
               case tv: TypeVar => tvs += tv
               case _ =>
             }
-          val varToParamMap: Map[Type, Symbol] = tvs map (tv => tv -> tv.origin.typeSymbol.cloneSymbol) toMap
+          val varToParamMap: Map[Type, Symbol] =
+            mapFrom[TypeVar, Type, Symbol](tvs.toList)(_.origin.typeSymbol.cloneSymbol)
           val paramToVarMap = varToParamMap map (_.swap)
           val varToParam = new TypeMap {
             def apply(tp: Type) = varToParamMap get tp match {
@@ -3473,7 +3474,7 @@ trait Types extends api.Types { self: SymbolTable =>
       case TypeRef(pre, sym, _) if sameLength(sym.typeParams, args) =>
         val eparams  = typeParamsToExistentials(sym)
         val bounds   = args map (TypeBounds upper _)
-        (eparams, bounds).zipped foreach (_ setInfo _)
+        foreach2(eparams, bounds)(_ setInfo _)
 
         newExistentialType(eparams, typeRef(pre, sym, eparams map (_.tpe)))
       case _ =>
@@ -3655,7 +3656,7 @@ trait Types extends api.Types { self: SymbolTable =>
           else owner.newValueParameter(name.toTermName)
         paramStack = newParams :: paramStack
         try {
-          (newParams, ptypes).zipped foreach ((p, t) => p setInfo this(t))
+          foreach2(newParams, ptypes)((p, t) => p setInfo this(t))
           val restpe1 = this(restpe)
           if (isType) PolyType(newParams, restpe1)
           else MethodType(newParams, restpe1)

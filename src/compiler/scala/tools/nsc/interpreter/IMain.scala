@@ -369,7 +369,7 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
   def flatName(id: String)    = optFlatName(id) getOrElse id
   def optFlatName(id: String) = requestForIdent(id) map (_ fullFlatName id)
 
-  def allDefinedNames = definedNameMap.keys.toList sortBy (_.toString)
+  def allDefinedNames = definedNameMap.keys.toList.sorted
   def pathToType(id: String): String = pathToName(newTypeName(id))
   def pathToTerm(id: String): String = pathToName(newTermName(id))
   def pathToName(name: Name): String = {
@@ -1007,9 +1007,8 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
     def lookupTypeOf(name: Name) = typeOf.getOrElse(name, typeOf(global.encode(name.toString)))
     def simpleNameOfType(name: TypeName) = (compilerTypeOf get name) map (_.typeSymbol.simpleName)
 
-    private def typeMap[T](f: Type => T): Map[Name, T] = {
-      termNames ++ typeNames map (x => x -> f(cleanMemberDecl(resultSymbol, x))) toMap
-    }
+    private def typeMap[T](f: Type => T) =
+      mapFrom[Name, Name, T](termNames ++ typeNames)(x => f(cleanMemberDecl(resultSymbol, x)))
 
     /** Types of variables defined by this request. */
     lazy val compilerTypeOf = typeMap[Type](x => x) withDefaultValue NoType
@@ -1024,8 +1023,7 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
       typeNames.map(x => x -> compilerTypeOf(x).typeSymbol)
     ).toMap[Name, Symbol] withDefaultValue NoSymbol
 
-    lazy val typesOfDefinedTerms: Map[Name, Type] =
-      termNames map (x => x -> applyToResultMember(x, _.tpe)) toMap
+    lazy val typesOfDefinedTerms = mapFrom[Name, Name, Type](termNames)(x => applyToResultMember(x, _.tpe))
 
     /** load and run the code using reflection */
     def loadAndRun: (String, Boolean) = {

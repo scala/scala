@@ -57,7 +57,7 @@ abstract class TreeCheckers extends Analyzer {
 
     def prev          = maps.init.last._2
     def latest        = maps.last._2
-    def sortedNewSyms = newSyms.toList.distinct sortBy (_.name.toString)
+    def sortedNewSyms = newSyms.toList.distinct sortBy (_.name)
 
     def inPrev(sym: Symbol) = {
       (maps.size >= 2) && (prev contains sym)

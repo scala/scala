@@ -3289,14 +3289,12 @@ trait Typers extends Modes with Adaptations with Taggings with PatMatVirtualiser
         case tp => tp
       }
 
-      (hidden map { s =>
-        // Hanging onto lower bound in case anything interesting
-        // happens with it.
-        (s, s.existentialBound match {
-          case TypeBounds(lo, hi) => TypeBounds(lo, hiBound(s))
-          case _                  => hiBound(s)
-        })
-      }).toMap
+      // Hanging onto lower bound in case anything interesting
+      // happens with it.
+      mapFrom(hidden)(s => s.existentialBound match {
+        case TypeBounds(lo, hi) => TypeBounds(lo, hiBound(s))
+        case _                  => hiBound(s)
+      })
     }
 
     /** Given a set `rawSyms` of term- and type-symbols, and a type

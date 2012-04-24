@@ -231,7 +231,7 @@ class Power[ReplValsImpl <: ReplVals : TypeTag](val intp: IMain, replVals: ReplV
     def shortClass     = erasure.getName split "[$.]" last
 
     def baseClasses                    = tpe.baseClasses
-    def baseClassDecls                 = baseClasses map (x => (x, x.info.decls.toList.sortBy(_.name.toString))) toMap
+    def baseClassDecls                 = mapFrom(baseClasses)(_.info.decls.toList.sortBy(_.name))
     def ancestors                      = baseClasses drop 1
     def ancestorDeclares(name: String) = ancestors filter (_.info member newTermName(name) ne NoSymbol)
     def baseTypes                      = tpe.baseTypeSeq.toList
@@ -362,7 +362,6 @@ class Power[ReplValsImpl <: ReplVals : TypeTag](val intp: IMain, replVals: ReplV
         else if (s1 isLess s2) -1
         else 1
     }
-    implicit lazy val powerNameOrdering: Ordering[Name]     = Ordering[String] on (_.toString)
     implicit lazy val powerSymbolOrdering: Ordering[Symbol] = Ordering[Name] on (_.name)
     implicit lazy val powerTypeOrdering: Ordering[Type]     = Ordering[Symbol] on (_.typeSymbol)
 

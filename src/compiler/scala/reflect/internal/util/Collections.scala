@@ -70,6 +70,27 @@ trait Collections {
     lb.toList
   }
   
+  final def flatCollect[A, B](elems: List[A])(pf: PartialFunction[A, Traversable[B]]): List[B] = {
+    val lb = new ListBuffer[B]
+    for (x <- elems ; if pf isDefinedAt x)
+      lb ++= pf(x)
+
+    lb.toList
+  }
+
+  final def distinctBy[A, B](xs: List[A])(f: A => B): List[A] = {
+    val buf = new ListBuffer[A]
+    val seen = mutable.Set[B]()
+    xs foreach { x =>
+      val y = f(x)
+      if (!seen(y)) {
+        buf += x
+        seen += y
+      }
+    }
+    buf.toList
+  }
+
   @tailrec final def flattensToEmpty(xss: Seq[Seq[_]]): Boolean = {
     xss.isEmpty || xss.head.isEmpty && flattensToEmpty(xss.tail)
   }
@@ -87,6 +108,10 @@ trait Collections {
   // @inline
   final def findOrElse[A](xs: TraversableOnce[A])(p: A => Boolean)(orElse: => A): A = {
     xs find p getOrElse orElse
+  }
+
+  final def mapFrom[A, A1 >: A, B](xs: List[A])(f: A => B): Map[A1, B] = {
+    Map[A1, B](xs map (x => (x, f(x))): _*)
   }
 
   final def mapWithIndex[A, B](xs: List[A])(f: (A, Int) => B): List[B] = {
