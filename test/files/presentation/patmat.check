@@ -1,0 +1,36 @@
+reload: PatMatTests.scala
+
+askHyperlinkPos for `CaseOne` at (12,18) PatMatTests.scala
+================================================================================
+[response] found askHyperlinkPos for `CaseOne` at (5,12) PatMatTests.scala
+================================================================================
+
+askHyperlinkPos for `first` at (14,21) PatMatTests.scala
+================================================================================
+[response] found askHyperlinkPos for `first` at (12,29) PatMatTests.scala
+================================================================================
+
+askHyperlinkPos for `tmp` at (15,19) PatMatTests.scala
+================================================================================
+[response] found askHyperlinkPos for `tmp` at (13,13) PatMatTests.scala
+================================================================================
+
+askHyperlinkPos for `CaseTwo` at (17,18) PatMatTests.scala
+================================================================================
+[response] found askHyperlinkPos for `CaseTwo` at (6,12) PatMatTests.scala
+================================================================================
+
+askHyperlinkPos for `mystring` at (18,24) PatMatTests.scala
+================================================================================
+[response] found askHyperlinkPos for `mystring` at (17,25) PatMatTests.scala
+================================================================================
+
+askHyperlinkPos for `x` at (25,13) PatMatTests.scala
+================================================================================
+[response] found askHyperlinkPos for `x` at (23,10) PatMatTests.scala
+================================================================================
+
+askHyperlinkPos for `y` at (25,21) PatMatTests.scala
+================================================================================
+[response] found askHyperlinkPos for `y` at (23,13) PatMatTests.scala
+================================================================================

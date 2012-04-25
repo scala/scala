@@ -1,0 +1,3 @@
+# This test will fail in the new pattern matcher because 
+# it generates trees whose positions are not transparent
+-Xoldpatmat
