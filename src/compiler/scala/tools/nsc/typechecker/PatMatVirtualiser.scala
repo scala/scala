@@ -46,7 +46,7 @@ trait PatMatVirtualiser extends ast.TreeDSL { self: Analyzer =>
     val outer     = newTermName("<outer>")
     val runOrElse = newTermName("runOrElse")
     val zero      = newTermName("zero")
-    val _match    = newTermName("__match") // don't call it __match, since that will trigger virtual pattern matching...
+    val _match    = newTermName("__match") // don't call the val __match, since that will trigger virtual pattern matching...
 
     def counted(str: String, i: Int) = newTermName(str+i)
   }
@@ -1067,7 +1067,7 @@ class Foo(x: Other) { x._1 } // no error in this order
 
     // assert(owner ne null); assert(owner ne NoSymbol)
     def freshSym(pos: Position, tp: Type = NoType, prefix: String = "x") =
-      NoSymbol.newTermSymbol(freshName(prefix), pos) setInfo /*repackExistential*/(tp)
+      NoSymbol.newTermSymbol(freshName(prefix), pos) setInfo tp
 
     // codegen relevant to the structure of the translation (how extractors are combined)
     trait AbsCodegen {
