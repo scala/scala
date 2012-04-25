@@ -855,7 +855,7 @@ trait Macros { self: Analyzer =>
     val numParamLists = paramss_without_evidences.length
     val numArgLists = argss.length
     if (numParamLists != numArgLists) {
-      typer.context.error(expandee.pos, "macros cannot be partially applied")
+      typer.TyperErrorGen.MacroPartialApplicationError(expandee)
       return None
     }
 
@@ -953,6 +953,11 @@ trait Macros { self: Analyzer =>
    *    the expandee with an error marker set   if there has been an error
    */
   def macroExpand(typer: Typer, expandee: Tree, mode: Int = EXPRmode, pt: Type = WildcardType): Tree = {
+    def fail(what: String, tree: Tree): Tree = {
+      val err = typer.context.errBuffer.head
+      this.fail(typer, tree, "failed to perform %s: %s at %s".format(what, err.errMsg, err.errPos))
+      return expandee
+    }
     val start = startTimer(macroExpandNanos)
     incCounter(macroExpandCount)
     try {
@@ -979,15 +984,9 @@ trait Macros { self: Analyzer =>
               case _ => ;
             }
 
-            def fail(what: String): Tree = {
-              val err = typer.context.errBuffer.head
-              this.fail(typer, expanded, "failed to perform %s: %s at %s".format(what, err.errMsg, err.errPos))
-              return expandee
-            }
-
             if (macroDebug) println("typechecking1 against %s: %s".format(expectedTpe, expanded))
             var typechecked = typer.context.withImplicitsEnabled(typer.typed(expanded, EXPRmode, expectedTpe))
-            if (typer.context.hasErrors) fail("typecheck1")
+            if (typer.context.hasErrors) fail("typecheck1", expanded)
             if (macroDebug) {
               println("typechecked1:")
               println(typechecked)
@@ -996,7 +995,7 @@ trait Macros { self: Analyzer =>
 
             if (macroDebug) println("typechecking2 against %s: %s".format(pt, expanded))
             typechecked = typer.context.withImplicitsEnabled(typer.typed(typechecked, EXPRmode, pt))
-            if (typer.context.hasErrors) fail("typecheck2")
+            if (typer.context.hasErrors) fail("typecheck2", expanded)
             if (macroDebug) {
               println("typechecked2:")
               println(typechecked)
@@ -1009,13 +1008,16 @@ trait Macros { self: Analyzer =>
           }
         case Delay(expandee) =>
           // need to save the context to preserve enclosures
-          val args = macroArgs(typer, expandee)
-          assert(args.isDefined, expandee)
-          val context = args.get.head.asInstanceOf[MacroContext]
-          var result = expandee withAttachment MacroAttachment(delayed = true, context = Some(context))
-          // adapting here would be premature, we must wait until undetparams are inferred
-//          result = typer.adapt(result, mode, pt)
-          result
+          macroArgs(typer, expandee) match {
+            case Some((context: MacroContext) :: _) =>
+              // adapting here would be premature, we must wait until undetparams are inferred
+              expandee withAttachment MacroAttachment(delayed = true, context = Some(context))
+            case _ =>
+              // !!! The correct place to issue an error needs to be clarified.
+              // I have the else condition here only as a fallback.
+              if (expandee.isErroneous) expandee
+              else fail("macros cannot be partially applied", expandee)
+          }
         case Fallback(fallback) =>
           typer.context.withImplicitsEnabled(typer.typed(fallback, EXPRmode, pt))
         case Other(result) =>

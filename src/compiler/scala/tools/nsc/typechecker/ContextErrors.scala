@@ -343,6 +343,11 @@ trait ContextErrors {
         issueNormalTypeError(tree, "macros cannot be eta-expanded")
         setError(tree)
       }
+      
+      def MacroPartialApplicationError(tree: Tree) = {
+        issueNormalTypeError(tree, "macros cannot be partially applied")
+        setError(tree)
+      }
 
       //typedReturn
       def ReturnOutsideOfDefError(tree: Tree) = {

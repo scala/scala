@@ -1,0 +1,21 @@
+Type in expressions to have them evaluated.
+Type :help for more information.
+
+scala> 
+
+scala> import language.experimental.macros
+import language.experimental.macros
+
+scala> import scala.reflect.mirror._
+import scala.reflect.mirror._
+
+scala> 
+
+scala> reify
+<console>:12: error: macros cannot be partially applied
+              reify
+              ^
+
+scala> 
+
+scala> 
