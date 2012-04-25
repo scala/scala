@@ -493,8 +493,8 @@ trait Definitions extends reflect.api.StandardDefinitions {
     lazy val NoManifest            = getRequiredModule("scala.reflect.NoManifest")
 
     lazy val ExprClass     = getMember(getRequiredClass("scala.reflect.api.Exprs"), tpnme.Expr)
-         def ExprTree      = getMemberClass(ExprClass, nme.tree)
-         def ExprTpe       = getMemberClass(ExprClass, nme.tpe)
+         def ExprTree      = getMember(ExprClass, nme.tree)
+         def ExprTpe       = getMember(ExprClass, nme.tpe)
          def ExprEval      = getMember(ExprClass, nme.eval)
          def ExprValue     = getMember(ExprClass, nme.value)
     lazy val ExprModule    = getMember(getRequiredClass("scala.reflect.api.Exprs"), nme.Expr)
