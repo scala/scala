@@ -9,7 +9,7 @@ object Test extends App {
     }
 
     Utils.foo
-  })
+  }.tree)
   println("============compiler messages============")
   toolbox.frontEnd.infos.foreach(println(_))
   println("=========================================")

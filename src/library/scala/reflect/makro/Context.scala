@@ -36,9 +36,9 @@ object Context {
     import cc.mirror._
     import scala.reflect.makro.internal._
     // [Eugene] how do I typecheck this without undergoing this tiresome (and, in general, incorrect) procedure?
-    val prefix: Tree = Select(cc.prefix, newTermName("mirror"))
+    val prefix: Tree = Select(cc.prefix.tree, newTermName("mirror"))
     val prefixTpe = cc.typeCheck(TypeApply(Select(prefix, newTermName("asInstanceOf")), List(SingletonTypeTree(prefix)))).tpe
     prefix setType prefixTpe
-    cc.materializeExpr(prefix, expr)
+    cc.Expr(cc.materializeExpr(prefix, expr.tree))
   }
 }

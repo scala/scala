@@ -3,7 +3,7 @@ import scala.reflect.makro.{Context => Ctx}
 object Impls {
   def foo(c: Ctx): c.Expr[Int] = {
     import c.mirror._
-    Literal(Constant("42"))
+    Expr(Literal(Constant("42")))
   }
 }
 
