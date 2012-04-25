@@ -62,9 +62,16 @@ abstract class Pickler extends SubComponent {
       // when we pickle it: so let's report an error instead.  We know next
       // to nothing about what happened, but our supposition is a lot better
       // than "bad type: <error>" in terms of explanatory power.
-      for (t <- unit.body ; if t.isErroneous) {
-        unit.error(t.pos, "erroneous or inaccessible type")
-        return
+      for (t <- unit.body) {
+        if (t.isErroneous) {
+          unit.error(t.pos, "erroneous or inaccessible type")
+          return
+        }
+
+        if (!t.isDef && t.hasSymbol && t.symbol.isTermMacro) {
+          unit.error(t.pos, "macro has not been expanded")
+          return
+        }
       }
 
       pickle(unit.body)
