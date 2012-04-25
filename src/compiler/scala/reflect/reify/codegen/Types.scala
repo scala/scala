@@ -84,7 +84,7 @@ trait Types {
 
   def spliceType(tpe: Type): Tree = {
     // [Eugene] it seems that depending on the context the very same symbol can be either a spliceable tparam or a quantified existential. very weird!
-    val quantified = currents collect { case ExistentialType(quantified, _) => quantified } flatMap identity
+    val quantified = currentQuantified
     if (tpe.isSpliceable && !(quantified contains tpe.typeSymbol)) {
       if (reifyDebug) println("splicing " + tpe)
 
