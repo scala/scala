@@ -602,7 +602,7 @@ abstract class TreeInfo {
 
   object ReifiedTree {
     def unapply(tree: Tree): Option[(Tree, List[Tree], Tree, Tree)] = tree match {
-      case reifee @ Block((mrDef @ ValDef(_, _, _, _)) :: symbolTable, Apply(Apply(_, List(tree)), List(Apply(_, List(tpe))))) if mrDef.name == nme.MIRROR_SHORT =>
+      case reifee @ Block((mrDef @ ValDef(_, _, _, _)) :: symbolTable, Apply(Apply(_, List(tree)), List(Apply(_, tpe :: _)))) if mrDef.name == nme.MIRROR_SHORT =>
         Some(reifee, symbolTable, tree, tpe)
       case _ =>
         None

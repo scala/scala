@@ -74,4 +74,4 @@ trait Reifiers {
 
 case class ReificationError(var pos: reflect.api.Position, val msg: String) extends Throwable(msg)
 
-case class UnexpectedReificationError(val pos: reflect.api.Position, val msg: String, val cause: Throwable = null) extends Throwable(msg)
+case class UnexpectedReificationError(val pos: reflect.api.Position, val msg: String, val cause: Throwable = null) extends Throwable(msg, cause)
