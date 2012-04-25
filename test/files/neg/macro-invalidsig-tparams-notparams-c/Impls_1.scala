@@ -6,6 +6,6 @@ object Impls {
     println(implicitly[c.TypeTag[T]])
     println(implicitly[c.TypeTag[U]])
     println(V)
-    Literal(Constant(()))
+    c.literalUnit
   }
 }

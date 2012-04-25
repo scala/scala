@@ -278,34 +278,6 @@ trait Trees { self: Universe =>
     override def equals(that: Any) = this eq that.asInstanceOf[AnyRef]
   }
 
-  // [Eugene] uh-oh
-  // locker.comp:
-  //     [mkdir] Created dir: C:\Projects\Kepler\build\locker\classes\compiler
-  // [scalacfork] Compiling 471 files to C:\Projects\Kepler\build\locker\classes\compiler
-  // [scalacfork] amb prefix: Importers.this.type#class Tree Importer.this.from.type#class Tree
-  // [scalacfork] amb prefix: Importers.this.type#class Tree Importer.this.from.type#class Tree
-  // [scalacfork] amb prefix: Importers.this.type#class Tree Importer.this.from.type#class Tree
-  // [scalacfork] amb prefix: Importers.this.type#class Tree Importer.this.from.type#class Tree
-  // [scalacfork] amb prefix: Importers.this.type#class Tree Importer.this.from.type#class Tree
-  // [scalacfork] amb prefix: Importers.this.type#class Tree Importer.this.from.type#class Tree
-  // [scalacfork] amb prefix: Importers.this.type#class Tree Importer.this.from.type#class Tree
-  // [scalacfork] amb prefix: Importers.this.type#class Tree Importer.this.from.type#class Tree
-  // [scalacfork] amb prefix: Importers.this.type#class Tree Importer.this.from.type#class Tree
-  // [scalacfork] amb prefix: Importers.this.type#class Tree Importer.this.from.type#class Tree
-//  object Tree {
-//    // would be great if in future this generated an Expr[Magic]
-//    // where Magic is a magic untyped type that propagates through the entire quasiquote
-//    // and turns off typechecking whenever it's involved
-//    // that'd allow us to splice trees into quasiquotes and still have these qqs to be partially typechecked
-//    // see some exploration of these ideas here: https://github.com/xeno-by/alphakeplerdemo
-//    implicit def tree2expr(tree: Tree): Expr[Nothing] = Expr[Nothing](tree)
-//    implicit def expr2tree(expr: Expr[_]): Tree = expr.tree
-//
-//    // [Eugene] good idea?
-//    implicit def trees2exprs(trees: List[Tree]): List[Expr[Nothing]] = trees map tree2expr
-//    implicit def exprs2trees(exprs: List[Expr[_]]): List[Tree] = exprs map expr2tree
-//  }
-
   /** A tree for a term.  Not all terms are TermTrees; use isTerm
    *  to reliably identify terms.
    */
