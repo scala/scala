@@ -90,8 +90,9 @@ private[tests] trait CoreTestDefs
               compiler.askLinkPos(tree.symbol, source, r)
               r.get match {
                 case Left(pos) =>
+                  val resolvedPos = if (tree.symbol.pos.isDefined) tree.symbol.pos else pos
                   withResponseDelimiter {
-                    reporter.println("[response] found askHyperlinkPos for `" + tree.symbol.name + "` at " + format(pos) + " " + tree.symbol.sourceFile.name)
+                    reporter.println("[response] found askHyperlinkPos for `" + tree.symbol.name + "` at " + format(resolvedPos) + " " + tree.symbol.sourceFile.name)
                   }
                 case Right(ex) =>
                   ex.printStackTrace()
