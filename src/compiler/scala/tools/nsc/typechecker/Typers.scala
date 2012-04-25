@@ -83,6 +83,9 @@ trait Typers extends Modes with Adaptations with Taggings with PatMatVirtualiser
 
   private def isPastTyper = phase.id > currentRun.typerPhase.id
 
+  // don't translate matches in presentation compiler: it loses vital symbols that are needed to do hyperlinking
+  @inline private def doMatchTranslation = !forInteractive && opt.virtPatmat && (phase.id < currentRun.uncurryPhase.id)
+
   abstract class Typer(context0: Context) extends TyperDiagnostics with Adaptation with Tagging with TyperContextErrors {
     import context0.unit
     import typeDebug.{ ptTree, ptBlock, ptLine }
@@ -2436,7 +2439,7 @@ trait Typers extends Modes with Adaptations with Taggings with PatMatVirtualiser
         fun.body match {
           // later phase indicates scaladoc is calling (where shit is messed up, I tell you)
           //  -- so fall back to old patmat, which is more forgiving
-          case Match(sel, cases) if opt.virtPatmat && (phase.id < currentRun.uncurryPhase.id) =>
+          case Match(sel, cases) if doMatchTranslation =>
             // go to outer context -- must discard the context that was created for the Function since we're discarding the function
             // thus, its symbol, which serves as the current context.owner, is not the right owner
             // you won't know you're using the wrong owner until lambda lift crashes (unless you know better than to use the wrong owner)
@@ -3828,7 +3831,7 @@ trait Typers extends Modes with Adaptations with Taggings with PatMatVirtualiser
       }
 
       def typedTranslatedMatch(tree: Tree, selector: Tree, cases: List[CaseDef]): Tree = {
-        if (opt.virtPatmat && (phase.id < currentRun.uncurryPhase.id)) {
+        if (doMatchTranslation) {
           if (selector ne EmptyTree) {
             val (selector1, selectorTp, casesAdapted, ownType, doTranslation) = typedMatch(selector, cases, mode, pt)
             typed(translatedMatch(selector1, selectorTp, casesAdapted, ownType, doTranslation), mode, pt)
@@ -4732,9 +4735,8 @@ trait Typers extends Modes with Adaptations with Taggings with PatMatVirtualiser
             catches1 = catches1 map (adaptCase(_, mode, owntype))
           }
 
-          if((phase.id < currentRun.uncurryPhase.id) && opt.virtPatmat) {
+          if (doMatchTranslation)
             catches1 = (MatchTranslator(this)).translateTry(catches1, owntype, tree.pos)
-          }
 
           treeCopy.Try(tree, block1, catches1, finalizer1) setType owntype
 
