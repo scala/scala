@@ -388,6 +388,7 @@ trait Macros { self: Analyzer =>
                     compatibilityError("types incompatible for parameter "+aparam.name+": corresponding is not a vararg parameter")
                   if (!hasErrors) {
                     var atpe = aparam.tpe.substSym(flatactparams, flatreqparams).instantiateTypeParams(tparams, tvars)
+                    atpe = atpe.dealias // SI-5706
                     // strip the { type PrefixType = ... } refinement off the Context or otherwise we get compatibility errors
                     atpe = atpe match {
                       case RefinedType(List(tpe), Scope(sym)) if tpe == MacroContextClass.tpe && sym.allOverriddenSymbols.contains(MacroContextPrefixType) => tpe
