@@ -1141,7 +1141,7 @@ class Foo(x: Other) { x._1 } // no error in this order
     val matchStrategy: Tree
 
     def inMatchMonad(tp: Type): Type = appliedType(oneSig, List(tp)).finalResultType
-    def pureType(tp: Type): Type     = appliedType(oneSig, List(tp)).paramTypes.head
+    def pureType(tp: Type): Type     = appliedType(oneSig, List(tp)).paramTypes.headOption getOrElse NoType // fail gracefully (otherwise we get crashes)
     protected def matchMonadSym      = oneSig.finalResultType.typeSymbol
 
     import CODE._
