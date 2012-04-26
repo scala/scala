@@ -1,0 +1,1 @@
+-language:experimental.macros -Xmacro-settings:hello=1

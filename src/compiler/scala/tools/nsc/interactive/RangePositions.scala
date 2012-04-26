@@ -6,7 +6,7 @@ package scala.tools.nsc
 package interactive
 
 import ast.Trees
-import symtab.Positions
+import ast.Positions
 import scala.tools.nsc.util.{SourceFile, Position, RangePosition, NoPosition, WorkScheduler}
 import scala.collection.mutable.ListBuffer
 

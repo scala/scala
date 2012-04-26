@@ -19,6 +19,7 @@ import JAccessFlags._
 import JObjectType.{ JAVA_LANG_STRING, JAVA_LANG_OBJECT }
 import java.util.jar.{ JarEntry, JarOutputStream }
 import scala.tools.nsc.io.AbstractFile
+import language.postfixOps
 
 /** This class ...
  *
@@ -120,6 +121,9 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
       // to collect everything
       if (settings.debug.value)
         inform("[running phase " + name + " on icode]")
+
+      if (settings.Xverify.value && !SigParser.isParserAvailable)
+        global.warning("signature verification requested by signature parser unavailable: signatures not checked")
 
       if (settings.Xdce.value)
         for ((sym, cls) <- icodes.classes if inliner.isClosureClass(sym) && !deadCode.liveClosures(sym))
@@ -284,6 +288,15 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
     val emitSource = debugLevel >= 1
     val emitLines  = debugLevel >= 2
     val emitVars   = debugLevel >= 3
+
+    // bug had phase with wrong name; leaving enabled for brief pseudo deprecation
+    private val checkSignatures = (
+         (settings.check containsName phaseName)
+      || (settings.check.value contains "genjvm") && {
+            global.warning("This option will be removed: please use -Ycheck:%s, not -Ycheck:genjvm." format phaseName)
+            true
+         }
+    )
 
     /** For given symbol return a symbol corresponding to a class that should be declared as inner class.
      *
@@ -639,7 +652,7 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
             case StringTag  =>
               buf put 's'.toByte
               buf putShort cpool.addUtf8(const.stringValue).toShort
-            case ClassTag   =>
+            case ClazzTag   =>
               buf put 'c'.toByte
               buf putShort cpool.addUtf8(javaType(const.typeValue).getSignature()).toShort
             case EnumTag =>
@@ -726,10 +739,10 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
     def addGenericSignature(jmember: JMember, sym: Symbol, owner: Symbol) {
       if (needsGenericSignature(sym)) {
         val memberTpe = beforeErasure(owner.thisType.memberInfo(sym))
-        // println("addGenericSignature sym: " + sym.fullName + " : " + memberTpe + " sym.info: " + sym.info)
-        // println("addGenericSignature: "+ (sym.ownerChain map (x => (x.name, x.isImplClass))))
+
         erasure.javaSig(sym, memberTpe) foreach { sig =>
-          debuglog("sig(" + jmember.getName + ", " + sym + ", " + owner + ")      " + sig)
+          // This seems useful enough in the general case.
+          log(sig)
           /** Since we're using a sun internal class for signature validation,
            *  we have to allow for it not existing or otherwise malfunctioning:
            *  in which case we treat every signature as valid.  Medium term we
@@ -739,11 +752,11 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
             clasz.cunit.warning(sym.pos,
                 """|compiler bug: created invalid generic signature for %s in %s
                    |signature: %s
-                   |if this is reproducible, please report bug at http://lampsvn.epfl.ch/trac/scala
+                   |if this is reproducible, please report bug at https://issues.scala-lang.org/
                 """.trim.stripMargin.format(sym, sym.owner.skipPackageObject.fullName, sig))
             return
           }
-          if ((settings.check.value contains "genjvm")) {
+          if (checkSignatures) {
             val normalizedTpe = beforeErasure(erasure.prepareSigMap(memberTpe))
             val bytecodeTpe = owner.thisType.memberInfo(sym)
             if (!sym.isType && !sym.isConstructor && !(erasure.erasure(sym)(normalizedTpe) =:= bytecodeTpe)) {
@@ -753,7 +766,7 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
                      |original type: %s
                      |normalized type: %s
                      |erasure type: %s
-                     |if this is reproducible, please report bug at http://lampsvn.epfl.ch/trac/scala
+                     |if this is reproducible, please report bug at https://issues.scala-lang.org/
                   """.trim.stripMargin.format(sym, sym.owner.skipPackageObject.fullName, sig, memberTpe, normalizedTpe, bytecodeTpe))
                return
             }
@@ -871,7 +884,7 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
       debuglog("Adding field: " + f.symbol.fullName)
       
       val jfield = jclass.addNewField(
-        javaFlags(f.symbol) | javaFieldFlags(f.symbol),
+        javaFieldFlags(f.symbol),
         javaName(f.symbol),
         javaType(f.symbol.tpe)
       )
@@ -1010,7 +1023,7 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
           serialVUID foreach { value =>
             import Flags._, definitions._
             val fieldName = "serialVersionUID"
-            val fieldSymbol = clasz.symbol.newValue(newTermName(fieldName), NoPosition, STATIC | FINAL) setInfo longType
+            val fieldSymbol = clasz.symbol.newValue(newTermName(fieldName), NoPosition, STATIC | FINAL) setInfo LongClass.tpe
             clasz addField new IField(fieldSymbol)
             lastBlock emit CONSTANT(Constant(value))
             lastBlock emit STORE_FIELD(fieldSymbol, true)
@@ -1269,7 +1282,7 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
         val jname    = javaName(method)
         val jtype    = javaType(method).asInstanceOf[JMethodType]
 
-        def debugMsg(invoke: String) {
+        def dbg(invoke: String) {
           debuglog("%s %s %s.%s:%s".format(invoke, receiver.accessString, jowner, jname, jtype))
         }
 
@@ -1287,14 +1300,14 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
         }
 
         style match {
-          case Static(true)                         => jcode.emitINVOKESPECIAL  (jowner, jname, jtype) ; debugMsg("invokespecial")
-          case Static(false)                        => jcode.emitINVOKESTATIC   (jowner, jname, jtype) ; debugMsg("invokestatic")
-          case Dynamic if isInterfaceCall(receiver) => jcode.emitINVOKEINTERFACE(jowner, jname, jtype) ; debugMsg("invokinterface")
-          case Dynamic                              => jcode.emitINVOKEVIRTUAL  (jowner, jname, jtype) ; debugMsg("invokevirtual")
+          case Static(true)                         => dbg("invokespecial");    jcode.emitINVOKESPECIAL(jowner, jname, jtype)
+          case Static(false)                        => dbg("invokestatic");      jcode.emitINVOKESTATIC(jowner, jname, jtype)
+          case Dynamic if isInterfaceCall(receiver) => dbg("invokinterface"); jcode.emitINVOKEINTERFACE(jowner, jname, jtype)
+          case Dynamic                              => dbg("invokevirtual");    jcode.emitINVOKEVIRTUAL(jowner, jname, jtype)
           case SuperCall(_)                         =>
+            dbg("invokespecial")
             jcode.emitINVOKESPECIAL(jowner, jname, jtype)
             initModule()
-            debugMsg("invokespecial")
         }
       }
 
@@ -1915,16 +1928,30 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
     val privateFlag =
       sym.isPrivate || (sym.isPrimaryConstructor && isTopLevelModule(sym.owner))
 
-    // This does not check .isFinal (which checks flags for the FINAL flag),
-    // instead checking rawflags for that flag so as to exclude symbols which
-    // received lateFINAL.  These symbols are eligible for inlining, but to
-    // avoid breaking proxy software which depends on subclassing, we avoid
-    // insisting on their finality in the bytecode.
+    // Final: the only fields which can receive ACC_FINAL are eager vals.
+    // Neither vars nor lazy vals can, because:
+    //
+    // Source: http://docs.oracle.com/javase/specs/jls/se7/html/jls-17.html#jls-17.5.3
+    // "Another problem is that the specification allows aggressive
+    // optimization of final fields. Within a thread, it is permissible to
+    // reorder reads of a final field with those modifications of a final
+    // field that do not take place in the constructor."
+    //
+    // A var or lazy val which is marked final still has meaning to the
+    // scala compiler.  The word final is heavily overloaded unfortunately;
+    // for us it means "not overridable".  At present you can't override
+    // vars regardless; this may change.
+    //
+    // The logic does not check .isFinal (which checks flags for the FINAL flag,
+    // and includes symbols marked lateFINAL) instead inspecting rawflags so
+    // we can exclude lateFINAL.  Such symbols are eligible for inlining, but to
+    // avoid breaking proxy software which depends on subclassing, we do not
+    // emit ACC_FINAL.
     val finalFlag = (
          ((sym.rawflags & (Flags.FINAL | Flags.MODULE)) != 0)
       && !sym.enclClass.isInterface
       && !sym.isClassConstructor
-      && !sym.isMutable  // fix for SI-3569, it is too broad?
+      && !sym.isMutable   // lazy vals and vars both
     )
 
     mkFlags(
@@ -1939,13 +1966,13 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
       if (sym.hasFlag(Flags.SYNCHRONIZED)) JAVA_ACC_SYNCHRONIZED else 0
     )
   }
-  def javaFieldFlags(sym: Symbol) = {
-    mkFlags(
+  def javaFieldFlags(sym: Symbol) = (
+    javaFlags(sym) | mkFlags(
       if (sym hasAnnotation TransientAttr) ACC_TRANSIENT else 0,
       if (sym hasAnnotation VolatileAttr) ACC_VOLATILE else 0,
       if (sym.isMutable) 0 else ACC_FINAL
     )
-  }
+  )
 
   def isTopLevelModule(sym: Symbol): Boolean =
     afterPickler { sym.isModuleClass && !sym.isImplClass && !sym.isNestedClass }

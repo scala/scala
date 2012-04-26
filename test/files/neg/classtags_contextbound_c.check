@@ -1,0 +1,4 @@
+classtags_contextbound_c.scala:2: error: No ArrayTag available for T
+  def mkArray[T] = Array[T]()
+                           ^
+one error found

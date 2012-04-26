@@ -252,12 +252,17 @@ trait TypeDiagnostics {
     }
     ""    // no elaborable variance situation found
   }
-  def foundReqMsg(found: Type, req: Type): String = (
-    withDisambiguation(Nil, found, req)(
+  // TODO - figure out how to avoid doing any work at all
+  // when the message will never be seen.  I though context.reportErrors
+  // being false would do that, but if I return "<suppressed>" under
+  // that condition, I see it.
+  def foundReqMsg(found: Type, req: Type): String = {
+    def baseMessage = (
       ";\n found   : " + found.toLongString + existentialContext(found) + explainAlias(found) +
        "\n required: " + req + existentialContext(req) + explainAlias(req)
-    ) + explainVariance(found, req)
-  )
+    )
+    withDisambiguation(Nil, found, req)(baseMessage) + explainVariance(found, req)
+  }
 
   case class TypeDiag(tp: Type, sym: Symbol) extends Ordered[TypeDiag] {
     // save the name because it will be mutated until it has been
@@ -265,8 +270,7 @@ trait TypeDiagnostics {
     private val savedName = sym.name
     def restoreName()     = sym.name = savedName
     def isAltered         = sym.name != savedName
-    def modifyName(f: String => String) =
-      sym.name = newTypeName(f(sym.name.toString))
+    def modifyName(f: String => String) = sym setName newTypeName(f(sym.name.toString))
 
     /** Prepend java.lang, scala., or Predef. if this type originated
      *  in one of those.
@@ -307,16 +311,37 @@ trait TypeDiagnostics {
       )
     }
   }
-  private def typeDiags(locals: List[Symbol], types: Type*): List[TypeDiag] = {
-    object SymExtractor {
-      def unapply(x: Any) = x match {
-        case t @ ConstantType(_)    => Some(t -> t.underlying.typeSymbol)
-        case t @ TypeRef(_, sym, _) => if (locals contains sym) None else Some(t -> sym)
-        case _                      => None
+  /** This is tricky stuff - we need to traverse types deeply to
+   *  explain name ambiguities, which may occur anywhere.  However
+   *  when lub explosions come through it knocks us into an n^2
+   *  disaster, see SI-5580.  This is trying to perform the initial
+   *  filtering of possibly ambiguous types in a sufficiently
+   *  aggressive way that the state space won't explode.
+   */
+  private def typeDiags(locals: List[Symbol], types0: Type*): List[TypeDiag] = {
+    val types   = types0.toList
+    // If two different type diag instances are seen for a given
+    // key (either the string representation of a type, or the simple
+    // name of a symbol) then keep them for disambiguation.
+    val strings = mutable.Map[String, Set[TypeDiag]]() withDefaultValue Set()
+    val names   = mutable.Map[Name, Set[TypeDiag]]() withDefaultValue Set()
+
+    def record(t: Type, sym: Symbol) = {
+      val diag = TypeDiag(t, sym)
+
+      strings("" + t) += diag
+      names(sym.name) += diag
+    }
+    for (tpe <- types ; t <- tpe) {
+      t match {
+        case ConstantType(_)    => record(t, t.underlying.typeSymbol)
+        case TypeRef(_, sym, _) => record(t, sym)
+        case _                  => ()
       }
     }
 
-    for (tp <- types.toList; SymExtractor(t, sym) <- tp) yield TypeDiag(t, sym)
+    val collisions = strings.values ++ names.values filter (_.size > 1)
+    collisions.flatten.toList
   }
 
   /** The distinct pairs from an ordered list. */
@@ -431,14 +456,20 @@ trait TypeDiagnostics {
 
       ex match {
         case CyclicReference(sym, info: TypeCompleter) =>
-          val pos = info.tree match {
-            case Import(expr, _)  => expr.pos
-            case _                => ex.pos
-          }
-          contextError(context0, pos, cyclicReferenceMessage(sym, info.tree) getOrElse ex.getMessage())
+          if (context0.owner.isTermMacro) {
+            // see comments to TypeSigError for an explanation of this special case
+            // [Eugene] is there a better way?
+            throw ex
+          } else {
+            val pos = info.tree match {
+              case Import(expr, _)  => expr.pos
+              case _                => ex.pos
+            }
+            contextError(context0, pos, cyclicReferenceMessage(sym, info.tree) getOrElse ex.getMessage())
 
-          if (sym == ObjectClass)
-            throw new FatalError("cannot redefine root "+sym)
+            if (sym == ObjectClass)
+              throw new FatalError("cannot redefine root "+sym)
+          }
         case _ =>
           contextError(context0, ex.pos, ex)
       }

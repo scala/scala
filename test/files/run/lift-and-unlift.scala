@@ -2,7 +2,7 @@ import Function.unlift
 
 object Test {
   def evens1(x: Int) = if (x % 2 == 0) Some(x) else None
-  def evens2: PartialFunction[Int, Int] = {
+  val evens2: PartialFunction[Int, Int] = {
     case x if x % 2 == 0  => x
   }
   
@@ -21,7 +21,7 @@ object Test {
     })
     
     assert(f1 eq f3.lift)
-    // Hmm, why is this not true:
-    // assert(f2 eq f4.lift)
+    assert(f4 eq unlift(f2))
+    assert(f4 eq evens2)
   }
 }

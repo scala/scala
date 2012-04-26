@@ -1,3 +1,5 @@
+import scala.reflect.mirror._
+
 object Append extends Application {
 
   def append[A](l1: List[A], l2: List[A]):List[A] =
@@ -6,6 +8,6 @@ object Append extends Application {
       case x::xs => x :: append(xs, l2)
     }
 
-  println(scala.reflect.Code.lift(append _).tree)
+  println(reify(append _).tree)
 }
 

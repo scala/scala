@@ -12,6 +12,7 @@ package scala.collection
 package generic
 
 import mutable.{Builder, SetBuilder}
+import language.higherKinds
 
 /** A template for companion objects of Set and subclasses thereof.
  *

@@ -1,7 +1,7 @@
 package test
 
 trait Vector[+A] {
-  def append(x: Vector[A]): Vector[A] 
+  def append(x: Vector[A]): Vector[A]
   private[this] def append3(x: Vector[A]): Vector[A] = append(x)
 }
 
@@ -11,19 +11,27 @@ object Covariant {
   class Foo[+A] {
     private[this] var a : A = _
     def getA : A = a
-    private[this] def setA(a : A) = this.a = a 
-    
+    // allowed
+    private[this] def setA1(a : A) = this.a = a
+    protected[this] def setA2(a : A) = this.a = a
+    // forbidden
+    private def setA3(a : A) = this.a = a
+    protected def setA4(a : A) = this.a = a
+
     object Baz extends C[A]
     trait Convert[B] {
       def b2a(b : B) : A
-      def doit(b : B) = setA(b2a(b))
+      def doit1(b : B) = setA1(b2a(b))
+      def doit2(b : B) = setA2(b2a(b))
+      def doit3(b : B) = setA3(b2a(b))
+      def doit4(b : B) = setA4(b2a(b))
     }
   }
   class Foo2[+A] {
     private[this] var a : A = _
     def getA : A = a
-    private[this] def setA(a : A) = this.a = a 
-    
+    private[this] def setA(a : A) = this.a = a
+
     {
       trait Convert[B] {
         def b2a(b : B) : A
@@ -35,8 +43,8 @@ object Covariant {
   class Foo3[+A] {
     private[this] var a : A = _
     def getA : A = a
-    private[this] def setA(a : A) = this.a = a 
-    
+    private[this] def setA(a : A) = this.a = a
+
     private[this] trait Convert[B] {
       def b2a(b : B) : A
       def doit(b : B) = setA(b2a(b))
@@ -54,7 +62,10 @@ object Covariant {
   }
   def main(args : Array[String]) {
     val test = new Test
-    test.c.doit(test.b)
+    test.c.doit1(test.b)
+    test.c.doit2(test.b)
+    test.c.doit3(test.b)
+    test.c.doit4(test.b)
     val x : java.lang.Character = test.a.getA
     Console.println("XXX " + x)
   }

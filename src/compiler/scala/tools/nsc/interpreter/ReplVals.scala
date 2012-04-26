@@ -6,6 +6,9 @@
 package scala.tools.nsc
 package interpreter
 
+import scala.reflect.{mirror => rm}
+import language.implicitConversions
+
 /** A class which the repl utilizes to expose predefined objects.
  *  The base implementation is empty; the standard repl implementation
  *  is StdReplVals.
@@ -25,19 +28,23 @@ class StdReplVals(final val r: ILoop) extends ReplVals {
   final lazy val phased                   = power.phased
   final lazy val analyzer                 = global.analyzer
 
-  final lazy val treedsl = new { val global: intp.global.type = intp.global } with ast.TreeDSL { }
+  object treedsl extends { val global: intp.global.type = intp.global } with ast.TreeDSL { }
+
   final lazy val typer = analyzer.newTyper(
     analyzer.rootContext(
       power.unit("").asInstanceOf[analyzer.global.CompilationUnit]
     )
   )
+  def lastRequest = intp.lastRequest
 
-  final lazy val replImplicits = new power.Implicits2 {
+  class ReplImplicits extends power.Implicits2 {
     import intp.global._
 
-    private val manifestFn = ReplVals.mkManifestToType[intp.global.type](global)
-    implicit def mkManifestToType(sym: Symbol) = manifestFn(sym)
+    private val tagFn = ReplVals.mkCompilerTypeFromTag[intp.global.type](global)
+    implicit def mkCompilerTypeFromTag(sym: Symbol) = tagFn(sym)
   }
+
+  final lazy val replImplicits = new ReplImplicits
 
   def typed[T <: analyzer.global.Tree](tree: T): T = typer.typed(tree).asInstanceOf[T]
 }
@@ -47,29 +54,29 @@ object ReplVals {
    *  not being seen as the same type as bar.global.Type even though
    *  the globals are the same.  Dependent method types to the rescue.
    */
-  def mkManifestToType[T <: Global](global: T) = {
+  def mkCompilerTypeFromTag[T <: Global](global: T) = {
     import global._
     import definitions._
 
-    /** We can't use definitions.manifestToType directly because we're passing
+    /** We can't use definitions.compilerTypeFromTag directly because we're passing
      *  it to map and the compiler refuses to perform eta expansion on a method
      *  with a dependent return type.  (Can this be relaxed?) To get around this
      *  I have this forwarder which widens the type and then cast the result back
      *  to the dependent type.
      */
-    def manifestToType(m: OptManifest[_]): Global#Type =
-      definitions.manifestToType(m)
+    def compilerTypeFromTag(t: rm.TypeTag[_]): Global#Type =
+      definitions.compilerTypeFromTag(t)
 
-    class AppliedTypeFromManifests(sym: Symbol) {
-      def apply[M](implicit m1: Manifest[M]): Type =
+    class AppliedTypeFromTags(sym: Symbol) {
+      def apply[M](implicit m1: rm.TypeTag[M]): Type =
         if (sym eq NoSymbol) NoType
-        else appliedType(sym.typeConstructor, List(m1) map (x => manifestToType(x).asInstanceOf[Type]))
+        else appliedType(sym, compilerTypeFromTag(m1).asInstanceOf[Type])
 
-      def apply[M1, M2](implicit m1: Manifest[M1], m2: Manifest[M2]): Type =
+      def apply[M1, M2](implicit m1: rm.TypeTag[M1], m2: rm.TypeTag[M2]): Type =
         if (sym eq NoSymbol) NoType
-        else appliedType(sym.typeConstructor, List(m1, m2) map (x => manifestToType(x).asInstanceOf[Type]))
+        else appliedType(sym, compilerTypeFromTag(m1).asInstanceOf[Type], compilerTypeFromTag(m2).asInstanceOf[Type])
     }
 
-    (sym: Symbol) => new AppliedTypeFromManifests(sym)
+    (sym: Symbol) => new AppliedTypeFromTags(sym)
   }
 }

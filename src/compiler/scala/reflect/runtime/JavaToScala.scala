@@ -34,16 +34,42 @@ trait JavaToScala extends ConversionUtil { self: SymbolTable =>
     val global: JavaToScala.this.type = self
   }
 
-  protected def defaultReflectiveClassLoader(): JClassLoader = {
-    val cl = Thread.currentThread.getContextClassLoader
-    if (cl == null) getClass.getClassLoader else cl
-  }
+  /** Defines the classloader that will be used for all class resolution activities in this mirror.
+   *  Is mutable, since sometimes we need to change it in flight (e.g. to make the default mirror work with REPL).
+   *
+   *  If you want to have a mirror with non-standard class resolution, override this var
+   *  (or, even simpler, use the `mkMirror` function from `scala.reflect` package)
+   *
+   *  Be careful, though, since fancy stuff might happen.
+   *  Here's one example:
+   *
+   *    partest uses a URLClassLoader(urls, null) with custom classpath to run workers (in separate threads)
+   *    however it doesn't set the context classloader for them, so they inherit the system classloader
+   *    http://www.javaworld.com/javaworld/javaqa/2003-06/01-qa-0606-load.html
+   *
+   *  Once upon a time, scala.reflect.mirror was loaded using getClass.getClassLoader,
+   *  which also means that classOf[...] constructs such as:
+   *
+   *    classOf[scala.reflect.ScalaSignature]
+   *
+   *  in unpickleClass were also loaded by the URLClassLoader
+   *
+   *  But mirror's classLoader used Thread.currentThread.getContextClassLoader,
+   *  which introduced a subtle bug that made the following snippet incorrectly:
+   *
+   *    jclazz.getAnnotation(classOf[scala.reflect.ScalaSignature])
+   *
+   *  Indeed, jclazz was loaded by context classloader, which defaulted to system classloader,
+   *  while ScalaSignature class was loaded by getClass.getClassLoader, which was incompatible with system classloader.
+   *  As a result, unpickler couldn't see the signature and that blew up the mirror.
+   */
+  var classLoader: ClassLoader
 
   /** Paul: It seems the default class loader does not pick up root classes, whereas the system classloader does.
    *  Can you check with your newly acquired classloader fu whether this implementation makes sense?
    */
   def javaClass(path: String): jClass[_] =
-    javaClass(path, defaultReflectiveClassLoader())
+    javaClass(path, classLoader)
   def javaClass(path: String, classLoader: JClassLoader): jClass[_] =
     Class.forName(path, true, classLoader)
 
@@ -75,19 +101,70 @@ trait JavaToScala extends ConversionUtil { self: SymbolTable =>
         (if (msg eq null) "reflection error while loading " + clazz.name
          else "error while loading " + clazz.name) + ", " + msg)
     }
+    // don't use classOf[scala.reflect.ScalaSignature] here, because it will use getClass.getClassLoader, not mirror's classLoader
+    // don't use asInstanceOf either because of the same reason (lol, I cannot believe I fell for it)
+    // don't use structural types to simplify reflective invocations because of the same reason
+    // todo. test for this
+    def loadAnnotation(name: String): java.lang.annotation.Annotation = {
+      def inferClasspath(cl: ClassLoader) = cl match {
+        case cl: java.net.URLClassLoader => "[" + (cl.getURLs mkString ",") + "]"
+        case _ => "<unknown>"
+      }
+      def show(cl: ClassLoader) = cl match {
+        case cl if cl != null =>
+          "%s of type %s with classpath %s".format(cl, cl.getClass, inferClasspath(cl))
+        case null =>
+          import scala.tools.util.PathResolver.Environment._
+          "primordial classloader with boot classpath [%s]".format(javaBootClassPath)
+      }
+
+      try {
+        val cls_ann = Class.forName(name, true, classLoader)
+        val anns = jclazz.getAnnotations
+        val ann = anns find (_.annotationType == cls_ann) orNull;
+        if (ann == null && anns.find(_.annotationType.getName == name).isDefined) {
+          val msg = "Mirror classloader mismatch: %s (loaded by %s)%nis unrelated to the mirror's classloader (%s)"
+          throw new Error(msg.format(jclazz, show(jclazz.getClassLoader), show(classLoader)))
+        }
+        ann
+      } catch {
+        case ex: ClassNotFoundException =>
+          val msg = "Dysfunctional mirror classloader, cannot load %s: %s."
+          throw new Error(msg.format(name, show(classLoader)), ex)
+      }
+    }
+    def loadScalaSignature: Option[String] = {
+      val ssig = loadAnnotation("scala.reflect.ScalaSignature")
+      if (ssig != null) {
+        val bytesMethod = ssig.annotationType.getMethod("bytes")
+        val result = bytesMethod.invoke(ssig)
+        Some(result.asInstanceOf[String])
+      } else {
+        None
+      }
+    }
+    def loadScalaLongSignature: Option[Array[String]] = {
+      val slsig = loadAnnotation("scala.reflect.ScalaLongSignature")
+      if (slsig != null) {
+        val bytesMethod = slsig.annotationType.getMethod("bytes")
+        val result = bytesMethod.invoke(slsig)
+        Some(result.asInstanceOf[Array[String]])
+      } else {
+        None
+      }
+    }
     try {
       markAbsent(NoType)
-      val ssig = jclazz.getAnnotation(classOf[scala.reflect.ScalaSignature])
-      if (ssig != null) {
-        info("unpickling Scala "+clazz + " and " + module+ ", owner = " + clazz.owner)
-        val bytes = ssig.bytes.getBytes
-        val len = ByteCodecs.decode(bytes)
-        unpickler.unpickle(bytes take len, 0, clazz, module, jclazz.getName)
-      } else {
-        val slsig = jclazz.getAnnotation(classOf[scala.reflect.ScalaLongSignature])
-        if (slsig != null) {
+      val sigs = (loadScalaSignature, loadScalaLongSignature)
+      sigs match {
+        case (Some(ssig), _) =>
+          info("unpickling Scala "+clazz + " and " + module+ ", owner = " + clazz.owner)
+          val bytes = ssig.getBytes
+          val len = ByteCodecs.decode(bytes)
+          unpickler.unpickle(bytes take len, 0, clazz, module, jclazz.getName)
+        case (_, Some(slsig)) =>
           info("unpickling Scala "+clazz + " and " + module + " with long Scala signature")
-          val byteSegments = slsig.bytes map (_.getBytes)
+          val byteSegments = slsig map (_.getBytes)
           val lens = byteSegments map ByteCodecs.decode
           val bytes = Array.ofDim[Byte](lens.sum)
           var len = 0
@@ -96,10 +173,10 @@ trait JavaToScala extends ConversionUtil { self: SymbolTable =>
             len += l
           }
           unpickler.unpickle(bytes, 0, clazz, module, jclazz.getName)
-        } else { // class does not have a Scala signature; it's a Java class
+        case (None, None) =>
+          // class does not have a Scala signature; it's a Java class
           info("translating reflection info for Java " + jclazz) //debug
           initClassModule(clazz, module, new FromJavaClassCompleter(clazz, module, jclazz))
-        }
       }
     } catch {
       case ex: MissingRequirementError =>
@@ -383,52 +460,70 @@ trait JavaToScala extends ConversionUtil { self: SymbolTable =>
    */
   def classToScala(jclazz: jClass[_]): Symbol = classCache.toScala(jclazz) {
     val jname = javaTypeName(jclazz)
-    val owner = sOwner(jclazz)
-    val simpleName = scalaSimpleName(jclazz)
 
-    val sym = {
-      def lookup = {
-        def coreLookup(name: Name): Symbol = {
-          val sym = owner.info.decl(name)
-          sym orElse {
-            if (name.startsWith(nme.NAME_JOIN_STRING))
-              coreLookup(name.subName(1, name.length))
-            else
-              NoSymbol
+    val sym =
+      if (jname == fulltpnme.RuntimeNothing)
+        NothingClass
+      else if (jname == fulltpnme.RuntimeNull)
+        NullClass
+      else
+      {
+        val owner = sOwner(jclazz)
+        val simpleName = scalaSimpleName(jclazz)
+
+        def lookup = {
+          def coreLookup(name: Name): Symbol = {
+            val sym = owner.info.decl(name)
+            sym orElse {
+              if (name.startsWith(nme.NAME_JOIN_STRING))
+                coreLookup(name.subName(1, name.length))
+              else
+                NoSymbol
+            }
+          }
+
+          if (nme.isModuleName(simpleName)) {
+            val moduleName = nme.stripModuleSuffix(simpleName).toTermName
+            val sym = coreLookup(moduleName)
+            if (sym == NoSymbol) sym else sym.moduleClass
+          } else {
+            coreLookup(simpleName)
           }
         }
 
-        if (nme.isModuleName(simpleName)) {
-          val moduleName = nme.stripModuleSuffix(simpleName).toTermName
-          val sym = coreLookup(moduleName)
-          if (sym == NoSymbol) sym else sym.moduleClass
-        } else {
-          coreLookup(simpleName)
+        val sym = {
+          if (jclazz.isMemberClass && !nme.isImplClassName(jname)) {
+            lookup
+          } else if (jclazz.isLocalClass || invalidClassName(jname)) {
+            // local classes and implementation classes not preserved by unpickling - treat as Java
+            jclassAsScala(jclazz)
+          } else if (jclazz.isArray) {
+            ArrayClass
+          } else javaTypeToValueClass(jclazz) orElse {
+            // jclazz is top-level - get signature
+            lookup
+            //        val (clazz, module) = createClassModule(
+            //          sOwner(jclazz), newTypeName(jclazz.getSimpleName), new TopClassCompleter(_, _))
+            //        classCache enter (jclazz, clazz)
+            //        clazz
+          }
         }
-      }
 
-      if (jclazz.isMemberClass && !nme.isImplClassName(jname)) {
-        lookup
-      } else if (jclazz.isLocalClass || invalidClassName(jname)) {
-        // local classes and implementation classes not preserved by unpickling - treat as Java
-        jclassAsScala(jclazz)
-      } else if (jclazz.isArray) {
-        ArrayClass
-      } else javaTypeToValueClass(jclazz) orElse {
-        // jclazz is top-level - get signature
-        lookup
-        //        val (clazz, module) = createClassModule(
-        //          sOwner(jclazz), newTypeName(jclazz.getSimpleName), new TopClassCompleter(_, _))
-        //        classCache enter (jclazz, clazz)
-        //        clazz
-      }
-    }
+        if (!sym.isType) {
+          val classloader = jclazz.getClassLoader
+          println("classloader is: %s of type %s".format(classloader, classloader.getClass))
+          def inferClasspath(cl: ClassLoader) = cl match {
+            case cl: java.net.URLClassLoader => "[" + (cl.getURLs mkString ",") + "]"
+            case _ => "<unknown>"
+          }
+          println("classpath is: %s".format(inferClasspath(classloader)))
+          def msgNoSym = "no symbol could be loaded from %s (scala equivalent is %s) by name %s".format(owner, jclazz, simpleName)
+          def msgIsNotType = "not a type: symbol %s loaded from %s (scala equivalent is %s) by name %s".format(sym, owner, jclazz, simpleName)
+          assert(false, if (sym == NoSymbol) msgNoSym else msgIsNotType)
+        }
 
-    if (!sym.isType) {
-      def msgNoSym = "no symbol could be loaded from %s (scala equivalent is %s) by name %s".format(owner, jclazz, simpleName)
-      def msgIsNotType = "not a type: symbol %s loaded from %s (scala equivalent is %s) by name %s".format(sym, owner, jclazz, simpleName)
-      assert(false, if (sym == NoSymbol) msgNoSym else msgIsNotType)
-    }
+        sym
+      }
 
     sym.asInstanceOf[ClassSymbol]
   }

@@ -23,6 +23,7 @@ trait TreePrinters extends api.TreePrinters { self: SymbolTable =>
     else s
   }
   def quotedName(name: Name): String = quotedName(name, false)
+  def quotedName(name: String): String = quotedName(newTermName(name), false)
 
   private def symNameInternal(tree: Tree, name: Name, decoded: Boolean): String = {
     val sym = tree.symbol
@@ -31,7 +32,7 @@ trait TreePrinters extends api.TreePrinters { self: SymbolTable =>
       var suffix = ""
       if (settings.uniqid.value) suffix += ("#" + sym.id)
       if (settings.Yshowsymkinds.value) suffix += ("#" + sym.abbreviatedKindString)
-      prefix + tree.symbol.decodedName + suffix
+      prefix + quotedName(tree.symbol.decodedName) + suffix
     } else {
       quotedName(name, decoded)
     }
@@ -64,7 +65,7 @@ trait TreePrinters extends api.TreePrinters { self: SymbolTable =>
     def indent() = indentMargin += indentStep
     def undent() = indentMargin -= indentStep
 
-    def printPosition(tree: Tree) = if (doPrintPositions) print(showPos(tree.pos))
+    def printPosition(tree: Tree) = if (doPrintPositions) print(tree.pos.show)
 
     def println() {
       out.println()
@@ -100,6 +101,16 @@ trait TreePrinters extends api.TreePrinters { self: SymbolTable =>
           printParam(t)
         }{print(", ")}; print("]")
       }
+    }
+
+    def printLabelParams(ps: List[Ident]) {
+      print("(")
+      printSeq(ps){printLabelParam}{print(", ")}
+      print(")")
+    }
+
+    def printLabelParam(p: Ident) {
+      print(symName(p, p.name)); printOpt(": ", TypeTree() setType p.tpe)
     }
 
     def printValueParams(ts: List[ValDef]) {
@@ -175,7 +186,7 @@ trait TreePrinters extends api.TreePrinters { self: SymbolTable =>
           printAnnotations(tree)
           printModifiers(tree, mods)
           val word =
-            if (mods.hasTraitFlag) "trait"
+            if (mods.isTrait) "trait"
             else if (ifSym(tree, _.isModuleClass)) "object"
             else "class"
 
@@ -218,7 +229,7 @@ trait TreePrinters extends api.TreePrinters { self: SymbolTable =>
           }
 
         case LabelDef(name, params, rhs) =>
-          print(symName(tree, name)); printRow(params, "(", ",", ")"); printBlock(rhs)
+          print(symName(tree, name)); printLabelParams(params); printBlock(rhs)
 
         case Import(expr, selectors) =>
           // Is this selector remapping a name (i.e, {name1 => name2})
@@ -361,6 +372,9 @@ trait TreePrinters extends api.TreePrinters { self: SymbolTable =>
 
         case Select(qualifier, name) =>
           print(backquotedPath(qualifier), ".", symName(tree, name))
+
+        case bqid: BackQuotedIdent =>
+          print("`%s`" format symName(tree, bqid.name))
 
         case Ident(name) =>
           print(symName(tree, name))

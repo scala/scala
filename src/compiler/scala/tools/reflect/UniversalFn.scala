@@ -26,8 +26,8 @@ class UniversalFn private (val closure: AnyRef, val method: Method) extends (Seq
    *  them to this universal function.  Will throw an exception in the
    *  face of any bad data.
    */
-  def as[T: Manifest] : T = {
-    val clazz = manifest[T].erasure
+  def as[T: ClassTag] : T = {
+    val clazz = classTag[T].erasure
     require(clazz.isInterface, "Type argument must be an interface.")
 
     val interfaceMethods = clazz.getDeclaredMethods.toSet

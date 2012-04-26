@@ -23,6 +23,7 @@ import scala.reflect.NameTransformer._
 import util.ScalaClassLoader
 import ScalaClassLoader._
 import scala.tools.util._
+import language.{implicitConversions, existentials}
 
 /** The Scala interactive shell.  It provides a read-eval-print loop
  *  around the Interpreter class.
@@ -48,12 +49,60 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
   var settings: Settings = _
   var intp: IMain = _
 
-  override def echoCommandMessage(msg: String): Unit =
-    intp.reporter.printMessage(msg)
+  /** Having inherited the difficult "var-ness" of the repl instance,
+   *  I'm trying to work around it by moving operations into a class from
+   *  which it will appear a stable prefix.
+   */
+  private def onIntp[T](f: IMain => T): T = f(intp)
+
+  class IMainOps[T <: IMain](val intp: T) {
+    import intp._
+    import global._
+
+    def printAfterTyper(msg: => String) =
+      intp.reporter printUntruncatedMessage afterTyper(msg)
+
+    /** Strip NullaryMethodType artifacts. */
+    private def replInfo(sym: Symbol) = {
+      sym.info match {
+        case NullaryMethodType(restpe) if sym.isAccessor  => restpe
+        case info                                         => info
+      }
+    }
+    def echoTypeStructure(sym: Symbol) =
+      printAfterTyper("" + deconstruct.show(replInfo(sym)))
+
+    def echoTypeSignature(sym: Symbol, verbose: Boolean) = {
+      if (verbose) ILoop.this.echo("// Type signature")
+      printAfterTyper("" + replInfo(sym))
+
+      if (verbose) {
+        ILoop.this.echo("\n// Internal Type structure")
+        echoTypeStructure(sym)
+      }
+    }
+  }
+  implicit def stabilizeIMain(intp: IMain) = new IMainOps[intp.type](intp)
+
+  /** TODO -
+   *  -n normalize
+   *  -l label with case class parameter names
+   *  -c complete - leave nothing out
+   */
+  private def typeCommandInternal(expr: String, verbose: Boolean): Result = {
+    onIntp { intp =>
+      val sym = intp.symbolOfLine(expr)
+      if (sym.exists) intp.echoTypeSignature(sym, verbose)
+      else ""
+    }
+  }
+
+  override def echoCommandMessage(msg: String) {
+    intp.reporter printUntruncatedMessage msg
+  }
 
   def isAsync = !settings.Yreplsync.value
   lazy val power = new Power(intp, new StdReplVals(this))
-  lazy val NoType = intp.global.NoType
 
   // TODO
   // object opt extends AestheticSettings
@@ -248,7 +297,7 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
     // nullary("reset", "reset the interpreter, forgetting session values but retaining session types", replay),
     shCommand,
     nullary("silent", "disable/enable automatic printing of results", verbosity),
-    cmd("type", "<expr>", "display the type of an expression without evaluating it", typeCommand),
+    cmd("type", "[-v] <expr>", "display the type of an expression without evaluating it", typeCommand),
     nullary("warnings", "show the suppressed warnings from the most recent line which had any", warningsCommand)
   )
 
@@ -321,10 +370,9 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
     }
   }
 
-  private def implicitsCommand(line: String): Result = {
-    val intp = ILoop.this.intp
+  private def implicitsCommand(line: String): Result = onIntp { intp =>
     import intp._
-    import global.{ Symbol, afterTyper }
+    import global._
 
     def p(x: Any) = intp.reporter.printMessage("" + x)
 
@@ -435,14 +483,14 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
   private lazy val javap = substituteAndLog[Javap]("javap", NoJavap)(newJavap())
 
   // Still todo: modules.
-  private def typeCommand(line: String): Result = {
-    if (line.trim == "") ":type <expression>"
-    else {
-      val tp = intp.typeOfExpression(line, false)
-      if (tp == NoType) "" // the error message was already printed
-      else intp.global.afterTyper(tp.toString)
+  private def typeCommand(line0: String): Result = {
+    line0.trim match {
+      case ""                      => ":type [-v] <expression>"
+      case s if s startsWith "-v " => typeCommandInternal(s stripPrefix "-v " trim, true)
+      case s                       => typeCommandInternal(s, false)
     }
   }
+
   private def warningsCommand(): Result = {
     intp.lastWarnings foreach { case (pos, msg) => intp.reporter.warning(pos, msg) }
   }
@@ -470,33 +518,34 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
   }
   private def wrapCommand(line: String): Result = {
     def failMsg = "Argument to :wrap must be the name of a method with signature [T](=> T): T"
-    val intp = ILoop.this.intp
-    val g: intp.global.type = intp.global
-    import g._
+    onIntp { intp =>
+      import intp._
+      import global._
 
-    words(line) match {
-      case Nil            =>
-        intp.executionWrapper match {
-          case ""   => "No execution wrapper is set."
-          case s    => "Current execution wrapper: " + s
-        }
-      case "clear" :: Nil =>
-        intp.executionWrapper match {
-          case ""   => "No execution wrapper is set."
-          case s    => intp.clearExecutionWrapper() ; "Cleared execution wrapper."
-        }
-      case wrapper :: Nil =>
-        intp.typeOfExpression(wrapper) match {
-          case PolyType(List(targ), MethodType(List(arg), restpe)) =>
-            intp setExecutionWrapper intp.pathToTerm(wrapper)
-            "Set wrapper to '" + wrapper + "'"
-          case tp =>
-            failMsg + (
-              if (tp == g.NoType) "\nFound: <unknown>"
-              else "\nFound: <unknown>"
-            )
-        }
-      case _ => failMsg
+      words(line) match {
+        case Nil            =>
+          intp.executionWrapper match {
+            case ""   => "No execution wrapper is set."
+            case s    => "Current execution wrapper: " + s
+          }
+        case "clear" :: Nil =>
+          intp.executionWrapper match {
+            case ""   => "No execution wrapper is set."
+            case s    => intp.clearExecutionWrapper() ; "Cleared execution wrapper."
+          }
+        case wrapper :: Nil =>
+          intp.typeOfExpression(wrapper) match {
+            case PolyType(List(targ), MethodType(List(arg), restpe)) =>
+              intp setExecutionWrapper intp.pathToTerm(wrapper)
+              "Set wrapper to '" + wrapper + "'"
+            case tp =>
+              failMsg + (
+                if (tp == NoType) "\nFound: <unknown>"
+                else "\nFound: <unknown>"
+              )
+          }
+        case _ => failMsg
+      }
     }
   }
 
@@ -797,6 +846,10 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
       })
     }
 
+    def runCompletion =
+      try in.completion execute code map (intp bindSyntheticValue _)
+      catch { case ex: Exception => None }
+
     /** Here we place ourselves between the user and the interpreter and examine
      *  the input they are ostensibly submitting.  We intervene in several cases:
      *
@@ -814,27 +867,28 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
     else if (Completion.looksLikeInvocation(code) && intp.mostRecentVar != "") {
       interpretStartingWith(intp.mostRecentVar + code)
     }
-    else {
-      def runCompletion = in.completion execute code map (intp bindValue _)
-      /** Due to my accidentally letting file completion execution sneak ahead
-       *  of actual parsing this now operates in such a way that the scala
-       *  interpretation always wins.  However to avoid losing useful file
-       *  completion I let it fail and then check the others.  So if you
-       *  type /tmp it will echo a failure and then give you a Directory object.
-       *  It's not pretty: maybe I'll implement the silence bits I need to avoid
-       *  echoing the failure.
-       */
-      if (intp isParseable code) {
-        val (code, result) = reallyInterpret
-        if (power != null && code == IR.Error)
-          runCompletion
+    else if (code.trim startsWith "//") {
+      // line comment, do nothing
+      None
+    }
+    /** Due to my accidentally letting file completion execution sneak ahead
+     *  of actual parsing this now operates in such a way that the scala
+     *  interpretation always wins.  However to avoid losing useful file
+     *  completion I let it fail and then check the others.  So if you
+     *  type /tmp it will echo a failure and then give you a Directory object.
+     *  It's not pretty: maybe I'll implement the silence bits I need to avoid
+     *  echoing the failure.
+     */
+    else if (intp isParseable code) {
+      val (code, result) = reallyInterpret
+      if (power != null && code == IR.Error)
+        runCompletion
 
-        result
-      }
-      else runCompletion match {
-        case Some(_)  => None // completion hit: avoid the latent error
-        case _        => reallyInterpret._2  // trigger the latent error
-      }
+      result
+    }
+    else runCompletion match {
+      case Some(_)  => None // completion hit: avoid the latent error
+      case _        => reallyInterpret._2  // trigger the latent error
     }
   }
 
@@ -881,6 +935,9 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
           case x              => x
         }
     }
+    // Bind intp somewhere out of the regular namespace where
+    // we can get at it in generated code.
+    addThunk(intp.quietBind("$intp" -> intp))
 
     loadFiles(settings)
     // it is broken on startup; go ahead and exit
@@ -996,11 +1053,11 @@ object ILoop {
 
   // provide the enclosing type T
   // in order to set up the interpreter's classpath and parent class loader properly
-  def breakIf[T: Manifest](assertion: => Boolean, args: NamedParam*): Unit =
+  def breakIf[T: ClassTag](assertion: => Boolean, args: NamedParam*): Unit =
     if (assertion) break[T](args.toList)
 
   // start a repl, binding supplied args
-  def break[T: Manifest](args: List[NamedParam]): Unit = savingContextLoader {
+  def break[T: ClassTag](args: List[NamedParam]): Unit = savingContextLoader {
     val msg = if (args.isEmpty) "" else "  Binding " + args.size + " value%s.".format(
       if (args.size == 1) "" else "s"
     )

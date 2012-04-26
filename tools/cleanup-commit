@@ -1,0 +1,130 @@
+#!/bin/bash
+
+##
+## The cleanup-commit script
+## -------------------------
+## This little script will cleanup your commit before you send it. You need to add the files to the staged area and
+## run this script. It will automatically cleanup tabs and trailing spaces for the files you added and then add the
+## clean versions to the staging area.
+##
+## Use at your own risk, I spent some time making the script error-proof so it will abort if sees any inconsistency,
+## but of course playing around with your commit might break things. Btw, it saves the original file to file.bak.
+##
+## Happy hacking!
+##
+
+ABORT="Ab0rT0p3r4+|0n"
+
+#
+# Cleanup function
+#
+function cleanup {
+  echo Cleaning up $1...
+  # prepare the ground
+  rm -rf $1.bak
+  # compress <TAB> into double <BLANK> and eliminate trailing <BLANC>s
+  sed -i.bak -e 's/\t/  /g' -e 's/ *$//' $1
+}
+
+
+#
+# Get the git status for the current staged commit
+#
+FULLSTATUS=`git status --porcelain`
+
+if [ $? -ne 0 ]
+then
+  echo "Unable to run git. Check if:"
+  echo " -- git is installed (you can run git in the command line)"
+  echo " -- the current directory is a valid git repository"
+  exit 1
+fi
+
+echo
+
+#
+# Based on the status decide what files will get cleaned up
+#
+CLEANUP_FILES=`echo "$FULLSTATUS" | while read LINE
+do
+
+  STATUS=$(echo $LINE | sed 's/^\(..\).*$/\1/')
+  if [ $? -ne 0 ]
+  then
+    echo "Could not get the status for line: $LINE"
+    echo " -- you have the basic unix tools installed (grep, cut, sed)"
+    echo $ABORT # This goes to CLEANUP_FILES
+    exit 1
+  fi
+
+  FILES=$(echo $LINE | sed 's/^..//')
+  FILE1=$(echo $FILES | cut -d ' ' -f 1)
+  FILE2=$(echo $FILES | cut -d ' ' -f 3)
+
+  case "$STATUS" in
+  [AMRDC]" ")
+    case "$STATUS" in
+      "A "|"M ")
+         echo $FILE1
+         ;;
+      "R ")
+         echo $FILE2
+         ;;
+      "D ")
+         #nothing to do
+         ;;
+      "C ")
+         echo $FILE1
+         echo $FILE2
+         ;;
+    esac
+    ;;
+  "??")
+    # File is not tracked, no need to do anything about it
+    # echo Untracked: $FILE1
+    ;;
+  *)
+    echo "Unstable status of file $FILE1 (\"$STATUS\")" >&2
+    echo "Aborting cleanup!" >&2
+    echo $ABORT # This goes to CLEANUP_FILES
+    exit 1
+  esac
+done; echo $CLEANUP_FILES`
+
+
+#
+# Perform actual cleanup
+#
+case $CLEANUP_FILES in
+*"$ABORT")
+  echo
+  exit 1
+  ;;
+"")
+  echo Nothing to do!
+  ;;
+*)
+  cd $(git rev-parse --show-toplevel)
+
+  if [ $? -ne 0 ]
+  then
+    echo Unexpected error: cannot cd to the repository root
+    echo Aborting cleanup!
+    exit 1
+  fi
+
+  echo "$CLEANUP_FILES" | while read FILE
+  do
+    cleanup $FILE
+  done
+
+  cd - &>/dev/null
+
+  echo
+  echo "Cleanup done: "
+  echo " - original files saved as .bak"
+  echo " - you can do \"git diff\" to see the changes the script did"
+  echo " - you can do \"git commit -a\" to commit the cleaned up files"
+  echo
+  ;;
+esac

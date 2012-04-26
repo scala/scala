@@ -121,7 +121,7 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
       if (sym.isDeferred) {
         val member = sym.overridingSymbol(clazz);
         if (mix != tpnme.EMPTY || member == NoSymbol ||
-            !((member hasFlag ABSOVERRIDE) && member.isIncompleteIn(clazz)))
+            !(member.isAbstractOverride && member.isIncompleteIn(clazz)))
           unit.error(sel.pos, ""+sym.fullLocationString+" is accessed from super. It may not be abstract "+
                                "unless it is overridden by a member declared `abstract' and `override'");
       }
@@ -134,7 +134,7 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
     // otherwise lead to either a compiler crash or runtime failure.
     private lazy val isDisallowed = {
       import definitions._
-      Set(Any_isInstanceOf, Object_isInstanceOf, Any_asInstanceOf, Object_asInstanceOf, Object_==, Object_!=, Object_##)
+      Set[Symbol](Any_isInstanceOf, Object_isInstanceOf, Any_asInstanceOf, Object_asInstanceOf, Object_==, Object_!=, Object_##)
     }
 
     override def transform(tree: Tree): Tree = {
@@ -259,7 +259,8 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
 
         case sel @ Select(Super(_, mix), name) =>
           if (sym.isValue && !sym.isMethod || sym.hasAccessorFlag) {
-            unit.error(tree.pos, "super may be not be used on "+ sym.accessedOrSelf)
+            if (!settings.overrideVars.value)
+              unit.error(tree.pos, "super may be not be used on "+ sym.accessedOrSelf)
           }
           else if (isDisallowed(sym)) {
             unit.error(tree.pos, "super not allowed here: use this." + name.decode + " instead")

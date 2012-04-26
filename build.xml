@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<project name="sabbus" default="build">
+<project name="sabbus" default="build" xmlns:artifact="urn:maven-artifact-ant">
   <description>
 SuperSabbus for Scala core, builds the scala library and compiler. It can also package it as a simple distribution, tests it for stable bootstrapping and against the Scala test suite.
   </description>
@@ -8,10 +8,10 @@ SuperSabbus for Scala core, builds the scala library and compiler. It can also p
 <!-- ===========================================================================
 END-USER TARGETS
 ============================================================================ -->
-  
+
   <target name="build" depends="pack.done"
     description="Builds the Scala compiler and library. Executables are in 'build/pack/bin'."/>
-    
+
   <target name="build-opt"
     description="Builds the optimised Scala compiler and library. Executables are in 'build/pack/bin'.">
     <antcall target="build">
@@ -34,20 +34,20 @@ END-USER TARGETS
 
   <target name="docs" depends="docs.done"
     description="Builds documentation for the Scala library. Scaladoc is in 'build/scaladoc/library'."/>
-  
+
   <target name="docscomp" depends="docs.comp"
     description="Builds documentation for the Scala compiler and library. Scaladoc is in 'build/scaladoc'."/>
-  
+
   <target name="docsclean" depends="docs.clean"
     description="Removes generated documentation. Distributions are untouched."/>
-  
+
   <target name="dist"
     description="Makes a new distribution and tests it. Will remove existing binaries and documentation.">
     <antcall target="locker.clean"/>
     <antcall target="docs.clean"/>
     <antcall target="all.done"/>
   </target>
-  
+
   <target name="dist-opt"
     description="Makes a new optimised distribution and tests it. Will remove existing binaries and documentation.">
     <antcall target="dist">
@@ -67,7 +67,7 @@ END-USER TARGETS
 
   <target name="distclean" depends="dist.clean"
     description="Removes all distributions. Binaries and documentation are untouched."/>
-  
+
   <target name="replacestarr"
     description="Replaces the Starr compiler and library by fresh ones built from current sources and tests them.">
     <fail message="This target is not available on Windows. Use 'ant replacestarrwin' instead.">
@@ -81,7 +81,7 @@ END-USER TARGETS
     <antcall target="locker.clean"/>
     <antcall target="test.done"/>
   </target>
-  
+
   <target name="replacestarr-opt"
     description="Replaces the Starr compiler and library by fresh, optimised ones built from current sources and tests them.">
     <antcall target="replacestarr">
@@ -103,7 +103,7 @@ END-USER TARGETS
     <antcall target="locker.clean"/>
     <antcall target="test.done"/>
   </target>
-  
+
   <target name="replacelocker"
     description="Replaces the Locker compiler and library by fresh ones built from current sources.">
     <antcall target="palo.clean"/>
@@ -144,7 +144,7 @@ END-USER TARGETS
     description="Requires forkjoin library to be rebuilt. Add this target before any other if class file format is incompatible.">
     <property name="forkjoin.outdated" value="yes"/>
   </target>
-  
+
 <!-- ===========================================================================
 PROPERTIES
 ============================================================================ -->
@@ -159,7 +159,7 @@ PROPERTIES
   <property name="lib-ant.dir" value="${lib.dir}/ant"/>
   <property name="src.dir" value="${basedir}/src"/>
   <property name="partest.dir" value="${basedir}/test"/>
-  
+
   <!-- For developers: any jars placed in this dir will be added to the classpath
        of all targets and copied into quick/pack/etc builds. -->
   <property name="lib-extra.dir" value="${lib.dir}/extra"/>
@@ -238,6 +238,21 @@ INITIALISATION
     </touch>
   </target>
 
+  <!-- Add our maven ant tasks -->
+  <target name="init.maven.tasks" depends="init.jars.check" unless="init.maven.tasks.finished">
+    <path id="maven-ant-tasks.classpath" path="${lib.dir}/ant/maven-ant-tasks-2.1.1.jar" />
+    <typedef resource="org/apache/maven/artifact/ant/antlib.xml" uri="urn:maven-artifact-ant" classpathref="maven-ant-tasks.classpath" />
+
+    <property name="init.maven.tasks.finished" value="true" />
+  </target>
+
+  <!-- Resolve maven dependencies -->
+  <target name="init.maven.jars" depends="init.maven.tasks">
+    <artifact:dependencies pathId="dependency.classpath" filesetId="dependency.fileset">
+      <dependency groupId="com.typesafe" artifactId="config" version="0.4.0"/>
+    </artifact:dependencies>
+  </target>
+
   <!-- Determines OSGi string + maven extension. -->
   <target name="init.hasbuildnum">
     <condition property="version.hasbuildnum">
@@ -259,28 +274,33 @@ INITIALISATION
     <property name="version.suffix" value="-${version.bnum}"/>
   </target>
 
-  <target name="init.build.suffix.done" depends="init.build.release, init.build.patch.release"/>
+  <target name="init.hasmavensuffix" if="build.release" depends="init.build.patch.release, init.build.release">
+    <condition property="version.hasmavensuffix">
+      <not><equals arg1="${maven.version.suffix}" arg2=""/></not>
+    </condition>
+  </target>
 
-  <target name="init" depends="init.jars, init.build.suffix.done">
-  <!-- scalac.args.optimise is selectively overridden in certain antcall tasks. -->
-    <property name="scalac.args.optimise" value=""/>
-  <!-- scalac.args.quickonly are added to quick.* targets but not others (particularly, locker.)
-       This is to facilitate testing new command line options which do not yet exist in starr. -->
-    <property name="scalac.args.quickonly" value=""/>
-    <property name="scalac.args.all" value="${scalac.args} ${scalac.args.optimise}"/>
-    <property name="scalac.args.quick" value="${scalac.args.all} ${scalac.args.quickonly}"/>
-    <!-- Setting-up Ant contrib tasks -->
-    <taskdef resource="net/sf/antcontrib/antlib.xml" classpath="${lib.dir}/ant/ant-contrib.jar"/>
-    <!-- This is the start time for the distribution -->
-    <tstamp prefix="time">
-      <format property="human" pattern="d MMMM yyyy, HH:mm:ss" locale="en,US"/>
-      <format property="short" pattern="yyyyMMddHHmmss"/>
-    </tstamp>
+  <target name="init.osgi.suffix" if="version.hasmavensuffix" depends="init.hasmavensuffix">
+    <property name="osgi.version.suffix" value="${maven.version.suffix}"/>
+  </target>
+
+  <target name="init.osgi.suffix.final" if="build.release" unless="version.hasmavensuffix" depends="init.hasmavensuffix">
+    <property name="osgi.version.suffix" value="-VFINAL"/>
+  </target>
+
+
+  <target name="init.osgi.suffix.snapshot" unless="build.release" depends="init.hasmavensuffix">
+    <property name="osgi.version.suffix" value=""/>
+  </target>
+
+  <target name="init.build.suffix.done" depends="init.build.release, init.build.patch.release, init.osgi.suffix, init.osgi.suffix.final, init.osgi.suffix.snapshot"/>
+
+  <target name="init.version.git" depends="init.build.suffix.done">
     <!-- Find out whether we are running on Windows -->
     <condition property="os.win">
       <os family="windows"/>
     </condition>
-    
+
     <exec osfamily="unix" executable="tools/get-scala-commit-sha" outputproperty="git.commit.sha" failifexecutionfails="false" />
     <exec osfamily="windows" executable="tools/get-scala-commit-sha.bat" outputproperty="git.commit.sha" failifexecutionfails="false" />
     <exec osfamily="unix" executable="tools/get-scala-commit-date" outputproperty="git.commit.date" failifexecutionfails="false" />
@@ -294,18 +314,49 @@ INITIALISATION
       name="maven.version.number"
       value="${version.major}.${version.minor}.${version.patch}${version.suffix}${maven.version.suffix}"/>
     <property
+      name="osgi.version.number"
+      value="${version.major}.${version.minor}.${version.patch}.v${git.commit.date}${version.suffix}${osgi.version.suffix}-${git.commit.sha}"/>
+  </target>
+
+  <target name="init.version.snapshot" unless="build.release" depends="init.version.git">
+     <property
       name="version.number"
       value="${version.major}.${version.minor}.${version.patch}${version.suffix}-${git.commit.date}-${git.commit.sha}"/>
-    <property
-      name="osgi.version.number"
-      value="${version.major}.${version.minor}.${version.patch}.v${git.commit.date}${version.suffix}-${git.commit.sha}"/>
+  </target>
+
+  <target name="init.version.release" if="build.release" depends="init.version.git">
+     <property
+      name="version.number"
+      value="${maven.version.number}"/>
+  </target>
+
+  <target name="init.version.done" depends="init.version.release, init.version.snapshot"/>
+
+  <target name="init" depends="init.jars, init.maven.jars, init.version.done">
+    <property name="scalac.args.always" value="-Xmacros" />
+  <!-- scalac.args.optimise is selectively overridden in certain antcall tasks. -->
+    <property name="scalac.args.optimise" value=""/>
+  <!-- scalac.args.quickonly are added to quick.* targets but not others (particularly, locker.)
+       This is to facilitate testing new command line options which do not yet exist in starr. -->
+    <property name="scalac.args.quickonly" value=""/>
+    <property name="scalac.args.all" value="${scalac.args.always} ${scalac.args} ${scalac.args.optimise}"/>
+    <property name="scalac.args.quick" value="${scalac.args.all} ${scalac.args.quickonly}"/>
+    <!-- Setting-up Ant contrib tasks -->
+    <taskdef resource="net/sf/antcontrib/antlib.xml" classpath="${lib.dir}/ant/ant-contrib.jar"/>
+    <!-- This is the start time for the distribution -->
+    <tstamp prefix="time">
+      <format property="human" pattern="d MMMM yyyy, HH:mm:ss" locale="en,US"/>
+      <format property="short" pattern="yyyyMMddHHmmss"/>
+    </tstamp>
+
     <!-- some default in case something went wrong getting the revision -->
     <property name="version.number" value="-unknown-"/>
     <property name="init.avail" value="yes"/>
 
+
     <!-- Local libs (developer use.) -->
     <mkdir dir="${lib-extra.dir}"/>
-    
+
     <path id="lib.extra">
       <!-- needs ant 1.7.1 -->
       <!-- <fileset dir="${lib-extra.dir}" erroronmissingdir="false"> -->
@@ -323,6 +374,7 @@ INITIALISATION
       </fileset>
       <pathelement location="${ant.jar}"/>
       <path refid="lib.extra"/>
+      <path refid="dependency.classpath"/>
     </path>
 
     <!-- And print-out what we are building -->
@@ -354,7 +406,7 @@ INITIALISATION
       <pathelement location="${lib.dir}/forkjoin.jar"/>
       <path refid="lib.extra"/>
     </path>
-    <taskdef resource="scala/tools/ant/sabbus/antlib.xml" classpathref="starr.classpath"/>    
+    <taskdef resource="scala/tools/ant/sabbus/antlib.xml" classpathref="starr.classpath"/>
   </target>
 
 <!-- ===========================================================================
@@ -382,7 +434,7 @@ LOCAL REFERENCE BUILD (LOCKER)
       classpath="${build-locker.dir}/classes/library"
       includes="**/*.java"
       target="1.5" source="1.5">
-        <compilerarg line="${javac.args}"/>
+        <compilerarg line="${javac.args} -XDignore.symbol.file"/>
     </javac>
     <!-- NOTE: Potential problem with maximal command line length on Windows
          (32768 characters for XP, since executed with Java's "exec"). See
@@ -417,7 +469,7 @@ LOCAL REFERENCE BUILD (LOCKER)
     <touch file="${build-locker.dir}/library.complete" verbose="no"/>
     <stopwatch name="locker.lib.timer" action="total"/>
   </target>
-  
+
   <target name="locker.pre-comp" depends="locker.lib" unless="locker.available">
     <condition property="locker.comp.needed">
       <not><available file="${build-locker.dir}/compiler.complete"/></not>
@@ -477,11 +529,11 @@ LOCAL REFERENCE BUILD (LOCKER)
       <path refid="aux.libs"/>
     </path>
   </target>
-  
+
   <target name="locker.clean" depends="palo.clean">
     <delete dir="${build-locker.dir}" includeemptydirs="yes" quiet="yes" failonerror="no"/>
   </target>
-  
+
   <target name="locker.unlock.pre-lib">
     <uptodate property="locker.lib.available" targetfile="${build-locker.dir}/library.complete">
       <srcfiles dir="${src.dir}">
@@ -603,14 +655,13 @@ PACKED LOCKER BUILD (PALO)
 <!-- ===========================================================================
 QUICK BUILD (QUICK)
 ============================================================================ -->
-  
+
   <target name="quick.start" depends="locker.done"/>
 
   <target name="quick.pre-lib" depends="quick.start">
     <uptodate property="quick.lib.available" targetfile="${build-quick.dir}/library.complete">
       <srcfiles dir="${src.dir}">
         <include name="library/**"/>
-        <include name="dbc/**"/>
         <include name="continuations/**"/>
         <include name="swing/**"/>
         <include name="actors/**"/>
@@ -627,7 +678,7 @@ QUICK BUILD (QUICK)
       classpath="${build-quick.dir}/classes/library"
       includes="**/*.java"
       target="1.5" source="1.5">
-      <compilerarg line="${javac.args}"/> 
+      <compilerarg line="${javac.args} -XDignore.symbol.file"/>
     </javac>
     <javac
       srcdir="${src.dir}/actors"
@@ -660,15 +711,6 @@ QUICK BUILD (QUICK)
       destdir="${build-quick.dir}/classes/library"
       compilerpathref="locker.classpath"
       params="${scalac.args.quick}"
-      srcdir="${src.dir}/dbc"
-      jvmargs="${scalacfork.jvmargs}">
-      <include name="**/*.scala"/>
-      <compilationpath refid="quick.compilation.path"/>
-    </scalacfork>
-    <scalacfork
-      destdir="${build-quick.dir}/classes/library"
-      compilerpathref="locker.classpath"
-      params="${scalac.args.quick}"
       srcdir="${src.dir}/swing"
       jvmargs="${scalacfork.jvmargs}">
       <include name="**/*.scala"/>
@@ -691,13 +733,13 @@ QUICK BUILD (QUICK)
     <touch file="${build-quick.dir}/library.complete" verbose="no"/>
     <stopwatch name="quick.lib.timer" action="total"/>
   </target>
-  
+
   <target name="quick.newlibs" depends="quick.lib" if="libs.outdated">
     <antcall target="libs.done" inheritRefs="true"/>
     <property name="fjbg.jar" value="${build-libs.dir}/fjbg.jar"/>
     <property name="msil.jar" value="${build-libs.dir}/msil.jar"/>
   </target>
-  
+
   <target name="quick.libs" depends="quick.newlibs" unless="libs.outdated">
     <property name="fjbg.jar" value="${lib.dir}/fjbg.jar"/>
     <property name="msil.jar" value="${lib.dir}/msil.jar"/>
@@ -794,7 +836,7 @@ QUICK BUILD (QUICK)
     <scalacfork
       destdir="${build-quick.dir}/classes/library"
       compilerpathref="quick.classpath"
-      params="${scalac.args.quick} -Xplugin-require:continuations"
+      params="${scalac.args.quick} -Xplugin-require:continuations -P:continuations:enable"
       srcdir="${src.dir}/continuations/library"
       jvmargs="${scalacfork.jvmargs}">
       <include name="**/*.scala"/>
@@ -805,7 +847,7 @@ QUICK BUILD (QUICK)
     <touch file="${build-quick.dir}/plugins.complete" verbose="no"/>
     <stopwatch name="quick.plugins.timer" action="total"/>
   </target>
-  
+
   <target name="quick.pre-scalacheck" depends="quick.plugins">
     <uptodate property="quick.scalacheck.available" targetfile="${build-quick.dir}/scalacheck.complete">
       <srcfiles dir="${src.dir}/scalacheck"/>
@@ -830,7 +872,7 @@ QUICK BUILD (QUICK)
     <touch file="${build-quick.dir}/scalacheck.complete" verbose="no"/>
     <stopwatch name="quick.scalacheck.timer" action="total"/>
   </target>
-  
+
   <target name="quick.pre-scalap" depends="quick.scalacheck">
     <uptodate property="quick.scalap.available" targetfile="${build-quick.dir}/scalap.complete">
       <srcfiles dir="${src.dir}/scalap"/>
@@ -865,7 +907,7 @@ QUICK BUILD (QUICK)
       <srcfiles dir="${src.dir}/partest"/>
     </uptodate>
   </target>
-    
+
   <target name="quick.partest" depends="quick.pre-partest" unless="quick.partest.available">
     <stopwatch name="quick.partest.timer"/>
     <mkdir dir="${build-quick.dir}/classes/partest"/>
@@ -960,7 +1002,7 @@ QUICK BUILD (QUICK)
     <chmod perm="ugo+rx" file="${build-quick.dir}/bin/scalap"/>
     <touch file="${build-quick.dir}/bin.complete" verbose="no"/>
   </target>
-  
+
   <target name="quick.done" depends="quick.bin">
     <path id="quick.classpath">
       <pathelement location="${build-quick.dir}/classes/library"/>
@@ -976,9 +1018,9 @@ QUICK BUILD (QUICK)
 <!-- ===========================================================================
 PACKED QUICK BUILD (PACK)
 ============================================================================ -->
-  
+
   <target name="pack.start" depends="quick.done"/>
-  
+
   <target name="pack.pre-lib" depends="pack.start">
     <uptodate
       property="pack.lib.available"
@@ -988,18 +1030,17 @@ PACKED QUICK BUILD (PACK)
 
   <target name="pack.lib" depends="pack.pre-lib" unless="pack.lib.available">
     <mkdir dir="${build-pack.dir}/lib"/>
+    <!-- First copy maven dependencies -->
+    <copy todir="${build-pack.dir}/lib">
+      <fileset refid="dependency.fileset" />
+      <mapper type="flatten" />
+    </copy>
     <jar destfile="${build-pack.dir}/lib/scala-library.jar">
       <fileset dir="${build-quick.dir}/classes/library">
-        <exclude name="scala/dbc/**"/>
         <exclude name="scala/swing/**"/>
         <exclude name="scala/actors/**"/>
       </fileset>
       <zipfileset dirmode="755" filemode="644" src="${forkjoin.jar}"/>
-    </jar>
-    <jar destfile="${build-pack.dir}/lib/scala-dbc.jar">
-      <fileset dir="${build-quick.dir}/classes/library">
-        <include name="scala/dbc/**"/>
-      </fileset>
     </jar>
     <jar destfile="${build-pack.dir}/lib/scala-swing.jar">
       <fileset dir="${build-quick.dir}/classes/library">
@@ -1012,7 +1053,7 @@ PACKED QUICK BUILD (PACK)
       </fileset>
   </jar>
   </target>
-  
+
   <target name="pack.pre-comp" depends="pack.lib">
     <uptodate
       property="pack.comp.available"
@@ -1040,7 +1081,7 @@ PACKED QUICK BUILD (PACK)
       </fileset>
     </copy>
   </target>
-  
+
   <target name="pack.pre-plugins" depends="pack.comp">
     <uptodate
       property="pack.plugins.available"
@@ -1054,13 +1095,13 @@ PACKED QUICK BUILD (PACK)
       <fileset dir="${build-quick.dir}/classes/continuations-plugin"/>
     </jar>
   </target>
-  
+
   <target name="pack.scalacheck" depends="pack.plugins">
     <jar destfile="${build-pack.dir}/lib/scalacheck.jar">
       <fileset dir="${build-quick.dir}/classes/scalacheck"/>
     </jar>
   </target>
-  
+
   <target name="pack.pre-partest" depends="pack.scalacheck">
     <uptodate
       property="pack.partest.available"
@@ -1074,7 +1115,7 @@ PACKED QUICK BUILD (PACK)
       <fileset dir="${build-quick.dir}/classes/partest"/>
     </jar>
   </target>
-  
+
   <target name="pack.pre-scalap" depends="pack.partest">
     <uptodate
       property="pack.scalap.available"
@@ -1086,10 +1127,10 @@ PACKED QUICK BUILD (PACK)
     <mkdir dir="${build-pack.dir}/lib"/>
     <jar destfile="${build-pack.dir}/lib/scalap.jar">
       <fileset dir="${build-quick.dir}/classes/scalap"/>
-      <fileset file="${src.dir}/scalap/decoder.properties"/>  
+      <fileset file="${src.dir}/scalap/decoder.properties"/>
     </jar>
   </target>
-  
+
   <target name="pack.pre-bin" depends="pack.scalap">
     <uptodate
       property="pack.bin.available"
@@ -1133,7 +1174,7 @@ PACKED QUICK BUILD (PACK)
     <chmod perm="ugo+rx" file="${build-pack.dir}/bin/scalap"/>
     <touch file="${build-pack.dir}/bin.complete" verbose="no"/>
   </target>
-  
+
   <target name="pack.done" depends="pack.bin">
     <path id="pack.classpath">
       <pathelement location="${build-pack.dir}/lib/scala-library.jar"/>
@@ -1156,14 +1197,13 @@ PACKED QUICK BUILD (PACK)
 <!-- ===========================================================================
 BOOTSTRAPPING BUILD (STRAP)
 ============================================================================ -->
-  
+
   <target name="strap.start" depends="pack.done"/>
-  
+
   <target name="strap.pre-lib" depends="strap.start">
     <uptodate property="strap.lib.available" targetfile="${build-strap.dir}/library.complete">
       <srcfiles dir="${src.dir}">
         <include name="library/**"/>
-        <include name="dbc/**"/>
         <include name="swing/**"/>
         <include name="actors/**"/>
       </srcfiles>
@@ -1179,7 +1219,7 @@ BOOTSTRAPPING BUILD (STRAP)
       classpath="${build-strap.dir}/classes/library"
       includes="**/*.java"
       target="1.5" source="1.5">
-      <compilerarg line="${javac.args}"/>
+      <compilerarg line="${javac.args} -XDignore.symbol.file"/>
     </javac>
     <javac
       srcdir="${src.dir}/actors"
@@ -1212,15 +1252,6 @@ BOOTSTRAPPING BUILD (STRAP)
       destdir="${build-strap.dir}/classes/library"
       compilerpathref="pack.classpath"
       params="${scalac.args.all}"
-      srcdir="${src.dir}/dbc"
-      jvmargs="${scalacfork.jvmargs}">
-      <include name="**/*.scala"/>
-      <compilationpath refid="strap.compilation.path"/>
-    </scalacfork>
-    <scalacfork
-      destdir="${build-strap.dir}/classes/library"
-      compilerpathref="pack.classpath"
-      params="${scalac.args.all}"
       srcdir="${src.dir}/swing"
       jvmargs="${scalacfork.jvmargs}">
       <include name="**/*.scala"/>
@@ -1243,7 +1274,7 @@ BOOTSTRAPPING BUILD (STRAP)
     <touch file="${build-strap.dir}/library.complete" verbose="no"/>
     <stopwatch name="strap.lib.timer" action="total"/>
   </target>
-  
+
   <target name="strap.pre-comp" depends="strap.lib">
     <uptodate property="strap.comp.available" targetfile="${build-strap.dir}/compiler.complete">
       <srcfiles dir="${src.dir}/compiler"/>
@@ -1326,7 +1357,7 @@ BOOTSTRAPPING BUILD (STRAP)
     <scalacfork
       destdir="${build-strap.dir}/classes/library"
       compilerpathref="pack.classpath"
-      params="${scalac.args.all} -Xplugin-require:continuations"
+      params="${scalac.args.all} -Xplugin-require:continuations -P:continuations:enable"
       srcdir="${src.dir}/continuations/library"
       jvmargs="${scalacfork.jvmargs}">
       <include name="**/*.scala"/>
@@ -1337,7 +1368,7 @@ BOOTSTRAPPING BUILD (STRAP)
     <touch file="${build-strap.dir}/plugins.complete" verbose="no"/>
     <stopwatch name="strap.plugins.timer" action="total"/>
   </target>
-  
+
   <target name="strap.scalacheck" depends="strap.plugins">
     <mkdir dir="${build-strap.dir}/classes/scalacheck"/>
     <scalacfork
@@ -1381,13 +1412,13 @@ BOOTSTRAPPING BUILD (STRAP)
     <touch file="${build-strap.dir}/scalap.complete" verbose="no"/>
     <stopwatch name="strap.scalap.timer" action="total"/>
   </target>
-  
+
   <target name="strap.pre-partest" depends="strap.scalap">
     <uptodate property="strap.partest.available" targetfile="${build-strap.dir}/partest.complete">
       <srcfiles dir="${src.dir}/partest"/>
     </uptodate>
   </target>
-    
+
   <target name="strap.partest" depends="strap.pre-partest" unless="strap.partest.available">
     <stopwatch name="strap.partest.timer"/>
     <mkdir dir="${build-strap.dir}/classes/partest"/>
@@ -1439,9 +1470,9 @@ BOOTSTRAPPING BUILD (STRAP)
 <!-- ===========================================================================
 LIBRARIES (MSIL, FJBG maybe later)
 ============================================================================ -->
-  
+
   <target name="libs.start"/>
-  
+
   <target name="libs.pre-forkjoin" depends="libs.start">
     <property name="java6.home" value="/home/linuxsoft/apps/java-1.6"/>
     <fail message="Compiling forkjoin.jar requires java 1.6. Please set the property `java6.home` in build.properties or using `-Djava6.home=/path/to/java6`">
@@ -1457,7 +1488,7 @@ LIBRARIES (MSIL, FJBG maybe later)
       </srcfiles>
     </uptodate>
   </target>
-  
+
   <target name="libs.forkjoin" depends="libs.pre-forkjoin" unless="libs.forkjoin.available">
     <mkdir dir="${build-libs.dir}/classes/forkjoin"/>
     <javac
@@ -1474,16 +1505,16 @@ LIBRARIES (MSIL, FJBG maybe later)
     </javac>
     <touch file="${build-libs.dir}/forkjoin.complete" verbose="no"/>
   </target>
-  
+
   <target name="libs.pre-forkjoinpack" depends="libs.forkjoin">
   </target>
-  
+
   <target name="libs.forkjoinpack" depends="libs.pre-forkjoinpack" unless="libs.forkjoinpack.available">
     <jar destfile="${build-libs.dir}/forkjoin.jar">
       <fileset dir="${build-libs.dir}/classes/forkjoin"/>
     </jar>
   </target>
-    
+
   <target name="libs.pre-msil" depends="libs.start">
     <uptodate property="libs.msil.available" targetfile="${build-libs.dir}/msil.complete">
       <srcfiles dir="${src.dir}/msil">
@@ -1492,7 +1523,7 @@ LIBRARIES (MSIL, FJBG maybe later)
       </srcfiles>
     </uptodate>
   </target>
-  
+
   <target name="libs.msil" depends="libs.pre-msil" unless="libs.msil.available">
     <mkdir dir="${build-libs.dir}/classes/msil"/>
     <javac
@@ -1519,16 +1550,16 @@ LIBRARIES (MSIL, FJBG maybe later)
     </scalacfork>
     <touch file="${build-libs.dir}/msil.complete" verbose="no"/>
   </target>
-  
+
   <target name="libs.pre-msilpack" depends="libs.msil">
   </target>
-  
+
   <target name="libs.msilpack" depends="libs.pre-msilpack" unless="libs.msilpack.available">
     <jar destfile="${build-libs.dir}/msil.jar">
       <fileset dir="${build-libs.dir}/classes/msil"/>
     </jar>
   </target>
-  
+
   <target name="libs.pre-fjbg" depends="libs.start">
     <uptodate property="libs.fjbg.available" targetfile="${build-libs.dir}/fjbg.complete">
       <srcfiles dir="${src.dir}/fjbg">
@@ -1537,7 +1568,7 @@ LIBRARIES (MSIL, FJBG maybe later)
       </srcfiles>
     </uptodate>
   </target>
-  
+
   <target name="libs.fjbg" depends="libs.pre-fjbg" unless="libs.fjbg.available">
     <mkdir dir="${build-libs.dir}/classes/fjbg"/>
     <javac
@@ -1551,10 +1582,10 @@ LIBRARIES (MSIL, FJBG maybe later)
     </javac>
     <touch file="${build-libs.dir}/fjbg.complete" verbose="no"/>
   </target>
-  
+
   <target name="libs.pre-fjbgpack" depends="libs.fjbg">
   </target>
-  
+
   <target name="libs.fjbgpack" depends="libs.pre-fjbgpack" unless="libs.fjbgpack.available">
     <jar destfile="${build-libs.dir}/fjbg.jar">
       <fileset dir="${build-libs.dir}/classes/fjbg"/>
@@ -1564,7 +1595,7 @@ LIBRARIES (MSIL, FJBG maybe later)
   <target name="libs.done" depends="libs.msilpack, libs.fjbgpack"/>
 
   <target name="forkjoin.done" depends="libs.forkjoinpack"/>
-  
+
   <target name="libs.clean" depends="pack.clean">
     <delete dir="${build-libs.dir}" includeemptydirs="yes" quiet="yes" failonerror="no"/>
   </target>
@@ -1572,7 +1603,7 @@ LIBRARIES (MSIL, FJBG maybe later)
 <!-- ===========================================================================
 DOCUMENTATION
 ============================================================================ -->
-  
+
   <target name="docs.start" depends="pack.done">
     <macrodef name="doc-uptodate-check">
       <attribute name="name" />
@@ -1586,13 +1617,27 @@ DOCUMENTATION
         </uptodate>
       </sequential>
     </macrodef>
+
+    <!-- Set the github commit scaladoc sources point to -->
+    <!-- For releases, look for the tag with the same name as the maven version -->
+    <condition property="scaladoc.git.commit" value="v${maven.version.number}">
+      <isset property="build.release"/>
+    </condition>
+    <!-- For snapshots, if we know the commit, point scaladoc to that particular commit instead of master -->
+    <condition property="scaladoc.git.commit" value="${git.commit.sha}">
+      <not><equals arg1="${git.commit.sha}" arg2="unknown"/></not>
+    </condition>
+    <!-- Fallback: point scaladoc to master -->
+    <property name="scaladoc.git.commit" value="master"/>
+    <!-- Compute the URL and show it -->
+    <property name="scaladoc.url" value="https://github.com/scala/scala/tree/${scaladoc.git.commit}/src"/>
+    <echo message="Scaladoc will point to ${scaladoc.url} for source files."/>
   </target>
-  
+
   <target name="docs.pre-lib" depends="docs.start">
     <doc-uptodate-check name="library" srcdir="${src.dir}">
       <source-includes>
         <include name="library/**"/>
-        <include name="dbc/**"/>
         <include name="swing/**"/>
         <include name="actors/**"/>
       </source-includes>
@@ -1606,13 +1651,14 @@ DOCUMENTATION
       destdir="${build-docs.dir}/library"
       doctitle="Scala Standard Library API (Scaladoc)"
       docversion="${version.number}"
-      docfooter="epfl" 
-      docsourceurl="https://lampsvn.epfl.ch/trac/scala/browser/scala/trunk/src/€{FILE_PATH}.scala#L1"
+      docfooter="epfl"
+      docsourceurl="${scaladoc.url}€{FILE_PATH}.scala#L1"
       docUncompilable="${src.dir}/library-aux"
       sourcepath="${src.dir}"
       classpathref="pack.classpath"
       addparams="${scalac.args.all}"
-      docRootContent="${src.dir}/library/rootdoc.txt">
+      docRootContent="${src.dir}/library/rootdoc.txt"
+      implicits="on" diagrams="on">
       <src>
         <files includes="${src.dir}/actors"/>
         <files includes="${src.dir}/library/scala"/>
@@ -1658,7 +1704,7 @@ DOCUMENTATION
     <taskdef name="genman"
              classname="scala.tools.docutil.ManMaker"
              classpathref="manual.classpath"/>
-    <genman command="fsc, sbaz, scala, scalac, scaladoc, scalap"
+    <genman command="fsc, scala, scalac, scaladoc, scalap"
             htmlout="${build-docs.dir}/manual/html"
             manout="${build-docs.dir}/manual/genman"/>
     <!-- On Windows source and target files can't be the same ! -->
@@ -1688,12 +1734,13 @@ DOCUMENTATION
       destdir="${build-docs.dir}/compiler"
       doctitle="Scala Compiler"
       docversion="${version.number}"
-      docsourceurl="https://lampsvn.epfl.ch/trac/scala/browser/scala/trunk/src/€{FILE_PATH}.scala#L1"
+      docsourceurl="${scaladoc.url}€{FILE_PATH}.scala#L1"
       sourcepath="${src.dir}"
       classpathref="pack.classpath"
       srcdir="${src.dir}/compiler"
       docRootContent="${src.dir}/compiler/rootdoc.txt"
-      addparams="${scalac.args.all}"> 
+      addparams="${scalac.args.all}"
+      implicits="on" diagrams="on">
       <include name="**/*.scala"/>
     </scaladoc>
     <touch file="${build-docs.dir}/compiler.complete" verbose="no"/>
@@ -1714,7 +1761,8 @@ DOCUMENTATION
       sourcepath="${src.dir}"
       classpathref="pack.classpath"
       srcdir="${src.dir}/jline/src/main/java"
-      addparams="${scalac.args.all}"> 
+      addparams="${scalac.args.all}"
+      implicits="on" diagrams="on">
       <include name="**/*.scala"/>
       <include name="**/*.java"/>
     </scaladoc>
@@ -1733,11 +1781,12 @@ DOCUMENTATION
       destdir="${build-docs.dir}/scalap"
       doctitle="Scalap"
       docversion="${version.number}"
-      docsourceurl="https://lampsvn.epfl.ch/trac/scala/browser/scala/trunk/src/€{FILE_PATH}.scala#L1"
+      docsourceurl="${scaladoc.url}€{FILE_PATH}.scala#L1"
       sourcepath="${src.dir}"
       classpathref="pack.classpath"
       srcdir="${src.dir}/scalap"
-      addparams="${scalac.args.all}"> 
+      addparams="${scalac.args.all}"
+      implicits="on" diagrams="on">
       <include name="**/*.scala"/>
     </scaladoc>
     <touch file="${build-docs.dir}/scalap.complete" verbose="no"/>
@@ -1758,7 +1807,8 @@ DOCUMENTATION
       sourcepath="${src.dir}"
       classpathref="pack.classpath"
       srcdir="${src.dir}/partest"
-      addparams="${scalac.args.all}"> 
+      addparams="${scalac.args.all}"
+      implicits="on" diagrams="on">
       <include name="**/*.scala"/>
     </scaladoc>
     <touch file="${build-docs.dir}/partest.complete" verbose="no"/>
@@ -1779,7 +1829,8 @@ DOCUMENTATION
       sourcepath="${src.dir}"
       classpathref="pack.classpath"
       srcdir="${src.dir}/continuations/plugin"
-      addparams="${scalac.args.all}"> 
+      addparams="${scalac.args.all}"
+      implicits="on" diagrams="on">
       <include name="**/*.scala"/>
     </scaladoc>
     <touch file="${build-docs.dir}/continuations-plugin.complete" verbose="no"/>
@@ -1811,7 +1862,7 @@ BOOTRAPING TEST AND TEST SUITE
   <target name="test.classload" depends="pack.done">
     <classloadVerify classpath="${build-pack.dir}/lib/scala-library.jar" />
   </target>
-  
+
   <!-- this target will run only those tests found in test/debug -->
   <target name="test.debug">
     <antcall target="test.suite">
@@ -1885,7 +1936,7 @@ BOOTRAPING TEST AND TEST SUITE
     <partest showlog="yes" erroronfailed="yes" javacmd="${java.home}/bin/java"
              timeout="2400000"
              srcdir="${partest.srcdir}"
-             scalacopts="${scalac.args.optimise} -Xplugin-require:continuations">
+             scalacopts="${scalac.args.optimise} -Xplugin-require:continuations -P:continuations:enable">
       <compilerarg value="-Xpluginsdir"/>
       <compilerarg file="${build-quick.dir}/misc/scala-devel/plugins"/>
       <compilationpath>
@@ -1903,7 +1954,8 @@ BOOTRAPING TEST AND TEST SUITE
         <path refid="pack.classpath"/>
         <fileset dir="${partest.dir}/files/lib" includes="*.jar" />
       </compilationpath>
-      <scalachecktests dir="${partest.dir}/scaladoc/scala" includes="**/*.scala" />
+      <runtests        dir="${partest.dir}/scaladoc/run"        includes="*.scala" />
+      <scalachecktests dir="${partest.dir}/scaladoc/scalacheck" includes="*.scala" />
     </partest>
   </target>
 
@@ -1972,9 +2024,6 @@ DISTRIBUTION
     <jar destfile="${dist.dir}/src/scala-library-src.jar">
       <fileset dir="${src.dir}/library"/>
       <fileset dir="${src.dir}/continuations/library"/>
-    </jar>
-    <jar destfile="${dist.dir}/src/scala-dbc-src.jar">
-      <fileset dir="${src.dir}/dbc"/>
     </jar>
     <jar destfile="${dist.dir}/src/scala-swing-src.jar">
       <fileset dir="${src.dir}/swing"/>
@@ -2063,7 +2112,6 @@ STABLE REFERENCE (STARR)
       <fileset dir="${basedir}/src/library"/>
       <fileset dir="${basedir}/src/swing"/>
       <fileset dir="${basedir}/src/actors"/>
-      <fileset dir="${basedir}/src/dbc"/>
     </jar>
   </target>
 
@@ -2101,7 +2149,7 @@ STABLE REFERENCE (STARR)
 <!-- ===========================================================================
 FORWARDED TARGETS FOR PACKAGING
 ============================================================================ -->
-  
+
   <target name="distpack" depends="dist.done, docs.all">
     <ant antfile="${src.dir}/build/pack.xml" target="pack-all.done" inheritall="yes" inheritrefs="yes"/>
   </target>
@@ -2116,7 +2164,7 @@ FORWARDED TARGETS FOR PACKAGING
       <param name="scalac.args.optimise" value="-optimise"/>
     </antcall>
   </target>
-  
+
   <target name="distpack-maven-opt"
     description="Builds an optimised maven distribution.">
     <antcall target="distpack-maven">
@@ -2164,9 +2212,6 @@ POSITIONS
     </antcall>
     <antcall target="test.positions.sub" inheritRefs="true">
       <param name="test.srcs" value="${src.dir}/actors"/>
-    </antcall>
-    <antcall target="test.positions.sub" inheritRefs="true">
-      <param name="test.srcs" value="${src.dir}/dbc"/>
     </antcall>
     <antcall target="test.positions.sub" inheritRefs="true">
       <param name="test.srcs" value="${src.dir}/swing"/>

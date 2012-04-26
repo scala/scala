@@ -27,4 +27,9 @@
 /src/intellij/*.iml
 /src/intellij/*.ipr
 /src/intellij/*.iws
+/.cache
+/.idea
+/.settings
 
+# bak files produced by ./cleanup-commit
+*.bak

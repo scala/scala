@@ -29,26 +29,3 @@ class V11[T](val x: List[T]) extends AnyVal // ok
 class V12[@specialized T, U](val x: (T, U)) extends AnyVal // fail
 
 class V13(x: Int) extends AnyVal // fail
-
-
-package time {
-
-object TOD {
- final val SecondsPerDay = 86400
-
- def apply(seconds: Int) = {
-   val n = seconds % SecondsPerDay
-   new TOD(if (n >= 0) n else n + SecondsPerDay)
- }
-}
-
-final class TOD private (val secondsOfDay: Int) extends AnyVal { // should fail with private constructor
- def hours = secondsOfDay / 3600
- def minutes = (secondsOfDay / 60) % 60
- def seconds = secondsOfDay % 60
-
- override def toString = "%02d:%02d:%02d".format(hours, minutes, seconds)
-}
-}
-
-

@@ -194,14 +194,7 @@ class JLineCompletion(val intp: IMain) extends Completion with CompletionOutput 
 
   // literal Ints, Strings, etc.
   object literals extends CompletionAware {
-    def simpleParse(code: String): Tree = {
-      val unit    = new CompilationUnit(new util.BatchSourceFile("<console>", code))
-      val scanner = new syntaxAnalyzer.UnitParser(unit)
-      val tss     = scanner.templateStatSeq(false)._2
-
-      if (tss.size == 1) tss.head else EmptyTree
-    }
-
+    def simpleParse(code: String): Tree = newUnitParser(code).templateStats().last
     def completions(verbosity: Int) = Nil
 
     override def follow(id: String) = simpleParse(id) match {
@@ -287,7 +280,12 @@ class JLineCompletion(val intp: IMain) extends Completion with CompletionOutput 
   }
 
   // chasing down results which won't parse
+  // This used to work fine, now it reports a type error before any
+  // exception gets to us. See SI-5657.  Don't have time to deal with
+  // it, so disabling everything.
   def execute(line: String): Option[ExecResult] = {
+    return None // disabled
+
     val parsed = Parsed(line)
     def noDotOrSlash = line forall (ch => ch != '.' && ch != '/')
 

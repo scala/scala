@@ -71,24 +71,46 @@ abstract class SelectiveANFTransform extends PluginComponent with Transform with
             // { x => x match { case A => ... }} to
             // { x => shiftUnit(x match { case A => ... })}
             // which Uncurry cannot handle (see function6.scala)
+            // thus, we push down the shiftUnit to each of the case bodies
 
             val ext = getExternalAnswerTypeAnn(body.tpe)
+            val pureBody = getAnswerTypeAnn(body.tpe).isEmpty
+
+            def transformPureMatch(tree: Tree, selector: Tree, cases: List[CaseDef]) = {
+              val caseVals = cases map { case cd @ CaseDef(pat, guard, body) =>
+                // if (!hasPlusMarker(body.tpe)) body.tpe = body.tpe withAnnotation newPlusMarker() // TODO: to avoid warning
+                val bodyVal = transExpr(body, None, ext) // ??? triggers "cps-transformed unexpectedly" warning in transTailValue
+                treeCopy.CaseDef(cd, transform(pat), transform(guard), bodyVal)
+              }
+              treeCopy.Match(tree, transform(selector), caseVals)
+            }
+
+            def transformPureVirtMatch(body: Block, selDef: ValDef, cases: List[Tree], matchEnd: Tree) = {
+              val stats = transform(selDef) :: (cases map (transExpr(_, None, ext)))
+              treeCopy.Block(body, stats, transExpr(matchEnd, None, ext))
+            }
 
             val body1 = body match {
-              case Match(selector, cases) if (ext.isDefined && getAnswerTypeAnn(body.tpe).isEmpty) =>
-                val cases1 = for {
-                  cd @ CaseDef(pat, guard, caseBody) <- cases
-                  caseBody1 = transExpr(body, None, ext)
-                } yield {
-                  treeCopy.CaseDef(cd, transform(pat), transform(guard), caseBody1)
-                }
-                treeCopy.Match(tree, transform(selector), cases1)
+              case Match(selector, cases) if ext.isDefined && pureBody =>
+                transformPureMatch(body, selector, cases)
+
+              // virtpatmat switch
+              case Block(List(selDef: ValDef), mat@Match(selector, cases)) if ext.isDefined && pureBody =>
+                treeCopy.Block(body, List(transform(selDef)), transformPureMatch(mat, selector, cases))
+
+              // virtpatmat
+              case b@Block(matchStats@((selDef: ValDef) :: cases), matchEnd) if ext.isDefined && pureBody && (matchStats forall gen.hasSynthCaseSymbol) =>
+                transformPureVirtMatch(b, selDef, cases, matchEnd)
+
+              // virtpatmat that stores the scrut separately -- TODO: can we eliminate this case??
+              case Block(List(selDef0: ValDef), mat@Block(matchStats@((selDef: ValDef) :: cases), matchEnd)) if ext.isDefined && pureBody  && (matchStats forall gen.hasSynthCaseSymbol)=>
+                treeCopy.Block(body, List(transform(selDef0)), transformPureVirtMatch(mat, selDef, cases, matchEnd))
 
               case _ =>
                 transExpr(body, None, ext)
             }
 
-            debuglog("result "+body1)
+            debuglog("anf result "+body1)
             debuglog("result is of type "+body1.tpe)
 
             treeCopy.Function(ff, transformValDefs(vparams), body1)
@@ -170,63 +192,72 @@ abstract class SelectiveANFTransform extends PluginComponent with Transform with
       tree match {
         case Block(stms, expr) =>
           val (cpsA2, cpsR2) = (cpsA, linearize(cpsA, getAnswerTypeAnn(tree.tpe))) // tbd
-//          val (cpsA2, cpsR2) = (None, getAnswerTypeAnn(tree.tpe))
-          val (a, b) = transBlock(stms, expr, cpsA2, cpsR2)
+          //          val (cpsA2, cpsR2) = (None, getAnswerTypeAnn(tree.tpe))
 
-          val tree1 = (treeCopy.Block(tree, a, b)) // no updateSynthFlag here!!!
+          val (a, b) = transBlock(stms, expr, cpsA2, cpsR2)
+          val tree1  = (treeCopy.Block(tree, a, b)) // no updateSynthFlag here!!!
 
           (Nil, tree1, cpsA)
 
-          case If(cond, thenp, elsep) =>
-            /* possible situations:
-            cps before (cpsA)
-            cps in condition (spc)  <-- synth flag set if *only* here!
-            cps in (one or both) branches */
-            val (condStats, condVal, spc) = transInlineValue(cond, cpsA)
-            val (cpsA2, cpsR2) = if (hasSynthMarker(tree.tpe))
-              (spc, linearize(spc, getAnswerTypeAnn(tree.tpe))) else
-              (None, getAnswerTypeAnn(tree.tpe)) // if no cps in condition, branches must conform to tree.tpe directly
-            val thenVal = transExpr(thenp, cpsA2, cpsR2)
-            val elseVal = transExpr(elsep, cpsA2, cpsR2)
+        case If(cond, thenp, elsep) =>
+          /* possible situations:
+          cps before (cpsA)
+          cps in condition (spc)  <-- synth flag set if *only* here!
+          cps in (one or both) branches */
+          val (condStats, condVal, spc) = transInlineValue(cond, cpsA)
+          val (cpsA2, cpsR2) = if (hasSynthMarker(tree.tpe))
+            (spc, linearize(spc, getAnswerTypeAnn(tree.tpe))) else
+            (None, getAnswerTypeAnn(tree.tpe)) // if no cps in condition, branches must conform to tree.tpe directly
+          val thenVal = transExpr(thenp, cpsA2, cpsR2)
+          val elseVal = transExpr(elsep, cpsA2, cpsR2)
 
-            // check that then and else parts agree (not necessary any more, but left as sanity check)
-            if (cpsR.isDefined) {
-              if (elsep == EmptyTree)
-                unit.error(tree.pos, "always need else part in cps code")
-            }
-            if (hasAnswerTypeAnn(thenVal.tpe) != hasAnswerTypeAnn(elseVal.tpe)) {
-              unit.error(tree.pos, "then and else parts must both be cps code or neither of them")
-            }
+          // check that then and else parts agree (not necessary any more, but left as sanity check)
+          if (cpsR.isDefined) {
+            if (elsep == EmptyTree)
+              unit.error(tree.pos, "always need else part in cps code")
+          }
+          if (hasAnswerTypeAnn(thenVal.tpe) != hasAnswerTypeAnn(elseVal.tpe)) {
+            unit.error(tree.pos, "then and else parts must both be cps code or neither of them")
+          }
 
-            (condStats, updateSynthFlag(treeCopy.If(tree, condVal, thenVal, elseVal)), spc)
+          (condStats, updateSynthFlag(treeCopy.If(tree, condVal, thenVal, elseVal)), spc)
 
-          case Match(selector, cases) =>
+        case Match(selector, cases) =>
+          val (selStats, selVal, spc) = transInlineValue(selector, cpsA)
+          val (cpsA2, cpsR2) =
+            if (hasSynthMarker(tree.tpe)) (spc, linearize(spc, getAnswerTypeAnn(tree.tpe)))
+            else (None, getAnswerTypeAnn(tree.tpe))
 
-            val (selStats, selVal, spc) = transInlineValue(selector, cpsA)
-            val (cpsA2, cpsR2) = if (hasSynthMarker(tree.tpe))
-              (spc, linearize(spc, getAnswerTypeAnn(tree.tpe))) else
-              (None, getAnswerTypeAnn(tree.tpe))
+          val caseVals = cases map { case cd @ CaseDef(pat, guard, body) =>
+            val bodyVal = transExpr(body, cpsA2, cpsR2)
+            treeCopy.CaseDef(cd, transform(pat), transform(guard), bodyVal)
+          }
 
-            val caseVals = for {
-              cd @ CaseDef(pat, guard, body) <- cases
-              bodyVal = transExpr(body, cpsA2, cpsR2)
-            } yield {
-              treeCopy.CaseDef(cd, transform(pat), transform(guard), bodyVal)
-            }
+          (selStats, updateSynthFlag(treeCopy.Match(tree, selVal, caseVals)), spc)
 
-            (selStats, updateSynthFlag(treeCopy.Match(tree, selVal, caseVals)), spc)
-
+        // this is utterly broken: LabelDefs need to be considered together when transforming them to DefDefs:
+        // suppose a Block {L1; ... ; LN}
+        // this should become {D1def ; ... ; DNdef ; D1()}
+        // where D$idef = def L$i(..) = {L$i.body; L${i+1}(..)}
 
         case ldef @ LabelDef(name, params, rhs) =>
           if (hasAnswerTypeAnn(tree.tpe)) {
-            val sym    = currentOwner.newMethod(name, tree.pos, Flags.SYNTHETIC) setInfo ldef.symbol.info
-            val rhs1   = new TreeSymSubstituter(List(ldef.symbol), List(sym)).transform(rhs)
+            // currentOwner.newMethod(name, tree.pos, Flags.SYNTHETIC) setInfo ldef.symbol.info
+            val sym    = ldef.symbol resetFlag Flags.LABEL
+            val rhs1   = rhs //new TreeSymSubstituter(List(ldef.symbol), List(sym)).transform(rhs)
             val rhsVal = transExpr(rhs1, None, getAnswerTypeAnn(tree.tpe)) changeOwner (currentOwner -> sym)
 
             val stm1 = localTyper.typed(DefDef(sym, rhsVal))
-            val expr = localTyper.typed(Apply(Ident(sym), List()))
-
-            (List(stm1), expr, cpsA)
+            // since virtpatmat does not rely on fall-through, don't call the labels it emits
+            // transBlock will take care of calling the first label
+            // calling each labeldef is wrong, since some labels may be jumped over
+            // we can get away with this for now since the only other labels we emit are for tailcalls/while loops,
+            // which do not have consecutive labeldefs (and thus fall-through is irrelevant)
+            if (gen.hasSynthCaseSymbol(ldef)) (List(stm1), localTyper.typed{Literal(Constant(()))}, cpsA)
+            else {
+              assert(params.isEmpty, "problem in ANF transforming label with non-empty params "+ ldef)
+              (List(stm1), localTyper.typed{Apply(Ident(sym), List())}, cpsA)
+            }
           } else {
             val rhsVal = transExpr(rhs, None, None)
             (Nil, updateSynthFlag(treeCopy.LabelDef(tree, name, params, rhsVal)), cpsA)
@@ -310,15 +341,23 @@ abstract class SelectiveANFTransform extends PluginComponent with Transform with
 
           try {
             val Some((a, b)) = cpsR
-
-            val res = localTyper.typed(atPos(tree.pos) {
-                    Apply(TypeApply(gen.mkAttributedRef(MethShiftUnit),
-                      List(TypeTree(plainTpe), TypeTree(a), TypeTree(b))),
-                       List(expr))
-            })
-            return (stms, res)
-
-          } catch {
+            /** Since shiftUnit is bounded [A,B,C>:B] this may not typecheck
+             *  if C is overly specific.  So if !(B <:< C), call shiftUnit0
+             *  instead, which takes only two type arguments.
+             */
+            val conforms = a <:< b
+            val call = localTyper.typedPos(tree.pos)(
+              Apply(
+                TypeApply(
+                  gen.mkAttributedRef( if (conforms) MethShiftUnit else MethShiftUnit0 ),
+                  List(TypeTree(plainTpe), TypeTree(a)) ++ ( if (conforms) List(TypeTree(b)) else Nil )
+                ),
+                List(expr)
+              )
+            )
+            return ((stms, call))
+          }
+          catch {
             case ex:TypeError =>
               unit.error(ex.pos, "cannot cps-transform expression " + tree + ": " + ex.msg)
           }
@@ -404,18 +443,31 @@ abstract class SelectiveANFTransform extends PluginComponent with Transform with
     }
 
     def transBlock(stms: List[Tree], expr: Tree, cpsA: CPSInfo, cpsR: CPSInfo): (List[Tree], Tree) = {
-      stms match {
-        case Nil =>
-          transTailValue(expr, cpsA, cpsR)
+      def rec(currStats: List[Tree], currAns: CPSInfo, accum: List[Tree]): (List[Tree], Tree) =
+        currStats match {
+          case Nil =>
+            val (anfStats, anfExpr) = transTailValue(expr, currAns, cpsR)
+            (accum ++ anfStats, anfExpr)
 
-        case stm::rest =>
-          var (rest2, expr2) = (rest, expr)
-          val (headStms, headSpc) = transInlineStm(stm, cpsA)
-          val (restStms, restExpr) = transBlock(rest2, expr2, headSpc, cpsR)
-          (headStms:::restStms, restExpr)
-       }
+          case stat :: rest =>
+            val (stats, nextAns) = transInlineStm(stat, currAns)
+            rec(rest, nextAns, accum ++ stats)
+         }
+
+      val (anfStats, anfExpr) = rec(stms, cpsA, List())
+      // println("\nanf-block:\n"+ ((stms :+ expr) mkString ("{", "\n", "}")) +"\nBECAME\n"+ ((anfStats :+ anfExpr) mkString ("{", "\n", "}")))
+
+      // SUPER UGLY HACK: handle virtpatmat-style matches, whose labels have already been turned into DefDefs
+      if (anfStats.nonEmpty && (anfStats forall (t => !t.isDef || gen.hasSynthCaseSymbol(t)))) {
+        val (prologue, rest) = (anfStats :+ anfExpr) span (s => !s.isInstanceOf[DefDef]) // find first case
+        // val (defs, calls) = rest partition (_.isInstanceOf[DefDef])
+        if (rest nonEmpty){
+          // the filter drops the ()'s emitted when transValue encountered a LabelDef
+          val stats = prologue ++ (rest filter (_.isInstanceOf[DefDef])).reverse // ++ calls
+          // println("REVERSED "+ (stats mkString ("{", "\n", "}")))
+          (stats, localTyper.typed{Apply(Ident(rest.head.symbol), List())}) // call first label to kick-start the match
+        } else (anfStats, anfExpr)
+      } else (anfStats, anfExpr)
     }
-
-
   }
 }

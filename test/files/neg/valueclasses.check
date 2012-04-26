@@ -40,7 +40,4 @@ class V12[@specialized T, U](val x: (T, U)) extends AnyVal // fail
 valueclasses.scala:31: error: value class needs to have exactly one public val parameter
 class V13(x: Int) extends AnyVal // fail
       ^
-valueclasses.scala:45: error: value class must have public primary constructor
-final class TOD private (val secondsOfDay: Int) extends AnyVal { // should fail with private constructor
-                ^
-15 errors found
+14 errors found

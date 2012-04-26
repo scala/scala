@@ -9,6 +9,7 @@ package transform
 import symtab._
 import Flags._
 import scala.collection._
+import language.postfixOps
 
 abstract class CleanUp extends Transform with ast.TreeDSL {
   import global._
@@ -299,11 +300,11 @@ abstract class CleanUp extends Transform with ast.TreeDSL {
 
         def testForName(name: Name): Tree => Tree = t => (
           if (nme.CommonOpNames(name))
-            gen.mkMethodCall(getMember(BoxesRunTimeClass, nme.isBoxedNumberOrBoolean), t :: Nil)
+            gen.mkMethodCall(definitions.Boxes_isNumberOrBool, t :: Nil)
           else if (nme.BooleanOpNames(name))
             t IS_OBJ BoxedBooleanClass.tpe
           else
-            gen.mkMethodCall(getMember(BoxesRunTimeClass, nme.isBoxedNumber), t :: Nil)
+            gen.mkMethodCall(definitions.Boxes_isNumber, t :: Nil)
         )
 
         /** The Tree => Tree function in the return is necessary to prevent the original qual
@@ -318,8 +319,10 @@ abstract class CleanUp extends Transform with ast.TreeDSL {
             else if (params.tail.isEmpty) nme.primitiveInfixMethodName(name)
             else nme.NO_NAME
           )
-          if (methodName == nme.NO_NAME) None
-          else Some((getMember(BoxesRunTimeClass, methodName), testForName(name)))
+          definitions.getDeclIfDefined(BoxesRunTimeClass, methodName) match {
+            case NoSymbol => None
+            case sym      => assert(!sym.isOverloaded, sym) ; Some((sym, testForName(name)))
+          }
         }
 
         /* ### BOXING PARAMS & UNBOXING RESULTS ### */
@@ -540,7 +543,7 @@ abstract class CleanUp extends Transform with ast.TreeDSL {
         if (forMSIL) savingStatics( transformTemplate(tree) )
         else transformTemplate(tree)
 
-      case Literal(c) if (c.tag == ClassTag) && !forMSIL=>
+      case Literal(c) if (c.tag == ClazzTag) && !forMSIL=>
         val tpe = c.typeValue
         typedWithPos(tree.pos) {
           if (isPrimitiveValueClass(tpe.typeSymbol)) {
@@ -608,7 +611,7 @@ abstract class CleanUp extends Transform with ast.TreeDSL {
         val ntree = typedWithPos(tree.pos)(safeREF(staticFieldSym))
         super.transform(ntree)
 
-      // This transform replaces Array(Predef.wrapArray(Array(...)), <manifest>)
+      // This transform replaces Array(Predef.wrapArray(Array(...)), <tag>)
       // with just Array(...)
       case Apply(appMeth, List(Apply(wrapRefArrayMeth, List(array)), _))
       if (wrapRefArrayMeth.symbol == Predef_wrapRefArray &&

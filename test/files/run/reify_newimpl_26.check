@@ -1,0 +1,23 @@
+Type in expressions to have them evaluated.
+Type :help for more information.
+
+scala> 
+
+scala> import scala.reflect.mirror._
+import scala.reflect.mirror._
+
+scala> def foo[T]{
+  val tt = implicitly[TypeTag[List[T]]]
+  println(tt)
+}
+<console>:11: free type: Ident(newTypeName("T")) defined by foo in <console>:10:16
+         val tt = implicitly[TypeTag[List[T]]]
+                            ^
+foo: [T]=> Unit
+
+scala> foo[Int]
+TypeTag[List[T]]
+
+scala> 
+
+scala> 

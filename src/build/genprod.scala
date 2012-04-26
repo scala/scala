@@ -123,23 +123,7 @@ object FunctionOne extends Function(1) {
  *    assert(succ(0) == anonfun1(0))
  * """)
 
-  override def moreMethods = """
-  /** Composes two instances of Function1 in a new Function1, with this function applied last.
-   *
-   *  @tparam   A   the type to which function `g` can be applied
-   *  @param    g   a function A => T1
-   *  @return       a new function `f` such that `f(x) == apply(g(x))`
-   */
-  def compose[A](g: A => T1): A => R = { x => apply(g(x)) }
-
-  /** Composes two instances of Function1 in a new Function1, with this function applied first.
-   *
-   *  @tparam   A   the result type of function `g`
-   *  @param    g   a function R => A
-   *  @return       a new function `f` such that `f(x) == g(apply(x))`
-   */
-  def andThen[A](g: R => A): T1 => A = { x => g(apply(x)) }
-"""
+  override def moreMethods = ""
 }
 
 object FunctionTwo extends Function(2) {
@@ -155,6 +139,8 @@ object FunctionTwo extends Function(2) {
  *    }
  *    assert(max(0, 1) == anonfun2(0, 1))
  * """)
+
+  override def moreMethods = ""
 }
 
 object Function {
@@ -255,11 +241,6 @@ class Function(val i: Int) extends Group("Function") with Arity {
 zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz */
 
 object Tuple {
-  val zipImports = """
-import scala.collection.{ TraversableLike => TLike, IterableLike => ILike }
-import scala.collection.generic.{ CanBuildFrom => CBF }
-"""
-
   def make(i: Int) = apply(i)()
   def apply(i: Int) = i match {
     case 1  => TupleOne
@@ -276,7 +257,6 @@ object TupleOne extends Tuple(1)
 
 object TupleTwo extends Tuple(2)
 {
-  override def imports = Tuple.zipImports
   override def covariantSpecs = "@specialized(Int, Long, Double, Char, Boolean, AnyRef) "
   override def moreMethods = """
   /** Swaps the elements of this `Tuple`.
@@ -284,112 +264,14 @@ object TupleTwo extends Tuple(2)
    * second element is the first element of this Tuple.
    */
   def swap: Tuple2[T2,T1] = Tuple2(_2, _1)
-
-  @deprecated("Use `zipped` instead.", "2.9.0")
-  def zip[Repr1, El1, El2, To](implicit w1:   T1 => TLike[El1, Repr1],
-                                        w2:   T2 => Iterable[El2],
-                                        cbf1: CBF[Repr1, (El1, El2), To]): To = {
-    zipped map ((x, y) => ((x, y)))
-  }
-
-  /** Wraps a tuple in a `Zipped`, which supports 2-ary generalisations of `map`, `flatMap`, `filter`, etc.
-   * Note that there must be an implicit value to convert this tuple's types into a [[scala.collection.TraversableLike]]
-   * or [[scala.collection.IterableLike]].
-   * {{{
-   * scala> val tuple = (List(1,2,3),List('a','b','c'))
-   * tuple: (List[Int], List[Char]) = (List(1, 2, 3),List(a, b, c))
-   *
-   * scala> tuple.zipped map { (x,y) => x + ":" + y }
-   * res6: List[java.lang.String] = List(1:a, 2:b, 3:c)
-   * }}}
-   *
-   * @see Zipped
-   * Note: will not terminate for infinite-sized collections.
-   */
-  def zipped[Repr1, El1, Repr2, El2](implicit w1: T1 => TLike[El1, Repr1], w2: T2 => ILike[El2, Repr2]): Zipped[Repr1, El1, Repr2, El2]
-    = new Zipped[Repr1, El1, Repr2, El2](_1, _2)
-
-  class Zipped[+Repr1, +El1, +Repr2, +El2](coll1: TLike[El1, Repr1], coll2: ILike[El2, Repr2]) { // coll2: ILike for filter
-    def map[B, To](f: (El1, El2) => B)(implicit cbf: CBF[Repr1, B, To]): To = {
-      val b = cbf(coll1.repr)
-      b.sizeHint(coll1)
-      val elems2 = coll2.iterator
-
-      for (el1 <- coll1) {
-        if (elems2.hasNext)
-          b += f(el1, elems2.next)
-        else
-          return b.result
-      }
-
-      b.result
-    }
-
-    def flatMap[B, To](f: (El1, El2) => TraversableOnce[B])(implicit cbf: CBF[Repr1, B, To]): To = {
-      val b = cbf(coll1.repr)
-      val elems2 = coll2.iterator
-
-      for (el1 <- coll1) {
-        if (elems2.hasNext)
-          b ++= f(el1, elems2.next)
-        else
-          return b.result
-      }
-
-      b.result
-    }
-
-    def filter[To1, To2](f: (El1, El2) => Boolean)(implicit cbf1: CBF[Repr1, El1, To1], cbf2: CBF[Repr2, El2, To2]): (To1, To2) = {
-      val b1 = cbf1(coll1.repr)
-      val b2 = cbf2(coll2.repr)
-      val elems2 = coll2.iterator
-
-      for (el1 <- coll1) {
-        if (elems2.hasNext) {
-          val el2 = elems2.next
-          if (f(el1, el2)) {
-            b1 += el1
-            b2 += el2
-          }
-        }
-        else return (b1.result, b2.result)
-      }
-
-      (b1.result, b2.result)
-    }
-
-    def exists(f: (El1, El2) => Boolean): Boolean = {
-      val elems2 = coll2.iterator
-
-      for (el1 <- coll1) {
-        if (elems2.hasNext) {
-          if (f(el1, elems2.next))
-            return true
-        }
-        else return false
-      }
-      false
-    }
-
-    def forall(f: (El1, El2) => Boolean): Boolean =
-      !exists((x, y) => !f(x, y))
-
-    def foreach[U](f: (El1, El2) => U): Unit = {
-      val elems2 = coll2.iterator
-
-      for (el1 <- coll1) {
-        if (elems2.hasNext)
-          f(el1, elems2.next)
-        else
-          return
-      }
-    }
-  }
 """
 }
 
 object TupleThree extends Tuple(3) {
-  override def imports = Tuple.zipImports
+  override def imports = """
+import scala.collection.{ TraversableLike => TLike, IterableLike => ILike }
+import scala.collection.generic.{ CanBuildFrom => CBF }
+  """
   override def moreMethods = """
 
   @deprecated("Use `zipped` instead.", "2.9.0")
@@ -578,7 +460,7 @@ class Product(val i: Int) extends Group("Product") with Arity {
    *  otherwise throws an `IndexOutOfBoundsException`.
    *
    *  @param n number of the projection to be returned
-   *  @return  same as `._(n+1)`, for example `productElement(1)` is the same as `._1`.
+   *  @return  same as `._(n+1)`, for example `productElement(0)` is the same as `._1`.
    *  @throws  IndexOutOfBoundsException
    */
 """

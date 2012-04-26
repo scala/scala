@@ -9,6 +9,7 @@
 package scala.math
 
 import java.util.Comparator
+import language.{implicitConversions, higherKinds}
 
 /** Ordering is a trait whose instances each represent a strategy for sorting
   * instances of a type.

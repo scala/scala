@@ -1,0 +1,4 @@
+reify_packed.scala:6: error: implementation restriction: cannot reify block of type List[_$1] that involves a type declared inside the block being reified. consider casting the return value to a suitable type.
+  reify {
+                                       ^
+one error found

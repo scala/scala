@@ -8,45 +8,61 @@
 
 package scala.runtime
 
-import scala.annotation.unchecked.uncheckedVariance
-
-/** This class provides a default implementation of partial functions
- *  that is used for all partial function literals.
- *  It contains an optimized `orElse` method which supports
- *  chained `orElse` in linear time, and with no slow-down
- *  if the `orElse` part is not needed.
- *  The implementation of `orElse` works by cloning the abstract function object
- *  and modifying a private `fallBack` variable that encodes the `getorElse` part.
+/** `AbstractPartialFunction` reformulates all operations of its supertrait `PartialFunction` in terms of `isDefinedAt` and `applyOrElse`.
+ *
+ *  This allows more efficient implementations in many cases:
+ *  - optimized `orElse` method supports chained `orElse` in linear time,
+ *    and with no slow-down if the `orElse` part is not needed.
+ *  - optimized `lift` method helps to avoid double evaluation of pattern matchers & guards
+ *    of partial function literals.
+ *
+ *  This trait is used as a basis for implementation of all partial function literals
+ *  with non-exhaustive matchers.
+ *
+ *  Use of `AbstractPartialFunction` instead of `PartialFunction` as a base trait for
+ *  user-defined partial functions may result in better performance
+ *  and more predictable behavior w.r.t. side effects.
+ *
+ *  @author  Pavel Pavlov
+ *  @since   2.10
  */
-abstract class AbstractPartialFunction[-T1, +R]
-    extends AbstractFunction1[T1, R]
-    with PartialFunction[T1, R]
-    with Cloneable {
+abstract class AbstractPartialFunction[@specialized(scala.Int, scala.Long, scala.Float, scala.Double, scala.AnyRef) -T1, @specialized(scala.Unit, scala.Boolean, scala.Int, scala.Float, scala.Long, scala.Double, scala.AnyRef) +R] extends Function1[T1, R] with PartialFunction[T1, R] { self =>
+  // this method must be overridden for better performance,
+  // for backwards compatibility, fall back to the one inherited from PartialFunction
+  // this assumes the old-school partial functions override the apply method, though
+  // override def applyOrElse[A1 <: T1, B1 >: R](x: A1, default: A1 => B1): B1 = ???
 
-  private var fallBackField: PartialFunction[T1 @uncheckedVariance, R @uncheckedVariance] = _
+  // probably okay to make final since classes compiled before have overridden against the old version of AbstractPartialFunction
+  // let's not make it final so as not to confuse anyone
+  /*final*/ def apply(x: T1): R = applyOrElse(x, PartialFunction.empty)
 
-  def fallBack: PartialFunction[T1, R] = synchronized {
-    if (fallBackField eq null) fallBackField = PartialFunction.empty
-    fallBackField
-  }
-
-  override protected def missingCase(x: T1): R = fallBack(x)
-
-  // Question: Need to ensure that fallBack is overwritten before any access
-  // Is the `synchronized` here the right thing to achieve this?
-  // Is there a cheaper way?
-  override def orElse[A1 <: T1, B1 >: R](that: PartialFunction[A1, B1]) : PartialFunction[A1, B1] = {
-    val result = this.clone.asInstanceOf[AbstractPartialFunction[A1, B1]]
-    result.synchronized {
-      result.fallBackField = if (this.fallBackField eq null) that else this.fallBackField orElse that
-      result
+  override final def andThen[C](k: R => C) : PartialFunction[T1, C] =
+    new AbstractPartialFunction[T1, C] {
+      def isDefinedAt(x: T1): Boolean = self.isDefinedAt(x)
+      override def applyOrElse[A1 <: T1, C1 >: C](x: A1, default: A1 => C1): C1 =
+        self.applyOrElse(x, PartialFunction.fallbackToken) match {
+          case PartialFunction.FallbackToken => default(x)
+          case z => k(z)
+        }
     }
-  }
 
-  def isDefinedAt(x: T1): scala.Boolean = _isDefinedAt(x) || fallBack.isDefinedAt(x)
-  def _isDefinedAt(x: T1): scala.Boolean
-
+  // TODO: remove
+  protected def missingCase(x: T1): R = throw new MatchError(x)
 }
 
 
-
+/** `AbstractTotalFunction` is a partial function whose `isDefinedAt` method always returns `true`.
+ *
+ * This class is used as base class for partial function literals with
+ * certainly exhaustive pattern matchers.
+ *
+ *  @author  Pavel Pavlov
+ *  @since   2.10
+ */
+abstract class AbstractTotalFunction[@specialized(scala.Int, scala.Long, scala.Float, scala.Double, scala.AnyRef) -T1, @specialized(scala.Unit, scala.Boolean, scala.Int, scala.Float, scala.Long, scala.Double, scala.AnyRef) +R] extends Function1[T1, R] with PartialFunction[T1, R] {
+  final def isDefinedAt(x: T1): Boolean = true
+  override final def applyOrElse[A1 <: T1, B1 >: R](x: A1, default: A1 => B1): B1 = apply(x)
+  override final def orElse[A1 <: T1, B1 >: R](that: PartialFunction[A1, B1]): PartialFunction[A1, B1] = this
+  //TODO: check generated code for PF literal here
+  override final def andThen[C](k: R => C): PartialFunction[T1, C] = { case x => k(apply(x)) }
+}

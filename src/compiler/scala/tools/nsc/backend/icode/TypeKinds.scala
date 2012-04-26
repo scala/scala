@@ -44,7 +44,7 @@ trait TypeKinds { self: ICodes =>
   }
   /** Reverse map for toType */
   private lazy val reversePrimitiveMap: Map[TypeKind, Symbol] =
-    primitiveTypeMap map (_.swap) toMap
+    (primitiveTypeMap map (_.swap)).toMap
 
   /** This class represents a type kind. Type kinds
    * represent the types that the VM know (or the ICode
@@ -142,7 +142,7 @@ trait TypeKinds { self: ICodes =>
     def lub0(tk1: TypeKind, tk2: TypeKind): Type = beforeUncurry {
       import definitions._
       val tp = global.lub(List(tk1.toType, tk2.toType))
-      val (front, rest) = tp.parents span (_.typeSymbol.hasTraitFlag)
+      val (front, rest) = tp.parents span (_.typeSymbol.isTrait)
 
       if (front.isEmpty || rest.isEmpty || rest.head.typeSymbol == ObjectClass) tp
       else rest.head
@@ -420,7 +420,7 @@ trait TypeKinds { self: ICodes =>
     // between "object PackratParsers$class" and "trait PackratParsers"
     if (sym.isImplClass) {
       // pos/spec-List.scala is the sole failure if we don't check for NoSymbol
-      val traitSym = sym.owner.info.decl(nme.interfaceName(sym.name))
+      val traitSym = sym.owner.info.decl(tpnme.interfaceName(sym.name))
       if (traitSym != NoSymbol)
         return REFERENCE(traitSym)
     }

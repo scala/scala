@@ -47,7 +47,7 @@ class CompilerCommand(arguments: List[String], val settings: Settings) {
   /** Creates a help message for a subset of options based on cond */
   def createUsageMsg(cond: Setting => Boolean): String = {
     val baseList            = (settings.visibleSettings filter cond).toList sortBy (_.name)
-    val width               = baseList map (_.helpSyntax.length) max
+    val width               = (baseList map (_.helpSyntax.length)).max
     def format(s: String)   = ("%-" + width + "s") format s
     def helpStr(s: Setting) = {
       val str    = format(s.helpSyntax) + "  " + s.helpDescription

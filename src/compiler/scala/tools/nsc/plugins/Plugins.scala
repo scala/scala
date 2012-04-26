@@ -70,7 +70,7 @@ trait Plugins {
       }
     }
 
-    val plugs = pick(roughPluginsList, Set(), phasesSet map (_.phaseName) toSet)
+    val plugs = pick(roughPluginsList, Set(), (phasesSet map (_.phaseName)).toSet)
 
     /** Verify requirements are present. */
     for (req <- settings.require.value ; if !(plugs exists (_.name == req)))
@@ -112,5 +112,5 @@ trait Plugins {
   def pluginOptionsHelp: String =
     (for (plug <- roughPluginsList ; help <- plug.optionsHelp) yield {
       "\nOptions for plugin '%s':\n%s\n".format(plug.name, help)
-    }) mkString
+    }).mkString
 }

@@ -1,8 +1,9 @@
 import scala.tools.partest.ReplTest
 
 object Test extends ReplTest {
-  override def extraSettings = "-Xmacros"
+  override def extraSettings = "-language:experimental.macros"
   def code = """
-    |def macro foo = ???
+    |def bar(c: scala.reflect.makro.Context) = ???
+    |def foo = macro bar
     |""".stripMargin
 }

@@ -1,6 +1,0 @@
-_ <: scala.runtime.AbstractFunction1[Int, _ <: Object with scala.Product with scala.Serializable] with scala.Serializable with java.lang.Object
-_ <: Object with scala.Product with scala.Serializable
-Object with scala.Product with scala.Serializable
-_ <: scala.runtime.AbstractFunction1[Int, _ <: Object with scala.Product with scala.Serializable] with scala.Serializable with java.lang.Object
-_ <: Object with scala.Product with scala.Serializable
-Object with scala.Product with scala.Serializable

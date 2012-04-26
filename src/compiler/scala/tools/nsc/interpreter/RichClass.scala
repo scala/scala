@@ -7,18 +7,21 @@ package scala.tools.nsc
 package interpreter
 
 class RichClass[T](val clazz: Class[T]) {
-  def toManifest: Manifest[T] = Manifest.classType(clazz)
+  def toTag: ClassTag[T] = ClassTag[T](clazz)
   def toTypeString: String = TypeStrings.fromClazz(clazz)
 
   // Sadly isAnonymousClass does not return true for scala anonymous
   // classes because our naming scheme is not doing well against the
   // jvm's many assumptions.
-  def isScalaAnonymous = clazz.isAnonymousClass || (clazz.getName contains "$anon$")
+  def isScalaAnonymous = (
+    try clazz.isAnonymousClass || (clazz.getName contains "$anon$")
+    catch { case _: java.lang.InternalError => false }  // good ol' "Malformed class name"
+  )
 
   /** It's not easy... to be... me... */
-  def supermans: List[Manifest[_]] = supers map (_.toManifest)
-  def superNames: List[String]     = supers map (_.getName)
-  def interfaces: List[JClass]     = supers filter (_.isInterface)
+  def supermans: List[ClassTag[_]] = supers map (_.toTag)
+  def superNames: List[String]    = supers map (_.getName)
+  def interfaces: List[JClass]    = supers filter (_.isInterface)
 
   def hasAncestorName(f: String => Boolean) = superNames exists f
   def hasAncestor(f: JClass => Boolean) = supers exists f

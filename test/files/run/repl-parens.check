@@ -34,7 +34,7 @@ res7: (Int, Int) = (4,4)
 scala> (((2 + 2)), ((2 + 2)), 2)
 res8: (Int, Int, Int) = (4,4,2)
 
-scala> ((((2 + 2)), ((2 + 2)), 2).productIterator ++ Iterator(3) mkString)
+scala> (((((2 + 2)), ((2 + 2)), 2).productIterator ++ Iterator(3)).mkString)
 res9: String = 4423
 
 scala> 

@@ -8,6 +8,7 @@ package internal
 
 import scala.io.Codec
 import java.security.MessageDigest
+import language.implicitConversions
 
 /** The class Names ...
  *
@@ -355,8 +356,10 @@ trait Names extends api.Names {
     final def endsWith(char: Char): Boolean     = len > 0 && endChar == char
     final def endsWith(name: String): Boolean   = endsWith(newTermName(name))
 
-    def dropRight(n: Int) = subName(0, len - n)
-    def drop(n: Int) = subName(n, len)
+    def dropRight(n: Int): ThisNameType = subName(0, len - n)
+    def drop(n: Int): ThisNameType = subName(n, len)
+    def stripSuffix(suffix: Name): ThisNameType =
+      if (this endsWith suffix) dropRight(suffix.length) else thisName
 
     def indexOf(ch: Char) = {
       val idx = pos(ch)
@@ -394,14 +397,14 @@ trait Names extends api.Names {
     // def decodedName: ThisNameType = newName(decoded)
     def encodedName: ThisNameType = encode
 
-    /** Replace operator symbols by corresponding $op_name. */
+    /** Replace operator symbols by corresponding \$op_name. */
     def encode: ThisNameType = {
       val str = toString
       val res = NameTransformer.encode(str)
       if (res == str) thisName else newName(res)
     }
 
-    /** Replace $op_name by corresponding operator symbol. */
+    /** Replace \$op_name by corresponding operator symbol. */
     def decode: String = {
       if (this containsChar '$') {
         val str = toString

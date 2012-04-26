@@ -8,6 +8,7 @@ package interpreter
 
 import collection.{ mutable, immutable }
 import mutable.ListBuffer
+import language.implicitConversions
 
 class ProcessResult(val line: String) {
   import sys.process._

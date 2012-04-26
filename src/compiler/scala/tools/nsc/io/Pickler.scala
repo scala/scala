@@ -3,6 +3,7 @@ package scala.tools.nsc.io
 import annotation.unchecked
 import Lexer._
 import java.io.Writer
+import language.implicitConversions
 
 /** An abstract class for writing and reading Scala objects to and
  *  from a legible representation. The presesentation follows the following grammar:
@@ -168,13 +169,10 @@ object Pickler {
   case class ~[+S, +T](fst: S, snd: T)
 
   /** A wrapper class to be able to use `~` s an infix method */
-  class TildeDecorator[S](x: S) {
+  implicit class TildeDecorator[S](x: S) {
     /** Infix method that forms a `~`-pair. */
     def ~ [T](y: T): S ~ T = new ~ (x, y)
   }
-
-  /** An implicit wrapper that adds `~` as a method to any value. */
-  implicit def tildeDecorator[S](x: S): TildeDecorator[S] = new TildeDecorator(x)
 
   /** A converter from binary functions to functions over `~`-pairs
    */
@@ -418,7 +416,7 @@ object Pickler {
     iterPickler[T] .wrapped { Vector() ++ _ } { _.iterator } .labelled ("scala.Vector")
 
   /** A pickler for array values */
-  implicit def array[T : ClassManifest : Pickler]: Pickler[Array[T]] =
+  implicit def array[T : ClassTag : Pickler]: Pickler[Array[T]] =
     iterPickler[T] .wrapped { _.toArray} { _.iterator } .labelled ("scala.Array")
 }
 

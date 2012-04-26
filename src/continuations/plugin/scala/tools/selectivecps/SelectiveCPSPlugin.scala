@@ -26,6 +26,7 @@ class SelectiveCPSPlugin(val global: Global) extends Plugin {
     override val runsBefore = List("uncurry")
   }
 
+
   val components = List[PluginComponent](anfPhase, cpsPhase)
 
   val checker = new CPSAnnotationChecker {
@@ -42,17 +43,19 @@ class SelectiveCPSPlugin(val global: Global) extends Plugin {
   }
 
   // TODO: require -enabled command-line flag
+
   override def processOptions(options: List[String], error: String => Unit) = {
-    var enabled = true
-    options foreach {
-      case "enable"    => enabled = true
-      case "disable"   => enabled = false
-      case option      => error("Option not understood: "+option)
+    var enabled = false
+    for (option <- options) {
+      if (option == "enable") {
+        enabled = true
+      } else {
+        error("Option not understood: "+option)
+      }
     }
     setEnabled(enabled)
   }
 
-  override val optionsHelp: Option[String] = {
-    Some("  -P:continuations:disable        Disable continuations plugin")
-  }
+  override val optionsHelp: Option[String] =
+    Some("  -P:continuations:enable        Enable continuations")
 }

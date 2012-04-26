@@ -7,7 +7,7 @@ package scala.tools.nsc
 package ast
 
 import symtab._
-import reporters.Reporter
+import reporters._
 import util.{Position, NoPosition}
 import util.DocStrings._
 import scala.reflect.internal.Chars._
@@ -20,8 +20,6 @@ import scala.collection.mutable
 trait DocComments { self: Global =>
 
   var cookedDocComments = Map[Symbol, String]()
-
-  def reporter: Reporter
 
   /** The raw doc comment map */
   val docComments = mutable.HashMap[Symbol, DocComment]()
@@ -229,31 +227,36 @@ trait DocComments { self: Global =>
    * 1. It takes longer to run compared to merge
    * 2. The inheritdoc annotation should not be used very often, as building the comment from pieces severely
    * impacts performance
+   *
+   * @param parent The source (or parent) comment
+   * @param child  The child (overriding member or usecase) comment
+   * @param sym    The child symbol
+   * @return       The child comment with the inheritdoc sections expanded
    */
-  def expandInheritdoc(src: String, dst: String, sym: Symbol): String =
-    if (dst.indexOf("@inheritdoc") == -1)
-      dst
+  def expandInheritdoc(parent: String, child: String, sym: Symbol): String =
+    if (child.indexOf("@inheritdoc") == -1)
+      child
     else {
-      val srcSections    = tagIndex(src)
-      val dstSections    = tagIndex(dst)
-      val srcTagMap      = sectionTagMap(src, srcSections)
-      val srcNamedParams = Map() +
-        ("@param"  -> paramDocs(src, "@param", srcSections)) +
-        ("@tparam" -> paramDocs(src, "@tparam", srcSections)) +
-        ("@throws" -> paramDocs(src, "@throws", srcSections))
+      val parentSections    = tagIndex(parent)
+      val childSections     = tagIndex(child)
+      val parentTagMap      = sectionTagMap(parent, parentSections)
+      val parentNamedParams = Map() +
+        ("@param"  -> paramDocs(parent, "@param", parentSections)) +
+        ("@tparam" -> paramDocs(parent, "@tparam", parentSections)) +
+        ("@throws" -> paramDocs(parent, "@throws", parentSections))
 
       val out         = new StringBuilder
 
-      def replaceInheritdoc(src: String, dst: String) =
-        if (dst.indexOf("@inheritdoc") == -1)
-          dst
+      def replaceInheritdoc(childSection: String, parentSection: => String) =
+        if (childSection.indexOf("@inheritdoc") == -1)
+          childSection
         else
-          dst.replaceAllLiterally("@inheritdoc", src)
+          childSection.replaceAllLiterally("@inheritdoc", parentSection)
 
-      def getSourceSection(section: (Int, Int)): String = {
+      def getParentSection(section: (Int, Int)): String = {
 
-        def getSectionHeader = extractSectionTag(dst, section) match {
-          case param@("@param"|"@tparam"|"@throws")  => param + " "  + extractSectionParam(dst, section)
+        def getSectionHeader = extractSectionTag(child, section) match {
+          case param@("@param"|"@tparam"|"@throws")  => param + " "  + extractSectionParam(child, section)
           case other     => other
         }
 
@@ -261,17 +264,19 @@ trait DocComments { self: Global =>
           paramMap.get(param) match {
             case Some(section) =>
               // Cleanup the section tag and parameter
-              val sectionTextBounds = extractSectionText(src, section)
-              cleanupSectionText(src.substring(sectionTextBounds._1, sectionTextBounds._2))
+              val sectionTextBounds = extractSectionText(parent, section)
+              cleanupSectionText(parent.substring(sectionTextBounds._1, sectionTextBounds._2))
             case None =>
               reporter.info(sym.pos, "The \"" + getSectionHeader + "\" annotation of the " + sym +
                   " comment contains @inheritdoc, but the corresponding section in the parent is not defined.", true)
               "<invalid inheritdoc annotation>"
           }
 
-        dst.substring(section._1, section._1 + 7) match {
-          case param@("@param "|"@tparam"|"@throws") => sectionString(extractSectionParam(dst, section), srcNamedParams(param.trim))
-          case _                                     => sectionString(extractSectionTag(dst, section), srcTagMap)
+        child.substring(section._1, section._1 + 7) match {
+          case param@("@param "|"@tparam"|"@throws") =>
+            sectionString(extractSectionParam(child, section), parentNamedParams(param.trim))
+          case _                                     =>
+            sectionString(extractSectionTag(child, section), parentTagMap)
         }
       }
 
@@ -283,11 +288,11 @@ trait DocComments { self: Global =>
 
       // Append main comment
       out.append("/**")
-      out.append(replaceInheritdoc(mainComment(src, srcSections), mainComment(dst, dstSections)))
+      out.append(replaceInheritdoc(mainComment(child, childSections), mainComment(parent, parentSections)))
 
       // Append sections
-      for (section <- dstSections)
-        out.append(replaceInheritdoc(getSourceSection(section), dst.substring(section._1, section._2)))
+      for (section <- childSections)
+        out.append(replaceInheritdoc(child.substring(section._1, section._2), getParentSection(section)))
 
       out.append("*/")
       out.toString
@@ -360,7 +365,7 @@ trait DocComments { self: Global =>
             case vname  =>
               lookupVariable(vname, site) match {
                 case Some(replacement) => replaceWith(replacement)
-                case None              => reporter.warning(sym.pos, "Variable " + vname + " undefined in comment for " + sym)
+                case None              => reporter.warning(sym.pos, "Variable " + vname + " undefined in comment for " + sym + " in " + site)
               }
             }
         }
@@ -488,8 +493,7 @@ trait DocComments { self: Global =>
               val tpe = getType(repl.trim)
               if (tpe != NoType) tpe
               else {
-                val alias1 = alias.cloneSymbol(definitions.RootClass)
-                alias1.name = newTypeName(repl)
+                val alias1 = alias.cloneSymbol(definitions.RootClass, alias.rawflags, newTypeName(repl))
                 typeRef(NoPrefix, alias1, Nil)
               }
             case None =>
@@ -516,10 +520,9 @@ trait DocComments { self: Global =>
       }
 
       for (defn <- defined) yield {
-        val useCase = defn.cloneSymbol
-        useCase.owner = sym.owner
-        useCase.flags = sym.flags
-        useCase.setFlag(Flags.SYNTHETIC).setInfo(substAliases(defn.info).asSeenFrom(site.thisType, sym.owner))
+        defn.cloneSymbol(sym.owner, sym.flags | Flags.SYNTHETIC) modifyInfo (info =>
+          substAliases(info).asSeenFrom(site.thisType, sym.owner)
+        )
       }
     }
   }

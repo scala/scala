@@ -1,4 +1,0 @@
-t3692.scala:15: error: unreachable code
-      case m2: Map[T, Int] => new java.util.HashMap[T, Integer]
-                              ^
-one error found

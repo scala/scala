@@ -48,7 +48,7 @@ extends TaskSupport with AdaptiveWorkStealingThreadPoolTasks
  *  By default, parallel collections are parametrized with this task support object, so parallel collections
  *  share the same execution context backend as the rest of the `scala.concurrent` package.
  */
-class ExecutionContextTaskSupport(val environment: ExecutionContext = scala.concurrent.executionContext)
+class ExecutionContextTaskSupport(val environment: ExecutionContext = scala.concurrent.defaultExecutionContext)
 extends TaskSupport with ExecutionContextTasks
 
 

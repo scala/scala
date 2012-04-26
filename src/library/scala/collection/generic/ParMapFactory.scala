@@ -12,6 +12,7 @@ import scala.collection.parallel.ParMap
 import scala.collection.parallel.ParMapLike
 import scala.collection.parallel.Combiner
 import scala.collection.mutable.Builder
+import language.higherKinds
 
 /** A template class for companion objects of `ParMap` and subclasses thereof.
  *  This class extends `TraversableFactory` and provides a set of operations

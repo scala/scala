@@ -13,6 +13,7 @@ import scala.collection.mutable.{ ListBuffer, Buffer }
 import scala.tools.nsc.symtab._
 import scala.annotation.switch
 import PartialFunction._
+import language.postfixOps
 
 /** This class ...
  *
@@ -868,6 +869,13 @@ abstract class GenICode extends SubComponent  {
                   abort("Unknown label target: " + sym + " at: " + (fun.pos) + ": ctx: " + ctx)
               }
             })
+            // note: when one of the args to genLoadLabelArguments is a jump to a label,
+            // it will call back into genLoad and arrive at this case, which will then set ctx1.bb.ignore to true,
+            // this is okay, since we're jumping unconditionally, so the loads and jumps emitted by the outer
+            // call to genLoad (by calling genLoadLabelArguments and emitOnly) can safely be ignored,
+            // however, as emitOnly will close the block, which reverses its instructions (when it's still open),
+            // we better not reverse when the block has already been closed but is in ignore mode
+            // (if it's not in ignore mode, double-closing is an error)
             val ctx1 = genLoadLabelArguments(args, label, ctx)
             ctx1.bb.emitOnly(if (label.anchored) JUMP(label.block) else PJUMP(label))
             ctx1.bb.enterIgnoreMode
@@ -937,11 +945,10 @@ abstract class GenICode extends SubComponent  {
                  "Trying to access the this of another class: " +
                  "tree.symbol = " + tree.symbol + ", ctx.clazz.symbol = " + ctx.clazz.symbol + " compilation unit:"+unit)
           if (tree.symbol.isModuleClass && tree.symbol != ctx.clazz.symbol) {
-            debuglog("LOAD_MODULE from 'This': " + tree.symbol);
-            assert(!tree.symbol.isPackageClass, "Cannot use package as value: " + tree)
-            genLoadModule(ctx, tree.symbol, tree.pos)
+            genLoadModule(ctx, tree)
             generatedType = REFERENCE(tree.symbol)
-          } else {
+          }
+          else {
             ctx.bb.emit(THIS(ctx.clazz.symbol), tree.pos)
             generatedType = REFERENCE(
               if (tree.symbol == ArrayClass) ObjectClass else ctx.clazz.symbol
@@ -954,11 +961,7 @@ abstract class GenICode extends SubComponent  {
             "Selection of non-module from empty package: " + tree +
             " sym: " + tree.symbol + " at: " + (tree.pos)
           )
-          debuglog("LOAD_MODULE from Select(<emptypackage>): " + tree.symbol)
-
-          assert(!tree.symbol.isPackageClass, "Cannot use package as value: " + tree)
-          genLoadModule(ctx, tree.symbol, tree.pos)
-          ctx
+          genLoadModule(ctx, tree)
 
         case Select(qualifier, selector) =>
           val sym = tree.symbol
@@ -966,14 +969,13 @@ abstract class GenICode extends SubComponent  {
           val hostClass = qualifier.tpe.typeSymbol.orElse(sym.owner)
 
           if (sym.isModule) {
-            debuglog("LOAD_MODULE from Select(qualifier, selector): " + sym)
-            assert(!tree.symbol.isPackageClass, "Cannot use package as value: " + tree)
-            genLoadModule(ctx, sym, tree.pos)
-            ctx
-          } else if (sym.isStaticMember) {
+            genLoadModule(ctx, tree)
+          }
+          else if (sym.isStaticMember) {
             ctx.bb.emit(LOAD_FIELD(sym, true)  setHostClass hostClass, tree.pos)
             ctx
-          } else {
+          }
+          else {
             val ctx1 = genLoadQualifier(tree, ctx)
             ctx1.bb.emit(LOAD_FIELD(sym, false) setHostClass hostClass, tree.pos)
             ctx1
@@ -983,11 +985,10 @@ abstract class GenICode extends SubComponent  {
           val sym = tree.symbol
           if (!sym.isPackage) {
             if (sym.isModule) {
-              debuglog("LOAD_MODULE from Ident(name): " + sym)
-              assert(!sym.isPackageClass, "Cannot use package as value: " + tree)
-              genLoadModule(ctx, sym, tree.pos)
+              genLoadModule(ctx, tree)
               generatedType = toTypeKind(sym.info)
-            } else {
+            }
+            else {
               try {
                 val Some(l) = ctx.method.lookupLocal(sym)
                 ctx.bb.emit(LOAD_LOCAL(l), tree.pos)
@@ -1200,8 +1201,19 @@ abstract class GenICode extends SubComponent  {
           genLoad(arg, res, toTypeKind(tpe))
       }
 
-    private def genLoadModule(ctx: Context, sym: Symbol, pos: Position) {
-      ctx.bb.emit(LOAD_MODULE(sym), pos)
+    private def genLoadModule(ctx: Context, tree: Tree): Context = {
+      // Working around SI-5604.  Rather than failing the compile when we see
+      // a package here, check if there's a package object.
+      val sym = (
+        if (!tree.symbol.isPackageClass) tree.symbol
+        else tree.symbol.info.member(nme.PACKAGE) match {
+          case NoSymbol => assert(false, "Cannot use package as value: " + tree) ; NoSymbol
+          case s        => Console.err.println("Bug: found package class where package object expected.  Converting.") ; s.moduleClass
+        }
+      )
+      debuglog("LOAD_MODULE from %s: %s".format(tree.shortClass, sym))
+      ctx.bb.emit(LOAD_MODULE(sym), tree.pos)
+      ctx
     }
 
     def genConversion(from: TypeKind, to: TypeKind, ctx: Context, cast: Boolean) = {
@@ -1522,7 +1534,7 @@ abstract class GenICode extends SubComponent  {
      */
     def genEqEqPrimitive(l: Tree, r: Tree, ctx: Context)(thenCtx: Context, elseCtx: Context): Unit = {
       def getTempLocal = ctx.method.lookupLocal(nme.EQEQ_LOCAL_VAR) getOrElse {
-        ctx.makeLocal(l.pos, AnyRefClass.typeConstructor, nme.EQEQ_LOCAL_VAR)
+        ctx.makeLocal(l.pos, AnyRefClass.tpe, nme.EQEQ_LOCAL_VAR)
       }
 
       /** True if the equality comparison is between values that require the use of the rich equality
@@ -1560,9 +1572,10 @@ abstract class GenICode extends SubComponent  {
 
         val ctx1 = genLoad(l, ctx, ObjectReference)
         val ctx2 = genLoad(r, ctx1, ObjectReference)
-        ctx2.bb.emit(CALL_METHOD(equalsMethod, if (settings.optimise.value) Dynamic else Static(false)))
-        ctx2.bb.emit(CZJUMP(thenCtx.bb, elseCtx.bb, NE, BOOL))
-        ctx2.bb.close
+        ctx2.bb.emitOnly(
+          CALL_METHOD(equalsMethod, if (settings.optimise.value) Dynamic else Static(false)),
+          CZJUMP(thenCtx.bb, elseCtx.bb, NE, BOOL)
+        )
       }
       else {
         if (isNull(l))
@@ -2212,7 +2225,7 @@ abstract class GenICode extends SubComponent  {
        * jumps to the given basic block.
        */
       def patch(code: Code) {
-        val map = toPatch map (i => (i -> patch(i))) toMap;
+        val map = mapFrom(toPatch)(patch)
         code.blocks foreach (_ subst map)
       }
 

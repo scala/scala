@@ -10,6 +10,8 @@ import scala.annotation.tailrec
 import mutable.ListBuffer
 
 /** Profiler driven changes.
+ *  TODO - inlining doesn't work from here because of the bug that
+ *  methods in traits aren't inlined.
  */
 trait Collections {
   /** True if all three arguments have the same number of elements and
@@ -22,18 +24,21 @@ trait Collections {
   )
 
   /** All these mm methods are "deep map" style methods for
-   *  mapping etc. on a list of lists.
+   *  mapping etc. on a list of lists while avoiding unnecessary
+   *  intermediate structures like those created via flatten.
    */
   final def mexists[A](xss: List[List[A]])(p: A => Boolean) =
     xss exists (_ exists p)
+  final def mforall[A](xss: List[List[A]])(p: A => Boolean) =
+    xss forall (_ forall p)
   final def mmap[A, B](xss: List[List[A]])(f: A => B) =
     xss map (_ map f)
   final def mforeach[A](xss: List[List[A]])(f: A => Unit) =
     xss foreach (_ foreach f)
   final def mfind[A](xss: List[List[A]])(p: A => Boolean): Option[A] = {
-    for (xs <- xss; x <- xs)
-      if (p(x)) return Some(x)
-    None
+    var res: Option[A] = null
+    mforeach(xss)(x => if ((res eq null) && p(x)) res = Some(x))
+    if (res eq null) None else res
   }
   final def mfilter[A](xss: List[List[A]])(p: A => Boolean) =
     for (xs <- xss; x <- xs; if p(x)) yield x
@@ -64,6 +69,31 @@ trait Collections {
     }
     lb.toList
   }
+  
+  final def flatCollect[A, B](elems: List[A])(pf: PartialFunction[A, Traversable[B]]): List[B] = {
+    val lb = new ListBuffer[B]
+    for (x <- elems ; if pf isDefinedAt x)
+      lb ++= pf(x)
+
+    lb.toList
+  }
+
+  final def distinctBy[A, B](xs: List[A])(f: A => B): List[A] = {
+    val buf = new ListBuffer[A]
+    val seen = mutable.Set[B]()
+    xs foreach { x =>
+      val y = f(x)
+      if (!seen(y)) {
+        buf += x
+        seen += y
+      }
+    }
+    buf.toList
+  }
+
+  @tailrec final def flattensToEmpty(xss: Seq[Seq[_]]): Boolean = {
+    xss.isEmpty || xss.head.isEmpty && flattensToEmpty(xss.tail)
+  }
 
   final def foreachWithIndex[A, B](xs: List[A])(f: (A, Int) => Unit) {
     var index = 0
@@ -75,8 +105,13 @@ trait Collections {
     }
   }
   
-  @inline final def findOrElse[A](xs: TraversableOnce[A])(p: A => Boolean)(orElse: => A): A = {
+  // @inline
+  final def findOrElse[A](xs: TraversableOnce[A])(p: A => Boolean)(orElse: => A): A = {
     xs find p getOrElse orElse
+  }
+
+  final def mapFrom[A, A1 >: A, B](xs: List[A])(f: A => B): Map[A1, B] = {
+    Map[A1, B](xs map (x => (x, f(x))): _*)
   }
 
   final def mapWithIndex[A, B](xs: List[A])(f: (A, Int) => B): List[B] = {

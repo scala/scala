@@ -1,0 +1,4 @@
+t4987.scala:2: error: constructor Foo2 in class Foo2 cannot be accessed in object Bar2
+object Bar2 { new Foo2(0, 0) }
+              ^
+one error found

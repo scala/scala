@@ -1,31 +1,31 @@
 package scala.reflect
 package runtime
 
-import internal.{SomePhase, NoPhase, Phase, TreeGen}
 import java.lang.reflect.Array
+import ReflectionUtils._
+import scala.tools.nsc.util.ScalaClassLoader._
 
 /** The mirror for standard runtime reflection from Java.
  */
-class Mirror extends Universe with RuntimeTypes with TreeBuildUtil with ToolBoxes with api.Mirror {
+class Mirror(var classLoader: ClassLoader) extends Universe with api.Mirror {
 
   definitions.init()
-
   import definitions._
 
   def symbolForName(name: String): Symbol = {
-    val clazz = javaClass(name, defaultReflectiveClassLoader())
+    val clazz = javaClass(name, classLoader)
     classToScala(clazz)
   }
 
   def companionInstance(clazz: Symbol): AnyRef = {
-    val singleton = ReflectionUtils.singletonInstance(clazz.fullName, defaultReflectiveClassLoader())
+    val singleton = singletonInstance(classLoader, clazz.fullName)
     singleton
   }
 
   def symbolOfInstance(obj: Any): Symbol = classToScala(obj.getClass)
   def typeOfInstance(obj: Any): Type = typeToScala(obj.getClass)
   // to do add getClass/getType for instances of primitive types, probably like this:
-  // def getClass[T <: AnyVal : Manifest](x: T): Symbol = manifest[T].getClass
+  // def getClass[T <: AnyVal : ClassTag](x: T): Symbol = classTag[T].sym
 
   def getValueOfField(receiver: AnyRef, field: Symbol): Any = {
     fieldToJava(field).get(receiver)
@@ -46,16 +46,30 @@ class Mirror extends Universe with RuntimeTypes with TreeBuildUtil with ToolBoxe
     jmeth.invoke(receiver, args.asInstanceOf[Seq[AnyRef]]: _*)
   }
 
-  override def classToType(jclazz: java.lang.Class[_]): Type = typeToScala(jclazz)
-  override def classToSymbol(jclazz: java.lang.Class[_]): Symbol = classToScala(jclazz)
+  private def validateIncomingClassLoader(wannabeCl: ClassLoader) = {
+    val ourCls = loaderChain(classLoader)
+    if (wannabeCl != null && !(ourCls contains wannabeCl))
+      throw new Error("class doesn't belong to the classloader chain of the mirror")
+  }
 
-  override def typeToClass(tpe: Type): java.lang.Class[_] = typeToJavaClass(tpe)
-  override def symbolToClass(sym: Symbol): java.lang.Class[_] = classToJava(sym)
+  def classToType(jclazz: java.lang.Class[_]): Type = {
+    validateIncomingClassLoader(jclazz.getClassLoader)
+    typeToScala(jclazz)
+  }
+
+  def classToSymbol(jclazz: java.lang.Class[_]): Symbol = {
+    validateIncomingClassLoader(jclazz.getClassLoader)
+    classToScala(jclazz)
+  }
+
+  def typeToClass(tpe: Type): java.lang.Class[_] =
+    typeToJavaClass(tpe)
+
+  def symbolToClass(sym: Symbol): java.lang.Class[_] =
+    classToJava(sym)
 
   override def inReflexiveMirror = true
 }
-
-object Mirror extends Mirror
 
 /** test code; should go to tests once things settle down a bit
  *

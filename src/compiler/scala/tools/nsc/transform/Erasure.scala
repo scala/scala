@@ -210,7 +210,7 @@ abstract class Erasure extends AddInterfaces
         }
         else parents
       )
-      ps map boxedSig mkString
+      (ps map boxedSig).mkString
     }
     def boxedSig(tp: Type) = jsig(tp, primitiveOK = false)
     def boundsSig(bounds: List[Type]) = traceSig("boundsSig", bounds) {
@@ -407,6 +407,102 @@ abstract class Erasure extends AddInterfaces
     }
   }
 
+  class ComputeBridges(owner: Symbol) {
+    assert(phase == currentRun.erasurePhase, phase)
+
+    var toBeRemoved  = immutable.Set[Symbol]()
+    val site         = owner.thisType
+    val bridgesScope = newScope
+    val bridgeTarget = mutable.HashMap[Symbol, Symbol]()
+    var bridges      = List[Tree]()
+
+    val opc = beforeExplicitOuter {
+      new overridingPairs.Cursor(owner) {
+        override def parents              = List(owner.info.firstParent)
+        override def exclude(sym: Symbol) = !sym.isMethod || sym.isPrivate || super.exclude(sym)
+      }
+    }
+
+    def compute(): (List[Tree], immutable.Set[Symbol]) = {
+      while (opc.hasNext) {
+        val member = opc.overriding
+        val other  = opc.overridden
+        //println("bridge? " + member + ":" + member.tpe + member.locationString + " to " + other + ":" + other.tpe + other.locationString)//DEBUG
+        if (beforeExplicitOuter(!member.isDeferred))
+          checkPair(member, other)
+
+        opc.next
+      }
+      (bridges, toBeRemoved)
+    }
+
+    def checkPair(member: Symbol, other: Symbol) {
+      val otpe = erasure(owner)(other.tpe)
+      val bridgeNeeded = afterErasure (
+        !(other.tpe =:= member.tpe) &&
+        !(deconstMap(other.tpe) =:= deconstMap(member.tpe)) &&
+        { var e = bridgesScope.lookupEntry(member.name)
+          while ((e ne null) && !((e.sym.tpe =:= otpe) && (bridgeTarget(e.sym) == member)))
+            e = bridgesScope.lookupNextEntry(e)
+          (e eq null)
+        }
+      )
+      if (!bridgeNeeded)
+        return
+
+      val newFlags = (member.flags | BRIDGE) & ~(ACCESSOR | DEFERRED | LAZY | lateDEFERRED)
+      val bridge   = other.cloneSymbolImpl(owner, newFlags) setPos owner.pos
+
+      debuglog("generating bridge from %s (%s): %s to %s: %s".format(
+        other, flagsToString(newFlags),
+        otpe + other.locationString, member,
+        erasure(owner)(member.tpe) + member.locationString)
+      )
+
+      // the parameter symbols need to have the new owner
+      bridge setInfo (otpe cloneInfo bridge)
+      bridgeTarget(bridge) = member
+      afterErasure(owner.info.decls enter bridge)
+      if (other.owner == owner) {
+        afterErasure(owner.info.decls.unlink(other))
+        toBeRemoved += other
+      }
+      bridgesScope enter bridge
+      bridges ::= makeBridgeDefDef(bridge, member, other)
+    }
+
+    def makeBridgeDefDef(bridge: Symbol, member: Symbol, other: Symbol) = afterErasure {
+      // type checking ensures we can safely call `other`, but unless `member.tpe <:< other.tpe`,
+      // calling `member` is not guaranteed to succeed in general, there's
+      // nothing we can do about this, except for an unapply: when this subtype test fails,
+      // return None without calling `member`
+      //
+      // TODO: should we do this for user-defined unapplies as well?
+      // does the first argument list have exactly one argument -- for user-defined unapplies we can't be sure
+      def maybeWrap(bridgingCall: Tree): Tree = {
+        val canReturnNone = ( // can't statically know which member is going to be selected, so don't let this depend on member.isSynthetic
+             (member.name == nme.unapply || member.name == nme.unapplySeq)
+          && !afterErasure((member.tpe <:< other.tpe))) // no static guarantees (TODO: is the subtype test ever true?)
+
+        if (canReturnNone) {
+          import CODE._
+          val typeTest = gen.mkIsInstanceOf(REF(bridge.firstParam), member.tpe.params.head.tpe)
+          IF (typeTest) THEN bridgingCall ELSE REF(NoneModule)
+        }
+        else bridgingCall
+      }
+      val rhs = member.tpe match {
+        case MethodType(Nil, ConstantType(c)) => Literal(c)
+        case _                                =>
+          val sel: Tree    = Select(This(owner), member)
+          val bridgingCall = (sel /: bridge.paramss)((fun, vparams) => Apply(fun, vparams map Ident))
+
+          maybeWrap(bridgingCall)
+      }
+      atPos(bridge.pos)(DefDef(bridge, rhs))
+    }
+  }
+
   /** The modifier typer which retypes with erased types. */
   class Eraser(_context: Context) extends Typer(_context) {
 
@@ -521,8 +617,12 @@ abstract class Erasure extends AddInterfaces
         // See SI-4731 for one example of how this occurs.
         log("Attempted to cast to Unit: " + tree)
         tree.duplicate setType pt
-      }
-      else gen.mkAttributedCast(tree, pt)
+      } else if (tree.tpe != null && tree.tpe.typeSymbol == ArrayClass && pt.typeSymbol == ArrayClass) {
+        // See SI-2386 for one example of when this might be necessary.
+        val needsExtraCast = isScalaValueType(tree.tpe.typeArgs.head) && !isScalaValueType(pt.typeArgs.head)
+        val tree1 = if (needsExtraCast) gen.mkRuntimeCall(nme.toObjectArray, List(tree)) else tree
+        gen.mkAttributedCast(tree1, pt)
+      } else gen.mkAttributedCast(tree, pt)
     }
 
     /** Adapt `tree` to expected type `pt`.
@@ -568,6 +668,7 @@ abstract class Erasure extends AddInterfaces
      */
     private def adaptMember(tree: Tree): Tree = {
       //Console.println("adaptMember: " + tree);
+      val x = 2 + 2
       tree match {
         case Apply(TypeApply(sel @ Select(qual, name), List(targ)), List())
         if tree.symbol == Any_asInstanceOf =>
@@ -637,7 +738,7 @@ abstract class Erasure extends AddInterfaces
 
     /** A replacement for the standard typer's `typed1` method.
      */
-    override protected def typed1(tree: Tree, mode: Int, pt: Type): Tree = {
+    override def typed1(tree: Tree, mode: Int, pt: Type): Tree = {
       val tree1 = try {
         tree match {
           case InjectDerivedValue(arg) =>
@@ -790,93 +891,10 @@ abstract class Erasure extends AddInterfaces
      *   type of `m1` in the template.
      */
     private def bridgeDefs(owner: Symbol): (List[Tree], immutable.Set[Symbol]) = {
-      var toBeRemoved: immutable.Set[Symbol] = immutable.Set()
-      debuglog("computing bridges for " + owner)//DEBUG
       assert(phase == currentRun.erasurePhase, phase)
-      val site = owner.thisType
-      val bridgesScope = newScope
-      val bridgeTarget = new mutable.HashMap[Symbol, Symbol]
-      var bridges: List[Tree] = List()
-      val opc = beforeExplicitOuter {
-        new overridingPairs.Cursor(owner) {
-          override def parents: List[Type] = List(owner.info.firstParent)
-          override def exclude(sym: Symbol): Boolean =
-            !sym.isMethod || sym.isPrivate || super.exclude(sym)
-        }
-      }
-      while (opc.hasNext) {
-        val member = opc.overriding
-        val other = opc.overridden
-        //println("bridge? " + member + ":" + member.tpe + member.locationString + " to " + other + ":" + other.tpe + other.locationString)//DEBUG
-        if (beforeExplicitOuter(!member.isDeferred)) {
-          val otpe = erasure(owner)(other.tpe)
-          val bridgeNeeded = afterErasure (
-            !(other.tpe =:= member.tpe) &&
-            !(deconstMap(other.tpe) =:= deconstMap(member.tpe)) &&
-            { var e = bridgesScope.lookupEntry(member.name)
-              while ((e ne null) && !((e.sym.tpe =:= otpe) && (bridgeTarget(e.sym) == member)))
-                e = bridgesScope.lookupNextEntry(e)
-              (e eq null)
-            }
-          );
-          if (bridgeNeeded) {
-            val newFlags = (member.flags | BRIDGE) & ~(ACCESSOR | DEFERRED | LAZY | lateDEFERRED)
-            val bridge   = other.cloneSymbolImpl(owner, newFlags) setPos owner.pos
-            // the parameter symbols need to have the new owner
-            bridge.setInfo(otpe.cloneInfo(bridge))
-            bridgeTarget(bridge) = member
-            afterErasure { owner.info.decls.enter(bridge) }
-            if (other.owner == owner) {
-              //println("bridge to same: "+other+other.locationString)//DEBUG
-              afterErasure { owner.info.decls.unlink(other) }
-              toBeRemoved += other
-            }
-            bridgesScope enter bridge
-            bridges =
-              afterErasure {
-                atPos(bridge.pos) {
-                  val bridgeDef =
-                    DefDef(bridge,
-                      member.tpe match {
-                        case MethodType(List(), ConstantType(c)) => Literal(c)
-                        case _ =>
-                          val bridgingCall = (((Select(This(owner), member): Tree) /: bridge.paramss)
-                             ((fun, vparams) => Apply(fun, vparams map Ident)))
-                          // type checking ensures we can safely call `other`, but unless `member.tpe <:< other.tpe`, calling `member` is not guaranteed to succeed
-                          // in general, there's nothing we can do about this, except for an unapply: when this subtype test fails, return None without calling `member`
-                          if (  member.isSynthetic // TODO: should we do this for user-defined unapplies as well?
-                             && ((member.name == nme.unapply) || (member.name == nme.unapplySeq))
-                             // && (bridge.paramss.nonEmpty && bridge.paramss.head.nonEmpty && bridge.paramss.head.tail.isEmpty) // does the first argument list has exactly one argument -- for user-defined unapplies we can't be sure
-                             && !(afterErasure(member.tpe <:< other.tpe))) { // no static guarantees (TODO: is the subtype test ever true?)
-                            import CODE._
-                            val typeTest = gen.mkIsInstanceOf(REF(bridge.firstParam), member.tpe.params.head.tpe, any = true, wrapInApply = true) // any = true since we're before erasure (?), wrapInapply is true since we're after uncurry
-                            // println("unapp type test: "+ typeTest)
-                            IF (typeTest) THEN bridgingCall ELSE REF(NoneModule)
-                          } else bridgingCall
-                      });
-                  debuglog("generating bridge from " + other + "(" + Flags.flagsToString(bridge.flags)  + ")" + ":" + otpe + other.locationString + " to " + member + ":" + erasure(owner)(member.tpe) + member.locationString + " =\n " + bridgeDef);
-                  bridgeDef
-                }
-              } :: bridges
-          }
-        }
-        opc.next
-      }
-      (bridges, toBeRemoved)
+      debuglog("computing bridges for " + owner)
+      new ComputeBridges(owner) compute()
     }
-/*
-      for (bc <- site.baseClasses.tail; other <- bc.info.decls.toList) {
-        if (other.isMethod && !other.isConstructor) {
-          for (member <- site.nonPrivateMember(other.name).alternatives) {
-            if (member != other &&
-                !(member hasFlag DEFERRED) &&
-                (site.memberType(member) matches site.memberType(other)) &&
-                !(site.parents exists (p =>
-                  (p.symbol isSubClass member.owner) && (p.symbol isSubClass other.owner)))) {
-...
-             }
-          }
-*/
 
     def addBridges(stats: List[Tree], base: Symbol): List[Tree] =
       if (base.isTrait) stats
@@ -979,7 +997,7 @@ abstract class Erasure extends AddInterfaces
           }
           // Rewrite 5.getClass to ScalaRunTime.anyValClass(5)
           else if (isPrimitiveValueClass(qual.tpe.typeSymbol))
-            global.typer.typed(gen.mkRuntimeCall(nme.anyValClass, List(qual)))
+            global.typer.typed(gen.mkRuntimeCall(nme.anyValClass, List(qual, typer.resolveErasureTag(tree.pos, qual.tpe.widen, true))))
           else
             tree
 
@@ -1076,7 +1094,7 @@ abstract class Erasure extends AddInterfaces
         case Match(selector, cases) =>
           Match(Typed(selector, TypeTree(selector.tpe)), cases)
 
-        case Literal(ct) if ct.tag == ClassTag
+        case Literal(ct) if ct.tag == ClazzTag
                          && ct.typeValue.typeSymbol != definitions.UnitClass =>
           val erased = ct.typeValue match {
             case TypeRef(pre, clazz, args) if clazz.isDerivedValueClass => scalaErasure.eraseNormalClassRef(pre, clazz)
@@ -1120,10 +1138,10 @@ abstract class Erasure extends AddInterfaces
      */
     override def transform(tree: Tree): Tree = {
       val tree1 = preTransformer.transform(tree)
-      log("tree after pretransform: "+tree1)
+      // log("tree after pretransform: "+tree1)
       afterErasure {
         val tree2 = mixinTransformer.transform(tree1)
-        debuglog("tree after addinterfaces: \n" + tree2)
+        // debuglog("tree after addinterfaces: \n" + tree2)
 
         newTyper(rootContext(unit, tree, true)).typed(tree2)
       }

@@ -10,6 +10,7 @@ import scala.tools.nsc.util._
 import scala.reflect.internal.Chars._
 import JavaTokens._
 import scala.annotation.switch
+import language.implicitConversions
 
 // Todo merge these better with Scanners
 trait JavaScanners extends ast.parser.ScannersCommon {

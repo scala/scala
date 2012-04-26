@@ -88,7 +88,7 @@ object Origins {
     sys.addShutdownHook(counters foreach (_.purge()))
   }
 
-  def apply[T: Manifest](tag: String): Origins = apply(tag, manifest[T].erasure)
+  def apply[T: ClassTag](tag: String): Origins = apply(tag, classTag[T].erasure)
   def apply(tag: String, clazz: Class[_]): Origins = apply(tag, new OneLine(clazz))
   def apply(tag: String, orElse: => Origins): Origins = {
     counters find (_.tag == tag) getOrElse {

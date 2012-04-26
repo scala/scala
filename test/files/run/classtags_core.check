@@ -1,0 +1,32 @@
+true
+ClassTag[byte]
+true
+ClassTag[short]
+true
+ClassTag[char]
+true
+ClassTag[int]
+true
+ClassTag[long]
+true
+ClassTag[float]
+true
+ClassTag[double]
+true
+ClassTag[boolean]
+true
+ClassTag[void]
+true
+ClassTag[class java.lang.Object]
+true
+ClassTag[class java.lang.Object]
+true
+ClassTag[class java.lang.Object]
+true
+ClassTag[class java.lang.Object]
+true
+ClassTag[class scala.runtime.Null$]
+true
+ClassTag[class scala.runtime.Nothing$]
+true
+ClassTag[class java.lang.String]

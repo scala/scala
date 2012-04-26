@@ -187,69 +187,69 @@ class J {
   D[A1]#J[T4]                Z.dZ.J[P]                  D[A1]#J[P]
 }
 class D { // after parser
-  private val cD: ll.C[List[T3]]
+  private[this] val cD: ll.C[List[T3]]
   val cD: ll.C[List[T3]]
 }
 
 class D { // after uncurry
-  private val cD: ll.C[List[T3]]
+  private[this] val cD: ll.C[List[T3]]
   val cD(): ll.C[List[T3]]
 }
 
 class D { // after erasure
-  private val cD: ll.C
+  private[this] val cD: ll.C
   val cD(): ll.C
 }
 
 object Z { // after parser
   def kz[P <: ll.Z.dZ.J[ll.A2]]: ll.Z.dZ.J[P]
-  private val jZ: ll.Z.dZ.J[ll.A2]
+  private[this] val jZ: ll.Z.dZ.J[ll.A2]
   val jZ: ll.Z.dZ.J[ll.A2]
-  private val dZ: ll.D[ll.A1]
+  private[this] val dZ: ll.D[ll.A1]
   val dZ: ll.D[ll.A1]
 }
 
 object Z { // after uncurry
   def kz[P <: ll.Z.dZ.J[ll.A2]](): ll.Z.dZ.J[P]
-  private val jZ: ll.Z.dZ.J[ll.A2]
+  private[this] val jZ: ll.Z.dZ.J[ll.A2]
   val jZ(): ll.Z.dZ.J[ll.A2]
-  private val dZ: ll.D[ll.A1]
+  private[this] val dZ: ll.D[ll.A1]
   val dZ(): ll.D[ll.A1]
 }
 
 object Z { // after erasure
   def kz(): ll.D#J
-  private val jZ: ll.D#J
+  private[this] val jZ: ll.D#J
   val jZ(): ll.D#J
-  private val dZ: ll.D
+  private[this] val dZ: ll.D
   val dZ(): ll.D
 }
 
 object Z { // after flatten
   def kz(): ll.D#D$J
-  private val jZ: ll.D#D$J
+  private[this] val jZ: ll.D#D$J
   val jZ(): ll.D#D$J
-  private val dZ: ll.D
+  private[this] val dZ: ll.D
   val dZ(): ll.D
 }
 
 value dZ { // after parser
-  private val cD: ll.C[List[T3]]
+  private[this] val cD: ll.C[List[T3]]
   val cD: ll.C[List[T3]]
 }
 
 value dZ { // after parser
-  private val cD: ll.C[List[T3]]
+  private[this] val cD: ll.C[List[T3]]
   val cD: ll.C[List[T3]]
 }
 
 value dZ { // after uncurry
-  private val cD: ll.C[List[T3]]
+  private[this] val cD: ll.C[List[T3]]
   val cD(): ll.C[List[T3]]
 }
 
 value dZ { // after erasure
-  private val cD: ll.C
+  private[this] val cD: ll.C
   val cD(): ll.C
 }
 
@@ -307,17 +307,17 @@ method kz { // after parser
 }
 
 value $outer { // after parser
-  private val cD: ll.C[List[T3]]
+  private[this] val cD: ll.C[List[T3]]
   val cD: ll.C[List[T3]]
 }
 
 value $outer { // after uncurry
-  private val cD: ll.C[List[T3]]
+  private[this] val cD: ll.C[List[T3]]
   val cD(): ll.C[List[T3]]
 }
 
 value $outer { // after erasure
-  private val cD: ll.C
+  private[this] val cD: ll.C
   val cD(): ll.C
 }
 

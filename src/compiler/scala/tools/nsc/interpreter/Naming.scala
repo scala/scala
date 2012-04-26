@@ -41,10 +41,10 @@ trait Naming {
   private def removeIWPackages(s: String)  = s.replaceAll("""\$iw[$.]""", "")
 
   trait SessionNames {
-    // All values are configurable by passing e.g. -Dscala.repl.naming.read=XXX
+    // All values are configurable by passing e.g. -Dscala.repl.name.read=XXX
     final def propOr(name: String): String = propOr(name, "$" + name)
     final def propOr(name: String, default: String): String =
-      sys.props.getOrElse("scala.repl.naming." + name, default)
+      sys.props.getOrElse("scala.repl.name." + name, default)
 
     // Prefixes used in repl machinery.  Default to $line, $read, etc.
     def line   = propOr("line")

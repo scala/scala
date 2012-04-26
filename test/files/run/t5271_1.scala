@@ -1,13 +1,11 @@
-import scala.tools.nsc.reporters._
-import scala.tools.nsc.Settings
-import reflect.runtime.Mirror.ToolBox
+import scala.reflect.mirror._
 
 object Test extends App {
-  val code = scala.reflect.Code.lift{
+  val code = reify {
     case class C(foo: Int, bar: Int)
   };
 
-  val reporter = new ConsoleReporter(new Settings)
-  val toolbox = new ToolBox(reporter)
+  val toolbox = mkToolBox()
   println(code.tree)
+  println(code.eval)
 }

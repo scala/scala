@@ -19,8 +19,8 @@ Ranges:
 -30
 -10
 IntRanges:
-Disabled #1
-Disabled #2
+-1073741824
+-1073741824
 0
 0
 55
@@ -39,8 +39,8 @@ Disabled #2
 -30
 -10
 LongRanges:
-Disabled #1
-Disabled #2
+2305843008139952128
+-2305843008139952128
 0
 0
 55
@@ -59,8 +59,8 @@ Disabled #2
 -30
 -10
 BigIntRanges:
-Disabled #1
-Disabled #2
+2305843008139952128
+-2305843008139952128
 0
 0
 55

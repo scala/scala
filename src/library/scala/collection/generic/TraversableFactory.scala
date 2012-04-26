@@ -11,6 +11,7 @@ package scala.collection
 package generic
 
 import annotation.bridge
+import language.higherKinds
 
 /** A template for companion objects of `Traversable` and subclasses thereof.
  *  This class provides a set of operations to create `$Coll` objects.

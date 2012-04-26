@@ -14,6 +14,7 @@ import transform.ExplicitOuter
 import symtab.Flags
 import mutable.ListBuffer
 import annotation.elidable
+import language.postfixOps
 
 trait ParallelMatching extends ast.TreeDSL
       with MatchSupport
@@ -425,7 +426,7 @@ trait ParallelMatching extends ast.TreeDSL
       // Should the given pattern join the expanded pivot in the success matrix? If so,
       // this partial function will be defined for the pattern, and the result of the apply
       // is the expanded sequence of new patterns.
-      lazy val successMatrixFn = new scala.runtime.AbstractPartialFunction[Pattern, List[Pattern]] {
+      lazy val successMatrixFn = new PartialFunction[Pattern, List[Pattern]] {
         private def seqIsDefinedAt(x: SequenceLikePattern) = (hasStar, x.hasStar) match {
           case (true, true)   => true
           case (true, false)  => pivotLen <= x.nonStarLength
@@ -433,7 +434,7 @@ trait ParallelMatching extends ast.TreeDSL
           case (false, false) => pivotLen == x.nonStarLength
         }
 
-        def _isDefinedAt(pat: Pattern) = pat match {
+        def isDefinedAt(pat: Pattern) = pat match {
           case x: SequenceLikePattern => seqIsDefinedAt(x)
           case WildcardPattern()      => true
           case _                      => false

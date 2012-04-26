@@ -8,6 +8,7 @@ package scala.tools.nsc
 
 import java.io.{ BufferedWriter, FileWriter }
 import scala.collection.mutable
+import language.postfixOps
 
 /**
  * PhaseAssembly

@@ -14,4 +14,5 @@ package scala.reflect
  *
  *  @author Martin Odersky
  */
+@deprecated("Use `@scala.reflect.TypeTag` instead", "2.10.0")
 trait OptManifest[+T] extends Serializable

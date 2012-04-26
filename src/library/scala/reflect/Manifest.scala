@@ -40,6 +40,7 @@ import mirror._
  *
  */
 @annotation.implicitNotFound(msg = "No Manifest available for ${T}.")
+@deprecated("Use `@scala.reflect.ConcreteTypeTag` instead", "2.10.0")
 trait Manifest[T] extends ClassManifest[T] with Equals {
   override def typeArguments: List[Manifest[_]] = Nil
 
@@ -60,6 +61,7 @@ trait Manifest[T] extends ClassManifest[T] with Equals {
   override def hashCode = this.erasure.##
 }
 
+@deprecated("Use type tags and manually check the corresponding class or type instead", "2.10.0")
 abstract class AnyValManifest[T <: AnyVal](override val toString: String) extends Manifest[T] with Equals {
   override def <:<(that: ClassManifest[_]): Boolean =
     (that eq this) || (that eq Manifest.Any) || (that eq Manifest.AnyVal)
@@ -75,9 +77,8 @@ abstract class AnyValManifest[T <: AnyVal](override val toString: String) extend
  *  It is intended for use by the compiler and should not be used
  *  in client code.
  */
+@deprecated("Use `@scala.reflect.ConcreteTypeTag` instead", "2.10.0")
 object Manifest {
-  import mirror.{ definitions => mdefs }
-
   def valueManifests: List[AnyValManifest[_]] =
     List(Byte, Short, Char, Int, Long, Float, Double, Boolean, Unit)
 
@@ -154,40 +155,33 @@ object Manifest {
   }
 
   val Any: Manifest[scala.Any] = new PhantomManifest[scala.Any]("Any") {
-    override def symbol = mdefs.AnyClass
     override def <:<(that: ClassManifest[_]): Boolean = (that eq this)
     private def readResolve(): Any = Manifest.Any
   }
 
   val Object: Manifest[java.lang.Object] = new PhantomManifest[java.lang.Object]("Object") {
-    override def symbol = mdefs.ObjectClass
     override def <:<(that: ClassManifest[_]): Boolean = (that eq this) || (that eq Any)
     private def readResolve(): Any = Manifest.Object
   }
 
   val AnyVal: Manifest[scala.AnyVal] = new PhantomManifest[scala.AnyVal]("AnyVal") {
-    override def symbol = mdefs.AnyValClass
     override def <:<(that: ClassManifest[_]): Boolean = (that eq this) || (that eq Any)
     private def readResolve(): Any = Manifest.AnyVal
   }
 
   val Null: Manifest[scala.Null] = new PhantomManifest[scala.Null]("Null") {
-    override def symbol = mdefs.NullClass
     override def <:<(that: ClassManifest[_]): Boolean =
       (that ne null) && (that ne Nothing) && !(that <:< AnyVal)
     private def readResolve(): Any = Manifest.Null
   }
 
   val Nothing: Manifest[scala.Nothing] = new PhantomManifest[scala.Nothing]("Nothing") {
-    override def symbol = mdefs.NothingClass
     override def <:<(that: ClassManifest[_]): Boolean = (that ne null)
     private def readResolve(): Any = Manifest.Nothing
   }
 
   private class SingletonTypeManifest[T <: AnyRef](value: AnyRef) extends Manifest[T] {
     lazy val erasure = value.getClass
-    override lazy val symbol = InstanceRefSymbol(value) // todo: change to freevar
-    override lazy val tpe = mirror.SingleType(mirror.NoPrefix, symbol)
     override lazy val toString = value.toString + ".type"
   }
 
@@ -216,12 +210,8 @@ object Manifest {
   def classType[T](prefix: Manifest[_], clazz: Predef.Class[_], args: Manifest[_]*): Manifest[T] =
     new ClassTypeManifest[T](Some(prefix), clazz, args.toList)
 
-  /** Phantom types have no runtime representation; they all erase to Object,
-   *  but the Symbol preserves their identity.
-   */
   private abstract class PhantomManifest[T](override val toString: String) extends ClassTypeManifest[T](None, classOf[java.lang.Object], Nil) {
-    override lazy val tpe = namedType(mirror.NoPrefix, symbol, Nil)
-    override def equals(that: Any) = this eq that.asInstanceOf[AnyRef]
+    override def equals(that: Any): Boolean = this eq that.asInstanceOf[AnyRef]
     override val hashCode = System.identityHashCode(this)
   }
 
@@ -230,15 +220,6 @@ object Manifest {
   private class ClassTypeManifest[T](prefix: Option[Manifest[_]],
                                      val erasure: Predef.Class[_],
                                      override val typeArguments: List[Manifest[_]]) extends Manifest[T] {
-
-    override lazy val tpe = {
-      val pre = prefix match {
-        case Some(pm) => pm.tpe
-        case None     => symbol.owner.thisPrefix
-      }
-      namedType(pre, symbol, typeArguments map (_.tpe))
-    }
-
     override def toString =
       (if (prefix.isEmpty) "" else prefix.get.toString+"#") +
       (if (erasure.isArray) "Array" else erasure.getName) +
@@ -254,7 +235,6 @@ object Manifest {
   def abstractType[T](prefix: Manifest[_], name: String, upperBound: Predef.Class[_], args: Manifest[_]*): Manifest[T] =
     new Manifest[T] {
       def erasure = upperBound
-      override lazy val tpe = namedType(prefix.tpe, prefix.tpe.member(newTypeName(name)), args map (_.tpe) toList)
       override val typeArguments = args.toList
       override def toString = prefix.toString+"#"+name+argString
     }
@@ -264,7 +244,6 @@ object Manifest {
   def wildcardType[T](lowerBound: Manifest[_], upperBound: Manifest[_]): Manifest[T] =
     new Manifest[T] {
       def erasure = upperBound.erasure
-      override lazy val tpe = mirror.TypeBounds(lowerBound.tpe, upperBound.tpe)
       override def toString =
         "_" +
         (if (lowerBound eq Nothing) "" else " >: "+lowerBound) +
@@ -275,28 +254,6 @@ object Manifest {
   def intersectionType[T](parents: Manifest[_]*): Manifest[T] =
     new Manifest[T] {
       def erasure = parents.head.erasure
-      override lazy val tpe = mirror.RefinedType((parents map (_.tpe)).toList, newScope)
       override def toString = parents.mkString(" with ")
     }
-
-  /** A generic manifest factory from a reflect.Type. Except where
-   *  mandated by performance considerations, we should replace most
-   *  other manifest factories by this one. There's just one thing
-   *  that needs to be done first: A Manifest's type can refer
-   *  to type variables that are controlled by manifests. In that
-   *  case the reified type needs to contain the type passed in the manifest
-   *  instead of the reference to the manifest. Note that splicing manifests
-   *  into manfifests is completely analogous to splicing code blocks into
-   *  code blocks. Manifest[T] and Code[T] are really the same thing, only one
-   *  works for types, the other for trees.
-   *  Another complication is that once we generate manifests from types, we really
-   *  should have reflection as a standard component shipped with the standard library,
-   *  instead of in scala-compiler.jar.
-   */
-  def apply[T](_tpe: mirror.Type): Manifest[T] = new Manifest[T] {
-    override def symbol   = _tpe.typeSymbol
-    override lazy val tpe = _tpe
-    override def erasure  = mirror.typeToClass(_tpe.erasedType)
-    override def toString = _tpe.toString
-  }
 }

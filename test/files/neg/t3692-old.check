@@ -1,0 +1,8 @@
+t3692-old.scala:6: warning: object Manifest in package reflect is deprecated: Use `@scala.reflect.ConcreteTypeTag` instead
+    new ManifestTester().toJavaMap(map)
+                                  ^
+t3692-old.scala:15: error: unreachable code
+      case m2: Map[T, Int] => new java.util.HashMap[T, Integer]
+                              ^
+one warning found
+one error found

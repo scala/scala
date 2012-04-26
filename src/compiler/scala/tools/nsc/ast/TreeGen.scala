@@ -9,6 +9,7 @@ package ast
 import scala.collection.mutable.ListBuffer
 import symtab.Flags._
 import symtab.SymbolTable
+import language.postfixOps
 
 /** XXX to resolve: TreeGen only assumes global is a SymbolTable, but
  *  TreeDSL at the moment expects a Global.  Can we get by with SymbolTable?
@@ -65,22 +66,24 @@ abstract class TreeGen extends reflect.internal.TreeGen with TreeDSL {
     case _                      => tree
   }
 
-  // must be kept in synch with the codegen in PatMatVirtualiser
-  object VirtualCaseDef {
-    def unapply(b: Block): Option[(Assign, Tree, Tree)] = b match {
-      case Block(List(assign@Assign(keepGoingLhs, falseLit), matchRes), zero) => Some((assign, matchRes, zero)) // TODO: check tree annotation
-      case _ => None
-    }
+  def mkSynthSwitchSelector(expr: Tree): Tree = atPos(expr.pos) {
+    // This can't be "Annotated(New(SwitchClass), expr)" because annotations
+    // are very picky about things and it crashes the compiler with "unexpected new".
+    Annotated(Ident(nme.synthSwitch), expr)
   }
+
+  def hasSynthCaseSymbol(t: Tree) = (t.symbol ne null) && (t.symbol hasFlag (CASE | SYNTHETIC))
 
   // TODO: would be so much nicer if we would know during match-translation (i.e., type checking)
   // whether we should emit missingCase-style apply (and isDefinedAt), instead of transforming trees post-factum
   class MatchMatcher {
     def caseMatch(orig: Tree, selector: Tree, cases: List[CaseDef], wrap: Tree => Tree): Tree = unknownTree(orig)
     def caseVirtualizedMatch(orig: Tree, _match: Tree, targs: List[Tree], scrut: Tree, matcher: Tree): Tree = unknownTree(orig)
-    def caseVirtualizedMatchOpt(orig: Tree, zero: ValDef, x: ValDef, matchRes: ValDef, keepGoing: ValDef, stats: List[Tree], epilogue: Tree, wrap: Tree => Tree): Tree = unknownTree(orig)
+    def caseVirtualizedMatchOpt(orig: Tree, prologue: List[Tree], cases: List[Tree], matchEndDef: Tree, wrap: Tree => Tree): Tree = unknownTree(orig)
 
-    def apply(matchExpr: Tree): Tree = (matchExpr: @unchecked) match {
+    def genVirtualizedMatch(prologue: List[Tree], cases: List[Tree], matchEndDef: Tree): Tree = Block(prologue ++ cases, matchEndDef)
+
+    def apply(matchExpr: Tree): Tree = matchExpr match {
       // old-style match or virtpatmat switch
       case Match(selector, cases) => // println("simple match: "+ (selector, cases) + "for:\n"+ matchExpr )
         caseMatch(matchExpr, selector, cases, identity)
@@ -91,11 +94,15 @@ abstract class TreeGen extends reflect.internal.TreeGen with TreeDSL {
       case Apply(Apply(TypeApply(Select(tgt, nme.runOrElse), targs), List(scrut)), List(matcher)) if opt.virtPatmat => // println("virt match: "+ (tgt, targs, scrut, matcher) + "for:\n"+ matchExpr )
         caseVirtualizedMatch(matchExpr, tgt, targs, scrut, matcher)
       // optimized version of virtpatmat
-      case Block((zero: ValDef) :: (x: ValDef) :: (matchRes: ValDef) :: (keepGoing: ValDef) :: stats, epilogue) if opt.virtPatmat => // TODO: check tree annotation // println("virtopt match: "+ (zero, x, matchRes, keepGoing, stats) + "for:\n"+ matchExpr )
-        caseVirtualizedMatchOpt(matchExpr, zero, x, matchRes, keepGoing, stats, epilogue, identity)
+      case Block(stats, matchEndDef) if opt.virtPatmat && (stats forall hasSynthCaseSymbol) =>
+        // the assumption is once we encounter a case, the remainder of the block will consist of cases
+        // the prologue may be empty, usually it is the valdef that stores the scrut
+        val (prologue, cases) = stats span (s => !s.isInstanceOf[LabelDef])
+        caseVirtualizedMatchOpt(matchExpr, prologue, cases, matchEndDef, identity)
       // optimized version of virtpatmat
-      case Block(outerStats, orig@Block((zero: ValDef) :: (x: ValDef) :: (matchRes: ValDef) :: (keepGoing: ValDef) :: stats, epilogue)) if opt.virtPatmat => // TODO: check tree annotation // println("virt opt block match: "+ (zero, x, matchRes, keepGoing, stats, outerStats) + "for:\n"+ matchExpr )
-        caseVirtualizedMatchOpt(matchExpr, zero, x, matchRes, keepGoing, stats, epilogue, m => copyBlock(matchExpr, outerStats, m))
+      case Block(outerStats, orig@Block(stats, matchEndDef)) if opt.virtPatmat && (stats forall hasSynthCaseSymbol) =>
+        val (prologue, cases) = stats span (s => !s.isInstanceOf[LabelDef])
+        caseVirtualizedMatchOpt(matchExpr, prologue, cases, matchEndDef, m => copyBlock(matchExpr, outerStats, m))
       case other =>
         unknownTree(other)
     }
@@ -110,35 +117,6 @@ abstract class TreeGen extends reflect.internal.TreeGen with TreeDSL {
              case CaseDef(pat, guard, body) => true
            }
   }
-
-  def withDefaultCase(matchExpr: Tree, defaultAction: Tree/*scrutinee*/ => Tree): Tree = {
-    object withDefaultTransformer extends MatchMatcher {
-      override def caseMatch(orig: Tree, selector: Tree, cases: List[CaseDef], wrap: Tree => Tree): Tree = {
-        val casesNoSynthCatchAll = dropSyntheticCatchAll(cases)
-        if (casesNoSynthCatchAll exists treeInfo.isDefaultCase) orig
-        else {
-          val defaultCase = CaseDef(Ident(nme.WILDCARD), EmptyTree, defaultAction(selector.duplicate))
-          wrap(Match(selector, casesNoSynthCatchAll :+ defaultCase))
-        }
-      }
-      override def caseVirtualizedMatch(orig: Tree, _match: Tree, targs: List[Tree], scrut: Tree, matcher: Tree): Tree = { import CODE._
-        ((matcher APPLY (scrut)) DOT nme.getOrElse) APPLY (defaultAction(scrut.duplicate)) // TODO: pass targs
-      }
-      override def caseVirtualizedMatchOpt(orig: Tree, zero: ValDef, x: ValDef, matchRes: ValDef, keepGoing: ValDef, stats: List[Tree], epilogue: Tree, wrap: Tree => Tree): Tree = { import CODE._
-        wrap(Block(
-          zero ::
-          x ::
-          matchRes ::
-          keepGoing ::
-          stats,
-          // replace `if (keepGoing) throw new MatchError(...) else matchRes` by `if (keepGoing) ${defaultAction(`x`)} else matchRes`
-          (IF (REF(keepGoing.symbol)) THEN defaultAction(x.rhs.duplicate) ELSE REF(matchRes.symbol))
-        ))
-      }
-    }
-    withDefaultTransformer(matchExpr)
-  }
-
 
   def mkCached(cvar: Symbol, expr: Tree): Tree = {
     val cvarRef = mkUnattributedRef(cvar)

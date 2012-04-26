@@ -33,7 +33,7 @@ object ListSet extends ImmutableSetFactory[ListSet] {
    */
   class ListSetBuilder[Elem](initial: ListSet[Elem]) extends Builder[Elem, ListSet[Elem]] {
     def this() = this(empty[Elem])
-    protected val elems = new mutable.ListBuffer[Elem] ++= initial reverse
+    protected val elems = (new mutable.ListBuffer[Elem] ++= initial).reverse
     protected val seen  = new mutable.HashSet[Elem] ++= initial
 
     def +=(x: Elem): this.type = {
@@ -100,7 +100,7 @@ class ListSet[A] extends AbstractSet[A]
    */
   override def ++(xs: GenTraversableOnce[A]): ListSet[A] =
     if (xs.isEmpty) this
-    else new ListSet.ListSetBuilder(this) ++= xs.seq result
+    else (new ListSet.ListSetBuilder(this) ++= xs.seq).result
 
   @bridge def ++(xs: TraversableOnce[A]): ListSet[A] = ++(xs: GenTraversableOnce[A]): ListSet[A]
 

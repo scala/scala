@@ -1,15 +1,15 @@
 // inference illuminator
 object Test {
-  class D1[T1 : Manifest, T2 <: T1 : Manifest](x: T1) { println(manifest[(T1, T2)]) }
-  class D2[T1 : Manifest, T2 >: T1 : Manifest](x: T1) { println(manifest[(T1, T2)]) }
-  class D3[+T1 : Manifest, T2 <: T1 : Manifest](x: T1) { println(manifest[(T1, T2)]) }
-  class D4[-T1 : Manifest, T2 >: T1 : Manifest](x: T1) { println(manifest[(T1, T2)]) }
-  
-  class E1[T1 : Manifest, T2 <: T1 : Manifest](x: D1[T1, T2]) { println(manifest[(T1, T2)]) }
-  class E2[T1 : Manifest, T2 >: T1 : Manifest](x: D2[T1, T2]) { println(manifest[(T1, T2)]) }
-  class E3[+T1 : Manifest, T2 <: T1 : Manifest](x: D3[T1, T2]) { println(manifest[(T1, T2)]) }
-  class E4[-T1 : Manifest, T2 >: T1 : Manifest](x: D4[T1, T2]) { println(manifest[(T1, T2)]) }
-  
+  class D1[T1 : TypeTag, T2 <: T1 : TypeTag](x: T1) { println(typeTag[(T1, T2)]) }
+  class D2[T1 : TypeTag, T2 >: T1 : TypeTag](x: T1) { println(typeTag[(T1, T2)]) }
+  class D3[+T1 : TypeTag, T2 <: T1 : TypeTag](x: T1) { println(typeTag[(T1, T2)]) }
+  class D4[-T1 : TypeTag, T2 >: T1 : TypeTag](x: T1) { println(typeTag[(T1, T2)]) }
+
+  class E1[T1 : TypeTag, T2 <: T1 : TypeTag](x: D1[T1, T2]) { println(typeTag[(T1, T2)]) }
+  class E2[T1 : TypeTag, T2 >: T1 : TypeTag](x: D2[T1, T2]) { println(typeTag[(T1, T2)]) }
+  class E3[+T1 : TypeTag, T2 <: T1 : TypeTag](x: D3[T1, T2]) { println(typeTag[(T1, T2)]) }
+  class E4[-T1 : TypeTag, T2 >: T1 : TypeTag](x: D4[T1, T2]) { println(typeTag[(T1, T2)]) }
+
   def main(args: Array[String]): Unit = {
     // WHY YOU NO LIKE NOTHING SO MUCH SCALAC?
     val d1 = new D1(5)

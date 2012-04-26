@@ -1,7 +1,8 @@
-9a10,11
+9c9
+<
+---
 > /* INSTRUMENTED VERSION */
-> 
-50a53,61
+51a52,59
 >     public static int booleanBoxCount = 0;
 >     public static int characterBoxCount = 0;
 >     public static int byteBoxCount = 0;
@@ -10,20 +11,19 @@
 >     public static int longBoxCount = 0;
 >     public static int floatBoxCount = 0;
 >     public static int doubleBoxCount = 0;
->     
-51a63
-> 	booleanBoxCount++;
-55a68
-> 	characterBoxCount++;
-59a73
-> 	byteBoxCount++;
-63a78
-> 	shortBoxCount++;
-67a83
-> 	integerBoxCount++;
-71a88
-> 	longBoxCount++;
-75a93
-> 	floatBoxCount++;
-79a98
-> 	doubleBoxCount++;
+53a62
+>         booleanBoxCount += 1;
+57a67
+>         characterBoxCount += 1;
+61a72
+>         byteBoxCount += 1;
+65a77
+>         shortBoxCount += 1;
+69a82
+>         integerBoxCount += 1;
+73a87
+>         longBoxCount += 1;
+77a92
+>         floatBoxCount += 1;
+83a99
+>         doubleBoxCount += 1;

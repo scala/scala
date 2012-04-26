@@ -11,11 +11,3 @@ Array(1.0m, 2.0m)
 1.0m
 >>>1.0m<<< 1.0m
 >>>2.0m<<< 2.0m
-testing wrapped arrays
-FlatArray(1.0m, 2.0m)
-1.0m
->>>1.0m<<< 1.0m
->>>2.0m<<< 2.0m
-FlatArray(2.0m, 3.0m)
-ArrayBuffer(1.0, 2.0)
-FlatArray(0.3048ft, 0.6096ft)

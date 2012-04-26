@@ -10,6 +10,8 @@
 
 package scala
 
+import language.implicitConversions
+
 /** Represents a value of one of two possible types (a disjoint union.)
  *  Instances of Either are either an instance of [[scala.Left]] or [[scala.Right]].
  *
@@ -201,12 +203,6 @@ final case class Right[+A, +B](b: B) extends Either[A, B] {
 }
 
 object Either {
-  class MergeableEither[A](x: Either[A, A]) {
-    def merge: A = x match {
-      case Left(a)  => a
-      case Right(a) => a
-    }
-  }
 
   /**
    * Allows use of a ``merge`` method to extract values from Either instances
@@ -219,7 +215,14 @@ object Either {
    * r.merge: Seq[Int] // Vector(1)
    * }}}
    */
-  implicit def either2mergeable[A](x: Either[A, A]): MergeableEither[A] = new MergeableEither(x)
+  implicit class MergeableEither[A](x: Either[A, A]) {
+    def merge: A = x match {
+      case Left(a)  => a
+      case Right(a) => a
+    }
+  }
+  @deprecated("use MergeableEither instead", "2.10")
+  def either2mergeable[A](x: Either[A, A]): MergeableEither[A] = new MergeableEither(x)
 
   /**
    * Projects an `Either` into a `Left`.
@@ -258,7 +261,7 @@ object Either {
    *     case ex => Left(ex)
    *   }
    *
-   * // this will only be executed if interactWithDB returns a Some
+   * // this will only be executed if interactWithDB returns a Right
    * val report =
    *   for (r <- interactWithDB(someQuery).right) yield generateReport(r)
    * if (report.isRight)

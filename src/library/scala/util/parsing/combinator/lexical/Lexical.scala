@@ -32,7 +32,7 @@ abstract class Lexical extends Scanners with Tokens {
   def digit = elem("digit", _.isDigit)
 
   /** A character-parser that matches any character except the ones given in `cs` (and returns it).*/
-  def chrExcept(cs: Char*) = elem("", ch => (cs forall (ch !=)))
+  def chrExcept(cs: Char*) = elem("", ch => (cs forall (ch != _)))
 
   /** A character-parser that matches a white-space character (and returns it).*/
   def whitespaceChar = elem("space char", ch => ch <= ' ' && ch != EofCh)

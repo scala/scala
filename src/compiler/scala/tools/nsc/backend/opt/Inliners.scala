@@ -135,7 +135,7 @@ abstract class Inliners extends SubComponent {
 
     /** The current iclass */
     private var currentIClazz: IClass = _
-    private def warn(pos: Position, msg: String) = currentIClazz.cunit.warning(pos, msg)
+    private def warn(pos: Position, msg: String) = currentIClazz.cunit.inlinerWarning(pos, msg)
 
     val recentTFAs = mutable.Map.empty[Symbol, Tuple2[Boolean, analysis.MethodTFA]]
     private def getRecentTFA(incm: IMethod): (Boolean, analysis.MethodTFA) = {
@@ -759,12 +759,16 @@ abstract class Inliners extends SubComponent {
 
       private def helperIsSafeToInline(stackLength: Int): Boolean = {
         def makePublic(f: Symbol): Boolean =
-          (inc.m.sourceFile ne NoSourceFile) && (f.isSynthetic || f.isParamAccessor) && {
-            debuglog("Making not-private symbol out of synthetic: " + f)
+          /*
+           * Completely disabling member publifying. This shouldn't have been done in the first place. :|
+           */
+          false
+          // (inc.m.sourceFile ne NoSourceFile) && (f.isSynthetic || f.isParamAccessor) && {
+          //   debuglog("Making not-private symbol out of synthetic: " + f)
 
-            f setNotFlag Flags.PRIVATE
-            true
-          }
+          //   f setNotFlag Flags.PRIVATE
+          //   true
+          // }
 
         if (!inc.m.hasCode || inc.isRecursive)        { return false }
         if (inc.m.symbol.hasFlag(Flags.SYNCHRONIZED)) { return false }
@@ -854,7 +858,7 @@ abstract class Inliners extends SubComponent {
     def lookupIMethod(meth: Symbol, receiver: Symbol): Option[IMethod] = {
       def tryParent(sym: Symbol) = icodes icode sym flatMap (_ lookupMethod meth)
 
-      receiver.info.baseClasses.iterator map tryParent find (_.isDefined) flatten
+      (receiver.info.baseClasses.iterator map tryParent find (_.isDefined)).flatten
     }
   } /* class Inliner */
 } /* class Inliners */

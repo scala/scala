@@ -1,8 +1,4 @@
 object D {
-  def x(a: A) = 
-    a match {
-      case _: B => ()
-      case _: C => ()
-    }
+  def x(a: A) = if (a.isInstanceOf[B] || a.isInstanceOf[C]) ()
 }
 

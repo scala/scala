@@ -1,9 +1,7 @@
-import scala.tools.nsc.reporters._
-import scala.tools.nsc.Settings
-import reflect.runtime.Mirror.ToolBox
+import scala.reflect.mirror._
 
 object Test extends App {
-  val code = scala.reflect.Code.lift{
+  reify {
     class Complex(val re: Double, val im: Double) {
       def + (that: Complex) =
         new Complex(re + that.re, im + that.im)
@@ -22,9 +20,5 @@ object Test extends App {
     }
     val x = new Complex(2, 1); val y = new Complex(1, 3)
     println(x + y)
-  };
-
-  val reporter = new ConsoleReporter(new Settings)
-  val toolbox = new ToolBox(reporter)
-  toolbox.runExpr(code.tree)
+  }.eval
 }

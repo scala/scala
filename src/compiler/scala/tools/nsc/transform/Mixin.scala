@@ -123,7 +123,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
    */
   private def rebindSuper(base: Symbol, member: Symbol, mixinClass: Symbol): Symbol =
     afterPickler {
-      var bcs = base.info.baseClasses.dropWhile(mixinClass !=).tail
+      var bcs = base.info.baseClasses.dropWhile(mixinClass != _).tail
       var sym: Symbol = NoSymbol
       debuglog("starting rebindsuper " + base + " " + member + ":" + member.tpe +
             " " + mixinClass + " " + base.info.baseClasses + "/" + bcs)
@@ -136,7 +136,6 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
         sym = member.matchingSymbol(bcs.head, base.thisType).suchThat(sym => !sym.hasFlag(DEFERRED | BRIDGE))
         bcs = bcs.tail
       }
-      assert(sym != NoSymbol, member)
       sym
     }
 
@@ -339,8 +338,14 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
         else if (mixinMember.isSuperAccessor) { // mixin super accessors
           val superAccessor = addMember(clazz, mixinMember.cloneSymbol(clazz)) setPos clazz.pos
           assert(superAccessor.alias != NoSymbol, superAccessor)
-          val alias1 = rebindSuper(clazz, mixinMember.alias, mixinClass)
-          superAccessor.asInstanceOf[TermSymbol] setAlias alias1
+
+          rebindSuper(clazz, mixinMember.alias, mixinClass) match {
+            case NoSymbol =>
+              unit.error(clazz.pos, "Member %s of mixin %s is missing a concrete super implementation.".format(
+                mixinMember.alias, mixinClass))
+            case alias1 =>
+              superAccessor.asInstanceOf[TermSymbol] setAlias alias1
+          }
         }
         else if (mixinMember.isMethod && mixinMember.isModule && mixinMember.hasNoFlags(LIFTED | BRIDGE)) {
           // mixin objects: todo what happens with abstract objects?
@@ -384,11 +389,14 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
           var sourceModule = clazz.owner.info.decls.lookup(sym.name.toTermName)
           if (sourceModule != NoSymbol) {
             sourceModule setPos sym.pos
-            sourceModule.flags = MODULE | FINAL
+            if (sourceModule.flags != MODULE) {
+              log("!!! Directly setting sourceModule flags from %s to MODULE".format(flagsToString(sourceModule.flags)))
+              sourceModule.flags = MODULE
+            }
           }
           else {
             sourceModule = (
-              clazz.owner.newModuleSymbol(sym.name.toTermName, sym.pos, MODULE | FINAL)
+              clazz.owner.newModuleSymbol(sym.name.toTermName, sym.pos, MODULE)
                 setModuleClass sym.asInstanceOf[ClassSymbol]
             )
             clazz.owner.info.decls enter sourceModule
@@ -770,7 +778,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
           val fields0 = usedBits(cl)
 
           if (requiredBitmaps(fields0) < bitmapNum) {
-            val fields1 = cl.info.decls filter isNonLocalFieldWithBitmap size;
+            val fields1 = (cl.info.decls filter isNonLocalFieldWithBitmap).size
             return {
               if (requiredBitmaps(fields0 + fields1) >= bitmapNum)
                 Some(bitmapFor(cl, offset, valSym, false))
@@ -930,7 +938,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
         private def checkedGetter(lhs: Tree) = {
           val sym = clazz.info decl lhs.symbol.getterName suchThat (_.isGetter)
           if (needsInitAndHasOffset(sym)) {
-            debuglog("adding checked getter for: " + sym + " " + lhs.symbol.defaultFlagString)
+            debuglog("adding checked getter for: " + sym + " " + lhs.symbol.flagString)
             List(localTyper typed mkSetFlag(clazz, fieldOffset(sym), sym))
           }
           else Nil
@@ -1077,7 +1085,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
             // add forwarders
             assert(sym.alias != NoSymbol, sym)
             // debuglog("New forwarder: " + sym.defString + " => " + sym.alias.defString)
-            addDefDef(sym, Apply(staticRef(sym.alias), gen.mkAttributedThis(clazz) :: sym.paramss.head.map(Ident)))
+            if (!sym.isTermMacro) addDefDef(sym, Apply(staticRef(sym.alias), gen.mkAttributedThis(clazz) :: sym.paramss.head.map(Ident)))
           }
         }
       }

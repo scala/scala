@@ -62,9 +62,16 @@ abstract class Pickler extends SubComponent {
       // when we pickle it: so let's report an error instead.  We know next
       // to nothing about what happened, but our supposition is a lot better
       // than "bad type: <error>" in terms of explanatory power.
-      for (t <- unit.body ; if t.isErroneous) {
-        unit.error(t.pos, "erroneous or inaccessible type")
-        return
+      for (t <- unit.body) {
+        if (t.isErroneous) {
+          unit.error(t.pos, "erroneous or inaccessible type")
+          return
+        }
+
+        if (!t.isDef && t.hasSymbol && t.symbol.isTermMacro) {
+          unit.error(t.pos, "macro has not been expanded")
+          return
+        }
       }
 
       pickle(unit.body)
@@ -149,7 +156,7 @@ abstract class Pickler extends SubComponent {
 
             putChildren(sym, children.toList sortBy (_.sealedSortName))
           }
-          for (annot <- sym.annotations filter (ann => ann.isStatic && !ann.isErroneous) reverse)
+          for (annot <- (sym.annotations filter (ann => ann.isStatic && !ann.isErroneous)).reverse)
             putAnnotation(sym, annot)
         }
         else if (sym != NoSymbol) {
@@ -425,7 +432,7 @@ abstract class Pickler extends SubComponent {
     private def putConstant(c: Constant) {
       if (putEntry(c)) {
         if (c.tag == StringTag) putEntry(newTermName(c.stringValue))
-        else if (c.tag == ClassTag) putType(c.typeValue)
+        else if (c.tag == ClazzTag) putType(c.typeValue)
         else if (c.tag == EnumTag) putSymbol(c.symbolValue)
       }
     }
@@ -606,7 +613,7 @@ abstract class Pickler extends SubComponent {
           else if (c.tag == FloatTag) writeLong(floatToIntBits(c.floatValue))
           else if (c.tag == DoubleTag) writeLong(doubleToLongBits(c.doubleValue))
           else if (c.tag == StringTag) writeRef(newTermName(c.stringValue))
-          else if (c.tag == ClassTag) writeRef(c.typeValue)
+          else if (c.tag == ClazzTag) writeRef(c.typeValue)
           else if (c.tag == EnumTag) writeRef(c.symbolValue)
           LITERAL + c.tag // also treats UnitTag, NullTag; no value required
         case AnnotatedType(annotations, tp, selfsym) =>
@@ -1059,7 +1066,7 @@ abstract class Pickler extends SubComponent {
           else if (c.tag == FloatTag) print("Float "+c.floatValue)
           else if (c.tag == DoubleTag) print("Double "+c.doubleValue)
           else if (c.tag == StringTag) { print("String "); printRef(newTermName(c.stringValue)) }
-          else if (c.tag == ClassTag) { print("Class "); printRef(c.typeValue) }
+          else if (c.tag == ClazzTag) { print("Class "); printRef(c.typeValue) }
           else if (c.tag == EnumTag) { print("Enum "); printRef(c.symbolValue) }
         case AnnotatedType(annots, tp, selfsym) =>
           if (settings.selfInAnnots.value) {

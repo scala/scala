@@ -3,13 +3,42 @@ Type :help for more information.
 
 scala> 
 
+scala> import language.experimental.macros
+import language.experimental.macros
+
+scala> import scala.reflect.makro.{Context => Ctx}
+import scala.reflect.makro.{Context=>Ctx}
+
+scala> 
+
+scala> object Impls {
+  def foo(c: Ctx)(x: c.Expr[Int]) = {
+    import c.mirror._
+    val body = Apply(Select(x.tree, newTermName("$plus")), List(Literal(Constant(1))))
+    Expr[Int](body)
+  }
+
+  def bar(c: Ctx)(x: c.Expr[Int]) = {
+    import c.mirror._
+    val body = Apply(Select(x.tree, newTermName("$plus")), List(Literal(Constant(2))))
+    Expr[Int](body)
+  }
+
+  def quux(c: Ctx)(x: c.Expr[Int]) = {
+    import c.mirror._
+    val body = Apply(Select(x.tree, newTermName("$plus")), List(Literal(Constant(3))))
+    Expr[Int](body)
+  }
+}
+defined module Impls
+
 scala> object Macros {
   object Shmacros {
-    def macro foo(x: Int): Int = x
+    def foo(x: Int): Int = macro Impls.foo
   }
-  def macro bar(x: Int): Int = x
+  def bar(x: Int): Int = macro Impls.bar
 }; class Macros {
-  def macro quux(x: Int): Int = x
+  def quux(x: Int): Int = macro Impls.quux
 }
 defined module Macros
 defined class Macros
@@ -20,6 +49,6 @@ scala> import Macros.Shmacros._
 import Macros.Shmacros._
 
 scala> println(foo(2) + Macros.bar(2) * new Macros().quux(4))
-10
+31
 
 scala> 

@@ -11,11 +11,13 @@ object +: {
 /** An extractor used to init/last deconstruct sequences. */
 object :+ {
   /** Splits a sequence into init :+ tail.
-   * @returns Some(init, tail) if sequence is non-empty.
-   *          None otherwise.
+   * @return Some(init, tail) if sequence is non-empty. None otherwise.
    */
   def unapply[T,Coll <: SeqLike[T, Coll]](
       t: Coll with SeqLike[T, Coll]): Option[(Coll, T)] =
     if(t.isEmpty) None
     else Some(t.init -> t.last)
 }
+
+// Dummy to fool ant
+private abstract class SeqExtractors

@@ -11,7 +11,7 @@
 package scala.testing
 
 /** Classes inheriting trait `Show` can test their member methods using the
- *  notattion `meth(arg,,1,,, ..., arg,,n,,)`, where `meth` is the name of
+ *  notation `meth(arg,,1,,, ..., arg,,n,,)`, where `meth` is the name of
  *  the method and `arg,,1,,,...,arg,,n,,` are the arguments.
  *
  *  The only difference to a normal method call is the leading quote
@@ -27,17 +27,17 @@ package scala.testing
  */
 trait Show {
 
-  /** The result class of wrapper `symApply`.
+  /** An implicit definition that adds an apply method to Symbol which forwards to `test`. 
    *  Prints out diagnostics of method applications.
    */
-  class SymApply(f: Symbol) {
+  implicit class SymApply(f: Symbol) {
     def apply[A](args: A*) {
       println(test(f, args: _*))
     }
   }
 
-  /** An implicit definition that adds an apply method to Symbol which forwards to `test`. */
-  implicit def symApply(sym: Symbol) = new SymApply(sym)
+  @deprecated("use SymApply instead", "2.10")
+  def symApply(sym: Symbol): SymApply = new SymApply(sym)
 
   /** Apply method with name of given symbol `f` to given arguments and return
    *  a result diagnostics.

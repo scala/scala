@@ -27,6 +27,12 @@ trait ReplConfig {
     try Console println msg
     catch { case x: AssertionError => Console.println("Assertion error printing debugging output: " + x) }
 
+  private[nsc] def repldbgex(ex: Throwable): Unit = {
+    if (isReplDebug) {
+      echo("Caught/suppressing: " + ex)
+      ex.printStackTrace
+    }
+  }
   private[nsc] def repldbg(msg: => String)    = if (isReplDebug) echo(msg)
   private[nsc] def repltrace(msg: => String)  = if (isReplTrace) echo(msg)
   private[nsc] def replinfo(msg: => String)   = if (isReplInfo)  echo(msg)

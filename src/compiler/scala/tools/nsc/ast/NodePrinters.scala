@@ -8,6 +8,7 @@ package ast
 
 import compat.Platform.EOL
 import symtab.Flags._
+import language.postfixOps
 
 /** The object `nodePrinter` converts the internal tree
  *  representation to a string.
@@ -27,24 +28,24 @@ abstract class NodePrinters {
   def nodeToString: Tree => String =
     if (sys.props contains "scala.colors") nodeToColorizedString
     else nodeToRegularString
-  
+
   object nodeToRegularString extends DefaultPrintAST with (Tree => String) {
     def apply(tree: Tree) = stringify(tree)
   }
-  
+
   object nodeToColorizedString extends ColorPrintAST with (Tree => String) {
     def apply(tree: Tree) = stringify(tree)
   }
 
   trait ColorPrintAST extends DefaultPrintAST {
     import scala.tools.util.color._
-    
+
     def keywordColor = Cyan
     def typeColor    = Yellow
     def termColor    = Blue
     def flagColor    = Red
     def literalColor = Green
-    
+
     override def showFlags(tree: MemberDef) =
       super.showFlags(tree) in flagColor.bright
 
@@ -62,10 +63,14 @@ abstract class NodePrinters {
   }
 
   trait DefaultPrintAST extends PrintAST {
+    val printPos = settings.Xprintpos.value || settings.Yposdebug.value
+
+    def showNameAndPos(tree: NameTree) = showPosition(tree) + showName(tree.name)
     def showDefTreeName(tree: DefTree) = showName(tree.name)
+    def showPosition(tree: Tree)       = if (printPos) tree.pos.show else ""
     def showFlags(tree: MemberDef)     = flagsToString(tree.symbol.flags | tree.mods.flags)
-    def showLiteral(lit: Literal)      = lit.value.escapedStringValue
-    def showTypeTree(tt: TypeTree)     = "<tpt>" + emptyOrComment(showType(tt))
+    def showLiteral(lit: Literal)      = showPosition(lit) + lit.value.escapedStringValue
+    def showTypeTree(tt: TypeTree)     = showPosition(tt) + "<tpt>" + emptyOrComment(showType(tt))
     def showName(name: Name)           = name match {
       case nme.EMPTY | tpnme.EMPTY => "<empty>"
       case name                    => "\"" + name + "\""
@@ -81,7 +86,7 @@ abstract class NodePrinters {
       if (tpe == null || tpe == NoType) ""
       else "tree.tpe=" + tpe
     }
-  
+
     def showAttributes(tree: Tree): String = {
       if (infolevel == InfoLevel.Quiet) ""
       else {
@@ -90,23 +95,27 @@ abstract class NodePrinters {
       }
     }
   }
-  
+
   trait PrintAST {
     private val buf = new StringBuilder
     private var level = 0
 
     def showName(name: Name): String
+    def showPosition(tree: Tree): String
+    def showNameAndPos(tree: NameTree): String
     def showDefTreeName(defTree: DefTree): String
     def showFlags(tree: MemberDef): String
     def showLiteral(lit: Literal): String
     def showTypeTree(tt: TypeTree): String
     def showAttributes(tree: Tree): String  // symbol and type
-    
-    def showRefTreeName(tree: Tree): String = tree match {
-      case SelectFromTypeTree(qual, name) => showRefTreeName(qual) + "#" + showName(name)
-      case Select(qual, name)             => showRefTreeName(qual) + "." + showName(name)
-      case Ident(name)                    => showName(name)
-      case _                              => "" + tree
+
+    def showRefTreeName(tree: Tree): String = {
+      tree match {
+        case SelectFromTypeTree(qual, name) => showRefTreeName(qual) + "#" + showName(name)
+        case Select(qual, name)             => showRefTreeName(qual) + "." + showName(name)
+        case id @ Ident(name)               => showNameAndPos(id)
+        case _                              => "" + tree
+      }
     }
     def showRefTree(tree: RefTree): String = {
       def prefix0 = showRefTreeName(tree.qualifier)
@@ -115,15 +124,21 @@ abstract class NodePrinters {
         case Select(_, _)             => prefix0 + "."
         case _                        => ""
       })
-      prefix + showName(tree.name) + emptyOrComment(showAttributes(tree))
+      prefix + showNameAndPos(tree) + emptyOrComment(showAttributes(tree))
     }
 
     def emptyOrComment(s: String) = if (s == "") "" else " // " + s
 
     def stringify(tree: Tree): String = {
       buf.clear()
-      level = 0
-      traverse(tree)
+      if (settings.XshowtreesStringified.value) buf.append(tree.toString + EOL)
+      if (settings.XshowtreesCompact.value) {
+        // todo. colors for compact representation
+        buf.append(showRaw(tree))
+      } else {
+        level = 0
+        traverse(tree)
+      }
       buf.toString
     }
     def traverseAny(x: Any) {
@@ -134,7 +149,7 @@ abstract class NodePrinters {
       }
     }
     def println(s: String) = printLine(s, "")
-    
+
     def printLine(value: String, comment: String) {
       buf append "  " * level
       buf append value
@@ -183,9 +198,10 @@ abstract class NodePrinters {
         traverseList("Nil", "argument")(args)
       }
     }
-    
+
+    def treePrefix(tree: Tree) = showPosition(tree) + tree.printingPrefix
     def printMultiline(tree: Tree)(body: => Unit) {
-      printMultiline(tree.printingPrefix, showAttributes(tree))(body)
+      printMultiline(treePrefix(tree), showAttributes(tree))(body)
     }
     def printMultiline(prefix: String, comment: String)(body: => Unit) {
       printLine(prefix + "(", comment)
@@ -211,10 +227,12 @@ abstract class NodePrinters {
     }
 
     def printSingle(tree: Tree, name: Name) {
-      println(tree.printingPrefix + "(" + showName(name) + ")" + showAttributes(tree))
+      println(treePrefix(tree) + "(" + showName(name) + ")" + showAttributes(tree))
     }
 
     def traverse(tree: Tree) {
+      showPosition(tree)
+
       tree match {
         case AppliedTypeTree(tpt, args) => applyCommon(tree, tpt, args)
         case ApplyDynamic(fun, args)    => applyCommon(tree, fun, args)
@@ -222,6 +240,19 @@ abstract class NodePrinters {
 
         case Throw(Ident(name)) =>
           printSingle(tree, name)
+
+        case b @ Bind(name, body) =>
+          printMultiline(tree) {
+            println(showDefTreeName(b))
+            traverse(body)
+          }
+
+        case ld @ LabelDef(name, params, rhs) =>
+          printMultiline(tree) {
+            showNameAndPos(ld)
+            traverseList("()", "params")(params)
+            traverse(rhs)
+          }
 
         case Function(vparams, body) =>
           printMultiline(tree) {
@@ -299,10 +330,10 @@ abstract class NodePrinters {
           }
         case Template(parents, self, body) =>
           printMultiline(tree) {
-            val ps0 = parents map { p => 
+            val ps0 = parents map { p =>
               if (p.tpe eq null) p match {
                 case x: RefTree => showRefTree(x)
-                case x          => "" + x
+                case x          => showPosition(x) + x
               }
               else showName(newTypeName(p.tpe.typeSymbol.fullName))
             }
@@ -339,14 +370,14 @@ abstract class NodePrinters {
             traverseList("[]", "type parameter")(tparams)
             traverse(rhs)
           }
-        
+
         case PackageDef(pid, stats) =>
           printMultiline("PackageDef", "")(pid :: stats foreach traverse)
 
         case _ =>
           tree match {
             case t: RefTree               => println(showRefTree(t))
-            case t if t.productArity == 0 => println(tree.printingPrefix)
+            case t if t.productArity == 0 => println(treePrefix(t))
             case t                        => printMultiline(tree)(tree.productIterator foreach traverseAny)
           }
       }

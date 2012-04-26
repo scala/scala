@@ -83,89 +83,89 @@ import scala.collection.{ mutable, immutable }
 /** Flags set on Modifiers instances in the parsing stage.
  */
 class ModifierFlags {
-  final val IMPLICIT      = 0x00000200
-  final val FINAL         = 0x00000020
-  final val PRIVATE       = 0x00000004
-  final val PROTECTED     = 0x00000001
+  final val IMPLICIT      = 1 << 9
+  final val FINAL         = 1 << 5    // May not be overridden. Note that java final implies much more than scala final.
+  final val PRIVATE       = 1 << 2
+  final val PROTECTED     = 1 << 0
 
-  final val SEALED        = 0x00000400
-  final val OVERRIDE      = 0x00000002
-  final val CASE          = 0x00000800
-  final val ABSTRACT      = 0x00000008    // abstract class, or used in conjunction with abstract override.
+  final val SEALED        = 1 << 10
+  final val OVERRIDE      = 1 << 1
+  final val CASE          = 1 << 11
+  final val ABSTRACT      = 1 << 3        // abstract class, or used in conjunction with abstract override.
                                           // Note difference to DEFERRED!
-  final val DEFERRED      = 0x00000010    // was `abstract' for members | trait is virtual
-  final val INTERFACE     = 0x00000080    // symbol is an interface (i.e. a trait which defines only abstract methods)
-  final val MUTABLE       = 0x00001000    // symbol is a mutable variable.
-  final val PARAM         = 0x00002000    // symbol is a (value or type) parameter to a method
-  final val MACRO         = 0x00008000    // symbol is a macro definition
+  final val DEFERRED      = 1 << 4        // was `abstract' for members | trait is virtual
+  final val INTERFACE     = 1 << 7        // symbol is an interface (i.e. a trait which defines only abstract methods)
+  final val MUTABLE       = 1 << 12       // symbol is a mutable variable.
+  final val PARAM         = 1 << 13       // symbol is a (value or type) parameter to a method
+  final val MACRO         = 1 << 15       // symbol is a macro definition
 
-  final val COVARIANT     = 0x00010000    // symbol is a covariant type variable
-  final val BYNAMEPARAM   = 0x00010000    // parameter is by name
-  final val CONTRAVARIANT = 0x00020000    // symbol is a contravariant type variable
-  final val ABSOVERRIDE   = 0x00040000    // combination of abstract & override
-  final val LOCAL         = 0x00080000    // symbol is local to current class (i.e. private[this] or protected[this]
+  final val COVARIANT     = 1 << 16       // symbol is a covariant type variable
+  final val BYNAMEPARAM   = 1 << 16       // parameter is by name
+  final val CONTRAVARIANT = 1 << 17       // symbol is a contravariant type variable
+  final val ABSOVERRIDE   = 1 << 18       // combination of abstract & override
+  final val LOCAL         = 1 << 19       // symbol is local to current class (i.e. private[this] or protected[this]
                                           // pre: PRIVATE or PROTECTED are also set
-  final val JAVA          = 0x00100000    // symbol was defined by a Java class
-  final val STATIC        = 0x00800000    // static field, method or class
-  final val CASEACCESSOR  = 0x01000000    // symbol is a case parameter (or its accessor, or a GADT skolem)
-  final val TRAIT         = 0x02000000    // symbol is a trait
-  final val DEFAULTPARAM  = 0x02000000    // the parameter has a default value
-  final val PARAMACCESSOR = 0x20000000    // for field definitions generated for primary constructor
+  final val JAVA          = 1 << 20       // symbol was defined by a Java class
+  final val STATIC        = 1 << 23       // static field, method or class
+  final val CASEACCESSOR  = 1 << 24       // symbol is a case parameter (or its accessor, or a GADT skolem)
+  final val TRAIT         = 1 << 25       // symbol is a trait
+  final val DEFAULTPARAM  = 1 << 25       // the parameter has a default value
+  final val PARAMACCESSOR = 1 << 29       // for field definitions generated for primary constructor
                                           //   parameters (no matter if it's a 'val' parameter or not)
                                           // for parameters of a primary constructor ('val' or not)
                                           // for the accessor methods generated for 'val' or 'var' parameters
-  final val LAZY          = 0x80000000L   // symbol is a lazy val. can't have MUTABLE unless transformed by typer
-  final val PRESUPER      = 0x2000000000L // value is evaluated before super call
-  final val DEFAULTINIT   = 0x20000000000L// symbol is initialized to the default value: used by -Xcheckinit
+  final val LAZY          = 1L << 31      // symbol is a lazy val. can't have MUTABLE unless transformed by typer
+  final val PRESUPER      = 1L << 37      // value is evaluated before super call
+  final val DEFAULTINIT   = 1L << 41      // symbol is initialized to the default value: used by -Xcheckinit
 
   // Overridden.
   def flagToString(flag: Long): String = ""
 
-  final val PrivateLocal: Long   = PRIVATE | LOCAL
-  final val ProtectedLocal: Long = PROTECTED | LOCAL
-  final val AccessFlags: Long    = PRIVATE | PROTECTED | LOCAL
+  final val PrivateLocal   = PRIVATE | LOCAL
+  final val ProtectedLocal = PROTECTED | LOCAL
+  final val AccessFlags    = PRIVATE | PROTECTED | LOCAL
 }
 object ModifierFlags extends ModifierFlags
 
 /** All flags and associated operatins */
 class Flags extends ModifierFlags {
-  final val METHOD        = 0x00000040    // a method
-  final val MODULE        = 0x00000100    // symbol is module or class implementing a module
-  final val PACKAGE       = 0x00004000    // symbol is a java package
+  final val METHOD        = 1 << 6        // a method
+  final val MODULE        = 1 << 8        // symbol is module or class implementing a module
+  final val PACKAGE       = 1 << 14       // symbol is a java package
 
-  final val CAPTURED      = 0x00010000    // variable is accessed from nested function.  Set by LambdaLift.
-  final val LABEL         = 0x00020000    // method symbol is a label. Set by TailCall
-  final val INCONSTRUCTOR = 0x00020000    // class symbol is defined in this/superclass constructor.
-  final val SYNTHETIC     = 0x00200000    // symbol is compiler-generated
-  final val STABLE        = 0x00400000    // functions that are assumed to be stable
+  final val CAPTURED      = 1 << 16       // variable is accessed from nested function.  Set by LambdaLift.
+  final val LABEL         = 1 << 17       // method symbol is a label. Set by TailCall
+  final val INCONSTRUCTOR = 1 << 17       // class symbol is defined in this/superclass constructor.
+  final val SYNTHETIC     = 1 << 21       // symbol is compiler-generated
+  final val STABLE        = 1 << 22       // functions that are assumed to be stable
                                           // (typically, access methods for valdefs)
                                           // or classes that do not contain abstract types.
-  final val BRIDGE        = 0x04000000    // function is a bridge method. Set by Erasure
-  final val ACCESSOR      = 0x08000000    // a value or variable accessor (getter or setter)
+  final val BRIDGE        = 1 << 26       // function is a bridge method. Set by Erasure
+  final val ACCESSOR      = 1 << 27       // a value or variable accessor (getter or setter)
 
-  final val SUPERACCESSOR = 0x10000000    // a super accessor
-  final val MODULEVAR     = 0x40000000    // for variables: is the variable caching a module value
+  final val SUPERACCESSOR = 1 << 28       // a super accessor
+  final val MODULEVAR     = 1 << 30       // for variables: is the variable caching a module value
 
-  final val IS_ERROR      = 0x100000000L  // symbol is an error symbol
-  final val OVERLOADED    = 0x200000000L  // symbol is overloaded
-  final val LIFTED        = 0x400000000L  // class has been lifted out to package level
+  final val IS_ERROR      = 1L << 32      // symbol is an error symbol
+  final val OVERLOADED    = 1L << 33      // symbol is overloaded
+  final val LIFTED        = 1L << 34      // class has been lifted out to package level
                                           // local value has been lifted out to class level
                                           // todo: make LIFTED = latePRIVATE?
-  final val MIXEDIN       = 0x800000000L  // term member has been mixed in
-  final val EXISTENTIAL   = 0x800000000L  // type is an existential parameter or skolem
-  final val EXPANDEDNAME  = 0x1000000000L // name has been expanded with class suffix
-  final val IMPLCLASS     = 0x2000000000L // symbol is an implementation class
-  final val TRANS_FLAG    = 0x4000000000L // transient flag guaranteed to be reset after each phase.
+  final val MIXEDIN       = 1L << 35      // term member has been mixed in
+  final val EXISTENTIAL   = 1L << 35      // type is an existential parameter or skolem
+  final val EXPANDEDNAME  = 1L << 36      // name has been expanded with class suffix
+  final val IMPLCLASS     = 1L << 37      // symbol is an implementation class
+  final val TRANS_FLAG    = 1L << 38      // transient flag guaranteed to be reset after each phase.
 
-  final val LOCKED        = 0x8000000000L // temporary flag to catch cyclic dependencies
-  final val SPECIALIZED   = 0x10000000000L// symbol is a generated specialized member
-  final val VBRIDGE       = 0x40000000000L// symbol is a varargs bridge
+  final val LOCKED        = 1L << 39      // temporary flag to catch cyclic dependencies
+  final val SPECIALIZED   = 1L << 40      // symbol is a generated specialized member
+  final val VBRIDGE       = 1L << 42      // symbol is a varargs bridge
 
-  final val VARARGS       = 0x80000000000L// symbol is a Java-style varargs method
-  final val TRIEDCOOKING  = 0x100000000000L // ``Cooking'' has been tried on this symbol
-                                            // A Java method's type is ``cooked'' by transforming raw types to existentials
+  final val VARARGS       = 1L << 43      // symbol is a Java-style varargs method
+  final val TRIEDCOOKING  = 1L << 44      // ``Cooking'' has been tried on this symbol
+                                          // A Java method's type is ``cooked'' by transforming raw types to existentials
 
-  final val SYNCHRONIZED  = 0x200000000000L // symbol is a method which should be marked ACC_SYNCHRONIZED
+  final val SYNCHRONIZED  = 1L << 45      // symbol is a method which should be marked ACC_SYNCHRONIZED
   // ------- shift definitions -------------------------------------------------------
 
   final val InitialFlags  = 0x0001FFFFFFFFFFFFL // flags that are enabled from phase 1.
@@ -173,6 +173,9 @@ class Flags extends ModifierFlags {
   final val AntiFlags     = 0x7F00000000000000L // flags that cancel flags in 0x07F
   final val LateShift     = 47L
   final val AntiShift     = 56L
+
+  // Flags which sketchily share the same slot
+  val OverloadedFlagsMask = 0L | BYNAMEPARAM | CONTRAVARIANT | DEFAULTPARAM | EXISTENTIAL | IMPLCLASS
 
   // ------- late flags (set by a transformer phase) ---------------------------------
   //
@@ -206,34 +209,46 @@ class Flags extends ModifierFlags {
 
   // ------- masks -----------------------------------------------------------------------
 
+  /** To be a little clearer to people who aren't habitual bit twiddlers.
+   */
+  final val AllFlags = -1L
+
   /** These flags can be set when class or module symbol is first created.
    *  They are the only flags to survive a call to resetFlags().
    */
-  final val TopLevelCreationFlags: Long =
+  final val TopLevelCreationFlags =
     MODULE | PACKAGE | FINAL | JAVA
+
+  // TODO - there's no call to slap four flags onto every package.
+  final val PackageFlags = TopLevelCreationFlags
+
+  // FINAL not included here due to possibility of object overriding.
+  // In fact, FINAL should not be attached regardless.  We should be able
+  // to reconstruct whether an object was marked final in source.
+  final val ModuleFlags = MODULE
 
   /** These modifiers can be set explicitly in source programs.  This is
    *  used only as the basis for the default flag mask (which ones to display
    *  when printing a normal message.)
    */
-  final val ExplicitFlags: Long =
+  final val ExplicitFlags =
     PRIVATE | PROTECTED | ABSTRACT | FINAL | SEALED |
     OVERRIDE | CASE | IMPLICIT | ABSOVERRIDE | LAZY
-
-  /** These modifiers appear in TreePrinter output. */
-  final val PrintableFlags: Long =
-    ExplicitFlags | LOCAL | SYNTHETIC | STABLE | CASEACCESSOR | MACRO |
-    ACCESSOR | SUPERACCESSOR | PARAMACCESSOR | BRIDGE | STATIC | VBRIDGE | SPECIALIZED | SYNCHRONIZED
 
   /** The two bridge flags */
   final val BridgeFlags = BRIDGE | VBRIDGE
   final val BridgeAndPrivateFlags = BridgeFlags | PRIVATE
 
+  /** These modifiers appear in TreePrinter output. */
+  final val PrintableFlags =
+    ExplicitFlags | BridgeFlags | LOCAL | SYNTHETIC | STABLE | CASEACCESSOR | MACRO |
+    ACCESSOR | SUPERACCESSOR | PARAMACCESSOR | STATIC | SPECIALIZED | SYNCHRONIZED
+
   /** When a symbol for a field is created, only these flags survive
    *  from Modifiers.  Others which may be applied at creation time are:
    *  PRIVATE, LOCAL.
    */
-  final val FieldFlags: Long =
+  final val FieldFlags =
     MUTABLE | CASEACCESSOR | PARAMACCESSOR | STATIC | FINAL | PRESUPER | LAZY
 
   /** Masks for getters and setters, where the flags are derived from those
@@ -247,24 +262,23 @@ class Flags extends ModifierFlags {
    *  flags from the method with the default.  Other flags applied at creation
    *  time are SYNTHETIC, DEFAULTPARAM, and possibly OVERRIDE.
    */
-  final val DefaultGetterFlags: Long =
-    PRIVATE | PROTECTED | FINAL
+  final val DefaultGetterFlags = PRIVATE | PROTECTED | FINAL
 
   /** When a symbol for a method parameter is created, only these flags survive
    *  from Modifiers.  Others which may be applied at creation time are:
    *  SYNTHETIC.
    */
-  final val ValueParameterFlags: Long = BYNAMEPARAM | IMPLICIT | DEFAULTPARAM
-  final val BeanPropertyFlags         = DEFERRED | OVERRIDE | STATIC
-  final val VarianceFlags             = COVARIANT | CONTRAVARIANT
+  final val ValueParameterFlags = BYNAMEPARAM | IMPLICIT | DEFAULTPARAM
+  final val BeanPropertyFlags   = DEFERRED | OVERRIDE | STATIC
+  final val VarianceFlags       = COVARIANT | CONTRAVARIANT
 
   /** These appear to be flags which should be transferred from owner symbol
    *  to a newly created constructor symbol.
    */
-  final val ConstrFlags: Long         = JAVA
+  final val ConstrFlags = JAVA
 
   /** Module flags inherited by their module-class */
-  final val ModuleToClassFlags: Long = AccessFlags | MODULE | PACKAGE | CASE | SYNTHETIC | JAVA | FINAL
+  final val ModuleToClassFlags = AccessFlags | TopLevelCreationFlags | CASE | SYNTHETIC
 
   def getterFlags(fieldFlags: Long): Long = ACCESSOR + (
     if ((fieldFlags & MUTABLE) != 0) fieldFlags & ~MUTABLE & ~PRESUPER
@@ -294,7 +308,7 @@ class Flags extends ModifierFlags {
 
   private final val PKL_MASK       = 0x00000FFF
 
-  final val PickledFlags: Long  = 0xFFFFFFFFL
+  final val PickledFlags  = 0xFFFFFFFFL
 
   private def rawPickledCorrespondence = Array(
     (IMPLICIT, IMPLICIT_PKL),
@@ -406,32 +420,28 @@ class Flags extends ModifierFlags {
     case 0x8000000000000000L => ""                                    // (1L << 63)
     case _ => ""
   }
-
+  
+  private def accessString(flags: Long, privateWithin: String)= (
+    if (privateWithin == "") {
+      if ((flags & PrivateLocal) == PrivateLocal) "private[this]"
+      else if ((flags & ProtectedLocal) == ProtectedLocal) "protected[this]"
+      else if ((flags & PRIVATE) != 0) "private"
+      else if ((flags & PROTECTED) != 0) "protected"
+      else ""
+    }
+    else if ((flags & PROTECTED) != 0) "protected[" + privateWithin + "]"
+    else "private[" + privateWithin + "]"
+  )
+  
+  @deprecated("Use flagString on the flag-carrying member", "2.10.0")
   def flagsToString(flags: Long, privateWithin: String): String = {
-    var f = flags
-    val pw =
-      if (privateWithin == "") {
-        if ((flags & PrivateLocal) == PrivateLocal) {
-          f &= ~PrivateLocal
-          "private[this]"
-        } else if ((flags & ProtectedLocal) == ProtectedLocal) {
-          f &= ~ProtectedLocal
-          "protected[this]"
-        } else {
-          ""
-        }
-      } else if ((f & PROTECTED) != 0L) {
-        f &= ~PROTECTED
-        "protected[" + privateWithin + "]"
-      } else {
-        "private[" + privateWithin + "]"
-      }
-    List(flagsToString(f), pw) filterNot (_ == "") mkString " "
+    val access    = accessString(flags, privateWithin)
+    val nonAccess = flagsToString(flags & ~AccessFlags)
+
+    List(nonAccess, access) filterNot (_ == "") mkString " "
   }
 
-  // List of the raw flags, in pickled order
-  protected final val MaxBitPosition = 62
-
+  @deprecated("Use flagString on the flag-carrying member", "2.10.0")
   def flagsToString(flags: Long): String = {
     // Fast path for common case
     if (flags == 0L) "" else {
@@ -459,13 +469,16 @@ class Flags extends ModifierFlags {
   def pickledToRawFlags(pflags: Long): Long =
     (pflags & ~PKL_MASK) | p2r(pflags.toInt & PKL_MASK)
 
-  protected final val pickledListOrder: List[Long] = {
+  // List of the raw flags, in pickled order
+  final val MaxBitPosition = 62
+
+  final val pickledListOrder: List[Long] = {
     val all   = 0 to MaxBitPosition map (1L << _)
     val front = rawFlags map (_.toLong)
 
     front.toList ++ (all filterNot (front contains _))
   }
-  protected final val rawFlagPickledOrder: Array[Long] = pickledListOrder.toArray
+  final val rawFlagPickledOrder: Array[Long] = pickledListOrder.toArray
 
   def flagOfModifier(mod: Modifier): Long = mod match {
     case Modifier.`protected`      => PROTECTED

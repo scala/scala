@@ -15,7 +15,7 @@ object Test {
   
   def main(args: Array[String]): Unit = {
     for (cc1 <- xss1 ; cc2 <- xss2) {
-      val sum1 = (cc1, cc2).zip map { case (x, y) => x + y } sum
+      val sum1 = (cc1 zip cc2) map { case (x, y) => x + y } sum
       val sum2 = (cc1, cc2).zipped map (_ + _) sum
       
       assert(sum1 == sum2)

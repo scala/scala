@@ -187,9 +187,9 @@ trait Patterns extends ast.TreeDSL {
     // As yet I can't testify this is doing any good relative to using
     // tpt.tpe, but it doesn't seem to hurt either.
     private lazy val packedType = global.typer.computeType(tpt, tpt.tpe)
-    private lazy val consRef    = appliedType(ConsClass.typeConstructor, List(packedType))
-    private lazy val listRef    = appliedType(ListClass.typeConstructor, List(packedType))
-    private lazy val seqRef     = appliedType(SeqClass.typeConstructor, List(packedType))
+    private lazy val consRef    = appliedType(ConsClass, packedType)
+    private lazy val listRef    = appliedType(ListClass, packedType)
+    private lazy val seqRef     = appliedType(SeqClass, packedType)
 
     private def thisSeqRef = {
       val tc = (tree.tpe baseType SeqClass).typeConstructor
@@ -343,10 +343,9 @@ trait Patterns extends ast.TreeDSL {
     def apply(x: Apply): Pattern = {
       val Apply(fn, args) = x
       def isModule  = x.symbol.isModule || x.tpe.termSymbol.isModule
-      def isTuple   = isTupleTypeOrSubtype(fn.tpe)
 
       if (fn.isType) {
-        if (isTuple) TuplePattern(x)
+        if (isTupleType(fn.tpe)) TuplePattern(x)
         else ConstructorPattern(x)
       }
       else if (args.isEmpty) {

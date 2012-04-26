@@ -1,0 +1,5 @@
+{
+  val $mr: mr.type = mr;
+  $mr.Expr.apply[Int(2)]($mr.Literal.apply($mr.Constant.apply(2)))($mr.ConcreteTypeTag.apply[Int(2)]($mr.ConstantType.apply($mr.Constant.apply(2)), classOf[scala.Int]))
+}
+mr.reify[Int](2)

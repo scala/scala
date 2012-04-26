@@ -10,6 +10,7 @@ package scala.reflect
 
 /** One of the branches of an [[scala.reflect.OptManifest]].
   */
+@deprecated("Use `@scala.reflect.TypeTag` instead", "2.10.0")
 object NoManifest extends OptManifest[Nothing] with Serializable {
   override def toString = "<?>"
 }

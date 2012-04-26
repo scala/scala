@@ -28,7 +28,7 @@ class MutableSettings(val errorFn: String => Unit)
     settings
   }
 
-  protected def copyInto(settings: MutableSettings) {
+  def copyInto(settings: MutableSettings) {
     allSettings foreach { thisSetting =>
       val otherSetting = settings.allSettings find { _.name == thisSetting.name }
       otherSetting foreach { otherSetting =>
@@ -136,7 +136,7 @@ class MutableSettings(val errorFn: String => Unit)
       val (p, args) = StringOps.splitWhere(s, _ == ':', true) getOrElse (return None)
 
       // any non-Nil return value means failure and we return s unmodified
-      tryToSetIfExists(p, args split "," toList, (s: Setting) => s.tryToSetColon _)
+      tryToSetIfExists(p, (args split ",").toList, (s: Setting) => s.tryToSetColon _)
     }
 
     // if arg is of form -Xfoo or -Xfoo bar (name = "-Xfoo")
@@ -183,8 +183,8 @@ class MutableSettings(val errorFn: String => Unit)
   * The class loader defining `T` should provide resources `app.class.path`
   * and `boot.class.path`.  These resources should contain the application
   * and boot classpaths in the same form as would be passed on the command line.*/
-  def embeddedDefaults[T: Manifest]: Unit =
-    embeddedDefaults(implicitly[Manifest[T]].erasure.getClassLoader)
+  def embeddedDefaults[T: ClassTag]: Unit =
+    embeddedDefaults(classTag[T].erasure.getClassLoader)
 
   /** Initializes these settings for embedded use by a class from the given class loader.
   * The class loader for `T` should provide resources `app.class.path`

@@ -5,6 +5,8 @@
 
 package scala.tools.nsc
 package doc
+import language.implicitConversions
+import language.postfixOps
 
 /** Some glue between DocParser (which reads source files which can't be compiled)
  *  and the scaladoc model.
@@ -14,7 +16,7 @@ trait Uncompilable {
   val settings: Settings
 
   import global.{ reporter, inform, warning, newTypeName, newTermName, Symbol, Name, DocComment, NoSymbol }
-  import global.definitions.RootClass
+  import global.definitions.{ RootClass, AnyRefClass }
 
   private implicit def translateName(name: Global#Name) =
     if (name.isTypeName) newTypeName("" + name) else newTermName("" + name)
@@ -32,7 +34,7 @@ trait Uncompilable {
   }
   def files     = settings.uncompilableFiles
   def symbols   = pairs map (_._1)
-  def templates = symbols filter (x => x.isClass || x.isTrait) toSet
+  def templates = symbols filter (x => x.isClass || x.isTrait || x == AnyRefClass/* which is now a type alias */) toSet
   def comments = {
     if (settings.debug.value || settings.verbose.value)
       inform("Found %d uncompilable files: %s".format(files.size, files mkString ", "))

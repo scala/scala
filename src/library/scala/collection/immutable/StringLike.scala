@@ -60,7 +60,7 @@ self =>
     val end   = until min length
 
     if (start >= end) newBuilder.result
-    else newBuilder ++= toString.substring(start, end) result
+    else (newBuilder ++= toString.substring(start, end)).result
   }
 
   /** Return the current string concatenated `n` times.
@@ -207,9 +207,20 @@ self =>
 
   /** You can follow a string with `.r`, turning it into a `Regex`. E.g.
    *
-   *  """A\w*""".r   is the regular expression for identifiers starting with `A`.
+   *  `"""A\w*""".r`   is the regular expression for identifiers starting with `A`.
    */
-  def r: Regex = new Regex(toString)
+  def r: Regex = r()
+
+  /** You can follow a string with `.r(g1, ... , gn)`, turning it into a `Regex`,
+   *  with group names g1 through gn.
+   *
+   *  `"""(\d\d)-(\d\d)-(\d\d\d\d)""".r("month", "day", "year")` matches dates
+   *  and provides its subcomponents through groups named "month", "day" and
+   *  "year".
+   *
+   *  @param groupNames The names of the groups in the pattern, in the order they appear.
+   */
+  def r(groupNames: String*): Regex = new Regex(toString, groupNames: _*)
 
   def toBoolean: Boolean = parseBoolean(toString)
   def toByte: Byte       = java.lang.Byte.parseByte(toString)
@@ -228,7 +239,7 @@ self =>
     else
       throw new IllegalArgumentException("For input string: \"null\"")
 
-  override def toArray[B >: Char : ClassManifest]: Array[B] =
+  override def toArray[B >: Char : ArrayTag]: Array[B] =
     toString.toCharArray.asInstanceOf[Array[B]]
 
   private def unwrapArg(arg: Any): AnyRef = arg match {

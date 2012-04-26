@@ -11,6 +11,7 @@ package scala.collection
 package generic
 
 import annotation.bridge
+import language.higherKinds
 
 trait GenericSeqCompanion[CC[X] <: Traversable[X]]
   extends GenericCompanion[CC] {

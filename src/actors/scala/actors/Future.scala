@@ -200,8 +200,8 @@ object Futures {
     Actor.timer.schedule(timerTask, timeout)
 
     def awaitWith(partFuns: Seq[PartialFunction[Any, Pair[Int, Any]]]) {
-      val reaction: PartialFunction[Any, Unit] = new scala.runtime.AbstractPartialFunction[Any, Unit] {
-        def _isDefinedAt(msg: Any) = msg match {
+      val reaction: PartialFunction[Any, Unit] = new PartialFunction[Any, Unit] {
+        def isDefinedAt(msg: Any) = msg match {
           case TIMEOUT => true
           case _ => partFuns exists (_ isDefinedAt msg)
         }

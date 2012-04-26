@@ -20,11 +20,10 @@ import scala.collection.mutable.ListBuffer
  */
 
 trait ParserUtil extends Parsers {
-  class ParserPlus[+T](underlying: Parser[T]) {
+  protected implicit class ParserPlus[+T](underlying: Parser[T]) {
     def !~>[U](p: => Parser[U]): Parser[U] = (underlying ~! p) ^^ { case a~b  => b }
     def <~![U](p: => Parser[U]): Parser[T] = (underlying ~! p) ^^ { case a~b  => a }
   }
-  protected implicit def parser2parserPlus[T](p: Parser[T]): ParserPlus[T] = new ParserPlus(p)
 }
 
 case class CommandLine(

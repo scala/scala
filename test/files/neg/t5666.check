@@ -1,0 +1,10 @@
+t5666.scala:2: error: class Any is abstract; cannot be instantiated
+  new Any
+  ^
+t5666.scala:3: error: class AnyVal is abstract; cannot be instantiated
+  new AnyVal
+  ^
+t5666.scala:13: error: class Nothing is abstract; cannot be instantiated
+  new Nothing
+  ^
+three errors found

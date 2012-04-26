@@ -100,8 +100,8 @@ abstract trait Cov31[+A, +B, C <: (A, B)] extends Object
 abstract trait Cov32[+A, B, C <: (A, B)] extends Object
     extest.Cov32[A,B,C] forSome { +A; B; C <: (A, B) }
 
-abstract trait Cov33[+A, -B, C <: (A, _$10) forSome { type _$10 }] extends Object
-    extest.Cov33[A,B,C] forSome { +A; -B; C <: (A, _$10) forSome { type _$10 } }
+abstract trait Cov33[+A, -B, C <: Tuple2[A, _]] extends Object
+    extest.Cov33[A,B,C] forSome { +A; -B; C <: Tuple2[A, _] }
 
 abstract trait Cov34[A, +B, C <: (A, B)] extends Object
     extest.Cov34[A,B,C] forSome { A; +B; C <: (A, B) }
@@ -109,14 +109,14 @@ abstract trait Cov34[A, +B, C <: (A, B)] extends Object
 abstract trait Cov35[A, B, C <: (A, B)] extends Object
     extest.Cov35[A,B,C] forSome { A; B; C <: (A, B) }
 
-abstract trait Cov36[A, -B, C <: (A, _$11) forSome { type _$11 }] extends Object
-    extest.Cov36[A,B,C] forSome { A; -B; C <: (A, _$11) forSome { type _$11 } }
+abstract trait Cov36[A, -B, C <: Tuple2[A, _]] extends Object
+    extest.Cov36[A,B,C] forSome { A; -B; C <: Tuple2[A, _] }
 
-abstract trait Cov37[-A, +B, C <: (_$12, B) forSome { type _$12 }] extends Object
-    extest.Cov37[A,B,C] forSome { -A; +B; C <: (_$12, B) forSome { type _$12 } }
+abstract trait Cov37[-A, +B, C <: Tuple2[_, B]] extends Object
+    extest.Cov37[A,B,C] forSome { -A; +B; C <: Tuple2[_, B] }
 
-abstract trait Cov38[-A, B, C <: (_$13, B) forSome { type _$13 }] extends Object
-    extest.Cov38[A,B,C] forSome { -A; B; C <: (_$13, B) forSome { type _$13 } }
+abstract trait Cov38[-A, B, C <: Tuple2[_, B]] extends Object
+    extest.Cov38[A,B,C] forSome { -A; B; C <: Tuple2[_, B] }
 
 abstract trait Cov39[-A, -B, C <: Tuple2[_, _]] extends Object
     extest.Cov39[_, _, _ <: Tuple2[_, _]]

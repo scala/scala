@@ -106,7 +106,7 @@ a[href]:hover {
   font-size: 24pt;
   text-shadow: black 0px 2px 0px;
 /*  text-shadow: black 0px 0px 0px;*/
-text-decoration: none; 
+text-decoration: none;
 }
 
 #definition #owner {
@@ -162,7 +162,7 @@ text-decoration: none;
   padding-left: 15px;
   background: url("arrow-right.png") no-repeat 0 3px transparent;
 }
-  
+
 .toggleContainer.open .toggle {
   background: url("arrow-down.png") no-repeat 0 3px transparent;
 }
@@ -205,6 +205,11 @@ dl.attributes > dt {
   font-style: italic;
 }
 
+dl.attributes > dt.implicit {
+  font-weight: bold;
+  color: darkgreen;
+}
+
 dl.attributes > dd {
   display: block;
   padding-left: 10em;
@@ -238,6 +243,17 @@ dl.attributes > dd {
 }
 
 #inheritedMembers > div.parent > h3 * {
+  color: white;
+}
+
+#inheritedMembers > div.conversion > h3 {
+  background: #dadada url("conversionbg.gif") repeat-x bottom left; /* gray */
+  height: 17px;
+  font-style: italic;
+  font-size: 12pt;
+}
+
+#inheritedMembers > div.conversion > h3 * {
   color: white;
 }
 
@@ -310,8 +326,19 @@ div.members > ol > li:last-child {
   font-weight: bold;
 }
 
-.signature .symbol .params .implicit {
+.signature .symbol > .implicit {
+  display: inline-block;
+  font-weight: bold;
+  text-decoration: underline;
+  color: darkgreen;
+}
+
+.signature .symbol .params > .implicit {
   font-style: italic;
+}
+
+.signature .symbol .implicit.deprecated {
+  text-decoration: line-through;
 }
 
 .signature .symbol .name.deprecated {
@@ -340,20 +367,44 @@ div.members > ol > li:last-child {
   color: darkgreen;
 }
 
+.full-signature-usecase h4 span {
+  font-size: 10pt;
+}
+
+.full-signature-usecase > #signature {
+  padding-top: 0px;
+}
+
+#template .full-signature-usecase > .signature.closed {
+  background: none;
+}
+
+#template .full-signature-usecase > .signature.opened {
+  background: none;
+}
+
+.full-signature-block {
+  padding: 5px 0 0;
+  border-top: 1px solid #EBEBEB;
+  margin-top: 5px;
+  margin-bottom: 5px;
+}
+
+
 /* Comments text formating */
 
 .cmt {}
 
 .cmt p {
-	margin: 0.7em 0;
+  margin: 0.7em 0;
 }
 
 .cmt p:first-child {
-	margin-top: 0;
+  margin-top: 0;
 }
 
 .cmt p:last-child {
-	margin-bottom: 0;
+  margin-bottom: 0;
 }
 
 .cmt h3,
@@ -515,7 +566,7 @@ div.fullcommenttop .block {
   margin-bottom: 5px
 }
 
-div.fullcomment div.block ol li p, 
+div.fullcomment div.block ol li p,
 div.fullcomment div.block ol li {
   display:inline
 }
@@ -559,10 +610,10 @@ div.fullcomment dl.paramcmts > dd {
 /* Members filter tool */
 
 #textfilter {
-	position: relative;
-	display: block;
+  position: relative;
+  display: block;
     height: 20px;
-	margin-bottom: 5px;
+  margin-bottom: 5px;
 }
 
 #textfilter > .pre {
@@ -576,7 +627,7 @@ div.fullcomment dl.paramcmts > dd {
 }
 
 #textfilter > .input {
-	display: block;
+  display: block;
     position: absolute;
     top: 0;
     right: 20px;
@@ -584,10 +635,10 @@ div.fullcomment dl.paramcmts > dd {
 }
 
 #textfilter > .input > input {
-	height: 20px;
-	padding: 1px;
- 	font-weight: bold;
-	color: #000000;
+  height: 20px;
+  padding: 1px;
+  font-weight: bold;
+  color: #000000;
         background: #ffffff url("filterboxbarbg.png") repeat-x top left;
         width: 100%;
 }
@@ -636,6 +687,13 @@ div.fullcomment dl.paramcmts > dd {
   display: inline-block;
 }
 
+#mbrsel > div > a {
+  position:relative;
+  top: -8px;
+  font-size: 11px;
+  text-shadow: #ffffff 0 1px 0;
+}
+
 #mbrsel > div > ol#linearization {
   display: table;
   margin-left: 70px;
@@ -659,9 +717,32 @@ div.fullcomment dl.paramcmts > dd {
   text-shadow: #ffffff 0 1px 0;
 }
 
+#mbrsel > div > ol#implicits {
+  display: table;
+  margin-left: 70px;
+}
+
+#mbrsel > div > ol#implicits > li.in {
+  text-decoration: none;
+  float: left;
+  padding-right: 10px;
+  margin-right: 5px;
+  background: url(selected-right-implicits.png) no-repeat;
+  background-position: right 0px;
+}
+
+#mbrsel > div > ol#implicits > li.in > span{
+  color: #404040;
+  float: left;
+  padding: 1px 0 1px 10px;
+  background: url(selected-implicits.png) no-repeat;
+  background-position: 0px 0px;
+  text-shadow: #ffffff 0 1px 0;
+}
+
 #mbrsel > div > ol > li {
 /*  padding: 3px 10px;*/
-  line-height: 16pt; 
+  line-height: 16pt;
   display: inline-block;
   cursor: pointer;
 }
@@ -685,10 +766,10 @@ div.fullcomment dl.paramcmts > dd {
 }
 
 #mbrsel > div > ol > li.out {
-	text-decoration: none;
-	float: left;
-	padding-right: 10px;
-	margin-right: 5px;
+  text-decoration: none;
+  float: left;
+  padding-right: 10px;
+  margin-right: 5px;
 }
 
 #mbrsel > div > ol > li.out > span{
@@ -715,10 +796,10 @@ div.fullcomment dl.paramcmts > dd {
 #mbrsel .showall {
   color: #4C4C4C;
   line-height: 16px;
-  font-weight: bold;  
+  font-weight: bold;
 }
 
 #mbrsel .showall span {
   color: #4C4C4C;
-  font-weight: bold;  
+  font-weight: bold;
 }*/

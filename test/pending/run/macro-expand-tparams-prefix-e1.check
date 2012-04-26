@@ -1,0 +1,3 @@
+TypeTag(List[Int])
+TypeTag(String)
+TypeTag(Boolean)

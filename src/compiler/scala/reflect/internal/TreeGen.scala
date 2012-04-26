@@ -1,7 +1,7 @@
 package scala.reflect
 package internal
 
-abstract class TreeGen {
+abstract class TreeGen extends api.AbsTreeGen {
   val global: SymbolTable
 
   import global._
@@ -47,6 +47,9 @@ abstract class TreeGen {
 
   def mkMethodCall(target: Tree, targs: List[Type], args: List[Tree]): Tree =
     Apply(mkTypeApply(target, targs map TypeTree), args)
+
+  def mkNullaryCall(method: Symbol, targs: List[Type]): Tree =
+    mkTypeApply(mkAttributedRef(method), targs map TypeTree)
 
   /** Builds a reference to value whose type is given stable prefix.
    *  The type must be suitable for this.  For example, it

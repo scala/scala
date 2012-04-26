@@ -12,8 +12,6 @@ trait Required { self: SymbolTable =>
 
   def picklerPhase: Phase
 
-  val gen: TreeGen { val global: Required.this.type }
-
   def settings: MutableSettings
 
   def forInteractive: Boolean
