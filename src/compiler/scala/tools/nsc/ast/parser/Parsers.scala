@@ -1705,11 +1705,11 @@ self =>
      *  was threaded through methods as boolean seqOK.
      */
     trait SeqContextSensitive extends PatternContextSensitive {
-      /** Returns Some(tree) if it finds a star and prematurely ends parsing.
-       *  This is an artifact of old implementation which has proven difficult
-       *  to cleanly extract.
-       */
-      def interceptStarPattern(top: Tree): Option[Tree]
+      // is a sequence pattern _* allowed?
+      def isSequenceOK: Boolean
+
+      // are we in an XML pattern?
+      def isXML: Boolean = false
 
       def functionArgType(): Tree = argType()
       def argType(): Tree = {
@@ -1796,24 +1796,74 @@ self =>
       /** {{{
        *  Pattern3    ::= SimplePattern
        *                |  SimplePattern {Id [nl] SimplePattern}
-       *  SeqPattern3 ::= SeqSimplePattern [ `*' | `?' | `+' ]
-       *                |  SeqSimplePattern {Id [nl] SeqSimplePattern}
        *  }}}
        */
       def pattern3(): Tree = {
+        var top = simplePattern(badPattern3)
+        // after peekahead
+        def acceptWildStar() = atPos(top.pos.startOrPoint, in.prev.offset)(Star(stripParens(top)))
+        def peekahead() = {
+          in.prev copyFrom in
+          in.nextToken()
+        }
+        def pushback() = {
+          in.next copyFrom in
+          in copyFrom in.prev
+        }
+        // See SI-3189, SI-4832 for motivation. Cf SI-3480 for counter-motivation.
+        // TODO: dredge out the remnants of regexp patterns.
+        // /{/ peek for _*) or _*} (for xml escape)
+        if (isSequenceOK) {
+          top match {
+            case Ident(nme.WILDCARD) if (isRawStar) =>
+              peekahead()
+              in.token match {
+                case RBRACE if (isXML) => return acceptWildStar()
+                case RPAREN if (!isXML) => return acceptWildStar()
+                case _ => pushback()
+              }
+            case _ =>
+          }
+        }
         val base = opstack
-        var top = simplePattern()
-        interceptStarPattern(top) foreach { x => return x }
-
         while (isIdent && in.name != raw.BAR) {
-          top = reduceStack(
-            false, base, top, precedence(in.name), treeInfo.isLeftAssoc(in.name))
+          top = reduceStack(false, base, top, precedence(in.name), treeInfo.isLeftAssoc(in.name))
           val op = in.name
           opstack = OpInfo(top, op, in.offset) :: opstack
           ident()
-          top = simplePattern()
+          top = simplePattern(badPattern3)
         }
         stripParens(reduceStack(false, base, top, 0, true))
+      }
+      def badPattern3(): Tree = {
+        def isComma = in.token == COMMA
+        def isAnyBrace = in.token == RPAREN || in.token == RBRACE
+        val badStart = "illegal start of simple pattern"
+        // better recovery if don't skip delims of patterns
+        var skip = !(isComma || isAnyBrace)
+        val msg = if (!opstack.isEmpty && opstack.head.operator == nme.STAR) {
+            opstack.head.operand match {
+              case Ident(nme.WILDCARD) =>
+                if (isSequenceOK && isComma)
+                  "bad use of _* (a sequence pattern must be the last pattern)"
+                else if (isSequenceOK && isAnyBrace) {
+                  skip = true  // do skip bad paren; scanner may skip bad brace already
+                  "bad brace or paren after _*"
+                } else if (!isSequenceOK && isAnyBrace)
+                  "bad use of _* (sequence pattern not allowed)"
+                else badStart
+              case _ =>
+                if (isSequenceOK && isAnyBrace)
+                  "use _* to match a sequence"
+                else if (isComma || isAnyBrace)
+                  "trailing * is not a valid pattern"
+                else badStart
+            }
+          } else {
+            badStart
+          }
+        syntaxErrorOrIncomplete(msg, skip)
+        errorPatternTree
       }
 
       /** {{{
@@ -1821,20 +1871,23 @@ self =>
        *                    |  `_'
        *                    |  literal
        *                    |  XmlPattern
-       *                    |  StableId  [TypeArgs] [`(' [SeqPatterns] `)']
+       *                    |  StableId  /[TypeArgs]/ [`(' [Patterns] `)']
+       *                    |  StableId  [`(' [Patterns] `)']
+       *                    |  StableId  [`(' [Patterns] `,' [varid `@'] `_' `*' `)']
        *                    |  `(' [Patterns] `)'
-       *  SimpleSeqPattern ::= varid
-       *                    |  `_'
-       *                    |  literal
-       *                    |  XmlPattern
-       *                    |  `<' xLiteralPattern
-       *                    |  StableId [TypeArgs] [`(' [SeqPatterns] `)']
-       *                    |  `(' [SeqPatterns] `)'
        *  }}}
        *
        * XXX: Hook for IDE
        */
       def simplePattern(): Tree = {
+        // simple diagnostics for this entry point
+        def badStart(): Tree = {
+          syntaxErrorOrIncomplete("illegal start of simple pattern", true)
+          errorPatternTree
+        }
+        simplePattern(badStart)
+      }
+      def simplePattern(onError: () => Tree): Tree = {
         val start = in.offset
         in.token match {
           case IDENTIFIER | BACKQUOTED_IDENT | THIS =>
@@ -1867,8 +1920,7 @@ self =>
           case XMLSTART =>
             xmlLiteralPattern()
           case _ =>
-            syntaxErrorOrIncomplete("illegal start of simple pattern", true)
-            errorPatternTree
+            onError()
         }
       }
     }
@@ -1879,16 +1931,16 @@ self =>
     }
     /** The implementation for parsing inside of patterns at points where sequences are allowed. */
     object seqOK extends SeqContextSensitive {
-      // See ticket #3189 for the motivation for the null check.
-      // TODO: dredge out the remnants of regexp patterns.
-      // ... and now this is back the way it was because it caused #3480.
-      def interceptStarPattern(top: Tree): Option[Tree] =
-        if (isRawStar) Some(atPos(top.pos.startOrPoint, in.skipToken())(Star(stripParens(top))))
-        else None
+      val isSequenceOK = true
     }
     /** The implementation for parsing inside of patterns at points where sequences are disallowed. */
     object noSeq extends SeqContextSensitive {
-      def interceptStarPattern(top: Tree) = None
+      val isSequenceOK = false
+    }
+    /** For use from xml pattern, where sequence is allowed and encouraged. */
+    object xmlSeqOK extends SeqContextSensitive {
+      val isSequenceOK = true
+      override val isXML = true
     }
     /** These are default entry points into the pattern context sensitive methods:
      *  they are all initiated from non-pattern context.
@@ -1902,7 +1954,8 @@ self =>
     /** Default entry points into some pattern contexts. */
     def pattern(): Tree = noSeq.pattern()
     def patterns(): List[Tree] = noSeq.patterns()
-    def seqPatterns(): List[Tree] = seqOK.patterns() // Also called from xml parser
+    def seqPatterns(): List[Tree] = seqOK.patterns()
+    def xmlSeqPatterns(): List[Tree] = xmlSeqOK.patterns() // Called from xml parser
     def argumentPatterns(): List[Tree] = inParens {
       if (in.token == RPAREN) Nil
       else seqPatterns()

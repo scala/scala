@@ -1,0 +1,10 @@
+t5702-neg-bad-brace.scala:14: error: Unmatched closing brace '}' ignored here
+      case List(1, _*} =>
+                     ^
+t5702-neg-bad-brace.scala:14: error: illegal start of simple pattern
+      case List(1, _*} =>
+                       ^
+t5702-neg-bad-brace.scala:15: error: ')' expected but '}' found.
+    }
+    ^
+three errors found
