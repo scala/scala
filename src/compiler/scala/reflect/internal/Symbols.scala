@@ -2971,12 +2971,15 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     )
   }
 
-  class FreeTerm(name0: TermName, value0: => Any, val origin: String) extends TermSymbol(NoSymbol, NoPosition, name0) {
+  trait FreeSymbol extends Symbol {
+    def origin: String
+  }
+  class FreeTerm(name0: TermName, value0: => Any, val origin: String) extends TermSymbol(NoSymbol, NoPosition, name0) with FreeSymbol {
     def value = value0
     override def isFreeTerm = true
   }
 
-  class FreeType(name0: TypeName, value0: => Any, val origin: String) extends TypeSkolem(NoSymbol, NoPosition, name0, NoSymbol) {
+  class FreeType(name0: TypeName, value0: => Any, val origin: String) extends TypeSkolem(NoSymbol, NoPosition, name0, NoSymbol) with FreeSymbol {
     def value = value0
     override def isFreeType = true
   }
