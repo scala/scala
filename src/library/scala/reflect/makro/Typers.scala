@@ -29,7 +29,7 @@ trait Typers {
    *
    *  If ``silent'' is false, ``TypeError'' will be thrown in case of a typecheck error.
    *  If ``silent'' is true, the typecheck is silent and will return ``EmptyTree'' if an error occurs.
-   *  Such errors don't vanish and can be inspected by turning on -Ymacro-debug.
+   *  Such errors don't vanish and can be inspected by turning on -Ymacro-debug-verbose.
    *  Unlike in ``inferImplicitValue'' and ``inferImplicitView'', ``silent'' is false by default.
    *
    *  Typechecking can be steered with the following optional parameters:

@@ -10,8 +10,7 @@ trait Errors {
   import mirror._
   import definitions._
 
-  lazy val defaultErrorPosition: Position =
-    mirror.analyzer.openMacros.find(c => c.macroApplication.pos != NoPosition).map(_.macroApplication.pos).getOrElse(NoPosition)
+  def defaultErrorPosition = analyzer.enclosingMacroPosition
 
   // expected errors: these can happen if the user casually writes whatever.reify(...)
   // hence we don't crash here, but nicely report a typechecking error and bail out asap
