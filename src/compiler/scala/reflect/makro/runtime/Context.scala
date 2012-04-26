@@ -14,7 +14,8 @@ abstract class Context extends scala.reflect.makro.Context
                          with Settings
                          with Symbols
                          with Typers
-                         with Util {
+                         with Util
+                         with Traces {
 
   val mirror: Global
 
