@@ -128,33 +128,12 @@ class JavaWriter(classfile: Classfile, writer: Writer) extends CodeWriter(writer
   def printMethod(flags: Int, name: Int, tpe: Int, attribs: List[cf.Attribute]) {
     if (getName(name) == "<init>")
     print(flagsToStr(false, flags))
-    attribs find {
-      case cf.Attribute(name, _) => getName(name) == "JacoMeta"
-    } match {
-      case Some(cf.Attribute(_, data)) =>
-        val mp = new MetaParser(getName(
-          ((data(0) & 0xff) << 8) + (data(1) & 0xff)).trim())
-        mp.parse match {
-          case None =>
-            if (getName(name) == "<init>") {
-              print("def this" + getType(tpe) + ";").newline
-            } else {
-              print("def " + NameTransformer.decode(getName(name)))
-              print(getType(tpe) + ";").newline
-            }
-          case Some(str) =>
-            if (getName(name) == "<init>")
-              print("def this" + str + ";").newline
-            else
-              print("def " + NameTransformer.decode(getName(name)) + str + ";").newline
-        }
-      case None =>
-        if (getName(name) == "<init>") {
-          print("def this" + getType(tpe) + ";").newline
-        } else {
-          print("def " + NameTransformer.decode(getName(name)))
-          print(getType(tpe) + ";").newline
-      }
+    if (getName(name) == "<init>") {
+      print("def this" + getType(tpe) + ";").newline
+    }
+    else {
+      print("def " + NameTransformer.decode(getName(name)))
+      print(getType(tpe) + ";").newline
     }
     attribs find {
       case cf.Attribute(name, _) => getName(name) == "Exceptions"

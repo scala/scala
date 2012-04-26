@@ -372,7 +372,7 @@ object ClassfileConstants {
     }
     def methodFlags(jflags: Int): Long = {
       initFields(jflags)
-      translateFlags(jflags, 0)
+      translateFlags(jflags, if ((jflags & JAVA_ACC_BRIDGE) != 0) BRIDGE else 0)
     }
   }
   object FlagTranslation extends FlagTranslation { }

@@ -10,6 +10,7 @@ import scala.tools.nsc.io.{ Directory }
 import scala.reflect.NameTransformer.decode
 import scala.tools.util.StringOps.trimTrailingSpace
 import ConstantPool._
+import ClassfileConstants._
 
 abstract class JvmInfo(attributes: Array[JvmAttributeInfo]) {
   // def flags: Short
@@ -78,6 +79,27 @@ class JvmMemberInfo(
   val descriptor: String,
   attributes: Array[JvmAttributeInfo]
 ) extends JvmInfo(attributes) {
+
+  final def isAbstract  = (flags & JAVA_ACC_ABSTRACT) != 0
+  final def isAnnotated = (flags & JAVA_ACC_ANNOTATION) != 0
+  final def isFinal     = (flags & JAVA_ACC_FINAL) != 0
+  final def isPrivate   = (flags & JAVA_ACC_PRIVATE) != 0
+  final def isProtected = (flags & JAVA_ACC_PROTECTED) != 0
+  final def isPublic    = (flags & JAVA_ACC_PUBLIC) != 0
+  final def isStatic    = (flags & JAVA_ACC_STATIC) != 0
+  final def isSynthetic = (flags & JAVA_ACC_SYNTHETIC) != 0
+  final def isVarargs   = (flags & JAVA_ACC_VARARGS) != 0
+
+  // method only
+  final def isBridge = (flags & JAVA_ACC_BRIDGE) != 0
+
+  // field only
+  final def isEnum      = (flags & JAVA_ACC_ENUM) != 0
+  final def isTransient = (flags & JAVA_ACC_TRANSIENT) != 0
+
+  def isMethod        = descriptor startsWith "(" // )
+  def isField         = !isMethod
+  def scalaFlags      = toScalaMethodFlags(flags)
   def decodedName     = decode(name)
   def hasSignature    = signature != ""
   def toErasedString  = "%-30s %s".format(decodedName, descriptor)
