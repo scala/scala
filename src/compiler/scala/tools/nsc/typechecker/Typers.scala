@@ -2439,7 +2439,7 @@ trait Typers extends Modes with Adaptations with Taggings with PatMatVirtualiser
         fun.body match {
           // later phase indicates scaladoc is calling (where shit is messed up, I tell you)
           //  -- so fall back to old patmat, which is more forgiving
-          case Match(sel, cases) if doMatchTranslation =>
+          case Match(sel, cases) if (sel ne EmptyTree) && doMatchTranslation =>
             // go to outer context -- must discard the context that was created for the Function since we're discarding the function
             // thus, its symbol, which serves as the current context.owner, is not the right owner
             // you won't know you're using the wrong owner until lambda lift crashes (unless you know better than to use the wrong owner)
