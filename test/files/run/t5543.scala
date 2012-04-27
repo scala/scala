@@ -10,7 +10,7 @@ object Test extends Function0[Int] {
   }
   object A {
     val v = 5
-    // should happily coexist with default getters
+    // should happily coexist with default getters, in a happier world
     def init(x: Function0[Int] = Test.this)(a: Int = v, b: Int = v * x()) = x.toString +", "+ a +", "+ b
     override def toString = "A"
   }
