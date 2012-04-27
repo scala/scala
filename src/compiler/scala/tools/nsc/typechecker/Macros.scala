@@ -1010,7 +1010,7 @@ trait Macros extends Traces {
   private def Failure(expandee: Tree) = Other(expandee)
   private def fail(typer: Typer, expandee: Tree, msg: String = null) = {
     def msgForLog = if (msg != null && (msg contains "exception during macro expansion")) msg.split(EOL).drop(1).headOption.getOrElse("?") else msg
-    macroLogVerbose("macro expansion has failed: %s".format(msgForLog))
+    macroLogLite("macro expansion has failed: %s".format(msgForLog))
     val pos = if (expandee.pos != NoPosition) expandee.pos else enclosingMacroPosition
     if (msg != null) typer.context.error(pos, msg)
     typer.infer.setError(expandee)
@@ -1079,7 +1079,7 @@ trait Macros extends Traces {
         else expanded match {
           case expanded: Expr[_] =>
             macroLogVerbose("original:")
-            macroLogVerbose("" + expanded.tree + "\n" + showRaw(expanded.tree))
+            macroLogLite("" + expanded.tree + "\n" + showRaw(expanded.tree))
 
             freeTerms(expanded.tree) foreach issueFreeError
             freeTypes(expanded.tree) foreach issueFreeError
@@ -1105,11 +1105,11 @@ trait Macros extends Traces {
         else Skip(macroExpandAll(typer, expandee))
       }
       else {
-        macroLogVerbose("typechecking macro expansion %s at %s".format(expandee, expandee.pos))
+        macroLogLite("typechecking macro expansion %s at %s".format(expandee, expandee.pos))
         macroArgs(typer, expandee).fold(failExpansion(): MacroExpansionResult) {
           case args @ ((context: MacroContext) :: _) =>
             if (nowDelayed) {
-              macroLogVerbose("macro expansion is delayed: %s".format(expandee))
+              macroLogLite("macro expansion is delayed: %s".format(expandee))
               delayed += expandee -> undetparams
               // need to save typer context for `macroExpandAll`
               // need to save macro context to preserve enclosures
@@ -1176,7 +1176,7 @@ trait Macros extends Traces {
     }
     fallBackToOverridden(expandee) match {
       case Some(tree1) =>
-        macroTraceVerbose("falling back to: ")(tree1)
+        macroTraceLite("falling back to: ")(tree1)
         currentRun.macroExpansionFailed = true
         Fallback(tree1)
       case None =>
@@ -1192,7 +1192,7 @@ trait Macros extends Traces {
         macroLogVerbose("macro expansion has failed: %s".format(realex.msg))
         fail(typer, expandee) // error has been reported by abort
       case err: TypeError =>
-        macroLogVerbose("macro expansion has failed: %s at %s".format(err.msg, err.pos))
+        macroLogLite("macro expansion has failed: %s at %s".format(err.msg, err.pos))
         throw err // error should be propagated, don't report
       case _ =>
         val message = {
