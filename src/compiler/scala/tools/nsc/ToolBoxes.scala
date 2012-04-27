@@ -39,7 +39,8 @@ trait ToolBoxes { self: Global =>
     def runExpr(tree0: Tree, freeTypes: Map[FreeType, Type] = Map[FreeType, Type]()): Any = {
       var tree = substituteFreeTypes(tree0, freeTypes)
       // need to reset the tree, otherwise toolbox will refuse to work with it
-      tree = resetAllAttrs(tree0.duplicate)
+      // upd. this has to be done by the user himself, otherwise we run into troubles. see SI-5713
+//      tree = resetAllAttrs(tree0.duplicate)
       val imported = importer.importTree(tree)
       val toolBox = libraryClasspathMirror.mkToolBox(frontEnd.asInstanceOf[libraryClasspathMirror.FrontEnd], options)
       try toolBox.runExpr(imported)
