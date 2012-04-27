@@ -5,7 +5,7 @@ object Test {
     val cwd = sys.props("partest.output")
     
     for ((f, info) <- JvmClassInfo.classInfoList(cwd)) {
-      println("file " + f.stripPrefix(cwd).substring(1))
+      println("file " + f.stripPrefix(cwd).substring(1).replace('\\', '/'))
       println(info)
     }
   }
