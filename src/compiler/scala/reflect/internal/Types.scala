@@ -4832,9 +4832,14 @@ trait Types extends api.Types { self: SymbolTable =>
         if (sym.isPackage) tp
         else {
           val pre1 = this(pre)
-          val sym1 = adaptToNewRun(pre1, sym)
-          if ((pre1 eq pre) && (sym1 eq sym)) tp
-          else singleType(pre1, sym1)
+          try {
+            val sym1 = adaptToNewRun(pre1, sym)
+            if ((pre1 eq pre) && (sym1 eq sym)) tp
+            else singleType(pre1, sym1)
+          } catch {
+            case _: MissingTypeControl =>
+              tp
+          }
         }
       case TypeRef(pre, sym, args) =>
         if (sym.isPackageClass) tp
