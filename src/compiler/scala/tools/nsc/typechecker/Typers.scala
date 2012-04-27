@@ -2208,44 +2208,26 @@ trait Typers extends Modes with Adaptations with Taggings with PatMatVirtualiser
 
     def adaptCase(cdef: CaseDef, mode: Int, tpe: Type): CaseDef = deriveCaseDef(cdef)(adapt(_, mode, tpe))
 
+    def ptOrLub(tps: List[Type], pt: Type  )       = if (isFullyDefined(pt)) (pt, false) else weakLub(tps map (_.deconst))
+    def ptOrLubPacked(trees: List[Tree], pt: Type) = if (isFullyDefined(pt)) (pt, false) else weakLub(trees map (c => packedType(c, context.owner).deconst))
+
     // takes untyped sub-trees of a match and type checks them
-    def typedMatch(selector0: Tree, cases: List[CaseDef], mode: Int, resTp: Type): Match = {
-      // strip off the annotation as it won't type check
-      val (selector, doTranslation) = selector0 match {
-        case Annotated(Ident(nme.synthSwitch), selector) => (selector, false)
-        case s => (s, true)
-      }
-      val selector1                = checkDead(typed(selector, EXPRmode | BYVALmode, WildcardType))
-      val selectorTp               = packCaptured(selector1.tpe.widen.withoutAnnotations)
+    def typedMatch(selector: Tree, cases: List[CaseDef], mode: Int, pt: Type, tree: Tree = EmptyTree): Match = {
+      val selector1  = checkDead(typed(selector, EXPRmode | BYVALmode, WildcardType))
+      val selectorTp = packCaptured(selector1.tpe.widen)
+      val casesTyped = typedCases(cases, selectorTp, pt)
 
-      val casesTyped               = typedCases(cases, selectorTp, resTp)
-      val caseTypes                = casesTyped map (c => packedType(c, context.owner).deconst)
-      val (ownType, needAdapt)     = if (isFullyDefined(resTp)) (resTp, false) else weakLub(caseTypes)
+      val (resTp, needAdapt) =
+        if (opt.virtPatmat) ptOrLubPacked(casesTyped, pt)
+        else ptOrLub(casesTyped map (_.tpe), pt)
 
-      val casesAdapted             = if (!needAdapt) casesTyped else casesTyped map (adaptCase(_, mode, ownType))
+      val casesAdapted = if (!needAdapt) casesTyped else casesTyped map (adaptCase(_, mode, resTp))
 
-      (selector1, selectorTp, casesAdapted, ownType, doTranslation)
+      treeCopy.Match(tree, selector1, casesAdapted) setType resTp
     }
 
     // match has been typed, now translate it
-    def translatedMatch(selector1: Tree, selectorTp: Type, casesAdapted: List[CaseDef], ownType: Type, doTranslation: Boolean, matchFailGen: Option[Tree => Tree] = None) = {
-      def repeatedToSeq(tp: Type): Type = (tp baseType RepeatedParamClass) match {
-        case TypeRef(_, RepeatedParamClass, arg :: Nil) => seqType(arg)
-        case _                                          => tp
-      }
-
-      if (!doTranslation) { // a switch
-        Match(selector1, casesAdapted) setType ownType // setType of the Match to avoid recursing endlessly
-      } else {
-        val scrutType = repeatedToSeq(elimAnonymousClass(selectorTp))
-        // we've packed the type for each case in typedMatch so that if all cases have the same existential case, we get a clean lub
-        // here, we should open up the existential again
-        // relevant test cases: pos/existentials-harmful.scala, pos/gadt-gilles.scala, pos/t2683.scala, pos/virtpatmat_exist4.scala
-        // TODO: fix skolemizeExistential (it should preserve annotations, right?)
-        val ownTypeSkolemized = ownType.skolemizeExistential(context.owner, context.tree) withAnnotations ownType.annotations
-        MatchTranslator(this).translateMatch(selector1, casesAdapted, repeatedToSeq(ownTypeSkolemized), scrutType, matchFailGen)
-      }
-    }
+    def translatedMatch(match_ : Match) = MatchTranslator(this).translateMatch(match_)
 
     // synthesize and type check a (Partial)Function implementation based on a match specified by `cases`
     // Match(EmptyTree, cases) ==> new <Partial>Function { def apply<OrElse>(params) = `translateMatch('`(param1,...,paramN)` match { cases }')` }
@@ -2298,7 +2280,8 @@ trait Typers extends Modes with Adaptations with Taggings with PatMatVirtualiser
           val methodBodyTyper = newTyper(context.makeNewScope(context.tree, methodSym)) // should use the DefDef for the context's tree, but it doesn't exist yet (we need the typer we're creating to create it)
           paramSyms foreach (methodBodyTyper.context.scope enter _)
 
-          val (selector1, selectorTp, casesAdapted, resTp, doTranslation) = methodBodyTyper.typedMatch(selector, cases, mode, ptRes)
+          val match_ = methodBodyTyper.typedMatch(selector, cases, mode, ptRes)
+          val resTp = match_.tpe
 
           val methFormals = paramSyms map (_.tpe)
           val parents =
@@ -2308,7 +2291,7 @@ trait Typers extends Modes with Adaptations with Taggings with PatMatVirtualiser
           anonClass setInfo ClassInfoType(parents, newScope, anonClass)
           methodSym setInfoAndEnter MethodType(paramSyms, resTp)
 
-          DefDef(methodSym, methodBodyTyper.translatedMatch(selector1, selectorTp, casesAdapted, resTp, doTranslation))
+          DefDef(methodSym, methodBodyTyper.translatedMatch(match_))
         }
       }
 
@@ -2337,16 +2320,17 @@ trait Typers extends Modes with Adaptations with Taggings with PatMatVirtualiser
           val methodBodyTyper = newTyper(context.makeNewScope(context.tree, methodSym)) // should use the DefDef for the context's tree, but it doesn't exist yet (we need the typer we're creating to create it)
           paramSyms foreach (methodBodyTyper.context.scope enter _)
 
-          val (selector1, selectorTp, casesAdapted, resTp, doTranslation) = methodBodyTyper.typedMatch(selector, cases, mode, ptRes)
+          val match_ = methodBodyTyper.typedMatch(selector, cases, mode, ptRes)
+          val resTp = match_.tpe
 
           anonClass setInfo ClassInfoType(parentsPartial(List(argTp, resTp)), newScope, anonClass)
           B1 setInfo TypeBounds.lower(resTp)
           anonClass.info.decls enter methodSym // methodSym's info need not change (B1's bound has been updated instead)
 
-          // use applyOrElse's first parameter since the scrut's type has been widened
-          def doDefault(scrut_ignored: Tree) = REF(default) APPLY (REF(x))
+          match_ setType B1.tpe
 
-          val body = methodBodyTyper.translatedMatch(selector1, selectorTp, casesAdapted, B1.tpe, doTranslation, Some(doDefault))
+          // the default uses applyOrElse's first parameter since the scrut's type has been widened
+          val body = methodBodyTyper.translatedMatch(match_ withAttachment DefaultOverrideMatchAttachment(REF(default) APPLY (REF(x))))
 
           DefDef(methodSym, body)
         }
@@ -2363,17 +2347,18 @@ trait Typers extends Modes with Adaptations with Taggings with PatMatVirtualiser
           paramSyms foreach (methodBodyTyper.context.scope enter _)
           methodSym setInfoAndEnter MethodType(paramSyms, BooleanClass.tpe)
 
-          val (selector1, selectorTp, casesAdapted, resTp, doTranslation) = methodBodyTyper.typedMatch(selector, casesTrue, mode, BooleanClass.tpe)
-          val body = methodBodyTyper.translatedMatch(selector1, selectorTp, casesAdapted, resTp, doTranslation, Some(scrutinee => FALSE_typed))
+          val match_ = methodBodyTyper.typedMatch(selector, casesTrue, mode, BooleanClass.tpe)
+          val body   = methodBodyTyper.translatedMatch(match_ withAttachment DefaultOverrideMatchAttachment(FALSE_typed))
 
           DefDef(methodSym, body)
         }
       }
 
       val members = if (isPartial) {
-        // TODO: don't check for MarkerCPSTypes -- check whether all targs are subtype of any (which they are not under CPS)
-        if ((MarkerCPSTypes ne NoSymbol) && (targs exists (_ hasAnnotation MarkerCPSTypes))) List(applyMethod, isDefinedAtMethod)
-        else List(applyOrElseMethodDef, isDefinedAtMethod)
+        // somehow @cps annotations upset the typer when looking at applyOrElse's signature, but not apply's
+        // TODO: figure out the details (T @cps[U] is not a subtype of Any, but then why does it work for the apply method?)
+        if (targs forall (_ <:< AnyClass.tpe)) List(applyOrElseMethodDef, isDefinedAtMethod)
+        else List(applyMethod, isDefinedAtMethod)
       } else List(applyMethod)
 
       def translated =
@@ -3639,8 +3624,6 @@ trait Typers extends Modes with Adaptations with Taggings with PatMatVirtualiser
       def isPatternMode = inPatternMode(mode)
 
       //Console.println("typed1("+tree.getClass()+","+Integer.toHexString(mode)+","+pt+")")
-      def ptOrLub(tps: List[Type]) = if (isFullyDefined(pt)) (pt, false) else weakLub(tps map (_.deconst))
-
       //@M! get the type of the qualifier in a Select tree, otherwise: NoType
       def prefixType(fun: Tree): Type = fun match {
         case Select(qualifier, _) => qualifier.tpe
@@ -3830,7 +3813,7 @@ trait Typers extends Modes with Adaptations with Taggings with PatMatVirtualiser
               && thenTp =:= elseTp
                ) (thenp1.tpe, false) // use unpacked type
             // TODO: skolemize (lub of packed types) when that no longer crashes on files/pos/t4070b.scala
-            else ptOrLub(List(thenp1.tpe, elsep1.tpe))
+            else ptOrLub(List(thenp1.tpe, elsep1.tpe), pt)
 
           if (needAdapt) { //isNumericValueType(owntype)) {
             thenp1 = adapt(thenp1, mode, owntype)
@@ -3840,34 +3823,28 @@ trait Typers extends Modes with Adaptations with Taggings with PatMatVirtualiser
         }
       }
 
-      def typedTranslatedMatch(tree: Tree, selector: Tree, cases: List[CaseDef]): Tree = {
-        if (doMatchTranslation) {
-          if (selector ne EmptyTree) {
-            val (selector1, selectorTp, casesAdapted, ownType, doTranslation) = typedMatch(selector, cases, mode, pt)
-            typed(translatedMatch(selector1, selectorTp, casesAdapted, ownType, doTranslation), mode, pt)
-          } else (new MatchFunTyper(tree, cases, mode, pt)).translated
-        } else if (selector == EmptyTree) {
-          if (opt.virtPatmat) debugwarn("virtpatmat should not encounter empty-selector matches "+ tree)
-          val arity = if (isFunctionType(pt)) pt.normalize.typeArgs.length - 1 else 1
-          val params = for (i <- List.range(0, arity)) yield
-            atPos(tree.pos.focusStart) {
-              ValDef(Modifiers(PARAM | SYNTHETIC),
-                     unit.freshTermName("x" + i + "$"), TypeTree(), EmptyTree)
-            }
-          val ids = for (p <- params) yield Ident(p.name)
-          val selector1 = atPos(tree.pos.focusStart) { if (arity == 1) ids.head else gen.mkTuple(ids) }
-          val body = treeCopy.Match(tree, selector1, cases)
-          typed1(atPos(tree.pos) { Function(params, body) }, mode, pt)
-        } else {
-          val selector1 = checkDead(typed(selector, EXPRmode | BYVALmode, WildcardType))
-          var cases1 = typedCases(cases, packCaptured(selector1.tpe.widen), pt)
-          val (owntype, needAdapt) = ptOrLub(cases1 map (_.tpe))
-          if (needAdapt) {
-            cases1 = cases1 map (adaptCase(_, mode, owntype))
+      def typedTranslatedMatch(tree: Tree, selector: Tree, cases: List[CaseDef]): Tree =
+        if (selector == EmptyTree) {
+          if (doMatchTranslation) (new MatchFunTyper(tree, cases, mode, pt)).translated
+          else {
+            if (opt.virtPatmat) debugwarn("virtpatmat should not encounter empty-selector matches "+ tree)
+            val arity = if (isFunctionType(pt)) pt.normalize.typeArgs.length - 1 else 1
+            val params = for (i <- List.range(0, arity)) yield
+              atPos(tree.pos.focusStart) {
+                ValDef(Modifiers(PARAM | SYNTHETIC),
+                       unit.freshTermName("x" + i + "$"), TypeTree(), EmptyTree)
+              }
+            val ids = for (p <- params) yield Ident(p.name)
+            val selector1 = atPos(tree.pos.focusStart) { if (arity == 1) ids.head else gen.mkTuple(ids) }
+            val body = treeCopy.Match(tree, selector1, cases)
+            typed1(atPos(tree.pos) { Function(params, body) }, mode, pt)
           }
-          treeCopy.Match(tree, selector1, cases1) setType owntype
+        } else {
+          if (!doMatchTranslation || (tree firstAttachment {case TranslatedMatchAttachment => } nonEmpty))
+            typedMatch(selector, cases, mode, pt, tree)
+          else
+            typed(translatedMatch(typedMatch(selector, cases, mode, pt, tree)), mode, pt)
         }
-      }
 
       def typedReturn(expr: Tree) = {
         val enclMethod = context.enclMethod
@@ -4719,7 +4696,7 @@ trait Typers extends Modes with Adaptations with Taggings with PatMatVirtualiser
           var catches1 = typedCases(catches, ThrowableClass.tpe, pt)
           val finalizer1 = if (finalizer.isEmpty) finalizer
                            else typed(finalizer, UnitClass.tpe)
-          val (owntype, needAdapt) = ptOrLub(block1.tpe :: (catches1 map (_.tpe)))
+          val (owntype, needAdapt) = ptOrLub(block1.tpe :: (catches1 map (_.tpe)), pt)
           if (needAdapt) {
             block1 = adapt(block1, mode, owntype)
             catches1 = catches1 map (adaptCase(_, mode, owntype))

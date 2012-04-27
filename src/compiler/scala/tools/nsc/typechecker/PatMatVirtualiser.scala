@@ -35,6 +35,9 @@ trait PatMatVirtualiser extends ast.TreeDSL { self: Analyzer =>
 
   val SYNTH_CASE = Flags.CASE | SYNTHETIC
 
+  object TranslatedMatchAttachment
+  case class DefaultOverrideMatchAttachment(default: Tree)
+
   object vpmName {
     val one       = newTermName("one")
     val drop      = newTermName("drop")
@@ -136,15 +139,36 @@ trait PatMatVirtualiser extends ast.TreeDSL { self: Analyzer =>
       *   thus, you must typecheck the result (and that will in turn translate nested matches)
       *   this could probably optimized... (but note that the matchStrategy must be solved for each nested patternmatch)
       */
-    def translateMatch(scrut: Tree, cases: List[CaseDef], pt: Type, scrutType: Type, matchFailGenOverride: Option[Tree => Tree] = None): Tree = {
+    def translateMatch(match_ : Match): Tree = {
+      val Match(selector, cases) = match_
+
       // we don't transform after uncurry
       // (that would require more sophistication when generating trees,
       //  and the only place that emits Matches after typers is for exception handling anyway)
-      if(phase.id >= currentRun.uncurryPhase.id) debugwarn("running translateMatch at "+ phase +" on "+ scrut +" match "+ cases)
+      if(phase.id >= currentRun.uncurryPhase.id) debugwarn("running translateMatch at "+ phase +" on "+ selector +" match "+ cases)
       // println("translating "+ cases.mkString("{", "\n", "}"))
-      val scrutSym  = freshSym(scrut.pos, pureType(scrutType)) setFlag SYNTH_CASE
+
+      def repeatedToSeq(tp: Type): Type = (tp baseType RepeatedParamClass) match {
+        case TypeRef(_, RepeatedParamClass, arg :: Nil) => seqType(arg)
+        case _                                          => tp
+      }
+
+      val selectorTp = repeatedToSeq(elimAnonymousClass(selector.tpe.widen.withoutAnnotations))
+      val pt0        = match_.tpe
+
+      // we've packed the type for each case in typedMatch so that if all cases have the same existential case, we get a clean lub
+      // here, we should open up the existential again
+      // relevant test cases: pos/existentials-harmful.scala, pos/gadt-gilles.scala, pos/t2683.scala, pos/virtpatmat_exist4.scala
+      // TODO: fix skolemizeExistential (it should preserve annotations, right?)
+      val pt = repeatedToSeq(pt0.skolemizeExistential(context.owner, context.tree) withAnnotations pt0.annotations)
+
+      // the alternative to attaching the default case override would be to simply
+      // append the default to the list of cases and suppress the unreachable case error that may arise (once we detect that...)
+      val matchFailGenOverride = match_ firstAttachment {case DefaultOverrideMatchAttachment(default) => ((scrut: Tree) => default)}
+
+      val selectorSym  = freshSym(selector.pos, pureType(selectorTp)) setFlag SYNTH_CASE
       // pt = Any* occurs when compiling test/files/pos/annotDepMethType.scala  with -Xexperimental
-      combineCases(scrut, scrutSym, cases map translateCase(scrutSym, pt), pt, matchOwner, matchFailGenOverride)
+      combineCases(selector, selectorSym, cases map translateCase(selectorSym, pt), pt, matchOwner, matchFailGenOverride)
     }
 
     // return list of typed CaseDefs that are supported by the backend (typed/bind/wildcard)
@@ -1586,7 +1610,7 @@ class Foo(x: Other) { x._1 } // no error in this order
             else (REF(scrutSym) DOT (nme.toInt))
           Some(BLOCK(
             VAL(scrutSym) === scrut,
-            Match(gen.mkSynthSwitchSelector(scrutToInt), caseDefsWithDefault) // add switch annotation
+            Match(scrutToInt, caseDefsWithDefault) withAttachment TranslatedMatchAttachment // add switch annotation
           ))
         }
       } else None
