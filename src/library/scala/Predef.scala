@@ -308,11 +308,11 @@ object Predef extends LowPriorityImplicits {
   // views --------------------------------------------------------------
 
   implicit def exceptionWrapper(exc: Throwable) = new runtime.RichException(exc)
-  implicit def function1ToRichFunction1[T, R](f: T => R): runtime.RichFunction1[T, R] = new runtime.RichFunction1(f)
-  implicit def function2ToRichFunction2[T1, T2, R](f: (T1, T2) => R): runtime.RichFunction2[T1, T2, R] =
-    new runtime.RichFunction2(f)
 
-  implicit def tuple2ToZipped[T1, T2](zz: (T1, T2)) = new runtime.Tuple2ZippedOps(zz)
+  implicit def zipped2ToTraversable[El1, El2](zz: Tuple2[_, _]#Zipped[_, El1, _, El2]): Traversable[(El1, El2)] =
+    new collection.AbstractTraversable[(El1, El2)] {
+      def foreach[U](f: ((El1, El2)) => U): Unit = zz foreach Function.untupled(f)
+    }
 
   implicit def zipped3ToTraversable[El1, El2, El3](zz: Tuple3[_, _, _]#Zipped[_, El1, _, El2, _, El3]): Traversable[(El1, El2, El3)] =
     new collection.AbstractTraversable[(El1, El2, El3)] {
