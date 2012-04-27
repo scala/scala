@@ -831,7 +831,7 @@ trait Implicits {
 
       /** Returns all eligible ImplicitInfos and their SearchResults in a map.
        */
-      def findAll() = (eligible map (info => (info, typedImplicit(info, false)))).toMap
+      def findAll() = mapFrom(eligible)(typedImplicit(_, false))
 
       /** Returns the SearchResult of the best match.
        */

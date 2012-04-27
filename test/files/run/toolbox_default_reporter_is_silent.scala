@@ -9,5 +9,5 @@ object Test extends App {
     }
 
     Utils.foo
-  })
+  }.tree)
 }

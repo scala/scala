@@ -6,31 +6,18 @@ trait Enclosures {
 
   import mirror._
 
+  private def site       = callsiteTyper.context
+  private def enclTrees  = site.enclosingContextChain map (_.tree)
+  private def enclPoses  = enclosingMacros map (_.macroApplication.pos) filterNot (_ eq NoPosition)
+
   // vals are eager to simplify debugging
   // after all we wouldn't save that much time by making them lazy
-
-  val macroApplication: Tree = expandee
-
-  val enclosingMacros: List[Context] = this :: mirror.analyzer.openMacros // include self
-
-  val enclosingImplicits: List[(Type, Tree)] = callsiteTyper.context.openImplicits
-
-  val enclosingPosition: Position = enclosingMacros.find(c => c.macroApplication.pos != NoPosition).map(_.macroApplication.pos).getOrElse(NoPosition)
-
-  val enclosingApplication: Tree = {
-    def loop(context: analyzer.Context): Tree = context match {
-      case analyzer.NoContext => EmptyTree
-      case context if context.tree.isInstanceOf[Apply] => context.tree
-      case context => loop(context.outer)
-    }
-
-    val context = callsiteTyper.context
-    loop(context)
-  }
-
-  val enclosingMethod: Tree = callsiteTyper.context.enclMethod.tree
-
-  val enclosingClass: Tree = callsiteTyper.context.enclClass.tree
-
-  val enclosingUnit: CompilationUnit = currentRun.currentUnit
+  val macroApplication: Tree                 = expandee
+  val enclosingApplication: Tree             = enclTrees collectFirst { case t: Apply => t } getOrElse EmptyTree
+  val enclosingClass: Tree                   = site.enclClass.tree
+  val enclosingImplicits: List[(Type, Tree)] = site.openImplicits
+  val enclosingMacros: List[Context]         = this :: mirror.analyzer.openMacros // include self
+  val enclosingMethod: Tree                  = site.enclMethod.tree
+  val enclosingPosition: Position            = if (enclPoses.isEmpty) NoPosition else enclPoses.head.pos
+  val enclosingUnit: CompilationUnit         = currentRun.currentUnit
 }

@@ -2225,7 +2225,7 @@ abstract class GenICode extends SubComponent  {
        * jumps to the given basic block.
        */
       def patch(code: Code) {
-        val map = toPatch map (i => (i -> patch(i))) toMap;
+        val map = mapFrom(toPatch)(patch)
         code.blocks foreach (_ subst map)
       }
 

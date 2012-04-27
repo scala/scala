@@ -65,8 +65,7 @@ abstract class Universe extends Symbols
 
 object Universe {
   def reify[T](cc: scala.reflect.makro.Context{ type PrefixType = Universe })(expr: cc.Expr[T]): cc.Expr[cc.prefix.value.Expr[T]] = {
-    import cc.mirror._
     import scala.reflect.makro.internal._
-    cc.materializeExpr(cc.prefix, expr)
+    cc.Expr(cc.materializeExpr(cc.prefix.tree, expr.tree))
   }
 }

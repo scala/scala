@@ -103,7 +103,7 @@ trait Definitions extends reflect.api.StandardDefinitions {
       getMemberMethod(valueClassCompanion(className.toTermName).moduleClass, methodName)
 
     private def classesMap[T](f: Name => T) = symbolsMap(ScalaValueClassesNoUnit, f)
-    private def symbolsMap[T](syms: List[Symbol], f: Name => T): Map[Symbol, T] = syms zip (syms map (x => f(x.name))) toMap
+    private def symbolsMap[T](syms: List[Symbol], f: Name => T): Map[Symbol, T] = mapFrom(syms)(x => f(x.name))
     private def symbolsMapFilt[T](syms: List[Symbol], p: Name => Boolean, f: Name => T) = symbolsMap(syms filter (x => p(x.name)), f)
 
     private def boxedName(name: Name) = sn.Boxed(name.toTypeName)
