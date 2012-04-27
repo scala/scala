@@ -2209,7 +2209,8 @@ trait Typers extends Modes with Adaptations with Taggings with PatMatVirtualiser
     def adaptCase(cdef: CaseDef, mode: Int, tpe: Type): CaseDef = deriveCaseDef(cdef)(adapt(_, mode, tpe))
 
     // takes untyped sub-trees of a match and type checks them
-    def typedMatch(selector0: Tree, cases: List[CaseDef], mode: Int, resTp: Type) = {
+    def typedMatch(selector0: Tree, cases: List[CaseDef], mode: Int, resTp: Type): Match = {
+      // strip off the annotation as it won't type check
       val (selector, doTranslation) = selector0 match {
         case Annotated(Ident(nme.synthSwitch), selector) => (selector, false)
         case s => (s, true)
