@@ -119,8 +119,6 @@ trait MapLike[A, B, +This <: MapLike[A, B, This] with Map[A, B]]
   override def ++[B1 >: B](xs: GenTraversableOnce[(A, B1)]): Map[A, B1] =
     clone().asInstanceOf[Map[A, B1]] ++= xs.seq
 
-  @bridge def ++[B1 >: B](xs: TraversableOnce[(A, B1)]): Map[A, B1] = ++(xs: GenTraversableOnce[(A, B1)])
-
   /** Removes a key from this map, returning the value associated previously
    *  with that key as an option.
    *  @param    key the key to be removed
@@ -224,6 +222,4 @@ trait MapLike[A, B, +This <: MapLike[A, B, This] with Map[A, B]]
    */
   @migration("`--` creates a new map. Use `--=` to remove an element from this map and return that map itself.", "2.8.0")
   override def --(xs: GenTraversableOnce[A]): This = clone() --= xs.seq
-
-  @bridge def --(xs: TraversableOnce[A]): This =  --(xs: GenTraversableOnce[A])
 }

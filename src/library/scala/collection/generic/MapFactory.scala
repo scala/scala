@@ -36,6 +36,4 @@ abstract class MapFactory[CC[A, B] <: Map[A, B] with MapLike[A, B, CC[A, B]]] ex
 
   def empty[A, B]: CC[A, B]
 
-  @bridge
-  override def apply[A, B](elems: (A, B)*): CC[A, B] = super.apply(elems: _*)
 }

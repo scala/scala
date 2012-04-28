@@ -147,11 +147,6 @@ trait GenericTraversableTemplate[+A, +CC[X] <: GenTraversable[X]] extends HasNew
     b.result
   }
 
-  // cannot have a bridge, because it would have the same signature as the target method after erasure
-  // @bridge
-  // def flatten[B](implicit asTraversable: A => /*<:<!!!*/ TraversableOnce[B]): CC[B] =
-  //   flatten[B](asTraversable: A => GenTraversableOnce[B])
-
   /** Transposes this $coll of traversable collections into
    *  a $coll of ${coll}s.
    *

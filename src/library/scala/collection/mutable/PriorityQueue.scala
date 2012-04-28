@@ -113,9 +113,6 @@ class PriorityQueue[A](implicit val ord: Ordering[A])
    */
   def ++(xs: GenTraversableOnce[A]): PriorityQueue[A] = { this.clone() ++= xs.seq }
 
-  @bridge
-  def ++(xs: TraversableOnce[A]): PriorityQueue[A] = ++ (xs: GenTraversableOnce[A])
-
   /** Adds all elements to the queue.
    *
    *  @param  elems       the elements to add.

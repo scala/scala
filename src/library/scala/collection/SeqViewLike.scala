@@ -132,12 +132,8 @@ trait SeqViewLike[+A,
   override def diff[B >: A](that: GenSeq[B]): This =
     newForced(thisSeq diff that).asInstanceOf[This]
 
-  @bridge def diff[B >: A](that: Seq[B]): This = diff(that: GenSeq[B])
-
   override def intersect[B >: A](that: GenSeq[B]): This =
     newForced(thisSeq intersect that).asInstanceOf[This]
-
-  @bridge def intersect[B >: A](that: Seq[B]): This = intersect(that: GenSeq[B])
 
   override def sorted[B >: A](implicit ord: Ordering[B]): This =
     newForced(thisSeq sorted ord).asInstanceOf[This]
