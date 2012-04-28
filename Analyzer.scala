@@ -17,7 +17,7 @@ object Analyzer
 {
 	def name = "xsbt-analyzer"
 }
-final class Analyzer(val global: Global, val callback: AnalysisCallback) extends Compat
+final class Analyzer(val global: CallbackGlobal) extends Compat
 {
 	import global._
 
@@ -35,10 +35,12 @@ final class Analyzer(val global: Global, val callback: AnalysisCallback) extends
 				// build dependencies structure
 				val sourceFile = unit.source.file.file
 				callback.beginSource(sourceFile)
+				println("Dependencies of " + sourceFile)
 				for(on <- unit.depends)
 				{
 					def binaryDependency(file: File, className: String) = callback.binaryDependency(file, className, sourceFile)
 					val onSource = on.sourceFile
+					println("\t" + on + ", src: " + onSource + ", class: " + classFile(on))
 					if(onSource == null)
 					{
 						classFile(on) match
@@ -82,7 +84,6 @@ final class Analyzer(val global: Global, val callback: AnalysisCallback) extends
 	}
 
 	private[this] final val classSeparator = '.'
-	private[this] def findClass(name: String): Option[AbstractFile] = classPath.findClass(name).flatMap(_.binary.asInstanceOf[Option[AbstractFile]])
 	private[this] def classFile(sym: Symbol): Option[(AbstractFile, String)] =
 	{
 		import scala.tools.nsc.symtab.Flags

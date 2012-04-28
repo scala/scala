@@ -16,7 +16,7 @@ object API
 	val name = "xsbt-api"
 }
 
-final class API(val global: Global, val callback: xsbti.AnalysisCallback) extends Compat
+final class API(val global: CallbackGlobal) extends Compat
 {
 	import global._
 	def error(msg: String) = throw new RuntimeException(msg)

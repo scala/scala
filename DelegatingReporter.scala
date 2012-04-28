@@ -15,10 +15,11 @@ private object DelegatingReporter
 // The following code is based on scala.tools.nsc.reporters.{AbstractReporter, ConsoleReporter}
 // Copyright 2002-2009 LAMP/EPFL
 // Original author: Martin Odersky
-private final class DelegatingReporter(warnFatal: Boolean, delegate: xsbti.Reporter) extends scala.tools.nsc.reporters.Reporter
+private final class DelegatingReporter(warnFatal: Boolean, private[this] var delegate: xsbti.Reporter) extends scala.tools.nsc.reporters.Reporter
 {
 	import scala.tools.nsc.util.{FakePos,NoPosition,Position}
 
+	def dropDelegate() { delegate = null }
 	def error(msg: String) { error(FakePos("scalac"), msg) }
 
 	def printSummary() = delegate.printSummary()
