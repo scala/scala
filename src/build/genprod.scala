@@ -130,7 +130,7 @@ object FunctionOne extends Function(1) {
    *  @param    g   a function A => T1
    *  @return       a new function `f` such that `f(x) == apply(g(x))`
    */
-  def compose[A](g: A => T1): A => R = { x => apply(g(x)) }
+  @annotation.unspecialized def compose[A](g: A => T1): A => R = { x => apply(g(x)) }
 
   /** Composes two instances of Function1 in a new Function1, with this function applied first.
    *
@@ -138,7 +138,7 @@ object FunctionOne extends Function(1) {
    *  @param    g   a function R => A
    *  @return       a new function `f` such that `f(x) == g(apply(x))`
    */
-  def andThen[A](g: R => A): T1 => A = { x => g(apply(x)) }
+  @annotation.unspecialized def andThen[A](g: R => A): T1 => A = { x => g(apply(x)) }
 """
 }
 
@@ -169,19 +169,20 @@ object Function {
 
 class Function(val i: Int) extends Group("Function") with Arity {
   def descriptiveComment  = ""
-  def functionNTemplate = """
+  def functionNTemplate = 
+"""
  *  In the following example, the definition of %s is a
  *  shorthand for the anonymous class definition %s:
  *
  *  {{{
- *  object Main extends App { %s }
+ *  object Main extends App {%s}
  *  }}}
  *
  *  Note that `Function1` does not define a total function, as might
  *  be suggested by the existence of [[scala.PartialFunction]]. The only
  *  distinction between `Function1` and `PartialFunction` is that the
  *  latter can specify inputs which it will not handle.
- """
+"""
 
   def toStr() = "\"" + ("<function%d>" format i) + "\""
   def apply() = {
@@ -195,7 +196,7 @@ class Function(val i: Int) extends Group("Function") with Arity {
    *  @return   the result of function application.
    */
   def apply({funArgs}): R
-  {moreMethods}
+{moreMethods}
   override def toString() = {toStr}
 }}
 </file>
@@ -218,15 +219,15 @@ class Function(val i: Int) extends Group("Function") with Arity {
 
   // f(x1,x2,x3,x4,x5,x6)  == (f.curried)(x1)(x2)(x3)(x4)(x5)(x6)
   def curryComment = {
-"""/** Creates a curried version of this function.
+"""  /** Creates a curried version of this function.
    *
    *  @return   a function `f` such that `f%s == apply%s`
    */""".format(xdefs map ("(" + _ + ")") mkString, commaXs)
   }
 
   def tupleMethod = {
-    def comment = """
-  /** Creates a tupled version of this function: instead of %d arguments,
+    def comment = 
+"""  /** Creates a tupled version of this function: instead of %d arguments,
    *  it accepts a single [[scala.Tuple%d]] argument.
    *
    *  @return   a function `f` such that `f(%s) == f(Tuple%d%s) == apply%s`
@@ -234,14 +235,14 @@ class Function(val i: Int) extends Group("Function") with Arity {
 """.format(i, i, commaXs, i, commaXs, commaXs)
     def body = "case Tuple%d%s => apply%s".format(i, commaXs, commaXs)
 
-    comment + "  def tupled: Tuple%d%s => R = {\n    %s\n  }".format(i, invariantArgs, body)
+    comment + "\n  @annotation.unspecialized def tupled: Tuple%d%s => R = {\n    %s\n  }".format(i, invariantArgs, body)
   }
 
   def curryMethod = {
     val body = if (i < 5) shortCurry else longCurry
 
     curryComment +
-    "  def curried: %s => R = {\n    %s\n  }\n".format(
+    "\n  @annotation.unspecialized def curried: %s => R = {\n    %s\n  }\n".format(
       targs mkString " => ", body
     )
   }
