@@ -35,17 +35,16 @@ final class Analyzer(val global: CallbackGlobal) extends Compat
 				// build dependencies structure
 				val sourceFile = unit.source.file.file
 				callback.beginSource(sourceFile)
-				println("Dependencies of " + sourceFile)
 				for(on <- unit.depends)
 				{
 					def binaryDependency(file: File, className: String) = callback.binaryDependency(file, className, sourceFile)
 					val onSource = on.sourceFile
-					println("\t" + on + ", src: " + onSource + ", class: " + classFile(on))
 					if(onSource == null)
 					{
 						classFile(on) match
 						{
-							case Some((f,className)) =>
+							case Some((f,className,inOutDir)) =>
+								if(inOutDir && on.isJavaDefined) registerTopLevelSym(on)
 								f match
 								{
 									case ze: ZipArchive#Entry => for(zip <- ze.underlyingSource; zipFile <- Option(zip.file) ) binaryDependency(zipFile, className)
@@ -84,11 +83,11 @@ final class Analyzer(val global: CallbackGlobal) extends Compat
 	}
 
 	private[this] final val classSeparator = '.'
-	private[this] def classFile(sym: Symbol): Option[(AbstractFile, String)] =
+	private[this] def classFile(sym: Symbol): Option[(AbstractFile, String, Boolean)] =
 	{
 		import scala.tools.nsc.symtab.Flags
 		val name = flatname(sym, classSeparator) + moduleSuffix(sym)
-		findClass(name).map(file => (file, name))  orElse {
+		findClass(name).map { case (file,inOut) => (file, name,inOut) } orElse {
 			if(isTopLevelModule(sym))
 			{
 				val linked = sym.companionClass

@@ -23,7 +23,7 @@ final class CompilerInterface
 }
 sealed abstract class CallbackGlobal(settings: Settings, reporter: reporters.Reporter) extends Global(settings, reporter) {
 	def callback: AnalysisCallback
-	def findClass(name: String): Option[AbstractFile]
+	def findClass(name: String): Option[(AbstractFile,Boolean)]
 }
 class InterfaceCompileFailed(val arguments: Array[String], val problems: Array[Problem], override val toString: String) extends xsbti.CompileFailed
 
@@ -173,8 +173,8 @@ private final class CachedCompiler0(args: Array[String], initialLog: WeakLog) ex
 
 		override def registerTopLevelSym(sym: Symbol) = toForget += sym
 
-		def findClass(name: String): Option[AbstractFile] =
-			getOutputClass(name) orElse findOnClassPath(name)
+		def findClass(name: String): Option[(AbstractFile, Boolean)] =
+			getOutputClass(name).map(f => (f,true)) orElse findOnClassPath(name).map(f =>(f, false))
 
 		def getOutputClass(name: String): Option[AbstractFile] =
 		{
