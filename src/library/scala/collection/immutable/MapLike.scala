@@ -11,7 +11,6 @@ package immutable
 
 import generic._
 import parallel.immutable.ParMap
-import annotation.bridge
 
 /**
  *  A generic template for immutable maps from keys of type `A`

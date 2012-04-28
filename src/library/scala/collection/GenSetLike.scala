@@ -8,7 +8,6 @@
 
 package scala.collection
 
-import annotation.bridge
 
 /** A template trait for sets which may possibly
  *  have their operations implemented in parallel.

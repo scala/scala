@@ -11,7 +11,6 @@
 package scala.collection
 package generic
 
-import annotation.bridge
 import language.higherKinds
 
 /** A template for companion objects of Seq and subclasses thereof.

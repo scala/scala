@@ -14,7 +14,6 @@ package immutable
 import generic._
 import immutable.{RedBlackTree => RB}
 import mutable.Builder
-import annotation.bridge
 
 /** $factoryInfo
  *  @define Coll immutable.TreeMap

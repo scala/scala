@@ -10,7 +10,6 @@
 package scala.collection
 package generic
 
-import annotation.bridge
 import language.higherKinds
 
 /** A template for companion objects of `Traversable` and subclasses thereof.

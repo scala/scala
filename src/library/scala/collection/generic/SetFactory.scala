@@ -12,7 +12,6 @@ package scala.collection
 package generic
 
 import mutable.Builder
-import annotation.bridge
 import language.higherKinds
 
 abstract class SetFactory[CC[X] <: Set[X] with SetLike[X, CC[X]]]

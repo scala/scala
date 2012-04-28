@@ -12,7 +12,6 @@ package scala.collection
 package mutable
 
 import generic._
-import annotation.bridge
 
 /** This class implements priority queues using a heap.
  *  To prioritize elements of type A there must be an implicit

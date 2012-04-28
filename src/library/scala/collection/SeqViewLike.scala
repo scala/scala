@@ -11,7 +11,6 @@ package scala.collection
 import generic._
 import Seq.fill
 import TraversableView.NoBuilder
-import annotation.bridge
 
 /** A template trait for non-strict views of sequences.
  *  $seqViewInfo

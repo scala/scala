@@ -10,7 +10,6 @@
 package scala.collection.immutable
 
 import scala.collection.parallel.immutable.ParRange
-import annotation.bridge
 
 /** The `Range` class represents integer values in range
  *  ''[start;end)'' with non-zero step value `step`.

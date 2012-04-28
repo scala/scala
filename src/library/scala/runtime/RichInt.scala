@@ -9,7 +9,6 @@
 package scala.runtime
 
 import scala.collection.immutable.Range
-import annotation.bridge
 
 // Note that this does not implement IntegralProxy[Int] so that it can return
 // the Int-specific Range class from until/to.

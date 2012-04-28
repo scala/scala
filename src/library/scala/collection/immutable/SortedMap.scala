@@ -14,7 +14,6 @@ package immutable
 import generic._
 import mutable.Builder
 import annotation.unchecked.uncheckedVariance
-import annotation.bridge
 
 /** A map whose keys are sorted.
  *

@@ -13,7 +13,6 @@ package scala.collection
 import generic._
 import mutable.{Builder, Buffer, ArrayBuffer, ListBuffer}
 import scala.util.control.Breaks
-import annotation.bridge
 
 /** A trait for traversable collections.
  *  All operations are guaranteed to be performed in a single-threaded manner.

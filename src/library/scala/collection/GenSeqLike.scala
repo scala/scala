@@ -9,7 +9,6 @@
 package scala.collection
 
 import generic._
-import annotation.bridge
 
 /** A template trait for all sequences which may be traversed
  *  in parallel.

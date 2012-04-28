@@ -6,7 +6,6 @@
 **                          |/                                          **
 \*                                                                      */
 
-import annotation.bridge
 
 /**
  * Core Scala types. They are always available without an explicit import.
