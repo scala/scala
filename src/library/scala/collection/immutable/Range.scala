@@ -398,7 +398,4 @@ object Range {
     def apply(start: Int, end: Int, step: Int) = NumericRange(start, end, step)
     def inclusive(start: Int, end: Int, step: Int) = NumericRange.inclusive(start, end, step)
   }
-
-  @deprecated("use Range instead", "2.9.0")
-  trait ByOne extends Range
 }

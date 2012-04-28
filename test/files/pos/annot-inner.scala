@@ -1,5 +1,5 @@
 object test {
-   class annot extends Annotation
+   class annot extends scala.annotation.Annotation
 
    def foo {
      @annot def bar(i: Int): Int = i

@@ -80,10 +80,6 @@ package object scala {
   type Range = scala.collection.immutable.Range
   val Range = scala.collection.immutable.Range
 
-  // Migrated from Predef
-  @deprecated("Use Thread.currentThread instead", "2.9.0")
-  def currentThread = java.lang.Thread.currentThread()
-
   // Numeric types which were moved into scala.math.*
 
   type BigDecimal = scala.math.BigDecimal
@@ -127,13 +123,4 @@ package object scala {
   type unchecked = annotation.unchecked.unchecked
   type volatile = annotation.volatile
   */
-
-  @deprecated("use scala.annotation.Annotation instead", "2.9.0")
-  type Annotation = scala.annotation.Annotation
-  @deprecated("use scala.annotation.ClassfileAnnotation instead", "2.9.0")
-  type ClassfileAnnotation = scala.annotation.ClassfileAnnotation
-  @deprecated("use scala.annotation.StaticAnnotation instead", "2.9.0")
-  type StaticAnnotation = scala.annotation.StaticAnnotation
-  @deprecated("use scala.annotation.TypeConstraint instead", "2.9.0")
-  type TypeConstraint = scala.annotation.TypeConstraint
 }

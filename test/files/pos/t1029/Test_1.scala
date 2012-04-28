@@ -1,4 +1,4 @@
-class ann(a: Array[Int]) extends StaticAnnotation
+class ann(a: Array[Int]) extends annotation.StaticAnnotation
 
 object Test1 {
   // bug #1029

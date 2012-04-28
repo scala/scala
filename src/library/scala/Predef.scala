@@ -468,13 +468,6 @@ object Predef extends LowPriorityImplicits {
      implicit def tpEquals[A]: A =:= A = singleton_=:=.asInstanceOf[A =:= A]
   }
 
-  // less useful due to #2781
-  @deprecated("Use From => To instead", "2.9.0")
-  sealed abstract class <%<[-From, +To] extends (From => To) with Serializable
-  object <%< {
-    implicit def conformsOrViewsAs[A <% B, B]: A <%< B = new (A <%< B) {def apply(x: A) = x}
-  }
-
   /** A type for which there is always an implicit value.
    *  @see fallbackCanBuildFrom in Array.scala
    */

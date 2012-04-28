@@ -1,4 +1,4 @@
-class foo(val bar: String) extends StaticAnnotation
+class foo(val bar: String) extends annotation.StaticAnnotation
 
 object Api {
   // foo in ann must have a different name

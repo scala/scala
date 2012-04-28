@@ -1,5 +1,5 @@
-class ann(i: Int) extends Annotation
-class cfann(x: String) extends ClassfileAnnotation
+class ann(i: Int) extends scala.annotation.Annotation
+class cfann(x: String) extends annotation.ClassfileAnnotation
 
 // annotations on abstract types
 abstract class C1[@serializable @cloneable +T, U, V[_]]
@@ -91,9 +91,9 @@ trait BeanF {
 }
 
 
-class Ann3(arr: Array[String]) extends ClassfileAnnotation
-class Ann4(i: Int) extends ClassfileAnnotation
-class Ann5(value: Class[_]) extends ClassfileAnnotation
+class Ann3(arr: Array[String]) extends annotation.ClassfileAnnotation
+class Ann4(i: Int) extends annotation.ClassfileAnnotation
+class Ann5(value: Class[_]) extends annotation.ClassfileAnnotation
 
 object Test3 {
   final val i = 1083

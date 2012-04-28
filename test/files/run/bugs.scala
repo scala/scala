@@ -445,8 +445,7 @@ object Test  {
       test;
     } catch {
       case exception =>
-        val curr: String = currentThread.toString();
-        Console.print("Exception in thread \"" + curr + "\" " + exception);
+        Console.print("Exception in thread \"" + Thread.currentThread + "\" " + exception);
         Console.println;
         errors += 1
     }
