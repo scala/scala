@@ -155,10 +155,6 @@ trait TraversableLike[+A, +Repr] extends Any
     b.result
   }
 
-  @bridge
-  def ++[B >: A, That](that: TraversableOnce[B])(implicit bf: CanBuildFrom[Repr, B, That]): That =
-    ++(that: GenTraversableOnce[B])(bf)
-
   /** As with `++`, returns a new collection containing the elements from the left operand followed by the
    *  elements from the right operand.
    *

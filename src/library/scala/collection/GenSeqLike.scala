@@ -228,9 +228,6 @@ trait GenSeqLike[+A, +Repr] extends Any with GenIterableLike[A, Repr] with Equal
    */
   def startsWith[B](that: GenSeq[B]): Boolean = startsWith(that, 0)
 
-  @bridge
-  def startsWith[B](that: Seq[B]): Boolean = startsWith(that: GenSeq[B])
-
   /** Tests whether this $coll contains the given sequence at a given index.
    *
    * '''Note''': If the both the receiver object `this` and the argument
@@ -412,10 +409,6 @@ trait GenSeqLike[+A, +Repr] extends Any with GenIterableLike[A, Repr] with Equal
    *                  followed by all elements of `that`.
    */
   def union[B >: A, That](that: GenSeq[B])(implicit bf: CanBuildFrom[Repr, B, That]): That = this ++ that
-
-  @bridge
-  def union[B >: A, That](that: Seq[B])(implicit bf: CanBuildFrom[Repr, B, That]): That =
-    union(that: GenSeq[B])(bf)
 
   /** Computes the multiset difference between this $coll and another sequence.
    *
