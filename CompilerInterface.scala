@@ -59,8 +59,7 @@ private final class CachedCompiler0(args: Array[String], initialLog: WeakLog) ex
 
 	def run(sources: Array[File], changes: DependencyChanges, callback: AnalysisCallback, log: Logger, delegate: Reporter): Unit = synchronized
 	{
-		println("Running cached compiler " + hashCode.toHexString)
-		debug(log, "Interfacing (CompilerInterface) with Scala compiler " + scala.tools.nsc.Properties.versionString)
+		debug(log, "Running cached compiler " + hashCode.toHexString + ", interfacing (CompilerInterface) with Scala compiler " + scala.tools.nsc.Properties.versionString)
 		val dreporter = DelegatingReporter(settings, delegate)
 		try { run(sources.toList, changes, callback, log, dreporter) }
 		finally { dreporter.dropDelegate() }
