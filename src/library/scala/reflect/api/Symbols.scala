@@ -146,7 +146,7 @@ trait Symbols { self: Universe =>
 
     /** ...
      */
-    def orElse[T](alt: => Symbol): Symbol
+    def orElse(alt: => Symbol): Symbol
 
     /** ...
      */

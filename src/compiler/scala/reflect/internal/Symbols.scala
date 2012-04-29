@@ -2053,7 +2053,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
      */
     def sealedDescendants: Set[Symbol] = children.flatMap(_.sealedDescendants) + this
 
-    @inline final def orElse[T](alt: => Symbol): Symbol = if (this ne NoSymbol) this else alt
+    @inline final def orElse(alt: => Symbol): Symbol = if (this ne NoSymbol) this else alt
 
 // ------ toString -------------------------------------------------------------------
 
