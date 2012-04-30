@@ -1425,7 +1425,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
 
     /** Reset symbol to initial state
      */
-    def reset(completer: Type) {
+    def reset(completer: Type): this.type = {
       resetFlags()
       infos = null
       _validTo = NoPeriod
@@ -2054,6 +2054,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     def sealedDescendants: Set[Symbol] = children.flatMap(_.sealedDescendants) + this
 
     @inline final def orElse(alt: => Symbol): Symbol = if (this ne NoSymbol) this else alt
+    @inline final def andAlso(f: Symbol => Unit): Symbol = if (this eq NoSymbol) NoSymbol else { f(this) ; this }
 
 // ------ toString -------------------------------------------------------------------
 
@@ -2636,10 +2637,11 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
       info.baseTypeIndex(that) >= 0
     )
 
-    override def reset(completer: Type) {
+    override def reset(completer: Type): this.type = {
       super.reset(completer)
       tpePeriod = NoPeriod
       tyconRunId = NoRunId
+      this
     }
 
     /*** example:
@@ -2822,9 +2824,10 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
       else super.sourceFile
     override def sourceFile_=(f: AbstractFileType) { source = f }
 
-    override def reset(completer: Type) {
+    override def reset(completer: Type): this.type = {
       super.reset(completer)
       thissym = this
+      this
     }
 
     /** the type this.type in this class */
@@ -3022,7 +3025,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     override def ownerChain: List[Symbol] = List()
     override def ownersIterator: Iterator[Symbol] = Iterator.empty
     override def alternatives: List[Symbol] = List()
-    override def reset(completer: Type) {}
+    override def reset(completer: Type): this.type = this
     override def info: Type = NoType
     override def existentialBound: Type = NoType
     override def rawInfo: Type = NoType

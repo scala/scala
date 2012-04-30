@@ -46,7 +46,7 @@ trait SynchronizedSymbols extends internal.Symbols { self: SymbolTable =>
 
     override def typeParams: List[Symbol] = synchronized { super.typeParams }
 
-    override def reset(completer: Type) = synchronized { super.reset(completer) }
+    override def reset(completer: Type): this.type = synchronized { super.reset(completer) }
 
     override def infosString: String = synchronized { super.infosString }
 

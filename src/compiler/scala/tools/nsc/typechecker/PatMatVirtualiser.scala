@@ -55,10 +55,15 @@ trait PatMatVirtualiser extends ast.TreeDSL { self: Analyzer =>
     def apply(typer: Typer): MatchTranslation with CodegenCore = {
       import typer._
       // typing `_match` to decide which MatchTranslator to create adds 4% to quick.comp.timer
-      newTyper(context.makeImplicit(reportAmbiguousErrors = false)).silent(_.typed(Ident(vpmName._match), EXPRmode, WildcardType), reportAmbiguousErrors = false) match {
-          case SilentResultValue(ms) => new PureMatchTranslator(typer, ms)
-          case _ => new OptimizingMatchTranslator(typer)
+      val matchStrategy: Tree = (
+        if (!context.isNameInScope(vpmName._match)) null    // fast path, avoiding the next line if there's no __match to be seen
+        else newTyper(context.makeImplicit(reportAmbiguousErrors = false)).silent(_.typed(Ident(vpmName._match), EXPRmode, WildcardType), reportAmbiguousErrors = false) match {
+          case SilentResultValue(ms) => ms
+          case _                     => null
         }
+      )
+      if (matchStrategy eq null) new OptimizingMatchTranslator(typer)
+      else new PureMatchTranslator(typer, matchStrategy)
     }
   }
 

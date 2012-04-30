@@ -458,13 +458,10 @@ trait Typers extends Modes with Adaptations with Taggings with PatMatVirtualiser
      *  of a this or super with prefix <code>qual</code>.
      *  packageOk is equal false when qualifying class symbol
      */
-    def qualifyingClass(tree: Tree, qual: Name, packageOK: Boolean = false): Option[Symbol] =
+    def qualifyingClass(tree: Tree, qual: Name, packageOK: Boolean) =
       context.enclClass.owner.ownerChain.find(o => qual.isEmpty || o.isClass && o.name == qual) match {
-        case Some(c) if packageOK || !c.isPackageClass =>
-          Some(c)
-        case _ =>
-          QualifyingClassError(tree, qual)
-          None
+        case Some(c) if packageOK || !c.isPackageClass => c
+        case _                                         => QualifyingClassError(tree, qual) ; NoSymbol
       }
 
     /** The typer for an expression, depending on where we are. If we are before a superclass
@@ -4133,7 +4130,7 @@ trait Typers extends Modes with Adaptations with Taggings with PatMatVirtualiser
       }
 
       def convertToAssignment(fun: Tree, qual: Tree, name: Name, args: List[Tree]): Tree = {
-        val prefix = name.subName(0, name.length - nme.EQL.length)
+        val prefix = name stripSuffix nme.EQL
         def mkAssign(vble: Tree): Tree =
           Assign(
             vble,
@@ -4142,21 +4139,18 @@ trait Typers extends Modes with Adaptations with Taggings with PatMatVirtualiser
           ) setPos tree.pos
 
         def mkUpdate(table: Tree, indices: List[Tree]) = {
-          gen.evalOnceAll(table :: indices, context.owner, context.unit) { ts =>
-            val tab = ts.head
-            val is = ts.tail
-            Apply(
-               Select(tab(), nme.update) setPos table.pos,
-               ((is map (i => i())) ::: List(
-                 Apply(
-                   Select(
-                     Apply(
-                       Select(tab(), nme.apply) setPos table.pos,
-                       is map (i => i())) setPos qual.pos,
-                     prefix) setPos fun.pos,
-                   args) setPos tree.pos)
-               )
-             ) setPos tree.pos
+          gen.evalOnceAll(table :: indices, context.owner, context.unit) {
+            case tab :: is =>
+              def mkCall(name: Name, extraArgs: Tree*) = (
+                Apply(
+                  Select(tab(), name) setPos table.pos,
+                  is.map(i => i()) ++ extraArgs
+                ) setPos tree.pos
+              )
+              mkCall(
+                nme.update,
+                Apply(Select(mkCall(nme.apply), prefix) setPos fun.pos, args) setPos tree.pos
+              )
            }
         }
 
@@ -4223,15 +4217,11 @@ trait Typers extends Modes with Adaptations with Taggings with PatMatVirtualiser
         treeCopy.Super(tree, qual1, mix) setType SuperType(clazz.thisType, owntype)
       }
 
-      def typedThis(qual: Name) = {
-        val qualifyingClassSym = if (tree.symbol != NoSymbol) Some(tree.symbol) else qualifyingClass(tree, qual)
-        qualifyingClassSym match {
-          case Some(clazz) =>
-            tree setSymbol clazz setType clazz.thisType.underlying
-            if (isStableContext(tree, mode, pt)) tree setType clazz.thisType
-            tree
-          case None => tree
-        }
+      def typedThis(qual: Name) = tree.symbol orElse qualifyingClass(tree, qual, packageOK = false) match {
+        case NoSymbol => tree
+        case clazz    =>
+          tree setSymbol clazz setType clazz.thisType.underlying
+          if (isStableContext(tree, mode, pt)) tree setType clazz.thisType else tree
       }
 
       /** Attribute a selection where <code>tree</code> is <code>qual.name</code>.
@@ -4242,34 +4232,19 @@ trait Typers extends Modes with Adaptations with Taggings with PatMatVirtualiser
        *  @return     ...
        */
       def typedSelect(qual: Tree, name: Name): Tree = {
-        val sym =
-          if (tree.symbol != NoSymbol) {
-            if (phase.erasedTypes && qual.isInstanceOf[Super])
-              qual.tpe = tree.symbol.owner.tpe
-            if (false && settings.debug.value) { // todo: replace by settings.check.value?
-              val alts = qual.tpe.member(tree.symbol.name).alternatives
-              if (!(alts exists (alt =>
-                alt == tree.symbol || alt.isTerm && (alt.tpe matches tree.symbol.tpe))))
-                assert(false, "symbol "+tree.symbol+tree.symbol.locationString+" not in "+alts+" of "+qual.tpe+
-                       "\n members = "+qual.tpe.members+
-                       "\n type history = "+qual.tpe.termSymbol.infosString+
-                       "\n phase = "+phase)
-            }
-            tree.symbol
-          } else {
-            member(qual, name)
+        val sym = tree.symbol orElse member(qual, name) orElse {
+          // symbol not found? --> try to convert implicitly to a type that does have the required
+          // member.  Added `| PATTERNmode` to allow enrichment in patterns (so we can add e.g., an
+          // xml member to StringContext, which in turn has an unapply[Seq] method)
+          if (name != nme.CONSTRUCTOR && inExprModeOr(mode, PATTERNmode)) {
+            val qual1 = adaptToMemberWithArgs(tree, qual, name, mode, true, true)
+            if (qual1 ne qual)
+              return typed(treeCopy.Select(tree, qual1, name), mode, pt)
           }
-
-        // symbol not found? --> try to convert implicitly to a type that does have the required member
-        // added `| PATTERNmode` to allow enrichment in patterns (so we can add e.g., an xml member to StringContext, which in turn has an unapply[Seq] method)
-        if (sym == NoSymbol && name != nme.CONSTRUCTOR && (mode & (EXPRmode | PATTERNmode)) != 0) {
-          val qual1 =
-            if (member(qual, name) != NoSymbol) qual
-            else adaptToMemberWithArgs(tree, qual, name, mode, true, true)
-
-          if (qual1 ne qual)
-            return typed(treeCopy.Select(tree, qual1, name), mode, pt)
+          NoSymbol
         }
+        if (phase.erasedTypes && qual.isInstanceOf[Super] && tree.symbol != NoSymbol)
+          qual.tpe = tree.symbol.owner.tpe
 
         if (!reallyExists(sym)) {
           if (context.owner.enclosingTopLevelClass.isJavaDefined && name.isTypeName) {
@@ -4284,14 +4259,12 @@ trait Typers extends Modes with Adaptations with Taggings with PatMatVirtualiser
             case _ =>
           }
 
-          if (settings.debug.value) {
-            log(
-              "qual = "+qual+":"+qual.tpe+
-              "\nSymbol="+qual.tpe.termSymbol+"\nsymbol-info = "+qual.tpe.termSymbol.info+
-              "\nscope-id = "+qual.tpe.termSymbol.info.decls.hashCode()+"\nmembers = "+qual.tpe.members+
-              "\nname = "+name+"\nfound = "+sym+"\nowner = "+context.enclClass.owner
-            )
-          }
+          debuglog(
+            "qual = "+qual+":"+qual.tpe+
+            "\nSymbol="+qual.tpe.termSymbol+"\nsymbol-info = "+qual.tpe.termSymbol.info+
+            "\nscope-id = "+qual.tpe.termSymbol.info.decls.hashCode()+"\nmembers = "+qual.tpe.members+
+            "\nname = "+name+"\nfound = "+sym+"\nowner = "+context.enclClass.owner
+          )
 
           def makeInteractiveErrorTree = {
             val tree1 = tree match {
