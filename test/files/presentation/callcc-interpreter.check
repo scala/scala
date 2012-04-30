@@ -4,66 +4,66 @@ askTypeCompletion at CallccInterpreter.scala(51,38)
 ================================================================================
 [response] aksTypeCompletion at (51,38)
 retrieved 64 members
-`class AddcallccInterpreter.Add`
-`class AppcallccInterpreter.App`
-`class CcccallccInterpreter.Ccc`
-`class ConcallccInterpreter.Con`
-`class FuncallccInterpreter.Fun`
-`class LamcallccInterpreter.Lam`
-`class McallccInterpreter.M`
-`class NumcallccInterpreter.Num`
-`class VarcallccInterpreter.Var`
-`method !=(x$1: Any)Boolean`
-`method !=(x$1: AnyRef)Boolean`
-`method ##()Int`
-`method +(other: String)String`
-`method ->[B](y: B)(callccInterpreter.type, B)`
-`method ==(x$1: Any)Boolean`
-`method ==(x$1: AnyRef)Boolean`
-`method add(a: callccInterpreter.Value, b: callccInterpreter.Value)callccInterpreter.M[_ >: callccInterpreter.Num with callccInterpreter.Wrong.type <: Product with Serializable with callccInterpreter.Value]`
-`method apply(a: callccInterpreter.Value, b: callccInterpreter.Value)callccInterpreter.M[callccInterpreter.Value]`
-`method asInstanceOf[T0]=> T0`
-`method callCC[A](h: (A => callccInterpreter.M[A]) => callccInterpreter.M[A])callccInterpreter.M[A]`
-`method clone()Object`
-`method ensuring(cond: Boolean)callccInterpreter.type`
-`method ensuring(cond: Boolean, msg: => Any)callccInterpreter.type`
-`method ensuring(cond: callccInterpreter.type => Boolean)callccInterpreter.type`
-`method ensuring(cond: callccInterpreter.type => Boolean, msg: => Any)callccInterpreter.type`
-`method eq(x$1: AnyRef)Boolean`
-`method equals(x$1: Any)Boolean`
-`method finalize()Unit`
-`method formatted(fmtstr: String)String`
-`method hashCode()Int`
-`method id[A]=> A => A`
-`method interp(t: callccInterpreter.Term, e: callccInterpreter.Environment)callccInterpreter.M[callccInterpreter.Value]`
-`method isInstanceOf[T0]=> Boolean`
-`method lookup(x: callccInterpreter.Name, e: callccInterpreter.Environment)callccInterpreter.M[callccInterpreter.Value]`
-`method main(args: Array[String])Unit`
-`method ne(x$1: AnyRef)Boolean`
-`method notify()Unit`
-`method notifyAll()Unit`
-`method showM(m: callccInterpreter.M[callccInterpreter.Value])String`
-`method synchronized[T0](x$1: T0)T0`
-`method test(t: callccInterpreter.Term)String`
-`method toString()String`
-`method unitM[A](a: A)callccInterpreter.M[A]`
-`method wait()Unit`
-`method wait(x$1: Long)Unit`
-`method wait(x$1: Long, x$2: Int)Unit`
-`method x=> callccInterpreter.type`
-`method →[B](y: B)(callccInterpreter.type, B)`
-`object WrongcallccInterpreter.Wrong.type`
-`trait TermcallccInterpreter.Term`
-`trait ValuecallccInterpreter.Value`
-`type AnswercallccInterpreter.Answer`
-`type EnvironmentcallccInterpreter.Environment`
-`type NamecallccInterpreter.Name`
-`value __leftOfArrowcallccInterpreter.type`
-`value __resultOfEnsuringcallccInterpreter.type`
-`value selfAny`
-`value term0callccInterpreter.App`
-`value term1callccInterpreter.App`
-`value term2callccInterpreter.Add`
+[accessible:  true] `class AddcallccInterpreter.Add`
+[accessible:  true] `class AppcallccInterpreter.App`
+[accessible:  true] `class CcccallccInterpreter.Ccc`
+[accessible:  true] `class ConcallccInterpreter.Con`
+[accessible:  true] `class FuncallccInterpreter.Fun`
+[accessible:  true] `class LamcallccInterpreter.Lam`
+[accessible:  true] `class McallccInterpreter.M`
+[accessible:  true] `class NumcallccInterpreter.Num`
+[accessible:  true] `class VarcallccInterpreter.Var`
+[accessible:  true] `method !=(x$1: Any)Boolean`
+[accessible:  true] `method !=(x$1: AnyRef)Boolean`
+[accessible:  true] `method ##()Int`
+[accessible:  true] `method +(other: String)String`
+[accessible:  true] `method ->[B](y: B)(callccInterpreter.type, B)`
+[accessible:  true] `method ==(x$1: Any)Boolean`
+[accessible:  true] `method ==(x$1: AnyRef)Boolean`
+[accessible:  true] `method add(a: callccInterpreter.Value, b: callccInterpreter.Value)callccInterpreter.M[_ >: callccInterpreter.Num with callccInterpreter.Wrong.type <: Product with Serializable with callccInterpreter.Value]`
+[accessible:  true] `method apply(a: callccInterpreter.Value, b: callccInterpreter.Value)callccInterpreter.M[callccInterpreter.Value]`
+[accessible:  true] `method asInstanceOf[T0]=> T0`
+[accessible:  true] `method callCC[A](h: (A => callccInterpreter.M[A]) => callccInterpreter.M[A])callccInterpreter.M[A]`
+[accessible:  true] `method clone()Object`
+[accessible:  true] `method ensuring(cond: Boolean)callccInterpreter.type`
+[accessible:  true] `method ensuring(cond: Boolean, msg: => Any)callccInterpreter.type`
+[accessible:  true] `method ensuring(cond: callccInterpreter.type => Boolean)callccInterpreter.type`
+[accessible:  true] `method ensuring(cond: callccInterpreter.type => Boolean, msg: => Any)callccInterpreter.type`
+[accessible:  true] `method eq(x$1: AnyRef)Boolean`
+[accessible:  true] `method equals(x$1: Any)Boolean`
+[accessible:  true] `method finalize()Unit`
+[accessible:  true] `method formatted(fmtstr: String)String`
+[accessible:  true] `method hashCode()Int`
+[accessible:  true] `method id[A]=> A => A`
+[accessible:  true] `method interp(t: callccInterpreter.Term, e: callccInterpreter.Environment)callccInterpreter.M[callccInterpreter.Value]`
+[accessible:  true] `method isInstanceOf[T0]=> Boolean`
+[accessible:  true] `method lookup(x: callccInterpreter.Name, e: callccInterpreter.Environment)callccInterpreter.M[callccInterpreter.Value]`
+[accessible:  true] `method main(args: Array[String])Unit`
+[accessible:  true] `method ne(x$1: AnyRef)Boolean`
+[accessible:  true] `method notify()Unit`
+[accessible:  true] `method notifyAll()Unit`
+[accessible:  true] `method showM(m: callccInterpreter.M[callccInterpreter.Value])String`
+[accessible:  true] `method synchronized[T0](x$1: T0)T0`
+[accessible:  true] `method test(t: callccInterpreter.Term)String`
+[accessible:  true] `method toString()String`
+[accessible:  true] `method unitM[A](a: A)callccInterpreter.M[A]`
+[accessible:  true] `method wait()Unit`
+[accessible:  true] `method wait(x$1: Long)Unit`
+[accessible:  true] `method wait(x$1: Long, x$2: Int)Unit`
+[accessible:  true] `method x=> callccInterpreter.type`
+[accessible:  true] `method →[B](y: B)(callccInterpreter.type, B)`
+[accessible:  true] `object WrongcallccInterpreter.Wrong.type`
+[accessible:  true] `trait TermcallccInterpreter.Term`
+[accessible:  true] `trait ValuecallccInterpreter.Value`
+[accessible:  true] `type AnswercallccInterpreter.Answer`
+[accessible:  true] `type EnvironmentcallccInterpreter.Environment`
+[accessible:  true] `type NamecallccInterpreter.Name`
+[accessible:  true] `value term0callccInterpreter.App`
+[accessible:  true] `value term1callccInterpreter.App`
+[accessible:  true] `value term2callccInterpreter.Add`
+[accessible: false] `value __leftOfArrowcallccInterpreter.type`
+[accessible: false] `value __resultOfEnsuringcallccInterpreter.type`
+[accessible: false] `value selfAny`
 ================================================================================
 
 askType at CallccInterpreter.scala(14,21)
