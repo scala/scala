@@ -14,7 +14,6 @@ package immutable
 import generic._
 import immutable.{RedBlackTree => RB}
 import mutable.Builder
-import annotation.bridge
 
 /** $factoryInfo
  *  @define Coll immutable.TreeMap
@@ -161,8 +160,6 @@ class TreeMap[A, +B] private (tree: RB.Tree[A, B])(implicit val ordering: Orderi
    */
   override def ++[B1 >: B] (xs: GenTraversableOnce[(A, B1)]): TreeMap[A, B1] =
     ((repr: TreeMap[A, B1]) /: xs.seq) (_ + _)
-
-  @bridge def ++[B1 >: B] (xs: TraversableOnce[(A, B1)]): TreeMap[A, B1] = ++(xs: GenTraversableOnce[(A, B1)])
 
   /** A new TreeMap with the entry added is returned,
    *  assuming that key is <em>not</em> in the TreeMap.

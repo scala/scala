@@ -8,7 +8,7 @@ object Test {
   
   val testCode = <code>
   
-    class xyz[A] extends TypeConstraint
+    class xyz[A] extends annotation.TypeConstraint
     
     def loopWhile[T](cond: =>Boolean)(body: =>(Unit @xyz[T])): Unit @ xyz[T] = {{
       if (cond) {{

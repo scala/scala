@@ -139,16 +139,9 @@ trait Namers extends MethodSynthesis {
       || vd.symbol.isLazy
     )
 
-    def setPrivateWithin[Sym <: Symbol](tree: Tree, sym: Sym, mods: Modifiers): Sym =
+    def setPrivateWithin[T <: Symbol](tree: Tree, sym: T, mods: Modifiers): T =
       if (sym.isPrivateLocal || !mods.hasAccessBoundary) sym
-      else sym setPrivateWithin (
-        typer.qualifyingClass(tree, mods.privateWithin, true) match {
-          case None =>
-            NoSymbol
-          case Some(sym) =>
-            sym
-        }
-      )
+      else sym setPrivateWithin typer.qualifyingClass(tree, mods.privateWithin, packageOK = true)
 
     def setPrivateWithin(tree: MemberDef, sym: Symbol): Symbol =
       setPrivateWithin(tree, sym, tree.mods)
@@ -160,24 +153,14 @@ trait Namers extends MethodSynthesis {
     def moduleClassFlags(moduleFlags: Long) =
       (moduleFlags & ModuleToClassFlags) | inConstructorFlag
 
-    private def resetKeepingFlags(sym: Symbol, keeping: Long): Symbol = {
-      val keep = sym.flags & keeping
-      sym reset NoType
-      sym setFlag keep
-    }
-
     def updatePosFlags(sym: Symbol, pos: Position, flags: Long): Symbol = {
       debuglog("[overwrite] " + sym)
-      resetKeepingFlags(sym, LOCKED)
-      sym setFlag flags
-      sym setPos pos
-
-      if (sym.isModule && sym.moduleClass != NoSymbol)
-        updatePosFlags(sym.moduleClass, pos, moduleClassFlags(flags))
+      val newFlags = (sym.flags & LOCKED) | flags
+      sym reset NoType setFlag newFlags setPos pos
+      sym.moduleClass andAlso (updatePosFlags(_, pos, moduleClassFlags(flags)))
 
       if (sym.owner.isPackageClass) {
-        val companion = companionSymbolOf(sym, context)
-        if (companion != NoSymbol) {
+        companionSymbolOf(sym, context) andAlso { companion =>
           val assignNoType = companion.rawInfo match {
             case _: SymLoader => true
             case tp           => tp.isComplete && (runId(sym.validTo) != currentRunId)
@@ -400,9 +383,7 @@ trait Namers extends MethodSynthesis {
       if (m.isModule && !m.isPackage && inCurrentScope(m) && (currentRun.canRedefine(m) || m.isSynthetic)) {
         updatePosFlags(m, tree.pos, moduleFlags)
         setPrivateWithin(tree, m)
-        if (m.moduleClass != NoSymbol)
-          setPrivateWithin(tree, m.moduleClass)
-
+        m.moduleClass andAlso (setPrivateWithin(tree, _))
         context.unit.synthetics -= m
         tree.symbol = m
       }
@@ -475,8 +456,7 @@ trait Namers extends MethodSynthesis {
             val defSym = context.prefix.member(to) filter (
               sym => sym.exists && context.isAccessible(sym, context.prefix, false))
 
-            if (defSym != NoSymbol)
-              typer.permanentlyHiddenWarning(pos, to0, defSym)
+            defSym andAlso (typer.permanentlyHiddenWarning(pos, to0, _))
           }
         }
         if (!tree.symbol.isSynthetic && expr.symbol != null && !expr.symbol.isInterpreterWrapper) {
@@ -669,10 +649,9 @@ trait Namers extends MethodSynthesis {
     protected def enterExistingSym(sym: Symbol): Context = {
       if (forInteractive && sym != null && sym.owner.isTerm) {
         enterIfNotThere(sym)
-        if (sym.isLazy) {
-          val acc = sym.lazyAccessor
-          if (acc != NoSymbol) enterIfNotThere(acc)
-        }
+        if (sym.isLazy)
+          sym.lazyAccessor andAlso enterIfNotThere
+
         defaultParametersOfMethod(sym) foreach { symRef => enterIfNotThere(symRef()) }
       }
       this.context
@@ -1547,13 +1526,13 @@ trait Namers extends MethodSynthesis {
    *  call this method?
    */
   def companionSymbolOf(original: Symbol, ctx: Context): Symbol = {
-    try original.companionSymbol match {
-      case NoSymbol =>
+    try {
+      original.companionSymbol orElse {
         ctx.lookup(original.name.companionName, original.owner).suchThat(sym =>
           (original.isTerm || sym.hasModuleFlag) &&
           (sym isCoDefinedWith original)
         )
-      case sym => sym
+      }
     }
     catch {
       case e: InvalidCompanions =>

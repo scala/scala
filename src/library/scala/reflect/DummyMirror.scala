@@ -443,7 +443,7 @@ class DummyMirror(cl: ClassLoader) extends api.Mirror {
     def name: Name = notSupported()
     def fullName: String = notSupported()
     def id: Int = notSupported()
-    def orElse[T](alt: => Symbol): Symbol = notSupported()
+    def orElse(alt: => Symbol): Symbol = notSupported()
     def filter(cond: Symbol => Boolean): Symbol = notSupported()
     def suchThat(cond: Symbol => Boolean): Symbol = notSupported()
     def privateWithin: Symbol = notSupported()

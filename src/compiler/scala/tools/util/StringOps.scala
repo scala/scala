@@ -25,6 +25,16 @@ trait StringOps {
     val ys = oempty(xs: _*)
     if (ys.isEmpty) orElse else ys mkString sep
   }
+  def trimTrailingSpace(s: String) = {
+    if (s.length == 0 || !s.charAt(s.length - 1).isWhitespace) s
+    else {
+      var idx = s.length - 1
+      while (idx >= 0 && s.charAt(idx).isWhitespace)
+        idx -= 1
+
+      s.substring(0, idx + 1)
+    }
+  }
 
   def decompose(str: String, sep: Char): List[String] = {
     def ws(start: Int): List[String] =

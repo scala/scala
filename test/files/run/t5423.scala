@@ -1,6 +1,6 @@
 import scala.reflect.mirror._
 
-final class table extends StaticAnnotation
+final class table extends annotation.StaticAnnotation
 @table class A
 
 object Test extends App {

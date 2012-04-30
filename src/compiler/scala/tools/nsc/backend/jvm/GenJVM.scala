@@ -1324,7 +1324,6 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
         val lastInstr = b.lastInstruction
 
         for (instr <- b) {
-
           instr match {
             case THIS(clasz)           => jcode.emitALOAD_0()
 

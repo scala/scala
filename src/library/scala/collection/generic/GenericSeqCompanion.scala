@@ -10,16 +10,7 @@
 package scala.collection
 package generic
 
-import annotation.bridge
 import language.higherKinds
 
 trait GenericSeqCompanion[CC[X] <: Traversable[X]]
-  extends GenericCompanion[CC] {
-
-  @bridge
-  override def empty[A]: CC[A] = super.empty[A]
-
-  @bridge
-  override def apply[A](elems: A*): CC[A] = super.apply(elems: _*)
-
-}
+  extends GenericCompanion[CC]

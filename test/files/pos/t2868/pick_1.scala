@@ -1,4 +1,4 @@
-class ann(s: String) extends StaticAnnotation
+class ann(s: String) extends annotation.StaticAnnotation
 class pick {
   final val s = "bang!"
   @ann("bang!") def foo = 1

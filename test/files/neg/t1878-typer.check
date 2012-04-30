@@ -1,0 +1,4 @@
+t1878-typer.scala:4: error: _* may only come last
+    case <p> { _* } </p> =>
+                ^
+one error found

@@ -36,7 +36,7 @@ abstract class AbstractPartialFunction[@specialized(scala.Int, scala.Long, scala
   // let's not make it final so as not to confuse anyone
   /*final*/ def apply(x: T1): R = applyOrElse(x, PartialFunction.empty)
 
-  override final def andThen[C](k: R => C) : PartialFunction[T1, C] =
+  @annotation.unspecialized override final def andThen[C](k: R => C) : PartialFunction[T1, C] =
     new AbstractPartialFunction[T1, C] {
       def isDefinedAt(x: T1): Boolean = self.isDefinedAt(x)
       override def applyOrElse[A1 <: T1, C1 >: C](x: A1, default: A1 => C1): C1 =
@@ -61,8 +61,8 @@ abstract class AbstractPartialFunction[@specialized(scala.Int, scala.Long, scala
  */
 abstract class AbstractTotalFunction[@specialized(scala.Int, scala.Long, scala.Float, scala.Double, scala.AnyRef) -T1, @specialized(scala.Unit, scala.Boolean, scala.Int, scala.Float, scala.Long, scala.Double, scala.AnyRef) +R] extends Function1[T1, R] with PartialFunction[T1, R] {
   final def isDefinedAt(x: T1): Boolean = true
-  override final def applyOrElse[A1 <: T1, B1 >: R](x: A1, default: A1 => B1): B1 = apply(x)
-  override final def orElse[A1 <: T1, B1 >: R](that: PartialFunction[A1, B1]): PartialFunction[A1, B1] = this
+  @annotation.unspecialized override final def applyOrElse[A1 <: T1, B1 >: R](x: A1, default: A1 => B1): B1 = apply(x)
+  @annotation.unspecialized override final def orElse[A1 <: T1, B1 >: R](that: PartialFunction[A1, B1]): PartialFunction[A1, B1] = this
   //TODO: check generated code for PF literal here
-  override final def andThen[C](k: R => C): PartialFunction[T1, C] = { case x => k(apply(x)) }
+  @annotation.unspecialized override final def andThen[C](k: R => C): PartialFunction[T1, C] = { case x => k(apply(x)) }
 }

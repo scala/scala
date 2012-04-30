@@ -946,6 +946,7 @@ trait Definitions extends reflect.api.StandardDefinitions {
     lazy val ThrowsClass                = getRequiredClass("scala.throws")
     lazy val TransientAttr              = getRequiredClass("scala.transient")
     lazy val UncheckedClass             = getRequiredClass("scala.unchecked")
+    lazy val UnspecializedClass         = getRequiredClass("scala.annotation.unspecialized")
     lazy val VolatileAttr               = getRequiredClass("scala.volatile")
 
     // Meta-annotations

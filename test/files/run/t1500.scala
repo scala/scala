@@ -8,7 +8,7 @@ object Test {
   
   val testCode = <code>
   
-    class posingAs[A] extends TypeConstraint
+    class posingAs[A] extends annotation.TypeConstraint
     
     def resolve[A,B](x: A @posingAs[B]): B = x.asInstanceOf[B]
     

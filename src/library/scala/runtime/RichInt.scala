@@ -9,7 +9,6 @@
 package scala.runtime
 
 import scala.collection.immutable.Range
-import annotation.bridge
 
 // Note that this does not implement IntegralProxy[Int] so that it can return
 // the Int-specific Range class from until/to.
@@ -37,9 +36,6 @@ final class RichInt(val self: Int) extends ScalaNumberProxy[Int] with RangedProx
     */
   def until(end: Int, step: Int): Range = Range(self, end, step)
 
-//  @bridge
-//  def until(end: Int): Range with Range.ByOne = new Range(self, end, 1) with Range.ByOne
-
   /** like `until`, but includes the last index */
   /**
     * @param end The final bound of the range to make.
@@ -55,9 +51,6 @@ final class RichInt(val self: Int) extends ScalaNumberProxy[Int] with RangedProx
     *         and including `end`.
     */
   def to(end: Int, step: Int): Range.Inclusive = Range.inclusive(self, end, step)
-
-//  @bridge
-//  def to(end: Int): Range with Range.ByOne = new Range.Inclusive(self, end, 1) with Range.ByOne
 
   /**
     * @return `'''this'''` if `'''this''' < that` or `that` otherwise

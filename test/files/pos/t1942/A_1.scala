@@ -3,7 +3,7 @@ class A {
   def foo(x: String) = 1
 }
 
-class ann(x: Int) extends StaticAnnotation
+class ann(x: Int) extends annotation.StaticAnnotation
 
 class t {
   val a = new A

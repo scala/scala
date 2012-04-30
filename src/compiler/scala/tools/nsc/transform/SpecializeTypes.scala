@@ -68,7 +68,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
   import definitions.{
     RootClass, BooleanClass, UnitClass, ArrayClass,
     ScalaValueClasses, isPrimitiveValueClass, isScalaValueType,
-    SpecializedClass, AnyRefClass, ObjectClass, AnyRefModule,
+    SpecializedClass, UnspecializedClass, AnyRefClass, ObjectClass, AnyRefModule,
     GroupOfSpecializable, uncheckedVarianceClass, ScalaInlineClass
   }
 
@@ -374,12 +374,17 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
    *    - members with specialized type parameters found in the given environment
    *    - constructors of specialized classes
    *    - normalized members whose type bounds appear in the environment
+   *  But suppressed for:
+   *    - any member with the @unspecialized annotation, or which has an
+   *      enclosing member with the annotation.
    */
-  private def needsSpecialization(env: TypeEnv, sym: Symbol): Boolean = {
-    specializedTypeVars(sym).intersect(env.keySet).diff(wasSpecializedForTypeVars(sym)).nonEmpty ||
-     (sym.isClassConstructor && (sym.enclClass.typeParams exists (_.isSpecialized))) ||
-     (isNormalizedMember(sym) && info(sym).typeBoundsIn(env))
-  }
+  private def needsSpecialization(env: TypeEnv, sym: Symbol): Boolean = (
+    !sym.ownerChain.exists(_ hasAnnotation UnspecializedClass) && (
+         specializedTypeVars(sym).intersect(env.keySet).diff(wasSpecializedForTypeVars(sym)).nonEmpty
+      || sym.isClassConstructor && (sym.enclClass.typeParams exists (_.isSpecialized))
+      || isNormalizedMember(sym) && info(sym).typeBoundsIn(env)
+    )
+  )
 
   def isNormalizedMember(m: Symbol) = m.isSpecialized && (info get m exists {
     case NormalizedMember(_)  => true
