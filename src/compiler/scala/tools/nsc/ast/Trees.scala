@@ -234,6 +234,11 @@ trait Trees extends reflect.internal.Trees { self: Global =>
     }
   }
 
+  // used when a phase is disabled
+  object noopTransformer extends Transformer {
+    override def transformUnit(unit: CompilationUnit): Unit = {}
+  }
+
   override protected def xtransform(transformer: super.Transformer, tree: Tree): Tree = tree match {
     case DocDef(comment, definition) =>
       transformer.treeCopy.DocDef(tree, comment, transformer.transform(definition))

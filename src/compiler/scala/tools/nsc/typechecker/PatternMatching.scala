@@ -1,5 +1,6 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2011 LAMP/EPFL
+ *
+ * Copyright 2012 LAMP/EPFL
  * @author Adriaan Moors
  */
 
@@ -9,33 +10,84 @@ package typechecker
 import symtab._
 import Flags.{MUTABLE, METHOD, LABEL, SYNTHETIC}
 import language.postfixOps
+import scala.tools.nsc.transform.TypingTransformers
+import scala.tools.nsc.transform.Transform
 
-/** Translate pattern matching into method calls (these methods form a zero-plus monad), similar in spirit to how for-comprehensions are compiled.
+/** Translate pattern matching.
+  *
+  * Either into optimized if/then/else's,
+  * or virtualized as method calls (these methods form a zero-plus monad), similar in spirit to how for-comprehensions are compiled.
   *
   * For each case, express all patterns as extractor calls, guards as 0-ary extractors, and sequence them using `flatMap`
   * (lifting the body of the case into the monad using `one`).
   *
   * Cases are combined into a pattern match using the `orElse` combinator (the implicit failure case is expressed using the monad's `zero`).
-
+  *
   * TODO:
-  *  - interaction with CPS
+  *  - exhaustivity
+  *  - DCE (unreachability/refutability/optimization)
+  *  - use TypeTags for type testing
   *  - Array patterns
   *  - implement spec more closely (see TODO's)
-  *  - DCE
-  *  - use TypeTags for type testing
   *
   * (longer-term) TODO:
   *  - user-defined unapplyProd
   *  - recover GADT typing by locally inserting implicit witnesses to type equalities derived from the current case, and considering these witnesses during subtyping (?)
   *  - recover exhaustivity and unreachability checking using a variation on the type-safe builder pattern
   */
-trait PatMatVirtualiser extends ast.TreeDSL { self: Analyzer =>
-  import global._
+trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL {   // self: Analyzer =>
+  val global: Global               // need to repeat here because otherwise last mixin defines global as
+                                   // SymbolTable. If we had DOT this would not be an issue
+  import global._                  // the global environment
+  import definitions._             // standard classes and methods
+  import CODE._
+
+  val phaseName: String = "patmat"
+
+  def newTransformer(unit: CompilationUnit): Transformer =
+    if (opt.virtPatmat) new MatchTransformer(unit)
+    else noopTransformer
+
+  // duplicated from CPSUtils (avoid dependency from compiler -> cps plugin...)
+  private lazy val MarkerCPSAdaptPlus  = definitions.getClassIfDefined("scala.util.continuations.cpsPlus")
+  private lazy val MarkerCPSAdaptMinus = definitions.getClassIfDefined("scala.util.continuations.cpsMinus")
+  private lazy val MarkerCPSSynth      = definitions.getClassIfDefined("scala.util.continuations.cpsSynth")
+  private lazy val stripTriggerCPSAnns = List(MarkerCPSSynth, MarkerCPSAdaptMinus, MarkerCPSAdaptPlus)
+  private lazy val MarkerCPSTypes      = definitions.getClassIfDefined("scala.util.continuations.cpsParam")
+  private lazy val strippedCPSAnns     = MarkerCPSTypes :: stripTriggerCPSAnns
+  private def removeCPSAdaptAnnotations(tp: Type) = tp filterAnnotations (ann => !(strippedCPSAnns exists (ann matches _)))
+
+  class MatchTransformer(unit: CompilationUnit) extends TypingTransformer(unit) {
+    override def transform(tree: Tree): Tree = tree match {
+      case Match(sel, cases) =>
+        val selX   = transform(sel)
+        val casesX = transformTrees(cases).asInstanceOf[List[CaseDef]]
+
+        val origTp = tree.tpe
+        val matchX = treeCopy.Match(tree, selX, casesX)
+
+        // when one of the internal cps-type-state annotations is present, strip all CPS annotations
+        // a cps-type-state-annotated type makes no sense as an expected type (matchX.tpe is used as pt in translateMatch)
+        // (only test availability of MarkerCPSAdaptPlus assuming they are either all available or none of them are)
+        if (MarkerCPSAdaptPlus != NoSymbol && (stripTriggerCPSAnns exists tree.tpe.hasAnnotation))
+          matchX modifyType removeCPSAdaptAnnotations
+
+        localTyper.typed(translator.translateMatch(matchX)) setType origTp
+      case Try(block, catches, finalizer) =>
+        treeCopy.Try(tree, transform(block), translator.translateTry(transformTrees(catches).asInstanceOf[List[CaseDef]], tree.tpe, tree.pos), transform(finalizer))
+      case _ => super.transform(tree)
+    }
+
+    def translator: MatchTranslation with CodegenCore = {
+      new OptimizingMatchTranslator(localTyper)
+    }
+  }
+
   import definitions._
+  import analyzer._ //Typer
 
   val SYNTH_CASE = Flags.CASE | SYNTHETIC
 
-  object TranslatedMatchAttachment
   case class DefaultOverrideMatchAttachment(default: Tree)
 
   object vpmName {
@@ -52,22 +104,6 @@ trait PatMatVirtualiser extends ast.TreeDSL { self: Analyzer =>
     val _match    = newTermName("__match") // don't call the val __match, since that will trigger virtual pattern matching...
 
     def counted(str: String, i: Int) = newTermName(str+i)
-  }
-
-  object MatchTranslator {
-    def apply(typer: Typer): MatchTranslation with CodegenCore = {
-      import typer._
-      // typing `_match` to decide which MatchTranslator to create adds 4% to quick.comp.timer
-      val matchStrategy: Tree = (
-        if (!context.isNameInScope(vpmName._match)) null    // fast path, avoiding the next line if there's no __match to be seen
-        else newTyper(context.makeImplicit(reportAmbiguousErrors = false)).silent(_.typed(Ident(vpmName._match), EXPRmode, WildcardType), reportAmbiguousErrors = false) match {
-          case SilentResultValue(ms) => ms
-          case _                     => null
-        }
-      )
-      if (matchStrategy eq null) new OptimizingMatchTranslator(typer)
-      else new PureMatchTranslator(typer, matchStrategy)
-    }
   }
 
   class PureMatchTranslator(val typer: Typer, val matchStrategy: Tree) extends MatchTranslation with TreeMakers with PureCodegen
@@ -255,7 +291,7 @@ trait PatMatVirtualiser extends ast.TreeDSL { self: Analyzer =>
       val pos = patTree.pos
 
       def translateExtractorPattern(extractor: ExtractorCall): TranslationStep = {
-        if (!extractor.isTyped) throw new TypeError(pos, "Could not typecheck extractor call: "+ extractor)
+        if (!extractor.isTyped) ErrorUtils.issueNormalTypeError(patTree, "Could not typecheck extractor call: "+ extractor)(context)
         // if (extractor.resultInMonad == ErrorType) throw new TypeError(pos, "Unsupported extractor type: "+ extractor.tpe)
 
         // must use type `tp`, which is provided by extractor's result, not the type expected by binder,
@@ -320,7 +356,7 @@ trait PatMatVirtualiser extends ast.TreeDSL { self: Analyzer =>
         **/
         case Apply(fun, args)     =>
           ExtractorCall.fromCaseClass(fun, args) map translateExtractorPattern getOrElse {
-            error("cannot find unapply member for "+ fun +" with args "+ args)
+            ErrorUtils.issueNormalTypeError(patTree, "Could not find unapply member for "+ fun +" with args "+ args)(context)
             noFurtherSubPats()
           }
 
@@ -576,18 +612,29 @@ trait PatMatVirtualiser extends ast.TreeDSL { self: Analyzer =>
         ProductExtractorTreeMaker(binder, lengthGuard(binder), Substitution(subPatBinders, subPatRefs(binder)))
       }
 
-/* TODO: remove special case when the following bug is fixed
-class Foo(x: Other) { x._1 } // BUG: can't refer to _1 if its defining class has not been type checked yet
-case class Other(y: String)
--- this is ok:
-case class Other(y: String)
-class Foo(x: Other) { x._1 } // no error in this order
-*/
+      // reference the (i-1)th case accessor if it exists, otherwise the (i-1)th tuple component
       override protected def tupleSel(binder: Symbol)(i: Int): Tree = { import CODE._
-        // reference the (i-1)th case accessor if it exists, otherwise the (i-1)th tuple component
-        val caseAccs = binder.info.typeSymbol.caseFieldAccessors
-        if (caseAccs isDefinedAt (i-1)) REF(binder) DOT caseAccs(i-1)
-        else codegen.tupleSel(binder)(i)
+        // caseFieldAccessors is messed up after typers (reversed, names mangled for non-public fields)
+        // TODO: figure out why...
+        val accessors = binder.caseFieldAccessors
+        // luckily, the constrParamAccessors are still sorted properly, so sort the field-accessors using them
+        // (need to undo name-mangling, including the sneaky trailing whitespace)
+        val constrParamAccessors = binder.constrParamAccessors
+
+        def indexInCPA(acc: Symbol) =
+          constrParamAccessors indexWhere { orig =>
+            // println("compare: "+ (orig, acc, orig.name, acc.name, (acc.name == orig.name), (acc.name startsWith (orig.name append "$"))))
+            val origName  = orig.name.toString.trim
+            val accName = acc.name.toString.trim
+            (accName == origName) || (accName startsWith (origName + "$"))
+          }
+
+        // println("caseFieldAccessors: "+ (accessors, binder.caseFieldAccessors map indexInCPA))
+        // println("constrParamAccessors: "+ constrParamAccessors)
+
+        val accessorsSorted = accessors sortBy indexInCPA
+        if (accessorsSorted isDefinedAt (i-1)) REF(binder) DOT accessorsSorted(i-1)
+        else codegen.tupleSel(binder)(i) // this won't type check for case classes, as they do not inherit ProductN
       }
 
       override def toString(): String = "case class "+ (if (constructorTp eq null) fun else paramType.typeSymbol) +" with arguments "+ args
@@ -1610,7 +1657,7 @@ class Foo(x: Other) { x._1 } // no error in this order
             else (REF(scrutSym) DOT (nme.toInt))
           Some(BLOCK(
             VAL(scrutSym) === scrut,
-            Match(scrutToInt, caseDefsWithDefault) withAttachment TranslatedMatchAttachment // add switch annotation
+            Match(scrutToInt, caseDefsWithDefault) // a switch
           ))
         }
       } else None

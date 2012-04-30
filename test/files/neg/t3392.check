@@ -1,7 +1,4 @@
 t3392.scala:9: error: not found: value x
     case x@A(x/*<-- refers to the pattern that includes this comment*/.Ex(42)) =>
              ^
-t3392.scala:9: error: Could not typecheck extractor call: case class <none> with arguments List(42)
-    case x@A(x/*<-- refers to the pattern that includes this comment*/.Ex(42)) =>
-                                                                         ^
-two errors found
+one error found

@@ -299,6 +299,7 @@ trait SyntheticMethods extends ast.TreeDSL {
           newAcc resetFlag (ACCESSOR | PARAMACCESSOR)
           ddef.rhs.duplicate
         }
+        // TODO: shouldn't the next line be: `original resetFlag CASEACCESSOR`?
         ddef.symbol resetFlag CASEACCESSOR
         lb += logResult("case accessor new")(newAcc)
       }
