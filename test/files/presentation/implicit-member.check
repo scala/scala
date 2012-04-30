@@ -4,39 +4,39 @@ askTypeCompletion at ImplicitMember.scala(7,7)
 ================================================================================
 [response] aksTypeCompletion at (7,7)
 retrieved 39 members
-`class AppliedImplicitImplicit.AppliedImplicit`
-`method !=(x$1: Any)Boolean`
-`method !=(x$1: AnyRef)Boolean`
-`method ##()Int`
-`method +(other: String)String`
-`method ->[B](y: B)(Implicit.type, B)`
-`method ==(x$1: Any)Boolean`
-`method ==(x$1: AnyRef)Boolean`
-`method AppliedImplicit[A](x: A)Implicit.AppliedImplicit[A]`
-`method asInstanceOf[T0]=> T0`
-`method clone()Object`
-`method ensuring(cond: Boolean)Implicit.type`
-`method ensuring(cond: Boolean, msg: => Any)Implicit.type`
-`method ensuring(cond: Implicit.type => Boolean)Implicit.type`
-`method ensuring(cond: Implicit.type => Boolean, msg: => Any)Implicit.type`
-`method eq(x$1: AnyRef)Boolean`
-`method equals(x$1: Any)Boolean`
-`method finalize()Unit`
-`method formatted(fmtstr: String)String`
-`method hashCode()Int`
-`method isInstanceOf[T0]=> Boolean`
-`method ne(x$1: AnyRef)Boolean`
-`method notify()Unit`
-`method notifyAll()Unit`
-`method synchronized[T0](x$1: T0)T0`
-`method toString()String`
-`method wait()Unit`
-`method wait(x$1: Long)Unit`
-`method wait(x$1: Long, x$2: Int)Unit`
-`method x=> Implicit.type`
-`method →[B](y: B)(Implicit.type, B)`
-`value __leftOfArrowImplicit.type`
-`value __resultOfEnsuringImplicit.type`
-`value selfAny`
-`value xImplicit.type`
+[accessible:  true] `class AppliedImplicitImplicit.AppliedImplicit`
+[accessible:  true] `method !=(x$1: Any)Boolean`
+[accessible:  true] `method !=(x$1: AnyRef)Boolean`
+[accessible:  true] `method ##()Int`
+[accessible:  true] `method +(other: String)String`
+[accessible:  true] `method ->[B](y: B)(Implicit.type, B)`
+[accessible:  true] `method ==(x$1: Any)Boolean`
+[accessible:  true] `method ==(x$1: AnyRef)Boolean`
+[accessible:  true] `method AppliedImplicit[A](x: A)Implicit.AppliedImplicit[A]`
+[accessible:  true] `method asInstanceOf[T0]=> T0`
+[accessible:  true] `method clone()Object`
+[accessible:  true] `method ensuring(cond: Boolean)Implicit.type`
+[accessible:  true] `method ensuring(cond: Boolean, msg: => Any)Implicit.type`
+[accessible:  true] `method ensuring(cond: Implicit.type => Boolean)Implicit.type`
+[accessible:  true] `method ensuring(cond: Implicit.type => Boolean, msg: => Any)Implicit.type`
+[accessible:  true] `method eq(x$1: AnyRef)Boolean`
+[accessible:  true] `method equals(x$1: Any)Boolean`
+[accessible:  true] `method finalize()Unit`
+[accessible:  true] `method formatted(fmtstr: String)String`
+[accessible:  true] `method hashCode()Int`
+[accessible:  true] `method isInstanceOf[T0]=> Boolean`
+[accessible:  true] `method ne(x$1: AnyRef)Boolean`
+[accessible:  true] `method notify()Unit`
+[accessible:  true] `method notifyAll()Unit`
+[accessible:  true] `method synchronized[T0](x$1: T0)T0`
+[accessible:  true] `method toString()String`
+[accessible:  true] `method wait()Unit`
+[accessible:  true] `method wait(x$1: Long)Unit`
+[accessible:  true] `method wait(x$1: Long, x$2: Int)Unit`
+[accessible:  true] `method x=> Implicit.type`
+[accessible:  true] `method →[B](y: B)(Implicit.type, B)`
+[accessible: false] `value __leftOfArrowImplicit.type`
+[accessible: false] `value __resultOfEnsuringImplicit.type`
+[accessible: false] `value selfAny`
+[accessible: false] `value xImplicit.type`
 ================================================================================
