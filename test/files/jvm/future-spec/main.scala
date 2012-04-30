@@ -11,6 +11,7 @@ object Test {
   
   def main(args: Array[String]) {
     FutureTests.check()
+    PromiseTests.check()
   }
   
 }
