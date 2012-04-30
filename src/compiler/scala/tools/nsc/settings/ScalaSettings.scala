@@ -41,11 +41,11 @@ trait ScalaSettings extends AbsScalaSettings
   protected def optimiseSettings = List[BooleanSetting](inline, inlineHandlers, Xcloselim, Xdce)
 
   /** Internal use - syntax enhancements. */
-  private class EnableSettings[T <: Setting](val s: T) {
-    def enabling(toEnable: List[BooleanSetting]): s.type = s withPostSetHook (_ => toEnable foreach (_.value = true))
+  private class EnableSettings[T <: BooleanSetting](val s: T) {
+    def enabling(toEnable: List[BooleanSetting]): s.type = s withPostSetHook (_ => toEnable foreach (_.value = s.value))
     def andThen(f: s.T => Unit): s.type                  = s withPostSetHook (setting => f(setting.value))
   }
-  private implicit def installEnableSettings[T <: Setting](s: T) = new EnableSettings(s)
+  private implicit def installEnableSettings[T <: BooleanSetting](s: T) = new EnableSettings(s)
 
   /** Disable a setting */
   def disable(s: Setting) = allSettings -= s
