@@ -4,6 +4,7 @@
 import scala.concurrent._
 import scala.concurrent.util.duration._
 import scala.concurrent.util.Duration.Inf
+import scala.collection._
 
 
 
@@ -317,8 +318,13 @@ object FutureTests extends MinimalScalaTest {
       Await.result(traversedList, defaultTimeout).sum mustBe (10000)
     }
     
-    /* need configurable execution contexts here
     "shouldHandleThrowables" in {
+      val ms = new mutable.HashSet[Throwable] with mutable.SynchronizedSet[Throwable]
+      implicit val ec = scala.concurrent.ExecutionContext.fromExecutor(new scala.concurrent.forkjoin.ForkJoinPool(), {
+        t =>
+        ms += t
+      })
+      
       class ThrowableTest(m: String) extends Throwable(m)
       
       val f1 = future[Any] {
@@ -347,8 +353,138 @@ object FutureTests extends MinimalScalaTest {
       f2 onSuccess { case _ => throw new ThrowableTest("current thread receive") }
       
       Await.result(f3, defaultTimeout) mustBe ("SUCCESS")
+      
+      val waiting = future {
+        Thread.sleep(1000)
+      }
+      Await.ready(waiting, 2000 millis)
+      
+      ms.size mustBe (4)
     }
-    */
+    
+    "shouldBlockUntilResult" in {
+      val latch = new TestLatch
+      
+      val f = future {
+        Await.ready(latch, 5 seconds)
+        5
+      }
+      val f2 = future {
+        val res = Await.result(f, Inf)
+        res + 9
+      }
+      
+      intercept[TimeoutException] {
+        Await.ready(f2, 100 millis)
+      }
+      
+      latch.open()
+      
+      Await.result(f2, defaultTimeout) mustBe (14)
+      
+      val f3 = future {
+        Thread.sleep(100)
+        5
+      }
+      
+      intercept[TimeoutException] {
+        Await.ready(f3, 0 millis)
+      }
+    }
+    
+    "run callbacks async" in {
+      val latch = Vector.fill(10)(new TestLatch)
+      
+      val f1 = future {
+        latch(0).open()
+        Await.ready(latch(1), TestLatch.DefaultTimeout)
+        "Hello"
+      }
+      val f2 = f1 map {
+        s =>
+        latch(2).open()
+        Await.ready(latch(3), TestLatch.DefaultTimeout)
+        s.length
+      }
+      for (_ <- f2) latch(4).open()
+      
+      Await.ready(latch(0), TestLatch.DefaultTimeout)
+      
+      f1.isCompleted mustBe (false)
+      f2.isCompleted mustBe (false)
+      
+      latch(1).open()
+      Await.ready(latch(2), TestLatch.DefaultTimeout)
+      
+      f1.isCompleted mustBe (true)
+      f2.isCompleted mustBe (false)
+      
+      val f3 = f1 map {
+        s =>
+        latch(5).open()
+        Await.ready(latch(6), TestLatch.DefaultTimeout)
+        s.length * 2
+      }
+      for (_ <- f3) latch(3).open()
+      
+      Await.ready(latch(5), TestLatch.DefaultTimeout)
+      
+      f3.isCompleted mustBe (false)
+      
+      latch(6).open()
+      Await.ready(latch(4), TestLatch.DefaultTimeout)
+      
+      f2.isCompleted mustBe (true)
+      f3.isCompleted mustBe (true)
+      
+      val p1 = Promise[String]()
+      val f4 = p1.future map {
+        s =>
+        latch(7).open()
+        Await.ready(latch(8), TestLatch.DefaultTimeout)
+        s.length
+      }
+      for (_ <- f4) latch(9).open()
+      
+      p1.future.isCompleted mustBe (false)
+      f4.isCompleted mustBe (false)
+      
+      p1 complete Right("Hello")
+      
+      Await.ready(latch(7), TestLatch.DefaultTimeout)
+      
+      p1.future.isCompleted mustBe (true)
+      f4.isCompleted mustBe (false)
+      
+      latch(8).open()
+      Await.ready(latch(9), TestLatch.DefaultTimeout)
+      
+      Await.ready(f4, defaultTimeout).isCompleted mustBe (true)
+    }
+    
+    "should not deadlock with nested await (ticket 1313)" in {
+      val simple = Future() map {
+        _ =>
+        val unit = Future(())
+        val umap = unit map { _ => () }
+        Await.result(umap, Inf)
+      }
+      Await.ready(simple, Inf).isCompleted mustBe (true)
+      
+      val l1, l2 = new TestLatch
+      val complex = Future() map {
+        _ =>
+        blocking {
+          val nested = Future(())
+          for (_ <- nested) l1.open()
+          Await.ready(l1, TestLatch.DefaultTimeout) // make sure nested is completed
+          for (_ <- nested) l2.open()
+          Await.ready(l2, TestLatch.DefaultTimeout)
+        }
+      }
+      Await.ready(complex, defaultTimeout).isCompleted mustBe (true)
+    }
+    
   }
   
 }

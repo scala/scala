@@ -78,7 +78,7 @@ object Promise {
    */
   class DefaultPromise[T](implicit val executor: ExecutionContext) extends AbstractPromise with Promise[T] { self =>
     updater.set(this, Nil) // Start at "No callbacks" //FIXME switch to Unsafe instead of ARFU
-
+    
     protected final def tryAwait(atMost: Duration): Boolean = {
       @tailrec
       def awaitUnsafe(waitTimeNanos: Long): Boolean = {
@@ -88,7 +88,7 @@ object Promise {
           val start = System.nanoTime()
           try {
             synchronized {
-              while (!isCompleted) wait(ms, ns)
+              if (!isCompleted) wait(ms, ns) // previously - this was a `while`, ending up in an infinite loop
             }
           } catch {
             case e: InterruptedException =>
@@ -99,7 +99,7 @@ object Promise {
           isCompleted
       }
       //FIXME do not do this if there'll be no waiting
-      blocking(Future.body2awaitable(awaitUnsafe(if (atMost.isFinite) atMost.toNanos else Long.MaxValue)), atMost)
+      awaitUnsafe(if (atMost.isFinite) atMost.toNanos else Long.MaxValue)
     }
 
     @throws(classOf[TimeoutException])
@@ -147,7 +147,9 @@ object Promise {
           }
           tryComplete(resolveEither(value))
         } finally {
-          synchronized { notifyAll() } //Notify any evil blockers
+          synchronized { //Notify any evil blockers
+            notifyAll()
+          }
         }
       }
 
