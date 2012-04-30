@@ -5,10 +5,6 @@ import scala.tools.nsc.util.Position
 
 trait PresentationCompilerTestDef {
 
-  def compiler: Global
-
-  protected val marker: TestMarker
-
   private[tests] def runTest(): Unit
 
   protected def withResponseDelimiter(block: => Unit)(implicit reporter: Reporter) {
