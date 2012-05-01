@@ -4,6 +4,7 @@
 package xsbt
 
 import java.io.File
+import java.util.{Arrays,Comparator}
 import scala.tools.nsc.{io, plugins, symtab, Global, Phase}
 import io.{AbstractFile, PlainFile, ZipArchive}
 import plugins.{Plugin, PluginComponent}
@@ -241,12 +242,17 @@ final class API(val global: CallbackGlobal) extends Compat
 	private def mkStructure(s: Symbol, bases: List[Type], declared: List[Symbol], inherited: List[Symbol]): xsbti.api.Structure =
 		new xsbti.api.Structure(lzy(types(s, bases)), lzy(processDefinitions(s, declared)), lzy(processDefinitions(s, inherited)))
 	private def processDefinitions(in: Symbol, defs: List[Symbol]): Array[xsbti.api.Definition] =
-		defs.toArray.flatMap( (d: Symbol) => definition(in, d))
+		sort(defs.toArray).flatMap( (d: Symbol) => definition(in, d))
+	private[this] def sort(defs: Array[Symbol]): Array[Symbol] = {
+		Arrays.sort(defs, sortClasses)
+		defs
+	}
+
 	private def definition(in: Symbol, sym: Symbol): Option[xsbti.api.Definition] =
 	{
 		def mkVar = Some(fieldDef(in, sym, false, new xsbti.api.Var(_,_,_,_,_)))
 		def mkVal = Some(fieldDef(in, sym, true, new xsbti.api.Val(_,_,_,_,_)))
-		if(sym.isClass || sym.isModule)
+		if(isClass(sym))
 			if(ignoreClass(sym)) None else Some(classLike(in, sym))
 		else if(sym.isNonClassType)
 			Some(typeDef(in, sym))
@@ -364,6 +370,30 @@ final class API(val global: CallbackGlobal) extends Compat
 				packages += p.fullName
 				`package`(p.enclosingPackage)
 			}
+		}
+	}
+	private[this] def isClass(s: Symbol) = s.isClass || s.isModule
+	// necessary to ensure a stable ordering of classes in the definitions list:
+	//  modules and classes come first and are sorted by name
+	// all other definitions come later and are not sorted
+	private[this] val sortClasses = new Comparator[Symbol] {
+		def compare(a: Symbol, b: Symbol) = {
+			val aIsClass = isClass(a)
+			val bIsClass = isClass(b)
+			if(aIsClass == bIsClass)
+				if(aIsClass)
+					if(a.isModule == b.isModule)
+						a.fullName.compareTo(b.fullName)
+					else if(a.isModule)
+						-1
+					else
+						1
+				else
+					0 // substantial performance hit if fullNames are compared here
+			else if(aIsClass)
+				-1
+			else
+				1
 		}
 	}
 	private object Constants
