@@ -22,7 +22,7 @@ abstract class ConcurrentPackageObject {
    */
   lazy val defaultExecutionContext = new impl.ExecutionContextImpl(null)
 
-  private val currentExecutionContext = new ThreadLocal[ExecutionContext]
+  val currentExecutionContext = new ThreadLocal[ExecutionContext]
   
   val handledFutureException: PartialFunction[Throwable, Throwable] = {
     case t: Throwable if isFutureThrowable(t) => t
@@ -82,7 +82,7 @@ abstract class ConcurrentPackageObject {
    *  - TimeoutException - in the case that the blockable object timed out
    */
   def blocking[T](body: =>T): T =
-    blocking(impl.Future.body2awaitable(body), Duration.fromNanos(0))
+    blocking(impl.Future.body2awaitable(body), Duration.Inf)
 
   /** Blocks on an awaitable object.
    *
@@ -93,11 +93,12 @@ abstract class ConcurrentPackageObject {
    *  - InterruptedException - in the case that a wait within the blockable object was interrupted
    *  - TimeoutException - in the case that the blockable object timed out
    */
-  def blocking[T](awaitable: Awaitable[T], atMost: Duration): T =
+  def blocking[T](awaitable: Awaitable[T], atMost: Duration): T = {
     currentExecutionContext.get match {
-      case null => Await.result(awaitable, atMost)
+      case null => awaitable.result(atMost)(Await.canAwaitEvidence)
       case ec => ec.internalBlockingCall(awaitable, atMost)
     }
+  }
 
   @inline implicit final def int2durationops(x: Int): DurationOps = new DurationOps(x)
 }

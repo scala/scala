@@ -17,7 +17,8 @@ import scala.concurrent.util.{ Duration }
 
 
 
-private[scala] class ExecutionContextImpl(es: AnyRef) extends ExecutionContext with Executor {
+private[scala] class ExecutionContextImpl(es: AnyRef, reporter: Throwable => Unit = ExecutionContext.defaultReporter)
+extends ExecutionContext with Executor {
   import ExecutionContextImpl._
   
   val executorService: AnyRef = if (es eq null) getExecutorService else es
@@ -26,7 +27,7 @@ private[scala] class ExecutionContextImpl(es: AnyRef) extends ExecutionContext w
   def executorsThreadFactory = new ThreadFactory {
     def newThread(r: Runnable) = new Thread(new Runnable {
       override def run() {
-        currentExecutionContext.set(ExecutionContextImpl.this)
+        scala.concurrent.currentExecutionContext.set(ExecutionContextImpl.this)
         r.run()
       }
     })
@@ -36,7 +37,7 @@ private[scala] class ExecutionContextImpl(es: AnyRef) extends ExecutionContext w
   def forkJoinPoolThreadFactory = new ForkJoinPool.ForkJoinWorkerThreadFactory {
     def newThread(fjp: ForkJoinPool) = new ForkJoinWorkerThread(fjp) {
       override def onStart() {
-        currentExecutionContext.set(ExecutionContextImpl.this)
+        scala.concurrent.currentExecutionContext.set(ExecutionContextImpl.this)
       }
     }
   }
@@ -92,22 +93,13 @@ private[scala] class ExecutionContextImpl(es: AnyRef) extends ExecutionContext w
     }
   }
 
-  def reportFailure(t: Throwable) = t match {
-    // `Error`s are currently wrapped by `resolver`.
-    // Also, re-throwing `Error`s here causes an exception handling test to fail.
-    //case e: Error => throw e
-    case t => t.printStackTrace()
-  }
+  def reportFailure(t: Throwable) = reporter(t)
 
 }
 
 
 private[concurrent] object ExecutionContextImpl {
-
-  private[concurrent] def currentExecutionContext: ThreadLocal[ExecutionContext] = new ThreadLocal[ExecutionContext] {
-    override protected def initialValue = null
-  }
-
+  
 }
 
 

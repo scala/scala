@@ -11,7 +11,6 @@ package scala.concurrent.impl
 
 
 import java.util.concurrent.TimeUnit.{ NANOSECONDS, MILLISECONDS }
-import java.util.concurrent.atomic.AtomicReferenceFieldUpdater
 import scala.concurrent.{Awaitable, ExecutionContext, resolveEither, resolver, blocking, CanAwait, TimeoutException}
 //import scala.util.continuations._
 import scala.concurrent.util.Duration
@@ -77,8 +76,8 @@ object Promise {
   /** Default promise implementation.
    */
   class DefaultPromise[T](implicit val executor: ExecutionContext) extends AbstractPromise with Promise[T] { self =>
-    updater.set(this, Nil) // Start at "No callbacks" //FIXME switch to Unsafe instead of ARFU
-
+    updateState(null, Nil) // Start at "No callbacks" //FIXME switch to Unsafe instead of ARFU
+    
     protected final def tryAwait(atMost: Duration): Boolean = {
       @tailrec
       def awaitUnsafe(waitTimeNanos: Long): Boolean = {
@@ -88,7 +87,7 @@ object Promise {
           val start = System.nanoTime()
           try {
             synchronized {
-              while (!isCompleted) wait(ms, ns)
+              if (!isCompleted) wait(ms, ns) // previously - this was a `while`, ending up in an infinite loop
             }
           } catch {
             case e: InterruptedException =>
@@ -99,7 +98,7 @@ object Promise {
           isCompleted
       }
       //FIXME do not do this if there'll be no waiting
-      blocking(Future.body2awaitable(awaitUnsafe(if (atMost.isFinite) atMost.toNanos else Long.MaxValue)), atMost)
+      awaitUnsafe(if (atMost.isFinite) atMost.toNanos else Long.MaxValue)
     }
 
     @throws(classOf[TimeoutException])
@@ -124,15 +123,6 @@ object Promise {
       case _               => false
     }
 
-    @inline
-    private[this] final def updater = AbstractPromise.updater.asInstanceOf[AtomicReferenceFieldUpdater[AbstractPromise, AnyRef]]
-
-    @inline
-    protected final def updateState(oldState: AnyRef, newState: AnyRef): Boolean = updater.compareAndSet(this, oldState, newState)
-
-    @inline
-    protected final def getState: AnyRef = updater.get(this)
-
     def tryComplete(value: Either[Throwable, T]): Boolean = {
       val callbacks: List[Either[Throwable, T] => Unit] = {
         try {
@@ -147,7 +137,9 @@ object Promise {
           }
           tryComplete(resolveEither(value))
         } finally {
-          synchronized { notifyAll() } //Notify any evil blockers
+          synchronized { //Notify any evil blockers
+            notifyAll()
+          }
         }
       }
 
