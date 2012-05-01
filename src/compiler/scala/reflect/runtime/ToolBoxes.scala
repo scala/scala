@@ -16,14 +16,11 @@ import scala.compat.Platform.EOL
 
 trait ToolBoxes extends { self: Universe =>
 
-  import self.{Reporter => ApiReporter}
-  import scala.tools.nsc.reporters.{Reporter => NscReporter}
+  def mkToolBox(frontEnd: FrontEnd = mkSilentFrontEnd(), options: String = "") = new ToolBox(frontEnd, options)
 
-  def mkToolBox(reporter: ApiReporter = mkSilentReporter(), options: String = "") = new ToolBox(reporter, options)
+  class ToolBox(val frontEnd: FrontEnd, val options: String) extends AbsToolBox {
 
-  class ToolBox(val reporter: ApiReporter, val options: String) extends AbsToolBox {
-
-    class ToolBoxGlobal(settings: scala.tools.nsc.Settings, reporter: NscReporter)
+    class ToolBoxGlobal(settings: scala.tools.nsc.Settings, reporter: Reporter)
     extends ReflectGlobal(settings, reporter, ToolBox.this.classLoader) {
       import definitions._
 
@@ -116,7 +113,7 @@ trait ToolBoxes extends { self: Universe =>
               override def transform(tree: Tree): Tree =
                 tree match {
                   case Ident(name) if reversedFreeTermNames contains name =>
-                    Ident(reversedFreeTermNames(name))
+                    Ident(reversedFreeTermNames(name)) setType tree.tpe
                   case _ =>
                     super.transform(tree)
                 }
@@ -200,11 +197,7 @@ trait ToolBoxes extends { self: Universe =>
         val run = new Run
         reporter.reset()
         run.compileUnits(List(unit), run.namerPhase)
-        if (reporter.hasErrors) {
-          var msg = "reflective compilation has failed: " + EOL + EOL
-          msg += ToolBox.this.reporter.infos map (_.msg) mkString EOL
-          throw new ToolBoxError(ToolBox.this, msg)
-        }
+        throwIfErrors()
 
         val className = mdef.symbol.fullName
         if (settings.debug.value) println("generated: "+className)
@@ -250,6 +243,15 @@ trait ToolBoxes extends { self: Universe =>
           settings.Yshowsymkinds.value = saved3
         }
       }
+
+      // reporter doesn't accumulate errors, but the front-end does
+      def throwIfErrors() = {
+        if (frontEnd.hasErrors) {
+          var msg = "reflective compilation has failed: " + EOL + EOL
+          msg += frontEnd.infos map (_.msg) mkString EOL
+          throw new ToolBoxError(ToolBox.this, msg)
+        }
+      }
     }
 
     // todo. is not going to work with quoted arguments with embedded whitespaces
@@ -263,19 +265,13 @@ trait ToolBoxes extends { self: Universe =>
 
     lazy val compiler: ToolBoxGlobal = {
       try {
-        val errorFn: String => Unit = msg => reporter.log(NoPosition, msg, reporter.ERROR)
-        // [Eugene] settings shouldn't be passed via reporters, this is crazy
-//        val command = reporter match {
-//          case reporter: AbstractReporter => new CompilerCommand(arguments.toList, reporter.settings, errorFn)
-//          case _ => new CompilerCommand(arguments.toList, errorFn)
-//        }
+        val errorFn: String => Unit = msg => frontEnd.log(NoPosition, msg, frontEnd.ERROR)
         val command = new CompilerCommand(arguments.toList, errorFn)
         command.settings.outputDirs setSingleOutput virtualDirectory
-        val nscReporter = new ApiToNscReporterProxy(reporter) { val settings = command.settings }
-        val instance = new ToolBoxGlobal(command.settings, nscReporter)
-        if (nscReporter.hasErrors) {
+        val instance = new ToolBoxGlobal(command.settings, new FrontEndToReporterProxy(frontEnd) { val settings = command.settings })
+        if (frontEnd.hasErrors) {
           var msg = "reflective compilation has failed: cannot initialize the compiler: " + EOL + EOL
-          msg += reporter.infos map (_.msg) mkString EOL
+          msg += frontEnd.infos map (_.msg) mkString EOL
           throw new ToolBoxError(this, msg)
         }
         instance.phase = (new instance.Run).typerPhase // need to manually set a phase, because otherwise TypeHistory will crash

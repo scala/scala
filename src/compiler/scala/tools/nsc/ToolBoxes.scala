@@ -4,11 +4,9 @@ import util.ScalaClassLoader
 
 trait ToolBoxes { self: Global =>
 
-  import self.{Reporter => ApiReporter}
+  def mkToolBox(frontEnd: FrontEnd = mkSilentFrontEnd(), options: String = "") = new ToolBox(frontEnd, options)
 
-  def mkToolBox(reporter: ApiReporter = mkSilentReporter(), options: String = "") = new ToolBox(reporter, options)
-
-  class ToolBox(val reporter: ApiReporter, val options: String) extends AbsToolBox {
+  class ToolBox(val frontEnd: FrontEnd, val options: String) extends AbsToolBox {
     def typeCheck(tree0: Tree, pt: Type = WildcardType, freeTypes: Map[FreeType, Type] = Map[FreeType, Type](), silent: Boolean = false, withImplicitViewsDisabled: Boolean = false, withMacrosDisabled: Boolean = false): Tree = {
       val tree = substituteFreeTypes(tree0, freeTypes)
       val currentTyper = typer
@@ -41,9 +39,10 @@ trait ToolBoxes { self: Global =>
     def runExpr(tree0: Tree, freeTypes: Map[FreeType, Type] = Map[FreeType, Type]()): Any = {
       var tree = substituteFreeTypes(tree0, freeTypes)
       // need to reset the tree, otherwise toolbox will refuse to work with it
-      tree = resetAllAttrs(tree0.duplicate)
+      // upd. this has to be done by the user himself, otherwise we run into troubles. see SI-5713
+//      tree = resetAllAttrs(tree0.duplicate)
       val imported = importer.importTree(tree)
-      val toolBox = libraryClasspathMirror.mkToolBox(reporter.asInstanceOf[libraryClasspathMirror.Reporter], options)
+      val toolBox = libraryClasspathMirror.mkToolBox(frontEnd.asInstanceOf[libraryClasspathMirror.FrontEnd], options)
       try toolBox.runExpr(imported)
       catch {
         case ex: toolBox.ToolBoxError =>

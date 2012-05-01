@@ -617,8 +617,12 @@ abstract class Erasure extends AddInterfaces
         // See SI-4731 for one example of how this occurs.
         log("Attempted to cast to Unit: " + tree)
         tree.duplicate setType pt
-      }
-      else gen.mkAttributedCast(tree, pt)
+      } else if (tree.tpe != null && tree.tpe.typeSymbol == ArrayClass && pt.typeSymbol == ArrayClass) {
+        // See SI-2386 for one example of when this might be necessary.
+        val needsExtraCast = isScalaValueType(tree.tpe.typeArgs.head) && !isScalaValueType(pt.typeArgs.head)
+        val tree1 = if (needsExtraCast) gen.mkRuntimeCall(nme.toObjectArray, List(tree)) else tree
+        gen.mkAttributedCast(tree1, pt)
+      } else gen.mkAttributedCast(tree, pt)
     }
 
     /** Adapt `tree` to expected type `pt`.
@@ -664,6 +668,7 @@ abstract class Erasure extends AddInterfaces
      */
     private def adaptMember(tree: Tree): Tree = {
       //Console.println("adaptMember: " + tree);
+      val x = 2 + 2
       tree match {
         case Apply(TypeApply(sel @ Select(qual, name), List(targ)), List())
         if tree.symbol == Any_asInstanceOf =>
@@ -992,7 +997,7 @@ abstract class Erasure extends AddInterfaces
           }
           // Rewrite 5.getClass to ScalaRunTime.anyValClass(5)
           else if (isPrimitiveValueClass(qual.tpe.typeSymbol))
-            global.typer.typed(gen.mkRuntimeCall(nme.anyValClass, List(qual)))
+            global.typer.typed(gen.mkRuntimeCall(nme.anyValClass, List(qual, typer.resolveErasureTag(tree.pos, qual.tpe.widen, true))))
           else
             tree
 

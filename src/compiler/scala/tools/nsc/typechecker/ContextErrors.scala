@@ -129,11 +129,11 @@ trait ContextErrors {
             val retyped    = typed (tree.duplicate setType null)
             val foundDecls = retyped.tpe.decls filter (sym => !sym.isConstructor && !sym.isSynthetic)
 
-            if (foundDecls.isEmpty) found
+            if (foundDecls.isEmpty || (found.typeSymbol eq NoSymbol)) found
             else {
               // The members arrive marked private, presumably because there was no
               // expected type and so they're considered members of an anon class.
-              foundDecls foreach (_ resetFlag (PRIVATE | PROTECTED))
+              foundDecls foreach (_.makePublic)
               // TODO: if any of the found parents match up with required parents after normalization,
               // print the error so that they match. The major beneficiary there would be
               // java.lang.Object vs. AnyRef.
@@ -341,6 +341,11 @@ trait ContextErrors {
 
       def MacroEtaError(tree: Tree) = {
         issueNormalTypeError(tree, "macros cannot be eta-expanded")
+        setError(tree)
+      }
+      
+      def MacroPartialApplicationError(tree: Tree) = {
+        issueNormalTypeError(tree, "macros cannot be partially applied")
         setError(tree)
       }
 
@@ -861,7 +866,7 @@ trait ContextErrors {
             // (note that this is not a compilation error, it's an artifact of implicit search algorithm)
             // normally, such "errors" are discarded by `isCyclicOrErroneous` in Implicits.scala
             // but in our case this won't work, because isCyclicOrErroneous catches CyclicReference exceptions
-            // while our error will manifest itself as a "recursive method needs a return type"
+            // while our error will present itself as a "recursive method needs a return type"
             //
             // hence we (together with reportTypeError in TypeDiagnostics) make sure that this CyclicReference
             // evades all the handlers on its way and successfully reaches `isCyclicOrErroneous` in Implicits

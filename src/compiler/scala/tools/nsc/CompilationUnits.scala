@@ -5,7 +5,7 @@
 
 package scala.tools.nsc
 
-import util.{ FreshNameCreator, Position, NoPosition, SourceFile, NoSourceFile }
+import util.{ FreshNameCreator, Position, NoPosition, BatchSourceFile, SourceFile, NoSourceFile }
 import scala.collection.mutable
 import scala.collection.mutable.{ LinkedHashSet, ListBuffer }
 
@@ -88,10 +88,13 @@ trait CompilationUnits { self: Global =>
       reporter.warning(pos, msg)
 
     def deprecationWarning(pos: Position, msg: String) =
-      currentRun.deprecationWarnings.warn(pos, msg)
+      currentRun.deprecationWarnings0.warn(pos, msg)
 
     def uncheckedWarning(pos: Position, msg: String) =
-      currentRun.uncheckedWarnings.warn(pos, msg)
+      currentRun.uncheckedWarnings0.warn(pos, msg)
+
+    def inlinerWarning(pos: Position, msg: String) =
+      currentRun.inlinerWarnings.warn(pos, msg)
 
     def incompleteInputError(pos: Position, msg:String) =
       reporter.incompleteInputError(pos, msg)

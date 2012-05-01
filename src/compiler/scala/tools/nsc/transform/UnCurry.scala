@@ -446,8 +446,10 @@ abstract class UnCurry extends InfoTransform
           }
 
           val members =
-            if (isPartial) List(applyOrElseMethodDef, isDefinedAtMethodDef)
-            else List(applyMethodDef)
+            if (isPartial) {
+              assert(!opt.virtPatmat, "PartialFunction should have been synthesized during typer "+ fun);
+              List(applyOrElseMethodDef, isDefinedAtMethodDef)
+            } else List(applyMethodDef)
 
           // println("MEMBERS "+ members)
           val res = localTyper.typedPos(fun.pos) {
@@ -484,7 +486,7 @@ abstract class UnCurry extends InfoTransform
           val toArraySym = tree.tpe member nme.toArray
           assert(toArraySym != NoSymbol)
           def getClassTag(tp: Type): Tree = {
-            val tag = localTyper.resolveClassTag(tree, tp)
+            val tag = localTyper.resolveArrayTag(tree.pos, tp)
             // Don't want bottom types getting any further than this (SI-4024)
             if (tp.typeSymbol.isBottomClass) getClassTag(AnyClass.tpe)
             else if (!tag.isEmpty) tag

@@ -1,6 +1,6 @@
 import scala.reflect.mirror._
 
-class Foo extends StaticAnnotation
+class Foo extends annotation.StaticAnnotation
 
 object Test extends App {
   val tree = reify{(5: @Foo).asInstanceOf[Int]}.tree

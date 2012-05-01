@@ -1,6 +1,6 @@
 import scala.reflect.mirror._
 
-class ann(bar: String, quux: Array[String] = Array(), baz: ann = null) extends ClassfileAnnotation
+class ann(bar: String, quux: Array[String] = Array(), baz: ann = null) extends annotation.ClassfileAnnotation
 
 object Test extends App {
   // test 1: reify

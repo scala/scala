@@ -80,23 +80,23 @@ object Test extends App {
     println(m)
     foo(arr)
   }
-
-  { println("testing wrapped arrays")
-    import collection.mutable.FlatArray
-    val arr = FlatArray(x, y + x)
-    println(arr)
-    def foo(x: FlatArray[Meter]) {
-      for (i <- 0 until x.length) { x(i).print; println(" "+x(i)) }
-    }
-    val m = arr(0)
-    println(m)
-    foo(arr)
-    val ys: Seq[Meter] = arr map (_ + new Meter(1))
-    println(ys)
-    val zs = arr map (_ / Meter(1))
-    println(zs)
-    val fs = arr map (_.toFoot)
-    println(fs)
-  }
+  // 
+  // { println("testing wrapped arrays")
+  //   import collection.mutable.FlatArray
+  //   val arr = FlatArray(x, y + x)
+  //   println(arr)
+  //   def foo(x: FlatArray[Meter]) {
+  //     for (i <- 0 until x.length) { x(i).print; println(" "+x(i)) }
+  //   }
+  //   val m = arr(0)
+  //   println(m)
+  //   foo(arr)
+  //   val ys: Seq[Meter] = arr map (_ + new Meter(1))
+  //   println(ys)
+  //   val zs = arr map (_ / Meter(1))
+  //   println(zs)
+  //   val fs = arr map (_.toFoot)
+  //   println(fs)
+  // }
 
 }

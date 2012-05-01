@@ -373,6 +373,9 @@ trait TreePrinters extends api.TreePrinters { self: SymbolTable =>
         case Select(qualifier, name) =>
           print(backquotedPath(qualifier), ".", symName(tree, name))
 
+        case bqid: BackQuotedIdent =>
+          print("`%s`" format symName(tree, bqid.name))
+
         case Ident(name) =>
           print(symName(tree, name))
 

@@ -53,13 +53,25 @@ trait Types { self: Universe =>
      */
     def typeArguments: List[Type]
 
+    /** For a (potentially wrapped) poly type, its type parameters,
+     *  the empty list for all other types */
+    def typeParams: List[Symbol]
+
     /** Is this type a type constructor that is missing its type arguments?
      */
     def isHigherKinded: Boolean   // !!! This should be called "isTypeConstructor", no?
 
-    /** Does this type refer to abstract types or is an abstract type?
+    /** Returns the corresponding type constructor (e.g. List for List[T] or List[String])
+     */
+    def typeConstructor: Type
+
+    /** Does this type refer to spliceable types or is a spliceable type?
      */
     def isConcrete: Boolean
+
+    /** Is this type an abstract type that needs to be resolved?
+     */
+    def isSpliceable: Boolean
 
     /**
      *  Expands type aliases and converts higher-kinded TypeRefs to PolyTypes.
@@ -257,6 +269,7 @@ trait Types { self: Universe =>
    *     (T # x).type             SingleType(T, x)
    *     p.x.type                 SingleType(p.type, x)
    *     x.type                   SingleType(NoPrefix, x)
+   *  }}}
    */
   type SingleType <: SingletonType
 

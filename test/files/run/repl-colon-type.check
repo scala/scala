@@ -7,6 +7,12 @@ scala> :type List[1, 2, 3]
 <console>:2: error: identifier expected but integer literal found.
        List[1, 2, 3]
             ^
+<console>:3: error: ']' expected but '}' found.
+       }
+       ^
+<console>:1: error: identifier expected but integer literal found.
+       List[1, 2, 3]
+            ^
 
 
 scala> :type List(1, 2, 3)
@@ -25,7 +31,7 @@ scala> :type def f[T >: Null, U <: String](x: T, y: U) = Set(x, y)
 [T >: Null, U <: String](x: T, y: U)scala.collection.immutable.Set[Any]
 
 scala> :type def x = 1 ; def bar[T >: Null <: AnyRef](xyz: T) = 5
-[T >: Null <: AnyRef](xyz: T)Int
+=> Int <and> [T >: Null <: AnyRef](xyz: T)Int
 
 scala> 
 
@@ -39,10 +45,19 @@ scala> :type lazy val f = 5
 Int
 
 scala> :type protected lazy val f = 5
-Int
+<console>:2: error: illegal start of statement (no modifiers allowed here)
+       protected lazy val f = 5
+       ^
+<console>:5: error: lazy value f cannot be accessed in object $iw
+ Access to protected value f not permitted because
+ enclosing object $eval in package $line19 is not a subclass of 
+ object $iw where target is defined
+  lazy val $result = `f`
+                                           ^
+
 
 scala> :type def f = 5
-Int
+=> Int
 
 scala> :type def f() = 5
 ()Int
@@ -51,6 +66,158 @@ scala>
 
 scala> :type def g[T](xs: Set[_ <: T]) = Some(xs.head)
 [T](xs: Set[_ <: T])Some[T]
+
+scala> 
+
+scala> // verbose!
+
+scala> :type -v List(1,2,3) filter _
+// Type signature
+(Int => Boolean) => List[Int]
+
+// Internal Type structure
+TypeRef(
+  TypeSymbol(abstract trait Function1[-T1, +R] extends Object)
+  args = List(
+    TypeRef(
+      TypeSymbol(abstract trait Function1[-T1, +R] extends Object)
+      args = List(
+        TypeRef(TypeSymbol(final class Int extends AnyVal))
+        TypeRef(TypeSymbol(final class Boolean extends AnyVal))
+      )
+    )
+    TypeRef(
+      TypeSymbol(
+        sealed abstract class List[+A] extends AbstractSeq[A] with LinearSeq[A] with Product with GenericTraversableTemplate[A,List] with LinearSeqOptimized[A,List[A]]
+        
+      )
+      args = List(
+        TypeRef(TypeSymbol(final class Int extends AnyVal))
+      )
+    )
+  )
+)
+
+scala> :type -v def f[T >: Null, U <: String](x: T, y: U) = Set(x, y)
+// Type signature
+[T >: Null, U <: String](x: T, y: U)scala.collection.immutable.Set[Any]
+
+// Internal Type structure
+PolyType(
+  typeParams = List(TypeParam(T >: Null), TypeParam(U <: String))
+  resultType = MethodType(
+    params = List(TermSymbol(x: T), TermSymbol(y: U))
+    resultType = TypeRef(
+      TypeSymbol(
+        abstract trait Set[A] extends Iterable[A] with Set[A] with GenericSetTemplate[A,scala.collection.immutable.Set] with SetLike[A,scala.collection.immutable.Set[A]] with Parallelizable[A,scala.collection.parallel.immutable.ParSet[A]]
+        
+      )
+      args = List(TypeRef(TypeSymbol(abstract class Any extends )))
+    )
+  )
+)
+
+scala> :type -v def x = 1 ; def bar[T >: Null <: AnyRef](xyz: T) = 5
+// Type signature
+=> Int <and> [T >: Null <: AnyRef](xyz: T)Int
+
+// Internal Type structure
+OverloadedType(
+  alts = List(
+    NullaryMethodType(
+      TypeRef(TypeSymbol(final class Int extends AnyVal))
+    )
+    PolyType(
+      typeParams = List(TypeParam(T >: Null <: AnyRef))
+      resultType = MethodType(
+        params = List(TermSymbol(xyz: T))
+        resultType = TypeRef(
+          TypeSymbol(final class Int extends AnyVal)
+        )
+      )
+    )
+  )
+)
+
+scala> :type -v Nil.combinations _
+// Type signature
+Int => Iterator[List[Nothing]]
+
+// Internal Type structure
+TypeRef(
+  TypeSymbol(abstract trait Function1[-T1, +R] extends Object)
+  args = List(
+    TypeRef(TypeSymbol(final class Int extends AnyVal))
+    TypeRef(
+      TypeSymbol(
+        abstract trait Iterator[+A] extends TraversableOnce[A]
+      )
+      args = List(
+        TypeRef(
+          TypeSymbol(
+            sealed abstract class List[+A] extends AbstractSeq[A] with LinearSeq[A] with Product with GenericTraversableTemplate[A,List] with LinearSeqOptimized[A,List[A]]
+            
+          )
+          args = List(
+            TypeRef(
+              TypeSymbol(final abstract class Nothing extends Any)
+            )
+          )
+        )
+      )
+    )
+  )
+)
+
+scala> :type -v def f[T <: AnyVal] = List[T]().combinations _
+// Type signature
+[T <: AnyVal]=> Int => Iterator[List[T]]
+
+// Internal Type structure
+PolyType(
+  typeParams = List(TypeParam(T <: AnyVal))
+  resultType = NullaryMethodType(
+    TypeRef(
+      TypeSymbol(abstract trait Function1[-T1, +R] extends Object)
+      args = List(
+        TypeRef(TypeSymbol(final class Int extends AnyVal))
+        TypeRef(
+          TypeSymbol(
+            abstract trait Iterator[+A] extends TraversableOnce[A]
+          )
+          args = List(
+            TypeRef(
+              TypeSymbol(
+                sealed abstract class List[+A] extends AbstractSeq[A] with LinearSeq[A] with Product with GenericTraversableTemplate[A,List] with LinearSeqOptimized[A,List[A]]
+                
+              )
+              args = List(TypeParamTypeRef(TypeParam(T <: AnyVal)))
+            )
+          )
+        )
+      )
+    )
+  )
+)
+
+scala> :type -v def f[T, U >: T](x: T, y: List[U]) = x :: y
+// Type signature
+[T, U >: T](x: T, y: List[U])List[U]
+
+// Internal Type structure
+PolyType(
+  typeParams = List(TypeParam(T), TypeParam(U >: T))
+  resultType = MethodType(
+    params = List(TermSymbol(x: T), TermSymbol(y: List[U]))
+    resultType = TypeRef(
+      TypeSymbol(
+        sealed abstract class List[+A] extends AbstractSeq[A] with LinearSeq[A] with Product with GenericTraversableTemplate[A,List] with LinearSeqOptimized[A,List[A]]
+        
+      )
+      args = List(TypeParamTypeRef(TypeParam(U >: T)))
+    )
+  )
+)
 
 scala> 
 

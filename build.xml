@@ -249,7 +249,7 @@ INITIALISATION
   <!-- Resolve maven dependencies -->
   <target name="init.maven.jars" depends="init.maven.tasks">
     <artifact:dependencies pathId="dependency.classpath" filesetId="dependency.fileset">
-      <dependency groupId="org.skife.com.typesafe.config" artifactId="typesafe-config" version="0.3.0"/>
+      <dependency groupId="com.typesafe" artifactId="config" version="0.4.0"/>
     </artifact:dependencies>
   </target>
 
@@ -274,7 +274,26 @@ INITIALISATION
     <property name="version.suffix" value="-${version.bnum}"/>
   </target>
 
-  <target name="init.build.suffix.done" depends="init.build.release, init.build.patch.release"/>
+  <target name="init.hasmavensuffix" if="build.release" depends="init.build.patch.release, init.build.release">
+    <condition property="version.hasmavensuffix">
+      <not><equals arg1="${maven.version.suffix}" arg2=""/></not>
+    </condition>
+  </target>
+
+  <target name="init.osgi.suffix" if="version.hasmavensuffix" depends="init.hasmavensuffix">
+    <property name="osgi.version.suffix" value="${maven.version.suffix}"/>
+  </target>
+
+  <target name="init.osgi.suffix.final" if="build.release" unless="version.hasmavensuffix" depends="init.hasmavensuffix">
+    <property name="osgi.version.suffix" value="-VFINAL"/>
+  </target>
+
+
+  <target name="init.osgi.suffix.snapshot" unless="build.release" depends="init.hasmavensuffix">
+    <property name="osgi.version.suffix" value=""/>
+  </target>
+
+  <target name="init.build.suffix.done" depends="init.build.release, init.build.patch.release, init.osgi.suffix, init.osgi.suffix.final, init.osgi.suffix.snapshot"/>
 
   <target name="init.version.git" depends="init.build.suffix.done">
     <!-- Find out whether we are running on Windows -->
@@ -296,7 +315,7 @@ INITIALISATION
       value="${version.major}.${version.minor}.${version.patch}${version.suffix}${maven.version.suffix}"/>
     <property
       name="osgi.version.number"
-      value="${version.major}.${version.minor}.${version.patch}.v${git.commit.date}${version.suffix}-${git.commit.sha}"/>
+      value="${version.major}.${version.minor}.${version.patch}.v${git.commit.date}${version.suffix}${osgi.version.suffix}-${git.commit.sha}"/>
   </target>
 
   <target name="init.version.snapshot" unless="build.release" depends="init.version.git">
@@ -415,7 +434,7 @@ LOCAL REFERENCE BUILD (LOCKER)
       classpath="${build-locker.dir}/classes/library"
       includes="**/*.java"
       target="1.5" source="1.5">
-        <compilerarg line="${javac.args}"/>
+        <compilerarg line="${javac.args} -XDignore.symbol.file"/>
     </javac>
     <!-- NOTE: Potential problem with maximal command line length on Windows
          (32768 characters for XP, since executed with Java's "exec"). See
@@ -643,7 +662,6 @@ QUICK BUILD (QUICK)
     <uptodate property="quick.lib.available" targetfile="${build-quick.dir}/library.complete">
       <srcfiles dir="${src.dir}">
         <include name="library/**"/>
-        <include name="dbc/**"/>
         <include name="continuations/**"/>
         <include name="swing/**"/>
         <include name="actors/**"/>
@@ -660,7 +678,7 @@ QUICK BUILD (QUICK)
       classpath="${build-quick.dir}/classes/library"
       includes="**/*.java"
       target="1.5" source="1.5">
-      <compilerarg line="${javac.args}"/>
+      <compilerarg line="${javac.args} -XDignore.symbol.file"/>
     </javac>
     <javac
       srcdir="${src.dir}/actors"
@@ -685,15 +703,6 @@ QUICK BUILD (QUICK)
       compilerpathref="locker.classpath"
       params="${scalac.args.quick}"
       srcdir="${src.dir}/actors"
-      jvmargs="${scalacfork.jvmargs}">
-      <include name="**/*.scala"/>
-      <compilationpath refid="quick.compilation.path"/>
-    </scalacfork>
-    <scalacfork
-      destdir="${build-quick.dir}/classes/library"
-      compilerpathref="locker.classpath"
-      params="${scalac.args.quick}"
-      srcdir="${src.dir}/dbc"
       jvmargs="${scalacfork.jvmargs}">
       <include name="**/*.scala"/>
       <compilationpath refid="quick.compilation.path"/>
@@ -1028,16 +1037,10 @@ PACKED QUICK BUILD (PACK)
     </copy>
     <jar destfile="${build-pack.dir}/lib/scala-library.jar">
       <fileset dir="${build-quick.dir}/classes/library">
-        <exclude name="scala/dbc/**"/>
         <exclude name="scala/swing/**"/>
         <exclude name="scala/actors/**"/>
       </fileset>
       <zipfileset dirmode="755" filemode="644" src="${forkjoin.jar}"/>
-    </jar>
-    <jar destfile="${build-pack.dir}/lib/scala-dbc.jar">
-      <fileset dir="${build-quick.dir}/classes/library">
-        <include name="scala/dbc/**"/>
-      </fileset>
     </jar>
     <jar destfile="${build-pack.dir}/lib/scala-swing.jar">
       <fileset dir="${build-quick.dir}/classes/library">
@@ -1201,7 +1204,6 @@ BOOTSTRAPPING BUILD (STRAP)
     <uptodate property="strap.lib.available" targetfile="${build-strap.dir}/library.complete">
       <srcfiles dir="${src.dir}">
         <include name="library/**"/>
-        <include name="dbc/**"/>
         <include name="swing/**"/>
         <include name="actors/**"/>
       </srcfiles>
@@ -1217,7 +1219,7 @@ BOOTSTRAPPING BUILD (STRAP)
       classpath="${build-strap.dir}/classes/library"
       includes="**/*.java"
       target="1.5" source="1.5">
-      <compilerarg line="${javac.args}"/>
+      <compilerarg line="${javac.args} -XDignore.symbol.file"/>
     </javac>
     <javac
       srcdir="${src.dir}/actors"
@@ -1242,15 +1244,6 @@ BOOTSTRAPPING BUILD (STRAP)
       compilerpathref="pack.classpath"
       params="${scalac.args.all}"
       srcdir="${src.dir}/actors"
-      jvmargs="${scalacfork.jvmargs}">
-      <include name="**/*.scala"/>
-      <compilationpath refid="strap.compilation.path"/>
-    </scalacfork>
-    <scalacfork
-      destdir="${build-strap.dir}/classes/library"
-      compilerpathref="pack.classpath"
-      params="${scalac.args.all}"
-      srcdir="${src.dir}/dbc"
       jvmargs="${scalacfork.jvmargs}">
       <include name="**/*.scala"/>
       <compilationpath refid="strap.compilation.path"/>
@@ -1645,7 +1638,6 @@ DOCUMENTATION
     <doc-uptodate-check name="library" srcdir="${src.dir}">
       <source-includes>
         <include name="library/**"/>
-        <include name="dbc/**"/>
         <include name="swing/**"/>
         <include name="actors/**"/>
       </source-includes>
@@ -2033,9 +2025,6 @@ DISTRIBUTION
       <fileset dir="${src.dir}/library"/>
       <fileset dir="${src.dir}/continuations/library"/>
     </jar>
-    <jar destfile="${dist.dir}/src/scala-dbc-src.jar">
-      <fileset dir="${src.dir}/dbc"/>
-    </jar>
     <jar destfile="${dist.dir}/src/scala-swing-src.jar">
       <fileset dir="${src.dir}/swing"/>
     </jar>
@@ -2123,7 +2112,6 @@ STABLE REFERENCE (STARR)
       <fileset dir="${basedir}/src/library"/>
       <fileset dir="${basedir}/src/swing"/>
       <fileset dir="${basedir}/src/actors"/>
-      <fileset dir="${basedir}/src/dbc"/>
     </jar>
   </target>
 
@@ -2224,9 +2212,6 @@ POSITIONS
     </antcall>
     <antcall target="test.positions.sub" inheritRefs="true">
       <param name="test.srcs" value="${src.dir}/actors"/>
-    </antcall>
-    <antcall target="test.positions.sub" inheritRefs="true">
-      <param name="test.srcs" value="${src.dir}/dbc"/>
     </antcall>
     <antcall target="test.positions.sub" inheritRefs="true">
       <param name="test.srcs" value="${src.dir}/swing"/>

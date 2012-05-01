@@ -13,7 +13,6 @@ package scala.collection
 import generic._
 import mutable.{Builder, Buffer, ArrayBuffer, ListBuffer}
 import scala.util.control.Breaks
-import annotation.bridge
 
 /** A trait for traversable collections.
  *  All operations are guaranteed to be performed in a single-threaded manner.
@@ -27,12 +26,6 @@ trait Traversable[+A] extends TraversableLike[A, Traversable[A]]
   override def companion: GenericCompanion[Traversable] = Traversable
 
   override def seq: Traversable[A] = this
-
-  @bridge
-  def flatten[B](implicit asTraversable: A => /*<:<!!!*/ GenTraversableOnce[B]): Traversable[B] = super.flatten(asTraversable)
-
-  @bridge
-  def transpose[B](implicit asTraversable: A => /*<:<!!!*/ GenTraversableOnce[B]): Traversable[Traversable[B]] = super.transpose(asTraversable)
 
   /* The following methods are inherited from TraversableLike
    *
@@ -75,7 +68,7 @@ trait Traversable[+A] extends TraversableLike[A, Traversable[A]]
   override def copyToBuffer[B >: A](dest: Buffer[B])
   override def copyToArray[B >: A](xs: Array[B], start: Int, len: Int)
   override def copyToArray[B >: A](xs: Array[B], start: Int)
-  override def toArray[B >: A : ClassManifest]: Array[B]
+  override def toArray[B >: A : ArrayTag]: Array[B]
   override def toList: List[A]
   override def toIterable: Iterable[A]
   override def toSeq: Seq[A]

@@ -297,9 +297,6 @@ self =>
   def ++[B1 >: B](xs: GenTraversableOnce[(A, B1)]): Map[A, B1] =
     ((repr: Map[A, B1]) /: xs.seq) (_ + _)
 
-  @bridge
-  def ++[B1 >: B](xs: TraversableOnce[(A, B1)]): Map[A, B1] = ++(xs: GenTraversableOnce[(A, B1)])
-
   /** Returns a new map with all key/value pairs for which the predicate
    *  `p` returns `true`.
    *

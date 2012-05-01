@@ -155,15 +155,15 @@ extends GenIterableLike[T, Repr]
    with HasNewCombiner[T, Repr]
 {
 self: ParIterableLike[T, Repr, Sequential] =>
-  
+
   @transient
   @volatile
   private var _tasksupport = defaultTaskSupport
-  
+
   protected def initTaskSupport() {
     _tasksupport = defaultTaskSupport
   }
-  
+
   def tasksupport = {
     val ts = _tasksupport
     if (ts eq null) {
@@ -171,9 +171,9 @@ self: ParIterableLike[T, Repr, Sequential] =>
       defaultTaskSupport
     } else ts
   }
-  
+
   def tasksupport_=(ts: TaskSupport) = _tasksupport = ts
-  
+
   def seq: Sequential
 
   def repr: Repr = this.asInstanceOf[Repr]
@@ -240,7 +240,7 @@ self: ParIterableLike[T, Repr, Sequential] =>
 
   trait BuilderOps[Elem, To] {
     trait Otherwise[Cmb] {
-      def otherwise(notbody: => Unit)(implicit m: ClassManifest[Cmb]): Unit
+      def otherwise(notbody: => Unit)(implicit t: ClassTag[Cmb]): Unit
     }
 
     def ifIs[Cmb](isbody: Cmb => Unit): Otherwise[Cmb]
@@ -282,8 +282,8 @@ self: ParIterableLike[T, Repr, Sequential] =>
 
   protected implicit def builder2ops[Elem, To](cb: Builder[Elem, To]) = new BuilderOps[Elem, To] {
     def ifIs[Cmb](isbody: Cmb => Unit) = new Otherwise[Cmb] {
-      def otherwise(notbody: => Unit)(implicit m: ClassManifest[Cmb]) {
-        if (cb.getClass == m.erasure) isbody(cb.asInstanceOf[Cmb]) else notbody
+      def otherwise(notbody: => Unit)(implicit t: ClassTag[Cmb]) {
+        if (cb.getClass == t.erasure) isbody(cb.asInstanceOf[Cmb]) else notbody
       }
     }
     def isCombiner = cb.isInstanceOf[Combiner[_, _]]
@@ -754,7 +754,7 @@ self: ParIterableLike[T, Repr, Sequential] =>
     cntx.setIndexFlag(Int.MaxValue)
     tasksupport.executeAndWaitResult(
       new Span(0, pred, combinerFactory, combinerFactory, splitter assign cntx) mapResult {
-        _._2.resultWithTaskSupport 
+        _._2.resultWithTaskSupport
       }
     )
   }
@@ -802,7 +802,7 @@ self: ParIterableLike[T, Repr, Sequential] =>
     def size = splitter.remaining
   }
 
-  override def toArray[U >: T: ClassManifest]: Array[U] = {
+  override def toArray[U >: T: ArrayTag]: Array[U] = {
     val arr = new Array[U](size)
     copyToArray(arr)
     arr

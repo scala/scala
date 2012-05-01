@@ -85,18 +85,39 @@ trait Trees { self: Universe =>
     def pos_=(pos: Position): Unit = rawatt = (rawatt withPos pos) // the "withPos" part is crucial to robustness
     def setPos(newpos: Position): this.type = { pos = newpos; this }
 
+    // [Eugene] can we make this more type-safe
     private var rawatt: Attachment = NoPosition
-    private case class NontrivialAttachment(pos: api.Position, payload: Any) extends Attachment {
-      def withPos(newPos: api.Position) = copy(pos = newPos, payload = payload)
-      def withPayload(newPayload: Any) = copy(pos = pos, payload = newPayload)
-    }
-    // todo. annotate T with ClassTag and make pattern matcher use it
-    // todo. support multiple attachments, and remove the assignment. only leave attach/detach
-//    def attachment[T]: T = rawatt.payload.asInstanceOf[T]
-//    def attachmentOpt[T]: Option[T] = try { Some(rawatt.payload.asInstanceOf[T]) } catch { case _: Throwable => None }
-    def attachment: Any = rawatt.payload
-    def attachment_=(att: Any): Unit = rawatt = NontrivialAttachment(pos, att)
-    def setAttachment(att: Any): this.type = { attachment = att; this }
+    def attach(att: Any): Unit =
+      rawatt match {
+        case NontrivialAttachment(pos, payload) =>
+          val index = payload.indexWhere(p => p.getClass == att.getClass)
+          if (index == -1) payload += att
+          else payload(index) = att
+        case _ =>
+          rawatt = NontrivialAttachment(pos, collection.mutable.ListBuffer[Any](att))
+      }
+    def withAttachment(att: Any): this.type = { attach(att); this }
+    def detach(att: Any): Unit =
+      detach(att.getClass)
+    def detach(clazz: java.lang.Class[_]): Unit =
+      rawatt match {
+        case NontrivialAttachment(pos, payload) =>
+          val index = payload.indexWhere(p => p.getClass == clazz)
+          if (index != -1) payload.remove(index)
+        case _ =>
+          // do nothing
+      }
+    def withoutAttachment(att: Any): this.type = { detach(att); this }
+    def attachment[T: ClassTag]: T = attachmentOpt[T] getOrElse { throw new Error("no attachment of type %s".format(classTag[T].erasure)) }
+    def attachmentOpt[T: ClassTag]: Option[T] =
+      rawatt match {
+        case NontrivialAttachment(pos, payload) =>
+          val index = payload.indexWhere(p => p.getClass == classTag[T].erasure)
+          if (index != -1) Some(payload(index).asInstanceOf[T])
+          else None
+        case _ =>
+          None
+      }
 
     private[this] var rawtpe: Type = _
 
@@ -256,34 +277,6 @@ trait Trees { self: Universe =>
     override def hashCode(): Int = System.identityHashCode(this)
     override def equals(that: Any) = this eq that.asInstanceOf[AnyRef]
   }
-
-  // [Eugene] uh-oh
-  // locker.comp:
-  //     [mkdir] Created dir: C:\Projects\Kepler\build\locker\classes\compiler
-  // [scalacfork] Compiling 471 files to C:\Projects\Kepler\build\locker\classes\compiler
-  // [scalacfork] amb prefix: Importers.this.type#class Tree Importer.this.from.type#class Tree
-  // [scalacfork] amb prefix: Importers.this.type#class Tree Importer.this.from.type#class Tree
-  // [scalacfork] amb prefix: Importers.this.type#class Tree Importer.this.from.type#class Tree
-  // [scalacfork] amb prefix: Importers.this.type#class Tree Importer.this.from.type#class Tree
-  // [scalacfork] amb prefix: Importers.this.type#class Tree Importer.this.from.type#class Tree
-  // [scalacfork] amb prefix: Importers.this.type#class Tree Importer.this.from.type#class Tree
-  // [scalacfork] amb prefix: Importers.this.type#class Tree Importer.this.from.type#class Tree
-  // [scalacfork] amb prefix: Importers.this.type#class Tree Importer.this.from.type#class Tree
-  // [scalacfork] amb prefix: Importers.this.type#class Tree Importer.this.from.type#class Tree
-  // [scalacfork] amb prefix: Importers.this.type#class Tree Importer.this.from.type#class Tree
-//  object Tree {
-//    // would be great if in future this generated an Expr[Magic]
-//    // where Magic is a magic untyped type that propagates through the entire quasiquote
-//    // and turns off typechecking whenever it's involved
-//    // that'd allow us to splice trees into quasiquotes and still have these qqs to be partially typechecked
-//    // see some exploration of these ideas here: https://github.com/xeno-by/alphakeplerdemo
-//    implicit def tree2expr(tree: Tree): Expr[Nothing] = Expr[Nothing](tree)
-//    implicit def expr2tree(expr: Expr[_]): Tree = expr.tree
-//
-//    // [Eugene] good idea?
-//    implicit def trees2exprs(trees: List[Tree]): List[Expr[Nothing]] = trees map tree2expr
-//    implicit def exprs2trees(exprs: List[Expr[_]]): List[Tree] = exprs map expr2tree
-//  }
 
   /** A tree for a term.  Not all terms are TermTrees; use isTerm
    *  to reliably identify terms.
@@ -642,10 +635,17 @@ trait Trees { self: Universe =>
 
   def Apply(sym: Symbol, args: Tree*): Tree
 
+  // TODO remove this class, add a tree attachment to Apply to track whether implicits were involved
+  // copying trees will all too easily forget to distinguish subclasses
   class ApplyToImplicitArgs(fun: Tree, args: List[Tree]) extends Apply(fun, args)
 
+  // TODO remove this class, add a tree attachment to Apply to track whether implicits were involved
+  // copying trees will all too easily forget to distinguish subclasses
   class ApplyImplicitView(fun: Tree, args: List[Tree]) extends Apply(fun, args)
 
+  // TODO: use a factory method, not a class (???)
+  // as a case in point of the comment that should go here by similarity to ApplyToImplicitArgs,
+  // this tree is considered in importers, but not in treecopier
   class ApplyConstructor(tpt: Tree, args: List[Tree]) extends Apply(Select(New(tpt), nme.CONSTRUCTOR), args) {
     override def printingPrefix = "ApplyConstructor"
   }
@@ -697,6 +697,8 @@ trait Trees { self: Universe =>
 
   def Ident(sym: Symbol): Ident
 
+  // TODO remove this class, add a tree attachment to Ident to track whether it was backquoted
+  // copying trees will all too easily forget to distinguish subclasses
   class BackQuotedIdent(name: Name) extends Ident(name)
 
   /** Marks underlying reference to id as boxed.
@@ -1136,9 +1138,10 @@ trait Trees { self: Universe =>
     def TypeApply(tree: Tree, fun: Tree, args: List[Tree]) =
       new TypeApply(fun, args).copyAttrs(tree)
     def Apply(tree: Tree, fun: Tree, args: List[Tree]) =
-      (tree match {
+      (tree match { // TODO: use a tree attachment to track whether this is an apply to implicit args or a view
         case _: ApplyToImplicitArgs => new ApplyToImplicitArgs(fun, args)
         case _: ApplyImplicitView => new ApplyImplicitView(fun, args)
+        // TODO: ApplyConstructor ???
         case _ => new Apply(fun, args)
       }).copyAttrs(tree)
     def ApplyDynamic(tree: Tree, qual: Tree, args: List[Tree]) =
@@ -1150,7 +1153,10 @@ trait Trees { self: Universe =>
     def Select(tree: Tree, qualifier: Tree, selector: Name) =
       new Select(qualifier, selector).copyAttrs(tree)
     def Ident(tree: Tree, name: Name) =
-      new Ident(name).copyAttrs(tree)
+      (tree match { // TODO: use a tree attachment to track whether this identifier was backquoted
+        case _ : BackQuotedIdent => new BackQuotedIdent(name)
+        case _ => new Ident(name)
+      }).copyAttrs(tree)
     def ReferenceToBoxed(tree: Tree, idt: Ident) =
       new ReferenceToBoxed(idt).copyAttrs(tree)
     def Literal(tree: Tree, value: Constant) =

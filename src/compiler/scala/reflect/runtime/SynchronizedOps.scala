@@ -39,7 +39,7 @@ trait SynchronizedOps extends internal.SymbolTable
   trait SynchronizedScope extends Scope {
     override def isEmpty: Boolean = synchronized { super.isEmpty }
     override def size: Int = synchronized { super.size }
-    override def enter(sym: Symbol) = synchronized { super.enter(sym) }
+    override def enter[T <: Symbol](sym: T): T = synchronized { super.enter(sym) }
     override def rehash(sym: Symbol, newname: Name) = synchronized { super.rehash(sym, newname) }
     override def unlink(e: ScopeEntry) = synchronized { super.unlink(e) }
     override def unlink(sym: Symbol) = synchronized { super.unlink(sym) }

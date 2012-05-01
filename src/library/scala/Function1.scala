@@ -11,7 +11,7 @@ package scala
 
 
 /** A function of 1 parameter.
- *
+ *  
  *  In the following example, the definition of succ is a
  *  shorthand for the anonymous class definition anonfun1:
  *
@@ -22,7 +22,7 @@ package scala
  *      def apply(x: Int): Int = x + 1
  *    }
  *    assert(succ(0) == anonfun1(0))
- *  }
+ * }
  *  }}}
  *
  *  Note that `Function1` does not define a total function, as might
@@ -44,7 +44,7 @@ trait Function1[@specialized(scala.Int, scala.Long, scala.Float, scala.Double, s
    *  @param    g   a function A => T1
    *  @return       a new function `f` such that `f(x) == apply(g(x))`
    */
-  def compose[A](g: A => T1): A => R = { x => apply(g(x)) }
+  @annotation.unspecialized def compose[A](g: A => T1): A => R = { x => apply(g(x)) }
 
   /** Composes two instances of Function1 in a new Function1, with this function applied first.
    *
@@ -52,7 +52,7 @@ trait Function1[@specialized(scala.Int, scala.Long, scala.Float, scala.Double, s
    *  @param    g   a function R => A
    *  @return       a new function `f` such that `f(x) == g(apply(x))`
    */
-  def andThen[A](g: R => A): T1 => A = { x => g(apply(x)) }
+  @annotation.unspecialized def andThen[A](g: R => A): T1 => A = { x => g(apply(x)) }
 
   override def toString() = "<function1>"
 }

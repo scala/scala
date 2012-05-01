@@ -1,0 +1,186 @@
+Type in expressions to have them evaluated.
+Type :help for more information.
+
+scala> 
+
+scala> // verbose!
+
+scala> :type -v def f = 5
+// Type signature
+=> Int
+
+// Internal Type structure
+NullaryMethodType(
+  TypeRef(TypeSymbol(final class Int extends AnyVal))
+)
+
+scala> :type -v def f() = 5
+// Type signature
+()Int
+
+// Internal Type structure
+NullaryMethodType(
+  resultType = TypeRef(TypeSymbol(final class Int extends AnyVal))
+)
+
+scala> :type -v def f[T] = 5
+// Type signature
+[T]=> Int
+
+// Internal Type structure
+PolyType(
+  typeParams = List(TypeParam(T))
+  resultType = NullaryMethodType(
+    TypeRef(TypeSymbol(final class Int extends AnyVal))
+  )
+)
+
+scala> :type -v def f[T >: Null] = 5
+// Type signature
+[T >: Null]=> Int
+
+// Internal Type structure
+PolyType(
+  typeParams = List(TypeParam(T >: Null))
+  resultType = NullaryMethodType(
+    TypeRef(TypeSymbol(final class Int extends AnyVal))
+  )
+)
+
+scala> :type -v def f[T <: String] = 5
+// Type signature
+[T <: String]=> Int
+
+// Internal Type structure
+PolyType(
+  typeParams = List(TypeParam(T <: String))
+  resultType = NullaryMethodType(
+    TypeRef(TypeSymbol(final class Int extends AnyVal))
+  )
+)
+
+scala> :type -v def f[T]() = 5
+// Type signature
+[T]()Int
+
+// Internal Type structure
+PolyType(
+  typeParams = List(TypeParam(T))
+  resultType = NullaryMethodType(
+    resultType = TypeRef(TypeSymbol(final class Int extends AnyVal))
+  )
+)
+
+scala> :type -v def f[T, U]() = 5
+// Type signature
+[T, U]()Int
+
+// Internal Type structure
+PolyType(
+  typeParams = List(TypeParam(T), TypeParam(U))
+  resultType = NullaryMethodType(
+    resultType = TypeRef(TypeSymbol(final class Int extends AnyVal))
+  )
+)
+
+scala> :type -v def f[T, U]()() = 5
+// Type signature
+[T, U]()()Int
+
+// Internal Type structure
+PolyType(
+  typeParams = List(TypeParam(T), TypeParam(U))
+  resultType = NullaryMethodType(
+    resultType = NullaryMethodType(
+      resultType = TypeRef(
+        TypeSymbol(final class Int extends AnyVal)
+      )
+    )
+  )
+)
+
+scala> :type -v def f[T, U <: T] = 5
+// Type signature
+[T, U <: T]=> Int
+
+// Internal Type structure
+PolyType(
+  typeParams = List(TypeParam(T), TypeParam(U <: T))
+  resultType = NullaryMethodType(
+    TypeRef(TypeSymbol(final class Int extends AnyVal))
+  )
+)
+
+scala> :type -v def f[T, U <: T](x: T)(y: U) = 5
+// Type signature
+[T, U <: T](x: T)(y: U)Int
+
+// Internal Type structure
+PolyType(
+  typeParams = List(TypeParam(T), TypeParam(U <: T))
+  resultType = MethodType(
+    params = List(TermSymbol(x: T))
+    resultType = MethodType(
+      params = List(TermSymbol(y: U))
+      resultType = TypeRef(
+        TypeSymbol(final class Int extends AnyVal)
+      )
+    )
+  )
+)
+
+scala> :type -v def f[T: Ordering] = 5
+// Type signature
+[T](implicit evidence$1: Ordering[T])Int
+
+// Internal Type structure
+PolyType(
+  typeParams = List(TypeParam(T))
+  resultType = MethodType(
+    params = List(TermSymbol(implicit evidence$1: Ordering[T]))
+    resultType = TypeRef(TypeSymbol(final class Int extends AnyVal))
+  )
+)
+
+scala> :type -v def f[T: Ordering] = implicitly[Ordering[T]]
+// Type signature
+[T](implicit evidence$1: Ordering[T])Ordering[T]
+
+// Internal Type structure
+PolyType(
+  typeParams = List(TypeParam(T))
+  resultType = MethodType(
+    params = List(TermSymbol(implicit evidence$1: Ordering[T]))
+    resultType = AliasTypeRef(
+      Alias(type Ordering[T] = scala.math.Ordering[T])
+      args = List(TypeParamTypeRef(TypeParam(T)))
+      normalize = TypeRef(
+        TypeSymbol(
+          abstract trait Ordering[T] extends Comparator[T] with PartialOrdering[T] with Serializable
+          
+        )
+        args = List(TypeParamTypeRef(TypeParam(T)))
+      )
+    )
+  )
+)
+
+scala> :type -v def f[T <: { type Bippy = List[Int] ; def g(): Bippy }] = 5
+// Type signature
+[T <: AnyRef{type Bippy = List[Int]; def g(): this.Bippy}]=> Int
+
+// Internal Type structure
+PolyType(
+  typeParams = List(
+    TypeParam(
+      T <: AnyRef{type Bippy = List[Int]; def g(): this.Bippy}
+    )
+  )
+  resultType = NullaryMethodType(
+    TypeRef(TypeSymbol(final class Int extends AnyVal))
+  )
+)
+
+scala> 
+
+scala> 

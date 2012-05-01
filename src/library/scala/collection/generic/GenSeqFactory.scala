@@ -11,7 +11,6 @@
 package scala.collection
 package generic
 
-import annotation.bridge
 import language.higherKinds
 
 /** A template for companion objects of Seq and subclasses thereof.
@@ -19,9 +18,4 @@ import language.higherKinds
  *  @since 2.8
  */
 abstract class GenSeqFactory[CC[X] <: GenSeq[X] with GenericTraversableTemplate[X, CC]]
-extends GenTraversableFactory[CC] {
-
-  @bridge
-  def unapplySeq[A](x: GenSeq[A]): Some[GenSeq[A]] = Some(x)
-
-}
+extends GenTraversableFactory[CC]

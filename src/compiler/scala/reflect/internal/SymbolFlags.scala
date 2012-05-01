@@ -11,7 +11,6 @@ import scala.collection.mutable.ListBuffer
 import util.Statistics._
 import Flags._
 import api.Modifier
-import scala.tools.util.StringOps.{ ojoin }
 
 trait SymbolFlags {
   self: SymbolTable =>

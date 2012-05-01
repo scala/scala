@@ -10,7 +10,6 @@
 package scala.collection
 package generic
 
-import annotation.bridge
 import language.higherKinds
 
 /** A template for companion objects of `Traversable` and subclasses thereof.
@@ -37,48 +36,5 @@ import language.higherKinds
  *    @see GenericCanBuildFrom
  */
 trait TraversableFactory[CC[X] <: Traversable[X] with GenericTraversableTemplate[X, CC]]
-  extends GenTraversableFactory[CC] with GenericSeqCompanion[CC] {
-
-  @bridge
-  override def concat[A](xss: Traversable[A]*): CC[A] = super.concat(xss: _*)
-
-  @bridge
-  override def fill[A](n: Int)(elem: => A): CC[A] = super.fill(n)(elem)
-
-  @bridge
-  override def fill[A](n1: Int, n2: Int)(elem: => A): CC[CC[A]] = super.fill(n1, n2)(elem)
-
-  @bridge
-  override def fill[A](n1: Int, n2: Int, n3: Int)(elem: => A): CC[CC[CC[A]]] = super.fill(n1, n2, n3)(elem)
-
-  @bridge
-  override def fill[A](n1: Int, n2: Int, n3: Int, n4: Int)(elem: => A): CC[CC[CC[CC[A]]]] = super.fill(n1, n2, n3, n4)(elem)
-
-  @bridge
-  override def fill[A](n1: Int, n2: Int, n3: Int, n4: Int, n5: Int)(elem: => A): CC[CC[CC[CC[CC[A]]]]] = super.fill(n1, n2, n3, n4, n5)(elem)
-
-  @bridge
-  override def tabulate[A](n: Int)(f: Int => A): CC[A] = super.tabulate(n)(f)
-
-  @bridge
-  override def tabulate[A](n1: Int, n2: Int)(f: (Int, Int) => A): CC[CC[A]] = super.tabulate(n1, n2)(f)
-
-  @bridge
-  override def tabulate[A](n1: Int, n2: Int, n3: Int)(f: (Int, Int, Int) => A): CC[CC[CC[A]]] = super.tabulate(n1, n2, n3)(f)
-
-  @bridge
-  override def tabulate[A](n1: Int, n2: Int, n3: Int, n4: Int)(f: (Int, Int, Int, Int) => A): CC[CC[CC[CC[A]]]] = super.tabulate(n1, n2, n3, n4)(f)
-
-  @bridge
-  override def tabulate[A](n1: Int, n2: Int, n3: Int, n4: Int, n5: Int)(f: (Int, Int, Int, Int, Int) => A): CC[CC[CC[CC[CC[A]]]]] = super.tabulate(n1, n2, n3, n4, n5)(f)
-
-  @bridge
-  override def range[T: Integral](start: T, end: T): CC[T] = super.range(start, end)
-
-  @bridge
-  override def range[T: Integral](start: T, end: T, step: T): CC[T] = super.range(start, end, step)
-
-  @bridge
-  override def iterate[A](start: A, len: Int)(f: A => A): CC[A] = super.iterate(start, len)(f)
-}
+  extends GenTraversableFactory[CC] with GenericSeqCompanion[CC]
 

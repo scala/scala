@@ -1,4 +1,4 @@
-case class pc(calls: Any*) extends TypeConstraint
+case class pc(calls: Any*) extends annotation.TypeConstraint
 
 object Main {
   class C0 { def baz: String = "" }

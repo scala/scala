@@ -14,11 +14,11 @@ trait SynchronizedSymbols extends internal.Symbols { self: SymbolTable =>
   override def connectModuleToClass(m: ModuleSymbol, moduleClass: ClassSymbol): ModuleSymbol =
     synchronized { super.connectModuleToClass(m, moduleClass) }
 
-  override def newFreeTerm(name: TermName, info: Type, value: => Any, origin: String = null, newFlags: Long = 0L): FreeTerm =
-    new FreeTerm(name, value, origin) with SynchronizedTermSymbol initFlags newFlags setInfo info
+  override def newFreeTermSymbol(name: TermName, info: Type, value: => Any, flags: Long = 0L, origin: String = null): FreeTerm =
+    new FreeTerm(name, value, origin) with SynchronizedTermSymbol initFlags flags setInfo info
 
-  override def newFreeType(name: TypeName, info: Type, value: => Any, origin: String = null, newFlags: Long = 0L): FreeType =
-    new FreeType(name, value, origin) with SynchronizedTypeSymbol initFlags newFlags setInfo info
+  override def newFreeTypeSymbol(name: TypeName, info: Type, value: => Any, flags: Long = 0L, origin: String = null): FreeType =
+    new FreeType(name, value, origin) with SynchronizedTypeSymbol initFlags flags setInfo info
 
   override protected def makeNoSymbol: NoSymbol = new NoSymbol with SynchronizedSymbol
 
@@ -46,7 +46,7 @@ trait SynchronizedSymbols extends internal.Symbols { self: SymbolTable =>
 
     override def typeParams: List[Symbol] = synchronized { super.typeParams }
 
-    override def reset(completer: Type) = synchronized { super.reset(completer) }
+    override def reset(completer: Type): this.type = synchronized { super.reset(completer) }
 
     override def infosString: String = synchronized { super.infosString }
 

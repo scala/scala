@@ -268,7 +268,7 @@ scala> xs map (_ => "abc")
 res5: Array[String] = Array(abc, abc)
 
 scala> xs map (x => x)
-res6: scala.collection.mutable.ArraySeq[_] = ArraySeq(1, 2)
+res6: Array[_] = Array(1, 2)
 
 scala> xs map (x => (x, x))
 warning: there were 1 feature warnings; re-run with -feature for details
@@ -316,9 +316,8 @@ scala> /*
   */
 */
 
-scala> 
 
-scala> 
+You typed two blank lines.  Starting a new command.
 
 scala> // multi-line string
 
@@ -326,7 +325,7 @@ scala> """
 hello
 there
 """
-res9: String = 
+res12: String = 
 "
 hello
 there

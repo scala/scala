@@ -5,7 +5,7 @@ object Test extends App {
   val mrPkg = staticModule("scala.reflect.package")
   val mrSym = selectTerm(mrPkg, "mirror")
   val NullaryMethodType(mrTpe) = mrSym.typeSignature
-  val mr = newFreeTerm("mr", mrTpe, scala.reflect.mirror, null)
+  val mr = newFreeTerm("mr", mrTpe, scala.reflect.mirror)
 
   val tree1 = Apply(Select(Ident(mr), newTermName("reify")), List(Literal(Constant(2))))
   val ttree1 = toolbox.typeCheck(tree1, withMacrosDisabled = false)

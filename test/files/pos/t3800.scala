@@ -1,4 +1,4 @@
-class meh extends StaticAnnotation
+class meh extends annotation.StaticAnnotation
 
 class ALike[C]
 abstract class AFactory[CC[x] <: ALike[CC[x]]] {

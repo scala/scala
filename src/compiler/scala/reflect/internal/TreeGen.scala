@@ -7,13 +7,14 @@ abstract class TreeGen extends api.AbsTreeGen {
   import global._
   import definitions._
 
-  def rootId(name: Name)          = Select(Ident(nme.ROOTPKG), name)
-  def rootScalaDot(name: Name)    = Select(rootId(nme.scala_) setSymbol ScalaPackage, name)
-  def scalaDot(name: Name)        = Select(Ident(nme.scala_) setSymbol ScalaPackage, name)
-  def scalaAnyRefConstr           = scalaDot(tpnme.AnyRef) setSymbol AnyRefClass
-  def scalaUnitConstr             = scalaDot(tpnme.Unit) setSymbol UnitClass
-  def productConstr               = scalaDot(tpnme.Product) setSymbol ProductRootClass
-  def serializableConstr          = scalaDot(tpnme.Serializable) setSymbol SerializableClass
+  def rootId(name: Name)             = Select(Ident(nme.ROOTPKG), name)
+  def rootScalaDot(name: Name)       = Select(rootId(nme.scala_) setSymbol ScalaPackage, name)
+  def scalaDot(name: Name)           = Select(Ident(nme.scala_) setSymbol ScalaPackage, name)
+  def scalaAnnotationDot(name: Name) = Select(scalaDot(nme.annotation), name)
+  def scalaAnyRefConstr              = scalaDot(tpnme.AnyRef) setSymbol AnyRefClass
+  def scalaUnitConstr                = scalaDot(tpnme.Unit) setSymbol UnitClass
+  def productConstr                  = scalaDot(tpnme.Product) setSymbol ProductRootClass
+  def serializableConstr             = scalaDot(tpnme.Serializable) setSymbol SerializableClass
 
   def scalaFunctionConstr(argtpes: List[Tree], restpe: Tree, abstractFun: Boolean = false): Tree = {
     val cls = if (abstractFun)
@@ -47,6 +48,9 @@ abstract class TreeGen extends api.AbsTreeGen {
 
   def mkMethodCall(target: Tree, targs: List[Type], args: List[Tree]): Tree =
     Apply(mkTypeApply(target, targs map TypeTree), args)
+
+  def mkNullaryCall(method: Symbol, targs: List[Type]): Tree =
+    mkTypeApply(mkAttributedRef(method), targs map TypeTree)
 
   /** Builds a reference to value whose type is given stable prefix.
    *  The type must be suitable for this.  For example, it

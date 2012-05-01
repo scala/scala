@@ -36,8 +36,9 @@ abstract class SymbolTable extends api.Universe
                               with Importers
                               with Required
                               with TreeBuildUtil
-                              with Reporters
+                              with FrontEnds
                               with CapturedVariables
+                              with StdAttachments
 {
   def rootLoader: LazyType
   def log(msg: => AnyRef): Unit
@@ -52,7 +53,7 @@ abstract class SymbolTable extends api.Universe
 
   /** Overridden when we know more about what was happening during a failure. */
   def supplementErrorMessage(msg: String): String = msg
-  
+
   private[scala] def printCaller[T](msg: String)(result: T) = {
     Console.err.println(msg + ": " + result)
     Console.err.println("Called from:")
@@ -73,6 +74,19 @@ abstract class SymbolTable extends api.Universe
       log(msg + ": " + result)
 
     result
+  }
+
+  // For too long have we suffered in order to sort NAMES.
+  // I'm pretty sure there's a reasonable default for that.
+  // Notice challenge created by Ordering's invariance.
+  implicit def lowPriorityNameOrdering[T <: Names#Name]: Ordering[T] =
+    SimpleNameOrdering.asInstanceOf[Ordering[T]]
+
+  private object SimpleNameOrdering extends Ordering[Names#Name] {
+    def compare(n1: Names#Name, n2: Names#Name) = (
+      if (n1 eq n2) 0
+      else n1.toString compareTo n2.toString
+    )
   }
 
   /** Dump each symbol to stdout after shutdown.

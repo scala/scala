@@ -1,0 +1,22 @@
+_ <: scala.runtime.AbstractFunction0[_ <: Object with Test$ToS with scala.Product with scala.Serializable] with scala.Serializable with java.lang.Object
+_ <: Object with Test$ToS with scala.Product with scala.Serializable
+Object with Test$ToS
+Object with Test$ToS
+Object with Test$ToS
+scala.Function0[Object with Test$ToS]
+scala.Function0[Object with Test$ToS]
+_ <: Object with _ <: Object with Object with Test$ToS
+_ <: Object with _ <: Object with _ <: Object with Test$ToS
+scala.collection.immutable.List[Object with scala.collection.Seq[Int]]
+scala.collection.immutable.List[Object with scala.collection.Seq[_ <: Int]]
+_ <: scala.runtime.AbstractFunction0[_ <: Object with Test$ToS with scala.Product with scala.Serializable] with scala.Serializable with java.lang.Object
+_ <: Object with Test$ToS with scala.Product with scala.Serializable
+Object with Test$ToS
+Object with Test$ToS
+Object with Test$ToS
+scala.Function0[Object with Test$ToS]
+scala.Function0[Object with Test$ToS]
+_ <: Object with _ <: Object with Object with Test$ToS
+_ <: Object with _ <: Object with _ <: Object with Test$ToS
+scala.collection.immutable.List[Object with scala.collection.Seq[Int]]
+scala.collection.immutable.List[Object with scala.collection.Seq[_ <: Int]]

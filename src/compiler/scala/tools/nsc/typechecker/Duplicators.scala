@@ -186,7 +186,7 @@ abstract class Duplicators extends Analyzer {
       oldClassOwner = oldThis
       newClassOwner = newThis
       invalidate(ddef.tparams)
-      for (vdef <- ddef.vparamss.flatten) {
+      mforeach(ddef.vparamss) { vdef =>
         invalidate(vdef)
         vdef.tpe = null
       }

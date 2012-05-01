@@ -86,13 +86,12 @@ trait Trees extends reflect.internal.Trees { self: Global =>
     /* Add constructor to template */
 
     // create parameters for <init> as synthetic trees.
-    var vparamss1 =
-      vparamss map (vps => vps.map { vd =>
-        atPos(vd.pos.focus) {
-          ValDef(
-            Modifiers(vd.mods.flags & (IMPLICIT | DEFAULTPARAM | BYNAMEPARAM) | PARAM | PARAMACCESSOR) withAnnotations vd.mods.annotations,
-            vd.name, vd.tpt.duplicate, vd.rhs.duplicate)
-        }})
+    var vparamss1 = mmap(vparamss) { vd =>
+      atPos(vd.pos.focus) {
+        val mods = Modifiers(vd.mods.flags & (IMPLICIT | DEFAULTPARAM | BYNAMEPARAM) | PARAM | PARAMACCESSOR)
+        ValDef(mods withAnnotations vd.mods.annotations, vd.name, vd.tpt.duplicate, vd.rhs.duplicate)
+      }
+    }
     val (edefs, rest) = body span treeInfo.isEarlyDef
     val (evdefs, etdefs) = edefs partition treeInfo.isEarlyValDef
     val gvdefs = evdefs map {
@@ -143,11 +142,18 @@ trait Trees extends reflect.internal.Trees { self: Global =>
    *  @param body       the template statements without primary constructor
    *                    and value parameter fields.
    */
-  def ClassDef(sym: Symbol, constrMods: Modifiers, vparamss: List[List[ValDef]], argss: List[List[Tree]], body: List[Tree], superPos: Position): ClassDef =
+  def ClassDef(sym: Symbol, constrMods: Modifiers, vparamss: List[List[ValDef]], argss: List[List[Tree]], body: List[Tree], superPos: Position): ClassDef = {
+    // "if they have symbols they should be owned by `sym`"
+    assert(
+      mforall(vparamss)(p => (p.symbol eq NoSymbol) || (p.symbol.owner == sym)),
+      ((mmap(vparamss)(_.symbol), sym))
+    )
+
     ClassDef(sym,
       Template(sym.info.parents map TypeTree,
                if (sym.thisSym == sym || phase.erasedTypes) emptyValDef else ValDef(sym.thisSym),
                constrMods, vparamss, argss, body, superPos))
+  }
 
  // --- subcomponents --------------------------------------------------
 

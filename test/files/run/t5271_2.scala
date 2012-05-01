@@ -9,4 +9,5 @@ object Test extends App {
 
   val toolbox = mkToolBox()
   println(code.tree)
+  println(code.eval)
 }

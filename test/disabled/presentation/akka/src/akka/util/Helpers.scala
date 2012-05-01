@@ -37,7 +37,7 @@ object Helpers {
    * Convenience helper to cast the given Option of Any to an Option of the given type. Will swallow a possible
    * ClassCastException and return None in that case.
    */
-  def narrowSilently[T: Manifest](o: Option[Any]): Option[T] =
+  def narrowSilently[T: ClassTag](o: Option[Any]): Option[T] =
     try {
       narrow(o)
     } catch {

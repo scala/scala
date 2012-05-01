@@ -159,7 +159,7 @@ abstract class LambdaLift extends InfoTransform {
               // for that failure. There should be exactly one method for any given
               // entity which always gives the right answer.
               if (sym.isImplClass)
-                localImplClasses((sym.owner, nme.interfaceName(sym.name))) = sym
+                localImplClasses((sym.owner, tpnme.interfaceName(sym.name))) = sym
               else {
                 renamable addEntry sym
                 if (sym.isTrait)
@@ -229,7 +229,7 @@ abstract class LambdaLift extends InfoTransform {
       def renameTrait(traitSym: Symbol, implSym: Symbol) {
         val originalImplName = implSym.name
         renameSym(traitSym)
-        implSym setName nme.implClassName(traitSym.name)
+        implSym setName tpnme.implClassName(traitSym.name)
 
         debuglog("renaming impl class in step with %s: %s => %s".format(traitSym, originalImplName, implSym.name))
       }

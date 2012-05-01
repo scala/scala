@@ -204,7 +204,7 @@ class Regex(regex: String, groupNames: String*) extends Serializable {
 
 
   /** Return all matches of this regexp in given character sequence as a
-   *  [[scala.collection.Iterator]] of [[scala.util.matching.Regex.Match].
+   *  [[scala.collection.Iterator]] of [[scala.util.matching.Regex.Match]].
    *
    *  @param source The text to match against.
    *  @return       A [[scala.collection.Iterator]] of [[scala.util.matching.Regex.Match]] for all matches.

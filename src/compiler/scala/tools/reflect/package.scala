@@ -27,17 +27,17 @@ package object reflect {
     }
   }
 
-  def zeroOfClass(clazz: Class[_]) = zeroOf(Manifest(ClassManifest(clazz).tpe))
-  def zeroOf[T](implicit m: Manifest[T]): AnyRef = {
-    if (m == manifest[Boolean] || m == manifest[jl.Boolean]) false: jl.Boolean
-    else if (m == manifest[Unit] || m == manifest[jl.Void] || m == manifest[scala.runtime.BoxedUnit]) scala.runtime.BoxedUnit.UNIT
-    else if (m == manifest[Char] || m == manifest[jl.Character]) 0.toChar: jl.Character
-    else if (m == manifest[Byte] || m == manifest[jl.Byte]) 0.toByte: jl.Byte
-    else if (m == manifest[Short] || m == manifest[jl.Short]) 0.toShort: jl.Short
-    else if (m == manifest[Int] || m == manifest[jl.Integer]) 0: jl.Integer
-    else if (m == manifest[Long] || m == manifest[jl.Long]) 0l: jl.Long
-    else if (m == manifest[Float] || m == manifest[jl.Float]) 0f: jl.Float
-    else if (m == manifest[Double] || m == manifest[jl.Double]) 0d: jl.Double
+  def zeroOfClass(clazz: Class[_]) = zeroOf(ClassTag(clazz))
+  def zeroOf[T](implicit t: ClassTag[T]): AnyRef = {
+    if (t == classTag[Boolean] || t == classTag[jl.Boolean]) false: jl.Boolean
+    else if (t == classTag[Unit] || t == classTag[jl.Void] || t == classTag[scala.runtime.BoxedUnit]) scala.runtime.BoxedUnit.UNIT
+    else if (t == classTag[Char] || t == classTag[jl.Character]) 0.toChar: jl.Character
+    else if (t == classTag[Byte] || t == classTag[jl.Byte]) 0.toByte: jl.Byte
+    else if (t == classTag[Short] || t == classTag[jl.Short]) 0.toShort: jl.Short
+    else if (t == classTag[Int] || t == classTag[jl.Integer]) 0: jl.Integer
+    else if (t == classTag[Long] || t == classTag[jl.Long]) 0l: jl.Long
+    else if (t == classTag[Float] || t == classTag[jl.Float]) 0f: jl.Float
+    else if (t == classTag[Double] || t == classTag[jl.Double]) 0d: jl.Double
     else null
   }
 }

@@ -447,7 +447,7 @@ abstract class UnPickler /*extends reflect.generic.UnPickler*/ {
     private def readArrayAnnot() = {
       readByte() // skip the `annotargarray` tag
       val end = readNat() + readIndex
-      until(end, () => readClassfileAnnotArg(readNat())).toArray(classfileAnnotArgManifest)
+      until(end, () => readClassfileAnnotArg(readNat())).toArray(classfileAnnotArgTag)
     }
     protected def readClassfileAnnotArg(i: Int): ClassfileAnnotArg = bytes(index(i)) match {
       case ANNOTINFO     => NestedAnnotArg(at(i, readAnnotation))
@@ -816,16 +816,10 @@ abstract class UnPickler /*extends reflect.generic.UnPickler*/ {
       throw new RuntimeException("malformed Scala signature of " + classRoot.name + " at " + readIndex + "; " + msg)
 
     protected def errorMissingRequirement(name: Name, owner: Symbol): Symbol =
-      missingHook(owner, name) orElse {
-        val what = if (name.isTypeName) "type" else "value"
-        MissingRequirementError.notFound(
-          "while unpickling %s, reference %s %s of %s/%s/%s".format(
-            filename,
-            what, name.decode, owner.tpe.widen,
-            owner.tpe.typeSymbol.ownerChain,
-            owner.info.members.mkString("\n  ", "\n  ", ""))
-        )
-      }
+      missingHook(owner, name) orElse MissingRequirementError.notFound(
+        "bad reference while unpickling %s: %s not found in %s".format(
+          filename, name.longString, owner.tpe.widen)
+      )
 
     def inferMethodAlternative(fun: Tree, argtpes: List[Type], restpe: Type) {} // can't do it; need a compiler for that.
 
@@ -849,7 +843,7 @@ abstract class UnPickler /*extends reflect.generic.UnPickler*/ {
         atPhase(p) (sym setInfo tp)
         if (currentRunId != definedAtRunId)
           sym.setInfo(adaptToNewRunMap(tp))
-      } 
+      }
       catch {
         case e: MissingRequirementError => throw toTypeError(e)
       }

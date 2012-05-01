@@ -62,20 +62,34 @@ trait TreeBuildUtil { self: Universe =>
    *  @param   name   the name of the free variable
    *  @param   info   the type signature of the free variable
    *  @param   value  the value of the free variable at runtime
+   *  @param   flags  (optional) flags of the free variable
    *  @param   origin debug information that tells where this symbol comes from
    */
-  def newFreeTerm(name: String, info: Type, value: => Any, origin: String): Symbol
+  def newFreeTerm(name: String, info: Type, value: => Any, flags: Long = 0L, origin: String = null): Symbol
 
-  /** Create a fresh free type symbol.
+  /** Create a fresh free non-existential type symbol.
    *  @param   name   the name of the free variable
    *  @param   info   the type signature of the free variable
    *  @param   value  a type tag that captures the value of the free variable
    *                  is completely phantom, since the captured type cannot be propagated to the runtime
    *                  if it could be, we wouldn't be creating a free type to begin with
    *                  the only usage for it is preserving the captured symbol for compile-time analysis
+   *  @param   flags  (optional) flags of the free variable
    *  @param   origin debug information that tells where this symbol comes from
    */
-  def newFreeType(name: String, info: Type, value: => Any, origin: String): Symbol
+  def newFreeType(name: String, info: Type, value: => Any, flags: Long = 0L, origin: String = null): Symbol
+
+  /** Create a fresh free existential type symbol.
+   *  @param   name   the name of the free variable
+   *  @param   info   the type signature of the free variable
+   *  @param   value  a type tag that captures the value of the free variable
+   *                  is completely phantom, since the captured type cannot be propagated to the runtime
+   *                  if it could be, we wouldn't be creating a free type to begin with
+   *                  the only usage for it is preserving the captured symbol for compile-time analysis
+   *  @param   flags  (optional) flags of the free variable
+   *  @param   origin (optional) debug information that tells where this symbol comes from
+   */
+  def newFreeExistential(name: String, info: Type, value: => Any, flags: Long = 0L, origin: String = null): Symbol
 
   /** Create a Modiiers structure given internal flags, qualifier, annotations */
   def modifiersFromInternalFlags(flags: Long, privateWithin: Name, annotations: List[Tree]): Modifiers
@@ -124,4 +138,22 @@ trait AbsTreeGen {
 
   /** Builds a typed Select with an underlying symbol. */
   def mkAttributedSelect(qual: Tree, sym: Symbol): Tree
+
+  /** A creator for method calls, e.g. fn[T1, T2, ...](v1, v2, ...)
+   *  There are a number of variations.
+   *
+   *  @param    receiver    symbol of the method receiver
+   *  @param    methodName  name of the method to call
+   *  @param    targs       type arguments (if Nil, no TypeApply node will be generated)
+   *  @param    args        value arguments
+   *  @return               the newly created trees.
+   */
+  def mkMethodCall(receiver: Symbol, methodName: Name, targs: List[Type], args: List[Tree]): Tree
+  def mkMethodCall(method: Symbol, targs: List[Type], args: List[Tree]): Tree
+  def mkMethodCall(method: Symbol, args: List[Tree]): Tree
+  def mkMethodCall(target: Tree, args: List[Tree]): Tree
+  def mkMethodCall(receiver: Symbol, methodName: Name, args: List[Tree]): Tree
+  def mkMethodCall(receiver: Tree, method: Symbol, targs: List[Type], args: List[Tree]): Tree
+  def mkMethodCall(target: Tree, targs: List[Type], args: List[Tree]): Tree
+  def mkNullaryCall(method: Symbol, targs: List[Type]): Tree
 }

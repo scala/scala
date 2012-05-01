@@ -1,7 +1,8 @@
 package scala.reflect
 package reify
 
-import scala.tools.nsc.Global
+import scala.reflect.makro.ReificationError
+import scala.reflect.makro.UnexpectedReificationError
 
 trait Errors {
   self: Reifier =>
@@ -9,11 +10,7 @@ trait Errors {
   import mirror._
   import definitions._
 
-  class ReificationError(var pos: Position, val msg: String) extends Throwable(msg)
-  class UnexpectedReificationError(val pos: Position, val msg: String, val cause: Throwable = null) extends Throwable(msg)
-
-  lazy val defaultErrorPosition: Position =
-    mirror.analyzer.openMacros.find(c => c.macroApplication.pos != NoPosition).map(_.macroApplication.pos).getOrElse(NoPosition)
+  def defaultErrorPosition = analyzer.enclosingMacroPosition
 
   // expected errors: these can happen if the user casually writes whatever.reify(...)
   // hence we don't crash here, but nicely report a typechecking error and bail out asap

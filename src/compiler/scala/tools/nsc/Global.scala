@@ -8,15 +8,13 @@ package scala.tools.nsc
 import java.io.{ File, FileOutputStream, PrintWriter, IOException, FileNotFoundException }
 import java.nio.charset.{ Charset, CharsetDecoder, IllegalCharsetNameException, UnsupportedCharsetException }
 import compat.Platform.currentTime
-
 import scala.tools.util.{ Profiling, PathResolver }
 import scala.collection.{ mutable, immutable }
 import io.{ SourceReader, AbstractFile, Path }
-import reporters.{ Reporter => NscReporter, ConsoleReporter }
+import reporters.{ Reporter, ConsoleReporter }
 import util.{ NoPosition, Exceptional, ClassPath, SourceFile, NoSourceFile, Statistics, StatisticsInfo, BatchSourceFile, ScriptSourceFile, ShowPickled, ScalaClassLoader, returning }
 import scala.reflect.internal.pickling.{ PickleBuffer, PickleFormat }
 import settings.{ AestheticSettings }
-
 import symtab.{ Flags, SymbolTable, SymbolLoaders, SymbolTrackers }
 import symtab.classfile.Pickler
 import dependencies.DependencyAnalysis
@@ -25,25 +23,25 @@ import ast._
 import ast.parser._
 import typechecker._
 import transform._
-
 import backend.icode.{ ICodes, GenICode, ICodeCheckers }
 import backend.{ ScalaPrimitives, Platform, MSILPlatform, JavaPlatform }
 import backend.jvm.GenJVM
 import backend.opt.{ Inliners, InlineExceptionHandlers, ClosureElimination, DeadCodeElimination }
 import backend.icode.analysis._
 import language.postfixOps
+import reflect.internal.StdAttachments
 
-class Global(var currentSettings: Settings, var reporter: NscReporter) extends SymbolTable
-                                                                          with ClassLoaders
-                                                                          with ToolBoxes
-                                                                          with CompilationUnits
-                                                                          with Plugins
-                                                                          with PhaseAssembly
-                                                                          with Trees
-                                                                          with FreeVars
-                                                                          with TreePrinters
-                                                                          with DocComments
-                                                                          with Positions {
+class Global(var currentSettings: Settings, var reporter: Reporter) extends SymbolTable
+                                                                       with ClassLoaders
+                                                                       with ToolBoxes
+                                                                       with CompilationUnits
+                                                                       with Plugins
+                                                                       with PhaseAssembly
+                                                                       with Trees
+                                                                       with FreeVars
+                                                                       with TreePrinters
+                                                                       with DocComments
+                                                                       with Positions {
 
   override def settings = currentSettings
 
@@ -51,7 +49,7 @@ class Global(var currentSettings: Settings, var reporter: NscReporter) extends S
 
   // alternate constructors ------------------------------------------
 
-  def this(reporter: NscReporter) =
+  def this(reporter: Reporter) =
     this(new Settings(err => reporter.error(null, err)), reporter)
 
   def this(settings: Settings) =
@@ -133,6 +131,16 @@ class Global(var currentSettings: Settings, var reporter: NscReporter) extends S
     val global: Global.this.type = Global.this
   } with NodePrinters {
     infolevel = InfoLevel.Verbose
+  }
+
+  def withInfoLevel[T](infolevel: nodePrinters.InfoLevel.Value)(op: => T) = {
+    val saved = nodePrinters.infolevel
+    try {
+      nodePrinters.infolevel = infolevel
+      op
+    } finally {
+      nodePrinters.infolevel = saved
+    }
   }
 
   /** Representing ASTs as graphs */
@@ -950,6 +958,11 @@ class Global(var currentSettings: Settings, var reporter: NscReporter) extends S
         reporter.warning(NoPosition, "there were %d %s warnings; re-run with %s for details".format(warnings.size, what, option.name))
   }
 
+  def newUnitParser(code: String)      = new syntaxAnalyzer.UnitParser(newCompilationUnit(code))
+  def newUnitScanner(code: String)     = new syntaxAnalyzer.UnitScanner(newCompilationUnit(code))
+  def newCompilationUnit(code: String) = new CompilationUnit(newSourceFile(code))
+  def newSourceFile(code: String)      = new BatchSourceFile("<console>", code)
+
   /** A Run is a single execution of the compiler on a sets of units
    */
   class Run {
@@ -961,10 +974,17 @@ class Global(var currentSettings: Settings, var reporter: NscReporter) extends S
     /** The currently compiled unit; set from GlobalPhase */
     var currentUnit: CompilationUnit = NoCompilationUnit
 
-    val deprecationWarnings = new ConditionalWarning("deprecation", settings.deprecation)
-    val uncheckedWarnings = new ConditionalWarning("unchecked", settings.unchecked)
+    // This change broke sbt; I gave it the thrilling name of uncheckedWarnings0 so
+    // as to recover uncheckedWarnings for its ever-fragile compiler interface.
+    val deprecationWarnings0 = new ConditionalWarning("deprecation", settings.deprecation)
+    val uncheckedWarnings0 = new ConditionalWarning("unchecked", settings.unchecked)
     val featureWarnings = new ConditionalWarning("feature", settings.feature)
-    val allConditionalWarnings = List(deprecationWarnings, uncheckedWarnings, featureWarnings)
+    val inlinerWarnings = new ConditionalWarning("inliner", settings.YinlinerWarnings)
+    val allConditionalWarnings = List(deprecationWarnings0, uncheckedWarnings0, featureWarnings, inlinerWarnings)
+
+    // for sbt's benefit
+    def uncheckedWarnings: List[(Position, String)] = uncheckedWarnings0.warnings.toList
+    def deprecationWarnings: List[(Position, String)] = deprecationWarnings0.warnings.toList
 
     var reportedFeature = Set[Symbol]()
 
@@ -1275,7 +1295,7 @@ class Global(var currentSettings: Settings, var reporter: NscReporter) extends S
 
       // nothing to compile, but we should still report use of deprecated options
       if (sources.isEmpty) {
-        checkDeprecatedSettings(new CompilationUnit(new BatchSourceFile("<no file>", "")))
+        checkDeprecatedSettings(newCompilationUnit(""))
         reportCompileErrors()
         return
       }
@@ -1511,7 +1531,7 @@ class Global(var currentSettings: Settings, var reporter: NscReporter) extends S
   /** We resolve the class/object ambiguity by passing a type/term name.
    */
   def showDef(fullName: Name, declsOnly: Boolean, ph: Phase) = {
-    val boringOwners = Set(definitions.AnyClass, definitions.AnyRefClass, definitions.ObjectClass)
+    val boringOwners = Set[Symbol](definitions.AnyClass, definitions.AnyRefClass, definitions.ObjectClass)
     def phased[T](body: => T): T = afterPhase(ph)(body)
     def boringMember(sym: Symbol) = boringOwners(sym.owner)
     def symString(sym: Symbol) = if (sym.isTerm) sym.defString else sym.toString
@@ -1594,7 +1614,7 @@ object Global {
    *  This allows the use of a custom Global subclass with the software which
    *  wraps Globals, such as scalac, fsc, and the repl.
    */
-  def fromSettings(settings: Settings, reporter: NscReporter): Global = {
+  def fromSettings(settings: Settings, reporter: Reporter): Global = {
     // !!! The classpath isn't known until the Global is created, which is too
     // late, so we have to duplicate it here.  Classpath is too tightly coupled,
     // it is a construct external to the compiler and should be treated as such.
@@ -1602,7 +1622,7 @@ object Global {
     val loader       = ScalaClassLoader.fromURLs(new PathResolver(settings).result.asURLs, parentLoader)
     val name         = settings.globalClass.value
     val clazz        = Class.forName(name, true, loader)
-    val cons         = clazz.getConstructor(classOf[Settings], classOf[NscReporter])
+    val cons         = clazz.getConstructor(classOf[Settings], classOf[Reporter])
 
     cons.newInstance(settings, reporter).asInstanceOf[Global]
   }
@@ -1610,7 +1630,7 @@ object Global {
   /** A global instantiated this way honors -Yglobal-class setting, and
    *  falls back on calling the Global constructor directly.
    */
-  def apply(settings: Settings, reporter: NscReporter): Global = {
+  def apply(settings: Settings, reporter: Reporter): Global = {
     val g = (
       if (settings.globalClass.isDefault) null
       else try fromSettings(settings, reporter) catch { case x =>

@@ -1,4 +1,0 @@
-t2386.scala:2: error: No ClassTag available for Array[_ >: String with Int]
-  val a = Array(Array(1, 2), Array("a","b"))
-               ^
-one error found

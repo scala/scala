@@ -18,6 +18,14 @@ object Test extends ReplTest {
     |:type def f() = 5
     |
     |:type def g[T](xs: Set[_ <: T]) = Some(xs.head)
+    |
+    |// verbose!
+    |:type -v List(1,2,3) filter _
+    |:type -v def f[T >: Null, U <: String](x: T, y: U) = Set(x, y)
+    |:type -v def x = 1 ; def bar[T >: Null <: AnyRef](xyz: T) = 5
+    |:type -v Nil.combinations _
+    |:type -v def f[T <: AnyVal] = List[T]().combinations _
+    |:type -v def f[T, U >: T](x: T, y: List[U]) = x :: y
   """.stripMargin
 }
 

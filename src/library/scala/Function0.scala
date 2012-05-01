@@ -6,13 +6,13 @@
 **                          |/                                          **
 \*                                                                      */
 // GENERATED CODE: DO NOT EDIT.
-// genprod generated these sources at: Tue Feb 14 16:49:03 PST 2012
+// genprod generated these sources at: Mon Apr 30 07:46:11 PDT 2012
 
 package scala
 
 
 /** A function of 0 parameters.
- *
+ *  
  *  In the following example, the definition of javaVersion is a
  *  shorthand for the anonymous class definition anonfun0:
  *
@@ -24,7 +24,7 @@ package scala
  *      def apply(): String = sys.props("java.version")
  *    }
  *    assert(javaVersion() == anonfun0())
- *  }
+ * }
  *  }}}
  *
  *  Note that `Function1` does not define a total function, as might

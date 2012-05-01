@@ -1,4 +1,4 @@
-class ann(i: Int) extends Annotation
+class ann(i: Int) extends scala.annotation.Annotation
 
 // annotations on abstract types
 abstract class C1[@serializable @cloneable +T, U, V[_]]

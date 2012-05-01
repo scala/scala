@@ -1,5 +1,6 @@
 package scala.reflect
 package api
+
 import language.experimental.macros
 
 abstract class Universe extends Symbols
@@ -19,7 +20,7 @@ abstract class Universe extends Symbols
                            with ClassLoaders
                            with TreeBuildUtil
                            with ToolBoxes
-                           with Reporters
+                           with FrontEnds
                            with Importers {
 
   /** Given an expression, generate a tree that when compiled and executed produces the original tree.
@@ -64,26 +65,7 @@ abstract class Universe extends Symbols
 
 object Universe {
   def reify[T](cc: scala.reflect.makro.Context{ type PrefixType = Universe })(expr: cc.Expr[T]): cc.Expr[cc.prefix.value.Expr[T]] = {
-    import cc.mirror._
-    try cc.reifyTree(cc.prefix, expr)
-    catch {
-      case ex: Throwable =>
-        // [Eugene] cannot pattern match on an abstract type, so had to do this
-        val ex1 = ex
-        if (ex.getClass.toString.endsWith("$ReificationError")) {
-          ex match {
-            case cc.ReificationError(pos, msg) =>
-              cc.error(pos, msg)
-              EmptyTree
-          }
-        } else if (ex.getClass.toString.endsWith("$UnexpectedReificationError")) {
-          ex match {
-            case cc.UnexpectedReificationError(pos, err, cause) =>
-              if (cause != null) throw cause else throw ex
-          }
-        } else {
-          throw ex
-        }
-    }
+    import scala.reflect.makro.internal._
+    cc.Expr(cc.materializeExpr(cc.prefix.tree, expr.tree))
   }
 }

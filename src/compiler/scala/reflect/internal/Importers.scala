@@ -71,9 +71,9 @@ trait Importers { self: SymbolTable =>
           case x: from.ModuleSymbol =>
             linkReferenced(myowner.newModuleSymbol(myname, mypos, myflags), x, importSymbol)
           case x: from.FreeTerm =>
-            newFreeTerm(importName(x.name).toTermName, importType(x.info), x.value, x.origin, myflags)
+            newFreeTermSymbol(importName(x.name).toTermName, importType(x.info), x.value, x.flags, x.origin)
           case x: from.FreeType =>
-            newFreeType(importName(x.name).toTypeName, importType(x.info), x.value, x.origin, myflags)
+            newFreeTypeSymbol(importName(x.name).toTypeName, importType(x.info), x.value, x.flags, x.origin)
           case x: from.TermSymbol =>
             linkReferenced(myowner.newValue(myname, mypos, myflags), x, importSymbol)
           case x: from.TypeSkolem =>
@@ -326,7 +326,7 @@ trait Importers { self: SymbolTable =>
         case from.ValDef(mods, name, tpt, rhs) =>
           new ValDef(importModifiers(mods), importName(name).toTermName, importTree(tpt), importTree(rhs))
         case from.DefDef(mods, name, tparams, vparamss, tpt, rhs) =>
-          new DefDef(importModifiers(mods), importName(name).toTermName, tparams map importTypeDef, vparamss map (_ map importValDef), importTree(tpt), importTree(rhs))
+          new DefDef(importModifiers(mods), importName(name).toTermName, tparams map importTypeDef, mmap(vparamss)(importValDef), importTree(tpt), importTree(rhs))
         case from.TypeDef(mods, name, tparams, rhs) =>
           new TypeDef(importModifiers(mods), importName(name).toTypeName, tparams map importTypeDef, importTree(rhs))
         case from.LabelDef(name, params, rhs) =>

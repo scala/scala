@@ -13,8 +13,7 @@ scala> // guarding against "error: reference to global is ambiguous"
 scala> global.emptyValDef  // "it is imported twice in the same scope by ..."
 res0: $r.global.emptyValDef.type = private val _ = _
 
-scala> val tp = ArrayClass[scala.util.Random]    // magic with manifests
-warning: there were 2 feature warnings; re-run with -feature for details
+scala> val tp = ArrayClass[scala.util.Random]    // magic with tags
 tp: $r.global.Type = Array[scala.util.Random]
 
 scala> tp.memberType(Array_apply)                // evidence

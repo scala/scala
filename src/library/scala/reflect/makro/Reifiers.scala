@@ -46,7 +46,12 @@ trait Reifiers {
    *  The produced tree will be bound to the mirror specified by ``prefix'' (also see ``reflectMirrorPrefix'').
    *  For more information and examples see the documentation for ``Context.reifyTree'' and ``Universe.reify''.
    */
-  def reifyType(prefix: Tree, tpe: Type, dontSpliceAtTopLevel: Boolean = false, requireConcreteTypeTag: Boolean = false): Tree
+  def reifyType(prefix: Tree, tpe: Type, dontSpliceAtTopLevel: Boolean = false, concrete: Boolean = false): Tree
+
+  /** Given a type, generate a tree that when compiled and executed produces the erasure of the original type.
+   *  If ``concrete'' is true, then this function will bail on types, whose erasure includes abstract types (like `ClassTag` does).
+   */
+  def reifyErasure(tpe: Type, concrete: Boolean = true): Tree
 
   /** Undoes reification of a tree.
    *
@@ -63,20 +68,10 @@ trait Reifiers {
    *    3) compileAndEval(unreifyTree(reifyTree(tree))) ~ compileAndEval(tree)  // at runtime original and unreified trees are behaviorally equivalent
    */
   def unreifyTree(tree: Tree): Tree
-
-  /** Represents an error during reification
-   */
-  type ReificationError <: Throwable
-  val ReificationError: ReificationErrorExtractor
-  abstract class ReificationErrorExtractor {
-    def unapply(error: ReificationError): Option[(Position, String)]
-  }
-
-  /** Wraps an unexpected error during reification
-   */
-  type UnexpectedReificationError <: Throwable
-  val UnexpectedReificationError: UnexpectedReificationErrorExtractor
-  abstract class UnexpectedReificationErrorExtractor {
-    def unapply(error: UnexpectedReificationError): Option[(Position, String, Throwable)]
-  }
 }
+
+// made these guys non path-dependent, otherwise exception handling quickly becomes a mess
+
+case class ReificationError(var pos: reflect.api.Position, val msg: String) extends Throwable(msg)
+
+case class UnexpectedReificationError(val pos: reflect.api.Position, val msg: String, val cause: Throwable = null) extends Throwable(msg, cause)

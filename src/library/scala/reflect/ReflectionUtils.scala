@@ -5,6 +5,7 @@
 
 package scala.reflect
 
+import java.lang.{Class => jClass}
 import java.lang.reflect.{ InvocationTargetException, UndeclaredThrowableException }
 
 /** A few java-reflection oriented utility functions useful during reflection bootstrapping.
@@ -25,6 +26,28 @@ object ReflectionUtils {
   // exceptions (for the values of wrap covered in unwrapThrowable.)
   def unwrapHandler[T](pf: PartialFunction[Throwable, T]): PartialFunction[Throwable, T] = {
     case ex if pf isDefinedAt unwrapThrowable(ex)   => pf(unwrapThrowable(ex))
+  }
+
+  private def systemProperties: Iterator[(String, String)] = {
+    import scala.collection.JavaConverters._
+    System.getProperties.asScala.iterator
+  }
+
+  private def searchForBootClasspath = (
+    systemProperties find (_._1 endsWith ".boot.class.path") map (_._2) getOrElse ""
+  )
+
+  def show(cl: ClassLoader) = {
+    def inferClasspath(cl: ClassLoader) = cl match {
+      case cl: java.net.URLClassLoader => "[" + (cl.getURLs mkString ",") + "]"
+      case _ => "<unknown>"
+    }
+    cl match {
+      case cl if cl != null =>
+        "%s of type %s with classpath %s".format(cl, cl.getClass, inferClasspath(cl))
+      case null =>
+        "primordial classloader with boot classpath [%s]".format(searchForBootClasspath)
+    }
   }
 
   def defaultReflectionClassLoader() = {

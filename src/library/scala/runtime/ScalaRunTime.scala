@@ -47,21 +47,29 @@ object ScalaRunTime {
     names.toSet
   }
 
+  /** Return the class object representing an array with element class `clazz`.
+   */
+  def arrayClass(clazz: Class[_]): Class[_] = {
+    // newInstance throws an exception if the erasure is Void.TYPE. see SI-5680
+    if (clazz == java.lang.Void.TYPE) classOf[Array[Unit]]
+    else java.lang.reflect.Array.newInstance(clazz, 0).getClass
+  }
+
+  /** Return the class object representing elements in arrays described by a given schematic.
+   */
+  def arrayElementClass(schematic: Any): Class[_] = schematic match {
+    case cls: Class[_] => cls.getComponentType
+    case tag: ClassTag[_] => tag.erasure
+    case tag: ArrayTag[_] => tag.newArray(0).getClass.getComponentType
+    case _ => throw new UnsupportedOperationException("unsupported schematic %s (%s)".format(schematic, if (schematic == null) "null" else schematic.getClass))
+  }
+
   /** Return the class object representing an unboxed value type,
    *  e.g. classOf[int], not classOf[java.lang.Integer].  The compiler
    *  rewrites expressions like 5.getClass to come here.
    */
-  def anyValClass[T <: AnyVal](value: T): Class[T] = (value match {
-    case x: Byte    => java.lang.Byte.TYPE
-    case x: Short   => java.lang.Short.TYPE
-    case x: Char    => java.lang.Character.TYPE
-    case x: Int     => java.lang.Integer.TYPE
-    case x: Long    => java.lang.Long.TYPE
-    case x: Float   => java.lang.Float.TYPE
-    case x: Double  => java.lang.Double.TYPE
-    case x: Boolean => java.lang.Boolean.TYPE
-    case x: Unit    => java.lang.Void.TYPE
-  }).asInstanceOf[Class[T]]
+  def anyValClass[T <: AnyVal : ClassTag](value: T): Class[T] =
+    classTag[T].erasure.asInstanceOf[Class[T]]
 
   /** Retrieve generic array element */
   def array_apply(xs: AnyRef, idx: Int): Any = xs match {

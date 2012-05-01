@@ -137,6 +137,8 @@ class ManifestA[W: Manifest](a: A[W]) {
   def convToManifestA(x: W): W = sys.error("dunno")
 }
 
+// [Eugene to Vlad] how do I test typetags here?
+
 /** MyTraversableOps class <br/>
  *  - checks if any abstract members are added - should not happen!
  */
@@ -144,4 +146,3 @@ trait MyTraversableOps[S] {
   /** The convToTraversableOps: S documentation... */
   def convToTraversableOps(x: S): S
 }
-

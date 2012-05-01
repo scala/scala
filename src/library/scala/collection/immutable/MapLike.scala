@@ -11,7 +11,6 @@ package immutable
 
 import generic._
 import parallel.immutable.ParMap
-import annotation.bridge
 
 /**
  *  A generic template for immutable maps from keys of type `A`
@@ -85,8 +84,6 @@ trait MapLike[A, +B, +This <: MapLike[A, B, This] with Map[A, B]]
    */
   override def ++[B1 >: B](xs: GenTraversableOnce[(A, B1)]): immutable.Map[A, B1] =
     ((repr: immutable.Map[A, B1]) /: xs.seq) (_ + _)
-
-  @bridge def ++[B1 >: B](xs: TraversableOnce[(A, B1)]): immutable.Map[A, B1] = ++(xs: GenTraversableOnce[(A, B1)])
 
   /** Filters this map by retaining only keys satisfying a predicate.
    *  @param  p   the predicate used to test keys

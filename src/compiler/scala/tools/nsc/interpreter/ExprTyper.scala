@@ -22,8 +22,7 @@ trait ExprTyper {
   object codeParser extends { val global: repl.global.type = repl.global } with CodeHandlers[Tree] {
     def applyRule[T](code: String, rule: UnitParser => T): T = {
       reporter.reset()
-      val unit    = new CompilationUnit(new BatchSourceFile("<console>", code))
-      val scanner = new UnitParser(unit)
+      val scanner = newUnitParser(code)
       val result  = rule(scanner)
 
       if (!reporter.hasErrors)
@@ -33,23 +32,17 @@ trait ExprTyper {
     }
     def tokens(code: String) = {
       reporter.reset()
-      val unit = new CompilationUnit(new BatchSourceFile("<tokens>", code))
-      val in   = new UnitScanner(unit)
+      val in = newUnitScanner(code)
       in.init()
-
       new Tokenizer(in) tokenIterator
     }
 
-    def decl(code: String)  = CodeHandlers.fail("todo")
-    def defn(code: String)  = CodeHandlers.fail("todo")
+    def defns(code: String) = stmts(code) collect { case x: DefTree => x }
     def expr(code: String)  = applyRule(code, _.expr())
     def impt(code: String)  = applyRule(code, _.importExpr())
     def impts(code: String) = applyRule(code, _.importClause())
-    def stmts(code: String) = applyRule(code, _.templateStatSeq(false)._2)
-    def stmt(code: String)  = stmts(code) match {
-      case List(t)  => t
-      case xs       => CodeHandlers.fail("Not a single statement: " + xs.mkString(", "))
-    }
+    def stmts(code: String) = applyRule(code, _.templateStats())
+    def stmt(code: String)  = stmts(code).last  // guaranteed nonempty
   }
 
   /** Parse a line into a sequence of trees. Returns None if the input is incomplete. */
@@ -62,77 +55,69 @@ trait ExprTyper {
       else Some(trees)
     }
   }
-  def tokens(line: String) = beQuietDuring(codeParser.tokens(line))
+  // def parsesAsExpr(line: String) = {
+  //   import codeParser._
+  //   (opt expr line).isDefined
+  // }
 
-  // TODO: integrate these into a CodeHandler[Type].
+  def symbolOfLine(code: String): Symbol = {
+    def asExpr(): Symbol = {
+      val name  = freshInternalVarName()
+      // Typing it with a lazy val would give us the right type, but runs
+      // into compiler bugs with things like existentials, so we compile it
+      // behind a def and strip the NullaryMethodType which wraps the expr.
+      val line = "def " + name + " = {\n" + code + "\n}"
 
-  // XXX literals.
-  // 1) Identifiers defined in the repl.
-  // 2) A path loadable via getModule.
-  // 3) Try interpreting it as an expression.
+      interpretSynthetic(line) match {
+        case IR.Success =>
+          val sym0 = symbolOfTerm(name)
+          // drop NullaryMethodType
+          val sym = sym0.cloneSymbol setInfo afterTyper(sym0.info.finalResultType)
+          if (sym.info.typeSymbol eq UnitClass) NoSymbol
+          else sym
+        case _          => NoSymbol
+      }
+    }
+    def asDefn(): Symbol = {
+      val old = repl.definedSymbolList.toSet
+
+      interpretSynthetic(code) match {
+        case IR.Success =>
+          repl.definedSymbolList filterNot old match {
+            case Nil        => NoSymbol
+            case sym :: Nil => sym
+            case syms       => NoSymbol.newOverloaded(NoPrefix, syms)
+          }
+        case _ => NoSymbol
+      }
+    }
+    beQuietDuring(asExpr()) orElse beQuietDuring(asDefn())
+  }
+
   private var typeOfExpressionDepth = 0
   def typeOfExpression(expr: String, silent: Boolean = true): Type = {
-    repltrace("typeOfExpression(" + expr + ")")
     if (typeOfExpressionDepth > 2) {
       repldbg("Terminating typeOfExpression recursion for expression: " + expr)
       return NoType
     }
-
-    def asQualifiedImport: Type = {
-      val name = expr.takeWhile(_ != '.')
-      typeOfExpression(importedTermNamed(name).fullName + expr.drop(name.length), true)
-    }
-    def asModule: Type = getModuleIfDefined(expr).tpe
-    def asExpr: Type = {
-      val lhs = freshInternalVarName()
-      val line = "lazy val " + lhs + " =\n" + expr
-
-      interpret(line, true) match {
-        case IR.Success => typeOfExpression(lhs, true)
-        case _          => NoType
-      }
-    }
-
-    def evaluate(): Type = {
-      typeOfExpressionDepth += 1
-      try typeOfTerm(expr) orElse asModule orElse asExpr orElse asQualifiedImport
-      finally typeOfExpressionDepth -= 1
-    }
-
+    typeOfExpressionDepth += 1
     // Don't presently have a good way to suppress undesirable success output
     // while letting errors through, so it is first trying it silently: if there
     // is an error, and errors are desired, then it re-evaluates non-silently
     // to induce the error message.
-    beSilentDuring(evaluate()) orElse beSilentDuring(typeOfDeclaration(expr)) orElse {
-      if (!silent)
-        evaluate()
-
-      NoType
+    try beSilentDuring(symbolOfLine(expr).tpe) match {
+      case NoType if !silent => symbolOfLine(expr).tpe // generate error
+      case tpe               => tpe
     }
+    finally typeOfExpressionDepth -= 1
   }
-  // Since people will be giving us ":t def foo = 5" even though that is not an
-  // expression, we have a means of typing declarations too.
-  private def typeOfDeclaration(code: String): Type = {
-    repltrace("typeOfDeclaration(" + code + ")")
-    val obname = freshInternalVarName()
 
-    interpret("object " + obname + " {\n" + code + "\n}\n", true) match {
-      case IR.Success =>
-        val sym = symbolOfTerm(obname)
-        if (sym == NoSymbol) NoType else {
-          // TODO: bitmap$n is not marked synthetic.
-          val decls = sym.tpe.decls.toList filterNot (x => x.isConstructor || x.isPrivate || (x.name.toString contains "$"))
-          repltrace("decls: " + decls)
-          if (decls.isEmpty) NoType
-          else cleanMemberDecl(sym, decls.last.name)
-        }
-      case _          =>
-        NoType
-    }
-  }
+  def tokens(line: String) = beQuietDuring(codeParser.tokens(line))
+
+  // In the todo column
+  //
   // def compileAndTypeExpr(expr: String): Option[Typer] = {
   //   class TyperRun extends Run {
   //     override def stopPhase(name: String) = name == "superaccessors"
   //   }
-  // }
 }

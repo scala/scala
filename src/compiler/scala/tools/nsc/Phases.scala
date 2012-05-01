@@ -14,7 +14,7 @@ object Phases {
 
   /** A class for tracking something about each phase.
    */
-  class Model[T: Manifest] {
+  class Model[T] {
     case class Cell(ph: Phase, value: T) {
       def name = ph.name
       def id = ph.id

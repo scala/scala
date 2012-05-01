@@ -12,7 +12,7 @@ trait Context extends Aliases
                  with Infrastructure
                  with Names
                  with Reifiers
-                 with Reporters
+                 with FrontEnds
                  with Settings
                  with Symbols
                  with Typers
@@ -34,28 +34,11 @@ trait Context extends Aliases
 object Context {
   def reify[T](cc: Context{ type PrefixType = Context })(expr: cc.Expr[T]): cc.Expr[cc.prefix.value.Expr[T]] = {
     import cc.mirror._
+    import scala.reflect.makro.internal._
     // [Eugene] how do I typecheck this without undergoing this tiresome (and, in general, incorrect) procedure?
-    val prefix: Tree = Select(cc.prefix, newTermName("mirror"))
+    val prefix: Tree = Select(cc.prefix.tree, newTermName("mirror"))
     val prefixTpe = cc.typeCheck(TypeApply(Select(prefix, newTermName("asInstanceOf")), List(SingletonTypeTree(prefix)))).tpe
     prefix setType prefixTpe
-    try cc.reifyTree(prefix, expr)
-    catch {
-      case ex: Throwable =>
-        // [Eugene] cannot pattern match on an abstract type, so had to do this
-        if (ex.getClass.toString.endsWith("$ReificationError")) {
-          ex match {
-            case cc.ReificationError(pos, msg) =>
-              cc.error(pos, msg)
-              EmptyTree
-          }
-        } else if (ex.getClass.toString.endsWith("$UnexpectedReificationError")) {
-          ex match {
-            case cc.UnexpectedReificationError(pos, err, cause) =>
-              if (cause != null) throw cause else throw ex
-          }
-        } else {
-          throw ex
-        }
-    }
+    cc.Expr(cc.materializeExpr(prefix, expr.tree))
   }
 }

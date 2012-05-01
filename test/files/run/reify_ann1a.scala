@@ -1,6 +1,6 @@
 import scala.reflect.mirror._
 
-class ann(bar: List[String]) extends StaticAnnotation
+class ann(bar: List[String]) extends annotation.StaticAnnotation
 
 object Test extends App {
   // test 1: reify
