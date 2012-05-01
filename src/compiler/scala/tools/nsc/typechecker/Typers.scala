@@ -2320,7 +2320,7 @@ trait Typers extends Modes with Adaptations with Taggings {
           anonClass setInfo ClassInfoType(parents, newScope, anonClass)
           methodSym setInfoAndEnter MethodType(paramSyms, resTp)
 
-          DefDef(methodSym, methodBodyTyper.virtualizedMatch(match_, mode, pt))
+          DefDef(methodSym, methodBodyTyper.virtualizedMatch(match_, mode, resTp))
         }
       }
 
@@ -2359,7 +2359,7 @@ trait Typers extends Modes with Adaptations with Taggings {
           match_ setType B1.tpe
 
           // the default uses applyOrElse's first parameter since the scrut's type has been widened
-          val body = methodBodyTyper.virtualizedMatch(match_ withAttachment DefaultOverrideMatchAttachment(REF(default) APPLY (REF(x))), mode, pt)
+          val body = methodBodyTyper.virtualizedMatch(match_ withAttachment DefaultOverrideMatchAttachment(REF(default) APPLY (REF(x))), mode, B1.tpe)
 
           DefDef(methodSym, body)
         }
@@ -2377,7 +2377,7 @@ trait Typers extends Modes with Adaptations with Taggings {
           methodSym setInfoAndEnter MethodType(paramSyms, BooleanClass.tpe)
 
           val match_ = methodBodyTyper.typedMatch(selector, casesTrue, mode, BooleanClass.tpe)
-          val body   = methodBodyTyper.virtualizedMatch(match_ withAttachment DefaultOverrideMatchAttachment(FALSE_typed), mode, pt)
+          val body   = methodBodyTyper.virtualizedMatch(match_ withAttachment DefaultOverrideMatchAttachment(FALSE_typed), mode, BooleanClass.tpe)
 
           DefDef(methodSym, body)
         }
