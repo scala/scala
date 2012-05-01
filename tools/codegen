@@ -3,6 +3,6 @@
 
 THISDIR=`dirname $0`
 SCALALIB=$THISDIR/../src/library/scala
-BINDIR=$THISDIR/../build/pack/bin
+BINDIR=$THISDIR/../build/quick/bin
 
 $BINDIR/scala scala.tools.cmd.gen.Codegen "$@"
