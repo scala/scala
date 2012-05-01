@@ -11,7 +11,6 @@ package scala.concurrent.impl
 
 
 import java.util.concurrent.TimeUnit.{ NANOSECONDS, MILLISECONDS }
-import java.util.concurrent.atomic.AtomicReferenceFieldUpdater
 import scala.concurrent.{Awaitable, ExecutionContext, resolveEither, resolver, blocking, CanAwait, TimeoutException}
 //import scala.util.continuations._
 import scala.concurrent.util.Duration
@@ -77,7 +76,7 @@ object Promise {
   /** Default promise implementation.
    */
   class DefaultPromise[T](implicit val executor: ExecutionContext) extends AbstractPromise with Promise[T] { self =>
-    updater.set(this, Nil) // Start at "No callbacks" //FIXME switch to Unsafe instead of ARFU
+    updateState(null, Nil) // Start at "No callbacks" //FIXME switch to Unsafe instead of ARFU
     
     protected final def tryAwait(atMost: Duration): Boolean = {
       @tailrec
@@ -123,15 +122,6 @@ object Promise {
       case _: Either[_, _] => true
       case _               => false
     }
-
-    @inline
-    private[this] final def updater = AbstractPromise.updater.asInstanceOf[AtomicReferenceFieldUpdater[AbstractPromise, AnyRef]]
-
-    @inline
-    protected final def updateState(oldState: AnyRef, newState: AnyRef): Boolean = updater.compareAndSet(this, oldState, newState)
-
-    @inline
-    protected final def getState: AnyRef = updater.get(this)
 
     def tryComplete(value: Either[Throwable, T]): Boolean = {
       val callbacks: List[Either[Throwable, T] => Unit] = {
