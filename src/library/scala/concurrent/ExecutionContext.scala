@@ -47,6 +47,7 @@ object ExecutionContext {
   
   /** Creates an `ExecutionContext` from the given `ExecutorService`.
    */
+  //FIXME return ExecutionContext with ExecutorService
   def fromExecutorService(e: ExecutorService): ExecutionContext with Executor = new impl.ExecutionContextImpl(e)
   
   /** Creates an `ExecutionContext` from the given `Executor`.
