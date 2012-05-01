@@ -367,16 +367,23 @@ object TraversableOnce {
   implicit def flattenTraversableOnce[A, CC[_]](travs: TraversableOnce[CC[A]])(implicit ev: CC[A] => TraversableOnce[A]) =
     new FlattenOps[A](travs map ev)
   
-  abstract class BufferedCanBuildFrom[A, Coll[X] <: TraversableOnce[X]] extends generic.CanBuildFrom[Coll[_], A, Coll[A]] {
-    def toColl[B](buff: ArrayBuffer[B]): Coll[B]
+  /* Functionality reused in Iterator.CanBuildFrom */
+  private[collection] abstract class BufferedCanBuildFrom[A, Coll[X] <: TraversableOnce[X]] extends generic.CanBuildFrom[Coll[_], A, Coll[A]] {
+    def bufferToColl[B](buff: ArrayBuffer[B]): Coll[B]
+    def traversableToColl[B](t: GenTraversable[B]): Coll[B]
     
-    def newIterator: Builder[A, Coll[A]] = new ArrayBuffer[A] mapResult toColl
+    def newIterator: Builder[A, Coll[A]] = new ArrayBuffer[A] mapResult bufferToColl
 
     /** Creates a new builder on request of a collection.
      *  @param from  the collection requesting the builder to be created.
      *  @return the result of invoking the `genericBuilder` method on `from`.
      */
-    def apply(from: Coll[_]): Builder[A, Coll[A]] = newIterator
+    def apply(from: Coll[_]): Builder[A, Coll[A]] = from match {
+      case xs: generic.GenericTraversableTemplate[_, _] => xs.genericBuilder mapResult {
+        case res => traversableToColl(res.asInstanceOf[GenTraversable[A]])
+      }
+      case _ => newIterator
+    }
 
     /** Creates a new builder from scratch
      *  @return the result of invoking the `newBuilder` method of this factory.
@@ -389,9 +396,11 @@ object TraversableOnce {
    *  See `scala.util.Random.shuffle` or `scala.concurrent.Future.sequence` for an example.
    */
   class OnceCanBuildFrom[A] extends BufferedCanBuildFrom[A, TraversableOnce] {
-    def toColl[B](buff: ArrayBuffer[B]) = buff.iterator
+    def bufferToColl[B](buff: ArrayBuffer[B]) = buff.iterator
+    def traversableToColl[B](t: GenTraversable[B]) = t.seq
   }
   
+  /** Evidence for building collections from `TraversableOnce` collections */
   implicit def OnceCanBuildFrom[A] = new OnceCanBuildFrom[A]
   
   class FlattenOps[A](travs: TraversableOnce[TraversableOnce[A]]) {

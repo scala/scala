@@ -26,7 +26,8 @@ object Iterator {
    *  See `scala.util.Random.shuffle` for an example.
    */
   implicit def IteratorCanBuildFrom[A] = new TraversableOnce.BufferedCanBuildFrom[A, Iterator] {
-    def toColl[B](coll: ArrayBuffer[B]) = coll.iterator
+    def bufferToColl[B](coll: ArrayBuffer[B]) = coll.iterator
+    def traversableToColl[B](t: GenTraversable[B]) = t.toIterator
   }
 
   /** The iterator which produces no values. */
