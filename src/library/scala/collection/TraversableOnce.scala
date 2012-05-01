@@ -8,7 +8,7 @@
 
 package scala.collection
 
-import mutable.{ Buffer, ListBuffer, ArrayBuffer }
+import mutable.{ Buffer, Builder, ListBuffer, ArrayBuffer }
 import annotation.unchecked.{ uncheckedVariance => uV }
 import language.{implicitConversions, higherKinds}
 
@@ -357,7 +357,6 @@ trait TraversableOnce[+A] extends Any with GenTraversableOnce[A] {
 }
 
 
-
 object TraversableOnce {
   @deprecated("use OnceCanBuildFrom instead")
   def traversableOnceCanBuildFrom[T] = new OnceCanBuildFrom[T]
@@ -367,26 +366,34 @@ object TraversableOnce {
   implicit def alternateImplicit[A](trav: TraversableOnce[A]) = new ForceImplicitAmbiguity
   implicit def flattenTraversableOnce[A, CC[_]](travs: TraversableOnce[CC[A]])(implicit ev: CC[A] => TraversableOnce[A]) =
     new FlattenOps[A](travs map ev)
-
-  /** With the advent of TraversableOnce, it can be useful to have a builder which
-   *  operates on Iterators so they can be treated uniformly along with the collections.
-   *  See scala.util.Random.shuffle for an example.
-   */
-  implicit class OnceCanBuildFrom[A] extends generic.CanBuildFrom[TraversableOnce[A], A, TraversableOnce[A]] {
-    def newIterator = new ArrayBuffer[A] mapResult (_.iterator)
+  
+  abstract class BufferedCanBuildFrom[A, Coll[X] <: TraversableOnce[X]] extends generic.CanBuildFrom[Coll[_], A, Coll[A]] {
+    def toColl[B](buff: ArrayBuffer[B]): Coll[B]
+    
+    def newIterator: Builder[A, Coll[A]] = new ArrayBuffer[A] mapResult toColl
 
     /** Creates a new builder on request of a collection.
      *  @param from  the collection requesting the builder to be created.
      *  @return the result of invoking the `genericBuilder` method on `from`.
      */
-    def apply(from: TraversableOnce[A]) = newIterator
+    def apply(from: Coll[_]): Builder[A, Coll[A]] = newIterator
 
     /** Creates a new builder from scratch
      *  @return the result of invoking the `newBuilder` method of this factory.
      */
     def apply() = newIterator
   }
-
+  
+  /** With the advent of `TraversableOnce`, it can be useful to have a builder which
+   *  operates on `Iterator`s so they can be treated uniformly along with the collections.
+   *  See `scala.util.Random.shuffle` or `scala.concurrent.Future.sequence` for an example.
+   */
+  class OnceCanBuildFrom[A] extends BufferedCanBuildFrom[A, TraversableOnce] {
+    def toColl[B](buff: ArrayBuffer[B]) = buff.iterator
+  }
+  
+  implicit def OnceCanBuildFrom[A] = new OnceCanBuildFrom[A]
+  
   class FlattenOps[A](travs: TraversableOnce[TraversableOnce[A]]) {
     def flatten: Iterator[A] = new AbstractIterator[A] {
       val its = travs.toIterator

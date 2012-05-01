@@ -1,12 +1,16 @@
-/**
- * Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
- */
+/*                     __                                               *\
+**     ________ ___   / /  ___     Scala API                            **
+**    / __/ __// _ | / /  / _ |    (c) 2003-2012, LAMP/EPFL             **
+**  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
+** /____/\___/_/ |_/____/_/ | |                                         **
+**                          |/                                          **
+\*                                                                      */
 
 package scala.concurrent.util
 
 import java.util.concurrent.TimeUnit
 import TimeUnit._
-import java.lang.{ Double ⇒ JDouble }
+import java.lang.{ Double => JDouble }
 import language.implicitConversions
 
 case class Deadline private (time: Duration) {

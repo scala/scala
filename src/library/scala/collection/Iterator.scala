@@ -21,6 +21,14 @@ import immutable.Stream
  */
 object Iterator {
 
+  /** With the advent of `TraversableOnce` and `Iterator`, it can be useful to have a builder which
+   *  operates on `Iterator`s so they can be treated uniformly along with the collections.
+   *  See `scala.util.Random.shuffle` for an example.
+   */
+  implicit def IteratorCanBuildFrom[A] = new TraversableOnce.BufferedCanBuildFrom[A, Iterator] {
+    def toColl[B](coll: ArrayBuffer[B]) = coll.iterator
+  }
+
   /** The iterator which produces no values. */
   val empty: Iterator[Nothing] = new AbstractIterator[Nothing] {
     def hasNext: Boolean = false
