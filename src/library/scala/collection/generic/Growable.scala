@@ -18,7 +18,7 @@ package generic
  *  @version 2.8
  *  @since   2.8
  *  @define coll growable collection
- *  @define Coll Growable
+ *  @define Coll `Growable`
  *  @define add  add
  *  @define Add  add
  */

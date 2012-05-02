@@ -15,7 +15,7 @@ import generic._
  *
  *  $factoryInfo
  *  @define coll array stack
- *  @define Coll ArrayStack
+ *  @define Coll `ArrayStack`
  */
 object ArrayStack extends SeqFactory[ArrayStack] {
   implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, ArrayStack[A]] = ReusableCBF.asInstanceOf[GenericCanBuildFrom[A]]
@@ -51,7 +51,7 @@ object ArrayStack extends SeqFactory[ArrayStack] {
  *
  *  @tparam T    type of the elements contained in this array stack.
  *
- *  @define Coll ArrayStack
+ *  @define Coll `ArrayStack`
  *  @define coll array stack
  *  @define orderDependent
  *  @define orderDependentFold

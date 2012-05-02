@@ -40,7 +40,7 @@ object Vector extends SeqFactory[Vector] {
  *
  *  @tparam A the element type
  *
- *  @define Coll Vector
+ *  @define Coll `Vector`
  *  @define coll vector
  *  @define thatinfo the class of the returned collection. In the standard library configuration,
  *    `That` is always `Vector[B]` because an implicit of type `CanBuildFrom[Vector, B, That]`

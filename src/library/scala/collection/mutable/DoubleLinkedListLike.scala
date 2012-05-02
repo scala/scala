@@ -52,7 +52,7 @@ import annotation.migration
  *  @tparam A    type of the elements contained in the double linked list
  *  @tparam This the type of the actual linked list holding the elements
  *
- *  @define Coll DoubleLinkedList
+ *  @define Coll `DoubleLinkedList`
  *  @define coll double linked list
  */
 trait DoubleLinkedListLike[A, This <: Seq[A] with DoubleLinkedListLike[A, This]] extends SeqLike[A, This] with LinkedListLike[A, This] { self =>

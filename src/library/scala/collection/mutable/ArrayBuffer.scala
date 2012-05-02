@@ -29,7 +29,7 @@ import parallel.mutable.ParArray
  *
  *  @tparam A    the type of this arraybuffer's elements.
  *
- *  @define Coll ArrayBuffer
+ *  @define Coll `ArrayBuffer`
  *  @define coll arraybuffer
  *  @define thatinfo the class of the returned collection. In the standard library configuration,
  *    `That` is always `ArrayBuffer[B]` because an implicit of type `CanBuildFrom[ArrayBuffer, B, ArrayBuffer[B]]`
@@ -187,7 +187,7 @@ class ArrayBuffer[A](override protected val initialSize: Int)
  *
  *  $factoryInfo
  *  @define coll array buffer
- *  @define Coll ArrayBuffer
+ *  @define Coll `ArrayBuffer`
  */
 object ArrayBuffer extends SeqFactory[ArrayBuffer] {
   /** $genericCanBuildFromInfo */

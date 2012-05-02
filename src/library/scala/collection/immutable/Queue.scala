@@ -30,7 +30,7 @@ import annotation.tailrec
  *  @see [[http://docs.scala-lang.org/overviews/collections/concrete-immutable-collection-classes.html#immutable_queues "Scala's Collection Library overview"]]
  *  section on `Immutable Queues` for more information.
  *
- *  @define Coll immutable.Queue
+ *  @define Coll `immutable.Queue`
  *  @define coll immutable queue
  *  @define mayNotTerminateInf
  *  @define willNotTerminateInf
@@ -131,7 +131,7 @@ class Queue[+A] protected(protected val in: List[A], protected val out: List[A])
 }
 
 /** $factoryInfo
- *  @define Coll immutable.Queue
+ *  @define Coll `immutable.Queue`
  *  @define coll immutable queue
  */
 object Queue extends SeqFactory[Queue] {

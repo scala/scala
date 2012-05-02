@@ -27,7 +27,7 @@ trait Seq[+A] extends PartialFunction[Int, A]
 /** $factoryInfo
  *  The current default implementation of a $Coll is a `List`.
  *  @define coll sequence
- *  @define Coll Seq
+ *  @define Coll `Seq`
  */
 object Seq extends SeqFactory[Seq] {
   /** $genericCanBuildFromInfo */

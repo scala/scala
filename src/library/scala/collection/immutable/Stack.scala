@@ -13,7 +13,7 @@ import generic._
 import mutable.{ ArrayBuffer, Builder }
 
 /** $factoryInfo
- *  @define Coll immutable.Stack
+ *  @define Coll `immutable.Stack`
  *  @define coll immutable stack
  */
 object Stack extends SeqFactory[Stack] {
@@ -37,7 +37,7 @@ object Stack extends SeqFactory[Stack] {
  *  @see [[http://docs.scala-lang.org/overviews/collections/concrete-immutable-collection-classes.html#immutable_stacks "Scala's Collection Library overview"]]
  *  section on `Immutable stacks` for more information.
  *
- *  @define Coll immutable.Stack
+ *  @define Coll `immutable.Stack`
  *  @define coll immutable stack
  *  @define orderDependent
  *  @define orderDependentFold

@@ -21,7 +21,7 @@ package mutable
  *  @author  Matthias Zenger
  *  @version 1.0, 03/05/2004
  *  @since   1
- *  @define Coll SynchronizedStack
+ *  @define Coll `SynchronizedStack`
  *  @define coll synchronized stack
  */
 class SynchronizedStack[A] extends Stack[A] {

@@ -29,7 +29,7 @@ trait Iterable[A] extends Traversable[A]
 /** $factoryInfo
  *  The current default implementation of a $Coll is an `ArrayBuffer`.
  *  @define coll mutable iterable collection
- *  @define Coll mutable.Iterable
+ *  @define Coll `mutable.Iterable`
  */
 object Iterable extends TraversableFactory[Iterable] {
   implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, Iterable[A]] = ReusableCBF.asInstanceOf[GenericCanBuildFrom[A]]

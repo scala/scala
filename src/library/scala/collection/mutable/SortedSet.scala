@@ -14,7 +14,7 @@ import generic._
 /**
  * Base trait for mutable sorted set.
  *
- * @define Coll mutable.SortedSet
+ * @define Coll `mutable.SortedSet`
  * @define coll mutable sorted set
  *
  * @author Lucien Pereira
@@ -31,7 +31,7 @@ trait SortedSet[A] extends collection.SortedSet[A] with collection.SortedSetLike
 /**
  * A template for mutable sorted set companion objects.
  *
- * @define Coll mutable.SortedSet
+ * @define Coll `mutable.SortedSet`
  * @define coll mutable sorted set
  * @define factoryInfo
  *   This object provides a set of operations needed to create sorted sets of type mutable.SortedSet.

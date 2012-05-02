@@ -27,7 +27,7 @@ import java.io._
  *
  *  @tparam A    the type of this list buffer's elements.
  *
- *  @define Coll ListBuffer
+ *  @define Coll `ListBuffer`
  *  @define coll list buffer
  *  @define thatinfo the class of the returned collection. In the standard library configuration,
  *    `That` is always `ListBuffer[B]` because an implicit of type `CanBuildFrom[ListBuffer, B, ListBuffer[B]]`
@@ -425,7 +425,7 @@ final class ListBuffer[A]
 }
 
 /** $factoryInfo
- *  @define Coll ListBuffer
+ *  @define Coll `ListBuffer`
  *  @define coll list buffer
  */
 object ListBuffer extends SeqFactory[ListBuffer] {

@@ -464,10 +464,10 @@ trait Types { self: Universe =>
     def unapply(tpe: AnnotatedType): Option[(List[AnnotationInfo], Type, Symbol)]
   }
 
-  /** The least upper bound wrt <:< of a list of types */
+  /** The least upper bound of a list of types, as determined by `<:<`.  */
   def lub(xs: List[Type]): Type
 
-    /** The greatest lower bound wrt <:< of a list of types */
+    /** The greatest lower bound of a list of types, as determined by `<:<`. */
   def glb(ts: List[Type]): Type
 
   // Creators ---------------------------------------------------------------
@@ -515,15 +515,17 @@ trait Types { self: Universe =>
 
   /** A creator for existential types. This generates:
    *
-   *  tpe1 where { tparams }
+   *  {{{
+   *    tpe1 where { tparams }
+   *  }}}
    *
-   *  where `tpe1` is the result of extrapolating `tpe` wrt to `tparams`.
+   *  where `tpe1` is the result of extrapolating `tpe` with regard to `tparams`.
    *  Extrapolating means that type variables in `tparams` occurring
    *  in covariant positions are replaced by upper bounds, (minus any
    *  SingletonClass markers), type variables in `tparams` occurring in
    *  contravariant positions are replaced by upper bounds, provided the
-   *  resulting type is legal wrt to stability, and does not contain any type
-   *  variable in `tparams`.
+   *  resulting type is legal with regard to stability, and does not contain
+   *  any type variable in `tparams`.
    *
    *  The abstraction drops all type parameters that are not directly or
    *  indirectly referenced by type `tpe1`. If there are no remaining type

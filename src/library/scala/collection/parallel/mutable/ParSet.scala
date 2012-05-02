@@ -21,7 +21,7 @@ import scala.collection.GenSet
 
 /** A mutable variant of `ParSet`.
  *
- *  @define Coll mutable.ParSet
+ *  @define Coll `mutable.ParSet`
  *  @define coll mutable parallel set
  *
  *  @author Aleksandar Prokopec
@@ -41,7 +41,7 @@ self =>
 
 
 /** $factoryInfo
- *  @define Coll mutable.ParSet
+ *  @define Coll `mutable.ParSet`
  *  @define coll mutable parallel set
  */
 object ParSet extends ParSetFactory[ParSet] {

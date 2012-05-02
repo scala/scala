@@ -36,7 +36,7 @@ import annotation.tailrec
  *  should still be avoided for such a purpose.
  *
  *  @define coll unrolled buffer
- *  @define Coll UnrolledBuffer
+ *  @define Coll `UnrolledBuffer`
  *  @author Aleksandar Prokopec
  *
  */

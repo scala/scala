@@ -38,7 +38,7 @@ import collection.parallel.Task
  *  @see  [[http://docs.scala-lang.org/overviews/parallel-collections/concrete-parallel-collections.html#parallel_hash_tries Scala's Parallel Collections Library overview]]
  *  section on Parallel Hash Tries for more information.
  *
- *  @define Coll immutable.ParHashSet
+ *  @define Coll `immutable.ParHashSet`
  *  @define coll immutable parallel hash set
  */
 @SerialVersionUID(1L)
@@ -118,7 +118,7 @@ self =>
 
 
 /** $factoryInfo
- *  @define Coll immutable.ParHashSet
+ *  @define Coll `immutable.ParHashSet`
  *  @define coll immutable parallel hash set
  */
 object ParHashSet extends ParSetFactory[ParHashSet] {

@@ -24,7 +24,7 @@ import mutable.Builder
  *
  *  @since 1.0
  *  @author Matthias Zenger
- *  @define Coll mutable.Set
+ *  @define Coll `mutable.Set`
  *  @define coll mutable set
  */
 trait GenSet[A] extends GenIterable[A]

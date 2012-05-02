@@ -66,7 +66,7 @@ trait Map[A, +B] extends Iterable[(A, B)]
 }
 
 /** $factoryInfo
- *  @define Coll immutable.Map
+ *  @define Coll `immutable.Map`
  *  @define coll immutable map
  */
 object Map extends ImmutableMapFactory[Map] {

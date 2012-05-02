@@ -19,7 +19,7 @@ import language.higherKinds
  *  @since 2.8
  *
  *  @define coll collection
- *  @define Coll Traversable
+ *  @define Coll `Traversable`
  *  @define factoryInfo
  *    This object provides a set of operations to create `$Coll` values.
  *    @author Martin Odersky

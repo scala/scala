@@ -19,7 +19,7 @@ import generic._
  *
  *  @since 1.0
  *  @author Matthias Zenger
- *  @define Coll mutable.Set
+ *  @define Coll `mutable.Set`
  *  @define coll mutable set
  */
 trait Set[A] extends Iterable[A]
@@ -34,7 +34,7 @@ trait Set[A] extends Iterable[A]
 /** $factoryInfo
  *  The current default implementation of a $Coll is a `HashSet`.
  *  @define coll mutable set
- *  @define Coll mutable.Set
+ *  @define Coll `mutable.Set`
  */
 object Set extends MutableSetFactory[Set] {
   implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, Set[A]] = setCanBuildFrom[A]

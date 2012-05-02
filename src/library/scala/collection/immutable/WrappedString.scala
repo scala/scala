@@ -25,7 +25,7 @@ import mutable.{Builder, StringBuilder}
  *  @param self    a string contained within this wrapped string
  *
  *  @since 2.8
- *  @define Coll WrappedString
+ *  @define Coll `WrappedString`
  *  @define coll wrapped string
  */
 class WrappedString(val self: String) extends AbstractSeq[Char] with IndexedSeq[Char] with StringLike[WrappedString] {

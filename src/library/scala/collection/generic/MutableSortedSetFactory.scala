@@ -13,8 +13,8 @@ import scala.collection.mutable.{ Builder, GrowingBuilder }
 import language.higherKinds
 
 /**
- * @define Coll mutable.SortedSet
- * @define coll mutable sorted
+ * @define Coll `mutable.SortedSet`
+ * @define coll mutable sorted set
  *
  * @author Lucien Pereira
  *

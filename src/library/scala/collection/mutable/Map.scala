@@ -63,7 +63,7 @@ trait Map[A, B]
 /** $factoryInfo
  *  The current default implementation of a $Coll is a `HashMap`.
  *  @define coll mutable map
- *  @define Coll mutable.Map
+ *  @define Coll `mutable.Map`
  */
 object Map extends MutableMapFactory[Map] {
   /** $canBuildFromInfo */
