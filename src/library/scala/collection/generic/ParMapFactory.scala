@@ -19,7 +19,7 @@ import language.higherKinds
  *  to create `$Coll` objects.
  *
  *  @define coll parallel map
- *  @define Coll ParMap
+ *  @define Coll `ParMap`
  *  @author Aleksandar Prokopec
  *  @since 2.8
  */

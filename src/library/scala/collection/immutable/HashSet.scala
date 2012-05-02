@@ -26,7 +26,7 @@ import collection.parallel.immutable.ParHashSet
  *  @author  Tiark Rompf
  *  @version 2.8
  *  @since   2.3
- *  @define Coll immutable.HashSet
+ *  @define Coll `immutable.HashSet`
  *  @define coll immutable hash set
  */
 @SerialVersionUID(2L)
@@ -85,12 +85,12 @@ class HashSet[A] extends AbstractSet[A]
 }
 
 /** $factoryInfo
- *  @define Coll immutable.HashSet
+ *  @define Coll `immutable.HashSet`
  *  @define coll immutable hash set
  *
  *  @author  Tiark Rompf
  *  @since   2.3
- *  @define Coll immutable.HashSet
+ *  @define Coll `immutable.HashSet`
  *  @define coll immutable hash set
  *  @define mayNotTerminateInf
  *  @define willNotTerminateInf

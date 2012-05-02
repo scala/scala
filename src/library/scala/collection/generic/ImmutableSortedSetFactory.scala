@@ -16,8 +16,8 @@ import language.higherKinds
 /** A template for companion objects of `SortedSet` and subclasses thereof.
  *
  *  @since 2.8
- *  @define Coll immutable.SortedSet
- *  @define coll immutable sorted
+ *  @define Coll `immutable.SortedSet`
+ *  @define coll immutable sorted set
  *  @define factoryInfo
  *    This object provides a set of operations needed to create sorted sets of type `$Coll`.
  *    @author Martin Odersky

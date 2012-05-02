@@ -15,7 +15,7 @@ import language.higherKinds
  *  subclasses thereof.
  *
  *  @define coll collection
- *  @define Coll Traversable
+ *  @define Coll `Traversable`
  *  @define genericCanBuildFromInfo
  *    The standard `CanBuildFrom` instance for $Coll objects.
  *    @author Aleksandar Prokopec

@@ -21,7 +21,7 @@ import generic._
  *
  *  The class adds an `update` method to `collection.Seq`.
  *
- *  @define Coll mutable.Seq
+ *  @define Coll `mutable.Seq`
  *  @define coll mutable sequence
  */
 trait Seq[A] extends Iterable[A]
@@ -36,7 +36,7 @@ trait Seq[A] extends Iterable[A]
 /** $factoryInfo
  *  The current default implementation of a $Coll is an `ArrayBuffer`.
  *  @define coll mutable sequence
- *  @define Coll mutable.Seq
+ *  @define Coll `mutable.Seq`
  */
 object Seq extends SeqFactory[Seq] {
   implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, Seq[A]] = ReusableCBF.asInstanceOf[GenericCanBuildFrom[A]]

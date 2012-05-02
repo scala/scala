@@ -25,7 +25,7 @@ import generic._
  *
  *  @tparam A    type of the elements contained in this buffer.
  *
- *  @define Coll Buffer
+ *  @define Coll `Buffer`
  *  @define coll buffer
  */
 @cloneable
@@ -37,7 +37,7 @@ trait Buffer[A] extends Seq[A]
 
 /** $factoryInfo
  *  @define coll buffer
- *  @define Coll Buffer
+ *  @define Coll `Buffer`
  */
 object Buffer extends SeqFactory[Buffer] {
   implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, Buffer[A]] = ReusableCBF.asInstanceOf[GenericCanBuildFrom[A]]

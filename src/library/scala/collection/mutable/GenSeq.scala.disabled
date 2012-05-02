@@ -24,7 +24,7 @@ import generic._
  * 
  *  The class adds an `update` method to `collection.Seq`.
  *  
- *  @define Coll mutable.Seq
+ *  @define Coll `mutable.Seq`
  *  @define coll mutable sequence
  */
 trait GenSeq[A] extends GenIterable[A] 

@@ -25,7 +25,7 @@ import collection.parallel.Task
  *
  *  @tparam T        type of the elements in the $coll.
  *
- *  @define Coll ParHashSet
+ *  @define Coll `ParHashSet`
  *  @define coll parallel hash set
  *
  *  @author Aleksandar Prokopec
@@ -104,7 +104,7 @@ extends ParSet[T]
 
 
 /** $factoryInfo
- *  @define Coll mutable.ParHashSet
+ *  @define Coll `mutable.ParHashSet`
  *  @define coll parallel hash set
  */
 object ParHashSet extends ParSetFactory[ParHashSet] {

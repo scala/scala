@@ -18,7 +18,7 @@ import generic._
  *  @version 2.8
  *  @since 2.8
  *
- *  @define Coll GrowingBuilder
+ *  @define Coll `GrowingBuilder`
  *  @define coll growing builder
  */
 class GrowingBuilder[Elem, To <: Growable[Elem]](empty: To) extends Builder[Elem, To] {

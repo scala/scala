@@ -21,7 +21,7 @@ import scala.collection.parallel.mutable.ParHashMap
  *  @tparam A    the type of the keys contained in this hash map.
  *  @tparam B    the type of the values assigned to keys in this hash map.
  *
- *  @define Coll mutable.HashMap
+ *  @define Coll `mutable.HashMap`
  *  @define coll mutable hash map
  *  @define thatinfo the class of the returned collection. In the standard library configuration,
  *    `That` is always `HashMap[A, B]` if the elements contained in the resulting collection are
@@ -138,7 +138,7 @@ extends AbstractMap[A, B]
 }
 
 /** $factoryInfo
- *  @define Coll mutable.HashMap
+ *  @define Coll `mutable.HashMap`
  *  @define coll mutable hash map
  */
 object HashMap extends MutableMapFactory[HashMap] {

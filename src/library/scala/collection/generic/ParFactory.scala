@@ -17,7 +17,7 @@ import language.higherKinds
  *  operations to create `$Coll` objects.
  *
  *  @define coll parallel collection
- *  @define Coll ParIterable
+ *  @define Coll `ParIterable`
  *  @since 2.8
  */
 abstract class ParFactory[CC[X] <: ParIterable[X] with GenericParTemplate[X, CC]]

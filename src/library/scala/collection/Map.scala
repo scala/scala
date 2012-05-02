@@ -33,7 +33,7 @@ trait Map[A, +B] extends Iterable[(A, B)] with GenMap[A, B] with MapLike[A, B, M
 }
 
 /** $factoryInfo
- *  @define Coll Map
+ *  @define Coll `Map`
  *  @define coll map
  */
 object Map extends MapFactory[Map] {

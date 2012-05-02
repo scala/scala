@@ -27,7 +27,7 @@ import generic._
  *  @tparam A    the element type of the $coll
  *  @tparam Repr the type of the actual $coll containing the elements.
  *
- *  @define Coll IndexedSeq
+ *  @define Coll `IndexedSeq`
  *  @define coll mutable indexed sequence
  *  @define indexedSeqInfo
  *  @author Martin Odersky

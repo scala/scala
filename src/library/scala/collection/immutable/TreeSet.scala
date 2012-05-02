@@ -16,7 +16,7 @@ import immutable.{RedBlackTree => RB}
 import mutable.{ Builder, SetBuilder }
 
 /** $factoryInfo
- *  @define Coll immutable.TreeSet
+ *  @define Coll `immutable.TreeSet`
  *  @define coll immutable tree set
  */
 object TreeSet extends ImmutableSortedSetFactory[TreeSet] {
@@ -40,7 +40,7 @@ object TreeSet extends ImmutableSortedSetFactory[TreeSet] {
  *  @see [[http://docs.scala-lang.org/overviews/collections/concrete-immutable-collection-classes.html#redblack_trees "Scala's Collection Library overview"]]
  *  section on `Red-Black Trees` for more information.
  *
- *  @define Coll immutable.TreeSet
+ *  @define Coll `immutable.TreeSet`
  *  @define coll immutable tree set
  *  @define orderDependent
  *  @define orderDependentFold

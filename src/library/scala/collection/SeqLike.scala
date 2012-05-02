@@ -45,7 +45,7 @@ import scala.math.Ordering
  *  @version 1.0, 16/07/2003
  *  @since   2.8
  *
- *  @define Coll Seq
+ *  @define Coll `Seq`
  *  @define coll sequence
  *  @define thatinfo the class of the returned collection. Where possible, `That` is
  *    the same class as the current collection class `Repr`, but this
@@ -380,8 +380,8 @@ trait SeqLike[+A, +Repr] extends Any with IterableLike[A, Repr] with GenSeqLike[
    *  $mayNotTerminateInf
    *
    *  @param elem  the element to test.
-   *  @return     `true` if this $coll has an element that is
-   *               is equal (wrt `==`) to `elem`, `false` otherwise.
+   *  @return     `true` if this $coll has an element that is equal (as
+   *              determined by `==`) to `elem`, `false` otherwise.
    */
   def contains(elem: Any): Boolean = exists (_ == elem)
 
@@ -553,8 +553,8 @@ trait SeqLike[+A, +Repr] extends Any with IterableLike[A, Repr] with GenSeqLike[
   /** Sorts this $coll according to a comparison function.
    *  $willNotTerminateInf
    *
-   *  The sort is stable. That is, elements that are equal wrt `lt` appear in the
-   *  same order in the sorted sequence as in the original.
+   *  The sort is stable. That is, elements that are equal (as determined by
+   *  `lt`) appear in the same order in the sorted sequence as in the original.
    *
    *  @param  lt  the comparison function which tests whether
    *              its first argument precedes its second argument in
@@ -592,8 +592,8 @@ trait SeqLike[+A, +Repr] extends Any with IterableLike[A, Repr] with GenSeqLike[
 
   /** Sorts this $coll according to an Ordering.
    *
-   *  The sort is stable. That is, elements that are equal wrt `lt` appear in the
-   *  same order in the sorted sequence as in the original.
+   *  The sort is stable. That is, elements that are equal (as determined by
+   *  `lt`) appear in the same order in the sorted sequence as in the original.
    *
    *  @see scala.math.Ordering
    *

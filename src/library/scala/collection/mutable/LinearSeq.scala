@@ -17,7 +17,7 @@ import generic._
  *  that can be mutated.
  *  $linearSeqInfo
  *
- *  @define Coll LinearSeq
+ *  @define Coll `LinearSeq`
  *  @define coll linear sequence
  *  @see [[http://docs.scala-lang.org/overviews/collections/concrete-mutable-collection-classes.html#mutable_lists "Scala's Collection Library overview"]]
  *  section on `Mutable Lists` for more information.
@@ -33,7 +33,7 @@ trait LinearSeq[A] extends Seq[A]
 /** $factoryInfo
  *  The current default implementation of a $Coll is a `MutableList`.
  *  @define coll mutable linear sequence
- *  @define Coll mutable.LinearSeq
+ *  @define Coll `mutable.LinearSeq`
  */
 object LinearSeq extends SeqFactory[LinearSeq] {
   implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, LinearSeq[A]] = ReusableCBF.asInstanceOf[GenericCanBuildFrom[A]]

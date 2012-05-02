@@ -29,7 +29,7 @@ trait IndexedSeq[+A] extends Seq[A]
 /** $factoryInfo
  *  The current default implementation of a $Coll is a `Vector`.
  *  @define coll indexed sequence
- *  @define Coll IndexedSeq
+ *  @define Coll `IndexedSeq`
  */
 object IndexedSeq extends SeqFactory[IndexedSeq] {
   class Impl[A](buf: ArrayBuffer[A]) extends AbstractSeq[A] with IndexedSeq[A] with Serializable {
