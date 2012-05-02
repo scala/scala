@@ -241,6 +241,8 @@ abstract class SelectiveANFTransform extends PluginComponent with Transform with
         // where D$idef = def L$i(..) = {L$i.body; L${i+1}(..)}
 
         case ldef @ LabelDef(name, params, rhs) =>
+          // println("trans LABELDEF "+(name, params, tree.tpe, hasAnswerTypeAnn(tree.tpe)))
+          // TODO why does the labeldef's type have a cpsMinus annotation, whereas the rhs does not? (BYVALmode missing/too much somewhere?)
           if (hasAnswerTypeAnn(tree.tpe)) {
             // currentOwner.newMethod(name, tree.pos, Flags.SYNTHETIC) setInfo ldef.symbol.info
             val sym    = ldef.symbol resetFlag Flags.LABEL
@@ -456,10 +458,11 @@ abstract class SelectiveANFTransform extends PluginComponent with Transform with
 
       val (anfStats, anfExpr) = rec(stms, cpsA, List())
       // println("\nanf-block:\n"+ ((stms :+ expr) mkString ("{", "\n", "}")) +"\nBECAME\n"+ ((anfStats :+ anfExpr) mkString ("{", "\n", "}")))
-
+      // println("synth case? "+ (anfStats map (t => (t, t.isDef, gen.hasSynthCaseSymbol(t)))))
       // SUPER UGLY HACK: handle virtpatmat-style matches, whose labels have already been turned into DefDefs
       if (anfStats.nonEmpty && (anfStats forall (t => !t.isDef || gen.hasSynthCaseSymbol(t)))) {
         val (prologue, rest) = (anfStats :+ anfExpr) span (s => !s.isInstanceOf[DefDef]) // find first case
+        // println("rest: "+ rest)
         // val (defs, calls) = rest partition (_.isInstanceOf[DefDef])
         if (rest nonEmpty){
           // the filter drops the ()'s emitted when transValue encountered a LabelDef

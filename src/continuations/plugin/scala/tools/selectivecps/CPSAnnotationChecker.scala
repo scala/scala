@@ -3,8 +3,9 @@
 package scala.tools.selectivecps
 
 import scala.tools.nsc.Global
+import scala.tools.nsc.typechecker.Modes
 
-abstract class CPSAnnotationChecker extends CPSUtils {
+abstract class CPSAnnotationChecker extends CPSUtils with Modes {
   val global: Global
   import global._
   import definitions._
@@ -177,59 +178,38 @@ abstract class CPSAnnotationChecker extends CPSUtils {
     override def adaptAnnotations(tree: Tree, mode: Int, pt: Type): Tree = {
       if (!cpsEnabled) return tree
 
-      vprintln("adapt annotations " + tree + " / " + tree.tpe + " / " + Integer.toHexString(mode) + " / " + pt)
+      vprintln("adapt annotations " + tree + " / " + tree.tpe + " / " + modeString(mode) + " / " + pt)
 
-      val annots1 = cpsParamAnnotation(tree.tpe)
-      val annots2 = cpsParamAnnotation(pt)
+      val patMode   = (mode & global.analyzer.PATTERNmode) != 0
+      val exprMode  = (mode & global.analyzer.EXPRmode) != 0
+      val byValMode = (mode & global.analyzer.BYVALmode) != 0
 
-      if ((mode & global.analyzer.PATTERNmode) != 0) {
-        if (!annots1.isEmpty) {
-          return tree modifyType removeAllCPSAnnotations
-        }
-      }
+      val annotsTree     = cpsParamAnnotation(tree.tpe)
+      val annotsExpected = cpsParamAnnotation(pt)
 
-/*
+      // not sure I rephrased this comment correctly:
+      // replacing `patMode` in the condition below by `patMode || ((mode & global.analyzer.TYPEmode) != 0 && (mode & global.analyzer.BYVALmode))`
       // doesn't work correctly -- still relying on addAnnotations to remove things from ValDef symbols
-      if ((mode & global.analyzer.TYPEmode) != 0 && (mode & global.analyzer.BYVALmode) != 0) {
-        if (!annots1.isEmpty) {
-          println("removing annotation from " + tree + "/" + tree.tpe)
-          val s = tree.setType(removeAllCPSAnnotations(tree.tpe))
-          println(s)
-          s
-        }
-      }
-*/
+      if (patMode && !annotsTree.isEmpty) tree modifyType removeAllCPSAnnotations
+      else if (exprMode && !byValMode && !hasPlusMarker(tree.tpe) && annotsTree.isEmpty && annotsExpected.nonEmpty) { // shiftUnit
+        // add a marker annotation that will make tree.tpe behave as pt, subtyping wise
+        // tree will look like having any possible annotation
+        //println("adapt annotations " + tree + " / " + tree.tpe + " / " + Integer.toHexString(mode) + " / " + pt)
 
-      if ((mode & global.analyzer.EXPRmode) != 0) {
-        if (annots1.isEmpty && !annots2.isEmpty && ((mode & global.analyzer.BYVALmode) == 0)) { // shiftUnit
-          // add a marker annotation that will make tree.tpe behave as pt, subtyping wise
-          // tree will look like having any possible annotation
-          //println("adapt annotations " + tree + " / " + tree.tpe + " / " + Integer.toHexString(mode) + " / " + pt)
-          //val same = annots2 forall { case AnnotationInfo(atp: TypeRef, _, _) => atp.typeArgs(0) =:= atp.typeArgs(1) }
-          // TBD: use same or not? see infer0.scala/infer1.scala
+        // CAVEAT:
+        //  for monomorphic answer types we want to have @plus @cps (for better checking)
+        //  for answer type modification we want to have only @plus (because actual answer type may differ from pt)
 
-          // CAVEAT:
-          //  for monomorphic answer types we want to have @plus @cps (for better checking)
-          //  for answer type modification we want to have only @plus (because actual answer type may differ from pt)
-
-          //val known = global.analyzer.isFullyDefined(pt)
-
-          if (/*same &&*/ !hasPlusMarker(tree.tpe)) {
-            //if (known)
-              return tree modifyType (_ withAnnotations newPlusMarker() :: annots2) // needed for #1807
-            //else
-            //  return tree.setType(tree.tpe.withAnnotations(adapt::Nil))
-          }
-          tree
-        } else if (!annots1.isEmpty && ((mode & global.analyzer.BYVALmode) != 0)) { // dropping annotation
-          // add a marker annotation that will make tree.tpe behave as pt, subtyping wise
-          // tree will look like having no annotation
-          if (!hasMinusMarker(tree.tpe)) {
-            return tree modifyType addMinusMarker
-          }
-        }
-      }
-      tree
+        val res = tree modifyType (_ withAnnotations newPlusMarker() :: annotsExpected) // needed for #1807
+        vprintln("adapted annotations (not by val) of " + tree + " to " + res.tpe)
+        res
+      } else if (exprMode && byValMode && !hasMinusMarker(tree.tpe) && annotsTree.nonEmpty) { // dropping annotation
+        // add a marker annotation that will make tree.tpe behave as pt, subtyping wise
+        // tree will look like having no annotation
+        val res = tree modifyType addMinusMarker
+        vprintln("adapted annotations (by val) of " + tree + " to " + res.tpe)
+        res
+      } else tree
     }
 
     def updateAttributesFromChildren(tpe: Type, childAnnots: List[AnnotationInfo], byName: List[Tree]): Type = {
@@ -454,11 +434,10 @@ abstract class CPSAnnotationChecker extends CPSUtils {
           transChildrenInOrder(tree, tpe, List(cond), List(thenp, elsep))
 
         case Match(select, cases) =>
-          // TODO: can there be cases that are not CaseDefs?? check collect vs map!
-          transChildrenInOrder(tree, tpe, List(select), cases:::(cases collect { case CaseDef(_, _, body) => body }))
+          transChildrenInOrder(tree, tpe, List(select), cases:::(cases map { case CaseDef(_, _, body) => body }))
 
         case Try(block, catches, finalizer) =>
-          val tpe1 = transChildrenInOrder(tree, tpe, Nil, block::catches:::(catches collect { case CaseDef(_, _, body) => body }))
+          val tpe1 = transChildrenInOrder(tree, tpe, Nil, block::catches:::(catches map { case CaseDef(_, _, body) => body }))
 
           val annots = cpsParamAnnotation(tpe1)
           if (annots.nonEmpty) {

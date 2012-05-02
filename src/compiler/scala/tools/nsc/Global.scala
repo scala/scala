@@ -462,6 +462,13 @@ class Global(var currentSettings: Settings, var reporter: Reporter) extends Symb
     val global: Global.this.type = Global.this
   } with Analyzer
 
+  // phaseName = "patmat"
+  object patmat extends {
+    val global: Global.this.type = Global.this
+    val runsAfter = List("typer")
+    val runsRightAfter = Some("typer")
+  } with PatternMatching
+
   // phaseName = "superaccessors"
   object superAccessors extends {
     val global: Global.this.type = Global.this
@@ -682,6 +689,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter) extends Symb
       analyzer.namerFactory   -> "resolve names, attach symbols to named trees",
       analyzer.packageObjects -> "load package objects",
       analyzer.typerFactory   -> "the meat and potatoes: type the trees",
+      patmat                  -> "translate match expressions",
       superAccessors          -> "add super accessors in traits and nested classes",
       extensionMethods        -> "add extension methods for inline classes",
       pickler                 -> "serialize symbol tables",

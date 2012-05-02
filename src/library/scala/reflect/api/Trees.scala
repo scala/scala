@@ -110,13 +110,12 @@ trait Trees { self: Universe =>
     def withoutAttachment(att: Any): this.type = { detach(att); this }
     def attachment[T: ClassTag]: T = attachmentOpt[T] getOrElse { throw new Error("no attachment of type %s".format(classTag[T].erasure)) }
     def attachmentOpt[T: ClassTag]: Option[T] =
+      firstAttachment { case attachment if attachment.getClass == classTag[T].erasure => attachment.asInstanceOf[T] }
+
+    def firstAttachment[T](p: PartialFunction[Any, T]): Option[T] =
       rawatt match {
-        case NontrivialAttachment(pos, payload) =>
-          val index = payload.indexWhere(p => p.getClass == classTag[T].erasure)
-          if (index != -1) Some(payload(index).asInstanceOf[T])
-          else None
-        case _ =>
-          None
+        case NontrivialAttachment(pos, payload) => payload.collectFirst(p)
+        case _ => None
       }
 
     private[this] var rawtpe: Type = _
