@@ -6,7 +6,8 @@
 package scala.reflect
 package internal
 
-import scala.collection.{ mutable, immutable }
+import scala.collection.{ mutable, immutable, generic }
+import generic.Clearable
 import scala.ref.WeakReference
 import mutable.ListBuffer
 import Flags._
@@ -115,7 +116,7 @@ trait Types extends api.Types { self: SymbolTable =>
 
   protected def newUndoLog = new UndoLog
 
-  class UndoLog {
+  class UndoLog extends Clearable {
     private type UndoPairs = List[(TypeVar, TypeConstraint)]
     private var log: UndoPairs = List()
 
@@ -139,7 +140,7 @@ trait Types extends api.Types { self: SymbolTable =>
       log ::= ((tv, tv.constr.cloneInternal))
     }
 
-    private[scala] def clear() {
+    def clear() {
       if (settings.debug.value)
         self.log("Clearing " + log.size + " entries from the undoLog.")
 

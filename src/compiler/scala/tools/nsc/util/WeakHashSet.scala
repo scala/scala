@@ -4,6 +4,7 @@ import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
 import scala.collection.mutable.Builder
 import scala.collection.mutable.SetBuilder
+import scala.collection.generic.Clearable
 import scala.runtime.AbstractFunction1
 
 /** A bare-bones implementation of a mutable `Set` that uses weak references
@@ -12,7 +13,7 @@ import scala.runtime.AbstractFunction1
  *  This implementation offers only add/remove/test operations,
  *  therefore it does not fulfill the contract of Scala collection sets.
  */
-class WeakHashSet[T <: AnyRef] extends AbstractFunction1[T, Boolean] {
+class WeakHashSet[T <: AnyRef] extends AbstractFunction1[T, Boolean] with Clearable {
   private val underlying = mutable.HashSet[WeakReferenceWithEquals[T]]()
 
   /** Add the given element to this set. */

@@ -10,6 +10,7 @@ package io
 import java.io.{ FileOutputStream, IOException, InputStream, OutputStream, BufferedOutputStream }
 import java.net.URL
 import scala.collection.mutable.ArrayBuffer
+import scala.reflect.api.RequiredFile
 
 /**
  * @author Philippe Altherr
@@ -81,7 +82,7 @@ object AbstractFile {
  *   <code>global.settings.encoding.value</code>.
  * </p>
  */
-abstract class AbstractFile extends AnyRef with Iterable[AbstractFile] {
+abstract class AbstractFile extends AnyRef with RequiredFile with Iterable[AbstractFile] {
 
   /** Returns the name of this abstract file. */
   def name: String

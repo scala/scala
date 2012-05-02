@@ -280,16 +280,8 @@ abstract class SymbolTable extends api.Universe
   object perRunCaches {
     import java.lang.ref.WeakReference
     import scala.runtime.ScalaRunTime.stringOf
+    import scala.collection.generic.Clearable
 
-    import language.reflectiveCalls
-
-    // We can allow ourselves a structural type, these methods
-    // amount to a few calls per run at most.  This does suggest
-    // a "Clearable" trait may be useful.
-    private type Clearable = {
-      def size: Int
-      def clear(): Unit
-    }
     // Weak references so the garbage collector will take care of
     // letting us know when a cache is really out of commission.
     private val caches = mutable.HashSet[WeakReference[Clearable]]()
@@ -298,10 +290,14 @@ abstract class SymbolTable extends api.Universe
       println(caches.size + " structures are in perRunCaches.")
       caches.zipWithIndex foreach { case (ref, index) =>
         val cache = ref.get()
-        println("(" + index + ")" + (
-          if (cache == null) " has been collected."
-          else " has " + cache.size + " entries:\n" + stringOf(cache)
-        ))
+        cache match {
+          case xs: Traversable[_] =>
+            println("(" + index + ")" + (
+              if (cache == null) " has been collected."
+              else " has " + xs.size + " entries:\n" + stringOf(xs)
+            ))
+          case _ =>
+        }
       }
     }
     // if (settings.debug.value) {
@@ -315,8 +311,9 @@ abstract class SymbolTable extends api.Universe
 
     def clearAll() = {
       if (settings.debug.value) {
-        val size = caches flatMap (ref => Option(ref.get)) map (_.size) sum;
-        log("Clearing " + caches.size + " caches totalling " + size + " entries.")
+        // val size = caches flatMap (ref => Option(ref.get)) map (_.size) sum;
+        log("Clearing " + caches.size + " caches.")
+        // totalling " + size + " entries.")
       }
       caches foreach { ref =>
         val cache = ref.get()
