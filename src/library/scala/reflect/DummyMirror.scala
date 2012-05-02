@@ -306,7 +306,6 @@ class DummyMirror(cl: ClassLoader) extends api.Mirror {
     val THIS: TermName = DummyName
     val BITMAP_NORMAL: TermName = DummyName
     val BITMAP_TRANSIENT: TermName = DummyName
-    val BITMAP_PRIVATE: TermName = DummyName
     val BITMAP_CHECKINIT: TermName = DummyName
     val BITMAP_CHECKINIT_TRANSIENT: TermName = DummyName
     val INTERPRETER_IMPORT_WRAPPER: String = ""

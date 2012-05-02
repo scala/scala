@@ -29,9 +29,6 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
   /** Map a lazy, mixedin field accessor to it's trait member accessor */
   private val initializer = perRunCaches.newMap[Symbol, Symbol]
 
-  /** Deferred bitmaps that will be added during the transformation of a class */
-  private val deferredBitmaps = perRunCaches.newMap[Symbol, List[Tree]]() withDefaultValue Nil
-
 // --------- helper functions -----------------------------------------------
 
   /** A member of a trait is implemented statically if its implementation after the
@@ -614,10 +611,6 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
         if (isNormal) BITMAP_TRANSIENT
         else BITMAP_CHECKINIT_TRANSIENT
       }
-      else if (field hasFlag PRIVATE | notPRIVATE) {
-        if (isNormal) BITMAP_PRIVATE
-        else BITMAP_CHECKINIT
-      }
       else {
         if (isNormal) BITMAP_NORMAL
         else BITMAP_CHECKINIT
@@ -686,11 +679,6 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
         else newDefs ::: (stats filter isNotDuplicate)
       }
 
-      def addDeferredBitmap(clazz: Symbol, tree: Tree) {
-        // Append the set of deferred defs
-        deferredBitmaps(clazz) ::= typedPos(clazz.pos)(tree)
-      }
-
       /** If `stat` is a superaccessor, complete it by adding a right-hand side.
        *  Note: superaccessors are always abstract until this point.
        *   The method to call in a superaccessor is stored in the accessor symbol's alias field.
@@ -711,27 +699,16 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
       import lazyVals._
 
       /**
-       *  Private or transient lazy vals use bitmaps that are private for the class context,
-       *  unlike public or protected vals, which can use inherited bitmaps.
-       *  Similarly fields in the checkinit mode use private bitmaps.
-       */
-      def isLocalBitmapField(field: Symbol) = (
-           field.accessed.hasAnnotation(TransientAttr)
-        || field.hasFlag(PRIVATE | notPRIVATE)
-        || isCheckInitField(field)
-      )
-
-      /**
        *  Return the bitmap field for 'offset'. Depending on the hierarchy it is possible to reuse
        *  the bitmap of its parents. If that does not exist yet we create one.
        */
-      def bitmapFor(clazz0: Symbol, offset: Int, field: Symbol, searchParents: Boolean = true): Symbol = {
+      def bitmapFor(clazz0: Symbol, offset: Int, field: Symbol): Symbol = {
         val category   = bitmapCategory(field)
         val bitmapName = nme.newBitmapName(category, offset / FLAGS_PER_WORD)
-        val sym        = clazz0.info.member(bitmapName)
+        val sym        = clazz0.info.decl(bitmapName)
 
         assert(!sym.isOverloaded, sym)
-
+        
         def createBitmap: Symbol = {
           val sym = clazz0.newVariable(bitmapName, clazz0.pos) setInfo IntClass.tpe
           beforeTyper(sym addAnnotation VolatileAttr)
@@ -740,53 +717,16 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
             case nme.BITMAP_TRANSIENT | nme.BITMAP_CHECKINIT_TRANSIENT => sym addAnnotation TransientAttr
             case _                                                     =>
           }
-          category match {
-            case nme.BITMAP_NORMAL if field.isLazy => sym setFlag PROTECTED
-            case _                                 => sym setFlag PrivateLocal
-          }
-
+          sym setFlag PrivateLocal
           clazz0.info.decls.enter(sym)
-          if (clazz0 == clazz)
-            addDef(clazz.pos, VAL(sym) === ZERO)
-          else {
-            //FIXME: the assertion below will not work because of the way bitmaps are added.
-            // They should be added during infoTransform, so that in separate compilation, bitmap
-            // is a member of clazz and doesn't fail the condition couple lines below.
-            // This works, as long as we assume that the previous classes were compiled correctly.
-            //assert(clazz0.sourceFile != null)
-            addDeferredBitmap(clazz0, VAL(sym) === ZERO)
-          }
+          addDef(clazz0.pos, VAL(sym) === ZERO)
           sym
         }
 
         if (sym ne NoSymbol)
           sym
-        else if (searchParents && !isLocalBitmapField(field))
-          bitmapForParents(clazz0, offset, field) getOrElse createBitmap
         else
           createBitmap
-      }
-
-      def bitmapForParents(clazz0: Symbol, offset: Int, valSym: Symbol): Option[Symbol] = {
-        def requiredBitmaps(fs: Int): Int = if (fs == 0) -1 else (fs - 1) / FLAGS_PER_WORD
-        val bitmapNum = offset / FLAGS_PER_WORD
-
-        // filter private and transient
-        // since we do not inherit normal values (in checkinit mode) also filter them out
-        // !!! Not sure how that comment relates to this code...
-        superClassesToCheck(clazz0) foreach { cl =>
-          val fields0 = usedBits(cl)
-
-          if (requiredBitmaps(fields0) < bitmapNum) {
-            val fields1 = (cl.info.decls filter isNonLocalFieldWithBitmap).size
-            return {
-              if (requiredBitmaps(fields0 + fields1) >= bitmapNum)
-                Some(bitmapFor(cl, offset, valSym, false))
-              else None // Don't waste time, since we won't find bitmap anyway
-            }
-          }
-        }
-        None
       }
 
       /** Return an (untyped) tree of the form 'Clazz.this.bmp = Clazz.this.bmp | mask'. */
@@ -964,22 +904,11 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
       def addInitBits(clazz: Symbol, rhs: Tree): Tree =
         new AddInitBitsTransformer(clazz) transform rhs
 
-      def isNonLocalFieldWithBitmap(field: Symbol) =
-        isFieldWithBitmap(field) && !isLocalBitmapField(field)
-
       def isCheckInitField(field: Symbol) =
         needsInitFlag(field) && !field.isDeferred
 
       def superClassesToCheck(clazz: Symbol) =
         clazz.ancestors filterNot (_ hasFlag TRAIT | JAVA)
-
-      /**
-       * Return the number of bits used by superclass fields.
-       */
-      def usedBits(clazz0: Symbol): Int =
-        superClassesToCheck(clazz0) flatMap (_.info.decls) count { f =>
-          f.owner != clazz0 && isNonLocalFieldWithBitmap(f)
-        }
 
       // begin addNewDefs
 
@@ -991,21 +920,17 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
         def fold(zero: Int, fields: List[Symbol]) = {
           var idx = zero
           fields foreach { f =>
-            idx += 1
             fieldOffset(f) = idx
+            idx += 1
           }
         }
         clazz.info.decls.toList groupBy bitmapCategory foreach {
           case (nme.NO_NAME, _)            => ()
-          case (nme.BITMAP_NORMAL, fields) => fold(usedBits(clazz), fields)
           case (_, fields)                 => fold(0, fields)
         }
       }
       buildBitmapOffsets()
       var stats1 = addCheckedGetters(clazz, stats)
-
-      // add deferred bitmaps
-      deferredBitmaps remove clazz foreach { d => stats1 = add(stats1, d) }
 
       def accessedReference(sym: Symbol) = sym.tpe match {
         case MethodType(Nil, ConstantType(c)) => Literal(c)
