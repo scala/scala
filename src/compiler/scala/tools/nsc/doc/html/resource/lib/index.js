@@ -454,7 +454,7 @@ function resizeFilterBlock() {
 function printAlphabet() {
     var html = '<a target="template" href="index/index-_.html">#</a>';
     var c;
-    for (c = 'a'; c < 'z'; c = String.fromCharCode(c.charCodeAt(0) + 1)) {
+    for (c = 'a'; c <= 'z'; c = String.fromCharCode(c.charCodeAt(0) + 1)) {
         html += [
             '<a target="template" href="index/index-',
             c,
