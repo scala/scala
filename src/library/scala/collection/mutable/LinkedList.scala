@@ -40,7 +40,7 @@ import generic._
   *
   *  @constructor Creates an "empty" list, defined as a single node with no data element and next pointing to itself.
 
-  *  @define Coll LinkedList
+  *  @define Coll `LinkedList`
   *  @define coll linked list
   *  @define thatinfo the class of the returned collection. In the standard library configuration,
   *    `That` is always `LinkedList[B]` because an implicit of type `CanBuildFrom[LinkedList, B, LinkedList[B]]`
@@ -109,7 +109,7 @@ class LinkedList[A]() extends AbstractSeq[A]
 }
 
 /** $factoryInfo
- *  @define Coll LinkedList
+ *  @define Coll `LinkedList`
  *  @define coll linked list
  */
 object LinkedList extends SeqFactory[LinkedList] {

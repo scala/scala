@@ -25,7 +25,7 @@ import collection.parallel.mutable.ParHashSet
  *  @see [[http://docs.scala-lang.org/overviews/collections/concrete-mutable-collection-classes.html#hash_tables "Scala's Collection Library overview"]]
  *  section on `Hash Tables` for more information.
  *
- *  @define Coll mutable.HashSet
+ *  @define Coll `mutable.HashSet`
  *  @define coll mutable hash set
  *  @define thatinfo the class of the returned collection. In the standard library configuration,
  *    `That` is always `HashSet[B]` because an implicit of type `CanBuildFrom[HashSet, B, HashSet[B]]`
@@ -98,7 +98,7 @@ extends AbstractSet[A]
 }
 
 /** $factoryInfo
- *  @define Coll mutable.HashSet
+ *  @define Coll `mutable.HashSet`
  *  @define coll mutable hash set
  */
 object HashSet extends MutableSetFactory[HashSet] {

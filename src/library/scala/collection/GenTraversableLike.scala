@@ -43,7 +43,7 @@ import annotation.migration
  *  @define traversableInfo
  *  This is a base trait of all kinds of Scala collections.
  *
- *  @define Coll GenTraversable
+ *  @define Coll `GenTraversable`
  *  @define coll general collection
  *  @define collectExample
  *  @tparam A    the collection element type.

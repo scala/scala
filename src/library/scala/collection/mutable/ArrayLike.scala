@@ -18,7 +18,7 @@ import generic._
  *  @tparam A     type of the elements contained in the array like object.
  *  @tparam Repr  the type of the actual collection containing the elements.
  *
- *  @define Coll ArrayLike
+ *  @define Coll `ArrayLike`
  *  @version 2.8
  *  @since   2.8
  */

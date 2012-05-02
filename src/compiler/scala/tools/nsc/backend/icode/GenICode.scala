@@ -821,7 +821,7 @@ abstract class GenICode extends SubComponent  {
               ctx2
 
             case _ =>
-              abort("Cannot instantiate " + tpt + "of kind: " + generatedType)
+              abort("Cannot instantiate " + tpt + " of kind: " + generatedType)
           }
 
         case Apply(fun @ _, List(expr)) if (definitions.isBox(fun.symbol)) =>

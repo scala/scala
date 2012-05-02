@@ -33,7 +33,7 @@ import StringLike._
  *  @tparam Repr   The type of the actual collection inheriting `StringLike`.
  *
  *  @since 2.8
- *  @define Coll String
+ *  @define Coll `String`
  *  @define coll string
  *  @define orderDependent
  *  @define orderDependentFold

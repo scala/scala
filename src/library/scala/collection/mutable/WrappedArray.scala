@@ -24,7 +24,7 @@ import scala.collection.parallel.mutable.ParArray
  *  @author  Martin Odersky, Stephane Micheloud
  *  @version 1.0
  *  @since 2.8
- *  @define Coll WrappedArray
+ *  @define Coll `WrappedArray`
  *  @define coll wrapped array
  *  @define orderDependent
  *  @define orderDependentFold

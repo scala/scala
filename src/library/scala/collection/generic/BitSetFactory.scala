@@ -15,7 +15,7 @@ import scala.collection._
 import mutable.Builder
 
 /** @define coll collection
- *  @define Coll Traversable
+ *  @define Coll `Traversable`
  *  @define factoryInfo
  *    This object provides a set of operations to create `$Coll` values.
  *    @author Martin Odersky

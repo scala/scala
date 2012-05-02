@@ -16,7 +16,7 @@ import generic.{ CanBuildFrom => CBF, _ }
  *  This trait contains abstract methods and methods that can be implemented
  *  directly in terms of other methods.
  *
- *  @define Coll GenIterable
+ *  @define Coll `GenIterable`
  *  @define coll general iterable collection
  *
  *  @author Martin Odersky

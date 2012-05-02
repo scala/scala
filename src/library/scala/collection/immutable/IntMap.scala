@@ -36,7 +36,7 @@ import IntMapUtils._
 
 /** A companion object for integer maps.
  *
- *  @define Coll  IntMap
+ *  @define Coll  `IntMap`
  *  @define mapCanBuildFromInfo
  *    The standard `CanBuildFrom` instance for `$Coll` objects.
  *    The created value is an instance of class `MapCanBuildFrom`.
@@ -150,7 +150,7 @@ import IntMap._
  *  @tparam T    type of the values associated with integer keys.
  *
  *  @since 2.7
- *  @define Coll immutable.IntMap
+ *  @define Coll `immutable.IntMap`
  *  @define coll immutable integer map
  *  @define mayNotTerminateInf
  *  @define willNotTerminateInf

@@ -22,7 +22,7 @@ import annotation.migration
  *  @author  Matthias Zenger, Martin Odersky
  *  @version 2.0, 31/12/2006
  *  @since   1
- *  @define Coll SynchronizedMap
+ *  @define Coll `SynchronizedMap`
  *  @define coll synchronized map
  */
 trait SynchronizedMap[A, B] extends Map[A, B] {

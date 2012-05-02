@@ -16,7 +16,7 @@ import language.higherKinds
 /** A template for companion objects of `SortedMap` and subclasses thereof.
  *
  *  @since 2.8
- *  @define Coll SortedMap
+ *  @define Coll `SortedMap`
  *  @define coll sorted map
  *  @define factoryInfo
  *    This object provides a set of operations needed to create sorted maps of type `$Coll`.

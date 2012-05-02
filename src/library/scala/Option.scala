@@ -83,7 +83,7 @@ object Option {
  *  @define p `p`
  *  @define f `f`
  *  @define coll option
- *  @define Coll Option
+ *  @define Coll `Option`
  *  @define orderDependent
  *  @define orderDependentFold
  *  @define mayNotTerminateInf

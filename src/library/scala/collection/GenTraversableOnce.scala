@@ -14,7 +14,7 @@ package scala.collection
  *  Methods in this trait are either abstract or can be implemented in terms
  *  of other methods.
  *
- *  @define Coll GenTraversableOnce
+ *  @define Coll `GenTraversableOnce`
  *  @define coll collection or iterator
  *  @define possiblyparinfo
  *  This trait may possibly have operations implemented in parallel.

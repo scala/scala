@@ -29,7 +29,7 @@ trait IndexedSeq[A] extends Seq[A]
 /** $factoryInfo
  *  The current default implementation of a $Coll is an `ArrayBuffer`.
  *  @define coll mutable indexed sequence
- *  @define Coll mutable.IndexedSeq
+ *  @define Coll `mutable.IndexedSeq`
  */
 object IndexedSeq extends SeqFactory[IndexedSeq] {
   implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, IndexedSeq[A]] = ReusableCBF.asInstanceOf[GenericCanBuildFrom[A]]

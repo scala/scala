@@ -24,7 +24,7 @@ import generic._
  *
  *  @tparam A     the type of the elements contained in this set.
  *
- *  @define Coll LinkedHashSet
+ *  @define Coll `LinkedHashSet`
  *  @define coll linked hash set
  *  @define thatinfo the class of the returned collection. In the standard library configuration,
  *    `That` is always `LinkedHashSet[B]` because an implicit of type `CanBuildFrom[LinkedHashSet, B, LinkedHashSet[B]]`
@@ -87,7 +87,7 @@ class LinkedHashSet[A] extends AbstractSet[A]
 }
 
 /** $factoryInfo
- *  @define Coll LinkedHashSet
+ *  @define Coll `LinkedHashSet`
  *  @define coll linked hash set
  */
 object LinkedHashSet extends MutableSetFactory[LinkedHashSet] {

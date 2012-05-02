@@ -40,7 +40,7 @@ trait Iterable[+A] extends Traversable[A]
 /** $factoryInfo
  *  The current default implementation of a $Coll is a `Vector`.
  *  @define coll iterable collection
- *  @define Coll Iterable
+ *  @define Coll `Iterable`
  */
 object Iterable extends TraversableFactory[Iterable] {
 

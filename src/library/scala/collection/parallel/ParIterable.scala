@@ -24,7 +24,7 @@ import scala.collection.parallel.mutable.ParArray
  *  @author Aleksandar Prokopec
  *  @since 2.9
  *
- *  @define Coll ParIterable
+ *  @define Coll `ParIterable`
  *  @define coll parallel iterable
  */
 trait ParIterable[+T]

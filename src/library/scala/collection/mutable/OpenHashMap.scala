@@ -10,7 +10,7 @@ package scala.collection
 package mutable
 
 /**
- *  @define Coll OpenHashMap
+ *  @define Coll `OpenHashMap`
  *  @define coll open hash map
  *
  *  @since 2.7
@@ -42,7 +42,7 @@ object OpenHashMap {
  *  @author David MacIver
  *  @since  2.7
  *
- *  @define Coll OpenHashMap
+ *  @define Coll `OpenHashMap`
  *  @define coll open hash map
  *  @define mayNotTerminateInf
  *  @define willNotTerminateInf

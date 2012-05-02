@@ -12,7 +12,7 @@ package mutable
 import generic._
 
 /**
- * @define Coll mutable.TreeSet
+ * @define Coll `mutable.TreeSet`
  * @define coll mutable tree set
  * @factoryInfo
  *   Companion object of TreeSet providing factory related utilities.

@@ -468,7 +468,7 @@ object Array extends FallbackArrayBuilding {
  *  @see [[http://www.scala-lang.org/docu/files/collections-api/collections_38.html#anchor "The Scala 2.8 Collections' API"]]
  *  section on `Array` by Martin Odersky for more information.
  *  @define coll array
- *  @define Coll Array
+ *  @define Coll `Array`
  *  @define orderDependent
  *  @define orderDependentFold
  *  @define mayNotTerminateInf

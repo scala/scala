@@ -26,7 +26,7 @@ import scala.annotation.tailrec
  *  access and length computation. They are defined in terms of abstract methods
  *  `apply` for indexing and `length`.
  *
- *  Indexed sequences do not add any new methods wrt `Seq`, but promise
+ *  Indexed sequences do not add any new methods to `Seq`, but promise
  *  efficient implementations of random access patterns.
  *
  *  @tparam A    the element type of the $coll

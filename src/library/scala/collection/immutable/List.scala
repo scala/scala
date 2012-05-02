@@ -141,7 +141,7 @@ sealed abstract class List[+A] extends AbstractSeq[A]
 
   /** Builds a new list by applying a function to all elements of this list.
    *  Like `xs map f`, but returns `xs` unchanged if function
-   *  `f` maps all elements to themselves (wrt eq).
+   *  `f` maps all elements to themselves (as determined by `eq`).
    *
    *  @param f      the function to apply to each element.
    *  @tparam B     the element type of the returned collection.
@@ -382,7 +382,7 @@ final case class ::[B](private var hd: B, private[scala] var tl: List[B]) extend
 
 /** $factoryInfo
  *  @define coll list
- *  @define Coll List
+ *  @define Coll `List`
  */
 object List extends SeqFactory[List] {
 
