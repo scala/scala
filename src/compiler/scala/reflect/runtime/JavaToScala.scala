@@ -314,6 +314,27 @@ trait JavaToScala extends ConversionUtil { self: SymbolTable =>
   private def followStatic(clazz: Symbol, mods: Int) =
     if (jModifier.isStatic(mods)) clazz.companionModule.moduleClass else clazz
 
+  /** Methods which need to be wrapped because they either are getSimpleName
+   *  or call getSimpleName:
+   *
+   *    public String getSimpleName()
+   *    public boolean isAnonymousClass()
+   *    public boolean isLocalClass()
+   *    public boolean isMemberClass()
+   *    public String getCanonicalName()
+   *
+   *  TODO - find all such calls and wrap them.
+   *  TODO - create mechanism to avoid the recurrence of unwrapped calls.
+   */
+  private def wrapClassCheck[T](alt: T)(body: => T): T =
+    try body catch { case x: InternalError if x.getMessage == "Malformed class name" => alt }
+
+  private def wrapIsLocalClass(clazz: jClass[_]): Boolean =
+    wrapClassCheck(false)(clazz.isLocalClass)
+
+  private def wrapGetSimpleName(clazz: jClass[_]): String =
+    wrapClassCheck("")(clazz.getSimpleName)
+
   /**
    * The Scala owner of the Scala class corresponding to the Java class `jclazz`
    */
@@ -322,7 +343,7 @@ trait JavaToScala extends ConversionUtil { self: SymbolTable =>
       val jEnclosingClass = jclazz.getEnclosingClass
       val sEnclosingClass = classToScala(jEnclosingClass)
       followStatic(sEnclosingClass, jclazz.getModifiers)
-    } else if (jclazz.isLocalClass) {
+    } else if (wrapIsLocalClass(jclazz)) {
       val jEnclosingMethod = jclazz.getEnclosingMethod
       if (jEnclosingMethod != null) {
         methodToScala(jEnclosingMethod)
@@ -494,7 +515,7 @@ trait JavaToScala extends ConversionUtil { self: SymbolTable =>
         val sym = {
           if (jclazz.isMemberClass && !nme.isImplClassName(jname)) {
             lookup
-          } else if (jclazz.isLocalClass || invalidClassName(jname)) {
+          } else if (wrapIsLocalClass(jclazz) || invalidClassName(jname)) {
             // local classes and implementation classes not preserved by unpickling - treat as Java
             jclassAsScala(jclazz)
           } else if (jclazz.isArray) {
