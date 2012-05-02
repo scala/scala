@@ -6,7 +6,7 @@
 package scala.reflect
 package internal
 
-import annotation.{ switch }
+import annotation.{ switch, meta }
 import scala.collection.{ mutable, immutable }
 import Flags._
 import PartialFunction._
@@ -328,11 +328,11 @@ trait Definitions extends reflect.api.StandardDefinitions {
 
     // fundamental reference classes
     lazy val PartialFunctionClass       = requiredClass[PartialFunction[_,_]]
-    lazy val AbstractPartialFunctionClass = getRequiredClass("scala.runtime.AbstractPartialFunction")
-    lazy val SymbolClass                = getRequiredClass("scala.Symbol")
+    lazy val AbstractPartialFunctionClass = requiredClass[scala.runtime.AbstractPartialFunction[_,_]]
+    lazy val SymbolClass                = requiredClass[scala.Symbol]
     lazy val StringClass                = requiredClass[java.lang.String]
     lazy val StringModule               = StringClass.linkedClassOfClass
-    lazy val ClassClass                 = getRequiredClass("java.lang.Class")
+    lazy val ClassClass                 = requiredClass[java.lang.Class[_]]
       def Class_getMethod               = getMember(ClassClass, nme.getMethod_)
     lazy val DynamicClass               = requiredClass[Dynamic]
 
@@ -368,9 +368,9 @@ trait Definitions extends reflect.api.StandardDefinitions {
     lazy val SpecializableModule  = requiredModule[Specializable]
     lazy val GroupOfSpecializable = getMember(SpecializableModule, tpnme.Group)
 
-    lazy val ConsoleModule: Symbol      = getRequiredModule("scala.Console")
-    lazy val ScalaRunTimeModule: Symbol = getRequiredModule("scala.runtime.ScalaRunTime")
-    lazy val SymbolModule: Symbol       = getRequiredModule("scala.Symbol")
+    lazy val ConsoleModule: Symbol      = requiredModule[scala.Console.type]
+    lazy val ScalaRunTimeModule: Symbol = requiredModule[scala.runtime.ScalaRunTime.type]
+    lazy val SymbolModule: Symbol       = requiredModule[scala.Symbol.type]
     lazy val Symbol_apply               = SymbolModule.info decl nme.apply
 
       def SeqFactory = getMember(ScalaRunTimeModule, nme.Seq)
@@ -384,13 +384,13 @@ trait Definitions extends reflect.api.StandardDefinitions {
       def arrayElementClassMethod = getMember(ScalaRunTimeModule, nme.arrayElementClass)
 
     // classes with special meanings
-    lazy val StringAddClass   = getRequiredClass("scala.runtime.StringAdd")
-    lazy val ArrowAssocClass  = getRequiredClass("scala.Predef.ArrowAssoc")
-    lazy val StringAdd_+      = getMember(StringAddClass, nme.PLUS)
-    lazy val NotNullClass     = getRequiredClass("scala.NotNull")
-    lazy val ScalaNumberClass           = getRequiredClass("scala.math.ScalaNumber")
-    lazy val TraitSetterAnnotationClass = getRequiredClass("scala.runtime.TraitSetter")
-    lazy val DelayedInitClass = requiredClass[scala.DelayedInit]
+    lazy val StringAddClass             = requiredClass[scala.runtime.StringAdd]
+    lazy val ArrowAssocClass            = getRequiredClass("scala.Predef.ArrowAssoc") // SI-5731
+    lazy val StringAdd_+                = getMember(StringAddClass, nme.PLUS)
+    lazy val NotNullClass               = getRequiredClass("scala.NotNull")
+    lazy val ScalaNumberClass           = requiredClass[scala.math.ScalaNumber]
+    lazy val TraitSetterAnnotationClass = requiredClass[scala.runtime.TraitSetter]
+    lazy val DelayedInitClass           = requiredClass[scala.DelayedInit]
       def delayedInitMethod = getMember(DelayedInitClass, nme.delayedInit)
       // a dummy value that communicates that a delayedInit call is compiler-generated
       // from phase UnCurry to phase Constructors
@@ -398,14 +398,14 @@ trait Definitions extends reflect.api.StandardDefinitions {
       // def delayedInitArgVal = EmptyPackageClass.newValue(NoPosition, nme.delayedInitArg)
       //   .setInfo(UnitClass.tpe)
 
-    lazy val TypeConstraintClass   = getRequiredClass("scala.annotation.TypeConstraint")
+    lazy val TypeConstraintClass   = requiredClass[scala.annotation.TypeConstraint]
     lazy val SingletonClass        = enterNewClass(ScalaPackageClass, tpnme.Singleton, anyparam, ABSTRACT | TRAIT | FINAL)
-    lazy val SerializableClass     = getRequiredClass("scala.Serializable")
-    lazy val JavaSerializableClass = getClass(sn.JavaSerializable) modifyInfo fixupAsAnyTrait
-    lazy val ComparableClass       = getRequiredClass("java.lang.Comparable") modifyInfo fixupAsAnyTrait
-    lazy val JavaCloneableClass    = getRequiredClass("java.lang.Cloneable")
-    lazy val RemoteInterfaceClass  = getRequiredClass("java.rmi.Remote")
-    lazy val RemoteExceptionClass  = getRequiredClass("java.rmi.RemoteException")
+    lazy val SerializableClass     = requiredClass[scala.Serializable]
+    lazy val JavaSerializableClass = requiredClass[java.io.Serializable] modifyInfo fixupAsAnyTrait
+    lazy val ComparableClass       = requiredClass[java.lang.Comparable[_]] modifyInfo fixupAsAnyTrait
+    lazy val JavaCloneableClass    = requiredClass[java.lang.Cloneable]
+    lazy val RemoteInterfaceClass  = requiredClass[java.rmi.Remote]
+    lazy val RemoteExceptionClass  = requiredClass[java.rmi.RemoteException]
 
     lazy val ByNameParamClass       = specialPolyClass(tpnme.BYNAME_PARAM_CLASS_NAME, COVARIANT)(_ => AnyClass.tpe)
     lazy val EqualsPatternClass     = specialPolyClass(tpnme.EQUALS_PATTERN_NAME, 0L)(_ => AnyClass.tpe)
@@ -444,25 +444,25 @@ trait Definitions extends reflect.api.StandardDefinitions {
     lazy val MatchingStrategyClass = getRequiredClass("scala.MatchingStrategy")
 
     // collections classes
-    lazy val ConsClass          = getRequiredClass("scala.collection.immutable.$colon$colon")
-    lazy val IterableClass      = getRequiredClass("scala.collection.Iterable")
-    lazy val IteratorClass      = getRequiredClass("scala.collection.Iterator")
-    lazy val ListClass          = getRequiredClass("scala.collection.immutable.List")
-    lazy val SeqClass           = getRequiredClass("scala.collection.Seq")
-    lazy val StringBuilderClass = getRequiredClass("scala.collection.mutable.StringBuilder")
-    lazy val TraversableClass   = getRequiredClass("scala.collection.Traversable")
+    lazy val ConsClass          = requiredClass[scala.collection.immutable.::[_]]
+    lazy val IterableClass      = requiredClass[scala.collection.Iterable[_]]
+    lazy val IteratorClass      = requiredClass[scala.collection.Iterator[_]]
+    lazy val ListClass          = requiredClass[scala.collection.immutable.List[_]]
+    lazy val SeqClass           = requiredClass[scala.collection.Seq[_]]
+    lazy val StringBuilderClass = requiredClass[scala.collection.mutable.StringBuilder]
+    lazy val TraversableClass   = requiredClass[scala.collection.Traversable[_]]
 
-    lazy val ListModule       = getRequiredModule("scala.collection.immutable.List")
+    lazy val ListModule       = requiredModule[scala.collection.immutable.List.type]
       lazy val List_apply = getMember(ListModule, nme.apply)
-    lazy val NilModule        = getRequiredModule("scala.collection.immutable.Nil")
-    lazy val SeqModule        = getRequiredModule("scala.collection.Seq")
-    lazy val IteratorModule = getRequiredModule("scala.collection.Iterator")
+    lazy val NilModule        = requiredModule[scala.collection.immutable.Nil.type]
+    lazy val SeqModule        = requiredModule[scala.collection.Seq.type]
+    lazy val IteratorModule = requiredModule[scala.collection.Iterator.type]
       lazy val Iterator_apply = getMember(IteratorModule, nme.apply)
 
     // arrays and their members
-    lazy val ArrayModule  = getRequiredModule("scala.Array")
+    lazy val ArrayModule  = requiredModule[scala.Array.type]
       lazy val ArrayModule_overloadedApply = getMember(ArrayModule, nme.apply)
-    lazy val ArrayClass   = getRequiredClass("scala.Array")
+    lazy val ArrayClass   = getRequiredClass("scala.Array") // requiredClass[scala.Array[_]]
       lazy val Array_apply  = getMember(ArrayClass, nme.apply)
       lazy val Array_update = getMember(ArrayClass, nme.update)
       lazy val Array_length = getMember(ArrayClass, nme.length)
@@ -473,31 +473,31 @@ trait Definitions extends reflect.api.StandardDefinitions {
     lazy val WeakReferenceClass     = requiredClass[java.lang.ref.WeakReference[_]]
     lazy val MethodClass            = getClass(sn.MethodAsObject)
       def methodClass_setAccessible = getMember(MethodClass, nme.setAccessible)
-    lazy val EmptyMethodCacheClass  = getRequiredClass("scala.runtime.EmptyMethodCache")
-    lazy val MethodCacheClass       = getRequiredClass("scala.runtime.MethodCache")
+    lazy val EmptyMethodCacheClass  = requiredClass[scala.runtime.EmptyMethodCache]
+    lazy val MethodCacheClass       = requiredClass[scala.runtime.MethodCache]
       def methodCache_find  = getMember(MethodCacheClass, nme.find_)
       def methodCache_add   = getMember(MethodCacheClass, nme.add_)
 
     // scala.reflect
     lazy val ReflectPackageClass = getMember(ScalaPackageClass, nme.reflect)
-    lazy val ReflectPackage = getPackageObject("scala.reflect")
+    lazy val ReflectPackage = requiredModule[scala.reflect.`package`.type]
       def ReflectMirror = getMember(ReflectPackage, nme.mirror)
       // [Eugene] is this a good place for ReflectMirrorPrefix?
       def ReflectMirrorPrefix = gen.mkAttributedRef(ReflectMirror) setType singleType(ReflectMirror.owner.thisPrefix, ReflectMirror)
 
-    lazy val PartialManifestClass  = getRequiredClass("scala.reflect.ClassManifest")
-    lazy val PartialManifestModule = getRequiredModule("scala.reflect.ClassManifest")
-    lazy val FullManifestClass     = getRequiredClass("scala.reflect.Manifest")
-    lazy val FullManifestModule    = getRequiredModule("scala.reflect.Manifest")
-    lazy val OptManifestClass      = getRequiredClass("scala.reflect.OptManifest")
-    lazy val NoManifest            = getRequiredModule("scala.reflect.NoManifest")
+    lazy val PartialManifestClass  = requiredClass[scala.reflect.ClassManifest[_]]
+    lazy val PartialManifestModule = requiredModule[scala.reflect.ClassManifest.type]
+    lazy val FullManifestClass     = requiredClass[scala.reflect.Manifest[_]]
+    lazy val FullManifestModule    = requiredModule[scala.reflect.Manifest.type]
+    lazy val OptManifestClass      = requiredClass[scala.reflect.OptManifest[_]]
+    lazy val NoManifest            = requiredModule[scala.reflect.NoManifest.type]
 
-    lazy val ExprClass     = getMember(getRequiredClass("scala.reflect.api.Exprs"), tpnme.Expr)
+    lazy val ExprClass     = getMember(requiredClass[scala.reflect.api.Exprs], tpnme.Expr)
          def ExprTree      = getMember(ExprClass, nme.tree)
          def ExprTpe       = getMember(ExprClass, nme.tpe)
          def ExprEval      = getMember(ExprClass, nme.eval)
          def ExprValue     = getMember(ExprClass, nme.value)
-    lazy val ExprModule    = getMember(getRequiredClass("scala.reflect.api.Exprs"), nme.Expr)
+    lazy val ExprModule    = getMember(requiredClass[scala.reflect.api.Exprs], nme.Expr)
 
     lazy val ArrayTagClass         = requiredClass[scala.reflect.ArrayTag[_]]
     lazy val ErasureTagClass       = requiredClass[scala.reflect.ErasureTag[_]]
@@ -515,12 +515,12 @@ trait Definitions extends reflect.api.StandardDefinitions {
          def ClassTagTpe           = getMemberMethod(ClassTagClass, nme.tpe)
          def TypeTagTpe            = getMemberMethod(TypeTagClass, nme.tpe)
 
-    lazy val MacroContextClass                        = getRequiredClass("scala.reflect.makro.Context")
+    lazy val MacroContextClass                        = requiredClass[scala.reflect.makro.Context]
          def MacroContextPrefix                       = getMember(MacroContextClass, nme.prefix)
          def MacroContextPrefixType                   = getMember(MacroContextClass, tpnme.PrefixType)
          def MacroContextMirror                       = getMember(MacroContextClass, nme.mirror)
          def MacroContextReify                        = getMember(MacroContextClass, nme.reify)
-    lazy val MacroImplAnnotation                      = getRequiredClass("scala.reflect.makro.internal.macroImpl")
+    lazy val MacroImplAnnotation                      = requiredClass[scala.reflect.makro.internal.macroImpl]
     lazy val MacroInternalPackage                     = getPackageObject("scala.reflect.makro.internal")
          def MacroInternal_materializeArrayTag        = getMemberMethod(MacroInternalPackage, nme.materializeArrayTag)
          def MacroInternal_materializeErasureTag      = getMemberMethod(MacroInternalPackage, nme.materializeErasureTag)
@@ -528,14 +528,14 @@ trait Definitions extends reflect.api.StandardDefinitions {
          def MacroInternal_materializeTypeTag         = getMemberMethod(MacroInternalPackage, nme.materializeTypeTag)
          def MacroInternal_materializeConcreteTypeTag = getMemberMethod(MacroInternalPackage, nme.materializeConcreteTypeTag)
 
-    lazy val ScalaSignatureAnnotation = getRequiredClass("scala.reflect.ScalaSignature")
-    lazy val ScalaLongSignatureAnnotation = getRequiredClass("scala.reflect.ScalaLongSignature")
+    lazy val ScalaSignatureAnnotation = requiredClass[scala.reflect.ScalaSignature]
+    lazy val ScalaLongSignatureAnnotation = requiredClass[scala.reflect.ScalaLongSignature]
 
     // Option classes
     lazy val OptionClass: Symbol = requiredClass[Option[_]]
     lazy val SomeClass: Symbol   = requiredClass[Some[_]]
-    lazy val NoneModule: Symbol  = getRequiredModule("scala.None")
-    lazy val SomeModule: Symbol  = getRequiredModule("scala.Some")
+    lazy val NoneModule: Symbol  = requiredModule[scala.None.type]
+    lazy val SomeModule: Symbol  = requiredModule[scala.Some.type]
 
     // [Eugene] how do I make this work without casts?
     // private lazy val importerFromRm = self.mkImporter(rm)
@@ -892,78 +892,78 @@ trait Definitions extends reflect.api.StandardDefinitions {
     def Object_toString  = getMember(ObjectClass, nme.toString_)
 
     // boxed classes
-    lazy val ObjectRefClass         = getRequiredClass("scala.runtime.ObjectRef")
-    lazy val VolatileObjectRefClass = getRequiredClass("scala.runtime.VolatileObjectRef")
+    lazy val ObjectRefClass         = requiredClass[scala.runtime.ObjectRef[_]]
+    lazy val VolatileObjectRefClass = requiredClass[scala.runtime.VolatileObjectRef[_]]
     lazy val BoxesRunTimeModule     = getRequiredModule("scala.runtime.BoxesRunTime")
     lazy val BoxesRunTimeClass      = BoxesRunTimeModule.moduleClass
     lazy val BoxedNumberClass       = getClass(sn.BoxedNumber)
     lazy val BoxedCharacterClass    = getClass(sn.BoxedCharacter)
     lazy val BoxedBooleanClass      = getClass(sn.BoxedBoolean)
-    lazy val BoxedByteClass         = getRequiredClass("java.lang.Byte")
-    lazy val BoxedShortClass        = getRequiredClass("java.lang.Short")
-    lazy val BoxedIntClass          = getRequiredClass("java.lang.Integer")
-    lazy val BoxedLongClass         = getRequiredClass("java.lang.Long")
-    lazy val BoxedFloatClass        = getRequiredClass("java.lang.Float")
-    lazy val BoxedDoubleClass       = getRequiredClass("java.lang.Double")
+    lazy val BoxedByteClass         = requiredClass[java.lang.Byte]
+    lazy val BoxedShortClass        = requiredClass[java.lang.Short]
+    lazy val BoxedIntClass          = requiredClass[java.lang.Integer]
+    lazy val BoxedLongClass         = requiredClass[java.lang.Long]
+    lazy val BoxedFloatClass        = requiredClass[java.lang.Float]
+    lazy val BoxedDoubleClass       = requiredClass[java.lang.Double]
 
     lazy val Boxes_isNumberOrBool = getDecl(BoxesRunTimeClass, nme.isBoxedNumberOrBoolean)
     lazy val Boxes_isNumber       = getDecl(BoxesRunTimeClass, nme.isBoxedNumber)
 
-    lazy val BoxedUnitClass         = getRequiredClass("scala.runtime.BoxedUnit")
+    lazy val BoxedUnitClass         = requiredClass[scala.runtime.BoxedUnit]
     lazy val BoxedUnitModule        = getRequiredModule("scala.runtime.BoxedUnit")
       def BoxedUnit_UNIT = getMember(BoxedUnitModule, nme.UNIT)
       def BoxedUnit_TYPE = getMember(BoxedUnitModule, nme.TYPE_)
 
     // Annotation base classes
-    lazy val AnnotationClass            = getRequiredClass("scala.annotation.Annotation")
-    lazy val ClassfileAnnotationClass   = getRequiredClass("scala.annotation.ClassfileAnnotation")
-    lazy val StaticAnnotationClass      = getRequiredClass("scala.annotation.StaticAnnotation")
+    lazy val AnnotationClass            = requiredClass[scala.annotation.Annotation]
+    lazy val ClassfileAnnotationClass   = requiredClass[scala.annotation.ClassfileAnnotation]
+    lazy val StaticAnnotationClass      = requiredClass[scala.annotation.StaticAnnotation]
 
     // Annotations
-    lazy val BridgeClass                = getRequiredClass("scala.annotation.bridge")
-    lazy val ElidableMethodClass        = getRequiredClass("scala.annotation.elidable")
-    lazy val ImplicitNotFoundClass      = getRequiredClass("scala.annotation.implicitNotFound")
-    lazy val MigrationAnnotationClass   = getRequiredClass("scala.annotation.migration")
-    lazy val ScalaStrictFPAttr          = getRequiredClass("scala.annotation.strictfp")
-    lazy val SerializableAttr           = getRequiredClass("scala.annotation.serializable") // @serializable is deprecated
-    lazy val SwitchClass                = getRequiredClass("scala.annotation.switch")
-    lazy val TailrecClass               = getRequiredClass("scala.annotation.tailrec")
-    lazy val VarargsClass               = getRequiredClass("scala.annotation.varargs")
-    lazy val uncheckedStableClass       = getRequiredClass("scala.annotation.unchecked.uncheckedStable")
-    lazy val uncheckedVarianceClass     = getRequiredClass("scala.annotation.unchecked.uncheckedVariance")
+    lazy val BridgeClass                = requiredClass[scala.annotation.bridge]
+    lazy val ElidableMethodClass        = requiredClass[scala.annotation.elidable]
+    lazy val ImplicitNotFoundClass      = requiredClass[scala.annotation.implicitNotFound]
+    lazy val MigrationAnnotationClass   = requiredClass[scala.annotation.migration]
+    lazy val ScalaStrictFPAttr          = requiredClass[scala.annotation.strictfp]
+    lazy val SerializableAttr           = requiredClass[scala.annotation.serializable] // @serializable is deprecated
+    lazy val SwitchClass                = requiredClass[scala.annotation.switch]
+    lazy val TailrecClass               = requiredClass[scala.annotation.tailrec]
+    lazy val VarargsClass               = requiredClass[scala.annotation.varargs]
+    lazy val uncheckedStableClass       = requiredClass[scala.annotation.unchecked.uncheckedStable]
+    lazy val uncheckedVarianceClass     = requiredClass[scala.annotation.unchecked.uncheckedVariance]
 
-    lazy val BeanPropertyAttr           = getRequiredClass("scala.beans.BeanProperty")
-    lazy val BooleanBeanPropertyAttr    = getRequiredClass("scala.beans.BooleanBeanProperty")
-    lazy val CloneableAttr              = getRequiredClass("scala.cloneable")
-    lazy val DeprecatedAttr             = getRequiredClass("scala.deprecated")
-    lazy val DeprecatedNameAttr         = getRequiredClass("scala.deprecatedName")
-    lazy val NativeAttr                 = getRequiredClass("scala.native")
-    lazy val RemoteAttr                 = getRequiredClass("scala.remote")
-    lazy val ScalaInlineClass           = getRequiredClass("scala.inline")
-    lazy val ScalaNoInlineClass         = getRequiredClass("scala.noinline")
-    lazy val SerialVersionUIDAttr       = getRequiredClass("scala.SerialVersionUID")
-    lazy val SpecializedClass           = getRequiredClass("scala.specialized")
-    lazy val ThrowsClass                = getRequiredClass("scala.throws")
-    lazy val TransientAttr              = getRequiredClass("scala.transient")
-    lazy val UncheckedClass             = getRequiredClass("scala.unchecked")
-    lazy val UnspecializedClass         = getRequiredClass("scala.annotation.unspecialized")
-    lazy val VolatileAttr               = getRequiredClass("scala.volatile")
+    lazy val BeanPropertyAttr           = requiredClass[scala.beans.BeanProperty]
+    lazy val BooleanBeanPropertyAttr    = requiredClass[scala.beans.BooleanBeanProperty]
+    lazy val CloneableAttr              = requiredClass[scala.cloneable]
+    lazy val DeprecatedAttr             = requiredClass[scala.deprecated]
+    lazy val DeprecatedNameAttr         = requiredClass[scala.deprecatedName]
+    lazy val NativeAttr                 = requiredClass[scala.native]
+    lazy val RemoteAttr                 = requiredClass[scala.remote]
+    lazy val ScalaInlineClass           = requiredClass[scala.inline]
+    lazy val ScalaNoInlineClass         = requiredClass[scala.noinline]
+    lazy val SerialVersionUIDAttr       = requiredClass[scala.SerialVersionUID]
+    lazy val SpecializedClass           = requiredClass[scala.specialized]
+    lazy val ThrowsClass                = requiredClass[scala.throws]
+    lazy val TransientAttr              = requiredClass[scala.transient]
+    lazy val UncheckedClass             = requiredClass[scala.unchecked]
+    lazy val UnspecializedClass         = requiredClass[scala.annotation.unspecialized]
+    lazy val VolatileAttr               = requiredClass[scala.volatile]
 
     // Meta-annotations
-    lazy val BeanGetterTargetClass      = getMetaAnnotation("beanGetter")
-    lazy val BeanSetterTargetClass      = getMetaAnnotation("beanSetter")
-    lazy val FieldTargetClass           = getMetaAnnotation("field")
-    lazy val GetterTargetClass          = getMetaAnnotation("getter")
-    lazy val ParamTargetClass           = getMetaAnnotation("param")
-    lazy val SetterTargetClass          = getMetaAnnotation("setter")
-    lazy val ClassTargetClass           = getMetaAnnotation("companionClass")
-    lazy val ObjectTargetClass          = getMetaAnnotation("companionObject")
-    lazy val MethodTargetClass          = getMetaAnnotation("companionMethod")    // TODO: module, moduleClass? package, packageObject?
-    lazy val LanguageFeatureAnnot       = getMetaAnnotation("languageFeature")
+    lazy val BeanGetterTargetClass      = requiredClass[meta.beanGetter]
+    lazy val BeanSetterTargetClass      = requiredClass[meta.beanSetter]
+    lazy val FieldTargetClass           = requiredClass[meta.field]
+    lazy val GetterTargetClass          = requiredClass[meta.getter]
+    lazy val ParamTargetClass           = requiredClass[meta.param]
+    lazy val SetterTargetClass          = requiredClass[meta.setter]
+    lazy val ClassTargetClass           = requiredClass[meta.companionClass]
+    lazy val ObjectTargetClass          = requiredClass[meta.companionObject]
+    lazy val MethodTargetClass          = requiredClass[meta.companionMethod]    // TODO: module, moduleClass? package, packageObject?
+    lazy val LanguageFeatureAnnot       = requiredClass[meta.languageFeature]
 
     // Language features
     lazy val languageFeatureModule      = getRequiredModule("scala.languageFeature")
-    lazy val experimentalModule         = getMember(languageFeatureModule, newTermName("experimental"))
+    lazy val experimentalModule         = getMember(languageFeatureModule, nme.experimental)
     lazy val MacrosFeature              = getLanguageFeature("macros", experimentalModule)
     lazy val DynamicsFeature            = getLanguageFeature("dynamics")
     lazy val PostfixOpsFeature          = getLanguageFeature("postfixOps")
@@ -972,7 +972,6 @@ trait Definitions extends reflect.api.StandardDefinitions {
     lazy val HigherKindsFeature         = getLanguageFeature("higherKinds")
     lazy val ExistentialsFeature        = getLanguageFeature("existentials")
 
-    private def getMetaAnnotation(name: String) = getRequiredClass("scala.annotation.meta." + name)
     def isMetaAnnotation(sym: Symbol): Boolean = metaAnnotations(sym) || (
       // Trying to allow for deprecated locations
       sym.isAliasType && isMetaAnnotation(sym.info.typeSymbol)
@@ -1024,8 +1023,18 @@ trait Definitions extends reflect.api.StandardDefinitions {
     def getRequiredModule(fullname: String): ModuleSymbol =
       getModule(newTermNameCached(fullname))
 
-    def requiredClass[T: ClassTag] : ClassSymbol =
-      getRequiredClass(classTag[T].erasure.getName)
+    def erasureName[T: ErasureTag] : String = {
+      /** We'd like the String representation to be a valid
+       *  scala type, so we have to decode the jvm's secret language.
+       */
+      def erasureString(clazz: Class[_]): String = {
+        if (clazz.isArray) "Array[" + erasureString(clazz.getComponentType) + "]"
+        else clazz.getName
+      }
+      erasureString(implicitly[ErasureTag[T]].erasure)
+    }
+
+    def requiredClass[T: ClassTag] : ClassSymbol = getRequiredClass(erasureName[T])
 
     // TODO: What syntax do we think should work here? Say you have an object
     // like scala.Predef.  You can't say requiredModule[scala.Predef] since there's
@@ -1035,7 +1044,7 @@ trait Definitions extends reflect.api.StandardDefinitions {
     // a method which returns a usable name, one which doesn't expose this
     // detail of the backend.
     def requiredModule[T: ClassTag] : ModuleSymbol =
-      getRequiredModule(classTag[T].erasure.getName stripSuffix "$")
+      getRequiredModule(erasureName[T] stripSuffix "$")
 
     def getRequiredClass(fullname: String): ClassSymbol =
       getClassByName(newTypeNameCached(fullname)) match {
