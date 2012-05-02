@@ -193,7 +193,9 @@ object Test6 {
     val c = new C("bob")
     c.setText("dylan")
     println(c.getText())
-    if (new D(true).isProp()) {
+    val d = new D(true)
+    d.setProp(false)
+    if (!d.isProp()) {
       println(new D(false).getM())
     }
   }
