@@ -5,6 +5,7 @@ class Test$$anonfun$main$1 extends scala.runtime.AbstractFunction1$mcVL$sp
   descriptor                             <clinit>  ()V
   descriptor                                apply  (Lscala/Tuple2;)V
   descriptor                                apply  (Ljava/lang/Object;)Ljava/lang/Object;
+  descriptor                                apply  (Ljava/lang/Object;)V
   descriptor                                cwd$1  Ljava/lang/String;
   descriptor                     serialVersionUID  J
   descriptor                               <init>  (Ljava/lang/String;)V

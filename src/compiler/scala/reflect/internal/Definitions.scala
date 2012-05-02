@@ -412,8 +412,6 @@ trait Definitions extends reflect.api.StandardDefinitions {
     lazy val JavaRepeatedParamClass = specialPolyClass(tpnme.JAVA_REPEATED_PARAM_CLASS_NAME, COVARIANT)(tparam => arrayType(tparam.tpe))
     lazy val RepeatedParamClass     = specialPolyClass(tpnme.REPEATED_PARAM_CLASS_NAME, COVARIANT)(tparam => seqType(tparam.tpe))
 
-    lazy val MarkerCPSTypes = getClassIfDefined("scala.util.continuations.cpsParam")
-
     def isByNameParamType(tp: Type)        = tp.typeSymbol == ByNameParamClass
     def isScalaRepeatedParamType(tp: Type) = tp.typeSymbol == RepeatedParamClass
     def isJavaRepeatedParamType(tp: Type)  = tp.typeSymbol == JavaRepeatedParamClass
