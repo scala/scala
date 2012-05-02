@@ -379,7 +379,7 @@ object TraversableOnce {
      *  @return the result of invoking the `genericBuilder` method on `from`.
      */
     def apply(from: Coll[_]): Builder[A, Coll[A]] = from match {
-      case xs: generic.GenericTraversableTemplate[_, _] => xs.genericBuilder mapResult {
+      case xs: generic.GenericTraversableTemplate[_, _] => xs.genericBuilder.asInstanceOf[Builder[A, Traversable[A]]] mapResult {
         case res => traversableToColl(res.asInstanceOf[GenTraversable[A]])
       }
       case _ => newIterator
