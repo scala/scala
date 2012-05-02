@@ -248,13 +248,12 @@ trait MethodSynthesis {
       else List(Getter(vd))
     )
     def beanAccessors(vd: ValDef): List[DerivedFromValDef] = {
+      val setter = if (vd.mods.isMutable) List(BeanSetter(vd)) else Nil
       if (forMSIL) Nil
-      else if (vd.symbol hasAnnotation BeanPropertyAttr) {
-        if (vd.mods.isMutable) List(BeanGetter(vd), BeanSetter(vd))
-        else List(BeanGetter(vd))
-      }
+      else if (vd.symbol hasAnnotation BeanPropertyAttr)
+        BeanGetter(vd) :: setter
       else if (vd.symbol hasAnnotation BooleanBeanPropertyAttr)
-        List(BooleanBeanGetter(vd))
+        BooleanBeanGetter(vd) :: setter
       else Nil
     }
     def allValDefDerived(vd: ValDef) = {
