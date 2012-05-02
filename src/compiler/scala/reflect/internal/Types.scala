@@ -97,7 +97,7 @@ trait Types extends api.Types { self: SymbolTable =>
    */
   private final val propagateParameterBoundsToTypeVars = sys.props contains "scalac.debug.prop-constraints"
 
-  protected val enableTypeVarExperimentals = settings.Xexperimental.value || !settings.XoldPatmat.value
+  protected val enableTypeVarExperimentals = settings.Xexperimental.value
 
   /** Empty immutable maps to avoid allocations. */
   private val emptySymMap   = immutable.Map[Symbol, Symbol]()
@@ -2898,6 +2898,7 @@ trait Types extends api.Types { self: SymbolTable =>
     // existential.
     // were we compared to skolems at a higher skolemizationLevel?
     // EXPERIMENTAL: value will not be considered unless enableTypeVarExperimentals is true
+    // see SI-5729 for why this is still experimental
     private var encounteredHigherLevel = false
     private def shouldRepackType = enableTypeVarExperimentals && encounteredHigherLevel
 

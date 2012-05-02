@@ -354,9 +354,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter) extends Symb
   // where I need it, and then an override in Global with the setting.
   override protected val etaExpandKeepsStar = settings.etaExpandKeepsStar.value
   // Here comes another one...
-  override protected val enableTypeVarExperimentals = (
-    settings.Xexperimental.value || !settings.XoldPatmat.value
-  )
+  override protected val enableTypeVarExperimentals = settings.Xexperimental.value
 
   // True if -Xscript has been set, indicating a script run.
   def isScriptRun = opt.script.isDefined
