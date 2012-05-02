@@ -4642,7 +4642,11 @@ trait Typers extends Modes with Adaptations with Taggings {
           typedValDef(vdef)
 
         case ddef @ DefDef(_, _, _, _, _, _) =>
-          newTyper(context.makeNewScope(tree, sym)).typedDefDef(ddef)
+          // flag default getters for constructors. An actual flag would be nice. See SI-5543.
+          //val flag = ddef.mods.hasDefaultFlag && ddef.mods.hasFlag(PRESUPER)
+          val flag = ddef.mods.hasDefaultFlag && sym.owner.isModuleClass &&
+                     nme.defaultGetterToMethod(sym.name) == nme.CONSTRUCTOR
+          newTyper(context.makeNewScope(tree, sym)).constrTyperIf(flag).typedDefDef(ddef)
 
         case tdef @ TypeDef(_, _, _, _) =>
           typedTypeDef(tdef)

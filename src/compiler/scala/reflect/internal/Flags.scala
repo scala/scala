@@ -260,7 +260,7 @@ class Flags extends ModifierFlags {
 
   /** When a symbol for a default getter is created, it inherits these
    *  flags from the method with the default.  Other flags applied at creation
-   *  time are SYNTHETIC, DEFAULTPARAM, and possibly OVERRIDE.
+   *  time are SYNTHETIC, DEFAULTPARAM, and possibly OVERRIDE, and maybe PRESUPER.
    */
   final val DefaultGetterFlags = PRIVATE | PROTECTED | FINAL
 
