@@ -40,7 +40,6 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
                                    // SymbolTable. If we had DOT this would not be an issue
   import global._                  // the global environment
   import definitions._             // standard classes and methods
-  import CODE._
 
   val phaseName: String = "patmat"
 
@@ -60,19 +59,9 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
   class MatchTransformer(unit: CompilationUnit) extends TypingTransformer(unit) {
     override def transform(tree: Tree): Tree = tree match {
       case Match(sel, cases) =>
-        val selX   = transform(sel)
-        val casesX = transformTrees(cases).asInstanceOf[List[CaseDef]]
-
         val origTp = tree.tpe
-        val matchX = treeCopy.Match(tree, selX, casesX)
-
-        // when one of the internal cps-type-state annotations is present, strip all CPS annotations
-        // a cps-type-state-annotated type makes no sense as an expected type (matchX.tpe is used as pt in translateMatch)
-        // (only test availability of MarkerCPSAdaptPlus assuming they are either all available or none of them are)
-        if (MarkerCPSAdaptPlus != NoSymbol && (stripTriggerCPSAnns exists tree.tpe.hasAnnotation))
-          matchX modifyType removeCPSAdaptAnnotations
-
-        localTyper.typed(translator.translateMatch(matchX)) setType origTp
+        // setType origTp intended for CPS -- TODO: is it necessary?
+        localTyper.typed(translator.translateMatch(treeCopy.Match(tree, transform(sel), transformTrees(cases).asInstanceOf[List[CaseDef]]))) setType origTp
       case Try(block, catches, finalizer) =>
         treeCopy.Try(tree, transform(block), translator.translateTry(transformTrees(catches).asInstanceOf[List[CaseDef]], tree.tpe, tree.pos), transform(finalizer))
       case _ => super.transform(tree)
@@ -190,13 +179,21 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
       }
 
       val selectorTp = repeatedToSeq(elimAnonymousClass(selector.tpe.widen.withoutAnnotations))
-      val pt0        = match_.tpe
+
+      val origPt  = match_.tpe
+      // when one of the internal cps-type-state annotations is present, strip all CPS annotations
+      // a cps-type-state-annotated type makes no sense as an expected type (matchX.tpe is used as pt in translateMatch)
+      // (only test availability of MarkerCPSAdaptPlus assuming they are either all available or none of them are)
+      val ptUnCPS =
+        if (MarkerCPSAdaptPlus != NoSymbol && (stripTriggerCPSAnns exists origPt.hasAnnotation))
+          removeCPSAdaptAnnotations(origPt)
+        else origPt
 
       // we've packed the type for each case in typedMatch so that if all cases have the same existential case, we get a clean lub
       // here, we should open up the existential again
       // relevant test cases: pos/existentials-harmful.scala, pos/gadt-gilles.scala, pos/t2683.scala, pos/virtpatmat_exist4.scala
       // TODO: fix skolemizeExistential (it should preserve annotations, right?)
-      val pt = repeatedToSeq(pt0.skolemizeExistential(context.owner, context.tree) withAnnotations pt0.annotations)
+      val pt = repeatedToSeq(ptUnCPS.skolemizeExistential(context.owner, context.tree) withAnnotations ptUnCPS.annotations)
 
       // the alternative to attaching the default case override would be to simply
       // append the default to the list of cases and suppress the unreachable case error that may arise (once we detect that...)
