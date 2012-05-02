@@ -3925,6 +3925,10 @@ trait Typers extends Modes with Adaptations with Taggings with PatMatVirtualiser
         val sym = tp.typeSymbol.initialize
         if (sym.isAbstractType || sym.hasAbstractFlag)
           IsAbstractError(tree, sym)
+        else if (isPrimitiveValueClass(sym)) {
+          NotAMemberError(tpt, TypeTree(tp), nme.CONSTRUCTOR)
+          setError(tpt)
+        }
         else if (!(  tp == sym.thisSym.tpe // when there's no explicit self type -- with (#3612) or without self variable
                      // sym.thisSym.tpe == tp.typeOfThis (except for objects)
                   || narrowRhs(tp) <:< tp.typeOfThis
