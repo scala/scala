@@ -3276,8 +3276,10 @@ trait Types extends api.Types { self: SymbolTable =>
   final class UniqueErasedValueType(sym: Symbol) extends ErasedValueType(sym) with UniqueType
 
   object ErasedValueType {
-    def apply(sym: Symbol): Type =
+    def apply(sym: Symbol): Type = {
+      assert(sym ne NoSymbol, "ErasedValueType cannot be NoSymbol")
       unique(new UniqueErasedValueType(sym))
+    }
   }
 
   /** A class representing an as-yet unevaluated type.

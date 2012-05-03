@@ -195,7 +195,7 @@ trait Trees extends reflect.internal.Trees { self: Global =>
     def SelectFromArray(tree: Tree, qualifier: Tree, selector: Name, erasure: Type) =
       new SelectFromArray(qualifier, selector, erasure).copyAttrs(tree)
     def InjectDerivedValue(tree: Tree, arg: Tree) =
-      new InjectDerivedValue(arg)
+      new InjectDerivedValue(arg).copyAttrs(tree)
     def TypeTreeWithDeferredRefCheck(tree: Tree) = tree match {
       case dc@TypeTreeWithDeferredRefCheck() => new TypeTreeWithDeferredRefCheck()(dc.check).copyAttrs(tree)
     }
