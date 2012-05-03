@@ -50,14 +50,18 @@ abstract class SymbolTable extends api.Universe
   /** Override with final implementation for inlining. */
   def debuglog(msg:  => String): Unit = if (settings.debug.value) log(msg)
   def debugwarn(msg: => String): Unit = if (settings.debug.value) Console.err.println(msg)
+  def throwableAsString(t: Throwable): String = "" + t
+
+  /** Prints a stack trace if -Ydebug or equivalent was given, otherwise does nothing. */
+  def debugStack(t: Throwable): Unit  = debugwarn(throwableAsString(t))
 
   /** Overridden when we know more about what was happening during a failure. */
   def supplementErrorMessage(msg: String): String = msg
 
   private[scala] def printCaller[T](msg: String)(result: T) = {
-    Console.err.println(msg + ": " + result)
-    Console.err.println("Called from:")
-    (new Throwable).getStackTrace.drop(2).take(15).foreach(Console.err.println)
+    Console.err.println("%s: %s\nCalled from: %s".format(msg, result,
+      (new Throwable).getStackTrace.drop(2).take(15).mkString("\n")))
+
     result
   }
 

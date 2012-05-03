@@ -6730,6 +6730,11 @@ trait Types extends api.Types { self: SymbolTable =>
     case TypeRef(_, sym, _)                       => !isPrimitiveValueClass(sym)
     case _                                        => false
   }
+  // Add serializable to a list of parents, unless one of them already is
+  def addSerializable(ps: Type*): List[Type] = (
+    if (ps exists (_ <:< SerializableClass.tpe)) ps.toList
+    else (ps :+ SerializableClass.tpe).toList
+  )
 
   def objToAny(tp: Type): Type =
     if (!phase.erasedTypes && tp.typeSymbol == ObjectClass) AnyClass.tpe

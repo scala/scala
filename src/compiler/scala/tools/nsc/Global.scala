@@ -243,7 +243,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter) extends Symb
   }
 
   def logThrowable(t: Throwable): Unit = globalError(throwableAsString(t))
-  def throwableAsString(t: Throwable): String =
+  override def throwableAsString(t: Throwable): String =
     if (opt.richExes) Exceptional(t).force().context()
     else util.stackTraceString(t)
 

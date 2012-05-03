@@ -72,14 +72,13 @@ abstract class UnCurry extends InfoTransform
   }
 
   class UnCurryTransformer(unit: CompilationUnit) extends TypingTransformer(unit) {
-
-    private var needTryLift = false
-    private var inPattern = false
+    private var needTryLift       = false
+    private var inPattern         = false
     private var inConstructorFlag = 0L
-    private val byNameArgs = new mutable.HashSet[Tree]
-    private val noApply = new mutable.HashSet[Tree]
-    private val newMembers = mutable.ArrayBuffer[Tree]()
-    private val repeatedParams = mutable.Map[Symbol, List[ValDef]]()
+    private val byNameArgs        = mutable.HashSet[Tree]()
+    private val noApply           = mutable.HashSet[Tree]()
+    private val newMembers        = mutable.ArrayBuffer[Tree]()
+    private val repeatedParams    = mutable.Map[Symbol, List[ValDef]]()
 
     @inline private def withInPattern[T](value: Boolean)(body: => T): T = {
       inPattern = value
@@ -87,30 +86,40 @@ abstract class UnCurry extends InfoTransform
       finally inPattern = !value
     }
 
+    private def newFunction0(body: Tree): Tree = {
+      val result = localTyper.typedPos(body.pos)(Function(Nil, body)).asInstanceOf[Function]
+      log("Change owner from %s to %s in %s".format(currentOwner, result.symbol, result.body))
+      result.body changeOwner (currentOwner -> result.symbol)
+      transformFunction(result)
+    }
+
     private lazy val serialVersionUIDAnnotation =
       AnnotationInfo(SerialVersionUIDAttr.tpe, List(Literal(Constant(0))), List())
 
     private var nprinted = 0
 
-    override def transform(tree: Tree): Tree = try { //debug
-      postTransform(mainTransform(tree))
-    } catch {
-      case ex: Throwable =>
-        if (nprinted < 10) {
-          Console.println("exception when traversing " + tree)
-          nprinted += 1
-        }
-        throw ex
-    }
+    // I don't have a clue why I'm catching TypeErrors here, but it's better
+    // than spewing stack traces at end users for internal errors. Examples
+    // which hit at this point should not be hard to come by, but the immediate
+    // motivation can be seen in continuations-neg/t3718.
+    override def transform(tree: Tree): Tree = (
+      try postTransform(mainTransform(tree))
+      catch { case ex: TypeError =>
+        unit.error(ex.pos, ex.msg)
+        debugStack(ex)
+        EmptyTree
+      }
+    )
 
     /* Is tree a reference `x` to a call by name parameter that needs to be converted to
      * x.apply()? Note that this is not the case if `x` is used as an argument to another
      * call by name parameter.
      */
-    def isByNameRef(tree: Tree): Boolean =
-      tree.isTerm && tree.hasSymbol &&
-      isByNameParamType(tree.symbol.tpe) &&
-      !byNameArgs(tree)
+    def isByNameRef(tree: Tree) = (
+         tree.isTerm
+      && !byNameArgs(tree)
+      && tree.hasSymbolWhich(s => isByNameParamType(s.tpe))
+    )
 
     /** Uncurry a type of a tree node.
      *  This function is sensitive to whether or not we are in a pattern -- when in a pattern
@@ -241,10 +250,10 @@ abstract class UnCurry extends InfoTransform
           // only get here when running under -Xoldpatmat
           synthPartialFunction(fun)
         case _ =>
-          val parents =
-            if (isFunctionType(fun.tpe)) List(abstractFunctionForFunctionType(fun.tpe), SerializableClass.tpe)
-            else List(ObjectClass.tpe, fun.tpe, SerializableClass.tpe)
-
+          val parents = (
+            if (isFunctionType(fun.tpe)) addSerializable(abstractFunctionForFunctionType(fun.tpe))
+            else addSerializable(ObjectClass.tpe, fun.tpe)
+          )
           val anonClass = fun.symbol.owner newAnonymousFunctionClass(fun.pos, inConstructorFlag) addAnnotation serialVersionUIDAnnotation
           anonClass setInfo ClassInfoType(parents, newScope, anonClass)
 
@@ -282,7 +291,7 @@ abstract class UnCurry extends InfoTransform
       val (formals, restpe) = (targs.init, targs.last)
 
       val anonClass = fun.symbol.owner newAnonymousFunctionClass(fun.pos, inConstructorFlag) addAnnotation serialVersionUIDAnnotation
-      val parents   = List(appliedType(AbstractPartialFunctionClass, targs: _*), SerializableClass.tpe)
+      val parents   = addSerializable(appliedType(AbstractPartialFunctionClass, targs: _*))
       anonClass setInfo ClassInfoType(parents, newScope, anonClass)
 
       // duplicate before applyOrElseMethodDef is run so that it does not mess up our trees and label symbols (we have a fresh set)
@@ -409,22 +418,27 @@ abstract class UnCurry extends InfoTransform
             else if (tp.bounds.hi ne tp) getClassTag(tp.bounds.hi)
             else localTyper.TyperErrorGen.MissingClassTagError(tree, tp)
           }
+          def traversableClassTag(tpe: Type): Tree = {
+            (tpe baseType TraversableClass).typeArgs match {
+              case targ :: _  => getClassTag(targ)
+              case _          => EmptyTree
+            }
+          }
           afterUncurry {
             localTyper.typedPos(pos) {
-              Apply(gen.mkAttributedSelect(tree, toArraySym),
-                    List(getClassTag(tree.tpe.baseType(TraversableClass).typeArgs.head)))
+              gen.mkMethodCall(tree, toArraySym, Nil, List(traversableClassTag(tree.tpe)))
             }
           }
         }
 
         var suffix: Tree =
           if (treeInfo isWildcardStarArgList args) {
-            val Typed(tree, _) = args.last;
+            val Typed(tree, _) = args.last
             if (isJava)
               if (tree.tpe.typeSymbol == ArrayClass) tree
               else sequenceToArray(tree)
             else
-              if (tree.tpe.typeSymbol isSubClass TraversableClass) tree   // @PP: I suspect this should be SeqClass
+              if (tree.tpe.typeSymbol isSubClass SeqClass) tree
               else arrayToSequence(tree, varargsElemType)
           }
           else {
@@ -447,22 +461,18 @@ abstract class UnCurry extends InfoTransform
       val args1 = if (isVarArgTypes(formals)) transformVarargs(formals.last.typeArgs.head) else args
 
       map2(formals, args1) { (formal, arg) =>
-        if (!isByNameParamType(formal)) {
+        if (!isByNameParamType(formal))
           arg
-        } else if (isByNameRef(arg)) {
+        else if (isByNameRef(arg)) {
           byNameArgs += arg
-          arg setType functionType(List(), arg.tpe)
-        } else {
-          if (opt.verboseDebug) {
-            val posstr  = arg.pos.source.path + ":" + arg.pos.line
-            val permstr = if (fun.isPrivate) "private" else "notprivate"
-            log("byname | %s | %s | %s".format(posstr, fun.fullName, permstr))
-          }
-
-          val result = localTyper.typed(
-            Function(Nil, arg) setPos arg.pos).asInstanceOf[Function]
-          new ChangeOwnerTraverser(currentOwner, result.symbol).traverse(arg)
-          transformFunction(result)
+          arg setType functionType(Nil, arg.tpe)
+        }
+        else {
+          log("byname | %s | %s | %s".format(
+            arg.pos.source.path + ":" + arg.pos.line, fun.fullName,
+            if (fun.isPrivate) "private" else "")
+          )
+          newFunction0(arg)
         }
       }
     }
@@ -709,12 +719,12 @@ abstract class UnCurry extends InfoTransform
         case Apply(Apply(fn, args), args1) =>
           treeCopy.Apply(tree, fn, args ::: args1)
         case Ident(name) =>
-          assert(name != tpnme.WILDCARD_STAR)
+          assert(name != tpnme.WILDCARD_STAR, tree)
           applyUnary()
         case Select(_, _) | TypeApply(_, _) =>
           applyUnary()
-        case ret @ Return(expr) if (isNonLocalReturn(ret)) =>
-          debuglog("non local return in "+ret.symbol+" from "+currentOwner.enclMethod)
+        case ret @ Return(expr) if isNonLocalReturn(ret) =>
+          log("non-local return from %s to %s".format(currentOwner.enclMethod, ret.symbol))
           atPos(ret.pos)(nonLocalReturnThrow(expr, ret.symbol))
         case TypeTree() =>
           tree
@@ -762,10 +772,10 @@ abstract class UnCurry extends InfoTransform
         )
       }
 
-      val reps          = repeatedParams(dd.symbol)
-      val rpsymbols     = reps.map(_.symbol).toSet
-      val theTyper      = typer.atOwner(dd, currentClass)
-      val flatparams    = flatdd.vparamss.head
+      val reps       = repeatedParams(dd.symbol)
+      val rpsymbols  = reps.map(_.symbol).toSet
+      val theTyper   = typer.atOwner(dd, currentClass)
+      val flatparams = flatdd.vparamss.head
 
       // create the type
       val forwformals = flatparams map {

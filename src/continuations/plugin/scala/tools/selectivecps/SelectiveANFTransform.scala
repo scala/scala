@@ -110,8 +110,7 @@ abstract class SelectiveANFTransform extends PluginComponent with Transform with
                 transExpr(body, None, ext)
             }
 
-            debuglog("anf result "+body1)
-            debuglog("result is of type "+body1.tpe)
+            debuglog("anf result "+body1+"\nresult is of type "+body1.tpe)
 
             treeCopy.Function(ff, transformValDefs(vparams), body1)
           }
@@ -142,7 +141,6 @@ abstract class SelectiveANFTransform extends PluginComponent with Transform with
           transExpr(tree, None, None)
 
         case _ =>
-
           if (hasAnswerTypeAnn(tree.tpe)) {
             if (!cpsAllowed)
               unit.error(tree.pos, "cps code not allowed here / " + tree.getClass + " / " + tree)
@@ -357,7 +355,20 @@ abstract class SelectiveANFTransform extends PluginComponent with Transform with
                 List(expr)
               )
             )
-            return ((stms, call))
+            // This is today's sick/meaningless heuristic for spotting breakdown so
+            // we don't proceed until stack traces start draping themselves over everything.
+            // If there are wildcard types in the tree and B == Nothing, something went wrong.
+            // (I thought WildcardTypes would be enough, but nope.  'reset0 { 0 }' has them.)
+            //
+            // Code as simple as    reset((_: String).length)
+            // will crash meaninglessly without this check.  See SI-3718.
+            //
+            // TODO - obviously this should be done earlier, differently, or with
+            // a more skilled hand.  Most likely, all three.
+            if ((b.typeSymbol eq NothingClass) && call.tpe.exists(_ eq WildcardType))
+              unit.error(tree.pos, "cannot cps-transform malformed (possibly in shift/reset placement) expression")
+            else
+              return ((stms, call))
           }
           catch {
             case ex:TypeError =>

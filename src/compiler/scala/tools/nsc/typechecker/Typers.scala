@@ -1616,10 +1616,16 @@ trait Typers extends Modes with Adaptations with Taggings {
       val clazz     = mdef.symbol.moduleClass
       val typedMods = typedModifiers(mdef.mods)
       assert(clazz != NoSymbol, mdef)
+      val noSerializable = (
+           (linkedClass eq NoSymbol)
+        || linkedClass.isErroneous
+        || !linkedClass.isSerializable
+        || clazz.isSerializable
+      )
       val impl1 = typerReportAnyContextErrors(context.make(mdef.impl, clazz, newScope)) {
         _.typedTemplate(mdef.impl, {
           parentTypes(mdef.impl) ++ (
-            if (linkedClass == NoSymbol || !linkedClass.isSerializable || clazz.isSerializable) Nil
+            if (noSerializable) Nil
             else {
               clazz.makeSerializable()
               List(TypeTree(SerializableClass.tpe) setPos clazz.pos.focus)
@@ -2293,11 +2299,11 @@ trait Typers extends Modes with Adaptations with Taggings {
       // need to duplicate the cases before typing them to generate the apply method, or the symbols will be all messed up
       val casesTrue = if (isPartial) cases map (c => deriveCaseDef(c)(x => TRUE_typed).duplicate) else Nil
       // println("casesTrue "+ casesTrue)
-      def parentsPartial(targs: List[Type]) = List(appliedType(AbstractPartialFunctionClass.typeConstructor, targs), SerializableClass.tpe)
+      def parentsPartial(targs: List[Type]) = addSerializable(appliedType(AbstractPartialFunctionClass.typeConstructor, targs))
 
       def applyMethod = {
         // rig the show so we can get started typing the method body -- later we'll correct the infos...
-        anonClass setInfo ClassInfoType(List(ObjectClass.tpe, pt, SerializableClass.tpe), newScope, anonClass)
+        anonClass setInfo ClassInfoType(addSerializable(ObjectClass.tpe, pt), newScope, anonClass)
         val methodSym = anonClass.newMethod(nme.apply, tree.pos, if(isPartial) (FINAL | OVERRIDE) else FINAL)
         val paramSyms = mkParams(methodSym)
         val selector  = mkSel(paramSyms)
@@ -2313,10 +2319,10 @@ trait Typers extends Modes with Adaptations with Taggings {
           val resTp = match_.tpe
 
           val methFormals = paramSyms map (_.tpe)
-          val parents =
+          val parents = (
             if (isPartial) parentsPartial(List(methFormals.head, resTp))
-            else List(abstractFunctionType(methFormals, resTp), SerializableClass.tpe)
-
+            else addSerializable(abstractFunctionType(methFormals, resTp))
+          )
           anonClass setInfo ClassInfoType(parents, newScope, anonClass)
           methodSym setInfoAndEnter MethodType(paramSyms, resTp)
 
