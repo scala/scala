@@ -131,10 +131,6 @@ trait Future[+T] extends Awaitable[T] {
 
   /* Miscellaneous */
 
-  /** Creates a new promise.
-   */
-  protected def newPromise[S]: Promise[S]
-
   /** Returns whether the future has already been completed with
    *  a value or an exception.
    *
@@ -169,7 +165,7 @@ trait Future[+T] extends Awaitable[T] {
    *  and throws a corresponding exception if the original future fails.
    */
   def failed: Future[Throwable] = {
-    val p = newPromise[Throwable]
+    val p = Promise[Throwable]()
 
     onComplete {
       case Left(t) => p success t
@@ -198,7 +194,7 @@ trait Future[+T] extends Awaitable[T] {
    *  $forComprehensionExample
    */
   def map[S](f: T => S): Future[S] = {
-    val p = newPromise[S]
+    val p = Promise[S]()
 
     onComplete {
       case Left(t) => p failure t
@@ -220,7 +216,7 @@ trait Future[+T] extends Awaitable[T] {
    *  $forComprehensionExample
    */
   def flatMap[S](f: T => Future[S]): Future[S] = {
-    val p = newPromise[S]
+    val p = Promise[S]()
 
     onComplete {
       case Left(t) => p failure t
@@ -255,7 +251,7 @@ trait Future[+T] extends Awaitable[T] {
    *  }}}
    */
   def filter(pred: T => Boolean): Future[T] = {
-    val p = newPromise[T]
+    val p = Promise[T]()
 
     onComplete {
       case Left(t) => p failure t
@@ -304,7 +300,7 @@ trait Future[+T] extends Awaitable[T] {
    *  }}}
    */
   def collect[S](pf: PartialFunction[T, S]): Future[S] = {
-    val p = newPromise[S]
+    val p = Promise[S]()
 
     onComplete {
       case Left(t) => p failure t
@@ -333,7 +329,7 @@ trait Future[+T] extends Awaitable[T] {
    *  }}}
    */
   def recover[U >: T](pf: PartialFunction[Throwable, U]): Future[U] = {
-    val p = newPromise[U]
+    val p = Promise[U]()
 
     onComplete {
       case Left(t) if pf isDefinedAt t =>
@@ -359,7 +355,7 @@ trait Future[+T] extends Awaitable[T] {
    *  }}}
    */
   def recoverWith[U >: T](pf: PartialFunction[Throwable, Future[U]]): Future[U] = {
-    val p = newPromise[U]
+    val p = Promise[U]()
 
     onComplete {
       case Left(t) if pf isDefinedAt t =>
@@ -383,7 +379,7 @@ trait Future[+T] extends Awaitable[T] {
    *  with the throwable stored in `that`.
    */
   def zip[U](that: Future[U]): Future[(T, U)] = {
-    val p = newPromise[(T, U)]
+    val p = Promise[(T, U)]()
     
     this onComplete {
       case Left(t)  => p failure t
@@ -414,7 +410,7 @@ trait Future[+T] extends Awaitable[T] {
    *  }}}
    */
   def fallbackTo[U >: T](that: Future[U]): Future[U] = {
-    val p = newPromise[U]
+    val p = Promise[U]()
     onComplete {
       case r @ Right(_) ⇒ p complete r
       case _            ⇒ p completeWith that
@@ -430,7 +426,7 @@ trait Future[+T] extends Awaitable[T] {
       if (c.isPrimitive) Future.toBoxed(c) else c
     }
 
-    val p = newPromise[S]
+    val p = Promise[S]()
 
     onComplete {
       case l: Left[Throwable, _] => p complete l.asInstanceOf[Either[Throwable, S]]
@@ -469,7 +465,7 @@ trait Future[+T] extends Awaitable[T] {
    *  }}}
    */
   def andThen[U](pf: PartialFunction[Either[Throwable, T], U]): Future[T] = {
-    val p = newPromise[T]
+    val p = Promise[T]()
 
     onComplete {
       case r =>
@@ -494,7 +490,7 @@ trait Future[+T] extends Awaitable[T] {
    *  }}}
    */
   def either[U >: T](that: Future[U]): Future[U] = {
-    val p = newPromise[U]
+    val p = Promise[U]()
 
     val completePromise: PartialFunction[Either[Throwable, U], _] = {
       case Left(t) => p tryFailure t

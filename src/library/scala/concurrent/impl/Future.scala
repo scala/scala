@@ -19,29 +19,23 @@ private[concurrent] trait Future[+T] extends scala.concurrent.Future[T] with Awa
 
   implicit def executor: ExecutionContext
 
-  /** For use only within a Future.flow block or another compatible Delimited Continuations reset block.
-   *
-   *  Returns the result of this Future without blocking, by suspending execution and storing it as a
-   *  continuation until the result is available.
-   */
-  //def apply(): T @cps[Future[Any]] = shift(this flatMap (_: T => Future[Any]))
-
-  /** Tests whether this Future has been completed.
-   */
-  def isCompleted: Boolean
-
-  /** The contained value of this Future. Before this Future is completed
-   *  the value will be None. After completion the value will be Some(Right(t))
-   *  if it contains a valid result, or Some(Left(error)) if it contains
-   *  an exception.
-   */
-  def value: Option[Either[Throwable, T]]
-
-  def onComplete[U](func: Either[Throwable, T] => U): this.type
-
 }
 
-object Future {
+private[concurrent] object Future {
+  import java.{ lang => jl }
+
+  private val toBoxed = Map[Class[_], Class[_]](
+    classOf[Boolean] -> classOf[jl.Boolean],
+    classOf[Byte]    -> classOf[jl.Byte],
+    classOf[Char]    -> classOf[jl.Character],
+    classOf[Short]   -> classOf[jl.Short],
+    classOf[Int]     -> classOf[jl.Integer],
+    classOf[Long]    -> classOf[jl.Long],
+    classOf[Float]   -> classOf[jl.Float],
+    classOf[Double]  -> classOf[jl.Double],
+    classOf[Unit]    -> classOf[scala.runtime.BoxedUnit]
+  )
+
   /** Wraps a block of code into an awaitable object. */
   private[concurrent] def body2awaitable[T](body: =>T) = new Awaitable[T] {
     def ready(atMost: Duration)(implicit permit: CanAwait) = {
@@ -51,24 +45,23 @@ object Future {
     def result(atMost: Duration)(implicit permit: CanAwait) = body
   }
   
+  def boxedType(c: Class[_]): Class[_] = if (c.isPrimitive) toBoxed(c) else c
+  
   def apply[T](body: =>T)(implicit executor: ExecutionContext): Future[T] = {
     val promise = new Promise.DefaultPromise[T]()
 
     //TODO: use `dispatchFuture`?
     executor.execute(new Runnable {
-      def run = {
-        promise complete {
-          try {
-            Right(body)
-          } catch {
-            case NonFatal(e) =>
-              // Commenting out reporting for now, since it produces too much output in the tests
-              //executor.reportFailure(e)
-              scala.concurrent.resolver(e)
-          }
+      def run = promise complete {
+        try Right(body) catch {
+          case NonFatal(e) =>
+            // Commenting out reporting for now, since it produces too much output in the tests
+            //executor.reportFailure(e)
+            scala.concurrent.resolver(e)
         }
       }
     })
+    
     promise.future
   }
 
