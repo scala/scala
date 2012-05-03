@@ -774,8 +774,12 @@ abstract class ClassfileParser {
           // make unbounded Array[T] where T is a type variable into Array[T with Object]
           // (this is necessary because such arrays have a representation which is incompatible
           // with arrays of primitive types.
-          if (elemtp.typeSymbol.isAbstractType && !(elemtp <:< definitions.ObjectClass.tpe))
+          // NOTE that the comparison to Object only works for abstract types bounded by classes that are strict subclasses of Object
+          // if the bound is exactly Object, it will have been converted to Any, and the comparison will fail
+          // see also RestrictJavaArraysMap (when compiling java sources directly)
+          if (elemtp.typeSymbol.isAbstractType && !(elemtp <:< definitions.ObjectClass.tpe)) {
             elemtp = intersectionType(List(elemtp, definitions.ObjectClass.tpe))
+          }
 
           definitions.arrayType(elemtp)
         case '(' =>
