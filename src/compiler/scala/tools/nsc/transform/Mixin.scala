@@ -492,6 +492,19 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
      *  fields count as fields defined by the class itself.
      */
     private val fieldOffset = perRunCaches.newMap[Symbol, Int]()
+    
+    private val bitmapKindForCategory = perRunCaches.newMap[Name, ClassSymbol]() // TODO: make it a list
+    
+    // ByteClass, IntClass, LongClass
+    private def bitmapKind(field: Symbol): ClassSymbol = bitmapKindForCategory(bitmapCategory(field))
+    
+    private def flagsPerBitmap(field: Symbol): Int = bitmapKind(field) match {
+      case BooleanClass => 1
+      case ByteClass    => 8
+      case IntClass     => 32
+      case LongClass    => 64
+    }
+    
 
     /** The first transform; called in a pre-order traversal at phase mixin
      *  (that is, every node is processed before its children).
@@ -610,8 +623,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
       if (field.accessed hasAnnotation TransientAttr) {
         if (isNormal) BITMAP_TRANSIENT
         else BITMAP_CHECKINIT_TRANSIENT
-      }
-      else {
+      } else {
         if (isNormal) BITMAP_NORMAL
         else BITMAP_CHECKINIT
       }
@@ -696,30 +708,34 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
           stat
       }
 
-      import lazyVals._
-
       /**
        *  Return the bitmap field for 'offset'. Depending on the hierarchy it is possible to reuse
        *  the bitmap of its parents. If that does not exist yet we create one.
        */
       def bitmapFor(clazz0: Symbol, offset: Int, field: Symbol): Symbol = {
         val category   = bitmapCategory(field)
-        val bitmapName = nme.newBitmapName(category, offset / FLAGS_PER_WORD)
+        val bitmapName = nme.newBitmapName(category, offset / flagsPerBitmap(field))
         val sym        = clazz0.info.decl(bitmapName)
 
         assert(!sym.isOverloaded, sym)
         
         def createBitmap: Symbol = {
-          val sym = clazz0.newVariable(bitmapName, clazz0.pos) setInfo IntClass.tpe
+          val bitmapKind =  bitmapKindForCategory(category)
+          val sym = clazz0.newVariable(bitmapName, clazz0.pos) setInfo bitmapKind.tpe
           beforeTyper(sym addAnnotation VolatileAttr)
 
           category match {
             case nme.BITMAP_TRANSIENT | nme.BITMAP_CHECKINIT_TRANSIENT => sym addAnnotation TransientAttr
             case _                                                     =>
           }
+          val init = bitmapKind match {
+            case BooleanClass => VAL(sym) === FALSE
+            case _            => VAL(sym) === ZERO
+          }
+          
           sym setFlag PrivateLocal
           clazz0.info.decls.enter(sym)
-          addDef(clazz0.pos, VAL(sym) === ZERO)
+          addDef(clazz0.pos, init)
           sym
         }
 
@@ -728,23 +744,36 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
         else
           createBitmap
       }
+      
+      def maskForOffset(offset: Int, sym: Symbol, kind: ClassSymbol): Tree = {
+        def realOffset = offset % flagsPerBitmap(sym)
+        if (kind == LongClass ) LIT(1L << realOffset) else LIT(1 << realOffset)
+      }
 
       /** Return an (untyped) tree of the form 'Clazz.this.bmp = Clazz.this.bmp | mask'. */
-      def mkSetFlag(clazz: Symbol, offset: Int, valSym: Symbol): Tree = {
-        val bmp   = bitmapFor(clazz, offset, valSym)
-        val mask  = LIT(1 << (offset % FLAGS_PER_WORD))
-        def x     = This(clazz) DOT bmp
+      def mkSetFlag(clazz: Symbol, offset: Int, valSym: Symbol, kind: ClassSymbol): Tree = {
+        val bmp      = bitmapFor(clazz, offset, valSym)
+        def mask     = maskForOffset(offset, valSym, kind)
+        def x        = This(clazz) DOT bmp
+        def newValue = if (kind == BooleanClass) TRUE else (x GEN_| (mask, kind)) 
 
-        x === (x INT_| mask)
+        x === newValue 
       }
 
       /** Return an (untyped) tree of the form 'clazz.this.bitmapSym & mask (==|!=) 0', the
        *  precise comparison operator depending on the value of 'equalToZero'.
        */
-      def mkTest(clazz: Symbol, mask: Tree, bitmapSym: Symbol, equalToZero: Boolean): Tree = {
-        def lhs = (This(clazz) DOT bitmapSym) INT_& mask
-        if (equalToZero)  lhs INT_== ZERO
-        else              lhs INT_!= ZERO
+      def mkTest(clazz: Symbol, mask: Tree, bitmapSym: Symbol, equalToZero: Boolean, kind: ClassSymbol): Tree = {
+        val bitmapTree  = (This(clazz) DOT bitmapSym)
+        def lhs         = bitmapTree GEN_& (mask, kind)
+        kind match {
+          case BooleanClass =>
+            if (equalToZero)  NOT(bitmapTree)
+            else              bitmapTree
+          case _            =>
+            if (equalToZero)  lhs GEN_== (ZERO, kind)
+            else              lhs GEN_!= (ZERO, kind)
+        }
       }
 
       /** return a 'lazified' version of rhs. It uses double-checked locking to ensure
@@ -777,10 +806,11 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
         def nullify(sym: Symbol) = Select(This(clazz), sym.accessedOrSelf) === LIT(null)
 
         val bitmapSym = bitmapFor(clazz, offset, lzyVal)
-        val mask      = LIT(1 << (offset % FLAGS_PER_WORD))
-        def cond      = mkTest(clazz, mask, bitmapSym, true)
+        val kind      = bitmapKind(lzyVal)
+        val mask      = maskForOffset(offset, lzyVal, kind)
+        def cond      = mkTest(clazz, mask, bitmapSym, true, kind)
         val nulls     = lazyValNullables(lzyVal).toList sortBy (_.id) map nullify
-        def syncBody  = init ::: List(mkSetFlag(clazz, offset, lzyVal), UNIT)
+        def syncBody  = init ::: List(mkSetFlag(clazz, offset, lzyVal, kind), UNIT)
 
         if (nulls.nonEmpty)
           log("nulling fields inside " + lzyVal + ": " + nulls)
@@ -802,11 +832,13 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
         }
 
       def mkCheckedAccessor(clazz: Symbol, retVal: Tree, offset: Int, pos: Position, fieldSym: Symbol): Tree = {
-        val bitmapSym = bitmapFor(clazz, offset, fieldSym.getter(fieldSym.owner))
-        val mask      = LIT(1 << (offset % FLAGS_PER_WORD))
+        val sym = fieldSym.getter(fieldSym.owner)
+        val bitmapSym = bitmapFor(clazz, offset, sym)
+        val kind      = bitmapKind(sym) 
+        val mask      = maskForOffset(offset, sym, kind)
         val msg       = "Uninitialized field: " + unit.source + ": " + pos.line
         val result    =
-          IF (mkTest(clazz, mask, bitmapSym, false)) .
+          IF (mkTest(clazz, mask, bitmapSym, false, kind)) .
             THEN (retVal) .
             ELSE (THROW(UninitializedErrorClass, LIT(msg)))
 
@@ -851,7 +883,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
           else if (settings.checkInit.value && !clazz.isTrait && sym.isSetter) {
             val getter = sym.getter(clazz)
             if (needsInitFlag(getter) && fieldOffset.isDefinedAt(getter))
-              deriveDefDef(stat)(rhs => Block(List(rhs, localTyper.typed(mkSetFlag(clazz, fieldOffset(getter), getter))), UNIT))
+              deriveDefDef(stat)(rhs => Block(List(rhs, localTyper.typed(mkSetFlag(clazz, fieldOffset(getter), getter, bitmapKind(getter)))), UNIT))
             else stat
           }
           else if (sym.isModule && (!clazz.isTrait || clazz.isImplClass) && !sym.isBridge) {
@@ -879,7 +911,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
           val sym = clazz.info decl lhs.symbol.getterName suchThat (_.isGetter)
           if (needsInitAndHasOffset(sym)) {
             debuglog("adding checked getter for: " + sym + " " + lhs.symbol.flagString)
-            List(localTyper typed mkSetFlag(clazz, fieldOffset(sym), sym))
+            List(localTyper typed mkSetFlag(clazz, fieldOffset(sym), sym, bitmapKind(sym)))
           }
           else Nil
         }
@@ -917,16 +949,22 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
        *  code generation easier later.
        */
       def buildBitmapOffsets() {
-        def fold(zero: Int, fields: List[Symbol]) = {
-          var idx = zero
+        def fold(fields: List[Symbol], category: Name) = {
+          var idx = 0
           fields foreach { f =>
             fieldOffset(f) = idx
             idx += 1
           }
+
+          if (idx == 0) ()
+          else if (idx == 1) bitmapKindForCategory(category) = BooleanClass
+          else if (idx < 9)  bitmapKindForCategory(category) = ByteClass
+          else if (idx < 33) bitmapKindForCategory(category) = IntClass
+          else bitmapKindForCategory(category)               = LongClass
         }
         clazz.info.decls.toList groupBy bitmapCategory foreach {
           case (nme.NO_NAME, _)            => ()
-          case (_, fields)                 => fold(0, fields)
+          case (category, fields)          => fold(fields, category)
         }
       }
       buildBitmapOffsets()
@@ -977,7 +1015,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
                     val getter = sym.getter(clazz)
 
                     if (!needsInitFlag(getter)) init
-                    else Block(init, mkSetFlag(clazz, fieldOffset(getter), getter), UNIT)
+                    else Block(init, mkSetFlag(clazz, fieldOffset(getter), getter, bitmapKind(getter)), UNIT)
                 }
               }
               else if (needsInitFlag(sym))

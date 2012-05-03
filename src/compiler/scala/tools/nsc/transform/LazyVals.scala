@@ -12,7 +12,8 @@ abstract class LazyVals extends Transform with TypingTransformers with ast.TreeD
   import CODE._
 
   val phaseName: String = "lazyvals"
-  val FLAGS_PER_WORD: Int
+  private val FLAGS_PER_BYTE: Int = 32 // Byte
+  private def bitmapKind = ByteClass
 
   def newTransformer(unit: CompilationUnit): Transformer =
     new LazyValues(unit)
@@ -206,7 +207,7 @@ abstract class LazyVals extends Transform with TypingTransformers with ast.TreeD
      */
     private def mkLazyDef(methOrClass: Symbol, tree: Tree, offset: Int, lazyVal: Symbol): Tree = {
       val bitmapSym           = getBitmapFor(methOrClass, offset)
-      val mask                = LIT(1 << (offset % FLAGS_PER_WORD))
+      val mask                = LIT(1 << (offset % FLAGS_PER_BYTE))
       val bitmapRef = if (methOrClass.isClass) Select(This(methOrClass), bitmapSym) else Ident(bitmapSym)
 
       def mkBlock(stmt: Tree) = BLOCK(stmt, mkSetFlag(bitmapSym, mask, bitmapRef), UNIT)
@@ -219,7 +220,7 @@ abstract class LazyVals extends Transform with TypingTransformers with ast.TreeD
           (mkBlock(rhs),         UNIT)
       }
 
-      val cond = (bitmapRef INT_& mask) INT_== ZERO
+      val cond = (bitmapRef GEN_& (mask, bitmapKind)) GEN_== (ZERO, bitmapKind)
 
       atPos(tree.pos)(localTyper.typed {
         def body = gen.mkDoubleCheckedLocking(methOrClass.enclClass, cond, List(block), Nil)
@@ -228,7 +229,7 @@ abstract class LazyVals extends Transform with TypingTransformers with ast.TreeD
     }
 
     private def mkSetFlag(bmp: Symbol, mask: Tree, bmpRef: Tree): Tree =
-      bmpRef === (bmpRef INT_| mask)
+      bmpRef === (bmpRef GEN_| (mask, bitmapKind))
 
     val bitmaps = mutable.Map[Symbol, List[Symbol]]() withDefaultValue Nil
 
@@ -236,12 +237,12 @@ abstract class LazyVals extends Transform with TypingTransformers with ast.TreeD
      *  given offset.
      */
     private def getBitmapFor(meth: Symbol, offset: Int): Symbol = {
-      val n = offset / FLAGS_PER_WORD
+      val n = offset / FLAGS_PER_BYTE
       val bmps = bitmaps(meth)
       if (bmps.length > n)
         bmps(n)
       else {
-        val sym = meth.newVariable(nme.newBitmapName(nme.BITMAP_NORMAL, n), meth.pos).setInfo(IntClass.tpe)
+        val sym = meth.newVariable(nme.newBitmapName(nme.BITMAP_NORMAL, n), meth.pos).setInfo(ByteClass.tpe)
         beforeTyper {
           sym addAnnotation VolatileAttr
         }
