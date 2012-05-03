@@ -1027,7 +1027,7 @@ self =>
         val tok = in.token
         val name = ident()
         t = atPos(start) {
-          if (tok == BACKQUOTED_IDENT) new BackQuotedIdent(name)
+          if (tok == BACKQUOTED_IDENT) Ident(name) withAttachment BackquotedIdentifier
           else Ident(name)
         }
         if (in.token == DOT) {
@@ -2506,7 +2506,6 @@ self =>
       }
       else {
         val nameOffset = in.offset
-        val isBackquoted = in.token == BACKQUOTED_IDENT
         val name = ident()
         funDefRest(start, nameOffset, mods, name)
       }
@@ -2601,7 +2600,6 @@ self =>
       newLinesOpt()
       atPos(start, in.offset) {
         val nameOffset = in.offset
-        val isBackquoted = in.token == BACKQUOTED_IDENT
         val name = identForType()
         // @M! a type alias as well as an abstract type may declare type parameters
         val tparams = typeParamClauseOpt(name, null)
@@ -2660,7 +2658,6 @@ self =>
     def classDef(start: Int, mods: Modifiers): ClassDef = {
       in.nextToken
       val nameOffset = in.offset
-      val isBackquoted = in.token == BACKQUOTED_IDENT
       val name = identForType()
       atPos(start, if (name == tpnme.ERROR) start else nameOffset) {
         savingClassContextBounds {
@@ -2701,7 +2698,6 @@ self =>
     def objectDef(start: Int, mods: Modifiers): ModuleDef = {
       in.nextToken
       val nameOffset = in.offset
-      val isBackquoted = in.token == BACKQUOTED_IDENT
       val name = ident()
       val tstart = in.offset
       atPos(start, if (name == nme.ERROR) start else nameOffset) {

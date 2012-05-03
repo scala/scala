@@ -1458,6 +1458,7 @@ abstract class RefChecks extends InfoTransform with reflect.internal.transform.R
           analyzer.ImplicitNotFoundMsg.check(sym) foreach { warn =>
             unit.warning(tree.pos, "Invalid implicitNotFound message for %s%s:\n%s".format(sym, sym.locationString, warn))
           }
+
         case tpt@TypeTree() =>
           if(tpt.original != null) {
             tpt.original foreach {

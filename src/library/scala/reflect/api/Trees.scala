@@ -16,6 +16,9 @@ trait Trees { self: Universe =>
   type Modifiers >: Null <: AbsModifiers
   val NoMods: Modifiers
 
+  // TODO - Where do I put this?
+  object BackquotedIdentifier
+
   abstract class AbsModifiers {
     def modifiers: Set[Modifier]
     def hasModifier(mod: Modifier): Boolean
@@ -96,6 +99,20 @@ trait Trees { self: Universe =>
         case _ =>
           rawatt = NontrivialAttachment(pos, collection.mutable.ListBuffer[Any](att))
       }
+
+    // a) why didn't this method already exist
+    // b) what is all this "Any" business?
+    // c) am I reverse-engineering this correctly? It shouldn't be hard
+    //    to figure out what is attached.
+    def attachments: List[Any] = rawatt match {
+      case NoPosition                      => Nil
+      case NontrivialAttachment(pos, atts) => pos :: atts.toList
+      case x                               => List(x)
+    }
+    // Writing "Any" repeatedly to work within this structure
+    // is making my skin crawl.
+    def hasAttachment(x: Any) = attachments contains x
+
     def withAttachment(att: Any): this.type = { attach(att); this }
     def detach(att: Any): Unit =
       detach(att.getClass)
@@ -702,15 +719,12 @@ trait Trees { self: Universe =>
   /** Identifier <name> */
   case class Ident(name: Name) extends RefTree {
     def qualifier: Tree = EmptyTree
+    def isBackquoted = this hasAttachment BackquotedIdentifier
   }
 
   def Ident(name: String): Ident
 
   def Ident(sym: Symbol): Ident
-
-  // TODO remove this class, add a tree attachment to Ident to track whether it was backquoted
-  // copying trees will all too easily forget to distinguish subclasses
-  class BackQuotedIdent(name: Name) extends Ident(name)
 
   /** Marks underlying reference to id as boxed.
    *  @pre: id must refer to a captured variable
@@ -1163,11 +1177,11 @@ trait Trees { self: Universe =>
       new This(qual.toTypeName).copyAttrs(tree)
     def Select(tree: Tree, qualifier: Tree, selector: Name) =
       new Select(qualifier, selector).copyAttrs(tree)
-    def Ident(tree: Tree, name: Name) =
-      (tree match { // TODO: use a tree attachment to track whether this identifier was backquoted
-        case _ : BackQuotedIdent => new BackQuotedIdent(name)
-        case _ => new Ident(name)
-      }).copyAttrs(tree)
+    def Ident(tree: Tree, name: Name) = {
+      val t = new Ident(name) copyAttrs tree
+      if (tree hasAttachment BackquotedIdentifier) t withAttachment BackquotedIdentifier
+      else t
+    }
     def ReferenceToBoxed(tree: Tree, idt: Ident) =
       new ReferenceToBoxed(idt).copyAttrs(tree)
     def Literal(tree: Tree, value: Constant) =

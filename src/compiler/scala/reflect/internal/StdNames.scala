@@ -332,6 +332,11 @@ trait StdNames {
     def isSingletonName(name: Name)         = name endsWith SINGLETON_SUFFIX
     def isModuleName(name: Name)            = name endsWith MODULE_SUFFIX_NAME
 
+    def isDeprecatedIdentifierName(name: Name) = name.toTermName match {
+      case nme.`then` | nme.`macro` => true
+      case _                        => false
+    }
+
     def isOpAssignmentName(name: Name) = name match {
       case raw.NE | raw.LE | raw.GE | EMPTY => false
       case _                                =>
@@ -634,6 +639,7 @@ trait StdNames {
     val lang: NameType                 = "lang"
     val length: NameType               = "length"
     val lengthCompare: NameType        = "lengthCompare"
+    val `macro` : NameType             = "macro"
     val macroThis : NameType           = "_this"
     val macroContext : NameType        = "c"
     val main: NameType                 = "main"
@@ -690,6 +696,7 @@ trait StdNames {
     val staticModule : NameType        = "staticModule"
     val synchronized_ : NameType       = "synchronized"
     val tail: NameType                 = "tail"
+    val `then` : NameType              = "then"
     val thisModuleType: NameType       = "thisModuleType"
     val this_ : NameType               = "this"
     val throw_ : NameType              = "throw"

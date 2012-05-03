@@ -389,12 +389,8 @@ trait Importers { self: SymbolTable =>
           new This(importName(qual).toTypeName)
         case from.Select(qual, name) =>
           new Select(importTree(qual), importName(name))
-        case from.Ident(name) => tree match {
-          case _: from.BackQuotedIdent =>
-            new BackQuotedIdent(importName(name))
-          case _ =>
-            new Ident(importName(name))
-        }
+        case from.Ident(name) =>
+          new Ident(importName(name))
         case from.ReferenceToBoxed(ident) =>
           new ReferenceToBoxed(importTree(ident) match { case ident: Ident => ident })
         case from.Literal(constant @ from.Constant(_)) =>
