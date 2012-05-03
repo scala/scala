@@ -36,7 +36,7 @@ import LongMapUtils._
 
 /** A companion object for long maps.
  *
- *  @define Coll  LongMap
+ *  @define Coll  `LongMap`
  *  @define mapCanBuildFromInfo
  *    The standard `CanBuildFrom` instance for `$Coll` objects.
  *    The created value is an instance of class `MapCanBuildFrom`.
@@ -147,7 +147,7 @@ import LongMap._;
  *  @tparam T      type of the values associated with the long keys.
  *
  *  @since 2.7
- *  @define Coll immutable.LongMap
+ *  @define Coll `immutable.LongMap`
  *  @define coll immutable long integer map
  *  @define mayNotTerminateInf
  *  @define willNotTerminateInf

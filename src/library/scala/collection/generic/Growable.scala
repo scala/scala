@@ -18,11 +18,11 @@ package generic
  *  @version 2.8
  *  @since   2.8
  *  @define coll growable collection
- *  @define Coll Growable
+ *  @define Coll `Growable`
  *  @define add  add
  *  @define Add  add
  */
-trait Growable[-A] {
+trait Growable[-A] extends Clearable {
 
   /** ${Add}s a single element to this $coll.
    *
@@ -50,5 +50,5 @@ trait Growable[-A] {
   /** Clears the $coll's contents. After this operation, the
    *  $coll is empty.
    */
-  def clear()
+  def clear(): Unit
 }

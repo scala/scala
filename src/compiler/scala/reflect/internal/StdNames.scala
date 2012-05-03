@@ -272,6 +272,7 @@ trait StdNames {
     val BITMAP_PREFIX                 = "bitmap$"
     val CHECK_IF_REFUTABLE_STRING     = "check$ifrefutable$"
     val DEFAULT_GETTER_STRING         = "$default$"
+    val DEFAULT_GETTER_INIT_STRING    = "$lessinit$greater" // CONSTRUCTOR.encoded, less is more
     val DO_WHILE_PREFIX               = "doWhile$"
     val EVIDENCE_PARAM_PREFIX         = "evidence$"
     val EXCEPTION_RESULT_PREFIX       = "exceptionResult"
@@ -413,14 +414,19 @@ trait StdNames {
       name.subName(0, name.length - SETTER_SUFFIX.length)
     }
 
+    // Nominally, name$default$N, encoded for <init>
     def defaultGetterName(name: Name, pos: Int): TermName = {
-      val prefix = if (isConstructorName(name)) "init" else name
+      val prefix = if (isConstructorName(name)) DEFAULT_GETTER_INIT_STRING else name
       newTermName(prefix + DEFAULT_GETTER_STRING + pos)
     }
+    // Nominally, name from name$default$N, CONSTRUCTOR for <init>
     def defaultGetterToMethod(name: Name): TermName = {
       val p = name.pos(DEFAULT_GETTER_STRING)
-      if (p < name.length) name.toTermName.subName(0, p)
-      else name.toTermName
+      if (p < name.length) {
+        val q = name.toTermName.subName(0, p)
+        // i.e., if (q.decoded == CONSTRUCTOR.toString) CONSTRUCTOR else q
+        if (q.toString == DEFAULT_GETTER_INIT_STRING) CONSTRUCTOR else q
+      } else name.toTermName
     }
 
     // If the name ends with $nn where nn are

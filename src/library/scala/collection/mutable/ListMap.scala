@@ -18,7 +18,7 @@ import generic._
  *  @tparam A    the type of the keys contained in this list map.
  *  @tparam B    the type of the values assigned to keys in this list map.
  *
- *  @define Coll mutable.ListMap
+ *  @define Coll `mutable.ListMap`
  *  @define coll mutable list map
  *  @define thatinfo the class of the returned collection. In the standard library configuration,
  *    `That` is always `ListMap[A, B]` if the elements contained in the resulting collection are
@@ -60,7 +60,7 @@ extends AbstractMap[A, B]
 }
 
 /** $factoryInfo
- *  @define Coll mutable.ListMap
+ *  @define Coll `mutable.ListMap`
  *  @define coll mutable list map
  */
 object ListMap extends MutableMapFactory[ListMap] {

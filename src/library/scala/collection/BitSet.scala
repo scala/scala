@@ -22,7 +22,7 @@ trait BitSet extends SortedSet[Int]
 
 /** $factoryInfo
  *  @define coll bitset
- *  @define Coll BitSet
+ *  @define Coll `BitSet`
  */
 object BitSet extends BitSetFactory[BitSet] {
   val empty: BitSet = immutable.BitSet.empty

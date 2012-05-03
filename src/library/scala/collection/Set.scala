@@ -35,7 +35,7 @@ trait Set[A] extends (A => Boolean)
  *  The current default implementation of a $Coll is one of `EmptySet`, `Set1`, `Set2`, `Set3`, `Set4` in
  *  class `immutable.Set` for sets of sizes up to 4, and a `immutable.HashSet` for sets of larger sizes.
  *  @define coll set
- *  @define Coll Set
+ *  @define Coll `Set`
  */
 object Set extends SetFactory[Set] {
   def newBuilder[A] = immutable.Set.newBuilder[A]

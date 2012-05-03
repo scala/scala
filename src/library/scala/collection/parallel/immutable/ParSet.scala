@@ -16,7 +16,7 @@ import scala.collection.parallel.Combiner
 
 /** An immutable variant of `ParSet`.
  *
- *  @define Coll mutable.ParSet
+ *  @define Coll `mutable.ParSet`
  *  @define coll mutable parallel set
  */
 trait ParSet[T]
@@ -38,7 +38,7 @@ self =>
 }
 
 /** $factoryInfo
- *  @define Coll mutable.ParSet
+ *  @define Coll `mutable.ParSet`
  *  @define coll mutable parallel set
  */
 object ParSet extends ParSetFactory[ParSet] {

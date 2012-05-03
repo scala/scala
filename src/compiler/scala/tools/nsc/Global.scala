@@ -354,9 +354,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter) extends Symb
   // where I need it, and then an override in Global with the setting.
   override protected val etaExpandKeepsStar = settings.etaExpandKeepsStar.value
   // Here comes another one...
-  override protected val enableTypeVarExperimentals = (
-    settings.Xexperimental.value || !settings.XoldPatmat.value
-  )
+  override protected val enableTypeVarExperimentals = settings.Xexperimental.value
 
   // True if -Xscript has been set, indicating a script run.
   def isScriptRun = opt.script.isDefined
@@ -461,6 +459,13 @@ class Global(var currentSettings: Settings, var reporter: Reporter) extends Symb
   lazy val analyzer = new {
     val global: Global.this.type = Global.this
   } with Analyzer
+
+  // phaseName = "patmat"
+  object patmat extends {
+    val global: Global.this.type = Global.this
+    val runsAfter = List("typer")
+    val runsRightAfter = Some("typer")
+  } with PatternMatching
 
   // phaseName = "superaccessors"
   object superAccessors extends {
@@ -682,6 +687,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter) extends Symb
       analyzer.namerFactory   -> "resolve names, attach symbols to named trees",
       analyzer.packageObjects -> "load package objects",
       analyzer.typerFactory   -> "the meat and potatoes: type the trees",
+      patmat                  -> "translate match expressions",
       superAccessors          -> "add super accessors in traits and nested classes",
       extensionMethods        -> "add extension methods for inline classes",
       pickler                 -> "serialize symbol tables",

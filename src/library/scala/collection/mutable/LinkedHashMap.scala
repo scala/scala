@@ -14,7 +14,7 @@ package mutable
 import generic._
 
 /** $factoryInfo
- *  @define Coll LinkedHashMap
+ *  @define Coll `LinkedHashMap`
  *  @define coll linked hash map
  */
 object LinkedHashMap extends MutableMapFactory[LinkedHashMap] {
@@ -28,7 +28,7 @@ object LinkedHashMap extends MutableMapFactory[LinkedHashMap] {
  *  @tparam A    the type of the keys contained in this hash map.
  *  @tparam B    the type of the values assigned to keys in this hash map.
  *
- *  @define Coll LinkedHashMap
+ *  @define Coll `LinkedHashMap`
  *  @define coll linked hash map
  *  @define thatinfo the class of the returned collection. In the standard library configuration,
  *    `That` is always `LinkedHashMap[A, B]` if the elements contained in the resulting collection are

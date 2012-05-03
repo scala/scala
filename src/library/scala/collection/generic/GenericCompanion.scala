@@ -20,7 +20,7 @@ import language.higherKinds
  *  @author Martin Odersky
  *  @since 2.8
  *  @define coll  collection
- *  @define Coll  CC
+ *  @define Coll  `CC`
  */
 abstract class GenericCompanion[+CC[X] <: GenTraversable[X]] {
   /** The underlying collection type with unknown element type */

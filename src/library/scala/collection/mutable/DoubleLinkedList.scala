@@ -26,7 +26,7 @@ import generic._
  *
  *  @tparam A     the type of the elements contained in this double linked list.
  *
- *  @define Coll DoubleLinkedList
+ *  @define Coll `DoubleLinkedList`
  *  @define coll double linked list
  *  @define thatinfo the class of the returned collection. In the standard library configuration,
  *    `That` is always `DoubleLinkedList[B]` because an implicit of type `CanBuildFrom[DoubleLinkedList, B, DoubleLinkedList[B]]`
@@ -67,7 +67,7 @@ class DoubleLinkedList[A]() extends AbstractSeq[A]
 
 /** $factoryInfo
  *  @define coll double linked list
- *  @define Coll DoubleLinkedList
+ *  @define Coll `DoubleLinkedList`
  */
 object DoubleLinkedList extends SeqFactory[DoubleLinkedList] {
   /** $genericCanBuildFromInfo */

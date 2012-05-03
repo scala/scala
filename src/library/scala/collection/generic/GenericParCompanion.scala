@@ -16,7 +16,7 @@ import language.higherKinds
 /** A template class for companion objects of parallel collection classes.
  *  They should be mixed in together with `GenericCompanion` type.
  *
- *  @define Coll ParIterable
+ *  @define Coll `ParIterable`
  *  @tparam CC   the type constructor representing the collection class
  *  @since 2.8
  */

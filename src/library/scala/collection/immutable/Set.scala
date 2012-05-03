@@ -21,7 +21,7 @@ import parallel.immutable.ParSet
  *  @since 1.0
  *  @author Matthias Zenger
  *  @author Martin Odersky
- *  @define Coll immutable.Set
+ *  @define Coll `immutable.Set`
  *  @define coll immutable set
  */
 trait Set[A] extends Iterable[A]
@@ -38,7 +38,7 @@ trait Set[A] extends Iterable[A]
 }
 
 /** $factoryInfo
- *  @define Coll immutable.Set
+ *  @define Coll `immutable.Set`
  *  @define coll immutable set
  */
 object Set extends ImmutableSetFactory[Set] {

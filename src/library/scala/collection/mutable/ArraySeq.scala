@@ -27,7 +27,7 @@ import parallel.mutable.ParArray
  *  @tparam A      type of the elements contained in this array sequence.
  *  @param length  the length of the underlying array.
  *
- *  @define Coll ArraySeq
+ *  @define Coll `ArraySeq`
  *  @define coll array sequence
  *  @define thatinfo the class of the returned collection. In the standard library configuration,
  *    `That` is always `ArraySeq[B]` because an implicit of type `CanBuildFrom[ArraySeq, B, ArraySeq[B]]`
@@ -93,7 +93,7 @@ extends AbstractSeq[A]
 
 /** $factoryInfo
  *  @define coll array sequence
- *  @define Coll ArraySeq
+ *  @define Coll `ArraySeq`
  */
 object ArraySeq extends SeqFactory[ArraySeq] {
   /** $genericCanBuildFromInfo */

@@ -30,7 +30,7 @@ import mutable.StringBuilder
  *  @version 2.8
  *  @since 2.8
  *  @define coll bitset
- *  @define Coll BitSet
+ *  @define Coll `BitSet`
  */
 trait BitSetLike[+This <: BitSetLike[This] with SortedSet[Int]] extends SortedSetLike[Int, This] { self =>
 

@@ -22,6 +22,6 @@ Many other packages exist.  See the complete list on the left.
 
 Identifiers in the scala package and the [[scala.Predef]] object are always in scope by default.
 
-Some of these identifiers are type aliases provided as shortcuts to commonly used classes.  For example, List is an alias for scala.collection.immutable.[[scala.collection.immutable.List]].
+Some of these identifiers are type aliases provided as shortcuts to commonly used classes.  For example, `List` is an alias for scala.collection.immutable.[[scala.collection.immutable.List]].
 
-Other aliases refer to classes providing by the underlying platform.  For example, on the JVM, String is an alias for java.lang.String.
+Other aliases refer to classes provided by the underlying platform.  For example, on the JVM, `String` is an alias for `java.lang.String`.

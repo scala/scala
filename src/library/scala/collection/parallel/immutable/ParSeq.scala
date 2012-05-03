@@ -24,7 +24,7 @@ import scala.collection.GenSeq
 
 /** An immutable variant of `ParSeq`.
  *
- *  @define Coll mutable.ParSeq
+ *  @define Coll `mutable.ParSeq`
  *  @define coll mutable parallel sequence
  */
 trait ParSeq[+T]
@@ -40,7 +40,7 @@ extends collection/*.immutable*/.GenSeq[T]
 
 
 /** $factoryInfo
- *  @define Coll mutable.ParSeq
+ *  @define Coll `mutable.ParSeq`
  *  @define coll mutable parallel sequence
  */
 object ParSeq extends ParFactory[ParSeq] {

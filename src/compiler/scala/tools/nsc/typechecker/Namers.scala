@@ -1347,6 +1347,11 @@ trait Namers extends MethodSynthesis {
     /** Convert Java generic array type T[] to (T with Object)[]
      *  (this is necessary because such arrays have a representation which is incompatible
      *   with arrays of primitive types.)
+     *
+     *  @note the comparison to Object only works for abstract types bounded by classes that are strict subclasses of Object
+     *  if the bound is exactly Object, it will have been converted to Any, and the comparison will fail
+     *
+     *  see also sigToType
      */
     private object RestrictJavaArraysMap extends TypeMap {
       def apply(tp: Type): Type = tp match {

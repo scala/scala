@@ -26,7 +26,7 @@ package concurrent {
   object Await {
     private[concurrent] implicit val canAwaitEvidence = new CanAwait {}
     
-    def ready[T <: Awaitable[_]](awaitable: T, atMost: Duration): T = {
+    def ready[T](awaitable: Awaitable[T], atMost: Duration): awaitable.type = {
       blocking(awaitable, atMost)
       awaitable
     }

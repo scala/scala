@@ -20,7 +20,7 @@ package mutable
  *  @author  Matthias Zenger
  *  @version 1.0, 03/05/2004
  *  @since   1
- *  @define Coll SynchronizedPriorityQueue
+ *  @define Coll `SynchronizedPriorityQueue`
  *  @define coll synchronized priority queue
  */
 class SynchronizedPriorityQueue[A](implicit ord: Ordering[A]) extends PriorityQueue[A] {

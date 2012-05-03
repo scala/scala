@@ -145,6 +145,7 @@ import java.util.regex.{ Pattern, Matcher }
  */
 @SerialVersionUID(-2094783597747625537L)
 class Regex(regex: String, groupNames: String*) extends Serializable {
+  outer =>
 
   import Regex._
 
@@ -179,15 +180,14 @@ class Regex(regex: String, groupNames: String*) extends Serializable {
    *  @return       The matches
    */
   def unapplySeq(target: Any): Option[List[String]] = target match {
-    case s: java.lang.CharSequence =>
-      val m = pattern.matcher(s)
-      if (m.matches) Some((1 to m.groupCount).toList map m.group)
+    case s: CharSequence =>
+      val m = pattern matcher s
+      if (runMatcher(m)) Some((1 to m.groupCount).toList map m.group)
       else None
-    case Match(s) =>
-      unapplySeq(s)
-    case _ =>
-      None
+    case m: Match        => unapplySeq(m.matched)
+    case _               => None
   }
+  protected def runMatcher(m: Matcher) = m.matches()
 
   /** Return all matches of this regexp in given character sequence as a [[scala.util.matching.Regex.MatchIterator]],
    *  which is a special [[scala.collection.Iterator]] that returns the
@@ -373,8 +373,33 @@ class Regex(regex: String, groupNames: String*) extends Serializable {
   def split(toSplit: java.lang.CharSequence): Array[String] =
     pattern.split(toSplit)
 
+  /** Create a new Regex with the same pattern, but no requirement that
+   *  the entire String matches in extractor patterns.  For instance, the strings
+   *  shown below lead to successful matches, where they would not otherwise.
+   *
+   *  {{{
+   *  val dateP1 = """(\d\d\d\d)-(\d\d)-(\d\d)""".r.unanchored
+   *
+   *  val dateP1(year, month, day) = "Date 2011-07-15"
+   *
+   *  val copyright: String = "Date of this document: 2011-07-15" match {
+   *    case dateP1(year, month, day) => "Copyright "+year
+   *    case _                        => "No copyright"
+   *  }
+   *  }}}
+   *
+   *  @return        The new unanchored regex
+   */
+  def unanchored: UnanchoredRegex = new Regex(regex, groupNames: _*) with UnanchoredRegex { override def anchored = outer }
+  def anchored: Regex             = this
+
   /** The string defining the regular expression */
   override def toString = regex
+}
+
+trait UnanchoredRegex extends Regex {
+  override protected def runMatcher(m: Matcher) = m.find()
+  override def unanchored = this
 }
 
 /** This object defines inner classes that describe

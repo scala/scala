@@ -11,7 +11,7 @@ package scala.collection
 /** A trait for all maps upon which operations may be
  *  implemented in parallel.
  *
- *  @define Coll GenMap
+ *  @define Coll `GenMap`
  *  @define coll general map
  *  @author Martin Odersky
  *  @author Aleksandar Prokopec

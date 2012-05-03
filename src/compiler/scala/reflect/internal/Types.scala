@@ -6,7 +6,8 @@
 package scala.reflect
 package internal
 
-import scala.collection.{ mutable, immutable }
+import scala.collection.{ mutable, immutable, generic }
+import generic.Clearable
 import scala.ref.WeakReference
 import mutable.ListBuffer
 import Flags._
@@ -97,7 +98,7 @@ trait Types extends api.Types { self: SymbolTable =>
    */
   private final val propagateParameterBoundsToTypeVars = sys.props contains "scalac.debug.prop-constraints"
 
-  protected val enableTypeVarExperimentals = settings.Xexperimental.value || !settings.XoldPatmat.value
+  protected val enableTypeVarExperimentals = settings.Xexperimental.value
 
   /** Empty immutable maps to avoid allocations. */
   private val emptySymMap   = immutable.Map[Symbol, Symbol]()
@@ -115,7 +116,7 @@ trait Types extends api.Types { self: SymbolTable =>
 
   protected def newUndoLog = new UndoLog
 
-  class UndoLog {
+  class UndoLog extends Clearable {
     private type UndoPairs = List[(TypeVar, TypeConstraint)]
     private var log: UndoPairs = List()
 
@@ -139,7 +140,7 @@ trait Types extends api.Types { self: SymbolTable =>
       log ::= ((tv, tv.constr.cloneInternal))
     }
 
-    private[scala] def clear() {
+    def clear() {
       if (settings.debug.value)
         self.log("Clearing " + log.size + " entries from the undoLog.")
 
@@ -1609,12 +1610,26 @@ trait Types extends api.Types { self: SymbolTable =>
     override def typeConstructor =
       copyRefinedType(this, parents map (_.typeConstructor), decls)
 
-    /* MO to AM: This is probably not correct
-     * If they are several higher-kinded parents with different bounds we need
-     * to take the intersection of their bounds
-     */
-    override def normalize = {
-      if (isHigherKinded) {
+    final override def normalize: Type =
+      if (phase.erasedTypes) normalizeImpl
+      else {
+        if (normalized eq null) normalized = normalizeImpl
+        normalized
+      }
+
+    private var normalized: Type = _
+    private def normalizeImpl = {
+      // TODO see comments around def intersectionType and def merge
+      def flatten(tps: List[Type]): List[Type] = tps flatMap { case RefinedType(parents, ds) if ds.isEmpty => flatten(parents) case tp => List(tp) }
+      val flattened = flatten(parents).distinct
+      if (decls.isEmpty && flattened.tail.isEmpty) {
+        flattened.head
+      } else if (flattened != parents) {
+        refinedType(flattened, if (typeSymbol eq NoSymbol) NoSymbol else typeSymbol.owner, decls, NoPosition)
+      } else if (isHigherKinded) {
+        // MO to AM: This is probably not correct
+        // If they are several higher-kinded parents with different bounds we need
+        // to take the intersection of their bounds
         typeFun(
           typeParams,
           RefinedType(
@@ -1624,8 +1639,7 @@ trait Types extends api.Types { self: SymbolTable =>
             },
             decls,
             typeSymbol))
-      }
-      else super.normalize
+      } else super.normalize
     }
 
     /** A refined type P1 with ... with Pn { decls } is volatile if
@@ -2898,6 +2912,7 @@ trait Types extends api.Types { self: SymbolTable =>
     // existential.
     // were we compared to skolems at a higher skolemizationLevel?
     // EXPERIMENTAL: value will not be considered unless enableTypeVarExperimentals is true
+    // see SI-5729 for why this is still experimental
     private var encounteredHigherLevel = false
     private def shouldRepackType = enableTypeVarExperimentals && encounteredHigherLevel
 
@@ -3320,7 +3335,7 @@ trait Types extends api.Types { self: SymbolTable =>
     if (phase.erasedTypes)
       if (parents.isEmpty) ObjectClass.tpe else parents.head
     else {
-      val clazz = owner.newRefinementClass(NoPosition)
+      val clazz = owner.newRefinementClass(pos) // TODO: why were we passing in NoPosition instead of pos?
       val result = RefinedType(parents, decls, clazz)
       clazz.setInfo(result)
       result

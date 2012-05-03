@@ -49,7 +49,7 @@ import scala.collection.GenTraversableOnce
  *  @see  [[http://docs.scala-lang.org/overviews/parallel-collections/concrete-parallel-collections.html#parallel_array Scala's Parallel Collections Library overview]]
  *  section on `ParArray` for more information.
  *
- *  @define Coll ParArray
+ *  @define Coll `ParArray`
  *  @define coll parallel array
  *
  */
@@ -685,7 +685,7 @@ self =>
 
 
 /** $factoryInfo
- *  @define Coll mutable.ParArray
+ *  @define Coll `mutable.ParArray`
  *  @define coll parallel array
  */
 object ParArray extends ParFactory[ParArray] {
