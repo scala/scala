@@ -4247,6 +4247,8 @@ trait Typers extends Modes with Adaptations with Taggings {
        *  @return     ...
        */
       def typedSelect(qual: Tree, name: Name): Tree = {
+        def asDynamicCall = dyna.mkInvoke(context.tree, tree, qual, name) map (typed1(_, mode, pt))
+
         val sym = tree.symbol orElse member(qual, name) orElse {
           // symbol not found? --> try to convert implicitly to a type that does have the required
           // member.  Added `| PATTERNmode` to allow enrichment in patterns (so we can add e.g., an
@@ -4268,11 +4270,7 @@ trait Typers extends Modes with Adaptations with Taggings {
           }
 
           // try to expand according to Dynamic rules.
-          dyna.mkInvoke(context.tree, tree, qual, name) match {
-            case Some(invocation) =>
-              return typed1(invocation, mode, pt)
-            case _ =>
-          }
+          asDynamicCall foreach (x => return x)
 
           debuglog(
             "qual = "+qual+":"+qual.tpe+
@@ -4311,7 +4309,8 @@ trait Typers extends Modes with Adaptations with Taggings {
               if (err.kind != ErrorKinds.Access) {
                 context issue err
                 return setError(tree)
-              } else (tree1, Some(err))
+              }
+              else (tree1, Some(err))
             case SilentResultValue(treeAndPre) =>
               (stabilize(treeAndPre._1, treeAndPre._2, mode, pt), None)
           }
@@ -4341,10 +4340,12 @@ trait Typers extends Modes with Adaptations with Taggings {
               val qual1 = adaptToMemberWithArgs(tree, qual, name, mode, false, false)
               if (!qual1.isErrorTyped && (qual1 ne qual))
                 typed(Select(qual1, name) setPos tree.pos, mode, pt)
-              else {
-                issue(accessibleError.get)
-                setError(tree)
-              }
+              else
+                // before failing due to access, try a dynamic call.
+                asDynamicCall getOrElse {
+                  issue(accessibleError.get)
+                  setError(tree)
+                }
             case _ =>
               result
           }
