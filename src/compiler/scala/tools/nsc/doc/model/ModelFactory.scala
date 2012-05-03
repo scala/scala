@@ -231,9 +231,10 @@ class ModelFactory(val global: Global, val settings: doc.Settings) {
         Some(makeType(RefinedType(tps, EmptyScope), inTpl))
       }
     }
-    val linearization: List[(TemplateEntity, TypeEntity)] = {
-      sym.ancestors map { ancestor =>
-        val typeEntity = makeType(sym.info.baseType(ancestor), this)
+
+    protected def linearizationFromSymbol(symbol: Symbol) = {
+      symbol.ancestors map { ancestor =>
+        val typeEntity = makeType(symbol.info.baseType(ancestor), this)
         val tmplEntity = makeTemplate(ancestor) match {
           case tmpl: DocTemplateImpl  => tmpl registerSubClass this ; tmpl
           case tmpl                   => tmpl
@@ -242,6 +243,7 @@ class ModelFactory(val global: Global, val settings: doc.Settings) {
       }
     }
 
+    val linearization = linearizationFromSymbol(sym)
     def linearizationTemplates = linearization map { _._1 }
     def linearizationTypes = linearization map { _._2 }
 
@@ -282,6 +284,12 @@ class ModelFactory(val global: Global, val settings: doc.Settings) {
   abstract class PackageImpl(sym: Symbol, inTpl: => PackageImpl) extends DocTemplateImpl(sym, inTpl) with Package {
     override def inTemplate = inTpl
     override def toRoot: List[PackageImpl] = this :: inTpl.toRoot
+    override val linearization = {
+      val symbol = sym.info.members.find {
+        s => s.isPackageObject
+      } getOrElse sym
+      linearizationFromSymbol(symbol)
+    }
     val packages = members collect { case p: Package => p }
   }
 
