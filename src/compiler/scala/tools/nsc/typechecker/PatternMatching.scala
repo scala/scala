@@ -931,7 +931,7 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
     // implements the run-time aspects of (§8.2) (typedPattern has already done the necessary type transformations)
     // TODO: normalize construction, which yields a combination of a EqualityTestTreeMaker (when necessary) and a TypeTestTreeMaker
     case class TypeAndEqualityTestTreeMaker(prevBinder: Symbol, patBinder: Symbol, pt: Type, pos: Position) extends CondTreeMaker {
-      val nextBinderTp = glb(List(patBinder.info.widen, pt))
+      val nextBinderTp = glb(List(patBinder.info.widen, pt)).normalize
 
       /** Type patterns consist of types, type variables, and wildcards. A type pattern T is of one of the following forms:
           - A reference to a class C, p.C, or T#C.

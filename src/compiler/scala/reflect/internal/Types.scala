@@ -1610,12 +1610,26 @@ trait Types extends api.Types { self: SymbolTable =>
     override def typeConstructor =
       copyRefinedType(this, parents map (_.typeConstructor), decls)
 
-    /* MO to AM: This is probably not correct
-     * If they are several higher-kinded parents with different bounds we need
-     * to take the intersection of their bounds
-     */
-    override def normalize = {
-      if (isHigherKinded) {
+    final override def normalize: Type =
+      if (phase.erasedTypes) normalizeImpl
+      else {
+        if (normalized eq null) normalized = normalizeImpl
+        normalized
+      }
+
+    private var normalized: Type = _
+    private def normalizeImpl = {
+      // TODO see comments around def intersectionType and def merge
+      def flatten(tps: List[Type]): List[Type] = tps flatMap { case RefinedType(parents, ds) if ds.isEmpty => flatten(parents) case tp => List(tp) }
+      val flattened = flatten(parents).distinct
+      if (decls.isEmpty && flattened.tail.isEmpty) {
+        flattened.head
+      } else if (flattened != parents) {
+        refinedType(flattened, if (typeSymbol eq NoSymbol) NoSymbol else typeSymbol.owner, decls, NoPosition)
+      } else if (isHigherKinded) {
+        // MO to AM: This is probably not correct
+        // If they are several higher-kinded parents with different bounds we need
+        // to take the intersection of their bounds
         typeFun(
           typeParams,
           RefinedType(
@@ -1625,8 +1639,7 @@ trait Types extends api.Types { self: SymbolTable =>
             },
             decls,
             typeSymbol))
-      }
-      else super.normalize
+      } else super.normalize
     }
 
     /** A refined type P1 with ... with Pn { decls } is volatile if
@@ -3322,7 +3335,7 @@ trait Types extends api.Types { self: SymbolTable =>
     if (phase.erasedTypes)
       if (parents.isEmpty) ObjectClass.tpe else parents.head
     else {
-      val clazz = owner.newRefinementClass(NoPosition)
+      val clazz = owner.newRefinementClass(pos) // TODO: why were we passing in NoPosition instead of pos?
       val result = RefinedType(parents, decls, clazz)
       clazz.setInfo(result)
       result
