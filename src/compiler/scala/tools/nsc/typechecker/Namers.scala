@@ -608,11 +608,12 @@ trait Namers extends MethodSynthesis {
 
     def enterClassDef(tree: ClassDef) {
       val ClassDef(mods, name, tparams, impl) = tree
+      val primaryConstructorArity = treeInfo.firstConstructorArgs(impl.body).size
       tree.symbol = enterClassSymbol(tree)
       tree.symbol setInfo completerOf(tree)
 
       if (mods.isCase) {
-        if (treeInfo.firstConstructorArgs(impl.body).size > MaxFunctionArity)
+        if (primaryConstructorArity > MaxFunctionArity)
           MaxParametersCaseClassError(tree)
 
         val m = ensureCompanionObject(tree, caseModuleDef)
@@ -636,8 +637,11 @@ trait Namers extends MethodSynthesis {
 
       // Suggested location only.
       if (mods.isImplicit) {
-        log("enter implicit wrapper "+tree+", owner = "+owner)
-        enterImplicitWrapper(tree)
+        if (primaryConstructorArity == 1) {
+          log("enter implicit wrapper "+tree+", owner = "+owner)
+          enterImplicitWrapper(tree)
+        }
+        else context.unit.error(tree.pos, "implicit classes must accept exactly one primary constructor parameter")
       }
     }
 

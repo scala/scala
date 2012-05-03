@@ -1,0 +1,4 @@
+t5728.scala:3: error: implicit classes must accept exactly one primary constructor parameter
+  implicit class Foo
+                 ^
+one error found
