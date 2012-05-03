@@ -1057,7 +1057,7 @@ trait Typers extends Modes with Adaptations with Taggings with PatMatVirtualiser
           val tparams1 = cloneSymbols(tparams)
           val tree1 = if (tree.isType) tree
           else TypeApply(tree, tparams1 map (tparam =>
-            TypeTree(tparam.tpeHK) setPos tree.pos.focus)) setPos tree.pos //@M/tcpolyinfer: changed tparam.tpe to tparam.tpeHK
+            TypeTree(tparam.tpeHK) setPos tree.pos.focus)) setPos tree.pos
           context.undetparams ++= tparams1
           notifyUndetparamsAdded(tparams1)
           adapt(tree1 setType restpe.substSym(tparams, tparams1), mode, pt, original)
@@ -2960,7 +2960,7 @@ trait Typers extends Modes with Adaptations with Taggings with PatMatVirtualiser
               assert(!inPatternMode(mode), modeString(mode)) // this case cannot arise for patterns
               val lenientTargs = protoTypeArgs(tparams, formals, mt.resultApprox, pt)
               val strictTargs = map2(lenientTargs, tparams)((targ, tparam) =>
-                if (targ == WildcardType) tparam.tpe else targ) //@M TODO: should probably be .tpeHK
+                if (targ == WildcardType) tparam.tpeHK else targ)
               var remainingParams = paramTypes
               def typedArgToPoly(arg: Tree, formal: Type): Tree = { //TR TODO: cleanup
                 val lenientPt = formal.instantiateTypeParams(tparams, lenientTargs)
@@ -3925,6 +3925,10 @@ trait Typers extends Modes with Adaptations with Taggings with PatMatVirtualiser
         val sym = tp.typeSymbol.initialize
         if (sym.isAbstractType || sym.hasAbstractFlag)
           IsAbstractError(tree, sym)
+        else if (isPrimitiveValueClass(sym)) {
+          NotAMemberError(tpt, TypeTree(tp), nme.CONSTRUCTOR)
+          setError(tpt)
+        }
         else if (!(  tp == sym.thisSym.tpe // when there's no explicit self type -- with (#3612) or without self variable
                      // sym.thisSym.tpe == tp.typeOfThis (except for objects)
                   || narrowRhs(tp) <:< tp.typeOfThis

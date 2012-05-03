@@ -124,6 +124,9 @@ trait Trees { self: Universe =>
     def tpe = rawtpe
     def tpe_=(t: Type) = rawtpe = t
 
+    def resetType(): this.type   = { tpe = null ; this }
+    def resetSymbol(): this.type = { if (hasSymbol) symbol = NoSymbol ; this }
+
     /** Set tpe to give `tp` and return this.
      */
     def setType(tp: Type): this.type = { rawtpe = tp; this }
@@ -134,7 +137,7 @@ trait Trees { self: Universe =>
      *  @PP: Attempting to elaborate on the above, I find: If defineType
      *  is called on a TypeTree whose type field is null or NoType,
      *  this is recorded as "wasEmpty = true". That value is used in
-     *  ResetAttrsTraverser, which nulls out the type field of TypeTrees
+     *  ResetAttrs, which nulls out the type field of TypeTrees
      *  for which wasEmpty is true, leaving the others alone.
      *
      *  resetAllAttrs is used in situations where some speculative
@@ -169,9 +172,14 @@ trait Trees { self: Universe =>
     def hasSymbol = false
     def isDef = false
     def isEmpty = false
-    def orElse(alt: => Tree) = if (!isEmpty) this else alt
+    @inline final def orElse(alt: => Tree) = if (!isEmpty) this else alt
+    @inline final def andAlso(f: Tree => Unit): Tree = { if (!this.isEmpty) f(this) ; this }
 
-    def hasSymbolWhich(f: Symbol => Boolean) = hasSymbol && f(symbol)
+    def hasAssignedType   = (tpe ne null) && (tpe ne NoType)
+    def hasAssignedSymbol = (symbol ne null) && (symbol ne NoSymbol)
+
+    @inline final def hasSymbolWhich(f: Symbol => Boolean) = hasAssignedSymbol && f(symbol)
+    @inline final def hasTypeWhich(f: Type => Boolean)     = hasAssignedType && f(tpe)
 
     /** The canonical way to test if a Tree represents a term.
      */
@@ -325,6 +333,7 @@ trait Trees { self: Universe =>
     override def tpe_=(t: Type) =
       if (t != NoType) throw new UnsupportedOperationException("tpe_=("+t+") inapplicable for <empty>")
     override def isEmpty = true
+    override def resetType(): this.type = this
   }
 
   /** Common base class for all member definitions: types, classes,
@@ -622,6 +631,9 @@ trait Trees { self: Universe =>
    */
   case class TypeApply(fun: Tree, args: List[Tree])
        extends GenericApply {
+
+    // Testing the above theory re: args.nonEmpty.
+    require(args.nonEmpty, this)
     override def symbol: Symbol = fun.symbol
     override def symbol_=(sym: Symbol) { fun.symbol = sym }
   }
@@ -773,8 +785,8 @@ trait Trees { self: Universe =>
         case t => t
       }
 
-      orig = followOriginal(tree); setPos(tree.pos);
-      this
+      orig = followOriginal(tree)
+      this setPos tree.pos
     }
 
     override def defineType(tp: Type): this.type = {

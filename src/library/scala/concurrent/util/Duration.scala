@@ -1,12 +1,16 @@
-/**
- * Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
- */
+/*                     __                                               *\
+**     ________ ___   / /  ___     Scala API                            **
+**    / __/ __// _ | / /  / _ |    (c) 2003-2012, LAMP/EPFL             **
+**  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
+** /____/\___/_/ |_/____/_/ | |                                         **
+**                          |/                                          **
+\*                                                                      */
 
 package scala.concurrent.util
 
 import java.util.concurrent.TimeUnit
 import TimeUnit._
-import java.lang.{ Double ⇒ JDouble }
+import java.lang.{ Double => JDouble }
 import language.implicitConversions
 
 case class Deadline private (time: Duration) {
@@ -115,13 +119,13 @@ object Duration {
    * Parse TimeUnit from string representation.
    */
   protected[util] def timeUnit(unit: String): TimeUnit = unit.toLowerCase match {
-    case "d" | "day" | "days"                                       ⇒ DAYS
-    case "h" | "hour" | "hours"                                     ⇒ HOURS
-    case "min" | "minute" | "minutes"                               ⇒ MINUTES
-    case "s" | "sec" | "second" | "seconds"                         ⇒ SECONDS
-    case "ms" | "milli" | "millis" | "millisecond" | "milliseconds" ⇒ MILLISECONDS
-    case "µs" | "micro" | "micros" | "microsecond" | "microseconds" ⇒ MICROSECONDS
-    case "ns" | "nano" | "nanos" | "nanosecond" | "nanoseconds"     ⇒ NANOSECONDS
+    case "d" | "day" | "days"                                       => DAYS
+    case "h" | "hour" | "hours"                                     => HOURS
+    case "min" | "minute" | "minutes"                               => MINUTES
+    case "s" | "sec" | "second" | "seconds"                         => SECONDS
+    case "ms" | "milli" | "millis" | "millisecond" | "milliseconds" => MILLISECONDS
+    case "µs" | "micro" | "micros" | "microsecond" | "microseconds" => MICROSECONDS
+    case "ns" | "nano" | "nanos" | "nanosecond" | "nanoseconds"     => NANOSECONDS
   }
 
   val Zero: FiniteDuration = new FiniteDuration(0, NANOSECONDS)
@@ -138,26 +142,26 @@ object Duration {
   }
 
   trait Infinite {
-    this: Duration ⇒
+    this: Duration =>
 
     def +(other: Duration): Duration =
       other match {
-        case _: this.type ⇒ this
-        case _: Infinite  ⇒ throw new IllegalArgumentException("illegal addition of infinities")
-        case _            ⇒ this
+        case _: this.type => this
+        case _: Infinite  => throw new IllegalArgumentException("illegal addition of infinities")
+        case _            => this
       }
     def -(other: Duration): Duration =
       other match {
-        case _: this.type ⇒ throw new IllegalArgumentException("illegal subtraction of infinities")
-        case _            ⇒ this
+        case _: this.type => throw new IllegalArgumentException("illegal subtraction of infinities")
+        case _            => this
       }
     def *(factor: Double): Duration = this
     def /(factor: Double): Duration = this
     def /(other: Duration): Double =
       other match {
-        case _: Infinite ⇒ throw new IllegalArgumentException("illegal division of infinities")
+        case _: Infinite => throw new IllegalArgumentException("illegal division of infinities")
         // maybe questionable but pragmatic: Inf / 0 => Inf
-        case x           ⇒ Double.PositiveInfinity * (if ((this > Zero) ^ (other >= Zero)) -1 else 1)
+        case x           => Double.PositiveInfinity * (if ((this > Zero) ^ (other >= Zero)) -1 else 1)
       }
 
     def finite_? = false
@@ -300,20 +304,20 @@ class FiniteDuration(val length: Long, val unit: TimeUnit) extends Duration {
   def toUnit(u: TimeUnit) = toNanos.toDouble / NANOSECONDS.convert(1, u)
 
   override def toString = this match {
-    case Duration(1, DAYS)         ⇒ "1 day"
-    case Duration(x, DAYS)         ⇒ x + " days"
-    case Duration(1, HOURS)        ⇒ "1 hour"
-    case Duration(x, HOURS)        ⇒ x + " hours"
-    case Duration(1, MINUTES)      ⇒ "1 minute"
-    case Duration(x, MINUTES)      ⇒ x + " minutes"
-    case Duration(1, SECONDS)      ⇒ "1 second"
-    case Duration(x, SECONDS)      ⇒ x + " seconds"
-    case Duration(1, MILLISECONDS) ⇒ "1 millisecond"
-    case Duration(x, MILLISECONDS) ⇒ x + " milliseconds"
-    case Duration(1, MICROSECONDS) ⇒ "1 microsecond"
-    case Duration(x, MICROSECONDS) ⇒ x + " microseconds"
-    case Duration(1, NANOSECONDS)  ⇒ "1 nanosecond"
-    case Duration(x, NANOSECONDS)  ⇒ x + " nanoseconds"
+    case Duration(1, DAYS)         => "1 day"
+    case Duration(x, DAYS)         => x + " days"
+    case Duration(1, HOURS)        => "1 hour"
+    case Duration(x, HOURS)        => x + " hours"
+    case Duration(1, MINUTES)      => "1 minute"
+    case Duration(x, MINUTES)      => x + " minutes"
+    case Duration(1, SECONDS)      => "1 second"
+    case Duration(x, SECONDS)      => x + " seconds"
+    case Duration(1, MILLISECONDS) => "1 millisecond"
+    case Duration(x, MILLISECONDS) => x + " milliseconds"
+    case Duration(1, MICROSECONDS) => "1 microsecond"
+    case Duration(x, MICROSECONDS) => x + " microseconds"
+    case Duration(1, NANOSECONDS)  => "1 nanosecond"
+    case Duration(x, NANOSECONDS)  => x + " nanoseconds"
   }
 
   def compare(other: Duration) =

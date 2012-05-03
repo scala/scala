@@ -2548,8 +2548,8 @@ trait Types extends api.Types { self: SymbolTable =>
     override def prefix = maybeRewrap(underlying.prefix)
     override def typeArgs = underlying.typeArgs map maybeRewrap
     override def params = underlying.params mapConserve { param =>
-      val tpe1 = rewrap(param.tpe)
-      if (tpe1 eq param.tpe) param else param.cloneSymbol.setInfo(tpe1)
+      val tpe1 = rewrap(param.tpeHK)
+      if (tpe1 eq param.tpeHK) param else param.cloneSymbol.setInfo(tpe1)
     }
     override def paramTypes = underlying.paramTypes map maybeRewrap
     override def instantiateTypeParams(formals: List[Symbol], actuals: List[Type]) = {
@@ -5884,8 +5884,8 @@ trait Types extends api.Types { self: SymbolTable =>
         foreach3(tvars, tparams, variances)((tvar2, tparam2, variance2) => {
           val ok = (tparam2 != tparam) && (
                (bound contains tparam2)
-            ||  up && (tparam2.info.bounds.lo =:= tparam.tpe)
-            || !up && (tparam2.info.bounds.hi =:= tparam.tpe)
+            ||  up && (tparam2.info.bounds.lo =:= tparam.tpeHK)
+            || !up && (tparam2.info.bounds.hi =:= tparam.tpeHK)
           )
           if (ok) {
             if (tvar2.constr.inst eq null) cyclic = true
@@ -5899,7 +5899,7 @@ trait Types extends api.Types { self: SymbolTable =>
             for (tparam2 <- tparams)
               tparam2.info.bounds.lo.dealias match {
                 case TypeRef(_, `tparam`, _) =>
-                  tvar addHiBound tparam2.tpe.instantiateTypeParams(tparams, tvars)
+                  tvar addHiBound tparam2.tpeHK.instantiateTypeParams(tparams, tvars)
                 case _ =>
               }
           } else {
@@ -5909,7 +5909,7 @@ trait Types extends api.Types { self: SymbolTable =>
             for (tparam2 <- tparams)
               tparam2.info.bounds.hi.dealias match {
                 case TypeRef(_, `tparam`, _) =>
-                  tvar addLoBound tparam2.tpe.instantiateTypeParams(tparams, tvars)
+                  tvar addLoBound tparam2.tpeHK.instantiateTypeParams(tparams, tvars)
                 case _ =>
               }
           }
