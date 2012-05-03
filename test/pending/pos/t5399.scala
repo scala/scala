@@ -1,15 +1,8 @@
 class Test {
-  type AnyCyclic = Execute[Task]#CyclicException[_]
+  class A[T]
+  class B[T](val a: A[T])
 
-  trait Task[T]
+  case class CaseClass[T](x: T)
 
-  trait Execute[A[_] <: AnyRef] {
-    class CyclicException[T](val caller: A[T], val target: A[T])
-  }
-
-  def convertCyclic(c: AnyCyclic): String =
-    (c.caller, c.target) match {
-      case (caller: Task[_], target: Task[_]) => "bazinga!"
-    }
+  def break(existB: B[_]) = CaseClass(existB.a) match { case CaseClass(_) => }
 }
-
