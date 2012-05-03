@@ -627,7 +627,7 @@ trait Namers extends MethodSynthesis {
         classAndNamerOfModule(m) = (tree, null)
       }
       val owner = tree.symbol.owner
-      if (owner.isPackageObjectClass) {
+      if (settings.lint.value && owner.isPackageObjectClass) {
         context.unit.warning(tree.pos,
           "it is not recommended to define classes/objects inside of package objects.\n" +
           "If possible, define " + tree.symbol + " in " + owner.skipPackageObject + " instead."
