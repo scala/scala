@@ -131,10 +131,6 @@ trait Future[+T] extends Awaitable[T] {
 
   /* Miscellaneous */
 
-  /** Creates a new promise.
-   */
-//  protected def newPromise[S]: Promise[S]
-
   /** Returns whether the future has already been completed with
    *  a value or an exception.
    *

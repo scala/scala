@@ -128,8 +128,6 @@ object Promise {
 
     override def isCompleted(): Boolean = true
 
-    def newPromise[S]: scala.concurrent.Promise[S] = new Promise.DefaultPromise()
-
     def tryComplete(value: Either[Throwable, T]): Boolean = false
 
     def onComplete[U](func: Either[Throwable, T] => U): this.type = {
