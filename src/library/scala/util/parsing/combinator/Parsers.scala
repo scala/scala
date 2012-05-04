@@ -596,7 +596,8 @@ trait Parsers {
    *  @return        A parser for elements satisfying p(e).
    */
   def acceptIf(p: Elem => Boolean)(err: Elem => String): Parser[Elem] = Parser { in =>
-    if (p(in.first)) Success(in.first, in.rest)
+    if (in.atEnd) Failure("end of input", in)
+    else if (p(in.first)) Success(in.first, in.rest)
     else Failure(err(in.first), in)
   }
 
@@ -614,7 +615,8 @@ trait Parsers {
    *          applying `f` to it to produce the result.
    */
   def acceptMatch[U](expected: String, f: PartialFunction[Elem, U]): Parser[U] = Parser{ in =>
-    if (f.isDefinedAt(in.first)) Success(f(in.first), in.rest)
+    if (in.atEnd) Failure("end of input", in)
+    else if (f.isDefinedAt(in.first)) Success(f(in.first), in.rest)
     else Failure(expected+" expected", in)
   }
 
