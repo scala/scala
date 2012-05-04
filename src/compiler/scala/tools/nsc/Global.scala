@@ -464,13 +464,15 @@ class Global(var currentSettings: Settings, var reporter: Reporter) extends Symb
   object patmat extends {
     val global: Global.this.type = Global.this
     val runsAfter = List("typer")
-    val runsRightAfter = Some("typer")
+    // patmat doesn't need to be right after typer, as long as we run before supperaccesors
+    // (sbt does need to run right after typer, so don't conflict)
+    val runsRightAfter = None
   } with PatternMatching
 
   // phaseName = "superaccessors"
   object superAccessors extends {
     val global: Global.this.type = Global.this
-    val runsAfter = List("typer")
+    val runsAfter = List("patmat")
     val runsRightAfter = None
   } with SuperAccessors
 
