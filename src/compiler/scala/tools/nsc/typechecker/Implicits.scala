@@ -214,13 +214,13 @@ trait Implicits {
     override def hashCode = 1
   }
 
-  /** A constructor for types ?{ name: tp }, used in infer view to member
+  /** A constructor for types ?{ def/type name: tp }, used in infer view to member
    *  searches.
    */
   def memberWildcardType(name: Name, tp: Type) = {
     val result = refinedType(List(WildcardType), NoSymbol)
     name match {
-      case x: TermName => result.typeSymbol.newValue(x) setInfoAndEnter tp
+      case x: TermName => result.typeSymbol.newMethod(x) setInfoAndEnter tp
       case x: TypeName => result.typeSymbol.newAbstractType(x) setInfoAndEnter tp
     }
     result

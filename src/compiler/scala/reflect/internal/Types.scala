@@ -5719,14 +5719,15 @@ trait Types extends api.Types { self: SymbolTable =>
     val info1 = tp1.memberInfo(sym1)
     val info2 = tp2.memberInfo(sym2).substThis(tp2.typeSymbol, tp1)
     //System.out.println("specializes "+tp1+"."+sym1+":"+info1+sym1.locationString+" AND "+tp2+"."+sym2+":"+info2)//DEBUG
-    sym2.isTerm && (info1 <:< info2) /*&& (!sym2.isStable || sym1.isStable) */ ||
-    sym2.isAbstractType && {
-      val memberTp1 = tp1.memberType(sym1)
-      // println("kinds conform? "+(memberTp1, tp1, sym2, kindsConform(List(sym2), List(memberTp1), tp2, sym2.owner)))
-      info2.bounds.containsType(memberTp1) &&
-      kindsConform(List(sym2), List(memberTp1), tp1, sym1.owner)
-    } ||
-    sym2.isAliasType && tp2.memberType(sym2).substThis(tp2.typeSymbol, tp1) =:= tp1.memberType(sym1) //@MAT ok
+    (    sym2.isTerm && (info1 <:< info2) && (!sym2.isStable || sym1.isStable)
+      || sym2.isAbstractType && {
+            val memberTp1 = tp1.memberType(sym1)
+            // println("kinds conform? "+(memberTp1, tp1, sym2, kindsConform(List(sym2), List(memberTp1), tp2, sym2.owner)))
+            info2.bounds.containsType(memberTp1) &&
+            kindsConform(List(sym2), List(memberTp1), tp1, sym1.owner)
+        }
+      || sym2.isAliasType && tp2.memberType(sym2).substThis(tp2.typeSymbol, tp1) =:= tp1.memberType(sym1) //@MAT ok
+    )
   }
 
   /** A function implementing `tp1` matches `tp2`. */
