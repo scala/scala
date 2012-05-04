@@ -1,0 +1,248 @@
+
+[check 'abcdefghi'] len = 9
+sub(0, 9) == 'abcdefghi'
+sub(0, 0) == ''
+sub(1, 9) == 'bcdefghi'
+sub(0, 1) == 'a'
+sub(2, 9) == 'cdefghi'
+sub(0, 2) == 'ab'
+sub(3, 9) == 'defghi'
+sub(0, 3) == 'abc'
+sub(4, 9) == 'efghi'
+sub(0, 4) == 'abcd'
+sub(5, 9) == 'fghi'
+sub(0, 5) == 'abcde'
+sub(6, 9) == 'ghi'
+sub(0, 6) == 'abcdef'
+sub(7, 9) == 'hi'
+sub(0, 7) == 'abcdefg'
+sub(8, 9) == 'i'
+sub(0, 8) == 'abcdefgh'
+
+[check 'bcdefgh'] len = 7
+sub(0, 7) == 'bcdefgh'
+sub(0, 0) == ''
+sub(1, 7) == 'cdefgh'
+sub(0, 1) == 'b'
+sub(2, 7) == 'defgh'
+sub(0, 2) == 'bc'
+sub(3, 7) == 'efgh'
+sub(0, 3) == 'bcd'
+sub(4, 7) == 'fgh'
+sub(0, 4) == 'bcde'
+sub(5, 7) == 'gh'
+sub(0, 5) == 'bcdef'
+sub(6, 7) == 'h'
+sub(0, 6) == 'bcdefg'
+
+[check 'cdefg'] len = 5
+sub(0, 5) == 'cdefg'
+sub(0, 0) == ''
+sub(1, 5) == 'defg'
+sub(0, 1) == 'c'
+sub(2, 5) == 'efg'
+sub(0, 2) == 'cd'
+sub(3, 5) == 'fg'
+sub(0, 3) == 'cde'
+sub(4, 5) == 'g'
+sub(0, 4) == 'cdef'
+
+[check 'def'] len = 3
+sub(0, 3) == 'def'
+sub(0, 0) == ''
+sub(1, 3) == 'ef'
+sub(0, 1) == 'd'
+sub(2, 3) == 'f'
+sub(0, 2) == 'de'
+
+[check 'e'] len = 1
+sub(0, 1) == 'e'
+sub(0, 0) == ''
+
+[check 'abcdefgh'] len = 8
+sub(0, 8) == 'abcdefgh'
+sub(0, 0) == ''
+sub(1, 8) == 'bcdefgh'
+sub(0, 1) == 'a'
+sub(2, 8) == 'cdefgh'
+sub(0, 2) == 'ab'
+sub(3, 8) == 'defgh'
+sub(0, 3) == 'abc'
+sub(4, 8) == 'efgh'
+sub(0, 4) == 'abcd'
+sub(5, 8) == 'fgh'
+sub(0, 5) == 'abcde'
+sub(6, 8) == 'gh'
+sub(0, 6) == 'abcdef'
+sub(7, 8) == 'h'
+sub(0, 7) == 'abcdefg'
+
+[check 'bcdefg'] len = 6
+sub(0, 6) == 'bcdefg'
+sub(0, 0) == ''
+sub(1, 6) == 'cdefg'
+sub(0, 1) == 'b'
+sub(2, 6) == 'defg'
+sub(0, 2) == 'bc'
+sub(3, 6) == 'efg'
+sub(0, 3) == 'bcd'
+sub(4, 6) == 'fg'
+sub(0, 4) == 'bcde'
+sub(5, 6) == 'g'
+sub(0, 5) == 'bcdef'
+
+[check 'cdef'] len = 4
+sub(0, 4) == 'cdef'
+sub(0, 0) == ''
+sub(1, 4) == 'def'
+sub(0, 1) == 'c'
+sub(2, 4) == 'ef'
+sub(0, 2) == 'cd'
+sub(3, 4) == 'f'
+sub(0, 3) == 'cde'
+
+[check 'de'] len = 2
+sub(0, 2) == 'de'
+sub(0, 0) == ''
+sub(1, 2) == 'e'
+sub(0, 1) == 'd'
+
+[check ''] len = 0
+
+[check 'abcdefg'] len = 7
+sub(0, 7) == 'abcdefg'
+sub(0, 0) == ''
+sub(1, 7) == 'bcdefg'
+sub(0, 1) == 'a'
+sub(2, 7) == 'cdefg'
+sub(0, 2) == 'ab'
+sub(3, 7) == 'defg'
+sub(0, 3) == 'abc'
+sub(4, 7) == 'efg'
+sub(0, 4) == 'abcd'
+sub(5, 7) == 'fg'
+sub(0, 5) == 'abcde'
+sub(6, 7) == 'g'
+sub(0, 6) == 'abcdef'
+
+[check 'bcdef'] len = 5
+sub(0, 5) == 'bcdef'
+sub(0, 0) == ''
+sub(1, 5) == 'cdef'
+sub(0, 1) == 'b'
+sub(2, 5) == 'def'
+sub(0, 2) == 'bc'
+sub(3, 5) == 'ef'
+sub(0, 3) == 'bcd'
+sub(4, 5) == 'f'
+sub(0, 4) == 'bcde'
+
+[check 'cde'] len = 3
+sub(0, 3) == 'cde'
+sub(0, 0) == ''
+sub(1, 3) == 'de'
+sub(0, 1) == 'c'
+sub(2, 3) == 'e'
+sub(0, 2) == 'cd'
+
+[check 'd'] len = 1
+sub(0, 1) == 'd'
+sub(0, 0) == ''
+
+[check 'abcdef'] len = 6
+sub(0, 6) == 'abcdef'
+sub(0, 0) == ''
+sub(1, 6) == 'bcdef'
+sub(0, 1) == 'a'
+sub(2, 6) == 'cdef'
+sub(0, 2) == 'ab'
+sub(3, 6) == 'def'
+sub(0, 3) == 'abc'
+sub(4, 6) == 'ef'
+sub(0, 4) == 'abcd'
+sub(5, 6) == 'f'
+sub(0, 5) == 'abcde'
+
+[check 'bcde'] len = 4
+sub(0, 4) == 'bcde'
+sub(0, 0) == ''
+sub(1, 4) == 'cde'
+sub(0, 1) == 'b'
+sub(2, 4) == 'de'
+sub(0, 2) == 'bc'
+sub(3, 4) == 'e'
+sub(0, 3) == 'bcd'
+
+[check 'cd'] len = 2
+sub(0, 2) == 'cd'
+sub(0, 0) == ''
+sub(1, 2) == 'd'
+sub(0, 1) == 'c'
+
+[check ''] len = 0
+
+[check 'abcde'] len = 5
+sub(0, 5) == 'abcde'
+sub(0, 0) == ''
+sub(1, 5) == 'bcde'
+sub(0, 1) == 'a'
+sub(2, 5) == 'cde'
+sub(0, 2) == 'ab'
+sub(3, 5) == 'de'
+sub(0, 3) == 'abc'
+sub(4, 5) == 'e'
+sub(0, 4) == 'abcd'
+
+[check 'bcd'] len = 3
+sub(0, 3) == 'bcd'
+sub(0, 0) == ''
+sub(1, 3) == 'cd'
+sub(0, 1) == 'b'
+sub(2, 3) == 'd'
+sub(0, 2) == 'bc'
+
+[check 'c'] len = 1
+sub(0, 1) == 'c'
+sub(0, 0) == ''
+
+[check 'abcd'] len = 4
+sub(0, 4) == 'abcd'
+sub(0, 0) == ''
+sub(1, 4) == 'bcd'
+sub(0, 1) == 'a'
+sub(2, 4) == 'cd'
+sub(0, 2) == 'ab'
+sub(3, 4) == 'd'
+sub(0, 3) == 'abc'
+
+[check 'bc'] len = 2
+sub(0, 2) == 'bc'
+sub(0, 0) == ''
+sub(1, 2) == 'c'
+sub(0, 1) == 'b'
+
+[check ''] len = 0
+
+[check 'abc'] len = 3
+sub(0, 3) == 'abc'
+sub(0, 0) == ''
+sub(1, 3) == 'bc'
+sub(0, 1) == 'a'
+sub(2, 3) == 'c'
+sub(0, 2) == 'ab'
+
+[check 'b'] len = 1
+sub(0, 1) == 'b'
+sub(0, 0) == ''
+
+[check 'ab'] len = 2
+sub(0, 2) == 'ab'
+sub(0, 0) == ''
+sub(1, 2) == 'b'
+sub(0, 1) == 'a'
+
+[check ''] len = 0
+
+[check 'a'] len = 1
+sub(0, 1) == 'a'
+sub(0, 0) == ''
