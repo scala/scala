@@ -1,0 +1,11 @@
+t5106.scala:3: error: type mismatch;
+ found   : Int(4)
+ required: String
+    val (n, l): (String, Int) = (4, "")
+                                 ^
+t5106.scala:3: error: type mismatch;
+ found   : String("")
+ required: Int
+    val (n, l): (String, Int) = (4, "")
+                                    ^
+two errors found
