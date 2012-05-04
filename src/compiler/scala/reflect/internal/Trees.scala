@@ -315,11 +315,19 @@ trait Trees extends api.Trees { self: SymbolTable =>
   class ChangeOwnerTraverser(val oldowner: Symbol, val newowner: Symbol) extends Traverser {
     def changeOwner(tree: Tree) = tree match {
       case Return(expr) =>
-        if (tree.symbol == oldowner)
-          tree.symbol = newowner
+        if (tree.symbol == oldowner) {
+          // SI-5612
+          if (newowner hasTransOwner oldowner)
+            log("NOT changing owner of %s because %s is nested in %s".format(tree, newowner, oldowner))
+          else {
+            log("changing owner of %s: %s => %s".format(tree, oldowner, newowner))
+            tree.symbol = newowner
+          }
+        }
       case _: DefTree | _: Function =>
-        if (tree.symbol != NoSymbol && tree.symbol.owner == oldowner)
+        if (tree.symbol != NoSymbol && tree.symbol.owner == oldowner) {
           tree.symbol.owner = newowner
+        }
       case _ =>
     }
     override def traverse(tree: Tree) {
