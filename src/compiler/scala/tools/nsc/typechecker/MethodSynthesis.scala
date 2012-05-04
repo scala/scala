@@ -234,11 +234,16 @@ trait MethodSynthesis {
         // TODO: need to shuffle annotations between wrapper and class.
         val wrapper = ImplicitClassWrapper(cd)
         val meth = wrapper.derivedSym
-        val mdef = context.unit.synthetics(meth)
-        context.unit.synthetics -= meth
-        meth setAnnotations deriveAnnotations(annotations, MethodTargetClass, false)
-        cd.symbol setAnnotations deriveAnnotations(annotations, ClassTargetClass, true)
-        List(cd, mdef)
+        context.unit.synthetics get meth match {
+          case Some(mdef) =>
+            context.unit.synthetics -= meth
+            meth setAnnotations deriveAnnotations(annotations, MethodTargetClass, false)
+            cd.symbol setAnnotations deriveAnnotations(annotations, ClassTargetClass, true)
+            List(cd, mdef)
+          case _ =>
+            // Shouldn't happen, but let's give ourselves a reasonable error when it does
+            abort("No synthetics for " + meth + ": synthetics contains " + context.unit.synthetics.keys.mkString(", "))
+        }
       case _ =>
         List(stat)
       }
@@ -373,7 +378,9 @@ trait MethodSynthesis {
       def completer(sym: Symbol): Type = ??? // not needed
       def createAndEnterSymbol(): Symbol = enterSyntheticSym(derivedTree)
       def derivedSym: Symbol = {
-        val result = enclClass.info decl name
+        // Only methods will do! Don't want to pick up any stray
+        // companion objects of the same name.
+        val result = enclClass.info decl name suchThat (_.isMethod)
         assert(result != NoSymbol, "not found: "+name+" in "+enclClass+" "+enclClass.info.decls)
         result
       }
