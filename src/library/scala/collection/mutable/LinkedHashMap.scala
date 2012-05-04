@@ -132,6 +132,14 @@ class LinkedHashMap[A, B] extends AbstractMap[A, B]
     }
   }
 
+  protected override def foreachEntry[C](f: Entry => C) {
+    var cur = firstEntry
+    while (cur ne null) {
+      f(cur)
+      cur = cur.later
+    }
+  }
+
   override def clear() {
     clearTable()
     firstEntry = null
