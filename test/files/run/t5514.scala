@@ -8,28 +8,28 @@ import scala.util.parsing.input.Position
 
 
 
-object DemoApp extends App {
-  val parsers = new DemoParsers
-  val reader = new DemoReader(10)
-  val result = parsers.startsWith("s").*(reader)
-  Console println result
-}
-
-
 class DemoReader(n: Int) extends Reader[String] {
   def atEnd = n == 0
-  def first = "s" + n
+  def first = if (n >= 0) "s" + n else throw new IllegalArgumentException("No more input.")
   def rest = new DemoReader(n - 1)
   def pos = new Position {
     def line = 0
     def column = 0
     def lineContents = first
   }
-  println("reader: " + n)
+  println("constructed reader: " + n)
 }
 
 
-class DemoParsers extends Parsers {
+object Test extends App with Parsers {
   type Elem = String
   def startsWith(prefix: String) = acceptIf(_ startsWith prefix)("Error: " + _)
+  
+  val resrep = startsWith("s").*(new DemoReader(10))
+  Console println resrep
+  
+  val resrep5 = repN(5, startsWith("s"))(new DemoReader(10))
+  Console println resrep5
 }
+
+
