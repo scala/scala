@@ -18,7 +18,7 @@ object Test {
   
   def main(args: Array[String]) {
     val values = mutable.Map(1 -> 1).values
-    assert(serializeDeserialize(values) == values)
+    assert(serializeDeserialize(values).toList == values.toList)
     
     val keyset = mutable.Map(1 -> 1).keySet
     assert(serializeDeserialize(keyset) == keyset)
@@ -28,6 +28,9 @@ object Test {
     
     val defaultmap = immutable.Map(1 -> 1).withDefaultValue(1)
     assert(serializeDeserialize(defaultmap) == defaultmap)
+    
+    val minusmap = mutable.Map(1 -> 1).withDefault(x => -x)
+    assert(serializeDeserialize(minusmap) == minusmap)
   }
   
 }
