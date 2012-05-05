@@ -3,7 +3,7 @@ reload: CrashOnLoad.scala
 askTypeCompletion at CrashOnLoad.scala(6,12)
 ================================================================================
 [response] aksTypeCompletion at (6,12)
-retrieved 123 members
+retrieved 124 members
 [accessible:  true] `class GroupedIteratorIterator[B]#GroupedIterator`
 [accessible:  true] `method !=(x$1: Any)Boolean`
 [accessible:  true] `method !=(x$1: AnyRef)Boolean`
@@ -29,6 +29,7 @@ retrieved 123 members
 [accessible:  true] `method copyToArray[B >: B](xs: Array[B], start: Int)Unit`
 [accessible:  true] `method copyToArray[B >: B](xs: Array[B], start: Int, len: Int)Unit`
 [accessible:  true] `method copyToBuffer[B >: B](dest: scala.collection.mutable.Buffer[B])Unit`
+[accessible:  true] `method corresponds[B](that: scala.collection.GenTraversableOnce[B])(p: (B, B) => Boolean)Boolean`
 [accessible:  true] `method count(p: B => Boolean)Int`
 [accessible:  true] `method drop(n: Int)Iterator[B]`
 [accessible:  true] `method dropWhile(p: B => Boolean)Iterator[B]`
