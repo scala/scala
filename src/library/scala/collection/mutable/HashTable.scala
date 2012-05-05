@@ -187,7 +187,7 @@ trait HashTable[A, Entry >: Null <: HashEntry[A, Entry]] extends HashTable.HashU
   }
 
   /** Avoid iterator for a 2x faster traversal. */
-  protected final def foreachEntry[C](f: Entry => C) {
+  protected def foreachEntry[C](f: Entry => C) {
     val iterTable = table
     var idx       = lastPopulatedIndex
     var es        = iterTable(idx)

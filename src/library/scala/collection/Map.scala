@@ -45,7 +45,7 @@ object Map extends MapFactory[Map] {
   /** An abstract shell used by { mutable, immutable }.Map but not by collection.Map
    *  because of variance issues.
    */
-  abstract class WithDefault[A, +B](underlying: Map[A, B], d: A => B) extends AbstractMap[A, B] with Map[A, B] {
+  abstract class WithDefault[A, +B](underlying: Map[A, B], d: A => B) extends AbstractMap[A, B] with Map[A, B] with Serializable {
     override def size               = underlying.size
     def get(key: A)                 = underlying.get(key) // removed in 2.9: orElse Some(default(key))
     def iterator                    = underlying.iterator
