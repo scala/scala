@@ -18,7 +18,11 @@ final class SeqCharSequence(val xs: collection.IndexedSeq[Char]) extends CharSeq
 }
 
 final class ArrayCharSequence(val xs: Array[Char], start: Int, end: Int) extends CharSequence {
-  def this(xs: Array[Char]) = this(xs, 0, xs.length)
+  // yikes
+  // java.lang.VerifyError: (class: scala/runtime/ArrayCharSequence, method: <init> signature: ([C)V)
+  //   Constructor must call super() or this()
+  //
+  // def this(xs: Array[Char]) = this(xs, 0, xs.length)
 
   def length: Int = math.max(0, end - start)
   def charAt(index: Int): Char = {
