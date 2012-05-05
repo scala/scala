@@ -130,16 +130,18 @@ object ScalaRunTime {
     case null => throw new NullPointerException
   }
 
-  /** Convert a numeric value array to an object array.
+  /** Convert an array to an object array.
    *  Needed to deal with vararg arguments of primitive types that are passed
    *  to a generic Java vararg parameter T ...
    */
-  def toObjectArray(src: AnyRef): Array[Object] = {
-    val length = array_length(src)
-    val dest = new Array[Object](length)
-    for (i <- 0 until length)
-      array_update(dest, i, array_apply(src, i))
-    dest
+  def toObjectArray(src: AnyRef): Array[Object] = src match {
+    case x: Array[AnyRef] => x
+    case _ =>
+      val length = array_length(src)
+      val dest = new Array[Object](length)
+      for (i <- 0 until length)
+        array_update(dest, i, array_apply(src, i))
+      dest
   }
 
   def toArray[T](xs: collection.Seq[T]) = {

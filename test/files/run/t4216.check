@@ -1,0 +1,34 @@
+Type in expressions to have them evaluated.
+Type :help for more information.
+
+scala> def f[A: ArrayTag](a: A) = java.util.Arrays.asList(Array(a): _*)
+f: [A](a: A)(implicit evidence$1: ArrayTag[A])java.util.List[A]
+
+scala> f(".")
+res0: java.util.List[String] = [.]
+
+scala> f(0)
+res1: java.util.List[Int] = [0]
+
+scala> def i(a: Int) = java.util.Arrays.asList(Array(a): _*)
+i: (a: Int)java.util.List[Int]
+
+scala> i(0)
+res2: java.util.List[Int] = [0]
+
+scala> def o(a: Any) = java.util.Arrays.asList(Array(a): _*)
+o: (a: Any)java.util.List[Any]
+
+scala> o(".")
+res3: java.util.List[Any] = [.]
+
+scala> class V(val a: Int) extends AnyVal
+defined class V
+
+scala> f(new V(0))
+res4: java.util.List[V] = [V@0]
+
+scala> o(new V(0))
+res5: java.util.List[Any] = [V@0]
+
+scala> 

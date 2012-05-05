@@ -449,7 +449,8 @@ abstract class UnCurry extends InfoTransform
           }
 
         afterUncurry {
-          if (isJava && isPrimitiveArray(suffix.tpe) && isArrayOfSymbol(fun.tpe.params.last.tpe, ObjectClass)) {
+          if (isJava && !isReferenceArray(suffix.tpe) && isArrayOfSymbol(fun.tpe.params.last.tpe, ObjectClass)) {
+            // The array isn't statically known to be a reference array, so call ScalaRuntime.toObjectArray.
             suffix = localTyper.typedPos(pos) {
               gen.mkRuntimeCall(nme.toObjectArray, List(suffix))
             }
