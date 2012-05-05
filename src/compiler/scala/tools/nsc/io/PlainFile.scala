@@ -51,6 +51,7 @@ class PlainFile(val givenPath: Path) extends AbstractFile {
   override def output = givenPath.toFile.outputStream()
   override def sizeOption = Some(givenPath.length.toInt)
 
+  override def toString = path
   override def hashCode(): Int = fpath.hashCode
   override def equals(that: Any): Boolean = that match {
     case x: PlainFile => fpath == x.fpath

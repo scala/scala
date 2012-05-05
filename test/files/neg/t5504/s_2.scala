@@ -1,5 +1,8 @@
+// b.scala
+package foo
+
 object Test {
   def main(args: Array[String]): Unit = {
-    J_2.f(new Bippy())
+    println(foo.m)
   }
 }

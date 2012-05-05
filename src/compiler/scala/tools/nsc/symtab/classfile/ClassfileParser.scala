@@ -1064,7 +1064,8 @@ abstract class ClassfileParser {
     def className(name: Name): Name =
       name.subName(name.lastPos('.') + 1, name.length)
 
-    def enterClassAndModule(entry: InnerClassEntry, completer: global.loaders.SymbolLoader, jflags: Int) {
+    def enterClassAndModule(entry: InnerClassEntry, file: AbstractFile, jflags: Int) {
+      val completer   = new global.loaders.ClassfileLoader(file)
       val name        = entry.originalName
       var sflags      = toScalaClassFlags(jflags)
       val owner       = getOwner(jflags)
@@ -1073,6 +1074,8 @@ abstract class ClassfileParser {
       val innerModule = owner.newModule(name.toTermName, NoPosition, sflags) setInfo completer
 
       innerModule.moduleClass setInfo global.loaders.moduleClassLoader
+      List(innerClass, innerModule.moduleClass) foreach (_.associatedFile = file)
+
       scope enter innerClass
       scope enter innerModule
 
@@ -1094,7 +1097,7 @@ abstract class ClassfileParser {
         val file = global.classPath.findSourceFile(entry.externalName.toString) getOrElse {
           throw new AssertionError(entry.externalName)
         }
-        enterClassAndModule(entry, new global.loaders.ClassfileLoader(file), entry.jflags)
+        enterClassAndModule(entry, file, entry.jflags)
       }
     }
   }

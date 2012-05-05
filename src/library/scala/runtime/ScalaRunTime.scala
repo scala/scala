@@ -293,8 +293,12 @@ object ScalaRunTime {
    */
   def stringOf(arg: Any): String = stringOf(arg, scala.Int.MaxValue)
   def stringOf(arg: Any, maxElements: Int): String = {
-    def isScalaClass(x: AnyRef) =
-      Option(x.getClass.getPackage) exists (_.getName startsWith "scala.")
+    def packageOf(x: AnyRef) = x.getClass.getPackage match {
+      case null   => ""
+      case p      => p.getName
+    }
+    def isScalaClass(x: AnyRef)         = packageOf(x) startsWith "scala."
+    def isScalaCompilerClass(x: AnyRef) = packageOf(x) startsWith "scala.tools.nsc."
 
     // When doing our own iteration is dangerous
     def useOwnToString(x: Any) = x match {
@@ -310,7 +314,8 @@ object ScalaRunTime {
       case _: TraversableView[_, _] => true
       // Don't want to a) traverse infinity or b) be overly helpful with peoples' custom
       // collections which may have useful toString methods - ticket #3710
-      case x: Traversable[_]  => !x.hasDefiniteSize || !isScalaClass(x)
+      // or c) print AbstractFiles which are somehow also Iterable[AbstractFile]s.
+      case x: Traversable[_] => !x.hasDefiniteSize || !isScalaClass(x) || isScalaCompilerClass(x)
       // Otherwise, nothing could possibly go wrong
       case _ => false
     }

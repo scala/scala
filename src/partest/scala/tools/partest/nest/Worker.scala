@@ -357,11 +357,11 @@ class Worker(val fileManager: FileManager, params: TestRunParams) extends Actor 
 
   private def compareOutput(dir: File, logFile: File): String = {
     val checkFile = getCheckFilePath(dir, kind)
-    // if check file exists, compare with log file
     val diff =
       if (checkFile.canRead) compareFiles(logFile, checkFile.jfile)
       else file2String(logFile)
 
+    // if check file exists, compare with log file
     if (diff != "" && fileManager.updateCheck) {
       NestUI.verbose("Updating checkfile " + checkFile.jfile)
       val toWrite = if (checkFile.exists) checkFile else getCheckFilePath(dir, "")

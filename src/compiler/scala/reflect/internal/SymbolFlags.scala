@@ -162,7 +162,7 @@ trait SymbolFlags {
       case _         => abort("setNotFlag on invalid flag: " + flag)
     })
 
-    protected def shortSymbolClass = getClass.getName.split('.').last.stripPrefix("Symbols$")
+    def shortSymbolClass = getClass.getName.split('.').last.stripPrefix("Symbols$")
     def symbolCreationString: String = (
       "%s%25s | %-40s | %s".format(
         if (settings.uniqid.value) "%06d | ".format(id) else "",

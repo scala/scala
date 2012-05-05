@@ -622,19 +622,23 @@ trait ContextErrors {
         setError(tree)
       }
 
-      // checkNoDoubleDefs...
-      // @PP: I hacked the filename in (context0.unit) to work around SI-4893.  It would be
-      // much better if every symbol could offer some idea of where it came from, else
-      // the obviously untrue claim that something has been defined twice can only frustrate.
-      // There's no direct test because partest doesn't work, but to reproduce, separately
-      // compile the next two lines:
-      //    package object foo { val x: Class[_] = null }
-      //    package foo
       def DefDefinedTwiceError(sym0: Symbol, sym1: Symbol) = {
+        // Most of this hard work is associated with SI-4893.
         val isBug = sym0.isAbstractType && sym1.isAbstractType && (sym0.name startsWith "_$")
-        issueSymbolTypeError(sym0, sym1+" is defined twice in " + context0.unit
-          + ( if (isBug) "\n(this error is likely due to a bug in the scala compiler involving wildcards in package objects)" else "" )
+        val addendums = List(
+          if (sym0.associatedFile eq sym1.associatedFile)
+            Some("conflicting symbols both originated in file '%s'".format(sym0.associatedFile.canonicalPath))
+          else if ((sym0.associatedFile ne null) && (sym1.associatedFile ne null))
+            Some("conflicting symbols originated in files '%s' and '%s'".format(sym0.associatedFile.canonicalPath, sym1.associatedFile.canonicalPath))
+          else None ,
+          if (isBug) Some("Note: this may be due to a bug in the compiler involving wildcards in package objects") else None
         )
+        val addendum = addendums.flatten match {
+          case Nil    => ""
+          case xs     => xs.mkString("\n  ", "\n  ", "")
+        }
+
+        issueSymbolTypeError(sym0, sym1+" is defined twice" + addendum)
       }
 
       // cyclic errors
