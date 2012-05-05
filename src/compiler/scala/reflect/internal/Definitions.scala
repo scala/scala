@@ -434,6 +434,10 @@ trait Definitions extends reflect.api.StandardDefinitions {
       case TypeRef(_, ArrayClass, arg :: Nil) => isPrimitiveValueClass(arg.typeSymbol)
       case _                                  => false
     }
+    def isReferenceArray(tp: Type) = tp match {
+      case TypeRef(_, ArrayClass, arg :: Nil) => arg.typeSymbol.info <:< AnyRefClass.tpe
+      case _                                  => false
+    }
     def isArrayOfSymbol(tp: Type, elem: Symbol) = tp match {
       case TypeRef(_, ArrayClass, arg :: Nil) => arg.typeSymbol == elem
       case _                                  => false
