@@ -84,7 +84,7 @@ private final class CachedCompiler0(args: Array[String], initialLog: WeakLog) ex
 			} finally {
 				compiler.clear()
 			}
-			dreporter.problems foreach { p => callback.problem(p.position, p.message, p.severity, true) }
+			dreporter.problems foreach { p => callback.problem(p.category, p.position, p.message, p.severity, true) }
 		}
 		dreporter.printSummary()
 		if(!noErrors(dreporter)) handleErrors(dreporter, log)
@@ -96,10 +96,14 @@ private final class CachedCompiler0(args: Array[String], initialLog: WeakLog) ex
 	}
 	def processUnreportedWarnings(run: compiler.Run)
 	{
-			implicit def listToBoolean[T](l: List[T]): Boolean = error("source compatibility only, should never be called")
-			implicit def listToInt[T](l: List[T]): Int = error("source compatibility only, should never be called")
-		compiler.logUnreportedWarnings(run.deprecationWarnings)
-		compiler.logUnreportedWarnings(run.uncheckedWarnings)
+			// allConditionalWarnings and the ConditionalWarning class are only in 2.10+
+			final class CondWarnCompat(val what: String, val warnings: mutable.ListBuffer[(compiler.Position, String)])
+			implicit def compat(run: AnyRef): Compat = new Compat
+			final class Compat { def allConditionalWarnings = List[CondWarnCompat]() }
+
+		val warnings = run.allConditionalWarnings
+		if(!warnings.isEmpty)
+			compiler.logUnreportedWarnings(warnings.map(cw => ("" /*cw.what*/, cw.warnings.toList)))
 	}
 	object compiler extends CallbackGlobal(command.settings, dreporter)
 	{
@@ -149,13 +153,12 @@ private final class CachedCompiler0(args: Array[String], initialLog: WeakLog) ex
 			meth.setAccessible(true)
 			meth.invoke(this)
 		}
-		def logUnreportedWarnings(seq: List[(Position,String)]): Unit = // Scala 2.10.x and later
+		def logUnreportedWarnings(seq: Seq[(String, List[(Position,String)])]): Unit = // Scala 2.10.x and later
 		{
-			for( (pos, msg) <- seq) yield
-				callback.problem(reporter.asInstanceOf[DelegatingReporter].convert(pos), msg, Severity.Warn, false)
+			val drep = reporter.asInstanceOf[DelegatingReporter]
+			for( (what, warnings) <- seq; (pos, msg) <- warnings) yield
+				callback.problem(what, drep.convert(pos), msg, Severity.Warn, false)
 		}
-		def logUnreportedWarnings(count: Boolean): Unit = () // for source compatibility with Scala 2.8.x
-		def logUnreportedWarnings(count: Int): Unit = () // for source compatibility with Scala 2.9.x
 		
 		def set(callback: AnalysisCallback, dreporter: DelegatingReporter)
 		{
