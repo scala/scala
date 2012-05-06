@@ -1,0 +1,4 @@
+stalepkg_2.scala:6: error: Foo is already defined as class Foo in package object stalepkg
+  class Foo
+        ^
+one error found
