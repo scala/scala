@@ -1,0 +1,4 @@
+t3614.scala:2: error: class type required but AnyRef{def a: <?>} found
+  def v = new ({ def a=0 })
+               ^
+one error found
