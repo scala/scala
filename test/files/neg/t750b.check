@@ -1,0 +1,15 @@
+Test.scala:4: error: type mismatch;
+ found   : Array[Int]
+ required: Array[? with Object]
+Note: Int >: ? with Object, but class Array is invariant in type T.
+You may wish to investigate a wildcard type such as `_ >: ? with Object`. (SLS 3.2.10)
+  AO.f(a)
+       ^
+Test.scala:5: error: type mismatch;
+ found   : Array[Int]
+ required: Array[Int]
+Note: Int >: Int, but class Array is invariant in type T.
+You may wish to investigate a wildcard type such as `_ >: Int`. (SLS 3.2.10)
+  AO.f[Int](a)
+            ^
+two errors found
