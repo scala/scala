@@ -327,16 +327,16 @@ object Range {
    */
   def apply(start: Int, end: Int, step: Int): Range = new Range(start, end, step)
 
-  /** Make an range from `start` to `end` inclusive with step value 1.
+  /** Make a range from `start` until `end` (exclusive) with step value 1.
    */
   def apply(start: Int, end: Int): Range = new Range(start, end, 1)
 
-  /** Make an inclusive range from start to end with given step value.
+  /** Make an inclusive range from `start` to `end` with given step value.
    * @note step != 0
    */
   @inline def inclusive(start: Int, end: Int, step: Int): Range.Inclusive = new Inclusive(start, end, step)
 
-  /** Make an inclusive range from start to end with step value 1.
+  /** Make an inclusive range from `start` to `end` with step value 1.
    */
   @inline def inclusive(start: Int, end: Int): Range.Inclusive = new Inclusive(start, end, 1)
 
