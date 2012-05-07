@@ -775,10 +775,47 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
             else              lhs GEN_!= (ZERO, kind)
         }
       }
+      
+      def mkSlowPathDef(clazz: Symbol, lzyVal: Symbol, cond: Tree, syncBody: List[Tree],
+                        stats: List[Tree], retVal: Tree, attrThis: Tree, args: List[Tree]): Symbol = {
+        val defSym = clazz.newMethod(nme.newLazyValSlowComputeName(lzyVal.name), lzyVal.pos, PRIVATE)
+        val params = defSym newSyntheticValueParams args.map(_.symbol.tpe)
+        defSym setInfoAndEnter MethodType(params, lzyVal.tpe.resultType)
+        val rhs: Tree = (gen.mkSynchronizedCheck(attrThis, cond, syncBody, stats)).changeOwner(currentOwner -> defSym)
+        val strictSubst = new SlowPathTreeSymSubstituter(args.map(_.symbol), params)
+        addDef(position(defSym), DEF(defSym).mkTree(strictSubst(BLOCK(rhs, retVal))) setSymbol defSym)
+        defSym
+      }
+      
+      // Always copy the tree if we are going to perform sym substitution,
+      // otherwise we will side-effect on the tree that is used in the fast path 
+      class SlowPathTreeSymSubstituter(from: List[Symbol], to: List[Symbol]) extends TreeSymSubstituter(from, to) {
+        override def transform(tree: Tree): Tree = {
+          if (tree.hasSymbol && from.contains(tree.symbol)) {
+            super.transform(tree.duplicate)
+          } else super.transform(tree.duplicate)
+        }
+        override def apply[T <: Tree](tree: T): T = if (from.isEmpty) tree else super.apply(tree)
+      }
+      
+      def mkFastPathLazyBody(clazz: Symbol, lzyVal: Symbol, cond: Tree, syncBody: List[Tree],
+                             stats: List[Tree], retVal: Tree): Tree = {
+        mkFastPathBody(clazz, lzyVal, cond, syncBody, stats, retVal, gen.mkAttributedThis(clazz), List())
+      }
+      
+      def mkFastPathBody(clazz: Symbol, lzyVal: Symbol, cond: Tree, syncBody: List[Tree],
+                        stats: List[Tree], retVal: Tree, attrThis: Tree, args: List[Tree]): Tree = {
+        val slowPathSym: Symbol = mkSlowPathDef(clazz, lzyVal, cond, syncBody, stats, retVal, attrThis, args)
+        If(cond, fn (This(clazz), slowPathSym, args.map(arg => Ident(arg.symbol)): _*), retVal)
+      }
 
       /** return a 'lazified' version of rhs. It uses double-checked locking to ensure
-       *  initialization is performed at most once. Private fields used only in this
-       *  initializer are subsequently set to null.
+       *  initialization is performed at most once. For performance reasons the double-checked
+       *  locking is split into two parts, the first (fast) path checks the bitmap without
+       *  synchronizing, and if that fails it initializes the lazy val within the
+       *  synchronization block (slow path). This way the inliner should optimize
+       *  the fast path because the method body is small enough.
+       *  Private fields used only in this initializer are subsequently set to null.
        *
        *  @param clazz The class symbol
        *  @param init The tree which initializes the field ( f = <rhs> )
@@ -786,21 +823,28 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
        *  @param offset The offset of this field in the flags bitmap
        *
        *  The result will be a tree of the form
-       *  {
-       *    if ((bitmap$n & MASK) == 0) {
-       *       synchronized(this) {
-       *         if ((bitmap$n & MASK) == 0) {
-       *           init // l$ = <rhs>
-       *           bitmap$n = bimap$n | MASK
-       *         }
-       *       }
-       *       this.f1 = null
-       *       ... this.fn = null
+       *  { if ((bitmap&n & MASK) == 0) this.l$compute()
+       *    else l$
+       *    
+       *    ... 
+       *    def l$compute() = { synchronized(this) {
+       *      if ((bitmap$n & MASK) == 0) {
+       *        init // l$ = <rhs>
+       *        bitmap$n = bimap$n | MASK
+       *      }}
+       *      l$
        *    }
-       *    l$
+       *    
+       *    ...
+       *    this.f1 = null
+       *    ... this.fn = null
        *  }
-       *  where bitmap$n is an int value acting as a bitmap of initialized values. It is
-       *  the 'n' is (offset / 32), the MASK is (1 << (offset % 32)).
+       *  where bitmap$n is a byte, int or long value acting as a bitmap of initialized values.
+       *  The kind of the bitmap determines how many bit indicators for lazy vals are stored in it.
+       *  For Int bitmap it is 32 and then 'n' in the above code is: (offset / 32),
+       *  the MASK is (1 << (offset % 32)).
+       *  If the class contains only a single lazy val then the bitmap is represented
+       *  as a Boolean and the condition checking is a simple bool test. 
        */
       def mkLazyDef(clazz: Symbol, lzyVal: Symbol, init: List[Tree], retVal: Tree, offset: Int): Tree = {
         def nullify(sym: Symbol) = Select(This(clazz), sym.accessedOrSelf) === LIT(null)
@@ -815,17 +859,15 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
         if (nulls.nonEmpty)
           log("nulling fields inside " + lzyVal + ": " + nulls)
 
-        val result    = gen.mkDoubleCheckedLocking(clazz, cond, syncBody, nulls)
-        typedPos(init.head.pos)(BLOCK(result, retVal))
+        typedPos(init.head.pos)(mkFastPathLazyBody(clazz, lzyVal, cond, syncBody, nulls, retVal))
       }
 
-      def mkInnerClassAccessorDoubleChecked(attrThis: Tree, rhs: Tree): Tree =
+      def mkInnerClassAccessorDoubleChecked(attrThis: Tree, rhs: Tree, moduleSym: Symbol, args: List[Tree]): Tree =
         rhs match {
           case Block(List(assign), returnTree) =>
             val Assign(moduleVarRef, _) = assign
             val cond                    = Apply(Select(moduleVarRef, nme.eq), List(NULL))
-            val doubleSynchrTree        = gen.mkDoubleCheckedLocking(attrThis, cond, List(assign), Nil)
-            Block(List(doubleSynchrTree), returnTree)
+            mkFastPathBody(clazz, moduleSym, cond, List(assign), List(NULL), returnTree, attrThis, args)
           case _ =>
             assert(false, "Invalid getter " + rhs + " for module in class " + clazz)
             EmptyTree
@@ -893,7 +935,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
                   // Martin to Hubert: I think this can be replaced by selfRef(tree.pos)
                   // @PP: It does not seem so, it crashes for me trying to bootstrap.
                   if (clazz.isImplClass) gen.mkAttributedIdent(stat.vparamss.head.head.symbol) else gen.mkAttributedThis(clazz),
-                  rhs
+                  rhs, sym, stat.vparamss.head
                 )
               )
             )
@@ -1032,7 +1074,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
             val rhs          = gen.newModule(sym, vdef.symbol.tpe)
             val assignAndRet = gen.mkAssignAndReturn(vdef.symbol, rhs)
             val attrThis     = gen.mkAttributedThis(clazz)
-            val rhs1         = mkInnerClassAccessorDoubleChecked(attrThis, assignAndRet)
+            val rhs1         = mkInnerClassAccessorDoubleChecked(attrThis, assignAndRet, sym, List())
 
             addDefDef(sym, rhs1)
           }

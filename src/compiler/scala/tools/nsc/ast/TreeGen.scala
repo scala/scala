@@ -362,13 +362,12 @@ abstract class TreeGen extends reflect.internal.TreeGen with TreeDSL {
   def mkDoubleCheckedLocking(clazz: Symbol, cond: Tree, syncBody: List[Tree], stats: List[Tree]): Tree =
     mkDoubleCheckedLocking(mkAttributedThis(clazz), cond, syncBody, stats)
 
-  def mkDoubleCheckedLocking(attrThis: Tree, cond: Tree, syncBody: List[Tree], stats: List[Tree]): Tree = {
-    If(cond,
-       Block(
-         mkSynchronized(
-           attrThis,
-           If(cond, Block(syncBody: _*), EmptyTree)) ::
-         stats: _*),
-       EmptyTree)
-  }
+  def mkDoubleCheckedLocking(attrThis: Tree, cond: Tree, syncBody: List[Tree], stats: List[Tree]): Tree =
+    If(cond, mkSynchronizedCheck(attrThis, cond, syncBody, stats), EmptyTree)
+  
+  def mkSynchronizedCheck(attrThis: Tree, cond: Tree, syncBody: List[Tree], stats: List[Tree]): Tree = 
+    Block(mkSynchronized(
+      attrThis,
+      If(cond, Block(syncBody: _*), EmptyTree)) ::
+      stats: _*)
 }

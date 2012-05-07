@@ -643,7 +643,7 @@ abstract class Erasure extends AddInterfaces
       else if (isPrimitiveValueType(tree.tpe) && !isPrimitiveValueType(pt)) {
         adaptToType(box(tree, pt.toString), pt)
       } else if (tree.tpe.isInstanceOf[MethodType] && tree.tpe.params.isEmpty) {
-        // [H] this assert fails when try to call !(Some.this.bitmap) for single lazy val
+        // [H] this assert fails when trying to typecheck tree !(SomeClass.this.bitmap) for single lazy val
         //assert(tree.symbol.isStable, "adapt "+tree+":"+tree.tpe+" to "+pt)
         adaptToType(Apply(tree, List()) setPos tree.pos setType tree.tpe.resultType, pt)
 //      } else if (pt <:< tree.tpe)

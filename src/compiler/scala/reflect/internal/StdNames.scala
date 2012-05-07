@@ -293,6 +293,7 @@ trait StdNames {
     val FAKE_LOCAL_THIS: NameType          = "this$"
     val INITIALIZER: NameType              = CONSTRUCTOR // Is this buying us something?
     val LAZY_LOCAL: NameType               = "$lzy"
+    val LAZY_SLOW_SUFFIX: NameType         = "$lzycompute"
     val LOCAL_SUFFIX_STRING                = " "
     val MIRROR_FREE_PREFIX: NameType       = "free$"
     val MIRROR_FREE_THIS_SUFFIX: NameType  = "$this"
@@ -809,6 +810,8 @@ trait StdNames {
     val BITMAP_TRANSIENT: NameType           = BITMAP_PREFIX + "trans$"     // initialization bitmap for transient lazy vals
     val BITMAP_CHECKINIT: NameType           = BITMAP_PREFIX + "init$"      // initialization bitmap for checkinit values
     val BITMAP_CHECKINIT_TRANSIENT: NameType = BITMAP_PREFIX + "inittrans$" // initialization bitmap for transient checkinit values
+
+    def newLazyValSlowComputeName(lzyValName: Name) = lzyValName append LAZY_SLOW_SUFFIX
 
     def isModuleVarName(name: Name): Boolean =
       stripAnonNumberSuffix(name) endsWith MODULE_VAR_SUFFIX
