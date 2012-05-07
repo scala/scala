@@ -178,10 +178,30 @@ self: ParIterableLike[T, Repr, Sequential] =>
 
   def repr: Repr = this.asInstanceOf[Repr]
 
+  final def isTraversableAgain = true
+
   def hasDefiniteSize = true
 
+  def isEmpty = size == 0
+  
   def nonEmpty = size != 0
-
+  
+  def head = iterator.next
+  
+  def headOption = if (nonEmpty) Some(head) else None
+  
+  def tail = drop(1)
+  
+  def last = {
+    var lst = head
+    for (x <- this.seq) lst = x
+    lst
+  }
+  
+  def lastOption = if (nonEmpty) Some(last) else None
+  
+  def init = take(size - 1)
+  
   /** Creates a new parallel iterator used to traverse the elements of this parallel collection.
    *  This iterator is more specific than the iterator of the returned by `iterator`, and augmented
    *  with additional accessor and transformer methods.

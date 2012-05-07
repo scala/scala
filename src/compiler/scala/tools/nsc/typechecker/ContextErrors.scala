@@ -343,7 +343,7 @@ trait ContextErrors {
         issueNormalTypeError(tree, "macros cannot be eta-expanded")
         setError(tree)
       }
-      
+
       def MacroPartialApplicationError(tree: Tree) = {
         issueNormalTypeError(tree, "macros cannot be partially applied")
         setError(tree)
@@ -592,9 +592,9 @@ trait ContextErrors {
       def AbstractExistentiallyOverParamerizedTpeError(tree: Tree, tp: Type) =
         issueNormalTypeError(tree, "can't existentially abstract over parameterized type " + tp)
 
-      // classTagTree
-      def MissingClassTagError(tree: Tree, tp: Type) = {
-        issueNormalTypeError(tree, "cannot find class tag for element type "+tp)
+      // resolveArrayTag
+      def MissingArrayTagError(tree: Tree, tp: Type) = {
+        issueNormalTypeError(tree, "cannot find array tag for element type "+tp)
         setError(tree)
       }
 

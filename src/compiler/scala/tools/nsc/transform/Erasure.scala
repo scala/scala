@@ -997,7 +997,7 @@ abstract class Erasure extends AddInterfaces
           }
           // Rewrite 5.getClass to ScalaRunTime.anyValClass(5)
           else if (isPrimitiveValueClass(qual.tpe.typeSymbol))
-            global.typer.typed(gen.mkRuntimeCall(nme.anyValClass, List(qual, typer.resolveErasureTag(tree.pos, qual.tpe.widen, true))))
+            global.typer.typed(gen.mkRuntimeCall(nme.anyValClass, List(qual, typer.resolveErasureTag(qual.tpe.widen, tree.pos, true))))
           else
             tree
 
