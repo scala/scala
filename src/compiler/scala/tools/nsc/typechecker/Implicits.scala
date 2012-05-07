@@ -1266,8 +1266,8 @@ trait Implicits {
       }
 
       val tagInScope =
-        if (full) context.withMacrosDisabled(resolveTypeTag(pos, ReflectMirrorPrefix.tpe, tp, true))
-        else context.withMacrosDisabled(resolveArrayTag(pos, tp))
+        if (full) context.withMacrosDisabled(resolveTypeTag(ReflectMirrorPrefix.tpe, tp, pos, true))
+        else context.withMacrosDisabled(resolveArrayTag(tp, pos))
       if (tagInScope.isEmpty) mot(tp, Nil, Nil)
       else {
         val interop =

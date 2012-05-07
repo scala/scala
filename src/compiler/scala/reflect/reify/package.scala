@@ -33,8 +33,8 @@ package object reify {
     import definitions._
     import analyzer.enclosingMacroPosition
 
-    def erasureTagInScope = typer0.context.withMacrosDisabled(typer0.resolveErasureTag(enclosingMacroPosition, tpe, concrete = concrete))
-    def arrayTagInScope = typer0.context.withMacrosDisabled(typer0.resolveArrayTag(enclosingMacroPosition, tpe))
+    def erasureTagInScope = typer0.context.withMacrosDisabled(typer0.resolveErasureTag(tpe, enclosingMacroPosition, concrete = concrete))
+    def arrayTagInScope = typer0.context.withMacrosDisabled(typer0.resolveArrayTag(tpe, enclosingMacroPosition))
     val inScope = (erasureTagInScope, arrayTagInScope)
 
     inScope match {

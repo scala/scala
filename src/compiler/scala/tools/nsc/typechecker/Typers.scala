@@ -4841,8 +4841,8 @@ trait Typers extends Modes with Adaptations with Taggings {
               val Some((level, componentType)) = erasure.GenericArray.unapply(tpt.tpe)
               val tagType = List.iterate(componentType, level)(tpe => appliedType(ArrayClass.asType, List(tpe))).last
               val newArrayApp = atPos(tree.pos) {
-                val tag = resolveArrayTag(tree.pos, tagType)
-                if (tag.isEmpty) MissingClassTagError(tree, tagType)
+                val tag = resolveArrayTag(tagType, tree.pos)
+                if (tag.isEmpty) MissingArrayTagError(tree, tagType)
                 else new ApplyToImplicitArgs(Select(tag, nme.newArray), args)
               }
               typed(newArrayApp, mode, pt)
