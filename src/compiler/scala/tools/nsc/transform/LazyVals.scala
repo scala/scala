@@ -54,7 +54,6 @@ abstract class LazyVals extends Transform with TypingTransformers with ast.TreeD
     private val lazyVals = perRunCaches.newMap[Symbol, Int]() withDefaultValue 0
 
     import symtab.Flags._
-    import lazyVals._
 
     /** Perform the following transformations:
      *  - for a lazy accessor inside a method, make it check the initialization bitmap
@@ -69,8 +68,19 @@ abstract class LazyVals extends Transform with TypingTransformers with ast.TreeD
       curTree = tree
 
       tree match {
+        
+        case Block(_, _) =>
+          val block1 = super.transform(tree)
+          val Block(stats, expr) = block1
+          val stats1 = stats.flatMap(_ match {
+            case Block(List(d1@DefDef(_, n1, _, _, _, _)), d2@DefDef(_, n2, _, _, _, _)) if (nme.newLazyValSlowComputeName(n2) == n1) =>
+              List(d1, d2)
+            case stat => List(stat)
+          })
+          treeCopy.Block(block1, stats1, expr)
+          
         case DefDef(_, _, _, _, _, rhs) => atOwner(tree.symbol) {
-          val res = if (!sym.owner.isClass && sym.isLazy) {
+          val (res, slowPathDef) = if (!sym.owner.isClass && sym.isLazy) {
             val enclosingClassOrDummyOrMethod = {
               val enclMethod = sym.enclMethod
 
@@ -85,13 +95,14 @@ abstract class LazyVals extends Transform with TypingTransformers with ast.TreeD
             }
             val idx = lazyVals(enclosingClassOrDummyOrMethod)
             lazyVals(enclosingClassOrDummyOrMethod) = idx + 1
-            val rhs1 = mkLazyDef(enclosingClassOrDummyOrMethod, super.transform(rhs), idx, sym)
+            val (rhs1, sDef) = mkLazyDef(enclosingClassOrDummyOrMethod, transform(rhs), idx, sym)
             sym.resetFlag((if (lazyUnit(sym)) 0 else LAZY) | ACCESSOR)
-            rhs1
-          } else
-            super.transform(rhs)
-
-          deriveDefDef(tree)(_ => if (LocalLazyValFinder.find(res)) typed(addBitmapDefs(sym, res)) else res)
+            (rhs1, sDef)
+          } else            
+            (transform(rhs), EmptyTree)
+            
+          val ddef1 = deriveDefDef(tree)(_ => if (LocalLazyValFinder.find(res)) typed(addBitmapDefs(sym, res)) else res)
+          if (slowPathDef != EmptyTree) Block(slowPathDef, ddef1) else ddef1
         }
 
         case Template(_, _, body) => atOwner(currentOwner) {
@@ -176,6 +187,24 @@ abstract class LazyVals extends Transform with TypingTransformers with ast.TreeD
         case _ => prependStats(bmps, rhs)
       }
     }
+    
+    def mkSlowPathDef(clazz: Symbol, lzyVal: Symbol, cond: Tree, syncBody: List[Tree],
+                      stats: List[Tree], retVal: Tree): Tree = {
+      val defSym = clazz.newMethod(nme.newLazyValSlowComputeName(lzyVal.name), lzyVal.pos, STABLE | PRIVATE)
+      defSym setInfo MethodType(List(), lzyVal.tpe.resultType)
+      defSym.owner = lzyVal.owner
+      if (bitmaps.contains(lzyVal))
+        bitmaps(lzyVal).map(_.owner = defSym)
+      val rhs: Tree = (gen.mkSynchronizedCheck(clazz, cond, syncBody, stats)).changeOwner(currentOwner -> defSym)
+      DEF(defSym).mkTree(addBitmapDefs(lzyVal, BLOCK(rhs, retVal))) setSymbol defSym
+    }
+  
+  
+    def mkFastPathBody(clazz: Symbol, lzyVal: Symbol, cond: Tree, syncBody: List[Tree],
+                       stats: List[Tree], retVal: Tree): (Tree, Tree) = {
+      val slowPathDef: Tree = mkSlowPathDef(clazz, lzyVal, cond, syncBody, stats, retVal)
+      (If(cond, Apply(ID(slowPathDef.symbol), List()), retVal), slowPathDef)
+    }
 
     /** return a 'lazified' version of rhs. Rhs should conform to the
      *  following schema:
@@ -186,32 +215,37 @@ abstract class LazyVals extends Transform with TypingTransformers with ast.TreeD
      *  <rhs> when the lazy value has type Unit (for which there is no field
      *  to cache it's value.
      *
-     *  The result will be a tree of the form
-     *  {
-     *    if ((bitmap$n & MASK) == 0) {
+     *  Similarly as for normal lazy val members (see Mixin), the result will be a tree of the form
+     *  { if ((bitmap&n & MASK) == 0) this.l$compute()
+     *    else l$
+     *    
+     *    def l$compute() = { synchronized(enclosing_class_or_dummy) {
+     *      if ((bitmap$n & MASK) == 0) {
      *       l$ = <rhs>
      *       bitmap$n = bimap$n | MASK
+     *      }}
+     *      l$
      *    }
-     *    l$
      *  }
-     *  where bitmap$n is an int value acting as a bitmap of initialized values. It is
-     *  the 'n' is (offset / 32), the MASK is (1 << (offset % 32)). If the value has type
-     *  unit, no field is used to cache the value, so the resulting code is:
+     *  where bitmap$n is a byte value acting as a bitmap of initialized values. It is
+     *  the 'n' is (offset / 8), the MASK is (1 << (offset % 8)). If the value has type
+     *  unit, no field is used to cache the value, so the l$compute will now look as following:
      *  {
-     *    if ((bitmap$n & MASK) == 0) {
+     *    def l$compute() = { synchronized(enclosing_class_or_dummy) {
+     *      if ((bitmap$n & MASK) == 0) {
      *       <rhs>;
      *       bitmap$n = bimap$n | MASK
-     *    }
+     *      }}
      *    ()
+     *    }
      *  }
      */
-    private def mkLazyDef(methOrClass: Symbol, tree: Tree, offset: Int, lazyVal: Symbol): Tree = {
+    private def mkLazyDef(methOrClass: Symbol, tree: Tree, offset: Int, lazyVal: Symbol): (Tree, Tree) = {
       val bitmapSym           = getBitmapFor(methOrClass, offset)
       val mask                = LIT(1 << (offset % FLAGS_PER_BYTE))
       val bitmapRef = if (methOrClass.isClass) Select(This(methOrClass), bitmapSym) else Ident(bitmapSym)
 
       def mkBlock(stmt: Tree) = BLOCK(stmt, mkSetFlag(bitmapSym, mask, bitmapRef), UNIT)
-
 
       val (block, res) = tree match {
         case Block(List(assignment), res) if !lazyUnit(lazyVal) =>
@@ -221,11 +255,8 @@ abstract class LazyVals extends Transform with TypingTransformers with ast.TreeD
       }
 
       val cond = (bitmapRef GEN_& (mask, bitmapKind)) GEN_== (ZERO, bitmapKind)
-
-      atPos(tree.pos)(localTyper.typed {
-        def body = gen.mkDoubleCheckedLocking(methOrClass.enclClass, cond, List(block), Nil)
-        BLOCK(body, res)
-      })
+      val lazyDefs = mkFastPathBody(methOrClass.enclClass, lazyVal, cond, List(block), Nil, res)
+      (atPos(tree.pos)(localTyper.typed {lazyDefs._1 }), atPos(tree.pos)(localTyper.typed {lazyDefs._2 }))
     }
 
     private def mkSetFlag(bmp: Symbol, mask: Tree, bmpRef: Tree): Tree =

@@ -493,7 +493,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
      */
     private val fieldOffset = perRunCaches.newMap[Symbol, Int]()
     
-    private val bitmapKindForCategory = perRunCaches.newMap[Name, ClassSymbol]() // TODO: make it a list
+    private val bitmapKindForCategory = perRunCaches.newMap[Name, ClassSymbol]()
     
     // ByteClass, IntClass, LongClass
     private def bitmapKind(field: Symbol): ClassSymbol = bitmapKindForCategory(bitmapCategory(field))
@@ -782,22 +782,11 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
         val params = defSym newSyntheticValueParams args.map(_.symbol.tpe)
         defSym setInfoAndEnter MethodType(params, lzyVal.tpe.resultType)
         val rhs: Tree = (gen.mkSynchronizedCheck(attrThis, cond, syncBody, stats)).changeOwner(currentOwner -> defSym)
-        val strictSubst = new SlowPathTreeSymSubstituter(args.map(_.symbol), params)
+        val strictSubst = new TreeSymSubstituterWithCopying(args.map(_.symbol), params)
         addDef(position(defSym), DEF(defSym).mkTree(strictSubst(BLOCK(rhs, retVal))) setSymbol defSym)
         defSym
       }
-      
-      // Always copy the tree if we are going to perform sym substitution,
-      // otherwise we will side-effect on the tree that is used in the fast path 
-      class SlowPathTreeSymSubstituter(from: List[Symbol], to: List[Symbol]) extends TreeSymSubstituter(from, to) {
-        override def transform(tree: Tree): Tree = {
-          if (tree.hasSymbol && from.contains(tree.symbol)) {
-            super.transform(tree.duplicate)
-          } else super.transform(tree.duplicate)
-        }
-        override def apply[T <: Tree](tree: T): T = if (from.isEmpty) tree else super.apply(tree)
-      }
-      
+
       def mkFastPathLazyBody(clazz: Symbol, lzyVal: Symbol, cond: Tree, syncBody: List[Tree],
                              stats: List[Tree], retVal: Tree): Tree = {
         mkFastPathBody(clazz, lzyVal, cond, syncBody, stats, retVal, gen.mkAttributedThis(clazz), List())
@@ -808,6 +797,19 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
         val slowPathSym: Symbol = mkSlowPathDef(clazz, lzyVal, cond, syncBody, stats, retVal, attrThis, args)
         If(cond, fn (This(clazz), slowPathSym, args.map(arg => Ident(arg.symbol)): _*), retVal)
       }
+      
+        
+	  /** Always copy the tree if we are going to perform sym substitution,
+	   *  otherwise we will side-effect on the tree that is used in the fast path
+	   */
+	  class TreeSymSubstituterWithCopying(from: List[Symbol], to: List[Symbol]) extends TreeSymSubstituter(from, to) {
+	    override def transform(tree: Tree): Tree =
+	      if (tree.hasSymbol && from.contains(tree.symbol))
+	        super.transform(tree.duplicate)
+	      else super.transform(tree.duplicate)
+	    
+	    override def apply[T <: Tree](tree: T): T = if (from.isEmpty) tree else super.apply(tree)
+	  }
 
       /** return a 'lazified' version of rhs. It uses double-checked locking to ensure
        *  initialization is performed at most once. For performance reasons the double-checked
