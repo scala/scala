@@ -6,7 +6,7 @@
 package scala.tools.nsc
 package backend.jvm
 
-import java.io.{ DataOutputStream, OutputStream }
+import java.io.{ByteArrayOutputStream, DataOutputStream, OutputStream }
 import java.nio.ByteBuffer
 import scala.collection.{ mutable, immutable }
 import scala.reflect.internal.pickling.{ PickleFormat, PickleBuffer }
@@ -345,7 +345,7 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
      */
     def emitClass(jclass: JClass, sym: Symbol) {
       addInnerClasses(jclass)
-      writeClass("" + sym.name, jclass, sym)
+      writeClass("" + sym.name, jclass.getName(), toByteArray(jclass), sym)
     }
 
     /** Returns the ScalaSignature annotation if it must be added to this class,
@@ -517,6 +517,14 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
       }
     }
 
+    private def toByteArray(jc: JClass): Array[Byte] = {
+      val bos = new java.io.ByteArrayOutputStream()
+      val dos = new java.io.DataOutputStream(bos)
+      jc.writeTo(dos)
+      dos.close()
+      bos.toByteArray
+    }
+
     /**
      * Generate a bean info class that describes the given class.
      *
@@ -586,7 +594,7 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
       jcode.emitRETURN()
 
       // write the bean information class file.
-      writeClass("BeanInfo ", beanInfoClass, c.symbol)
+      writeClass("BeanInfo ", beanInfoClass.getName(), toByteArray(beanInfoClass), c.symbol)
     }
 
     /** Add the given 'throws' attributes to jmethod */

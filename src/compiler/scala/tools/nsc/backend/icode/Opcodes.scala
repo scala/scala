@@ -435,6 +435,8 @@ trait Opcodes { self: ICodes =>
 
       override def consumed = 1
       override def produced = 0
+
+      def flatTagsCount: Int = { var acc = 0; var rest = tags; while(rest.nonEmpty) { acc += rest.head.length; rest = rest.tail }; acc } // a one-liner
     }
 
     /** This class represents a JUMP instruction
@@ -593,48 +595,49 @@ trait Opcodes { self: ICodes =>
     /** This class represents a method invocation style. */
     sealed abstract class InvokeStyle {
       /** Is this a dynamic method call? */
-      def isDynamic: Boolean = this match {
-        case Dynamic =>  true
-        case _       => false
-      }
+      def isDynamic: Boolean = false
 
       /** Is this a static method call? */
-      def isStatic: Boolean = this match {
-        case Static(_) => true
-        case _ =>  false
-      }
+      def isStatic: Boolean = false
 
-      def isSuper: Boolean = this match {
-        case SuperCall(_) => true
-        case _ => false
-      }
+      def isSuper: Boolean = false
 
       /** Is this an instance method call? */
-      def hasInstance: Boolean = this match {
-        case Static(false)      => false
-        case _                  => true
-      }
+      def hasInstance: Boolean = true
 
       /** Returns a string representation of this style. */
-      override def toString(): String = this match {
-        case Dynamic        => "dynamic"
-        case Static(false)  => "static-class"
-        case Static(true)   => "static-instance"
-        case SuperCall(mix) => "super(" + mix + ")"
+      override def toString(): String
+    }
+
+    /** Virtual calls.
+     *  On JVM, translated to either `invokeinterface` or `invokevirtual`.
+     */
+    case object Dynamic extends InvokeStyle {
+      override def isDynamic = true
+      override def toString(): String = "dynamic"
+    }
+
+    /**
+     * Special invoke:
+     *   Static(true)  is used for calls to private members, ie `invokespecial` on JVM.
+     *   Static(false) is used for calls to class-level instance-less static methods, ie `invokestatic` on JVM.
+     */
+    case class Static(onInstance: Boolean) extends InvokeStyle {
+      override def isStatic    = true
+      override def hasInstance = onInstance
+      override def toString(): String = {
+        if(onInstance) "static-instance"
+        else           "static-class"
       }
     }
 
-    /** Virtual calls */
-    case object Dynamic extends InvokeStyle
-
-    /**
-     * Special invoke. Static(true) is used for calls to private
-     * members.
+    /** Call through super[mix].
+     *  On JVM, translated to `invokespecial`.
      */
-    case class Static(onInstance: Boolean) extends InvokeStyle
-
-    /** Call through super[mix]. */
-    case class SuperCall(mix: Name) extends InvokeStyle
+    case class SuperCall(mix: Name) extends InvokeStyle {
+      override def isSuper = true
+      override def toString(): String = { "super(" + mix + ")" }
+    }
 
 
     // CLR backend

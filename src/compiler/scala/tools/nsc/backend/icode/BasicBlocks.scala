@@ -219,8 +219,8 @@ trait BasicBlocks {
     ///////////////////// Substitutions ///////////////////////
 
     /**
-     * Replace the instruction at the given position. Used by labels when
-     * they are anchored. It retains the position of the previous instruction.
+     * Replace the instruction at the given position. Used by labels when they are anchored.
+     * The replacing instruction is given the nsc.util.Position of the instruction it replaces.
      */
     def replaceInstruction(pos: Int, instr: Instruction): Boolean = {
       assert(closed, "Instructions can be replaced only after the basic block is closed")
@@ -233,7 +233,7 @@ trait BasicBlocks {
     /**
      * Replace the given instruction with the new one.
      * Returns `true` if it actually changed something.
-     * It retains the position of the previous instruction.
+     * The replacing instruction is given the nsc.util.Position of the instruction it replaces.
      */
     def replaceInstruction(oldInstr: Instruction, newInstr: Instruction): Boolean = {
       assert(closed, "Instructions can be replaced only after the basic block is closed")

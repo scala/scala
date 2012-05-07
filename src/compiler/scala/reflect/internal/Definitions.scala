@@ -1153,7 +1153,7 @@ trait Definitions extends reflect.api.StandardDefinitions {
      */
     private def getModuleOrClass(path: Name): Symbol = getModuleOrClass(path, path.length)
 
-    private def getClassByName(fullname: Name): Symbol = {
+    def getClassByName(fullname: Name): Symbol = {
       var result = getModuleOrClass(fullname.toTypeName)
       while (result.isAliasType) result = result.info.typeSymbol
       result
