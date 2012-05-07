@@ -141,7 +141,4 @@ trait GenIterableLike[+A, +Repr] extends Any with GenTraversableLike[A, Repr] {
    */
   def zipAll[B, A1 >: A, That](that: GenIterable[B], thisElem: A1, thatElem: B)(implicit bf: CBF[Repr, (A1, B), That]): That
 
-  def isEmpty = iterator.isEmpty
-
-  def head = iterator.next
 }

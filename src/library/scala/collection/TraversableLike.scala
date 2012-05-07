@@ -84,6 +84,8 @@ trait TraversableLike[+A, +Repr] extends Any
    */
   def repr: Repr = this.asInstanceOf[Repr]
 
+  final def isTraversableAgain: Boolean = true
+  
   /** The underlying collection seen as an instance of `$Coll`.
    *  By default this is implemented as the current collection object itself,
    *  but this can be overridden.
