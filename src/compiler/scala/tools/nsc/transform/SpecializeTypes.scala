@@ -752,9 +752,10 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
         }
       }
     }
-
+    
     val subclasses = specializations(clazz.info.typeParams) filter satisfiable
-    subclasses foreach { env =>
+    subclasses foreach {
+      env =>
       val spc      = specializedClass(env, decls1)
       val existing = clazz.owner.info.decl(spc.name)
 
@@ -928,7 +929,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
             if (currentRun compiles overriding)
               checkOverriddenTParams(overridden)
 
-            val env    = unify(overridden.info, overriding.info, emptyEnv, false)
+            val env    = unify(overridden.info, overriding.info, emptyEnv, false, true)
             def atNext = afterSpecialize(overridden.owner.info.decl(specializedName(overridden, env)))
 
             if (TypeEnv.restrict(env, stvars).nonEmpty && TypeEnv.isValid(env, overridden) && atNext != NoSymbol) {
@@ -990,8 +991,10 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
    *  Fails if such an environment cannot be found.
    *
    *  If `strict` is true, a UnifyError is thrown if unification is impossible.
+   *  
+   *  If `tparams` is true, then the methods tries to unify over type params in polytypes as well.
    */
-  private def unify(tp1: Type, tp2: Type, env: TypeEnv, strict: Boolean): TypeEnv = (tp1, tp2) match {
+  private def unify(tp1: Type, tp2: Type, env: TypeEnv, strict: Boolean, tparams: Boolean = false): TypeEnv = (tp1, tp2) match {
     case (TypeRef(_, sym1, _), _) if sym1.isSpecialized =>
       debuglog("Unify " + tp1 + ", " + tp2)
       if (isPrimitiveValueClass(tp2.typeSymbol) || isSpecializedAnyRefSubtype(tp2, sym1))
@@ -1020,17 +1023,20 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
       debuglog("Unify polytypes " + tp1 + " and " + tp2)
       if (strict && tparams1.length != tparams2.length)
         unifyError(tp1, tp2)
+      else if (tparams && tparams1.length == tparams2.length)
+        unify(res1 :: tparams1.map(_.info), res2 :: tparams2.map(_.info), env, strict)
       else
         unify(res1, res2, env, strict)
-    case (PolyType(_, res), other)              => unify(res, other, env, strict)
-    case (ThisType(_), ThisType(_))             => env
-    case (_, SingleType(_, _))                  => unify(tp1, tp2.underlying, env, strict)
-    case (SingleType(_, _), _)                  => unify(tp1.underlying, tp2, env, strict)
-    case (ThisType(_), _)                       => unify(tp1.widen, tp2, env, strict)
-    case (_, ThisType(_))                       => unify(tp1, tp2.widen, env, strict)
-    case (RefinedType(_, _), RefinedType(_, _)) => env
-    case (AnnotatedType(_, tp1, _), tp2)        => unify(tp2, tp1, env, strict)
-    case (ExistentialType(_, res1), _)          => unify(tp2, res1, env, strict)
+    case (PolyType(_, res), other)                    => unify(res, other, env, strict)
+    case (ThisType(_), ThisType(_))                   => env
+    case (_, SingleType(_, _))                        => unify(tp1, tp2.underlying, env, strict)
+    case (SingleType(_, _), _)                        => unify(tp1.underlying, tp2, env, strict)
+    case (ThisType(_), _)                             => unify(tp1.widen, tp2, env, strict)
+    case (_, ThisType(_))                             => unify(tp1, tp2.widen, env, strict)
+    case (RefinedType(_, _), RefinedType(_, _))       => env
+    case (AnnotatedType(_, tp1, _), tp2)              => unify(tp2, tp1, env, strict)
+    case (ExistentialType(_, res1), _)                => unify(tp2, res1, env, strict)
+    case (TypeBounds(lo1, hi1), TypeBounds(lo2, hi2)) => unify(List(lo1, hi1), List(lo2, hi2), env, strict)
     case _ =>
       debuglog("don't know how to unify %s [%s] with %s [%s]".format(tp1, tp1.getClass, tp2, tp2.getClass))
       env
