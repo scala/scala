@@ -13,7 +13,7 @@ object Test extends App {
     1 + t + t
   }
 
-  /** test 32 lazy vals, which fills one bitmap int. */
+  /** test 32 lazy vals, which should spill over multiple byte bitmaps. */
   def testLazy32 = {
     lazy val t00 = { Console.println("forced lazy val t00");  0 }
     lazy val t01 = { Console.println("forced lazy val t01");  1 }
@@ -51,12 +51,47 @@ object Test extends App {
     val sum = t31 + t30 + t29 + t28 + t27 + t26 + t25 + t24 + t23 +
               t22 + t21 + t20 + t19 + t18 + t17 + t16 + t15 + t14 +
               t13 + t12 + t11 + t10 + t09 + t08 + t07 + t06 + t05 +
-              t04 + t03 + t02 + t01 + t00;
-    println("Sum is: " + sum);
+              t04 + t03 + t02 + t01 + t00
+    val sum2 = t31 + t30 + t29 + t28 + t27 + t26 + t25 + t24 + t23 +
+              t22 + t21 + t20 + t19 + t18 + t17 + t16 + t15 + t14 +
+              t13 + t12 + t11 + t10 + t09 + t08 + t07 + t06 + t05 +
+              t04 + t03 + t02 + t01 + t00
+    val sum3 = t00 + t01 + t02 + t03 + t04 + t05 + t06 + t07 + t08 +
+              t09 + t10 + t11 + t12 + t13 + t14 + t15 + t16 + t17 +
+              t18 + t19 + t20 + t21 + t22 + t23 + t24 + t25 + t26 +
+              t27 + t28 + t29 + t30 + t31 
+
+
+
+    println("Sum is: " + sum)
+    println("Sum again is: " + sum2)
+    println("Sum again again is: " + sum3)
   }
 
-  /** test 32 lazy vals, which needs two bitmap ints. */
-  def testLazy33 = {
+  /** test 8 lazy vals, which should fit one byte bitmap. */
+  def testLazy8 = {
+    lazy val t00 = { Console.println("forced lazy val t00");  0 }
+    lazy val t01 = { Console.println("forced lazy val t01");  1 }
+    lazy val t02 = { Console.println("forced lazy val t02");  2 }
+    lazy val t03 = { Console.println("forced lazy val t03");  3 }
+    lazy val t04 = { Console.println("forced lazy val t04");  4 }
+    lazy val t05 = { Console.println("forced lazy val t05");  5 }
+    lazy val t06 = { Console.println("forced lazy val t06");  6 }
+    lazy val t07 = { Console.println("forced lazy val t07");  7 }
+
+    val sum = t07 + t06 + t05 + t04 + t03 + t02 + t01 + t00
+    val sum2 = t07 + t06 + t05 + t04 + t03 + t02 + t01 + t00
+    val sum3 = t00 + t01 + t02 + t03 + t04 + t05 + t06 + t07
+
+
+
+    println("Sum is: " + sum)
+    println("Sum again is: " + sum2)
+    println("Sum again again is: " + sum3)
+  }
+
+  /** test 9 lazy vals, which should spill over two bitmaps. */
+  def testLazy9 = {
     lazy val t00 = { Console.println("forced lazy val t00");  0 }
     lazy val t01 = { Console.println("forced lazy val t01");  1 }
     lazy val t02 = { Console.println("forced lazy val t02");  2 }
@@ -66,38 +101,15 @@ object Test extends App {
     lazy val t06 = { Console.println("forced lazy val t06");  6 }
     lazy val t07 = { Console.println("forced lazy val t07");  7 }
     lazy val t08 = { Console.println("forced lazy val t08");  8 }
-    lazy val t09 = { Console.println("forced lazy val t09");  9 }
-    lazy val t10 = { Console.println("forced lazy val t10"); 10 }
-    lazy val t11 = { Console.println("forced lazy val t11"); 11 }
-    lazy val t12 = { Console.println("forced lazy val t12"); 12 }
-    lazy val t13 = { Console.println("forced lazy val t13"); 13 }
-    lazy val t14 = { Console.println("forced lazy val t14"); 14 }
-    lazy val t15 = { Console.println("forced lazy val t15"); 15 }
-    lazy val t16 = { Console.println("forced lazy val t16"); 16 }
-    lazy val t17 = { Console.println("forced lazy val t17"); 17 }
-    lazy val t18 = { Console.println("forced lazy val t18"); 18 }
-    lazy val t19 = { Console.println("forced lazy val t19"); 19 }
-    lazy val t20 = { Console.println("forced lazy val t20"); 20 }
-    lazy val t21 = { Console.println("forced lazy val t21"); 21 }
-    lazy val t22 = { Console.println("forced lazy val t22"); 22 }
-    lazy val t23 = { Console.println("forced lazy val t23"); 23 }
-    lazy val t24 = { Console.println("forced lazy val t24"); 24 }
-    lazy val t25 = { Console.println("forced lazy val t25"); 25 }
-    lazy val t26 = { Console.println("forced lazy val t26"); 26 }
-    lazy val t27 = { Console.println("forced lazy val t27"); 27 }
-    lazy val t28 = { Console.println("forced lazy val t28"); 28 }
-    lazy val t29 = { Console.println("forced lazy val t29"); 29 }
-    lazy val t30 = { Console.println("forced lazy val t30"); 30 }
-    lazy val t31 = { Console.println("forced lazy val t31"); 31 }
-    lazy val t32 = { Console.println("forced lazy val t32"); 32 }
 
-    val sum = t32 + t31 + t30 + t29 + t28 + t27 + t26 + t25 + t24 + t23 +
-              t22 + t21 + t20 + t19 + t18 + t17 + t16 + t15 + t14 +
-              t13 + t12 + t11 + t10 + t09 + t08 + t07 + t06 + t05 +
-              t04 + t03 + t02 + t01 + t00;
-    println("Sum is: " + sum);
+    val sum = t08 + t07 + t06 + t05 + t04 + t03 + t02 + t01 + t00
+    val sum2 = t08 + t07 + t06 + t05 + t04 + t03 + t02 + t01 + t00
+    val sum3 = t00 + t01 + t02 + t03 + t04 + t05 + t06 + t07 + t08
+
+    println("Sum is: " + sum)
+    println("Sum again is: " + sum2)
+    println("Sum again again is: " + sum3)
   }
-
 
   /** test recursive method with lazy vals and a single forced */
   def testLazyRec(n: Int): Int = {
@@ -185,7 +197,8 @@ object Test extends App {
 
   println(testLazy)
   testLazy32
-  testLazy33
+  testLazy8
+  testLazy9
   println(testLazyRec(5))
   println(testLazyRecMany(5))
   testRecVal

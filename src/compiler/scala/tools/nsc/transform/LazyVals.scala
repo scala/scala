@@ -12,7 +12,7 @@ abstract class LazyVals extends Transform with TypingTransformers with ast.TreeD
   import CODE._
 
   val phaseName: String = "lazyvals"
-  private val FLAGS_PER_BYTE: Int = 32 // Byte
+  private val FLAGS_PER_BYTE: Int = 8 // Byte
   private def bitmapKind = ByteClass
 
   def newTransformer(unit: CompilationUnit): Transformer =
