@@ -36,30 +36,19 @@ forced lazy val t02
 forced lazy val t01
 forced lazy val t00
 Sum is: 496
-forced lazy val t32
-forced lazy val t31
-forced lazy val t30
-forced lazy val t29
-forced lazy val t28
-forced lazy val t27
-forced lazy val t26
-forced lazy val t25
-forced lazy val t24
-forced lazy val t23
-forced lazy val t22
-forced lazy val t21
-forced lazy val t20
-forced lazy val t19
-forced lazy val t18
-forced lazy val t17
-forced lazy val t16
-forced lazy val t15
-forced lazy val t14
-forced lazy val t13
-forced lazy val t12
-forced lazy val t11
-forced lazy val t10
-forced lazy val t09
+Sum again is: 496
+Sum again again is: 496
+forced lazy val t07
+forced lazy val t06
+forced lazy val t05
+forced lazy val t04
+forced lazy val t03
+forced lazy val t02
+forced lazy val t01
+forced lazy val t00
+Sum is: 28
+Sum again is: 28
+Sum again again is: 28
 forced lazy val t08
 forced lazy val t07
 forced lazy val t06
@@ -69,7 +58,9 @@ forced lazy val t03
 forced lazy val t02
 forced lazy val t01
 forced lazy val t00
-Sum is: 528
+Sum is: 36
+Sum again is: 36
+Sum again again is: 36
 forced lazy val t at n = 0
 42
 forced lazy val t at n = 0
