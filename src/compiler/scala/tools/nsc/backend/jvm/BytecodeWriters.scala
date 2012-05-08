@@ -6,7 +6,6 @@
 package scala.tools.nsc
 package backend.jvm
 
-import ch.epfl.lamp.fjbg._
 import java.io.{ DataOutputStream, FileOutputStream, OutputStream, File => JFile }
 import scala.tools.nsc.io._
 import scala.tools.nsc.util.ScalaClassLoader
@@ -26,19 +25,19 @@ trait BytecodeWriters {
   private def outputDirectory(sym: Symbol): AbstractFile = (
     settings.outputDirs.outputDirFor(beforeFlatten(sym.sourceFile))
   )
-  private def getFile(base: AbstractFile, cls: JClass, suffix: String): AbstractFile = {
+  private def getFile(base: AbstractFile, /*cls.getName()*/ clsName: String, suffix: String): AbstractFile = {
     var dir = base
-    val pathParts = cls.getName().split("[./]").toList
+    val pathParts = clsName.split("[./]").toList
     for (part <- pathParts.init) {
       dir = dir.subdirectoryNamed(part)
     }
     dir.fileNamed(pathParts.last + suffix)
   }
-  private def getFile(sym: Symbol, cls: JClass, suffix: String): AbstractFile =
-    getFile(outputDirectory(sym), cls, suffix)
+  private def getFile(sym: Symbol, clsName: String, suffix: String): AbstractFile =
+    getFile(outputDirectory(sym), clsName, suffix)
 
   trait BytecodeWriter {
-    def writeClass(label: String, jclass: JClass, sym: Symbol): Unit
+    def writeClass(label: String, jclassName: String, jclassBytes: Array[Byte], sym: Symbol): Unit
     def close(): Unit = ()
   }
 
@@ -49,11 +48,11 @@ trait BytecodeWriters {
     )
     val writer = new Jar(jfile).jarWriter(jarMainAttrs: _*)
 
-    def writeClass(label: String, jclass: JClass, sym: Symbol) {
-      val path = jclass.getName + ".class"
+    def writeClass(label: String, jclassName: String, jclassBytes: Array[Byte], sym: Symbol) {
+      val path = jclassName + ".class"
       val out  = writer.newOutputStream(path)
 
-      try jclass writeTo out
+      try out.write(jclassBytes, 0, jclassBytes.length)
       finally out.flush()
 
       informProgress("added " + label + path + " to jar")
@@ -73,11 +72,11 @@ trait BytecodeWriters {
       try javap(Seq("-verbose", "dummy")) foreach (_.show())
       finally pw.close()
     }
-    abstract override def writeClass(label: String, jclass: JClass, sym: Symbol) {
-      super.writeClass(label, jclass, sym)
+    abstract override def writeClass(label: String, jclassName: String, jclassBytes: Array[Byte], sym: Symbol) {
+      super.writeClass(label, jclassName, jclassBytes, sym)
 
-      val bytes     = getFile(sym, jclass, ".class").toByteArray
-      val segments  = jclass.getName().split("[./]")
+      val bytes     = getFile(sym, jclassName, ".class").toByteArray
+      val segments  = jclassName.split("[./]")
       val javapFile = segments.foldLeft(baseDir: Path)(_ / _) changeExtension "javap" toFile;
 
       javapFile.parent.createDirectory()
@@ -86,11 +85,11 @@ trait BytecodeWriters {
   }
 
   trait ClassBytecodeWriter extends BytecodeWriter {
-    def writeClass(label: String, jclass: JClass, sym: Symbol) {
-      val outfile   = getFile(sym, jclass, ".class")
+    def writeClass(label: String, jclassName: String, jclassBytes: Array[Byte], sym: Symbol) {
+      val outfile   = getFile(sym, jclassName, ".class")
       val outstream = new DataOutputStream(outfile.bufferedOutput)
 
-      try jclass writeTo outstream
+      try outstream.write(jclassBytes, 0, jclassBytes.length)
       finally outstream.close()
       informProgress("wrote '" + label + "' to " + outfile)
     }
@@ -99,15 +98,15 @@ trait BytecodeWriters {
   trait DumpBytecodeWriter extends BytecodeWriter {
     val baseDir = Directory(settings.Ydumpclasses.value).createDirectory()
 
-    abstract override def writeClass(label: String, jclass: JClass, sym: Symbol) {
-      super.writeClass(label, jclass, sym)
+    abstract override def writeClass(label: String, jclassName: String, jclassBytes: Array[Byte], sym: Symbol) {
+      super.writeClass(label, jclassName, jclassBytes, sym)
 
-      val pathName = jclass.getName()
+      val pathName = jclassName
       var dumpFile = pathName.split("[./]").foldLeft(baseDir: Path) (_ / _) changeExtension "class" toFile;
       dumpFile.parent.createDirectory()
       val outstream = new DataOutputStream(new FileOutputStream(dumpFile.path))
 
-      try jclass writeTo outstream
+      try outstream.write(jclassBytes, 0, jclassBytes.length)
       finally outstream.close()
     }
   }

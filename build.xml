@@ -337,7 +337,9 @@ INITIALISATION
   <!-- scalac.args.optimise is selectively overridden in certain antcall tasks. -->
     <property name="scalac.args.optimise" value=""/>
   <!-- scalac.args.quickonly are added to quick.* targets but not others (particularly, locker.)
-       This is to facilitate testing new command line options which do not yet exist in starr. -->
+       This is to facilitate testing new command line options which do not yet exist in starr.
+       Note: These are also used by strap since they may affect JVM target or other and we'd like
+       to be able to test binary stability of features. -->
     <property name="scalac.args.quickonly" value=""/>
     <property name="scalac.args.all" value="${scalac.args.always} ${scalac.args} ${scalac.args.optimise}"/>
     <property name="scalac.args.quick" value="${scalac.args.all} ${scalac.args.quickonly}"/>
@@ -383,6 +385,7 @@ INITIALISATION
     <echo message="        java args: ${env.ANT_OPTS} ${jvm.opts}" />
     <echo message="       javac args: ${javac.args}" />
     <echo message="      scalac args: ${scalac.args.all}" />
+    <echo message="scalac quick args: ${scalac.args.quick}" />
     <echo message="         git date: ${git.commit.date}" />
     <echo message="         git hash: ${git.commit.sha}" />
     <echo message="    maven version: ${maven.version.number}"/>
@@ -479,6 +482,20 @@ LOCAL REFERENCE BUILD (LOCKER)
   <target name="locker.comp" depends="locker.pre-comp" if="locker.comp.needed">
     <stopwatch name="locker.comp.timer"/>
     <mkdir dir="${build-locker.dir}/classes/compiler"/>
+    <!-- TODO If we have cross dependencies, move this below scalacfork... -->
+    <javac
+      srcdir="${src.dir}/compiler"
+      destdir="${build-locker.dir}/classes/compiler"
+      includes="**/*.java"
+      target="1.5" source="1.5">
+        <compilerarg line="${javac.args}"/>
+        <classpath>
+          <pathelement location="${build-locker.dir}/classes/library"/>
+          <pathelement location="${build-locker.dir}/classes/compiler"/>
+          <path refid="aux.libs"/>
+          <pathelement location="${jline.jar}"/>
+      </classpath>
+    </javac>
     <scalacfork
       destdir="${build-locker.dir}/classes/compiler"
       compilerpathref="starr.classpath"
@@ -763,6 +780,20 @@ QUICK BUILD (QUICK)
   <target name="quick.comp" depends="quick.pre-comp" unless="quick.comp.available">
     <stopwatch name="quick.comp.timer"/>
     <mkdir dir="${build-quick.dir}/classes/compiler"/>
+    <!-- TODO If we have cross dependencies, move this below scalacfork... -->
+    <javac
+      srcdir="${src.dir}/compiler"
+      destdir="${build-quick.dir}/classes/compiler"
+      includes="**/*.java"
+      target="1.5" source="1.5">
+        <compilerarg line="${javac.args}"/>
+        <classpath>
+          <pathelement location="${build-quick.dir}/classes/library"/>
+          <pathelement location="${build-quick.dir}/classes/compiler"/>
+          <path refid="aux.libs"/>
+          <pathelement location="${jline.jar}"/>
+      </classpath>
+    </javac>
     <scalacfork
       destdir="${build-quick.dir}/classes/compiler"
       compilerpathref="locker.classpath"
@@ -860,7 +891,7 @@ QUICK BUILD (QUICK)
     <scalacfork
       destdir="${build-quick.dir}/classes/scalacheck"
       compilerpathref="quick.classpath"
-      params="${scalac.args.all}"
+      params="${scalac.args.quick}"
       srcdir="${src.dir}/scalacheck"
       jvmargs="${scalacfork.jvmargs}">
       <include name="**/*.scala"/>
@@ -1233,7 +1264,7 @@ BOOTSTRAPPING BUILD (STRAP)
       destdir="${build-strap.dir}/classes/library"
       compilerpathref="pack.classpath"
       srcpath="${src.dir}/library"
-      params="${scalac.args.all}"
+      params="${scalac.args.quick}"
       srcdir="${src.dir}/library"
       jvmargs="${scalacfork.jvmargs}">
       <include name="**/*.scala"/>
@@ -1242,7 +1273,7 @@ BOOTSTRAPPING BUILD (STRAP)
     <scalacfork
       destdir="${build-strap.dir}/classes/library"
       compilerpathref="pack.classpath"
-      params="${scalac.args.all}"
+      params="${scalac.args.quick}"
       srcdir="${src.dir}/actors"
       jvmargs="${scalacfork.jvmargs}">
       <include name="**/*.scala"/>
@@ -1251,7 +1282,7 @@ BOOTSTRAPPING BUILD (STRAP)
     <scalacfork
       destdir="${build-strap.dir}/classes/library"
       compilerpathref="pack.classpath"
-      params="${scalac.args.all}"
+      params="${scalac.args.quick}"
       srcdir="${src.dir}/swing"
       jvmargs="${scalacfork.jvmargs}">
       <include name="**/*.scala"/>
@@ -1284,10 +1315,24 @@ BOOTSTRAPPING BUILD (STRAP)
   <target name="strap.comp" depends="strap.pre-comp" unless="strap.comp.available">
     <stopwatch name="strap.comp.timer"/>
     <mkdir dir="${build-strap.dir}/classes/compiler"/>
+    <!-- TODO If we have cross dependencies, move this below scalacfork... -->
+    <javac
+      srcdir="${src.dir}/compiler"
+      destdir="${build-strap.dir}/classes/compiler"
+      includes="**/*.java"
+      target="1.5" source="1.5">
+        <compilerarg line="${javac.args}"/>
+        <classpath>
+          <pathelement location="${build-strap.dir}/classes/library"/>
+          <pathelement location="${build-strap.dir}/classes/compiler"/>
+          <path refid="aux.libs"/>
+          <pathelement location="${jline.jar}"/>
+      </classpath>
+    </javac>
     <scalacfork
       destdir="${build-strap.dir}/classes/compiler"
       compilerpathref="pack.classpath"
-      params="${scalac.args.all}"
+      params="${scalac.args.quick}"
       srcdir="${src.dir}/compiler"
       jvmargs="${scalacfork.jvmargs}">
       <include name="**/*.scala"/>
@@ -1334,7 +1379,7 @@ BOOTSTRAPPING BUILD (STRAP)
     <scalacfork
       destdir="${build-strap.dir}/classes/continuations-plugin"
       compilerpathref="pack.classpath"
-      params="${scalac.args.all}"
+      params="${scalac.args.quick}"
       srcdir="${src.dir}/continuations/plugin"
       jvmargs="${scalacfork.jvmargs}">
       <include name="**/*.scala"/>
@@ -1357,7 +1402,7 @@ BOOTSTRAPPING BUILD (STRAP)
     <scalacfork
       destdir="${build-strap.dir}/classes/library"
       compilerpathref="pack.classpath"
-      params="${scalac.args.all} -Xplugin-require:continuations -P:continuations:enable"
+      params="${scalac.args.quick} -Xplugin-require:continuations -P:continuations:enable"
       srcdir="${src.dir}/continuations/library"
       jvmargs="${scalacfork.jvmargs}">
       <include name="**/*.scala"/>
@@ -1374,7 +1419,7 @@ BOOTSTRAPPING BUILD (STRAP)
     <scalacfork
       destdir="${build-strap.dir}/classes/scalacheck"
       compilerpathref="pack.classpath"
-      params="${scalac.args.all}"
+      params="${scalac.args.quick}"
       srcdir="${src.dir}/scalacheck"
       jvmargs="${scalacfork.jvmargs}">
       <include name="**/*.scala"/>
@@ -1396,7 +1441,7 @@ BOOTSTRAPPING BUILD (STRAP)
     <scalacfork
       destdir="${build-strap.dir}/classes/scalap"
       compilerpathref="pack.classpath"
-      params="${scalac.args.all}"
+      params="${scalac.args.quick}"
       srcdir="${src.dir}/scalap"
       jvmargs="${scalacfork.jvmargs}">
       <include name="**/*.scala"/>
@@ -1438,7 +1483,7 @@ BOOTSTRAPPING BUILD (STRAP)
     <scalacfork
       destdir="${build-strap.dir}/classes/partest"
       compilerpathref="pack.classpath"
-      params="${scalac.args.all}"
+      params="${scalac.args.quick}"
       srcdir="${src.dir}/partest"
       jvmargs="${scalacfork.jvmargs}">
       <include name="**/*.scala"/>
