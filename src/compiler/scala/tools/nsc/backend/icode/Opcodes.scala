@@ -435,6 +435,8 @@ trait Opcodes { self: ICodes =>
 
       override def consumed = 1
       override def produced = 0
+
+      def flatTagsCount: Int = { var acc = 0; var rest = tags; while(rest.nonEmpty) { acc += rest.head.length; rest = rest.tail }; acc } // a one-liner
     }
 
     /** This class represents a JUMP instruction
