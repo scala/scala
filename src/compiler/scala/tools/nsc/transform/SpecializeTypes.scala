@@ -1322,7 +1322,15 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
           else None
         } else None
       }
-
+      
+      def reportError[T](body: =>T)(handler: TypeError => T): T =
+        try body
+        catch {
+          case te: TypeError =>
+            reporter.error(tree.pos, te.msg)
+            handler(te)
+        }
+      
       curTree = tree
       tree match {
         case Apply(Select(New(tpt), nme.CONSTRUCTOR), args) =>
@@ -1331,11 +1339,10 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
           if (found.typeSymbol ne tpt.tpe.typeSymbol) {
             // the ctor can be specialized
             debuglog("** instantiated specialized type: " + found)
-            try localTyper.typedPos(tree.pos)(New(found, transformTrees(args): _*))
-            catch {
-              case te: TypeError =>
-                reporter.error(tree.pos, te.msg)
-                super.transform(tree)
+            reportError {
+              localTyper.typedPos(tree.pos)(New(found, transformTrees(args): _*))
+            } {
+              _ => super.transform(tree)
             }
           } else super.transform(tree)
 
@@ -1493,13 +1500,21 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
               })
               debuglog("created special overload tree " + t)
               debuglog("created " + t)
-              localTyper.typed(t)
+              reportError { 
+                localTyper.typed(t)
+              } {
+                _ => super.transform(tree)
+              }
 
             case fwd @ Forward(_) =>
               debuglog("forward: " + fwd + ", " + ddef)
               val rhs1 = forwardCall(tree.pos, gen.mkAttributedRef(symbol.owner.thisType, fwd.target), vparamss)
               debuglog("-->d completed forwarder to specialized overload: " + fwd.target + ": " + rhs1)
-              localTyper.typed(deriveDefDef(tree)(_ => rhs1))
+              reportError {
+                localTyper.typed(deriveDefDef(tree)(_ => rhs1))
+              } {
+                _ => super.transform(tree)
+              }
 
             case SpecializedAccessor(target) =>
               val rhs1 = if (symbol.isGetter)

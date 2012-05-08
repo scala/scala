@@ -1,0 +1,4 @@
+t5564.scala:8: error: inferred type arguments [A] do not conform to method bar's type parameter bounds [B >: A <: C]
+  def bar[B >: A <: C]: T = throw new Exception
+      ^
+one error found
