@@ -1,4 +1,14 @@
-reload: PatMatTests.scala
+reload: NameDefaultTests.scala, PatMatTests.scala
+
+askHyperlinkPos for `someOtherInt` at (14,24) NameDefaultTests.scala
+================================================================================
+[response] found askHyperlinkPos for `someOtherInt` at (12,9) NameDefaultTests.scala
+================================================================================
+
+askHyperlinkPos for `someString` at (14,45) NameDefaultTests.scala
+================================================================================
+[response] found askHyperlinkPos for `someString` at (3,7) NameDefaultTests.scala
+================================================================================
 
 askHyperlinkPos for `CaseOne` at (12,18) PatMatTests.scala
 ================================================================================
