@@ -234,10 +234,13 @@ object ScalaRunTime {
   // Note that these are the implementations called by ##, so they
   // must not call ## themselves.
 
-  @inline def hash(x: Any): Int =
-    if (x == null) 0
-    else if (x.isInstanceOf[java.lang.Number]) BoxesRunTime.hashFromNumber(x.asInstanceOf[java.lang.Number])
-    else x.hashCode
+  @inline def hash(x: Any): Int = x match {
+    case null                => 0
+    case x: Double           => hash(x)
+    case x: Float            => hash(x)
+    case x: java.lang.Number => hash(x)
+    case _                   => x.hashCode
+  }
 
   @inline def hash(dv: Double): Int = {
     val iv = dv.toInt
