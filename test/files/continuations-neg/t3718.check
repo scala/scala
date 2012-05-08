@@ -1,0 +1,4 @@
+t3718.scala:2: error: cannot cps-transform malformed (possibly in shift/reset placement) expression
+  scala.util.continuations.reset((_: Any).##)
+                                          ^
+one error found

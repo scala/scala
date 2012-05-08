@@ -155,6 +155,8 @@ trait NamesDefaults { self: Analyzer =>
         val sym = blockTyper.context.owner.newValue(unit.freshTermName("qual$"), qual.pos) setInfo qual.tpe
         blockTyper.context.scope enter sym
         val vd = atPos(sym.pos)(ValDef(sym, qual) setType NoType)
+        // it stays in Vegas: SI-5720, SI-5727
+        qual changeOwner (blockTyper.context.owner -> sym)
 
         var baseFunTransformed = atPos(baseFun.pos.makeTransparent) {
           // don't use treeCopy: it would assign opaque position.
@@ -444,21 +446,12 @@ trait NamesDefaults { self: Analyzer =>
     }
   }
 
-  /** Fast path for ambiguous assignment check.
-   */
-  private def isNameInScope(context: Context, name: Name) = (
-    context.enclosingContextChain exists (ctx =>
-         (ctx.scope.lookupEntry(name) != null)
-      || (ctx.owner.rawInfo.member(name) != NoSymbol)
-    )
-  )
-
   /** A full type check is very expensive; let's make sure there's a name
    *  somewhere which could potentially be ambiguous before we go that route.
    */
   private def isAmbiguousAssignment(typer: Typer, param: Symbol, arg: Tree) = {
     import typer.context
-    isNameInScope(context, param.name) && {
+    (context isNameInScope param.name) && {
       // for named arguments, check whether the assignment expression would
       // typecheck. if it does, report an ambiguous error.
       val paramtpe = param.tpe.cloneInfo(param)

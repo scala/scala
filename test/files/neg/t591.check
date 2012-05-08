@@ -1,4 +1,5 @@
-t591.scala:38: error: method input_= is defined twice in t591.scala
+t591.scala:38: error: method input_= is defined twice
+  conflicting symbols both originated in file 't591.scala'
     def input_=(in : Input) = {}
         ^
 one error found

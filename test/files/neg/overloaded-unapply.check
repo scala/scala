@@ -7,7 +7,8 @@ match argument types (List[a])
 overloaded-unapply.scala:22: error: cannot resolve overloaded unapply
     case List(x, xs) => 7
          ^
-overloaded-unapply.scala:12: error: method unapply is defined twice in overloaded-unapply.scala
+overloaded-unapply.scala:12: error: method unapply is defined twice
+  conflicting symbols both originated in file 'overloaded-unapply.scala'
   def unapply[a](xs: List[a]): Option[Null] = xs match {
       ^
 three errors found

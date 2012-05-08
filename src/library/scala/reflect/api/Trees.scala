@@ -16,6 +16,9 @@ trait Trees { self: Universe =>
   type Modifiers >: Null <: AbsModifiers
   val NoMods: Modifiers
 
+  // TODO - Where do I put this?
+  object BackquotedIdentifier
+
   abstract class AbsModifiers {
     def modifiers: Set[Modifier]
     def hasModifier(mod: Modifier): Boolean
@@ -96,6 +99,20 @@ trait Trees { self: Universe =>
         case _ =>
           rawatt = NontrivialAttachment(pos, collection.mutable.ListBuffer[Any](att))
       }
+
+    // a) why didn't this method already exist
+    // b) what is all this "Any" business?
+    // c) am I reverse-engineering this correctly? It shouldn't be hard
+    //    to figure out what is attached.
+    def attachments: List[Any] = rawatt match {
+      case NoPosition                      => Nil
+      case NontrivialAttachment(pos, atts) => pos :: atts.toList
+      case x                               => List(x)
+    }
+    // Writing "Any" repeatedly to work within this structure
+    // is making my skin crawl.
+    def hasAttachment(x: Any) = attachments contains x
+
     def withAttachment(att: Any): this.type = { attach(att); this }
     def detach(att: Any): Unit =
       detach(att.getClass)
@@ -110,19 +127,21 @@ trait Trees { self: Universe =>
     def withoutAttachment(att: Any): this.type = { detach(att); this }
     def attachment[T: ClassTag]: T = attachmentOpt[T] getOrElse { throw new Error("no attachment of type %s".format(classTag[T].erasure)) }
     def attachmentOpt[T: ClassTag]: Option[T] =
+      firstAttachment { case attachment if attachment.getClass == classTag[T].erasure => attachment.asInstanceOf[T] }
+
+    def firstAttachment[T](p: PartialFunction[Any, T]): Option[T] =
       rawatt match {
-        case NontrivialAttachment(pos, payload) =>
-          val index = payload.indexWhere(p => p.getClass == classTag[T].erasure)
-          if (index != -1) Some(payload(index).asInstanceOf[T])
-          else None
-        case _ =>
-          None
+        case NontrivialAttachment(pos, payload) => payload.collectFirst(p)
+        case _ => None
       }
 
     private[this] var rawtpe: Type = _
 
     def tpe = rawtpe
     def tpe_=(t: Type) = rawtpe = t
+
+    def resetType(): this.type   = { tpe = null ; this }
+    def resetSymbol(): this.type = { if (hasSymbol) symbol = NoSymbol ; this }
 
     /** Set tpe to give `tp` and return this.
      */
@@ -134,7 +153,7 @@ trait Trees { self: Universe =>
      *  @PP: Attempting to elaborate on the above, I find: If defineType
      *  is called on a TypeTree whose type field is null or NoType,
      *  this is recorded as "wasEmpty = true". That value is used in
-     *  ResetAttrsTraverser, which nulls out the type field of TypeTrees
+     *  ResetAttrs, which nulls out the type field of TypeTrees
      *  for which wasEmpty is true, leaving the others alone.
      *
      *  resetAllAttrs is used in situations where some speculative
@@ -169,9 +188,14 @@ trait Trees { self: Universe =>
     def hasSymbol = false
     def isDef = false
     def isEmpty = false
-    def orElse(alt: => Tree) = if (!isEmpty) this else alt
+    @inline final def orElse(alt: => Tree) = if (!isEmpty) this else alt
+    @inline final def andAlso(f: Tree => Unit): Tree = { if (!this.isEmpty) f(this) ; this }
 
-    def hasSymbolWhich(f: Symbol => Boolean) = hasSymbol && f(symbol)
+    def hasAssignedType   = (tpe ne null) && (tpe ne NoType)
+    def hasAssignedSymbol = (symbol ne null) && (symbol ne NoSymbol)
+
+    @inline final def hasSymbolWhich(f: Symbol => Boolean) = hasAssignedSymbol && f(symbol)
+    @inline final def hasTypeWhich(f: Type => Boolean)     = hasAssignedType && f(tpe)
 
     /** The canonical way to test if a Tree represents a term.
      */
@@ -325,6 +349,7 @@ trait Trees { self: Universe =>
     override def tpe_=(t: Type) =
       if (t != NoType) throw new UnsupportedOperationException("tpe_=("+t+") inapplicable for <empty>")
     override def isEmpty = true
+    override def resetType(): this.type = this
   }
 
   /** Common base class for all member definitions: types, classes,
@@ -622,6 +647,9 @@ trait Trees { self: Universe =>
    */
   case class TypeApply(fun: Tree, args: List[Tree])
        extends GenericApply {
+
+    // Testing the above theory re: args.nonEmpty.
+    require(args.nonEmpty, this)
     override def symbol: Symbol = fun.symbol
     override def symbol_=(sym: Symbol) { fun.symbol = sym }
   }
@@ -691,15 +719,12 @@ trait Trees { self: Universe =>
   /** Identifier <name> */
   case class Ident(name: Name) extends RefTree {
     def qualifier: Tree = EmptyTree
+    def isBackquoted = this hasAttachment BackquotedIdentifier
   }
 
   def Ident(name: String): Ident
 
   def Ident(sym: Symbol): Ident
-
-  // TODO remove this class, add a tree attachment to Ident to track whether it was backquoted
-  // copying trees will all too easily forget to distinguish subclasses
-  class BackQuotedIdent(name: Name) extends Ident(name)
 
   /** Marks underlying reference to id as boxed.
    *  @pre: id must refer to a captured variable
@@ -773,8 +798,8 @@ trait Trees { self: Universe =>
         case t => t
       }
 
-      orig = followOriginal(tree); setPos(tree.pos);
-      this
+      orig = followOriginal(tree)
+      this setPos tree.pos
     }
 
     override def defineType(tp: Type): this.type = {
@@ -1152,11 +1177,11 @@ trait Trees { self: Universe =>
       new This(qual.toTypeName).copyAttrs(tree)
     def Select(tree: Tree, qualifier: Tree, selector: Name) =
       new Select(qualifier, selector).copyAttrs(tree)
-    def Ident(tree: Tree, name: Name) =
-      (tree match { // TODO: use a tree attachment to track whether this identifier was backquoted
-        case _ : BackQuotedIdent => new BackQuotedIdent(name)
-        case _ => new Ident(name)
-      }).copyAttrs(tree)
+    def Ident(tree: Tree, name: Name) = {
+      val t = new Ident(name) copyAttrs tree
+      if (tree hasAttachment BackquotedIdentifier) t withAttachment BackquotedIdentifier
+      else t
+    }
     def ReferenceToBoxed(tree: Tree, idt: Ident) =
       new ReferenceToBoxed(idt).copyAttrs(tree)
     def Literal(tree: Tree, value: Constant) =

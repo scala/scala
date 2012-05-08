@@ -119,7 +119,7 @@ import PagedSeq._
  *
  *  @author Martin Odersky
  *  @since  2.7
- *  @define Coll PagedSeq
+ *  @define Coll `PagedSeq`
  *  @define coll paged sequence
  *  @define mayNotTerminateInf
  *  @define willNotTerminateInf

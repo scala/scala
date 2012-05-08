@@ -26,9 +26,15 @@ package concurrent {
   object Await {
     private[concurrent] implicit val canAwaitEvidence = new CanAwait {}
     
-    def ready[T](awaitable: Awaitable[T], atMost: Duration): Awaitable[T] = awaitable.ready(atMost)
+    def ready[T](awaitable: Awaitable[T], atMost: Duration): awaitable.type = {
+      blocking(awaitable, atMost)
+      awaitable
+    }
     
-    def result[T](awaitable: Awaitable[T], atMost: Duration): T = awaitable.result(atMost)
+    def result[T](awaitable: Awaitable[T], atMost: Duration): T = {
+      blocking(awaitable, atMost)
+    }
+    
   }
 
   final class DurationOps private[concurrent] (x: Int) {

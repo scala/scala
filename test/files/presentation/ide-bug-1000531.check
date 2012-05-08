@@ -3,124 +3,125 @@ reload: CrashOnLoad.scala
 askTypeCompletion at CrashOnLoad.scala(6,12)
 ================================================================================
 [response] aksTypeCompletion at (6,12)
-retrieved 123 members
-`class GroupedIteratorIterator[B]#GroupedIterator`
-`method !=(x$1: Any)Boolean`
-`method !=(x$1: AnyRef)Boolean`
-`method ##()Int`
-`method +(other: String)String`
-`method ++[B >: B](that: => scala.collection.GenTraversableOnce[B])Iterator[B]`
-`method ->[B](y: B)(java.util.Iterator[B], B)`
-`method /:[B](z: B)(op: (B, B) => B)B`
-`method /:\[A1 >: B](z: A1)(op: (A1, A1) => A1)A1`
-`method :\[B](z: B)(op: (B, B) => B)B`
-`method ==(x$1: Any)Boolean`
-`method ==(x$1: AnyRef)Boolean`
-`method addString(b: StringBuilder)StringBuilder`
-`method addString(b: StringBuilder, sep: String)StringBuilder`
-`method addString(b: StringBuilder, start: String, sep: String, end: String)StringBuilder`
-`method aggregate[B](z: B)(seqop: (B, B) => B, combop: (B, B) => B)B`
-`method asInstanceOf[T0]=> T0`
-`method buffered=> scala.collection.BufferedIterator[B]`
-`method clone()Object`
-`method collectFirst[B](pf: PartialFunction[B,B])Option[B]`
-`method collect[B](pf: PartialFunction[B,B])Iterator[B]`
-`method contains(elem: Any)Boolean`
-`method copyToArray[B >: B](xs: Array[B])Unit`
-`method copyToArray[B >: B](xs: Array[B], start: Int)Unit`
-`method copyToArray[B >: B](xs: Array[B], start: Int, len: Int)Unit`
-`method copyToBuffer[B >: B](dest: scala.collection.mutable.Buffer[B])Unit`
-`method count(p: B => Boolean)Int`
-`method drop(n: Int)Iterator[B]`
-`method dropWhile(p: B => Boolean)Iterator[B]`
-`method duplicate=> (Iterator[B], Iterator[B])`
-`method ensuring(cond: Boolean)java.util.Iterator[B]`
-`method ensuring(cond: Boolean, msg: => Any)java.util.Iterator[B]`
-`method ensuring(cond: java.util.Iterator[B] => Boolean)java.util.Iterator[B]`
-`method ensuring(cond: java.util.Iterator[B] => Boolean, msg: => Any)java.util.Iterator[B]`
-`method eq(x$1: AnyRef)Boolean`
-`method equals(x$1: Any)Boolean`
-`method exists(p: B => Boolean)Boolean`
-`method filter(p: B => Boolean)Iterator[B]`
-`method filterNot(p: B => Boolean)Iterator[B]`
-`method finalize()Unit`
-`method find(p: B => Boolean)Option[B]`
-`method flatMap[B](f: B => scala.collection.GenTraversableOnce[B])Iterator[B]`
-`method foldLeft[B](z: B)(op: (B, B) => B)B`
-`method foldRight[B](z: B)(op: (B, B) => B)B`
-`method fold[A1 >: B](z: A1)(op: (A1, A1) => A1)A1`
-`method forall(p: B => Boolean)Boolean`
-`method foreach[U](f: B => U)Unit`
-`method formatted(fmtstr: String)String`
-`method grouped[B >: B](size: Int)Iterator[B]#GroupedIterator[B]`
-`method hasDefiniteSize=> Boolean`
-`method hasNext()Boolean`
-`method hashCode()Int`
-`method indexOf[B >: B](elem: B)Int`
-`method indexWhere(p: B => Boolean)Int`
-`method isEmpty=> Boolean`
-`method isInstanceOf[T0]=> Boolean`
-`method isTraversableAgain=> Boolean`
-`method length=> Int`
-`method map[B](f: B => B)Iterator[B]`
-`method maxBy[B](f: B => B)(implicit cmp: Ordering[B])B`
-`method max[B >: B](implicit cmp: Ordering[B])B`
-`method minBy[B](f: B => B)(implicit cmp: Ordering[B])B`
-`method min[B >: B](implicit cmp: Ordering[B])B`
-`method mkString(sep: String)String`
-`method mkString(start: String, sep: String, end: String)String`
-`method mkString=> String`
-`method ne(x$1: AnyRef)Boolean`
-`method next()B`
-`method nonEmpty=> Boolean`
-`method notify()Unit`
-`method notifyAll()Unit`
-`method padTo[A1 >: B](len: Int, elem: A1)Iterator[A1]`
-`method partition(p: B => Boolean)(Iterator[B], Iterator[B])`
-`method patch[B >: B](from: Int, patchElems: Iterator[B], replaced: Int)Iterator[B]`
-`method product[B >: B](implicit num: Numeric[B])B`
-`method reduceLeftOption[B >: B](op: (B, B) => B)Option[B]`
-`method reduceLeft[B >: B](op: (B, B) => B)B`
-`method reduceOption[A1 >: B](op: (A1, A1) => A1)Option[A1]`
-`method reduceRightOption[B >: B](op: (B, B) => B)Option[B]`
-`method reduceRight[B >: B](op: (B, B) => B)B`
-`method reduce[A1 >: B](op: (A1, A1) => A1)A1`
-`method remove()Unit`
-`method reversed=> List[B]`
-`method sameElements(that: Iterator[_])Boolean`
-`method scanLeft[B](z: B)(op: (B, B) => B)Iterator[B]`
-`method scanRight[B](z: B)(op: (B, B) => B)Iterator[B]`
-`method seq=> Iterator[B]`
-`method size=> Int`
-`method slice(from: Int, until: Int)Iterator[B]`
-`method sliding[B >: B](size: Int, step: Int)Iterator[B]#GroupedIterator[B]`
-`method span(p: B => Boolean)(Iterator[B], Iterator[B])`
-`method sum[B >: B](implicit num: Numeric[B])B`
-`method synchronized[T0](x$1: T0)T0`
-`method take(n: Int)Iterator[B]`
-`method takeWhile(p: B => Boolean)Iterator[B]`
-`method toArray[B >: B](implicit evidence$1: ArrayTag[B])Array[B]`
-`method toBuffer[B >: B]=> scala.collection.mutable.Buffer[B]`
-`method toIndexedSeq=> scala.collection.immutable.IndexedSeq[B]`
-`method toIterable=> Iterable[B]`
-`method toIterator=> Iterator[B]`
-`method toList=> List[B]`
-`method toMap[T, U](implicit ev: <:<[B,(T, U)])scala.collection.immutable.Map[T,U]`
-`method toSeq=> Seq[B]`
-`method toSet[B >: B]=> scala.collection.immutable.Set[B]`
-`method toStream=> scala.collection.immutable.Stream[B]`
-`method toString()String`
-`method toTraversable=> Traversable[B]`
-`method wait()Unit`
-`method wait(x$1: Long)Unit`
-`method wait(x$1: Long, x$2: Int)Unit`
-`method withFilter(p: B => Boolean)Iterator[B]`
-`method x=> java.util.Iterator[B]`
-`method zipAll[B, A1 >: B, B1 >: B](that: Iterator[B], thisElem: A1, thatElem: B1)Iterator[(A1, B1)]`
-`method zipWithIndex=> Iterator[(B, Int)]`
-`method zip[B](that: Iterator[B])Iterator[(B, B)]`
-`method →[B](y: B)(java.util.Iterator[B], B)`
-`value __leftOfArrowjava.util.Iterator[B]`
-`value __resultOfEnsuringjava.util.Iterator[B]`
-`value selfAny`
+retrieved 124 members
+[accessible:  true] `class GroupedIteratorIterator[B]#GroupedIterator`
+[accessible:  true] `method !=(x$1: Any)Boolean`
+[accessible:  true] `method !=(x$1: AnyRef)Boolean`
+[accessible:  true] `method ##()Int`
+[accessible:  true] `method +(other: String)String`
+[accessible:  true] `method ++[B >: B](that: => scala.collection.GenTraversableOnce[B])Iterator[B]`
+[accessible:  true] `method ->[B](y: B)(java.util.Iterator[B], B)`
+[accessible:  true] `method /:[B](z: B)(op: (B, B) => B)B`
+[accessible:  true] `method /:\[A1 >: B](z: A1)(op: (A1, A1) => A1)A1`
+[accessible:  true] `method :\[B](z: B)(op: (B, B) => B)B`
+[accessible:  true] `method ==(x$1: Any)Boolean`
+[accessible:  true] `method ==(x$1: AnyRef)Boolean`
+[accessible:  true] `method addString(b: StringBuilder)StringBuilder`
+[accessible:  true] `method addString(b: StringBuilder, sep: String)StringBuilder`
+[accessible:  true] `method addString(b: StringBuilder, start: String, sep: String, end: String)StringBuilder`
+[accessible:  true] `method aggregate[B](z: B)(seqop: (B, B) => B, combop: (B, B) => B)B`
+[accessible:  true] `method asInstanceOf[T0]=> T0`
+[accessible:  true] `method buffered=> scala.collection.BufferedIterator[B]`
+[accessible:  true] `method collectFirst[B](pf: PartialFunction[B,B])Option[B]`
+[accessible:  true] `method collect[B](pf: PartialFunction[B,B])Iterator[B]`
+[accessible:  true] `method contains(elem: Any)Boolean`
+[accessible:  true] `method copyToArray[B >: B](xs: Array[B])Unit`
+[accessible:  true] `method copyToArray[B >: B](xs: Array[B], start: Int)Unit`
+[accessible:  true] `method copyToArray[B >: B](xs: Array[B], start: Int, len: Int)Unit`
+[accessible:  true] `method copyToBuffer[B >: B](dest: scala.collection.mutable.Buffer[B])Unit`
+[accessible:  true] `method corresponds[B](that: scala.collection.GenTraversableOnce[B])(p: (B, B) => Boolean)Boolean`
+[accessible:  true] `method count(p: B => Boolean)Int`
+[accessible:  true] `method drop(n: Int)Iterator[B]`
+[accessible:  true] `method dropWhile(p: B => Boolean)Iterator[B]`
+[accessible:  true] `method duplicate=> (Iterator[B], Iterator[B])`
+[accessible:  true] `method ensuring(cond: Boolean)java.util.Iterator[B]`
+[accessible:  true] `method ensuring(cond: Boolean, msg: => Any)java.util.Iterator[B]`
+[accessible:  true] `method ensuring(cond: java.util.Iterator[B] => Boolean)java.util.Iterator[B]`
+[accessible:  true] `method ensuring(cond: java.util.Iterator[B] => Boolean, msg: => Any)java.util.Iterator[B]`
+[accessible:  true] `method eq(x$1: AnyRef)Boolean`
+[accessible:  true] `method equals(x$1: Any)Boolean`
+[accessible:  true] `method exists(p: B => Boolean)Boolean`
+[accessible:  true] `method filter(p: B => Boolean)Iterator[B]`
+[accessible:  true] `method filterNot(p: B => Boolean)Iterator[B]`
+[accessible:  true] `method find(p: B => Boolean)Option[B]`
+[accessible:  true] `method flatMap[B](f: B => scala.collection.GenTraversableOnce[B])Iterator[B]`
+[accessible:  true] `method foldLeft[B](z: B)(op: (B, B) => B)B`
+[accessible:  true] `method foldRight[B](z: B)(op: (B, B) => B)B`
+[accessible:  true] `method fold[A1 >: B](z: A1)(op: (A1, A1) => A1)A1`
+[accessible:  true] `method forall(p: B => Boolean)Boolean`
+[accessible:  true] `method foreach[U](f: B => U)Unit`
+[accessible:  true] `method formatted(fmtstr: String)String`
+[accessible:  true] `method grouped[B >: B](size: Int)Iterator[B]#GroupedIterator[B]`
+[accessible:  true] `method hasDefiniteSize=> Boolean`
+[accessible:  true] `method hasNext()Boolean`
+[accessible:  true] `method hashCode()Int`
+[accessible:  true] `method indexOf[B >: B](elem: B)Int`
+[accessible:  true] `method indexWhere(p: B => Boolean)Int`
+[accessible:  true] `method isEmpty=> Boolean`
+[accessible:  true] `method isInstanceOf[T0]=> Boolean`
+[accessible:  true] `method isTraversableAgain=> Boolean`
+[accessible:  true] `method length=> Int`
+[accessible:  true] `method map[B](f: B => B)Iterator[B]`
+[accessible:  true] `method maxBy[B](f: B => B)(implicit cmp: Ordering[B])B`
+[accessible:  true] `method max[B >: B](implicit cmp: Ordering[B])B`
+[accessible:  true] `method minBy[B](f: B => B)(implicit cmp: Ordering[B])B`
+[accessible:  true] `method min[B >: B](implicit cmp: Ordering[B])B`
+[accessible:  true] `method mkString(sep: String)String`
+[accessible:  true] `method mkString(start: String, sep: String, end: String)String`
+[accessible:  true] `method mkString=> String`
+[accessible:  true] `method ne(x$1: AnyRef)Boolean`
+[accessible:  true] `method next()B`
+[accessible:  true] `method nonEmpty=> Boolean`
+[accessible:  true] `method notify()Unit`
+[accessible:  true] `method notifyAll()Unit`
+[accessible:  true] `method padTo[A1 >: B](len: Int, elem: A1)Iterator[A1]`
+[accessible:  true] `method partition(p: B => Boolean)(Iterator[B], Iterator[B])`
+[accessible:  true] `method patch[B >: B](from: Int, patchElems: Iterator[B], replaced: Int)Iterator[B]`
+[accessible:  true] `method product[B >: B](implicit num: Numeric[B])B`
+[accessible:  true] `method reduceLeftOption[B >: B](op: (B, B) => B)Option[B]`
+[accessible:  true] `method reduceLeft[B >: B](op: (B, B) => B)B`
+[accessible:  true] `method reduceOption[A1 >: B](op: (A1, A1) => A1)Option[A1]`
+[accessible:  true] `method reduceRightOption[B >: B](op: (B, B) => B)Option[B]`
+[accessible:  true] `method reduceRight[B >: B](op: (B, B) => B)B`
+[accessible:  true] `method reduce[A1 >: B](op: (A1, A1) => A1)A1`
+[accessible:  true] `method remove()Unit`
+[accessible:  true] `method sameElements(that: Iterator[_])Boolean`
+[accessible:  true] `method scanLeft[B](z: B)(op: (B, B) => B)Iterator[B]`
+[accessible:  true] `method scanRight[B](z: B)(op: (B, B) => B)Iterator[B]`
+[accessible:  true] `method seq=> Iterator[B]`
+[accessible:  true] `method size=> Int`
+[accessible:  true] `method slice(from: Int, until: Int)Iterator[B]`
+[accessible:  true] `method sliding[B >: B](size: Int, step: Int)Iterator[B]#GroupedIterator[B]`
+[accessible:  true] `method span(p: B => Boolean)(Iterator[B], Iterator[B])`
+[accessible:  true] `method sum[B >: B](implicit num: Numeric[B])B`
+[accessible:  true] `method synchronized[T0](x$1: T0)T0`
+[accessible:  true] `method take(n: Int)Iterator[B]`
+[accessible:  true] `method takeWhile(p: B => Boolean)Iterator[B]`
+[accessible:  true] `method toArray[B >: B](implicit evidence$1: ArrayTag[B])Array[B]`
+[accessible:  true] `method toBuffer[B >: B]=> scala.collection.mutable.Buffer[B]`
+[accessible:  true] `method toIndexedSeq=> scala.collection.immutable.IndexedSeq[B]`
+[accessible:  true] `method toIterable=> Iterable[B]`
+[accessible:  true] `method toIterator=> Iterator[B]`
+[accessible:  true] `method toList=> List[B]`
+[accessible:  true] `method toMap[T, U](implicit ev: <:<[B,(T, U)])scala.collection.immutable.Map[T,U]`
+[accessible:  true] `method toSeq=> Seq[B]`
+[accessible:  true] `method toSet[B >: B]=> scala.collection.immutable.Set[B]`
+[accessible:  true] `method toStream=> scala.collection.immutable.Stream[B]`
+[accessible:  true] `method toString()String`
+[accessible:  true] `method toTraversable=> Traversable[B]`
+[accessible:  true] `method wait()Unit`
+[accessible:  true] `method wait(x$1: Long)Unit`
+[accessible:  true] `method wait(x$1: Long, x$2: Int)Unit`
+[accessible:  true] `method withFilter(p: B => Boolean)Iterator[B]`
+[accessible:  true] `method x=> java.util.Iterator[B]`
+[accessible:  true] `method zipAll[B, A1 >: B, B1 >: B](that: Iterator[B], thisElem: A1, thatElem: B1)Iterator[(A1, B1)]`
+[accessible:  true] `method zipWithIndex=> Iterator[(B, Int)]`
+[accessible:  true] `method zip[B](that: Iterator[B])Iterator[(B, B)]`
+[accessible:  true] `method →[B](y: B)(java.util.Iterator[B], B)`
+[accessible: false] `method clone()Object`
+[accessible: false] `method finalize()Unit`
+[accessible: false] `method reversed=> List[B]`
+[accessible: false] `value __leftOfArrowjava.util.Iterator[B]`
+[accessible: false] `value __resultOfEnsuringjava.util.Iterator[B]`
+[accessible: false] `value selfAny`
 ================================================================================

@@ -13,6 +13,7 @@ import scala.collection.mutable.ListBuffer
 import scala.annotation.tailrec
 import annotation.migration
 import language.implicitConversions
+import scala.util.DynamicVariable
 
 // TODO: better error handling (labelling like parsec's <?>)
 
@@ -154,13 +155,14 @@ trait Parsers {
     val successful = true
   }
 
-  var lastNoSuccess: NoSuccess = null
+  private lazy val lastNoSuccess = new DynamicVariable[Option[NoSuccess]](None)
 
   /** A common super-class for unsuccessful parse results. */
   sealed abstract class NoSuccess(val msg: String, override val next: Input) extends ParseResult[Nothing] { // when we don't care about the difference between Failure and Error
     val successful = false
-    if (!(lastNoSuccess != null && next.pos < lastNoSuccess.next.pos))
-      lastNoSuccess = this
+
+    if (lastNoSuccess.value map { v => !(next.pos < v.next.pos) } getOrElse true)
+      lastNoSuccess.value = Some(this)
 
     def map[U](f: Nothing => U) = this
     def mapPartial[U](f: PartialFunction[Nothing, U], error: Nothing => String): ParseResult[U] = this
@@ -596,7 +598,8 @@ trait Parsers {
    *  @return        A parser for elements satisfying p(e).
    */
   def acceptIf(p: Elem => Boolean)(err: Elem => String): Parser[Elem] = Parser { in =>
-    if (p(in.first)) Success(in.first, in.rest)
+    if (in.atEnd) Failure("end of input", in)
+    else if (p(in.first)) Success(in.first, in.rest)
     else Failure(err(in.first), in)
   }
 
@@ -614,7 +617,8 @@ trait Parsers {
    *          applying `f` to it to produce the result.
    */
   def acceptMatch[U](expected: String, f: PartialFunction[Elem, U]): Parser[U] = Parser{ in =>
-    if (f.isDefinedAt(in.first)) Success(f(in.first), in.rest)
+    if (in.atEnd) Failure("end of input", in)
+    else if (f.isDefinedAt(in.first)) Success(f(in.first), in.rest)
     else Failure(expected+" expected", in)
   }
 
@@ -877,16 +881,15 @@ trait Parsers {
    *           if `p` consumed all the input.
    */
   def phrase[T](p: Parser[T]) = new Parser[T] {
-    lastNoSuccess = null
-    def apply(in: Input) = p(in) match {
+    def apply(in: Input) = lastNoSuccess.withValue(None) {
+      p(in) match {
       case s @ Success(out, in1) =>
         if (in1.atEnd)
           s
-        else if (lastNoSuccess == null || lastNoSuccess.next.pos < in1.pos)
-          Failure("end of input expected", in1)
         else
-          lastNoSuccess
-      case _ => lastNoSuccess
+            lastNoSuccess.value filterNot { _.next.pos < in1.pos } getOrElse Failure("end of input expected", in1)
+        case ns => lastNoSuccess.value.getOrElse(ns)
+      }
     }
   }
 

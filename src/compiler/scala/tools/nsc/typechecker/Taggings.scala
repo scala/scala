@@ -10,7 +10,7 @@ trait Taggings {
   trait Tagging {
     self: Typer =>
 
-    private def resolveTag(pos: Position, taggedTp: Type) = beforeTyper {
+    private def resolveTag(taggedTp: Type, pos: Position) = beforeTyper {
       inferImplicit(
         EmptyTree,
         taggedTp,
@@ -25,47 +25,47 @@ trait Taggings {
     /** Finds in scope or materializes an ArrayTag.
      *  Should be used instead of ClassTag or ClassManifest every time compiler needs to create an array.
      *
+     *  @param   tp         Type we're looking an ArrayTag for, e.g. resolveArrayTag(IntClass.tpe, pos) will look for ArrayTag[Int].
      *  @param   pos        Position for error reporting. Please, provide meaningful value.
-     *  @param   tp         Type we're looking an ArrayTag for, e.g. resolveArrayTag(pos, IntClass.tpe) will look for ArrayTag[Int].
      *
      *  @returns Tree that represents an `scala.reflect.ArrayTag` for `tp` if everything is okay.
      *           EmptyTree if the result contains unresolved (i.e. not spliced) type parameters and abstract type members.
      */
-    def resolveArrayTag(pos: Position, tp: Type): Tree = {
+    def resolveArrayTag(tp: Type, pos: Position): Tree = {
       val taggedTp = appliedType(ArrayTagClass.typeConstructor, List(tp))
-      resolveTag(pos, taggedTp)
+      resolveTag(taggedTp, pos)
     }
 
     /** Finds in scope or materializes an ErasureTag (if `concrete` is false) or a ClassTag (if `concrete` is true).
      *  Should be used instead of ClassTag or ClassManifest every time compiler needs to persist an erasure.
      *
+     *  @param   tp         Type we're looking an ErasureTag for, e.g. resolveErasureTag(IntClass.tpe, pos, true) will look for ClassTag[Int].
      *  @param   pos        Position for error reporting. Please, provide meaningful value.
-     *  @param   tp         Type we're looking an ErasureTag for, e.g. resolveErasureTag(pos, IntClass.tpe, true) will look for ClassTag[Int].
      *  @param   concrete   If true then the result must not contain unresolved (i.e. not spliced) type parameters and abstract type members.
      *                      If false then the function will always succeed (abstract types will be erased to their upper bounds).
      *
      *  @returns Tree that represents an `scala.reflect.ErasureTag` for `tp` if everything is okay.
      *           EmptyTree if `concrete` is true and the result contains unresolved (i.e. not spliced) type parameters and abstract type members.
      */
-    def resolveErasureTag(pos: Position, tp: Type, concrete: Boolean): Tree = {
+    def resolveErasureTag(tp: Type, pos: Position, concrete: Boolean): Tree = {
       val taggedTp = appliedType(if (concrete) ClassTagClass.typeConstructor else ErasureTagClass.typeConstructor, List(tp))
-      resolveTag(pos, taggedTp)
+      resolveTag(taggedTp, pos)
     }
 
     /** Finds in scope or materializes a TypeTag (if `concrete` is false) or a ConcreteTypeTag (if `concrete` is true).
      *
-     *  @param   pos        Position for error reporting. Please, provide meaningful value.
      *  @param   pre        Prefix that represents a universe this type tag will be bound to.
-     *  @param   tp         Type we're looking a TypeTag for, e.g. resolveTypeTag(pos, reflectMirrorPrefix, IntClass.tpe, false) will look for scala.reflect.mirror.TypeTag[Int].
+     *  @param   tp         Type we're looking a TypeTag for, e.g. resolveTypeTag(reflectMirrorPrefix, IntClass.tpe, pos, false) will look for scala.reflect.mirror.TypeTag[Int].
+     *  @param   pos        Position for error reporting. Please, provide meaningful value.
      *  @param   concrete   If true then the result must not contain unresolved (i.e. not spliced) type parameters and abstract type members.
      *                      If false then the function will always succeed (abstract types will be reified as free types).
      *
      *  @returns Tree that represents a `scala.reflect.TypeTag` for `tp` if everything is okay.
      *           EmptyTree if `concrete` is true and the result contains unresolved (i.e. not spliced) type parameters and abstract type members.
      */
-    def resolveTypeTag(pos: Position, pre: Type, tp: Type, concrete: Boolean): Tree = {
+    def resolveTypeTag(pre: Type, tp: Type, pos: Position, concrete: Boolean): Tree = {
       val taggedTp = appliedType(singleType(pre, pre member (if (concrete) ConcreteTypeTagClass else TypeTagClass).name), List(tp))
-      resolveTag(pos, taggedTp)
+      resolveTag(taggedTp, pos)
     }
   }
 }

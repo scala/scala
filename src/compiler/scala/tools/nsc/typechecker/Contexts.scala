@@ -354,32 +354,30 @@ trait Contexts { self: Analyzer =>
 
     private def unitError(pos: Position, msg: String) =
       unit.error(pos, if (checking) "\n**** ERROR DURING INTERNAL CHECKING ****\n" + msg else msg)
-
-    def issue(err: AbsTypeError) {
+    
+    @inline private def issueCommon(err: AbsTypeError)(pf: PartialFunction[AbsTypeError, Unit]) {
       debugwarn("issue error: " + err.errMsg)
       if (settings.Yissuedebug.value) (new Exception).printStackTrace()
-      if (reportErrors) unitError(err.errPos, addDiagString(err.errMsg))
+      if (pf isDefinedAt err) pf(err)
       else if (bufferErrors) { buffer += err }
       else throw new TypeError(err.errPos, err.errMsg)
+    }
+
+    def issue(err: AbsTypeError) {
+      issueCommon(err) { case _ if reportErrors =>
+        unitError(err.errPos, addDiagString(err.errMsg))
+      }
     }
 
     def issueAmbiguousError(pre: Type, sym1: Symbol, sym2: Symbol, err: AbsTypeError) {
-      debugwarn("issue ambiguous error: " + err.errMsg)
-      if (settings.Yissuedebug.value) (new Exception).printStackTrace()
-      if (ambiguousErrors) {
+      issueCommon(err) { case _ if ambiguousErrors =>
         if (!pre.isErroneous && !sym1.isErroneous && !sym2.isErroneous)
           unitError(err.errPos, err.errMsg)
-      } else if (bufferErrors) { buffer += err }
-      else throw new TypeError(err.errPos, err.errMsg)
+      }
     }
 
     def issueAmbiguousError(err: AbsTypeError) {
-      debugwarn("issue ambiguous error: " + err.errMsg)
-      if (settings.Yissuedebug.value) (new Exception).printStackTrace()
-      if (ambiguousErrors)
-        unitError(err.errPos, addDiagString(err.errMsg))
-      else if (bufferErrors) { buffer += err }
-      else throw new TypeError(err.errPos, err.errMsg)
+      issueCommon(err) { case _ if ambiguousErrors => unitError(err.errPos, addDiagString(err.errMsg)) }
     }
 
     // TODO remove
@@ -404,6 +402,17 @@ trait Contexts { self: Analyzer =>
       case EmptyTree        => false
       case _                => outer.isLocal()
     }
+
+    /** Fast path for some slow checks (ambiguous assignment in Refchecks, and
+     *  existence of __match for MatchTranslation in virtpatmat.) This logic probably
+     *  needs improvement.
+     */
+    def isNameInScope(name: Name) = (
+      enclosingContextChain exists (ctx =>
+           (ctx.scope.lookupEntry(name) != null)
+        || (ctx.owner.rawInfo.member(name) != NoSymbol)
+      )
+    )
 
     // nextOuter determines which context is searched next for implicits
     // (after `this`, which contributes `newImplicits` below.) In

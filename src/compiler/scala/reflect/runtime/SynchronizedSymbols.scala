@@ -46,7 +46,7 @@ trait SynchronizedSymbols extends internal.Symbols { self: SymbolTable =>
 
     override def typeParams: List[Symbol] = synchronized { super.typeParams }
 
-    override def reset(completer: Type) = synchronized { super.reset(completer) }
+    override def reset(completer: Type): this.type = synchronized { super.reset(completer) }
 
     override def infosString: String = synchronized { super.infosString }
 
@@ -121,8 +121,8 @@ trait SynchronizedSymbols extends internal.Symbols { self: SymbolTable =>
   }
 
   trait SynchronizedClassSymbol extends ClassSymbol with SynchronizedTypeSymbol {
-    override def sourceFile = synchronized { super.sourceFile }
-    override def sourceFile_=(f: AbstractFileType) = synchronized { super.sourceFile_=(f) }
+    override def associatedFile = synchronized { super.associatedFile }
+    override def associatedFile_=(f: AbstractFileType) = synchronized { super.associatedFile_=(f) }
     override def thisSym: Symbol = synchronized { super.thisSym }
     override def thisType: Type = synchronized { super.thisType }
     override def typeOfThis: Type = synchronized { super.typeOfThis }

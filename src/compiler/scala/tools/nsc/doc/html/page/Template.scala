@@ -70,8 +70,7 @@ class Template(universe: doc.Universe, tpl: DocTemplateEntity) extends HtmlPage 
         <p id="owner">{ templatesToHtml(tpl.inTemplate.toRoot.reverse.tail, xml.Text(".")) }</p>
     }
 
-    <body class={ if (tpl.isTrait || tpl.isClass || tpl.qualifiedName == "scala.AnyRef") "type" else "value" }
-          onload={ "sh_highlightDocument('../lib/', '.min.js');" }>
+    <body class={ if (tpl.isTrait || tpl.isClass || tpl.qualifiedName == "scala.AnyRef") "type" else "value" }>
       <div id="definition">
         {
           tpl.companion match {

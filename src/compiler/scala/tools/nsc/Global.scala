@@ -25,7 +25,7 @@ import typechecker._
 import transform._
 import backend.icode.{ ICodes, GenICode, ICodeCheckers }
 import backend.{ ScalaPrimitives, Platform, MSILPlatform, JavaPlatform }
-import backend.jvm.GenJVM
+import backend.jvm.{GenJVM, GenASM}
 import backend.opt.{ Inliners, InlineExceptionHandlers, ClosureElimination, DeadCodeElimination }
 import backend.icode.analysis._
 import language.postfixOps
@@ -243,7 +243,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter) extends Symb
   }
 
   def logThrowable(t: Throwable): Unit = globalError(throwableAsString(t))
-  def throwableAsString(t: Throwable): String =
+  override def throwableAsString(t: Throwable): String =
     if (opt.richExes) Exceptional(t).force().context()
     else util.stackTraceString(t)
 
@@ -354,9 +354,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter) extends Symb
   // where I need it, and then an override in Global with the setting.
   override protected val etaExpandKeepsStar = settings.etaExpandKeepsStar.value
   // Here comes another one...
-  override protected val enableTypeVarExperimentals = (
-    settings.Xexperimental.value || !settings.XoldPatmat.value
-  )
+  override protected val enableTypeVarExperimentals = settings.Xexperimental.value
 
   // True if -Xscript has been set, indicating a script run.
   def isScriptRun = opt.script.isDefined
@@ -462,10 +460,19 @@ class Global(var currentSettings: Settings, var reporter: Reporter) extends Symb
     val global: Global.this.type = Global.this
   } with Analyzer
 
+  // phaseName = "patmat"
+  object patmat extends {
+    val global: Global.this.type = Global.this
+    val runsAfter = List("typer")
+    // patmat doesn't need to be right after typer, as long as we run before supperaccesors
+    // (sbt does need to run right after typer, so don't conflict)
+    val runsRightAfter = None
+  } with PatternMatching
+
   // phaseName = "superaccessors"
   object superAccessors extends {
     val global: Global.this.type = Global.this
-    val runsAfter = List("typer")
+    val runsAfter = List("patmat")
     val runsRightAfter = None
   } with SuperAccessors
 
@@ -534,7 +541,6 @@ class Global(var currentSettings: Settings, var reporter: Reporter) extends Symb
 
   // phaseName = "lazyvals"
   object lazyVals extends {
-    final val FLAGS_PER_WORD = 32
     val global: Global.this.type = Global.this
     val runsAfter = List("erasure")
     val runsRightAfter = None
@@ -610,12 +616,19 @@ class Global(var currentSettings: Settings, var reporter: Reporter) extends Symb
     val runsRightAfter = None
   } with DeadCodeElimination
 
-  // phaseName = "jvm"
+  // phaseName = "jvm", FJBG-based version
   object genJVM extends {
     val global: Global.this.type = Global.this
     val runsAfter = List("dce")
     val runsRightAfter = None
   } with GenJVM
+
+  // phaseName = "jvm", ASM-based version
+  object genASM extends {
+    val global: Global.this.type = Global.this
+    val runsAfter = List("dce")
+    val runsRightAfter = None
+  } with GenASM
 
   // This phase is optional: only added if settings.make option is given.
   // phaseName = "dependencyAnalysis"
@@ -682,6 +695,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter) extends Symb
       analyzer.namerFactory   -> "resolve names, attach symbols to named trees",
       analyzer.packageObjects -> "load package objects",
       analyzer.typerFactory   -> "the meat and potatoes: type the trees",
+      patmat                  -> "translate match expressions",
       superAccessors          -> "add super accessors in traits and nested classes",
       extensionMethods        -> "add extension methods for inline classes",
       pickler                 -> "serialize symbol tables",

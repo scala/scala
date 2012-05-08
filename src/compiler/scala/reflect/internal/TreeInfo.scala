@@ -227,8 +227,11 @@ abstract class TreeInfo {
 
   /** Is tree a variable pattern? */
   def isVarPattern(pat: Tree): Boolean = pat match {
-    case _: BackQuotedIdent => false
-    case x: Ident           => isVariableName(x.name)
+    case x: Ident           => !x.isBackquoted && isVariableName(x.name)
+    case _                  => false
+  }
+  def isDeprecatedIdentifier(tree: Tree): Boolean = tree match {
+    case x: Ident           => !x.isBackquoted && nme.isDeprecatedIdentifierName(x.name)
     case _                  => false
   }
 

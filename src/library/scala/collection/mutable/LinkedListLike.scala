@@ -29,7 +29,7 @@ import annotation.tailrec
  *  @tparam A    type of the elements contained in the linked list
  *  @tparam This the type of the actual linked list holding the elements
  *
- *  @define Coll LinkedList
+ *  @define Coll `LinkedList`
  *  @define coll linked list
  *
  *  @define singleLinkedListExample

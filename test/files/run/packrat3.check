@@ -4,4 +4,4 @@
 (((List(a, a, a, a, b, b, b, b)~())~List(a, a, a, a))~List(b, b, b, b, c, c, c, c))
 Expected failure
 ``b'' expected but `c' found
-``c'' expected but EOF found
+end of input

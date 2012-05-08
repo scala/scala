@@ -9,7 +9,7 @@ package backend.opt
 
 import scala.collection.mutable
 import scala.tools.nsc.symtab._
-import scala.tools.nsc.util.{ NoSourceFile }
+import scala.tools.nsc.util.NoSourceFile
 
 /**
  *  @author Iulian Dragos
@@ -196,33 +196,35 @@ abstract class Inliners extends SubComponent {
     val staleIn       = mutable.Set.empty[BasicBlock]
 
     /**
-     * A transformation local to the body of the argument.
+     * A transformation local to the body of the IMethod received as argument.
      * An linining decision consists in replacing a callsite with the body of the callee.
      * Please notice that, because `analyzeMethod()` itself may modify a method body,
      * the particular callee bodies that end up being inlined depend on the particular order in which methods are visited
-     * (no topological ordering over the call-graph is attempted).
+     * (no topological sorting over the call-graph is attempted).
      *
      * Making an inlining decision requires type-flow information for both caller and callee.
      * Regarding the caller, such information is needed only for basic blocks containing inlining candidates
      * (and their transitive predecessors). This observation leads to using a custom type-flow analysis (MTFAGrowable)
-     * that can be re-inited, i.e. that reuses lattice elements (type-flow information) computed in a previous iteration
+     * that can be re-inited, i.e. that reuses lattice elements (type-flow information computed in a previous iteration)
      * as starting point for faster convergence in a new iteration.
      *
      * The mechanics of inlining are iterative for a given invocation of `analyzeMethod(m)`,
-     * thus considering the basic blocks that successful inlining added in a previous iteration:
+     * and are affected by inlinings from previous iterations
+     * (ie, "heuristic" rules are based on statistics tracked for that purpose):
      *
      *   (1) before the iterations proper start, so-called preinlining is performed.
      *       Those callsites whose (receiver, concreteMethod) are both known statically
      *       can be analyzed for inlining before computing a type-flow. Details in `preInline()`
      *
      *   (2) the first iteration computes type-flow information for basic blocks containing inlining candidates
-     *       (and their transitive predecessors), so called `relevantBBs`.
+     *       (and their transitive predecessors), so called `relevantBBs` basic blocks.
      *       The ensuing analysis of each candidate (performed by `analyzeInc()`)
-     *       may result in a CFG isomorphic to that of the callee being inserted where the callsite was
-     *       (i.e. a CALL_METHOD instruction is replaced with a single-entry single-exit CFG, which we call "successful inlining").
+     *       may result in a CFG isomorphic to that of the callee being inserted in place of the callsite
+     *       (i.e. a CALL_METHOD instruction is replaced with a single-entry single-exit CFG,
+     *        a situation we call "successful inlining").
      *
-     *   (3) following iterations have their relevant basic blocks updated to focus
-     *       on the inlined basic blocks and their successors only. Details in `MTFAGrowable.reinit()`
+     *   (3) following iterations have `relevantBBs` updated to focus on the inlined basic blocks and their successors only.
+     *       Details in `MTFAGrowable.reinit()`
      * */
     def analyzeMethod(m: IMethod): Unit = {
       // m.normalize
@@ -372,7 +374,7 @@ abstract class Inliners extends SubComponent {
        * That's why preInline() is invoked twice: any inlinings downplayed by the heuristics during the first round get an opportunity to rank higher during the second.
        *
        * As a whole, both `preInline()` invocations amount to priming the inlining process,
-       * so that the first TFA run afterwards is able to gain more information as compared to a cold-start.
+       * so that the first TFA that is run afterwards is able to gain more information as compared to a cold-start.
        */
       val totalPreInlines = {
         val firstRound = preInline(true)
@@ -388,9 +390,10 @@ abstract class Inliners extends SubComponent {
 
         /* it's important not to inline in unreachable basic blocks. linearizedBlocks() returns only reachable ones. */
         tfa.callerLin = caller.m.linearizedBlocks()
-           /* TODO Do we want to perform inlining in non-finally exception handlers?
+           /* TODO Do we really want to inline inside exception handlers?
            *  Seems counterproductive (the larger the method the less likely it will be JITed).
-            * The alternative above would be `linearizer.linearizeAt(caller.m, caller.m.startBlock)`.
+            * The alternative would be `linearizer.linearizeAt(caller.m, caller.m.startBlock)`.
+            * And, we would cut down on TFA iterations, too.
             * See also comment on the same topic in TypeFlowAnalysis. */
 
         tfa.reinit(m, staleOut.toList, splicedBlocks, staleIn)

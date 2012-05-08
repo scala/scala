@@ -3,31 +3,19 @@ patmat-type-check.scala:22: error: scrutinee is incompatible with pattern type;
  required: String
   def f1 = "bob".reverse match { case Seq('b', 'o', 'b') => true } // fail
                                          ^
-patmat-type-check.scala:22: error: value _1 is not a member of object Seq
-  def f1 = "bob".reverse match { case Seq('b', 'o', 'b') => true } // fail
-                 ^
 patmat-type-check.scala:23: error: scrutinee is incompatible with pattern type;
  found   : Seq[A]
  required: Array[Char]
   def f2 = "bob".toArray match { case Seq('b', 'o', 'b') => true } // fail
                                          ^
-patmat-type-check.scala:23: error: value _1 is not a member of object Seq
-  def f2 = "bob".toArray match { case Seq('b', 'o', 'b') => true } // fail
-                 ^
 patmat-type-check.scala:27: error: scrutinee is incompatible with pattern type;
  found   : Seq[A]
  required: Test.Bop2
   def f3(x: Bop2) = x match { case Seq('b', 'o', 'b') => true } // fail
                                       ^
-patmat-type-check.scala:27: error: value _1 is not a member of object Seq
-  def f3(x: Bop2) = x match { case Seq('b', 'o', 'b') => true } // fail
-                    ^
 patmat-type-check.scala:30: error: scrutinee is incompatible with pattern type;
  found   : Seq[A]
  required: Test.Bop3[Char]
   def f4[T](x: Bop3[Char]) = x match { case Seq('b', 'o', 'b') => true } // fail
                                                ^
-patmat-type-check.scala:30: error: value _1 is not a member of object Seq
-  def f4[T](x: Bop3[Char]) = x match { case Seq('b', 'o', 'b') => true } // fail
-                             ^
-8 errors found
+four errors found

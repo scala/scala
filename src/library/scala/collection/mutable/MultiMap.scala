@@ -19,7 +19,7 @@ package mutable
  *  `B` objects.
  *
  *  @define coll multimap
- *  @define Coll MultiMap
+ *  @define Coll `MultiMap`
  *  @author  Matthias Zenger
  *  @author  Martin Odersky
  *  @version 2.8

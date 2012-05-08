@@ -99,7 +99,7 @@ trait Types {
           // if this fails, it might produce the dreaded "erroneous or inaccessible type" error
           // to find out the whereabouts of the error run scalac with -Ydebug
           if (reifyDebug) println("launching implicit search for %s.%s[%s]".format(prefix, tagClass.name, tpe))
-          typer.resolveTypeTag(defaultErrorPosition, prefix.tpe, tpe, concrete) match {
+          typer.resolveTypeTag(prefix.tpe, tpe, defaultErrorPosition, concrete) match {
             case failure if failure.isEmpty =>
               if (reifyDebug) println("implicit search was fruitless")
               EmptyTree

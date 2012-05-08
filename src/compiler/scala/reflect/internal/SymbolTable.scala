@@ -50,14 +50,18 @@ abstract class SymbolTable extends api.Universe
   /** Override with final implementation for inlining. */
   def debuglog(msg:  => String): Unit = if (settings.debug.value) log(msg)
   def debugwarn(msg: => String): Unit = if (settings.debug.value) Console.err.println(msg)
+  def throwableAsString(t: Throwable): String = "" + t
+
+  /** Prints a stack trace if -Ydebug or equivalent was given, otherwise does nothing. */
+  def debugStack(t: Throwable): Unit  = debugwarn(throwableAsString(t))
 
   /** Overridden when we know more about what was happening during a failure. */
   def supplementErrorMessage(msg: String): String = msg
 
   private[scala] def printCaller[T](msg: String)(result: T) = {
-    Console.err.println(msg + ": " + result)
-    Console.err.println("Called from:")
-    (new Throwable).getStackTrace.drop(2).take(15).foreach(Console.err.println)
+    Console.err.println("%s: %s\nCalled from: %s".format(msg, result,
+      (new Throwable).getStackTrace.drop(2).take(15).mkString("\n")))
+
     result
   }
 
@@ -280,16 +284,8 @@ abstract class SymbolTable extends api.Universe
   object perRunCaches {
     import java.lang.ref.WeakReference
     import scala.runtime.ScalaRunTime.stringOf
+    import scala.collection.generic.Clearable
 
-    import language.reflectiveCalls
-
-    // We can allow ourselves a structural type, these methods
-    // amount to a few calls per run at most.  This does suggest
-    // a "Clearable" trait may be useful.
-    private type Clearable = {
-      def size: Int
-      def clear(): Unit
-    }
     // Weak references so the garbage collector will take care of
     // letting us know when a cache is really out of commission.
     private val caches = mutable.HashSet[WeakReference[Clearable]]()
@@ -298,10 +294,14 @@ abstract class SymbolTable extends api.Universe
       println(caches.size + " structures are in perRunCaches.")
       caches.zipWithIndex foreach { case (ref, index) =>
         val cache = ref.get()
-        println("(" + index + ")" + (
-          if (cache == null) " has been collected."
-          else " has " + cache.size + " entries:\n" + stringOf(cache)
-        ))
+        cache match {
+          case xs: Traversable[_] =>
+            println("(" + index + ")" + (
+              if (cache == null) " has been collected."
+              else " has " + xs.size + " entries:\n" + stringOf(xs)
+            ))
+          case _ =>
+        }
       }
     }
     // if (settings.debug.value) {
@@ -315,8 +315,9 @@ abstract class SymbolTable extends api.Universe
 
     def clearAll() = {
       if (settings.debug.value) {
-        val size = caches flatMap (ref => Option(ref.get)) map (_.size) sum;
-        log("Clearing " + caches.size + " caches totalling " + size + " entries.")
+        // val size = caches flatMap (ref => Option(ref.get)) map (_.size) sum;
+        log("Clearing " + caches.size + " caches.")
+        // totalling " + size + " entries.")
       }
       caches foreach { ref =>
         val cache = ref.get()

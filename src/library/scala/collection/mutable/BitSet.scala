@@ -21,7 +21,7 @@ import BitSetLike.{LogWL, updateArray}
  *  @see [[http://docs.scala-lang.org/overviews/collections/concrete-mutable-collection-classes.html#mutable_bitsets "Scala's Collection Library overview"]]
  *  section on `Mutable Bitsets` for more information.
  *
- *  @define Coll BitSet
+ *  @define Coll `BitSet`
  *  @define coll bitset
  *  @define thatinfo the class of the returned collection. In the standard library configuration,
  *    `That` is always `BitSet[B]` because an implicit of type `CanBuildFrom[BitSet, B, BitSet]`
@@ -114,7 +114,7 @@ class BitSet(protected var elems: Array[Long]) extends AbstractSet[Int]
 
 /** $factoryInfo
  *  @define coll bitset
- *  @define Coll BitSet
+ *  @define Coll `BitSet`
  */
 object BitSet extends BitSetFactory[BitSet] {
   def empty: BitSet = new BitSet

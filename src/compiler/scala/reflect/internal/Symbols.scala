@@ -1425,7 +1425,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
 
     /** Reset symbol to initial state
      */
-    def reset(completer: Type) {
+    def reset(completer: Type): this.type = {
       resetFlags()
       infos = null
       _validTo = NoPeriod
@@ -2036,13 +2036,27 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
 
     def isExpandedModuleClass: Boolean = name(name.length - 1) == '$'
 */
-    def sourceFile: AbstractFileType =
-      if (isModule) moduleClass.sourceFile
-      else enclosingTopLevelClass.sourceFile
 
-    def sourceFile_=(f: AbstractFileType) {
-      abort("sourceFile_= inapplicable for " + this)
-    }
+    /** Desire to re-use the field in ClassSymbol which stores the source
+     *  file to also store the classfile, but without changing the behavior
+     *  of sourceFile (which is expected at least in the IDE only to
+     *  return actual source code.) So sourceFile has classfiles filtered out.
+     */
+    private def sourceFileOnly(file: AbstractFileType): AbstractFileType =
+      if ((file eq null) || (file.path endsWith ".class")) null else file
+
+    private def binaryFileOnly(file: AbstractFileType): AbstractFileType =
+      if ((file eq null) || !(file.path endsWith ".class")) null else file
+
+    final def binaryFile: AbstractFileType = binaryFileOnly(associatedFile)
+    final def sourceFile: AbstractFileType = sourceFileOnly(associatedFile)
+
+    /** Overridden in ModuleSymbols to delegate to the module class. */
+    def associatedFile: AbstractFileType = enclosingTopLevelClass.associatedFile
+    def associatedFile_=(f: AbstractFileType) { abort("associatedFile_= inapplicable for " + this) }
+
+    @deprecated("Use associatedFile_= instead", "2.10.0")
+    def sourceFile_=(f: AbstractFileType): Unit = associatedFile_=(f)
 
     /** If this is a sealed class, its known direct subclasses.
      *  Otherwise, the empty set.
@@ -2054,6 +2068,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     def sealedDescendants: Set[Symbol] = children.flatMap(_.sealedDescendants) + this
 
     @inline final def orElse(alt: => Symbol): Symbol = if (this ne NoSymbol) this else alt
+    @inline final def andAlso(f: Symbol => Unit): Symbol = { if (this ne NoSymbol) f(this) ; this }
 
 // ------ toString -------------------------------------------------------------------
 
@@ -2422,6 +2437,9 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     def distinguishingFlag = MODULE
     private var flatname: TermName = null
 
+    override def associatedFile = moduleClass.associatedFile
+    override def associatedFile_=(f: AbstractFileType) { moduleClass.associatedFile = f }
+
     override def isModule = true
     override def moduleClass = referenced
     override def companionClass =
@@ -2636,10 +2654,11 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
       info.baseTypeIndex(that) >= 0
     )
 
-    override def reset(completer: Type) {
+    override def reset(completer: Type): this.type = {
       super.reset(completer)
       tpePeriod = NoPeriod
       tyconRunId = NoRunId
+      this
     }
 
     /*** example:
@@ -2716,9 +2735,9 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
   extends TypeSymbol(initOwner, initPos, initName) with ClassSymbolApi {
     type TypeOfClonedSymbol = ClassSymbol
 
-    private[this] var flatname: TypeName       = _
-    private[this] var source: AbstractFileType = _
-    private[this] var thissym: Symbol          = this
+    private[this] var flatname: TypeName                = _
+    private[this] var _associatedFile: AbstractFileType = _
+    private[this] var thissym: Symbol                   = this
 
     private[this] var thisTypeCache: Type      = _
     private[this] var thisTypePeriod           = NoPeriod
@@ -2817,14 +2836,13 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
       if (c.isOverloaded) c.alternatives.head else c
     }
 
-    override def sourceFile =
-      if (owner.isPackageClass) source
-      else super.sourceFile
-    override def sourceFile_=(f: AbstractFileType) { source = f }
+    override def associatedFile = if (owner.isPackageClass) _associatedFile else super.associatedFile
+    override def associatedFile_=(f: AbstractFileType) { _associatedFile = f }
 
-    override def reset(completer: Type) {
+    override def reset(completer: Type): this.type = {
       super.reset(completer)
       thissym = this
+      this
     }
 
     /** the type this.type in this class */
@@ -2864,6 +2882,9 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
         clone.typeOfThis = typeOfThis
         clone.thisSym setName thisSym.name
       }
+      if (_associatedFile ne null)
+        clone.associatedFile = _associatedFile
+
       clone
     }
 
@@ -3018,11 +3039,11 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     override def enclosingTopLevelClass: Symbol = this
     override def enclosingPackageClass: Symbol = this
     override def enclMethod: Symbol = this
-    override def sourceFile: AbstractFileType = null
+    override def associatedFile = null
     override def ownerChain: List[Symbol] = List()
     override def ownersIterator: Iterator[Symbol] = Iterator.empty
     override def alternatives: List[Symbol] = List()
-    override def reset(completer: Type) {}
+    override def reset(completer: Type): this.type = this
     override def info: Type = NoType
     override def existentialBound: Type = NoType
     override def rawInfo: Type = NoType

@@ -307,42 +307,36 @@ object Predef extends LowPriorityImplicits {
 
   // views --------------------------------------------------------------
 
-  implicit def exceptionWrapper(exc: Throwable) = new runtime.RichException(exc)
+  implicit def exceptionWrapper(exc: Throwable)                                 = new runtime.RichException(exc)
+  implicit def tuple2ToZippedOps[T1, T2](x: (T1, T2))                           = new runtime.Tuple2Zipped.Ops(x)
+  implicit def tuple3ToZippedOps[T1, T2, T3](x: (T1, T2, T3))                   = new runtime.Tuple3Zipped.Ops(x)
+  implicit def seqToCharSequence(xs: collection.IndexedSeq[Char]): CharSequence = new runtime.SeqCharSequence(xs)
+  implicit def arrayToCharSequence(xs: Array[Char]): CharSequence               = new runtime.ArrayCharSequence(xs, 0, xs.length)
 
-  implicit def zipped2ToTraversable[El1, El2](zz: Tuple2[_, _]#Zipped[_, El1, _, El2]): Traversable[(El1, El2)] =
-    new collection.AbstractTraversable[(El1, El2)] {
-      def foreach[U](f: ((El1, El2)) => U): Unit = zz foreach Function.untupled(f)
-    }
-
-  implicit def zipped3ToTraversable[El1, El2, El3](zz: Tuple3[_, _, _]#Zipped[_, El1, _, El2, _, El3]): Traversable[(El1, El2, El3)] =
-    new collection.AbstractTraversable[(El1, El2, El3)] {
-      def foreach[U](f: ((El1, El2, El3)) => U): Unit = zz foreach Function.untupled(f)
-    }
-
-  implicit def genericArrayOps[T](xs: Array[T]): ArrayOps[T] = xs match {
-    case x: Array[AnyRef]  => refArrayOps[AnyRef](x).asInstanceOf[ArrayOps[T]]
-    case x: Array[Int]     => intArrayOps(x).asInstanceOf[ArrayOps[T]]
-    case x: Array[Double]  => doubleArrayOps(x).asInstanceOf[ArrayOps[T]]
-    case x: Array[Long]    => longArrayOps(x).asInstanceOf[ArrayOps[T]]
-    case x: Array[Float]   => floatArrayOps(x).asInstanceOf[ArrayOps[T]]
-    case x: Array[Char]    => charArrayOps(x).asInstanceOf[ArrayOps[T]]
-    case x: Array[Byte]    => byteArrayOps(x).asInstanceOf[ArrayOps[T]]
-    case x: Array[Short]   => shortArrayOps(x).asInstanceOf[ArrayOps[T]]
-    case x: Array[Boolean] => booleanArrayOps(x).asInstanceOf[ArrayOps[T]]
-    case x: Array[Unit]    => unitArrayOps(x).asInstanceOf[ArrayOps[T]]
+  implicit def genericArrayOps[T](xs: Array[T]): ArrayOps[T] = (xs match {
+    case x: Array[AnyRef]  => refArrayOps[AnyRef](x)
+    case x: Array[Boolean] => booleanArrayOps(x)
+    case x: Array[Byte]    => byteArrayOps(x)
+    case x: Array[Char]    => charArrayOps(x)
+    case x: Array[Double]  => doubleArrayOps(x)
+    case x: Array[Float]   => floatArrayOps(x)
+    case x: Array[Int]     => intArrayOps(x)
+    case x: Array[Long]    => longArrayOps(x)
+    case x: Array[Short]   => shortArrayOps(x)
+    case x: Array[Unit]    => unitArrayOps(x)
     case null              => null
-  }
+  }).asInstanceOf[ArrayOps[T]]
 
-  implicit def refArrayOps[T <: AnyRef](xs: Array[T]): ArrayOps[T] = new ArrayOps.ofRef[T](xs)
-  implicit def intArrayOps(xs: Array[Int]): ArrayOps[Int] = new ArrayOps.ofInt(xs)
-  implicit def doubleArrayOps(xs: Array[Double]): ArrayOps[Double] = new ArrayOps.ofDouble(xs)
-  implicit def longArrayOps(xs: Array[Long]): ArrayOps[Long] = new ArrayOps.ofLong(xs)
-  implicit def floatArrayOps(xs: Array[Float]): ArrayOps[Float] = new ArrayOps.ofFloat(xs)
-  implicit def charArrayOps(xs: Array[Char]): ArrayOps[Char] = new ArrayOps.ofChar(xs)
-  implicit def byteArrayOps(xs: Array[Byte]): ArrayOps[Byte] = new ArrayOps.ofByte(xs)
-  implicit def shortArrayOps(xs: Array[Short]): ArrayOps[Short] = new ArrayOps.ofShort(xs)
   implicit def booleanArrayOps(xs: Array[Boolean]): ArrayOps[Boolean] = new ArrayOps.ofBoolean(xs)
-  implicit def unitArrayOps(xs: Array[Unit]): ArrayOps[Unit] = new ArrayOps.ofUnit(xs)
+  implicit def byteArrayOps(xs: Array[Byte]): ArrayOps[Byte]          = new ArrayOps.ofByte(xs)
+  implicit def charArrayOps(xs: Array[Char]): ArrayOps[Char]          = new ArrayOps.ofChar(xs)
+  implicit def doubleArrayOps(xs: Array[Double]): ArrayOps[Double]    = new ArrayOps.ofDouble(xs)
+  implicit def floatArrayOps(xs: Array[Float]): ArrayOps[Float]       = new ArrayOps.ofFloat(xs)
+  implicit def intArrayOps(xs: Array[Int]): ArrayOps[Int]             = new ArrayOps.ofInt(xs)
+  implicit def longArrayOps(xs: Array[Long]): ArrayOps[Long]          = new ArrayOps.ofLong(xs)
+  implicit def refArrayOps[T <: AnyRef](xs: Array[T]): ArrayOps[T]    = new ArrayOps.ofRef[T](xs)
+  implicit def shortArrayOps(xs: Array[Short]): ArrayOps[Short]       = new ArrayOps.ofShort(xs)
+  implicit def unitArrayOps(xs: Array[Unit]): ArrayOps[Unit]          = new ArrayOps.ofUnit(xs)
 
   // Primitive Widenings --------------------------------------------------------------
 
@@ -406,29 +400,17 @@ object Predef extends LowPriorityImplicits {
 
   // Strings and CharSequences --------------------------------------------------------------
 
-  implicit def any2stringadd(x: Any) = new runtime.StringAdd(x)
   @inline implicit def any2stringfmt(x: Any) = new runtime.StringFormat(x)
   @inline implicit def augmentString(x: String): StringOps = new StringOps(x)
+  implicit def any2stringadd(x: Any) = new runtime.StringAdd(x)
   implicit def unaugmentString(x: StringOps): String = x.repr
 
-  implicit def stringCanBuildFrom: CanBuildFrom[String, Char, String] =
-    new CanBuildFrom[String, Char, String] {
-      def apply(from: String) = apply()
-      def apply() = mutable.StringBuilder.newBuilder
-    }
+  @deprecated("Use StringCanBuildFrom", "2.10.0")
+  def stringCanBuildFrom: CanBuildFrom[String, Char, String] = StringCanBuildFrom
 
-  implicit def seqToCharSequence(xs: collection.IndexedSeq[Char]): CharSequence = new CharSequence {
-    def length: Int = xs.length
-    def charAt(index: Int): Char = xs(index)
-    def subSequence(start: Int, end: Int): CharSequence = seqToCharSequence(xs.slice(start, end))
-    override def toString: String = xs.mkString("")
-  }
-
-  implicit def arrayToCharSequence(xs: Array[Char]): CharSequence = new CharSequence {
-    def length: Int = xs.length
-    def charAt(index: Int): Char = xs(index)
-    def subSequence(start: Int, end: Int): CharSequence = arrayToCharSequence(xs.slice(start, end))
-    override def toString: String = xs.mkString("")
+  implicit val StringCanBuildFrom: CanBuildFrom[String, Char, String] = new CanBuildFrom[String, Char, String] {
+    def apply(from: String) = apply()
+    def apply()             = mutable.StringBuilder.newBuilder
   }
 
   // Type Constraints --------------------------------------------------------------

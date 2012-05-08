@@ -1,0 +1,4 @@
+(Both Int,-1,-1)
+(Both Float,1,1)
+(Float then Int,0,0)
+(Int then Float,0,0)

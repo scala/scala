@@ -1,7 +1,7 @@
 import scala.tools.partest.ReplTest
 
 object Test extends ReplTest {
-  override def extraSettings = "-Xoldpatmat"
+  override def extraSettings = ""
   def code = """
 
 // "Is this thing on?" Not working on first couple

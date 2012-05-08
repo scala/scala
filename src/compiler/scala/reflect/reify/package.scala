@@ -33,8 +33,8 @@ package object reify {
     import definitions._
     import analyzer.enclosingMacroPosition
 
-    def erasureTagInScope = typer0.context.withMacrosDisabled(typer0.resolveErasureTag(enclosingMacroPosition, tpe, concrete = concrete))
-    def arrayTagInScope = typer0.context.withMacrosDisabled(typer0.resolveArrayTag(enclosingMacroPosition, tpe))
+    def erasureTagInScope = typer0.context.withMacrosDisabled(typer0.resolveErasureTag(tpe, enclosingMacroPosition, concrete = concrete))
+    def arrayTagInScope = typer0.context.withMacrosDisabled(typer0.resolveArrayTag(tpe, enclosingMacroPosition))
     val inScope = (erasureTagInScope, arrayTagInScope)
 
     inScope match {
@@ -43,15 +43,16 @@ package object reify {
       case (_, success) if !success.isEmpty =>
         gen.mkMethodCall(arrayElementClassMethod, List(success))
       case _ =>
-        if (tpe.typeSymbol == ArrayClass) {
-          val componentTpe = tpe.typeArguments(0)
-          val componentErasure = reifyErasure(global)(typer0, componentTpe, concrete)
-          gen.mkMethodCall(arrayClassMethod, List(componentErasure))
-        } else {
-          if (tpe.isSpliceable && concrete) throw new ReificationError(enclosingMacroPosition, "tpe %s is an unresolved spliceable type".format(tpe))
-          var erasure = tpe.erasure
-          if (tpe.typeSymbol.isDerivedValueClass && global.phase.id < global.currentRun.erasurePhase.id) erasure = tpe
-          gen.mkNullaryCall(Predef_classOf, List(erasure))
+        tpe.normalize match {
+          case TypeRef(_, ArrayClass, componentTpe :: Nil) =>
+            val componentErasure = reifyErasure(global)(typer0, componentTpe, concrete)
+            gen.mkMethodCall(arrayClassMethod, List(componentErasure))
+          case _ =>
+            if (tpe.isSpliceable && concrete)
+              throw new ReificationError(enclosingMacroPosition, "tpe %s is an unresolved spliceable type".format(tpe))
+            var erasure = tpe.erasure
+            if (tpe.typeSymbol.isDerivedValueClass && global.phase.id < global.currentRun.erasurePhase.id) erasure = tpe
+            gen.mkNullaryCall(Predef_classOf, List(erasure))
         }
     }
   }

@@ -25,7 +25,7 @@ import script._
  *
  *  @tparam A     type of the elements the buffer proxy contains.
  *
- *  @define Coll BufferProxy
+ *  @define Coll `BufferProxy`
  *  @define coll buffer proxy
  */
 trait BufferProxy[A] extends Buffer[A] with Proxy {

@@ -4,7 +4,34 @@ t5666.scala:2: error: class Any is abstract; cannot be instantiated
 t5666.scala:3: error: class AnyVal is abstract; cannot be instantiated
   new AnyVal
   ^
+t5666.scala:4: error: Double does not have a constructor
+  new Double
+      ^
+t5666.scala:5: error: Float does not have a constructor
+  new Float
+      ^
+t5666.scala:6: error: Long does not have a constructor
+  new Long
+      ^
+t5666.scala:7: error: Int does not have a constructor
+  new Int
+      ^
+t5666.scala:8: error: Char does not have a constructor
+  new Char
+      ^
+t5666.scala:9: error: Short does not have a constructor
+  new Short
+      ^
+t5666.scala:10: error: Byte does not have a constructor
+  new Byte
+      ^
+t5666.scala:11: error: Boolean does not have a constructor
+  new Boolean
+      ^
+t5666.scala:12: error: Unit does not have a constructor
+  new Unit
+      ^
 t5666.scala:13: error: class Nothing is abstract; cannot be instantiated
   new Nothing
   ^
-three errors found
+12 errors found

@@ -1,0 +1,4 @@
+newSource:8: error: Incorrect variable expansion for $Coll in use case. Does the variable expand to wiki syntax when documenting class Test2?
+       * @usecase def foo: $Coll[T]
+                  ^
+Done.

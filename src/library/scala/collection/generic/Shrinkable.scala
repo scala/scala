@@ -17,7 +17,7 @@ package generic
  *  @version 2.8
  *  @since   2.8
  *  @define coll shrinkable collection
- *  @define Coll Shrinkable
+ *  @define Coll `Shrinkable`
  */
 trait Shrinkable[-A] {
 

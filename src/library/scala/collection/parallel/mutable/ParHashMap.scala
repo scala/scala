@@ -28,7 +28,7 @@ import collection.parallel.Task
  *
  *  @tparam T        type of the elements in the parallel hash map
  *
- *  @define Coll ParHashMap
+ *  @define Coll `ParHashMap`
  *  @define coll parallel hash map
  *
  *  @author Aleksandar Prokopec
@@ -141,7 +141,7 @@ self =>
 
 
 /** $factoryInfo
- *  @define Coll mutable.ParHashMap
+ *  @define Coll `mutable.ParHashMap`
  *  @define coll parallel hash map
  */
 object ParHashMap extends ParMapFactory[ParHashMap] {

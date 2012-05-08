@@ -17,7 +17,7 @@ import language.higherKinds
 /** A template for companion objects of `Set` and subclasses thereof.
  *
  *  @define coll set
- *  @define Coll Set
+ *  @define Coll `Set`
  *  @define factoryInfo
  *    This object provides a set of operations needed to create `$Coll` values.
  *    @author Martin Odersky

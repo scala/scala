@@ -1,0 +1,4 @@
+t5578.scala:33: error: No Manifest available for T.
+  def plus[T: Numeric](x: Rep[T], y: Rep[T]): Rep[T] = Plus[T](x,y)
+                                                              ^
+one error found

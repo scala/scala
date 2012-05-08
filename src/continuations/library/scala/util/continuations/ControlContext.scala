@@ -13,7 +13,7 @@ import annotation.{ Annotation, StaticAnnotation, TypeConstraint }
 /** This annotation is used to mark a parameter as part of a continuation
  * context.
  *
- * The type `A @cps[B,C]` is desugared to `ControlContext[A,B,C]` at compile
+ * The type `A @cpsParam[B,C]` is desugared to `ControlContext[A,B,C]` at compile
  * time.
  *
  * @tparam B  The type of computation state after computation has executed, and

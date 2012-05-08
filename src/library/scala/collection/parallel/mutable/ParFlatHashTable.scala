@@ -15,7 +15,7 @@ import collection.parallel.IterableSplitter
  *
  *  @tparam T      type of the elements in the $coll.
  *  @define coll   table
- *  @define Coll   flat hash table
+ *  @define Coll   `ParFlatHashTable`
  *
  *  @author Aleksandar Prokopec
  */

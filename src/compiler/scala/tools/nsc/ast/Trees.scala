@@ -195,7 +195,7 @@ trait Trees extends reflect.internal.Trees { self: Global =>
     def SelectFromArray(tree: Tree, qualifier: Tree, selector: Name, erasure: Type) =
       new SelectFromArray(qualifier, selector, erasure).copyAttrs(tree)
     def InjectDerivedValue(tree: Tree, arg: Tree) =
-      new InjectDerivedValue(arg)
+      new InjectDerivedValue(arg).copyAttrs(tree)
     def TypeTreeWithDeferredRefCheck(tree: Tree) = tree match {
       case dc@TypeTreeWithDeferredRefCheck() => new TypeTreeWithDeferredRefCheck()(dc.check).copyAttrs(tree)
     }
@@ -232,6 +232,11 @@ trait Trees extends reflect.internal.Trees { self: Global =>
           throw ex
       }
     }
+  }
+
+  // used when a phase is disabled
+  object noopTransformer extends Transformer {
+    override def transformUnit(unit: CompilationUnit): Unit = {}
   }
 
   override protected def xtransform(transformer: super.Transformer, tree: Tree): Tree = tree match {
@@ -321,13 +326,14 @@ trait Trees extends reflect.internal.Trees { self: Global =>
           super.transform {
             tree match {
               case tpt: TypeTree =>
-                if (tpt.original != null) {
+                if (tpt.original != null)
                   transform(tpt.original)
-                } else {
-                  if (tpt.tpe != null && (tpt.wasEmpty || (tpt.tpe exists (tp => locals contains tp.typeSymbol))))
-                    tpt.tpe = null
-                  tree
+                else if (tpt.tpe != null && (tpt.wasEmpty || (tpt.tpe exists (tp => locals contains tp.typeSymbol)))) {
+                  val dupl = tpt.duplicate
+                  dupl.tpe = null
+                  dupl
                 }
+                else tree
               case TypeApply(fn, args) if args map transform exists (_.isEmpty) =>
                 transform(fn)
               case This(_) if tree.symbol != null && tree.symbol.isPackageClass =>
@@ -335,10 +341,11 @@ trait Trees extends reflect.internal.Trees { self: Global =>
               case EmptyTree =>
                 tree
               case _ =>
+                val dupl = tree.duplicate
                 if (tree.hasSymbol && (!localOnly || (locals contains tree.symbol)) && !(keepLabels && tree.symbol.isLabel))
-                  tree.symbol = NoSymbol
-                tree.tpe = null
-                tree
+                  dupl.symbol = NoSymbol
+                dupl.tpe = null
+                dupl
             }
           }
       }

@@ -43,7 +43,7 @@ import annotation.migration
  *  @define traversableInfo
  *  This is a base trait of all kinds of Scala collections.
  *
- *  @define Coll GenTraversable
+ *  @define Coll `GenTraversable`
  *  @define coll general collection
  *  @define collectExample
  *  @tparam A    the collection element type.
@@ -59,12 +59,24 @@ trait GenTraversableLike[+A, +Repr] extends Any with GenTraversableOnce[A] with 
 
   def size: Int
 
+  /** Selects the first element of this $coll.
+   *  $orderDependent
+   *  @return  the first element of this $coll.
+   *  @throws `NoSuchElementException` if the $coll is empty.
+   */
   def head: A
-
+  
+  /** Optionally selects the first element.
+   *  $orderDependent
+   *  @return  the first element of this $coll if it is nonempty,
+   *           `None` if it is empty.
+   */
+  def headOption: Option[A]
+  
   /** Tests whether this $coll can be repeatedly traversed.
    *  @return   `true`
    */
-  final def isTraversableAgain = true
+  def isTraversableAgain: Boolean
 
   /** Selects all elements except the first.
    *  $orderDependent
@@ -72,11 +84,30 @@ trait GenTraversableLike[+A, +Repr] extends Any with GenTraversableOnce[A] with 
    *           except the first one.
    *  @throws `UnsupportedOperationException` if the $coll is empty.
    */
-  def tail: Repr = {
-    if (isEmpty) throw new UnsupportedOperationException("empty.tail")
-    drop(1)
-  }
+  def tail: Repr
 
+  /** Selects the last element.
+    * $orderDependent
+    * @return The last element of this $coll.
+    * @throws NoSuchElementException If the $coll is empty.
+    */
+  def last: A
+  
+  /** Optionally selects the last element.
+   *  $orderDependent
+   *  @return  the last element of this $coll$ if it is nonempty,
+   *           `None` if it is empty.
+   */
+  def lastOption: Option[A]
+  
+  /** Selects all elements except the last.
+   *  $orderDependent
+   *  @return  a $coll consisting of all elements of this $coll
+   *           except the last one.
+   *  @throws `UnsupportedOperationException` if the $coll is empty.
+   */
+  def init: Repr
+  
   /** Computes a prefix scan of the elements of the collection.
    *
    *  Note: The neutral element `z` may be applied more than once.

@@ -22,9 +22,6 @@ t5589neg.scala:4: error: constructor cannot be instantiated to expected type;
 t5589neg.scala:4: error: not found: value y2
   def f7(x: Either[Int, (String, Int)]) = for (y1 @ Tuple1(y2) <- x.right) yield ((y1, y2))
                                                                                        ^
-t5589neg.scala:4: error: Could not typecheck extractor call: case class Tuple1 with arguments List((y2 @ _))
-  def f7(x: Either[Int, (String, Int)]) = for (y1 @ Tuple1(y2) <- x.right) yield ((y1, y2))
-                                                          ^
 t5589neg.scala:5: error: constructor cannot be instantiated to expected type;
  found   : (T1, T2, T3)
  required: (String, Int)
@@ -37,4 +34,4 @@ t5589neg.scala:5: error: not found: value y2
   def f8(x: Either[Int, (String, Int)]) = for ((y1, y2, y3) <- x.right) yield ((y1, y2))
                                                                                     ^
 two warnings found
-8 errors found
+7 errors found

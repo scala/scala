@@ -21,6 +21,15 @@ import immutable.Stream
  */
 object Iterator {
 
+  /** With the advent of `TraversableOnce` and `Iterator`, it can be useful to have a builder which
+   *  operates on `Iterator`s so they can be treated uniformly along with the collections.
+   *  See `scala.util.Random.shuffle` for an example.
+   */
+  implicit def IteratorCanBuildFrom[A] = new TraversableOnce.BufferedCanBuildFrom[A, Iterator] {
+    def bufferToColl[B](coll: ArrayBuffer[B]) = coll.iterator
+    def traversableToColl[B](t: GenTraversable[B]) = t.toIterator
+  }
+
   /** The iterator which produces no values. */
   val empty: Iterator[Nothing] = new AbstractIterator[Nothing] {
     def hasNext: Boolean = false
@@ -381,6 +390,24 @@ trait Iterator[+A] extends TraversableOnce[A] {
     }
 
     def next() = if (hasNext) { hdDefined = false; hd } else empty.next()
+  }
+  
+  /** Tests whether every element of this iterator relates to the
+   *  corresponding element of another collection by satisfying a test predicate.
+   *
+   *  @param   that    the other collection
+   *  @param   p       the test predicate, which relates elements from both collections
+   *  @tparam  B       the type of the elements of `that`
+   *  @return          `true` if both collections have the same length and
+   *                   `p(x, y)` is `true` for all corresponding elements `x` of this iterator
+   *                   and `y` of `that`, otherwise `false`
+   */
+  def corresponds[B](that: GenTraversableOnce[B])(p: (A, B) => Boolean): Boolean = {
+    val that0 = that.toIterator
+    while (hasNext && that0.hasNext)
+      if (!p(next, that0.next)) return false
+
+    hasNext == that0.hasNext
   }
 
   /** Creates an iterator over all the elements of this iterator that
