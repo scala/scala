@@ -115,21 +115,10 @@ package object math {
   def min(x: Float, y: Float): Float  = java.lang.Math.min(x, y)
   def min(x: Double, y: Double): Double = java.lang.Math.min(x, y)
 
-  def signum(x: Double): Double =
-    if (x == 0d) 0d
-    else if (x < 0) -1.0
-    else if (x > 0) 1.0
-    else x    // NaN
-
-  def signum(x: Float): Float =
-    if (x == 0f) 0f
-    else if (x < 0) -1.0f
-    else if (x > 0) 1.0f
-    else x    // NaN
-
-  def signum(x: Long): Long = java.lang.Long.signum(x)
-
   def signum(x: Int): Int = java.lang.Integer.signum(x)
+  def signum(x: Long): Long = java.lang.Long.signum(x)
+  def signum(x: Float): Float = java.lang.Math.signum(x)
+  def signum(x: Double): Double = java.lang.Math.signum(x)
 
   // -----------------------------------------------------------------------
   // root functions
