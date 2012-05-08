@@ -543,10 +543,17 @@ abstract class UnCurry extends InfoTransform
             log("byname | %s | %s | %s".format(posstr, fun.fullName, permstr))
           }
 
-          val result = localTyper.typed(
-            Function(Nil, arg) setPos arg.pos).asInstanceOf[Function]
-          new ChangeOwnerTraverser(currentOwner, result.symbol).traverse(arg)
-          transformFunction(result)
+          arg match {
+            // don't add a thunk for by-name argument if argument already is an application of
+            // a Function0. We can then remove the application and use the existing Function0.
+            case Apply(Select(recv, nme.apply), Nil) if recv.tpe.typeSymbol isSubClass FunctionClass(0) =>
+              recv
+            case _ =>
+              val result = localTyper.typed(
+                Function(Nil, arg) setPos arg.pos).asInstanceOf[Function]
+              new ChangeOwnerTraverser(currentOwner, result.symbol).traverse(arg)
+              transformFunction(result)
+          }
         }
       }
     }
