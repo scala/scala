@@ -352,23 +352,19 @@ abstract class TreeGen extends reflect.internal.TreeGen with TreeDSL {
     else Block(prefix, containing) setPos (prefix.head.pos union containing.pos)
   }
 
-  /** Return a double-checked locking idiom around the syncBody tree. It guards with `cond` and
+  /** Return the synchronized part of the double-checked locking idiom around the syncBody tree. It guards with `cond` and
    *  synchronizez on `clazz.this`. Additional statements can be included after initialization,
    *  (outside the synchronized block).
    *
    *  The idiom works only if the condition is using a volatile field.
    *  @see http://www.cs.umd.edu/~pugh/java/memoryModel/DoubleCheckedLocking.html
    */
-  def mkDoubleCheckedLocking(clazz: Symbol, cond: Tree, syncBody: List[Tree], stats: List[Tree]): Tree =
-    mkDoubleCheckedLocking(mkAttributedThis(clazz), cond, syncBody, stats)
-
-  def mkDoubleCheckedLocking(attrThis: Tree, cond: Tree, syncBody: List[Tree], stats: List[Tree]): Tree = {
-    If(cond,
-       Block(
-         mkSynchronized(
-           attrThis,
-           If(cond, Block(syncBody: _*), EmptyTree)) ::
-         stats: _*),
-       EmptyTree)
-  }
+  def mkSynchronizedCheck(clazz: Symbol, cond: Tree, syncBody: List[Tree], stats: List[Tree]): Tree =
+    mkSynchronizedCheck(mkAttributedThis(clazz), cond, syncBody, stats)
+    
+  def mkSynchronizedCheck(attrThis: Tree, cond: Tree, syncBody: List[Tree], stats: List[Tree]): Tree = 
+    Block(mkSynchronized(
+      attrThis,
+      If(cond, Block(syncBody: _*), EmptyTree)) ::
+      stats: _*)
 }

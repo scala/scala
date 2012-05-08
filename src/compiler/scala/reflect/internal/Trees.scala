@@ -420,7 +420,7 @@ trait Trees extends api.Trees { self: SymbolTable =>
         tree match {
           case Ident(name0) if tree.symbol != NoSymbol =>
             treeCopy.Ident(tree, tree.symbol.name)
-          case Select(qual, name0) =>
+          case Select(qual, name0) if tree.symbol != NoSymbol =>
             treeCopy.Select(tree, transform(qual), tree.symbol.name)
           case _ =>
             super.transform(tree)

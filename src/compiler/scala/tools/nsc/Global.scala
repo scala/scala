@@ -541,7 +541,6 @@ class Global(var currentSettings: Settings, var reporter: Reporter) extends Symb
 
   // phaseName = "lazyvals"
   object lazyVals extends {
-    final val FLAGS_PER_WORD = 32
     val global: Global.this.type = Global.this
     val runsAfter = List("erasure")
     val runsRightAfter = None

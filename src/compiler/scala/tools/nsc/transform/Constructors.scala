@@ -362,9 +362,8 @@ abstract class Constructors extends Transform with ast.TreeDSL {
           val tree =
             If(
               Apply(
-                Select(
-                  Apply(gen.mkAttributedRef(specializedFlag), List()),
-                  definitions.getMember(definitions.BooleanClass, nme.UNARY_!)),
+                CODE.NOT (
+                 Apply(gen.mkAttributedRef(specializedFlag), List())),
                 List()),
               Block(stats, Literal(Constant())),
               EmptyTree)

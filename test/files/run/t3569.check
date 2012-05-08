@@ -9,8 +9,7 @@ private int Test$X.var1
 private int Test$X.var2
 private int Test$X.var3
 private int Test$X.x
-private volatile int Test$X.bitmap$priv$0
-public volatile int Test$X.bitmap$0
+private volatile byte Test$X.bitmap$0
 private final int Test$Y.z1
 private final int Test$Y.z2
 private int Test$Y.x

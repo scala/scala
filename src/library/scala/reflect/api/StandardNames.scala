@@ -73,7 +73,6 @@ trait StandardNames {
 
     val BITMAP_NORMAL: TermName
     val BITMAP_TRANSIENT: TermName
-    val BITMAP_PRIVATE: TermName
     val BITMAP_CHECKINIT: TermName
     val BITMAP_CHECKINIT_TRANSIENT: TermName
 
