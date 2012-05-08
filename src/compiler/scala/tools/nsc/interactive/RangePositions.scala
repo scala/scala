@@ -269,7 +269,8 @@ self: scala.tools.nsc.Global =>
     protected def isEligible(t: Tree) = !t.pos.isTransparent
     override def traverse(t: Tree) {
       t match {
-        case tt : TypeTree if tt.original != null => traverse(tt.original)
+        case tt : TypeTree if tt.original != null && (tt.pos includes tt.original.pos) =>
+          traverse(tt.original)
         case _ =>
           if (t.pos includes pos) {
             if (isEligible(t)) last = t

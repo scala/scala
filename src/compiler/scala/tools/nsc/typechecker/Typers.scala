@@ -921,7 +921,7 @@ trait Typers extends Modes with Adaptations with Taggings {
           KindArityMismatchError(tree, pt)
         } else tree match { // (6)
           case TypeTree() => tree
-          case _          => TypeTree(tree.tpe) setOriginal (tree) setPos (tree.pos)
+          case _          => TypeTree(tree.tpe) setOriginal tree
         }
       }
 
@@ -3230,7 +3230,7 @@ trait Typers extends Modes with Adaptations with Taggings {
             }
 
             if (hasError) annotationError
-            else AnnotationInfo(annType, List(), nvPairs map {p => (p._1, p._2.get)}).setOriginal(Apply(typedFun, args)).setPos(ann.pos)
+            else AnnotationInfo(annType, List(), nvPairs map {p => (p._1.asInstanceOf[Name], p._2.get)}).setOriginal(Apply(typedFun, args).setPos(ann.pos)) // [Eugene+] why do we need this cast?
           }
         } else if (requireJava) {
           reportAnnotationError(NestedAnnotationError(ann, annType))
