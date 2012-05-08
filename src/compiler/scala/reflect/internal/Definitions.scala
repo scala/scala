@@ -435,7 +435,7 @@ trait Definitions extends reflect.api.StandardDefinitions {
       case _                                  => false
     }
     def isReferenceArray(tp: Type) = tp match {
-      case TypeRef(_, ArrayClass, arg :: Nil) => arg.typeSymbol.info <:< AnyRefClass.tpe
+      case TypeRef(_, ArrayClass, arg :: Nil) => arg <:< AnyRefClass.tpe
       case _                                  => false
     }
     def isArrayOfSymbol(tp: Type, elem: Symbol) = tp match {
