@@ -16,7 +16,7 @@ trait PresentationCompilerRequestsWorkingMode extends TestResources {
    *  ask the type at all positions marked with `TypeMarker.marker` and println the result.
    */
   private def askAllSourcesAsync[T](marker: TestMarker)(askAt: Position => Response[T])(f: (Position, T) => Unit) {
-    val positions = allPositionsOf(marker.marker).valuesIterator.toList.flatten
+    val positions = allPositionsOf(str = marker.marker)
     val responses = for (pos <- positions) yield askAt(pos)
 
     for ((pos, r) <- positions zip responses) withResponse(pos, r)(f)
@@ -26,13 +26,25 @@ trait PresentationCompilerRequestsWorkingMode extends TestResources {
    *  response before going to the next one.
    */
   private def askAllSourcesSync[T](marker: TestMarker)(askAt: Position => Response[T])(f: (Position, T) => Unit) {
-    val positions = allPositionsOf(marker.marker).valuesIterator.toList.flatten
+    val positions = allPositionsOf(str = marker.marker)
     for (pos <- positions) withResponse(pos, askAt(pos))(f)
   }
 
-  private def allPositionsOf: String => Map[SourceFile, Seq[Position]] =
-    FindOccurrences(sourceFiles) _
+  /** All positions of the given string in all source files. */
+  private def allPositionsOf(srcs: Seq[SourceFile] = sourceFiles, str: String): Seq[Position] =
+    for (s <- srcs; p <- positionsOf(s, str)) yield p
 
+  /** Return all positions of the given str in the given source file. */
+  private def positionsOf(source: SourceFile, str: String): Seq[Position] = {
+    val buf = new collection.mutable.ListBuffer[Position]
+    var pos = source.content.indexOfSlice(str)
+    while (pos >= 0) {
+      buf += source.position(pos - 1) // we need the position before the first character of this marker
+      pos = source.content.indexOfSlice(str, pos + 1)
+    }
+    buf.toList
+  }
+    
   private def withResponse[T](pos: Position, response: Response[T])(f: (Position, T) => Unit) {
     /** Return the filename:line:col version of this position. */
     def showPos(pos: Position): String =
