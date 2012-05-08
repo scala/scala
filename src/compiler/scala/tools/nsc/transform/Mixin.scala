@@ -1210,8 +1210,12 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
           // refer to fields in some implementation class via an abstract
           // getter in the interface.
           val iface  = toInterface(sym.owner.tpe).typeSymbol
-          val getter = sym getter iface orElse abort("No getter for " + sym + " in " + iface)
-
+          val getter = sym getter iface orElse { // e.g., sym is private[this]
+            val lastDollar = name.toString.lastIndexOf('$')
+            unit.error(tree.pos, "Cannot access %s in %s".format(name.toString.substring(lastDollar+1), iface))
+            RootClass.newErrorClass(tpnme.ERROR)
+                     .newErrorValue(nme.ERROR)
+          }
           typedPos(tree.pos)((qual DOT getter)())
 
         case Assign(Apply(lhs @ Select(qual, _), List()), rhs) =>

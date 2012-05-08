@@ -1,0 +1,4 @@
+t5508.scala:4: error: Cannot access _st in trait Test$NestedTrait
+    val escape = { () => _st }
+                         ^
+one error found
