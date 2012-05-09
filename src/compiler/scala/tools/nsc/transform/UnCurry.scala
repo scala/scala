@@ -473,7 +473,15 @@ abstract class UnCurry extends InfoTransform
             arg.pos.source.path + ":" + arg.pos.line, fun.fullName,
             if (fun.isPrivate) "private" else "")
           )
-          newFunction0(arg)
+
+          arg match {
+            // don't add a thunk for by-name argument if argument already is an application of
+            // a Function0. We can then remove the application and use the existing Function0.
+            case Apply(Select(recv, nme.apply), Nil) if recv.tpe.typeSymbol isSubClass FunctionClass(0) =>
+              recv
+            case _ =>
+              newFunction0(arg)
+          }
         }
       }
     }

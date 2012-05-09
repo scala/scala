@@ -1079,11 +1079,12 @@ trait Iterator[+A] extends TraversableOnce[A] {
       if (i < from) origElems.hasNext
       else patchElems.hasNext || origElems.hasNext
     def next(): B = {
+      // We have to do this *first* just in case from = 0.
+      if (i == from) origElems = origElems drop replaced
       val result: B =
         if (i < from || !patchElems.hasNext) origElems.next()
         else patchElems.next()
       i += 1
-      if (i == from) origElems = origElems drop replaced
       result
     }
   }
