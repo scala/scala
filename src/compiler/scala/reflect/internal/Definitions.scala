@@ -896,6 +896,7 @@ trait Definitions extends reflect.api.StandardDefinitions {
     // boxed classes
     lazy val ObjectRefClass         = requiredClass[scala.runtime.ObjectRef[_]]
     lazy val VolatileObjectRefClass = requiredClass[scala.runtime.VolatileObjectRef[_]]
+    lazy val RuntimeStaticsModule   = getRequiredModule("scala.runtime.Statics")
     lazy val BoxesRunTimeModule     = getRequiredModule("scala.runtime.BoxesRunTime")
     lazy val BoxesRunTimeClass      = BoxesRunTimeModule.moduleClass
     lazy val BoxedNumberClass       = getClass(sn.BoxedNumber)

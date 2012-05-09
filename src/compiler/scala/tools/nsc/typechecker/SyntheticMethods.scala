@@ -89,6 +89,11 @@ trait SyntheticMethods extends ast.TreeDSL {
     def forwardToRuntime(method: Symbol): Tree =
       forwardMethod(method, getMember(ScalaRunTimeModule, method.name prepend "_"))(mkThis :: _)
 
+    def callStaticsMethod(name: String)(args: Tree*): Tree = {
+      val method = termMember(RuntimeStaticsModule, name)
+      Apply(gen.mkAttributedRef(method), args.toList)
+    }
+
     // Any member, including private
     def hasConcreteImpl(name: Name) =
       clazz.info.member(name).alternatives exists (m => !m.isDeferred && !m.isSynthetic)
@@ -222,13 +227,41 @@ trait SyntheticMethods extends ast.TreeDSL {
       )
     }
 
+    def hashcodeImplementation(sym: Symbol): Tree = {
+      sym.tpe.finalResultType.typeSymbol match {
+        case UnitClass | NullClass                         => Literal(Constant(0))
+        case BooleanClass                                  => If(Ident(sym), Literal(Constant(1231)), Literal(Constant(1237)))
+        case IntClass | ShortClass | ByteClass | CharClass => Ident(sym)
+        case LongClass                                     => callStaticsMethod("longHash")(Ident(sym))
+        case DoubleClass                                   => callStaticsMethod("doubleHash")(Ident(sym))
+        case FloatClass                                    => callStaticsMethod("floatHash")(Ident(sym))
+        case _                                             => callStaticsMethod("anyHash")(Ident(sym))
+      }
+    }
+
+    def specializedHashcode = {
+      createMethod(nme.hashCode_, Nil, IntClass.tpe) { m =>
+        val accumulator = m.newVariable(newTermName("acc"), m.pos, SYNTHETIC) setInfo IntClass.tpe
+        val valdef      = ValDef(accumulator, Literal(Constant(0xcafebabe)))
+        val mixes       = accessors map (acc =>
+          Assign(
+            Ident(accumulator),
+            callStaticsMethod("mix")(Ident(accumulator), hashcodeImplementation(acc))
+          )
+        )
+        val finish = callStaticsMethod("finalizeHash")(Ident(accumulator), Literal(Constant(arity)))
+
+        Block(valdef :: mixes, finish)
+      }
+    }
+
     def valueClassMethods = List(
       Any_hashCode -> (() => hashCodeDerivedValueClassMethod),
       Any_equals -> (() => equalsDerivedValueClassMethod)
     )
 
     def caseClassMethods = productMethods ++ productNMethods ++ Seq(
-      Object_hashCode -> (() => forwardToRuntime(Object_hashCode)),
+      Object_hashCode -> (() => specializedHashcode),
       Object_toString -> (() => forwardToRuntime(Object_toString)),
       Object_equals   -> (() => equalsCaseClassMethod)
     )
