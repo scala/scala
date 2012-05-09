@@ -259,7 +259,7 @@ object ScalaRunTime {
   // as yet have not.
   //
   // Note: Among primitives, Float.NaN != Float.NaN, but the boxed
-  // verisons are equal.  This still needs reconciliation.
+  // versions are equal.  This still needs reconciliation.
 
   @inline def hash(x: Any): Int = x match {
     case null                => 0
