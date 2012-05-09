@@ -787,8 +787,8 @@ trait Namers extends MethodSynthesis {
       val typedBody =
         if (tree.symbol.isTermMacro) defnTyper.computeMacroDefType(tree, pt)
         else defnTyper.computeType(tree.rhs, pt)
-      val sym       = if (owner.isMethod) owner else tree.symbol
-      val typedDefn = widenIfNecessary(sym, typedBody, pt)
+
+      val typedDefn = widenIfNecessary(tree.symbol, typedBody, pt)
       assignTypeToTree(tree, typedDefn)
     }
 
