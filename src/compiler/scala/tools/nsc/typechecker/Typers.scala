@@ -2812,7 +2812,7 @@ trait Typers extends Modes with Adaptations with Taggings {
           if (context.hasErrors)
             setError(tree)
           else {
-            inferMethodAlternative(fun, undetparams, argtpes.toList, pt, varArgsOnly = treeInfo.isWildcardStarArgList(args))
+            inferMethodAlternative(fun, undetparams, args, argtpes.toList, pt, varArgsOnly = treeInfo.isWildcardStarArgList(args))
             doTypedApply(tree, adapt(fun, forFunMode(mode), WildcardType), args1, mode, pt)
           }
 
