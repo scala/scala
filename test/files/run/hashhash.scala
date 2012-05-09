@@ -9,15 +9,7 @@ object Test {
 
     val x = (BigInt(1) << 64).toDouble
     val y: Any = x
-    val f: Float = x.toFloat
-    val jn: java.lang.Number = x
-    val jf: java.lang.Float = x.toFloat
-    val jd: java.lang.Double = x
 
     assert(x.## == y.##, ((x, y)))
-    assert(x.## == f.##, ((x, f)))
-    assert(x.## == jn.##, ((x, jn)))
-    assert(x.## == jf.##, ((x, jf)))
-    assert(x.## == jd.##, ((x, jd)))
   }
 }

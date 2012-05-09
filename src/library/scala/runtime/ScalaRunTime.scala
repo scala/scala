@@ -233,39 +233,12 @@ object ScalaRunTime {
   //
   // Note that these are the implementations called by ##, so they
   // must not call ## themselves.
-  //
-  // Hashcode algorithm is driven by the requirements imposed
-  // by primitive equality semantics, namely that equal objects
-  // have equal hashCodes.  The first priority are the integral/char
-  // types, which already have the same hashCodes for the same
-  // values except for Long.  So Long's hashCode is altered to
-  // conform to Int's for all values in Int's range.
-  //
-  // Float is problematic because it's far too small to hold
-  // all the Ints, so for instance Int.MaxValue.toFloat claims
-  // to be == to each of the largest 64 Ints.  There is no way
-  // to preserve equals/hashCode alignment without compromising
-  // the hashCode distribution, so Floats are only guaranteed
-  // to have the same hashCode for whole Floats in the range
-  // Short.MinValue to Short.MaxValue (2^16 total.)
-  //
-  // Double has its hashCode altered to match the entire Int range,
-  // but is not guaranteed beyond that.  (But could/should it be?
-  // The hashCode is only 32 bits so this is a more tractable
-  // issue than Float's, but it might be better simply to exclude it.)
-  //
-  // Note: BigInt and BigDecimal, being arbitrary precision, could
-  // be made consistent with all other types for the Int range, but
-  // as yet have not.
-  //
-  // Note: Among primitives, Float.NaN != Float.NaN, but the boxed
-  // versions are equal.  This still needs reconciliation.
 
   @inline def hash(x: Any): Int = x match {
     case null                => 0
-    case x: Long             => hash(x)
     case x: Double           => hash(x)
     case x: Float            => hash(x)
+    case x: java.lang.Number => hash(x)
     case _                   => x.hashCode
   }
 
@@ -293,6 +266,7 @@ object ScalaRunTime {
     val high = (lv >>> 32).toInt
     low ^ (high + lowSign)
   }
+  @inline def hash(x: Number): Int  = runtime.BoxesRunTime.hashFromNumber(x)
 
   // The remaining overloads are here for completeness, but the compiler
   // inlines these definitions directly so they're not generally used.
