@@ -23,8 +23,8 @@ x=(1,2), t=ConcreteTypeTag[(Int, Int)], k=TypeRef, s=class Tuple2
 x=(abc,xyz), t=ConcreteTypeTag[(String, String)], k=TypeRef, s=class Tuple2
 x=('abc,'xyz), t=ConcreteTypeTag[(Symbol, Symbol)], k=TypeRef, s=class Tuple2
 
-x=Test$, t=ConcreteTypeTag[Test.type], k=TypeRef, s=object Test
-x=scala.collection.immutable.List$, t=ConcreteTypeTag[scala.collection.immutable.List.type], k=TypeRef, s=object List
+x=Test$, t=ConcreteTypeTag[Test.type], k=SingleType, s=object Test
+x=scala.collection.immutable.List$, t=ConcreteTypeTag[scala.collection.immutable.List.type], k=SingleType, s=object List
 
 x=Foo, t=ConcreteTypeTag[Foo[Int]], k=TypeRef, s=class Foo
 x=Foo, t=ConcreteTypeTag[Foo[List[Int]]], k=TypeRef, s=class Foo
