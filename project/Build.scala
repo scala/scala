@@ -23,7 +23,7 @@ object ScalaBuild extends Build with Layers {
   lazy val buildFixed = AttributeKey[Boolean]("build-uri-fixed")
 
   // Build wide settings:
-  override lazy val settings = super.settings ++ Seq(
+  override lazy val settings = super.settings ++ Versions.settings ++ Seq(
     autoScalaLibrary := false,
     resolvers += Resolver.url(
       "Typesafe nightlies", 
@@ -34,7 +34,7 @@ object ScalaBuild extends Build with Layers {
       ScalaToolsSnapshots
     ),
     organization := "org.scala-lang",
-    version := "2.10.0-SNAPSHOT",
+    version <<= Versions.mavenVersion,
     pomExtra := <xml:group>
       <inceptionYear>2002</inceptionYear>
         <licenses>
@@ -170,7 +170,7 @@ object ScalaBuild extends Build with Layers {
                              skip in Compile <<= lockFile.map(_  exists),
                              lock <<= lockFile map { f => IO.touch(f) },
                              unlock <<= lockFile map IO.delete
-                            )
+                            ) ++ CheatingCompilerSettings.settings
 
   // --------------------------------------------------------------
   //  Libraries used by Scalac that change infrequently
