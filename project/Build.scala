@@ -148,13 +148,14 @@ object ScalaBuild extends Build with Layers {
   lazy val externalDeps: Setting[_] = libraryDependencies <<= (sbtVersion)(v => 
     Seq(
       "org.apache.ant" % "ant" % "1.8.2",
-      "org.scala-tools.sbt" % "compiler-interface" % v % "provided"
+      "org.scala-sbt" % "compiler-interface" % v % "provided"
     )
   )
 
   // These are setting overrides for most artifacts in the Scala build file.
   def settingOverrides: Seq[Setting[_]] = publishSettings ++ Seq(
                              crossPaths := false,
+                             autoScalaLibrary := false,
                              publishArtifact in packageDoc := false,
                              publishArtifact in packageSrc := false,
                              target <<= (baseDirectory, name) apply (_ / "target" / _),
@@ -170,7 +171,7 @@ object ScalaBuild extends Build with Layers {
                              skip in Compile <<= lockFile.map(_  exists),
                              lock <<= lockFile map { f => IO.touch(f) },
                              unlock <<= lockFile map IO.delete
-                            ) ++ CheatingCompilerSettings.settings
+                            )
 
   // --------------------------------------------------------------
   //  Libraries used by Scalac that change infrequently
@@ -327,7 +328,7 @@ object ScalaBuild extends Build with Layers {
   //  Testing
   // --------------------------------------------------------------
   /* lazy val scalacheckSettings: Seq[Setting[_]] = Seq(fullQuickScalaReference, crossPaths := false)*/
-  lazy val scalacheck = uri("git://github.com/rickynils/scalacheck.git")
+  lazy val scalacheck = uri("git://github.com/jsuereth/scalacheck.git#scala-build")
 
   lazy val testsuiteSettings: Seq[Setting[_]] = compilerDependentProjectSettings ++ partestTaskSettings ++ VerifyClassLoad.settings ++ Seq(
     unmanagedBase <<= baseDirectory / "test/files/lib",
@@ -518,7 +519,7 @@ object ScalaBuild extends Build with Layers {
     // Add in some more dependencies
     makeDistMappings <<= (makeDistMappings, 
                           packageBin in swing in Compile) map {
-      (dist, s, d) =>
+      (dist, s) =>
         dist ++ Seq(s -> "lib/scala-swing.jar")
     },
     makeDist <<= (makeDistMappings, baseDirectory, streams) map { (maps, dir, s) => 

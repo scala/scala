@@ -70,7 +70,6 @@ trait Layers extends Build {
       resourceDirectory in Compile <<= baseDirectory apply (_ / "src" / "compiler"),
       unmanagedSourceDirectories in Compile <+= (baseDirectory) apply (_ / "src" / "msil"),
       defaultExcludes := ("tests"),
-      javacOptions ++= Seq("-source", "1.4"),
       defaultExcludes in unmanagedResources := "*.scala",
       resourceGenerators in Compile <+= (resourceManaged, Versions.scalaVersions, streams) map Versions.generateVersionPropertiesFile("compiler.properties"),
       // Note, we might be able to use the default task, but for some reason ant was filtering files out.  Not sure what's up, but we'll
