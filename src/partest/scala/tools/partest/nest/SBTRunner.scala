@@ -54,15 +54,17 @@ object SBTRunner extends DirectRunner {
     val config = parseArgs(args, CommandLineOptions())
     fileManager.SCALAC_OPTS = config.scalacOptions
     fileManager.CLASSPATH = config.classpath getOrElse sys.error("No classpath set")
+
+    def findClasspath(jar: String, name: String): Option[String] = {
+      val optJar = (fileManager.CLASSPATH split File.pathSeparator filter (_ matches (".*"+jar+".*\\.jar"))).headOption
+      val optClassDir = (fileManager.CLASSPATH split File.pathSeparator filter (_ matches (".*"+name+File.separator+"classes"))).headOption
+      optJar orElse optClassDir
+    }
     // Find scala library jar file...
-    val lib: Option[String] = (fileManager.CLASSPATH split File.pathSeparator filter (_ matches ".*scala-library.*\\.jar")).headOption
-    fileManager.LATEST_LIB = lib getOrElse sys.error("No scala-library found! Classpath = " + fileManager.CLASSPATH)
-    val comp: Option[String] = (fileManager.CLASSPATH split File.pathSeparator filter (_ matches ".*scala-compiler.*\\.jar")).headOption
-    fileManager.LATEST_COMP = comp getOrElse sys.error("No scala-compiler found! Classpath = " + fileManager.CLASSPATH)
-    val partest: Option[String] = (fileManager.CLASSPATH split File.pathSeparator filter (_ matches ".*scala-partest.*\\.jar")).headOption
-    fileManager.LATEST_PARTEST = partest getOrElse sys.error("No scala-partest found! Classpath = " + fileManager.CLASSPATH)
-    val actors: Option[String] = (fileManager.CLASSPATH split File.pathSeparator filter (_ matches ".*scala-actors.*\\.jar")).headOption
-    fileManager.LATEST_ACTORS = actors getOrElse sys.error("No scala-actors found! Classpath = " + fileManager.CLASSPATH)
+    fileManager.LATEST_LIB = findClasspath("scala-library", "scala-library") getOrElse sys.error("No scala-library found! Classpath = " + fileManager.CLASSPATH)
+    fileManager.LATEST_COMP = findClasspath("scala-compiler", "scala-compiler") getOrElse sys.error("No scala-compiler found! Classpath = " + fileManager.CLASSPATH)
+    fileManager.LATEST_PARTEST = findClasspath("scala-partest", "partest") getOrElse sys.error("No scala-partest found! Classpath = " + fileManager.CLASSPATH)
+    fileManager.LATEST_ACTORS = findClasspath("scala-actors", "actors") getOrElse sys.error("No scala-actors found! Classpath = " + fileManager.CLASSPATH)
 
     // TODO - Do something useful here!!!
     fileManager.JAVAC_CMD = "javac"
