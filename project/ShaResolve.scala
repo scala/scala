@@ -40,6 +40,8 @@ object ShaResolve {
       throw t
   }
 
+  // TODO - Finish this publishing aspect.
+
   def getShaFromShafile(file: File): String = parseShaFile(file)._2
 
   // This should calculate the SHA sum of a file the same as the linux process.

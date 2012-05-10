@@ -115,7 +115,7 @@ object partest {
     }
   }
 
-  def partestRunnerTask(classpath: ScopedTask[Classpath], javacOptions: ScopedTask[Seq[String]]): Project.Initialize[Task[PartestRunner]] =
+  def partestRunnerTask(classpath: ScopedTask[Classpath], javacOptions: SettingKey[Seq[String]]): Project.Initialize[Task[PartestRunner]] =
    (classpath, javacOptions) map ((cp, opts) => new PartestRunner(Build.data(cp), opts mkString " "))
 }
 
