@@ -179,7 +179,7 @@ trait ModelFactoryImplicitSupport {
           hardcoded.arraySkipConversions.contains(conv.conversionQualifiedName))
 
       // Filter out non-sensical conversions from value types
-      if (isScalaValueType(sym.tpe))
+      if (isPrimitiveValueType(sym.tpe))
         conversions = conversions.filter((ic: ImplicitConversion) =>
           hardcoded.valueClassFilter(sym.nameString, ic.conversionQualifiedName))
 

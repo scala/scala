@@ -619,7 +619,7 @@ abstract class Erasure extends AddInterfaces
         tree.duplicate setType pt
       } else if (tree.tpe != null && tree.tpe.typeSymbol == ArrayClass && pt.typeSymbol == ArrayClass) {
         // See SI-2386 for one example of when this might be necessary.
-        val needsExtraCast = isScalaValueType(tree.tpe.typeArgs.head) && !isScalaValueType(pt.typeArgs.head)
+        val needsExtraCast = isPrimitiveValueType(tree.tpe.typeArgs.head) && !isPrimitiveValueType(pt.typeArgs.head)
         val tree1 = if (needsExtraCast) gen.mkRuntimeCall(nme.toObjectArray, List(tree)) else tree
         gen.mkAttributedCast(tree1, pt)
       } else gen.mkAttributedCast(tree, pt)

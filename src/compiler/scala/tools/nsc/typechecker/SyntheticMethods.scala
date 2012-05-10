@@ -254,6 +254,12 @@ trait SyntheticMethods extends ast.TreeDSL {
         Block(valdef :: mixes, finish)
       }
     }
+    def chooseHashcode = {
+      if (accessors exists (x => isPrimitiveValueType(x.tpe.finalResultType)))
+        specializedHashcode
+      else
+        forwardToRuntime(Object_hashCode)
+    }
 
     def valueClassMethods = List(
       Any_hashCode -> (() => hashCodeDerivedValueClassMethod),
@@ -261,7 +267,7 @@ trait SyntheticMethods extends ast.TreeDSL {
     )
 
     def caseClassMethods = productMethods ++ productNMethods ++ Seq(
-      Object_hashCode -> (() => specializedHashcode),
+      Object_hashCode -> (() => chooseHashcode),
       Object_toString -> (() => forwardToRuntime(Object_toString)),
       Object_equals   -> (() => equalsCaseClassMethod)
     )
