@@ -30,6 +30,10 @@ class WorkScheduler {
     todo.dequeueAll(a => f(a).isDefined).map(a => f(a).get)
   }
 
+  def dequeueAllInterrupts(f: InterruptReq => Unit): Unit = synchronized {
+    interruptReqs.dequeueAll { iq => f(iq); true }
+  }
+
   /** Called from server: return optional exception posted by client
    *  Reset to no exception.
    */
