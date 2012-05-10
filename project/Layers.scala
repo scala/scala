@@ -16,6 +16,8 @@ trait Layers extends Build {
   def fjbg: Project
   /** A setting that adds some external dependencies. */
   def externalDeps: Setting[_]
+  /** The root project. */
+  def aaa_root: Project
 
   /** Creates a reference Scala version that can be used to build other projects.   This takes in the raw
     * library, compiler and fjbg libraries as well as a string representing the layer name (used for compiling the compile-interface).
@@ -57,7 +59,7 @@ trait Layers extends Build {
       // TODO - Allow other scalac option settings.
       scalacOptions in Compile <++= (scalaSource in Compile) map (src => Seq("-sourcepath", src.getAbsolutePath)),
       classpathOptions := ClasspathOptions.manual,
-      resourceGenerators in Compile <+= (baseDirectory, version, resourceManaged, gitRunner, streams) map Release.generatePropertiesFile("library.properties"),
+      resourceGenerators in Compile <+= (resourceManaged, Versions.scalaVersions, skip in Compile, streams) map Versions.generateVersionPropertiesFile("library.properties"),
       referenceScala
     )
 
@@ -68,9 +70,8 @@ trait Layers extends Build {
       resourceDirectory in Compile <<= baseDirectory apply (_ / "src" / "compiler"),
       unmanagedSourceDirectories in Compile <+= (baseDirectory) apply (_ / "src" / "msil"),
       defaultExcludes := ("tests"),
-      javacOptions ++= Seq("-source", "1.4"),
       defaultExcludes in unmanagedResources := "*.scala",
-      resourceGenerators in Compile <+= (baseDirectory, version, resourceManaged, gitRunner, streams) map Release.generatePropertiesFile("compiler.properties"),
+      resourceGenerators in Compile <+= (resourceManaged, Versions.scalaVersions, skip in Compile, streams) map Versions.generateVersionPropertiesFile("compiler.properties"),
       // Note, we might be able to use the default task, but for some reason ant was filtering files out.  Not sure what's up, but we'll
       // stick with that for now.
       unmanagedResources in Compile <<= (baseDirectory) map {
