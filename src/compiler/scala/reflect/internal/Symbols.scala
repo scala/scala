@@ -2232,7 +2232,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     }
 
     def infosString = infos.toString
-    def debugLocationString = fullLocationString + " " + debugFlagString
+    def debugLocationString = fullLocationString + " (flags: " + debugFlagString + ")"
 
     private def defStringCompose(infoString: String) = compose(
       flagString,

@@ -31,7 +31,6 @@ trait Typers extends Modes with Adaptations with Taggings {
 
   import global._
   import definitions._
-
   import patmat.DefaultOverrideMatchAttachment
 
   final def forArgMode(fun: Tree, mode: Int) =
@@ -84,6 +83,12 @@ trait Typers extends Modes with Adaptations with Taggings {
   private final val SYNTHETIC_PRIVATE = TRANS_FLAG
 
   private def isPastTyper = phase.id > currentRun.typerPhase.id
+
+  // To enable decent error messages when the typer crashes.
+  // TODO - this only catches trees which go through def typed,
+  // but there are all kinds of back ways - typedClassDef, etc. etc.
+  // Funnel everything through one doorway.
+  var lastTreeToTyper: Tree = EmptyTree
 
   // when true:
   //  - we may virtualize matches (if -Xexperimental and there's a suitable __match in scope)
@@ -4972,6 +4977,7 @@ trait Typers extends Modes with Adaptations with Taggings {
      *  @return     ...
      */
     def typed(tree: Tree, mode: Int, pt: Type): Tree = {
+      lastTreeToTyper = tree
       indentTyping()
 
       var alreadyTyped = false
