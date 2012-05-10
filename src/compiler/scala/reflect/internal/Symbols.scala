@@ -2088,7 +2088,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     /** String representation of symbol's definition key word */
     final def keyString: String =
       if (isJavaInterface) "interface"
-      else if (isTrait) "trait"
+      else if (isTrait && !isImplClass) "trait"
       else if (isClass) "class"
       else if (isType && !isParameter) "type"
       else if (isVariable) "var"
@@ -2116,6 +2116,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
         else if (isSetter) ("setter", if (isSourceMethod) "method" else "value", "SET")
         else if (isTerm && isLazy) ("lazy value", "lazy value", "LAZ")
         else if (isVariable) ("field", "variable", "VAR")
+        else if (isImplClass) ("implementation class", "class", "IMPL")
         else if (isTrait) ("trait", "trait", "TRT")
         else if (isClass) ("class", "class", "CLS")
         else if (isType) ("type", "type", "TPE")
