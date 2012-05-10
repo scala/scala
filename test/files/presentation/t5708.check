@@ -1,0 +1,47 @@
+reload: Completions.scala
+
+askTypeCompletion at Completions.scala(17,9)
+================================================================================
+[response] aksTypeCompletion at (17,9)
+retrieved 44 members
+[accessible:  true] `lazy value fooInt`
+[accessible:  true] `method !=(x$1: Any)Boolean`
+[accessible:  true] `method !=(x$1: AnyRef)Boolean`
+[accessible:  true] `method ##()Int`
+[accessible:  true] `method +(other: String)String`
+[accessible:  true] `method ->[B](y: B)(test.Compat.type, B)`
+[accessible:  true] `method ==(x$1: Any)Boolean`
+[accessible:  true] `method ==(x$1: AnyRef)Boolean`
+[accessible:  true] `method asInstanceOf[T0]=> T0`
+[accessible:  true] `method ensuring(cond: Boolean)test.Compat.type`
+[accessible:  true] `method ensuring(cond: Boolean, msg: => Any)test.Compat.type`
+[accessible:  true] `method ensuring(cond: test.Compat.type => Boolean)test.Compat.type`
+[accessible:  true] `method ensuring(cond: test.Compat.type => Boolean, msg: => Any)test.Compat.type`
+[accessible:  true] `method eq(x$1: AnyRef)Boolean`
+[accessible:  true] `method equals(x$1: Any)Boolean`
+[accessible:  true] `method formatted(fmtstr: String)String`
+[accessible:  true] `method hashCode()Int`
+[accessible:  true] `method isInstanceOf[T0]=> Boolean`
+[accessible:  true] `method ne(x$1: AnyRef)Boolean`
+[accessible:  true] `method notify()Unit`
+[accessible:  true] `method notifyAll()Unit`
+[accessible:  true] `method pkgPrivateM=> String`
+[accessible:  true] `method synchronized[T0](x$1: T0)T0`
+[accessible:  true] `method toString()String`
+[accessible:  true] `method wait()Unit`
+[accessible:  true] `method wait(x$1: Long)Unit`
+[accessible:  true] `method wait(x$1: Long, x$2: Int)Unit`
+[accessible:  true] `method x=> test.Compat.type`
+[accessible:  true] `method →[B](y: B)(test.Compat.type, B)`
+[accessible:  true] `value CONST_STRINGString("constant")`
+[accessible:  true] `value __leftOfArrowtest.Compat.type`
+[accessible:  true] `value __resultOfEnsuringtest.Compat.type`
+[accessible:  true] `value pkgPrivateVString`
+[accessible:  true] `value selfAny`
+[accessible: false] `method clone()Object`
+[accessible: false] `method finalize()Unit`
+[accessible: false] `method privateM=> String`
+[accessible: false] `method protectedValM=> String`
+[accessible: false] `value privateVString`
+[accessible: false] `value protectedVString`
+================================================================================
