@@ -1279,6 +1279,15 @@ abstract class RefChecks extends InfoTransform with reflect.internal.transform.R
     }
 
     def transformStat(tree: Tree, index: Int): List[Tree] = tree match {
+      case Apply(Select(This(_), nme.CONSTRUCTOR), args) =>
+        assert(index == 0, index)
+        val t = transform(tree)
+        if (currentLevel.maxindex > 0) {
+          // An implementation restriction to avoid VerifyErrors and lazyvals mishaps; see SI-4717
+          debuglog("refsym = " + currentLevel.refsym)
+          unit.error(currentLevel.refpos, "forward reference not allowed from self constructor invocation")
+        }
+        List(t)
       case ModuleDef(_, _, _) => eliminateModuleDefs(tree)
       case ValDef(_, _, _, _) =>
         val tree1 @ ValDef(_, _, _, rhs) = transform(tree) // important to do before forward reference check

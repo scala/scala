@@ -1,0 +1,13 @@
+t4098.scala:3: error: forward reference not allowed from self constructor invocation
+    this(b)       
+         ^
+t4098.scala:8: error: forward reference not allowed from self constructor invocation
+    this(b)
+         ^
+t4098.scala:13: error: forward reference not allowed from self constructor invocation
+    this(b)
+         ^
+t4098.scala:18: error: forward reference not allowed from self constructor invocation
+    this(b)
+         ^
+four errors found
