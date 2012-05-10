@@ -46,7 +46,7 @@ object Versions {
 
   /** This generates a  properties file, if it does not already exist, with the maximum lastmodified timestamp
     * of any source file. */
-  def generateVersionPropertiesFile(name: String)(dir: File, versions: VersionInfo, s: TaskStreams): Seq[File] = {
+  def generateVersionPropertiesFile(name: String)(dir: File, versions: VersionInfo, skip: Boolean, s: TaskStreams): Seq[File] = {
     // TODO - We can probably clean this up by moving caching bits elsewhere perhaps....
     val target = dir / name        
     // TODO - Regenerate on triggers, like recompilation or something...
@@ -56,7 +56,7 @@ object Versions {
       try props.load(in) finally in.close()
       versions.canonical == (props getProperty "version.number")
     }
-    if (!target.exists || !hasSameVersion) {
+    if (!target.exists || !(skip || hasSameVersion)) {
       makeVersionPropertiesFile(target, versions)
     }
     target :: Nil
