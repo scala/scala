@@ -872,7 +872,10 @@ trait JavaParsers extends ast.parser.ParsersCommon with JavaScanners {
           skipAhead()
           accept(RBRACE)
         }
-        ValDef(Modifiers(Flags.JAVA | Flags.STATIC), name, enumType, blankExpr)
+        // The STABLE flag is to signal to namer that this was read from a
+        // java enum, and so should be given a Constant type (thereby making
+        // it usable in annotations.)
+        ValDef(Modifiers(Flags.STABLE | Flags.JAVA | Flags.STATIC), name, enumType, blankExpr)
       }
     }
 

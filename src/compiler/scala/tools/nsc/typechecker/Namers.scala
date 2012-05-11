@@ -567,7 +567,15 @@ trait Namers extends MethodSynthesis {
         assignAndEnterFinishedSymbol(tree)
       else
         enterGetterSetter(tree)
+
+      // When java enums are read from bytecode, they are known to have
+      // constant types by the jvm flag and assigned accordingly.  When
+      // they are read from source, the java parser marks them with the
+      // STABLE flag, and now we receive that signal.
+      if (tree.symbol hasAllFlags STABLE | JAVA)
+        tree.symbol setInfo ConstantType(Constant(tree.symbol))
     }
+
     def enterLazyVal(tree: ValDef, lazyAccessor: Symbol): TermSymbol = {
       // If the owner is not a class, this is a lazy val from a method,
       // with no associated field.  It has an accessor with $lzy appended to its name and
