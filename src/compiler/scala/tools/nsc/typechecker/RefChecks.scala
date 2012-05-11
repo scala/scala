@@ -1279,7 +1279,7 @@ abstract class RefChecks extends InfoTransform with reflect.internal.transform.R
     }
 
     def transformStat(tree: Tree, index: Int): List[Tree] = tree match {
-      case Apply(Select(This(_), nme.CONSTRUCTOR), args) =>
+      case t if treeInfo.isSelfConstrCall(t) =>
         assert(index == 0, index)
         val t = transform(tree)
         if (currentLevel.maxindex > 0) {
