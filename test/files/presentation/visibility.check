@@ -38,10 +38,10 @@ retrieved 42 members
 [accessible:  true] `method wait(x$1: Long, x$2: Int)Unit`
 [accessible:  true] `method x=> accessibility.Foo`
 [accessible:  true] `method →[B](y: B)(accessibility.Foo, B)`
+[accessible:  true] `value __leftOfArrowaccessibility.Foo`
+[accessible:  true] `value __resultOfEnsuringaccessibility.Foo`
+[accessible:  true] `value selfAny`
 [accessible: false] `method secretPrivateThis()Unit`
-[accessible: false] `value __leftOfArrowaccessibility.Foo`
-[accessible: false] `value __resultOfEnsuringaccessibility.Foo`
-[accessible: false] `value selfAny`
 ================================================================================
 
 askTypeCompletion at Completions.scala(16,11)
@@ -83,9 +83,9 @@ retrieved 42 members
 [accessible:  true] `method wait(x$1: Long, x$2: Int)Unit`
 [accessible:  true] `method x=> accessibility.Foo`
 [accessible:  true] `method →[B](y: B)(accessibility.Foo, B)`
-[accessible: false] `value __leftOfArrowaccessibility.Foo`
-[accessible: false] `value __resultOfEnsuringaccessibility.Foo`
-[accessible: false] `value selfAny`
+[accessible:  true] `value __leftOfArrowaccessibility.Foo`
+[accessible:  true] `value __resultOfEnsuringaccessibility.Foo`
+[accessible:  true] `value selfAny`
 ================================================================================
 
 askTypeCompletion at Completions.scala(22,11)
@@ -126,10 +126,10 @@ retrieved 42 members
 [accessible:  true] `method wait(x$1: Long, x$2: Int)Unit`
 [accessible:  true] `method x=> accessibility.AccessibilityChecks`
 [accessible:  true] `method →[B](y: B)(accessibility.AccessibilityChecks, B)`
+[accessible:  true] `value __leftOfArrowaccessibility.AccessibilityChecks`
+[accessible:  true] `value __resultOfEnsuringaccessibility.AccessibilityChecks`
+[accessible:  true] `value selfAny`
 [accessible: false] `method secretPrivate()Unit`
-[accessible: false] `value __leftOfArrowaccessibility.AccessibilityChecks`
-[accessible: false] `value __resultOfEnsuringaccessibility.AccessibilityChecks`
-[accessible: false] `value selfAny`
 ================================================================================
 
 askTypeCompletion at Completions.scala(28,10)
@@ -166,14 +166,14 @@ retrieved 42 members
 [accessible:  true] `method wait(x$1: Long, x$2: Int)Unit`
 [accessible:  true] `method x=> accessibility.Foo`
 [accessible:  true] `method →[B](y: B)(accessibility.Foo, B)`
+[accessible:  true] `value __leftOfArrowaccessibility.Foo`
+[accessible:  true] `value __resultOfEnsuringaccessibility.Foo`
+[accessible:  true] `value selfAny`
 [accessible: false] `method clone()Object`
 [accessible: false] `method finalize()Unit`
 [accessible: false] `method secretPrivate()Unit`
 [accessible: false] `method secretPrivateThis()Unit`
 [accessible: false] `method secretProtected()Unit`
-[accessible: false] `value __leftOfArrowaccessibility.Foo`
-[accessible: false] `value __resultOfEnsuringaccessibility.Foo`
-[accessible: false] `value selfAny`
 ================================================================================
 
 askTypeCompletion at Completions.scala(37,8)
@@ -209,13 +209,13 @@ retrieved 42 members
 [accessible:  true] `method wait(x$1: Long, x$2: Int)Unit`
 [accessible:  true] `method x=> accessibility.Foo`
 [accessible:  true] `method →[B](y: B)(accessibility.Foo, B)`
+[accessible:  true] `value __leftOfArrowaccessibility.Foo`
+[accessible:  true] `value __resultOfEnsuringaccessibility.Foo`
+[accessible:  true] `value selfAny`
 [accessible: false] `method clone()Object`
 [accessible: false] `method finalize()Unit`
 [accessible: false] `method secretPrivate()Unit`
 [accessible: false] `method secretPrivateThis()Unit`
 [accessible: false] `method secretProtected()Unit`
 [accessible: false] `method secretProtectedInPackage()Unit`
-[accessible: false] `value __leftOfArrowaccessibility.Foo`
-[accessible: false] `value __resultOfEnsuringaccessibility.Foo`
-[accessible: false] `value selfAny`
 ================================================================================

@@ -58,12 +58,12 @@ retrieved 64 members
 [accessible:  true] `type AnswercallccInterpreter.Answer`
 [accessible:  true] `type EnvironmentcallccInterpreter.Environment`
 [accessible:  true] `type NamecallccInterpreter.Name`
+[accessible:  true] `value __leftOfArrowcallccInterpreter.type`
+[accessible:  true] `value __resultOfEnsuringcallccInterpreter.type`
+[accessible:  true] `value selfAny`
 [accessible:  true] `value term0callccInterpreter.App`
 [accessible:  true] `value term1callccInterpreter.App`
 [accessible:  true] `value term2callccInterpreter.Add`
-[accessible: false] `value __leftOfArrowcallccInterpreter.type`
-[accessible: false] `value __resultOfEnsuringcallccInterpreter.type`
-[accessible: false] `value selfAny`
 ================================================================================
 
 askType at CallccInterpreter.scala(14,21)
