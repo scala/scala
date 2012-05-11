@@ -958,9 +958,14 @@ trait Typers extends Modes with Adaptations with Taggings {
        * see test/files/../t5189*.scala
        */
       def adaptConstrPattern(): Tree = { // (5)
-        val extractor = tree.symbol.filter(sym => reallyExists(unapplyMember(sym.tpe)))
+        def isExtractor(sym: Symbol) = reallyExists(unapplyMember(sym.tpe))
+        val extractor = tree.symbol filter isExtractor
         if (extractor != NoSymbol) {
           tree setSymbol extractor
+          tree.tpe match {
+            case OverloadedType(pre, alts) => tree.tpe = overloadedType(pre, alts filter isExtractor)
+            case _ =>
+          }
           val unapply = unapplyMember(extractor.tpe)
           val clazz = unapplyParameterType(unapply)
 
