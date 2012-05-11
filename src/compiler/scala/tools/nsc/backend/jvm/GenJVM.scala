@@ -1159,6 +1159,27 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
      */
     def generateMirrorClass(clasz: Symbol, sourceFile: SourceFile) {
       import JAccessFlags._
+      /* We need to save inner classes buffer and create a new one to make sure
+       * that we do confuse inner classes of the class  we mirror with inner
+       * classes of the class we are mirroring. These two sets can be different
+       * as seen in this case:
+       *
+       *  class A {
+       *   class B
+       *   def b: B = new B
+       *  }
+       *  object C extends A
+       *
+       *  Here mirror class of C has a static forwarder for (inherited) method `b`
+       *  therefore it refers to class `B` and needs InnerClasses entry. However,
+       *  the real class for `C` (named `C$`) is empty and does not refer to `B`
+       *  thus does not need InnerClasses entry it.
+       *
+       *  NOTE: This logic has been refactored in GenASM and everything is
+       *  implemented in a much cleaner way by having two separate buffers.
+       */
+      val savedInnerClasses = innerClassBuffer
+      innerClassBuffer = mutable.LinkedHashSet[Symbol]()
       val moduleName = javaName(clasz) // + "$"
       val mirrorName = moduleName.substring(0, moduleName.length() - 1)
       val mirrorClass = fjbgContext.JClass(ACC_SUPER | ACC_PUBLIC | ACC_FINAL,
@@ -1172,6 +1193,7 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
       val ssa = scalaSignatureAddingMarker(mirrorClass, clasz.companionSymbol)
       addAnnotations(mirrorClass, clasz.annotations ++ ssa)
       emitClass(mirrorClass, clasz)
+      innerClassBuffer = savedInnerClasses
     }
 
     var linearization: List[BasicBlock] = Nil
