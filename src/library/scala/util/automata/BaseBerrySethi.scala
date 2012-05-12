@@ -17,6 +17,7 @@ import scala.collection.{ mutable, immutable }
   * [[scala.util.automata.NondetWordAutom]] over `A` using the celebrated
   * position automata construction (also called ''Berry-Sethi'' or ''Glushkov'').
   */
+@deprecated("This class will be removed", "2.10.0")
 abstract class BaseBerrySethi {
   val lang: Base
   import lang.{ Alt, Eps, Meta, RegExp, Sequ, Star }

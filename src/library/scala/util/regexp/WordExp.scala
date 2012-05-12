@@ -38,6 +38,7 @@ package scala.util.regexp
  *  @author  Burak Emir
  *  @version 1.0
  */
+@deprecated("This class will be removed", "2.10.0")
 abstract class WordExp extends Base {
 
   abstract class Label

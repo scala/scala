@@ -16,6 +16,7 @@ package scala.util
  * @author Stephane Micheloud
  * @version 1.0
  */
+@deprecated("This class will be removed", "2.10.0")
 object Marshal {
   import java.io._
   import scala.reflect.ClassTag

@@ -17,6 +17,7 @@ package scala.util.automata
  *  @author Burak Emir
  *  @version 1.0
  */
+@deprecated("This class will be removed", "2.10.0")
 trait Inclusion[A <: AnyRef] {
 
   val labels: Seq[A]

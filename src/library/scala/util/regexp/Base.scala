@@ -15,8 +15,9 @@ package scala.util.regexp
  *  @author  Burak Emir
  *  @version 1.0
  */
-abstract class Base
-{
+
+@deprecated("This class will be removed", "2.10.0")
+abstract class Base {
   type _regexpT <: RegExp
 
   abstract class RegExp {

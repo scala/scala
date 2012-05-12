@@ -24,6 +24,7 @@ import language.implicitConversions
  *
  *  @author Adriaan Moors
  */
+@deprecated("This class will be removed", "2.10.0")
 trait Mappable {
   trait Mapper { def apply[T <% Mappable[T]](x: T): T } /* TODO: having type `Forall T. T => T` is too strict:
   sometimes we want to allow `Forall T >: precision. T => T` for some type `precision`, so that,

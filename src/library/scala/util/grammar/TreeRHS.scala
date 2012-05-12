@@ -11,9 +11,12 @@
 package scala.util.grammar
 
 /** Right hand side of a tree production. */
+@deprecated("This class will be removed", "2.10.0")
 abstract class TreeRHS
 
 /** Right hand side of a tree production, labelled with a letter from an alphabet. */
+@deprecated("This class will be removed", "2.10.0")
 case class LabelledRHS[A](label: A, hnt: Int) extends TreeRHS
 
+@deprecated("This class will be removed", "2.10.0")
 case object AnyTreeRHS extends TreeRHS
