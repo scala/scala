@@ -1208,7 +1208,7 @@ abstract class GenICode extends SubComponent  {
         if (!tree.symbol.isPackageClass) tree.symbol
         else tree.symbol.info.member(nme.PACKAGE) match {
           case NoSymbol => assert(false, "Cannot use package as value: " + tree) ; NoSymbol
-          case s        => Console.err.println("Bug: found package class where package object expected.  Converting.") ; s.moduleClass
+          case s        => debugwarn("Bug: found package class where package object expected.  Converting.") ; s.moduleClass
         }
       )
       debuglog("LOAD_MODULE from %s: %s".format(tree.shortClass, sym))

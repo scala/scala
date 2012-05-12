@@ -7,7 +7,7 @@ trait TraceSymbolActivity {
   val global: SymbolTable
   import global._
 
-  if (traceSymbolActivity)
+  if (traceSymbolActivity && !global.inReflexiveMirror)
     scala.sys addShutdownHook showAllSymbols()
 
   private type Set[T] = scala.collection.immutable.Set[T]

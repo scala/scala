@@ -17,7 +17,14 @@ trait Erasure {
      *  with primitive as well as class types)?.
      */
     private def genericCore(tp: Type): Type = tp.normalize match {
-      case TypeRef(_, sym, _) if sym.isAbstractType && !sym.owner.isJavaDefined =>
+      /* A Java Array<T> is erased to Array[Object] (T can only be a reference type), where as a Scala Array[T] is
+       * erased to Object. However, there is only symbol for the Array class. So to make the distinction between
+       * a Java and a Scala array, we check if the owner of T comes from a Java class.
+       * This however caused issue SI-5654. The additional test for EXSITENTIAL fixes it, see the ticket comments.
+       * In short, members of an existential type (e.g. `T` in `forSome { type T }`) can have pretty arbitrary
+       * owners (e.g. when computing lubs, <root> is used). All packageClass symbols have `isJavaDefined == true`.
+       */
+      case TypeRef(_, sym, _) if sym.isAbstractType && (!sym.owner.isJavaDefined || sym.hasFlag(Flags.EXISTENTIAL)) =>
         tp
       case ExistentialType(tparams, restp) =>
         genericCore(restp)

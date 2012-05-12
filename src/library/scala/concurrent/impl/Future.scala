@@ -57,7 +57,7 @@ private[concurrent] object Future {
           case NonFatal(e) =>
             // Commenting out reporting for now, since it produces too much output in the tests
             //executor.reportFailure(e)
-            scala.concurrent.resolver(e)
+            Left(e)
         }
       }
     })

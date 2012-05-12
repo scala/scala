@@ -236,7 +236,7 @@ abstract class TreeGen extends reflect.internal.TreeGen with TreeDSL {
     mkMethodCall(
       PredefModule,
       wrapArrayMethodName(elemtp),
-      if (isScalaValueType(elemtp)) Nil else List(elemtp),
+      if (isPrimitiveValueType(elemtp)) Nil else List(elemtp),
       List(tree)
     )
   }
@@ -261,7 +261,7 @@ abstract class TreeGen extends reflect.internal.TreeGen with TreeDSL {
    *  elem type elemtp to expected type pt.
    */
   def mkCastArray(tree: Tree, elemtp: Type, pt: Type) =
-    if (elemtp.typeSymbol == AnyClass && isScalaValueType(tree.tpe.typeArgs.head))
+    if (elemtp.typeSymbol == AnyClass && isPrimitiveValueType(tree.tpe.typeArgs.head))
       mkCast(mkRuntimeCall(nme.toObjectArray, List(tree)), pt)
     else
       mkCast(tree, pt)

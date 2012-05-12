@@ -54,8 +54,7 @@ object ExecutionContext {
   def fromExecutor(e: Executor, reporter: Throwable => Unit = defaultReporter): ExecutionContext with Executor = new impl.ExecutionContextImpl(e, reporter)
   
   def defaultReporter: Throwable => Unit = {
-    // `Error`s are currently wrapped by `resolver`.
-    // Also, re-throwing `Error`s here causes an exception handling test to fail.
+    // re-throwing `Error`s here causes an exception handling test to fail.
     //case e: Error => throw e
     case t => t.printStackTrace()
   }

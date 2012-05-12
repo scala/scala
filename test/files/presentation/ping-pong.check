@@ -32,13 +32,13 @@ retrieved 40 members
 [accessible:  true] `method wait(x$1: Long, x$2: Int)Unit`
 [accessible:  true] `method x=> Pong`
 [accessible:  true] `method →[B](y: B)(Pong, B)`
+[accessible:  true] `value __leftOfArrowPong`
+[accessible:  true] `value __resultOfEnsuringPong`
+[accessible:  true] `value nameString`
+[accessible:  true] `value selfAny`
 [accessible: false] `method clone()Object`
 [accessible: false] `method finalize()Unit`
-[accessible: false] `value __leftOfArrowPong`
-[accessible: false] `value __resultOfEnsuringPong`
-[accessible: false] `value nameString`
 [accessible: false] `value pingPing`
-[accessible: false] `value selfAny`
 ================================================================================
 
 askTypeCompletion at PingPong.scala(19,20)
@@ -75,12 +75,12 @@ retrieved 40 members
 [accessible:  true] `method wait(x$1: Long, x$2: Int)Unit`
 [accessible:  true] `method x=> Ping`
 [accessible:  true] `method →[B](y: B)(Ping, B)`
+[accessible:  true] `value __leftOfArrowPing`
+[accessible:  true] `value __resultOfEnsuringPing`
+[accessible:  true] `value pongPong`
+[accessible:  true] `value selfAny`
 [accessible: false] `method clone()Object`
 [accessible: false] `method finalize()Unit`
-[accessible: false] `value __leftOfArrowPing`
-[accessible: false] `value __resultOfEnsuringPing`
-[accessible: false] `value pongPong`
-[accessible: false] `value selfAny`
 ================================================================================
 
 askType at PingPong.scala(8,10)

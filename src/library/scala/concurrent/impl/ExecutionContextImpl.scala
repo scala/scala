@@ -10,10 +10,10 @@ package scala.concurrent.impl
 
 
 
-import java.util.concurrent.{Callable, Executor, ExecutorService, Executors, ThreadFactory}
+import java.util.concurrent.{ Callable, Executor, ExecutorService, Executors, ThreadFactory }
 import scala.concurrent.forkjoin._
-import scala.concurrent.{ExecutionContext, resolver, Awaitable}
-import scala.concurrent.util.{ Duration }
+import scala.concurrent.{ ExecutionContext, Awaitable }
+import scala.concurrent.util.Duration
 
 
 

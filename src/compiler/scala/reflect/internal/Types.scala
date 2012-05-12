@@ -2663,6 +2663,10 @@ trait Types extends api.Types { self: SymbolTable =>
     override def kind = "OverloadedType"
   }
 
+  def overloadedType(pre: Type, alternatives: List[Symbol]): Type =
+    if (alternatives.tail.isEmpty) pre memberType alternatives.head
+    else OverloadedType(pre, alternatives)
+
   /** A class remembering a type instantiation for some a set of overloaded
    *  polymorphic symbols.
    *  Not used after phase `typer`.

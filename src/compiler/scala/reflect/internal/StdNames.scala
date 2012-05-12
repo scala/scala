@@ -766,7 +766,6 @@ trait StdNames {
   object fulltpnme extends TypeNames {
     val RuntimeNothing: NameType = "scala.runtime.Nothing$"
     val RuntimeNull: NameType    = "scala.runtime.Null$"
-    val JavaLangEnum: NameType   = "java.lang.Enum"
   }
 
   /** Java binary names, like scala/runtime/Nothing$.

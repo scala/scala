@@ -118,10 +118,10 @@ retrieved 124 members
 [accessible:  true] `method zipWithIndex=> Iterator[(B, Int)]`
 [accessible:  true] `method zip[B](that: Iterator[B])Iterator[(B, B)]`
 [accessible:  true] `method →[B](y: B)(java.util.Iterator[B], B)`
+[accessible:  true] `value __leftOfArrowjava.util.Iterator[B]`
+[accessible:  true] `value __resultOfEnsuringjava.util.Iterator[B]`
+[accessible:  true] `value selfAny`
 [accessible: false] `method clone()Object`
 [accessible: false] `method finalize()Unit`
 [accessible: false] `method reversed=> List[B]`
-[accessible: false] `value __leftOfArrowjava.util.Iterator[B]`
-[accessible: false] `value __resultOfEnsuringjava.util.Iterator[B]`
-[accessible: false] `value selfAny`
 ================================================================================

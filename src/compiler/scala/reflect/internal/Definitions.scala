@@ -1207,7 +1207,7 @@ trait Definitions extends reflect.api.StandardDefinitions {
     def isPrimitiveValueClass(sym: Symbol) = ScalaValueClasses contains sym
     def isNonUnitValueClass(sym: Symbol)   = isPrimitiveValueClass(sym) && (sym != UnitClass)
     def isSpecializableClass(sym: Symbol)  = isPrimitiveValueClass(sym) || (sym == AnyRefClass)
-    def isScalaValueType(tp: Type)         = ScalaValueClasses contains tp.typeSymbol
+    def isPrimitiveValueType(tp: Type)     = isPrimitiveValueClass(tp.typeSymbol)
 
     /** Is symbol a boxed value class, e.g. java.lang.Integer? */
     def isBoxedValueClass(sym: Symbol) = boxedValueClassesSet(sym)

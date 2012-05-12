@@ -201,7 +201,7 @@ trait Future[+T] extends Awaitable[T] {
       case Right(v) =>
         try p success f(v)
         catch {
-          case NonFatal(t) => p complete resolver(t)
+          case NonFatal(t) => p failure t
         }
     }
 
@@ -227,7 +227,7 @@ trait Future[+T] extends Awaitable[T] {
             case Right(v) => p success v
           }
         } catch {
-          case NonFatal(t) => p complete resolver(t)
+          case NonFatal(t) => p failure t
         }
     }
 
@@ -260,7 +260,7 @@ trait Future[+T] extends Awaitable[T] {
           if (pred(v)) p success v
           else p failure new NoSuchElementException("Future.filter predicate is not satisfied by: " + v)
         } catch {
-          case NonFatal(t) => p complete resolver(t)
+          case NonFatal(t) => p failure t
         }
     }
 
@@ -309,7 +309,7 @@ trait Future[+T] extends Awaitable[T] {
           if (pf.isDefinedAt(v)) p success pf(v)
           else p failure new NoSuchElementException("Future.collect partial function is not defined at: " + v)
         } catch {
-          case NonFatal(t) => p complete resolver(t)
+          case NonFatal(t) => p failure t
         }
     }
 
@@ -334,7 +334,9 @@ trait Future[+T] extends Awaitable[T] {
     onComplete {
       case Left(t) if pf isDefinedAt t =>
         try { p success pf(t) }
-        catch { case NonFatal(t) => p complete resolver(t) }
+        catch {
+          case NonFatal(t) => p failure t
+        }
       case otherwise => p complete otherwise
     }
 
@@ -362,7 +364,7 @@ trait Future[+T] extends Awaitable[T] {
         try {
           p completeWith pf(t)
         } catch {
-          case NonFatal(t) => p complete resolver(t)
+          case NonFatal(t) => p failure t
         }
       case otherwise => p complete otherwise
     }

@@ -162,7 +162,9 @@ class Global(var currentSettings: Settings, var reporter: Reporter) extends Symb
 
   /** Register new context; called for every created context
    */
-  def registerContext(c: analyzer.Context) {}
+  def registerContext(c: analyzer.Context) {
+    lastSeenContext = c
+  }
 
   /** Register top level class (called on entering the class)
    */
@@ -894,12 +896,21 @@ class Global(var currentSettings: Settings, var reporter: Reporter) extends Symb
     curRun = null
   }
 
+  object typeDeconstruct extends {
+    val global: Global.this.type = Global.this
+  } with interpreter.StructuredTypeStrings
+
   /** There are common error conditions where when the exception hits
    *  here, currentRun.currentUnit is null.  This robs us of the knowledge
    *  of what file was being compiled when it broke.  Since I really
    *  really want to know, this hack.
    */
   private var lastSeenSourceFile: SourceFile = NoSourceFile
+
+  /** Let's share a lot more about why we crash all over the place.
+   *  People will be very grateful.
+   */
+  private var lastSeenContext: analyzer.Context = null
 
   /** The currently active run
    */
@@ -929,25 +940,64 @@ class Global(var currentSettings: Settings, var reporter: Reporter) extends Symb
   @inline final def beforeTyper[T](op: => T): T         = beforePhase(currentRun.typerPhase)(op)
   @inline final def beforeUncurry[T](op: => T): T       = beforePhase(currentRun.uncurryPhase)(op)
 
+  def explainContext(c: analyzer.Context): String = (
+    if (c == null) "" else (
+     """| context owners: %s
+        |
+        |Enclosing block or template:
+        |%s""".format(
+          c.owner.ownerChain.takeWhile(!_.isPackageClass).mkString(" -> "),
+          nodePrinters.nodeToString(c.enclClassOrMethod.tree)
+        )
+    )
+  )
+  // Owners up to and including the first package class.
+  private def ownerChainString(sym: Symbol): String = (
+    if (sym == null) ""
+    else sym.ownerChain.span(!_.isPackageClass) match {
+      case (xs, pkg :: _) => (xs :+ pkg) mkString " -> "
+      case _              => sym.ownerChain mkString " -> " // unlikely
+    }
+  )
+  private def formatExplain(pairs: (String, Any)*): String = (
+    pairs.toList collect { case (k, v) if v != null => "%20s: %s".format(k, v) } mkString "\n"
+  )
+
+  def explainTree(t: Tree): String = formatExplain(
+  )
+
   /** Don't want to introduce new errors trying to report errors,
    *  so swallow exceptions.
    */
   override def supplementErrorMessage(errorMessage: String): String = try {
-    """|
-       |     while compiling:  %s
-       |       current phase:  %s
-       |     library version:  %s
-       |    compiler version:  %s
-       |  reconstructed args:  %s
-       |
-       |%s""".stripMargin.format(
-      currentSource.path,
-      phase,
-      scala.util.Properties.versionString,
-      Properties.versionString,
-      settings.recreateArgs.mkString(" "),
-      if (opt.debug) "Current unit body:\n" + currentUnit.body + "\n" + errorMessage else errorMessage
+    val tree      = analyzer.lastTreeToTyper
+    val sym       = tree.symbol
+    val tpe       = tree.tpe
+    val enclosing = lastSeenContext.enclClassOrMethod.tree
+
+    val info1 = formatExplain(
+      "while compiling"    -> currentSource.path,
+      "during phase"       -> phase,
+      "library version"    -> scala.util.Properties.versionString,
+      "compiler version"   -> Properties.versionString,
+      "reconstructed args" -> settings.recreateArgs.mkString(" ")
     )
+    val info2 = formatExplain(
+      "last tree to typer" -> tree.summaryString,
+      "symbol"             -> Option(sym).fold("null")(_.debugLocationString),
+      "symbol definition"  -> Option(sym).fold("null")(_.defString),
+      "tpe"                -> tpe,
+      "symbol owners"      -> ownerChainString(sym),
+      "context owners"     -> ownerChainString(lastSeenContext.owner)
+    )
+    val info3: List[String] = (
+         ( List("== Enclosing template or block ==", nodePrinters.nodeToString(enclosing).trim) )
+      ++ ( if (tpe eq null) Nil else List("== Expanded type of tree ==", typeDeconstruct.show(tpe)) )
+      ++ ( if (!opt.debug) Nil else List("== Current unit body ==", nodePrinters.nodeToString(currentUnit.body)) )
+      ++ ( List(errorMessage) )
+    )
+
+    ("\n" + info1) :: info2 :: info3 mkString "\n\n"
   }
   catch { case x: Exception => errorMessage }
 

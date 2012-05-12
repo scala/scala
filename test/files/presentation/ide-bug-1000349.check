@@ -34,7 +34,7 @@ retrieved 37 members
 [accessible:  true] `method wait(x$1: Long, x$2: Int)Unit`
 [accessible:  true] `method x=> Foo`
 [accessible:  true] `method →[B](y: B)(Foo, B)`
-[accessible: false] `value __leftOfArrowFoo`
-[accessible: false] `value __resultOfEnsuringFoo`
-[accessible: false] `value selfAny`
+[accessible:  true] `value __leftOfArrowFoo`
+[accessible:  true] `value __resultOfEnsuringFoo`
+[accessible:  true] `value selfAny`
 ================================================================================
