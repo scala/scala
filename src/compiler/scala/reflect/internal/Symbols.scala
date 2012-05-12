@@ -3054,7 +3054,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     override def originalEnclosingMethod = this
 
     override def owner: Symbol =
-      abort("no-symbol does not have an owner (this is a bug: scala " + scala.util.Properties.versionString + ")")
+      abort("no-symbol does not have an owner")
     override def typeConstructor: Type =
       abort("no-symbol does not have a type constructor (this may indicate scalac cannot find fundamental classes)")
   }
