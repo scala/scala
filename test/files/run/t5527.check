@@ -1,4 +1,4 @@
-[[syntax trees at end of parser]]// Scala source: newSource1
+[[syntax trees at end of                    parser]] // newSource1
 package <empty> {
   object UselessComments extends scala.AnyRef {
     def <init>() = {

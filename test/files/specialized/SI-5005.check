@@ -1,4 +1,4 @@
-[[syntax trees at end of specialize]]// Scala source: newSource1
+[[syntax trees at end of                specialize]] // newSource1
 package <empty> {
   class C2[@specialized(scala.Boolean) U >: Nothing <: Any] extends Object {
     def <init>(): C2[U] = {
