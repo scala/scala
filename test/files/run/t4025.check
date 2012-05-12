@@ -1,0 +1,19 @@
+Type in expressions to have them evaluated.
+Type :help for more information.
+
+scala> 
+
+scala> class Color(val red: Int)
+defined class Color
+
+scala> 
+
+scala> case class Red(r:Int) extends Color(r)
+defined class Red
+
+scala> 
+
+scala> def f(c: Any) = c match { case Red(_) => () }
+f: (c: Any)Unit
+
+scala> 
