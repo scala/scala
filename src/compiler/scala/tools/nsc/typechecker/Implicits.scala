@@ -1133,16 +1133,27 @@ trait Implicits {
       * An EmptyTree is returned if materialization fails.
       */
     private def tagOfType(pre: Type, tp: Type, tagClass: Symbol): SearchResult = {
-      def success(arg: Tree) =
+      def success(arg: Tree) = {
+        def isMacroException(msg: String): Boolean =
+          // [Eugene] very unreliable, ask Hubert about a better way
+          msg contains "exception during macro expansion"
+
+        def processMacroExpansionError(pos: Position, msg: String): SearchResult = {
+          // giving up and reporting all macro exceptions regardless of their source
+          // this might lead to an avalanche of errors if one of your implicit macros misbehaves
+          if (isMacroException(msg)) context.error(pos, msg)
+          failure(arg, "failed to typecheck the materialized tag: %n%s".format(msg), pos)
+        }
+
         try {
           val tree1 = typed(atPos(pos.focus)(arg))
-          def isErroneous = tree exists (_.isErroneous)
-          if (context.hasErrors) failure(tp, "failed to typecheck the materialized typetag: %n%s".format(context.errBuffer.head.errMsg), context.errBuffer.head.errPos)
+          if (context.hasErrors) processMacroExpansionError(context.errBuffer.head.errPos, context.errBuffer.head.errMsg)
           else new SearchResult(tree1, EmptyTreeTypeSubstituter)
         } catch {
           case ex: TypeError =>
-            failure(arg, "failed to typecheck the materialized typetag: %n%s".format(ex.msg), ex.pos)
+            processMacroExpansionError(ex.pos, ex.msg)
         }
+      }
 
       val prefix = (
         // ClassTags only exist for scala.reflect.mirror, so their materializer
