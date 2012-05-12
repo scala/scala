@@ -130,7 +130,28 @@ class Global(var currentSettings: Settings, var reporter: Reporter) extends Symb
   object nodePrinters extends {
     val global: Global.this.type = Global.this
   } with NodePrinters {
+    var lastPrintedPhase: Phase = NoPhase
+    var lastPrintedSource: String = ""
     infolevel = InfoLevel.Verbose
+
+    def showUnit(unit: CompilationUnit) {
+      print(" // " + unit.source)
+      if (unit.body == null) println(": tree is null")
+      else {
+        val source = util.stringFromWriter(w => newTreePrinter(w) print unit.body)
+
+        // treePrinter show unit.body
+        if (lastPrintedSource == source)
+          println(": tree is unchanged since " + lastPrintedPhase)
+        else {
+          lastPrintedPhase = phase.prev // since we're running inside "afterPhase"
+          lastPrintedSource = source
+          println("")
+          println(source)
+          println("")
+        }
+      }
+    }
   }
 
   def withInfoLevel[T](infolevel: nodePrinters.InfoLevel.Value)(op: => T) = {
@@ -1588,8 +1609,10 @@ class Global(var currentSettings: Settings, var reporter: Reporter) extends Symb
   } // class Run
 
   def printAllUnits() {
-    print("[[syntax trees at end of " + phase + "]]")
-    afterPhase(phase) { currentRun.units foreach (treePrinter.print(_)) }
+    print("[[syntax trees at end of %25s]]".format(phase))
+    afterPhase(phase)(currentRun.units foreach { unit =>
+      nodePrinters showUnit unit
+    })
   }
 
   /** We resolve the class/object ambiguity by passing a type/term name.
