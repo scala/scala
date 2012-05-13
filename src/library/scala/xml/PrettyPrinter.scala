@@ -42,10 +42,6 @@ class PrettyPrinter(width: Int, step: Int) {
   }
 
   /** Try to cut at whitespace.
-   *
-   *  @param s   ...
-   *  @param ind ...
-   *  @return    ...
    */
   protected def cut(s: String, ind: Int): List[Item] = {
     val tmp = width - cur
@@ -74,10 +70,6 @@ class PrettyPrinter(width: Int, step: Int) {
   }
 
   /** Try to make indented box, if possible, else para.
-   *
-   *  @param ind ...
-   *  @param s   ...
-   *  @return    ...
    */
   protected def makeBox(ind: Int, s: String) =
     if (cur + s.length > width) {            // fits in this line
@@ -99,10 +91,6 @@ class PrettyPrinter(width: Int, step: Int) {
     cur = 0
   }
 
-  /**
-   *  @param n ...
-   *  @return  ...
-   */
   protected def leafTag(n: Node) = {
     def mkLeaf(sb: StringBuilder) {
       sb append '<'
@@ -149,7 +137,6 @@ class PrettyPrinter(width: Int, step: Int) {
   private def doPreserve(node: Node) =
     node.attribute(XML.namespace, XML.space).map(_.toString == XML.preserve) getOrElse false
 
-  /** @param tail: what we'd like to sqeeze in */
   protected def traverse(node: Node, pscope: NamespaceBinding, ind: Int): Unit =  node match {
 
       case Text(s) if s.trim() == "" =>
@@ -210,7 +197,6 @@ class PrettyPrinter(width: Int, step: Int) {
    *  given namespace to prefix mapping to the given string buffer.
    *
    * @param n    the node to be serialized
-   * @param pmap the namespace to prefix mapping
    * @param sb   the stringbuffer to append to
    */
   def format(n: Node, sb: StringBuilder) { // entry point
@@ -250,9 +236,9 @@ class PrettyPrinter(width: Int, step: Int) {
   /** Returns a formatted string containing well-formed XML with
    *  given namespace to prefix mapping.
    *
-   *  @param n    the node to be serialized
-   *  @param pmap the namespace to prefix mapping
-   *  @return     ...
+   *  @param n      the node to be serialized
+   *  @param pscope the namespace to prefix mapping
+   *  @return      the formatted string
    */
   def format(n: Node, pscope: NamespaceBinding = null): String =
     sbToString(format(n, pscope, _))

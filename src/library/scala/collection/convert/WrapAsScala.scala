@@ -25,8 +25,8 @@ trait WrapAsScala {
    * explicit call of `asIterator(scala.collection.Iterator)` then the
    * original Scala `Iterator` will be returned.
    *
-   * @param i The `Iterator` to be converted.
-   * @return A Scala `Iterator` view of the argument.
+   * @param it The `Iterator` to be converted.
+   * @return   A Scala `Iterator` view of the argument.
    */
   implicit def asScalaIterator[A](it: ju.Iterator[A]): Iterator[A] = it match {
     case IteratorWrapper(wrapped) => wrapped
@@ -187,8 +187,8 @@ trait WrapAsScala {
    * `Dictionary` and any side-effects of using it via the Scala interface
    * will be visible via the Java interface and vice versa.
    *
-   * @param m The Dictionary to be converted.
-   * @return A Scala mutable Map[String, String] view of the argument.
+   * @param p The Dictionary to be converted.
+   * @return  A Scala mutable Map[String, String] view of the argument.
    */
   implicit def dictionaryAsScalaMap[A, B](p: ju.Dictionary[A, B]): mutable.Map[A, B] = p match {
     case DictionaryWrapper(wrapped) => wrapped
@@ -202,8 +202,8 @@ trait WrapAsScala {
    * `Properties` and any side-effects of using it via the Scala interface
    * will be visible via the Java interface and vice versa.
    *
-   * @param m The Properties to be converted.
-   * @return A Scala mutable Map[String, String] view of the argument.
+   * @param p The Properties to be converted.
+   * @return  A Scala mutable Map[String, String] view of the argument.
    */
   implicit def propertiesAsScalaMap(p: ju.Properties): mutable.Map[String, String] = p match {
     case _ => new JPropertiesWrapper(p)

@@ -21,9 +21,6 @@ package scala
 object Responder {
 
   /** Creates a responder that answer continuations with the constant `a`.
-   *
-   *  @param x ...
-   *  @return ...
    */
   def constant[A](x: A) = new Responder[A] {
     def respond(k: A => Unit) = k(x)
@@ -31,9 +28,6 @@ object Responder {
 
   /** Executes `x` and returns `'''true'''`, useful as syntactic
    *  convenience in for comprehensions.
-   *
-   *  @param x ...
-   *  @return ...
    */
   def exec[A](x: => Unit): Boolean = { x; true }
 

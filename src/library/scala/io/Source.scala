@@ -100,8 +100,6 @@ object Source {
   /** Create a `Source` from array of bytes, decoding
    *  the bytes according to codec.
    *
-   *  @param bytes ...
-   *  @param enc   ...
    *  @return      the created `Source` instance.
    */
   def fromBytes(bytes: Array[Byte])(implicit codec: Codec): Source =

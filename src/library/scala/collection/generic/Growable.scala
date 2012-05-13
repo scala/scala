@@ -42,7 +42,7 @@ trait Growable[-A] extends Clearable {
 
   /** ${Add}s all elements produced by a TraversableOnce to this $coll.
    *
-   *  @param iter  the TraversableOnce producing the elements to $add.
+   *  @param xs   the TraversableOnce producing the elements to $add.
    *  @return  the $coll itself.
    */
   def ++=(xs: TraversableOnce[A]): this.type = { xs.seq foreach += ; this }

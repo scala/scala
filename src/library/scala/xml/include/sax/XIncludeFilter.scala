@@ -249,7 +249,7 @@ class XIncludeFilter extends XMLFilterImpl {
     * calls to `characters()`. It's used to include files with `parse="text"`.
     *
     * @param  url          URL of the document that will be read
-    * @param  encoding     Encoding of the document; e.g. UTF-8,
+    * @param  encoding1    Encoding of the document; e.g. UTF-8,
     *                      ISO-8859-1, etc.
     * @return void
     * @throws SAXException if the requested document cannot

@@ -312,7 +312,7 @@ trait GenTraversableOnce[+A] extends Any {
    *
    *   @param   num  an implicit parameter defining a set of numeric operations
    *                 which includes the `+` operator to be used in forming the sum.
-   *   @tparam  B    the result type of the `+` operator.
+   *   @tparam  A1   the result type of the `+` operator.
    *   @return       the sum of all elements of this $coll with respect to the `+` operator in `num`.
    *
    *   @usecase def sum: A
@@ -330,7 +330,7 @@ trait GenTraversableOnce[+A] extends Any {
    *
    *   @param   num  an implicit parameter defining a set of numeric operations
    *                 which includes the `*` operator to be used in forming the product.
-   *   @tparam  B    the result type of the `*` operator.
+   *   @tparam  A1   the result type of the `*` operator.
    *   @return       the product of all elements of this $coll with respect to the `*` operator in `num`.
    *
    *   @usecase def product: A
@@ -345,8 +345,8 @@ trait GenTraversableOnce[+A] extends Any {
 
   /** Finds the smallest element.
    *
-   *  @param    cmp   An ordering to be used for comparing elements.
-   *  @tparam   B     The type over which the ordering is defined.
+   *  @param    ord   An ordering to be used for comparing elements.
+   *  @tparam   A1    The type over which the ordering is defined.
    *  @return   the smallest element of this $coll with respect to the ordering `cmp`.
    *
    *  @usecase def min: A
@@ -358,8 +358,8 @@ trait GenTraversableOnce[+A] extends Any {
 
   /** Finds the largest element.
    *
-   *  @param    cmp   An ordering to be used for comparing elements.
-   *  @tparam   B     The type over which the ordering is defined.
+   *  @param    ord   An ordering to be used for comparing elements.
+   *  @tparam   A1    The type over which the ordering is defined.
    *  @return   the largest element of this $coll with respect to the ordering `cmp`.
    *
    *  @usecase def max: A
@@ -382,9 +382,9 @@ trait GenTraversableOnce[+A] extends Any {
    *  $mayNotTerminateInf
    *  $orderDependent
    *
-   *  @param p    the predicate used to test elements.
-   *  @return     an option value containing the first element in the $coll
-   *              that satisfies `p`, or `None` if none exists.
+   *  @param pred    the predicate used to test elements.
+   *  @return        an option value containing the first element in the $coll
+   *                 that satisfies `p`, or `None` if none exists.
    */
   def find(pred: A => Boolean): Option[A]
 
@@ -459,9 +459,9 @@ trait GenTraversableOnce[+A] extends Any {
 
   /** Converts this $coll to an array.
    *
-   *  @tparam B the type of the elements of the array. An `ArrayTag` for
-   *            this type must be available.
-   *  @return   an array containing all elements of this $coll.
+   *  @tparam A1 the type of the elements of the array. An `ArrayTag` for
+   *             this type must be available.
+   *  @return    an array containing all elements of this $coll.
    *
    *  @usecase def toArray: Array[A]
    *    @inheritdoc

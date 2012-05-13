@@ -54,8 +54,8 @@ private[scala] trait MarkupParserCommon extends TokenTests {
     xTakeUntil(mkProcInstr(_, n, _), () => tmppos, "?>")
   }
 
-  /** attribute value, terminated by either ' or ". value may not contain <.
-   *  @param endch either ' or "
+  /** attribute value, terminated by either `'` or `"`. value may not contain `<`.
+   @param endCh either `'` or `"`
    */
   def xAttributeValue(endCh: Char): String = {
     val buf = new StringBuilder

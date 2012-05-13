@@ -511,7 +511,7 @@ object List extends SeqFactory[List] {
 
   /** Transforms an Iterable of Eithers into a pair of lists.
    *
-   *  @param xs the iterable of Eithers to separate
+   *  @param es the iterable of Eithers to separate
    *  @return a pair of lists.
    */
   @deprecated("use `(for (Left(x) <- es) yield x, for (Right(x) <- es) yield x)` instead", "2.8.0")
@@ -582,7 +582,7 @@ object List extends SeqFactory[List] {
   /** Tests whether the given predicate `p` holds
    *  for all corresponding elements of the argument lists.
    *
-   *  @param p function to apply to each pair of elements.
+   *  @param f function to apply to each pair of elements.
    *  @return  `(p(a<sub>0</sub>,b<sub>0</sub>) &amp;&amp;
    *           ... &amp;&amp; p(a<sub>n</sub>,b<sub>n</sub>))]`
    *           if the lists are `[a<sub>0</sub>, ..., a<sub>k</sub>]`;
@@ -604,7 +604,7 @@ object List extends SeqFactory[List] {
   /** Tests whether the given predicate `p` holds
    *  for some corresponding elements of the argument lists.
    *
-   *  @param p function to apply to each pair of elements.
+   *  @param f function to apply to each pair of elements.
    *  @return  `n != 0 &amp;&amp; (p(a<sub>0</sub>,b<sub>0</sub>) ||
    *           ... || p(a<sub>n</sub>,b<sub>n</sub>))]` if the lists are
    *           `[a<sub>0</sub>, ..., a<sub>k</sub>]`,

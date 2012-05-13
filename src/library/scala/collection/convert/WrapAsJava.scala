@@ -24,8 +24,8 @@ trait WrapAsJava {
    * explicit call of `asIterator(java.util.Iterator)` then the original
    * Java Iterator will be returned.
    *
-   * @param i The Iterator to be converted.
-   * @return A Java Iterator view of the argument.
+   * @param  it The Iterator to be converted.
+   * @return    A Java Iterator view of the argument.
    */
   implicit def asJavaIterator[A](it: Iterator[A]): ju.Iterator[A] = it match {
     case JIteratorWrapper(wrapped) => wrapped.asInstanceOf[ju.Iterator[A]]
@@ -42,8 +42,8 @@ trait WrapAsJava {
    * explicit call of `asIterator(java.util.Enumeration)` then the
    * original Java Enumeration will be returned.
    *
-   * @param i The Iterator to be converted.
-   * @return A Java Enumeration view of the argument.
+   * @param it The Iterator to be converted.
+   * @return   A Java Enumeration view of the argument.
    */
   implicit def asJavaEnumeration[A](it: Iterator[A]): ju.Enumeration[A] = it match {
     case JEnumerationWrapper(wrapped) => wrapped.asInstanceOf[ju.Enumeration[A]]
@@ -76,8 +76,8 @@ trait WrapAsJava {
    * explicit call of `asSizedIterable(java.util.Collection)` then the original
    * Java Collection will be returned.
    *
-   * @param i The SizedIterable to be converted.
-   * @return A Java Collection view of the argument.
+   * @param it The SizedIterable to be converted.
+   * @return   A Java Collection view of the argument.
    */
   implicit def asJavaCollection[A](it: Iterable[A]): ju.Collection[A] = it match {
     case JCollectionWrapper(wrapped) => wrapped.asInstanceOf[ju.Collection[A]]
@@ -112,8 +112,8 @@ trait WrapAsJava {
    * explicit call of `asSeq(java.util.List)` then the original
    * Java List will be returned.
    *
-   * @param b The Seq to be converted.
-   * @return A Java List view of the argument.
+   * @param seq The Seq to be converted.
+   * @return    A Java List view of the argument.
    */
   implicit def mutableSeqAsJavaList[A](seq: mutable.Seq[A]): ju.List[A] = seq match {
     case JListWrapper(wrapped) => wrapped
@@ -130,8 +130,8 @@ trait WrapAsJava {
    * explicit call of `asSeq(java.util.List)` then the original
    * Java List will be returned.
    *
-   * @param b The Seq to be converted.
-   * @return A Java List view of the argument.
+   * @param seq The Seq to be converted.
+   * @return    A Java List view of the argument.
    */
   implicit def seqAsJavaList[A](seq: Seq[A]): ju.List[A] = seq match {
     case JListWrapper(wrapped) => wrapped.asInstanceOf[ju.List[A]]

@@ -186,7 +186,6 @@ object Console {
    *  }
    *  }}}
    *
-   *  @param in the new input stream.
    *  @param thunk the code to execute with
    *               the new input stream active
    *

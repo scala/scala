@@ -152,7 +152,7 @@ extends AbstractSeq[T]
 
   /** Pushes all the provided elements in the traversable object onto the stack.
    *
-   *  @param x  The source of elements to push.
+   *  @param xs The source of elements to push.
    *  @return   A reference to this stack.
    */
   override def ++=(xs: TraversableOnce[T]): this.type = { xs.seq foreach += ; this }

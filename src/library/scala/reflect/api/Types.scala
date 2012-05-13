@@ -111,10 +111,12 @@ trait Types { self: Universe =>
      *  Proceed analogously for thistypes referring to outer classes.
      *
      *  Example:
+     *  {{{
      *    class D[T] { def m: T }
      *    class C extends p.D[Int]
      *    T.asSeenFrom(ThisType(C), D)  (where D is owner of m)
      *      = Int
+     *  }}} 
      */
     def asSeenFrom(pre: Type, clazz: Symbol): Type
 
@@ -481,10 +483,6 @@ trait Types { self: Universe =>
   def refinedType(parents: List[Type], owner: Symbol, decls: Scope, pos: Position): Type
 
   /** The canonical creator for a refined type with an initially empty scope.
-   *
-   *  @param parents ...
-   *  @param owner   ...
-   *  @return        ...
    */
   def refinedType(parents: List[Type], owner: Symbol): Type
 

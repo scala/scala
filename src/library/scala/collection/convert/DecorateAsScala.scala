@@ -186,9 +186,9 @@ trait DecorateAsScala {
    * any side-effects of using it via the Scala interface will be visible via
    * the Java interface and vice versa.
    *
-   * @param m The `Dictionary` to be converted.
-   * @return An object with an `asScala` method that returns a Scala mutable
-   *         `Map[String, String]` view of the argument.
+   * @param p The `Dictionary` to be converted.
+   * @return  An object with an `asScala` method that returns a Scala mutable
+   *          `Map[String, String]` view of the argument.
    */
   implicit def dictionaryAsScalaMapConverter[A, B](p: ju.Dictionary[A, B]): AsScala[mutable.Map[A, B]] =
     new AsScala(dictionaryAsScalaMap(p))
@@ -200,9 +200,9 @@ trait DecorateAsScala {
    * any side-effects of using it via the Scala interface will be visible via
    * the Java interface and vice versa.
    *
-   * @param m The `Properties` to be converted.
-   * @return An object with an `asScala` method that returns a Scala mutable
-   *         `Map[String, String]` view of the argument.
+   * @param p The `Properties` to be converted.
+   * @return  An object with an `asScala` method that returns a Scala mutable
+   *          `Map[String, String]` view of the argument.
    */
   implicit def propertiesAsScalaMapConverter(p: ju.Properties): AsScala[mutable.Map[String, String]] =
     new AsScala(propertiesAsScalaMap(p))

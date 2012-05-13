@@ -41,7 +41,7 @@ trait GenIterableLike[+A, +Repr] extends Any with GenTraversableLike[A, Repr] {
   /** Checks if the other iterable collection contains the same elements in the same order as this $coll.
    *
    *  @param that  the collection to compare with.
-   *  @tparam B    the type of the elements of collection `that`.
+   *  @tparam A1   the type of the elements of collection `that`.
    *  @return `true`, if both collections contain the same elements in the same order, `false` otherwise.
    *
    *  @usecase  def sameElements(that: GenIterable[A]): Boolean
@@ -87,13 +87,13 @@ trait GenIterableLike[+A, +Repr] extends Any with GenTraversableLike[A, Repr] {
    *  @tparam  A1    the type of the first half of the returned pairs (this is always a supertype
    *                 of the collection's element type `A`).
    *  @tparam  That  the class of the returned collection. Where possible, `That` is
-   *    the same class as the current collection class `Repr`, but this
-   *    depends on the element type `(A1, Int)` being admissible for that class,
-   *    which means that an implicit instance of type `CanBuildFrom[Repr, (A1, Int), That]`.
-   *    is found.
-   *  @tparam  bf    an implicit value of class `CanBuildFrom` which determines the
-   *    result class `That` from the current representation type `Repr`
-   *    and the new element type `(A1, Int)`.
+   *                 the same class as the current collection class `Repr`, but this
+   *                 depends on the element type `(A1, Int)` being admissible for that class,
+   *                 which means that an implicit instance of type `CanBuildFrom[Repr, (A1, Int), That]`.
+   *                 is found.
+   *  @param  bf     an implicit value of class `CanBuildFrom` which determines the
+   *                 result class `That` from the current representation type `Repr`
+   *                 and the new element type `(A1, Int)`.
    *  @return        A new collection of type `That` containing pairs consisting of all elements of this
    *                 $coll paired with their index. Indices start at `0`.
    *

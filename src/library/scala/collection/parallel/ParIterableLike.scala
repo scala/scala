@@ -491,8 +491,8 @@ self: ParIterableLike[T, Repr, Sequential] =>
    *
    *  $abortsignalling
    *
-   *  @param p    a predicate used to test elements
-   *  @return     true if `p` holds for all elements, false otherwise
+   *  @param pred    a predicate used to test elements
+   *  @return        true if `p` holds for all elements, false otherwise
    */
   def forall(pred: T => Boolean): Boolean = {
     tasksupport.executeAndWaitResult(new Forall(pred, splitter assign new DefaultSignalling with VolatileAbort))
@@ -502,8 +502,8 @@ self: ParIterableLike[T, Repr, Sequential] =>
    *
    *  $abortsignalling
    *
-   *  @param p    a predicate used to test elements
-   *  @return     true if `p` holds for some element, false otherwise
+   *  @param pred    a predicate used to test elements
+   *  @return        true if `p` holds for some element, false otherwise
    */
   def exists(pred: T => Boolean): Boolean = {
     tasksupport.executeAndWaitResult(new Exists(pred, splitter assign new DefaultSignalling with VolatileAbort))
@@ -517,8 +517,8 @@ self: ParIterableLike[T, Repr, Sequential] =>
    *
    *  $abortsignalling
    *
-   *  @param p     predicate used to test the elements
-   *  @return      an option value with the element if such an element exists, or `None` otherwise
+   *  @param pred     predicate used to test the elements
+   *  @return         an option value with the element if such an element exists, or `None` otherwise
    */
   def find(pred: T => Boolean): Option[T] = {
     tasksupport.executeAndWaitResult(new Find(pred, splitter assign new DefaultSignalling with VolatileAbort))
@@ -685,7 +685,7 @@ self: ParIterableLike[T, Repr, Sequential] =>
    *  @tparam That      type of the resulting collection
    *  @param z          neutral element for the operator `op`
    *  @param op         the associative operator for the scan
-   *  @param cbf        combiner factory which provides a combiner
+   *  @param bf         $bfinfo
    *  @return           a collection containing the prefix scan of the elements in the original collection
    *
    *  @usecase def scan(z: T)(op: (T, T) => T): $Coll[T]

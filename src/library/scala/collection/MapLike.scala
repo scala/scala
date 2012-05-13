@@ -280,14 +280,14 @@ self =>
    *
    *  @usecase  def + (kvs: (A, B)*): Map[A, B]
    *    @inheritdoc
-   *    @param    the key/value pairs
+   *    @param    kvs the key/value pairs
    */
   def + [B1 >: B] (kv1: (A, B1), kv2: (A, B1), kvs: (A, B1) *): Map[A, B1] =
     this + kv1 + kv2 ++ kvs
 
   /** Adds all key/value pairs in a traversable collection to this map, returning a new map.
    *
-   *  @param    kvs the collection containing the added key/value pairs
+   *  @param    xs  the collection containing the added key/value pairs
    *  @tparam   B1  the type of the added values
    *  @return   a new map with the given bindings added to this map
    *

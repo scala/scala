@@ -35,9 +35,9 @@ import parallel.immutable.ParMap
  *  It is also good idea to override methods `foreach` and
  *  `size` for efficiency.
  *
- *  @param A     the type of the keys contained in this collection.
- *  @param B     the type of the values associated with the keys.
- *  @param This  The type of the actual map implementation.
+ *  @tparam A     the type of the keys contained in this collection.
+ *  @tparam B     the type of the values associated with the keys.
+ *  @tparam This  The type of the actual map implementation.
  *
  *  @author  Martin Odersky
  *  @version 2.8

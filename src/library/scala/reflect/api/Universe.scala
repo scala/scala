@@ -28,18 +28,23 @@ abstract class Universe extends Symbols
    *
    *  For instance, given the abstract syntax tree representation of the <[ x + 1 ]> expression:
    *
+   *  {{{
    *    Apply(Select(Ident("x"), "+"), List(Literal(Constant(1))))
+   *  }}}
    *
    *  The reifier transforms it to the following expression:
-   *
+   *   
+   *  {{{
    *    <[
    *      val $mr: scala.reflect.api.Universe = <reference to the Universe that calls the reify>
    *      $mr.Expr[Int]($mr.Apply($mr.Select($mr.Ident($mr.newFreeVar("x", <Int>, x), "+"), List($mr.Literal($mr.Constant(1))))))
    *    ]>
+   *  }}}
    *
    *  Reification performs expression splicing (when processing Expr.eval and Expr.value)
    *  and type splicing (for every type T that has a TypeTag[T] implicit in scope):
    *
+   *  {{{
    *    val two = mirror.reify(2)                       // Literal(Constant(2))
    *    val four = mirror.reify(two.eval + two.eval)    // Apply(Select(two.tree, newTermName("$plus")), List(two.tree))
    *
@@ -51,6 +56,7 @@ abstract class Universe extends Symbols
    *      val factory = c.reify{ new Queryable[T] }
    *      ...
    *    }
+   *  }}}
    *
    *  The transformation looks mostly straightforward, but it has its tricky parts:
    *    * Reifier retains symbols and types defined outside the reified tree, however

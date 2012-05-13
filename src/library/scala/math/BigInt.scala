@@ -71,11 +71,7 @@ object BigInt {
     new BigInt(new BigInteger(bitlength, certainty, rnd.self))
 
   /** Constructs a randomly generated BigInt, uniformly distributed over the
-   *  range 0 to (2 ^ numBits - 1), inclusive.
-   *
-   *  @param numbits ...
-   *  @param rnd     ...
-   *  @return        ...
+   *  range `0` to `(2 ^ numBits - 1)`, inclusive.
    */
   def apply(numbits: Int, rnd: scala.util.Random): BigInt =
     new BigInt(new BigInteger(numbits, rnd.self))
@@ -87,10 +83,6 @@ object BigInt {
 
   /** Translates the string representation of a `BigInt` in the
    *  specified `radix` into a BigInt.
-   *
-   *  @param x     ...
-   *  @param radix ...
-   *  @return      ...
    */
   def apply(x: String, radix: Int): BigInt =
     new BigInt(new BigInteger(x, radix))
