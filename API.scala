@@ -126,9 +126,7 @@ final class API(val global: CallbackGlobal) extends Compat
 		else if(sym.isRoot || sym.isRootPackage) Constants.emptyType
 		else new xsbti.api.Projection(simpleType(in, pre), sym.nameString)
 	}
-
-	private def reference(sym: Symbol): xsbti.api.ParameterRef = new xsbti.api.ParameterRef(sym.id)
-
+	private def reference(sym: Symbol): xsbti.api.ParameterRef = new xsbti.api.ParameterRef(tparamID(sym))
 
 	private def annotations(in: Symbol, as: List[AnnotationInfo]): Array[xsbti.api.Annotation] = as.toArray[AnnotationInfo].map(annotation(in,_))
 	private def annotation(in: Symbol, a: AnnotationInfo) =
@@ -338,11 +336,12 @@ final class API(val global: CallbackGlobal) extends Compat
 		val variance = if(varianceInt < 0) Contravariant else if(varianceInt > 0) Covariant else Invariant
 		viewer(in).memberInfo(s) match
 		{
-			case TypeBounds(low, high) => new xsbti.api.TypeParameter( s.id, annots, typeParameters(in, s), variance, processType(in, low), processType(in, high) )
-			case PolyType(typeParams, base) => new xsbti.api.TypeParameter( s.id, annots, typeParameters(in, typeParams), variance, processType(in, base.bounds.lo),  processType(in, base.bounds.hi))
+			case TypeBounds(low, high) => new xsbti.api.TypeParameter( tparamID(s), annots, typeParameters(in, s), variance, processType(in, low), processType(in, high) )
+			case PolyType(typeParams, base) => new xsbti.api.TypeParameter( tparamID(s), annots, typeParameters(in, typeParams), variance, processType(in, base.bounds.lo),  processType(in, base.bounds.hi))
 			case x => error("Unknown type parameter info: " + x.getClass)
 		}
 	}
+	private def tparamID(s: Symbol) = s.fullName
 	private def selfType(in: Symbol, s: Symbol): xsbti.api.Type  =  processType(in, s.thisSym.typeOfThis)
 
 	private def classLike(in: Symbol, c: Symbol): ClassLike = classLikeCache.getOrElseUpdate( (in,c), mkClassLike(in, c))
