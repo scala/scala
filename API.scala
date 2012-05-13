@@ -309,9 +309,15 @@ final class API(val global: CallbackGlobal) extends Compat
 			case ThisType(sym) => new xsbti.api.Singleton(thisPath(sym))
 			case SingleType(pre, sym) => projectionType(in, pre, sym)
 			case ConstantType(constant) => new xsbti.api.Constant(processType(in, constant.tpe), constant.stringValue)
-			case TypeRef(pre, sym, args) =>
+			case tr @ TypeRef(pre, sym, args) =>
 				val base = projectionType(in, pre, sym)
-				if(args.isEmpty) base else new xsbti.api.Parameterized(base, types(in, args))
+				if(args.isEmpty)
+					if(isRaw(sym, args))
+						processType(in, rawToExistential(tr))
+					else
+						base
+				else
+					 new xsbti.api.Parameterized(base, types(in, args))
 			case SuperType(thistpe: Type, supertpe: Type) => warning("sbt-api: Super type (not implemented): this=" + thistpe + ", super=" + supertpe); Constants.emptyType
 			case at: AnnotatedType => annotatedType(in, at)
 			case rt: CompoundType => structure(rt)
