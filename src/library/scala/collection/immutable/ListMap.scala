@@ -152,7 +152,7 @@ extends AbstractMap[A, B]
      *  method throws an exception if there is no mapping from the given
      *  key to a value.
      *
-     *  @param  key the key
+     *  @param  k   the key
      *  @return     the value associated with the given key.
      */
     override def apply(k: A): B1 = apply0(this, k)
@@ -162,7 +162,7 @@ extends AbstractMap[A, B]
     /** Checks if this map maps `key` to a value and return the
      *  value if it exists.
      *
-     *  @param  key the key of the mapping of interest
+     *  @param  k   the key of the mapping of interest
      *  @return     the value of the mapping, if it exists
      */
     override def get(k: A): Option[B1] = get0(this, k)
@@ -174,9 +174,6 @@ extends AbstractMap[A, B]
     /** This method allows one to create a new map with an additional mapping
      *  from `key` to `value`. If the map contains already a mapping for `key`,
      *  it will be overridden by this function.
-     *
-     *  @param k ...
-     *  @param v ...
      */
     override def updated [B2 >: B1](k: A, v: B2): ListMap[A, B2] = {
       val m = if (contains(k)) this - k else this
@@ -186,9 +183,6 @@ extends AbstractMap[A, B]
     /** Creates a new mapping without the given `key`.
      *  If the map does not contain a mapping for the given key, the
      *  method returns the same map.
-     *
-     *  @param k ...
-     *  @return  ...
      */
     override def - (k: A): ListMap[A, B1] = {
       // This definition used to result in stack overflows

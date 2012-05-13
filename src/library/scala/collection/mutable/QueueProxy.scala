@@ -49,7 +49,7 @@ trait QueueProxy[A] extends Queue[A] with Proxy {
   /** Adds all elements provided by an iterator at the end of the queue. The
    *  elements are prepended in the order they are given out by the iterator.
    *
-   *  @param  iter        an iterator
+   *  @param  it        an iterator
    */
   override def ++=(it: TraversableOnce[A]): this.type = {
     self ++= it

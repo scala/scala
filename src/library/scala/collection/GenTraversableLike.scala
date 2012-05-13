@@ -289,7 +289,7 @@ trait GenTraversableLike[+A, +Repr] extends Any with GenTraversableOnce[A] with 
 
   /** Selects all elements of this $coll which satisfy a predicate.
    *
-   *  @param p     the predicate used to test elements.
+   *  @param pred  the predicate used to test elements.
    *  @return      a new $coll consisting of all elements of this $coll that satisfy the given
    *               predicate `p`. Their order may not be preserved.
    */
@@ -297,7 +297,7 @@ trait GenTraversableLike[+A, +Repr] extends Any with GenTraversableOnce[A] with 
 
   /** Selects all elements of this $coll which do not satisfy a predicate.
    *
-   *  @param p     the predicate used to test elements.
+   *  @param pred  the predicate used to test elements.
    *  @return      a new $coll consisting of all elements of this $coll that do not satisfy the given
    *               predicate `p`. Their order may not be preserved.
    */
@@ -305,11 +305,11 @@ trait GenTraversableLike[+A, +Repr] extends Any with GenTraversableOnce[A] with 
 
   /** Partitions this $coll in two ${coll}s according to a predicate.
    *
-   *  @param p the predicate on which to partition.
-   *  @return  a pair of ${coll}s: the first $coll consists of all elements that
-   *           satisfy the predicate `p` and the second $coll consists of all elements
-   *           that don't. The relative order of the elements in the resulting ${coll}s
-   *           may not be preserved.
+   *  @param pred the predicate on which to partition.
+   *  @return     a pair of ${coll}s: the first $coll consists of all elements that
+   *              satisfy the predicate `p` and the second $coll consists of all elements
+   *              that don't. The relative order of the elements in the resulting ${coll}s
+   *              may not be preserved.
    */
   def partition(pred: A => Boolean): (Repr, Repr)
 
@@ -354,8 +354,8 @@ trait GenTraversableLike[+A, +Repr] extends Any with GenTraversableOnce[A] with 
    *  }}}
    *  $orderDependent
    *
-   *  @param from   the lowest index to include from this $coll.
-   *  @param until  the lowest index to EXCLUDE from this $coll.
+   *  @param unc_from   the lowest index to include from this $coll.
+   *  @param unc_until  the lowest index to EXCLUDE from this $coll.
    *  @return  a $coll containing the elements greater than or equal to
    *           index `from` extending up to (but not including) index `until`
    *           of this $coll.
@@ -375,7 +375,7 @@ trait GenTraversableLike[+A, +Repr] extends Any with GenTraversableOnce[A] with 
 
   /** Takes longest prefix of elements that satisfy a predicate.
    *  $orderDependent
-   *  @param   p  The predicate used to test elements.
+   *  @param   pred  The predicate used to test elements.
    *  @return  the longest prefix of this $coll whose elements all satisfy
    *           the predicate `p`.
    */
@@ -388,7 +388,7 @@ trait GenTraversableLike[+A, +Repr] extends Any with GenTraversableOnce[A] with 
    *  predicate `p` does not cause any side-effects.
    *  $orderDependent
    *
-   *  @param p the test predicate
+   *  @param pred the test predicate
    *  @return  a pair consisting of the longest prefix of this $coll whose
    *           elements all satisfy `p`, and the rest of this $coll.
    */
@@ -396,7 +396,7 @@ trait GenTraversableLike[+A, +Repr] extends Any with GenTraversableOnce[A] with 
 
   /** Drops longest prefix of elements that satisfy a predicate.
    *  $orderDependent
-   *  @param   p  The predicate used to test elements.
+   *  @param   pred  The predicate used to test elements.
    *  @return  the longest suffix of this $coll whose first element
    *           does not satisfy the predicate `p`.
    */

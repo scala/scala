@@ -53,7 +53,6 @@ abstract class WordBerrySethi extends BaseBerrySethi {
   /** Returns the first set of an expression, setting the follow set along
    *  the way.
    *
-   *  @param fol1 ...
    *  @param r    the regular expression
    *  @return     the computed set
    */

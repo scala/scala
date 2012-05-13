@@ -52,7 +52,7 @@ trait Subtractable[A, +Repr <: Subtractable[A, Repr]] { self =>
   /** Creates a new $coll from this $coll by removing all elements of another
    *  collection.
    *
-   *  @param elems     the collection containing the removed elements.
+   *  @param xs     the collection containing the removed elements.
    *  @return a new $coll that contains all elements of the current $coll
    *  except one less occurrence of each of the elements of `elems`.
    */

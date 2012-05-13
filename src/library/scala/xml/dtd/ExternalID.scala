@@ -41,7 +41,7 @@ abstract class ExternalID extends parsing.TokenTests
 /** a system identifier
  *
  *  @author Burak Emir
- *  @param  systemLiteral the system identifier literal
+ *  @param  systemId the system identifier literal
  */
 case class SystemID(systemId: String) extends ExternalID {
   val publicId = null
@@ -54,8 +54,8 @@ case class SystemID(systemId: String) extends ExternalID {
 /** a public identifier (see http://www.w3.org/QA/2002/04/valid-dtd-list.html).
  *
  *  @author Burak Emir
- *  @param  publicLiteral the public identifier literal
- *  @param  systemLiteral (can be null for notation pubIDs) the system identifier literal
+ *  @param  publicId the public identifier literal
+ *  @param  systemId (can be null for notation pubIDs) the system identifier literal
  */
 case class PublicID(publicId: String, systemId: String) extends ExternalID {
   if (!checkPubID(publicId))

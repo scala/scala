@@ -61,7 +61,7 @@ abstract class ArrayOps[T] extends ArrayLike[T, Array[T]] with CustomParalleliza
    *  into a single array.
    *
    *  @tparam U        Type of row elements.
-   *  @param asArray   A function that converts elements of this array to rows - arrays of type `U`.
+   *  @param asTrav    A function that converts elements of this array to rows - arrays of type `U`.
    *  @return          An array obtained by concatenating rows of this array.
    */
   def flatten[U, To](implicit asTrav: T => collection.Traversable[U], m: ArrayTag[U]): Array[U] = {

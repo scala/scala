@@ -162,7 +162,7 @@ self =>
    *
    *  $abortsignalling
    *
-   *  @tparam U      the element type of `that` parallel sequence
+   *  @tparam S      the element type of `that` parallel sequence
    *  @param that    the parallel sequence this sequence is being searched for
    *  @param offset  the starting offset for the search
    *  @return        `true` if there is a sequence `that` starting at `offset` in this sequence, `false` otherwise
@@ -287,9 +287,7 @@ self =>
   /** Computes the multiset intersection between this $coll and another sequence.
    *
    *  @param that   the sequence of elements to intersect with.
-   *  @tparam B     the element type of the returned $coll.
-   *  @tparam That  $thatinfo
-   *  @param bf     $bfinfo
+   *  @tparam U     the element type of `that` parallel sequence
    *  @return       a new collection of type `That` which contains all elements of this $coll
    *                which also appear in `that`.
    *                If an element value `x` appears

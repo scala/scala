@@ -21,10 +21,8 @@ object CharArrayReader {
 /** A character array reader reads a stream of characters (keeping track of their positions)
  * from an array.
  *
- * @param source an array of characters
+ * @param chars  an array of characters
  * @param index  starting offset into the array; the first element returned will be `source(index)`
- * @param line   the line number of the first element (counting from index `0` of `source`)
- * @param column the column number of the first element (counting from index `0` of `source`)
  *
  * @author Martin Odersky
  * @author Adriaan Moors

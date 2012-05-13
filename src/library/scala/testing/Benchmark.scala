@@ -49,9 +49,6 @@ trait Benchmark {
 
   /** Run the benchmark the specified number of times and return a list with
    *  the execution times in milliseconds in reverse order of the execution.
-   *
-   *  @param noTimes ...
-   *  @return        ...
    */
   def runBenchmark(noTimes: Int): List[Long] =
     for (i <- List.range(1, noTimes + 1)) yield {

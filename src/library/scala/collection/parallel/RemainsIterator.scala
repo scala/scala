@@ -39,8 +39,7 @@ private[collection] trait RemainsIterator[+T] extends Iterator[T] {
 /** Augments iterators with additional methods, mostly transformers,
  *  assuming they iterate an iterable collection.
  *
- *  @param T          type of the elements iterated.
- *  @param IterRepr   iterator type.
+ *  @tparam T         type of the elements iterated.
  */
 private[collection] trait AugmentedIterableIterator[+T] extends RemainsIterator[T] {
 
@@ -377,7 +376,7 @@ private[collection] trait AugmentedSeqIterator[+T] extends AugmentedIterableIter
 /** Parallel iterators allow splitting and provide a `remaining` method to
  *  obtain the number of elements remaining in the iterator.
  *
- *  @param T          type of the elements iterated.
+ *  @tparam T          type of the elements iterated.
  */
 trait IterableSplitter[+T]
 extends AugmentedIterableIterator[T]
@@ -537,7 +536,7 @@ self =>
 
 /** Parallel sequence iterators allow splitting into arbitrary subsets.
  *
- *  @param T          type of the elements iterated.
+ *  @tparam T          type of the elements iterated.
  */
 trait SeqSplitter[+T]
 extends IterableSplitter[T]

@@ -727,7 +727,7 @@ trait Trees { self: Universe =>
   def Ident(sym: Symbol): Ident
 
   /** Marks underlying reference to id as boxed.
-   *  @pre: id must refer to a captured variable
+   *  @pre id must refer to a captured variable
    *  A reference such marked will refer to the boxed entity, no dereferencing
    *  with `.elem` is done on it.
    *  This tree node can be emitted by macros such as reify that call referenceCapturedVariable.

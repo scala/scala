@@ -23,11 +23,6 @@ import scala.io.Source
 trait ExternalSources {
   self: ExternalSources with MarkupParser with MarkupHandler =>
 
-  /** ...
-   *
-   *  @param systemId ...
-   *  @return         ...
-   */
   def externalSource(systemId: String): Source = {
     if (systemId startsWith "http:")
       return Source fromURL new URL(systemId)

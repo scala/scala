@@ -11,10 +11,10 @@ package scala.xml
 
 /** prefixed attributes always have a non-null namespace.
  *
- *  @param pre   ...
- *  @param key   ...
+ *  @param pre   
+ *  @param key   
  *  @param value the attribute value
- *  @param next  ...
+ *  @param next1
  */
 class PrefixedAttribute(
   val pre: String,

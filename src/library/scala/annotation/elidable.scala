@@ -18,18 +18,22 @@ import java.util.logging.Level
  *  be omitted from generated code if the priority given the annotation
  *  is lower than that given on the command line.
  *
+ *  {{{
  *     @elidable(123)           // annotation priority
  *     scalac -Xelide-below 456 // command line priority
- *
+ *  }}}
+ *  
  *  The method call will be replaced with an expression which depends on
  *  the type of the elided expression.  In decreasing order of precedence:
  *
+ *  {{{
  *    Unit            ()
  *    Boolean         false
  *    T <: AnyVal     0
  *    T >: Null       null
  *    T >: Nothing    Predef.???
- *
+ *  }}}
+ *  
  *  Complete example:
  {{{
    import annotation._, elidable._

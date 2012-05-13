@@ -716,8 +716,8 @@ self =>
   /** A substream starting at index `from` and extending up to (but not including)
    *  index `until`.  This returns a `Stream` that is lazily evaluated.
    *
-   * @param start   The index of the first element of the returned subsequence
-   * @param end     The index of the element following the returned subsequence
+   * @param from    The index of the first element of the returned subsequence
+   * @param until   The index of the element following the returned subsequence
    * @return A new string containing the elements requested from `start` until
    * `end`.
    *

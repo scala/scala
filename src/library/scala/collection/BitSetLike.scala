@@ -137,7 +137,7 @@ trait BitSetLike[+This <: BitSetLike[This] with SortedSet[Int]] extends SortedSe
 
   /** Computes the intersection between this bitset and another bitset by performing
    *  a bitwise "and".
-   *  @param   that  the bitset to intersect with.
+   *  @param   other  the bitset to intersect with.
    *  @return  a new bitset consisting of all elements that are both in this
    *  bitset and in the given bitset `other`.
    */
@@ -152,7 +152,7 @@ trait BitSetLike[+This <: BitSetLike[This] with SortedSet[Int]] extends SortedSe
   /** Computes the difference of this bitset and another bitset by performing
    *  a bitwise "and-not".
    *
-   *  @param that the set of bits to exclude.
+   *  @param other the set of bits to exclude.
    *  @return     a bitset containing those bits of this
    *              bitset that are not also contained in the given bitset `other`.
    */
@@ -167,7 +167,7 @@ trait BitSetLike[+This <: BitSetLike[This] with SortedSet[Int]] extends SortedSe
   /** Computes the symmetric difference of this bitset and another bitset by performing
    *  a bitwise "exclusive-or".
    *
-   *  @param that the other bitset to take part in the symmetric difference.
+   *  @param other the other bitset to take part in the symmetric difference.
    *  @return     a bitset containing those bits of this
    *              bitset or the other bitset that are not contained in both bitsets.
    */
@@ -184,7 +184,7 @@ trait BitSetLike[+This <: BitSetLike[This] with SortedSet[Int]] extends SortedSe
 
   /** Tests whether this bitset is a subset of another bitset.
    *
-   *  @param that  the bitset to test.
+   *  @param other  the bitset to test.
    *  @return     `true` if this bitset is a subset of `other`, i.e. if
    *              every bit of this set is also an element in `other`.
    */

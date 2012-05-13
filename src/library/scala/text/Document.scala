@@ -33,9 +33,6 @@ abstract class Document {
   /**
    * Format this document on `writer` and try to set line
    * breaks so that the result fits in `width` columns.
-   *
-   * @param width  ...
-   * @param writer ...
    */
   def format(width: Int, writer: Writer) {
     type FmtState = (Int, Boolean, Document)

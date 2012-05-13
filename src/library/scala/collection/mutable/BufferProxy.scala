@@ -77,7 +77,7 @@ trait BufferProxy[A] extends Buffer[A] with Proxy {
 
   /** Prepend an element to this list.
    *
-   *  @param elem  the element to prepend.
+   *  @param elems  the elements to prepend.
    */
   override def prepend(elems: A*) { self.prependAll(elems) }
 

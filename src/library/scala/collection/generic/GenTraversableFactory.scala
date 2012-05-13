@@ -201,8 +201,8 @@ abstract class GenTraversableFactory[CC[X] <: GenTraversable[X] with GenericTrav
 
   /** Produces a $coll containing a sequence of increasing of integers.
    *
-   *  @param from the first element of the $coll
-   *  @param end the end value of the $coll (the first value NOT contained)
+   *  @param start the first element of the $coll
+   *  @param end   the end value of the $coll (the first value NOT contained)
    *  @return  a $coll with values `start, start + 1, ..., end - 1`
    */
   def range[T: Integral](start: T, end: T): CC[T] = range(start, end, implicitly[Integral[T]].one)

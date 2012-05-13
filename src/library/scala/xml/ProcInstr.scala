@@ -12,8 +12,8 @@ package scala.xml
 /** an XML node for processing instructions (PI)
  *
  * @author Burak Emir
- * @param  target target name of this PI
- * @param  text   text contained in this node, may not contain "?>"
+ * @param  target     target name of this PI
+ * @param  proctext   text contained in this node, may not contain "?>"
  */
 case class ProcInstr(target: String, proctext: String) extends SpecialNode
 {

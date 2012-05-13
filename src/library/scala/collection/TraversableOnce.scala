@@ -16,8 +16,6 @@ import language.{implicitConversions, higherKinds}
  *  or one or more times.
  *  $traversableonceinfo
  *
- *  @tparam A    the element type of the collection
- *
  *  @author Martin Odersky
  *  @author Paul Phillips
  *  @version 2.8

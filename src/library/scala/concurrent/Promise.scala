@@ -66,7 +66,7 @@ trait Promise[T] {
 
   /** Completes the promise with a value.
    *
-   *  @param value    The value to complete the promise with.
+   *  @param v    The value to complete the promise with.
    *
    *  $promiseCompletion
    */
@@ -106,7 +106,7 @@ object Promise {
   /** Creates a promise object which can be completed with a value.
    *  
    *  @tparam T       the type of the value in the promise
-   *  @param execctx  the execution context on which the promise is created on
+   *  @param executor the execution context on which the promise is created on
    *  @return         the newly created `Promise` object
    */
   def apply[T]()(implicit executor: ExecutionContext): Promise[T] = new impl.Promise.DefaultPromise[T]()
@@ -114,7 +114,7 @@ object Promise {
   /** Creates an already completed Promise with the specified exception.
    *  
    *  @tparam T       the type of the value in the promise
-   *  @param execctx  the execution context on which the promise is created on
+   *  @param executor the execution context on which the promise is created on
    *  @return         the newly created `Promise` object
    */
   def failed[T](exception: Throwable)(implicit executor: ExecutionContext): Promise[T] = new impl.Promise.KeptPromise[T](Left(exception))
@@ -122,7 +122,7 @@ object Promise {
   /** Creates an already completed Promise with the specified result.
    *  
    *  @tparam T       the type of the value in the promise
-   *  @param execctx  the execution context on which the promise is created on
+   *  @param executor the execution context on which the promise is created on
    *  @return         the newly created `Promise` object
    */
   def successful[T](result: T)(implicit executor: ExecutionContext): Promise[T] = new impl.Promise.KeptPromise[T](Right(result))

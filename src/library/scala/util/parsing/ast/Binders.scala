@@ -326,11 +326,11 @@ trait Binders extends AbstractSyntax with Mappable {
   // TODO: move this to some utility object higher in the scala hierarchy?
   /** Returns a given result, but executes the supplied closure before returning.
    *  (The effect of this closure does not influence the returned value.)
-   *
-   *  @param result the result to be returned
-   *  @param block  code to be executed, purely for its side-effects
    */
   trait ReturnAndDo[T]{
+    /**
+     *  @param block  code to be executed, purely for its side-effects
+     */
     def andDo(block: => Unit): T
   }
 

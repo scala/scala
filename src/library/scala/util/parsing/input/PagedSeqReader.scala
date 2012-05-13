@@ -23,7 +23,7 @@ object PagedSeqReader {
 /** A character array reader reads a stream of characters (keeping track of their positions)
  * from an array.
  *
- * @param source the source sequence
+ * @param seq     the source sequence
  * @param offset  starting offset.
  *
  * @author Martin Odersky

@@ -11,7 +11,7 @@ package scala.xml
 /** The class `Comment` implements an XML node for comments.
  *
  * @author Burak Emir
- * @param text the text contained in this node, may not contain "--"
+ * @param commentText the text contained in this node, may not contain "--"
  */
 case class Comment(commentText: String) extends SpecialNode {
 
