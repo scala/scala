@@ -15,7 +15,7 @@ import Origins._
  *  You could do this:
  *
  *  {{{
- *    private lazy val origins = Origins[SymbolTable]("phase_=")
+ *    private lazy val origins = Origins("arbitraryTag")
  *    // Commented out original enclosed for contrast
  *    // final def phase_=(p: Phase): Unit = {
  *    final def phase_=(p: Phase): Unit = origins {
@@ -23,7 +23,7 @@ import Origins._
  *
  *  And that's it.  When the JVM exits it would issue a report something like this:
  {{{
- >> Origins scala.tools.nsc.symtab.SymbolTable.phase_= logged 145585 calls from 51 distinguished sources.
+ >> Origins tag 'arbitraryTag' logged 145585 calls from 51 distinguished sources.
 
    71114   scala.tools.nsc.symtab.Symbols$Symbol.unsafeTypeParams(Symbols.scala:862)
    16584   scala.tools.nsc.symtab.Symbols$Symbol.rawInfo(Symbols.scala:757)
@@ -37,29 +37,21 @@ import Origins._
  */
 abstract class Origins {
   type Rep
+  type StackSlice = Array[StackTraceElement]
+
+  def tag: String
+  def isCutoff(el: StackTraceElement): Boolean
   def newRep(xs: StackSlice): Rep
   def repString(rep: Rep): String
-  def originClass: String
-
-  private var _tag: String = null
-  def tag: String = _tag
-  def setTag(tag: String): this.type = {
-    _tag = tag
-    this
-  }
 
   private val origins      = new mutable.HashMap[Rep, Int] withDefaultValue 0
   private def add(xs: Rep) = origins(xs) += 1
   private def total        = origins.values.foldLeft(0L)(_ + _)
 
-  // We find the right line by dropping any from around here and any
-  // from the method's origin class.
-  private def dropStackElement(cn: String) =
-    (cn startsWith OriginsName) || (cn startsWith originClass)
-
   // Create a stack and whittle it down to the interesting part.
-  private def readStack(): Array[StackTraceElement] =
-    (new Throwable).getStackTrace dropWhile (el => dropStackElement(el.getClassName))
+  def readStack(): Array[StackTraceElement] = (
+    Thread.currentThread.getStackTrace dropWhile (x => !isCutoff(x)) dropWhile isCutoff drop 1
+  )
 
   def apply[T](body: => T): T = {
     add(newRep(readStack()))
@@ -67,7 +59,7 @@ abstract class Origins {
   }
   def clear() = origins.clear()
   def show()  = {
-    println("\n>> Origins %s.%s logged %s calls from %s distinguished sources.\n".format(originClass, tag, total, origins.keys.size))
+    println("\n>> Origins tag '%s' logged %s calls from %s distinguished sources.\n".format(tag, total, origins.keys.size))
     origins.toList sortBy (-_._2) foreach {
       case (k, v) => println("%7s %s".format(v, repString(k)))
     }
@@ -79,29 +71,49 @@ abstract class Origins {
 }
 
 object Origins {
-  private type StackSlice = Array[StackTraceElement]
-  private val OriginsName = classOf[Origins].getName
-  private val counters    = new mutable.HashSet[Origins]
+  private val counters  = mutable.HashMap[String, Origins]()
+  private val thisClass = this.getClass.getName
 
-  {
-    // Console.println("\nOrigins loaded: registering shutdown hook to display results.")
-    sys.addShutdownHook(counters foreach (_.purge()))
+  locally {
+    sys.addShutdownHook(counters.values foreach (_.purge()))
   }
 
-  def apply[T: ClassTag](tag: String): Origins = apply(tag, classTag[T].erasure)
-  def apply(tag: String, clazz: Class[_]): Origins = apply(tag, new OneLine(clazz))
-  def apply(tag: String, orElse: => Origins): Origins = {
-    counters find (_.tag == tag) getOrElse {
-      val res = orElse setTag tag
-      counters += res
-      res
-    }
+  case class OriginId(className: String, methodName: String) {
+    def matches(el: StackTraceElement) = (
+      (methodName == el.getMethodName) && (className startsWith el.getClassName)
+    )
   }
 
-  class OneLine(clazz: Class[_]) extends Origins {
-    type Rep                        = StackTraceElement
-    val originClass                 = clazz.getName stripSuffix MODULE_SUFFIX_STRING
-    def newRep(xs: StackSlice): Rep = xs(0)
-    def repString(rep: Rep)         = "  " + rep
+  def lookup(tag: String, orElse: String => Origins): Origins =
+    counters.getOrElseUpdate(tag, orElse(tag))
+  def register(x: Origins): Origins = {
+    counters(x.tag) = x
+    x
+  }
+
+  private def preCutoff(el: StackTraceElement) = (
+       (el.getClassName == thisClass)
+    || (el.getClassName startsWith "java.lang.")
+  )
+  private def findCutoff() = {
+    val cutoff = Thread.currentThread.getStackTrace dropWhile preCutoff head;
+    OriginId(cutoff.getClassName, cutoff.getMethodName)
+  }
+
+  def apply(tag: String): Origins              = counters.getOrElseUpdate(tag, new OneLine(tag, findCutoff()))
+  def apply(tag: String, frames: Int): Origins = counters.getOrElseUpdate(tag, new MultiLine(tag, findCutoff(), frames))
+
+  class OneLine(val tag: String, id: OriginId) extends Origins {
+    type Rep                            = StackTraceElement
+    def isCutoff(el: StackTraceElement) = id matches el
+    def newRep(xs: StackSlice): Rep     = if ((xs eq null) || (xs.length == 0)) null else xs(0)
+    def repString(rep: Rep)             = "  " + rep
+  }
+  class MultiLine(val tag: String, id: OriginId, numLines: Int) extends Origins {
+    type Rep                            = List[StackTraceElement]
+    def isCutoff(el: StackTraceElement) = id matches el
+    def newRep(xs: StackSlice): Rep     = (xs take numLines).toList
+    def repString(rep: Rep)             = rep.map("\n  " + _).mkString
+    override def readStack()            = super.readStack() drop 1
   }
 }
