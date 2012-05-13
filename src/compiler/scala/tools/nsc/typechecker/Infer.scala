@@ -1388,6 +1388,9 @@ trait Infer {
         tp.normalize match {
           case TypeRef(_, sym, _) =>
             if (includeCondition(sym) && !result.contains(sym)) result = sym :: result
+          case PolyType(params, resultType) =>
+            // Fixes SI-5318, although in an ad-hoc fashion.
+            traverse(resultType)
           case _ =>
         }
         mapOver(tp)
