@@ -15,27 +15,18 @@ trait AnyValReps {
 
     case class Op(val op : String, val doc : String)
     
-    private def companionCoercions(tos: AnyValRep*) = {
+    private def companionCoercions(tos: String*) = {
       tos.toList map (to =>
-        """implicit def @javaequiv@2%s(x: @name@): %s = x.to%s""".format(to.javaEquiv, to.name, to.name)
+        """implicit def %s2%s(x: %s): %s = x.to%s""".format(javaEquiv, to, name, to.capitalize, to.capitalize)
       )
     }
-    def coercionCommentExtra = ""
-    def coercionComment = """
-  /** Language mandated coercions from @name@ to "wider" types.%s
-   */""".format(coercionCommentExtra)
-    
-    def implicitCoercions: List[String] = {
-      val coercions = this match {
-        case B     => companionCoercions(S, I, L, F, D)
-        case S | C => companionCoercions(I, L, F, D)
-        case I     => companionCoercions(L, F, D)
-        case L     => companionCoercions(F, D)
-        case F     => companionCoercions(D)
-        case _     => Nil
-      }
-      if (coercions.isEmpty) Nil
-      else coercionComment :: coercions
+    def implicitCoercions: List[String] = javaEquiv match {
+      case "byte"           => companionCoercions("short", "int", "long", "float", "double")
+      case "short" | "char" => companionCoercions("int", "long", "float", "double")
+      case "int"            => companionCoercions("long", "float", "double")
+      case "long"           => companionCoercions("float", "double")
+      case "float"          => companionCoercions("double")
+      case _                => Nil
     }
 
     def isCardinal: Boolean = isIntegerType(this)
@@ -183,7 +174,7 @@ trait AnyValReps {
     }
     def objectLines = {
       val comp = if (isCardinal) cardinalCompanion else floatingCompanion
-      (comp + allCompanions + "\n" + nonUnitCompanions).trim.lines.toList ++ implicitCoercions map interpolate
+      ((comp + allCompanions).trim.lines map interpolate).toList ++ implicitCoercions
     }
 
     /** Makes a set of binary operations based on the given set of ops, args, and resultFn.
@@ -247,9 +238,8 @@ trait AnyValReps {
     def classDoc  = interpolate(classDocTemplate)
     def objectDoc = ""
     def mkImports = ""
-    
-    def mkClass       = assemble("final class " + name + " private extends AnyVal", classLines)
-    def mkObject      = assemble("object " + name + " extends AnyValCompanion", objectLines)
+    def mkClass   = assemble("final class", "private", "AnyVal", classLines) + "\n"
+    def mkObject  = assemble("object", "", "AnyValCompanion", objectLines) + "\n"
     def make()    = List[String](
       headerTemplate,
       mkImports,
@@ -259,10 +249,11 @@ trait AnyValReps {
       mkObject
     ) mkString ""
 
-    def assemble(decl: String, lines: List[String]): String = {
-      val body = if (lines.isEmpty) " { }\n\n" else lines map indent mkString (" {\n", "\n", "\n}\n")
+    def assemble(what: String, ctor: String, parent: String, lines: List[String]): String = {
+      val decl = "%s %s %s extends %s ".format(what, name, ctor, parent)
+      val body = if (lines.isEmpty) "{ }\n\n" else lines map indent mkString ("{\n", "\n", "\n}\n")
 
-      decl + body + "\n"
+      decl + body
     }
     override def toString = name
   }
@@ -283,6 +274,8 @@ package scala
 
 """.trim.format(timestampString) + "\n\n")
 
+import language.implicitConversions
+
   def classDocTemplate = ("""
 /** `@name@`@representation@ (equivalent to Java's `@javaequiv@` primitive type) is a
  *  subtype of [[scala.AnyVal]]. Instances of `@name@` are not
@@ -293,7 +286,17 @@ package scala
  */
 """.trim + "\n")
 
-  def timestampString = "// DO NOT EDIT, CHANGES WILL BE LOST.\n"
+  def timestampString = """/* DO NOT EDIT, CHANGES WILL BE LOST.
+                          | * You can make changes to the generating template at
+                          | *
+                          | *    scala.tools.cmd.gen.AnyVals
+                          | *
+                          | * To update the generated source files in-place after making a change,
+                          | * rebuild AnyVals with
+                          | * 
+                          | * tools/codegen-anyvals
+                          | */""".stripMargin
+"
   def stub            = """sys.error("stub")"""
 
   def allCompanions = """
@@ -318,8 +321,6 @@ def unbox(x: java.lang.Object): @name@ = @unboxImpl@
  */
 override def toString = "object scala.@name@"
 """
-
-  def nonUnitCompanions = ""  // todo
 
   def cardinalCompanion = """
 /** The smallest value representable as a @name@.
@@ -457,7 +458,7 @@ def ^(x: Boolean): Boolean  = sys.error("stub")
 override def getClass(): Class[Boolean] = sys.error("stub")
     """.trim.lines.toList
 
-    def objectLines = interpolate(allCompanions + "\n" + nonUnitCompanions).lines.toList
+    def objectLines = interpolate(allCompanions).lines.toList
   }
   object U extends AnyValRep("Unit", None, "void") {
     override def classDoc = """
