@@ -1,0 +1,5 @@
+t5318b.scala:7: error: diverging implicit expansion for type DivergingImplicitReported.this.TC[F]
+starting with method tc in class DivergingImplicitReported
+  breakage // correct: diverging implicit expansion
+  ^
+one error found
