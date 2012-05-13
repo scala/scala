@@ -346,7 +346,11 @@ trait Implicits {
         case _ => tp
       }
       def stripped(tp: Type): Type = {
-        deriveTypeWithWildcards(freeTypeParametersNoSkolems.collect(tp))(tp)
+        // `t.typeSymbol` returns the symbol of the normalized type. If that normalized type
+        // is a `PolyType`, the symbol of the result type is collected. This is precisely
+        // what we require for SI-5318.
+        val syms = for (t <- tp; if t.typeSymbol.isTypeParameter) yield t.typeSymbol
+        deriveTypeWithWildcards(syms.distinct)(tp)
       }
       def sum(xs: List[Int]) = (0 /: xs)(_ + _)
       def complexity(tp: Type): Int = tp.normalize match {
