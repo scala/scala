@@ -12,7 +12,7 @@ package scala.xml
  *
  * @author  Burak Emir
  * @version 1.0
- * @param   text the text contained in this node.
+ * @param   entityName the name of the entity reference, for example `amp`.
  */
 case class EntityRef(entityName: String) extends SpecialNode {
   final override def doCollectNamespaces = false

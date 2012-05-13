@@ -20,6 +20,7 @@ import scala.collection.{ mutable, immutable }
  *  @author Burak Emir
  *  @version 1.0
  */
+@deprecated("This class will be removed", "2.10.0")
 abstract class DetWordAutom[T <: AnyRef] {
   val nstates: Int
   val finals: Array[Int]

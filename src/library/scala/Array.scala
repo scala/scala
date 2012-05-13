@@ -362,8 +362,8 @@ object Array extends FallbackArrayBuilding {
 
   /** Returns an array containing a sequence of increasing integers in a range.
    *
-   *  @param from the start value of the array
-   *  @param end the end value of the array, exclusive (in other words, this is the first value '''not''' returned)
+   *  @param start  the start value of the array
+   *  @param end    the end value of the array, exclusive (in other words, this is the first value '''not''' returned)
    *  @return  the array with values in range `start, start + 1, ..., end - 1`
    *  up to, but excluding, `end`.
    */

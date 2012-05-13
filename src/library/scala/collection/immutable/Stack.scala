@@ -84,7 +84,7 @@ class Stack[+A] protected (protected val elems: List[A])
    *  the stack. The last element returned by the traversable object
    *  will be on top of the new stack.
    *
-   *  @param   elems      the iterator object.
+   *  @param   xs      the iterator object.
    *  @return the stack with the new elements on top.
    */
   def pushAll[B >: A](xs: TraversableOnce[B]): Stack[B] =

@@ -13,14 +13,16 @@ import scala.collection.immutable.PagedSeq
 
 /** An object to create a `StreamReader` from a `java.io.Reader`.
  *
- * @param in the `java.io.Reader` that provides the underlying
- *           stream of characters for this Reader.
- *
  * @author Miles Sabin
  */
 object StreamReader {
   final val EofCh = '\032'
 
+  /** Create a `StreamReader` from a `java.io.Reader`.
+   *
+   * @param in the `java.io.Reader` that provides the underlying
+   *           stream of characters for this Reader.
+   */  
   def apply(in: java.io.Reader): StreamReader = {
     new StreamReader(PagedSeq.fromReader(in), 0, 1)
   }

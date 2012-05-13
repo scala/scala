@@ -26,7 +26,8 @@ import collection.parallel.Task
  *  `ParHashMap` is a parallel map which internally keeps elements within a hash table.
  *  It uses chaining to resolve collisions.
  *
- *  @tparam T        type of the elements in the parallel hash map
+ *  @tparam K        type of the keys in the parallel hash map
+ *  @tparam V        type of the values in the parallel hash map
  *
  *  @define Coll `ParHashMap`
  *  @define coll parallel hash map

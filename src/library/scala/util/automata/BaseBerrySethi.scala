@@ -17,6 +17,7 @@ import scala.collection.{ mutable, immutable }
   * [[scala.util.automata.NondetWordAutom]] over `A` using the celebrated
   * position automata construction (also called ''Berry-Sethi'' or ''Glushkov'').
   */
+@deprecated("This class will be removed", "2.10.0")
 abstract class BaseBerrySethi {
   val lang: Base
   import lang.{ Alt, Eps, Meta, RegExp, Sequ, Star }
@@ -54,9 +55,6 @@ abstract class BaseBerrySethi {
   /** Starts from the right-to-left
    *  precondition: pos is final
    *               pats are successor patterns of a Sequence node
-   *
-   *  @param r ...
-   *  @return  ...
    */
   protected def compFollow(rs: Seq[RegExp]): Set[Int] = {
     follow(0) =
@@ -72,10 +70,6 @@ abstract class BaseBerrySethi {
   }
 
   /** Returns the first set of an expression, setting the follow set along the way.
-   *
-   *  @param fol1 ...
-   *  @param r    ...
-   *  @return     ...
    */
   protected def compFollow1(fol1: Set[Int], r: RegExp): Set[Int] = r match {
     case x: Alt     => Set((x.rs reverseMap (compFollow1(fol1, _))).flatten: _*)
@@ -92,8 +86,6 @@ abstract class BaseBerrySethi {
   }
 
   /** Returns the "Sethi-length" of a pattern, creating the set of position along the way.
-   *
-   *  @param r ...
    */
   protected def traverse(r: RegExp): Unit = r match {
     // (is tree automaton stuff, more than Berry-Sethi)

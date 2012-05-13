@@ -210,13 +210,25 @@ trait Unapplies extends ast.TreeDSL
       // and re-added in ``finishWith'' in the namer.
       def paramWithDefault(vd: ValDef) =
         treeCopy.ValDef(vd, vd.mods | DEFAULTPARAM, vd.name, atPos(vd.pos.focus)(TypeTree() setOriginal vd.tpt), toIdent(vd))
+        
+      val (copyParamss, funParamss) = cparamss match {
+        case Nil => (Nil, Nil)
+        case ps :: pss =>
+          (List(ps.map(paramWithDefault)), mmap(pss)(p => copyUntyped[ValDef](p).copy(rhs = EmptyTree)))
+      }
 
-      val paramss   = mmap(cparamss)(paramWithDefault)
-      val classTpe  = classType(cdef, tparams)
+      val classTpe = classType(cdef, tparams)
+      val bodyTpe = funParamss.foldRight(classTpe)((params, restp) => gen.scalaFunctionConstr(params.map(_.tpt), restp))
+
+      val argss = copyParamss match {
+        case Nil       => Nil
+        case ps :: Nil => mmap(ps :: funParamss)(toIdent)
+      }      
+      val body = funParamss.foldRight(New(classTpe, argss): Tree)(Function)
 
       Some(atPos(cdef.pos.focus)(
-        DefDef(Modifiers(SYNTHETIC), nme.copy, tparams, paramss, classTpe,
-          New(classTpe, mmap(paramss)(toIdent)))
+        DefDef(Modifiers(SYNTHETIC), nme.copy, tparams, copyParamss, bodyTpe,
+          body)
       ))
     }
   }

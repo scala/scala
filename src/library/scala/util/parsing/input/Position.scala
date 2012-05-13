@@ -27,10 +27,7 @@ trait Position {
   /** The column number referred to by the position; column numbers start at 1. */
   def column: Int
 
-  /** The contents of the line numbered `lnum` (must not contain a new-line character).
-   *
-   * @param lnum a 1-based integer index into the `document`
-   * @return the line at `lnum` (not including a newline)
+  /** The contents of the line at this position. (must not contain a new-line character).
    */
   protected def lineContents: String
 

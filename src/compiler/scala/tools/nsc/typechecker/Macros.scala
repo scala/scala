@@ -641,143 +641,181 @@ trait Macros extends Traces {
    */
   private type MacroRuntime = List[Any] => Any
   private val macroRuntimesCache = perRunCaches.newWeakMap[Symbol, Option[MacroRuntime]]
-  private def macroRuntime(macroDef: Symbol): Option[MacroRuntime] =
-    macroRuntimesCache.getOrElseUpdate(macroDef, {
-      val runtime = {
-        macroTraceVerbose("looking for macro implementation: ")(macroDef)
-        macroTraceVerbose("macroDef is annotated with: ")(macroDef.annotations)
+  private lazy val fastTrack: Map[Symbol, MacroRuntime] = {
+    import scala.reflect.api.Universe
+    import scala.reflect.makro.internal._
+    Map( // challenge: how can we factor out the common code? Does not seem to be easy.
+      MacroInternal_materializeArrayTag -> (args => {
+        assert(args.length == 3, args)
+        val c = args(0).asInstanceOf[MacroContext]
+        materializeArrayTag_impl(c)(args(1).asInstanceOf[c.Expr[Universe]])(args(2).asInstanceOf[c.TypeTag[_]])
+      }),
+      MacroInternal_materializeErasureTag -> (args => {
+        assert(args.length == 3, args)
+        val c = args(0).asInstanceOf[MacroContext]
+        materializeErasureTag_impl(c)(args(1).asInstanceOf[c.Expr[Universe]])(args(2).asInstanceOf[c.TypeTag[_]])
+      }),
+      MacroInternal_materializeClassTag -> (args => {
+        assert(args.length == 3, args)
+        val c = args(0).asInstanceOf[MacroContext]
+        materializeClassTag_impl(c)(args(1).asInstanceOf[c.Expr[Universe]])(args(2).asInstanceOf[c.TypeTag[_]])
+      }),
+      MacroInternal_materializeTypeTag -> (args => {
+        assert(args.length == 3, args)
+        val c = args(0).asInstanceOf[MacroContext]
+        materializeTypeTag_impl(c)(args(1).asInstanceOf[c.Expr[Universe]])(args(2).asInstanceOf[c.TypeTag[_]])
+      }),
+      MacroInternal_materializeConcreteTypeTag -> (args => {
+        assert(args.length == 3, args)
+        val c = args(0).asInstanceOf[MacroContext]
+        materializeConcreteTypeTag_impl(c)(args(1).asInstanceOf[c.Expr[Universe]])(args(2).asInstanceOf[c.TypeTag[_]])
+      })
+    )
+  }
+  private def macroRuntime(macroDef: Symbol): Option[MacroRuntime] = {
+    macroTraceVerbose("looking for macro implementation: ")(macroDef)
+    if (fastTrack contains macroDef) {
+      macroLogVerbose("macro expansion serviced by a fast track")
+      Some(fastTrack(macroDef))
+    } else {
+      macroRuntimesCache.getOrElseUpdate(macroDef, {
+        val runtime = {
+          macroTraceVerbose("looking for macro implementation: ")(macroDef)
+          macroTraceVerbose("macroDef is annotated with: ")(macroDef.annotations)
 
-        val ann = macroDef.getAnnotation(MacroImplAnnotation)
-        if (ann == None) {
-          macroTraceVerbose("@macroImpl annotation is missing (this means that macro definition failed to typecheck)")(macroDef)
-          return None
-        }
+          val ann = macroDef.getAnnotation(MacroImplAnnotation)
+          if (ann == None) {
+            macroTraceVerbose("@macroImpl annotation is missing (this means that macro definition failed to typecheck)")(macroDef)
+            return None
+          }
 
-        val macroImpl = ann.get.args(0).symbol
-        if (macroImpl == NoSymbol) {
-          macroTraceVerbose("@macroImpl annotation is malformed (this means that macro definition failed to typecheck)")(macroDef)
-          return None
-        }
+          val macroImpl = ann.get.args(0).symbol
+          if (macroImpl == NoSymbol) {
+            macroTraceVerbose("@macroImpl annotation is malformed (this means that macro definition failed to typecheck)")(macroDef)
+            return None
+          }
 
-        macroLogVerbose("resolved implementation %s at %s".format(macroImpl, macroImpl.pos))
-        if (macroImpl.isErroneous) {
-          macroTraceVerbose("macro implementation is erroneous (this means that either macro body or macro implementation signature failed to typecheck)")(macroDef)
-          return None
-        }
+          macroLogVerbose("resolved implementation %s at %s".format(macroImpl, macroImpl.pos))
+          if (macroImpl.isErroneous) {
+            macroTraceVerbose("macro implementation is erroneous (this means that either macro body or macro implementation signature failed to typecheck)")(macroDef)
+            return None
+          }
 
-        def loadMacroImpl(macroMirror: Mirror): Option[(Object, macroMirror.Symbol)] = {
-          try {
-            // this logic relies on the assumptions that were valid for the old macro prototype
-            // namely that macro implementations can only be defined in top-level classes and modules
-            // with the new prototype that materialized in a SIP, macros need to be statically accessible, which is different
-            // for example, a macro def could be defined in a trait that is implemented by an object
-            // there are some more clever cases when seemingly non-static method ends up being statically accessible
-            // however, the code below doesn't account for these guys, because it'd take a look of time to get it right
-            // for now I leave it as a todo and move along to more the important stuff
+          def loadMacroImpl(macroMirror: Mirror): Option[(Object, macroMirror.Symbol)] = {
+            try {
+              // this logic relies on the assumptions that were valid for the old macro prototype
+              // namely that macro implementations can only be defined in top-level classes and modules
+              // with the new prototype that materialized in a SIP, macros need to be statically accessible, which is different
+              // for example, a macro def could be defined in a trait that is implemented by an object
+              // there are some more clever cases when seemingly non-static method ends up being statically accessible
+              // however, the code below doesn't account for these guys, because it'd take a look of time to get it right
+              // for now I leave it as a todo and move along to more the important stuff
 
-            macroTraceVerbose("loading implementation class from %s: ".format(macroMirror))(macroImpl.owner.fullName)
-            macroTraceVerbose("classloader is: ")("%s of type %s".format(macroMirror.classLoader, if (macroMirror.classLoader != null) macroMirror.classLoader.getClass.toString else "primordial classloader"))
-            def inferClasspath(cl: ClassLoader) = cl match {
-              case cl: java.net.URLClassLoader => "[" + (cl.getURLs mkString ",") + "]"
-              case null => "[" + scala.tools.util.PathResolver.Environment.javaBootClassPath + "]"
-              case _ => "<unknown>"
-            }
-            macroTraceVerbose("classpath is: ")(inferClasspath(macroMirror.classLoader))
+              macroTraceVerbose("loading implementation class from %s: ".format(macroMirror))(macroImpl.owner.fullName)
+              macroTraceVerbose("classloader is: ")("%s of type %s".format(macroMirror.classLoader, if (macroMirror.classLoader != null) macroMirror.classLoader.getClass.toString else "primordial classloader"))
+              def inferClasspath(cl: ClassLoader) = cl match {
+                case cl: java.net.URLClassLoader => "[" + (cl.getURLs mkString ",") + "]"
+                case null => "[" + scala.tools.util.PathResolver.Environment.javaBootClassPath + "]"
+                case _ => "<unknown>"
+              }
+              macroTraceVerbose("classpath is: ")(inferClasspath(macroMirror.classLoader))
 
-            // [Eugene] relies on the fact that macro implementations can only be defined in static classes
-            // [Martin to Eugene] There's similar logic buried in Symbol#flatname. Maybe we can refactor?
-            def classfile(sym: Symbol): String = {
-              def recur(sym: Symbol): String = sym match {
-                case sym if sym.owner.isPackageClass =>
-                  val suffix = if (sym.isModuleClass) "$" else ""
-                  sym.fullName + suffix
-                case sym =>
-                  val separator = if (sym.owner.isModuleClass) "" else "$"
-                  recur(sym.owner) + separator + sym.javaSimpleName.toString
+              // [Eugene] relies on the fact that macro implementations can only be defined in static classes
+              // [Martin to Eugene] There's similar logic buried in Symbol#flatname. Maybe we can refactor?
+              def classfile(sym: Symbol): String = {
+                def recur(sym: Symbol): String = sym match {
+                  case sym if sym.owner.isPackageClass =>
+                    val suffix = if (sym.isModuleClass) "$" else ""
+                    sym.fullName + suffix
+                  case sym =>
+                    val separator = if (sym.owner.isModuleClass) "" else "$"
+                    recur(sym.owner) + separator + sym.javaSimpleName.toString
+                }
+
+                if (sym.isClass || sym.isModule) recur(sym)
+                else recur(sym.enclClass)
               }
 
-              if (sym.isClass || sym.isModule) recur(sym)
-              else recur(sym.enclClass)
-            }
+              // [Eugene] this doesn't work for inner classes
+              // neither does macroImpl.owner.javaClassName, so I had to roll my own implementation
+              //val receiverName = macroImpl.owner.fullName
+              val implClassName = classfile(macroImpl.owner)
+              val implClassSymbol: macroMirror.Symbol = macroMirror.symbolForName(implClassName)
 
-            // [Eugene] this doesn't work for inner classes
-            // neither does macroImpl.owner.javaClassName, so I had to roll my own implementation
-            //val receiverName = macroImpl.owner.fullName
-            val implClassName = classfile(macroImpl.owner)
-            val implClassSymbol: macroMirror.Symbol = macroMirror.symbolForName(implClassName)
+              if (macroDebugVerbose) {
+                println("implClassSymbol is: " + implClassSymbol.fullNameString)
 
-            if (macroDebugVerbose) {
-              println("implClassSymbol is: " + implClassSymbol.fullNameString)
-
-              if (implClassSymbol != macroMirror.NoSymbol) {
-                val implClass = macroMirror.classToJava(implClassSymbol)
-                val implSource = implClass.getProtectionDomain.getCodeSource
-                println("implClass is %s from %s".format(implClass, implSource))
-                println("implClassLoader is %s with classpath %s".format(implClass.getClassLoader, inferClasspath(implClass.getClassLoader)))
-              }
-            }
-
-            val implObjSymbol = implClassSymbol.companionModule
-            macroTraceVerbose("implObjSymbol is: ")(implObjSymbol.fullNameString)
-
-            if (implObjSymbol == macroMirror.NoSymbol) None
-            else {
-              // yet another reflection method that doesn't work for inner classes
-              //val receiver = macroMirror.companionInstance(receiverClass)
-              val implObj = try {
-                val implObjClass = java.lang.Class.forName(implClassName, true, macroMirror.classLoader)
-                implObjClass getField "MODULE$" get null
-              } catch {
-                case ex: NoSuchFieldException => macroTraceVerbose("exception when loading implObj: ")(ex); null
-                case ex: NoClassDefFoundError => macroTraceVerbose("exception when loading implObj: ")(ex); null
-                case ex: ClassNotFoundException => macroTraceVerbose("exception when loading implObj: ")(ex); null
-              }
-
-              if (implObj == null) None
-              else {
-                val implMethSymbol = implObjSymbol.info.member(macroMirror.newTermName(macroImpl.name.toString))
-                macroLogVerbose("implMethSymbol is: " + implMethSymbol.fullNameString)
-                macroLogVerbose("jimplMethSymbol is: " + macroMirror.methodToJava(implMethSymbol))
-
-                if (implMethSymbol == macroMirror.NoSymbol) None
-                else {
-                  macroLogVerbose("successfully loaded macro impl as (%s, %s)".format(implObj, implMethSymbol))
-                  Some((implObj, implMethSymbol))
+                if (implClassSymbol != macroMirror.NoSymbol) {
+                  val implClass = macroMirror.classToJava(implClassSymbol)
+                  val implSource = implClass.getProtectionDomain.getCodeSource
+                  println("implClass is %s from %s".format(implClass, implSource))
+                  println("implClassLoader is %s with classpath %s".format(implClass.getClassLoader, inferClasspath(implClass.getClassLoader)))
                 }
               }
+
+              val implObjSymbol = implClassSymbol.companionModule
+              macroTraceVerbose("implObjSymbol is: ")(implObjSymbol.fullNameString)
+
+              if (implObjSymbol == macroMirror.NoSymbol) None
+              else {
+                // yet another reflection method that doesn't work for inner classes
+                //val receiver = macroMirror.companionInstance(receiverClass)
+                val implObj = try {
+                  val implObjClass = java.lang.Class.forName(implClassName, true, macroMirror.classLoader)
+                  implObjClass getField "MODULE$" get null
+                } catch {
+                  case ex: NoSuchFieldException => macroTraceVerbose("exception when loading implObj: ")(ex); null
+                  case ex: NoClassDefFoundError => macroTraceVerbose("exception when loading implObj: ")(ex); null
+                  case ex: ClassNotFoundException => macroTraceVerbose("exception when loading implObj: ")(ex); null
+                }
+
+                if (implObj == null) None
+                else {
+                  val implMethSymbol = implObjSymbol.info.member(macroMirror.newTermName(macroImpl.name.toString))
+                  macroLogVerbose("implMethSymbol is: " + implMethSymbol.fullNameString)
+                  macroLogVerbose("jimplMethSymbol is: " + macroMirror.methodToJava(implMethSymbol))
+
+                  if (implMethSymbol == macroMirror.NoSymbol) None
+                  else {
+                    macroLogVerbose("successfully loaded macro impl as (%s, %s)".format(implObj, implMethSymbol))
+                    Some((implObj, implMethSymbol))
+                  }
+                }
+              }
+            } catch {
+              case ex: ClassNotFoundException =>
+                macroTraceVerbose("implementation class failed to load: ")(ex.toString)
+                None
             }
-          } catch {
-            case ex: ClassNotFoundException =>
-              macroTraceVerbose("implementation class failed to load: ")(ex.toString)
-              None
+          }
+
+          val primary = loadMacroImpl(primaryMirror)
+          primary match {
+            case Some((implObj, implMethSymbol)) =>
+              def runtime(args: List[Any]) = primaryMirror.invoke(implObj, implMethSymbol)(args: _*).asInstanceOf[Any]
+              Some(runtime _)
+            case None =>
+              if (settings.XmacroFallbackClasspath.value != "") {
+                macroLogVerbose("trying to load macro implementation from the fallback mirror: %s".format(settings.XmacroFallbackClasspath.value))
+                val fallback = loadMacroImpl(fallbackMirror)
+                fallback match {
+                  case Some((implObj, implMethSymbol)) =>
+                    def runtime(args: List[Any]) = fallbackMirror.invoke(implObj, implMethSymbol)(args: _*).asInstanceOf[Any]
+                    Some(runtime _)
+                  case None =>
+                    None
+                }
+              } else {
+                None
+              }
           }
         }
 
-        val primary = loadMacroImpl(primaryMirror)
-        primary match {
-          case Some((implObj, implMethSymbol)) =>
-            def runtime(args: List[Any]) = primaryMirror.invoke(implObj, implMethSymbol)(args: _*).asInstanceOf[Any]
-            Some(runtime _)
-          case None =>
-            if (settings.XmacroFallbackClasspath.value != "") {
-              macroLogVerbose("trying to load macro implementation from the fallback mirror: %s".format(settings.XmacroFallbackClasspath.value))
-              val fallback = loadMacroImpl(fallbackMirror)
-              fallback match {
-                case Some((implObj, implMethSymbol)) =>
-                  def runtime(args: List[Any]) = fallbackMirror.invoke(implObj, implMethSymbol)(args: _*).asInstanceOf[Any]
-                  Some(runtime _)
-                case None =>
-                  None
-              }
-            } else {
-              None
-            }
-        }
-      }
-
-      if (runtime == None) macroDef setFlag IS_ERROR
-      runtime
-    })
+        if (runtime == None) macroDef setFlag IS_ERROR
+        runtime
+      })
+    }
+  }
 
   /** Should become private again once we're done with migrating typetag generation from implicits */
   def macroContext(typer: Typer, prefixTree: Tree, expandeeTree: Tree): MacroContext { val mirror: global.type } =
@@ -1203,8 +1241,10 @@ trait Macros extends Traces {
             if (relevancyThreshold == -1) None
             else {
               var relevantElements = realex.getStackTrace().take(relevancyThreshold + 1)
-              var framesTillReflectiveInvocationOfMacroImpl = relevantElements.reverse.indexWhere(_.isNativeMethod) + 1
-              relevantElements = relevantElements dropRight framesTillReflectiveInvocationOfMacroImpl
+              def isMacroInvoker(este: StackTraceElement) = este.isNativeMethod || (este.getClassName != null && (este.getClassName contains "fastTrack"))
+              var threshold = relevantElements.reverse.indexWhere(isMacroInvoker) + 1
+              while (threshold != relevantElements.length && isMacroInvoker(relevantElements(relevantElements.length - threshold - 1))) threshold += 1
+              relevantElements = relevantElements dropRight threshold
 
               realex.setStackTrace(relevantElements)
               val message = new java.io.StringWriter()

@@ -191,7 +191,7 @@ trait Future[+T] extends Awaitable[T] {
    *  this future. If this future is completed with an exception then the new
    *  future will also contain this exception.
    *
-   *  $forComprehensionExample
+   *  $forComprehensionExamples
    */
   def map[S](f: T => S): Future[S] = {
     val p = Promise[S]()
@@ -213,7 +213,7 @@ trait Future[+T] extends Awaitable[T] {
    *  If this future is completed with an exception then the new future will
    *  also contain this exception.
    *
-   *  $forComprehensionExample
+   *  $forComprehensionExamples
    */
   def flatMap[S](f: T => Future[S]): Future[S] = {
     val p = Promise[S]()

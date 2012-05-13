@@ -9,10 +9,19 @@
 ##############################################################################
 
 findScalaHome () {
-  # see #2092
+  # see SI-2092
   local SOURCE="${BASH_SOURCE[0]}"
   while [ -h "$SOURCE" ] ; do SOURCE="$(readlink "$SOURCE")"; done
-  ( cd -P "$( dirname "$SOURCE" )"/.. && pwd )
+  local bindir="$( dirname "$SOURCE" )"
+  if [[ -d "$bindir"/.. ]]; then
+    ( cd -P "$bindir"/.. && pwd )
+  else
+    # See SI-5792
+    local dir=$(dirname "${BASH_SOURCE[0]}")
+    local link=$(dirname "$(readlink "${BASH_SOURCE[0]}")")
+    local path="$dir/$link/.."
+    ( cd "$path" && pwd )
+  fi
 }
 execCommand () {
   [[ -n $SCALA_RUNNER_DEBUG ]] && echo "" && for arg in "$@@"; do echo "$arg"; done && echo "";

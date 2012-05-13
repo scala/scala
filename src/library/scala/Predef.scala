@@ -160,7 +160,7 @@ object Predef extends LowPriorityImplicits {
    *  is at least `ASSERTION`.
    *
    *  @see elidable
-   *  @param p   the expression to test
+   *  @param assertion   the expression to test
    */
   @elidable(ASSERTION)
   def assert(assertion: Boolean) {
@@ -173,8 +173,8 @@ object Predef extends LowPriorityImplicits {
    *  is at least `ASSERTION`.
    *
    *  @see elidable
-   *  @param p   the expression to test
-   *  @param msg a String to include in the failure message
+   *  @param assertion   the expression to test
+   *  @param message     a String to include in the failure message
    */
   @elidable(ASSERTION) @inline
   final def assert(assertion: Boolean, message: => Any) {
@@ -189,7 +189,7 @@ object Predef extends LowPriorityImplicits {
    *  will not be generated if `-Xelide-below` is at least `ASSERTION`.
    *
    *  @see elidable
-   *  @param p   the expression to test
+   *  @param assumption   the expression to test
    */
   @elidable(ASSERTION)
   def assume(assumption: Boolean) {
@@ -204,8 +204,8 @@ object Predef extends LowPriorityImplicits {
    *  will not be generated if `-Xelide-below` is at least `ASSERTION`.
    *
    *  @see elidable
-   *  @param p   the expression to test
-   *  @param msg a String to include in the failure message
+   *  @param assumption   the expression to test
+   *  @param message      a String to include in the failure message
    */
   @elidable(ASSERTION) @inline
   final def assume(assumption: Boolean, message: => Any) {
@@ -217,7 +217,7 @@ object Predef extends LowPriorityImplicits {
    *  This method is similar to `assert`, but blames the caller of the method
    *  for violating the condition.
    *
-   *  @param p   the expression to test
+   *  @param requirement   the expression to test
    */
   def require(requirement: Boolean) {
     if (!requirement)
@@ -228,8 +228,8 @@ object Predef extends LowPriorityImplicits {
    *  This method is similar to `assert`, but blames the caller of the method
    *  for violating the condition.
    *
-   *  @param p   the expression to test
-   *  @param msg a String to include in the failure message
+   *  @param requirement   the expression to test
+   *  @param message       a String to include in the failure message
    */
   @inline final def require(requirement: Boolean, message: => Any) {
     if (!requirement)

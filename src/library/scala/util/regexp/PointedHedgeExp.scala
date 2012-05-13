@@ -15,6 +15,7 @@ package scala.util.regexp
  *  @author  Burak Emir
  *  @version 1.0
  */
+@deprecated("This class will be removed", "2.10.0")
 abstract class PointedHedgeExp extends Base {
 
   type _regexpT <: RegExp

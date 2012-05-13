@@ -18,11 +18,6 @@ package transform
  */
 abstract class BasicTransformer extends Function1[Node,Node]
 {
-  /**
-   *  @param n  ...
-   *  @param ns ...
-   *  @return   ...
-   */
   protected def unchanged(n: Node, ns: Seq[Node]) =
     ns.length == 1 && (ns.head == n)
 

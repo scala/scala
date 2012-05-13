@@ -5,10 +5,14 @@ import scala.util.parsing.combinator._
 import scala.util.parsing.input._
 import language.postfixOps
 
+@deprecated("This class will be removed", "2.10.0")
 case class Ident(s: String)
+@deprecated("This class will be removed", "2.10.0")
 case class Number(n: Int)
+@deprecated("This class will be removed", "2.10.0")
 case class Str(s: String)
 
+@deprecated("This class will be removed", "2.10.0")
 object RegexTest extends RegexParsers {
   val ident: Parser[Any] = """[a-zA-Z_]\w*""".r ^^ (s => Ident(s))
   val number: Parser[Any] = """\d\d*""".r ^^ (s => Number(s.toInt))

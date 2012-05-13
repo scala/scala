@@ -24,6 +24,7 @@ import language.implicitConversions
  *
  *  @author Adriaan Moors
  */
+@deprecated("This class will be removed", "2.10.0")
 trait Mappable {
   trait Mapper { def apply[T <% Mappable[T]](x: T): T } /* TODO: having type `Forall T. T => T` is too strict:
   sometimes we want to allow `Forall T >: precision. T => T` for some type `precision`, so that,
@@ -325,11 +326,11 @@ trait Binders extends AbstractSyntax with Mappable {
   // TODO: move this to some utility object higher in the scala hierarchy?
   /** Returns a given result, but executes the supplied closure before returning.
    *  (The effect of this closure does not influence the returned value.)
-   *
-   *  @param result the result to be returned
-   *  @param block  code to be executed, purely for its side-effects
    */
   trait ReturnAndDo[T]{
+    /**
+     *  @param block  code to be executed, purely for its side-effects
+     */
     def andDo(block: => Unit): T
   }
 

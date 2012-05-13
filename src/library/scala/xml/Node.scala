@@ -155,8 +155,7 @@ abstract class Node extends NodeSeq {
   /**
    * String representation of this node
    *
-   * @param stripComment if true, strips comment nodes from result
-   * @return ...
+   * @param stripComments if true, strips comment nodes from result
    */
   def buildString(stripComments: Boolean): String =
     Utility.serialize(this, stripComments = stripComments).toString
@@ -170,9 +169,6 @@ abstract class Node extends NodeSeq {
 
   /**
    * Appends qualified name of this node to `StringBuilder`.
-   *
-   * @param sb ...
-   * @return   ...
    */
   def nameToString(sb: StringBuilder): StringBuilder = {
     if (null != prefix) {

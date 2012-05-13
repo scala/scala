@@ -101,8 +101,7 @@ class Random(val self: java.util.Random) {
 
   /** Returns a new collection of the same type in a randomly chosen order.
    *
-   *  @param  coll    the [[scala.collection.TraversableOnce]] to shuffle
-   *  @return         the shuffled [[scala.collection.TraversableOnce]]
+   *  @return         the shuffled collection
    */
   def shuffle[T, CC[X] <: TraversableOnce[X]](xs: CC[T])(implicit bf: CanBuildFrom[CC[T], T, CC[T]]): CC[T] = {
     val buf = new ArrayBuffer[T] ++= xs

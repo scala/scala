@@ -14,7 +14,7 @@ package dtd
  *
  *  @author Burak Emir
  *
- *  @param  target name of this DOCTYPE
+ *  @param  name   name of this DOCTYPE
  *  @param  extID  None, or Some(external ID of this doctype)
  *  @param  intSubset sequence of internal subset declarations
  */

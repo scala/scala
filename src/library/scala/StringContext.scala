@@ -132,7 +132,7 @@ object StringContext {
    *   escape:  `\\`, `\"`, `\'`
    *   octal:   `\d` `\dd` `\ddd` where `d` is an octal digit between `0` and `7`.
    *
-   *  @param  A string that may contain escape sequences
+   *  @param  str  A string that may contain escape sequences
    *  @return The string with all escape sequences expanded.
    */
   def treatEscapes(str: String): String = {

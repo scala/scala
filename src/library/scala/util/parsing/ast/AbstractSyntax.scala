@@ -14,6 +14,7 @@ import scala.util.parsing.input.Positional
  *
  * @author Adriaan Moors
  */
+@deprecated("This class will be removed", "2.10.0")
 trait AbstractSyntax {
   /** The base class for elements of the abstract syntax tree.
    */

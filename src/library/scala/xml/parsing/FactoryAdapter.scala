@@ -158,7 +158,7 @@ abstract class FactoryAdapter extends DefaultHandler with factory.XMLLoader[Node
 
   /** End element.
    * @param uri
-   * @param localName
+   * @param _localName
    * @param qname
    * @throws org.xml.sax.SAXException if ..
    */

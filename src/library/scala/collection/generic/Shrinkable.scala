@@ -43,7 +43,7 @@ trait Shrinkable[-A] {
 
   /** Removes all elements produced by an iterator from this $coll.
    *
-   *  @param iter  the iterator producing the elements to remove.
+   *  @param xs   the iterator producing the elements to remove.
    *  @return the $coll itself
    */
   def --=(xs: TraversableOnce[A]): this.type = { xs.seq foreach -= ; this }

@@ -157,7 +157,7 @@ class ListSet[A] extends AbstractSet[A]
 
     /** Checks if this set contains element `elem`.
      *
-     *  @param  elem    the element to check for membership.
+     *  @param  e       the element to check for membership.
      *  @return `'''true'''`, iff `elem` is contained in this set.
      */
     override def contains(e: A) = containsInternal(this, e)

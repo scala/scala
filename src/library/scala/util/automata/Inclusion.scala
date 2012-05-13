@@ -17,14 +17,12 @@ package scala.util.automata
  *  @author Burak Emir
  *  @version 1.0
  */
+@deprecated("This class will be removed", "2.10.0")
 trait Inclusion[A <: AnyRef] {
 
   val labels: Seq[A]
 
   /** Returns true if `dfa1` is included in `dfa2`.
-   *
-   *  @param dfa1 ...
-   *  @param dfa2 ...
    */
   def inclusion(dfa1: DetWordAutom[A], dfa2: DetWordAutom[A]) = {
 

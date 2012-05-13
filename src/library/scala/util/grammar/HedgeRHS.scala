@@ -10,13 +10,17 @@
 
 package scala.util.grammar
 
+@deprecated("This class will be removed", "2.10.0")
 abstract class HedgeRHS
 
 /** Right hand side of a hedge production, deriving a single tree. */
+@deprecated("This class will be removed", "2.10.0")
 case class ConsRHS(tnt: Int, hnt: Int) extends HedgeRHS
 
 /** Right hand side of a hedge production, deriving any hedge. */
+@deprecated("This class will be removed", "2.10.0")
 case object AnyHedgeRHS extends HedgeRHS
 
 /** Right hand side of a hedge production, deriving the empty hedge. */
+@deprecated("This class will be removed", "2.10.0")
 case object EmptyHedgeRHS extends HedgeRHS

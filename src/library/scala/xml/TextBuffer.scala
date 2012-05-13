@@ -25,9 +25,6 @@ class TextBuffer
   val sb = new StringBuilder()
 
   /** Appends this string to the text buffer, trimming whitespaces as needed.
-   *
-   *  @param  cs ...
-   *  @return ...
    */
   def append(cs: Seq[Char]): this.type = {
     cs foreach { c =>

@@ -19,7 +19,7 @@ package scala
  */
 trait Product extends Any with Equals {
   /** The n^th^ element of this product, 0-based.  In other words, for a
-   *  product `A(x,,1,,, ..., x,,k,,)`, returns `x,,(n+1),, where `0 < n < k`.
+   *  product `A(x,,1,,, ..., x,,k,,)`, returns `x,,(n+1),,` where `0 < n < k`.
    *
    *  @param    n   the index of the element to return
    *  @throws       `IndexOutOfBoundsException`

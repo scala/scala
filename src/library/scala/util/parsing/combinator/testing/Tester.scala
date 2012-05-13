@@ -28,6 +28,7 @@ import scala.util.parsing.combinator.syntactical.TokenParsers
  * @author Martin Odersky
  * @author Adriaan Moors
  */
+@deprecated("This class will be removed", "2.10.0")
 abstract class Tester {
 
   val syntactic: TokenParsers { val lexical: Lexical }

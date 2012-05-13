@@ -69,8 +69,8 @@ package object sys {
    *
    *  Note that shutdown hooks are NOT guaranteed to be run.
    *
-   *  @param    the body of code to run at shutdown
-   *  @return   the Thread which will run the shutdown hook.
+   *  @param    body  the body of code to run at shutdown
+   *  @return   the   Thread which will run the shutdown hook.
    */
   def addShutdownHook(body: => Unit): ShutdownHookThread = ShutdownHookThread(body)
 

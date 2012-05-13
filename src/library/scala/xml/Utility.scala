@@ -77,9 +77,6 @@ object Utility extends AnyRef with parsing.TokenTests {
 
   /**
    * Escapes the characters &lt; &gt; &amp; and &quot; from string.
-   *
-   * @param text ...
-   * @return     ...
    */
   final def escape(text: String): String = sbToString(escape(text, _))
 
@@ -102,10 +99,6 @@ object Utility extends AnyRef with parsing.TokenTests {
 
   /**
    * Appends escaped string to `s`.
-   *
-   * @param text ...
-   * @param s    ...
-   * @return     ...
    */
   final def escape(text: String, s: StringBuilder): StringBuilder = {
     // Implemented per XML spec:
@@ -135,8 +128,6 @@ object Utility extends AnyRef with parsing.TokenTests {
    * Appends unescaped string to `s`, `amp` becomes `&amp;`,
    * `lt` becomes `&lt;` etc..
    *
-   * @param ref ...
-   * @param s   ...
    * @return    `'''null'''` if `ref` was not a predefined entity.
    */
   final def unescape(ref: String, s: StringBuilder): StringBuilder =
@@ -145,18 +136,12 @@ object Utility extends AnyRef with parsing.TokenTests {
   /**
    * Returns a set of all namespaces used in a sequence of nodes
    * and all their descendants, including the empty namespaces.
-   *
-   * @param nodes ...
-   * @return      ...
    */
   def collectNamespaces(nodes: Seq[Node]): mutable.Set[String] =
     nodes.foldLeft(new mutable.HashSet[String]) { (set, x) => collectNamespaces(x, set) ; set }
 
   /**
    * Adds all namespaces in node to set.
-   *
-   * @param n   ...
-   * @param set ...
    */
   def collectNamespaces(n: Node, set: mutable.Set[String]) {
     if (n.doCollectNamespaces) {
@@ -273,9 +258,6 @@ object Utility extends AnyRef with parsing.TokenTests {
 
   /**
    * Returns prefix of qualified name if any.
-   *
-   * @param name ...
-   * @return     ...
    */
   final def prefix(name: String): Option[String] = (name indexOf ':') match {
     case -1   => None
@@ -284,11 +266,6 @@ object Utility extends AnyRef with parsing.TokenTests {
 
   /**
    * Returns a hashcode for the given constituents of a node
-   *
-   * @param uri
-   * @param label
-   * @param attribHashCode
-   * @param children
    */
   def hashCode(pre: String, label: String, attribHashCode: Int, scpeHash: Int, children: Seq[Node]) =
     scala.util.MurmurHash3.orderedHash(label +: attribHashCode +: scpeHash +: children, pre.##)
@@ -298,10 +275,6 @@ object Utility extends AnyRef with parsing.TokenTests {
   /**
    * Appends &quot;s&quot; if string `s` does not contain &quot;,
    * &apos;s&apos; otherwise.
-   *
-   * @param s  ...
-   * @param sb ...
-   * @return   ...
    */
   def appendQuoted(s: String, sb: StringBuilder) = {
     val ch = if (s contains '"') '\'' else '"'
@@ -310,10 +283,6 @@ object Utility extends AnyRef with parsing.TokenTests {
 
   /**
    * Appends &quot;s&quot; and escapes and &quot; i s with \&quot;
-   *
-   * @param s  ...
-   * @param sb ...
-   * @return   ...
    */
   def appendEscapedQuoted(s: String, sb: StringBuilder): StringBuilder = {
     sb.append('"')
@@ -324,11 +293,6 @@ object Utility extends AnyRef with parsing.TokenTests {
     sb.append('"')
   }
 
-  /**
-   * @param s     ...
-   * @param index ...
-   * @return      ...
-   */
   def getName(s: String, index: Int): String = {
     if (index >= s.length) null
     else {
@@ -341,9 +305,6 @@ object Utility extends AnyRef with parsing.TokenTests {
   /**
    * Returns `'''null'''` if the value is a correct attribute value,
    * error message if it isn't.
-   *
-   * @param value ...
-   * @return      ...
    */
   def checkAttributeValue(value: String): String = {
     var i = 0
@@ -365,12 +326,6 @@ object Utility extends AnyRef with parsing.TokenTests {
     null
   }
 
-  /**
-   * new
-   *
-   * @param value ...
-   * @return      ...
-   */
   def parseAttributeValue(value: String): Seq[Node] = {
     val sb  = new StringBuilder
     var rfb: StringBuilder = null
@@ -426,11 +381,6 @@ object Utility extends AnyRef with parsing.TokenTests {
    *             | "&amp;#x" '0'..'9'|'A'..'F'|'a'..'f' { hexdigit } ";"
    * }}}
    * See [66]
-   *
-   * @param ch                ...
-   * @param nextch            ...
-   * @param reportSyntaxError ...
-   * @return                  ...
    */
   def parseCharRef(ch: () => Char, nextch: () => Unit, reportSyntaxError: String => Unit, reportTruncatedError: String => Unit): String = {
     val hex  = (ch() == 'x') && { nextch(); true }

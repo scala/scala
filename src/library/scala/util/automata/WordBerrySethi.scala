@@ -17,6 +17,7 @@ import scala.util.regexp.WordExp
   *  @author Burak Emir
   *  @version 1.0
   */
+@deprecated("This class will be removed", "2.10.0")
 abstract class WordBerrySethi extends BaseBerrySethi {
   override val lang: WordExp
 
@@ -52,7 +53,6 @@ abstract class WordBerrySethi extends BaseBerrySethi {
   /** Returns the first set of an expression, setting the follow set along
    *  the way.
    *
-   *  @param fol1 ...
    *  @param r    the regular expression
    *  @return     the computed set
    */

@@ -12,6 +12,7 @@ package scala.util.parsing.input
  *
  * @author Martin Odersky, Adriaan Moors
  */
+@deprecated("This class will be removed", "2.10.0")
 trait Positional {
 
   /** The source position of this object, initially set to undefined. */
