@@ -998,7 +998,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter) extends Symb
 
     val info1 = formatExplain(
       "while compiling"    -> currentSource.path,
-      "during phase"       -> phase,
+      "during phase"       -> ( if (globalPhase eq phase) phase else "global=%s, atPhase=%s".format(globalPhase, phase) ),
       "library version"    -> scala.util.Properties.versionString,
       "compiler version"   -> Properties.versionString,
       "reconstructed args" -> settings.recreateArgs.mkString(" ")

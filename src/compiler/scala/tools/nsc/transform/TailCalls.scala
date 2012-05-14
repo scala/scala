@@ -154,7 +154,10 @@ abstract class TailCalls extends Transform {
       def isTransformed    = isEligible && accessed(label)
       def tailrecFailure() = unit.error(failPos, "could not optimize @tailrec annotated " + method + ": " + failReason)
 
-      def newThis(pos: Position) = method.newValue(nme.THIS, pos, SYNTHETIC) setInfo currentClass.typeOfThis
+      def newThis(pos: Position) = logResult("Creating new `this` during tailcalls\n  method: %s\n  current class: %s".format(
+        method.ownerChain.mkString(" -> "), currentClass.ownerChain.mkString(" -> "))) {
+          method.newValue(nme.THIS, pos, SYNTHETIC) setInfo currentClass.typeOfThis
+      }
 
       override def toString(): String = (
         "" + method.name + " tparams: " + tparams + " tailPos: " + tailPos +
@@ -222,7 +225,7 @@ abstract class TailCalls extends Transform {
 
         if (!ctx.isEligible)            fail("it is neither private nor final so can be overridden")
         else if (!isRecursiveCall) {
-          if (receiverIsSuper)          failHere("it contains a recursive call targetting a supertype")
+          if (receiverIsSuper)          failHere("it contains a recursive call targeting supertype " + receiver.tpe)
           else                          failHere(defaultReason)
         }
         else if (!matchesTypeArgs)      failHere("it is called recursively with different type arguments")

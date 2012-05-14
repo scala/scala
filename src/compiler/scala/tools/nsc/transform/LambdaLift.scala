@@ -108,28 +108,30 @@ abstract class LambdaLift extends InfoTransform {
      *  }
      */
     private def markFree(sym: Symbol, enclosure: Symbol): Boolean = {
-      debuglog("mark free: " + sym + " of " + sym.owner + " marked free in " + enclosure)
-      if (enclosure == sym.owner.logicallyEnclosingMember) true
-      else if (enclosure.isPackageClass || !markFree(sym, enclosure.skipConstructor.owner.logicallyEnclosingMember)) false
-      else {
-        val ss = symSet(free, enclosure)
-        if (!ss(sym)) {
-          ss addEntry sym
-          renamable addEntry sym
-          beforePickler {
-            // The param symbol in the MethodType should not be renamed, only the symbol in scope. This way,
-            // parameter names for named arguments are not changed. Example: without cloning the MethodType,
-            //     def closure(x: Int) = { () => x }
-            // would have the signature
-            //     closure: (x$1: Int)() => Int
-            if (sym.isParameter && sym.owner.info.paramss.exists(_ contains sym))
-              sym.owner modifyInfo (_ cloneInfo sym.owner)
+      debuglog("mark free: " + sym.fullLocationString + " marked free in " + enclosure)
+      (enclosure == sym.owner.logicallyEnclosingMember) || {
+        debuglog("%s != %s".format(enclosure, sym.owner.logicallyEnclosingMember))
+        if (enclosure.isPackageClass || !markFree(sym, enclosure.skipConstructor.owner.logicallyEnclosingMember)) false
+        else {
+          val ss = symSet(free, enclosure)
+          if (!ss(sym)) {
+            ss addEntry sym
+            renamable addEntry sym
+            beforePickler {
+              // The param symbol in the MethodType should not be renamed, only the symbol in scope. This way,
+              // parameter names for named arguments are not changed. Example: without cloning the MethodType,
+              //     def closure(x: Int) = { () => x }
+              // would have the signature
+              //     closure: (x$1: Int)() => Int
+              if (sym.isParameter && sym.owner.info.paramss.exists(_ contains sym))
+                sym.owner modifyInfo (_ cloneInfo sym.owner)
+            }
+            changedFreeVars = true
+            debuglog("" + sym + " is free in " + enclosure);
+            if (sym.isVariable) sym setFlag CAPTURED
           }
-          changedFreeVars = true
-          debuglog("" + sym + " is free in " + enclosure);
-          if (sym.isVariable) sym setFlag CAPTURED
+          !enclosure.isClass
         }
-        !enclosure.isClass
       }
     }
 
@@ -273,8 +275,11 @@ abstract class LambdaLift extends InfoTransform {
         if (ps.isEmpty) searchIn(enclosure.skipConstructor.owner)
         else ps.head
       }
-      debuglog("proxy " + sym + " in " + sym.owner + " from " + currentOwner.ownerChain.mkString(" -> ") +
-          " " + sym.owner.logicallyEnclosingMember)
+      debuglog("proxy %s from %s has logical enclosure %s".format(
+        sym.debugLocationString,
+        currentOwner.debugLocationString,
+        sym.owner.logicallyEnclosingMember.debugLocationString)
+      )
 
       if (isSameOwnerEnclosure(sym)) sym
       else searchIn(currentOwner)

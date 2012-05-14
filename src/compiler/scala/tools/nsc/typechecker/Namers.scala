@@ -1423,6 +1423,8 @@ trait Namers extends MethodSynthesis {
         fail(LazyAndEarlyInit)
       if (sym.info.typeSymbol == FunctionClass(0) && sym.isValueParameter && sym.owner.isCaseClass)
         fail(ByNameParameter)
+      if (sym.isTrait && sym.isFinal)
+        checkNoConflict(ABSTRACT, FINAL)
 
       if (sym.isDeferred) {
         // Is this symbol type always allowed the deferred flag?
