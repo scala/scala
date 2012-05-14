@@ -1423,7 +1423,7 @@ trait Namers extends MethodSynthesis {
         fail(LazyAndEarlyInit)
       if (sym.info.typeSymbol == FunctionClass(0) && sym.isValueParameter && sym.owner.isCaseClass)
         fail(ByNameParameter)
-      if (sym.isTrait && sym.isFinal)
+      if (sym.isTrait && sym.isFinal && !sym.isSubClass(AnyValClass))
         checkNoConflict(ABSTRACT, FINAL)
 
       if (sym.isDeferred) {
