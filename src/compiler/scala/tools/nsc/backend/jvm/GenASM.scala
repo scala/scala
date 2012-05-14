@@ -274,8 +274,10 @@ abstract class GenASM extends SubComponent with BytecodeWriters {
     // we can exclude lateFINAL. Such symbols are eligible for inlining, but to
     // avoid breaking proxy software which depends on subclassing, we do not
     // emit ACC_FINAL.
+    // Nested objects won't receive ACC_FINAL in order to allow for their overloading.
+
     val finalFlag = (
-         ((sym.rawflags & (Flags.FINAL | Flags.MODULE)) != 0)
+         (sym.hasFlag(Flags.FINAL) || isTopLevelModule(sym))
       && !sym.enclClass.isInterface
       && !sym.isClassConstructor
       && !sym.isMutable // lazy vals and vars both
@@ -649,8 +651,7 @@ abstract class GenASM extends SubComponent with BytecodeWriters {
 
     val INNER_CLASSES_FLAGS =
       (asm.Opcodes.ACC_PUBLIC    | asm.Opcodes.ACC_PRIVATE | asm.Opcodes.ACC_PROTECTED |
-       asm.Opcodes.ACC_STATIC    | asm.Opcodes.ACC_FINAL   |
-       asm.Opcodes.ACC_INTERFACE | asm.Opcodes.ACC_ABSTRACT)
+       asm.Opcodes.ACC_STATIC    | asm.Opcodes.ACC_INTERFACE | asm.Opcodes.ACC_ABSTRACT)
 
     val PublicStatic      = asm.Opcodes.ACC_PUBLIC | asm.Opcodes.ACC_STATIC
     val PublicStaticFinal = asm.Opcodes.ACC_PUBLIC | asm.Opcodes.ACC_STATIC | asm.Opcodes.ACC_FINAL
