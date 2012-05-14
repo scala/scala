@@ -3068,7 +3068,8 @@ trait Types extends api.Types { self: SymbolTable =>
     }
 
     def registerTypeEquality(tp: Type, typeVarLHS: Boolean): Boolean = {
-      //println("regTypeEq: "+(safeToString, debugString(tp), typeVarLHS)) //@MDEBUG
+//      println("regTypeEq: "+(safeToString, debugString(tp), tp.getClass, if (typeVarLHS) "in LHS" else "in RHS", if (suspended) "ZZ" else if (constr.instValid) "IV" else "")) //@MDEBUG
+//      println("constr: "+ constr)
       def checkIsSameType(tp: Type) =
         if(typeVarLHS) constr.inst =:= tp
         else           tp          =:= constr.inst
@@ -3127,7 +3128,7 @@ trait Types extends api.Types { self: SymbolTable =>
     }
     def originName = {
       val name = origin.typeSymbolDirect.decodedName
-      if (name contains "_$") origin.typeSymbolDirect.decodedName else name
+      if (name contains "_$") origin.typeSymbolDirect.decodedName else name // wait, what? - what?
     }
     def originLocation = {
       val sym  = origin.typeSymbolDirect
@@ -3146,7 +3147,7 @@ trait Types extends api.Types { self: SymbolTable =>
     protected def typeVarString = originName
     override def safeToString = (
       if ((constr eq null) || (constr.inst eq null)) "TVar<" + originName + "=null>"
-      else if (constr.inst ne NoType) "" + constr.inst
+      else if (constr.inst ne NoType) "=?" + constr.inst
       else (if(untouchable) "!?" else "?") + levelString + originName
     )
     override def kind = "TypeVar"
@@ -4925,7 +4926,23 @@ trait Types extends api.Types { self: SymbolTable =>
     override def hashCode = tp1.hashCode * 41 + tp2.hashCode
     override def equals(other: Any) = other match {
       case stp: SubTypePair =>
-        (tp1 =:= stp.tp1) && (tp2 =:= stp.tp2)
+        // suspend TypeVars in types compared by =:=,
+        // since we don't want to mutate them simply to check whether a subtype test is pending
+        // in addition to making subtyping "more correct" for type vars,
+        // it should avoid the stackoverflow that's been plaguing us (https://groups.google.com/d/topic/scala-internals/2gHzNjtB4xA/discussion)
+        // this method is only called when subtyping hits a recursion threshold (subsametypeRecursions >= LogPendingSubTypesThreshold)
+        @inline def suspend(tp: Type) =
+          if (tp.isGround) null else suspendTypeVarsInType(tp)
+        @inline def revive(suspension: List[TypeVar]) =
+          if (suspension ne null) suspension foreach (_.suspended = false)
+
+        val suspensions = Array(tp1, stp.tp1, tp2, stp.tp2) map suspend
+
+        val sameTypes = (tp1 =:= stp.tp1) && (tp2 =:= stp.tp2)
+
+        suspensions foreach revive
+
+        sameTypes
       case _ =>
         false
     }
