@@ -75,7 +75,8 @@ abstract class LazyVals extends Transform with TypingTransformers with ast.TreeD
           val stats1 = stats.flatMap(_ match {
             case Block(List(d1@DefDef(_, n1, _, _, _, _)), d2@DefDef(_, n2, _, _, _, _)) if (nme.newLazyValSlowComputeName(n2) == n1) =>
               List(d1, d2)
-            case stat => List(stat)
+            case stat =>
+              List(stat)
           })
           treeCopy.Block(block1, stats1, expr)
           
@@ -138,7 +139,7 @@ abstract class LazyVals extends Transform with TypingTransformers with ast.TreeD
 
         case ValDef(_, _, _, _) if !sym.owner.isModule && !sym.owner.isClass =>
           deriveValDef(tree) { rhs0 =>
-            val rhs = super.transform(rhs0)
+            val rhs = transform(rhs0)
             if (LocalLazyValFinder.find(rhs)) typed(addBitmapDefs(sym, rhs)) else rhs
           }
 

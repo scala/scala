@@ -903,14 +903,14 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
 
           if (sym.isLazy && !isEmpty && !clazz.isImplClass) {
             assert(fieldOffset contains sym, sym)
-            deriveDefDef(stat)(rhs =>
-              if (isUnit)
-                mkLazyDef(clazz, sym, List(rhs), UNIT, fieldOffset(sym))
-              else {
-                val Block(stats, res) = rhs
+            deriveDefDef(stat) {
+              case t if isUnit => mkLazyDef(clazz, sym, List(t), UNIT, fieldOffset(sym))
+
+              case Block(stats, res) =>
                 mkLazyDef(clazz, sym, stats, Select(This(clazz), res.symbol), fieldOffset(sym))
-              }
-            )
+
+              case t => t // pass specialized lazy vals through
+            }
           }
           else if (needsInitFlag(sym) && !isEmpty && !clazz.hasFlag(IMPLCLASS | TRAIT)) {
             assert(fieldOffset contains sym, sym)

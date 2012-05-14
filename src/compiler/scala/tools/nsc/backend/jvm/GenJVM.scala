@@ -191,7 +191,7 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
 
     val MIN_SWITCH_DENSITY = 0.7
     val INNER_CLASSES_FLAGS =
-      (ACC_PUBLIC | ACC_PRIVATE | ACC_PROTECTED | ACC_STATIC | ACC_FINAL | ACC_INTERFACE | ACC_ABSTRACT)
+      (ACC_PUBLIC | ACC_PRIVATE | ACC_PROTECTED | ACC_STATIC | ACC_INTERFACE | ACC_ABSTRACT)
 
     val PublicStatic      = ACC_PUBLIC | ACC_STATIC
     val PublicStaticFinal = ACC_PUBLIC | ACC_STATIC | ACC_FINAL
@@ -1976,8 +1976,10 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
     // we can exclude lateFINAL.  Such symbols are eligible for inlining, but to
     // avoid breaking proxy software which depends on subclassing, we do not
     // emit ACC_FINAL.
+    // Nested objects won't receive ACC_FINAL in order to allow for their overloading.
+
     val finalFlag = (
-         ((sym.rawflags & (Flags.FINAL | Flags.MODULE)) != 0)
+         (sym.hasFlag(Flags.FINAL) || isTopLevelModule(sym))
       && !sym.enclClass.isInterface
       && !sym.isClassConstructor
       && !sym.isMutable   // lazy vals and vars both
