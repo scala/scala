@@ -1976,7 +1976,7 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
     // we can exclude lateFINAL.  Such symbols are eligible for inlining, but to
     // avoid breaking proxy software which depends on subclassing, we do not
     // emit ACC_FINAL.
-    // Nested objects won't receive ACC_FINAL in order to allow for their overloading.
+    // Nested objects won't receive ACC_FINAL in order to allow for their overriding.
 
     val finalFlag = (
          (sym.hasFlag(Flags.FINAL) || isTopLevelModule(sym))

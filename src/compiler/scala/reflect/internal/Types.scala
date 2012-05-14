@@ -3126,10 +3126,7 @@ trait Types extends api.Types { self: SymbolTable =>
         tparams map (_.defString) mkString("[", ",", "]")
       case _ => ""
     }
-    def originName = {
-      val name = origin.typeSymbolDirect.decodedName
-      if (name contains "_$") origin.typeSymbolDirect.decodedName else name // wait, what? - what?
-    }
+    def originName = origin.typeSymbolDirect.decodedName
     def originLocation = {
       val sym  = origin.typeSymbolDirect
       val encl = sym.owner.logicallyEnclosingMember
