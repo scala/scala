@@ -173,6 +173,12 @@ private final class CachedCompiler0(args: Array[String], initialLog: WeakLog) ex
 			reporter = null
 		}
 
+		private[this] val ScalaObjectClass = {
+			// ScalaObject removed in 2.10, so alias it to Object
+			implicit def compat(a: AnyRef): CompatScalaObject = new CompatScalaObject
+			class CompatScalaObject { def ScalaObjectClass = definitions.ObjectClass }
+			definitions.ScalaObjectClass
+		}
 		override def registerTopLevelSym(sym: Symbol) = toForget += sym
 
 		def findClass(name: String): Option[(AbstractFile, Boolean)] =
@@ -184,7 +190,8 @@ private final class CachedCompiler0(args: Array[String], initialLog: WeakLog) ex
 			if(f.exists) Some(AbstractFile.getFile(f)) else None
 		}
 
-		def findOnClassPath(name: String): Option[AbstractFile] = classPath.findClass(name).flatMap(_.binary.asInstanceOf[Option[AbstractFile]])
+		def findOnClassPath(name: String): Option[AbstractFile] =
+			classPath.findClass(name).flatMap(_.binary.asInstanceOf[Option[AbstractFile]])
 
 		final def unlinkAll(m: Symbol) {
 			val scope = m.owner.info.decls
@@ -218,10 +225,40 @@ private final class CachedCompiler0(args: Array[String], initialLog: WeakLog) ex
 				classFile <- getOutputClass(fullName)
 			}
 				reloadClass(pkg, simpleName, classFile)
+	
+			for( (_, (pkg, "package")) <- toReload)
+				openPkgModule(pkg)
 
 			toReload = newReloadMap()
 		}
-		
+		def openPkgModule(pkgClass: Symbol): Unit =
+			openPkgModule(pkgClass.info.decl(nme.PACKAGEkw), pkgClass)
+
+		// only easily accessible in 2.10+, so copy implementation here
+		def openPkgModule(container: Symbol, dest: Symbol)
+		{
+			val destScope = dest.info.decls
+			def include(member: Symbol) = !member.isPrivate && !member.isConstructor
+			for(member <- container.info.decls.iterator) {
+				if(include(member))
+					for(existing <- dest.info.decl(member.name).alternatives)
+						destScope.unlink(existing)
+			}
+
+			for(member <- container.info.decls.iterator) {
+				if(include(member))
+					destScope.enter(member)
+			}
+
+			for(p <- parentSymbols(container)) {
+				if(p != definitions.ObjectClass && p != ScalaObjectClass)
+					openPkgModule(p, dest)
+			}
+		}
+
+		// only in 2.10+, so copy implementation here for earlier versions
+		def parentSymbols(sym: Symbol): List[Symbol] = sym.info.parents map (_.typeSymbol)
+
 		private [this] def newReloadMap() = mutable.Map[String,(Symbol,String)]()
 		private[this] var emptyPackages = mutable.Set[Symbol]()
 		private[this] var toReload = newReloadMap()

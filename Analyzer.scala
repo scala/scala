@@ -121,6 +121,7 @@ abstract class Compat
 	import global._
 	val LocalChild = global.tpnme.LOCAL_CHILD
 	val Nullary = global.NullaryMethodType
+	val ScalaObjectClass = definitions.ScalaObjectClass	
 
 	private[this] final class MiscCompat
 	{
@@ -128,6 +129,9 @@ abstract class Compat
 		def tpnme = nme
 		def LOCAL_CHILD = nme.LOCALCHILD
 		def LOCALCHILD = sourceCompatibilityOnly
+
+		// in 2.10, ScalaObject was removed
+		def ScalaObjectClass = definitions.ObjectClass
 
 		def NullaryMethodType = NullaryMethodTpe
 
