@@ -173,7 +173,7 @@ private final class CachedCompiler0(args: Array[String], initialLog: WeakLog) ex
 			reporter = null
 		}
 
-		private[this] val ScalaObjectClass = {
+		private[this] lazy val ScalaObjectClass = {
 			// ScalaObject removed in 2.10, so alias it to Object
 			implicit def compat(a: AnyRef): CompatScalaObject = new CompatScalaObject
 			class CompatScalaObject { def ScalaObjectClass = definitions.ObjectClass }
