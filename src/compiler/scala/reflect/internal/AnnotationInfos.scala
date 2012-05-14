@@ -18,8 +18,6 @@ trait AnnotationInfos extends api.AnnotationInfos { self: SymbolTable =>
   // the Symbol's field directly.  For Type, a new AnnotatedType is
   // created which wraps the original type.
   trait Annotatable[Self] {
-    self: Self =>
-
     /** The annotations on this type. */
     def annotations: List[AnnotationInfo]                     // Annotations on this type.
     def setAnnotations(annots: List[AnnotationInfo]): Self    // Replace annotations with argument list.
