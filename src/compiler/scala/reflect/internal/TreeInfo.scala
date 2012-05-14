@@ -221,9 +221,29 @@ abstract class TreeInfo {
     case _ => false
   }
 
+  /**
+   * Named arguments can transform a constructor call into a block, e.g.
+   *   <init>(b = foo, a = bar)
+   * is transformed to
+   *   { val x$1 = foo
+   *     val x$2 = bar
+   *     <init>(x$2, x$1)
+   *   }
+   */
+  def stripNamedApplyBlock(tree: Tree) = tree match {
+    case Block(stats, expr) if stats.forall(_.isInstanceOf[ValDef]) =>
+      expr
+    case _ =>
+      tree
+  }
+  
   /** Is tree a self or super constructor call? */
-  def isSelfOrSuperConstrCall(tree: Tree) =
-    isSelfConstrCall(tree) || isSuperConstrCall(tree)
+  def isSelfOrSuperConstrCall(tree: Tree) = {
+    // stripNamedApply for SI-3584: adaptToImplicitMethod in Typers creates a special context
+    // for implicit search in constructor calls, adaptToImplicitMethod(isSelfOrConstrCall)
+    val tree1 = stripNamedApplyBlock(tree)
+    isSelfConstrCall(tree1) || isSuperConstrCall(tree1)
+  }
 
   /** Is tree a variable pattern? */
   def isVarPattern(pat: Tree): Boolean = pat match {
