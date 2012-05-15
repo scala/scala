@@ -583,6 +583,7 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
   def interpretSynthetic(line: String): IR.Result = interpret(line, true)
   def interpret(line: String, synthetic: Boolean): IR.Result = {
     def loadAndRunReq(req: Request) = {
+      classLoader.setAsContext()
       val (result, succeeded) = req.loadAndRun
 
       /** To our displeasure, ConsoleReporter offers only printMessage,
