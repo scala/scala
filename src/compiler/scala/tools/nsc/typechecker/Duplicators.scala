@@ -144,7 +144,7 @@ abstract class Duplicators extends Analyzer {
         sym
 
     private def invalidate(tree: Tree) {
-      debuglog("attempting to invalidate " + tree.symbol + ", owner - " + (if (tree.symbol ne null) tree.symbol.owner else "<NULL>"))
+      log("attempting to invalidate " + tree.symbol + ", owner - " + (if (tree.symbol ne null) tree.symbol.owner else "<NULL>"))
       if (tree.isDef && tree.symbol != NoSymbol) {
         debuglog("invalid " + tree.symbol)
         invalidSyms(tree.symbol) = tree
@@ -160,12 +160,12 @@ abstract class Duplicators extends Analyzer {
             debuglog("newsym: " + newsym + " info: " + newsym.info)
 
           case vdef @ ValDef(mods, name, _, rhs) if mods.hasFlag(Flags.LAZY) =>
-            debuglog("ValDef " + name + " sym.info: " + vdef.symbol.info)
+            log("ValDef " + name + " sym.info: " + vdef.symbol.info + ", owner: " + vdef.symbol.owner + " vs. context owner: " + context.owner)
             invalidSyms(vdef.symbol) = vdef
             val newsym = vdef.symbol.cloneSymbol(context.owner)
             newsym.setInfo(fixType(vdef.symbol.info))
             vdef.symbol = newsym
-            debuglog("newsym: " + newsym + " info: " + newsym.info)
+            log("newsym: " + newsym + " info: " + newsym.info + ", " + newsym.owner + ", whereas symbol.owner is: " + vdef.symbol.owner)
 
           case DefDef(_, name, tparams, vparamss, _, rhs) =>
             // invalidate parameters
@@ -245,7 +245,7 @@ abstract class Duplicators extends Analyzer {
           super.typed(tree, mode, pt)
 
         case ClassDef(_, _, _, tmpl @ Template(parents, _, stats)) =>
-          // log("invalidating classdef " + tree.tpe)
+          log("invalidating classdef " + tree.tpe)
           tmpl.symbol = tree.symbol.newLocalDummy(tree.pos)
           invalidate(stats)
           tree.tpe = null
@@ -257,6 +257,7 @@ abstract class Duplicators extends Analyzer {
           super.typed(ddef, mode, pt)
 
         case vdef @ ValDef(mods, name, tpt, rhs) =>
+          log("vdef: " + vdef)
           // log("vdef fixing tpe: " + tree.tpe + " with sym: " + tree.tpe.typeSymbol + " and " + invalidSyms)
           //if (mods.hasFlag(Flags.LAZY)) vdef.symbol.resetFlag(Flags.MUTABLE) // Martin to Iulian: lazy vars can now appear because they are no longer boxed; Please check that deleting this statement is OK.
           vdef.tpt.tpe = fixType(vdef.tpt.tpe)
@@ -358,11 +359,15 @@ abstract class Duplicators extends Analyzer {
           tree
 
         case _ =>
-          debuglog("Duplicators default case: " + tree.summaryString)
+          log("Duplicators default case: " + tree.summaryString)
           if (tree.hasSymbol && tree.symbol != NoSymbol && (tree.symbol.owner == definitions.AnyClass)) {
             tree.symbol = NoSymbol // maybe we can find a more specific member in a subclass of Any (see AnyVal members, like ==)
           }
           tree.tpe = null
+          tree match {
+            case Select(q, n) => log("Select: " + q + ", " + n + " = " + q.tpe.member(n) + ", members: " + q.tpe.members)
+            case _ => log(tree.getClass)
+          }
           super.typed(tree, mode, pt)
       }
     }
