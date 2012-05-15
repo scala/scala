@@ -138,7 +138,11 @@ trait AnnotationInfos extends api.AnnotationInfos { self: SymbolTable =>
     // necessary for reification, see Reifiers.scala for more info
     private var orig: Tree = EmptyTree
     def original = orig
-    def setOriginal(t: Tree): this.type = { orig = t; this }
+    def setOriginal(t: Tree): this.type = {
+      orig = t
+      this setPos t.pos
+      this
+    }
 
     override def toString = (
       atp +
