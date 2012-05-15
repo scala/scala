@@ -438,7 +438,7 @@ object Array extends FallbackArrayBuilding {
  *  Arrays make use of two common pieces of Scala syntactic sugar, shown on lines 2 and 3 of the above
  *  example code.
  *  Line 2 is translated into a call to `apply(Int)`, while line 3 is translated into a call to
- *  `update(Int, T)`. For more information on these transformations, see the
+ *  `update(Int, T)`.
  *  
  *  Two implicit conversions exist in [[scala.Predef]] that are frequently applied to arrays: a conversion
  *  to [[scala.collection.mutable.ArrayOps]] (shown on line 4 of the example above) and a conversion
