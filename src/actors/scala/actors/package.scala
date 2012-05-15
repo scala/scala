@@ -7,7 +7,7 @@ package scala
  * == Guide ==
  *
  * A detailed guide for the actors library is available
- * [[http://www.scala-lang.org/docu/files/actors-api/actors_api_guide.html#]].
+ * [[http://docs.scala-lang.org/overviews/core/actors.html]].
  *
  * == Getting Started ==
  *

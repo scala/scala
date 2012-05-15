@@ -92,8 +92,8 @@ sealed abstract class Try[+T] {
   def andThen[U](f: T => Try[U]): Try[U] = flatMap(f)
 
   /**
-   * Transforms a nested `Try`, i.e., a `Try` of type `Try[Try[T]]`,
-   * into an un-nested `Try`, i.e., a `Try` of type `Try[T]`.
+   * Transforms a nested `Try`, ie, a `Try` of type `Try[Try[T]]`,
+   * into an un-nested `Try`, ie, a `Try` of type `Try[T]`.
    */
   def flatten[U](implicit ev: T <:< Try[U]): Try[U]
 
