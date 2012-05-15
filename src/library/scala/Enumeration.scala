@@ -113,8 +113,8 @@ abstract class Enumeration (initial: Int) extends Serializable {
     * enumeration, but no higher than 0. */
   private var bottomId = if(initial < 0) initial else 0
 
-  /** The highest integer amongst those used to identify values in this
-    * enumeration. */
+  /** The one higher than the highest integer amongst those used to identify
+    *  values in this enumeration. */
   final def maxId = topId
 
   /** The value of this enumeration with given id `x`
