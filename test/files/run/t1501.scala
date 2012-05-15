@@ -30,7 +30,7 @@ object Test {
   def main(args: Array[String]) = {
     val settings = new Settings()
     settings.classpath.value = System.getProperty("java.class.path")
-    val tool = new Interpreter(settings)
+    val tool = new interpreter.IMain(settings)
     val global = tool.compiler
 
     import global._

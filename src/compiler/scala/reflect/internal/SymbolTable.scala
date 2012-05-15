@@ -13,9 +13,7 @@ import scala.tools.nsc.util.WeakHashSet
 abstract class SymbolTable extends api.Universe
                               with Collections
                               with Names
-                              with SymbolCreations
                               with Symbols
-                              with SymbolFlags
                               with FreeVars
                               with Types
                               with Kinds

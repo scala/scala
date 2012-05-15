@@ -22,7 +22,6 @@ trait InteractiveReader {
 
   def history: History
   def completion: Completion
-  def keyBindings: List[KeyBinding]
   def eraseLine(): Unit
   def redrawLine(): Unit
   def currentLine: String

@@ -308,9 +308,6 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
     _classLoader
   }
   private class TranslatingClassLoader(parent: ClassLoader) extends AbstractFileClassLoader(virtualDirectory, parent) {
-    private[IMain] var traceClassLoading = isReplTrace
-    override protected def trace = super.trace || traceClassLoading
-
     /** Overridden here to try translating a simple name to the generated
      *  class name if the original attempt fails.  This method is used by
      *  getResourceAsStream as well as findClass.

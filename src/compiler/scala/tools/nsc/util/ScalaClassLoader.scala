@@ -24,14 +24,6 @@ trait HasClassPath {
  *  of java reflection.
  */
 trait ScalaClassLoader extends JClassLoader {
-  /** Override to see classloader activity traced */
-  protected def trace: Boolean = false
-  protected lazy val classLoaderUniqueId = "Cl#" + System.identityHashCode(this)
-  protected def classLoaderLog(msg: => String) {
-    if (trace)
-      Console.err.println("[" + classLoaderUniqueId + "] " + msg)
-  }
-
   /** Executing an action with this classloader as context classloader */
   def asContext[T](action: => T): T = {
     val saved = contextLoader
@@ -52,18 +44,6 @@ trait ScalaClassLoader extends JClassLoader {
   /** Create an instance of a class with this classloader */
   def create(path: String): AnyRef =
     tryToInitializeClass[AnyRef](path) map (_.newInstance()) orNull
-
-  override def findClass(name: String) = {
-    val result = super.findClass(name)
-    classLoaderLog("findClass(%s) = %s".format(name, result))
-    result
-  }
-
-  override def loadClass(name: String, resolve: Boolean) = {
-    val result = super.loadClass(name, resolve)
-    classLoaderLog("loadClass(%s, %s) = %s".format(name, resolve, result))
-    result
-  }
 
   def constructorsOf[T <: AnyRef : ClassTag]: List[Constructor[T]] =
     classTag[T].erasure.getConstructors.toList map (_.asInstanceOf[Constructor[T]])
@@ -98,7 +78,6 @@ trait ScalaClassLoader extends JClassLoader {
     case null => Nil
     case p    => p.loaderChain
   })
-  override def toString = classLoaderUniqueId
 }
 
 /** Methods for obtaining various classloaders.
@@ -171,7 +150,7 @@ object ScalaClassLoader {
       classloaderURLs :+= url
       super.addURL(url)
     }
-    def toLongString = urls.mkString("URLClassLoader(id=" + classLoaderUniqueId + "\n  ", "\n  ", "\n)\n")
+    def toLongString = urls.mkString("URLClassLoader(\n  ", "\n  ", "\n)\n")
   }
 
   def fromURLs(urls: Seq[URL], parent: ClassLoader = null): URLClassLoader =

@@ -17,28 +17,8 @@ import scala.util.control.ControlThrowable
 trait CodeHandlers[T] {
   self =>
 
-/*
-  // A declaration introduces names and assigns them types.
-  // It can form part of a class definition (§5.1) or of a refinement in a compound type (§3.2.7).
-  // (Ed: aka abstract members.)
-  //
-  // ‘val’ ValDcl | ‘var’ VarDcl | ‘def’ FunDcl | ‘type’ {nl} TypeDcl
-  def decl(code: String): T
-
-  // A definition introduces names that denote terms or types.
-  // It can form part of an object or class definition or it can be local to a block.
-  // (Ed: aka concrete members.)
-  //
-  // ‘val’ PatDef | ‘var’ VarDef | ‘def’ FunDef | ‘type’ {nl} TypeDef |
-  // [‘case’] ‘class’ ClassDef | [‘case’] ‘object’ ObjectDef | ‘trait’ TraitDef
-  def defn(code: String): T
-*/
-
   // Expressions are composed of operators and operands.
   def expr(code: String): T
-
-  // An import clause has the form import p.I where p is a stable identifier (§3.1) and I is an import expression.
-  def impt(code: String): T
 
   // Statements occur as parts of blocks and templates.
   // A statement can be an import, a definition or an expression, or it can be empty.
@@ -54,10 +34,7 @@ trait CodeHandlers[T] {
       case _: NoSuccess => Nil
     }
 
-    // def decl(code: String)   = try Some(self.decl(code)) catch handler
-    // def defn(code: String)   = try Some(self.defn(code)) catch handler
     def expr(code: String)   = try Some(self.expr(code)) catch handler
-    def impt(code: String)   = try Some(self.impt(code)) catch handler
     def stmt(code: String)   = try Some(self.stmt(code)) catch handler
     def stmts(code: String)  = try (self.stmts(code) map (x => Some(x))) catch handlerSeq
   }

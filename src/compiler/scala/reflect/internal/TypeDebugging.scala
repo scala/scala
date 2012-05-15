@@ -50,33 +50,6 @@ trait TypeDebugging {
       def refine(defs: Scope): String          = defs.toList.mkString("{", " ;\n ", "}")
     }
 
-    def dump(tp: Type): Unit = {
-      println("** " + tp + " / " + tp.getClass + " **")
-      import tp._
-
-      println("typeSymbol = " + typeSymbol)
-      println("termSymbol = " + termSymbol)
-      println("widen = " + widen)
-      println("deconst = " + deconst)
-      println("typeOfThis = " + typeOfThis)
-      println("bounds = " + bounds)
-      println("parents = " + parents)
-      println("prefixChain = " + prefixChain)
-      println("typeConstructor = " + typeConstructor)
-      println(" .. typeConstructor.typeParams = " + typeConstructor.typeParams)
-      println(" .. _.variance = " + (typeConstructor.typeParams map (_.variance)))
-      println("typeArgs = " + typeArgs)
-      println("resultType = " + resultType)
-      println("finalResultType = " + finalResultType)
-      println("paramss = " + paramss)
-      println("paramTypes = " + paramTypes)
-      println("typeParams = " + typeParams)
-      println("boundSyms = " + boundSyms)
-      println("baseTypeSeq = " + baseTypeSeq)
-      println("baseClasses = " + baseClasses)
-      println("toLongString = " + toLongString)
-    }
-
     private def debug(tp: Type): String = tp match {
       case TypeRef(pre, sym, args)             => debug(pre) + "." + sym.nameString + str.tparams(args)
       case ThisType(sym)                       => sym.nameString + ".this"

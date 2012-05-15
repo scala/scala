@@ -147,7 +147,7 @@ def f(e: Exp) = e match {{  // non-exhaustive warning here
   def appendix() = {
     val settings = new Settings
     settings.classpath.value = sys.props("java.class.path")
-    val interp = new Interpreter(settings)
+    val interp = new interpreter.IMain(settings)
     interp.interpret("def plusOne(x: Int) = x + 1")
     interp.interpret("plusOne(5)")
     interp.reset()

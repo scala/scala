@@ -11,15 +11,6 @@ import scala.PartialFunction.cond
 import scala.reflect.internal.Chars
 
 trait ReplStrings {
-  // Longest common prefix
-  def longestCommonPrefix(xs: List[String]): String = {
-    if (xs.isEmpty || xs.contains("")) ""
-    else xs.head.head match {
-      case ch =>
-        if (xs.tail forall (_.head == ch)) "" + ch + longestCommonPrefix(xs map (_.tail))
-        else ""
-    }
-  }
   /** Convert a string into code that can recreate the string.
    *  This requires replacing all special characters by escape
    *  codes. It does not add the surrounding " marks.  */

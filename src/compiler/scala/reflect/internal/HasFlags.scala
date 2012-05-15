@@ -75,70 +75,41 @@ trait HasFlags {
    *  flag carrying entity.
    */
   def resolveOverloadedFlag(flag: Long): String = Flags.flagToString(flag)
-  
-  def privateWithinString = if (hasAccessBoundary) privateWithin.toString else ""
-
-  protected def isSetting(f: Long, mask: Long)  = !hasFlag(f) && ((mask & f) != 0L)
-  protected def isClearing(f: Long, mask: Long) =  hasFlag(f) && ((mask & f) != 0L)
 
   // Tests which come through cleanly: both Symbol and Modifiers use these
   // identically, testing for a single flag.
-  def isCase      = hasFlag(CASE     )
-  def isFinal     = hasFlag(FINAL    )
-  def isImplicit  = hasFlag(IMPLICIT )
-  def isLazy      = hasFlag(LAZY     )
-  def isMutable   = hasFlag(MUTABLE  )  // in Modifiers, formerly isVariable
-  def isOverride  = hasFlag(OVERRIDE )
-  def isPrivate   = hasFlag(PRIVATE  )
-  def isProtected = hasFlag(PROTECTED)
-  def isSynthetic = hasFlag(SYNTHETIC)
-  def isInterface = hasFlag(INTERFACE)
-
-  // Newly introduced based on having a reasonably obvious clean translation.
-  def isPrivateLocal   = hasAllFlags(PrivateLocal)
-  def isProtectedLocal = hasAllFlags(ProtectedLocal)
-  def isParamAccessor  = hasFlag(PARAMACCESSOR)
-  def isCaseAccessor   = hasFlag(CASEACCESSOR)
-  def isSuperAccessor  = hasFlag(SUPERACCESSOR)
-  def isLifted         = hasFlag(LIFTED)
-
-  // Formerly the Modifiers impl did not include the access boundary check,
-  // which must have been a bug.
-  def isPublic = hasNoFlags(PRIVATE | PROTECTED) && !hasAccessBoundary
-
-  // Removed isClass qualification since the flag isn't overloaded and
-  // sym.isClass is enforced in Namers#validate.
-  def isSealed = hasFlag(SEALED)
-
-  // Removed !isClass qualification since the flag isn't overloaded.
-  def isDeferred = hasFlag(DEFERRED)
-
-  // Dropped isTerm condition because flag isn't overloaded.
+  def hasAbstractFlag    = hasFlag(ABSTRACT)
+  def hasAccessorFlag    = hasFlag(ACCESSOR)
+  def hasDefault         = hasAllFlags(DEFAULTPARAM | PARAM)
+  def hasLocalFlag       = hasFlag(LOCAL)
+  def hasModuleFlag      = hasFlag(MODULE)
+  def hasPackageFlag     = hasFlag(PACKAGE)
+  def hasStableFlag      = hasFlag(STABLE)
+  def hasStaticFlag      = hasFlag(STATIC)
   def isAbstractOverride = hasFlag(ABSOVERRIDE)
-  def isAnyOverride = hasFlag(OVERRIDE | ABSOVERRIDE)
-
-  // Disambiguating: DEFAULTPARAM, TRAIT
-  def hasDefault     = hasAllFlags(DEFAULTPARAM | PARAM)
-  def isTrait        = hasFlag(TRAIT) && !hasFlag(PARAM)
-
-  // Straightforwardly named accessors already being used differently.
-  // These names are most likely temporary.
-  def hasAbstractFlag      = hasFlag(ABSTRACT)
-  def hasAccessorFlag      = hasFlag(ACCESSOR)
-  def hasLocalFlag         = hasFlag(LOCAL)
-  def hasModuleFlag        = hasFlag(MODULE)
-  def hasPackageFlag       = hasFlag(PACKAGE)
-  def hasStableFlag        = hasFlag(STABLE)
-  def hasStaticFlag        = hasFlag(STATIC)
-
-  // Disambiguating: LABEL, CONTRAVARIANT, INCONSTRUCTOR
-  def isLabel = hasAllFlags(LABEL | METHOD) && !hasAccessorFlag
-  // Cannot effectively disambiguate the others at this level.
-  def hasContravariantFlag = hasFlag(CONTRAVARIANT)
-  def hasInConstructorFlag = hasFlag(INCONSTRUCTOR)
-
-  // Name
-  def isJavaDefined = hasFlag(JAVA)
+  def isAnyOverride      = hasFlag(OVERRIDE | ABSOVERRIDE)
+  def isCase             = hasFlag(CASE)
+  def isCaseAccessor     = hasFlag(CASEACCESSOR)
+  def isDeferred         = hasFlag(DEFERRED)
+  def isFinal            = hasFlag(FINAL)
+  def isImplicit         = hasFlag(IMPLICIT)
+  def isInterface        = hasFlag(INTERFACE)
+  def isJavaDefined      = hasFlag(JAVA)
+  def isLabel            = hasAllFlags(LABEL | METHOD) && !hasAccessorFlag
+  def isLazy             = hasFlag(LAZY)
+  def isLifted           = hasFlag(LIFTED)
+  def isMutable          = hasFlag(MUTABLE)
+  def isOverride         = hasFlag(OVERRIDE)
+  def isParamAccessor    = hasFlag(PARAMACCESSOR)
+  def isPrivate          = hasFlag(PRIVATE)
+  def isPrivateLocal     = hasAllFlags(PrivateLocal)
+  def isProtected        = hasFlag(PROTECTED)
+  def isProtectedLocal   = hasAllFlags(ProtectedLocal)
+  def isPublic           = hasNoFlags(PRIVATE | PROTECTED) && !hasAccessBoundary
+  def isSealed           = hasFlag(SEALED)
+  def isSuperAccessor    = hasFlag(SUPERACCESSOR)
+  def isSynthetic        = hasFlag(SYNTHETIC)
+  def isTrait            = hasFlag(TRAIT) && !hasFlag(PARAM)
 
   def flagBitsToString(bits: Long): String = {
     // Fast path for common case
@@ -162,7 +133,7 @@ trait HasFlags {
   }
 
   def accessString: String = {
-    val pw = privateWithinString
+    val pw = if (hasAccessBoundary) privateWithin.toString else ""
     
     if (pw == "") {
       if (hasAllFlags(PrivateLocal)) "private[this]"
@@ -188,8 +159,6 @@ trait HasFlags {
   def hasTraitFlag = hasFlag(TRAIT)
   @deprecated("Use hasDefault", "2.10.0")
   def hasDefaultFlag = hasFlag(DEFAULTPARAM)
-  @deprecated("", "2.9.0")
-  def isAbstract = hasFlag(ABSTRACT)
   @deprecated("Use isValueParameter or isTypeParameter", "2.10.0")
   def isParameter = hasFlag(PARAM)
   @deprecated("Use flagString", "2.10.0")

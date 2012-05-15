@@ -157,8 +157,6 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
   abstract class Symbol protected[Symbols] (initOwner: Symbol, initPos: Position, initName: Name)
           extends AbsSymbolImpl
              with HasFlags
-             with SymbolFlagLogic
-             with SymbolCreator
              with Annotatable[Symbol] {
 
     type AccessBoundaryType = Symbol
@@ -207,6 +205,36 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
         }
       }
     }
+
+    def rawFlagString(mask: Long): String = calculateFlagString(rawflags & mask)
+    def rawFlagString: String             = rawFlagString(flagMask)
+    def debugFlagString: String           = flagString(AllFlags)
+
+    /** String representation of symbol's variance */
+    def varianceString: String =
+      if (variance == 1) "+"
+      else if (variance == -1) "-"
+      else ""
+
+    override def flagMask =
+      if (settings.debug.value && !isAbstractType) AllFlags
+      else if (owner.isRefinementClass) ExplicitFlags & ~OVERRIDE
+      else ExplicitFlags
+
+    // make the error message more googlable
+    def flagsExplanationString =
+      if (isGADTSkolem) " (this is a GADT skolem)"
+      else ""
+
+    def shortSymbolClass = getClass.getName.split('.').last.stripPrefix("Symbols$")
+    def symbolCreationString: String = (
+      "%s%25s | %-40s | %s".format(
+        if (settings.uniqid.value) "%06d | ".format(id) else "",
+        shortSymbolClass,
+        name.decode + " in " + owner,
+        rawFlagString
+      )
+    )
 
     /** !!! The logic after "hasFlag" is far too opaque to be unexplained.
      *  I'm guessing it's attempting to compensate for flag overloading,
@@ -619,15 +647,15 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
       && owner.isPackageClass
       && nme.isReplWrapperName(name)
     )
-    @inline final override def getFlag(mask: Long): Long = flags & mask
+    @inline final def getFlag(mask: Long): Long = flags & mask
     /** Does symbol have ANY flag in `mask` set? */
-    @inline final override def hasFlag(mask: Long): Boolean = (flags & mask) != 0
+    @inline final def hasFlag(mask: Long): Boolean = (flags & mask) != 0
     /** Does symbol have ALL the flags in `mask` set? */
-    @inline final override def hasAllFlags(mask: Long): Boolean = (flags & mask) == mask
+    @inline final def hasAllFlags(mask: Long): Boolean = (flags & mask) == mask
 
-    override def setFlag(mask: Long): this.type   = { _rawflags |= mask ; this }
-    override def resetFlag(mask: Long): this.type = { _rawflags &= ~mask ; this }
-    override def resetFlags() { rawflags &= TopLevelCreationFlags }
+    def setFlag(mask: Long): this.type   = { _rawflags |= mask ; this }
+    def resetFlag(mask: Long): this.type = { _rawflags &= ~mask ; this }
+    def resetFlags() { rawflags &= TopLevelCreationFlags }
 
     /** Default implementation calls the generic string function, which
      *  will print overloaded flags as <flag1/flag2/flag3>.  Subclasses
@@ -638,7 +666,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     /** Set the symbol's flags to the given value, asserting
      *  that the previous value was 0.
      */
-    override def initFlags(mask: Long): this.type = {
+    def initFlags(mask: Long): this.type = {
       assert(rawflags == 0L, symbolCreationString)
       _rawflags = mask
       this
@@ -1083,6 +1111,44 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
 
     protected def createValueMemberSymbol(name: TermName, pos: Position, newFlags: Long): TermSymbol =
       new TermSymbol(this, pos, name) initFlags newFlags
+
+    final def newTermSymbol(name: TermName, pos: Position = NoPosition, newFlags: Long = 0L): TermSymbol = {
+      if ((newFlags & METHOD) != 0)
+        createMethodSymbol(name, pos, newFlags)
+      else if ((newFlags & PACKAGE) != 0)
+        createPackageSymbol(name, pos, newFlags | PackageFlags)
+      else if ((newFlags & MODULE) != 0)
+        createModuleSymbol(name, pos, newFlags)
+      else if ((newFlags & PARAM) != 0)
+        createValueParameterSymbol(name, pos, newFlags)
+      else
+        createValueMemberSymbol(name, pos, newFlags)
+    }
+
+    final def newClassSymbol(name: TypeName, pos: Position = NoPosition, newFlags: Long = 0L): ClassSymbol = {
+      if (name == tpnme.REFINE_CLASS_NAME)
+        createRefinementClassSymbol(pos, newFlags)
+      else if ((newFlags & PACKAGE) != 0)
+        createPackageClassSymbol(name, pos, newFlags | PackageFlags)
+      else if (name == tpnme.PACKAGE)
+        createPackageObjectClassSymbol(pos, newFlags)
+      else if ((newFlags & MODULE) != 0)
+        createModuleClassSymbol(name, pos, newFlags)
+      else if ((newFlags & IMPLCLASS) != 0)
+        createImplClassSymbol(name, pos, newFlags)
+      else
+        createClassSymbol(name, pos, newFlags)
+    }
+
+    final def newNonClassSymbol(name: TypeName, pos: Position = NoPosition, newFlags: Long = 0L): TypeSymbol = {
+      if ((newFlags & DEFERRED) != 0)
+        createAbstractTypeSymbol(name, pos, newFlags)
+      else
+        createAliasTypeSymbol(name, pos, newFlags)
+    }
+
+    def newTypeSymbol(name: TypeName, pos: Position = NoPosition, newFlags: Long = 0L): TypeSymbol =
+      newNonClassSymbol(name, pos, newFlags)
 
     /** The class or term up to which this symbol is accessible,
      *  or RootClass if it is public.  As java protected statics are

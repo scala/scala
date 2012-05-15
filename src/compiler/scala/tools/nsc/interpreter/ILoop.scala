@@ -103,16 +103,6 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
 
   def isAsync = !settings.Yreplsync.value
   lazy val power = new Power(intp, new StdReplVals(this))
-
-  // TODO
-  // object opt extends AestheticSettings
-  //
-  @deprecated("Use `intp` instead.", "2.9.0")
-  def interpreter = intp
-
-  @deprecated("Use `intp` instead.", "2.9.0")
-  def interpreter_= (i: Interpreter): Unit = intp = i
-
   def history = in.history
 
   /** The context class loader at the time this object was created */
@@ -264,14 +254,12 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
     cmd("imports", "[name name ...]", "show import history, identifying sources of names", importsCommand),
     cmd("implicits", "[-v]", "show the implicits in scope", implicitsCommand),
     cmd("javap", "<path|class>", "disassemble a file or class name", javapCommand),
-    nullary("keybindings", "show how ctrl-[A-Z] and other keys are bound", keybindingsCommand),
     cmd("load", "<path>", "load and interpret a Scala file", loadCommand),
     nullary("paste", "enter paste mode: all input up to ctrl-D compiled together", pasteCommand),
     nullary("power", "enable power user mode", powerCmd),
     nullary("quit", "exit the interpreter", () => Result(false, None)),
     nullary("replay", "reset execution and replay all previous commands", replay),
     nullary("reset", "reset the repl to its initial state, forgetting all session entries", resetCommand),
-    // nullary("reset", "reset the interpreter, forgetting session values but retaining session types", replay),
     shCommand,
     nullary("silent", "disable/enable automatic printing of results", verbosity),
     cmd("type", "[-v] <expr>", "display the type of an expression without evaluating it", typeCommand),
@@ -280,31 +268,7 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
 
   /** Power user commands */
   lazy val powerCommands: List[LoopCommand] = List(
-    nullary("dump", "displays a view of the interpreter's internal state", dumpCommand),
-    nullary("vals", "gives information about the power mode repl vals", valsCommand),
-    cmd("phase", "<phase>", "set the implicit phase for power commands", phaseCommand),
-    cmd("wrap", "<method>", "name of method to wrap around each repl line", wrapCommand) withLongHelp ("""
-      |:wrap
-      |:wrap clear
-      |:wrap <method>
-      |
-      |Installs a wrapper around each line entered into the repl.
-      |Currently it must be the simple name of an existing method
-      |with the specific signature shown in the following example.
-      |
-      |def timed[T](body: => T): T = {
-      |  val start = System.nanoTime
-      |  try body
-      |  finally println((System.nanoTime - start) + " nanos elapsed.")
-      |}
-      |:wrap timed
-      |
-      |If given no argument, :wrap names the wrapper installed.
-      |An argument of clear will remove the wrapper if any is active.
-      |Note that wrappers do not compose (a new one replaces the old
-      |one) and also that the :phase command uses the same machinery,
-      |so setting :wrap will clear any :phase setting.
-    """.stripMargin.trim)
+    cmd("phase", "<phase>", "set the implicit phase for power commands", phaseCommand)
   )
 
   private def dumpCommand(): Result = {
@@ -485,14 +449,7 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
         else res.show()
       }
   }
-  private def keybindingsCommand(): Result = {
-    if (in.keyBindings.isEmpty) "Key bindings unavailable."
-    else {
-      echo("Reading jline properties for default key bindings.")
-      echo("Accuracy not guaranteed: treat this as a guideline only.\n")
-      in.keyBindings foreach (x => echo ("" + x))
-    }
-  }
+
   private def wrapCommand(line: String): Result = {
     def failMsg = "Argument to :wrap must be the name of a method with signature [T](=> T): T"
     onIntp { intp =>
@@ -516,10 +473,7 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
               intp setExecutionWrapper intp.pathToTerm(wrapper)
               "Set wrapper to '" + wrapper + "'"
             case tp =>
-              failMsg + (
-                if (tp == NoType) "\nFound: <unknown>"
-                else "\nFound: <unknown>"
-              )
+              failMsg + "\nFound: <unknown>"
           }
         case _ => failMsg
       }
@@ -528,18 +482,6 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
 
   private def pathToPhaseWrapper = intp.pathToTerm("$r") + ".phased.atCurrent"
   private def phaseCommand(name: String): Result = {
-    // This line crashes us in TreeGen:
-    //
-    //   if (intp.power.phased set name) "..."
-    //
-    // Exception in thread "main" java.lang.AssertionError: assertion failed: ._7.type
-    //  at scala.Predef$.assert(Predef.scala:99)
-    //  at scala.tools.nsc.ast.TreeGen.mkAttributedQualifier(TreeGen.scala:69)
-    //  at scala.tools.nsc.ast.TreeGen.mkAttributedQualifier(TreeGen.scala:44)
-    //  at scala.tools.nsc.ast.TreeGen.mkAttributedRef(TreeGen.scala:101)
-    //  at scala.tools.nsc.ast.TreeGen.mkAttributedStableRef(TreeGen.scala:143)
-    //
-    // But it works like so, type annotated.
     val phased: Phased = power.phased
     import phased.NoPhaseName
 
@@ -815,10 +757,6 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
       })
     }
 
-    def runCompletion =
-      try in.completion execute code map (intp bindSyntheticValue _)
-      catch { case ex: Exception => None }
-
     /** Here we place ourselves between the user and the interpreter and examine
      *  the input they are ostensibly submitting.  We intervene in several cases:
      *
@@ -840,25 +778,8 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
       // line comment, do nothing
       None
     }
-    /** Due to my accidentally letting file completion execution sneak ahead
-     *  of actual parsing this now operates in such a way that the scala
-     *  interpretation always wins.  However to avoid losing useful file
-     *  completion I let it fail and then check the others.  So if you
-     *  type /tmp it will echo a failure and then give you a Directory object.
-     *  It's not pretty: maybe I'll implement the silence bits I need to avoid
-     *  echoing the failure.
-     */
-    else if (intp isParseable code) {
-      val (code, result) = reallyInterpret
-      if (power != null && code == IR.Error)
-        runCompletion
-
-      result
-    }
-    else runCompletion match {
-      case Some(_)  => None // completion hit: avoid the latent error
-      case _        => reallyInterpret._2  // trigger the latent error
-    }
+    else
+      reallyInterpret._2
   }
 
   // runs :load `file` on any files passed via -i
@@ -937,7 +858,7 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
 
   /** process command-line arguments and do as they request */
   def process(args: Array[String]): Boolean = {
-    val command = new CommandLine(args.toList, msg => echo("scala: " + msg))
+    val command = new CommandLine(args.toList, echo)
     def neededHelp(): String =
       (if (command.settings.help.value) command.usageMsg + "\n" else "") +
       (if (command.settings.Xhelp.value) command.xusageMsg + "\n" else "")
@@ -948,16 +869,6 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
       case help   => echoNoNL(help) ; true
     }
   }
-
-  @deprecated("Use `process` instead", "2.9.0")
-  def main(args: Array[String]): Unit = {
-    if (isReplDebug)
-      System.out.println(new java.util.Date)
-
-    process(args)
-  }
-  @deprecated("Use `process` instead", "2.9.0")
-  def main(settings: Settings): Unit = process(settings)
 }
 
 object ILoop {
@@ -1019,32 +930,4 @@ object ILoop {
     }
   }
   def run(lines: List[String]): String = run(lines map (_ + "\n") mkString)
-
-  // provide the enclosing type T
-  // in order to set up the interpreter's classpath and parent class loader properly
-  def breakIf[T: ClassTag](assertion: => Boolean, args: NamedParam*): Unit =
-    if (assertion) break[T](args.toList)
-
-  // start a repl, binding supplied args
-  def break[T: ClassTag](args: List[NamedParam]): Unit = savingContextLoader {
-    val msg = if (args.isEmpty) "" else "  Binding " + args.size + " value%s.".format(
-      if (args.size == 1) "" else "s"
-    )
-    echo("Debug repl starting." + msg)
-    val repl = new ILoop {
-      override def prompt = "\ndebug> "
-    }
-    repl.settings = new Settings(echo)
-    repl.settings.embeddedDefaults[T]
-    repl.createInterpreter()
-    repl.in = new JLineReader(new JLineCompletion(repl))
-
-    // rebind exit so people don't accidentally call sys.exit by way of predef
-    repl.quietRun("""def exit = println("Type :quit to resume program execution.")""")
-    args foreach (p => repl.bind(p.name, p.tpe, p.value))
-    repl.loop()
-
-    echo("\nDebug repl exiting.")
-    repl.closeInterpreter()
-  }
 }

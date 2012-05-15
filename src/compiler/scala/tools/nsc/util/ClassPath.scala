@@ -9,7 +9,7 @@ package util
 
 import java.net.URL
 import scala.collection.{ mutable, immutable }
-import io.{ File, Directory, Path, Jar, AbstractFile, ClassAndJarInfo }
+import io.{ File, Directory, Path, Jar, AbstractFile }
 import scala.tools.util.StringOps.splitWhere
 import Jar.isJarOrZip
 import File.pathSeparator
@@ -23,16 +23,6 @@ import java.net.MalformedURLException
  *  @author Stepan Koltsov
  */
 object ClassPath {
-  def scalaLibrary  = locate[Option[_]]
-  def scalaCompiler = locate[Global]
-
-  def infoFor[T](value: T)     = info(value.getClass)
-  def info[T](clazz: Class[T]) = new ClassAndJarInfo()(ClassTag[T](clazz))
-  def info[T: ClassTag]        = new ClassAndJarInfo[T]
-  def locate[T: ClassTag]      = info[T].rootClasspath
-  def locateJar[T: ClassTag]   = info[T].rootPossibles find (x => isJarOrZip(x)) map (x => File(x))
-  def locateDir[T: ClassTag]   = info[T].rootPossibles find (_.isDirectory) map (_.toDirectory)
-
   /** Expand single path entry */
   private def expandS(pattern: String): List[String] = {
     val wildSuffix = File.separator + "*"
@@ -53,26 +43,6 @@ object ClassPath {
     }
     else List(pattern)
   }
-
-  /** Return duplicated classpath entries as
-   *    (name, list of origins)
-   *  in the order they occur on the path.
-   */
-  // def findDuplicates(cp: ClassPath[_]) = {
-  //   def toFullName(x: (String, _, cp.AnyClassRep)) = x._1 + "." + x._3.name
-  //   def toOriginString(x: ClassPath[_]) = x.origin getOrElse x.name
-  //
-  //   /** Flatten everything into tuples, recombine grouped by name, filter down to 2+ entries. */
-  //   val flattened = (
-  //     for ((pkgName, pkg) <- cp.allPackagesWithNames ; clazz <- pkg.classes) yield
-  //       (pkgName, pkg, clazz)
-  //   )
-  //   val multipleAppearingEntries = flattened groupBy toFullName filter (_._2.size > 1)
-  //
-  //   /** Extract results. */
-  //   for (name <- flattened map toFullName distinct ; dups <- multipleAppearingEntries get name) yield
-  //     (name, dups map { case (_, cp, _) => toOriginString(cp) })
-  // }
 
   /** Split classpath using platform-dependent path separator */
   def split(path: String): List[String] = (path split pathSeparator).toList filterNot (_ == "") distinct
@@ -239,26 +209,6 @@ abstract class ClassPath[T] {
   def classes: IndexedSeq[AnyClassRep]
   def packages: IndexedSeq[ClassPath[T]]
   def sourcepaths: IndexedSeq[AbstractFile]
-
-  /** Information which entails walking the tree.  This is probably only
-   *  necessary for tracking down problems - it's normally not used.
-   */
-  // def allPackages: List[ClassPath[T]] = packages ::: (packages flatMap (_.allPackages))
-  // def allPackageNames: List[String] = {
-  //   def subpackages(prefix: String, cp: ClassPath[T]): List[String] = (
-  //     (cp.packages map (prefix + _.name)) :::
-  //     (cp.packages flatMap (x => subpackages(prefix + x.name + ".", x)))
-  //   )
-  //   subpackages("", this)
-  // }
-  // def allPackagesWithNames: List[(String, ClassPath[T])] = {
-  //   val root = packages map (p => p.name -> p)
-  //   val subs =
-  //     for ((prefix, p) <- root ; (k, v) <- p.allPackagesWithNames) yield
-  //       (prefix + "." + k, v)
-  //
-  //   root ::: subs
-  // }
 
   /**
    * Represents classes which can be loaded with a ClassfileLoader/MsilFileLoader
@@ -431,41 +381,10 @@ extends ClassPath[T] {
     }
     new MergedClassPath[T](newEntries, context)
   }
-  //
-  // override def allPackages: List[ClassPath[T]] = entries flatMap (_.allPackages)
-  // override def allPackageNames = entries flatMap (_.allPackageNames)
-  // override def allPackagesWithNames = entries flatMap (_.allPackagesWithNames)
-  //
-  // def duplicatedClasses = {
-  //   def toFullName(x: (String, _, AnyClassRep)) = x._1 + "." + x._3.name
-  //
-  //   /** Flatten everything into tuples, recombine grouped by name, filter down to 2+ entries. */
-  //   val flattened = (
-  //     for ((pkgName, pkg) <- allPackagesWithNames ; clazz <- pkg.classes) yield
-  //       (pkgName, pkg, clazz)
-  //   )
-  //   val multipleAppearingEntries = flattened groupBy toFullName filter (_._2.size > 1)
-  //
-  //   /** Using original name list as reference point, return duplicated entries as
-  //    *    (name, list of origins)
-  //    *  in the order they occur on the path.
-  //    */
-  //   for (name <- flattened map toFullName distinct ; dups <- multipleAppearingEntries get name) yield
-  //     (name, dups map {
-  //       case (_, cp, _) if cp.origin.isDefined  => cp.origin.get
-  //       case (_, cp, _)                         => cp.asURLs.mkString
-  //     })
-  // }
-  //
   def show() {
     println("ClassPath %s has %d entries and results in:\n".format(name, entries.size))
     asClasspathString split ':' foreach (x => println("  " + x))
   }
-  // def showDuplicates() =
-  //   ClassPath findDuplicates this foreach {
-  //     case (name, xs) => println(xs.mkString(name + ":\n  ", "\n  ", "\n"))
-  //   }
-  //
   override def toString() = "merged classpath "+ entries.mkString("(", "\n", ")")
 }
 

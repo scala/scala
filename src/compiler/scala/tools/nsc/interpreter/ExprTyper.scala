@@ -32,8 +32,6 @@ trait ExprTyper {
 
     def defns(code: String) = stmts(code) collect { case x: DefTree => x }
     def expr(code: String)  = applyRule(code, _.expr())
-    def impt(code: String)  = applyRule(code, _.importExpr())
-    def impts(code: String) = applyRule(code, _.importClause())
     def stmts(code: String) = applyRule(code, _.templateStats())
     def stmt(code: String)  = stmts(code).last  // guaranteed nonempty
   }

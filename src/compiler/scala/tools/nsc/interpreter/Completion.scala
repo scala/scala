@@ -14,13 +14,11 @@ import Completion._
 trait Completion {
   type ExecResult
   def resetVerbosity(): Unit
-  def execute(line: String): Option[ExecResult]
   def completer(): ScalaCompleter
 }
 object NoCompletion extends Completion {
   type ExecResult = Nothing
   def resetVerbosity() = ()
-  def execute(line: String) = None
   def completer() = NullCompleter
 }
 
@@ -44,8 +42,6 @@ object Completion {
     && !(code startsWith "./")
     && !(code startsWith "..")
   )
-  private val pathStarts = """/ \ ./ ../ ~/""" split ' ' toSet
-  def looksLikePath(code: String) = (code != null) && (pathStarts exists (code startsWith _))
   object Forwarder {
     def apply(forwardTo: () => Option[CompletionAware]): CompletionAware = new CompletionAware {
       def completions(verbosity: Int) = forwardTo() map (_ completions verbosity) getOrElse Nil
