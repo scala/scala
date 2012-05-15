@@ -9,7 +9,6 @@ package typechecker
 import scala.collection.{ mutable, immutable }
 import scala.tools.util.StringOps.{ countElementsAsString, countAsString }
 import symtab.Flags.{ PRIVATE, PROTECTED }
-import scala.tools.util.EditDistance.similarString
 
 trait ContextErrors {
   self: Analyzer =>
@@ -171,36 +170,7 @@ trait ContextErrors {
         NormalTypeError(tree, "reference to " + name + " is ambiguous;\n" + msg)
 
       def SymbolNotFoundError(tree: Tree, name: Name, owner: Symbol, startingIdentCx: Context) = {
-        /*** Disabled pending investigation of performance impact.
-
-        // This laborious determination arrived at to keep the tests working.
-        val calcSimilar = (
-          name.length > 2 && (
-               startingIdentCx.reportErrors
-            || startingIdentCx.enclClassOrMethod.reportErrors
-          )
-        )
-        // avoid calculating if we're in "silent" mode.
-        // name length check to limit unhelpful suggestions for e.g. "x" and "b1"
-        val similar = {
-          if (!calcSimilar) ""
-          else {
-            val allowed = (
-              startingIdentCx.enclosingContextChain
-                flatMap (ctx => ctx.scope.toList ++ ctx.imports.flatMap(_.allImportedSymbols))
-                filter (sym => sym.isTerm == name.isTermName)
-                filterNot (sym => sym.isPackage || sym.isSynthetic || sym.hasMeaninglessName)
-            )
-            val allowedStrings = (
-              allowed.map("" + _.name).distinct.sorted
-                filterNot (s => (s contains '$') || (s contains ' '))
-            )
-            similarString("" + name, allowedStrings)
-          }
-        }
-        */
-        val similar = ""
-        NormalTypeError(tree, "not found: "+decodeWithKind(name, owner) + similar)
+        NormalTypeError(tree, "not found: "+decodeWithKind(name, owner))
       }
 
       // typedAppliedTypeTree

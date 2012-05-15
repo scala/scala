@@ -45,11 +45,5 @@ object JLineHistory {
     override def toString = "History(size = " + size + ", index = " + index + ")"
   }
 
-  def apply(): JLineHistory =
-    try   { new JLineFileHistory }
-    catch { case x: Exception =>
-      Console.println("Error creating file history: memory history only. " + x)
-      util.Exceptional(x).show()
-      new SimpleHistory()
-    }
+  def apply(): JLineHistory = try new JLineFileHistory catch { case x: Exception => new SimpleHistory() }
 }

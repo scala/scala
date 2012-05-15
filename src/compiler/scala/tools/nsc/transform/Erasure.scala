@@ -6,7 +6,6 @@
 package scala.tools.nsc
 package transform
 
-import scala.tools.reflect.SigParser
 import scala.reflect.internal.ClassfileConstants._
 import scala.collection.{ mutable, immutable }
 import symtab._
@@ -63,16 +62,6 @@ abstract class Erasure extends AddInterfaces
             mapOver(tp)
         }
       }
-    }
-  }
-
-  // for debugging signatures: traces logic given system property
-  // performance: get the value here
-  val traceSignatures = (sys.BooleanProp keyExists "scalac.sigs.trace").value
-  private object traceSig extends util.Tracer(() => traceSignatures) {
-    override def stringify(x: Any) = x match {
-      case tp: Type   => super.stringify(dropAllRefinements(tp))
-      case _          => super.stringify(x)
     }
   }
 
@@ -173,21 +162,6 @@ abstract class Erasure extends AddInterfaces
     }
   }
 
-  /** Run the signature parser to catch bogus signatures.
-   */
-  def isValidSignature(sym: Symbol, sig: String) = (
-    /** Since we're using a sun internal class for signature validation,
-     *  we have to allow for it not existing or otherwise malfunctioning:
-     *  in which case we treat every signature as valid.  Medium term we
-     *  should certainly write independent signature validation.
-     */
-    SigParser.isParserAvailable && (
-      if (sym.isMethod) SigParser verifyMethod sig
-      else if (sym.isTerm) SigParser verifyType sig
-      else SigParser verifyClass sig
-    )
-  )
-
   private def hiBounds(bounds: TypeBounds): List[Type] = bounds.hi.normalize match {
     case RefinedType(parents, _) => parents map (_.normalize)
     case tp                      => tp :: Nil
@@ -199,7 +173,7 @@ abstract class Erasure extends AddInterfaces
   def javaSig(sym0: Symbol, info: Type): Option[String] = beforeErasure {
     val isTraitSignature = sym0.enclClass.isTrait
 
-    def superSig(parents: List[Type]) = traceSig("superSig", parents) {
+    def superSig(parents: List[Type]) = {
       val ps = (
         if (isTraitSignature) {
           // java is unthrilled about seeing interfaces inherit from classes
@@ -213,7 +187,7 @@ abstract class Erasure extends AddInterfaces
       (ps map boxedSig).mkString
     }
     def boxedSig(tp: Type) = jsig(tp, primitiveOK = false)
-    def boundsSig(bounds: List[Type]) = traceSig("boundsSig", bounds) {
+    def boundsSig(bounds: List[Type]) = {
       val (isTrait, isClass) = bounds partition (_.typeSymbol.isTrait)
       val classPart = isClass match {
         case Nil    => ":" // + boxedSig(ObjectClass.tpe)
@@ -222,7 +196,7 @@ abstract class Erasure extends AddInterfaces
       classPart :: (isTrait map boxedSig) mkString ":"
     }
     def paramSig(tsym: Symbol) = tsym.name + boundsSig(hiBounds(tsym.info.bounds))
-    def polyParamSig(tparams: List[Symbol]) = traceSig("polyParamSig", tparams) (
+    def polyParamSig(tparams: List[Symbol]) = (
       if (tparams.isEmpty) ""
       else tparams map paramSig mkString ("<", "", ">")
     )
@@ -315,22 +289,11 @@ abstract class Erasure extends AddInterfaces
           else jsig(etp)
       }
     }
-    val result = traceSig("javaSig", (sym0, info)) {
-      if (needsJavaSig(info)) {
-        try Some(jsig(info, toplevel = true))
-        catch { case ex: UnknownSig => None }
-      }
-      else None
+    if (needsJavaSig(info)) {
+      try Some(jsig(info, toplevel = true))
+      catch { case ex: UnknownSig => None }
     }
-    // Debugging: immediately verify signatures when tracing.
-    if (traceSignatures) {
-      result foreach { sig =>
-        if (!isValidSignature(sym0, sig))
-          println("**** invalid signature for " + sym0 + ": " + sig)
-      }
-    }
-
-    result
+    else None
   }
 
   class UnknownSig extends Exception

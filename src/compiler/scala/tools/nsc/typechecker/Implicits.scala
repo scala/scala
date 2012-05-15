@@ -764,12 +764,14 @@ trait Implicits {
        *  so that if there is a best candidate it can still be selected.
        */
       private var divergence = false
-      private val MaxDiverges = 1   // not sure if this should be > 1
-      private val divergenceHandler = util.Exceptional.expiringHandler(MaxDiverges) {
-        case x: DivergentImplicit =>
-          divergence = true
-          log("discarding divergent implicit during implicit search")
-          SearchFailure
+      private val divergenceHandler: PartialFunction[Throwable, SearchResult] = {
+        var remaining = 1;
+        { case x: DivergentImplicit if remaining > 0 =>
+            remaining -= 1
+            divergence = true
+            log("discarding divergent implicit during implicit search")
+            SearchFailure
+        }
       }
 
       /** Sorted list of eligible implicits.

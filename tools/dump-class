@@ -1,6 +1,0 @@
-#!/bin/sh
-#
-
-classpath=$($(dirname $BASH_SOURCE)/quickcp)
-
-java -cp "$classpath" scala.tools.nsc.MainGenericRunner -usejavacp scala.tools.cmd.program.DumpClass "$@"

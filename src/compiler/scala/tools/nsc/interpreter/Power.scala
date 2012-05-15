@@ -321,8 +321,6 @@ class Power[ReplValsImpl <: ReplVals : TypeTag](val intp: IMain, replVals: ReplV
   }
 
   class RichReplString(s: String) {
-    // pretty print the string
-    def pp() { intp.prettyPrint(s) }
     // make an url out of the string
     def u: URL = (
       if (s contains ":") new URL(s)
@@ -337,7 +335,6 @@ class Power[ReplValsImpl <: ReplVals : TypeTag](val intp: IMain, replVals: ReplV
   }
   class RichReplURL(url: URL)(implicit codec: Codec) {
     def slurp(): String = io.Streamable.slurp(url)
-    def pp() { intp prettyPrint slurp() }
   }
   class RichSymbolList(syms: List[Symbol]) {
     def sigs  = syms map (_.defString)

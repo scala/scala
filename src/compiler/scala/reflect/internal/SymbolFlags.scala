@@ -17,101 +17,6 @@ trait SymbolFlags {
 
   import definitions._
 
-  /** Not mixed in under normal conditions; a powerful debugging aid.
-   */
-  trait FlagVerifier extends Symbol {
-    private def assert0(cond: Boolean, message: => Any) {
-      if (!cond) {
-        Console.err.println("[flag verification failure]\n%s\n%s\n".format(atPhaseStackMessage, message))
-        (new Throwable).getStackTrace.take(13).drop(3).foreach(println)
-        println("")
-      }
-    }
-
-    protected def verifyChange(isAdd: Boolean, mask: Long, before: Long) {
-      val after   = if (isAdd) before | mask else before & ~mask
-      val added   = after & ~before
-      val removed = before & ~after
-      val ignored = mask & ~added & ~removed
-      val error = (
-           (added & OverloadedFlagsMask) != 0 || (removed & OverloadedFlagsMask) != 0
-        // || (ignored != 0)
-      )
-      val addString    = if (added == 0) "" else "+(" + flagsToString(added) + ")"
-      val removeString = if (removed == 0) "" else "-(" + flagsToString(removed) + ")"
-      val changeString = if (added == 0 && removed == 0) "no change" else addString + " " + removeString
-
-      if (error) {
-        val templ = (
-          """|  symbol: %s %s in %s
-             |    call: %s(%s)
-             |   flags: %s
-             |  result: %s""".stripMargin
-        )
-
-        assert0(false, templ.format(
-          shortSymbolClass,
-          name.decode,
-          owner,
-          if (isAdd) "+" else "-",
-          flagsToString(mask),
-          flagsToString(before),
-          changeString
-        ))
-      }
-    }
-
-    protected def verifyFlags(what: String) {
-      assert0(this hasAllFlags alwaysHasFlags, symbolCreationString + "\n  always=%s, what=%s\n".format(flagsToString(alwaysHasFlags), what))
-      if (this hasFlag neverHasFlags) {
-        val hasRaw = (rawflags & neverHasFlags) != 0
-        assert0(!hasRaw, symbolCreationString + "\n   never=%s, what=%s".format(flagsToString(neverHasFlags), what))
-      }
-    }
-    abstract override def initFlags(mask: Long): this.type = {
-      super.initFlags(mask)
-      verifyFlags("initFlags(" + flagsToString(mask) + ")")
-      this
-    }
-    abstract override def setFlag(mask: Long): this.type = {
-      verifyChange(true, mask, rawflags)
-      super.setFlag(mask)
-      verifyFlags("setFlag(" + flagsToString(mask) + ")")
-      this
-    }
-    abstract override def resetFlag(mask: Long): this.type = {
-      verifyChange(false, mask, rawflags)
-      super.resetFlag(mask)
-      verifyFlags("resetFlag(" + flagsToString(mask) + ")")
-      this
-    }
-    abstract override def flags_=(fs: Long) {
-      if ((fs & ~rawflags) != 0)
-        verifyChange(true, fs & ~rawflags, rawflags)
-      if ((rawflags & ~fs) != 0)
-        verifyChange(false, rawflags & ~fs, rawflags)
-    
-      super.flags_=(fs)
-      verifyFlags("flags_=(" + flagsToString(fs) + ")")
-    }
-  }
-
-  /** Flags which should always be present on a particular class of
-   *  Symbol, and never be present on any others.
-   */
-  def AllDistinguishingFlags: Long = METHOD | MODULE | IMPLCLASS
-
-  /** A distinguishing flag is one which the mixing class must always
-   *  have, and which no other symbol class is allowed to have.
-   */
-  trait DistinguishingFlag extends SymbolFlagLogic {
-    this: Symbol =>
-
-    def distinguishingFlag: Long
-    override protected def alwaysHasFlags = super.alwaysHasFlags | distinguishingFlag
-    override protected def neverHasFlags  = super.neverHasFlags & ~distinguishingFlag
-  }
-
   trait SymbolFlagLogic {
     this: Symbol =>
 
@@ -127,9 +32,6 @@ trait SymbolFlags {
 
     protected def resolveOverloadedFlag(flag: Long): String
     protected def calculateFlagString(basis: Long): String
-
-    protected def alwaysHasFlags: Long = 0L
-    protected def neverHasFlags: Long = AllDistinguishingFlags
 
     def rawFlagString(mask: Long): String = calculateFlagString(rawflags & mask)
     def rawFlagString: String             = rawFlagString(flagMask)

@@ -1,4 +1,0 @@
-#!/bin/sh
-#
-
-scala scala.tools.cmd.program.Scmp "$@"

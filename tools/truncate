@@ -1,7 +1,0 @@
-#!/bin/bash
-
-find . -type f -not -path "*.svn*" -name "*.scala" -exec sed -i "" -e 's/$ *Id.*$/$Id$/g' {} \;
-find . -type f -not -path "*.svn*" -name "*.java" -exec sed -i "" -e 's/$ *Id.*$/$Id$/g' {} \;
-find . -type f -not -path "*.svn*" -name "*.cs" -exec sed -i "" -e 's/$ *Id.*$/$Id$/g' {} \;
-find . -type f -not -path "*.svn*" -name "*.js" -exec sed -i "" -e 's/$ *Id.*$/$Id$/g' {} \;
-find . -type f -not -path "*.svn*" -name "*.scala.disabled" -exec sed -i "" -e 's/$ *Id.*$/$Id$/g' {} \;

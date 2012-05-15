@@ -16,9 +16,9 @@ import reporters._
 import symtab.Flags
 import scala.reflect.internal.Names
 import scala.tools.util.PathResolver
-import scala.tools.nsc.util.{ ScalaClassLoader, Exceptional, Indenter }
+import scala.tools.nsc.util.ScalaClassLoader
 import ScalaClassLoader.URLClassLoader
-import Exceptional.unwrap
+import scala.tools.nsc.util.Exceptional.unwrap
 import scala.collection.{ mutable, immutable }
 import scala.util.control.Exception.{ ultimately }
 import IMain._
@@ -92,7 +92,6 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
    *  on the future.
    */
   private var _classLoader: AbstractFileClassLoader = null                              // active classloader
-  private var _lineManager: Line.Manager            = null                              // logic for individual lines
   private val _compiler: Global                     = newCompiler(settings, reporter)   // our private compiler
 
   private val nextReqId = {
@@ -233,11 +232,6 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
     val global: imain.global.type = imain.global
   } with StructuredTypeStrings
 
-  // object dossiers extends {
-  //   val intp: imain.type = imain
-  // } with Dossiers { }
-  // import dossiers._
-
   lazy val memberHandlers = new {
     val intp: imain.type = imain
   } with MemberHandlers
@@ -272,14 +266,9 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
   def executionWrapper = _executionWrapper
   def setExecutionWrapper(code: String) = _executionWrapper = code
   def clearExecutionWrapper() = _executionWrapper = ""
-  def lineManager = _lineManager
 
   /** interpreter settings */
   lazy val isettings = new ISettings(this)
-
-  /** Create a line manager.  Overridable.  */
-  protected def noLineManager = ReplPropsKludge.noThreadCreation(settings)
-  protected def createLineManager(classLoader: ClassLoader): Line.Manager = new Line.Manager(classLoader)
 
   /** Instantiate a compiler.  Overridable. */
   protected def newCompiler(settings: Settings, reporter: Reporter): ReplGlobal = {
@@ -311,10 +300,8 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
     ensureClassLoader()
   }
   final def ensureClassLoader() {
-    if (_classLoader == null) {
+    if (_classLoader == null)
       _classLoader = makeClassLoader()
-      _lineManager = if (noLineManager) null else createLineManager(_classLoader)
-    }
   }
   def classLoader: AbstractFileClassLoader = {
     ensureClassLoader()
@@ -725,33 +712,14 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
     val printName   = sessionNames.print
     val resultName  = sessionNames.result
 
-    class LineExceptional(ex: Throwable) extends Exceptional(ex) {
-      private def showReplInternal = isettings.showInternalStackTraces
-
-      override def spanFn(frame: JavaStackFrame) =
-        if (showReplInternal) super.spanFn(frame)
-        else !(frame.className startsWith evalPath)
-
-      override def contextPrelude = super.contextPrelude + (
-        if (showReplInternal) ""
-        else "/* The repl internal portion of the stack trace is elided. */\n"
-      )
-    }
     def bindError(t: Throwable) = {
       if (!bindExceptions) // avoid looping if already binding
         throw t
 
       val unwrapped = unwrap(t)
       withLastExceptionLock[String]({
-        if (opt.richExes) {
-          val ex = new LineExceptional(unwrapped)
-          directBind[Exceptional]("lastException", ex)
-          ex.contextHead + "\n(access lastException for the full trace)"
-        }
-        else {
-          directBind[Throwable]("lastException", unwrapped)
-          util.stackTraceString(unwrapped)
-        }
+        directBind[Throwable]("lastException", unwrapped)
+        util.stackTraceString(unwrapped)
       }, util.stackTraceString(unwrapped))
     }
 
@@ -1027,24 +995,8 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
 
     /** load and run the code using reflection */
     def loadAndRun: (String, Boolean) = {
-      if (lineManager == null) return {
-        try   { ("" + (lineRep call sessionNames.print), true) }
-        catch { case ex => (lineRep.bindError(ex), false) }
-      }
-      import interpreter.Line._
-
-      try {
-        val execution = lineManager.set(originalLine)(lineRep call sessionNames.print)
-        execution.await()
-
-        execution.state match {
-          case Done       => ("" + execution.get(), true)
-          case Threw      => (lineRep.bindError(execution.caught()), false)
-          case Cancelled  => ("Execution interrupted by signal.\n", false)
-          case Running    => ("Execution still running! Seems impossible.", false)
-        }
-      }
-      finally lineManager.clear()
+      try   { ("" + (lineRep call sessionNames.print), true) }
+      catch { case ex => (lineRep.bindError(ex), false) }
     }
 
     override def toString = "Request(line=%s, %s trees)".format(line, trees.size)
@@ -1138,10 +1090,6 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
     }
   }
 
-  object replTokens extends {
-    val global: imain.global.type = imain.global
-  } with ReplTokens { }
-
   object exprTyper extends {
     val repl: IMain.this.type = imain
   } with ExprTyper { }
@@ -1153,9 +1101,6 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
 
   def typeOfExpression(expr: String, silent: Boolean = true): Type =
     exprTyper.typeOfExpression(expr, silent)
-
-  def prettyPrint(code: String) =
-    replTokens.prettyPrint(exprTyper tokens code)
 
   protected def onlyTerms(xs: List[Name]) = xs collect { case x: TermName => x }
   protected def onlyTypes(xs: List[Name]) = xs collect { case x: TypeName => x }
@@ -1237,12 +1182,6 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
      */
     def isShow    = code.lines exists (_.trim endsWith "// show")
     def isShowRaw = code.lines exists (_.trim endsWith "// raw")
-
-    // checking for various debug signals
-    if (isShowRaw)
-      replTokens withRawTokens prettyPrint(code)
-    else if (repllog.isTrace || isShow)
-      prettyPrint(code)
 
     // old style
     beSilentDuring(parse(code)) foreach { ts =>

@@ -10,7 +10,6 @@ import java.io.{ByteArrayOutputStream, DataOutputStream, OutputStream }
 import java.nio.ByteBuffer
 import scala.collection.{ mutable, immutable }
 import scala.reflect.internal.pickling.{ PickleFormat, PickleBuffer }
-import scala.tools.reflect.SigParser
 import scala.tools.nsc.symtab._
 import scala.tools.nsc.util.{ SourceFile, NoSourceFile }
 import scala.reflect.internal.ClassfileConstants._
@@ -121,9 +120,6 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
       // to collect everything
       if (settings.debug.value)
         inform("[running phase " + name + " on icode]")
-
-      if (settings.Xverify.value && !SigParser.isParserAvailable)
-        global.warning("signature verification requested by signature parser unavailable: signatures not checked")
 
       if (settings.Xdce.value)
         for ((sym, cls) <- icodes.classes if inliner.isClosureClass(sym) && !deadCode.liveClosures(sym))
@@ -722,14 +718,6 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
       nannots
     }
 
-    /** Run the signature parser to catch bogus signatures.
-     */
-    def isValidSignature(sym: Symbol, sig: String) = (
-      if (sym.isMethod) SigParser verifyMethod sig
-      else if (sym.isTerm) SigParser verifyType sig
-      else SigParser verifyClass sig
-    )
-
     // @M don't generate java generics sigs for (members of) implementation
     // classes, as they are monomorphic (TODO: ok?)
     private def needsGenericSignature(sym: Symbol) = !(
@@ -751,19 +739,6 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
         erasure.javaSig(sym, memberTpe) foreach { sig =>
           // This seems useful enough in the general case.
           log(sig)
-          /** Since we're using a sun internal class for signature validation,
-           *  we have to allow for it not existing or otherwise malfunctioning:
-           *  in which case we treat every signature as valid.  Medium term we
-           *  should certainly write independent signature validation.
-           */
-          if (settings.Xverify.value && SigParser.isParserAvailable && !isValidSignature(sym, sig)) {
-            clasz.cunit.warning(sym.pos,
-                """|compiler bug: created invalid generic signature for %s in %s
-                   |signature: %s
-                   |if this is reproducible, please report bug at https://issues.scala-lang.org/
-                """.trim.stripMargin.format(sym, sym.owner.skipPackageObject.fullName, sig))
-            return
-          }
           if (checkSignatures) {
             val normalizedTpe = beforeErasure(erasure.prepareSigMap(memberTpe))
             val bytecodeTpe = owner.thisType.memberInfo(sym)

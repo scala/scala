@@ -16,8 +16,6 @@ import ScalaClassLoader._
 import scala.util.control.Exception.{ catching }
 import language.implicitConversions
 
-// import Exceptional.unwrap
-
 trait HasClassPath {
   def classPathURLs: Seq[URL]
 }

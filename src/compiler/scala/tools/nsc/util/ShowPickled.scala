@@ -11,8 +11,6 @@ import java.io.{File, FileInputStream, PrintStream}
 import java.lang.Long.toHexString
 import java.lang.Float.intBitsToFloat
 import java.lang.Double.longBitsToDouble
-
-import cmd.program.Simple
 import scala.reflect.internal.{Flags, Names}
 import scala.reflect.internal.pickling.{ PickleBuffer, PickleFormat }
 import interpreter.ByteCode.scalaSigBytesForPath
@@ -119,21 +117,18 @@ object ShowPickled extends Names {
     result.toInt
   }
 
-  def printFile(buf: PickleBuffer, out: PrintStream): Unit = printFile(buf, out, false)
-  def printFile(buf: PickleBuffer, out: PrintStream, bare: Boolean) {
+  def printFile(buf: PickleBuffer, out: PrintStream) {
     out.println("Version " + buf.readNat() + "." + buf.readNat())
     val index = buf.createIndex
     val entryList = makeEntryList(buf, index)
     buf.readIndex = 0
 
-    /** A print wrapper which discards everything if bare is true.
-     */
-    def p(s: String) = if (!bare) out print s
+    def p(s: String) = out print s
 
     def printNameRef() {
       val idx = buf.readNat()
       val name = entryList nameAt idx
-      val toPrint = if (bare) " " + name else " %s(%s)".format(idx, name)
+      val toPrint = " %s(%s)".format(idx, name)
 
       out print toPrint
     }
@@ -156,7 +151,7 @@ object ShowPickled extends Names {
         val accessBoundary = (
           for (idx <- privateWithin) yield {
             val s = entryList nameAt idx
-            if (bare) s else idx + "(" + s + ")"
+            idx + "(" + s + ")"
           }
         )
         val flagString = {
@@ -283,31 +278,18 @@ object ShowPickled extends Names {
     try Some(new PickleBuffer(data, 0, data.length))
     catch { case _: Exception => None }
 
-  def show(what: String, pickle: PickleBuffer, bare: Boolean) = {
+  def show(what: String, pickle: PickleBuffer) = {
     Console.println(what)
     val saved = pickle.readIndex
     pickle.readIndex = 0
-    printFile(pickle, Console.out, bare)
+    printFile(pickle, Console.out)
     pickle.readIndex = saved
   }
 
-  private lazy val ShowPickledSpec =
-    Simple(
-      Simple.scalaProgramInfo("showPickled", "Usage: showPickled [--bare] <classname>"),
-      List("--bare" -> "suppress numbers in output"),
-      Nil,
-      null
-    )
-
-  /** Option --bare suppresses numbers so the output can be diffed.
-   */
   def main(args: Array[String]) {
-    val runner = ShowPickledSpec instance args
-    import runner._
-
-    residualArgs foreach { arg =>
+    args foreach { arg =>
       (fromFile(arg) orElse fromName(arg)) match {
-        case Some(pb) => show(arg + ":", pb, parsed isSet "--bare")
+        case Some(pb) => show(arg + ":", pb)
         case _        => Console.println("Cannot read " + arg)
       }
     }

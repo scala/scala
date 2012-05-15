@@ -10,7 +10,7 @@ import java.lang.reflect.{ GenericSignatureFormatError, Method, Constructor }
 import java.lang.{ ClassLoader => JavaClassLoader }
 import scala.tools.nsc.util.ScalaClassLoader
 import java.io.{ InputStream, PrintWriter, ByteArrayInputStream, FileNotFoundException }
-import scala.tools.nsc.io.{ File, NullPrintStream }
+import scala.tools.nsc.io.File
 import Javap._
 
 trait Javap {

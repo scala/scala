@@ -23,9 +23,6 @@ package object io {
   def callable[T](body: => T): Callable[T]    = new Callable[T] { override def call() = body }
   def spawn[T](body: => T): Future[T]         = daemonThreadPool submit callable(body)
   def submit(runnable: Runnable)              = daemonThreadPool submit runnable
-  def runnableFn(f: () => Unit): Runnable     = runnable(f())
-  def callableFn[T](f: () => T): Callable[T]  = callable(f())
-  def spawnFn[T](f: () => T): Future[T]       = spawn(f())
 
   // Create, start, and return a daemon thread
   def daemonize(body: => Unit): Thread = newThread(_ setDaemon true)(body)

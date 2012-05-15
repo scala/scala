@@ -159,7 +159,6 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
              with HasFlags
              with SymbolFlagLogic
              with SymbolCreator
-             // with FlagVerifier   // DEBUG
              with Annotatable[Symbol] {
 
     type AccessBoundaryType = Symbol
@@ -628,7 +627,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
 
     override def setFlag(mask: Long): this.type   = { _rawflags |= mask ; this }
     override def resetFlag(mask: Long): this.type = { _rawflags &= ~mask ; this }
-    override def resetFlags() { rawflags &= (TopLevelCreationFlags | alwaysHasFlags) }
+    override def resetFlags() { rawflags &= TopLevelCreationFlags }
 
     /** Default implementation calls the generic string function, which
      *  will print overloaded flags as <flag1/flag2/flag3>.  Subclasses
@@ -2434,8 +2433,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
 
   /** A class for module symbols */
   class ModuleSymbol protected[Symbols] (initOwner: Symbol, initPos: Position, initName: TermName)
-  extends TermSymbol(initOwner, initPos, initName) with DistinguishingFlag with ModuleSymbolApi {
-    def distinguishingFlag = MODULE
+  extends TermSymbol(initOwner, initPos, initName) with ModuleSymbolApi {
     private var flatname: TermName = null
 
     override def associatedFile = moduleClass.associatedFile
@@ -2462,19 +2460,13 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
   }
 
   class PackageSymbol protected[Symbols] (owner0: Symbol, pos0: Position, name0: TermName)
-  extends ModuleSymbol(owner0, pos0, name0) with DistinguishingFlag with PackageSymbolApi {
-    override def distinguishingFlag = super.distinguishingFlag | PACKAGE
+  extends ModuleSymbol(owner0, pos0, name0) with PackageSymbolApi {
     override def isPackage = true
   }
 
   /** A class for method symbols */
   class MethodSymbol protected[Symbols] (initOwner: Symbol, initPos: Position, initName: TermName)
-  extends TermSymbol(initOwner, initPos, initName) with DistinguishingFlag with MethodSymbolApi {
-    def distinguishingFlag = METHOD
-    // MethodSymbols pick up MODULE when trait-owned object accessors are cloned
-    // during mixin composition.
-    override protected def neverHasFlags = super.neverHasFlags & ~MODULE
-
+  extends TermSymbol(initOwner, initPos, initName) with MethodSymbolApi {
     private[this] var mtpePeriod       = NoPeriod
     private[this] var mtpePre: Type    = _
     private[this] var mtpeResult: Type = _
@@ -2743,9 +2735,6 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     private[this] var thisTypeCache: Type      = _
     private[this] var thisTypePeriod           = NoPeriod
 
-    override protected def alwaysHasFlags: Long = 0L
-    override protected def neverHasFlags: Long = 0L
-
     override def resolveOverloadedFlag(flag: Long) = flag match {
       case INCONSTRUCTOR => "<inconstructor>" // INCONSTRUCTOR / CONTRAVARIANT / LABEL
       case EXISTENTIAL   => "<existential>"   // EXISTENTIAL / MIXEDIN
@@ -2904,12 +2893,10 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
    *  plain class symbols!
    */
   class ModuleClassSymbol protected[Symbols] (owner: Symbol, pos: Position, name: TypeName)
-  extends ClassSymbol(owner, pos, name) with DistinguishingFlag {
+  extends ClassSymbol(owner, pos, name) {
     private[this] var module: Symbol        = _
     private[this] var typeOfThisCache: Type = _
     private[this] var typeOfThisPeriod      = NoPeriod
-
-    def distinguishingFlag = MODULE
 
     private var implicitMembersCacheValue: List[Symbol] = Nil
     private var implicitMembersCacheKey1: Type = NoType
@@ -2965,8 +2952,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
   }
 
   class PackageClassSymbol protected[Symbols] (owner0: Symbol, pos0: Position, name0: TypeName)
-  extends ModuleClassSymbol(owner0, pos0, name0) with DistinguishingFlag {
-    override def distinguishingFlag = super.distinguishingFlag | PACKAGE
+  extends ModuleClassSymbol(owner0, pos0, name0) {
     override def sourceModule = companionModule
     override def enclClassChain = Nil
     override def isPackageClass = true

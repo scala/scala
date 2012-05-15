@@ -25,41 +25,10 @@ abstract class NodePrinters {
   }
   var infolevel = InfoLevel.Quiet
 
-  def nodeToString: Tree => String =
-    if (sys.props contains "scala.colors") nodeToColorizedString
-    else nodeToRegularString
+  def nodeToString: Tree => String = nodeToRegularString
 
   object nodeToRegularString extends DefaultPrintAST with (Tree => String) {
     def apply(tree: Tree) = stringify(tree)
-  }
-
-  object nodeToColorizedString extends ColorPrintAST with (Tree => String) {
-    def apply(tree: Tree) = stringify(tree)
-  }
-
-  trait ColorPrintAST extends DefaultPrintAST {
-    import scala.tools.util.color._
-
-    def keywordColor = Cyan
-    def typeColor    = Yellow
-    def termColor    = Blue
-    def flagColor    = Red
-    def literalColor = Green
-
-    override def showFlags(tree: MemberDef) =
-      super.showFlags(tree) in flagColor.bright
-
-    override def showDefTreeName(tree: DefTree) =
-      if (tree.name.isTermName) tree.name.decode in termColor.bright
-      else tree.name.decode in typeColor.bright
-
-    override def showName(name: Name) =
-      if (name == nme.EMPTY || name == tpnme.EMPTY) "<empty>" in keywordColor
-      else if (name.isTermName) name.decode in termColor
-      else name.decode in typeColor
-
-    override def showLiteral(lit: Literal) =
-      super.showLiteral(lit) in literalColor.bright
   }
 
   trait DefaultPrintAST extends PrintAST {
@@ -133,7 +102,6 @@ abstract class NodePrinters {
       buf.clear()
       if (settings.XshowtreesStringified.value) buf.append(tree.toString + EOL)
       if (settings.XshowtreesCompact.value) {
-        // todo. colors for compact representation
         buf.append(showRaw(tree))
       } else {
         level = 0

@@ -12,13 +12,13 @@ import java.util.concurrent.locks.ReentrantLock
 import scala.sys.process.Process
 import session._
 import scala.util.Properties.{ jdkHome, javaVersion }
-import scala.tools.util.{ Signallable, Javap }
+import scala.tools.util.{ Javap }
 import scala.annotation.tailrec
 import scala.collection.mutable.ListBuffer
 import scala.concurrent.ops
 import util.{ ClassPath, Exceptional, stringFromWriter, stringFromStream }
 import interpreter._
-import io.{ File, Sources, Directory }
+import io.{ File, Directory }
 import scala.reflect.NameTransformer._
 import util.ScalaClassLoader
 import ScalaClassLoader._
@@ -118,12 +118,6 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
   /** The context class loader at the time this object was created */
   protected val originalClassLoader = Thread.currentThread.getContextClassLoader
 
-  // Install a signal handler so we can be prodded.
-  private val signallable =
-    if (isReplDebug)
-      Signallable("Dump repl state.")(dumpCommand())
-    else null
-
   // classpath entries added via :cp
   var addedClasspath: String = ""
 
@@ -152,32 +146,15 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
     if (intp ne null) {
       intp.close()
       intp = null
-      removeSigIntHandler()
     }
   }
 
   class ILoopInterpreter extends IMain(settings, out) {
     outer =>
 
-    private class ThreadStoppingLineManager(classLoader: ClassLoader) extends Line.Manager(classLoader) {
-      override def onRunaway(line: Line[_]): Unit = {
-        val template = """
-          |// She's gone rogue, captain! Have to take her out!
-          |// Calling Thread.stop on runaway %s with offending code:
-          |// scala> %s""".stripMargin
-
-        echo(template.format(line.thread, line.code))
-        // XXX no way to suppress the deprecation warning
-        line.thread.stop()
-        in.redrawLine()
-      }
-    }
     override lazy val formatting = new Formatting {
       def prompt = ILoop.this.prompt
     }
-    override protected def createLineManager(classLoader: ClassLoader): Line.Manager =
-      new ThreadStoppingLineManager(classLoader)
-
     override protected def parentClassLoader =
       settings.explicitParentLoader.getOrElse( classOf[ILoop].getClassLoader )
   }
@@ -603,14 +580,6 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
 
   private val crashRecovery: PartialFunction[Throwable, Boolean] = {
     case ex: Throwable =>
-      if (settings.YrichExes.value) {
-        val sources = implicitly[Sources]
-        echo("\n" + ex.getMessage)
-        echo(
-          if (isReplDebug) "[searching " + sources.path + " for exception contexts...]"
-          else "[searching for exception contexts...]"
-        )
-      }
       echo(intp.global.throwableAsString(ex))
 
       ex match {

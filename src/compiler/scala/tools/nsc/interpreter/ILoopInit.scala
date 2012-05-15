@@ -7,7 +7,6 @@ package scala.tools.nsc
 package interpreter
 
 import util.Position
-import scala.tools.util.SignalManager
 import scala.util.control.Exception.ignoring
 
 /**
@@ -31,37 +30,6 @@ trait ILoopInit {
   protected def asyncMessage(msg: String) {
     if (isReplInfo || isReplPower)
       echoAndRefresh(msg)
-  }
-
-  /** Try to install sigint handler: ignore failure.  Signal handler
-   *  will interrupt current line execution if any is in progress.
-   *
-   *  Attempting to protect the repl from accidental exit, we only honor
-   *  a single ctrl-C if the current buffer is empty: otherwise we look
-   *  for a second one within a short time.
-   */
-  protected def installSigIntHandler() {
-    def onExit() {
-      Console.println("") // avoiding "shell prompt in middle of line" syndrome
-      sys.exit(1)
-    }
-    ignoring(classOf[Exception]) {
-      SignalManager("INT") = {
-        if (intp == null || intp.lineManager == null)
-          onExit()
-        else if (intp.lineManager.running)
-          intp.lineManager.cancel()
-        else if (in.currentLine != "") {
-          // non-empty buffer, so make them hit ctrl-C a second time
-          SignalManager("INT") = onExit()
-          io.timer(5)(installSigIntHandler())  // and restore original handler if they don't
-        }
-        else onExit()
-      }
-    }
-  }
-  protected def removeSigIntHandler() {
-    squashAndLog("removeSigIntHandler")(SignalManager("INT") = null)
   }
 
   private val initLock = new java.util.concurrent.locks.ReentrantLock()
@@ -105,9 +73,7 @@ trait ILoopInit {
 
   protected def postInitThunks = List[Option[() => Unit]](
     Some(intp.setContextClassLoader _),
-    if (isReplPower) Some(() => enablePowerMode(true)) else None,
-    // do this last to avoid annoying uninterruptible startups
-    Some(installSigIntHandler _)
+    if (isReplPower) Some(() => enablePowerMode(true)) else None
   ).flatten
   // ++ (
   //   warningsThunks

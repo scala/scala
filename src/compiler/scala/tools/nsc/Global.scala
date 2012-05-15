@@ -8,11 +8,11 @@ package scala.tools.nsc
 import java.io.{ File, FileOutputStream, PrintWriter, IOException, FileNotFoundException }
 import java.nio.charset.{ Charset, CharsetDecoder, IllegalCharsetNameException, UnsupportedCharsetException }
 import compat.Platform.currentTime
-import scala.tools.util.{ Profiling, PathResolver }
+import scala.tools.util.PathResolver
 import scala.collection.{ mutable, immutable }
 import io.{ SourceReader, AbstractFile, Path }
 import reporters.{ Reporter, ConsoleReporter }
-import util.{ NoPosition, Exceptional, ClassPath, SourceFile, NoSourceFile, Statistics, StatisticsInfo, BatchSourceFile, ScriptSourceFile, ShowPickled, ScalaClassLoader, returning }
+import util.{ NoPosition, Exceptional, ClassPath, SourceFile, NoSourceFile, Statistics, StatisticsInfo, BatchSourceFile, ScriptSourceFile, ScalaClassLoader, returning }
 import scala.reflect.internal.pickling.{ PickleBuffer, PickleFormat }
 import settings.{ AestheticSettings }
 import symtab.{ Flags, SymbolTable, SymbolLoaders, SymbolTrackers }
@@ -266,9 +266,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter) extends Symb
   }
 
   def logThrowable(t: Throwable): Unit = globalError(throwableAsString(t))
-  override def throwableAsString(t: Throwable): String =
-    if (opt.richExes) Exceptional(t).force().context()
-    else util.stackTraceString(t)
+  override def throwableAsString(t: Throwable) = util.stackTraceString(t)
 
 // ------------ File interface -----------------------------------------
 
@@ -356,19 +354,6 @@ class Global(var currentSettings: Settings, var reporter: Reporter) extends Symb
     def showTrees     = settings.Xshowtrees.value || settings.XshowtreesCompact.value || settings.XshowtreesStringified.value
     val showClass     = optSetting[String](settings.Xshowcls) map (x => splitClassAndPhase(x, false))
     val showObject    = optSetting[String](settings.Xshowobj) map (x => splitClassAndPhase(x, true))
-
-    // profiling
-    def profCPUPhase = isActive(settings.Yprofile) && !profileAll
-    def profileAll   = settings.Yprofile.doAllPhases
-    def profileAny   = !settings.Yprofile.isDefault || !settings.YprofileMem.isDefault
-    def profileClass = settings.YprofileClass.value
-    def profileMem   = settings.YprofileMem.value
-
-    // shortish-term property based options
-    def timings       = (sys.props contains "scala.timings")
-    def inferDebug    = (sys.props contains "scalac.debug.infer") || settings.Yinferdebug.value
-    def typerDebug    = (sys.props contains "scalac.debug.typer") || settings.Ytyperdebug.value
-    def lubDebug      = (sys.props contains "scalac.debug.lub")
   }
 
   // The current division between scala.reflect.* and scala.tools.nsc.* is pretty
@@ -410,14 +395,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter) extends Symb
 
     def run() {
       echoPhaseSummary(this)
-      currentRun.units foreach { unit =>
-        if (opt.timings) {
-          val start = System.nanoTime
-          try applyPhase(unit)
-          finally unitTimings(unit) += (System.nanoTime - start)
-        }
-        else applyPhase(unit)
-      }
+      currentRun.units foreach applyPhase
     }
 
     def apply(unit: CompilationUnit): Unit
@@ -461,8 +439,8 @@ class Global(var currentSettings: Settings, var reporter: Reporter) extends Symb
   }
 
   /** Switch to turn on detailed type logs */
-  var printTypings = opt.typerDebug
-  var printInfers = opt.inferDebug
+  var printTypings = settings.Ytyperdebug.value
+  var printInfers = settings.Yinferdebug.value
 
   // phaseName = "parser"
   object syntaxAnalyzer extends {
@@ -770,20 +748,6 @@ class Global(var currentSettings: Settings, var reporter: Reporter) extends Symb
   protected lazy val phasesSet     = new mutable.HashSet[SubComponent]
   protected lazy val phasesDescMap = new mutable.HashMap[SubComponent, String] withDefaultValue ""
   private lazy val phaseTimings = new Phases.TimingModel   // tracking phase stats
-  private lazy val unitTimings = mutable.HashMap[CompilationUnit, Long]() withDefaultValue 0L // tracking time spent per unit
-  private def unitTimingsFormatted(): String = {
-    def toMillis(nanos: Long) = "%.3f" format nanos / 1000000d
-
-    val formatter = new util.TableDef[(String, String)] {
-      >> ("ms"   -> (_._1)) >+ "  "
-      << ("path" -> (_._2))
-    }
-    "" + (
-      new formatter.Table(unitTimings.toList sortBy (-_._2) map {
-        case (unit, nanos) => (toMillis(nanos), unit.source.path)
-      })
-    )
-  }
 
   protected def addToPhasesSet(sub: SubComponent, descr: String) {
     phasesSet += sub
@@ -1292,14 +1256,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter) extends Symb
      */
     def units: Iterator[CompilationUnit] = unitbuf.iterator
 
-    def registerPickle(sym: Symbol): Unit = {
-      // Convert all names to the type name: objects don't store pickled data
-      if (opt.showPhase && (opt.showNames exists (x => findNamedMember(x.toTypeName, sym) != NoSymbol))) {
-        symData get sym foreach { pickle =>
-          ShowPickled.show("\n<<-- " + sym.fullName + " -->>\n", pickle, false)
-        }
-      }
-    }
+    def registerPickle(sym: Symbol): Unit = ()
 
     /** does this run compile given class, module, or case factory? */
     def compiles(sym: Symbol): Boolean =
@@ -1333,9 +1290,6 @@ class Global(var currentSettings: Settings, var reporter: Reporter) extends Symb
 
     private def showMembers() =
       opt.showNames foreach (x => showDef(x, opt.declsOnly, globalPhase))
-
-    // If -Yprofile isn't given this will never be triggered.
-    lazy val profiler = Class.forName(opt.profileClass).newInstance().asInstanceOf[Profiling]
 
     // Similarly, this will only be created under -Yshow-syms.
     object trackerFactory extends SymbolTrackers {
@@ -1400,10 +1354,6 @@ class Global(var currentSettings: Settings, var reporter: Reporter) extends Symb
 
     private def compileUnitsInternal(units: List[CompilationUnit], fromPhase: Phase) {
       units foreach addUnit
-      if (opt.profileAll) {
-        inform("starting CPU profiling on compilation run")
-        profiler.startProfiling()
-      }
       val startTime = currentTime
 
       reporter.reset()
@@ -1413,16 +1363,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter) extends Symb
      while (globalPhase.hasNext && !reporter.hasErrors) {
         val startTime = currentTime
         phase = globalPhase
-
-        if (opt.profCPUPhase) {
-          inform("starting CPU profiling on phase " + globalPhase.name)
-          profiler profile globalPhase.run
-        }
-        else globalPhase.run
-
-        // Create a profiling generation for each phase's allocations
-        if (opt.profileAny)
-          profiler.advanceGeneration(globalPhase.name)
+        globalPhase.run
 
         // progress update
         informTime(globalPhase.description, startTime)
@@ -1462,13 +1403,6 @@ class Global(var currentSettings: Settings, var reporter: Reporter) extends Symb
 
         advancePhase
       }
-      if (opt.profileAll)
-        profiler.stopProfiling()
-
-      if (opt.timings) {
-        inform(phaseTimings.formatted)
-        inform(unitTimingsFormatted)
-      }
 
       if (traceSymbolActivity)
         units map (_.body) foreach (traceSymbols recordSymbolsInTree _)
@@ -1480,15 +1414,6 @@ class Global(var currentSettings: Settings, var reporter: Reporter) extends Symb
       reportCompileErrors()
       symSource.keys foreach (x => resetPackageClass(x.owner))
       informTime("total", startTime)
-
-      // save heap snapshot if requested
-      if (opt.profileMem) {
-        inform("Saving heap snapshot, this could take a while...")
-        System.gc()
-        profiler.captureSnapshot()
-        inform("...done saving heap snapshot.")
-        specializeTypes.printSpecStats()
-      }
 
       // record dependency data
       if (!dependencyAnalysis.off)
@@ -1697,35 +1622,5 @@ class Global(var currentSettings: Settings, var reporter: Reporter) extends Symb
 }
 
 object Global {
-  /** If possible, instantiate the global specified via -Yglobal-class.
-   *  This allows the use of a custom Global subclass with the software which
-   *  wraps Globals, such as scalac, fsc, and the repl.
-   */
-  def fromSettings(settings: Settings, reporter: Reporter): Global = {
-    // !!! The classpath isn't known until the Global is created, which is too
-    // late, so we have to duplicate it here.  Classpath is too tightly coupled,
-    // it is a construct external to the compiler and should be treated as such.
-    val parentLoader = settings.explicitParentLoader getOrElse getClass.getClassLoader
-    val loader       = ScalaClassLoader.fromURLs(new PathResolver(settings).result.asURLs, parentLoader)
-    val name         = settings.globalClass.value
-    val clazz        = Class.forName(name, true, loader)
-    val cons         = clazz.getConstructor(classOf[Settings], classOf[Reporter])
-
-    cons.newInstance(settings, reporter).asInstanceOf[Global]
-  }
-
-  /** A global instantiated this way honors -Yglobal-class setting, and
-   *  falls back on calling the Global constructor directly.
-   */
-  def apply(settings: Settings, reporter: Reporter): Global = {
-    val g = (
-      if (settings.globalClass.isDefault) null
-      else try fromSettings(settings, reporter) catch { case x =>
-        reporter.warning(NoPosition, "Failed to instantiate " + settings.globalClass.value + ": " + x)
-        null
-      }
-    )
-    if (g != null) g
-    else new Global(settings, reporter)
-  }
+  def apply(settings: Settings, reporter: Reporter): Global = new Global(settings, reporter)
 }
