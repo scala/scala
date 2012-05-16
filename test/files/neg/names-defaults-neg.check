@@ -149,8 +149,12 @@ names-defaults-neg.scala:170: error: reference to x is ambiguous; it is both a m
 names-defaults-neg.scala:177: error: variable definition needs type because 'x' is used as a named argument in its body.
   class u15 { var x = u.f(x = 1) }
                   ^
+names-defaults-neg.scala:177: warning: type-checking the invocation of method f checks if the named argument expression 'x = ...' is a valid assignment
+in the current scope. The resulting type inference error (see above) can be fixed by providing an explicit type in the local definition for x.
+  class u15 { var x = u.f(x = 1) }
+                            ^
 names-defaults-neg.scala:180: error: reference to x is ambiguous; it is both a method parameter and a variable in scope.
   class u18 { var x: Int = u.f(x = 1) }
                                  ^
-one warning found
+two warnings found
 41 errors found

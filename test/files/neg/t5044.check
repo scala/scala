@@ -1,0 +1,9 @@
+t5044.scala:7: error: recursive value a needs type
+    val id = m(a)
+               ^
+t5044.scala:6: warning: type-checking the invocation of method foo checks if the named argument expression 'id = ...' is a valid assignment
+in the current scope. The resulting type inference error (see above) can be fixed by providing an explicit type in the local definition for id.
+    val a = foo(id = 1)
+                   ^
+one warning found
+one error found
