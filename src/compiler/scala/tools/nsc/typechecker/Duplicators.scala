@@ -269,11 +269,15 @@ abstract class Duplicators extends Analyzer {
           invalidate(rhs)
           ldef.tpe = null
 
-          // since typer does not create the symbols for a LabelDef's params,
-          // we do that manually here -- we should really refactor LabelDef to be a subclass of DefDef
+          // we need to pick up the existing symbols from before, otherwise we'll run into SI-5788
           def newParam(p: Tree): Ident = {
-            val newsym = p.symbol.cloneSymbol //(context.owner) // TODO owner?
-            Ident(newsym.setInfo(fixType(p.symbol.info)))
+            if (invalidSyms.isDefinedAt(p.symbol))
+              Ident(invalidSyms(p.symbol).symbol)
+            else {
+              val tree = Ident(p.symbol.name) // the typer will pick up the correct parameter, just give it the name
+              super.typed(tree, mode, pt)
+              tree
+            }
           }
           val params1 = params map newParam
           val rhs1 = (new TreeSubstituter(params map (_.symbol), params1) transform rhs) // TODO: duplicate?
