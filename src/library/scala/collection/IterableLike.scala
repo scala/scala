@@ -148,7 +148,7 @@ self =>
   }
 
   /** Partitions elements in fixed size ${coll}s.
-   *  @see Iterator#grouped
+   *  @see [[scala.collection.Iterator]], method `grouped`
    *
    *  @param size the number of elements per group
    *  @return An iterator producing ${coll}s of size `size`, except the
@@ -163,7 +163,7 @@ self =>
 
   /** Groups elements in fixed size blocks by passing a "sliding window"
    *  over them (as opposed to partitioning them, as is done in grouped.)
-   *  @see Iterator#sliding
+   *  @see [[scala.collection.Iterator]], method `sliding`
    *
    *  @param size the number of elements per group
    *  @return An iterator producing ${coll}s of size `size`, except the
@@ -174,7 +174,7 @@ self =>
   
   /** Groups elements in fixed size blocks by passing a "sliding window"
    *  over them (as opposed to partitioning them, as is done in grouped.)
-   *  @see Iterator#sliding
+   *  @see [[scala.collection.Iterator]], method `sliding`
    *
    *  @param size the number of elements per group
    *  @param step the distance between the first elements of successive

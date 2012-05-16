@@ -20,7 +20,7 @@ import scala.annotation.implicitNotFound
  *  @tparam Elem  the element type of the collection to be created.
  *  @tparam To    the type of the collection to be created.
  *
- *  @see Builder
+ *  @see [[scala.collection.mutable.Builder]]
  *  @author Martin Odersky
  *  @author Adriaan Moors
  *  @since 2.8

@@ -19,7 +19,7 @@ import java.lang.Integer.{ rotateLeft => rotl }
  * to remedy some weaknesses and improve performance. This represents the
  * latest and supposedly final version of the algortihm (revision 136).
  *
- * @see http://code.google.com/p/smhasher
+ * @see [[http://code.google.com/p/smhasher]]
  */
 class MurmurHash3 {
   /** Mix in a block of data into an intermediate hash value. */
