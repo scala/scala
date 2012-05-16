@@ -18,6 +18,28 @@ import parallel.mutable.ParMap
  *  $mapNote
  *  $mapTags
  *  @since   2.8
+ *
+ * @define mapNote
+ *    '''Implementation note:'''
+ *    This trait provides most of the operations of a mutable `Map`
+ *    independently of its representation. It is typically inherited by
+ *    concrete implementations of maps.
+ *
+ *    To implement a concrete mutable map, you need to provide
+ *    implementations of the following methods:
+ *    {{{
+ *       def get(key: A): Option[B]
+ *       def iterator: Iterator[(A, B)]
+ *       def += (kv: (A, B)): This
+ *       def -= (key: A): This
+ *    }}}
+ *    If you wish that methods like `take`, `drop`, `filter` also return the same kind of map
+ *    you should also override:
+ *    {{{
+ *       def empty: This
+ *    }}}
+ *    It is also good idea to override methods `foreach` and
+ *    `size` for efficiency.
  */
 trait MapLike[A, B, +This <: MapLike[A, B, This] with Map[A, B]]
   extends scala.collection.MapLike[A, B, This]
