@@ -67,7 +67,7 @@ class SyncVar[A] {
    *  @return            `None` if variable is undefined after `timeout`, `Some(value)` otherwise
    */
   def take(timeout: Long): A = synchronized {
-    try get(timeout)
+    try get(timeout).get
     finally unsetVal()
   }
 
