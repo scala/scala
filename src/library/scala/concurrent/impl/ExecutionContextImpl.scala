@@ -10,18 +10,20 @@ package scala.concurrent.impl
 
 
 
-import java.util.concurrent.{ Callable, Executor, ExecutorService, Executors, ThreadFactory }
+import java.util.concurrent.{ Callable, Executor, ExecutorService, Executors, ThreadFactory, TimeUnit }
+import java.util.Collection
 import scala.concurrent.forkjoin._
 import scala.concurrent.{ ExecutionContext, Awaitable }
 import scala.concurrent.util.Duration
 
 
 
-private[scala] class ExecutionContextImpl(es: AnyRef, reporter: Throwable => Unit = ExecutionContext.defaultReporter)
-extends ExecutionContext with Executor {
-  import ExecutionContextImpl._
-  
-  val executorService: AnyRef = if (es eq null) getExecutorService else es
+private[scala] class ExecutionContextImpl private[impl] (es: Executor, reporter: Throwable => Unit) extends ExecutionContext with Executor {
+
+  val executor: Executor = es match {
+    case null => createExecutorService
+    case some => some
+  }
   
   // to ensure that the current execution context thread local is properly set
   def executorsThreadFactory = new ThreadFactory {
@@ -42,51 +44,46 @@ extends ExecutionContext with Executor {
     }
   }
   
-  def getExecutorService: AnyRef =
-    if (scala.util.Properties.isJavaAtLeast("1.6")) {
-      val vendor = scala.util.Properties.javaVmVendor
-      if ((vendor contains "Oracle") || (vendor contains "Sun") || (vendor contains "Apple"))
-        new ForkJoinPool(
-          Runtime.getRuntime.availableProcessors(),
+  def createExecutorService: ExecutorService = try { new ForkJoinPool(
+          Runtime.getRuntime.availableProcessors(), //FIXME from config
           forkJoinPoolThreadFactory,
-          null,
-          false)
-      else
-        Executors.newCachedThreadPool(executorsThreadFactory)
-    } else Executors.newCachedThreadPool(executorsThreadFactory)
+          null, //FIXME we should have an UncaughtExceptionHandler, see what Akka does
+          true) //FIXME I really think this should be async...
+  } catch {
+    case NonFatal(t) =>
+      System.err.println("Failed to create ForkJoinPool for the default ExecutionContext, falling back to Executors.newCachedThreadPool")
+      t.printStackTrace(System.err)
+      Executors.newCachedThreadPool(executorsThreadFactory)
+  }
 
-  def execute(runnable: Runnable): Unit = executorService match {
+  def execute(runnable: Runnable): Unit = executor match {
     case fj: ForkJoinPool =>
       Thread.currentThread match {
         case fjw: ForkJoinWorkerThread if fjw.getPool eq fj =>
-          val fjtask = runnable match {
+          (runnable match {
             case fjt: ForkJoinTask[_] => fjt
             case _ => ForkJoinTask.adapt(runnable)
-          }
-          fjtask.fork
-        case _ =>
-          fj.execute(runnable)
+          }).fork
+        case _ => fj.execute(runnable)
       }
-    case executor: Executor =>
-      executor execute runnable
+    case generic => generic execute runnable
   }
 
   def internalBlockingCall[T](awaitable: Awaitable[T], atMost: Duration): T = {
     Future.releaseStack(this)
     
-    executorService match {
+    executor match {
       case fj: ForkJoinPool =>
         var result: T = null.asInstanceOf[T]
-        val managedBlocker = new ForkJoinPool.ManagedBlocker {
+        ForkJoinPool.managedBlock(new ForkJoinPool.ManagedBlocker { 
           @volatile var isdone = false
-          def block() = {
-            result = awaitable.result(atMost)(scala.concurrent.Await.canAwaitEvidence)
+          def block(): Boolean = {
+            result = awaitable.result(atMost)(scala.concurrent.Await.canAwaitEvidence) // FIXME what happens if there's an exception thrown here?
             isdone = true
             true
           }
           def isReleasable = isdone
-        }
-        ForkJoinPool.managedBlock(managedBlocker)
+        })
         result
       case _ =>
         awaitable.result(atMost)(scala.concurrent.Await.canAwaitEvidence)
@@ -94,12 +91,29 @@ extends ExecutionContext with Executor {
   }
 
   def reportFailure(t: Throwable) = reporter(t)
-
 }
 
 
 private[concurrent] object ExecutionContextImpl {
-  
+
+  def fromExecutor(e: Executor, reporter: Throwable => Unit = ExecutionContext.defaultReporter): ExecutionContextImpl = new ExecutionContextImpl(e, reporter)
+  def fromExecutorService(es: ExecutorService, reporter: Throwable => Unit = ExecutionContext.defaultReporter): ExecutionContextImpl with ExecutorService =
+    new ExecutionContextImpl(es, reporter) with ExecutorService {
+      final def asExecutorService: ExecutorService = executor.asInstanceOf[ExecutorService]
+      override def execute(command: Runnable) = executor.execute(command)
+      override def shutdown() { asExecutorService.shutdown() }
+      override def shutdownNow() = asExecutorService.shutdownNow()
+      override def isShutdown = asExecutorService.isShutdown
+      override def isTerminated = asExecutorService.isTerminated
+      override def awaitTermination(l: Long, timeUnit: TimeUnit) = asExecutorService.awaitTermination(l, timeUnit)
+      override def submit[T](callable: Callable[T]) = asExecutorService.submit(callable)
+      override def submit[T](runnable: Runnable, t: T) = asExecutorService.submit(runnable, t)
+      override def submit(runnable: Runnable) = asExecutorService.submit(runnable)
+      override def invokeAll[T](callables: Collection[_ <: Callable[T]]) = asExecutorService.invokeAll(callables)
+      override def invokeAll[T](callables: Collection[_ <: Callable[T]], l: Long, timeUnit: TimeUnit) = asExecutorService.invokeAll(callables, l, timeUnit)
+      override def invokeAny[T](callables: Collection[_ <: Callable[T]]) = asExecutorService.invokeAny(callables)
+      override def invokeAny[T](callables: Collection[_ <: Callable[T]], l: Long, timeUnit: TimeUnit) = asExecutorService.invokeAny(callables, l, timeUnit)
+    }
 }
 
 

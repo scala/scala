@@ -182,6 +182,72 @@ trait FutureCombinators extends TestBase {
       }
   }
 
+  def testMapSuccessPF(): Unit = once {
+    done =>
+      val f = future { 5 }
+      val g = f map { case r => "result: " + r }
+      g onSuccess {
+        case s =>
+          done()
+          assert(s == "result: 5")
+      }
+      g onFailure {
+        case _ =>
+          done()
+          assert(false)
+      }
+  }
+
+  def testTransformSuccess(): Unit = once {
+    done =>
+      val f = future { 5 }
+      val g = f.transform(r => "result: " + r, identity)
+      g onSuccess {
+        case s =>
+          done()
+          assert(s == "result: 5")
+      }
+      g onFailure {
+        case _ =>
+          done()
+          assert(false)
+      }
+  }
+
+  def testTransformSuccessPF(): Unit = once {
+    done =>
+      val f = future { 5 }
+      val g = f.transform( { case r => "result: " + r }, identity)
+      g onSuccess {
+        case s =>
+          done()
+          assert(s == "result: 5")
+      }
+      g onFailure {
+        case _ =>
+          done()
+          assert(false)
+      }
+  }
+
+  def testFoldFailure(): Unit = once {
+    done =>
+      val f = future {
+        throw new Exception("exception message")
+      }
+      val g = f.transform(r => "result: " + r, identity)
+      g onSuccess {
+        case _ =>
+          done()
+          assert(false)
+      }
+      g onFailure {
+        case t =>
+          done()
+          assert(t.getMessage() == "exception message")
+      }
+  }
+
   def testFlatMapSuccess(): Unit = once {
     done =>
       val f = future { 5 }
@@ -340,14 +406,17 @@ trait FutureCombinators extends TestBase {
     } recover {
       case re: RuntimeException =>
         "recovered"
-    } onSuccess {
+    }
+    f onSuccess {
       case x =>
         done()
         assert(x == "recovered")
-    } onFailure { case any =>
+    }
+    f onFailure { case any =>
       done()
       assert(false)
     }
+    f
   }
 
   def testRecoverFailure(): Unit = once {
@@ -357,11 +426,13 @@ trait FutureCombinators extends TestBase {
       throw cause
     } recover {
       case te: TimeoutException => "timeout"
-    } onSuccess {
+    }
+    f onSuccess {
       case x =>
         done()
         assert(false)
-    } onFailure { case any =>
+    }
+    f onFailure { case any =>
       done()
       assert(any == cause)
     }
@@ -375,11 +446,13 @@ trait FutureCombinators extends TestBase {
     } recoverWith {
       case re: RuntimeException =>
         future { "recovered" }
-    } onSuccess {
+    }
+    f onSuccess {
       case x =>
         done()
         assert(x == "recovered")
-    } onFailure { case any =>
+    }
+    f onFailure { case any =>
       done()
       assert(false)
     }
@@ -393,11 +466,13 @@ trait FutureCombinators extends TestBase {
     } recoverWith {
       case te: TimeoutException =>
         future { "timeout" }
-    } onSuccess {
+    }
+    f onSuccess {
       case x =>
         done()
         assert(false)
-    } onFailure { case any =>
+    }
+    f onFailure { case any =>
       done()
       assert(any == cause)
     }
@@ -635,11 +710,12 @@ trait Promises extends TestBase {
     val p = promise[Int]()
     val f = p.future
     
-    f.onSuccess {
+    f onSuccess {
       case x =>
         done()
         assert(x == 5)
-    } onFailure {
+    }
+    f onFailure {
       case any =>
         done()
         assert(false)

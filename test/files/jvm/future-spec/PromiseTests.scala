@@ -133,7 +133,7 @@ object PromiseTests extends MinimalScalaTest {
         (future, result) =>
           intercept[NoSuchElementException] {
             Await.result(future.failed, defaultTimeout)
-          }.getMessage mustBe ("Future.failed not completed with a throwable. Instead completed with: " + result)
+          }.getMessage mustBe ("Future.failed not completed with a throwable.")
       }
     }
     
