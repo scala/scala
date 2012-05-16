@@ -824,7 +824,7 @@ trait Iterator[+A] extends TraversableOnce[A] {
 
   /** Creates a buffered iterator from this iterator.
    *
-   *  @see BufferedIterator
+   *  @see [[scala.collection.BufferedIterator]]
    *  @return  a buffered iterator producing the same values as this iterator.
    *  @note    Reuse: $consumesAndProducesIterator
    */

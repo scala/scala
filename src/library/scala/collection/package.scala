@@ -14,7 +14,7 @@ package scala
  * == Guide ==
  *
  * A detailed guide for the collections library is available
- * at [[http://www.scala-lang.org/docu/files/collections-api]].
+ * at [[http://docs.scala-lang.org/overviews/collections/introduction.html]].
  *
  * == Using Collections ==
  *
@@ -67,7 +67,7 @@ package scala
  * Also note that the collections library was carefully designed to include several implementations of
  * each of the three basic collection types. These implementations have specific performance
  * characteristics which are described
- * in [[http://www.scala-lang.org/docu/files/collections-api the guide]].
+ * in [[http://docs.scala-lang.org/overviews/collections/performance-characteristics.html the guide]].
  *
  * === Converting between Java Collections ===
  *

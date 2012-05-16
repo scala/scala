@@ -451,14 +451,14 @@ object Predef extends LowPriorityImplicits {
   }
 
   /** A type for which there is always an implicit value.
-   *  @see fallbackCanBuildFrom in Array.scala
+   *  @see [[scala.Array$]], method `fallbackCanBuildFrom`
    */
   class DummyImplicit
 
   object DummyImplicit {
 
     /** An implicit value yielding a `DummyImplicit`.
-     *   @see fallbackCanBuildFrom in Array.scala
+     *   @see [[scala.Array$]], method `fallbackCanBuildFrom`
      */
     implicit def dummyImplicit: DummyImplicit = new DummyImplicit
   }

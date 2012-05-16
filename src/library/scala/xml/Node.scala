@@ -162,8 +162,6 @@ abstract class Node extends NodeSeq {
 
   /**
    * Same as `toString('''false''')`.
-   *
-   * @see <code><a href="#toString">toString(Boolean)</a></code>
    */
   override def toString(): String = buildString(false)
 

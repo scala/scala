@@ -511,7 +511,7 @@ class Template(universe: doc.Universe, tpl: DocTemplateEntity) extends HtmlPage 
             <dt>See also</dt>
             <dd>{
               val seeXml:List[scala.xml.NodeSeq]=(for(see <- comment.see ) yield <span class="cmt">{bodyToHtml(see)}</span> )
-              seeXml.reduceLeft(_ ++ Text(", ") ++ _)
+              seeXml.reduceLeft(_ ++ _)
             }</dd>
           } else NodeSeq.Empty
 

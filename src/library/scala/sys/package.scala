@@ -50,7 +50,7 @@ package object sys {
   /** A bidirectional, mutable Map representing the current system Properties.
    *
    *  @return   a SystemProperties.
-   *  @see      `scala.sys.SystemProperties`
+   *  @see      [[scala.sys.SystemProperties]]
    */
   def props: SystemProperties = new SystemProperties
 

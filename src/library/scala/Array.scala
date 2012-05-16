@@ -438,10 +438,8 @@ object Array extends FallbackArrayBuilding {
  *  Arrays make use of two common pieces of Scala syntactic sugar, shown on lines 2 and 3 of the above
  *  example code.
  *  Line 2 is translated into a call to `apply(Int)`, while line 3 is translated into a call to
- *  `update(Int, T)`. For more information on these transformations, see the
- *  [[http://www.scala-lang.org/docu/files/ScalaReference.pdf Scala Language Specification v2.8]], Sections
- *  6.6 and 6.15 respectively.
- *
+ *  `update(Int, T)`.
+ *  
  *  Two implicit conversions exist in [[scala.Predef]] that are frequently applied to arrays: a conversion
  *  to [[scala.collection.mutable.ArrayOps]] (shown on line 4 of the example above) and a conversion
  *  to [[scala.collection.mutable.WrappedArray]] (a subtype of [[scala.collections.Seq]]).
@@ -465,8 +463,9 @@ object Array extends FallbackArrayBuilding {
  *
  *  @author Martin Odersky
  *  @version 1.0
- *  @see [[http://www.scala-lang.org/docu/files/collections-api/collections_38.html#anchor "The Scala 2.8 Collections' API"]]
- *  section on `Array` by Martin Odersky for more information.
+ *  @see [[http://www.scala-lang.org/docu/files/ScalaReference.pdf Scala Language Specification]], for in-depth information on the transformations the Scala compiler makes on Arrays (Sections 6.6 and 6.15 respectively.)
+ *  @see [[http://docs.scala-lang.org/sips/completed/scala-2-8-arrays.html "Scala 2.8 Arrays"]] the Scala Improvement Document detailing arrays since Scala 2.8.
+ *  @see [[http://docs.scala-lang.org/overviews/collections/arrays.html "The Scala 2.8 Collections' API"]] section on `Array` by Martin Odersky for more information.
  *  @define coll array
  *  @define Coll `Array`
  *  @define orderDependent
