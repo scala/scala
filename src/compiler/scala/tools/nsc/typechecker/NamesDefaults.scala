@@ -158,20 +158,20 @@ trait NamesDefaults { self: Analyzer =>
         // it stays in Vegas: SI-5720, SI-5727
         qual changeOwner (blockTyper.context.owner -> sym)
 
+        val newQual = atPos(qual.pos.focus)(blockTyper.typedQualifier(Ident(sym.name)))
         var baseFunTransformed = atPos(baseFun.pos.makeTransparent) {
-          // don't use treeCopy: it would assign opaque position.
-          val f = Select(gen.mkAttributedRef(sym), selected)
-                   .setType(baseFun1.tpe).setSymbol(baseFun1.symbol)
+          // setSymbol below is important because the 'selected' function might be overloaded. by
+          // assigning the correct method symbol, typedSelect will just assign the type. the reason
+          // to still call 'typed' is to correctly infer singleton types, SI-5259.
+          val f = blockTyper.typedOperator(Select(newQual, selected).setSymbol(baseFun1.symbol))
           if (funTargs.isEmpty) f
           else TypeApply(f, funTargs).setType(baseFun.tpe)
         }
 
         val b = Block(List(vd), baseFunTransformed)
                   .setType(baseFunTransformed.tpe).setPos(baseFun.pos)
-
-        val defaultQual = Some(atPos(qual.pos.focus)(gen.mkAttributedRef(sym)))
         context.namedApplyBlockInfo =
-          Some((b, NamedApplyInfo(defaultQual, defaultTargs, Nil, blockTyper)))
+          Some((b, NamedApplyInfo(Some(newQual), defaultTargs, Nil, blockTyper)))
         b
       }
 
