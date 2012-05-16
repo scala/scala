@@ -1,0 +1,5 @@
+t4928.scala:3: error: parameter 'a' is already specified at parameter position 1
+Note that that 'z' is not a parameter name of the invoked method.
+  f(z = 0, a = 1)
+             ^
+one error found
