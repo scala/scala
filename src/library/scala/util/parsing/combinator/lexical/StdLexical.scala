@@ -25,8 +25,8 @@ import scala.collection.mutable
  *  `delimiters` set.
  *
  *  Usually this component is used to break character-based input into
- *  bigger tokens, which are then passed to a token-parser {@see
- *  [[scala.util.parsing.combinator.syntactical.TokenParsers]]}.
+ *  bigger tokens, which are then passed to a token-parser (see
+ *  [[scala.util.parsing.combinator.syntactical.TokenParsers]].)
  *
  * @author Martin Odersky
  * @author Iulian Dragos
