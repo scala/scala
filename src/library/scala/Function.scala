@@ -37,7 +37,7 @@ object Function {
    *  @param   f    a function `T => Option[R]`
    *  @return       a partial function defined for those inputs where
    *                f returns `Some(_)` and undefined where `f` returns `None`.
-   *  @see [[scala.PartialFunction#lift]]
+   *  @see [[scala.PartialFunction]], method `lift`.
    */
   def unlift[T, R](f: T => Option[R]): PartialFunction[T, R] = PartialFunction.unlifted(f)
 
