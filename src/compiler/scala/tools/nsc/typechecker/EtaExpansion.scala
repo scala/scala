@@ -63,15 +63,18 @@ trait EtaExpansion { self: Analyzer =>
      *  @return     ...
      */
     def liftoutPrefix(tree: Tree): Tree = {
-      def liftout(tree: Tree): Tree =
+      def liftout(tree: Tree, byName: Boolean): Tree =
         if (treeInfo.isExprSafeToInline(tree)) tree
         else {
           val vname: Name = freshName()
           // Problem with ticket #2351 here
           defs += atPos(tree.pos) {
-            ValDef(Modifiers(SYNTHETIC), vname.toTermName, TypeTree(), tree)
+            val rhs = if (byName) Function(List(), tree) else tree
+            ValDef(Modifiers(SYNTHETIC), vname.toTermName, TypeTree(), rhs)
           }
-          Ident(vname) setPos tree.pos.focus
+          atPos(tree.pos.focus) {
+            if (byName) Apply(Ident(vname), List()) else Ident(vname)
+          }
         }
       val tree1 = tree match {
         // a partial application using named arguments has the following form:
@@ -85,11 +88,14 @@ trait EtaExpansion { self: Analyzer =>
           defs ++= stats
           liftoutPrefix(fun)
         case Apply(fn, args) =>
-          treeCopy.Apply(tree, liftoutPrefix(fn), args mapConserve (liftout)) setType null
+          val byName = fn.tpe.params.map(p => definitions.isByNameParamType(p.tpe))
+          // zipAll: with repeated params, there might be more args than params
+          val newArgs = args.zipAll(byName, EmptyTree, false) map { case (arg, byN) => liftout(arg, byN) }
+          treeCopy.Apply(tree, liftoutPrefix(fn), newArgs) setType null
         case TypeApply(fn, args) =>
           treeCopy.TypeApply(tree, liftoutPrefix(fn), args) setType null
         case Select(qual, name) =>
-          treeCopy.Select(tree, liftout(qual), name) setSymbol NoSymbol setType null
+          treeCopy.Select(tree, liftout(qual, false), name) setSymbol NoSymbol setType null
         case Ident(name) =>
           tree
       }
