@@ -30,10 +30,10 @@ trait ToolBoxes { self: Global =>
       // todo. implement this
       ???
 
-    def resetAllAttrs[T <: Tree](tree: T): T =
+    def resetAllAttrs(tree: Tree): Tree =
       self.resetAllAttrs(tree)
 
-    def resetLocalAttrs[T <: Tree](tree: T): T =
+    def resetLocalAttrs(tree: Tree): Tree =
       self.resetLocalAttrs(tree)
 
     def runExpr(tree0: Tree, freeTypes: Map[FreeType, Type] = Map[FreeType, Type]()): Any = {
