@@ -69,7 +69,7 @@ trait Typers {
     def unapply(error: TypeError): Option[(Position, String)] = Some((error.pos, error.msg))
   }
 
-  def resetAllAttrs[T <: Tree](tree: T): T = mirror.resetAllAttrs(tree)
+  def resetAllAttrs(tree: Tree): Tree = mirror.resetAllAttrs(tree)
 
-  def resetLocalAttrs[T <: Tree](tree: T): T = mirror.resetLocalAttrs(tree)
+  def resetLocalAttrs(tree: Tree): Tree = mirror.resetLocalAttrs(tree)
 }

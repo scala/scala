@@ -315,18 +315,16 @@ trait ToolBoxes extends { self: Universe =>
       // todo. implement this
       ???
 
-    def resetAllAttrs[T <: Tree](tree: T): T = {
+    def resetAllAttrs(tree: Tree): Tree = {
       val ctree: compiler.Tree = importer.importTree(tree)
       val ttree: compiler.Tree = compiler.resetAllAttrs(ctree)
-      val rmttree = exporter.importTree(ttree)
-      rmttree.asInstanceOf[T]
+      exporter.importTree(ttree)
     }
 
-    def resetLocalAttrs[T <: Tree](tree: T): T = {
+    def resetLocalAttrs(tree: Tree): Tree = {
       val ctree: compiler.Tree = importer.importTree(tree)
       val ttree: compiler.Tree = compiler.resetLocalAttrs(ctree)
-      val rmttree = exporter.importTree(ttree)
-      rmttree.asInstanceOf[T]
+      exporter.importTree(ttree)
     }
 
     def showAttributed(tree: Tree, printTypes: Boolean = true, printIds: Boolean = true, printKinds: Boolean = false): String =

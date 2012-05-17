@@ -59,14 +59,14 @@ trait ToolBoxes { self: Universe =>
      *  Note that this does not revert the tree to its pre-typer shape.
      *  For more info, read up https://issues.scala-lang.org/browse/SI-5464.
      */
-    def resetAllAttrs[T <: Tree](tree: T): T
+    def resetAllAttrs(tree: Tree): Tree
 
     /** Recursively resets locally defined symbols and types in a given tree.
      *
      *  Note that this does not revert the tree to its pre-typer shape.
      *  For more info, read up https://issues.scala-lang.org/browse/SI-5464.
      */
-    def resetLocalAttrs[T <: Tree](tree: T): T
+    def resetLocalAttrs(tree: Tree): Tree
 
     /** Compiles and runs a tree using this ToolBox.
      *
