@@ -362,7 +362,8 @@ trait Trees extends reflect.internal.Trees { self: Global =>
       }
 
       val x1 = new Transformer().transform(x)
-      assert(x.getClass isInstance x1, x1.getClass)
+      // The loose invariant is a temporary workaround for SI-5803
+      assert(x.getClass.isInstance(x1) || (x.isInstanceOf[ApplyConstructor] && x1.isInstanceOf[Apply]), (x.getClass, x1.getClass))
       x1.asInstanceOf[T]
     }
   }

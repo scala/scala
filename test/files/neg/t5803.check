@@ -1,0 +1,4 @@
+t5803.scala:3: error: could not find implicit value for parameter ev: Nothing
+  new Foo(): String
+  ^
+one error found
