@@ -10,8 +10,8 @@ package scala.concurrent.impl
 
 
 
-import java.util.concurrent.TimeUnit.{ NANOSECONDS, MILLISECONDS }
-import scala.concurrent.{ Awaitable, ExecutionContext, blocking, CanAwait, TimeoutException, ExecutionException }
+import java.util.concurrent.TimeUnit.NANOSECONDS
+import scala.concurrent.{ ExecutionContext, CanAwait, TimeoutException, ExecutionException }
 import scala.concurrent.util.Duration
 import scala.annotation.tailrec
 
