@@ -19,7 +19,7 @@ object FutureTests extends MinimalScalaTest {
     case "NoReply" => Promise[String]().future
   }
   
-  val defaultTimeout = Inf
+  val defaultTimeout = 5 seconds
   
   /* future specification */
   

@@ -65,6 +65,8 @@ private[concurrent] object Future {
     promise.future
   }
 
+  private[impl] val throwableId: Throwable => Throwable = identity _
+
   // an optimization for batching futures
   // TODO we should replace this with a public queue,
   // so that it can be stolen from

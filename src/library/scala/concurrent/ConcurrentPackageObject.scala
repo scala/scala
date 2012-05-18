@@ -8,7 +8,7 @@
 
 package scala.concurrent
 
-import java.util.concurrent.{ Executors, ExecutorService, ThreadFactory }
+import java.util.concurrent.{ Executors, Executor, ThreadFactory }
 import scala.concurrent.forkjoin.{ ForkJoinPool, ForkJoinWorkerThread }
 import scala.concurrent.util.Duration
 import language.implicitConversions
@@ -19,7 +19,7 @@ import language.implicitConversions
 abstract class ConcurrentPackageObject {
   /** A global execution environment for executing lightweight tasks.
    */
-  lazy val defaultExecutionContext = new impl.ExecutionContextImpl(null)
+  lazy val defaultExecutionContext: ExecutionContext with Executor = impl.ExecutionContextImpl.fromExecutor(null: Executor)
 
   val currentExecutionContext = new ThreadLocal[ExecutionContext]
   

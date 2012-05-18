@@ -112,7 +112,7 @@ object Promise {
       }
     }
 
-    def onComplete[U](func: Either[Throwable, T] => U): this.type = {
+    def onComplete[U](func: Either[Throwable, T] => U): Unit = {
       @tailrec //Tries to add the callback, if already completed, it dispatches the callback to be executed
       def dispatchOrAddCallback(): Unit =
         getState match {
@@ -120,7 +120,6 @@ object Promise {
           case listeners: List[_] => if (updateState(listeners, func :: listeners)) () else dispatchOrAddCallback()
         }
       dispatchOrAddCallback()
-      this
     }
 
     private final def notifyCompleted(func: Either[Throwable, T] => Any, result: Either[Throwable, T]) {
@@ -144,10 +143,9 @@ object Promise {
 
     def tryComplete(value: Either[Throwable, T]): Boolean = false
 
-    def onComplete[U](func: Either[Throwable, T] => U): this.type = {
-      val completedAs = value.get
+    def onComplete[U](func: Either[Throwable, T] => U): Unit = {
+      val completedAs = value.get // Avoid closing over "this"
       Future.dispatchFuture(executor, () => func(completedAs))
-      this
     }
 
     def ready(atMost: Duration)(implicit permit: CanAwait): this.type = this

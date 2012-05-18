@@ -96,9 +96,9 @@ trait Future[+T] extends Awaitable[T] {
    *
    *  $multipleCallbacks
    */
-  def onSuccess[U](pf: PartialFunction[T, U]): this.type = onComplete {
-    case Left(t) => // do nothing
-    case Right(v) => if (pf isDefinedAt v) pf(v) else { /*do nothing*/ }
+  def onSuccess[U](pf: PartialFunction[T, U]): Unit = onComplete {
+    case Right(v) if pf isDefinedAt v => pf(v)
+    case _ =>
   }
 
   /** When this future is completed with a failure (i.e. with a throwable),
@@ -113,9 +113,9 @@ trait Future[+T] extends Awaitable[T] {
    *
    *  $multipleCallbacks
    */
-  def onFailure[U](callback: PartialFunction[Throwable, U]): this.type = onComplete {
-    case Left(t) => if (isFutureThrowable(t) && callback.isDefinedAt(t)) callback(t) else { /*do nothing*/ }
-    case Right(v) => // do nothing
+  def onFailure[U](callback: PartialFunction[Throwable, U]): Unit = onComplete {
+    case Left(t) if (isFutureThrowable(t) && callback.isDefinedAt(t)) => callback(t)
+    case _ =>
   }
 
   /** When this future is completed, either through an exception, or a value,
@@ -126,7 +126,7 @@ trait Future[+T] extends Awaitable[T] {
    *
    *  $multipleCallbacks
    */
-  def onComplete[U](func: Either[Throwable, T] => U): this.type
+  def onComplete[U](func: Either[Throwable, T] => U): Unit
 
 
   /* Miscellaneous */
@@ -169,7 +169,7 @@ trait Future[+T] extends Awaitable[T] {
 
     onComplete {
       case Left(t) => p success t
-      case Right(v) => p failure (new NoSuchElementException("Future.failed not completed with a throwable. Instead completed with: " + v))
+      case Right(v) => p failure (new NoSuchElementException("Future.failed not completed with a throwable."))
     }
 
     p.future
@@ -184,7 +184,36 @@ trait Future[+T] extends Awaitable[T] {
    */
   def foreach[U](f: T => U): Unit = onComplete {
     case Right(r) => f(r)
-    case Left(_)  => // do nothing
+    case _  => // do nothing
+  }
+
+  /** Creates a new future by applying the 's' function to the successful result of
+   *  this future, or the 'f' function to the failed result. If there is any non-fatal
+   *  exception thrown when 's' or 'f' is applied, that exception will be propagated
+   *  to the resulting future.
+   *  
+   *  @param  s  function that transforms a successful result of the receiver into a
+   *             successful result of the returned future
+   *  @param  f  function that transforms a failure of the receiver into a failure of
+   *             the returned future
+   *  @return    a future that will be completed with the transformed value
+   */
+  def transform[S](s: T => S, f: Throwable => Throwable): Future[S] = {
+    val p = Promise[S]()
+
+    onComplete {
+      case result =>
+        try {
+          result match {
+            case Left(t)  => p failure f(t)
+            case Right(r) => p success s(r)
+          }
+        } catch {
+          case NonFatal(t) => p failure t
+        }
+    }
+
+    p.future
   }
 
   /** Creates a new future by applying a function to the successful result of
@@ -193,14 +222,17 @@ trait Future[+T] extends Awaitable[T] {
    *
    *  $forComprehensionExamples
    */
-  def map[S](f: T => S): Future[S] = {
+  def map[S](f: T => S): Future[S] = { // transform(f, identity)
     val p = Promise[S]()
 
     onComplete {
-      case Left(t) => p failure t
-      case Right(v) =>
-        try p success f(v)
-        catch {
+      case result =>
+        try {
+          result match {
+            case Right(r) => p success f(r)
+            case l: Left[_, _] => p complete l.asInstanceOf[Left[Throwable, S]]
+          }
+        } catch {
           case NonFatal(t) => p failure t
         }
     }
@@ -219,11 +251,11 @@ trait Future[+T] extends Awaitable[T] {
     val p = Promise[S]()
 
     onComplete {
-      case Left(t) => p failure t
+      case l: Left[_, _] => p complete l.asInstanceOf[Left[Throwable, S]]
       case Right(v) =>
         try {
           f(v) onComplete {
-            case Left(t) => p failure t
+            case l: Left[_, _] => p complete l.asInstanceOf[Left[Throwable, S]]
             case Right(v) => p success v
           }
         } catch {
@@ -254,7 +286,7 @@ trait Future[+T] extends Awaitable[T] {
     val p = Promise[T]()
 
     onComplete {
-      case Left(t) => p failure t
+      case l: Left[_, _] => p complete l.asInstanceOf[Left[Throwable, T]]
       case Right(v) =>
         try {
           if (pred(v)) p success v
@@ -303,7 +335,7 @@ trait Future[+T] extends Awaitable[T] {
     val p = Promise[S]()
 
     onComplete {
-      case Left(t) => p failure t
+      case l: Left[_, _] => p complete l.asInstanceOf[Left[Throwable, S]]
       case Right(v) =>
         try {
           if (pf.isDefinedAt(v)) p success pf(v)
@@ -384,7 +416,7 @@ trait Future[+T] extends Awaitable[T] {
     val p = Promise[(T, U)]()
     
     this onComplete {
-      case Left(t)  => p failure t
+      case l: Left[_, _] => p complete l.asInstanceOf[Left[Throwable, (T, U)]]
       case Right(r) =>
         that onSuccess {
           case r2 => p success ((r, r2))
@@ -431,7 +463,7 @@ trait Future[+T] extends Awaitable[T] {
     val p = Promise[S]()
 
     onComplete {
-      case l: Left[Throwable, _] => p complete l.asInstanceOf[Either[Throwable, S]]
+      case l: Left[_, _] => p complete l.asInstanceOf[Left[Throwable, S]]
       case Right(t) =>
         p complete (try {
           Right(boxedType(tag.erasure).cast(t).asInstanceOf[S])
@@ -470,9 +502,7 @@ trait Future[+T] extends Awaitable[T] {
     val p = Promise[T]()
 
     onComplete {
-      case r =>
-        try if (pf isDefinedAt r) pf(r)
-        finally p complete r
+      case r => try if (pf isDefinedAt r) pf(r) finally p complete r
     }
 
     p.future
@@ -493,11 +523,7 @@ trait Future[+T] extends Awaitable[T] {
    */
   def either[U >: T](that: Future[U]): Future[U] = {
     val p = Promise[U]()
-
-    val completePromise: PartialFunction[Either[Throwable, U], _] = {
-      case Left(t) => p tryFailure t
-      case Right(v) => p trySuccess v
-    }
+    val completePromise: PartialFunction[Either[Throwable, U], _] = { case result => p tryComplete result }
 
     this onComplete completePromise
     that onComplete completePromise
