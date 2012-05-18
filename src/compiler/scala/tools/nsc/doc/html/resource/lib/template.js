@@ -42,6 +42,11 @@ $(document).ready(function(){
            document.activeElement != $("#textfilter input")[0]) {
                $("#textfilter input").focus();
         }
+        if(event.keyCode == 9) {
+            $("#index-input", window.parent.document).focus();
+            input.attr("value", "");
+            return false;            
+        }        
     });
     $("#textfilter input").focus();
 

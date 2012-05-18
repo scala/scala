@@ -263,15 +263,20 @@ function prepareEntityList() {
 /* Configures the text filter  */
 function configureTextFilter() {
     scheduler.add("init", function() {
-        $("#filter").append("<div id='textfilter'><span class='pre'/><span class='input'><input type='text' accesskey='/'/></span><span class='post'/></div>");
+        $("#filter").append("<div id='textfilter'><span class='pre'/><span class='input'><input id='index-input' type='text' accesskey='/'/></span><span class='post'/></div>");
         printAlphabet();
         var input = $("#textfilter input");
         resizeFilterBlock();
-        input.bind("keyup", function(event) {
+        input.bind("keydown", function(event) {
             if (event.keyCode == 27) { // escape
                 input.attr("value", "");
+                textFilter();
             }
-            textFilter();
+            if (event.keyCode == 9) { // tab
+                $("#template").contents().find("#mbrsel-input").focus();
+                input.attr("value", "");
+                return false;
+            }              
         });
         input.focus(function(event) { input.select(); });
     });
