@@ -1036,7 +1036,7 @@ trait ContextErrors {
     }
     
     def WarnAfterNonSilentRecursiveInference(param: Symbol, arg: Tree)(implicit context: Context) = {
-      val note = "type-checking the invocation of "+ param.owner +" verifies if the named argument expression '"+ param.name + " = ...' is a valid assignment\n"+
+      val note = "type-checking the invocation of "+ param.owner +" checks if the named argument expression '"+ param.name + " = ...' is a valid assignment\n"+
                  "in the current scope. The resulting type inference error (see above) can be fixed by providing an explicit type in the local definition for "+ param.name +"."
       context.warning(arg.pos, note)
     }
