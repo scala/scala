@@ -112,6 +112,7 @@
         <deploy-local name="scala-compiler" version="@{version}" repository="@{repository}" />
         <deploy-local-plugin name="continuations" version="@{version}" repository="@{repository}"/>
         <deploy-local name="scala-actors" version="@{version}" repository="@{repository}" />
+        <deploy-local name="scala-actors-migration" version="@{version}" repository="@{repository}" />
         <deploy-local name="scala-swing" version="@{version}" repository="@{repository}"/>
         <deploy-local name="scalap" version="@{version}" repository="@{repository}"/>
         <deploy-local name="scala-partest" version="@{version}" repository="@{repository}"/>
@@ -172,6 +173,7 @@
         <deploy-remote name="scala-compiler" version="@{version}" repository="@{repository}" />
         <deploy-remote name="scala-swing" version="@{version}" repository="@{repository}"/>
         <deploy-remote name="scala-actors" version="@{version}" repository="@{repository}"/>
+        <deploy-remote name="scala-actors-migration" version="@{version}" repository="@{repository}"/>
         <deploy-remote name="scalap" version="@{version}" repository="@{repository}"/>
         <deploy-remote name="scala-partest" version="@{version}" repository="@{repository}"/>
         <deploy-remote-plugin name="continuations" version="@{version}" repository="@{repository}"/> 
@@ -239,6 +241,7 @@
         <deploy-remote-signed name="scala-compiler" version="@{version}" repository="@{repository}" />
         <deploy-remote-signed name="scala-swing" version="@{version}" repository="@{repository}"/>
         <deploy-remote-signed name="scala-actors" version="@{version}" repository="@{repository}"/>
+        <deploy-remote-signed name="scala-actors-migration" version="@{version}" repository="@{repository}"/>
         <deploy-remote-signed name="scalap" version="@{version}" repository="@{repository}"/>
         <deploy-remote-signed name="scala-partest" version="@{version}" repository="@{repository}"/>
       </sequential>
