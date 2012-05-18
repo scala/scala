@@ -10,13 +10,10 @@ package scala.concurrent.impl
 
 
 
-import java.util.concurrent.TimeUnit.{ NANOSECONDS, MILLISECONDS }
-import scala.concurrent.{ Awaitable, ExecutionContext, blocking, CanAwait, TimeoutException, ExecutionException }
-//import scala.util.continuations._
+import java.util.concurrent.TimeUnit.NANOSECONDS
+import scala.concurrent.{ ExecutionContext, CanAwait, TimeoutException, ExecutionException }
 import scala.concurrent.util.Duration
-import scala.util
 import scala.annotation.tailrec
-//import scala.concurrent.NonDeterministic
 
 
 
@@ -25,7 +22,7 @@ private[concurrent] trait Promise[T] extends scala.concurrent.Promise[T] with Fu
 }
 
 
-object Promise {
+private[concurrent] object Promise {
 
   private def resolveEither[T](source: Either[Throwable, T]): Either[Throwable, T] = source match {
     case Left(t) => resolver(t)
