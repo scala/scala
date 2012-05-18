@@ -9,6 +9,8 @@
 
 package scala.util.parsing.combinator
 
+import annotation.migration
+
 /** `JavaTokenParsers` differs from [[scala.util.parsing.combinator.RegexParsers]]
  *  by adding the following definitions:
  *
@@ -39,12 +41,13 @@ trait JavaTokenParsers extends RegexParsers {
   /** Double quotes (`"`) enclosing a sequence of:
    *
    *  - Any character except double quotes, control characters or backslash (`\`)
-   *  - A backslash followed by a slash, another backslash, or one of the letters
-   *    `b`, `f`, `n`, `r` or `t`.
+   *  - A backslash followed by another backslash, a single or double quote, or one
+   *    of the letters `b`, `f`, `n`, `r` or `t`
    *  - `\` followed by `u` followed by four hexadecimal digits
    */
+  @migration("`stringLiteral` allows escaping single and double quotes, but not forward slashes any longer.", "2.10.0")
   def stringLiteral: Parser[String] =
-    ("\""+"""([^"\p{Cntrl}\\]|\\[\\/bfnrt]|\\u[a-fA-F0-9]{4})*"""+"\"").r
+    ("\""+"""([^"\p{Cntrl}\\]|\\[\\'"bfnrt]|\\u[a-fA-F0-9]{4})*"""+"\"").r
   /** A number following the rules of `decimalNumber`, with the following
    *  optional additions:
    *
