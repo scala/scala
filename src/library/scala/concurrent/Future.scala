@@ -85,6 +85,13 @@ import language.higherKinds
  */
 trait Future[+T] extends Awaitable[T] {
 
+  private[this] def isFutureThrowable(t: Throwable) = t match {
+    case e: Error                               => false
+    case t: scala.util.control.ControlThrowable => false
+    case i: InterruptedException                => false
+    case _                                      => true
+  }
+  
   /* Callbacks */
 
   /** When this future is completed successfully (i.e. with a value),
