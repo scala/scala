@@ -50,6 +50,10 @@ trait FlatHashTable[A] extends FlatHashTable.HashUtils[A] {
 
   protected def capacity(expectedSize: Int) = if (expectedSize == 0) 1 else powerOfTwo(expectedSize)
 
+  /** The initial size of the hash table.
+   */
+  def initialSize: Int = 32
+
   private def initialCapacity = capacity(initialSize)
 
   protected def randomSeed = seedGenerator.get.nextInt()
@@ -360,10 +364,6 @@ private[collection] object FlatHashTable {
    */
   def defaultLoadFactor: Int = 450
   final def loadFactorDenum = 1000
-
-  /** The initial size of the hash table.
-   */
-  def initialSize: Int = 32
 
   def sizeForThreshold(size: Int, _loadFactor: Int) = math.max(32, (size.toLong * loadFactorDenum / _loadFactor).toInt)
 
