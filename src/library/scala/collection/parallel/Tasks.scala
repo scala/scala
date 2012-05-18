@@ -541,7 +541,7 @@ trait ExecutionContextTasks extends Tasks {
   
   // this part is a hack which allows switching
   val driver: Tasks = executionContext match {
-    case eci: scala.concurrent.impl.ExecutionContextImpl => eci.executorService match {
+    case eci: scala.concurrent.impl.ExecutionContextImpl => eci.executor match {
       case fjp: ForkJoinPool => new ForkJoinTaskSupport(fjp)
       case tpe: ThreadPoolExecutor => new ThreadPoolTaskSupport(tpe)
       case _ => ???
