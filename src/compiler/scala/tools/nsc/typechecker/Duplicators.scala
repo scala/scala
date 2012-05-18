@@ -166,8 +166,8 @@ abstract class Duplicators extends Analyzer {
             val newsym = vdef.symbol.cloneSymbol(newowner)
             newsym.setInfo(fixType(vdef.symbol.info))
             vdef.symbol = newsym
-            newsym.owner.info.decls enter newsym
-            debuglog("newsym: " + newsym + " info: " + newsym.info)
+            debuglog("newsym: " + newsym + " info: " + newsym.info + ", owner: " + newsym.owner)
+            if (newsym.isClass) newsym.owner.info.decls enter newsym
           
           case DefDef(_, name, tparams, vparamss, _, rhs) =>
             // invalidate parameters
