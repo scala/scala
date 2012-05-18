@@ -15,5 +15,9 @@ object Test {
     buf ++= ArrayBuffer(3, 4) // works
     buf ++= List(5) // works
     buf ++= collection.immutable.Vector(6, 7) // works
+    buf.insertAll(7, List(8, 9, 10))
+    0 +=: buf
+    List(-2, -1) ++=: buf
+    buf remove 0
   }
 }
