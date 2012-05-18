@@ -114,6 +114,8 @@ trait Typers extends Modes with Adaptations with Taggings {
       case MethodType(params, _) =>
         val argResultsBuff = new ListBuffer[SearchResult]()
         val argBuff = new ListBuffer[Tree]()
+        // paramFailed cannot be initialized with params.exists(_.tpe.isError) because that would
+        // hide some valid errors for params preceding the erroneous one.
         var paramFailed = false
 
         def mkPositionalArg(argTree: Tree, paramName: Name) = argTree
@@ -129,7 +131,7 @@ trait Typers extends Modes with Adaptations with Taggings {
           for(ar <- argResultsBuff)
             paramTp = paramTp.subst(ar.subst.from, ar.subst.to)
 
-          val res = if (paramFailed) SearchFailure else inferImplicit(fun, paramTp, context.reportErrors, false, context)
+          val res = if (paramFailed || (paramTp.isError && {paramFailed = true; true})) SearchFailure else inferImplicit(fun, paramTp, context.reportErrors, false, context)
           argResultsBuff += res
 
           if (res != SearchFailure) {

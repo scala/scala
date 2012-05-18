@@ -1,0 +1,22 @@
+t5801.scala:1: error: object sth is not a member of package scala
+import scala.sth
+       ^
+t5801.scala:4: error: not found: value sth
+  def foo(a: Int)(implicit b: sth.Sth): Unit = {}
+                              ^
+t5801.scala:7: error: not found: value sth
+  def bar(x: Int)(implicit y: Int): sth.Sth = null
+                                    ^
+t5801.scala:8: error: could not find implicit value for parameter y: Int
+  bar(1)
+     ^
+t5801.scala:10: error: not found: value sth
+  def meh(x: Int)(implicit a: sth.Sth, b: Int): Unit = {}
+                              ^
+t5801.scala:13: error: not found: value sth
+  def meh2(x: Int)(implicit b: Int, a: sth.Sth): Unit = {}
+                                       ^
+t5801.scala:14: error: could not find implicit value for parameter b: Int
+  meh2(1)
+      ^
+7 errors found
