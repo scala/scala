@@ -143,8 +143,8 @@ abstract class Duplicators extends Analyzer {
       else
         sym
 
-    private def invalidate(tree: Tree) {
-      log("attempting to invalidate " + tree.symbol + ", owner - " + (if (tree.symbol ne null) tree.symbol.owner else "<NULL>"))
+    private def invalidate(tree: Tree, owner: Symbol = NoSymbol) {
+      debuglog("attempting to invalidate " + tree.symbol)
       if (tree.isDef && tree.symbol != NoSymbol) {
         debuglog("invalid " + tree.symbol)
         invalidSyms(tree.symbol) = tree
@@ -158,18 +158,20 @@ abstract class Duplicators extends Analyzer {
             newsym.setInfo(fixType(ldef.symbol.info))
             ldef.symbol = newsym
             debuglog("newsym: " + newsym + " info: " + newsym.info)
-
+          
           case vdef @ ValDef(mods, name, _, rhs) if mods.hasFlag(Flags.LAZY) =>
-            log("ValDef " + name + " sym.info: " + vdef.symbol.info + ", owner: " + vdef.symbol.owner + " vs. context owner: " + context.owner)
+            debuglog("ValDef " + name + " sym.info: " + vdef.symbol.info)
             invalidSyms(vdef.symbol) = vdef
-            val newsym = vdef.symbol.cloneSymbol(context.owner)
+            val newowner = if (owner != NoSymbol) owner else context.owner
+            val newsym = vdef.symbol.cloneSymbol(newowner)
             newsym.setInfo(fixType(vdef.symbol.info))
             vdef.symbol = newsym
-            log("newsym: " + newsym + " info: " + newsym.info + ", " + newsym.owner + ", whereas symbol.owner is: " + vdef.symbol.owner)
-
+            newsym.owner.info.decls enter newsym
+            debuglog("newsym: " + newsym + " info: " + newsym.info)
+          
           case DefDef(_, name, tparams, vparamss, _, rhs) =>
             // invalidate parameters
-            invalidate(tparams ::: vparamss.flatten)
+            invalidateAll(tparams ::: vparamss.flatten)
             tree.symbol = NoSymbol
 
           case _ =>
@@ -178,14 +180,14 @@ abstract class Duplicators extends Analyzer {
       }
     }
 
-    private def invalidate(stats: List[Tree]) {
-      stats foreach invalidate
+    private def invalidateAll(stats: List[Tree], owner: Symbol = NoSymbol) {
+      stats.foreach(invalidate(_, owner))
     }
 
     def retypedMethod(ddef: DefDef, oldThis: Symbol, newThis: Symbol): Tree = {
       oldClassOwner = oldThis
       newClassOwner = newThis
-      invalidate(ddef.tparams)
+      invalidateAll(ddef.tparams)
       mforeach(ddef.vparamss) { vdef =>
         invalidate(vdef)
         vdef.tpe = null
@@ -239,15 +241,15 @@ abstract class Duplicators extends Analyzer {
 
         case Block(stats, res) =>
           debuglog("invalidating block")
-          invalidate(stats)
+          invalidateAll(stats)
           invalidate(res)
           tree.tpe = null
           super.typed(tree, mode, pt)
 
         case ClassDef(_, _, _, tmpl @ Template(parents, _, stats)) =>
-          log("invalidating classdef " + tree.tpe)
+          // log("invalidating classdef " + tree)
           tmpl.symbol = tree.symbol.newLocalDummy(tree.pos)
-          invalidate(stats)
+          invalidateAll(stats, tree.symbol)
           tree.tpe = null
           super.typed(tree, mode, pt)
 
@@ -257,7 +259,6 @@ abstract class Duplicators extends Analyzer {
           super.typed(ddef, mode, pt)
 
         case vdef @ ValDef(mods, name, tpt, rhs) =>
-          log("vdef: " + vdef)
           // log("vdef fixing tpe: " + tree.tpe + " with sym: " + tree.tpe.typeSymbol + " and " + invalidSyms)
           //if (mods.hasFlag(Flags.LAZY)) vdef.symbol.resetFlag(Flags.MUTABLE) // Martin to Iulian: lazy vars can now appear because they are no longer boxed; Please check that deleting this statement is OK.
           vdef.tpt.tpe = fixType(vdef.tpt.tpe)
@@ -359,15 +360,11 @@ abstract class Duplicators extends Analyzer {
           tree
 
         case _ =>
-          log("Duplicators default case: " + tree.summaryString)
+          debuglog("Duplicators default case: " + tree.summaryString)
           if (tree.hasSymbol && tree.symbol != NoSymbol && (tree.symbol.owner == definitions.AnyClass)) {
             tree.symbol = NoSymbol // maybe we can find a more specific member in a subclass of Any (see AnyVal members, like ==)
           }
           tree.tpe = null
-          tree match {
-            case Select(q, n) => log("Select: " + q + ", " + n + " = " + q.tpe.member(n) + ", members: " + q.tpe.members)
-            case _ => log(tree.getClass)
-          }
           super.typed(tree, mode, pt)
       }
     }

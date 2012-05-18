@@ -3657,10 +3657,6 @@ trait Typers extends Modes with Adaptations with Taggings {
 
     def typed1(tree: Tree, mode: Int, pt: Type): Tree = {
       def isPatternMode = inPatternMode(mode)
-      tree match {
-        case This(_) => log("typed1: " + tree + ", " + tree.tpe)
-        case _ =>
-      }
 
       //Console.println("typed1("+tree.getClass()+","+Integer.toHexString(mode)+","+pt+")")
       //@M! get the type of the qualifier in a Select tree, otherwise: NoType
@@ -4239,7 +4235,6 @@ trait Typers extends Modes with Adaptations with Taggings {
       def typedThis(qual: Name) = tree.symbol orElse qualifyingClass(tree, qual, packageOK = false) match {
         case NoSymbol => tree
         case clazz    =>
-          log("typedThis: " + qual + ", " + clazz.thisType.underlying)
           tree setSymbol clazz setType clazz.thisType.underlying
           if (isStableContext(tree, mode, pt)) tree setType clazz.thisType else tree
       }
@@ -4252,7 +4247,6 @@ trait Typers extends Modes with Adaptations with Taggings {
        *  @return     ...
        */
       def typedSelect(qual: Tree, name: Name): Tree = {
-        log("typedSelect: " + qual + ", name: " + name + ", member: " + (qual.tpe.members))
         def asDynamicCall = dyna.mkInvoke(context.tree, tree, qual, name) map (typed1(_, mode, pt))
 
         val sym = tree.symbol orElse member(qual, name) orElse {
@@ -4876,12 +4870,9 @@ trait Typers extends Modes with Adaptations with Taggings {
 
         case Select(qual, name) =>
           incCounter(typedSelectCount)
-          val tpq = typedQualifier(qual, mode)
-          if (qual.tpe ne null) log("Select: " + qual + ", " + name + " = " + qual.tpe.member(name) + ", members: " + qual.tpe.members)
-          var qual1 = checkDead(tpq)
+          var qual1 = checkDead(typedQualifier(qual, mode))
           if (name.isTypeName) qual1 = checkStable(qual1)
-          log("members: " + qual.tpe.members)
-          
+
           val tree1 = // temporarily use `filter` and an alternative for `withFilter`
             if (name == nme.withFilter)
               silent(_ => typedSelect(qual1, name)) match {
