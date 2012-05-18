@@ -507,7 +507,7 @@ trait NamesDefaults { self: Analyzer =>
     // maps indices from (order written by user) to (order of definition)
     val argPos            = Array.fill(args.length)(-1)
     var positionalAllowed = true
-    val namelessArgs = mapWithIndex(args) { (arg, index) =>
+    val namelessArgs = mapWithIndex(args) { (arg, argIndex) =>
       arg match {
         case arg @ AssignOrNamedArg(Ident(name), rhs) =>
           def matchesName(param: Symbol) = !param.isSynthetic && (
@@ -519,30 +519,35 @@ trait NamesDefaults { self: Analyzer =>
               case _ => false
             })
           )
-          val pos = params indexWhere matchesName
-          if (pos == -1) {
+          val paramPos = params indexWhere matchesName
+          if (paramPos == -1) {
             if (positionalAllowed) {
-              argPos(index) = index
+              argPos(argIndex) = argIndex
               // prevent isNamed from being true when calling doTypedApply recursively,
               // treat the arg as an assignment of type Unit
               Assign(arg.lhs, rhs) setPos arg.pos
             }
             else UnknownParameterNameNamesDefaultError(arg, name)
           }
-          else if (argPos contains pos)
-            DoubleParamNamesDefaultError(arg, name)
-          else if (isAmbiguousAssignment(typer, params(pos), arg))
+          else if (argPos contains paramPos) {
+            val existingArgIndex = argPos.indexWhere(_ == paramPos)
+            val otherName = args(paramPos) match {
+              case AssignOrNamedArg(Ident(oName), rhs) if oName != name => Some(oName)
+              case _ => None
+            }
+            DoubleParamNamesDefaultError(arg, name, existingArgIndex+1, otherName)
+          } else if (isAmbiguousAssignment(typer, params(paramPos), arg))
             AmbiguousReferenceInNamesDefaultError(arg, name)
           else {
             // if the named argument is on the original parameter
             // position, positional after named is allowed.
-            if (index != pos)
+            if (argIndex != paramPos)
               positionalAllowed = false
-            argPos(index) = pos
+            argPos(argIndex) = paramPos
             rhs
           }
         case _ =>
-          argPos(index) = index
+          argPos(argIndex) = argIndex
           if (positionalAllowed) arg
           else PositionalAfterNamedNamesDefaultError(arg)
       }

@@ -28,10 +28,10 @@ names-defaults-neg.scala:18: error: not found: value m
 names-defaults-neg.scala:19: error: reference to x is ambiguous; it is both a method parameter and a variable in scope.
   test8(x = 1)
           ^
-names-defaults-neg.scala:22: error: parameter specified twice: a
+names-defaults-neg.scala:22: error: parameter 'a' is already specified at parameter position 1
   test1(1, a = 2)
              ^
-names-defaults-neg.scala:23: error: parameter specified twice: b
+names-defaults-neg.scala:23: error: parameter 'b' is already specified at parameter position 1
   test1(b = 1, b = "2")
                  ^
 names-defaults-neg.scala:26: error: Int does not take parameters
@@ -61,10 +61,10 @@ and  method g in object t7 of type (a: C, b: Int*)String
 match argument types (C)
   t7.g(new C()) // ambigous reference
      ^
-names-defaults-neg.scala:53: error: parameter specified twice: b
+names-defaults-neg.scala:53: error: parameter 'b' is already specified at parameter position 2
   test5(a = 1, b = "dkjl", b = "dkj")
                              ^
-names-defaults-neg.scala:54: error: parameter specified twice: b
+names-defaults-neg.scala:54: error: parameter 'b' is already specified at parameter position 2
   test5(1, "2", b = 3)
                   ^
 names-defaults-neg.scala:55: error: when using named arguments, the vararg parameter has to be specified exactly once
@@ -110,7 +110,7 @@ names-defaults-neg.scala:91: error: deprecated parameter name a has to be distin
 names-defaults-neg.scala:93: warning: the parameter name y has been deprecated. Use b instead.
   deprNam3(y = 10, b = 2)
              ^
-names-defaults-neg.scala:93: error: parameter specified twice: b
+names-defaults-neg.scala:93: error: parameter 'b' is already specified at parameter position 1
   deprNam3(y = 10, b = 2)
                      ^
 names-defaults-neg.scala:98: error: unknown parameter name: m
@@ -122,7 +122,7 @@ names-defaults-neg.scala:131: error: reference to var2 is ambiguous; it is both 
 names-defaults-neg.scala:134: error: missing parameter type for expanded function ((x$1) => a = x$1)
   val taf2: Int => Unit = testAnnFun(a = _, b = get("+"))
                                          ^
-names-defaults-neg.scala:135: error: parameter specified twice: a
+names-defaults-neg.scala:135: error: parameter 'a' is already specified at parameter position 1
   val taf3 = testAnnFun(b = _: String, a = get(8))
                                          ^
 names-defaults-neg.scala:136: error: wrong number of parameters; expected = 2
