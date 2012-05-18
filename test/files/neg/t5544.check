@@ -1,0 +1,4 @@
+Test_2.scala:2: error: value baz is not a member of object Api
+  Api.baz
+      ^
+one error found

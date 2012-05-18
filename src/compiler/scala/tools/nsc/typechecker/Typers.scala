@@ -3246,7 +3246,9 @@ trait Typers extends Modes with Adaptations with Taggings {
           reportAnnotationError(NestedAnnotationError(ann, annType))
         } else {
           val typedAnn = if (selfsym == NoSymbol) {
-            typed(ann, mode, annClass.tpe)
+            // local dummy fixes SI-5544
+            val localTyper = newTyper(context.make(ann, context.owner.newLocalDummy(ann.pos)))
+            localTyper.typed(ann, mode, annClass.tpe)
           } else {
             // Since a selfsym is supplied, the annotation should have
             // an extra "self" identifier in scope for type checking.
