@@ -74,29 +74,4 @@ package object concurrent {
     }
   }
 
-  @inline implicit final def int2durationops(x: Int): DurationOps = new DurationOps(x)
-}
-
-package concurrent {
-  
-  sealed trait CanAwait
-  
-  object Await {
-    private[concurrent] implicit val canAwaitEvidence = new CanAwait {}
-    
-    def ready[T](awaitable: Awaitable[T], atMost: Duration): awaitable.type = {
-      blocking(awaitable, atMost)
-      awaitable
-    }
-    
-    def result[T](awaitable: Awaitable[T], atMost: Duration): T = {
-      blocking(awaitable, atMost)
-    }
-    
-  }
-
-  final class DurationOps private[concurrent] (x: Int) {
-    // TODO ADD OTHERS
-    def ns = util.Duration.fromNanos(0)
-  }
 }
