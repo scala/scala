@@ -762,7 +762,12 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
               """.trim.stripMargin.format(sym, sym.owner.skipPackageObject.fullName, sig))
             return
           }
-          if (checkSignatures) {
+          //There is a bug here, which becomes less bad if we omit generating
+          //the generic signature. See
+          //https://issues.scala-lang.org/browse/SI-3452.
+          //Please uncomment the 'if' statement when that bug is fixed, to make
+          //the checking conditional again.
+          //if (checkSignatures) {
             val normalizedTpe = beforeErasure(erasure.prepareSigMap(memberTpe))
             val bytecodeTpe = owner.thisType.memberInfo(sym)
             if (!sym.isType && !sym.isConstructor && !(erasure.erasure(sym)(normalizedTpe) =:= bytecodeTpe)) {
@@ -776,7 +781,7 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
                   """.trim.stripMargin.format(sym, sym.owner.skipPackageObject.fullName, sig, memberTpe, normalizedTpe, bytecodeTpe))
                return
             }
-          }
+          //}
           val index = jmember.getConstantPool.addUtf8(sig).toShort
           if (opt.verboseDebug)
             beforeErasure(println("add generic sig "+sym+":"+sym.info+" ==> "+sig+" @ "+index))
