@@ -718,6 +718,21 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
       nannots
     }
 
+    def isValidSignature(sym: Symbol, sig: String) = {
+      def wrap(op: => Unit) = {
+        try   { op; true }
+        catch { case _ => false }
+      }
+      // Run the signature parser to catch bogus signatures.
+      wrap {
+        import scala.tools.asm.util.SignatureChecker
+        // requires asm-util.jar //XXX this comment seems outdated.
+        if (sym.isMethod)    { SignatureChecker checkMethodSignature sig }
+        else if (sym.isTerm) { SignatureChecker checkFieldSignature  sig }
+        else                 { SignatureChecker checkClassSignature  sig }
+      }
+    }
+
     // @M don't generate java generics sigs for (members of) implementation
     // classes, as they are monomorphic (TODO: ok?)
     private def needsGenericSignature(sym: Symbol) = !(
@@ -739,6 +754,14 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
         erasure.javaSig(sym, memberTpe) foreach { sig =>
           // This seems useful enough in the general case.
           log(sig)
+          if (settings.Xverify.value && !isValidSignature(sym, sig)) {
+            clasz.cunit.warning(sym.pos,
+              """|compiler bug: created invalid generic signature for %s in %s
+                 |signature: %s
+                 |if this is reproducible, please report bug at https://issues.scala-lang.org/
+              """.trim.stripMargin.format(sym, sym.owner.skipPackageObject.fullName, sig))
+            return
+          }
           if (checkSignatures) {
             val normalizedTpe = beforeErasure(erasure.prepareSigMap(memberTpe))
             val bytecodeTpe = owner.thisType.memberInfo(sym)
