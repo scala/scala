@@ -146,7 +146,8 @@ private final class CachedCompiler0(args: Array[String], initialLog: WeakLog) ex
 		}
 		// Required because computePhaseDescriptors is private in 2.8 (changed to protected sometime later).
 		private[this] def superComputePhaseDescriptors() = superCall("computePhaseDescriptors").asInstanceOf[List[SubComponent]]
-		private[this] def superDropRun(): Unit = superCall("dropRun")
+		private[this] def superDropRun(): Unit =
+			try { superCall("dropRun") } catch { case e: NoSuchMethodException => () } // dropRun not in 2.8.1, so resident mode not supported
 		private[this] def superCall(methodName: String): AnyRef =
 		{
 			val meth = classOf[Global].getDeclaredMethod(methodName)
@@ -203,6 +204,12 @@ private final class CachedCompiler0(args: Array[String], initialLog: WeakLog) ex
 		def reloadClass(pkg: Symbol, simpleName: String, bin: AbstractFile)
 		{
 			val loader = new loaders.ClassfileLoader(bin)
+			// enterClass/enterModule not in 2.8.1, so resident mode can't be supported
+			object LoadersCompat {
+				def enterClass(pkg: Any, simpleName: Any, loader: Any): Symbol = NoSymbol
+				def enterModule(pkg: Any, simpleName: Any, loader: Any): Symbol = NoSymbol
+			}
+			implicit def compat(run: AnyRef): LoadersCompat.type = LoadersCompat
 			toForget += loaders.enterClass(pkg, simpleName, loader)
 			toForget += loaders.enterModule(pkg, simpleName, loader)
 		}
