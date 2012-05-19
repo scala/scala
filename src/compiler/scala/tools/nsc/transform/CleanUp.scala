@@ -572,6 +572,15 @@ abstract class CleanUp extends Transform with ast.TreeDSL {
 
         typedWithPos(theTry.pos)(BLOCK(VAL(tempVar) === EmptyTree, newTry, Ident(tempVar)))
 
+      /* Remove default argument trees from DefDefs. Otherwise the Symbol transformation outlined
+       * below will create a field & static initializer in a trait interface class, SI-4812.
+       */
+      case dd @ DefDef(mods, name, tparams, vparamss, tpt, rhs) =>
+        val vparamss1 = vparamss mapConserve (_ mapConserve {p =>
+          treeCopy.ValDef(p, p.mods, p.name, p.tpt, EmptyTree)
+        })
+        super.transform(treeCopy.DefDef(dd, mods, name, tparams, vparamss1, tpt, rhs))
+        
      /*
       * This transformation should identify Scala symbol invocations in the tree and replace them
       * with references to a static member. Also, whenever a class has at least a single symbol invocation
