@@ -568,7 +568,12 @@ abstract class UnCurry extends InfoTransform
         if ((sym ne null) && (sym.elisionLevel.exists (_ < settings.elidebelow.value || settings.noassertions.value)))
           replaceElidableTree(tree)
         else translateSynchronized(tree) match {
-          case dd @ DefDef(mods, name, tparams, vparamss, tpt, rhs) =>
+          case dd @ DefDef(mods, name, tparams, _, tpt, rhs) =>
+            // Remove default argument trees from parameter ValDefs, SI-4812
+            val vparamss1 = dd.vparamss mapConserve (_ mapConserve {p =>
+              treeCopy.ValDef(p, p.mods, p.name, p.tpt, EmptyTree)
+            })
+            
             if (dd.symbol hasAnnotation VarargsClass) saveRepeatedParams(dd)
 
             withNeedLift(false) {
@@ -586,10 +591,10 @@ abstract class UnCurry extends InfoTransform
                   }
                   treeCopy.DefDef(
                     dd, mods, name, transformTypeDefs(tparams),
-                    transformValDefss(vparamss), transform(tpt), rhs1)
+                    transformValDefss(vparamss1), transform(tpt), rhs1)
                 }
               } else {
-                super.transform(dd)
+                super.transform(treeCopy.DefDef(dd, mods, name, tparams, vparamss1, tpt, rhs))
               }
             }
           case ValDef(_, _, _, rhs) =>
