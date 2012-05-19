@@ -2058,8 +2058,9 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
         // Marking these methods final causes problems for proxies which use subclassing. If people
         // write their code with no usage of final, we probably shouldn't introduce it ourselves
         // unless we know it is safe. ... Unfortunately if they aren't marked final the inliner
-        // thinks it can't inline them. So once again marking lateFINAL, and in genjvm we no longer
-        // generate ACC_FINAL on "final" methods which are actually lateFINAL.
+        // thinks it can't inline them. So once again marking lateFINAL, and in the jvm phase
+        // we no longer generate ACC_FINAL on "final" methods which are actually
+        // lateFINAL.
         if (isMethod && !isDeferred)
           setFlag(lateFINAL)
         if (!isStaticModule && !isClassConstructor) {
