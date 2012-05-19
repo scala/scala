@@ -15,10 +15,10 @@ var lastHash = "";
 
 $(document).ready(function() {
     $('body').layout({ west__size: '20%' });
-    $('#browser').layout({	
-    	center__paneSelector: ".ui-west-center"
+    $('#browser').layout({  
+        center__paneSelector: ".ui-west-center"
         //,center__initClosed:true
-    	,north__paneSelector: ".ui-west-north"
+        ,north__paneSelector: ".ui-west-north"
     }); 
     $('iframe').bind("load", function(){
         var subtitle = $(this).contents().find('title').text();
@@ -260,18 +260,95 @@ function prepareEntityList() {
         .prepend("<a class='packfocus'>focus</a>");
 }
 
+/* Handles all key presses while scrolling around with keyboard shortcuts in left panel */
+function keyboardScrolldownLeftPane() {
+    scheduler.add("init", function() {
+        $("#textfilter input").blur();
+        var $items = $("#tpl li");
+        $items.first().addClass('selected');       
+
+        $(window).bind("keydown", function(e) {
+            var $old = $items.filter('.selected'),
+                $new;    
+
+            switch ( e.keyCode ) {
+
+            case 9: // tab
+                $old.removeClass('selected');
+                break;
+
+            case 13: // enter
+                $old.removeClass('selected');
+                var $url = $old.children().filter('a:last').attr('href');
+                $("#template").attr("src",$url);
+                break;
+
+            case 27: // escape
+                $old.removeClass('selected');
+                $(window).unbind(e);
+                $("#textfilter input").focus();    
+
+                break;
+
+            case 38: // up
+                $new = $old.prev();
+
+                if (!$new.length) {
+                    $new = $old.parent().prev();
+                }
+                
+                if ($new.is('ol') && $new.children(':last').is('ol')) {
+                    $new = $new.children().children(':last');
+                } else if ($new.is('ol')) {
+                    $new = $new.children(':last');
+                }
+
+                break;
+
+            case 40: // down
+                $new = $old.next();
+                if (!$new.length) {
+                    $new = $old.parent().parent().next();
+                }
+                if ($new.is('ol')) {
+                    $new = $new.children(':first');
+                }
+                break; 
+            } 
+            
+            if ($new.is('li')) {
+                $old.removeClass('selected');
+                $new.addClass('selected');  
+            } else if (e.keyCode == 38) {
+                $(window).unbind(e);
+                $("#textfilter input").focus();
+            }
+        });   
+    });
+}
+
 /* Configures the text filter  */
 function configureTextFilter() {
     scheduler.add("init", function() {
-        $("#filter").append("<div id='textfilter'><span class='pre'/><span class='input'><input type='text' accesskey='/'/></span><span class='post'/></div>");
+        $("#filter").append("<div id='textfilter'><span class='pre'/><span class='input'><input id='index-input' type='text' accesskey='/'/></span><span class='post'/></div>");
         printAlphabet();
         var input = $("#textfilter input");
         resizeFilterBlock();
-        input.bind("keyup", function(event) {
+        input.bind("keydown", function(event) {
             if (event.keyCode == 27) { // escape
                 input.attr("value", "");
             }
-            textFilter();
+            if (event.keyCode == 9) { // tab
+                $("#template").contents().find("#mbrsel-input").focus();
+                input.attr("value", "");
+                return false;
+            } 
+            if (event.keyCode == 40) { // down arrow
+                $(window).unbind("keydown");
+                keyboardScrolldownLeftPane();
+                return false;
+            }              
+            textFilter();          
         });
         input.focus(function(event) { input.select(); });
     });
