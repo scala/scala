@@ -478,7 +478,14 @@ trait NamesDefaults { self: Analyzer =>
         // instead of arg, but can't do that because eventually setType(ErrorType)
         // is called, and EmptyTree can only be typed NoType.  Thus we need to
         // disable conforms as a view...
-        try typer.silent(_.typed(arg, subst(paramtpe))) match {
+        val errsBefore = reporter.ERROR.count
+        try typer.silent { tpr =>
+          val res = tpr.typed(arg, subst(paramtpe))
+          // better warning for SI-5044: if `silent` was not actually silent give a hint to the user
+          if (errsBefore < reporter.ERROR.count)
+            WarnAfterNonSilentRecursiveInference(param, arg)(context)
+          res
+        } match {
           case SilentResultValue(t)  => !t.isErroneous // #4041
           case _        => false
         }
@@ -487,7 +494,7 @@ trait NamesDefaults { self: Analyzer =>
           // CyclicReferences.  Fix for #3685
           case cr @ CyclicReference(sym, _) =>
             (sym.name == param.name) && sym.accessedOrSelf.isVariable && {
-              NameClashError(sym, arg)(typer.context)
+              NameClashError(sym, arg)(context)
               true
             }
         }
