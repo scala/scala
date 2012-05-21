@@ -99,7 +99,7 @@ trait Trees extends reflect.internal.Trees { self: Global =>
         copyValDef(vdef)(
         // atPos for the new tpt is necessary, since the original tpt might have no position
         // (when missing type annotation for ValDef for example), so even though setOriginal modifies the
-        // position of TypeTree, it would still be NoSymbol. That's what the author meant.
+        // position of TypeTree, it would still be NoPosition. That's what the author meant.
         tpt = atPos(vdef.pos.focus)(TypeTree() setOriginal tpt setPos tpt.pos.focus),
         rhs = EmptyTree
       )
