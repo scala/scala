@@ -1,0 +1,7 @@
+t3761-neg-overload-byname.scala:14: error: ambiguous reference to overloaded definition,
+both method f in class WWTT of type (i: => Int, j: Int)Int
+and  method f in class WWTT of type (i: Int, j: => Int)Int
+match argument types (Int,Int)
+    sut.f(1,2)
+        ^
+one error found
