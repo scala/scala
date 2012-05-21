@@ -257,11 +257,23 @@ trait Members {
           var succ = bb
           do {
             succ = nextBlock(succ);
-            bb.removeLastInstruction
-            succ.toList foreach { i => bb.emit(i, i.pos) }
-            code.removeBlock(succ)
+            val lastInstr = bb.lastInstruction
+            /* Ticket SI-5672
+             * Besides removing the control-flow instruction at the end of `bb` (usually a JUMP), we have to pop any values it pushes.
+             * Examples:
+             *   `SWITCH` consisting of just the default case, or
+             *   `CJUMP(targetBlock, targetBlock, _, _)` ie where success and failure targets coincide (this one consumes two stack values).
+             */
+            val oldTKs = lastInstr.consumedTypes
+            assert(lastInstr.consumed == oldTKs.size, "Someone forgot to override consumedTypes() in " +  lastInstr)
+
+              bb.removeLastInstruction
+              for(tk <- oldTKs.reverse) { bb.emit(DROP(tk), lastInstr.pos) }
+              succ.toList foreach { i => bb.emit(i, i.pos) }
+              code.removeBlock(succ)
+              exh foreach { e => e.covered = e.covered - succ }
+
             nextBlock -= bb
-            exh foreach { e => e.covered = e.covered - succ }
           } while (nextBlock.isDefinedAt(succ))
           bb.close
         } else
