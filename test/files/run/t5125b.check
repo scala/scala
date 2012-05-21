@@ -1,0 +1,7 @@
+public void C1.f(java.lang.String[])
+public void C1.f(scala.collection.Seq)
+public void C2.f(java.lang.String[])
+public void C2.f(scala.collection.Seq)
+public void C2$C3.f(java.lang.String[])
+public void C2$C3.f(scala.collection.Seq)
+public void C4.f(scala.collection.Seq)
