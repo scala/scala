@@ -1,0 +1,6 @@
+t5735.scala:6: error: type mismatch;
+ found   : (x: Int)Int <and> => String
+ required: Int
+  val z: Int = a
+               ^
+one error found

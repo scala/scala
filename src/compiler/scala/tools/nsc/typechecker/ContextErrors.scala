@@ -711,12 +711,14 @@ trait ContextErrors {
         issueAmbiguousTypeError(pre, best, firstCompeting, AmbiguousTypeError(tree, pos, msg))
       }
 
-      def NoBestExprAlternativeError(tree: Tree, pt: Type) =
+      def NoBestExprAlternativeError(tree: Tree, pt: Type) = {
         issueNormalTypeError(tree, withAddendum(tree.pos)(typeErrorMsg(tree.symbol.tpe, pt, isPossiblyMissingArgs(tree.symbol.tpe, pt))))
+        if (implicitly[Context].reportErrors) setError(tree)
+      }
 
       def AmbiguousExprAlternativeError(tree: Tree, pre: Type, best: Symbol, firstCompeting: Symbol, pt: Type) = {
         val (pos, msg) = ambiguousErrorMsgPos(tree.pos, pre, best, firstCompeting, "expected type " + pt)
-        setError(tree)
+        if (implicitly[Context].ambiguousErrors) setError(tree)
         issueAmbiguousTypeError(pre, best, firstCompeting, AmbiguousTypeError(tree, pos, msg))
       }
 

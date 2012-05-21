@@ -1450,7 +1450,9 @@ trait Infer {
     def inferExprAlternative(tree: Tree, pt: Type) = tree.tpe match {
       case OverloadedType(pre, alts) => tryTwice {
         val alts0     = alts filter (alt => isWeaklyCompatible(pre.memberType(alt), pt))
-        val secondTry = alts0.isEmpty
+        // secondTry is not a sufficient condition to decide whether that was our final attempt.
+        // This is because it doesn't take into account tryTwice implicits search option.
+        val secondTry = alts0.isEmpty 
         val alts1     = if (secondTry) alts else alts0
 
         //println("trying "+alts1+(alts1 map (_.tpe))+(alts1 map (_.locationString))+" for "+pt)
@@ -1481,7 +1483,7 @@ trait Infer {
           // todo: missing test case
           NoBestExprAlternativeError(tree, pt)
         } else if (!competing.isEmpty) {
-          if (secondTry) { NoBestExprAlternativeError(tree, pt); setError(tree) }
+          if (secondTry) NoBestExprAlternativeError(tree, pt)
           else if (!pt.isErroneous) AmbiguousExprAlternativeError(tree, pre, best, competing.head, pt)
         } else {
 //          val applicable = alts1 filter (alt =>
