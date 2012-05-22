@@ -1,6 +1,5 @@
-t3683a.scala:14: error: match is not exhaustive!
-missing combination             XX
-
+t3683a.scala:14: error: match may not be exhaustive.
+It would fail on the following input: XX()
     w match {
     ^
 one error found

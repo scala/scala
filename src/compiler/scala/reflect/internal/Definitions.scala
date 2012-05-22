@@ -609,6 +609,7 @@ trait Definitions extends reflect.api.StandardDefinitions {
     def isTupleTypeOrSubtype(tp: Type) = isTupleType(tp)
 
     def tupleField(n: Int, j: Int) = getMember(TupleClass(n), nme.productAccessorName(j))
+    // NOTE: returns true for NoSymbol since it's included in the TupleClass array -- is this intensional?
     def isTupleSymbol(sym: Symbol) = TupleClass contains unspecializedSymbol(sym)
     def isProductNClass(sym: Symbol) = ProductClass contains sym
 

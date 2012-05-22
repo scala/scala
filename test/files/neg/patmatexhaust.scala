@@ -50,7 +50,7 @@ class TestSealedExhaustive { // compile only
       case Ga => 
     }
 
-    def ma5(x:Deep) = x match { // Gp
+    def ma5(x:Deep) = x match {
       case Gu =>
       case _ if 1 == 0 => 
       case Ga =>

@@ -1,29 +1,25 @@
-exhausting.scala:20: error: match is not exhaustive!
-missing combination              *           Nil
-
+exhausting.scala:21: error: match may not be exhaustive.
+It would fail on the following input: List(_, _, _)
   def fail1[T](xs: List[T]) = xs match {
                               ^
-exhausting.scala:24: error: match is not exhaustive!
-missing combination            Nil
-
+exhausting.scala:27: error: match may not be exhaustive.
+It would fail on the following input: Nil
   def fail2[T](xs: List[T]) = xs match {
                               ^
-exhausting.scala:27: error: match is not exhaustive!
-missing combination           Bar3
-
+exhausting.scala:32: error: match may not be exhaustive.
+It would fail on the following input: List(<not in (1, 2)>)
+  def fail3a(xs: List[Int]) = xs match {
+                              ^
+exhausting.scala:39: error: match may not be exhaustive.
+It would fail on the following input: Bar3
   def fail3[T](x: Foo[T]) = x match {
                             ^
-exhausting.scala:31: error: match is not exhaustive!
-missing combination           Bar2          Bar2
-
+exhausting.scala:47: error: match may not be exhaustive.
+It would fail on the following inputs: (Bar1, Bar2), (Bar1, Bar3), (Bar2, Bar1), (Bar2, Bar2)
   def fail4[T <: AnyRef](xx: (Foo[T], Foo[T])) = xx match {
                                                  ^
-exhausting.scala:36: error: match is not exhaustive!
-missing combination           Bar1          Bar2
-missing combination           Bar1          Bar3
-missing combination           Bar2          Bar1
-missing combination           Bar2          Bar2
-
+exhausting.scala:56: error: match may not be exhaustive.
+It would fail on the following inputs: (Bar1, Bar2), (Bar1, Bar3), (Bar2, Bar1), (Bar2, Bar2)
   def fail5[T](xx: (Foo[T], Foo[T])) = xx match {
                                        ^
-5 errors found
+6 errors found

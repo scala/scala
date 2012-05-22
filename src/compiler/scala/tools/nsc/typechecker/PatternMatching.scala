@@ -1554,6 +1554,698 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
     }
   }
 
+  // http://www.cis.upenn.edu/~cis510/tcl/chap3.pdf
+  // http://users.encs.concordia.ca/~ta_ahmed/ms_thesis.pdf
+  trait Logic extends Prettification {
+    class Prop
+    case class Eq(p: Var, q: Const) extends Prop
+
+    type Const
+    type Var <: AbsVar
+
+    trait AbsVar {
+      // if the domain is enumerable, at least one assignment must be true
+      def domainEnumerable: Boolean
+      def domain: Option[Set[Const]]
+
+      // for this var, call it V, turn V = C into the equivalent proposition in boolean logic
+      def propForEqualsTo(c: Const): Prop
+
+      def equalitySyms: Set[Sym]
+    }
+
+    // would be nice to statically check whether a prop is equational or pure,
+    // but that requires typing relations like And(x: Tx, y: Ty) : (if(Tx == PureProp && Ty == PureProp) PureProp else Prop)
+    case class And(a: Prop, b: Prop) extends Prop
+    case class Or(a: Prop, b: Prop) extends Prop
+    case class Not(a: Prop) extends Prop
+
+    case object True extends Prop
+    case object False extends Prop
+
+    private def nextSymId = {_symId += 1; _symId}; private var _symId = 0
+
+    // symbols are propositions
+    case class Sym(val variable: Var, val const: Const) extends Prop {
+      override val toString = variable +"="+ const +"#"+ nextSymId
+    }
+
+    trait PropTraverser {
+      def apply(x: Prop): Unit = x match {
+        case And(a, b) => apply(a); apply(b)
+        case Or(a, b) => apply(a); apply(b)
+        case Not(a) => apply(a)
+        case Eq(a, b) => applyVar(a); applyConst(b)
+        case _ =>
+      }
+      def applyVar(x: Var): Unit = {}
+      def applyConst(x: Const): Unit = {}
+    }
+
+    trait PropMap {
+      def apply(x: Prop): Prop = x match { // TODO: mapConserve
+        case And(a, b) => And(apply(a), apply(b))
+        case Or(a, b) => Or(apply(a), apply(b))
+        case Not(a) => Not(apply(a))
+        case p => p
+      }
+    }
+
+    // plan: (aka TODO)
+
+    // convert finite domain propositional logic to boolean propositional logic
+    // for all c in C, there is a corresponding (meta-indexed) proposition Qv(c) that represents V = c,
+    // the only property of equality that is encoded is that a variable can at most be equal to one of the c in C:
+    // thus, for each distinct c, c', c'',... in C, a clause `not (Qv(c) /\ (Qv(c') \/ ... \/ Qv(c'')))` is added
+    def removeVarEq(prop: Prop): Prop = {
+      val vars = new collection.mutable.HashSet[Var]
+
+      object dropEquational extends PropMap {
+        override def apply(p: Prop) = p match {
+          case Eq(v, c) => vars += v; v.propForEqualsTo(c)
+          case _ => super.apply(p)
+        }
+      }
+
+      // dropEquational populates vars, and for each var in vars. var.equalitySyms
+      val pure = dropEquational(prop)
+
+      // X = C is translated to P_X=C
+      // X = C' is translated to P_X=C'
+      // need to enforce X cannot simultaneously equal C and C'
+      // thus, all equality syms are mutually exclusive
+      // X = A, B, C, D --> Not(And(A, B)) /\ Not(And(A, C)) /\ Not(And(A, D))
+      //                 /\ Not(And(B, C)) /\ Not(And(B, D))
+      //                 /\ Not(And(C, D))
+      // equivalently Or(Not(A), Not(B)) /\ Or(...)
+
+      var eqAxioms: Prop = True
+      def mutex(a: Sym)(b: Sym) =
+        eqAxioms = And(eqAxioms, Or(Not(a), Not(b)))
+
+      // at least one assignment from the domain must be true
+      def assigned(dom: Set[Sym]) =
+        eqAxioms = And(eqAxioms, dom.reduceLeft(Or))
+
+      // println("vars: "+ vars)
+      vars.foreach { v =>
+        // is the domain enumerable? then create equality syms for all elements in the domain and
+        // assert at least one of them must be selected
+        // if v.domain.isEmpty, we must consider the domain to be infinite
+        v.domain foreach { dom =>
+          // get the Syms for the constants in the domain (making fresh ones for those not encountered in the formula)
+          val domProps = dom map {c => v.propForEqualsTo(c)}
+          val domSyms  = new collection.mutable.HashSet[Sym]()
+          object collectSyms extends PropTraverser {
+            override def apply(p: Prop) = p match {
+              case domSym: Sym => domSyms += domSym
+              case _ => super.apply(p)
+            }
+          }
+          domProps foreach collectSyms.apply
+
+          // TODO: an empty domain means involved type tests can never be true --> always non-exhaustive?
+          if (domSyms.nonEmpty) assigned(domSyms.toSet)
+        }
+
+        // recover mutual-exclusivity (a variable can never be assigned two different constants)
+        var syms = v.equalitySyms.toList
+        while (syms.nonEmpty) {
+          syms.tail.foreach(mutex(syms.head))
+          syms = syms.tail
+        }
+      }
+
+      // println("eqAxioms:\n"+ cnfString(conjunctiveNormalForm(negationNormalForm(eqAxioms))))
+      // println("pure:\n"+ cnfString(conjunctiveNormalForm(negationNormalForm(pure))))
+
+      And(eqAxioms, pure)
+    }
+
+    // convert propositional logic formula to CNF
+    // http://www.dcs.warwick.ac.uk/people/academic/Ranko.Lazic/fsv/fsv6.pdf
+    def negationNormalForm(p: Prop): Prop = p match {
+      case And(a, b)      => And(negationNormalForm(a), negationNormalForm(b))
+      case Or(a, b)       => Or(negationNormalForm(a), negationNormalForm(b))
+      case Not(And(a, b)) => negationNormalForm(Or(Not(a), Not(b)))
+      case Not(Or(a, b))  => negationNormalForm(And(Not(a), Not(b)))
+      case Not(Not(p))    => negationNormalForm(p)
+      case Not(True)      => False
+      case Not(False)     => True
+      case True
+         | False
+         | (_ : Sym)
+         | Not(_ : Sym)   => p
+    }
+
+    // CNF: a formula is a conjunction of clauses
+    type Formula = List[Clause] ; def formula(c: Clause*): Formula = c.toList
+
+    // a clause is a disjunction of distinct literals
+    type Clause  = Set[Lit]     ; def clause(l: Lit*): Clause = l.toSet
+
+    // a literal is a (possibly negated) variable
+    case class Lit(sym: Sym, pos: Boolean = true) {
+      override def toString = if (!pos) "-"+ sym.toString else sym.toString
+      def unary_- = Lit(sym, !pos)
+    }
+
+    val TrueF          = formula()
+    val FalseF         = formula(clause())
+    def lit(s: Sym)    = formula(clause(Lit(s)))
+    def negLit(s: Sym) = formula(clause(Lit(s, false)))
+
+    def conjunctiveNormalForm(p: Prop): Formula = {
+      def distribute(a: Formula, b: Formula): Formula = (a, b) match {
+        // true \/ _ = true
+        case (TrueF, _) => TrueF
+        // _ \/ true = true
+        case (_, TrueF) => TrueF
+        // lit \/ lit
+        case (List(a), List(b)) => formula(a ++ b)
+        // (c1 /\ ... /\ cn) \/ d = ((c1 \/ d) /\ ... /\ (cn \/ d))
+        case (cs, d) if cs.tail nonEmpty => cs flatMap (c => distribute(formula(c), d))
+        // d \/ (c1 /\ ... /\ cn) = ((d \/ c1) /\ ... /\ (d \/ cn))
+        case (d, cs) if cs.tail nonEmpty => cs flatMap (c => distribute(d, formula(c)))
+      }
+
+      p match {
+        case True        => TrueF
+        case False       => FalseF
+        case s: Sym      => lit(s)
+        case Not(s: Sym) => negLit(s)
+        case And(a, b)   => conjunctiveNormalForm(a) ++ conjunctiveNormalForm(b)
+        case Or(a, b)    => distribute(conjunctiveNormalForm(a), conjunctiveNormalForm(b))
+      }
+    }
+
+    def normalize(p: Prop) = conjunctiveNormalForm(negationNormalForm(removeVarEq(p)))
+    def cnfString(f: Formula) = alignAcrossRows(f map (_.toList) toList, "\\/", " /\\\n")
+
+    // adapted from http://lara.epfl.ch/w/sav10:simple_sat_solver (original by Hossein Hojjat)
+    type Model = Map[Sym, Boolean]
+    val EmptyModel = Map.empty[Sym, Boolean]
+
+    // returns all solutions, if any (TODO: better infinite recursion backstop -- detect fixpoint??)
+    def fullDPLL(f: Formula): List[Model] = {
+      // the negation of a model -(S1=True/False /\ ... /\ SN=True/False) = clause(S1=False/True, ...., SN=False/True)
+      def negateModel(m: Model) = clause(m.toSeq.map{ case (sym, pos) => Lit(sym, !pos) } : _*)
+
+      def findAllModels(f: Formula, models: List[Model], recursionDepthAllowed: Int = 20): List[Model]=
+        if (recursionDepthAllowed == 0) models
+        else {
+          val (ok, model) = DPLL(f)
+          // if we found a solution, conjunct the formula with the model's negation and recurse
+          if (ok) findAllModels(f :+ negateModel(model), model :: models, recursionDepthAllowed - 1)
+          else models
+        }
+
+      findAllModels(f, Nil)
+    }
+
+    def DPLL(f: Formula): (Boolean, Model) = {
+      @inline def withLit(res: (Boolean, Model), l: Lit) = (res._1, res._2 + (l.sym -> l.pos))
+      @inline def orElse(a: (Boolean, Model), b: => (Boolean, Model)) = if (a._1) a else b
+
+//      println("dpll\n"+ cnfString(f))
+
+      if (f isEmpty) (true, EmptyModel)
+      else if(f exists (_.isEmpty)) (false, EmptyModel)
+      else f.find(_.size == 1) map { unitClause =>
+        val unitLit = unitClause.head
+//        println("unit: "+ unitLit)
+        val negated = -unitLit
+        // drop entire clauses that are trivially true
+        // (i.e., disjunctions that contain the literal we're making true in the returned model),
+        // and simplify clauses by dropping the negation of the literal we're making true
+        // (since False \/ X == X)
+        val simplified = f.filterNot(_.contains(unitLit)).map(_ - negated)
+        withLit(DPLL(simplified), unitLit)
+      } getOrElse {
+        // partition symbols according to whether they appear in positive and/or negative literals
+        val pos = new HashSet[Sym]()
+        val neg = new HashSet[Sym]()
+        f.foreach{_.foreach{ lit =>
+          if (lit.pos) pos += lit.sym else neg += lit.sym
+        }}
+        // appearing in both positive and negative
+        val impures = pos intersect neg
+        // appearing only in either positive/negative positions
+        val pures = (pos ++ neg) -- impures
+
+        if (pures nonEmpty) {
+          val pureSym = pures.head
+          // turn it back into a literal
+          // (since equality on literals is in terms of equality
+          //  of the underlying symbol and its positivity, simply construct a new Lit)
+          val pureLit = Lit(pureSym, pos(pureSym))
+//          println("pure: "+ pureLit +" pures: "+ pures +" impures: "+ impures)
+          val simplified = f.filterNot(_.contains(pureLit))
+          withLit(DPLL(simplified), pureLit)
+        } else {
+          val split = f.head.head
+//          println("split: "+ split)
+          orElse(DPLL(f :+ clause(split)), DPLL(f :+ clause(-split)))
+        }
+      }
+    }
+  }
+
+  /**
+   * Represent a match as a formula in propositional logic that encodes whether the match matches (abstractly: we only consider types)
+   *
+   */
+  trait SymbolicMatchAnalysis extends TreeMakerApproximation with Logic { self: CodegenCore =>
+    object Var {
+      private var _nextId = 0
+      def nextId = {_nextId += 1; _nextId}
+
+      private val uniques = new collection.mutable.HashMap[Tree, Var]
+      def apply(x: Tree): Var = uniques getOrElseUpdate(x, new Var(x, x.tpe))
+    }
+    class Var(val path: Tree, fullTp: Type, checked: Boolean = true) extends AbsVar {
+      // when looking at the domain, we only care about types we can check at run time
+      val domainTp: Type = checkableType(fullTp)
+
+      // case None => domain is unknown,
+      // case Some(List(tps: _*)) => domain is exactly tps
+      // we enumerate the subtypes of the full type, as that allows us to filter out more types statically,
+      // once we go to run-time checks (on Const's), convert them to checkable types
+      // TODO: there seems to be bug for singleton domains (variable does not show up in model)
+      val domain = if (checked) enumerateSubtypes(fullTp).map(_.map(Const).toSet) else None
+
+      def describe = toString + ": "+ fullTp + domain.map(_.map(_.tp).mkString(" ::= ", " | ", "")).getOrElse(" ::= ??") +" // = "+ path
+      def domainEnumerable = domain.nonEmpty
+
+      private val domMap = new collection.mutable.HashMap[Const, Sym]
+      private def symForEqualsTo(c: Const) = {
+        domMap getOrElseUpdate(c, {
+            // println("creating symbol for equality "+ this +" = "+ c)
+            Sym(this, c)
+          })
+      }
+
+      // for this var, call it V, turn V = C into the equivalent proposition in boolean logic
+      // over all executions of this method on the same Var object,
+      def propForEqualsTo(c: Const): Prop = {
+        domain match {
+          case None => symForEqualsTo(c)
+          case Some(domainConsts) =>
+            val domainTps = domainConsts map (_.tp)
+            val checkedTp = c.tp
+            // find all the domain types that could make the type test true
+            // if the checked type is a supertype of the lub of the domain,
+            // we'll end up \/'ing the whole domain together,
+            // but must not simplify to True, as the type test may also fail...
+            val matches = domainTps.filter(_ <:< checkedTp).map{ tp => symForEqualsTo(Const(tp)) }
+            // println("type-equals-prop for "+ this +" = "+ c +": "+ (checkedTp, domainTp, domainTps) +" matches: "+ matches)
+
+            if (matches isEmpty) False else matches.reduceLeft(Or)
+        }
+      }
+
+      def equalitySyms: Set[Sym] = domMap.values.toSet
+
+      private[this] val id: Int = Var.nextId
+      override def toString = "V"+ id
+    }
+
+    // all our variables range over types
+    // a literal constant becomes ConstantType(Constant(v)) when the type allows it (roughly, anyval + string + null)
+    // equality between variables: SingleType(x) (note that pattern variables cannot relate to each other -- it's always patternVar == nonPatternVar)
+    case class Const(tp: Type) {
+      override def toString = tp.toString
+
+      def toValueString = tp match {
+        case ConstantType(c) => c.escapedStringValue
+        case _ => tp.toString
+      }
+    }
+
+    // make sure it's not a primitive, else (5: Byte) match { case 5 => ... } sees no Byte
+    // TODO: domain of feasibly enumerable built-in types (enums, char?)
+    def enumerateSubtypes(tp: Type): Option[List[Type]] =
+      tp.typeSymbol match {
+        case BooleanClass =>
+          // println("enum bool "+ tp)
+          Some(List(ConstantType(Constant(true)), ConstantType(Constant(false))))
+        // TODO case _ if tp.isTupleType => // recurse into component types
+        case sym if !sym.isSealed || isPrimitiveValueClass(sym) =>
+          // println("enum unsealed "+ (tp, sym, sym.isSealed, isPrimitiveValueClass(sym)))
+          None
+        case sym =>
+          val subclasses = (
+            sym.sealedDescendants.toList sortBy (_.sealedSortName)
+            // symbols which are both sealed and abstract need not be covered themselves, because
+            // all of their children must be and they cannot otherwise be created.
+            filterNot (x => x.isSealed && x.isAbstractClass && !isPrimitiveValueClass(x)))
+          // println("subclasses "+ (sym, subclasses))
+
+          val tpApprox = typer.infer.approximateAbstracts(tp)
+          val pre = tpApprox.prefix
+          // valid subtypes are turned into checkable types, as we are entering the realm of the dynamic
+          val validSubTypes = (subclasses flatMap {sym =>
+              // have to filter out children which cannot match: see ticket #3683 for an example
+              // compare to the fully known type `tp` (modulo abstract types),
+              // so that we can rule out stuff like: sealed trait X[T]; class XInt extends X[Int] --> XInt not valid when enumerating X[String]
+              // however, must approximate abstract types in
+              val subTp       = appliedType(pre.memberType(sym), sym.typeParams.map(_ => WildcardType))
+              val subTpApprox = typer.infer.approximateAbstracts(subTp) // TODO: needed?
+              // println("subtp"+(subTpApprox <:< tpApprox, subTpApprox, tpApprox))
+              if (subTpApprox <:< tpApprox) Some(checkableType(subTp))
+              else None
+            })
+          // println("enum sealed "+ (tp, tpApprox) + " as "+ validSubTypes)
+          Some(validSubTypes)
+      }
+
+    def narrowTypeOf(p: Tree) = p match {
+      case Literal(c) => ConstantType(c)
+      case Ident(_) if p.symbol.isStable => singleType(p.tpe.prefix, p.symbol)
+      case x => x.tpe.narrow
+    }
+
+    // approximate a type to the static type that is fully checkable at run time,
+    // hiding statically known but dynamically uncheckable information using existential quantification
+    // TODO: this is subject to the availability of TypeTags (since an abstract type with a type tag is checkable at run time)
+    def checkableType(tp: Type): Type = {
+      // TODO: this is extremely rough...
+      object toCheckable extends TypeMap {
+        def apply(tp: Type) = tp match {
+          case TypeRef(pre, sym, a :: as) if sym ne ArrayClass =>
+            // replace type args by existentials, since they can't be checked
+            // TODO: when type tags are available, we will check -- when this is implemented, can we take that into account here?
+            // TODO: don't reuse sym.typeParams, they have bounds (and those must not be considered)
+            newExistentialType(sym.typeParams, sym.tpe).asSeenFrom(pre, sym.owner)
+          case _ => mapOver(tp)
+        }
+      }
+      val res = toCheckable(tp)
+      // println("checkable "+(tp, res))
+      res
+    }
+
+    // a type is "uncheckable" (for exhaustivity) if we don't statically know its subtypes (i.e., it's unsealed)
+    // we consider tuple types with at least one component of a checkable type as a checkable type
+    def uncheckableType(tp: Type): Boolean = {
+      @inline def tupleComponents(tp: Type) = tp.normalize.typeArgs
+      val checkable = (
+           (isTupleType(tp) && tupleComponents(tp).exists(tp => !uncheckableType(tp)))
+        || enumerateSubtypes(tp).nonEmpty)
+      // if (!checkable) println("deemed uncheckable: "+ tp)
+      !checkable
+    }
+
+    def exhaustive(prevBinder: Symbol, cases: List[List[TreeMaker]], pt: Type): List[String] = if (uncheckableType(prevBinder.info)) Nil else {
+      // customize TreeMakersToConds (which turns a tree of tree makers into a more abstract DAG of tests)
+      // - approximate the pattern `List()` (unapplySeq on List with empty length) as `Nil`,
+      //   otherwise the common (xs: List[Any]) match { case List() => case x :: xs => } is deemed unexhaustive
+      // - back off (to avoid crying exhaustive too often) when:
+      //    - there are guards -->
+      //    - there are extractor calls (that we can't secretly/soundly) rewrite
+      var backoff = false
+      object exhaustivityApproximation extends TreeMakersToConds(prevBinder, cases) {
+        override def treeMakerToCond(tm: TreeMaker): Cond = tm match {
+          case p@ExtractorTreeMaker(extractor, Some(lenCheck), testedBinder, _) =>
+            p.checkedLength match {
+              // pattern: `List()`  (interpret as `Nil`)
+              // TODO: make it more general List(1, 2) => 1 :: 2 :: Nil
+              case Some(0) if testedBinder.tpe.typeSymbol == ListClass => // extractor.symbol.owner == SeqFactory
+                EqualityCond(binderToUniqueTree(p.prevBinder), unique(Ident(NilModule) setType NilModule.tpe))
+              case _ =>
+                super.treeMakerToCond(tm)
+            }
+          case ExtractorTreeMaker(_, _, _, _) =>
+//            println("backing off due to "+ tm)
+            backoff = true
+            super.treeMakerToCond(tm)
+          case GuardTreeMaker(guard) =>
+            guard.tpe match {
+              case ConstantType(Constant(true)) => Top
+              case ConstantType(Constant(false)) => Havoc
+              case _ =>
+//                println("can't statically interpret guard: "+(guard, guard.tpe))
+                backoff = true
+                Havoc
+            }
+          case _ =>
+            super.treeMakerToCond(tm)
+        }
+      }
+
+      def symbolic(t: Cond): Prop = t match {
+        case AndCond(a, b) => And(symbolic(a), symbolic(b))
+        case OrCond(a, b) => Or(symbolic(a), symbolic(b))
+        case Top => True
+        case Havoc => False
+        case TypeCond(p, pt) => Eq(Var(p), Const(checkableType(pt)))
+        case EqualityCond(p, q) => Eq(Var(p), Const(narrowTypeOf(q)))
+        case NonNullCond(p) => True // ignoring nullness because it generates too much noise Not(Eq(Var(p), Const(NullClass.tpe)))
+      }
+
+      def symbolicCase(tests: List[Test]) = {
+        val testsBeforeBody = tests.takeWhile(t => !t.treeMaker.isInstanceOf[BodyTreeMaker])
+        testsBeforeBody.map(t => symbolic(t.cond)).foldLeft(True: Prop)(And)
+      }
+
+      val tests = exhaustivityApproximation.approximateMatch
+
+      if (backoff) Nil else {
+        val symbolicCases = tests map symbolicCase
+
+        val prevBinderTree = exhaustivityApproximation.binderToUniqueTree(prevBinder)
+
+        // TODO: null tests generate too much noise, so disabled them -- is there any way to bring them back?
+        // assuming we're matching on a non-null scrutinee (prevBinder), when does the match fail?
+        // val nonNullScrutineeCond =
+        //   assume non-null for all the components of the tuple we're matching on (if we're matching on a tuple)
+        //   if (isTupleType(prevBinder.tpe))
+        //     prevBinder.tpe.typeArgs.mapWithIndex{case (_, i) => NonNullCond(codegen.tupleSel(prevBinderTree)(i))}.reduceLeft(AndCond)
+        //   else
+        //     NonNullCond(prevBinderTree)
+        // val matchFails = And(symbolic(nonNullScrutineeCond), Not(symbolicCases reduceLeft (Or(_, _))))
+
+        // when does the match fail?
+        val matchFails = Not(symbolicCases reduceLeft (Or(_, _)))
+
+
+  // debug output:
+        // println("analysing:")
+        // showTreeMakers(cases)
+        // showTests(tests)
+        //
+        // def gatherVariables(p: Prop): Set[Var] = {
+        //   val vars = new HashSet[Var]()
+        //   (new PropTraverser {
+        //     override def applyVar(v: Var) = vars += v
+        //   })(p)
+        //   vars.toSet
+        // }
+        // val vars = gatherVariables(matchFails)
+        // println("\nvars:\n"+ (vars map (_.describe) mkString ("\n")))
+        //
+        // println("\nmatchFails as CNF:\n"+ cnfString(normalize(matchFails)))
+
+        // find the models (under which the match fails)
+        val matchFailModels = fullDPLL(normalize(matchFails))
+
+        val scrutVar = Var(prevBinderTree)
+        val counterExamples = matchFailModels.map(modelToCounterExample(scrutVar))
+
+        CounterExample.prune(counterExamples).map(_.toString).sorted
+      }
+    }
+
+    object CounterExample {
+      def prune(examples: List[CounterExample]): List[CounterExample] = {
+        val distinct = examples.filterNot(_ == NoExample).toSet
+        distinct.filterNot(ce => distinct.exists(other => (ce ne other) && ce.coveredBy(other))).toList
+      }
+    }
+
+    // a way to construct a value that will make the match fail: a constructor invocation, a constant, an object of some type)
+    class CounterExample {
+      protected[SymbolicMatchAnalysis] def flattenConsArgs: List[CounterExample] = Nil
+      def coveredBy(other: CounterExample): Boolean = this == other || other == WildcardExample
+    }
+    case class ValueExample(c: Const) extends CounterExample { override def toString = c.toValueString }
+    case class TypeExample(c: Const)  extends CounterExample { override def toString = "(_ : "+ c +")" }
+    case class NegativeExample(nonTrivialNonEqualTo: List[Const]) extends CounterExample {
+      override def toString = {
+        val negation =
+          if (nonTrivialNonEqualTo.tail.isEmpty) nonTrivialNonEqualTo.head.toValueString
+          else nonTrivialNonEqualTo.map(_.toValueString).sorted.mkString("in (", ", ", ")")
+        "<not "+ negation +">"
+      }
+    }
+    case class ListExample(ctorArgs: List[CounterExample]) extends CounterExample {
+      protected[SymbolicMatchAnalysis] override def flattenConsArgs: List[CounterExample] = ctorArgs match {
+        case hd :: tl :: Nil => hd :: tl.flattenConsArgs
+        case _ => Nil
+      }
+      protected[SymbolicMatchAnalysis] lazy val elems = flattenConsArgs
+
+      override def coveredBy(other: CounterExample): Boolean =
+        other match {
+          case other@ListExample(_) =>
+            this == other || ((elems.length == other.elems.length) && (elems zip other.elems).forall{case (a, b) => a coveredBy b})
+          case _ => super.coveredBy(other)
+        }
+
+      override def toString = elems.mkString("List(", ", ", ")")
+    }
+    case class TupleExample(ctorArgs: List[CounterExample]) extends CounterExample {
+      override def toString = ctorArgs.mkString("(", ", ", ")")
+
+      override def coveredBy(other: CounterExample): Boolean =
+        other match {
+          case TupleExample(otherArgs) =>
+            this == other || ((ctorArgs.length == otherArgs.length) && (ctorArgs zip otherArgs).forall{case (a, b) => a coveredBy b})
+          case _ => super.coveredBy(other)
+        }
+    }
+    case class ConstructorExample(cls: Symbol, ctorArgs: List[CounterExample]) extends CounterExample {
+      override def toString = cls.decodedName + (if (cls.isModuleClass) "" else ctorArgs.mkString("(", ", ", ")"))
+    }
+
+    case object WildcardExample extends CounterExample { override def toString = "_" }
+    case object NoExample extends CounterExample { override def toString = "??" }
+
+    // return constructor call when the model is a true counter example
+    // (the variables don't take into account type information derived from other variables,
+    //  so, naively, you might try to construct a counter example like _ :: Nil(_ :: _, _ :: _),
+    //  since we didn't realize the tail of the outer cons was a Nil)
+    def modelToCounterExample(scrutVar: Var)(model: Model): CounterExample = {
+      // x1 = ...
+      // x1.hd = ...
+      // x1.tl = ...
+      // x1.hd.hd = ...
+      // ...
+      val varAssignment = model.toSeq.groupBy{f => f match {case (sym, value) => sym.variable} }.mapValues{ xs =>
+        val (trues, falses) = xs.partition(_._2)
+        (trues map (_._1.const), falses map (_._1.const))
+        // should never be more than one value in trues...
+      }
+
+      // println("var assignment:\n"+
+      //   varAssignment.toSeq.sortBy(_._1.toString).map { case (v, (trues, falses)) =>
+      //     val assignment = "== "+ (trues mkString("(", ", ", ")")) +"  != ("+ (falses mkString(", ")) +")"
+      //     v +"(="+ v.path +": "+ v.domainTp +") "+ assignment
+      //   }.mkString("\n"))
+
+
+      // chop a path into a list of symbols
+      def chop(path: Tree): List[Symbol] = path match {
+        case Ident(_) => List(path.symbol)
+        case Select(pre, name) => chop(pre) :+ path.symbol
+        case _ => println("don't know how to chop "+ path); Nil
+      }
+
+      // turn the variable assignments into a tree
+      // the root is the scrutinee (x1), edges are labelled by the fields that are assigned
+      // a node is a variable example (which is later turned into a counter example)
+      object VariableAssignment {
+        private def findVar(path: List[Symbol]) = path match {
+          case List(root) if root == scrutVar.path.symbol => Some(scrutVar)
+          case _ => varAssignment.find{case (v, a) => chop(v.path) == path}.map(_._1)
+        }
+
+        private val uniques = new collection.mutable.HashMap[Var, VariableAssignment]
+        private def unique(variable: Var): VariableAssignment =
+          uniques.getOrElseUpdate(variable, {
+            val (eqTo, neqTo) = varAssignment.getOrElse(variable, (Nil, Nil)) // TODO
+            VariableAssignment(variable, eqTo.toList, neqTo.toList, HashMap.empty)
+          })
+
+        def apply(variable: Var): VariableAssignment = {
+          val path  = chop(variable.path)
+          val pre   = path.init
+          val field = path.last
+
+          val newCtor = unique(variable)
+
+          if (pre.isEmpty) newCtor
+          else {
+            findVar(pre) foreach { preVar =>
+              val outerCtor = this(preVar)
+              outerCtor.fields(field) = newCtor
+            }
+            newCtor
+          }
+        }
+      }
+
+      // node in the tree that describes how to construct a counter-example
+      case class VariableAssignment(variable: Var, equalTo: List[Const], notEqualTo: List[Const], fields: collection.mutable.Map[Symbol, VariableAssignment]) {
+        private lazy val ctor       = (equalTo match { case List(Const(tp)) => tp case _ => variable.domainTp }).typeSymbol.primaryConstructor
+        private lazy val ctorParams = if (ctor == NoSymbol || ctor.paramss.isEmpty) Nil else ctor.paramss.head
+        private lazy val cls        = if (ctor == NoSymbol) NoSymbol else ctor.owner
+        private lazy val caseFieldAccs = if (cls == NoSymbol) Nil else cls.caseFieldAccessors
+
+
+        def allFieldAssignmentsLegal: Boolean =
+          (fields.keySet subsetOf caseFieldAccs.toSet) && fields.values.forall(_.allFieldAssignmentsLegal)
+
+        private lazy val nonTrivialNonEqualTo = notEqualTo.filterNot{c => val sym = c.tp.typeSymbol; sym == AnyClass } // sym == NullClass ||
+
+        // NoExample if the constructor call is ill-typed
+        // (thus statically impossible -- can we incorporate this into the formula?)
+        // beBrief is used to suppress negative information nested in tuples -- it tends to get too noisy
+        def toCounterExample(beBrief: Boolean = false): CounterExample =
+          if (!allFieldAssignmentsLegal) NoExample
+          else {
+//            println("describing "+ (variable, equalTo, notEqualTo, fields, cls, allFieldAssignmentsLegal))
+            val res = equalTo match {
+              // a definite assignment to a value
+              case List(eq@Const(_: ConstantType)) if fields.isEmpty => ValueExample(eq)
+
+              // constructor call
+              // or we did not gather any information about equality but we have information about the fields
+              //  --> typical example is when the scrutinee is a tuple and all the cases first unwrap that tuple and only then test something interesting
+              case _ if cls != NoSymbol &&
+                        (  equalTo.nonEmpty
+                        || (fields.nonEmpty && !isPrimitiveValueClass(cls) && equalTo.isEmpty && notEqualTo.isEmpty)) =>
+
+                @inline def args(brevity: Boolean = beBrief) = {
+                  // figure out the constructor arguments from the field assignment
+                  val argLen = (caseFieldAccs.length min ctorParams.length)
+
+                  (0 until argLen).map(i => fields.get(caseFieldAccs(i)).map(_.toCounterExample(brevity)) getOrElse WildcardExample).toList
+                }
+
+                cls match {
+                  case ConsClass               => ListExample(args())
+                  case _ if isTupleSymbol(cls) => TupleExample(args(true))
+                  case _ => ConstructorExample(cls, args())
+                }
+
+              // a definite assignment to a type
+              case List(eq) if fields.isEmpty => TypeExample(eq)
+
+              // negative information
+              case Nil if nonTrivialNonEqualTo.nonEmpty =>
+                // negation tends to get pretty verbose
+                if (beBrief) WildcardExample else NegativeExample(nonTrivialNonEqualTo)
+
+              // not a valid counter-example, possibly since we have a definite type but there was a field mismatch
+              // TODO: improve reasoning -- in the mean time, a false negative is better than an annoying false positive
+              case _ => NoExample
+            }
+//            println("described as: "+ res)
+            res
+          }
+
+        override def toString = toCounterExample().toString
+      }
+
+      // slurp in information from other variables
+      varAssignment.keys.foreach{ v => if (v != scrutVar) VariableAssignment(v) }
+
+      // this is the variable we want a counter example for
+      VariableAssignment(scrutVar).toCounterExample()
+    }
+  }
+
 ////
   trait CommonSubconditionElimination extends TreeMakerApproximation { self: OptimizedCodegen =>
     /** a flow-sensitive, generalised, common sub-expression elimination
@@ -1999,8 +2691,18 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
   trait MatchOptimizations extends CommonSubconditionElimination
                               with DeadCodeElimination
                               with SwitchEmission
-                              with OptimizedCodegen { self: TreeMakers =>
+                              with OptimizedCodegen
+                              with SymbolicMatchAnalysis { self: TreeMakers =>
     override def optimizeCases(prevBinder: Symbol, cases: List[List[TreeMaker]], pt: Type, unchecked: Boolean): (List[List[TreeMaker]], List[Tree]) = {
+      val counterExamples = if (unchecked) Nil else exhaustive(prevBinder, cases, pt)
+      if (counterExamples.nonEmpty) {
+        val ceString =
+          if (counterExamples.tail.isEmpty) "input: " + counterExamples.head
+          else "inputs: " + counterExamples.mkString(", ")
+
+        typer.context.unit.warning(prevBinder.pos, "match may not be exhaustive.\nIt would fail on the following "+ ceString)
+      }
+
       val optCases = doCSE(prevBinder, doDCE(prevBinder, cases, pt), pt)
       val toHoist = (
         for (treeMakers <- optCases)
