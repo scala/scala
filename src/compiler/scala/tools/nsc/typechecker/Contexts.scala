@@ -438,8 +438,8 @@ trait Contexts { self: Analyzer =>
 
     def enclosingContextChain: List[Context] = this :: outer.enclosingContextChain
 
-    override def toString = "Context(%s@%s unit=%s scope=%s errors=%b)".format(
-      owner.fullName, tree.shortClass, unit, scope.##, hasErrors
+    override def toString = "Context(%s@%s unit=%s scope=%s errors=%b, reportErrors=%b, throwErrors=%b)".format(
+      owner.fullName, tree.shortClass, unit, scope.##, hasErrors, reportErrors, throwErrors
     )
     /** Is `sub` a subclass of `base` or a companion object of such a subclass?
      */
