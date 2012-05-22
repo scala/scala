@@ -56,7 +56,15 @@ trait HashTable[A, Entry >: Null <: HashEntry[A, Entry]] extends HashTable.HashU
 
   protected def tableSizeSeed = Integer.bitCount(table.length - 1)
 
-  protected def initialSize: Int = HashTable.initialSize
+  /** The initial size of the hash table.
+   */
+  protected def initialSize: Int = 16
+
+  /** The initial threshold.
+   */
+  private def initialThreshold(_loadFactor: Int): Int = newThreshold(_loadFactor, initialCapacity)
+
+  private def initialCapacity = capacity(initialSize)
 
   private def lastPopulatedIndex = {
     var idx = table.length - 1
@@ -353,16 +361,6 @@ private[collection] object HashTable {
    */
   private[collection] final def defaultLoadFactor: Int = 750 // corresponds to 75%
   private[collection] final def loadFactorDenum = 1000;
-
-  /** The initial size of the hash table.
-   */
-  private[collection] final def initialSize: Int = 16
-
-  /** The initial threshold.
-   */
-  private[collection] final def initialThreshold(_loadFactor: Int): Int = newThreshold(_loadFactor, initialCapacity)
-
-  private[collection] final def initialCapacity = capacity(initialSize)
 
   private[collection] final def newThreshold(_loadFactor: Int, size: Int) = ((size.toLong * _loadFactor) / loadFactorDenum).toInt
 
