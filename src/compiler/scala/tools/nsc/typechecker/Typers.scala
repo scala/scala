@@ -2510,10 +2510,7 @@ trait Typers extends Modes with Adaptations with Taggings {
       namer.enterSyms(stats)
       // need to delay rest of typedRefinement to avoid cyclic reference errors
       unit.toCheck += { () =>
-        // go to next outer context which is not silent, see #3614
-        var c = context
-        while (c.bufferErrors) c = c.outer
-        val stats1 = newTyper(c).typedStats(stats, NoSymbol)
+        val stats1 = typedStats(stats, NoSymbol)
         for (stat <- stats1 if stat.isDef) {
           val member = stat.symbol
           if (!(context.owner.ancestors forall
