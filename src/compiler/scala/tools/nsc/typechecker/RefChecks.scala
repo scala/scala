@@ -1085,13 +1085,16 @@ abstract class RefChecks extends InfoTransform with reflect.internal.transform.R
         def isBoolean(s: Symbol) = unboxedValueClass(s) == BooleanClass
         def isUnit(s: Symbol)    = unboxedValueClass(s) == UnitClass
         def isNumeric(s: Symbol) = isNumericValueClass(unboxedValueClass(s)) || (s isSubClass ScalaNumberClass)
+        def isJavaNumeric(s: Symbol) = s isSubClass JavaNumberClass
         def isSpecial(s: Symbol) = isPrimitiveValueClass(unboxedValueClass(s)) || (s isSubClass ScalaNumberClass) || isMaybeValue(s)
         def possibleNumericCount = onSyms(_ filter (x => isNumeric(x) || isMaybeValue(x)) size)
         val nullCount            = onSyms(_ filter (_ == NullClass) size)
 
+        var sensicality = false
         def nonSensibleWarning(what: String, alwaysEqual: Boolean) = {
           val msg = alwaysEqual == (name == nme.EQ || name == nme.eq)
           unit.warning(pos, "comparing "+what+" using `"+name.decode+"' will always yield " + msg)
+          sensicality = true
         }
         def nonSensible(pre: String, alwaysEqual: Boolean) =
           nonSensibleWarning(pre+"values of types "+typesString, alwaysEqual)
@@ -1123,10 +1126,11 @@ abstract class RefChecks extends InfoTransform with reflect.internal.transform.R
           else if (!isUnit(actual) && !isMaybeValue(actual))  // () == "abc"
             nonSensiblyNeq()
         }
-        else if (isNumeric(receiver)) {
-          if (!isNumeric(actual) && !forMSIL)
+        else if (isNumeric(receiver) || (!forMSIL && isJavaNumeric(receiver))) {
+          if (!isNumeric(actual) && !forMSIL && !isJavaNumeric(actual))
             if (isUnit(actual) || isBoolean(actual) || !isMaybeValue(actual))   // 5 == "abc"
               nonSensiblyNeq()
+          sensicality = true
         }
         else if (isWarnable && !isCaseEquals) {
           if (isNew(qual)) // new X == y
@@ -1142,7 +1146,7 @@ abstract class RefChecks extends InfoTransform with reflect.internal.transform.R
         }
 
         // possibleNumericCount is insufficient or this will warn on e.g. Boolean == j.l.Boolean
-        if (isWarnable && nullCount == 0 && !(isSpecial(receiver) && isSpecial(actual))) {
+        if (!sensicality && isWarnable && nullCount == 0 && !(isSpecial(receiver) && isSpecial(actual))) {
           // better to have lubbed and lost
           def warnIfLubless(): Unit = {
             val common = global.lub(List(actual.tpe, receiver.tpe))
@@ -1155,7 +1159,7 @@ abstract class RefChecks extends InfoTransform with reflect.internal.transform.R
           if (isCaseEquals) {
             def thisCase = receiver.info.member(nme.equals_).owner
             actual.info.baseClasses.find(_.isCase) match {
-              case Some(p) if (p != thisCase) => nonSensible("case class ", false)
+              case Some(p) if p != thisCase => nonSensible("case class ", false)
               case None =>
                 // stronger message on (Some(1) == None)
                 //if (receiver.isCase && receiver.isEffectivelyFinal && !(receiver isSubClass actual)) nonSensiblyNeq()
