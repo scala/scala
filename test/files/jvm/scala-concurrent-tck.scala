@@ -808,6 +808,126 @@ trait TryEitherExtractor extends TestBase {
   testLeftMatch()
 }
 
+trait CustomExecutionContext extends TestBase {
+  import scala.concurrent.{ ExecutionContext, Awaitable }
+
+  def defaultEC = ExecutionContext.defaultExecutionContext
+
+  val inEC = new java.lang.ThreadLocal[Int]() {
+    override def initialValue = 0
+  }
+
+  def enterEC() = inEC.set(inEC.get + 1)
+  def leaveEC() = inEC.set(inEC.get - 1)
+  def assertEC() = assert(inEC.get > 0)
+  def assertNoEC() = assert(inEC.get == 0)
+
+  class CountingExecutionContext extends ExecutionContext {
+    val _count = new java.util.concurrent.atomic.AtomicInteger(0)
+    def count = _count.get
+
+    def delegate = ExecutionContext.defaultExecutionContext
+
+    override def execute(runnable: Runnable) = {
+      _count.incrementAndGet()
+      val wrapper = new Runnable() {
+        override def run() = {
+          enterEC()
+          try {
+            runnable.run()
+          } finally {
+            leaveEC()
+          }
+        }
+      }
+      delegate.execute(wrapper)
+    }
+
+    override def internalBlockingCall[T](awaitable: Awaitable[T], atMost: Duration): T =
+      delegate.internalBlockingCall(awaitable, atMost)
+
+    override def reportFailure(t: Throwable): Unit = {
+      System.err.println("Failure: " + t.getClass.getSimpleName + ": " + t.getMessage)
+      delegate.reportFailure(t)
+    }
+  }
+
+  def countExecs(block: (ExecutionContext) => Unit): Int = {
+    val context = new CountingExecutionContext()
+    block(context)
+    context.count
+  }
+
+  def testOnSuccessCustomEC(): Unit = {
+    val count = countExecs { implicit ec =>
+      once { done =>
+        val f = future({ assertNoEC() })(defaultEC)
+        f onSuccess {
+          case _ =>
+            assertEC()
+            done()
+        }
+        assertNoEC()
+      }
+    }
+
+    // should be onSuccess, but not future body
+    assert(count == 1)
+  }
+
+  def testKeptPromiseCustomEC(): Unit = {
+    val count = countExecs { implicit ec =>
+      once { done =>
+        val f = Promise.successful(10).future
+        f onSuccess {
+          case _ =>
+            assertEC()
+            done()
+        }
+      }
+    }
+
+    // should be onSuccess called once in proper EC
+    assert(count == 1)
+  }
+
+  def testCallbackChainCustomEC(): Unit = {
+    val count = countExecs { implicit ec =>
+      once { done =>
+        assertNoEC()
+        val addOne = { x: Int => assertEC(); x + 1 }
+        val f = Promise.successful(10).future
+        f.map(addOne).filter { x =>
+           assertEC()
+           x == 11
+         } flatMap { x =>
+           Promise.successful(x + 1).future.map(addOne).map(addOne)
+         } onComplete {
+          case Left(t) =>
+            try {
+              throw new AssertionError("error in test: " + t.getMessage, t)
+            } finally {
+              done()
+            }
+          case Right(x) =>
+            assertEC()
+            assert(x == 14)
+            done()
+        }
+        assertNoEC()
+      }
+    }
+
+    // the count is not defined (other than >=1)
+    // due to the batching optimizations.
+    assert(count >= 1)
+  }
+
+  testOnSuccessCustomEC()
+  testKeptPromiseCustomEC()
+  testCallbackChainCustomEC()
+}
+
 object Test
 extends App
 with FutureCallbacks
@@ -816,6 +936,7 @@ with FutureProjections
 with Promises
 with Exceptions
 with TryEitherExtractor
+with CustomExecutionContext
 {
   System.exit(0)
 }
