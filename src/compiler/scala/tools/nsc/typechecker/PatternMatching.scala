@@ -793,6 +793,8 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
       None
 
     abstract class TreeMaker {
+      def pos: Position
+
       /** captures the scope and the value of the bindings in patterns
        * important *when* the substitution happens (can't accumulate and do at once after the full matcher has been constructed)
        */
@@ -820,16 +822,22 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
     }
 
     case class TrivialTreeMaker(tree: Tree) extends TreeMaker with NoNewBinders {
+      def pos = tree.pos
+
       def chainBefore(next: Tree)(casegen: Casegen): Tree = tree
     }
 
     case class BodyTreeMaker(body: Tree, matchPt: Type) extends TreeMaker with NoNewBinders {
+      def pos = body.pos
+
       def chainBefore(next: Tree)(casegen: Casegen): Tree = // assert(next eq EmptyTree)
         atPos(body.pos)(casegen.one(substitution(body))) // since SubstOnly treemakers are dropped, need to do it here
       override def toString = "B"+(body, matchPt)
     }
 
     case class SubstOnlyTreeMaker(prevBinder: Symbol, nextBinder: Symbol) extends TreeMaker {
+      val pos = NoPosition
+
       val localSubstitution = Substitution(prevBinder, CODE.REF(nextBinder))
       def chainBefore(next: Tree)(casegen: Casegen): Tree = substitution(next)
       override def toString = "S"+ localSubstitution
@@ -837,10 +845,10 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
 
     abstract class FunTreeMaker extends TreeMaker {
       val nextBinder: Symbol
+      def pos = nextBinder.pos
     }
 
     abstract class CondTreeMaker extends FunTreeMaker {
-      val pos: Position
       val prevBinder: Symbol
       val nextBinderTp: Type
       val cond: Tree
@@ -962,9 +970,7 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
         - A parameterized type pattern scala.Array[T1], where T1 is a type pattern. // TODO
           This type pattern matches any non-null instance of type scala.Array[U1], where U1 is a type matched by T1.
     **/
-    case class TypeTestTreeMaker(prevBinder: Symbol, testedBinder: Symbol, expectedTp: Type, nextBinderTp: Type)(_pos: Position, extractorArgTypeTest: Boolean = false) extends CondTreeMaker {
-      val pos = _pos
-
+    case class TypeTestTreeMaker(prevBinder: Symbol, testedBinder: Symbol, expectedTp: Type, nextBinderTp: Type)(override val pos: Position, extractorArgTypeTest: Boolean = false) extends CondTreeMaker {
       import TypeTestTreeMaker._
       // println("TTTM"+(prevBinder, extractorArgTypeTest, testedBinder, expectedTp, nextBinderTp))
 
@@ -1023,7 +1029,7 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
     }
 
     // need to substitute to deal with existential types -- TODO: deal with existentials better, don't substitute (see RichClass during quick.comp)
-    case class EqualityTestTreeMaker(prevBinder: Symbol, patTree: Tree, pos: Position) extends CondTreeMaker {
+    case class EqualityTestTreeMaker(prevBinder: Symbol, patTree: Tree, override val pos: Position) extends CondTreeMaker {
       val nextBinderTp = prevBinder.info.widen
 
       // NOTE: generate `patTree == patBinder`, since the extractor must be in control of the equals method (also, patBinder may be null)
@@ -1056,6 +1062,8 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
     }
 
     case class GuardTreeMaker(guardTree: Tree) extends TreeMaker with NoNewBinders {
+      val pos = guardTree.pos
+
       def chainBefore(next: Tree)(casegen: Casegen): Tree = casegen.flatMapGuard(substitution(guardTree), next)
       override def toString = "G("+ guardTree +")"
     }
@@ -2366,7 +2374,7 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
     object ReusedCondTreeMaker {
       def apply(orig: CondTreeMaker) = new ReusedCondTreeMaker(orig.prevBinder, orig.nextBinder, orig.cond, orig.res, orig.pos)
     }
-    class ReusedCondTreeMaker(prevBinder: Symbol, val nextBinder: Symbol, cond: Tree, res: Tree, pos: Position) extends TreeMaker { import CODE._
+    class ReusedCondTreeMaker(prevBinder: Symbol, val nextBinder: Symbol, cond: Tree, res: Tree, val pos: Position) extends TreeMaker { import CODE._
       lazy val localSubstitution        = Substitution(List(prevBinder), List(CODE.REF(nextBinder)))
       lazy val storedCond               = freshSym(pos, BooleanClass.tpe, "rc") setFlag MUTABLE
       lazy val treesToHoist: List[Tree] = {
@@ -2382,6 +2390,8 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
     }
 
     case class ReusingCondTreeMaker(sharedPrefix: List[Test], toReused: TreeMaker => TreeMaker) extends TreeMaker { import CODE._
+      val pos = sharedPrefix.last.treeMaker.pos
+
       lazy val localSubstitution = {
         // replace binder of each dropped treemaker by corresponding binder bound by the most recent reused treemaker
         var mostRecentReusedMaker: ReusedCondTreeMaker = null
