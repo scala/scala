@@ -598,16 +598,16 @@ trait Contexts { self: Analyzer =>
      *  it is accessible, and if it is imported there is not already a local symbol
      *  with the same names. Local symbols override imported ones. This fixes #2866.
      */
-    private def isQualifyingImplicit(sym: Symbol, pre: Type, imported: Boolean) =
+    private def isQualifyingImplicit(name: Name, sym: Symbol, pre: Type, imported: Boolean) =
       sym.isImplicit &&
       isAccessible(sym, pre) &&
       !(imported && {
-        val e = scope.lookupEntry(sym.name)
+        val e = scope.lookupEntry(name)
         (e ne null) && (e.owner == scope)
       })
 
     private def collectImplicits(syms: List[Symbol], pre: Type, imported: Boolean = false): List[ImplicitInfo] =
-      for (sym <- syms if isQualifyingImplicit(sym, pre, imported)) yield
+      for (sym <- syms if isQualifyingImplicit(sym.name, sym, pre, imported)) yield
         new ImplicitInfo(sym.name, pre, sym)
 
     private def collectImplicitImports(imp: ImportInfo): List[ImplicitInfo] = {
@@ -621,7 +621,7 @@ trait Contexts { self: Analyzer =>
           var impls = collect(sels1) filter (info => info.name != from)
           if (to != nme.WILDCARD) {
             for (sym <- imp.importedSymbol(to).alternatives)
-              if (isQualifyingImplicit(sym, pre, imported = true))
+              if (isQualifyingImplicit(to, sym, pre, imported = true))
                 impls = new ImplicitInfo(to, pre, sym) :: impls
           }
           impls
