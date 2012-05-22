@@ -933,7 +933,7 @@ trait Implicits {
               }
             case None =>
               if (pre.isStable) {
-                val companion = sym.companionModule
+                val companion = companionSymbolOf(sym, context)
                 companion.moduleClass match {
                   case mc: ModuleClassSymbol =>
                     val infos =
