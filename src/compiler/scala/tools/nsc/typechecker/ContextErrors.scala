@@ -690,34 +690,44 @@ trait ContextErrors {
         setError(tree)
       }
 
-      def NoBestMethodAlternativeError(tree: Tree, argtpes: List[Type], pt: Type) = {
+      // side-effect on the tree, break the overloaded type cycle in infer
+      @inline
+      private def setErrorOnLastTry(lastTry: Boolean, tree: Tree) = if (lastTry) setError(tree)
+      
+      def NoBestMethodAlternativeError(tree: Tree, argtpes: List[Type], pt: Type, lastTry: Boolean) = {
         issueNormalTypeError(tree,
           applyErrorMsg(tree, " cannot be applied to ", argtpes, pt))
         // since inferMethodAlternative modifies the state of the tree
         // we have to set the type of tree to ErrorType only in the very last
-        // fallback action that is done in the inference (tracking it manually is error prone).
+        // fallback action that is done in the inference.
         // This avoids entering infinite loop in doTypeApply.
-        if (implicitly[Context].reportErrors) setError(tree)
+        setErrorOnLastTry(lastTry, tree)
       }
 
       def AmbiguousMethodAlternativeError(tree: Tree, pre: Type, best: Symbol,
-            firstCompeting: Symbol, argtpes: List[Type], pt: Type) = {
-        val msg0 =
-          "argument types " + argtpes.mkString("(", ",", ")") +
-         (if (pt == WildcardType) "" else " and expected result type " + pt)
-        val (pos, msg) = ambiguousErrorMsgPos(tree.pos, pre, best, firstCompeting, msg0)
-        // discover last attempt in a similar way as for NoBestMethodAlternativeError
-        if (implicitly[Context].ambiguousErrors) setError(tree)
-        issueAmbiguousTypeError(pre, best, firstCompeting, AmbiguousTypeError(tree, pos, msg))
+            firstCompeting: Symbol, argtpes: List[Type], pt: Type, lastTry: Boolean) = {
+        
+        if (!(argtpes exists (_.isErroneous)) && !pt.isErroneous) {
+          val msg0 =
+            "argument types " + argtpes.mkString("(", ",", ")") +
+           (if (pt == WildcardType) "" else " and expected result type " + pt)
+          val (pos, msg) = ambiguousErrorMsgPos(tree.pos, pre, best, firstCompeting, msg0)
+          issueAmbiguousTypeError(pre, best, firstCompeting, AmbiguousTypeError(tree, pos, msg))
+          setErrorOnLastTry(lastTry, tree)
+        } else setError(tree) // do not even try further attempts because they should all fail
+                              // even if this is not the last attempt (because of the SO's possibility on the horizon)
+        
       }
 
-      def NoBestExprAlternativeError(tree: Tree, pt: Type) =
+      def NoBestExprAlternativeError(tree: Tree, pt: Type, lastTry: Boolean) = {
         issueNormalTypeError(tree, withAddendum(tree.pos)(typeErrorMsg(tree.symbol.tpe, pt, isPossiblyMissingArgs(tree.symbol.tpe, pt))))
+        setErrorOnLastTry(lastTry, tree)
+      }
 
-      def AmbiguousExprAlternativeError(tree: Tree, pre: Type, best: Symbol, firstCompeting: Symbol, pt: Type) = {
+      def AmbiguousExprAlternativeError(tree: Tree, pre: Type, best: Symbol, firstCompeting: Symbol, pt: Type, lastTry: Boolean) = {
         val (pos, msg) = ambiguousErrorMsgPos(tree.pos, pre, best, firstCompeting, "expected type " + pt)
-        setError(tree)
         issueAmbiguousTypeError(pre, best, firstCompeting, AmbiguousTypeError(tree, pos, msg))
+        setErrorOnLastTry(lastTry, tree)
       }
 
       // checkBounds
