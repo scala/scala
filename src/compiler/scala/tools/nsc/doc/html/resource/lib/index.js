@@ -334,7 +334,8 @@ function configureTextFilter() {
         printAlphabet();
         var input = $("#textfilter input");
         resizeFilterBlock();
-        input.bind("keydown", function(event) {
+
+        var keydown = function(event) {
             if (event.keyCode == 27) { // escape
                 input.attr("value", "");
             }
@@ -349,7 +350,8 @@ function configureTextFilter() {
                 return false;
             }              
             textFilter();          
-        });
+        }
+        input.on('keydown', $.throttle(100, keydown));
         input.focus(function(event) { input.select(); });
     });
     scheduler.add("init", function() {

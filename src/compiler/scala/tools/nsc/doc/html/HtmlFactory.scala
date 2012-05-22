@@ -31,6 +31,7 @@ class HtmlFactory(val universe: doc.Universe, index: doc.Index) {
     "scheduler.js",
     "template.js",
     "tools.tooltip.js",
+    "jquery.ba-throttle-debounce.js",
 
     "index.css",
     "ref-index.css",
