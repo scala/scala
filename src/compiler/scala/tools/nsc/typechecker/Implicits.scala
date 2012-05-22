@@ -554,7 +554,11 @@ trait Implicits {
 
       val itree = atPos(pos.focus) {
         if (info.pre == NoPrefix) Ident(info.name)
-        else Select(gen.mkAttributedQualifier(info.pre), info.name)
+        else {
+          // SI-2405 Not info.name, which might be an aliased import
+          val implicitMemberName = info.sym.name
+          Select(gen.mkAttributedQualifier(info.pre), implicitMemberName)
+        }
       }
       printTyping("typedImplicit1 %s, pt=%s, from implicit %s:%s".format(
         typeDebug.ptTree(itree), wildPt, info.name, info.tpe)

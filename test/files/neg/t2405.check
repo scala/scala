@@ -1,0 +1,8 @@
+t2405.scala:6: warning: imported `y' is permanently hidden by definition of method y
+		import A.{x => y}
+                          ^
+t2405.scala:8: error: could not find implicit value for parameter e: Int
+		implicitly[Int]
+                          ^
+one warning found
+one error found
