@@ -156,6 +156,8 @@ object ScalaBuild extends Build with Layers {
   def settingOverrides: Seq[Setting[_]] = publishSettings ++ Seq(
                              crossPaths := false,
                              autoScalaLibrary := false,
+                             // Work around a bug where scala-library (and forkjoin) is put on classpath for analysis.
+                             classpathOptions := ClasspathOptions.manual,
                              publishArtifact in packageDoc := false,
                              publishArtifact in packageSrc := false,
                              target <<= (baseDirectory, name) apply (_ / "target" / _),
@@ -168,8 +170,8 @@ object ScalaBuild extends Build with Layers {
                              // Most libs in the compiler use this order to build.
                              compileOrder in Compile := CompileOrder.JavaThenScala,
                              lockFile <<= target(_ / "compile.lock"),
-                             skip in Compile <<= lockFile.map(_  exists),
-                             lock <<= lockFile map { f => IO.touch(f) },
+                             skip in Compile <<= lockFile map (_.exists),
+                             lock <<= lockFile map (f => IO.touch(f)),
                              unlock <<= lockFile map IO.delete
                             )
 
