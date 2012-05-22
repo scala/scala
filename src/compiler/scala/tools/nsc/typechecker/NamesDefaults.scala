@@ -482,6 +482,10 @@ trait NamesDefaults { self: Analyzer =>
         try typer.silent { tpr =>
           val res = tpr.typed(arg, subst(paramtpe))
           // better warning for SI-5044: if `silent` was not actually silent give a hint to the user
+          // [H]: the reason why `silent` is not silent is because the cyclic reference exception is
+          // thrown in a context completely different from `context` here. The exception happens while
+          // completing the type, and TypeCompleter is created/run with a non-silent Namer `context`
+          // and there is at the moment no way to connect the two unless we go through some global state.
           if (errsBefore < reporter.ERROR.count)
             WarnAfterNonSilentRecursiveInference(param, arg)(context)
           res
