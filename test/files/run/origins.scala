@@ -2,7 +2,7 @@ import scala.reflect.internal.util.Origins
 
 package goxbox {
   object Socks {
-    val origins = Origins[Socks.type]("boop")
+    val origins = Origins("boop")
 
     def boop(x: Int): Int = origins { 5 }
   }

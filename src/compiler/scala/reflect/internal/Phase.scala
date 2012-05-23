@@ -7,9 +7,10 @@ package scala.reflect
 package internal
 
 abstract class Phase(val prev: Phase) {
+  if ((prev ne null) && (prev ne NoPhase))
+    prev.nx = this
 
   type Id = Int
-
   val id: Id = if (prev eq null) 0 else prev.id + 1
 
   /** New flags visible after this phase has completed */
@@ -18,12 +19,13 @@ abstract class Phase(val prev: Phase) {
   /** New flags visible once this phase has started */
   def newFlags: Long = 0l
 
-  private var fmask: Long =
-    if (prev eq null) Flags.InitialFlags else prev.flagMask | prev.nextFlags | newFlags
+  val fmask = (
+    if (prev eq null) Flags.InitialFlags
+    else prev.flagMask | prev.nextFlags | newFlags
+  )
   def flagMask: Long = fmask
 
   private var nx: Phase = this
-  if ((prev ne null) && (prev ne NoPhase)) prev.nx = this
 
   def next: Phase = nx
   def hasNext = next != this

@@ -1,5 +1,5 @@
 
->> Origins goxbox.Socks.boop logged 65 calls from 3 distinguished sources.
+>> Origins tag 'boop' logged 65 calls from 3 distinguished sources.
 
      50   Test$$anonfun$f3$1.apply(origins.scala:16)
      10   Test$$anonfun$f2$1.apply(origins.scala:15)
