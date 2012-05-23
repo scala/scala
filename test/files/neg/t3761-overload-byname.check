@@ -1,0 +1,13 @@
+t3761-overload-byname.scala:9: error: ambiguous reference to overloaded definition,
+both method m1 in object t of type (x: => Int, s: Object)Int
+and  method m1 in object t of type (x: => AnyVal, s: String)Int
+match argument types (Int,String)
+  m1(1, "")
+  ^
+t3761-overload-byname.scala:11: error: ambiguous reference to overloaded definition,
+both method m2 in object t of type (x: => Int, s: Object)Int
+and  method m2 in object t of type (x: => Any, s: String)Int
+match argument types (Int,String)
+  m2(1, "")
+  ^
+two errors found
