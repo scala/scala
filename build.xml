@@ -1914,9 +1914,31 @@ DOCUMENTATION
     <stopwatch name="docs.continuations-plugin.timer" action="total"/>
   </target>
 
+  <target name="docs.pre-actors-migration" depends="docs.continuations-plugin">
+    <doc-uptodate-check name="actors-migration" srcdir="${src.dir}/actors-migration" />
+  </target>
+
+  <target name="docs.actors-migration" depends="docs.pre-actors-migration" unless="docs.actors-migration.available">
+    <stopwatch name="docs.actors-migration.timer"/>
+    <mkdir dir="${build-docs.dir}/actors-migration"/>
+    <scaladoc
+      destdir="${build-docs.dir}/actors-migration"
+      doctitle="Actors Migration Kit"
+      docversion="${version.number}"
+      sourcepath="${src.dir}"
+      classpathref="pack.classpath"
+      srcdir="${src.dir}/actors-migration"
+      addparams="${scalac.args.all}"
+      implicits="on" diagrams="on">
+      <include name="**/*.scala"/>
+    </scaladoc>
+    <touch file="${build-docs.dir}/actors-migration.complete" verbose="no"/>
+    <stopwatch name="docs.actors-migration.timer" action="total"/>
+  </target>
+
   <target name="docs.done" depends="docs.man"/>
 
-  <target name="docs.all" depends="docs.jline, docs.comp, docs.man, docs.lib, docs.scalap, docs.partest, docs.continuations-plugin"/>
+  <target name="docs.all" depends="docs.jline, docs.comp, docs.man, docs.lib, docs.scalap, docs.partest, docs.continuations-plugin, docs.actors-migration"/>
 
   <target name="docs.clean">
     <delete dir="${build-docs.dir}" includeemptydirs="yes" quiet="yes" failonerror="no"/>
