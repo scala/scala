@@ -991,6 +991,9 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
           if (outerTestNeeded) and(typeTest(testedBinder, expectedTp), outerTest(testedBinder, expectedTp))
           else typeTest(testedBinder, expectedTp)
 
+        // propagate expected type
+        @inline def expTp(t: Tree): t.type = t setType expectedTp
+
         // true when called to type-test the argument to an extractor
         // don't do any fancy equality checking, just test the type
         if (extractorArgTypeTest) default
@@ -1000,11 +1003,11 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
           case SingleType(_, sym)                       => and(equalsTest(CODE.REF(sym), testedBinder), typeTest(testedBinder, expectedTp.widen))
           // must use == to support e.g. List() == Nil
           case ThisType(sym) if sym.isModule            => and(equalsTest(CODE.REF(sym), testedBinder), typeTest(testedBinder, expectedTp.widen))
-          case ConstantType(const)                      => equalsTest(Literal(const), testedBinder)
+          case ConstantType(const)                      => equalsTest(expTp(Literal(const)), testedBinder)
 
-          case ThisType(sym)                            => eqTest(This(sym), testedBinder)
+          case ThisType(sym)                            => eqTest(expTp(This(sym)), testedBinder)
           case ConstantType(Constant(null)) if testedBinder.info.widen <:< AnyRefClass.tpe
-                                                        => eqTest(CODE.NULL, testedBinder)
+                                                        => eqTest(expTp(CODE.NULL), testedBinder)
 
           // TODO: verify that we don't need to special-case Array
           // I think it's okay:
