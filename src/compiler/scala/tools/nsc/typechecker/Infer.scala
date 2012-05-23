@@ -305,9 +305,21 @@ trait Infer {
       }
 
 
-    def isCompatible(tp: Type, pt: Type): Boolean = {
+    /** "Compatible" means conforming after conversions.
+     *  "Raising to a thunk" is not implicit; therefore, for purposes of applicability and
+     *  specificity, an arg type `A` is considered compatible with cbn formal parameter type `=>A`.
+     *  For this behavior, the type `pt` must have cbn params preserved; for instance, `formalTypes(removeByName = false)`.
+     *
+     *  `isAsSpecific` no longer prefers A by testing applicability to A for both m(A) and m(=>A)
+     *  since that induces a tie between m(=>A) and m(=>A,B*) [SI-3761]
+     */
+    private def isCompatible(tp: Type, pt: Type): Boolean = {
+      def isCompatibleByName(tp: Type, pt: Type): Boolean = pt match {
+        case TypeRef(_, ByNameParamClass, List(res)) if !isByNameParamType(tp) => isCompatible(tp, res)
+        case _ => false
+      }
       val tp1 = normalize(tp)
-      (tp1 weak_<:< pt) || isCoercible(tp1, pt)
+      (tp1 weak_<:< pt) || isCoercible(tp1, pt) || isCompatibleByName(tp, pt)
     }
     def isCompatibleArgs(tps: List[Type], pts: List[Type]) =
       (tps corresponds pts)(isCompatible)
@@ -662,7 +674,7 @@ trait Infer {
         case ExistentialType(tparams, qtpe) =>
           isApplicable(undetparams, qtpe, argtpes0, pt)
         case MethodType(params, _) =>
-          val formals = formalTypes(params map { _.tpe }, argtpes0.length)
+          val formals = formalTypes(params map { _.tpe }, argtpes0.length, removeByName = false)
 
           def tryTupleApply: Boolean = {
             // if 1 formal, 1 argtpe (a tuple), otherwise unmodified argtpes0
