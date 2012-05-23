@@ -308,8 +308,7 @@ abstract class AddInterfaces extends InfoTransform { self: Erasure =>
         // body until now, because the typer knows that Any has no
         // constructor and won't accept a call to super.init.
         assert((clazz isSubClass AnyValClass) || clazz.info.parents.isEmpty, clazz)
-        val superCall = Apply(Select(Super(This(tpnme.EMPTY), tpnme.EMPTY), nme.CONSTRUCTOR), Nil)
-        Block(List(superCall), expr)
+        Block(List(Apply(gen.mkSuperSelect, Nil)), expr)
 
       case Block(stats, expr) =>
         // needs `hasSymbol` check because `supercall` could be a block (named / default args)

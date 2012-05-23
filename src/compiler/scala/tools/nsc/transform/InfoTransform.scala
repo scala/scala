@@ -37,7 +37,7 @@ trait InfoTransform extends Transform {
         val changesBaseClasses = InfoTransform.this.changesBaseClasses
         def transform(sym: Symbol, tpe: Type): Type = transformInfo(sym, tpe)
       }
-      infoTransformers.insert(infoTransformer)
+      infoTransformers insert infoTransformer
     }
   }
 }
