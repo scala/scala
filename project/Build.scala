@@ -184,6 +184,8 @@ object ScalaBuild extends Build with Layers {
   lazy val jline = Project("jline", file("src/jline"))
   // Fast Java Bytecode Generator (nested in every scala-compiler.jar)
   lazy val fjbg = Project("fjbg", file(".")) settings(settingOverrides : _*)
+  // Our wrapped version of msil.
+  lazy val asm = Project("asm", file(".")) settings(settingOverrides : _*)
   // Forkjoin backport
   lazy val forkjoin = Project("forkjoin", file(".")) settings(settingOverrides : _*)
 
@@ -208,11 +210,11 @@ object ScalaBuild extends Build with Layers {
   lazy val locker = Project("locker", file(".")) aggregate(lockerLib, lockerComp)
 
   // Quick is the general purpose project layer for the Scala compiler.
-  lazy val (quickLib, quickComp) = makeLayer("quick", makeScalaReference("locker", lockerLib, lockerComp, fjbg))
+  lazy val (quickLib, quickComp) = makeLayer("quick", makeScalaReference("locker", lockerLib, lockerComp))
   lazy val quick = Project("quick", file(".")) aggregate(quickLib, quickComp)
 
   // Reference to quick scala instance.
-  lazy val quickScalaInstance = makeScalaReference("quick", quickLib, quickComp, fjbg)
+  lazy val quickScalaInstance = makeScalaReference("quick", quickLib, quickComp)
   def quickScalaLibraryDependency = unmanagedClasspath in Compile <++= (exportedProducts in quickLib in Compile).identity
   def quickScalaCompilerDependency = unmanagedClasspath in Compile <++= (exportedProducts in quickComp in Compile).identity
 
@@ -312,7 +314,7 @@ object ScalaBuild extends Build with Layers {
   // --------------------------------------------------------------
   //  Real Compiler Artifact
   // --------------------------------------------------------------
-  lazy val packageScalaBinTask = Seq(quickComp, fjbg).map(p => products in p in Compile).join.map(_.flatten).map(productTaskToMapping)
+  lazy val packageScalaBinTask = Seq(quickComp, fjbg, asm).map(p => products in p in Compile).join.map(_.flatten).map(productTaskToMapping)
   lazy val scalaBinArtifactSettings : Seq[Setting[_]] = inConfig(Compile)(Defaults.packageTasks(packageBin, packageScalaBinTask)) ++ Seq(
     name := "scala-compiler",
     crossPaths := false,
@@ -324,7 +326,7 @@ object ScalaBuild extends Build with Layers {
     target <<= (baseDirectory, name) apply (_ / "target" / _)
   )
   lazy val scalaCompiler = Project("scala-compiler", file(".")) settings(publishSettings:_*) settings(scalaBinArtifactSettings:_*) dependsOn(scalaLibrary)
-  lazy val fullQuickScalaReference = makeScalaReference("pack", scalaLibrary, scalaCompiler, fjbg)
+  lazy val fullQuickScalaReference = makeScalaReference("pack", scalaLibrary, scalaCompiler)
 
   // --------------------------------------------------------------
   //  Testing
@@ -368,7 +370,7 @@ object ScalaBuild extends Build with Layers {
   
   // TODO - Migrate this into the dist project.
   // Scaladocs
-  def distScalaInstance = makeScalaReference("dist", scalaLibrary, scalaCompiler, fjbg)
+  def distScalaInstance = makeScalaReference("dist", scalaLibrary, scalaCompiler)
   lazy val documentationSettings: Seq[Setting[_]] = dependentProjectSettings ++ Seq(
     // TODO - Make these work for realz.
     defaultExcludes in unmanagedSources in Compile := ((".*"  - ".") || HiddenFileFilter ||
