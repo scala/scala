@@ -615,12 +615,11 @@ abstract class ClassfileParser {
 
       // sealed java enums (experimental)
       if (isEnum && opt.experimental) {
-        // need to give singleton type
-        sym setInfo info.narrow
-        if (!sym.superClass.isSealed)
-          sym.superClass setFlag SEALED
+        val enumClass = sym.owner.linkedClassOfClass
+        if (!enumClass.isSealed)
+          enumClass setFlag (SEALED | ABSTRACT)
 
-        sym.superClass addChild sym
+        enumClass addChild sym
       }
     }
   }

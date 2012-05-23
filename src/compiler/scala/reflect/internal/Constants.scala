@@ -224,6 +224,7 @@ trait Constants extends api.Constants {
         case ClazzTag  => "classOf[" + signature(typeValue) + "]"
         case CharTag   => "'" + escapedChar(charValue) + "'"
         case LongTag   => longValue.toString() + "L"
+        case EnumTag   => symbolValue.name.toString()
         case _         => String.valueOf(value)
       }
     }

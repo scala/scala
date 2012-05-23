@@ -1,10 +1,10 @@
 switch.scala:28: error: could not emit switch for @switch annotated match
   def fail1(c: Char) = (c: @switch) match {
-                                    ^
+                            ^
 switch.scala:38: error: could not emit switch for @switch annotated match
   def fail2(c: Char) = (c: @switch @unchecked) match {
-                                               ^
+                                    ^
 switch.scala:45: error: could not emit switch for @switch annotated match
   def fail3(c: Char) = (c: @unchecked @switch) match {
-                                               ^
+                                       ^
 three errors found
