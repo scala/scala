@@ -309,6 +309,16 @@ class PartestTask extends Task with CompilationPathProperty {
       }
     } getOrElse sys.error("Provided classpath does not contain a Scala actors.")
 
+    val scalaActorsMigration = {
+      (classpath.list map { fs => new File(fs) }) find { f =>
+        f.getName match {
+          case "scala-actors-migration.jar" => true
+          case "actors-migration" if (f.getParentFile.getName == "classes") => true
+          case _ => false
+        }
+      }
+    } getOrElse sys.error("Provided classpath does not contain a Scala actors.")
+
     def scalacArgsFlat: Option[Seq[String]] = scalacArgs map (_ flatMap { a =>
       val parts = a.getParts
       if(parts eq null) Seq[String]() else parts.toSeq
@@ -335,6 +345,7 @@ class PartestTask extends Task with CompilationPathProperty {
     antFileManager.LATEST_COMP = scalaCompiler.getAbsolutePath
     antFileManager.LATEST_PARTEST = scalaPartest.getAbsolutePath
     antFileManager.LATEST_ACTORS = scalaActors.getAbsolutePath
+    antFileManager.LATEST_ACTORS_MIGRATION = scalaActorsMigration.getAbsolutePath
 
     javacmd foreach (x => antFileManager.JAVACMD = x.getAbsolutePath)
     javaccmd foreach (x => antFileManager.JAVAC_CMD = x.getAbsolutePath)

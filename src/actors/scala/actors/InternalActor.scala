@@ -153,7 +153,7 @@ private[actors] trait InternalActor extends AbstractActor with InternalReplyReac
         val matches = f.isDefinedAt(m)
         senders = senders.tail
         matches
-      }) 
+      })
       if (null eq qel) {
         val todo = synchronized {
           // in mean time new stuff might have arrived
@@ -317,6 +317,35 @@ private[actors] trait InternalActor extends AbstractActor with InternalReplyReac
   }
 
   /**
+   * Links <code>self</code> to actor <code>to</code>.
+   *
+   * @param to the actor to link to
+   * @return   the parameter actor
+   */
+  def link(to: ActorRef): ActorRef = {
+    this.link(to.localActor)
+    to
+  }
+
+  /**
+   *  Unidirectional linking. For migration purposes only
+   */
+  private[actors] def watch(subject: ActorRef): ActorRef = {
+    assert(Actor.self(scheduler) == this, "link called on actor different from self")
+    subject.localActor linkTo this
+    subject
+  }
+
+  /**
+   *  Unidirectional linking. For migration purposes only
+   */
+  private[actors] def unwatch(subject: ActorRef): ActorRef = {
+    assert(Actor.self(scheduler) == this, "link called on actor different from self")
+    subject.localActor unlinkFrom this
+    subject
+  }
+
+  /**
    * Links <code>self</code> to the actor defined by <code>body</code>.
    *
    * @param body the body of the actor to link to
@@ -346,17 +375,24 @@ private[actors] trait InternalActor extends AbstractActor with InternalReplyReac
     from unlinkFrom this
   }
 
+  /**
+   * Unlinks <code>self</code> from actor <code>from</code>.
+   */
+  def unlink(from: ActorRef) {
+    unlink(from.localActor)
+  }
+
   private[actors] def unlinkFrom(from: AbstractActor) = synchronized {
     links = links.filterNot(from.==)
   }
 
-  @volatile  
+  @volatile
   private[actors] var _trapExit = false
-  
+
   def trapExit = _trapExit
-  
+
   def trapExit_=(value: Boolean) = _trapExit = value
-  
+
   // guarded by this
   private var exitReason: AnyRef = 'normal
   // guarded by this
@@ -445,12 +481,11 @@ private[actors] trait InternalActor extends AbstractActor with InternalReplyReac
     scheduler.onTerminate(this) { f }
   }
 
-  private[actors] def internalPostStop() = {}
 
-  private[actors] def stop(reason: AnyRef): Unit = {    
+  private[actors] def stop(reason: AnyRef): Unit = {
     synchronized {
       shouldExit = true
-      exitReason = reason      
+      exitReason = reason
       // resume this Actor in a way that
       // causes it to exit
       // (because shouldExit == true)
@@ -464,7 +499,7 @@ private[actors] trait InternalActor extends AbstractActor with InternalReplyReac
         /* Here we should not throw a SuspendActorControl,
            since the current method is called from an actor that
            is in the process of exiting.
-           
+
            Therefore, the contract for scheduleActor is that
            it never throws a SuspendActorControl.
          */

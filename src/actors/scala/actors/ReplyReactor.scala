@@ -7,10 +7,7 @@
 \*                                                                      */
 package scala.actors
 
-@deprecated("Scala Actors are beeing removed from the standard library. Please refer to the migration guide.", "2.10")
+@deprecated("Scala Actors are being removed from the standard library. Please refer to the migration guide.", "2.10")
 trait ReplyReactor extends InternalReplyReactor {
-  
-	protected[actors] def sender: OutputChannel[Any] = super.internalSender
-	
+  protected[actors] def sender: OutputChannel[Any] = super.internalSender
 }
-

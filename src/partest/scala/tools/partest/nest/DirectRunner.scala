@@ -61,10 +61,10 @@ trait DirectRunner {
     val latestLibFile = new File(fileManager.LATEST_LIB)
     val latestPartestFile = new File(fileManager.LATEST_PARTEST)
     val latestActorsFile = new File(fileManager.LATEST_ACTORS)
-
+    val latestActMigFile = new File(fileManager.LATEST_ACTORS_MIGRATION)
     val scalacheckURL = PathSettings.scalaCheck.toURL
     val scalaCheckParentClassLoader = ScalaClassLoader.fromURLs(
-      scalacheckURL :: (List(latestCompFile, latestLibFile, latestActorsFile, latestPartestFile).map(_.toURI.toURL))
+      scalacheckURL :: (List(latestCompFile, latestLibFile, latestActorsFile, latestActMigFile, latestPartestFile).map(_.toURI.toURL))
     )
     Output.init()
 
