@@ -10,7 +10,7 @@ object StashingActor extends Combinators {
   }
 }
 
-@deprecated("Scala Actors are beeing removed from the standard library. Please refer to the migration guide.", "2.10")
+@deprecated("Scala Actors are being removed from the standard library. Please refer to the migration guide.", "2.10")
 trait StashingActor extends InternalActor {
   type Receive = PartialFunction[Any, Unit]
 
@@ -83,9 +83,9 @@ trait StashingActor extends InternalActor {
    * by default it does: EventHandler.warning(self, message)
    */
   def unhandled(message: Any) {
-    println("unhandeld")
     message match {
-      case _ => throw new UnhandledMessageException(message, self)
+      case Terminated(dead) ⇒ throw new DeathPactException(dead)
+      case _                ⇒ System.err.println("Unhandeled message " + message)
     }
   }
 
@@ -152,7 +152,6 @@ trait StashingActor extends InternalActor {
     def swapExitHandler(pf: PartialFunction[Any, Unit]) = new PartialFunction[Any, Unit] {
       def swapExit(v: Any) = v match {
         case Exit(from, reason) =>
-
           Terminated(new InternalActorRef(from.asInstanceOf[InternalActor]))
         case v => v
       }
@@ -244,18 +243,13 @@ trait StashingActor extends InternalActor {
 }
 
 /**
- * This message is thrown by default when an Actors behavior doesn't match a message
+ * This message is thrown by default when an Actor does not handle termination.
  */
-case class UnhandledMessageException(msg: Any, ref: ActorRef = null) extends Exception {
-
-  def this(msg: String) = this(msg, null)
-
-  // constructor with 'null' ActorRef needed to work with client instantiation of remote exception
-  override def getMessage =
-    if (ref ne null) "Actor %s does not handle [%s]".format(ref, msg)
-    else "Actor does not handle [%s]".format(msg)
-
+class DeathPactException(ref: ActorRef = null) extends Exception {
   override def fillInStackTrace() = this //Don't waste cycles generating stack trace
 }
 
+/**
+ * Message that is sent to a watching actor when the watched actor terminates.
+ */
 case class Terminated(actor: ActorRef)
