@@ -2327,7 +2327,7 @@ trait Typers extends Modes with Adaptations with Taggings {
           val methodBodyTyper = newTyper(context.makeNewScope(context.tree, methodSym)) // should use the DefDef for the context's tree, but it doesn't exist yet (we need the typer we're creating to create it)
           paramSyms foreach (methodBodyTyper.context.scope enter _)
 
-          val match_ = methodBodyTyper.typedMatch(selector, cases, mode, ptRes)
+          val match_ = methodBodyTyper.typedMatch(gen.mkUnchecked(selector), cases, mode, ptRes)
           val resTp = match_.tpe
 
           val methFormals = paramSyms map (_.tpe)
@@ -2367,7 +2367,7 @@ trait Typers extends Modes with Adaptations with Taggings {
           val methodBodyTyper = newTyper(context.makeNewScope(context.tree, methodSym)) // should use the DefDef for the context's tree, but it doesn't exist yet (we need the typer we're creating to create it)
           paramSyms foreach (methodBodyTyper.context.scope enter _)
 
-          val match_ = methodBodyTyper.typedMatch(selector, cases, mode, ptRes)
+          val match_ = methodBodyTyper.typedMatch(gen.mkUnchecked(selector), cases, mode, ptRes)
           val resTp = match_.tpe
 
           anonClass setInfo ClassInfoType(parentsPartial(List(argTp, resTp)), newScope, anonClass)
@@ -2394,7 +2394,7 @@ trait Typers extends Modes with Adaptations with Taggings {
           paramSyms foreach (methodBodyTyper.context.scope enter _)
           methodSym setInfoAndEnter MethodType(paramSyms, BooleanClass.tpe)
 
-          val match_ = methodBodyTyper.typedMatch(selector, casesTrue, mode, BooleanClass.tpe)
+          val match_ = methodBodyTyper.typedMatch(gen.mkUnchecked(selector), casesTrue, mode, BooleanClass.tpe)
           val body   = methodBodyTyper.virtualizedMatch(match_ withAttachment DefaultOverrideMatchAttachment(FALSE_typed), mode, BooleanClass.tpe)
 
           DefDef(methodSym, body)
