@@ -1084,8 +1084,16 @@ abstract class RefChecks extends InfoTransform with reflect.internal.transform.R
         def isEitherNullable     = (NullClass.tpe <:< receiver.info) || (NullClass.tpe <:< actual.info)
         def isBoolean(s: Symbol) = unboxedValueClass(s) == BooleanClass
         def isUnit(s: Symbol)    = unboxedValueClass(s) == UnitClass
-        def isNumeric(s: Symbol) = isNumericValueClass(unboxedValueClass(s)) || (s isSubClass ScalaNumberClass)
-        def isSpecial(s: Symbol) = isPrimitiveValueClass(unboxedValueClass(s)) || (s isSubClass ScalaNumberClass) || isMaybeValue(s)
+        def isNumeric(s: Symbol) = isNumericValueClass(unboxedValueClass(s)) || isAnyNumber(s)
+        def isScalaNumber(s: Symbol) = s isSubClass ScalaNumberClass
+        // test is behind a platform guard
+        def isJavaNumber(s: Symbol) = !forMSIL && (s isSubClass JavaNumberClass)
+        // includes java.lang.Number if appropriate [SI-5779]
+        def isAnyNumber(s: Symbol) = isScalaNumber(s) || isJavaNumber(s)
+        def isMaybeAnyValue(s: Symbol) = isPrimitiveValueClass(unboxedValueClass(s)) || isMaybeValue(s)
+        // used to short-circuit unrelatedTypes check if both sides are special
+        def isSpecial(s: Symbol) = isMaybeAnyValue(s) || isAnyNumber(s)
+        // unused
         def possibleNumericCount = onSyms(_ filter (x => isNumeric(x) || isMaybeValue(x)) size)
         val nullCount            = onSyms(_ filter (_ == NullClass) size)
 
@@ -1155,7 +1163,7 @@ abstract class RefChecks extends InfoTransform with reflect.internal.transform.R
           if (isCaseEquals) {
             def thisCase = receiver.info.member(nme.equals_).owner
             actual.info.baseClasses.find(_.isCase) match {
-              case Some(p) if (p != thisCase) => nonSensible("case class ", false)
+              case Some(p) if p != thisCase => nonSensible("case class ", false)
               case None =>
                 // stronger message on (Some(1) == None)
                 //if (receiver.isCase && receiver.isEffectivelyFinal && !(receiver isSubClass actual)) nonSensiblyNeq()
