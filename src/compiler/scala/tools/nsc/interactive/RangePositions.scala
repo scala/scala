@@ -42,9 +42,9 @@ self: scala.tools.nsc.Global =>
    *  If some of the trees are ranges, returns a range position enclosing all ranges
    *  Otherwise returns default position.
    */
-  override def wrappingPos(default: Position, trees: List[Tree]): Position = {
+  override def wrappingPos(default: Position, trees: List[Tree], focus: Boolean): Position = {
     val ranged = trees filter (_.pos.isRange)
-    if (ranged.isEmpty) default.focus
+    if (ranged.isEmpty) if (focus) default.focus else default
     else new RangePosition(default.source, (ranged map (_.pos.start)).min, default.point, (ranged map (_.pos.end)).max)
   }
 
@@ -117,7 +117,7 @@ self: scala.tools.nsc.Global =>
       val children = tree.children
       children foreach (ensureNonOverlapping(_, others))
       if (tree.pos.isOpaqueRange) {
-        val wpos = wrappingPos(tree.pos.focus, children)
+        val wpos = wrappingPos(tree.pos, children, false)
         tree setPos (if (isOverlapping(wpos)) tree.pos.makeTransparent else wpos)
       }
     }
