@@ -139,6 +139,7 @@ MAIN DISTRIBUTION PACKAGING
     <mvn-copy-lib mvn.artifact.name="scala-compiler"/>
     <mvn-copy-lib mvn.artifact.name="scala-swing"/>
     <mvn-copy-lib mvn.artifact.name="scala-actors"/>
+    <mvn-copy-lib mvn.artifact.name="scala-actors-migration"/>
     <mvn-copy-lib mvn.artifact.name="scala-partest"/>
     <mvn-copy-lib mvn.artifact.name="scalap"/>
   </target>
@@ -201,6 +202,11 @@ MAIN DISTRIBUTION PACKAGING
          basedir="${build-docs.dir}/continuations-plugin">
       <include name="**/*"/>
     </jar>
+    <jar destfile="${dists.dir}/maven/${version.number}/scala-actors-migration/scala-actors-migration-docs.jar"
+           basedir="${build-docs.dir}/actors-migration">
+        <include name="**/*"/>
+    </jar>
+
     <!-- TODO - Scala swing and actors should maybe have thier own jar, but creating it is SLOW. -->
     <copy tofile="${dists.dir}/maven/${version.number}/scala-swing/scala-swing-docs.jar"
           file="${dists.dir}/maven/${version.number}/scala-library/scala-library-docs.jar"/>

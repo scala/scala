@@ -51,7 +51,6 @@ private[actors] class ActorTask(actor: InternalActor,
         super.terminateExecution(e)
         () => {}
       }
-      actor.internalPostStop
       res
     }
 

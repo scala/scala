@@ -1,0 +1,8 @@
+OK error: java.lang.RuntimeException: In order to create StashingActor one must use actorOf.
+OK error: java.lang.RuntimeException: Only one actor can be created per actorOf call.
+0
+100
+200
+300
+400
+500

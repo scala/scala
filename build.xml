@@ -682,6 +682,7 @@ QUICK BUILD (QUICK)
         <include name="continuations/**"/>
         <include name="swing/**"/>
         <include name="actors/**"/>
+        <include name="actors-migration/**"/>
       </srcfiles>
     </uptodate>
   </target>
@@ -879,7 +880,32 @@ QUICK BUILD (QUICK)
     <stopwatch name="quick.plugins.timer" action="total"/>
   </target>
 
-  <target name="quick.pre-scalacheck" depends="quick.plugins">
+  <target name="quick.pre-actors-migration" depends="quick.plugins">
+    <uptodate property="quick.actors-migration.available" targetfile="${build-quick.dir}/actors-migration.complete">
+      <srcfiles dir="${src.dir}/actors-migration"/>
+    </uptodate>
+  </target>
+
+  <target name="quick.actors-migration" depends="quick.pre-actors-migration" unless="quick.actors-migration.available">
+    <stopwatch name="quick.actors-migration.timer"/>
+    <mkdir dir="${build-quick.dir}/classes/actors-migration"/>
+    <scalacfork
+      destdir="${build-quick.dir}/classes/actors-migration"
+      compilerpathref="quick.classpath"
+      params="${scalac.args.quick}"
+      srcdir="${src.dir}/actors-migration"
+      jvmargs="${scalacfork.jvmargs}">
+      <include name="**/*.scala"/>
+      <compilationpath>
+        <pathelement location="${build-quick.dir}/classes/library"/>
+        <pathelement location="${build-quick.dir}/classes/actors-migration"/>
+      </compilationpath>
+    </scalacfork>
+    <touch file="${build-quick.dir}/actors-migration.complete" verbose="no"/>
+    <stopwatch name="quick.actors-migration.timer" action="total"/>
+  </target>
+
+  <target name="quick.pre-scalacheck" depends="quick.actors-migration">
     <uptodate property="quick.scalacheck.available" targetfile="${build-quick.dir}/scalacheck.complete">
       <srcfiles dir="${src.dir}/scalacheck"/>
     </uptodate>
@@ -1083,6 +1109,9 @@ PACKED QUICK BUILD (PACK)
         <include name="scala/actors/**"/>
       </fileset>
   </jar>
+  <jar destfile="${build-pack.dir}/lib/scala-actors-migration.jar">
+      <fileset dir="${build-quick.dir}/classes/actors-migration"/>
+  </jar>
   </target>
 
   <target name="pack.pre-comp" depends="pack.lib">
@@ -1213,6 +1242,7 @@ PACKED QUICK BUILD (PACK)
       <pathelement location="${build-pack.dir}/lib/scala-partest.jar"/>
       <pathelement location="${build-pack.dir}/lib/scalap.jar"/>
       <pathelement location="${build-pack.dir}/lib/scala-actors.jar"/>
+      <pathelement location="${build-pack.dir}/lib/scala-actors-migration.jar"/>
       <pathelement location="${ant.jar}"/>
       <pathelement location="${jline.jar}"/>
       <path refid="lib.extra"/>
@@ -1685,6 +1715,7 @@ DOCUMENTATION
         <include name="library/**"/>
         <include name="swing/**"/>
         <include name="actors/**"/>
+        <include name="actors-migration/**"/>
       </source-includes>
     </doc-uptodate-check>
   </target>
@@ -1705,6 +1736,7 @@ DOCUMENTATION
       docRootContent="${src.dir}/library/rootdoc.txt"
       implicits="on" diagrams="on">
       <src>
+        <files includes="${src.dir}/actors-migration"/>
         <files includes="${src.dir}/actors"/>
         <files includes="${src.dir}/library/scala"/>
         <files includes="${src.dir}/swing"/>
@@ -1901,6 +1933,7 @@ BOOTRAPING TEST AND TEST SUITE
       <exclude name="bin/**"/>
       <exclude name="*.complete"/>
       <exclude name="misc/scala-devel/plugins/*.jar"/>
+      <exclude name="classes/actors-migration/**"/>
     </same>
   </target>
 
@@ -2078,6 +2111,9 @@ DISTRIBUTION
     </jar>
     <jar destfile="${dist.dir}/src/scala-actors-src.jar">
       <fileset dir="${src.dir}/actors"/>
+    </jar>
+    <jar destfile="${dist.dir}/src/scala-actors-migration-src.jar">
+      <fileset dir="${src.dir}/actors-migration"/>
     </jar>
     <jar destfile="${dist.dir}/src/scalap-src.jar">
       <fileset dir="${src.dir}/scalap"/>
@@ -2257,6 +2293,12 @@ POSITIONS
     </antcall>
     <antcall target="test.positions.sub" inheritRefs="true">
       <param name="test.srcs" value="${src.dir}/actors"/>
+    </antcall>
+    <antcall target="test.positions.sub" inheritRefs="true">
+      <param name="test.srcs" value="${src.dir}/actors-migration"/>
+    </antcall>
+    <antcall target="test.positions.sub" inheritRefs="true">
+      <param name="test.srcs" value="${src.dir}/dbc"/>
     </antcall>
     <antcall target="test.positions.sub" inheritRefs="true">
       <param name="test.srcs" value="${src.dir}/swing"/>
