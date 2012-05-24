@@ -1,4 +1,7 @@
 t639.scala:3: error: not found: object a
 import a._
        ^
-one error found
+t639.scala:5: error: not found: type B
+@B
+ ^
+two errors found

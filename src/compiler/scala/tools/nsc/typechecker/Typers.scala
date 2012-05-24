@@ -2552,9 +2552,11 @@ trait Typers extends Modes with Adaptations with Taggings {
         else
           stat match {
             case imp @ Import(_, _) =>
-              context = context.makeNewImport(imp)
               imp.symbol.initialize
-              typedImport(imp)
+              if (!imp.symbol.isError) {
+                context = context.makeNewImport(imp)
+                typedImport(imp)
+              } else EmptyTree
             case _ =>
               if (localTarget && !includesTargetPos(stat)) {
                 // skip typechecking of statements in a sequence where some other statement includes

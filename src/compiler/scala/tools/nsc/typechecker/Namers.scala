@@ -1306,14 +1306,18 @@ trait Namers extends MethodSynthesis {
           if (expr1.symbol != null && expr1.symbol.isRootPackage)
             RootImportError(tree)
 
-          val newImport = treeCopy.Import(tree, expr1, selectors).asInstanceOf[Import]
-          checkSelectors(newImport)
-          transformed(tree) = newImport
-          // copy symbol and type attributes back into old expression
-          // so that the structure builder will find it.
-          expr.symbol = expr1.symbol
-          expr.tpe = expr1.tpe
-          ImportType(expr1)
+          if (expr1.isErrorTyped)
+            ErrorType
+          else {
+            val newImport = treeCopy.Import(tree, expr1, selectors).asInstanceOf[Import]
+            checkSelectors(newImport)
+            transformed(tree) = newImport
+            // copy symbol and type attributes back into old expression
+            // so that the structure builder will find it.
+            expr.symbol = expr1.symbol
+            expr.tpe = expr1.tpe
+            ImportType(expr1)
+          }
       }
 
       val result =
