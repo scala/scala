@@ -23,6 +23,7 @@ class SelectiveCPSPlugin(val global: Global) extends Plugin {
   val cpsPhase = new SelectiveCPSTransform() {
     val global = SelectiveCPSPlugin.this.global
     val runsAfter = List("selectiveanf")
+    override val runsBefore = List("uncurry")
   }
 
 
