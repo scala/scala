@@ -54,6 +54,11 @@ trait StackProxy[A] extends Stack[A] with Proxy {
     this
   }
 
+  override def push(elem: A): this.type = {
+    self.push(elem)
+    this
+  }
+  
   /** Returns the top element of the stack. This method will not remove
    *  the element from the stack. An error is signaled if there is no
    *  element on the stack.
