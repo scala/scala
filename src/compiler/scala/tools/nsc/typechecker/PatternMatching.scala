@@ -1105,7 +1105,7 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
         }
 
         emitSwitch(scrut, scrutSym, casesNoSubstOnly, pt, matchFailGenOverride).getOrElse{
-          if (requireSwitch) typer.context.unit.error(scrut.pos, "could not emit switch for @switch annotated match")
+          if (requireSwitch) typer.context.unit.warning(scrut.pos, "could not emit switch for @switch annotated match")
 
           if (casesNoSubstOnly nonEmpty) {
             // before optimizing, check casesNoSubstOnly for presence of a default case,
