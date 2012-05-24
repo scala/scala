@@ -1,6 +1,7 @@
 import sbt._
 import Keys._
 import com.jsuereth.git.GitKeys.gitRunner
+import ScalaBuildKeys.lock
 
 /** This trait stores all the helper methods to generate layers in Scala's layered build. */
 trait Layers extends Build {
@@ -24,7 +25,7 @@ trait Layers extends Build {
   /** Creates a reference Scala version that can be used to build other projects.   This takes in the raw
     * library, compiler and fjbg libraries as well as a string representing the layer name (used for compiling the compile-interface).
     */
-  def makeScalaReference(layer : String, library: Project, compiler: Project) =
+  def makeScalaReference(layer: String, library: Project, compiler: Project) =
      scalaInstance <<= (appConfiguration in library,
                         version in library,
                         (exportedProducts in library in Compile),
@@ -50,8 +51,18 @@ trait Layers extends Build {
    * Returns the library project and compiler project from the next layer.
    * Note:  The library and compiler are not *complete* in the sense that they are missing things like "actors" and "fjbg".
    */
-  def makeLayer(layer: String, referenceScala: Setting[Task[ScalaInstance]]) : (Project, Project) = {
-    val library = Project(layer + "-library", file("."))  settings(settingOverrides: _*) settings(
+  def makeLayer(layer: String, referenceScala: Setting[Task[ScalaInstance]], autoLock: Boolean = false) : (Project, Project) = {
+    val autoLockSettings: Seq[Setting[_]] = 
+      if(autoLock) Seq(compile in Compile <<= (compile in Compile, lock) apply { (c, l) => 
+        c flatMapR { cResult =>
+          val result = Result.tryValue(cResult)
+          l mapR { tx => result }
+        }
+      }) 
+      else Seq.empty
+
+
+    val library = Project(layer + "-library", file("."))  settings(settingOverrides: _*) settings(autoLockSettings:_*) settings(
       version := layer,
       // TODO - use depends on.
       unmanagedClasspath in Compile <<= (exportedProducts in forkjoin in Compile).identity,
@@ -66,7 +77,7 @@ trait Layers extends Build {
     )
 
     // Define the compiler
-    val compiler = Project(layer + "-compiler", file(".")) settings(settingOverrides:_*) settings(
+    val compiler = Project(layer + "-compiler", file(".")) settings(settingOverrides:_*) settings(autoLockSettings:_*) settings(
       version := layer,
       scalaSource in Compile <<= (baseDirectory) apply (_ / "src" / "compiler"),
       resourceDirectory in Compile <<= baseDirectory apply (_ / "src" / "compiler"),
