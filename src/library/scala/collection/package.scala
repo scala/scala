@@ -45,7 +45,7 @@ package scala
  *
  * The most common way to create a collection is to use the companion objects as factories.
  * Of these, the three most common
- * are [[scala.collection.immutable.Seq]], [[scala.collection.immutable.Set]], and [[scala.collection.immutable.Map]].  Their
+ * are [[scala.collection.Seq]], [[scala.collection.immutable.Set]], and [[scala.collection.immutable.Map]].  Their
  * companion objects are all available
  * as type aliases the either the [[scala]] package or in `scala.Predef`, and can be used
  * like so:
@@ -61,7 +61,7 @@ package scala
  * }}}
  *
  * It is also typical to use the [[scala.collection.immutable]] collections over those
- * in [[scala.collection.mutable]]; The types aliased in the [[scala]] package and
+ * in [[scala.collection.mutable]]; The types aliased in
  * the `scala.Predef` object are the immutable versions.
  *
  * Also note that the collections library was carefully designed to include several implementations of
