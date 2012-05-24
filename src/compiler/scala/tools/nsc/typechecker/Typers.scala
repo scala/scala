@@ -4422,10 +4422,6 @@ trait Typers extends Modes with Adaptations with Taggings {
 
           var cx = startingIdentContext
           while (defSym == NoSymbol && cx != NoContext && (cx.scope ne null)) { // cx.scope eq null arises during FixInvalidSyms in Duplicators
-            // !!! Shouldn't the argument to compileSourceFor be cx, not context?
-            // I can't tell because those methods do nothing in the standard compiler,
-            // presumably they are overridden in the IDE.
-            currentRun.compileSourceFor(context.asInstanceOf[analyzer.Context], name)
             pre = cx.enclClass.prefix
             defEntry = cx.scope.lookupEntry(name)
             if ((defEntry ne null) && qualifies(defEntry.sym)) {
