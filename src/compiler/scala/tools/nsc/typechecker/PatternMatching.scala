@@ -1973,6 +1973,7 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
               case Some(0) if testedBinder.tpe.typeSymbol == ListClass => // extractor.symbol.owner == SeqFactory
                 EqualityCond(binderToUniqueTree(p.prevBinder), unique(Ident(NilModule) setType NilModule.tpe))
               case _ =>
+                backoff = true
                 super.treeMakerToCond(tm)
             }
           case ExtractorTreeMaker(_, _, _, _) =>
