@@ -346,7 +346,9 @@ trait Implicits {
         case _ => tp
       }
       def stripped(tp: Type): Type = {
-        deriveTypeWithWildcards(freeTypeParametersNoSkolems.collect(tp))(tp)
+        def isFreeTypeParamNoSkolem(sym: Symbol) = sym.isTypeParameter && sym.owner.isTerm
+        val syms = for (t <- tp; if isFreeTypeParamNoSkolem(t.typeSymbol)) yield t.typeSymbol
+        deriveTypeWithWildcards(syms.distinct)(tp)
       }
       def sum(xs: List[Int]) = (0 /: xs)(_ + _)
       def complexity(tp: Type): Int = tp.normalize match {
