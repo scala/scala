@@ -1088,7 +1088,7 @@ trait Infer {
      */
     def inferConstructorInstance(tree: Tree, undetparams: List[Symbol], pt0: Type) {
       val pt       = widen(pt0)
-      val ptparams = freeTypeParamsOfTerms.collect(pt)
+      val ptparams = freeTypeParamsOfTerms(pt)
       val ctorTp   = tree.tpe
       val resTp    = ctorTp.finalResultType
 
@@ -1322,8 +1322,8 @@ trait Infer {
 
     def inferTypedPattern(tree0: Tree, pattp: Type, pt0: Type): Type = {
       val pt        = widen(pt0)
-      val ptparams  = freeTypeParamsOfTerms.collect(pt)
-      val tpparams  = freeTypeParamsOfTerms.collect(pattp)
+      val ptparams  = freeTypeParamsOfTerms(pt)
+      val tpparams  = freeTypeParamsOfTerms(pattp)
 
       def ptMatchesPattp = pt matchesPattern pattp.widen
       def pattpMatchesPt = pattp matchesPattern pt
@@ -1376,7 +1376,7 @@ trait Infer {
 
     def inferModulePattern(pat: Tree, pt: Type) =
       if (!(pat.tpe <:< pt)) {
-        val ptparams = freeTypeParamsOfTerms.collect(pt)
+        val ptparams = freeTypeParamsOfTerms(pt)
         debuglog("free type params (2) = " + ptparams)
         val ptvars = ptparams map freshVar
         val pt1 = pt.instantiateTypeParams(ptparams, ptvars)
@@ -1393,19 +1393,6 @@ trait Infer {
       }
     }
 
-    abstract class SymCollector extends TypeCollector(List[Symbol]()) {
-      protected def includeCondition(sym: Symbol): Boolean
-
-      def traverse(tp: Type) {
-        tp.normalize match {
-          case TypeRef(_, sym, _) =>
-            if (includeCondition(sym) && !result.contains(sym)) result = sym :: result
-          case _ =>
-        }
-        mapOver(tp)
-      }
-    }
-
     object approximateAbstracts extends TypeMap {
       def apply(tp: Type): Type = tp.normalize match {
         case TypeRef(pre, sym, _) if sym.isAbstractType => WildcardType
@@ -1413,31 +1400,30 @@ trait Infer {
       }
     }
 
-    /** A traverser to collect type parameters referred to in a type
+    /** Collects type parameters referred to in a type.
      */
-    object freeTypeParamsOfTerms extends SymCollector {
+    def freeTypeParamsOfTerms(tp: Type): List[Symbol] = {
       // An inferred type which corresponds to an unknown type
       // constructor creates a file/declaration order-dependent crasher
       // situation, the behavior of which depends on the state at the
       // time the typevar is created. Until we can deal with these
       // properly, we can avoid it by ignoring type parameters which
       // have type constructors amongst their bounds. See SI-4070.
-      protected def includeCondition(sym: Symbol) = (
-           sym.isAbstractType
-        && sym.owner.isTerm
-        && !sym.info.bounds.exists(_.typeParams.nonEmpty)
-      )
-    }
+      def isFreeTypeParamOfTerm(sym: Symbol) = (
+        sym.isAbstractType
+          && sym.owner.isTerm
+          && !sym.info.bounds.exists(_.typeParams.nonEmpty)
+        )
 
-    /** A traverser to collect type parameters referred to in a type
-     */
-    object freeTypeParametersNoSkolems extends SymCollector {
-      protected def includeCondition(sym: Symbol): Boolean =
-        sym.isTypeParameter && sym.owner.isTerm
-    }
-
-    object typeRefs extends SymCollector {
-      protected def includeCondition(sym: Symbol): Boolean = true
+      // Intentionally *not* using `Type#typeSymbol` here, which would normalize `tp`
+      // and collect symbols from the result type of any resulting `PolyType`s, which 
+      // are not free type parameters of `tp`.
+      //
+      // Contrast with `isFreeTypeParamNoSkolem`.
+      val syms = tp collect {
+        case TypeRef(_, sym, _) if isFreeTypeParamOfTerm(sym) => sym
+      }
+      syms.distinct
     }
 
     /* -- Overload Resolution ---------------------------------------------- */
