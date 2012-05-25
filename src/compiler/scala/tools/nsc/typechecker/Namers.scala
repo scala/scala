@@ -473,12 +473,8 @@ trait Namers extends MethodSynthesis {
 
         if (from != nme.WILDCARD && base != ErrorType) {
           if (isValid(from)) {
-            if (currentRun.compileSourceFor(expr, from)) {
-              // side effecting, apparently
-              typeSig(tree)
-            }
             // for Java code importing Scala objects
-            else if (!nme.isModuleName(from) || isValid(nme.stripModuleSuffix(from))) {
+            if (!nme.isModuleName(from) || isValid(nme.stripModuleSuffix(from))) {
               typer.TyperErrorGen.NotAMemberError(tree, expr, from)
               typer.infer.setError(tree)
             }
