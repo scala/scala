@@ -161,10 +161,13 @@ class PriorityQueue[A](implicit val ord: Ordering[A])
    */
   def clear(): Unit = { resarr.p_size0 = 1 }
 
-  /** Returns an iterator which yields all the elements of the priority
-   *  queue in descending priority order.
+  /** Returns an iterator which yields all the elements.
    *
-   *  @return  an iterator over all elements sorted in descending order.
+   *  Note: The order of elements returned is undefined.
+   *  If you want to traverse the elements in priority queue
+   *  order, use `clone().dequeueAll.iterator`.
+   *  
+   *  @return  an iterator over all the elements.
    */
   override def iterator: Iterator[A] = new AbstractIterator[A] {
     private var i = 1
@@ -175,7 +178,6 @@ class PriorityQueue[A](implicit val ord: Ordering[A])
       toA(n)
     }
   }
-
 
   /** Returns the reverse of this queue. The priority queue that gets
    *  returned will have an inversed ordering - if for some elements
@@ -198,6 +200,13 @@ class PriorityQueue[A](implicit val ord: Ordering[A])
     revq
   }
 
+  /** Returns an iterator which yields all the elements in the reverse order
+   *  than that returned by the method `iterator`.
+   *
+   *  Note: The order of elements returned is undefined.
+   *  
+   *  @return  an iterator over all elements sorted in descending order.
+   */
   def reverseIterator: Iterator[A] = new AbstractIterator[A] {
     private var i = resarr.p_size0 - 1
     def hasNext: Boolean = i >= 1
@@ -217,6 +226,8 @@ class PriorityQueue[A](implicit val ord: Ordering[A])
     throw new UnsupportedOperationException("unsuitable as hash key")
 
   /** Returns a regular queue containing the same elements.
+   *
+   *  Note: the order of elements is undefined.
    */
   def toQueue: Queue[A] = new Queue[A] ++= this.iterator
 
@@ -225,6 +236,13 @@ class PriorityQueue[A](implicit val ord: Ordering[A])
    *  @return the string representation of this queue.
    */
   override def toString() = toList.mkString("PriorityQueue(", ", ", ")")
+  
+  /** Converts this $coll to a list.
+   *
+   *  Note: the order of elements is undefined.
+   *  
+   *  @return a list containing all elements of this $coll.
+   */
   override def toList = this.iterator.toList
 
   /** This method clones the priority queue.
