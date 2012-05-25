@@ -1390,19 +1390,28 @@ trait Infer {
 
     /** Collects type parameters referred to in a type.
      */
-    def freeTypeParamsOfTerms(tp: Type) = {
+    def freeTypeParamsOfTerms(tp: Type): List[Symbol] = {
       // An inferred type which corresponds to an unknown type
       // constructor creates a file/declaration order-dependent crasher
       // situation, the behavior of which depends on the state at the
       // time the typevar is created. Until we can deal with these
       // properly, we can avoid it by ignoring type parameters which
       // have type constructors amongst their bounds. See SI-4070.
-      def includeCondition(sym: Symbol) = (
+      def isFreeTypeParamOfTerm(sym: Symbol) = (
         sym.isAbstractType
           && sym.owner.isTerm
           && !sym.info.bounds.exists(_.typeParams.nonEmpty)
         )
-      (for (t <- tp if includeCondition(t.typeSymbol)) yield t.typeSymbol).distinct
+
+      // Intentionally *not* using `Type#typeSymbol` here, which would normalize `tp`
+      // and collect symbols from the result type of any resulting `PolyType`s, which 
+      // are not free type parameters of `tp`.
+      //
+      // Contrast with `isFreeTypeParamNoSkolem`.
+      val syms = tp collect {
+        case TypeRef(_, sym, _) if isFreeTypeParamOfTerm(sym) => sym
+      }
+      syms.distinct
     }
 
     /* -- Overload Resolution ---------------------------------------------- */
