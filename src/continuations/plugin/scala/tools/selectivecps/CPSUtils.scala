@@ -3,6 +3,7 @@
 package scala.tools.selectivecps
 
 import scala.tools.nsc.Global
+import scala.collection.mutable.ListBuffer
 
 trait CPSUtils {
   val global: Global
@@ -135,4 +136,39 @@ trait CPSUtils {
       case _ => None
     }
   }
+
+  def isTailReturn(retExpr: Tree, body: Tree): Boolean = {
+    val removedIds = ListBuffer[Int]()
+    removeTailReturn(body, removedIds)
+    removedIds contains retExpr.id
+  }
+
+  def removeTailReturn(tree: Tree, ids: ListBuffer[Int]): Tree = tree match {
+    case Block(stms, r @ Return(expr)) =>
+      ids += r.id
+      treeCopy.Block(tree, stms, expr)
+
+    case Block(stms, expr) =>
+      treeCopy.Block(tree, stms, removeTailReturn(expr, ids))
+
+    case If(cond, thenExpr, elseExpr) =>
+      treeCopy.If(tree, cond, removeTailReturn(thenExpr, ids), removeTailReturn(elseExpr, ids))
+
+    case Try(block, catches, finalizer) =>
+      treeCopy.Try(tree,
+        removeTailReturn(block, ids),
+        (catches map (t => removeTailReturn(t, ids))).asInstanceOf[List[CaseDef]],
+        removeTailReturn(finalizer, ids))
+
+    case CaseDef(pat, guard, r @ Return(expr)) =>
+      ids += r.id
+      treeCopy.CaseDef(tree, pat, guard, expr)
+
+    case CaseDef(pat, guard, body) =>
+      treeCopy.CaseDef(tree, pat, guard, removeTailReturn(body, ids))
+
+    case _ =>
+      tree
+  }
+
 }
