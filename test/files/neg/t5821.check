@@ -1,0 +1,4 @@
+t5821.scala:1: error: not found: object SthImportant
+import SthImportant._
+       ^
+one error found
