@@ -9,3 +9,6 @@ compiling Set(A2.scala)
 A2.scala:2: error: stable identifier required, but A.x found.
   import A.x.y
            ^
+A2.scala:3: error: not found: value y
+  val z = y
+          ^
