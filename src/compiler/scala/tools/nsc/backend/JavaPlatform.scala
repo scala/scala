@@ -7,7 +7,7 @@ package scala.tools.nsc
 package backend
 
 import io.AbstractFile
-import util.{ClassPath,JavaClassPath}
+import util.{ClassPath,JavaClassPath,MergedClassPath,DeltaClassPath}
 import util.ClassPath.{ JavaContext, DefaultJavaContext }
 import scala.tools.util.PathResolver
 
@@ -17,7 +17,17 @@ trait JavaPlatform extends Platform {
 
   type BinaryRepr = AbstractFile
 
-  lazy val classPath  = new PathResolver(settings).result
+  private var currentClassPath: Option[MergedClassPath[BinaryRepr]] = None
+
+  def classPath: ClassPath[BinaryRepr] = {
+    if (currentClassPath.isEmpty) currentClassPath = Some(new PathResolver(settings).result)
+    currentClassPath.get
+  }
+    
+  /** Update classpath with a substituted subentry */
+  def updateClassPath(oldEntry: ClassPath[BinaryRepr], newEntry: ClassPath[BinaryRepr]) = 
+    currentClassPath = Some(new DeltaClassPath(currentClassPath.get, oldEntry, newEntry))
+
   def rootLoader = new loaders.PackageLoader(classPath.asInstanceOf[ClassPath[platform.BinaryRepr]])
     // [Martin] Why do we need a cast here?
     // The problem is that we cannot specify at this point that global.platform should be of type JavaPlatform.
