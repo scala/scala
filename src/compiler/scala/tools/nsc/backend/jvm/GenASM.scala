@@ -223,8 +223,8 @@ abstract class GenASM extends SubComponent with BytecodeWriters {
 
   // unlike javaNameCache, reverseJavaName contains entries only for class symbols and their internal names.
   val reverseJavaName = mutable.Map.empty[String, Symbol] ++= List(
-    binarynme.RuntimeNothing.toString() -> NothingClass, // neither RuntimeNothingClass nor RuntimeNullClass belong to the co-domain of this map.
-    binarynme.RuntimeNull.toString()    -> NullClass
+    binarynme.RuntimeNothing.toString() -> RuntimeNothingClass, // RuntimeNothingClass is the bytecode-level return type of Scala methods with Nothing return-type.
+    binarynme.RuntimeNull.toString()    -> RuntimeNullClass
   )
 
   private def mkFlags(args: Int*) = args.foldLeft(0)(_ | _)
@@ -587,7 +587,7 @@ abstract class GenASM extends SubComponent with BytecodeWriters {
           case None         =>
             reverseJavaName.put(internalName, trackedSym)
           case Some(oldsym) =>
-            assert(List(NothingClass, NullClass).contains(oldsym) || oldsym == trackedSym,
+            assert((oldsym == trackedSym) || List(RuntimeNothingClass, RuntimeNullClass).contains(oldsym), // NothingClass, NullClass,
                    "how can getCommonSuperclass() do its job if different class symbols get the same bytecode-level internal name.")
         }
       }
@@ -2542,7 +2542,8 @@ abstract class GenASM extends SubComponent with BytecodeWriters {
               } else if(kind.isRefOrArrayType) { // REFERENCE(_) | ARRAY(_)
                 val Success = success
                 val Failure = failure
-                (cond, nextBlock) match {
+                // @unchecked because references aren't compared with GT, GE, LT, LE.
+                ((cond, nextBlock) : @unchecked) match {
                   case (EQ, Success) => jcode emitIFNONNULL labels(failure)
                   case (NE, Failure) => jcode emitIFNONNULL labels(success)
                   case (EQ, Failure) => jcode emitIFNULL    labels(success)
