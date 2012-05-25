@@ -17,8 +17,6 @@ import scala.collection.mutable.Stack
 
 private[concurrent] trait Future[+T] extends scala.concurrent.Future[T] with Awaitable[T] {
 
-  implicit def executor: ExecutionContext
-
 }
 
 private[concurrent] object Future {
