@@ -431,13 +431,16 @@ trait Names extends api.Names {
 
   /** A name that contains no operator chars nor dollar signs.
    *  TODO - see if it's any faster to do something along these lines.
+   *  Cute: now that exhaustivity kind of works, the mere presence of
+   *  this trait causes TermName and TypeName to stop being exhaustive.
+   *  Commented out.
    */
-  trait AlphaNumName extends Name {
-    final override def encode         = thisName
-    final override def decodedName    = thisName
-    final override def decode         = toString
-    final override def isOperatorName = false
-  }
+  // trait AlphaNumName extends Name {
+  //   final override def encode         = thisName
+  //   final override def decodedName    = thisName
+  //   final override def decode         = toString
+  //   final override def isOperatorName = false
+  // }
 
   /** TermName_S and TypeName_S have fields containing the string version of the name.
    *  TermName_R and TypeName_R recreate it each time toString is called.
