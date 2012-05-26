@@ -771,7 +771,14 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
             val normalizedTpe = beforeErasure(erasure.prepareSigMap(memberTpe))
             val bytecodeTpe0 = owner.thisType.memberInfo(sym)
             val bytecodeTpe = erasure.minimalSigMap(bytecodeTpe0)
-            val erasedNormalizedType = erasure.erasure(sym)(normalizedTpe) /* Not necessarily related to sig! */
+            val erasedNormalizedType = erasure.erasure(sym)(normalizedTpe)
+            /* XXX: This is not necessarily related to sig! To write this check,
+             * javaSig should be split into two functions:
+             * - a function erasing a Scala method type to a Scala method type
+             *   which can be represented faithfully in a Java generic
+             *   signature; this should be similar to prepareSigMap.
+             * - a second function encoding a Scala type (output by the first
+             *   function) into a Java generic signature. Paolo G. */
             if (!sym.isType && !sym.isConstructor && !(erasedNormalizedType =:= bytecodeTpe)) {
               clasz.cunit.warning(sym.pos,
                   """|compiler bug: created generic signature for %s in %s that does not conform to its erasure
