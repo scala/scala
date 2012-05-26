@@ -1,0 +1,18 @@
+#!/bin/sh
+#
+# Scans for and removes .check and .flags files under test/
+# which don't have an accompanying test.
+
+shopt -s nullglob
+
+echo "Scanning for orphan check files..."
+for f in $(ls -1d test/{files,pending,disabled}/{jvm,neg,pos,run}/*.check); do
+  base=${f%%.check}
+  [[ -d $base ]] || [[ -f $base.scala ]] || git rm -f $f
+done
+
+echo "Scanning for orphan flags files..."
+for f in $(ls -1d test/{files,pending,disabled}/{jvm,neg,pos,run}/*.flags); do
+  base=${f%%.flags}
+  [[ -d $base ]] || [[ -f $base.scala ]] || git rm -f $f
+done

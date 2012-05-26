@@ -1,6 +1,0 @@
-Macros_1.scala:2: error: type mismatch;
- found   : Int(2)
- required: _context.Tree
-  def macro foo = 2
-                  ^
-one error found

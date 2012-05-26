@@ -1,4 +1,0 @@
-false < false = False
-false < true = True
-true < false = False
-true < true = False

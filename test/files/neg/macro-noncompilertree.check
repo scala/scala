@@ -1,6 +1,0 @@
-Macros_1.scala:2: error: type mismatch;
- found   : reflect.mirror.Literal
- required: _context.Tree
-  def macro foo = scala.reflect.mirror.Literal(scala.reflect.mirror.Constant(2))
-                                              ^
-one error found
