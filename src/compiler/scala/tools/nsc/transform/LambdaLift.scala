@@ -227,7 +227,7 @@ abstract class LambdaLift extends InfoTransform {
             //         Generating a a unique name, mangled with the enclosing class name, avoids a VerifyError
             //         in the case that a sub-class happens to lifts out a method with the *same* name.
             val name = freshen(sym.name + nme.NAME_JOIN_STRING)
-            if (originalName.isTermName && calledFromInner(sym)) nme.expandedName(name, sym.enclClass)
+            if (originalName.isTermName && !sym.enclClass.isImplClass && calledFromInner(sym)) nme.expandedName(name, sym.enclClass)
             else name
           }
         )
