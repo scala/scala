@@ -45,7 +45,7 @@ abstract class ExtensionMethods extends Transform with TypingTransformers {
    *  of how overloaded types are ordered between phases and picklings.
    */
   private def extensionNames(imeth: Symbol): Stream[Name] =
-    imeth.owner.info.decl(imeth.name).tpe match {
+    imeth.owner.info.member(imeth.name).tpe match {
       case OverloadedType(_, alts) =>
         val index = alts indexOf imeth
         assert(index >= 0, alts+" does not contain "+imeth)
