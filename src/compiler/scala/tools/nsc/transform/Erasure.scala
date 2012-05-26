@@ -274,8 +274,8 @@ abstract class Erasure extends AddInterfaces
           "("+(params map (_.tpe) map (jsig(_))).mkString+")"+
           (if (restpe.typeSymbol == UnitClass || sym0.isConstructor) VOID_TAG.toString else jsig(restpe))
 
-        case RefinedType(parent :: _, decls) =>
-          boxedSig(parent)
+        case RefinedType(parents, decls) =>
+          boxedSig(intersectionDominator(parents))
         case ClassInfoType(parents, _, _) =>
           superSig(parents)
         case AnnotatedType(_, atp, _) =>
