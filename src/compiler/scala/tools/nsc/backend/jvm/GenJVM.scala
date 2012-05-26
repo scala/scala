@@ -769,10 +769,9 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
           //the checking conditional again.
           //if (checkSignatures) {
             val normalizedTpe = beforeErasure(erasure.prepareSigMap(memberTpe))
-            val bytecodeTpe = owner.thisType.memberInfo(sym)
-            val erasedNormalizedType =
-              erasure.erasure(sym)(normalizedTpe) /* Not necessarily related to
-            sig! */
+            val bytecodeTpe0 = owner.thisType.memberInfo(sym)
+            val bytecodeTpe = erasure.minimalSigMap(bytecodeTpe0)
+            val erasedNormalizedType = erasure.erasure(sym)(normalizedTpe) /* Not necessarily related to sig! */
             if (!sym.isType && !sym.isConstructor && !(erasedNormalizedType =:= bytecodeTpe)) {
               clasz.cunit.warning(sym.pos,
                   """|compiler bug: created generic signature for %s in %s that does not conform to its erasure

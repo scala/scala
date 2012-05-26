@@ -94,6 +94,20 @@ abstract class Erasure extends AddInterfaces
     }
   }
 
+  val minimalSigMap = new TypeMap {
+    override def apply(tp: Type) = tp.normalize match {
+      case tp1 @ TypeRef(pre, sym, args) =>
+        if (sym == NothingClass)
+          RuntimeNothingClass.tpe
+        else if (sym == NullClass)
+          RuntimeNullClass.tpe
+        else
+          mapOver(tp1)
+      case tp1 =>
+        mapOver(tp1)
+    }
+  }
+
   /** This object is only used for sanity testing when -check:jvm is set.
    *  In that case we make sure that the erasure of the `normalized` type
    *  is the same as the erased type that's generated. Normalization means
