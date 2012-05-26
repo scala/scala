@@ -1532,6 +1532,7 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
                   case (NE, _) =>
                     jcode emitIFNONNULL labels(success)
                     jcode.emitGOTO_maybe_W(labels(failure), false)
+                  case _ =>
                 }
               } else {
                 (kind: @unchecked) match {

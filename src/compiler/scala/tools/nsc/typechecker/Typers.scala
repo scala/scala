@@ -2523,7 +2523,7 @@ trait Typers extends Modes with Adaptations with Taggings {
 
     def typedImport(imp : Import) : Import = (transformed remove imp) match {
       case Some(imp1: Import) => imp1
-      case None => log("unhandled import: "+imp+" in "+unit); imp
+      case _                  => log("unhandled import: "+imp+" in "+unit); imp
     }
     private def isWarnablePureExpression(tree: Tree) = tree match {
       case EmptyTree | Literal(Constant(())) => false
@@ -4179,7 +4179,8 @@ trait Typers extends Modes with Adaptations with Taggings {
                 nme.update,
                 Apply(Select(mkCall(nme.apply), prefix) setPos fun.pos, args) setPos tree.pos
               )
-           }
+            case _ => EmptyTree
+          }
         }
 
         val tree1 = qual match {

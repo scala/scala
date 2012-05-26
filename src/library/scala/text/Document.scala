@@ -88,6 +88,8 @@ abstract class Document {
       case (i, b, DocGroup(d)) :: z =>
         val fitsFlat = fits(width - k, (i, false, d) :: z)
         fmt(k, (i, !fitsFlat, d) :: z)
+      case _ =>
+        ()
     }
 
     fmt(0, (0, false, DocGroup(this)) :: Nil)

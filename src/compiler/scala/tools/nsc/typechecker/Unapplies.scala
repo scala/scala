@@ -221,9 +221,9 @@ trait Unapplies extends ast.TreeDSL
       val bodyTpe = funParamss.foldRight(classTpe)((params, restp) => gen.scalaFunctionConstr(params.map(_.tpt), restp))
 
       val argss = copyParamss match {
-        case Nil       => Nil
-        case ps :: Nil => mmap(ps :: funParamss)(toIdent)
-      }      
+        case Nil     => Nil
+        case ps :: _ => mmap(ps :: funParamss)(toIdent)
+      }
       val body = funParamss.foldRight(New(classTpe, argss): Tree)(Function)
 
       Some(atPos(cdef.pos.focus)(

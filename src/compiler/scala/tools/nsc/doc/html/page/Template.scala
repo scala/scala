@@ -316,7 +316,6 @@ class Template(universe: doc.Universe, tpl: DocTemplateEntity) extends HtmlPage 
       def mbrCmt = mbr.comment.get
 
       def paramCommentToHtml(prs: List[ParameterEntity]): NodeSeq = prs match {
-        case Nil => NodeSeq.Empty
 
         case (tp: TypeParam) :: rest =>
           val paramEntry: NodeSeq = {
@@ -329,6 +328,9 @@ class Template(universe: doc.Universe, tpl: DocTemplateEntity) extends HtmlPage 
             <dt class="param">{ vp.name }</dt><dd class="cmt">{ bodyToHtml(mbrCmt.valueParams(vp.name)) }</dd>
           }
           paramEntry ++ paramCommentToHtml(rest)
+
+        case _ =>
+          NodeSeq.Empty
       }
 
       if (mbr.comment.isEmpty) NodeSeq.Empty

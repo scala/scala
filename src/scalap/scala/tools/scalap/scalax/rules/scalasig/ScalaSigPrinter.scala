@@ -156,7 +156,7 @@ class ScalaSigPrinter(stream: PrintStream, printPrivates: Boolean) {
         val printer = new ScalaSigPrinter(stream, printPrivates)
         printer.printMethodType(m.infoType, false)(())
         baos.toString
-      case None =>
+      case _ =>
         ""
     }
   }

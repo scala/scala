@@ -807,9 +807,9 @@ abstract class RefChecks extends InfoTransform with reflect.internal.transform.R
       for (i <- 0 until seenTypes.length) {
         val baseClass = clazz.info.baseTypeSeq(i).typeSymbol
         seenTypes(i) match {
-          case List() =>
+          case Nil =>
             println("??? base "+baseClass+" not found in basetypes of "+clazz)
-          case List(_) =>
+          case _ :: Nil =>
             ;// OK
           case tp1 :: tp2 :: _ =>
             unit.error(clazz.pos, "illegal inheritance;\n " + clazz +

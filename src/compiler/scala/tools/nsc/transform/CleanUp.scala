@@ -678,7 +678,7 @@ abstract class CleanUp extends Transform with ast.TreeDSL {
                 // need to create a new block with inits and the old term
                 treeCopy.Block(term, newStaticInits.toList, term)
             }
-          case None =>
+          case _ =>
             // create new static ctor
             val staticCtorSym  = currentClass.newStaticConstructor(template.pos)
             val rhs            = Block(newStaticInits.toList, Literal(Constant(())))

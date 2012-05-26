@@ -1553,7 +1553,7 @@ abstract class GenMSIL extends SubComponent {
     }
 
     def emitBrBool(cond: TestOp, dest: Label) {
-      cond match {
+      (cond: @unchecked) match {
         // EQ -> Brfalse, NE -> Brtrue; this is because we come from
         // a CZJUMP. If the value on the stack is 0 (e.g. a boolean
         // method returned false), and we are in the case EQ, then
