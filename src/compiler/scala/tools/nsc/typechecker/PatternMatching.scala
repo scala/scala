@@ -1005,11 +1005,10 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
           case SingleType(_, sym)                       => and(equalsTest(CODE.REF(sym), testedBinder), typeTest(testedBinder, expectedTp.widen))
           // must use == to support e.g. List() == Nil
           case ThisType(sym) if sym.isModule            => and(equalsTest(CODE.REF(sym), testedBinder), typeTest(testedBinder, expectedTp.widen))
-          case ConstantType(const)                      => equalsTest(expTp(Literal(const)), testedBinder)
-
-          case ThisType(sym)                            => eqTest(expTp(This(sym)), testedBinder)
           case ConstantType(Constant(null)) if testedBinder.info.widen <:< AnyRefClass.tpe
                                                         => eqTest(expTp(CODE.NULL), testedBinder)
+          case ConstantType(const)                      => equalsTest(expTp(Literal(const)), testedBinder)
+          case ThisType(sym)                            => eqTest(expTp(This(sym)), testedBinder)
 
           // TODO: verify that we don't need to special-case Array
           // I think it's okay:
