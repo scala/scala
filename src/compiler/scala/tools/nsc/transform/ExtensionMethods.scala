@@ -44,8 +44,18 @@ abstract class ExtensionMethods extends Transform with TypingTransformers {
    *  in `extensionMethod` if the first name has the wrong type. We thereby gain a level of insensitivity
    *  of how overloaded types are ordered between phases and picklings.
    */
-  private def extensionNames(imeth: Symbol): Stream[Name] =
-    imeth.owner.info.decl(imeth.name).tpe match {
+  private def extensionNames(imeth: Symbol): Stream[Name] = {
+    val decl = imeth.owner.info.decl(imeth.name)
+
+    // Bridge generation is done at phase `erasure`, but new scopes are only generated
+    // for the phase after that. So bridges are visible in earlier phases.
+    //
+    // `info.member(imeth.name)` filters these out, but we need to use `decl`
+    // to restrict ourselves to members defined in the current class, so we
+    // must do the filtering here.
+    val declTypeNoBridge = decl.filter(sym => !sym.isBridge).tpe
+
+    declTypeNoBridge match {
       case OverloadedType(_, alts) =>
         val index = alts indexOf imeth
         assert(index >= 0, alts+" does not contain "+imeth)
@@ -55,6 +65,7 @@ abstract class ExtensionMethods extends Transform with TypingTransformers {
         assert(tpe != NoType, imeth.name+" not found in "+imeth.owner+"'s decls: "+imeth.owner.info.decls)
         Stream(newTermName("extension$"+imeth.name))
     }
+  }
 
   /** Return the extension method that corresponds to given instance method `meth`.
    */
