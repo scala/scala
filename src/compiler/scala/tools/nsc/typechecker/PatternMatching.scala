@@ -1457,6 +1457,9 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
       def binderToUniqueTree(b: Symbol) =
         unique(accumSubst(normalize(CODE.REF(b))), b.tpe)
 
+      @inline def /\(conds: Iterable[Cond]) = if (conds.isEmpty) Top else conds.reduceLeft(AndCond(_, _))
+      @inline def \/(conds: Iterable[Cond]) = if (conds.isEmpty) Havoc else conds.reduceLeft(OrCond(_, _))
+
       // note that the sequencing of operations is important: must visit in same order as match execution
       // binderToUniqueTree uses the type of the first symbol that was encountered as the type for all future binders
       def treeMakerToCond(tm: TreeMaker): Cond = {
@@ -1475,7 +1478,7 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
             }
             ttm.renderCondition(condStrategy)
           case EqualityTestTreeMaker(prevBinder, patTree, _)        => EqualityCond(binderToUniqueTree(prevBinder), unique(patTree))
-          case AlternativesTreeMaker(_, altss, _)                   => altss map (_ map treeMakerToCond reduceLeft AndCond) reduceLeft OrCond
+          case AlternativesTreeMaker(_, altss, _)                   => \/(altss map (alts => /\(alts map treeMakerToCond)))
           case ProductExtractorTreeMaker(testedBinder, None, subst) => NonNullCond(binderToUniqueTree(testedBinder))
           case ExtractorTreeMaker(_, _, _, _)
              | GuardTreeMaker(_)
@@ -1973,6 +1976,7 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
               case Some(0) if testedBinder.tpe.typeSymbol == ListClass => // extractor.symbol.owner == SeqFactory
                 EqualityCond(binderToUniqueTree(p.prevBinder), unique(Ident(NilModule) setType NilModule.tpe))
               case _ =>
+                backoff = true
                 super.treeMakerToCond(tm)
             }
           case ExtractorTreeMaker(_, _, _, _) =>

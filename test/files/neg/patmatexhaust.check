@@ -18,10 +18,6 @@ patmatexhaust.scala:53: error: match may not be exhaustive.
 It would fail on the following input: Gp()
     def ma5(x:Deep) = x match {
                       ^
-patmatexhaust.scala:59: error: match may not be exhaustive.
-It would fail on the following input: Nil
-  def ma6()  = List(1,2) match { // give up
-                   ^
 patmatexhaust.scala:75: error: match may not be exhaustive.
 It would fail on the following input: B()
   def ma9(x: B) = x match {
@@ -38,4 +34,4 @@ patmatexhaust.scala:126: error: match may not be exhaustive.
 It would fail on the following input: C1()
     def ma10(x: C) = x match { // not exhaustive: C1 is not abstract.
                      ^
-10 errors found
+9 errors found

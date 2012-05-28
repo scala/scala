@@ -12,5 +12,15 @@ object Test {
     case _ if turnOffChecks =>
   }
 
-  // TODO: we back off when there are any user-defined extractors
+  // we back off when there are any user-defined extractors
+  // in fact this is exhaustive, but we pretend we don't know since List's unapplySeq is not special to the compiler
+  // to compensate our ignorance, we back off
+  // well, in truth, we do rewrite List() to Nil, but otherwise we do nothing
+  // the full rewrite List(a, b) to a :: b :: Nil, for example is planned (but not sure it's a good idea)
+  List(true, false) match {
+    case List(_, _, _*) =>
+    case List(node, _*)  =>
+    case Nil =>
+  }
+
 }
