@@ -4318,7 +4318,7 @@ trait Types extends api.Types { self: SymbolTable =>
               def throwError = abort("" + tp + sym.locationString + " cannot be instantiated from " + pre.widen)
 
               val symclazz = sym.owner
-              if (symclazz == clazz && !pre.isInstanceOf[TypeVar] && (pre.widen.typeSymbol isNonBottomSubClass symclazz)) {
+              if (symclazz == clazz && !pre.widen.isInstanceOf[TypeVar] && (pre.widen.typeSymbol isNonBottomSubClass symclazz)) {
                 // have to deconst because it may be a Class[T].
                 pre.baseType(symclazz).deconst match {
                   case TypeRef(_, basesym, baseargs) =>
