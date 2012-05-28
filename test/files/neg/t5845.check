@@ -1,0 +1,7 @@
+t5845.scala:9: error: value +++ is not a member of Int
+  println(5 +++ 5)
+            ^
+t5845.scala:15: error: value +++ is not a member of Int
+  println(5 +++ 5)
+            ^
+two errors found
