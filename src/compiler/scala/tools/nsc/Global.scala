@@ -72,7 +72,10 @@ class Global(var currentSettings: Settings, var reporter: Reporter) extends Symb
     if (forMSIL) new { val global: Global.this.type = Global.this } with MSILPlatform
     else new { val global: Global.this.type = Global.this } with JavaPlatform
 
-  def classPath: ClassPath[platform.BinaryRepr] = platform.classPath
+  type PlatformClassPath = ClassPath[platform.BinaryRepr]
+
+  def classPath: PlatformClassPath = platform.classPath
+
   def rootLoader: LazyType = platform.rootLoader
 
   // sub-components --------------------------------------------------
@@ -840,6 +843,97 @@ class Global(var currentSettings: Settings, var reporter: Reporter) extends Symb
   def printAfterEachPhase[T](op: => T): Unit =
     describeAfterEachPhase(op) foreach (m => println("  " + m))
 
+  // ------------ Invalidations ---------------------------------
+
+  /** Is given package class a system package class that cannot be invalidated?
+   */
+  private def isSystemPackageClass(pkg: Symbol) =
+    pkg == definitions.RootClass ||
+    pkg == definitions.ScalaPackageClass || {
+      val pkgname = pkg.fullName
+      (pkgname startsWith "scala.") && !(pkgname startsWith "scala.tools")
+    }
+
+  /** Invalidates packages that contain classes defined in a classpath entry, and
+   *  rescans that entry.
+   *  @param path  A fully qualified name that refers to a directory or jar file that's
+   *               an entry on the classpath.
+   *  First, causes the classpath entry referred to by `path` to be rescanned, so that
+   *  any new files or deleted files or changes in subpackages are picked up.
+   *  Second, invalidates any packages for which one of the following considitions is met:
+
+   *   - the classpath entry contained during the last compilation run classfiles
+   *     that represent a member in the package
+   *   - the classpath entry now contains classfiles
+   *     that represent a member in the package
+   *   - the set of subpackages has changed.
+   *
+   *  The invalidated packages are reset in their entirety; all member classes and member packages
+   *  are re-accessed using the new classpath.
+   *  Not invalidated are system packages that the compiler needs to access as parts
+   *  of standard definitions. The criterion what is a system package is currently:
+   *  any package rooted in "scala", with the exception of packages rooted in "scala.tools".
+   *  This can be refined later.
+   *  @return A pair consisting of
+   *    - a list of invalidated packages
+   *    - a list of of packages that should have been invalidated but were not because
+   *      they are system packages.
+   */
+  def invalidateClassPathEntry(path: String): (List[Symbol], List[Symbol]) = {
+    val invalidated, failed = new mutable.ListBuffer[Symbol]
+    classPath match {
+      case cp: util.MergedClassPath[_] =>
+        val dir = AbstractFile getDirectory path
+        val canonical = Some(dir.canonicalPath)
+        cp.entries find (_.origin == canonical) match {
+          case Some(oldEntry) =>
+            val newEntry = cp.context.newClassPath(dir)
+            platform.updateClassPath(oldEntry, newEntry)
+            informProgress(s"classpath updated to $classPath")
+            reSync(definitions.RootClass, classPath, oldEntry, newEntry, invalidated, failed)
+          case None =>
+            error(s"cannot invalidate: no entry named $path in classpath $classPath")
+        }
+    }
+    def show(msg: String, syms: collection.Traversable[Symbol]) =
+      if (syms.nonEmpty)
+        informProgress(s"$msg: ${syms map (_.fullName) mkString ","}")
+    show("invalidated packages", invalidated)
+    show("could not invalidate system packages", failed)
+    (invalidated.toList, failed.toList)
+  }
+
+  private def reSync(root: Symbol, all: PlatformClassPath,
+             oldEntry: PlatformClassPath, newEntry: PlatformClassPath,
+             invalidated: mutable.ListBuffer[Symbol], failed: mutable.ListBuffer[Symbol]) {
+    ifDebug(informProgress(s"syncing $root, $oldEntry -> $newEntry"))
+    val getName: ClassPath[platform.BinaryRepr] => String = (_.name)
+    val oldPackages = oldEntry.packages sortBy getName
+    val newPackages = newEntry.packages sortBy getName
+    val hasChanged =
+      oldEntry.classes.nonEmpty ||
+      newEntry.classes.nonEmpty ||
+      (oldPackages map getName) != (newPackages map getName)
+    if (hasChanged && !isSystemPackageClass(root)) {
+      root setInfo new loaders.PackageLoader(all)
+      invalidated += root
+    } else {
+      if (hasChanged) failed += root
+      for ((oldNested, newNested) <- oldPackages zip newPackages) {
+        val pkgname = newNested.name
+        val pkg = root.info decl newTermName(pkgname)
+        val allNested = (all.packages find (_.name == pkgname)).get
+        reSync(pkg.moduleClass, allNested, oldNested, newNested, invalidated, failed)
+      }
+    }
+  }
+
+  /** Invalidate contents of setting -Yinvalidate */
+  def doInvalidation() = settings.Yinvalidate.value match {
+    case "" =>
+    case entry => invalidateClassPathEntry(entry)
+  }
+
   // ----------- Runs ---------------------------------------
 
   private var curRun: Run = null
@@ -859,6 +953,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter) extends Symb
    *
    *  @param    sym A class symbol, object symbol, package, or package class.
    */
+  @deprecated("use invalidateClassPathEntry instead")
   def clearOnNextRun(sym: Symbol) = false
     /* To try out clearOnNext run on the scala.tools.nsc project itself
      * replace `false` above with the following code
@@ -870,7 +965,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter) extends Symb
       }
     }}
 
-     * Then, fsc -Xexperimental clears the nsc porject between successive runs of `fsc`.
+     * Then, fsc -Xexperimental clears the nsc project between successive runs of `fsc`.
      */
 
   /** Remove the current run when not needed anymore. Used by the build
@@ -1115,6 +1210,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter) extends Symb
     /** Reset all classes contained in current project, as determined by
      *  the clearOnNextRun hook
      */
+    @deprecated("use invalidateClassPathEntry instead")
     def resetProjectClasses(root: Symbol): Unit = try {
       def unlink(sym: Symbol) =
         if (sym != NoSymbol) root.info.decls.unlink(sym)
@@ -1353,6 +1449,8 @@ class Global(var currentSettings: Settings, var reporter: Reporter) extends Symb
     }
 
     private def compileUnitsInternal(units: List[CompilationUnit], fromPhase: Phase) {
+      doInvalidation()
+
       units foreach addUnit
       val startTime = currentTime
 
