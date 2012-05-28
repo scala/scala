@@ -61,8 +61,8 @@ abstract trait Attribute extends MetaData {
     else copy(next remove key)
 
   def remove(namespace: String, scope: NamespaceBinding, key: String) =
-    if (isPrefixed && this.key == key && (scope getURI pre) == namespace) next
-    else next.remove(namespace, scope, key)
+    if (this.key == key && (scope getURI pre) == namespace) next
+    else copy(next.remove(namespace, scope, key))
 
   def isPrefixed: Boolean = pre != null
 
