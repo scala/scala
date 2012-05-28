@@ -312,6 +312,11 @@ class DirectoryClassPath(val dir: AbstractFile, val context: ClassPathContext[Ab
   override def toString() = "directory classpath: "+ origin.getOrElse("?")
 }
 
+class DeltaClassPath[T](original: MergedClassPath[T], oldEntry: ClassPath[T], newEntry: ClassPath[T]) 
+extends MergedClassPath[T](original.entries map (e => if (e == oldEntry) newEntry else e), original.context) {
+  require(original.entries contains oldEntry)
+}
+
 /**
  * A classpath unifying multiple class- and sourcepath entries.
  */

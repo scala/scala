@@ -30,7 +30,11 @@ trait MSILPlatform extends Platform {
   lazy val classPath = MsilClassPath.fromSettings(settings)
   def rootLoader = new loaders.PackageLoader(classPath.asInstanceOf[ClassPath[platform.BinaryRepr]])
     // See discussion in JavaPlatForm for why we need a cast here.
-
+  
+  /** Update classpath with a substituted subentry */
+  def updateClassPath(oldEntry: ClassPath[BinaryRepr], newEntry: ClassPath[BinaryRepr]) = 
+    throw new UnsupportedOperationException("classpath invalidations not supported on MSIL")
+  
   def platformPhases = List(
     genMSIL   // generate .msil files
   )
