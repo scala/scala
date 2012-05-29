@@ -23,10 +23,10 @@ trait JavaPlatform extends Platform {
     if (currentClassPath.isEmpty) currentClassPath = Some(new PathResolver(settings).result)
     currentClassPath.get
   }
-    
+
   /** Update classpath with a substituted subentry */
-  def updateClassPath(oldEntry: ClassPath[BinaryRepr], newEntry: ClassPath[BinaryRepr]) = 
-    currentClassPath = Some(new DeltaClassPath(currentClassPath.get, oldEntry, newEntry))
+  def updateClassPath(subst: Map[ClassPath[BinaryRepr], ClassPath[BinaryRepr]]) =
+    currentClassPath = Some(new DeltaClassPath(currentClassPath.get, subst))
 
   def rootLoader = new loaders.PackageLoader(classPath.asInstanceOf[ClassPath[platform.BinaryRepr]])
     // [Martin] Why do we need a cast here?
