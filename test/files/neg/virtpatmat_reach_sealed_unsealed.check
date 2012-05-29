@@ -1,0 +1,14 @@
+virtpatmat_reach_sealed_unsealed.scala:16: error: match may not be exhaustive.
+It would fail on the following input: false
+  (true: Boolean) match { case true => } // not exhaustive, but reachable
+       ^
+virtpatmat_reach_sealed_unsealed.scala:18: error: unreachable code
+  (true: Boolean) match { case true => case false =>  case _ => } // exhaustive, last case is unreachable
+                                                             ^
+virtpatmat_reach_sealed_unsealed.scala:19: error: unreachable code
+  (true: Boolean) match { case true => case false =>  case _: Boolean => } // exhaustive, last case is unreachable
+                                                                      ^
+virtpatmat_reach_sealed_unsealed.scala:20: error: unreachable code
+  (true: Boolean) match { case true => case false =>  case _: Any => } // exhaustive, last case is unreachable
+                                                                  ^
+four errors found
