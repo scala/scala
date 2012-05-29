@@ -1585,18 +1585,36 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
     class Prop
     case class Eq(p: Var, q: Const) extends Prop
 
-    type Const
+    type Const <: AbsConst
+
+    trait AbsConst {
+      def implies(other: Const): Boolean
+      def excludes(other: Const): Boolean
+    }
+
     type Var <: AbsVar
 
     trait AbsVar {
-      // if the domain is enumerable, at least one assignment must be true
-      def domainEnumerable: Boolean
-      def domain: Option[Set[Const]]
+      // indicate we may later require a prop for V = C
+      def registerEquality(c: Const): Unit
+
+      // indicates null is part of the domain
+      def considerNull: Unit
+
+      // compute the domain and return it (call considerNull first!)
+      def domainSyms: Option[Set[Sym]]
 
       // for this var, call it V, turn V = C into the equivalent proposition in boolean logic
+      // registerEquality(c) must have been called prior to this call
+      // in fact, all equalities relevant to this variable must have been registered
       def propForEqualsTo(c: Const): Prop
 
-      def equalitySyms: Set[Sym]
+//      // describe the equality axioms related to this variable being equal to this constant
+//      def impliedProp(c: Const): Prop
+
+      // populated by registerEquality
+      // once equalitySyms has been called, registerEquality has no effect
+      def equalitySyms: List[Sym]
     }
 
     // would be nice to statically check whether a prop is equational or pure,
@@ -1608,12 +1626,17 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
     case object True extends Prop
     case object False extends Prop
 
-    private def nextSymId = {_symId += 1; _symId}; private var _symId = 0
-
     // symbols are propositions
     case class Sym(val variable: Var, val const: Const) extends Prop {
-      override val toString = variable +"="+ const +"#"+ nextSymId
+      private[this] val id = nextSymId
+      override def toString = variable +"="+ const +"#"+ id
     }
+    private def nextSymId = {_symId += 1; _symId}; private var _symId = 0
+
+
+    @inline def /\(props: Iterable[Prop]) = if (props.isEmpty) True else props.reduceLeft(And(_, _))
+    @inline def \/(props: Iterable[Prop]) = if (props.isEmpty) False else props.reduceLeft(Or(_, _))
+
 
     trait PropTraverser {
       def apply(x: Prop): Unit = x match {
@@ -1627,6 +1650,14 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
       def applyConst(x: Const): Unit = {}
     }
 
+    def gatherVariables(p: Prop): Set[Var] = {
+      val vars = new HashSet[Var]()
+      (new PropTraverser {
+        override def applyVar(v: Var) = vars += v
+      })(p)
+      vars.toSet
+    }
+
     trait PropMap {
       def apply(x: Prop): Prop = x match { // TODO: mapConserve
         case And(a, b) => And(apply(a), apply(b))
@@ -1636,75 +1667,63 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
       }
     }
 
-    // plan: (aka TODO)
-
     // convert finite domain propositional logic to boolean propositional logic
     // for all c in C, there is a corresponding (meta-indexed) proposition Qv(c) that represents V = c,
     // the only property of equality that is encoded is that a variable can at most be equal to one of the c in C:
     // thus, for each distinct c, c', c'',... in C, a clause `not (Qv(c) /\ (Qv(c') \/ ... \/ Qv(c'')))` is added
-    def removeVarEq(prop: Prop): Prop = {
+    def removeVarEq(props: List[Prop], considerNull: Boolean = false): (Prop, List[Prop]) = {
       val vars = new collection.mutable.HashSet[Var]
 
-      object dropEquational extends PropMap {
+      object gatherEqualities extends PropTraverser {
         override def apply(p: Prop) = p match {
-          case Eq(v, c) => vars += v; v.propForEqualsTo(c)
+          case Eq(v, c) =>
+            vars += v
+            v.registerEquality(c)
           case _ => super.apply(p)
         }
       }
 
-      // dropEquational populates vars, and for each var in vars. var.equalitySyms
-      val pure = dropEquational(prop)
+      object rewriteEqualsToProp extends PropMap {
+        override def apply(p: Prop) = p match {
+          case Eq(v, c) => v.propForEqualsTo(c)
+          case _ => super.apply(p)
+        }
+      }
 
-      // X = C is translated to P_X=C
-      // X = C' is translated to P_X=C'
-      // need to enforce X cannot simultaneously equal C and C'
-      // thus, all equality syms are mutually exclusive
-      // X = A, B, C, D --> Not(And(A, B)) /\ Not(And(A, C)) /\ Not(And(A, D))
-      //                 /\ Not(And(B, C)) /\ Not(And(B, D))
-      //                 /\ Not(And(C, D))
-      // equivalently Or(Not(A), Not(B)) /\ Or(...)
+      props foreach gatherEqualities.apply
+      if (considerNull) vars foreach (_.considerNull)
+
+      val pure = props map rewriteEqualsToProp.apply
 
       var eqAxioms: Prop = True
-      def mutex(a: Sym)(b: Sym) =
-        eqAxioms = And(eqAxioms, Or(Not(a), Not(b)))
-
-      // at least one assignment from the domain must be true
-      def assigned(dom: Set[Sym]) =
-        eqAxioms = And(eqAxioms, dom.reduceLeft(Or))
+      def addAxiom(p: Prop) = eqAxioms = And(eqAxioms, p)
 
       // patmatDebug("vars: "+ vars)
       vars.foreach { v =>
-        // is the domain enumerable? then create equality syms for all elements in the domain and
-        // assert at least one of them must be selected
-        // if v.domain.isEmpty, we must consider the domain to be infinite
-        v.domain foreach { dom =>
-          // get the Syms for the constants in the domain (making fresh ones for those not encountered in the formula)
-          val domProps = dom map {c => v.propForEqualsTo(c)}
-          val domSyms  = new collection.mutable.HashSet[Sym]()
-          object collectSyms extends PropTraverser {
-            override def apply(p: Prop) = p match {
-              case domSym: Sym => domSyms += domSym
-              case _ => super.apply(p)
-            }
-          }
-          domProps foreach collectSyms.apply
+        // if v.domainSyms.isEmpty, we must consider the domain to be infinite
+        // otherwise, since the domain fully partitions the type of the value,
+        // exactly one of the types (and whatever it implies, imposed separately) must be chosen
+        // consider X ::= A | B | C, and A => B
+        // coverage is formulated as: A \/ B \/ C and the implications are
+        v.domainSyms foreach { dsyms => addAxiom(\/(dsyms)) }
 
-          // TODO: an empty domain means involved type tests can never be true --> always non-exhaustive?
-          if (domSyms.nonEmpty) assigned(domSyms.toSet)
+        def implications(sym: Sym, rest: List[Sym]) = {
+          val (excluded, notExcluded) = rest partition (b => sym.const.excludes(b.const))
+          val implied  = notExcluded filter (b => sym.const.implies(b.const))
+          // patmatDebug("implications: "+ (sym.const, excluded, implied, rest))
+          // when this symbol is true, what must hold, and what must not?
+          addAxiom(Or(Not(sym), /\(implied ++ excluded.map(Not(_)))))
         }
 
-        // recover mutual-exclusivity (a variable can never be assigned two different constants)
-        var syms = v.equalitySyms.toList
-        while (syms.nonEmpty) {
-          syms.tail.foreach(mutex(syms.head))
-          syms = syms.tail
-        }
+        val syms = v.equalitySyms
+        // patmatDebug("eqSyms "+(v, syms))
+        syms foreach (sym => implications(sym, syms.filterNot(_ eq sym))) // TODO: optimize
       }
 
       // patmatDebug("eqAxioms:\n"+ cnfString(conjunctiveNormalForm(negationNormalForm(eqAxioms))))
       // patmatDebug("pure:\n"+ cnfString(conjunctiveNormalForm(negationNormalForm(pure))))
 
-      And(eqAxioms, pure)
+      (eqAxioms, pure)
     }
 
     // convert propositional logic formula to CNF
@@ -1747,7 +1766,7 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
         // _ \/ true = true
         case (_, TrueF) => TrueF
         // lit \/ lit
-        case (List(a), List(b)) => formula(a ++ b)
+        case (a :: Nil, b :: Nil) => formula(a ++ b)
         // (c1 /\ ... /\ cn) \/ d = ((c1 \/ d) /\ ... /\ (cn \/ d))
         case (cs, d) if cs.tail nonEmpty => cs flatMap (c => distribute(formula(c), d))
         // d \/ (c1 /\ ... /\ cn) = ((d \/ c1) /\ ... /\ (d \/ cn))
@@ -1764,7 +1783,10 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
       }
     }
 
-    def normalize(p: Prop) = conjunctiveNormalForm(negationNormalForm(removeVarEq(p)))
+    def normalize(p: Prop) = {
+      val (eqAxioms, pure :: Nil) = removeVarEq(List(p), considerNull = false)
+      conjunctiveNormalForm(negationNormalForm(And(eqAxioms, pure)))
+    }
     def cnfString(f: Formula) = alignAcrossRows(f map (_.toList) toList, "\\/", " /\\\n")
 
     // adapted from http://lara.epfl.ch/w/sav10:simple_sat_solver (original by Hossein Hojjat)
@@ -1773,65 +1795,86 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
 
     // returns all solutions, if any (TODO: better infinite recursion backstop -- detect fixpoint??)
     def fullDPLL(f: Formula): List[Model] = {
+      val vars: Set[Sym] = f.flatMap(_ collect {case Lit(sym, _) => sym}).toSet
+      // patmatDebug("vars "+ vars)
       // the negation of a model -(S1=True/False /\ ... /\ SN=True/False) = clause(S1=False/True, ...., SN=False/True)
       def negateModel(m: Model) = clause(m.toSeq.map{ case (sym, pos) => Lit(sym, !pos) } : _*)
 
-      def findAllModels(f: Formula, models: List[Model], recursionDepthAllowed: Int = 20): List[Model]=
+      def findAllModels(f: Formula, models: List[Model], recursionDepthAllowed: Int = 10): List[Model]=
         if (recursionDepthAllowed == 0) models
         else {
+          // patmatDebug("solving\n"+ cnfString(f))
           val (ok, model) = DPLL(f)
           // if we found a solution, conjunct the formula with the model's negation and recurse
-          if (ok) findAllModels(f :+ negateModel(model), model :: models, recursionDepthAllowed - 1)
+          if (ok) {
+            val unassigned = (vars -- model.keySet).toList
+            // patmatDebug("unassigned "+ unassigned +" in "+ model)
+            def force(lit: Lit) = {
+              val (ok, model) = withLit(DPLL(dropUnit(f, lit)), lit)
+              if (ok) List(model)
+              else Nil
+            }
+            val forced = unassigned flatMap { s =>
+              force(Lit(s, true)) ++ force(Lit(s, false))
+            }
+            // patmatDebug("forced "+ forced)
+            val negated = negateModel(model)
+            findAllModels(f :+ negated, model :: (forced ++ models), recursionDepthAllowed - 1)
+          }
           else models
         }
 
       findAllModels(f, Nil)
     }
 
+    @inline private def withLit(res: (Boolean, Model), l: Lit) = (res._1, res._2 + (l.sym -> l.pos))
+    @inline private def dropUnit(f: Formula, unitLit: Lit) = {
+      val negated = -unitLit
+      // drop entire clauses that are trivially true
+      // (i.e., disjunctions that contain the literal we're making true in the returned model),
+      // and simplify clauses by dropping the negation of the literal we're making true
+      // (since False \/ X == X)
+      f.filterNot(_.contains(unitLit)).map(_ - negated)
+    }
+
     def DPLL(f: Formula): (Boolean, Model) = {
-      @inline def withLit(res: (Boolean, Model), l: Lit) = (res._1, res._2 + (l.sym -> l.pos))
       @inline def orElse(a: (Boolean, Model), b: => (Boolean, Model)) = if (a._1) a else b
 
       // patmatDebug("dpll\n"+ cnfString(f))
 
       if (f isEmpty) (true, EmptyModel)
       else if(f exists (_.isEmpty)) (false, EmptyModel)
-      else f.find(_.size == 1) map { unitClause =>
-        val unitLit = unitClause.head
-        // patmatDebug("unit: "+ unitLit)
-        val negated = -unitLit
-        // drop entire clauses that are trivially true
-        // (i.e., disjunctions that contain the literal we're making true in the returned model),
-        // and simplify clauses by dropping the negation of the literal we're making true
-        // (since False \/ X == X)
-        val simplified = f.filterNot(_.contains(unitLit)).map(_ - negated)
-        withLit(DPLL(simplified), unitLit)
-      } getOrElse {
-        // partition symbols according to whether they appear in positive and/or negative literals
-        val pos = new HashSet[Sym]()
-        val neg = new HashSet[Sym]()
-        f.foreach{_.foreach{ lit =>
-          if (lit.pos) pos += lit.sym else neg += lit.sym
-        }}
-        // appearing in both positive and negative
-        val impures = pos intersect neg
-        // appearing only in either positive/negative positions
-        val pures = (pos ++ neg) -- impures
+      else f.find(_.size == 1) match {
+        case Some(unitClause) =>
+          val unitLit = unitClause.head
+          // patmatDebug("unit: "+ unitLit)
+          withLit(DPLL(dropUnit(f, unitLit)), unitLit)
+        case _ =>
+          // partition symbols according to whether they appear in positive and/or negative literals
+          val pos = new HashSet[Sym]()
+          val neg = new HashSet[Sym]()
+          f.foreach{_.foreach{ lit =>
+            if (lit.pos) pos += lit.sym else neg += lit.sym
+          }}
+          // appearing in both positive and negative
+          val impures = pos intersect neg
+          // appearing only in either positive/negative positions
+          val pures = (pos ++ neg) -- impures
 
-        if (pures nonEmpty) {
-          val pureSym = pures.head
-          // turn it back into a literal
-          // (since equality on literals is in terms of equality
-          //  of the underlying symbol and its positivity, simply construct a new Lit)
-          val pureLit = Lit(pureSym, pos(pureSym))
-          // patmatDebug("pure: "+ pureLit +" pures: "+ pures +" impures: "+ impures)
-          val simplified = f.filterNot(_.contains(pureLit))
-          withLit(DPLL(simplified), pureLit)
-        } else {
-          val split = f.head.head
-          // patmatDebug("split: "+ split)
-          orElse(DPLL(f :+ clause(split)), DPLL(f :+ clause(-split)))
-        }
+          if (pures nonEmpty) {
+            val pureSym = pures.head
+            // turn it back into a literal
+            // (since equality on literals is in terms of equality
+            //  of the underlying symbol and its positivity, simply construct a new Lit)
+            val pureLit = Lit(pureSym, pos(pureSym))
+            // patmatDebug("pure: "+ pureLit +" pures: "+ pures +" impures: "+ impures)
+            val simplified = f.filterNot(_.contains(pureLit))
+            withLit(DPLL(simplified), pureLit)
+          } else {
+            val split = f.head.head
+            // patmatDebug("split: "+ split)
+            orElse(DPLL(f :+ clause(split)), DPLL(f :+ clause(-split)))
+          }
       }
     }
   }
@@ -1841,72 +1884,370 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
    *
    */
   trait SymbolicMatchAnalysis extends TreeMakerApproximation with Logic { self: CodegenCore =>
+    def prepareNewAnalysis() = { Var.resetUniques(); Const.resetUniques() }
+
     object Var {
       private var _nextId = 0
       def nextId = {_nextId += 1; _nextId}
 
+      def resetUniques() = {_nextId = 0; uniques.clear()}
       private val uniques = new collection.mutable.HashMap[Tree, Var]
       def apply(x: Tree): Var = uniques getOrElseUpdate(x, new Var(x, x.tpe))
     }
     class Var(val path: Tree, fullTp: Type, checked: Boolean = true) extends AbsVar {
+      private[this] val id: Int = Var.nextId
+
+      // private[this] var canModify: Option[Array[StackTraceElement]] = None
+      @inline private[this] def ensureCanModify = {} //if (canModify.nonEmpty) patmatDebug("BUG!"+ this +" modified after having been observed: "+ canModify.get.mkString("\n"))
+
+      @inline private[this] def observed = {} //canModify = Some(Thread.currentThread.getStackTrace)
+
+      // don't access until all potential equalities have been registered using registerEquality
+      private[this] val symForEqualsTo = new collection.mutable.HashMap[Const, Sym]
+
       // when looking at the domain, we only care about types we can check at run time
       val domainTp: Type = checkableType(fullTp)
+
+      private[this] var _considerNull = false
+      def considerNull: Unit = { ensureCanModify; if (NullTp <:< domainTp) _considerNull = true }
 
       // case None => domain is unknown,
       // case Some(List(tps: _*)) => domain is exactly tps
       // we enumerate the subtypes of the full type, as that allows us to filter out more types statically,
       // once we go to run-time checks (on Const's), convert them to checkable types
       // TODO: there seems to be bug for singleton domains (variable does not show up in model)
-      val domain = if (checked) enumerateSubtypes(fullTp).map(_.map(Const).toSet) else None
+      lazy val domain: Option[Set[Const]] =
+        if (!checked) None
+        else {
+          val subConsts = enumerateSubtypes(fullTp).map{ tps =>
+            tps.toSet[Type].map{ tp =>
+              val domainC = TypeConst(tp)
+              registerEquality(domainC)
+              domainC
+            }
+          }
 
-      def describe = toString + ": "+ fullTp + domain.map(_.map(_.tp).mkString(" ::= ", " | ", "")).getOrElse(" ::= ??") +" // = "+ path
-      def domainEnumerable = domain.nonEmpty
+          val allConsts =
+            if (! _considerNull) subConsts
+            else {
+              registerEquality(NullConst)
+              subConsts map (_ + NullConst)
+            }
 
-      private val domMap = new collection.mutable.HashMap[Const, Sym]
-      private def symForEqualsTo(c: Const) = {
-        domMap getOrElseUpdate(c, {
-            // println("creating symbol for equality "+ this +" = "+ c)
-            Sym(this, c)
-          })
-      }
-
-      // for this var, call it V, turn V = C into the equivalent proposition in boolean logic
-      // over all executions of this method on the same Var object,
-      def propForEqualsTo(c: Const): Prop = {
-        domain match {
-          case None => symForEqualsTo(c)
-          case Some(domainConsts) =>
-            val domainTps = domainConsts map (_.tp)
-            val checkedTp = c.tp
-            // find all the domain types that could make the type test true
-            // if the checked type is a supertype of the lub of the domain,
-            // we'll end up \/'ing the whole domain together,
-            // but must not simplify to True, as the type test may also fail...
-            val matches = domainTps.filter(_ <:< checkedTp).map{ tp => symForEqualsTo(Const(tp)) }
-            // println("type-equals-prop for "+ this +" = "+ c +": "+ (checkedTp, domainTp, domainTps) +" matches: "+ matches)
-
-            if (matches isEmpty) False else matches.reduceLeft(Or)
+          observed; allConsts
         }
-      }
 
-      def equalitySyms: Set[Sym] = domMap.values.toSet
+      // accessing after calling considerNull will result in inconsistencies
+      lazy val domainSyms: Option[Set[Sym]] = domain map { _ map symForEqualsTo }
 
-      private[this] val id: Int = Var.nextId
+
+      // populate equalitySyms
+      // don't care about the result, but want only one fresh symbol per distinct constant c
+      def registerEquality(c: Const): Unit = {ensureCanModify; symForEqualsTo getOrElseUpdate(c, Sym(this, c))}
+
+      // don't access until all potential equalities have been registered using registerEquality
+      lazy val equalitySyms = {observed; symForEqualsTo.values.toList}
+
+      // return the symbol that represents this variable being equal to the constant `c`, if it exists, otherwise False (for robustness)
+      // (registerEquality(c) must have been called prior, either when constructing the domain or from outside)
+      def propForEqualsTo(c: Const): Prop = {observed; symForEqualsTo.getOrElse(c, False)}
+
+
+      // don't call until all equalities have been registered and considerNull has been called (if needed)
+      def describe = toString + ": " + fullTp + domain.map(_.mkString(" ::= ", " | ", "// "+ symForEqualsTo.keys)).getOrElse(symForEqualsTo.keys.mkString(" ::= ", " | ", " | ...")) + " // = " + path
       override def toString = "V"+ id
+
+
+
+      // when V = C, which other V = Ci are implied?
+      //   V = null is an exclusive assignment, since null precludes any type test being true
+      //   V = Any does not imply anything (except non-nullness)
+      // consider:
+      //  when V's domain is closed, say V : X ::= A | B | C, and we have some value constants, say U and V, of type X:
+      //  (x: X) match { case U => case V => case _ : X => }
+      //
+      // V's equalityConsts (for the above match): TC(X), TC(A), TC(B), TC(C), VC(U), VC(V)
+      // Set(TC(X), VC(U), VC(V)).forall(c => Set(TC(A), TC(B), TC(C)).forall(_.covers(c)))
+      // Set(VC(U), VC(V), TC(A), TC(B), TC(C)).forall(_.implies(TC(X))
+      // impliedSuper for TC(X) is empty (since it's at the top of the lattice),
+      // but since we have a closed domain, we know that also one of the partitions must hold
+      // thus, TC(X) implies TC(A) \/ TC(B) \/ TC(C),
+      // we only need to add this implication when impliedSuper is empty,
+      // since that'll eventually be the case (transitive closure & acyclic graphs ftw)
+//      def impliedProp(c: Const): Prop = if (c eq NullConst) True else {
+//        val impliedSuper     =  /\((equalityConsts filter { other => (c != other) && c.implies(other) && !other.implies(c) } map symForEqualsTo))
+//
+//        val implied =
+//          if (impliedSuper == True) domain match { case None => True
+//            case Some(domCs) => \/(domCs filter { _.covers(c) } map symForEqualsTo)
+//          } else impliedSuper
+//
+//        // patmatDebug("impliedProp: "+(this, c, impliedSuper, implied))
+//        implied
+//      }
+//      private lazy val equalityConsts = symForEqualsTo.keySet
     }
 
 
     // all our variables range over types
     // a literal constant becomes ConstantType(Constant(v)) when the type allows it (roughly, anyval + string + null)
     // equality between variables: SingleType(x) (note that pattern variables cannot relate to each other -- it's always patternVar == nonPatternVar)
-    case class Const(tp: Type) {
-      override def toString = tp.toString
+    object Const {
+      def resetUniques() = {_nextTypeId = 0; _nextValueId = 0; uniques.clear()} // patmatDebug("RESET")
 
-      def toValueString = tp match {
-        case ConstantType(c) => c.escapedStringValue
-        case _ => tp.toString
+      private var _nextTypeId = 0
+      def nextTypeId = {_nextTypeId += 1; _nextTypeId}
+
+      private var _nextValueId = 0
+      def nextValueId = {_nextValueId += 1; _nextValueId}
+
+      private val uniques = new collection.mutable.HashMap[Type, Const]
+      private[SymbolicMatchAnalysis] def unique(tp: Type, mkFresh: => Const): Const =
+        uniques.get(tp).getOrElse(
+          uniques.find {case (oldTp, oldC) => oldTp =:= tp} match {
+            case Some((_, c)) => c
+            case _ =>
+              val fresh = mkFresh
+              uniques(tp) = fresh
+              fresh
+          })
+    }
+
+    sealed abstract class Const extends AbsConst {
+      protected def tp: Type
+      protected def wideTp: Type
+
+      def isAny = wideTp.typeSymbol == AnyClass
+
+//      final def covers(other: Const): Boolean = {
+//        val r = (this, other) match {
+//          case (_: ValueConst, _: ValueConst) => this == other // hashconsed
+//          case (TypeConst(a) , _: ValueConst) => a <:< other.wideTp
+//          case (_            , _: TypeConst)  => tp <:< other.tp
+//          case _                              => false
+//        }
+//        // if(r) patmatDebug("covers    : "+(this, other))
+//        // else  patmatDebug("NOT covers: "+(this, other))
+//        r
+//      }
+
+      final def implies(other: Const): Boolean = {
+        val r = (this, other) match {
+          case (_: ValueConst, _: ValueConst) => this == other // hashconsed
+          case (_: ValueConst, _: TypeConst)  => tp <:< other.tp
+          case (TypeConst(_),  _)             => tp <:< other.tp
+          case _                              => false
+        }
+        // if(r) patmatDebug("implies    : "+(this, other))
+        // else  patmatDebug("NOT implies: "+(this, other))
+        r
+      }
+
+      // does V = C preclude V having value `other`?  V = null is an exclusive assignment,
+      // but V = 1 does not preclude V = Int, or V = Any
+      final def excludes(other: Const): Boolean = {
+        val r = (this, other) match {
+          case (_, NullConst)                 => true
+          case (NullConst, _)                 => true
+          case (_: ValueConst, _: ValueConst) => this != other
+          case (_: ValueConst, _: TypeConst)  => !((tp <:< other.tp) || (other.tp <:< wideTp))
+          case (_: TypeConst,  _: ValueConst) => !((other.tp <:< tp) || (tp <:< other.wideTp))
+          case (_: TypeConst,  _: TypeConst)  => !((tp <:< other.tp) || (other.tp <:< tp))
+          case _                              => false
+        }
+        // if(r) patmatDebug("excludes    : "+(this, other))
+        // else  patmatDebug("NOT excludes: "+(this, other))
+        r
+      }
+
+      // the equality symbol for V = C is looked up by C
+      final override def equals(other: Any): Boolean = other match { case o: Const => this eq o case _ => false }
+    }
+
+
+    object TypeConst {
+      def apply(tp: Type) = {
+        if (tp =:= NullTp) NullConst
+        else if (tp.isInstanceOf[SingletonType]) ValueConst.fromType(tp)
+        else Const.unique(tp, new TypeConst(tp))
+      }
+      def unapply(c: TypeConst): Some[Type] = Some(c.tp)
+    }
+
+    // corresponds to a type test that does not imply any value-equality (well, except for outer checks, which we don't model yet)
+    sealed class TypeConst(val tp: Type) extends Const {
+      assert(!(tp =:= NullTp))
+      private[this] val id: Int = Const.nextTypeId
+
+      val wideTp = tp.widen
+
+      override def toString = tp.toString //+"#"+ id
+    }
+
+    // p is a unique type or a constant value
+    object ValueConst {
+      def fromType(tp: Type) = {
+        assert(tp.isInstanceOf[SingletonType])
+        val toString = tp match {
+          case ConstantType(c) => c.escapedStringValue
+          case _ => tp.toString
+        }
+        Const.unique(tp, new ValueConst(tp, tp.widen, toString))
+      }
+      def apply(p: Tree) = {
+        val tp = p.tpe.normalize
+        if (tp =:= NullTp) NullConst
+        else {
+          val wideTp = {
+            if (p.hasSymbol && p.symbol.isStable) tp.asSeenFrom(tp.prefix, p.symbol.owner).widen
+            else tp.widen
+          }
+
+          val narrowTp =
+            if (tp.isInstanceOf[SingletonType]) tp
+            else p match {
+              case Literal(c) =>
+                if (c.tpe.typeSymbol == UnitClass) c.tpe
+                else ConstantType(c)
+              case p if p.symbol.isStable =>
+                singleType(tp.prefix, p.symbol)
+              case x =>
+                // TODO: better type
+                x.tpe.narrow
+            }
+
+          val toString =
+            if (p.hasSymbol && p.symbol.isStable) p.symbol.name.toString // tp.toString
+            else p.toString //+"#"+ id
+
+          Const.unique(narrowTp, new ValueConst(narrowTp, wideTp, toString))
+        }
       }
     }
+    sealed class ValueConst(val tp: Type, val wideTp: Type, override val toString: String) extends Const {
+      // patmatDebug("VC"+(tp, wideTp, toString))
+      assert(!(tp =:= NullTp))
+      private[this] val id: Int = Const.nextValueId
+    }
+
+    lazy val NullTp = ConstantType(Constant(null))
+    case object NullConst extends Const {
+      protected def tp     = NullTp
+      protected def wideTp = NullTp
+
+      def isValue = true
+      override def toString = "null"
+    }
+
+
+    // turns a case (represented as a list of abstract tests)
+    // into a proposition that is satisfiable if the case may match
+    def symbolicCase(tests: List[Test], modelNull: Boolean = false): Prop = {
+      def symbolic(t: Cond): Prop = t match {
+        case AndCond(a, b) => And(symbolic(a), symbolic(b))
+        case OrCond(a, b) => Or(symbolic(a), symbolic(b))
+        case Top => True
+        case Havoc => False
+        case TypeCond(p, pt) => Eq(Var(p), TypeConst(checkableType(pt)))
+        case EqualityCond(p, q) => Eq(Var(p), ValueConst(q))
+        case NonNullCond(p) => if (!modelNull) True else Not(Eq(Var(p), NullConst))
+      }
+
+      val testsBeforeBody = tests.takeWhile(t => !t.treeMaker.isInstanceOf[BodyTreeMaker])
+      testsBeforeBody.map(t => symbolic(t.cond)).foldLeft(True: Prop)(And)
+    }
+
+    // TODO: model dependencies between variables: if V1 corresponds to (x: List[_]) and V2 is (x.hd), V2 cannot be assigned when V1 = null or V1 = Nil
+    // right now hackily implement this by pruning counter-examples
+    // unreachability would also benefit from a more faithful representation
+
+    // reachability (dead code)
+
+    // computes the first 0-based case index that is unreachable (if any)
+    // a case is unreachable if it implies its preceding cases
+    // call C the formula that is satisfiable if the considered case matches
+    // call P the formula that is satisfiable if the cases preceding it match
+    // the case is reachable if there is a model for -P /\ C,
+    // thus, the case is unreachable if there is no model for -(-P /\ C),
+    // or, equivalently, P \/ -C, or C => P
+    def unreachableCase(prevBinder: Symbol, cases: List[List[TreeMaker]], pt: Type): Option[Int] = {
+      // customize TreeMakersToConds (which turns a tree of tree makers into a more abstract DAG of tests)
+      // when approximating the current case (which we hope is reachable), be optimistic about the unknowns
+      object reachabilityApproximation extends TreeMakersToConds(prevBinder, cases) {
+        def makeCondOptimistic(tm: TreeMaker)(recurse: TreeMaker => Cond): Cond = tm match {
+          // for unreachability, let's assume a guard always matches (unless we statically determined otherwise)
+          // otherwise, a guarded case would be considered unreachable
+          case GuardTreeMaker(guard) =>
+            guard.tpe match {
+              case ConstantType(Constant(false)) => Havoc // not the best name; however, symbolically, 'Havoc' becomes 'False'
+              case _ => Top
+            }
+          // similar to a guard, user-defined extractors should not cause us to freak out
+          // if we're not 100% sure it does not match (i.e., its result type is None or Constant(false) -- TODO),
+          // let's stay optimistic and assume it does
+          case ExtractorTreeMaker(_, _, _, _)
+             | ProductExtractorTreeMaker(_, Some(_), _)  => Top
+          // TODO: consider length-checks
+          case _ =>
+            makeCond(tm)(recurse)
+        }
+
+        // be pessimistic when approximating the prefix of the current case
+        // we hope the prefix fails so that we might get to the current case, which we hope is not dead
+        def makeCondPessimistic(tm: TreeMaker)(recurse: TreeMaker => Cond): Cond = makeCond(tm)(recurse)
+      }
+
+      // use the same approximator so we share variables,
+      // but need different conditions depending on whether we're conservatively looking for failure or success
+      val testCasesOk = reachabilityApproximation.approximateMatch(reachabilityApproximation.makeCondOptimistic)
+      val testCasesFail = reachabilityApproximation.approximateMatchAgain(reachabilityApproximation.makeCondPessimistic)
+
+      prepareNewAnalysis()
+
+      val propsCasesFail = testCasesFail map (t => Not(symbolicCase(t, modelNull = true)))
+      val propsCasesOk   = testCasesOk   map (t => symbolicCase(t, modelNull = true))
+      val (eqAxiomsFail, symbolicCasesFail) = removeVarEq(propsCasesFail, considerNull = true)
+      val (eqAxiomsOk, symbolicCasesOk)     = removeVarEq(propsCasesOk,   considerNull = true)
+
+      // most of the time eqAxiomsFail == eqAxiomsOk, but the different approximations might cause different variables to disapper in general
+      val eqAxiomsCNF =
+        if (eqAxiomsFail == eqAxiomsOk) conjunctiveNormalForm(negationNormalForm(eqAxiomsFail))
+        else (eqAxiomsFail :: eqAxiomsOk :: Nil).flatMap(p => conjunctiveNormalForm(negationNormalForm(p)))
+      val symbolicCasesFailCNF = symbolicCasesFail map (p => conjunctiveNormalForm(negationNormalForm(p)))
+      val symbolicCasesOkCNF   = symbolicCasesOk map (p => conjunctiveNormalForm(negationNormalForm(p)))
+
+      var prefix     = eqAxiomsCNF
+      var prefixRest = symbolicCasesFailCNF
+      var current    = symbolicCasesOkCNF
+      var reachable  = true
+      var caseIndex  = 0
+
+//      patmatDebug("reachability, vars:\n"+ ((propsCasesFail flatMap gatherVariables) map (_.describe) mkString ("\n")))
+//      patmatDebug("equality axioms:\n"+ cnfString(eqAxiomsCNF))
+
+      // invariant (prefixRest.length == current.length) && (prefix.reverse ++ prefixRest == symbolicCasesFail)
+      // termination: prefixRest.length decreases by 1
+      while (prefixRest.nonEmpty && reachable) {
+        prefix   ++= prefixRest.head
+        caseIndex += 1
+        prefixRest = prefixRest.tail
+        if (prefixRest.isEmpty) reachable = true
+        else {
+          current = current.tail
+          val (ok, model) = DPLL(current.head ++ prefix)
+
+//          patmatDebug("trying to reach:\n"+ cnfString(current.head) +"\nunder prefix:\n"+ cnfString(prefix))
+//          if (ok) patmatDebug("reached: "+ modelString(model))
+
+          reachable = ok
+          prepareNewAnalysis()
+        }
+      }
+
+      if (reachable) None else Some(caseIndex)
+    }
+
+    // exhaustivity
 
     // make sure it's not a primitive, else (5: Byte) match { case 5 => ... } sees no Byte
     // TODO: domain of feasibly enumerable built-in types (enums, char?)
@@ -1944,12 +2285,6 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
           // patmatDebug("enum sealed "+ (tp, tpApprox) + " as "+ validSubTypes)
           Some(validSubTypes)
       }
-
-    def narrowTypeOf(p: Tree) = p match {
-      case Literal(c) => ConstantType(c)
-      case Ident(_) if p.symbol.isStable => singleType(p.tpe.prefix, p.symbol)
-      case x => x.tpe.narrow
-    }
 
     // approximate a type to the static type that is fully checkable at run time,
     // hiding statically known but dynamically uncheckable information using existential quantification
@@ -2020,25 +2355,11 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
         }
       }
 
-      def symbolic(t: Cond): Prop = t match {
-        case AndCond(a, b) => And(symbolic(a), symbolic(b))
-        case OrCond(a, b) => Or(symbolic(a), symbolic(b))
-        case Top => True
-        case Havoc => False
-        case TypeCond(p, pt) => Eq(Var(p), Const(checkableType(pt)))
-        case EqualityCond(p, q) => Eq(Var(p), Const(narrowTypeOf(q)))
-        case NonNullCond(p) => True // ignoring nullness because it generates too much noise Not(Eq(Var(p), Const(NullClass.tpe)))
-      }
-
-      def symbolicCase(tests: List[Test]) = {
-        val testsBeforeBody = tests.takeWhile(t => !t.treeMaker.isInstanceOf[BodyTreeMaker])
-        testsBeforeBody.map(t => symbolic(t.cond)).foldLeft(True: Prop)(And)
-      }
-
       val tests = exhaustivityApproximation.approximateMatch(exhaustivityApproximation.makeCondExhaustivity)
 
       if (backoff) Nil else {
-        val symbolicCases = tests map symbolicCase
+        prepareNewAnalysis()
+        val symbolicCases = tests map (symbolicCase(_, modelNull = false))
 
         val prevBinderTree = exhaustivityApproximation.binderToUniqueTree(prevBinder)
 
@@ -2053,7 +2374,7 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
         // val matchFails = And(symbolic(nonNullScrutineeCond), Not(symbolicCases reduceLeft (Or(_, _))))
 
         // when does the match fail?
-        val matchFails = Not(symbolicCases reduceLeft (Or(_, _)))
+        val matchFails = Not(\/(symbolicCases))
 
 
   // debug output:
@@ -2088,13 +2409,13 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
       protected[SymbolicMatchAnalysis] def flattenConsArgs: List[CounterExample] = Nil
       def coveredBy(other: CounterExample): Boolean = this == other || other == WildcardExample
     }
-    case class ValueExample(c: Const) extends CounterExample { override def toString = c.toValueString }
+    case class ValueExample(c: ValueConst) extends CounterExample { override def toString = c.toString }
     case class TypeExample(c: Const)  extends CounterExample { override def toString = "(_ : "+ c +")" }
     case class NegativeExample(nonTrivialNonEqualTo: List[Const]) extends CounterExample {
       override def toString = {
         val negation =
-          if (nonTrivialNonEqualTo.tail.isEmpty) nonTrivialNonEqualTo.head.toValueString
-          else nonTrivialNonEqualTo.map(_.toValueString).sorted.mkString("in (", ", ", ")")
+          if (nonTrivialNonEqualTo.tail.isEmpty) nonTrivialNonEqualTo.head.toString
+          else nonTrivialNonEqualTo.map(_.toString).sorted.mkString("in (", ", ", ")")
         "<not "+ negation +">"
       }
     }
@@ -2198,7 +2519,9 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
 
       // node in the tree that describes how to construct a counter-example
       case class VariableAssignment(variable: Var, equalTo: List[Const], notEqualTo: List[Const], fields: collection.mutable.Map[Symbol, VariableAssignment]) {
-        private lazy val ctor       = (equalTo match { case List(Const(tp)) => tp case _ => variable.domainTp }).typeSymbol.primaryConstructor
+        // need to prune since the model now incorporates all super types of a constant (needed for reachability)
+        private lazy val prunedEqualTo = equalTo filterNot (subsumed => equalTo.exists(better => (better ne subsumed) && (better implies subsumed)))
+        private lazy val ctor       = (prunedEqualTo match { case List(TypeConst(tp)) => tp case _ => variable.domainTp }).typeSymbol.primaryConstructor
         private lazy val ctorParams = if (ctor == NoSymbol || ctor.paramss.isEmpty) Nil else ctor.paramss.head
         private lazy val cls        = if (ctor == NoSymbol) NoSymbol else ctor.owner
         private lazy val caseFieldAccs = if (cls == NoSymbol) Nil else cls.caseFieldAccessors
@@ -2207,7 +2530,7 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
         def allFieldAssignmentsLegal: Boolean =
           (fields.keySet subsetOf caseFieldAccs.toSet) && fields.values.forall(_.allFieldAssignmentsLegal)
 
-        private lazy val nonTrivialNonEqualTo = notEqualTo.filterNot{c => val sym = c.tp.typeSymbol; sym == AnyClass } // sym == NullClass ||
+        private lazy val nonTrivialNonEqualTo = notEqualTo.filterNot{c => c.isAny }
 
         // NoExample if the constructor call is ill-typed
         // (thus statically impossible -- can we incorporate this into the formula?)
@@ -2215,17 +2538,17 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
         def toCounterExample(beBrief: Boolean = false): CounterExample =
           if (!allFieldAssignmentsLegal) NoExample
           else {
-//            println("describing "+ (variable, equalTo, notEqualTo, fields, cls, allFieldAssignmentsLegal))
-            val res = equalTo match {
+// patmatDebug("describing "+ (variable, equalTo, notEqualTo, fields, cls, allFieldAssignmentsLegal))
+            val res = prunedEqualTo match {
               // a definite assignment to a value
-              case List(eq@Const(_: ConstantType)) if fields.isEmpty => ValueExample(eq)
+              case List(eq: ValueConst) if fields.isEmpty => ValueExample(eq)
 
               // constructor call
               // or we did not gather any information about equality but we have information about the fields
               //  --> typical example is when the scrutinee is a tuple and all the cases first unwrap that tuple and only then test something interesting
               case _ if cls != NoSymbol &&
-                        (  equalTo.nonEmpty
-                        || (fields.nonEmpty && !isPrimitiveValueClass(cls) && equalTo.isEmpty && notEqualTo.isEmpty)) =>
+                        (  prunedEqualTo.nonEmpty
+                        || (fields.nonEmpty && !isPrimitiveValueClass(cls) && prunedEqualTo.isEmpty && notEqualTo.isEmpty)) =>
 
                 @inline def args(brevity: Boolean = beBrief) = {
                   // figure out the constructor arguments from the field assignment
@@ -2717,6 +3040,11 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
                               with OptimizedCodegen
                               with SymbolicMatchAnalysis { self: TreeMakers =>
     override def optimizeCases(prevBinder: Symbol, cases: List[List[TreeMaker]], pt: Type, unchecked: Boolean): (List[List[TreeMaker]], List[Tree]) = {
+      if (!unchecked) {
+        unreachableCase(prevBinder, cases, pt) foreach { caseIndex =>
+          typer.context.unit.warning(cases(caseIndex).last.pos, "unreachable code")
+        }
+      }
       val counterExamples = if (unchecked) Nil else exhaustive(prevBinder, cases, pt)
       if (counterExamples.nonEmpty) {
         val ceString =

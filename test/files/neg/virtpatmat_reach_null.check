@@ -1,0 +1,4 @@
+virtpatmat_reach_null.scala:13: error: unreachable code
+      case _                              =>  // unreachable
+                                          ^
+one error found
