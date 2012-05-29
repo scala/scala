@@ -1439,6 +1439,29 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
       //   pointsToBound -- accumSubst.from == Set(root) && (accumSubst.from.toSet -- pointsToBound) isEmpty
       private var accumSubst: Substitution = EmptySubstitution
 
+      private def updateSubstitution(subst: Substitution) = {
+        // find part of substitution that replaces bound symbols by new symbols, and reverse that part
+        // so that we don't introduce new aliases for existing symbols, thus keeping the set of bound symbols minimal
+        val (boundSubst, unboundSubst) = (subst.from zip subst.to) partition {
+          case (f, t) =>
+            t.isInstanceOf[Ident] && (t.symbol ne NoSymbol) && pointsToBound(f)
+        }
+        val (boundFrom, boundTo) = boundSubst.unzip
+        val (unboundFrom, unboundTo) = unboundSubst.unzip
+
+        // reverse substitution that would otherwise replace a variable we already encountered by a new variable
+        // NOTE: this forgets the more precise we have for these later variables, but that's probably okay
+        normalize >>= Substitution(boundTo map (_.symbol), boundFrom map (CODE.REF(_)))
+        // patmatDebug("normalize: "+ normalize)
+
+        val okSubst = Substitution(unboundFrom, unboundTo map (normalize(_))) // it's important substitution does not duplicate trees here -- it helps to keep hash consing simple, anyway
+        pointsToBound ++= ((okSubst.from, okSubst.to).zipped filter { (f, t) => pointsToBound exists (sym => t.exists(_.symbol == sym)) })._1
+        // patmatDebug("pointsToBound: "+ pointsToBound)
+
+        accumSubst >>= okSubst
+        // patmatDebug("accumSubst: "+ accumSubst)
+      }
+
       private val trees = new collection.mutable.HashSet[Tree]
 
       // TODO: improve, e.g., for constants
@@ -1467,7 +1490,7 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
       // produce the unique tree used to refer to this binder
       // the type of the binder passed to the first invocation
       // determines the type of the tree that'll be returned for that binder as of then
-      def binderToUniqueTree(b: Symbol) =
+      final def binderToUniqueTree(b: Symbol) =
         unique(accumSubst(normalize(CODE.REF(b))), b.tpe)
 
       @inline def /\(conds: Iterable[Cond]) = if (conds.isEmpty) Top else conds.reduceLeft(AndCond(_, _))
@@ -1475,23 +1498,32 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
 
       // note that the sequencing of operations is important: must visit in same order as match execution
       // binderToUniqueTree uses the type of the first symbol that was encountered as the type for all future binders
-      def treeMakerToCond(tm: TreeMaker): Cond = {
+      final protected def treeMakerToCond(tm: TreeMaker, condMaker: CondMaker): Cond = {
         updateSubstitution(tm.substitution)
+        condMaker(tm)(treeMakerToCond(_, condMaker))
+      }
 
+      final protected def treeMakerToCondNoSubst(tm: TreeMaker, condMaker: CondMaker): Cond =
+        condMaker(tm)(treeMakerToCondNoSubst(_, condMaker))
+
+      type CondMaker = TreeMaker => (TreeMaker => Cond) => Cond
+      final def makeCond(tm: TreeMaker)(recurse: TreeMaker => Cond): Cond = {
         tm match {
           case ttm@TypeTestTreeMaker(prevBinder, testedBinder, pt, _)   =>
             object condStrategy extends TypeTestTreeMaker.TypeTestCondStrategy {
               type Result                                           = Cond
               def and(a: Result, b: Result)                         = AndCond(a, b)
               def outerTest(testedBinder: Symbol, expectedTp: Type) = Top // TODO OuterEqCond(testedBinder, expectedType)
-              def typeTest(b: Symbol, pt: Type)                     = TypeCond(binderToUniqueTree(b), uniqueTp(pt))
+              def typeTest(b: Symbol, pt: Type) = { // a type test implies the tested path is non-null (null.isInstanceOf[T] is false for all T)
+                val p = binderToUniqueTree(b);                        AndCond(NonNullCond(p), TypeCond(p, uniqueTp(pt)))
+              }
               def nonNullTest(testedBinder: Symbol)                 = NonNullCond(binderToUniqueTree(testedBinder))
               def equalsTest(pat: Tree, testedBinder: Symbol)       = EqualityCond(binderToUniqueTree(testedBinder), unique(pat))
               def eqTest(pat: Tree, testedBinder: Symbol)           = EqualityCond(binderToUniqueTree(testedBinder), unique(pat)) // TODO: eq, not ==
             }
             ttm.renderCondition(condStrategy)
           case EqualityTestTreeMaker(prevBinder, patTree, _)        => EqualityCond(binderToUniqueTree(prevBinder), unique(patTree))
-          case AlternativesTreeMaker(_, altss, _)                   => \/(altss map (alts => /\(alts map treeMakerToCond)))
+          case AlternativesTreeMaker(_, altss, _)                   => \/(altss map (alts => /\(alts map recurse)))
           case ProductExtractorTreeMaker(testedBinder, None, subst) => NonNullCond(binderToUniqueTree(testedBinder))
           case ExtractorTreeMaker(_, _, _, _)
              | GuardTreeMaker(_)
@@ -1501,37 +1533,14 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
         }
       }
 
-      private def updateSubstitution(subst: Substitution) = {
-        // find part of substitution that replaces bound symbols by new symbols, and reverse that part
-        // so that we don't introduce new aliases for existing symbols, thus keeping the set of bound symbols minimal
-        val (boundSubst, unboundSubst) = (subst.from zip subst.to) partition {case (f, t) =>
-            t.isInstanceOf[Ident] && (t.symbol ne NoSymbol) && pointsToBound(f)
-          }
-        val (boundFrom, boundTo) = boundSubst.unzip
-        val (unboundFrom, unboundTo) = unboundSubst.unzip
+      final def approximateMatch(condMaker: CondMaker = makeCond): List[List[Test]] = cases.map { _ map (tm => Test(treeMakerToCond(tm, condMaker), tm)) }
 
-        // reverse substitution that would otherwise replace a variable we already encountered by a new variable
-        // NOTE: this forgets the more precise we have for these later variables, but that's probably okay
-        normalize >>= Substitution(boundTo map (_.symbol), boundFrom map (CODE.REF(_)))
-        // println("normalize: "+ normalize)
-
-        val okSubst = Substitution(unboundFrom, unboundTo map (normalize(_))) // it's important substitution does not duplicate trees here -- it helps to keep hash consing simple, anyway
-        pointsToBound ++= ((okSubst.from, okSubst.to).zipped filter { (f, t) => pointsToBound exists (sym => t.exists(_.symbol == sym)) })._1
-        // println("pointsToBound: "+ pointsToBound)
-
-        accumSubst >>= okSubst
-        // println("accumSubst: "+ accumSubst)
-      }
-
-      def approximateTreeMaker(tm: TreeMaker): Test =
-        Test(treeMakerToCond(tm), tm)
-
-      def approximateMatch: List[List[Test]] = cases.map { _ map approximateTreeMaker }
+      final def approximateMatchAgain(condMaker: CondMaker = makeCond): List[List[Test]] = cases.map { _ map (tm => Test(treeMakerToCondNoSubst(tm, condMaker), tm)) }
     }
 
     def approximateMatch(root: Symbol, cases: List[List[TreeMaker]]): List[List[Test]] = {
       object approximator extends TreeMakersToConds(root, cases)
-      approximator.approximateMatch
+      approximator.approximateMatch()
     }
 
     def showTreeMakers(cases: List[List[TreeMaker]]) = {
@@ -1982,8 +1991,8 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
       //    - there are extractor calls (that we can't secretly/soundly) rewrite
       var backoff = false
       object exhaustivityApproximation extends TreeMakersToConds(prevBinder, cases) {
-        override def treeMakerToCond(tm: TreeMaker): Cond = tm match {
-          case p@ExtractorTreeMaker(extractor, Some(lenCheck), testedBinder, _) =>
+        def makeCondExhaustivity(tm: TreeMaker)(recurse: TreeMaker => Cond): Cond = tm match {
+          case p @ ExtractorTreeMaker(extractor, Some(lenCheck), testedBinder, _) =>
             p.checkedLength match {
               // pattern: `List()`  (interpret as `Nil`)
               // TODO: make it more general List(1, 2) => 1 :: 2 :: Nil
@@ -1991,23 +2000,23 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
                 EqualityCond(binderToUniqueTree(p.prevBinder), unique(Ident(NilModule) setType NilModule.tpe))
               case _ =>
                 backoff = true
-                super.treeMakerToCond(tm)
+                makeCond(tm)(recurse)
             }
           case ExtractorTreeMaker(_, _, _, _) =>
-//            println("backing off due to "+ tm)
+// patmatDebug("backing off due to "+ tm)
             backoff = true
-            super.treeMakerToCond(tm)
+            makeCond(tm)(recurse)
           case GuardTreeMaker(guard) =>
             guard.tpe match {
               case ConstantType(Constant(true)) => Top
               case ConstantType(Constant(false)) => Havoc
               case _ =>
-//                println("can't statically interpret guard: "+(guard, guard.tpe))
+// patmatDebug("can't statically interpret guard: "+(guard, guard.tpe))
                 backoff = true
                 Havoc
             }
           case _ =>
-            super.treeMakerToCond(tm)
+            makeCond(tm)(recurse)
         }
       }
 
@@ -2026,7 +2035,7 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
         testsBeforeBody.map(t => symbolic(t.cond)).foldLeft(True: Prop)(And)
       }
 
-      val tests = exhaustivityApproximation.approximateMatch
+      val tests = exhaustivityApproximation.approximateMatch(exhaustivityApproximation.makeCondExhaustivity)
 
       if (backoff) Nil else {
         val symbolicCases = tests map symbolicCase
