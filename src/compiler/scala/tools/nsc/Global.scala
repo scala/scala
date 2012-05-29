@@ -944,7 +944,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter) extends Symb
 
     val getName: ClassPath[platform.BinaryRepr] => String = (_.name)
     def hasClasses(cp: OptClassPath) = cp.isDefined && cp.get.classes.nonEmpty
-    def invalidateOrRemove() = {
+    def invalidateOrRemove(root: ClassSymbol) = {
       allEntry match {
         case Some(cp) => root setInfo new loaders.PackageLoader(cp)
         case None => root.owner.info.decls unlink root.sourceModule
@@ -957,9 +957,12 @@ class Global(var currentSettings: Settings, var reporter: Reporter) extends Symb
 
     val classesFound = hasClasses(oldEntry) || hasClasses(newEntry)
     if (classesFound && !isSystemPackageClass(root)) {
-      invalidateOrRemove()
+      invalidateOrRemove(root)
     } else {
-      if (classesFound) failed += root
+      if (classesFound) {
+        if (root.isRoot) invalidateOrRemove(definitions.EmptyPackageClass)
+        else failed += root
+      }
       (oldEntry, newEntry) match {
         case (Some(oldcp) , Some(newcp)) =>
           for (pstr <- packageNames(oldcp) ++ packageNames(newcp)) {
@@ -978,9 +981,9 @@ class Global(var currentSettings: Settings, var reporter: Reporter) extends Symb
                 invalidated, failed)
           }
         case (Some(oldcp), None) =>
-          invalidateOrRemove()
+          invalidateOrRemove(root)
         case (None, Some(newcp)) =>
-          invalidateOrRemove()
+          invalidateOrRemove(root)
         case (None, None) =>
       }
     }
