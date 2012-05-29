@@ -771,7 +771,7 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
             val normalizedTpe = beforeErasure(erasure.prepareSigMap(memberTpe))
             val bytecodeTpe0 = owner.thisType.memberInfo(sym)
             val bytecodeTpe = erasure.minimalSigMap(bytecodeTpe0)
-            val erasedNormalizedType = erasure.erasure(sym)(normalizedTpe)
+            val erasedNormalizedType = beforeErasure(erasure.erasure(sym)(normalizedTpe))
             /* XXX: This is not necessarily related to sig! To write this check,
              * javaSig should be split into two functions:
              * - a function erasing a Scala method type to a Scala method type
