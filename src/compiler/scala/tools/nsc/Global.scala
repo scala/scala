@@ -879,19 +879,26 @@ class Global(var currentSettings: Settings, var reporter: Reporter) extends Symb
    *    - a list of of packages that should have been invalidated but were not because
    *      they are system packages.
    */
-  def invalidateClassPathEntry(path: String): (List[Symbol], List[Symbol]) = {
-    val invalidated, failed = new mutable.ListBuffer[Symbol]
+  def invalidateClassPathEntry(path: String): (List[ClassSymbol], List[ClassSymbol]) = {
+    val invalidated, failed = new mutable.ListBuffer[ClassSymbol]
     classPath match {
       case cp: util.MergedClassPath[_] =>
         val dir = AbstractFile getDirectory path
-        val canonical = Some(dir.canonicalPath)
-        cp.entries find (_.origin == canonical) match {
+        val canonical = dir.canonicalPath
+        def matchesCanonical(e: ClassPath[_]) = e.origin match {
+          case Some(opath) =>
+            (AbstractFile getDirectory opath).canonicalPath == canonical
+          case None =>
+            false
+        }
+        cp.entries find matchesCanonical match {
           case Some(oldEntry) =>
             val newEntry = cp.context.newClassPath(dir)
             platform.updateClassPath(oldEntry, newEntry)
             informProgress(s"classpath updated to $classPath")
-            reSync(definitions.RootClass, classPath, oldEntry, newEntry, invalidated, failed)
+            reSync(definitions.RootClass, Some(classPath), Some(oldEntry), Some(newEntry), invalidated, failed)
           case None =>
+            println(s"canonical = $canonical, origins = ${cp.entries map (_.origin)}")
             error(s"cannot invalidate: no entry named $path in classpath $classPath")
         }
     }
@@ -903,27 +910,78 @@ class Global(var currentSettings: Settings, var reporter: Reporter) extends Symb
     (invalidated.toList, failed.toList)
   }
 
-  private def reSync(root: Symbol, all: PlatformClassPath,
-             oldEntry: PlatformClassPath, newEntry: PlatformClassPath,
-             invalidated: mutable.ListBuffer[Symbol], failed: mutable.ListBuffer[Symbol]) {
+  type OptClassPath = Option[PlatformClassPath]
+
+  /** Re-syncs symbol table with classpath
+   *  @param root      The root symbol to be resynced (a package class)
+   *  @param allEntry  Optionally, the corresponding package in the complete current classPath
+   *  @param oldEntry  Optionally, the corresponding package in the old classPath entry
+   *  @param newEntry  Optionally, the corresponding package in the new classPath entry
+   *  @param invalidated  A listbuffer collecting the invalidated package classes
+   *  @param failed       A listbuffer collecting system package classes which could not be invalidated
+   * The resyncing strategy is determined by the absence or presence of classes and packages.
+   * If either oldEntry or newEntry contains classes, root is invalidated, provided a corresponding package
+   * exists in allEntry, or otherwise is removed.
+   * Otherwise, the action is determined by the following matrix, with columns:
+   *
+   *      old new all sym   action
+   *       +   +   +   +    recurse into all child packages of old ++ new
+   *       +   -   +   +    invalidate root
+   *       +   -   -   +    remove root from its scope
+   *       -   +   +   +    invalidate root
+   *       -   +   +   -    create and enter root
+   *       -   -   *   *    no action
+   *
+   *  Here, old, new, all mean classpaths and sym means symboltable. + is presence of an
+   *  entry in its column, - is absence, * is don't care.
+   *
+   *  Note that new <= all and old <= sym, so the matrix above covers all possibilities.
+   */
+  private def reSync(root: ClassSymbol,
+             allEntry: OptClassPath, oldEntry: OptClassPath, newEntry: OptClassPath,
+             invalidated: mutable.ListBuffer[ClassSymbol], failed: mutable.ListBuffer[ClassSymbol]) {
     ifDebug(informProgress(s"syncing $root, $oldEntry -> $newEntry"))
+
     val getName: ClassPath[platform.BinaryRepr] => String = (_.name)
-    val oldPackages = oldEntry.packages sortBy getName
-    val newPackages = newEntry.packages sortBy getName
-    val hasChanged =
-      oldEntry.classes.nonEmpty ||
-      newEntry.classes.nonEmpty ||
-      (oldPackages map getName) != (newPackages map getName)
-    if (hasChanged && !isSystemPackageClass(root)) {
-      root setInfo new loaders.PackageLoader(all)
+    def hasClasses(cp: OptClassPath) = cp.isDefined && cp.get.classes.nonEmpty
+    def invalidateOrRemove() = {
+      allEntry match {
+        case Some(cp) => root setInfo new loaders.PackageLoader(cp)
+        case None => root.owner.info.decls unlink root.sourceModule
+      }
       invalidated += root
+    }
+    def packageNames(cp: PlatformClassPath): Set[String] = cp.packages.toSet map getName
+    def subPackage(cp: PlatformClassPath, name: String): OptClassPath =
+      cp.packages find (cp1 => getName(cp1) == name)
+
+    val classesFound = hasClasses(oldEntry) || hasClasses(newEntry)
+    if (classesFound && !isSystemPackageClass(root)) {
+      invalidateOrRemove()
     } else {
-      if (hasChanged) failed += root
-      for ((oldNested, newNested) <- oldPackages zip newPackages) {
-        val pkgname = newNested.name
-        val pkg = root.info decl newTermName(pkgname)
-        val allNested = (all.packages find (_.name == pkgname)).get
-        reSync(pkg.moduleClass, allNested, oldNested, newNested, invalidated, failed)
+      if (classesFound) failed += root
+      (oldEntry, newEntry) match {
+        case (Some(oldcp) , Some(newcp)) =>
+          for (pstr <- packageNames(oldcp) ++ packageNames(newcp)) {
+            val pname = newTermName(pstr)
+            var pkg = root.info decl pname
+            if (pkg == NoSymbol) {
+              // package was created by external agent, create symbol to track it
+              assert(!subPackage(oldcp, pstr).isDefined)
+              pkg = root.newPackage(pname)
+              pkg.setInfo(pkg.moduleClass.tpe)
+              root.info.decls.enter(pkg)
+            }
+            reSync(
+                pkg.moduleClass.asInstanceOf[ClassSymbol],
+                subPackage(allEntry.get, pstr), subPackage(oldcp, pstr), subPackage(newcp, pstr),
+                invalidated, failed)
+          }
+        case (Some(oldcp), None) =>
+          invalidateOrRemove()
+        case (None, Some(newcp)) =>
+          invalidateOrRemove()
+        case (None, None) =>
       }
     }
   }
