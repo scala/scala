@@ -312,9 +312,11 @@ class DirectoryClassPath(val dir: AbstractFile, val context: ClassPathContext[Ab
   override def toString() = "directory classpath: "+ origin.getOrElse("?")
 }
 
-class DeltaClassPath[T](original: MergedClassPath[T], oldEntry: ClassPath[T], newEntry: ClassPath[T]) 
-extends MergedClassPath[T](original.entries map (e => if (e == oldEntry) newEntry else e), original.context) {
-  require(original.entries contains oldEntry)
+class DeltaClassPath[T](original: MergedClassPath[T], subst: Map[ClassPath[T], ClassPath[T]])
+extends MergedClassPath[T](original.entries map (e => subst getOrElse (e, e)), original.context) {
+  // not sure we should require that here. Commented out for now.
+  // require(subst.keySet subsetOf original.entries.toSet)
+  // We might add specialized operations for computing classes packages here. Not sure it's worth it.
 }
 
 /**
