@@ -44,7 +44,6 @@ final class Analyzer(val global: CallbackGlobal) extends Compat
 						classFile(on) match
 						{
 							case Some((f,className,inOutDir)) =>
-								if(inOutDir && on.isJavaDefined) registerTopLevelSym(on)
 								f match
 								{
 									case ze: ZipArchive#Entry => for(zip <- ze.underlyingSource; zipFile <- Option(zip.file) ) binaryDependency(zipFile, className)

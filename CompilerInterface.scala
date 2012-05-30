@@ -172,7 +172,6 @@ private final class CachedCompiler0(args: Array[String], initialLog: WeakLog) ex
 		def clear()
 		{
 			callback0 = null
-			atPhase(currentRun.namerPhase) { forgetAll() }
 			superDropRun()
 			reporter = null
 		}
@@ -188,21 +187,6 @@ private final class CachedCompiler0(args: Array[String], initialLog: WeakLog) ex
 
 		def findOnClassPath(name: String): Option[AbstractFile] =
 			classPath.findClass(name).flatMap(_.binary.asInstanceOf[Option[AbstractFile]])
-
-		override def registerTopLevelSym(sym: Symbol) = toForget += sym
-
-		final def unlinkAll(m: Symbol) {
-			val scope = m.owner.info.decls
-			scope unlink m
-			scope unlink m.companionSymbol
-		}
-
-		def forgetAll()
-		{
-			for(sym <- toForget)
-				unlinkAll(sym)
-			toForget = mutable.Set()
-		}
 
 		// fine-control over external changes is unimplemented:
 		//   must drop whole CachedCompiler when !changes.isEmpty
