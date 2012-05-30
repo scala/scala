@@ -5,7 +5,10 @@ package xsbt
 
 import xsbti.{AnalysisCallback,Logger,Problem,Reporter,Severity}
 import xsbti.compile.{CachedCompiler, DependencyChanges}
-import scala.tools.nsc.{io, reporters, util, Phase, Global, Settings, SubComponent}
+import scala.tools.nsc.{backend, io, reporters, symtab, util, Phase, Global, Settings, SubComponent}
+import backend.JavaPlatform
+import scala.tools.util.PathResolver
+import symtab.SymbolLoaders
 import util.{ClassPath,DirectoryClassPath,MergedClassPath,JavaClassPath}
 import ClassPath.{ClassPathContext,JavaContext}
 import io.AbstractFile
@@ -147,7 +150,7 @@ private final class CachedCompiler0(args: Array[String], initialLog: WeakLog) ex
 		// Required because computePhaseDescriptors is private in 2.8 (changed to protected sometime later).
 		private[this] def superComputePhaseDescriptors() = superCall("computePhaseDescriptors").asInstanceOf[List[SubComponent]]
 		private[this] def superDropRun(): Unit =
-			try { superCall("dropRun") } catch { case e: NoSuchMethodException => () } // dropRun not in 2.8.1, so resident mode not supported
+			try { superCall("dropRun") } catch { case e: NoSuchMethodException => () } // dropRun not in 2.8.1
 		private[this] def superCall(methodName: String): AnyRef =
 		{
 			val meth = classOf[Global].getDeclaredMethod(methodName)
@@ -174,14 +177,6 @@ private final class CachedCompiler0(args: Array[String], initialLog: WeakLog) ex
 			reporter = null
 		}
 
-		private[this] lazy val ScalaObjectClass = {
-			// ScalaObject removed in 2.10, so alias it to Object
-			implicit def compat(a: AnyRef): CompatScalaObject = new CompatScalaObject
-			class CompatScalaObject { def ScalaObjectClass = definitions.ObjectClass }
-			definitions.ScalaObjectClass
-		}
-		override def registerTopLevelSym(sym: Symbol) = toForget += sym
-
 		def findClass(name: String): Option[(AbstractFile, Boolean)] =
 			getOutputClass(name).map(f => (f,true)) orElse findOnClassPath(name).map(f =>(f, false))
 
@@ -194,32 +189,18 @@ private final class CachedCompiler0(args: Array[String], initialLog: WeakLog) ex
 		def findOnClassPath(name: String): Option[AbstractFile] =
 			classPath.findClass(name).flatMap(_.binary.asInstanceOf[Option[AbstractFile]])
 
+		override def registerTopLevelSym(sym: Symbol) = toForget += sym
+
 		final def unlinkAll(m: Symbol) {
 			val scope = m.owner.info.decls
 			scope unlink m
 			scope unlink m.companionSymbol
-//			if(scope.isEmpty && m.owner != definitions.EmptyPackageClass && m.owner != definitions.RootClass)
-//				emptyPackages += m.owner
-		}
-		def reloadClass(pkg: Symbol, simpleName: String, bin: AbstractFile)
-		{
-			val loader = new loaders.ClassfileLoader(bin)
-			// enterClass/enterModule not in 2.8.1, so resident mode can't be supported
-			object LoadersCompat {
-				def enterClass(pkg: Any, simpleName: Any, loader: Any): Symbol = NoSymbol
-				def enterModule(pkg: Any, simpleName: Any, loader: Any): Symbol = NoSymbol
-			}
-			implicit def compat(run: AnyRef): LoadersCompat.type = LoadersCompat
-			toForget += loaders.enterClass(pkg, simpleName, loader)
-			toForget += loaders.enterModule(pkg, simpleName, loader)
 		}
 
 		def forgetAll()
 		{
-			for(sym <- toForget) {
+			for(sym <- toForget)
 				unlinkAll(sym)
-				toReload.put(sym.fullName, (sym.owner, sym.name.toString))
-			}
 			toForget = mutable.Set()
 		}
 
@@ -227,50 +208,134 @@ private final class CachedCompiler0(args: Array[String], initialLog: WeakLog) ex
 		//   must drop whole CachedCompiler when !changes.isEmpty
 		def reload(changes: DependencyChanges)
 		{
-			for {
-				(fullName,(pkg,simpleName)) <- toReload
-				classFile <- getOutputClass(fullName)
-			}
-				reloadClass(pkg, simpleName, classFile)
-	
-			for( (_, (pkg, "package")) <- toReload)
-				openPkgModule(pkg)
-
-			toReload = newReloadMap()
-		}
-		def openPkgModule(pkgClass: Symbol): Unit =
-			openPkgModule(pkgClass.info.decl(nme.PACKAGEkw), pkgClass)
-
-		// only easily accessible in 2.10+, so copy implementation here
-		def openPkgModule(container: Symbol, dest: Symbol)
-		{
-			val destScope = dest.info.decls
-			def include(member: Symbol) = !member.isPrivate && !member.isConstructor
-			for(member <- container.info.decls.iterator) {
-				if(include(member))
-					for(existing <- dest.info.decl(member.name).alternatives)
-						destScope.unlink(existing)
-			}
-
-			for(member <- container.info.decls.iterator) {
-				if(include(member))
-					destScope.enter(member)
-			}
-
-			for(p <- parentSymbols(container)) {
-				if(p != definitions.ObjectClass && p != ScalaObjectClass)
-					openPkgModule(p, dest)
-			}
+			inv(settings.outdir.value)
 		}
 
-		// only in 2.10+, so copy implementation here for earlier versions
-		def parentSymbols(sym: Symbol): List[Symbol] = sym.info.parents map (_.typeSymbol)
-
-		private [this] def newReloadMap() = mutable.Map[String,(Symbol,String)]()
-		private[this] var emptyPackages = mutable.Set[Symbol]()
-		private[this] var toReload = newReloadMap()
 		private[this] var toForget = mutable.Set[Symbol]()
 		private[this] var callback0: AnalysisCallback = null
 		def callback: AnalysisCallback = callback0
+
+		// override defaults in order to inject a ClassPath that can change
+		override lazy val platform = new PlatformImpl
+		override lazy val classPath = new ClassPathCell(new PathResolver(settings).result)
+		final class PlatformImpl extends JavaPlatform
+		{
+			val global: compiler.type = compiler
+			// this is apparently never called except by rootLoader, so no need to implement it
+			override lazy val classPath = throw new RuntimeException("Unexpected reference to platform.classPath")
+			override def rootLoader = newPackageLoaderCompat(rootLoader)(compiler.classPath)
+		}
+
+		private[this] type PlatformClassPath = ClassPath[AbstractFile]
+		private[this] type OptClassPath = Option[PlatformClassPath]
+
+		// converted from Martin's new code in scalac for use in 2.8 and 2.9
+		private[this] def inv(path: String)
+		{
+			classPath.delegate match {
+				case cp: util.MergedClassPath[_] =>
+					val dir = AbstractFile getDirectory path
+					val canonical = dir.file.getCanonicalPath
+					def matchesCanonical(e: ClassPath[_]) = e.origin.exists { opath =>
+							(AbstractFile getDirectory opath).file.getCanonicalPath == canonical
+					}
+
+					cp.entries find matchesCanonical match {
+						case Some(oldEntry) =>
+							val newEntry = cp.context.newClassPath(dir)
+							classPath.updateClassPath(oldEntry, newEntry)
+							reSyncCompat(definitions.RootClass, Some(classPath), Some(oldEntry), Some(newEntry))
+						case None =>
+							error("Cannot invalidate: no entry named " + path + " in classpath " + classPath)
+					}
+			}
+		}
+		private def reSyncCompat(root: ClassSymbol, allEntry: OptClassPath, oldEntry: OptClassPath, newEntry: OptClassPath)
+		{
+			val getName: PlatformClassPath => String = (_.name)
+			def hasClasses(cp: OptClassPath) = cp.exists(_.classes.nonEmpty)
+			def invalidateOrRemove(root: ClassSymbol) =
+				allEntry match {
+					case Some(cp) => root setInfo newPackageLoader[Type](cp)
+					case None => root.owner.info.decls unlink root.sourceModule
+				}
+
+			def packageNames(cp: PlatformClassPath): Set[String] = cp.packages.toSet map getName
+			def subPackage(cp: PlatformClassPath, name: String): OptClassPath =
+				cp.packages find (_.name == name)
+
+			val classesFound = hasClasses(oldEntry) || hasClasses(newEntry)
+			if (classesFound && !isSystemPackageClass(root)) {
+				invalidateOrRemove(root)
+			} else {
+				if (classesFound && root.isRoot)
+				invalidateOrRemove(definitions.EmptyPackageClass.asInstanceOf[ClassSymbol])
+				(oldEntry, newEntry) match {
+					case (Some(oldcp) , Some(newcp)) =>
+						for (pstr <- packageNames(oldcp) ++ packageNames(newcp)) {
+							val pname = newTermName(pstr)
+							var pkg = root.info decl pname
+							if (pkg == NoSymbol) {
+								// package was created by external agent, create symbol to track it
+								assert(!subPackage(oldcp, pstr).isDefined)
+								pkg = root.newPackage(NoPosition, pname)
+								pkg.setInfo(pkg.moduleClass.tpe)
+								root.info.decls.enter(pkg)
+							}
+							reSyncCompat(
+									pkg.moduleClass.asInstanceOf[ClassSymbol],
+									subPackage(allEntry.get, pstr), subPackage(oldcp, pstr), subPackage(newcp, pstr))
+						}
+					case (Some(oldcp), None) => invalidateOrRemove(root)
+					case (None, Some(newcp)) => invalidateOrRemove(root)
+					case (None, None) => ()
+				}
+			}
+		}
+
+		// type parameter T, `dummy` value for inference, and reflection are source compatibility hacks
+		//   to work around JavaPackageLoader and PackageLoader changes between 2.9 and 2.10 
+		//   and in particular not being able to say JavaPackageLoader in 2.10 in a compatible way (it no longer exists)
+		private[this] def newPackageLoaderCompat[T](dummy: => T)(classpath: ClassPath[AbstractFile])(implicit mf: ClassManifest[T]): T =
+			newPackageLoader[T](classpath)
+
+		private[this] def newPackageLoader[T](classpath: ClassPath[AbstractFile]): T =
+			loaderClass.getConstructor(classOf[SymbolLoaders], classOf[ClassPath[AbstractFile]]).newInstance(loaders, classpath).asInstanceOf[T]
+
+		private[this] lazy val loaderClass: Class[_] =
+			try Class.forName("scala.tools.nsc.symtab.SymbolLoaders$JavaPackageLoader")
+			catch { case e: Exception =>
+				Class.forName("scala.tools.nsc.symtab.SymbolLoaders$PackageLoader")
+			}
+
+		private[this] implicit def newPackageCompat(s: ClassSymbol): NewPackageCompat = new NewPackageCompat(s)
+		private[this] final class NewPackageCompat(s: ClassSymbol) {
+			def newPackage(name: Name): Symbol = s.newPackage(NoPosition, name)
+			def newPackage(pos: Position, name: Name): Nothing = throw new RuntimeException("source compatibility only")
+		}
+		private[this] def isSystemPackageClass(pkg: Symbol) =
+			pkg == definitions.RootClass ||
+			pkg == definitions.ScalaPackageClass || {
+				val pkgname = pkg.fullName
+				(pkgname startsWith "scala.") && !(pkgname startsWith "scala.tools")
+			}
+
+		final class ClassPathCell[T](var delegate: MergedClassPath[T]) extends ClassPath[T] {
+			private[this] class DeltaClassPath[T](original: MergedClassPath[T], oldEntry: ClassPath[T], newEntry: ClassPath[T]) 
+				extends MergedClassPath[T](original.entries map (e => if (e == oldEntry) newEntry else e), original.context)
+		
+			def updateClassPath(oldEntry: ClassPath[T], newEntry: ClassPath[T]) {
+				delegate = new DeltaClassPath(delegate, oldEntry, newEntry)
+			}
+
+			def name = delegate.name
+			override def origin = delegate.origin
+			def asURLs = delegate.asURLs
+			def asClasspathString = delegate.asClasspathString
+			def context = delegate.context
+			def classes = delegate.classes
+			def packages = delegate.packages
+			def sourcepaths = delegate.sourcepaths
+		}
 	}
 }
