@@ -2453,6 +2453,21 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
     case object WildcardExample extends CounterExample { override def toString = "_" }
     case object NoExample extends CounterExample { override def toString = "??" }
 
+    @inline def modelToVarAssignment(model: Model): Map[Var, (Seq[Const], Seq[Const])] =
+      model.toSeq.groupBy{f => f match {case (sym, value) => sym.variable} }.mapValues{ xs =>
+        val (trues, falses) = xs.partition(_._2)
+        (trues map (_._1.const), falses map (_._1.const))
+        // should never be more than one value in trues...
+      }
+
+    def varAssignmentString(varAssignment: Map[Var, (Seq[Const], Seq[Const])]) =
+      varAssignment.toSeq.sortBy(_._1.toString).map { case (v, (trues, falses)) =>
+         val assignment = "== "+ (trues mkString("(", ", ", ")")) +"  != ("+ (falses mkString(", ")) +")"
+         v +"(="+ v.path +": "+ v.domainTp +") "+ assignment
+       }.mkString("\n")
+
+    def modelString(model: Model) = varAssignmentString(modelToVarAssignment(model))
+
     // return constructor call when the model is a true counter example
     // (the variables don't take into account type information derived from other variables,
     //  so, naively, you might try to construct a counter example like _ :: Nil(_ :: _, _ :: _),
@@ -2463,18 +2478,9 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
       // x1.tl = ...
       // x1.hd.hd = ...
       // ...
-      val varAssignment = model.toSeq.groupBy{f => f match {case (sym, value) => sym.variable} }.mapValues{ xs =>
-        val (trues, falses) = xs.partition(_._2)
-        (trues map (_._1.const), falses map (_._1.const))
-        // should never be more than one value in trues...
-      }
+      val varAssignment = modelToVarAssignment(model)
 
-      // patmatDebug("var assignment for model "+ model +":\n"+
-      //   varAssignment.toSeq.sortBy(_._1.toString).map { case (v, (trues, falses)) =>
-      //     val assignment = "== "+ (trues mkString("(", ", ", ")")) +"  != ("+ (falses mkString(", ")) +")"
-      //     v +"(="+ v.path +": "+ v.domainTp +") "+ assignment
-      //   }.mkString("\n"))
-
+      // patmatDebug("var assignment for model "+ model +":\n"+ varAssignmentString(varAssignment))
 
       // chop a path into a list of symbols
       def chop(path: Tree): List[Symbol] = path match {
