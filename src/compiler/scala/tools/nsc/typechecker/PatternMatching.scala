@@ -1705,10 +1705,19 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
       val pure = props map rewriteEqualsToProp.apply
 
       var eqAxioms: Prop = True
-      def addAxiom(p: Prop) = eqAxioms = And(eqAxioms, p)
+      @inline def addAxiom(p: Prop) = eqAxioms = And(eqAxioms, p)
+
+      case class ExcludedPair(a: Const, b: Const) {
+        override def equals(o: Any) = o match {
+          case ExcludedPair(aa, bb) => (a == aa && b == bb) || (a == bb && b == aa)
+          case _ => false
+        }
+      }
 
       // patmatDebug("vars: "+ vars)
       vars.foreach { v =>
+        val excludedPair = new collection.mutable.HashSet[ExcludedPair]
+
         // if v.domainSyms.isEmpty, we must consider the domain to be infinite
         // otherwise, since the domain fully partitions the type of the value,
         // exactly one of the types (and whatever it implies, imposed separately) must be chosen
@@ -1716,17 +1725,26 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
         // coverage is formulated as: A \/ B \/ C and the implications are
         v.domainSyms foreach { dsyms => addAxiom(\/(dsyms)) }
 
-        def implications(sym: Sym, rest: List[Sym]) = {
-          val (excluded, notExcluded) = rest partition (b => sym.const.excludes(b.const))
-          val implied  = notExcluded filter (b => sym.const.implies(b.const))
-          // patmatDebug("implications: "+ (sym.const, excluded, implied, rest))
-          // when this symbol is true, what must hold, and what must not?
-          addAxiom(Or(Not(sym), /\(implied ++ excluded.map(Not(_)))))
-        }
-
         val syms = v.equalitySyms
         // patmatDebug("eqSyms "+(v, syms))
-        syms foreach (sym => implications(sym, syms.filterNot(_ eq sym))) // TODO: optimize
+        syms foreach { sym =>
+          // don't relate V = C to V = C -- `b.const == sym.const`
+          // if we've already excluded the pair at some point (-A \/ -B), then don't exclude the symmetric one (-B \/ -A)
+          // (nor the positive implications -B \/ A, or -A \/ B, which would entail the equality axioms falsifying the whole formula)
+          val todo = syms filterNot (b => (b.const == sym.const) || excludedPair(ExcludedPair(b.const, sym.const)))
+          val (excluded, notExcluded) = todo partition (b => sym.const.excludes(b.const))
+          val implied = notExcluded filter (b => sym.const.implies(b.const))
+          // patmatDebug("implications: "+ (sym.const, excluded, implied, syms))
+
+          // when this symbol is true, what must hold...
+          implied  foreach (impliedSym => addAxiom(Or(Not(sym), impliedSym)))
+
+          // ... and what must not?
+          excluded foreach {excludedSym =>
+            excludedPair += ExcludedPair(sym.const, excludedSym.const)
+            addAxiom(Or(Not(sym), Not(excludedSym)))
+          }
+        }
       }
 
       // patmatDebug("eqAxioms:\n"+ cnfString(conjunctiveNormalForm(negationNormalForm(eqAxioms))))
