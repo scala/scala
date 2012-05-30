@@ -2048,6 +2048,8 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
         val r = (this, other) match {
           case (_, NullConst)                 => true
           case (NullConst, _)                 => true
+          // this causes false negative for unreachability, but that's ok:
+          // example: val X = 1; val Y = 1; (2: Int) match { case X => case Y => /* considered reachable */ }
           case (_: ValueConst, _: ValueConst) => this != other
           case (_: ValueConst, _: TypeConst)  => !((tp <:< other.tp) || (other.tp <:< wideTp))
           case (_: TypeConst,  _: ValueConst) => !((other.tp <:< tp) || (tp <:< other.wideTp))
@@ -2119,7 +2121,7 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
             if (p.hasSymbol && p.symbol.isStable) p.symbol.name.toString // tp.toString
             else p.toString //+"#"+ id
 
-          Const.unique(narrowTp, new ValueConst(narrowTp, wideTp, toString))
+          Const.unique(narrowTp, new ValueConst(narrowTp, checkableType(wideTp), toString)) // must make wide type checkable so that it is comparable to types from TypeConst
         }
       }
     }
