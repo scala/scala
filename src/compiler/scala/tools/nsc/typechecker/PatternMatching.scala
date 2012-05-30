@@ -14,6 +14,7 @@ import scala.tools.nsc.transform.TypingTransformers
 import scala.tools.nsc.transform.Transform
 import scala.collection.mutable.HashSet
 import scala.collection.mutable.HashMap
+import scala.tools.nsc.util.Statistics
 
 /** Translate pattern matching.
   *
@@ -38,6 +39,8 @@ import scala.collection.mutable.HashMap
   *  - recover exhaustivity and unreachability checking using a variation on the type-safe builder pattern
   */
 trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL {   // self: Analyzer =>
+  import Statistics._
+
   val global: Global               // need to repeat here because otherwise last mixin defines global as
                                    // SymbolTable. If we had DOT this would not be an issue
   import global._                  // the global environment
@@ -182,6 +185,8 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
         case _                                          => tp
       }
 
+      val start = startTimer(patmatNanos)
+
       val selectorTp = repeatedToSeq(elimAnonymousClass(selector.tpe.widen.withoutAnnotations))
 
       val origPt  = match_.tpe
@@ -205,7 +210,10 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
 
       val selectorSym  = freshSym(selector.pos, pureType(selectorTp)) setFlag SYNTH_CASE
       // pt = Any* occurs when compiling test/files/pos/annotDepMethType.scala  with -Xexperimental
-      combineCases(selector, selectorSym, cases map translateCase(selectorSym, pt), pt, matchOwner, matchFailGenOverride)
+      val combined = combineCases(selector, selectorSym, cases map translateCase(selectorSym, pt), pt, matchOwner, matchFailGenOverride)
+
+      stopTimer(patmatNanos, start)
+      combined
     }
 
     // return list of typed CaseDefs that are supported by the backend (typed/bind/wildcard)
@@ -1671,6 +1679,8 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
     // the only property of equality that is encoded is that a variable can at most be equal to one of the c in C:
     // thus, for each distinct c, c', c'',... in C, a clause `not (Qv(c) /\ (Qv(c') \/ ... \/ Qv(c'')))` is added
     def removeVarEq(props: List[Prop], considerNull: Boolean = false): (Prop, List[Prop]) = {
+      val start = startTimer(patmatAnaVarEq)
+
       val vars = new collection.mutable.HashSet[Var]
 
       object gatherEqualities extends PropTraverser {
@@ -1721,6 +1731,8 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
 
       // patmatDebug("eqAxioms:\n"+ cnfString(conjunctiveNormalForm(negationNormalForm(eqAxioms))))
       // patmatDebug("pure:\n"+ cnfString(conjunctiveNormalForm(negationNormalForm(pure))))
+
+      stopTimer(patmatAnaVarEq, start)
 
       (eqAxioms, pure)
     }
@@ -1841,40 +1853,47 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
 
       // patmatDebug("dpll\n"+ cnfString(f))
 
-      if (f isEmpty) (true, EmptyModel)
-      else if(f exists (_.isEmpty)) (false, EmptyModel)
-      else f.find(_.size == 1) match {
-        case Some(unitClause) =>
-          val unitLit = unitClause.head
-          // patmatDebug("unit: "+ unitLit)
-          withLit(DPLL(dropUnit(f, unitLit)), unitLit)
-        case _ =>
-          // partition symbols according to whether they appear in positive and/or negative literals
-          val pos = new HashSet[Sym]()
-          val neg = new HashSet[Sym]()
-          f.foreach{_.foreach{ lit =>
-            if (lit.pos) pos += lit.sym else neg += lit.sym
-          }}
-          // appearing in both positive and negative
-          val impures = pos intersect neg
-          // appearing only in either positive/negative positions
-          val pures = (pos ++ neg) -- impures
+      val start = startTimer(patmatAnaDPLL)
 
-          if (pures nonEmpty) {
-            val pureSym = pures.head
-            // turn it back into a literal
-            // (since equality on literals is in terms of equality
-            //  of the underlying symbol and its positivity, simply construct a new Lit)
-            val pureLit = Lit(pureSym, pos(pureSym))
-            // patmatDebug("pure: "+ pureLit +" pures: "+ pures +" impures: "+ impures)
-            val simplified = f.filterNot(_.contains(pureLit))
-            withLit(DPLL(simplified), pureLit)
-          } else {
-            val split = f.head.head
-            // patmatDebug("split: "+ split)
-            orElse(DPLL(f :+ clause(split)), DPLL(f :+ clause(-split)))
-          }
-      }
+      val satisfiableWithModel: (Boolean, Model) =
+        if (f isEmpty) (true, EmptyModel)
+        else if(f exists (_.isEmpty)) (false, EmptyModel)
+        else f.find(_.size == 1) match {
+          case Some(unitClause) =>
+            val unitLit = unitClause.head
+            // patmatDebug("unit: "+ unitLit)
+            withLit(DPLL(dropUnit(f, unitLit)), unitLit)
+          case _ =>
+            // partition symbols according to whether they appear in positive and/or negative literals
+            val pos = new HashSet[Sym]()
+            val neg = new HashSet[Sym]()
+            f.foreach{_.foreach{ lit =>
+              if (lit.pos) pos += lit.sym else neg += lit.sym
+            }}
+            // appearing in both positive and negative
+            val impures = pos intersect neg
+            // appearing only in either positive/negative positions
+            val pures = (pos ++ neg) -- impures
+
+            if (pures nonEmpty) {
+              val pureSym = pures.head
+              // turn it back into a literal
+              // (since equality on literals is in terms of equality
+              //  of the underlying symbol and its positivity, simply construct a new Lit)
+              val pureLit = Lit(pureSym, pos(pureSym))
+              // patmatDebug("pure: "+ pureLit +" pures: "+ pures +" impures: "+ impures)
+              val simplified = f.filterNot(_.contains(pureLit))
+              withLit(DPLL(simplified), pureLit)
+            } else {
+              val split = f.head.head
+              // patmatDebug("split: "+ split)
+              orElse(DPLL(f :+ clause(split)), DPLL(f :+ clause(-split)))
+            }
+        }
+
+        stopTimer(patmatAnaDPLL, start)
+
+        satisfiableWithModel
     }
   }
 
@@ -2198,6 +2217,8 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
         def makeCondPessimistic(tm: TreeMaker)(recurse: TreeMaker => Cond): Cond = makeCond(tm)(recurse)
       }
 
+      val start = startTimer(patmatAnaReach)
+
       // use the same approximator so we share variables,
       // but need different conditions depending on whether we're conservatively looking for failure or success
       val testCasesOk = reachabilityApproximation.approximateMatch(reachabilityApproximation.makeCondOptimistic)
@@ -2244,6 +2265,8 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
           prepareNewAnalysis()
         }
       }
+
+      stopTimer(patmatAnaReach, start)
 
       if (reachable) None else Some(caseIndex)
     }
@@ -2325,6 +2348,7 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
       // - back off (to avoid crying exhaustive too often) when:
       //    - there are guards -->
       //    - there are extractor calls (that we can't secretly/soundly) rewrite
+      val start = startTimer(patmatAnaExhaust)
       var backoff = false
       object exhaustivityApproximation extends TreeMakersToConds(prevBinder, cases) {
         def makeCondExhaustivity(tm: TreeMaker)(recurse: TreeMaker => Cond): Cond = tm match {
@@ -2394,7 +2418,10 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
         val scrutVar = Var(prevBinderTree)
         val counterExamples = matchFailModels.map(modelToCounterExample(scrutVar))
 
-        CounterExample.prune(counterExamples).map(_.toString).sorted
+        val pruned = CounterExample.prune(counterExamples).map(_.toString).sorted
+
+        stopTimer(patmatAnaExhaust, start)
+        pruned
       }
     }
 
