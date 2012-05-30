@@ -109,6 +109,7 @@ trait ScalaSettings extends AbsScalaSettings
   val sourceReader  = StringSetting     ("-Xsource-reader", "classname", "Specify a custom method for reading source files.", "")
 
   val XoldPatmat    = BooleanSetting    ("-Xoldpatmat", "Use the pre-2.10 pattern matcher. Otherwise, the 'virtualizing' pattern matcher is used in 2.10.")
+  val XnoPatmatAnalysis = BooleanSetting ("-Xno-patmat-analysis", "Don't perform exhaustivity/unreachability analysis. Also, ignore @switch annotation.")
 
   /** Compatibility stubs for options whose value name did
    *  not previously match the option name.

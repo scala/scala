@@ -44,4 +44,5 @@ abstract class MutableSettings extends AbsSettings {
   def maxClassfileName: IntSetting
   def Xexperimental: BooleanSetting
   def XoldPatmat: BooleanSetting
+  def XnoPatmatAnalysis: BooleanSetting
 }

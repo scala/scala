@@ -1115,14 +1115,16 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
         def isSwitchAnnotation(tpe: Type) = tpe hasAnnotation SwitchClass
         def isUncheckedAnnotation(tpe: Type) = tpe hasAnnotation UncheckedClass
 
-        val (unchecked, requireSwitch) = scrut match {
-          case Typed(_, tpt) =>
-            (isUncheckedAnnotation(tpt.tpe),
-             // matches with two or fewer cases need not apply for switchiness (if-then-else will do)
-             isSwitchAnnotation(tpt.tpe) && casesNoSubstOnly.lengthCompare(2) > 0)
-          case _ =>
-            (false, false)
-        }
+        val (unchecked, requireSwitch) =
+          if (settings.XnoPatmatAnalysis.value) (true, false)
+          else scrut match {
+            case Typed(_, tpt) =>
+              (isUncheckedAnnotation(tpt.tpe),
+               // matches with two or fewer cases need not apply for switchiness (if-then-else will do)
+               isSwitchAnnotation(tpt.tpe) && casesNoSubstOnly.lengthCompare(2) > 0)
+            case _ =>
+              (false, false)
+          }
 
         emitSwitch(scrut, scrutSym, casesNoSubstOnly, pt, matchFailGenOverride).getOrElse{
           if (requireSwitch) typer.context.unit.warning(scrut.pos, "could not emit switch for @switch annotated match")
