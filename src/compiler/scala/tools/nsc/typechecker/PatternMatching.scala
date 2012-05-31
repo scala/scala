@@ -2073,7 +2073,7 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
         val r = (this, other) match {
           case (_: ValueConst, _: ValueConst) => this == other // hashconsed
           case (_: ValueConst, _: TypeConst)  => tp <:< other.tp
-          case (TypeConst(_),  _)             => tp <:< other.tp
+          case (_: TypeConst,  _)             => tp <:< other.tp
           case _                              => false
         }
         // if(r) patmatDebug("implies    : "+(this, other))
@@ -2194,7 +2194,7 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
       }
 
       val testsBeforeBody = tests.takeWhile(t => !t.treeMaker.isInstanceOf[BodyTreeMaker])
-      testsBeforeBody.map(t => symbolic(t.cond)).foldLeft(True: Prop)(And)
+      /\(testsBeforeBody.map(t => symbolic(t.cond)))
     }
 
     // TODO: model dependencies between variables: if V1 corresponds to (x: List[_]) and V2 is (x.hd), V2 cannot be assigned when V1 = null or V1 = Nil
