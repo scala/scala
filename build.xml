@@ -2390,6 +2390,50 @@ POSITIONS
 MISCELLANEOUS
 ============================================================================ -->
 
+  <target name="yourkit.init">
+    <property name="yourkit.home" value="/Applications/YourKit.app"/>
+    <property name="yourkit.api.jar" value="${yourkit.home}/lib/yjp-controller-api-redist.jar"/>
+    <property name="yourkit.agent" value="${yourkit.home}/bin/mac/libyjpagent.jnilib"/>
+    <property name="yourkit.jvm.opts" value="-agentpath:${yourkit.agent}"/>
+    <property name="yourkit.scalac.opts" value="-Yprofile:all"/>
+  </target>
+
+  <!-- Builds yourkit wrapper/jar and copies into lib/extra. -->
+  <target name="yourkit.build" depends="locker.done,yourkit.init">
+    <copy file="${yourkit.api.jar}" todir="${lib-extra.dir}"/>
+    <property name="yourkit.build.dir" value="${build-quick.dir}/classes/yourkit"/>
+    <mkdir dir="${yourkit.build.dir}"/>
+
+    <scalacfork
+      destdir="${yourkit.build.dir}"
+      compilerpathref="locker.classpath"
+      params="${scalac.args.all}"
+      srcdir="${src.dir}/yourkit"
+      jvmargs="${scalacfork.jvmargs}">
+      <include name="**/*.scala"/>
+      <compilationpath>
+        <path refid="locker.classpath"/>
+      </compilationpath>
+    </scalacfork>
+    <jar destfile="${lib-extra.dir}/scalac-yourkit.jar">
+      <fileset dir="${yourkit.build.dir}"/>
+    </jar>
+  </target>
+
+  <!-- Builds quick.lib/comp with profiling enabled. -->
+  <target name="yourkit.run" depends="yourkit.build">
+    <antcall target="clean"/>
+    <ant target="quick.lib" inheritall="false" inheritrefs="false">
+      <property name="jvm.opts" value="${yourkit.jvm.opts}"/>
+      <property name="scalac.args" value="${yourkit.scalac.opts}"/>
+    </ant>
+    <ant target="quick.comp" inheritall="false" inheritrefs="false">
+      <property name="jvm.opts" value="${yourkit.jvm.opts}"/>
+      <property name="scalac.args" value="${yourkit.scalac.opts}"/>
+    </ant>
+    <antcall target="build"/>
+  </target>
+
   <target name="graph.init">
     <taskdef name="vizant" classname="vizant.Vizant" classpath="${lib-ant.dir}/vizant.jar"/>
   </target>

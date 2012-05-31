@@ -8,7 +8,7 @@ package scala.tools.nsc
 import java.io.{ File, FileOutputStream, PrintWriter, IOException, FileNotFoundException }
 import java.nio.charset.{ Charset, CharsetDecoder, IllegalCharsetNameException, UnsupportedCharsetException }
 import compat.Platform.currentTime
-import scala.tools.util.PathResolver
+import scala.tools.util.{ Profiling, PathResolver }
 import scala.collection.{ mutable, immutable }
 import io.{ SourceReader, AbstractFile, Path }
 import reporters.{ Reporter, ConsoleReporter }
@@ -358,6 +358,13 @@ class Global(var currentSettings: Settings, var reporter: Reporter) extends Symb
     def showTrees     = settings.Xshowtrees.value || settings.XshowtreesCompact.value || settings.XshowtreesStringified.value
     val showClass     = optSetting[String](settings.Xshowcls) map (x => splitClassAndPhase(x, false))
     val showObject    = optSetting[String](settings.Xshowobj) map (x => splitClassAndPhase(x, true))
+
+    // profiling
+    def profCPUPhase = isActive(settings.Yprofile) && !profileAll
+    def profileAll   = settings.Yprofile.doAllPhases
+    def profileAny   = !settings.Yprofile.isDefault || !settings.YprofileMem.isDefault
+    def profileClass = settings.YprofileClass.value
+    def profileMem   = settings.YprofileMem.value
   }
 
   // The current division between scala.reflect.* and scala.tools.nsc.* is pretty
@@ -1455,6 +1462,9 @@ class Global(var currentSettings: Settings, var reporter: Reporter) extends Symb
     private def showMembers() =
       opt.showNames foreach (x => showDef(x, opt.declsOnly, globalPhase))
 
+    // If -Yprofile isn't given this will never be triggered.
+    lazy val profiler = Class.forName(opt.profileClass).newInstance().asInstanceOf[Profiling]
+
     // Similarly, this will only be created under -Yshow-syms.
     object trackerFactory extends SymbolTrackers {
       val global: Global.this.type = Global.this
@@ -1521,6 +1531,10 @@ class Global(var currentSettings: Settings, var reporter: Reporter) extends Symb
       doInvalidation()
 
       units foreach addUnit
+      if (opt.profileAll) {
+        inform("starting CPU profiling on compilation run")
+        profiler.startProfiling()
+      }
       val startTime = currentTime
 
       reporter.reset()
@@ -1530,7 +1544,16 @@ class Global(var currentSettings: Settings, var reporter: Reporter) extends Symb
      while (globalPhase.hasNext && !reporter.hasErrors) {
         val startTime = currentTime
         phase = globalPhase
-        globalPhase.run
+
+        if (opt.profCPUPhase) {
+          inform("starting CPU profiling on phase " + globalPhase.name)
+          profiler profile globalPhase.run
+        }
+        else globalPhase.run
+
+        // Create a profiling generation for each phase's allocations
+        if (opt.profileAny)
+          profiler.advanceGeneration(globalPhase.name)
 
         // progress update
         informTime(globalPhase.description, startTime)
@@ -1570,6 +1593,8 @@ class Global(var currentSettings: Settings, var reporter: Reporter) extends Symb
 
         advancePhase
       }
+      if (opt.profileAll)
+        profiler.stopProfiling()
 
       if (traceSymbolActivity)
         units map (_.body) foreach (traceSymbols recordSymbolsInTree _)
@@ -1581,6 +1606,14 @@ class Global(var currentSettings: Settings, var reporter: Reporter) extends Symb
       reportCompileErrors()
       symSource.keys foreach (x => resetPackageClass(x.owner))
       informTime("total", startTime)
+
+      // save heap snapshot if requested
+      if (opt.profileMem) {
+        inform("Saving heap snapshot, this could take a while...")
+        System.gc()
+        profiler.captureSnapshot()
+        inform("...done saving heap snapshot.")
+      }
 
       // record dependency data
       if (!dependencyAnalysis.off)
