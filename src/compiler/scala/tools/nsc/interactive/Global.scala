@@ -924,7 +924,7 @@ class Global(settings: Settings, reporter: Reporter, projectName: String = "")
       val implicitlyAdded = viaView != NoSymbol
       members.add(sym, pre, implicitlyAdded) { (s, st) =>
         new TypeMember(s, st,
-          context.isAccessible(s, pre, superAccess && !implicitlyAdded),
+          context.isAccessible(if (s.hasGetter) s.getter(s.owner) else s, pre, superAccess && !implicitlyAdded),
           inherited,
           viaView)
       }
