@@ -352,6 +352,10 @@ class Global(settings: Settings, reporter: Reporter, projectName: String = "")
               case item: WorkItem => Some(item.raiseMissing())
               case _ => Some(())
             }
+
+            // don't forget to service interrupt requests
+            scheduler.dequeueAllInterrupts(_.execute())
+
             debugLog("ShutdownReq: cleaning work queue (%d items)".format(units.size))
             debugLog("Cleanup up responses (%d loadedType pending, %d parsedEntered pending)"
                 .format(waitLoadedTypeResponses.size, getParsedEnteredResponses.size))
