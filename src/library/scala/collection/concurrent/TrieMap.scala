@@ -82,7 +82,7 @@ private[collection] final class INode[K, V](bn: MainNode[K, V], g: Gen) extends 
   }
 
   @inline
-  private def equal(k1: K, k2: K, ct: TrieMap[K, V]) = ct.equality.areEqual(k1, k2)
+  private def equal(k1: K, k2: K, ct: TrieMap[K, V]) = ct.equality.equiv(k1, k2)
 
   @inline private def inode(cn: MainNode[K, V]) = {
     val nin = new INode[K, V](gen)
@@ -631,7 +631,7 @@ private[concurrent] case class RDCSS_Descriptor[K, V](old: INode[K, V], expected
  *  @since 2.10
  */
 @SerialVersionUID(0L - 6402774413839597105L)
-final class TrieMap[K, V] private (r: AnyRef, rtupd: AtomicReferenceFieldUpdater[TrieMap[K, V], AnyRef], hashf: Hashing[K], ef: Equality[K])
+final class TrieMap[K, V] private (r: AnyRef, rtupd: AtomicReferenceFieldUpdater[TrieMap[K, V], AnyRef], hashf: Hashing[K], ef: Equiv[K])
 extends scala.collection.concurrent.Map[K, V]
    with scala.collection.mutable.MapLike[K, V, TrieMap[K, V]]
    with CustomParallelizable[(K, V), ParTrieMap[K, V]]
@@ -644,14 +644,14 @@ extends scala.collection.concurrent.Map[K, V]
   def equality = equalityobj
   @volatile var root = r
   
-  def this(hashf: Hashing[K], ef: Equality[K]) = this(
+  def this(hashf: Hashing[K], ef: Equiv[K]) = this(
     INode.newRootNode,
     AtomicReferenceFieldUpdater.newUpdater(classOf[TrieMap[K, V]], classOf[AnyRef], "root"),
     hashf,
     ef
   )
   
-  def this() = this(Hashing.defaultHashing, Equality.defaultEquality)
+  def this() = this(Hashing.default, Equiv.universal)
   
   /* internal methods */
 
@@ -673,7 +673,7 @@ extends scala.collection.concurrent.Map[K, V]
     rootupdater = AtomicReferenceFieldUpdater.newUpdater(classOf[TrieMap[K, V]], classOf[AnyRef], "root")
 
     hashingobj = in.readObject().asInstanceOf[Hashing[K]]
-    equalityobj = in.readObject().asInstanceOf[Equality[K]]
+    equalityobj = in.readObject().asInstanceOf[Equiv[K]]
     
     var obj: AnyRef = null
     do {

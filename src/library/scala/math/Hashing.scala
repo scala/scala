@@ -14,7 +14,7 @@ package scala.math
   * `Hashing`'s companion object defines a default hashing strategy for all
   * objects - it calls their `##` method.
   *
-  * Note: when using a custom `Hashing`, make sure to use it with the `Equality`
+  * Note: when using a custom `Hashing`, make sure to use it with the `Equiv`
   * such that if any two objects are equal, then their hash codes must be equal.
   * 
   * @since 2.10
@@ -29,11 +29,11 @@ trait Hashing[T] extends Serializable {
 
 object Hashing {
   
-  implicit def defaultHashing[T] = new Hashing[T] {
+  implicit def default[T] = new Hashing[T] {
     def hashCode(x: T) = x.##
   }
   
-  def apply[T](f: T => Int) = new Hashing[T] {
+  def fromFunction[T](f: T => Int) = new Hashing[T] {
     def hashCode(x: T) = f(x)
   }
   
