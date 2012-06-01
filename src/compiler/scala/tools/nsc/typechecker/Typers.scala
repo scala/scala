@@ -3041,72 +3041,79 @@ trait Typers extends Modes with Adaptations with Tags {
         case ErrorType =>
           if (!tree.isErrorTyped) setError(tree) else tree
           // @H change to setError(treeCopy.Apply(tree, fun, args))
-        /* --- begin unapply  --- */
 
         case otpe if inPatternMode(mode) && unapplyMember(otpe).exists =>
-          if (args.length > MaxTupleArity)
-            return duplErrorTree(TooManyArgsPatternError(fun))
+          doTypedUnapply(tree, fun0, fun, args, mode, pt)
 
-          //
-          def freshArgType(tp: Type): (List[Symbol], Type) = tp match {
-            case MethodType(param :: _, _) =>
-              (Nil, param.tpe)
-            case PolyType(tparams, restpe) =>
-              createFromClonedSymbols(tparams, freshArgType(restpe)._2)((ps, t) => ((ps, t)))
-            // No longer used, see test case neg/t960.scala (#960 has nothing to do with it)
-            case OverloadedType(_, _) =>
-              OverloadedUnapplyError(fun)
-              (Nil, ErrorType)
-            case _ =>
-              UnapplyWithSingleArgError(fun)
-              (Nil, ErrorType)
-          }
-
-          val unapp     = unapplyMember(otpe)
-          val unappType = otpe.memberType(unapp)
-          val argDummy  = context.owner.newValue(nme.SELECTOR_DUMMY, fun.pos, SYNTHETIC) setInfo pt
-          val arg       = Ident(argDummy) setType pt
-
-          if (!isApplicableSafe(Nil, unappType, List(pt), WildcardType)) {
-            //Console.println("UNAPP: need to typetest, arg.tpe = "+arg.tpe+", unappType = "+unappType)
-            val (freeVars, unappFormal) = freshArgType(unappType.skolemizeExistential(context.owner, tree))
-            val unapplyContext = context.makeNewScope(context.tree, context.owner)
-            freeVars foreach unapplyContext.scope.enter
-
-            val typer1 = newTyper(unapplyContext)
-            val pattp  = typer1.infer.inferTypedPattern(tree, unappFormal, arg.tpe)
-
-            // turn any unresolved type variables in freevars into existential skolems
-            val skolems = freeVars map (fv => unapplyContext.owner.newExistentialSkolem(fv, fv))
-            arg.tpe = pattp.substSym(freeVars, skolems)
-            argDummy setInfo arg.tpe
-          }
-
-          // setType null is necessary so that ref will be stabilized; see bug 881
-          val fun1 = typedPos(fun.pos)(Apply(Select(fun setType null, unapp), List(arg)))
-
-          if (fun1.tpe.isErroneous) {
-            duplErrTree
-          } else {
-            val formals0 = unapplyTypeList(fun1.symbol, fun1.tpe)
-            val formals1 = formalTypes(formals0, args.length)
-            if (sameLength(formals1, args)) {
-              val args1 = typedArgs(args, mode, formals0, formals1)
-              // This used to be the following (failing) assert:
-              //   assert(isFullyDefined(pt), tree+" ==> "+UnApply(fun1, args1)+", pt = "+pt)
-              // I modified as follows.  See SI-1048.
-              val pt1 = if (isFullyDefined(pt)) pt else makeFullyDefined(pt)
-
-              val itype = glb(List(pt1, arg.tpe))
-              arg.tpe = pt1    // restore type (arg is a dummy tree, just needs to pass typechecking)
-              UnApply(fun1, args1) setPos tree.pos setType itype
-            } else
-              duplErrorTree(WrongNumberArgsPatternError(tree, fun))
-          }
-
-/* --- end unapply  --- */
         case _ =>
           duplErrorTree(ApplyWithoutArgsError(tree, fun))
+      }
+    }
+
+    def doTypedUnapply(tree: Tree, fun0: Tree, fun: Tree, args: List[Tree], mode: Int, pt: Type): Tree = {
+      def duplErrTree = setError(treeCopy.Apply(tree, fun0, args))
+      def duplErrorTree(err: AbsTypeError) = { issue(err); duplErrTree }
+
+      val otpe = fun.tpe
+
+      if (args.length > MaxTupleArity)
+        return duplErrorTree(TooManyArgsPatternError(fun))
+
+      //
+      def freshArgType(tp: Type): (List[Symbol], Type) = tp match {
+        case MethodType(param :: _, _) =>
+          (Nil, param.tpe)
+        case PolyType(tparams, restpe) =>
+          createFromClonedSymbols(tparams, freshArgType(restpe)._2)((ps, t) => ((ps, t)))
+        // No longer used, see test case neg/t960.scala (#960 has nothing to do with it)
+        case OverloadedType(_, _) =>
+          OverloadedUnapplyError(fun)
+          (Nil, ErrorType)
+        case _ =>
+          UnapplyWithSingleArgError(fun)
+          (Nil, ErrorType)
+      }
+
+      val unapp     = unapplyMember(otpe)
+      val unappType = otpe.memberType(unapp)
+      val argDummy  = context.owner.newValue(nme.SELECTOR_DUMMY, fun.pos, SYNTHETIC) setInfo pt
+      val arg       = Ident(argDummy) setType pt
+
+      if (!isApplicableSafe(Nil, unappType, List(pt), WildcardType)) {
+        //Console.println("UNAPP: need to typetest, arg.tpe = "+arg.tpe+", unappType = "+unappType)
+        val (freeVars, unappFormal) = freshArgType(unappType.skolemizeExistential(context.owner, tree))
+        val unapplyContext = context.makeNewScope(context.tree, context.owner)
+        freeVars foreach unapplyContext.scope.enter
+
+        val typer1 = newTyper(unapplyContext)
+        val pattp  = typer1.infer.inferTypedPattern(tree, unappFormal, arg.tpe)
+
+        // turn any unresolved type variables in freevars into existential skolems
+        val skolems = freeVars map (fv => unapplyContext.owner.newExistentialSkolem(fv, fv))
+        arg.tpe = pattp.substSym(freeVars, skolems)
+        argDummy setInfo arg.tpe
+      }
+
+      // setType null is necessary so that ref will be stabilized; see bug 881
+      val fun1 = typedPos(fun.pos)(Apply(Select(fun setType null, unapp), List(arg)))
+
+      if (fun1.tpe.isErroneous) {
+        duplErrTree
+      } else {
+        val formals0 = unapplyTypeList(fun1.symbol, fun1.tpe)
+        val formals1 = formalTypes(formals0, args.length)
+        if (sameLength(formals1, args)) {
+          val args1 = typedArgs(args, mode, formals0, formals1)
+          // This used to be the following (failing) assert:
+          //   assert(isFullyDefined(pt), tree+" ==> "+UnApply(fun1, args1)+", pt = "+pt)
+          // I modified as follows.  See SI-1048.
+          val pt1 = if (isFullyDefined(pt)) pt else makeFullyDefined(pt)
+
+          val itype = glb(List(pt1, arg.tpe))
+          arg.tpe = pt1    // restore type (arg is a dummy tree, just needs to pass typechecking)
+          UnApply(fun1, args1) setPos tree.pos setType itype
+        } else
+          duplErrorTree(WrongNumberArgsPatternError(tree, fun))
       }
     }
 
