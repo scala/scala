@@ -183,6 +183,20 @@ import Flags._
   def hasTraitFlag   = hasFlag(TRAIT)
   def hasDefaultFlag = hasFlag(DEFAULTPARAM)
 
+  def accessString: String = {
+    val pw = if (hasAccessBoundary) privateWithin.toString else ""
+    
+    if (pw == "") {
+      if (hasAllFlags(PRIVATE | LOCAL)) "private[this]"
+      else if (hasAllFlags(PROTECTED | LOCAL)) "protected[this]"
+      else if (hasFlag(PRIVATE)) "private"
+      else if (hasFlag(PROTECTED)) "protected"
+      else ""
+    }
+    else if (hasFlag(PROTECTED)) "protected[" + pw + "]"
+    else "private[" + pw + "]"
+  }
+
   // Straightforwardly named accessors already being used differently.
   // These names are most likely temporary.
   def hasAbstractFlag      = hasFlag(ABSTRACT)
