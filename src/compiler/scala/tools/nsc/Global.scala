@@ -343,8 +343,8 @@ class Global(var currentSettings: Settings, var reporter: Reporter) extends Symb
     def checkPhase = wasActive(settings.check)
     def logPhase   = isActive(settings.log)
 
-    // Write *.icode files the setting was given.
-    def writeICode = settings.writeICode.isSetByUser && isActive(settings.writeICode)
+    // Write *.icode files right after GenICode when -Xprint-icode was given.
+    def writeICodeAtICode = settings.writeICode.isSetByUser && isActive(settings.writeICode)
 
     // showing/printing things
     def browsePhase   = isActive(settings.browse)
@@ -1384,14 +1384,22 @@ class Global(var currentSettings: Settings, var reporter: Reporter) extends Symb
     val mixinPhase                   = phaseNamed("mixin")
     val cleanupPhase                 = phaseNamed("cleanup")
     val icodePhase                   = phaseNamed("icode")
-    // val inlinerPhase                 = phaseNamed("inliner")
-    // val inlineExceptionHandlersPhase = phaseNamed("inlineExceptionHandlers")
-    // val closelimPhase                = phaseNamed("closelim")
-    // val dcePhase                     = phaseNamed("dce")
+    val inlinerPhase                 = phaseNamed("inliner")
+    val inlineExceptionHandlersPhase = phaseNamed("inlineExceptionHandlers")
+    val closelimPhase                = phaseNamed("closelim")
+    val dcePhase                     = phaseNamed("dce")
     val jvmPhase                     = phaseNamed("jvm")
+    // val msilPhase                    = phaseNamed("msil")
 
     def runIsAt(ph: Phase)   = globalPhase.id == ph.id
     def runIsPast(ph: Phase) = globalPhase.id > ph.id
+    // def runIsAtBytecodeGen   = (runIsAt(jvmPhase) || runIsAt(msilPhase))
+    def runIsAtOptimiz       = {
+      runIsAt(inlinerPhase)                 || // listing phases in full for robustness when -Ystop-after has been given.
+      runIsAt(inlineExceptionHandlersPhase) ||
+      runIsAt(closelimPhase)                ||
+      runIsAt(dcePhase)
+    }
 
     isDefined = true
 
@@ -1536,15 +1544,15 @@ class Global(var currentSettings: Settings, var reporter: Reporter) extends Symb
         informTime(globalPhase.description, startTime)
         phaseTimings(globalPhase) = currentTime - startTime
 
-        // write icode to *.icode files
-        if (opt.writeICode)
+        if (opt.writeICodeAtICode || (opt.printPhase && runIsAtOptimiz)) {
+          // Write *.icode files when -Xprint-icode or -Xprint:<some-optimiz-phase> was given.
           writeICode()
-
-        // print trees
-        if (opt.printPhase || opt.printLate && runIsAt(cleanupPhase)) {
+        } else if (opt.printPhase || opt.printLate && runIsAt(cleanupPhase)) {
+          // print trees
           if (opt.showTrees) nodePrinters.printAll()
           else printAllUnits()
         }
+
         // print the symbols presently attached to AST nodes
         if (opt.showSymbols)
           trackerFactory.snapshot()
