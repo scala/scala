@@ -6,7 +6,7 @@
 **                          |/                                          **
 \*                                                                      */
 
-package scala.math
+package scala.util.hashing
 
 /** `Hashing` is a trait whose instances each represent a strategy for hashing
   * instances of a type.
@@ -29,9 +29,11 @@ trait Hashing[T] extends Serializable {
 
 object Hashing {
   
-  implicit def default[T] = new Hashing[T] {
+  final class Default[T] extends Hashing[T] {
     def hashCode(x: T) = x.##
   }
+  
+  implicit def default[T] = new Default[T]
   
   def fromFunction[T](f: T => Int) = new Hashing[T] {
     def hashCode(x: T) = f(x)

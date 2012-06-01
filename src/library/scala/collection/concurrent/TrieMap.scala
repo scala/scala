@@ -14,7 +14,7 @@ package concurrent
 import java.util.concurrent.atomic._
 import collection.immutable.{ ListMap => ImmutableListMap }
 import collection.parallel.mutable.ParTrieMap
-import math.Hashing
+import util.hashing.Hashing
 import generic._
 import annotation.tailrec
 import annotation.switch
@@ -637,7 +637,7 @@ extends scala.collection.concurrent.Map[K, V]
    with CustomParallelizable[(K, V), ParTrieMap[K, V]]
    with Serializable
 {
-  private var hashingobj = hashf
+  private var hashingobj = if (hashf.isInstanceOf[Hashing.Default[_]]) new TrieMap.MangledHashing[K] else hashf
   private var equalityobj = ef
   private var rootupdater = rtupd
   def hashing = hashingobj
@@ -824,14 +824,8 @@ extends scala.collection.concurrent.Map[K, V]
     if (!RDCSS_ROOT(r, r.gcasRead(this), INode.newRootNode[K, V])) clear()
   }
   
-  @inline private def mangle(hc: Int): Int = {
-    var hcode = hc * 0x9e3775cd
-    hcode = java.lang.Integer.reverseBytes(hcode)
-    hcode * 0x9e3775cd
-  }
-
   @inline
-  def computeHash(k: K) = mangle(hashingobj.hashCode(k))
+  def computeHash(k: K) = hashingobj.hashCode(k)
   
   final def lookup(k: K): V = {
     val hc = computeHash(k)
@@ -919,7 +913,15 @@ object TrieMap extends MutableMapFactory[TrieMap] {
   implicit def canBuildFrom[K, V]: CanBuildFrom[Coll, (K, V), TrieMap[K, V]] = new MapCanBuildFrom[K, V]
 
   def empty[K, V]: TrieMap[K, V] = new TrieMap[K, V]
-
+  
+  class MangledHashing[K] extends Hashing[K] {
+    def hashCode(k: K) = {
+      var hcode = k.## * 0x9e3775cd
+      hcode = java.lang.Integer.reverseBytes(hcode)
+      hcode * 0x9e3775cd
+    }
+  }
+  
 }
 
 

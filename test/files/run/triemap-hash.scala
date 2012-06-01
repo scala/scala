@@ -1,7 +1,7 @@
 
 
 
-import math.Hashing
+import util.hashing.Hashing
 
 
 
