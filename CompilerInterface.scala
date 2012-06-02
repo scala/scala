@@ -24,7 +24,11 @@ final class CompilerInterface
 	def run(sources: Array[File], changes: DependencyChanges, callback: AnalysisCallback, log: Logger, delegate: Reporter, cached: CachedCompiler): Unit =
 		cached.run(sources, changes, callback, log, delegate)
 }
-sealed abstract class CallbackGlobal(settings: Settings, reporter: reporters.Reporter) extends Global(settings, reporter) {
+// for compatibility with Scala versions without Global.registerTopLevelSym (2.8.1 and earlier)
+sealed trait GlobalCompat { self: Global =>
+	def registerTopLevelSym(sym: Symbol): Unit
+}
+sealed abstract class CallbackGlobal(settings: Settings, reporter: reporters.Reporter) extends Global(settings, reporter) with GlobalCompat {
 	def callback: AnalysisCallback
 	def findClass(name: String): Option[(AbstractFile,Boolean)]
 }
