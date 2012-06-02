@@ -347,7 +347,7 @@ abstract class SelectiveCPSTransform extends PluginComponent with
                   //   val <lhs> = ctx.getTrivialValue; ...    <--- TODO: try/catch ??? don't bother for the moment...
                   // else
                   //   ctx.flatMap { <lhs> => ... }
-                  val ctxSym = currentOwner.newValue(vd.symbol.name append cpsNames.shiftSuffix).setInfo(rhs1.tpe)
+                  val ctxSym = currentOwner.newValue(newTermName("" + vd.symbol.name + cpsNames.shiftSuffix)).setInfo(rhs1.tpe)
                   val ctxDef = localTyper.typed(ValDef(ctxSym, rhs1))
                   def ctxRef = localTyper.typed(Ident(ctxSym))
                   val argSym = currentOwner.newValue(vd.symbol.name).setInfo(tpe)

@@ -1,42 +1,27 @@
 package scala.reflect
 package api
 
-trait AnnotationInfos { self: Universe =>
+trait AnnotationInfos extends base.AnnotationInfos { self: Universe =>
 
-  type AnnotationInfo <: AnyRef
-  val AnnotationInfo: AnnotationInfoExtractor
-
-  abstract class AnnotationInfoExtractor {
-    def apply(atp: Type, args: List[Tree], assocs: List[(Name, ClassfileAnnotArg)]): AnnotationInfo
-    def unapply(info: AnnotationInfo): Option[(Type, List[Tree], List[(Name, ClassfileAnnotArg)])]
+  override type AnnotationInfo >: Null <: AnyRef with AnnotationInfoApi
+  trait AnnotationInfoApi {
+    def atp: Type
+    def args: List[Tree]
+    def assocs: List[(Name, ClassfileAnnotArg)]
   }
 
-  type ClassfileAnnotArg <: AnyRef
-  implicit def classfileAnnotArgTag: ArrayTag[ClassfileAnnotArg] // need a precise tag to pass to UnPickle's toArray call
-
-  type LiteralAnnotArg <: ClassfileAnnotArg
-  val LiteralAnnotArg: LiteralAnnotArgExtractor
-
-  type ArrayAnnotArg <: ClassfileAnnotArg
-  val ArrayAnnotArg: ArrayAnnotArgExtractor
-
-  type NestedAnnotArg <: ClassfileAnnotArg
-  val NestedAnnotArg: NestedAnnotArgExtractor
-
-  abstract class LiteralAnnotArgExtractor {
-    def apply(const: Constant): LiteralAnnotArg
-    def unapply(arg: LiteralAnnotArg): Option[Constant]
+  override type LiteralAnnotArg >: Null <: ClassfileAnnotArg with LiteralAnnotArgApi
+  trait LiteralAnnotArgApi {
+    def const: Constant
   }
 
-  abstract class ArrayAnnotArgExtractor {
-    def apply(const: Array[ClassfileAnnotArg]): ArrayAnnotArg
-    def unapply(arg: ArrayAnnotArg): Option[Array[ClassfileAnnotArg]]
+  override type ArrayAnnotArg >: Null <: ClassfileAnnotArg with ArrayAnnotArgApi
+  trait ArrayAnnotArgApi {
+    def args: Array[ClassfileAnnotArg]
   }
 
-  abstract class NestedAnnotArgExtractor {
-    def apply(anninfo: AnnotationInfo): NestedAnnotArg
-    def unapply(arg: NestedAnnotArg): Option[AnnotationInfo]
+  override type NestedAnnotArg >: Null <: ClassfileAnnotArg with NestedAnnotArgApi
+  trait NestedAnnotArgApi {
+    def annInfo: AnnotationInfo
   }
 }
-
-

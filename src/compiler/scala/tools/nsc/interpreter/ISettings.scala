@@ -24,7 +24,7 @@ class ISettings(intp: IMain) {
    *  more than this number of characters, then the printout is
    *  truncated.
    */
-  var maxPrintString = 800
+  var maxPrintString = replProps.maxPrintString.option.getOrElse(800)
 
   /** The maximum number of completion candidates to print for tab
    *  completion without requiring confirmation.

@@ -3,6 +3,8 @@
  * @author  Martin Odersky
  */
 
+// [Eugene++ to Martin] we need to unify this prettyprinter with NodePrinters
+
 package scala.reflect
 package internal
 
@@ -27,7 +29,9 @@ trait TreePrinters extends api.TreePrinters { self: SymbolTable =>
 
   private def symNameInternal(tree: Tree, name: Name, decoded: Boolean): String = {
     val sym = tree.symbol
-    if (sym != null && sym != NoSymbol) {
+    if (sym.name.toString == nme.ERROR.toString) {
+      "<" + quotedName(name, decoded) + ": error>"
+    } else if (sym != null && sym != NoSymbol) {
       val prefix = if (sym.isMixinConstructor) "/*%s*/".format(quotedName(sym.owner.name, decoded)) else ""
       var suffix = ""
       if (settings.uniqid.value) suffix += ("#" + sym.id)
@@ -167,6 +171,11 @@ trait TreePrinters extends api.TreePrinters { self: SymbolTable =>
     }
 
     def printAnnotations(tree: Tree) {
+      if (!isCompilerUniverse && tree.symbol != null && tree.symbol != NoSymbol)
+        // [Eugene++ to Martin] this is not 100% correct, but is necessary for sane printing
+        // see comments to `Symbol.getAnnotations` for an explanation
+        tree.symbol.initialize
+
       val annots = tree.symbol.annotations match {
         case Nil  => tree.asInstanceOf[MemberDef].mods.annotations
         case anns => anns
@@ -445,7 +454,7 @@ trait TreePrinters extends api.TreePrinters { self: SymbolTable =>
 
   /** Hook for extensions */
   def xprintTree(treePrinter: TreePrinter, tree: Tree) =
-    treePrinter.print(tree.printingPrefix+tree.productIterator.mkString("(", ", ", ")"))
+    treePrinter.print(tree.productPrefix+tree.productIterator.mkString("(", ", ", ")"))
 
   def newTreePrinter(writer: PrintWriter): TreePrinter = new TreePrinter(writer)
   def newTreePrinter(stream: OutputStream): TreePrinter = newTreePrinter(new PrintWriter(stream))

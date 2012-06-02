@@ -8,7 +8,7 @@
 
 package scala.util
 
-import scala.reflect.ClassTag
+import scala.reflect.{ ArrayTag, ClassTag }
 import scala.math.Ordering
 
 /** The Sorting object provides functions that can sort various kinds of

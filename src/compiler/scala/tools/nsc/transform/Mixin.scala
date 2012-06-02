@@ -480,7 +480,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
 
     /** The rootContext used for typing */
     private val rootContext =
-      erasure.NoContext.make(EmptyTree, RootClass, newScope)
+      erasure.NoContext.make(EmptyTree, rootMirror.RootClass, newScope)
 
     /** The typer */
     private var localTyper: erasure.Typer = _

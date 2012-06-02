@@ -1,5 +1,5 @@
-ConcreteTypeTag[Int]
-ConcreteTypeTag[Array[Int]]
-ConcreteTypeTag[Array[Array[Int]]]
-ConcreteTypeTag[Array[Array[Array[Int]]]]
-ConcreteTypeTag[Array[Array[Array[Array[Int]]]]]
+Int
+Array[Int]
+Array[Array[Int]]
+Array[Array[Array[Int]]]
+Array[Array[Array[Array[Int]]]]

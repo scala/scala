@@ -15,7 +15,7 @@ import scala.collection.{ mutable, immutable }
  *
  * @author Lex Spoon
  */
-class AbstractFileClassLoader(root: AbstractFile, parent: ClassLoader)
+class AbstractFileClassLoader(val root: AbstractFile, parent: ClassLoader)
     extends ClassLoader(parent)
     with ScalaClassLoader
 {

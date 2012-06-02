@@ -26,7 +26,7 @@ import util.Statistics._
  *  @author  Martin Odersky
  *  @version 1.0
  */
-trait Typers extends Modes with Adaptations with Taggings {
+trait Typers extends Modes with Adaptations with Tags {
   self: Analyzer =>
 
   import global._
@@ -91,7 +91,7 @@ trait Typers extends Modes with Adaptations with Taggings {
   // this is disabled by: -Xoldpatmat, scaladoc or interactive compilation
   @inline private def newPatternMatching = opt.virtPatmat && !forScaladoc && !forInteractive // && (phase.id < currentRun.uncurryPhase.id)
 
-  abstract class Typer(context0: Context) extends TyperDiagnostics with Adaptation with Tagging with TyperContextErrors {
+  abstract class Typer(context0: Context) extends TyperDiagnostics with Adaptation with Tag with TyperContextErrors {
     import context0.unit
     import typeDebug.{ ptTree, ptBlock, ptLine }
     import TyperErrorGen._
@@ -230,7 +230,9 @@ trait Typers extends Modes with Adaptations with Taggings {
      *  @return     ...
      */
     def checkStable(tree: Tree): Tree =
-      if (treeInfo.isExprSafeToInline(tree)) tree else UnstableTreeError(tree)
+      if (treeInfo.isExprSafeToInline(tree)) tree
+      else if (tree.isErrorTyped) tree
+      else UnstableTreeError(tree)
 
     /** Would tree be a stable (i.e. a pure expression) if the type
      *  of its symbol was not volatile?
@@ -896,6 +898,10 @@ trait Typers extends Modes with Adaptations with Taggings {
 
       def adaptType(): Tree = {
         if (inFunMode(mode)) {
+          // [Eugene++] the commented line below makes sense for typechecking, say, TypeApply(Ident(`some abstract type symbol`), List(...))
+          // because otherwise Ident will have its tpe set to a TypeRef, not to a PolyType, and `typedTypeApply` will fail
+          // but this needs additional investigation, because it crashes t5228, gadts1 and maybe something else
+          // tree setType tree.tpe.normalize
           tree
         } else if (tree.hasSymbol && !tree.symbol.typeParams.isEmpty && !inHKMode(mode) &&
           !(tree.symbol.isJavaDefined && context.unit.isJava)) { // (7)
@@ -921,7 +927,7 @@ trait Typers extends Modes with Adaptations with Taggings {
           KindArityMismatchError(tree, pt)
         } else tree match { // (6)
           case TypeTree() => tree
-          case _          => TypeTree(tree.tpe) setOriginal (tree) setPos (tree.pos)
+          case _          => TypeTree(tree.tpe) setOriginal tree
         }
       }
 
@@ -953,9 +959,14 @@ trait Typers extends Modes with Adaptations with Taggings {
        * see test/files/../t5189*.scala
        */
       def adaptConstrPattern(): Tree = { // (5)
-        val extractor = tree.symbol.filter(sym => reallyExists(unapplyMember(sym.tpe)))
+        def isExtractor(sym: Symbol) = reallyExists(unapplyMember(sym.tpe))
+        val extractor = tree.symbol filter isExtractor
         if (extractor != NoSymbol) {
           tree setSymbol extractor
+          tree.tpe match {
+            case OverloadedType(pre, alts) => tree.tpe = overloadedType(pre, alts filter isExtractor)
+            case _ =>
+          }
           val unapply = unapplyMember(extractor.tpe)
           val clazz = unapplyParameterType(unapply)
 
@@ -1343,7 +1354,7 @@ trait Typers extends Modes with Adaptations with Taggings {
         case List(acc) =>
           def isUnderlyingAcc(sym: Symbol) =
             sym == acc || acc.hasAccessorFlag && sym == acc.accessed
-          if (acc.accessBoundary(clazz) != RootClass)
+          if (acc.accessBoundary(clazz) != rootMirror.RootClass)
             unit.error(acc.pos, "value class needs to have a publicly accessible val parameter")
           for (stat <- body)
             if (!treeInfo.isAllowedInUniversalTrait(stat) && !isUnderlyingAcc(stat.symbol))
@@ -2297,7 +2308,7 @@ trait Typers extends Modes with Adaptations with Taggings {
       import CODE._
 
       // need to duplicate the cases before typing them to generate the apply method, or the symbols will be all messed up
-      val casesTrue = if (isPartial) cases map (c => deriveCaseDef(c)(x => TRUE_typed).duplicate) else Nil
+      val casesTrue = if (isPartial) cases map (c => deriveCaseDef(c)(x => TRUE_typed).duplicate.asInstanceOf[CaseDef]) else Nil
       // println("casesTrue "+ casesTrue)
       def parentsPartial(targs: List[Type]) = addSerializable(appliedType(AbstractPartialFunctionClass.typeConstructor, targs))
 
@@ -2365,7 +2376,7 @@ trait Typers extends Modes with Adaptations with Taggings {
           match_ setType B1.tpe
 
           // the default uses applyOrElse's first parameter since the scrut's type has been widened
-          val body = methodBodyTyper.virtualizedMatch(match_ withAttachment DefaultOverrideMatchAttachment(REF(default) APPLY (REF(x))), mode, B1.tpe)
+          val body = methodBodyTyper.virtualizedMatch(match_ addAttachment DefaultOverrideMatchAttachment(REF(default) APPLY (REF(x))), mode, B1.tpe)
 
           DefDef(methodSym, body)
         }
@@ -2383,7 +2394,7 @@ trait Typers extends Modes with Adaptations with Taggings {
           methodSym setInfoAndEnter MethodType(paramSyms, BooleanClass.tpe)
 
           val match_ = methodBodyTyper.typedMatch(selector, casesTrue, mode, BooleanClass.tpe)
-          val body   = methodBodyTyper.virtualizedMatch(match_ withAttachment DefaultOverrideMatchAttachment(FALSE_typed), mode, BooleanClass.tpe)
+          val body   = methodBodyTyper.virtualizedMatch(match_ addAttachment DefaultOverrideMatchAttachment(FALSE_typed), mode, BooleanClass.tpe)
 
           DefDef(methodSym, body)
         }
@@ -2494,7 +2505,8 @@ trait Typers extends Modes with Adaptations with Taggings {
       }
     }
 
-    def typedRefinement(stats: List[Tree]) {
+    def typedRefinement(templ: Template) {
+      val stats = templ.body
       namer.enterSyms(stats)
       // need to delay rest of typedRefinement to avoid cyclic reference errors
       unit.toCheck += { () =>
@@ -2502,6 +2514,12 @@ trait Typers extends Modes with Adaptations with Taggings {
         var c = context
         while (c.bufferErrors) c = c.outer
         val stats1 = newTyper(c).typedStats(stats, NoSymbol)
+        // this code kicks in only after typer, so `stats` will never be filled in time
+        // as a result, most of compound type trees with non-empty stats will fail to reify
+        // [Eugene++] todo. investigate whether something can be done about this
+        val att = templ.attachments.get[CompoundTypeTreeOriginalAttachment].getOrElse(CompoundTypeTreeOriginalAttachment(Nil, Nil))
+        templ.removeAttachment[CompoundTypeTreeOriginalAttachment]
+        templ addAttachment att.copy(stats = stats1)
         for (stat <- stats1 if stat.isDef) {
           val member = stat.symbol
           if (!(context.owner.ancestors forall
@@ -3230,7 +3248,7 @@ trait Typers extends Modes with Adaptations with Taggings {
             }
 
             if (hasError) annotationError
-            else AnnotationInfo(annType, List(), nvPairs map {p => (p._1, p._2.get)}).setOriginal(Apply(typedFun, args)).setPos(ann.pos)
+            else AnnotationInfo(annType, List(), nvPairs map {p => (p._1.asInstanceOf[Name], p._2.get)}).setOriginal(Apply(typedFun, args).setPos(ann.pos)) // [Eugene++] why do we need this cast?
           }
         } else if (requireJava) {
           reportAnnotationError(NestedAnnotationError(ann, annType))
@@ -3618,7 +3636,7 @@ trait Typers extends Modes with Adaptations with Taggings {
               case t => (t, Nil)
           }
 
-          @inline def hasNamedArg(as: List[Tree]) = as collectFirst {case AssignOrNamedArg(lhs, rhs) =>} nonEmpty
+          @inline def hasNamedArg(as: List[Tree]) = as.collectFirst{case AssignOrNamedArg(lhs, rhs) =>}.nonEmpty
 
           // note: context.tree includes at most one Apply node
           // thus, we can't use it to detect we're going to receive named args in expressions such as:
@@ -3638,7 +3656,7 @@ trait Typers extends Modes with Adaptations with Taggings {
           }
 
           val dynSel  = Select(qual, oper)
-          val tappSel = if (explicitTargs nonEmpty) TypeApply(dynSel, explicitTargs) else dynSel
+          val tappSel = if (explicitTargs.nonEmpty) TypeApply(dynSel, explicitTargs) else dynSel
 
           atPos(qual.pos)(Apply(tappSel, List(Literal(Constant(name.decode)))))
         }
@@ -3675,11 +3693,10 @@ trait Typers extends Modes with Adaptations with Taggings {
           // hence we go the extra mile to hand-craft tis guy
           val original =
             if (arg1.isType)
-              (tree, arg1) match {
-                case (Annotated(annot, arg), tt @ TypeTree()) => Annotated(annot, tt.original)
+              arg1 match {
+                case tt @ TypeTree() => Annotated(ann, tt.original)
                 // this clause is needed to correctly compile stuff like "new C @D" or "@(inline @getter)"
-                case (Annotated(annot, arg), _) => Annotated(annot, arg1)
-                case _ => throw new Error("unexpected trees in typedAnnotated: tree = %s, arg1 = %s".format(showRaw(tree), showRaw(arg1)))
+                case _ => Annotated(ann, arg1)
               }
             else
               tree
@@ -4383,7 +4400,7 @@ trait Typers extends Modes with Adaptations with Taggings {
         // last ditch effort before failing.  This method sets defSym and returns
         // true if a member of the given name exists.
         def checkEmptyPackage(): Boolean = {
-          defSym = EmptyPackageClass.tpe.nonPrivateMember(name)
+          defSym = rootMirror.EmptyPackageClass.tpe.nonPrivateMember(name)
           defSym != NoSymbol
         }
         def startingIdentContext = (
@@ -4515,7 +4532,7 @@ trait Typers extends Modes with Adaptations with Taggings {
               log("Allowing empty package member " + name + " due to settings.")
             else {
               if ((mode & QUALmode) != 0) {
-                val lastTry = missingHook(RootClass, name)
+                val lastTry = missingHook(rootMirror.RootClass, name)
                 if (lastTry != NoSymbol) return typed1(tree setSymbol lastTry, mode, pt)
               }
               if (settings.debug.value) {
@@ -4569,7 +4586,8 @@ trait Typers extends Modes with Adaptations with Taggings {
           val decls = newScope
           //Console.println("Owner: " + context.enclClass.owner + " " + context.enclClass.owner.id)
           val self = refinedType(parents1 map (_.tpe), context.enclClass.owner, decls, templ.pos)
-          newTyper(context.make(templ, self.typeSymbol, decls)).typedRefinement(templ.body)
+          newTyper(context.make(templ, self.typeSymbol, decls)).typedRefinement(templ)
+          templ addAttachment CompoundTypeTreeOriginalAttachment(parents1, Nil) // stats are set elsewhere
           tree setType self
         }
       }
@@ -4841,7 +4859,7 @@ trait Typers extends Modes with Adaptations with Taggings {
               val Some((level, componentType)) = erasure.GenericArray.unapply(tpt.tpe)
               val tagType = List.iterate(componentType, level)(tpe => appliedType(ArrayClass.asType, List(tpe))).last
               val newArrayApp = atPos(tree.pos) {
-                val tag = resolveArrayTag(tagType, tree.pos)
+                val tag = resolveArrayTag(tree.pos, tagType)
                 if (tag.isEmpty) MissingArrayTagError(tree, tagType)
                 else new ApplyToImplicitArgs(Select(tag, nme.newArray), args)
               }
@@ -4851,6 +4869,7 @@ trait Typers extends Modes with Adaptations with Taggings {
           }
 
         case ApplyDynamic(qual, args) =>
+          assert(phase.erasedTypes)
           val reflectiveCalls = !(settings.refinementMethodDispatch.value == "invoke-dynamic")
           val qual1 = typed(qual, AnyRefClass.tpe)
           val args1 = args mapConserve (arg => if (reflectiveCalls) typed(arg, AnyRefClass.tpe) else typed(arg))
@@ -4897,7 +4916,7 @@ trait Typers extends Modes with Adaptations with Taggings {
           if (tree1.symbol != null && tree1.symbol.isOnlyRefinementMember)
             checkFeature(tree1.pos, ReflectiveCallsFeature, tree1.symbol.toString)
 
-          if (qual1.symbol == RootPackage) treeCopy.Ident(tree1, name)
+          if (qual1.hasSymbolWhich(_.isRootPackage)) treeCopy.Ident(tree1, name)
           else tree1
 
         case Ident(name) =>

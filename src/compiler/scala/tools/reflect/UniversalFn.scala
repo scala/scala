@@ -8,6 +8,7 @@ package reflect
 
 import java.lang.reflect.{ Method, InvocationTargetException }
 import java.{ lang => jl }
+import scala.reflect.{ ClassTag, classTag }
 
 /** For certain reflection tasks it is convenient to treat all methods
  *  as having the same signature: (Seq[AnyRef]) => AnyRef
@@ -27,7 +28,7 @@ class UniversalFn private (val closure: AnyRef, val method: Method) extends (Seq
    *  face of any bad data.
    */
   def as[T: ClassTag] : T = {
-    val clazz = classTag[T].erasure
+    val clazz = classTag[T].runtimeClass
     require(clazz.isInterface, "Type argument must be an interface.")
 
     val interfaceMethods = clazz.getDeclaredMethods.toSet

@@ -4,13 +4,14 @@ package typechecker
 import symtab.Flags._
 import scala.tools.nsc.util._
 import scala.tools.nsc.util.ClassPath._
-import scala.reflect.ReflectionUtils
+import scala.reflect.runtime.ReflectionUtils
 import scala.collection.mutable.ListBuffer
 import scala.compat.Platform.EOL
-import scala.reflect.makro.runtime.{Context => MacroContext}
-import scala.reflect.runtime.Mirror
 import util.Statistics._
 import scala.reflect.makro.util._
+import java.lang.{Class => jClass}
+import java.lang.reflect.{Array => jArray, Method => jMethod}
+import scala.reflect.runtime.ReflectionUtils
 
 /**
  *  Code to deal with macros, namely with:
@@ -26,7 +27,7 @@ import scala.reflect.makro.util._
  *    def fooBar[T: c.TypeTag]
  *           (c: scala.reflect.makro.Context)
  *           (xs: c.Expr[List[T]])
- *           : c.mirror.Tree = {
+ *           : c.Tree = {
  *      ...
  *    }
  *
@@ -37,7 +38,7 @@ import scala.reflect.makro.util._
  *    (Expr(elems))
  *    (TypeTag(Int))
  */
-trait Macros extends Traces {
+trait Macros extends scala.tools.reflect.FastTrack with Traces {
   self: Analyzer =>
 
   import global._
@@ -193,8 +194,8 @@ trait Macros extends Traces {
     implicit class AugmentedString(s: String) {
       def abbreviateCoreAliases: String = { // hack!
         var result = s
-        result = result.replace("c.mirror.TypeTag", "c.TypeTag")
-        result = result.replace("c.mirror.Expr", "c.Expr")
+        result = result.replace("c.universe.TypeTag", "c.TypeTag")
+        result = result.replace("c.universe.Expr", "c.Expr")
         result
       }
     }
@@ -582,150 +583,114 @@ trait Macros extends Traces {
     runtimeType
   }
 
-  /** Primary mirror that is used to resolve and run macro implementations.
+  /** Primary classloader that is used to resolve and run macro implementations.
    *  Loads classes from -Xmacro-primary-classpath, or from -cp if the option is not specified.
+   *  Is also capable of detecting REPL and reusing its classloader.
    */
-  private lazy val primaryMirror: Mirror = {
+  private lazy val primaryClassloader: ClassLoader = {
     if (global.forMSIL)
       throw new UnsupportedOperationException("Scala reflection not available on this platform")
 
-    val libraryClassLoader = {
-      if (settings.XmacroPrimaryClasspath.value != "") {
-        macroLogVerbose("primary macro mirror: initializing from -Xmacro-primary-classpath: %s".format(settings.XmacroPrimaryClasspath.value))
-        val classpath = toURLs(settings.XmacroFallbackClasspath.value)
-        ScalaClassLoader.fromURLs(classpath, self.getClass.getClassLoader)
-      } else {
-        macroLogVerbose("primary macro mirror: initializing from -cp: %s".format(global.classPath.asURLs))
-        val classpath = global.classPath.asURLs
-        var loader: ClassLoader = ScalaClassLoader.fromURLs(classpath, self.getClass.getClassLoader)
-
-        // [Eugene] a heuristic to detect REPL
-        if (global.settings.exposeEmptyPackage.value) {
-          import scala.tools.nsc.interpreter._
-          val virtualDirectory = global.settings.outputDirs.getSingleOutput.get
-          loader = new AbstractFileClassLoader(virtualDirectory, loader) {}
-        }
-
-        loader
-      }
-    }
-
-    new Mirror(libraryClassLoader) { override def toString = "<primary macro mirror>" }
-  }
-
-  /** Fallback mirror that is used to resolve and run macro implementations.
-   *  Loads classes from -Xmacro-fallback-classpath aka "macro fallback classpath".
-   */
-  private lazy val fallbackMirror: Mirror = {
-    if (global.forMSIL)
-      throw new UnsupportedOperationException("Scala reflection not available on this platform")
-
-    val fallbackClassLoader = {
-      macroLogVerbose("fallback macro mirror: initializing from -Xmacro-fallback-classpath: %s".format(settings.XmacroFallbackClasspath.value))
+    if (settings.XmacroPrimaryClasspath.value != "") {
+      macroLogVerbose("primary macro classloader: initializing from -Xmacro-primary-classpath: %s".format(settings.XmacroPrimaryClasspath.value))
       val classpath = toURLs(settings.XmacroFallbackClasspath.value)
       ScalaClassLoader.fromURLs(classpath, self.getClass.getClassLoader)
-    }
+    } else {
+      macroLogVerbose("primary macro classloader: initializing from -cp: %s".format(global.classPath.asURLs))
+      val classpath = global.classPath.asURLs
+      var loader: ClassLoader = ScalaClassLoader.fromURLs(classpath, self.getClass.getClassLoader)
 
-    new Mirror(fallbackClassLoader) { override def toString = "<fallback macro mirror>" }
+      // [Eugene] a heuristic to detect the REPL
+      if (global.settings.exposeEmptyPackage.value) {
+        macroLogVerbose("primary macro classloader: initializing from a REPL classloader".format(global.classPath.asURLs))
+        import scala.tools.nsc.interpreter._
+        val virtualDirectory = global.settings.outputDirs.getSingleOutput.get
+        loader = new AbstractFileClassLoader(virtualDirectory, loader) {}
+      }
+
+      loader
+    }
+  }
+
+  /** Fallback classloader that is used to resolve and run macro implementations when `primaryClassloader` fails.
+   *  Loads classes from -Xmacro-fallback-classpath.
+   */
+  private lazy val fallbackClassloader: ClassLoader = {
+    if (global.forMSIL)
+      throw new UnsupportedOperationException("Scala reflection not available on this platform")
+
+    macroLogVerbose("fallback macro classloader: initializing from -Xmacro-fallback-classpath: %s".format(settings.XmacroFallbackClasspath.value))
+    val classpath = toURLs(settings.XmacroFallbackClasspath.value)
+    ScalaClassLoader.fromURLs(classpath, self.getClass.getClassLoader)
   }
 
   /** Produces a function that can be used to invoke macro implementation for a given macro definition:
    *    1) Looks up macro implementation symbol in this universe.
-   *    2) Loads its enclosing class from the primary mirror.
-   *    3) Loads the companion of that enclosing class from the primary mirror.
+   *    2) Loads its enclosing class from the primary classloader.
+   *    3) Loads the companion of that enclosing class from the primary classloader.
    *    4) Resolves macro implementation within the loaded companion.
-   *    5) If 2-4 fails, repeats them for the fallback mirror.
+   *    5) If 2-4 fails, repeats them for the fallback classloader.
    *
    *  @return Some(runtime) if macro implementation can be loaded successfully from either of the mirrors,
    *          None otherwise.
    */
-  private type MacroRuntime = List[Any] => Any
+  type MacroRuntime = List[Any] => Any
   private val macroRuntimesCache = perRunCaches.newWeakMap[Symbol, Option[MacroRuntime]]
-  private def macroRuntime(macroDef: Symbol): Option[MacroRuntime] =
-    macroRuntimesCache.getOrElseUpdate(macroDef, {
-      val runtime = {
-        macroTraceVerbose("looking for macro implementation: ")(macroDef)
-        macroTraceVerbose("macroDef is annotated with: ")(macroDef.annotations)
+  private def macroRuntime(macroDef: Symbol): Option[MacroRuntime] = {
+    macroTraceVerbose("looking for macro implementation: ")(macroDef)
+    if (fastTrack contains macroDef) {
+      macroLogVerbose("macro expansion is serviced by a fast track")
+      Some(fastTrack(macroDef))
+    } else {
+      macroRuntimesCache.getOrElseUpdate(macroDef, {
+        val runtime = {
+          macroTraceVerbose("macroDef is annotated with: ")(macroDef.annotations)
+          val ann = macroDef.getAnnotation(MacroImplAnnotation)
+          if (ann == None) { macroTraceVerbose("@macroImpl annotation is missing (this means that macro definition failed to typecheck)")(macroDef); return None }
 
-        val ann = macroDef.getAnnotation(MacroImplAnnotation)
-        if (ann == None) {
-          macroTraceVerbose("@macroImpl annotation is missing (this means that macro definition failed to typecheck)")(macroDef)
-          return None
-        }
+          val macroImpl = ann.get.args(0).symbol
+          if (macroImpl == NoSymbol) { macroTraceVerbose("@macroImpl annotation is malformed (this means that macro definition failed to typecheck)")(macroDef); return None }
+          macroLogVerbose("resolved implementation %s at %s".format(macroImpl, macroImpl.pos))
+          if (macroImpl.isErroneous) { macroTraceVerbose("macro implementation is erroneous (this means that either macro body or macro implementation signature failed to typecheck)")(macroDef); return None }
 
-        val macroImpl = ann.get.args(0).symbol
-        if (macroImpl == NoSymbol) {
-          macroTraceVerbose("@macroImpl annotation is malformed (this means that macro definition failed to typecheck)")(macroDef)
-          return None
-        }
+          // [Eugene++] I don't use Scala reflection here, because it seems to interfere with JIT magic
+          // whenever you instantiate a mirror (and not do anything with in, just instantiate), performance drops by 15-20%
+          // I'm not sure what's the reason - for me it's pure voodoo
+          def loadMacroImpl(cl: ClassLoader): Option[(Object, jMethod)] = {
+            try {
+              // this logic relies on the assumptions that were valid for the old macro prototype
+              // namely that macro implementations can only be defined in top-level classes and modules
+              // with the new prototype that materialized in a SIP, macros need to be statically accessible, which is different
+              // for example, a macro def could be defined in a trait that is implemented by an object
+              // there are some more clever cases when seemingly non-static method ends up being statically accessible
+              // however, the code below doesn't account for these guys, because it'd take a look of time to get it right
+              // for now I leave it as a todo and move along to more the important stuff
 
-        macroLogVerbose("resolved implementation %s at %s".format(macroImpl, macroImpl.pos))
-        if (macroImpl.isErroneous) {
-          macroTraceVerbose("macro implementation is erroneous (this means that either macro body or macro implementation signature failed to typecheck)")(macroDef)
-          return None
-        }
+              macroTraceVerbose("loading implementation class: ")(macroImpl.owner.fullName)
+              macroTraceVerbose("classloader is: ")(ReflectionUtils.show(cl))
 
-        def loadMacroImpl(macroMirror: Mirror): Option[(Object, macroMirror.Symbol)] = {
-          try {
-            // this logic relies on the assumptions that were valid for the old macro prototype
-            // namely that macro implementations can only be defined in top-level classes and modules
-            // with the new prototype that materialized in a SIP, macros need to be statically accessible, which is different
-            // for example, a macro def could be defined in a trait that is implemented by an object
-            // there are some more clever cases when seemingly non-static method ends up being statically accessible
-            // however, the code below doesn't account for these guys, because it'd take a look of time to get it right
-            // for now I leave it as a todo and move along to more the important stuff
+              // [Eugene] relies on the fact that macro implementations can only be defined in static classes
+              // [Martin to Eugene++] There's similar logic buried in Symbol#flatname. Maybe we can refactor?
+              def classfile(sym: Symbol): String = {
+                def recur(sym: Symbol): String = sym match {
+                  case sym if sym.owner.isPackageClass =>
+                    val suffix = if (sym.isModuleClass) "$" else ""
+                    sym.fullName + suffix
+                  case sym =>
+                    val separator = if (sym.owner.isModuleClass) "" else "$"
+                    recur(sym.owner) + separator + sym.javaSimpleName.toString
+                }
 
-            macroTraceVerbose("loading implementation class from %s: ".format(macroMirror))(macroImpl.owner.fullName)
-            macroTraceVerbose("classloader is: ")("%s of type %s".format(macroMirror.classLoader, if (macroMirror.classLoader != null) macroMirror.classLoader.getClass.toString else "primordial classloader"))
-            def inferClasspath(cl: ClassLoader) = cl match {
-              case cl: java.net.URLClassLoader => "[" + (cl.getURLs mkString ",") + "]"
-              case null => "[" + scala.tools.util.PathResolver.Environment.javaBootClassPath + "]"
-              case _ => "<unknown>"
-            }
-            macroTraceVerbose("classpath is: ")(inferClasspath(macroMirror.classLoader))
-
-            // [Eugene] relies on the fact that macro implementations can only be defined in static classes
-            // [Martin to Eugene] There's similar logic buried in Symbol#flatname. Maybe we can refactor?
-            def classfile(sym: Symbol): String = {
-              def recur(sym: Symbol): String = sym match {
-                case sym if sym.owner.isPackageClass =>
-                  val suffix = if (sym.isModuleClass) "$" else ""
-                  sym.fullName + suffix
-                case sym =>
-                  val separator = if (sym.owner.isModuleClass) "" else "$"
-                  recur(sym.owner) + separator + sym.javaSimpleName.toString
+                if (sym.isClass || sym.isModule) recur(sym)
+                else recur(sym.enclClass)
               }
 
-              if (sym.isClass || sym.isModule) recur(sym)
-              else recur(sym.enclClass)
-            }
-
-            // [Eugene] this doesn't work for inner classes
-            // neither does macroImpl.owner.javaClassName, so I had to roll my own implementation
-            //val receiverName = macroImpl.owner.fullName
-            val implClassName = classfile(macroImpl.owner)
-            val implClassSymbol: macroMirror.Symbol = macroMirror.symbolForName(implClassName)
-
-            if (macroDebugVerbose) {
-              println("implClassSymbol is: " + implClassSymbol.fullNameString)
-
-              if (implClassSymbol != macroMirror.NoSymbol) {
-                val implClass = macroMirror.classToJava(implClassSymbol)
-                val implSource = implClass.getProtectionDomain.getCodeSource
-                println("implClass is %s from %s".format(implClass, implSource))
-                println("implClassLoader is %s with classpath %s".format(implClass.getClassLoader, inferClasspath(implClass.getClassLoader)))
-              }
-            }
-
-            val implObjSymbol = implClassSymbol.companionModule
-            macroTraceVerbose("implObjSymbol is: ")(implObjSymbol.fullNameString)
-
-            if (implObjSymbol == macroMirror.NoSymbol) None
-            else {
-              // yet another reflection method that doesn't work for inner classes
-              //val receiver = macroMirror.companionInstance(receiverClass)
+              // [Eugene++] this doesn't work for inner classes
+              // neither does macroImpl.owner.javaClassName, so I had to roll my own implementation
+              //val receiverName = macroImpl.owner.fullName
+              val implClassName = classfile(macroImpl.owner)
               val implObj = try {
-                val implObjClass = java.lang.Class.forName(implClassName, true, macroMirror.classLoader)
+                val implObjClass = jClass.forName(implClassName, true, cl)
                 implObjClass getField "MODULE$" get null
               } catch {
                 case ex: NoSuchFieldException => macroTraceVerbose("exception when loading implObj: ")(ex); null
@@ -735,59 +700,75 @@ trait Macros extends Traces {
 
               if (implObj == null) None
               else {
-                val implMethSymbol = implObjSymbol.info.member(macroMirror.newTermName(macroImpl.name.toString))
-                macroLogVerbose("implMethSymbol is: " + implMethSymbol.fullNameString)
-                macroLogVerbose("jimplMethSymbol is: " + macroMirror.methodToJava(implMethSymbol))
+                // [Eugene++] doh, it seems that I need to copy/paste Scala reflection logic
+                // see `JavaMirrors.methodToJava` or whatever it's called now
+                val implMeth = {
+                  def typeToJavaClass(tpe: Type): jClass[_] = tpe match {
+                    case ExistentialType(_, rtpe) => typeToJavaClass(rtpe)
+                    case TypeRef(_, ArrayClass, List(elemtpe)) => jArray.newInstance(typeToJavaClass(elemtpe), 0).getClass
+                    case TypeRef(_, sym: ClassSymbol, _) => jClass.forName(classfile(sym), true, cl)
+                    case _ => throw new NoClassDefFoundError("no Java class corresponding to "+tpe+" found")
+                  }
 
-                if (implMethSymbol == macroMirror.NoSymbol) None
-                else {
-                  macroLogVerbose("successfully loaded macro impl as (%s, %s)".format(implObj, implMethSymbol))
-                  Some((implObj, implMethSymbol))
+                  val paramClasses = transformedType(macroImpl).paramTypes map typeToJavaClass
+                  try implObj.getClass getDeclaredMethod (macroImpl.name.toString, paramClasses: _*)
+                  catch {
+                    case ex: NoSuchMethodException =>
+                      val expandedName =
+                        if (macroImpl.isPrivate) nme.expandedName(macroImpl.name.toTermName, macroImpl.owner).toString
+                        else macroImpl.name.toString
+                      implObj.getClass getDeclaredMethod (expandedName, paramClasses: _*)
+                  }
                 }
+                macroLogVerbose("successfully loaded macro impl as (%s, %s)".format(implObj, implMeth))
+                Some((implObj, implMeth))
               }
+            } catch {
+              case ex: ClassNotFoundException =>
+                macroTraceVerbose("implementation class failed to load: ")(ex.toString)
+                None
+              case ex: NoSuchMethodException =>
+                macroTraceVerbose("implementation method failed to load: ")(ex.toString)
+                None
             }
-          } catch {
-            case ex: ClassNotFoundException =>
-              macroTraceVerbose("implementation class failed to load: ")(ex.toString)
-              None
+          }
+
+          val primary = loadMacroImpl(primaryClassloader)
+          primary match {
+            case Some((implObj, implMeth)) =>
+              def runtime(args: List[Any]) = implMeth.invoke(implObj, (args map (_.asInstanceOf[AnyRef])): _*).asInstanceOf[Any]
+              Some(runtime _)
+            case None =>
+              if (settings.XmacroFallbackClasspath.value != "") {
+                macroLogVerbose("trying to load macro implementation from the fallback mirror: %s".format(settings.XmacroFallbackClasspath.value))
+                val fallback = loadMacroImpl(fallbackClassloader)
+                fallback match {
+                  case Some((implObj, implMeth)) =>
+                    def runtime(args: List[Any]) = implMeth.invoke(implObj, (args map (_.asInstanceOf[AnyRef])): _*).asInstanceOf[Any]
+                    Some(runtime _)
+                  case None =>
+                    None
+                }
+              } else {
+                None
+              }
           }
         }
 
-        val primary = loadMacroImpl(primaryMirror)
-        primary match {
-          case Some((implObj, implMethSymbol)) =>
-            def runtime(args: List[Any]) = primaryMirror.invoke(implObj, implMethSymbol)(args: _*).asInstanceOf[Any]
-            Some(runtime _)
-          case None =>
-            if (settings.XmacroFallbackClasspath.value != "") {
-              macroLogVerbose("trying to load macro implementation from the fallback mirror: %s".format(settings.XmacroFallbackClasspath.value))
-              val fallback = loadMacroImpl(fallbackMirror)
-              fallback match {
-                case Some((implObj, implMethSymbol)) =>
-                  def runtime(args: List[Any]) = fallbackMirror.invoke(implObj, implMethSymbol)(args: _*).asInstanceOf[Any]
-                  Some(runtime _)
-                case None =>
-                  None
-              }
-            } else {
-              None
-            }
-        }
-      }
+        if (runtime == None) macroDef setFlag IS_ERROR
+        runtime
+      })
+    }
+  }
 
-      if (runtime == None) macroDef setFlag IS_ERROR
-      runtime
-    })
-
-  /** Should become private again once we're done with migrating typetag generation from implicits */
-  def macroContext(typer: Typer, prefixTree: Tree, expandeeTree: Tree): MacroContext { val mirror: global.type } =
+  private def macroContext(typer: Typer, prefixTree: Tree, expandeeTree: Tree): MacroContext =
     new {
-      val mirror: global.type = global
-      val callsiteTyper: mirror.analyzer.Typer = typer.asInstanceOf[global.analyzer.Typer]
-      // todo. infer precise typetag for this Expr, namely the PrefixType member of the Context refinement
-      val prefix = Expr(prefixTree)(TypeTag.Nothing)
+      val universe: self.global.type = self.global
+      val callsiteTyper: universe.analyzer.Typer = typer.asInstanceOf[global.analyzer.Typer]
       val expandee = expandeeTree
-    } with MacroContext {
+    } with UnaffiliatedMacroContext {
+      // todo. infer precise typetag for this Expr, namely the PrefixType member of the Context refinement
+      val prefix = Expr[Nothing](prefixTree)(TypeTag.Nothing)
       override def toString = "MacroContext(%s@%s +%d)".format(expandee.symbol.name, expandee.pos, enclosingMacros.length - 1 /* exclude myself */)
     }
 
@@ -799,26 +780,23 @@ trait Macros extends Traces {
    *  @return list of runtime objects to pass to the implementation obtained by ``macroRuntime''
    */
   private def macroArgs(typer: Typer, expandee: Tree): Option[List[Any]] = {
-    val macroDef         = expandee.symbol
-    val runtime          = macroRuntime(macroDef) orElse { return None }
-    var prefixTree: Tree = EmptyTree
-    var typeArgs         = List[Tree]()
-    val exprArgs         = ListBuffer[List[Expr[_]]]()
-
+    val macroDef   = expandee.symbol
+    val runtime    = macroRuntime(macroDef) orElse { return None }
+    val prefixTree = expandee.collect{ case Select(qual, name) => qual }.headOption.getOrElse(EmptyTree)
+    val context    = expandee.attachments.get[MacroRuntimeAttachment].flatMap(_.macroContext).getOrElse(macroContext(typer, prefixTree, expandee))
+    var typeArgs   = List[Tree]()
+    val exprArgs   = ListBuffer[List[Expr[_]]]()
     def collectMacroArgs(tree: Tree): Unit = tree match {
       case Apply(fn, args) =>
         // todo. infer precise typetag for this Expr, namely the declared type of the corresponding macro impl argument
-        exprArgs.prepend(args map (Expr(_)(TypeTag.Nothing)))
+        exprArgs.prepend(args map (arg => context.Expr[Nothing](arg)(TypeTag.Nothing)))
         collectMacroArgs(fn)
       case TypeApply(fn, args) =>
         typeArgs = args
         collectMacroArgs(fn)
-      case Select(qual, name) =>
-        prefixTree = qual
       case _ =>
     }
     collectMacroArgs(expandee)
-    val context = expandee.attachmentOpt[MacroAttachment].flatMap(_.macroContext).getOrElse(macroContext(typer, prefixTree, expandee))
     var argss: List[List[Any]] = List(context) :: exprArgs.toList
     macroTraceVerbose("argss: ")(argss)
 
@@ -896,13 +874,7 @@ trait Macros extends Traces {
       }
       Some(tparam)
     })
-    val tags = paramss.last takeWhile (_.isType) map (resolved(_)) map (tpe => {
-      // generally speaking, it's impossible to calculate erasure from a tpe here
-      // the tpe might be compiled by this run, so its jClass might not exist yet
-      // hence I just pass `null` instead and leave this puzzle to macro programmers
-      val ttag = TypeTag(tpe, null)
-      if (ttag.isConcrete) ttag.toConcrete else ttag
-    })
+    val tags = paramss.last takeWhile (_.isType) map (resolved(_)) map (tpe => if (tpe.isConcrete) context.ConcreteTypeTag(tpe) else context.TypeTag(tpe))
     if (paramss.lastOption map (params => !params.isEmpty && params.forall(_.isType)) getOrElse false) argss = argss :+ Nil
     argss = argss.dropRight(1) :+ (tags ++ argss.last) // todo. add support for context bounds in argss
 
@@ -947,15 +919,17 @@ trait Macros extends Traces {
   def macroExpand(typer: Typer, expandee: Tree, mode: Int = EXPRmode, pt: Type = WildcardType): Tree = {
     def fail(what: String, tree: Tree): Tree = {
       val err = typer.context.errBuffer.head
-      this.fail(typer, tree, "failed to %s: %s at %s".format(what, err.errMsg, err.errPos))
+      this.fail(typer, tree, err.errPos, "failed to %s: %s".format(what, err.errMsg))
       return expandee
     }
     val start = startTimer(macroExpandNanos)
     incCounter(macroExpandCount)
     try {
       macroExpand1(typer, expandee) match {
-        case Success(expanded) =>
+        case Success(expanded0) =>
           try {
+            val expanded = expanded0 // virtpatmat swallows the local for expandee from the match
+                                     // so I added this dummy local for the ease of debugging
             var expectedTpe = expandee.tpe
 
             // [Eugene] weird situation. what's the conventional way to deal with it?
@@ -986,7 +960,7 @@ trait Macros extends Traces {
             if (typer.context.hasErrors) fail("typecheck against expected type", expanded)
             macroLogVerbose("typechecked2:%n%s%n%s".format(typechecked, showRaw(typechecked)))
 
-            typechecked
+            typechecked addAttachment MacroExpansionAttachment(expandee)
           } finally {
             openMacros = openMacros.tail
           }
@@ -1008,11 +982,11 @@ trait Macros extends Traces {
   private def Skip(expanded: Tree) = Other(expanded)
   private def Cancel(expandee: Tree) = Other(expandee)
   private def Failure(expandee: Tree) = Other(expandee)
-  private def fail(typer: Typer, expandee: Tree, msg: String = null) = {
+  private def fail(typer: Typer, expandee: Tree, pos: Position = NoPosition, msg: String = null) = {
     def msgForLog = if (msg != null && (msg contains "exception during macro expansion")) msg.split(EOL).drop(1).headOption.getOrElse("?") else msg
     macroLogLite("macro expansion has failed: %s".format(msgForLog))
-    val pos = if (expandee.pos != NoPosition) expandee.pos else enclosingMacroPosition
-    if (msg != null) typer.context.error(pos, msg)
+    val errorPos = if (pos != NoPosition) pos else (if (expandee.pos != NoPosition) expandee.pos else enclosingMacroPosition)
+    if (msg != null) typer.context.error(errorPos, msg)
     typer.infer.setError(expandee)
     Failure(expandee)
   }
@@ -1031,7 +1005,7 @@ trait Macros extends Traces {
       // if a macro implementation is incompatible or any of the arguments are erroneous
       // there is no sense to expand the macro itself => it will only make matters worse
       if (expandee.symbol.isErroneous || (expandee exists (_.isErroneous))) {
-        val reason = if (expandee.symbol.isErroneous) "incompatible macro implementation" else "erroneous arguments"
+        val reason = if (expandee.symbol.isErroneous) "not found or incompatible macro implementation" else "erroneous arguments"
         macroTraceVerbose("cancelled macro expansion because of %s: ".format(reason))(expandee)
         return Cancel(typer.infer.setError(expandee))
       }
@@ -1054,7 +1028,7 @@ trait Macros extends Traces {
         + "If you have troubles tracking free @kind@ variables, consider using -Xlog-free-@kind@s"
       )
       val forgotten = (
-        if (sym.isTerm) "eval when splicing this variable into a reifee"
+        if (sym.isTerm) "splice when splicing this variable into a reifee"
         else "c.TypeTag annotation for this type parameter"
       )
       typer.context.error(expandee.pos,
@@ -1067,7 +1041,7 @@ trait Macros extends Traces {
       val undetparams = calculateUndetparams(expandee)
       val nowDelayed  = !typer.context.macrosEnabled || undetparams.nonEmpty
 
-      def failExpansion(msg: String = null) = fail(typer, expandee, msg)
+      def failExpansion(msg: String = null) = fail(typer, expandee, msg = msg)
       def performExpansion(args: List[Any]): MacroExpansionResult = {
         val numErrors    = reporter.ERROR.count
         def hasNewErrors = reporter.ERROR.count > numErrors
@@ -1081,8 +1055,8 @@ trait Macros extends Traces {
             macroLogVerbose("original:")
             macroLogLite("" + expanded.tree + "\n" + showRaw(expanded.tree))
 
-            freeTerms(expanded.tree) foreach issueFreeError
-            freeTypes(expanded.tree) foreach issueFreeError
+            expanded.tree.freeTerms foreach issueFreeError
+            expanded.tree.freeTypes foreach issueFreeError
             if (hasNewErrors) failExpansion()
 
             // inherit the position from the first position-ful expandee in macro callstack
@@ -1107,13 +1081,212 @@ trait Macros extends Traces {
       else {
         macroLogLite("typechecking macro expansion %s at %s".format(expandee, expandee.pos))
         macroArgs(typer, expandee).fold(failExpansion(): MacroExpansionResult) {
-          case args @ ((context: MacroContext) :: _) =>
+          // [Eugene++] crashes virtpatmat:
+          // case args @ ((context: MacroContext) :: _) =>
+          // [scalacfork] Compiling 532 files to C:\Projects\KeplerUnderRefactoring\build\locker\classes\compiler
+          // [scalacfork] error: bad qualifier received: mkAttributedQualifier(<notype>, <none>)
+          // [scalacfork] error:
+          // [scalacfork]      while compiling:  C:\Projects\KeplerUnderRefactoring\src\compiler\scala\tools\nsc\typechecker\Macros.scala
+          // [scalacfork]        current phase:  typer
+          // [scalacfork]      library version:  version 2.10.0-20120523-172531-9b7cebd9b7
+          // [scalacfork]     compiler version:  version 2.10.0-20120523-172531-9b7cebd9b7
+          // [scalacfork]   reconstructed args:  -d C:\\Projects\\KeplerUnderRefactoring\\build\\locker\\classes\\compiler -classpath
+          // C:\\Projects\\KeplerUnderRefactoring\\build\\locker\\classes\\library;C:\\Projects\\KeplerUnderRefactoring\\build\\locker\\classes\\compiler;C:\\Projects\\KeplerUnderRefactoring\\lib\\fjbg.
+          // jar;C:\\Projects\\KeplerUnderRefactoring\\lib\\forkjoin.jar;C:\\Projects\\KeplerUnderRefactoring\\lib\\msil.jar;C:\\Program Files (x86)\\ant\\lib\\ant.jar;C:\\Users\\xeno.by\\.m2\\repository\\com\\typesafe\\config\\0.4.0\\config-0.4
+          // .0.jar;C:\\Projects\\KeplerUnderRefactoring\\lib\\jline.jar
+          // [scalacfork]
+          // [scalacfork] uncaught exception during compilation: scala.reflect.internal.FatalError
+          // [scalacfork] error: scala.reflect.internal.FatalError:
+          // [scalacfork]      while compiling:  C:\Projects\KeplerUnderRefactoring\src\compiler\scala\tools\nsc\typechecker\Macros.scala
+          // [scalacfork]        current phase:  typer
+          // [scalacfork]      library version:  version 2.10.0-20120523-172531-9b7cebd9b7
+          // [scalacfork]     compiler version:  version 2.10.0-20120523-172531-9b7cebd9b7
+          // [scalacfork]   reconstructed args:  -d C:\\Projects\\KeplerUnderRefactoring\\build\\locker\\classes\\compiler -classpath
+          // C:\\Projects\\KeplerUnderRefactoring\\build\\locker\\classes\\library;C:\\Projects\\KeplerUnderRefactoring\\build\\locker\\classes\\compiler;C:\\Projects\\KeplerUnderRefactoring\\lib\\fjbg.
+          // jar;C:\\Projects\\KeplerUnderRefactoring\\lib\\forkjoin.jar;C:\\Projects\\KeplerUnderRefactoring\\lib\\msil.jar;C:\\Program Files (x86)\\ant\\lib\\ant.jar;C:\\Users\\xeno.by\\.m2\\repository\\com\\typesafe\\config\\0.4.0\\config-0.4
+          // .0.jar;C:\\Projects\\KeplerUnderRefactoring\\lib\\jline.jar
+          // [scalacfork]
+          // [scalacfork] bad qualifier received: mkAttributedQualifier(<notype>, <none>)
+          // [scalacfork]  at scala.reflect.internal.SymbolTable.abort(SymbolTable.scala:45)
+          // [scalacfork]  at scala.tools.nsc.Global.abort(Global.scala:202)
+          // [scalacfork]  at scala.reflect.internal.TreeGen.mkAttributedQualifier(TreeGen.scala:107)
+          // [scalacfork]  at scala.reflect.internal.TreeGen.mkAttributedQualifier(TreeGen.scala:60)
+          // [scalacfork]  at scala.reflect.internal.TreeGen.mkAttributedRef(TreeGen.scala:120)
+          // [scalacfork]  at scala.tools.nsc.ast.TreeDSL$CODE$.REF(TreeDSL.scala:302)
+          // [scalacfork]  at scala.tools.nsc.typechecker.PatMatVirtualiser$TreeMakers$class.maybeWithOuterCheck(PatMatVirtualiser.scala:810)
+          // [scalacfork]  at scala.tools.nsc.typechecker.PatMatVirtualiser$OptimizingMatchTranslator.maybeWithOuterCheck(PatMatVirtualiser.scala:66)
+          // [scalacfork]  at scala.tools.nsc.typechecker.PatMatVirtualiser$TreeMakers$class.scala$tools$nsc$typechecker$PatMatVirtualiser$TreeMakers$$typeTest(PatMatVirtualiser.scala:831)
+          // [scalacfork]  at scala.tools.nsc.typechecker.PatMatVirtualiser$TreeMakers$TypeAndEqualityTestTreeMaker.typeAndEqualityTest(PatMatVirtualiser.scala:909)
+          // [scalacfork]  at scala.tools.nsc.typechecker.PatMatVirtualiser$TreeMakers$TypeAndEqualityTestTreeMaker.<init>(PatMatVirtualiser.scala:913)
+          // [scalacfork]  at scala.tools.nsc.typechecker.PatMatVirtualiser$MatchTranslation$class.translatePattern(PatMatVirtualiser.scala:305)
+          // [scalacfork]  at scala.tools.nsc.typechecker.PatMatVirtualiser$OptimizingMatchTranslator.translatePattern(PatMatVirtualiser.scala:66)
+          // [scalacfork]  at scala.tools.nsc.typechecker.PatMatVirtualiser$MatchTranslation$$anonfun$translatePattern$1.apply(PatMatVirtualiser.scala:353)
+          // [scalacfork]  at scala.tools.nsc.typechecker.PatMatVirtualiser$MatchTranslation$$anonfun$translatePattern$1.apply(PatMatVirtualiser.scala:352)
+          // [scalacfork]  at scala.collection.TraversableLike$$anonfun$flatMap$1.apply(TraversableLike.scala:243)
+          // [scalacfork]  at scala.collection.TraversableLike$$anonfun$flatMap$1.apply(TraversableLike.scala:243)
+          // [scalacfork]  at scala.collection.LinearSeqOptimized$class.foreach(LinearSeqOptimized.scala:59)
+          // [scalacfork]  at scala.collection.immutable.List.foreach(List.scala:77)
+          // [scalacfork]  at scala.collection.TraversableLike$class.flatMap(TraversableLike.scala:243)
+          // [scalacfork]  at scala.collection.AbstractTraversable.flatMap(Traversable.scala:105)
+          // [scalacfork]  at scala.tools.nsc.typechecker.PatMatVirtualiser$MatchTranslation$class.translatePattern(PatMatVirtualiser.scala:352)
+          // [scalacfork]  at scala.tools.nsc.typechecker.PatMatVirtualiser$OptimizingMatchTranslator.translatePattern(PatMatVirtualiser.scala:66)
+          // [scalacfork]  at scala.tools.nsc.typechecker.PatMatVirtualiser$MatchTranslation$$anonfun$translatePattern$1.apply(PatMatVirtualiser.scala:353)
+          // [scalacfork]  at scala.tools.nsc.typechecker.PatMatVirtualiser$MatchTranslation$$anonfun$translatePattern$1.apply(PatMatVirtualiser.scala:352)
+          // [scalacfork]  at scala.collection.TraversableLike$$anonfun$flatMap$1.apply(TraversableLike.scala:243)
+          // [scalacfork]  at scala.collection.TraversableLike$$anonfun$flatMap$1.apply(TraversableLike.scala:243)
+          // [scalacfork]  at scala.collection.LinearSeqOptimized$class.foreach(LinearSeqOptimized.scala:59)
+          // [scalacfork]  at scala.collection.immutable.List.foreach(List.scala:77)
+          // [scalacfork]  at scala.collection.TraversableLike$class.flatMap(TraversableLike.scala:243)
+          // [scalacfork]  at scala.collection.AbstractTraversable.flatMap(Traversable.scala:105)
+          // [scalacfork]  at scala.tools.nsc.typechecker.PatMatVirtualiser$MatchTranslation$class.translatePattern(PatMatVirtualiser.scala:352)
+          // [scalacfork]  at scala.tools.nsc.typechecker.PatMatVirtualiser$OptimizingMatchTranslator.translatePattern(PatMatVirtualiser.scala:66)
+          // [scalacfork]  at scala.tools.nsc.typechecker.PatMatVirtualiser$MatchTranslation$class.translateCase(PatMatVirtualiser.scala:217)
+          // [scalacfork]  at scala.tools.nsc.typechecker.PatMatVirtualiser$OptimizingMatchTranslator.translateCase(PatMatVirtualiser.scala:66)
+          // [scalacfork]  at scala.tools.nsc.typechecker.PatMatVirtualiser$MatchTranslation$$anonfun$translateMatch$2.apply(PatMatVirtualiser.scala:142)
+          // [scalacfork]  at scala.tools.nsc.typechecker.PatMatVirtualiser$MatchTranslation$$anonfun$translateMatch$2.apply(PatMatVirtualiser.scala:142)
+          // [scalacfork]  at scala.collection.TraversableLike$$anonfun$map$1.apply(TraversableLike.scala:237)
+          // [scalacfork]  at scala.collection.TraversableLike$$anonfun$map$1.apply(TraversableLike.scala:237)
+          // [scalacfork]  at scala.collection.LinearSeqOptimized$class.foreach(LinearSeqOptimized.scala:59)
+          // [scalacfork]  at scala.collection.immutable.List.foreach(List.scala:77)
+          // [scalacfork]  at scala.collection.TraversableLike$class.map(TraversableLike.scala:237)
+          // [scalacfork]  at scala.collection.AbstractTraversable.map(Traversable.scala:105)
+          // [scalacfork]  at scala.tools.nsc.typechecker.PatMatVirtualiser$MatchTranslation$class.translateMatch(PatMatVirtualiser.scala:142)
+          // [scalacfork]  at scala.tools.nsc.typechecker.PatMatVirtualiser$OptimizingMatchTranslator.translateMatch(PatMatVirtualiser.scala:66)
+          // [scalacfork]  at scala.tools.nsc.typechecker.Typers$Typer.translatedMatch(Typers.scala:2253)
+          // [scalacfork]  at scala.tools.nsc.typechecker.Typers$Typer$MatchFunTyper.applyMethod(Typers.scala:2318)
+          // [scalacfork]  at scala.tools.nsc.typechecker.Typers$Typer$MatchFunTyper.<init>(Typers.scala:2384)
+          // [scalacfork]  at scala.tools.nsc.typechecker.Typers$Typer.typedTranslatedMatch$1(Typers.scala:3855)
+          // [scalacfork]  at scala.tools.nsc.typechecker.Typers$Typer.typed1(Typers.scala:4739)
+          // [scalacfork]  at scala.tools.nsc.typechecker.Typers$Typer.typed(Typers.scala:5020)
+          // [scalacfork]  at scala.tools.nsc.typechecker.Typers$Typer$$anonfun$66.apply(Typers.scala:2655)
+          // [scalacfork]  at scala.tools.nsc.typechecker.Typers$Typer$$anonfun$66.apply(Typers.scala:2655)
+          // [scalacfork]  at scala.tools.nsc.typechecker.Typers$Typer.withCondConstrTyper(Typers.scala:487)
+          // [scalacfork]  at scala.tools.nsc.typechecker.Typers$Typer.typedArg(Typers.scala:2655)
+          // [scalacfork]  at scala.tools.nsc.typechecker.Typers$Typer.loop$1(Typers.scala:2674)
+          // [scalacfork]  at scala.tools.nsc.typechecker.Typers$Typer.typedArgs(Typers.scala:2680)
+          // [scalacfork]  at scala.tools.nsc.typechecker.Typers$Typer.doTypedApply(Typers.scala:2921)
+          // [scalacfork]  at scala.tools.nsc.typechecker.Typers$Typer.typedApply$1(Typers.scala:4115)
+          // [scalacfork]  at scala.tools.nsc.typechecker.Typers$Typer.typed1(Typers.scala:4847)
+          // [scalacfork]  at scala.tools.nsc.typechecker.Typers$Typer.typed(Typers.scala:5020)
+          // [scalacfork]  at scala.tools.nsc.typechecker.Typers$Typer.typedBlock(Typers.scala:2140)
+          // [scalacfork]  at scala.tools.nsc.typechecker.Typers$Typer$$anonfun$typed1$3.apply(Typers.scala:4700)
+          // [scalacfork]  at scala.tools.nsc.typechecker.Typers$Typer$$anonfun$typed1$3.apply(Typers.scala:4700)
+          // [scalacfork]  at scala.tools.nsc.typechecker.Typers$Typer.typerWithLocalContext(Typers.scala:496)
+          // [scalacfork]  at scala.tools.nsc.typechecker.Typers$Typer.typed1(Typers.scala:4699)
+          // [scalacfork]  at scala.tools.nsc.typechecker.Typers$Typer.typed(Typers.scala:5020)
+          // [scalacfork]  at scala.tools.nsc.typechecker.Typers$Typer.typed(Typers.scala:5094)
+          // [scalacfork]  at scala.tools.nsc.typechecker.Typers$Typer.typedIf$1(Typers.scala:3825)
+          // [scalacfork]  at scala.tools.nsc.typechecker.Typers$Typer.typed1(Typers.scala:4736)
+          // [scalacfork]  at scala.tools.nsc.typechecker.Typers$Typer.typed(Typers.scala:5020)
+          // [scalacfork]  at scala.tools.nsc.typechecker.Typers$Typer.typedBlock(Typers.scala:2140)
+          // [scalacfork]  at scala.tools.nsc.typechecker.Typers$Typer$$anonfun$typed1$3.apply(Typers.scala:4700)
+          // [scalacfork]  at scala.tools.nsc.typechecker.Typers$Typer$$anonfun$typed1$3.apply(Typers.scala:4700)
+          // [scalacfork]  at scala.tools.nsc.typechecker.Typers$Typer.typerWithLocalContext(Typers.scala:496)
+          // [scalacfork]  at scala.tools.nsc.typechecker.Typers$Typer.typed1(Typers.scala:4699)
+          // [scalacfork]  at scala.tools.nsc.typechecker.Typers$Typer.typed(Typers.scala:5020)
+          // [scalacfork]  at scala.tools.nsc.typechecker.Typers$Typer.typed(Typers.scala:5094)
+          // [scalacfork]  at scala.tools.nsc.typechecker.Typers$Typer.computeType(Typers.scala:5189)
+          // [scalacfork]  at scala.tools.nsc.typechecker.Namers$Namer.assignTypeToTree(Namers.scala:803)
+          // [scalacfork]  at scala.tools.nsc.typechecker.Namers$Namer.methodSig(Namers.scala:1039)
+          // [scalacfork]  at scala.tools.nsc.typechecker.Namers$Namer.getSig$1(Namers.scala:1288)
+          // [scalacfork]  at scala.tools.nsc.typechecker.Namers$Namer.typeSig(Namers.scala:1326)
+          // [scalacfork]  at scala.tools.nsc.typechecker.Namers$Namer$$anonfun$monoTypeCompleter$1$$anonfun$apply$3.apply$mcV$sp(Namers.scala:702)
+          // [scalacfork]  at scala.tools.nsc.typechecker.Namers$Namer$$anonfun$monoTypeCompleter$1$$anonfun$apply$3.apply(Namers.scala:701)
+          // [scalacfork]  at scala.tools.nsc.typechecker.Namers$Namer$$anonfun$monoTypeCompleter$1$$anonfun$apply$3.apply(Namers.scala:701)
+          // [scalacfork]  at scala.tools.nsc.typechecker.Namers$Namer$LogTransitions.apply(Namers.scala:1355)
+          // [scalacfork]  at scala.tools.nsc.typechecker.Namers$Namer.scala$tools$nsc$typechecker$Namers$Namer$$logAndValidate(Namers.scala:1364)
+          // [scalacfork]  at scala.tools.nsc.typechecker.Namers$Namer$$anonfun$monoTypeCompleter$1.apply(Namers.scala:701)
+          // [scalacfork]  at scala.tools.nsc.typechecker.Namers$Namer$$anonfun$monoTypeCompleter$1.apply(Namers.scala:700)
+          // [scalacfork]  at scala.Function1$class.apply$mcVL$sp(Function1.scala:39)
+          // [scalacfork]  at scala.runtime.AbstractFunction1.apply$mcVL$sp(AbstractFunction1.scala:12)
+          // [scalacfork]  at scala.tools.nsc.typechecker.Namers$$anon$1.completeImpl(Namers.scala:1467)
+          // [scalacfork]  at scala.tools.nsc.typechecker.Namers$LockingTypeCompleter$class.complete(Namers.scala:1475)
+          // [scalacfork]  at scala.tools.nsc.typechecker.Namers$$anon$1.complete(Namers.scala:1465)
+          // [scalacfork]  at scala.reflect.internal.Symbols$Symbol.info(Symbols.scala:1170)
+          // [scalacfork]  at scala.reflect.internal.Symbols$Symbol.initialize(Symbols.scala:1302)
+          // [scalacfork]  at scala.tools.nsc.typechecker.Typers$Typer.typed1(Typers.scala:4646)
+          // [scalacfork]  at scala.tools.nsc.typechecker.Typers$Typer.typed(Typers.scala:5020)
+          // [scalacfork]  at scala.tools.nsc.typechecker.Typers$Typer.typedStat$1(Typers.scala:2545)
+          // [scalacfork]  at scala.tools.nsc.typechecker.Typers$Typer$$anonfun$64$$anonfun$65.apply(Typers.scala:2641)
+          // [scalacfork]  at scala.tools.nsc.typechecker.Typers$Typer$$anonfun$64$$anonfun$65.apply(Typers.scala:2641)
+          // [scalacfork]  at scala.collection.immutable.List.loop$1(List.scala:163)
+          // [scalacfork]  at scala.collection.immutable.List.mapConserve(List.scala:179)
+          // [scalacfork]  at scala.tools.nsc.typechecker.Typers$Typer$$anonfun$64.apply(Typers.scala:2641)
+          // [scalacfork]  at scala.tools.nsc.typechecker.Typers$Typer$$anonfun$64.apply(Typers.scala:2640)
+          // [scalacfork]  at scala.tools.nsc.typechecker.Typers$Typer.withSavedContext(Typers.scala:513)
+          // [scalacfork]  at scala.tools.nsc.typechecker.Typers$Typer.typedStats(Typers.scala:2640)
+          // [scalacfork]  at scala.tools.nsc.typechecker.Typers$Typer.typedBlock(Typers.scala:2139)
+          // [scalacfork]  at scala.tools.nsc.typechecker.Typers$Typer$$anonfun$typed1$3.apply(Typers.scala:4700)
+          // [scalacfork]  at scala.tools.nsc.typechecker.Typers$Typer$$anonfun$typed1$3.apply(Typers.scala:4700)
+          // [scalacfork]  at scala.tools.nsc.typechecker.Typers$Typer.typerWithLocalContext(Typers.scala:496)
+          // [scalacfork]  at scala.tools.nsc.typechecker.Typers$Typer.typed1(Typers.scala:4699)
+          // [scalacfork]  at scala.tools.nsc.typechecker.Typers$Typer.typed(Typers.scala:5020)
+          // [scalacfork]  at scala.tools.nsc.typechecker.Typers$Typer.transformedOrTyped(Typers.scala:5225)
+          // [scalacfork]  at scala.tools.nsc.typechecker.Typers$Typer.typedDefDef(Typers.scala:1971)
+          // [scalacfork]  at scala.tools.nsc.typechecker.Typers$Typer.typed1(Typers.scala:4668)
+          // [scalacfork]  at scala.tools.nsc.typechecker.Typers$Typer.typed(Typers.scala:5020)
+          // [scalacfork]  at scala.tools.nsc.typechecker.Typers$Typer.typedStat$1(Typers.scala:2545)
+          // [scalacfork]  at scala.tools.nsc.typechecker.Typers$Typer$$anonfun$64$$anonfun$65.apply(Typers.scala:2641)
+          // [scalacfork]  at scala.tools.nsc.typechecker.Typers$Typer$$anonfun$64$$anonfun$65.apply(Typers.scala:2641)
+          // [scalacfork]  at scala.collection.immutable.List.loop$1(List.scala:163)
+          // [scalacfork]  at scala.collection.immutable.List.mapConserve(List.scala:179)
+          // [scalacfork]  at scala.tools.nsc.typechecker.Typers$Typer$$anonfun$64.apply(Typers.scala:2641)
+          // [scalacfork]  at scala.tools.nsc.typechecker.Typers$Typer$$anonfun$64.apply(Typers.scala:2640)
+          // [scalacfork]  at scala.tools.nsc.typechecker.Typers$Typer.withSavedContext(Typers.scala:513)
+          // [scalacfork]  at scala.tools.nsc.typechecker.Typers$Typer.typedStats(Typers.scala:2640)
+          // [scalacfork]  at scala.tools.nsc.typechecker.Typers$Typer.typedTemplate(Typers.scala:1715)
+          // [scalacfork]  at scala.tools.nsc.typechecker.Typers$Typer$$anonfun$43.apply(Typers.scala:1584)
+          // [scalacfork]  at scala.tools.nsc.typechecker.Typers$Typer$$anonfun$43.apply(Typers.scala:1584)
+          // [scalacfork]  at scala.tools.nsc.typechecker.Typers$Typer.typerReportAnyContextErrors(Typers.scala:504)
+          // [scalacfork]  at scala.tools.nsc.typechecker.Typers$Typer.typedClassDef(Typers.scala:1583)
+          // [scalacfork]  at scala.tools.nsc.typechecker.Typers$Typer.typed1(Typers.scala:4659)
+          // [scalacfork]  at scala.tools.nsc.typechecker.Typers$Typer.typed(Typers.scala:5020)
+          // [scalacfork]  at scala.tools.nsc.typechecker.Typers$Typer.typedStat$1(Typers.scala:2545)
+          // [scalacfork]  at scala.tools.nsc.typechecker.Typers$Typer$$anonfun$64$$anonfun$65.apply(Typers.scala:2641)
+          // [scalacfork]  at scala.tools.nsc.typechecker.Typers$Typer$$anonfun$64$$anonfun$65.apply(Typers.scala:2641)
+          // [scalacfork]  at scala.collection.immutable.List.loop$1(List.scala:163)
+          // [scalacfork]  at scala.collection.immutable.List.mapConserve(List.scala:179)
+          // [scalacfork]  at scala.tools.nsc.typechecker.Typers$Typer$$anonfun$64.apply(Typers.scala:2641)
+          // [scalacfork]  at scala.tools.nsc.typechecker.Typers$Typer$$anonfun$64.apply(Typers.scala:2640)
+          // [scalacfork]  at scala.tools.nsc.typechecker.Typers$Typer.withSavedContext(Typers.scala:513)
+          // [scalacfork]  at scala.tools.nsc.typechecker.Typers$Typer.typedStats(Typers.scala:2640)
+          // [scalacfork]  at scala.tools.nsc.typechecker.Typers$Typer.typed1(Typers.scala:4655)
+          // [scalacfork]  at scala.tools.nsc.typechecker.Typers$Typer.typed(Typers.scala:5020)
+          // [scalacfork]  at scala.tools.nsc.typechecker.Typers$Typer.typedStat$1(Typers.scala:2545)
+          // [scalacfork]  at scala.tools.nsc.typechecker.Typers$Typer$$anonfun$64$$anonfun$65.apply(Typers.scala:2641)
+          // [scalacfork]  at scala.tools.nsc.typechecker.Typers$Typer$$anonfun$64$$anonfun$65.apply(Typers.scala:2641)
+          // [scalacfork]  at scala.collection.immutable.List.loop$1(List.scala:163)
+          // [scalacfork]  at scala.collection.immutable.List.mapConserve(List.scala:179)
+          // [scalacfork]  at scala.tools.nsc.typechecker.Typers$Typer$$anonfun$64.apply(Typers.scala:2641)
+          // [scalacfork]  at scala.tools.nsc.typechecker.Typers$Typer$$anonfun$64.apply(Typers.scala:2640)
+          // [scalacfork]  at scala.tools.nsc.typechecker.Typers$Typer.withSavedContext(Typers.scala:513)
+          // [scalacfork]  at scala.tools.nsc.typechecker.Typers$Typer.typedStats(Typers.scala:2640)
+          // [scalacfork]  at scala.tools.nsc.typechecker.Typers$Typer.typed1(Typers.scala:4655)
+          // [scalacfork]  at scala.tools.nsc.typechecker.Typers$Typer.typed(Typers.scala:5020)
+          // [scalacfork]  at scala.tools.nsc.typechecker.Typers$Typer.typed(Typers.scala:5078)
+          // [scalacfork]  at scala.tools.nsc.typechecker.Analyzer$typerFactory$$anon$3.apply(Analyzer.scala:97)
+          // [scalacfork]  at scala.tools.nsc.Global$GlobalPhase.applyPhase(Global.scala:432)
+          // [scalacfork]  at scala.tools.nsc.typechecker.Analyzer$typerFactory$$anon$3$$anonfun$run$1.apply(Analyzer.scala:89)
+          // [scalacfork]  at scala.tools.nsc.typechecker.Analyzer$typerFactory$$anon$3$$anonfun$run$1.apply(Analyzer.scala:89)
+          // [scalacfork]  at scala.collection.Iterator$class.foreach(Iterator.scala:697)
+          // [scalacfork]  at scala.collection.AbstractIterator.foreach(Iterator.scala:1124)
+          // [scalacfork]  at scala.tools.nsc.typechecker.Analyzer$typerFactory$$anon$3.run(Analyzer.scala:89)
+          // [scalacfork]  at scala.tools.nsc.Global$Run.compileUnitsInternal(Global.scala:1336)
+          // [scalacfork]  at scala.tools.nsc.Global$Run.compileUnits(Global.scala:1309)
+          // [scalacfork]  at scala.tools.nsc.Global$Run.compileSources(Global.scala:1303)
+          // [scalacfork]  at scala.tools.nsc.Global$Run.compile(Global.scala:1436)
+          // [scalacfork]  at scala.tools.nsc.Driver.doCompile(Driver.scala:31)
+          // [scalacfork]  at scala.tools.nsc.Main$.doCompile(Main.scala:81)
+          // [scalacfork]  at scala.tools.nsc.Driver.process(Driver.scala:52)
+          // [scalacfork]  at scala.tools.nsc.Driver.main(Driver.scala:65)
+          // [scalacfork]  at scala.tools.nsc.Main.main(Main.scala)
+          case args @ ((context: UnaffiliatedMacroContext) :: _) =>
             if (nowDelayed) {
               macroLogLite("macro expansion is delayed: %s".format(expandee))
               delayed += expandee -> undetparams
               // need to save typer context for `macroExpandAll`
               // need to save macro context to preserve enclosures
-              expandee attach MacroAttachment(delayed = true, typerContext = typer.context, macroContext = Some(context))
+              expandee addAttachment MacroRuntimeAttachment(delayed = true, typerContext = typer.context, macroContext = Some(context.asInstanceOf[MacroContext]))
               Delay(expandee)
             }
             else {
@@ -1121,14 +1294,14 @@ trait Macros extends Traces {
               // it needs to be sprinkled over several different code locations
               // why? https://github.com/scala/scala/commit/bd3eacbae21f39b1ac7fe8ade4ed71fa98e1a28d#L2R1137
               // todo. will be improved
-              openMacros ::= context
+              openMacros ::= context.asInstanceOf[MacroContext]
               var isSuccess = false
               try performExpansion(args) match {
                 case x: Success => isSuccess = true ; x
                 case x          => x
               }
               finally {
-                expandee.detach(classOf[MacroAttachment])
+                expandee.removeAttachment[MacroRuntimeAttachment]
                 if (!isSuccess) openMacros = openMacros.tail
               }
             }
@@ -1203,8 +1376,10 @@ trait Macros extends Traces {
             if (relevancyThreshold == -1) None
             else {
               var relevantElements = realex.getStackTrace().take(relevancyThreshold + 1)
-              var framesTillReflectiveInvocationOfMacroImpl = relevantElements.reverse.indexWhere(_.isNativeMethod) + 1
-              relevantElements = relevantElements dropRight framesTillReflectiveInvocationOfMacroImpl
+              def isMacroInvoker(este: StackTraceElement) = este.isNativeMethod || (este.getClassName != null && (este.getClassName contains "fastTrack"))
+              var threshold = relevantElements.reverse.indexWhere(isMacroInvoker) + 1
+              while (threshold != relevantElements.length && isMacroInvoker(relevantElements(relevantElements.length - threshold - 1))) threshold += 1
+              relevantElements = relevantElements dropRight threshold
 
               realex.setStackTrace(relevantElements)
               val message = new java.io.StringWriter()
@@ -1217,7 +1392,7 @@ trait Macros extends Traces {
               None
           }
         } getOrElse realex.getMessage
-        fail(typer, expandee, "exception during macro expansion: " + message)
+        fail(typer, expandee, msg = "exception during macro expansion: " + message)
     }
   }
 
@@ -1277,7 +1452,7 @@ trait Macros extends Traces {
       override def transform(tree: Tree) = super.transform(tree match {
         // todo. expansion should work from the inside out
         case wannabe if (delayed contains wannabe) && calculateUndetparams(wannabe).isEmpty =>
-          val context = wannabe.attachment[MacroAttachment].typerContext
+          val context = wannabe.attachments.get[MacroRuntimeAttachment].get.typerContext
           delayed -= wannabe
           context.implicitsEnabled = typer.context.implicitsEnabled
           context.enrichmentEnabled = typer.context.enrichmentEnabled

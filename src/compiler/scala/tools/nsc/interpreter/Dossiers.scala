@@ -35,7 +35,7 @@ trait Dossiers {
 
   class TermDossier(val symbol: TermSymbol, val staticType: Type, val value: AnyRef) extends Dossier {
     def runtimeClass: JClass = value.getClass
-    def runtimeSymbol: Symbol  = getClassIfDefined(runtimeClass.getName)
+    def runtimeSymbol: Symbol  = rootMirror.getClassIfDefined(runtimeClass.getName)
     def runtimeType: Type      = runtimeSymbol.tpe
     def runtimeTypeString      = TypeStrings.fromClazz(runtimeClass)
 

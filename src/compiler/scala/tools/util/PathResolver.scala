@@ -13,6 +13,7 @@ import nsc.util.{ ClassPath, JavaClassPath, ScalaClassLoader }
 import nsc.io.{ File, Directory, Path, AbstractFile }
 import ClassPath.{ JavaContext, DefaultJavaContext, join, split }
 import PartialFunction.condOpt
+import language.postfixOps
 
 // Loosely based on the draft specification at:
 // https://wiki.scala-lang.org/display/SW/Classpath

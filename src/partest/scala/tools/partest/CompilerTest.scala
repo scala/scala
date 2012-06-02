@@ -5,7 +5,7 @@
 
 package scala.tools.partest
 
-import scala.reflect.{mirror => rm}
+import scala.reflect.{basis => rb}
 import scala.tools.nsc._
 
 /** For testing compiler internals directly.
@@ -34,7 +34,7 @@ abstract class CompilerTest extends DirectTest {
   // Utility functions
 
   class MkType(sym: Symbol) {
-    def apply[M](implicit t: rm.TypeTag[M]): Type =
+    def apply[M](implicit t: rb.TypeTag[M]): Type =
       if (sym eq NoSymbol) NoType
       else appliedType(sym, compilerTypeFromTag(t))
   }
@@ -50,7 +50,7 @@ abstract class CompilerTest extends DirectTest {
   }
 
   class SymsInPackage(pkgName: String) {
-    def pkg     = getRequiredModule(pkgName)
+    def pkg     = rootMirror.getRequiredModule(pkgName)
     def classes = allMembers(pkg) filter (_.isClass)
     def modules = allMembers(pkg) filter (_.isModule)
     def symbols = classes ++ terms filterNot (_ eq NoSymbol)

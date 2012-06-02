@@ -8,6 +8,7 @@ package scala.tools.partest
 import scala.tools.nsc.Settings
 import scala.tools.nsc.interpreter.ILoop
 import java.lang.reflect.{ Method => JMethod, Field => JField }
+import scala.reflect.{ClassTag, classTag}
 
 /** Support code for testing signatures.
  */
@@ -21,13 +22,13 @@ trait SigTest {
   def isObjectMethodName(name: String) = classOf[Object].getMethods exists (_.getName == name)
 
   def fields[T: ClassTag](p: JField => Boolean) = {
-    val cl = classTag[T].erasure
+    val cl = classTag[T].runtimeClass
     val fs = (cl.getFields ++ cl.getDeclaredFields).distinct sortBy (_.getName)
 
     fs filter p
   }
   def methods[T: ClassTag](p: JMethod => Boolean) = {
-    val cl = classTag[T].erasure
+    val cl = classTag[T].runtimeClass
     val ms = (cl.getMethods ++ cl.getDeclaredMethods).distinct sortBy (x => (x.getName, x.isBridge))
 
     ms filter p
@@ -44,7 +45,7 @@ trait SigTest {
     (methodsNamed[T](name) map mstr) ++ (fieldsNamed[T](name) map fstr)
 
   def show[T: ClassTag](name: String = "") = {
-    println(classTag[T].erasure.getName)
+    println(classTag[T].runtimeClass.getName)
     if (name == "") allGenericStrings[T]() foreach println
     else genericStrings[T](name) foreach println
   }

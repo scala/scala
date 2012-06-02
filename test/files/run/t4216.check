@@ -1,8 +1,11 @@
 Type in expressions to have them evaluated.
 Type :help for more information.
 
+scala> import scala.reflect.ArrayTag
+import scala.reflect.ArrayTag
+
 scala> def f[A: ArrayTag](a: A) = java.util.Arrays.asList(Array(a): _*)
-f: [A](a: A)(implicit evidence$1: ArrayTag[A])java.util.List[A]
+f: [A](a: A)(implicit evidence$1: scala.reflect.ArrayTag[A])java.util.List[A]
 
 scala> f(".")
 res0: java.util.List[String] = [.]

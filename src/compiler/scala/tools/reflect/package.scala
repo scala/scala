@@ -7,15 +7,18 @@ package scala.tools
 
 import java.lang.reflect.Method
 import java.{ lang => jl }
+import scala.reflect.{ ClassTag, classTag }
+import scala.reflect.api.JavaUniverse
+import language.implicitConversions
 
-package object reflect {
+package object reflect extends FrontEnds {
   def nameAndArity(m: Method) = (m.getName, m.getParameterTypes.size)
   def allInterfaces(cl: Class[_]): List[Class[_]] =
     if (cl == null) Nil
-    else cl.getInterfaces.toList ++ allInterfaces(cl.getSuperclass) distinct
+    else cl.getInterfaces.toList ++ allInterfaces(cl.getSuperclass).distinct
 
   def methodsNamed(target: AnyRef, name: String): List[Method] =
-    target.getClass.getMethods filter (x => x.getName == name) toList
+    target.getClass.getMethods.toList filter (x => x.getName == name)
 
   /** If there is a single non-bridge apply method in the given instance,
    *  return it: otherwise None.
@@ -39,5 +42,27 @@ package object reflect {
     else if (t == classTag[Float] || t == classTag[jl.Float]) 0f: jl.Float
     else if (t == classTag[Double] || t == classTag[jl.Double]) 0d: jl.Double
     else null
+  }
+
+  // [todo: can we generalize this?
+  import scala.reflect.runtime.{universe => ru}
+  implicit def ToolBox(mirror0: ru.Mirror): ToolBoxFactory[ru.type] =
+    new ToolBoxFactory[ru.type](mirror0.universe) {
+      lazy val mirror = mirror0
+    }
+
+  // todo. replace this with an implicit class, once the pesky warning is gone
+  implicit def Eval[T](expr: JavaUniverse # Expr[T]): Eval[T] = new Eval[T](expr)
+
+  // we don't provide `Eval` for trees, because it's unclear where to get an evaluation mirror from
+}
+
+package reflect {
+  class Eval[T](expr: JavaUniverse # Expr[T]) {
+    def eval: T = {
+      val factory = new ToolBoxFactory[JavaUniverse](expr.mirror.universe) { val mirror = expr.mirror.asInstanceOf[this.u.Mirror] }
+      val toolBox = factory.mkToolBox()
+      toolBox.runExpr(expr.tree.asInstanceOf[toolBox.u.Tree]).asInstanceOf[T]
+    }
   }
 }

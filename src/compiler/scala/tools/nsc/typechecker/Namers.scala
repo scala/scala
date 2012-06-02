@@ -313,7 +313,7 @@ trait Namers extends MethodSynthesis {
     /** All PackageClassInfoTypes come from here. */
     private def createPackageSymbol(pos: Position, pid: RefTree): Symbol = {
       val pkgOwner = pid match {
-        case Ident(_)                 => if (owner == EmptyPackageClass) RootClass else owner
+        case Ident(_)                 => if (owner.isEmptyPackageClass) rootMirror.RootClass else owner
         case Select(qual: RefTree, _) => createPackageSymbol(pos, qual).moduleClass
       }
       val existing = pkgOwner.info.decls.lookup(pid.name)

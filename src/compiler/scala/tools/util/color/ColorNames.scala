@@ -5,6 +5,8 @@
 
 package scala.tools.util.color
 
+import language.implicitConversions
+
 /** Raw data adapted from perl's Term-ExtendedColor, which is published
  *  under perl's Artistic license: http://dev.perl.org/licenses/artistic.html
  *

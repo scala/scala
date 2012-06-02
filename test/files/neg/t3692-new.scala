@@ -1,3 +1,4 @@
+import scala.reflect.{ClassTag, classTag}
 import java.lang.Integer
 
 object Tester {

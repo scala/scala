@@ -4,6 +4,7 @@ package runtime
 trait Enclosures {
   self: Context =>
 
+  import universe._
   import mirror._
 
   private def site       = callsiteTyper.context
@@ -16,7 +17,7 @@ trait Enclosures {
   val enclosingApplication: Tree             = enclTrees collectFirst { case t: Apply => t } getOrElse EmptyTree
   val enclosingClass: Tree                   = site.enclClass.tree
   val enclosingImplicits: List[(Type, Tree)] = site.openImplicits
-  val enclosingMacros: List[Context]         = this :: mirror.analyzer.openMacros // include self
+  val enclosingMacros: List[Context]         = this :: universe.analyzer.openMacros // include self
   val enclosingMethod: Tree                  = site.enclMethod.tree
   val enclosingPosition: Position            = if (enclPoses.isEmpty) NoPosition else enclPoses.head.pos
   val enclosingUnit: CompilationUnit         = currentRun.currentUnit

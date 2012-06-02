@@ -1,4 +1,5 @@
-package scala.reflect.makro
+package scala.reflect
+package makro
 
 trait Names {
   self: Context =>
@@ -10,5 +11,5 @@ trait Names {
   def fresh(name: String): String
 
   /** Creates a fresh name from the provided name */
-  def fresh(name: Name): Name
+  def fresh[NameType <: Name](name: NameType): NameType
 }

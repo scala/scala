@@ -1,7 +1,7 @@
 import scala.reflect.makro.{Context => Ctx}
 
 object Impls {
-  def foo(c: Ctx)(x: c.mirror.Tree) = ???
+  def foo(c: Ctx)(x: c.universe.Tree) = ???
 }
 
 object Macros {

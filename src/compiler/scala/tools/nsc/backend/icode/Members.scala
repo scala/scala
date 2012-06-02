@@ -156,7 +156,7 @@ trait Members {
 
     def newBlock() = code.newBlock
     def startBlock = code.startBlock
-    def lastBlock  = blocks.last
+    def lastBlock  = { assert(blocks.nonEmpty, symbol); blocks.last }
     def blocks = code.blocksList
     def linearizedBlocks(lin: Linearizer = self.linearizer): List[BasicBlock] = lin linearize this
 

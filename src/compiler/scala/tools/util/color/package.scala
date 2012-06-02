@@ -5,6 +5,8 @@
 
 package scala.tools.util
 
+import language.implicitConversions
+
 /**
  *  Wrappers around ansi colors.
  *

@@ -1,3 +1,6 @@
+import scala.reflect.{ArrayTag, arrayTag}
+import scala.reflect.{ClassTag, classTag}
+
 object Test extends App {
   def arrayTagIsClassManifest[T: ArrayTag] = {
     println(classManifest[T])

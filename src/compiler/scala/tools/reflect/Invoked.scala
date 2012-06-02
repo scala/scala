@@ -7,6 +7,7 @@ package scala.tools
 package reflect
 
 import java.lang.reflect.{ Method, Proxy }
+import scala.reflect.{ ClassTag, classTag }
 
 /** A class representing a single method call.  It is primarily for use
  *  in tandem with Mock.  If the invocation did not target an InvocationHandler,
@@ -16,7 +17,7 @@ class Invoked private (val proxy: AnyRef, val m: Method, val args: List[AnyRef])
   def name                 = m.getName
   def arity                = m.getParameterTypes.size
   def returnType           = m.getReturnType
-  def returns[T: ClassTag] = returnType == classTag[T].erasure
+  def returns[T: ClassTag] = returnType == classTag[T].runtimeClass
 
   def invokeOn(target: AnyRef) = m.invoke(target, args: _*)
   def isObjectMethod = Set("toString", "equals", "hashCode") contains name

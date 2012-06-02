@@ -1,0 +1,6 @@
+class A$1
+Test.A$1
+java.lang.Object {
+  def foo(): Nothing
+  def <init>(): A$1
+}

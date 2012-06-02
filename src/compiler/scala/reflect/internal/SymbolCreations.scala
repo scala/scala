@@ -10,7 +10,6 @@ import scala.collection.{ mutable, immutable }
 import scala.collection.mutable.ListBuffer
 import util.Statistics._
 import Flags._
-import api.Modifier
 
 trait SymbolCreations {
   self: SymbolTable =>
@@ -51,7 +50,7 @@ trait SymbolCreations {
     // value parameters, and values (including vals, vars, and lazy vals.)
     protected def createMethodSymbol(name: TermName, pos: Position, newFlags: Long): MethodSymbol
     protected def createModuleSymbol(name: TermName, pos: Position, newFlags: Long): ModuleSymbol
-    protected def createPackageSymbol(name: TermName, pos: Position, newFlags: Long): PackageSymbol
+    protected def createPackageSymbol(name: TermName, pos: Position, newFlags: Long): ModuleSymbol
 
     // TODO
     // protected def createValueParameterSymbol(name: TermName, pos: Position, newFlags: Long): TermSymbol

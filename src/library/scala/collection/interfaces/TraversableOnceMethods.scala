@@ -9,6 +9,8 @@
 package scala.collection
 package interfaces
 
+import reflect.ArrayTag
+
 trait TraversableOnceMethods[+A] {
   self: TraversableOnce[A] =>
 

@@ -189,7 +189,7 @@ self: scala.tools.nsc.Global =>
   override def validatePositions(tree: Tree) {
     def reportTree(prefix : String, tree : Tree) {
       val source = if (tree.pos.isDefined) tree.pos.source else ""
-      inform("== "+prefix+" tree ["+tree.id+"] of type "+tree.printingPrefix+" at "+tree.pos.show+source)
+      inform("== "+prefix+" tree ["+tree.id+"] of type "+tree.productPrefix+" at "+tree.pos.show+source)
       inform("")
       inform(treeStatus(tree))
       inform("")
@@ -269,7 +269,8 @@ self: scala.tools.nsc.Global =>
     protected def isEligible(t: Tree) = !t.pos.isTransparent
     override def traverse(t: Tree) {
       t match {
-        case tt : TypeTree if tt.original != null => traverse(tt.original)
+        case tt : TypeTree if tt.original != null && (tt.pos includes tt.original.pos) =>
+          traverse(tt.original)
         case _ =>
           if (t.pos includes pos) {
             if (isEligible(t)) last = t

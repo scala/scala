@@ -480,16 +480,22 @@ abstract class Erasure extends AddInterfaces
       // TODO: should we do this for user-defined unapplies as well?
       // does the first argument list have exactly one argument -- for user-defined unapplies we can't be sure
       def maybeWrap(bridgingCall: Tree): Tree = {
-        val canReturnNone = ( // can't statically know which member is going to be selected, so don't let this depend on member.isSynthetic
+        val guardExtractor = ( // can't statically know which member is going to be selected, so don't let this depend on member.isSynthetic
              (member.name == nme.unapply || member.name == nme.unapplySeq)
           && !afterErasure((member.tpe <:< other.tpe))) // no static guarantees (TODO: is the subtype test ever true?)
 
-        if (canReturnNone) {
-          import CODE._
+        import CODE._
+        val _false    = FALSE_typed
+        val pt        = member.tpe.resultType
+        lazy val zero =
+          if      (_false.tpe <:< pt)    _false
+          else if (NoneModule.tpe <:< pt) REF(NoneModule)
+          else EmptyTree
+
+        if (guardExtractor && (zero ne EmptyTree)) {
           val typeTest = gen.mkIsInstanceOf(REF(bridge.firstParam), member.tpe.params.head.tpe)
-          IF (typeTest) THEN bridgingCall ELSE REF(NoneModule)
-        }
-        else bridgingCall
+          IF (typeTest) THEN bridgingCall ELSE zero
+        } else bridgingCall
       }
       val rhs = member.tpe match {
         case MethodType(Nil, ConstantType(c)) => Literal(c)
@@ -668,7 +674,6 @@ abstract class Erasure extends AddInterfaces
      */
     private def adaptMember(tree: Tree): Tree = {
       //Console.println("adaptMember: " + tree);
-      val x = 2 + 2
       tree match {
         case Apply(TypeApply(sel @ Select(qual, name), List(targ)), List())
         if tree.symbol == Any_asInstanceOf =>
@@ -997,7 +1002,7 @@ abstract class Erasure extends AddInterfaces
           }
           // Rewrite 5.getClass to ScalaRunTime.anyValClass(5)
           else if (isPrimitiveValueClass(qual.tpe.typeSymbol))
-            global.typer.typed(gen.mkRuntimeCall(nme.anyValClass, List(qual, typer.resolveErasureTag(qual.tpe.widen, tree.pos, true))))
+            global.typer.typed(gen.mkRuntimeCall(nme.anyValClass, List(qual, typer.resolveClassTag(tree.pos, qual.tpe.widen))))
           else
             tree
 

@@ -1,3 +1,4 @@
+import scala.reflect.{ArrayTag, arrayTag}
 import java.{ lang => jl }
 
 trait T[A] {

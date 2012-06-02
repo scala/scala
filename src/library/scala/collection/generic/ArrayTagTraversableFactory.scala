@@ -10,6 +10,7 @@ package scala.collection
 package generic
 
 import language.higherKinds
+import reflect.ArrayTag
 
 /** A template for companion objects of `ClassTagTraversable` and
  *  subclasses thereof.

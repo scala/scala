@@ -285,7 +285,7 @@ abstract class RefChecks extends InfoTransform with reflect.internal.transform.R
         def memberTp = self.memberType(member)
         def otherTp  = self.memberType(other)
         def noErrorType = other.tpe != ErrorType && member.tpe != ErrorType
-        def isRootOrNone(sym: Symbol) = sym == RootClass || sym == NoSymbol
+        def isRootOrNone(sym: Symbol) = sym != null && sym.isRoot || sym == NoSymbol
         def isNeitherInClass = (member.owner != clazz) && (other.owner != clazz)
         def objectOverrideErrorMsg = (
           "overriding " + other.fullLocationString + " with " + member.fullLocationString + ":\n" +

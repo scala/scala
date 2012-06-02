@@ -9,13 +9,13 @@ package io
 import java.net.{ URL, URLClassLoader }
 import java.io.IOException
 import collection.JavaConverters._
+import scala.reflect.{ ClassTag, classTag }
 
 /** A convenience class for finding the jar with the bytecode for
  *  a given Class object and similar common tasks.
  */
 class ClassAndJarInfo[T: ClassTag] {
-  val tag          = classTag[T]
-  def clazz        = tag.erasure
+  def clazz        = classTag[T].runtimeClass
   def internalName = clazz.getName.replace('.', '/')
 
   def resourceURL = new URLClassLoader(Array[URL]()) getResource internalName + ".class"

@@ -1,3 +1,4 @@
+import scala.reflect.{ArrayTag, arrayTag}
 import org.scalacheck._
 import Prop._
 import Gen._

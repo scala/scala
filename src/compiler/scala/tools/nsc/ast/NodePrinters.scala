@@ -177,6 +177,8 @@ abstract class NodePrinters {
       str.toString
     }
     def printModifiers(tree: MemberDef) {
+      // [Eugene to Paul] this should really be preceded by a call to tree.symbol.initialize
+      // because otherwise it might incorrectly show empty annotation list
       val annots0 = tree.symbol.annotations match {
         case Nil  => tree.mods.annotations
         case xs   => xs map annotationInfoToString
@@ -199,7 +201,7 @@ abstract class NodePrinters {
       }
     }
 
-    def treePrefix(tree: Tree) = showPosition(tree) + tree.printingPrefix
+    def treePrefix(tree: Tree) = showPosition(tree) + tree.productPrefix
     def printMultiline(tree: Tree)(body: => Unit) {
       printMultiline(treePrefix(tree), showAttributes(tree))(body)
     }

@@ -1,4 +1,4 @@
-Impls_Macros_1.scala:4: error: macro implementations cannot have implicit parameters other than TypeTag evidences
+Impls_Macros_1.scala:5: error: macro implementations cannot have implicit parameters other than TypeTag evidences
   def foo_targs[T, U: c.TypeTag](c: Ctx)(implicit x: c.Expr[Int]) = {
                                                   ^
 one error found

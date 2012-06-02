@@ -1027,7 +1027,7 @@ self =>
         val tok = in.token
         val name = ident()
         t = atPos(start) {
-          if (tok == BACKQUOTED_IDENT) Ident(name) withAttachment BackquotedIdentifier
+          if (tok == BACKQUOTED_IDENT) Ident(name) addAttachment BackquotedIdentifierAttachment
           else Ident(name)
         }
         if (in.token == DOT) {
@@ -2533,8 +2533,7 @@ self =>
           } else {
             if (in.token == EQUALS) {
               in.nextTokenAllow(nme.MACROkw)
-              if (settings.Xmacros.value && in.token == MACRO || // [Martin] Xmacros can be retired now
-                  in.token == IDENTIFIER && in.name == nme.MACROkw) {
+              if (in.token == IDENTIFIER && in.name == nme.MACROkw) {
                 in.nextToken()
                 newmods |= Flags.MACRO
               }

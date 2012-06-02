@@ -118,7 +118,10 @@ trait Trees extends reflect.internal.Trees { self: Global =>
         val superRef: Tree = atPos(superPos) {
           Select(Super(This(tpnme.EMPTY), tpnme.EMPTY), nme.CONSTRUCTOR)
         }
-        val superCall = (superRef /: argss) (Apply)
+        def mkApply(fun: Tree, args: List[Tree]) = Apply(fun, args)
+        val superCall = (superRef /: argss) (mkApply)
+        // [Eugene++] no longer compiles after I moved the `Apply` case class into scala.reflect.internal
+        // val superCall = (superRef /: argss) (Apply)
         List(
           atPos(wrappingPos(superPos, lvdefs ::: argss.flatten)) (
             DefDef(constrMods, nme.CONSTRUCTOR, List(), vparamss1, TypeTree(), Block(lvdefs ::: List(superCall), Literal(Constant())))))

@@ -13,6 +13,7 @@ import nsc.io.timer
 import nsc.util.{ ScalaClassLoader, Exceptional }
 import Exceptional.unwrap
 import scala.util.Random
+import language.implicitConversions
 
 /** Signal handling code.  100% clean of any references to sun.misc:
  *  it's all reflection and proxies and invocation handlers and lasers,
@@ -203,7 +204,7 @@ class SignalManager(classLoader: ScalaClassLoader) {
 
 object SignalManager extends SignalManager {
   private implicit def mkWSignal(name: String): WSignal = this(name)
-  private lazy val signalNumberMap = all map (x => x.number -> x) toMap
+  private lazy val signalNumberMap = all.map(x => x.number -> x).toMap
 
   def all = List(
     HUP, INT, QUIT, ILL, TRAP, ABRT, EMT, FPE,    // 1-8

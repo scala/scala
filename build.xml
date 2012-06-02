@@ -198,7 +198,10 @@ PROPERTIES
   <!-- These are NOT the flags used to run SuperSabbus, but the ones written
        into the script runners created with scala.tools.ant.ScalaTool -->
   <property name="java.flags" value="-Xmx256M -Xms32M"/>
+
   <property name="jvm.opts" value=""/>
+
+  <!-- disabled  <property name="jvm.opts" value="-agentlib:jdwp=transport=dt_socket,server=y,address=8000,suspend=y"/> -->
 
   <!-- if ANT_OPTS is already set by the environment, it will be unaltered,
        but if it is unset it will take this default value. -->
@@ -333,7 +336,7 @@ INITIALISATION
   <target name="init.version.done" depends="init.version.release, init.version.snapshot"/>
 
   <target name="init" depends="init.jars, init.maven.jars, init.version.done">
-    <property name="scalac.args.always" value="-Xmacros" />
+    <property name="scalac.args.always" value="" />
   <!-- scalac.args.optimise is selectively overridden in certain antcall tasks. -->
     <property name="scalac.args.optimise" value=""/>
   <!-- scalac.args.quickonly are added to quick.* targets but not others (particularly, locker.)

@@ -12,7 +12,7 @@ package scala.collection
 package mutable
 import compat.Platform.arraycopy
 
-import scala.reflect.ArrayTag
+import scala.reflect.{ArrayTag, ClassTag}
 import scala.runtime.ScalaRunTime._
 
 import parallel.mutable.ParArray

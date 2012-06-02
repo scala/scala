@@ -10,7 +10,6 @@ import scala.collection.{ mutable, immutable }
 import scala.collection.mutable.ListBuffer
 import util.Statistics._
 import Flags._
-import api.Modifier
 
 trait SymbolFlags {
   self: SymbolTable =>
@@ -90,7 +89,7 @@ trait SymbolFlags {
         verifyChange(true, fs & ~rawflags, rawflags)
       if ((rawflags & ~fs) != 0)
         verifyChange(false, rawflags & ~fs, rawflags)
-    
+
       super.flags_=(fs)
       verifyFlags("flags_=(" + flagsToString(fs) + ")")
     }

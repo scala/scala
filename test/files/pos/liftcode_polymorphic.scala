@@ -1,4 +1,4 @@
-import scala.reflect.mirror._
+import scala.reflect.runtime.universe._
 
 object Append extends Application {
 
@@ -10,4 +10,3 @@ object Append extends Application {
 
   println(reify(append _).tree)
 }
-

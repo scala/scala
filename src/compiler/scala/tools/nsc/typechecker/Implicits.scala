@@ -17,6 +17,8 @@ import mutable.{ LinkedHashMap, ListBuffer }
 import scala.util.matching.Regex
 import symtab.Flags._
 import util.Statistics._
+import compat.Platform.EOL
+import language.implicitConversions
 
 /** This trait provides methods to find various kinds of implicits.
  *
@@ -335,7 +337,7 @@ trait Implicits {
      *  The _complexity_ of a stripped core type corresponds roughly to the number of
      *  nodes in its ast, except that singleton types are widened before taking the complexity.
      *  Two types overlap if they have the same type symbol, or
-     *  if one or both are intersection types with a pair of overlapiing parent types.
+     *  if one or both are intersection types with a pair of overlapping parent types.
      */
     private def dominates(dtor: Type, dted: Type): Boolean = {
       def core(tp: Type): Type = tp.normalize match {
@@ -1123,7 +1125,6 @@ trait Implicits {
     private def TagSymbols =  TagMaterializers.keySet
     private val TagMaterializers = Map[Symbol, Symbol](
       ArrayTagClass        -> MacroInternal_materializeArrayTag,
-      ErasureTagClass      -> MacroInternal_materializeErasureTag,
       ClassTagClass        -> MacroInternal_materializeClassTag,
       TypeTagClass         -> MacroInternal_materializeTypeTag,
       ConcreteTypeTagClass -> MacroInternal_materializeConcreteTypeTag
@@ -1133,21 +1134,32 @@ trait Implicits {
       * An EmptyTree is returned if materialization fails.
       */
     private def tagOfType(pre: Type, tp: Type, tagClass: Symbol): SearchResult = {
-      def success(arg: Tree) =
+      def success(arg: Tree) = {
+        def isMacroException(msg: String): Boolean =
+          // [Eugene++] very unreliable, ask Hubert about a better way
+          msg contains "exception during macro expansion"
+
+        def processMacroExpansionError(pos: Position, msg: String): SearchResult = {
+          // giving up and reporting all macro exceptions regardless of their source
+          // this might lead to an avalanche of errors if one of your implicit macros misbehaves
+          if (isMacroException(msg)) context.error(pos, msg)
+          failure(arg, "failed to typecheck the materialized tag: %n%s".format(msg), pos)
+        }
+
         try {
           val tree1 = typed(atPos(pos.focus)(arg))
-          def isErroneous = tree exists (_.isErroneous)
-          if (context.hasErrors) failure(tp, "failed to typecheck the materialized typetag: %n%s".format(context.errBuffer.head.errMsg), context.errBuffer.head.errPos)
+          if (context.hasErrors) processMacroExpansionError(context.errBuffer.head.errPos, context.errBuffer.head.errMsg)
           else new SearchResult(tree1, EmptyTreeTypeSubstituter)
         } catch {
           case ex: TypeError =>
-            failure(arg, "failed to typecheck the materialized typetag: %n%s".format(ex.msg), ex.pos)
+            processMacroExpansionError(ex.pos, ex.msg)
         }
+      }
 
       val prefix = (
-        // ClassTags only exist for scala.reflect.mirror, so their materializer
+        // ClassTags and ArrayTags only exist for scala.reflect, so their materializer
         // doesn't care about prefixes
-        if ((tagClass eq ArrayTagClass) || (tagClass eq ErasureTagClass) || (tagClass eq ClassTagClass)) ReflectMirrorPrefix
+        if ((tagClass eq ArrayTagClass) || (tagClass eq ClassTagClass)) gen.mkBasisUniverseRef
         else pre match {
           // [Eugene to Martin] this is the crux of the interaction between
           // implicits and reifiers here we need to turn a (supposedly
@@ -1162,16 +1174,24 @@ trait Implicits {
             // if ``pre'' is not a PDT, e.g. if someone wrote
             //   implicitly[scala.reflect.makro.Context#TypeTag[Int]]
             // then we need to fail, because we don't know the prefix to use during type reification
-            return failure(tp, "tag error: unsupported prefix type %s (%s)".format(pre, pre.kind))
+            // upd. we also need to fail silently, because this is a very common situation
+            // e.g. quite often we're searching for BaseUniverse#TypeTag, e.g. for a type tag in any universe
+            // so that if we find one, we could convert it to whatever universe we need by the means of the `in` method
+            // if no tag is found in scope, we end up here, where we ask someone to materialize the tag for us
+            // however, since the original search was about a tag with no particular prefix, we cannot proceed
+            // this situation happens very often, so emitting an error message here (even if only for -Xlog-implicits) would be too much
+            //return failure(tp, "tag error: unsupported prefix type %s (%s)".format(pre, pre.kind))
+            return SearchFailure
         }
       )
       // todo. migrate hardcoded materialization in Implicits to corresponding implicit macros
-      var materializer = atPos(pos.focus)(
-        gen.mkMethodCall(TagMaterializers(tagClass), List(tp), List(prefix))
-      )
+      var materializer = atPos(pos.focus)(gen.mkMethodCall(TagMaterializers(tagClass), List(tp), List(prefix)))
       if (settings.XlogImplicits.value) println("materializing requested %s.%s[%s] using %s".format(pre, tagClass.name, tp, materializer))
       if (context.macrosEnabled) success(materializer)
-      else failure(materializer, "macros are disabled")
+      // don't call `failure` here. if macros are disabled, we just fail silently
+      // otherwise -Xlog-implicits will spam the long with zillions of "macros are disabled"
+      // this is ugly but temporary, since all this code will be removed once I fix implicit macros
+      else SearchFailure
     }
 
     private val ManifestSymbols = Set[Symbol](PartialManifestClass, FullManifestClass, OptManifestClass)
@@ -1266,13 +1286,33 @@ trait Implicits {
       }
 
       val tagInScope =
-        if (full) context.withMacrosDisabled(resolveTypeTag(ReflectMirrorPrefix.tpe, tp, pos, true))
-        else context.withMacrosDisabled(resolveArrayTag(tp, pos))
+        if (full) resolveTypeTag(pos, NoType, tp, concrete = true, allowMaterialization = false)
+        else resolveArrayTag(pos, tp, allowMaterialization = false)
       if (tagInScope.isEmpty) mot(tp, Nil, Nil)
       else {
+        if (full) {
+          if (ReflectRuntimeUniverse == NoSymbol) {
+            // todo. write a test for this
+            context.error(pos, s"""
+              |to create a manifest here, it is necessary to interoperate with the type tag `$tagInScope` in scope.
+              |however typetag -> manifest conversion requires Scala reflection, which is not present on the classpath.
+              |to proceed put scala-reflect.jar on your compilation classpath and recompile.""".trim.stripMargin)
+            return SearchFailure
+          }
+          if (resolveClassTag(pos, tp, allowMaterialization = true) == EmptyTree) {
+            context.error(pos, s"""
+              |to create a manifest here, it is necessary to interoperate with the type tag `$tagInScope` in scope.
+              |however typetag -> manifest conversion requires a class tag for the corresponding type to be present.
+              |to proceed add a class tag to the type `$tp` (e.g. by introducing a context bound) and recompile.""".trim.stripMargin)
+            return SearchFailure
+          }
+        }
+
         val interop =
-          if (full) gen.mkMethodCall(ReflectPackage, nme.concreteTypeTagToManifest, List(tp), List(tagInScope))
-          else gen.mkMethodCall(ReflectPackage, nme.arrayTagToClassManifest, List(tp), List(tagInScope))
+          if (full) {
+            val cm = typed(Ident(ReflectRuntimeCurrentMirror))
+            gen.mkMethodCall(ReflectRuntimeUniverse, nme.concreteTypeTagToManifest, List(tp), List(cm, tagInScope))
+          } else gen.mkMethodCall(ReflectRuntimeUniverse, nme.arrayTagToClassManifest, List(tp), List(tagInScope))
         wrapResult(interop)
       }
     }

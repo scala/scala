@@ -48,11 +48,11 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
     else noopTransformer
 
   // duplicated from CPSUtils (avoid dependency from compiler -> cps plugin...)
-  private lazy val MarkerCPSAdaptPlus  = definitions.getClassIfDefined("scala.util.continuations.cpsPlus")
-  private lazy val MarkerCPSAdaptMinus = definitions.getClassIfDefined("scala.util.continuations.cpsMinus")
-  private lazy val MarkerCPSSynth      = definitions.getClassIfDefined("scala.util.continuations.cpsSynth")
+  private lazy val MarkerCPSAdaptPlus  = rootMirror.getClassIfDefined("scala.util.continuations.cpsPlus")
+  private lazy val MarkerCPSAdaptMinus = rootMirror.getClassIfDefined("scala.util.continuations.cpsMinus")
+  private lazy val MarkerCPSSynth      = rootMirror.getClassIfDefined("scala.util.continuations.cpsSynth")
   private lazy val stripTriggerCPSAnns = List(MarkerCPSSynth, MarkerCPSAdaptMinus, MarkerCPSAdaptPlus)
-  private lazy val MarkerCPSTypes      = definitions.getClassIfDefined("scala.util.continuations.cpsParam")
+  private lazy val MarkerCPSTypes      = rootMirror.getClassIfDefined("scala.util.continuations.cpsParam")
   private lazy val strippedCPSAnns     = MarkerCPSTypes :: stripTriggerCPSAnns
   private def removeCPSAdaptAnnotations(tp: Type) = tp filterAnnotations (ann => !(strippedCPSAnns exists (ann matches _)))
 
@@ -197,7 +197,7 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
 
       // the alternative to attaching the default case override would be to simply
       // append the default to the list of cases and suppress the unreachable case error that may arise (once we detect that...)
-      val matchFailGenOverride = match_ firstAttachment {case DefaultOverrideMatchAttachment(default) => ((scrut: Tree) => default)}
+      val matchFailGenOverride = match_.attachments.get[DefaultOverrideMatchAttachment].map{case DefaultOverrideMatchAttachment(default) => ((scrut: Tree) => default)}
 
       val selectorSym  = freshSym(selector.pos, pureType(selectorTp)) setFlag SYNTH_CASE
       // pt = Any* occurs when compiling test/files/pos/annotDepMethType.scala  with -Xexperimental
@@ -902,7 +902,7 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
     private def typeTest(binderToTest: Symbol, expectedTp: Type, disableOuterCheck: Boolean = false, dynamic: Boolean = false): Tree = { import CODE._
       // def coreTest =
       if (disableOuterCheck) codegen._isInstanceOf(binderToTest, expectedTp) else maybeWithOuterCheck(binderToTest, expectedTp)(codegen._isInstanceOf(binderToTest, expectedTp))
-      // [Eugene to Adriaan] use `resolveErasureTag` instead of `findManifest`. please, provide a meaningful position
+      // [Eugene to Adriaan] use `resolveClassTag` instead of `findManifest`. please, provide a meaningful position
       // if (opt.experimental && containsUnchecked(expectedTp)) {
       //   if (dynamic) {
       //     val expectedTpTagTree = findManifest(expectedTp, true)
@@ -1397,7 +1397,7 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
 
         // hashconsing trees (modulo value-equality)
         def unique(t: Tree): Tree =
-          trees find (a => a.equalsStructure0(t)(sameValue)) match {
+          trees find (a => a.correspondsStructure(t)(sameValue)) match {
             case Some(orig) => orig // println("unique: "+ (t eq orig, orig));
             case _ => trees += t; t
           }

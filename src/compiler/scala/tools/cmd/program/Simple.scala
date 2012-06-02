@@ -7,6 +7,7 @@ package scala.tools
 package cmd
 package program
 
+import language.postfixOps
 import Spec.Info
 
 /** A boilerplate reducer for commands with simple requirements.  For examples,

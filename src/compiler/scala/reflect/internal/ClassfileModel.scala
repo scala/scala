@@ -3,7 +3,8 @@
  * @author  Paul Phillips
  */
 
-package scala.reflect.internal
+package scala.reflect
+package internal
 
 import java.io.DataInput
 import ConstantPool._

@@ -26,9 +26,9 @@ trait ProxyReport {
       methods foreach (m => m.initialize.info.paramss.flatten foreach (_.initialize))
       methods
     }
-    lazy val GlobalClass     = getRequiredClass(classOf[Global].getName)
-    lazy val GenericClass    = getRequiredModule("scala.collection.generic").moduleClass
-    lazy val CollectionClass = getRequiredModule("scala.collection").moduleClass
+    lazy val GlobalClass     = rootMirror.getRequiredClass(classOf[Global].getName)
+    lazy val GenericClass    = rootMirror.getRequiredModule("scala.collection.generic").moduleClass
+    lazy val CollectionClass = rootMirror.getRequiredModule("scala.collection").moduleClass
 
     def getType(name: String)    = getMember(GlobalClass, newTypeName(name))
     def getColl(name: String)    = getMember(CollectionClass, newTypeName(name))

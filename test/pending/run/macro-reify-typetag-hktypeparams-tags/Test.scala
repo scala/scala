@@ -1,4 +1,4 @@
-import scala.reflect.mirror._
+import scala.reflect.runtime.universe._
 
 object Test extends App {
   def fooTypeTagHK[C[_]: TypeTag, T: TypeTag] = {

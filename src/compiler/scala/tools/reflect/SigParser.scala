@@ -7,6 +7,7 @@ package scala.tools
 package reflect
 
 import java.lang.reflect.{ GenericSignatureFormatError, Method }
+import language.reflectiveCalls
 
 /** The usual reflection song and dance to avoid referencing
  *  any sun.* classes.

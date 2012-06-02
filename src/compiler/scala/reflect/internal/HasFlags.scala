@@ -90,6 +90,7 @@ trait HasFlags {
   def isMutable   = hasFlag(MUTABLE  )  // in Modifiers, formerly isVariable
   def isOverride  = hasFlag(OVERRIDE )
   def isPrivate   = hasFlag(PRIVATE  )
+  def isPackage   = hasFlag(PACKAGE  )
   def isProtected = hasFlag(PROTECTED)
   def isSynthetic = hasFlag(SYNTHETIC)
   def isInterface = hasFlag(INTERFACE)

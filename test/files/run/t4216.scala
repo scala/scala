@@ -4,6 +4,7 @@ import scala.tools.partest.ReplTest
 object Test extends ReplTest {
   def code =
     """
+      |import scala.reflect.ArrayTag
       |def f[A: ArrayTag](a: A) = java.util.Arrays.asList(Array(a): _*)
       |f(".")
       |f(0)

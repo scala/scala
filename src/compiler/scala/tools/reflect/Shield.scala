@@ -8,6 +8,7 @@ package reflect
 
 import java.lang.reflect.Constructor
 import nsc.util.ScalaClassLoader
+import language.implicitConversions
 
 /** A support class for simplifying the otherwise disbelief-inspiring
  *  process of working with classes completely reflectively.  This is

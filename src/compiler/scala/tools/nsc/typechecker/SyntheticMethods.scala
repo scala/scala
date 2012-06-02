@@ -63,7 +63,7 @@ trait SyntheticMethods extends ast.TreeDSL {
     // in the original order.
     def accessors = clazz.caseFieldAccessors sortBy { acc =>
       originalAccessors indexWhere { orig =>
-        (acc.name == orig.name) || (acc.name startsWith (orig.name append "$"))
+        (acc.name == orig.name) || (acc.name startsWith (orig.name append "$").asInstanceOf[Name]) // [Eugene++] why do we need this cast?
       }
     }
     val arity = accessors.size
@@ -87,7 +87,7 @@ trait SyntheticMethods extends ast.TreeDSL {
     )
 
     def forwardToRuntime(method: Symbol): Tree =
-      forwardMethod(method, getMember(ScalaRunTimeModule, method.name prepend "_"))(mkThis :: _)
+      forwardMethod(method, getMember(ScalaRunTimeModule, (method.name prepend "_").asInstanceOf[Name]))(mkThis :: _) // [Eugene++] why do we need this cast?
 
     // Any member, including private
     def hasConcreteImpl(name: Name) =

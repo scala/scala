@@ -3,7 +3,8 @@
  * @author  Paul Phillips
  */
 
-package scala.reflect.internal
+package scala.reflect
+package internal
 
 import java.io.{ DataInput, InputStream, DataInputStream, ByteArrayInputStream, BufferedInputStream, FileInputStream }
 import scala.tools.nsc.io.{ Directory }
@@ -17,7 +18,7 @@ abstract class JvmInfo(attributes: Array[JvmAttributeInfo]) {
   def name: String
 
   val signature    = attributes collectFirst { case x: SignatureAttr => x.value } getOrElse ""
-  val innerClasses = attributes collectFirst { case x: InnerClassesAttr => x.value } getOrElse Array()
+  val innerClasses = attributes collectFirst { case x: InnerClassesAttr => x.value } getOrElse Array[JvmInnerClassInfo]()
 }
 abstract class JvmAttributeInfo {
   // attribute_info {
@@ -194,12 +195,12 @@ object JvmClassInfo {
     Directory(path).deepFiles filter (_ hasExtension "class")
 
   def classInfoMap(path: String): Map[String, JvmClassInfo] = {
-    classFiles(path) map (f => (f.path, JvmClassInfo fromFile f.jfile)) toMap
+    (classFiles(path) map (f => (f.path, JvmClassInfo fromFile f.jfile))).toMap
   }
   def classInfoList(path: String): List[(String, JvmClassInfo)] = {
     classInfoMap(path).toList sortBy (_._1)
   }
-  
+
   def fromFile(file: java.io.File) =
     fromStream(new BufferedInputStream(new FileInputStream(file)))
 
@@ -215,6 +216,6 @@ object JvmClassInfo {
   }
 
   def fromDataInput(in: DataInput): JvmClassInfo = {
-    new Builder(in) parse
+    new Builder(in).parse
   }
 }
