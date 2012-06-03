@@ -201,6 +201,12 @@ trait Collections {
     }
     true
   }
+
+  final def transposeSafe[A](ass: List[List[A]]): Option[List[List[A]]] = try {
+    Some(ass.transpose)
+  } catch {
+    case _: IllegalArgumentException => None
+  }
 }
 
 object Collections extends Collections { }
