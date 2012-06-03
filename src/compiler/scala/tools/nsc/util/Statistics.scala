@@ -60,6 +60,14 @@ class Statistics extends scala.reflect.internal.util.Statistics {
 
   val macroExpandCount = new Counter
   val macroExpandNanos = new Timer
+
+  val patmatNanos      = new Timer
+  val patmatAnaDPLL    = new Timer
+  val patmatAnaVarEq   = new Timer
+  val patmatCNF        = new Timer
+  val patmatAnaExhaust = new Timer
+  val patmatAnaReach   = new Timer
+  val patmatCNFSizes   = new collection.mutable.HashMap[Int, Int] withDefaultValue 0
 }
 
 object Statistics extends Statistics
@@ -71,7 +79,7 @@ abstract class StatisticsInfo {
   val global: Global
   import global._
 
-  var phasesShown = List("parser", "typer", "erasure", "cleanup")
+  var phasesShown = List("parser", "typer", "patmat", "erasure", "cleanup")
 
   def countNodes(tree: Tree, counts: ClassCounts) {
     for (t <- tree) counts(t.getClass) += 1
@@ -83,10 +91,15 @@ abstract class StatisticsInfo {
   def showRelTyper(timer: Timer) =
     timer+showPercent(timer.nanos, typerNanos.nanos)
 
-  def showCounts(counts: ClassCounts) =
+  def showRelPatmat(timer: Timer) =
+    timer+showPercent(timer.nanos, patmatNanos.nanos)
+
+  def showCounts[T](counts: scala.collection.mutable.Map[T, Int]) =
     counts.toSeq.sortWith(_._2 > _._2).map {
-      case (cls, cnt) =>
+      case (cls: Class[_], cnt) =>
         cls.toString.substring(cls.toString.lastIndexOf("$") + 1)+": "+cnt
+      case (o, cnt) =>
+        o.toString +": "+cnt
     }
 
   def print(phase: Phase) = if (phasesShown contains phase.name) {
@@ -169,6 +182,16 @@ abstract class StatisticsInfo {
       if (timer1   != null) inform("#timer1                  : " + timer1)
       if (timer2   != null) inform("#timer2                  : " + timer2)
       //for (t <- uniques.iterator) println("unique: "+t)
+
+      if (phase.name == "patmat") {
+        inform("time spent in patmat       : " + patmatNanos                   )
+        inform("             of which DPLL : " + showRelPatmat(patmatAnaDPLL   ))
+        inform("of which in CNF conversion : " + showRelPatmat(patmatCNF       ))
+        inform("           CNF size counts : " + showCounts(patmatCNFSizes     ))
+        inform("of which variable equality : " + showRelPatmat(patmatAnaVarEq  ))
+        inform("  of which in exhaustivity : " + showRelPatmat(patmatAnaExhaust))
+        inform("of which in unreachability : " + showRelPatmat(patmatAnaReach  ))
+      }
     }
   }
 }
