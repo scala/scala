@@ -9,8 +9,7 @@ package io
 import java.io.{
   FileInputStream, FileOutputStream, BufferedReader, BufferedWriter, InputStreamReader, OutputStreamWriter,
   BufferedInputStream, BufferedOutputStream, RandomAccessFile }
-// [scala-reflect.jar migration note] uncomment when creating scala-reflect.jar
-// import java.io.{ File => JFile }
+import java.io.{ File => JFile }
 import java.net.{ URI, URL }
 import scala.util.Random.alphanumeric
 import language.implicitConversions

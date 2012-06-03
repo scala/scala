@@ -136,6 +136,7 @@ MAIN DISTRIBUTION PACKAGING
     </macrodef>
     <mvn-copy-lib mvn.artifact.name="jline"/>
     <mvn-copy-lib mvn.artifact.name="scala-library"/>
+    <mvn-copy-lib mvn.artifact.name="scala-reflect"/>
     <mvn-copy-lib mvn.artifact.name="scala-compiler"/>
     <mvn-copy-lib mvn.artifact.name="scala-swing"/>
     <mvn-copy-lib mvn.artifact.name="scala-actors"/>
@@ -211,6 +212,8 @@ MAIN DISTRIBUTION PACKAGING
     <copy tofile="${dists.dir}/maven/${version.number}/scala-swing/scala-swing-docs.jar"
           file="${dists.dir}/maven/${version.number}/scala-library/scala-library-docs.jar"/>
     <copy tofile="${dists.dir}/maven/${version.number}/scala-actors/scala-actors-docs.jar"
+          file="${dists.dir}/maven/${version.number}/scala-library/scala-library-docs.jar"/>
+    <copy tofile="${dists.dir}/maven/${version.number}/scala-reflect/scala-reflect-docs.jar"
           file="${dists.dir}/maven/${version.number}/scala-library/scala-library-docs.jar"/>
   </target>
 

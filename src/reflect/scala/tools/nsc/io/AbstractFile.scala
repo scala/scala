@@ -8,8 +8,7 @@ package scala.tools.nsc
 package io
 
 import java.io.{ FileOutputStream, IOException, InputStream, OutputStream, BufferedOutputStream }
-// [scala-reflect.jar migration note] uncomment when creating scala-reflect.jar
-// import java.io.{ File => JFile }
+import java.io.{ File => JFile }
 import java.net.URL
 import scala.collection.mutable.ArrayBuffer
 
