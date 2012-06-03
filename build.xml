@@ -1922,6 +1922,7 @@ DOCUMENTATION
     <doc-uptodate-check name="library" srcdir="${src.dir}">
       <source-includes>
         <include name="library/**"/>
+        <include name="reflect/**"/>
         <include name="swing/**"/>
         <include name="actors/**"/>
         <include name="actors-migration/**"/>
@@ -1948,6 +1949,7 @@ DOCUMENTATION
         <files includes="${src.dir}/actors-migration"/>
         <files includes="${src.dir}/actors"/>
         <files includes="${src.dir}/library/scala"/>
+        <files includes="${src.dir}/reflect/scala"/>
         <files includes="${src.dir}/swing"/>
         <files includes="${src.dir}/continuations/library"/>
       </src>

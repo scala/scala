@@ -12,7 +12,7 @@ package generic
 import mutable.Builder
 import annotation.unchecked.uncheckedVariance
 import language.higherKinds
-import reflect.ArrayTag
+import scala.reflect.ArrayTag
 
 /** This trait represents collections classes which require array
  *  tags for their element types.

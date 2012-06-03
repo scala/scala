@@ -11,7 +11,7 @@ package generic
 
 import mutable.Builder
 import language.higherKinds
-import reflect.ArrayTag
+import scala.reflect.ArrayTag
 
 /** This class represents companions of classes which require ArrayTags
  *  for their element types.

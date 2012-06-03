@@ -13,7 +13,7 @@ package immutable
 
 import java.io._
 import scala.util.matching.Regex
-import reflect.ArrayTag
+import scala.reflect.ArrayTag
 
 /** The `PagedSeq` object defines a lazy implementations of
  *  a random access sequence.
