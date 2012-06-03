@@ -1127,11 +1127,9 @@ trait Typers extends Modes with Adaptations with Taggings {
               if (inExprModeButNot(mode, FUNmode)) {
                 pt.normalize match {
                   case TypeRef(_, sym, _) =>
-                    // note: there was an additional '&& tree.tpe <:< AnyClass.tpe', claiming that
-                    // it would save us from a potentially infinite expansion if pt is constant type ()
-                    // didn't seem to do any good, and the test would miss the fact that Object.tpe <:< AnyClass.tpe 
-                    // after erasure (triggered by try-catches added by cleanup for structural types)
-                    if (sym == UnitClass) { // (12)
+                    // note: was if (pt.typeSymbol == UnitClass) but this leads to a potentially
+                    // infinite expansion if pt is constant type ()
+                    if (sym == UnitClass && tree.tpe <:< AnyClass.tpe) { // (12)
                       if (settings.warnValueDiscard.value)
                         context.unit.warning(tree.pos, "discarded non-Unit value")
                       return typed(atPos(tree.pos)(Block(List(tree), Literal(Constant()))), mode, pt)
@@ -2568,7 +2566,7 @@ trait Typers extends Modes with Adaptations with Taggings {
                 } else newTyper(context.make(stat, exprOwner))
                 // XXX this creates a spurious dead code warning if an exception is thrown
                 // in a constructor, even if it is the only thing in the constructor.
-                val result = checkDead(localTyper.typed(stat, EXPRmode | BYVALmode | STATmode, WildcardType))
+                val result = checkDead(localTyper.typed(stat, EXPRmode | BYVALmode, WildcardType))
 
                 if (treeInfo.isSelfOrSuperConstrCall(result)) {
                   context.inConstructorSuffix = true
@@ -3863,7 +3861,6 @@ trait Typers extends Modes with Adaptations with Taggings {
               && thenTp =:= elseTp
                ) (thenp1.tpe, false) // use unpacked type
             // TODO: skolemize (lub of packed types) when that no longer crashes on files/pos/t4070b.scala
-            else if ((mode & STATmode) != 0) (definitions.UnitClass.tpe, true)
             else ptOrLub(List(thenp1.tpe, elsep1.tpe), pt)
 
           if (needAdapt) { //isNumericValueType(owntype)) {
@@ -4747,7 +4744,7 @@ trait Typers extends Modes with Adaptations with Taggings {
           var catches1 = typedCases(catches, ThrowableClass.tpe, pt)
           val finalizer1 = if (finalizer.isEmpty) finalizer
                            else typed(finalizer, UnitClass.tpe)
-          val (owntype, needAdapt) = if ((mode & STATmode) != 0) (definitions.UnitClass.tpe, true) else ptOrLub(block1.tpe :: (catches1 map (_.tpe)), pt)
+          val (owntype, needAdapt) = ptOrLub(block1.tpe :: (catches1 map (_.tpe)), pt)
           if (needAdapt) {
             block1 = adapt(block1, mode, owntype)
             catches1 = catches1 map (adaptCase(_, mode, owntype))
