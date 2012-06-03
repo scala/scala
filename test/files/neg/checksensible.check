@@ -77,8 +77,8 @@ checksensible.scala:63: error: comparing a fresh object using `!=' will always y
   new Exception() != new Exception()
                   ^
 checksensible.scala:66: error: comparing values of types Int and Null using `==' will always yield false
-  val dummy = if (foo.length == null) "plante" else "plante pas"
-                             ^
+  if (foo.length == null) "plante" else "plante pas"
+                 ^
 checksensible.scala:71: error: comparing values of types Bip and Bop using `==' will always yield false
   (x1 == x2)
       ^
