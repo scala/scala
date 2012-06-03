@@ -2237,7 +2237,7 @@ trait Typers extends Modes with Adaptations with Taggings {
     // takes untyped sub-trees of a match and type checks them
     def typedMatch(selector: Tree, cases: List[CaseDef], mode: Int, pt: Type, tree: Tree = EmptyTree): Match = {
       val selector1  = checkDead(typed(selector, EXPRmode | BYVALmode, WildcardType))
-      val selectorTp = packCaptured(selector1.tpe.widen)
+      val selectorTp = packCaptured(selector1.tpe.widen).skolemizeExistential(context.owner, selector)
       val casesTyped = typedCases(cases, selectorTp, pt)
 
       val (resTp, needAdapt) =
