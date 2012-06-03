@@ -14,6 +14,9 @@ patmatexhaust.scala:49: error: match may not be exhaustive.
 It would fail on the following inputs: Gp(), Gu
     def ma4(x:Deep) = x match { // missing cases: Gu, Gp
                       ^
+patmatexhaust.scala:55: error: unreachable code
+      case _ if 1 == 0 => 
+                       ^
 patmatexhaust.scala:53: error: match may not be exhaustive.
 It would fail on the following input: Gp()
     def ma5(x:Deep) = x match {
@@ -34,4 +37,4 @@ patmatexhaust.scala:126: error: match may not be exhaustive.
 It would fail on the following input: C1()
     def ma10(x: C) = x match { // not exhaustive: C1 is not abstract.
                      ^
-9 errors found
+10 errors found
