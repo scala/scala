@@ -138,9 +138,9 @@ abstract class ExtensionMethods extends Transform with TypingTransformers {
           val GenPolyType(extensionTpeParams, extensionMono) = extensionMeth.info
           val origTpeParams = (tparams map (_.symbol)) ::: currentOwner.typeParams
           val extensionBody = rhs
-              .substTreeSyms(origTpeParams, extensionTpeParams)
-              .substTreeSyms(vparamss.flatten map (_.symbol), allParams(extensionMono).tail)
-              .substTreeThis(currentOwner, thisParamRef)
+              .substituteSymbols(origTpeParams, extensionTpeParams)
+              .substituteSymbols(vparamss.flatten map (_.symbol), allParams(extensionMono).tail)
+              .substituteThis(currentOwner, thisParamRef)
               .changeOwner((origMeth, extensionMeth))
           extensionDefs(companion) += atPos(tree.pos) { DefDef(extensionMeth, extensionBody) }
           val extensionCallPrefix = Apply(

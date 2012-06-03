@@ -32,8 +32,8 @@ class WrappedArrayBuilder[A](tag: ArrayTag[A]) extends Builder[A, WrappedArray[A
   private var size: Int = 0
 
   private def mkArray(size: Int): WrappedArray[A] = {
-    val erasure = arrayElementClass(tag)
-    val newelems = erasure match {
+    val runtimeClass = arrayElementClass(tag)
+    val newelems = runtimeClass match {
       case java.lang.Byte.TYPE      => new WrappedArray.ofByte(new Array[Byte](size)).asInstanceOf[WrappedArray[A]]
       case java.lang.Short.TYPE     => new WrappedArray.ofShort(new Array[Short](size)).asInstanceOf[WrappedArray[A]]
       case java.lang.Character.TYPE => new WrappedArray.ofChar(new Array[Char](size)).asInstanceOf[WrappedArray[A]]

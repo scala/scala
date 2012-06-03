@@ -1,3 +1,5 @@
+import scala.reflect.runtime.universe._
+
 object Test
 {
   object Variances extends Enumeration {
@@ -54,15 +56,15 @@ object Test
   }
 
   def assertAnyRef[T: TypeTag] = List(
-    typeTag[T].tpe <:< typeTag[Any].tpe,
-    typeTag[T].tpe <:< typeTag[AnyRef].tpe,
-    !(typeTag[T].tpe <:< typeTag[AnyVal].tpe)
+    typeOf[T] <:< typeOf[Any],
+    typeOf[T] <:< typeOf[AnyRef],
+    !(typeOf[T] <:< typeOf[AnyVal])
   ) foreach (assert(_, "assertAnyRef"))
 
   def assertAnyVal[T: TypeTag] = List(
-    typeTag[T].tpe <:< typeTag[Any].tpe,
-    !(typeTag[T].tpe <:< typeTag[AnyRef].tpe),
-    typeTag[T].tpe <:< typeTag[AnyVal].tpe
+    typeOf[T] <:< typeOf[Any],
+    !(typeOf[T] <:< typeOf[AnyRef]),
+    typeOf[T] <:< typeOf[AnyVal]
   ) foreach (assert(_, "assertAnyVal"))
 
   def assertSameType[T: TypeTag, U: TypeTag] = assert(typeCompare[T, U] == SAME, "assertSameType")

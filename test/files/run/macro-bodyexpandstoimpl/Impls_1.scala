@@ -5,8 +5,8 @@ object Impls {
 
   def refToFoo(dummy: Int) = macro refToFoo_impl
   def refToFoo_impl(c: Ctx)(dummy: c.Expr[Int]) = {
-    import c.mirror._
+    import c.universe._
     val body = Select(Ident(newTermName("Impls")), newTermName("foo"))
-    Expr[Int](body)
+    c.Expr[Int](body)
   }
 }

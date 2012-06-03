@@ -9,7 +9,7 @@ package icode
 
 import scala.collection.{ mutable, immutable }
 import mutable.{ ListBuffer, ArrayBuffer }
-import util.{ Position, NoPosition }
+import scala.reflect.internal.util.{ Position, NoPosition }
 import backend.icode.analysis.ProgramPoint
 import language.postfixOps
 

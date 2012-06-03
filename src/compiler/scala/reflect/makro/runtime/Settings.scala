@@ -5,12 +5,12 @@ trait Settings {
   self: Context =>
 
   def settings: List[String] = {
-    val optionName = mirror.settings.XmacroSettings.name
+    val optionName = universe.settings.XmacroSettings.name
     val settings = compilerSettings.find(opt => opt.startsWith(optionName)).map(opt => opt.substring(optionName.length + 1)).getOrElse("")
     settings.split(",").toList
   }
 
-  def compilerSettings: List[String] = mirror.settings.recreateArgs
+  def compilerSettings: List[String] = universe.settings.recreateArgs
 
   def setCompilerSettings(options: String): this.type =
     // todo. is not going to work with quoted arguments with embedded whitespaces
@@ -19,7 +19,7 @@ trait Settings {
   def setCompilerSettings(options: List[String]): this.type = {
     val settings = new tools.nsc.Settings(_ => ())
     // [Eugene] what settings should we exclude?
-    settings.copyInto(mirror.settings)
+    settings.copyInto(universe.settings)
     this
   }
 

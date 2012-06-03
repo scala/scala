@@ -1,3 +1,6 @@
+import scala.reflect.runtime.universe._
+import scala.reflect.{ArrayTag, arrayTag}
+
 // #1435
 object t1435 {
   implicit def a(s:String):String = error("")

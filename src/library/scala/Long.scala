@@ -10,6 +10,9 @@
 
 package scala
 
+// todo. change the generator to emit this import
+import scala.language.implicitConversions
+
 /** `Long`, a 64-bit signed integer (equivalent to Java's `long` primitive type) is a
  *  subtype of [[scala.AnyVal]]. Instances of `Long` are not
  *  represented by an object in the underlying runtime system.

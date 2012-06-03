@@ -11,6 +11,7 @@ package scala.collection
 import mutable.{ Buffer, Builder, ListBuffer, ArrayBuffer }
 import annotation.unchecked.{ uncheckedVariance => uV }
 import language.{implicitConversions, higherKinds}
+import reflect.ArrayTag
 
 /** A template trait for collections which can be traversed either once only
  *  or one or more times.

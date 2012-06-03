@@ -10,6 +10,9 @@
 
 package scala
 
+// todo. change the generator to emit this import
+import scala.language.implicitConversions
+
 /** `Float`, a 32-bit IEEE-754 floating point number (equivalent to Java's `float` primitive type) is a
  *  subtype of [[scala.AnyVal]]. Instances of `Float` are not
  *  represented by an object in the underlying runtime system.

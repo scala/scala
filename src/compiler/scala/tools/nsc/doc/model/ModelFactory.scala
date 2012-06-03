@@ -20,7 +20,8 @@ class ModelFactory(val global: Global, val settings: doc.Settings) {
   thisFactory: ModelFactory with ModelFactoryImplicitSupport with CommentFactory with TreeFactory =>
 
   import global._
-  import definitions.{ ObjectClass, RootPackage, EmptyPackage, NothingClass, AnyClass, AnyValClass, AnyRefClass }
+  import definitions.{ ObjectClass, NothingClass, AnyClass, AnyValClass, AnyRefClass }
+  import rootMirror.{ RootPackage, EmptyPackage }
 
   private var droppedPackages = 0
   def templatesCount = templatesCache.size - droppedPackages
@@ -339,7 +340,7 @@ class ModelFactory(val global: Global, val settings: doc.Settings) {
 
   /** */
   def normalizeTemplate(aSym: Symbol): Symbol = aSym match {
-    case null | EmptyPackage | NoSymbol =>
+    case null | rootMirror.EmptyPackage | NoSymbol =>
       normalizeTemplate(RootPackage)
     case ObjectClass =>
       normalizeTemplate(AnyRefClass)

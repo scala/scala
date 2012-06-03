@@ -9,7 +9,8 @@ package ast.parser
 import scala.collection.mutable
 import mutable.{ Buffer, ArrayBuffer, ListBuffer }
 import scala.util.control.ControlThrowable
-import scala.tools.nsc.util.{SourceFile,CharArrayReader}
+import scala.tools.nsc.util.CharArrayReader
+import scala.reflect.internal.util.SourceFile
 import scala.xml.{ Text, TextBuffer }
 import scala.xml.parsing.MarkupParserCommon
 import scala.xml.Utility.{ isNameStart, isNameChar, isSpace }

@@ -8,10 +8,11 @@ package scala.tools
 package nsc
 package settings
 
-import io.{ AbstractFile, Path, PlainFile, VirtualDirectory }
-import scala.tools.util.StringOps
+import io.{ AbstractFile, Jar, Path, PlainFile, VirtualDirectory }
+import scala.reflect.internal.util.StringOps
 import scala.collection.mutable.ListBuffer
 import scala.io.Source
+import scala.reflect.{ ClassTag, classTag }
 
 /** A mutable Settings object.
  */
@@ -184,7 +185,7 @@ class MutableSettings(val errorFn: String => Unit)
   * and `boot.class.path`.  These resources should contain the application
   * and boot classpaths in the same form as would be passed on the command line.*/
   def embeddedDefaults[T: ClassTag]: Unit =
-    embeddedDefaults(classTag[T].erasure.getClassLoader)
+    embeddedDefaults(classTag[T].runtimeClass.getClassLoader)
 
   /** Initializes these settings for embedded use by a class from the given class loader.
   * The class loader for `T` should provide resources `app.class.path`
@@ -254,7 +255,8 @@ class MutableSettings(val errorFn: String => Unit)
     private def checkDir(dir: AbstractFile, name: String, allowJar: Boolean = false): AbstractFile = (
       if (dir != null && dir.isDirectory)
         dir
-      else if (allowJar && dir == null && Path.isJarOrZip(name, false))
+// was:      else if (allowJar && dir == null && Path.isJarOrZip(name, false))
+      else if (allowJar && dir == null && Jar.isJarOrZip(name, false))
         new PlainFile(Path(name))
       else
         throw new FatalError(name + " does not exist or is not a directory")

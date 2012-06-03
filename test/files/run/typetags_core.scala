@@ -1,3 +1,5 @@
+import scala.reflect.runtime.universe._
+
 object Test extends App {
   println(implicitly[TypeTag[Byte]] eq TypeTag.Byte)
   println(implicitly[TypeTag[Byte]])
@@ -21,10 +23,6 @@ object Test extends App {
   println(implicitly[TypeTag[Any]])
   println(implicitly[TypeTag[Object]] eq TypeTag.Object)
   println(implicitly[TypeTag[Object]])
-  println(implicitly[TypeTag[AnyVal]] eq TypeTag.AnyVal)
-  println(implicitly[TypeTag[AnyVal]])
-  println(implicitly[TypeTag[AnyRef]] eq TypeTag.AnyRef)
-  println(implicitly[TypeTag[AnyRef]])
   println(implicitly[TypeTag[Null]] eq TypeTag.Null)
   println(implicitly[TypeTag[Null]])
   println(implicitly[TypeTag[Nothing]] eq TypeTag.Nothing)

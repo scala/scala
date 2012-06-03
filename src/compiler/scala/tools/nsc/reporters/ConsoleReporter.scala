@@ -7,8 +7,7 @@ package scala.tools.nsc
 package reporters
 
 import java.io.{ BufferedReader, IOException, PrintWriter }
-import util._
-import scala.tools.util.StringOps
+import scala.reflect.internal.util._
 
 /**
  * This class implements a Reporter that displays messages on a text

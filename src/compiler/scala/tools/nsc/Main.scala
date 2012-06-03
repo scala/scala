@@ -11,7 +11,7 @@ import File.pathSeparator
 import scala.tools.nsc.interactive.{ RefinedBuildManager, SimpleBuildManager }
 import scala.tools.nsc.io.AbstractFile
 import scala.tools.nsc.reporters.{Reporter, ConsoleReporter}
-import scala.tools.nsc.util.{ BatchSourceFile, FakePos } //{Position}
+import scala.reflect.internal.util.{ BatchSourceFile, FakePos } //{Position}
 import Properties.{ versionString, copyrightString, residentPromptString, msilLibPath }
 
 /** The main class for NSC, a compiler for the programming

@@ -1,4 +1,5 @@
 // a.scala
+import scala.reflect.{ArrayTag, arrayTag}
 
 class A {
   type AI = Array[Int]

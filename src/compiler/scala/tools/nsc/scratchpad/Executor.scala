@@ -4,7 +4,7 @@ import java.io.{PrintStream, OutputStreamWriter, Writer}
 
 import scala.runtime.ScalaRunTime.stringOf
 import java.lang.reflect.InvocationTargetException
-import scala.reflect.ReflectionUtils._
+import scala.reflect.runtime.ReflectionUtils._
 
 object Executor {
 

@@ -9,6 +9,8 @@ package io
 import java.io.{
   FileInputStream, FileOutputStream, BufferedReader, BufferedWriter, InputStreamReader, OutputStreamWriter,
   BufferedInputStream, BufferedOutputStream, RandomAccessFile }
+// [scala-reflect.jar migration note] uncomment when creating scala-reflect.jar
+// import java.io.{ File => JFile }
 import java.net.{ URI, URL }
 import scala.util.Random.alphanumeric
 import language.implicitConversions
@@ -42,7 +44,8 @@ object Path {
     if (i < 0) ""
     else name.substring(i + 1).toLowerCase
   }
-  def isJarOrZip(f: Path, examineFile: Boolean = true) = Jar.isJarOrZip(f, examineFile)
+  // [Eugene++] I hope that noone relied on this method
+//  def isJarOrZip(f: Path, examineFile: Boolean = true) = Jar.isJarOrZip(f, examineFile)
 
   // not certain these won't be problematic, but looks good so far
   implicit def string2path(s: String): Path = apply(s)

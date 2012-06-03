@@ -5,7 +5,8 @@
 package scala.tools.nsc
 package ast.parser
 
-import scala.tools.nsc.util._
+import scala.tools.nsc.util.CharArrayReader
+import scala.reflect.internal.util._
 import scala.reflect.internal.Chars._
 import Tokens._
 import scala.annotation.switch
@@ -185,7 +186,7 @@ trait Scanners extends ScannersCommon {
       sepRegions.nonEmpty && sepRegions.head == STRINGLIT
 
     /** Are we directly in a multiline string interpolation expression?
-     *  @pre: inStringInterpolation
+     *  @pre inStringInterpolation
      */
     @inline private def inMultiLineInterpolation =
       inStringInterpolation && sepRegions.tail.nonEmpty && sepRegions.tail.head == STRINGPART

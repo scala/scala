@@ -1,3 +1,5 @@
+import scala.reflect.{ClassTag, classTag}
+
 /* The Computer Language Shootout
    http://shootout.alioth.debian.org/
    contributed by Isaac Gouy
@@ -490,7 +492,6 @@ final class PieceCell extends Cell {
       next(Cell.SE) = swap
    }
 }
-
 
 
 

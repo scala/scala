@@ -9,7 +9,6 @@
 package scala.reflect
 
 import scala.collection.mutable.{ ArrayBuilder, WrappedArray }
-import mirror._
 
 /** A `Manifest[T]` is an opaque descriptor for type T.  Its supported use
  *  is to give access to the erasure of the type as a `Class` instance, as

@@ -12,7 +12,8 @@ import scala.tools.util.PathResolver
 import scala.collection.{ mutable, immutable }
 import io.{ SourceReader, AbstractFile, Path }
 import reporters.{ Reporter, ConsoleReporter }
-import util.{ NoPosition, Exceptional, ClassPath, MergedClassPath, SourceFile, NoSourceFile, Statistics, StatisticsInfo, BatchSourceFile, ScriptSourceFile, ScalaClassLoader, returning }
+import util.{ Exceptional, ClassPath, MergedClassPath, Statistics, StatisticsInfo, ScalaClassLoader, returning }
+import scala.reflect.internal.util.{ NoPosition, SourceFile, NoSourceFile, BatchSourceFile, ScriptSourceFile }
 import scala.reflect.internal.pickling.{ PickleBuffer, PickleFormat }
 import settings.{ AestheticSettings }
 import symtab.{ Flags, SymbolTable, SymbolLoaders, SymbolTrackers }
@@ -30,22 +31,44 @@ import backend.opt.{ Inliners, InlineExceptionHandlers, ClosureElimination, Dead
 import backend.icode.analysis._
 import language.postfixOps
 import reflect.internal.StdAttachments
+import scala.reflect.ClassTag
 
-class Global(var currentSettings: Settings, var reporter: Reporter) extends SymbolTable
-                                                                       with ClassLoaders
-                                                                       with ToolBoxes
-                                                                       with CompilationUnits
-                                                                       with Plugins
-                                                                       with PhaseAssembly
-                                                                       with Trees
-                                                                       with FreeVars
-                                                                       with TreePrinters
-                                                                       with DocComments
-                                                                       with Positions {
+class Global(var currentSettings: Settings, var reporter: Reporter)
+    extends SymbolTable
+    with CompilationUnits
+    with Plugins
+    with PhaseAssembly
+    with Trees
+    with TreePrinters
+    with DocComments
+    with Positions { self =>
+
+  // [Eugene++] would love to find better homes for the new things dumped into Global
+
+  // the mirror --------------------------------------------------
+
+  override def isCompilerUniverse = true
+
+  class GlobalMirror extends Roots(NoSymbol) {
+    val universe: self.type = self
+    def rootLoader: LazyType = platform.rootLoader
+    override def toString = "compiler mirror"
+  }
+
+  lazy val rootMirror: Mirror = {
+    val rm = new GlobalMirror
+    rm.init()
+    rm.asInstanceOf[Mirror]
+  }
+  def RootClass: ClassSymbol = rootMirror.RootClass
+  def EmptyPackageClass: ClassSymbol = rootMirror.EmptyPackageClass
+  // [Eugene++] this little inconvenience gives us precise types for Expr.mirror and TypeTag.mirror
+  // by the way, is it possible to define variant type members?
 
   override def settings = currentSettings
 
-  import definitions.{ findNamedMember, findMemberFromRoot }
+  import definitions.findNamedMember
+  def findMemberFromRoot(fullName: Name): Symbol = rootMirror.findMemberFromRoot(fullName)
 
   // alternate constructors ------------------------------------------
 
@@ -77,14 +100,12 @@ class Global(var currentSettings: Settings, var reporter: Reporter) extends Symb
 
   def classPath: PlatformClassPath = platform.classPath
 
-  def rootLoader: LazyType = platform.rootLoader
-
   // sub-components --------------------------------------------------
 
   /** Generate ASTs */
   type TreeGen = scala.tools.nsc.ast.TreeGen
 
-  object gen extends {
+  override object gen extends {
     val global: Global.this.type = Global.this
   } with TreeGen {
     def mkAttributedCast(tree: Tree, pt: Type): Tree =
@@ -386,6 +407,9 @@ class Global(var currentSettings: Settings, var reporter: Reporter) extends Symb
     val global: Global.this.type = Global.this
   }
 
+  /** Returns the mirror that loaded given symbol */
+  def mirrorThatLoaded(sym: Symbol): Mirror = rootMirror
+
 // ------------ Phases -------------------------------------------}
 
   var globalPhase: Phase = NoPhase
@@ -686,7 +710,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter) extends Symb
   object icodeChecker extends icodeCheckers.ICodeChecker()
 
   object typer extends analyzer.Typer(
-    analyzer.NoContext.make(EmptyTree, Global.this.definitions.RootClass, newScope)
+    analyzer.NoContext.make(EmptyTree, RootClass, newScope)
   )
 
   /** Add the internal compiler phases to the phases set.
@@ -849,7 +873,9 @@ class Global(var currentSettings: Settings, var reporter: Reporter) extends Symb
   /** Is given package class a system package class that cannot be invalidated?
    */
   private def isSystemPackageClass(pkg: Symbol) =
-    pkg == definitions.RootClass ||
+    // [Eugene++ to Martin] please, verify
+// was:    pkg == definitions.RootClass ||
+    pkg == RootClass ||
     pkg == definitions.ScalaPackageClass || {
       val pkgname = pkg.fullName
       (pkgname startsWith "scala.") && !(pkgname startsWith "scala.tools")
@@ -911,7 +937,9 @@ class Global(var currentSettings: Settings, var reporter: Reporter) extends Symb
             else new MergedClassPath(elems, classPath.context)
           val oldEntries = mkClassPath(subst.keys)
           val newEntries = mkClassPath(subst.values)
-          reSync(definitions.RootClass, Some(classPath), Some(oldEntries), Some(newEntries), invalidated, failed)
+          // [Eugene++ to Martin] please, verify
+// was:          reSync(definitions.RootClass, Some(classPath), Some(oldEntries), Some(newEntries), invalidated, failed)
+          reSync(RootClass, Some(classPath), Some(oldEntries), Some(newEntries), invalidated, failed)
         }
     }
     def show(msg: String, syms: collection.Traversable[Symbol]) =
@@ -970,7 +998,9 @@ class Global(var currentSettings: Settings, var reporter: Reporter) extends Symb
       invalidateOrRemove(root)
     } else {
       if (classesFound) {
-        if (root.isRoot) invalidateOrRemove(definitions.EmptyPackageClass)
+        // [Eugene++ to Martin] please, verify
+// was:        if (root.isRoot) invalidateOrRemove(definitions.EmptyPackageClass)
+        if (root.isRoot) invalidateOrRemove(EmptyPackageClass)
         else failed += root
       }
       (oldEntries, newEntries) match {
@@ -1514,13 +1544,16 @@ class Global(var currentSettings: Settings, var reporter: Reporter) extends Symb
       compileUnits(sources map (new CompilationUnit(_)), firstPhase)
     }
 
-    /** Compile list of units, starting with phase `fromPhase`
-     */
     def compileUnits(units: List[CompilationUnit], fromPhase: Phase) {
       try compileUnitsInternal(units, fromPhase)
       catch { case ex =>
+        val shown = if (settings.verbose.value) {
+          val pw = new java.io.PrintWriter(new java.io.StringWriter)
+          ex.printStackTrace(pw)
+          pw.toString
+        } else ex.getClass.getName
         // ex.printStackTrace(Console.out) // DEBUG for fsc, note that error stacktraces do not print in fsc
-        globalError(supplementErrorMessage("uncaught exception during compilation: " + ex.getClass.getName))
+        globalError(supplementErrorMessage("uncaught exception during compilation: " + shown))
         throw ex
       }
     }
@@ -1600,7 +1633,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter) extends Symb
       // Reset project
       if (!stopPhase("namer")) {
         atPhase(namerPhase) {
-          resetProjectClasses(definitions.RootClass)
+          resetProjectClasses(RootClass)
         }
       }
     }

@@ -8,6 +8,8 @@
 
 package scala.collection
 
+import scala.reflect.ArrayTag
+
 /** A template trait for all traversable-once objects which may be
  *  traversed in parallel.
  *

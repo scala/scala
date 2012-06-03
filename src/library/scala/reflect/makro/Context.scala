@@ -1,4 +1,5 @@
-package scala.reflect.makro
+package scala.reflect
+package makro
 
 import language.experimental.macros
 
@@ -14,12 +15,18 @@ trait Context extends Aliases
                  with Reifiers
                  with FrontEnds
                  with Settings
-                 with Symbols
                  with Typers
-                 with Util {
+                 with Parsers
+                 with ExprUtils
+                 with Exprs
+                 with TypeTags
+                 with Evals {
 
-  /** The mirror that corresponds to the compile-time universe */
-  val mirror: scala.reflect.api.Universe
+  /** The compile-time universe */
+  val universe: Universe
+
+  /** The mirror of the compile-time universe */
+  val mirror: MirrorOf[universe.type]
 
   /** The type of the prefix tree from which the macro is selected */
   type PrefixType
@@ -28,17 +35,6 @@ trait Context extends Aliases
   val prefix: Expr[PrefixType]
 
   /** Alias to the underlying mirror's reify */
-  def reify[T](expr: T): Expr[T] = macro Context.reify[T]
-}
-
-object Context {
-  def reify[T](cc: Context{ type PrefixType = Context })(expr: cc.Expr[T]): cc.Expr[cc.prefix.value.Expr[T]] = {
-    import cc.mirror._
-    import scala.reflect.makro.internal._
-    // [Eugene] how do I typecheck this without undergoing this tiresome (and, in general, incorrect) procedure?
-    val prefix: Tree = Select(cc.prefix.tree, newTermName("mirror"))
-    val prefixTpe = cc.typeCheck(TypeApply(Select(prefix, newTermName("asInstanceOf")), List(SingletonTypeTree(prefix)))).tpe
-    prefix setType prefixTpe
-    cc.Expr(cc.materializeExpr(prefix, expr.tree))
-  }
+  // implementation is magically hardwired to `scala.reflect.makro.runtime.ContextReifiers`
+  def reify[T](expr: T): Expr[T] = macro ???
 }

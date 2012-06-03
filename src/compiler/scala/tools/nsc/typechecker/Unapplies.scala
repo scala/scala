@@ -210,7 +210,7 @@ trait Unapplies extends ast.TreeDSL
       // and re-added in ``finishWith'' in the namer.
       def paramWithDefault(vd: ValDef) =
         treeCopy.ValDef(vd, vd.mods | DEFAULTPARAM, vd.name, atPos(vd.pos.focus)(TypeTree() setOriginal vd.tpt), toIdent(vd))
-        
+
       val (copyParamss, funParamss) = cparamss match {
         case Nil => (Nil, Nil)
         case ps :: pss =>
@@ -224,7 +224,10 @@ trait Unapplies extends ast.TreeDSL
         case Nil     => Nil
         case ps :: _ => mmap(ps :: funParamss)(toIdent)
       }
-      val body = funParamss.foldRight(New(classTpe, argss): Tree)(Function)
+      def mkFunction(vparams: List[ValDef], body: Tree) = Function(vparams, body)
+      val body = funParamss.foldRight(New(classTpe, argss): Tree)(mkFunction)
+      // [Eugene++] no longer compiles after I moved the `Function` case class into scala.reflect.internal
+      // val body = funParamss.foldRight(New(classTpe, argss): Tree)(Function)
 
       Some(atPos(cdef.pos.focus)(
         DefDef(Modifiers(SYNTHETIC), nme.copy, tparams, copyParamss, bodyTpe,
