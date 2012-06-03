@@ -86,6 +86,17 @@ trait Modes {
    */
   final val TYPEPATmode   = 0x10000
 
+  /** STATmode is set when typing statements inside a block.
+   *
+   *  This is useful only for skipping lub computations in 
+   *  such positions, when the expected type is known to be Unit. This
+   *  saves time in pathological cases where lubs can take many seconds 
+   *  but in the end is discarded.
+   *
+   *  TODO: Remove when lubs become types in their own right. 
+   */
+  final val STATmode      = 0x20000
+
   final private val StickyModes   = EXPRmode | PATTERNmode | TYPEmode | ALTmode
 
   final def onlyStickyModes(mode: Int) =
@@ -128,7 +139,8 @@ trait Modes {
     (1 << 13) -> "ALTmode",
     (1 << 14) -> "HKmode",
     (1 << 15) -> "BYVALmode",
-    (1 << 16) -> "TYPEPATmode"
+    (1 << 16) -> "TYPEPATmode",
+    (1 << 17) -> "STATmode"
   )
   def modeString(mode: Int): String =
     if (mode == 0) "NOmode"

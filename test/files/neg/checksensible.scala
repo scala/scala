@@ -63,7 +63,7 @@ class EqEqRefTest {
   new Exception() != new Exception()
 
   val foo: Array[String] = Array("1","2","3")
-  if (foo.length == null) "plante" else "plante pas"
+  val dummy = if (foo.length == null) "plante" else "plante pas"
 
   // final classes with default equals
   val x1 = new Bip
