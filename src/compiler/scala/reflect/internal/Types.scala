@@ -6572,47 +6572,50 @@ trait Types extends api.Types { self: SymbolTable =>
             else Some(typeRef(pre, sym, List(lub(args))))
           }
         }
-        else {
-          val args = map2(sym.typeParams, argss.transpose) { (tparam, as) =>
-            if (depth == 0) {
-              if (tparam.variance == variance) {
-                // Take the intersection of the upper bounds of the type parameters
-                // rather than falling all the way back to "Any", otherwise we end up not
-                // conforming to bounds.
-                val bounds0 = sym.typeParams map (_.info.bounds.hi) filterNot (_.typeSymbol == AnyClass)
-                if (bounds0.isEmpty) AnyClass.tpe
-                else intersectionType(bounds0 map (b => b.asSeenFrom(tps.head, sym)))
+        else transposeSafe(argss) match {
+          case None =>
+            // transpose freaked out because of irregular argss
+            // catching just in case (shouldn't happen, but also doesn't cost us)
+            // [JZ] It happens: see SI-5683.
+            debuglog("transposed irregular matrix!?" +(tps, argss))
+            None
+          case Some(argsst) =>
+            val args = map2(sym.typeParams, argsst) { (tparam, as) =>
+              if (depth == 0) {
+                if (tparam.variance == variance) {
+                  // Take the intersection of the upper bounds of the type parameters
+                  // rather than falling all the way back to "Any", otherwise we end up not
+                  // conforming to bounds.
+                  val bounds0 = sym.typeParams map (_.info.bounds.hi) filterNot (_.typeSymbol == AnyClass)
+                  if (bounds0.isEmpty) AnyClass.tpe
+                  else intersectionType(bounds0 map (b => b.asSeenFrom(tps.head, sym)))
+                }
+                else if (tparam.variance == -variance) NothingClass.tpe
+                else NoType
               }
-              else if (tparam.variance == -variance) NothingClass.tpe
-              else NoType
-            }
-            else {
-              if (tparam.variance == variance) lub(as, decr(depth))
-              else if (tparam.variance == -variance) glb(as, decr(depth))
               else {
-                val l = lub(as, decr(depth))
-                val g = glb(as, decr(depth))
-                if (l <:< g) l
+                if (tparam.variance == variance) lub(as, decr(depth))
+                else if (tparam.variance == -variance) glb(as, decr(depth))
+                else {
+                  val l = lub(as, decr(depth))
+                  val g = glb(as, decr(depth))
+                  if (l <:< g) l
                 else { // Martin: I removed this, because incomplete. Not sure there is a good way to fix it. For the moment we
                        // just err on the conservative side, i.e. with a bound that is too high.
                        // if(!(tparam.info.bounds contains tparam))   //@M can't deal with f-bounds, see #2251
 
-                  val qvar = commonOwner(as) freshExistential "" setInfo TypeBounds(g, l)
-                  capturedParams += qvar
-                  qvar.tpe
+                    val qvar = commonOwner(as) freshExistential "" setInfo TypeBounds(g, l)
+                    capturedParams += qvar
+                    qvar.tpe
+                  }
                 }
               }
             }
-          }
-          if (args contains NoType) None
-          else Some(existentialAbstraction(capturedParams.toList, typeRef(pre, sym, args)))
+            if (args contains NoType) None
+            else Some(existentialAbstraction(capturedParams.toList, typeRef(pre, sym, args)))
         }
       } catch {
         case ex: MalformedType => None
-        case ex: IndexOutOfBoundsException =>  // transpose freaked out because of irregular argss
-        // catching just in case (shouldn't happen, but also doesn't cost us)
-        debuglog("transposed irregular matrix!?"+ (tps, argss))
-        None
       }
     case SingleType(_, sym) :: rest =>
       val pres = tps map (_.prefix)
