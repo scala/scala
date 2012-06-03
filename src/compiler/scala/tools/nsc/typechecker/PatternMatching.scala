@@ -27,11 +27,9 @@ import scala.tools.nsc.util.Statistics
   * Cases are combined into a pattern match using the `orElse` combinator (the implicit failure case is expressed using the monad's `zero`).
   *
   * TODO:
-  *  - exhaustivity
-  *  - DCE (unreachability/refutability/optimization)
   *  - use TypeTags for type testing
-  *  - Array patterns
-  *  - implement spec more closely (see TODO's)
+  *  - DCE (on irrefutable patterns)
+  *  - update spec and double check it's implemented correctly (see TODO's)
   *
   * (longer-term) TODO:
   *  - user-defined unapplyProd
@@ -1451,6 +1449,9 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
       private var normalize: Substitution  = EmptySubstitution
 
       // replaces a variable (in pointsToBound) by a selection on another variable in pointsToBound
+      // in the end, instead of having x1, x1.hd, x2, x2.hd, ... flying around,
+      // we want something like x1, x1.hd, x1.hd.tl, x1.hd.tl.hd, so that we can easily recognize when
+      // we're testing the same variable
       // TODO check:
       //   pointsToBound -- accumSubst.from == Set(root) && (accumSubst.from.toSet -- pointsToBound) isEmpty
       private var accumSubst: Substitution = EmptySubstitution
@@ -1466,7 +1467,7 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
         val (unboundFrom, unboundTo) = unboundSubst.unzip
 
         // reverse substitution that would otherwise replace a variable we already encountered by a new variable
-        // NOTE: this forgets the more precise we have for these later variables, but that's probably okay
+        // NOTE: this forgets the more precise type we have for these later variables, but that's probably okay
         normalize >>= Substitution(boundTo map (_.symbol), boundFrom map (CODE.REF(_)))
         // patmatDebug("normalize: "+ normalize)
 
@@ -1624,11 +1625,8 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
       // in fact, all equalities relevant to this variable must have been registered
       def propForEqualsTo(c: Const): Prop
 
-//      // describe the equality axioms related to this variable being equal to this constant
-//      def impliedProp(c: Const): Prop
-
       // populated by registerEquality
-      // once equalitySyms has been called, registerEquality has no effect
+      // once equalitySyms has been called, must not call registerEquality anymore
       def equalitySyms: List[Sym]
     }
 
@@ -1682,10 +1680,23 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
       }
     }
 
-    // convert finite domain propositional logic to boolean propositional logic
-    // for all c in C, there is a corresponding (meta-indexed) proposition Qv(c) that represents V = c,
-    // the only property of equality that is encoded is that a variable can at most be equal to one of the c in C:
-    // thus, for each distinct c, c', c'',... in C, a clause `not (Qv(c) /\ (Qv(c') \/ ... \/ Qv(c'')))` is added
+    // convert finite domain propositional logic with subtyping to pure boolean propositional logic
+    // a type test or a value equality test are modelled as a variable being equal to some constant
+    // a variable V may be assigned multiple constants, as long as they do not contradict each other
+    // according to subtyping, e.g., V = ConstantType(1) and V = Int are valid assignments
+    // we rewrite V = C to a fresh boolean symbol, and model what we know about the variable's domain
+    // in a prelude (the equality axioms)
+    //   1. a variable with a closed domain (of a sealed type) must be assigned one of the instantiatable types in its domain
+    //   2. for each variable V in props, and each constant C it is compared to,
+    //      compute which assignments imply each other (as in the example above: V = 1 implies V = Int)
+    //      and which assignments are mutually exclusive (V = String implies -(V = Int))
+    //
+    // note that this is a conservative approximation: V = Constant(A) and V = Constant(B)
+    // are considered mutually exclusive (and thus both cases are considered reachable in {case A => case B =>}),
+    // even though A may be equal to B   (and thus the second case is not "dynamically reachable")
+    //
+    // TODO: for V1 representing x1 and V2 standing for x1.head, encode that
+    //       V1 = Nil implies -(V2 = Ci) for all Ci in V2's domain (i.e., it is unassignable)
     def removeVarEq(props: List[Prop], considerNull: Boolean = false): (Prop, List[Prop]) = {
       val start = startTimer(patmatAnaVarEq)
 
@@ -1720,6 +1731,8 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
           case ExcludedPair(aa, bb) => (a == aa && b == bb) || (a == bb && b == aa)
           case _ => false
         }
+        // make ExcludedPair(a, b).hashCode == ExcludedPair(b, a).hashCode
+        override def hashCode = a.hashCode ^ b.hashCode
       }
 
       // patmatDebug("vars: "+ vars)
@@ -1736,7 +1749,6 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
         val syms = v.equalitySyms
         // patmatDebug("eqSyms "+(v, syms))
         syms foreach { sym =>
-          // don't relate V = C to V = C -- `b.const == sym.const`
           // if we've already excluded the pair at some point (-A \/ -B), then don't exclude the symmetric one (-B \/ -A)
           // (nor the positive implications -B \/ A, or -A \/ B, which would entail the equality axioms falsifying the whole formula)
           val todo = syms filterNot (b => (b.const == sym.const) || excludedPair(ExcludedPair(b.const, sym.const)))
@@ -1767,7 +1779,9 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
     type Formula
     def andFormula(a: Formula, b: Formula): Formula
 
-    // may throw an IllegalArgumentException
+    class CNFBudgetExceeded extends RuntimeException("CNF budget exceeded")
+
+    // may throw an CNFBudgetExceeded
     def propToSolvable(p: Prop) = {
       val (eqAxioms, pure :: Nil) = removeVarEq(List(p), considerNull = false)
       eqFreePropToSolvable(And(eqAxioms, pure))
@@ -1798,7 +1812,7 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
     type Lit
     def Lit(sym: Sym, pos: Boolean = true): Lit
 
-    // throws an IllegalArgumentException when the prop results in a CNF that's too big
+    // throws an CNFBudgetExceeded when the prop results in a CNF that's too big
     def eqFreePropToSolvable(p: Prop): Formula = {
       // TODO: for now, reusing the normalization from DPLL
       def negationNormalForm(p: Prop): Prop = p match {
@@ -1822,7 +1836,7 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
 
       def conjunctiveNormalForm(p: Prop, budget: Int = 256): Formula = {
         def distribute(a: Formula, b: Formula, budget: Int): Formula =
-          if (budget <= 0) throw new IllegalArgumentException("CNF budget exceeded")
+          if (budget <= 0) throw new CNFBudgetExceeded
           else
             (a, b) match {
               // true \/ _ = true
@@ -1837,7 +1851,7 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
                 big flatMap (c => distribute(formula(c), small, budget - (big.size*small.size)))
             }
 
-        if (budget <= 0) throw new IllegalArgumentException("CNF budget exceeded")
+        if (budget <= 0) throw new CNFBudgetExceeded
 
         p match {
           case True        => TrueF
@@ -1883,7 +1897,6 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
     def cnfString(f: Formula) = alignAcrossRows(f map (_.toList) toList, "\\/", " /\\\n")
 
     // adapted from http://lara.epfl.ch/w/sav10:simple_sat_solver (original by Hossein Hojjat)
-//    type Model = Map[Sym, Boolean]
     val EmptyModel = Map.empty[Sym, Boolean]
     val NoModel: Model = null
 
@@ -2058,36 +2071,6 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
       // don't call until all equalities have been registered and considerNull has been called (if needed)
       def describe = toString + ": " + fullTp + domain.map(_.mkString(" ::= ", " | ", "// "+ symForEqualsTo.keys)).getOrElse(symForEqualsTo.keys.mkString(" ::= ", " | ", " | ...")) + " // = " + path
       override def toString = "V"+ id
-
-
-
-      // when V = C, which other V = Ci are implied?
-      //   V = null is an exclusive assignment, since null precludes any type test being true
-      //   V = Any does not imply anything (except non-nullness)
-      // consider:
-      //  when V's domain is closed, say V : X ::= A | B | C, and we have some value constants, say U and V, of type X:
-      //  (x: X) match { case U => case V => case _ : X => }
-      //
-      // V's equalityConsts (for the above match): TC(X), TC(A), TC(B), TC(C), VC(U), VC(V)
-      // Set(TC(X), VC(U), VC(V)).forall(c => Set(TC(A), TC(B), TC(C)).forall(_.covers(c)))
-      // Set(VC(U), VC(V), TC(A), TC(B), TC(C)).forall(_.implies(TC(X))
-      // impliedSuper for TC(X) is empty (since it's at the top of the lattice),
-      // but since we have a closed domain, we know that also one of the partitions must hold
-      // thus, TC(X) implies TC(A) \/ TC(B) \/ TC(C),
-      // we only need to add this implication when impliedSuper is empty,
-      // since that'll eventually be the case (transitive closure & acyclic graphs ftw)
-//      def impliedProp(c: Const): Prop = if (c eq NullConst) True else {
-//        val impliedSuper     =  /\((equalityConsts filter { other => (c != other) && c.implies(other) && !other.implies(c) } map symForEqualsTo))
-//
-//        val implied =
-//          if (impliedSuper == True) domain match { case None => True
-//            case Some(domCs) => \/(domCs filter { _.covers(c) } map symForEqualsTo)
-//          } else impliedSuper
-//
-//        // patmatDebug("impliedProp: "+(this, c, impliedSuper, implied))
-//        implied
-//      }
-//      private lazy val equalityConsts = symForEqualsTo.keySet
     }
 
 
@@ -2121,18 +2104,6 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
 
       def isAny = wideTp.typeSymbol == AnyClass
 
-//      final def covers(other: Const): Boolean = {
-//        val r = (this, other) match {
-//          case (_: ValueConst, _: ValueConst) => this == other // hashconsed
-//          case (TypeConst(a) , _: ValueConst) => a <:< other.wideTp
-//          case (_            , _: TypeConst)  => tp <:< other.tp
-//          case _                              => false
-//        }
-//        // if(r) patmatDebug("covers    : "+(this, other))
-//        // else  patmatDebug("NOT covers: "+(this, other))
-//        r
-//      }
-
       final def implies(other: Const): Boolean = {
         val r = (this, other) match {
           case (_: ValueConst, _: ValueConst) => this == other // hashconsed
@@ -2164,8 +2135,8 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
         r
       }
 
-      // the equality symbol for V = C is looked up by C
-      final override def equals(other: Any): Boolean = other match { case o: Const => this eq o case _ => false }
+      // note: use reference equality on Const since they're hash-consed (doing type equality all the time is too expensive)
+      // the equals inherited from AnyRef does just this
     }
 
 
@@ -2354,8 +2325,8 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
 
         if (reachable) None else Some(caseIndex)
       } catch {
-        case e : IllegalArgumentException =>
-//          patmatDebug(util.Position.formatMessage(prevBinder.pos, "Cannot check match for reachability", false))
+        case e : CNFBudgetExceeded =>
+//          debugWarn(util.Position.formatMessage(prevBinder.pos, "Cannot check match for reachability", false))
 //          e.printStackTrace()
           None // CNF budget exceeded
       }
@@ -2516,7 +2487,7 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
           stopTimer(patmatAnaExhaust, start)
           pruned
         } catch {
-          case e : IllegalArgumentException =>
+          case e : CNFBudgetExceeded =>
             // patmatDebug(util.Position.formatMessage(prevBinder.pos, "Cannot check match for exhaustivity", false))
             // e.printStackTrace()
             Nil // CNF budget exceeded
@@ -2539,6 +2510,7 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
     case class ValueExample(c: ValueConst) extends CounterExample { override def toString = c.toString }
     case class TypeExample(c: Const)  extends CounterExample { override def toString = "(_ : "+ c +")" }
     case class NegativeExample(nonTrivialNonEqualTo: List[Const]) extends CounterExample {
+      // require(nonTrivialNonEqualTo.nonEmpty, nonTrivialNonEqualTo)
       override def toString = {
         val negation =
           if (nonTrivialNonEqualTo.tail.isEmpty) nonTrivialNonEqualTo.head.toString
@@ -2728,11 +2700,9 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
     /** a flow-sensitive, generalised, common sub-expression elimination
      * reuse knowledge from performed tests
      * the only sub-expressions we consider are the conditions and results of the three tests (type, type&equality, equality)
-     * when a sub-expression is share, it is stored in a mutable variable
+     * when a sub-expression is shared, it is stored in a mutable variable
      * the variable is floated up so that its scope includes all of the program that shares it
      * we generalize sharing to implication, where b reuses a if a => b and priors(a) => priors(b) (the priors of a sub expression form the path through the decision tree)
-     *
-     * intended to be generalised to exhaustivity/reachability checking
      */
     def doCSE(prevBinder: Symbol, cases: List[List[TreeMaker]], pt: Type): List[List[TreeMaker]] = {
       val testss = approximateMatch(prevBinder, cases)
