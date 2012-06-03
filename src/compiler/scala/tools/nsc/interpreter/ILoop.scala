@@ -24,6 +24,8 @@ import util.ScalaClassLoader
 import ScalaClassLoader._
 import scala.tools.util._
 import language.{implicitConversions, existentials}
+import scala.reflect.{ClassTag, classTag}
+import scala.tools.reflect.StdTags._
 
 /** The Scala interactive shell.  It provides a read-eval-print loop
  *  around the Interpreter class.
@@ -105,7 +107,7 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
   }
 
   def isAsync = !settings.Yreplsync.value
-  lazy val power = new Power(intp, new StdReplVals(this))
+  lazy val power = new Power(intp, new StdReplVals(this))(tagOfStdReplVals, classTag[StdReplVals])
   def history = in.history
 
   /** The context class loader at the time this object was created */
@@ -554,7 +556,7 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
     // return false if repl should exit
     def processLine(line: String): Boolean = {
       if (isAsync) {
-        awaitInitialized()
+        if (!awaitInitialized()) return false
         runThunks()
       }
       if (line eq null) false               // assume null means EOF
@@ -830,7 +832,14 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
     }
     // Bind intp somewhere out of the regular namespace where
     // we can get at it in generated code.
-    addThunk(intp.quietBind("$intp" -> intp))
+    addThunk(intp.quietBind(NamedParam[IMain]("$intp", intp)(tagOfIMain, classTag[IMain])))
+    addThunk({
+      import scala.tools.nsc.io._
+      import Properties.userHome
+      import compat.Platform.EOL
+      val autorun = replProps.replAutorunCode.option flatMap (f => io.File(f).safeSlurp())
+      if (autorun.isDefined) intp.quietRun(autorun.get)
+    })
 
     loadFiles(settings)
     // it is broken on startup; go ahead and exit

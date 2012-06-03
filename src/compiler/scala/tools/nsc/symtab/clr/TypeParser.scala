@@ -653,7 +653,7 @@ abstract class TypeParser {
 
   private def getClassType(typ: MSILType): Type = {
     assert(typ != null);
-    val res = definitions.getClass(typ.FullName.replace('+', '.')).tpe;
+    val res = rootMirror.getClassByName(typ.FullName.replace('+', '.')).tpe;
     //if (res.isError())
     //  global.reporter.error("unknown class reference " + type.FullName);
     res

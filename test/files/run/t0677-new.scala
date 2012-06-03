@@ -1,3 +1,5 @@
+import scala.reflect.{ArrayTag, arrayTag}
+
 object Test extends App {
   class X[T: ArrayTag] {
     val a = Array.ofDim[T](3, 4)

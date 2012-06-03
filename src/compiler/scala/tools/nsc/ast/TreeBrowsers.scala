@@ -354,7 +354,7 @@ abstract class TreeBrowsers {
    */
   object TreeInfo {
     /** Return the case class name and the Name, if the node defines one */
-    def treeName(t: Tree): (String, Name) = ((t.printingPrefix, t match {
+    def treeName(t: Tree): (String, Name) = ((t.productPrefix, t match {
       case UnitTree(unit)                  => newTermName("" + unit)
       case Super(_, mix)                   => newTermName("mix: " + mix)
       case This(qual)                      => qual

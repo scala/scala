@@ -11,10 +11,11 @@ import java.lang.reflect.{ Constructor, Modifier, Method }
 import java.io.{ File => JFile }
 import java.net.{ URLClassLoader => JURLClassLoader }
 import java.net.URL
-import scala.reflect.ReflectionUtils.unwrapHandler
+import scala.reflect.runtime.ReflectionUtils.unwrapHandler
 import ScalaClassLoader._
 import scala.util.control.Exception.{ catching }
 import language.implicitConversions
+import scala.reflect.{ ClassTag, classTag }
 
 trait HasClassPath {
   def classPathURLs: Seq[URL]
@@ -46,7 +47,7 @@ trait ScalaClassLoader extends JClassLoader {
     tryToInitializeClass[AnyRef](path) map (_.newInstance()) orNull
 
   def constructorsOf[T <: AnyRef : ClassTag]: List[Constructor[T]] =
-    classTag[T].erasure.getConstructors.toList map (_.asInstanceOf[Constructor[T]])
+    classTag[T].runtimeClass.getConstructors.toList map (_.asInstanceOf[Constructor[T]])
 
   /** The actual bytes for a class file, or an empty array if it can't be found. */
   def classBytes(className: String): Array[Byte] = classAsStream(className) match {
@@ -102,7 +103,7 @@ object ScalaClassLoader {
   def bootLoader    = apply(null)
   def contextChain  = loaderChain(contextLoader)
 
-  def pathToErasure[T: ClassTag]   = pathToClass(classTag[T].erasure)
+  def pathToErasure[T: ClassTag]   = pathToClass(classTag[T].runtimeClass)
   def pathToClass(clazz: Class[_]) = clazz.getName.replace('.', JFile.separatorChar) + ".class"
   def locate[T: ClassTag]          = contextLoader getResource pathToErasure[T]
 

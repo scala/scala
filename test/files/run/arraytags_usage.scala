@@ -1,3 +1,5 @@
+import scala.reflect.{ArrayTag, arrayTag}
+
 object Test extends App {
   def foo[T] = {
     class MyArrayTag extends ArrayTag[T] {

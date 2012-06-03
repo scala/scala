@@ -10,6 +10,7 @@
 package org.scalacheck
 
 import util.{FreqMap,Buildable}
+import scala.reflect.ClassTag
 
 sealed abstract class Arbitrary[T] {
   val arbitrary: Gen[T]

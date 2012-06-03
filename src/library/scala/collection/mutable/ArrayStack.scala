@@ -10,6 +10,7 @@ package scala.collection
 package mutable
 
 import generic._
+import scala.reflect.ArrayTag
 
 /** Factory object for the `ArrayStack` class.
  *

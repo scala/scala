@@ -5,29 +5,22 @@ import scala.runtime.ScalaRunTime.isAnyVal
 import scala.runtime.ScalaRunTime.isTuple
 import scala.reflect.reify.codegen._
 
-trait Reify extends Symbols
-               with Types
-               with Names
-               with Trees
-               with AnnotationInfos
-               with Positions
-               with Util {
+trait Reify extends GenSymbols
+               with GenTypes
+               with GenNames
+               with GenTrees
+               with GenAnnotationInfos
+               with GenPositions
+               with GenUtils {
 
   self: Reifier =>
 
-  import mirror._
+  import global._
   import definitions._
-  import treeInfo._
 
-  // `reify` looked so nice, I wanted to push the last bit of orthogonal
-  // logic out of it so you can see the improvement.  There is no cost to
-  // wrapper methods of this form because the inliner will eliminate them,
-  // but they are very good at separating concerns like pushing/popping
-  // a stack, and they are great for composition and reuse.
-  //
-  // Also, please avoid public vars whenever possible.
   private object reifyStack {
-    var currents: List[Any] = reifee :: Nil
+    def currents: List[Any] = state.reifyStack
+    def currents_=(value: List[Any]): Unit = state.reifyStack = value
 
     @inline final def push[T](reifee: Any)(body: => T): T = {
       currents ::= reifee
@@ -37,6 +30,7 @@ trait Reify extends Symbols
   }
   def currentQuantified = flatCollect(reifyStack.currents)({ case ExistentialType(quantified, _) => quantified })
   def current = reifyStack.currents.head
+  def currents = reifyStack.currents
 
   /**
    *  Reifies any supported value.
@@ -52,9 +46,9 @@ trait Reify extends Symbols
     case tree: Tree               => reifyTree(tree)
     // disabled because this is a very special case that I plan to remove later
     // why do I dislike annotations? see comments to `reifyAnnotationInfo`
-//        case ann: AnnotationInfo      => reifyAnnotationInfo(ann)
+    // case ann: AnnotationInfo      => reifyAnnotationInfo(ann)
     case pos: Position            => reifyPosition(pos)
-    case mods: mirror.Modifiers   => reifyModifiers(mods)
+    case mods: global.Modifiers   => reifyModifiers(mods)
     case xs: List[_]              => reifyList(xs)
     case s: String                => Literal(Constant(s))
     case v if isAnyVal(v)         => Literal(Constant(v))

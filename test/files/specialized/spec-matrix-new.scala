@@ -1,3 +1,5 @@
+import scala.reflect.{ArrayTag, arrayTag}
+
 /** Test matrix multiplication with specialization.
  */
 

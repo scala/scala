@@ -84,7 +84,7 @@ object NestUI {
     println("    --grep <expr>    run all tests whose source file contains <expr>")
     println
     println("  Other options:")
-    println("    --pack       pick compiler/library in build/pack, and run all tests")
+    println("    --pack       pick compiler/reflect/library in build/pack, and run all tests")
     println("    --show-log   show log")
     println("    --show-diff  show diff between log and check file")
     println("    --failed     run only those tests that failed during the last run")

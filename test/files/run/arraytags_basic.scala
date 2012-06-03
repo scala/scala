@@ -1,3 +1,5 @@
+import scala.reflect.{ArrayTag, arrayTag}
+
 object Test extends App {
   def test[T: ArrayTag] = {
     println(implicitly[ArrayTag[T]].newArray(10).getClass)

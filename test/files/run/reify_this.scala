@@ -1,4 +1,5 @@
-import scala.reflect.mirror._
+import scala.reflect.runtime.universe._
+import scala.tools.reflect.Eval
 
 trait Eval {
   def eval(tree: Expr[_]) = tree.eval

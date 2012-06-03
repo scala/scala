@@ -1,24 +1,24 @@
-ConcreteTypeTag[Bar.type], t=AbstractTypeRef, s= <: scala.runtime.AbstractFunction0[Bar] with Serializable{case def unapply(x$0: Bar): Boolean} with Singleton
-ConcreteTypeTag[Bar], t=AbstractTypeRef, s= <: Test.ToS with Product with Serializable{def copy(): Bar}
-ConcreteTypeTag[Test.ToS], t=RefinedType, s=f3
-ConcreteTypeTag[Test.ToS], t=RefinedType, s=f4
-ConcreteTypeTag[Test.ToS], t=RefinedType, s=f5
-ConcreteTypeTag[() => Test.ToS], t=TypeRef, s=class Function0
-ConcreteTypeTag[() => Test.ToS], t=TypeRef, s=class Function0
-ConcreteTypeTag[$anon], t=AbstractTypeRef, s= <: B with Test.ToS
-ConcreteTypeTag[$anon], t=AbstractTypeRef, s= <: B with A with Test.ToS
-TypeTag[List[Object{type T1}#T1]], t=TypeRef, s=class List
-ConcreteTypeTag[List[Seq[Int]]], t=TypeRef, s=class List
-ConcreteTypeTag[List[Seq[U forSome { type U <: Int }]]], t=TypeRef, s=class List
-ConcreteTypeTag[Bar.type], t=AbstractTypeRef, s= <: scala.runtime.AbstractFunction0[Bar] with Serializable{case def unapply(x$0: Bar): Boolean} with Singleton
-ConcreteTypeTag[Bar], t=AbstractTypeRef, s= <: Test.ToS with Product with Serializable{def copy(): Bar}
-ConcreteTypeTag[Test.ToS], t=RefinedType, s=g3
-ConcreteTypeTag[Test.ToS], t=RefinedType, s=g4
-ConcreteTypeTag[Test.ToS], t=RefinedType, s=g5
-ConcreteTypeTag[() => Test.ToS], t=TypeRef, s=class Function0
-ConcreteTypeTag[() => Test.ToS], t=TypeRef, s=class Function0
-ConcreteTypeTag[$anon], t=AbstractTypeRef, s= <: B with Test.ToS
-ConcreteTypeTag[$anon], t=AbstractTypeRef, s= <: B with A with Test.ToS
-TypeTag[List[Object{type T1}#T1]], t=TypeRef, s=class List
-ConcreteTypeTag[List[Seq[Int]]], t=TypeRef, s=class List
-ConcreteTypeTag[List[Seq[U forSome { type U <: Int }]]], t=TypeRef, s=class List
+Bar.type, t=AbstractTypeRef, s= <: scala.runtime.AbstractFunction0[Bar] with Serializable{case def unapply(x$0: Bar): Boolean} with Singleton
+Bar, t=AbstractTypeRef, s= <: Test.ToS with Product with Serializable{def copy(): Bar}
+Test.ToS, t=RefinedType, s=f3
+Test.ToS, t=RefinedType, s=f4
+Test.ToS, t=RefinedType, s=f5
+() => Test.ToS, t=TypeRef, s=class Function0
+() => Test.ToS, t=TypeRef, s=class Function0
+$anon, t=AbstractTypeRef, s= <: B with Test.ToS
+$anon, t=AbstractTypeRef, s= <: B with A with Test.ToS
+List[java.lang.Object{type T1}#T1], t=TypeRef, s=class List
+List[Seq[Int]], t=TypeRef, s=class List
+List[Seq[U forSome { type U <: Int }]], t=TypeRef, s=class List
+Bar.type, t=AbstractTypeRef, s= <: scala.runtime.AbstractFunction0[Bar] with Serializable{case def unapply(x$0: Bar): Boolean} with Singleton
+Bar, t=AbstractTypeRef, s= <: Test.ToS with Product with Serializable{def copy(): Bar}
+Test.ToS, t=RefinedType, s=g3
+Test.ToS, t=RefinedType, s=g4
+Test.ToS, t=RefinedType, s=g5
+() => Test.ToS, t=TypeRef, s=class Function0
+() => Test.ToS, t=TypeRef, s=class Function0
+$anon, t=AbstractTypeRef, s= <: B with Test.ToS
+$anon, t=AbstractTypeRef, s= <: B with A with Test.ToS
+List[java.lang.Object{type T1}#T1], t=TypeRef, s=class List
+List[Seq[Int]], t=TypeRef, s=class List
+List[Seq[U forSome { type U <: Int }]], t=TypeRef, s=class List

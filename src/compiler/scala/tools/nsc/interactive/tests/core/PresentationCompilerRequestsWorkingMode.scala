@@ -2,8 +2,8 @@ package scala.tools.nsc
 package interactive
 package tests.core
 
-import scala.tools.nsc.util.Position
-import scala.tools.nsc.util.SourceFile
+import scala.reflect.internal.util.Position
+import scala.reflect.internal.util.SourceFile
 
 trait PresentationCompilerRequestsWorkingMode extends TestResources {
 

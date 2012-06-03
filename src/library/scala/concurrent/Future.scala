@@ -25,6 +25,7 @@ import scala.annotation.tailrec
 import scala.collection.mutable.Stack
 import scala.collection.mutable.Builder
 import scala.collection.generic.CanBuildFrom
+import scala.reflect.ClassTag
 import language.higherKinds
 
 
@@ -489,7 +490,7 @@ trait Future[+T] extends Awaitable[T] {
       case l: Left[_, _] => p complete l.asInstanceOf[Left[Throwable, S]]
       case Right(t) =>
         p complete (try {
-          Right(boxedType(tag.erasure).cast(t).asInstanceOf[S])
+          Right(boxedType(tag.runtimeClass).cast(t).asInstanceOf[S])
         } catch {
           case e: ClassCastException => Left(e)
         })

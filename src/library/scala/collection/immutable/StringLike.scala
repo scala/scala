@@ -13,6 +13,7 @@ import generic._
 import mutable.Builder
 import scala.util.matching.Regex
 import scala.math.ScalaNumber
+import scala.reflect.ArrayTag
 
 /** A companion object for the `StringLike` containing some constants.
  *  @since 2.8

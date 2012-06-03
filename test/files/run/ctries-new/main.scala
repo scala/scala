@@ -1,3 +1,5 @@
+import scala.reflect.{ClassTag, classTag}
+
 
 
 
@@ -35,7 +37,7 @@ trait Spec {
       var produced = false
       try body
       catch {
-        case e => if (e.getClass == implicitly[ClassTag[T]].erasure) produced = true
+        case e => if (e.getClass == implicitly[ClassTag[T]].runtimeClass) produced = true
       } finally {
         assert(produced, "Did not produce exception of type: " + implicitly[ClassTag[T]])
       }

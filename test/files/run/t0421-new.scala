@@ -1,3 +1,5 @@
+import scala.reflect.{ArrayTag, arrayTag}
+
 // ticket #421
 object Test extends App {
 
