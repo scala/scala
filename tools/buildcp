@@ -1,0 +1,11 @@
+#!/bin/sh
+#
+
+[[ $# -eq 1 ]] || { echo "Usage: $0 <locker|quick|...>"; exit 0; }
+
+dir=$(dirname $0)
+lib=$($dir/abspath $dir/../lib)
+build=$($dir/abspath $dir/../build)
+cp=$($dir/cpof $build/$1/classes):$build/asm/classes
+
+echo $cp:$lib/fjbg.jar:$lib/msil.jar:$lib/forkjoin.jar:$lib/jline.jar:$lib/extra/'*'

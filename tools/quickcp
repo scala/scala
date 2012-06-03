@@ -1,10 +1,4 @@
 #!/bin/sh
 #
 
-THISDIR=`dirname $0`
-ABS=${THISDIR}/abspath
-LIBDIR=`$ABS $THISDIR/../lib`
-
-cp=`${THISDIR}/cpof ${THISDIR}/../build/quick/classes`
-
-echo ${cp}:$LIBDIR/fjbg.jar:$LIBDIR/msil.jar:$LIBDIR/forkjoin.jar:$LIBDIR/jline.jar:$LIBDIR/extra/'*'
+$(dirname $0)/buildcp quick
