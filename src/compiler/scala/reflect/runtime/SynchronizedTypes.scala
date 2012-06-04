@@ -9,7 +9,8 @@ trait SynchronizedTypes extends internal.Types { self: SymbolTable =>
   // No sharing of map objects:
   override protected def commonOwnerMap = new CommonOwnerMap
 
-  private val uniqueLock = new Object
+  private object uniqueLock
+
   override def unique[T <: Type](tp: T): T = uniqueLock.synchronized { super.unique(tp) }
 
   class SynchronizedUndoLog extends UndoLog {
@@ -29,7 +30,7 @@ trait SynchronizedTypes extends internal.Types { self: SymbolTable =>
   override protected def baseTypeOfNonClassTypeRef(tpe: NonClassTypeRef, clazz: Symbol) =
     synchronized { super.baseTypeOfNonClassTypeRef(tpe, clazz) }
 
-  private val subsametypeLock = new Object
+  private object subsametypeLock
 
   override def isSameType(tp1: Type, tp2: Type): Boolean =
     subsametypeLock.synchronized { super.isSameType(tp1, tp2) }
@@ -40,7 +41,7 @@ trait SynchronizedTypes extends internal.Types { self: SymbolTable =>
   override def isSubType(tp1: Type, tp2: Type, depth: Int): Boolean =
     subsametypeLock.synchronized { super.isSubType(tp1, tp2, depth) }
 
-  private val lubglbLock = new Object
+  private object lubglbLock
 
   override def glb(ts: List[Type]): Type =
     lubglbLock.synchronized { super.glb(ts) }
@@ -48,13 +49,13 @@ trait SynchronizedTypes extends internal.Types { self: SymbolTable =>
   override def lub(ts: List[Type]): Type =
     lubglbLock.synchronized { super.lub(ts) }
 
-  private val indentLock = new Object
+  private object indentLock
 
   override protected def explain[T](op: String, p: (Type, T) => Boolean, tp1: Type, arg2: T): Boolean = {
     indentLock.synchronized { super.explain(op, p, tp1, arg2) }
   }
 
-  private val toStringLock = new Object
+  private object toStringLock
 
   override protected def typeToString(tpe: Type): String =
     toStringLock.synchronized(super.typeToString(tpe))

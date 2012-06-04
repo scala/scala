@@ -1,4 +1,4 @@
-import scala.reflect.mirror._
+import scala.reflect.runtime.universe._
 
 object Test extends App {
   // todo. cannot test this unfortunately, because ConsoleFrontEnd grabs Console.out too early

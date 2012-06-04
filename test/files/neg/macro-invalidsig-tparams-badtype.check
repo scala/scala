@@ -1,6 +1,6 @@
 Macros_Test_2.scala:2: error: macro implementation has wrong shape:
  required: (c: scala.reflect.makro.Context): c.Expr[Any]
- found   : (c: scala.reflect.makro.Context)(U: c.mirror.Type): Nothing
+ found   : (c: scala.reflect.makro.Context)(U: c.universe.Type): Nothing
 number of parameter sections differ
   def foo[U] = macro Impls.foo[U]
                               ^

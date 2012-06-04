@@ -10,6 +10,7 @@
 package org.scalacheck.util
 
 import scala.collection._
+import scala.reflect.ClassTag
 
 trait Buildable[T,C[_]] {
   def builder: mutable.Builder[T,C[T]]

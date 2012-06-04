@@ -187,7 +187,7 @@ trait Infer {
       tp1 // @MAT aliases already handled by subtyping
   }
 
-  private val stdErrorClass = RootClass.newErrorClass(tpnme.ERROR)
+  private val stdErrorClass = rootMirror.RootClass.newErrorClass(tpnme.ERROR)
   private val stdErrorValue = stdErrorClass.newErrorValue(nme.ERROR)
 
   /** The context-dependent inferencer part */

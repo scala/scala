@@ -1,4 +1,4 @@
-import scala.reflect.mirror._
+import scala.reflect.runtime.universe._
 
 class Foo(bar: String) extends annotation.ClassfileAnnotation
 

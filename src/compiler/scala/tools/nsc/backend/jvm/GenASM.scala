@@ -53,7 +53,7 @@ abstract class GenASM extends SubComponent with BytecodeWriters {
     override def erasedTypes = true
     def apply(cls: IClass) = sys.error("no implementation")
 
-    val BeanInfoAttr = definitions.getRequiredClass("scala.beans.BeanInfo")
+    val BeanInfoAttr = rootMirror.getRequiredClass("scala.beans.BeanInfo")
 
     def isJavaEntryPoint(icls: IClass) = {
       val sym = icls.symbol
@@ -341,8 +341,8 @@ abstract class GenASM extends SubComponent with BytecodeWriters {
   def inameToSymbol(iname: String): Symbol = {
     val name = global.newTypeName(iname)
     val res0 =
-      if (nme.isModuleName(name)) definitions.getModule(nme.stripModuleSuffix(name))
-      else                        definitions.getClassByName(name.replace('/', '.')) // TODO fails for inner classes (but this hasn't been tested).
+      if (nme.isModuleName(name)) rootMirror.getModule(nme.stripModuleSuffix(name))
+      else                        rootMirror.getClassByName(name.replace('/', '.')) // TODO fails for inner classes (but this hasn't been tested).
     assert(res0 != NoSymbol)
     val res = jsymbol(res0)
     res
@@ -1176,8 +1176,8 @@ abstract class GenASM extends SubComponent with BytecodeWriters {
      */
     private val androidFieldName = newTermName("CREATOR")
 
-    private lazy val AndroidParcelableInterface = definitions.getClassIfDefined("android.os.Parcelable")
-    private lazy val AndroidCreatorClass        = definitions.getClassIfDefined("android.os.Parcelable$Creator")
+    private lazy val AndroidParcelableInterface = rootMirror.getClassIfDefined("android.os.Parcelable")
+    private lazy val AndroidCreatorClass        = rootMirror.getClassIfDefined("android.os.Parcelable$Creator")
 
     def isAndroidParcelableClass(sym: Symbol) =
       (AndroidParcelableInterface != NoSymbol) &&

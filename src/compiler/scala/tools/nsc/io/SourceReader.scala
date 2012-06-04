@@ -28,7 +28,7 @@ class SourceReader(decoder: CharsetDecoder, reporter: Reporter) {
   private var chars: CharBuffer = CharBuffer.allocate(0x4000)
 
   private def reportEncodingError(filename:String) = {
-    reporter.error(util.NoPosition,
+    reporter.error(scala.reflect.internal.util.NoPosition,
                    "IO error while decoding "+filename+" with "+decoder.charset()+"\n"+
                    "Please try specifying another one using the -encoding option")
   }

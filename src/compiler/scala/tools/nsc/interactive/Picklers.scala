@@ -5,10 +5,12 @@
 package scala.tools.nsc
 package interactive
 
-import util.{SourceFile, BatchSourceFile, InterruptReq}
+import util.InterruptReq
+import scala.reflect.internal.util.{SourceFile, BatchSourceFile}
 import io.{AbstractFile, PlainFile}
 
-import util.{Position, RangePosition, NoPosition, OffsetPosition, TransparentPosition, EmptyAction}
+import util.EmptyAction
+import scala.reflect.internal.util.{Position, RangePosition, NoPosition, OffsetPosition, TransparentPosition}
 import io.{Pickler, CondPickler}
 import io.Pickler._
 import collection.mutable
@@ -115,7 +117,7 @@ trait Picklers { self: Global =>
         if (sym.isOverloaded) makeSymbol(sym.alternatives(rest.head.toString.toInt), rest.tail)
         else makeSymbol(sym, rest)
     }
-    pkl[List[Name]] .wrapped { makeSymbol(definitions.RootClass, _) } { ownerNames(_, new ListBuffer).toList }
+    pkl[List[Name]] .wrapped { makeSymbol(rootMirror.RootClass, _) } { ownerNames(_, new ListBuffer).toList }
   }
 
   implicit def workEvent: Pickler[WorkEvent] = {

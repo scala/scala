@@ -1,7 +1,7 @@
 package scala.tools.nsc.interactive.tests.core
 
 import scala.tools.nsc.io.Path
-import scala.tools.nsc.util.SourceFile
+import scala.reflect.internal.util.SourceFile
 
 /** Resources used by the test. */
 private[tests] trait TestResources extends TestSettings {

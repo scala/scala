@@ -8,7 +8,7 @@ package doc
 
 import scala.util.control.ControlThrowable
 import reporters.Reporter
-import util.{ NoPosition, BatchSourceFile}
+import scala.reflect.internal.util.{ NoPosition, BatchSourceFile}
 import io.{ File, Directory }
 import DocParser.Parsed
 

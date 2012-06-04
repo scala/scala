@@ -1,10 +1,5 @@
-package scala.reflect
-
-package object api {
-  implicit class PimpedExpr[T](expr: Universe # Expr[T]) {
-    def runtimeEval: T = {
-      println("hello, dear")
-      expr.eval
-    }
+package object foo {
+  implicit class PimpedInt(foo: Int) {
+    def bar = ???
   }
 }

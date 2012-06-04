@@ -1,3 +1,4 @@
+import scala.reflect.{ArrayTag, arrayTag}
 import scala.collection.mutable.MapLike
 
 class SparseArray[@specialized(Int) T:ArrayTag] extends collection.mutable.Map[Int,T] with collection.mutable.MapLike[Int,T,SparseArray[T]] {

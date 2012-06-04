@@ -1,7 +1,9 @@
+import scala.reflect.runtime.universe._
+
 object Test extends App {
-  println(typeTag[Int])
-  println(typeTag[Array[Int]])
-  println(typeTag[Array[Array[Int]]])
-  println(typeTag[Array[Array[Array[Int]]]])
-  println(typeTag[Array[Array[Array[Array[Int]]]]])
+  println(typeOf[Int])
+  println(typeOf[Array[Int]])
+  println(typeOf[Array[Array[Int]]])
+  println(typeOf[Array[Array[Array[Int]]]])
+  println(typeOf[Array[Array[Array[Array[Int]]]]])
 }

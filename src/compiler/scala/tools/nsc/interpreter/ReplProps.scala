@@ -7,9 +7,11 @@ package scala.tools.nsc
 package interpreter
 
 import scala.sys._
+import Prop._
 
 class ReplProps {
   private def bool(name: String) = BooleanProp.keyExists(name)
+  private def int(name: String) = IntProp(name)
 
   val jlineDebug = bool("scala.tools.jline.internal.Log.debug")
   val jlineTrace = bool("scala.tools.jline.internal.Log.trace")
@@ -19,7 +21,11 @@ class ReplProps {
   val trace = bool("scala.repl.trace")
   val power = bool("scala.repl.power")
 
-  val replInitCode  = Prop[JFile]("scala.repl.initcode")
-  val powerInitCode = Prop[JFile]("scala.repl.power.initcode")
-  val powerBanner   = Prop[JFile]("scala.repl.power.banner")
+  val replInitCode    = Prop[JFile]("scala.repl.initcode")
+  val replAutorunCode = Prop[JFile]("scala.repl.autoruncode")
+  val powerInitCode   = Prop[JFile]("scala.repl.power.initcode")
+  val powerBanner     = Prop[JFile]("scala.repl.power.banner")
+
+  val vids = bool("scala.repl.vids")
+  val maxPrintString = int("scala.repl.maxprintstring")
 }

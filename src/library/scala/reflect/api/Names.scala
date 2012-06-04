@@ -10,28 +10,18 @@ package api
  *  Names are interned. That is, for two names `name11 and `name2`,
  *  `name1 == name2` implies `name1 eq name2`.
  */
-trait Names {
+trait Names extends base.Names {
+
   /** The abstract type of names */
-  type Name >: Null <: AbsName
+  type Name >: Null <: NameApi
 
-  /** The abstract type of names representing terms */
-  type TypeName <: Name
+  /** The extended API of names that's supported on reflect mirror via an
+   *  implicit conversion in reflect.ops
+   */
+  abstract class NameApi extends NameBase {
 
-  /** The abstract type of names representing types */
-  type TermName <: Name
-
-  abstract class AbsName {
-    /** Is this name a term name? */
-    def isTermName: Boolean
-
-    /** Is this name a type name? */
-    def isTypeName: Boolean
-
-    /** Returns a term name that represents the same string as this name */
-    def toTermName: TermName
-
-    /** Returns a type name that represents the same string as this name */
-    def toTypeName: TypeName
+    // [Eugene++] this functionality should be in base
+    // this is because stuff will be reified in mangled state, and people will need a way to figure it out
 
     /** Replaces all occurrences of \$op_names in this name by corresponding operator symbols.
      *  Example: `foo_\$plus\$eq` becomes `foo_+=`
@@ -51,16 +41,4 @@ trait Names {
      */
     def encodedName: Name
   }
-
-  /** Create a new term name.
-   */
-  def newTermName(s: String): TermName
-
-  /** Creates a new type name.
-   */
-  def newTypeName(s: String): TypeName
-
-  def EmptyTermName: TermName = newTermName("")
-
-  def EmptyTypeName: TypeName = EmptyTermName.toTypeName
 }

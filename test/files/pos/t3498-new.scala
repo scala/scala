@@ -1,3 +1,5 @@
+import scala.reflect.{ArrayTag, arrayTag}
+
 abstract class A[T, @specialized(scala.Int) U : ArrayTag] {
     def f(state: T): Array[U]
 }

@@ -6,13 +6,12 @@
 package scala.reflect
 package api
 
-import java.lang.Integer.toOctalString
-import annotation.switch
-
-trait Constants {
+trait Constants extends base.Constants {
   self: Universe =>
 
-  abstract class AbsConstant {
+  override type Constant >: Null <: AnyRef with ConstantApi
+
+  abstract class ConstantApi {
     val value: Any
     def tpe: Type
     def isNaN: Boolean
@@ -30,14 +29,5 @@ trait Constants {
     def symbolValue: Symbol
 
     def convertTo(pt: Type): Constant
-  }
-
-  type Constant <: AbsConstant
-
-  val Constant: ConstantExtractor
-
-  abstract class ConstantExtractor {
-    def apply(const: Any): Constant
-    def unapply(arg: Constant): Option[Any]
   }
 }

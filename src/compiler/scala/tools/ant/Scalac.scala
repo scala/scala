@@ -632,7 +632,7 @@ class Scalac extends ScalaMatchingTask with ScalacShared {
       case "none" =>
       case x =>
         val depFilePath = SPath(x)
-        command.settings.dependenciesFile.value = SPath(getProject.getBaseDir).normalize resolve depFilePath path
+        command.settings.dependenciesFile.value = SPath(getProject.getBaseDir).normalize.resolve(depFilePath).path
     }
 
     (command.settings, sourceFiles, javaOnly)

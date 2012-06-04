@@ -1,4 +1,4 @@
-classtags_contextbound_b.scala:3: error: No ClassTag available for T
+classtags_contextbound_b.scala:5: error: No ClassTag available for T
   def foo[T] = mkArray[T]
                       ^
 one error found

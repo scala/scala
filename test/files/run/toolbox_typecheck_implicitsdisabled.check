@@ -2,4 +2,4 @@
   import scala.Predef._;
   scala.Predef.any2ArrowAssoc[Int](1).->[Int](2)
 }
-scala.reflect.runtime.ToolBoxes$ToolBox$ToolBoxError: reflective typecheck has failed: value -> is not a member of Int
+scala.tools.reflect.ToolBoxError: reflective typecheck has failed: value -> is not a member of Int

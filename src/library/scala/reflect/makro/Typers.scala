@@ -1,9 +1,11 @@
-package scala.reflect.makro
+package scala.reflect
+package makro
 
 trait Typers {
   self: Context =>
 
   import mirror._
+  import universe._
 
   /** Contexts that represent macros in-flight, including the current one. Very much like a stack trace, but for macros only.
    *  Can be useful for interoperating with other macros and for imposing compiler-friendly limits on macro expansion.

@@ -14,11 +14,11 @@ trait SynchronizedSymbols extends internal.Symbols { self: SymbolTable =>
   override def connectModuleToClass(m: ModuleSymbol, moduleClass: ClassSymbol): ModuleSymbol =
     synchronized { super.connectModuleToClass(m, moduleClass) }
 
-  override def newFreeTermSymbol(name: TermName, info: Type, value: => Any, flags: Long = 0L, origin: String = null): FreeTerm =
-    new FreeTerm(name, value, origin) with SynchronizedTermSymbol initFlags flags setInfo info
+  override def newFreeTermSymbol(name: TermName, info: Type, value: => Any, flags: Long = 0L, origin: String = null): FreeTermSymbol =
+    new FreeTermSymbol(name, value, origin) with SynchronizedTermSymbol initFlags flags setInfo info
 
-  override def newFreeTypeSymbol(name: TypeName, info: Type, value: => Any, flags: Long = 0L, origin: String = null): FreeType =
-    new FreeType(name, value, origin) with SynchronizedTypeSymbol initFlags flags setInfo info
+  override def newFreeTypeSymbol(name: TypeName, info: Type, value: => Any, flags: Long = 0L, origin: String = null): FreeTypeSymbol =
+    new FreeTypeSymbol(name, value, origin) with SynchronizedTypeSymbol initFlags flags setInfo info
 
   override protected def makeNoSymbol: NoSymbol = new NoSymbol with SynchronizedSymbol
 
@@ -92,8 +92,7 @@ trait SynchronizedSymbols extends internal.Symbols { self: SymbolTable =>
     override protected def createModuleSymbol(name: TermName, pos: Position, newFlags: Long): ModuleSymbol =
       new ModuleSymbol(this, pos, name) with SynchronizedTermSymbol initFlags newFlags
 
-    override protected def createPackageSymbol(name: TermName, pos: Position, newFlags: Long): PackageSymbol =
-      new PackageSymbol(this, pos, name) with SynchronizedTermSymbol initFlags newFlags
+    override protected def createPackageSymbol(name: TermName, pos: Position, newFlags: Long): ModuleSymbol = createModuleSymbol(name, pos, newFlags)
 
     // TODO
     // override protected def createValueParameterSymbol(name: TermName, pos: Position, newFlags: Long)
@@ -133,7 +132,8 @@ trait SynchronizedSymbols extends internal.Symbols { self: SymbolTable =>
 
   trait SynchronizedModuleClassSymbol extends ModuleClassSymbol with SynchronizedClassSymbol {
     override def sourceModule = synchronized { super.sourceModule }
-    override def sourceModule_=(module: Symbol) = synchronized { super.sourceModule_=(module: Symbol) }
+    // [Eugene++ to Martin] doesn't override anything. no longer necessary?
+    // def sourceModule_=(module: ModuleSymbol) = synchronized { super.sourceModule_=(module) }
     override def implicitMembers: List[Symbol] = synchronized { super.implicitMembers }
   }
 }

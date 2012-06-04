@@ -7,6 +7,8 @@ package scala.tools.nsc
 package io
 
 import java.io.InputStream
+// [scala-reflect.jar migration note] uncomment when creating scala-reflect.jar
+// import java.io.{ File => JFile }
 
 /** A distinguished object so you can avoid both null
  *  and Option.

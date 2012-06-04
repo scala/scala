@@ -2,10 +2,12 @@
  * Copyright 2006-2011 LAMP/EPFL
  * @author  Martin Odersky
  */
-package scala.reflect.internal
+package scala.reflect
+package internal
 
 import annotation.{ tailrec, switch }
 import java.lang.{ Character => JCharacter }
+import language.postfixOps
 
 /** Contains constants and classifier methods for characters */
 trait Chars {

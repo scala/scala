@@ -1,3 +1,5 @@
+import scala.reflect.{ArrayTag, arrayTag}
+
 class Foo[@specialized A: ArrayTag] {
 
   // conflicting in bounds, expect a normalized member calling m
