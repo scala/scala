@@ -749,12 +749,18 @@ trait Types extends api.Types { self: SymbolTable =>
     def substThis(from: Symbol, to: Symbol): Type =
       substThis(from, to.thisType)
 
-    /** Performs both substThis and substSym in one traversal.
+    /** Performs both substThis and substSym, in that order.
+     *
+     * [JZ] Reverted `SubstThisAndSymMap` from 334872, which was not the same as
+     * `substThis(from, to).substSym(symsFrom, symsTo)`.
+     *
+     * `SubstThisAndSymMap` performs a breadth-first map over this type, which meant that
+     * symbol substitution occured before `ThisType` substitution. Consequently, in substitution
+     * of a `SingleType(ThisType(`from`), sym), symbols were rebound to `from` rather than `to`.
      */
-    def substThisAndSym(from: Symbol, to: Type, symsFrom: List[Symbol], symsTo: List[Symbol]): Type = {
+    def substThisAndSym(from: Symbol, to: Type, symsFrom: List[Symbol], symsTo: List[Symbol]): Type =
       if (symsFrom eq symsTo) substThis(from, to)
-      else new SubstThisAndSymMap(from, to, symsFrom, symsTo) apply this
-    }
+      else substThis(from, to).substSym(symsFrom, symsTo)
 
     /** Returns all parts of this type which satisfy predicate `p` */
     def filter(p: Type => Boolean): List[Type] = new FilterTypeCollector(p) collect this
@@ -4516,13 +4522,6 @@ trait Types extends api.Types { self: SymbolTable =>
     def apply(tp: Type): Type = tp match {
       case ThisType(sym) if (sym == from) => to
       case _ => mapOver(tp)
-    }
-  }
-  class SubstThisAndSymMap(fromThis: Symbol, toThis: Type, fromSyms: List[Symbol], toSyms: List[Symbol])
-  extends SubstSymMap(fromSyms, toSyms) {
-    override def apply(tp: Type): Type = tp match {
-      case ThisType(sym) if sym == fromThis => apply(toThis)
-      case _                                => super.apply(tp)
     }
   }
 
