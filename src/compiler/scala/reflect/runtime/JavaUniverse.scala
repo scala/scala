@@ -14,7 +14,7 @@ class JavaUniverse extends internal.SymbolTable with ReflectSetup with runtime.S
 
   type TreeGen = internal.TreeGen
 
-  override type Position = scala.tools.nsc.util.Position
+  override type Position = scala.reflect.internal.util.Position
 
   override val gen = new TreeGen { val global: self.type = self }
 

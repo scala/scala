@@ -377,7 +377,7 @@ trait NamesDefaults { self: Analyzer =>
    */
   def addDefaults(givenArgs: List[Tree], qual: Option[Tree], targs: List[Tree],
                   previousArgss: List[List[Tree]], params: List[Symbol],
-                  pos: util.Position, context: Context): (List[Tree], List[Symbol]) = {
+                  pos: scala.reflect.internal.util.Position, context: Context): (List[Tree], List[Symbol]) = {
     if (givenArgs.length < params.length) {
       val (missing, positional) = missingParams(givenArgs, params)
       if (missing forall (_.hasDefault)) {

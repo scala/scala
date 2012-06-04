@@ -1,7 +1,7 @@
 package scala.tools.nsc
 package interactive
 
-import util.{SourceFile, BatchSourceFile, RangePosition}
+import scala.reflect.internal.util.{SourceFile, BatchSourceFile, RangePosition}
 import collection.mutable.ArrayBuffer
 import reflect.internal.Chars.isLineBreakChar
 

@@ -6,7 +6,7 @@ package scala.tools.nsc
 package interactive
 package tests
 
-import util._
+import scala.reflect.internal.util._
 import reporters._
 import io.AbstractFile
 import collection.mutable.ArrayBuffer

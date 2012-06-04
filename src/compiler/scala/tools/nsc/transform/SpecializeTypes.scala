@@ -1695,7 +1695,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
     }
   }
 
-  private def forwardCall(pos: util.Position, receiver: Tree, paramss: List[List[ValDef]]): Tree = {
+  private def forwardCall(pos: scala.reflect.internal.util.Position, receiver: Tree, paramss: List[List[ValDef]]): Tree = {
     val argss = mmap(paramss)(x => Ident(x.symbol))
     def mkApply(fun: Tree, args: List[Tree]) = Apply(fun, args)
     atPos(pos) { (receiver /: argss) (mkApply) }
@@ -1722,7 +1722,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
    *    }
    *  }}
    */
-  private def forwardCtorCall(pos: util.Position, receiver: Tree, paramss: List[List[ValDef]], clazz: Symbol): Tree = {
+  private def forwardCtorCall(pos: scala.reflect.internal.util.Position, receiver: Tree, paramss: List[List[ValDef]], clazz: Symbol): Tree = {
 
     /** A constructor parameter `f` initializes a specialized field
      *  iff:

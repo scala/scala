@@ -7,7 +7,7 @@ package scala.tools.nsc
 package typechecker
 
 import scala.collection.{ mutable, immutable }
-import scala.tools.util.StringOps.{ countElementsAsString, countAsString }
+import scala.reflect.internal.util.StringOps.{ countElementsAsString, countAsString }
 import symtab.Flags.{ PRIVATE, PROTECTED }
 
 trait ContextErrors {

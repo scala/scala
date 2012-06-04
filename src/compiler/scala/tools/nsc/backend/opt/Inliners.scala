@@ -9,7 +9,7 @@ package backend.opt
 
 import scala.collection.mutable
 import scala.tools.nsc.symtab._
-import scala.tools.nsc.util.NoSourceFile
+import scala.reflect.internal.util.NoSourceFile
 
 /**
  *  @author Iulian Dragos
@@ -100,7 +100,7 @@ abstract class Inliners extends SubComponent {
   }
 
   def isBottomType(sym: Symbol) = sym == NullClass || sym == NothingClass
-  def posToStr(pos: util.Position) = if (pos.isDefined) pos.point.toString else "<nopos>"
+  def posToStr(pos: scala.reflect.internal.util.Position) = if (pos.isDefined) pos.point.toString else "<nopos>"
 
   /** Is the given class a closure? */
   def isClosureClass(cls: Symbol): Boolean =

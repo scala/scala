@@ -7,7 +7,7 @@ import scala.reflect.ClassTag
 
 trait FrontEnds extends scala.reflect.api.FrontEnds {
 
-  type Position = scala.tools.nsc.util.Position
+  type Position = scala.reflect.internal.util.Position
 
   def mkConsoleFrontEnd(minSeverity: Int = 1): FrontEnd = {
     val settings = new Settings()

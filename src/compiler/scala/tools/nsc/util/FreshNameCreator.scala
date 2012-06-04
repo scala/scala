@@ -16,9 +16,9 @@ trait FreshNameCreator {
   def newName(prefix: String): String
 
   @deprecated("use newName(prefix)", "2.9.0")
-  def newName(pos: util.Position, prefix: String): String = newName(prefix)
+  def newName(pos: scala.reflect.internal.util.Position, prefix: String): String = newName(prefix)
   @deprecated("use newName()", "2.9.0")
-  def newName(pos: util.Position): String = newName()
+  def newName(pos: scala.reflect.internal.util.Position): String = newName()
 }
 
 object FreshNameCreator {

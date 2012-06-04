@@ -4,10 +4,9 @@
  */
 
 
-package scala.tools.nsc
-package util
+package scala.reflect.internal.util
 
-import io.{ AbstractFile, VirtualFile }
+import scala.tools.nsc.io.{ AbstractFile, VirtualFile }
 import scala.collection.mutable.ArrayBuffer
 import annotation.tailrec
 import java.util.regex.Pattern

@@ -3,8 +3,8 @@ package internal
 
 trait Positions extends api.Positions { self: SymbolTable =>
 
-  type Position = scala.tools.nsc.util.Position
-  val NoPosition = scala.tools.nsc.util.NoPosition
+  type Position = scala.reflect.internal.util.Position
+  val NoPosition = scala.reflect.internal.util.NoPosition
   implicit val PositionTag = ClassTag[Position](classOf[Position])
 
   /** A position that wraps a set of trees.
