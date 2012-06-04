@@ -75,7 +75,13 @@ object scaladoc extends Command {
           "Define the overall version number of the documentation, typically the version of the library being documented."),
         Definition(
           CmdOption("doc-source-url", Argument("url")),
-          "Define a URL to be concatenated with source locations for link to source files."))),
+          "Define a URL to be concatenated with source locations for link to source files."),
+        Definition(
+          CmdOption("doc-diagrams"),
+          "Generate diagrams in the current scaladoc compilation run."),
+        Definition(
+          CmdOption("doc-implicits"),
+          "List members generated from implicit conversions in the scaladoc page."))),
 
     Section("Compiler Options",
       DefinitionList(
@@ -103,8 +109,8 @@ object scaladoc extends Command {
             "include the current directory in the search path, you must " &
             "include " & Mono("\".\"") & " in the new settings.")),
         Definition(
-          CmdOption("sourcepath", Argument("path")),
-          "Specify where to find input source files."),
+          CmdOption("doc-source-path", Argument("path")),
+          "Specify the common prefix in the source files' paths. Used when generating links to source."),
         Definition(
           CmdOption("bootclasspath", Argument("path")),
           "Override location of bootstrap class files (where to find the " &

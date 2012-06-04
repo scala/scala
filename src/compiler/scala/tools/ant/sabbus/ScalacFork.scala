@@ -101,7 +101,7 @@ class ScalacFork extends ScalaMatchingTask with ScalacShared with TaskArgs {
 
     compTarget foreach (settings.target = _)
     compilationPath foreach (settings.classpath = _)
-    sourcePath foreach (settings.sourcepath = _)
+    sourcePath foreach (settings.Ysourcepath = _)
     settings.extraParams = extraArgsFlat
 
     if (isMSIL)
