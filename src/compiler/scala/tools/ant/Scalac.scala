@@ -30,8 +30,8 @@ import scala.tools.nsc.reporters.{Reporter, ConsoleReporter}
  *  - `destdir`,
  *  - `classpath`,
  *  - `classpathref`,
- *  - `sourcepath`,
- *  - `sourcepathref`,
+ *  - `Ysourcepath`,
+ *  - `Ysourcepathref`,
  *  - `bootclasspath`,
  *  - `bootclasspathref`,
  *  - `extdirs`,
@@ -61,7 +61,7 @@ import scala.tools.nsc.reporters.{Reporter, ConsoleReporter}
  *  It also takes the following parameters as nested elements:
  *  - `src` (for `srcdir`),
  *  - `classpath`,
- *  - `sourcepath`,
+ *  - `Ysourcepath`,
  *  - `bootclasspath`,
  *  - `extdirs`,
  *  - `compilerarg`.
@@ -119,7 +119,7 @@ class Scalac extends ScalaMatchingTask with ScalacShared {
   /** The class path to use for this compilation. */
   protected var classpath: Option[Path] = None
   /** The source path to use for this compilation. */
-  protected var sourcepath: Option[Path] = None
+  protected var Ysourcepath: Option[Path] = None
   /** The boot class path to use for this compilation. */
   protected var bootclasspath: Option[Path] = None
   /** The path to use when finding scalac - *only used for forking!*  */
@@ -253,19 +253,32 @@ class Scalac extends ScalaMatchingTask with ScalacShared {
     createClasspath().setRefid(input)
   }
 
-  /** Sets the `sourcepath` attribute. Used by [[http://ant.apache.org Ant]].
+  // bridge to setYsourcepath
+  @deprecated("The scalac sourcepath attribute is deprecated. Please use ySourcePath instead!")
+  def setSourcepath(input: Path) = {
+    buildWarning("The scalac sourcepath attribute is deprecated. Please use ySourcePath instead!")
+    setYSourcepath(input)
+  }
+
+  @deprecated("The scalac sourcepath attribute is deprecated. Please use ySourcePath instead!")
+  def setSourcepathref(input: Reference) = {
+    buildWarning("The scalac sourcepath attribute is deprecated. Please use ySourcePath instead!")
+    setYSourcepathref(input)
+  }
+
+  /** Sets the `Ysourcepath` attribute. Used by [[http://ant.apache.org Ant]].
    *  @param input The value of `sourcepath`. */
-  def setSourcepath(input: Path) {
-    sourcepath = setOrAppend(sourcepath, input)
+  def setYSourcepath(input: Path) {
+    Ysourcepath = setOrAppend(Ysourcepath, input)
   }
 
   /** Sets the `sourcepath` as a nested sourcepath Ant parameter.
    *  @return A source path to be configured. */
-  def createSourcepath(): Path = createNewPath(sourcepath _, p => sourcepath = p)
+  def createSourcepath(): Path = createNewPath(Ysourcepath _, p => Ysourcepath = p)
 
-  /** Sets the `sourcepath` as an external reference Ant parameter.
+  /** Sets the `docSourcePath` as an external reference Ant parameter.
    *  @param input A reference to a source path. */
-  def setSourcepathref(input: Reference) {
+  def setYSourcepathref(input: Reference) {
     createSourcepath().setRefid(input)
   }
 
@@ -452,10 +465,10 @@ class Scalac extends ScalaMatchingTask with ScalacShared {
     if (destination.isEmpty) buildError("Member 'destination' is empty.")
     else existing(getProject resolveFile destination.get.toString)
 
-  /** Gets the value of the `sourcepath` attribute in a
+  /** Gets the value of the `ySourcepath` attribute in a
    *  Scala-friendly form.
    *  @return The source path as a list of files. */
-  protected def getSourcepath: List[File] = pathAsList(sourcepath, "sourcepath")
+  protected def getSourcepath: List[File] = pathAsList(Ysourcepath, "sourcepath")
 
   /** Gets the value of the `bootclasspath` attribute in a
    *  Scala-friendly form.
@@ -585,10 +598,10 @@ class Scalac extends ScalaMatchingTask with ScalacShared {
     settings.outdir.value = asString(destination.get)
     if (!classpath.isEmpty)
       settings.classpath.value = asString(getClasspath)
-    if (!sourcepath.isEmpty)
-      settings.sourcepath.value = asString(getSourcepath)
+    if (!Ysourcepath.isEmpty)
+      settings.Ysourcepath.value = asString(getSourcepath)
     else if (origin.get.size() > 0)
-      settings.sourcepath.value = origin.get.list()(0)
+      settings.Ysourcepath.value = origin.get.list()(0)
     if (!bootclasspath.isEmpty)
       settings.bootclasspath.value = asString(getBootclasspath)
     if (!extdirs.isEmpty) settings.extdirs.value = asString(getExtdirs)

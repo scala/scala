@@ -24,8 +24,15 @@ trait StandardScalaSettings {
   val extdirs =           PathSetting ("-extdirs", "Override location of installed extensions.", Defaults.scalaExtDirs)
   val javabootclasspath = PathSetting ("-javabootclasspath", "Override java boot classpath.", Defaults.javaBootClassPath)
   val javaextdirs =       PathSetting ("-javaextdirs", "Override java extdirs classpath.", Defaults.javaExtDirs)
-  val sourcepath =        PathSetting ("-sourcepath", "Specify location(s) of source files.", "") // Defaults.scalaSourcePath
-
+  // sourcePath is now deprecated, as it had two very different meanings confused under a single setting
+  // for the scalac compiler -- it was only used when bootstrapping the scala library, to prevent the new library 
+  //                            bytecode to depend on the old library (now -Ysource-path and .Ysourcepath) 
+  // for scaladoc --            it was used to generate the URL for the source file paths (used in conjunction with
+  //                            -doc-source-url, now -doc-source-path and .docSourcePath)
+  // to prevent .sourcepath usage:
+  def sourcepath :        PathSetting = { assert(false, "Settings.sourcepath has been deprecated. Please use either Settings.YsourcePath or Settings.docSourcePath instead."); null.asInstanceOf[PathSetting] }
+  // to bridge -sourcepath command line: we define deprSourcepath in ScalaSettings
+  
   /** Other settings.
    */
   val dependencyfile =  StringSetting ("-dependencyfile", "file", "Set dependency tracking file.", ".scala_dependencies")

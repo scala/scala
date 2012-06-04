@@ -179,7 +179,7 @@ class PathResolver(settings: Settings, context: JavaContext) {
     case "bootclasspath"      => settings.bootclasspath.value
     case "extdirs"            => settings.extdirs.value
     case "classpath" | "cp"   => settings.classpath.value
-    case "sourcepath"         => settings.sourcepath.value
+    case "Ysourcepath"         => settings.Ysourcepath.value
   }
 
   /** Calculated values based on any given command line options, falling back on
@@ -193,7 +193,7 @@ class PathResolver(settings: Settings, context: JavaContext) {
     def javaUserClassPath   = if (useJavaClassPath) Defaults.javaUserClassPath else ""
     def scalaBootClassPath  = cmdLineOrElse("bootclasspath", Defaults.scalaBootClassPath)
     def scalaExtDirs        = cmdLineOrElse("extdirs", Defaults.scalaExtDirs)
-    def sourcePath          = cmdLineOrElse("sourcepath", Defaults.scalaSourcePath)
+    def sourcePath          = cmdLineOrElse("Ysourcepath", Defaults.scalaSourcePath)
 
     /** Against my better judgment, giving in to martin here and allowing
      *  CLASSPATH to be used automatically.  So for the user-specified part

@@ -62,7 +62,15 @@ class Settings(error: String => Unit) extends scala.tools.nsc.Settings(error) {
   }
 
   /** A setting that defines a URL to be concatenated with source locations and show a link to source files.
-   * If needed the sourcepath option can be used to exclude undesired initial part of the link to sources */
+   * If needed the docSourcePath option can be used to exclude undesired initial part of the link to sources */
+  val docSourcePath = PathSetting (
+    "-doc-source-path",
+    "The prefix in all source file paths. Will be stripped off all paths before URLs are generated.",
+    ""
+  )
+
+  /** A setting that defines a URL to be concatenated with source locations and show a link to source files.
+   * If needed the docSourcePath option can be used to exclude undesired initial part of the link to sources */
   val docsourceurl = StringSetting (
     "-doc-source-url",
     "url",

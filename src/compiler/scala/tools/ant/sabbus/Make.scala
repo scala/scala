@@ -20,7 +20,7 @@ class Make extends Task with TaskArgs {
     if (!destinationDir.isEmpty) settings.d = destinationDir.get
     if (!compTarget.isEmpty) settings.target = compTarget.get
     if (!compilationPath.isEmpty) settings.classpath = compilationPath.get
-    if (!sourcePath.isEmpty) settings.sourcepath = sourcePath.get
+    if (!sourcePath.isEmpty) settings.Ysourcepath = sourcePath.get
     settings.extraParams = extraArgsFlat
     Compilers.make(id.get, (compilerPath.get.list.map{ path => new File(path).toURI.toURL }), settings)
   }
