@@ -12,7 +12,7 @@ import java.util.{Comparator, StringTokenizer}
 import scala.util.Sorting
 import ch.epfl.lamp.compiler.msil._
 import scala.collection.{ mutable, immutable }
-import scala.tools.nsc.util.{Position, NoPosition}
+import scala.reflect.internal.util.{Position, NoPosition}
 
 /**
  * Collects all types from all reference assemblies.

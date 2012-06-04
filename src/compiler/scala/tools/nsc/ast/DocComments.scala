@@ -8,7 +8,7 @@ package ast
 
 import symtab._
 import reporters._
-import util.{Position, NoPosition}
+import scala.reflect.internal.util.{Position, NoPosition}
 import util.DocStrings._
 import scala.reflect.internal.Chars._
 import scala.collection.mutable

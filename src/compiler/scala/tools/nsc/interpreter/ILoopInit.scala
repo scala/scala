@@ -6,7 +6,7 @@
 package scala.tools.nsc
 package interpreter
 
-import util.Position
+import scala.reflect.internal.util.Position
 import scala.util.control.Exception.ignoring
 
 /**

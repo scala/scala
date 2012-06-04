@@ -8,7 +8,7 @@
 package scala.tools.nsc
 package javac
 
-import scala.tools.nsc.util.OffsetPosition
+import scala.reflect.internal.util.OffsetPosition
 import scala.collection.mutable.ListBuffer
 import symtab.Flags
 import JavaTokens._

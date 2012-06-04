@@ -1,4 +1,4 @@
-package scala.tools.nsc.util
+package scala.reflect.internal.util
 
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer

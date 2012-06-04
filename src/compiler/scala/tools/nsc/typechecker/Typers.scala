@@ -13,7 +13,7 @@ package scala.tools.nsc
 package typechecker
 
 import scala.collection.mutable
-import scala.tools.nsc.util.BatchSourceFile
+import scala.reflect.internal.util.BatchSourceFile
 import mutable.ListBuffer
 import symtab.Flags._
 import util.Statistics

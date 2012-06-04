@@ -7,7 +7,8 @@ package scala.tools.nsc
 package interpreter
 
 import Predef.{ println => _, _ }
-import util.{ Set => _, _ }
+import util.stringFromWriter
+import scala.reflect.internal.util._
 import java.net.URL
 import scala.sys.BooleanProp
 import io.VirtualDirectory

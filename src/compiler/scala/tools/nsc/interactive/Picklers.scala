@@ -5,10 +5,12 @@
 package scala.tools.nsc
 package interactive
 
-import util.{SourceFile, BatchSourceFile, InterruptReq}
+import util.InterruptReq
+import scala.reflect.internal.util.{SourceFile, BatchSourceFile}
 import io.{AbstractFile, PlainFile}
 
-import util.{Position, RangePosition, NoPosition, OffsetPosition, TransparentPosition, EmptyAction}
+import util.EmptyAction
+import scala.reflect.internal.util.{Position, RangePosition, NoPosition, OffsetPosition, TransparentPosition}
 import io.{Pickler, CondPickler}
 import io.Pickler._
 import collection.mutable

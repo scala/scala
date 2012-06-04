@@ -8,7 +8,7 @@ package interpreter
 
 import scala.collection.{ mutable, immutable }
 import scala.util.matching.Regex
-import scala.tools.nsc.util.{ BatchSourceFile }
+import scala.reflect.internal.util.{ BatchSourceFile }
 import session.{ History }
 import scala.io.Codec
 import java.net.{ URL, MalformedURLException }

@@ -5995,7 +5995,7 @@ trait Types extends api.Types { self: SymbolTable =>
 // Lubs and Glbs ---------------------------------------------------------
 
   private def printLubMatrix(btsMap: Map[Type, List[Type]], depth: Int) {
-    import scala.tools.nsc.util.TableDef
+    import util.TableDef
     import TableDef.Column
     def str(tp: Type) = {
       if (tp == NoType) ""

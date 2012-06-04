@@ -11,7 +11,7 @@ import java.nio.ByteBuffer
 import scala.collection.{ mutable, immutable }
 import scala.reflect.internal.pickling.{ PickleFormat, PickleBuffer }
 import scala.tools.nsc.symtab._
-import scala.tools.nsc.util.{ SourceFile, NoSourceFile }
+import scala.reflect.internal.util.{ SourceFile, NoSourceFile }
 import scala.reflect.internal.ClassfileConstants._
 import ch.epfl.lamp.fjbg._
 import JAccessFlags._

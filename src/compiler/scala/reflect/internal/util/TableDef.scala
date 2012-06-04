@@ -1,5 +1,4 @@
-package scala.tools.nsc
-package util
+package scala.reflect.internal.util
 
 import TableDef._
 

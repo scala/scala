@@ -8,7 +8,6 @@ package internal
 
 import scala.collection.{ mutable, immutable }
 import util._
-import scala.tools.nsc.util.WeakHashSet
 
 abstract class SymbolTable extends makro.Universe
                               with Collections

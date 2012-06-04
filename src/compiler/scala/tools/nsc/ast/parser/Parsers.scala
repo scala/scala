@@ -10,10 +10,11 @@ package scala.tools.nsc
 package ast.parser
 
 import scala.collection.mutable.{ListBuffer, StringBuilder}
-import util.{ SourceFile, OffsetPosition, FreshNameCreator }
 import scala.reflect.internal.{ ModifierFlags => Flags }
-import Tokens._
 import scala.reflect.internal.Chars.{ isScalaLetter }
+import scala.reflect.internal.util.{ SourceFile, OffsetPosition }
+import Tokens._
+import util.FreshNameCreator
 
 /** Historical note: JavaParsers started life as a direct copy of Parsers
  *  but at a time when that Parsers had been replaced by a different one.

@@ -3,7 +3,7 @@ package util
 
 import java.util.concurrent.ExecutionException
 import java.lang.reflect.{ InvocationTargetException, UndeclaredThrowableException }
-import scala.tools.util.StringOps._
+import scala.reflect.internal.util.StringOps._
 import language.implicitConversions
 
 object Exceptional {

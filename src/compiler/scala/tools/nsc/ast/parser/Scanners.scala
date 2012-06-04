@@ -5,7 +5,8 @@
 package scala.tools.nsc
 package ast.parser
 
-import scala.tools.nsc.util._
+import scala.tools.nsc.util.CharArrayReader
+import scala.reflect.internal.util._
 import scala.reflect.internal.Chars._
 import Tokens._
 import scala.annotation.switch

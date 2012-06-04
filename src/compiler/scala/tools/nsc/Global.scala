@@ -12,7 +12,8 @@ import scala.tools.util.PathResolver
 import scala.collection.{ mutable, immutable }
 import io.{ SourceReader, AbstractFile, Path }
 import reporters.{ Reporter, ConsoleReporter }
-import util.{ NoPosition, Exceptional, ClassPath, MergedClassPath, SourceFile, NoSourceFile, Statistics, StatisticsInfo, BatchSourceFile, ScriptSourceFile, ScalaClassLoader, returning }
+import util.{ Exceptional, ClassPath, MergedClassPath, Statistics, StatisticsInfo, ScalaClassLoader, returning }
+import scala.reflect.internal.util.{ NoPosition, SourceFile, NoSourceFile, BatchSourceFile, ScriptSourceFile }
 import scala.reflect.internal.pickling.{ PickleBuffer, PickleFormat }
 import settings.{ AestheticSettings }
 import symtab.{ Flags, SymbolTable, SymbolLoaders, SymbolTrackers }

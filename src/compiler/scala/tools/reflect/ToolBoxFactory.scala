@@ -8,9 +8,9 @@ import scala.tools.nsc.Global
 import scala.tools.nsc.typechecker.Modes
 import scala.tools.nsc.io.VirtualDirectory
 import scala.tools.nsc.interpreter.AbstractFileClassLoader
-import scala.tools.nsc.util.{FreshNameCreator, BatchSourceFile}
+import scala.tools.nsc.util.FreshNameCreator
 import scala.reflect.internal.Flags
-import scala.tools.nsc.util.{NoSourceFile, NoFile}
+import scala.reflect.internal.util.{BatchSourceFile, NoSourceFile, NoFile}
 import java.lang.{Class => jClass}
 import scala.compat.Platform.EOL
 import scala.reflect.NameTransformer
@@ -289,7 +289,7 @@ abstract class ToolBoxFactory[U <: JavaUniverse](val u: U) { factorySelf =>
 
     lazy val compiler: ToolBoxGlobal = {
       try {
-        val errorFn: String => Unit = msg => frontEnd.log(scala.tools.nsc.util.NoPosition, msg, frontEnd.ERROR)
+        val errorFn: String => Unit = msg => frontEnd.log(scala.reflect.internal.util.NoPosition, msg, frontEnd.ERROR)
         val command = new CompilerCommand(arguments.toList, errorFn)
         command.settings.outputDirs setSingleOutput virtualDirectory
         val instance = new ToolBoxGlobal(command.settings, new FrontEndToReporterProxy(frontEnd) { val settings = command.settings })
