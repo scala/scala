@@ -966,12 +966,21 @@ trait Typers extends Modes with Adaptations with Tags {
        * see test/files/../t5189*.scala
        */
       def adaptConstrPattern(): Tree = { // (5)
-        def isExtractor(sym: Symbol) = reallyExists(unapplyMember(sym.tpe))
-        val extractor = tree.symbol filter isExtractor
+        def hasUnapplyMember(tp: Type) = reallyExists(unapplyMember(tp))
+        val overloadedExtractorOfObject = tree.symbol filter (sym => hasUnapplyMember(sym.tpe))
+        // if the tree's symbol's type does not define an extractor, maybe the tree's type does
+        // this is the case when we encounter an arbitrary tree as the target of an unapply call (rather than something that looks like a constructor call)
+        // (for now, this only happens due to maybeTypeTagExtractor, but when we support parameterized extractors, it will become more common place)
+        val extractor = overloadedExtractorOfObject orElse unapplyMember(tree.tpe)
         if (extractor != NoSymbol) {
-          tree setSymbol extractor
+          // if we did some ad-hoc overloading resolution, update the tree's symbol
+          // do not update the symbol if the tree's symbol's type does not define an unapply member
+          // (e.g. since it's some method that returns an object with an unapply member)
+          if (overloadedExtractorOfObject != NoSymbol)
+            tree setSymbol overloadedExtractorOfObject
+
           tree.tpe match {
-            case OverloadedType(pre, alts) => tree.tpe = overloadedType(pre, alts filter isExtractor)
+            case OverloadedType(pre, alts) => tree.tpe = overloadedType(pre, alts filter (alt => hasUnapplyMember(alt.tpe)))
             case _ =>
           }
           val unapply = unapplyMember(extractor.tpe)
