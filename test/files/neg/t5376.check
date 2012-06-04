@@ -1,0 +1,11 @@
+t5376.scala:12: error: type mismatch;
+ found   : String("a")
+ required: Int
+    "a": Int
+    ^
+t5376.scala:22: error: type mismatch;
+ found   : String("a")
+ required: Int
+    "a": Int
+    ^
+two errors found
