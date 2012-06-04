@@ -11,7 +11,7 @@ scala> :type -v def f = 5
 
 // Internal Type structure
 NullaryMethodType(
-  TypeRef(TypeSymbol(final class Int extends AnyVal))
+  TypeRef(TypeSymbol(final abstract class Int extends AnyVal))
 )
 
 scala> :type -v def f() = 5
@@ -20,7 +20,9 @@ scala> :type -v def f() = 5
 
 // Internal Type structure
 NullaryMethodType(
-  resultType = TypeRef(TypeSymbol(final class Int extends AnyVal))
+  resultType = TypeRef(
+    TypeSymbol(final abstract class Int extends AnyVal)
+  )
 )
 
 scala> :type -v def f[T] = 5
@@ -31,7 +33,7 @@ scala> :type -v def f[T] = 5
 PolyType(
   typeParams = List(TypeParam(T))
   resultType = NullaryMethodType(
-    TypeRef(TypeSymbol(final class Int extends AnyVal))
+    TypeRef(TypeSymbol(final abstract class Int extends AnyVal))
   )
 )
 
@@ -43,7 +45,7 @@ scala> :type -v def f[T >: Null] = 5
 PolyType(
   typeParams = List(TypeParam(T >: Null))
   resultType = NullaryMethodType(
-    TypeRef(TypeSymbol(final class Int extends AnyVal))
+    TypeRef(TypeSymbol(final abstract class Int extends AnyVal))
   )
 )
 
@@ -55,7 +57,7 @@ scala> :type -v def f[T <: String] = 5
 PolyType(
   typeParams = List(TypeParam(T <: String))
   resultType = NullaryMethodType(
-    TypeRef(TypeSymbol(final class Int extends AnyVal))
+    TypeRef(TypeSymbol(final abstract class Int extends AnyVal))
   )
 )
 
@@ -67,7 +69,9 @@ scala> :type -v def f[T]() = 5
 PolyType(
   typeParams = List(TypeParam(T))
   resultType = NullaryMethodType(
-    resultType = TypeRef(TypeSymbol(final class Int extends AnyVal))
+    resultType = TypeRef(
+      TypeSymbol(final abstract class Int extends AnyVal)
+    )
   )
 )
 
@@ -79,7 +83,9 @@ scala> :type -v def f[T, U]() = 5
 PolyType(
   typeParams = List(TypeParam(T), TypeParam(U))
   resultType = NullaryMethodType(
-    resultType = TypeRef(TypeSymbol(final class Int extends AnyVal))
+    resultType = TypeRef(
+      TypeSymbol(final abstract class Int extends AnyVal)
+    )
   )
 )
 
@@ -93,7 +99,7 @@ PolyType(
   resultType = NullaryMethodType(
     resultType = NullaryMethodType(
       resultType = TypeRef(
-        TypeSymbol(final class Int extends AnyVal)
+        TypeSymbol(final abstract class Int extends AnyVal)
       )
     )
   )
@@ -107,7 +113,7 @@ scala> :type -v def f[T, U <: T] = 5
 PolyType(
   typeParams = List(TypeParam(T), TypeParam(U <: T))
   resultType = NullaryMethodType(
-    TypeRef(TypeSymbol(final class Int extends AnyVal))
+    TypeRef(TypeSymbol(final abstract class Int extends AnyVal))
   )
 )
 
@@ -123,7 +129,7 @@ PolyType(
     resultType = MethodType(
       params = List(TermSymbol(y: U))
       resultType = TypeRef(
-        TypeSymbol(final class Int extends AnyVal)
+        TypeSymbol(final abstract class Int extends AnyVal)
       )
     )
   )
@@ -138,7 +144,9 @@ PolyType(
   typeParams = List(TypeParam(T))
   resultType = MethodType(
     params = List(TermSymbol(implicit evidence$1: Ordering[T]))
-    resultType = TypeRef(TypeSymbol(final class Int extends AnyVal))
+    resultType = TypeRef(
+      TypeSymbol(final abstract class Int extends AnyVal)
+    )
   )
 )
 
@@ -177,7 +185,7 @@ PolyType(
     )
   )
   resultType = NullaryMethodType(
-    TypeRef(TypeSymbol(final class Int extends AnyVal))
+    TypeRef(TypeSymbol(final abstract class Int extends AnyVal))
   )
 )
 
