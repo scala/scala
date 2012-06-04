@@ -1,4 +1,4 @@
-t5334_2.scala:4: error: implementation restriction: cannot reify block of type List[(C, C)] that involves a type declared inside the block being reified. consider casting the return value to a suitable type
+t5334_2.scala:5: error: implementation restriction: cannot reify block of type List[(C, C)] that involves a type declared inside the block being reified. consider casting the return value to a suitable type
   reify {
         ^
 one error found

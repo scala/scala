@@ -6,8 +6,8 @@ scala>
 scala> import language.experimental.macros
 import language.experimental.macros
 
-scala> import scala.reflect.mirror._
-import scala.reflect.mirror._
+scala> import scala.reflect.runtime.universe._
+import scala.reflect.runtime.universe._
 
 scala> 
 

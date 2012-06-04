@@ -1,4 +1,12 @@
+class A1
 Test.A1
-true
-Test.this.A2
-true
+Object {
+  def <init>: <?>
+  def foo: <?>
+}
+class A2
+Test.A2
+Object {
+  def <init>: <?>
+  def foo: <?>
+}

@@ -1,4 +1,7 @@
-import scala.reflect.mirror._
+import scala.reflect.runtime.universe._
+import scala.reflect.runtime.{universe => ru}
+import scala.reflect.runtime.{currentMirror => cm}
+import scala.tools.reflect.ToolBox
 
 class ann(bar: String, quux: Array[String] = Array(), baz: ann = null) extends annotation.ClassfileAnnotation
 
@@ -10,7 +13,7 @@ object Test extends App {
   println(tree.toString)
 
   // test 2: import and typecheck
-  val toolbox = mkToolBox()
+  val toolbox = cm.mkToolBox()
   val ttree = toolbox.typeCheck(tree)
   println(ttree.toString)
 

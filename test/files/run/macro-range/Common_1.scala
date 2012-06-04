@@ -1,4 +1,3 @@
-import reflect.api.Modifier
 import reflect.makro.Context
 
 abstract class RangeDefault {
@@ -12,7 +11,7 @@ abstract class RangeDefault {
 /** This class should go into reflect.macro once it is a bit more stable. */
 abstract class Utils {
   val context: Context
-  import context.mirror._
+  import context.universe._
 
   class TreeSubstituter(from: List[Symbol], to: List[Tree]) extends Transformer {
     override def transform(tree: Tree): Tree = tree match {
