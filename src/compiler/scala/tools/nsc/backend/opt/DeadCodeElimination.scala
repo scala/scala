@@ -100,9 +100,20 @@ abstract class DeadCodeElimination extends SubComponent {
         var rd = rdef.in(bb);
         for (Pair(i, idx) <- bb.toList.zipWithIndex) {
           i match {
+
             case LOAD_LOCAL(l) =>
               defs = defs + Pair(((bb, idx)), rd.vars)
-//              Console.println(i + ": " + (bb, idx) + " rd: " + rd + " and having: " + defs)
+
+            case STORE_LOCAL(_) => // see SI-4935
+              val necessary = rdef.findDefs(bb, idx, 1) exists { p =>
+                val (bb1, idx1) = p
+                bb1(idx1) match {
+                  case LOAD_MODULE(module) => isLoadNeeded(module)
+                  case _                   => false
+                }
+              }
+              if (necessary) worklist += ((bb, idx))
+
             case RETURN(_) | JUMP(_) | CJUMP(_, _, _, _) | CZJUMP(_, _, _, _) | STORE_FIELD(_, _) |
                  THROW(_)   | LOAD_ARRAY_ITEM(_) | STORE_ARRAY_ITEM(_) | SCOPE_ENTER(_) | SCOPE_EXIT(_) | STORE_THIS(_) |
                  LOAD_EXCEPTION(_) | SWITCH(_, _) | MONITOR_ENTER() | MONITOR_EXIT() => worklist += ((bb, idx))
@@ -127,6 +138,10 @@ abstract class DeadCodeElimination extends SubComponent {
           rd = rdef.interpret(bb, idx, rd)
         }
       }
+    }
+
+    private def isLoadNeeded(module: Symbol): Boolean = {
+      module.info.member(nme.CONSTRUCTOR).filter(isSideEffecting) != NoSymbol
     }
 
     /** Mark useful instructions. Instructions in the worklist are each inspected and their
