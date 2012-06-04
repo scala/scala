@@ -44,6 +44,16 @@ trait ClassTag[T] extends Equals with Serializable {
       case _                        => java.lang.reflect.Array.newInstance(runtimeClass, len).asInstanceOf[Array[T]]
     }
 
+  /** A ClassTag[T] can serve as an extractor that matches only objects of type T.
+   *
+   * The compiler tries to turn unchecked type tests in pattern matches into checked ones
+   * by wrapping a `(_: T)` type pattern as `ct(_: T)`, where `ct` is the `ClassTag[T]` instance.
+   * Type tests necessary before calling other extractors are treated similarly.
+   * `SomeExtractor(...)` is turned into `ct(SomeExtractor(...))` if `T` in `SomeExtractor.unapply(x: T)`
+   * is uncheckable, but we have an instance of `ClassTag[T]`.
+   */
+  def unapply(x: Any): Option[T] = if (runtimeClass.isAssignableFrom(x.getClass)) Some(x.asInstanceOf[T]) else None
+
   /** case class accessories */
   override def canEqual(x: Any) = x.isInstanceOf[ClassTag[_]]
   override def equals(x: Any) = x.isInstanceOf[ClassTag[_]] && this.runtimeClass == x.asInstanceOf[ClassTag[_]].runtimeClass
