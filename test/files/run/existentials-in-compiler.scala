@@ -4,6 +4,7 @@ import scala.collection.{ mutable, immutable, generic }
 
 object Test extends CompilerTest {
   import global._
+  import rootMirror._
   import definitions._
 
   override def code = """
@@ -21,7 +22,7 @@ package extest {
   trait Cov07[-A <: AnyRef, +B] { }
   trait Cov08[-A <: AnyRef,  B] { }
   trait Cov09[-A <: AnyRef, -B] { }
-  
+
   trait Cov11[+A <: AnyRef, +B <: List[_]] { }
   trait Cov12[+A <: AnyRef,  B <: List[_]] { }
   trait Cov13[+A <: AnyRef, -B <: List[_]] { }
@@ -31,7 +32,7 @@ package extest {
   trait Cov17[-A <: AnyRef, +B <: List[_]] { }
   trait Cov18[-A <: AnyRef,  B <: List[_]] { }
   trait Cov19[-A <: AnyRef, -B <: List[_]] { }
-  
+
   trait Cov21[+A, +B] { }
   trait Cov22[+A,  B] { }
   trait Cov23[+A, -B] { }
@@ -41,7 +42,7 @@ package extest {
   trait Cov27[-A, +B] { }
   trait Cov28[-A,  B] { }
   trait Cov29[-A, -B] { }
-  
+
   trait Cov31[+A, +B, C <: ((A, B))] { }
   trait Cov32[+A,  B, C <: ((A, B))] { }
   trait Cov33[+A, -B, C <: ((A, _))] { }
@@ -51,7 +52,7 @@ package extest {
   trait Cov37[-A, +B, C <: ((_, B))] { }
   trait Cov38[-A,  B, C <: ((_, B))] { }
   trait Cov39[-A, -B, C <: ((_, _))] { }
-  
+
   trait Cov41[+A >: Null, +B] { }
   trait Cov42[+A >: Null,  B] { }
   trait Cov43[+A >: Null, -B] { }

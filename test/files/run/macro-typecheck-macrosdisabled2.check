@@ -1,5 +1,37 @@
 {
-  val $mr: reflect.mirror.type = scala.reflect.`package`.mirror;
-  $mr.Expr.apply[Array[Int]]($mr.Apply.apply($mr.Select.apply($mr.Select.apply($mr.Ident($mr.staticModule("scala")), $mr.newTermName("Array")), $mr.newTermName("apply")), scala.collection.immutable.List.apply[$mr.Literal]($mr.Literal.apply($mr.Constant.apply(2)))))($mr.ConcreteTypeTag.apply[Array[Int]]($mr.TypeRef.apply($mr.thisModuleType("scala"), $mr.staticClass("scala.Array"), scala.collection.immutable.List.apply[$mr.Type]($mr.staticClass("scala.Int").asTypeConstructor)), ScalaRunTime.this.arrayClass(classOf[scala.Int])))
+  val $u: reflect.runtime.universe.type = scala.reflect.runtime.`package`.universe;
+  val $m: $u.Mirror = scala.reflect.runtime.`package`.universe.runtimeMirror(this.getClass().getClassLoader());
+  $u.Expr.apply[Array[Int]]($m, {
+    final class $treecreator1 extends TreeCreator {
+      def <init>(): $treecreator1 = {
+        $treecreator1.super.<init>();
+        ()
+      };
+      def apply[U >: Nothing <: scala.reflect.base.Universe with Singleton]($m$untyped: scala.reflect.base.MirrorOf[U]): U#Tree = {
+        val $u: scala.reflect.api.Universe = $m$untyped.universe.asInstanceOf[scala.reflect.api.Universe];
+        val $m: $u.Mirror = $m$untyped.asInstanceOf[$u.Mirror];
+        $treecreator1.this.applyImpl[$u.type]($m).asInstanceOf[U#Tree]
+      };
+      private def applyImpl[U >: Nothing <: scala.reflect.api.Universe with Singleton]($m$untyped: scala.reflect.base.MirrorOf[U]): scala.reflect.base.Universe#Tree = {
+        val $u: U = $m$untyped.universe;
+        val $m: $u.Mirror = $m$untyped.asInstanceOf[$u.Mirror];
+        $u.Apply.apply($u.Select.apply($u.Select.apply($u.build.Ident($m.staticModule("scala")), $u.newTermName("Array")), $u.newTermName("apply")), scala.collection.immutable.List.apply[$u.Literal]($u.Literal.apply($u.Constant.apply(2))))
+      }
+    };
+    new $treecreator1()
+  })($u.TypeTag.apply[Array[Int]]($m, {
+    final class $typecreator2 extends TypeCreator {
+      def <init>(): $typecreator2 = {
+        $typecreator2.super.<init>();
+        ()
+      };
+      def apply[U >: Nothing <: scala.reflect.base.Universe with Singleton]($m$untyped: scala.reflect.base.MirrorOf[U]): U#Type = {
+        val $u: U = $m$untyped.universe;
+        val $m: $u.Mirror = $m$untyped.asInstanceOf[$u.Mirror];
+        $u.TypeRef.apply($u.ThisType.apply($m.staticModule("scala").asModuleSymbol.moduleClass), $m.staticClass("scala.Array"), scala.collection.immutable.List.apply[$u.Type]($m.staticClass("scala.Int").asTypeSymbol.asTypeConstructor))
+      }
+    };
+    new $typecreator2()
+  }))
 }
-mr.reify[Array[Int]](scala.Array.apply(2))
+ru.reify[Array[Int]](scala.Array.apply(2))

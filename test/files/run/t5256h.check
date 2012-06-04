@@ -1,0 +1,7 @@
+anonymous class $anon$1
+Test.$anon$1
+java.lang.Object {
+  final private val x: Int
+  def x(): Int
+  def <init>(): java.lang.Object{def x(): Int}
+}

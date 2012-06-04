@@ -1,7 +1,8 @@
+import scala.reflect.runtime.universe._
+
 object Test extends App {
   def manifestIsConcreteTypeTag[T: Manifest] = {
-    println(concreteTypeTag[T].tpe)
-    println(concreteTypeTag[T].erasure)
+    println(implicitly[ConcreteTypeTag[T]].tpe)
   }
 
   manifestIsConcreteTypeTag[Int]

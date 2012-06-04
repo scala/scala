@@ -1,3 +1,5 @@
+import scala.reflect.{ArrayTag, arrayTag}
+
 abstract class Foo[@specialized T: ArrayTag, U <: Ordered[U]](x: T, size: Int) {
   var y: T
   var z: T = x

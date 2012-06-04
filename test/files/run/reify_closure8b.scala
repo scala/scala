@@ -1,4 +1,7 @@
-import scala.reflect.mirror._
+import scala.reflect.runtime.universe._
+import scala.reflect.runtime.{universe => ru}
+import scala.reflect.runtime.{currentMirror => cm}
+import scala.tools.reflect.ToolBox
 
 object Test extends App {
   // will fail because y is a private field
@@ -8,7 +11,7 @@ object Test extends App {
   }
 
   try {
-    val dyn = mkToolBox().runExpr(new Foo(10).fun.tree)
+    val dyn = cm.mkToolBox().runExpr(new Foo(10).fun.tree)
     val foo = dyn.asInstanceOf[Int]
     println(foo)
   } catch {

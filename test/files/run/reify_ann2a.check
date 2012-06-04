@@ -22,21 +22,21 @@
 }
 {
   class ann extends scala.annotation.Annotation with scala.annotation.StaticAnnotation {
-    <paramaccessor> private[this] val bar: List[String] = _;
-    def <init>(bar: List[String]): ann = {
+    <paramaccessor> private[this] val bar: List[java.lang.String] = _;
+    def <init>(bar: List[java.lang.String]): ann = {
       ann.super.<init>();
       ()
     }
   };
-  @ann(immutable.this.List.apply[String]("1a")) @ann(immutable.this.List.apply[String]("1b")) class C[@ann(immutable.this.List.apply[String]("2a")) @ann(immutable.this.List.apply[String]("2b")) T] extends Object {
-    @ann(immutable.this.List.apply[String]("3a")) @ann(immutable.this.List.apply[String]("3b")) <paramaccessor> private[this] val x: T @ann(immutable.this.List.apply[String]("4b")) @ann(immutable.this.List.apply[String]("4a")) = _;
-    def <init>(@ann(immutable.this.List.apply[String]("3a")) @ann(immutable.this.List.apply[String]("3b")) x: T @ann(immutable.this.List.apply[String]("4b")) @ann(immutable.this.List.apply[String]("4a"))): C[T] = {
+  @ann(immutable.this.List.apply[java.lang.String]("1a")) @ann(immutable.this.List.apply[java.lang.String]("1b")) class C[@ann(immutable.this.List.apply[java.lang.String]("2a")) @ann(immutable.this.List.apply[java.lang.String]("2b")) T] extends Object {
+    @ann(immutable.this.List.apply[java.lang.String]("3a")) @ann(immutable.this.List.apply[java.lang.String]("3b")) <paramaccessor> private[this] val x: T @ann(immutable.this.List.apply[java.lang.String]("4b")) @ann(immutable.this.List.apply[java.lang.String]("4a")) = _;
+    def <init>(@ann(immutable.this.List.apply[java.lang.String]("3a")) @ann(immutable.this.List.apply[java.lang.String]("3b")) x: T @ann(immutable.this.List.apply[java.lang.String]("4b")) @ann(immutable.this.List.apply[java.lang.String]("4a"))): C[T] = {
       C.super.<init>();
       ()
     };
-    @ann(immutable.this.List.apply[String]("5a")) @ann(immutable.this.List.apply[String]("5b")) def f(x: Int @ann(immutable.this.List.apply[String]("6b")) @ann(immutable.this.List.apply[String]("6a"))): Int = {
-      @ann(immutable.this.List.apply[String]("7a")) @ann(immutable.this.List.apply[String]("7b")) val r: Int @ann(immutable.this.List.apply[String]("8b")) @ann(immutable.this.List.apply[String]("8a")) = ((x.+(3): Int @ann(immutable.this.List.apply[String]("8a"))): Int @ann(immutable.this.List.apply[String]("8b")) @ann(immutable.this.List.apply[String]("8a")));
-      val s: Int @ann(immutable.this.List.apply[String]("9b")) @ann(immutable.this.List.apply[String]("9a")) = (4: Int @ann(immutable.this.List.apply[String]("9b")) @ann(immutable.this.List.apply[String]("9a")));
+    @ann(immutable.this.List.apply[java.lang.String]("5a")) @ann(immutable.this.List.apply[java.lang.String]("5b")) def f(x: Int @ann(immutable.this.List.apply[java.lang.String]("6b")) @ann(immutable.this.List.apply[java.lang.String]("6a"))): Int = {
+      @ann(immutable.this.List.apply[java.lang.String]("7a")) @ann(immutable.this.List.apply[java.lang.String]("7b")) val r: Int @ann(immutable.this.List.apply[java.lang.String]("8b")) @ann(immutable.this.List.apply[java.lang.String]("8a")) = ((x.+(3): Int @ann(immutable.this.List.apply[java.lang.String]("8a"))): Int @ann(immutable.this.List.apply[java.lang.String]("8b")) @ann(immutable.this.List.apply[java.lang.String]("8a")));
+      val s: Int @ann(immutable.this.List.apply[java.lang.String]("9b")) @ann(immutable.this.List.apply[java.lang.String]("9a")) = (4: Int @ann(immutable.this.List.apply[java.lang.String]("9b")) @ann(immutable.this.List.apply[java.lang.String]("9a")));
       r.+(s)
     }
   };

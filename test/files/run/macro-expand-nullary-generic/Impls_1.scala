@@ -1,10 +1,11 @@
+import scala.reflect.runtime.universe._
 import scala.reflect.makro.{Context => Ctx}
 
 object Impls {
   def impl[T: c.TypeTag](c: Ctx) = {
-    import c.mirror._
+    import c.universe._
     val body = Apply(Select(Ident(definitions.PredefModule), newTermName("println")), List(Literal(Constant("it works " + implicitly[c.TypeTag[T]]))))
-    Expr[Unit](body)
+    c.Expr[Unit](body)
   }
 
   def fooNullary[T: c.TypeTag](c: Ctx) = impl[T](c)

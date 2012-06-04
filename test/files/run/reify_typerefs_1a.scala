@@ -1,4 +1,7 @@
-import scala.reflect.mirror._
+import scala.reflect.runtime.universe._
+import scala.reflect.runtime.{universe => ru}
+import scala.reflect.runtime.{currentMirror => cm}
+import scala.tools.reflect.ToolBox
 
 class Expression {
   override def toString = "Expression"
@@ -9,7 +12,7 @@ object Test extends App {
     List(new Expression, new Expression)
   };
 
-  val toolbox = mkToolBox()
+  val toolbox = cm.mkToolBox()
   val evaluated = toolbox.runExpr(code.tree)
   println("evaluated = " + evaluated)
 }

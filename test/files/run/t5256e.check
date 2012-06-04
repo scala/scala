@@ -1,2 +1,6 @@
-C.this.A
-true
+class A
+Test.C.A
+Object {
+  def <init>: <?>
+  def foo: <?>
+}

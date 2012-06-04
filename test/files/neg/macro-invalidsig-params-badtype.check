@@ -1,7 +1,7 @@
 Impls_Macros_1.scala:8: error: macro implementation has wrong shape:
  required: (c: scala.reflect.makro.Context)(x: c.Expr[Int]): c.Expr[Any]
- found   : (c: scala.reflect.makro.Context)(x: c.mirror.Tree): Nothing
-type mismatch for parameter x: c.Expr[Int] does not conform to c.mirror.Tree
+ found   : (c: scala.reflect.makro.Context)(x: c.universe.Tree): Nothing
+type mismatch for parameter x: c.Expr[Int] does not conform to c.universe.Tree
   def foo(x: Int) = macro Impls.foo
                                 ^
 one error found
