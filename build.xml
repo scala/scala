@@ -334,7 +334,7 @@ INITIALISATION
   <target name="init.version.done" depends="init.version.release, init.version.snapshot"/>
 
   <target name="init" depends="init.jars, init.maven.jars, init.version.done">
-    <property name="scalac.args.always" value="-Xmacros" />
+    <property name="scalac.args.always" value="" />
   <!-- scalac.args.optimise is selectively overridden in certain antcall tasks. -->
     <property name="scalac.args.optimise" value=""/>
   <!-- scalac.args.quickonly are added to quick.* targets but not others (particularly, locker.)
