@@ -1228,7 +1228,7 @@ object IMain {
     def maxStringLength: Int
     def isTruncating: Boolean
     def truncate(str: String): String = {
-      if (isTruncating && str.length > maxStringLength)
+      if (isTruncating && (maxStringLength != 0 && str.length > maxStringLength))
         (str take maxStringLength - 3) + "..."
       else str
     }
