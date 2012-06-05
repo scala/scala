@@ -104,7 +104,16 @@ abstract class DeadCodeElimination extends SubComponent {
             case LOAD_LOCAL(l) =>
               defs = defs + Pair(((bb, idx)), rd.vars)
 
-            case STORE_LOCAL(_) => // see SI-4935
+            case STORE_LOCAL(_) =>
+              /* SI-4935 Check whether a module is stack top, if so mark the instruction that loaded it
+               * (otherwise any side-effects of the module's constructor go lost).
+               *   (a) The other two cases where a module's value is stored (STORE_FIELD and STORE_ARRAY_ITEM)
+               *       are already marked (case clause below).
+               *   (b) A CALL_METHOD targeting a method `m1` where the receiver is potentially a module (case clause below)
+               *       will have the module's load marked provided `isSideEffecting(m1)`.
+               *       TODO check for purity (the ICode?) of the module's constructor (besides m1's purity).
+               *       See also https://github.com/paulp/scala/blob/topic/purity-analysis/src/compiler/scala/tools/nsc/backend/opt/DeadCodeElimination.scala
+               */
               val necessary = rdef.findDefs(bb, idx, 1) exists { p =>
                 val (bb1, idx1) = p
                 bb1(idx1) match {
