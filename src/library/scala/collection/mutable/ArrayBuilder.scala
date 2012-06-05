@@ -36,8 +36,8 @@ object ArrayBuilder {
    */
   def make[T: ArrayTag](): ArrayBuilder[T] = {
     val tag = implicitly[ArrayTag[T]]
-    val erasure = ScalaRunTime.arrayElementClass(tag)
-    erasure match {
+    val runtimeClass = ScalaRunTime.arrayElementClass(tag)
+    runtimeClass match {
       case java.lang.Byte.TYPE      => new ArrayBuilder.ofByte().asInstanceOf[ArrayBuilder[T]]
       case java.lang.Short.TYPE     => new ArrayBuilder.ofShort().asInstanceOf[ArrayBuilder[T]]
       case java.lang.Character.TYPE => new ArrayBuilder.ofChar().asInstanceOf[ArrayBuilder[T]]

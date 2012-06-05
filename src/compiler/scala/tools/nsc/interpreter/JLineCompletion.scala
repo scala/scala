@@ -16,7 +16,8 @@ import collection.mutable.ListBuffer
 class JLineCompletion(val intp: IMain) extends Completion with CompletionOutput {
   val global: intp.global.type = intp.global
   import global._
-  import definitions.{ PredefModule, RootClass, AnyClass, AnyRefClass, ScalaPackage, JavaLangPackage, getModuleIfDefined }
+  import definitions.{ PredefModule, AnyClass, AnyRefClass, ScalaPackage, JavaLangPackage }
+  import rootMirror.{ RootClass, getModuleIfDefined }
   type ExecResult = Any
   import intp.{ debugging }
 

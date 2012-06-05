@@ -1,4 +1,4 @@
-import scala.reflect.TypeTag
+import scala.reflect.runtime.universe._
 
 object Test {
   def foo[T](x: T)(implicit m: TypeTag[T]) {

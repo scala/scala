@@ -39,7 +39,7 @@ object Marshal {
     try {
       // [Eugene] needs review
       // previously was: found <:< expected
-      found.erasure.asSubclass(expected.erasure)
+      found.runtimeClass.asSubclass(expected.runtimeClass)
       in.readObject.asInstanceOf[A]
     } catch {
       case _: ClassCastException =>

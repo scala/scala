@@ -1,7 +1,9 @@
+import scala.reflect.{ClassTag, classTag}
+
 // /scala/trac/5452/a.scala
 // Mon Feb 13 22:52:36 PST 2012
 
-// import scala.reflect.mirror._
+// import scala.reflect.runtime.universe._
 
 trait Tree
 

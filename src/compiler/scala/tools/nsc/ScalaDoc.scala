@@ -9,7 +9,7 @@ package scala.tools.nsc
 import java.io.File.pathSeparator
 import scala.tools.nsc.doc.DocFactory
 import scala.tools.nsc.reporters.ConsoleReporter
-import scala.tools.nsc.util.FakePos
+import scala.reflect.internal.util.FakePos
 import Properties.msilLibPath
 
 /** The main class for scaladoc, a front-end for the Scala compiler

@@ -10,10 +10,11 @@ package scala.tools.nsc
 package ast.parser
 
 import scala.collection.mutable.{ListBuffer, StringBuilder}
-import util.{ SourceFile, OffsetPosition, FreshNameCreator }
 import scala.reflect.internal.{ ModifierFlags => Flags }
-import Tokens._
 import scala.reflect.internal.Chars.{ isScalaLetter }
+import scala.reflect.internal.util.{ SourceFile, OffsetPosition }
+import Tokens._
+import util.FreshNameCreator
 
 /** Historical note: JavaParsers started life as a direct copy of Parsers
  *  but at a time when that Parsers had been replaced by a different one.
@@ -1026,7 +1027,7 @@ self =>
         val tok = in.token
         val name = ident()
         t = atPos(start) {
-          if (tok == BACKQUOTED_IDENT) Ident(name) withAttachment BackquotedIdentifier
+          if (tok == BACKQUOTED_IDENT) Ident(name) addAttachment BackquotedIdentifierAttachment
           else Ident(name)
         }
         if (in.token == DOT) {
@@ -2534,8 +2535,7 @@ self =>
           } else {
             if (in.token == EQUALS) {
               in.nextTokenAllow(nme.MACROkw)
-              if (settings.Xmacros.value && in.token == MACRO || // [Martin] Xmacros can be retired now
-                  in.token == IDENTIFIER && in.name == nme.MACROkw) {
+              if (in.token == IDENTIFIER && in.name == nme.MACROkw) {
                 in.nextToken()
                 newmods |= Flags.MACRO
               }

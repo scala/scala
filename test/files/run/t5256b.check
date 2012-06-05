@@ -1,2 +1,6 @@
+class A
 Test.A
-true
+Object {
+  def <init>: <?>
+  def foo: <?>
+}

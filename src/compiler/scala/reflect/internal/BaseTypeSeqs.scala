@@ -225,9 +225,9 @@ trait BaseTypeSeqs {
             nextRawElem(i) match {
               case RefinedType(variants, decls) =>
                 for (tp <- variants)
-                  if (!(minTypes exists (tp =:=))) minTypes = tp :: minTypes
+                  if (!(minTypes exists (tp =:= _))) minTypes = tp :: minTypes
               case tp =>
-                if (!(minTypes exists (tp =:=))) minTypes = tp :: minTypes
+                if (!(minTypes exists (tp =:= _))) minTypes = tp :: minTypes
             }
             index(i) = index(i) + 1
           }
@@ -252,7 +252,7 @@ trait BaseTypeSeqs {
     override def map(g: Type => Type) = lateMap(g)
     override def lateMap(g: Type => Type) = orig.lateMap(x => g(f(x)))
     override def exists(p: Type => Boolean) = elems exists (x => p(f(x)))
-    override protected def maxDepthOfElems: Int = elems map (x => maxDpth(f(x))) max
+    override protected def maxDepthOfElems: Int = (elems map (x => maxDpth(f(x)))).max
     override def toString = elems.mkString("MBTS(", ",", ")")
   }
 

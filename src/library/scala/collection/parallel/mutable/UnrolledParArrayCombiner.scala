@@ -21,7 +21,7 @@ import scala.collection.parallel.TaskSupport
 import scala.collection.parallel.unsupportedop
 import scala.collection.parallel.Combiner
 import scala.collection.parallel.Task
-
+import scala.reflect.ArrayTag
 
 
 

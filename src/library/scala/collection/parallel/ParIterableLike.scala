@@ -24,6 +24,7 @@ import scala.collection.GenIterable
 import scala.collection.GenTraversableOnce
 import scala.collection.GenTraversable
 import immutable.HashMapCombiner
+import reflect.{ArrayTag, ClassTag}
 
 import java.util.concurrent.atomic.AtomicBoolean
 
@@ -303,7 +304,7 @@ self: ParIterableLike[T, Repr, Sequential] =>
   protected implicit def builder2ops[Elem, To](cb: Builder[Elem, To]) = new BuilderOps[Elem, To] {
     def ifIs[Cmb](isbody: Cmb => Unit) = new Otherwise[Cmb] {
       def otherwise(notbody: => Unit)(implicit t: ClassTag[Cmb]) {
-        if (cb.getClass == t.erasure) isbody(cb.asInstanceOf[Cmb]) else notbody
+        if (cb.getClass == t.runtimeClass) isbody(cb.asInstanceOf[Cmb]) else notbody
       }
     }
     def isCombiner = cb.isInstanceOf[Combiner[_, _]]

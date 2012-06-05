@@ -1,7 +1,11 @@
 package scala.reflect
 package api
 
-trait FrontEnds { self: Universe =>
+// [Martin to Eugene] Todo: Needs to be evicted from API
+// [Eugene++ to Martin] but how? we need them for macros
+trait FrontEnds {
+
+  type Position >: Null
 
   trait FrontEnd {
     object severity extends Enumeration

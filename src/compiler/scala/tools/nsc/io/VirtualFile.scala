@@ -8,6 +8,8 @@ package scala.tools.nsc
 package io
 
 import java.io.{ ByteArrayInputStream, ByteArrayOutputStream, InputStream, OutputStream }
+// [scala-reflect.jar migration note] uncomment when creating scala-reflect.jar
+// import java.io.{ File => JFile }
 
 /** This class implements an in-memory file.
  *

@@ -1,3 +1,5 @@
+import scala.reflect.runtime.universe._
+
 object Test {
   def f() = { case class Bar(x: Int); Bar }
   def g() = { case class Bar(x: Int); Bar(5) }
@@ -7,7 +9,7 @@ object Test {
   val g1 = g()
   val h1 = h()
 
-  def m[T: TypeTag](x: T) = println(typeTag[T] + ", underlying = " + typeTag[T].sym.typeSignature)
+  def m[T: TypeTag](x: T) = println(typeOf[T] + ", underlying = " + typeOf[T].typeSymbol.typeSignature)
 
   def main(args: Array[String]): Unit = {
     m(f)

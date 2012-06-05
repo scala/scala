@@ -1,3 +1,5 @@
+import scala.reflect.runtime.universe._
+
 object Test {
   def mani[T: TypeTag](xs: T) = xs
   mani(List())

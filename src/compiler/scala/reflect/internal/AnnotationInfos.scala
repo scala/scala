@@ -46,23 +46,26 @@ trait AnnotationInfos extends api.AnnotationInfos { self: SymbolTable =>
    *  - or nested classfile annotations
    */
   abstract class ClassfileAnnotArg extends Product
+  implicit val ClassfileAnnotArgTag = ClassTag[ClassfileAnnotArg](classOf[ClassfileAnnotArg])
 
   /** Represents a compile-time Constant (`Boolean`, `Byte`, `Short`,
    *  `Char`, `Int`, `Long`, `Float`, `Double`, `String`, `java.lang.Class` or
    *  an instance of a Java enumeration value).
    */
   case class LiteralAnnotArg(const: Constant)
-  extends ClassfileAnnotArg {
+  extends ClassfileAnnotArg with LiteralAnnotArgApi {
     override def toString = const.escapedStringValue
   }
+  implicit val LiteralAnnotArgTag = ClassTag[LiteralAnnotArg](classOf[LiteralAnnotArg])
 
   object LiteralAnnotArg extends LiteralAnnotArgExtractor
 
   /** Represents an array of classfile annotation arguments */
   case class ArrayAnnotArg(args: Array[ClassfileAnnotArg])
-  extends ClassfileAnnotArg {
+  extends ClassfileAnnotArg with ArrayAnnotArgApi {
     override def toString = args.mkString("[", ", ", "]")
   }
+  implicit val ArrayAnnotArgTag = ClassTag[ArrayAnnotArg](classOf[ArrayAnnotArg])
 
   object ArrayAnnotArg extends ArrayAnnotArgExtractor
 
@@ -105,11 +108,12 @@ trait AnnotationInfos extends api.AnnotationInfos { self: SymbolTable =>
   }
 
   /** Represents a nested classfile annotation */
-  case class NestedAnnotArg(annInfo: AnnotationInfo) extends ClassfileAnnotArg {
+  case class NestedAnnotArg(annInfo: AnnotationInfo) extends ClassfileAnnotArg with NestedAnnotArgApi {
     // The nested annotation should not have any Scala annotation arguments
     assert(annInfo.args.isEmpty, annInfo.args)
     override def toString = annInfo.toString
   }
+  implicit val NestedAnnotArgTag = ClassTag[NestedAnnotArg](classOf[NestedAnnotArg])
 
   object NestedAnnotArg extends NestedAnnotArgExtractor
 
@@ -191,7 +195,7 @@ trait AnnotationInfos extends api.AnnotationInfos { self: SymbolTable =>
    *
    *  `assocs` stores arguments to classfile annotations as name-value pairs.
    */
-  sealed abstract class AnnotationInfo {
+  sealed abstract class AnnotationInfo extends AnnotationInfoApi {
     def atp: Type
     def args: List[Tree]
     def assocs: List[(Name, ClassfileAnnotArg)]
@@ -258,7 +262,7 @@ trait AnnotationInfos extends api.AnnotationInfos { self: SymbolTable =>
 
     /** Change all ident's with Symbol "from" to instead use symbol "to" */
     def substIdentSyms(from: Symbol, to: Symbol) =
-      AnnotationInfo(atp, args map (_ substTreeSyms (from -> to)), assocs) setPos pos
+      AnnotationInfo(atp, args map (_ substituteSymbols (List(from), List(to))), assocs) setPos pos
 
     def stringArg(index: Int) = constantAtIndex(index) map (_.stringValue)
     def intArg(index: Int)    = constantAtIndex(index) map (_.intValue)
@@ -283,7 +287,7 @@ trait AnnotationInfos extends api.AnnotationInfos { self: SymbolTable =>
     }
   }
 
-  lazy val classfileAnnotArgTag: ArrayTag[ClassfileAnnotArg] = arrayTag[ClassfileAnnotArg]
+  implicit val AnnotationInfoTag = ClassTag[AnnotationInfo](classOf[AnnotationInfo])
 
   object UnmappableAnnotation extends CompleteAnnotationInfo(NoType, Nil, Nil)
 }

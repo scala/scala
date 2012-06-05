@@ -2,7 +2,7 @@ package scala.tools.nsc
 package interactive
 package tests.core
 
-import scala.tools.nsc.util.Position
+import scala.reflect.internal.util.Position
 import scala.tools.nsc.interactive.tests.core._
 
 /** Set of core test definitions that are executed for each test run. */

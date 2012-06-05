@@ -6,7 +6,7 @@
 package scala.tools.nsc
 package interpreter
 
-import util.BatchSourceFile
+import scala.reflect.internal.util.BatchSourceFile
 import scala.tools.nsc.ast.parser.Tokens.EOF
 
 trait ExprTyper {

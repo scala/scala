@@ -1,0 +1,17 @@
+Type in expressions to have them evaluated.
+Type :help for more information.
+
+scala> 
+
+scala> import scala.reflect.runtime.universe._
+import scala.reflect.runtime.universe._
+
+scala> def foo[T: TypeTag] = reify{List[T]()}
+foo: [T](implicit evidence$1: reflect.runtime.universe.TypeTag[T])reflect.runtime.universe.Expr[List[T]]
+
+scala> println(foo)
+Expr[List[Nothing]](immutable.this.Nil)
+
+scala> 
+
+scala> 

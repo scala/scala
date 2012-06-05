@@ -9,6 +9,7 @@ package transform
 import scala.tools.nsc.symtab.Flags
 import scala.collection.{ mutable, immutable }
 import language.postfixOps
+import language.existentials
 
 /** Specialize code on types.
  *
@@ -66,11 +67,12 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
   private implicit val typeOrdering: Ordering[Type] = Ordering[String] on ("" + _.typeSymbol.name)
 
   import definitions.{
-    RootClass, BooleanClass, UnitClass, ArrayClass,
+    BooleanClass, UnitClass, ArrayClass,
     ScalaValueClasses, isPrimitiveValueClass, isPrimitiveValueType,
     SpecializedClass, UnspecializedClass, AnyRefClass, ObjectClass, AnyRefModule,
     GroupOfSpecializable, uncheckedVarianceClass, ScalaInlineClass
   }
+  import rootMirror.RootClass
 
   /** TODO - this is a lot of maps.
    */
@@ -434,7 +436,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
     val sClassMap = anyrefSpecCache.getOrElseUpdate(sClass, mutable.Map[Symbol, Symbol]())
 
     sClassMap.getOrElseUpdate(tparam,
-      tparam.cloneSymbol(sClass, tparam.flags, tparam.name append tpnme.SPECIALIZED_SUFFIX)
+      tparam.cloneSymbol(sClass, tparam.flags, (tparam.name append tpnme.SPECIALIZED_SUFFIX).asInstanceOf[Name]) // [Eugene++] why do we need this cast?
         modifyInfo (info => TypeBounds(info.bounds.lo, AnyRefClass.tpe))
     ).tpe
   }
@@ -499,16 +501,16 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
        *  was both already used for a map and mucho long.  So "sClass" is the
        *  specialized subclass of "clazz" throughout this file.
        */
-      
+
       // SI-5545: Eliminate classes with the same name loaded from the bytecode already present - all we need to do is
       // to force .info on them, as their lazy type will be evaluated and the symbols will be eliminated. Unfortunately
       // evaluating the info after creating the specialized class will mess the specialized class signature, so we'd
-      // better evaluate it before creating the new class symbol 
+      // better evaluate it before creating the new class symbol
       val clazzName = specializedName(clazz, env0).toTypeName
-      val bytecodeClazz = clazz.owner.info.decl(clazzName)      
+      val bytecodeClazz = clazz.owner.info.decl(clazzName)
       // debuglog("Specializing " + clazz + ", but found " + bytecodeClazz + " already there")
       bytecodeClazz.info
-      
+
       val sClass = clazz.owner.newClass(clazzName, clazz.pos, (clazz.flags | SPECIALIZED) & ~CASE)
 
       def cloneInSpecializedClass(member: Symbol, flagFn: Long => Long, newName: Name = null) =
@@ -1693,9 +1695,12 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
     }
   }
 
-  private def forwardCall(pos: util.Position, receiver: Tree, paramss: List[List[ValDef]]): Tree = {
+  private def forwardCall(pos: scala.reflect.internal.util.Position, receiver: Tree, paramss: List[List[ValDef]]): Tree = {
     val argss = mmap(paramss)(x => Ident(x.symbol))
-    atPos(pos) { (receiver /: argss) (Apply) }
+    def mkApply(fun: Tree, args: List[Tree]) = Apply(fun, args)
+    atPos(pos) { (receiver /: argss) (mkApply) }
+    // [Eugene++] no longer compiles after I moved the `Apply` case class into scala.reflect.internal
+    // atPos(pos) { (receiver /: argss) (Apply) }
   }
 
   /** Forward to the generic class constructor. If the current class initializes
@@ -1717,7 +1722,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
    *    }
    *  }}
    */
-  private def forwardCtorCall(pos: util.Position, receiver: Tree, paramss: List[List[ValDef]], clazz: Symbol): Tree = {
+  private def forwardCtorCall(pos: scala.reflect.internal.util.Position, receiver: Tree, paramss: List[List[ValDef]], clazz: Symbol): Tree = {
 
     /** A constructor parameter `f` initializes a specialized field
      *  iff:
@@ -1737,7 +1742,10 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
       else
         Ident(x.symbol)
     )
-    atPos(pos) { (receiver /: argss) (Apply) }
+    def mkApply(fun: Tree, args: List[Tree]) = Apply(fun, args)
+    atPos(pos) { (receiver /: argss) (mkApply) }
+    // [Eugene++] no longer compiles after I moved the `Apply` case class into scala.reflect.internal
+    // atPos(pos) { (receiver /: argss) (Apply) }
   }
 
   /** Add method m to the set of symbols for which we need an implementation tree

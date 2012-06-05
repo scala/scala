@@ -5,7 +5,7 @@
 package scala.tools.nsc
 package interactive
 
-import scala.tools.nsc.util.{SourceFile, Position, NoPosition}
+import scala.reflect.internal.util.{SourceFile, Position, NoPosition}
 import collection.mutable.ArrayBuffer
 
 trait RichCompilationUnits { self: Global =>

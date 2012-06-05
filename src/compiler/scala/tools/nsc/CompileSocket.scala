@@ -13,7 +13,7 @@ import java.security.SecureRandom
 import io.{ File, Path, Directory, Socket }
 import scala.util.control.Exception.catching
 import scala.tools.util.CompileOutputCommon
-import scala.tools.util.StringOps.splitWhere
+import scala.reflect.internal.util.StringOps.splitWhere
 import scala.sys.process._
 
 trait HasCompileSocket {

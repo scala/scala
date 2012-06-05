@@ -317,6 +317,8 @@ trait Scopes extends api.Scopes { self: SymbolTable =>
 
   }
 
+  implicit val ScopeTag = ClassTag[Scope](classOf[Scope])
+
   /** Create a new scope */
   def newScope: Scope = new Scope()
 
