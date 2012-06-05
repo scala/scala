@@ -8,9 +8,10 @@ import scala.reflect.ReflectionUtils
 import scala.collection.mutable.ListBuffer
 import scala.compat.Platform.EOL
 import scala.reflect.makro.runtime.{Context => MacroContext}
-import scala.reflect.runtime.Mirror
 import util.Statistics._
 import scala.reflect.makro.util._
+import java.lang.{Class => jClass}
+import java.lang.reflect.{Array => jArray, Method => jMethod}
 
 /**
  *  Code to deal with macros, namely with:
@@ -583,59 +584,53 @@ trait Macros extends Traces {
     runtimeType
   }
 
-  /** Primary mirror that is used to resolve and run macro implementations.
+  /** Primary classloader that is used to resolve and run macro implementations.
    *  Loads classes from -Xmacro-primary-classpath, or from -cp if the option is not specified.
+   *  Is also capable of detecting REPL and reusing its classloader.
    */
-  private lazy val primaryMirror: Mirror = {
+  private lazy val primaryClassloader: ClassLoader = {
     if (global.forMSIL)
       throw new UnsupportedOperationException("Scala reflection not available on this platform")
 
-    val libraryClassLoader = {
-      if (settings.XmacroPrimaryClasspath.value != "") {
-        macroLogVerbose("primary macro mirror: initializing from -Xmacro-primary-classpath: %s".format(settings.XmacroPrimaryClasspath.value))
-        val classpath = toURLs(settings.XmacroFallbackClasspath.value)
-        ScalaClassLoader.fromURLs(classpath, self.getClass.getClassLoader)
-      } else {
-        macroLogVerbose("primary macro mirror: initializing from -cp: %s".format(global.classPath.asURLs))
-        val classpath = global.classPath.asURLs
-        var loader: ClassLoader = ScalaClassLoader.fromURLs(classpath, self.getClass.getClassLoader)
-
-        // [Eugene] a heuristic to detect REPL
-        if (global.settings.exposeEmptyPackage.value) {
-          import scala.tools.nsc.interpreter._
-          val virtualDirectory = global.settings.outputDirs.getSingleOutput.get
-          loader = new AbstractFileClassLoader(virtualDirectory, loader) {}
-        }
-
-        loader
-      }
-    }
-
-    new Mirror(libraryClassLoader) { override def toString = "<primary macro mirror>" }
-  }
-
-  /** Fallback mirror that is used to resolve and run macro implementations.
-   *  Loads classes from -Xmacro-fallback-classpath aka "macro fallback classpath".
-   */
-  private lazy val fallbackMirror: Mirror = {
-    if (global.forMSIL)
-      throw new UnsupportedOperationException("Scala reflection not available on this platform")
-
-    val fallbackClassLoader = {
-      macroLogVerbose("fallback macro mirror: initializing from -Xmacro-fallback-classpath: %s".format(settings.XmacroFallbackClasspath.value))
+    if (settings.XmacroPrimaryClasspath.value != "") {
+      macroLogVerbose("primary macro classloader: initializing from -Xmacro-primary-classpath: %s".format(settings.XmacroPrimaryClasspath.value))
       val classpath = toURLs(settings.XmacroFallbackClasspath.value)
       ScalaClassLoader.fromURLs(classpath, self.getClass.getClassLoader)
-    }
+    } else {
+      macroLogVerbose("primary macro classloader: initializing from -cp: %s".format(global.classPath.asURLs))
+      val classpath = global.classPath.asURLs
+      var loader: ClassLoader = ScalaClassLoader.fromURLs(classpath, self.getClass.getClassLoader)
 
-    new Mirror(fallbackClassLoader) { override def toString = "<fallback macro mirror>" }
+      // [Eugene] a heuristic to detect the REPL
+      if (global.settings.exposeEmptyPackage.value) {
+        macroLogVerbose("primary macro classloader: initializing from a REPL classloader".format(global.classPath.asURLs))
+        import scala.tools.nsc.interpreter._
+        val virtualDirectory = global.settings.outputDirs.getSingleOutput.get
+        loader = new AbstractFileClassLoader(virtualDirectory, loader) {}
+      }
+
+      loader
+    }
+  }
+
+  /** Fallback classloader that is used to resolve and run macro implementations when `primaryClassloader` fails.
+   *  Loads classes from -Xmacro-fallback-classpath.
+   */
+  private lazy val fallbackClassloader: ClassLoader = {
+    if (global.forMSIL)
+      throw new UnsupportedOperationException("Scala reflection not available on this platform")
+
+    macroLogVerbose("fallback macro classloader: initializing from -Xmacro-fallback-classpath: %s".format(settings.XmacroFallbackClasspath.value))
+    val classpath = toURLs(settings.XmacroFallbackClasspath.value)
+    ScalaClassLoader.fromURLs(classpath, self.getClass.getClassLoader)
   }
 
   /** Produces a function that can be used to invoke macro implementation for a given macro definition:
    *    1) Looks up macro implementation symbol in this universe.
-   *    2) Loads its enclosing class from the primary mirror.
-   *    3) Loads the companion of that enclosing class from the primary mirror.
+   *    2) Loads its enclosing class from the primary classloader.
+   *    3) Loads the companion of that enclosing class from the primary classloader.
    *    4) Resolves macro implementation within the loaded companion.
-   *    5) If 2-4 fails, repeats them for the fallback mirror.
+   *    5) If 2-4 fails, repeats them for the fallback classloader.
    *
    *  @return Some(runtime) if macro implementation can be loaded successfully from either of the mirrors,
    *          None otherwise.
@@ -691,7 +686,10 @@ trait Macros extends Traces {
           macroLogVerbose("resolved implementation %s at %s".format(macroImpl, macroImpl.pos))
           if (macroImpl.isErroneous) { macroTraceVerbose("macro implementation is erroneous (this means that either macro body or macro implementation signature failed to typecheck)")(macroDef); return None }
 
-          def loadMacroImpl(macroMirror: Mirror): Option[(Object, macroMirror.Symbol)] = {
+          // [Eugene++] I don't use Scala reflection here, because it seems to interfere with JIT magic
+          // whenever you instantiate a mirror (and not do anything with in, just instantiate), performance drops by 15-20%
+          // I'm not sure what's the reason - for me it's pure voodoo
+          def loadMacroImpl(cl: ClassLoader): Option[(Object, jMethod)] = {
             try {
               // this logic relies on the assumptions that were valid for the old macro prototype
               // namely that macro implementations can only be defined in top-level classes and modules
@@ -702,10 +700,10 @@ trait Macros extends Traces {
               // for now I leave it as a todo and move along to more the important stuff
 
               macroTraceVerbose("loading implementation class: ")(macroImpl.owner.fullName)
-              macroTraceVerbose("classloader is: ")(ReflectionUtils.show(macroMirror.classLoader))
+              macroTraceVerbose("classloader is: ")(ReflectionUtils.show(cl))
 
               // [Eugene] relies on the fact that macro implementations can only be defined in static classes
-              // [Martin to Eugene] There's similar logic buried in Symbol#flatname. Maybe we can refactor?
+              // [Martin to Eugene++] There's similar logic buried in Symbol#flatname. Maybe we can refactor?
               def classfile(sym: Symbol): String = {
                 def recur(sym: Symbol): String = sym match {
                   case sym if sym.owner.isPackageClass =>
@@ -720,51 +718,43 @@ trait Macros extends Traces {
                 else recur(sym.enclClass)
               }
 
-              // [Eugene] this doesn't work for inner classes
+              // [Eugene++] this doesn't work for inner classes
               // neither does macroImpl.owner.javaClassName, so I had to roll my own implementation
               //val receiverName = macroImpl.owner.fullName
               val implClassName = classfile(macroImpl.owner)
-              val implClassSymbol: macroMirror.Symbol = macroMirror.symbolForName(implClassName)
-
-              if (macroDebugVerbose) {
-                println("implClassSymbol is: " + implClassSymbol.fullNameString)
-
-                if (implClassSymbol != macroMirror.NoSymbol) {
-                  val implClass = macroMirror.classToJava(implClassSymbol)
-                  val implSource = implClass.getProtectionDomain.getCodeSource
-                  println("implClass is %s from %s".format(implClass, implSource))
-                  println("implClassLoader is %s".format(implClass.getClassLoader, ReflectionUtils.show(implClass.getClassLoader)))
-                }
+              val implObj = try {
+                val implObjClass = jClass.forName(implClassName, true, cl)
+                implObjClass getField "MODULE$" get null
+              } catch {
+                case ex: NoSuchFieldException => macroTraceVerbose("exception when loading implObj: ")(ex); null
+                case ex: NoClassDefFoundError => macroTraceVerbose("exception when loading implObj: ")(ex); null
+                case ex: ClassNotFoundException => macroTraceVerbose("exception when loading implObj: ")(ex); null
               }
 
-              val implObjSymbol = implClassSymbol.companionModule
-              macroTraceVerbose("implObjSymbol is: ")(implObjSymbol.fullNameString)
-
-              if (implObjSymbol == macroMirror.NoSymbol) None
+              if (implObj == null) None
               else {
-                // yet another reflection method that doesn't work for inner classes
-                //val receiver = macroMirror.companionInstance(receiverClass)
-                val implObj = try {
-                  val implObjClass = java.lang.Class.forName(implClassName, true, macroMirror.classLoader)
-                  implObjClass getField "MODULE$" get null
-                } catch {
-                  case ex: NoSuchFieldException => macroTraceVerbose("exception when loading implObj: ")(ex); null
-                  case ex: NoClassDefFoundError => macroTraceVerbose("exception when loading implObj: ")(ex); null
-                  case ex: ClassNotFoundException => macroTraceVerbose("exception when loading implObj: ")(ex); null
-                }
+                // [Eugene++] doh, it seems that I need to copy/paste Scala reflection logic
+                // see `JavaMirrors.methodToJava` or whatever it's called now
+                val implMeth = {
+                  def typeToJavaClass(tpe: Type): jClass[_] = tpe match {
+                    case ExistentialType(_, rtpe) => typeToJavaClass(rtpe)
+                    case TypeRef(_, ArrayClass, List(elemtpe)) => jArray.newInstance(typeToJavaClass(elemtpe), 0).getClass
+                    case TypeRef(_, sym: ClassSymbol, _) => jClass.forName(classfile(sym), true, cl)
+                    case _ => throw new NoClassDefFoundError("no Java class corresponding to "+tpe+" found")
+                  }
 
-                if (implObj == null) None
-                else {
-                  val implMethSymbol = implObjSymbol.info.member(macroMirror.newTermName(macroImpl.name.toString))
-                  macroLogVerbose("implMethSymbol is: " + implMethSymbol.fullNameString)
-                  macroLogVerbose("jimplMethSymbol is: " + macroMirror.methodToJava(implMethSymbol))
-
-                  if (implMethSymbol == macroMirror.NoSymbol) None
-                  else {
-                    macroLogVerbose("successfully loaded macro impl as (%s, %s)".format(implObj, implMethSymbol))
-                    Some((implObj, implMethSymbol))
+                  val paramClasses = transformedType(macroImpl).paramTypes map typeToJavaClass
+                  try implObj.getClass getDeclaredMethod (macroImpl.name.toString, paramClasses: _*)
+                  catch {
+                    case ex: NoSuchMethodException =>
+                      val expandedName =
+                        if (macroImpl.isPrivate) nme.expandedName(macroImpl.name.toTermName, macroImpl.owner).toString
+                        else macroImpl.name.toString
+                      implObj.getClass getDeclaredMethod (expandedName, paramClasses: _*)
                   }
                 }
+                macroLogVerbose("successfully loaded macro impl as (%s, %s)".format(implObj, implMeth))
+                Some((implObj, implMeth))
               }
             } catch {
               case ex: ClassNotFoundException =>
@@ -776,18 +766,18 @@ trait Macros extends Traces {
             }
           }
 
-          val primary = loadMacroImpl(primaryMirror)
+          val primary = loadMacroImpl(primaryClassloader)
           primary match {
-            case Some((implObj, implMethSymbol)) =>
-              def runtime(args: List[Any]) = primaryMirror.invoke(implObj, implMethSymbol)(args: _*).asInstanceOf[Any]
+            case Some((implObj, implMeth)) =>
+              def runtime(args: List[Any]) = implMeth.invoke(implObj, (args map (_.asInstanceOf[AnyRef])): _*).asInstanceOf[Any]
               Some(runtime _)
             case None =>
               if (settings.XmacroFallbackClasspath.value != "") {
                 macroLogVerbose("trying to load macro implementation from the fallback mirror: %s".format(settings.XmacroFallbackClasspath.value))
-                val fallback = loadMacroImpl(fallbackMirror)
+                val fallback = loadMacroImpl(fallbackClassloader)
                 fallback match {
-                  case Some((implObj, implMethSymbol)) =>
-                    def runtime(args: List[Any]) = fallbackMirror.invoke(implObj, implMethSymbol)(args: _*).asInstanceOf[Any]
+                  case Some((implObj, implMeth)) =>
+                    def runtime(args: List[Any]) = implMeth.invoke(implObj, (args map (_.asInstanceOf[AnyRef])): _*).asInstanceOf[Any]
                     Some(runtime _)
                   case None =>
                     None
