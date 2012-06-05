@@ -37,6 +37,7 @@ trait Reify extends Symbols
   }
   def currentQuantified = flatCollect(reifyStack.currents)({ case ExistentialType(quantified, _) => quantified })
   def current = reifyStack.currents.head
+  def currents = reifyStack.currents
 
   /**
    *  Reifies any supported value.

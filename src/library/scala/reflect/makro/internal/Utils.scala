@@ -102,7 +102,7 @@ package internal {
             else gen.mkMethodCall(staticModule("scala.reflect.package"), newTermName("manifestToConcreteTypeTag"), List(tpe), List(manifestInScope))
         }
       try c.typeCheck(result)
-      catch { case terr @ c.TypeError(pos, msg) => failTag(terr) }
+      catch { case terr @ c.TypeError(pos, msg) => failTag(result, terr) }
     }
 
     private def nonSyntheticManifestInScope(tpe: Type) = {
@@ -116,7 +116,7 @@ package internal {
     def materializeExpr(prefix: Tree, expr: Tree): Tree = {
       val result = translatingReificationErrors(c.reifyTree(prefix, expr))
       try c.typeCheck(result)
-      catch { case terr @ c.TypeError(pos, msg) => failExpr(terr) }
+      catch { case terr @ c.TypeError(pos, msg) => failExpr(result, terr) }
     }
 
     private def translatingReificationErrors(materializer: => Tree): Tree = {
@@ -130,17 +130,19 @@ package internal {
       }
     }
 
-    private def failTag(reason: Any): Nothing = {
+    private def failTag(result: Tree, reason: Any): Nothing = {
       val Apply(TypeApply(fun, List(tpeTree)), _) = c.macroApplication
       val tpe = tpeTree.tpe
       val PolyType(_, MethodType(_, tagTpe)) = fun.tpe
       val tagModule = tagTpe.typeSymbol.companionSymbol
       if (c.compilerSettings.contains("-Xlog-implicits"))
-        c.echo(c.enclosingPosition, "cannot materialize " + tagModule.name + "[" + tpe + "] because:\n" + reason)
+        c.echo(c.enclosingPosition, s"cannot materialize ${tagModule.name}[$tpe] as $result because:\n$reason")
       c.abort(c.enclosingPosition, "No %s available for %s".format(tagModule.name, tpe))
     }
 
-    private def failExpr(reason: Any): Nothing =
-      c.abort(c.enclosingPosition, "Cannot materialize Expr because:\n" + reason)
+    private def failExpr(result: Tree, reason: Any): Nothing = {
+      val Apply(_, expr :: Nil) = c.macroApplication
+      c.abort(c.enclosingPosition, s"Cannot materialize $expr as $result because:\n$reason")
+    }
   }
 }

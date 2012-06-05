@@ -186,6 +186,7 @@ trait Macros extends Traces {
     macroLogVerbose("typechecking macro def %s at %s".format(ddef.symbol, ddef.pos))
 
     if (!typer.checkFeature(ddef.pos, MacrosFeature, immediate = true)) {
+      macroLogVerbose("typecheck terminated unexpectedly: language.experimental.macros feature is not enabled")
       ddef.symbol setFlag IS_ERROR
       return EmptyTree
     }
@@ -675,31 +676,20 @@ trait Macros extends Traces {
   private def macroRuntime(macroDef: Symbol): Option[MacroRuntime] = {
     macroTraceVerbose("looking for macro implementation: ")(macroDef)
     if (fastTrack contains macroDef) {
-      macroLogVerbose("macro expansion serviced by a fast track")
+      macroLogVerbose("macro expansion is serviced by a fast track")
       Some(fastTrack(macroDef))
     } else {
       macroRuntimesCache.getOrElseUpdate(macroDef, {
         val runtime = {
-          macroTraceVerbose("looking for macro implementation: ")(macroDef)
           macroTraceVerbose("macroDef is annotated with: ")(macroDef.annotations)
 
           val ann = macroDef.getAnnotation(MacroImplAnnotation)
-          if (ann == None) {
-            macroTraceVerbose("@macroImpl annotation is missing (this means that macro definition failed to typecheck)")(macroDef)
-            return None
-          }
+          if (ann == None) { macroTraceVerbose("@macroImpl annotation is missing (this means that macro definition failed to typecheck)")(macroDef); return None }
 
           val macroImpl = ann.get.args(0).symbol
-          if (macroImpl == NoSymbol) {
-            macroTraceVerbose("@macroImpl annotation is malformed (this means that macro definition failed to typecheck)")(macroDef)
-            return None
-          }
-
+          if (macroImpl == NoSymbol) { macroTraceVerbose("@macroImpl annotation is malformed (this means that macro definition failed to typecheck)")(macroDef); return None }
           macroLogVerbose("resolved implementation %s at %s".format(macroImpl, macroImpl.pos))
-          if (macroImpl.isErroneous) {
-            macroTraceVerbose("macro implementation is erroneous (this means that either macro body or macro implementation signature failed to typecheck)")(macroDef)
-            return None
-          }
+          if (macroImpl.isErroneous) { macroTraceVerbose("macro implementation is erroneous (this means that either macro body or macro implementation signature failed to typecheck)")(macroDef); return None }
 
           def loadMacroImpl(macroMirror: Mirror): Option[(Object, macroMirror.Symbol)] = {
             try {
@@ -711,14 +701,8 @@ trait Macros extends Traces {
               // however, the code below doesn't account for these guys, because it'd take a look of time to get it right
               // for now I leave it as a todo and move along to more the important stuff
 
-              macroTraceVerbose("loading implementation class from %s: ".format(macroMirror))(macroImpl.owner.fullName)
-              macroTraceVerbose("classloader is: ")("%s of type %s".format(macroMirror.classLoader, if (macroMirror.classLoader != null) macroMirror.classLoader.getClass.toString else "primordial classloader"))
-              def inferClasspath(cl: ClassLoader) = cl match {
-                case cl: java.net.URLClassLoader => "[" + (cl.getURLs mkString ",") + "]"
-                case null => "[" + scala.tools.util.PathResolver.Environment.javaBootClassPath + "]"
-                case _ => "<unknown>"
-              }
-              macroTraceVerbose("classpath is: ")(inferClasspath(macroMirror.classLoader))
+              macroTraceVerbose("loading implementation class: ")(macroImpl.owner.fullName)
+              macroTraceVerbose("classloader is: ")(ReflectionUtils.show(macroMirror.classLoader))
 
               // [Eugene] relies on the fact that macro implementations can only be defined in static classes
               // [Martin to Eugene] There's similar logic buried in Symbol#flatname. Maybe we can refactor?
@@ -749,7 +733,7 @@ trait Macros extends Traces {
                   val implClass = macroMirror.classToJava(implClassSymbol)
                   val implSource = implClass.getProtectionDomain.getCodeSource
                   println("implClass is %s from %s".format(implClass, implSource))
-                  println("implClassLoader is %s with classpath %s".format(implClass.getClassLoader, inferClasspath(implClass.getClassLoader)))
+                  println("implClassLoader is %s".format(implClass.getClassLoader, ReflectionUtils.show(implClass.getClassLoader)))
                 }
               }
 
@@ -785,6 +769,9 @@ trait Macros extends Traces {
             } catch {
               case ex: ClassNotFoundException =>
                 macroTraceVerbose("implementation class failed to load: ")(ex.toString)
+                None
+              case ex: NoSuchMethodException =>
+                macroTraceVerbose("implementation method failed to load: ")(ex.toString)
                 None
             }
           }
@@ -985,15 +972,17 @@ trait Macros extends Traces {
   def macroExpand(typer: Typer, expandee: Tree, mode: Int = EXPRmode, pt: Type = WildcardType): Tree = {
     def fail(what: String, tree: Tree): Tree = {
       val err = typer.context.errBuffer.head
-      this.fail(typer, tree, "failed to %s: %s at %s".format(what, err.errMsg, err.errPos))
+      this.fail(typer, tree, err.errPos, "failed to %s: %s".format(what, err.errMsg))
       return expandee
     }
     val start = startTimer(macroExpandNanos)
     incCounter(macroExpandCount)
     try {
       macroExpand1(typer, expandee) match {
-        case Success(expanded) =>
+        case Success(expanded0) =>
           try {
+            val expanded = expanded0 // virtpatmat swallows the local for expandee from the match
+                                     // so I added this dummy local for the ease of debugging
             var expectedTpe = expandee.tpe
 
             // [Eugene] weird situation. what's the conventional way to deal with it?
@@ -1046,11 +1035,11 @@ trait Macros extends Traces {
   private def Skip(expanded: Tree) = Other(expanded)
   private def Cancel(expandee: Tree) = Other(expandee)
   private def Failure(expandee: Tree) = Other(expandee)
-  private def fail(typer: Typer, expandee: Tree, msg: String = null) = {
+  private def fail(typer: Typer, expandee: Tree, pos: Position = NoPosition, msg: String = null) = {
     def msgForLog = if (msg != null && (msg contains "exception during macro expansion")) msg.split(EOL).drop(1).headOption.getOrElse("?") else msg
     macroLogLite("macro expansion has failed: %s".format(msgForLog))
-    val pos = if (expandee.pos != NoPosition) expandee.pos else enclosingMacroPosition
-    if (msg != null) typer.context.error(pos, msg)
+    val errorPos = if (pos != NoPosition) pos else (if (expandee.pos != NoPosition) expandee.pos else enclosingMacroPosition)
+    if (msg != null) typer.context.error(errorPos, msg)
     typer.infer.setError(expandee)
     Failure(expandee)
   }
@@ -1069,7 +1058,7 @@ trait Macros extends Traces {
       // if a macro implementation is incompatible or any of the arguments are erroneous
       // there is no sense to expand the macro itself => it will only make matters worse
       if (expandee.symbol.isErroneous || (expandee exists (_.isErroneous))) {
-        val reason = if (expandee.symbol.isErroneous) "incompatible macro implementation" else "erroneous arguments"
+        val reason = if (expandee.symbol.isErroneous) "not found or incompatible macro implementation" else "erroneous arguments"
         macroTraceVerbose("cancelled macro expansion because of %s: ".format(reason))(expandee)
         return Cancel(typer.infer.setError(expandee))
       }
@@ -1105,7 +1094,7 @@ trait Macros extends Traces {
       val undetparams = calculateUndetparams(expandee)
       val nowDelayed  = !typer.context.macrosEnabled || undetparams.nonEmpty
 
-      def failExpansion(msg: String = null) = fail(typer, expandee, msg)
+      def failExpansion(msg: String = null) = fail(typer, expandee, msg = msg)
       def performExpansion(args: List[Any]): MacroExpansionResult = {
         val numErrors    = reporter.ERROR.count
         def hasNewErrors = reporter.ERROR.count > numErrors
@@ -1257,7 +1246,7 @@ trait Macros extends Traces {
               None
           }
         } getOrElse realex.getMessage
-        fail(typer, expandee, "exception during macro expansion: " + message)
+        fail(typer, expandee, msg = "exception during macro expansion: " + message)
     }
   }
 

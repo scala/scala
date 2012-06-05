@@ -27,7 +27,9 @@ trait TreePrinters extends api.TreePrinters { self: SymbolTable =>
 
   private def symNameInternal(tree: Tree, name: Name, decoded: Boolean): String = {
     val sym = tree.symbol
-    if (sym != null && sym != NoSymbol) {
+    if (sym.name.toString == nme.ERROR.toString) {
+      "<" + quotedName(name, decoded) + ": error>"
+    } else if (sym != null && sym != NoSymbol) {
       val prefix = if (sym.isMixinConstructor) "/*%s*/".format(quotedName(sym.owner.name, decoded)) else ""
       var suffix = ""
       if (settings.uniqid.value) suffix += ("#" + sym.id)
@@ -167,6 +169,12 @@ trait TreePrinters extends api.TreePrinters { self: SymbolTable =>
     }
 
     def printAnnotations(tree: Tree) {
+      if (inReflexiveMirror && tree.symbol != null && tree.symbol != NoSymbol)
+        // [Eugene++] todo. this is not 100% correct, but is necessary for sane printing
+        // the problem is that getting annotations doesn't automatically initialize the symbol
+        // so we might easily print something as if it doesn't have annotations, whereas it does
+        tree.symbol.initialize
+
       val annots = tree.symbol.annotations match {
         case Nil  => tree.asInstanceOf[MemberDef].mods.annotations
         case anns => anns

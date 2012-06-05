@@ -10,7 +10,10 @@ trait Errors {
   import mirror._
   import definitions._
 
-  def defaultErrorPosition = analyzer.enclosingMacroPosition
+  def defaultErrorPosition = {
+    val stack = currents collect { case t: Tree if t.pos != NoPosition => t.pos }
+    stack.headOption getOrElse analyzer.enclosingMacroPosition
+  }
 
   // expected errors: these can happen if the user casually writes whatever.reify(...)
   // hence we don't crash here, but nicely report a typechecking error and bail out asap

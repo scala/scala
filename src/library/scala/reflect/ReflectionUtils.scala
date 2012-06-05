@@ -33,20 +33,26 @@ object ReflectionUtils {
     System.getProperties.asScala.iterator
   }
 
-  private def searchForBootClasspath = (
+  private def inferBootClasspath: String = (
     systemProperties find (_._1 endsWith ".boot.class.path") map (_._2) getOrElse ""
   )
 
   def show(cl: ClassLoader) = {
-    def inferClasspath(cl: ClassLoader) = cl match {
-      case cl: java.net.URLClassLoader => "[" + (cl.getURLs mkString ",") + "]"
-      case _ => "<unknown>"
+    def inferClasspath(cl: ClassLoader): String = cl match {
+      case cl: java.net.URLClassLoader =>
+        "[" + (cl.getURLs mkString ",") + "]"
+      case cl if cl != null && cl.getClass.getName == "scala.tools.nsc.interpreter.AbstractFileClassLoader" =>
+        "[" + cl.asInstanceOf[{val root: api.RequiredFile}].root + "] and " + inferClasspath(cl.getParent)
+      case null =>
+        inferBootClasspath
+      case _ =>
+        "<unknown>"
     }
     cl match {
       case cl if cl != null =>
         "%s of type %s with classpath %s".format(cl, cl.getClass, inferClasspath(cl))
       case null =>
-        "primordial classloader with boot classpath [%s]".format(searchForBootClasspath)
+        "primordial classloader with boot classpath [%s]".format(inferClasspath(cl))
     }
   }
 
