@@ -554,7 +554,7 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
     // return false if repl should exit
     def processLine(line: String): Boolean = {
       if (isAsync) {
-        awaitInitialized()
+        if (!awaitInitialized()) return false
         runThunks()
       }
       if (line eq null) false               // assume null means EOF
