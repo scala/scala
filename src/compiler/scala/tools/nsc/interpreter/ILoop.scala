@@ -831,6 +831,13 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
     // Bind intp somewhere out of the regular namespace where
     // we can get at it in generated code.
     addThunk(intp.quietBind("$intp" -> intp))
+    addThunk({
+      import scala.tools.nsc.io._
+      import Properties.userHome
+      import compat.Platform.EOL
+      val autorun = replProps.replAutorunCode.option flatMap (f => io.File(f).safeSlurp())
+      if (autorun.isDefined) intp.quietRun(autorun.get)
+    })
 
     loadFiles(settings)
     // it is broken on startup; go ahead and exit

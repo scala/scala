@@ -19,7 +19,8 @@ class ReplProps {
   val trace = bool("scala.repl.trace")
   val power = bool("scala.repl.power")
 
-  val replInitCode  = Prop[JFile]("scala.repl.initcode")
-  val powerInitCode = Prop[JFile]("scala.repl.power.initcode")
-  val powerBanner   = Prop[JFile]("scala.repl.power.banner")
+  val replInitCode    = Prop[JFile]("scala.repl.initcode")
+  val replAutorunCode = Prop[JFile]("scala.repl.autoruncode")
+  val powerInitCode   = Prop[JFile]("scala.repl.power.initcode")
+  val powerBanner     = Prop[JFile]("scala.repl.power.banner")
 }
