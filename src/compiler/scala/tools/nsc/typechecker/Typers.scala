@@ -3694,11 +3694,10 @@ trait Typers extends Modes with Adaptations with Taggings {
           // hence we go the extra mile to hand-craft tis guy
           val original =
             if (arg1.isType)
-              (tree, arg1) match {
-                case (Annotated(annot, arg), tt @ TypeTree()) => Annotated(annot, tt.original)
+              arg1 match {
+                case tt @ TypeTree() => Annotated(ann, tt.original)
                 // this clause is needed to correctly compile stuff like "new C @D" or "@(inline @getter)"
-                case (Annotated(annot, arg), _) => Annotated(annot, arg1)
-                case _ => throw new Error("unexpected trees in typedAnnotated: tree = %s, arg1 = %s".format(showRaw(tree), showRaw(arg1)))
+                case _ => Annotated(ann, arg1)
               }
             else
               tree
