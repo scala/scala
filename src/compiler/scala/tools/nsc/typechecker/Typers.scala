@@ -905,6 +905,10 @@ trait Typers extends Modes with Adaptations with Taggings {
 
       def adaptType(): Tree = {
         if (inFunMode(mode)) {
+          // [Eugene++] the commented line below makes sense for typechecking, say, TypeApply(Ident(`some abstract type symbol`), List(...))
+          // because otherwise Ident will have its tpe set to a TypeRef, not to a PolyType, and `typedTypeApply` will fail
+          // but this needs additional investigation, because it crashes t5228, gadts1 and maybe something else
+          // tree setType tree.tpe.normalize
           tree
         } else if (tree.hasSymbol && !tree.symbol.typeParams.isEmpty && !inHKMode(mode) &&
           !(tree.symbol.isJavaDefined && context.unit.isJava)) { // (7)
