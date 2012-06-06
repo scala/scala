@@ -982,7 +982,7 @@ trait Macros extends scala.tools.reflect.FastTrack with Traces {
             if (typer.context.hasErrors) fail("typecheck against expected type", expanded)
             macroLogVerbose("typechecked2:%n%s%n%s".format(typechecked, showRaw(typechecked)))
 
-            typechecked
+            typechecked addAttachment MacroExpansionAttachment(expandee)
           } finally {
             openMacros = openMacros.tail
           }

@@ -1294,8 +1294,8 @@ trait Implicits {
       }
 
       val tagInScope =
-        if (full) resolveTypeTag(NoType, tp, pos, concrete = true)
-        else resolveArrayTag(tp, pos)
+        if (full) resolveTypeTag(pos, NoType, tp, concrete = true, allowMaterialization = false)
+        else resolveArrayTag(pos, tp, allowMaterialization = false)
       if (tagInScope.isEmpty) mot(tp, Nil, Nil)
       else {
         if (full) {
@@ -1307,7 +1307,7 @@ trait Implicits {
               |to proceed put scala-reflect.jar on your compilation classpath and recompile.""".trim.stripMargin)
             return SearchFailure
           }
-          if (resolveErasureTag(tp, pos, concrete = true) == EmptyTree) {
+          if (resolveClassTag(pos, tp, allowMaterialization = true) == EmptyTree) {
             context.error(pos, s"""
               |to create a manifest here, it is necessary to interoperate with the type tag `$tagInScope` in scope.
               |however typetag -> manifest conversion requires a class tag for the corresponding type to be present.

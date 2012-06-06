@@ -6,15 +6,16 @@ import scala.tools.nsc.symtab.Flags._
 trait Reshape {
   self: Reifier =>
 
-  import mirror._
+  import global._
   import definitions._
-  import treeInfo._
 
   /**
    *  Rolls back certain changes that were introduced during typechecking of the reifee.
    *
    *  These include:
+   *    * Undoing macro expansions
    *    * Replacing type trees with TypeTree(tpe)
+   *    * Reassembling CompoundTypeTrees into reifiable form
    *    * Transforming Modifiers.annotations into Symbol.annotations
    *    * Transforming Annotated annotations into AnnotatedType annotations
    *    * Transforming Annotated(annot, expr) into Typed(expr, TypeTree(Annotated(annot, _))
@@ -23,7 +24,8 @@ trait Reshape {
   val reshape = new Transformer {
     var currentSymbol: Symbol = NoSymbol
 
-    override def transform(tree: Tree) = {
+    override def transform(tree0: Tree) = {
+      val tree = undoMacroExpansion(tree0)
       currentSymbol = tree.symbol
 
       val preTyper = tree match {
@@ -31,8 +33,13 @@ trait Reshape {
           tree
         case tt @ TypeTree() =>
           toPreTyperTypeTree(tt)
+        case ctt @ CompoundTypeTree(_) =>
+          toPreTyperCompoundTypeTree(ctt)
         case toa @ TypedOrAnnotated(_) =>
           toPreTyperTypedOrAnnotated(toa)
+        case ta @ TypeApply(_, _) if isCrossStageTypeBearer(ta) =>
+          if (reifyDebug) println("cross-stage type bearer, retaining: " + tree)
+          ta
         case ta @ TypeApply(hk, ts) =>
           val discard = ts collect { case tt: TypeTree => tt } exists isDiscarded
           if (reifyDebug && discard) println("discarding TypeApply: " + tree)
@@ -85,6 +92,29 @@ trait Reshape {
       super.transform(preTyper)
     }
 
+    private def undoMacroExpansion(tree: Tree): Tree =
+      tree.attachments.get[MacroExpansionAttachment] match {
+        case Some(MacroExpansionAttachment(original)) =>
+          original match {
+            // this hack is necessary until I fix implicit macros
+            // so far tag materialization is implemented by sneaky macros hidden in scala-compiler.jar
+            // hence we cannot reify references to them, because noone will be able to see them later
+            // when implicit macros are fixed, these sneaky macros will move to corresponding companion objects
+            // of, say, ClassTag or TypeTag
+            case Apply(TypeApply(_, List(tt)), _) if original.symbol == MacroInternal_materializeArrayTag =>
+              gen.mkNullaryCall(Predef_implicitly, List(appliedType(ArrayTagClass, tt.tpe)))
+            case Apply(TypeApply(_, List(tt)), _) if original.symbol == MacroInternal_materializeClassTag =>
+              gen.mkNullaryCall(Predef_implicitly, List(appliedType(ClassTagClass, tt.tpe)))
+            case Apply(TypeApply(_, List(tt)), List(pre)) if original.symbol == MacroInternal_materializeTypeTag =>
+              gen.mkNullaryCall(Predef_implicitly, List(typeRef(pre.tpe, TypeTagClass, List(tt.tpe))))
+            case Apply(TypeApply(_, List(tt)), List(pre)) if original.symbol == MacroInternal_materializeConcreteTypeTag =>
+              gen.mkNullaryCall(Predef_implicitly, List(typeRef(pre.tpe, ConcreteTypeTagClass, List(tt.tpe))))
+            case _ =>
+              original
+          }
+        case _ => tree
+      }
+
     override def transformModifiers(mods: Modifiers) = {
       val mods1 = toPreTyperModifiers(mods, currentSymbol)
       super.transformModifiers(mods1)
@@ -130,6 +160,7 @@ trait Reshape {
      *  Suddenly I found out that in certain contexts original trees do not contain symbols, but are just parser trees.
      *  To the moment I know only one such situation: typedAnnotations does not typecheck the annotation in-place, but rather creates new trees and typechecks them, so the original remains symless.
      *  Thus we apply a workaround for that in typedAnnotated. I hope this will be the only workaround in this department.
+     *  upd. There are also problems with CompoundTypeTrees. I had to use attachments to retain necessary information.
      *
      *  upd. Recently I went ahead and started using original for all TypeTrees, regardless of whether they refer to local symbols or not.
      *  As a result, ``reifyType'' is never called directly by tree reification (and, wow, it seems to work great!).
@@ -137,7 +168,7 @@ trait Reshape {
      */
     private def isDiscarded(tt: TypeTree) = tt.original == null
     private def toPreTyperTypeTree(tt: TypeTree): Tree = {
-      if (tt.original != null) {
+      if (!isDiscarded(tt)) {
         // here we rely on the fact that the originals that reach this point
         // have all necessary symbols attached to them (i.e. that they can be recompiled in any lexical context)
         // if this assumption fails, please, don't be quick to add postprocessing here (like I did before)
@@ -152,6 +183,14 @@ trait Reshape {
         if (reifyDebug) println("verdict: discarded")
         TypeTree()
       }
+    }
+
+    private def toPreTyperCompoundTypeTree(ctt: CompoundTypeTree): Tree = {
+      val CompoundTypeTree(tmpl @ Template(parents, self, stats)) = ctt
+      assert(self eq emptyValDef, self)
+      val att = tmpl.attachments.get[CompoundTypeTreeOriginalAttachment]
+      val CompoundTypeTreeOriginalAttachment(parents1, stats1) = att.getOrElse(CompoundTypeTreeOriginalAttachment(parents, stats))
+      CompoundTypeTree(Template(parents1, self, stats1))
     }
 
     private def toPreTyperTypedOrAnnotated(tree: Tree): Tree = tree match {

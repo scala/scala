@@ -419,7 +419,7 @@ abstract class UnCurry extends InfoTransform
           val toArraySym = tree.tpe member nme.toArray
           assert(toArraySym != NoSymbol)
           def getArrayTag(tp: Type): Tree = {
-            val tag = localTyper.resolveArrayTag(tp, tree.pos)
+            val tag = localTyper.resolveArrayTag(tree.pos, tp)
             // Don't want bottom types getting any further than this (SI-4024)
             if (tp.typeSymbol.isBottomClass) getArrayTag(AnyClass.tpe)
             else if (!tag.isEmpty) tag

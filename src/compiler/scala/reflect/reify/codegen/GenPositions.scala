@@ -1,12 +1,11 @@
 package scala.reflect.reify
 package codegen
 
-trait Positions {
+trait GenPositions {
   self: Reifier =>
 
-  import mirror._
+  import global._
   import definitions._
-  import treeInfo._
 
   // we do not reify positions because this inflates resulting trees, but doesn't buy as anything
   // where would one use positions? right, in error messages

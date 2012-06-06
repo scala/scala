@@ -26,7 +26,7 @@ import util.Statistics._
  *  @author  Martin Odersky
  *  @version 1.0
  */
-trait Typers extends Modes with Adaptations with Taggings {
+trait Typers extends Modes with Adaptations with Tags {
   self: Analyzer =>
 
   import global._
@@ -96,7 +96,7 @@ trait Typers extends Modes with Adaptations with Taggings {
   // this is disabled by: -Xoldpatmat, scaladoc or interactive compilation
   @inline private def newPatternMatching = opt.virtPatmat && !forScaladoc && !forInteractive // && (phase.id < currentRun.uncurryPhase.id)
 
-  abstract class Typer(context0: Context) extends TyperDiagnostics with Adaptation with Tagging with TyperContextErrors {
+  abstract class Typer(context0: Context) extends TyperDiagnostics with Adaptation with Tag with TyperContextErrors {
     import context0.unit
     import typeDebug.{ ptTree, ptBlock, ptLine }
     import TyperErrorGen._
@@ -2512,11 +2512,18 @@ trait Typers extends Modes with Adaptations with Taggings {
       }
     }
 
-    def typedRefinement(stats: List[Tree]) {
+    def typedRefinement(templ: Template) {
+      val stats = templ.body
       namer.enterSyms(stats)
       // need to delay rest of typedRefinement to avoid cyclic reference errors
       unit.toCheck += { () =>
         val stats1 = typedStats(stats, NoSymbol)
+        // this code kicks in only after typer, so `stats` will never be filled in time
+        // as a result, most of compound type trees with non-empty stats will fail to reify
+        // [Eugene++] todo. investigate whether something can be done about this
+        val att = templ.attachments.get[CompoundTypeTreeOriginalAttachment].getOrElse(CompoundTypeTreeOriginalAttachment(Nil, Nil))
+        templ.removeAttachment[CompoundTypeTreeOriginalAttachment]
+        templ addAttachment att.copy(stats = stats1)
         for (stat <- stats1 if stat.isDef) {
           val member = stat.symbol
           if (!(context.owner.ancestors forall
@@ -4584,7 +4591,8 @@ trait Typers extends Modes with Adaptations with Taggings {
           val decls = newScope
           //Console.println("Owner: " + context.enclClass.owner + " " + context.enclClass.owner.id)
           val self = refinedType(parents1 map (_.tpe), context.enclClass.owner, decls, templ.pos)
-          newTyper(context.make(templ, self.typeSymbol, decls)).typedRefinement(templ.body)
+          newTyper(context.make(templ, self.typeSymbol, decls)).typedRefinement(templ)
+          templ addAttachment CompoundTypeTreeOriginalAttachment(parents1, Nil) // stats are set elsewhere
           tree setType self
         }
       }
@@ -4856,7 +4864,7 @@ trait Typers extends Modes with Adaptations with Taggings {
               val Some((level, componentType)) = erasure.GenericArray.unapply(tpt.tpe)
               val tagType = List.iterate(componentType, level)(tpe => appliedType(ArrayClass.asType, List(tpe))).last
               val newArrayApp = atPos(tree.pos) {
-                val tag = resolveArrayTag(tagType, tree.pos)
+                val tag = resolveArrayTag(tree.pos, tagType)
                 if (tag.isEmpty) MissingArrayTagError(tree, tagType)
                 else new ApplyToImplicitArgs(Select(tag, nme.newArray), args)
               }

@@ -1,12 +1,11 @@
 package scala.reflect.reify
 package codegen
 
-trait AnnotationInfos {
+trait GenAnnotationInfos {
   self: Reifier =>
 
-  import mirror._
+  import global._
   import definitions._
-  import treeInfo._
 
   // usually annotations are reified as their originals from Modifiers
   // however, when reifying free and tough types, we're forced to reify annotation infos as is
@@ -26,8 +25,8 @@ trait AnnotationInfos {
         //    reflective typechecker will fill in missing symbols and types, right?
         // A: actually, no. annotation ASTs live inside AnnotatedTypes,
         //    and insides of the types is the place where typechecker doesn't look.
-        reifyTreeSymbols = true
-        reifyTreeTypes = true
+        state.reifyTreeSymbols = true
+        state.reifyTreeTypes = true
 
         // todo. every AnnotationInfo is an island, entire of itself
         // no regular Traverser or Transformer can reach it
@@ -35,8 +34,8 @@ trait AnnotationInfos {
         // e.g. to apply reshaping or to check metalevels
         reify(arg)
       } finally {
-        reifyTreeSymbols = saved1
-        reifyTreeTypes = saved2
+        state.reifyTreeSymbols = saved1
+        state.reifyTreeTypes = saved2
       }
     }
 
