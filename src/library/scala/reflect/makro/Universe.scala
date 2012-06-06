@@ -1,4 +1,5 @@
-package scala.reflect.makro
+package scala.reflect
+package makro
 
 abstract class Universe extends scala.reflect.api.Universe {
 
@@ -82,13 +83,13 @@ abstract class Universe extends scala.reflect.api.Universe {
     def setSymbol(sym: Symbol): this.type
 
     /** ... */
-    def attachments: scala.reflect.base.Attachments { type Pos = Position }
+    def attachments: base.Attachments { type Pos = Position }
 
     /** ... */
     def addAttachment(attachment: Any): this.type
 
     /** ... */
-    def removeAttachment[T: scala.reflect.ClassTag]: this.type
+    def removeAttachment[T: ClassTag]: this.type
   }
 
   override type SymTree >: Null <: Tree with SymTreeContextApi

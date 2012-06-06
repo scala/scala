@@ -1,4 +1,5 @@
-package scala.reflect.makro
+package scala.reflect
+package makro
 
 // [Eugene] I added some stuff that was necessary for typetag materialization macros
 // but we should think it over and pick other generally useful stuff

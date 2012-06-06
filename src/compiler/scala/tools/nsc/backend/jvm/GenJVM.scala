@@ -1711,7 +1711,7 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
                 abort("Unknown arithmetic primitive " + primitive)
             }
 
-          case Logical(op, kind) => (op, kind) match {
+          case Logical(op, kind) => ((op, kind): @unchecked) match {
             case (AND, LONG) => jcode.emitLAND()
             case (AND, INT)  => jcode.emitIAND()
             case (AND, _)    =>
@@ -1734,7 +1734,7 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
                 jcode.emitT2T(javaType(INT), javaType(kind));
           }
 
-          case Shift(op, kind) => (op, kind) match {
+          case Shift(op, kind) => ((op, kind): @unchecked) match {
             case (LSL, LONG) => jcode.emitLSHL()
             case (LSL, INT)  => jcode.emitISHL()
             case (LSL, _) =>

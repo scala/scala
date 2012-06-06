@@ -2,6 +2,7 @@ package scala.reflect.internal
 package util
 
 import scala.collection.{ mutable, immutable }
+import language.postfixOps
 
 trait TraceSymbolActivity {
   val global: SymbolTable

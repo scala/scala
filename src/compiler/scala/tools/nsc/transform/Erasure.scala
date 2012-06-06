@@ -638,7 +638,6 @@ abstract class Erasure extends AddInterfaces
      */
     private def adaptMember(tree: Tree): Tree = {
       //Console.println("adaptMember: " + tree);
-      val x = 2 + 2
       tree match {
         case Apply(TypeApply(sel @ Select(qual, name), List(targ)), List())
         if tree.symbol == Any_asInstanceOf =>

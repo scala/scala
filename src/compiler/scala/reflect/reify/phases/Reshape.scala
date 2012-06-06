@@ -252,7 +252,7 @@ trait Reshape {
 
     // [Eugene] is this implemented correctly?
     private def trimAccessors(deff: Tree, stats: List[Tree]): List[Tree] = {
-      val symdefs = stats collect { case vodef: ValOrDefDef => vodef } map (vodeff => vodeff.symbol -> vodeff) toMap
+      val symdefs = (stats collect { case vodef: ValOrDefDef => vodef } map (vodeff => vodeff.symbol -> vodeff)).toMap
       val accessors = collection.mutable.Map[ValDef, List[DefDef]]()
       stats collect { case ddef: DefDef => ddef } foreach (defdef => {
         val valdef = symdefs get defdef.symbol.accessedOrSelf collect { case vdef: ValDef => vdef } getOrElse null
@@ -262,8 +262,8 @@ trait Reshape {
           if (defdef.name.startsWith(prefix)) {
             var name = defdef.name.toString.substring(prefix.length)
             def uncapitalize(s: String) = if (s.length == 0) "" else { val chars = s.toCharArray; chars(0) = chars(0).toLower; new String(chars) }
-            def findValDef(name: String) = symdefs.values collect { case vdef: ValDef if nme.dropLocalSuffix(vdef.name).toString == name => vdef } headOption;
-            val valdef = findValDef(name) orElse findValDef(uncapitalize(name)) orNull;
+            def findValDef(name: String) = (symdefs.values collect { case vdef: ValDef if nme.dropLocalSuffix(vdef.name).toString == name => vdef }).headOption
+            val valdef = findValDef(name).orElse(findValDef(uncapitalize(name))).orNull
             if (valdef != null) accessors(valdef) = accessors.getOrElse(valdef, Nil) :+ defdef
           }
         }

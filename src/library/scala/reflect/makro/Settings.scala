@@ -1,4 +1,5 @@
-package scala.reflect.makro
+package scala.reflect
+package makro
 
 trait Settings {
   self: Context =>
@@ -18,6 +19,7 @@ trait Settings {
 
   /** Updates current compiler settings with an option string.
    *  Use `scalac -help`, `scalac -X` and `scalac -Y` to learn about currently supported options.
+   *  todo. http://groups.google.com/group/scala-internals/browse_thread/thread/07c18cff41f59203
    */
   def setCompilerSettings(options: String): this.type
 

@@ -358,7 +358,7 @@ abstract class UnPickler /*extends reflect.generic.UnPickler*/ {
         case POLYtpe =>
           val restpe = readTypeRef()
           val typeParams = until(end, readSymbolRef)
-          if(typeParams nonEmpty) {
+          if (typeParams.nonEmpty) {
             // NMT_TRANSITION: old class files denoted a polymorphic nullary method as PolyType(tps, restpe), we now require PolyType(tps, NullaryMethodType(restpe))
             // when a type of kind * is expected (forceProperType is true), we know restpe should be wrapped in a NullaryMethodType (if it wasn't suitably wrapped yet)
             def transitionNMT(restpe: Type) = {

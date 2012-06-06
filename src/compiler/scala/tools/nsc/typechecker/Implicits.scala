@@ -17,6 +17,7 @@ import mutable.{ LinkedHashMap, ListBuffer }
 import scala.util.matching.Regex
 import symtab.Flags._
 import util.Statistics._
+import language.implicitConversions
 
 /** This trait provides methods to find various kinds of implicits.
  *
@@ -335,7 +336,7 @@ trait Implicits {
      *  The _complexity_ of a stripped core type corresponds roughly to the number of
      *  nodes in its ast, except that singleton types are widened before taking the complexity.
      *  Two types overlap if they have the same type symbol, or
-     *  if one or both are intersection types with a pair of overlapiing parent types.
+     *  if one or both are intersection types with a pair of overlapping parent types.
      */
     private def dominates(dtor: Type, dted: Type): Boolean = {
       def core(tp: Type): Type = tp.normalize match {

@@ -3644,7 +3644,7 @@ trait Typers extends Modes with Adaptations with Tags {
               case t => (t, Nil)
           }
 
-          @inline def hasNamedArg(as: List[Tree]) = as collectFirst {case AssignOrNamedArg(lhs, rhs) =>} nonEmpty
+          @inline def hasNamedArg(as: List[Tree]) = as.collectFirst{case AssignOrNamedArg(lhs, rhs) =>}.nonEmpty
 
           // note: context.tree includes at most one Apply node
           // thus, we can't use it to detect we're going to receive named args in expressions such as:
@@ -3664,7 +3664,7 @@ trait Typers extends Modes with Adaptations with Tags {
           }
 
           val dynSel  = Select(qual, oper)
-          val tappSel = if (explicitTargs nonEmpty) TypeApply(dynSel, explicitTargs) else dynSel
+          val tappSel = if (explicitTargs.nonEmpty) TypeApply(dynSel, explicitTargs) else dynSel
 
           atPos(qual.pos)(Apply(tappSel, List(Literal(Constant(name.decode)))))
         }
@@ -4874,6 +4874,7 @@ trait Typers extends Modes with Adaptations with Tags {
           }
 
         case ApplyDynamic(qual, args) =>
+          assert(phase.erasedTypes)
           val reflectiveCalls = !(settings.refinementMethodDispatch.value == "invoke-dynamic")
           val qual1 = typed(qual, AnyRefClass.tpe)
           val args1 = args mapConserve (arg => if (reflectiveCalls) typed(arg, AnyRefClass.tpe) else typed(arg))

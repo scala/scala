@@ -1,4 +1,5 @@
-package scala.reflect.makro
+package scala.reflect
+package makro
 
 import language.experimental.macros
 
@@ -19,7 +20,7 @@ trait Context extends Aliases
                  with Exprs
                  with TypeTags
                  with Evals
-                 with Util {
+                 with ExprUtils {
 
   /** The compile-time universe */
   val universe: Universe

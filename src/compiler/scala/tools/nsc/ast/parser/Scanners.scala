@@ -185,7 +185,7 @@ trait Scanners extends ScannersCommon {
       sepRegions.nonEmpty && sepRegions.head == STRINGLIT
 
     /** Are we directly in a multiline string interpolation expression?
-     *  @pre: inStringInterpolation
+     *  @pre inStringInterpolation
      */
     @inline private def inMultiLineInterpolation =
       inStringInterpolation && sepRegions.tail.nonEmpty && sepRegions.tail.head == STRINGPART

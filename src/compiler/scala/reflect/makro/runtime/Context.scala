@@ -18,7 +18,7 @@ abstract class Context extends scala.reflect.makro.Context
                          with Exprs
                          with TypeTags
                          with Evals
-                         with Util
+                         with ExprUtils
                          with Traces {
 
   val universe: Global

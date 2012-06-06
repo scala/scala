@@ -1667,7 +1667,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
      *  The empty list for all other classes.
      */
     final def caseFieldAccessors: List[Symbol] =
-      info.decls filter (_.isCaseAccessorMethod) toList
+      (info.decls filter (_.isCaseAccessorMethod)).toList
 
     final def constrParamAccessors: List[Symbol] =
       info.decls.toList filter (sym => !sym.isMethod && sym.isParamAccessor)
@@ -1730,7 +1730,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
      */
     def mixinClasses: List[Symbol] = {
       val sc = superClass
-      ancestors takeWhile (sc ne)
+      ancestors takeWhile (sc ne _)
     }
 
     /** All directly or indirectly inherited classes. */
@@ -1994,7 +1994,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
      *  pre: `this.owner` is in the base class sequence of `base`.
      */
     final def superSymbol(base: Symbol): Symbol = {
-      var bcs = base.info.baseClasses.dropWhile(owner !=).tail
+      var bcs = base.info.baseClasses.dropWhile(owner != _).tail
       var sym: Symbol = NoSymbol
       while (!bcs.isEmpty && sym == NoSymbol) {
         if (!bcs.head.isImplClass)

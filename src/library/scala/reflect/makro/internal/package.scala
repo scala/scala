@@ -1,8 +1,8 @@
-package scala.reflect.makro
+package scala.reflect
+package makro
 
 import language.experimental.macros
 import scala.reflect.base.{Universe => BaseUniverse}
-import scala.reflect.{ClassTag, ArrayTag}
 
 // anchors for materialization macros emitted during tag materialization in Implicits.scala
 // implementation is magically hardwired into `scala.reflect.reify.Taggers`
