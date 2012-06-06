@@ -78,7 +78,19 @@ extends collection.AbstractSeq[Int]
   final val terminalElement = start + numRangeElements * step
 
   override def last = if (isEmpty) Nil.last else lastElement
-
+  
+  override def min[A1 >: Int](implicit ord: Ordering[A1]): Int =
+    if (ord eq Ordering.Int) {
+      if (step > 0) start
+      else last
+    } else super.min(ord)
+  
+  override def max[A1 >: Int](implicit ord: Ordering[A1]): Int = 
+    if (ord eq Ordering.Int) {
+      if (step > 0) last
+      else start
+    } else super.max(ord)
+  
   protected def copy(start: Int, end: Int, step: Int): Range = new Range(start, end, step)
 
   /** Create a new range with the `start` and `end` values of this range and
