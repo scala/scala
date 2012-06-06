@@ -5,7 +5,7 @@
 
 package scala.reflect
 package api
-import language.implicitConversions
+
 import scala.reflect.base.TreeCreator
 
 trait Exprs { self: Universe =>

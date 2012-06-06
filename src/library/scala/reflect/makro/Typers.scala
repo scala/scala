@@ -1,4 +1,5 @@
-package scala.reflect.makro
+package scala.reflect
+package makro
 
 trait Typers {
   self: Context =>

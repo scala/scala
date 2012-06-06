@@ -14,6 +14,7 @@ import Flags._
 import scala.util.control.ControlThrowable
 import scala.annotation.tailrec
 import util.Statistics._
+import language.postfixOps
 
 /* A standard type pattern match:
   case ErrorType =>

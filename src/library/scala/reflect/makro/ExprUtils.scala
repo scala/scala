@@ -1,6 +1,7 @@
-package scala.reflect.makro
+package scala.reflect
+package makro
 
-trait Util {
+trait ExprUtils {
   self: Context =>
 
   def literalNull: Expr[Null]

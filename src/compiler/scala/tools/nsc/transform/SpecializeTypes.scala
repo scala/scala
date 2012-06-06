@@ -9,6 +9,7 @@ package transform
 import scala.tools.nsc.symtab.Flags
 import scala.collection.{ mutable, immutable }
 import language.postfixOps
+import language.existentials
 
 /** Specialize code on types.
  *

@@ -1,4 +1,5 @@
-package scala.reflect.makro
+package scala.reflect
+package makro
 
 trait Exprs {
   self: Context =>

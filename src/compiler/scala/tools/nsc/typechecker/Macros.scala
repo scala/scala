@@ -1103,34 +1103,36 @@ trait Macros extends scala.tools.reflect.FastTrack with Traces {
       else {
         macroLogLite("typechecking macro expansion %s at %s".format(expandee, expandee.pos))
         macroArgs(typer, expandee).fold(failExpansion(): MacroExpansionResult) {
-          // [Eugene++] crashes virtpatmat:
-          // case args @ ((context: MacroContext) :: _) =>
-          case args @ (context0 :: _) =>
-            val context = context0.asInstanceOf[MacroContext]
-            if (nowDelayed) {
-              macroLogLite("macro expansion is delayed: %s".format(expandee))
-              delayed += expandee -> undetparams
-              // need to save typer context for `macroExpandAll`
-              // need to save macro context to preserve enclosures
-              expandee addAttachment MacroRuntimeAttachment(delayed = true, typerContext = typer.context, macroContext = Some(context.asInstanceOf[MacroContext]))
-              Delay(expandee)
-            }
-            else {
-              // adding stuff to openMacros is easy, but removing it is a nightmare
-              // it needs to be sprinkled over several different code locations
-              // why? https://github.com/scala/scala/commit/bd3eacbae21f39b1ac7fe8ade4ed71fa98e1a28d#L2R1137
-              // todo. will be improved
-              openMacros ::= context
-              var isSuccess = false
-              try performExpansion(args) match {
-                case x: Success => isSuccess = true ; x
-                case x          => x
+          args => (args: @unchecked) match {
+            // [Eugene++] crashes virtpatmat:
+            // case args @ ((context: MacroContext) :: _) =>
+            case args @ (context0 :: _) =>
+              val context = context0.asInstanceOf[MacroContext]
+              if (nowDelayed) {
+                macroLogLite("macro expansion is delayed: %s".format(expandee))
+                delayed += expandee -> undetparams
+                // need to save typer context for `macroExpandAll`
+                // need to save macro context to preserve enclosures
+                expandee addAttachment MacroRuntimeAttachment(delayed = true, typerContext = typer.context, macroContext = Some(context.asInstanceOf[MacroContext]))
+                Delay(expandee)
               }
-              finally {
-                expandee.removeAttachment[MacroRuntimeAttachment]
-                if (!isSuccess) openMacros = openMacros.tail
+              else {
+                // adding stuff to openMacros is easy, but removing it is a nightmare
+                // it needs to be sprinkled over several different code locations
+                // why? https://github.com/scala/scala/commit/bd3eacbae21f39b1ac7fe8ade4ed71fa98e1a28d#L2R1137
+                // todo. will be improved
+                openMacros ::= context
+                var isSuccess = false
+                try performExpansion(args) match {
+                  case x: Success => isSuccess = true ; x
+                  case x          => x
+                }
+                finally {
+                  expandee.removeAttachment[MacroRuntimeAttachment]
+                  if (!isSuccess) openMacros = openMacros.tail
+                }
               }
-            }
+          }
         }
       }
     }

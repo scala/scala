@@ -12,6 +12,7 @@ import scala.tools.nsc.util.ScalaClassLoader
 import java.io.{ InputStream, PrintWriter, ByteArrayInputStream, FileNotFoundException }
 import scala.tools.nsc.io.File
 import Javap._
+import language.reflectiveCalls
 
 trait Javap {
   def loader: ScalaClassLoader

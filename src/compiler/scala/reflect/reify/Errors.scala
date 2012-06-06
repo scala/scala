@@ -1,5 +1,4 @@
-package scala.reflect
-package reify
+package scala.reflect.reify
 
 import scala.reflect.makro.ReificationError
 import scala.reflect.makro.UnexpectedReificationError

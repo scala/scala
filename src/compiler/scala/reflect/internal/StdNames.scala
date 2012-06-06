@@ -72,7 +72,7 @@ trait StdNames {
       val cs = s.toArray
       val bytes = Codec toUTF8 cs
       md5 update bytes
-      val md5chars = md5.digest() map (b => (b & 0xFF).toHexString) mkString
+      val md5chars = (md5.digest() map (b => (b & 0xFF).toHexString)).mkString
 
       prefix + marker + md5chars + marker + suffix
     }
@@ -262,10 +262,10 @@ trait StdNames {
     final val SourceFileATTR: NameType             = "SourceFile"
     final val SyntheticATTR: NameType              = "Synthetic"
 
-    def dropSingletonName(name: Name): TypeName = name dropRight SINGLETON_SUFFIX.length toTypeName
-    def singletonName(name: Name): TypeName     = name append SINGLETON_SUFFIX toTypeName
-    def implClassName(name: Name): TypeName     = name append IMPL_CLASS_SUFFIX toTypeName
-    def interfaceName(implname: Name): TypeName = implname dropRight IMPL_CLASS_SUFFIX.length toTypeName
+    def dropSingletonName(name: Name): TypeName = (name dropRight SINGLETON_SUFFIX.length).toTypeName
+    def singletonName(name: Name): TypeName     = (name append SINGLETON_SUFFIX).toTypeName
+    def implClassName(name: Name): TypeName     = (name append IMPL_CLASS_SUFFIX).toTypeName
+    def interfaceName(implname: Name): TypeName = (implname dropRight IMPL_CLASS_SUFFIX.length).toTypeName
   }
 
   abstract class TermNames extends Keywords with TermNamesApi {
