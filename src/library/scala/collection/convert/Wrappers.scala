@@ -171,7 +171,13 @@ private[collection] trait Wrappers {
         var prev : Option[A] = None
 
         def hasNext = ui.hasNext
-
+        
+        def improve(hc: Int) = {
+          var i = hc * 0x9e3775cd
+          i = java.lang.Integer.reverseBytes(i)
+          i * 0x9e3775c
+        }
+        
         def next() = {
           val (k, v) = ui.next
           prev = Some(k)
@@ -179,7 +185,7 @@ private[collection] trait Wrappers {
             def getKey = k
             def getValue = v
             def setValue(v1 : B) = self.put(k, v1)
-            override def hashCode = k.hashCode + v.hashCode
+            override def hashCode = improve(k.hashCode) + (improve(v.hashCode) << 16)
             override def equals(other: Any) = other match {
               case e: ju.Map.Entry[_, _] => k == e.getKey && v == e.getValue
               case _ => false
