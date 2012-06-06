@@ -7,7 +7,6 @@ import scala.tools.nsc.util.ClassPath._
 import scala.reflect.ReflectionUtils
 import scala.collection.mutable.ListBuffer
 import scala.compat.Platform.EOL
-import scala.reflect.makro.runtime.{Context => MacroContext}
 import util.Statistics._
 import scala.reflect.makro.util._
 import java.lang.{Class => jClass}
@@ -38,7 +37,7 @@ import java.lang.reflect.{Array => jArray, Method => jMethod}
  *    (Expr(elems))
  *    (TypeTag(Int))
  */
-trait Macros extends Traces {
+trait Macros extends scala.tools.reflect.FastTrack with Traces {
   self: Analyzer =>
 
   import global._
@@ -185,6 +184,12 @@ trait Macros extends Traces {
   def typedMacroBody(typer: Typer, ddef: DefDef): Tree = {
     import typer.context
     macroLogVerbose("typechecking macro def %s at %s".format(ddef.symbol, ddef.pos))
+
+    if (fastTrack contains ddef.symbol) {
+      macroLogVerbose("typecheck terminated unexpectedly: macro is hardwired")
+      assert(!ddef.tpt.isEmpty, "hardwired macros must provide result type")
+      return EmptyTree
+    }
 
     if (!typer.checkFeature(ddef.pos, MacrosFeature, immediate = true)) {
       macroLogVerbose("typecheck terminated unexpectedly: language.experimental.macros feature is not enabled")
@@ -635,39 +640,8 @@ trait Macros extends Traces {
    *  @return Some(runtime) if macro implementation can be loaded successfully from either of the mirrors,
    *          None otherwise.
    */
-  private type MacroRuntime = List[Any] => Any
+  type MacroRuntime = List[Any] => Any
   private val macroRuntimesCache = perRunCaches.newWeakMap[Symbol, Option[MacroRuntime]]
-  private lazy val fastTrack: Map[Symbol, MacroRuntime] = {
-    import scala.reflect.api.Universe
-    import scala.reflect.makro.internal._
-    Map( // challenge: how can we factor out the common code? Does not seem to be easy.
-      MacroInternal_materializeArrayTag -> (args => {
-        assert(args.length == 3, args)
-        val c = args(0).asInstanceOf[MacroContext]
-        materializeArrayTag_impl(c)(args(1).asInstanceOf[c.Expr[Universe]])(args(2).asInstanceOf[c.TypeTag[_]])
-      }),
-      MacroInternal_materializeErasureTag -> (args => {
-        assert(args.length == 3, args)
-        val c = args(0).asInstanceOf[MacroContext]
-        materializeErasureTag_impl(c)(args(1).asInstanceOf[c.Expr[Universe]])(args(2).asInstanceOf[c.TypeTag[_]])
-      }),
-      MacroInternal_materializeClassTag -> (args => {
-        assert(args.length == 3, args)
-        val c = args(0).asInstanceOf[MacroContext]
-        materializeClassTag_impl(c)(args(1).asInstanceOf[c.Expr[Universe]])(args(2).asInstanceOf[c.TypeTag[_]])
-      }),
-      MacroInternal_materializeTypeTag -> (args => {
-        assert(args.length == 3, args)
-        val c = args(0).asInstanceOf[MacroContext]
-        materializeTypeTag_impl(c)(args(1).asInstanceOf[c.Expr[Universe]])(args(2).asInstanceOf[c.TypeTag[_]])
-      }),
-      MacroInternal_materializeConcreteTypeTag -> (args => {
-        assert(args.length == 3, args)
-        val c = args(0).asInstanceOf[MacroContext]
-        materializeConcreteTypeTag_impl(c)(args(1).asInstanceOf[c.Expr[Universe]])(args(2).asInstanceOf[c.TypeTag[_]])
-      })
-    )
-  }
   private def macroRuntime(macroDef: Symbol): Option[MacroRuntime] = {
     macroTraceVerbose("looking for macro implementation: ")(macroDef)
     if (fastTrack contains macroDef) {
@@ -794,15 +768,14 @@ trait Macros extends Traces {
     }
   }
 
-  /** Should become private again once we're done with migrating typetag generation from implicits */
-  def macroContext(typer: Typer, prefixTree: Tree, expandeeTree: Tree): MacroContext { val mirror: global.type } =
+  private def macroContext(typer: Typer, prefixTree: Tree, expandeeTree: Tree): MacroContext =
     new {
-      val mirror: global.type = global
+      val mirror: self.global.type = self.global
       val callsiteTyper: mirror.analyzer.Typer = typer.asInstanceOf[global.analyzer.Typer]
-      // todo. infer precise typetag for this Expr, namely the PrefixType member of the Context refinement
-      val prefix = Expr(prefixTree)(TypeTag.Nothing)
       val expandee = expandeeTree
-    } with MacroContext {
+    } with UnaffiliatedMacroContext {
+      // todo. infer precise typetag for this Expr, namely the PrefixType member of the Context refinement
+      val prefix = Expr[Nothing](prefixTree)(TypeTag.Nothing)
       override def toString = "MacroContext(%s@%s +%d)".format(expandee.symbol.name, expandee.pos, enclosingMacros.length - 1 /* exclude myself */)
     }
 
@@ -836,96 +809,111 @@ trait Macros extends Traces {
     val context = expandee.attachmentOpt[MacroAttachment].flatMap(_.macroContext).getOrElse(macroContext(typer, prefixTree, expandee))
     var argss: List[List[Any]] = List(context) :: exprArgs.toList
     macroTraceVerbose("argss: ")(argss)
+    val rawArgss =
+      if (fastTrack contains macroDef) {
+        if (fastTrack(macroDef) validate argss) argss
+        else {
+          // if you're getting here, it's not necessarily partial application that is at fault
+          // for example, if a signature of a hardwired macro has been changed without updated FastTrack
+          // then the corresponding partial function in FastTrack will refuse to process the expandee
+          // validation will return false, and control flow will end up here
+          // however, for simplicity sake, I didn't introduce the notion of error handling to FastTrack
+          // so all kinds of validation errors produce `MacroPartialApplicationError`
+          typer.TyperErrorGen.MacroPartialApplicationError(expandee)
+          return None
+        }
+      } else {
+        val ann = macroDef.getAnnotation(MacroImplAnnotation).getOrElse(throw new Error("assertion failed. %s: %s".format(macroDef, macroDef.annotations)))
+        val macroImpl = ann.args(0).symbol
+        var paramss = macroImpl.paramss
+        val tparams = macroImpl.typeParams
+        macroTraceVerbose("paramss: ")(paramss)
 
-    val ann = macroDef.getAnnotation(MacroImplAnnotation).getOrElse(throw new Error("assertion failed. %s: %s".format(macroDef, macroDef.annotations)))
-    val macroImpl = ann.args(0).symbol
-    var paramss = macroImpl.paramss
-    val tparams = macroImpl.typeParams
-    macroTraceVerbose("paramss: ")(paramss)
+        // we need to take care of all possible combos of nullary/empty-paramlist macro defs vs nullary/empty-arglist invocations
+        // nullary def + nullary invocation => paramss and argss match, everything is okay
+        // nullary def + empty-arglist invocation => illegal Scala code, impossible, everything is okay
+        // empty-paramlist def + nullary invocation => uh-oh, we need to append a List() to argss
+        // empty-paramlist def + empty-arglist invocation => paramss and argss match, everything is okay
+        // that's almost it, but we need to account for the fact that paramss might have context bounds that mask the empty last paramlist
+        val paramss_without_evidences = transformTypeTagEvidenceParams(paramss, (param, tparam) => None)
+        val isEmptyParamlistDef = paramss_without_evidences.nonEmpty && paramss_without_evidences.last.isEmpty
+        val isEmptyArglistInvocation = argss.nonEmpty && argss.last.isEmpty
+        if (isEmptyParamlistDef && !isEmptyArglistInvocation) {
+          macroLogVerbose("isEmptyParamlistDef && !isEmptyArglistInvocation: appending a List() to argss")
+          argss = argss :+ Nil
+        }
 
-    // we need to take care of all possible combos of nullary/empty-paramlist macro defs vs nullary/empty-arglist invocations
-    // nullary def + nullary invocation => paramss and argss match, everything is okay
-    // nullary def + empty-arglist invocation => illegal Scala code, impossible, everything is okay
-    // empty-paramlist def + nullary invocation => uh-oh, we need to append a List() to argss
-    // empty-paramlist def + empty-arglist invocation => paramss and argss match, everything is okay
-    // that's almost it, but we need to account for the fact that paramss might have context bounds that mask the empty last paramlist
-    val paramss_without_evidences = transformTypeTagEvidenceParams(paramss, (param, tparam) => None)
-    val isEmptyParamlistDef = paramss_without_evidences.nonEmpty && paramss_without_evidences.last.isEmpty
-    val isEmptyArglistInvocation = argss.nonEmpty && argss.last.isEmpty
-    if (isEmptyParamlistDef && !isEmptyArglistInvocation) {
-      macroLogVerbose("isEmptyParamlistDef && !isEmptyArglistInvocation: appending a List() to argss")
-      argss = argss :+ Nil
-    }
+        // nb! check partial application against paramss without evidences
+        val numParamLists = paramss_without_evidences.length
+        val numArgLists = argss.length
+        if (numParamLists != numArgLists) {
+          typer.TyperErrorGen.MacroPartialApplicationError(expandee)
+          return None
+        }
 
-    // nb! check partial application against paramss without evidences
-    val numParamLists = paramss_without_evidences.length
-    val numArgLists = argss.length
-    if (numParamLists != numArgLists) {
-      typer.TyperErrorGen.MacroPartialApplicationError(expandee)
-      return None
-    }
+        // if paramss have typetag context bounds, add an arglist to argss if necessary and instantiate the corresponding evidences
+        // consider the following example:
+        //
+        //   class D[T] {
+        //     class C[U] {
+        //       def foo[V] = macro Impls.foo[T, U, V]
+        //     }
+        //   }
+        //
+        //   val outer1 = new D[Int]
+        //   val outer2 = new outer1.C[String]
+        //   outer2.foo[Boolean]
+        //
+        // then T and U need to be inferred from the lexical scope of the call using ``asSeenFrom''
+        // whereas V won't be resolved by asSeenFrom and need to be loaded directly from ``expandee'' which needs to contain a TypeApply node
+        // also, macro implementation reference may contain a regular type as a type argument, then we pass it verbatim
+        val resolved = collection.mutable.Map[Symbol, Type]()
+        paramss = transformTypeTagEvidenceParams(paramss, (param, tparam) => {
+          val TypeApply(_, implRefTargs) = ann.args(0)
+          var implRefTarg = implRefTargs(tparam.paramPos).tpe.typeSymbol
+          val tpe = if (implRefTarg.isTypeParameterOrSkolem) {
+            if (implRefTarg.owner == macroDef) {
+              // [Eugene] doesn't work when macro def is compiled separately from its usages
+              // then implRefTarg is not a skolem and isn't equal to any of macroDef.typeParams
+    //          val paramPos = implRefTarg.deSkolemize.paramPos
+              val paramPos = macroDef.typeParams.indexWhere(_.name == implRefTarg.name)
+              typeArgs(paramPos).tpe
+            } else
+              implRefTarg.tpe.asSeenFrom(
+                if (prefixTree == EmptyTree) macroDef.owner.tpe else prefixTree.tpe,
+                macroDef.owner)
+          } else
+            implRefTarg.tpe
+          macroLogVerbose("resolved tparam %s as %s".format(tparam, tpe))
+          resolved(tparam) = tpe
+          param.tpe.typeSymbol match {
+            case definitions.TypeTagClass =>
+              // do nothing
+            case definitions.ConcreteTypeTagClass =>
+              if (!tpe.isConcrete) context.abort(context.enclosingPosition, "cannot create ConcreteTypeTag from a type %s having unresolved type parameters".format(tpe))
+              // otherwise do nothing
+            case _ =>
+              throw new Error("unsupported tpe: " + tpe)
+          }
+          Some(tparam)
+        })
+        val tags = paramss.last takeWhile (_.isType) map (resolved(_)) map (tpe => {
+          // generally speaking, it's impossible to calculate erasure from a tpe here
+          // the tpe might be compiled by this run, so its jClass might not exist yet
+          // hence I just pass `null` instead and leave this puzzle to macro programmers
+          val ttag = TypeTag(tpe, null)
+          if (ttag.isConcrete) ttag.toConcrete else ttag
+        })
+        if (paramss.lastOption map (params => !params.isEmpty && params.forall(_.isType)) getOrElse false) argss = argss :+ Nil
+        argss = argss.dropRight(1) :+ (tags ++ argss.last) // todo. add support for context bounds in argss
 
-    // if paramss have typetag context bounds, add an arglist to argss if necessary and instantiate the corresponding evidences
-    // consider the following example:
-    //
-    //   class D[T] {
-    //     class C[U] {
-    //       def foo[V] = macro Impls.foo[T, U, V]
-    //     }
-    //   }
-    //
-    //   val outer1 = new D[Int]
-    //   val outer2 = new outer1.C[String]
-    //   outer2.foo[Boolean]
-    //
-    // then T and U need to be inferred from the lexical scope of the call using ``asSeenFrom''
-    // whereas V won't be resolved by asSeenFrom and need to be loaded directly from ``expandee'' which needs to contain a TypeApply node
-    // also, macro implementation reference may contain a regular type as a type argument, then we pass it verbatim
-    val resolved = collection.mutable.Map[Symbol, Type]()
-    paramss = transformTypeTagEvidenceParams(paramss, (param, tparam) => {
-      val TypeApply(_, implRefTargs) = ann.args(0)
-      var implRefTarg = implRefTargs(tparam.paramPos).tpe.typeSymbol
-      val tpe = if (implRefTarg.isTypeParameterOrSkolem) {
-        if (implRefTarg.owner == macroDef) {
-          // [Eugene] doesn't work when macro def is compiled separately from its usages
-          // then implRefTarg is not a skolem and isn't equal to any of macroDef.typeParams
-//          val paramPos = implRefTarg.deSkolemize.paramPos
-          val paramPos = macroDef.typeParams.indexWhere(_.name == implRefTarg.name)
-          typeArgs(paramPos).tpe
-        } else
-          implRefTarg.tpe.asSeenFrom(
-            if (prefixTree == EmptyTree) macroDef.owner.tpe else prefixTree.tpe,
-            macroDef.owner)
-      } else
-        implRefTarg.tpe
-      macroLogVerbose("resolved tparam %s as %s".format(tparam, tpe))
-      resolved(tparam) = tpe
-      param.tpe.typeSymbol match {
-        case definitions.TypeTagClass =>
-          // do nothing
-        case definitions.ConcreteTypeTagClass =>
-          if (!tpe.isConcrete) context.abort(context.enclosingPosition, "cannot create ConcreteTypeTag from a type %s having unresolved type parameters".format(tpe))
-          // otherwise do nothing
-        case _ =>
-          throw new Error("unsupported tpe: " + tpe)
+        assert(argss.length == paramss.length, "argss: %s, paramss: %s".format(argss, paramss))
+        val rawArgss = for ((as, ps) <- argss zip paramss) yield {
+          if (isVarArgsList(ps)) as.take(ps.length - 1) :+ as.drop(ps.length - 1)
+          else as
+        }
+        rawArgss
       }
-      Some(tparam)
-    })
-    val tags = paramss.last takeWhile (_.isType) map (resolved(_)) map (tpe => {
-      // generally speaking, it's impossible to calculate erasure from a tpe here
-      // the tpe might be compiled by this run, so its jClass might not exist yet
-      // hence I just pass `null` instead and leave this puzzle to macro programmers
-      val ttag = TypeTag(tpe, null)
-      if (ttag.isConcrete) ttag.toConcrete else ttag
-    })
-    if (paramss.lastOption map (params => !params.isEmpty && params.forall(_.isType)) getOrElse false) argss = argss :+ Nil
-    argss = argss.dropRight(1) :+ (tags ++ argss.last) // todo. add support for context bounds in argss
-
-    assert(argss.length == paramss.length, "argss: %s, paramss: %s".format(argss, paramss))
-    val rawArgss = for ((as, ps) <- argss zip paramss) yield {
-      if (isVarArgsList(ps)) as.take(ps.length - 1) :+ as.drop(ps.length - 1)
-      else as
-    }
     val rawArgs = rawArgss.flatten
     macroTraceVerbose("rawArgs: ")(rawArgs)
     Some(rawArgs)
@@ -1124,7 +1112,10 @@ trait Macros extends Traces {
       else {
         macroLogLite("typechecking macro expansion %s at %s".format(expandee, expandee.pos))
         macroArgs(typer, expandee).fold(failExpansion(): MacroExpansionResult) {
-          case args @ ((context: MacroContext) :: _) =>
+          // [Eugene++] crashes virtpatmat:
+          // case args @ ((context: MacroContext) :: _) =>
+          case args @ (context0 :: _) =>
+            val context = context0.asInstanceOf[MacroContext]
             if (nowDelayed) {
               macroLogLite("macro expansion is delayed: %s".format(expandee))
               delayed += expandee -> undetparams

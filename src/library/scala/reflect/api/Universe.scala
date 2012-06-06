@@ -33,7 +33,7 @@ abstract class Universe extends Symbols
    *  }}}
    *
    *  The reifier transforms it to the following expression:
-   *   
+   *
    *  {{{
    *    <[
    *      val $mr: scala.reflect.api.Universe = <reference to the Universe that calls the reify>
@@ -66,12 +66,6 @@ abstract class Universe extends Symbols
    *    * Since reified trees can be compiled outside of the scope they've been created in,
    *      special measures are taken to ensure that all members accessed in the reifee remain visible
    */
-  def reify[T](expr: T): Expr[T] = macro Universe.reify[T]
-}
-
-object Universe {
-  def reify[T](cc: scala.reflect.makro.Context{ type PrefixType = Universe })(expr: cc.Expr[T]): cc.Expr[cc.prefix.value.Expr[T]] = {
-    import scala.reflect.makro.internal._
-    cc.Expr(cc.materializeExpr(cc.prefix.tree, expr.tree))
-  }
+  // implementation is magically hardwired to `scala.reflect.reify.Taggers`
+  def reify[T](expr: T): Expr[T] = macro ???
 }

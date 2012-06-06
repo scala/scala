@@ -486,6 +486,9 @@ trait Definitions extends reflect.api.StandardDefinitions {
       // [Eugene] is this a good place for ReflectMirrorPrefix?
       def ReflectMirrorPrefix = gen.mkAttributedRef(ReflectMirror) setType singleType(ReflectMirror.owner.thisPrefix, ReflectMirror)
 
+    lazy val ApiUniverseClass      = requiredClass[scala.reflect.api.Universe]
+         def ApiUniverseReify      = getMemberMethod(ApiUniverseClass, nme.reify)
+
     lazy val PartialManifestClass  = requiredClass[scala.reflect.ClassManifest[_]]
     lazy val PartialManifestModule = requiredModule[scala.reflect.ClassManifest.type]
     lazy val FullManifestClass     = requiredClass[scala.reflect.Manifest[_]]
