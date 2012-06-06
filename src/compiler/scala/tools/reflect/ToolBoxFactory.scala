@@ -79,7 +79,7 @@ abstract class ToolBoxFactory[U <: JavaUniverse](val u: U) { factorySelf =>
           var name = ft.name.toString
           val namesakes = freeTerms takeWhile (_ != ft) filter (ft2 => ft != ft2 && ft.name == ft2.name)
           if (namesakes.length > 0) name += ("$" + (namesakes.length + 1))
-          freeTermNames += (ft -> newTermName(name + nme.MIRROR_FREE_VALUE_SUFFIX))
+          freeTermNames += (ft -> newTermName(name + nme.REIFY_FREE_VALUE_SUFFIX))
         })
         var expr = new Transformer {
           override def transform(tree: Tree): Tree =

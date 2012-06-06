@@ -1,17 +1,17 @@
 package scala.reflect.reify
 package codegen
 
-trait Trees {
+trait GenTrees {
   self: Reifier =>
 
-  import mirror._
+  import global._
   import definitions._
-  import treeInfo._
 
   // unfortunately, these are necessary to reify AnnotatedTypes
-  // I'd gladly got rid of them, but I don't fancy making a metaprogramming API that doesn't work with annotated types
-  var reifyTreeSymbols = false
-  var reifyTreeTypes = false
+  // I'd gladly get rid of them, but I don't fancy making a metaprogramming API that doesn't work with annotated types
+  // luckily for our sanity, these vars are mutated only within a very restricted code execution path
+  def reifyTreeSymbols: Boolean = state.reifyTreeSymbols
+  def reifyTreeTypes: Boolean = state.reifyTreeTypes
 
   /**
    *  Reify a tree.
@@ -42,10 +42,10 @@ trait Trees {
     // the second prototype reified external types, but avoided reifying local ones => this created an ugly irregularity
     // current approach is uniform and compact
     var rtree = tree match {
-      case mirror.EmptyTree =>
+      case global.EmptyTree =>
         reifyMirrorObject(EmptyTree)
-      case mirror.emptyValDef =>
-        mirrorSelect(nme.emptyValDef)
+      case global.emptyValDef =>
+        mirrorBuildSelect(nme.emptyValDef)
       case FreeDef(_, _, _, _, _) =>
         reifyNestedFreeDef(tree)
       case FreeRef(_, _) =>
@@ -54,31 +54,7 @@ trait Trees {
         reifyBoundTerm(tree)
       case BoundType(tree) =>
         reifyBoundType(tree)
-      case NestedExpr(_, _, _) =>
-        reifyNestedExpr(tree)
       case Literal(const @ Constant(_)) =>
-        // [Eugene] was necessary when we reified erasures as normalized tycons
-        // now, when we do existentialAbstraction on normalizations, everything works great
-        // todo. find an explanation
-//        if (const.tag == ClazzTag) {
-////          def preprocess(tpe: Type): Type = tpe.typeSymbol match {
-////            case ArrayClass => appliedType(ArrayClass, preprocess(tpe.typeArgs.head))
-////            case _ => tpe.typeConstructor
-////          }
-////          val tpe = preprocess(const.typeValue)
-//          val tpe = const.typeValue
-//          var reified = reify(tpe)
-//          reified = mirrorCall(nme.Literal, mirrorCall(nme.Constant, reified))
-////          val skolems = ClassClass.typeParams map (_ => newTypeName(typer.context.unit.fresh.newName("_$")))
-////          var existential = mirrorCall(nme.AppliedTypeTree, mirrorCall(nme.TypeTree, reify(ClassClass.typeConstructor)), mkList(skolems map (skolem => mirrorCall(nme.Ident, reify(skolem)))))
-////          existential = mirrorCall(nme.ExistentialTypeTree, existential, reify(skolems map (skolem => TypeDef(Modifiers(Set(Modifier.deferred: Modifier)), skolem, Nil, TypeBoundsTree(Ident(NothingClass) setType NothingClass.tpe, Ident(AnyClass) setType AnyClass.tpe)))))
-////          reified = mirrorCall(nme.TypeApply, mirrorCall(nme.Select, reified, reify(nme.asInstanceOf_)), mkList(List(existential)))
-//          // why is this required??
-////          reified = mirrorCall(nme.TypeApply, mirrorCall(nme.Select, reified, reify(nme.asInstanceOf_)), mkList(List(mirrorCall(nme.TypeTree, reify(appliedType(ClassClass.tpe, List(AnyClass.tpe)))))))
-//          reified
-//        } else {
-//          mirrorCall(nme.Literal, reifyProduct(const))
-//        }
         mirrorCall(nme.Literal, reifyProduct(const))
       case Import(expr, selectors) =>
         mirrorCall(nme.Import, reify(expr), mkList(selectors map reifyProduct))
@@ -90,51 +66,47 @@ trait Trees {
     // however, reification of AnnotatedTypes is special. see ``reifyType'' to find out why.
     if (reifyTreeSymbols && tree.hasSymbol) {
       if (reifyDebug) println("reifying symbol %s for tree %s".format(tree.symbol, tree))
-      rtree = Apply(Select(rtree, nme.setSymbol), List(reify(tree.symbol)))
+      rtree = mirrorBuildCall(nme.setSymbol, rtree, reify(tree.symbol))
     }
     if (reifyTreeTypes && tree.tpe != null) {
       if (reifyDebug) println("reifying type %s for tree %s".format(tree.tpe, tree))
-      rtree = Apply(Select(rtree, nme.setType), List(reify(tree.tpe)))
+      rtree = mirrorBuildCall(nme.setType, rtree, reify(tree.tpe))
     }
 
     rtree
   }
 
-  def reifyModifiers(m: mirror.Modifiers) =
-    mirrorCall("modifiersFromInternalFlags", reify(m.flags), reify(m.privateWithin), reify(m.annotations))
+  def reifyModifiers(m: global.Modifiers) =
+    mirrorFactoryCall(nme.Modifiers, mirrorBuildCall(nme.flagsFromBits, reify(m.flags)), reify(m.privateWithin), reify(m.annotations))
 
   private def spliceTree(tree: Tree): Tree = {
     tree match {
       case TreeSplice(splicee) =>
-        if (reifyDebug) println("splicing eval " + tree)
+        if (reifyDebug) println("splicing " + tree)
 
         // see ``Metalevels'' for more info about metalevel breaches
         // and about how we deal with splices that contain them
-        if (splicee exists (sub => sub.hasSymbol && sub.symbol != NoSymbol && sub.symbol.metalevel > 0)) {
-          if (reifyDebug) println("splicing has failed: cannot splice when facing a metalevel breach")
-          EmptyTree
+        val isMetalevelBreach = splicee exists (sub => sub.hasSymbol && sub.symbol != NoSymbol && sub.symbol.metalevel > 0)
+        val isRuntimeEval = splicee exists (sub => sub.hasSymbol && sub.symbol == ExprSplice)
+        if (isMetalevelBreach || isRuntimeEval) {
+          // we used to convert dynamic splices into runtime evals transparently, but we no longer do that
+          // why? see comments in ``Metalevels''
+          // if (reifyDebug) println("splicing has failed: cannot splice when facing a metalevel breach")
+          // EmptyTree
+          CannotReifyRuntimeSplice(tree)
         } else {
           if (reifyDebug) println("splicing has succeeded")
-          var splice = Select(splicee, nme.tree)
-          splice match {
-            case InlinedTreeSplice(_, inlinedSymbolTable, tree, _) =>
+          splicee match {
+            // we intentionally don't care about the prefix (the first underscore in the `RefiedTree` pattern match)
+            case ReifiedTree(_, _, inlinedSymtab, rtree, _, _, _) =>
               if (reifyDebug) println("inlining the splicee")
               // all free vars local to the enclosing reifee should've already been inlined by ``Metalevels''
-              inlinedSymbolTable collect { case freedef @ FreeDef(_, _, binding, _, _) if binding.symbol.isLocalToReifee => assert(false, freedef) }
-              symbolTable ++= inlinedSymbolTable
-              tree
+              inlinedSymtab.syms foreach (sym => if (sym.isLocalToReifee) assert(false, inlinedSymtab.symDef(sym)))
+              state.symtab ++= inlinedSymtab
+              rtree
             case tree =>
-              // we need to preserve types of exprs, because oftentimes they cannot be inferred later
-              // this circumvents regular reification scheme, therefore we go the extra mile here
-              new Transformer {
-                override def transform(tree: Tree) = super.transform(tree match {
-                  case NestedExpr(factory, tree, typetag) =>
-                    val typedFactory = TypeApply(factory, List(TypeTree(typetag.tpe.typeArgs(0))))
-                    Apply(Apply(typedFactory, List(tree)), List(typetag))
-                  case _ =>
-                    tree
-                })
-              }.transform(tree)
+              val migrated = Apply(Select(splicee, nme.in), List(Ident(nme.MIRROR_SHORT)))
+              Select(migrated, nme.tree)
           }
         }
       case _ =>
@@ -142,6 +114,9 @@ trait Trees {
     }
   }
 
+  // unlike in `reifyBoundType` we can skip checking for `tpe` being local or not local w.r.t the reifee
+  // a single check for a symbol of the bound term should be enough
+  // that's because only Idents and Thises can be bound terms, and they cannot host complex types
   private def reifyBoundTerm(tree: Tree): Tree = tree match {
     case tree @ This(_) if tree.symbol == NoSymbol =>
       throw new Error("unexpected: bound term that doesn't have a symbol: " + showRaw(tree))
@@ -149,10 +124,10 @@ trait Trees {
       val sym = tree.symbol
       if (reifyDebug) println("This for %s, reified as freeVar".format(sym))
       if (reifyDebug) println("Free: " + sym)
-      mirrorCall(nme.Ident, reifyFreeTerm(sym, This(sym)))
+      mirrorBuildCall(nme.Ident, reifyFreeTerm(sym, This(sym)))
     case tree @ This(_) if !tree.symbol.isLocalToReifee =>
       if (reifyDebug) println("This for %s, reified as This".format(tree.symbol))
-      mirrorCall(nme.This, reify(tree.symbol))
+      mirrorBuildCall(nme.This, reify(tree.symbol))
     case tree @ This(_) if tree.symbol.isLocalToReifee =>
       mirrorCall(nme.This, reify(tree.qual))
     case tree @ Ident(_) if tree.symbol == NoSymbol =>
@@ -163,9 +138,9 @@ trait Trees {
     case tree @ Ident(_) if !tree.symbol.isLocalToReifee =>
       if (tree.symbol.isVariable && tree.symbol.owner.isTerm) {
         captureVariable(tree.symbol) // Note order dependency: captureVariable needs to come before reification here.
-        mirrorCall(nme.Select, mirrorCall(nme.Ident, reify(tree.symbol)), reify(nme.elem))
+        mirrorCall(nme.Select, mirrorBuildCall(nme.Ident, reify(tree.symbol)), reify(nme.elem))
       } else {
-        mirrorCall(nme.Ident, reify(tree.symbol))
+        mirrorBuildCall(nme.Ident, reify(tree.symbol))
       }
     case tree @ Ident(_) if tree.symbol.isLocalToReifee =>
       mirrorCall(nme.Ident, reify(tree.name))
@@ -178,7 +153,12 @@ trait Trees {
       if (tree.tpe == null)
         throw new Error("unexpected: bound type that doesn't have a tpe: " + showRaw(tree))
 
-      if (tree.symbol.isLocalToReifee)
+      // if a symbol or a type of the scrutinee are local to reifee
+      // (e.g. point to a locally declared class or to a path-dependent thingie that depends on a local variable)
+      // then we can reify the scrutinee as a symless AST and that will definitely be hygienic
+      // why? because then typechecking of a scrutinee doesn't depend on the environment external to the quasiquote
+      // otherwise we need to reify the corresponding type
+      if (tree.symbol.isLocalToReifee || tree.tpe.isLocalToReifee)
         reifyProduct(tree)
       else {
         val sym0 = tree.symbol
@@ -191,7 +171,7 @@ trait Trees {
           val spliced = spliceType(tpe)
           if (spliced == EmptyTree) {
             if (reifyDebug) println("splicing failed: reify as is")
-            mirrorCall(nme.TypeTree, reify(tpe))
+            mirrorBuildCall(nme.TypeTree, reify(tpe))
           } else {
             spliced match {
               case TypeRefToFreeType(freeType) =>
@@ -199,16 +179,16 @@ trait Trees {
                 Ident(freeType)
               case _ =>
                 if (reifyDebug) println("splicing succeeded: " + spliced)
-                mirrorCall(nme.TypeTree, spliced)
+                mirrorBuildCall(nme.TypeTree, spliced)
             }
           }
         } else {
           if (sym.isLocatable) {
             if (reifyDebug) println("tpe is locatable: reify as Ident(%s)".format(sym))
-            mirrorCall(nme.Ident, reify(sym))
+            mirrorBuildCall(nme.Ident, reify(sym))
           } else {
             if (reifyDebug) println("tpe is an alias, but not a locatable: reify as TypeTree(%s)".format(tpe))
-            mirrorCall(nme.TypeTree, reify(tpe))
+            mirrorBuildCall(nme.TypeTree, reify(tpe))
           }
         }
       }
@@ -231,25 +211,8 @@ trait Trees {
     reifyProduct(tree)
   }
 
-  private def reifyNestedFreeRef(tree: Tree): Tree = tree match {
-    case Apply(Select(mrRef @ Ident(_), ident), List(Ident(name: TermName))) if ident == nme.Ident && name.startsWith(nme.MIRROR_FREE_PREFIX) =>
-      if (reifyDebug) println("nested free ref: %s".format(showRaw(tree)))
-      reifyProduct(tree)
-    case _ =>
-      throw new Error("internal error: %s (%s, %s) is not supported".format(tree, tree.productPrefix, tree.getClass))
-  }
-
-  private def reifyNestedExpr(tree: Tree): Tree = tree match {
-    case NestedExpr(factory, tree, typetag) =>
-      // we need to preserve types of exprs, because oftentimes they cannot be inferred later
-      // this circumvents regular reification scheme, therefore we go through this crazy dance
-      if (reifyDebug) println("nested expr: %s".format(showRaw(tree)))
-      val rtype = mirrorCall(nme.TypeTree, reify(typetag.tpe.typeArgs(0)))
-      val rfactory = mirrorCall(nme.TypeApply, reify(factory), mkList(List(rtype)))
-      val rexpr = mirrorCall(nme.Apply, rfactory, reify(List(tree)))
-      val rwrapped = mirrorCall(nme.Apply, rexpr, reify(List(typetag)))
-      rwrapped
-    case _ =>
-      throw new Error("internal error: %s (%s, %s) is not supported".format(tree, tree.productPrefix, tree.getClass))
+  private def reifyNestedFreeRef(tree: Tree): Tree = {
+    if (reifyDebug) println("nested free ref: %s".format(showRaw(tree)))
+    reifyProduct(tree)
   }
 }

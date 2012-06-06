@@ -1,18 +1,11 @@
 package scala.reflect.reify
 package codegen
 
-trait Util {
+trait GenUtils {
   self: Reifier =>
 
-  import mirror._
+  import global._
   import definitions._
-  import treeInfo._
-
-  val reifyDebug = settings.Yreifydebug.value
-  val reifyCopypaste = settings.Yreifycopypaste.value
-  val reifyTrace = scala.tools.nsc.util.trace when reifyDebug
-  object reifiedNodePrinters extends { val global: mirror.type = mirror } with tools.nsc.ast.NodePrinters with NodePrinters
-  val reifiedNodeToString = reifiedNodePrinters.reifiedNodeToString
 
   def reifyList(xs: List[Any]): Tree =
     mkList(xs map reify)
@@ -39,12 +32,30 @@ trait Util {
     Apply(termPath(fname), args.toList)
 
   def mirrorSelect(name: String): Tree =
+    termPath(nme.UNIVERSE_PREFIX + name)
+
+  def mirrorBuildSelect(name: String): Tree =
+    termPath(nme.UNIVERSE_BUILD_PREFIX + name)
+
+  def mirrorMirrorSelect(name: String): Tree =
     termPath(nme.MIRROR_PREFIX + name)
 
   def mirrorCall(name: TermName, args: Tree*): Tree =
-    call("" + (nme.MIRROR_PREFIX append name), args: _*)
+    call("" + (nme.UNIVERSE_PREFIX append name), args: _*)
 
   def mirrorCall(name: String, args: Tree*): Tree =
+    call(nme.UNIVERSE_PREFIX + name, args: _*)
+
+  def mirrorBuildCall(name: TermName, args: Tree*): Tree =
+    call("" + (nme.UNIVERSE_BUILD_PREFIX append name), args: _*)
+
+  def mirrorBuildCall(name: String, args: Tree*): Tree =
+    call(nme.UNIVERSE_BUILD_PREFIX + name, args: _*)
+
+  def mirrorMirrorCall(name: TermName, args: Tree*): Tree =
+    call("" + (nme.MIRROR_PREFIX append name), args: _*)
+
+  def mirrorMirrorCall(name: String, args: Tree*): Tree =
     call(nme.MIRROR_PREFIX + name, args: _*)
 
   def mirrorFactoryCall(value: Product, args: Tree*): Tree =
@@ -93,6 +104,17 @@ trait Util {
     tpe != null && (tpe exists isTough)
   }
 
+  object TypedOrAnnotated {
+    def unapply(tree: Tree): Option[Tree] = tree match {
+      case ty @ Typed(_, _) =>
+        Some(ty)
+      case at @ Annotated(_, _) =>
+        Some(at)
+      case _ =>
+        None
+    }
+  }
+
   def isAnnotated(tpe: Type) = {
     def isAnnotated(tpe: Type) = tpe match {
       case _: AnnotatedType => true
@@ -100,6 +122,17 @@ trait Util {
     }
 
     tpe != null && (tpe exists isAnnotated)
+  }
+
+  def isSemiConcreteTypeMember(tpe: Type) = tpe match {
+    case TypeRef(SingleType(_, _), sym, _) if sym.isAbstractType && !sym.isExistential => true
+    case _ => false
+  }
+
+  def isCrossStageTypeBearer(tree: Tree): Boolean = tree match {
+    case TypeApply(hk, _) => isCrossStageTypeBearer(hk)
+    case Select(sym @ Select(_, ctor), nme.apply) if ctor == nme.TypeTag || ctor == nme.ConcreteTypeTag || ctor == nme.Expr => true
+    case _ => false
   }
 
   def origin(sym: Symbol) = {

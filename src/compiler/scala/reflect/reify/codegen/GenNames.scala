@@ -1,12 +1,11 @@
 package scala.reflect.reify
 package codegen
 
-trait Names {
+trait GenNames {
   self: Reifier =>
 
-  import mirror._
+  import global._
   import definitions._
-  import treeInfo._
 
   def reifyName(name: Name) = {
     val factory = if (name.isTypeName) nme.nmeNewTypeName else nme.nmeNewTermName

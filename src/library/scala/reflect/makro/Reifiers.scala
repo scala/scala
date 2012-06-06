@@ -3,14 +3,22 @@ package scala.reflect.makro
 trait Reifiers {
   self: Context =>
 
-  /** Reification prefix that refers to the standard reflexive mirror, ``scala.reflect.mirror''.
+  /** Reification prefix that refers to the base reflexive universe, ``scala.reflect.basis''.
    *  Providing it for the ``prefix'' parameter of ``reifyTree'' or ``reifyType'' will create a tree that can be inspected at runtime.
    */
-  val reflectMirrorPrefix: Tree
+  val basisUniverse: Tree
+
+  /** Reification prefix that refers to the runtime reflexive universe, ``scala.reflect.runtime.universe''.
+   *  Providing it for the ``prefix'' parameter of ``reifyTree'' or ``reifyType'' will create a full-fledged tree that can be inspected at runtime.
+   */
+  val runtimeUniverse: Tree
 
   /** Given a tree, generate a tree that when compiled and executed produces the original tree.
-   *  The produced tree will be bound to the mirror specified by ``prefix'' (also see ``reflectMirrorPrefix'').
    *  For more information and examples see the documentation for ``Universe.reify''.
+   *
+   *  The produced tree will be bound to the specified ``universe'' and ``mirror''.
+   *  Possible values for ``universe'' include ``basisUniverse'' and ``runtimeUniverse''.
+   *  Possible values for ``mirror'' include ``EmptyTree'' (in that case the reifier will automatically pick an appropriate mirror).
    *
    *  This function is deeply connected to ``Universe.reify'', a macro that reifies arbitrary expressions into runtime trees.
    *  They do very similar things (``Universe.reify'' calls ``Context.reifyTree'' to implement itself), but they operate on different metalevels (see below).
@@ -40,18 +48,23 @@ trait Reifiers {
    *  Typical usage of this function is to retain some of the trees received/created by a macro
    *  into the form that can be inspected (via pattern matching) or compiled/run (by a reflective ToolBox) during the runtime.
    */
-  def reifyTree(prefix: Tree, tree: Tree): Tree
+  def reifyTree(universe: Tree, mirror: Tree, tree: Tree): Tree
 
   /** Given a type, generate a tree that when compiled and executed produces the original type.
-   *  The produced tree will be bound to the mirror specified by ``prefix'' (also see ``reflectMirrorPrefix'').
+   *  The produced tree will be bound to the specified ``universe'' and ``mirror''.
    *  For more information and examples see the documentation for ``Context.reifyTree'' and ``Universe.reify''.
    */
-  def reifyType(prefix: Tree, tpe: Type, dontSpliceAtTopLevel: Boolean = false, concrete: Boolean = false): Tree
+  def reifyType(universe: Tree, mirror: Tree, tpe: Type, concrete: Boolean = false): Tree
 
   /** Given a type, generate a tree that when compiled and executed produces the runtime class of the original type.
    *  If ``concrete'' is true, then this function will bail on types, who refer to abstract types (like `ClassTag` does).
    */
   def reifyRuntimeClass(tpe: Type, concrete: Boolean = true): Tree
+
+  /** Given a type, generate a tree that when compiled and executed produces the runtime class of the enclosing class or module.
+   *  Returns `EmptyTree` if there does not exist an enclosing class or module.
+   */
+  def reifyEnclosingRuntimeClass: Tree
 
   /** Undoes reification of a tree.
    *

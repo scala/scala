@@ -47,12 +47,17 @@ trait StandardNames extends base.StandardNames {
     val FAKE_LOCAL_THIS: TermName
     val INITIALIZER: TermName
     val LAZY_LOCAL: TermName
-    val MIRROR_FREE_PREFIX: NameType
-    val MIRROR_FREE_THIS_SUFFIX: NameType
-    val MIRROR_FREE_VALUE_SUFFIX: NameType
+    val UNIVERSE_BUILD: NameType
+    val UNIVERSE_BUILD_PREFIX: NameType
+    val UNIVERSE_PREFIX: NameType
+    val UNIVERSE_SHORT: NameType
     val MIRROR_PREFIX: NameType
     val MIRROR_SHORT: NameType
-    val MIRROR_SYMDEF_PREFIX: NameType
+    val MIRROR_UNTYPED: NameType
+    val REIFY_FREE_PREFIX: NameType
+    val REIFY_FREE_THIS_SUFFIX: NameType
+    val REIFY_FREE_VALUE_SUFFIX: NameType
+    val REIFY_SYMDEF_PREFIX: NameType
     val MIXIN_CONSTRUCTOR: TermName
     val MODULE_INSTANCE_FIELD: TermName
     val OUTER: TermName
@@ -147,6 +152,8 @@ trait StandardNames extends base.StandardNames {
     val REFINE_CLASS_NAME: TypeName
     val REPEATED_PARAM_CLASS_NAME: TypeName
     val WILDCARD_STAR: TypeName
+    val REIFY_TYPECREATOR_PREFIX: NameType
+    val REIFY_TREECREATOR_PREFIX: NameType
 
     def dropSingletonName(name: Name): TypeName
     def implClassName(name: Name): TypeName

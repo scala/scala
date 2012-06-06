@@ -8,38 +8,57 @@ abstract class Taggers {
 
   import c.universe._
   import definitions._
+  import treeBuild._
 
   val coreTags = Map(
-    ByteClass.asType -> newTermName("Byte"),
-    ShortClass.asType -> newTermName("Short"),
-    CharClass.asType -> newTermName("Char"),
-    IntClass.asType -> newTermName("Int"),
-    LongClass.asType -> newTermName("Long"),
-    FloatClass.asType -> newTermName("Float"),
-    DoubleClass.asType -> newTermName("Double"),
-    BooleanClass.asType -> newTermName("Boolean"),
-    UnitClass.asType -> newTermName("Unit"),
-    AnyClass.asType -> newTermName("Any"),
-    ObjectClass.asType -> newTermName("Object"),
-    NothingClass.asType -> newTermName("Nothing"),
-    NullClass.asType -> newTermName("Null"),
-    StringClass.asType -> newTermName("String"))
+    ByteClass.asType -> nme.Byte,
+    ShortClass.asType -> nme.Short,
+    CharClass.asType -> nme.Char,
+    IntClass.asType -> nme.Int,
+    LongClass.asType -> nme.Long,
+    FloatClass.asType -> nme.Float,
+    DoubleClass.asType -> nme.Double,
+    BooleanClass.asType -> nme.Boolean,
+    UnitClass.asType -> nme.Unit,
+    AnyClass.asType -> nme.Any,
+    ObjectClass.asType -> nme.Object,
+    NothingClass.asType -> nme.Nothing,
+    NullClass.asType -> nme.Null,
+    StringClass.asType -> nme.String)
 
   // todo. the following two methods won't be necessary once we implement implicit macro generators for tags
 
   def materializeArrayTag(prefix: Tree, tpe: Type): Tree =
     materializeClassTag(prefix, tpe)
 
-  def materializeClassTag(prefix: Tree, tpe: Type): Tree =
-    materializeTag(prefix, tpe, ClassTagModule, {
-      val runtimeClass = c.reifyRuntimeClass(tpe, concrete = true)
-      val factory = TypeApply(Select(Ident(ClassTagModule), "apply"), List(TypeTree(tpe)))
-      Apply(factory, List(runtimeClass))
+  def materializeClassTag(prefix: Tree, tpe: Type): Tree = {
+    val tagModule = ClassTagModule
+    materializeTag(prefix, tpe, tagModule, {
+      val erasure = c.reifyRuntimeClass(tpe, concrete = true)
+      val factory = TypeApply(Select(Ident(tagModule), nme.apply), List(TypeTree(tpe)))
+      Apply(factory, List(erasure))
     })
+  }
 
-  def materializeTypeTag(prefix: Tree, tpe: Type, concrete: Boolean): Tree = {
-    val tagModule = if (concrete) ConcreteTypeTagModule else TypeTagModule
-    materializeTag(prefix, tpe, tagModule, c.reifyType(prefix, tpe, dontSpliceAtTopLevel = true, concrete = concrete))
+  def materializeTypeTag(universe: Tree, mirror: Tree, tpe: Type, concrete: Boolean): Tree = {
+    if (universe.symbol == MacroContextUniverse && mirror == EmptyTree) {
+      import scala.reflect.makro.runtime.ContextReifiers
+      import language.implicitConversions
+      implicit def context2contextreifiers(c0: Context) : ContextReifiers { val c: c0.type } = new { val c: c0.type = c0 } with ContextReifiers
+      val Select(prefix, _) = universe
+      c.materializeTypeTagForMacroContext(prefix, tpe, concrete)
+    } else {
+      val tagType = if (concrete) ConcreteTypeTagClass else TypeTagClass
+      val unaffiliatedTagTpe = TypeRef(BaseUniverseClass.asTypeConstructor, tagType, List(tpe))
+      val unaffiliatedTag = c.inferImplicitValue(unaffiliatedTagTpe, silent = true, withMacrosDisabled = true)
+      unaffiliatedTag match {
+        case success if !success.isEmpty =>
+          Apply(Select(success, nme.in), List(mirror orElse mkDefaultMirrorRef(c.universe)(universe, c.callsiteTyper)))
+        case _ =>
+          val tagModule = if (concrete) ConcreteTypeTagModule else TypeTagModule
+          materializeTag(universe, tpe, tagModule, c.reifyType(universe, mirror, tpe, concrete = concrete))
+      }
+    }
   }
 
   private def materializeTag(prefix: Tree, tpe: Type, tagModule: Symbol, materializer: => Tree): Tree = {
@@ -55,8 +74,8 @@ abstract class Taggers {
     catch { case terr @ c.TypeError(pos, msg) => failTag(result, terr) }
   }
 
-  def materializeExpr(prefix: Tree, expr: Tree): Tree = {
-    val result = translatingReificationErrors(c.reifyTree(prefix, expr))
+  def materializeExpr(universe: Tree, mirror: Tree, expr: Tree): Tree = {
+    val result = translatingReificationErrors(c.reifyTree(universe, mirror, expr))
     try c.typeCheck(result)
     catch { case terr @ c.TypeError(pos, msg) => failExpr(result, terr) }
   }
