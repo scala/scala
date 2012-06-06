@@ -4,20 +4,24 @@ package runtime
 trait Aliases {
   self: Context =>
 
-  /** Aliases of mirror types */
-  override type Symbol = mirror.Symbol
-  override type Type = mirror.Type
-  override type Name = mirror.Name
-  override type Tree = mirror.Tree
-  // override type Position = mirror.Position
-  override type Scope = mirror.Scope
-  override type Modifiers = mirror.Modifiers
-  override type Expr[+T] = mirror.Expr[T]
-  override type TypeTag[T] = mirror.TypeTag[T]
-  override type ConcreteTypeTag[T] = mirror.ConcreteTypeTag[T]
+  override type Symbol = universe.Symbol
+  override type Type = universe.Type
+  override type Name = universe.Name
+  override type TermName = universe.TermName
+  override type TypeName = universe.TypeName
+  override type Tree = universe.Tree
+  // override type Position = universe.Position
+  override type Scope = universe.Scope
+  override type Modifiers = universe.Modifiers
 
-  /** Creator/extractor objects for Expr and TypeTag values */
-  override val TypeTag = mirror.TypeTag
-  override val ConcreteTypeTag = mirror.ConcreteTypeTag
-  override val Expr = mirror.Expr
+  override type Expr[+T] = universe.Expr[T]
+  override val Expr = universe.Expr
+
+  override type TypeTag[T] = universe.TypeTag[T]
+  override type ConcreteTypeTag[T] = universe.ConcreteTypeTag[T]
+  override val TypeTag = universe.TypeTag
+  override val ConcreteTypeTag = universe.ConcreteTypeTag
+  override def typeTag[T](implicit ttag: TypeTag[T]) = ttag
+  override def concreteTypeTag[T](implicit cttag: ConcreteTypeTag[T]) = cttag
+  override def typeOf[T](implicit ttag: TypeTag[T]): Type = ttag.tpe
 }

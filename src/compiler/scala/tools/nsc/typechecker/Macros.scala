@@ -26,7 +26,7 @@ import java.lang.reflect.{Array => jArray, Method => jMethod}
  *    def fooBar[T: c.TypeTag]
  *           (c: scala.reflect.makro.Context)
  *           (xs: c.Expr[List[T]])
- *           : c.mirror.Tree = {
+ *           : c.Tree = {
  *      ...
  *    }
  *
@@ -200,8 +200,8 @@ trait Macros extends scala.tools.reflect.FastTrack with Traces {
     implicit class AugmentedString(s: String) {
       def abbreviateCoreAliases: String = { // hack!
         var result = s
-        result = result.replace("c.mirror.TypeTag", "c.TypeTag")
-        result = result.replace("c.mirror.Expr", "c.Expr")
+        result = result.replace("c.universe.TypeTag", "c.TypeTag")
+        result = result.replace("c.universe.Expr", "c.Expr")
         result
       }
     }
@@ -770,8 +770,8 @@ trait Macros extends scala.tools.reflect.FastTrack with Traces {
 
   private def macroContext(typer: Typer, prefixTree: Tree, expandeeTree: Tree): MacroContext =
     new {
-      val mirror: self.global.type = self.global
-      val callsiteTyper: mirror.analyzer.Typer = typer.asInstanceOf[global.analyzer.Typer]
+      val universe: self.global.type = self.global
+      val callsiteTyper: universe.analyzer.Typer = typer.asInstanceOf[global.analyzer.Typer]
       val expandee = expandeeTree
     } with UnaffiliatedMacroContext {
       // todo. infer precise typetag for this Expr, namely the PrefixType member of the Context refinement
@@ -787,26 +787,23 @@ trait Macros extends scala.tools.reflect.FastTrack with Traces {
    *  @return list of runtime objects to pass to the implementation obtained by ``macroRuntime''
    */
   private def macroArgs(typer: Typer, expandee: Tree): Option[List[Any]] = {
-    val macroDef         = expandee.symbol
-    val runtime          = macroRuntime(macroDef) orElse { return None }
-    var prefixTree: Tree = EmptyTree
-    var typeArgs         = List[Tree]()
-    val exprArgs         = ListBuffer[List[Expr[_]]]()
-
+    val macroDef   = expandee.symbol
+    val runtime    = macroRuntime(macroDef) orElse { return None }
+    val prefixTree = expandee.collect{ case Select(qual, name) => qual }.headOption.getOrElse(EmptyTree)
+    val context    = expandee.attachments.get[MacroRuntimeAttachment].flatMap(_.macroContext).getOrElse(macroContext(typer, prefixTree, expandee))
+    var typeArgs   = List[Tree]()
+    val exprArgs   = ListBuffer[List[Expr[_]]]()
     def collectMacroArgs(tree: Tree): Unit = tree match {
       case Apply(fn, args) =>
         // todo. infer precise typetag for this Expr, namely the declared type of the corresponding macro impl argument
-        exprArgs.prepend(args map (arg => Expr(rootMirror, FixedMirrorTreeCreator(rootMirror, arg))(TypeTag.Nothing)))
+        exprArgs.prepend(args map (arg => context.Expr[Nothing](arg)(TypeTag.Nothing)))
         collectMacroArgs(fn)
       case TypeApply(fn, args) =>
         typeArgs = args
         collectMacroArgs(fn)
-      case Select(qual, name) =>
-        prefixTree = qual
       case _ =>
     }
     collectMacroArgs(expandee)
-    val context = expandee.attachments.get[MacroAttachment].flatMap(_.macroContext).getOrElse(macroContext(typer, prefixTree, expandee))
     var argss: List[List[Any]] = List(context) :: exprArgs.toList
     macroTraceVerbose("argss: ")(argss)
     val rawArgss =
@@ -1115,7 +1112,7 @@ trait Macros extends scala.tools.reflect.FastTrack with Traces {
               delayed += expandee -> undetparams
               // need to save typer context for `macroExpandAll`
               // need to save macro context to preserve enclosures
-              expandee addAttachment MacroAttachment(delayed = true, typerContext = typer.context, macroContext = Some(context.asInstanceOf[MacroContext]))
+              expandee addAttachment MacroRuntimeAttachment(delayed = true, typerContext = typer.context, macroContext = Some(context.asInstanceOf[MacroContext]))
               Delay(expandee)
             }
             else {
@@ -1130,7 +1127,7 @@ trait Macros extends scala.tools.reflect.FastTrack with Traces {
                 case x          => x
               }
               finally {
-                expandee.removeAttachment[MacroAttachment]
+                expandee.removeAttachment[MacroRuntimeAttachment]
                 if (!isSuccess) openMacros = openMacros.tail
               }
             }
@@ -1281,7 +1278,7 @@ trait Macros extends scala.tools.reflect.FastTrack with Traces {
       override def transform(tree: Tree) = super.transform(tree match {
         // todo. expansion should work from the inside out
         case wannabe if (delayed contains wannabe) && calculateUndetparams(wannabe).isEmpty =>
-          val context = wannabe.attachments.get[MacroAttachment].get.typerContext
+          val context = wannabe.attachments.get[MacroRuntimeAttachment].get.typerContext
           delayed -= wannabe
           context.implicitsEnabled = typer.context.implicitsEnabled
           context.enrichmentEnabled = typer.context.enrichmentEnabled

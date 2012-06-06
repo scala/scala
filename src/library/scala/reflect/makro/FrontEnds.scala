@@ -5,7 +5,7 @@ trait FrontEnds extends scala.reflect.api.FrontEnds {
 
   import mirror._
 
-  type Position = mirror.Position
+  type Position = universe.Position
 
   /** Exposes means to control the compiler UI */
   def frontEnd: FrontEnd

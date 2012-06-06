@@ -4,6 +4,6 @@ package runtime
 trait TypeTags {
   self: Context =>
 
-  def TypeTag[T](tpe: Type): TypeTag[T] = mirror.TypeTag[T](mirror.rootMirror, mirror.FixedMirrorTypeCreator(mirror.rootMirror, tpe))
-  def ConcreteTypeTag[T](tpe: Type): ConcreteTypeTag[T] = mirror.ConcreteTypeTag[T](mirror.rootMirror, mirror.FixedMirrorTypeCreator(mirror.rootMirror, tpe))
+  def TypeTag[T](tpe: Type): TypeTag[T] = universe.TypeTag[T](mirror, universe.FixedMirrorTypeCreator(mirror, tpe))
+  def ConcreteTypeTag[T](tpe: Type): ConcreteTypeTag[T] = universe.ConcreteTypeTag[T](mirror, universe.FixedMirrorTypeCreator(mirror, tpe))
 }
