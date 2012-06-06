@@ -12,6 +12,7 @@ package scala.collection
 
 import generic._
 import mutable.{Buffer, StringBuilder}
+import reflect.ArrayTag
 
 // Methods could be printed by  cat TraversableLike.scala | egrep '^  (override )?def'
 

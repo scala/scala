@@ -2,6 +2,7 @@ package scala.tools
 package reflect
 
 import java.lang.{Class => jClass}
+import scala.reflect.{ClassTag, classTag}
 import scala.reflect.base.{MirrorOf, TypeCreator, Universe => BaseUniverse}
 import scala.reflect.runtime.{universe => ru}
 

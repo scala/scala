@@ -9,6 +9,7 @@ package interpreter
 import NamedParam._
 import language.implicitConversions
 import scala.reflect.runtime.{universe => ru}
+import scala.reflect.{ClassTag, classTag}
 
 trait NamedParamCreator {
   protected def freshName: () => String

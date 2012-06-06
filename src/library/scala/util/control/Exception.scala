@@ -9,6 +9,7 @@
 package scala.util.control
 
 import collection.immutable.List
+import reflect.{ ClassTag, classTag }
 import java.lang.reflect.InvocationTargetException
 import language.implicitConversions
 

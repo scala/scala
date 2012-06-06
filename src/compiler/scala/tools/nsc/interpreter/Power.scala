@@ -15,6 +15,7 @@ import java.net.{ URL, MalformedURLException }
 import io.{ Path }
 import language.implicitConversions
 import scala.reflect.runtime.{universe => ru}
+import scala.reflect.{ClassTag, classTag}
 
 /** Collecting some power mode examples.
 

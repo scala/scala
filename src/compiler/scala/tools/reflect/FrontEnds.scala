@@ -3,6 +3,7 @@ package reflect
 
 import scala.tools.nsc.reporters._
 import scala.tools.nsc.Settings
+import scala.reflect.ClassTag
 
 trait FrontEnds extends scala.reflect.api.FrontEnds {
 

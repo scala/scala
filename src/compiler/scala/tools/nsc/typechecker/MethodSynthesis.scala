@@ -8,6 +8,7 @@ package typechecker
 import symtab.Flags._
 import scala.collection.{ mutable, immutable }
 import scala.tools.util.StringOps.{ ojoin }
+import scala.reflect.ClassTag
 import scala.reflect.runtime.{ universe => ru }
 import language.higherKinds
 

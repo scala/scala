@@ -12,6 +12,7 @@ import collection.AbstractIterator
 import collection.Iterator
 import collection.generic._
 import annotation.tailrec
+import reflect.ArrayTag
 
 /** A buffer that stores elements in an unrolled linked list.
  *
