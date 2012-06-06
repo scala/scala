@@ -13,7 +13,9 @@ trait TreePrinters { self: Universe =>
     def withUniqueIds: this.type = { uniqueIds = true; this }
   }
 
-  def show(tree: Tree, mkPrinter: PrintWriter => TreePrinter = newTreePrinter): String = {
+  def show(tree: Tree): String = show(tree, newTreePrinter)
+
+  def show(tree: Tree, mkPrinter: PrintWriter => TreePrinter): String = {
     val buffer = new StringWriter()
     val writer = new PrintWriter(buffer)
     val printer = mkPrinter(writer)
@@ -29,13 +31,12 @@ trait TreePrinters { self: Universe =>
   def newTreePrinter(out: PrintWriter): TreePrinter
 
   // emits more or less verbatim representation of the provided tree
+  // [Eugene] todo. needs to be refined
+  //  http://groups.google.com/group/scala-user/browse_thread/thread/de5a5be2e083cf8e
   class RawTreePrinter(out: PrintWriter) extends TreePrinter {
-    val EmptyValDef = self.emptyValDef
     def print(args: Any*): Unit = args foreach {
       case EmptyTree =>
         print("EmptyTree")
-      case EmptyValDef =>
-        print("emptyValDef")
       case tree @ TypeTree() =>
         print("TypeTree()")
         if (tree.tpe != null)
@@ -45,7 +46,7 @@ trait TreePrinters { self: Universe =>
       case Literal(Constant(s: String)) =>
         print("Literal(Constant(\"" + s + "\"))")
       case tree: Tree =>
-        print(tree.printingPrefix+"(")
+        print(tree.productPrefix+"(")
         val it = tree.productIterator
         while (it.hasNext) {
           it.next() match {
@@ -69,16 +70,12 @@ trait TreePrinters { self: Universe =>
         print(")")
       case mods: Modifiers =>
         val parts = collection.mutable.ListBuffer[String]()
-        parts += "Set(" + mods.modifiers.map(_.sourceString).mkString(", ") + ")"
-        parts += "newTypeName(\"" + mods.privateWithin.toString + "\")"
-        parts += "List(" + mods.annotations.map{showRaw}.mkString(", ") + ")"
-
-        var keep = 3
-        if (keep == 3 && mods.annotations.isEmpty) keep -= 1
-        if (keep == 2 && mods.privateWithin == EmptyTypeName) keep -= 1
-        if (keep == 1 && mods.modifiers.isEmpty) keep -= 1
-
-        print("Modifiers(", parts.take(keep).mkString(", "), ")")
+        parts += mods.flagString
+        if (mods.privateWithin.toString.nonEmpty)
+          parts += "newTypeName(\"" + mods.privateWithin.toString + "\")"
+        if (mods.annotations.nonEmpty)
+          parts += mods.annotations map showRaw mkString ("List(", ", ", ")")
+        print(parts mkString ("Modifiers(", ", ", ")"))
       case name: Name =>
         if (name.isTermName) print("newTermName(\"") else print("newTypeName(\"")
         print(name.toString)

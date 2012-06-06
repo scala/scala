@@ -385,7 +385,7 @@ abstract class ExplicitOuter extends InfoTransform
         method setInfo new MethodType(params, BooleanClass.tpe)
 
         localTyper typed {
-          DEF(method) === guard.changeOwner(currentOwner -> method).substTreeSyms(vs zip params: _*)
+          DEF(method) === guard.changeOwner(currentOwner -> method).substituteSymbols(vs, params)
         }
       }
 

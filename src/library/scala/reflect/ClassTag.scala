@@ -1,7 +1,6 @@
 package scala.reflect
 
 import java.lang.{ Class => jClass }
-import scala.reflect.{ mirror => rm }
 import language.{implicitConversions, existentials}
 import scala.runtime.ScalaRunTime.arrayClass
 
@@ -21,12 +20,15 @@ import scala.runtime.ScalaRunTime.arrayClass
  *  A ConcreteTypeTag member of the reflect.mirror object is convertible to a ClassTag via an implicit conversion
  *  (this is not possible to do in all reflection universes because an operation that converts a type to a Java class might not be available).
  *
- * @see [[scala.reflect.api.TypeTags]]
+ * @see [[scala.reflect.base.TypeTags]]
  */
 @annotation.implicitNotFound(msg = "No ClassTag available for ${T}")
-trait ClassTag[T] extends ArrayTag[T] with ErasureTag[T] with Equals with Serializable {
+trait ClassTag[T] extends ArrayTag[T] with Equals with Serializable {
   // please, don't add any APIs here, like it was with `newWrappedArray` and `newArrayBuilder`
   // class tags, and all tags in general, should be as minimalistic as possible
+
+  /** Returns an erasure of type `T` */
+  def erasure: jClass[_]
 
   /** Produces a `ClassTag` that knows how to build `Array[Array[T]]` */
   def wrap: ClassTag[Array[T]] = ClassTag[Array[T]](arrayClass(erasure))

@@ -115,7 +115,7 @@ trait Picklers { self: Global =>
         if (sym.isOverloaded) makeSymbol(sym.alternatives(rest.head.toString.toInt), rest.tail)
         else makeSymbol(sym, rest)
     }
-    pkl[List[Name]] .wrapped { makeSymbol(definitions.RootClass, _) } { ownerNames(_, new ListBuffer).toList }
+    pkl[List[Name]] .wrapped { makeSymbol(rootMirror.RootClass, _) } { ownerNames(_, new ListBuffer).toList }
   }
 
   implicit def workEvent: Pickler[WorkEvent] = {

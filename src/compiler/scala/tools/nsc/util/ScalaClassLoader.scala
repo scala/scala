@@ -11,7 +11,7 @@ import java.lang.reflect.{ Constructor, Modifier, Method }
 import java.io.{ File => JFile }
 import java.net.{ URLClassLoader => JURLClassLoader }
 import java.net.URL
-import scala.reflect.ReflectionUtils.unwrapHandler
+import scala.reflect.runtime.ReflectionUtils.unwrapHandler
 import ScalaClassLoader._
 import scala.util.control.Exception.{ catching }
 import language.implicitConversions

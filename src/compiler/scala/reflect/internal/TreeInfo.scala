@@ -587,25 +587,7 @@ abstract class TreeInfo {
 
   object TreeSplice {
     def unapply(tree: Tree): Option[Tree] = tree match {
-      case Select(splicee, _) if tree.symbol == ExprEval || tree.symbol == ExprValue =>
-        Some(splicee)
-      case _ =>
-        None
-    }
-  }
-
-  object EvalSplice {
-    def unapply(tree: Tree): Option[Tree] = tree match {
-      case Select(splicee, _) if tree.symbol == ExprEval =>
-        Some(splicee)
-      case _ =>
-        None
-    }
-  }
-
-  object ValueSplice {
-    def unapply(tree: Tree): Option[Tree] = tree match {
-      case Select(splicee, _) if tree.symbol == ExprValue =>
+      case Select(splicee, _) if tree.symbol == ExprSplice =>
         Some(splicee)
       case _ =>
         None
@@ -634,7 +616,7 @@ abstract class TreeInfo {
 
   object InlineableTreeSplice {
     def unapply(tree: Tree): Option[(Tree, List[Tree], Tree, Tree, Symbol)] = tree match {
-      case select @ Select(ReifiedTree(splicee, symbolTable, tree, tpe), _) if select.symbol == ExprEval || select.symbol == ExprValue =>
+      case select @ Select(ReifiedTree(splicee, symbolTable, tree, tpe), _) if select.symbol == ExprSplice =>
         Some(splicee, symbolTable, tree, tpe, select.symbol)
       case _ =>
         None
@@ -643,7 +625,7 @@ abstract class TreeInfo {
 
   object InlinedTreeSplice {
     def unapply(tree: Tree): Option[(Tree, List[Tree], Tree, Tree)] = tree match {
-      case Select(ReifiedTree(splicee, symbolTable, tree, tpe), name) if name == ExprTree.name =>
+      case Select(ReifiedTree(splicee, symbolTable, tree, tpe), name) if name == nme.tree =>
         Some(splicee, symbolTable, tree, tpe)
       case _ =>
         None
@@ -661,7 +643,7 @@ abstract class TreeInfo {
 
   object InlinedTypeSplice {
     def unapply(tree: Tree): Option[(Tree, List[Tree], Tree)] = tree match {
-      case Select(ReifiedType(splicee, symbolTable, tpe), name) if name == TypeTagTpe.name =>
+      case Select(ReifiedType(splicee, symbolTable, tpe), name) if name == nme.tpe =>
         Some(splicee, symbolTable, tpe)
       case _ =>
         None
@@ -680,11 +662,9 @@ abstract class TreeInfo {
   }
 
   object FreeTermDef {
-    lazy val newFreeTermMethod = getMember(getRequiredClass("scala.reflect.api.TreeBuildUtil"), nme.newFreeTerm)
-
     def unapply(tree: Tree): Option[(Tree, TermName, Tree, Long, String)] = tree match {
       case ValDef(_, name, _, Apply(Select(mrRef @ Ident(_), newFreeTerm), List(_, _, binding, Literal(Constant(flags: Long)), Literal(Constant(origin: String)))))
-      if mrRef.name == nme.MIRROR_SHORT && newFreeTerm == newFreeTermMethod.name =>
+      if mrRef.name == nme.MIRROR_SHORT && newFreeTerm == nme.newFreeTerm =>
         Some(mrRef, name, binding, flags, origin)
       case _ =>
         None
@@ -692,12 +672,9 @@ abstract class TreeInfo {
   }
 
   object FreeTypeDef {
-    lazy val newFreeExistentialMethod = getMember(getRequiredClass("scala.reflect.api.TreeBuildUtil"), nme.newFreeType)
-    lazy val newFreeTypeMethod = getMember(getRequiredClass("scala.reflect.api.TreeBuildUtil"), nme.newFreeExistential)
-
     def unapply(tree: Tree): Option[(Tree, TermName, Tree, Long, String)] = tree match {
       case ValDef(_, name, _, Apply(Select(mrRef1 @ Ident(_), newFreeType), List(_, _, value, Literal(Constant(flags: Long)), Literal(Constant(origin: String)))))
-      if mrRef1.name == nme.MIRROR_SHORT && (newFreeType == newFreeTypeMethod.name || newFreeType == newFreeExistentialMethod.name) =>
+      if mrRef1.name == nme.MIRROR_SHORT && (newFreeType == nme.newFreeType || newFreeType == nme.newFreeExistential) =>
         value match {
           case Apply(TypeApply(Select(Select(mrRef2 @ Ident(_), typeTag), apply), List(binding)), List(Literal(Constant(null)), _))
           if mrRef2.name == nme.MIRROR_SHORT && typeTag == nme.TypeTag && apply == nme.apply =>

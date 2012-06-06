@@ -113,7 +113,6 @@ object Predef extends LowPriorityImplicits {
 
   // Tag types and companions, and incantations for summoning
   type ArrayTag[T]           = scala.reflect.ArrayTag[T]
-  type ErasureTag[T]         = scala.reflect.ErasureTag[T]
   type ClassTag[T]           = scala.reflect.ClassTag[T]
   type TypeTag[T]            = scala.reflect.TypeTag[T]
   type ConcreteTypeTag[T]    = scala.reflect.ConcreteTypeTag[T]
@@ -124,7 +123,6 @@ object Predef extends LowPriorityImplicits {
 
   // [Eugene to Martin] it's really tedious to type "implicitly[...]" all the time, so I'm reintroducing these shortcuts
   def arrayTag[T](implicit atag: ArrayTag[T])                      = atag
-  def erasureTag[T](implicit etag: ErasureTag[T])                  = etag
   def classTag[T](implicit ctag: ClassTag[T])                      = ctag
   def tag[T](implicit ttag: TypeTag[T])                            = ttag
   def typeTag[T](implicit ttag: TypeTag[T])                        = ttag

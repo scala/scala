@@ -1,6 +1,6 @@
 package scala.reflect.makro
 package runtime
 
-import scala.reflect.api.Position
+import scala.tools.nsc.util.Position
 
 class AbortMacroException(val pos: Position, val msg: String) extends Throwable(msg)

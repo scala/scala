@@ -7,6 +7,9 @@
 package scala.tools.nsc
 package util
 
+import reflect.base.Attachments
+import reflect.api.PositionApi
+
 object Position {
   val tabInc = 8
 
@@ -33,22 +36,13 @@ object Position {
   }
 }
 
-trait Position extends scala.reflect.api.Position with scala.reflect.api.Attachment {
-  /** Exposes itself as payload of Attachment */
-  // necessary for conformance with Attachment
+abstract class Position extends PositionApi { self =>
+
+  type Pos = Position
+
   def pos: Position = this
 
-  /** A bit weird method that is necessary to safely update positions without destroying custom attachments */
-  // necessary for conformance with Attachment
-  def withPos(newPos: scala.reflect.api.Position): scala.reflect.api.Attachment = newPos
-
-  /** Exposes itself as payload of Attachment */
-  // necessary for conformance with Attachment
-  def payload: Position = this
-
-  /** A bit weird method that is necessary to safely update positions without destroying custom attachments */
-  // necessary for conformance with Attachment
-  def withPayload(newPos: Any): scala.reflect.api.Attachment = newPos.asInstanceOf[Position]
+  def withPos(newPos: Position): Attachments { type Pos = self.Pos } = newPos
 
   /** Java file corresponding to the source file of this position.
    */
@@ -118,7 +112,7 @@ trait Position extends scala.reflect.api.Position with scala.reflect.api.Attachm
   /** If this is a range, the union with the other range, with the point of this position.
    *  Otherwise, this position
    */
-  def union(pos: scala.reflect.api.Position): Position = this
+  def union(pos: Position): Position = this
 
   /** If this is a range position, the offset position of its start.
    *  Otherwise the position itself
@@ -139,39 +133,39 @@ trait Position extends scala.reflect.api.Position with scala.reflect.api.Attachm
    *  This holds if `this` is a range position and its range [start..end]
    *  is the same or covers the range of the given position, which may or may not be a range position.
    */
-  def includes(pos: scala.reflect.api.Position): Boolean = false
+  def includes(pos: Position): Boolean = false
 
   /** Does this position properly include the given position `pos` ("properly" meaning their
    *  ranges are not the same)?
    */
-  def properlyIncludes(pos: scala.reflect.api.Position): Boolean =
+  def properlyIncludes(pos: Position): Boolean =
     includes(pos) && (start < pos.startOrPoint || pos.endOrPoint < end)
 
   /** Does this position precede that position?
    *  This holds if both positions are defined and the end point of this position
    *  is not larger than the start point of the given position.
    */
-  def precedes(pos: scala.reflect.api.Position): Boolean =
+  def precedes(pos: Position): Boolean =
     isDefined && pos.isDefined && endOrPoint <= pos.startOrPoint
 
   /** Does this position properly precede the given position `pos` ("properly" meaning their ranges
    *  do not share a common point).
    */
-  def properlyPrecedes(pos: scala.reflect.api.Position): Boolean =
+  def properlyPrecedes(pos: Position): Boolean =
     isDefined && pos.isDefined && endOrPoint < pos.startOrPoint
 
   /** Does this position overlap with that position?
    *  This holds if both positions are ranges and there is an interval of
    *  non-zero length that is shared by both position ranges.
    */
-  def overlaps(pos: scala.reflect.api.Position): Boolean =
+  def overlaps(pos: Position): Boolean =
     isRange && pos.isRange &&
     ((pos.start < end && start < pos.end) || (start < pos.end && pos.start < end))
 
   /** Does this position cover the same range as that position?
    *  Holds only if both position are ranges
    */
-  def sameRange(pos: scala.reflect.api.Position): Boolean =
+  def sameRange(pos: Position): Boolean =
     isRange && pos.isRange && start == pos.start && end == pos.end
 
   def line: Int = throw new UnsupportedOperationException("Position.line")
@@ -224,10 +218,7 @@ class OffsetPosition(override val source: SourceFile, override val point: Int) e
     col + 1
   }
 
-  override def union(pos: scala.reflect.api.Position) =
-    // [Eugene] how do I get rid of this cast?
-    // I could introduce a "type PositionType <: scala.reflect.api.Position", but that's also ugly
-    if (pos.isRange) pos.asInstanceOf[Position] else this
+  override def union(pos: Position) = if (pos.isRange) pos else this
 
   override def equals(that : Any) = that match {
     case that : OffsetPosition => point == that.point && source.file == that.source.file
@@ -261,8 +252,8 @@ extends OffsetPosition(source, point) {
   }
   override def focusEnd = new OffsetPosition(source, end)
   override def makeTransparent = new TransparentPosition(source, start, point, end)
-  override def includes(pos: scala.reflect.api.Position) = pos.isDefined && start <= pos.startOrPoint && pos.endOrPoint <= end
-  override def union(pos: scala.reflect.api.Position): Position =
+  override def includes(pos: Position) = pos.isDefined && start <= pos.startOrPoint && pos.endOrPoint <= end
+  override def union(pos: Position): Position =
     if (pos.isRange) new RangePosition(source, start min pos.start, point, end max pos.end) else this
 
   override def toSingleLine: Position = source match {

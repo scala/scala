@@ -139,8 +139,8 @@ trait Names extends api.Names {
    *  or Strings as Names.  Give names the key functions the absence of which
    *  make people want Strings all the time.
    */
-  sealed abstract class Name(protected val index: Int, protected val len: Int) extends AbsName with Function1[Int, Char] {
-    type ThisNameType <: Name
+  sealed abstract class Name(protected val index: Int, protected val len: Int) extends NameApi with Function1[Int, Char] {
+    type ThisNameType >: Null <: Name
     protected[this] def thisName: ThisNameType
 
     /** Index into name table */
@@ -429,6 +429,8 @@ trait Names extends api.Names {
     def debugString = { val s = decode ; if (isTypeName) s + "!" else s }
   }
 
+  implicit val NameTag = ClassTag[Name](classOf[Name])
+
   /** A name that contains no operator chars nor dollar signs.
    *  TODO - see if it's any faster to do something along these lines.
    *  Cute: now that exhaustivity kind of works, the mere presence of
@@ -491,6 +493,8 @@ trait Names extends api.Names {
     protected def createCompanionName(h: Int): TypeName
   }
 
+  implicit val TermNameTag = ClassTag[TermName](classOf[TermName])
+
   sealed abstract class TypeName(index0: Int, len0: Int, hash: Int) extends Name(index0, len0) {
     type ThisNameType = TypeName
     protected[this] def thisName: TypeName = this
@@ -518,4 +522,6 @@ trait Names extends api.Names {
     override def decode = if (nameDebug) super.decode + "!" else super.decode
     protected def createCompanionName(h: Int): TermName
   }
+
+  implicit val TypeNameTag = ClassTag[TypeName](classOf[TypeName])
 }

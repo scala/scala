@@ -1361,7 +1361,7 @@ trait Typers extends Modes with Adaptations with Taggings {
         case List(acc) =>
           def isUnderlyingAcc(sym: Symbol) =
             sym == acc || acc.hasAccessorFlag && sym == acc.accessed
-          if (acc.accessBoundary(clazz) != RootClass)
+          if (acc.accessBoundary(clazz) != rootMirror.RootClass)
             unit.error(acc.pos, "value class needs to have a publicly accessible val parameter")
           for (stat <- body)
             if (!treeInfo.isAllowedInUniversalTrait(stat) && !isUnderlyingAcc(stat.symbol))
@@ -2315,7 +2315,7 @@ trait Typers extends Modes with Adaptations with Taggings {
       import CODE._
 
       // need to duplicate the cases before typing them to generate the apply method, or the symbols will be all messed up
-      val casesTrue = if (isPartial) cases map (c => deriveCaseDef(c)(x => atPos(x.pos.focus)(TRUE_typed)).duplicate) else Nil
+      val casesTrue = if (isPartial) cases map (c => deriveCaseDef(c)(x => atPos(x.pos.focus)(TRUE_typed)).duplicate.asInstanceOf[CaseDef]) else Nil
       // println("casesTrue "+ casesTrue)
       def parentsPartial(targs: List[Type]) = addSerializable(appliedType(AbstractPartialFunctionClass.typeConstructor, targs))
 
@@ -2383,7 +2383,7 @@ trait Typers extends Modes with Adaptations with Taggings {
           match_ setType B1.tpe
 
           // the default uses applyOrElse's first parameter since the scrut's type has been widened
-          val body = methodBodyTyper.virtualizedMatch(match_ withAttachment DefaultOverrideMatchAttachment(REF(default) APPLY (REF(x))), mode, B1.tpe)
+          val body = methodBodyTyper.virtualizedMatch(match_ addAttachment DefaultOverrideMatchAttachment(REF(default) APPLY (REF(x))), mode, B1.tpe)
 
           DefDef(methodSym, body)
         }
@@ -2401,7 +2401,7 @@ trait Typers extends Modes with Adaptations with Taggings {
           methodSym setInfoAndEnter MethodType(paramSyms, BooleanClass.tpe)
 
           val match_ = methodBodyTyper.typedMatch(gen.mkUnchecked(selector), casesTrue, mode, BooleanClass.tpe)
-          val body   = methodBodyTyper.virtualizedMatch(match_ withAttachment DefaultOverrideMatchAttachment(FALSE_typed), mode, BooleanClass.tpe)
+          val body   = methodBodyTyper.virtualizedMatch(match_ addAttachment DefaultOverrideMatchAttachment(FALSE_typed), mode, BooleanClass.tpe)
 
           DefDef(methodSym, body)
         }
@@ -4402,7 +4402,7 @@ trait Typers extends Modes with Adaptations with Taggings {
         // last ditch effort before failing.  This method sets defSym and returns
         // true if a member of the given name exists.
         def checkEmptyPackage(): Boolean = {
-          defSym = EmptyPackageClass.tpe.nonPrivateMember(name)
+          defSym = rootMirror.EmptyPackageClass.tpe.nonPrivateMember(name)
           defSym != NoSymbol
         }
         def startingIdentContext = (
@@ -4530,7 +4530,7 @@ trait Typers extends Modes with Adaptations with Taggings {
               log("Allowing empty package member " + name + " due to settings.")
             else {
               if ((mode & QUALmode) != 0) {
-                val lastTry = missingHook(RootClass, name)
+                val lastTry = missingHook(rootMirror.RootClass, name)
                 if (lastTry != NoSymbol) return typed1(tree setSymbol lastTry, mode, pt)
               }
               if (settings.debug.value) {
@@ -4912,7 +4912,7 @@ trait Typers extends Modes with Adaptations with Taggings {
           if (tree1.symbol != null && tree1.symbol.isOnlyRefinementMember)
             checkFeature(tree1.pos, ReflectiveCallsFeature, tree1.symbol.toString)
 
-          if (qual1.symbol == RootPackage) treeCopy.Ident(tree1, name)
+          if (qual1.hasSymbolWhich(_.isRootPackage)) treeCopy.Ident(tree1, name)
           else tree1
 
         case Ident(name) =>

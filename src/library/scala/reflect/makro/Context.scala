@@ -14,12 +14,13 @@ trait Context extends Aliases
                  with Reifiers
                  with FrontEnds
                  with Settings
-                 with Symbols
                  with Typers
+                 with Exprs
+                 with TypeTags
                  with Util {
 
   /** The mirror that corresponds to the compile-time universe */
-  val mirror: scala.reflect.api.Universe
+  val mirror: Universe
 
   /** The type of the prefix tree from which the macro is selected */
   type PrefixType

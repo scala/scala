@@ -10,15 +10,16 @@ import scala.collection.{ mutable, immutable }
 import util._
 import scala.tools.nsc.util.WeakHashSet
 
-abstract class SymbolTable extends api.Universe
+abstract class SymbolTable extends makro.Universe
                               with Collections
                               with Names
                               with Symbols
-                              with FreeVars
                               with Types
                               with Kinds
                               with ExistentialsAndSkolems
+                              with FlagSets
                               with Scopes
+                              with Mirrors
                               with Definitions
                               with Constants
                               with BaseTypeSeqs
@@ -33,12 +34,15 @@ abstract class SymbolTable extends api.Universe
                               with TypeDebugging
                               with Importers
                               with Required
-                              with TreeBuildUtil
-                              with FrontEnds
                               with CapturedVariables
                               with StdAttachments
+                              with StdCreators
+                              with BuildUtils
 {
-  def rootLoader: LazyType
+
+  val gen = new TreeGen { val global: SymbolTable.this.type = SymbolTable.this }
+  val treeBuild = gen
+
   def log(msg: => AnyRef): Unit
   def abort(msg: String): Nothing = throw new FatalError(supplementErrorMessage(msg))
 
@@ -109,6 +113,9 @@ abstract class SymbolTable extends api.Universe
    *  when it makes sense (i.e. <owner> is a package and <name> is a term name).
    */
   def missingHook(owner: Symbol, name: Name): Symbol = NoSymbol
+
+  /** Returns the mirror that loaded given symbol */
+  def mirrorThatLoaded(sym: Symbol): Mirror
 
   /** A period is an ordinal number for a phase in a run.
    *  Phases in later runs have higher periods than phases in earlier runs.
@@ -295,7 +302,6 @@ abstract class SymbolTable extends api.Universe
 
     def clearAll() = {
       debuglog("Clearing " + caches.size + " caches.")
-
       caches foreach { ref =>
         val cache = ref.get()
         if (cache == null)
@@ -321,8 +327,7 @@ abstract class SymbolTable extends api.Universe
   /** The phase which has given index as identifier. */
   val phaseWithId: Array[Phase]
 
-  /** Is this symbol table part of reflexive mirror? In this case
-   *  operations need to be made thread safe.
+  /** Is this symbol table a part of a compiler universe?
    */
-  def inReflexiveMirror = false
+  def isCompilerUniverse = false
 }

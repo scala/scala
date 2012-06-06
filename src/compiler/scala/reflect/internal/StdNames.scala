@@ -82,8 +82,8 @@ trait StdNames {
     )
   }
 
-  abstract class CommonNames {
-    type NameType <: Name
+  abstract class CommonNames extends NamesApi {
+    type NameType >: Null <: Name
     protected implicit def createNameType(name: String): NameType
 
     def flattenedName(segments: Name*): NameType =
@@ -122,15 +122,16 @@ trait StdNames {
       scala.List(Byte, Char, Short, Int, Long, Float, Double, Boolean, Unit)
 
     // some types whose companions we utilize
-    final val AnyRef: NameType = "AnyRef"
-    final val Array: NameType  = "Array"
-    final val List: NameType   = "List"
-    final val Seq: NameType    = "Seq"
-    final val Symbol: NameType = "Symbol"
-    final val ClassTag: NameType = "ClassTag"
-    final val TypeTag : NameType = "TypeTag"
+    final val AnyRef: NameType          = "AnyRef"
+    final val Array: NameType           = "Array"
+    final val List: NameType            = "List"
+    final val Seq: NameType             = "Seq"
+    final val Symbol: NameType          = "Symbol"
+    final val ClassTag: NameType        = "ClassTag"
+    final val TypeTag : NameType        = "TypeTag"
     final val ConcreteTypeTag: NameType = "ConcreteTypeTag"
-    final val String: NameType  = "String"
+    final val Expr: NameType            = "Expr"
+    final val String: NameType          = "String"
 
     // fictions we use as both types and terms
     final val ERROR: NameType    = "<error>"
@@ -201,7 +202,7 @@ trait StdNames {
     final val javaKeywords = new JavaKeywords()
   }
 
-  abstract class TypeNames extends Keywords {
+  abstract class TypeNames extends Keywords with TypeNamesApi {
     type NameType = TypeName
     protected implicit def createNameType(name: String): TypeName = newTypeNameCached(name)
 
@@ -215,7 +216,8 @@ trait StdNames {
 
     final val Any: NameType             = "Any"
     final val AnyVal: NameType          = "AnyVal"
-    final val Expr: NameType            = "Expr"
+    final val ExprApi: NameType         = "ExprApi"
+    final val Mirror: NameType          = "Mirror"
     final val Nothing: NameType         = "Nothing"
     final val Null: NameType            = "Null"
     final val Object: NameType          = "Object"
@@ -229,9 +231,10 @@ trait StdNames {
     final val Annotation: NameType          = "Annotation"
     final val ClassfileAnnotation: NameType = "ClassfileAnnotation"
     final val Enum: NameType                = "Enum"
-    final val Group: NameType            = "Group"
-    final val Tree: NameType             = "Tree"
-    final val TypeTree: NameType         = "TypeTree"
+    final val Group: NameType               = "Group"
+    final val Tree: NameType                = "Tree"
+    final val Type : NameType               = "Type"
+    final val TypeTree: NameType            = "TypeTree"
 
     // Annotation simple names, used in Namer
     final val BeanPropertyAnnot: NameType = "BeanProperty"
@@ -263,7 +266,7 @@ trait StdNames {
     def interfaceName(implname: Name): TypeName = implname dropRight IMPL_CLASS_SUFFIX.length toTypeName
   }
 
-  abstract class TermNames extends Keywords {
+  abstract class TermNames extends Keywords with TermNamesApi {
     type NameType = TermName
     protected implicit def createNameType(name: String): TermName = newTermNameCached(name)
 
@@ -290,6 +293,7 @@ trait StdNames {
     // Compiler internal names
     val ANYNAME: NameType                  = "<anyname>"
     val CONSTRUCTOR: NameType              = "<init>"
+    val EQEQ_LOCAL_VAR: NameType           = "eqEqTemp$"
     val FAKE_LOCAL_THIS: NameType          = "this$"
     val INITIALIZER: NameType              = CONSTRUCTOR // Is this buying us something?
     val LAZY_LOCAL: NameType               = "$lzy"
@@ -306,6 +310,7 @@ trait StdNames {
     val OUTER: NameType                    = "$outer"
     val OUTER_LOCAL: NameType              = OUTER + LOCAL_SUFFIX_STRING // "$outer ", note the space
     val OUTER_SYNTH: NameType              = "<outer>" // emitted by virtual pattern matcher, replaced by outer accessor in explicitouter
+    val ROOTPKG: NameType                  = "_root_"
     val SELECTOR_DUMMY: NameType           = "<unapply-selector>"
     val SELF: NameType                     = "$this"
     val SETTER_SUFFIX: NameType            = encode("_=")
@@ -511,6 +516,32 @@ trait StdNames {
       case _  => newTermName("x$" + i)
     }
 
+    @switch def productAccessorName(j: Int): TermName = j match {
+      case 1  => nme._1
+      case 2  => nme._2
+      case 3  => nme._3
+      case 4  => nme._4
+      case 5  => nme._5
+      case 6  => nme._6
+      case 7  => nme._7
+      case 8  => nme._8
+      case 9  => nme._9
+      case 10 => nme._10
+      case 11 => nme._11
+      case 12 => nme._12
+      case 13 => nme._13
+      case 14 => nme._14
+      case 15 => nme._15
+      case 16 => nme._16
+      case 17 => nme._17
+      case 18 => nme._18
+      case 19 => nme._19
+      case 20 => nme._20
+      case 21 => nme._21
+      case 22 => nme._22
+      case _  => newTermName("_" + j)
+    }
+
     val ??? = encode("???")
 
     val wrapRefArray: NameType     = "wrapRefArray"
@@ -539,12 +570,14 @@ trait StdNames {
     val EmptyPackage: NameType         = "EmptyPackage"
     val EmptyPackageClass: NameType    = "EmptyPackageClass"
     val ExistentialTypeTree: NameType  = "ExistentialTypeTree"
-    val Expr: NameType                 = "Expr"
+    val Flag : NameType                = "Flag"
     val Ident: NameType                = "Ident"
     val Import: NameType               = "Import"
     val Literal: NameType              = "Literal"
     val LiteralAnnotArg: NameType      = "LiteralAnnotArg"
+    val Modifiers: NameType            = "Modifiers"
     val NestedAnnotArg: NameType       = "NestedAnnotArg"
+    val NoFlags: NameType              = "NoFlags"
     val NoPrefix: NameType             = "NoPrefix"
     val NoSymbol: NameType             = "NoSymbol"
     val Nothing: NameType              = "Nothing"
@@ -556,6 +589,7 @@ trait StdNames {
     val Select: NameType               = "Select"
     val StringContext: NameType        = "StringContext"
     val This: NameType                 = "This"
+    val ThisType: NameType             = "ThisType"
     val Tree : NameType                = "Tree"
     val Tuple2: NameType               = "Tuple2"
     val TYPE_ : NameType               = "TYPE"
@@ -570,6 +604,7 @@ trait StdNames {
     val apply: NameType                = "apply"
     val applyDynamic: NameType         = "applyDynamic"
     val applyDynamicNamed: NameType    = "applyDynamicNamed"
+    val applyImpl: NameType            = "applyImpl"
     val applyOrElse: NameType          = "applyOrElse"
     val args : NameType                = "args"
     val argv : NameType                = "argv"
@@ -582,12 +617,19 @@ trait StdNames {
     val array_length : NameType        = "array_length"
     val array_update : NameType        = "array_update"
     val arraycopy: NameType            = "arraycopy"
+    val asTermSymbol: NameType         = "asTermSymbol"
+    val asModuleSymbol: NameType       = "asModuleSymbol"
+    val asMethodSymbol: NameType       = "asMethodSymbol"
+    val asTypeSymbol: NameType         = "asTypeSymbol"
+    val asClassSymbol: NameType        = "asClassSymbol"
     val asInstanceOf_ : NameType       = "asInstanceOf"
     val asInstanceOf_Ob : NameType     = "$asInstanceOf"
     val asTypeConstructor: NameType    = "asTypeConstructor"
     val assert_ : NameType             = "assert"
     val assume_ : NameType             = "assume"
+    val basis : NameType               = "basis"
     val box: NameType                  = "box"
+    val build : NameType               = "build"
     val bytes: NameType                = "bytes"
     val canEqual_ : NameType           = "canEqual"
     val checkInitialized: NameType     = "checkInitialized"
@@ -596,6 +638,7 @@ trait StdNames {
     val concreteTypeTagToManifest: NameType = "concreteTypeTagToManifest"
     val conforms: NameType             = "conforms"
     val copy: NameType                 = "copy"
+    val currentMirror: NameType        = "currentMirror"
     val definitions: NameType          = "definitions"
     val delayedInit: NameType          = "delayedInit"
     val delayedInitArg: NameType       = "delayedInit$body"
@@ -617,6 +660,7 @@ trait StdNames {
     val filter: NameType               = "filter"
     val finalize_ : NameType           = if (forMSIL) "Finalize" else "finalize"
     val find_ : NameType               = "find"
+    val flagsFromBits : NameType       = "flagsFromBits"
     val flatMap: NameType              = "flatMap"
     val foreach: NameType              = "foreach"
     val genericArrayOps: NameType      = "genericArrayOps"
@@ -627,6 +671,8 @@ trait StdNames {
     val hash_ : NameType               = "hash"
     val head: NameType                 = "head"
     val identity: NameType             = "identity"
+    val implicitly: NameType           = "implicitly"
+    val in: NameType                   = "in"
     val info: NameType                 = "info"
     val inlinedEquals: NameType        = "inlinedEquals"
     val isArray: NameType              = "isArray"
@@ -650,7 +696,6 @@ trait StdNames {
     val materializeArrayTag: NameType  = "materializeArrayTag"
     val materializeClassTag: NameType  = "materializeClassTag"
     val materializeConcreteTypeTag: NameType = "materializeConcreteTypeTag"
-    val materializeErasureTag: NameType= "materializeErasureTag"
     val materializeTypeTag: NameType   = "materializeTypeTag"
     val mirror : NameType              = "mirror"
     val moduleClass : NameType         = "moduleClass"
@@ -679,8 +724,10 @@ trait StdNames {
     val readResolve: NameType          = "readResolve"
     val reflect : NameType             = "reflect"
     val reify : NameType               = "reify"
+    val rootMirror : NameType          = "rootMirror"
     val runOrElse: NameType            = "runOrElse"
     val runtime: NameType              = "runtime"
+    val runtimeMirror: NameType        = "runtimeMirror"
     val sameElements: NameType         = "sameElements"
     val scala_ : NameType              = "scala"
     val selectDynamic: NameType        = "selectDynamic"
@@ -693,13 +740,15 @@ trait StdNames {
     val setSymbol: NameType            = "setSymbol"
     val setType: NameType              = "setType"
     val setTypeSignature: NameType     = "setTypeSignature"
+    val splice: NameType               = "splice"
     val staticClass : NameType         = "staticClass"
     val staticModule : NameType        = "staticModule"
     val synchronized_ : NameType       = "synchronized"
     val tail: NameType                 = "tail"
     val `then` : NameType              = "then"
-    val thisModuleType: NameType       = "thisModuleType"
     val this_ : NameType               = "this"
+    val thisModuleType : NameType      = "thisModuleType"
+    val thisPrefix : NameType          = "thisPrefix"
     val throw_ : NameType              = "throw"
     val toArray: NameType              = "toArray"
     val toList: NameType               = "toList"
@@ -713,6 +762,7 @@ trait StdNames {
     val unapply: NameType              = "unapply"
     val unapplySeq: NameType           = "unapplySeq"
     val unbox: NameType                = "unbox"
+    val universe: NameType             = "universe"
     val update: NameType               = "update"
     val updateDynamic: NameType        = "updateDynamic"
     val value: NameType                = "value"
@@ -757,90 +807,10 @@ trait StdNames {
     // overlap with the above, but not for these two.
     val toCharacter: NameType = "toCharacter"
     val toInteger: NameType   = "toInteger"
-  }
-
-  object tpnme extends TypeNames with AbsTypeNames { }
-
-  /** For fully qualified type names.
-   */
-  object fulltpnme extends TypeNames {
-    val RuntimeNothing: NameType = "scala.runtime.Nothing$"
-    val RuntimeNull: NameType    = "scala.runtime.Null$"
-  }
-
-  /** Java binary names, like scala/runtime/Nothing$.
-   */
-  object binarynme {
-    def toBinary(name: Name) = name mapName (_.replace('.', '/'))
-
-    val RuntimeNothing = toBinary(fulltpnme.RuntimeNothing).toTypeName
-    val RuntimeNull    = toBinary(fulltpnme.RuntimeNull).toTypeName
-  }
-
-  val javanme = nme.javaKeywords
-
-  object nme extends TermNames with AbsTermNames {
-
-    /** Translate a String into a list of simple TypeNames and TermNames.
-     *  In all segments before the last, type/term is determined by whether
-     *  the following separator char is '.' or '#'.  In the last segment,
-     *  the argument "assumeTerm" determines it.  Examples:
-     *
-     *  package foo {
-     *    object Lorax { object Wog ; class Wog }
-     *    class Lorax  { object Zax ; class Zax }
-     *  }
-     *
-     *  f("foo.Lorax", true)   == List("foo": Term, "Lorax": Term) // object Lorax
-     *  f("foo.Lorax", false)  == List("foo": Term, "Lorax": Type) // class Lorax
-     *  f("Lorax.Wog", true)   == List("Lorax": Term, "Wog": Term) // object Wog
-     *  f("Lorax.Wog", false)  == List("Lorax": Term, "Wog": Type) // class Wog
-     *  f("Lorax#Zax", true)   == List("Lorax": Type, "Zax": Term) // object Zax
-     *  f("Lorax#Zax", false)  == List("Lorax": Type, "Zax": Type) // class Zax
-     *
-     *  Note that in actual scala syntax you cannot refer to object Zax without an
-     *  instance of Lorax, so Lorax#Zax could only mean the type.  One might think
-     *  that Lorax#Zax.type would work, but this is not accepted by the parser.
-     *  For the purposes of referencing that object, the syntax is allowed.
-     */
-    def segments(name: String, assumeTerm: Boolean): List[Name] = {
-      def mkName(str: String, term: Boolean): Name =
-        if (term) newTermName(str) else newTypeName(str)
-
-      name.indexWhere(ch => ch == '.' || ch == '#') match {
-        // it's the last segment: the parameter tells us whether type or term
-        case -1     => if (name == "") scala.Nil else scala.List(mkName(name, assumeTerm))
-        // otherwise, we can tell based on whether '#' or '.' is the following char.
-        case idx    =>
-          val (simple, div, rest) = (name take idx, name charAt idx, newTermName(name) drop (idx + 1))
-          mkName(simple, div == '.') :: segments(rest, assumeTerm)
-      }
-    }
-
-    def newBitmapName(bitmapPrefix: Name, n: Int) = bitmapPrefix append ("" + n)
-
-    val BITMAP_NORMAL: NameType              = BITMAP_PREFIX + ""           // initialization bitmap for public/protected lazy vals
-    val BITMAP_TRANSIENT: NameType           = BITMAP_PREFIX + "trans$"     // initialization bitmap for transient lazy vals
-    val BITMAP_CHECKINIT: NameType           = BITMAP_PREFIX + "init$"      // initialization bitmap for checkinit values
-    val BITMAP_CHECKINIT_TRANSIENT: NameType = BITMAP_PREFIX + "inittrans$" // initialization bitmap for transient checkinit values
 
     def newLazyValSlowComputeName(lzyValName: Name) = lzyValName append LAZY_SLOW_SUFFIX
 
-    def isModuleVarName(name: Name): Boolean =
-      stripAnonNumberSuffix(name) endsWith MODULE_VAR_SUFFIX
-
-    def moduleVarName(name: TermName): TermName =
-      newTermNameCached("" + name + MODULE_VAR_SUFFIX)
-
-    val ROOTPKG: TermName        = "_root_"
-    val EQEQ_LOCAL_VAR: TermName = "eqEqTemp$"
-
-    def getCause         = sn.GetCause
-    def getClass_        = sn.GetClass
-    def getComponentType = sn.GetComponentType
-    def getMethod_       = sn.GetMethod
-    def invoke_          = sn.Invoke
-
+    // ASCII names for operators
     val ADD      = encode("+")
     val AND      = encode("&")
     val ASR      = encode(">>")
@@ -906,9 +876,6 @@ trait StdNames {
     val testLessThan: NameType           = "testLessThan"
     val testNotEqual: NameType           = "testNotEqual"
 
-    val isBoxedNumberOrBoolean: NameType = "isBoxedNumberOrBoolean"
-    val isBoxedNumber: NameType = "isBoxedNumber"
-
     def toUnaryName(name: TermName): TermName = name match {
       case raw.MINUS => UNARY_-
       case raw.PLUS  => UNARY_+
@@ -958,6 +925,90 @@ trait StdNames {
       case _          => NO_NAME
     }
 
+    /** Translate a String into a list of simple TypeNames and TermNames.
+     *  In all segments before the last, type/term is determined by whether
+     *  the following separator char is '.' or '#'.  In the last segment,
+     *  the argument "assumeTerm" determines it.  Examples:
+     *
+     *  package foo {
+     *    object Lorax { object Wog ; class Wog }
+     *    class Lorax  { object Zax ; class Zax }
+     *  }
+     *
+     *  f("foo.Lorax", true)   == List("foo": Term, "Lorax": Term) // object Lorax
+     *  f("foo.Lorax", false)  == List("foo": Term, "Lorax": Type) // class Lorax
+     *  f("Lorax.Wog", true)   == List("Lorax": Term, "Wog": Term) // object Wog
+     *  f("Lorax.Wog", false)  == List("Lorax": Term, "Wog": Type) // class Wog
+     *  f("Lorax#Zax", true)   == List("Lorax": Type, "Zax": Term) // object Zax
+     *  f("Lorax#Zax", false)  == List("Lorax": Type, "Zax": Type) // class Zax
+     *
+     *  Note that in actual scala syntax you cannot refer to object Zax without an
+     *  instance of Lorax, so Lorax#Zax could only mean the type.  One might think
+     *  that Lorax#Zax.type would work, but this is not accepted by the parser.
+     *  For the purposes of referencing that object, the syntax is allowed.
+     */
+    def segments(name: String, assumeTerm: Boolean): List[Name] = {
+      def mkName(str: String, term: Boolean): Name =
+        if (term) newTermName(str) else newTypeName(str)
+
+      name.indexWhere(ch => ch == '.' || ch == '#') match {
+        // it's the last segment: the parameter tells us whether type or term
+        case -1     => if (name == "") scala.Nil else scala.List(mkName(name, assumeTerm))
+        // otherwise, we can tell based on whether '#' or '.' is the following char.
+        case idx    =>
+          val (simple, div, rest) = (name take idx, name charAt idx, newTermName(name) drop (idx + 1))
+          mkName(simple, div == '.') :: segments(rest, assumeTerm)
+      }
+    }
+
+    def newBitmapName(bitmapPrefix: Name, n: Int) = bitmapPrefix append ("" + n)
+
+    val BITMAP_NORMAL: NameType              = BITMAP_PREFIX + ""           // initialization bitmap for public/protected lazy vals
+    val BITMAP_TRANSIENT: NameType           = BITMAP_PREFIX + "trans$"     // initialization bitmap for transient lazy vals
+    val BITMAP_CHECKINIT: NameType           = BITMAP_PREFIX + "init$"      // initialization bitmap for checkinit values
+    val BITMAP_CHECKINIT_TRANSIENT: NameType = BITMAP_PREFIX + "inittrans$" // initialization bitmap for transient checkinit values
+  }
+
+  object tpnme extends TypeNames { }
+
+  /** For fully qualified type names.
+   */
+  object fulltpnme extends TypeNames {
+    val RuntimeNothing: NameType = "scala.runtime.Nothing$"
+    val RuntimeNull: NameType    = "scala.runtime.Null$"
+    val JavaLangEnum: NameType   = "java.lang.Enum"
+  }
+
+  /** Java binary names, like scala/runtime/Nothing$.
+   */
+  object binarynme {
+    def toBinary(name: Name) = name mapName (_.replace('.', '/'))
+
+    val RuntimeNothing = toBinary(fulltpnme.RuntimeNothing).toTypeName
+    val RuntimeNull    = toBinary(fulltpnme.RuntimeNull).toTypeName
+  }
+
+  val javanme = nme.javaKeywords
+
+  // [Eugene++ to Martin] had to move a lot of stuff from here to TermNames to satisfy the contract
+  // why do we even have stuff in object nme? cf. object tpnme
+  object nme extends TermNames {
+
+    def isModuleVarName(name: Name): Boolean =
+      stripAnonNumberSuffix(name) endsWith MODULE_VAR_SUFFIX
+
+    def moduleVarName(name: TermName): TermName =
+      newTermNameCached("" + name + MODULE_VAR_SUFFIX)
+
+    def getCause         = sn.GetCause
+    def getClass_        = sn.GetClass
+    def getComponentType = sn.GetComponentType
+    def getMethod_       = sn.GetMethod
+    def invoke_          = sn.Invoke
+
+    val isBoxedNumberOrBoolean: NameType = "isBoxedNumberOrBoolean"
+    val isBoxedNumber: NameType = "isBoxedNumber"
+
     val reflPolyCacheName: NameType   = "reflPoly$Cache"
     val reflClassCacheName: NameType  = "reflClass$Cache"
     val reflParamsCacheName: NameType = "reflParams$Cache"
@@ -972,32 +1023,6 @@ trait StdNames {
       reflMethodName
     )
     def isReflectionCacheName(name: Name) = reflectionCacheNames exists (name startsWith _)
-
-    @switch def productAccessorName(j: Int): TermName = j match {
-      case 1  => nme._1
-      case 2  => nme._2
-      case 3  => nme._3
-      case 4  => nme._4
-      case 5  => nme._5
-      case 6  => nme._6
-      case 7  => nme._7
-      case 8  => nme._8
-      case 9  => nme._9
-      case 10 => nme._10
-      case 11 => nme._11
-      case 12 => nme._12
-      case 13 => nme._13
-      case 14 => nme._14
-      case 15 => nme._15
-      case 16 => nme._16
-      case 17 => nme._17
-      case 18 => nme._18
-      case 19 => nme._19
-      case 20 => nme._20
-      case 21 => nme._21
-      case 22 => nme._22
-      case _  => newTermName("_" + j)
-    }
 
     @deprecated("Use a method in tpnme", "2.10.0") def dropSingletonName(name: Name): TypeName = tpnme.dropSingletonName(name)
     @deprecated("Use a method in tpnme", "2.10.0") def singletonName(name: Name): TypeName     = tpnme.singletonName(name)
@@ -1028,6 +1053,7 @@ trait StdNames {
     val ForName             : TermName
     val GetCause            : TermName
     val GetClass            : TermName
+    val GetClassLoader      : TermName
     val GetComponentType    : TermName
     val GetMethod           : TermName
     val Invoke              : TermName
@@ -1117,6 +1143,7 @@ trait StdNames {
     final val ForName: TermName          = newTermName("forName")
     final val GetCause: TermName         = newTermName("getCause")
     final val GetClass: TermName         = newTermName("getClass")
+    final val GetClassLoader: TermName   = newTermName("getClassLoader")
     final val GetComponentType: TermName = newTermName("getComponentType")
     final val GetMethod: TermName        = newTermName("getMethod")
     final val Invoke: TermName           = newTermName("invoke")
@@ -1155,6 +1182,7 @@ trait StdNames {
     final val ForName: TermName          = newTermName("GetType")
     final val GetCause: TermName         = newTermName("InnerException") /* System.Reflection.TargetInvocationException.InnerException */
     final val GetClass: TermName         = newTermName("GetType")
+    final lazy val GetClassLoader: TermName   = throw new UnsupportedOperationException("Scala reflection is not supported on this platform");
     final val GetComponentType: TermName = newTermName("GetElementType")
     final val GetMethod: TermName        = newTermName("GetMethod")
     final val Invoke: TermName           = newTermName("Invoke")

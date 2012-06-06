@@ -8,14 +8,16 @@ trait Aliases {
   type Type = mirror.Type
   type Name = mirror.Name
   type Tree = mirror.Tree
-  type Position = mirror.Position
+  // type Position = mirror.Position
   type Scope = mirror.Scope
   type Modifiers = mirror.Modifiers
   type Expr[+T] = mirror.Expr[T]
   type TypeTag[T] = mirror.TypeTag[T]
+  type ConcreteTypeTag[T] = mirror.ConcreteTypeTag[T]
 
   /** Creator/extractor objects for Expr and TypeTag values */
   val TypeTag = mirror.TypeTag
+  val ConcreteTypeTag = mirror.ConcreteTypeTag
   val Expr = mirror.Expr
 
   /** incantations for summoning tags */

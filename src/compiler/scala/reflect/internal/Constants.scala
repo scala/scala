@@ -30,7 +30,7 @@ trait Constants extends api.Constants {
   // For supporting java enumerations inside java annotations (see ClassfileParser)
   final val EnumTag    = 13
 
-  case class Constant(value: Any) extends AbsConstant {
+  case class Constant(value: Any) extends ConstantApi {
     val tag: Int = value match {
       case null         => NullTag
       case x: Unit      => UnitTag
@@ -235,4 +235,6 @@ trait Constants extends api.Constants {
   }
 
   object Constant extends ConstantExtractor
+
+  implicit val ConstantTag = ClassTag[Constant](classOf[Constant])
 }

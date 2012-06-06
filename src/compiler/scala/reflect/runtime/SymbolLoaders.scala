@@ -7,12 +7,6 @@ import collection.mutable
 
 trait SymbolLoaders { self: SymbolTable =>
 
-  /** The lazy type for root.
-   */
-  override val rootLoader = new LazyType {
-    override def complete(sym: Symbol) = sym setInfo new LazyPackageType
-  }
-
   /** The standard completer for top-level classes
    *  @param clazz   The top-level class
    *  @param module  The companion object of `clazz`
@@ -35,7 +29,9 @@ trait SymbolLoaders { self: SymbolTable =>
       assert(sym == clazz || sym == module || sym == module.moduleClass)
 //      try {
       atPhaseNotLaterThan(picklerPhase) {
-        unpickleClass(clazz, module, javaClass(clazz.javaClassName))
+        val loadingMirror = mirrorThatLoaded(sym)
+        val javaClass = loadingMirror.javaClass(clazz.javaClassName)
+        loadingMirror.unpickleClass(clazz, module, javaClass)
 //      } catch {
 //        case ex: ClassNotFoundException => makePackage()
 //        case ex: NoClassDefFoundError => makePackage()
@@ -65,8 +61,14 @@ trait SymbolLoaders { self: SymbolTable =>
     assert(!(name.toString endsWith "[]"), name)
     val clazz = owner.newClass(name)
     val module = owner.newModule(name.toTermName)
-    owner.info.decls enter clazz
-    owner.info.decls enter module
+    // [Eugene++] am I doing this right?
+    // todo: drop condition, see what goes wrong
+    // [Eugene++ to Martin] test/files/run/t5256g and test/files/run/t5256h will crash
+    // reflection meeting verdict: need to enter the symbols into the first symbol in the owner chain that has a non-empty scope
+    if (owner.info.decls != EmptyScope) {
+      owner.info.decls enter clazz
+      owner.info.decls enter module
+    }
     initClassModule(clazz, module, completer(clazz, module))
     (clazz, module)
   }
@@ -92,7 +94,7 @@ trait SymbolLoaders { self: SymbolTable =>
   /** Is the given name valid for a top-level class? We exclude names with embedded $-signs, because
    *  these are nested classes or anonymous classes,
    */
-  def invalidClassName(name: Name) = {
+  def isInvalidClassName(name: Name) = {
     val dp = name pos '$'
     0 < dp && dp < (name.length - 1)
   }
@@ -104,20 +106,35 @@ trait SymbolLoaders { self: SymbolTable =>
       val e = super.lookupEntry(name)
       if (e != null)
         e
-      else if (invalidClassName(name) || (negatives contains name))
+      else if (isInvalidClassName(name) || (negatives contains name))
         null
       else {
         val path =
           if (pkgClass.isEmptyPackageClass) name.toString
           else pkgClass.fullName + "." + name
-        if (isJavaClass(path)) {
-          val (clazz, module) = createClassModule(pkgClass, name.toTypeName, new TopClassCompleter(_, _))
-          debugInfo("created "+module+"/"+module.moduleClass+" in "+pkgClass)
-          lookupEntry(name)
-        } else {
-          debugInfo("*** not found : "+path)
-          negatives += name
-          null
+        val currentMirror = mirrorThatLoaded(pkgClass)
+        currentMirror.tryJavaClass(path) match {
+          case Some(cls) =>
+            val loadingMirror = currentMirror.mirrorDefining(cls)
+            val (clazz, module) =
+              if (loadingMirror eq currentMirror) {
+                createClassModule(pkgClass, name.toTypeName, new TopClassCompleter(_, _))
+              } else {
+                val origOwner = loadingMirror.packageNameToScala(pkgClass.fullName)
+                val clazz = origOwner.info decl name.toTypeName
+                val module = origOwner.info decl name.toTermName
+                assert(clazz != NoSymbol)
+                assert(module != NoSymbol)
+                pkgClass.info.decls enter clazz
+                pkgClass.info.decls enter module
+                (clazz, module)
+              }
+            debugInfo(s"created $module/${module.moduleClass} in $pkgClass")
+            lookupEntry(name)
+          case none =>
+            debugInfo("*** not found : "+path)
+            negatives += name
+            null
         }
       }
     }

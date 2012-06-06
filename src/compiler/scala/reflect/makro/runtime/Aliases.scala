@@ -9,13 +9,15 @@ trait Aliases {
   override type Type = mirror.Type
   override type Name = mirror.Name
   override type Tree = mirror.Tree
-  override type Position = mirror.Position
+  // override type Position = mirror.Position
   override type Scope = mirror.Scope
   override type Modifiers = mirror.Modifiers
   override type Expr[+T] = mirror.Expr[T]
   override type TypeTag[T] = mirror.TypeTag[T]
+  override type ConcreteTypeTag[T] = mirror.ConcreteTypeTag[T]
 
   /** Creator/extractor objects for Expr and TypeTag values */
   override val TypeTag = mirror.TypeTag
+  override val ConcreteTypeTag = mirror.ConcreteTypeTag
   override val Expr = mirror.Expr
 }

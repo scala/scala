@@ -169,7 +169,7 @@ abstract class NodePrinters {
       }
     }
 
-    def treePrefix(tree: Tree) = showPosition(tree) + tree.printingPrefix
+    def treePrefix(tree: Tree) = showPosition(tree) + tree.productPrefix
     def printMultiline(tree: Tree)(body: => Unit) {
       printMultiline(treePrefix(tree), showAttributes(tree))(body)
     }

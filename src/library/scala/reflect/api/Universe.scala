@@ -3,25 +3,22 @@ package api
 
 import language.experimental.macros
 
-abstract class Universe extends Symbols
-                           with FreeVars
+abstract class Universe extends base.Universe
+                           with Symbols
                            with Types
-                           with Constants
-                           with Scopes
+                           with FlagSets
                            with Names
                            with Trees
-                           with AnnotationInfos
-                           with Positions
-                           with Exprs
-                           with StandardDefinitions
-                           with TypeTags
                            with TreePrinters
+                           with Constants
+                           with Positions
+                           with Mirrors
+                           with StandardDefinitions
                            with StandardNames
-                           with ClassLoaders
-                           with TreeBuildUtil
-                           with ToolBoxes
-                           with FrontEnds
-                           with Importers {
+                           with Importers
+                           with Exprs
+                           with AnnotationInfos
+{
 
   /** Given an expression, generate a tree that when compiled and executed produces the original tree.
    *  The produced tree will be bound to the Universe it was called from.
@@ -36,17 +33,17 @@ abstract class Universe extends Symbols
    *
    *  {{{
    *    <[
-   *      val $mr: scala.reflect.api.Universe = <reference to the Universe that calls the reify>
-   *      $mr.Expr[Int]($mr.Apply($mr.Select($mr.Ident($mr.newFreeVar("x", <Int>, x), "+"), List($mr.Literal($mr.Constant(1))))))
+   *      val $u: u.type = u // where u is a reference to the Universe that calls the reify
+   *      $u.Expr[Int]($u.Apply($u.Select($u.Ident($u.newFreeVar("x", <Int>, x), "+"), List($u.Literal($u.Constant(1))))))
    *    ]>
    *  }}}
    *
-   *  Reification performs expression splicing (when processing Expr.eval and Expr.value)
+   *  Reification performs expression splicing (when processing Expr.splice)
    *  and type splicing (for every type T that has a TypeTag[T] implicit in scope):
    *
    *  {{{
-   *    val two = mirror.reify(2)                       // Literal(Constant(2))
-   *    val four = mirror.reify(two.eval + two.eval)    // Apply(Select(two.tree, newTermName("$plus")), List(two.tree))
+   *    val two = mirror.reify(2)                         // Literal(Constant(2))
+   *    val four = mirror.reify(two.splice + two.splice)  // Apply(Select(two.tree, newTermName("$plus")), List(two.tree))
    *
    *    def macroImpl[T](c: Context) = {
    *      ...
