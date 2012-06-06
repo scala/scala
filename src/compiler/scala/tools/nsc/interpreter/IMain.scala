@@ -25,6 +25,7 @@ import IMain._
 import java.util.concurrent.Future
 import typechecker.Analyzer
 import language.implicitConversions
+import scala.tools.reflect.StdTags._
 
 /** directory to save .class files to */
 private class ReplVirtualDirectory(out: JPrintWriter) extends VirtualDirectory("(memory)", None) {
@@ -717,7 +718,7 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
 
       val unwrapped = unwrap(t)
       withLastExceptionLock[String]({
-        directBind[Throwable]("lastException", unwrapped)
+        directBind[Throwable]("lastException", unwrapped)(classTag[Throwable])
         util.stackTraceString(unwrapped)
       }, util.stackTraceString(unwrapped))
     }
