@@ -1120,9 +1120,9 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
     findName(termname) orElse getModuleIfDefined(termname)
   }
   // [Eugene to Paul] possibly you could make use of TypeTags here
-  def types[T: ClassTag] : Symbol = types(classTag[T].erasure.getName)
-  def terms[T: ClassTag] : Symbol = terms(classTag[T].erasure.getName)
-  def apply[T: ClassTag] : Symbol = apply(classTag[T].erasure.getName)
+  def types[T: ClassTag] : Symbol = types(classTag[T].runtimeClass.getName)
+  def terms[T: ClassTag] : Symbol = terms(classTag[T].runtimeClass.getName)
+  def apply[T: ClassTag] : Symbol = apply(classTag[T].runtimeClass.getName)
 
   def classSymbols  = allDefSymbols collect { case x: ClassSymbol => x }
   def methodSymbols = allDefSymbols collect { case x: MethodSymbol => x }

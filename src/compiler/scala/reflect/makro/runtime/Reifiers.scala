@@ -20,8 +20,8 @@ trait Reifiers {
   def reifyType(prefix: Tree, tpe: Type, dontSpliceAtTopLevel: Boolean = false, concrete: Boolean = false): Tree =
     scala.reflect.reify.`package`.reifyType(mirror)(callsiteTyper, prefix, tpe, dontSpliceAtTopLevel, concrete)
 
-  def reifyErasure(tpe: Type, concrete: Boolean = true): Tree =
-    scala.reflect.reify.`package`.reifyErasure(mirror)(callsiteTyper, tpe, concrete)
+  def reifyRuntimeClass(tpe: Type, concrete: Boolean = true): Tree =
+    scala.reflect.reify.`package`.reifyRuntimeClass(mirror)(callsiteTyper, tpe, concrete)
 
   def unreifyTree(tree: Tree): Tree =
     Select(tree, definitions.ExprSplice)

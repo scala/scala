@@ -184,7 +184,7 @@ class MutableSettings(val errorFn: String => Unit)
   * and `boot.class.path`.  These resources should contain the application
   * and boot classpaths in the same form as would be passed on the command line.*/
   def embeddedDefaults[T: ClassTag]: Unit =
-    embeddedDefaults(classTag[T].erasure.getClassLoader)
+    embeddedDefaults(classTag[T].runtimeClass.getClassLoader)
 
   /** Initializes these settings for embedded use by a class from the given class loader.
   * The class loader for `T` should provide resources `app.class.path`

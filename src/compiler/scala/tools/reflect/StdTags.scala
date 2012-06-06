@@ -29,7 +29,7 @@ object StdTags {
       ru.runtimeMirror(ourClassloader),
       new TypeCreator {
         def apply[U <: BaseUniverse with Singleton](m: MirrorOf[U]): U # Type =
-          m.staticClass(classTag[T].erasure.getName).asTypeConstructor.asInstanceOf[U # Type]
+          m.staticClass(classTag[T].runtimeClass.getName).asTypeConstructor.asInstanceOf[U # Type]
       })
   lazy val tagOfInt = ru.TypeTag.Int
   lazy val tagOfFile = tagOfStaticClass[scala.tools.nsc.io.File]

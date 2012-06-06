@@ -32,7 +32,7 @@ object Exception {
 
   def mkCatcher[Ex <: Throwable: ClassTag, T](isDef: Ex => Boolean, f: Ex => T) = new Catcher[T] {
     private def downcast(x: Throwable): Option[Ex] =
-      if (classTag[Ex].erasure.isAssignableFrom(x.getClass)) Some(x.asInstanceOf[Ex])
+      if (classTag[Ex].runtimeClass.isAssignableFrom(x.getClass)) Some(x.asInstanceOf[Ex])
       else None
 
     def isDefinedAt(x: Throwable) = downcast(x) exists isDef
