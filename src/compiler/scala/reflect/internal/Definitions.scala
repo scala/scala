@@ -293,8 +293,6 @@ trait Definitions extends reflect.api.StandardDefinitions {
       anyval
     }).asInstanceOf[ClassSymbol]
 
-      lazy val AnyVal_getClass = enterNewMethod(AnyValClass, nme.getClass_, Nil, getClassReturnType(AnyValClass.tpe))
-
     // bottom types
     lazy val RuntimeNothingClass  = getClass(fulltpnme.RuntimeNothing)
     lazy val RuntimeNullClass     = getClass(fulltpnme.RuntimeNull)

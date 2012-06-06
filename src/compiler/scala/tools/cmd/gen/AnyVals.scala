@@ -177,7 +177,7 @@ trait AnyValReps {
       case (res, lines) =>
         val xs = lines map {
           case ""   => ""
-          case s    => interpolate(s) + " = " + stub
+          case s    => interpolate(s)
         }
         res ++ xs
     }
@@ -205,7 +205,7 @@ trait AnyValReps {
     def classLines: List[String]
     def objectLines: List[String]
     def commonClassLines = List(
-      "override def getClass(): Class[@name@]"
+      "override def getClass(): Class[@name@] = null"
     )
 
     def lcname = name.toLowerCase
@@ -248,7 +248,7 @@ trait AnyValReps {
     def objectDoc = ""
     def mkImports = ""
     
-    def mkClass       = assemble("final class " + name + " private extends AnyVal", classLines)
+    def mkClass       = assemble("final abstract class " + name + " private extends AnyVal", classLines)
     def mkObject      = assemble("object " + name + " extends AnyValCompanion", objectLines)
     def make()    = List[String](
       headerTemplate,
@@ -281,6 +281,8 @@ trait AnyValTemplates {
 %s
 package scala
 
+import language.implicitConversions
+
 """.trim.format(timestampString) + "\n\n")
 
   def classDocTemplate = ("""
@@ -294,7 +296,6 @@ package scala
 """.trim + "\n")
 
   def timestampString = "// DO NOT EDIT, CHANGES WILL BE LOST.\n"
-  def stub            = """sys.error("stub")"""
 
   def allCompanions = """
 /** Transform a value type into a boxed reference type.
@@ -373,7 +374,7 @@ class AnyVals extends AnyValReps with AnyValTemplates {
  *
  * @return the negated expression
  */
-def unary_! : Boolean = sys.error("stub")
+def unary_! : Boolean
 
 /**
   * Compares two Boolean expressions and returns `true` if they evaluate to the same value.
@@ -382,7 +383,7 @@ def unary_! : Boolean = sys.error("stub")
   *  - `a` and `b` are `true` or
   *  - `a` and `b` are `false`.
   */
-def ==(x: Boolean): Boolean = sys.error("stub")
+def ==(x: Boolean): Boolean
 
 /**
   * Compares two Boolean expressions and returns `true` if they evaluate to a different value.
@@ -391,7 +392,7 @@ def ==(x: Boolean): Boolean = sys.error("stub")
   *  - `a` is `true` and `b` is `false` or
   *  - `a` is `false` and `b` is `true`.
   */
-def !=(x: Boolean): Boolean = sys.error("stub")
+def !=(x: Boolean): Boolean
 
 /**
   * Compares two Boolean expressions and returns `true` if one or both of them evaluate to true.
@@ -405,7 +406,7 @@ def !=(x: Boolean): Boolean = sys.error("stub")
   *       behaves as if it was declared as `def ||(x: => Boolean): Boolean`.
   *       If `a` evaluates to `true`, `true` is returned without evaluating `b`.
   */
-def ||(x: Boolean): Boolean = sys.error("stub")
+def ||(x: Boolean): Boolean
 
 /**
   * Compares two Boolean expressions and returns `true` if both of them evaluate to true.
@@ -417,11 +418,11 @@ def ||(x: Boolean): Boolean = sys.error("stub")
   *       behaves as if it was declared as `def &&(x: => Boolean): Boolean`.
   *       If `a` evaluates to `false`, `false` is returned without evaluating `b`.
   */
-def &&(x: Boolean): Boolean = sys.error("stub")
+def &&(x: Boolean): Boolean
 
 // Compiler won't build with these seemingly more accurate signatures
-// def ||(x: => Boolean): Boolean = sys.error("stub")
-// def &&(x: => Boolean): Boolean = sys.error("stub")
+// def ||(x: => Boolean): Boolean
+// def &&(x: => Boolean): Boolean
 
 /**
   * Compares two Boolean expressions and returns `true` if one or both of them evaluate to true.
@@ -433,7 +434,7 @@ def &&(x: Boolean): Boolean = sys.error("stub")
   *
   * @note This method evaluates both `a` and `b`, even if the result is already determined after evaluating `a`.
   */
-def |(x: Boolean): Boolean  = sys.error("stub")
+def |(x: Boolean): Boolean
 
 /**
   * Compares two Boolean expressions and returns `true` if both of them evaluate to true.
@@ -443,7 +444,7 @@ def |(x: Boolean): Boolean  = sys.error("stub")
   *
   * @note This method evaluates both `a` and `b`, even if the result is already determined after evaluating `a`.
   */
-def &(x: Boolean): Boolean  = sys.error("stub")
+def &(x: Boolean): Boolean
 
 /**
   * Compares two Boolean expressions and returns `true` if they evaluate to a different value.
@@ -452,9 +453,9 @@ def &(x: Boolean): Boolean  = sys.error("stub")
   *  - `a` is `true` and `b` is `false` or
   *  - `a` is `false` and `b` is `true`.
   */
-def ^(x: Boolean): Boolean  = sys.error("stub")
+def ^(x: Boolean): Boolean
 
-override def getClass(): Class[Boolean] = sys.error("stub")
+override def getClass(): Class[Boolean] = null
     """.trim.lines.toList
 
     def objectLines = interpolate(allCompanions + "\n" + nonUnitCompanions).lines.toList
@@ -468,7 +469,7 @@ override def getClass(): Class[Boolean] = sys.error("stub")
  */
 """
     def classLines  = List(
-      """override def getClass(): Class[Unit] = sys.error("stub")"""
+      """override def getClass(): Class[Unit] = null"""
     )
     def objectLines = interpolate(allCompanions).lines.toList
 
