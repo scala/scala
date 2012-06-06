@@ -26,7 +26,7 @@ import scala.collection.parallel.CHECK_RATE
 import scala.collection.mutable.ArraySeq
 import scala.collection.mutable.Builder
 import scala.collection.GenTraversableOnce
-
+import scala.reflect.ArrayTag
 
 
 

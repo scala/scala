@@ -12,6 +12,7 @@ import io.{ AbstractFile, Path, PlainFile, VirtualDirectory }
 import scala.tools.util.StringOps
 import scala.collection.mutable.ListBuffer
 import scala.io.Source
+import scala.reflect.{ ClassTag, classTag }
 
 /** A mutable Settings object.
  */

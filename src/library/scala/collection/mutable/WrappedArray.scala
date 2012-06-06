@@ -11,7 +11,7 @@
 package scala.collection
 package mutable
 
-import scala.reflect.ArrayTag
+import scala.reflect.{ArrayTag, ClassTag}
 import scala.runtime.ScalaRunTime._
 import scala.collection.generic._
 import scala.collection.parallel.mutable.ParArray

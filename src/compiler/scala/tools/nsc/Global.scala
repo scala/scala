@@ -30,6 +30,7 @@ import backend.opt.{ Inliners, InlineExceptionHandlers, ClosureElimination, Dead
 import backend.icode.analysis._
 import language.postfixOps
 import reflect.internal.StdAttachments
+import scala.reflect.ClassTag
 
 class Global(var currentSettings: Settings, var reporter: Reporter)
     extends SymbolTable

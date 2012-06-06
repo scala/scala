@@ -12,6 +12,7 @@ import scala.collection.{ Seq, IndexedSeq, TraversableView, AbstractIterator }
 import scala.collection.mutable.WrappedArray
 import scala.collection.immutable.{ StringLike, NumericRange, List, Stream, Nil, :: }
 import scala.collection.generic.{ Sorted }
+import scala.reflect.{ ArrayTag, ClassTag, arrayTag, classTag }
 import scala.util.control.ControlThrowable
 import scala.xml.{ Node, MetaData }
 

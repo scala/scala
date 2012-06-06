@@ -15,6 +15,7 @@ import scala.reflect.runtime.ReflectionUtils.unwrapHandler
 import ScalaClassLoader._
 import scala.util.control.Exception.{ catching }
 import language.implicitConversions
+import scala.reflect.{ ClassTag, classTag }
 
 trait HasClassPath {
   def classPathURLs: Seq[URL]

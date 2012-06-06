@@ -26,6 +26,7 @@ import java.util.concurrent.Future
 import typechecker.Analyzer
 import language.implicitConversions
 import scala.reflect.runtime.{ universe => ru }
+import scala.reflect.{ ClassTag, classTag }
 import scala.tools.reflect.StdTags._
 
 /** directory to save .class files to */

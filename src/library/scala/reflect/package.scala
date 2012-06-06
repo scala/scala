@@ -21,6 +21,11 @@ package object reflect extends reflect_compat {
 
   // ArrayTag trait is defined outside the basis
   // ClassTag class is defined outside the basis
+  def arrayTag[T](implicit atag: ArrayTag[T]) = atag
+  def classTag[T](implicit ctag: ClassTag[T]) = ctag
+  // typeTag incantation is defined inside the basis
+  // concreteTypeTag incantation is defined inside the basis
+
   type TypeTag[T]          = scala.reflect.basis.TypeTag[T]
   type ConcreteTypeTag[T]  = scala.reflect.basis.ConcreteTypeTag[T]
 

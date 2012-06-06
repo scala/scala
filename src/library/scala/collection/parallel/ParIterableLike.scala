@@ -24,6 +24,7 @@ import scala.collection.GenIterable
 import scala.collection.GenTraversableOnce
 import scala.collection.GenTraversable
 import immutable.HashMapCombiner
+import reflect.{ArrayTag, ClassTag}
 
 import java.util.concurrent.atomic.AtomicBoolean
 

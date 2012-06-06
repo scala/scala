@@ -7,6 +7,7 @@
 package scala.tools.nsc
 package util
 
+import reflect.ClassTag
 import reflect.base.Attachments
 import reflect.api.PositionApi
 

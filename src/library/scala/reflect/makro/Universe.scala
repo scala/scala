@@ -88,7 +88,7 @@ abstract class Universe extends scala.reflect.api.Universe {
     def addAttachment(attachment: Any): this.type
 
     /** ... */
-    def removeAttachment[T: ClassTag]: this.type
+    def removeAttachment[T: scala.reflect.ClassTag]: this.type
   }
 
   override type SymTree >: Null <: Tree with SymTreeContextApi

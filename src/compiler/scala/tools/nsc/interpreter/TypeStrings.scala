@@ -11,6 +11,7 @@ import r.TypeVariable
 import scala.reflect.NameTransformer
 import NameTransformer._
 import scala.reflect.runtime.{universe => ru}
+import scala.reflect.{ClassTag, classTag}
 import typechecker.DestructureTypes
 import scala.tools.util.StringOps.ojoin
 
