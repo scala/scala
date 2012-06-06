@@ -179,6 +179,8 @@ extends collection.mutable.AbstractBuffer[T]
     }
   }
 
+  override def clone(): UnrolledBuffer[T] = new UnrolledBuffer[T] ++= this
+  
   override def stringPrefix = "UnrolledBuffer"
 }
 
