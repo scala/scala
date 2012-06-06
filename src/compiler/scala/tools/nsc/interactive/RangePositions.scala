@@ -189,7 +189,7 @@ self: scala.tools.nsc.Global =>
   override def validatePositions(tree: Tree) {
     def reportTree(prefix : String, tree : Tree) {
       val source = if (tree.pos.isDefined) tree.pos.source else ""
-      inform("== "+prefix+" tree ["+tree.id+"] of type "+tree.printingPrefix+" at "+tree.pos.show+source)
+      inform("== "+prefix+" tree ["+tree.id+"] of type "+tree.productPrefix+" at "+tree.pos.show+source)
       inform("")
       inform(treeStatus(tree))
       inform("")

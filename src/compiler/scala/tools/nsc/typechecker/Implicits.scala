@@ -1133,7 +1133,6 @@ trait Implicits {
     private def TagSymbols =  TagMaterializers.keySet
     private val TagMaterializers = Map[Symbol, Symbol](
       ArrayTagClass        -> MacroInternal_materializeArrayTag,
-      ErasureTagClass      -> MacroInternal_materializeErasureTag,
       ClassTagClass        -> MacroInternal_materializeClassTag,
       TypeTagClass         -> MacroInternal_materializeTypeTag,
       ConcreteTypeTagClass -> MacroInternal_materializeConcreteTypeTag
@@ -1166,9 +1165,9 @@ trait Implicits {
       }
 
       val prefix = (
-        // ClassTags only exist for scala.reflect.mirror, so their materializer
+        // ClassTags and ArrayTags only exist for scala.reflect, so their materializer
         // doesn't care about prefixes
-        if ((tagClass eq ArrayTagClass) || (tagClass eq ErasureTagClass) || (tagClass eq ClassTagClass)) ReflectMirrorPrefix
+        if ((tagClass eq ArrayTagClass) || (tagClass eq ClassTagClass)) gen.mkBasisUniverseRef
         else pre match {
           // [Eugene to Martin] this is the crux of the interaction between
           // implicits and reifiers here we need to turn a (supposedly
@@ -1295,13 +1294,33 @@ trait Implicits {
       }
 
       val tagInScope =
-        if (full) context.withMacrosDisabled(resolveTypeTag(ReflectMirrorPrefix.tpe, tp, pos, true))
-        else context.withMacrosDisabled(resolveArrayTag(tp, pos))
+        if (full) resolveTypeTag(NoType, tp, pos, concrete = true)
+        else resolveArrayTag(tp, pos)
       if (tagInScope.isEmpty) mot(tp, Nil, Nil)
       else {
+        if (full) {
+          if (ReflectRuntimeUniverse == NoSymbol) {
+            // todo. write a test for this
+            context.error(pos, s"""
+              |to create a manifest here, it is necessary to interoperate with the type tag `$tagInScope` in scope.
+              |however typetag -> manifest conversion requires Scala reflection, which is not present on the classpath.
+              |to proceed put scala-reflect.jar on your compilation classpath and recompile.""".trim.stripMargin)
+            return SearchFailure
+          }
+          if (resolveErasureTag(tp, pos, concrete = true) == EmptyTree) {
+            context.error(pos, s"""
+              |to create a manifest here, it is necessary to interoperate with the type tag `$tagInScope` in scope.
+              |however typetag -> manifest conversion requires a class tag for the corresponding type to be present.
+              |to proceed add a class tag to the type `$tp` (e.g. by introducing a context bound) and recompile.""".trim.stripMargin)
+            return SearchFailure
+          }
+        }
+
         val interop =
-          if (full) gen.mkMethodCall(ReflectPackage, nme.concreteTypeTagToManifest, List(tp), List(tagInScope))
-          else gen.mkMethodCall(ReflectPackage, nme.arrayTagToClassManifest, List(tp), List(tagInScope))
+          if (full) {
+            val cm = typed(Ident(ReflectRuntimeCurrentMirror))
+            gen.mkMethodCall(ReflectRuntimeUniverse, nme.concreteTypeTagToManifest, List(tp), List(cm, tagInScope))
+          } else gen.mkMethodCall(ReflectRuntimeUniverse, nme.arrayTagToClassManifest, List(tp), List(tagInScope))
         wrapResult(interop)
       }
     }

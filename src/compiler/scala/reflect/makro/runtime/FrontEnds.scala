@@ -1,10 +1,12 @@
 package scala.reflect.makro
 package runtime
 
-trait FrontEnds {
+trait FrontEnds extends scala.tools.reflect.FrontEnds {
   self: Context =>
 
   import mirror._
+
+  override type Position = mirror.Position
 
   def frontEnd: FrontEnd = wrapReporter(mirror.reporter)
 

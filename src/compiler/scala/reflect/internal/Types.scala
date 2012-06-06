@@ -260,7 +260,7 @@ trait Types extends api.Types { self: SymbolTable =>
     }
   }
 
-  abstract class AbsTypeImpl extends AbsType { this: Type =>
+  abstract class TypeApiImpl extends TypeApi { this: Type =>
     def declaration(name: Name): Symbol = decl(name)
     def nonPrivateDeclaration(name: Name): Symbol = nonPrivateDecl(name)
     def declarations = decls
@@ -268,7 +268,7 @@ trait Types extends api.Types { self: SymbolTable =>
     def erasure = this match {
       case ConstantType(value) => widen.erasure // [Eugene to Martin] constant types are unaffected by erasure. weird.
       case _ =>
-        var result = transformedType(this)
+        var result: Type = transformedType(this)
         result = result.normalize match { // necessary to deal with erasures of HK types, typeConstructor won't work
           case PolyType(undets, underlying) => existentialAbstraction(undets, underlying) // we don't want undets in the result
           case _ => result
@@ -282,6 +282,7 @@ trait Types extends api.Types { self: SymbolTable =>
         })
         result
     }
+    def substituteSymbols(from: List[Symbol], to: List[Symbol]): Type = substSym(from, to)
     def substituteTypes(from: List[Symbol], to: List[Type]): Type = subst(from, to)
 
     // [Eugene] to be discussed and refactored
@@ -315,7 +316,7 @@ trait Types extends api.Types { self: SymbolTable =>
   }
 
   /** The base class for all types */
-  abstract class Type extends AbsTypeImpl with Annotatable[Type] {
+  abstract class Type extends TypeApiImpl with Annotatable[Type] {
     /** Types for which asSeenFrom always is the identity, no matter what
      *  prefix or owner.
      */
@@ -1243,7 +1244,7 @@ trait Types extends api.Types { self: SymbolTable =>
    *       type is created: a MethodType with parameters typed as
    *       BoundedWildcardTypes.
    */
-  case class BoundedWildcardType(override val bounds: TypeBounds) extends Type {
+  case class BoundedWildcardType(override val bounds: TypeBounds) extends Type with BoundedWildcardTypeApi {
     override def isWildcard = true
     override def safeToString: String = "?" + bounds
     override def kind = "BoundedWildcardType"
@@ -1271,7 +1272,7 @@ trait Types extends api.Types { self: SymbolTable =>
 
   /** A class for this-types of the form <sym>.this.type
    */
-  abstract case class ThisType(sym: Symbol) extends SingletonType {
+  abstract case class ThisType(sym: Symbol) extends SingletonType with ThisTypeApi {
     assert(sym.isClass)
     //assert(sym.isClass && !sym.isModuleClass || sym.isRoot, sym)
     override def isTrivial: Boolean = sym.isPackageClass
@@ -1306,7 +1307,7 @@ trait Types extends api.Types { self: SymbolTable =>
   /** A class for singleton types of the form `<prefix>.<sym.name>.type`.
    *  Cannot be created directly; one should always use `singleType` for creation.
    */
-  abstract case class SingleType(pre: Type, sym: Symbol) extends SingletonType {
+  abstract case class SingleType(pre: Type, sym: Symbol) extends SingletonType with SingleTypeApi {
     override val isTrivial: Boolean = pre.isTrivial
     override def isGround = sym.isPackageClass || pre.isGround
 
@@ -1366,13 +1367,13 @@ trait Types extends api.Types { self: SymbolTable =>
       tpe.underlyingPeriod = currentPeriod
       if (!isValid(period)) {
         // [Eugene to Paul] needs review
-        tpe.underlyingCache = if (tpe.sym == NoSymbol) ThisType(RootClass) else tpe.pre.memberType(tpe.sym).resultType;
+        tpe.underlyingCache = if (tpe.sym == NoSymbol) ThisType(rootMirror.RootClass) else tpe.pre.memberType(tpe.sym).resultType;
         assert(tpe.underlyingCache ne tpe, tpe)
       }
     }
   }
 
-  abstract case class SuperType(thistpe: Type, supertpe: Type) extends SingletonType {
+  abstract case class SuperType(thistpe: Type, supertpe: Type) extends SingletonType with SuperTypeApi {
     override val isTrivial: Boolean = thistpe.isTrivial && supertpe.isTrivial
     override def isNotNull = true;
     override def typeSymbol = thistpe.typeSymbol
@@ -1394,7 +1395,7 @@ trait Types extends api.Types { self: SymbolTable =>
 
   /** A class for the bounds of abstract types and type parameters
    */
-  abstract case class TypeBounds(lo: Type, hi: Type) extends SubType {
+  abstract case class TypeBounds(lo: Type, hi: Type) extends SubType with TypeBoundsApi {
     def supertype = hi
     override val isTrivial: Boolean = lo.isTrivial && hi.isTrivial
     override def bounds: TypeBounds = this
@@ -1600,7 +1601,7 @@ trait Types extends api.Types { self: SymbolTable =>
    *  one should always use `refinedType` for creation.
    */
   case class RefinedType(override val parents: List[Type],
-                         override val decls: Scope) extends CompoundType {
+                         override val decls: Scope) extends CompoundType with RefinedTypeApi {
 
     override def isHigherKinded = (
       parents.nonEmpty &&
@@ -1695,7 +1696,7 @@ trait Types extends api.Types { self: SymbolTable =>
   case class ClassInfoType(
     override val parents: List[Type],
     override val decls: Scope,
-    override val typeSymbol: Symbol) extends CompoundType
+    override val typeSymbol: Symbol) extends CompoundType with ClassInfoTypeApi
   {
     validateClassInfo(this)
 
@@ -1874,7 +1875,7 @@ trait Types extends api.Types { self: SymbolTable =>
    *
    *  @param value ...
    */
-  abstract case class ConstantType(value: Constant) extends SingletonType {
+  abstract case class ConstantType(value: Constant) extends SingletonType with ConstantTypeApi {
     override def underlying: Type = value.tpe
     assert(underlying.typeSymbol != UnitClass)
     override def isTrivial: Boolean = true
@@ -2183,7 +2184,7 @@ trait Types extends api.Types { self: SymbolTable =>
    *
    * @M: a higher-kinded type is represented as a TypeRef with sym.typeParams.nonEmpty, but args.isEmpty
    */
-  abstract case class TypeRef(pre: Type, sym: Symbol, args: List[Type]) extends Type {
+  abstract case class TypeRef(pre: Type, sym: Symbol, args: List[Type]) extends Type with TypeRefApi {
     private[reflect] var parentsCache: List[Type]      = _
     private[reflect] var parentsPeriod                 = NoPeriod
     private[reflect] var baseTypeSeqCache: BaseTypeSeq = _
@@ -2406,7 +2407,7 @@ trait Types extends api.Types { self: SymbolTable =>
    *    def m: Int          NullaryMethodType(Int)
    */
   case class MethodType(override val params: List[Symbol],
-                        override val resultType: Type) extends Type {
+                        override val resultType: Type) extends Type with MethodTypeApi {
     override def isTrivial: Boolean = isTrivial0 && (resultType eq resultType.withoutAnnotations)
     private lazy val isTrivial0 =
       resultType.isTrivial && params.forall{p => p.tpe.isTrivial &&  (
@@ -2462,7 +2463,7 @@ trait Types extends api.Types { self: SymbolTable =>
     override def isJava = true
   }
 
-  case class NullaryMethodType(override val resultType: Type) extends Type {
+  case class NullaryMethodType(override val resultType: Type) extends Type with NullaryMethodTypeApi {
     override def isTrivial = resultType.isTrivial && (resultType eq resultType.withoutAnnotations)
     override def prefix: Type = resultType.prefix
     override def narrow: Type = resultType.narrow
@@ -2496,7 +2497,7 @@ trait Types extends api.Types { self: SymbolTable =>
    * A polytype is of kind * iff its resultType is a (nullary) method type.
    */
   case class PolyType(override val typeParams: List[Symbol], override val resultType: Type)
-       extends Type {
+       extends Type with PolyTypeApi {
     //assert(!(typeParams contains NoSymbol), this)
     assert(typeParams nonEmpty, this) // used to be a marker for nullary method type, illegal now (see @NullaryMethodType)
 
@@ -2556,7 +2557,7 @@ trait Types extends api.Types { self: SymbolTable =>
     }
 
   case class ExistentialType(quantified: List[Symbol],
-                             override val underlying: Type) extends RewrappingTypeProxy
+                             override val underlying: Type) extends RewrappingTypeProxy with ExistentialTypeApi
   {
     override protected def rewrap(newtp: Type) = existentialAbstraction(quantified, newtp)
 
@@ -3177,7 +3178,7 @@ trait Types extends api.Types { self: SymbolTable =>
   case class AnnotatedType(override val annotations: List[AnnotationInfo],
                            override val underlying: Type,
                            override val selfsym: Symbol)
-  extends RewrappingTypeProxy {
+  extends RewrappingTypeProxy with AnnotatedTypeApi {
 
     assert(!annotations.isEmpty, "" + underlying)
 
@@ -3250,7 +3251,7 @@ trait Types extends api.Types { self: SymbolTable =>
     if (annots.isEmpty) underlying
     else AnnotatedType(annots, underlying, selfsym)
 
-  object AnnotatedType extends AnnotatedTypeExtractor { }
+  object AnnotatedType extends AnnotatedTypeExtractor
 
   /** A class representing types with a name. When an application uses
    *  named arguments, the named argument types for calling isApplicable
@@ -3331,7 +3332,7 @@ trait Types extends api.Types { self: SymbolTable =>
     if (phase.erasedTypes)
       sym.tpe.resultType
     else if (sym.isRootPackage)
-      ThisType(RootClass)
+      ThisType(sym.moduleClass)
     else {
       var sym1 = rebind(pre, sym)
       val pre1 = removeSuper(pre, sym1)
@@ -5053,6 +5054,13 @@ trait Types extends api.Types { self: SymbolTable =>
     pre1 =:= pre2
   }
 
+  private def isSubPre(pre1: Type, pre2: Type, sym: Symbol) =
+    if ((pre1 ne pre2) && (pre1 ne NoPrefix) && (pre2 ne NoPrefix) && pre1 <:< pre2) {
+      if (settings.debug.value) println(s"new isSubPre $sym: $pre1 <:< $pre2")
+      true
+    } else
+      false
+
   private def equalSymsAndPrefixes(sym1: Symbol, pre1: Type, sym2: Symbol, pre2: Type): Boolean =
     if (sym1 == sym2) sym1.hasPackageFlag || phase.erasedTypes || pre1 =:= pre2
     else (sym1.name == sym2.name) && isUnifiable(pre1, pre2)
@@ -5215,9 +5223,9 @@ trait Types extends api.Types { self: SymbolTable =>
       true
     else if ((tp1 eq NoType) || (tp2 eq NoType))
       false
-    else if (tp1 eq NoPrefix)
+    else if (tp1 eq NoPrefix) // !! I do not see how this would be warranted by the spec
       tp2.typeSymbol.isPackageClass
-    else if (tp2 eq NoPrefix)
+    else if (tp2 eq NoPrefix) // !! I do not see how this would be warranted by the spec
       tp1.typeSymbol.isPackageClass
     else {
       isSameType2(tp1, tp2) || {
@@ -5521,7 +5529,7 @@ trait Types extends api.Types { self: SymbolTable =>
   private def isSubType2(tp1: Type, tp2: Type, depth: Int): Boolean = {
     if ((tp1 eq tp2) || isErrorOrWildcard(tp1) || isErrorOrWildcard(tp2)) return true
     if ((tp1 eq NoType) || (tp2 eq NoType)) return false
-    if (tp1 eq NoPrefix) return (tp2 eq NoPrefix) || tp2.typeSymbol.isPackageClass
+    if (tp1 eq NoPrefix) return (tp2 eq NoPrefix) || tp2.typeSymbol.isPackageClass // !! I do not see how the "isPackageClass" would be warranted by the spec
     if (tp2 eq NoPrefix) return tp1.typeSymbol.isPackageClass
     if (isSingleType(tp1) && isSingleType(tp2) || isConstantType(tp1) && isConstantType(tp2)) return tp1 =:= tp2
     if (tp1.isHigherKinded || tp2.isHigherKinded) return isHKSubType0(tp1, tp2, depth)
@@ -5542,7 +5550,9 @@ trait Types extends api.Types { self: SymbolTable =>
             val pre2 = tr2.pre
             (((if (sym1 == sym2) phase.erasedTypes || pre1 <:< pre2
                else (sym1.name == sym2.name && !sym1.isModuleClass && !sym2.isModuleClass &&
-                     (isUnifiable(pre1, pre2) || isSameSpecializedSkolem(sym1, sym2, pre1, pre2)))) &&
+                     (isUnifiable(pre1, pre2) ||
+                      isSameSpecializedSkolem(sym1, sym2, pre1, pre2) ||
+                      sym2.isAbstractType && isSubPre(pre1, pre2, sym2)))) &&
                     isSubArgs(tr1.args, tr2.args, sym1.typeParams))
              ||
              sym2.isClass && {
@@ -6789,4 +6799,21 @@ trait Types extends api.Types { self: SymbolTable =>
         tostringRecursions -= 1
       }
 
+  implicit val AnnotatedTypeTag = ClassTag[AnnotatedType](classOf[AnnotatedType])
+  implicit val BoundedWildcardTypeTag = ClassTag[BoundedWildcardType](classOf[BoundedWildcardType])
+  implicit val ClassInfoTypeTag = ClassTag[ClassInfoType](classOf[ClassInfoType])
+  implicit val CompoundTypeTag = ClassTag[CompoundType](classOf[CompoundType])
+  implicit val ConstantTypeTag = ClassTag[ConstantType](classOf[ConstantType])
+  implicit val ExistentialTypeTag = ClassTag[ExistentialType](classOf[ExistentialType])
+  implicit val MethodTypeTag = ClassTag[MethodType](classOf[MethodType])
+  implicit val NullaryMethodTypeTag = ClassTag[NullaryMethodType](classOf[NullaryMethodType])
+  implicit val PolyTypeTag = ClassTag[PolyType](classOf[PolyType])
+  implicit val RefinedTypeTag = ClassTag[RefinedType](classOf[RefinedType])
+  implicit val SingletonTypeTag = ClassTag[SingletonType](classOf[SingletonType])
+  implicit val SingleTypeTag = ClassTag[SingleType](classOf[SingleType])
+  implicit val SuperTypeTag = ClassTag[SuperType](classOf[SuperType])
+  implicit val ThisTypeTag = ClassTag[ThisType](classOf[ThisType])
+  implicit val TypeBoundsTag = ClassTag[TypeBounds](classOf[TypeBounds])
+  implicit val TypeRefTag = ClassTag[TypeRef](classOf[TypeRef])
+  implicit val TypeTagg = ClassTag[Type](classOf[Type])
 }

@@ -64,7 +64,7 @@ trait DestructureTypes {
         case x: NameTree => atom(x.name.toString, x)
         case _           => wrapAtom(tree)
       },
-      tree.printingPrefix
+      tree.productPrefix
     )
     def wrapSymbol(label: String, sym: Symbol): Node = {
       if (sym eq NoSymbol) wrapEmpty

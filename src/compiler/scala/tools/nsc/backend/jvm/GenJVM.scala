@@ -203,10 +203,10 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
     val MethodHandleType  = new JObjectType("java.dyn.MethodHandle")
 
     // Scala attributes
-    val BeanInfoAttr        = definitions.getRequiredClass("scala.beans.BeanInfo")
-    val BeanInfoSkipAttr    = definitions.getRequiredClass("scala.beans.BeanInfoSkip")
-    val BeanDisplayNameAttr = definitions.getRequiredClass("scala.beans.BeanDisplayName")
-    val BeanDescriptionAttr = definitions.getRequiredClass("scala.beans.BeanDescription")
+    val BeanInfoAttr        = rootMirror.getRequiredClass("scala.beans.BeanInfo")
+    val BeanInfoSkipAttr    = rootMirror.getRequiredClass("scala.beans.BeanInfoSkip")
+    val BeanDisplayNameAttr = rootMirror.getRequiredClass("scala.beans.BeanDisplayName")
+    val BeanDescriptionAttr = rootMirror.getRequiredClass("scala.beans.BeanDescription")
 
     final val ExcludedForwarderFlags = {
       import Flags._

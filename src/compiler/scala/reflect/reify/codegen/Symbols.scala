@@ -15,13 +15,13 @@ trait Symbols {
 
     if (sym == NoSymbol)
       mirrorSelect(nme.NoSymbol)
-    else if (sym == RootPackage)
+    else if (sym == rootMirror.RootPackage)
       Select(mirrorSelect(nme.definitions), nme.RootPackage)
-    else if (sym == RootClass)
+    else if (sym == rootMirror.RootClass)
       Select(mirrorSelect(nme.definitions), nme.RootClass)
-    else if (sym == EmptyPackage)
+    else if (sym == rootMirror.EmptyPackage)
       Select(mirrorSelect(nme.definitions), nme.EmptyPackage)
-    else if (sym == EmptyPackageClass)
+    else if (sym == rootMirror.EmptyPackageClass)
       Select(mirrorSelect(nme.definitions), nme.EmptyPackageClass)
     else if (sym.isModuleClass)
       Select(reify(sym.sourceModule), nme.moduleClass)
@@ -105,7 +105,7 @@ trait Symbols {
     filledIn = false
     newSymbolTable foreach {
       case entry =>
-        val att = entry.attachmentOpt[ReifyAttachment]
+        val att = entry.attachments.get[ReifyAttachment]
         att match {
           case Some(ReifyAttachment(sym)) =>
             // don't duplicate reified symbols when merging inlined reifee
@@ -134,7 +134,7 @@ trait Symbols {
     // todo. tried to declare a private class here to carry an attachment, but it's path-dependent
     // so got troubles with exchanging free variables between nested and enclosing quasiquotes
     // attaching just Symbol isn't good either, so we need to think of a principled solution
-    val local = ValDef(NoMods, name, TypeTree(), reified) withAttachment ReifyAttachment(sym)
+    val local = ValDef(NoMods, name, TypeTree(), reified) addAttachment ReifyAttachment(sym)
     localReifications += local
     filledIn = false
     locallyReified(sym) = Ident(name)
@@ -149,7 +149,7 @@ trait Symbols {
       while (i < localReifications.length) {
         // fillInSymbol might create new locallyReified symbols, that's why this is done iteratively
         val reified = localReifications(i)
-        val att = reified.attachmentOpt[ReifyAttachment]
+        val att = reified.attachments.get[ReifyAttachment]
         att match {
           case Some(ReifyAttachment(sym)) => fillIns += fillInSymbol(sym)
           case other => // do nothing

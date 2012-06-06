@@ -2,6 +2,7 @@ package scala.reflect
 package internal
 import scala.collection.mutable.WeakHashMap
 
+// todo: move importers to a mirror
 trait Importers { self: SymbolTable =>
 
   // [Eugene] possible to make this less cast-heavy?
@@ -70,9 +71,9 @@ trait Importers { self: SymbolTable =>
             linkReferenced(myowner.newMethod(myname, mypos, myflags), x, importSymbol)
           case x: from.ModuleSymbol =>
             linkReferenced(myowner.newModuleSymbol(myname, mypos, myflags), x, importSymbol)
-          case x: from.FreeTerm =>
+          case x: from.FreeTermSymbol =>
             newFreeTermSymbol(importName(x.name).toTermName, importType(x.info), x.value, x.flags, x.origin)
-          case x: from.FreeType =>
+          case x: from.FreeTypeSymbol =>
             newFreeTypeSymbol(importName(x.name).toTypeName, importType(x.info), x.value, x.flags, x.origin)
           case x: from.TermSymbol =>
             linkReferenced(myowner.newValue(myname, mypos, myflags), x, importSymbol)
@@ -124,7 +125,7 @@ trait Importers { self: SymbolTable =>
         else if (sym == from.NoSymbol)
           NoSymbol
         else if (sym.isRoot)
-          definitions.RootClass
+          rootMirror.RootClass // !!! replace with actual mirror when we move importers to the mirror
         else {
           val name = sym.name
           val owner = sym.owner
@@ -376,8 +377,6 @@ trait Importers { self: SymbolTable =>
             new ApplyToImplicitArgs(importTree(fun), args map importTree)
           case _: from.ApplyImplicitView =>
             new ApplyImplicitView(importTree(fun), args map importTree)
-          case _: from.ApplyConstructor =>
-            new ApplyConstructor(importTree(fun), args map importTree)
           case _ =>
             new Apply(importTree(fun), args map importTree)
         }

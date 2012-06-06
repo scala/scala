@@ -3,6 +3,8 @@
  * @author  Martin Odersky
  */
 
+// [Eugene++ to Martin] we need to unify this prettyprinter with NodePrinters
+
 package scala.reflect
 package internal
 
@@ -169,7 +171,7 @@ trait TreePrinters extends api.TreePrinters { self: SymbolTable =>
     }
 
     def printAnnotations(tree: Tree) {
-      if (inReflexiveMirror && tree.symbol != null && tree.symbol != NoSymbol)
+      if (!isCompilerUniverse && tree.symbol != null && tree.symbol != NoSymbol)
         // [Eugene++] todo. this is not 100% correct, but is necessary for sane printing
         // the problem is that getting annotations doesn't automatically initialize the symbol
         // so we might easily print something as if it doesn't have annotations, whereas it does
@@ -453,7 +455,7 @@ trait TreePrinters extends api.TreePrinters { self: SymbolTable =>
 
   /** Hook for extensions */
   def xprintTree(treePrinter: TreePrinter, tree: Tree) =
-    treePrinter.print(tree.printingPrefix+tree.productIterator.mkString("(", ", ", ")"))
+    treePrinter.print(tree.productPrefix+tree.productIterator.mkString("(", ", ", ")"))
 
   def newTreePrinter(writer: PrintWriter): TreePrinter = new TreePrinter(writer)
   def newTreePrinter(stream: OutputStream): TreePrinter = newTreePrinter(new PrintWriter(stream))

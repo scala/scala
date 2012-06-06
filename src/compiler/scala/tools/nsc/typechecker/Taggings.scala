@@ -48,7 +48,7 @@ trait Taggings {
      *           EmptyTree if `concrete` is true and the result contains unresolved (i.e. not spliced) type parameters and abstract type members.
      */
     def resolveErasureTag(tp: Type, pos: Position, concrete: Boolean): Tree = {
-      val taggedTp = appliedType(if (concrete) ClassTagClass.typeConstructor else ErasureTagClass.typeConstructor, List(tp))
+      val taggedTp = appliedType(if (concrete) ClassTagClass.typeConstructor else ???, List(tp))
       resolveTag(taggedTp, pos)
     }
 

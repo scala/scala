@@ -53,6 +53,8 @@ abstract class UnPickler /*extends reflect.generic.UnPickler*/ {
 
     checkVersion()
 
+    private val loadingMirror = mirrorThatLoaded(classRoot)
+
     /** A map from entry numbers to array offsets */
     private val index = createIndex
 
@@ -195,13 +197,13 @@ abstract class UnPickler /*extends reflect.generic.UnPickler*/ {
 
       def readExtSymbol(): Symbol = {
         val name  = readNameRef()
-        val owner = if (atEnd) definitions.RootClass else readSymbolRef()
+        val owner = if (atEnd) loadingMirror.RootClass else readSymbolRef()
 
         def adjust(sym: Symbol) = if (tag == EXTref) sym else sym.moduleClass
 
         def fromName(name: Name) = name.toTermName match {
-          case nme.ROOT     => definitions.RootClass
-          case nme.ROOTPKG  => definitions.RootPackage
+          case nme.ROOT     => loadingMirror.RootClass
+          case nme.ROOTPKG  => loadingMirror.RootPackage
           case _            => adjust(owner.info.decl(name))
         }
         def nestedObjectSymbol: Symbol = {
@@ -447,7 +449,7 @@ abstract class UnPickler /*extends reflect.generic.UnPickler*/ {
     private def readArrayAnnot() = {
       readByte() // skip the `annotargarray` tag
       val end = readNat() + readIndex
-      until(end, () => readClassfileAnnotArg(readNat())).toArray(classfileAnnotArgTag)
+      until(end, () => readClassfileAnnotArg(readNat())).toArray(ClassfileAnnotArgTag)
     }
     protected def readClassfileAnnotArg(i: Int): ClassfileAnnotArg = bytes(index(i)) match {
       case ANNOTINFO     => NestedAnnotArg(at(i, readAnnotation))
@@ -816,9 +818,8 @@ abstract class UnPickler /*extends reflect.generic.UnPickler*/ {
       throw new RuntimeException("malformed Scala signature of " + classRoot.name + " at " + readIndex + "; " + msg)
 
     protected def errorMissingRequirement(name: Name, owner: Symbol): Symbol =
-      missingHook(owner, name) orElse MissingRequirementError.notFound(
-        "bad reference while unpickling %s: %s not found in %s".format(
-          filename, name.longString, owner.tpe.widen)
+      missingHook(owner, name) orElse MissingRequirementError.signal(
+        s"bad reference while unpickling $filename: ${name.longString} not found in ${owner.tpe.widen}"
       )
 
     def inferMethodAlternative(fun: Tree, argtpes: List[Type], restpe: Type) {} // can't do it; need a compiler for that.

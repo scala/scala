@@ -7,7 +7,6 @@ trait Trees {
   import mirror._
   import definitions._
   import treeInfo._
-  import scala.reflect.api.Modifier
 
   // unfortunately, these are necessary to reify AnnotatedTypes
   // I'd gladly got rid of them, but I don't fancy making a metaprogramming API that doesn't work with annotated types
@@ -106,7 +105,7 @@ trait Trees {
 
   private def spliceTree(tree: Tree): Tree = {
     tree match {
-      case EvalSplice(splicee) =>
+      case TreeSplice(splicee) =>
         if (reifyDebug) println("splicing eval " + tree)
 
         // see ``Metalevels'' for more info about metalevel breaches
@@ -138,9 +137,6 @@ trait Trees {
               }.transform(tree)
           }
         }
-      case ValueSplice(splicee) =>
-        // todo. implement this
-        ???
       case _ =>
         EmptyTree
     }

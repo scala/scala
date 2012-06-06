@@ -272,7 +272,7 @@ abstract class TreeCheckers extends Analyzer {
 
           tree match {
             case x: PackageDef    =>
-              if ((sym.ownerChain contains currentOwner) || currentOwner == definitions.EmptyPackageClass) ()
+              if ((sym.ownerChain contains currentOwner) || currentOwner.isEmptyPackageClass) ()
               else fail(sym + " owner chain does not contain currentOwner " + currentOwner + sym.ownerChain)
             case _ =>
               def cond(s: Symbol) = !s.isTerm || s.isMethod || s == sym.owner

@@ -7,4 +7,6 @@ trait StdAttachments {
   self: SymbolTable =>
 
   case class ReifyAttachment(original: Symbol)
+
+  case object BackquotedIdentifierAttachment
 }

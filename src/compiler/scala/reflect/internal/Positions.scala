@@ -5,6 +5,7 @@ trait Positions extends api.Positions { self: SymbolTable =>
 
   type Position = scala.tools.nsc.util.Position
   val NoPosition = scala.tools.nsc.util.NoPosition
+  implicit val PositionTag = ClassTag[Position](classOf[Position])
 
   /** A position that wraps a set of trees.
    *  The point of the wrapping position is the point of the default position.

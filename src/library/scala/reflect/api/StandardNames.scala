@@ -2,36 +2,30 @@
 * Copyright 2005-2011 LAMP/EPFL
 * @author  Martin Odersky
 */
-
 package scala.reflect
 package api
 
-trait StandardNames {
+trait StandardNames extends base.StandardNames {
   self: Universe =>
 
-  val nme: AbsTermNames
-  val tpnme: AbsTypeNames
+  val nme: TermNamesApi
+  val tpnme: TypeNamesApi
 
-  trait AbsNames {
-    type NameType <: Name
-
+  trait NamesApi extends NamesBase {
     val ANON_CLASS_NAME: NameType
     val ANON_FUN_NAME: NameType
     val EMPTY: NameType
-    val EMPTY_PACKAGE_NAME: NameType
     val ERROR: NameType
     val IMPORT: NameType
     val MODULE_VAR_SUFFIX: NameType
-    val NO_NAME: NameType
     val PACKAGE: NameType
     val ROOT: NameType
     val SPECIALIZED_SUFFIX: NameType
-    val WILDCARD: NameType
 
     def flattenedName(segments: Name*): NameType
   }
 
-  trait AbsTermNames extends AbsNames {
+  trait TermNamesApi extends NamesApi with TermNamesBase {
     val EXPAND_SEPARATOR_STRING: String
     val IMPL_CLASS_SUFFIX: String
     val INTERPRETER_IMPORT_WRAPPER: String
@@ -50,16 +44,15 @@ trait StandardNames {
     val TRAIT_SETTER_SEPARATOR_STRING: String
 
     val ANYNAME: TermName
-    val CONSTRUCTOR: TermName
     val FAKE_LOCAL_THIS: TermName
     val INITIALIZER: TermName
     val LAZY_LOCAL: TermName
-    val MIRROR_FREE_PREFIX: TermName
-    val MIRROR_FREE_THIS_SUFFIX: TermName
-    val MIRROR_FREE_VALUE_SUFFIX: TermName
-    val MIRROR_PREFIX: TermName
-    val MIRROR_SHORT: TermName
-    val MIRROR_SYMDEF_PREFIX: TermName
+    val MIRROR_FREE_PREFIX: NameType
+    val MIRROR_FREE_THIS_SUFFIX: NameType
+    val MIRROR_FREE_VALUE_SUFFIX: NameType
+    val MIRROR_PREFIX: NameType
+    val MIRROR_SHORT: NameType
+    val MIRROR_SYMDEF_PREFIX: NameType
     val MIXIN_CONSTRUCTOR: TermName
     val MODULE_INSTANCE_FIELD: TermName
     val OUTER: TermName
@@ -146,7 +139,7 @@ trait StandardNames {
     def splitSpecializedName(name: Name): (Name, String, String)
   }
 
-  trait AbsTypeNames extends AbsNames {
+  trait TypeNamesApi extends NamesApi with TypeNamesBase {
     val BYNAME_PARAM_CLASS_NAME: TypeName
     val EQUALS_PATTERN_NAME: TypeName
     val JAVA_REPEATED_PARAM_CLASS_NAME: TypeName

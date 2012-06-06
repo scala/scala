@@ -1,9 +1,11 @@
 package scala.reflect.makro
 
-trait FrontEnds {
+trait FrontEnds extends scala.reflect.api.FrontEnds {
   self: Context =>
 
   import mirror._
+
+  type Position = mirror.Position
 
   /** Exposes means to control the compiler UI */
   def frontEnd: FrontEnd

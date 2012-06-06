@@ -8,7 +8,7 @@ package typechecker
 import symtab.Flags._
 import scala.collection.{ mutable, immutable }
 import scala.tools.util.StringOps.{ ojoin }
-import scala.reflect.{ mirror => rm }
+import scala.reflect.runtime.{ universe => ru }
 import language.higherKinds
 
 /** Logic related to method synthesis which involves cooperation between
@@ -22,7 +22,7 @@ trait MethodSynthesis {
   import CODE._
 
   object synthesisUtil {
-    type CTT[T]  = rm.ConcreteTypeTag[T]
+    type CTT[T]  = ru.ConcreteTypeTag[T]
     type CT[T] = ClassTag[T]
 
     def ValOrDefDef(sym: Symbol, body: Tree) =
@@ -30,7 +30,7 @@ trait MethodSynthesis {
       else DefDef(sym, body)
 
     def applyTypeInternal(tags: List[CTT[_]]): Type = {
-      // [Eugene to Paul] needs review!!
+      // [Eugene++ to Paul] needs review!!
       val symbols = tags map compilerSymbolFromTag
       val container :: args = symbols
       val tparams = container.typeConstructor.typeParams
@@ -44,26 +44,33 @@ trait MethodSynthesis {
       appliedType(container, args map (_.tpe): _*)
     }
 
-    def companionType[T](implicit m: CTT[T]) =
-      getRequiredModule(m.erasure.getName).tpe
+    def companionType[T](implicit ct: CT[T]) =
+      rootMirror.getRequiredModule(ct.erasure.getName).tpe
 
     // Use these like `applyType[List, Int]` or `applyType[Map, Int, String]`
-    def applyType[CC](implicit m1: CTT[CC]): Type =
-      applyTypeInternal(List(m1))
+    def applyType[CC](implicit t1: CTT[CC]): Type =
+      applyTypeInternal(List(t1))
 
-    def applyType[CC[X1], X1](implicit m1: CTT[CC[_]], m2: CTT[X1]): Type =
-      applyTypeInternal(List(m1, m2))
+    def applyType[CC[X1], X1](implicit t1: CTT[CC[_]], t2: CTT[X1]): Type =
+      applyTypeInternal(List[CTT[_]](t1, t2))
 
-    def applyType[CC[X1, X2], X1, X2](implicit m1: CTT[CC[_,_]], m2: CTT[X1], m3: CTT[X2]): Type =
-      applyTypeInternal(List(m1, m2, m3))
+    def applyType[CC[X1, X2], X1, X2](implicit t1: CTT[CC[_,_]], t2: CTT[X1], t3: CTT[X2]): Type =
+    // [Eugene++] without an explicit type annotation for List, we get this:
+    // [scalacfork] C:\Projects\KeplerUnderRefactoring\src\compiler\scala\tools\nsc\typechecker\MethodSynthesis.scala:59: error: no type parameters for method apply: (xs: A*)List[A] in object List exist so that it can be applied to arguments (scala.tools.nsc.typechecker.MethodSynthesis.synthesisUtil.CTT[CC[_, _]], scala.tools.nsc.typechecker.MethodSynthesis.synthesisUtil.CTT[X1], scala.tools.nsc.typechecker.MethodSynthesis.synthesisUtil.CTT[X2])
+    // [scalacfork]  --- because ---
+    // [scalacfork] undetermined type
+    // [scalacfork]       applyTypeInternal(List(t1, t2, t3))
+      applyTypeInternal(List[CTT[_]](t1, t2, t3))
 
-    def applyType[CC[X1, X2, X3], X1, X2, X3](implicit m1: CTT[CC[_,_,_]], m2: CTT[X1], m3: CTT[X2], m4: CTT[X3]): Type =
-      applyTypeInternal(List(m1, m2, m3, m4))
+    def applyType[CC[X1, X2, X3], X1, X2, X3](implicit t1: CTT[CC[_,_,_]], t2: CTT[X1], t3: CTT[X2], t4: CTT[X3]): Type =
+      applyTypeInternal(List[CTT[_]](t1, t2, t3, t4))
 
+    // [Martin->Eugene]  !!! reinstantiate when typeables are in.
+    // [Eugene++->Martin] now this compiles, will soon check it out
     def newMethodType[F](owner: Symbol)(implicit t: CTT[F]): Type = {
       val fnSymbol = compilerSymbolFromTag(t)
       assert(fnSymbol isSubClass FunctionClass(t.tpe.typeArguments.size - 1), (owner, t))
-      // [Eugene to Paul] needs review!!
+      // [Eugene++ to Paul] needs review!!
       // val symbols = m.typeArguments map (m => manifestToSymbol(m))
       // val formals = symbols.init map (_.typeConstructor)
       val formals = compilerTypeFromTag(t).typeArguments

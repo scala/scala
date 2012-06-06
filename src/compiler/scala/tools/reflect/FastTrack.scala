@@ -35,7 +35,6 @@ trait FastTrack {
     var registry = Map[Symbol, FastTrackEntry]()
     implicit class BindTo(sym: Symbol) { def bindTo(expander: FastTrackExpander): Unit = if (sym != NoSymbol) registry += sym -> FastTrackEntry(sym, expander) }
     MacroInternal_materializeArrayTag bindTo { case (c, Apply(TypeApply(_, List(tt)), List(u))) => c.materializeArrayTag(u, tt.tpe) }
-    MacroInternal_materializeErasureTag bindTo { case (c, Apply(TypeApply(_, List(tt)), List(u))) => c.materializeErasureTag(u, tt.tpe, concrete = false) }
     MacroInternal_materializeClassTag bindTo { case (c, Apply(TypeApply(_, List(tt)), List(u))) => c.materializeClassTag(u, tt.tpe) }
     MacroInternal_materializeTypeTag bindTo { case (c, Apply(TypeApply(_, List(tt)), List(u))) => c.materializeTypeTag(u, tt.tpe, concrete = false) }
     MacroInternal_materializeConcreteTypeTag bindTo { case (c, Apply(TypeApply(_, List(tt)), List(u))) => c.materializeTypeTag(u, tt.tpe, concrete = true) }
