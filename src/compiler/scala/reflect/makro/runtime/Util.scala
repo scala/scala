@@ -4,7 +4,7 @@ package runtime
 trait Util {
   self: Context =>
 
-  import mirror._
+  import universe._
 
   def literalNull = Expr[Null](Literal(Constant(null)))(TypeTag.Null)
 

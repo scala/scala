@@ -3,26 +3,24 @@ package scala.reflect.makro
 trait Aliases {
   self: Context =>
 
-  /** Aliases of mirror types */
-  type Symbol = mirror.Symbol
-  type Type = mirror.Type
-  type Name = mirror.Name
-  type Tree = mirror.Tree
-  // type Position = mirror.Position
-  type Scope = mirror.Scope
-  type Modifiers = mirror.Modifiers
-  type Expr[+T] = mirror.Expr[T]
-  type TypeTag[T] = mirror.TypeTag[T]
-  type ConcreteTypeTag[T] = mirror.ConcreteTypeTag[T]
+  type Symbol = universe.Symbol
+  type Type = universe.Type
+  type Name = universe.Name
+  type TermName = universe.TermName
+  type TypeName = universe.TypeName
+  type Tree = universe.Tree
+  // type Position = universe.Position
+  type Scope = universe.Scope
+  type Modifiers = universe.Modifiers
 
-  /** Creator/extractor objects for Expr and TypeTag values */
-  val TypeTag = mirror.TypeTag
-  val ConcreteTypeTag = mirror.ConcreteTypeTag
-  val Expr = mirror.Expr
+  type Expr[+T] = universe.Expr[T]
+  val Expr = universe.Expr
 
-  /** incantations for summoning tags */
-  def tag[T](implicit ttag: TypeTag[T]) = ttag
+  type TypeTag[T] = universe.TypeTag[T]
+  type ConcreteTypeTag[T] = universe.ConcreteTypeTag[T]
+  val TypeTag = universe.TypeTag
+  val ConcreteTypeTag = universe.ConcreteTypeTag
   def typeTag[T](implicit ttag: TypeTag[T]) = ttag
-  def concreteTag[T](implicit cttag: ConcreteTypeTag[T]) = cttag
   def concreteTypeTag[T](implicit cttag: ConcreteTypeTag[T]) = cttag
+  def typeOf[T](implicit ttag: TypeTag[T]): Type = ttag.tpe
 }

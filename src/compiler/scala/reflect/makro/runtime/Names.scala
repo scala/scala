@@ -14,7 +14,7 @@ trait Names {
     freshNameCreator.newName(name)
   }
 
-  def fresh(name: Name): Name = {
-    name.mapName(freshNameCreator.newName(_))
+  def fresh[NameType <: Name](name: NameType): NameType = {
+    name.mapName(freshNameCreator.newName(_)).asInstanceOf[NameType]
   }
 }

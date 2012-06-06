@@ -477,6 +477,7 @@ trait Definitions extends api.StandardDefinitions {
     lazy val MacroContextClass                        = getClassIfDefined("scala.reflect.makro.Context") // defined in scala-reflect.jar, so we need to be careful
          def MacroContextPrefix                       = if (MacroContextClass != NoSymbol) getMemberMethod(MacroContextClass, nme.prefix) else NoSymbol
          def MacroContextPrefixType                   = if (MacroContextClass != NoSymbol) getMemberType(MacroContextClass, tpnme.PrefixType) else NoSymbol
+         def MacroContextUniverse                     = if (MacroContextClass != NoSymbol) getMemberMethod(MacroContextClass, nme.universe) else NoSymbol
          def MacroContextMirror                       = if (MacroContextClass != NoSymbol) getMemberMethod(MacroContextClass, nme.mirror) else NoSymbol
          def MacroContextReify                        = if (MacroContextClass != NoSymbol) getMemberMethod(MacroContextClass, nme.reify) else NoSymbol
     lazy val MacroImplAnnotation                      = requiredClass[scala.reflect.makro.internal.macroImpl]

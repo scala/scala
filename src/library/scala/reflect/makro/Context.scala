@@ -15,12 +15,17 @@ trait Context extends Aliases
                  with FrontEnds
                  with Settings
                  with Typers
+                 with Parsers
                  with Exprs
                  with TypeTags
+                 with Evals
                  with Util {
 
-  /** The mirror that corresponds to the compile-time universe */
-  val mirror: Universe
+  /** The compile-time universe */
+  val universe: Universe
+
+  /** The mirror of the compile-time universe */
+  val mirror: MirrorOf[universe.type]
 
   /** The type of the prefix tree from which the macro is selected */
   type PrefixType

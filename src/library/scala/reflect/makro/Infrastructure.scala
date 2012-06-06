@@ -23,6 +23,35 @@ trait Infrastructure {
    */
   val currentRun: Run
 
+  /** Exposes library classpath.
+   */
+  val libraryClassPath: List[java.net.URL]
+
+  /** Exposes a classloader that corresponds to the library classpath.
+   *
+   *  With this classloader you can perform on-the-fly evaluation of macro arguments.
+   *  For example, consider this code snippet:
+   *
+   *    def staticEval[T](x: T) = macro staticEval[T]
+   *
+   *    def staticEval[T: c.TypeTag](c: Context)(x: c.Expr[T]) = {
+   *      import scala.reflect.runtime.{universe => ru}
+   *      val mirror = ru.runtimeMirror(c.libraryClassLoader)
+   *      import scala.tools.reflect.ToolBox
+   *      val toolBox = mirror.mkToolBox()
+   *      val importer = ru.mkImporter(c.universe).asInstanceOf[ru.Importer { val from: c.universe.type }]
+   *      val tree = c.resetAllAttrs(x.tree.duplicate)
+   *      val imported = importer.importTree(tree)
+   *      val valueOfX = toolBox.runExpr(imported).asInstanceOf[T]
+   *      ...
+   *    }
+   *
+   *  // [Eugene++] using this guy will tremendously slow down the compilation
+   *  // https://twitter.com/xeno_by/status/201248317831774208
+   *  // todo. we need to address this somehow
+   */
+  def libraryClassLoader: ClassLoader
+
   /** As seen by macro API, compilation run is an opaque type that can be deconstructed into:
    *    1) Current compilation unit
    *    2) List of all compilation units that comprise the run

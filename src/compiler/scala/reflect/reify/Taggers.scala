@@ -6,7 +6,7 @@ import scala.reflect.makro.runtime.Context
 abstract class Taggers {
   val c: Context
 
-  import c.mirror._
+  import c.universe._
   import definitions._
 
   val coreTags = Map(

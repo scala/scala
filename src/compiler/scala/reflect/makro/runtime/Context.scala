@@ -8,19 +8,24 @@ abstract class Context extends scala.reflect.makro.Context
                          with CapturedVariables
                          with Infrastructure
                          with Enclosures
+                         with Mirrors
                          with Names
                          with Reifiers
                          with FrontEnds
                          with Settings
                          with Typers
+                         with Parsers
                          with Exprs
                          with TypeTags
+                         with Evals
                          with Util
                          with Traces {
 
-  val mirror: Global
+  val universe: Global
 
-  val callsiteTyper: mirror.analyzer.Typer
+  val mirror: MirrorOf[universe.type] = new ContextMirror
+
+  val callsiteTyper: universe.analyzer.Typer
 
   val prefix: Expr[PrefixType]
 
