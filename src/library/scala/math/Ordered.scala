@@ -15,7 +15,7 @@ import language.implicitConversions
  *  more information about whether to use [[scala.math.Ordering]] instead.
  *
  *  Classes that implement this trait can be sorted with
- *  [[scala.utils.Sorting]] and can be compared with standard comparison operators
+ *  [[scala.util.Sorting]] and can be compared with standard comparison operators
  *  (e.g. > and <).
  *
  *  Ordered should be used for data with a single, natural ordering (like
@@ -27,14 +27,15 @@ import language.implicitConversions
  *
  *  [[scala.math.PartiallyOrdered]] is an alternative to this trait for partially ordered data.
  *
- *  For example, to create a simple class that implements Ordered and then sort it with [[scala.utils.Sorting]]:
+ *  For example, create a simple class that implements `Ordered` and then sort it with [[scala.util.Sorting]]:
  *  {{{
- *  class OrderedClass(n:Int) extends Ordered[OrderedClass] {
+ *  case class OrderedClass(n:Int) extends Ordered[OrderedClass] {
  *  	def compare(that: OrderedClass) =  this.n - that.n
  *  }
  *
- *  val x = List(new MyClass(1), new MyClass(5), new MyClass(3))
- *  val result = scala.utils.Sorting.quickSort(x)
+ *  val x = Array(OrderedClass(1), OrderedClass(5), OrderedClass(3))
+ *  scala.util.Sorting.quickSort(x)
+ *  x
  *  }}}
  *
  *  It is important that the `equals` method for an instance of `Ordered[A]` be consistent with the
