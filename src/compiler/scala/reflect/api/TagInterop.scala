@@ -15,8 +15,8 @@ trait TagInterop { self: JavaUniverse =>
     // [Eugene++] implement more sophisticated logic
     // Martin said it'd be okay to simply copypaste `Implicits.manifestOfType`
     val mirror = mirror0.asInstanceOf[Mirror]
-    val erasure = mirror.runtimeClass(tag.in(mirror).tpe)
-    Manifest.classType(erasure).asInstanceOf[Manifest[T]]
+    val runtimeClass = mirror.runtimeClass(tag.in(mirror).tpe)
+    Manifest.classType(runtimeClass).asInstanceOf[Manifest[T]]
   }
 
   override def manifestToConcreteTypeTag[T](mirror0: Any, manifest: Manifest[T]): base.Universe # ConcreteTypeTag[T] =

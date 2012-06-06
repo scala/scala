@@ -192,7 +192,7 @@ trait TypeStrings {
       else enclClass.getName + "." + (name stripPrefix enclPre)
     )
   }
-  def scalaName(ct: ClassTag[_]): String = scalaName(ct.erasure)
+  def scalaName(ct: ClassTag[_]): String = scalaName(ct.runtimeClass)
   def anyClass(x: Any): JClass          = if (x == null) null else x.getClass
 
   private def brackets(tps: String*): String =
@@ -229,7 +229,7 @@ trait TypeStrings {
   def fromTypedValue[T: ru.TypeTag : ClassTag](x: T): String = fromTag[T]
   def fromValue(value: Any): String                          = if (value == null) "Null" else fromClazz(anyClass(value))
   def fromClazz(clazz: JClass): String                       = scalaName(clazz) + tparamString(clazz)
-  def fromTag[T: ru.TypeTag : ClassTag] : String             = scalaName(classTag[T].erasure) + tparamString[T]
+  def fromTag[T: ru.TypeTag : ClassTag] : String             = scalaName(classTag[T].runtimeClass) + tparamString[T]
 
   /** Reducing fully qualified noise for some common packages.
    */

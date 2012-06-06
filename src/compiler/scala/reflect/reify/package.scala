@@ -28,7 +28,7 @@ package object reify {
   def reifyType(global: Global)(typer: global.analyzer.Typer, prefix: global.Tree, tpe: global.Type, dontSpliceAtTopLevel: Boolean = false, concrete: Boolean = false): global.Tree =
     mkReifier(global)(typer, prefix, tpe, dontSpliceAtTopLevel, concrete).reified.asInstanceOf[global.Tree]
 
-  def reifyErasure(global: Global)(typer0: global.analyzer.Typer, tpe: global.Type, concrete: Boolean = true): global.Tree = {
+  def reifyRuntimeClass(global: Global)(typer0: global.analyzer.Typer, tpe: global.Type, concrete: Boolean = true): global.Tree = {
     import global._
     import definitions._
     import analyzer.enclosingMacroPosition
@@ -39,14 +39,14 @@ package object reify {
 
     inScope match {
       case (success, _) if !success.isEmpty =>
-        Select(success, nme.erasure)
+        Select(success, nme.runtimeClass)
       case (_, success) if !success.isEmpty =>
         gen.mkMethodCall(arrayElementClassMethod, List(success))
       case _ =>
         tpe.normalize match {
           case TypeRef(_, ArrayClass, componentTpe :: Nil) =>
-            val componentErasure = reifyErasure(global)(typer0, componentTpe, concrete)
-            gen.mkMethodCall(arrayClassMethod, List(componentErasure))
+            val componentRuntimeClass = reifyRuntimeClass(global)(typer0, componentTpe, concrete)
+            gen.mkMethodCall(arrayClassMethod, List(componentRuntimeClass))
           case _ =>
             if (tpe.isSpliceable && concrete)
               throw new ReificationError(enclosingMacroPosition, "tpe %s is an unresolved spliceable type".format(tpe))

@@ -59,7 +59,7 @@ object ScalaRunTime {
    */
   def arrayElementClass(schematic: Any): Class[_] = schematic match {
     case cls: Class[_] => cls.getComponentType
-    case tag: ClassTag[_] => tag.erasure
+    case tag: ClassTag[_] => tag.runtimeClass
     case tag: ArrayTag[_] => tag.newArray(0).getClass.getComponentType
     case _ => throw new UnsupportedOperationException("unsupported schematic %s (%s)".format(schematic, if (schematic == null) "null" else schematic.getClass))
   }
@@ -69,7 +69,7 @@ object ScalaRunTime {
    *  rewrites expressions like 5.getClass to come here.
    */
   def anyValClass[T <: AnyVal : ClassTag](value: T): Class[T] =
-    classTag[T].erasure.asInstanceOf[Class[T]]
+    classTag[T].runtimeClass.asInstanceOf[Class[T]]
 
   /** Retrieve generic array element */
   def array_apply(xs: AnyRef, idx: Int): Any = xs match {

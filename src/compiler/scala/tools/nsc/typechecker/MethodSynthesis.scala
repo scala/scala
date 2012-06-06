@@ -45,7 +45,7 @@ trait MethodSynthesis {
     }
 
     def companionType[T](implicit ct: CT[T]) =
-      rootMirror.getRequiredModule(ct.erasure.getName).tpe
+      rootMirror.getRequiredModule(ct.runtimeClass.getName).tpe
 
     // Use these like `applyType[List, Int]` or `applyType[Map, Int, String]`
     def applyType[CC](implicit t1: CTT[CC]): Type =

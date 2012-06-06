@@ -7,8 +7,8 @@ package scala.reflect
  *  cannot contain unresolved references to type parameters or abstract types.
  *
  *  Scala library provides a standard implementation of this trait,
- *  `ClassTag[T]` that explicitly carries the `java.lang.Class` erasure of type T
- *  and uses Java reflection to instantiate arrays.
+ *  `ClassTag[T]` that explicitly carries the runtime class of type T
+ *  and uses reflection to instantiate arrays.
  *
  *  However other platforms (e.g. a Scala -> JS crosscompiler) may reimplement this trait as they see fit
  *  and then expose the implementation via an implicit macro.

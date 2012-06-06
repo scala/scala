@@ -188,7 +188,7 @@ class Power[ReplValsImpl <: ReplVals : ru.TypeTag: ClassTag](val intp: IMain, re
    *    translate tag type arguments into applied types
    *    customizable symbol filter (had to hardcode no-spec to reduce noise)
    */
-  class InternalInfo[T](value: Option[T] = None)(implicit typeEvidence: ru.TypeTag[T], erasureEvidence: ClassTag[T]) {
+  class InternalInfo[T](value: Option[T] = None)(implicit typeEvidence: ru.TypeTag[T], runtimeClassEvidence: ClassTag[T]) {
     private def newInfo[U: ru.TypeTag : ClassTag](value: U): InternalInfo[U] = new InternalInfo[U](Some(value))
     private def isSpecialized(s: Symbol) = s.name.toString contains "$mc"
     private def isImplClass(s: Symbol)   = s.name.toString endsWith "$class"
@@ -229,8 +229,8 @@ class Power[ReplValsImpl <: ReplVals : ru.TypeTag: ClassTag](val intp: IMain, re
     def pkgSymbols      = new PackageSlurper(pkgClass).slurp() filterNot excludeMember
 
     def tag            = typeEvidence
-    def erasure        = erasureEvidence.erasure
-    def shortClass     = erasure.getName split "[$.]" last
+    def runtimeClass   = runtimeClassEvidence.runtimeClass
+    def shortClass     = runtimeClass.getName split "[$.]" last
 
     def baseClasses                    = tpe.baseClasses
     def baseClassDecls                 = mapFrom(baseClasses)(_.info.decls.toList.sortBy(_.name))
@@ -244,7 +244,7 @@ class Power[ReplValsImpl <: ReplVals : ru.TypeTag: ClassTag](val intp: IMain, re
 
     override def toString = value match {
       case Some(x)  => "%s (%s)".format(x, shortClass)
-      case _        => erasure.getName
+      case _        => runtimeClass.getName
     }
   }
 

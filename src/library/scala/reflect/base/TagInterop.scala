@@ -5,13 +5,13 @@ import scala.runtime.ScalaRunTime._
 
 trait TagInterop { self: Universe =>
   def arrayTagToClassManifest[T](tag: ArrayTag[T]): ClassManifest[T] = {
-    val erasure = arrayElementClass(tag)
-    if (erasure.isArray) {
-      val elementClass = arrayElementClass(erasure)
+    val runtimeClass = arrayElementClass(tag)
+    if (runtimeClass.isArray) {
+      val elementClass = arrayElementClass(runtimeClass)
       val elementManifest = arrayTagToClassManifest(ClassTag(elementClass))
       ClassManifest.arrayType(elementManifest).asInstanceOf[ClassManifest[T]]
     } else {
-      ClassManifest.fromClass(erasure.asInstanceOf[Class[T]])
+      ClassManifest.fromClass(runtimeClass.asInstanceOf[Class[T]])
     }
   }
 

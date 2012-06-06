@@ -21,14 +21,14 @@ abstract class Attachments { self =>
   def all: Set[Any] = Set.empty
 
   def get[T: ClassTag]: Option[T] =
-    (all find (_.getClass == classTag[T].erasure)).asInstanceOf[Option[T]]
+    (all find (_.getClass == classTag[T].runtimeClass)).asInstanceOf[Option[T]]
 
   /** Creates a copy of this attachment with its payload updated */
   def add(attachment: Any): Attachments { type Pos = self.Pos } =
     new NonemptyAttachments(this.pos, all + attachment)
 
   def remove[T: ClassTag]: Attachments { type Pos = self.Pos } = {
-    val newAll = all filterNot (_.getClass == classTag[T].erasure)
+    val newAll = all filterNot (_.getClass == classTag[T].runtimeClass)
     if (newAll.isEmpty) pos.asInstanceOf[Attachments { type Pos = self.Pos }]
     else new NonemptyAttachments(this.pos, newAll)
   }

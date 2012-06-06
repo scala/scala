@@ -103,7 +103,7 @@ trait Mirrors extends api.Mirrors {
         if (clazz.isArray) "Array[" + erasureString(clazz.getComponentType) + "]"
         else clazz.getName
       }
-      erasureString(classTag[T].erasure)
+      erasureString(classTag[T].runtimeClass)
     }
 
     def requiredClass[T: ClassTag] : ClassSymbol =

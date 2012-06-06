@@ -21,7 +21,7 @@ import language.implicitConversions
  * [[scala.reflect.base.Universe#TypeTag]] and [[scala.reflect.base.Universe#ConcreteTypeTag]].
  *
  * An [[scala.reflect.ArrayTag]] value carries knowledge about how to build an array of elements of type T.
- * Typically such operation is performed by storing an erasure and instantiating arrays via reflection,
+ * Typically such operation is performed by storing a runtime class and instantiating arrays via reflection,
  * but [[scala.reflect.ArrayTag]] only defines an interface, not an implementation, hence it only contains the factory methods
  * `newArray` and `wrap` that can be used to build, correspondingly, single-dimensional and multi-dimensional arrays.
  *
@@ -35,7 +35,7 @@ import language.implicitConversions
  *
  * It is recommended to use the tag supertypes of to precisely express your intent, i.e.:
  * use ArrayTag when you just want to construct arrays,
- * use ClassTag only when you need an erasure, e.g. for serialization or pattern matching.
+ * use ClassTag only when you need a runtime class, e.g. for serialization or pattern matching.
  *
  * [Eugene++] also mention sensitivity to prefixes, i.e. that rb.TypeTag is different from ru.TypeTag
  * [Eugene++] migratability between mirrors and universes is also worth mentioning
