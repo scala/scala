@@ -1,0 +1,6 @@
+expected a field symbol, you provided a method symbol
+A typical cause of this problem is using a field accessor symbol instead of a field symbol.
+To obtain a field symbol append nme.LOCAL_SUFFIX_STRING to the name of the field,
+when searching for a member with Type.members or Type.declarations.
+This is a temporary inconvenience that will be resolved before 2.10.0-final.
+More information can be found here: https://issues.scala-lang.org/browse/SI-5895.
