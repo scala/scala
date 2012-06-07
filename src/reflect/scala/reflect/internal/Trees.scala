@@ -1266,6 +1266,9 @@ trait Trees extends api.Trees { self: SymbolTable =>
 
   // --- specific traversers and transformers
 
+  @deprecated("Moved to tree.duplicate", "2.10.0")
+  protected[scala] def duplicateTree(tree: Tree): Tree = tree.duplicate
+
   class ForeachPartialTreeTraverser(pf: PartialFunction[Tree, Tree]) extends Traverser {
     override def traverse(tree: Tree) {
       val t = if (pf isDefinedAt tree) pf(tree) else tree

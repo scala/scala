@@ -169,6 +169,18 @@ trait Definitions extends api.StandardDefinitions {
     // symbols related to packages
     var emptypackagescope: Scope = null //debug
 
+    @deprecated("Moved to rootMirror.RootPackage", "2.10.0")
+    val RootPackage: ModuleSymbol = rootMirror.RootPackage
+
+    @deprecated("Moved to rootMirror.RootClass", "2.10.0")
+    val RootClass: ClassSymbol = rootMirror.RootClass
+
+    @deprecated("Moved to rootMirror.EmptyPackage", "2.10.0")
+    val EmptyPackage: ModuleSymbol = rootMirror.EmptyPackage
+
+    @deprecated("Moved to rootMirror.EmptyPackageClass", "2.10.0")
+    val EmptyPackageClass: ClassSymbol = rootMirror.RootClass
+
     // It becomes tricky to create dedicated objects for other symbols because
     // of initialization order issues.
     lazy val JavaLangPackage      = getRequiredPackage(sn.JavaLang)
@@ -945,6 +957,12 @@ trait Definitions extends api.StandardDefinitions {
       attr.info.decls enter attr.newClassConstructor(NoPosition)
       attr
     }
+
+    @deprecated("Moved to rootMirror.getClass", "2.10.0")
+    def getClass(fullname: Name): ClassSymbol = rootMirror.getClassByName(fullname)
+
+    @deprecated("Moved to rootMirror.getModule", "2.10.0")
+    def getModule(fullname: Name): ModuleSymbol = rootMirror.getModule(fullname)
 
     private def fatalMissingSymbol(owner: Symbol, name: Name, what: String = "member") = {
       throw new FatalError(owner + " does not have a " + what + " " + name)
