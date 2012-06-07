@@ -825,7 +825,7 @@ extends scala.collection.concurrent.Map[K, V]
   }
   
   @inline
-  def computeHash(k: K) = hashingobj.hashCode(k)
+  def computeHash(k: K) = hashingobj.hash(k)
   
   final def lookup(k: K): V = {
     val hc = computeHash(k)
@@ -915,11 +915,7 @@ object TrieMap extends MutableMapFactory[TrieMap] {
   def empty[K, V]: TrieMap[K, V] = new TrieMap[K, V]
   
   class MangledHashing[K] extends Hashing[K] {
-    def hashCode(k: K) = {
-      var hcode = k.## * 0x9e3775cd
-      hcode = java.lang.Integer.reverseBytes(hcode)
-      hcode * 0x9e3775cd
-    }
+    def hash(k: K) = util.hashing.byteswap32(k.##)
   }
   
 }
