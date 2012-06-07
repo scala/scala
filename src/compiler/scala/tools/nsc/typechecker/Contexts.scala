@@ -117,6 +117,7 @@ trait Contexts { self: Analyzer =>
     var inSelfSuperCall = false             // is this context (enclosed in) a constructor call?
     // (the call to the super or self constructor in the first line of a constructor)
     // in this context the object's fields should not be in scope
+    // This mode is also used when typing class type parameters.
 
     var diagnostic: List[String] = Nil      // these messages are printed when issuing an error
     var implicitsEnabled = false

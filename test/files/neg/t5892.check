@@ -1,0 +1,6 @@
+t5892.scala:5: error: type mismatch;
+ found   : Boolean(false)
+ required: String
+class C[@annot(false) X] {
+               ^
+one error found
