@@ -1,0 +1,6 @@
+interop_typetags_without_classtags_arenot_manifests.scala:6: error: to create a manifest here, it is necessary to interoperate with the type tag `evidence$1` in scope.
+however typetag -> manifest conversion requires a class tag for the corresponding type to be present.
+to proceed add a class tag to the type `T` (e.g. by introducing a context bound) and recompile.
+    println(manifest[T])
+                    ^
+one error found

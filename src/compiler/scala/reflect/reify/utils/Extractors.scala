@@ -31,7 +31,7 @@ trait Extractors {
   //       }
   //     };
   //     new $treecreator1()
-  //   })($u.ConcreteTypeTag[List[Int]]($m, {
+  //   })($u.TypeTag[List[Int]]($m, {
   //     final class $typecreator1 extends scala.reflect.base.TypeCreator {
   //       def <init>(): $typecreator1 = {
   //         $typecreator1.super.<init>();
@@ -116,7 +116,7 @@ trait Extractors {
 
   object ReifiedTree {
     def apply(universe: Tree, mirror: Tree, symtab: SymbolTable, rtree: Tree, tpe: Type, rtpe: Tree, concrete: Boolean): Tree = {
-      val tagFactory = if (concrete) nme.ConcreteTypeTag else nme.TypeTag
+      val tagFactory = if (concrete) nme.TypeTag else nme.AbsTypeTag
       val tagCtor = TypeApply(Select(Select(Ident(nme.UNIVERSE_SHORT), tagFactory), nme.apply), List(TypeTree(tpe)))
       val exprCtor = TypeApply(Select(Select(Ident(nme.UNIVERSE_SHORT), nme.Expr), nme.apply), List(TypeTree(tpe)))
       val tagArgs = List(Ident(nme.MIRROR_SHORT), mkCreator(tpnme.REIFY_TYPECREATOR_PREFIX, symtab, rtpe))
@@ -130,9 +130,13 @@ trait Extractors {
         Apply(
           Apply(TypeApply(_, List(ttpe @ TypeTree())), List(_, Block(List(ClassDef(_, _, _, Template(_, _, List(_, _, DefDef(_, _, _, _, _, Block(_ :: _ :: symbolTable1, rtree)))))), _))),
           // todo. doesn't take into account optimizations such as $u.TypeTag.Int or the upcoming closure optimization
-          List(Apply(TypeApply(Select(_, tagFlavor), _), List(_, Block(List(ClassDef(_, _, _, Template(_, _, List(_, DefDef(_, _, _, _, _, Block(_ :: _ :: symbolTable2, rtpe)))))), _))))))
+          List(Apply(TypeApply(tagFactory @ Select(_, _), _), List(_, Block(List(ClassDef(_, _, _, Template(_, _, List(_, DefDef(_, _, _, _, _, Block(_ :: _ :: symbolTable2, rtpe)))))), _))))))
         if udef.name == nme.UNIVERSE_SHORT && mdef.name == nme.MIRROR_SHORT =>
-          Some(universe, mirror, SymbolTable(symbolTable1 ++ symbolTable2), rtree, ttpe.tpe, rtpe, tagFlavor == nme.ConcreteTypeTag)
+          val tagFlavor = tagFactory match {
+            case Select(Select(_, tagFlavor), _) => tagFlavor
+            case Select(_, tagFlavor) => tagFlavor
+          }
+          Some(universe, mirror, SymbolTable(symbolTable1 ++ symbolTable2), rtree, ttpe.tpe, rtpe, tagFlavor == nme.TypeTag)
       case _ =>
         None
     }
@@ -140,7 +144,7 @@ trait Extractors {
 
   object ReifiedType {
     def apply(universe: Tree, mirror: Tree, symtab: SymbolTable, tpe: Type, rtpe: Tree, concrete: Boolean) = {
-      val tagFactory = if (concrete) nme.ConcreteTypeTag else nme.TypeTag
+      val tagFactory = if (concrete) nme.TypeTag else nme.AbsTypeTag
       val ctor = TypeApply(Select(Select(Ident(nme.UNIVERSE_SHORT), tagFactory), nme.apply), List(TypeTree(tpe)))
       val args = List(Ident(nme.MIRROR_SHORT), mkCreator(tpnme.REIFY_TYPECREATOR_PREFIX, symtab, rtpe))
       val unwrapped = Apply(ctor, args)
@@ -151,9 +155,13 @@ trait Extractors {
       case Block(
         List(udef @ ValDef(_, _, _, universe), mdef @ ValDef(_, _, _, mirror)),
         // todo. doesn't take into account optimizations such as $u.TypeTag.Int or the upcoming closure optimization
-        Apply(TypeApply(Select(_, tagFlavor), List(ttpe @ TypeTree())), List(_, Block(List(ClassDef(_, _, _, Template(_, _, List(_, DefDef(_, _, _, _, _, Block(_ :: _ :: symtab, rtpe)))))), _))))
+        Apply(TypeApply(tagFactory @ Select(_, _), List(ttpe @ TypeTree())), List(_, Block(List(ClassDef(_, _, _, Template(_, _, List(_, DefDef(_, _, _, _, _, Block(_ :: _ :: symtab, rtpe)))))), _))))
         if udef.name == nme.UNIVERSE_SHORT && mdef.name == nme.MIRROR_SHORT =>
-          Some(universe, mirror, SymbolTable(symtab), ttpe.tpe, rtpe, tagFlavor == nme.ConcreteTypeTag)
+          val tagFlavor = tagFactory match {
+            case Select(Select(_, tagFlavor), _) => tagFlavor
+            case Select(_, tagFlavor) => tagFlavor
+          }
+          Some(universe, mirror, SymbolTable(symtab), ttpe.tpe, rtpe, tagFlavor == nme.TypeTag)
       case _ =>
         None
     }

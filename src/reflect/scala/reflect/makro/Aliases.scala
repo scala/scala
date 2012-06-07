@@ -17,11 +17,10 @@ trait Aliases {
   type Expr[+T] = universe.Expr[T]
   val Expr = universe.Expr
 
+  type AbsTypeTag[T] = universe.AbsTypeTag[T]
   type TypeTag[T] = universe.TypeTag[T]
-  type ConcreteTypeTag[T] = universe.ConcreteTypeTag[T]
+  val AbsTypeTag = universe.AbsTypeTag
   val TypeTag = universe.TypeTag
-  val ConcreteTypeTag = universe.ConcreteTypeTag
   def typeTag[T](implicit ttag: TypeTag[T]) = ttag
-  def concreteTypeTag[T](implicit cttag: ConcreteTypeTag[T]) = cttag
   def typeOf[T](implicit ttag: TypeTag[T]): Type = ttag.tpe
 }

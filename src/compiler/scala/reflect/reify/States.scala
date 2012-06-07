@@ -36,7 +36,7 @@ trait States {
       if (!value && concrete) {
         assert(current.isInstanceOf[Type], current)
         val offender = current.asInstanceOf[Type]
-        CannotReifyConcreteTypeTagHavingUnresolvedTypeParameters(offender)
+        CannotReifyTypeTagHavingUnresolvedTypeParameters(offender)
       }
     }
     var reifyStack = reifee :: Nil

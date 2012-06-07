@@ -1133,9 +1133,9 @@ trait Implicits {
 
     private def TagSymbols =  TagMaterializers.keySet
     private val TagMaterializers = Map[Symbol, Symbol](
-      ClassTagClass        -> MacroInternal_materializeClassTag,
-      TypeTagClass         -> MacroInternal_materializeTypeTag,
-      ConcreteTypeTagClass -> MacroInternal_materializeConcreteTypeTag
+      ClassTagClass   -> MacroInternal_materializeClassTag,
+      AbsTypeTagClass -> MacroInternal_materializeAbsTypeTag,
+      TypeTagClass    -> MacroInternal_materializeTypeTag
     )
 
     /** Creates a tree will produce a tag of the requested flavor.
@@ -1318,7 +1318,7 @@ trait Implicits {
         val interop =
           if (full) {
             val cm = typed(Ident(ReflectRuntimeCurrentMirror))
-            gen.mkMethodCall(ReflectRuntimeUniverse, nme.concreteTypeTagToManifest, List(tp), List(cm, tagInScope))
+            gen.mkMethodCall(ReflectRuntimeUniverse, nme.typeTagToManifest, List(tp), List(cm, tagInScope))
           } else gen.mkMethodCall(ReflectRuntimeUniverse, nme.classTagToClassManifest, List(tp), List(tagInScope))
         wrapResult(interop)
       }

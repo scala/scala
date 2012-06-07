@@ -104,7 +104,7 @@ trait Macros extends scala.tools.reflect.FastTrack with Traces {
             RepeatedParamClass.typeConstructor,
             List(implType(isType, sigma(origTpe.typeArgs.head))))
         else {
-          val tsym = getMember(MacroContextClass, if (isType) tpnme.TypeTag else tpnme.Expr)
+          val tsym = getMember(MacroContextClass, if (isType) tpnme.AbsTypeTag else tpnme.Expr)
           typeRef(singleType(NoPrefix, ctxParam), tsym, List(sigma(origTpe)))
         }
       val paramCache = collection.mutable.Map[Symbol, Symbol]()
@@ -155,7 +155,7 @@ trait Macros extends scala.tools.reflect.FastTrack with Traces {
       case TypeRef(SingleType(NoPrefix, contextParam), sym, List(tparam)) =>
         var wannabe = sym
         while (wannabe.isAliasType) wannabe = wannabe.info.typeSymbol
-        if (wannabe != definitions.TypeTagClass && wannabe != definitions.ConcreteTypeTagClass)
+        if (wannabe != definitions.AbsTypeTagClass && wannabe != definitions.TypeTagClass)
           List(param)
         else
           transform(param, tparam.typeSymbol) map (_ :: Nil) getOrElse Nil
@@ -200,6 +200,7 @@ trait Macros extends scala.tools.reflect.FastTrack with Traces {
     implicit class AugmentedString(s: String) {
       def abbreviateCoreAliases: String = { // hack!
         var result = s
+        result = result.replace("c.universe.AbsTypeTag", "c.AbsTypeTag")
         result = result.replace("c.universe.TypeTag", "c.TypeTag")
         result = result.replace("c.universe.Expr", "c.Expr")
         result
@@ -884,17 +885,17 @@ trait Macros extends scala.tools.reflect.FastTrack with Traces {
           macroLogVerbose("resolved tparam %s as %s".format(tparam, tpe))
           resolved(tparam) = tpe
           param.tpe.typeSymbol match {
-            case definitions.TypeTagClass =>
+            case definitions.AbsTypeTagClass =>
               // do nothing
-            case definitions.ConcreteTypeTagClass =>
-              if (!tpe.isConcrete) context.abort(context.enclosingPosition, "cannot create ConcreteTypeTag from a type %s having unresolved type parameters".format(tpe))
+            case definitions.TypeTagClass =>
+              if (!tpe.isConcrete) context.abort(context.enclosingPosition, "cannot create TypeTag from a type %s having unresolved type parameters".format(tpe))
               // otherwise do nothing
             case _ =>
               throw new Error("unsupported tpe: " + tpe)
           }
           Some(tparam)
         })
-        val tags = paramss.last takeWhile (_.isType) map (resolved(_)) map (tpe => if (tpe.isConcrete) context.ConcreteTypeTag(tpe) else context.TypeTag(tpe))
+        val tags = paramss.last takeWhile (_.isType) map (resolved(_)) map (tpe => if (tpe.isConcrete) context.TypeTag(tpe) else context.AbsTypeTag(tpe))
         if (paramss.lastOption map (params => !params.isEmpty && params.forall(_.isType)) getOrElse false) argss = argss :+ Nil
         argss = argss.dropRight(1) :+ (tags ++ argss.last) // todo. add support for context bounds in argss
 

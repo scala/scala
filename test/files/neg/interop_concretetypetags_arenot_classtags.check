@@ -1,4 +1,0 @@
-interop_concretetypetags_arenot_classtags.scala:6: error: No ClassTag available for T
-    println(classTag[T])
-                    ^
-one error found

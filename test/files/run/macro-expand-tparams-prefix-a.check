@@ -1,4 +1,4 @@
-ConcreteTypeTag[Int]
-ConcreteTypeTag[Int]
-ConcreteTypeTag[String]
-ConcreteTypeTag[Boolean]
+TypeTag[Int]
+TypeTag[Int]
+TypeTag[String]
+TypeTag[Boolean]

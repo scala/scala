@@ -65,7 +65,7 @@ object ReplVals {
      *  I have this forwarder which widens the type and then cast the result back
      *  to the dependent type.
      */
-    def compilerTypeFromTag(t: BaseUniverse # TypeTag[_]): Global#Type =
+    def compilerTypeFromTag(t: BaseUniverse # AbsTypeTag[_]): Global#Type =
       definitions.compilerTypeFromTag(t)
 
     class AppliedTypeFromTags(sym: Symbol) {

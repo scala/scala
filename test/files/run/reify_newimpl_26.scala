@@ -5,7 +5,7 @@ object Test extends ReplTest {
   def code = """
 def foo[T]{
   import scala.reflect.runtime.universe._
-  val tt = implicitly[TypeTag[List[T]]]
+  val tt = implicitly[AbsTypeTag[List[T]]]
   println(tt)
 }
 foo[Int]

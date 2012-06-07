@@ -30,14 +30,14 @@ trait Exprs { self: Universe =>
   }
 
   object Expr {
-    def apply[T: TypeTag](mirror: MirrorOf[self.type], treec: TreeCreator): Expr[T] = new ExprImpl[T](mirror.asInstanceOf[Mirror], treec)
+    def apply[T: AbsTypeTag](mirror: MirrorOf[self.type], treec: TreeCreator): Expr[T] = new ExprImpl[T](mirror.asInstanceOf[Mirror], treec)
     def unapply[T](expr: Expr[T]): Option[Tree] = Some(expr.tree)
   }
 
-  private class ExprImpl[+T: TypeTag](val mirror: Mirror, val treec: TreeCreator) extends Expr[T] {
+  private class ExprImpl[+T: AbsTypeTag](val mirror: Mirror, val treec: TreeCreator) extends Expr[T] {
     def in[U <: Universe with Singleton](otherMirror: MirrorOf[U]): U # Expr[T] = {
       val otherMirror1 = otherMirror.asInstanceOf[MirrorOf[otherMirror.universe.type]]
-      val tag1 = (implicitly[TypeTag[T]] in otherMirror).asInstanceOf[otherMirror.universe.TypeTag[T]]
+      val tag1 = (implicitly[AbsTypeTag[T]] in otherMirror).asInstanceOf[otherMirror.universe.AbsTypeTag[T]]
       otherMirror.universe.Expr[T](otherMirror1, treec)(tag1)
     }
 
@@ -45,7 +45,7 @@ trait Exprs { self: Universe =>
       // [Eugene++] this is important
       // !!! remove when we have improved type inference for singletons
       // search for .type] to find other instances
-    lazy val staticTpe: Type = implicitly[TypeTag[T]].tpe
+    lazy val staticTpe: Type = implicitly[AbsTypeTag[T]].tpe
     def actualTpe: Type = tree.tpe
 
     def splice: T = throw new UnsupportedOperationException("""

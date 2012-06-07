@@ -5,16 +5,16 @@ scala>
 
 scala> def foo[T]{
   import scala.reflect.runtime.universe._
-  val tt = implicitly[TypeTag[List[T]]]
+  val tt = implicitly[AbsTypeTag[List[T]]]
   println(tt)
 }
 <console>:9: free type: Ident(newTypeName("T")) defined by foo in <console>:7:16
-         val tt = implicitly[TypeTag[List[T]]]
+         val tt = implicitly[AbsTypeTag[List[T]]]
                             ^
 foo: [T]=> Unit
 
 scala> foo[Int]
-TypeTag[List[T]]
+AbsTypeTag[List[T]]
 
 scala> 
 

@@ -26,7 +26,7 @@ trait Tags {
     /** Finds in scope or materializes a ClassTag.
      *  Should be used instead of ClassManifest every time compiler needs to persist an erasure.
      *
-     *  Once upon a time, we had an `ErasureTag` which was to `ClassTag` the same that `TypeTag` is for `ConcreteTypeTag`.
+     *  Once upon a time, we had an `ErasureTag` which was to `ClassTag` the same that `AbsTypeTag` is for `TypeTag`.
      *  However we found out that we don't really need this concept, so it got removed.
      *
      *  @param   pos                    Position for error reporting. Please, provide meaningful value.
@@ -43,7 +43,7 @@ trait Tags {
       resolveTag(pos, taggedTp, allowMaterialization)
     }
 
-    /** Finds in scope or materializes a TypeTag (if `concrete` is false) or a ConcreteTypeTag (if `concrete` is true).
+    /** Finds in scope or materializes an AbsTypeTag (if `concrete` is false) or a TypeTag (if `concrete` is true).
      *
      *  @param   pos                    Position for error reporting. Please, provide meaningful value.
      *  @param   pre                    Prefix that represents a universe this type tag will be bound to.
@@ -60,7 +60,7 @@ trait Tags {
      *           EmptyTree if `allowMaterialization` is false, and there is no array tag in scope.
      */
     def resolveTypeTag(pos: Position, pre: Type, tp: Type, concrete: Boolean, allowMaterialization: Boolean = true): Tree = {
-      val tagSym = if (concrete) ConcreteTypeTagClass else TypeTagClass
+      val tagSym = if (concrete) TypeTagClass else AbsTypeTagClass
       val tagTp =  if (pre == NoType) TypeRef(BaseUniverseClass.asTypeConstructor, tagSym, List(tp)) else singleType(pre, pre member tagSym.name)
       val taggedTp = appliedType(tagTp, List(tp))
       resolveTag(pos, taggedTp, allowMaterialization)
