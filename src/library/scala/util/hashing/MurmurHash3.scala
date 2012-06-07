@@ -6,30 +6,11 @@
 **                          |/                                          **
 \*                                                                      */
 
-package scala.util
+package scala.util.hashing
 
 import java.lang.Integer.{ rotateLeft => rotl }
 
-/**
- * An implementation of Austin Appleby's MurmurHash 3 algorithm
- * (MurmurHash3_x86_32).
- *
- * An algorithm designed to generate well-distributed non-cryptographic
- * hashes. It is designed to hash data in 32 bit chunks (ints).
- *
- * The mix method needs to be called at each step to update the intermediate
- * hash value. For the last chunk to incorporate into the hash mixLast may
- * be used instead, which is slightly faster. Finally finalizeHash needs to
- * be called to compute the final hash value.
- *
- * This is based on the earlier MurmurHash3 code by Rex Kerr, but the
- * MurmurHash3 algorithm was since changed by its creator Austin Appleby
- * to remedy some weaknesses and improve performance. This represents the
- * latest and supposedly final version of the algortihm (revision 136).
- *
- * @see [[http://code.google.com/p/smhasher]]
- */
-class MurmurHash3 {
+private[hashing] class MurmurHash3 {
   /** Mix in a block of data into an intermediate hash value. */
   final def mix(hash: Int, data: Int): Int = {
     var h = mixLast(hash, data)
@@ -179,8 +160,25 @@ class MurmurHash3 {
 }
 
 /**
- * An instance of MurmurHash3 with predefined seeds for various
- * classes.  Used by all the scala collections and case classes.
+ * An implementation of Austin Appleby's MurmurHash 3 algorithm
+ * (MurmurHash3_x86_32). This object contains methods that hash
+ * values of various types as well as means to construct `Hashing`
+ * objects.
+ *
+ * This algorithm is designed to generate well-distributed non-cryptographic
+ * hashes. It is designed to hash data in 32 bit chunks (ints).
+ *
+ * The mix method needs to be called at each step to update the intermediate
+ * hash value. For the last chunk to incorporate into the hash mixLast may
+ * be used instead, which is slightly faster. Finally finalizeHash needs to
+ * be called to compute the final hash value.
+ *
+ * This is based on the earlier MurmurHash3 code by Rex Kerr, but the
+ * MurmurHash3 algorithm was since changed by its creator Austin Appleby
+ * to remedy some weaknesses and improve performance. This represents the
+ * latest and supposedly final version of the algortihm (revision 136).
+ *
+ * @see [[http://code.google.com/p/smhasher]]
  */
 object MurmurHash3 extends MurmurHash3 {
   final val arraySeed       = 0x3c074a61
@@ -205,6 +203,32 @@ object MurmurHash3 extends MurmurHash3 {
   def mapHash(xs: collection.Map[_, _]): Int = unorderedHash(xs, mapSeed)
   def setHash(xs: collection.Set[_]): Int    = unorderedHash(xs, setSeed)
 
+  class ArrayHashing[@specialized T] extends Hashing[Array[T]] {
+    def hash(a: Array[T]) = arrayHash(a)
+  }
+  
+  def arrayHashing[@specialized T] = new ArrayHashing[T]
+  
+  def bytesHashing = new Hashing[Array[Byte]] {
+    def hash(data: Array[Byte]) = bytesHash(data)
+  }
+  
+  def orderedHashing = new Hashing[TraversableOnce[Any]] {
+    def hash(xs: TraversableOnce[Any]) = orderedHash(xs)
+  }
+  
+  def productHashing = new Hashing[Product] {
+    def hash(x: Product) = productHash(x)
+  }
+  
+  def stringHashing = new Hashing[String] {
+    def hash(x: String) = stringHash(x)
+  }
+  
+  def unorderedHashing = new Hashing[TraversableOnce[Any]] {
+    def hash(xs: TraversableOnce[Any]) = unorderedHash(xs)
+  }
+  
   /** All this trouble and foreach still appears faster.
    *  Leaving in place in case someone would like to investigate further.
    */
