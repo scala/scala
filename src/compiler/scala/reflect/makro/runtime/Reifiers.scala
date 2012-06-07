@@ -40,13 +40,25 @@ trait Reifiers {
     Select(tree, ExprSplice)
   }
 
-  object utils extends {
-    val global: self.global.type = self.global
-    val typer: global.analyzer.Typer = self.callsiteTyper
-  } with scala.reflect.reify.utils.Utils
-  import utils._
+  // fixme: if I put utils here, then "global" from utils' early initialization syntax
+  // and "global" that comes from here conflict with each other when incrementally compiling
+  // the problem is that both are pickled with the same owner - trait Reifiers
+  // and this upsets the compiler, so that oftentimes it throws assertion failures
+  // Martin knows the details
+  //
+  // object utils extends {
+  //   val global: self.global.type = self.global
+  //   val typer: global.analyzer.Typer = self.callsiteTyper
+  // } with scala.reflect.reify.utils.Utils
+  // import utils._
 
   private def logFreeVars(position: Position, reification: Tree): Unit = {
+    object utils extends {
+      val global: self.global.type = self.global
+      val typer: global.analyzer.Typer = self.callsiteTyper
+    } with scala.reflect.reify.utils.Utils
+    import utils._
+
     def logFreeVars(symtab: SymbolTable): Unit =
       // logging free vars only when they are untyped prevents avalanches of duplicate messages
       symtab.syms map (sym => symtab.symDef(sym)) foreach {
