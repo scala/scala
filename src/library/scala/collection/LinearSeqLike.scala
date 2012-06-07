@@ -50,7 +50,7 @@ trait LinearSeqLike[+A, +Repr <: LinearSeqLike[A, Repr]] extends SeqLike[A, Repr
 
   def seq: LinearSeq[A]
 
-  override def hashCode() = util.MurmurHash3.seqHash(seq) // TODO - can we get faster via "linearSeqHash" ?
+  override def hashCode() = util.hashing.MurmurHash3.seqHash(seq) // TODO - can we get faster via "linearSeqHash" ?
 
   override /*IterableLike*/
   def iterator: Iterator[A] = new AbstractIterator[A] {

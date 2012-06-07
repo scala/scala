@@ -401,12 +401,7 @@ private[collection] object HashTable {
        *
        * For performance reasons, we avoid this improvement.
        * */
-      var i = hcode * 0x9e3775cd
-      i = java.lang.Integer.reverseBytes(i)
-      i = i * 0x9e3775cd
-      // a slower alternative for byte reversal:
-      // i = (i << 16) | (i >> 16)
-      // i = ((i >> 8) & 0x00ff00ff) | ((i << 8) & 0xff00ff00)
+      val i = util.hashing.byteswap32(hcode)
 
       /* Jenkins hash
        * for range 0-10000, output has the msb set to zero */
