@@ -23,23 +23,6 @@ trait Tags {
       ).tree)
     }
 
-    /** Finds in scope or materializes an ArrayTag.
-     *  Should be used instead of ClassTag or ClassManifest every time compiler needs to create an array.
-     *
-     *  @param   pos                    Position for error reporting. Please, provide meaningful value.
-     *  @param   tp                     Type we're looking an ArrayTag for, e.g. resolveArrayTag(pos, IntClass.tpe) will look for ArrayTag[Int].
-     *  @param   allowMaterialization   If true (default) then the resolver is allowed to launch materialization macros when there's no array tag in scope.
-     *                                  If false then materialization macros are prohibited from running.
-     *
-     *  @returns Tree that represents an `scala.reflect.ArrayTag` for `tp` if everything is okay.
-     *           EmptyTree if `allowMaterialization` is false, and there is no array tag in scope.
-     *           EmptyTree if the result contains unresolved (i.e. not spliced) type parameters and abstract type members.
-     */
-    def resolveArrayTag(pos: Position, tp: Type, allowMaterialization: Boolean = true): Tree = {
-      val taggedTp = appliedType(ArrayTagClass.typeConstructor, List(tp))
-      resolveTag(pos, taggedTp, allowMaterialization)
-    }
-
     /** Finds in scope or materializes a ClassTag.
      *  Should be used instead of ClassManifest every time compiler needs to persist an erasure.
      *

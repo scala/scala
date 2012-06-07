@@ -26,11 +26,6 @@ abstract class Taggers {
     NullClass.asType -> nme.Null,
     StringClass.asType -> nme.String)
 
-  // todo. the following two methods won't be necessary once we implement implicit macro generators for tags
-
-  def materializeArrayTag(prefix: Tree, tpe: Type): Tree =
-    materializeClassTag(prefix, tpe)
-
   def materializeClassTag(prefix: Tree, tpe: Type): Tree = {
     val tagModule = ClassTagModule
     materializeTag(prefix, tpe, tagModule, {

@@ -1133,7 +1133,6 @@ trait Implicits {
 
     private def TagSymbols =  TagMaterializers.keySet
     private val TagMaterializers = Map[Symbol, Symbol](
-      ArrayTagClass        -> MacroInternal_materializeArrayTag,
       ClassTagClass        -> MacroInternal_materializeClassTag,
       TypeTagClass         -> MacroInternal_materializeTypeTag,
       ConcreteTypeTagClass -> MacroInternal_materializeConcreteTypeTag
@@ -1166,9 +1165,8 @@ trait Implicits {
       }
 
       val prefix = (
-        // ClassTags and ArrayTags only exist for scala.reflect, so their materializer
-        // doesn't care about prefixes
-        if ((tagClass eq ArrayTagClass) || (tagClass eq ClassTagClass)) gen.mkBasisUniverseRef
+        // ClassTags are not path-dependent, so their materializer doesn't care about prefixes
+        if (tagClass eq ClassTagClass) gen.mkBasisUniverseRef
         else pre match {
           // [Eugene to Martin] this is the crux of the interaction between
           // implicits and reifiers here we need to turn a (supposedly
@@ -1296,7 +1294,7 @@ trait Implicits {
 
       val tagInScope =
         if (full) resolveTypeTag(pos, NoType, tp, concrete = true, allowMaterialization = false)
-        else resolveArrayTag(pos, tp, allowMaterialization = false)
+        else resolveClassTag(pos, tp, allowMaterialization = false)
       if (tagInScope.isEmpty) mot(tp, Nil, Nil)
       else {
         if (full) {
@@ -1321,7 +1319,7 @@ trait Implicits {
           if (full) {
             val cm = typed(Ident(ReflectRuntimeCurrentMirror))
             gen.mkMethodCall(ReflectRuntimeUniverse, nme.concreteTypeTagToManifest, List(tp), List(cm, tagInScope))
-          } else gen.mkMethodCall(ReflectRuntimeUniverse, nme.arrayTagToClassManifest, List(tp), List(tagInScope))
+          } else gen.mkMethodCall(ReflectRuntimeUniverse, nme.classTagToClassManifest, List(tp), List(tagInScope))
         wrapResult(interop)
       }
     }

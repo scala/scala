@@ -10,7 +10,7 @@ package scala.collection
 package generic
 
 import language.higherKinds
-import reflect.ArrayTag
+import reflect.ClassTag
 
 /** A template for companion objects of `ClassTagTraversable` and
  *  subclasses thereof.
@@ -22,11 +22,11 @@ import reflect.ArrayTag
  *    @author Aleksandar Prokopec
  *    @since 2.8
  */
-abstract class ArrayTagTraversableFactory[CC[X] <: Traversable[X] with GenericArrayTagTraversableTemplate[X, CC]]
-              extends GenericArrayTagCompanion[CC] {
+abstract class ClassTagTraversableFactory[CC[X] <: Traversable[X] with GenericClassTagTraversableTemplate[X, CC]]
+              extends GenericClassTagCompanion[CC] {
 
-  class GenericCanBuildFrom[A](implicit tag: ArrayTag[A]) extends CanBuildFrom[CC[_], A, CC[A]] {
-    def apply(from: CC[_]) = from.genericArrayTagBuilder[A]
+  class GenericCanBuildFrom[A](implicit tag: ClassTag[A]) extends CanBuildFrom[CC[_], A, CC[A]] {
+    def apply(from: CC[_]) = from.genericClassTagBuilder[A]
     def apply = newBuilder[A]
   }
 }

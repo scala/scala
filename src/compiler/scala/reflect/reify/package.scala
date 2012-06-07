@@ -48,8 +48,6 @@ package object reify {
     if (tpe.isSpliceable) {
       val classTagInScope = typer0.resolveClassTag(enclosingMacroPosition, tpe, allowMaterialization = false)
       if (!classTagInScope.isEmpty) return Select(classTagInScope, nme.runtimeClass)
-      val arrayTagInScope = typer0.resolveArrayTag(enclosingMacroPosition, tpe, allowMaterialization = false)
-      if (!arrayTagInScope.isEmpty) return gen.mkMethodCall(arrayElementClassMethod, List(arrayTagInScope))
       if (concrete) throw new ReificationError(enclosingMacroPosition, "tpe %s is an unresolved spliceable type".format(tpe))
     }
 

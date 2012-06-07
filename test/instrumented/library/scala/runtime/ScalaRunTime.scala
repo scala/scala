@@ -14,7 +14,7 @@ import scala.collection.{ Seq, IndexedSeq, TraversableView, AbstractIterator }
 import scala.collection.mutable.WrappedArray
 import scala.collection.immutable.{ StringLike, NumericRange, List, Stream, Nil, :: }
 import scala.collection.generic.{ Sorted }
-import scala.reflect.{ ArrayTag, ClassTag, arrayTag, classTag }
+import scala.reflect.{ ClassTag, classTag }
 import scala.util.control.ControlThrowable
 import scala.xml.{ Node, MetaData }
 
@@ -63,7 +63,6 @@ object ScalaRunTime {
   def arrayElementClass(schematic: Any): Class[_] = schematic match {
     case cls: Class[_] => cls.getComponentType
     case tag: ClassTag[_] => tag.runtimeClass
-    case tag: ArrayTag[_] => tag.newArray(0).getClass.getComponentType
     case _ => throw new UnsupportedOperationException("unsupported schematic %s (%s)".format(schematic, if (schematic == null) "null" else schematic.getClass))
   }
 

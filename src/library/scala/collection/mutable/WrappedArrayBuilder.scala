@@ -12,7 +12,7 @@ package scala.collection
 package mutable
 
 import generic._
-import scala.reflect.ArrayTag
+import scala.reflect.ClassTag
 import scala.runtime.ScalaRunTime._
 
 /** A builder class for arrays.
@@ -22,10 +22,10 @@ import scala.runtime.ScalaRunTime._
  *
  *  @since 2.8
  */
-class WrappedArrayBuilder[A](tag: ArrayTag[A]) extends Builder[A, WrappedArray[A]] {
+class WrappedArrayBuilder[A](tag: ClassTag[A]) extends Builder[A, WrappedArray[A]] {
 
   @deprecated("use tag instead", "2.10.0")
-  val manifest: ArrayTag[A] = tag
+  val manifest: ClassTag[A] = tag
 
   private var elems: WrappedArray[A] = _
   private var capacity: Int = 0

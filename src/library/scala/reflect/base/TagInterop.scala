@@ -4,11 +4,11 @@ package base
 import scala.runtime.ScalaRunTime._
 
 trait TagInterop { self: Universe =>
-  def arrayTagToClassManifest[T](tag: ArrayTag[T]): ClassManifest[T] = {
-    val runtimeClass = arrayElementClass(tag)
+  def classTagToClassManifest[T](tag: ClassTag[T]): ClassManifest[T] = {
+    val runtimeClass = tag.runtimeClass
     if (runtimeClass.isArray) {
       val elementClass = arrayElementClass(runtimeClass)
-      val elementManifest = arrayTagToClassManifest(ClassTag(elementClass))
+      val elementManifest = classTagToClassManifest(ClassTag(elementClass))
       ClassManifest.arrayType(elementManifest).asInstanceOf[ClassManifest[T]]
     } else {
       ClassManifest.fromClass(runtimeClass.asInstanceOf[Class[T]])

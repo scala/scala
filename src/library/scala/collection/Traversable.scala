@@ -68,7 +68,7 @@ trait Traversable[+A] extends TraversableLike[A, Traversable[A]]
   override def copyToBuffer[B >: A](dest: Buffer[B])
   override def copyToArray[B >: A](xs: Array[B], start: Int, len: Int)
   override def copyToArray[B >: A](xs: Array[B], start: Int)
-  override def toArray[B >: A : ArrayTag]: Array[B]
+  override def toArray[B >: A : ClassTag]: Array[B]
   override def toList: List[A]
   override def toIterable: Iterable[A]
   override def toSeq: Seq[A]

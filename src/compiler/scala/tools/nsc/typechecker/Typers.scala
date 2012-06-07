@@ -3158,7 +3158,7 @@ trait Typers extends Modes with Adaptations with Tags {
           if (annInfo.atp.isErroneous) { hasError = true; None }
           else Some(NestedAnnotArg(annInfo))
 
-        // use of Array.apply[T: ArrayTag](xs: T*): Array[T]
+        // use of Array.apply[T: ClassTag](xs: T*): Array[T]
         // and    Array.apply(x: Int, xs: Int*): Array[Int]       (and similar)
         case Apply(fun, args) =>
           val typedFun = typed(fun, forFunMode(mode), WildcardType)
@@ -4864,8 +4864,8 @@ trait Typers extends Modes with Adaptations with Tags {
               val Some((level, componentType)) = erasure.GenericArray.unapply(tpt.tpe)
               val tagType = List.iterate(componentType, level)(tpe => appliedType(ArrayClass.asType, List(tpe))).last
               val newArrayApp = atPos(tree.pos) {
-                val tag = resolveArrayTag(tree.pos, tagType)
-                if (tag.isEmpty) MissingArrayTagError(tree, tagType)
+                val tag = resolveClassTag(tree.pos, tagType)
+                if (tag.isEmpty) MissingClassTagError(tree, tagType)
                 else new ApplyToImplicitArgs(Select(tag, nme.newArray), args)
               }
               typed(newArrayApp, mode, pt)

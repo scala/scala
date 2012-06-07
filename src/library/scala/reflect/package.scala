@@ -19,9 +19,7 @@ package object reflect extends reflect_compat {
   @deprecated("Use `@scala.beans.ScalaBeanInfo` instead", "2.10.0")
   type ScalaBeanInfo = scala.beans.ScalaBeanInfo
 
-  // ArrayTag trait is defined outside the basis
   // ClassTag class is defined outside the basis
-  def arrayTag[T](implicit atag: ArrayTag[T]) = atag
   def classTag[T](implicit ctag: ClassTag[T]) = ctag
   // typeTag incantation is defined inside the basis
   // concreteTypeTag incantation is defined inside the basis

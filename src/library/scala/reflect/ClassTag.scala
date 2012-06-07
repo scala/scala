@@ -9,21 +9,17 @@ import scala.runtime.ScalaRunTime.arrayClass
  *  This is useful in itself, but also enables very important use case.
  *  Having this knowledge ClassTag can instantiate `Arrays`
  *  in those cases where the element type is unknown at compile time.
- *  Hence, ClassTag[T] conforms to the ArrayTag[T] trait.
  *
  *  If an implicit value of type u.ClassTag[T] is required, the compiler will make one up on demand.
  *  The implicitly created value contains in its `runtimeClass` field the runtime class that is the result of erasing type T.
  *  In that value, any occurrences of type parameters or abstract types U which come themselves with a ClassTag
- *  or a reflect.mirror.ConcreteTypeTag are represented by the type referenced by that tag.
+ *  are represented by the type referenced by that tag.
  *  If the type T contains unresolved references to type parameters or abstract types, a static error results.
- *
- *  A ConcreteTypeTag member of the reflect.mirror object is convertible to a ClassTag via an implicit conversion
- *  (this is not possible to do in all reflection universes because an operation that converts a type to a Java class might not be available).
  *
  * @see [[scala.reflect.base.TypeTags]]
  */
 @annotation.implicitNotFound(msg = "No ClassTag available for ${T}")
-trait ClassTag[T] extends ArrayTag[T] with Equals with Serializable {
+trait ClassTag[T] extends Equals with Serializable {
   // please, don't add any APIs here, like it was with `newWrappedArray` and `newArrayBuilder`
   // class tags, and all tags in general, should be as minimalistic as possible
 
