@@ -128,20 +128,41 @@ trait JavaMirrors extends internal.SymbolTable with api.JavaUniverse { self: Sym
             extends InstanceMirror {
       def instance = obj
       def reflectClass = wholemirror.reflectClass(obj.getClass)
-      def reflectField(field: TermSymbol): FieldMirror = new JavaFieldMirror(obj, field)
+      def reflectField(field: TermSymbol): FieldMirror = {
+        if (field.isMethod || field.isModule) throw new Error(s"""
+          |expected a field symbol, you provided a ${field.kind} symbol
+          |A typical cause of this problem is using a field accessor symbol instead of a field symbol.
+          |To obtain a field symbol append nme.LOCAL_SUFFIX_STRING to the name of the field,
+          |when searching for a member with Type.members or Type.declarations.
+          |This is a temporary inconvenience that will be resolved before 2.10.0-final.
+          |More information can be found here: https://issues.scala-lang.org/browse/SI-5895.
+        """.trim.stripMargin)
+        new JavaFieldMirror(obj, field)
+      }
       def reflectMethod(method: MethodSymbol): MethodMirror = new JavaMethodMirror(obj, method)
     }
 
     private class JavaFieldMirror(val receiver: AnyRef, val field: TermSymbol)
             extends FieldMirror {
-      lazy val jfield = fieldToJava(field)
+      lazy val jfield = {
+        val jfield = fieldToJava(field)
+        if (!jfield.isAccessible) jfield.setAccessible(true)
+        jfield
+      }
       def get = jfield.get(receiver)
-      def set(value: Any) = jfield.set(receiver, value)
+      def set(value: Any) = {
+        if (!field.isMutable) throw new Error("cannot set an immutable field")
+        jfield.set(receiver, value)
+      }
     }
 
     private class JavaMethodMirror(val receiver: AnyRef, val method: MethodSymbol)
             extends MethodMirror {
-      lazy val jmeth = methodToJava(method)
+      lazy val jmeth = {
+        val jmeth = methodToJava(method)
+        if (!jmeth.isAccessible) jmeth.setAccessible(true)
+        jmeth
+      }
       def apply(args: Any*): Any =
         if (method.owner == ArrayClass)
           method.name match {
@@ -157,7 +178,11 @@ trait JavaMirrors extends internal.SymbolTable with api.JavaUniverse { self: Sym
     private class JavaConstructorMirror(val method: MethodSymbol)
             extends MethodMirror {
       override val receiver = null
-      lazy val jconstr = constructorToJava(method)
+      lazy val jconstr = {
+        val jconstr = constructorToJava(method)
+        if (!jconstr.isAccessible) jconstr.setAccessible(true)
+        jconstr
+      }
       def apply(args: Any*): Any = jconstr.newInstance(args.asInstanceOf[Seq[AnyRef]]: _*)
     }
 
@@ -877,7 +902,8 @@ trait JavaMirrors extends internal.SymbolTable with api.JavaUniverse { self: Sym
      */
     def fieldToJava(fld: TermSymbol): jField = fieldCache.toJava(fld) {
       val jclazz = classToJava(fld.owner.asClassSymbol)
-      try jclazz getDeclaredField fld.name.toString
+      val jname = nme.dropLocalSuffix(fld.name).toString
+      try jclazz getDeclaredField jname
       catch {
         case ex: NoSuchFieldException => jclazz getDeclaredField expandedName(fld)
       }
@@ -889,7 +915,8 @@ trait JavaMirrors extends internal.SymbolTable with api.JavaUniverse { self: Sym
     def methodToJava(meth: MethodSymbol): jMethod = methodCache.toJava(meth) {
       val jclazz = classToJava(meth.owner.asClassSymbol)
       val paramClasses = transformedType(meth).paramTypes map typeToJavaClass
-      try jclazz getDeclaredMethod (meth.name.toString, paramClasses: _*)
+      val jname = nme.dropLocalSuffix(meth.name).toString
+      try jclazz getDeclaredMethod (jname, paramClasses: _*)
       catch {
         case ex: NoSuchMethodException =>
           jclazz getDeclaredMethod (expandedName(meth), paramClasses: _*)
