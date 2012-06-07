@@ -172,20 +172,15 @@ private[collection] trait Wrappers {
 
         def hasNext = ui.hasNext
         
-        def improve(hc: Int) = {
-          var i = hc * 0x9e3775cd
-          i = java.lang.Integer.reverseBytes(i)
-          i * 0x9e3775c
-        }
-        
         def next() = {
           val (k, v) = ui.next
           prev = Some(k)
           new ju.Map.Entry[A, B] {
+            import util.hashing.byteswap32
             def getKey = k
             def getValue = v
             def setValue(v1 : B) = self.put(k, v1)
-            override def hashCode = improve(k.hashCode) + (improve(v.hashCode) << 16)
+            override def hashCode = byteswap32(k.hashCode) + (byteswap32(v.hashCode) << 16)
             override def equals(other: Any) = other match {
               case e: ju.Map.Entry[_, _] => k == e.getKey && v == e.getValue
               case _ => false
