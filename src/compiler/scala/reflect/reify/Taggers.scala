@@ -43,14 +43,14 @@ abstract class Taggers {
       val Select(prefix, _) = universe
       c.materializeTypeTagForMacroContext(prefix, tpe, concrete)
     } else {
-      val tagType = if (concrete) ConcreteTypeTagClass else TypeTagClass
+      val tagType = if (concrete) TypeTagClass else AbsTypeTagClass
       val unaffiliatedTagTpe = TypeRef(BaseUniverseClass.asTypeConstructor, tagType, List(tpe))
       val unaffiliatedTag = c.inferImplicitValue(unaffiliatedTagTpe, silent = true, withMacrosDisabled = true)
       unaffiliatedTag match {
         case success if !success.isEmpty =>
           Apply(Select(success, nme.in), List(mirror orElse mkDefaultMirrorRef(c.universe)(universe, c.callsiteTyper)))
         case _ =>
-          val tagModule = if (concrete) ConcreteTypeTagModule else TypeTagModule
+          val tagModule = if (concrete) TypeTagModule else AbsTypeTagModule
           materializeTag(universe, tpe, tagModule, c.reifyType(universe, mirror, tpe, concrete = concrete))
       }
     }

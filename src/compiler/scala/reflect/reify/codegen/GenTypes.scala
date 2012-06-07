@@ -76,7 +76,7 @@ trait GenTypes {
     if (tpe.isSpliceable && !(quantified contains tpe.typeSymbol)) {
       if (reifyDebug) println("splicing " + tpe)
 
-      val tagFlavor = if (concrete) tpnme.ConcreteTypeTag.toString else tpnme.TypeTag.toString
+      val tagFlavor = if (concrete) tpnme.TypeTag.toString else tpnme.AbsTypeTag.toString
       val key = (tagFlavor, tpe.typeSymbol)
       // if this fails, it might produce the dreaded "erroneous or inaccessible type" error
       // to find out the whereabouts of the error run scalac with -Ydebug
@@ -96,7 +96,7 @@ trait GenTypes {
             }
           case success =>
             if (reifyDebug) println("implicit search has produced a result: " + success)
-            state.reificationIsConcrete &= concrete || success.tpe <:< ConcreteTypeTagClass.asTypeConstructor
+            state.reificationIsConcrete &= concrete || success.tpe <:< TypeTagClass.asTypeConstructor
             Select(Apply(Select(success, nme.in), List(Ident(nme.MIRROR_SHORT))), nme.tpe)
         }
       if (result != EmptyTree) return result
@@ -124,7 +124,7 @@ trait GenTypes {
             // todo. write a test for this
             if (ReflectRuntimeUniverse == NoSymbol) CannotConvertManifestToTagWithoutScalaReflect(tpe, manifestInScope)
             val cm = typer.typed(Ident(ReflectRuntimeCurrentMirror))
-            val tagTree = gen.mkMethodCall(ReflectRuntimeUniverse, nme.manifestToConcreteTypeTag, List(tpe), List(cm, manifestInScope))
+            val tagTree = gen.mkMethodCall(ReflectRuntimeUniverse, nme.manifestToTypeTag, List(tpe), List(cm, manifestInScope))
             Select(Apply(Select(tagTree, nme.in), List(Ident(nme.MIRROR_SHORT))), nme.tpe)
           case _ =>
             EmptyTree

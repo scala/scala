@@ -131,7 +131,7 @@ trait GenUtils {
 
   def isCrossStageTypeBearer(tree: Tree): Boolean = tree match {
     case TypeApply(hk, _) => isCrossStageTypeBearer(hk)
-    case Select(sym @ Select(_, ctor), nme.apply) if ctor == nme.TypeTag || ctor == nme.ConcreteTypeTag || ctor == nme.Expr => true
+    case Select(sym @ Select(_, ctor), nme.apply) if ctor == nme.AbsTypeTag || ctor == nme.TypeTag || ctor == nme.Expr => true
     case _ => false
   }
 

@@ -1,7 +1,9 @@
 // [Eugene++] delete this once we merge with trunk and have a working IDE
 
 package scala.reflect {
+  trait ArrayTag[T]
   trait ErasureTag[T]
+  trait ConcreteTypeTag[T]
 }
 
 package scala.reflect.api {
@@ -24,6 +26,8 @@ package scala.reflect {
   import scala.reflect.base.{Universe => BaseUniverse}
 
   trait internal_compat {
+    private[scala] def materializeArrayTag[T](u: BaseUniverse): ArrayTag[T] = ???
     private[scala] def materializeErasureTag[T](u: BaseUniverse): ErasureTag[T] = ???
+    private[scala] def materializeConcreteTypeTag[T](u: BaseUniverse): ConcreteTypeTag[T] = ???
   }
 }

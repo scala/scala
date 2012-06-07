@@ -1,6 +1,6 @@
-it works ConcreteTypeTag[Int]
-it works ConcreteTypeTag[Int]
-it works ConcreteTypeTag[Int]
-it works ConcreteTypeTag[Int]
-it works ConcreteTypeTag[Int]
+it works TypeTag[Int]
+it works TypeTag[Int]
+it works TypeTag[Int]
+it works TypeTag[Int]
+it works TypeTag[Int]
 kkthxbai

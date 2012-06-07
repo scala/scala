@@ -11,7 +11,7 @@ trait TagInterop { self: JavaUniverse =>
   // [Eugene++] would be great if we could approximate the interop without any mirrors
   // todo. think how to implement that
 
-  override def concreteTypeTagToManifest[T: ClassTag](mirror0: Any, tag: base.Universe # ConcreteTypeTag[T]): Manifest[T] = {
+  override def typeTagToManifest[T: ClassTag](mirror0: Any, tag: base.Universe # TypeTag[T]): Manifest[T] = {
     // [Eugene++] implement more sophisticated logic
     // Martin said it'd be okay to simply copypaste `Implicits.manifestOfType`
     val mirror = mirror0.asInstanceOf[Mirror]
@@ -19,8 +19,8 @@ trait TagInterop { self: JavaUniverse =>
     Manifest.classType(runtimeClass).asInstanceOf[Manifest[T]]
   }
 
-  override def manifestToConcreteTypeTag[T](mirror0: Any, manifest: Manifest[T]): base.Universe # ConcreteTypeTag[T] =
-    ConcreteTypeTag(mirror0.asInstanceOf[Mirror], new TypeCreator {
+  override def manifestToTypeTag[T](mirror0: Any, manifest: Manifest[T]): base.Universe # TypeTag[T] =
+    TypeTag(mirror0.asInstanceOf[Mirror], new TypeCreator {
       def apply[U <: BaseUniverse with Singleton](mirror: MirrorOf[U]): U # Type = {
         mirror.universe match {
           case ju: JavaUniverse =>
@@ -28,10 +28,10 @@ trait TagInterop { self: JavaUniverse =>
             val sym = jm.reflectClass(manifest.erasure).symbol
             val tpe =
               if (manifest.typeArguments.isEmpty) sym.asType
-              else ju.appliedType(sym.asTypeConstructor, manifest.typeArguments map (targ => ju.manifestToConcreteTypeTag(jm, targ)) map (_.in(jm).tpe))
+              else ju.appliedType(sym.asTypeConstructor, manifest.typeArguments map (targ => ju.manifestToTypeTag(jm, targ)) map (_.in(jm).tpe))
             tpe.asInstanceOf[U # Type]
           case u =>
-            u.manifestToConcreteTypeTag(mirror.asInstanceOf[u.Mirror], manifest).in(mirror).tpe
+            u.manifestToTypeTag(mirror.asInstanceOf[u.Mirror], manifest).in(mirror).tpe
         }
       }
     })

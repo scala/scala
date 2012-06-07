@@ -4,5 +4,5 @@ package makro
 trait Exprs {
   self: Context =>
 
-  def Expr[T: TypeTag](tree: Tree): Expr[T]
+  def Expr[T: AbsTypeTag](tree: Tree): Expr[T]
 }

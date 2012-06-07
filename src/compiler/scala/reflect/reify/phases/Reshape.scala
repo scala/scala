@@ -103,10 +103,10 @@ trait Reshape {
             // of, say, ClassTag or TypeTag
             case Apply(TypeApply(_, List(tt)), _) if original.symbol == MacroInternal_materializeClassTag =>
               gen.mkNullaryCall(Predef_implicitly, List(appliedType(ClassTagClass, tt.tpe)))
+            case Apply(TypeApply(_, List(tt)), List(pre)) if original.symbol == MacroInternal_materializeAbsTypeTag =>
+              gen.mkNullaryCall(Predef_implicitly, List(typeRef(pre.tpe, AbsTypeTagClass, List(tt.tpe))))
             case Apply(TypeApply(_, List(tt)), List(pre)) if original.symbol == MacroInternal_materializeTypeTag =>
               gen.mkNullaryCall(Predef_implicitly, List(typeRef(pre.tpe, TypeTagClass, List(tt.tpe))))
-            case Apply(TypeApply(_, List(tt)), List(pre)) if original.symbol == MacroInternal_materializeConcreteTypeTag =>
-              gen.mkNullaryCall(Predef_implicitly, List(typeRef(pre.tpe, ConcreteTypeTagClass, List(tt.tpe))))
             case _ =>
               original
           }

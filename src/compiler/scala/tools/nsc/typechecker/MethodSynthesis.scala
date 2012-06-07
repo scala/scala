@@ -23,14 +23,14 @@ trait MethodSynthesis {
   import CODE._
 
   object synthesisUtil {
-    type CTT[T]  = ru.ConcreteTypeTag[T]
+    type TT[T]  = ru.TypeTag[T]
     type CT[T] = ClassTag[T]
 
     def ValOrDefDef(sym: Symbol, body: Tree) =
       if (sym.isLazy) ValDef(sym, body)
       else DefDef(sym, body)
 
-    def applyTypeInternal(tags: List[CTT[_]]): Type = {
+    def applyTypeInternal(tags: List[TT[_]]): Type = {
       // [Eugene++ to Paul] needs review!!
       val symbols = tags map compilerSymbolFromTag
       val container :: args = symbols
@@ -49,26 +49,26 @@ trait MethodSynthesis {
       rootMirror.getRequiredModule(ct.runtimeClass.getName).tpe
 
     // Use these like `applyType[List, Int]` or `applyType[Map, Int, String]`
-    def applyType[CC](implicit t1: CTT[CC]): Type =
+    def applyType[CC](implicit t1: TT[CC]): Type =
       applyTypeInternal(List(t1))
 
-    def applyType[CC[X1], X1](implicit t1: CTT[CC[_]], t2: CTT[X1]): Type =
-      applyTypeInternal(List[CTT[_]](t1, t2))
+    def applyType[CC[X1], X1](implicit t1: TT[CC[_]], t2: TT[X1]): Type =
+      applyTypeInternal(List[TT[_]](t1, t2))
 
-    def applyType[CC[X1, X2], X1, X2](implicit t1: CTT[CC[_,_]], t2: CTT[X1], t3: CTT[X2]): Type =
+    def applyType[CC[X1, X2], X1, X2](implicit t1: TT[CC[_,_]], t2: TT[X1], t3: TT[X2]): Type =
     // [Eugene++] without an explicit type annotation for List, we get this:
-    // [scalacfork] C:\Projects\KeplerUnderRefactoring\src\compiler\scala\tools\nsc\typechecker\MethodSynthesis.scala:59: error: no type parameters for method apply: (xs: A*)List[A] in object List exist so that it can be applied to arguments (scala.tools.nsc.typechecker.MethodSynthesis.synthesisUtil.CTT[CC[_, _]], scala.tools.nsc.typechecker.MethodSynthesis.synthesisUtil.CTT[X1], scala.tools.nsc.typechecker.MethodSynthesis.synthesisUtil.CTT[X2])
+    // [scalacfork] C:\Projects\KeplerUnderRefactoring\src\compiler\scala\tools\nsc\typechecker\MethodSynthesis.scala:59: error: no type parameters for method apply: (xs: A*)List[A] in object List exist so that it can be applied to arguments (scala.tools.nsc.typechecker.MethodSynthesis.synthesisUtil.TT[CC[_, _]], scala.tools.nsc.typechecker.MethodSynthesis.synthesisUtil.TT[X1], scala.tools.nsc.typechecker.MethodSynthesis.synthesisUtil.TT[X2])
     // [scalacfork]  --- because ---
     // [scalacfork] undetermined type
     // [scalacfork]       applyTypeInternal(List(t1, t2, t3))
-      applyTypeInternal(List[CTT[_]](t1, t2, t3))
+      applyTypeInternal(List[TT[_]](t1, t2, t3))
 
-    def applyType[CC[X1, X2, X3], X1, X2, X3](implicit t1: CTT[CC[_,_,_]], t2: CTT[X1], t3: CTT[X2], t4: CTT[X3]): Type =
-      applyTypeInternal(List[CTT[_]](t1, t2, t3, t4))
+    def applyType[CC[X1, X2, X3], X1, X2, X3](implicit t1: TT[CC[_,_,_]], t2: TT[X1], t3: TT[X2], t4: TT[X3]): Type =
+      applyTypeInternal(List[TT[_]](t1, t2, t3, t4))
 
     // [Martin->Eugene]  !!! reinstantiate when typeables are in.
     // [Eugene++->Martin] now this compiles, will soon check it out
-    def newMethodType[F](owner: Symbol)(implicit t: CTT[F]): Type = {
+    def newMethodType[F](owner: Symbol)(implicit t: TT[F]): Type = {
       val fnSymbol = compilerSymbolFromTag(t)
       assert(fnSymbol isSubClass FunctionClass(t.tpe.typeArguments.size - 1), (owner, t))
       // [Eugene++ to Paul] needs review!!

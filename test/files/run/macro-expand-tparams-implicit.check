@@ -1,2 +1,2 @@
-ConcreteTypeTag[Int]
-ConcreteTypeTag[String]
+TypeTag[Int]
+TypeTag[String]

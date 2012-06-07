@@ -88,5 +88,5 @@ package foo2709 {
 
 // Problem with specs
 object specsProblem {
-  println(implicitly[ConcreteTypeTag[Class[_]]])
+  println(implicitly[TypeTag[Class[_]]])
 }

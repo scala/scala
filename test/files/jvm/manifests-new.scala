@@ -101,10 +101,10 @@ trait TestUtil {
     val in = new ObjectInputStream(new ByteArrayInputStream(buffer))
     in.readObject().asInstanceOf[A]
   }
-  def print[T](x: T)(implicit t: ConcreteTypeTag[T]) {
+  def print[T](x: T)(implicit t: TypeTag[T]) {
     // todo. type tags are not yet serializable
-//    val t1: ConcreteTypeTag[T] = read(write(t))
-    val t1: ConcreteTypeTag[T] = t
+//    val t1: TypeTag[T] = read(write(t))
+    val t1: TypeTag[T] = t
     val x1 = x.toString.replaceAll("@[0-9a-z]+$", "")
     println("x="+x1+", t="+t1+", k="+t1.tpe.kind+", s="+t1.tpe.typeSymbol.toString)
   }

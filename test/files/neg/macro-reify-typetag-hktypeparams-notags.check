@@ -1,0 +1,7 @@
+Test.scala:5: error: No TypeTag available for C[T]
+    println(implicitly[TypeTag[C[T]]])
+                      ^
+Test.scala:6: error: No TypeTag available for List[C[T]]
+    println(implicitly[TypeTag[List[C[T]]]])
+                      ^
+two errors found
