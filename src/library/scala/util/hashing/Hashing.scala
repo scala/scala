@@ -22,7 +22,7 @@ package scala.util.hashing
 @annotation.implicitNotFound(msg = "No implicit Hashing defined for ${T}.")
 trait Hashing[T] extends Serializable {
   
-  def hashCode(x: T): Int
+  def hashOf(x: T): Int
   
 }
 
@@ -30,13 +30,13 @@ trait Hashing[T] extends Serializable {
 object Hashing {
   
   final class Default[T] extends Hashing[T] {
-    def hashCode(x: T) = x.##
+    def hashOf(x: T) = x.##
   }
   
   implicit def default[T] = new Default[T]
   
   def fromFunction[T](f: T => Int) = new Hashing[T] {
-    def hashCode(x: T) = f(x)
+    def hashOf(x: T) = f(x)
   }
   
 }
