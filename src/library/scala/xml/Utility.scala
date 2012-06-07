@@ -268,7 +268,7 @@ object Utility extends AnyRef with parsing.TokenTests {
    * Returns a hashcode for the given constituents of a node
    */
   def hashCode(pre: String, label: String, attribHashCode: Int, scpeHash: Int, children: Seq[Node]) =
-    scala.util.MurmurHash3.orderedHash(label +: attribHashCode +: scpeHash +: children, pre.##)
+    scala.util.hashing.MurmurHash3.orderedHash(label +: attribHashCode +: scpeHash +: children, pre.##)
 
   def appendQuoted(s: String): String = sbToString(appendQuoted(s, _))
 

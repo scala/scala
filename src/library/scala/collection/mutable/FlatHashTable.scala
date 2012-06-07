@@ -397,9 +397,7 @@ private[collection] object FlatHashTable {
       //h = h + (h << 4)
       //h ^ (h >>> 10)
 
-      var i = hcode * 0x9e3775cd
-      i = java.lang.Integer.reverseBytes(i)
-      val improved = i * 0x9e3775cd
+      val improved = util.hashing.byteswap32(hcode)
 
       // for the remainder, see SI-5293
       // to ensure that different bits are used for different hash tables, we have to rotate based on the seed

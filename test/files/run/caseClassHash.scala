@@ -11,8 +11,8 @@ object Test {
 
     println("## method 1: " + foo1.##)
     println("## method 2: " + foo2.##)
-    println("   Murmur 1: " + scala.util.MurmurHash3.productHash(foo1))
-    println("   Murmur 2: " + scala.util.MurmurHash3.productHash(foo2))
+    println("   Murmur 1: " + scala.util.hashing.MurmurHash3.productHash(foo1))
+    println("   Murmur 2: " + scala.util.hashing.MurmurHash3.productHash(foo2))
   }
 }
 
