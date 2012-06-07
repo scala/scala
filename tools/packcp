@@ -1,5 +1,5 @@
 #!/bin/sh
 #
 
-THISDIR=`dirname $0`
-${THISDIR}/cpof ${THISDIR}/../build/pack/lib
+dir=$(dirname $0)
+$dir/cpof $dir/../build/pack/lib

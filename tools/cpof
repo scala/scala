@@ -3,28 +3,16 @@
 # Creates a classpath out of the contents of each directory
 # given as an argument.
 
-if [ $# == 0 ] ; then
-  echo "Usage: $0 [dir1 dir2 ...]"
-  exit 1
-fi
+[[ $# == 0 ]] && { echo "Usage: $0 [dir1 dir2 ...]" && exit 0; }
 
-THISDIR=`dirname $0`
-ABSCMD="${THISDIR}/abspath"
-CPRES=""
+sdir=$(dirname $0)
+cp=""
 
-for dir in $* ; do
-  absdir=`${ABSCMD} $dir`
-  LS=`ls -1 ${absdir}`
-
-  for x in $LS ; do
-    ABS=`${ABSCMD} "${absdir}/${x}"`
-    CPRES="${CPRES}:${ABS}"
+for dir in "$@" ; do
+  for x in $($sdir/abspath $dir)/* ; do
+    cp="$cp:$($sdir/abspath $x)"
   done
 done
 
-# shaving the : off the beginning.  Applause to /bin/sh for
-# keeping us humble about how far we've come.
-LEN=$(( ${#CPRES} - 1 ))
-result=${CPRES:1:${LEN}}
-
-echo $result
+# shaving the : off the beginning.
+echo ${cp#:}

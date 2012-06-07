@@ -82,8 +82,10 @@ TypeRef(
     TypeRef(
       TypeSymbol(abstract trait Function1[-T1, +R] extends Object)
       args = List(
-        TypeRef(TypeSymbol(final class Int extends AnyVal))
-        TypeRef(TypeSymbol(final class Boolean extends AnyVal))
+        TypeRef(TypeSymbol(final abstract class Int extends AnyVal))
+        TypeRef(
+          TypeSymbol(final abstract class Boolean extends AnyVal)
+        )
       )
     )
     TypeRef(
@@ -92,7 +94,7 @@ TypeRef(
         
       )
       args = List(
-        TypeRef(TypeSymbol(final class Int extends AnyVal))
+        TypeRef(TypeSymbol(final abstract class Int extends AnyVal))
       )
     )
   )
@@ -125,14 +127,14 @@ scala> :type -v def x = 1 ; def bar[T >: Null <: AnyRef](xyz: T) = 5
 OverloadedType(
   alts = List(
     NullaryMethodType(
-      TypeRef(TypeSymbol(final class Int extends AnyVal))
+      TypeRef(TypeSymbol(final abstract class Int extends AnyVal))
     )
     PolyType(
       typeParams = List(TypeParam(T >: Null <: AnyRef))
       resultType = MethodType(
         params = List(TermSymbol(xyz: T))
         resultType = TypeRef(
-          TypeSymbol(final class Int extends AnyVal)
+          TypeSymbol(final abstract class Int extends AnyVal)
         )
       )
     )
@@ -147,7 +149,7 @@ Int => Iterator[List[Nothing]]
 TypeRef(
   TypeSymbol(abstract trait Function1[-T1, +R] extends Object)
   args = List(
-    TypeRef(TypeSymbol(final class Int extends AnyVal))
+    TypeRef(TypeSymbol(final abstract class Int extends AnyVal))
     TypeRef(
       TypeSymbol(
         abstract trait Iterator[+A] extends TraversableOnce[A]
@@ -180,7 +182,7 @@ PolyType(
     TypeRef(
       TypeSymbol(abstract trait Function1[-T1, +R] extends Object)
       args = List(
-        TypeRef(TypeSymbol(final class Int extends AnyVal))
+        TypeRef(TypeSymbol(final abstract class Int extends AnyVal))
         TypeRef(
           TypeSymbol(
             abstract trait Iterator[+A] extends TraversableOnce[A]

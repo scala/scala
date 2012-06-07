@@ -1,8 +1,12 @@
 #!/bin/sh
 #
 
-THISDIR=`dirname $0`
-cp=`${THISDIR}/cpof ${THISDIR}/../build/strap/classes`
-fjbg=`${THISDIR}/abspath ${THISDIR}/../lib/fjbg.jar`
+dir=$(dirname $0)
+strap="$dir/../build/strap/classes"
+[[ -d $strap ]] || { echo "Error: no directory at $strap"; exit 1; }
 
-echo ${cp}:${fjbg}
+cp=$($dir/cpof $strap)
+fjbg=$($dir/abspath $dir/../lib/fjbg.jar)
+asm=$($dir/abspath $dir/../build/asm/classes)
+
+echo $cp:$fjbg:$asm
