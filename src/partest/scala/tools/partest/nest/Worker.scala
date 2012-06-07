@@ -694,7 +694,7 @@ class Worker(val fileManager: FileManager, params: TestRunParams) extends Actor 
               // create proper settings for the compiler
               val settings = new Settings(workerError)
               settings.outdir.value = outDir.getAbsoluteFile.getAbsolutePath
-              settings.Ysourcepath.value = sourcepath
+              settings.sourcepath.value = sourcepath
               settings.classpath.value = fileManager.CLASSPATH
               settings.Ybuildmanagerdebug.value = true
 
@@ -712,7 +712,7 @@ class Worker(val fileManager: FileManager, params: TestRunParams) extends Actor 
                 val args = (line split ' ').toList
                 val command = new CompilerCommand(args, settings)
                 command.ok && {
-                  bM.update(filesToSet(settings.Ysourcepath.value, command.files), Set.empty)
+                  bM.update(filesToSet(settings.sourcepath.value, command.files), Set.empty)
                   !reporter.hasErrors
                 }
               }
@@ -799,7 +799,7 @@ class Worker(val fileManager: FileManager, params: TestRunParams) extends Actor 
             NestUI.verbose("resFile: "+resFile)
 
             // run compiler in resident mode
-            // $SCALAC -d "$os_dstbase".obj -Xresident -Ysourcepath . "$@"
+            // $SCALAC -d "$os_dstbase".obj -Xresident -sourcepath . "$@"
             val sourcedir  = logFile.getParentFile.getAbsoluteFile
             val sourcepath = sourcedir.getAbsolutePath+File.separator
             NestUI.verbose("sourcepath: "+sourcepath)
@@ -807,7 +807,7 @@ class Worker(val fileManager: FileManager, params: TestRunParams) extends Actor 
             val argList = List(
               "-d", outDir.getAbsoluteFile.getPath,
               "-Xresident",
-              "-Ysourcepath", sourcepath)
+              "-sourcepath", sourcepath)
 
             // configure input/output files
             val logOut    = new FileOutputStream(logFile)
@@ -817,7 +817,7 @@ class Worker(val fileManager: FileManager, params: TestRunParams) extends Actor 
 
             // create compiler
             val settings = new Settings(workerError)
-            settings.Ysourcepath.value = sourcepath
+            settings.sourcepath.value = sourcepath
             settings.classpath.value = fileManager.CLASSPATH
             reporter = new ConsoleReporter(settings, scala.Console.in, logConsoleWriter)
             val command = new CompilerCommand(argList, settings)
@@ -828,7 +828,7 @@ class Worker(val fileManager: FileManager, params: TestRunParams) extends Actor 
               val cmdArgs = (line split ' ').toList map (fs => new File(dir, fs).getAbsolutePath)
               NestUI.verbose("cmdArgs: "+cmdArgs)
               val sett = new Settings(workerError)
-              sett.Ysourcepath.value = sourcepath
+              sett.sourcepath.value = sourcepath
               val command = new CompilerCommand(cmdArgs, sett)
               command.ok && {
                 (new compiler.Run) compile command.files

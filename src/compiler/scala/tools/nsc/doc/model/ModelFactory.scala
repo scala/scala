@@ -208,7 +208,7 @@ class ModelFactory(val global: Global, val settings: doc.Settings) {
 
     def sourceUrl = {
       def fixPath(s: String) = s.replaceAll("\\" + java.io.File.separator, "/")
-      val assumedSourceRoot  = fixPath(settings.docSourcePath.value) stripSuffix "/"
+      val assumedSourceRoot  = fixPath(settings.sourcepath.value) stripSuffix "/"
 
       if (!settings.docsourceurl.isDefault)
         inSource map { case (file, _) =>

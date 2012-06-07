@@ -100,7 +100,7 @@ class FastScalac extends Scalac {
       List(
         /*scalac*/
         s.bootclasspath, s.classpath, s.extdirs, s.dependencyfile, s.encoding,
-        s.outdir, s.Ysourcepath,
+        s.outdir, s.sourcepath,
         /*fsc*/
         s.server
       ) filter (_.value != "") flatMap (x => List(x.name, x.value))
