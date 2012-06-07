@@ -35,7 +35,7 @@ object Test {
     }
     // println(hits.toBuffer)
     // println(ChiSquare)
-    assert(ChiSquare < 2.0)
+    assert(ChiSquare < 4.0, ChiSquare + " -> " + hits.mkString(", "))
   }
   
 }

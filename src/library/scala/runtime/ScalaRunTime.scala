@@ -199,7 +199,7 @@ object ScalaRunTime {
   def _toString(x: Product): String =
     x.productIterator.mkString(x.productPrefix + "(", ",", ")")
 
-  def _hashCode(x: Product): Int = scala.util.MurmurHash3.productHash(x)
+  def _hashCode(x: Product): Int = scala.util.hashing.MurmurHash3.productHash(x)
 
   /** A helper for case classes. */
   def typedProductIterator[T](x: Product): Iterator[T] = {
