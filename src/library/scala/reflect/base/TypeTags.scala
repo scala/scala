@@ -16,26 +16,17 @@ import language.implicitConversions
  *
  * === Overview ===
  *
- * Type tags are organized in a hierarchy of four classes:
- * [[scala.reflect.ArrayTag]], [[scala.reflect.ClassTag]],
- * [[scala.reflect.base.Universe#TypeTag]] and [[scala.reflect.base.Universe#ConcreteTypeTag]].
+ * Type tags are organized in a hierarchy of three classes:
+ * [[scala.reflect.ClassTag]], [[scala.reflect.base.Universe#TypeTag]] and [[scala.reflect.base.Universe#ConcreteTypeTag]].
  *
- * An [[scala.reflect.ArrayTag]] value carries knowledge about how to build an array of elements of type T.
- * Typically such operation is performed by storing a runtime class and instantiating arrays via reflection,
- * but [[scala.reflect.ArrayTag]] only defines an interface, not an implementation, hence it only contains the factory methods
- * `newArray` and `wrap` that can be used to build, correspondingly, single-dimensional and multi-dimensional arrays.
- *
- * A [[scala.reflect.ClassTag]] is a standard implementation of [[scala.reflect.ArrayTag]].
+ * A [[scala.reflect.ClassTag]] carries a runtime class that corresponds to the source type T.
+ * As of such, it possesses the knowledge about how to build single- and multi-dimensional arrays of elements of that type.
  * It guarantees that the source type T did not to contain any references to type parameters or abstract types.
  * [[scala.reflect.ClassTag]] corresponds to a previous notion of [[scala.reflect.ClassManifest]].
  *
  * A [[scala.reflect.base.Universe#TypeTag]] value wraps a full Scala type in its tpe field.
  * A [[scala.reflect.base.Universe#ConcreteTypeTag]] value is a [[scala.reflect.base.Universe#TypeTag]]
  * that is guaranteed not to contain any references to type parameters or abstract types.
- *
- * It is recommended to use the tag supertypes of to precisely express your intent, i.e.:
- * use ArrayTag when you just want to construct arrays,
- * use ClassTag only when you need a runtime class, e.g. for serialization or pattern matching.
  *
  * [Eugene++] also mention sensitivity to prefixes, i.e. that rb.TypeTag is different from ru.TypeTag
  * [Eugene++] migratability between mirrors and universes is also worth mentioning

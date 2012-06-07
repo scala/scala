@@ -11,21 +11,21 @@ package generic
 
 import mutable.Builder
 import language.higherKinds
-import reflect.ArrayTag
+import reflect.ClassTag
 
-/** This class represents companions of classes which require ArrayTags
+/** This class represents companions of classes which require ClassTags
  *  for their element types.
  *
  *  @author Aleksandar Prokopec
  */
-abstract class GenericArrayTagCompanion[+CC[X] <: Traversable[X]] {
+abstract class GenericClassTagCompanion[+CC[X] <: Traversable[X]] {
   type Coll = CC[_]
 
-  def newBuilder[A](implicit ord: ArrayTag[A]): Builder[A, CC[A]]
+  def newBuilder[A](implicit ord: ClassTag[A]): Builder[A, CC[A]]
 
-  def empty[A: ArrayTag]: CC[A] = newBuilder[A].result
+  def empty[A: ClassTag]: CC[A] = newBuilder[A].result
 
-  def apply[A](elems: A*)(implicit ord: ArrayTag[A]): CC[A] = {
+  def apply[A](elems: A*)(implicit ord: ClassTag[A]): CC[A] = {
     val b = newBuilder[A]
     b ++= elems
     b.result

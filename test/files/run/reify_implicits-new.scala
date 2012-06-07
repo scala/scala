@@ -1,10 +1,10 @@
-import scala.reflect.{ArrayTag, arrayTag}
+import scala.reflect.{ClassTag, classTag}
 import scala.reflect.runtime.universe._
 import scala.tools.reflect.Eval
 
 object Test extends App {
   reify {
-    implicit def arrayWrapper[A : ArrayTag](x: Array[A]) =
+    implicit def arrayWrapper[A : ClassTag](x: Array[A]) =
       new {
         def sort(p: (A, A) => Boolean) = {
           util.Sorting.stableSort(x, p); x
