@@ -71,7 +71,7 @@ trait Layers extends Build {
       resourceDirectory in Compile <<= baseDirectory apply (_ / "src" / "library"),   
       defaultExcludes in unmanagedResources := ("*.scala" | "*.java" | "*.disabled"),
       // TODO - Allow other scalac option settings.
-      scalacOptions in Compile <++= (scalaSource in Compile) map (src => Seq("-Ysourcepath", src.getAbsolutePath)),
+      scalacOptions in Compile <++= (scalaSource in Compile) map (src => Seq("-sourcepath", src.getAbsolutePath)),
       resourceGenerators in Compile <+= (resourceManaged, Versions.scalaVersions, skip in Compile, streams) map Versions.generateVersionPropertiesFile("library.properties"),
       referenceScala
     )

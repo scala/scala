@@ -143,6 +143,9 @@ object scalac extends Command {
           CmdOption("print"),
           "Print program with all Scala-specific features removed."),
         Definition(
+          CmdOption("sourcepath", Argument("path")),
+          "Specify location(s) of source files."),
+        Definition(
           CmdOptionBound("target:", Argument("target")),
           SeqPara(
             "Specify which backend to use (" & Mono("jvm-1.5," &

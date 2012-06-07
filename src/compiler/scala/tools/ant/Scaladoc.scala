@@ -27,8 +27,8 @@ import scala.tools.nsc.reporters.{Reporter, ConsoleReporter}
  *  - `destdir`,
  *  - `classpath`,
  *  - `classpathref`,
- *  - `docSourcePath`,
- *  - `docSourcePathref`,
+ *  - `sourcepath`,
+ *  - `sourcepathref`,
  *  - `bootclasspath`,
  *  - `bootclasspathref`,
  *  - `extdirs`,
@@ -44,12 +44,12 @@ import scala.tools.nsc.reporters.{Reporter, ConsoleReporter}
  *  - `docgenerator`,
  *  - `docrootcontent`,
  *  - `unchecked`,
- *  - `nofail` and others :)
+ *  - `nofail`.
  *
  *  It also takes the following parameters as nested elements:
  *  - `src` (for srcdir),
  *  - `classpath`,
- *  - `docSourcePath`,
+ *  - `sourcepath`,
  *  - `bootclasspath`,
  *  - `extdirs`.
  *
@@ -90,7 +90,7 @@ class Scaladoc extends ScalaMatchingTask {
   /** The class path to use for this compilation. */
   private var classpath: Option[Path] = None
   /** The source path to use for this compilation. */
-  private var docSourcePath: Option[Path] = None
+  private var sourcepath: Option[Path] = None
   /** The boot class path to use for this compilation. */
   private var bootclasspath: Option[Path] = None
   /** The external extensions path to use for this compilation. */
@@ -214,33 +214,29 @@ class Scaladoc extends ScalaMatchingTask {
   def setClasspathref(input: Reference) =
     createClasspath().setRefid(input)
 
-  // Bridge the gap between sourcepath and docSourcePath
-  @deprecated("The scaladoc sourcepath attribute is deprecated. Please use docSourcePath instead.")
-  def setSourcepath(input: Path) = {
-    buildWarning("The scaladoc sourcepath attribute is deprecated. Please use docSourcePath instead.")
-    setDocSourcePath(input)
+  /** Sets the `sourcepath` attribute. Used by [[http://ant.apache.org Ant]].
+   *
+   *  @param input The value of `sourcepath`.
+   */
+  def setSourcepath(input: Path) =
+    if (sourcepath.isEmpty) sourcepath = Some(input)
+    else sourcepath.get.append(input)
+
+  /** Sets the `sourcepath` as a nested sourcepath Ant parameter.
+   *
+   *  @return A source path to be configured.
+   */
+  def createSourcepath(): Path = {
+    if (sourcepath.isEmpty) sourcepath = Some(new Path(getProject))
+    sourcepath.get.createPath()
   }
 
-  @deprecated("The scaladoc sourcepath attribute is deprecated. Please use docSourcePath instead.")
-  def setSourcepathref(input: Reference) = {
-    buildWarning("The scaladoc sourcepath attribute is deprecated. Please use docSourcePath instead.")
-    setDocSourcePathRef(input)
-  }
-
-  /** Sets the `docSourcePath` attribute. */
-  def setDocSourcePath(input: Path) =
-    if (docSourcePath.isEmpty) docSourcePath = Some(input)
-    else docSourcePath.get.append(input)
-
-  /** Sets the `docSourcePath` as a nested docSourcePath Ant parameter. */
-  def createSourcePath(): Path = {
-    if (docSourcePath.isEmpty) docSourcePath = Some(new Path(getProject))
-    docSourcePath.get.createPath()
-  }
-
-  /** Sets the `docSourcePath` as an external reference Ant parameter. */
-  def setDocSourcePathRef(input: Reference) =
-    createSourcePath().setRefid(input)
+  /** Sets the `sourcepath` as an external reference Ant parameter.
+   *
+   *  @param input A reference to a source path.
+   */
+  def setSourcepathref(input: Reference) =
+    createSourcepath().setRefid(input)
 
   /** Sets the `bootclasspath` attribute. Used by [[http://ant.apache.org Ant]].
    *
@@ -250,7 +246,7 @@ class Scaladoc extends ScalaMatchingTask {
     if (bootclasspath.isEmpty) bootclasspath = Some(input)
     else bootclasspath.get.append(input)
 
-  /** Sets the `bootclasspath` as a nested `docSourcePath` Ant parameter.
+  /** Sets the `bootclasspath` as a nested `sourcepath` Ant parameter.
    *
    *  @return A source path to be configured.
    */
@@ -276,7 +272,7 @@ class Scaladoc extends ScalaMatchingTask {
     else extdirs.get.append(input)
   }
 
-  /** Sets the `extdirs` as a nested docSourcePath Ant parameter.
+  /** Sets the `extdirs` as a nested sourcepath Ant parameter.
    *
    *  @return An extensions path to be configured.
    */
@@ -460,8 +456,8 @@ class Scaladoc extends ScalaMatchingTask {
    *  @return The source path as a list of files.
    */
   private def getSourcepath: List[File] =
-    if (docSourcePath.isEmpty) buildError("Member 'sourcepath' is empty.")
-    else docSourcePath.get.list().toList map nameToFile
+    if (sourcepath.isEmpty) buildError("Member 'sourcepath' is empty.")
+    else sourcepath.get.list().toList map nameToFile
 
   /** Gets the value of the `bootclasspath` attribute in a
    *  Scala-friendly form.
@@ -599,11 +595,12 @@ class Scaladoc extends ScalaMatchingTask {
     docSettings.outdir.value = asString(destination.get)
     if (!classpath.isEmpty)
       docSettings.classpath.value = asString(getClasspath)
-    if (!docSourcePath.isEmpty)
-      docSettings.docSourcePath.value = asString(getSourcepath)
+    if (!sourcepath.isEmpty)
+      docSettings.sourcepath.value = asString(getSourcepath)
+    /*else if (origin.get.size() > 0)
+      settings.sourcepath.value = origin.get.list()(0)*/
     if (!bootclasspath.isEmpty)
       docSettings.bootclasspath.value = asString(getBootclasspath)
-
     if (!extdirs.isEmpty) docSettings.extdirs.value = asString(getExtdirs)
     if (!encoding.isEmpty) docSettings.encoding.value = encoding.get
     if (!doctitle.isEmpty) docSettings.doctitle.value = decodeEscapes(doctitle.get)

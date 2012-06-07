@@ -176,21 +176,6 @@ trait ScalaSettings extends AbsScalaSettings
   val YvirtClasses    = false // too embryonic to even expose as a -Y //BooleanSetting    ("-Yvirtual-classes", "Support virtual classes")
 
   val exposeEmptyPackage = BooleanSetting("-Yexpose-empty-package", "Internal only: expose the empty package.").internalOnly()
-  val Ysourcepath     = PathSetting ("-Ysourcepath", "[Only used when bootstrapping the scala library] Indicates the path to the scala library source code so the code generated is stand-alone rather than referencing the previous library classes.", "") // Defaults.scalaSourcePath
-
-  // this should be defined StandardScalaSettings, but there we don't have withDeprecationMessage and withPostSetHook
-  // see StandardScalaSettings.sourcepath for more information
-  val deprSourcepath    = this match {
-    case s: doc.Settings    => PathSetting("-sourcepath", "Deprecated. Please use -doc-source-path.", ""). 
-                                 withDeprecationMessage ("-sourcepath is deprecated. Please use -doc-source-path."). 
-                                 withPostSetHook((v: PathSetting) => s.docSourcePath.tryToSet(List(v.value)))
-    case s: MutableSettings => PathSetting("-sourcepath", "Deprecated. Please use -Ysourcepath.",     ""). 
-                                 withDeprecationMessage ("-sourcepath is deprecated. Please use -Ysourcepath.").
-                                 withPostSetHook((v: PathSetting) => s.Ysourcepath.tryToSet(List(v.value)))
-    case _                  => PathSetting("-sourcepath", "Deprecated. Please use -doc-source-path or -Ysourcepath.", "").
-                                 withDeprecationMessage ("-sourcepath is deprecated. Please use -doc-source-path or -Ysourcepath.")
-                                 // no PostSetHook, we have no idea what's the equivalent
-  }
 
   def stop = stopAfter
 

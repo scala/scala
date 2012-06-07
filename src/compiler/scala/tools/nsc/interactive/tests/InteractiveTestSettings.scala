@@ -46,7 +46,7 @@ trait InteractiveTestSettings extends TestSettings with PresentationCompilerInst
         println("error processing arguments (unprocessed: %s)".format(rest))
       case _ => ()
     }
-    adjustPaths(settings.bootclasspath, settings.classpath, settings.javabootclasspath, settings.Ysourcepath)
+    adjustPaths(settings.bootclasspath, settings.classpath, settings.javabootclasspath, settings.sourcepath)
   }
 
   /** If there's a file ending in .opts, read it and parse it for cmd line arguments. */

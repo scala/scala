@@ -10,19 +10,12 @@ package scala.tools.ant
 
 import java.io.{ File, InputStream, FileWriter }
 
-import org.apache.tools.ant.{ Task, BuildException, Project }
+import org.apache.tools.ant.{ Task, BuildException }
 import org.apache.tools.ant.taskdefs.MatchingTask
 import org.apache.tools.ant.types.{ Path, Reference }
 
 trait ScalaTask {
   self: Task =>
-
-  /** Logs a warning message from the ant task (such as deprecated warnings) */
-  protected def buildWarning(message: String): Unit = {
-      log("warning:", Project.MSG_WARN)
-      log("  " + message, Project.MSG_WARN)
-      log("", Project.MSG_WARN)
-  }
 
   /** Generates a build error. Error location will be the
    *  current task in the ant file.

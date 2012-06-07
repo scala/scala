@@ -179,7 +179,7 @@ class PathResolver(settings: Settings, context: JavaContext) {
     case "bootclasspath"      => settings.bootclasspath.value
     case "extdirs"            => settings.extdirs.value
     case "classpath" | "cp"   => settings.classpath.value
-    case "Ysourcepath"         => settings.Ysourcepath.value
+    case "sourcepath"         => settings.sourcepath.value
   }
 
   /** Calculated values based on any given command line options, falling back on
@@ -193,7 +193,15 @@ class PathResolver(settings: Settings, context: JavaContext) {
     def javaUserClassPath   = if (useJavaClassPath) Defaults.javaUserClassPath else ""
     def scalaBootClassPath  = cmdLineOrElse("bootclasspath", Defaults.scalaBootClassPath)
     def scalaExtDirs        = cmdLineOrElse("extdirs", Defaults.scalaExtDirs)
-    def sourcePath          = cmdLineOrElse("Ysourcepath", Defaults.scalaSourcePath)
+    /** Scaladoc doesn't need any bootstrapping, otherwise will create errors such as:
+     * [scaladoc] ../scala-trunk/src/reflect/scala/reflect/makro/Reifiers.scala:89: error: object api is not a member of package reflect
+     * [scaladoc] case class ReificationError(val pos: reflect.api.PositionApi, val msg: String) extends Throwable(msg)
+     * [scaladoc]                                              ^
+     * because the bootstrapping will look at the sourcepath and create package "reflect" in "<root>"
+     * and then when typing relative names, instead of picking <root>.scala.relect, typedIdentifier will pick up the
+     * <root>.reflect package created by the bootstrapping. Thus, no bootstrapping for scaladoc!
+     * TODO: we should refactor this as a separate -bootstrap option to have a clean implementation, no? */
+    def sourcePath          = if (!settings.isScaladoc) cmdLineOrElse("sourcepath", Defaults.scalaSourcePath) else ""
 
     /** Against my better judgment, giving in to martin here and allowing
      *  CLASSPATH to be used automatically.  So for the user-specified part

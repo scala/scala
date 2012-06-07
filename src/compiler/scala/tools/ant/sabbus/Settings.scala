@@ -27,8 +27,8 @@ class Settings {
   def classpath_=(p: Path): this.type = { classpathBf = Some(p); this }
 
   private var sourcepathBf: Option[Path] = None
-  def Ysourcepath = sourcepathBf.get
-  def Ysourcepath_=(p: Path): this.type = { sourcepathBf = Some(p); this }
+  def sourcepath = sourcepathBf.get
+  def sourcepath_=(p: Path): this.type = { sourcepathBf = Some(p); this }
 
   private var sourcedirBf: Option[File] = None
   def sourcedir = sourcedirBf.get
@@ -66,7 +66,7 @@ class Settings {
     (if (!gBf.isEmpty) "-g:"+g :: Nil else Nil) :::
     (if (uncheckedBf) "-unchecked" :: Nil else Nil) :::
     (if (!classpathBf.isEmpty) "-classpath" :: classpath.toString :: Nil else Nil) :::
-    (if (!sourcepathBf.isEmpty) "-Ysourcepath" :: Ysourcepath.toString :: Nil else Nil) :::
+    (if (!sourcepathBf.isEmpty) "-sourcepath" :: sourcepath.toString :: Nil else Nil) :::
     (if (!sourcedirBf.isEmpty) "-Xsourcedir" :: sourcedir.toString :: Nil else Nil) :::
     (if (!bootclasspathBf.isEmpty) "-bootclasspath" :: bootclasspath.toString :: Nil else Nil) :::
     (if (!extdirsBf.isEmpty) "-extdirs" :: extdirs.toString :: Nil else Nil) :::
