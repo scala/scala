@@ -77,11 +77,26 @@ abstract class ExtensionMethods extends Transform with TypingTransformers {
     matching.head
   }
 
+  /** This method removes the `$this` argument from the parameter list a method.
+   *  
+   *  A method may be a `PolyType`, in which case we tear out the `$this` and the class
+   *  type params from its nested `MethodType`.
+   *  It may be a `MethodType`, either with a curried parameter list in which the first argument
+   *  is a `$this` - we just return the rest of the list.
+   *  This means that the corresponding symbol was generated during `extmethods`.
+   *  
+   *  It may also be a `MethodType` in which the `$this` does not appear in a curried parameter list.
+   *  The curried lists disappear during `uncurry`, and the methods may be duplicated afterwards,
+   *  for instance, during `specialize`.
+   *  In this case, the first argument is `$this` and we just get rid of it.
+   */
   private def normalize(stpe: Type, clazz: Symbol): Type = stpe match {
     case PolyType(tparams, restpe) =>
       GenPolyType(tparams dropRight clazz.typeParams.length, normalize(restpe.substSym(tparams takeRight clazz.typeParams.length, clazz.typeParams), clazz))
-    case MethodType(tparams, restpe) =>
+    case MethodType(List(thiz), restpe) if thiz.name == nme.SELF =>
       restpe
+    case MethodType(tparams, restpe) =>
+      MethodType(tparams.drop(1), restpe)
     case _ =>
       stpe
   }
