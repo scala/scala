@@ -37,8 +37,8 @@ object Test extends InteractiveTest {
     val filename = "usedmem-%tF.txt".format(Calendar.getInstance.getTime)
 
     val typerUnit = AbstractFile.getFile(baseDir.parent.parent.parent.parent / "src/compiler/scala/tools/nsc/typechecker/Typers.scala")
-    val typesUnit = AbstractFile.getFile(baseDir.parent.parent.parent.parent / "src/compiler/scala/reflect/internal/Types.scala")
-    val treesUnit = AbstractFile.getFile(baseDir.parent.parent.parent.parent / "src/compiler/scala/reflect/internal/Trees.scala")
+    val typesUnit = AbstractFile.getFile(baseDir.parent.parent.parent.parent / "src/reflect/scala/reflect/internal/Types.scala")
+    val treesUnit = AbstractFile.getFile(baseDir.parent.parent.parent.parent / "src/reflect/scala/reflect/internal/Trees.scala")
 
     askReload(Seq(new BatchSourceFile(typerUnit), new BatchSourceFile(typesUnit), new BatchSourceFile(treesUnit)))
     typeCheckWith(treesUnit, new String(treesUnit.toCharArray))

@@ -13,8 +13,7 @@ package io
 import java.io.{
   FileInputStream, FileOutputStream, BufferedReader, BufferedWriter, InputStreamReader, OutputStreamWriter,
   BufferedInputStream, BufferedOutputStream, IOException, PrintStream, PrintWriter, Closeable => JCloseable }
-// [scala-reflect.jar migration note] uncomment when creating scala-reflect.jar
-// import java.io.{ File => JFile }
+import java.io.{ File => JFile }
 import java.nio.channels.{ Channel, FileChannel }
 import scala.io.Codec
 import language.{reflectiveCalls, implicitConversions}

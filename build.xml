@@ -175,6 +175,7 @@ PROPERTIES
 
   <!-- Sets location of pre-compiled libraries -->
   <property name="lib.starr.jar" value="${lib.dir}/scala-library.jar"/>
+  <property name="reflect.starr.jar" value="${lib.dir}/scala-reflect.jar"/>
   <property name="comp.starr.jar" value="${lib.dir}/scala-compiler.jar"/>
   <property name="jline.jar" value="${lib.dir}/jline.jar"/>
   <property name="ant.jar" value="${ant.home}/lib/ant.jar"/>
@@ -396,6 +397,7 @@ INITIALISATION
   <!-- Define tasks that can be run with Starr -->
     <path id="starr.classpath">
       <pathelement location="${lib.starr.jar}"/>
+      <pathelement location="${reflect.starr.jar}"/>
       <pathelement location="${comp.starr.jar}"/>
       <path refid="aux.libs"/>
     </path>
@@ -507,11 +509,60 @@ LOCAL REFERENCE BUILD (LOCKER)
     <stopwatch name="locker.lib.timer" action="total"/>
   </target>
 
-  <target name="locker.pre-comp" depends="locker.lib" unless="locker.available">
+
+  <target name="locker.pre-reflect" depends="locker.lib" unless="locker.available">
+    <condition property="locker.reflect.needed">
+      <not><available file="${build-locker.dir}/reflect.complete"/></not>
+    </condition>
+  </target>
+
+  <target name="locker.reflect" depends="locker.pre-reflect" if="locker.reflect.needed">
+    <stopwatch name="locker.reflect.timer"/>
+    <mkdir dir="${build-locker.dir}/classes/reflect"/>
+    <scalacfork
+      destdir="${build-locker.dir}/classes/reflect"
+      compilerpathref="starr.classpath"
+      params="${scalac.args.all}"
+      srcdir="${src.dir}/reflect"
+      jvmargs="${scalacfork.jvmargs}">
+      <include name="**/*.scala"/>
+      <compilationpath>
+        <pathelement location="${build-locker.dir}/classes/library"/>
+        <pathelement location="${build-locker.dir}/classes/reflect"/>
+        <path refid="aux.libs"/>
+        <pathelement location="${jline.jar}"/>
+      </compilationpath>
+    </scalacfork>
+    <!-- TODO - needed? -->
+    <propertyfile file="${build-locker.dir}/classes/reflect/reflect.properties">
+      <entry key="version.number" value="${version.number}"/>
+      <entry key="maven.version.number" value="${maven.version.number}"/>
+      <entry key="osgi.version.number" value="${osgi.version.number}"/>
+      <entry key="copyright.string" value="${copyright.string}"/>
+    </propertyfile>
+    <copy todir="${build-locker.dir}/classes/reflect">
+      <fileset dir="${src.dir}/reflect">
+        <include name="**/*.tmpl"/>
+        <include name="**/*.xml"/>
+        <include name="**/*.js"/>
+        <include name="**/*.html"/>
+        <include name="**/*.css"/>
+        <include name="**/*.properties"/>
+        <include name="**/*.swf"/>
+        <include name="**/*.png"/>
+        <include name="**/*.gif"/>
+      </fileset>
+    </copy>
+    <touch file="${build-locker.dir}/reflect.complete" verbose="no"/>
+    <stopwatch name="locker.reflect.timer" action="total"/>
+  </target>
+
+  <target name="locker.pre-comp" depends="locker.reflect" unless="locker.available">
     <condition property="locker.comp.needed">
       <not><available file="${build-locker.dir}/compiler.complete"/></not>
     </condition>
   </target>
+
 
   <target name="locker.comp" depends="locker.pre-comp" if="locker.comp.needed">
     <stopwatch name="locker.comp.timer"/>
@@ -525,6 +576,7 @@ LOCAL REFERENCE BUILD (LOCKER)
       <include name="**/*.scala"/>
       <compilationpath>
         <pathelement location="${build-locker.dir}/classes/library"/>
+        <pathelement location="${build-locker.dir}/classes/reflect"/>
         <pathelement location="${build-locker.dir}/classes/compiler"/>
         <path refid="aux.libs"/>
         <path refid="asm.classpath"/>
@@ -558,12 +610,15 @@ LOCAL REFERENCE BUILD (LOCKER)
     <touch file="${build-locker.dir}/all.complete" verbose="no"/>
     <path id="locker.classpath">
       <pathelement location="${build-locker.dir}/classes/library"/>
+      <pathelement location="${build-locker.dir}/classes/reflect"/>
       <pathelement location="${build-locker.dir}/classes/compiler"/>
       <path refid="asm.classpath"/>
       <path refid="aux.libs"/>
     </path>
+    <!-- TODO - Why is this *here* ? -->
     <path id="quick.classpath">
       <pathelement location="${build-quick.dir}/classes/library"/>
+      <pathelement location="${build-quick.dir}/classes/reflect"/>
       <pathelement location="${build-quick.dir}/classes/compiler"/>
       <path refid="asm.classpath"/>
       <path refid="aux.libs"/>
@@ -586,7 +641,19 @@ LOCAL REFERENCE BUILD (LOCKER)
     <delete file="${build-locker.dir}/library.complete"/>
   </target>
 
-  <target name="locker.unlock.pre-comp" depends="locker.unlock.lib">
+  <target name="locker.unlock.pre-reflect" depends="locker.unlock.lib">
+    <uptodate property="locker.reflect.available" targetfile="${build-locker.dir}/reflect.complete">
+      <srcfiles dir="${src.dir}">
+        <include name="reflect/**"/>
+      </srcfiles>
+    </uptodate>
+  </target>
+
+  <target name="locker.unlock.reflect" depends="locker.unlock.pre-reflect" unless="locker.reflect.available">
+    <delete file="${build-locker.dir}/reflect.complete"/>
+  </target>
+
+  <target name="locker.unlock.pre-comp" depends="locker.unlock.reflect">
     <uptodate property="locker.comp.available" targetfile="${build-locker.dir}/compiler.complete">
       <srcfiles dir="${src.dir}">
         <include name="compiler/**"/>
@@ -622,7 +689,21 @@ PACKED LOCKER BUILD (PALO)
     </jar>
   </target>
 
-  <target name="palo.pre-comp" depends="palo.lib">
+  <target name="palo.pre-reflect" depends="palo.lib">
+    <uptodate
+      property="palo.reflect.available"
+      targetfile="${build-palo.dir}/lib/scala-reflect.jar"
+      srcfile="${build-locker.dir}/reflect.complete"/>
+  </target>
+
+  <target name="palo.reflect" depends="palo.pre-reflect" unless="palo.reflect.available">
+    <mkdir dir="${build-palo.dir}/lib"/>
+    <jar destfile="${build-palo.dir}/lib/scala-reflect.jar" manifest="${basedir}/META-INF/MANIFEST.MF">
+      <fileset dir="${build-locker.dir}/classes/reflect"/>
+    </jar>
+  </target>
+
+  <target name="palo.pre-comp" depends="palo.reflect">
     <uptodate
       property="palo.comp.available"
       targetfile="${build-palo.dir}/lib/scala-compiler.jar"
@@ -660,6 +741,7 @@ PACKED LOCKER BUILD (PALO)
     <taskdef name="palo-bin" classname="scala.tools.ant.ScalaTool">
       <classpath>
         <pathelement location="${build-palo.dir}/lib/scala-library.jar"/>
+        <pathelement location="${build-palo.dir}/lib/scala-reflect.jar"/>
         <pathelement location="${build-palo.dir}/lib/scala-compiler.jar"/>
         <pathelement location="${build-palo.dir}/lib/jline.jar"/>
       </classpath>
@@ -776,7 +858,57 @@ QUICK BUILD (QUICK)
     <stopwatch name="quick.lib.timer" action="total"/>
   </target>
 
-  <target name="quick.newlibs" depends="quick.lib" if="libs.outdated">
+
+  <target name="quick.pre-reflect" depends="quick.lib">
+    <uptodate property="quick.reflect.available" targetfile="${build-quick.dir}/reflect.complete">
+      <srcfiles dir="${src.dir}">
+        <include name="reflect/**"/>
+      </srcfiles>
+    </uptodate>
+  </target>
+
+  <target name="quick.reflect" depends="quick.pre-reflect" unless="quick.reflect.available">
+    <stopwatch name="quick.reflect.timer"/>
+    <mkdir dir="${build-quick.dir}/classes/reflect"/>
+    <scalacfork
+      destdir="${build-quick.dir}/classes/reflect"
+      compilerpathref="locker.classpath"
+      params="${scalac.args.all}"
+      srcdir="${src.dir}/reflect"
+      jvmargs="${scalacfork.jvmargs}">
+      <include name="**/*.scala"/>
+      <compilationpath>
+        <pathelement location="${build-quick.dir}/classes/library"/>
+        <pathelement location="${build-quick.dir}/classes/reflect"/>
+        <path refid="aux.libs"/>
+        <pathelement location="${jline.jar}"/>
+      </compilationpath>
+    </scalacfork>
+    <!-- TODO - needed? -->
+    <propertyfile file="${build-quick.dir}/classes/reflect/reflect.properties">
+      <entry key="version.number" value="${version.number}"/>
+      <entry key="maven.version.number" value="${maven.version.number}"/>
+      <entry key="osgi.version.number" value="${osgi.version.number}"/>
+      <entry key="copyright.string" value="${copyright.string}"/>
+    </propertyfile>
+    <copy todir="${build-quick.dir}/classes/reflect">
+      <fileset dir="${src.dir}/reflect">
+        <include name="**/*.tmpl"/>
+        <include name="**/*.xml"/>
+        <include name="**/*.js"/>
+        <include name="**/*.html"/>
+        <include name="**/*.css"/>
+        <include name="**/*.properties"/>
+        <include name="**/*.swf"/>
+        <include name="**/*.png"/>
+        <include name="**/*.gif"/>
+      </fileset>
+    </copy>
+    <touch file="${build-quick.dir}/reflect.complete" verbose="no"/>
+    <stopwatch name="quick.reflect.timer" action="total"/>
+  </target>
+
+  <target name="quick.newlibs" depends="quick.reflect" if="libs.outdated">
     <antcall target="libs.done" inheritRefs="true"/>
     <property name="fjbg.jar" value="${build-libs.dir}/fjbg.jar"/>
     <property name="msil.jar" value="${build-libs.dir}/msil.jar"/>
@@ -814,6 +946,7 @@ QUICK BUILD (QUICK)
       <include name="**/*.scala"/>
       <compilationpath>
         <pathelement location="${build-quick.dir}/classes/library"/>
+        <pathelement location="${build-quick.dir}/classes/reflect"/>
         <pathelement location="${build-quick.dir}/classes/compiler"/>
         <path refid="aux.libs"/>
         <path refid="asm.classpath"/>
@@ -862,6 +995,7 @@ QUICK BUILD (QUICK)
       <include name="**/*.scala"/>
       <compilationpath>
         <pathelement location="${build-quick.dir}/classes/library"/>
+        <pathelement location="${build-quick.dir}/classes/reflect"/>
         <pathelement location="${build-quick.dir}/classes/compiler"/>
         <pathelement location="${build-quick.dir}/classes/continuations-plugin"/>
         <path refid="aux.libs"/>
@@ -959,6 +1093,7 @@ QUICK BUILD (QUICK)
       <include name="**/*.scala"/>
       <compilationpath>
         <pathelement location="${build-quick.dir}/classes/library"/>
+        <pathelement location="${build-quick.dir}/classes/reflect"/>
         <pathelement location="${build-quick.dir}/classes/compiler"/>
         <pathelement location="${build-quick.dir}/classes/scalap"/>
         <pathelement location="${build-quick.dir}/classes/partest"/>
@@ -985,6 +1120,7 @@ QUICK BUILD (QUICK)
       target="1.5" source="1.5">
       <classpath>
         <pathelement location="${build-quick.dir}/classes/library"/>
+        <pathelement location="${build-quick.dir}/classes/reflect"/>
         <pathelement location="${build-quick.dir}/classes/compiler"/>
         <pathelement location="${build-quick.dir}/classes/scalap"/>
         <pathelement location="${build-quick.dir}/classes/partest"/>
@@ -1001,6 +1137,7 @@ QUICK BUILD (QUICK)
       <include name="**/*.scala"/>
       <compilationpath>
         <pathelement location="${build-quick.dir}/classes/library"/>
+        <pathelement location="${build-quick.dir}/classes/reflect"/>
         <pathelement location="${build-quick.dir}/classes/compiler"/>
         <pathelement location="${build-quick.dir}/classes/scalap"/>
         <pathelement location="${build-quick.dir}/classes/partest"/>
@@ -1031,6 +1168,7 @@ QUICK BUILD (QUICK)
   <target name="quick.bin" depends="quick.pre-bin" unless="quick.bin.available">
     <path id="quick.bin.classpath">
       <pathelement location="${build-quick.dir}/classes/library"/>
+      <pathelement location="${build-quick.dir}/classes/reflect"/>
       <pathelement location="${build-quick.dir}/classes/compiler"/>
       <pathelement location="${build-quick.dir}/classes/scalap"/>
       <path refid="aux.libs"/>
@@ -1074,6 +1212,7 @@ QUICK BUILD (QUICK)
   <target name="quick.done" depends="quick.bin">
     <path id="quick.classpath">
       <pathelement location="${build-quick.dir}/classes/library"/>
+      <pathelement location="${build-quick.dir}/classes/reflect"/>
       <pathelement location="${build-quick.dir}/classes/compiler"/>
       <path refid="asm.classpath"/>
       <path refid="aux.libs"/>
@@ -1126,7 +1265,21 @@ PACKED QUICK BUILD (PACK)
   </jar>
   </target>
 
-  <target name="pack.pre-comp" depends="pack.lib">
+  <target name="pack.pre-reflect" depends="pack.lib">
+    <uptodate
+      property="pack.reflect.available"
+      targetfile="${build-pack.dir}/lib/scala-reflect.jar"
+      srcfile="${build-quick.dir}/reflect.complete"/>
+  </target>
+
+  <target name="pack.reflect" depends="pack.pre-reflect" unless="pack.reflect.available">
+    <mkdir dir="${build-pack.dir}/lib"/>
+    <jar destfile="${build-pack.dir}/lib/scala-reflect.jar">
+      <fileset dir="${build-quick.dir}/classes/reflect" />
+    </jar>
+  </target>
+
+  <target name="pack.pre-comp" depends="pack.reflect">
     <uptodate
       property="pack.comp.available"
       targetfile="${build-pack.dir}/lib/scala-compiler.jar"
@@ -1215,6 +1368,7 @@ PACKED QUICK BUILD (PACK)
     <taskdef name="pack-bin" classname="scala.tools.ant.ScalaTool">
       <classpath>
         <pathelement location="${build-pack.dir}/lib/scala-library.jar"/>
+        <pathelement location="${build-pack.dir}/lib/scala-reflect.jar"/>
         <pathelement location="${build-pack.dir}/lib/scala-compiler.jar"/>
         <pathelement location="${build-pack.dir}/lib/jline.jar"/>
       </classpath>
@@ -1251,6 +1405,7 @@ PACKED QUICK BUILD (PACK)
   <target name="pack.done" depends="pack.bin">
     <path id="pack.classpath">
       <pathelement location="${build-pack.dir}/lib/scala-library.jar"/>
+      <pathelement location="${build-pack.dir}/lib/scala-reflect.jar"/>
       <pathelement location="${build-pack.dir}/lib/scala-compiler.jar"/>
       <pathelement location="${build-pack.dir}/lib/scala-partest.jar"/>
       <pathelement location="${build-pack.dir}/lib/scalap.jar"/>
@@ -1349,7 +1504,54 @@ BOOTSTRAPPING BUILD (STRAP)
     <stopwatch name="strap.lib.timer" action="total"/>
   </target>
 
-  <target name="strap.pre-comp" depends="strap.lib">
+  <target name="strap.pre-reflect" depends="strap.lib">
+    <uptodate property="strap.reflect.available" targetfile="${build-strap.dir}/reflect.complete">
+      <srcfiles dir="${src.dir}/reflect"/>
+    </uptodate>
+  </target>
+
+  <target name="strap.reflect" depends="strap.pre-reflect" unless="strap.reflect.available">
+    <stopwatch name="strap.reflect.timer"/>
+    <mkdir dir="${build-strap.dir}/classes/reflect"/>
+    <scalacfork
+      destdir="${build-strap.dir}/classes/reflect"
+      compilerpathref="pack.classpath"
+      params="${scalac.args.all}"
+      srcdir="${src.dir}/reflect"
+      jvmargs="${scalacfork.jvmargs}">
+      <include name="**/*.scala"/>
+      <compilationpath>
+        <pathelement location="${build-strap.dir}/classes/library"/>
+        <pathelement location="${build-strap.dir}/classes/reflect"/>
+        <path refid="aux.libs"/>
+        <pathelement location="${jline.jar}"/>
+      </compilationpath>
+    </scalacfork>
+    <propertyfile file="${build-strap.dir}/classes/reflect/reflect.properties">
+      <entry key="version.number" value="${version.number}"/>
+      <entry key="maven.version.number" value="${maven.version.number}"/>
+      <entry key="osgi.version.number" value="${osgi.version.number}"/>
+      <entry key="copyright.string" value="${copyright.string}"/>
+    </propertyfile>
+    <copy todir="${build-strap.dir}/classes/reflect">
+      <fileset dir="${src.dir}/reflect">
+        <include name="**/*.tmpl"/>
+        <include name="**/*.xml"/>
+        <include name="**/*.js"/>
+        <include name="**/*.css"/>
+        <include name="**/*.html"/>
+        <include name="**/*.properties"/>
+        <include name="**/*.swf"/>
+        <include name="**/*.png"/>
+        <include name="**/*.gif"/>
+        <include name="**/*.txt"/>
+       </fileset>
+    </copy>
+    <touch file="${build-strap.dir}/reflect.complete" verbose="no"/>
+    <stopwatch name="strap.comp.timer" action="total"/>
+  </target>
+
+  <target name="strap.pre-comp" depends="strap.reflect">
     <uptodate property="strap.comp.available" targetfile="${build-strap.dir}/compiler.complete">
       <srcfiles dir="${src.dir}/compiler"/>
     </uptodate>
@@ -1368,6 +1570,7 @@ BOOTSTRAPPING BUILD (STRAP)
       <include name="**/*.scala"/>
       <compilationpath>
         <pathelement location="${build-strap.dir}/classes/library"/>
+        <pathelement location="${build-strap.dir}/classes/reflect"/>
         <pathelement location="${build-strap.dir}/classes/compiler"/>
         <path refid="aux.libs"/>
         <path refid="asm.classpath"/>
@@ -1416,6 +1619,7 @@ BOOTSTRAPPING BUILD (STRAP)
       <include name="**/*.scala"/>
       <compilationpath>
         <pathelement location="${build-strap.dir}/classes/library"/>
+        <pathelement location="${build-strap.dir}/classes/reflect"/>
         <pathelement location="${build-strap.dir}/classes/compiler"/>
         <pathelement location="${build-strap.dir}/classes/continuations-plugin"/>
         <path refid="aux.libs"/>
@@ -1478,6 +1682,7 @@ BOOTSTRAPPING BUILD (STRAP)
       <include name="**/*.scala"/>
       <compilationpath>
         <pathelement location="${build-strap.dir}/classes/library"/>
+        <pathelement location="${build-strap.dir}/classes/reflect"/>
         <pathelement location="${build-strap.dir}/classes/compiler"/>
         <pathelement location="${build-strap.dir}/classes/scalap"/>
         <pathelement location="${build-strap.dir}/classes/partest"/>
@@ -1504,6 +1709,7 @@ BOOTSTRAPPING BUILD (STRAP)
       target="1.5" source="1.5">
       <classpath>
         <pathelement location="${build-strap.dir}/classes/library"/>
+        <pathelement location="${build-strap.dir}/classes/reflect"/>
         <pathelement location="${build-strap.dir}/classes/compiler"/>
         <pathelement location="${build-strap.dir}/classes/scalap"/>
         <pathelement location="${build-strap.dir}/classes/partest"/>
@@ -1520,6 +1726,7 @@ BOOTSTRAPPING BUILD (STRAP)
       <include name="**/*.scala"/>
       <compilationpath>
         <pathelement location="${build-strap.dir}/classes/library"/>
+        <pathelement location="${build-strap.dir}/classes/reflect"/>
         <pathelement location="${build-strap.dir}/classes/compiler"/>
         <pathelement location="${build-strap.dir}/classes/scalap"/>
         <pathelement location="${build-strap.dir}/classes/partest"/>
@@ -1961,6 +2168,7 @@ BOOTRAPING TEST AND TEST SUITE
   </target>
 
   <target name="test.classload" depends="pack.done">
+    <!-- TODO - Add actors + reflect to this -->
     <classloadVerify classpath="${build-pack.dir}/lib/scala-library.jar" />
   </target>
 
@@ -2126,6 +2334,9 @@ DISTRIBUTION
       <fileset dir="${src.dir}/library"/>
       <fileset dir="${src.dir}/continuations/library"/>
     </jar>
+    <jar destfile="${dist.dir}/src/scala-reflect-src.jar">
+      <fileset dir="${src.dir}/reflect"/>
+    </jar>
     <jar destfile="${dist.dir}/src/scala-swing-src.jar">
       <fileset dir="${src.dir}/swing"/>
     </jar>
@@ -2195,6 +2406,7 @@ STABLE REFERENCE (STARR)
 
   <target name="starr.clean" depends="starr.start">
     <delete file="${basedir}/lib/scala-library.jar"/>
+    <delete file="${basedir}/lib/scala-reflect.jar"/>
     <delete file="${basedir}/lib/scala-compiler.jar"/>
     <delete file="${basedir}/lib/scala-library-src.jar"/>
   </target>
@@ -2205,7 +2417,13 @@ STABLE REFERENCE (STARR)
     </jar>
   </target>
 
-  <target name="starr.comp" depends="starr.lib">
+  <target name="starr.reflect" depends="starr.lib">
+    <jar destfile="${basedir}/lib/scala-reflect.jar">
+      <fileset dir="${basedir}/build/quick/classes/reflect"/>
+    </jar>
+  </target>
+
+  <target name="starr.comp" depends="starr.reflect">
     <jar destfile="${basedir}/lib/scala-compiler.jar">
       <fileset dir="${basedir}/build/quick/classes/compiler"/>
     </jar>
@@ -2242,6 +2460,7 @@ STABLE REFERENCE (STARR)
     <delete>
       <fileset dir="${lib.dir}">
         <include name="scala-compiler.jar.desired.sha1"/>
+        <include name="scala-reflect.jar.desired.sha1"/>
         <include name="scala-library.jar.desired.sha1"/>
         <include name="scala-library-src.jar.desired.sha1"/>
       </fileset>
@@ -2389,6 +2608,7 @@ POSITIONS
 <!-- ===========================================================================
 MISCELLANEOUS
 ============================================================================ -->
+
 
   <target name="graph.init">
     <taskdef name="vizant" classname="vizant.Vizant" classpath="${lib-ant.dir}/vizant.jar"/>
