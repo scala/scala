@@ -1400,7 +1400,7 @@ abstract class GenASM extends SubComponent with BytecodeWriters {
       // typestate: entering mode with valid call sequences:
       //   ( visitInnerClass | visitField | visitMethod )* visitEnd
 
-      if (isStaticModule(c.symbol) || serialVUID != None || isParcelableClass) {
+      if (isStaticModule(c.symbol) || isParcelableClass) {
 
         if (isStaticModule(c.symbol)) { addModuleInstanceField() }
         addStaticInit(c.lookupStaticCtor)
@@ -1426,6 +1426,18 @@ abstract class GenASM extends SubComponent with BytecodeWriters {
           }
         }
 
+      }
+
+      // add static serialVersionUID field if `clasz` annotated with `@SerialVersionUID(uid: Long)`
+      serialVUID foreach { value =>
+        val fieldName = "serialVersionUID"
+        jclass.visitField(
+          PublicStaticFinal,
+          fieldName,
+          tdesc_long,
+          null, // no java-generic-signature
+          value
+        ).visitEnd()
       }
 
       clasz.fields  foreach genField
@@ -1650,15 +1662,6 @@ abstract class GenASM extends SubComponent with BytecodeWriters {
             lastBlock emit CALL_METHOD(m.symbol.enclClass.primaryConstructor, Static(true))
           }
 
-          // add serialVUID code
-          serialVUID foreach { value =>
-            val fieldName   = "serialVersionUID"
-            val fieldSymbol = clasz.symbol.newValue(newTermName(fieldName), NoPosition, Flags.STATIC | Flags.FINAL) setInfo LongClass.tpe
-            clasz addField new IField(fieldSymbol)
-            lastBlock emit CONSTANT(Constant(value))
-            lastBlock emit STORE_FIELD(fieldSymbol, true)
-          }
-
           if (isParcelableClass) { addCreatorCode(lastBlock) }
 
           lastBlock emit RETURN(UNIT)
@@ -1687,17 +1690,6 @@ abstract class GenASM extends SubComponent with BytecodeWriters {
         clinit.visitTypeInsn(asm.Opcodes.NEW, thisName)
         clinit.visitMethodInsn(asm.Opcodes.INVOKESPECIAL,
                                thisName, INSTANCE_CONSTRUCTOR_NAME, mdesc_arglessvoid)
-      }
-
-      serialVUID foreach { value =>
-        val fieldName = "serialVersionUID"
-        jclass.visitField(
-          PublicStaticFinal,
-          fieldName,
-          tdesc_long,
-          null, // no java-generic-signature
-          value // TODO confirm whether initial value here is behaviorally equiv to fjbg's emitPUSH emitPUTSTATIC
-        ).visitEnd()
       }
 
       if (isParcelableClass) { legacyAddCreatorCode(clinit) }
