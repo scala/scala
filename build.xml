@@ -304,9 +304,17 @@ INITIALISATION
     </condition>
 
     <exec osfamily="unix" executable="tools/get-scala-commit-sha" outputproperty="git.commit.sha" failifexecutionfails="false" />
-    <exec osfamily="windows" executable="tools/get-scala-commit-sha.bat" outputproperty="git.commit.sha" failifexecutionfails="false" />
+    <exec osfamily="windows" executable="cmd.exe" outputproperty="git.commit.sha" failifexecutionfails="false">
+      <arg value="/c"/>
+      <arg value="tools\get-scala-commit-sha.bat"/>
+      <arg value="-p"/>
+    </exec>
     <exec osfamily="unix" executable="tools/get-scala-commit-date" outputproperty="git.commit.date" failifexecutionfails="false" />
-    <exec osfamily="windows" executable="tools/get-scala-commit-date.bat" outputproperty="git.commit.date" failifexecutionfails="false" />
+    <exec osfamily="windows" executable="cmd.exe" outputproperty="git.commit.date" failifexecutionfails="false">
+      <arg value="/c"/>
+      <arg value="tools\get-scala-commit-date.bat"/>
+      <arg value="-p"/>
+    </exec>
     <!-- some default in case something went wrong getting the revision -->
     <property name="git.commit.sha" value="unknown"/>
     <property name="git.commit.date" value="unknown"/>
