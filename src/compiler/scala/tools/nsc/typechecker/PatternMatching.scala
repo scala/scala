@@ -1429,6 +1429,12 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
 //      (Select(codegen._asInstanceOf(testedBinder, expectedTp), outer)) OBJ_EQ expectedOuter
 //    }
 
+    // TODO: improve, e.g., for constants
+    def sameValue(a: Tree, b: Tree): Boolean = (a eq b) || ((a, b) match {
+      case (_ : Ident, _ : Ident) => a.symbol eq b.symbol
+      case _                      => false
+    })
+
 
     // returns (tree, tests), where `tree` will be used to refer to `root` in `tests`
     abstract class TreeMakersToConds(val root: Symbol) {
@@ -1475,13 +1481,6 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
         accumSubst >>= okSubst
         // patmatDebug("accumSubst: "+ accumSubst)
       }
-
-
-      // TODO: improve, e.g., for constants
-      def sameValue(a: Tree, b: Tree): Boolean = (a eq b) || ((a, b) match {
-        case (_ : Ident, _ : Ident) => a.symbol eq b.symbol
-        case _                      => false
-      })
 
       // hashconsing trees (modulo value-equality)
       def unique(t: Tree, tpOverride: Type = NoType): Tree =
@@ -2075,7 +2074,7 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
     // a literal constant becomes ConstantType(Constant(v)) when the type allows it (roughly, anyval + string + null)
     // equality between variables: SingleType(x) (note that pattern variables cannot relate to each other -- it's always patternVar == nonPatternVar)
     object Const {
-      def resetUniques() = {_nextTypeId = 0; _nextValueId = 0; uniques.clear()} // patmatDebug("RESET")
+      def resetUniques() = {_nextTypeId = 0; _nextValueId = 0; uniques.clear() ; trees.clear() } // patmatDebug("RESET")
 
       private var _nextTypeId = 0
       def nextTypeId = {_nextTypeId += 1; _nextTypeId}
@@ -2093,6 +2092,27 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
               uniques(tp) = fresh
               fresh
           })
+
+      private val trees = collection.mutable.HashSet.empty[Tree]
+
+      // hashconsing trees (modulo value-equality)
+      private[SymbolicMatchAnalysis] def uniqueTpForTree(t: Tree): Type =
+        // a new type for every unstable symbol -- only stable value are uniqued
+        // technically, an unreachable value may change between cases
+        // thus, the failure of a case that matches on a mutable value does not exclude the next case succeeding
+        // (and thuuuuus, the latter case must be considered reachable)
+        if (!t.symbol.isStable) t.tpe.narrow
+        else trees find (a => a.correspondsStructure(t)(sameValue)) match {
+          case Some(orig) =>
+            // patmatDebug("unique: "+ (orig, orig.tpe))
+            orig.tpe
+          case _ =>
+            // duplicate, don't mutate old tree (TODO: use a map tree -> type instead?)
+            val treeWithNarrowedType = t.duplicate setType t.tpe.narrow
+            // patmatDebug("uniqued: "+ (t, t.tpe, treeWithNarrowedType.tpe))
+            trees += treeWithNarrowedType
+            treeWithNarrowedType.tpe
+        }
     }
 
     sealed abstract class Const extends AbsConst {
@@ -2181,11 +2201,13 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
               case Literal(c) =>
                 if (c.tpe.typeSymbol == UnitClass) c.tpe
                 else ConstantType(c)
-              case p if p.symbol.isStable =>
+              case Ident(_) if p.symbol.isStable =>
+                // for Idents, can encode uniqueness of symbol as uniqueness of the corresponding singleton type
+                // for Selects, which are handled by the next case, the prefix of the select varies independently of the symbol (see pos/virtpatmat_unreach_select.scala)
                 singleType(tp.prefix, p.symbol)
-              case x =>
-                // TODO: better type
-                x.tpe.narrow
+              case _ =>
+                // patmatDebug("unique type for "+(p, Const.uniqueTpForTree(p)))
+                Const.uniqueTpForTree(p)
             }
 
           val toString =
