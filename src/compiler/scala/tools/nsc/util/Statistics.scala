@@ -138,6 +138,8 @@ abstract class StatisticsInfo {
       inform("  of which in app impl   : " + subtypeAppInfos)
       inform("  of which in improv     : " + subtypeImprovCount)
       inform("#sametype                : " + sametypeCount)
+      inform("#toplevel lub            : " + lubCount)
+      inform("#all lub                 : " + nestedLubCount)
       inform("ms type-flow-analysis: " + analysis.timer.millis)
 
       if (phase.name == "typer") {
@@ -155,6 +157,7 @@ abstract class StatisticsInfo {
         inform("       failed apply        : " + showRelTyper(failedApplyNanos))
         inform("       failed op=          : " + showRelTyper(failedOpEqNanos))
         inform("time spent ref scanning    : " + showRelTyper(isReferencedNanos))
+        inform("time spent in lubs         : " + showRelTyper(lubNanos))
         inform("micros by tree node        : " + showCounts(microsByType))
         inform("#visits by tree node       : " + showCounts(visitsByType))
         val average = new ClassCounts
