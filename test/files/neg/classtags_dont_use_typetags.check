@@ -1,4 +1,4 @@
-classtags_dont_use_typetags.scala:2: error: No ArrayTag available for T
+classtags_dont_use_typetags.scala:4: error: No ClassTag available for T
   def foo[T: TypeTag] = Array[T]()
                                 ^
 one error found

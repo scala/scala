@@ -1,0 +1,10 @@
+1 is not a ClassTag[int]; it's a class java.lang.Integer
+1 is a ClassTag[class java.lang.Integer]
+1 is not a ClassTag[class java.lang.String]; it's a class java.lang.Integer
+true is a ClassTag[class java.lang.Object]
+woele is a ClassTag[class java.lang.String]
+1 is not a ClassTag[int]; it's a class java.lang.Integer
+1 is a ClassTag[class java.lang.Integer]
+1 is not a ClassTag[class java.lang.String]; it's a class java.lang.Integer
+true is a ClassTag[class java.lang.Object]
+woele is a ClassTag[class java.lang.String]

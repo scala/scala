@@ -6,7 +6,7 @@
 package scala.tools.nsc
 package interpreter
 
-import util.Position
+import scala.reflect.internal.util.Position
 import scala.util.control.Exception.ignoring
 
 /**
@@ -44,6 +44,7 @@ trait ILoopInit {
   }
   // a condition used to ensure serial access to the compiler.
   @volatile private var initIsComplete = false
+  @volatile private var initError: String = null
   private def elapsed() = "%.3f".format((System.nanoTime - initStart).toDouble / 1000000000L)
 
   // the method to be called when the interpreter is initialized.
@@ -63,9 +64,17 @@ trait ILoopInit {
   }
 
   // called from main repl loop
-  protected def awaitInitialized() {
+  protected def awaitInitialized(): Boolean = {
     if (!initIsComplete)
       withLock { while (!initIsComplete) initLoopCondition.await() }
+    if (initError != null) {
+      println("""
+        |Failed to initialize the REPL due to an unexpected error.
+        |This is a bug, please, report it along with the error diagnostics printed below.
+        |%s.""".stripMargin.format(initError)
+      )
+      false
+    } else true
   }
   // private def warningsThunks = List(
   //   () => intp.bind("lastWarnings", "" + typeTag[List[(Position, String)]], intp.lastWarnings _),
@@ -80,13 +89,22 @@ trait ILoopInit {
   // )
   // called once after init condition is signalled
   protected def postInitialization() {
-    postInitThunks foreach (f => addThunk(f()))
-    runThunks()
-    initIsComplete = true
+    try {
+      postInitThunks foreach (f => addThunk(f()))
+      runThunks()
+    } catch {
+      case ex =>
+        val message = new java.io.StringWriter()
+        ex.printStackTrace(new java.io.PrintWriter(message))
+        initError = message.toString
+        throw ex
+    } finally {
+      initIsComplete = true
 
-    if (isAsync) {
-      asyncMessage("[info] total init time: " + elapsed() + " s.")
-      withLock(initLoopCondition.signal())
+      if (isAsync) {
+        asyncMessage("[info] total init time: " + elapsed() + " s.")
+        withLock(initLoopCondition.signal())
+      }
     }
   }
   // code to be executed only after the interpreter is initialized

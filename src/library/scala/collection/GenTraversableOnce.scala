@@ -8,6 +8,8 @@
 
 package scala.collection
 
+import scala.reflect.ClassTag
+
 /** A template trait for all traversable-once objects which may be
  *  traversed in parallel.
  *
@@ -459,7 +461,7 @@ trait GenTraversableOnce[+A] extends Any {
 
   /** Converts this $coll to an array.
    *
-   *  @tparam A1 the type of the elements of the array. An `ArrayTag` for
+   *  @tparam A1 the type of the elements of the array. An `ClassTag` for
    *             this type must be available.
    *  @return    an array containing all elements of this $coll.
    *
@@ -469,9 +471,9 @@ trait GenTraversableOnce[+A] extends Any {
    *    $willNotTerminateInf
    *
    *    @return  an array containing all elements of this $coll.
-   *             An `ArrayTag` must be available for the element type of this $coll.
+   *             An `ClassTag` must be available for the element type of this $coll.
    */
-  def toArray[A1 >: A: ArrayTag]: Array[A1]
+  def toArray[A1 >: A: ClassTag]: Array[A1]
 
   /** Converts this $coll to a list.
    *  $willNotTerminateInf

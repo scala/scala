@@ -27,6 +27,7 @@ trait ClassManifest[T] extends OptManifest[T] with ClassTag[T] with Equals with 
   /** A class representing the type `U` to which `T` would be erased. Note
     * that there is no subtyping relationship between `T` and `U`. */
   def erasure: jClass[_]
+  override def runtimeClass: jClass[_] = erasure
 
   private def subtype(sub: jClass[_], sup: jClass[_]): Boolean = {
     def loop(left: Set[jClass[_]], seen: Set[jClass[_]]): Boolean = {

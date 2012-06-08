@@ -1,3 +1,4 @@
+import scala.reflect.{ClassTag, classTag}
 import org.scalacheck._
 import Prop._
 import Gen._
@@ -9,7 +10,7 @@ import scala.collection.mutable.ArraySeq
 object Test extends Properties("Array") {
   /** At this moment the authentic scalacheck Array Builder/Arb bits are commented out.
    */
-  implicit def arbArray[T](implicit a: Arbitrary[T], m: ArrayTag[T]): Arbitrary[Array[T]] =
+  implicit def arbArray[T](implicit a: Arbitrary[T], m: ClassTag[T]): Arbitrary[Array[T]] =
     Arbitrary(containerOf[List,T](arbitrary[T]) map (_.toArray))
 
   val arrGen: Gen[Array[_]] = oneOf(

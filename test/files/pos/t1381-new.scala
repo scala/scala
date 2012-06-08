@@ -1,4 +1,4 @@
-import scala.reflect.TypeTag
+import scala.reflect.runtime.universe._
 
 class D[V <: Variable]
 

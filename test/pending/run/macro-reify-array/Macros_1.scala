@@ -5,7 +5,7 @@ object Macros {
 
   object Impls {
     def foo[T: c.TypeTag](c: Ctx)(s: c.Expr[T]) = c.reify {
-      Array(s.eval)
+      Array(s.splice)
     }
   }
 }

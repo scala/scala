@@ -4,5 +4,5 @@ package runtime
 trait Traces extends util.Traces {
   self: Context =>
 
-  def globalSettings = mirror.settings
+  def globalSettings = universe.settings
 }

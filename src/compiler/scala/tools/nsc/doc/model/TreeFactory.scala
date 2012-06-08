@@ -3,7 +3,7 @@ package doc
 package model
 
 import scala.collection._
-import util.{RangePosition, OffsetPosition, SourceFile}
+import scala.reflect.internal.util.{RangePosition, OffsetPosition, SourceFile}
 
 /** The goal of this trait is , using makeTree,
   * to browse a tree to

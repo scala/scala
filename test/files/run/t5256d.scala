@@ -2,9 +2,12 @@ import scala.tools.partest.ReplTest
 
 object Test extends ReplTest {
   def code = """
-import scala.reflect.mirror._
-class A
-val c = classToType(classOf[A])
-println(c.typeSymbol == classToSymbol(classOf[A]))
+import scala.reflect.runtime.universe._
+import scala.reflect.runtime.{currentMirror => cm}
+class A { def foo = ??? }
+val c = cm.classSymbol(classOf[A])
+println(c)
+println(c.fullName)
+println(c.typeSignature)
   """
 }

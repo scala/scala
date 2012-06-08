@@ -1,7 +1,4 @@
-interop_classtags_arenot_manifests.scala:3: error: No Manifest available for T.
+interop_classtags_arenot_manifests.scala:5: error: No Manifest available for T.
     println(manifest[T])
                     ^
-interop_classtags_arenot_manifests.scala:11: error: No Manifest available for T.
-    println(manifest[T])
-                    ^
-two errors found
+one error found

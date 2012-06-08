@@ -1,7 +1,9 @@
+import scala.reflect.{ClassTag, classTag}
+
 /** Test matrix multiplication with specialization.
  */
 
-class Matrix[@specialized A: ArrayTag](val rows: Int, val cols: Int) {
+class Matrix[@specialized A: ClassTag](val rows: Int, val cols: Int) {
   private val arr: Array[Array[A]] = Array.ofDim[A](rows, cols)
 
   def apply(i: Int, j: Int): A = {
@@ -52,7 +54,7 @@ object Test {
     }
   }
 
-  def multTag[@specialized(Int) T](m: Matrix[T], n: Matrix[T])(implicit at: ArrayTag[T], num: Numeric[T]) {
+  def multTag[@specialized(Int) T](m: Matrix[T], n: Matrix[T])(implicit at: ClassTag[T], num: Numeric[T]) {
     val p = new Matrix[T](m.rows, n.cols)
     import num._
 

@@ -3,18 +3,16 @@ Type :help for more information.
 
 scala> 
 
-scala> import scala.reflect.mirror._
-import scala.reflect.mirror._
-
 scala> {
+  import scala.reflect.runtime.universe._
   val x = "2"
   val tt = implicitly[TypeTag[x.type]]
   println(tt)
 }
-<console>:13: free term: Ident(newTermName("x")) defined by res0  in <console>:12:21
+<console>:11: free term: Ident(newTermName("x")) defined by res0  in <console>:10:21
                 val tt = implicitly[TypeTag[x.type]]
                                    ^
-ConcreteTypeTag[x.type]
+TypeTag[x.type]
 
 scala> 
 

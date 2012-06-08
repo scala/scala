@@ -11,6 +11,7 @@ package scala.collection
 import mutable.{ Buffer, Builder, ListBuffer, ArrayBuffer }
 import annotation.unchecked.{ uncheckedVariance => uV }
 import language.{implicitConversions, higherKinds}
+import reflect.ClassTag
 
 /** A template trait for collections which can be traversed either once only
  *  or one or more times.
@@ -227,7 +228,7 @@ trait TraversableOnce[+A] extends Any with GenTraversableOnce[A] {
   def copyToArray[B >: A](xs: Array[B]): Unit =
     copyToArray(xs, 0, xs.length)
 
-  def toArray[B >: A : ArrayTag]: Array[B] = {
+  def toArray[B >: A : ClassTag]: Array[B] = {
     if (isTraversableAgain) {
       val result = new Array[B](size)
       copyToArray(result, 0)

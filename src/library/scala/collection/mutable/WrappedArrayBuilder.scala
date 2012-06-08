@@ -12,7 +12,7 @@ package scala.collection
 package mutable
 
 import generic._
-import scala.reflect.ArrayTag
+import scala.reflect.ClassTag
 import scala.runtime.ScalaRunTime._
 
 /** A builder class for arrays.
@@ -22,18 +22,18 @@ import scala.runtime.ScalaRunTime._
  *
  *  @since 2.8
  */
-class WrappedArrayBuilder[A](tag: ArrayTag[A]) extends Builder[A, WrappedArray[A]] {
+class WrappedArrayBuilder[A](tag: ClassTag[A]) extends Builder[A, WrappedArray[A]] {
 
   @deprecated("use tag instead", "2.10.0")
-  val manifest: ArrayTag[A] = tag
+  val manifest: ClassTag[A] = tag
 
   private var elems: WrappedArray[A] = _
   private var capacity: Int = 0
   private var size: Int = 0
 
   private def mkArray(size: Int): WrappedArray[A] = {
-    val erasure = arrayElementClass(tag)
-    val newelems = erasure match {
+    val runtimeClass = arrayElementClass(tag)
+    val newelems = runtimeClass match {
       case java.lang.Byte.TYPE      => new WrappedArray.ofByte(new Array[Byte](size)).asInstanceOf[WrappedArray[A]]
       case java.lang.Short.TYPE     => new WrappedArray.ofShort(new Array[Short](size)).asInstanceOf[WrappedArray[A]]
       case java.lang.Character.TYPE => new WrappedArray.ofChar(new Array[Char](size)).asInstanceOf[WrappedArray[A]]

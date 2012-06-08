@@ -187,7 +187,7 @@ trait Infer {
       tp1 // @MAT aliases already handled by subtyping
   }
 
-  private val stdErrorClass = RootClass.newErrorClass(tpnme.ERROR)
+  private val stdErrorClass = rootMirror.RootClass.newErrorClass(tpnme.ERROR)
   private val stdErrorValue = stdErrorClass.newErrorValue(nme.ERROR)
 
   /** The context-dependent inferencer part */
@@ -1247,7 +1247,10 @@ trait Infer {
       check(tp, Nil)
     }
 
-    def checkCheckable(tree: Tree, tp: Type, kind: String) {
+    // if top-level abstract types can be checked using a classtag extractor, don't warn about them
+    def checkCheckable(tree: Tree, tp: Type, inPattern: Boolean, canRemedy: Boolean = false) = {
+      val kind = if (inPattern) "pattern " else ""
+
       def patternWarning(tp0: Type, prefix: String) = {
         context.unit.uncheckedWarning(tree.pos, prefix+tp0+" in type "+kind+tp+" is unchecked since it is eliminated by erasure")
       }
@@ -1264,7 +1267,8 @@ trait Infer {
             check(pre, bound)
           case TypeRef(pre, sym, args) =>
             if (sym.isAbstractType) {
-              if (!isLocalBinding(sym)) patternWarning(tp, "abstract type ")
+              // we only use the extractor for top-level type tests, type arguments (see below) remain unchecked
+              if (!isLocalBinding(sym) && !canRemedy) patternWarning(tp, "abstract type ")
             } else if (sym.isAliasType) {
               check(tp.normalize, bound)
             } else if (sym == NothingClass || sym == NullClass || sym == AnyValClass) {
@@ -1320,7 +1324,7 @@ trait Infer {
       }
     }
 
-    def inferTypedPattern(tree0: Tree, pattp: Type, pt0: Type): Type = {
+    def inferTypedPattern(tree0: Tree, pattp: Type, pt0: Type, canRemedy: Boolean): Type = {
       val pt        = widen(pt0)
       val ptparams  = freeTypeParamsOfTerms(pt)
       val tpparams  = freeTypeParamsOfTerms(pattp)
@@ -1337,7 +1341,7 @@ trait Infer {
         return ErrorType
       }
 
-      checkCheckable(tree0, pattp, "pattern ")
+      checkCheckable(tree0, pattp, inPattern = true, canRemedy)
       if (pattp <:< pt) ()
       else {
         debuglog("free type params (1) = " + tpparams)

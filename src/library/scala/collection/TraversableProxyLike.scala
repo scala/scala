@@ -12,6 +12,7 @@ package scala.collection
 
 import generic._
 import mutable.{Buffer, StringBuilder}
+import reflect.ClassTag
 
 // Methods could be printed by  cat TraversableLike.scala | egrep '^  (override )?def'
 
@@ -73,7 +74,7 @@ trait TraversableProxyLike[+A, +Repr <: TraversableLike[A, Repr] with Traversabl
   override def copyToArray[B >: A](xs: Array[B], start: Int, len: Int) = self.copyToArray(xs, start, len)
   override def copyToArray[B >: A](xs: Array[B], start: Int) = self.copyToArray(xs, start)
   override def copyToArray[B >: A](xs: Array[B]) = self.copyToArray(xs)
-  override def toArray[B >: A: ArrayTag]: Array[B] = self.toArray
+  override def toArray[B >: A: ClassTag]: Array[B] = self.toArray
   override def toList: List[A] = self.toList
   override def toIterable: Iterable[A] = self.toIterable
   override def toSeq: Seq[A] = self.toSeq

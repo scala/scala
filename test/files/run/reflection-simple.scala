@@ -5,7 +5,8 @@ object Test  {
   def main(args: Array[String]) {
     System.out.println("Running")
     case class Foo(a: Int, b: Int, c: Int)
-    val props = reflect.mirror.classToType(classOf[Foo]).members.filter(_.isTerm).map(_.toString)
+    import scala.reflect.runtime.{currentMirror => cm}
+    val props = cm.classSymbol(classOf[Foo]).typeSignature.members.filter(_.isTerm).map(_.toString)
     props.toList.sorted foreach System.out.println
   }
 }

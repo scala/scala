@@ -1,10 +1,10 @@
+import reflect.{ClassTag, classTag}
+
 // abstract types and extractors, oh my!
 trait TypesAPI {
   trait Type
 
-  // an alternative fix (implemented in the virtual pattern matcher, is to replace the isInstanceOf by a manifest-based run-time test)
-  // that's what typeRefMani is for
-  type TypeRef <: Type //; implicit def typeRefMani: Manifest[TypeRef]
+  type TypeRef <: Type
   val TypeRef: TypeRefExtractor; trait TypeRefExtractor {
     def apply(x: Int): TypeRef
     def unapply(x: TypeRef): Option[(Int)]
@@ -19,11 +19,6 @@ trait TypesUser extends TypesAPI {
   def shouldNotCrash(tp: Type): Unit = {
     tp match {
       case TypeRef(x) => println("TypeRef") 
-      // the above checks tp.isInstanceOf[TypeRef], which is erased to tp.isInstanceOf[Type]
-      //   before calling TypeRef.unapply(tp), which will then crash unless tp.isInstanceOf[TypesImpl#TypeRef] (which is not implied by tp.isInstanceOf[Type])
-      // tp.isInstanceOf[TypesImpl#TypeRef] is equivalent to classOf[TypesImpl#TypeRef].isAssignableFrom(tp.getClass)
-      // this is equivalent to manifest
-      // it is NOT equivalent to manifest[Type] <:< typeRefMani
       case MethodType(x) => println("MethodType")
       case _ => println("none of the above")
     }
@@ -34,7 +29,6 @@ trait TypesImpl extends TypesAPI {
   object TypeRef extends TypeRefExtractor  // this will have a bridged unapply(x: Type) = unapply(x.asInstanceOf[TypeRef])
   case class TypeRef(n: Int) extends Type // this has a bridge from TypesAPI#Type to TypesImpl#TypeRef 
   // --> the cast in the bridge will fail because the pattern matcher can't type test against the abstract types in TypesUser
-  //lazy val typeRefMani = manifest[TypeRef]
 }
 
 trait Foos {
@@ -63,16 +57,15 @@ trait Intermed extends Foos {
 
 object TestUnappStaticallyKnownSynthetic extends TypesImpl with TypesUser {
   def test() = {
-    shouldNotCrash(TypeRef(10)) // should and does print "TypeRef"
-    // once  #1697/#2337 are fixed, this should generate the correct output
-    shouldNotCrash(MethodType(10)) // should print "MethodType" but prints "none of the above" -- good one, pattern matcher!
+    shouldNotCrash(TypeRef(10)) // prints "TypeRef"
+    shouldNotCrash(MethodType(10)) // prints "MethodType"
   }
 }
 
 object TestUnappDynamicSynth extends RealFoos with Intermed {
- case class FooToo(n: Int) extends Bar
+ case class NotAFoo(n: Int) extends Bar
  def test() = {
-   crash(FooToo(10))
+   crash(NotAFoo(10))
    crash(new Foo(5))
  }
 }

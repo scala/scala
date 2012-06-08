@@ -1,20 +1,20 @@
 import java.io.{ ByteArrayOutputStream, PrintStream }
-import scala.reflect.mirror._
+import scala.reflect.runtime.universe._
+import scala.reflect.runtime.{universe => ru}
+import scala.reflect.runtime.{currentMirror => cm}
+import scala.tools.reflect.ToolBox
 import scala.reflect.api._
 import scala.reflect.api.Trees
 import scala.reflect.internal.Types
 import scala.util.matching.Regex
 
 object Test extends App {
-  val tree = tree_printf(reify("hello %s").tree, reify("world").tree)
-
-  import scala.reflect.mirror._
-  val toolbox = mkToolBox()
-
   val output = new ByteArrayOutputStream()
   Console.setOut(new PrintStream(output))
-  val evaluated = toolbox.runExpr(tree)
+  val toolbox = cm.mkToolBox()
 
+  val tree = tree_printf(reify("hello %s").tree, reify("world").tree)
+  val evaluated = toolbox.runExpr(tree)
   assert(output.toString() == "hello world", output.toString() +" ==     hello world")
 
   /*
@@ -30,9 +30,9 @@ object Test extends App {
     (
       Some(
         ValDef(
-          Modifiers()
+          NoMods
           , local
-          , TypeTree().setType(tpe)
+          , TypeTree(tpe)
           , value
         )
       )
@@ -44,8 +44,8 @@ object Test extends App {
     val Literal(Constant(s_format: String)) = format
     val paramsStack = scala.collection.mutable.Stack(params: _*)
     val parsed = s_format.split("(?<=%[\\w%])|(?=%[\\w%])") map {
-      case "%d" => createTempValDef( paramsStack.pop, classToType(classOf[Int]) )
-      case "%s" => createTempValDef( paramsStack.pop, classToType(classOf[String]) )
+      case "%d" => createTempValDef( paramsStack.pop, IntTpe )
+      case "%s" => createTempValDef( paramsStack.pop, StringTpe )
       case "%%" => {
         (None:Option[Tree], Literal(Constant("%")))
       }

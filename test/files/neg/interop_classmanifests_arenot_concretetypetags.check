@@ -1,4 +1,0 @@
-interop_classmanifests_arenot_concretetypetags.scala:3: error: No ConcreteTypeTag available for T
-    println(concreteTypeTag[T])
-                           ^
-one error found

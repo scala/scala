@@ -9,7 +9,7 @@ package icode
 
 import java.io.PrintWriter
 import scala.tools.nsc.symtab.Flags
-import scala.tools.nsc.util.Position
+import scala.reflect.internal.util.Position
 
 trait Printers { self: ICodes =>
   import global._
