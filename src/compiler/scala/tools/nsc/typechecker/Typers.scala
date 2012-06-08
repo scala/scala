@@ -970,7 +970,7 @@ trait Typers extends Modes with Adaptations with Tags {
         val overloadedExtractorOfObject = tree.symbol filter (sym => hasUnapplyMember(sym.tpe))
         // if the tree's symbol's type does not define an extractor, maybe the tree's type does
         // this is the case when we encounter an arbitrary tree as the target of an unapply call (rather than something that looks like a constructor call)
-        // (for now, this only happens due to maybeWrapClassTagUnapply, but when we support parameterized extractors, it will become more common place)
+        // (for now, this only happens due to wrapClassTagUnapply, but when we support parameterized extractors, it will become more common place)
         val extractor = overloadedExtractorOfObject orElse unapplyMember(tree.tpe)
         if (extractor != NoSymbol) {
           // if we did some ad-hoc overloading resolution, update the tree's symbol
@@ -3088,6 +3088,11 @@ trait Typers extends Modes with Adaptations with Tags {
       val argDummy  = context.owner.newValue(nme.SELECTOR_DUMMY, fun.pos, SYNTHETIC) setInfo pt
       val arg       = Ident(argDummy) setType pt
 
+      val uncheckedTypeExtractor =
+        if (unappType.paramTypes.nonEmpty)
+          extractorForUncheckedType(tree.pos, unappType.paramTypes.head)
+        else None
+
       if (!isApplicableSafe(Nil, unappType, List(pt), WildcardType)) {
         //Console.println("UNAPP: need to typetest, arg.tpe = "+arg.tpe+", unappType = "+unappType)
         val (freeVars, unappFormal) = freshArgType(unappType.skolemizeExistential(context.owner, tree))
@@ -3095,7 +3100,7 @@ trait Typers extends Modes with Adaptations with Tags {
         freeVars foreach unapplyContext.scope.enter
 
         val typer1 = newTyper(unapplyContext)
-        val pattp  = typer1.infer.inferTypedPattern(tree, unappFormal, arg.tpe)
+        val pattp = typer1.infer.inferTypedPattern(tree, unappFormal, arg.tpe, canRemedy = uncheckedTypeExtractor.nonEmpty)
 
         // turn any unresolved type variables in freevars into existential skolems
         val skolems = freeVars map (fv => unapplyContext.owner.newExistentialSkolem(fv, fv))
@@ -3124,57 +3129,53 @@ trait Typers extends Modes with Adaptations with Tags {
 
           // if the type that the unapply method expects for its argument is uncheckable, wrap in classtag extractor
           // skip if the unapply's type is not a method type with (at least, but really it should be exactly) one argument
-          if (unappType.paramTypes.isEmpty) unapply
-          else maybeWrapClassTagUnapply(unapply, unappType.paramTypes.head)
+          // also skip if we already wrapped a classtag extractor (so we don't keep doing that forever)
+          if (uncheckedTypeExtractor.isEmpty || fun1.symbol.owner.isNonBottomSubClass(ClassTagClass)) unapply
+          else wrapClassTagUnapply(unapply, uncheckedTypeExtractor.get, unappType.paramTypes.head)
         } else
           duplErrorTree(WrongNumberArgsPatternError(tree, fun))
       }
     }
 
-    // TODO: disable when in unchecked match
-    def maybeWrapClassTagUnapply(uncheckedPattern: Tree, pt: Type): Tree = if (isPastTyper) uncheckedPattern else {
+    def wrapClassTagUnapply(uncheckedPattern: Tree, classTagExtractor: Tree, pt: Type): Tree = {
+      // TODO: disable when in unchecked match
+      // we don't create a new Context for a Match, so find the CaseDef, then go out one level and navigate back to the match that has this case
+      // val thisCase = context.nextEnclosing(_.tree.isInstanceOf[CaseDef])
+      // val unchecked = thisCase.outer.tree.collect{case Match(selector, cases) if cases contains thisCase => selector} match {
+      //   case List(Typed(_, tpt)) if treeInfo.isUncheckedAnnotation(tpt.tpe) => true
+      //   case t => println("outer tree: "+ (t, thisCase, thisCase.outer.tree)); false
+      // }
+      // println("wrapClassTagUnapply"+ (!isPastTyper && infer.containsUnchecked(pt), pt, uncheckedPattern))
+      // println("wrapClassTagUnapply: "+ extractor)
+      // println(util.Position.formatMessage(uncheckedPattern.pos, "made unchecked type test into a checked one", true))
+
+      val args = List(uncheckedPattern)
+      // must call doTypedUnapply directly, as otherwise we get undesirable rewrites
+      // and re-typechecks of the target of the unapply call in PATTERNmode,
+      // this breaks down when the classTagExtractor (which defineds the unapply member) is not a simple reference to an object,
+      // but an arbitrary tree as is the case here
+      doTypedUnapply(Apply(classTagExtractor, args), classTagExtractor, classTagExtractor, args, PATTERNmode, pt)
+    }
+
+    // if there's a ClassTag that allows us to turn the unchecked type test for `pt` into a checked type test
+    // return the corresponding extractor (an instance of ClassTag[`pt`])
+    def extractorForUncheckedType(pos: Position, pt: Type): Option[Tree] = if (!opt.virtPatmat || isPastTyper) None else {
       // only look at top-level type, can't (reliably) do anything about unchecked type args (in general)
       pt.normalize.typeConstructor match {
         // if at least one of the types in an intersection is checkable, use the checkable ones
         // this avoids problems as in run/matchonseq.scala, where the expected type is `Coll with scala.collection.SeqLike`
         // Coll is an abstract type, but SeqLike of course is not
-        case tp@RefinedType(parents, _)  if (parents.length >= 2) && (parents.exists(tp => !infer.containsUnchecked(tp))) =>
-          uncheckedPattern
+        case RefinedType(parents, _)  if (parents.length >= 2) && (parents.exists(tp => !infer.containsUnchecked(tp))) =>
+          None
 
         case ptCheckable if infer.containsUnchecked(ptCheckable) =>
-          uncheckedPattern match {
-            // are we being called on a classtag extractor call?
-            // don't recurse forever, it's not *that* much fun
-            case UnApply(fun, _) if fun.symbol.owner.isNonBottomSubClass(ClassTagClass) =>
-              uncheckedPattern
+          val classTagExtractor = resolveClassTag(pos, ptCheckable)
 
-            case _  =>
-              val typeTagExtractor = resolveClassTag(uncheckedPattern.pos, ptCheckable)
-                //orElse resolveTypeTag(uncheckedPattern.pos, ReflectMirrorPrefix.tpe, ptCheckable, concrete = true)
+          if (classTagExtractor != EmptyTree && unapplyMember(classTagExtractor.tpe) != NoSymbol)
+            Some(classTagExtractor)
+          else None
 
-              // we don't create a new Context for a Match, so find the CaseDef, then go out one level and navigate back to the match that has this case
-              // val thisCase = context.nextEnclosing(_.tree.isInstanceOf[CaseDef])
-              // val unchecked = thisCase.outer.tree.collect{case Match(selector, cases) if cases contains thisCase => selector} match {
-              //   case List(Typed(_, tpt)) if treeInfo.isUncheckedAnnotation(tpt.tpe) => true
-              //   case t => println("outer tree: "+ (t, thisCase, thisCase.outer.tree)); false
-              // }
-              // println("maybeWrapClassTagUnapply"+ (!isPastTyper && infer.containsUnchecked(pt), pt, uncheckedPattern))
-              // println("typeTagExtractor"+ typeTagExtractor)
-
-
-              if (typeTagExtractor != EmptyTree && unapplyMember(typeTagExtractor.tpe) != NoSymbol) {
-                // println("maybeWrapClassTagUnapply "+ typeTagExtractor)
-                // println(util.Position.formatMessage(uncheckedPattern.pos, "made unchecked type test into a checked one", true))
-                val args = List(uncheckedPattern)
-                // must call doTypedUnapply directly, as otherwise we get undesirable rewrites
-                // and re-typechecks of the target of the unapply call in PATTERNmode,
-                // this breaks down when the extractor (which defineds the unapply member) is not a simple reference to an object,
-                // but an arbitrary tree as is the case here
-                doTypedUnapply(Apply(typeTagExtractor, args), typeTagExtractor, typeTagExtractor, args, PATTERNmode, pt)
-              } else uncheckedPattern
-          }
-
-        case _ => uncheckedPattern
+        case _ => None
       }
     }
 
@@ -3618,7 +3619,7 @@ trait Typers extends Modes with Adaptations with Tags {
             typedClassOf(tree, args.head, true)
           else {
             if (!isPastTyper && fun.symbol == Any_isInstanceOf && !targs.isEmpty)
-              checkCheckable(tree, targs.head, "")
+              checkCheckable(tree, targs.head, inPattern = false)
             val resultpe = restpe.instantiateTypeParams(tparams, targs)
             //@M substitution in instantiateParams needs to be careful!
             //@M example: class Foo[a] { def foo[m[x]]: m[a] = error("") } (new Foo[Int]).foo[List] : List[Int]
@@ -4880,8 +4881,14 @@ trait Typers extends Modes with Adaptations with Tags {
           val treeTyped = treeCopy.Typed(tree, exprTyped, tptTyped)
 
           if (isPatternMode) {
-            val ownType = inferTypedPattern(tptTyped, tptTyped.tpe, pt)
-            maybeWrapClassTagUnapply(treeTyped setType ownType, tptTyped.tpe)
+            val uncheckedTypeExtractor = extractorForUncheckedType(tpt.pos, tptTyped.tpe)
+            val ownType = inferTypedPattern(tptTyped, tptTyped.tpe, pt, canRemedy = uncheckedTypeExtractor.nonEmpty)
+            treeTyped setType ownType
+
+            uncheckedTypeExtractor match {
+              case None => treeTyped
+              case Some(extractor) => wrapClassTagUnapply(treeTyped, extractor, tptTyped.tpe)
+            }
           } else
             treeTyped setType tptTyped.tpe
 
