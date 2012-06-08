@@ -1946,7 +1946,8 @@ DOCUMENTATION
       <src>
         <files includes="${src.dir}/actors-migration"/>
         <files includes="${src.dir}/actors"/>
-        <files includes="${src.dir}/library/scala"/>
+        <files includes="${src.dir}/library"/>
+        <files includes="${src.dir}/reflect"/>
         <files includes="${src.dir}/swing"/>
         <files includes="${src.dir}/continuations/library"/>
       </src>
