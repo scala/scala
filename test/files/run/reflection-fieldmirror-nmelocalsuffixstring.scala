@@ -9,8 +9,8 @@ object Test extends App {
   val a = new A
 
   val im: InstanceMirror = cm.reflect(a)
-  val cs = im.reflectClass.symbol
+  val cs = im.symbol
   val f = cs.typeSignature.declaration(newTermName("x" + nme.LOCAL_SUFFIX_STRING)).asTermSymbol
   val fm: FieldMirror = im.reflectField(f)
-  println(fm.field.isVariable)
+  println(fm.symbol.isVariable)
 }

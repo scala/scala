@@ -32,6 +32,8 @@ trait JavaMirrors extends internal.SymbolTable with api.JavaUniverse { self: Sym
     jm
   }
 
+  override type RuntimeClass = java.lang.Class[_]
+
   override type Mirror = JavaMirror
 
   override lazy val rootMirror: Mirror = createMirror(NoSymbol, rootClassLoader)
@@ -105,30 +107,32 @@ trait JavaMirrors extends internal.SymbolTable with api.JavaUniverse { self: Sym
 
 // ----------- Implementations of mirror operations and classes  -------------------
 
-    def reflect(obj: Any): InstanceMirror =
-      new JavaInstanceMirror(obj.asInstanceOf[AnyRef])
+    def reflect(obj: Any): InstanceMirror = new JavaInstanceMirror(obj.asInstanceOf[AnyRef])
 
-    def reflectClass(runtimeClass: RuntimeClass): ClassMirror =
-      new JavaClassMirror(classToScala(runtimeClass))
+    def reflectClass(cls: ClassSymbol): ClassMirror = {
+      if (!cls.isStatic) throw new Error("this is an inner class, use reflectClass on an InstanceMirror to obtain its ClassMirror")
+      new JavaClassMirror(null, cls)
+    }
 
-    def reflectClass(fullName: String): ClassMirror =
-      reflectClass(java.lang.Class.forName(fullName))
-
-    def reflectModule(runtimeClass: RuntimeClass): ModuleMirror =
-      new JavaModuleMirror(classToScala(runtimeClass).companionModule.asModuleSymbol)
-
-    def reflectModule(fullName: String): ModuleMirror =
-      reflectModule(java.lang.Class.forName(fullName))
+    def reflectModule(mod: ModuleSymbol): ModuleMirror = {
+      if (!mod.isStatic) throw new Error("this is an inner module, use reflectModule on an InstanceMirror to obtain its ModuleMirror")
+      new JavaModuleMirror(null, mod)
+    }
 
     def runtimeClass(tpe: Type): RuntimeClass = typeToJavaClass(tpe)
 
     def runtimeClass(cls: ClassSymbol): RuntimeClass = classToJava(cls)
 
+    def classSymbol(rtcls: RuntimeClass): ClassSymbol = classToScala(rtcls)
+
+    def moduleSymbol(rtcls: RuntimeClass): ModuleSymbol = classToScala(rtcls).companionModule.asModuleSymbol
+
     private class JavaInstanceMirror(obj: AnyRef)
             extends InstanceMirror {
       def instance = obj
-      def reflectClass = wholemirror.reflectClass(obj.getClass)
+      def symbol = wholemirror.classSymbol(obj.getClass)
       def reflectField(field: TermSymbol): FieldMirror = {
+        // [Eugene+++] check whether `field` represents a member of a `symbol`
         if (field.isMethod || field.isModule) throw new Error(s"""
           |expected a field symbol, you provided a ${field.kind} symbol
           |A typical cause of this problem is using a field accessor symbol instead of a field symbol.
@@ -139,79 +143,101 @@ trait JavaMirrors extends internal.SymbolTable with api.JavaUniverse { self: Sym
         """.trim.stripMargin)
         new JavaFieldMirror(obj, field)
       }
-      def reflectMethod(method: MethodSymbol): MethodMirror = new JavaMethodMirror(obj, method)
+      def reflectMethod(method: MethodSymbol): MethodMirror = {
+        // [Eugene+++] check whether `method` represents a member of a `symbol`
+        new JavaMethodMirror(obj, method)
+      }
+      def reflectClass(cls: ClassSymbol): ClassMirror = {
+        // [Eugene+++] check whether `cls` represents a member of a `symbol`
+        if (cls.isStatic) throw new Error("this is a static class, use reflectClass on a RuntimeMirror to obtain its ClassMirror")
+        new JavaClassMirror(instance, cls)
+      }
+      def reflectModule(mod: ModuleSymbol): ModuleMirror = {
+        // [Eugene+++] check whether `mod` represents a member of a `symbol`
+        if (mod.isStatic) throw new Error("this is a static module, use reflectModule on a RuntimeMirror to obtain its ModuleMirror")
+        new JavaModuleMirror(instance, mod)
+      }
     }
 
-    private class JavaFieldMirror(val receiver: AnyRef, val field: TermSymbol)
+    private class JavaFieldMirror(val receiver: AnyRef, val symbol: TermSymbol)
             extends FieldMirror {
       lazy val jfield = {
-        val jfield = fieldToJava(field)
+        val jfield = fieldToJava(symbol)
         if (!jfield.isAccessible) jfield.setAccessible(true)
         jfield
       }
       def get = jfield.get(receiver)
       def set(value: Any) = {
-        if (!field.isMutable) throw new Error("cannot set an immutable field")
+        if (!symbol.isMutable) throw new Error("cannot set an immutable field")
         jfield.set(receiver, value)
       }
     }
 
-    private class JavaMethodMirror(val receiver: AnyRef, val method: MethodSymbol)
+    private class JavaMethodMirror(val receiver: AnyRef, val symbol: MethodSymbol)
             extends MethodMirror {
       lazy val jmeth = {
-        val jmeth = methodToJava(method)
+        val jmeth = methodToJava(symbol)
         if (!jmeth.isAccessible) jmeth.setAccessible(true)
         jmeth
       }
       def apply(args: Any*): Any =
-        if (method.owner == ArrayClass)
-          method.name match {
+        if (symbol.owner == ArrayClass)
+          symbol.name match {
             case nme.length => jArray.getLength(receiver)
             case nme.apply => jArray.get(receiver, args(0).asInstanceOf[Int])
             case nme.update => jArray.set(receiver, args(0).asInstanceOf[Int], args(1))
-            case _ => throw new Error(s"unexpected array method $method")
+            case _ => throw new Error(s"unexpected array method $symbol")
           }
         else
           jmeth.invoke(receiver, args.asInstanceOf[Seq[AnyRef]]: _*)
     }
 
-    private class JavaConstructorMirror(val method: MethodSymbol)
+    private class JavaConstructorMirror(val outer: AnyRef, val symbol: MethodSymbol)
             extends MethodMirror {
-      override val receiver = null
+      override val receiver = outer
       lazy val jconstr = {
-        val jconstr = constructorToJava(method)
+        val jconstr = constructorToJava(symbol)
         if (!jconstr.isAccessible) jconstr.setAccessible(true)
         jconstr
       }
-      def apply(args: Any*): Any = jconstr.newInstance(args.asInstanceOf[Seq[AnyRef]]: _*)
+      def apply(args: Any*): Any = {
+        val effectiveArgs =
+          if (outer == null) args.asInstanceOf[Seq[AnyRef]]
+          else outer +: args.asInstanceOf[Seq[AnyRef]]
+        jconstr.newInstance(effectiveArgs: _*)
+      }
     }
 
 
     private abstract class JavaTemplateMirror
             extends TemplateMirror {
+      def outer: AnyRef
       def erasure: ClassSymbol
       lazy val runtimeClass = classToJava(erasure)
       lazy val signature = typeToScala(runtimeClass)
     }
 
-    private class JavaClassMirror(val symbol: ClassSymbol)
+    private class JavaClassMirror(val outer: AnyRef, val symbol: ClassSymbol)
             extends JavaTemplateMirror with ClassMirror {
       def erasure = symbol
       def isStatic = false
-      def reflectConstructor(constructor: MethodSymbol) = new JavaConstructorMirror(constructor)
+      def reflectConstructor(constructor: MethodSymbol) = new JavaConstructorMirror(outer, constructor)
       def companion: Option[ModuleMirror] = symbol.companionModule match {
-       case module: ModuleSymbol => Some(new JavaModuleMirror(module))
+       case module: ModuleSymbol => Some(new JavaModuleMirror(outer, module))
        case _ => None
       }
     }
 
-    private class JavaModuleMirror(val symbol: ModuleSymbol)
+    private class JavaModuleMirror(val outer: AnyRef, val symbol: ModuleSymbol)
             extends JavaTemplateMirror with ModuleMirror {
       def erasure = symbol.moduleClass.asClassSymbol
       def isStatic = true
-      def instance = singletonInstance(classLoader, symbol.fullName)
+      def instance = {
+        if (!symbol.owner.isPackageClass) throw new Error("inner and nested modules are not supported yet")
+        singletonInstance(classLoader, symbol.fullName)
+      }
       def companion: Option[ClassMirror] = symbol.companionClass match {
-        case cls: ClassSymbol => Some(new JavaClassMirror(cls))
+        case cls: ClassSymbol => Some(new JavaClassMirror(outer, cls))
         case _ => None
       }
     }
@@ -929,7 +955,10 @@ trait JavaMirrors extends internal.SymbolTable with api.JavaUniverse { self: Sym
     def constructorToJava(constr: MethodSymbol): jConstructor[_] = constructorCache.toJava(constr) {
       val jclazz = classToJava(constr.owner.asClassSymbol)
       val paramClasses = transformedType(constr).paramTypes map typeToJavaClass
-      jclazz getConstructor (paramClasses: _*)
+      val effectiveParamClasses =
+        if (!constr.owner.owner.isStaticOwner) jclazz.getEnclosingClass +: paramClasses
+        else paramClasses
+      jclazz getConstructor (effectiveParamClasses: _*)
     }
 
     private def jArrayClass(elemClazz: jClass[_]): jClass[_] = {
