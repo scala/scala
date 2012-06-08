@@ -1350,20 +1350,21 @@ trait Typers extends Modes with Adaptations with Taggings {
       if (!clazz.isStatic)
         unit.error(clazz.pos, "value class may not be a "+
           (if (clazz.owner.isTerm) "local class" else "member of another class"))
-      val constr = clazz.primaryConstructor
-      clazz.info.decls.toList.filter(acc => acc.isMethod && (acc hasFlag PARAMACCESSOR)) match {
-        case List(acc) =>
-          def isUnderlyingAcc(sym: Symbol) =
-            sym == acc || acc.hasAccessorFlag && sym == acc.accessed
-          if (acc.accessBoundary(clazz) != RootClass)
-            unit.error(acc.pos, "value class needs to have a publicly accessible val parameter")
-          for (stat <- body)
-            if (!treeInfo.isAllowedInUniversalTrait(stat) && !isUnderlyingAcc(stat.symbol))
-              unit.error(stat.pos,
-                if (stat.symbol hasFlag PARAMACCESSOR) "illegal parameter for value class"
-                else "this statement is not allowed in value class: "+stat)
-        case x =>
-          unit.error(clazz.pos, "value class needs to have exactly one public val parameter")
+      if (!clazz.isPrimitiveValueClass) {
+        clazz.info.decls.toList.filter(acc => acc.isMethod && (acc hasFlag PARAMACCESSOR)) match {
+          case List(acc) =>
+            def isUnderlyingAcc(sym: Symbol) =
+              sym == acc || acc.hasAccessorFlag && sym == acc.accessed
+            if (acc.accessBoundary(clazz) != RootClass)
+              unit.error(acc.pos, "value class needs to have a publicly accessible val parameter")
+            for (stat <- body)
+              if (!treeInfo.isAllowedInUniversalTrait(stat) && !isUnderlyingAcc(stat.symbol))
+                unit.error(stat.pos,
+                  if (stat.symbol hasFlag PARAMACCESSOR) "illegal parameter for value class"
+                  else "this statement is not allowed in value class: " + stat)
+          case x =>
+            unit.error(clazz.pos, "value class needs to have exactly one public val parameter")
+        }
       }
       for (tparam <- clazz.typeParams)
         if (tparam hasAnnotation definitions.SpecializedClass)
@@ -1729,7 +1730,7 @@ trait Typers extends Modes with Adaptations with Taggings {
 
       val body1 = typedStats(body, templ.symbol)
 
-      if (clazz.isDerivedValueClass)
+      if (clazz.info.firstParent.typeSymbol == AnyValClass)
         validateDerivedValueClass(clazz, body1)
 
       treeCopy.Template(templ, parents1, self1, body1) setType clazz.tpe
