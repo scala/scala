@@ -3,7 +3,7 @@
 	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>org.scala-lang</groupId>
-	<artifactId>scala-compiler</artifactId>
+	<artifactId>scala-reflect</artifactId>
 	<packaging>jar</packaging>
 	<version>@VERSION@</version>
   <name>Scala Compiler</name>
@@ -37,17 +37,6 @@
 			<artifactId>scala-library</artifactId>
 			<version>@VERSION@</version>
 		</dependency>
-		<dependency>
-			<groupId>org.scala-lang</groupId>
-			<artifactId>scala-reflect</artifactId>
-			<version>@VERSION@</version>
-		</dependency>
-    <dependency>
-      <groupId>org.scala-lang</groupId>
-      <artifactId>jline</artifactId>
-      <version>@VERSION@</version>
-      <optional>true</optional>
-    </dependency>
 	</dependencies>
 	<distributionManagement>
 		<repository>

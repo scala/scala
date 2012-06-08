@@ -8,8 +8,7 @@ package io
 
 import java.net.URL
 import java.io.{ IOException, InputStream, ByteArrayInputStream }
-// [scala-reflect.jar migration note] uncomment when creating scala-reflect.jar
-// import java.io.{ File => JFile }
+import java.io.{ File => JFile }
 import java.util.zip.{ ZipEntry, ZipFile, ZipInputStream }
 import scala.collection.{ immutable, mutable }
 import annotation.tailrec

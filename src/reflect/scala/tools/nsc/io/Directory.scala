@@ -9,8 +9,7 @@
 package scala.tools.nsc
 package io
 
-// [scala-reflect.jar migration note] uncomment when creating scala-reflect.jar
-// import java.io.{ File => JFile }
+import java.io.{ File => JFile }
 
 object Directory {
   import scala.util.Properties.{ tmpDir, userHome, userDir }
