@@ -5,10 +5,6 @@ trait Mirrors { self: Universe =>
 
   type RuntimeClass >: Null
 
-  // [Eugene++ to Martin] how do we reflect against inner classes?
-  // presumably, we should add `reflectClass` to both InstanceMirror (inner classes) and TemplateMirror (nested classes)
-  // in the former case, the resulting ClassMirror should remember the outer instance that spawned it to use it in reflective construction
-
   // [Eugene] also, it might make sense to provide shortcuts for the API
   //
   // for example, right now to invoke the same method for several different instances, you need:
@@ -31,8 +27,8 @@ trait Mirrors { self: Universe =>
     /** The instance value reflected by this mirror */
     def instance: Any
 
-    /** The mirror corresponding to the run-time class of the reflected instance. */
-    def reflectClass: ClassMirror
+    /** The symbol corresponding to the run-time class of the reflected instance. */
+    def symbol: ClassSymbol
 
     /** Get value of field in reflected instance.
      *  @field  A field symbol that should represent a field of the instance class.
@@ -48,6 +44,12 @@ trait Mirrors { self: Universe =>
      *  @throws ???
      */
     def reflectMethod(method: MethodSymbol): MethodMirror
+
+    /** .. */
+    def reflectClass(cls: ClassSymbol): ClassMirror
+
+    /** .. */
+    def reflectModule(mod: ModuleSymbol): ModuleMirror
   }
 
   /** A mirror that reflects a field */
@@ -57,7 +59,7 @@ trait Mirrors { self: Universe =>
     def receiver: AnyRef
 
     /** The field symbol representing the field */
-    def field: TermSymbol
+    def symbol: TermSymbol
 
     /** Retrieves the value stored in the field */
     def get: Any
@@ -73,9 +75,10 @@ trait Mirrors { self: Universe =>
     def receiver: AnyRef
 
     /** The method symbol representing the method */
-    def method: MethodSymbol
+    def symbol: MethodSymbol
 
     /** The result of applying the method to the given arguments */
+    // [Eugene+++] If it's a constructor, it should account for inner classes
     def apply(args: Any*): Any
   }
 
@@ -96,8 +99,6 @@ trait Mirrors { self: Universe =>
 
     /** The Scala symbol corresponding to the reflected runtime class or module. */
     def symbol: Symbol
-
-    // [Eugene++ to Martin] I've removed `typeSignature`, because we can obtain it via `symbol.typeSignature`
 
     /** Optionally, the mirror of the companion reflected by this mirror.
      *  If this mirror reflects a Scala object, the mirror for the companion class, or None
@@ -157,8 +158,8 @@ trait Mirrors { self: Universe =>
     def companion: Option[ModuleMirror]
   }
 
-  /** The API of a mirror for a reflective universe */
-  trait RuntimeMirror extends MirrorOf[Mirrors.this.type] { self =>
+  /** A mirror that reflects instances and static classes */
+  trait ReflectiveMirror extends MirrorOf[Mirrors.this.type] {
 
     /** A reflective mirror for the given object
      *  @param  obj   An arbitrary value
@@ -166,37 +167,15 @@ trait Mirrors { self: Universe =>
      */
     def reflect(obj: Any): InstanceMirror
 
-    /** A reflective mirror for the given Runtime class
-     *  @param  runtimeClass  A Runtime class object
-     *  @return The mirror for `runtimeClass`
-     */
-    def reflectClass(runtimeClass: RuntimeClass): ClassMirror
+    /** .. */
+    def reflectClass(cls: ClassSymbol): ClassMirror
 
-    /** A reflective mirror for the Runtime class with the given name in the
-     *  current classloader.
-     *  @param  name  The fully qualified name of the class
-     *  @return       The mirror for the runtime class with fully qualified name
-     *                `name` in the current class loader.
-     *  @throws java.lang.ClassNotFoundException if no class with that name exists
-     *  to do: throws anything else?
-     */
-    def reflectClass(fullName: String): ClassMirror
+    /** .. */
+    def reflectModule(mod: ModuleSymbol): ModuleMirror
+  }
 
-    /** A reflective mirror for the given Runtime class
-     *  @param  runtimeClass  A Runtime class object
-     *  @return The mirror for `runtimeClass`
-     */
-    def reflectModule(runtimeClass: RuntimeClass): ModuleMirror
-
-    /** A reflective mirror for the Runtime class with the given name in the
-     *  current classloader.
-     *  @param  name  The fully qualified name of the class
-     *  @return       The mirror for the runtime class with fully qualified name
-     *                `name` in the current class loader.
-     *  @throws java.lang.ClassNotFoundException if no class with that name exists
-     *  to do: throws anything else?
-     */
-    def reflectModule(fullName: String): ModuleMirror
+  /** The API of a mirror for a reflective universe */
+  trait RuntimeMirror extends ReflectiveMirror { self =>
 
     /** Maps a Scala type to the corresponding Java class object
      */
@@ -209,5 +188,21 @@ trait Mirrors { self: Universe =>
      *        because there is no unique Java class corresponding to a Scala generic array
      */
     def runtimeClass(cls: ClassSymbol): RuntimeClass
+
+    /** A class symbol for the specified runtime class.
+     *  @return The class symbol for the runtime class in the current class loader.
+     *  @throws java.lang.ClassNotFoundException if no class with that name exists
+     *  @throws scala.reflect.internal.MissingRequirementError if no corresponding symbol exists
+     *  to do: throws anything else?
+     */
+    def classSymbol(rtcls: RuntimeClass): ClassSymbol
+
+    /** A module symbol for the specified runtime class.
+     *  @return       The module symbol for the runtime class in the current class loader.
+     *  @throws java.lang.ClassNotFoundException if no class with that name exists
+     *  @throws scala.reflect.internal.MissingRequirementError if no corresponding symbol exists
+     *  to do: throws anything else?
+     */
+    def moduleSymbol(rtcls: RuntimeClass): ModuleSymbol
   }
 }

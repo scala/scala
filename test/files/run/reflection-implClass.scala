@@ -10,8 +10,8 @@ object Test extends App with Outer {
   import scala.reflect.runtime.universe._
   import scala.reflect.runtime.{currentMirror => cm}
 
-  assert(cm.reflectClass(classTag[Foo].runtimeClass).symbol.typeSignature.declaration(newTermName("bar")).typeSignature ==
-    cm.reflectClass(classTag[Bar].runtimeClass).symbol.typeSignature.declaration(newTermName("foo")).typeSignature)
+  assert(cm.classSymbol(classTag[Foo].runtimeClass).typeSignature.declaration(newTermName("bar")).typeSignature ==
+    cm.classSymbol(classTag[Bar].runtimeClass).typeSignature.declaration(newTermName("foo")).typeSignature)
 
   val s1 = implClass(classTag[Foo].runtimeClass)
   assert(s1 != NoSymbol)
@@ -25,7 +25,7 @@ object Test extends App with Outer {
   assert(s2.companionSymbol.typeSignature.declaration(newTermName("foo")) != NoSymbol)
   def implClass(clazz: Class[_]) = {
     val implClass = Class.forName(clazz.getName + "$class")
-    cm.reflectClass(implClass).symbol
+    cm.classSymbol(implClass)
   }
 }
 

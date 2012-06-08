@@ -5,7 +5,7 @@ object Test extends App {
 
   val s = "hello world"
   val m = cm.reflect(s)
-  val sc = m.reflectClass.symbol
+  val sc = m.symbol
   val st = sc.asType
   val meth = (st member newTermName("indexOf")).asTermSymbol
   val IntType = definitions.IntClass.asType

@@ -1,0 +1,2 @@
+this is a static module, use reflectModule on a RuntimeMirror to obtain its ModuleMirror
+()
