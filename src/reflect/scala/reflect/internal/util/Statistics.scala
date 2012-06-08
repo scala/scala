@@ -28,6 +28,9 @@ class Statistics extends StatBase {
   val baseTypeSeqLenTotal = new Counter
   val typeSymbolCount = new Counter
   val classSymbolCount = new Counter
+  val lubCount = new Counter
+  val nestedLubCount = new Counter
+  val lubNanos = new Timer
 }
 
 object Statistics extends Statistics

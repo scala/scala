@@ -127,38 +127,11 @@ trait BaseTypeSeqs {
 
     def exists(p: Type => Boolean): Boolean = elems exists p
 
-    lazy val maxDepth: Int = maxDepthOfElems
+    lazy val maxDepth = maxDepthOfElems
 
-    protected def maxDepthOfElems = {
+    protected def maxDepthOfElems: Int = {
       var d = 0
-      for (i <- 0 until length) d = max(d, maxDpth(elems(i)))
-      d
-    }
-
-    /** The maximum depth of type `tp` */
-    protected def maxDpth(tp: Type): Int = tp match {
-      case TypeRef(pre, sym, args) =>
-        max(maxDpth(pre), maxDpth(args) + 1)
-      case RefinedType(parents, decls) =>
-        max(maxDpth(parents), maxDpth(decls.toList.map(_.info)) + 1)
-      case TypeBounds(lo, hi) =>
-        max(maxDpth(lo), maxDpth(hi))
-      case MethodType(paramtypes, result) =>
-        maxDpth(result)
-      case NullaryMethodType(result) =>
-        maxDpth(result)
-      case PolyType(tparams, result) =>
-        max(maxDpth(result), maxDpth(tparams map (_.info)) + 1)
-      case ExistentialType(tparams, result) =>
-        max(maxDpth(result), maxDpth(tparams map (_.info)) + 1)
-      case _ =>
-        1
-    }
-
-    /** The maximum depth of all types `tps` */
-    private def maxDpth(tps: Seq[Type]): Int = {
-      var d = 0
-      for (tp <- tps) d = max(d, maxDpth(tp))
+      for (i <- 1 until length) d = max(d, typeDepth(elems(i)))
       d
     }
 
@@ -252,7 +225,7 @@ trait BaseTypeSeqs {
     override def map(g: Type => Type) = lateMap(g)
     override def lateMap(g: Type => Type) = orig.lateMap(x => g(f(x)))
     override def exists(p: Type => Boolean) = elems exists (x => p(f(x)))
-    override protected def maxDepthOfElems: Int = (elems map (x => maxDpth(f(x)))).max
+    override protected def maxDepthOfElems: Int = elems map (x => typeDepth(f(x))) max
     override def toString = elems.mkString("MBTS(", ",", ")")
   }
 

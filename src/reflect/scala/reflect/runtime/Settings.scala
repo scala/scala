@@ -36,4 +36,5 @@ class Settings extends internal.settings.MutableSettings {
   val deepCloning = new BooleanSetting (false)
   val XoldPatmat = new BooleanSetting(false)
   val XnoPatmatAnalysis = new BooleanSetting(false)
+  val XfullLubs = new BooleanSetting(false)
 }

@@ -900,8 +900,8 @@ trait Types extends api.Types { self: SymbolTable =>
      */
     def baseTypeSeq: BaseTypeSeq = baseTypeSingletonSeq(this)
 
-    /** The maximum depth (@see maxDepth)
-     *  of each type in the BaseTypeSeq of this type.
+    /** The maximum depth (@see typeDepth)
+     *  of each type in the BaseTypeSeq of this type except the first.
      */
     def baseTypeSeqDepth: Int = 1
 
@@ -3027,7 +3027,7 @@ trait Types extends api.Types { self: SymbolTable =>
             // this is a higher-kinded type var with same arity as tp.
             // side effect: adds the type constructor itself as a bound
             addBound(tp.typeConstructor)
-            isSubArgs(lhs, rhs, params)
+            isSubArgs(lhs, rhs, params, AnyDepth)
           }
         }
       }
@@ -4949,17 +4949,53 @@ trait Types extends api.Types { self: SymbolTable =>
 
 // Helper Methods  -------------------------------------------------------------
 
-  final val LubGlbMargin = 0
-
   /** The maximum allowable depth of lubs or glbs over types `ts`.
-    * This is the maximum depth of all types in the base type sequences
-    * of each of the types `ts`, plus LubGlbMargin.
     */
-  def lubDepth(ts: List[Type]) = {
-    var d = 0
-    for (tp <- ts) d = math.max(d, tp.baseTypeSeqDepth)
-    d + LubGlbMargin
+  def lubDepth(ts: List[Type]): Int = {
+    val td = typeDepth(ts)
+    val bd = baseTypeSeqDepth(ts)
+    lubDepthAdjust(td, td max bd)
   }
+
+  /** The maximum allowable depth of lubs or glbs over given types,
+   *  as a function over the maximum depth `td` of these types, and
+   *  the maximum depth `bd` of all types in the base type sequences of these types.
+   */
+  private def lubDepthAdjust(td: Int, bd: Int): Int =
+    if (settings.XfullLubs.value) bd
+    else if (bd <= 3) bd
+    else if (bd <= 5) td max (bd - 1)
+    else if (bd <= 7) td max (bd - 2)
+    else (td - 1) max (bd - 3)
+
+  /** The maximum depth of type `tp` */
+  def typeDepth(tp: Type): Int = tp match {
+    case TypeRef(pre, sym, args) =>
+      typeDepth(pre) max typeDepth(args) + 1
+    case RefinedType(parents, decls) =>
+      typeDepth(parents) max typeDepth(decls.toList.map(_.info)) + 1
+    case TypeBounds(lo, hi) =>
+      typeDepth(lo) max typeDepth(hi)
+    case MethodType(paramtypes, result) =>
+      typeDepth(result)
+    case NullaryMethodType(result) =>
+      typeDepth(result)
+    case PolyType(tparams, result) =>
+      typeDepth(result) max typeDepth(tparams map (_.info)) + 1
+    case ExistentialType(tparams, result) =>
+      typeDepth(result) max typeDepth(tparams map (_.info)) + 1
+    case _ =>
+      1
+  }
+
+  private def maxDepth(tps: Seq[Type], by: Type => Int): Int = {
+    var d = 0
+    for (tp <- tps) d = d max by(tp)
+    d
+  }
+
+  private def typeDepth(tps: Seq[Type]): Int = maxDepth(tps, typeDepth)
+  private def baseTypeSeqDepth(tps: Seq[Type]): Int = maxDepth(tps, _.baseTypeSeqDepth)
 
   /** Is intersection of given types populated? That is,
    *  for all types tp1, tp2 in intersection
@@ -5518,11 +5554,12 @@ trait Types extends api.Types { self: SymbolTable =>
       // --> thus, cannot be subtypes (Any/Nothing has already been checked)
     }))
 
-  def isSubArg(t1: Type, t2: Type, variance: Int) =
-    (variance > 0 || t2 <:< t1) && (variance < 0 || t1 <:< t2)
-
-  def isSubArgs(tps1: List[Type], tps2: List[Type], tparams: List[Symbol]): Boolean =
+  def isSubArgs(tps1: List[Type], tps2: List[Type], tparams: List[Symbol], depth: Int): Boolean = {
+    def isSubArg(t1: Type, t2: Type, variance: Int) =
+      (variance > 0 || isSubType(t2, t1, depth)) &&
+      (variance < 0 || isSubType(t1, t2, depth))
     corresponds3(tps1, tps2, tparams map (_.variance))(isSubArg)
+  }
 
   def differentOrNone(tp1: Type, tp2: Type) = if (tp1 eq tp2) NoType else tp1
 
@@ -5549,16 +5586,16 @@ trait Types extends api.Types { self: SymbolTable =>
             val sym2 = tr2.sym
             val pre1 = tr1.pre
             val pre2 = tr2.pre
-            (((if (sym1 == sym2) phase.erasedTypes || pre1 <:< pre2
+            (((if (sym1 == sym2) phase.erasedTypes || isSubType(pre1, pre2, depth)
                else (sym1.name == sym2.name && !sym1.isModuleClass && !sym2.isModuleClass &&
                      (isUnifiable(pre1, pre2) ||
                       isSameSpecializedSkolem(sym1, sym2, pre1, pre2) ||
                       sym2.isAbstractType && isSubPre(pre1, pre2, sym2)))) &&
-                    isSubArgs(tr1.args, tr2.args, sym1.typeParams))
+                    isSubArgs(tr1.args, tr2.args, sym1.typeParams, depth))
              ||
              sym2.isClass && {
                val base = tr1 baseType sym2
-               (base ne tr1) && base <:< tr2
+               (base ne tr1) && isSubType(base, tr2, depth)
              }
              ||
              thirdTryRef(tr1, tr2))
@@ -5566,9 +5603,10 @@ trait Types extends api.Types { self: SymbolTable =>
             secondTry
         }
       case AnnotatedType(_, _, _) =>
-        tp1.withoutAnnotations <:< tp2.withoutAnnotations && annotationsConform(tp1, tp2)
+        isSubType(tp1.withoutAnnotations, tp2.withoutAnnotations, depth) &&
+        annotationsConform(tp1, tp2)
       case BoundedWildcardType(bounds) =>
-        tp1 <:< bounds.hi
+        isSubType(tp1, bounds.hi, depth)
       case tv2 @ TypeVar(_, constr2) =>
         tp1 match {
           case AnnotatedType(_, _, _) | BoundedWildcardType(_) =>
@@ -5587,15 +5625,16 @@ trait Types extends api.Types { self: SymbolTable =>
      */
     def secondTry = tp1 match {
       case AnnotatedType(_, _, _) =>
-        tp1.withoutAnnotations <:< tp2.withoutAnnotations && annotationsConform(tp1, tp2)
+        isSubType(tp1.withoutAnnotations, tp2.withoutAnnotations, depth) &&
+        annotationsConform(tp1, tp2)
       case BoundedWildcardType(bounds) =>
-        tp1.bounds.lo <:< tp2
+        isSubType(tp1.bounds.lo, tp2, depth)
       case tv @ TypeVar(_,_) =>
         tv.registerBound(tp2, false)
       case ExistentialType(_, _) =>
         try {
           skolemizationLevel += 1
-          tp1.skolemizeExistential <:< tp2
+          isSubType(tp1.skolemizeExistential, tp2, depth)
         } finally {
           skolemizationLevel -= 1
         }
@@ -5618,7 +5657,9 @@ trait Types extends api.Types { self: SymbolTable =>
         case _: TypeSymbol =>
           if (sym2 hasFlag DEFERRED) {
             val tp2a = tp2.bounds.lo
-            isDifferentTypeConstructor(tp2, tp2a) && tp1 <:< tp2a || fourthTry
+            isDifferentTypeConstructor(tp2, tp2a) &&
+            isSubType(tp1, tp2a, depth) ||
+            fourthTry
           } else {
             isSubType(tp1.normalize, tp2.normalize, depth)
           }
@@ -5636,12 +5677,12 @@ trait Types extends api.Types { self: SymbolTable =>
       case tr2: TypeRef =>
         thirdTryRef(tp1, tr2)
       case rt2: RefinedType =>
-        (rt2.parents forall (tp1 <:< _)) &&
-        (rt2.decls forall tp1.specializes)
+        (rt2.parents forall (isSubType(tp1, _, depth))) &&
+        (rt2.decls forall (specializesSym(tp1, _, depth)))
       case et2: ExistentialType =>
-        et2.withTypeVars(tp1 <:< _, depth) || fourthTry
+        et2.withTypeVars(isSubType(tp1, _, depth), depth) || fourthTry
       case nn2: NotNullType =>
-        tp1.isNotNull && tp1 <:< nn2.underlying
+        tp1.isNotNull && isSubType(tp1, nn2.underlying, depth)
       case mt2: MethodType =>
         tp1 match {
           case mt1 @ MethodType(params1, res1) =>
@@ -5650,7 +5691,7 @@ trait Types extends api.Types { self: SymbolTable =>
             (sameLength(params1, params2) &&
              mt1.isImplicit == mt2.isImplicit &&
              matchingParams(params1, params2, mt1.isJava, mt2.isJava) &&
-             (res1 <:< res2.substSym(params2, params1)))
+             isSubType(res1, res2.substSym(params2, params1), depth))
           // TODO: if mt1.params.isEmpty, consider NullaryMethodType?
           case _ =>
             false
@@ -5659,14 +5700,14 @@ trait Types extends api.Types { self: SymbolTable =>
         tp1 match {
           // TODO: consider MethodType mt for which mt.params.isEmpty??
           case pt1 @ NullaryMethodType(_) =>
-            pt1.resultType <:< pt2.resultType
+            isSubType(pt1.resultType, pt2.resultType, depth)
           case _ =>
             false
         }
       case TypeBounds(lo2, hi2) =>
         tp1 match {
           case TypeBounds(lo1, hi1) =>
-            lo2 <:< lo1 && hi1 <:< hi2
+            isSubType(lo2, lo1, depth) && isSubType(hi1, hi2, depth)
           case _ =>
             false
         }
@@ -5686,7 +5727,7 @@ trait Types extends api.Types { self: SymbolTable =>
               case TypeRef(_, sym2, _) =>
                 containsNull(sym2)
               case _ =>
-                isSingleType(tp2) && tp1 <:< tp2.widen
+                isSingleType(tp2) && isSubType(tp1, tp2.widen, depth)
             }
           case _: ClassSymbol =>
             if (isRaw(sym1, tr1.args))
@@ -5702,7 +5743,7 @@ trait Types extends api.Types { self: SymbolTable =>
           case _: TypeSymbol =>
             if (sym1 hasFlag DEFERRED) {
               val tp1a = tp1.bounds.hi
-              isDifferentTypeConstructor(tp1, tp1a) && tp1a <:< tp2
+              isDifferentTypeConstructor(tp1, tp1a) && isSubType(tp1a, tp2, depth)
             } else {
               isSubType(tp1.normalize, tp2.normalize, depth)
             }
@@ -5710,9 +5751,9 @@ trait Types extends api.Types { self: SymbolTable =>
             false
         }
       case RefinedType(parents1, _) =>
-        parents1 exists (_ <:< tp2)
+        parents1 exists (isSubType(_, tp2, depth))
       case _: SingletonType | _: NotNullType =>
-        tp1.underlying <:< tp2
+        isSubType(tp1.underlying, tp2, depth)
       case _ =>
         false
     }
@@ -5735,19 +5776,22 @@ trait Types extends api.Types { self: SymbolTable =>
    *  refinement type, otherwise we might return false negatives.
    */
   def specializesSym(tp: Type, sym: Symbol): Boolean =
+    specializesSym(tp, sym, AnyDepth)
+
+  def specializesSym(tp: Type, sym: Symbol, depth: Int): Boolean =
     tp.typeSymbol == NothingClass ||
     tp.typeSymbol == NullClass && containsNull(sym.owner) ||
     (tp.nonPrivateMember(sym.name).alternatives exists
-      (alt => sym == alt || specializesSym(tp.narrow, alt, sym.owner.thisType, sym)))
+      (alt => sym == alt || specializesSym(tp.narrow, alt, sym.owner.thisType, sym, depth)))
 
   /** Does member `sym1` of `tp1` have a stronger type
    *  than member `sym2` of `tp2`?
    */
-  private def specializesSym(tp1: Type, sym1: Symbol, tp2: Type, sym2: Symbol): Boolean = {
+  private def specializesSym(tp1: Type, sym1: Symbol, tp2: Type, sym2: Symbol, depth: Int): Boolean = {
     val info1 = tp1.memberInfo(sym1)
     val info2 = tp2.memberInfo(sym2).substThis(tp2.typeSymbol, tp1)
     //System.out.println("specializes "+tp1+"."+sym1+":"+info1+sym1.locationString+" AND "+tp2+"."+sym2+":"+info2)//DEBUG
-    (    sym2.isTerm && (info1 <:< info2) && (!sym2.isStable || sym1.isStable)
+    (    sym2.isTerm && isSubType(info1, info2, depth) && (!sym2.isStable || sym1.isStable)
       || sym2.isAbstractType && {
             val memberTp1 = tp1.memberType(sym1)
             // println("kinds conform? "+(memberTp1, tp1, sym2, kindsConform(List(sym2), List(memberTp1), tp2, sym2.owner)))
@@ -6264,11 +6308,14 @@ trait Types extends api.Types { self: SymbolTable =>
     case List() => NothingClass.tpe
     case List(t) => t
     case _ =>
+      incCounter(lubCount)
+      val start = startTimer(lubNanos)
       try {
-        lub(ts, lubDepth(ts))
+         lub(ts, lubDepth(ts))
       } finally {
         lubResults.clear()
         glbResults.clear()
+        stopTimer(lubNanos, start)
       }
   }
 
@@ -6343,14 +6390,14 @@ trait Types extends api.Types { self: SymbolTable =>
             !syms.isEmpty && (syms forall (alt =>
               // todo alt != sym is strictly speaking not correct, but without it we lose
               // efficiency.
-              alt != sym && !specializesSym(lubThisType, sym, tp, alt)))
+              alt != sym && !specializesSym(lubThisType, sym, tp, alt, depth)))
           }
           // add a refinement symbol for all non-class members of lubBase
           // which are refined by every type in ts.
           for (sym <- lubBase.nonPrivateMembers ; if !excludeFromLub(sym)) {
             try {
               val lsym = lubsym(sym)
-              if (lsym != NoSymbol) addMember(lubThisType, lubRefined, lsym)
+              if (lsym != NoSymbol) addMember(lubThisType, lubRefined, lsym, depth)
             } catch {
               case ex: NoCommonType =>
             }
@@ -6362,7 +6409,7 @@ trait Types extends api.Types { self: SymbolTable =>
             // In theory this should not be necessary, but higher-order type
             // parameters are not handled correctly.
             val ok = ts forall { t =>
-              (t <:< lubRefined) || {
+              isSubType(t, lubRefined, depth) || {
                 if (settings.debug.value || printLubs) {
                   Console.println(
                     "Malformed lub: " + lubRefined + "\n" +
@@ -6384,6 +6431,7 @@ trait Types extends api.Types { self: SymbolTable =>
       indent = indent + "  "
       assert(indent.length <= 100)
     }
+    incCounter(nestedLubCount)
     val res = lub0(ts)
     if (printLubs) {
       indent = indent stripSuffix "  "
@@ -6408,12 +6456,15 @@ trait Types extends api.Types { self: SymbolTable =>
     case List() => AnyClass.tpe
     case List(t) => t
     case ts0 =>
+      incCounter(lubCount)
+      val start = startTimer(lubNanos)
       try {
         glbNorm(ts0, lubDepth(ts0))
       } finally {
         lubResults.clear()
         glbResults.clear()
-      }
+        stopTimer(lubNanos, start)
+     }
   }
 
   private def glb(ts: List[Type], depth: Int): Type = elimSuper(ts) match {
@@ -6507,9 +6558,9 @@ trait Types extends api.Types { self: SymbolTable =>
                 globalGlbDepth += 1
                 val dss = ts flatMap refinedToDecls
                 for (ds <- dss; sym <- ds.iterator)
-                  if (globalGlbDepth < globalGlbLimit && !(glbThisType specializes sym))
+                  if (globalGlbDepth < globalGlbLimit && !specializesSym(glbThisType, sym, depth))
                     try {
-                      addMember(glbThisType, glbRefined, glbsym(sym))
+                      addMember(glbThisType, glbRefined, glbsym(sym), depth)
                     } catch {
                       case ex: NoCommonType =>
                     }
@@ -6527,6 +6578,7 @@ trait Types extends api.Types { self: SymbolTable =>
     }
     // if (settings.debug.value) { println(indent + "glb of " + ts + " at depth "+depth); indent = indent + "  " } //DEBUG
 
+    incCounter(nestedLubCount)
     val res = glb0(ts)
 
     // if (settings.debug.value) { indent = indent.substring(0, indent.length() - 2); log(indent + "glb of " + ts + " is " + res) }//DEBUG
@@ -6641,16 +6693,18 @@ trait Types extends api.Types { self: SymbolTable =>
       assert(false, tps); None
   }
 
+  def addMember(thistp: Type, tp: Type, sym: Symbol): Unit = addMember(thistp, tp, sym, AnyDepth)
+
   /** Make symbol `sym` a member of scope `tp.decls`
    *  where `thistp` is the narrowed owner type of the scope.
    */
-  def addMember(thistp: Type, tp: Type, sym: Symbol) {
+  def addMember(thistp: Type, tp: Type, sym: Symbol, depth: Int) {
     assert(sym != NoSymbol)
     // debuglog("add member " + sym+":"+sym.info+" to "+thistp) //DEBUG
-    if (!(thistp specializes sym)) {
+    if (!specializesSym(thistp, sym, depth)) {
       if (sym.isTerm)
         for (alt <- tp.nonPrivateDecl(sym.name).alternatives)
-          if (specializesSym(thistp, sym, thistp, alt))
+          if (specializesSym(thistp, sym, thistp, alt, depth))
             tp.decls unlink alt;
       tp.decls enter sym
     }
