@@ -10,7 +10,7 @@ import symtab._
 import Flags._
 import util.TreeSet
 import scala.collection.{ mutable, immutable }
-import scala.collection.mutable.LinkedHashMap
+import scala.collection.mutable.{ LinkedHashMap, LinkedHashSet }
 
 abstract class LambdaLift extends InfoTransform {
   import global._
@@ -50,6 +50,9 @@ abstract class LambdaLift extends InfoTransform {
     /** A hashtable storing calls between functions */
     private val called = new LinkedHashMap[Symbol, SymSet]
 
+    /** Symbols that are called from an inner class. */
+    private val calledFromInner = new LinkedHashSet[Symbol]
+
     /** The set of symbols that need to be renamed. */
     private val renamable = newSymSet
 
@@ -63,9 +66,6 @@ abstract class LambdaLift extends InfoTransform {
 
     /** Buffers for lifted out classes and methods */
     private val liftedDefs = new LinkedHashMap[Symbol, List[Tree]]
-
-    /** True if we are transforming under a ReferenceToBoxed node */
-    private var isBoxedRef = false
 
     private type SymSet = TreeSet[Symbol]
 
@@ -138,6 +138,7 @@ abstract class LambdaLift extends InfoTransform {
     private def markCalled(sym: Symbol, owner: Symbol) {
       debuglog("mark called: " + sym + " of " + sym.owner + " is called by " + owner)
       symSet(called, owner) addEntry sym
+      if (sym.enclClass != owner.enclClass) calledFromInner addEntry sym
     }
 
     /** The traverse function */
@@ -214,15 +215,23 @@ abstract class LambdaLift extends InfoTransform {
 
       def renameSym(sym: Symbol) {
         val originalName = sym.name
-        val base = sym.name + nme.NAME_JOIN_STRING + (
-          if (sym.isAnonymousFunction && sym.owner.isMethod)
-            sym.owner.name + nme.NAME_JOIN_STRING
-          else ""
+        def freshen(prefix: String): Name =
+          if (originalName.isTypeName) unit.freshTypeName(prefix)
+          else unit.freshTermName(prefix)
+
+        val newName: Name = (
+          if (sym.isAnonymousFunction && sym.owner.isMethod) {
+            freshen(sym.name + nme.NAME_JOIN_STRING + sym.owner.name + nme.NAME_JOIN_STRING)
+          } else {
+            // SI-5652 If the lifted symbol is accessed from an inner class, it will be made public. (where?)
+            //         Generating a a unique name, mangled with the enclosing class name, avoids a VerifyError
+            //         in the case that a sub-class happens to lifts out a method with the *same* name.
+            val name = freshen(sym.name + nme.NAME_JOIN_STRING)
+            if (originalName.isTermName && !sym.enclClass.isImplClass && calledFromInner(sym)) nme.expandedName(name, sym.enclClass)
+            else name
+          }
         )
-        sym setName (
-          if (sym.name.isTypeName) unit.freshTypeName(base)
-          else unit.freshTermName(base)
-        )
+        sym setName newName
         debuglog("renaming in %s: %s => %s".format(sym.owner.fullLocationString, originalName, sym.name))
       }
 
