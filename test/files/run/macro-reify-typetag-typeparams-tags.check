@@ -1,2 +1,2 @@
-ConcreteTypeTag[Int]
-*ConcreteTypeTag[List[Int]]
+TypeTag[Int]
+TypeTag[List[Int]]

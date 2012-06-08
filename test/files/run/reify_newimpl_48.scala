@@ -1,4 +1,6 @@
-import scala.reflect.mirror._
+import scala.reflect.runtime.universe._
+import scala.tools.reflect.ToolBox
+import scala.tools.reflect.Eval
 
 object Test extends App {
   val outer1 = {
@@ -13,7 +15,7 @@ object Test extends App {
 
   val code = reify{
     val x = 4
-    x + outer1.eval + outer2.eval
+    x + outer1.splice + outer2.splice
   }
 
   println(code.eval)

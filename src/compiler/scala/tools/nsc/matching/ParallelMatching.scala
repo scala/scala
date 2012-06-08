@@ -9,7 +9,7 @@ package matching
 
 import PartialFunction._
 import scala.collection.{ mutable }
-import util.Position
+import scala.reflect.internal.util.Position
 import transform.ExplicitOuter
 import symtab.Flags
 import mutable.ListBuffer

@@ -11,7 +11,7 @@
 package scala.collection
 package mutable
 
-import scala.reflect.ArrayTag
+import scala.reflect.ClassTag
 import scala.runtime.ScalaRunTime._
 import scala.collection.generic._
 import scala.collection.parallel.mutable.ParArray
@@ -42,7 +42,7 @@ extends AbstractSeq[T]
   override protected[this] def toCollection(repr: WrappedArray[T]): WrappedArray[T] = repr
 
   /** The tag of the element type */
-  def elemTag: ArrayTag[T]
+  def elemTag: ClassTag[T]
 
   @deprecated("use elemTag instead", "2.10.0")
   def elemManifest: ClassManifest[T] = ClassManifest.fromClass[T](arrayElementClass(elemTag).asInstanceOf[Class[T]])
@@ -64,8 +64,8 @@ extends AbstractSeq[T]
   private def elementClass: Class[_] =
     arrayElementClass(repr.getClass)
 
-  override def toArray[U >: T : ArrayTag]: Array[U] = {
-    val thatElementClass = arrayElementClass(implicitly[ArrayTag[U]])
+  override def toArray[U >: T : ClassTag]: Array[U] = {
+    val thatElementClass = arrayElementClass(implicitly[ClassTag[U]])
     if (elementClass eq thatElementClass)
       array.asInstanceOf[Array[U]]
     else
@@ -110,7 +110,7 @@ object WrappedArray {
     case x: Array[Unit]    => new ofUnit(x)
   }).asInstanceOf[WrappedArray[T]]
 
-  implicit def canBuildFrom[T](implicit m: ArrayTag[T]): CanBuildFrom[WrappedArray[_], T, WrappedArray[T]] =
+  implicit def canBuildFrom[T](implicit m: ClassTag[T]): CanBuildFrom[WrappedArray[_], T, WrappedArray[T]] =
     new CanBuildFrom[WrappedArray[_], T, WrappedArray[T]] {
       def apply(from: WrappedArray[_]): Builder[T, WrappedArray[T]] =
         ArrayBuilder.make[T]()(m) mapResult WrappedArray.make[T]

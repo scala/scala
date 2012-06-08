@@ -1,12 +1,6 @@
+import scala.reflect.{ClassTag, classTag}
+
 object Test extends App {
-  def arrayTagIsnotManifest[T: ArrayTag] = {
-    println(manifest[T])
-  }
-
-  arrayTagIsnotManifest[Int]
-  arrayTagIsnotManifest[String]
-  arrayTagIsnotManifest[Array[Int]]
-
   def classTagIsnotManifest[T: ClassTag] = {
     println(manifest[T])
   }

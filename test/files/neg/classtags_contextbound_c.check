@@ -1,4 +1,4 @@
-classtags_contextbound_c.scala:2: error: No ArrayTag available for T
+classtags_contextbound_c.scala:4: error: No ClassTag available for T
   def mkArray[T] = Array[T]()
                            ^
 one error found

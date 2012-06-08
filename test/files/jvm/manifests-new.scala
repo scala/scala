@@ -1,3 +1,6 @@
+import scala.reflect.runtime.universe._
+import scala.reflect.{ClassTag, classTag}
+
 object Test extends App {
   Test1
   Test2
@@ -58,12 +61,12 @@ object Test2 {
   println("true="+load[Boolean](dump(true)))
   println("a="+load[Char](dump('a')))
   println("1="+load[Int](dump(1)))
-  println("'abc="+load[Symbol](dump('abc)))
+  println("'abc="+load[scala.Symbol](dump('abc)))
   println()
 
   println("List(())="+load[List[Unit]](dump(List(()))))
   println("List(true)="+load[List[Boolean]](dump(List(true))))
-  println("List('abc)="+load[List[Symbol]](dump(List('abc))))
+  println("List('abc)="+load[List[scala.Symbol]](dump(List('abc))))
   println()
 
   def loadArray[T](x: Array[Byte])(implicit t: reflect.ClassTag[Array[T]]) =
@@ -98,12 +101,11 @@ trait TestUtil {
     val in = new ObjectInputStream(new ByteArrayInputStream(buffer))
     in.readObject().asInstanceOf[A]
   }
-  import scala.reflect._
-  def print[T](x: T)(implicit t: ConcreteTypeTag[T]) {
+  def print[T](x: T)(implicit t: TypeTag[T]) {
     // todo. type tags are not yet serializable
-//    val t1: ConcreteTypeTag[T] = read(write(t))
-    val t1: ConcreteTypeTag[T] = t
+//    val t1: TypeTag[T] = read(write(t))
+    val t1: TypeTag[T] = t
     val x1 = x.toString.replaceAll("@[0-9a-z]+$", "")
-    println("x="+x1+", t="+t1+", k="+t1.tpe.kind+", s="+t1.sym.toString)
+    println("x="+x1+", t="+t1+", k="+t1.tpe.kind+", s="+t1.tpe.typeSymbol.toString)
   }
 }

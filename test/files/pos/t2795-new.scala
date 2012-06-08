@@ -1,11 +1,13 @@
 package t1
 
+import scala.reflect.{ClassTag, classTag}
+
 trait Element[T] {
 }
 
 trait Config {
   type T <: Element[T]
-  implicit val m: ArrayTag[T]
+  implicit val m: ClassTag[T]
   // XXX Following works fine:
   // type T <: Element[_]
 }

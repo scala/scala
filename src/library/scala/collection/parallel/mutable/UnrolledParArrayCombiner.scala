@@ -21,12 +21,12 @@ import scala.collection.parallel.TaskSupport
 import scala.collection.parallel.unsupportedop
 import scala.collection.parallel.Combiner
 import scala.collection.parallel.Task
+import scala.reflect.ClassTag
 
 
 
 
-
-private[mutable] class DoublingUnrolledBuffer[T](implicit t: ArrayTag[T]) extends UnrolledBuffer[T]()(t) {
+private[mutable] class DoublingUnrolledBuffer[T](implicit t: ClassTag[T]) extends UnrolledBuffer[T]()(t) {
   override def calcNextLength(sz: Int) = if (sz < 10000) sz * 2 else sz
   protected override def newUnrolled = new Unrolled[T](0, new Array[T](4), null, this)
 }

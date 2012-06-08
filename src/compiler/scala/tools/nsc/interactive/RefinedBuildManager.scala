@@ -12,7 +12,8 @@ import scala.util.control.Breaks._
 import scala.tools.nsc.symtab.Flags
 
 import dependencies._
-import util.{FakePos, ClassPath}
+import scala.reflect.internal.util.FakePos
+import util.ClassPath
 import io.AbstractFile
 import scala.tools.util.PathResolver
 

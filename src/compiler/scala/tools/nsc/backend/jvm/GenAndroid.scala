@@ -25,8 +25,8 @@ trait GenAndroid {
    */
   private val fieldName = newTermName("CREATOR")
 
-  private lazy val AndroidParcelableInterface = definitions.getClassIfDefined("android.os.Parcelable")
-  private lazy val AndroidCreatorClass        = definitions.getClassIfDefined("android.os.Parcelable$Creator")
+  private lazy val AndroidParcelableInterface = rootMirror.getClassIfDefined("android.os.Parcelable")
+  private lazy val AndroidCreatorClass        = rootMirror.getClassIfDefined("android.os.Parcelable$Creator")
 
   def isAndroidParcelableClass(sym: Symbol) =
     (AndroidParcelableInterface != NoSymbol) &&

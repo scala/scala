@@ -1,16 +1,15 @@
-package scala.reflect
-package reify
+package scala.reflect.reify
 
-import scala.reflect.reify.phases._
+import phases._
 
-trait Phases extends Calculate
-                with Reshape
+trait Phases extends Reshape
+                with Calculate
                 with Metalevels
                 with Reify {
 
   self: Reifier =>
 
-  import mirror._
+  import global._
   import definitions._
 
   private var alreadyRun = false
@@ -26,16 +25,19 @@ trait Phases extends Calculate
 
     if (reifyDebug) println("[reshape phase]")
     tree = reshape.transform(tree)
+    if (reifyDebug) println("[interlude]")
+    if (reifyDebug) println("reifee = " + (if (opt.showTrees) "\n" + nodePrinters.nodeToString(tree).trim else tree.toString))
+
+    if (reifyDebug) println("[calculate phase]")
+    calculate.traverse(tree)
 
     if (reifyDebug) println("[metalevels phase]")
     tree = metalevels.transform(tree)
-
     if (reifyDebug) println("[interlude]")
-    if (reifyDebug) println("symbol table = " + (if (symbolTable.length == 0) "<empty>" else ""))
-    if (reifyDebug) symbolTable foreach (println(_))
-    if (reifyDebug) println("reifee = " + (if (opt.showTrees) "\n" + nodePrinters.nodeToString(tree).trim else tree.toString))
+    if (reifyDebug) println(symtab.debugString)
+
     if (reifyDebug) println("[reify phase]")
-    var result = reify(tree)
+    val result = reify(tree)
 
     result
   }

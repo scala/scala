@@ -53,6 +53,7 @@ class ScalaCheckFileManager(val origmanager: FileManager) extends FileManager {
 
   var CLASSPATH: String = join(origmanager.CLASSPATH, PathSettings.scalaCheck.path)
   var LATEST_LIB: String = origmanager.LATEST_LIB
+  var LATEST_REFLECT: String = origmanager.LATEST_REFLECT
   var LATEST_COMP: String = origmanager.LATEST_COMP
   var LATEST_PARTEST: String = origmanager.LATEST_PARTEST
   var LATEST_ACTORS: String = origmanager.LATEST_ACTORS
@@ -323,6 +324,7 @@ class Worker(val fileManager: FileManager, params: TestRunParams) extends Actor 
       "-Djava.library.path="+logFile.getParentFile.getAbsolutePath,
       "-Dpartest.output="+outDir.getAbsolutePath,
       "-Dpartest.lib="+LATEST_LIB,
+      "-Dpartest.reflect="+LATEST_REFLECT,
       "-Dpartest.cwd="+outDir.getParent,
       "-Dpartest.test-path="+testFullPath,
       "-Dpartest.testname="+fileBase,

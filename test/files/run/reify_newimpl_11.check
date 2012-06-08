@@ -1,2 +1,2 @@
-scala.reflect.runtime.ToolBoxes$ToolBox$ToolBoxError: reflective toolbox has failed:
-unresolved free type variables (namely: T defined by C in reify_newimpl_11.scala:4:11). have you forgot to use TypeTag annotations for type parameters external to a reifee? if you have troubles tracking free type variables, consider using -Xlog-free-types
+scala.tools.reflect.ToolBoxError: reflective toolbox has failed:
+unresolved free type variables (namely: T defined by C in reify_newimpl_11.scala:6:11). have you forgot to use TypeTag annotations for type parameters external to a reifee? if you have troubles tracking free type variables, consider using -Xlog-free-types

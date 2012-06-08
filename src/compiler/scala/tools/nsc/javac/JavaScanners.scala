@@ -6,7 +6,8 @@
 package scala.tools.nsc
 package javac
 
-import scala.tools.nsc.util._
+import scala.tools.nsc.util.JavaCharArrayReader
+import scala.reflect.internal.util._
 import scala.reflect.internal.Chars._
 import JavaTokens._
 import scala.annotation.switch

@@ -285,7 +285,7 @@ abstract class RefChecks extends InfoTransform with reflect.internal.transform.R
         def memberTp = self.memberType(member)
         def otherTp  = self.memberType(other)
         def noErrorType = other.tpe != ErrorType && member.tpe != ErrorType
-        def isRootOrNone(sym: Symbol) = sym == RootClass || sym == NoSymbol
+        def isRootOrNone(sym: Symbol) = sym != null && sym.isRoot || sym == NoSymbol
         def isNeitherInClass = (member.owner != clazz) && (other.owner != clazz)
         def objectOverrideErrorMsg = (
           "overriding " + other.fullLocationString + " with " + member.fullLocationString + ":\n" +
@@ -1309,9 +1309,9 @@ abstract class RefChecks extends InfoTransform with reflect.internal.transform.R
           }
           List(tree1)
         }
-      case Import(_, _)                                        => Nil
-      case DefDef(mods, _, _, _, _, _) if (mods hasFlag MACRO) => Nil
-      case _                                                   => List(transform(tree))
+      case Import(_, _)                                                                       => Nil
+      case DefDef(mods, _, _, _, _, _) if (mods hasFlag MACRO) || (tree.symbol hasFlag MACRO) => Nil
+      case _                                                                                  => List(transform(tree))
     }
 
     /* Check whether argument types conform to bounds of type parameters */
@@ -1496,7 +1496,7 @@ abstract class RefChecks extends InfoTransform with reflect.internal.transform.R
 
     private def transformCaseApply(tree: Tree, ifNot: => Unit) = {
       val sym = tree.symbol
-          
+
       def isClassTypeAccessible(tree: Tree): Boolean = tree match {
         case TypeApply(fun, targs) =>
           isClassTypeAccessible(fun)
@@ -1505,7 +1505,7 @@ abstract class RefChecks extends InfoTransform with reflect.internal.transform.R
           // the companion class is actually not a ClassSymbol, but a reference to an abstract type.
           module.symbol.companionClass.isClass
       }
-      
+
       val doTransform =
         sym.isSourceMethod &&
         sym.isCase &&

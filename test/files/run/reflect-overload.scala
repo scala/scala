@@ -1,16 +1,19 @@
+import scala.reflect.runtime.universe._
+import scala.reflect.runtime.{currentMirror => cm}
+
 object Test extends App {
-  import reflect.mirror._
 
   val s = "hello world"
-  val sc = symbolOfInstance(s)
+  val m = cm.reflect(s)
+  val sc = m.symbol
   val st = sc.asType
-  val m = st member newTermName("indexOf")
+  val meth = (st member newTermName("indexOf")).asTermSymbol
   val IntType = definitions.IntClass.asType
-  val indexOf = m resolveOverloaded(actuals = List(IntType))
-  assert(invoke(s, indexOf)('w') == 6)
-  assert((invoke(s, indexOf)('w') match { case x: Int => x }) == 6)
+  val indexOf = (meth resolveOverloaded(actuals = List(IntType))).asMethodSymbol
+  assert(m.reflectMethod(indexOf)('w') == 6)
+  assert((m.reflectMethod(indexOf)('w') match { case x: Int => x }) == 6)
 
-  val m2 = st member newTermName("substring")
-  val substring = m2 resolveOverloaded(actuals = List(IntType, IntType))
-  assert(invoke(s, substring)(2, 6) == "llo ")
+  val meth2 = (st member newTermName("substring")).asTermSymbol
+  val substring = (meth2 resolveOverloaded(actuals = List(IntType, IntType))).asMethodSymbol
+  assert(m.reflectMethod(substring)(2, 6) == "llo ")
 }

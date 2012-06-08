@@ -1,4 +1,0 @@
-interop_typetags_arenot_manifests.scala:3: error: No Manifest available for T.
-    println(manifest[T])
-                    ^
-one error found

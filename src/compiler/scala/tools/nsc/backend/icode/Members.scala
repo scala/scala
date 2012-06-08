@@ -9,7 +9,7 @@ package icode
 
 import java.io.PrintWriter
 import scala.collection.{ mutable, immutable }
-import util.{ SourceFile, NoSourceFile }
+import scala.reflect.internal.util.{ SourceFile, NoSourceFile }
 import symtab.Flags.{ DEFERRED }
 
 trait ReferenceEquality {

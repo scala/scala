@@ -224,7 +224,10 @@ trait Unapplies extends ast.TreeDSL
         case Nil     => Nil
         case ps :: _ => mmap(ps :: funParamss)(toIdent)
       }
-      val body = funParamss.foldRight(New(classTpe, argss): Tree)(Function)
+      def mkFunction(vparams: List[ValDef], body: Tree) = Function(vparams, body)
+      val body = funParamss.foldRight(New(classTpe, argss): Tree)(mkFunction)
+      // [Eugene++] no longer compiles after I moved the `Function` case class into scala.reflect.internal
+      // val body = funParamss.foldRight(New(classTpe, argss): Tree)(Function)
 
       Some(atPos(cdef.pos.focus)(
         DefDef(Modifiers(SYNTHETIC), nme.copy, tparams, copyParamss, bodyTpe,

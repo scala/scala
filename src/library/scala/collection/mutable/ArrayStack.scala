@@ -10,6 +10,7 @@ package scala.collection
 package mutable
 
 import generic._
+import reflect.ClassTag
 
 /** Factory object for the `ArrayStack` class.
  *
@@ -21,7 +22,7 @@ object ArrayStack extends SeqFactory[ArrayStack] {
   implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, ArrayStack[A]] = ReusableCBF.asInstanceOf[GenericCanBuildFrom[A]]
   def newBuilder[A]: Builder[A, ArrayStack[A]] = new ArrayStack[A]
   def empty: ArrayStack[Nothing] = new ArrayStack()
-  def apply[A: ArrayTag](elems: A*): ArrayStack[A] = {
+  def apply[A: ClassTag](elems: A*): ArrayStack[A] = {
     val els: Array[AnyRef] = elems.reverseMap(_.asInstanceOf[AnyRef])(breakOut)
     if (els.length == 0) new ArrayStack()
     else new ArrayStack[A](els, els.length)

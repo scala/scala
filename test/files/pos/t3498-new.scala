@@ -1,4 +1,6 @@
-abstract class A[T, @specialized(scala.Int) U : ArrayTag] {
+import scala.reflect.{ClassTag, classTag}
+
+abstract class A[T, @specialized(scala.Int) U : ClassTag] {
     def f(state: T): Array[U]
 }
 

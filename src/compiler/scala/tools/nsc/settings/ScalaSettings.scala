@@ -82,7 +82,6 @@ trait ScalaSettings extends AbsScalaSettings
   val XlogImplicits = BooleanSetting    ("-Xlog-implicits", "Show more detail on why some implicits are not applicable.")
   val logImplicitConv = BooleanSetting  ("-Xlog-implicit-conversions", "Print a message whenever an implicit conversion is inserted.")
   val logReflectiveCalls = BooleanSetting("-Xlog-reflective-calls", "Print a message when a reflective method call is generated")
-  val logRuntimeSplices = BooleanSetting("-Xlog-runtime-splices", "Print a message when Expr.eval or Expr.value cannot be resolved statically.")
   val logFreeTerms  = BooleanSetting    ("-Xlog-free-terms", "Print a message when reification creates a free term.")
   val logFreeTypes  = BooleanSetting    ("-Xlog-free-types", "Print a message when reification resorts to generating a free type.")
   val maxClassfileName = IntSetting     ("-Xmax-classfile-name", "Maximum filename length for generated classes", 255, Some((72, 255)), _ => None)
@@ -110,6 +109,7 @@ trait ScalaSettings extends AbsScalaSettings
 
   val XoldPatmat    = BooleanSetting    ("-Xoldpatmat", "Use the pre-2.10 pattern matcher. Otherwise, the 'virtualizing' pattern matcher is used in 2.10.")
   val XnoPatmatAnalysis = BooleanSetting ("-Xno-patmat-analysis", "Don't perform exhaustivity/unreachability analysis. Also, ignore @switch annotation.")
+  val XfullLubs     = BooleanSetting    ("-Xfull-lubs", "Retains pre 2.10 behavior of less aggressive truncation of least upper bounds.")
 
   /** Compatibility stubs for options whose value name did
    *  not previously match the option name.
@@ -203,7 +203,6 @@ trait ScalaSettings extends AbsScalaSettings
   val Xexperimental = BooleanSetting("-Xexperimental", "Enable experimental extensions.") enabling experimentalSettings
 
   // Feature extensions
-  val Xmacros                 = BooleanSetting("-Xmacros", "Enable macros.") // [Martin] Can be retired now.
   val XmacroSettings          = MultiStringSetting("-Xmacro-settings", "option", "Custom settings for macros.")
   val XmacroPrimaryClasspath  = PathSetting("-Xmacro-primary-classpath", "Classpath to load macros implementations from, defaults to compilation classpath (aka \"library classpath\".", "")
   val XmacroFallbackClasspath = PathSetting("-Xmacro-fallback-classpath", "Classpath to load macros implementations from if they cannot be loaded from library classpath.", "")

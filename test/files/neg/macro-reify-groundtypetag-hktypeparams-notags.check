@@ -1,7 +1,0 @@
-Test.scala:5: error: No ConcreteTypeTag available for C[T]
-    println(implicitly[ConcreteTypeTag[C[T]]])
-                      ^
-Test.scala:6: error: No ConcreteTypeTag available for List[C[T]]
-    println(implicitly[ConcreteTypeTag[List[C[T]]]])
-                      ^
-two errors found

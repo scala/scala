@@ -4,7 +4,8 @@ import scala.tools.partest.ReplTest
 object Test extends ReplTest {
   def code =
     """
-      |def f[A: ArrayTag](a: A) = java.util.Arrays.asList(Array(a): _*)
+      |import scala.reflect.ClassTag
+      |def f[A: ClassTag](a: A) = java.util.Arrays.asList(Array(a): _*)
       |f(".")
       |f(0)
       |def i(a: Int) = java.util.Arrays.asList(Array(a): _*)

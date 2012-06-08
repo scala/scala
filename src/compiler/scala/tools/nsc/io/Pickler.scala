@@ -4,6 +4,7 @@ import annotation.unchecked
 import Lexer._
 import java.io.Writer
 import language.implicitConversions
+import reflect.ClassTag
 
 /** An abstract class for writing and reading Scala objects to and
  *  from a legible representation. The presesentation follows the following grammar:
