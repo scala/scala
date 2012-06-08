@@ -385,7 +385,7 @@ abstract class ExplicitOuter extends InfoTransform
         method setInfo new MethodType(params, BooleanClass.tpe)
 
         localTyper typed {
-          DEF(method) === guard.changeOwner(currentOwner -> method).substTreeSyms(vs zip params: _*)
+          DEF(method) === guard.changeOwner(currentOwner -> method).substituteSymbols(vs, params)
         }
       }
 
@@ -410,18 +410,15 @@ abstract class ExplicitOuter extends InfoTransform
           (CASE(transform(strippedPat)) IF gdcall) ==> transform(body)
         }
 
-      def isUncheckedAnnotation(tpe: Type) = tpe hasAnnotation UncheckedClass
-      def isSwitchAnnotation(tpe: Type) = tpe hasAnnotation SwitchClass
-
       val (checkExhaustive, requireSwitch) = nselector match {
         case Typed(nselector1, tpt) =>
-          val unchecked = isUncheckedAnnotation(tpt.tpe)
+          val unchecked = treeInfo.isUncheckedAnnotation(tpt.tpe)
           if (unchecked)
             nselector = nselector1
 
           // Don't require a tableswitch if there are 1-2 casedefs
           // since the matcher intentionally emits an if-then-else.
-          (!unchecked, isSwitchAnnotation(tpt.tpe) && ncases.size > 2)
+          (!unchecked, treeInfo.isSwitchAnnotation(tpt.tpe) && ncases.size > 2)
         case _  =>
           (true, false)
       }

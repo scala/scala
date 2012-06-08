@@ -37,6 +37,11 @@
 			<artifactId>scala-library</artifactId>
 			<version>@VERSION@</version>
 		</dependency>
+		<dependency>
+			<groupId>org.scala-lang</groupId>
+			<artifactId>scala-reflect</artifactId>
+			<version>@VERSION@</version>
+		</dependency>
     <dependency>
       <groupId>org.scala-lang</groupId>
       <artifactId>jline</artifactId>

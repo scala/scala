@@ -8,7 +8,7 @@
 
 package scala.util
 
-import scala.reflect.ClassTag
+import scala.reflect.{ ClassTag, classTag }
 import scala.math.Ordering
 
 /** The Sorting object provides functions that can sort various kinds of
@@ -39,14 +39,14 @@ object Sorting {
 
   /** Sort an array of K where K is Ordered, preserving the existing order
     * where the values are equal. */
-  def stableSort[K: ArrayTag: Ordering](a: Array[K]) {
+  def stableSort[K: ClassTag: Ordering](a: Array[K]) {
     stableSort(a, 0, a.length-1, new Array[K](a.length), Ordering[K].lt _)
   }
 
   /** Sorts an array of `K` given an ordering function `f`.
    *  `f` should return `true` iff its first parameter is strictly less than its second parameter.
    */
-  def stableSort[K: ArrayTag](a: Array[K], f: (K, K) => Boolean) {
+  def stableSort[K: ClassTag](a: Array[K], f: (K, K) => Boolean) {
     stableSort(a, 0, a.length-1, new Array[K](a.length), f)
   }
 
@@ -57,14 +57,14 @@ object Sorting {
    *  @param  f the comparison function.
    *  @return the sorted sequence of items.
    */
-  def stableSort[K: ArrayTag](a: Seq[K], f: (K, K) => Boolean): Array[K] = {
+  def stableSort[K: ClassTag](a: Seq[K], f: (K, K) => Boolean): Array[K] = {
     val ret = a.toArray
     stableSort(ret, f)
     ret
   }
 
   /** Sorts an arbitrary sequence of items that are viewable as ordered. */
-  def stableSort[K: ArrayTag: Ordering](a: Seq[K]): Array[K] =
+  def stableSort[K: ClassTag: Ordering](a: Seq[K]): Array[K] =
     stableSort(a, Ordering[K].lt _)
 
   /** Stably sorts a sequence of items given an extraction function that will
@@ -74,8 +74,8 @@ object Sorting {
    *  @param  f the comparison function.
    *  @return the sorted sequence of items.
    */
-  def stableSort[K: ArrayTag, M: Ordering](a: Seq[K], f: K => M): Array[K] =
-    stableSort(a)(implicitly[ArrayTag[K]], Ordering[M] on f)
+  def stableSort[K: ClassTag, M: Ordering](a: Seq[K], f: K => M): Array[K] =
+    stableSort(a)(implicitly[ClassTag[K]], Ordering[M] on f)
 
   private def sort1[K: Ordering](x: Array[K], off: Int, len: Int) {
     val ord = Ordering[K]
@@ -498,7 +498,7 @@ object Sorting {
     sort2(off, len)
   }
 
-  private def stableSort[K : ArrayTag](a: Array[K], lo: Int, hi: Int, scratch: Array[K], f: (K,K) => Boolean) {
+  private def stableSort[K : ClassTag](a: Array[K], lo: Int, hi: Int, scratch: Array[K], f: (K,K) => Boolean) {
     if (lo < hi) {
       val mid = (lo+hi) / 2
       stableSort(a, lo, mid, scratch, f)

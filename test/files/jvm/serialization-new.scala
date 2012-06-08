@@ -282,7 +282,7 @@ object Test2_immutable {
 // Test classes in package "scala.collection.mutable"
 
 object Test3_mutable {
-  import scala.reflect.ArrayTag
+  import scala.reflect.ClassTag
   import scala.collection.mutable.{
     ArrayBuffer, ArrayBuilder, ArraySeq, ArrayStack, BitSet, DoubleLinkedList,
     HashMap, HashSet, History, LinkedList, ListBuffer, Publisher, Queue,
@@ -299,11 +299,11 @@ object Test3_mutable {
 
     // ArrayBuilder
     val abu1 = ArrayBuilder.make[Long]
-    val _abu1: ArrayBuilder[ArrayTag[Long]] = read(write(abu1))
+    val _abu1: ArrayBuilder[ClassTag[Long]] = read(write(abu1))
     check(abu1, _abu1)
 
     val abu2 = ArrayBuilder.make[Float]
-    val _abu2: ArrayBuilder[ArrayTag[Float]] = read(write(abu2))
+    val _abu2: ArrayBuilder[ClassTag[Float]] = read(write(abu2))
     check(abu2, _abu2)
 
     // ArraySeq

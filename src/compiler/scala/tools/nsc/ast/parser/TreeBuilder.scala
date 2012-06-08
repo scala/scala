@@ -546,7 +546,10 @@ abstract class TreeBuilder {
           rhs1,
           List(
             atPos(pat1.pos) {
-              CaseDef(pat1, EmptyTree, makeTupleTerm(vars map (_._1) map Ident, true))
+              def mkIdent(name: Name) = Ident(name)
+              CaseDef(pat1, EmptyTree, makeTupleTerm(vars map (_._1) map mkIdent, true))
+              // [Eugene++] no longer compiles after I moved the `Ident` case class into scala.reflect.internal
+              // CaseDef(pat1, EmptyTree, makeTupleTerm(vars map (_._1) map Ident, true))
             }
           ))
       }

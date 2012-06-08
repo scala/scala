@@ -13,6 +13,7 @@ import generic._
 import mutable.Builder
 import scala.util.matching.Regex
 import scala.math.ScalaNumber
+import reflect.ClassTag
 
 /** A companion object for the `StringLike` containing some constants.
  *  @since 2.8
@@ -239,7 +240,7 @@ self =>
     else
       throw new IllegalArgumentException("For input string: \"null\"")
 
-  override def toArray[B >: Char : ArrayTag]: Array[B] =
+  override def toArray[B >: Char : ClassTag]: Array[B] =
     toString.toCharArray.asInstanceOf[Array[B]]
 
   private def unwrapArg(arg: Any): AnyRef = arg match {

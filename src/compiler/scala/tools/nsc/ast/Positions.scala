@@ -1,7 +1,7 @@
 package scala.tools.nsc
 package ast
 
-import scala.tools.nsc.util.{ SourceFile, Position, OffsetPosition, NoPosition }
+import scala.reflect.internal.util.{ SourceFile, Position, OffsetPosition, NoPosition }
 
 trait Positions extends scala.reflect.internal.Positions {
   self: Global =>
@@ -14,7 +14,7 @@ trait Positions extends scala.reflect.internal.Positions {
   // [Eugene] disabling this for now. imo it doesn't justify pollution of the public API
   // override def _checkSetAnnotation(tree: Tree, annot: TreeAnnotation): Unit = {
   //   if (tree.pos != NoPosition && tree.pos != annot.pos) debugwarn("Overwriting annotation "+ tree.annotation +" of tree "+ tree +" with annotation "+ annot)
-  //   // if ((tree.annotation.isInstanceOf[scala.tools.nsc.util.Position] || !annot.isInstanceOf[scala.tools.nsc.util.Position]) && tree.isInstanceOf[Block])
+  //   // if ((tree.annotation.isInstanceOf[scala.reflect.internal.util.Position] || !annot.isInstanceOf[scala.reflect.internal.util.Position]) && tree.isInstanceOf[Block])
   //   //   println("Updating block from "+ tree.annotation +" to "+ annot)
   // }
 

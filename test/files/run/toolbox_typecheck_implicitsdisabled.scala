@@ -1,7 +1,10 @@
-import scala.reflect.mirror._
+import scala.reflect.runtime.universe._
+import scala.reflect.runtime.{universe => ru}
+import scala.reflect.runtime.{currentMirror => cm}
+import scala.tools.reflect.ToolBox
 
 object Test extends App {
-  val toolbox = mkToolBox()
+  val toolbox = cm.mkToolBox()
 
   val tree1 = Block(
     Import(Select(Ident(newTermName("scala")), newTermName("Predef")), List(ImportSelector(nme.WILDCARD, -1, null, -1))),

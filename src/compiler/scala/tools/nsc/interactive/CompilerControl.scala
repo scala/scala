@@ -7,11 +7,12 @@ package interactive
 
 import scala.util.control.ControlThrowable
 import scala.tools.nsc.io.AbstractFile
-import scala.tools.nsc.util.{SourceFile, Position, WorkScheduler}
 import scala.tools.nsc.symtab._
 import scala.tools.nsc.ast._
 import scala.tools.nsc.util.FailedInterrupt
 import scala.tools.nsc.util.EmptyAction
+import scala.tools.nsc.util.WorkScheduler
+import scala.reflect.internal.util.{SourceFile, Position}
 
 /** Interface of interactive compiler to a client such as an IDE
  *  The model the presentation compiler consists of the following parts:

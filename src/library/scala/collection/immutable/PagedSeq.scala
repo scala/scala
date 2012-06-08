@@ -13,6 +13,7 @@ package immutable
 
 import java.io._
 import scala.util.matching.Regex
+import reflect.ClassTag
 
 /** The `PagedSeq` object defines a lazy implementations of
  *  a random access sequence.
@@ -25,7 +26,7 @@ object PagedSeq {
   final val UndeterminedEnd = Int.MaxValue
 
   /** Constructs a paged sequence from an iterator */
-  def fromIterator[T: ArrayTag](source: Iterator[T]): PagedSeq[T] =
+  def fromIterator[T: ClassTag](source: Iterator[T]): PagedSeq[T] =
     new PagedSeq[T]((data: Array[T], start: Int, len: Int) => {
       var i = 0
       while (i < len && source.hasNext) {
@@ -36,7 +37,7 @@ object PagedSeq {
     })
 
   /** Constructs a paged sequence from an iterable */
-  def fromIterable[T: ArrayTag](source: Iterable[T]): PagedSeq[T] =
+  def fromIterable[T: ClassTag](source: Iterable[T]): PagedSeq[T] =
     fromIterator(source.iterator)
 
   /** Constructs a paged character sequence from a string iterator */
@@ -115,7 +116,7 @@ import PagedSeq._
  *  It returns the number of elements produced, or -1 if end of logical input stream was reached
  *  before reading any element.
  *
- *  @tparam T     the type of the elements contained in this paged sequence, with an `ArrayTag` context bound.
+ *  @tparam T     the type of the elements contained in this paged sequence, with an `ClassTag` context bound.
  *
  *  @author Martin Odersky
  *  @since  2.7
@@ -124,7 +125,7 @@ import PagedSeq._
  *  @define mayNotTerminateInf
  *  @define willNotTerminateInf
  */
-class PagedSeq[T: ArrayTag] protected(
+class PagedSeq[T: ClassTag] protected(
   more: (Array[T], Int, Int) => Int,
   first1: Page[T],
   start: Int,
@@ -205,7 +206,7 @@ extends scala.collection.AbstractSeq[T]
 
 /** Page containing up to PageSize characters of the input sequence.
  */
-private class Page[T: ArrayTag](val num: Int) {
+private class Page[T: ClassTag](val num: Int) {
 
   private final val PageSize = 4096
 

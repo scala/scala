@@ -8,7 +8,7 @@ package nsc
 package doc
 
 import reporters._
-import util._
+import scala.reflect.internal.util._
 import interactive.RangePositions
 import DocParser.Parsed
 

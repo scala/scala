@@ -1,3 +1,5 @@
+import scala.reflect.runtime.universe._
+
 object TestCase {
 
         //now matter if you put (abstract) class or trait it will fail in all cases

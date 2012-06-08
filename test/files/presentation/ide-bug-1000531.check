@@ -97,7 +97,7 @@ retrieved 124 members
 [accessible:  true] `method synchronized[T0](x$1: T0)T0`
 [accessible:  true] `method take(n: Int)Iterator[B]`
 [accessible:  true] `method takeWhile(p: B => Boolean)Iterator[B]`
-[accessible:  true] `method toArray[B >: B](implicit evidence$1: ArrayTag[B])Array[B]`
+[accessible:  true] `method toArray[B >: B](implicit evidence$1: scala.reflect.ClassTag[B])Array[B]`
 [accessible:  true] `method toBuffer[B >: B]=> scala.collection.mutable.Buffer[B]`
 [accessible:  true] `method toIndexedSeq=> scala.collection.immutable.IndexedSeq[B]`
 [accessible:  true] `method toIterable=> Iterable[B]`

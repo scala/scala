@@ -1,0 +1,2 @@
+this is an inner module, use reflectModule on an InstanceMirror to obtain its ModuleMirror
+()

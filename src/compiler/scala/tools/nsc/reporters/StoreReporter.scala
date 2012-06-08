@@ -7,7 +7,7 @@ package scala.tools.nsc
 package reporters
 
 import scala.collection.mutable
-import scala.tools.nsc.util.Position
+import scala.reflect.internal.util.Position
 
 /**
  * This class implements a Reporter that displays messages on a text

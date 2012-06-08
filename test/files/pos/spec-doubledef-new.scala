@@ -1,3 +1,5 @@
+import scala.reflect.runtime.universe._
+
 object Test {
   def fn[@specialized T, @specialized U](t : T => Int, u : U => Int) : T =
     null.asInstanceOf[T]

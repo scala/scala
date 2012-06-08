@@ -16,7 +16,8 @@ trait Uncompilable {
   val settings: Settings
 
   import global.{ reporter, inform, warning, newTypeName, newTermName, Symbol, Name, DocComment, NoSymbol }
-  import global.definitions.{ RootClass, AnyRefClass }
+  import global.definitions.AnyRefClass
+  import global.rootMirror.RootClass
 
   private implicit def translateName(name: Global#Name) =
     if (name.isTypeName) newTypeName("" + name) else newTermName("" + name)

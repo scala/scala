@@ -1,0 +1,4 @@
+interop_abstypetags_arenot_classmanifests.scala:5: error: could not find implicit value for parameter m: ClassManifest[T]
+    println(classManifest[T])
+                         ^
+one error found

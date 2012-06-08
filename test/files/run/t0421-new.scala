@@ -1,7 +1,9 @@
+import scala.reflect.{ClassTag, classTag}
+
 // ticket #421
 object Test extends App {
 
-  def transpose[A: ArrayTag](xss: Array[Array[A]]) = {
+  def transpose[A: ClassTag](xss: Array[Array[A]]) = {
     for (i <- Array.range(0, xss(0).length)) yield
       for (xs <- xss) yield xs(i)
   }

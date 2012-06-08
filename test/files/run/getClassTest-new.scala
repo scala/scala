@@ -1,3 +1,5 @@
+import scala.reflect.{ClassTag, classTag}
+
 class AnyVals {
   def f1 = (5: Any).getClass
   def f2 = (5: AnyVal).getClass
@@ -52,7 +54,7 @@ class MoreAnyRefs {
 
 object Test {
   def returnTypes[T: ClassTag] = (
-    classTag[T].erasure.getMethods.toList
+    classTag[T].runtimeClass.getMethods.toList
       filter (_.getName startsWith "f")
       sortBy (_.getName)
       map (m => m.getName + ": " + m.getGenericReturnType.toString)

@@ -279,6 +279,16 @@ class PartestTask extends Task with CompilationPathProperty {
       }
     } getOrElse sys.error("Provided classpath does not contain a Scala library.")
 
+    val scalaReflect = {
+      (classpath.list map { fs => new File(fs) }) find { f =>
+        f.getName match {
+          case "scala-reflect.jar" => true
+          case "reflect" if (f.getParentFile.getName == "classes") => true
+          case _ => false
+        }
+      }
+    } getOrElse sys.error("Provided classpath does not contain a Scala reflection library.")
+
     val scalaCompiler = {
       (classpath.list map { fs => new File(fs) }) find { f =>
         f.getName match {
@@ -342,6 +352,7 @@ class PartestTask extends Task with CompilationPathProperty {
     antFileManager.failed = runFailed
     antFileManager.CLASSPATH = ClassPath.join(classpath.list: _*)
     antFileManager.LATEST_LIB = scalaLibrary.getAbsolutePath
+    antFileManager.LATEST_REFLECT = scalaReflect.getAbsolutePath
     antFileManager.LATEST_COMP = scalaCompiler.getAbsolutePath
     antFileManager.LATEST_PARTEST = scalaPartest.getAbsolutePath
     antFileManager.LATEST_ACTORS = scalaActors.getAbsolutePath

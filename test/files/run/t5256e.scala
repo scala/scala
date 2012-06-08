@@ -1,9 +1,10 @@
-import scala.reflect.mirror._
-
-class C { class A }
+import scala.reflect.runtime.universe._
+import scala.reflect.runtime.{currentMirror => cm}
 
 object Test extends App {
-  val c = classToType(classOf[C#A])
+  class C { class A { def foo = ??? } }
+  val c = cm.classSymbol(classOf[C#A])
   println(c)
-  println(c.typeSymbol == classToSymbol(classOf[C#A]))
+  println(c.fullName)
+  println(c.typeSignature)
 }

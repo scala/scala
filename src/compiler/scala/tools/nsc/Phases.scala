@@ -6,7 +6,7 @@
 package scala.tools.nsc
 
 import symtab.Flags
-import util.TableDef
+import reflect.internal.util.TableDef
 import language.postfixOps
 
 object Phases {
