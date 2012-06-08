@@ -16,7 +16,7 @@ import scala.collection.{ mutable, immutable }
 import mutable.{ LinkedHashMap, ListBuffer }
 import scala.util.matching.Regex
 import symtab.Flags._
-import util.Statistics._
+import scala.reflect.internal.util.Statistics
 import language.implicitConversions
 
 /** This trait provides methods to find various kinds of implicits.
@@ -29,6 +29,7 @@ trait Implicits {
 
   import global._
   import definitions._
+  import ImplicitsStats._
   import typeDebug.{ ptTree, ptBlock, ptLine }
   import global.typer.{ printTyping, deindentTyping, indentTyping, printInference }
 
@@ -71,10 +72,10 @@ trait Implicits {
     )
     indentTyping()
 
-    val rawTypeStart    = startCounter(rawTypeImpl)
-    val findMemberStart = startCounter(findMemberImpl)
-    val subtypeStart    = startCounter(subtypeImpl)
-    val start = startTimer(implicitNanos)
+    val rawTypeStart    = Statistics.startCounter(rawTypeImpl)
+    val findMemberStart = Statistics.startCounter(findMemberImpl)
+    val subtypeStart    = Statistics.startCounter(subtypeImpl)
+    val start           = Statistics.startTimer(implicitNanos)
     if (printInfers && !tree.isEmpty && !context.undetparams.isEmpty)
       printTyping("typing implicit: %s %s".format(tree, context.undetparamsString))
     val implicitSearchContext = context.makeImplicit(reportAmbiguous)
@@ -86,10 +87,10 @@ trait Implicits {
     printInference("[infer implicit] inferred " + result)
     context.undetparams = context.undetparams filterNot result.subst.from.contains
 
-    stopTimer(implicitNanos, start)
-    stopCounter(rawTypeImpl, rawTypeStart)
-    stopCounter(findMemberImpl, findMemberStart)
-    stopCounter(subtypeImpl, subtypeStart)
+    Statistics.stopTimer(implicitNanos, start)
+    Statistics.stopCounter(rawTypeImpl, rawTypeStart)
+    Statistics.stopCounter(findMemberImpl, findMemberStart)
+    Statistics.stopCounter(subtypeImpl, subtypeStart)
     deindentTyping()
     printTyping("Implicit search yielded: "+ result)
     result
@@ -307,12 +308,12 @@ trait Implicits {
     /** Is implicit info `info1` better than implicit info `info2`?
      */
     def improves(info1: ImplicitInfo, info2: ImplicitInfo) = {
-      incCounter(improvesCount)
+      Statistics.incCounter(improvesCount)
       (info2 == NoImplicitInfo) ||
       (info1 != NoImplicitInfo) && {
         if (info1.sym.isStatic && info2.sym.isStatic) {
           improvesCache get (info1, info2) match {
-            case Some(b) => incCounter(improvesCachedCount); b
+            case Some(b) => Statistics.incCounter(improvesCachedCount); b
             case None =>
               val result = isStrictlyMoreSpecific(info1.tpe, info2.tpe, info1.sym, info2.sym)
               improvesCache((info1, info2)) = result
@@ -376,7 +377,7 @@ trait Implicits {
       overlaps(dtor1, dted1) && (dtor1 =:= dted1 || complexity(dtor1) > complexity(dted1))
     }
 
-    incCounter(implicitSearchCount)
+    Statistics.incCounter(implicitSearchCount)
 
     /** The type parameters to instantiate */
     val undetParams = if (isView) List() else context.outer.undetparams
@@ -427,7 +428,7 @@ trait Implicits {
      *  This method is performance critical: 5-8% of typechecking time.
      */
     private def matchesPt(tp: Type, pt: Type, undet: List[Symbol]): Boolean = {
-      val start = startTimer(matchesPtNanos)
+      val start = Statistics.startTimer(matchesPtNanos)
       val result = normSubType(tp, pt) || isView && {
         pt match {
           case TypeRef(_, Function1.Sym, args) =>
@@ -436,7 +437,7 @@ trait Implicits {
             false
         }
       }
-      stopTimer(matchesPtNanos, start)
+      Statistics.stopTimer(matchesPtNanos, start)
       result
     }
     private def matchesPt(info: ImplicitInfo): Boolean = (
@@ -535,7 +536,7 @@ trait Implicits {
     }
 
     private def typedImplicit0(info: ImplicitInfo, ptChecked: Boolean): SearchResult = {
-      incCounter(plausiblyCompatibleImplicits)
+      Statistics.incCounter(plausiblyCompatibleImplicits)
       printTyping (
         ptBlock("typedImplicit0",
           "info.name" -> info.name,
@@ -555,7 +556,7 @@ trait Implicits {
     }
 
     private def typedImplicit1(info: ImplicitInfo): SearchResult = {
-      incCounter(matchingImplicits)
+      Statistics.incCounter(matchingImplicits)
 
       val itree = atPos(pos.focus) {
         if (info.pre == NoPrefix) Ident(info.name)
@@ -586,7 +587,7 @@ trait Implicits {
         if (context.hasErrors)
           return fail("typed implicit %s has errors".format(info.sym.fullLocationString))
 
-        incCounter(typedImplicits)
+        Statistics.incCounter(typedImplicits)
 
         printTyping("typed implicit %s:%s, pt=%s".format(itree1, itree1.tpe, wildPt))
         val itree2 = if (isView) (itree1: @unchecked) match { case Apply(fun, _) => fun }
@@ -669,7 +670,7 @@ trait Implicits {
               fail("typing TypeApply reported errors for the implicit tree")
             else {
               val result = new SearchResult(itree2, subst)
-              incCounter(foundImplicits)
+              Statistics.incCounter(foundImplicits)
               printInference("[success] found %s for pt %s".format(result, ptInstantiated))
               result
             }
@@ -890,11 +891,11 @@ trait Implicits {
      *  @return               map from infos to search results
      */
     def applicableInfos(iss: Infoss, isLocal: Boolean): Map[ImplicitInfo, SearchResult] = {
-      val start       = startCounter(subtypeAppInfos)
+      val start       = Statistics.startCounter(subtypeAppInfos)
       val computation = new ImplicitComputation(iss, if (isLocal) util.HashSet[Name](512) else null) { }
       val applicable  = computation.findAll()
 
-      stopCounter(subtypeAppInfos, start)
+      Statistics.stopCounter(subtypeAppInfos, start)
       applicable
     }
 
@@ -1109,26 +1110,28 @@ trait Implicits {
      *  These are all implicits found in companion objects of classes C
      *  such that some part of `tp` has C as one of its superclasses.
      */
-    private def implicitsOfExpectedType: Infoss = implicitsCache get pt match {
-      case Some(implicitInfoss) =>
-        incCounter(implicitCacheHits)
-        implicitInfoss
-      case None                 =>
-        incCounter(implicitCacheMisses)
-        val start = startTimer(subtypeETNanos)
-//        val implicitInfoss = companionImplicits(pt)
-        val implicitInfoss1 = companionImplicitMap(pt).valuesIterator.toList
-//        val is1 = implicitInfoss.flatten.toSet
-//        val is2 = implicitInfoss1.flatten.toSet
-//        for (i <- is1)
-//          if (!(is2 contains i)) println("!!! implicit infos of "+pt+" differ, new does not contain "+i+",\nold: "+implicitInfoss+",\nnew: "+implicitInfoss1)
-//        for (i <- is2)
-//          if (!(is1 contains i)) println("!!! implicit infos of "+pt+" differ, old does not contain "+i+",\nold: "+implicitInfoss+",\nnew: "+implicitInfoss1)
-        stopTimer(subtypeETNanos, start)
-        implicitsCache(pt) = implicitInfoss1
-        if (implicitsCache.size >= sizeLimit)
-          implicitsCache -= implicitsCache.keysIterator.next
-        implicitInfoss1
+    private def implicitsOfExpectedType: Infoss = {
+      Statistics.incCounter(implicitCacheHits)
+      implicitsCache get pt match {
+        case Some(implicitInfoss) =>
+          Statistics.incCounter(implicitCacheHits)
+          implicitInfoss
+        case None =>
+          val start = Statistics.startTimer(subtypeETNanos)
+          //        val implicitInfoss = companionImplicits(pt)
+          val implicitInfoss1 = companionImplicitMap(pt).valuesIterator.toList
+          //        val is1 = implicitInfoss.flatten.toSet
+          //        val is2 = implicitInfoss1.flatten.toSet
+          //        for (i <- is1)
+          //          if (!(is2 contains i)) println("!!! implicit infos of "+pt+" differ, new does not contain "+i+",\nold: "+implicitInfoss+",\nnew: "+implicitInfoss1)
+          //        for (i <- is2)
+          //          if (!(is1 contains i)) println("!!! implicit infos of "+pt+" differ, old does not contain "+i+",\nold: "+implicitInfoss+",\nnew: "+implicitInfoss1)
+          Statistics.stopTimer(subtypeETNanos, start)
+          implicitsCache(pt) = implicitInfoss1
+          if (implicitsCache.size >= sizeLimit)
+            implicitsCache -= implicitsCache.keysIterator.next
+          implicitInfoss1
+      }
     }
 
     private def TagSymbols =  TagMaterializers.keySet
@@ -1354,30 +1357,30 @@ trait Implicits {
      *  If all fails return SearchFailure
      */
     def bestImplicit: SearchResult = {
-      val failstart = startTimer(inscopeFailNanos)
-      val succstart = startTimer(inscopeSucceedNanos)
+      val failstart = Statistics.startTimer(inscopeFailNanos)
+      val succstart = Statistics.startTimer(inscopeSucceedNanos)
 
       var result = searchImplicit(context.implicitss, true)
 
       if (result == SearchFailure) {
-        stopTimer(inscopeFailNanos, failstart)
+        Statistics.stopTimer(inscopeFailNanos, failstart)
       } else {
-        stopTimer(inscopeSucceedNanos, succstart)
-        incCounter(inscopeImplicitHits)
+        Statistics.stopTimer(inscopeSucceedNanos, succstart)
+        Statistics.incCounter(inscopeImplicitHits)
       }
       if (result == SearchFailure) {
         val previousErrs = context.flushAndReturnBuffer()
-        val failstart = startTimer(oftypeFailNanos)
-        val succstart = startTimer(oftypeSucceedNanos)
+        val failstart = Statistics.startTimer(oftypeFailNanos)
+        val succstart = Statistics.startTimer(oftypeSucceedNanos)
 
         result = implicitTagOrOfExpectedType(pt)
 
         if (result == SearchFailure) {
           context.updateBuffer(previousErrs)
-          stopTimer(oftypeFailNanos, failstart)
+          Statistics.stopTimer(oftypeFailNanos, failstart)
         } else {
-          stopTimer(oftypeSucceedNanos, succstart)
-          incCounter(oftypeImplicitHits)
+          Statistics.stopTimer(oftypeSucceedNanos, succstart)
+          Statistics.incCounter(oftypeImplicitHits)
         }
       }
 
@@ -1455,5 +1458,37 @@ trait Implicits {
     }
   }
 }
+
+object ImplicitsStats {
+
+  import reflect.internal.TypesStats._
+
+  val rawTypeImpl         = Statistics.newSubCounter ("  of which in implicits", rawTypeCount)
+  val subtypeImpl         = Statistics.newSubCounter("  of which in implicit", subtypeCount)
+  val findMemberImpl      = Statistics.newSubCounter("  of which in implicit", findMemberCount)
+  val subtypeAppInfos     = Statistics.newSubCounter("  of which in app impl", subtypeCount)
+  val subtypeImprovCount  = Statistics.newSubCounter("  of which in improves", subtypeCount)
+  val implicitSearchCount = Statistics.newCounter   ("#implicit searches", "typer")
+  val triedImplicits      = Statistics.newSubCounter("  #tried", implicitSearchCount)
+  val plausiblyCompatibleImplicits
+                                  = Statistics.newSubCounter("  #plausibly compatible", implicitSearchCount)
+  val matchingImplicits   = Statistics.newSubCounter("  #matching", implicitSearchCount)
+  val typedImplicits      = Statistics.newSubCounter("  #typed", implicitSearchCount)
+  val foundImplicits      = Statistics.newSubCounter("  #found", implicitSearchCount)
+  val improvesCount       = Statistics.newSubCounter("implicit improves tests", implicitSearchCount)
+  val improvesCachedCount = Statistics.newSubCounter("#implicit improves cached ", implicitSearchCount)
+  val inscopeImplicitHits = Statistics.newSubCounter("#implicit inscope hits", implicitSearchCount)
+  val oftypeImplicitHits  = Statistics.newSubCounter("#implicit oftype hits ", implicitSearchCount)
+  val implicitNanos       = Statistics.newSubTimer  ("time spent in implicits", typerNanos)
+  val inscopeSucceedNanos = Statistics.newSubTimer  ("  successful in scope", typerNanos)
+  val inscopeFailNanos    = Statistics.newSubTimer  ("  failed in scope", typerNanos)
+  val oftypeSucceedNanos  = Statistics.newSubTimer  ("  successful of type", typerNanos)
+  val oftypeFailNanos     = Statistics.newSubTimer  ("  failed of type", typerNanos)
+  val subtypeETNanos      = Statistics.newSubTimer  ("  assembling parts", typerNanos)
+  val matchesPtNanos      = Statistics.newSubTimer  ("  matchesPT", typerNanos)
+  val implicitCacheAccs   = Statistics.newCounter   ("implicit cache accesses", "typer")
+  val implicitCacheHits   = Statistics.newSubCounter("implicit cache hits", implicitCacheAccs)
+}
+
 class DivergentImplicit extends Exception
 object DivergentImplicit extends DivergentImplicit

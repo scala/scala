@@ -8,17 +8,16 @@ package internal
 
 import scala.collection.{ mutable, immutable }
 import scala.collection.mutable.ListBuffer
-import util.Statistics._
+import util.Statistics
 import Flags._
 
 trait Symbols extends api.Symbols { self: SymbolTable =>
   import definitions._
+  import SymbolsStats._
 
   protected var ids = 0
 
   val emptySymbolArray = new Array[Symbol](0)
-
-  def symbolCount = ids // statistics
 
   protected def nextId() = { ids += 1; ids }
 
@@ -666,7 +665,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     def isClassLocalToConstructor = false
 
     final def isDerivedValueClass =
-      isClass && !hasFlag(PACKAGE | TRAIT) && 
+      isClass && !hasFlag(PACKAGE | TRAIT) &&
       info.firstParent.typeSymbol == AnyValClass && !isPrimitiveValueClass
 
     final def isMethodWithExtension =
@@ -2713,7 +2712,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
       }
     }
 
-    incCounter(typeSymbolCount)
+    Statistics.incCounter(typeSymbolCount)
   }
   implicit val TypeSymbolTag = ClassTag[TypeSymbol](classOf[TypeSymbol])
 
@@ -2929,7 +2928,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     override def children = childSet
     override def addChild(sym: Symbol) { childSet = childSet + sym }
 
-    incCounter(classSymbolCount)
+    Statistics.incCounter(classSymbolCount)
   }
   implicit val ClassSymbolTag = ClassTag[ClassSymbol](classOf[ClassSymbol])
 
@@ -3188,4 +3187,12 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
 
     def toList: List[TypeHistory] = this :: ( if (prev eq null) Nil else prev.toList )
   }
+
+  Statistics.newView("#symbols")(ids)
 }
+
+object SymbolsStats {
+  val typeSymbolCount     = Statistics.newCounter("#type symbols")
+  val classSymbolCount    = Statistics.newCounter("#class symbols")
+}
+
