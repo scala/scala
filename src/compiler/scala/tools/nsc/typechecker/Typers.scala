@@ -4575,17 +4575,17 @@ trait Typers extends Modes with Adaptations with Tags {
               qual = atPos(tree.pos.focusStart)(gen.mkAttributedQualifier(pre))
           } else {
             if (impSym.exists) {
-              var impSym1 = NoSymbol
+              var impSym1: Symbol = NoSymbol
               var imports1 = imports.tail
               def ambiguousImport() = {
-                if (!(imports.head.qual.tpe =:= imports1.head.qual.tpe))
+                if (!(imports.head.qual.tpe =:= imports1.head.qual.tpe && impSym == impSym1))
                   ambiguousError(
                     "it is imported twice in the same scope by\n"+imports.head +  "\nand "+imports1.head)
               }
               while (errorContainer == null && !imports1.isEmpty &&
                      (!imports.head.isExplicitImport(name) ||
                       imports1.head.depth == imports.head.depth)) {
-                var impSym1 = imports1.head.importedSymbol(name)
+                impSym1 = imports1.head.importedSymbol(name)
                 if (reallyExists(impSym1)) {
                   if (imports1.head.isExplicitImport(name)) {
                     if (imports.head.isExplicitImport(name) ||
