@@ -4577,8 +4577,8 @@ trait Typers extends Modes with Adaptations with Tags {
             if (impSym.exists) {
               var impSym1 = NoSymbol
               var imports1 = imports.tail
-              def ambiguousImport() = {
-                if (!(imports.head.qual.tpe =:= imports1.head.qual.tpe))
+              def ambiguousImport(sym1: Symbol) = {
+                if (!(imports.head.qual.tpe =:= imports1.head.qual.tpe && impSym == sym1))
                   ambiguousError(
                     "it is imported twice in the same scope by\n"+imports.head +  "\nand "+imports1.head)
               }
@@ -4589,11 +4589,11 @@ trait Typers extends Modes with Adaptations with Tags {
                 if (reallyExists(impSym1)) {
                   if (imports1.head.isExplicitImport(name)) {
                     if (imports.head.isExplicitImport(name) ||
-                        imports1.head.depth != imports.head.depth) ambiguousImport()
+                        imports1.head.depth != imports.head.depth) ambiguousImport(impSym1)
                     impSym = impSym1
                     imports = imports1
                   } else if (!imports.head.isExplicitImport(name) &&
-                             imports1.head.depth == imports.head.depth) ambiguousImport()
+                             imports1.head.depth == imports.head.depth) ambiguousImport(impSym1)
                 }
                 imports1 = imports1.tail
               }
