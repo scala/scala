@@ -1,0 +1,7 @@
+t4831.scala:10: error: reference to b is ambiguous;
+it is imported twice in the same scope by
+import O.b
+and import O.{a=>b}
+  println(b)
+          ^
+one error found
