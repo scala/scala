@@ -1,0 +1,4 @@
+virtpatmat_unreach_select.scala:10: error: unreachable code
+    case WARNING.id => // unreachable
+                    ^
+one error found
