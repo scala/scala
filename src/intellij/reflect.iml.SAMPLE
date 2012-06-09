@@ -5,6 +5,7 @@
       <configuration>
         <option name="compilerLibraryLevel" value="Project" />
         <option name="compilerLibraryName" value="compiler-locker" />
+        <option name="compilerOptions" value="-sourcepath /Users/luc/scala/git/src/reflect" />
         <option name="maximumHeapSize" value="1536" />
         <option name="vmOptions" value="-Xms1536m -Xss1m -XX:MaxPermSize=128M -d32 -server -XX:+UseParallelGC" />
       </configuration>
@@ -12,14 +13,13 @@
   </component>
   <component name="NewModuleRootManager" inherit-compiler-output="true">
     <exclude-output />
-    <content url="file://$MODULE_DIR$/../compiler">
-      <sourceFolder url="file://$MODULE_DIR$/../compiler" isTestSource="false" />
+    <content url="file://$MODULE_DIR$/../reflect">
+      <sourceFolder url="file://$MODULE_DIR$/../reflect" isTestSource="false" />
     </content>
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
-    <orderEntry type="module" module-name="library" />
     <orderEntry type="library" name="lib" level="project" />
-    <orderEntry type="module" module-name="reflect" />
-    <orderEntry type="library" name="ant" level="application" />
+    <orderEntry type="module" module-name="library" />
   </component>
 </module>
+
