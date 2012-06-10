@@ -1,0 +1,4 @@
+Test.scala:2: error: Unable to access method f in class AbstractFoo with a super reference.
+  override def f(): Int = super.f()
+                                ^
+one error found
