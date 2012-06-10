@@ -4950,6 +4950,8 @@ trait Typers extends Modes with Adaptations with Tags {
                 else new ApplyToImplicitArgs(Select(tag, nme.newArray), args)
               }
               typed(newArrayApp, mode, pt)
+            case Apply(Select(fun, nme.apply), _) if treeInfo.isSuperConstrCall(fun) => //SI-5696
+              TooManyArgumentListsForConstructor(tree)
             case tree1 =>
               tree1
           }

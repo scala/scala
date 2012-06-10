@@ -224,6 +224,11 @@ trait ContextErrors {
       def SuperConstrArgsThisReferenceError(tree: Tree) =
         NormalTypeError(tree, "super constructor arguments cannot reference unconstructed `this`")
 
+      def TooManyArgumentListsForConstructor(tree: Tree) = {
+        issueNormalTypeError(tree, "too many argument lists for constructor invocation")
+        setError(tree)
+      }
+
       // typedValDef
       def VolatileValueError(vdef: Tree) =
         issueNormalTypeError(vdef, "values cannot be volatile")
