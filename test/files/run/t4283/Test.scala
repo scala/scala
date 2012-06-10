@@ -1,8 +1,7 @@
-package other
+object Test {
 
-object IllegalAccess {
   def main(args: Array[String]) {
-    val x = (new test.ScalaBipp).make.get.asInstanceOf[test.ScalaBipp].f() 
+    val x = (new test.ScalaBipp).make.get.asInstanceOf[test.ScalaBipp].f()
     println(x)
     val y = (new test.ScalaBipp).make.get.f()
     println(y)

@@ -1042,18 +1042,27 @@ abstract class Erasure extends AddInterfaces
             assert(overridden != NoSymbol, tree.symbol)
             tree.symbol = overridden
           }
+
           def isAccessible(sym: Symbol) = localTyper.context.isAccessible(sym, sym.owner.thisType)
           if (!isAccessible(owner) && qual.tpe != null) {
-            // Todo: Figure out how qual.tpe could be null in the check above (it does appear in build where SwingWorker.this
-            // has a null type).
-            val qualSym = qual.tpe.widen.typeSymbol
-            if (isAccessible(qualSym) && !qualSym.isPackageClass && !qualSym.isPackageObjectClass) {
-              // insert cast to prevent illegal access error (see #4283)
-              // util.trace("insert erasure cast ") (*/
-              treeCopy.Select(tree, gen.mkAttributedCast(qual, qual.tpe.widen), name) //)
-            } else tree
+            qual match {
+              case Super(_, _) =>
+                // Insert a cast here at your peril -- see SI-5162. Bail out if the target method is defined in
+                // Java, otherwise, we'd get an IllegalAccessError at runtime. If the target method is defined in
+                // Scala, however, we should have access.
+                if (owner.isJavaDefined) unit.error(tree.pos, s"Unable to access ${tree.symbol.fullLocationString} with a super reference.")
+                tree
+              case _ =>
+                // Todo: Figure out how qual.tpe could be null in the check above (it does appear in build where SwingWorker.this
+                // has a null type).
+                val qualSym = qual.tpe.widen.typeSymbol
+                if (isAccessible(qualSym) && !qualSym.isPackageClass && !qualSym.isPackageObjectClass) {
+                  // insert cast to prevent illegal access error (see #4283)
+                  // util.trace("insert erasure cast ") (*/
+                  treeCopy.Select(tree, gen.mkAttributedCast(qual, qual.tpe.widen), name) //)
+                } else tree
+            }
           } else tree
-
         case Template(parents, self, body) =>
           assert(!currentOwner.isImplClass)
           //Console.println("checking no dble defs " + tree)//DEBUG
