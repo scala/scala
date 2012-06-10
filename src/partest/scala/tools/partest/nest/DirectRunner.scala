@@ -13,8 +13,8 @@ import scala.util.Properties.setProp
 import scala.tools.nsc.util.ScalaClassLoader
 import scala.tools.nsc.io.Path
 import scala.collection.{ mutable, immutable }
-import scala.actors.Actor._
-import scala.actors.TIMEOUT
+import java.util.concurrent._
+import scala.collection.convert.decorateAll._
 
 case class TestRunParams(val scalaCheckParentClassLoader: ScalaClassLoader)
 
@@ -38,17 +38,11 @@ trait DirectRunner {
     })
   }
 
-  def setProperties() {
-    if (isPartestDebug)
-      scala.actors.Debug.level = 3
-
-    if (PartestDefaults.poolSize.isEmpty) {
-      scala.actors.Debug.info("actors.corePoolSize not defined")
-      setProp("actors.corePoolSize", "12")
-    }
+  private def timeoutResult = {
+    NestUI.verbose("worker timed out; adding failed test")
+    Map("worker timed out; adding failed test" -> TestState.Timeout)
   }
-
-  def runTestsForFiles(_kindFiles: List[File], kind: String): immutable.Map[String, Int] = {
+  def runTestsForFiles(_kindFiles: List[File], kind: String): immutable.Map[String, TestState] = {
     val kindFiles = onlyValidTestPaths(_kindFiles)
     val groupSize = (kindFiles.length / numActors) + 1
 
@@ -69,21 +63,15 @@ trait DirectRunner {
     )
     Output.init()
 
-    val workers = kindFiles.grouped(groupSize).toList map { toTest =>
-      val worker = new Worker(fileManager, TestRunParams(scalaCheckParentClassLoader))
-      worker.start()
-      worker ! RunTests(kind, toTest)
-      worker
-    }
+    val pool      = Executors.newCachedThreadPool()
+    val fileSets  = kindFiles grouped groupSize toList;
+    val workers   = fileSets map (_ => new Worker(kind, fileManager, TestRunParams(scalaCheckParentClassLoader)))
+    val callables = (fileSets, workers).zipped map ((xs, w) => callable(w actDirect xs))
+    val results   = pool.invokeAll(callables.asJava, 1, TimeUnit.HOURS).asScala
 
-    workers map { w =>
-      receiveWithin(3600 * 1000) {
-        case Results(testResults) => testResults
-        case TIMEOUT =>
-          // add at least one failure
-          NestUI.verbose("worker timed out; adding failed test")
-          Map("worker timed out; adding failed test" -> 2)
-      }
-    } reduceLeft (_ ++ _)
+    results flatMap { r =>
+      if (r.isCancelled) timeoutResult
+      else for ((file, status) <- r.get) yield (file.getAbsolutePath, status)
+    } toMap
   }
 }
