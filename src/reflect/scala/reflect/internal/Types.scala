@@ -1116,6 +1116,11 @@ trait Types extends api.Types { self: SymbolTable =>
       var required = requiredFlags
       var excluded = excludedFlags | DEFERRED
       var continue = true
+
+      // SI-5330. I we don't widen before narrowing, subsequent calls to asSeenFrom have different symbols for existentials, e.g. pos/t5330.scala.
+      //          If we don't re-narrow the result, pos/t5330b.scala fails.
+      // See also SI-6014 and SI-5120 (whose fix caused the regressions SI-5330 and SI-6014)
+      def selfTypeSkolemized = widen.narrow
       var self: Type = null
       val fingerPrint: Long = name.fingerPrint
 
@@ -1147,7 +1152,7 @@ trait Types extends api.Types { self: SymbolTable =>
                     if ((member ne sym) &&
                         ((member.owner eq sym.owner) ||
                          (flags & PRIVATE) != 0 || {
-                           if (self eq null) self = this.narrow
+                           if (self eq null) self = selfTypeSkolemized
                            if (membertpe eq null) membertpe = self.memberType(member)
                            !(membertpe matches self.memberType(sym))
                          })) {
@@ -1162,7 +1167,7 @@ trait Types extends api.Types { self: SymbolTable =>
                              (other ne sym) &&
                              ((other.owner eq sym.owner) ||
                               (flags & PRIVATE) != 0 || {
-                                if (self eq null) self = this.narrow
+                                if (self eq null) self = selfTypeSkolemized
                                 if (symtpe eq null) symtpe = self.memberType(sym)
                                 !(self.memberType(other) matches symtpe)
                              })}) {
