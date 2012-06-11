@@ -342,6 +342,16 @@ INITIALISATION
 
   <target name="init.version.done" depends="init.version.release, init.version.snapshot"/>
 
+  <target name="init.testjava6">
+    <fail message="This build requires JDK 1.6">
+      <condition>
+        <not>
+          <equals arg1="${ant.java.version}" arg2="1.6"/>
+        </not>
+      </condition>
+    </fail>
+  </target>
+
   <target name="init" depends="init.jars, init.maven.jars, init.version.done">
     <property name="scalac.args.always" value="" />
   <!-- scalac.args.optimise is selectively overridden in certain antcall tasks. -->
@@ -377,12 +387,17 @@ INITIALISATION
       </fileset>
     </path>
 
+    <!-- Libraries only used for STARR -->
+    <path id="starr.dep.libs">
+      <fileset dir="${lib.dir}">
+        <include name="fjbg.jar"/>
+        <include name="forkjoin.jar"/>
+      </fileset>
+    </path>
     <!-- Auxiliary libs placed on every classpath. -->
     <path id="aux.libs">
       <fileset dir="${lib.dir}">
-        <include name="fjbg.jar"/>
         <include name="msil.jar"/>
-        <include name="forkjoin.jar"/>
       </fileset>
       <pathelement location="${ant.jar}"/>
       <path refid="lib.extra"/>
@@ -391,7 +406,7 @@ INITIALISATION
 
     <!-- And print-out what we are building -->
     <echo message="       build time: ${time.human}" />
-    <echo message="     java version: ${java.vm.name} ${java.version}" />
+    <echo message="     java version: ${java.vm.name} ${java.version} (${ant.java.version})" />
     <echo message="        java args: ${env.ANT_OPTS} ${jvm.opts}" />
     <echo message="       javac args: ${javac.args}" />
     <echo message="      scalac args: ${scalac.args.all}" />
@@ -408,23 +423,24 @@ INITIALISATION
       <pathelement location="${reflect.starr.jar}"/>
       <pathelement location="${comp.starr.jar}"/>
       <path refid="aux.libs"/>
+      <path refid="starr.dep.libs"/>
     </path>
     <!-- What to have on the compilation path when compiling during certain phases -->
     <path id="quick.compilation.path">
       <pathelement location="${build-quick.dir}/classes/library"/>
-      <pathelement location="${lib.dir}/forkjoin.jar"/>
+      <pathelement location="${build-libs.dir}/classes/forkjoin"/>
       <path refid="lib.extra"/>
     </path>
     <path id="strap.compilation.path">
       <pathelement location="${build-strap.dir}/classes/library"/>
-      <pathelement location="${lib.dir}/forkjoin.jar"/>
+      <pathelement location="${build-libs.dir}/classes/forkjoin"/>
       <path refid="lib.extra"/>
     </path>
     <taskdef resource="scala/tools/ant/sabbus/antlib.xml" classpathref="starr.classpath"/>
   </target>
 
 <!-- ===========================================================================
-LOCAL Adapted ASM
+LOCAL DEPENDENCY (Adapted ASM)
 ============================================================================ -->
 
   <target name="asm.start" depends="init">
@@ -455,12 +471,106 @@ LOCAL Adapted ASM
     </path>
   </target>
 
+  <target name="asm.clean" depends="init">
+    <delete dir="${build-asm.dir}" includeemptydirs="yes" quiet="yes" failonerror="no"/>
+  </target>
+
+<!-- ===========================================================================
+LOCAL DEPENDENCY (FORKJOIN)
+============================================================================ -->
+  <target name="forkjoin.start" depends="init, init.testjava6">
+    <uptodate property="forkjoin.available" targetfile="${build-libs.dir}/forkjoin.complete">
+      <srcfiles dir="${src.dir}/forkjoin">
+        <include name="**/*.java"/>
+        <include name="**/*.scala"/>
+      </srcfiles>
+    </uptodate>
+  </target>
+
+  <target name="forkjoin.lib" depends="forkjoin.start" unless="forkjoin.available">
+    <mkdir dir="${build-libs.dir}/classes/forkjoin"/>
+    <javac
+      fork="yes"
+      compiler="javac1.6"
+      srcdir="${src.dir}/forkjoin"
+      destdir="${build-libs.dir}/classes/forkjoin"
+      classpath="${build-libs.dir}/classes/forkjoin"
+      includes="**/*.java"
+      debug="true"
+      target="1.5" source="1.5">
+        <compilerarg line="${javac.args}"/>
+    </javac>
+    <touch file="${build-libs.dir}/forkjoin.complete" verbose="no"/>
+  </target>
+
+  <target name="forkjoin.pack" depends="forkjoin.lib">
+    <jar destfile="${build-libs.dir}/forkjoin.jar">
+      <fileset dir="${build-libs.dir}/classes/forkjoin"/>
+    </jar>
+  </target>
+
+  <target name="forkjoin.done" depends="forkjoin.pack">
+    <!-- TODO - jar or classfiles? -->
+    <path id="forkjoin.classpath">
+      <pathelement location="${build-libs.dir}/classes/forkjoin"/>
+    </path>
+  </target>
+
+  <target name="forkjoin.clean" depends="init">
+    <delete dir="${build-libs.dir}/classes/forkjoin" includeemptydirs="yes" quiet="yes" failonerror="no"/>
+    <delete file="${build-libs.dir}/forkjoin.complete" quiet="yes" failonerror="no"/>
+  </target>
+
+<!-- ===========================================================================
+LOCAL DEPENDENCY (FJBG)
+============================================================================ -->
+
+  <target name="fjbg.init" depends="init">
+    <uptodate property="fjbg.available" targetfile="${build-libs.dir}/fjbg.complete">
+      <srcfiles dir="${src.dir}/fjbg">
+        <include name="**/*.java"/>
+        <include name="**/*.scala"/>
+      </srcfiles>
+    </uptodate>
+  </target>
+
+  <target name="fjbg.lib" depends="fjbg.init" unless="fjbg.available">
+    <mkdir dir="${build-libs.dir}/classes/fjbg"/>
+    <javac
+      srcdir="${src.dir}/fjbg"
+      destdir="${build-libs.dir}/classes/fjbg"
+      classpath="${build-libs.dir}/classes/fjbg"
+      includes="**/*.java"
+      debug="true"
+      target="1.5" source="1.4">
+        <compilerarg line="${javac.args}"/>
+    </javac>
+    <touch file="${build-libs.dir}/fjbg.complete" verbose="no"/>
+  </target>
+
+  <target name="fjbg.pack" depends="fjbg.lib">
+    <jar destfile="${build-libs.dir}/fjbg.jar">
+      <fileset dir="${build-libs.dir}/classes/fjbg"/>
+    </jar>
+  </target>
+
+  <target name="fjbg.done" depends="fjbg.pack">
+    <!-- TODO - jar or classfiles? -->
+    <path id="fjbg.classpath">
+      <pathelement location="${build-libs.dir}/classes/fjbg"/>
+    </path>
+  </target>
+
+  <target name="fjbg.clean" depends="init">
+    <delete dir="${build-libs.dir}/classes/fjbg" includeemptydirs="yes" quiet="yes" failonerror="no"/>
+    <delete file="${build-libs.dir}/fjbg.complete" quiet="yes" failonerror="no"/>
+  </target>
 
 <!-- ===========================================================================
 LOCAL REFERENCE BUILD (LOCKER)
 ============================================================================ -->
 
-  <target name="locker.start" depends="asm.done">
+  <target name="locker.start" depends="asm.done, forkjoin.done, fjbg.done">
     <condition property="locker.available">
       <available file="${build-locker.dir}/all.complete"/>
     </condition>
@@ -478,10 +588,13 @@ LOCAL REFERENCE BUILD (LOCKER)
     <javac
       srcdir="${src.dir}/library"
       destdir="${build-locker.dir}/classes/library"
-      classpath="${build-locker.dir}/classes/library"
       includes="**/*.java"
       target="1.5" source="1.5">
         <compilerarg line="${javac.args} -XDignore.symbol.file"/>
+        <classpath>
+          <path refid="forkjoin.classpath"/>
+          <pathelement location="${build-locker.dir}/classes/library"/>
+        </classpath>
     </javac>
     <!-- NOTE: Potential problem with maximal command line length on Windows
          (32768 characters for XP, since executed with Java's "exec"). See
@@ -496,7 +609,7 @@ LOCAL REFERENCE BUILD (LOCKER)
       <include name="**/*.scala"/>
       <compilationpath>
         <pathelement location="${build-locker.dir}/classes/library"/>
-        <pathelement location="${lib.dir}/forkjoin.jar"/>
+        <path refid="forkjoin.classpath"/>
       </compilationpath>
     </scalacfork>
     <propertyfile file="${build-locker.dir}/classes/library/library.properties">
@@ -586,6 +699,7 @@ LOCAL REFERENCE BUILD (LOCKER)
         <pathelement location="${build-locker.dir}/classes/library"/>
         <pathelement location="${build-locker.dir}/classes/reflect"/>
         <pathelement location="${build-locker.dir}/classes/compiler"/>
+        <path refid="fjbg.classpath"/>
         <path refid="aux.libs"/>
         <path refid="asm.classpath"/>
         <pathelement location="${jline.jar}"/>
@@ -620,6 +734,8 @@ LOCAL REFERENCE BUILD (LOCKER)
       <pathelement location="${build-locker.dir}/classes/library"/>
       <pathelement location="${build-locker.dir}/classes/reflect"/>
       <pathelement location="${build-locker.dir}/classes/compiler"/>
+      <path refid="fjbg.classpath"/>
+      <path refid="forkjoin.classpath"/>
       <path refid="asm.classpath"/>
       <path refid="aux.libs"/>
     </path>
@@ -628,6 +744,8 @@ LOCAL REFERENCE BUILD (LOCKER)
       <pathelement location="${build-quick.dir}/classes/library"/>
       <pathelement location="${build-quick.dir}/classes/reflect"/>
       <pathelement location="${build-quick.dir}/classes/compiler"/>
+      <path refid="fjbg.classpath"/>
+      <path refid="forkjoin.classpath"/>
       <path refid="asm.classpath"/>
       <path refid="aux.libs"/>
     </path>
@@ -694,6 +812,7 @@ PACKED LOCKER BUILD (PALO)
     <mkdir dir="${build-palo.dir}/lib"/>
     <jar destfile="${build-palo.dir}/lib/scala-library.jar">
       <fileset dir="${build-locker.dir}/classes/library"/>
+      <fileset dir="${build-libs.dir}/classes/forkjoin"/>
     </jar>
   </target>
 
@@ -723,8 +842,8 @@ PACKED LOCKER BUILD (PALO)
     <jar destfile="${build-palo.dir}/lib/scala-compiler.jar" manifest="${basedir}/META-INF/MANIFEST.MF">
       <fileset dir="${build-locker.dir}/classes/compiler"/>
       <fileset dir="${build-asm.dir}/classes/"/>
+      <fileset dir="${build-libs.dir}/classes/fjbg"/>
       <!-- filemode / dirmode: see trac ticket #1294 -->
-      <zipfileset dirmode="755" filemode="644" src="${lib.dir}/fjbg.jar"/>
       <zipfileset dirmode="755" filemode="644" src="${lib.dir}/msil.jar"/>
     </jar>
     <copy file="${jline.jar}" toDir="${build-palo.dir}/lib"/>
@@ -807,18 +926,24 @@ QUICK BUILD (QUICK)
     <javac
       srcdir="${src.dir}/library"
       destdir="${build-quick.dir}/classes/library"
-      classpath="${build-quick.dir}/classes/library"
       includes="**/*.java"
       target="1.5" source="1.5">
       <compilerarg line="${javac.args} -XDignore.symbol.file"/>
+      <classpath>
+        <path refid="forkjoin.classpath"/>
+        <pathelement location="${build-quick.dir}/classes/library"/>
+      </classpath>
     </javac>
     <javac
       srcdir="${src.dir}/actors"
       destdir="${build-quick.dir}/classes/library"
-      classpath="${build-quick.dir}/classes/library"
       includes="**/*.java"
       target="1.5" source="1.5">
       <compilerarg line="${javac.args}"/>
+      <classpath>
+        <path refid="forkjoin.classpath"/>
+        <pathelement location="${build-quick.dir}/classes/library"/>
+      </classpath>
     </javac>
     <scalacfork
       destdir="${build-quick.dir}/classes/library"
@@ -957,6 +1082,8 @@ QUICK BUILD (QUICK)
         <pathelement location="${build-quick.dir}/classes/reflect"/>
         <pathelement location="${build-quick.dir}/classes/compiler"/>
         <path refid="aux.libs"/>
+        <path refid="forkjoin.classpath"/>
+        <path refid="fjbg.classpath"/>
         <path refid="asm.classpath"/>
         <pathelement location="${jline.jar}"/>
       </compilationpath>
@@ -1006,6 +1133,8 @@ QUICK BUILD (QUICK)
         <pathelement location="${build-quick.dir}/classes/reflect"/>
         <pathelement location="${build-quick.dir}/classes/compiler"/>
         <pathelement location="${build-quick.dir}/classes/continuations-plugin"/>
+        <path refid="forkjoin.classpath"/>
+        <path refid="fjbg.classpath"/>
         <path refid="aux.libs"/>
       </compilationpath>
     </scalacfork>
@@ -1052,6 +1181,7 @@ QUICK BUILD (QUICK)
       <compilationpath>
         <pathelement location="${build-quick.dir}/classes/library"/>
         <pathelement location="${build-quick.dir}/classes/actors-migration"/>
+        <path refid="forkjoin.classpath"/>
       </compilationpath>
     </scalacfork>
     <touch file="${build-quick.dir}/actors-migration.complete" verbose="no"/>
@@ -1106,7 +1236,7 @@ QUICK BUILD (QUICK)
         <pathelement location="${build-quick.dir}/classes/scalap"/>
         <pathelement location="${build-quick.dir}/classes/partest"/>
         <pathelement location="${ant.jar}"/>
-        <pathelement location="${lib.dir}/forkjoin.jar"/>
+        <path refid="forkjoin.classpath"/>
       </compilationpath>
     </scalacfork>
     <touch file="${build-quick.dir}/scalap.complete" verbose="no"/>
@@ -1150,7 +1280,8 @@ QUICK BUILD (QUICK)
         <pathelement location="${build-quick.dir}/classes/scalap"/>
         <pathelement location="${build-quick.dir}/classes/partest"/>
         <pathelement location="${ant.jar}"/>
-        <pathelement location="${lib.dir}/forkjoin.jar"/>
+        <path refid="forkjoin.classpath"/>
+        <path refid="fjbg.classpath"/>
         <pathelement location="${scalacheck.jar}"/>
       </compilationpath>
     </scalacfork>
@@ -1179,6 +1310,8 @@ QUICK BUILD (QUICK)
       <pathelement location="${build-quick.dir}/classes/reflect"/>
       <pathelement location="${build-quick.dir}/classes/compiler"/>
       <pathelement location="${build-quick.dir}/classes/scalap"/>
+      <path refid="forkjoin.classpath"/>
+      <path refid="fjbg.classpath"/>
       <path refid="aux.libs"/>
       <pathelement location="${jline.jar}"/>
     </path>
@@ -1256,6 +1389,7 @@ PACKED QUICK BUILD (PACK)
         <exclude name="scala/swing/**"/>
         <exclude name="scala/actors/**"/>
       </fileset>
+      <fileset dir="${build-libs.dir}/classes/forkjoin"/>
       <zipfileset dirmode="755" filemode="644" src="${forkjoin.jar}"/>
     </jar>
     <jar destfile="${build-pack.dir}/lib/scala-swing.jar">
@@ -1304,8 +1438,8 @@ PACKED QUICK BUILD (PACK)
     <jar destfile="${build-pack.dir}/lib/scala-compiler.jar" manifest="${build-pack.dir}/META-INF/MANIFEST.MF">
       <fileset dir="${build-quick.dir}/classes/compiler"/>
       <fileset dir="${build-asm.dir}/classes"/>
+      <fileset dir="${build-libs.dir}/classes/fjbg"/>
       <!-- filemode / dirmode: see trac ticket #1294 -->
-      <zipfileset dirmode="755" filemode="644" src="${fjbg.jar}"/>
       <zipfileset dirmode="755" filemode="644" src="${msil.jar}"/>
     </jar>
     <copy file="${jline.jar}" toDir="${build-pack.dir}/lib"/>
@@ -1453,18 +1587,24 @@ BOOTSTRAPPING BUILD (STRAP)
     <javac
       srcdir="${src.dir}/library"
       destdir="${build-strap.dir}/classes/library"
-      classpath="${build-strap.dir}/classes/library"
       includes="**/*.java"
       target="1.5" source="1.5">
       <compilerarg line="${javac.args} -XDignore.symbol.file"/>
+      <classpath>
+        <path refid="forkjoin.classpath"/>
+        <pathelement location="${build-strap.dir}/classes/library"/>
+      </classpath>
     </javac>
     <javac
       srcdir="${src.dir}/actors"
       destdir="${build-strap.dir}/classes/library"
-      classpath="${build-strap.dir}/classes/library"
       includes="**/*.java"
       target="1.5" source="1.5">
       <compilerarg line="${javac.args}"/>
+      <classpath>
+        <path refid="forkjoin.classpath"/>
+        <pathelement location="${build-strap.dir}/classes/library"/>
+      </classpath>
     </javac>
     <scalacfork
       destdir="${build-strap.dir}/classes/library"
@@ -1531,6 +1671,7 @@ BOOTSTRAPPING BUILD (STRAP)
       <compilationpath>
         <pathelement location="${build-strap.dir}/classes/library"/>
         <pathelement location="${build-strap.dir}/classes/reflect"/>
+        <path refid="forkjoin.classpath"/>
         <path refid="aux.libs"/>
         <pathelement location="${jline.jar}"/>
       </compilationpath>
@@ -1581,6 +1722,8 @@ BOOTSTRAPPING BUILD (STRAP)
         <pathelement location="${build-strap.dir}/classes/reflect"/>
         <pathelement location="${build-strap.dir}/classes/compiler"/>
         <path refid="aux.libs"/>
+        <path refid="forkjoin.classpath"/>
+        <path refid="fjbg.classpath"/>
         <path refid="asm.classpath"/>
         <pathelement location="${jline.jar}"/>
       </compilationpath>
@@ -1630,6 +1773,8 @@ BOOTSTRAPPING BUILD (STRAP)
         <pathelement location="${build-strap.dir}/classes/reflect"/>
         <pathelement location="${build-strap.dir}/classes/compiler"/>
         <pathelement location="${build-strap.dir}/classes/continuations-plugin"/>
+        <path refid="forkjoin.classpath"/>
+        <path refid="fjbg.classpath"/>
         <path refid="aux.libs"/>
       </compilationpath>
     </scalacfork>
@@ -1695,7 +1840,7 @@ BOOTSTRAPPING BUILD (STRAP)
         <pathelement location="${build-strap.dir}/classes/scalap"/>
         <pathelement location="${build-strap.dir}/classes/partest"/>
         <pathelement location="${ant.jar}"/>
-        <pathelement location="${lib.dir}/forkjoin.jar"/>
+        <path refid="forkjoin.classpath"/>
       </compilationpath>
     </scalacfork>
     <touch file="${build-strap.dir}/scalap.complete" verbose="no"/>
@@ -1739,7 +1884,7 @@ BOOTSTRAPPING BUILD (STRAP)
         <pathelement location="${build-strap.dir}/classes/scalap"/>
         <pathelement location="${build-strap.dir}/classes/partest"/>
         <pathelement location="${ant.jar}"/>
-        <pathelement location="${lib.dir}/forkjoin.jar"/>
+        <path refid="forkjoin.classpath"/>
         <pathelement location="${scalacheck.jar}"/>
       </compilationpath>
     </scalacfork>
@@ -1763,48 +1908,6 @@ LIBRARIES (MSIL, FJBG maybe later)
 ============================================================================ -->
 
   <target name="libs.start"/>
-
-  <target name="libs.pre-forkjoin" depends="libs.start">
-    <property name="java6.home" value="/home/linuxsoft/apps/java-1.6"/>
-    <fail message="Compiling forkjoin.jar requires java 1.6. Please set the property `java6.home` in build.properties or using `-Djava6.home=/path/to/java6`">
-      <condition><not>
-        <available file="${java6.home}/bin/javac"/>
-      </not></condition>
-    </fail>
-
-    <uptodate property="libs.forkjoin.available" targetfile="${build-libs.dir}/forkjoin.complete">
-      <srcfiles dir="${src.dir}/forkjoin">
-        <include name="**/*.java"/>
-        <include name="**/*.scala"/>
-      </srcfiles>
-    </uptodate>
-  </target>
-
-  <target name="libs.forkjoin" depends="libs.pre-forkjoin" unless="libs.forkjoin.available">
-    <mkdir dir="${build-libs.dir}/classes/forkjoin"/>
-    <javac
-      executable="${java6.home}/bin/javac"
-      fork="yes"
-      compiler="javac1.6"
-      srcdir="${src.dir}/forkjoin"
-      destdir="${build-libs.dir}/classes/forkjoin"
-      classpath="${build-libs.dir}/classes/forkjoin"
-      includes="**/*.java"
-      debug="true"
-      target="1.5" source="1.5">
-        <compilerarg line="${javac.args}"/>
-    </javac>
-    <touch file="${build-libs.dir}/forkjoin.complete" verbose="no"/>
-  </target>
-
-  <target name="libs.pre-forkjoinpack" depends="libs.forkjoin">
-  </target>
-
-  <target name="libs.forkjoinpack" depends="libs.pre-forkjoinpack" unless="libs.forkjoinpack.available">
-    <jar destfile="${build-libs.dir}/forkjoin.jar">
-      <fileset dir="${build-libs.dir}/classes/forkjoin"/>
-    </jar>
-  </target>
 
   <target name="libs.pre-msil" depends="libs.start">
     <uptodate property="libs.msil.available" targetfile="${build-libs.dir}/msil.complete">
@@ -1849,43 +1952,9 @@ LIBRARIES (MSIL, FJBG maybe later)
     <jar destfile="${build-libs.dir}/msil.jar">
       <fileset dir="${build-libs.dir}/classes/msil"/>
     </jar>
-  </target>
+  </target> 
 
-  <target name="libs.pre-fjbg" depends="libs.start">
-    <uptodate property="libs.fjbg.available" targetfile="${build-libs.dir}/fjbg.complete">
-      <srcfiles dir="${src.dir}/fjbg">
-        <include name="**/*.java"/>
-        <include name="**/*.scala"/>
-      </srcfiles>
-    </uptodate>
-  </target>
-
-  <target name="libs.fjbg" depends="libs.pre-fjbg" unless="libs.fjbg.available">
-    <mkdir dir="${build-libs.dir}/classes/fjbg"/>
-    <javac
-      srcdir="${src.dir}/fjbg"
-      destdir="${build-libs.dir}/classes/fjbg"
-      classpath="${build-libs.dir}/classes/fjbg"
-      includes="**/*.java"
-      debug="true"
-      target="1.5" source="1.4">
-        <compilerarg line="${javac.args}"/>
-    </javac>
-    <touch file="${build-libs.dir}/fjbg.complete" verbose="no"/>
-  </target>
-
-  <target name="libs.pre-fjbgpack" depends="libs.fjbg">
-  </target>
-
-  <target name="libs.fjbgpack" depends="libs.pre-fjbgpack" unless="libs.fjbgpack.available">
-    <jar destfile="${build-libs.dir}/fjbg.jar">
-      <fileset dir="${build-libs.dir}/classes/fjbg"/>
-    </jar>
-  </target>
-
-  <target name="libs.done" depends="libs.msilpack, libs.fjbgpack"/>
-
-  <target name="forkjoin.done" depends="libs.forkjoinpack"/>
+  <target name="libs.done" depends="libs.msilpack"/>
 
   <target name="libs.clean" depends="pack.clean">
     <delete dir="${build-libs.dir}" includeemptydirs="yes" quiet="yes" failonerror="no"/>
