@@ -123,7 +123,6 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
          def zero: M[Nothing]
          def one[T](x: P[T]): M[T]
          def guard[T](cond: P[Boolean], then: => P[T]): M[T]
-         def isSuccess[T, U](x: P[T])(f: P[T] => M[U]): P[Boolean] // used for isDefinedAt
        }
 
    * P and M are derived from one's signature (`def one[T](x: P[T]): M[T]`)
@@ -137,7 +136,6 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
          // NOTE: guard's return type must be of the shape M[T], where M is the monad in which the pattern match should be interpreted
          def guard[T](cond: Boolean, then: => T): Option[T] = if(cond) Some(then) else None
          def runOrElse[T, U](x: T)(f: T => Option[U]): U = f(x) getOrElse (throw new MatchError(x))
-         def isSuccess[T, U](x: T)(f: T => Option[U]): Boolean = !f(x).isEmpty
        }
 
    */
@@ -2006,7 +2004,7 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
       private val uniques = new collection.mutable.HashMap[Tree, Var]
       def apply(x: Tree): Var = uniques getOrElseUpdate(x, new Var(x, x.tpe))
     }
-    class Var(val path: Tree, fullTp: Type, checked: Boolean = true) extends AbsVar {
+    class Var(val path: Tree, fullTp: Type) extends AbsVar {
       private[this] val id: Int = Var.nextId
 
       // private[this] var canModify: Option[Array[StackTraceElement]] = None
@@ -2028,26 +2026,24 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
       // we enumerate the subtypes of the full type, as that allows us to filter out more types statically,
       // once we go to run-time checks (on Const's), convert them to checkable types
       // TODO: there seems to be bug for singleton domains (variable does not show up in model)
-      lazy val domain: Option[Set[Const]] =
-        if (!checked) None
-        else {
-          val subConsts = enumerateSubtypes(fullTp).map{ tps =>
-            tps.toSet[Type].map{ tp =>
-              val domainC = TypeConst(tp)
-              registerEquality(domainC)
-              domainC
-            }
+      lazy val domain: Option[Set[Const]] = {
+        val subConsts = enumerateSubtypes(fullTp).map{ tps =>
+          tps.toSet[Type].map{ tp =>
+            val domainC = TypeConst(tp)
+            registerEquality(domainC)
+            domainC
+          }
+        }
+
+        val allConsts =
+          if (! _considerNull) subConsts
+          else {
+            registerEquality(NullConst)
+            subConsts map (_ + NullConst)
           }
 
-          val allConsts =
-            if (! _considerNull) subConsts
-            else {
-              registerEquality(NullConst)
-              subConsts map (_ + NullConst)
-            }
-
-          observed; allConsts
-        }
+        observed; allConsts
+      }
 
       // accessing after calling considerNull will result in inconsistencies
       lazy val domainSyms: Option[Set[Sym]] = domain map { _ map symForEqualsTo }
