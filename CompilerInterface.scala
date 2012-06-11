@@ -226,7 +226,10 @@ private final class CachedCompiler0(args: Array[String], initialLog: WeakLog) ex
 		{
 			val global: compiler.type = compiler
 			// this is apparently never called except by rootLoader, so no need to implement it
-			override lazy val classPath = throw new RuntimeException("Unexpected reference to platform.classPath")
+			override lazy val classPath = {
+				compiler.warning("platform.classPath should not be called because it is incompatible with resident compilation.  Use Global.classPath")
+				new PathResolver(settings).result
+			}
 			override def rootLoader = newPackageLoaderCompat(rootLoader)(compiler.classPath)
 		}
 
@@ -240,11 +243,11 @@ private final class CachedCompiler0(args: Array[String], initialLog: WeakLog) ex
 				case cp: util.MergedClassPath[_] =>
 					val dir = AbstractFile getDirectory path
 					val canonical = dir.file.getCanonicalPath
-					def matchesCanonical(e: ClassPath[_]) = e.origin.exists { opath =>
+					def matchesCanonicalCompat(e: ClassPath[_]) = e.origin.exists { opath =>
 							(AbstractFile getDirectory opath).file.getCanonicalPath == canonical
 					}
 
-					cp.entries find matchesCanonical match {
+					cp.entries find matchesCanonicalCompat match {
 						case Some(oldEntry) =>
 							val newEntry = cp.context.newClassPath(dir)
 							classPath.updateClassPath(oldEntry, newEntry)
@@ -260,7 +263,7 @@ private final class CachedCompiler0(args: Array[String], initialLog: WeakLog) ex
 			def hasClasses(cp: OptClassPath) = cp.exists(_.classes.nonEmpty)
 			def invalidateOrRemove(root: ClassSymbol) =
 				allEntry match {
-					case Some(cp) => root setInfo newPackageLoader[Type](cp)
+					case Some(cp) => root setInfo newPackageLoader0[Type](cp)
 					case None => root.owner.info.decls unlink root.sourceModule
 				}
 
@@ -301,12 +304,12 @@ private final class CachedCompiler0(args: Array[String], initialLog: WeakLog) ex
 		//   to work around JavaPackageLoader and PackageLoader changes between 2.9 and 2.10 
 		//   and in particular not being able to say JavaPackageLoader in 2.10 in a compatible way (it no longer exists)
 		private[this] def newPackageLoaderCompat[T](dummy: => T)(classpath: ClassPath[AbstractFile])(implicit mf: ClassManifest[T]): T =
-			newPackageLoader[T](classpath)
+			newPackageLoader0[T](classpath)
 
-		private[this] def newPackageLoader[T](classpath: ClassPath[AbstractFile]): T =
-			loaderClass.getConstructor(classOf[SymbolLoaders], classOf[ClassPath[AbstractFile]]).newInstance(loaders, classpath).asInstanceOf[T]
+		private[this] def newPackageLoader0[T](classpath: ClassPath[AbstractFile]): T =
+			loaderClassCompat.getConstructor(classOf[SymbolLoaders], classOf[ClassPath[AbstractFile]]).newInstance(loaders, classpath).asInstanceOf[T]
 
-		private[this] lazy val loaderClass: Class[_] =
+		private[this] lazy val loaderClassCompat: Class[_] =
 			try Class.forName("scala.tools.nsc.symtab.SymbolLoaders$JavaPackageLoader")
 			catch { case e: Exception =>
 				Class.forName("scala.tools.nsc.symtab.SymbolLoaders$PackageLoader")
