@@ -1,0 +1,13 @@
+t3836.scala:17: error: reference to IOException is ambiguous;
+it is imported twice in the same scope by
+import foo.bar._
+and import java.io._
+    def f = new IOException // genuinely different
+                ^
+t3836.scala:26: error: reference to Bippy is ambiguous;
+it is imported twice in the same scope by
+import baz._
+and import bar._
+    def f: Bippy[Int] = ???
+           ^
+two errors found
