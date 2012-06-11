@@ -22,6 +22,7 @@ import scala.collection.{ mutable, immutable }
 import scala.tools.nsc.interactive.{ BuildManager, RefinedBuildManager }
 import scala.sys.process._
 import java.util.concurrent.{ Executors, TimeUnit, TimeoutException }
+import PartestDefaults.{ javaCmd, javacCmd }
 
 class LogContext(val file: File, val writers: Option[(StringWriter, PrintWriter)])
 
@@ -34,10 +35,11 @@ object LogContext {
 }
 
 object Output {
-  def init() {
-    System.setOut(outRedirect)
-    System.setErr(errRedirect)
-  }
+  object outRedirect extends Redirecter(out)
+  object errRedirect extends Redirecter(err)
+
+  System.setOut(outRedirect)
+  System.setErr(errRedirect)
 
   import scala.util.DynamicVariable
   private def out = java.lang.System.out
@@ -54,10 +56,6 @@ object Output {
     override def flush = withStream(_.flush)
     override def close = withStream(_.close)
   })
-
-  object outRedirect extends Redirecter(out)
-
-  object errRedirect extends Redirecter(err)
 
   // this supports thread-safe nested output redirects
   def withRedirected[T](newstream: PrintStream)(func: => T): T = {
@@ -76,70 +74,15 @@ object Output {
   }
 }
 
-class Worker(kind: String, val fileManager: FileManager, params: TestRunParams) {
+class RunnerManager(kind: String, val fileManager: FileManager, params: TestRunParams) {
   import fileManager._
 
-  private val executor = Executors.newSingleThreadExecutor()
-
-  /** Formerly deeper inside, these next few things are now promoted outside so
-   *  I can see what they're doing when the world comes to a premature stop.
-   */
-  private val toDelete  = mutable.HashSet[File]()
-  val failDiffs = mutable.HashMap[File, String]()
-  val timer    = new Timer
-  val javaCmd  = propOrElse("partest.javacmd", Path(javaHome) / "bin" / "java" path)
-  val javacCmd = propOrElse("partest.javac_cmd", Path(jdkHome) / "bin" / "javac" path)
-
-  def cancelTimerTask() = if (currentTimerTask != null) currentTimerTask.cancel()
-  def updateTimerTask(body: => Unit) = {
-    cancelTimerTask()
-    currentTimerTask = new KickableTimerTask(body)
-    timer.schedule(currentTimerTask, fileManager.oneTestTimeout)
-  }
-
-  class KickableTimerTask(body: => Unit) extends TimerTask {
-    def run() = body
-    def kick() = {
-      cancel()
-      body
-    }
-  }
-
-  private var currentTimerTask: KickableTimerTask = _
-  private var currentFileStart: Long = System.currentTimeMillis
-  private var currentTestFile: File = _
-  private def fileBase = basename(currentTestFile.getName)
+  val compileMgr = new CompileManager(fileManager)
+  fileManager.CLASSPATH += File.pathSeparator + PathSettings.scalaCheck
 
   private def compareFiles(f1: File, f2: File): String =
     try fileManager.compareFiles(f1, f2)
     catch { case t => t.toString }
-
-  private def cleanup() {
-    // keep output directories under debug
-    if (!isPartestDebug)
-      toDelete foreach (_.deleteRecursively())
-
-    toDelete.clear()
-  }
-  sys addShutdownHook cleanup()
-
-  private def resetAll() {
-    cancelTimerTask()
-    cleanup()
-    currentTestFile = null
-    currentTimerTask = null
-  }
-
-  def currentFileElapsed = (System.currentTimeMillis - currentFileStart) / 1000
-  def forceTimeout() = {
-    println("Let's see what them threads are doing before I kill that test.")
-    sys.allThreads foreach { t =>
-      println(t)
-      t.getStackTrace foreach println
-      println("")
-    }
-    currentTimerTask.kick()
-  }
 
   /** This does something about absolute paths and file separator
    *  chars before diffing.
@@ -151,24 +94,7 @@ class Worker(kind: String, val fileManager: FileManager, params: TestRunParams) 
     s.replace('\\', '/').replaceAll(regex, "")
   }
 
-  private def currentFileString = {
-    "Current test file is: %s\n  Started: %s (%s seconds ago)\n  Current time: %s".format(
-      currentTestFile,
-      new java.util.Date(currentFileStart),
-      currentFileElapsed,
-      new java.util.Date()
-    )
-  }
-
-  override def toString = "Partest Worker"
-
   private def workerError(msg: String): Unit = System.err.println("Error: " + msg)
-
-  def actDirect(files: List[File]): Map[File, TestState] = {
-    NestUI.verbose("actDirect(%s files)".format(files.size))
-
-    try runTests(files) finally resetAll()
-  }
 
   private def printInfoStart(file: File, printer: PrintWriter) {
     NestUI.outline("testing: ", printer)
@@ -198,15 +124,6 @@ class Worker(kind: String, val fileManager: FileManager, params: TestRunParams) 
     NestUI.normal("]\n", printer)
   }
 
-  private def createLogFile(file: File) = fileManager.getLogFile(file, kind)
-
-  private def createOutputDir(dir: File): File = {
-    val outDir = Path(dir) / Directory("%s-%s.obj".format(fileBase, kind))
-    outDir.createDirectory()
-    toDelete += outDir.jfile
-    outDir.jfile
-  }
-
   private def javac(outDir: File, files: List[File], output: File): CompilationOutcome = {
     // compile using command-line javac compiler
     val args = Seq(
@@ -227,87 +144,6 @@ class Worker(kind: String, val fileManager: FileManager, params: TestRunParams) 
   private def runCommand(args: Seq[String], outFile: File): Boolean = {
     NestUI.verbose("running command:\n"+args.map("  " + _ + "\n").mkString)
     (Process(args) #> outFile !) == 0
-  }
-
-  private def execTest(outDir: File, logFile: File, classpathPrefix: String = ""): Boolean = {
-    // check whether there is a ".javaopts" file
-    val argsFile  = new File(logFile.getParentFile, fileBase + ".javaopts")
-    val argString = file2String(argsFile)
-    if (argString != "")
-      NestUI.verbose("Found javaopts file '%s', using options: '%s'".format(argsFile, argString))
-
-    val testFullPath = {
-      val d = new File(logFile.getParentFile, fileBase)
-      if (d.isDirectory) d.getAbsolutePath
-      else {
-        val f = new File(logFile.getParentFile, fileBase + ".scala")
-        if (f.isFile) f.getAbsolutePath
-        else ""
-      }
-    }
-
-    // Note! As this currently functions, JAVA_OPTS must precede argString
-    // because when an option is repeated to java only the last one wins.
-    // That means until now all the .javaopts files were being ignored because
-    // they all attempt to change options which are also defined in
-    // partest.java_opts, leading to debug output like:
-    //
-    // debug: Found javaopts file 'files/shootout/message.scala-2.javaopts', using options: '-Xss32k'
-    // debug: java -Xss32k -Xss2m -Xms256M -Xmx1024M -classpath [...]
-    val extras = if (isPartestDebug) List("-Dpartest.debug=true") else Nil
-    val propertyOptions = List(
-      "-Dfile.encoding=UTF-8",
-      "-Djava.library.path="+logFile.getParentFile.getAbsolutePath,
-      "-Dpartest.output="+outDir.getAbsolutePath,
-      "-Dpartest.lib="+LATEST_LIB,
-      "-Dpartest.reflect="+LATEST_REFLECT,
-      "-Dpartest.cwd="+outDir.getParent,
-      "-Dpartest.test-path="+testFullPath,
-      "-Dpartest.testname="+fileBase,
-      "-Djavacmd="+javaCmd,
-      "-Djavaccmd="+javacCmd,
-      "-Duser.language=en",
-      "-Duser.country=US"
-    ) ++ extras
-
-    val classpath = if (classpathPrefix != "") join(classpathPrefix, CLASSPATH) else CLASSPATH
-    val cmd = javaCmd +: (
-      (JAVA_OPTS.split(' ') ++ argString.split(' ')).map(_.trim).filter(_ != "") ++ Seq(
-        "-classpath",
-        join(outDir.toString, classpath)
-      ) ++ propertyOptions ++ Seq(
-        "scala.tools.nsc.MainGenericRunner",
-        "-usejavacp",
-        "Test",
-        "jvm"
-      )
-    )
-
-    runCommand(cmd, logFile)
-  }
-
-  private def getCheckFilePath(dir: File, suffix: String = "") = {
-    def chkFile(s: String) = (Directory(dir) / "%s%s.check".format(fileBase, s)).toFile
-
-    if (chkFile("").isFile || suffix == "") chkFile("")
-    else chkFile("-" + suffix)
-  }
-  private def getCheckFile(dir: File) = Some(getCheckFilePath(dir, kind)) filter (_.canRead)
-
-  private def compareOutput(dir: File, logFile: File): String = {
-    val checkFile = getCheckFilePath(dir, kind)
-    val diff =
-      if (checkFile.canRead) compareFiles(logFile, checkFile.jfile)
-      else file2String(logFile)
-
-    // if check file exists, compare with log file
-    if (diff != "" && fileManager.updateCheck) {
-      NestUI.verbose("Updating checkfile " + checkFile.jfile)
-      val toWrite = if (checkFile.exists) checkFile else getCheckFilePath(dir, "")
-      toWrite writeAll file2String(logFile)
-      ""
-    }
-    else diff
   }
 
   @inline private def isJava(f: File) = SFile(f) hasExtension "java"
@@ -331,17 +167,104 @@ class Worker(kind: String, val fileManager: FileManager, params: TestRunParams) 
     case e: Exception => logStackTrace(logFile, e, msg) ; value
   }
 
-  /** Runs a list of tests.
-   *
-   * @param files The list of test files
-   */
-  private def runTests(files: List[File]): Map[File, TestState] = {
-    val compileMgr = new CompileManager(fileManager)
-    fileManager.CLASSPATH += File.pathSeparator + PathSettings.scalaCheck
+  class Runner(testFile: File) {
+    var testDiff: String = ""
+    var passed: Option[Boolean] = None
 
-    // You don't default "succeeded" to true.
-    var succeeded = false
-    var errors = 0
+    val fileBase = basename(testFile.getName)
+    val logFile  = fileManager.getLogFile(testFile, kind)
+    val parent   = testFile.getParentFile
+    val outDir   = new File(parent, "%s-%s.obj".format(fileBase, kind))
+    def toDelete = if (isPartestDebug) Nil else List(
+      if (passed exists (x => x)) Some(logFile) else None,
+      if (outDir.isDirectory) Some(outDir) else None
+    ).flatten
+
+    private def createOutputDir(): File = {
+      outDir.mkdirs()
+      outDir
+    }
+
+    private def execTest(outDir: File, logFile: File, classpathPrefix: String = ""): Boolean = {
+      // check whether there is a ".javaopts" file
+      val argsFile  = new File(logFile.getParentFile, fileBase + ".javaopts")
+      val argString = file2String(argsFile)
+      if (argString != "")
+        NestUI.verbose("Found javaopts file '%s', using options: '%s'".format(argsFile, argString))
+
+      val testFullPath = {
+        val d = new File(logFile.getParentFile, fileBase)
+        if (d.isDirectory) d.getAbsolutePath
+        else {
+          val f = new File(logFile.getParentFile, fileBase + ".scala")
+          if (f.isFile) f.getAbsolutePath
+          else ""
+        }
+      }
+
+      // Note! As this currently functions, JAVA_OPTS must precede argString
+      // because when an option is repeated to java only the last one wins.
+      // That means until now all the .javaopts files were being ignored because
+      // they all attempt to change options which are also defined in
+      // partest.java_opts, leading to debug output like:
+      //
+      // debug: Found javaopts file 'files/shootout/message.scala-2.javaopts', using options: '-Xss32k'
+      // debug: java -Xss32k -Xss2m -Xms256M -Xmx1024M -classpath [...]
+      val extras = if (isPartestDebug) List("-Dpartest.debug=true") else Nil
+      val propertyOptions = List(
+        "-Dfile.encoding=UTF-8",
+        "-Djava.library.path="+logFile.getParentFile.getAbsolutePath,
+        "-Dpartest.output="+outDir.getAbsolutePath,
+        "-Dpartest.lib="+LATEST_LIB,
+        "-Dpartest.reflect="+LATEST_REFLECT,
+        "-Dpartest.cwd="+outDir.getParent,
+        "-Dpartest.test-path="+testFullPath,
+        "-Dpartest.testname="+fileBase,
+        "-Djavacmd="+javaCmd,
+        "-Djavaccmd="+javacCmd,
+        "-Duser.language=en",
+        "-Duser.country=US"
+      ) ++ extras
+
+      val classpath = if (classpathPrefix != "") join(classpathPrefix, CLASSPATH) else CLASSPATH
+      val cmd = javaCmd +: (
+        (JAVA_OPTS.split(' ') ++ argString.split(' ')).map(_.trim).filter(_ != "") ++ Seq(
+          "-classpath",
+          join(outDir.toString, classpath)
+        ) ++ propertyOptions ++ Seq(
+          "scala.tools.nsc.MainGenericRunner",
+          "-usejavacp",
+          "Test",
+          "jvm"
+        )
+      )
+
+      runCommand(cmd, logFile)
+    }
+
+    private def getCheckFilePath(dir: File, suffix: String = "") = {
+      def chkFile(s: String) = (Directory(dir) / "%s%s.check".format(fileBase, s)).toFile
+
+      if (chkFile("").isFile || suffix == "") chkFile("")
+      else chkFile("-" + suffix)
+    }
+    private def getCheckFile(dir: File) = Some(getCheckFilePath(dir, kind)) filter (_.canRead)
+
+    private def compareOutput(dir: File, logFile: File): String = {
+      val checkFile = getCheckFilePath(dir, kind)
+      val diff =
+        if (checkFile.canRead) compareFiles(logFile, checkFile.jfile)
+        else file2String(logFile)
+
+      // if check file exists, compare with log file
+      if (diff != "" && fileManager.updateCheck) {
+        NestUI.verbose("Updating checkfile " + checkFile.jfile)
+        val toWrite = if (checkFile.exists) checkFile else getCheckFilePath(dir, "")
+        toWrite writeAll file2String(logFile)
+        ""
+      }
+      else diff
+    }
 
     def newTestWriters() = {
       val swr = new StringWriter
@@ -355,41 +278,34 @@ class Worker(kind: String, val fileManager: FileManager, params: TestRunParams) 
       NestUI.verbose("scalac: compilation of "+what+" failed\n")
       false
     }
-    def diffCheck(testFile: File, diff: String) =
-      (diff == "") || ( try false finally failDiffs(testFile) = diff )
+    def diffCheck(testFile: File, diff: String) = {
+      testDiff = diff
+      testDiff == ""
+    }
 
     /** 1. Creates log file and output directory.
      *  2. Runs script function, providing log file and output directory as arguments.
      */
     def runInContext(file: File, script: (File, File) => Boolean): (Boolean, LogContext) = {
-      // When option "--failed" is provided, execute test only if log file is present
-      // (which means it failed before)
-      val logFile = createLogFile(file)
+      val (swr, wr) = newTestWriters()
+      printInfoStart(file, wr)
 
-      if (fileManager.failed && !logFile.canRead)
-        (true, LogContext(logFile))
-      else {
-        val (swr, wr) = newTestWriters()
-        printInfoStart(file, wr)
+      NestUI.verbose(this+" running test "+fileBase)
+      val outDir = createOutputDir()
+      NestUI.verbose("output directory: "+outDir)
 
-        NestUI.verbose(this+" running test "+fileBase)
-        val dir = file.getParentFile
-        val outDir = createOutputDir(dir)
-        NestUI.verbose("output directory: "+outDir)
-
-        // run test-specific code
-        val succeeded = try {
-          if (isPartestDebug) {
-            val (result, millis) = timed(script(logFile, outDir))
-            fileManager.recordTestTiming(file.getPath, millis)
-            result
-          }
-          else script(logFile, outDir)
+      // run test-specific code
+      val succeeded = try {
+        if (isPartestDebug) {
+          val (result, millis) = timed(script(logFile, outDir))
+          fileManager.recordTestTiming(file.getPath, millis)
+          result
         }
-        catch exHandler(logFile, "", false)
-
-        (succeeded, LogContext(logFile, swr, wr))
+        else script(logFile, outDir)
       }
+      catch exHandler(logFile, "", false)
+
+      (succeeded, LogContext(logFile, swr, wr))
     }
 
     def groupedFiles(dir: File): List[List[File]] = {
@@ -475,33 +391,29 @@ class Worker(kind: String, val fileManager: FileManager, params: TestRunParams) 
     }
 
     def runAntTest(file: File): (Boolean, LogContext) = {
-      val logFile = createLogFile(file)
-      if (!fileManager.failed || logFile.canRead) {
-        val (swr, wr) = newTestWriters()
-        printInfoStart(file, wr)
+      val (swr, wr) = newTestWriters()
+      printInfoStart(file, wr)
 
-        NestUI.verbose(this+" running test "+fileBase)
+      NestUI.verbose(this+" running test "+fileBase)
 
-        val succeeded = try {
-          val binary = "-Dbinary="+(
-            if      (fileManager.LATEST_LIB endsWith "build/quick/classes/library") "quick"
-            else if (fileManager.LATEST_LIB endsWith "build/pack/lib/scala-library.jar") "pack"
-            else if (fileManager.LATEST_LIB endsWith "dists/latest/lib/scala-library.jar/") "latest"
-            else "installed"
-          )
-          val args = Array(binary, "-logfile", logFile.path, "-file", file.path)
-          NestUI.verbose("ant "+args.mkString(" "))
-          ant(args, logFile) && diffCheck(file, compareOutput(file.getParentFile, logFile))
-        }
-        catch { // *catch-all*
-          case e: Exception =>
-            NestUI.verbose("caught "+e)
-            false
-        }
-
-        (succeeded, LogContext(logFile, swr, wr))
+      val succeeded = try {
+        val binary = "-Dbinary="+(
+          if      (fileManager.LATEST_LIB endsWith "build/quick/classes/library") "quick"
+          else if (fileManager.LATEST_LIB endsWith "build/pack/lib/scala-library.jar") "pack"
+          else if (fileManager.LATEST_LIB endsWith "dists/latest/lib/scala-library.jar/") "latest"
+          else "installed"
+        )
+        val args = Array(binary, "-logfile", logFile.path, "-file", file.path)
+        NestUI.verbose("ant "+args.mkString(" "))
+        ant(args, logFile) && diffCheck(file, compareOutput(file.getParentFile, logFile))
       }
-      else (true, LogContext(logFile))
+      catch { // *catch-all*
+        case e: Exception =>
+          NestUI.verbose("caught "+e)
+          false
+      }
+
+      (succeeded, LogContext(logFile, swr, wr))
     }
 
     def runSpecializedTest(file: File): (Boolean, LogContext) =
@@ -530,11 +442,7 @@ class Worker(kind: String, val fileManager: FileManager, params: TestRunParams) 
           NestUI.verbose(file2String(logFile))
           // obviously this must be improved upon
           val lines = SFile(logFile).lines map (_.trim) filterNot (_ == "") toBuffer;
-          if (lines forall (x => !x.startsWith("!"))) {
-            NestUI.verbose("test for '" + file + "' success: " + succeeded)
-            true
-          }
-          else {
+          lines.forall(x => !x.startsWith("!")) || {
             NestUI.normal("ScalaCheck test failed. Output:\n")
             lines foreach (x => NestUI.normal(x + "\n"))
             false
@@ -574,10 +482,6 @@ class Worker(kind: String, val fileManager: FileManager, params: TestRunParams) 
         runAntTest(file)
 
       case "buildmanager" =>
-        val logFile = createLogFile(file)
-        if (fileManager.failed && !logFile.canRead)
-          return (true, LogContext(logFile))
-
         val (swr, wr) = newTestWriters()
         printInfoStart(file, wr)
         val (outDir, testFile, changesDir) = {
@@ -585,7 +489,7 @@ class Worker(kind: String, val fileManager: FileManager, params: TestRunParams) 
             (null, null, null)
           else {
             NestUI.verbose(this+" running test "+fileBase)
-            val outDir = createOutputDir(file)
+            val outDir = createOutputDir()
             val testFile = new File(file, fileBase + ".test")
             val changesDir = new File(file, fileBase + ".changes")
 
@@ -696,19 +600,12 @@ class Worker(kind: String, val fileManager: FileManager, params: TestRunParams) 
           // simulate resident compiler loop
           val prompt = "\nnsc> "
 
-          // when option "--failed" is provided
-          // execute test only if log file is present
-          // (which means it failed before)
-          val logFile = createLogFile(file)
-          if (fileManager.failed && !logFile.canRead)
-            return (true, LogContext(logFile))
-
           val (swr, wr) = newTestWriters()
           printInfoStart(file, wr)
 
           NestUI.verbose(this+" running test "+fileBase)
           val dir = file.getParentFile
-          val outDir = createOutputDir(dir)
+          val outDir = createOutputDir()
           val resFile = new File(dir, fileBase + ".res")
           NestUI.verbose("outDir:  "+outDir)
           NestUI.verbose("logFile: "+logFile)
@@ -771,19 +668,11 @@ class Worker(kind: String, val fileManager: FileManager, params: TestRunParams) 
         }
 
       case "shootout" =>
-        // when option "--failed" is provided
-        // execute test only if log file is present
-        // (which means it failed before)
-        val logFile = createLogFile(file)
-        if (fileManager.failed && !logFile.canRead)
-          return (true, LogContext(logFile))
-
         val (swr, wr) = newTestWriters()
         printInfoStart(file, wr)
 
         NestUI.verbose(this+" running test "+fileBase)
-        val dir = file.getParentFile
-        val outDir = createOutputDir(dir)
+        val outDir = createOutputDir()
 
         // 2. define file {outDir}/test.scala that contains code to compile/run
         val testFile = new File(outDir, "test.scala")
@@ -792,8 +681,8 @@ class Worker(kind: String, val fileManager: FileManager, params: TestRunParams) 
         NestUI.verbose("testFile: "+testFile)
 
         // 3. cat {test}.scala.runner {test}.scala > testFile
-        val runnerFile = new File(dir, fileBase+".scala.runner")
-        val bodyFile   = new File(dir, fileBase+".scala")
+        val runnerFile = new File(parent, fileBase+".scala.runner")
+        val bodyFile   = new File(parent, fileBase+".scala")
         SFile(testFile).writeAll(
           file2String(runnerFile),
           file2String(bodyFile)
@@ -805,7 +694,7 @@ class Worker(kind: String, val fileManager: FileManager, params: TestRunParams) 
         val result = ok && {
           execTest(outDir, logFile) && {
             NestUI.verbose(this+" finished running "+fileBase)
-            diffCheck(file, compareOutput(dir, logFile))
+            diffCheck(file, compareOutput(parent, logFile))
           }
         }
 
@@ -847,13 +736,6 @@ class Worker(kind: String, val fileManager: FileManager, params: TestRunParams) 
         })
 
       case "script" =>
-        // when option "--failed" is provided
-        // execute test only if log file is present
-        // (which means it failed before)
-        val logFile = createLogFile(file)
-        if (fileManager.failed && !logFile.canRead)
-          return (true, LogContext(logFile))
-
         val (swr, wr) = newTestWriters()
         printInfoStart(file, wr)
 
@@ -880,70 +762,52 @@ class Worker(kind: String, val fileManager: FileManager, params: TestRunParams) 
         (succeeded, LogContext(logFile, swr, wr))
     }
 
-    def reportResult(testFile: File, state: TestState, logFile: File, writers: Option[(StringWriter, PrintWriter)]) {
-      if (state.isOk) {
-        // add logfile from deletion list if test passed
-        if (logFile != null)
-          toDelete += logFile
+    private def crashContext(t: Throwable): LogContext = {
+      try {
+        logStackTrace(logFile, t, "Possible compiler crash during test of: " + testFile + "\n")
+        LogContext(logFile)
       }
-      else {
-        errors += 1
-        NestUI.verbose("incremented errors: "+errors)
-      }
+      catch { case t => LogContext(null) }
+    }
 
+    def run(): (Boolean, LogContext) = {
+      val result = try processSingleFile(testFile) catch { case t => (false, crashContext(t)) }
+      passed = Some(result._1)
+      result
+    }
+
+    def reportResult(writers: Option[(StringWriter, PrintWriter)]) {
       writers foreach { case (swr, wr) =>
-        if (state.isTimeout) printInfoTimeout(wr)
-        else printInfoEnd(state.isOk, wr)
+        if (passed.isEmpty) printInfoTimeout(wr)
+        else printInfoEnd(passed.get, wr)
         wr.flush()
         swr.flush()
         NestUI.normal(swr.toString)
 
-        if (state.isFail) {
+        if (passed exists (x => !x)) {
           if (fileManager.showDiff || isPartestDebug)
-            failDiffs get testFile foreach (NestUI normal _)
+            NestUI.normal(testDiff)
           else if (fileManager.showLog)
             showLog(logFile)
         }
       }
-      cleanup()
+      toDelete foreach (_.deleteRecursively())
     }
+  }
 
-    def runNext(testFile: File): (Boolean, LogContext) = {
-      // System.out.println("runNext(" + testFile + ")")
-      currentTestFile = testFile
+  def runTest(testFile: File): TestState = {
+    val runner = new Runner(testFile)
+    // when option "--failed" is provided execute test only if log
+    // is present (which means it failed before)
+    if (fileManager.failed && !runner.logFile.canRead)
+      return TestState.Ok
 
-      try processSingleFile(testFile)
-      catch { case t =>
-        val ctx = try {
-          val logFile = createLogFile(testFile)
-          logStackTrace(logFile, t, "Possible compiler crash during test of: " + testFile + "\n")
-          LogContext(logFile)
-        }
-        catch { case t => LogContext(null) }
+    // sys addShutdownHook cleanup()
+    val ((success, ctx), elapsed) = timed(runner.run())
+    val state                     = if (success) TestState.Ok else TestState.Fail
 
-        (false, ctx)
-      }
-    }
-
-    val statuses = files map { file =>
-      def dummyCtx = {
-        val swr = new StringWriter
-        val wr  = new PrintWriter(swr, true)
-        printInfoStart(file, wr)
-        new LogContext(null, Some((swr, wr)))
-      }
-      val future                    = executor submit callable(timed(runNext(file)))
-      val result                    = try future.get(10, TimeUnit.MINUTES) catch { case _: TimeoutException => null }
-      val timedOut                  = result == null
-      val ((success, ctx), elapsed) = if (timedOut) ((false, dummyCtx), 1000 * 60 * 10) else future.get
-      val state                     = if (timedOut) TestState.Timeout else if (success) TestState.Ok else TestState.Fail
-
-      reportResult(file, state, ctx.file, ctx.writers)
-      file -> state
-    }
-
-    timer.cancel()
-    statuses.toMap
+    runner.reportResult(ctx.writers)
+    state
   }
 
   private def filesToSet(pre: String, fs: List[String]): Set[AbstractFile] =
