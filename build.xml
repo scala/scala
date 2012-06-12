@@ -467,7 +467,7 @@ LOCAL DEPENDENCY (Adapted ASM)
 <!-- ===========================================================================
 LOCAL DEPENDENCY (FORKJOIN)
 ============================================================================ -->
-  <target name="forkjoin.start" depends="init, init.testjava6">
+  <target name="forkjoin.start" depends="init">
     <uptodate property="forkjoin.available" targetfile="${build-libs.dir}/forkjoin.complete">
       <srcfiles dir="${src.dir}/forkjoin">
         <include name="**/*.java"/>
