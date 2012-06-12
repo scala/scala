@@ -177,20 +177,20 @@ object ScalaBuild extends Build with Layers {
   }
 
   // Locker is a lockable Scala compiler that can be built of 'current' source to perform rapid development.
-  lazy val (lockerLib, lockerComp) = makeLayer("locker", STARR, autoLock = true)
-  lazy val locker = Project("locker", file(".")) aggregate(lockerLib, lockerComp)
+  lazy val (lockerLib, lockerReflect, lockerComp) = makeLayer("locker", STARR, autoLock = true)
+  lazy val locker = Project("locker", file(".")) aggregate(lockerLib, lockerReflect, lockerComp)
 
   // Quick is the general purpose project layer for the Scala compiler.
-  lazy val (quickLib, quickComp) = makeLayer("quick", makeScalaReference("locker", lockerLib, lockerComp))
-  lazy val quick = Project("quick", file(".")) aggregate(quickLib, quickComp)
+  lazy val (quickLib, quickReflect, quickComp) = makeLayer("quick", makeScalaReference("locker", lockerLib, lockerReflect, lockerComp))
+  lazy val quick = Project("quick", file(".")) aggregate(quickLib, quickReflect, quickComp)
 
   // Reference to quick scala instance.
-  lazy val quickScalaInstance = makeScalaReference("quick", quickLib, quickComp)
+  lazy val quickScalaInstance = makeScalaReference("quick", quickLib, quickReflect, quickComp)
   def quickScalaLibraryDependency = unmanagedClasspath in Compile <++= (exportedProducts in quickLib in Compile).identity
   def quickScalaCompilerDependency = unmanagedClasspath in Compile <++= (exportedProducts in quickComp in Compile).identity
 
   // Strapp is used to test binary 'sameness' between things built with locker and things built with quick.
-  lazy val (strappLib, strappComp) = makeLayer("strapp", quickScalaInstance)
+  lazy val (strappLib, strappReflect, strappComp) = makeLayer("strapp", quickScalaInstance)
 
   // --------------------------------------------------------------
   //  Projects dependent on layered compilation (quick)
@@ -282,6 +282,8 @@ object ScalaBuild extends Build with Layers {
   )
   lazy val scalaLibrary = Project("scala-library", file(".")) settings(publishSettings:_*) settings(scalaLibArtifactSettings:_*)
 
+  // TODO - Real Reflect instance
+
   // --------------------------------------------------------------
   //  Real Compiler Artifact
   // --------------------------------------------------------------
@@ -297,7 +299,7 @@ object ScalaBuild extends Build with Layers {
     target <<= (baseDirectory, name) apply (_ / "target" / _)
   )
   lazy val scalaCompiler = Project("scala-compiler", file(".")) settings(publishSettings:_*) settings(scalaBinArtifactSettings:_*) dependsOn(scalaLibrary)
-  lazy val fullQuickScalaReference = makeScalaReference("pack", scalaLibrary, scalaCompiler)
+  lazy val fullQuickScalaReference = makeScalaReference("pack", scalaLibrary, quickReflect, scalaCompiler)
 
   // --------------------------------------------------------------
   //  Testing
@@ -341,7 +343,7 @@ object ScalaBuild extends Build with Layers {
   
   // TODO - Migrate this into the dist project.
   // Scaladocs
-  def distScalaInstance = makeScalaReference("dist", scalaLibrary, scalaCompiler)
+  def distScalaInstance = makeScalaReference("dist", scalaLibrary, quickReflect, scalaCompiler)
   lazy val documentationSettings: Seq[Setting[_]] = dependentProjectSettings ++ Seq(
     // TODO - Make these work for realz.
     defaultExcludes in unmanagedSources in Compile := ((".*"  - ".") || HiddenFileFilter ||
