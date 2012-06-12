@@ -53,7 +53,7 @@ abstract class GenASM extends SubComponent with BytecodeWriters {
     override def erasedTypes = true
     def apply(cls: IClass) = sys.error("no implementation")
 
-    val BeanInfoAttr = definitions.getRequiredClass("scala.beans.BeanInfo")
+    val BeanInfoAttr = rootMirror.getRequiredClass("scala.beans.BeanInfo")
 
     def isJavaEntryPoint(icls: IClass) = {
       val sym = icls.symbol
@@ -283,12 +283,16 @@ abstract class GenASM extends SubComponent with BytecodeWriters {
       && !sym.isMutable // lazy vals and vars both
     )
 
+    // Primitives are "abstract final" to prohibit instantiation
+    // without having to provide any implementations, but that is an
+    // illegal combination of modifiers at the bytecode level so
+    // suppress final if abstract if present.
     import asm.Opcodes._
     mkFlags(
       if (privateFlag) ACC_PRIVATE else ACC_PUBLIC,
       if (sym.isDeferred || sym.hasAbstractFlag) ACC_ABSTRACT else 0,
       if (sym.isInterface) ACC_INTERFACE else 0,
-      if (finalFlag) ACC_FINAL else 0,
+      if (finalFlag && !sym.hasAbstractFlag) ACC_FINAL else 0,
       if (sym.isStaticMember) ACC_STATIC else 0,
       if (sym.isBridge) ACC_BRIDGE | ACC_SYNTHETIC else 0,
       if (sym.isClass && !sym.isInterface) ACC_SUPER else 0,
@@ -341,8 +345,8 @@ abstract class GenASM extends SubComponent with BytecodeWriters {
   def inameToSymbol(iname: String): Symbol = {
     val name = global.newTypeName(iname)
     val res0 =
-      if (nme.isModuleName(name)) definitions.getModule(nme.stripModuleSuffix(name))
-      else                        definitions.getClassByName(name.replace('/', '.')) // TODO fails for inner classes (but this hasn't been tested).
+      if (nme.isModuleName(name)) rootMirror.getModule(nme.stripModuleSuffix(name))
+      else                        rootMirror.getClassByName(name.replace('/', '.')) // TODO fails for inner classes (but this hasn't been tested).
     assert(res0 != NoSymbol)
     val res = jsymbol(res0)
     res
@@ -1176,8 +1180,8 @@ abstract class GenASM extends SubComponent with BytecodeWriters {
      */
     private val androidFieldName = newTermName("CREATOR")
 
-    private lazy val AndroidParcelableInterface = definitions.getClassIfDefined("android.os.Parcelable")
-    private lazy val AndroidCreatorClass        = definitions.getClassIfDefined("android.os.Parcelable$Creator")
+    private lazy val AndroidParcelableInterface = rootMirror.getClassIfDefined("android.os.Parcelable")
+    private lazy val AndroidCreatorClass        = rootMirror.getClassIfDefined("android.os.Parcelable$Creator")
 
     def isAndroidParcelableClass(sym: Symbol) =
       (AndroidParcelableInterface != NoSymbol) &&
@@ -1396,7 +1400,7 @@ abstract class GenASM extends SubComponent with BytecodeWriters {
       // typestate: entering mode with valid call sequences:
       //   ( visitInnerClass | visitField | visitMethod )* visitEnd
 
-      if (isStaticModule(c.symbol) || serialVUID != None || isParcelableClass) {
+      if (isStaticModule(c.symbol) || isParcelableClass) {
 
         if (isStaticModule(c.symbol)) { addModuleInstanceField() }
         addStaticInit(c.lookupStaticCtor)
@@ -1422,6 +1426,18 @@ abstract class GenASM extends SubComponent with BytecodeWriters {
           }
         }
 
+      }
+
+      // add static serialVersionUID field if `clasz` annotated with `@SerialVersionUID(uid: Long)`
+      serialVUID foreach { value =>
+        val fieldName = "serialVersionUID"
+        jclass.visitField(
+          PublicStaticFinal,
+          fieldName,
+          tdesc_long,
+          null, // no java-generic-signature
+          value
+        ).visitEnd()
       }
 
       clasz.fields  foreach genField
@@ -1646,15 +1662,6 @@ abstract class GenASM extends SubComponent with BytecodeWriters {
             lastBlock emit CALL_METHOD(m.symbol.enclClass.primaryConstructor, Static(true))
           }
 
-          // add serialVUID code
-          serialVUID foreach { value =>
-            val fieldName   = "serialVersionUID"
-            val fieldSymbol = clasz.symbol.newValue(newTermName(fieldName), NoPosition, Flags.STATIC | Flags.FINAL) setInfo LongClass.tpe
-            clasz addField new IField(fieldSymbol)
-            lastBlock emit CONSTANT(Constant(value))
-            lastBlock emit STORE_FIELD(fieldSymbol, true)
-          }
-
           if (isParcelableClass) { addCreatorCode(lastBlock) }
 
           lastBlock emit RETURN(UNIT)
@@ -1683,17 +1690,6 @@ abstract class GenASM extends SubComponent with BytecodeWriters {
         clinit.visitTypeInsn(asm.Opcodes.NEW, thisName)
         clinit.visitMethodInsn(asm.Opcodes.INVOKESPECIAL,
                                thisName, INSTANCE_CONSTRUCTOR_NAME, mdesc_arglessvoid)
-      }
-
-      serialVUID foreach { value =>
-        val fieldName = "serialVersionUID"
-        jclass.visitField(
-          PublicStaticFinal,
-          fieldName,
-          tdesc_long,
-          null, // no java-generic-signature
-          value // TODO confirm whether initial value here is behaviorally equiv to fjbg's emitPUSH emitPUTSTATIC
-        ).visitEnd()
       }
 
       if (isParcelableClass) { legacyAddCreatorCode(clinit) }

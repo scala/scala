@@ -6,7 +6,7 @@ package scala.tools.nsc
 package interactive
 
 import scala.concurrent.SyncVar
-import scala.tools.nsc.util._
+import scala.reflect.internal.util._
 import scala.tools.nsc.symtab._
 import scala.tools.nsc.ast._
 import scala.tools.nsc.reporters._
@@ -141,7 +141,7 @@ object REPL {
      */
     def compileInstrumented(iSourceName: String, arguments: List[String]): Option[AbstractFile] = {
       println("compiling "+iSourceName)
-      val command = new CompilerCommand(iSourceName :: arguments, reporter.error(scala.tools.nsc.util.NoPosition, _))
+      val command = new CompilerCommand(iSourceName :: arguments, reporter.error(scala.reflect.internal.util.NoPosition, _))
       val virtualDirectoryOpt =
         if (arguments contains "-d")
           None

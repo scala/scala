@@ -12,6 +12,7 @@ import scala.collection.{ Seq, IndexedSeq, TraversableView, AbstractIterator }
 import scala.collection.mutable.WrappedArray
 import scala.collection.immutable.{ StringLike, NumericRange, List, Stream, Nil, :: }
 import scala.collection.generic.{ Sorted }
+import scala.reflect.{ ClassTag, classTag }
 import scala.util.control.ControlThrowable
 import scala.xml.{ Node, MetaData }
 
@@ -59,8 +60,7 @@ object ScalaRunTime {
    */
   def arrayElementClass(schematic: Any): Class[_] = schematic match {
     case cls: Class[_] => cls.getComponentType
-    case tag: ClassTag[_] => tag.erasure
-    case tag: ArrayTag[_] => tag.newArray(0).getClass.getComponentType
+    case tag: ClassTag[_] => tag.runtimeClass
     case _ => throw new UnsupportedOperationException("unsupported schematic %s (%s)".format(schematic, if (schematic == null) "null" else schematic.getClass))
   }
 
@@ -69,7 +69,7 @@ object ScalaRunTime {
    *  rewrites expressions like 5.getClass to come here.
    */
   def anyValClass[T <: AnyVal : ClassTag](value: T): Class[T] =
-    classTag[T].erasure.asInstanceOf[Class[T]]
+    classTag[T].runtimeClass.asInstanceOf[Class[T]]
 
   /** Retrieve generic array element */
   def array_apply(xs: AnyRef, idx: Int): Any = xs match {
@@ -199,7 +199,7 @@ object ScalaRunTime {
   def _toString(x: Product): String =
     x.productIterator.mkString(x.productPrefix + "(", ",", ")")
 
-  def _hashCode(x: Product): Int = scala.util.MurmurHash3.productHash(x)
+  def _hashCode(x: Product): Int = scala.util.hashing.MurmurHash3.productHash(x)
 
   /** A helper for case classes. */
   def typedProductIterator[T](x: Product): Iterator[T] = {

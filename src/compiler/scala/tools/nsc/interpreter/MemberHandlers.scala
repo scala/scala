@@ -115,7 +115,11 @@ trait MemberHandlers {
           if (mods.isLazy) codegenln(false, "<lazy>")
           else any2stringOf(req fullPath name, maxStringElements)
 
-        """ + "%s: %s = " + %s""".format(prettyName, string2code(req typeOf name), resultString)
+        val vidString =
+          if (replProps.vids) """" + " @ " + "%%8x".format(System.identityHashCode(%s)) + " """.trim.format(req fullPath name)
+          else ""
+
+        """ + "%s%s: %s = " + %s""".format(prettyName, vidString, string2code(req typeOf name), resultString)
       }
     }
   }

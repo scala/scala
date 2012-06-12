@@ -1,0 +1,5 @@
+TypeRef(ThisType(class immutable),class List,List(TypeRef(ThisType(class scala),class Int,List())))
+List[Int]
+TypeRef(ThisType(class immutable),class Map,List(TypeRef(ThisType(class lang),class String,List()), TypeRef(ThisType(class lang),class String,List())))
+scala.collection.immutable.Map[java.lang.String,java.lang.String]
+TypeTag[TypeRef(ThisType(class immutable),class Map,List(TypeRef(ThisType(class lang),class String,List()), TypeRef(ThisType(class lang),class String,List())))]

@@ -1,0 +1,4 @@
+interop_classmanifests_arenot_typetags.scala:5: error: No TypeTag available for T
+    println(implicitly[TypeTag[T]])
+                      ^
+one error found

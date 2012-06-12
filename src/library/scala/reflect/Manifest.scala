@@ -9,7 +9,6 @@
 package scala.reflect
 
 import scala.collection.mutable.{ ArrayBuilder, WrappedArray }
-import mirror._
 
 /** A `Manifest[T]` is an opaque descriptor for type T.  Its supported use
  *  is to give access to the erasure of the type as a `Class` instance, as
@@ -40,7 +39,7 @@ import mirror._
  *
  */
 @annotation.implicitNotFound(msg = "No Manifest available for ${T}.")
-@deprecated("Use `@scala.reflect.ConcreteTypeTag` instead", "2.10.0")
+@deprecated("Use TypeTag instead", "2.10.0")
 trait Manifest[T] extends ClassManifest[T] with Equals {
   override def typeArguments: List[Manifest[_]] = Nil
 
@@ -77,7 +76,7 @@ abstract class AnyValManifest[T <: AnyVal](override val toString: String) extend
  *  It is intended for use by the compiler and should not be used
  *  in client code.
  */
-@deprecated("Use `@scala.reflect.ConcreteTypeTag` instead", "2.10.0")
+@deprecated("Use TypeTag instead", "2.10.0")
 object Manifest {
   def valueManifests: List[AnyValManifest[_]] =
     List(Byte, Short, Char, Int, Long, Float, Double, Boolean, Unit)

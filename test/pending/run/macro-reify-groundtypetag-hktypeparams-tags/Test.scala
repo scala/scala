@@ -1,9 +1,9 @@
-import scala.reflect.mirror._
+import scala.reflect.runtime.universe._
 
 object Test extends App {
-  def fooTypeTagHK[C[_]: ConcreteTypeTag, T: ConcreteTypeTag] = {
-    println(implicitly[ConcreteTypeTag[C[T]]])
-    println(implicitly[ConcreteTypeTag[List[C[T]]]])
+  def fooTypeTagHK[C[_]: TypeTag, T: TypeTag] = {
+    println(implicitly[TypeTag[C[T]]])
+    println(implicitly[TypeTag[List[C[T]]]])
   }
   fooTypeTagHK[List, Int]
 }

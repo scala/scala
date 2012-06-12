@@ -53,7 +53,7 @@ if [ -z "$EXT_CLASSPATH" ] ; then
             fi
         done
     elif [ -f "$SCALA_HOME/build/pack/lib/scala-partest.jar" ] ; then
-        for lib in `echo "partest library compiler"`; do
+        for lib in `echo "partest library reflect compiler"`; do
             ext="$SCALA_HOME/build/pack/lib/scala-$lib.jar"
             if [ -z "$EXT_CLASSPATH" ] ; then
                 EXT_CLASSPATH="$ext"

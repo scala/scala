@@ -13,6 +13,7 @@ object SBTRunner extends DirectRunner {
     var JAVAC_CMD: String      = "javac"
     var CLASSPATH: String      = _
     var LATEST_LIB: String     = _
+    var LATEST_REFLECT: String = _
     var LATEST_COMP: String     = _
     var LATEST_PARTEST: String     = _
     var LATEST_ACTORS: String     = _
@@ -63,6 +64,7 @@ object SBTRunner extends DirectRunner {
     }
     // Find scala library jar file...
     fileManager.LATEST_LIB = findClasspath("scala-library", "scala-library") getOrElse sys.error("No scala-library found! Classpath = " + fileManager.CLASSPATH)
+    fileManager.LATEST_REFLECT = findClasspath("scala-reflect", "scala-reflect") getOrElse sys.error("No scala-reflect found! Classpath = " + fileManager.CLASSPATH)
     fileManager.LATEST_COMP = findClasspath("scala-compiler", "scala-compiler") getOrElse sys.error("No scala-compiler found! Classpath = " + fileManager.CLASSPATH)
     fileManager.LATEST_PARTEST = findClasspath("scala-partest", "partest") getOrElse sys.error("No scala-partest found! Classpath = " + fileManager.CLASSPATH)
     fileManager.LATEST_ACTORS = findClasspath("scala-actors", "actors") getOrElse sys.error("No scala-actors found! Classpath = " + fileManager.CLASSPATH)

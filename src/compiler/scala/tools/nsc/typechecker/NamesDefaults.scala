@@ -9,6 +9,7 @@ package typechecker
 import symtab.Flags._
 import scala.collection.mutable
 import scala.ref.WeakReference
+import scala.reflect.ClassTag
 
 /**
  *  @author Lukas Rytz
@@ -39,14 +40,14 @@ trait NamesDefaults { self: Analyzer =>
   def isNamed(arg: Tree) = nameOf(arg).isDefined
 
   /** @param pos maps indices from old to new */
-  def reorderArgs[T: ArrayTag](args: List[T], pos: Int => Int): List[T] = {
+  def reorderArgs[T: ClassTag](args: List[T], pos: Int => Int): List[T] = {
     val res = new Array[T](args.length)
     foreachWithIndex(args)((arg, index) => res(pos(index)) = arg)
     res.toList
   }
 
   /** @param pos maps indices from new to old (!) */
-  def reorderArgsInv[T: ArrayTag](args: List[T], pos: Int => Int): List[T] = {
+  def reorderArgsInv[T: ClassTag](args: List[T], pos: Int => Int): List[T] = {
     val argsArray = args.toArray
     (argsArray.indices map (i => argsArray(pos(i)))).toList
   }
@@ -376,7 +377,7 @@ trait NamesDefaults { self: Analyzer =>
    */
   def addDefaults(givenArgs: List[Tree], qual: Option[Tree], targs: List[Tree],
                   previousArgss: List[List[Tree]], params: List[Symbol],
-                  pos: util.Position, context: Context): (List[Tree], List[Symbol]) = {
+                  pos: scala.reflect.internal.util.Position, context: Context): (List[Tree], List[Symbol]) = {
     if (givenArgs.length < params.length) {
       val (missing, positional) = missingParams(givenArgs, params)
       if (missing forall (_.hasDefault)) {

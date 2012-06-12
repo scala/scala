@@ -19,7 +19,7 @@
     <orderEntry type="sourceFolder" forTests="false" />
     <orderEntry type="module" module-name="library" />
     <orderEntry type="library" name="lib" level="project" />
+    <orderEntry type="module" module-name="reflect" />
     <orderEntry type="library" name="ant" level="application" />
   </component>
 </module>
-

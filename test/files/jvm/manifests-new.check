@@ -1,38 +1,38 @@
-x=(), t=ConcreteTypeTag[Unit], k=TypeRef, s=class Unit
-x=true, t=ConcreteTypeTag[Boolean], k=TypeRef, s=class Boolean
-x=a, t=ConcreteTypeTag[Char], k=TypeRef, s=class Char
-x=1, t=ConcreteTypeTag[Int], k=TypeRef, s=class Int
-x=abc, t=ConcreteTypeTag[String], k=TypeRef, s=class String
-x='abc, t=ConcreteTypeTag[Symbol], k=TypeRef, s=class Symbol
+x=(), t=TypeTag[Unit], k=TypeRef, s=class Unit
+x=true, t=TypeTag[Boolean], k=TypeRef, s=class Boolean
+x=a, t=TypeTag[Char], k=TypeRef, s=class Char
+x=1, t=TypeTag[Int], k=TypeRef, s=class Int
+x=abc, t=TypeTag[java.lang.String], k=TypeRef, s=class String
+x='abc, t=TypeTag[Symbol], k=TypeRef, s=class Symbol
 
-x=List(()), t=ConcreteTypeTag[List[Unit]], k=TypeRef, s=class List
-x=List(true), t=ConcreteTypeTag[List[Boolean]], k=TypeRef, s=class List
-x=List(1), t=ConcreteTypeTag[List[Int]], k=TypeRef, s=class List
-x=List(abc), t=ConcreteTypeTag[List[String]], k=TypeRef, s=class List
-x=List('abc), t=ConcreteTypeTag[List[Symbol]], k=TypeRef, s=class List
+x=List(()), t=TypeTag[List[Unit]], k=TypeRef, s=class List
+x=List(true), t=TypeTag[List[Boolean]], k=TypeRef, s=class List
+x=List(1), t=TypeTag[List[Int]], k=TypeRef, s=class List
+x=List(abc), t=TypeTag[List[java.lang.String]], k=TypeRef, s=class List
+x=List('abc), t=TypeTag[List[Symbol]], k=TypeRef, s=class List
 
-x=[Z, t=ConcreteTypeTag[Array[Boolean]], k=TypeRef, s=class Array
-x=[C, t=ConcreteTypeTag[Array[Char]], k=TypeRef, s=class Array
-x=[I, t=ConcreteTypeTag[Array[Int]], k=TypeRef, s=class Array
-x=[Ljava.lang.String;, t=ConcreteTypeTag[Array[String]], k=TypeRef, s=class Array
-x=[Lscala.Symbol;, t=ConcreteTypeTag[Array[Symbol]], k=TypeRef, s=class Array
+x=[Z, t=TypeTag[Array[Boolean]], k=TypeRef, s=class Array
+x=[C, t=TypeTag[Array[Char]], k=TypeRef, s=class Array
+x=[I, t=TypeTag[Array[Int]], k=TypeRef, s=class Array
+x=[Ljava.lang.String;, t=TypeTag[Array[java.lang.String]], k=TypeRef, s=class Array
+x=[Lscala.Symbol;, t=TypeTag[Array[Symbol]], k=TypeRef, s=class Array
 
-x=((),()), t=ConcreteTypeTag[(Unit, Unit)], k=TypeRef, s=class Tuple2
-x=(true,false), t=ConcreteTypeTag[(Boolean, Boolean)], k=TypeRef, s=class Tuple2
-x=(1,2), t=ConcreteTypeTag[(Int, Int)], k=TypeRef, s=class Tuple2
-x=(abc,xyz), t=ConcreteTypeTag[(String, String)], k=TypeRef, s=class Tuple2
-x=('abc,'xyz), t=ConcreteTypeTag[(Symbol, Symbol)], k=TypeRef, s=class Tuple2
+x=((),()), t=TypeTag[(Unit, Unit)], k=TypeRef, s=class Tuple2
+x=(true,false), t=TypeTag[(Boolean, Boolean)], k=TypeRef, s=class Tuple2
+x=(1,2), t=TypeTag[(Int, Int)], k=TypeRef, s=class Tuple2
+x=(abc,xyz), t=TypeTag[(java.lang.String, java.lang.String)], k=TypeRef, s=class Tuple2
+x=('abc,'xyz), t=TypeTag[(Symbol, Symbol)], k=TypeRef, s=class Tuple2
 
-x=Test$, t=ConcreteTypeTag[Test.type], k=SingleType, s=object Test
-x=scala.collection.immutable.List$, t=ConcreteTypeTag[scala.collection.immutable.List.type], k=SingleType, s=object List
+x=Test$, t=TypeTag[Test.type], k=SingleType, s=object Test
+x=scala.collection.immutable.List$, t=TypeTag[scala.collection.immutable.List.type], k=SingleType, s=object List
 
-x=Foo, t=ConcreteTypeTag[Foo[Int]], k=TypeRef, s=class Foo
-x=Foo, t=ConcreteTypeTag[Foo[List[Int]]], k=TypeRef, s=class Foo
-x=Foo, t=ConcreteTypeTag[Foo[Foo[Int]]], k=TypeRef, s=class Foo
-x=Foo, t=ConcreteTypeTag[Foo[List[Foo[Int]]]], k=TypeRef, s=class Foo
+x=Foo, t=TypeTag[Foo[Int]], k=TypeRef, s=class Foo
+x=Foo, t=TypeTag[Foo[List[Int]]], k=TypeRef, s=class Foo
+x=Foo, t=TypeTag[Foo[Foo[Int]]], k=TypeRef, s=class Foo
+x=Foo, t=TypeTag[Foo[List[Foo[Int]]]], k=TypeRef, s=class Foo
 
-x=Test1$$anon$1, t=ConcreteTypeTag[Bar[String]], k=RefinedType, s=<local Test1>
-x=Test1$$anon$2, t=ConcreteTypeTag[Bar[String]], k=RefinedType, s=<local Test1>
+x=Test1$$anon$1, t=TypeTag[Bar[java.lang.String]], k=RefinedType, s=<local Test1>
+x=Test1$$anon$2, t=TypeTag[Bar[java.lang.String]], k=RefinedType, s=<local Test1>
 
 ()=()
 true=true

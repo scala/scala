@@ -1,3 +1,4 @@
+import scala.reflect.{ClassTag, classTag}
 import java.{ lang => jl }
 
 trait T[A] {
@@ -10,7 +11,7 @@ class Arr {
   def arr1(xs: Array[Int]): List[Int] = xs.toList
   def arr2(xs: Array[jl.Character]): List[jl.Character] = xs.toList
   def arr3(xss: Array[Array[Float]]): Array[Float] = xss map (_.sum)
-  def arr4[T: ArrayTag](xss: Array[Array[T]]): Array[T] = xss map (_.head)
+  def arr4[T: ClassTag](xss: Array[Array[T]]): Array[T] = xss map (_.head)
 }
 
 object Test {

@@ -6,15 +6,12 @@ trait Names {
 
   lazy val freshNameCreator = callsiteTyper.context.unit.fresh
 
-  def fresh(): String = {
+  def fresh(): String =
     freshNameCreator.newName()
-  }
 
-  def fresh(name: String): String = {
+  def fresh(name: String): String =
     freshNameCreator.newName(name)
-  }
 
-  def fresh(name: Name): Name = {
-    name.mapName(freshNameCreator.newName(_))
-  }
+  def fresh[NameType <: Name](name: NameType): NameType =
+    name.mapName(freshNameCreator.newName(_)).asInstanceOf[NameType]
 }

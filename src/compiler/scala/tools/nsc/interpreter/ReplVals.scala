@@ -6,8 +6,9 @@
 package scala.tools.nsc
 package interpreter
 
-import scala.reflect.{mirror => rm}
 import language.implicitConversions
+import scala.reflect.base.{Universe => BaseUniverse}
+import scala.reflect.runtime.{universe => ru}
 
 /** A class which the repl utilizes to expose predefined objects.
  *  The base implementation is empty; the standard repl implementation
@@ -64,15 +65,15 @@ object ReplVals {
      *  I have this forwarder which widens the type and then cast the result back
      *  to the dependent type.
      */
-    def compilerTypeFromTag(t: rm.TypeTag[_]): Global#Type =
+    def compilerTypeFromTag(t: BaseUniverse # AbsTypeTag[_]): Global#Type =
       definitions.compilerTypeFromTag(t)
 
     class AppliedTypeFromTags(sym: Symbol) {
-      def apply[M](implicit m1: rm.TypeTag[M]): Type =
+      def apply[M](implicit m1: ru.TypeTag[M]): Type =
         if (sym eq NoSymbol) NoType
         else appliedType(sym, compilerTypeFromTag(m1).asInstanceOf[Type])
 
-      def apply[M1, M2](implicit m1: rm.TypeTag[M1], m2: rm.TypeTag[M2]): Type =
+      def apply[M1, M2](implicit m1: ru.TypeTag[M1], m2: ru.TypeTag[M2]): Type =
         if (sym eq NoSymbol) NoType
         else appliedType(sym, compilerTypeFromTag(m1).asInstanceOf[Type], compilerTypeFromTag(m2).asInstanceOf[Type])
     }

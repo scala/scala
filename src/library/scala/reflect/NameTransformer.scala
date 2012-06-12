@@ -8,8 +8,8 @@
 
 package scala.reflect
 
-/**
- *  @author  Martin Odersky
+/** Provides functions to encode and decode Scala symbolic names.
+ *  Also provides some constants.
  */
 object NameTransformer {
   // XXX Short term: providing a way to alter these without having to recompile

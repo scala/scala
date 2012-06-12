@@ -11,6 +11,7 @@ package scala.collection.generic
 import scala.collection._
 import mutable.{ Buffer, StringBuilder }
 import immutable.{ List, Stream }
+import reflect.ClassTag
 
 /** This trait implements a forwarder for traversable objects. It forwards
  *  all calls to a different traversable, except for:
@@ -57,7 +58,7 @@ trait TraversableForwarder[+A] extends Traversable[A] {
   override def copyToArray[B >: A](xs: Array[B], start: Int, len: Int) = underlying.copyToArray(xs, start, len)
   override def copyToArray[B >: A](xs: Array[B], start: Int) = underlying.copyToArray(xs, start)
   override def copyToArray[B >: A](xs: Array[B]) = underlying.copyToArray(xs)
-  override def toArray[B >: A: ArrayTag]: Array[B] = underlying.toArray
+  override def toArray[B >: A: ClassTag]: Array[B] = underlying.toArray
   override def toList: List[A] = underlying.toList
   override def toIterable: Iterable[A] = underlying.toIterable
   override def toSeq: Seq[A] = underlying.toSeq

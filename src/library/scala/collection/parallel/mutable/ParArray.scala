@@ -26,7 +26,7 @@ import scala.collection.parallel.CHECK_RATE
 import scala.collection.mutable.ArraySeq
 import scala.collection.mutable.Builder
 import scala.collection.GenTraversableOnce
-
+import scala.reflect.ClassTag
 
 
 
@@ -706,7 +706,7 @@ object ParArray extends ParFactory[ParArray] {
     case _ => new ParArray[T](new ExposedArraySeq[T](runtime.ScalaRunTime.toObjectArray(arr), sz))
   }
 
-  def createFromCopy[T <: AnyRef : ArrayTag](arr: Array[T]): ParArray[T] = {
+  def createFromCopy[T <: AnyRef : ClassTag](arr: Array[T]): ParArray[T] = {
     val newarr = new Array[T](arr.length)
     Array.copy(arr, 0, newarr, 0, arr.length)
     handoff(newarr)

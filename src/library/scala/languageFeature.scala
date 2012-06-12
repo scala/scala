@@ -4,26 +4,26 @@ import annotation.meta
 
 object languageFeature {
 
-  @meta.languageFeature("extension of type scala.Dynamic", true)
+  @meta.languageFeature("extension of type scala.Dynamic", enableRequired = true)
   sealed trait dynamics
 
-  @meta.languageFeature("postfix operator #", false)
+  @meta.languageFeature("postfix operator #", enableRequired = false)
   sealed trait postfixOps
 
-  @meta.languageFeature("reflective access of structural type member #", false)
+  @meta.languageFeature("reflective access of structural type member #", enableRequired = false)
   sealed trait reflectiveCalls
 
-  @meta.languageFeature("implicit conversion #", false)
+  @meta.languageFeature("implicit conversion #", enableRequired = false)
   sealed trait implicitConversions
 
-  @meta.languageFeature("higher-kinded type", false)
+  @meta.languageFeature("higher-kinded type", enableRequired = false)
   sealed trait higherKinds
 
-  @meta.languageFeature("#, which cannot be expressed by wildcards, ", false)
+  @meta.languageFeature("#, which cannot be expressed by wildcards, ", enableRequired = false)
   sealed trait existentials
 
   object experimental {
-    @meta.languageFeature("macro definition", true)
+    @meta.languageFeature("macro definition", enableRequired = true)
     sealed trait macros
   }
 }

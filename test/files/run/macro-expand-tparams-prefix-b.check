@@ -1,2 +1,2 @@
-ConcreteTypeTag[Boolean] ConcreteTypeTag[Int]
-ConcreteTypeTag[Boolean] ConcreteTypeTag[String]
+TypeTag[Boolean] TypeTag[Int]
+TypeTag[Boolean] TypeTag[String]

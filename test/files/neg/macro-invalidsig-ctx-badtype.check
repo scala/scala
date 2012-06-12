@@ -1,7 +1,7 @@
 Macros_Test_2.scala:2: error: macro implementation has wrong shape:
  required: (c: scala.reflect.makro.Context): c.Expr[Any]
- found   : (c: scala.reflect.api.Mirror): Nothing
-type mismatch for parameter c: scala.reflect.makro.Context does not conform to scala.reflect.api.Mirror
+ found   : (c: scala.reflect.api.Universe): Nothing
+type mismatch for parameter c: scala.reflect.makro.Context does not conform to scala.reflect.api.Universe
   def foo = macro Impls.foo
                         ^
 one error found

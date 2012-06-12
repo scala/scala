@@ -2,7 +2,7 @@ package scala.tools.nsc
 package scratchpad
 
 import java.io.Writer
-import util.SourceFile
+import scala.reflect.internal.util.SourceFile
 
 import reflect.internal.Chars._
 

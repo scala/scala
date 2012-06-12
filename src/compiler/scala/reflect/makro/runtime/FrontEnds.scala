@@ -1,32 +1,35 @@
 package scala.reflect.makro
 package runtime
 
-trait FrontEnds {
+trait FrontEnds extends scala.tools.reflect.FrontEnds {
   self: Context =>
 
+  import universe._
   import mirror._
 
-  def frontEnd: FrontEnd = wrapReporter(mirror.reporter)
+  override type Position = universe.Position
+
+  def frontEnd: FrontEnd = wrapReporter(universe.reporter)
 
   def setFrontEnd(frontEnd: FrontEnd): this.type = {
-    mirror.reporter = wrapFrontEnd(frontEnd)
+    universe.reporter = wrapFrontEnd(frontEnd)
     this
   }
 
   def withFrontEnd[T](frontEnd: FrontEnd)(op: => T): T = {
-    val old = mirror.reporter
+    val old = universe.reporter
     setFrontEnd(frontEnd)
     try op
-    finally mirror.reporter = old
+    finally universe.reporter = old
   }
 
-  def echo(pos: Position, msg: String): Unit = mirror.reporter.echo(pos, msg)
+  def echo(pos: Position, msg: String): Unit = universe.reporter.echo(pos, msg)
 
-  def info(pos: Position, msg: String, force: Boolean): Unit = mirror.reporter.info(pos, msg, force)
+  def info(pos: Position, msg: String, force: Boolean): Unit = universe.reporter.info(pos, msg, force)
 
-  def hasWarnings: Boolean = mirror.reporter.hasErrors
+  def hasWarnings: Boolean = universe.reporter.hasErrors
 
-  def hasErrors: Boolean = mirror.reporter.hasErrors
+  def hasErrors: Boolean = universe.reporter.hasErrors
 
   def warning(pos: Position, msg: String): Unit = callsiteTyper.context.warning(pos, msg)
 
@@ -37,7 +40,7 @@ trait FrontEnds {
     throw new AbortMacroException(pos, msg)
   }
 
-  def interactive(): Unit = mirror.reporter match {
+  def interactive(): Unit = universe.reporter match {
     case reporter: tools.nsc.reporters.AbstractReporter => reporter.displayPrompt()
     case _ => ()
   }

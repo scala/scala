@@ -9,6 +9,7 @@ package transform
 import scala.tools.nsc.symtab.Flags
 import scala.collection.{ mutable, immutable }
 import language.postfixOps
+import language.existentials
 
 /** Specialize code on types.
  *
@@ -66,11 +67,12 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
   private implicit val typeOrdering: Ordering[Type] = Ordering[String] on ("" + _.typeSymbol.name)
 
   import definitions.{
-    RootClass, BooleanClass, UnitClass, ArrayClass,
+    BooleanClass, UnitClass, ArrayClass,
     ScalaValueClasses, isPrimitiveValueClass, isPrimitiveValueType,
     SpecializedClass, UnspecializedClass, AnyRefClass, ObjectClass, AnyRefModule,
     GroupOfSpecializable, uncheckedVarianceClass, ScalaInlineClass
   }
+  import rootMirror.RootClass
 
   /** TODO - this is a lot of maps.
    */
@@ -434,7 +436,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
     val sClassMap = anyrefSpecCache.getOrElseUpdate(sClass, mutable.Map[Symbol, Symbol]())
 
     sClassMap.getOrElseUpdate(tparam,
-      tparam.cloneSymbol(sClass, tparam.flags, tparam.name append tpnme.SPECIALIZED_SUFFIX)
+      tparam.cloneSymbol(sClass, tparam.flags, (tparam.name append tpnme.SPECIALIZED_SUFFIX).asInstanceOf[Name]) // [Eugene++] why do we need this cast?
         modifyInfo (info => TypeBounds(info.bounds.lo, AnyRefClass.tpe))
     ).tpe
   }
@@ -821,6 +823,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
           debuglog("%s expands to %s in %s".format(sym, specMember.name.decode, pp(env)))
           info(specMember) = NormalizedMember(sym)
           overloads(sym) ::= Overload(specMember, env)
+          owner.info.decls.enter(specMember)
           specMember
         }
       }
@@ -1693,9 +1696,12 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
     }
   }
 
-  private def forwardCall(pos: util.Position, receiver: Tree, paramss: List[List[ValDef]]): Tree = {
+  private def forwardCall(pos: scala.reflect.internal.util.Position, receiver: Tree, paramss: List[List[ValDef]]): Tree = {
     val argss = mmap(paramss)(x => Ident(x.symbol))
-    atPos(pos) { (receiver /: argss) (Apply) }
+    def mkApply(fun: Tree, args: List[Tree]) = Apply(fun, args)
+    atPos(pos) { (receiver /: argss) (mkApply) }
+    // [Eugene++] no longer compiles after I moved the `Apply` case class into scala.reflect.internal
+    // atPos(pos) { (receiver /: argss) (Apply) }
   }
 
   /** Forward to the generic class constructor. If the current class initializes
@@ -1717,7 +1723,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
    *    }
    *  }}
    */
-  private def forwardCtorCall(pos: util.Position, receiver: Tree, paramss: List[List[ValDef]], clazz: Symbol): Tree = {
+  private def forwardCtorCall(pos: scala.reflect.internal.util.Position, receiver: Tree, paramss: List[List[ValDef]], clazz: Symbol): Tree = {
 
     /** A constructor parameter `f` initializes a specialized field
      *  iff:
@@ -1737,7 +1743,10 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
       else
         Ident(x.symbol)
     )
-    atPos(pos) { (receiver /: argss) (Apply) }
+    def mkApply(fun: Tree, args: List[Tree]) = Apply(fun, args)
+    atPos(pos) { (receiver /: argss) (mkApply) }
+    // [Eugene++] no longer compiles after I moved the `Apply` case class into scala.reflect.internal
+    // atPos(pos) { (receiver /: argss) (Apply) }
   }
 
   /** Add method m to the set of symbols for which we need an implementation tree

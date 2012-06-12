@@ -1,3 +1,3 @@
 reflective compilation has failed: 
 
-Macro expansion contains free term variable code defined by map in Macros_1.scala:8:9. Have you forgotten to use eval when splicing this variable into a reifee? If you have troubles tracking free term variables, consider using -Xlog-free-terms
+Macro expansion contains free term variable code defined by map in Macros_1.scala:9:9. Have you forgotten to use splice when splicing this variable into a reifee? If you have troubles tracking free term variables, consider using -Xlog-free-terms

@@ -5,7 +5,7 @@ object Macros {
 
   object Impls {
     def foo(c: Ctx)(s: c.Expr[String]) = c.reify {
-      println("hello " + s.eval)
+      println("hello " + s.splice)
     }
   }
 }
