@@ -18,6 +18,8 @@ class JavaUniverse extends internal.SymbolTable with ReflectSetup with runtime.S
 
   override val gen = new TreeGen { val global: self.type = self }
 
+  override val treeBuild = gen
+
   lazy val settings = new Settings
   def forInteractive = false
   def forScaladoc = false
