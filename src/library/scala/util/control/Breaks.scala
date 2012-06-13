@@ -73,7 +73,7 @@ class Breaks {
    *
    * @note This might be different than the statically closest enclosing block!
    */
-  def break() { throw breakException }
+  def break(): Nothing = { throw breakException }
 }
 
 /** An object that can be used for the break control abstraction.
