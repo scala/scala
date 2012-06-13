@@ -5,7 +5,7 @@
 **                                                                         **
 **  This software is released under the terms of the Revised BSD License.  **
 **  There is NO WARRANTY. See the file LICENSE for the full text.          **
-\*-------------------------------------------------------------------------*/
+\*------------------------------------------------------------------------ */
 
 package org.scalacheck
 
@@ -58,6 +58,12 @@ object Choose {
       chooseDouble.choose(low, high).map(_.toFloat)
   }
 }
+
+case class FiniteGenRes[+T](
+  r: T
+)
+
+sealed trait FiniteGen[+T] extends Gen[FiniteGenRes[T]]
 
 
 /** Class that represents a generator. */
@@ -150,13 +156,6 @@ sealed trait Gen[+T] {
 
   /** Returns a new property that holds if and only if both this
    *  and the given generator generates the same result, or both
-   *  generators generate no result.
-   *  @deprecated Use <code>==</code> instead */
-  @deprecated("Use == instead", "1.7")
-  def ===[U](g: Gen[U]): Prop = this == g
-
-  /** Returns a new property that holds if and only if both this
-   *  and the given generator generates the same result, or both
    *  generators generate no result.  */
   def ==[U](g: Gen[U]) = Prop(prms =>
     (this(prms.genPrms), g(prms.genPrms)) match {
@@ -220,11 +219,6 @@ object Gen {
       else rng.nextDouble * (h-l) + l
     }
   }
-
-  /* Default generator parameters
-   *  @deprecated Use <code>Gen.Params()</code> instead */
-  @deprecated("Use Gen.Params() instead", "1.8")
-  val defaultParams = Params()
 
   /* Generator factory method */
   def apply[T](g: Gen.Params => Option[T]) = new Gen[T] {
@@ -310,20 +304,6 @@ object Gen {
     x <- if(i == 0) g1 else if(i == 1) g2 else gs(i-2)
   } yield x
 
-  /** Chooses one of the given values, with a weighted random distribution.
-   *  @deprecated Use <code>frequency</code> with constant generators
-   *  instead. */
-  @deprecated("Use 'frequency' with constant generators instead.", "1.6")
-  def elementsFreq[T](vs: (Int, T)*): Gen[T] =
-    frequency(vs.map { case (w,v) => (w, value(v)) } : _*)
-
-  /** A generator that returns a random element from a list
-   *  @deprecated Use <code>oneOf</code> with constant generators instead. */
-  @deprecated("Use 'oneOf' with constant generators instead.", "1.6")
-  def elements[T](xs: T*): Gen[T] = if(xs.isEmpty) fail else for {
-    i <- choose(0,xs.length-1)
-  } yield xs(i)
-
 
   //// List Generators ////
 
@@ -367,12 +347,6 @@ object Gen {
   /** Generates a list of the given length. This method is equal to calling
    *  <code>containerOfN[List,T](n,g)</code>. */
   def listOfN[T](n: Int, g: Gen[T]) = containerOfN[List,T](n,g)
-
-  /** Generates a list of the given length. This method is equal to calling
-   *  <code>containerOfN[List,T](n,g)</code>.
-   *  @deprecated Use the method <code>listOfN</code> instead. */
-  @deprecated("Use 'listOfN' instead.", "1.6")
-  def vectorOf[T](n: Int, g: Gen[T]) = containerOfN[List,T](n,g)
 
   /** A generator that picks a random number of elements from a list */
   def someOf[T](l: Iterable[T]) = choose(0,l.size) flatMap (pick(_,l))
@@ -437,16 +411,6 @@ object Gen {
   def numStr: Gen[String] = for(cs <- listOf(Gen.numChar)) yield cs.mkString
 
   //// Number Generators ////
-
-  /* Generates positive integers
-   * @deprecated Use <code>posNum[Int]code> instead */
-  @deprecated("Use posNum[Int] instead", "1.7")
-  def posInt: Gen[Int] = sized(max => choose(1, max))
-
-  /* Generates negative integers
-   * @deprecated Use <code>negNum[Int]code> instead */
-  @deprecated("Use negNum[Int] instead", "1.7")
-  def negInt: Gen[Int] = sized(max => choose(-max, -1))
 
   /** Generates positive numbers of uniform distribution, with an
    *  upper bound of the generation size parameter. */

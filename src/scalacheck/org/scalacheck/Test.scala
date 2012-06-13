@@ -5,7 +5,7 @@
 **                                                                         **
 **  This software is released under the terms of the Revised BSD License.  **
 **  There is NO WARRANTY. See the file LICENSE for the full text.          **
-\*-------------------------------------------------------------------------*/
+\*------------------------------------------------------------------------ */
 
 package org.scalacheck
 
@@ -19,12 +19,18 @@ object Test {
   /** Test parameters */
   case class Params(
     minSuccessfulTests: Int = 100,
-    maxDiscardedTests: Int = 500,
+
+    /** @deprecated Use maxDiscardRatio instead. */
+    @deprecated("Use maxDiscardRatio instead.", "1.10")
+    maxDiscardedTests: Int = -1,
+
     minSize: Int = 0,
     maxSize: Int = Gen.Params().size,
     rng: java.util.Random = Gen.Params().rng,
     workers: Int = 1,
-    testCallback: TestCallback = new TestCallback {}
+    testCallback: TestCallback = new TestCallback {},
+    maxDiscardRatio: Float = 5,
+    customClassLoader: Option[ClassLoader] = None
   )
 
   /** Test statistics */
@@ -90,7 +96,7 @@ object Test {
     import prms._
     if(
       minSuccessfulTests <= 0 ||
-      maxDiscardedTests < 0 ||
+      maxDiscardRatio <= 0 ||
       minSize < 0 ||
       maxSize < minSize ||
       workers <= 0
@@ -106,12 +112,13 @@ object Test {
       val names = Set("minSuccessfulTests", "s")
       val help = "Number of tests that must succeed in order to pass a property"
     }
-    object OptMaxDiscarded extends IntOpt {
-      val default = Test.Params().maxDiscardedTests
-      val names = Set("maxDiscardedTests", "d")
+    object OptMaxDiscardRatio extends FloatOpt {
+      val default = Test.Params().maxDiscardRatio
+      val names = Set("maxDiscardRatio", "r")
       val help =
-        "Number of tests that can be discarded before ScalaCheck stops " +
-        "testing a property"
+        "The maximum ratio between discarded and succeeded tests " +
+        "allowed before ScalaCheck stops testing a property. At " +
+        "least minSuccessfulTests will always be tested, though."
     }
     object OptMinSize extends IntOpt {
       val default = Test.Params().minSize
@@ -135,45 +142,54 @@ object Test {
     }
 
     val opts = Set[Opt[_]](
-      OptMinSuccess, OptMaxDiscarded, OptMinSize,
+      OptMinSuccess, OptMaxDiscardRatio, OptMinSize,
       OptMaxSize, OptWorkers, OptVerbosity
     )
 
     def parseParams(args: Array[String]) = parseArgs(args) {
       optMap => Test.Params(
-        optMap(OptMinSuccess),
-        optMap(OptMaxDiscarded),
-        optMap(OptMinSize),
-        optMap(OptMaxSize),
-        Test.Params().rng,
-        optMap(OptWorkers),
-        ConsoleReporter(optMap(OptVerbosity))
+        minSuccessfulTests = optMap(OptMinSuccess),
+        maxDiscardRatio = optMap(OptMaxDiscardRatio),
+        minSize = optMap(OptMinSize),
+        maxSize = optMap(OptMaxSize),
+        rng = Test.Params().rng,
+        workers = optMap(OptWorkers),
+        testCallback = ConsoleReporter(optMap(OptVerbosity))
       )
     }
   }
 
   /** Tests a property with the given testing parameters, and returns
    *  the test results. */
-  def check(prms: Params, p: Prop): Result = {
+  def check(params: Params, p: Prop): Result = {
+
+    // maxDiscardedTests is deprecated, but if someone
+    // uses it let it override maxDiscardRatio
+    val mdr =
+      if(params.maxDiscardedTests < 0) params.maxDiscardRatio
+      else (params.maxDiscardedTests: Float)/(params.minSuccessfulTests: Float)
+    val prms = params.copy( maxDiscardRatio = mdr)
+
     import prms._
-    import actors.Futures.future
+    import scala.actors.Futures.future
 
     assertParams(prms)
     if(workers > 1)
       assert(!p.isInstanceOf[Commands], "Commands cannot be checked multi-threaded")
 
-    val iterations = minSuccessfulTests / workers
-    val sizeStep = (maxSize-minSize) / (minSuccessfulTests: Float)
+    val iterations = math.ceil(minSuccessfulTests / (workers: Double))
+    val sizeStep = (maxSize-minSize) / (iterations*workers)
     var stop = false
 
-    def worker(workerdIdx: Int) = future {
-      var n = 0
-      var d = 0
-      var size = minSize + (workerdIdx*sizeStep*iterations)
+    def worker(workerIdx: Int) = future {
+      params.customClassLoader.map(Thread.currentThread.setContextClassLoader(_))
+      var n = 0  // passed tests
+      var d = 0  // discarded tests
       var res: Result = null
       var fm = FreqMap.empty[immutable.Set[Any]]
       while(!stop && res == null && n < iterations) {
-        val propPrms = Prop.Params(Gen.Params(size.round, prms.rng), fm)
+        val size = (minSize: Double) + (sizeStep * (workerIdx + (workers*(n+d))))
+        val propPrms = Prop.Params(Gen.Params(size.round.toInt, prms.rng), fm)
         secure(p(propPrms)) match {
           case Right(e) => res =
             Result(GenException(e), n, d, FreqMap.empty[immutable.Set[Any]])
@@ -184,35 +200,48 @@ object Test {
             propRes.status match {
               case Prop.Undecided =>
                 d += 1
-                testCallback.onPropEval("", workerdIdx, n, d)
-                if(d >= maxDiscardedTests) res = Result(Exhausted, n, d, fm)
+                testCallback.onPropEval("", workerIdx, n, d)
+                // The below condition is kind of hacky. We have to have
+                // some margin, otherwise workers might stop testing too
+                // early because they have been exhausted, but the overall
+                // test has not.
+                if (n+d > minSuccessfulTests && 1+workers*maxDiscardRatio*n < d)
+                  res = Result(Exhausted, n, d, fm)
               case Prop.True =>
                 n += 1
-                testCallback.onPropEval("", workerdIdx, n, d)
+                testCallback.onPropEval("", workerIdx, n, d)
               case Prop.Proof =>
                 n += 1
                 res = Result(Proved(propRes.args), n, d, fm)
-              case Prop.False => res =
-                Result(Failed(propRes.args, propRes.labels), n, d, fm)
-              case Prop.Exception(e) => res =
-                Result(PropException(propRes.args, e, propRes.labels), n, d, fm)
+                stop = true
+              case Prop.False =>
+                res = Result(Failed(propRes.args,propRes.labels), n, d, fm)
+                stop = true
+              case Prop.Exception(e) =>
+                res = Result(PropException(propRes.args,e,propRes.labels), n, d, fm)
+                stop = true
             }
         }
-        size += sizeStep
       }
-      if(res != null) stop = true
-      else res = Result(Passed, n, d, fm)
-      res
+      if (res == null) {
+        if (maxDiscardRatio*n > d) Result(Passed, n, d, fm)
+        else Result(Exhausted, n, d, fm)
+      } else res
     }
 
-    def mergeResults(r1: () => Result, r2: () => Result) = r1() match {
-      case Result(Passed, s1, d1, fm1, t) => r2() match {
-        case Result(Passed, s2, d2, fm2, t) if d1+d2 >= maxDiscardedTests =>
-          () => Result(Exhausted, s1+s2, d1+d2, fm1++fm2, t)
-        case Result(st, s2, d2, fm2, t) =>
-          () => Result(st, s1+s2, d1+d2, fm1++fm2, t)
+    def mergeResults(r1: () => Result, r2: () => Result) = {
+      val Result(st1, s1, d1, fm1, _) = r1()
+      val Result(st2, s2, d2, fm2, _) = r2()
+      if (st1 != Passed && st1 != Exhausted)
+        () => Result(st1, s1+s2, d1+d2, fm1++fm2, 0)
+      else if (st2 != Passed && st2 != Exhausted)
+        () => Result(st2, s1+s2, d1+d2, fm1++fm2, 0)
+      else {
+        if (s1+s2 >= minSuccessfulTests && maxDiscardRatio*(s1+s2) >= (d1+d2))
+          () => Result(Passed, s1+s2, d1+d2, fm1++fm2, 0)
+        else
+          () => Result(Exhausted, s1+s2, d1+d2, fm1++fm2, 0)
       }
-      case r => () => r
     }
 
     val start = System.currentTimeMillis
@@ -237,78 +266,4 @@ object Test {
       (name,res)
     }
 
-
-  // Deprecated methods //
-
-  /** Default testing parameters
-   *  @deprecated Use <code>Test.Params()</code> instead */
-  @deprecated("Use Test.Params() instead", "1.8")
-  val defaultParams = Params()
-
-  /** Property evaluation callback. Takes number of passed and
-   *  discarded tests, respectively */
-  @deprecated("(v1.8)", "1.8")
-  type PropEvalCallback = (Int,Int) => Unit
-
-  /** Property evaluation callback. Takes property name, and number of passed
-   *  and discarded tests, respectively */
-  @deprecated("(v1.8)", "1.8")
-  type NamedPropEvalCallback = (String,Int,Int) => Unit
-
-  /** Test callback. Takes property name, and test results. */
-  @deprecated("(v1.8)", "1.8")
-  type TestResCallback = (String,Result) => Unit
-
-  /** @deprecated (v1.8) Use <code>check(prms.copy(testCallback = myCallback), p)</code> instead. */
-  @deprecated("Use check(prms.copy(testCallback = myCallback), p) instead", "1.8")
-  def check(prms: Params, p: Prop, propCallb: PropEvalCallback): Result = {
-    val testCallback = new TestCallback {
-      override def onPropEval(n: String, t: Int, s: Int, d: Int) = propCallb(s,d)
-    }
-    check(prms copy (testCallback = testCallback), p)
-  }
-
-  /** Tests a property and prints results to the console. The
-   *  <code>maxDiscarded</code> parameter specifies how many
-   *  discarded tests that should be allowed before ScalaCheck
-   *  @deprecated (v1.8) Use <code>check(Params(maxDiscardedTests = n, testCallback = ConsoleReporter()), p)</code> instead. */
-  @deprecated("Use check(Params(maxDiscardedTests = n, testCallback = ConsoleReporter()), p) instead.", "1.8")
-  def check(p: Prop, maxDiscarded: Int): Result =
-    check(Params(maxDiscardedTests = maxDiscarded, testCallback = ConsoleReporter()), p)
-
-  /** Tests a property and prints results to the console
-   *  @deprecated (v1.8) Use <code>check(Params(testCallback = ConsoleReporter()), p)</code> instead. */
-  @deprecated("Use check(Params(testCallback = ConsoleReporter()), p) instead.", "1.8")
-  def check(p: Prop): Result = check(Params(testCallback = ConsoleReporter()), p)
-
-  /** Tests all properties with the given testing parameters, and returns
-   *  the test results. <code>f</code> is a function which is called each
-   *  time a property is evaluted. <code>g</code> is a function called each
-   *  time a property has been fully tested.
-   *  @deprecated (v1.8) Use <code>checkProperties(prms.copy(testCallback = myCallback), ps)</code> instead. */
-  @deprecated("Use checkProperties(prms.copy(testCallback = myCallback), ps) instead.", "1.8")
-  def checkProperties(ps: Properties, prms: Params,
-    propCallb: NamedPropEvalCallback, testCallb: TestResCallback
-  ): Seq[(String,Result)] = {
-    val testCallback = new TestCallback {
-      override def onPropEval(n: String, t: Int, s: Int, d: Int) = propCallb(n,s,d)
-      override def onTestResult(n: String, r: Result) = testCallb(n,r)
-    }
-    checkProperties(prms copy (testCallback = testCallback), ps)
-  }
-
-  /** Tests all properties with the given testing parameters, and returns
-   *  the test results.
-   *  @deprecated (v1.8) Use checkProperties(prms, ps) instead */
-  @deprecated("Use checkProperties(prms, ps) instead", "1.8")
-  def checkProperties(ps: Properties, prms: Params): Seq[(String,Result)] =
-    checkProperties(ps, prms, (n,s,d) => (), (n,s) => ())
-
-  /** Tests all properties with default testing parameters, and returns
-   *  the test results. The results are also printed on the console during
-   *  testing.
-   *  @deprecated (v1.8) Use <code>checkProperties(Params(), ps)</code> instead. */
-  @deprecated("Use checkProperties(Params(), ps) instead.", "1.8")
-  def checkProperties(ps: Properties): Seq[(String,Result)] =
-    checkProperties(Params(), ps)
 }
