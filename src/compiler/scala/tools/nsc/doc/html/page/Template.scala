@@ -8,9 +8,10 @@ package doc
 package html
 package page
 
-import model._
 import scala.xml.{ NodeSeq, Text, UnprefixedAttribute }
 import language.postfixOps
+
+import model._
 
 class Template(universe: doc.Universe, tpl: DocTemplateEntity) extends HtmlPage {
 
@@ -41,8 +42,11 @@ class Template(universe: doc.Universe, tpl: DocTemplateEntity) extends HtmlPage 
   val (absValueMembers, nonAbsValueMembers) =
     valueMembers partition (_.isAbstract)
 
-  val (deprValueMembers, concValueMembers) =
+  val (deprValueMembers, nonDeprValueMembers) =
     nonAbsValueMembers partition (_.deprecation.isDefined)
+
+  val (concValueMembers, shadowedImplicitMembers) =
+    nonDeprValueMembers partition (!Template.isShadowedOrAmbiguousImplicit(_))
 
   val typeMembers =
     tpl.abstractTypes ++ tpl.aliasTypes ++ tpl.templates.filter(x => x.isTrait || x.isClass) sorted
@@ -163,6 +167,13 @@ class Template(universe: doc.Universe, tpl: DocTemplateEntity) extends HtmlPage 
             </div>
         }
 
+        { if (shadowedImplicitMembers.isEmpty) NodeSeq.Empty else
+            <div id="values" class="values members">
+              <h3>Shadowed Implict Value Members</h3>
+              <ol>{ shadowedImplicitMembers map (memberToHtml(_, tpl)) }</ol>
+            </div>
+        }
+
         { if (deprValueMembers.isEmpty) NodeSeq.Empty else
             <div id="values" class="values members">
               <h3>Deprecated Value Members</h3>
@@ -244,7 +255,8 @@ class Template(universe: doc.Universe, tpl: DocTemplateEntity) extends HtmlPage 
     }
     val memberComment = memberToCommentHtml(mbr, inTpl, false)
     <li name={ mbr.definitionName } visbl={ if (mbr.visibility.isProtected) "prt" else "pub" }
-      data-isabs={ mbr.isAbstract.toString } fullComment={ if(memberComment.isEmpty) "no" else "yes" }>
+      data-isabs={ mbr.isAbstract.toString }
+      fullComment={ if(memberComment.filter(_.label=="div").isEmpty) "no" else "yes" }>
       <a id={ mbr.name +defParamsString +":"+ mbr.resultType.name}/>
       { signature(mbr, false) }
       { memberComment }
@@ -299,6 +311,7 @@ class Template(universe: doc.Universe, tpl: DocTemplateEntity) extends HtmlPage 
     <p class="comment cmt">{ inlineToHtml(mbr.comment.get.short) }</p>
 
   def memberToCommentBodyHtml(mbr: MemberEntity, inTpl: DocTemplateEntity, isSelf: Boolean, isReduced: Boolean = false): NodeSeq = {
+    val s = universe.settings
 
     val memberComment =
       if (mbr.comment.isEmpty) NodeSeq.Empty
@@ -387,6 +400,35 @@ class Template(universe: doc.Universe, tpl: DocTemplateEntity) extends HtmlPage 
             { targetType } performed by method { conversionMethod } in { conversionOwner }.
             { constraintText }
           </dd>
+        } ++ {
+          if (Template.isShadowedOrAmbiguousImplicit(mbr)) {
+            // These are the members that are shadowing or ambiguating the current implicit
+            // see ImplicitMemberShadowing trait for more information
+            val shadowingSuggestion = {
+              val params = mbr match {
+                case d: Def => d.valueParams map (_ map (_ name) mkString("(", ", ", ")")) mkString
+                case _      => "" // no parameters
+              }
+              <br/> ++ xml.Text("To access this member you can use a ") ++
+              <a href="http://stackoverflow.com/questions/2087250/what-is-the-purpose-of-type-ascription-in-scala"
+                target="_blank">type ascription</a> ++ xml.Text(":") ++
+              <br/> ++ <div class="cmt"><pre>{"(" + Template.lowerFirstLetter(tpl.name) + ": " + conv.targetType.name + ")." + mbr.name + params }</pre></div>
+            }
+
+            val shadowingWarning: NodeSeq =
+              if (Template.isShadowedImplicit(mbr))
+                  xml.Text("This implicitly inherited member is shadowed by one or more members in this " +
+                  "class.") ++ shadowingSuggestion
+              else if (Template.isAmbiguousImplicit(mbr))
+                  xml.Text("This implicitly inherited member is ambiguous. One or more implicitly " +
+                  "inherited members have similar signatures, so calling this member may produce an ambiguous " +
+                  "implicit conversion compiler error.") ++ shadowingSuggestion
+              else NodeSeq.Empty
+
+            <dt class="implicit">Shadowing</dt> ++
+            <dd>{ shadowingWarning }</dd>
+
+          } else NodeSeq.Empty
         }
       case _ =>
         NodeSeq.Empty
@@ -562,11 +604,11 @@ class Template(universe: doc.Universe, tpl: DocTemplateEntity) extends HtmlPage 
     }
 
     val subclasses = mbr match {
-      case dtpl: DocTemplateEntity if isSelf && !isReduced && dtpl.subClasses.nonEmpty =>
+      case dtpl: DocTemplateEntity if isSelf && !isReduced && dtpl.allSubClasses.nonEmpty =>
         <div class="toggleContainer block">
           <span class="toggle">Known Subclasses</span>
           <div class="subClasses hiddenContent">{
-            templatesToHtml(dtpl.subClasses.sortBy(_.name), xml.Text(", "))
+            templatesToHtml(dtpl.allSubClasses.sortBy(_.name), xml.Text(", "))
           }</div>
         </div>
       case _ => NodeSeq.Empty
@@ -605,13 +647,13 @@ class Template(universe: doc.Universe, tpl: DocTemplateEntity) extends HtmlPage 
       case PrivateInTemplate(owner) if (owner == mbr.inTemplate) =>
         Some(Paragraph(CText("private")))
       case PrivateInTemplate(owner) =>
-        Some(Paragraph(Chain(List(CText("private["), EntityLink(owner), CText("]")))))
+        Some(Paragraph(Chain(List(CText("private["), EntityLink(owner.qualifiedName, () => Some(owner)), CText("]")))))
       case ProtectedInInstance() =>
         Some(Paragraph(CText("protected[this]")))
       case ProtectedInTemplate(owner) if (owner == mbr.inTemplate) =>
         Some(Paragraph(CText("protected")))
       case ProtectedInTemplate(owner) =>
-        Some(Paragraph(Chain(List(CText("protected["), EntityLink(owner), CText("]")))))
+        Some(Paragraph(Chain(List(CText("protected["), EntityLink(owner.qualifiedName, () => Some(owner)), CText("]")))))
       case Public() =>
         None
     }
@@ -627,7 +669,15 @@ class Template(universe: doc.Universe, tpl: DocTemplateEntity) extends HtmlPage 
       </span>
       <span class="symbol">
         {
-          val nameClass = if (mbr.byConversion.isDefined) "implicit" else "name"
+          val nameClass =
+            if (Template.isImplicit(mbr))
+              if (Template.isShadowedOrAmbiguousImplicit(mbr))
+                "implicit shadowed"
+              else
+                "implicit"
+            else
+              "name"
+
           val nameHtml = {
             val value = if (mbr.isConstructor) tpl.name else mbr.name
             val span = if (mbr.deprecation.isDefined)
@@ -699,8 +749,8 @@ class Template(universe: doc.Universe, tpl: DocTemplateEntity) extends HtmlPage 
           }
         }{ if (isReduced) NodeSeq.Empty else {
           mbr match {
-            case tpl: DocTemplateEntity if tpl.parentType.isDefined =>
-              <span class="result"> extends { typeToHtml(tpl.parentType.get, hasLinks) }</span>
+            case tpl: DocTemplateEntity if !tpl.parentTypes.isEmpty =>
+              <span class="result"> extends { typeToHtml(tpl.parentTypes.map(_._2), hasLinks) }</span>
 
             case tme: MemberEntity if (tme.isDef || tme.isVal || tme.isLazyVal || tme.isVar) =>
               <span class="result">: { typeToHtml(tme.resultType, hasLinks) }</span>
@@ -870,5 +920,16 @@ class Template(universe: doc.Universe, tpl: DocTemplateEntity) extends HtmlPage 
       xml.Text(ub.typeParamName + " is a subclass of " + ub.upperBound.name + " (" + ub.typeParamName + " <: ") ++
         typeToHtml(ub.upperBound, true) ++ xml.Text(")")
   }
+}
 
+object Template {
+
+  def isImplicit(mbr: MemberEntity) = mbr.byConversion.isDefined
+  def isShadowedImplicit(mbr: MemberEntity): Boolean =
+    mbr.byConversion.map(_.source.implicitsShadowing.get(mbr).map(_.isShadowed).getOrElse(false)).getOrElse(false)
+  def isAmbiguousImplicit(mbr: MemberEntity): Boolean =
+    mbr.byConversion.map(_.source.implicitsShadowing.get(mbr).map(_.isAmbiguous).getOrElse(false)).getOrElse(false)
+  def isShadowedOrAmbiguousImplicit(mbr: MemberEntity) = isShadowedImplicit(mbr) || isAmbiguousImplicit(mbr)
+
+  def lowerFirstLetter(s: String) = if (s.length >= 1) s.substring(0,1).toLowerCase() + s.substring(1) else s
 }

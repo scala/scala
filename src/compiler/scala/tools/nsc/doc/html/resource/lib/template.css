@@ -333,6 +333,10 @@ div.members > ol > li:last-child {
   color: darkgreen;
 }
 
+.signature .symbol .shadowed {
+  color: darkseagreen;
+}
+
 .signature .symbol .params > .implicit {
   font-style: italic;
 }

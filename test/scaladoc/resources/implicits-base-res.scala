@@ -16,8 +16,9 @@ trait MyNumeric[R]
  * def convToManifestA(x: T)              // pimpA7: with 2 constraints: T: Manifest and T <: Double
  * def convToMyNumericA(x: T)             // pimpA6: with a constraint that there is x: MyNumeric[T] implicit in scope
  * def convToNumericA(x: T)               // pimpA1: with a constraint that there is x: Numeric[T] implicit in scope
- * def convToPimpedA(x: Bar[Foo[T]])      // pimpA5: no constraints
- * def convToPimpedA(x: S)                // pimpA4: with 3 constraints: T = Foo[Bar[S]], S: Foo and S: Bar
+ * def convToPimpedA(x: Bar[Foo[T]])      // pimpA5: no constraints, SHADOWED
+ * def convToPimpedA(x: S)                // pimpA4: with 3 constraints: T = Foo[Bar[S]], S: Foo and S: Bar, SHADOWED
+ * def convToPimpedA(x: T)                // pimpA0: with no constraints, SHADOWED
  * def convToTraversableOps(x: T)         // pimpA7: with 2 constraints: T: Manifest and T <: Double
  *                                        // should not be abstract!
  * }}}
@@ -52,9 +53,10 @@ object A {
  * def convToManifestA(x: Double)         // pimpA7: no constraints
  * def convToMyNumericA(x: Double)        // pimpA6: (if showAll is set) with a constraint that there is x: MyNumeric[Double] implicit in scope
  * def convToNumericA(x: Double)          // pimpA1: no constraintsd
- * def convToPimpedA(x: Bar[Foo[Double]]) // pimpA5: no constraints
+ * def convToPimpedA(x: Bar[Foo[Double]]) // pimpA5: no constraints, SHADOWED
+ * def convToPimpedA(x: Double)           // pimpA0: no constraints, SHADOWED
  * def convToTraversableOps(x: Double)    // pimpA7: no constraints
- *                                       // should not be abstract!
+ *                                        // should not be abstract!
  * }}}
  */
 class B extends A[Double]
@@ -68,7 +70,8 @@ object B extends A
  * def convToIntA(x: Int)                 // pimpA2: no constraints
  * def convToMyNumericA(x: Int)           // pimpA6: (if showAll is set) with a constraint that there is x: MyNumeric[Int] implicit in scope
  * def convToNumericA(x: Int)             // pimpA1: no constraints
- * def convToPimpedA(x: Bar[Foo[Int]])    // pimpA5: no constraints
+ * def convToPimpedA(x: Int)              // pimpA0: no constraints, SHADOWED
+ * def convToPimpedA(x: Bar[Foo[Int]])    // pimpA5: no constraints, SHADOWED
  * }}}
  */
 class C extends A[Int]
@@ -81,7 +84,8 @@ object C extends A
  * {{{
  * def convToMyNumericA(x: String)        // pimpA6: (if showAll is set) with a constraint that there is x: MyNumeric[String] implicit in scope
  * def convToNumericA(x: String)          // pimpA1: (if showAll is set) with a constraint that there is x: Numeric[String] implicit in scope
- * def convToPimpedA(x: Bar[Foo[String]]) // pimpA5: no constraints
+ * def convToPimpedA(x: Bar[Foo[String]]) // pimpA5: no constraints, SHADOWED
+ * def convToPimpedA(x: String)           // pimpA0: no constraints, SHADOWED
  * }}}
  */
 class D extends A[String]

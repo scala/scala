@@ -118,11 +118,25 @@ abstract class HtmlPage extends Page { thisPage =>
     case Superscript(in) => <sup>{ inlineToHtml(in) }</sup>
     case Subscript(in) => <sub>{ inlineToHtml(in) }</sub>
     case Link(raw, title) => <a href={ raw }>{ inlineToHtml(title) }</a>
-    case EntityLink(entity) => templateToHtml(entity)
     case Monospace(in) => <code>{ inlineToHtml(in) }</code>
     case Text(text) => xml.Text(text)
     case Summary(in) => inlineToHtml(in)
     case HtmlTag(tag) => xml.Unparsed(tag)
+    case EntityLink(target, template) => template() match {
+      case Some(tpl) =>
+        templateToHtml(tpl)
+      case None =>
+        xml.Text(target)
+    }
+  }
+
+  def typeToHtml(tpes: List[model.TypeEntity], hasLinks: Boolean): NodeSeq = tpes match {
+    case Nil =>
+      sys.error("Internal Scaladoc error")
+    case List(tpe) =>
+      typeToHtml(tpe, hasLinks)
+    case tpe :: rest =>
+      typeToHtml(tpe, hasLinks) ++ scala.xml.Text(" with ") ++ typeToHtml(rest, hasLinks)
   }
 
   def typeToHtml(tpe: model.TypeEntity, hasLinks: Boolean): NodeSeq = {

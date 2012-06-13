@@ -97,18 +97,4 @@ abstract class Page {
     }
     relativize(thisPage.path.reverse, destPath.reverse).mkString("/")
   }
-
-  def isExcluded(dtpl: DocTemplateEntity) = {
-    val qname = dtpl.qualifiedName
-    ( ( qname.startsWith("scala.Tuple") || qname.startsWith("scala.Product") ||
-       qname.startsWith("scala.Function") || qname.startsWith("scala.runtime.AbstractFunction")
-     ) && !(
-      qname == "scala.Tuple1" || qname == "scala.Tuple2" ||
-      qname == "scala.Product" || qname == "scala.Product1" || qname == "scala.Product2" ||
-      qname == "scala.Function" || qname == "scala.Function1" || qname == "scala.Function2" ||
-      qname == "scala.runtime.AbstractFunction0" || qname == "scala.runtime.AbstractFunction1" ||
-      qname == "scala.runtime.AbstractFunction2"
-    )
-   )
-  }
 }
