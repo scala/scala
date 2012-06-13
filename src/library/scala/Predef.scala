@@ -320,30 +320,30 @@ object Predef extends LowPriorityImplicits {
 
   // Primitive Widenings --------------------------------------------------------------
 
-  @deprecated("Use .toShort", "2.10.0") def byte2short(x: Byte): Short = x.toShort
-  @deprecated("Use .toInt", "2.10.0") def byte2int(x: Byte): Int = x.toInt
-  @deprecated("Use .toLong", "2.10.0") def byte2long(x: Byte): Long = x.toLong
-  @deprecated("Use .toFloat", "2.10.0") def byte2float(x: Byte): Float = x.toFloat
-  @deprecated("Use .toDouble", "2.10.0") def byte2double(x: Byte): Double = x.toDouble
+  @deprecated("Use .toShort for explicit conversion and Byte.byte2short for implicit conversion", "2.10.0") def byte2short(x: Byte): Short = x.toShort
+  @deprecated("Use .toInt for explicit conversion and Byte.byte2int for implicit conversion", "2.10.0") def byte2int(x: Byte): Int = x.toInt
+  @deprecated("Use .toLong for explicit conversion and Byte.byte2long for implicit conversion", "2.10.0") def byte2long(x: Byte): Long = x.toLong
+  @deprecated("Use .toFloat for explicit conversion and Byte.byte2float for implicit conversion", "2.10.0") def byte2float(x: Byte): Float = x.toFloat
+  @deprecated("Use .toDouble for explicit conversion and Byte.byte2double for implicit conversion", "2.10.0") def byte2double(x: Byte): Double = x.toDouble
 
-  @deprecated("Use .toInt", "2.10.0") def short2int(x: Short): Int = x.toInt
-  @deprecated("Use .toLong", "2.10.0") def short2long(x: Short): Long = x.toLong
-  @deprecated("Use .toFloat", "2.10.0") def short2float(x: Short): Float = x.toFloat
-  @deprecated("Use .toDouble", "2.10.0") def short2double(x: Short): Double = x.toDouble
+  @deprecated("Use .toInt for explicit conversion and Short.short2int for implicit conversion", "2.10.0") def short2int(x: Short): Int = x.toInt
+  @deprecated("Use .toLong for explicit conversion and Short.short2long for implicit conversion", "2.10.0") def short2long(x: Short): Long = x.toLong
+  @deprecated("Use .toFloat for explicit conversion and Short.short2float for implicit conversion", "2.10.0") def short2float(x: Short): Float = x.toFloat
+  @deprecated("Use .toDouble for explicit conversion and Short.short2double for implicit conversion", "2.10.0") def short2double(x: Short): Double = x.toDouble
 
-  @deprecated("Use .toInt", "2.10.0") def char2int(x: Char): Int = x.toInt
-  @deprecated("Use .toLong", "2.10.0") def char2long(x: Char): Long = x.toLong
-  @deprecated("Use .toFloat", "2.10.0") def char2float(x: Char): Float = x.toFloat
-  @deprecated("Use .toDouble", "2.10.0") def char2double(x: Char): Double = x.toDouble
+  @deprecated("Use .toInt for explicit conversion and Char.char2int for implicit conversion", "2.10.0") def char2int(x: Char): Int = x.toInt
+  @deprecated("Use .toLong for explicit conversion and Char.char2long for implicit conversion", "2.10.0") def char2long(x: Char): Long = x.toLong
+  @deprecated("Use .toFloat for explicit conversion and Char.char2float for implicit conversion", "2.10.0") def char2float(x: Char): Float = x.toFloat
+  @deprecated("Use .toDouble for explicit conversion and Char.char2double for implicit conversion", "2.10.0") def char2double(x: Char): Double = x.toDouble
 
-  @deprecated("Use .toLong", "2.10.0") def int2long(x: Int): Long = x.toLong
-  @deprecated("Use .toFloat", "2.10.0") def int2float(x: Int): Float = x.toFloat
-  @deprecated("Use .toDouble", "2.10.0") def int2double(x: Int): Double = x.toDouble
+  @deprecated("Use .toLong for explicit conversion and Int.int2long for implicit conversion", "2.10.0") def int2long(x: Int): Long = x.toLong
+  @deprecated("Use .toFloat for explicit conversion and Int.int2float for implicit conversion", "2.10.0") def int2float(x: Int): Float = x.toFloat
+  @deprecated("Use .toDouble for explicit conversion and Int.int2double for implicit conversion", "2.10.0") def int2double(x: Int): Double = x.toDouble
 
-  @deprecated("Use .toFloat", "2.10.0") def long2float(x: Long): Float = x.toFloat
-  @deprecated("Use .toDouble", "2.10.0") def long2double(x: Long): Double = x.toDouble
+  @deprecated("Use .toFloat for explicit conversion and Long.long2float for implicit conversion", "2.10.0") def long2float(x: Long): Float = x.toFloat
+  @deprecated("Use .toDouble for explicit conversion and Long.long2double for implicit conversion", "2.10.0") def long2double(x: Long): Double = x.toDouble
 
-  @deprecated("Use .toDouble", "2.10.0") def float2double(x: Float): Double = x.toDouble
+  @deprecated("Use .toDouble for explicit conversion and Float.float2double for implicit conversion", "2.10.0") def float2double(x: Float): Double = x.toDouble
 
   // "Autoboxing" and "Autounboxing" ---------------------------------------------------
 
