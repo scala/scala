@@ -123,10 +123,30 @@ END-USER TARGETS
     <antcall target="palo.done"/>
   </target>
 
+  <target name="fastlocker.lib"
+    description="Buildlocker without extra fuss">
+    <property name="fastlocker" value="true"/>
+    <antcall target="locker.unlock"/>
+    <antcall target="locker.lib"/>
+  </target>
+
+  <target name="fastlocker.reflect"
+    description="Buildlocker without extra fuss">
+    <property name="fastlocker" value="true"/>
+    <antcall target="locker.unlock"/>
+    <antcall target="locker.reflect"/>
+  </target>
+
+  <target name="fastlocker.comp"
+    description="Buildlocker without extra fuss">
+    <property name="fastlocker" value="true"/>
+    <antcall target="locker.unlock"/>
+    <antcall target="locker.comp"/>
+  </target>
+
   <target name="fastlocker"
     description="Buildlocker without extra fuss">
-    <antcall target="locker.unlock"/>
-    <antcall target="locker.done"/>
+    <antcall target="fastlocker.comp"/>
   </target>
 
   <target name="buildlocker"
@@ -477,6 +497,7 @@ LOCAL DEPENDENCY (FORKJOIN)
   </target>
 
   <target name="forkjoin.lib" depends="forkjoin.start" unless="forkjoin.available">
+    <stopwatch name="forkjoin.lib.timer"/>
     <mkdir dir="${build-libs.dir}/classes/forkjoin"/>
     <javac
       fork="yes"
@@ -490,6 +511,7 @@ LOCAL DEPENDENCY (FORKJOIN)
         <compilerarg line="${javac.args}"/>
     </javac>
     <touch file="${build-libs.dir}/forkjoin.complete" verbose="no"/>
+    <stopwatch name="forkjoin.lib.timer" action="total"/>
   </target>
 
   <target name="forkjoin.pack" depends="forkjoin.lib">
@@ -524,6 +546,7 @@ LOCAL DEPENDENCY (FJBG)
   </target>
 
   <target name="fjbg.lib" depends="fjbg.init" unless="fjbg.available">
+    <stopwatch name="fjbg.lib.timer" />
     <mkdir dir="${build-libs.dir}/classes/fjbg"/>
     <javac
       srcdir="${src.dir}/fjbg"
@@ -535,6 +558,7 @@ LOCAL DEPENDENCY (FJBG)
         <compilerarg line="${javac.args}"/>
     </javac>
     <touch file="${build-libs.dir}/fjbg.complete" verbose="no"/>
+    <stopwatch name="fjbg.lib.timer" action="total"/>
   </target>
 
   <target name="fjbg.pack" depends="fjbg.lib">
@@ -677,33 +701,43 @@ LOCAL REFERENCE BUILD (LOCKER)
   <target name="locker.comp" depends="locker.pre-comp" if="locker.comp.needed">
     <stopwatch name="locker.comp.timer"/>
     <mkdir dir="${build-locker.dir}/classes/compiler"/>
-    <!-- Compile MSIL inside of locker.... -->
-    <javac
-      srcdir="${src.dir}/msil"
-      destdir="${build-locker.dir}/classes/compiler"
-      classpath="${build-locker.dir}/classes/compiler"
-      includes="**/*.java"
-      excludes="**/tests/**"
-      debug="true"
-      target="1.5" source="1.4">
-        <compilerarg line="${javac.args}"/>
-    </javac>
-    <scalacfork
-      destdir="${build-locker.dir}/classes/compiler"
-      compilerpathref="starr.classpath"
-      params="${scalac.args.all}"
-      srcdir="${src.dir}/msil"
-      jvmargs="${scalacfork.jvmargs}">
-      <include name="**/*.scala"/>
-      <compilationpath>
-        <pathelement location="${build-locker.dir}/classes/library"/>
-        <pathelement location="${build-locker.dir}/classes/reflect"/>
-        <pathelement location="${build-locker.dir}/classes/compiler"/>
-        <path refid="fjbg.classpath"/>
-        <path refid="aux.libs"/>
-        <pathelement location="${jline.jar}"/>
-      </compilationpath>
-    </scalacfork>
+    <if>
+      <equals arg1="${fastlocker}" arg2="true" />
+      <then>
+        <!-- Fastlocker build: don't compile MSIL, use its starr version.... -->
+        <property name="locker.comp.msil" value="${msil.starr.jar}"/>
+      </then>
+      <else>
+        <!-- Regular build: Compile MSIL inside of locker.... -->
+        <javac
+          srcdir="${src.dir}/msil"
+          destdir="${build-locker.dir}/classes/compiler"
+          classpath="${build-locker.dir}/classes/compiler"
+          includes="**/*.java"
+          excludes="**/tests/**"
+          debug="true"
+          target="1.5" source="1.4">
+            <compilerarg line="${javac.args}"/>
+        </javac>
+        <scalacfork
+          destdir="${build-locker.dir}/classes/compiler"
+          compilerpathref="starr.classpath"
+          params="${scalac.args.all}"
+          srcdir="${src.dir}/msil"
+          jvmargs="${scalacfork.jvmargs}">
+          <include name="**/*.scala"/>
+          <compilationpath>
+            <pathelement location="${build-locker.dir}/classes/library"/>
+            <pathelement location="${build-locker.dir}/classes/reflect"/>
+            <pathelement location="${build-locker.dir}/classes/compiler"/>
+            <path refid="fjbg.classpath"/>
+            <path refid="aux.libs"/>
+            <pathelement location="${jline.jar}"/>
+          </compilationpath>
+        </scalacfork>
+        <property name="locker.comp.msil" value="${build-locker.dir}/classes/compiler"/>
+      </else>
+    </if>
     <scalacfork
       destdir="${build-locker.dir}/classes/compiler"
       compilerpathref="starr.classpath"
@@ -718,6 +752,7 @@ LOCAL REFERENCE BUILD (LOCKER)
         <path refid="fjbg.classpath"/>
         <path refid="aux.libs"/>
         <path refid="asm.classpath"/>
+        <pathelement location="${locker.comp.msil}" />
         <pathelement location="${jline.jar}"/>
       </compilationpath>
     </scalacfork>
