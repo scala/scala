@@ -179,7 +179,7 @@ trait Definitions extends api.StandardDefinitions {
     val EmptyPackage: ModuleSymbol = rootMirror.EmptyPackage
 
     @deprecated("Moved to rootMirror.EmptyPackageClass", "2.10.0")
-    val EmptyPackageClass: ClassSymbol = rootMirror.RootClass
+    val EmptyPackageClass: ClassSymbol = rootMirror.EmptyPackageClass
 
     // It becomes tricky to create dedicated objects for other symbols because
     // of initialization order issues.
