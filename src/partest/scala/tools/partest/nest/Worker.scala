@@ -609,7 +609,7 @@ class Worker(val fileManager: FileManager, params: TestRunParams) extends Actor 
           NestUI.verbose(file2String(logFile))
           // obviously this must be improved upon
           val lines = SFile(logFile).lines map (_.trim) filterNot (_ == "") toBuffer;
-          if (lines forall (x => !x.startsWith("!"))) {
+          if (lines forall (x => x.startsWith("+"))) {
             NestUI.verbose("test for '" + file + "' success: " + succeeded)
             true
           }
