@@ -412,7 +412,7 @@ object Predef extends LowPriorityImplicits {
    *
    * In part contributed by Jason Zaugg.
    */
-  @implicitNotFound(msg = "Cannot prove that `${From} <:< ${To}`.")
+  @implicitNotFound(msg = "Cannot prove that ${From} <:< ${To}.")
   sealed abstract class <:<[-From, +To] extends (From => To) with Serializable
   private[this] final val singleton_<:< = new <:<[Any,Any] { def apply(x: Any): Any = x }
   // not in the <:< companion object because it is also
@@ -423,7 +423,7 @@ object Predef extends LowPriorityImplicits {
    *
    * @see `<:<` for expressing subtyping constraints
    */
-  @implicitNotFound(msg = "Cannot prove that `${From} =:= ${To}`.")
+  @implicitNotFound(msg = "Cannot prove that ${From} =:= ${To}.")
   sealed abstract class =:=[From, To] extends (From => To) with Serializable
   private[this] final val singleton_=:= = new =:=[Any,Any] { def apply(x: Any): Any = x }
   object =:= {
