@@ -65,7 +65,7 @@ trait Variances {
 
   /** Compute variance of type parameter <code>tparam</code> in type <code>tp</code>. */
   def varianceInType(tp: Type)(tparam: Symbol): Int = tp match {
-    case ErrorType | WildcardType | NoType | NoPrefix | ThisType(_) | ConstantType(_) =>
+    case ErrorType | WildcardType | BoundedWildcardType(_) | NoType | NoPrefix | ThisType(_) | ConstantType(_) =>
       VARIANCES
     case SingleType(pre, sym) =>
       varianceInType(pre)(tparam)
