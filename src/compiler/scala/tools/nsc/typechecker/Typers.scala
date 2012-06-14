@@ -3987,7 +3987,6 @@ trait Typers extends Modes with Adaptations with Tags {
             ReturnWithoutTypeError(tree, enclMethod.owner)
           } else {
             context.enclMethod.returnsSeen = true
-            //TODO: also pass enclMethod.tree, so that adaptAnnotations can check whether return is in tail position
             pushAnnotationContext(tree)
             val expr1: Tree = typed(expr, EXPRmode | BYVALmode, restpt.tpe)
             popAnnotationContext()
