@@ -112,7 +112,6 @@ object ScalaBuild extends Build with Layers with Packaging with Testing {
     javacOptions ++= Seq("-target", "1.5", "-source", "1.5"),
     scalaSource in Compile <<= (baseDirectory, name) apply (_ / "src" / _),
     javaSource in Compile <<= (baseDirectory, name) apply (_ / "src" / _),
-    autoScalaLibrary := false,
     unmanagedJars in Compile := Seq(),
     // Most libs in the compiler use this order to build.
     compileOrder in Compile := CompileOrder.JavaThenScala,
@@ -200,9 +199,9 @@ object ScalaBuild extends Build with Layers with Packaging with Testing {
 
   // TODO - in sabbus, these all use locker to build...  I think tihs way is better, but let's farm this idea around.
   lazy val dependentProjectSettings = settingOverrides ++ Seq(quickScalaInstance, quickScalaLibraryDependency, addCheaterDependency("scala-library"))
-  lazy val actors = Project("actors", file(".")) settings(dependentProjectSettings:_*) dependsOn(forkjoin % "provided")
-  lazy val swing = Project("swing", file(".")) settings(dependentProjectSettings:_*) dependsOn(actors % "provided")
-  lazy val actorsMigration = Project("actors-migration", file(".")) settings(dependentProjectSettings:_*) dependsOn(actors % "provided")
+  lazy val actors = Project("scala-actors", file(".")) settings(dependentProjectSettings:_*) dependsOn(forkjoin % "provided")
+  lazy val swing = Project("scala-swing", file(".")) settings(dependentProjectSettings:_*) dependsOn(actors % "provided")
+  lazy val actorsMigration = Project("scala-actors-migration", file(".")) settings(dependentProjectSettings:_*) dependsOn(actors % "provided")
   // This project will generate man pages (in man1 and html) for scala.    
   lazy val manmakerSettings: Seq[Setting[_]] = dependentProjectSettings :+ externalDeps
   lazy val manmaker = Project("manual", file(".")) settings(manmakerSettings:_*)
@@ -263,7 +262,7 @@ object ScalaBuild extends Build with Layers with Packaging with Testing {
   // --------------------------------------------------------------
 
   lazy val packageScalaReflect = Seq(quickReflect).map(p => products in p in Compile).join.map(_.flatten).map(productTaskToMapping)
-  lazy val scalaReflectArtifactSettings : Seq[Setting[_]] = inConfig(Compile)(Defaults.packageTasks(packageBin, packageScalaBinTask)) ++ Seq(
+  lazy val scalaReflectArtifactSettings : Seq[Setting[_]] = inConfig(Compile)(Defaults.packageTasks(packageBin, packageScalaReflect)) ++ Seq(
     name := "scala-reflect",
     crossPaths := false,
     exportJars := true,
