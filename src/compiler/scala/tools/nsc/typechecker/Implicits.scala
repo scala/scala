@@ -739,15 +739,33 @@ trait Implicits {
      *                    enclosing scope, and so on.
      */
     class ImplicitComputation(iss: Infoss, isLocal: Boolean) {
-      private val shadowed = util.HashSet[Name](512)
+      abstract class Shadower {
+        def addInfos(infos: Infos)
+        def isShadowed(name: Name): Boolean
+      }
+      private val shadower: Shadower = {
+        /** Used for exclude implicits from outer scopes that are shadowed by same-named implicits */
+        final class LocalShadower extends Shadower {
+          val shadowed = util.HashSet[Name](512)
+          def addInfos(infos: Infos) {
+            shadowed addEntries infos.map(_.name)
+          }
+          def isShadowed(name: Name) = shadowed(name)
+        }
+        /** Used for the implicits of expected type, when no shadowing checks are needed. */
+        object NoShadower extends Shadower {
+          def addInfos(infos: Infos) {}
+          def isShadowed(name: Name) = false
+        }
+        if (isLocal) new LocalShadower else NoShadower
+      }
+
       private var best: SearchResult = SearchFailure
-      private def isShadowed(name: Name) = (
-        isLocal && shadowed(name)
-      )
+
       private def isIneligible(info: ImplicitInfo) = (
            info.isCyclicOrErroneous
         || isView && isPredefMemberNamed(info.sym, nme.conforms)
-        || isShadowed(info.name)
+        || shadower.isShadowed(info.name)
         || (!context.macrosEnabled && info.sym.isTermMacro)
       )
 
@@ -786,7 +804,7 @@ trait Implicits {
       val eligible = {
         val matches = iss flatMap { is =>
           val result = is filter (info => checkValid(info.sym) && survives(info))
-          if (isLocal) shadowed addEntries (is map (_.name))
+          shadower addInfos is
           result
         }
 
