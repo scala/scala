@@ -7,7 +7,7 @@ import scala.tools.nsc.util.ClassPath._
 import scala.reflect.runtime.ReflectionUtils
 import scala.collection.mutable.ListBuffer
 import scala.compat.Platform.EOL
-import util.Statistics._
+import reflect.internal.util.Statistics
 import scala.reflect.makro.util._
 import java.lang.{Class => jClass}
 import java.lang.reflect.{Array => jArray, Method => jMethod}
@@ -42,6 +42,7 @@ trait Macros extends scala.tools.reflect.FastTrack with Traces {
 
   import global._
   import definitions._
+  import MacrosStats._
   def globalSettings = global.settings
 
   val globalMacroCache = collection.mutable.Map[Any, Any]()
@@ -945,8 +946,8 @@ trait Macros extends scala.tools.reflect.FastTrack with Traces {
       this.fail(typer, tree, err.errPos, "failed to %s: %s".format(what, err.errMsg))
       return expandee
     }
-    val start = startTimer(macroExpandNanos)
-    incCounter(macroExpandCount)
+    val start = Statistics.startTimer(macroExpandNanos)
+    Statistics.incCounter(macroExpandCount)
     try {
       macroExpand1(typer, expandee) match {
         case Success(expanded0) =>
@@ -993,7 +994,7 @@ trait Macros extends scala.tools.reflect.FastTrack with Traces {
           result
       }
     } finally {
-      stopTimer(macroExpandNanos, start)
+      Statistics.stopTimer(macroExpandNanos, start)
     }
   }
 
@@ -1291,4 +1292,10 @@ trait Macros extends scala.tools.reflect.FastTrack with Traces {
           tree
       })
     }.transform(expandee)
+}
+
+object MacrosStats {
+  import reflect.internal.TypesStats.typerNanos
+  val macroExpandCount    = Statistics.newCounter ("#macro expansions", "typer")
+  val macroExpandNanos    = Statistics.newSubTimer("time spent in macroExpand", typerNanos)
 }
