@@ -17,8 +17,6 @@ abstract class CPSAnnotationChecker extends CPSUtils with Modes {
    *  Checks whether @cps annotations conform
    */
   object checker extends AnnotationChecker {
-    private var contextStack: List[Tree] = List()
-
     private def addPlusMarker(tp: Type)  = tp withAnnotation newPlusMarker()
     private def addMinusMarker(tp: Type) = tp withAnnotation newMinusMarker()
 
@@ -26,12 +24,6 @@ abstract class CPSAnnotationChecker extends CPSUtils with Modes {
       removeAttribs(tp, MarkerCPSAdaptPlus, MarkerCPSTypes)
     private def cleanPlusWith(tp: Type)(newAnnots: AnnotationInfo*) =
       cleanPlus(tp) withAnnotations newAnnots.toList
-
-    override def pushAnnotationContext(tree: Tree): Unit =
-      contextStack = tree :: contextStack
-
-    override def popAnnotationContext(): Unit =
-      contextStack = contextStack.tail
 
     /** Check annotations to decide whether tpe1 <:< tpe2 */
     def annotationsConform(tpe1: Type, tpe2: Type): Boolean = {
@@ -124,11 +116,6 @@ abstract class CPSAnnotationChecker extends CPSUtils with Modes {
         bounds
     }
 
-    private def inReturnContext(tree: Tree): Boolean = !contextStack.isEmpty && (contextStack.head match {
-      case Return(tree1) => tree1 == tree
-      case _ => false
-    })
-
     override def canAdaptAnnotations(tree: Tree, mode: Int, pt: Type): Boolean = {
       if (!cpsEnabled) return false
       vprintln("can adapt annotations? " + tree + " / " + tree.tpe + " / " + Integer.toHexString(mode) + " / " + pt)
@@ -183,7 +170,7 @@ abstract class CPSAnnotationChecker extends CPSUtils with Modes {
             vprintln("yes we can!! (byval)")
             return true
           }
-        } else if (inReturnContext(tree)) {
+        } else if ((mode & global.analyzer.RETmode) != 0) {
           vprintln("yes we can!! (return)")
           return true
         }
@@ -199,6 +186,7 @@ abstract class CPSAnnotationChecker extends CPSUtils with Modes {
       val patMode   = (mode & global.analyzer.PATTERNmode) != 0
       val exprMode  = (mode & global.analyzer.EXPRmode) != 0
       val byValMode = (mode & global.analyzer.BYVALmode) != 0
+      val retMode   = (mode & global.analyzer.RETmode) != 0
 
       val annotsTree     = cpsParamAnnotation(tree.tpe)
       val annotsExpected = cpsParamAnnotation(pt)
@@ -225,7 +213,7 @@ abstract class CPSAnnotationChecker extends CPSUtils with Modes {
         val res = tree modifyType addMinusMarker
         vprintln("adapted annotations (by val) of " + tree + " to " + res.tpe)
         res
-      } else if (inReturnContext(tree) && !hasPlusMarker(tree.tpe) && annotsTree.isEmpty && annotsExpected.nonEmpty) {
+      } else if (retMode && !hasPlusMarker(tree.tpe) && annotsTree.isEmpty && annotsExpected.nonEmpty) {
         // add a marker annotation that will make tree.tpe behave as pt, subtyping wise
         // tree will look like having no annotation
         val res = tree modifyType (_ withAnnotations List(newPlusMarker()))

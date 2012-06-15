@@ -151,6 +151,10 @@ trait CPSUtils {
     case Block(stms, expr) =>
       treeCopy.Block(tree, stms, removeTailReturn(expr, ids))
 
+    case If(cond, r1 @ Return(thenExpr), r2 @ Return(elseExpr)) =>
+      ids ++= Seq(r1.id, r2.id)
+      treeCopy.If(tree, cond, removeTailReturn(thenExpr, ids), removeTailReturn(elseExpr, ids))
+
     case If(cond, thenExpr, elseExpr) =>
       treeCopy.If(tree, cond, removeTailReturn(thenExpr, ids), removeTailReturn(elseExpr, ids))
 

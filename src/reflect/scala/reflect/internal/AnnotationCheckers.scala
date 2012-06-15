@@ -47,10 +47,6 @@ trait AnnotationCheckers {
      *  before. If the implementing class cannot do the adaptiong, it
      *  should return the tree unchanged.*/
     def adaptAnnotations(tree: Tree, mode: Int, pt: Type): Tree = tree
-
-    def pushAnnotationContext(tree: Tree): Unit = {}
-
-    def popAnnotationContext(): Unit = {}
   }
 
   // Syncnote: Annotation checkers inaccessible to reflection, so no sync in var necessary.
@@ -121,15 +117,5 @@ trait AnnotationCheckers {
   def adaptAnnotations(tree: Tree, mode: Int, pt: Type): Tree = {
     annotationCheckers.foldLeft(tree)((tree, checker) =>
       checker.adaptAnnotations(tree, mode, pt))
-  }
-
-  def pushAnnotationContext(tree: Tree): Unit = {
-    annotationCheckers.foreach(checker =>
-      checker.pushAnnotationContext(tree))
-  }
-
-  def popAnnotationContext(): Unit = {
-    annotationCheckers.foreach(checker =>
-      checker.popAnnotationContext())
   }
 }
