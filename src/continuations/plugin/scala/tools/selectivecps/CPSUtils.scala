@@ -138,38 +138,38 @@ trait CPSUtils {
   }
 
   def isTailReturn(retExpr: Tree, body: Tree): Boolean = {
-    val removedIds = ListBuffer[Int]()
-    removeTailReturn(body, removedIds)
-    removedIds contains retExpr.id
+    val removed = ListBuffer[Tree]()
+    removeTailReturn(body, removed)
+    removed contains retExpr
   }
 
-  def removeTailReturn(tree: Tree, ids: ListBuffer[Int]): Tree = tree match {
+  def removeTailReturn(tree: Tree, removed: ListBuffer[Tree]): Tree = tree match {
     case Block(stms, r @ Return(expr)) =>
-      ids += r.id
+      removed += r
       treeCopy.Block(tree, stms, expr)
 
     case Block(stms, expr) =>
-      treeCopy.Block(tree, stms, removeTailReturn(expr, ids))
+      treeCopy.Block(tree, stms, removeTailReturn(expr, removed))
 
     case If(cond, r1 @ Return(thenExpr), r2 @ Return(elseExpr)) =>
-      ids ++= Seq(r1.id, r2.id)
-      treeCopy.If(tree, cond, removeTailReturn(thenExpr, ids), removeTailReturn(elseExpr, ids))
+      removed ++= Seq(r1, r2)
+      treeCopy.If(tree, cond, removeTailReturn(thenExpr, removed), removeTailReturn(elseExpr, removed))
 
     case If(cond, thenExpr, elseExpr) =>
-      treeCopy.If(tree, cond, removeTailReturn(thenExpr, ids), removeTailReturn(elseExpr, ids))
+      treeCopy.If(tree, cond, removeTailReturn(thenExpr, removed), removeTailReturn(elseExpr, removed))
 
     case Try(block, catches, finalizer) =>
       treeCopy.Try(tree,
-        removeTailReturn(block, ids),
-        (catches map (t => removeTailReturn(t, ids))).asInstanceOf[List[CaseDef]],
-        removeTailReturn(finalizer, ids))
+        removeTailReturn(block, removed),
+        (catches map (t => removeTailReturn(t, removed))).asInstanceOf[List[CaseDef]],
+        removeTailReturn(finalizer, removed))
 
     case CaseDef(pat, guard, r @ Return(expr)) =>
-      ids += r.id
+      removed += r
       treeCopy.CaseDef(tree, pat, guard, expr)
 
     case CaseDef(pat, guard, body) =>
-      treeCopy.CaseDef(tree, pat, guard, removeTailReturn(body, ids))
+      treeCopy.CaseDef(tree, pat, guard, removeTailReturn(body, removed))
 
     case _ =>
       tree

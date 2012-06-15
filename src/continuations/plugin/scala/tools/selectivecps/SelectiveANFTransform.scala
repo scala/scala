@@ -52,12 +52,12 @@ abstract class SelectiveANFTransform extends PluginComponent with Transform with
           debuglog("transforming " + dd.symbol)
 
           atOwner(dd.symbol) {
-            val tailReturns = ListBuffer[Int]()
+            val tailReturns = ListBuffer[Tree]()
             val rhs = removeTailReturn(rhs0, tailReturns)
             // throw an error if there is a Return tree which is not in tail position
             rhs0 foreach {
               case r @ Return(_) =>
-                if (!tailReturns.contains(r.id))
+                if (!tailReturns.contains(r))
                   unit.error(r.pos, "return expressions in CPS code must be in tail position")
               case _ => /* do nothing */
             }
