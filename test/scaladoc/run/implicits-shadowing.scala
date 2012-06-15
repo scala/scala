@@ -22,12 +22,8 @@ object Test extends ScaladocModelTest {
     val A = base._class("A")
 
     conv = A._conversion(base._object("A").qualifiedName + ".AtoZ")
-    assert(conv.members.length == 5)
-    conv._member("conv5")
-    conv._member("conv8")
-    conv._member("conv9")
-    conv._member("conv10")
-    conv._member("conv11")
+    assert(conv.members.length == 11)
+    assert(conv.members.forall(_.byConversion.get.isShadowed))
     assert(conv.constraints.length == 0)
 
 //// class B ///////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -35,11 +31,8 @@ object Test extends ScaladocModelTest {
     val B = base._class("B")
 
     conv = B._conversion(base._object("A").qualifiedName + ".AtoZ")
-    assert(conv.members.length == 4)
-    conv._member("conv5")
-    conv._member("conv8")
-    conv._member("conv9")
-    conv._member("conv11")
+    assert(conv.members.length == 11)
+    assert(conv.members.forall(_.byConversion.get.isShadowed))
     assert(conv.constraints.length == 0)
 
 //// class C ///////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -47,12 +40,8 @@ object Test extends ScaladocModelTest {
     val C = base._class("C")
 
     conv = C._conversion(base._object("A").qualifiedName + ".AtoZ")
-    assert(conv.members.length == 5)
-    conv._member("conv5")
-    conv._member("conv8")
-    conv._member("conv9")
-    conv._member("conv10")
-    conv._member("conv11")
+    assert(conv.members.length == 11)
+    assert(conv.members.forall(_.byConversion.get.isShadowed))
     assert(conv.constraints.length == 0)
 
 //// class D ///////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -60,11 +49,8 @@ object Test extends ScaladocModelTest {
     val D = base._class("D")
 
     conv = D._conversion(base._object("A").qualifiedName + ".AtoZ")
-    assert(conv.members.length == 4)
-    conv._member("conv5")
-    conv._member("conv8")
-    conv._member("conv9")
-    conv._member("conv10")
+    assert(conv.members.length == 11)
+    assert(conv.members.forall(_.byConversion.get.isShadowed))
     assert(conv.constraints.length == 0)
   }
 }
