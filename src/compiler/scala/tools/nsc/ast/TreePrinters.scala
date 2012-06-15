@@ -276,8 +276,8 @@ trait TreePrinters extends reflect.internal.TreePrinters { this: Global =>
     }
   }
 
-  def asString(t: Tree): String = show(t, newStandardTreePrinter)
-  def asCompactString(t: Tree): String = show(t, newCompactTreePrinter)
+  def asString(t: Tree): String = render(t, newStandardTreePrinter, settings.printtypes.value, settings.uniqid.value, settings.Yshowsymkinds.value)
+  def asCompactString(t: Tree): String = render(t, newCompactTreePrinter, settings.printtypes.value, settings.uniqid.value, settings.Yshowsymkinds.value)
 
   def newStandardTreePrinter(writer: PrintWriter): TreePrinter = new TreePrinter(writer)
   def newStandardTreePrinter(stream: OutputStream): TreePrinter = newStandardTreePrinter(new PrintWriter(stream))

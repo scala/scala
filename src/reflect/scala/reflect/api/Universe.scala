@@ -9,7 +9,7 @@ abstract class Universe extends base.Universe
                            with FlagSets
                            with Names
                            with Trees
-                           with TreePrinters
+                           with Printers
                            with Constants
                            with Positions
                            with Mirrors
