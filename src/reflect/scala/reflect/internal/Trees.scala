@@ -809,7 +809,7 @@ trait Trees extends api.Trees { self: SymbolTable =>
     }
   }
 
-  // Belongs in TreeInfo but then I can't reach it from TreePrinters.
+  // Belongs in TreeInfo but then I can't reach it from Printers.
   def isReferenceToScalaMember(t: Tree, Id: Name) = t match {
     case Ident(Id)                                          => true
     case Select(Ident(nme.scala_), Id)                      => true

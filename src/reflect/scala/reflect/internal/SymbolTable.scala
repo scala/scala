@@ -28,7 +28,7 @@ abstract class SymbolTable extends makro.Universe
                               with AnnotationInfos
                               with AnnotationCheckers
                               with Trees
-                              with TreePrinters
+                              with Printers
                               with Positions
                               with TypeDebugging
                               with Importers
