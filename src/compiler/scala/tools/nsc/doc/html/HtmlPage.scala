@@ -13,7 +13,7 @@ import comment._
 import xml.{XML, NodeSeq}
 import xml.dtd.{DocType, PublicID}
 import scala.collection._
-import java.nio.channels.Channels
+import java.io.Writer
 
 /** An html page that is part of a Scaladoc site.
   * @author David Bernard
@@ -52,17 +52,19 @@ abstract class HtmlPage extends Page { thisPage =>
         </head>
         { body }
       </html>
-    val fos = createFileOutputStream(site)
-    val w = Channels.newWriter(fos.getChannel, site.encoding)
-    try {
+
+    writeFile(site) { (w: Writer) =>
       w.write("<?xml version='1.0' encoding='" + site.encoding + "'?>\n")
       w.write(doctype.toString + "\n")
       w.write(xml.Xhtml.toXhtml(html))
     }
-    finally {
-      w.close()
-      fos.close()
-    }
+
+    if (site.universe.settings.docRawOutput.value)
+      writeFile(site, ".raw") {
+        // we're only interested in the body, as this will go into the diff
+        _.write(body.text)
+      }
+
     //XML.save(pageFile.getPath, html, site.encoding, xmlDecl = false, doctype = doctype)
   }
 

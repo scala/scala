@@ -120,6 +120,11 @@ class Settings(error: String => Unit) extends scala.tools.nsc.Settings(error) {
     "dot" // by default, just pick up the system-wide dot
   )
 
+  val docRawOutput = BooleanSetting (
+    "-raw-output",
+    "For each html file, create another .html.raw file containing only the text. (can be used for quickly diffing two scaladoc outputs)"
+  )
+
   // Somewhere slightly before r18708 scaladoc stopped building unless the
   // self-type check was suppressed.  I hijacked the slotted-for-removal-anyway
   // suppress-vt-warnings option and renamed it for this purpose.

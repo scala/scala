@@ -150,6 +150,9 @@ class Scaladoc extends ScalaMatchingTask {
   /** Instruct the scaladoc tool to use the binary given to create diagrams */
   private var docDiagramsDotPath: Option[String] = None
 
+  /** Instruct the scaladoc to produce textual ouput from html pages, for easy diff-ing */
+  private var docRawOutput: Boolean = false
+
 
 /*============================================================================*\
 **                             Properties setters                             **
@@ -419,6 +422,11 @@ class Scaladoc extends ScalaMatchingTask {
   def setDiagramsDotPath(input: String) =
     docDiagramsDotPath = Some(input)
 
+  /** Set the `rawOutput` bit so Scaladoc also outputs text from each html file
+   *  @param input One of the flags `yes/no` or `on/off`. Default if no/off. */
+  def setRawOutput(input: String) =
+    docRawOutput = Flag.getBooleanValue(input, "rawOutput")
+
 /*============================================================================*\
 **                             Properties getters                             **
 \*============================================================================*/
@@ -616,6 +624,7 @@ class Scaladoc extends ScalaMatchingTask {
     docSettings.docImplicitsShowAll.value = docImplicitsShowAll
     docSettings.docDiagrams.value = docDiagrams
     docSettings.docDiagramsDebug.value = docDiagramsDebug
+    docSettings.docRawOutput.value = docRawOutput
     if(!docDiagramsDotPath.isEmpty) docSettings.docDiagramsDotPath.value = docDiagramsDotPath.get
 
     if (!docgenerator.isEmpty) docSettings.docgenerator.value = docgenerator.get

@@ -15,14 +15,8 @@ class IndexScript(universe: doc.Universe, index: doc.Index) extends Page {
   def path = List("index.js")
 
   override def writeFor(site: HtmlFactory) {
-    val stream = createFileOutputStream(site)
-    val writer = Channels.newWriter(stream.getChannel, site.encoding)
-    try {
-      writer.write("Index.PACKAGES = " + packages.toString() + ";")
-    }
-    finally {
-      writer.close
-      stream.close
+    writeFile(site) {
+      _.write("Index.PACKAGES = " + packages.toString() + ";")
     }
   }
 
