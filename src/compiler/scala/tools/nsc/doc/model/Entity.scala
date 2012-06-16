@@ -53,6 +53,9 @@ trait Entity {
 
   /** The kind of the entity */
   def kind: String
+
+  /** Whether or not the template was defined in a package object */
+  def inPackageObject: Boolean
 }
 
 object Entity {
@@ -90,9 +93,6 @@ trait TemplateEntity extends Entity {
 
   /** Whether this template is a case class. */
   def isCaseClass: Boolean
-
-  /** Whether or not the template was defined in a package object */
-  def inPackageObject: Boolean
 
   /** The self-type of this template, if it differs from the template type. */
   def selfType : Option[TypeEntity]
@@ -183,7 +183,11 @@ trait MemberEntity extends Entity {
 
   /** If this member originates from an implicit conversion, we set the implicit information to the correct origin */
   def byConversion: Option[ImplicitConversion]
+
+  /** The identity of this member, used for linking */
+  def signature: String
 }
+
 object MemberEntity {
   // Oh contravariance, contravariance, wherefore art thou contravariance?
   // Note: the above works for both the commonly misunderstood meaning of the line and the real one.
@@ -205,7 +209,10 @@ trait NoDocTemplate extends TemplateEntity {
   def kind = "<no doc>"
 }
 
-/** TODO: Document */
+/** An inherited template that was not documented in its original owner - example:
+ *  in classpath:  trait T { class C } -- T (and implicitly C) are not documented
+ *  in the source: trait U extends T -- C appears in U as a NoDocTemplateMemberImpl
+ *    -- that is, U has a member for it but C doesn't get its own page */
 trait NoDocTemplateMemberEntity extends TemplateEntity with MemberEntity {
   def kind = "<no doc, mbr>"
 }
@@ -253,7 +260,7 @@ trait DocTemplateEntity extends TemplateEntity with MemberEntity {
 
   /** All templates that are members of this template. If this template is a package, only templates for which
     * documentation is available  in the universe (`DocTemplateEntity`) are listed. */
-  def templates: List[DocTemplateEntity]
+  def templates: List[TemplateEntity with MemberEntity]
 
   /** All methods that are members of this template. */
   def methods: List[Def]

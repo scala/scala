@@ -155,12 +155,18 @@ abstract class HtmlPage extends Page { thisPage =>
     def toLinksIn(inPos: Int, starts: List[Int]): NodeSeq = {
       val (tpl, width) = tpe.refEntity(inPos)
       (tpl match {
-        case dtpl:DocTemplateEntity if hasLinks =>
+        case LinkToTpl(dtpl:DocTemplateEntity) if hasLinks =>
           <a href={ relativeLinkTo(dtpl) } class="extype" name={ dtpl.qualifiedName }>{
             string.slice(inPos, inPos + width)
           }</a>
-        case tpl =>
+        case LinkToTpl(tpl) =>
           <span class="extype" name={ tpl.qualifiedName }>{ string.slice(inPos, inPos + width) }</span>
+        case LinkToMember(mbr, inTpl) if hasLinks =>
+          <a href={ relativeLinkTo(inTpl) + "#" + mbr.signature } class="extmbr" name={ mbr.qualifiedName }>{
+            string.slice(inPos, inPos + width)
+          }</a>
+        case LinkToMember(mbr, inTpl) =>
+          <span class="extmbr" name={ mbr.qualifiedName }>{ string.slice(inPos, inPos + width) }</span>
       }) ++ toLinksOut(inPos + width, starts.tail)
     }
     if (hasLinks)

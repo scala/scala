@@ -138,7 +138,7 @@ class HtmlFactory(val universe: doc.Universe, index: doc.Index) {
       if (!(written contains tpl)) {
         writeForThis(new page.Template(universe, diagramGenerator, tpl))
         written += tpl
-        tpl.templates map writeTemplate
+        tpl.templates collect { case d: DocTemplateEntity => d } map writeTemplate
       }
     }
 

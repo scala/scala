@@ -48,7 +48,7 @@ abstract class Page {
     * @param generator The generator that is writing this page. */
   def writeFor(site: HtmlFactory): Unit
 
-  def docEntityKindToString(ety: DocTemplateEntity) =
+  def docEntityKindToString(ety: TemplateEntity) =
   	if (ety.isTrait) "trait"
   	else if (ety.isCaseClass) "case class"
   	else if (ety.isClass) "class"

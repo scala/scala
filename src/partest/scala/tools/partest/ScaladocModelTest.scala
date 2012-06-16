@@ -103,13 +103,22 @@ abstract class ScaladocModelTest extends DirectTest {
 
     class TemplateAccess(tpl: DocTemplateEntity) {
       def _class(name: String): DocTemplateEntity = getTheFirst(_classes(name), tpl.qualifiedName + ".class(" + name + ")")
-      def _classes(name: String): List[DocTemplateEntity] = tpl.templates.filter(_.name == name).collect({ case c: Class => c})
+      def _classes(name: String): List[DocTemplateEntity] = tpl.templates.filter(_.name == name).collect({ case c: DocTemplateEntity with Class => c})
+
+      def _classMbr(name: String): NoDocTemplateMemberEntity = getTheFirst(_classesMbr(name), tpl.qualifiedName + ".classMember(" + name + ")")
+      def _classesMbr(name: String): List[NoDocTemplateMemberEntity] = tpl.templates.filter(_.name == name).collect({ case c: NoDocTemplateMemberEntity if c.isClass => c})
 
       def _trait(name: String): DocTemplateEntity = getTheFirst(_traits(name), tpl.qualifiedName + ".trait(" + name + ")")
-      def _traits(name: String): List[DocTemplateEntity] = tpl.templates.filter(_.name == name).collect({ case t: Trait => t})
+      def _traits(name: String): List[DocTemplateEntity] = tpl.templates.filter(_.name == name).collect({ case t: DocTemplateEntity with Trait => t})
+
+      def _traitMbr(name: String): NoDocTemplateMemberEntity = getTheFirst(_traitsMbr(name), tpl.qualifiedName + ".traitMember(" + name + ")")
+      def _traitsMbr(name: String): List[NoDocTemplateMemberEntity] = tpl.templates.filter(_.name == name).collect({ case t: NoDocTemplateMemberEntity if t.isTrait => t})
 
       def _object(name: String): DocTemplateEntity = getTheFirst(_objects(name), tpl.qualifiedName + ".object(" + name + ")")
-      def _objects(name: String): List[DocTemplateEntity] = tpl.templates.filter(_.name == name).collect({ case o: Object => o})
+      def _objects(name: String): List[DocTemplateEntity] = tpl.templates.filter(_.name == name).collect({ case o: DocTemplateEntity with Object => o})
+
+      def _objectMbr(name: String): NoDocTemplateMemberEntity = getTheFirst(_objectsMbr(name), tpl.qualifiedName + ".objectMember(" + name + ")")
+      def _objectsMbr(name: String): List[NoDocTemplateMemberEntity] = tpl.templates.filter(_.name == name).collect({ case o: NoDocTemplateMemberEntity if o.isObject => o})
 
       def _method(name: String): Def = getTheFirst(_methods(name), tpl.qualifiedName + ".method(" + name + ")")
       def _methods(name: String): List[Def] = tpl.methods.filter(_.name == name)
@@ -119,6 +128,12 @@ abstract class ScaladocModelTest extends DirectTest {
 
       def _conversion(name: String): ImplicitConversion = getTheFirst(_conversions(name), tpl.qualifiedName + ".conversion(" + name + ")")
       def _conversions(name: String): List[ImplicitConversion] = tpl.conversions.filter(_.conversionQualifiedName == name)
+
+      def _absType(name: String): MemberEntity = getTheFirst(_methods(name), tpl.qualifiedName + ".abstractType(" + name + ")")
+      def _absTypes(name: String): List[MemberEntity] = tpl.members.filter(mbr => mbr.name == name && mbr.isAbstractType)
+
+      def _aliasType(name: String): MemberEntity = getTheFirst(_methods(name), tpl.qualifiedName + ".aliasType(" + name + ")")
+      def _aliasTypes(name: String): List[MemberEntity] = tpl.members.filter(mbr => mbr.name == name && mbr.isAliasType)
     }
 
     class PackageAccess(pack: Package) extends TemplateAccess(pack) {
@@ -141,7 +156,10 @@ abstract class ScaladocModelTest extends DirectTest {
       case 1 => list.head
       case 0 => sys.error("Error getting " + expl + ": No such element.")
       case _ => sys.error("Error getting " + expl + ": " + list.length + " elements with this name. " +
-                  "All elements in list: [" + list.mkString(", ") + "]")
+                  "All elements in list: [" + list.map({
+                    case ent: Entity => ent.kind + " " + ent.qualifiedName
+                    case other => other.toString
+                  }).mkString(", ") + "]")
     }
 
     def extractCommentText(c: Comment) = {

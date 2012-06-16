@@ -32,7 +32,7 @@ trait DiagramFactory extends DiagramDirectiveParser {
   def normalNode(sym: Symbol) =
     NormalNode(makeTemplate(sym).ownType, Some(makeTemplate(sym)))
   def aggregationNode(text: String) =
-    NormalNode(new TypeEntity { val name = text; val refEntity = SortedMap[Int, (TemplateEntity, Int)]() }, None)
+    NormalNode(new TypeEntity { val name = text; val refEntity = SortedMap[Int, (LinkTo, Int)]() }, None)
 
   /** Create the inheritance diagram for this template */
   def makeInheritanceDiagram(tpl: DocTemplateImpl): Option[Diagram] = {

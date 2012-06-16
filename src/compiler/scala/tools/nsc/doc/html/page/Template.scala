@@ -238,44 +238,12 @@ class Template(universe: doc.Universe, generator: DiagramGenerator, tpl: DocTemp
     </body>
   }
 
-  def boundsToString(hi: Option[TypeEntity], lo: Option[TypeEntity]): String = {
-    def bound0(bnd: Option[TypeEntity], pre: String): String = bnd match {
-      case None => ""
-      case Some(tpe) => pre ++ tpe.toString
-    }
-    bound0(hi, "<:") ++ bound0(lo, ">:")
-  }
-
-  def tparamsToString(tpss: List[TypeParam]): String = {
-    if (tpss.isEmpty) "" else {
-      def tparam0(tp: TypeParam): String =
-         tp.variance + tp.name + boundsToString(tp.hi, tp.lo)
-      def tparams0(tpss: List[TypeParam]): String = (tpss: @unchecked) match {
-        case tp :: Nil => tparam0(tp)
-        case tp :: tps => tparam0(tp) ++ ", " ++ tparams0(tps)
-      }
-      "[" + tparams0(tpss) + "]"
-    }
-  }
-
-  def defParamsToString(d: MemberEntity with Def): String = {
-    val paramLists: List[String] =
-      if (d.valueParams.isEmpty) Nil
-      else d.valueParams map (ps => ps map (_.resultType.name) mkString ("(",",",")"))
-
-    tparamsToString(d.typeParams) + paramLists.mkString
-  }
-
   def memberToHtml(mbr: MemberEntity, inTpl: DocTemplateEntity): NodeSeq = {
-    val defParamsString = mbr match {
-      case d:MemberEntity with Def => defParamsToString(d)
-      case _ => ""
-    }
     val memberComment = memberToCommentHtml(mbr, inTpl, false)
     <li name={ mbr.definitionName } visbl={ if (mbr.visibility.isProtected) "prt" else "pub" }
       data-isabs={ mbr.isAbstract.toString }
       fullComment={ if(memberComment.filter(_.label=="div").isEmpty) "no" else "yes" }>
-      <a id={ mbr.name +defParamsString +":"+ mbr.resultType.name}/>
+      <a id={ mbr.signature }/>
       { signature(mbr, false) }
       { memberComment }
     </li>
@@ -650,6 +618,7 @@ class Template(universe: doc.Universe, generator: DiagramGenerator, tpl: DocTemp
   def kindToString(mbr: MemberEntity): String = {
     mbr match {
       case tpl: DocTemplateEntity => docEntityKindToString(tpl)
+      case tpl: NoDocTemplateMemberEntity => docEntityKindToString(tpl)
       case ctor: Constructor => "new"
       case tme: MemberEntity =>
         ( if (tme.isDef) "def"
@@ -850,17 +819,12 @@ class Template(universe: doc.Universe, generator: DiagramGenerator, tpl: DocTemp
             val link = relativeLinkTo(mbr)
             myXml ++= <span class="name"><a href={link}>{str.substring(from, to)}</a></span>
           case mbr: MemberEntity =>
-            val anchor = "#" + mbr.name + defParamsString(mbr) + ":" + mbr.resultType.name
+            val anchor = "#" + mbr.signature
             val link = relativeLinkTo(mbr.inTemplate)
             myXml ++= <span class="name"><a href={link ++ anchor}>{str.substring(from, to)}</a></span>
         }
         index = to
       }
-    }
-    // function used in the MemberEntity case above
-    def defParamsString(mbr: Entity):String = mbr match {
-      case d:MemberEntity with Def => defParamsToString(d)
-      case _ => ""
     }
 
     if (index <= length-1)

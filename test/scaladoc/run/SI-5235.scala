@@ -77,11 +77,11 @@ object Test extends ScaladocModelTest {
     assert(gcReverseType.name == "GenericColl", gcReverseType.name + " == GenericColl")
     assert(scReverseType.name == "BullSh",      scReverseType.name + " == BullSh")
     assert(mcReverseType.name == "MyCollection",mcReverseType.name + " == MyCollection")
-    assert(gcReverseType.refEntity(0)._1 == GenericColl,
+    assert(gcReverseType.refEntity(0)._1 == LinkToTpl(GenericColl),
            gcReverse.qualifiedName + "'s return type has a link to " + GenericColl.qualifiedName)
-    assert(scReverseType.refEntity.isEmpty,
+    assert(!scReverseType.refEntity(0)._1.asInstanceOf[LinkToTpl].tpl.isDocTemplate,
            scReverse.qualifiedName + "'s return type does not have links")
-    assert(mcReverseType.refEntity(0)._1 == MyCollection,
+    assert(mcReverseType.refEntity(0)._1 == LinkToTpl(MyCollection),
            mcReverse.qualifiedName + "'s return type has a link to " + MyCollection.qualifiedName)
   }
 }
