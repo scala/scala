@@ -8,7 +8,8 @@ $(document).ready(function(){
                name == 'scala.Predef.any2stringfmt' ||
                name == 'scala.Predef.any2stringadd' ||
                name == 'scala.Predef.any2ArrowAssoc' ||
-               name == 'scala.Predef.any2Ensuring'
+               name == 'scala.Predef.any2Ensuring' ||
+               name == 'scala.collection.TraversableOnce.alternateImplicit'
     };
 
     $("#linearization li:gt(0)").filter(function(){
@@ -184,21 +185,18 @@ $(document).ready(function(){
     });
 
     /* Linear super types and known subclasses */
-    function toggleShowContentFct(outerElement){
-      var content = $(".hiddenContent", outerElement);
-      var vis = $(":visible", content);
-      if (vis.length > 0) {
+    function toggleShowContentFct(e){
+      e.toggleClass("open");
+      var content = $(".hiddenContent", e.parent().get(0));
+      if (content.is(':visible')) {
         content.slideUp(100);
-        $(".showElement", outerElement).show();
-        $(".hideElement", outerElement).hide();
       }
       else {
         content.slideDown(100);
-        $(".showElement", outerElement).hide();
-        $(".hideElement", outerElement).show();
       }
     };
-    $(".toggleContainer").click(function() {
+
+    $(".toggle:not(.diagram-link)").click(function() {
       toggleShowContentFct($(this));
     });
 
