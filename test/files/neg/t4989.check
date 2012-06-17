@@ -1,0 +1,4 @@
+t4989.scala:14: error: method print in class A cannot be directly accessed from class C because class B redeclares it as abstract
+  override def print(): String = super.print() // should be an error
+                                       ^
+one error found
