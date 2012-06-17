@@ -222,7 +222,13 @@ trait ContextErrors {
         NormalTypeError(tree, "super constructor cannot be passed a self reference unless parameter is declared by-name")
 
       def SuperConstrArgsThisReferenceError(tree: Tree) =
-        NormalTypeError(tree, "super constructor arguments cannot reference unconstructed `this`")
+        ConstrArgsThisReferenceError("super", tree)
+
+      def SelfConstrArgsThisReferenceError(tree: Tree) =
+        ConstrArgsThisReferenceError("self", tree)
+
+      private def ConstrArgsThisReferenceError(prefix: String, tree: Tree) =
+        NormalTypeError(tree, s"$prefix constructor arguments cannot reference unconstructed `this`")
 
       def TooManyArgumentListsForConstructor(tree: Tree) = {
         issueNormalTypeError(tree, "too many argument lists for constructor invocation")
