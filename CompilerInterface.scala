@@ -19,8 +19,9 @@ import java.io.File
 
 final class CompilerInterface
 {
-	def newCompiler(options: Array[String], initialLog: Logger, initialDelegate: Reporter): CachedCompiler =
-		new CachedCompiler0(options, new WeakLog(initialLog, initialDelegate))
+	def newCompiler(options: Array[String], initialLog: Logger, initialDelegate: Reporter, resident: Boolean): CachedCompiler =
+		new CachedCompiler0(options, new WeakLog(initialLog, initialDelegate), resident)
+
 	def run(sources: Array[File], changes: DependencyChanges, callback: AnalysisCallback, log: Logger, delegate: Reporter, cached: CachedCompiler): Unit =
 		cached.run(sources, changes, callback, log, delegate)
 }
@@ -48,7 +49,7 @@ private final class WeakLog(private[this] var log: Logger, private[this] var del
 	}
 }
 
-private final class CachedCompiler0(args: Array[String], initialLog: WeakLog) extends CachedCompiler
+private final class CachedCompiler0(args: Array[String], initialLog: WeakLog, resident: Boolean) extends CachedCompiler
 {
 	val settings = new Settings(s => initialLog(s))
 	val command = Command(args.toList, settings)
@@ -84,12 +85,12 @@ private final class CachedCompiler0(args: Array[String], initialLog: WeakLog) ex
 			compiler.set(callback, dreporter)
 			try {
 				val run = new compiler.Run
-				compiler.reload(changes)
+				if(resident) compiler.reload(changes)
 				val sortedSourceFiles = sources.map(_.getAbsolutePath).sortWith(_ < _)
 				run compile sortedSourceFiles
 				processUnreportedWarnings(run)
 			} finally {
-				compiler.clear()
+				if(resident) compiler.clear()
 			}
 			dreporter.problems foreach { p => callback.problem(p.category, p.position, p.message, p.severity, true) }
 		}
@@ -219,18 +220,24 @@ private final class CachedCompiler0(args: Array[String], initialLog: WeakLog) ex
 		private[this] var callback0: AnalysisCallback = null
 		def callback: AnalysisCallback = callback0
 
+		private[this] def defaultClasspath = new PathResolver(settings).result
+
 		// override defaults in order to inject a ClassPath that can change
 		override lazy val platform = new PlatformImpl
-		override lazy val classPath = new ClassPathCell(new PathResolver(settings).result)
+		override lazy val classPath = if(resident) classPathCell else defaultClasspath
+		private[this] lazy val classPathCell = new ClassPathCell(defaultClasspath)
+
 		final class PlatformImpl extends JavaPlatform
 		{
 			val global: compiler.type = compiler
-			// this is apparently never called except by rootLoader, so no need to implement it
+			// This can't be overridden to provide a ClassPathCell, so we have to fix it to the initial classpath
+			// This is apparently never called except by rootLoader, so we can return the default and warn if someone tries to use it.
 			override lazy val classPath = {
-				compiler.warning("platform.classPath should not be called because it is incompatible with resident compilation.  Use Global.classPath")
-				new PathResolver(settings).result
+				if(resident)
+					compiler.warning("platform.classPath should not be called because it is incompatible with sbt's resident compilation.  Use Global.classPath")
+				defaultClasspath
 			}
-			override def rootLoader = newPackageLoaderCompat(rootLoader)(compiler.classPath)
+			override def rootLoader = if(resident) newPackageLoaderCompat(rootLoader)(compiler.classPath) else super.rootLoader
 		}
 
 		private[this] type PlatformClassPath = ClassPath[AbstractFile]
@@ -239,7 +246,7 @@ private final class CachedCompiler0(args: Array[String], initialLog: WeakLog) ex
 		// converted from Martin's new code in scalac for use in 2.8 and 2.9
 		private[this] def inv(path: String)
 		{
-			classPath.delegate match {
+			classPathCell.delegate match {
 				case cp: util.MergedClassPath[_] =>
 					val dir = AbstractFile getDirectory path
 					val canonical = dir.file.getCanonicalPath
@@ -250,7 +257,7 @@ private final class CachedCompiler0(args: Array[String], initialLog: WeakLog) ex
 					cp.entries find matchesCanonicalCompat match {
 						case Some(oldEntry) =>
 							val newEntry = cp.context.newClassPath(dir)
-							classPath.updateClassPath(oldEntry, newEntry)
+							classPathCell.updateClassPath(oldEntry, newEntry)
 							reSyncCompat(definitions.RootClass, Some(classPath), Some(oldEntry), Some(newEntry))
 						case None =>
 							error("Cannot invalidate: no entry named " + path + " in classpath " + classPath)
