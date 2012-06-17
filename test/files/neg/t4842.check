@@ -1,0 +1,7 @@
+t4842.scala:6: error: Cannot access enclosing instance from a class local to a constructor invocation.
+  def this(x: Int) = this(new { println(Foo.this)}) // error
+                                        ^
+t4842.scala:10: error: Cannot access enclosing instance from a class local to a constructor invocation.
+  extends Foo(new { println(Bar.this)}) // error
+                            ^
+two errors found

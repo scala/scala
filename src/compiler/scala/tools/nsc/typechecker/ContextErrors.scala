@@ -221,9 +221,6 @@ trait ContextErrors {
       def SuperConstrReferenceError(tree: Tree) =
         NormalTypeError(tree, "super constructor cannot be passed a self reference unless parameter is declared by-name")
 
-      def SuperConstrArgsThisReferenceError(tree: Tree) =
-        NormalTypeError(tree, "super constructor arguments cannot reference unconstructed `this`")
-
       def TooManyArgumentListsForConstructor(tree: Tree) = {
         issueNormalTypeError(tree, "too many argument lists for constructor invocation")
         setError(tree)
@@ -258,6 +255,10 @@ trait ContextErrors {
 
       def AmbiguousParentClassError(tree: Tree) =
         issueNormalTypeError(tree, "ambiguous parent class qualifier")
+
+      //typedThis
+      def CannotAccessEnclosingInstanceFromConstructorInvocation(tree: Tree) =
+        issueNormalTypeError(tree, "Cannot access enclosing instance from a class local to a constructor invocation.")
 
       //typedSelect
       def NotAMemberError(sel: Tree, qual: Tree, name: Name) = {

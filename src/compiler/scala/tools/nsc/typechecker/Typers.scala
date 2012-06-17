@@ -1845,12 +1845,7 @@ trait Typers extends Modes with Adaptations with Tags {
         val sym = tree.symbol
         if (sym != null && (sym.info.baseClasses contains clazz)) {
           if (sym.isModule)
-            pending +=  SuperConstrReferenceError(tree)
-          tree match {
-            case This(qual) =>
-              pending += SuperConstrArgsThisReferenceError(tree)
-            case _ => ()
-          }
+            pending += SuperConstrReferenceError(tree)
         }
       }
 
@@ -4331,6 +4326,11 @@ trait Typers extends Modes with Adaptations with Tags {
       def typedThis(qual: Name) = tree.symbol orElse qualifyingClass(tree, qual, packageOK = false) match {
         case NoSymbol => tree
         case clazz    =>
+          val enclClass = context.owner.enclClass
+          // SI-4842 prevent classes local to a self or super constructor argument expression from accessing Outer.this.
+          if (enclClass.isClassLocalToConstructor && enclClass.enclClassChain.drop(1).contains(clazz))
+            CannotAccessEnclosingInstanceFromConstructorInvocation(tree)
+
           tree setSymbol clazz setType clazz.thisType.underlying
           if (isStableContext(tree, mode, pt)) tree setType clazz.thisType else tree
       }
