@@ -202,7 +202,6 @@ PROPERTIES
   <property name="comp.starr.jar" value="${lib.dir}/scala-compiler.jar"/>
   <property name="jline.jar" value="${lib.dir}/jline.jar"/>
   <property name="ant.jar" value="${ant.home}/lib/ant.jar"/>
-  <property name="scalacheck.jar" value="${lib.dir}/scalacheck.jar"/>
 
   <!-- Sets location of build folders -->
   <property name="build.dir" value="${basedir}/build"/>
@@ -214,6 +213,9 @@ PROPERTIES
   <property name="build-strap.dir" value="${build.dir}/strap"/>
   <property name="build-docs.dir" value="${build.dir}/scaladoc"/>
   <property name="build-libs.dir" value="${build.dir}/libs"/>
+  <property name="build-scalacheck.dir" value="${build.dir}/quick/classes/scalacheck"/>
+
+  <property name="scalacheck.jar" value="${build.dir}/pack/lib/scalacheck.jar"/>
 
   <property name="dists.dir" value="${basedir}/dists"/>
 
@@ -1284,9 +1286,9 @@ QUICK BUILD (QUICK)
 
   <target name="quick.scalacheck" depends="quick.pre-scalacheck" unless="quick.scalacheck.available">
     <stopwatch name="quick.scalacheck.timer"/>
-    <mkdir dir="${build-quick.dir}/classes/scalacheck"/>
+    <mkdir dir="${build-scalacheck.dir}"/>
     <scalacfork
-      destdir="${build-quick.dir}/classes/scalacheck"
+      destdir="${build-scalacheck.dir}"
       compilerpathref="quick.classpath"
       params="${scalac.args.quick}"
       srcdir="${src.dir}/scalacheck"
@@ -1294,7 +1296,7 @@ QUICK BUILD (QUICK)
       <include name="**/*.scala"/>
       <compilationpath>
         <pathelement location="${build-quick.dir}/classes/library"/>
-        <pathelement location="${build-quick.dir}/classes/scalacheck"/>
+        <pathelement location="${build-scalacheck.dir}"/>
       </compilationpath>
     </scalacfork>
     <touch file="${build-quick.dir}/scalacheck.complete" verbose="no"/>
@@ -1370,7 +1372,7 @@ QUICK BUILD (QUICK)
         <pathelement location="${ant.jar}"/>
         <path refid="forkjoin.classpath"/>
         <path refid="fjbg.classpath"/>
-        <pathelement location="${scalacheck.jar}"/>
+        <pathelement location="${build-scalacheck.dir}"/>
       </compilationpath>
     </scalacfork>
     <propertyfile file="${build-quick.dir}/classes/partest/partest.properties">

@@ -114,13 +114,13 @@ abstract class ParallelIterableCheck[T](collName: String) extends Properties(col
       val results = for ((op, ind) <- reduceOperators.zipWithIndex) yield {
         val tr = t.reduceLeft(op)
         val cr = coll.reduce(op)
-        if (tr != cr) {
-          println("from: " + t)
-          println("and: " + coll)
-          println("reducing with " + ind)
-          println(tr)
-          println(cr)
-        }
+        // if (tr != cr) {
+        //   println("from: " + t)
+        //   println("and: " + coll)
+        //   println("reducing with " + ind)
+        //   println(tr)
+        //   println(cr)
+        // }
         ("op index: " + ind) |: tr == cr
       }
       results.reduceLeft(_ && _)
@@ -131,13 +131,13 @@ abstract class ParallelIterableCheck[T](collName: String) extends Properties(col
     val results = for ((pred, ind) <- countPredicates.zipWithIndex) yield {
       val tc = t.count(pred)
       val cc = coll.count(pred)
-      if (tc != cc) {
-        println("from: " + t + " - size: " + t.size)
-        println("and: " + coll + " - size: " + coll.toList.size)
-        println(tc)
-        println(cc)
-        printDebugInfo(coll)
-      }
+      // if (tc != cc) {
+      //   println("from: " + t + " - size: " + t.size)
+      //   println("and: " + coll + " - size: " + coll.toList.size)
+      //   println(tc)
+      //   println(cc)
+      //   printDebugInfo(coll)
+      // }
       ("op index: " + ind) |: tc == cc
     }
     results.reduceLeft(_ && _)
@@ -169,17 +169,17 @@ abstract class ParallelIterableCheck[T](collName: String) extends Properties(col
       val ms = t.map(f)
       val mp = coll.map(f)
       val invs = checkDataStructureInvariants(ms, mp)
-      if (!areEqual(ms, mp) || !invs) {
-        println(t)
-        println(coll)
-        println("mapped to: ")
-        println(ms)
-        println(mp)
-        println("sizes: ")
-        println(ms.size)
-        println(mp.size)
-        println("valid: " + invs)
-      }
+      // if (!areEqual(ms, mp) || !invs) {
+      //   println(t)
+      //   println(coll)
+      //   println("mapped to: ")
+      //   println(ms)
+      //   println(mp)
+      //   println("sizes: ")
+      //   println(ms.size)
+      //   println(mp.size)
+      //   println("valid: " + invs)
+      // }
       ("op index: " + ind) |: (areEqual(ms, mp) && invs)
     }
     results.reduceLeft(_ && _)
@@ -189,13 +189,13 @@ abstract class ParallelIterableCheck[T](collName: String) extends Properties(col
     val results = for ((f, ind) <- partialMapFunctions.zipWithIndex) yield {
       val ps = t.collect(f)
       val pp = coll.collect(f)
-      if (!areEqual(ps, pp)) {
-        println(t)
-        println(coll)
-        println("collected to: ")
-        println(ps)
-        println(pp)
-      }
+      // if (!areEqual(ps, pp)) {
+      //   println(t)
+      //   println(coll)
+      //   println("collected to: ")
+      //   println(ps)
+      //   println(pp)
+      // }
       ("op index: " + ind) |: areEqual(ps, pp)
     }
     results.reduceLeft(_ && _)
@@ -211,26 +211,26 @@ abstract class ParallelIterableCheck[T](collName: String) extends Properties(col
       val tf = t.filter(p)
       val cf = coll.filter(p)
       val invs = checkDataStructureInvariants(tf, cf)
-      if (tf != cf || cf != tf || !invs) {
-        printDebugInfo(coll)
-        println("Operator: " + ind)
-        println("sz: " + t.size)
-        println(t)
-        println
-        println("sz: " + coll.size)
-        println(coll)
-        println
-        println("filtered to:")
-        println
-        println(cf)
-        println
-        println(tf)
-        println
-        println("tf == cf - " + (tf == cf))
-        println("cf == tf - " + (cf == tf))
-        printDataStructureDebugInfo(cf)
-        println("valid: " + invs)
-      }
+      // if (tf != cf || cf != tf || !invs) {
+      //   printDebugInfo(coll)
+      //   println("Operator: " + ind)
+      //   println("sz: " + t.size)
+      //   println(t)
+      //   println
+      //   println("sz: " + coll.size)
+      //   println(coll)
+      //   println
+      //   println("filtered to:")
+      //   println
+      //   println(cf)
+      //   println
+      //   println(tf)
+      //   println
+      //   println("tf == cf - " + (tf == cf))
+      //   println("cf == tf - " + (cf == tf))
+      //   printDataStructureDebugInfo(cf)
+      //   println("valid: " + invs)
+      // }
       ("op index: " + ind) |: tf == cf && cf == tf && invs
     }).reduceLeft(_ && _)
   }
@@ -248,12 +248,12 @@ abstract class ParallelIterableCheck[T](collName: String) extends Properties(col
     (for ((p, ind) <- partitionPredicates.zipWithIndex) yield {
       val tpart = t.partition(p)
       val cpart = coll.partition(p)
-      if (tpart != cpart) {
-        println("from: " + t)
-        println("and: " + coll)
-        println(cpart)
-        println(tpart)
-      }
+      // if (tpart != cpart) {
+      //   println("from: " + t)
+      //   println("and: " + coll)
+      //   println(cpart)
+      //   println(tpart)
+      // }
       ("op index: " + ind) |: tpart == cpart
     }).reduceLeft(_ && _)
   }
@@ -272,34 +272,34 @@ abstract class ParallelIterableCheck[T](collName: String) extends Properties(col
     val until = if (from + slicelength > t.size) t.size else from + slicelength
     val tsl = t.slice(from, until)
     val collsl = coll.slice(from, until)
-    if (tsl != collsl) {
-      println("---------------------- " + from + ", " + until)
-      println("from: " + t)
-      println("and: " + coll)
-      println(tsl)
-      println(collsl)
-      println("as list: " + collsl.toList)
-      println(collsl.iterator.hasNext)
-      println(collsl.iterator.next)
-      println(collsl.iterator.hasNext)
-      println(collsl.iterator.next)
-      println(collsl.iterator.hasNext)
-      println(collsl.iterator.next)
-      println(collsl.iterator.hasNext)
-    }
+    // if (tsl != collsl) {
+    //   println("---------------------- " + from + ", " + until)
+    //   println("from: " + t)
+    //   println("and: " + coll)
+    //   println(tsl)
+    //   println(collsl)
+    //   println("as list: " + collsl.toList)
+    //   println(collsl.iterator.hasNext)
+    //   println(collsl.iterator.next)
+    //   println(collsl.iterator.hasNext)
+    //   println(collsl.iterator.next)
+    //   println(collsl.iterator.hasNext)
+    //   println(collsl.iterator.next)
+    //   println(collsl.iterator.hasNext)
+    // }
     ("slice from " + from + " until " + until) |: tsl == collsl
   }
   
   if (hasStrictOrder) property("splits must be equal") = forAll(collectionPairsWithLengths) { case (t, coll, n) =>
     val tspl = t.splitAt(n)
     val cspl = coll.splitAt(n)
-    if (tspl != cspl) {
-      println("at: " + n)
-      println("from: " + t)
-      println("and: " + coll)
-      println(tspl)
-      println(cspl)
-    }
+    // if (tspl != cspl) {
+    //   println("at: " + n)
+    //   println("from: " + t)
+    //   println("and: " + coll)
+    //   println(tspl)
+    //   println(cspl)
+    // }
     ("splitAt " + n) |: tspl == cspl
   }
   
@@ -307,13 +307,13 @@ abstract class ParallelIterableCheck[T](collName: String) extends Properties(col
     (for ((pred, ind) <- takeWhilePredicates.zipWithIndex) yield {
       val tt = t.takeWhile(pred)
       val ct = coll.takeWhile(pred)
-      if (tt != ct) {
-        println("from: " + t)
-        println("and: " + coll)
-        println("taking while...")
-        println(tt)
-        println(ct)
-      }
+      // if (tt != ct) {
+      //   println("from: " + t)
+      //   println("and: " + coll)
+      //   println("taking while...")
+      //   println(tt)
+      //   println(ct)
+      // }
       ("operator " + ind) |: tt == ct
     }).reduceLeft(_ && _)
   }
@@ -322,16 +322,16 @@ abstract class ParallelIterableCheck[T](collName: String) extends Properties(col
     (for ((pred, ind) <- spanPredicates.zipWithIndex) yield {
       val tsp = t.span(pred)
       val csp = coll.span(pred)
-      if (tsp != csp) {
-        println("from: " + t)
-        println("and: " + coll)
-        println("span with predicate " + ind)
-        println(tsp)
-        println(csp)
-        println("---------------------------------")
-        println(coll.span(pred))
-        println("---------------------------------")
-      }
+      // if (tsp != csp) {
+      //   println("from: " + t)
+      //   println("and: " + coll)
+      //   println("span with predicate " + ind)
+      //   println(tsp)
+      //   println(csp)
+      //   println("---------------------------------")
+      //   println(coll.span(pred))
+      //   println("---------------------------------")
+      // }
       ("operator " + ind) |: tsp == csp
     }).reduceLeft(_ && _)
   }
@@ -346,13 +346,13 @@ abstract class ParallelIterableCheck[T](collName: String) extends Properties(col
     (for (((first, op), ind) <- foldArguments.zipWithIndex) yield {
       val tres = t.foldLeft(first)(op)
       val cres = coll.fold(first)(op)
-      if (cres != tres) {
-        println("from: " + t)
-        println("and: " + coll)
-        println("folds are: ")
-        println(tres)
-        println(cres)
-      }
+      // if (cres != tres) {
+      //   println("from: " + t)
+      //   println("and: " + coll)
+      //   println("folds are: ")
+      //   println(tres)
+      //   println(cres)
+      // }
       ("operator " + ind) |: tres == cres
     }).reduceLeft(_ && _)
   }
@@ -361,25 +361,25 @@ abstract class ParallelIterableCheck[T](collName: String) extends Properties(col
     val toadd = colltoadd
     val tr = t ++ toadd.iterator
     val cr = coll ++ toadd.iterator
-    if (!areEqual(tr, cr)) {
-      println("from: " + t)
-      println("and: " + coll.iterator.toList)
-      println("adding: " + toadd)
-      println(tr.toList)
-      println(cr.iterator.toList)
-    }
+    // if (!areEqual(tr, cr)) {
+    //   println("from: " + t)
+    //   println("and: " + coll.iterator.toList)
+    //   println("adding: " + toadd)
+    //   println(tr.toList)
+    //   println(cr.iterator.toList)
+    // }
     ("adding " |: areEqual(tr, cr)) &&
     (for ((trav, ind) <- (addAllTraversables).zipWithIndex) yield {
       val tadded = t ++ trav
       val cadded = coll ++ collection.parallel.mutable.ParArray(trav.toSeq: _*)
-      if (!areEqual(tadded, cadded)) {
-        println("----------------------")
-        println("from: " + t)
-        println("and: " + coll)
-        println("adding: " + trav)
-        println(tadded)
-        println(cadded)
-      }
+      // if (!areEqual(tadded, cadded)) {
+      //   println("----------------------")
+      //   println("from: " + t)
+      //   println("and: " + coll)
+      //   println("adding: " + trav)
+      //   println(tadded)
+      //   println(cadded)
+      // }
       ("traversable " + ind) |: areEqual(tadded, cadded)
     }).reduceLeft(_ && _)
   }
@@ -389,12 +389,12 @@ abstract class ParallelIterableCheck[T](collName: String) extends Properties(col
     val collarr = newArray(coll.size)
     t.copyToArray(tarr, 0, t.size)
     coll.copyToArray(collarr, 0, coll.size)
-    if (tarr.toSeq != collarr.toSeq) {
-      println("from: " + t)
-      println("and: " + coll)
-      println(tarr.toSeq)
-      println(collarr.toSeq)
-    }
+    // if (tarr.toSeq != collarr.toSeq) {
+    //   println("from: " + t)
+    //   println("and: " + coll)
+    //   println(tarr.toSeq)
+    //   println(collarr.toSeq)
+    // }
     tarr.toSeq == collarr.toSeq
   }
   
@@ -403,13 +403,13 @@ abstract class ParallelIterableCheck[T](collName: String) extends Properties(col
       (for (((first, op), ind) <- foldArguments.zipWithIndex) yield {
         val tscan = t.scanLeft(first)(op)
         val cscan = coll.scan(first)(op)
-        if (tscan != cscan || cscan != tscan) {
-          println("from: " + t)
-          println("and: " + coll)
-          println("scans are: ")
-          println(tscan)
-          println(cscan)
-        }
+        // if (tscan != cscan || cscan != tscan) {
+        //   println("from: " + t)
+        //   println("and: " + coll)
+        //   println("scans are: ")
+        //   println(tscan)
+        //   println(cscan)
+        // }
         ("operator " + ind) |: tscan == cscan && cscan == tscan
       }).reduceLeft(_ && _)
   }
@@ -419,13 +419,13 @@ abstract class ParallelIterableCheck[T](collName: String) extends Properties(col
       (for ((f, ind) <- groupByFunctions.zipWithIndex) yield {
         val tgroup = t.groupBy(f)
         val cgroup = coll.groupBy(f)
-        if (tgroup != cgroup || cgroup != tgroup) {
-          println("from: " + t)
-          println("and: " + coll)
-          println("groups are: ")
-          println(tgroup)
-          println(cgroup)
-        }
+        // if (tgroup != cgroup || cgroup != tgroup) {
+        //   println("from: " + t)
+        //   println("and: " + coll)
+        //   println("groups are: ")
+        //   println(tgroup)
+        //   println(cgroup)
+        // }
         ("operator " + ind) |: tgroup == cgroup && cgroup == tgroup
       }).reduceLeft(_ && _)
   }
