@@ -853,7 +853,7 @@ self: ParIterableLike[T, Repr, Sequential] =>
 
   override def toVector: Vector[T] = seq.toVector
 
-  override def copyTo[Col[_]](implicit cbf: CanBuildFrom[Nothing, T, Col[T @uncheckedVariance]]): Col[T @uncheckedVariance] = seq.copyTo[Col]
+  override def build[Col[_]](implicit cbf: CanBuildFrom[Nothing, T, Col[T @uncheckedVariance]]): Col[T @uncheckedVariance] = seq.build[Col]
   
 
   /* tasks */

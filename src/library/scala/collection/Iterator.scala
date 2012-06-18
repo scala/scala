@@ -1141,8 +1141,8 @@ trait Iterator[+A] extends TraversableOnce[A] {
     if (self.hasNext) Stream.cons(self.next, self.toStream)
     else Stream.empty[A]
 
-  def toVector: Vector[A] = copyTo[Vector]
-  def copyTo[Col[_]](implicit cbf: CanBuildFrom[Nothing, A, Col[A @uV]]): Col[A @uV] = {
+  def toVector: Vector[A] = build[Vector]
+  def build[Col[_]](implicit cbf: CanBuildFrom[Nothing, A, Col[A @uV]]): Col[A @uV] = {
     val b = cbf()
     while(hasNext) b += next
     b.result

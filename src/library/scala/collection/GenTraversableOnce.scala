@@ -565,10 +565,10 @@ trait GenTraversableOnce[+A] extends Any {
    *  @tparam Col  The collection type to build.
    *  @return a new collection containing all elements of this $coll.
    *  
-   *  @usecase def copyTo[Col[_]]: Col[A]
+   *  @usecase def build[Col[_]]: Col[A]
    *    @inheritdoc
    *    $willNotTerminateInf
    *    @return a new collection containing all elements of this $coll.
    */
-  def copyTo[Col[_]](implicit cbf: CanBuildFrom[Nothing, A, Col[A @uV]]): Col[A @uV]
+  def build[Col[_]](implicit cbf: CanBuildFrom[Nothing, A, Col[A @uV]]): Col[A @uV]
 }
