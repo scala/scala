@@ -81,7 +81,6 @@ class DocFactory(val reporter: Reporter, val settings: doc.Settings) { processor
       new { override val global: compiler.type = compiler }
         with model.ModelFactory(compiler, settings)
         with model.ModelFactoryImplicitSupport
-        with model.diagram.DiagramFactory
         with model.comment.CommentFactory
         with model.TreeFactory {
           override def templateShouldDocument(sym: compiler.Symbol) =
@@ -91,12 +90,11 @@ class DocFactory(val reporter: Reporter, val settings: doc.Settings) { processor
 
     modelFactory.makeModel match {
       case Some(madeModel) =>
-        if (!settings.scaladocQuietRun)
+        if (settings.reportModel)
           println("model contains " + modelFactory.templatesCount + " documentable templates")
         Some(madeModel)
       case None =>
-        if (!settings.scaladocQuietRun)
-          println("no documentable class found in compilation units")
+        println("no documentable class found in compilation units")
         None
     }
 
