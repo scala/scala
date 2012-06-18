@@ -34,17 +34,17 @@ object Test {
     val tmp = col
     println("-- Testing " + name + " ---")
     printResult("[Direct] Vector   ", col.toVector, testVector)
-    printResult("[Copy]   Vector   ", col.build[Vector], testVector)
+    printResult("[Copy]   Vector   ", col.convertTo[Vector], testVector)
     printResult("[Direct] Buffer   ", col.toBuffer, testBuffer)
-    printResult("[Copy]   Buffer   ", col.build[Buffer], testBuffer)
+    printResult("[Copy]   Buffer   ", col.convertTo[Buffer], testBuffer)
     printResult("[Direct] GenSeq   ", col.toSeq, testGenSeq)
-    printResult("[Copy]   GenSeq   ", col.build[GenSeq], testGenSeq)
-    printResult("[Copy]   Seq      ", col.build[Seq], testSeq)
+    printResult("[Copy]   GenSeq   ", col.convertTo[GenSeq], testGenSeq)
+    printResult("[Copy]   Seq      ", col.convertTo[Seq], testSeq)
     printResult("[Direct] Stream   ", col.toStream, testStream)
-    printResult("[Copy]   Stream   ", col.build[Stream], testStream)
+    printResult("[Copy]   Stream   ", col.convertTo[Stream], testStream)
     printResult("[Direct] Array    ", col.toArray, testArray)
-    printResult("[Copy]   Array    ", col.build[Array], testArray)
-    printResult("[Copy]   ParVector", col.build[ParVector], testParVector)
+    printResult("[Copy]   Array    ", col.convertTo[Array], testArray)
+    printResult("[Copy]   ParVector", col.convertTo[ParVector], testParVector)
   }
   
   def main(args: Array[String]): Unit = {
