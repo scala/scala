@@ -9,6 +9,8 @@
 package scala.collection
 
 import scala.reflect.ClassTag
+import scala.collection.generic.CanBuildFrom
+import scala.annotation.unchecked.{ uncheckedVariance => uV }
 
 /** A template trait for all traversable-once objects which may be
  *  traversed in parallel.
@@ -552,4 +554,21 @@ trait GenTraversableOnce[+A] extends Any {
    *               containing all key/value pairs of type `(T, U)` of this $coll.
    */
   def toMap[K, V](implicit ev: A <:< (K, V)): GenMap[K, V]
+
+  /** Converts this $coll to a Vector.
+   *  $willNotTerminateInf
+   *  @return a vector containing all elements of this $coll.
+   */
+  def toVector: Vector[A]
+
+  /** Converts this $coll into another by copying all elemnents.
+   *  $willNotTerminateInf
+   *  @return a new collection containing all elements of this $coll.
+   *  
+   *  @usecase def copyInto[Col[_]]: Col[A]
+   *    @inheritdoc
+   *    $willNotTerminateInf
+   *    @return a new collection containing all elemnts of this $coll.
+   */
+  def copyInto[Col[_]](implicit cbf: CanBuildFrom[Nothing, A, Col[A @uV]]): Col[A @uV]
 }

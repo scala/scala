@@ -851,6 +851,11 @@ self: ParIterableLike[T, Repr, Sequential] =>
 
   override def toMap[K, V](implicit ev: T <:< (K, V)): immutable.ParMap[K, V] = toParMap[K, V, immutable.ParMap[K, V]](() => immutable.ParMap.newCombiner[K, V])
 
+  override def toVector: Vector[T] = seq.toVector
+
+  override def copyInto[Col[_]](implicit cbf: CanBuildFrom[Nothing, T, Col[T @uncheckedVariance]]): Col[T @uncheckedVariance] = seq.copyInto[Col]
+  
+
   /* tasks */
 
   protected trait StrictSplitterCheckTask[R, Tp] extends Task[R, Tp] {

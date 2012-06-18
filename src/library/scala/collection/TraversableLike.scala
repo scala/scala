@@ -616,6 +616,13 @@ trait TraversableLike[+A, +Repr] extends Any
   def toTraversable: Traversable[A] = thisCollection
   def toIterator: Iterator[A] = toStream.iterator
   def toStream: Stream[A] = toBuffer.toStream
+  def toVector: Vector[A] = copyInto[Vector]
+  def copyInto[Col[_]](implicit cbf: CanBuildFrom[Nothing, A, Col[A @uV]]): Col[A @uV] = {
+    val b = cbf()
+    b.sizeHint(this)
+    b ++= thisCollection
+    b.result
+  }
 
   /** Converts this $coll to a string.
    *
