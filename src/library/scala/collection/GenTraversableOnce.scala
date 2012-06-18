@@ -562,13 +562,13 @@ trait GenTraversableOnce[+A] extends Any {
   def toVector: Vector[A]
 
   /** Converts this $coll into another by copying all elemnents.
-   *  $willNotTerminateInf
+   *  @tparam Col  The collection type to build.
    *  @return a new collection containing all elements of this $coll.
    *  
-   *  @usecase def copyInto[Col[_]]: Col[A]
+   *  @usecase def copyTo[Col[_]]: Col[A]
    *    @inheritdoc
    *    $willNotTerminateInf
-   *    @return a new collection containing all elemnts of this $coll.
+   *    @return a new collection containing all elements of this $coll.
    */
-  def copyInto[Col[_]](implicit cbf: CanBuildFrom[Nothing, A, Col[A @uV]]): Col[A @uV]
+  def copyTo[Col[_]](implicit cbf: CanBuildFrom[Nothing, A, Col[A @uV]]): Col[A @uV]
 }
