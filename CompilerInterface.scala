@@ -264,12 +264,12 @@ private final class CachedCompiler0(args: Array[String], initialLog: WeakLog, re
 					}
 			}
 		}
-		private def reSyncCompat(root: ClassSymbol, allEntry: OptClassPath, oldEntry: OptClassPath, newEntry: OptClassPath)
+		private def reSyncCompat(root: ClassSymbol, allEntries: OptClassPath, oldEntry: OptClassPath, newEntry: OptClassPath)
 		{
 			val getName: PlatformClassPath => String = (_.name)
 			def hasClasses(cp: OptClassPath) = cp.exists(_.classes.nonEmpty)
 			def invalidateOrRemove(root: ClassSymbol) =
-				allEntry match {
+				allEntries match {
 					case Some(cp) => root setInfo newPackageLoader0[Type](cp)
 					case None => root.owner.info.decls unlink root.sourceModule
 				}
@@ -283,7 +283,7 @@ private final class CachedCompiler0(args: Array[String], initialLog: WeakLog, re
 				invalidateOrRemove(root)
 			} else {
 				if (classesFound && root.isRoot)
-				invalidateOrRemove(definitions.EmptyPackageClass.asInstanceOf[ClassSymbol])
+					invalidateOrRemove(definitions.EmptyPackageClass.asInstanceOf[ClassSymbol])
 				(oldEntry, newEntry) match {
 					case (Some(oldcp) , Some(newcp)) =>
 						for (pstr <- packageNames(oldcp) ++ packageNames(newcp)) {
@@ -292,19 +292,25 @@ private final class CachedCompiler0(args: Array[String], initialLog: WeakLog, re
 							if (pkg == NoSymbol) {
 								// package was created by external agent, create symbol to track it
 								assert(!subPackage(oldcp, pstr).isDefined)
-								pkg = root.newPackage(NoPosition, pname)
-								pkg.setInfo(pkg.moduleClass.tpe)
-								root.info.decls.enter(pkg)
+								pkg = enterPackageCompat(root, pname, newPackageLoader0[loaders.SymbolLoader](allEntries.get))
 							}
 							reSyncCompat(
 									pkg.moduleClass.asInstanceOf[ClassSymbol],
-									subPackage(allEntry.get, pstr), subPackage(oldcp, pstr), subPackage(newcp, pstr))
+									subPackage(allEntries.get, pstr), subPackage(oldcp, pstr), subPackage(newcp, pstr))
 						}
 					case (Some(oldcp), None) => invalidateOrRemove(root)
 					case (None, Some(newcp)) => invalidateOrRemove(root)
 					case (None, None) => ()
 				}
 			}
+		}
+		private[this] def enterPackageCompat(root: ClassSymbol, pname: Name, completer: loaders.SymbolLoader): Symbol =
+		{
+			val pkg = root.newPackage(pname)
+			pkg.moduleClass.setInfo(completer)
+			pkg.setInfo(pkg.moduleClass.tpe)
+			root.info.decls.enter(pkg)
+			pkg
 		}
 
 		// type parameter T, `dummy` value for inference, and reflection are source compatibility hacks
