@@ -8,16 +8,10 @@ package doc
 package html
 package page
 
-import model._
-import model.diagram._
-import diagram._
-
 import scala.xml.{ NodeSeq, Text, UnprefixedAttribute }
 import language.postfixOps
 
 import model._
-import model.diagram._
-import diagram._
 
 class Template(universe: doc.Universe, tpl: DocTemplateEntity) extends HtmlPage {
 
@@ -36,22 +30,10 @@ class Template(universe: doc.Universe, tpl: DocTemplateEntity) extends HtmlPage 
   val headers =
     <xml:group>
       <link href={ relativeLinkTo{List("template.css", "lib")} } media="screen" type="text/css" rel="stylesheet"/>
-      <link href={ relativeLinkTo{List("diagrams.css", "lib")} } media="screen" type="text/css" rel="stylesheet" id="diagrams-css" />
-      <script type="text/javascript" src={ relativeLinkTo{List("jquery.js", "lib")} } id="jquery-js"></script>
+      <script type="text/javascript" src={ relativeLinkTo{List("jquery.js", "lib")} }></script>
       <script type="text/javascript" src={ relativeLinkTo{List("jquery-ui.js", "lib")} }></script>
       <script type="text/javascript" src={ relativeLinkTo{List("template.js", "lib")} }></script>
       <script type="text/javascript" src={ relativeLinkTo{List("tools.tooltip.js", "lib")} }></script>
-      { if (universe.settings.docDiagrams.isSetByUser) {
-      <script type="text/javascript" src={ relativeLinkTo{List("modernizr.custom.js", "lib")} }></script>
-      <script type="text/javascript" src={ relativeLinkTo{List("diagrams.js", "lib")} } id="diagrams-js"></script>
-      } else NodeSeq.Empty }
-      <script type="text/javascript">
-         if(top === self) {{
-            var url = '{ val p = templateToPath(tpl); "../" * (p.size - 1) + "index.html" }';
-            var hash = '{ val p = templateToPath(tpl); (p.tail.reverse ::: List(p.head.replace(".html", ""))).mkString(".") }';
-            window.location.href = url + '#' + hash;
-         }}
-   	  </script>
     </xml:group>
 
   val valueMembers =
@@ -634,19 +616,7 @@ class Template(universe: doc.Universe, tpl: DocTemplateEntity) extends HtmlPage 
       case _ => NodeSeq.Empty
     }
 
-    val typeHierarchy = if (s.docDiagrams.isSetByUser) mbr match {
-      case dtpl: DocTemplateEntity if isSelf && !isReduced && dtpl.inheritanceDiagram.isDefined =>
-        makeDiagramHtml(dtpl, dtpl.inheritanceDiagram, "Type Hierarchy", "inheritance-diagram")
-      case _ => NodeSeq.Empty
-    } else NodeSeq.Empty // diagrams not generated
-
-    val contentHierarchy = if (s.docDiagrams.isSetByUser) mbr match {
-      case dtpl: DocTemplateEntity if isSelf && !isReduced && dtpl.contentDiagram.isDefined =>
-        makeDiagramHtml(dtpl, dtpl.contentDiagram, "Content Hierarchy", "content-diagram")
-      case _ => NodeSeq.Empty
-    } else NodeSeq.Empty // diagrams not generated
-
-    memberComment ++ paramComments ++ attributesBlock ++ linearization ++ subclasses ++ typeHierarchy ++ contentHierarchy
+    memberComment ++ paramComments ++ attributesBlock ++ linearization ++ subclasses
   }
 
   def kindToString(mbr: MemberEntity): String = {
@@ -952,39 +922,9 @@ class Template(universe: doc.Universe, tpl: DocTemplateEntity) extends HtmlPage 
       xml.Text(ub.typeParamName + " is a subclass of " + ub.upperBound.name + " (" + ub.typeParamName + " <: ") ++
         typeToHtml(ub.upperBound, true) ++ xml.Text(")")
   }
-
-  def makeDiagramHtml(tpl: DocTemplateEntity, diagram: Option[Diagram], description: String, id: String) = {
-    val s = universe.settings
-    val diagramSvg = Template.diagramGenerator(s).generate(diagram.get, tpl, this)
-    if (diagramSvg != NodeSeq.Empty) {
-      <div class="toggleContainer block diagram-container" id={ id + "-container"}>
-        <span class="toggle diagram-link">{ description }</span>
-        <a href="http://docs.scala-lang.org/overviews/scaladoc/usage.html#diagrams" target="_blank" class="diagram-help">Learn more about scaladoc diagrams</a>
-        <div class="diagram" id={ id }>{
-          diagramSvg
-        }</div>
-      </div>
-    } else NodeSeq.Empty
-  }
 }
 
 object Template {
-
-  private var _diagramGenerator: DiagramGenerator = null
-  /**
-   *  Get a diagram generator instance based on the given settings.
-   *  NOTE: This function does not take into account changing settings, so the first setting will initialize the diagram
-   *  generator and the other settings will be ignored!
-   */
-  def diagramGenerator(settings: doc.Settings): DiagramGenerator = {
-    if (_diagramGenerator == null) {
-      // for now, the diagram generator is hard-coded to use GraphViz, in the future we should use a more general
-      // approach. Also the DiagramGenerator should be stateless and a single instance should be used to generate all
-      // the diagrams
-      _diagramGenerator = new DotDiagramGenerator(settings)
-    }
-    _diagramGenerator
-  }
 
   def isImplicit(mbr: MemberEntity) = mbr.byConversion.isDefined
   def isShadowedImplicit(mbr: MemberEntity) = mbr.byConversion.isDefined && mbr.byConversion.get.isShadowed
