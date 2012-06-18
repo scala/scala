@@ -473,7 +473,11 @@ extends CNodeBase[K, V] {
   private def computeSize(ct: TrieMap[K, V]): Int = {
     var i = 0
     var sz = 0
-    val offset = math.abs(util.Random.nextInt()) % array.length
+    val offset =
+      if (array.length > 0)
+        //util.Random.nextInt(array.length) /* <-- benchmarks show that this causes observable contention */
+        scala.concurrent.forkjoin.ThreadLocalRandom.current.nextInt(0, array.length)
+      else 0
     while (i < array.length) {
       val pos = (i + offset) % array.length
       array(pos) match {
