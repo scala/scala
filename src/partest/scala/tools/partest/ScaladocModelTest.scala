@@ -81,9 +81,9 @@ abstract class ScaladocModelTest extends DirectTest {
   private[this] var settings: Settings = null
 
   // create a new scaladoc compiler
-  private[this] def newDocFactory: DocFactory = {
+  def newDocFactory: DocFactory = {
     settings = new Settings(_ => ())
-    settings.scaladocQuietRun = true // yaay, no more "model contains X documentable templates"!
+    settings.reportModel = false // yaay, no more "model contains X documentable templates"!
     val args = extraSettings + " " + scaladocSettings
     val command = new ScalaDoc.Command((CommandLineParser tokenize (args)), settings)
     val docFact = new DocFactory(new ConsoleReporter(settings), settings)

@@ -163,12 +163,16 @@ text-decoration: none;
   background: url("arrow-right.png") no-repeat 0 3px transparent;
 }
 
-.toggleContainer .toggle.open {
+.toggleContainer.open .toggle {
   background: url("arrow-down.png") no-repeat 0 3px transparent;
 }
 
 .toggleContainer .hiddenContent {
   margin-top: 5px;
+}
+
+.toggleContainer .showElement {
+  padding-left: 15px;
 }
 
 .value #definition {
@@ -329,15 +333,15 @@ div.members > ol > li:last-child {
   color: darkgreen;
 }
 
-.signature .symbol .shadowed {
-  color: darkseagreen;
-}
-
 .signature .symbol .params > .implicit {
   font-style: italic;
 }
 
-.signature .symbol .deprecated {
+.signature .symbol .implicit.deprecated {
+  text-decoration: line-through;
+}
+
+.signature .symbol .name.deprecated {
   text-decoration: line-through;
 }
 

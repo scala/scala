@@ -108,12 +108,6 @@ abstract class Comment {
   /** A description for the primary constructor */
   def constructor: Option[Body]
 
-  /** A set of diagram directives for the inheritance diagram */
-  def inheritDiagram: List[String]
-
-  /** A set of diagram directives for the content diagram */
-  def contentDiagram: List[String]
-
   override def toString =
     body.toString + "\n" +
     (authors map ("@author " + _.toString)).mkString("\n") +
