@@ -561,7 +561,7 @@ trait GenTraversableOnce[+A] extends Any {
    */
   def toVector: Vector[A]
 
-  /** Converts this $coll into another by copying all elemnents.
+  /** Converts this $coll into another by copying all elements.
    *  @tparam Col  The collection type to build.
    *  @return a new collection containing all elements of this $coll.
    *  
