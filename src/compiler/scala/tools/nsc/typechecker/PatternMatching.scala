@@ -14,7 +14,7 @@ import scala.tools.nsc.transform.TypingTransformers
 import scala.tools.nsc.transform.Transform
 import scala.collection.mutable.HashSet
 import scala.collection.mutable.HashMap
-import scala.tools.nsc.util.Statistics
+import reflect.internal.util.Statistics
 
 /** Translate pattern matching.
   *
@@ -38,6 +38,7 @@ import scala.tools.nsc.util.Statistics
   */
 trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL {   // self: Analyzer =>
   import Statistics._
+  import PatternMatchingStats._
 
   val global: Global               // need to repeat here because otherwise last mixin defines global as
                                    // SymbolTable. If we had DOT this would not be an issue
@@ -183,7 +184,7 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
         case _                                          => tp
       }
 
-      val start = startTimer(patmatNanos)
+      val start = Statistics.startTimer(patmatNanos)
 
       val selectorTp = repeatedToSeq(elimAnonymousClass(selector.tpe.widen.withoutAnnotations))
 
@@ -210,7 +211,7 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
       // pt = Any* occurs when compiling test/files/pos/annotDepMethType.scala  with -Xexperimental
       val combined = combineCases(selector, selectorSym, cases map translateCase(selectorSym, pt), pt, matchOwner, matchFailGenOverride)
 
-      stopTimer(patmatNanos, start)
+      Statistics.stopTimer(patmatNanos, start)
       combined
     }
 
@@ -1694,7 +1695,7 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
     // TODO: for V1 representing x1 and V2 standing for x1.head, encode that
     //       V1 = Nil implies -(V2 = Ci) for all Ci in V2's domain (i.e., it is unassignable)
     def removeVarEq(props: List[Prop], considerNull: Boolean = false): (Prop, List[Prop]) = {
-      val start = startTimer(patmatAnaVarEq)
+      val start = Statistics.startTimer(patmatAnaVarEq)
 
       val vars = new collection.mutable.HashSet[Var]
 
@@ -1766,7 +1767,7 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
       // patmatDebug("eqAxioms:\n"+ cnfString(eqFreePropToSolvable(eqAxioms)))
       // patmatDebug("pure:\n"+ cnfString(eqFreePropToSolvable(pure)))
 
-      stopTimer(patmatAnaVarEq, start)
+      Statistics.stopTimer(patmatAnaVarEq, start)
 
       (eqAxioms, pure)
     }
@@ -1865,10 +1866,10 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
         }
       }
 
-      val start = startTimer(patmatCNF)
+      val start = Statistics.startTimer(patmatCNF)
       val res = conjunctiveNormalForm(negationNormalForm(p))
-      stopTimer(patmatCNF, start)
-      patmatCNFSizes(res.size) += 1
+      Statistics.stopTimer(patmatCNF, start)
+      patmatCNFSizes(res.size).value += 1
 
 //      patmatDebug("cnf for\n"+ p +"\nis:\n"+cnfString(res))
       res
@@ -1945,7 +1946,7 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
 
       // patmatDebug("dpll\n"+ cnfString(f))
 
-      val start = startTimer(patmatAnaDPLL)
+      val start = Statistics.startTimer(patmatAnaDPLL)
 
       val satisfiableWithModel: Model =
         if (f isEmpty) EmptyModel
@@ -1983,7 +1984,7 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
             }
         }
 
-        stopTimer(patmatAnaDPLL, start)
+        Statistics.stopTimer(patmatAnaDPLL, start)
 
         satisfiableWithModel
     }
@@ -2291,7 +2292,7 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
         def makeCondPessimistic(tm: TreeMaker)(recurse: TreeMaker => Cond): Cond = makeCond(tm)(recurse)
       }
 
-      val start = startTimer(patmatAnaReach)
+      val start = Statistics.startTimer(patmatAnaReach)
 
       // use the same approximator so we share variables,
       // but need different conditions depending on whether we're conservatively looking for failure or success
@@ -2340,7 +2341,7 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
           }
         }
 
-        stopTimer(patmatAnaReach, start)
+        Statistics.stopTimer(patmatAnaReach, start)
 
         if (reachable) None else Some(caseIndex)
       } catch {
@@ -2428,7 +2429,7 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
       // - back off (to avoid crying exhaustive too often) when:
       //    - there are guards -->
       //    - there are extractor calls (that we can't secretly/soundly) rewrite
-      val start = startTimer(patmatAnaExhaust)
+      val start = Statistics.startTimer(patmatAnaExhaust)
       var backoff = false
       object exhaustivityApproximation extends TreeMakersToConds(prevBinder) {
         def makeCondExhaustivity(tm: TreeMaker)(recurse: TreeMaker => Cond): Cond = tm match {
@@ -2503,7 +2504,7 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
 
           val pruned = CounterExample.prune(counterExamples).map(_.toString).sorted
 
-          stopTimer(patmatAnaExhaust, start)
+          Statistics.stopTimer(patmatAnaExhaust, start)
           pruned
         } catch {
           case e : CNFBudgetExceeded =>
@@ -3185,4 +3186,14 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
       (optCases, toHoist)
     }
   }
+}
+
+object PatternMatchingStats {
+  val patmatNanos         = Statistics.newTimer     ("time spent in patmat", "patmat")
+  val patmatAnaDPLL       = Statistics.newSubTimer  ("  of which DPLL", patmatNanos)
+  val patmatCNF           = Statistics.newSubTimer  ("  of which in CNF conversion", patmatNanos)
+  val patmatCNFSizes      = Statistics.newQuantMap[Int, Statistics.Counter]("  CNF size counts", "patmat")(Statistics.newCounter(""))
+  val patmatAnaVarEq      = Statistics.newSubTimer  ("  of which variable equality", patmatNanos)
+  val patmatAnaExhaust    = Statistics.newSubTimer  ("  of which in exhaustivity", patmatNanos)
+  val patmatAnaReach      = Statistics.newSubTimer  ("  of which in unreachability", patmatNanos)
 }
