@@ -1,0 +1,2 @@
+Apply(Select(New(AppliedTypeTree(Ident(scala.collection.immutable.HashMap#1903), List(Ident(java.lang.String#129), Ident(java.lang.String#129)))), nme.CONSTRUCTOR), List())
+Apply(Select(New(AppliedTypeTree(Ident(scala.collection.mutable.HashMap#1908), List(Ident(java.lang.String#129), Ident(java.lang.String#129)))), nme.CONSTRUCTOR), List())

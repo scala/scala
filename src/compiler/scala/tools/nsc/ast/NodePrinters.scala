@@ -146,7 +146,7 @@ abstract class NodePrinters {
     }
     def printModifiers(tree: MemberDef) {
       // [Eugene++] there's most likely a bug here (?)
-      // see `TreePrinters.printAnnotations` for more information
+      // see `Printers.printAnnotations` for more information
       val annots0 = tree.symbol.annotations match {
         case Nil  => tree.mods.annotations
         case xs   => xs map annotationInfoToString
