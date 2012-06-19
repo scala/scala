@@ -39,7 +39,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
     with Plugins
     with PhaseAssembly
     with Trees
-    with TreePrinters
+    with Printers
     with DocComments
     with Positions { self =>
 

@@ -11,7 +11,7 @@ package internal
 import java.io.{ OutputStream, PrintWriter, StringWriter, Writer }
 import Flags._
 
-trait TreePrinters extends api.TreePrinters { self: SymbolTable =>
+trait Printers extends api.Printers { self: SymbolTable =>
 
   //nsc import treeInfo.{ IsTrue, IsFalse }
 
@@ -62,8 +62,9 @@ trait TreePrinters extends api.TreePrinters { self: SymbolTable =>
     protected val indentStep = 2
     protected var indentString = "                                        " // 40
 
-    typesPrinted = settings.printtypes.value
-    uniqueIds = settings.uniqid.value
+    printTypes = settings.printtypes.value
+    printIds = settings.uniqid.value
+    printKinds = settings.Yshowsymkinds.value
     protected def doPrintPositions = settings.Xprintpos.value
 
     def indent() = indentMargin += indentStep
@@ -320,7 +321,7 @@ trait TreePrinters extends api.TreePrinters { self: SymbolTable =>
 
         case Function(vparams, body) =>
           print("("); printValueParams(vparams); print(" => ", body, ")")
-          if (uniqueIds && tree.symbol != null) print("#"+tree.symbol.id)
+          if (printIds && tree.symbol != null) print("#"+tree.symbol.id)
 
         case Assign(lhs, rhs) =>
           print(lhs, " = ", rhs)
@@ -429,7 +430,7 @@ trait TreePrinters extends api.TreePrinters { self: SymbolTable =>
           printColumn(whereClauses, " forSome { ", ";", "}")
 
 // SelectFromArray is no longer visible in reflect.internal.
-// eliminated until we figure out what we will do with both TreePrinters and
+// eliminated until we figure out what we will do with both Printers and
 // SelectFromArray.
 //          case SelectFromArray(qualifier, name, _) =>
 //          print(qualifier); print(".<arr>"); print(symName(tree, name))
@@ -437,7 +438,7 @@ trait TreePrinters extends api.TreePrinters { self: SymbolTable =>
         case tree =>
           xprintTree(this, tree)
       }
-      if (typesPrinted && tree.isTerm && !tree.isEmpty) {
+      if (printTypes && tree.isTerm && !tree.isEmpty) {
         print("{", if (tree.tpe eq null) "<null>" else tree.tpe.toString, "}")
       }
     }
@@ -474,5 +475,168 @@ trait TreePrinters extends api.TreePrinters { self: SymbolTable =>
 
     def close = { /* do nothing */ }
     def flush = { /* do nothing */ }
+  }
+
+  // provides footnotes for types
+  private var typeCounter = 0
+  private val typeMap = collection.mutable.WeakHashMap[Type, Int]()
+
+  def newRawTreePrinter(writer: PrintWriter): RawTreePrinter = new RawTreePrinter(writer)
+  def newRawTreePrinter(stream: OutputStream): RawTreePrinter = newRawTreePrinter(new PrintWriter(stream))
+  def newRawTreePrinter(): RawTreePrinter = newRawTreePrinter(new PrintWriter(ConsoleWriter))
+
+  // emits more or less verbatim representation of the provided tree
+  class RawTreePrinter(out: PrintWriter) extends super.TreePrinter {
+    private var depth = 0
+    private var footnotes = collection.mutable.Map[Int, Type]()
+    private var printingFootnotes = false
+    private var printTypesInFootnotes = true
+
+    def print(args: Any*): Unit = {
+      if (depth == 0 && args.length == 1 && args(0) != null && args(0).isInstanceOf[Type])
+        printTypesInFootnotes = false
+
+      depth += 1
+      args foreach {
+        case EmptyTree =>
+          print("EmptyTree")
+        case emptyValDef: AnyRef if emptyValDef eq self.emptyValDef =>
+          print("emptyValDef")
+        case Literal(Constant(value)) =>
+          def print(s: String) = this.print("Literal(Constant(" + s + "))")
+          value match {
+            case s: String => print("\"" + s + "\"")
+            case null => print(null)
+            case _ => print(value.toString)
+          }
+        case tree: Tree =>
+          val hasSymbol = tree.hasSymbol && tree.symbol != NoSymbol
+          val isError = hasSymbol && tree.symbol.name.toString == nme.ERROR.toString
+          printProduct(
+            tree,
+            preamble = _ => {
+              print(tree.productPrefix)
+              if (printTypes && tree.tpe != null) print(tree.tpe)
+            },
+            body = {
+              case name: Name =>
+                if (isError) {
+                  if (isError) print("<")
+                  print(name)
+                  if (isError) print(": error>")
+                } else if (hasSymbol) {
+                  tree match {
+                    case _: Ident | _: Select | _: SelectFromTypeTree => print(tree.symbol)
+                    case _ => print(tree.symbol.name)
+                  }
+                } else {
+                  print(name)
+                }
+              case arg =>
+                print(arg)
+            },
+            postamble = {
+              case tree @ TypeTree() if tree.original != null => print(".setOriginal(", tree.original, ")")
+              case _ => // do nothing
+            })
+        case sym: Symbol =>
+          if (sym.isStatic && (sym.isClass || sym.isModule)) print(sym.fullName)
+          else print(sym.name)
+          if (printIds) print("#", sym.id)
+          if (printKinds) print("#", sym.abbreviatedKindString)
+        case NoType =>
+          print("NoType")
+        case NoPrefix =>
+          print("NoPrefix")
+        case tpe: Type if printTypesInFootnotes && !printingFootnotes =>
+          val index = typeMap.getOrElseUpdate(tpe, { typeCounter += 1; typeCounter })
+          footnotes(index) = tpe
+          print("[", index, "]")
+        case mods: Modifiers =>
+          print("Modifiers(")
+          if (mods.flags != NoFlags || mods.privateWithin != tpnme.EMPTY || mods.annotations.nonEmpty) print(show(mods.flags))
+          if (mods.privateWithin != tpnme.EMPTY || mods.annotations.nonEmpty) { print(", "); print(mods.privateWithin) }
+          if (mods.annotations.nonEmpty) { print(", "); print(mods.annotations); }
+          print(")")
+        case name: Name =>
+          print(show(name))
+        case list: List[_] =>
+          print("List")
+          printIterable(list)
+        case product: Product =>
+          printProduct(product)
+        case arg =>
+          out.print(arg)
+      }
+      depth -= 1
+      if (depth == 0 && footnotes.nonEmpty && !printingFootnotes) {
+        printingFootnotes = true
+        out.println()
+        val typeIndices = footnotes.keys.toList.sorted
+        typeIndices.zipWithIndex foreach {
+          case (typeIndex, i) =>
+            print("[" + typeIndex + "] ")
+            print(footnotes(typeIndex))
+            if (i < typeIndices.length - 1) out.println()
+        }
+      }
+    }
+
+    def printProduct(
+      p: Product,
+      preamble: Product => Unit = p => print(p.productPrefix),
+      body: Any => Unit = print(_),
+      postamble: Product => Unit = p => print("")): Unit =
+    {
+      preamble(p)
+      printIterable(p.productIterator.toList, body = body)
+      postamble(p)
+    }
+
+    def printIterable(
+      iterable: List[_],
+      preamble: => Unit = print(""),
+      body: Any => Unit = print(_),
+      postamble: => Unit = print("")): Unit =
+    {
+      preamble
+      print("(")
+      val it = iterable.iterator
+      while (it.hasNext) {
+        body(it.next)
+        print(if (it.hasNext) ", " else "")
+      }
+      print(")")
+      postamble
+    }
+  }
+
+  def show(name: Name): String = name match {
+    // base.StandardNames
+    case tpnme.EMPTY => "tpnme.EMPTY"
+    case tpnme.ROOT => "tpnme.ROOT"
+    case tpnme.EMPTY_PACKAGE_NAME => "tpnme.EMPTY_PACKAGE_NAME"
+    case tpnme.WILDCARD => "tpnme.WILDCARD"
+    case nme.CONSTRUCTOR => "nme.CONSTRUCTOR"
+    case nme.NO_NAME => "nme.NO_NAME"
+    // api.StandardNames
+    case tpnme.ERROR => "tpnme.ERROR"
+    case nme.ERROR => "nme.ERROR"
+    case nme.EMPTY => "nme.EMPTY"
+    case tpnme.PACKAGE => "tpnme.PACKAGE"
+    case nme.PACKAGE => "nme.PACKAGE"
+    case _ =>
+      val prefix = if (name.isTermName) "newTermName(\"" else "newTypeName(\""
+      prefix + name.toString + "\")"
+  }
+
+  def show(flags: FlagSet): String = {
+    if (flags == NoFlags) nme.NoFlags.toString
+    else {
+      val s_flags = new collection.mutable.ListBuffer[String]
+      for (i <- 0 to 63 if (flags containsAll (1L << i)))
+        s_flags += flagToString(1L << i).replace("<", "").replace(">", "").toUpperCase
+      s_flags mkString " | "
+    }
   }
 }
