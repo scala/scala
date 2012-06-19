@@ -1,0 +1,104 @@
+-- Testing iterator ---
+  :[Direct] Vector   : OK
+  :[Copy]   Vector   : OK
+  :[Direct] Buffer   : OK
+  :[Copy]   Buffer   : OK
+  :[Direct] GenSeq   : OK
+  :[Copy]   GenSeq   : OK
+  :[Copy]   Seq      : OK
+  :[Direct] Stream   : OK
+  :[Copy]   Stream   : OK
+  :[Direct] Array    : OK
+  :[Copy]   Array    : OK
+  :[Copy]   ParVector: OK
+-- Testing Vector ---
+  :[Direct] Vector   : OK
+  :[Copy]   Vector   : OK
+  :[Direct] Buffer   : OK
+  :[Copy]   Buffer   : OK
+  :[Direct] GenSeq   : OK
+  :[Copy]   GenSeq   : OK
+  :[Copy]   Seq      : OK
+  :[Direct] Stream   : OK
+  :[Copy]   Stream   : OK
+  :[Direct] Array    : OK
+  :[Copy]   Array    : OK
+  :[Copy]   ParVector: OK
+-- Testing List ---
+  :[Direct] Vector   : OK
+  :[Copy]   Vector   : OK
+  :[Direct] Buffer   : OK
+  :[Copy]   Buffer   : OK
+  :[Direct] GenSeq   : OK
+  :[Copy]   GenSeq   : OK
+  :[Copy]   Seq      : OK
+  :[Direct] Stream   : OK
+  :[Copy]   Stream   : OK
+  :[Direct] Array    : OK
+  :[Copy]   Array    : OK
+  :[Copy]   ParVector: OK
+-- Testing Buffer ---
+  :[Direct] Vector   : OK
+  :[Copy]   Vector   : OK
+  :[Direct] Buffer   : OK
+  :[Copy]   Buffer   : OK
+  :[Direct] GenSeq   : OK
+  :[Copy]   GenSeq   : OK
+  :[Copy]   Seq      : OK
+  :[Direct] Stream   : OK
+  :[Copy]   Stream   : OK
+  :[Direct] Array    : OK
+  :[Copy]   Array    : OK
+  :[Copy]   ParVector: OK
+-- Testing ParVector ---
+  :[Direct] Vector   : OK
+  :[Copy]   Vector   : OK
+  :[Direct] Buffer   : OK
+  :[Copy]   Buffer   : OK
+  :[Direct] GenSeq   : OK
+  :[Copy]   GenSeq   : OK
+  :[Copy]   Seq      : OK
+  :[Direct] Stream   : OK
+  :[Copy]   Stream   : OK
+  :[Direct] Array    : OK
+  :[Copy]   Array    : OK
+  :[Copy]   ParVector: OK
+-- Testing Set ---
+  :[Direct] Vector   : OK
+  :[Copy]   Vector   : OK
+  :[Direct] Buffer   : OK
+  :[Copy]   Buffer   : OK
+  :[Direct] GenSeq   : OK
+  :[Copy]   GenSeq   : OK
+  :[Copy]   Seq      : OK
+  :[Direct] Stream   : OK
+  :[Copy]   Stream   : OK
+  :[Direct] Array    : OK
+  :[Copy]   Array    : OK
+  :[Copy]   ParVector: OK
+-- Testing SetView ---
+  :[Direct] Vector   : OK
+  :[Copy]   Vector   : OK
+  :[Direct] Buffer   : OK
+  :[Copy]   Buffer   : OK
+  :[Direct] GenSeq   : OK
+  :[Copy]   GenSeq   : OK
+  :[Copy]   Seq      : OK
+  :[Direct] Stream   : OK
+  :[Copy]   Stream   : OK
+  :[Direct] Array    : OK
+  :[Copy]   Array    : OK
+  :[Copy]   ParVector: OK
+-- Testing BufferView ---
+  :[Direct] Vector   : OK
+  :[Copy]   Vector   : OK
+  :[Direct] Buffer   : OK
+  :[Copy]   Buffer   : OK
+  :[Direct] GenSeq   : OK
+  :[Copy]   GenSeq   : OK
+  :[Copy]   Seq      : OK
+  :[Direct] Stream   : OK
+  :[Copy]   Stream   : OK
+  :[Direct] Array    : OK
+  :[Copy]   Array    : OK
+  :[Copy]   ParVector: OK
