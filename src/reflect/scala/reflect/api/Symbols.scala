@@ -116,10 +116,27 @@ trait Symbols extends base.Symbols { self: Universe =>
      */
     def isValue: Boolean
 
+    /** Does this symbol denote a stable value? */
+    def isStable: Boolean
+
     /** Does this symbol represent a mutable value?
      *  If yes, `isTerm` and `isValue` are also guaranteed to be true.
      */
     def isVariable: Boolean
+
+    /** Does this symbol represent a getter or a setter?
+     */
+    def isAccessor: Boolean
+
+    /** Does this symbol represent a getter of a field?
+     *  If yes, `isTerm` and `isMethod` are also guaranteed to be true.
+     */
+    def isGetter: Boolean
+
+    /** Does this symbol represent a setter of a field?
+     *  If yes, `isTerm` and `isMethod` are also guaranteed to be true.
+     */
+    def isSetter: Boolean
 
     /** Does this symbol represent the definition of a package?
      *  If yes, `isTerm` is also guaranteed to be true.
