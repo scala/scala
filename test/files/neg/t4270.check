@@ -1,0 +1,4 @@
+t4270.scala:5: error: could not find implicit value for parameter e: Int
+  implicitly[Int]
+            ^
+one error found
