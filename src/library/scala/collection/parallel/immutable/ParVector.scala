@@ -62,6 +62,8 @@ extends ParSeq[T]
 
   override def seq: Vector[T] = vector
 
+  override def toVector: Vector[T] = vector
+
   class ParVectorIterator(_start: Int, _end: Int) extends VectorIterator[T](_start, _end) with SeqSplitter[T] {
     def remaining: Int = remainingElementCount
     def dup: SeqSplitter[T] = (new ParVector(remainingVector)).splitter

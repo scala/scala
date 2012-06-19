@@ -126,7 +126,10 @@ abstract class ToolBoxFactory[U <: JavaUniverse](val u: U) { factorySelf =>
         wrapper(currentTyper.silent(_.typed(expr, analyzer.EXPRmode, pt)) match {
           case analyzer.SilentResultValue(result) =>
             trace("success: ")(showAttributed(result, true, true, settings.Yshowsymkinds.value))
-            var Block(dummies, unwrapped) = result
+            var (dummies, unwrapped) = result match {
+              case Block(dummies, unwrapped) => (dummies, unwrapped)
+              case unwrapped => (Nil, unwrapped)
+            }
             var invertedIndex = freeTerms map (_.swap)
             // todo. also fixup singleton types
             unwrapped = new Transformer {

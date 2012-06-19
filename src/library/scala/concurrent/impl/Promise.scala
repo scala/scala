@@ -94,10 +94,10 @@ object Promise {
       val resolved = resolveEither(value)
       (try {
         @tailrec
-        def tryComplete(v: Either[Throwable, T]): List[Either[Throwable, T] => Unit] = {
+        def tryComplete(v: Either[Throwable, T]): List[Future.OnCompleteTask[T]] = {
           getState match {
             case raw: List[_] =>
-              val cur = raw.asInstanceOf[List[Either[Throwable, T] => Unit]]
+              val cur = raw.asInstanceOf[List[Future.OnCompleteTask[T]]]
               if (updateState(cur, v)) cur else tryComplete(v)
             case _ => null
           }
@@ -108,31 +108,20 @@ object Promise {
       }) match {
         case null             => false
         case cs if cs.isEmpty => true
-        // this assumes that f(resolved) will go via dispatchFuture
-        // and notifyCompleted (see onComplete below)
-        case cs               => cs.foreach(f => f(resolved)); true
+        case cs               => cs.foreach(c => c.dispatch(resolved)); true
       }
     }
 
     def onComplete[U](func: Either[Throwable, T] => U)(implicit executor: ExecutionContext): Unit = {
-      val bound: Either[Throwable, T] => Unit = (either: Either[Throwable, T]) =>
-        Future.dispatchFuture(executor, () => notifyCompleted(func, either))
+      val bound = new Future.OnCompleteTask[T](executor, func)
 
       @tailrec //Tries to add the callback, if already completed, it dispatches the callback to be executed
       def dispatchOrAddCallback(): Unit =
         getState match {
-          case r: Either[_, _]    => bound(r.asInstanceOf[Either[Throwable, T]])
+          case r: Either[_, _]    => bound.dispatch(r.asInstanceOf[Either[Throwable, T]])
           case listeners: List[_] => if (updateState(listeners, bound :: listeners)) () else dispatchOrAddCallback()
         }
       dispatchOrAddCallback()
-    }
-
-    private final def notifyCompleted(func: Either[Throwable, T] => Any, result: Either[Throwable, T])(implicit executor: ExecutionContext) {
-      try {
-        func(result)
-      } catch {
-        case NonFatal(e) => executor reportFailure e
-      }
     }
   }
 
@@ -149,8 +138,8 @@ object Promise {
     def tryComplete(value: Either[Throwable, T]): Boolean = false
 
     def onComplete[U](func: Either[Throwable, T] => U)(implicit executor: ExecutionContext): Unit = {
-      val completedAs = value.get // Avoid closing over "this"
-      Future.dispatchFuture(executor, () => func(completedAs))
+      val completedAs = value.get
+      (new Future.OnCompleteTask(executor, func)).dispatch(completedAs)
     }
 
     def ready(atMost: Duration)(implicit permit: CanAwait): this.type = this

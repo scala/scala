@@ -49,7 +49,8 @@ class LinkedHashMap[A, B] extends AbstractMap[A, B]
                              with Map[A, B]
                              with MapLike[A, B, LinkedHashMap[A, B]]
                              with HashTable[A, LinkedEntry[A, B]]
-                             with Serializable {
+                             with Serializable
+{
 
   override def empty = LinkedHashMap.empty[A, B]
   override def size = tableSize
@@ -107,7 +108,25 @@ class LinkedHashMap[A, B] extends AbstractMap[A, B]
       if (hasNext) { val res = (cur.key, cur.value); cur = cur.later; res }
       else Iterator.empty.next
   }
+  
+  protected class FilteredKeys(p: A => Boolean) extends super.FilteredKeys(p) {
+    override def empty = LinkedHashMap.empty
+  }
+  
+  override def filterKeys(p: A => Boolean): scala.collection.Map[A, B] = new FilteredKeys(p)
 
+  protected class MappedValues[C](f: B => C) extends super.MappedValues[C](f) {
+    override def empty = LinkedHashMap.empty
+  }
+  
+  override def mapValues[C](f: B => C): scala.collection.Map[A, C] = new MappedValues(f)
+  
+  protected class DefaultKeySet extends super.DefaultKeySet {
+    override def empty = LinkedHashSet.empty
+  }
+  
+  override def keySet: scala.collection.Set[A] = new DefaultKeySet
+  
   override def keysIterator: Iterator[A] = new AbstractIterator[A] {
     private var cur = firstEntry
     def hasNext = cur ne null

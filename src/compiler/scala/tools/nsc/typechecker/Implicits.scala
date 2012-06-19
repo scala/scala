@@ -1319,7 +1319,7 @@ trait Implicits {
           if (full) {
             val cm = typed(Ident(ReflectRuntimeCurrentMirror))
             gen.mkMethodCall(ReflectRuntimeUniverse, nme.typeTagToManifest, List(tp), List(cm, tagInScope))
-          } else gen.mkMethodCall(ReflectRuntimeUniverse, nme.classTagToClassManifest, List(tp), List(tagInScope))
+          } else gen.mkMethodCall(ReflectBasis, nme.classTagToClassManifest, List(tp), List(tagInScope))
         wrapResult(interop)
       }
     }
