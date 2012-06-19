@@ -8,7 +8,7 @@ import Release._
 object ScalaBuild extends Build with Layers with Packaging with Testing {
 
   // Build wide settings:
-  override lazy val settings = super.settings ++ Versions.settings ++ RemoteDependencies.buildSettings(Set(scalacheck), fullQuickScalaReference) ++ Seq(
+  override lazy val settings = super.settings ++ Versions.settings ++ Seq(
     autoScalaLibrary := false,
     resolvers += Resolver.url(
       "Typesafe nightlies", 
@@ -86,7 +86,6 @@ object ScalaBuild extends Build with Layers with Packaging with Testing {
     },
     // TODO - Make exported products == makeDist so we can use this when creating a *real* distribution.
     commands += Release.pushStarr
-    //commands += Release.setStarrHome
   )
   // Note: Root project is determined by lowest-alphabetical project that has baseDirectory as file(".").  we use aaa_ to 'win'.
   lazy val aaa_root = Project("scala", file(".")) settings(projectSettings: _*) settings(ShaResolve.settings: _*)
@@ -99,6 +98,11 @@ object ScalaBuild extends Build with Layers with Packaging with Testing {
     )
   )
 
+  def fixArtifactSrc(dir: File, name: String) = name match {
+    case x if x startsWith "scala-" => dir / "src" / (name drop 6)
+    case x                          => dir / "src" / name
+  }
+
   // These are setting overrides for most artifacts in the Scala build file.
   def settingOverrides: Seq[Setting[_]] = publishSettings ++ Seq(
     crossPaths := false,
@@ -110,8 +114,8 @@ object ScalaBuild extends Build with Layers with Packaging with Testing {
     target <<= (baseDirectory, name) apply (_ / "target" / _),
     (classDirectory in Compile) <<= target(_ / "classes"),
     javacOptions ++= Seq("-target", "1.5", "-source", "1.5"),
-    scalaSource in Compile <<= (baseDirectory, name) apply (_ / "src" / _),
-    javaSource in Compile <<= (baseDirectory, name) apply (_ / "src" / _),
+    scalaSource in Compile <<= (baseDirectory, name) apply fixArtifactSrc,
+    javaSource in Compile <<= (baseDirectory, name) apply fixArtifactSrc,
     unmanagedJars in Compile := Seq(),
     // Most libs in the compiler use this order to build.
     compileOrder in Compile := CompileOrder.JavaThenScala,
@@ -208,6 +212,8 @@ object ScalaBuild extends Build with Layers with Packaging with Testing {
 
   // Things that compile against the compiler.
   lazy val compilerDependentProjectSettings = dependentProjectSettings ++ Seq(quickScalaReflectDependency, quickScalaCompilerDependency, addCheaterDependency("scala-compiler"))
+
+  lazy val scalacheck = Project("scalacheck", file(".")) settings(compilerDependentProjectSettings:_*) dependsOn(actors % "provided")
   lazy val partestSettings = compilerDependentProjectSettings :+ externalDeps
   lazy val partest = Project("partest", file(".")) settings(partestSettings:_*)  dependsOn(actors,forkjoin,scalap)
   lazy val scalapSettings = compilerDependentProjectSettings ++ Seq(

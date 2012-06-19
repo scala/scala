@@ -7,9 +7,6 @@ import ScalaBuildKeys._
 /** All settings/projects relating to testing. */
 trait Testing { self: ScalaBuild.type =>
 
-  /* lazy val scalacheckSettings: Seq[Setting[_]] = Seq(fullQuickScalaReference, crossPaths := false)*/
-  lazy val scalacheck = uri("git://github.com/jsuereth/scalacheck.git#scala-build")
-
   lazy val testsuiteSettings: Seq[Setting[_]] = compilerDependentProjectSettings ++ partestTaskSettings ++ VerifyClassLoad.settings ++ Seq(
     unmanagedBase <<= baseDirectory / "test/files/lib",
     fullClasspath in VerifyClassLoad.checkClassLoad <<= (fullClasspath in scalaLibrary in Runtime).identity,
@@ -32,12 +29,12 @@ trait Testing { self: ScalaBuild.type =>
   val testsuite = (
     Project("testsuite", file(".")) 
     settings (testsuiteSettings:_*)
-    dependsOn (scalaLibrary, scalaCompiler, fjbg, partest, scalacheck)
+    dependsOn (scalaLibrary, scalaCompiler, fjbg, partest, scalacheck, actorsMigration)
   )
   val continuationsTestsuite = (
     Project("continuations-testsuite", file("."))
     settings (continuationsTestsuiteSettings:_*) 
-    dependsOn (partest, scalaLibrary, scalaCompiler, fjbg)
+    dependsOn (partest, scalaLibrary, scalaCompiler, fjbg, actorsMigration)
   )
 
 }
