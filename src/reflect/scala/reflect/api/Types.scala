@@ -121,7 +121,7 @@ trait Types extends base.Types { self: Universe =>
      *    class C extends p.D[Int]
      *    T.asSeenFrom(ThisType(C), D)  (where D is owner of m)
      *      = Int
-     *  }}} 
+     *  }}}
      */
     def asSeenFrom(pre: Type, clazz: Symbol): Type
 
@@ -170,6 +170,15 @@ trait Types extends base.Types { self: Universe =>
      *  <o.x.type>.widen = o.C
      */
     def widen: Type
+
+    /** Map to a singleton type which is a subtype of this type.
+     *  The fallback implemented here gives:
+     *  {{{
+     *    T.narrow  =  (T {}).this.type
+     *  }}}
+     *  Overridden where we know more about where types come from.
+     */
+    def narrow: Type
 
     /** The string discriminator of this type; useful for debugging */
     def kind: String
@@ -365,4 +374,3 @@ trait Types extends base.Types { self: Universe =>
    */
   def existentialAbstraction(tparams: List[Symbol], tpe0: Type): Type
 }
-
