@@ -16,8 +16,7 @@ import scala.collection.mutable
 import scala.reflect.internal.util.BatchSourceFile
 import mutable.ListBuffer
 import symtab.Flags._
-import util.Statistics
-import util.Statistics._
+import reflect.internal.util.Statistics
 
 // Suggestion check whether we can do without priming scopes with symbols of outer scopes,
 // like the IDE does.
@@ -31,6 +30,7 @@ trait Typers extends Modes with Adaptations with Tags {
 
   import global._
   import definitions._
+  import TypersStats._
   import patmat.DefaultOverrideMatchAttachment
 
   final def forArgMode(fun: Tree, mode: Int) =
@@ -707,10 +707,16 @@ trait Typers extends Modes with Adaptations with Tags {
     def silent[T](op: Typer => T,
                   reportAmbiguousErrors: Boolean = context.ambiguousErrors,
                   newtree: Tree = context.tree): SilentResult[T] = {
-      val rawTypeStart = startCounter(rawTypeFailed)
-      val findMemberStart = startCounter(findMemberFailed)
-      val subtypeStart = startCounter(subtypeFailed)
-      val failedSilentStart = startTimer(failedSilentNanos)
+      val rawTypeStart = Statistics.startCounter(rawTypeFailed)
+      val findMemberStart = Statistics.startCounter(findMemberFailed)
+      val subtypeStart = Statistics.startCounter(subtypeFailed)
+      val failedSilentStart = Statistics.startTimer(failedSilentNanos)
+      def stopStats() = {
+        Statistics.stopCounter(rawTypeFailed, rawTypeStart)
+        Statistics.stopCounter(findMemberFailed, findMemberStart)
+        Statistics.stopCounter(subtypeFailed, subtypeStart)
+        Statistics.stopTimer(failedSilentNanos, failedSilentStart)
+      }
       try {
         if (context.reportErrors ||
             reportAmbiguousErrors != context.ambiguousErrors ||
@@ -724,8 +730,10 @@ trait Typers extends Modes with Adaptations with Tags {
           context.undetparams = context1.undetparams
           context.savedTypeBounds = context1.savedTypeBounds
           context.namedApplyBlockInfo = context1.namedApplyBlockInfo
-          if (context1.hasErrors) SilentTypeError(context1.errBuffer.head)
-          else SilentResultValue(result)
+          if (context1.hasErrors) {
+            stopStats()
+            SilentTypeError(context1.errBuffer.head)
+          } else SilentResultValue(result)
         } else {
           assert(context.bufferErrors || isPastTyper, "silent mode is not available past typer")
           withSavedContext(context){
@@ -739,10 +747,7 @@ trait Typers extends Modes with Adaptations with Tags {
         case ex: TypeError =>
           // fallback in case TypeError is still thrown
           // @H this happens for example in cps annotation checker
-          stopCounter(rawTypeFailed, rawTypeStart)
-          stopCounter(findMemberFailed, findMemberStart)
-          stopCounter(subtypeFailed, subtypeStart)
-          stopTimer(failedSilentNanos, failedSilentStart)
+          stopStats()
           SilentTypeError(TypeErrorWrapper(ex))
       }
     }
@@ -3481,9 +3486,9 @@ trait Typers extends Modes with Adaptations with Tags {
 
     def isCapturedExistential(sym: Symbol) =
       (sym hasAllFlags (EXISTENTIAL | CAPTURED)) && {
-      val start = startTimer(isReferencedNanos)
+      val start = Statistics.startTimer(isReferencedNanos)
       try !isReferencedFrom(context, sym)
-      finally stopTimer(isReferencedNanos, start)
+      finally Statistics.stopTimer(isReferencedNanos, start)
     }
 
     def packCaptured(tpe: Type): Type = {
@@ -4110,10 +4115,10 @@ trait Typers extends Modes with Adaptations with Tags {
        *  insert an implicit conversion.
        */
       def tryTypedApply(fun: Tree, args: List[Tree]): Tree = {
-        val start = startTimer(failedApplyNanos)
+        val start = Statistics.startTimer(failedApplyNanos)
 
         def onError(typeError: AbsTypeError): Tree = {
-            stopTimer(failedApplyNanos, start)
+            Statistics.stopTimer(failedApplyNanos, start)
 
             // If the problem is with raw types, copnvert to existentials and try again.
             // See #4712 for a case where this situation arises,
@@ -4176,8 +4181,8 @@ trait Typers extends Modes with Adaptations with Tags {
           typed1(tree, mode & ~PATTERNmode | EXPRmode, pt)
         } else {
           val funpt = if (isPatternMode) pt else WildcardType
-          val appStart = startTimer(failedApplyNanos)
-          val opeqStart = startTimer(failedOpEqNanos)
+          val appStart = Statistics.startTimer(failedApplyNanos)
+          val opeqStart = Statistics.startTimer(failedOpEqNanos)
 
           def onError(reportError: => Tree): Tree = {
               fun match {
@@ -4185,14 +4190,14 @@ trait Typers extends Modes with Adaptations with Tags {
                 if !isPatternMode && nme.isOpAssignmentName(newTermName(name.decode)) =>
                   val qual1 = typedQualifier(qual)
                   if (treeInfo.isVariableOrGetter(qual1)) {
-                    stopTimer(failedOpEqNanos, opeqStart)
+                    Statistics.stopTimer(failedOpEqNanos, opeqStart)
                     convertToAssignment(fun, qual1, name, args)
                   } else {
-                    stopTimer(failedApplyNanos, appStart)
+                    Statistics.stopTimer(failedApplyNanos, appStart)
                       reportError
                   }
                 case _ =>
-                  stopTimer(failedApplyNanos, appStart)
+                  Statistics.stopTimer(failedApplyNanos, appStart)
                   reportError
               }
           }
@@ -4201,7 +4206,7 @@ trait Typers extends Modes with Adaptations with Tags {
                  if ((mode & EXPRmode) != 0) tree else context.tree) match {
             case SilentResultValue(fun1) =>
               val fun2 = if (stableApplication) stabilizeFun(fun1, mode, pt) else fun1
-              incCounter(typedApplyCount)
+              Statistics.incCounter(typedApplyCount)
               def isImplicitMethod(tpe: Type) = tpe match {
                 case mt: MethodType => mt.isImplicit
                 case _ => false
@@ -4977,7 +4982,7 @@ trait Typers extends Modes with Adaptations with Tags {
           typedSelect(qual1, nme.CONSTRUCTOR)
 
         case Select(qual, name) =>
-          incCounter(typedSelectCount)
+          Statistics.incCounter(typedSelectCount)
           var qual1 = checkDead(typedQualifier(qual, mode))
           if (name.isTypeName) qual1 = checkStable(qual1)
 
@@ -5009,7 +5014,7 @@ trait Typers extends Modes with Adaptations with Tags {
           else tree1
 
         case Ident(name) =>
-          incCounter(typedIdentCount)
+          Statistics.incCounter(typedIdentCount)
           if ((name == nme.WILDCARD && (mode & (PATTERNmode | FUNmode)) == PATTERNmode) ||
               (name == tpnme.WILDCARD && (mode & TYPEmode) != 0))
             tree setType makeFullyDefined(pt)
@@ -5084,15 +5089,9 @@ trait Typers extends Modes with Adaptations with Tags {
       indentTyping()
 
       var alreadyTyped = false
+      val startByType = Statistics.pushTimerClass(byTypeNanos, tree.getClass)
+      Statistics.incCounter(visitsByType, tree.getClass)
       try {
-        if (Statistics.enabled) {
-          val t = currentTime()
-          if (pendingTreeTypes.nonEmpty) {
-            microsByType(pendingTreeTypes.head) += ((t - typerTime) / 1000).toInt
-          }
-          typerTime = t
-          pendingTreeTypes = tree.getClass :: pendingTreeTypes
-        }
         if (context.retyping &&
             (tree.tpe ne null) && (tree.tpe.isErroneous || !(tree.tpe <:< pt))) {
           tree.tpe = null
@@ -5146,14 +5145,7 @@ trait Typers extends Modes with Adaptations with Tags {
       }
       finally {
         deindentTyping()
-
-        if (Statistics.enabled) {
-          val t = currentTime()
-          microsByType(pendingTreeTypes.head) += ((t - typerTime) / 1000).toInt
-          visitsByType(pendingTreeTypes.head) += 1
-          typerTime = t
-          pendingTreeTypes = pendingTreeTypes.tail
-        }
+        Statistics.popTimerClass(byTypeNanos, startByType)
       }
     }
 
@@ -5329,3 +5321,22 @@ trait Typers extends Modes with Adaptations with Tags {
   }
 }
 
+object TypersStats {
+  import reflect.internal.TypesStats._
+  import reflect.internal.BaseTypeSeqsStats._
+  val typedIdentCount     = Statistics.newCounter("#typechecked identifiers")
+  val typedSelectCount    = Statistics.newCounter("#typechecked selections")
+  val typedApplyCount     = Statistics.newCounter("#typechecked applications")
+  val rawTypeFailed       = Statistics.newSubCounter ("  of which in failed", rawTypeCount)
+  val subtypeFailed       = Statistics.newSubCounter("  of which in failed", subtypeCount)
+  val findMemberFailed    = Statistics.newSubCounter("  of which in failed", findMemberCount)
+  val compoundBaseTypeSeqCount = Statistics.newSubCounter("  of which for compound types", baseTypeSeqCount)
+  val typerefBaseTypeSeqCount = Statistics.newSubCounter("  of which for typerefs", baseTypeSeqCount)
+  val singletonBaseTypeSeqCount = Statistics.newSubCounter("  of which for singletons", baseTypeSeqCount)
+  val failedSilentNanos   = Statistics.newSubTimer  ("time spent in failed", typerNanos)
+  val failedApplyNanos    = Statistics.newSubTimer  ("  failed apply", typerNanos)
+  val failedOpEqNanos     = Statistics.newSubTimer  ("  failed op=", typerNanos)
+  val isReferencedNanos   = Statistics.newSubTimer  ("time spent ref scanning", typerNanos)
+  val visitsByType        = Statistics.newByClass   ("#visits by tree node", "typer")(Statistics.newCounter(""))
+  val byTypeNanos         = Statistics.newByClassTimerStack("time spent by tree node", typerNanos)
+}
