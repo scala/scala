@@ -12,14 +12,6 @@ class JavaUniverse extends internal.SymbolTable with ReflectSetup with runtime.S
 
   def picklerPhase = SomePhase
 
-  type TreeGen = internal.TreeGen
-
-  override type Position = scala.reflect.internal.util.Position
-
-  override val gen = new TreeGen { val global: self.type = self }
-
-  override val treeBuild = gen
-
   lazy val settings = new Settings
   def forInteractive = false
   def forScaladoc = false
