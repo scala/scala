@@ -46,14 +46,18 @@ t5429.scala:38: error: overriding method emptyArg in class A of type ()Int;
  object emptyArg has incompatible type
   override object emptyArg  // fail
                   ^
-t5429.scala:39: error: object oneArg overrides nothing
+t5429.scala:39: error: object oneArg overrides nothing.
+Note: the super classes of class C contain the following, non final members named oneArg:
+def oneArg(x: String): Int
   override object oneArg    // fail
                   ^
 t5429.scala:43: error: overriding lazy value lazyvalue in class A0 of type Any;
  object lazyvalue must be declared lazy to override a concrete lazy value
   override object lazyvalue // !!! this fails, but should succeed (lazy over lazy)
                   ^
-t5429.scala:46: error: object oneArg overrides nothing
+t5429.scala:46: error: object oneArg overrides nothing.
+Note: the super classes of class C0 contain the following, non final members named oneArg:
+def oneArg(x: String): Any
   override object oneArg    // fail
                   ^
 t5429.scala:50: error: overriding value value in class A of type Int;
@@ -76,7 +80,9 @@ t5429.scala:58: error: overriding lazy value lazyvalue in class A0 of type Any;
  value lazyvalue must be declared lazy to override a concrete lazy value
   override val lazyvalue = 0  // fail (non-lazy)
                ^
-t5429.scala:61: error: value oneArg overrides nothing
+t5429.scala:61: error: value oneArg overrides nothing.
+Note: the super classes of class D0 contain the following, non final members named oneArg:
+def oneArg(x: String): Any
   override val oneArg = 15    // fail
                ^
 t5429.scala:65: error: overriding value value in class A of type Int;
@@ -103,7 +109,9 @@ t5429.scala:73: error: overriding lazy value lazyvalue in class A0 of type Any;
  method lazyvalue needs to be a stable, immutable value
   override def lazyvalue = 2  // fail
                ^
-t5429.scala:76: error: method oneArg overrides nothing
+t5429.scala:76: error: method oneArg overrides nothing.
+Note: the super classes of class E0 contain the following, non final members named oneArg:
+def oneArg(x: String): Any
   override def oneArg = 15    // fail
                ^
 t5429.scala:80: error: overriding value value in class A of type Int;
@@ -126,7 +134,9 @@ t5429.scala:87: error: overriding value value in class A0 of type Any;
  lazy value value cannot override a concrete non-lazy value
   override lazy val value = 0      // fail (strict over lazy)
                     ^
-t5429.scala:91: error: value oneArg overrides nothing
+t5429.scala:91: error: value oneArg overrides nothing.
+Note: the super classes of class F0 contain the following, non final members named oneArg:
+def oneArg(x: String): Any
   override lazy val oneArg = 15    // fail
                     ^
 34 errors found
