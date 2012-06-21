@@ -3181,7 +3181,7 @@ trait Typers extends Modes {
             errorTree(tree, enclMethod.owner + " has return statement; needs result type")
           else {
             context.enclMethod.returnsSeen = true
-            val expr1: Tree = typed(expr, EXPRmode | BYVALmode, restpt.tpe)
+            val expr1: Tree = typed(expr, EXPRmode | BYVALmode | RETmode, restpt.tpe)
             // Warn about returning a value if no value can be returned.
             if (restpt.tpe.typeSymbol == UnitClass) {
               // The typing in expr1 says expr is Unit (it has already been coerced if
