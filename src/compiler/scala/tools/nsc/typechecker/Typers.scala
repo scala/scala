@@ -4863,6 +4863,16 @@ trait Typers extends Modes with Adaptations with Tags {
         case Try(block, catches, finalizer) =>
           var block1 = typed(block, pt)
           var catches1 = typedCases(catches, ThrowableClass.tpe, pt)
+
+          for (cdef <- catches1 if cdef.guard.isEmpty) {
+            def warn(name: Name) = context.warning(cdef.pat.pos, s"This catches all Throwables. If this is really intended, use `case ${name.decoded} : Throwable` to clear this warning.")
+            cdef.pat match {
+              case Bind(name, Ident(_)) => warn(name)
+              case Ident(name)          => warn(name)
+              case _ =>
+            }
+          }
+
           val finalizer1 = if (finalizer.isEmpty) finalizer
                            else typed(finalizer, UnitClass.tpe)
           val (owntype, needAdapt) = ptOrLub(block1.tpe :: (catches1 map (_.tpe)), pt)
