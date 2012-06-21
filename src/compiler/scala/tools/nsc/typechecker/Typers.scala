@@ -1846,16 +1846,13 @@ trait Typers extends Modes with Adaptations with Tags {
       val pending = ListBuffer[AbsTypeError]()
       // an object cannot be allowed to pass a reference to itself to a superconstructor
       // because of initialization issues; bug #473
-      for (arg <- superArgs ; tree <- arg) {
-        val sym = tree.symbol
-        if (sym != null && (sym.info.baseClasses contains clazz)) {
-          if (sym.isModule)
-            pending +=  SuperConstrReferenceError(tree)
-          tree match {
-            case This(qual) =>
-              pending += SuperConstrArgsThisReferenceError(tree)
-            case _ => ()
-          }
+      foreachSubTreeBoundTo(superArgs, clazz) { tree =>
+        if (tree.symbol.isModule)
+          pending += SuperConstrReferenceError(tree)
+        tree match {
+          case This(qual) =>
+            pending += SuperConstrArgsThisReferenceError(tree)
+          case _ => ()
         }
       }
 
@@ -1889,7 +1886,39 @@ trait Typers extends Modes with Adaptations with Tags {
       pending.foreach(ErrorUtils.issueTypeError)
     }
 
-    /** Check if a structurally defined method violates implementation restrictions.
+    // Check for SI-4842.
+    private def checkSelfConstructorArgs(ddef: DefDef, clazz: Symbol) {
+      val pending = ListBuffer[AbsTypeError]()
+      ddef.rhs match {
+        case Block(stats, expr) =>
+          val selfConstructorCall = stats.headOption.getOrElse(expr)
+          foreachSubTreeBoundTo(List(selfConstructorCall), clazz) {
+            case tree @ This(qual) =>
+              pending += SelfConstrArgsThisReferenceError(tree)
+            case _ => ()
+          }
+        case _ =>
+      }
+      pending.foreach(ErrorUtils.issueTypeError)
+    }
+
+    /**
+     * Run the provided function for each sub tree of `trees` that
+     * are bound to a symbol with `clazz` as a base class.
+     *
+     * @param f This function can assume that `tree.symbol` is non null
+     */
+    private def foreachSubTreeBoundTo[A](trees: List[Tree], clazz: Symbol)(f: Tree => Unit): Unit =
+      for {
+        tree <- trees
+        subTree <- tree
+      } {
+        val sym = subTree.symbol
+        if (sym != null && sym.info.baseClasses.contains(clazz))
+          f(subTree)
+      }
+
+      /** Check if a structurally defined method violates implementation restrictions.
      *  A method cannot be called if it is a non-private member of a refinement type
      *  and if its parameter's types are any of:
      *    - the self-type of the refinement
@@ -2007,11 +2036,14 @@ trait Typers extends Modes with Adaptations with Tags {
           transformedOrTyped(ddef.rhs, EXPRmode, tpt1.tpe)
         }
 
-        if (meth.isPrimaryConstructor && meth.isClassConstructor && !isPastTyper && !reporter.hasErrors && !meth.owner.isSubClass(AnyValClass)) {
-          // At this point in AnyVal there is no supercall, which will blow up
-          // in computeParamAliases; there's nothing to be computed for Anyval anyway.
+      if (meth.isClassConstructor && !isPastTyper && !reporter.hasErrors && !meth.owner.isSubClass(AnyValClass)) {
+        // At this point in AnyVal there is no supercall, which will blow up
+        // in computeParamAliases; there's nothing to be computed for Anyval anyway.
+        if (meth.isPrimaryConstructor)
           computeParamAliases(meth.owner, vparamss1, rhs1)
-        }
+        else
+          checkSelfConstructorArgs(ddef, meth.owner)
+      }
 
       if (tpt1.tpe.typeSymbol != NothingClass && !context.returnsSeen && rhs1.tpe.typeSymbol != NothingClass)
         rhs1 = checkDead(rhs1)
