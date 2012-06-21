@@ -5,7 +5,7 @@
 **                                                                         **
 **  This software is released under the terms of the Revised BSD License.  **
 **  There is NO WARRANTY. See the file LICENSE for the full text.          **
-\*-------------------------------------------------------------------------*/
+\*------------------------------------------------------------------------ */
 
 package org.scalacheck
 
@@ -178,9 +178,10 @@ object Arbitrary {
     import java.math.MathContext._
     val mcGen = oneOf(UNLIMITED, DECIMAL32, DECIMAL64, DECIMAL128)
     val bdGen = for {
-      mc <- mcGen
-      scale <- arbInt.arbitrary
       x <- arbBigInt.arbitrary
+      mc <- mcGen
+      limit <- value(if(mc == UNLIMITED) 0 else math.max(x.abs.toString.length - mc.getPrecision, 0))
+      scale <- Gen.chooseNum(Int.MinValue + limit , Int.MaxValue)
     } yield BigDecimal(x, scale, mc)
     Arbitrary(bdGen)
   }
@@ -197,24 +198,37 @@ object Arbitrary {
   }
 
   /** Generates an arbitrary property */
-  implicit lazy val arbProp: Arbitrary[Prop] =
+  implicit lazy val arbProp: Arbitrary[Prop] = {
+    import Prop._
+    val undecidedOrPassed = forAll { b: Boolean =>
+      b ==> true
+    }
     Arbitrary(frequency(
-      (5, Prop.proved),
-      (4, Prop.falsified),
-      (2, Prop.undecided),
-      (1, Prop.exception(null))
+      (4, falsified),
+      (4, passed),
+      (3, proved),
+      (3, undecidedOrPassed),
+      (2, undecided),
+      (1, exception(null))
     ))
+  }
 
   /** Arbitrary instance of test params */
   implicit lazy val arbTestParams: Arbitrary[Test.Params] =
     Arbitrary(for {
-      minSuccTests <- choose(10,150)
-      maxDiscTests <- choose(100,500)
+      minSuccTests <- choose(10,200)
+      maxDiscardRatio <- choose(0.2f,10f)
       minSize <- choose(0,500)
       sizeDiff <- choose(0,500)
       maxSize <- choose(minSize, minSize + sizeDiff)
       ws <- choose(1,4)
-    } yield Test.Params(minSuccTests,maxDiscTests,minSize,maxSize,workers = ws))
+    } yield Test.Params(
+      minSuccessfulTests = minSuccTests,
+      maxDiscardRatio = maxDiscardRatio,
+      minSize = minSize,
+      maxSize = maxSize,
+      workers = ws
+    ))
 
   /** Arbitrary instance of gen params */
   implicit lazy val arbGenParams: Arbitrary[Gen.Params] =
