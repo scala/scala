@@ -5,7 +5,7 @@
 **                                                                         **
 **  This software is released under the terms of the Revised BSD License.  **
 **  There is NO WARRANTY. See the file LICENSE for the full text.          **
-\*-------------------------------------------------------------------------*/
+\*------------------------------------------------------------------------ */
 
 package org.scalacheck.util
 
@@ -26,6 +26,7 @@ trait CmdLineParser extends Parsers {
   }
   trait Flag extends Opt[Unit]
   trait IntOpt extends Opt[Int]
+  trait FloatOpt extends Opt[Float]
   trait StrOpt extends Opt[String]
 
   class OptMap {
@@ -68,11 +69,17 @@ trait CmdLineParser extends Parsers {
     case s if s != null && s.length > 0 && s.forall(_.isDigit) => s.toInt
   })
 
+  private val floatVal: Parser[Float] = accept("float", {
+    case s if s != null && s.matches("[0987654321]+\\.?[0987654321]*")
+      => s.toFloat
+  })
+
   private case class OptVal[T](o: Opt[T], v: T)
 
   private val optVal: Parser[OptVal[Any]] = opt into {
     case o: Flag => success(OptVal(o, ()))
     case o: IntOpt => intVal ^^ (v => OptVal(o, v))
+    case o: FloatOpt => floatVal ^^ (v => OptVal(o, v))
     case o: StrOpt => strVal ^^ (v => OptVal(o, v))
   }
 
