@@ -540,8 +540,17 @@ trait Namers extends MethodSynthesis {
         //@M! TypeDef's type params are handled differently
         //@M e.g., in [A[x <: B], B], A and B are entered first as both are in scope in the definition of x
         //@M x is only in scope in `A[x <: B]'
-        if (!tree.symbol.isAbstractType) //@M TODO: change to isTypeMember ?
-          createNamer(tree) enterSyms tparams
+        if (!tree.symbol.isAbstractType) { //@M TODO: change to isTypeMember ?
+          val scope = tree match {
+            case ClassDef(_, _, _, _) =>
+              val scope = context.makeNewScope(tree, tree.symbol)
+              scope.inSelfSuperCall = true
+              scope
+            case _ =>
+              context.makeNewScope(tree, tree.symbol)
+          }
+          newNamer(scope) enterSyms tparams
+        }
 
         new PolyTypeCompleter(tparams, mono, tree, context) //@M
       }
