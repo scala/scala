@@ -1,0 +1,8 @@
+t5617.scala:12: error: method foo overrides nothing.
+Note: the super classes of trait C contain the following, non final members named foo:
+def foo(u: Unit): Int
+def foo(x: Boolean): Int
+def foo(i: Int)(b: String): Int
+  override def foo(s: String): Int
+               ^
+one error found
