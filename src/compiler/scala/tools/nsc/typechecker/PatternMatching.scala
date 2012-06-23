@@ -2362,6 +2362,8 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
           // patmatDebug("enum bool "+ tp)
           Some(List(ConstantType(Constant(true)), ConstantType(Constant(false))))
         // TODO case _ if tp.isTupleType => // recurse into component types
+        case modSym: ModuleClassSymbol =>
+          Some(List(tp))
         case sym if !sym.isSealed || isPrimitiveValueClass(sym) =>
           // patmatDebug("enum unsealed "+ (tp, sym, sym.isSealed, isPrimitiveValueClass(sym)))
           None
