@@ -17,8 +17,8 @@ import collection.parallel.immutable.ParHashSet
 
 /** This class implements immutable sets using a hash trie.
  *
- *  '''Note:''' the builder of a hash set returns specialized representations `EmptySet`,`Set1`,..., `Set4`
- *  for sets of `size <= 4`.
+ *  '''Note:''' The builder of this hash set returns the specialized representations `EmptySet`,
+ *  `Set1`, `Set2`, `Set3` or `Set4` for sets with less than four entries.
  *
  *  @tparam A      the type of the elements contained in this hash set.
  *
