@@ -24,8 +24,9 @@ package scala.util.control
  *  try {
  *    // Body might throw arbitrarily
  *  } catch {
- *    case ce : ControlThrowable => throw ce // propagate
- *    case t : Exception => log(t)           // log and suppress
+ *    case c: ControlThrowable => throw c // propagate
+ *    case t: Exception        => log(t)  // log and suppress
+ *  }
  *  }}}
  *
  *  @author Miles Sabin
