@@ -213,17 +213,14 @@ abstract class TreeGen extends reflect.internal.TreeGen with TreeDSL {
   def wildcardStar(tree: Tree) =
     atPos(tree.pos) { Typed(tree, Ident(tpnme.WILDCARD_STAR)) }
 
-  def paramToArg(vparam: Symbol) = {
-    val arg = Ident(vparam)
-    if (isRepeatedParamType(vparam.tpe)) wildcardStar(arg)
-    else arg
-  }
+  def paramToArg(vparam: Symbol): Tree =
+    paramToArg(Ident(vparam), isRepeatedParamType(vparam.tpe))
 
-  def paramToArg(vparam: ValDef) = {
-    val arg = Ident(vparam.name)
-    if (treeInfo.isRepeatedParamType(vparam.tpt)) wildcardStar(arg)
-    else arg
-  }
+  def paramToArg(vparam: ValDef): Tree =
+    paramToArg(Ident(vparam.name), treeInfo.isRepeatedParamType(vparam.tpt))
+
+  def paramToArg(arg: Ident, isRepeatedParam: Boolean): Tree  =
+    if (isRepeatedParam) wildcardStar(arg) else arg
 
   /** Make forwarder to method `target`, passing all parameters in `params` */
   def mkForwarder(target: Tree, vparamss: List[List[Symbol]]) =
