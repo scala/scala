@@ -336,7 +336,6 @@ import ILGenerator._
         emitSpecialLabel(Label.Try)
         val endExc: Label = new Label.NormalLabel() // new Label(lastLabel) ???
         excStack.push(Label.Try, endExc)
-	return endExc
     }
 
     /** Begins a catch block. */
