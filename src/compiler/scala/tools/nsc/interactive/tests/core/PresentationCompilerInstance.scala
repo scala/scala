@@ -2,12 +2,15 @@ package scala.tools.nsc
 package interactive
 package tests.core
 
-import reporters.StoreReporter
+import reporters.{Reporter => CompilerReporter}
+import scala.reflect.internal.util.Position
 
 /** Trait encapsulating the creation of a presentation compiler's instance.*/
-private[tests] trait PresentationCompilerInstance {
+private[tests] trait PresentationCompilerInstance extends TestSettings {
   protected val settings = new Settings
-  protected val compilerReporter = new StoreReporter
+  protected val compilerReporter: CompilerReporter = new InteractiveReporter {
+    override def compiler = PresentationCompilerInstance.this.compiler
+  }
 
   protected lazy val compiler: Global = {
     prepareSettings(settings)

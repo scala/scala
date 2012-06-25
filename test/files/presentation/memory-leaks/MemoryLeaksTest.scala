@@ -24,10 +24,7 @@ import scala.tools.nsc.io._
 object Test extends InteractiveTest {
   final val mega = 1024 * 1024
 
-  override def main(args: Array[String]) {
-    memoryConsumptionTest()
-    compiler.askShutdown()
-  }
+  override def execute(): Unit = memoryConsumptionTest()
 
   def batchSource(name: String) =
     new BatchSourceFile(AbstractFile.getFile(name))
