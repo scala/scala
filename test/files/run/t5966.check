@@ -1,0 +1,3 @@
+(o()_)("") = List()
+(o("a1")_)("") = WrappedArray(a1)
+(o("a1", "a2")_)("") = WrappedArray(a1, a2)
