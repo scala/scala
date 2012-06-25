@@ -565,9 +565,10 @@ abstract class TypeFlowAnalysis {
       val msym  = cm.method
       val style = cm.style
 
-      !msym.isAccessor &&
-      !msym.isConstructor && !blackballed(msym) &&
-      (style.isDynamic || (style.hasInstance && style.isStatic))
+      !blackballed(msym)  &&
+      !msym.isConstructor &&
+      (!msym.isAccessor || inliner.isClosureClass(msym.owner)) &&
+      (style.isDynamic  || (style.hasInstance && style.isStatic))
     }
 
     override def init(m: icodes.IMethod) {
