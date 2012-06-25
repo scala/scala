@@ -551,14 +551,23 @@ abstract class TypeFlowAnalysis {
 
     val relevantBBs   = mutable.Set.empty[BasicBlock]
 
+    /*
+     * Rationale to prevent some methods from ever being inlined:
+     *
+     *   (1) inlining getters and setters results in exposing a private field,
+     *       which may itself prevent inlining of the caller (at best) or
+     *       lead to situations like SI-5442 ("IllegalAccessError when mixing optimized and unoptimized bytecode")
+     *
+     *   (2) only invocations having a receiver object are considered (ie no static-methods are ever inlined).
+     *       This is taken care of by checking `isDynamic` (ie virtual method dispatch) and `Static(true)` (ie calls to private members)
+     */
     private def isPreCandidate(cm: opcodes.CALL_METHOD): Boolean = {
       val msym  = cm.method
       val style = cm.style
-      // Dynamic == normal invocations
-      // Static(true) == calls to private members
+
+      !msym.isAccessor &&
       !msym.isConstructor && !blackballed(msym) &&
       (style.isDynamic || (style.hasInstance && style.isStatic))
-      // && !(msym hasAnnotation definitions.ScalaNoInlineClass)
     }
 
     override def init(m: icodes.IMethod) {
