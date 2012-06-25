@@ -1,4 +1,0 @@
-t4842b.scala:2: error: self constructor arguments cannot reference unconstructed `this`
-  def this() = { this(???)(new { println(TypeArg.this.x) } ); println("next") } // error
-                                         ^
-one error found
