@@ -24,6 +24,9 @@ import comment._
   *  - annotations. */
 trait Entity {
 
+  /** Similar to symbols, so we can track entities */
+  def id: Int
+
   /** The name of the entity. Note that the name does not qualify this entity uniquely; use its `qualifiedName`
     * instead. */
   def name : String
@@ -48,6 +51,8 @@ trait Entity {
   /** The annotations attached to this entity, if any. */
   def annotations: List[Annotation]
 
+  /** The kind of the entity */
+  def kind: String
 }
 
 object Entity {
@@ -86,9 +91,11 @@ trait TemplateEntity extends Entity {
   /** Whether this template is a case class. */
   def isCaseClass: Boolean
 
+  /** Whether or not the template was defined in a package object */
+  def inPackageObject: Boolean
+
   /** The self-type of this template, if it differs from the template type. */
   def selfType : Option[TypeEntity]
-
 }
 
 
@@ -177,7 +184,7 @@ object MemberEntity {
 }
 
 /** An entity that is parameterized by types */
-trait HigherKinded extends Entity {
+trait HigherKinded {
 
   /** The type parameters of this entity. */
   def typeParams: List[TypeParam]
@@ -187,8 +194,14 @@ trait HigherKinded extends Entity {
 
 /** A template (class, trait, object or package) which is referenced in the universe, but for which no further
   * documentation is available. Only templates for which a source file is given are documented by Scaladoc. */
-trait NoDocTemplate extends TemplateEntity
+trait NoDocTemplate extends TemplateEntity {
+  def kind = "<no doc>"
+}
 
+/** TODO: Document */
+trait NoDocTemplateMemberEntity extends TemplateEntity with MemberEntity {
+  def kind = "<no doc, mbr>"
+}
 
 /** A template (class, trait, object or package) for which documentation is available. Only templates for which
   * a source file is given are documented by Scaladoc. */
@@ -208,9 +221,6 @@ trait DocTemplateEntity extends TemplateEntity with MemberEntity {
 
   /** The direct super-type of this template. */
   def parentType: Option[TypeEntity]
-
-  @deprecated("Use `linearizationTemplates` and `linearizationTypes` instead", "2.9.0")
-  def linearization: List[(TemplateEntity, TypeEntity)]
 
   /** All class, trait and object templates which are part of this template's linearization, in lineratization order.
     * This template's linearization contains all of its direct and indirect super-classes and super-traits. */
@@ -254,7 +264,9 @@ trait DocTemplateEntity extends TemplateEntity with MemberEntity {
 
 
 /** A trait template. */
-trait Trait extends DocTemplateEntity with HigherKinded
+trait Trait extends DocTemplateEntity with HigherKinded {
+  def kind = "trait"
+}
 
 
 /** A class template. */
@@ -270,11 +282,14 @@ trait Class extends Trait with HigherKinded {
     * parameters cannot be curried, the outer list has exactly one element. */
   def valueParams: List[List[ValueParam]]
 
+  override def kind = "class"
 }
 
 
 /** An object template. */
-trait Object extends DocTemplateEntity
+trait Object extends DocTemplateEntity {
+  def kind = "object"
+}
 
 
 /** A package template. A package is in the universe if it is declared as a package object, or if it
@@ -290,6 +305,8 @@ trait Package extends Object {
 
   /** All packages that are member of this package. */
   def packages: List[Package]
+
+  override def kind = "package"
 }
 
 
@@ -323,6 +340,7 @@ trait Def extends NonTemplateMemberEntity with HigherKinded {
     * Each parameter block is a list of value parameters. */
   def valueParams : List[List[ValueParam]]
 
+  def kind = "method"
 }
 
 
@@ -337,11 +355,14 @@ trait Constructor extends NonTemplateMemberEntity {
     * element. */
   def valueParams : List[List[ValueParam]]
 
+  def kind = "constructor"
 }
 
 
 /** A value (`val`), lazy val (`lazy val`) or variable (`var`) of a template. */
-trait Val extends NonTemplateMemberEntity
+trait Val extends NonTemplateMemberEntity {
+  def kind = "[lazy] value/variable"
+}
 
 
 /** An abstract type member of a template. */
@@ -353,6 +374,7 @@ trait AbstractType extends NonTemplateMemberEntity with HigherKinded {
   /** The upper bound for this abstract type, if it has been defined. */
   def hi: Option[TypeEntity]
 
+  def kind = "abstract type"
 }
 
 
@@ -362,18 +384,14 @@ trait AliasType extends NonTemplateMemberEntity with HigherKinded {
   /** The type aliased by this type alias. */
   def alias: TypeEntity
 
+  def kind = "type alias"
 }
 
 
 /** A parameter to an entity. */
-trait ParameterEntity extends Entity {
+trait ParameterEntity {
 
-  /** Whether this parameter is a type parameter. */
-  def isTypeParam: Boolean
-
-  /** Whether this parameter is a value parameter. */
-  def isValueParam: Boolean
-
+  def name: String
 }
 
 
@@ -388,7 +406,6 @@ trait TypeParam extends ParameterEntity with HigherKinded {
 
   /** The upper bound for this type parameter, if it has been defined. */
   def hi: Option[TypeEntity]
-
 }
 
 
@@ -403,7 +420,6 @@ trait ValueParam extends ParameterEntity {
 
   /** Whether this value parameter is implicit. */
   def isImplicit: Boolean
-
 }
 
 
@@ -416,6 +432,7 @@ trait Annotation extends Entity {
   /** The arguments passed to the constructor of the annotation class. */
   def arguments: List[ValueArgument]
 
+  def kind = "annotation"
 }
 
 /** A trait that signals the member results from an implicit conversion */

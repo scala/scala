@@ -58,6 +58,7 @@ trait ModelFactoryImplicitSupport {
   import global._
   import global.analyzer._
   import global.definitions._
+  import rootMirror.{RootPackage, RootClass, EmptyPackage, EmptyPackageClass}
   import settings.hardcoded
 
   // debugging:
@@ -96,13 +97,7 @@ trait ModelFactoryImplicitSupport {
 
     def targetType: TypeEntity = makeType(toType, inTpl)
 
-    def convertorOwner: TemplateEntity =
-      if (convSym != NoSymbol)
-        makeTemplate(convSym.owner)
-      else {
-        error("Scaladoc implicits: Implicit conversion from " + sym.tpe + " to " + toType + " done by " + convSym + " = NoSymbol!")
-        makeRootPackage.get // surely the root package was created :)
-      }
+    def convertorOwner: TemplateEntity = makeTemplate(convSym.owner)
 
     def convertorMethod: Either[MemberEntity, String] = {
       var convertor: MemberEntity = null
@@ -122,11 +117,11 @@ trait ModelFactoryImplicitSupport {
 
     def conversionShortName = convSym.nameString
 
-    def conversionQualifiedName = convertorOwner.qualifiedName + "." + convSym.nameString
+    def conversionQualifiedName = makeQualifiedName(convSym)
 
     lazy val constraints: List[Constraint] = constrs
 
-    val members: List[MemberEntity] = {
+    val members: List[MemberImpl] = {
       // Obtain the members inherited by the implicit conversion
       var memberSyms = toType.members.filter(implicitShouldDocument(_))
       val existingMembers = sym.info.members
@@ -162,7 +157,7 @@ trait ModelFactoryImplicitSupport {
    *  default Scala imports (Predef._ for example) and the companion object of the current class, if one exists. In the
    *  future we might want to extend this to more complex scopes.
    */
-  def makeImplicitConversions(sym: Symbol, inTpl: => DocTemplateImpl): List[ImplicitConversion] =
+  def makeImplicitConversions(sym: Symbol, inTpl: => DocTemplateImpl): List[ImplicitConversionImpl] =
     // Nothing and Null are somewhat special -- they can be transformed by any implicit conversion available in scope.
     // But we don't want that, so we'll simply refuse to find implicit conversions on for Nothing and Null
     if (!(sym.isClass || sym.isTrait || sym == AnyRefClass) || sym == NothingClass || sym == NullClass) Nil
@@ -218,7 +213,7 @@ trait ModelFactoryImplicitSupport {
    *  - we also need to transform implicit parameters in the view's signature into constraints, such that Numeric[T4]
    * appears as a constraint
    */
-  def makeImplicitConversion(sym: Symbol, result: SearchResult, constrs: List[TypeConstraint], context: Context, inTpl: => DocTemplateImpl): List[ImplicitConversion] =
+  def makeImplicitConversion(sym: Symbol, result: SearchResult, constrs: List[TypeConstraint], context: Context, inTpl: => DocTemplateImpl): List[ImplicitConversionImpl] =
     if (result.tree == EmptyTree) Nil
     else {
       // `result` will contain the type of the view (= implicit conversion method)
@@ -280,7 +275,7 @@ trait ModelFactoryImplicitSupport {
     types.flatMap((tpe:Type) => {
       // TODO: Before creating constraints, map typeVarToOriginOrWildcard on the implicitTypes
       val implType = typeVarToOriginOrWildcard(tpe)
-      val qualifiedName = implType.typeSymbol.ownerChain.reverse.map(_.nameString).mkString(".")
+      val qualifiedName = makeQualifiedName(implType.typeSymbol)
 
       var available: Option[Boolean] = None
 
@@ -333,20 +328,20 @@ trait ModelFactoryImplicitSupport {
                 case Some(explanation) =>
                   List(new KnownTypeClassConstraint {
                     val typeParamName = targ.nameString
-                    val typeExplanation = explanation
-                    val typeClassEntity = makeTemplate(sym)
-                    val implicitType: TypeEntity = makeType(implType, inTpl)
+                    lazy val typeExplanation = explanation
+                    lazy val typeClassEntity = makeTemplate(sym)
+                    lazy val implicitType: TypeEntity = makeType(implType, inTpl)
                   })
                 case None =>
                   List(new TypeClassConstraint {
                     val typeParamName = targ.nameString
-                    val typeClassEntity = makeTemplate(sym)
-                    val implicitType: TypeEntity = makeType(implType, inTpl)
+                    lazy val typeClassEntity = makeTemplate(sym)
+                    lazy val implicitType: TypeEntity = makeType(implType, inTpl)
                   })
               }
             case _ =>
               List(new ImplicitInScopeConstraint{
-                val implicitType: TypeEntity = makeType(implType, inTpl)
+                lazy val implicitType: TypeEntity = makeType(implType, inTpl)
               })
           }
       }
@@ -372,23 +367,23 @@ trait ModelFactoryImplicitSupport {
             case (List(lo), List(up)) if (lo == up) =>
               List(new EqualTypeParamConstraint {
                 val typeParamName = tparam.nameString
-                val rhs = makeType(lo, inTpl)
+                lazy val rhs = makeType(lo, inTpl)
               })
             case (List(lo), List(up)) =>
               List(new BoundedTypeParamConstraint {
                 val typeParamName = tparam.nameString
-                val lowerBound = makeType(lo, inTpl)
-                val upperBound = makeType(up, inTpl)
+                lazy val lowerBound = makeType(lo, inTpl)
+                lazy val upperBound = makeType(up, inTpl)
               })
             case (List(lo), Nil) =>
               List(new LowerBoundedTypeParamConstraint {
                 val typeParamName = tparam.nameString
-                val lowerBound = makeType(lo, inTpl)
+                lazy val lowerBound = makeType(lo, inTpl)
               })
             case (Nil, List(up)) =>
               List(new UpperBoundedTypeParamConstraint {
                 val typeParamName = tparam.nameString
-                val upperBound = makeType(up, inTpl)
+                lazy val upperBound = makeType(up, inTpl)
               })
             case other =>
               // this is likely an error on the lub/glb side
@@ -398,6 +393,11 @@ trait ModelFactoryImplicitSupport {
         }
       }
     }
+
+  def makeQualifiedName(sym: Symbol): String = {
+    val remove = Set[Symbol](RootPackage, RootClass, EmptyPackage, EmptyPackageClass)
+    sym.ownerChain.filterNot(remove.contains(_)).reverse.map(_.nameString).mkString(".")
+  }
 
   /**
    * uniteConstraints takes a TypeConstraint instance and simplifies the constraints inside

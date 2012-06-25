@@ -733,8 +733,8 @@ trait CommentFactory { thisFactory: ModelFactory with CommentFactory =>
         nextChar()
     }
 
-    /** 
-     *  Eliminates the (common) leading spaces in all lines, based on the first line 
+    /**
+     *  Eliminates the (common) leading spaces in all lines, based on the first line
      *  For indented pieces of code, it reduces the indent to the least whitespace prefix:
      *    {{{
      *       indented example
@@ -757,11 +757,11 @@ trait CommentFactory { thisFactory: ModelFactory with CommentFactory =>
       while (index < code.length) {
         code(index) match {
           case ' ' =>
-            if (wsArea) 
+            if (wsArea)
               crtSkip += 1
           case c =>
             wsArea = (c == '\n')
-            maxSkip = if (firstLine || emptyLine) maxSkip else if (maxSkip <= crtSkip) maxSkip else crtSkip 
+            maxSkip = if (firstLine || emptyLine) maxSkip else if (maxSkip <= crtSkip) maxSkip else crtSkip
             crtSkip = if (c == '\n') 0 else crtSkip
             firstLine = if (c == '\n') false else firstLine
             emptyLine = if (c == '\n') true else false

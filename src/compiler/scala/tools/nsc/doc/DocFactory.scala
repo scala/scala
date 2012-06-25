@@ -83,8 +83,8 @@ class DocFactory(val reporter: Reporter, val settings: doc.Settings) { processor
         with model.ModelFactoryImplicitSupport
         with model.comment.CommentFactory
         with model.TreeFactory {
-          override def templateShouldDocument(sym: compiler.Symbol) =
-            extraTemplatesToDocument(sym) || super.templateShouldDocument(sym)
+          override def templateShouldDocument(sym: compiler.Symbol, inTpl: TemplateImpl) =
+            extraTemplatesToDocument(sym) || super.templateShouldDocument(sym, inTpl)
         }
     )
 

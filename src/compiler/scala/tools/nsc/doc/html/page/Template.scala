@@ -84,7 +84,7 @@ class Template(universe: doc.Universe, tpl: DocTemplateEntity) extends HtmlPage 
       </div>
 
       { signature(tpl, true) }
-      { memberToCommentHtml(tpl, true) }
+      { memberToCommentHtml(tpl, tpl.inTemplate, true) }
 
       <div id="mbrsel">
         <div id='textfilter'><span class='pre'/><span class='input'><input id='mbrsel-input' type='text' accesskey='/'/></span><span class='post'/></div>
@@ -96,7 +96,7 @@ class Template(universe: doc.Universe, tpl: DocTemplateEntity) extends HtmlPage 
         }
         { if (tpl.linearizationTemplates.isEmpty && tpl.conversions.isEmpty) NodeSeq.Empty else
           {
-            if (!tpl.linearization.isEmpty)
+            if (!tpl.linearizationTemplates.isEmpty)
               <div id="ancestors">
                 <span class="filtertype">Inherited<br/>
                 </span>
@@ -138,35 +138,35 @@ class Template(universe: doc.Universe, tpl: DocTemplateEntity) extends HtmlPage 
         { if (constructors.isEmpty) NodeSeq.Empty else
             <div id="constructors" class="members">
               <h3>Instance Constructors</h3>
-              <ol>{ constructors map (memberToHtml(_)) }</ol>
+              <ol>{ constructors map (memberToHtml(_, tpl)) }</ol>
             </div>
         }
 
         { if (typeMembers.isEmpty) NodeSeq.Empty else
             <div id="types" class="types members">
               <h3>Type Members</h3>
-              <ol>{ typeMembers map (memberToHtml(_)) }</ol>
+              <ol>{ typeMembers map (memberToHtml(_, tpl)) }</ol>
             </div>
         }
 
         { if (absValueMembers.isEmpty) NodeSeq.Empty else
             <div id="values" class="values members">
               <h3>Abstract Value Members</h3>
-              <ol>{ absValueMembers map (memberToHtml(_)) }</ol>
+              <ol>{ absValueMembers map (memberToHtml(_, tpl)) }</ol>
             </div>
         }
 
         { if (concValueMembers.isEmpty) NodeSeq.Empty else
             <div id="values" class="values members">
               <h3>{ if (absValueMembers.isEmpty) "Value Members" else "Concrete Value Members" }</h3>
-              <ol>{ concValueMembers map (memberToHtml(_)) }</ol>
+              <ol>{ concValueMembers map (memberToHtml(_, tpl)) }</ol>
             </div>
         }
 
         { if (deprValueMembers.isEmpty) NodeSeq.Empty else
             <div id="values" class="values members">
               <h3>Deprecated Value Members</h3>
-              <ol>{ deprValueMembers map (memberToHtml(_)) }</ol>
+              <ol>{ deprValueMembers map (memberToHtml(_, tpl)) }</ol>
             </div>
         }
         </div>
@@ -237,12 +237,12 @@ class Template(universe: doc.Universe, tpl: DocTemplateEntity) extends HtmlPage 
     tparamsToString(d.typeParams) + paramLists.mkString
   }
 
-  def memberToHtml(mbr: MemberEntity): NodeSeq = {
+  def memberToHtml(mbr: MemberEntity, inTpl: DocTemplateEntity): NodeSeq = {
     val defParamsString = mbr match {
       case d:MemberEntity with Def => defParamsToString(d)
       case _ => ""
     }
-    val memberComment = memberToCommentHtml(mbr, false)
+    val memberComment = memberToCommentHtml(mbr, inTpl, false)
     <li name={ mbr.definitionName } visbl={ if (mbr.visibility.isProtected) "prt" else "pub" }
       data-isabs={ mbr.isAbstract.toString } fullComment={ if(memberComment.isEmpty) "no" else "yes" }>
       <a id={ mbr.name +defParamsString +":"+ mbr.resultType.name}/>
@@ -251,24 +251,24 @@ class Template(universe: doc.Universe, tpl: DocTemplateEntity) extends HtmlPage 
     </li>
   }
 
-  def memberToCommentHtml(mbr: MemberEntity, isSelf: Boolean): NodeSeq = {
+  def memberToCommentHtml(mbr: MemberEntity, inTpl: DocTemplateEntity, isSelf: Boolean): NodeSeq = {
     mbr match {
       case dte: DocTemplateEntity if isSelf =>
         // comment of class itself
         <xml:group>
-          <div id="comment" class="fullcommenttop">{ memberToCommentBodyHtml(mbr, isSelf = true) }</div>
+          <div id="comment" class="fullcommenttop">{ memberToCommentBodyHtml(mbr, inTpl, isSelf = true) }</div>
         </xml:group>
       case dte: DocTemplateEntity if mbr.comment.isDefined =>
         // comment of inner, documented class (only short comment, full comment is on the class' own page)
         memberToInlineCommentHtml(mbr, isSelf)
       case _ =>
         // comment of non-class member or non-documentented inner class
-        val commentBody = memberToCommentBodyHtml(mbr, isSelf = false)
+        val commentBody = memberToCommentBodyHtml(mbr, inTpl, isSelf = false)
         if (commentBody.isEmpty)
           NodeSeq.Empty
         else {
           val shortComment = memberToShortCommentHtml(mbr, isSelf)
-          val longComment = memberToUseCaseCommentHtml(mbr, isSelf) ++ memberToCommentBodyHtml(mbr, isSelf)
+          val longComment = memberToUseCaseCommentHtml(mbr, isSelf) ++ memberToCommentBodyHtml(mbr, inTpl, isSelf)
 
           val includedLongComment = if (shortComment.text.trim == longComment.text.trim)
             NodeSeq.Empty
@@ -298,7 +298,7 @@ class Template(universe: doc.Universe, tpl: DocTemplateEntity) extends HtmlPage 
   def memberToInlineCommentHtml(mbr: MemberEntity, isSelf: Boolean): NodeSeq =
     <p class="comment cmt">{ inlineToHtml(mbr.comment.get.short) }</p>
 
-  def memberToCommentBodyHtml(mbr: MemberEntity, isSelf: Boolean, isReduced: Boolean = false): NodeSeq = {
+  def memberToCommentBodyHtml(mbr: MemberEntity, inTpl: DocTemplateEntity, isSelf: Boolean, isReduced: Boolean = false): NodeSeq = {
 
     val memberComment =
       if (mbr.comment.isEmpty) NodeSeq.Empty
@@ -383,7 +383,7 @@ class Template(universe: doc.Universe, tpl: DocTemplateEntity) extends HtmlPage 
           }
 
           <dd>
-            This member is added by an implicit conversion from { typeToHtml(mbr.inTemplate.resultType, true) } to
+            This member is added by an implicit conversion from { typeToHtml(inTpl.resultType, true) } to
             { targetType } performed by method { conversionMethod } in { conversionOwner }.
             { constraintText }
           </dd>
@@ -404,7 +404,7 @@ class Template(universe: doc.Universe, tpl: DocTemplateEntity) extends HtmlPage 
 
     val definitionClasses: Seq[scala.xml.Node] = {
       val inDefTpls = mbr.inDefinitionTemplates
-      if ((inDefTpls.tail.isEmpty && (inDefTpls.head == mbr.inTemplate)) || isReduced) NodeSeq.Empty
+      if ((inDefTpls.tail.isEmpty && (inDefTpls.head == inTpl)) || isReduced) NodeSeq.Empty
       else {
         <dt>Definition Classes</dt>
         <dd>{ templatesToHtml(inDefTpls, xml.Text(" → ")) }</dd>
@@ -650,7 +650,7 @@ class Template(universe: doc.Universe, tpl: DocTemplateEntity) extends HtmlPage 
             <a href={nameLink}>{nameHtml}</a>
           else nameHtml
         }{
-          def tparamsToHtml(mbr: Entity): NodeSeq = mbr match {
+          def tparamsToHtml(mbr: Any): NodeSeq = mbr match {
             case hk: HigherKinded =>
               val tpss = hk.typeParams
               if (tpss.isEmpty) NodeSeq.Empty else {
@@ -662,7 +662,7 @@ class Template(universe: doc.Universe, tpl: DocTemplateEntity) extends HtmlPage 
                 }
                 <span class="tparams">[{ tparams0(tpss) }]</span>
               }
-              case _ => NodeSeq.Empty
+            case _ => NodeSeq.Empty
           }
           tparamsToHtml(mbr)
         }{
