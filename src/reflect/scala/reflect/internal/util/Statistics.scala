@@ -4,6 +4,8 @@ import collection.mutable
 
 object Statistics {
 
+  type TimerSnapshot = (Long, Long)
+
   /** If enabled, increment counter by one */
   @inline final def incCounter(c: Counter) {
     if (_enabled && c != null) c.value += 1
@@ -30,20 +32,20 @@ object Statistics {
   }
 
   /** If enabled, start timer */
-  @inline final def startTimer(tm: Timer): (Long, Long) =
+  @inline final def startTimer(tm: Timer): TimerSnapshot =
     if (_enabled && tm != null) tm.start() else null
 
   /** If enabled, stop timer */
-  @inline final def stopTimer(tm: Timer, start: (Long, Long)) {
+  @inline final def stopTimer(tm: Timer, start: TimerSnapshot) {
     if (_enabled && tm != null) tm.stop(start)
   }
 
   /** If enabled, push and start a new timer in timer stack */
-  @inline final def pushTimerClass(timers: ByClassTimerStack, cls: Class[_]): (Long, Long) =
-    if (_enabled && timers != null) timers.push(cls) else null
+  @inline final def pushTimer(timers: TimerStack, timer: StackableTimer): TimerSnapshot =
+    if (_enabled && timers != null) timers.push(timer) else null
 
   /** If enabled, stop and pop timer from timer stack */
-  @inline final def popTimerClass(timers: ByClassTimerStack, prev: (Long, Long)) {
+  @inline final def popTimer(timers: TimerStack, prev: TimerSnapshot) {
     if (_enabled && timers != null) timers.pop(prev)
   }
 
@@ -73,6 +75,13 @@ object Statistics {
    */
   def newSubTimer(prefix: String, timer: Timer): Timer = new SubTimer(prefix, timer)
 
+  /** Create a new stackable that shows as `prefix` and is active
+   *  in the same phases as its base timer. Stackable timers are subtimers
+   *  that can be stacked ina timerstack, and that print aggregate, as well as specific
+   *  durations.
+   */
+  def newStackableTimer(prefix: String, timer: Timer): StackableTimer = new StackableTimer(prefix, timer)
+
   /** Create a new view that shows as `prefix` and is active in given phases.
    *  The view always reflects the current value of `quant` as a quantity.
    */
@@ -86,20 +95,27 @@ quant)
   /** Same as newQuantMap, where the key type is fixed to be Class[_] */
   def newByClass[V <% Ordered[V]](prefix: String, phases: String*)(initValue: => V): QuantMap[Class[_], V] = new QuantMap(prefix, phases, initValue)
 
-  /** Create a new timer stack map, indexed by Class[_]. */
-  def newByClassTimerStack(prefix: String, underlying: Timer) = new ByClassTimerStack(prefix, underlying)
+  /** Create a new timer stack */
+  def newTimerStack() = new TimerStack()
 
   def allQuantities: Iterable[Quantity] =
-    for ((q, _) <- qs if !q.isInstanceOf[SubQuantity];
+    for ((_, q) <- qs if q.underlying == q;
          r <- q :: q.children.toList if r.prefix.nonEmpty) yield r
 
   private def showPercent(x: Double, base: Double) =
     if (base == 0) "" else f" (${x / base * 100}%2.1f%)"
 
+  /** The base trait for quantities.
+   *  Quantities with non-empty prefix are printed in the statistics info.
+   */
   trait Quantity {
-    qs += (this -> ())
+    if (prefix.nonEmpty) {
+      val key = s"${if (underlying != this) underlying.prefix else ""}/$prefix"
+      qs(key) = this
+    }
     val prefix: String
     val phases: Seq[String]
+    def underlying: Quantity = this
     def showAt(phase: String) = phases.isEmpty || (phases contains phase)
     def line = f"$prefix%-30s: ${this}"
     val children = new mutable.ListBuffer[Quantity]
@@ -123,7 +139,7 @@ quant)
     override def toString = quant.toString
   }
 
-  private class RelCounter(prefix: String, val underlying: Counter) extends Counter(prefix, underlying.phases) with SubQuantity {
+  private class RelCounter(prefix: String, override val underlying: Counter) extends Counter(prefix, underlying.phases) with SubQuantity {
     override def toString =
       if (value == 0) "0"
       else {
@@ -142,26 +158,32 @@ quant)
       value + showPercent(value, underlying.value)
   }
 
-  class Timer(val prefix: String, val phases: Seq[String]) extends Quantity with Ordered[Timer] {
+  class Timer(val prefix: String, val phases: Seq[String]) extends Quantity {
     var nanos: Long = 0
     var timings = 0
-    def compare(that: Timer): Int =
-      if (this.nanos < that.nanos) -1
-      else if (this.nanos > that.nanos) 1
-      else 0
     def start() = {
       (nanos, System.nanoTime())
     }
-    def stop(prev: (Long, Long)) {
+    def stop(prev: TimerSnapshot) {
       val (nanos0, start) = prev
       nanos = nanos0 + System.nanoTime() - start
       timings += 1
     }
-    override def toString = s"$timings spans, ${nanos/1000}ms"
+    protected def show(ns: Long) = s"${ns/1000}ms"
+    override def toString = s"$timings spans, ${show(nanos)}"
   }
 
-  private class SubTimer(prefix: String, override val underlying: Timer) extends Timer(prefix, underlying.phases) with SubQuantity {
-    override def toString: String = super.toString + showPercent(nanos, underlying.nanos)
+  class SubTimer(prefix: String, override val underlying: Timer) extends Timer(prefix, underlying.phases) with SubQuantity {
+    override protected def show(ns: Long) = super.show(ns) + showPercent(ns, underlying.nanos)
+  }
+
+  class StackableTimer(prefix: String, underlying: Timer) extends SubTimer(prefix, underlying) with Ordered[StackableTimer] {
+    var specificNanos: Long = 0
+    def compare(that: StackableTimer): Int =
+      if (this.specificNanos < that.specificNanos) -1
+      else if (this.specificNanos > that.specificNanos) 1
+      else 0
+    override def toString = s"${super.toString} aggregate, ${show(specificNanos)} specific"
   }
 
   /** A mutable map quantity where missing elements are automatically inserted
@@ -183,23 +205,25 @@ quant)
       }.mkString(", ")
   }
 
-  /** A mutable map quantity that takes class keys to subtimer values, relative to
-   *  some `underlying` timer. In addition, class timers can be pushed and popped.
-   *  Pushing the timer for a class means stopping the currently active timer.
+  /** A stack of timers, all active, where a timer's specific "clock"
+   *  is stopped as long as it is buried by some other timer in the stack, but
+   *  its aggregate clock keeps on ticking.
    */
-  class ByClassTimerStack(prefix: String, val underlying: Timer)
-      extends QuantMap[Class[_], Timer](prefix, underlying.phases, new SubTimer("", underlying)) with SubQuantity {
-    private var elems: List[(Timer, Long)] = Nil
-    def push(cls: Class[_]): (Long, Long) = {
-      val topTimer = this(cls)
-      elems = (topTimer, 0L) :: elems
-      topTimer.start()
+  class TimerStack {
+    private var elems: List[(StackableTimer, Long)] = Nil
+    /** Start given timer and push it onto the stack */
+    def push(t: StackableTimer): TimerSnapshot = {
+      elems = (t, 0L) :: elems
+      t.start()
     }
-    def pop(prev: (Long, Long)) = {
+    /** Stop and pop top timer in stack
+     */
+    def pop(prev: TimerSnapshot) = {
       val (nanos0, start) = prev
       val duration = System.nanoTime() - start
       val (topTimer, nestedNanos) :: rest = elems
-      topTimer.nanos = nanos0 + duration - nestedNanos
+      topTimer.nanos = nanos0 + duration
+      topTimer.specificNanos += duration - nestedNanos
       topTimer.timings += 1
       elems = rest match {
         case (outerTimer, outerNested) :: elems1 =>
@@ -211,7 +235,7 @@ quant)
   }
 
   private var _enabled = false
-  private val qs = new mutable.WeakHashMap[Quantity, Unit]
+  private val qs = new mutable.HashMap[String, Quantity]
 
   def enabled = _enabled
   def enabled_=(cond: Boolean) = {
@@ -229,4 +253,9 @@ quant)
       _enabled = true
     }
   }
+
+  /** replace rhs with enabled and rebuild to also count tiny but super-hot methods
+   * such as phase, flags, owner, name.
+   */
+  final val hotEnabled = false
 }
