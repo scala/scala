@@ -458,6 +458,10 @@ abstract class GenASM extends SubComponent with BytecodeWriters {
     val CLASS_CONSTRUCTOR_NAME    = "<clinit>"
     val INSTANCE_CONSTRUCTOR_NAME = "<init>"
 
+    val INNER_CLASSES_FLAGS =
+      (asm.Opcodes.ACC_PUBLIC    | asm.Opcodes.ACC_PRIVATE | asm.Opcodes.ACC_PROTECTED |
+       asm.Opcodes.ACC_STATIC    | asm.Opcodes.ACC_INTERFACE | asm.Opcodes.ACC_ABSTRACT)
+
     // -----------------------------------------------------------------------------------------
     // factory methods
     // -----------------------------------------------------------------------------------------
@@ -644,6 +648,86 @@ abstract class GenASM extends SubComponent with BytecodeWriters {
 
     def isDeprecated(sym: Symbol): Boolean = { sym.annotations exists (_ matches definitions.DeprecatedAttr) }
 
+    def addInnerClasses(csym: Symbol, jclass: asm.ClassVisitor) {
+      /** The outer name for this inner class. Note that it returns null
+       *  when the inner class should not get an index in the constant pool.
+       *  That means non-member classes (anonymous). See Section 4.7.5 in the JVMS.
+       */
+      def outerName(innerSym: Symbol): String = {
+        if (innerSym.originalEnclosingMethod != NoSymbol)
+          null
+        else {
+          val outerName = javaName(innerSym.rawowner)
+          if (isTopLevelModule(innerSym.rawowner)) "" + nme.stripModuleSuffix(newTermName(outerName))
+          else outerName
+        }
+      }
+
+      def innerName(innerSym: Symbol): String =
+        if (innerSym.isAnonymousClass || innerSym.isAnonymousFunction)
+          null
+        else
+          innerSym.rawname + innerSym.moduleSuffix
+
+      // add inner classes which might not have been referenced yet
+      afterErasure {
+        for (sym <- List(csym, csym.linkedClassOfClass); m <- sym.info.decls.map(innerClassSymbolFor) if m.isClass)
+          innerClassBuffer += m
+      }
+
+      val allInners: List[Symbol] = innerClassBuffer.toList
+      if (allInners.nonEmpty) {
+        debuglog(csym.fullName('.') + " contains " + allInners.size + " inner classes.")
+
+        // entries ready to be serialized into the classfile, used to detect duplicates.
+        val entries = mutable.Map.empty[String, String]
+
+        // sort them so inner classes succeed their enclosing class to satisfy the Eclipse Java compiler
+        for (innerSym <- allInners sortBy (_.name.length)) { // TODO why not sortBy (_.name.toString()) ??
+          val flags = mkFlags(
+            if (innerSym.rawowner.hasModuleFlag) asm.Opcodes.ACC_STATIC else 0,
+            javaFlags(innerSym),
+            if(isDeprecated(innerSym)) asm.Opcodes.ACC_DEPRECATED else 0 // ASM pseudo-access flag
+          ) & (INNER_CLASSES_FLAGS | asm.Opcodes.ACC_DEPRECATED)
+          val jname = javaName(innerSym)  // never null
+          val oname = outerName(innerSym) // null when method-enclosed
+          val iname = innerName(innerSym) // null for anonymous inner class
+
+          // Mimicking javap inner class output
+          debuglog(
+            if (oname == null || iname == null) "//class " + jname
+            else "//%s=class %s of class %s".format(iname, jname, oname)
+          )
+
+          assert(jname != null, "javaName is broken.") // documentation
+          val doAdd = entries.get(jname) match {
+            // TODO is it ok for prevOName to be null? (Someone should really document the invariants of the InnerClasses bytecode attribute)
+            case Some(prevOName) =>
+              // this occurs e.g. when innerClassBuffer contains both class Thread$State, object Thread$State,
+              // i.e. for them it must be the case that oname == java/lang/Thread
+              assert(prevOName == oname, "duplicate")
+              false
+            case None => true
+          }
+
+          if(doAdd) {
+            entries += (jname -> oname)
+            jclass.visitInnerClass(jname, oname, iname, flags)
+          }
+
+          /*
+           * TODO assert (JVMS 4.7.6 The InnerClasses attribute)
+           * If a class file has a version number that is greater than or equal to 51.0, and
+           * has an InnerClasses attribute in its attributes table, then for all entries in the
+           * classes array of the InnerClasses attribute, the value of the
+           * outer_class_info_index item must be zero if the value of the
+           * inner_name_index item is zero.
+           */
+
+        }
+      }
+    }
+
   } // end of class JBuilder
 
 
@@ -653,10 +737,6 @@ abstract class GenASM extends SubComponent with BytecodeWriters {
     // -----------------------------------------------------------------------------------------
     // more constants
     // -----------------------------------------------------------------------------------------
-
-    val INNER_CLASSES_FLAGS =
-      (asm.Opcodes.ACC_PUBLIC    | asm.Opcodes.ACC_PRIVATE | asm.Opcodes.ACC_PROTECTED |
-       asm.Opcodes.ACC_STATIC    | asm.Opcodes.ACC_INTERFACE | asm.Opcodes.ACC_ABSTRACT)
 
     val PublicStatic      = asm.Opcodes.ACC_PUBLIC | asm.Opcodes.ACC_STATIC
     val PublicStaticFinal = asm.Opcodes.ACC_PUBLIC | asm.Opcodes.ACC_STATIC | asm.Opcodes.ACC_FINAL
@@ -966,86 +1046,6 @@ abstract class GenASM extends SubComponent with BytecodeWriters {
         assert(args.isEmpty, args)
         val pannVisitor: asm.AnnotationVisitor = jmethod.visitParameterAnnotation(idx, descriptor(typ), true)
         emitAssocs(pannVisitor, assocs)
-      }
-    }
-
-    def addInnerClasses(csym: Symbol, jclass: asm.ClassVisitor) {
-      /** The outer name for this inner class. Note that it returns null
-       *  when the inner class should not get an index in the constant pool.
-       *  That means non-member classes (anonymous). See Section 4.7.5 in the JVMS.
-       */
-      def outerName(innerSym: Symbol): String = {
-        if (innerSym.originalEnclosingMethod != NoSymbol)
-          null
-        else {
-          val outerName = javaName(innerSym.rawowner)
-          if (isTopLevelModule(innerSym.rawowner)) "" + nme.stripModuleSuffix(newTermName(outerName))
-          else outerName
-        }
-      }
-
-      def innerName(innerSym: Symbol): String =
-        if (innerSym.isAnonymousClass || innerSym.isAnonymousFunction)
-          null
-        else
-          innerSym.rawname + innerSym.moduleSuffix
-
-      // add inner classes which might not have been referenced yet
-      afterErasure {
-        for (sym <- List(csym, csym.linkedClassOfClass); m <- sym.info.decls.map(innerClassSymbolFor) if m.isClass)
-          innerClassBuffer += m
-      }
-
-      val allInners: List[Symbol] = innerClassBuffer.toList
-      if (allInners.nonEmpty) {
-        debuglog(csym.fullName('.') + " contains " + allInners.size + " inner classes.")
-
-        // entries ready to be serialized into the classfile, used to detect duplicates.
-        val entries = mutable.Map.empty[String, String]
-
-        // sort them so inner classes succeed their enclosing class to satisfy the Eclipse Java compiler
-        for (innerSym <- allInners sortBy (_.name.length)) { // TODO why not sortBy (_.name.toString()) ??
-          val flags = mkFlags(
-            if (innerSym.rawowner.hasModuleFlag) asm.Opcodes.ACC_STATIC else 0,
-            javaFlags(innerSym),
-            if(isDeprecated(innerSym)) asm.Opcodes.ACC_DEPRECATED else 0 // ASM pseudo-access flag
-          ) & (INNER_CLASSES_FLAGS | asm.Opcodes.ACC_DEPRECATED)
-          val jname = javaName(innerSym)  // never null
-          val oname = outerName(innerSym) // null when method-enclosed
-          val iname = innerName(innerSym) // null for anonymous inner class
-
-          // Mimicking javap inner class output
-          debuglog(
-            if (oname == null || iname == null) "//class " + jname
-            else "//%s=class %s of class %s".format(iname, jname, oname)
-          )
-
-          assert(jname != null, "javaName is broken.") // documentation
-          val doAdd = entries.get(jname) match {
-            // TODO is it ok for prevOName to be null? (Someone should really document the invariants of the InnerClasses bytecode attribute)
-            case Some(prevOName) =>
-              // this occurs e.g. when innerClassBuffer contains both class Thread$State, object Thread$State,
-              // i.e. for them it must be the case that oname == java/lang/Thread
-              assert(prevOName == oname, "duplicate")
-              false
-            case None => true
-          }
-
-          if(doAdd) {
-            entries += (jname -> oname)
-            jclass.visitInnerClass(jname, oname, iname, flags)
-          }
-
-          /*
-           * TODO assert (JVMS 4.7.6 The InnerClasses attribute)
-           * If a class file has a version number that is greater than or equal to 51.0, and
-           * has an InnerClasses attribute in its attributes table, then for all entries in the
-           * classes array of the InnerClasses attribute, the value of the
-           * outer_class_info_index item must be zero if the value of the
-           * inner_name_index item is zero.
-           */
-
-        }
       }
     }
 
@@ -3033,9 +3033,7 @@ abstract class GenASM extends SubComponent with BytecodeWriters {
       constructor.visitMaxs(0, 0) // just to follow protocol, dummy arguments
       constructor.visitEnd()
 
-      // TODO no inner classes attribute is written. Confirm intent.
-      assert(innerClassBuffer.isEmpty, innerClassBuffer)
-
+      addInnerClasses(clasz.symbol, beanInfoClass)
       beanInfoClass.visitEnd()
 
       writeIfNotTooBig("BeanInfo ", beanInfoName, beanInfoClass, clasz.symbol)
