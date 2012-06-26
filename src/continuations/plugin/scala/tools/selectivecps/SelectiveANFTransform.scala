@@ -52,15 +52,19 @@ abstract class SelectiveANFTransform extends PluginComponent with Transform with
           debuglog("transforming " + dd.symbol)
 
           atOwner(dd.symbol) {
-            val tailReturns = ListBuffer[Tree]()
-            val rhs = removeTailReturn(rhs0, tailReturns)
-            // throw an error if there is a Return tree which is not intail position
-            rhs0 foreach {
-              case r @ Return(_) =>
-                if (!tailReturns.contains(r))
-                  unit.error(r.pos, "return expressions in CPS code must be in tail position")
-              case _ => /* do nothing */
-            }
+            val rhs = if (hasCpsParamTypes(rhs0.tpe)) {
+              val tailReturns = ListBuffer[Tree]()
+              val rhs1 = removeTailReturn(rhs0, tailReturns)
+              // throw an error if there is a Return tree which is not intail position
+              rhs0 foreach {
+                case r @ Return(_) =>
+                  if (!tailReturns.contains(r))
+                    unit.error(r.pos, "return expressions in CPS code must be in tail position")
+                case _ => /* do nothing */
+              }
+              rhs1
+            } else
+              rhs0
             
             val rhs1 = transExpr(rhs, None, getExternalAnswerTypeAnn(tpt.tpe))
 
