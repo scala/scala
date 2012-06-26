@@ -100,9 +100,29 @@ abstract class DeadCodeElimination extends SubComponent {
         var rd = rdef.in(bb);
         for (Pair(i, idx) <- bb.toList.zipWithIndex) {
           i match {
+
             case LOAD_LOCAL(l) =>
               defs = defs + Pair(((bb, idx)), rd.vars)
-//              Console.println(i + ": " + (bb, idx) + " rd: " + rd + " and having: " + defs)
+
+            case STORE_LOCAL(_) =>
+              /* SI-4935 Check whether a module is stack top, if so mark the instruction that loaded it
+               * (otherwise any side-effects of the module's constructor go lost).
+               *   (a) The other two cases where a module's value is stored (STORE_FIELD and STORE_ARRAY_ITEM)
+               *       are already marked (case clause below).
+               *   (b) A CALL_METHOD targeting a method `m1` where the receiver is potentially a module (case clause below)
+               *       will have the module's load marked provided `isSideEffecting(m1)`.
+               *       TODO check for purity (the ICode?) of the module's constructor (besides m1's purity).
+               *       See also https://github.com/paulp/scala/blob/topic/purity-analysis/src/compiler/scala/tools/nsc/backend/opt/DeadCodeElimination.scala
+               */
+              val necessary = rdef.findDefs(bb, idx, 1) exists { p =>
+                val (bb1, idx1) = p
+                bb1(idx1) match {
+                  case LOAD_MODULE(module) => isLoadNeeded(module)
+                  case _                   => false
+                }
+              }
+              if (necessary) worklist += ((bb, idx))
+
             case RETURN(_) | JUMP(_) | CJUMP(_, _, _, _) | CZJUMP(_, _, _, _) | STORE_FIELD(_, _) |
                  THROW(_)   | LOAD_ARRAY_ITEM(_) | STORE_ARRAY_ITEM(_) | SCOPE_ENTER(_) | SCOPE_EXIT(_) | STORE_THIS(_) |
                  LOAD_EXCEPTION(_) | SWITCH(_, _) | MONITOR_ENTER() | MONITOR_EXIT() => worklist += ((bb, idx))
@@ -127,6 +147,10 @@ abstract class DeadCodeElimination extends SubComponent {
           rd = rdef.interpret(bb, idx, rd)
         }
       }
+    }
+
+    private def isLoadNeeded(module: Symbol): Boolean = {
+      module.info.member(nme.CONSTRUCTOR).filter(isSideEffecting) != NoSymbol
     }
 
     /** Mark useful instructions. Instructions in the worklist are each inspected and their
