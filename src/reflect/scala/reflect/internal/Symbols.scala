@@ -645,6 +645,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     }
 
     final def flags: Long = {
+      if (Statistics.hotEnabled) Statistics.incCounter(flagsCount)
       val fs = _rawflags & phase.flagMask
       (fs | ((fs & LateFlags) >>> LateShift)) & ~(fs >>> AntiShift)
     }
@@ -936,7 +937,11 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
 
 // ------ owner attribute --------------------------------------------------------------
 
-    def owner: Symbol = rawowner
+    def owner: Symbol = {
+      Statistics.incCounter(ownerCount)
+      rawowner
+    }
+
     // TODO - don't allow the owner to be changed without checking invariants, at least
     // when under some flag. Define per-phase invariants for owner/owned relationships,
     // e.g. after flatten all classes are owned by package classes, there are lots and
@@ -2324,7 +2329,10 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
 
     private[this] var _rawname: TermName = initName
     def rawname = _rawname
-    def name = _rawname
+    def name = {
+      Statistics.incCounter(nameCount)
+      _rawname
+    }
     def name_=(name: Name) {
       if (name != rawname) {
         log("Renaming %s %s %s to %s".format(shortSymbolClass, debugFlagString, rawname, name))
@@ -2493,11 +2501,13 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     override def companionClass =
       flatOwnerInfo.decl(name.toTypeName).suchThat(_ isCoDefinedWith this)
 
-    override def owner = (
+    override def owner = {
+      Statistics.incCounter(ownerCount)
       if (!isMethod && needsFlatClasses) rawowner.owner
       else rawowner
-    )
-    override def name: TermName = (
+    }
+    override def name: TermName = {
+      Statistics.incCounter(nameCount)
       if (!isMethod && needsFlatClasses) {
         if (flatname eq null)
           flatname = nme.flattenedName(rawowner.name, rawname)
@@ -2505,7 +2515,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
         flatname
       }
       else rawname
-    )
+    }
   }
   implicit val ModuleSymbolTag = ClassTag[ModuleSymbol](classOf[ModuleSymbol])
 
@@ -2576,7 +2586,10 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     // cloneSymbolImpl still abstract in TypeSymbol.
 
     def rawname = _rawname
-    def name = _rawname
+    def name = {
+      Statistics.incCounter(nameCount)
+      _rawname
+    }
     final def asNameType(n: Name) = n.toTypeName
 
     override def isNonClassType = true
@@ -2888,10 +2901,13 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
       thisTypeCache
     }
 
-    override def owner: Symbol =
+    override def owner: Symbol = {
+      Statistics.incCounter(ownerCount)
       if (needsFlatClasses) rawowner.owner else rawowner
+    }
 
-    override def name: TypeName = (
+    override def name: TypeName = {
+      Statistics.incCounter(nameCount)
       if (needsFlatClasses) {
         if (flatname eq null)
           flatname = nme.flattenedName(rawowner.name, rawname).toTypeName
@@ -2899,7 +2915,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
         flatname
       }
       else rawname
-    )
+    }
 
     /** A symbol carrying the self type of the class as its type */
     override def thisSym: Symbol = thissym
@@ -3194,4 +3210,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
 object SymbolsStats {
   val typeSymbolCount     = Statistics.newCounter("#type symbols")
   val classSymbolCount    = Statistics.newCounter("#class symbols")
+  val flagsCount          = Statistics.newCounter("#flags ops")
+  val ownerCount          = Statistics.newCounter("#owner ops")
+  val nameCount           = Statistics.newCounter("#name ops")
 }

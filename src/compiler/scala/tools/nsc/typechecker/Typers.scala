@@ -4025,7 +4025,7 @@ trait Typers extends Modes with Adaptations with Tags {
           } else {
             context.enclMethod.returnsSeen = true
             val expr1: Tree = typed(expr, EXPRmode | BYVALmode | RETmode, restpt.tpe)
-            
+
             // Warn about returning a value if no value can be returned.
             if (restpt.tpe.typeSymbol == UnitClass) {
               // The typing in expr1 says expr is Unit (it has already been coerced if
@@ -5131,7 +5131,7 @@ trait Typers extends Modes with Adaptations with Tags {
       indentTyping()
 
       var alreadyTyped = false
-      val startByType = Statistics.pushTimerClass(byTypeNanos, tree.getClass)
+      val startByType = Statistics.pushTimer(byTypeStack, byTypeNanos(tree.getClass))
       Statistics.incCounter(visitsByType, tree.getClass)
       try {
         if (context.retyping &&
@@ -5187,7 +5187,7 @@ trait Typers extends Modes with Adaptations with Tags {
       }
       finally {
         deindentTyping()
-        Statistics.popTimerClass(byTypeNanos, startByType)
+        Statistics.popTimer(byTypeStack, startByType)
       }
     }
 
@@ -5375,10 +5375,11 @@ object TypersStats {
   val compoundBaseTypeSeqCount = Statistics.newSubCounter("  of which for compound types", baseTypeSeqCount)
   val typerefBaseTypeSeqCount = Statistics.newSubCounter("  of which for typerefs", baseTypeSeqCount)
   val singletonBaseTypeSeqCount = Statistics.newSubCounter("  of which for singletons", baseTypeSeqCount)
-  val failedSilentNanos   = Statistics.newSubTimer  ("time spent in failed", typerNanos)
-  val failedApplyNanos    = Statistics.newSubTimer  ("  failed apply", typerNanos)
-  val failedOpEqNanos     = Statistics.newSubTimer  ("  failed op=", typerNanos)
-  val isReferencedNanos   = Statistics.newSubTimer  ("time spent ref scanning", typerNanos)
-  val visitsByType        = Statistics.newByClass   ("#visits by tree node", "typer")(Statistics.newCounter(""))
-  val byTypeNanos         = Statistics.newByClassTimerStack("time spent by tree node", typerNanos)
+  val failedSilentNanos   = Statistics.newSubTimer("time spent in failed", typerNanos)
+  val failedApplyNanos    = Statistics.newSubTimer("  failed apply", typerNanos)
+  val failedOpEqNanos     = Statistics.newSubTimer("  failed op=", typerNanos)
+  val isReferencedNanos   = Statistics.newSubTimer("time spent ref scanning", typerNanos)
+  val visitsByType        = Statistics.newByClass("#visits by tree node", "typer")(Statistics.newCounter(""))
+  val byTypeNanos         = Statistics.newByClass("time spent by tree node", "typer")(Statistics.newStackableTimer("", typerNanos))
+  val byTypeStack         = Statistics.newTimerStack()
 }

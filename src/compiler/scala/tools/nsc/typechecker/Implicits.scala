@@ -1125,7 +1125,7 @@ trait Implicits {
      *  such that some part of `tp` has C as one of its superclasses.
      */
     private def implicitsOfExpectedType: Infoss = {
-      Statistics.incCounter(implicitCacheHits)
+      Statistics.incCounter(implicitCacheAccs)
       implicitsCache get pt match {
         case Some(implicitInfoss) =>
           Statistics.incCounter(implicitCacheHits)

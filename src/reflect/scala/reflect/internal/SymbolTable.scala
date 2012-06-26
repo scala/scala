@@ -129,11 +129,15 @@ abstract class SymbolTable extends makro.Universe
 
   // sigh, this has to be public or atPhase doesn't inline.
   var phStack: List[Phase] = Nil
-  private var ph: Phase = NoPhase
-  private var per = NoPeriod
+  private[this] var ph: Phase = NoPhase
+  private[this] var per = NoPeriod
 
   final def atPhaseStack: List[Phase] = phStack
-  final def phase: Phase = ph
+  final def phase: Phase = {
+    if (Statistics.hotEnabled)
+      Statistics.incCounter(SymbolTableStats.phaseCounter)
+    ph
+  }
 
   def atPhaseStackMessage = atPhaseStack match {
     case Nil    => ""
@@ -329,4 +333,8 @@ abstract class SymbolTable extends makro.Universe
   /** Is this symbol table a part of a compiler universe?
    */
   def isCompilerUniverse = false
+}
+
+object SymbolTableStats {
+  val phaseCounter = Statistics.newCounter("#phase calls")
 }
