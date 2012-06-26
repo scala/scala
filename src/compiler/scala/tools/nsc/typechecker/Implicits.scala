@@ -1224,7 +1224,9 @@ trait Implicits {
       * reflect.Manifest for type 'tp'. An EmptyTree is returned if
       * no manifest is found. todo: make this instantiate take type params as well?
       */
-    private def manifestOfType(tp: Type, full: Boolean): SearchResult = {
+    private def manifestOfType(tp: Type, flavor: Symbol): SearchResult = {
+      val full = flavor == FullManifestClass
+      val opt = flavor == OptManifestClass
 
       /** Creates a tree that calls the factory method called constructor in object reflect.Manifest */
       def manifestFactoryCall(constructor: String, tparg: Type, args: Tree*): Tree =
@@ -1256,7 +1258,7 @@ trait Implicits {
             if (containsExistential(tp1)) EmptyTree
             else manifestFactoryCall("singleType", tp, gen.mkAttributedQualifier(tp1))
           case ConstantType(value) =>
-            manifestOfType(tp1.deconst, full)
+            manifestOfType(tp1.deconst, FullManifestClass)
           case TypeRef(pre, sym, args) =>
             if (isPrimitiveValueClass(sym) || isPhantomClass(sym)) {
               findSingletonManifest(sym.name.toString)
@@ -1299,22 +1301,13 @@ trait Implicits {
             mot(tp1.skolemizeExistential, from, to)
           case _ =>
             EmptyTree
-/*          !!! the following is almost right, but we have to splice nested manifest
- *          !!! types into this type. This requires a substantial extension of
- *          !!! reifiers.
-            val reifier = new Reifier()
-            val rtree = reifier.reifyTopLevel(tp1)
-            manifestFactoryCall("apply", tp, rtree)
-*/
           }
       }
 
-      val tagInScope =
-        if (full) resolveTypeTag(pos, NoType, tp, concrete = true, allowMaterialization = false)
-        else resolveClassTag(pos, tp, allowMaterialization = false)
-      if (tagInScope.isEmpty) mot(tp, Nil, Nil)
-      else {
-        if (full) {
+      if (full) {
+        val tagInScope = resolveTypeTag(pos, NoType, tp, concrete = true, allowMaterialization = false)
+        if (tagInScope.isEmpty) mot(tp, Nil, Nil)
+        else {
           if (ReflectRuntimeUniverse == NoSymbol) {
             // todo. write a test for this
             context.error(pos, s"""
@@ -1330,44 +1323,62 @@ trait Implicits {
               |to proceed add a class tag to the type `$tp` (e.g. by introducing a context bound) and recompile.""".trim.stripMargin)
             return SearchFailure
           }
+          val cm = typed(Ident(ReflectRuntimeCurrentMirror))
+          val interop = gen.mkMethodCall(ReflectRuntimeUniverse, nme.typeTagToManifest, List(tp), List(cm, tagInScope))
+          wrapResult(interop)
         }
-
-        val interop =
-          if (full) {
-            val cm = typed(Ident(ReflectRuntimeCurrentMirror))
-            gen.mkMethodCall(ReflectRuntimeUniverse, nme.typeTagToManifest, List(tp), List(cm, tagInScope))
-          } else gen.mkMethodCall(ReflectBasis, nme.classTagToClassManifest, List(tp), List(tagInScope))
-        wrapResult(interop)
+      } else {
+        mot(tp, Nil, Nil) match {
+          case SearchFailure if opt => wrapResult(gen.mkAttributedRef(NoManifest))
+          case result               => result
+        }
       }
     }
 
     def wrapResult(tree: Tree): SearchResult =
       if (tree == EmptyTree) SearchFailure else new SearchResult(tree, EmptyTreeTypeSubstituter)
 
-    /** The tag corresponding to type `pt`, provided `pt` is a flavor of a tag.
+    /** Materializes implicits of magic types (currently, manifests and tags).
+     *  Will be replaced by implicit macros once we fix them.
      */
-    private def implicitTagOrOfExpectedType(pt: Type): SearchResult = pt.dealias match {
-      case TypeRef(pre, sym, arg :: Nil) if ManifestSymbols(sym) =>
-        manifestOfType(arg, sym == FullManifestClass) match {
-          case SearchFailure if sym == OptManifestClass => wrapResult(gen.mkAttributedRef(NoManifest))
-          case result                                   => result
-        }
-      case TypeRef(pre, sym, arg :: Nil) if TagSymbols(sym) =>
-        tagOfType(pre, arg, sym)
-      case tp@TypeRef(_, sym, _) if sym.isAbstractType =>
-        implicitTagOrOfExpectedType(tp.bounds.lo) // #3977: use tp (==pt.dealias), not pt (if pt is a type alias, pt.bounds.lo == pt)
-      case _ =>
+    private def materializeImplicit(pt: Type): SearchResult = {
+      def fallback = {
         searchImplicit(implicitsOfExpectedType, false)
         // shouldn't we pass `pt` to `implicitsOfExpectedType`, or is the recursive case
         // for an abstract type really only meant for tags?
+      }
+
+      pt match {
+        case TypeRef(_, sym, _) if sym.isAbstractType =>
+          materializeImplicit(pt.dealias.bounds.lo) // #3977: use pt.dealias, not pt (if pt is a type alias, pt.bounds.lo == pt)
+        case pt @ TypeRef(pre, sym, arg :: Nil) =>
+          sym match {
+            case sym if ManifestSymbols(sym) => manifestOfType(arg, sym)
+            case sym if TagSymbols(sym) => tagOfType(pre, arg, sym)
+            // as of late ClassManifest is an alias of ClassTag
+            // hence we need to take extra care when performing dealiasing
+            // because it might destroy the flavor of the manifest requested by the user
+            // when the user wants ClassManifest[T], we should invoke `manifestOfType` not `tagOfType`
+            // hence we don't do `pt.dealias` as we did before, but rather do `pt.betaReduce`
+            // unlike `dealias`, `betaReduce` performs at most one step of dealiasing
+            // while dealias pops all aliases in a single invocation
+            case sym if sym.isAliasType => materializeImplicit(pt.betaReduce)
+            case _ => fallback
+          }
+        case _ =>
+          fallback
+      }
     }
 
     /** The result of the implicit search:
      *  First search implicits visible in current context.
      *  If that fails, search implicits in expected type `pt`.
-     *  // [Eugene] the following two lines should be deleted after we migrate delegate tag materialization to implicit macros
+     *  // [Eugene] the following lines should be deleted after we migrate delegate tag materialization to implicit macros
      *  If that fails, and `pt` is an instance of a ClassTag, try to construct a class tag.
      *  If that fails, and `pt` is an instance of a TypeTag, try to construct a type tag.
+     *  If that fails, and `pt` is an instance of a ClassManifest, try to construct a class manifest.
+     *  If that fails, and `pt` is an instance of a Manifest, try to construct a manifest.
+     *  If that fails, and `pt` is an instance of a OptManifest, try to construct a class manifest and return NoManifest if construction fails.
      *  If all fails return SearchFailure
      */
     def bestImplicit: SearchResult = {
@@ -1387,7 +1398,7 @@ trait Implicits {
         val failstart = Statistics.startTimer(oftypeFailNanos)
         val succstart = Statistics.startTimer(oftypeSucceedNanos)
 
-        result = implicitTagOrOfExpectedType(pt)
+        result = materializeImplicit(pt)
 
         if (result == SearchFailure) {
           context.updateBuffer(previousErrs)
@@ -1434,7 +1445,16 @@ trait Implicits {
   }
 
   object ImplicitNotFoundMsg {
-    def unapply(sym: Symbol): Option[(Message)] = sym.implicitNotFoundMsg map (m => (new Message(sym, m)))
+    def unapply(sym: Symbol): Option[(Message)] = sym.implicitNotFoundMsg match {
+      case Some(m) => Some(new Message(sym, m))
+      case None if sym.isAliasType =>
+        // perform exactly one step of dealiasing
+        // this is necessary because ClassManifests are now aliased to ClassTags
+        // but we don't want to intimidate users by showing unrelated error messages
+        unapply(sym.info.resultType.betaReduce.typeSymbolDirect)
+      case _ => None
+    }
+
     // check the message's syntax: should be a string literal that may contain occurrences of the string "${X}",
     // where `X` refers to a type parameter of `sym`
     def check(sym: Symbol): Option[String] =

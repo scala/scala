@@ -1,0 +1,61 @@
+classmanifests_new_deprecations.scala:2: error: type ClassManifest in object Predef is deprecated: Use scala.reflect.ClassTag instead
+  def cm1[T: ClassManifest] = ???
+           ^
+classmanifests_new_deprecations.scala:3: error: type ClassManifest in object Predef is deprecated: Use scala.reflect.ClassTag instead
+  def cm2[T](implicit evidence$1: ClassManifest[T]) = ???
+                                  ^
+classmanifests_new_deprecations.scala:4: error: type ClassManifest in object Predef is deprecated: Use scala.reflect.ClassTag instead
+  val cm3: ClassManifest[Int] = null
+           ^
+classmanifests_new_deprecations.scala:4: error: type ClassManifest in object Predef is deprecated: Use scala.reflect.ClassTag instead
+  val cm3: ClassManifest[Int] = null
+      ^
+classmanifests_new_deprecations.scala:6: error: type ClassManifest in package reflect is deprecated: Use scala.reflect.ClassTag instead
+  def rcm1[T: scala.reflect.ClassManifest] = ???
+            ^
+classmanifests_new_deprecations.scala:7: error: type ClassManifest in package reflect is deprecated: Use scala.reflect.ClassTag instead
+  def rcm2[T](implicit evidence$1: scala.reflect.ClassManifest[T]) = ???
+                                                 ^
+classmanifests_new_deprecations.scala:8: error: type ClassManifest in package reflect is deprecated: Use scala.reflect.ClassTag instead
+  val rcm3: scala.reflect.ClassManifest[Int] = null
+                          ^
+classmanifests_new_deprecations.scala:8: error: type ClassManifest in package reflect is deprecated: Use scala.reflect.ClassTag instead
+  val rcm3: scala.reflect.ClassManifest[Int] = null
+      ^
+classmanifests_new_deprecations.scala:10: error: type ClassManifest in object Predef is deprecated: Use scala.reflect.ClassTag instead
+  type CM[T] = ClassManifest[T]
+               ^
+classmanifests_new_deprecations.scala:15: error: type ClassManifest in package reflect is deprecated: Use scala.reflect.ClassTag instead
+  type RCM[T] = scala.reflect.ClassManifest[T]
+                              ^
+classmanifests_new_deprecations.scala:20: error: type Manifest in object Predef is deprecated: Use scala.reflect.ClassTag (to capture erasures) or scala.reflect.runtime.universe.TypeTag (to capture types) or both instead
+  def m1[T: Manifest] = ???
+          ^
+classmanifests_new_deprecations.scala:21: error: type Manifest in object Predef is deprecated: Use scala.reflect.ClassTag (to capture erasures) or scala.reflect.runtime.universe.TypeTag (to capture types) or both instead
+  def m2[T](implicit evidence$1: Manifest[T]) = ???
+                                 ^
+classmanifests_new_deprecations.scala:22: error: type Manifest in object Predef is deprecated: Use scala.reflect.ClassTag (to capture erasures) or scala.reflect.runtime.universe.TypeTag (to capture types) or both instead
+  val m3: Manifest[Int] = null
+          ^
+classmanifests_new_deprecations.scala:22: error: type Manifest in object Predef is deprecated: Use scala.reflect.ClassTag (to capture erasures) or scala.reflect.runtime.universe.TypeTag (to capture types) or both instead
+  val m3: Manifest[Int] = null
+      ^
+classmanifests_new_deprecations.scala:24: error: trait Manifest in package reflect is deprecated: Use scala.reflect.ClassTag (to capture erasures) or scala.reflect.runtime.universe.TypeTag (to capture types) or both instead
+  def rm1[T: scala.reflect.Manifest] = ???
+           ^
+classmanifests_new_deprecations.scala:25: error: trait Manifest in package reflect is deprecated: Use scala.reflect.ClassTag (to capture erasures) or scala.reflect.runtime.universe.TypeTag (to capture types) or both instead
+  def rm2[T](implicit evidence$1: scala.reflect.Manifest[T]) = ???
+                                                ^
+classmanifests_new_deprecations.scala:26: error: trait Manifest in package reflect is deprecated: Use scala.reflect.ClassTag (to capture erasures) or scala.reflect.runtime.universe.TypeTag (to capture types) or both instead
+  val rm3: scala.reflect.Manifest[Int] = null
+                         ^
+classmanifests_new_deprecations.scala:26: error: trait Manifest in package reflect is deprecated: Use scala.reflect.ClassTag (to capture erasures) or scala.reflect.runtime.universe.TypeTag (to capture types) or both instead
+  val rm3: scala.reflect.Manifest[Int] = null
+      ^
+classmanifests_new_deprecations.scala:28: error: type Manifest in object Predef is deprecated: Use scala.reflect.ClassTag (to capture erasures) or scala.reflect.runtime.universe.TypeTag (to capture types) or both instead
+  type M[T] = Manifest[T]
+              ^
+classmanifests_new_deprecations.scala:33: error: trait Manifest in package reflect is deprecated: Use scala.reflect.ClassTag (to capture erasures) or scala.reflect.runtime.universe.TypeTag (to capture types) or both instead
+  type RM[T] = scala.reflect.Manifest[T]
+                             ^
+20 errors found

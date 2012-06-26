@@ -19,18 +19,20 @@ import scala.runtime.ScalaRunTime.arrayClass
  * @see [[scala.reflect.base.TypeTags]]
  */
 @annotation.implicitNotFound(msg = "No ClassTag available for ${T}")
-trait ClassTag[T] extends Equals with Serializable {
+trait ClassTag[T] extends ClassManifestDeprecatedApis[T] with Equals with Serializable {
   // please, don't add any APIs here, like it was with `newWrappedArray` and `newArrayBuilder`
   // class tags, and all tags in general, should be as minimalistic as possible
 
-  /** Returns a runtime class of type `T` */
+  /** A class representing the type `U` to which `T` would be erased.
+   *  Note that there is no subtyping relationship between `T` and `U`.
+   */
   def runtimeClass: jClass[_]
 
   /** Produces a `ClassTag` that knows how to build `Array[Array[T]]` */
   def wrap: ClassTag[Array[T]] = ClassTag[Array[T]](arrayClass(runtimeClass))
 
   /** Produces a new array with element type `T` and length `len` */
-  def newArray(len: Int): Array[T] =
+  override def newArray(len: Int): Array[T] =
     runtimeClass match {
       case java.lang.Byte.TYPE      => new Array[Byte](len).asInstanceOf[Array[T]]
       case java.lang.Short.TYPE     => new Array[Short](len).asInstanceOf[Array[T]]

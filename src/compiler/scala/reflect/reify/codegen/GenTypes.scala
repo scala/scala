@@ -107,13 +107,11 @@ trait GenTypes {
   }
 
   private def spliceAsManifest(tpe: Type): Tree = {
-    val ManifestClass = rootMirror.staticClass("scala.reflect.Manifest")
-    val ManifestModule = rootMirror.staticModule("scala.reflect.Manifest")
-    def isSynthetic(manifest: Tree) = manifest exists (sub => sub.symbol != null && (sub.symbol == ManifestModule || sub.symbol.owner == ManifestModule))
+    def isSynthetic(manifest: Tree) = manifest exists (sub => sub.symbol != null && (sub.symbol == FullManifestModule || sub.symbol.owner == FullManifestModule))
     def searchForManifest(typer: analyzer.Typer): Tree =
       analyzer.inferImplicit(
         EmptyTree,
-        appliedType(ManifestClass.asTypeConstructor, List(tpe)),
+        appliedType(FullManifestClass.asTypeConstructor, List(tpe)),
         reportAmbiguous = false,
         isView = false,
         context = typer.context,
