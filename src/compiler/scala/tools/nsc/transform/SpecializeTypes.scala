@@ -1355,8 +1355,19 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
         }
       }
     }
+    
+    def reportError[T](body: =>T)(handler: TypeError => T): T =
+      try body
+      catch {
+        case te: TypeError =>
+          reporter.error(te.pos, te.msg)
+          handler(te)
+      }
 
-    override def transform(tree: Tree): Tree = {
+    override def transform(tree: Tree): Tree =
+      reportError { transform1(tree) } {_ => tree}
+    
+    def transform1(tree: Tree) = {
       val symbol = tree.symbol
 
       /** The specialized symbol of 'tree.symbol' for tree.tpe, if there is one */
@@ -1381,14 +1392,6 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
           else None
         } else None
       }
-      
-      def reportError[T](body: =>T)(handler: TypeError => T): T =
-        try body
-        catch {
-          case te: TypeError =>
-            reporter.error(tree.pos, te.msg)
-            handler(te)
-        }
       
       curTree = tree
       tree match {
@@ -1501,13 +1504,8 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
 
         case ddef @ DefDef(_, _, _, vparamss, _, _) if info.isDefinedAt(symbol) =>
           // log("--> method: " + ddef + " in " + ddef.symbol.owner + ", " + info(symbol))
-          def reportTypeError(body: =>Tree) =
-            try body
-            catch {
-              case te: TypeError =>
-                reporter.error(te.pos, te.toString)
-                ddef
-            }
+          def reportTypeError(body: =>Tree) = reportError(body)(_ => ddef)
+
           if (symbol.isConstructor) {
 
             val t = atOwner(symbol)(forwardCtorCall(tree.pos, gen.mkSuperSelect, vparamss, symbol.owner))

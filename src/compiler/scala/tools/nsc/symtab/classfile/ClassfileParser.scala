@@ -879,7 +879,7 @@ abstract class ClassfileParser {
         case tpnme.ScalaSignatureATTR =>
           if (!isScalaAnnot) {
             debuglog("warning: symbol " + sym.fullName + " has pickled signature in attribute")
-            unpickler.unpickle(in.buf, in.bp, clazz, staticModule, in.file.toString)
+            unpickler.unpickle(in.buf, in.bp, clazz, staticModule, in.file.name)
           }
           in.skip(attrLen)
         case tpnme.ScalaATTR =>
@@ -897,7 +897,7 @@ abstract class ClassfileParser {
                 case Some(san: AnnotationInfo) =>
                   val bytes =
                     san.assocs.find({ _._1 == nme.bytes }).get._2.asInstanceOf[ScalaSigBytes].bytes
-                  unpickler.unpickle(bytes, 0, clazz, staticModule, in.file.toString)
+                  unpickler.unpickle(bytes, 0, clazz, staticModule, in.file.name)
                 case None =>
                   throw new RuntimeException("Scala class file does not contain Scala annotation")
               }
