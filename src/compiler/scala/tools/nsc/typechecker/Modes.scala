@@ -86,10 +86,6 @@ trait Modes {
    */
   final val TYPEPATmode   = 0x10000
 
-  /** RETmode is set when we are typing a return expression.
-   */
-  final val RETmode       = 0x20000
-  
   final private val StickyModes   = EXPRmode | PATTERNmode | TYPEmode | ALTmode
 
   final def onlyStickyModes(mode: Int) =
