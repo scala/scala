@@ -1,0 +1,4 @@
+t2796.scala:7: error: Implementation restriction: early definitions in traits are not initialized before the super class is initialized.
+  val abstractVal = "T1.abstractVal" // warn
+      ^
+one error found
