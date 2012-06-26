@@ -2153,6 +2153,21 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
       // the equals inherited from AnyRef does just this
     }
 
+    // find most precise super-type of tp that is a class
+    // we skip non-class types (singleton types, abstract types) so that we can
+    // correctly compute how types relate in terms of the values they rule out
+    // e.g., when we know some value must be of type T, can it still be of type S? (this is the positive formulation of what `excludes` on Const computes)
+    // since we're talking values, there must have been a class involved in creating it, so rephrase our types in terms of classes
+    // (At least conceptually: `true` is an instance of class `Boolean`)
+    private def widenToClass(tp: Type) = {
+      // getOrElse to err on the safe side -- all BTS should end in Any, right?
+      val wideTp = tp.widen
+      val clsTp =
+        if (wideTp.typeSymbol.isClass) wideTp
+        else wideTp.baseTypeSeq.toList.find(_.typeSymbol.isClass).getOrElse(AnyClass.tpe)
+      // patmatDebug("Widening to class: "+ (tp, clsTp, tp.widen, tp.widen.baseTypeSeq, tp.widen.baseTypeSeq.toList.find(_.typeSymbol.isClass)))
+      clsTp
+    }
 
     object TypeConst {
       def apply(tp: Type) = {
@@ -2168,7 +2183,7 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
       assert(!(tp =:= NullTp))
       private[this] val id: Int = Const.nextTypeId
 
-      val wideTp = tp.widen
+      val wideTp = widenToClass(tp)
 
       override def toString = tp.toString //+"#"+ id
     }
@@ -2187,10 +2202,7 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
         val tp = p.tpe.normalize
         if (tp =:= NullTp) NullConst
         else {
-          val wideTp = {
-            if (p.hasSymbol && p.symbol.isStable) tp.asSeenFrom(tp.prefix, p.symbol.owner).widen
-            else tp.widen
-          }
+          val wideTp = widenToClass(tp)
 
           val narrowTp =
             if (tp.isInstanceOf[SingletonType]) tp
