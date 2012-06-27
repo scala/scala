@@ -19,6 +19,8 @@ import  html.page.diagram.DiagramStats
 trait DiagramDirectiveParser {
   this: ModelFactory with DiagramFactory with CommentFactory with TreeFactory =>
 
+  import this.global.definitions.AnyRefClass
+
   ///// DIAGRAM FILTERS //////////////////////////////////////////////////////////////////////////////////////////////
 
   /**
@@ -48,16 +50,22 @@ trait DiagramDirectiveParser {
     /** Hide subclasses (for type hierarchy diagrams) */
     def hideSubclasses: Boolean
     /** Show related classes from other objects/traits/packages (for content diagrams) */
-    def showInheritedNodes: Boolean
+    def hideInheritedNodes: Boolean
     /** Hide a node from the diagram */
-    def hideNode(clazz: TemplateEntity): Boolean
+    def hideNode(clazz: Node): Boolean
     /** Hide an edge from the diagram */
-    def hideEdge(clazz1: TemplateEntity, clazz2: TemplateEntity): Boolean
+    def hideEdge(clazz1: Node, clazz2: Node): Boolean
   }
 
   /** Main entry point into this trait: generate the filter for inheritance diagrams */
   def makeInheritanceDiagramFilter(template: DocTemplateImpl): DiagramFilter = {
-    val defaultFilter = if (template.isClass || template.isTrait) FullDiagram else NoDiagramAtAll
+
+    val defaultFilter =
+      if (template.isClass || template.isTrait || template.sym == AnyRefClass)
+        FullDiagram
+      else
+        NoDiagramAtAll
+
     if (template.comment.isDefined)
       makeDiagramFilter(template, template.comment.get.inheritDiagram, defaultFilter, true)
     else
@@ -83,9 +91,9 @@ trait DiagramDirectiveParser {
     val hideOutgoingImplicits: Boolean = false
     val hideSuperclasses: Boolean = false
     val hideSubclasses: Boolean = false
-    val showInheritedNodes: Boolean = false
-    def hideNode(clazz: TemplateEntity): Boolean = false
-    def hideEdge(clazz1: TemplateEntity, clazz2: TemplateEntity): Boolean = false
+    val hideInheritedNodes: Boolean = false
+    def hideNode(clazz: Node): Boolean = false
+    def hideEdge(clazz1: Node, clazz2: Node): Boolean = false
   }
 
   /** Hide the diagram completely, no need for special filtering */
@@ -95,9 +103,9 @@ trait DiagramDirectiveParser {
     val hideOutgoingImplicits: Boolean = true
     val hideSuperclasses: Boolean = true
     val hideSubclasses: Boolean = true
-    val showInheritedNodes: Boolean = false
-    def hideNode(clazz: TemplateEntity): Boolean = true
-    def hideEdge(clazz1: TemplateEntity, clazz2: TemplateEntity): Boolean = true
+    val hideInheritedNodes: Boolean = true
+    def hideNode(clazz: Node): Boolean = true
+    def hideEdge(clazz1: Node, clazz2: Node): Boolean = true
   }
 
   /** The AnnotationDiagramFilter trait directs the diagram engine according to an annotation
@@ -107,12 +115,18 @@ trait DiagramDirectiveParser {
                                              hideOutgoingImplicits: Boolean,
                                              hideSuperclasses: Boolean,
                                              hideSubclasses: Boolean,
-                                             showInheritedNodes: Boolean,
+                                             hideInheritedNodes: Boolean,
                                              hideNodesFilter: List[Pattern],
                                              hideEdgesFilter: List[(Pattern, Pattern)]) extends DiagramFilter {
 
-    def hideNode(clazz: TemplateEntity): Boolean = {
-      val qualifiedName = clazz.qualifiedName
+    private[this] def getName(n: Node): String =
+      if (n.tpl.isDefined)
+        n.tpl.get.qualifiedName
+      else
+        n.name
+
+    def hideNode(clazz: Node): Boolean = {
+      val qualifiedName = getName(clazz)
       for (hideFilter <- hideNodesFilter)
         if (hideFilter.matcher(qualifiedName).matches) {
           // println(hideFilter + ".matcher(" + qualifiedName + ").matches = " + hideFilter.matcher(qualifiedName).matches)
@@ -121,9 +135,9 @@ trait DiagramDirectiveParser {
       false
     }
 
-    def hideEdge(clazz1: TemplateEntity, clazz2: TemplateEntity): Boolean = {
-      val clazz1Name = clazz1.qualifiedName
-      val clazz2Name = clazz2.qualifiedName
+    def hideEdge(clazz1: Node, clazz2: Node): Boolean = {
+      val clazz1Name = getName(clazz1)
+      val clazz2Name = getName(clazz2)
       for ((clazz1Filter, clazz2Filter) <- hideEdgesFilter) {
         if (clazz1Filter.matcher(clazz1Name).matches &&
             clazz2Filter.matcher(clazz2Name).matches) {
@@ -162,7 +176,7 @@ trait DiagramDirectiveParser {
       var hideOutgoingImplicits0: Boolean = false
       var hideSuperclasses0: Boolean = false
       var hideSubclasses0: Boolean = false
-      var showInheritedNodes0: Boolean = false
+      var hideInheritedNodes0: Boolean = false
       var hideNodesFilter0: List[Pattern] = Nil
       var hideEdgesFilter0: List[(Pattern, Pattern)] = Nil
 
@@ -190,8 +204,8 @@ trait DiagramDirectiveParser {
               hideSuperclasses0 = true
           case "hideSubclasses" if isInheritanceDiagram =>
               hideSubclasses0 = true
-          case "showInheritedNodes" if !isInheritanceDiagram =>
-              showInheritedNodes0 = true
+          case "hideInheritedNodes" if !isInheritanceDiagram =>
+              hideInheritedNodes0 = true
           case HideNodesRegex(last) =>
             val matcher = NodeSpecPattern.matcher(entry)
             while (matcher.find()) {
@@ -225,7 +239,7 @@ trait DiagramDirectiveParser {
                  (hideOutgoingImplicits0 == false) &&
                  (hideSuperclasses0 == false) &&
                  (hideSubclasses0 == false) &&
-                 (showInheritedNodes0 == false) &&
+                 (hideInheritedNodes0 == false) &&
                  (hideDiagram0 == false))
           FullDiagram
         else
@@ -235,7 +249,7 @@ trait DiagramDirectiveParser {
             hideOutgoingImplicits = hideOutgoingImplicits0,
             hideSuperclasses = hideSuperclasses0,
             hideSubclasses = hideSubclasses0,
-            showInheritedNodes = showInheritedNodes0,
+            hideInheritedNodes = hideInheritedNodes0,
             hideNodesFilter = hideNodesFilter0,
             hideEdgesFilter = hideEdgesFilter0)
 

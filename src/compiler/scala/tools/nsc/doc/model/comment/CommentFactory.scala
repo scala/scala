@@ -30,12 +30,12 @@ trait CommentFactory { thisFactory: ModelFactory with CommentFactory =>
 
   protected val commentCache = mutable.HashMap.empty[(global.Symbol, TemplateImpl), Comment]
 
-  def addCommentBody(sym: global.Symbol, inTpl: => TemplateImpl, docStr: String, docPos: global.Position): global.Symbol = {
+  def addCommentBody(sym: global.Symbol, inTpl: TemplateImpl, docStr: String, docPos: global.Position): global.Symbol = {
     commentCache += (sym, inTpl) -> parse(docStr, docStr, docPos)
     sym
   }
 
-  def comment(sym: global.Symbol, inTpl: => DocTemplateImpl): Option[Comment] = {
+  def comment(sym: global.Symbol, inTpl: DocTemplateImpl): Option[Comment] = {
     val key = (sym, inTpl)
     if (commentCache isDefinedAt key)
       Some(commentCache(key))
@@ -50,7 +50,7 @@ trait CommentFactory { thisFactory: ModelFactory with CommentFactory =>
     * cases we have to give some `inTpl` comments (parent class for example)
     * to the comment of the symbol.
     * This function manages some of those cases : Param accessor and Primary constructor */
-  def defineComment(sym: global.Symbol, inTpl: => DocTemplateImpl):Option[Comment] = {
+  def defineComment(sym: global.Symbol, inTpl: DocTemplateImpl):Option[Comment] = {
 
     //param accessor case
     // We just need the @param argument, we put it into the body

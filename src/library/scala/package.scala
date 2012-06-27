@@ -9,6 +9,7 @@
 
 /**
  * Core Scala types. They are always available without an explicit import.
+ * @contentDiagram hideNodes "scala.Serializable"
  */
 package object scala {
   type Throwable = java.lang.Throwable

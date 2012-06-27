@@ -54,11 +54,11 @@ object Test extends ScaladocModelTest {
     assert(packDiag.edges.map(_._2.length).sum == 5)
 
     // trait A
-    // Assert we have just 2 nodes and 1 edge
+    // Assert we have just 3 nodes and 2 edges
     val A = base._trait("A")
     val ADiag = A.inheritanceDiagram.get
-    assert(ADiag.nodes.length == 2)
-    assert(ADiag.edges.map(_._2.length).sum == 1)
+    assert(ADiag.nodes.length == 3)
+    assert(ADiag.edges.map(_._2.length).sum == 2)
 
     // trait C
     val C = base._trait("C")
@@ -82,7 +82,7 @@ object Test extends ScaladocModelTest {
 
     val (outgoingSuperclass, outgoingImplicit) = outgoing.head._2.partition(_.isNormalNode)
     assert(outgoingSuperclass.length == 2) // B and C
-    assert(outgoingImplicit.length == 1) // T
+    assert(outgoingImplicit.length == 1, outgoingImplicit) // T
 
     val (incomingSubclass, incomingImplicit) = incoming.partition(_._1.isNormalNode)
     assert(incomingSubclass.length == 2) // F and G

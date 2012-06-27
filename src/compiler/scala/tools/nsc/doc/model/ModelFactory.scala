@@ -45,8 +45,6 @@ class ModelFactory(val global: Global, val settings: doc.Settings) {
     memberSym.isOmittablePrefix || (closestPackage(memberSym) == closestPackage(templateSym))
   }
 
-  private lazy val noSubclassCache = Set[Symbol](AnyClass, AnyRefClass, ObjectClass)
-
   def makeModel: Option[Universe] = {
     val universe = new Universe { thisUniverse =>
       thisFactory.universe = thisUniverse
@@ -270,7 +268,7 @@ class ModelFactory(val global: Global, val settings: doc.Settings) {
     def parentTypes =
       if (sym.isPackage || sym == AnyClass) List() else {
         val tps = sym.tpe.parents map { _.asSeenFrom(sym.thisType, sym) }
-        makeParentTypes(RefinedType(tps, EmptyScope), inTpl)
+        makeParentTypes(RefinedType(tps, EmptyScope), Some(this), inTpl)
       }
 
     protected def linearizationFromSymbol(symbol: Symbol): List[(TemplateEntity, TypeEntity)] = {
@@ -290,7 +288,7 @@ class ModelFactory(val global: Global, val settings: doc.Settings) {
 
     /* Subclass cache */
     private lazy val subClassesCache = (
-      if (noSubclassCache(sym)) null
+      if (sym == AnyRefClass) null
       else mutable.ListBuffer[DocTemplateEntity]()
     )
     def registerSubClass(sc: DocTemplateEntity): Unit = {
@@ -796,10 +794,15 @@ class ModelFactory(val global: Global, val settings: doc.Settings) {
   }
 
   /** Get the types of the parents of the current class, ignoring the refinements */
-  def makeParentTypes(aType: Type, inTpl: => TemplateImpl): List[(TemplateEntity, TypeEntity)] = aType match {
+  def makeParentTypes(aType: Type, tpl: Option[DocTemplateImpl], inTpl: TemplateImpl): List[(TemplateEntity, TypeEntity)] = aType match {
     case RefinedType(parents, defs) =>
-      val ignoreParents = Set[Symbol](AnyClass, ObjectClass)
-      val filtParents = parents filterNot (x => ignoreParents(x.typeSymbol))
+      val ignoreParents = Set[Symbol](AnyRefClass, ObjectClass)
+      val filtParents =
+        // we don't want to expose too many links to AnyRef, that will just be redundant information
+        if (tpl.isDefined && (!tpl.get.isObject && parents.length < 2))
+          parents
+        else
+          parents.filterNot((p: Type) => ignoreParents(p.typeSymbol))
       filtParents.map(parent => {
         val templateEntity = makeTemplate(parent.typeSymbol)
         val typeEntity = makeType(parent, inTpl)

@@ -109,7 +109,7 @@ case class NormalNode(tpe: TypeEntity, tpl: Option[TemplateEntity]) extends Node
 case class ImplicitNode(tpe: TypeEntity, tpl: Option[TemplateEntity]) extends Node { override def isImplicitNode = true }
 
 /** An outside node is shown in packages when a class from a different package makes it to the package diagram due to
- * its relation to a class in the package (and @contentDiagram showInheritedNodes annotation) */
+ * its relation to a class in the template (see @contentDiagram hideInheritedNodes annotation) */
 case class OutsideNode(tpe: TypeEntity, tpl: Option[TemplateEntity]) extends Node { override def isOutsideNode = true }
 
 

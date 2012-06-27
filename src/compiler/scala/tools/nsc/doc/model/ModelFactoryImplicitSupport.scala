@@ -91,7 +91,7 @@ trait ModelFactoryImplicitSupport {
    *  default Scala imports (Predef._ for example) and the companion object of the current class, if one exists. In the
    *  future we might want to extend this to more complex scopes.
    */
-  def makeImplicitConversions(sym: Symbol, inTpl: => DocTemplateImpl): List[ImplicitConversionImpl] =
+  def makeImplicitConversions(sym: Symbol, inTpl: DocTemplateImpl): List[ImplicitConversionImpl] =
     // Nothing and Null are somewhat special -- they can be transformed by any implicit conversion available in scope.
     // But we don't want that, so we'll simply refuse to find implicit conversions on for Nothing and Null
     if (!(sym.isClass || sym.isTrait || sym == AnyRefClass) || sym == NothingClass || sym == NullClass) Nil
@@ -148,7 +148,7 @@ trait ModelFactoryImplicitSupport {
    *  - we also need to transform implicit parameters in the view's signature into constraints, such that Numeric[T4]
    * appears as a constraint
    */
-  def makeImplicitConversion(sym: Symbol, result: SearchResult, constrs: List[TypeConstraint], context: Context, inTpl: => DocTemplateImpl): List[ImplicitConversionImpl] =
+  def makeImplicitConversion(sym: Symbol, result: SearchResult, constrs: List[TypeConstraint], context: Context, inTpl: DocTemplateImpl): List[ImplicitConversionImpl] =
     if (result.tree == EmptyTree) Nil
     else {
       // `result` will contain the type of the view (= implicit conversion method)
@@ -206,7 +206,7 @@ trait ModelFactoryImplicitSupport {
       }
     }
 
-  def makeImplicitConstraints(types: List[Type], sym: Symbol, context: Context, inTpl: => DocTemplateImpl): List[Constraint] =
+  def makeImplicitConstraints(types: List[Type], sym: Symbol, context: Context, inTpl: DocTemplateImpl): List[Constraint] =
     types.flatMap((tpe:Type) => {
       // TODO: Before creating constraints, map typeVarToOriginOrWildcard on the implicitTypes
       val implType = typeVarToOriginOrWildcard(tpe)
@@ -282,7 +282,7 @@ trait ModelFactoryImplicitSupport {
       }
     })
 
-  def makeSubstitutionConstraints(subst: TreeTypeSubstituter, inTpl: => DocTemplateImpl): List[Constraint] =
+  def makeSubstitutionConstraints(subst: TreeTypeSubstituter, inTpl: DocTemplateImpl): List[Constraint] =
     (subst.from zip subst.to) map {
       case (from, to) =>
         new EqualTypeParamConstraint {
@@ -292,7 +292,7 @@ trait ModelFactoryImplicitSupport {
         }
     }
 
-  def makeBoundedConstraints(tparams: List[Symbol], constrs: List[TypeConstraint], inTpl: => DocTemplateImpl): List[Constraint] =
+  def makeBoundedConstraints(tparams: List[Symbol], constrs: List[TypeConstraint], inTpl: DocTemplateImpl): List[Constraint] =
     (tparams zip constrs) flatMap {
       case (tparam, constr) => {
         uniteConstraints(constr) match {
@@ -341,7 +341,7 @@ trait ModelFactoryImplicitSupport {
     val convSym: Symbol,
     val toType: Type,
     val constrs: List[Constraint],
-    inTpl: => DocTemplateImpl)
+    inTpl: DocTemplateImpl)
       extends ImplicitConversion {
 
     def source: DocTemplateEntity = inTpl
@@ -365,7 +365,7 @@ trait ModelFactoryImplicitSupport {
       case _ => error("Scaladoc implicits: Could not create template for: " + toType + " of type " + toType.getClass); None
     }
 
-    def targetTypeComponents: List[(TemplateEntity, TypeEntity)] = makeParentTypes(toType, inTpl)
+    def targetTypeComponents: List[(TemplateEntity, TypeEntity)] = makeParentTypes(toType, None, inTpl)
 
     def convertorMethod: Either[MemberEntity, String] = {
       var convertor: MemberEntity = null
