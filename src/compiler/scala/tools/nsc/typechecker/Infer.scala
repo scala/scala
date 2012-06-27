@@ -1612,6 +1612,9 @@ trait Infer {
         val saved = context.state
         var fallback = false
         context.setBufferErrors()
+        // Need to test first attempt with an empty buffer.
+        // Otherwise, any previous errors will get lost.
+        val errorsToRestore = context.flushAndReturnBuffer()
         try {
           context.withImplicitsDisabled(infer(false))
           if (context.hasErrors) {
@@ -1625,8 +1628,10 @@ trait Infer {
           case ex: TypeError        => // recoverable cyclic references
             context.restoreState(saved)
             if (!fallback) infer(true) else ()
+        } finally {
+          context.restoreState(saved)
+          context.updateBuffer(errorsToRestore)
         }
-        context.restoreState(saved)
       }
       else infer(true)
     }
