@@ -43,7 +43,7 @@ object RedBlackTree {
   }
 
   def count(tree: Tree[_, _]) = if (tree eq null) 0 else tree.count
-  def update[A, B, B1 >: B](tree: Tree[A, B], k: A, v: B1)(implicit ordering: Ordering[A]): Tree[A, B1] = blacken(upd(tree, k, v))
+  def update[A, B, B1 >: B](tree: Tree[A, B], k: A, v: B1, overwrite: Boolean)(implicit ordering: Ordering[A]): Tree[A, B1] = blacken(upd(tree, k, v, overwrite))
   def delete[A, B](tree: Tree[A, B], k: A)(implicit ordering: Ordering[A]): Tree[A, B] = blacken(del(tree, k))
   def rangeImpl[A: Ordering, B](tree: Tree[A, B], from: Option[A], until: Option[A]): Tree[A, B] = (from, until) match {
     case (Some(from), Some(until)) => this.range(tree, from, until)
@@ -122,17 +122,18 @@ object RedBlackTree {
     else
       mkTree(isBlack, x, xv, a, r)
   }
-  private[this] def upd[A, B, B1 >: B](tree: Tree[A, B], k: A, v: B1)(implicit ordering: Ordering[A]): Tree[A, B1] = if (tree eq null) {
+  private[this] def upd[A, B, B1 >: B](tree: Tree[A, B], k: A, v: B1, overwrite: Boolean)(implicit ordering: Ordering[A]): Tree[A, B1] = if (tree eq null) {
     RedTree(k, v, null, null)
   } else {
     val cmp = ordering.compare(k, tree.key)
-    if (cmp < 0) balanceLeft(isBlackTree(tree), tree.key, tree.value, upd(tree.left, k, v), tree.right)
-    else if (cmp > 0) balanceRight(isBlackTree(tree), tree.key, tree.value, tree.left, upd(tree.right, k, v))
-    else mkTree(isBlackTree(tree), k, v, tree.left, tree.right)
+    if (cmp < 0) balanceLeft(isBlackTree(tree), tree.key, tree.value, upd(tree.left, k, v, overwrite), tree.right)
+    else if (cmp > 0) balanceRight(isBlackTree(tree), tree.key, tree.value, tree.left, upd(tree.right, k, v, overwrite))
+    else if (overwrite || k != tree.key) mkTree(isBlackTree(tree), k, v, tree.left, tree.right)
+    else tree
   }
 
-  // Based on Stefan Kahrs' Haskell version of Okasaki's Red&Black Trees
-  // http://www.cse.unsw.edu.au/~dons/data/RedBlackTree.html
+  /* Based on Stefan Kahrs' Haskell version of Okasaki's Red&Black Trees
+   * http://www.cse.unsw.edu.au/~dons/data/RedBlackTree.html */
   private[this] def del[A, B](tree: Tree[A, B], k: A)(implicit ordering: Ordering[A]): Tree[A, B] = if (tree eq null) null else {
     def balance(x: A, xv: B, tl: Tree[A, B], tr: Tree[A, B]) = if (isRedTree(tl)) {
       if (isRedTree(tr)) {
@@ -216,7 +217,7 @@ object RedBlackTree {
     if (ordering.lt(tree.key, from)) return doFrom(tree.right, from)
     val newLeft = doFrom(tree.left, from)
     if (newLeft eq tree.left) tree
-    else if (newLeft eq null) upd(tree.right, tree.key, tree.value)
+    else if (newLeft eq null) upd(tree.right, tree.key, tree.value, false)
     else rebalance(tree, newLeft, tree.right)
   }
   private[this] def doTo[A, B](tree: Tree[A, B], to: A)(implicit ordering: Ordering[A]): Tree[A, B] = {
@@ -224,7 +225,7 @@ object RedBlackTree {
     if (ordering.lt(to, tree.key)) return doTo(tree.left, to)
     val newRight = doTo(tree.right, to)
     if (newRight eq tree.right) tree
-    else if (newRight eq null) upd(tree.left, tree.key, tree.value)
+    else if (newRight eq null) upd(tree.left, tree.key, tree.value, false)
     else rebalance(tree, tree.left, newRight)
   }
   private[this] def doUntil[A, B](tree: Tree[A, B], until: A)(implicit ordering: Ordering[A]): Tree[A, B] = {
@@ -232,7 +233,7 @@ object RedBlackTree {
     if (ordering.lteq(until, tree.key)) return doUntil(tree.left, until)
     val newRight = doUntil(tree.right, until)
     if (newRight eq tree.right) tree
-    else if (newRight eq null) upd(tree.left, tree.key, tree.value)
+    else if (newRight eq null) upd(tree.left, tree.key, tree.value, false)
     else rebalance(tree, tree.left, newRight)
   }
   private[this] def doRange[A, B](tree: Tree[A, B], from: A, until: A)(implicit ordering: Ordering[A]): Tree[A, B] = {
@@ -242,8 +243,8 @@ object RedBlackTree {
     val newLeft = doFrom(tree.left, from)
     val newRight = doUntil(tree.right, until)
     if ((newLeft eq tree.left) && (newRight eq tree.right)) tree
-    else if (newLeft eq null) upd(newRight, tree.key, tree.value);
-    else if (newRight eq null) upd(newLeft, tree.key, tree.value);
+    else if (newLeft eq null) upd(newRight, tree.key, tree.value, false);
+    else if (newRight eq null) upd(newLeft, tree.key, tree.value, false);
     else rebalance(tree, newLeft, newRight)
   }
 
@@ -254,7 +255,7 @@ object RedBlackTree {
     if (n > count) return doDrop(tree.right, n - count - 1)
     val newLeft = doDrop(tree.left, n)
     if (newLeft eq tree.left) tree
-    else if (newLeft eq null) upd(tree.right, tree.key, tree.value)
+    else if (newLeft eq null) upd(tree.right, tree.key, tree.value, false)
     else rebalance(tree, newLeft, tree.right)
   }
   private[this] def doTake[A: Ordering, B](tree: Tree[A, B], n: Int): Tree[A, B] = {
@@ -264,7 +265,7 @@ object RedBlackTree {
     if (n <= count) return doTake(tree.left, n)
     val newRight = doTake(tree.right, n - count - 1)
     if (newRight eq tree.right) tree
-    else if (newRight eq null) upd(tree.left, tree.key, tree.value)
+    else if (newRight eq null) upd(tree.left, tree.key, tree.value, false)
     else rebalance(tree, tree.left, newRight)
   }
   private[this] def doSlice[A: Ordering, B](tree: Tree[A, B], from: Int, until: Int): Tree[A, B] = {
@@ -275,8 +276,8 @@ object RedBlackTree {
     val newLeft = doDrop(tree.left, from)
     val newRight = doTake(tree.right, until - count - 1)
     if ((newLeft eq tree.left) && (newRight eq tree.right)) tree
-    else if (newLeft eq null) upd(newRight, tree.key, tree.value)
-    else if (newRight eq null) upd(newLeft, tree.key, tree.value)
+    else if (newLeft eq null) upd(newRight, tree.key, tree.value, false)
+    else if (newRight eq null) upd(newLeft, tree.key, tree.value, false)
     else rebalance(tree, newLeft, newRight)
   }
 
