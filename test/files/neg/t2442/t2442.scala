@@ -6,4 +6,10 @@ class Test {
     case TWO => println("two")
     // missing case --> exhaustivity warning!
   }
+
+  import MySecondEnum._
+  def g(e: MySecondEnum) = e match {
+    case RED => println("red")
+    // missing case --> exhaustivity warning!
+  }
 }
