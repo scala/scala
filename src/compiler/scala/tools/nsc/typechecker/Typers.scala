@@ -4978,7 +4978,7 @@ trait Typers extends Modes with Adaptations with Tags {
           typedTypeApply(tree, mode, fun1, args1)
 
         case Apply(Block(stats, expr), args) =>
-          typed1(atPos(tree.pos)(Block(stats, Apply(expr, args))), mode, pt)
+          typed1(atPos(tree.pos)(Block(stats, Apply(expr, args) setPos tree.pos.makeTransparent)), mode, pt)
 
         case Apply(fun, args) =>
           typedApply(fun, args) match {
