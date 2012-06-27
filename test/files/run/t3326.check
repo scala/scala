@@ -1,0 +1,8 @@
+Map(2 -> Hello, 1 -> World)
+Map(5 -> Foo, 4 -> Bar)
+Map(5 -> Foo, 4 -> Bar, 2 -> Hello, 1 -> World)
+Map(3 -> ?, 2 -> Hello, 1 -> World)
+Map(2 -> Hello, 1 -> World)
+Map(5 -> Foo, 4 -> Bar)
+Map(5 -> Foo, 4 -> Bar, 2 -> Hello, 1 -> World)
+Map(3 -> ?, 2 -> Hello, 1 -> World)
