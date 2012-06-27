@@ -1,0 +1,6 @@
+t5839.scala:5: error: type mismatch;
+ found   : (x: String => String)Int <and> (x: Int)Int
+ required: Int => String
+  val x: String = goo(foo _)
+                      ^
+one error found
