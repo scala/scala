@@ -16,7 +16,7 @@
 	</natures>
 	<linkedResources>
 		<link>
-			<name>SCALA_BASEDIR</name>
+			<name>src</name>
 			<type>2</type>
 			<locationURI>SCALA_BASEDIR/src/asm</locationURI>
 		</link>
