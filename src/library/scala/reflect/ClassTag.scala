@@ -52,7 +52,7 @@ trait ClassTag[T] extends Equals with Serializable {
    * `SomeExtractor(...)` is turned into `ct(SomeExtractor(...))` if `T` in `SomeExtractor.unapply(x: T)`
    * is uncheckable, but we have an instance of `ClassTag[T]`.
    */
-  def unapply(x: Any): Option[T] = if (runtimeClass.isAssignableFrom(x.getClass)) Some(x.asInstanceOf[T]) else None
+  def unapply(x: Any): Option[T] = if (x != null && runtimeClass.isAssignableFrom(x.getClass)) Some(x.asInstanceOf[T]) else None
 
   /** case class accessories */
   override def canEqual(x: Any) = x.isInstanceOf[ClassTag[_]]
