@@ -1,4 +1,4 @@
-t4541.scala:11: error: scala.reflect.internal.Types$TypeError: variable data in class Sparse cannot be accessed in Sparse[Int]
+t4541.scala:11: error: variable data in class Sparse cannot be accessed in Sparse[Int]
  Access to protected method data not permitted because
  prefix type Sparse[Int] does not conform to
  class Sparse$mcI$sp where the access take place
