@@ -9,8 +9,6 @@ import scala.tools.nsc.plugins._
 
 import scala.tools.nsc.ast._
 
-import scala.collection.mutable.ListBuffer
-
 /**
  * In methods marked @cps, explicitly name results of calls to other @cps methods
  */
@@ -48,20 +46,10 @@ abstract class SelectiveANFTransform extends PluginComponent with Transform with
         // this would cause infinite recursion. But we could remove the
         // ValDef case here.
 
-        case dd @ DefDef(mods, name, tparams, vparamss, tpt, rhs0) =>
+        case dd @ DefDef(mods, name, tparams, vparamss, tpt, rhs) =>
           debuglog("transforming " + dd.symbol)
 
           atOwner(dd.symbol) {
-            val tailReturns = ListBuffer[Tree]()
-            val rhs = removeTailReturn(rhs0, tailReturns)
-            // throw an error if there is a Return tree which is not in tail position
-            rhs0 foreach {
-              case r @ Return(_) =>
-                if (!tailReturns.contains(r))
-                  unit.error(r.pos, "return expressions in CPS code must be in tail position")
-              case _ => /* do nothing */
-            }
-            
             val rhs1 = transExpr(rhs, None, getExternalAnswerTypeAnn(tpt.tpe))
 
             debuglog("result "+rhs1)
@@ -164,6 +152,7 @@ abstract class SelectiveANFTransform extends PluginComponent with Transform with
           super.transform(tree)
       }
     }
+
 
     def transExpr(tree: Tree, cpsA: CPSInfo, cpsR: CPSInfo): Tree = {
       transTailValue(tree, cpsA, cpsR) match {
