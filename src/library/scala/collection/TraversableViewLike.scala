@@ -117,7 +117,7 @@ trait TraversableViewLike[+A,
   }
 
   /** Explicit instantiation of the `Transformed` trait to reduce class file size in subclasses. */
-  private[collection] abstract class AbstractTransformed[+B] extends Transformed[B]
+  private[collection] abstract class AbstractTransformed[+B] extends Traversable[B] with Transformed[B]
 
   trait EmptyView extends Transformed[Nothing] with super.EmptyView
 
