@@ -841,7 +841,7 @@ self: ParIterableLike[T, Repr, Sequential] =>
 
   override def toBuffer[U >: T]: collection.mutable.Buffer[U] = seq.toBuffer // have additional, parallel buffers?
 
-  override def toTraversable: GenTraversable[T] = this.asInstanceOf[GenTraversable[T]] // TODO add ParTraversable[T]
+  override def toTraversable: GenTraversable[T] = this.asInstanceOf[GenTraversable[T]]
 
   override def toIterable: ParIterable[T] = this.asInstanceOf[ParIterable[T]]
 
@@ -850,13 +850,13 @@ self: ParIterableLike[T, Repr, Sequential] =>
   override def toSet[U >: T]: immutable.ParSet[U] = toParCollection[U, immutable.ParSet[U]](() => immutable.ParSet.newCombiner[U])
 
   override def toMap[K, V](implicit ev: T <:< (K, V)): immutable.ParMap[K, V] = toParMap[K, V, immutable.ParMap[K, V]](() => immutable.ParMap.newCombiner[K, V])
-
-  // TODO(@alex22): make these better
-  override def toVector: Vector[T] = seq.toVector
-
-  override def convertTo[Col[_]](implicit cbf: CanBuildFrom[Nothing, T, Col[T @uncheckedVariance]]): Col[T @uncheckedVariance] = seq.convertTo[Col]
   
+  override def toVector: Vector[T] = convertTo[Vector]
 
+  override def convertTo[Col[_]](implicit cbf: CanBuildFrom[Nothing, T, Col[T @uncheckedVariance]]): Col[T @uncheckedVariance] = if (cbf().isCombiner) {
+    toParCollection[T, Col[T]](() => cbf().asCombiner)
+  } else seq.convertTo(cbf)
+  
   /* tasks */
 
   protected trait StrictSplitterCheckTask[R, Tp] extends Task[R, Tp] {
