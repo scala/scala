@@ -1013,9 +1013,16 @@ abstract class ClassfileParser {
     } catch {
       case f: FatalError => throw f // don't eat fatal errors, they mean a class was not found
       case ex: Throwable =>
-        debuglog("dropping annotation on " + sym + ", an error occured during parsing (e.g. annotation  class not found)")
+        // We want to be robust when annotations are unavailable, so the very least
+        // we can do is warn the user about the exception
+        // There was a reference to ticket 1135, but that is outdated: a reference to a class not on
+        // the classpath would *not* end up here. A class not found is signaled
+        // with a `FatalError` exception, handled above. Here you'd end up after a NPE (for example),
+        // and that should never be swallowed silently.
+        warning("Caught: " + ex + " while parsing annotations in " + in.file)
+        if (settings.debug.value) ex.printStackTrace()
 
-        None // ignore malformed annotations ==> t1135
+        None // ignore malformed annotations
     }
 
     /**
