@@ -1,6 +1,6 @@
 package scala
 
-package object reflect extends reflect_compat {
+package object reflect {
 
   lazy val basis: base.Universe = new base.Base
 
