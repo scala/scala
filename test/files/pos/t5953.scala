@@ -10,7 +10,7 @@ package object foo {
 
 package foo {
   object Test {
-    def f1[T](xs: Traversable[T]) = xs.convertTo[immutable.Vector]
+    def f1[T](xs: Traversable[T]) = xs.to[immutable.Vector]
     def f2[T](xs: Traversable[T]) = xs.build[immutable.Vector]
   }
 }
