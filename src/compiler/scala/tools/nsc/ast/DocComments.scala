@@ -457,22 +457,16 @@ trait DocComments { self: Global =>
           case List() => NoType
           case site :: sites1 => select(site.thisType, name, findIn(sites1))
         }
-        val (classes, pkgs) = site.ownerChain.span(!_.isPackageClass)
-        findIn(classes ::: List(pkgs.head, rootMirror.RootClass))
+        // Previously, searching was taking place *only* in the current package and in the root package
+        // now we're looking for it everywhere in the hierarchy, so we'll be able to link variable expansions like
+        // immutable.Seq in package immutable
+        //val (classes, pkgs) = site.ownerChain.span(!_.isPackageClass)
+        //val sites = (classes ::: List(pkgs.head, rootMirror.RootClass)))
+        //findIn(sites)
+        findIn(site.ownerChain ::: List(definitions.EmptyPackage))
       }
 
-      def getType(_str: String, variable: String): Type = {
-        /*
-         * work around the backticks issue suggested by Simon in
-         * https://groups.google.com/forum/?hl=en&fromgroups#!topic/scala-internals/z7s1CCRCz74
-         * ideally, we'd have a removeWikiSyntax method in the CommentFactory to completely eliminate the wiki markup
-         */
-        val str =
-          if (_str.length >= 2 && _str.startsWith("`") && _str.endsWith("`"))
-            _str.substring(1, _str.length - 2)
-          else
-            _str
-
+      def getType(str: String, variable: String): Type = {
         def getParts(start: Int): List[String] = {
           val end = skipIdent(str, start)
           if (end == start) List()
@@ -484,7 +478,7 @@ trait DocComments { self: Global =>
         val parts = getParts(0)
         if (parts.isEmpty) {
           reporter.error(comment.codePos, "Incorrect variable expansion for " + variable + " in use case. Does the " +
-                             "variable expand to wiki syntax when documenting " + site + "?")
+                                          "variable expand to wiki syntax when documenting " + site + "?")
           return ErrorType
         }
         val partnames = (parts.init map newTermName) :+ newTypeName(parts.last)
@@ -498,17 +492,36 @@ trait DocComments { self: Global =>
           case _ =>
             (getSite(partnames.head), partnames.tail)
         }
-        (start /: rest)(select(_, _, NoType))
+        val result = (start /: rest)(select(_, _, NoType))
+        if (result == NoType)
+          reporter.warning(comment.codePos, "Could not find the type " + variable + " points to while expanding it " +
+                                            "for the usecase signature of " + sym + " in " + site + "." +
+                                            "In this context, " + variable + " = \"" + str + "\".")
+        result
+      }
+
+      /**
+       * work around the backticks issue suggested by Simon in
+       * https://groups.google.com/forum/?hl=en&fromgroups#!topic/scala-internals/z7s1CCRCz74
+       * ideally, we'd have a removeWikiSyntax method in the CommentFactory to completely eliminate the wiki markup
+       */
+      def cleanupVariable(str: String) = {
+        val tstr = str.trim
+        if (tstr.length >= 2 && tstr.startsWith("`") && tstr.endsWith("`"))
+          tstr.substring(1, tstr.length - 1)
+        else
+          tstr
       }
 
       val aliasExpansions: List[Type] =
         for (alias <- aliases) yield
           lookupVariable(alias.name.toString.substring(1), site) match {
             case Some(repl) =>
-              val tpe = getType(repl.trim, alias.name.toString)
+              val repl2 = cleanupVariable(repl)
+              val tpe = getType(repl2, alias.name.toString)
               if (tpe != NoType) tpe
               else {
-                val alias1 = alias.cloneSymbol(rootMirror.RootClass, alias.rawflags, newTypeName(repl))
+                val alias1 = alias.cloneSymbol(rootMirror.RootClass, alias.rawflags, newTypeName(repl2))
                 typeRef(NoPrefix, alias1, Nil)
               }
             case None =>

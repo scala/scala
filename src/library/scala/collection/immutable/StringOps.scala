@@ -25,7 +25,7 @@ import mutable.StringBuilder
  *  @param repr     the actual representation of this string operations object.
  *
  *  @since 2.8
- *  @define Coll `StringOps`
+ *  @define Coll `String`
  *  @define coll string
  */
 final class StringOps(override val repr: String) extends AnyVal with StringLike[String] {

@@ -12,6 +12,7 @@ import scala.tools.nsc.util.CommandLineParser
 import scala.tools.nsc.doc.{Settings, DocFactory, Universe}
 import scala.tools.nsc.doc.model._
 import scala.tools.nsc.reporters.ConsoleReporter
+import scala.tools.nsc.doc.model.comment.Comment
 
 /** A class for testing scaladoc model generation
  *   - you need to specify the code in the `code` method
@@ -141,6 +142,15 @@ abstract class ScaladocModelTest extends DirectTest {
       case 0 => sys.error("Error getting " + expl + ": No such element.")
       case _ => sys.error("Error getting " + expl + ": " + list.length + " elements with this name. " +
                   "All elements in list: [" + list.mkString(", ") + "]")
+    }
+
+    def extractCommentText(c: Comment) = {
+      def extractText(body: Any): String = body match {
+        case s: String  => s
+        case p: Product => p.productIterator.toList.map(extractText(_)).mkString
+        case _          => ""
+      }
+      extractText(c.body)
     }
   }
 }
