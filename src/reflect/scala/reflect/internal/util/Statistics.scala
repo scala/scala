@@ -41,7 +41,7 @@ object Statistics {
   }
 
   /** If enabled, push and start a new timer in timer stack */
-  @inline final def pushTimer(timers: TimerStack, timer: StackableTimer): TimerSnapshot =
+  @inline final def pushTimer(timers: TimerStack, timer: => StackableTimer): TimerSnapshot =
     if (_enabled && timers != null) timers.push(timer) else null
 
   /** If enabled, stop and pop timer from timer stack */
@@ -190,7 +190,7 @@ quant)
    *  on access by executing `initValue`.
    */
   class QuantMap[K, V <% Ordered[V]](val prefix: String, val phases: Seq[String], initValue: => V)
-      extends scala.collection.mutable.HashMap[K, V] with Quantity {
+      extends mutable.HashMap[K, V] with mutable.SynchronizedMap[K, V] with Quantity {
     override def default(key: K) = {
       val elem = initValue
       this(key) = elem
