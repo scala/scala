@@ -4480,6 +4480,13 @@ trait Typers extends Modes with Adaptations with Tags {
                   issue(accessibleError.get)
                   setError(tree)
                 }
+            case t if t.tpe.isErroneous && !qual.tpe.isErroneous =>
+              // Either error has been reported or we are dealing with 'invalid bounds' errors.
+              // The latter might be caused by forcing the info yet the real error reporting
+              // will be done in refchecks, so we delay it until then.
+              // qual.tpe check is done to avoid throwing spurious errors
+              // (see t692.scala for one example)
+              t setType sym.tpe.normalize
             case _ =>
               result
           }
