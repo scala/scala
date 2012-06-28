@@ -1,4 +1,0 @@
-ts-1681-nontail-return.scala:10: error: return expressions in CPS code must be in tail position
-      return v
-      ^
-one error found
