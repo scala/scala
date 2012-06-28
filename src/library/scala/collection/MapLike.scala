@@ -226,7 +226,7 @@ self =>
    */
   def default(key: A): B =
     throw new NoSuchElementException("key not found: " + key)
-
+  
   protected class FilteredKeys(p: A => Boolean) extends AbstractMap[A, B] with DefaultMap[A, B] {
     override def foreach[C](f: ((A, B)) => C): Unit = for (kv <- self) if (p(kv._1)) f(kv)
     def iterator = self.iterator.filter(kv => p(kv._1))
@@ -240,7 +240,7 @@ self =>
    *          the predicate `p`. The resulting map wraps the original map without copying any elements.
    */
   def filterKeys(p: A => Boolean): Map[A, B] = new FilteredKeys(p)
-
+  
   protected class MappedValues[C](f: B => C) extends AbstractMap[A, C] with DefaultMap[A, C] {
     override def foreach[D](g: ((A, C)) => D): Unit = for ((k, v) <- self) g((k, f(v)))
     def iterator = for ((k, v) <- self.iterator) yield (k, f(v))

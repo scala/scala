@@ -48,7 +48,8 @@ import parallel.immutable.ParMap
 trait MapLike[A, +B, +This <: MapLike[A, B, This] with Map[A, B]]
   extends scala.collection.MapLike[A, B, This]
      with Parallelizable[(A, B), ParMap[A, B]]
-{ self =>
+{
+self =>
 
   protected[this] override def parCombiner = ParMap.newCombiner[A, B]
 
@@ -84,31 +85,20 @@ trait MapLike[A, +B, +This <: MapLike[A, B, This] with Map[A, B]]
    */
   override def ++[B1 >: B](xs: GenTraversableOnce[(A, B1)]): immutable.Map[A, B1] =
     ((repr: immutable.Map[A, B1]) /: xs.seq) (_ + _)
-
+  
   /** Filters this map by retaining only keys satisfying a predicate.
    *  @param  p   the predicate used to test keys
    *  @return an immutable map consisting only of those key value pairs of this map where the key satisfies
    *          the predicate `p`. The resulting map wraps the original map without copying any elements.
    */
-  override def filterKeys(p: A => Boolean): Map[A, B] = new AbstractMap[A, B] with DefaultMap[A, B] {
-    override def foreach[C](f: ((A, B)) => C): Unit = for (kv <- self) if (p(kv._1)) f(kv)
-    def iterator = self.iterator.filter(kv => p(kv._1))
-    override def contains(key: A) = self.contains(key) && p(key)
-    def get(key: A) = if (!p(key)) None else self.get(key)
-  }
-
+  override def filterKeys(p: A => Boolean): Map[A, B] = new FilteredKeys(p) with DefaultMap[A, B]
+  
   /** Transforms this map by applying a function to every retrieved value.
    *  @param  f   the function used to transform values of this map.
    *  @return a map view which maps every key of this map
    *          to `f(this(key))`. The resulting map wraps the original map without copying any elements.
    */
-  override def mapValues[C](f: B => C): Map[A, C] = new AbstractMap[A, C] with DefaultMap[A, C] {
-    override def foreach[D](g: ((A, C)) => D): Unit = for ((k, v) <- self) g((k, f(v)))
-    def iterator = for ((k, v) <- self.iterator) yield (k, f(v))
-    override def size = self.size
-    override def contains(key: A) = self.contains(key)
-    def get(key: A) = self.get(key).map(f)
-  }
+  override def mapValues[C](f: B => C): Map[A, C] = new MappedValues(f) with DefaultMap[A, C]
 
   /** Collects all keys of this map in a set.
    *  @return  a set containing all keys of this map.
