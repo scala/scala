@@ -43,12 +43,16 @@ trait DiagramFactory extends DiagramDirectiveParser {
     // the diagram filter
     val diagramFilter = makeInheritanceDiagramFilter(tpl)
 
+    def implicitTooltip(from: DocTemplateEntity, to: TemplateEntity, conv: ImplicitConversion) =
+      Some(from.qualifiedName + " can be implicitly converted to " + conv.targetType + " by the implicit method "
+        + conv.conversionShortName + " in " + conv.convertorOwner.kind + " " + conv.convertorOwner.qualifiedName)
+
     val result =
       if (diagramFilter == NoDiagramAtAll)
         None
       else {
         // the main node
-        val thisNode = ThisNode(tpl.ownType, Some(tpl))
+        val thisNode = ThisNode(tpl.ownType, Some(tpl), Some(tpl.qualifiedName + " (this " + tpl.kind + ")"))
 
         // superclasses
         var superclasses: List[Node] =
@@ -57,7 +61,10 @@ trait DiagramFactory extends DiagramDirectiveParser {
           }.reverse
 
         // incoming implcit conversions
-        lazy val incomingImplicitNodes = tpl.incomingImplicitlyConvertedClasses.map(tpl => ImplicitNode(tpl.ownType, Some(tpl)))
+        lazy val incomingImplicitNodes = tpl.incomingImplicitlyConvertedClasses.map {
+          case (incomingTpl, conv) =>
+            ImplicitNode(incomingTpl.ownType, Some(incomingTpl), implicitTooltip(from=incomingTpl, to=tpl, conv=conv))
+        }
 
         // subclasses
         var subclasses: List[Node] =
@@ -67,7 +74,10 @@ trait DiagramFactory extends DiagramDirectiveParser {
           }.sortBy(_.tpl.get.name)(implicitly[Ordering[String]].reverse)
 
         // outgoing implicit coversions
-        lazy val outgoingImplicitNodes = tpl.outgoingImplicitlyConvertedClasses.map(pair => ImplicitNode(pair._2, Some(pair._1)))
+        lazy val outgoingImplicitNodes = tpl.outgoingImplicitlyConvertedClasses.map {
+          case (outgoingTpl, outgoingType, conv) =>
+            ImplicitNode(outgoingType, Some(outgoingTpl), implicitTooltip(from=tpl, to=tpl, conv=conv))
+        }
 
         // TODO: Everyone should be able to use the @{inherit,content}Diagram annotation to change the diagrams.
         // Currently, it's possible to leave nodes and edges out, but there's no way to create new nodes and edges

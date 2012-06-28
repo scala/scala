@@ -38,6 +38,8 @@ object DiagramStats {
   private[this] val dotGenTrack = new TimeTracker("dot diagram generation")
   private[this] val dotRunTrack = new TimeTracker("dot process runnning")
   private[this] val svgTrack = new TimeTracker("svg processing")
+  private[this] var brokenImages = 0
+  private[this] var fixedImages = 0
 
   def printStats(settings: Settings) = {
     if (settings.docDiagramsDebug.value) {
@@ -47,6 +49,9 @@ object DiagramStats {
       dotGenTrack.printStats(settings.printMsg)
       dotRunTrack.printStats(settings.printMsg)
       svgTrack.printStats(settings.printMsg)
+      println("  Broken images: " + brokenImages)
+      println("  Fixed images: " + fixedImages)
+      println("")
     }
   }
 
@@ -55,4 +60,7 @@ object DiagramStats {
   def addDotGenerationTime(ms: Long) = dotGenTrack.addTime(ms)
   def addDotRunningTime(ms: Long) = dotRunTrack.addTime(ms)
   def addSvgTime(ms: Long) = svgTrack.addTime(ms)
+
+  def addBrokenImage(): Unit = brokenImages += 1
+  def addFixedImage(): Unit = fixedImages += 1
 }

@@ -299,14 +299,14 @@ class ModelFactory(val global: Global, val settings: doc.Settings) {
     def directSubClasses = allSubClasses.filter(_.parentTypes.map(_._1).contains(this))
 
     /* Implcitly convertible class cache */
-    private var implicitlyConvertibleClassesCache: mutable.ListBuffer[DocTemplateEntity] = null
-    def registerImplicitlyConvertibleClass(sc: DocTemplateEntity): Unit = {
+    private var implicitlyConvertibleClassesCache: mutable.ListBuffer[(DocTemplateEntity, ImplicitConversionImpl)] = null
+    def registerImplicitlyConvertibleClass(dtpl: DocTemplateEntity, conv: ImplicitConversionImpl): Unit = {
       if (implicitlyConvertibleClassesCache == null)
-        implicitlyConvertibleClassesCache = mutable.ListBuffer[DocTemplateEntity]()
-      implicitlyConvertibleClassesCache += sc
+        implicitlyConvertibleClassesCache = mutable.ListBuffer[(DocTemplateEntity, ImplicitConversionImpl)]()
+      implicitlyConvertibleClassesCache += ((dtpl, conv))
     }
 
-    def incomingImplicitlyConvertedClasses: List[DocTemplateEntity] =
+    def incomingImplicitlyConvertedClasses: List[(DocTemplateEntity, ImplicitConversionImpl)] =
       if (implicitlyConvertibleClassesCache == null)
         List()
       else
@@ -363,18 +363,19 @@ class ModelFactory(val global: Global, val settings: doc.Settings) {
 
     var implicitsShadowing = Map[MemberEntity, ImplicitMemberShadowing]()
 
-    lazy val outgoingImplicitlyConvertedClasses: List[(TemplateEntity, TypeEntity)] = conversions flatMap (conv =>
-      if (!implicitExcluded(conv.conversionQualifiedName))
-        conv.targetTypeComponents map {
-          case pair@(template, tpe) =>
-            template match {
-              case d: DocTemplateImpl => d.registerImplicitlyConvertibleClass(this)
-              case _ => // nothing
-            }
-            pair
-        }
-      else List()
-    )
+    lazy val outgoingImplicitlyConvertedClasses: List[(TemplateEntity, TypeEntity, ImplicitConversionImpl)] =
+      conversions flatMap (conv =>
+        if (!implicitExcluded(conv.conversionQualifiedName))
+          conv.targetTypeComponents map {
+            case pair@(template, tpe) =>
+              template match {
+                case d: DocTemplateImpl => d.registerImplicitlyConvertibleClass(this, conv)
+                case _ => // nothing
+              }
+              (pair._1, pair._2, conv)
+          }
+        else List()
+      )
 
     override def isTemplate = true
     lazy val definitionName = optimize(inDefinitionTemplates.head.qualifiedName + "." + name)
@@ -862,7 +863,7 @@ class ModelFactory(val global: Global, val settings: doc.Settings) {
           //   nameBuffer append stripPrefixes.foldLeft(pre.prefixString)(_ stripPrefix _)
           // }
           val bSym = normalizeTemplate(aSym)
-          if (bSym.isNonClassType) {
+          if (bSym.isNonClassType && bSym != AnyRefClass) {
             nameBuffer append bSym.decodedName
           } else {
             val tpl = makeTemplate(bSym)
