@@ -25,7 +25,6 @@ retrieved 126 members
 [accessible:  true] `method collectFirst[B](pf: PartialFunction[B,B])Option[B]`
 [accessible:  true] `method collect[B](pf: PartialFunction[B,B])Iterator[B]`
 [accessible:  true] `method contains(elem: Any)Boolean`
-[accessible:  true] `method convertTo[Col[_]](implicit cbf: scala.collection.generic.CanBuildFrom[Nothing,B,Col[B]])Col[B]`
 [accessible:  true] `method copyToArray[B >: B](xs: Array[B])Unit`
 [accessible:  true] `method copyToArray[B >: B](xs: Array[B], start: Int)Unit`
 [accessible:  true] `method copyToArray[B >: B](xs: Array[B], start: Int, len: Int)Unit`
@@ -111,6 +110,7 @@ retrieved 126 members
 [accessible:  true] `method toString()String`
 [accessible:  true] `method toTraversable=> Traversable[B]`
 [accessible:  true] `method toVector=> Vector[B]`
+[accessible:  true] `method to[Col[_]](implicit cbf: scala.collection.generic.CanBuildFrom[Nothing,B,Col[B]])Col[B]`
 [accessible:  true] `method wait()Unit`
 [accessible:  true] `method wait(x$1: Long)Unit`
 [accessible:  true] `method wait(x$1: Long, x$2: Int)Unit`

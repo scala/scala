@@ -851,11 +851,11 @@ self: ParIterableLike[T, Repr, Sequential] =>
 
   override def toMap[K, V](implicit ev: T <:< (K, V)): immutable.ParMap[K, V] = toParMap[K, V, immutable.ParMap[K, V]](() => immutable.ParMap.newCombiner[K, V])
   
-  override def toVector: Vector[T] = convertTo[Vector]
+  override def toVector: Vector[T] = to[Vector]
 
-  override def convertTo[Col[_]](implicit cbf: CanBuildFrom[Nothing, T, Col[T @uncheckedVariance]]): Col[T @uncheckedVariance] = if (cbf().isCombiner) {
+  override def to[Col[_]](implicit cbf: CanBuildFrom[Nothing, T, Col[T @uncheckedVariance]]): Col[T @uncheckedVariance] = if (cbf().isCombiner) {
     toParCollection[T, Col[T]](() => cbf().asCombiner)
-  } else seq.convertTo(cbf)
+  } else seq.to(cbf)
   
   /* tasks */
 
