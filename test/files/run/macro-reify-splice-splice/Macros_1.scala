@@ -1,5 +1,4 @@
 import scala.reflect.makro.{Context => Ctx}
-import scala.reflect.{mirror => mr}
 
 object Macros {
   def foo = macro Impls.foo

@@ -1,0 +1,9 @@
+t2442.scala:4: error: match may not be exhaustive.
+It would fail on the following input: THREE
+  def f(e: MyEnum) = e match {
+                     ^
+t2442.scala:11: error: match may not be exhaustive.
+It would fail on the following input: BLUE
+  def g(e: MySecondEnum) = e match {
+                           ^
+two errors found

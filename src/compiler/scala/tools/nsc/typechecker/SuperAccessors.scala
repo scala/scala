@@ -124,7 +124,15 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
             !(member.isAbstractOverride && member.isIncompleteIn(clazz)))
           unit.error(sel.pos, ""+sym.fullLocationString+" is accessed from super. It may not be abstract "+
                                "unless it is overridden by a member declared `abstract' and `override'");
+      } else if (mix == tpnme.EMPTY && !sym.owner.isTrait){
+        // SI-4989 Check if an intermediate class between `clazz` and `sym.owner` redeclares the method as abstract.
+        val intermediateClasses = clazz.info.baseClasses.tail.takeWhile(_ != sym.owner)
+        intermediateClasses.map(sym.overridingSymbol).find(s => s.isDeferred && !s.isAbstractOverride && !s.owner.isTrait).foreach {
+          absSym =>
+            unit.error(sel.pos, s"${sym.fullLocationString} cannot be directly accessed from ${clazz} because ${absSym.owner} redeclares it as abstract")
+        }
       }
+
       if (name.isTermName && mix == tpnme.EMPTY && (clazz.isTrait || clazz != currentClass || !validCurrentOwner))
         ensureAccessor(sel)
       else sel

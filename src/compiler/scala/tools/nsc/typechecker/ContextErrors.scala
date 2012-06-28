@@ -90,7 +90,7 @@ trait ContextErrors {
     import infer.setError
 
     object TyperErrorGen {
-      implicit val context0: Context = infer.getContext
+      implicit val contextTyperErrorGen: Context = infer.getContext
 
       def UnstableTreeError(tree: Tree) = {
         def addendum = {
@@ -222,7 +222,13 @@ trait ContextErrors {
         NormalTypeError(tree, "super constructor cannot be passed a self reference unless parameter is declared by-name")
 
       def SuperConstrArgsThisReferenceError(tree: Tree) =
-        NormalTypeError(tree, "super constructor arguments cannot reference unconstructed `this`")
+        ConstrArgsThisReferenceError("super", tree)
+
+      def SelfConstrArgsThisReferenceError(tree: Tree) =
+        ConstrArgsThisReferenceError("self", tree)
+
+      private def ConstrArgsThisReferenceError(prefix: String, tree: Tree) =
+        NormalTypeError(tree, s"$prefix constructor arguments cannot reference unconstructed `this`")
 
       def TooManyArgumentListsForConstructor(tree: Tree) = {
         issueNormalTypeError(tree, "too many argument lists for constructor invocation")
@@ -642,7 +648,7 @@ trait ContextErrors {
 
     object InferErrorGen {
 
-      implicit val context0 = getContext
+      implicit val contextInferErrorGen = getContext
 
       object PolyAlternativeErrorKind extends Enumeration {
         type ErrorType = Value
@@ -828,7 +834,7 @@ trait ContextErrors {
 
     object NamerErrorGen {
 
-      implicit val context0 = context
+      implicit val contextNamerErrorGen = context
 
       object SymValidateErrors extends Enumeration {
         val ImplicitConstr, ImplicitNotTermOrClass, ImplicitAtToplevel,
@@ -863,7 +869,7 @@ trait ContextErrors {
           case CyclicReference(sym, info: TypeCompleter) =>
             issueNormalTypeError(tree, typer.cyclicReferenceMessage(sym, info.tree) getOrElse ex.getMessage())
           case _ =>
-            context0.issue(TypeErrorWithUnderlyingTree(tree, ex))
+            contextNamerErrorGen.issue(TypeErrorWithUnderlyingTree(tree, ex))
         }
       }
 

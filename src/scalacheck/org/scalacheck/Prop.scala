@@ -5,12 +5,13 @@
 **                                                                         **
 **  This software is released under the terms of the Revised BSD License.  **
 **  There is NO WARRANTY. See the file LICENSE for the full text.          **
-\*-------------------------------------------------------------------------*/
+\*------------------------------------------------------------------------ */
 
 package org.scalacheck
 
 import util.{FreqMap,Buildable}
 import scala.collection._
+import scala.annotation.tailrec
 
 /** A property is a generator that generates a property result */
 trait Prop {
@@ -102,15 +103,6 @@ trait Prop {
     }
   }
 
-  /** Returns a new property that holds if and only if both this
-   *  and the given property generates a result with the exact
-   *  same status. Note that this means that if one of the properties is
-   *  proved, and the other one passed, then the resulting property
-   *  will fail.
-   *  @deprecated Use <code>==</code> instead */
-  @deprecated("Use == instead.", "1.7")
-  def ===(p: Prop): Prop = this == p
-
   override def toString = "Prop"
 
   /** Put a label on the property to make test reports clearer */
@@ -201,7 +193,7 @@ object Prop {
       case (_,Undecided) => r
 
       case (_,Proof) => merge(this, r, this.status)
-      case (Proof,_) => merge(this, r, this.status)
+      case (Proof,_) => merge(this, r, r.status)
 
       case (True,True) => merge(this, r, True)
     }
@@ -337,14 +329,11 @@ object Prop {
 
   /** A property that depends on the generator size */
   def sizedProp(f: Int => Prop): Prop = Prop { prms =>
+    // provedToTrue since if the property is proved for
+    // one size, it shouldn't be regarded as proved for
+    // all sizes.
     provedToTrue(f(prms.genPrms.size)(prms))
   }
-
-  /** Implication
-   *  @deprecated Use the implication operator of the Prop class instead
-   */
-  @deprecated("Use the implication operator of the Prop class instead", "1.7")
-  def ==>(b: => Boolean, p: => Prop): Prop = (b: Prop) ==> p
 
   /** Implication with several conditions */
   def imply[T](x: T, f: PartialFunction[T,Prop]): Prop =
@@ -758,4 +747,17 @@ object Prop {
     a8: Arbitrary[A8], s8: Shrink[A8], pp8: A8 => Pretty
   ): Prop = forAll((a: A1) => forAll(f(a, _:A2, _:A3, _:A4, _:A5, _:A6, _:A7, _:A8)))
 
+  /** Ensures that the property expression passed in completes within the given space of time. */
+  def within(maximumMs: Long)(wrappedProp: => Prop): Prop = new Prop {
+    @tailrec private def attempt(prms: Params, endTime: Long): Result = {
+      val result = wrappedProp.apply(prms)
+      if (System.currentTimeMillis > endTime) {
+        (if (result.failure) result else Result(False)).label("Timeout")
+      } else {
+        if (result.success) result
+        else attempt(prms, endTime)
+      }
+    }
+    def apply(prms: Params) = attempt(prms, System.currentTimeMillis + maximumMs)
+  }
 }

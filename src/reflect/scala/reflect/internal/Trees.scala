@@ -9,6 +9,7 @@ package internal
 import Flags._
 import base.Attachments
 import collection.mutable.{ListBuffer, LinkedHashSet}
+import util.Statistics
 
 trait Trees extends api.Trees { self: SymbolTable =>
 
@@ -17,6 +18,8 @@ trait Trees extends api.Trees { self: SymbolTable =>
   abstract class Tree extends TreeContextApiImpl with Product {
     val id = nodeCount // TODO: add to attachment?
     nodeCount += 1
+
+    Statistics.incCounter(TreesStats.nodeByType, getClass)
 
     @inline final def pos: Position = rawatt.pos
     def pos_=(pos: Position): Unit = rawatt = (rawatt withPos pos)
@@ -809,7 +812,7 @@ trait Trees extends api.Trees { self: SymbolTable =>
     }
   }
 
-  // Belongs in TreeInfo but then I can't reach it from TreePrinters.
+  // Belongs in TreeInfo but then I can't reach it from Printers.
   def isReferenceToScalaMember(t: Tree, Id: Name) = t match {
     case Ident(Id)                                          => true
     case Select(Ident(nme.scala_), Id)                      => true
@@ -1592,4 +1595,11 @@ trait Trees extends api.Trees { self: SymbolTable =>
   implicit val TypeBoundsTreeTag = ClassTag[TypeBoundsTree](classOf[TypeBoundsTree])
   implicit val ExistentialTypeTreeTag = ClassTag[ExistentialTypeTree](classOf[ExistentialTypeTree])
   implicit val TypeTreeTag = ClassTag[TypeTree](classOf[TypeTree])
+
+  val treeNodeCount = Statistics.newView("#created tree nodes")(nodeCount)
+}
+
+object TreesStats {
+  // statistics
+  val nodeByType = Statistics.newByClass("#created tree nodes by type")(Statistics.newCounter(""))
 }

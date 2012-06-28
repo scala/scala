@@ -34,6 +34,7 @@ extends collection/*.immutable*/.GenIterable[T]
    with collection.parallel.ParIterable[T]
    with GenericParTemplate[T, ParIterable]
    with ParIterableLike[T, ParIterable[T], collection.immutable.Iterable[T]]
+   with Immutable
 {
   override def companion: GenericCompanion[ParIterable] with GenericParCompanion[ParIterable] = ParIterable
 

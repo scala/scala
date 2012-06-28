@@ -22,12 +22,8 @@ object Test extends ScaladocModelTest {
 
     val A = base._class("A")
 
-    // def convToPimpedA(x: T)                // pimpA0: with no constraints, SHADOWED
-    conv = A._conversion(A.qualifiedName + ".pimpA0")
-    assert(conv.members.length == 1)
-    assert(conv.constraints.length == 0)
-    assert(conv._member("convToPimpedA").byConversion.get.isShadowed)
-    assert(conv._member("convToPimpedA").resultType.name == "T")
+    // the method pimped on by pimpA0 should be shadowed by the method in class A
+    assert(A._conversions(A.qualifiedName + ".pimpA0").isEmpty)
 
     // def convToNumericA: T               // pimpA1: with a constraint that there is x: Numeric[T] implicit in scope
     conv = A._conversion(A.qualifiedName + ".pimpA1")
@@ -57,7 +53,6 @@ object Test extends ScaladocModelTest {
     conv = A._conversion(A.qualifiedName + ".pimpA5")
     assert(conv.members.length == 1)
     assert(conv.constraints.length == 0)
-    assert(conv._member("convToPimpedA").byConversion.get.isShadowed)
     assert(conv._member("convToPimpedA").resultType.name == "Bar[Foo[T]]")
 
     // def convToMyNumericA: T             // pimpA6: with a constraint that there is x: MyNumeric[T] implicit in scope
@@ -81,15 +76,9 @@ object Test extends ScaladocModelTest {
     val B = base._class("B")
 
     // these conversions should not affect B
+    assert(B._conversions(A.qualifiedName + ".pimpA0").isEmpty)
     assert(B._conversions(A.qualifiedName + ".pimpA2").isEmpty)
     assert(B._conversions(A.qualifiedName + ".pimpA4").isEmpty)
-
-    // def convToPimpedA(x: Double)           // pimpA0: no constraints, SHADOWED
-    conv = B._conversion(A.qualifiedName + ".pimpA0")
-    assert(conv.members.length == 1)
-    assert(conv.constraints.length == 0)
-    assert(conv._member("convToPimpedA").byConversion.get.isShadowed)
-    assert(conv._member("convToPimpedA").resultType.name == "Double")
 
     // def convToNumericA: Double          // pimpA1: no constraintsd
     conv = B._conversion(A.qualifiedName + ".pimpA1")
@@ -107,7 +96,6 @@ object Test extends ScaladocModelTest {
     conv = B._conversion(A.qualifiedName + ".pimpA5")
     assert(conv.members.length == 1)
     assert(conv.constraints.length == 0)
-    assert(conv._member("convToPimpedA").byConversion.get.isShadowed)
     assert(conv._member("convToPimpedA").resultType.name == "Bar[Foo[Double]]")
 
     // def convToMyNumericA: Double        // pimpA6: (if showAll is set) with a constraint that there is x: MyNumeric[Double] implicit in scope
@@ -131,16 +119,10 @@ object Test extends ScaladocModelTest {
     val C = base._class("C")
 
     // these conversions should not affect C
+    assert(C._conversions(A.qualifiedName + ".pimpA0").isEmpty)
     assert(C._conversions(A.qualifiedName + ".pimpA3").isEmpty)
     assert(C._conversions(A.qualifiedName + ".pimpA4").isEmpty)
     assert(C._conversions(A.qualifiedName + ".pimpA7").isEmpty)
-
-    // def convToPimpedA(x: Int)           // pimpA0: no constraints, SHADOWED
-    conv = C._conversion(A.qualifiedName + ".pimpA0")
-    assert(conv.members.length == 1)
-    assert(conv.constraints.length == 0)
-    assert(conv._member("convToPimpedA").byConversion.get.isShadowed)
-    assert(conv._member("convToPimpedA").resultType.name == "Int")
 
     // def convToNumericA: Int             // pimpA1: no constraints
     conv = C._conversion(A.qualifiedName + ".pimpA1")
@@ -158,7 +140,6 @@ object Test extends ScaladocModelTest {
     conv = C._conversion(A.qualifiedName + ".pimpA5")
     assert(conv.members.length == 1)
     assert(conv.constraints.length == 0)
-    assert(conv._member("convToPimpedA").byConversion.get.isShadowed)
     assert(conv._member("convToPimpedA").resultType.name == "Bar[Foo[Int]]")
 
     // def convToMyNumericA: Int           // pimpA6: (if showAll is set) with a constraint that there is x: MyNumeric[Int] implicit in scope
@@ -172,17 +153,11 @@ object Test extends ScaladocModelTest {
     val D = base._class("D")
 
     // these conversions should not affect D
+    assert(D._conversions(A.qualifiedName + ".pimpA0").isEmpty)
     assert(D._conversions(A.qualifiedName + ".pimpA2").isEmpty)
     assert(D._conversions(A.qualifiedName + ".pimpA3").isEmpty)
     assert(D._conversions(A.qualifiedName + ".pimpA4").isEmpty)
     assert(D._conversions(A.qualifiedName + ".pimpA7").isEmpty)
-
-    // def convToPimpedA(x: String)        // pimpA0: no constraints, SHADOWED
-    conv = D._conversion(A.qualifiedName + ".pimpA0")
-    assert(conv.members.length == 1)
-    assert(conv.constraints.length == 0)
-    assert(conv._member("convToPimpedA").byConversion.get.isShadowed)
-    assert(conv._member("convToPimpedA").resultType.name == "String")
 
     // def convToNumericA: String          // pimpA1: (if showAll is set) with a constraint that there is x: Numeric[String] implicit in scope
     conv = D._conversion(A.qualifiedName + ".pimpA1")
@@ -194,7 +169,6 @@ object Test extends ScaladocModelTest {
     conv = D._conversion(A.qualifiedName + ".pimpA5")
     assert(conv.members.length == 1)
     assert(conv.constraints.length == 0)
-    assert(conv._member("convToPimpedA").byConversion.get.isShadowed)
     assert(conv._member("convToPimpedA").resultType.name == "Bar[Foo[String]]")
 
     // def convToMyNumericA: String        // pimpA6: (if showAll is set) with a constraint that there is x: MyNumeric[String] implicit in scope

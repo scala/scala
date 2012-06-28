@@ -4,6 +4,7 @@ package scala.tools.selectivecps
 
 import scala.tools.nsc.Global
 import scala.tools.nsc.typechecker.Modes
+import scala.tools.nsc.MissingRequirementError
 
 abstract class CPSAnnotationChecker extends CPSUtils with Modes {
   val global: Global
@@ -356,8 +357,9 @@ abstract class CPSAnnotationChecker extends CPSUtils with Modes {
      *  for a tree.  All this should do is add annotations. */
 
     override def addAnnotations(tree: Tree, tpe: Type): Type = {
+      import scala.util.control._
       if (!cpsEnabled) {
-        if (hasCpsParamTypes(tpe))
+        if (Exception.failAsValue(classOf[MissingRequirementError])(false)(hasCpsParamTypes(tpe)))
           global.reporter.error(tree.pos, "this code must be compiled with the Scala continuations plugin enabled")
         return tpe
       }

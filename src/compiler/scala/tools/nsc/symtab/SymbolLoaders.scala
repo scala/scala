@@ -12,7 +12,7 @@ import scala.tools.nsc.util.{ ClassPath }
 import classfile.ClassfileParser
 import reflect.internal.Flags._
 import reflect.internal.MissingRequirementError
-import util.Statistics._
+import reflect.internal.util.Statistics
 import scala.tools.nsc.io.{ AbstractFile, MsilFile }
 
 /** This class ...
@@ -23,6 +23,7 @@ import scala.tools.nsc.io.{ AbstractFile, MsilFile }
 abstract class SymbolLoaders {
   val global: Global
   import global._
+  import SymbolLoadersStats._
 
   protected def enterIfNew(owner: Symbol, member: Symbol, completer: SymbolLoader): Symbol = {
     assert(owner.info.decls.lookup(member.name) == NoSymbol, owner.fullName + "." + member.name)
@@ -236,7 +237,7 @@ abstract class SymbolLoaders {
     protected def description = "class file "+ classfile.toString
 
     protected def doComplete(root: Symbol) {
-      val start = startTimer(classReadNanos)
+      val start = Statistics.startTimer(classReadNanos)
       classfileParser.parse(classfile, root)
       if (root.associatedFile eq null) {
         root match {
@@ -248,7 +249,7 @@ abstract class SymbolLoaders {
             debuglog("Not setting associatedFile to %s because %s is a %s".format(classfile, root.name, root.shortSymbolClass))
         }
       }
-      stopTimer(classReadNanos, start)
+      Statistics.stopTimer(classReadNanos, start)
     }
     override def sourcefile: Option[AbstractFile] = classfileParser.srcfile
   }
@@ -283,4 +284,9 @@ abstract class SymbolLoaders {
   /** used from classfile parser to avoid cyclies */
   var parentsLevel = 0
   var pendingLoadActions: List[() => Unit] = Nil
+}
+
+object SymbolLoadersStats {
+  import reflect.internal.TypesStats.typerNanos
+  val classReadNanos = Statistics.newSubTimer  ("time classfilereading", typerNanos)
 }

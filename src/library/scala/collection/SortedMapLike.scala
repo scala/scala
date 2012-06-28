@@ -83,6 +83,14 @@ self =>
     override def rangeImpl(from : Option[A], until : Option[A]): SortedMap[A, C] = self.rangeImpl(from, until).mapValues(f)
   }
   
+  /** Adds a number of elements provided by a traversable object
+   *  and returns a new collection with the added elements.
+   *
+   *  @param xs     the traversable object.
+   */
+  override def ++[B1 >: B](xs: GenTraversableOnce[(A, B1)]): SortedMap[A, B1] =
+    ((repr: SortedMap[A, B1]) /: xs.seq) (_ + _)
+  
 }
 
 
