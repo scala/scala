@@ -72,4 +72,19 @@ self =>
     for (e <- elems) m = m + e
     m
   }
+  
+  override def filterKeys(p: A => Boolean): SortedMap[A, B] = new FilteredKeys(p) with SortedMap.Default[A, B] {
+    implicit def ordering: Ordering[A] = self.ordering
+    override def rangeImpl(from : Option[A], until : Option[A]): SortedMap[A, B] = self.rangeImpl(from, until).filterKeys(p)
+  }
+  
+  override def mapValues[C](f: B => C): SortedMap[A, C] = new MappedValues(f) with SortedMap.Default[A, C] {
+    implicit def ordering: Ordering[A] = self.ordering
+    override def rangeImpl(from : Option[A], until : Option[A]): SortedMap[A, C] = self.rangeImpl(from, until).mapValues(f)
+  }
+  
 }
+
+
+
+
