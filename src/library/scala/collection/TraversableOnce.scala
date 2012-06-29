@@ -240,21 +240,21 @@ trait TraversableOnce[+A] extends Any with GenTraversableOnce[A] {
 
   def toTraversable: Traversable[A]
 
-  def toList: List[A] = convertTo[List]
+  def toList: List[A] = to[List]
 
   def toIterable: Iterable[A] = toStream
 
   def toSeq: Seq[A] = toStream
 
-  def toIndexedSeq: immutable.IndexedSeq[A] = convertTo[immutable.IndexedSeq]
+  def toIndexedSeq: immutable.IndexedSeq[A] = to[immutable.IndexedSeq]
 
-  def toBuffer[B >: A]: mutable.Buffer[B] = convertTo[ArrayBuffer].asInstanceOf[mutable.Buffer[B]]
+  def toBuffer[B >: A]: mutable.Buffer[B] = to[ArrayBuffer].asInstanceOf[mutable.Buffer[B]]
 
-  def toSet[B >: A]: immutable.Set[B] = convertTo[immutable.Set].asInstanceOf[immutable.Set[B]]
+  def toSet[B >: A]: immutable.Set[B] = to[immutable.Set].asInstanceOf[immutable.Set[B]]
 
-  def toVector: Vector[A] = convertTo[Vector]
+  def toVector: Vector[A] = to[Vector]
 
-  def convertTo[Col[_]](implicit cbf: CanBuildFrom[Nothing, A, Col[A @uV]]): Col[A @uV] = {
+  def to[Col[_]](implicit cbf: CanBuildFrom[Nothing, A, Col[A @uV]]): Col[A @uV] = {
     val b = cbf()
     b ++= seq
     b.result
