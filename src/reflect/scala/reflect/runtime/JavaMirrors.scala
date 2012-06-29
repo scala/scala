@@ -972,6 +972,7 @@ trait JavaMirrors extends internal.SymbolTable with api.JavaUniverse { self: Sym
       case ExistentialType(_, rtpe) => typeToJavaClass(rtpe)
       case TypeRef(_, ArrayClass, List(elemtpe)) => jArrayClass(typeToJavaClass(elemtpe))
       case TypeRef(_, sym: ClassSymbol, _) => classToJava(sym.asClassSymbol)
+      case tpe @ TypeRef(_, sym: AliasTypeSymbol, _) => typeToJavaClass(tpe.dealias)
       case _ => throw new NoClassDefFoundError("no Java class corresponding to "+tpe+" found")
     }
   }

@@ -11,9 +11,8 @@ trait GenTypes {
    *  Reify a type.
    *  For internal use only, use ``reified'' instead.
    */
-  def reifyType(tpe0: Type): Tree = {
-    assert(tpe0 != null, "tpe is null")
-    val tpe = tpe0.dealias
+  def reifyType(tpe: Type): Tree = {
+    assert(tpe != null, "tpe is null")
 
     if (tpe.isErroneous)
       CannotReifyErroneousReifee(tpe)
@@ -29,9 +28,9 @@ trait GenTypes {
     if (spliced != EmptyTree)
       return spliced
 
-    val tsym = tpe.typeSymbol
+    val tsym = tpe.typeSymbolDirect
     if (tsym.isClass && tpe == tsym.typeConstructor && tsym.isStatic)
-      Select(Select(reify(tpe.typeSymbol), nme.asTypeSymbol), nme.asTypeConstructor)
+      Select(Select(reify(tsym), nme.asTypeSymbol), nme.asTypeConstructor)
     else tpe match {
       case tpe @ NoType =>
         reifyMirrorObject(tpe)
