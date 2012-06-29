@@ -96,8 +96,8 @@ class Base extends Universe { self =>
   class Type extends TypeBase { def typeSymbol: Symbol = NoSymbol }
   implicit val TypeTagg = ClassTag[Type](classOf[Type])
 
-  val NoType = new Type
-  val NoPrefix = new Type
+  val NoType = new Type { override def toString = "NoType" }
+  val NoPrefix = new Type { override def toString = "NoPrefix" }
 
   class SingletonType extends Type
   implicit val SingletonTypeTag = ClassTag[SingletonType](classOf[SingletonType])
