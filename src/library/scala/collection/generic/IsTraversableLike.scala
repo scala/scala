@@ -18,14 +18,12 @@ package generic
  *
  *  Example usage,
  * {{{
- *    import scala.collection.generic.{ CanBuildFrom, FromRepr, HasElem }
- *
- *    class FilterMapImpl[A, Repr](val r : Repr)(implicit hasElem : HasElem[Repr, A]) {
- *      def filterMap[B, That](f : A => Option[B])
- *        (implicit cbf : CanBuildFrom[Repr, B, That]) : That = r.flatMap(f(_).toSeq)
+ *    class FilterMapImpl[A, Repr](val r: GenTraversableLike[A, Repr]) {
+ *      final def filterMap[B, That](f: A => Option[B])(implicit cbf: CanBuildFrom[Repr, B, That]): That =
+ *        r.flatMap(f(_).toSeq)
  *    }
- *
- *    implicit def filterMap[Repr : FromRepr](r : Repr) = new FilterMapImpl(r)
+ *    implicit def filterMap[Repr, A](r: Repr)(implicit fr: IsTraversableOnce[Repr]): FilterMapImpl[fr.A,Repr] =
+ *      new FilterMapImpl(fr.conversion(r))
  *
  *    val l = List(1, 2, 3, 4, 5)
  *    List(1, 2, 3, 4, 5) filterMap (i => if(i % 2 == 0) Some(i) else None)
@@ -33,24 +31,28 @@ package generic
  * }}}
  *
  * @author Miles Sabin
+ * @author J. Suereth
  * @since 2.10
  */
-trait FromRepr[Repr] {
+trait IsTraversableLike[Repr] {
+  /** The type of elements we can traverse over. */
   type A
-  val hasElem: HasElem[Repr, A]
+  /** A conversion from the representation type `Repr` to a `GenTraversableLike[A,Repr]`. */
+  val conversion: Repr => GenTraversableLike[A, Repr]
 }
 
-object FromRepr {
+object IsTraversableLike {
   import language.higherKinds
 
-  implicit val stringFromRepr : FromRepr[String] { type A = Char } = new FromRepr[String] {
-    type A = Char
-    val hasElem = implicitly[HasElem[String, Char]]
-  }
+  implicit val stringRepr: IsTraversableLike[String] { type A = Char } =
+    new IsTraversableLike[String] {
+      type A = Char
+      val conversion = implicitly[String => GenTraversableLike[Char, String]]
+    }
 
-  implicit def genTraversableLikeFromRepr[C[_], A0]
-    (implicit hasElem0: HasElem[C[A0], A0]) : FromRepr[C[A0]] { type A = A0 } = new FromRepr[C[A0]] {
+  implicit def genTraversableLikeRepr[C[_], A0](implicit conv: C[A0] => GenTraversableLike[A0,C[A0]]): IsTraversableLike[C[A0]] { type A = A0 } = 
+    new IsTraversableLike[C[A0]] {
       type A = A0
-      val hasElem = hasElem0
+      val conversion = conv
     }
 }
