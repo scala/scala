@@ -24,5 +24,3 @@ true
 ClassTag[class scala.runtime.Null$]
 true
 ClassTag[class scala.runtime.Nothing$]
-true
-ClassTag[class java.lang.String]

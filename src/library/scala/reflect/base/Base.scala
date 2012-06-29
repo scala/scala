@@ -420,7 +420,6 @@ class Base extends Universe { self =>
   lazy val NullTpe    = TypeRef(ScalaPrefix, NullClass, Nil)
   lazy val ObjectTpe  = TypeRef(JavaLangPrefix, ObjectClass, Nil)
   lazy val AnyRefTpe  = ObjectTpe
-  lazy val StringTpe  = TypeRef(JavaLangPrefix, StringClass, Nil)
 
   private var nodeCount = 0 // not synchronized
 
