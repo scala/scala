@@ -1221,7 +1221,10 @@ trait Macros extends scala.tools.reflect.FastTrack with Traces {
             case ex: Throwable =>
               None
           }
-        } getOrElse realex.getMessage
+        } getOrElse {
+          val msg = realex.getMessage
+          if (msg != null) msg else realex.getClass.getName
+        }
         fail(typer, expandee, msg = "exception during macro expansion: " + message)
     }
   }
