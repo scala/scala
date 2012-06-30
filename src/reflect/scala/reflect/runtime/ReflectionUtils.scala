@@ -37,12 +37,17 @@ object ReflectionUtils {
     systemProperties find (_._1 endsWith ".boot.class.path") map (_._2) getOrElse ""
   )
 
-  def show(cl: ClassLoader) = {
+  def show(cl: ClassLoader): String = {
+    def isAbstractFileClassLoader(clazz: Class[_]): Boolean = {
+      if (clazz == null) return false
+      if (clazz.getName == "scala.tools.nsc.interpreter.AbstractFileClassLoader") return true
+      return isAbstractFileClassLoader(clazz.getSuperclass)
+    }
     def inferClasspath(cl: ClassLoader): String = cl match {
       case cl: java.net.URLClassLoader =>
-        "[" + (cl.getURLs mkString ",") + "]"
-      case cl if cl != null && cl.getClass.getName == "scala.tools.nsc.interpreter.AbstractFileClassLoader" =>
-        "[" + cl.asInstanceOf[{val root: scala.reflect.internal.AbstractFileApi}].root + "] and " + inferClasspath(cl.getParent)
+        (cl.getURLs mkString ",")
+      case cl if cl != null && isAbstractFileClassLoader(cl.getClass) =>
+        cl.asInstanceOf[{val root: scala.reflect.internal.AbstractFileApi}].root.canonicalPath
       case null =>
         inferBootClasspath
       case _ =>
@@ -50,7 +55,7 @@ object ReflectionUtils {
     }
     cl match {
       case cl if cl != null =>
-        "%s of type %s with classpath %s".format(cl, cl.getClass, inferClasspath(cl))
+        "%s of type %s with classpath [%s] and parent being %s".format(cl, cl.getClass, inferClasspath(cl), show(cl.getParent))
       case null =>
         "primordial classloader with boot classpath [%s]".format(inferClasspath(cl))
     }

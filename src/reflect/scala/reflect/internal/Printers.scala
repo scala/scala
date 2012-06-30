@@ -10,6 +10,7 @@ package internal
 
 import java.io.{ OutputStream, PrintWriter, StringWriter, Writer }
 import Flags._
+import compat.Platform.EOL
 
 trait Printers extends api.Printers { self: SymbolTable =>
 
@@ -65,6 +66,7 @@ trait Printers extends api.Printers { self: SymbolTable =>
     printTypes = settings.printtypes.value
     printIds = settings.uniqid.value
     printKinds = settings.Yshowsymkinds.value
+    printMirrors = false // typically there's no point to print mirrors inside the compiler, as there is only one mirror there
     protected def doPrintPositions = settings.Xprintpos.value
 
     def indent() = indentMargin += indentStep
@@ -477,22 +479,61 @@ trait Printers extends api.Printers { self: SymbolTable =>
     def flush = { /* do nothing */ }
   }
 
-  // provides footnotes for types
-  private var typeCounter = 0
-  private val typeMap = collection.mutable.WeakHashMap[Type, Int]()
-
   def newRawTreePrinter(writer: PrintWriter): RawTreePrinter = new RawTreePrinter(writer)
   def newRawTreePrinter(stream: OutputStream): RawTreePrinter = newRawTreePrinter(new PrintWriter(stream))
   def newRawTreePrinter(): RawTreePrinter = newRawTreePrinter(new PrintWriter(ConsoleWriter))
 
+  // provides footnotes for types and mirrors
+  import scala.collection.mutable.{Map, WeakHashMap, SortedSet}
+  private val footnoteIndex = new FootnoteIndex
+  private class FootnoteIndex {
+    private val index = Map[Class[_], WeakHashMap[Any, Int]]()
+    private def classIndex[T: ClassTag] = index.getOrElseUpdate(classTag[T].runtimeClass, WeakHashMap[Any, Int]())
+    private val counters = Map[Class[_], Int]()
+    private def nextCounter[T: ClassTag] = {
+      val clazz = classTag[T].runtimeClass
+      counters.getOrElseUpdate(clazz, 0)
+      counters(clazz) = counters(clazz) + 1
+      counters(clazz)
+    }
+
+    def mkFootnotes() = new Footnotes
+    class Footnotes {
+      private val footnotes = Map[Class[_], SortedSet[Int]]()
+      private def classFootnotes[T: ClassTag] = footnotes.getOrElseUpdate(classTag[T].runtimeClass, SortedSet[Int]())
+
+      def put[T: ClassTag](any: T): Int = {
+        val index = classIndex[T].getOrElseUpdate(any, nextCounter[T])
+        classFootnotes[T] += index
+        index
+      }
+
+      def get[T: ClassTag]: List[(Int, Any)] =
+        classFootnotes[T].toList map (fi => (fi, classIndex[T].find{ case (any, ii) => ii == fi }.get._1))
+
+      def print[T: ClassTag](printer: Printers.super.TreePrinter): Unit = {
+        val footnotes = get[T]
+        if (footnotes.nonEmpty) {
+          printer.print(EOL)
+          footnotes.zipWithIndex foreach {
+            case ((fi, any), ii) =>
+              printer.print("[", fi, "] ", any)
+              if (ii < footnotes.length - 1) printer.print(EOL)
+          }
+        }
+      }
+    }
+  }
+
   // emits more or less verbatim representation of the provided tree
   class RawTreePrinter(out: PrintWriter) extends super.TreePrinter {
     private var depth = 0
-    private var footnotes = collection.mutable.Map[Int, Type]()
-    private var printingFootnotes = false
     private var printTypesInFootnotes = true
+    private var printingFootnotes = false
+    private var footnotes = footnoteIndex.mkFootnotes()
 
     def print(args: Any*): Unit = {
+      // don't print type footnotes if the argument is a mere type
       if (depth == 0 && args.length == 1 && args(0) != null && args(0).isInstanceOf[Type])
         printTypesInFootnotes = false
 
@@ -544,14 +585,15 @@ trait Printers extends api.Printers { self: SymbolTable =>
           else print(sym.name)
           if (printIds) print("#", sym.id)
           if (printKinds) print("#", sym.abbreviatedKindString)
+          if (printMirrors) print("%M", footnotes.put[MirrorOf[_]](mirrorThatLoaded(sym)))
         case NoType =>
           print("NoType")
         case NoPrefix =>
           print("NoPrefix")
-        case tpe: Type if printTypesInFootnotes && !printingFootnotes =>
-          val index = typeMap.getOrElseUpdate(tpe, { typeCounter += 1; typeCounter })
-          footnotes(index) = tpe
-          print("[", index, "]")
+        case tpe: Type =>
+          val defer = printTypesInFootnotes && !printingFootnotes
+          if (defer) print("[", footnotes.put(tpe), "]")
+          else printProduct(tpe.asInstanceOf[Product])
         case mods: Modifiers =>
           print("Modifiers(")
           if (mods.flags != NoFlags || mods.privateWithin != tpnme.EMPTY || mods.annotations.nonEmpty) print(show(mods.flags))
@@ -569,16 +611,11 @@ trait Printers extends api.Printers { self: SymbolTable =>
           out.print(arg)
       }
       depth -= 1
-      if (depth == 0 && footnotes.nonEmpty && !printingFootnotes) {
+      if (depth == 0 && !printingFootnotes) {
         printingFootnotes = true
-        out.println()
-        val typeIndices = footnotes.keys.toList.sorted
-        typeIndices.zipWithIndex foreach {
-          case (typeIndex, i) =>
-            print("[" + typeIndex + "] ")
-            print(footnotes(typeIndex))
-            if (i < typeIndices.length - 1) out.println()
-        }
+        footnotes.print[Type](this)
+        footnotes.print[MirrorOf[_]](this)
+        printingFootnotes = false
       }
     }
 
