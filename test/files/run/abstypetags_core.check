@@ -19,6 +19,10 @@ TypeTag[Unit]
 true
 TypeTag[Any]
 true
+TypeTag[AnyVal]
+true
+TypeTag[AnyRef]
+true
 TypeTag[java.lang.Object]
 true
 TypeTag[Null]

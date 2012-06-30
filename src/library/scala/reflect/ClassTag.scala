@@ -79,8 +79,8 @@ object ClassTag {
   val Unit    : ClassTag[scala.Unit]       = new ClassTag[scala.Unit]{ def runtimeClass = java.lang.Void.TYPE; private def readResolve() = ClassTag.Unit }
   val Any     : ClassTag[scala.Any]        = new ClassTag[scala.Any]{ def runtimeClass = ObjectTYPE; private def readResolve() = ClassTag.Any }
   val Object  : ClassTag[java.lang.Object] = new ClassTag[java.lang.Object]{ def runtimeClass = ObjectTYPE; private def readResolve() = ClassTag.Object }
-  val AnyVal  : ClassTag[scala.AnyVal]     = new ClassTag[scala.AnyVal]{ def runtimeClass = ObjectTYPE; private def readResolve() = ClassTag.AnyVal }
-  val AnyRef  : ClassTag[scala.AnyRef]     = new ClassTag[scala.AnyRef]{ def runtimeClass = ObjectTYPE; private def readResolve() = ClassTag.AnyRef }
+  val AnyVal  : ClassTag[scala.AnyVal]     = ClassTag.Object.asInstanceOf[ClassTag[scala.AnyVal]]
+  val AnyRef  : ClassTag[scala.AnyRef]     = ClassTag.Object.asInstanceOf[ClassTag[scala.AnyRef]]
   val Nothing : ClassTag[scala.Nothing]    = new ClassTag[scala.Nothing]{ def runtimeClass = NothingTYPE; private def readResolve() = ClassTag.Nothing }
   val Null    : ClassTag[scala.Null]       = new ClassTag[scala.Null]{ def runtimeClass = NullTYPE; private def readResolve() = ClassTag.Null }
 
