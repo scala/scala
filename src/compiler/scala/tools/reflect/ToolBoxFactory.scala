@@ -2,7 +2,6 @@ package scala.tools
 package reflect
 
 import scala.tools.nsc.reporters._
-import scala.tools.nsc.ReflectGlobal
 import scala.tools.nsc.CompilerCommand
 import scala.tools.nsc.Global
 import scala.tools.nsc.typechecker.Modes
