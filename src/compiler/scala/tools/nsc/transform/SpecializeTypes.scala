@@ -1366,7 +1366,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
 
     override def transform(tree: Tree): Tree =
       reportError { transform1(tree) } {_ => tree}
-    
+
     def transform1(tree: Tree) = {
       val symbol = tree.symbol
 
@@ -1437,7 +1437,10 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
                 localTyper.typedOperator(atPos(tree.pos)(tree1)) // being polymorphic, it must be a method
               }
 
-            case None => super.transform(tree)
+            case None =>
+              treeCopy.TypeApply(tree, treeCopy.Select(sel, qual1, name), super.transformTrees(targs))
+              // See pos/exponential-spec.scala - can't call transform on the whole tree again.
+              // super.transform(tree)
           }
 
         case Select(Super(_, _), name) if illegalSpecializedInheritance(currentClass) =>
