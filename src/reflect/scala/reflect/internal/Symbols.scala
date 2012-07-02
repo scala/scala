@@ -10,6 +10,7 @@ import scala.collection.{ mutable, immutable }
 import scala.collection.mutable.ListBuffer
 import util.Statistics
 import Flags._
+import base.Attachments
 
 trait Symbols extends api.Symbols { self: SymbolTable =>
   import definitions._
@@ -176,7 +177,10 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     def rawowner = _rawowner
     def rawflags = _rawflags
 
-    private var rawpos = initPos
+    private var rawatt: Attachments { type Pos = Position } = initPos
+    def attachments = rawatt
+    def addAttachment(attachment: Any): this.type = { rawatt = rawatt.add(attachment); this }
+    def removeAttachment[T: ClassTag]: this.type = { rawatt = rawatt.remove[T]; this }
 
     val id = nextId() // identity displayed when -uniqid
     //assert(id != 3390, initName)
@@ -189,8 +193,9 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     def validTo = _validTo
     def validTo_=(x: Period) { _validTo = x}
 
-    def pos = rawpos
-    def setPos(pos: Position): this.type = { this.rawpos = pos; this }
+    def pos: Position = rawatt.pos
+    def pos_=(pos: Position): Unit = rawatt = (rawatt withPos pos)
+    def setPos(newpos: Position): this.type = { pos = newpos; this }
     def setName(name: Name): this.type = { this.name = asNameType(name) ; this }
 
     // Update the surrounding scopes
@@ -1616,6 +1621,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
           setInfo (this.info cloneInfo clone)
           setAnnotations this.annotations
       )
+      this.attachments.all.foreach(clone.addAttachment)
       if (clone.thisSym != clone)
         clone.typeOfThis = (clone.typeOfThis cloneInfo clone)
 
