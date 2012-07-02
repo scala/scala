@@ -1262,7 +1262,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
                   transformTrees(args))))
           } else super.transform(tree)
 
-        case TypeApply(Select(qual, name), targs)
+        case TypeApply(sel @ Select(qual, name), targs)
                 if (!specializedTypeVars(symbol.info).isEmpty && name != nme.CONSTRUCTOR) =>
           debuglog("checking typeapp for rerouting: " + tree + " with sym.tpe: " + symbol.tpe + " tree.tpe: " + tree.tpe)
           val qual1 = transform(qual)
@@ -1285,7 +1285,10 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
               log("rewrote " + tree + " to " + tree1)
               localTyper.typedOperator(atPos(tree.pos)(tree1)) // being polymorphic, it must be a method
 
-            case None => super.transform(tree)
+            case None =>
+              treeCopy.TypeApply(tree, treeCopy.Select(sel, qual1, name), super.transformTrees(targs))
+              // See pos/exponential-spec.scala - can't call transform on the whole tree again.
+              // super.transform(tree)
           }
 
         case Select(Super(_, _), name) if illegalSpecializedInheritance(currentClass) =>
