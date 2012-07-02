@@ -65,7 +65,6 @@ object ClassTag {
   private val NothingTYPE = classOf[scala.runtime.Nothing$]
   private val NullTYPE = classOf[scala.runtime.Null$]
   private val ObjectTYPE = classOf[java.lang.Object]
-  private val StringTYPE = classOf[java.lang.String]
 
   val Byte    : ClassTag[scala.Byte]       = new ClassTag[scala.Byte]{ def runtimeClass = java.lang.Byte.TYPE; private def readResolve() = ClassTag.Byte }
   val Short   : ClassTag[scala.Short]      = new ClassTag[scala.Short]{ def runtimeClass = java.lang.Short.TYPE; private def readResolve() = ClassTag.Short }
@@ -82,7 +81,6 @@ object ClassTag {
   val AnyRef  : ClassTag[scala.AnyRef]     = new ClassTag[scala.AnyRef]{ def runtimeClass = ObjectTYPE; private def readResolve() = ClassTag.AnyRef }
   val Nothing : ClassTag[scala.Nothing]    = new ClassTag[scala.Nothing]{ def runtimeClass = NothingTYPE; private def readResolve() = ClassTag.Nothing }
   val Null    : ClassTag[scala.Null]       = new ClassTag[scala.Null]{ def runtimeClass = NullTYPE; private def readResolve() = ClassTag.Null }
-  val String  : ClassTag[java.lang.String] = new ClassTag[java.lang.String]{ def runtimeClass = StringTYPE; private def readResolve() = ClassTag.String }
 
   def apply[T](runtimeClass1: jClass[_]): ClassTag[T] =
     runtimeClass1 match {
@@ -96,7 +94,6 @@ object ClassTag {
       case java.lang.Boolean.TYPE   => ClassTag.Boolean.asInstanceOf[ClassTag[T]]
       case java.lang.Void.TYPE      => ClassTag.Unit.asInstanceOf[ClassTag[T]]
       case ObjectTYPE               => ClassTag.Object.asInstanceOf[ClassTag[T]]
-      case StringTYPE               => ClassTag.String.asInstanceOf[ClassTag[T]]
       case _                        => new ClassTag[T]{ def runtimeClass = runtimeClass1 }
     }
 

@@ -23,10 +23,8 @@ trait GenSymbols {
   def symtab: SymbolTable = state.symtab
 
   /** Reify a reference to a symbol */
-  def reifySymRef(sym0: Symbol): Tree = {
-    assert(sym0 != null, "sym is null")
-    val sym = sym0.dealias
-
+  def reifySymRef(sym: Symbol): Tree = {
+    assert(sym != null, "sym is null")
     if (sym == NoSymbol)
       mirrorSelect(nme.NoSymbol)
     else if (sym.isRootPackage)
