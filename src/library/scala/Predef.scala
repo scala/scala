@@ -100,11 +100,19 @@ object Predef extends LowPriorityImplicits {
   // def AnyRef = scala.AnyRef
 
   // Manifest types, companions, and incantations for summoning
+  @annotation.implicitNotFound(msg = "No ClassManifest available for ${T}.")
+  @deprecated("Use scala.reflect.ClassTag instead", "2.10.0")
   type ClassManifest[T] = scala.reflect.ClassManifest[T]
+  @deprecated("This notion doesn't have a corresponding concept in 2.10, because scala.reflect.runtime.universe.TypeTag can capture arbitrary types. Use type tags instead of manifests, and there will be no need in opt manifests.", "2.10.0")
   type OptManifest[T]   = scala.reflect.OptManifest[T]
+  @annotation.implicitNotFound(msg = "No Manifest available for ${T}.")
+  @deprecated("Use scala.reflect.ClassTag (to capture erasures) or scala.reflect.runtime.universe.TypeTag (to capture types) or both instead", "2.10.0")
   type Manifest[T]      = scala.reflect.Manifest[T]
+  @deprecated("Use scala.reflect.ClassTag instead", "2.10.0")
   val ClassManifest     = scala.reflect.ClassManifest
+  @deprecated("Use scala.reflect.ClassTag (to capture erasures) or scala.reflect.runtime.universe.TypeTag (to capture types) or both instead", "2.10.0")
   val Manifest          = scala.reflect.Manifest
+  @deprecated("This notion doesn't have a corresponding concept in 2.10, because scala.reflect.runtime.universe.TypeTag can capture arbitrary types. Use type tags instead of manifests, and there will be no need in opt manifests.", "2.10.0")
   val NoManifest        = scala.reflect.NoManifest
 
   def manifest[T](implicit m: Manifest[T])           = m

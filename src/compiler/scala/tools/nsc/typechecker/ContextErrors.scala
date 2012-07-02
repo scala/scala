@@ -106,7 +106,7 @@ trait ContextErrors {
         def errMsg = {
           val paramName = param.name
           val paramTp   = param.tpe
-          paramTp.typeSymbol match {
+          paramTp.typeSymbolDirect match {
               case ImplicitNotFoundMsg(msg) => msg.format(paramName, paramTp)
               case _ =>
                 "could not find implicit value for "+
