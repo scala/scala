@@ -539,7 +539,6 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     def isConcreteClass         = false
     def isImplClass             = false   // the implementation class of a trait
     def isJavaInterface         = false
-    def isModuleClass           = false
     def isNumericValueClass     = false
     def isPrimitiveValueClass   = false
     def isRefinementClass       = false
