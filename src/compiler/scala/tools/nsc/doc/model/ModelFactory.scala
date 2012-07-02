@@ -554,7 +554,10 @@ class ModelFactory(val global: Global, val settings: doc.Settings) {
           new DocTemplateImpl(bSym, inTpl) with Class {
             def valueParams =
               // we don't want params on a class (non case class) signature
-              if (isCaseClass) List(sym.constrParamAccessors map (makeValueParam(_, this)))
+              if (isCaseClass) primaryConstructor match {
+                case Some(const) => const.sym.paramss map (_ map (makeValueParam(_, this)))
+                case None => List()
+              }
               else List.empty
             val constructors =
               members collect { case d: Constructor => d }
