@@ -1,8 +1,12 @@
-package scala.tools.nsc
+package scala.tools
+package reflect
 
-import tools.util.PathResolver
-import util.ClassPath.DefaultJavaContext
-import util.ScalaClassLoader
+import scala.tools.nsc.Driver
+import scala.tools.nsc.Global
+import scala.tools.nsc.Settings
+import scala.tools.nsc.util.ClassPath.DefaultJavaContext
+import scala.tools.nsc.util.ScalaClassLoader
+import scala.tools.util.PathResolver
 
 object ReflectMain extends Driver {
 
