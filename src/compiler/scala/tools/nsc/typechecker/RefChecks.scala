@@ -1150,7 +1150,7 @@ abstract class RefChecks extends InfoTransform with reflect.internal.transform.R
             nonSensiblyNew()
           else if (isNew(args.head) && (receiver.isEffectivelyFinal || isReferenceOp))   // object X ; X == new Y
             nonSensiblyNew()
-          else if (receiver.isEffectivelyFinal && !(receiver isSubClass actual)) {  // object X, Y; X == Y
+          else if (receiver.isEffectivelyFinal && !(receiver isSubClass actual) && !actual.isRefinementClass) {  // object X, Y; X == Y
             if (isEitherNullable)
               nonSensible("non-null ", false)
             else
