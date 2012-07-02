@@ -1438,24 +1438,28 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
      */
     def classBound: Type = {
       val tp = refinedType(info.parents, owner)
-      val thistp = tp.typeSymbol.thisType
-      val oldsymbuf = new ListBuffer[Symbol]
-      val newsymbuf = new ListBuffer[Symbol]
-      for (sym <- info.decls) {
-        // todo: what about public references to private symbols?
-        if (sym.isPublic && !sym.isConstructor) {
-          oldsymbuf += sym
-          newsymbuf += (
-            if (sym.isClass)
-              tp.typeSymbol.newAbstractType(sym.name.toTypeName, sym.pos).setInfo(sym.existentialBound)
-            else
-              sym.cloneSymbol(tp.typeSymbol))
+      // SI-4589 refinedType only creates a new refinement class symbol before erasure; afterwards
+      //         the first parent class is returned, to which we must not add members.
+      if (!phase.erasedTypes) {
+        val thistp = tp.typeSymbol.thisType
+        val oldsymbuf = new ListBuffer[Symbol]
+        val newsymbuf = new ListBuffer[Symbol]
+        for (sym <- info.decls) {
+          // todo: what about public references to private symbols?
+          if (sym.isPublic && !sym.isConstructor) {
+            oldsymbuf += sym
+            newsymbuf += (
+              if (sym.isClass)
+                tp.typeSymbol.newAbstractType(sym.name.toTypeName, sym.pos).setInfo(sym.existentialBound)
+              else
+                sym.cloneSymbol(tp.typeSymbol))
+          }
         }
-      }
-      val oldsyms = oldsymbuf.toList
-      val newsyms = newsymbuf.toList
-      for (sym <- newsyms) {
-        addMember(thistp, tp, sym modifyInfo (_ substThisAndSym(this, thistp, oldsyms, newsyms)))
+        val oldsyms = oldsymbuf.toList
+        val newsyms = newsymbuf.toList
+        for (sym <- newsyms) {
+          addMember(thistp, tp, sym modifyInfo (_ substThisAndSym(this, thistp, oldsyms, newsyms)))
+        }
       }
       tp
     }
