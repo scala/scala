@@ -1,0 +1,4 @@
+t5830.scala:6: error: unreachable code
+    case 'a' => println("b") // unreachable
+                       ^
+one error found
