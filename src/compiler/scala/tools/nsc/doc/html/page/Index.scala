@@ -14,7 +14,7 @@ import scala.collection._
 import scala.xml._
 import scala.util.parsing.json.{JSONObject, JSONArray}
 
-class Index(universe: doc.Universe, index: doc.Index) extends HtmlPage {
+class Index(universe: doc.Universe, val index: doc.Index) extends HtmlPage {
 
   def path = List("index.html")
 
