@@ -513,23 +513,25 @@ trait DocComments { self: Global =>
           tstr
       }
 
-      val aliasExpansions: List[Type] =
+      // the Boolean tells us whether we can normalize: if we found an actual type, then yes, we can normalize, else no,
+      // use the synthetic alias created for the variable
+      val aliasExpansions: List[(Type, Boolean)] =
         for (alias <- aliases) yield
           lookupVariable(alias.name.toString.substring(1), site) match {
             case Some(repl) =>
               val repl2 = cleanupVariable(repl)
               val tpe = getType(repl2, alias.name.toString)
-              if (tpe != NoType) tpe
+              if (tpe != NoType) (tpe, true)
               else {
                 val alias1 = alias.cloneSymbol(rootMirror.RootClass, alias.rawflags, newTypeName(repl2))
-                typeRef(NoPrefix, alias1, Nil)
+                (typeRef(NoPrefix, alias1, Nil), false)
               }
             case None =>
-              typeRef(NoPrefix, alias, Nil)
+              (typeRef(NoPrefix, alias, Nil), false)
           }
 
-      def subst(sym: Symbol, from: List[Symbol], to: List[Type]): Type =
-        if (from.isEmpty) sym.tpe
+      def subst(sym: Symbol, from: List[Symbol], to: List[(Type, Boolean)]): (Type, Boolean) =
+        if (from.isEmpty) (sym.tpe, false)
         else if (from.head == sym) to.head
         else subst(sym, from.tail, to.tail)
 
@@ -537,8 +539,9 @@ trait DocComments { self: Global =>
         def apply(tp: Type) = mapOver(tp) match {
           case tp1 @ TypeRef(pre, sym, args) if (sym.name.length > 1 && sym.name.startChar == '$') =>
             subst(sym, aliases, aliasExpansions) match {
-              case TypeRef(pre1, sym1, _) =>
-                typeRef(pre1, sym1, args)
+              case (TypeRef(pre1, sym1, _), canNormalize) =>
+                val tpe = typeRef(pre1, sym1, args)
+                if (canNormalize) tpe.normalize else tpe
               case _ =>
                 tp1
             }
