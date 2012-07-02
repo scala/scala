@@ -137,7 +137,6 @@ trait TypeTags { self: Universe =>
     val Object  : AbsTypeTag[java.lang.Object] = TypeTag.Object
     val Nothing : AbsTypeTag[scala.Nothing]    = TypeTag.Nothing
     val Null    : AbsTypeTag[scala.Null]       = TypeTag.Null
-    val String  : AbsTypeTag[java.lang.String] = TypeTag.String
 
     def apply[T](mirror1: MirrorOf[self.type], tpec1: TypeCreator): AbsTypeTag[T] =
       tpec1(mirror1) match {
@@ -154,7 +153,6 @@ trait TypeTags { self: Universe =>
         case ObjectTpe  => AbsTypeTag.Object.asInstanceOf[AbsTypeTag[T]]
         case NothingTpe => AbsTypeTag.Nothing.asInstanceOf[AbsTypeTag[T]]
         case NullTpe    => AbsTypeTag.Null.asInstanceOf[AbsTypeTag[T]]
-        case StringTpe  => AbsTypeTag.String.asInstanceOf[AbsTypeTag[T]]
         case _          => new AbsTypeTagImpl[T](mirror1.asInstanceOf[Mirror], tpec1)
       }
 
@@ -200,7 +198,6 @@ trait TypeTags { self: Universe =>
     val Object:  TypeTag[java.lang.Object] = new PredefTypeTag[java.lang.Object] (ObjectTpe,  _.TypeTag.Object)
     val Nothing: TypeTag[scala.Nothing]    = new PredefTypeTag[scala.Nothing]    (NothingTpe, _.TypeTag.Nothing)
     val Null:    TypeTag[scala.Null]       = new PredefTypeTag[scala.Null]       (NullTpe,    _.TypeTag.Null)
-    val String:  TypeTag[java.lang.String] = new PredefTypeTag[java.lang.String] (StringTpe,  _.TypeTag.String)
 
     def apply[T](mirror1: MirrorOf[self.type], tpec1: TypeCreator): TypeTag[T] =
       tpec1(mirror1) match {
@@ -217,7 +214,6 @@ trait TypeTags { self: Universe =>
         case ObjectTpe  => TypeTag.Object.asInstanceOf[TypeTag[T]]
         case NothingTpe => TypeTag.Nothing.asInstanceOf[TypeTag[T]]
         case NullTpe    => TypeTag.Null.asInstanceOf[TypeTag[T]]
-        case StringTpe  => TypeTag.String.asInstanceOf[TypeTag[T]]
         case _          => new TypeTagImpl[T](mirror1.asInstanceOf[Mirror], tpec1)
       }
 

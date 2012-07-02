@@ -35,7 +35,6 @@ trait Definitions extends api.StandardDefinitions {
   lazy val AnyRefTpe  = definitions.AnyRefClass.asType
   lazy val NothingTpe = definitions.NothingClass.asType
   lazy val NullTpe    = definitions.NullClass.asType
-  lazy val StringTpe  = definitions.StringClass.asType
 
   /** Since both the value parameter types and the result type may
    *  require access to the type parameter symbols, we model polymorphic

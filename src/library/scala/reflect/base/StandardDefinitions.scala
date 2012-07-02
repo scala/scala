@@ -27,7 +27,6 @@ trait StandardTypes {
 
   val NothingTpe: Type
   val NullTpe: Type
-  val StringTpe: Type
 }
 
 trait StandardDefinitions extends StandardTypes {

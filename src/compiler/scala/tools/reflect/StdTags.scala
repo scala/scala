@@ -12,7 +12,14 @@ import scala.reflect.runtime.{universe => ru}
 
 object StdTags {
   // root mirror is fine for these guys, since scala-library.jar is guaranteed to be reachable from the root mirror
-  lazy val tagOfString = ru.TypeTag.String
+  lazy val tagOfString = ru.TypeTag[String](
+    ru.rootMirror,
+    new TypeCreator {
+      def apply[U <: BaseUniverse with Singleton](m: MirrorOf[U]): U # Type = {
+        val u = m.universe
+        u.definitions.StringClass.asTypeConstructor
+      }
+    })
   lazy val tagOfListOfString = ru.TypeTag[List[String]](
     ru.rootMirror,
     new TypeCreator {

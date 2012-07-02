@@ -29,7 +29,7 @@ trait ExprUtils {
 
   def literal(x: Double) = Expr[Double](Literal(Constant(x)))(TypeTag.Double)
 
-  def literal(x: String) = Expr[String](Literal(Constant(x)))(TypeTag.String)
+  def literal(x: String) = Expr[String](Literal(Constant(x)))(TypeTag[String](definitions.StringClass.asTypeConstructor))
 
   def literal(x: Char) = Expr[Char](Literal(Constant(x)))(TypeTag.Char)
 }
