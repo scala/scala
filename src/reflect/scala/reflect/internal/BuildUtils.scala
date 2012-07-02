@@ -8,18 +8,26 @@ trait BuildUtils extends base.BuildUtils { self: SymbolTable =>
   class BuildImpl extends BuildBase {
 
     def selectType(owner: Symbol, name: String): TypeSymbol = {
-      val result = owner.info.decl(newTypeName(name))
-      if (result ne NoSymbol) result.asTypeSymbol
-      else MissingRequirementError.notFound("type %s in %s".format(name, owner.fullName))
+      var result = owner.info.decl(newTypeName(name))
+      result =
+        if (result ne NoSymbol) result
+        else
+          mirrorThatLoaded(owner).tryMissingHooks(owner, newTypeName(name)) orElse
+          MissingRequirementError.notFound("type %s in %s".format(name, owner.fullName))
+      result.asTypeSymbol
     }
 
     def selectTerm(owner: Symbol, name: String): TermSymbol = {
       val sym = owner.info.decl(newTermName(name))
-      val result =
+      var result =
         if (sym.isOverloaded) sym.suchThat(!_.isMethod)
         else sym
-      if (result ne NoSymbol) result.asTermSymbol
-      else MissingRequirementError.notFound("term %s in %s".format(name, owner.fullName))
+      result =
+        if (result ne NoSymbol) result.asTermSymbol
+        else
+          mirrorThatLoaded(owner).tryMissingHooks(owner, newTermName(name)) orElse
+          MissingRequirementError.notFound("term %s in %s".format(name, owner.fullName))
+      result.asTermSymbol
     }
 
     def selectOverloadedMethod(owner: Symbol, name: String, index: Int): MethodSymbol = {
