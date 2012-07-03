@@ -12,6 +12,29 @@ import scala.tools.nsc.symtab._
 import scala.reflect.internal.util.NoSourceFile
 
 /**
+ * Inliner balances two competing goals:
+ *   (a) aggressive inlining of:
+ *       (a.1) the apply methods of anonymous closures, so that their anon-classes can be eliminated;
+ *       (a.2) higher-order-methods defined in an external library, e.g. `Range.foreach()` among many others.
+ *   (b) circumventing the barrier to inter-library inlining that private accesses in the callee impose.
+ *
+ * Summing up the discussion in SI-5442 and SI-5891,
+ * the current implementation achieves to a large degree both goals above, and
+ * overcomes a problem exhibited by previous versions:
+ *
+ *   (1) Problem: Attempting to access a private member `p` at runtime resulting in an `IllegalAccessError`,
+ *                where `p` is defined in a library L, and is accessed from a library C (for Client),
+ *                where C was compiled against L', an optimized version of L where the inliner made `p` public at the bytecode level.
+ *                The only such members are fields, either synthetic or isParamAccessor, and thus having a dollar sign in their name
+ *                (the accesibility of methods and constructors isn't touched by the inliner).
+ *
+ * Thus we add one more goal to our list:
+ *   (c) Compile C (either optimized or not) against any of L or L',
+ *       so that it runs with either L or L' (in particular, compile against L' and run with L).
+ *
+ * The chosen strategy is described in some detail in the comments for `accessRequirements()` and `potentiallyPublicized()`.
+ * Documentation at http://lamp.epfl.ch/~magarcia/ScalaCompilerCornerReloaded/2011Q4/Inliner.pdf
+ *
  *  @author Iulian Dragos
  */
 abstract class Inliners extends SubComponent {
@@ -50,6 +73,8 @@ abstract class Inliners extends SubComponent {
     )
     def lookup(clazz: Symbol): Symbol = {
       // println("\t\tlooking up " + meth + " in " + clazz.fullName + " meth.owner = " + meth.owner)
+      assert(clazz != NoSymbol, "Walked up past Object.superClass looking for " + sym +
+                                ", most likely this reveals the TFA at fault (receiver and callee don't match).")
       if (sym.owner == clazz || isBottomType(clazz)) sym
       else sym.overridingSymbol(clazz) match {
         case NoSymbol  => if (sym.owner.isTrait) sym else lookup(clazz.superClass)
@@ -86,13 +111,27 @@ abstract class Inliners extends SubComponent {
     def name = phaseName
     val inliner = new Inliner
 
-    override def apply(c: IClass) {
-      inliner analyzeClass c
+    object iclassOrdering extends Ordering[IClass] {
+      def compare(a: IClass, b: IClass) = {
+        val sourceNamesComparison = (a.cunit.toString() compare b.cunit.toString())
+        if(sourceNamesComparison != 0) sourceNamesComparison
+        else {
+          val namesComparison = (a.toString() compare b.toString())
+          if(namesComparison != 0) namesComparison
+          else {
+            a.symbol.id compare b.symbol.id
+          }
+        }
+      }
     }
+    val queue = new mutable.PriorityQueue[IClass]()(iclassOrdering)
+
+    override def apply(c: IClass) { queue += c }
 
     override def run() {
       try {
         super.run()
+        for(c <- queue) { inliner analyzeClass c }
       } finally {
         inliner.clearCaches()
       }
@@ -138,7 +177,8 @@ abstract class Inliners extends SubComponent {
     private def warn(pos: Position, msg: String) = currentIClazz.cunit.inlinerWarning(pos, msg)
 
     val recentTFAs = mutable.Map.empty[Symbol, Tuple2[Boolean, analysis.MethodTFA]]
-    private def getRecentTFA(incm: IMethod): (Boolean, analysis.MethodTFA) = {
+
+    private def getRecentTFA(incm: IMethod, forceable: Boolean): (Boolean, analysis.MethodTFA) = {
 
         def containsRETURN(blocks: List[BasicBlock]) = blocks exists { bb => bb.lastInstruction.isInstanceOf[RETURN] }
 
@@ -154,7 +194,7 @@ abstract class Inliners extends SubComponent {
       var a: analysis.MethodTFA = null
       if(hasRETURN) { a = new analysis.MethodTFA(incm); a.run }
 
-      if(hasInline(incm.symbol)) { recentTFAs.put(incm.symbol, (hasRETURN, a)) }
+      if(forceable) { recentTFAs.put(incm.symbol, (hasRETURN, a)) }
 
       (hasRETURN, a)
     }
@@ -174,12 +214,22 @@ abstract class Inliners extends SubComponent {
       tfa.isOnWatchlist.clear()
     }
 
+    object imethodOrdering extends Ordering[IMethod] {
+      def compare(a: IMethod, b: IMethod) = {
+        val namesComparison = (a.toString() compare b.toString())
+        if(namesComparison != 0) namesComparison
+        else {
+          a.symbol.id compare b.symbol.id
+        }
+      }
+    }
+
     def analyzeClass(cls: IClass): Unit =
       if (settings.inline.value) {
         debuglog("Analyzing " + cls)
 
         this.currentIClazz = cls
-        val ms = cls.methods filterNot { _.symbol.isConstructor }
+        val ms = cls.methods filterNot { _.symbol.isConstructor } sorted imethodOrdering
         ms foreach { im =>
           if(hasInline(im.symbol)) {
             log("Not inlining into " + im.symbol.originalName.decode + " because it is marked @inline.")
@@ -221,7 +271,7 @@ abstract class Inliners extends SubComponent {
      *       The ensuing analysis of each candidate (performed by `analyzeInc()`)
      *       may result in a CFG isomorphic to that of the callee being inserted in place of the callsite
      *       (i.e. a CALL_METHOD instruction is replaced with a single-entry single-exit CFG,
-     *        a situation we call "successful inlining").
+     *        a substitution we call "successful inlining").
      *
      *   (3) following iterations have `relevantBBs` updated to focus on the inlined basic blocks and their successors only.
      *       Details in `MTFAGrowable.reinit()`
@@ -280,20 +330,23 @@ abstract class Inliners extends SubComponent {
       }
 
       /**
-          Decides whether it's feasible and desirable to inline the body of the method given by `concreteMethod`
-          at the program point given by `i` (a callsite). The boolean result indicates whether inlining was performed.
-
+       *  Decides whether it's feasible and desirable to inline the body of the method given by `concreteMethod`
+       *  at the program point given by `i` (a callsite). The boolean result indicates whether inlining was performed.
+       *
        */
       def analyzeInc(i: CALL_METHOD, bb: BasicBlock, receiver: Symbol, stackLength: Int, concreteMethod: Symbol): Boolean = {
+        assert(bb.toList contains i, "Candidate callsite does not belong to BasicBlock.")
+
         var inlined = false
-        val msym = i.method
+        val shouldWarn = hasInline(i.method)
 
-        def warnNoInline(reason: String) = {
-          if (hasInline(msym) && !caller.isBridge)
-            warn(i.pos, "Could not inline required method %s because %s.".format(msym.originalName.decode, reason))
-        }
+            def warnNoInline(reason: String) = {
+              if (shouldWarn) {
+                warn(i.pos, "Could not inline required method %s because %s.".format(i.method.originalName.decode, reason))
+              }
+            }
 
-        def isAvailable = icodes available concreteMethod.enclClass
+        var isAvailable = icodes available concreteMethod.enclClass
 
         if (!isAvailable && shouldLoadImplFor(concreteMethod, receiver)) {
           // Until r22824 this line was:
@@ -304,21 +357,23 @@ abstract class Inliners extends SubComponent {
           // was the proximate cause for SI-3882:
           //   error: Illegal index: 0 overlaps List((variable par1,LONG))
           //   error: Illegal index: 0 overlaps List((variable par1,LONG))
-          icodes.load(concreteMethod.enclClass)
+          isAvailable = icodes.load(concreteMethod.enclClass)
         }
 
-        def isCandidate = (
-             isClosureClass(receiver)
-          || concreteMethod.isEffectivelyFinal
-          || receiver.isEffectivelyFinal
-        )
-        def isApply     = concreteMethod.name == nme.apply
-        def isCountable = !(
-             isClosureClass(receiver)
-          || isApply
-          || isMonadicMethod(concreteMethod)
-          || receiver.enclosingPackage == definitions.RuntimePackage
-        )   // only count non-closures
+            def isCandidate = (
+                 isClosureClass(receiver)
+              || concreteMethod.isEffectivelyFinal
+              || receiver.isEffectivelyFinal
+            )
+
+            def isApply     = concreteMethod.name == nme.apply
+
+            def isCountable = !(
+                 isClosureClass(receiver)
+              || isApply
+              || isMonadicMethod(concreteMethod)
+              || receiver.enclosingPackage == definitions.RuntimePackage
+            )   // only count non-closures
 
         debuglog("Treating " + i
               + "\n\treceiver: " + receiver
@@ -327,42 +382,62 @@ abstract class Inliners extends SubComponent {
 
         if (isAvailable && isCandidate) {
           lookupIMethod(concreteMethod, receiver) match {
-            case Some(callee) =>
+
+            case Some(callee) if callee.hasCode =>
               val inc   = new IMethodInfo(callee)
               val pair  = new CallerCalleeInfo(caller, inc, fresh, inlinedMethodCount)
 
-              if (pair isStampedForInlining stackLength) {
-                retry = true
-                inlined = true
-                if (isCountable)
-                  count += 1
+               (pair isStampedForInlining stackLength) match {
 
-                pair.doInline(bb, i)
-                if (!inc.inline || inc.isMonadic)
-                  caller.inlinedCalls += 1
-                inlinedMethodCount(inc.sym) += 1
+                 case inlInfo if inlInfo.isSafe =>
 
-                /* Remove this method from the cache, as the calls-private relation
-                 * might have changed after the inlining.
-                 */
-                usesNonPublics -= m
-                recentTFAs     -= m.symbol
+                   (inlInfo: @unchecked) match {
+
+                     case FeasibleInline(accessNeeded, toBecomePublic) =>
+                       for(f <- toBecomePublic) {
+                         debuglog("Making public (synthetic) field-symbol: " + f)
+                         f setFlag Flags.notPRIVATE
+                         f setFlag Flags.notPROTECTED
+                       }
+                       // only add to `knownSafe` after all `toBecomePublic` fields actually made public.
+                       if(accessNeeded == NonPublicRefs.Public) { tfa.knownSafe += inc.sym }
+
+                     case InlineableAtThisCaller => ()
+
+                   }
+
+                   retry = true
+                   inlined = true
+                   if (isCountable) { count += 1 };
+
+                   pair.doInline(bb, i)
+                   if (!pair.isInlineForced || inc.isMonadic) { caller.inlinedCalls += 1 };
+                   inlinedMethodCount(inc.sym) += 1
+
+                   // Remove the caller from the cache (this inlining might have changed its calls-private relation).
+                   usesNonPublics -= m
+                   recentTFAs     -= m.symbol
+
+
+                 case DontInlineHere(msg) =>
+                   debuglog("inline failed, reason: " + msg)
+                   warnNoInline(msg)
+
+                 case NeverSafeToInline => ()
               }
-              else {
-                if (settings.debug.value)
-                  pair logFailure stackLength
 
-                warnNoInline(pair failureReason stackLength)
-              }
+            case Some(callee) =>
+              assert(!callee.hasCode, "The case clause right before this one should have handled this case.")
+              warnNoInline("callee (" + callee + ") has no code")
+              ()
+
             case None =>
               warnNoInline("bytecode was not available")
               debuglog("could not find icode\n\treceiver: " + receiver + "\n\tmethod: " + concreteMethod)
           }
+        } else {
+          warnNoInline(if(!isAvailable) "bytecode was not available" else "it can be overridden")
         }
-        else warnNoInline(
-          if (!isAvailable) "bytecode was not available"
-          else "it can be overridden"
-        )
 
         inlined
       }
@@ -398,6 +473,7 @@ abstract class Inliners extends SubComponent {
 
         tfa.reinit(m, staleOut.toList, splicedBlocks, staleIn)
         tfa.run
+
         staleOut.clear()
         splicedBlocks.clear()
         staleIn.clear()
@@ -491,11 +567,8 @@ abstract class Inliners extends SubComponent {
       def paramTypes    = sym.info.paramTypes
       def minimumStack  = paramTypes.length + 1
 
-      def inline        = hasInline(sym)
-      def noinline      = hasNoInline(sym)
-
       def isBridge      = sym.isBridge
-      def isInClosure   = isClosureClass(owner)
+      val isInClosure   = isClosureClass(owner)
       val isHigherOrder = isHigherOrderMethod(sym)
       def isMonadic     = isMonadicMethod(sym)
 
@@ -511,26 +584,143 @@ abstract class Inliners extends SubComponent {
       def isLarge       = length > MAX_INLINE_SIZE
       def isRecursive   = m.recursive
       def hasHandlers   = handlers.nonEmpty
+
+      def isSynchronized         = sym.hasFlag(Flags.SYNCHRONIZED)
       def hasNonFinalizerHandler = handlers exists {
         case _: Finalizer => true
         case _            => false
       }
 
-      // the number of inlined calls in 'm', used by 'shouldInline'
+      // the number of inlined calls in 'm', used by 'isScoreOK'
       var inlinedCalls = 0
 
       def addLocals(ls: List[Local])  = m.locals ++= ls
       def addLocal(l: Local)          = addLocals(List(l))
       def addHandlers(exhs: List[ExceptionHandler]) = m.exh = exhs ::: m.exh
+
+      /**
+       * This method inspects the callee's instructions, finding out the most restrictive accessibility implied by them.
+       *
+       * Rather than giving up upon encountering an access to a private field `p`, it provisorily admits `p` as "can-be-made-public", provided:
+       *   - `p` is being compiled as part of this compilation run, and
+       *   - `p` is synthetic or param-accessor.
+       *
+       * This method is side-effect free, in particular it lets the invoker decide
+       * whether the accessibility of the `toBecomePublic` fields should be changed or not.
+       */
+      def accessRequirements: AccessReq = {
+
+        var toBecomePublic: List[Symbol] = Nil
+
+        def check(sym: Symbol, cond: Boolean) =
+          if (cond) Private
+          else if (sym.isProtected) Protected
+          else Public
+
+        def canMakePublic(f: Symbol): Boolean =
+          (m.sourceFile ne NoSourceFile) &&
+          (f.isSynthetic || f.isParamAccessor) &&
+          { toBecomePublic = f :: toBecomePublic; true }
+
+        /* A safety check to consider as private, for the purposes of inlining, a public field that:
+         *   (1) is defined in an external library, and
+         *   (2) can be presumed synthetic (due to a dollar sign in its name).
+         * Such field was made public by `doMakePublic()` and we don't want to rely on that,
+         * because under other compilation conditions (ie no -optimize) that won't be the case anymore.
+         *
+         * This allows aggressive intra-library inlining (making public if needed)
+         * that does not break inter-library scenarios (see comment for `Inliners`).
+         *
+         * TODO handle more robustly the case of a trait var changed at the source-level from public to private[this]
+         *      (eg by having ICodeReader use unpickler, see SI-5442).
+         * */
+        def potentiallyPublicized(f: Symbol): Boolean = {
+          (m.sourceFile eq NoSourceFile) && f.name.containsChar('$')
+        }
+
+        def checkField(f: Symbol)   = check(f, potentiallyPublicized(f) ||
+                                               (f.isPrivate && !canMakePublic(f)))
+        def checkSuper(n: Symbol)   = check(n, n.isPrivate || !n.isClassConstructor)
+        def checkMethod(n: Symbol)  = check(n, n.isPrivate)
+
+        def getAccess(i: Instruction) = i match {
+          case CALL_METHOD(n, SuperCall(_)) => checkSuper(n)
+          case CALL_METHOD(n, _)            => checkMethod(n)
+          case LOAD_FIELD(f, _)             => checkField(f)
+          case STORE_FIELD(f, _)            => checkField(f)
+          case _                            => Public
+        }
+
+        var seen = Public
+        val iter = instructions.iterator
+        while((seen ne Private) && iter.hasNext) {
+          val i = iter.next()
+          getAccess(i) match {
+            case Private    =>
+              log("instruction " + i + " requires private access.")
+              toBecomePublic = Nil
+              seen = Private
+            case Protected  => seen = Protected
+            case _          => ()
+          }
+        }
+
+        AccessReq(seen, toBecomePublic)
+      }
+
     }
 
-    class CallerCalleeInfo(val caller: IMethodInfo, val inc: IMethodInfo, fresh: mutable.Map[String, Int], inlinedMethodCount: collection.Map[Symbol, Int]) {
+    /**
+     * Classifies a pair (caller, callee) into one of four categories:
+     *
+     *   (a) inlining should be performed, classified in turn into:
+     *       (a.1) `InlineableAtThisCaller`: unconditionally at this caller
+     *       (a.2) `FeasibleInline`: it only remains for certain access requirements to be met (see `IMethodInfo.accessRequirements()`)
+     *
+     *   (b) inlining shouldn't be performed, classified in turn into:
+     *       (b.1) `DontInlineHere`: indicates that this particular occurrence of the callee at the caller shouldn't be inlined.
+     *                - Nothing is said about the outcome for other callers, or for other occurrences of the callee for the same caller.
+     *                - In particular inlining might be possible, but heuristics gave a low score for it.
+     *       (b.2) `NeverSafeToInline`: the callee can't be inlined anywhere, irrespective of caller.
+     *
+     * The classification above is computed by `isStampedForInlining()` based on which `analyzeInc()` goes on to:
+     *   - either log the reason for failure --- case (b) ---,
+     *   - or perform inlining --- case (a) ---.
+     */
+    sealed abstract class InlineSafetyInfo {
+      def isSafe   = false
+      def isUnsafe = !isSafe
+    }
+    case object NeverSafeToInline           extends InlineSafetyInfo
+    case object InlineableAtThisCaller      extends InlineSafetyInfo { override def isSafe = true }
+    case class  DontInlineHere(msg: String) extends InlineSafetyInfo
+    case class  FeasibleInline(accessNeeded: NonPublicRefs.Value,
+                               toBecomePublic: List[Symbol]) extends InlineSafetyInfo {
+      override def isSafe = true
+    }
+
+    case class AccessReq(
+      accessNeeded:   NonPublicRefs.Value,
+      toBecomePublic: List[Symbol]
+    )
+
+    final class CallerCalleeInfo(val caller: IMethodInfo, val inc: IMethodInfo, fresh: mutable.Map[String, Int], inlinedMethodCount: collection.Map[Symbol, Int]) {
+
+      assert(!caller.isBridge && inc.m.hasCode,
+             "A guard in Inliner.analyzeClass() should have prevented from getting here.")
+
       def isLargeSum  = caller.length + inc.length - 1 > SMALL_METHOD_SIZE
 
       private def freshName(s: String): TermName = {
         fresh(s) += 1
         newTermName(s + fresh(s))
       }
+
+      private def isKnownToInlineSafely: Boolean = { tfa.knownSafe(inc.sym) }
+
+      val isInlineForced    = hasInline(inc.sym)
+      val isInlineForbidden = hasNoInline(inc.sym)
+      assert(!(isInlineForced && isInlineForbidden), "method ("+inc.m+") marked both @inline and @noinline.")
 
       /** Inline 'inc' into 'caller' at the given block and instruction.
        *  The instruction must be a CALL_METHOD.
@@ -549,7 +739,7 @@ abstract class Inliners extends SubComponent {
         def newLocal(baseName: String, kind: TypeKind) =
           new Local(caller.sym.newVariable(freshName(baseName), targetPos), kind, false)
 
-        val (hasRETURN, a) = getRecentTFA(inc.m)
+        val (hasRETURN, a) = getRecentTFA(inc.m, isInlineForced)
 
         /* The exception handlers that are active at the current block. */
         val activeHandlers = caller.handlers filter (_ covered block)
@@ -709,28 +899,76 @@ abstract class Inliners extends SubComponent {
         if (settings.debug.value) icodes.checkValid(caller.m)
       }
 
-      def isStampedForInlining(stackLength: Int) =
-        !sameSymbols && inc.m.hasCode && shouldInline &&
-        isSafeToInline(stackLength) // `isSafeToInline()` must be invoked last in this AND expr bc it mutates the `knownSafe` and `knownUnsafe` maps for good.
+      def isStampedForInlining(stackLength: Int): InlineSafetyInfo = {
 
-      def logFailure(stackLength: Int) = log(
-        """|inline failed for %s:
-           |  pair.sameSymbols: %s
-           |  inc.numInlined < 2: %s
-           |  inc.m.hasCode: %s
-           |  isSafeToInline: %s
-           |  shouldInline: %s
-        """.stripMargin.format(
-          inc.m, sameSymbols, inlinedMethodCount(inc.sym) < 2,
-          inc.m.hasCode, isSafeToInline(stackLength), shouldInline
-        )
-      )
+        if(tfa.blackballed(inc.sym)) { return NeverSafeToInline }
 
-      def failureReason(stackLength: Int) =
-        if (!inc.m.hasCode) "bytecode was unavailable"
-        else if (inc.m.symbol.hasFlag(Flags.SYNCHRONIZED)) "method is synchronized"
-        else if (!isSafeToInline(stackLength)) "it is unsafe (target may reference private fields)"
-        else "of a bug (run with -Ylog:inline -Ydebug for more information)"
+        if(!isKnownToInlineSafely) {
+
+          if(inc.openBlocks.nonEmpty) {
+            val msg = ("Encountered " + inc.openBlocks.size + " open block(s) in isSafeToInline: this indicates a bug in the optimizer!\n" +
+                       "  caller = " + caller.m + ", callee = " + inc.m)
+            warn(inc.sym.pos, msg)
+            tfa.knownNever += inc.sym
+            return DontInlineHere("Open blocks in " + inc.m)
+          }
+
+          val reasonWhyNever: String = {
+            var rs: List[String] = Nil
+            if(inc.isRecursive)    { rs ::= "is recursive"           }
+            if(isInlineForbidden)  { rs ::= "is annotated @noinline" }
+            if(inc.isSynchronized) { rs ::= "is synchronized method" }
+            if(rs.isEmpty) null else rs.mkString("", ", and ", "")
+          }
+
+          if(reasonWhyNever != null) {
+            tfa.knownNever += inc.sym
+            // next time around NeverSafeToInline is returned, thus skipping (duplicate) msg, this is intended.
+            return DontInlineHere(inc.m + " " + reasonWhyNever)
+          }
+
+          if(sameSymbols) { // TODO but this also amounts to recursive, ie should lead to adding to tfa.knownNever, right?
+            tfa.knownUnsafe += inc.sym;
+            return DontInlineHere("sameSymbols (ie caller == callee)")
+          }
+
+        }
+
+        /*
+         * From here on, two main categories of checks remain, (a) and (b) below:
+         *   (a.1) either the scoring heuristics give green light; or
+         *   (a.2) forced as candidate due to @inline.
+         * After that, safety proper is checked:
+         *   (b.1) the callee does not contain calls to private methods when called from another class
+         *   (b.2) the callee is not going to be inlined into a position with non-empty stack,
+         *         while having a top-level finalizer (see liftedTry problem)
+         * As a result of (b), some synthetic private members can be chosen to become public.
+         */
+
+        if(!isInlineForced && !isScoreOK) {
+          // During inlining retry, a previous caller-callee pair that scored low may pass.
+          // Thus, adding the callee to tfa.knownUnsafe isn't warranted.
+          return DontInlineHere("too low score (heuristics)")
+        }
+
+        if(isKnownToInlineSafely) { return InlineableAtThisCaller }
+
+        if(stackLength > inc.minimumStack && inc.hasNonFinalizerHandler) {
+          val msg = "method " + inc.sym + " is used on a non-empty stack with finalizer."
+          debuglog(msg)
+          // FYI: not reason enough to add inc.sym to tfa.knownUnsafe (because at other callsite in this caller, inlining might be ok)
+          return DontInlineHere(msg)
+        }
+
+        val accReq = inc.accessRequirements
+        if(!canAccess(accReq.accessNeeded)) {
+          tfa.knownUnsafe += inc.sym
+          return DontInlineHere("access level required by callee not matched by caller")
+        }
+
+        FeasibleInline(accReq.accessNeeded, accReq.toBecomePublic)
+
+      }
 
       def canAccess(level: NonPublicRefs.Value) = level match {
         case Private    => caller.owner == inc.owner
@@ -740,98 +978,15 @@ abstract class Inliners extends SubComponent {
       private def sameSymbols = caller.sym == inc.sym
       private def sameOwner   = caller.owner == inc.owner
 
-      /** A method is safe to inline when:
-       *    - it does not contain calls to private methods when called from another class
-       *    - it is not inlined into a position with non-empty stack,
-       *      while having a top-level finalizer (see liftedTry problem)
-       *    - it is not recursive
-       * Note:
-       *    - synthetic private members are made public in this pass.
-       */
-      def isSafeToInline(stackLength: Int): Boolean = {
-
-        if(tfa.blackballed(inc.sym)) { return false }
-        if(tfa.knownSafe(inc.sym))   { return true  }
-
-        if(helperIsSafeToInline(stackLength)) {
-          tfa.knownSafe += inc.sym;   true
-        } else {
-          tfa.knownUnsafe += inc.sym; false
-        }
-      }
-
-      private def helperIsSafeToInline(stackLength: Int): Boolean = {
-        def makePublic(f: Symbol): Boolean =
-          /*
-           * Completely disabling member publifying. This shouldn't have been done in the first place. :|
-           */
-          false
-          // (inc.m.sourceFile ne NoSourceFile) && (f.isSynthetic || f.isParamAccessor) && {
-          //   debuglog("Making not-private symbol out of synthetic: " + f)
-
-          //   f setNotFlag Flags.PRIVATE
-          //   true
-          // }
-
-        if (!inc.m.hasCode || inc.isRecursive)        { return false }
-        if (inc.m.symbol.hasFlag(Flags.SYNCHRONIZED)) { return false }
-
-        val accessNeeded = usesNonPublics.getOrElseUpdate(inc.m, {
-          // Avoiding crashing the compiler if there are open blocks.
-          inc.openBlocks foreach { b =>
-            warn(inc.sym.pos,
-                "Encountered open block in isSafeToInline: this indicates a bug in the optimizer!\n" +
-                "  caller = " + caller.m + ", callee = " + inc.m
-              )
-            return false
-          }
-          def check(sym: Symbol, cond: Boolean) =
-            if (cond) Private
-            else if (sym.isProtected) Protected
-            else Public
-
-          def checkField(f: Symbol)   = check(f, f.isPrivate && !makePublic(f))
-          def checkSuper(m: Symbol)   = check(m, m.isPrivate || !m.isClassConstructor)
-          def checkMethod(m: Symbol)  = check(m, m.isPrivate)
-
-          def getAccess(i: Instruction) = i match {
-            case CALL_METHOD(m, SuperCall(_)) => checkSuper(m)
-            case CALL_METHOD(m, _)            => checkMethod(m)
-            case LOAD_FIELD(f, _)             => checkField(f)
-            case STORE_FIELD(f, _)            => checkField(f)
-            case _                            => Public
-          }
-
-          def iterate(): NonPublicRefs.Value = inc.instructions.foldLeft(Public)((res, inc) => getAccess(inc) match {
-            case Private    => log("instruction " + inc + " requires private access.") ; return Private
-            case Protected  => Protected
-            case Public     => res
-          })
-          iterate()
-        })
-
-        canAccess(accessNeeded) && {
-          val isIllegalStack = (stackLength > inc.minimumStack && inc.hasNonFinalizerHandler)
-
-          !isIllegalStack || {
-            debuglog("method " + inc.sym + " is used on a non-empty stack with finalizer.")
-            false
-          }
-        }
-      }
-
-      /** Decide whether to inline or not. Heuristics:
+      /** Gives green light for inlining (which may still be vetoed later). Heuristics:
        *   - it's bad to make the caller larger (> SMALL_METHOD_SIZE) if it was small
        *   - it's bad to inline large methods
        *   - it's good to inline higher order functions
        *   - it's good to inline closures functions.
        *   - it's bad (useless) to inline inside bridge methods
        */
-      private def neverInline   = caller.isBridge || !inc.m.hasCode || inc.noinline
-      private def alwaysInline  = inc.inline
-
-      def shouldInline: Boolean = !neverInline && (alwaysInline || {
-        debuglog("shouldInline: " + caller.m + " with " + inc.m)
+      def isScoreOK: Boolean = {
+        debuglog("shouldInline: " + caller.m + " , callee:" + inc.m)
 
         var score = 0
 
@@ -855,7 +1010,7 @@ abstract class Inliners extends SubComponent {
         log("shouldInline(" + inc.m + ") score: " + score)
 
         score > 0
-      })
+      }
     }
 
     def lookupIMethod(meth: Symbol, receiver: Symbol): Option[IMethod] = {

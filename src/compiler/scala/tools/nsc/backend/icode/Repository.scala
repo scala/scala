@@ -38,19 +38,21 @@ trait Repository {
     }
 
   /** Load bytecode for given symbol. */
-  def load(sym: Symbol) {
+  def load(sym: Symbol): Boolean = {
     try {
       val (c1, c2) = icodeReader.readClass(sym)
 
-      assert(c1.symbol == sym || c2.symbol == sym,
-        "c1.symbol = %s, c2.symbol = %s, sym = %s".format(c1.symbol, c2.symbol, sym))
+      assert(c1.symbol == sym || c2.symbol == sym, "c1.symbol = %s, c2.symbol = %s, sym = %s".format(c1.symbol, c2.symbol, sym))
       loaded += (c1.symbol -> c1)
       loaded += (c2.symbol -> c2)
+
+      true
     } catch {
       case e: Throwable => // possible exceptions are MissingRequirementError, IOException and TypeError -> no better common supertype
         log("Failed to load %s. [%s]".format(sym.fullName, e.getMessage))
-        if (settings.debug.value)
-          e.printStackTrace
+        if (settings.debug.value) { e.printStackTrace }
+
+        false
     }
   }
 }

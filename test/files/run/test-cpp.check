@@ -62,12 +62,4 @@
 <     102	LOAD_LOCAL(variable x)
 ---
 >     102	LOAD_LOCAL(variable y)
-345c329
-<     41	THIS(TestSetterInline)
----
->     41	THIS(Object)
-347c331
-<     41	CALL_METHOD TestSetterInline._postSetHook_$eq (static-instance)
----
->     41	STORE_FIELD variable _postSetHook (dynamic)
 
