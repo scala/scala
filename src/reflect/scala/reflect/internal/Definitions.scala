@@ -35,7 +35,6 @@ trait Definitions extends api.StandardDefinitions {
   lazy val AnyRefTpe  = definitions.AnyRefClass.asType
   lazy val NothingTpe = definitions.NothingClass.asType
   lazy val NullTpe    = definitions.NullClass.asType
-  lazy val StringTpe  = definitions.StringClass.asType
 
   /** Since both the value parameter types and the result type may
    *  require access to the type parameter symbols, we model polymorphic
@@ -454,10 +453,10 @@ trait Definitions extends api.StandardDefinitions {
          def ReflectRuntimeUniverse      = if (ReflectRuntimePackage != NoSymbol) getMemberValue(ReflectRuntimePackage, nme.universe) else NoSymbol
          def ReflectRuntimeCurrentMirror = if (ReflectRuntimePackage != NoSymbol) getMemberMethod(ReflectRuntimePackage, nme.currentMirror) else NoSymbol
 
-    lazy val PartialManifestClass  = requiredClass[scala.reflect.ClassManifest[_]]
-    lazy val PartialManifestModule = requiredModule[scala.reflect.ClassManifest.type]
+    lazy val PartialManifestClass  = getMemberType(ReflectPackage, tpnme.ClassManifest)
+    lazy val PartialManifestModule = requiredModule[scala.reflect.ClassManifestFactory.type]
     lazy val FullManifestClass     = requiredClass[scala.reflect.Manifest[_]]
-    lazy val FullManifestModule    = requiredModule[scala.reflect.Manifest.type]
+    lazy val FullManifestModule    = requiredModule[scala.reflect.ManifestFactory.type]
     lazy val OptManifestClass      = requiredClass[scala.reflect.OptManifest[_]]
     lazy val NoManifest            = requiredModule[scala.reflect.NoManifest.type]
 

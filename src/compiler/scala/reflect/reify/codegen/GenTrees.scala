@@ -161,11 +161,9 @@ trait GenTrees {
       if (tree.symbol.isLocalToReifee || tree.tpe.isLocalToReifee)
         reifyProduct(tree)
       else {
-        val sym0 = tree.symbol
-        val sym = sym0.dealias
-        val tpe0 = tree.tpe
-        val tpe = tpe0.dealias
-        if (reifyDebug) println("reifying bound type %s (underlying type is %s, dealiased is %s)".format(sym0, tpe0, tpe))
+        val sym = tree.symbol
+        val tpe = tree.tpe
+        if (reifyDebug) println("reifying bound type %s (underlying type is %s)".format(sym, tpe))
 
         if (tpe.isSpliceable) {
           val spliced = spliceType(tpe)
@@ -187,7 +185,7 @@ trait GenTrees {
             if (reifyDebug) println("tpe is locatable: reify as Ident(%s)".format(sym))
             mirrorBuildCall(nme.Ident, reify(sym))
           } else {
-            if (reifyDebug) println("tpe is an alias, but not a locatable: reify as TypeTree(%s)".format(tpe))
+            if (reifyDebug) println("tpe is not locatable: reify as TypeTree(%s)".format(tpe))
             mirrorBuildCall(nme.TypeTree, reify(tpe))
           }
         }

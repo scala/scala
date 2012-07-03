@@ -216,7 +216,7 @@ abstract class ToolBoxFactory[U <: JavaUniverse](val u: U) { factorySelf =>
         (singleton, jmeth)
       }
 
-      def runExpr(expr: Tree, freeTypes: Map[TypeName, Type] = Map[TypeName, Type]()): Any = {
+      def runExpr(expr: Tree): Any = {
         val freeTerms = expr.freeTerms // need to calculate them here, because later on they will be erased
         val thunks = freeTerms map (fte => () => fte.value) // need to be lazy in order not to distort evaluation order
 
