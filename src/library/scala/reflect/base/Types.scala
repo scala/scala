@@ -6,6 +6,11 @@ trait Types { self: Universe =>
   /** The base API that all types support */
   abstract class TypeBase {
 
+    /** The term symbol associated with the type, or `NoSymbol` for types
+     *  that do not refer to a term symbol.
+     */
+    def termSymbol: Symbol
+
     /** The type symbol associated with the type, or `NoSymbol` for types
      *  that do not refer to a type symbol.
      */

@@ -23,7 +23,7 @@ class Base extends Universe { self =>
       new TermSymbol(this, name, flags)
 
     def newModuleAndClassSymbol(name: Name, pos: Position = NoPosition, flags: FlagSet = NoFlags): (ModuleSymbol, ClassSymbol) = {
-      val c = newClassSymbol(name.toTypeName, pos, flags)
+      val c = new ModuleClassSymbol(this, name.toTypeName, flags)
       val m = new ModuleSymbol(this, name.toTermName, flags, c)
       (m, c)
     }
@@ -77,6 +77,8 @@ class Base extends Universe { self =>
 
   class ClassSymbol(owner: Symbol, name: TypeName, flags: FlagSet)
       extends TypeSymbol(owner, name, flags) with ClassSymbolBase
+  class ModuleClassSymbol(owner: Symbol, name: TypeName, flags: FlagSet)
+      extends ClassSymbol(owner, name, flags) { override def isModuleClass = true }
   implicit val ClassSymbolTag = ClassTag[ClassSymbol](classOf[ClassSymbol])
 
   class FreeTermSymbol(owner: Symbol, name: TermName, flags: FlagSet)
@@ -93,7 +95,10 @@ class Base extends Universe { self =>
   }
 
   // todo. write a decent toString that doesn't crash on recursive types
-  class Type extends TypeBase { def typeSymbol: Symbol = NoSymbol }
+  class Type extends TypeBase {
+    def typeSymbol: Symbol = NoSymbol
+    def termSymbol: Symbol = NoSymbol
+  }
   implicit val TypeTagg = ClassTag[Type](classOf[Type])
 
   val NoType = new Type
@@ -106,7 +111,7 @@ class Base extends Universe { self =>
   object ThisType extends ThisTypeExtractor
   implicit val ThisTypeTag = ClassTag[ThisType](classOf[ThisType])
 
-  case class SingleType(pre: Type, sym: Symbol) extends SingletonType
+  case class SingleType(pre: Type, sym: Symbol) extends SingletonType { override val termSymbol = sym }
   object SingleType extends SingleTypeExtractor
   implicit val SingleTypeTag = ClassTag[SingleType](classOf[SingleType])
 
@@ -341,9 +346,9 @@ class Base extends Universe { self =>
   class Mirror extends MirrorOf[self.type] {
     val universe: self.type = self
 
-    lazy val RootClass    = new ClassSymbol(NoSymbol, tpnme.ROOT, NoFlags)
+    lazy val RootClass    = new ClassSymbol(NoSymbol, tpnme.ROOT, NoFlags) { override def isModuleClass = true }
     lazy val RootPackage  = new ModuleSymbol(NoSymbol, nme.ROOT, NoFlags, RootClass)
-    lazy val EmptyPackageClass = new ClassSymbol(RootClass, tpnme.EMPTY_PACKAGE_NAME, NoFlags)
+    lazy val EmptyPackageClass = new ClassSymbol(RootClass, tpnme.EMPTY_PACKAGE_NAME, NoFlags) { override def isModuleClass = true }
     lazy val EmptyPackage = new ModuleSymbol(RootClass, nme.EMPTY_PACKAGE_NAME, NoFlags, EmptyPackageClass)
 
     def staticClass(fullName: String): ClassSymbol =
