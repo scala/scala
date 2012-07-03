@@ -1612,8 +1612,12 @@ trait Infer {
         val saved = context.state
         var fallback = false
         context.setBufferErrors()
-        // Need to test first attempt with an empty buffer.
-        // Otherwise, any previous errors will get lost.
+        // We cache the current buffer because it is impossible to 
+        // distinguish errors that occurred before entering tryTwice
+        // and our first attempt in 'withImplicitsDisabled'. If the
+        // first attempt fails we try with implicits on *and* clean
+        // buffer but that would also flush any pre-tryTwice valid
+        // errors, hence some manual buffer tweaking is necessary.
         val errorsToRestore = context.flushAndReturnBuffer()
         try {
           context.withImplicitsDisabled(infer(false))
