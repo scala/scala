@@ -11,20 +11,19 @@ abstract class Taggers {
   import treeBuild._
 
   val coreTags = Map(
-    ByteClass.asType -> nme.Byte,
-    ShortClass.asType -> nme.Short,
-    CharClass.asType -> nme.Char,
-    IntClass.asType -> nme.Int,
-    LongClass.asType -> nme.Long,
-    FloatClass.asType -> nme.Float,
-    DoubleClass.asType -> nme.Double,
-    BooleanClass.asType -> nme.Boolean,
-    UnitClass.asType -> nme.Unit,
-    AnyClass.asType -> nme.Any,
-    ObjectClass.asType -> nme.Object,
-    NothingClass.asType -> nme.Nothing,
-    NullClass.asType -> nme.Null,
-    StringClass.asType -> nme.String)
+    ByteTpe -> nme.Byte,
+    ShortTpe -> nme.Short,
+    CharTpe -> nme.Char,
+    IntTpe -> nme.Int,
+    LongTpe -> nme.Long,
+    FloatTpe -> nme.Float,
+    DoubleTpe -> nme.Double,
+    BooleanTpe -> nme.Boolean,
+    UnitTpe -> nme.Unit,
+    AnyTpe -> nme.Any,
+    ObjectTpe -> nme.Object,
+    NothingTpe -> nme.Nothing,
+    NullTpe -> nme.Null)
 
   def materializeClassTag(prefix: Tree, tpe: Type): Tree = {
     val tagModule = ClassTagModule

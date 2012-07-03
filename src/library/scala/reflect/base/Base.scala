@@ -101,8 +101,8 @@ class Base extends Universe { self =>
   }
   implicit val TypeTagg = ClassTag[Type](classOf[Type])
 
-  val NoType = new Type
-  val NoPrefix = new Type
+  val NoType = new Type { override def toString = "NoType" }
+  val NoPrefix = new Type { override def toString = "NoPrefix" }
 
   class SingletonType extends Type
   implicit val SingletonTypeTag = ClassTag[SingletonType](classOf[SingletonType])
@@ -425,7 +425,6 @@ class Base extends Universe { self =>
   lazy val NullTpe    = TypeRef(ScalaPrefix, NullClass, Nil)
   lazy val ObjectTpe  = TypeRef(JavaLangPrefix, ObjectClass, Nil)
   lazy val AnyRefTpe  = ObjectTpe
-  lazy val StringTpe  = TypeRef(JavaLangPrefix, StringClass, Nil)
 
   private var nodeCount = 0 // not synchronized
 

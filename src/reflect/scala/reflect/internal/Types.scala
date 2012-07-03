@@ -568,6 +568,24 @@ trait Types extends api.Types { self: SymbolTable =>
     /** Expands type aliases. */
     def dealias = this
 
+    def etaExpand: Type = this
+
+    /** Performs a single step of beta-reduction on types.
+     *  Given:
+     *
+     *    type C[T] = B[T]
+     *    type B[T] = A
+     *    class A
+     *
+     *  The following will happen after `betaReduce` is invoked:
+     *    TypeRef(pre, <C>, List(Int)) is replaced by
+     *    TypeRef(pre, <B>, List(Int))
+     *
+     *  Unlike `dealias`, which recursively applies beta reduction, until it's stuck,
+     *  `betaReduce` performs exactly one step and then returns.
+     */
+    def betaReduce: Type = this
+
     /** For a classtype or refined type, its defined or declared members;
      *  inherited by subtypes and typerefs.
      *  The empty scope for all other types.
@@ -2110,7 +2128,7 @@ trait Types extends api.Types { self: SymbolTable =>
     //
     // this crashes pos/depmet_implicit_tpbetareduce.scala
     // appliedType(sym.info, typeArgs).asSeenFrom(pre, sym.owner)
-    def betaReduce = transform(sym.info.resultType)
+    override def betaReduce = transform(sym.info.resultType)
 
     // #3731: return sym1 for which holds: pre bound sym.name to sym and
     // pre1 now binds sym.name to sym1, conceptually exactly the same
@@ -2221,7 +2239,7 @@ trait Types extends api.Types { self: SymbolTable =>
       || pre.isGround && args.forall(_.isGround)
     )
 
-    def etaExpand: Type = {
+    override def etaExpand: Type = {
       // must initialise symbol, see test/files/pos/ticket0137.scala
       val tpars = initializedTypeParams
       if (tpars.isEmpty) this

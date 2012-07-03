@@ -14,7 +14,7 @@ scala> def foo[T]{
 foo: [T]=> Unit
 
 scala> foo[Int]
-AbsTypeTag[List[T]]
+AbsTypeTag[scala.List[T]]
 
 scala> 
 
