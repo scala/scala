@@ -27,6 +27,4 @@ object Test extends App {
   println(implicitly[AbsTypeTag[Null]])
   println(implicitly[AbsTypeTag[Nothing]] eq AbsTypeTag.Nothing)
   println(implicitly[AbsTypeTag[Nothing]])
-  println(implicitly[AbsTypeTag[String]] eq AbsTypeTag.String)
-  println(implicitly[AbsTypeTag[String]])
 }

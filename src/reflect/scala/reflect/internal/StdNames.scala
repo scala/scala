@@ -232,6 +232,7 @@ trait StdNames {
 
     final val Annotation: NameType          = "Annotation"
     final val ClassfileAnnotation: NameType = "ClassfileAnnotation"
+    final val ClassManifest: NameType       = "ClassManifest"
     final val Enum: NameType                = "Enum"
     final val Group: NameType               = "Group"
     final val Tree: NameType                = "Tree"
@@ -639,8 +640,8 @@ trait StdNames {
     val bytes: NameType                = "bytes"
     val canEqual_ : NameType           = "canEqual"
     val checkInitialized: NameType     = "checkInitialized"
+    val ClassManifestFactory: NameType = "ClassManifestFactory"
     val classOf: NameType              = "classOf"
-    val classTagToClassManifest: NameType = "classTagToClassManifest"
     val clone_ : NameType              = if (forMSIL) "MemberwiseClone" else "clone" // sn.OClone causes checkinit failure
     val conforms: NameType             = "conforms"
     val copy: NameType                 = "copy"
@@ -696,6 +697,7 @@ trait StdNames {
     val macroContext : NameType        = "c"
     val main: NameType                 = "main"
     val manifest: NameType             = "manifest"
+    val ManifestFactory: NameType      = "ManifestFactory"
     val manifestToTypeTag: NameType    = "manifestToTypeTag"
     val map: NameType                  = "map"
     val materializeClassTag: NameType  = "materializeClassTag"

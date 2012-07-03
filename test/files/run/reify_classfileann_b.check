@@ -1,5 +1,5 @@
 {
-  class C extends Object {
+  class C extends AnyRef {
     def <init>() = {
       super.<init>();
       ()
@@ -9,7 +9,7 @@
   ()
 }
 {
-  class C extends Object {
+  class C extends AnyRef {
     def <init>(): C = {
       C.super.<init>();
       ()

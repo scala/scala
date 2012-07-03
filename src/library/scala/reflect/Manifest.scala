@@ -39,7 +39,7 @@ import scala.collection.mutable.{ ArrayBuilder, WrappedArray }
  *
  */
 @annotation.implicitNotFound(msg = "No Manifest available for ${T}.")
-@deprecated("Use TypeTag instead", "2.10.0")
+@deprecated("Use scala.reflect.ClassTag (to capture erasures) or scala.reflect.runtime.universe.TypeTag (to capture types) or both instead", "2.10.0")
 trait Manifest[T] extends ClassManifest[T] with Equals {
   override def typeArguments: List[Manifest[_]] = Nil
 
@@ -72,17 +72,19 @@ abstract class AnyValManifest[T <: AnyVal](override val toString: String) extend
   override val hashCode = System.identityHashCode(this)
 }
 
-/** The object `Manifest` defines factory methods for manifests.
- *  It is intended for use by the compiler and should not be used
- *  in client code.
+/** `ManifestFactory` defines factory methods for manifests.
+ *  It is intended for use by the compiler and should not be used in client code.
+ *
+ *  Unlike `Manifest`, this factory isn't annotated with a deprecation warning.
+ *  This is done to prevent avalanches of deprecation warnings in the code that calls methods with manifests.
+ *  Why so complicated? Read up the comments for `ClassManifestFactory`.
  */
-@deprecated("Use TypeTag instead", "2.10.0")
-object Manifest {
+object ManifestFactory {
   def valueManifests: List[AnyValManifest[_]] =
     List(Byte, Short, Char, Int, Long, Float, Double, Boolean, Unit)
 
   val Byte: AnyValManifest[Byte] = new AnyValManifest[scala.Byte]("Byte") {
-    def erasure = java.lang.Byte.TYPE
+    def runtimeClass = java.lang.Byte.TYPE
     override def newArray(len: Int): Array[Byte] = new Array[Byte](len)
     override def newWrappedArray(len: Int): WrappedArray[Byte] = new WrappedArray.ofByte(new Array[Byte](len))
     override def newArrayBuilder(): ArrayBuilder[Byte] = new ArrayBuilder.ofByte()
@@ -90,7 +92,7 @@ object Manifest {
   }
 
   val Short: AnyValManifest[Short] = new AnyValManifest[scala.Short]("Short") {
-    def erasure = java.lang.Short.TYPE
+    def runtimeClass = java.lang.Short.TYPE
     override def newArray(len: Int): Array[Short] = new Array[Short](len)
     override def newWrappedArray(len: Int): WrappedArray[Short] = new WrappedArray.ofShort(new Array[Short](len))
     override def newArrayBuilder(): ArrayBuilder[Short] = new ArrayBuilder.ofShort()
@@ -98,7 +100,7 @@ object Manifest {
   }
 
   val Char: AnyValManifest[Char] = new AnyValManifest[scala.Char]("Char") {
-    def erasure = java.lang.Character.TYPE
+    def runtimeClass = java.lang.Character.TYPE
     override def newArray(len: Int): Array[Char] = new Array[Char](len)
     override def newWrappedArray(len: Int): WrappedArray[Char] = new WrappedArray.ofChar(new Array[Char](len))
     override def newArrayBuilder(): ArrayBuilder[Char] = new ArrayBuilder.ofChar()
@@ -106,7 +108,7 @@ object Manifest {
   }
 
   val Int: AnyValManifest[Int] = new AnyValManifest[scala.Int]("Int") {
-    def erasure = java.lang.Integer.TYPE
+    def runtimeClass = java.lang.Integer.TYPE
     override def newArray(len: Int): Array[Int] = new Array[Int](len)
     override def newWrappedArray(len: Int): WrappedArray[Int] = new WrappedArray.ofInt(new Array[Int](len))
     override def newArrayBuilder(): ArrayBuilder[Int] = new ArrayBuilder.ofInt()
@@ -114,7 +116,7 @@ object Manifest {
   }
 
   val Long: AnyValManifest[Long] = new AnyValManifest[scala.Long]("Long") {
-    def erasure = java.lang.Long.TYPE
+    def runtimeClass = java.lang.Long.TYPE
     override def newArray(len: Int): Array[Long] = new Array[Long](len)
     override def newWrappedArray(len: Int): WrappedArray[Long] = new WrappedArray.ofLong(new Array[Long](len))
     override def newArrayBuilder(): ArrayBuilder[Long] = new ArrayBuilder.ofLong()
@@ -122,7 +124,7 @@ object Manifest {
   }
 
   val Float: AnyValManifest[Float] = new AnyValManifest[scala.Float]("Float") {
-    def erasure = java.lang.Float.TYPE
+    def runtimeClass = java.lang.Float.TYPE
     override def newArray(len: Int): Array[Float] = new Array[Float](len)
     override def newWrappedArray(len: Int): WrappedArray[Float] = new WrappedArray.ofFloat(new Array[Float](len))
     override def newArrayBuilder(): ArrayBuilder[Float] = new ArrayBuilder.ofFloat()
@@ -130,7 +132,7 @@ object Manifest {
   }
 
   val Double: AnyValManifest[Double] = new AnyValManifest[scala.Double]("Double") {
-    def erasure = java.lang.Double.TYPE
+    def runtimeClass = java.lang.Double.TYPE
     override def newArray(len: Int): Array[Double] = new Array[Double](len)
     override def newWrappedArray(len: Int): WrappedArray[Double] = new WrappedArray.ofDouble(new Array[Double](len))
     override def newArrayBuilder(): ArrayBuilder[Double] = new ArrayBuilder.ofDouble()
@@ -138,7 +140,7 @@ object Manifest {
   }
 
   val Boolean: AnyValManifest[Boolean] = new AnyValManifest[scala.Boolean]("Boolean") {
-    def erasure = java.lang.Boolean.TYPE
+    def runtimeClass = java.lang.Boolean.TYPE
     override def newArray(len: Int): Array[Boolean] = new Array[Boolean](len)
     override def newWrappedArray(len: Int): WrappedArray[Boolean] = new WrappedArray.ofBoolean(new Array[Boolean](len))
     override def newArrayBuilder(): ArrayBuilder[Boolean] = new ArrayBuilder.ofBoolean()
@@ -146,7 +148,7 @@ object Manifest {
   }
 
   val Unit: AnyValManifest[Unit] = new AnyValManifest[scala.Unit]("Unit") {
-    def erasure = java.lang.Void.TYPE
+    def runtimeClass = java.lang.Void.TYPE
     override def newArray(len: Int): Array[Unit] = new Array[Unit](len)
     override def newWrappedArray(len: Int): WrappedArray[Unit] = new WrappedArray.ofUnit(new Array[Unit](len))
     override def newArrayBuilder(): ArrayBuilder[Unit] = new ArrayBuilder.ofUnit()
@@ -180,7 +182,7 @@ object Manifest {
   }
 
   private class SingletonTypeManifest[T <: AnyRef](value: AnyRef) extends Manifest[T] {
-    lazy val erasure = value.getClass
+    lazy val runtimeClass = value.getClass
     override lazy val toString = value.toString + ".type"
   }
 
@@ -217,7 +219,7 @@ object Manifest {
   /** Manifest for the class type `clazz[args]`, where `clazz` is
     * a top-level or static class. */
   private class ClassTypeManifest[T](prefix: Option[Manifest[_]],
-                                     val erasure: Predef.Class[_],
+                                     val runtimeClass: Predef.Class[_],
                                      override val typeArguments: List[Manifest[_]]) extends Manifest[T] {
     override def toString =
       (if (prefix.isEmpty) "" else prefix.get.toString+"#") +
@@ -233,7 +235,7 @@ object Manifest {
     * added so that erasure can be calculated without reflection. */
   def abstractType[T](prefix: Manifest[_], name: String, upperBound: Predef.Class[_], args: Manifest[_]*): Manifest[T] =
     new Manifest[T] {
-      def erasure = upperBound
+      def runtimeClass = upperBound
       override val typeArguments = args.toList
       override def toString = prefix.toString+"#"+name+argString
     }
@@ -242,7 +244,7 @@ object Manifest {
     */
   def wildcardType[T](lowerBound: Manifest[_], upperBound: Manifest[_]): Manifest[T] =
     new Manifest[T] {
-      def erasure = upperBound.erasure
+      def runtimeClass = upperBound.erasure
       override def toString =
         "_" +
         (if (lowerBound eq Nothing) "" else " >: "+lowerBound) +
@@ -252,7 +254,7 @@ object Manifest {
   /** Manifest for the intersection type `parents_0 with ... with parents_n'. */
   def intersectionType[T](parents: Manifest[_]*): Manifest[T] =
     new Manifest[T] {
-      def erasure = parents.head.erasure
+      def runtimeClass = parents.head.erasure
       override def toString = parents.mkString(" with ")
     }
 }
