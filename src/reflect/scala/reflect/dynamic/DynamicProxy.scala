@@ -6,7 +6,7 @@ package scala.reflect.dynamic
  *
  *  Any attempt to access a method or field of this class will be
  *  passed through to the target object through reflection. The result
- *  will always be case to type `Any`. No compile-time checks are
+ *  will always be cast to type `Any`. No compile-time checks are
  *  performed. Rather, if an invalid access attempt is made (e.g. attempting
  *  to access a member that does not exist), a runtime exception will be raised.
  *
@@ -158,9 +158,9 @@ trait DynamicProxy extends Dynamic {
       val pva = posVargs
       val nva = nameVargs
       val helpers =
-        new ConcreteReflectionHelpers
-          with ConcreteCorrelationHelpers
-          with ConcreteSelectionHelpers
+        new ReflectionHelpers
+          with CorrelationHelpers
+          with SelectionHelpers
           with KnowsArgs {
 
           val posTargs = pta
@@ -191,37 +191,13 @@ trait DynamicProxy extends Dynamic {
       }
   }
 
-  private[this] trait ReflectionHelpers {
-    def typeParams(x: u.Type): Seq[u.Type]
-    def paramTypes(method: u.MethodSymbol): Seq[u.Type]
-    def defaultValues(method: u.MethodSymbol): Map[Int, u.MethodSymbol]
-    def valueParams(x: u.MethodSymbol): Seq[u.TermSymbol]
-  }
-
-  private[this] trait CorrelationHelpers {
-    def shape(arg: u.Type): u.Type
-    def signatureAsSpecific(method1: u.MethodSymbol, method2: u.MethodSymbol): Boolean
-    def scopeMoreSpecific(method1: u.MethodSymbol, method2: u.MethodSymbol): Boolean
-    def moreSpecific(method1: u.MethodSymbol, method2: u.MethodSymbol): Boolean
-    def fixArguments(method: u.MethodSymbol): Option[Seq[(u.Type, Either[Any, u.MethodSymbol])]]
-  }
-
-  private[this] trait SelectionHelpers {
-    def defaultFilteringOps: Seq[Seq[u.MethodSymbol] => Seq[u.MethodSymbol]]
-    def select
-      (
-        alternatives: Seq[u.MethodSymbol],
-        filters: Seq[Seq[u.MethodSymbol] => Seq[u.MethodSymbol]]
-      ): Seq[u.MethodSymbol]
-  }
-
   private[this] trait KnowsArgs {
     def posTargs: Seq[u.Type]
     def posVargs: Seq[(u.Type, Any)]
     def nameVargs: Seq[(String, u.Type, Any)]
   }
 
-  private[this] trait ConcreteReflectionHelpers extends ReflectionHelpers {
+  private[this] trait ReflectionHelpers {
 
     def paramTypes(method: u.MethodSymbol): Seq[u.Type] = {
       val symbols = method.typeSignature match {
@@ -255,7 +231,7 @@ trait DynamicProxy extends Dynamic {
 
   }
   
-  private[this] trait ConcreteCorrelationHelpers extends CorrelationHelpers {
+  private[this] trait CorrelationHelpers {
     self: ReflectionHelpers with KnowsArgs =>
 
     def shape(arg: u.Type): u.Type = {
@@ -345,8 +321,8 @@ trait DynamicProxy extends Dynamic {
     
   }
 
-  private[this] trait ConcreteSelectionHelpers extends SelectionHelpers {
-    self: ReflectionHelpers with ConcreteCorrelationHelpers with KnowsArgs =>
+  private[this] trait SelectionHelpers {
+    self: ReflectionHelpers with CorrelationHelpers with KnowsArgs =>
 
     def select (
         alternatives: Seq[u.MethodSymbol],
