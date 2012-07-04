@@ -1614,6 +1614,13 @@ trait Infer {
         val saved = context.state
         var fallback = false
         context.setBufferErrors()
+        // We cache the current buffer because it is impossible to 
+        // distinguish errors that occurred before entering tryTwice
+        // and our first attempt in 'withImplicitsDisabled'. If the
+        // first attempt fails we try with implicits on *and* clean
+        // buffer but that would also flush any pre-tryTwice valid
+        // errors, hence some manual buffer tweaking is necessary.
+        val errorsToRestore = context.flushAndReturnBuffer()
         try {
           context.withImplicitsDisabled(infer(false))
           if (context.hasErrors) {
@@ -1627,8 +1634,10 @@ trait Infer {
           case ex: TypeError        => // recoverable cyclic references
             context.restoreState(saved)
             if (!fallback) infer(true) else ()
+        } finally {
+          context.restoreState(saved)
+          context.updateBuffer(errorsToRestore)
         }
-        context.restoreState(saved)
       }
       else infer(true)
     }
