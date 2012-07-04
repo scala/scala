@@ -860,7 +860,7 @@ abstract class GenICode extends SubComponent  {
           if (sym.isLabel) {  // jump to a label
             val label = ctx.labels.getOrElse(sym, {
               // it is a forward jump, scan for labels
-              scanForLabels(ctx.defdef, ctx)
+              resolveForwardLabel(ctx.defdef, ctx, sym)
               ctx.labels.get(sym) match {
                 case Some(l) =>
                   log("Forward jump for " + sym.fullLocationString + ": scan found label " + l)
@@ -1406,21 +1406,17 @@ abstract class GenICode extends SubComponent  {
     def ifOneIsNull(l: Tree, r: Tree) = if (isNull(l)) r else if (isNull(r)) l else null
 
     /**
-     * Traverse the tree and store label stubs in the context. This is
-     * necessary to handle forward jumps, because at a label application
-     * with arguments, the symbols of the corresponding LabelDef parameters
-     * are not yet known.
+     * Find the label denoted by `lsym` and enter it in context `ctx`.
      *
-     * Since it is expensive to traverse each method twice, this method is called
-     * only when forward jumps really happen, and then it re-traverses the whole
-     * method, scanning for LabelDefs.
+     * We only enter one symbol at a time, even though we might traverse the same
+     * tree more than once per method. That's because we cannot enter labels that
+     * might be duplicated (for instance, inside finally blocks).
      *
      * TODO: restrict the scanning to smaller subtrees than the whole method.
      *  It is sufficient to scan the trees of the innermost enclosing block.
      */
-    //
-    private def scanForLabels(tree: Tree, ctx: Context): Unit = tree foreachPartial {
-      case t @ LabelDef(_, params, rhs) =>
+    private def resolveForwardLabel(tree: Tree, ctx: Context, lsym: Symbol): Unit = tree foreachPartial {
+      case t @ LabelDef(_, params, rhs) if t.symbol == lsym =>
         ctx.labels.getOrElseUpdate(t.symbol, {
           val locals  = params map (p => new Local(p.symbol, toTypeKind(p.symbol.info), false))
           ctx.method addLocals locals
