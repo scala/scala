@@ -174,11 +174,8 @@ abstract class TypeFlowAnalysis {
       }
       i match {
 
-        case THIS(clasz) =>
-          stack push toTypeKind(clasz.tpe)
-
-        case CONSTANT(const) =>
-          stack push toTypeKind(const.tpe)
+        case THIS(clasz)     => stack push toTypeKind(clasz.tpe)
+        case CONSTANT(const) => stack push toTypeKind(const.tpe)
 
         case LOAD_ARRAY_ITEM(kind) =>
           stack.pop2 match {
@@ -194,139 +191,73 @@ abstract class TypeFlowAnalysis {
           stack push (if (t == typeLattice.bottom) local.kind  else t)
 
         case LOAD_FIELD(field, isStatic) =>
-          if (!isStatic)
-            stack.pop
+          if (!isStatic) { stack.pop }
           stack push toTypeKind(field.tpe)
 
-        case LOAD_MODULE(module) =>
-          stack push toTypeKind(module.tpe)
+        case LOAD_MODULE(module)    => stack push toTypeKind(module.tpe)
+        case STORE_ARRAY_ITEM(kind) => stack.pop3
+        case STORE_LOCAL(local)     => val t = stack.pop; bindings += (local -> t)
+        case STORE_THIS(_)          => stack.pop
 
-        case STORE_ARRAY_ITEM(kind) =>
-          stack.pop3
-
-        case STORE_LOCAL(local) =>
-          val t = stack.pop
-          bindings += (local -> t)
-
-        case STORE_THIS(_) =>
-          stack.pop
-
-        case STORE_FIELD(field, isStatic) =>
-          if (isStatic)
-            stack.pop
-          else
-            stack.pop2
+        case STORE_FIELD(field, isStatic) => if (isStatic) stack.pop else stack.pop2
 
         case CALL_PRIMITIVE(primitive) =>
           primitive match {
-            case Negation(kind) =>
-              stack.pop; stack.push(kind)
+            case Negation(kind) => stack.pop; stack.push(kind)
+
             case Test(_, kind, zero) =>
               stack.pop
-              if (!zero) stack.pop
+              if (!zero) { stack.pop }
               stack push BOOL;
-            case Comparison(_, _) =>
-              stack.pop2
-              stack push INT
+
+            case Comparison(_, _) => stack.pop2; stack push INT
 
             case Arithmetic(op, kind) =>
               stack.pop
-              if (op != NOT)
-                stack.pop
+              if (op != NOT) { stack.pop }
               val k = kind match {
                 case BYTE | SHORT | CHAR => INT
                 case _ => kind
               }
               stack push k
 
-            case Logical(op, kind) =>
-              stack.pop2
-              stack push kind
-
-            case Shift(op, kind) =>
-              stack.pop2
-              stack push kind
-
-            case Conversion(src, dst) =>
-              stack.pop
-              stack push dst
-
-            case ArrayLength(kind) =>
-              stack.pop
-              stack push INT
-
-            case StartConcat =>
-              stack.push(ConcatClass)
-
-            case EndConcat =>
-              stack.pop
-              stack.push(STRING)
-
-            case StringConcat(el) =>
-              stack.pop2
-              stack push ConcatClass
+            case Logical(op, kind)    => stack.pop2; stack push kind
+            case Shift(op, kind)      => stack.pop2; stack push kind
+            case Conversion(src, dst) => stack.pop;  stack push dst
+            case ArrayLength(kind)    => stack.pop;  stack push INT
+            case StartConcat          => stack.push(ConcatClass)
+            case EndConcat            => stack.pop;  stack.push(STRING)
+            case StringConcat(el)     => stack.pop2; stack push ConcatClass
           }
 
         case cm @ CALL_METHOD(_, _) =>
           stack pop cm.consumed
           cm.producedTypes foreach (stack push _)
 
-        case BOX(kind) =>
-          stack.pop
-          stack.push(BOXED(kind))
+        case BOX(kind)   => stack.pop; stack.push(BOXED(kind))
+        case UNBOX(kind) => stack.pop; stack.push(kind)
 
-        case UNBOX(kind) =>
-          stack.pop
-          stack.push(kind)
+        case NEW(kind) => stack.push(kind)
 
-        case NEW(kind) =>
-          stack.push(kind)
+        case CREATE_ARRAY(elem, dims) => stack.pop(dims); stack.push(ARRAY(elem))
 
-        case CREATE_ARRAY(elem, dims) =>
-          stack.pop(dims)
-          stack.push(ARRAY(elem))
+        case IS_INSTANCE(tpe) => stack.pop; stack.push(BOOL)
+        case CHECK_CAST(tpe)  => stack.pop; stack.push(tpe)
 
-        case IS_INSTANCE(tpe) =>
-          stack.pop
-          stack.push(BOOL)
+        case _: SWITCH => stack.pop
+        case _: JUMP   => ()
+        case _: CJUMP  => stack.pop2
+        case _: CZJUMP => stack.pop
 
-        case CHECK_CAST(tpe) =>
-          stack.pop
-          stack.push(tpe)
+        case RETURN(kind) => if (kind != UNIT) { stack.pop }
+        case THROW(_)     => stack.pop
 
-        case SWITCH(tags, labels) =>
-          stack.pop
+        case DROP(kind) => stack.pop
+        case DUP(kind)  => stack.push(stack.head)
 
-        case JUMP(whereto) =>
-          ()
+        case MONITOR_ENTER() | MONITOR_EXIT()  => stack.pop
 
-        case CJUMP(success, failure, cond, kind) =>
-          stack.pop2
-
-        case CZJUMP(success, failure, cond, kind) =>
-          stack.pop
-
-        case RETURN(kind) =>
-          if (kind != UNIT)
-            stack.pop;
-
-        case THROW(_) =>
-          stack.pop
-
-        case DROP(kind) =>
-          stack.pop
-
-        case DUP(kind) =>
-          stack.push(stack.head)
-
-        case MONITOR_ENTER() =>
-          stack.pop
-
-        case MONITOR_EXIT() =>
-          stack.pop
-
-        case SCOPE_ENTER(_) | SCOPE_EXIT(_) =>
-          ()
+        case SCOPE_ENTER(_)  | SCOPE_EXIT(_) => ()
 
         case LOAD_EXCEPTION(clasz) =>
           stack.pop(stack.length)
@@ -551,14 +482,24 @@ abstract class TypeFlowAnalysis {
 
     val relevantBBs   = mutable.Set.empty[BasicBlock]
 
+    /*
+     * Rationale to prevent some methods from ever being inlined:
+     *
+     *   (1) inlining getters and setters results in exposing a private field,
+     *       which may itself prevent inlining of the caller (at best) or
+     *       lead to situations like SI-5442 ("IllegalAccessError when mixing optimized and unoptimized bytecode")
+     *
+     *   (2) only invocations having a receiver object are considered (ie no static-methods are ever inlined).
+     *       This is taken care of by checking `isDynamic` (ie virtual method dispatch) and `Static(true)` (ie calls to private members)
+     */
     private def isPreCandidate(cm: opcodes.CALL_METHOD): Boolean = {
       val msym  = cm.method
       val style = cm.style
-      // Dynamic == normal invocations
-      // Static(true) == calls to private members
-      !msym.isConstructor && !blackballed(msym) &&
-      (style.isDynamic || (style.hasInstance && style.isStatic))
-      // && !(msym hasAnnotation definitions.ScalaNoInlineClass)
+
+      !blackballed(msym)  &&
+      !msym.isConstructor &&
+      (!msym.isAccessor || inliner.isClosureClass(msym.owner)) &&
+      (style.isDynamic  || (style.hasInstance && style.isStatic))
     }
 
     override def init(m: icodes.IMethod) {
