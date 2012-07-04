@@ -1615,11 +1615,18 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
     case class Eq(p: Var, q: Const) extends Prop
 
     type Const <: AbsConst
-
     trait AbsConst {
       def implies(other: Const): Boolean
       def excludes(other: Const): Boolean
     }
+
+    type TypeConst <: Const
+    def TypeConst: TypeConstExtractor
+    trait TypeConstExtractor {
+      def apply(tp: Type): Const
+    }
+
+    def NullConst: Const
 
     type Var <: AbsVar
 
@@ -1627,11 +1634,18 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
       // indicate we may later require a prop for V = C
       def registerEquality(c: Const): Unit
 
-      // indicates null is part of the domain
+      // call this to indicate null is part of the domain
       def considerNull: Unit
+
+      // can this variable be null?
+      def consideringNull: Boolean
 
       // compute the domain and return it (call considerNull first!)
       def domainSyms: Option[Set[Sym]]
+
+      // the symbol for this variable being equal to its statically known type
+      // (only available if registerEquality has been called for that type before)
+      def symForStaticTp: Option[Sym]
 
       // for this var, call it V, turn V = C into the equivalent proposition in boolean logic
       // registerEquality(c) must have been called prior to this call
@@ -1758,6 +1772,11 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
         // consider X ::= A | B | C, and A => B
         // coverage is formulated as: A \/ B \/ C and the implications are
         v.domainSyms foreach { dsyms => addAxiom(\/(dsyms)) }
+
+        // when this variable cannot be null the equality corresponding to the type test `(x: T)`, where T is x's static type,
+        // is always true; when the variable may be null we use the implication `(x != null) => (x: T)` for the axiom
+        if (!v.consideringNull) v.symForStaticTp foreach addAxiom
+        else v.symForStaticTp foreach { symForStaticTp => addAxiom(Or(v.propForEqualsTo(NullConst), symForStaticTp)) }
 
         val syms = v.equalitySyms
         // patmatDebug ("eqSyms "+(v, syms))
@@ -2024,7 +2043,7 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
       private val uniques = new collection.mutable.HashMap[Tree, Var]
       def apply(x: Tree): Var = uniques getOrElseUpdate(x, new Var(x, x.tpe))
     }
-    class Var(val path: Tree, fullTp: Type) extends AbsVar {
+    class Var(val path: Tree, staticTp: Type) extends AbsVar {
       private[this] val id: Int = Var.nextId
 
       // private[this] var canModify: Option[Array[StackTraceElement]] = None
@@ -2036,10 +2055,11 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
       private[this] val symForEqualsTo = new collection.mutable.HashMap[Const, Sym]
 
       // when looking at the domain, we only care about types we can check at run time
-      val domainTp: Type = checkableType(fullTp)
+      val staticTpCheckable: Type = checkableType(staticTp)
 
-      private[this] var _considerNull = false
-      def considerNull: Unit = { ensureCanModify; if (NullTp <:< domainTp) _considerNull = true }
+      private[this] var _consideringNull = false
+      def considerNull: Unit = { ensureCanModify; if (NullTp <:< staticTpCheckable) _consideringNull = true }
+      def consideringNull: Boolean = _consideringNull
 
       // case None => domain is unknown,
       // case Some(List(tps: _*)) => domain is exactly tps
@@ -2047,7 +2067,7 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
       // once we go to run-time checks (on Const's), convert them to checkable types
       // TODO: there seems to be bug for singleton domains (variable does not show up in model)
       lazy val domain: Option[Set[Const]] = {
-        val subConsts = enumerateSubtypes(fullTp).map{ tps =>
+        val subConsts = enumerateSubtypes(staticTp).map{ tps =>
           tps.toSet[Type].map{ tp =>
             val domainC = TypeConst(tp)
             registerEquality(domainC)
@@ -2056,7 +2076,7 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
         }
 
         val allConsts =
-          if (! _considerNull) subConsts
+          if (!consideringNull) subConsts
           else {
             registerEquality(NullConst)
             subConsts map (_ + NullConst)
@@ -2068,6 +2088,7 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
       // accessing after calling considerNull will result in inconsistencies
       lazy val domainSyms: Option[Set[Sym]] = domain map { _ map symForEqualsTo }
 
+      lazy val symForStaticTp: Option[Sym]  = symForEqualsTo.get(TypeConst(staticTpCheckable))
 
       // populate equalitySyms
       // don't care about the result, but want only one fresh symbol per distinct constant c
@@ -2082,7 +2103,7 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
 
 
       // don't call until all equalities have been registered and considerNull has been called (if needed)
-      def describe = toString + ": " + fullTp + domain.map(_.mkString(" ::= ", " | ", "// "+ symForEqualsTo.keys)).getOrElse(symForEqualsTo.keys.mkString(" ::= ", " | ", " | ...")) + " // = " + path
+      def describe = toString + ": " + staticTp + domain.map(_.mkString(" ::= ", " | ", "// "+ symForEqualsTo.keys)).getOrElse(symForEqualsTo.keys.mkString(" ::= ", " | ", " | ...")) + " // = " + path
       override def toString = "V"+ id
     }
 
@@ -2136,7 +2157,7 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
     }
 
     sealed abstract class Const extends AbsConst {
-      protected def tp: Type
+      def tp: Type
       protected def wideTp: Type
 
       def isAny = wideTp.typeSymbol == AnyClass
@@ -2192,7 +2213,7 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
       clsTp
     }
 
-    object TypeConst {
+    object TypeConst extends TypeConstExtractor {
       def apply(tp: Type) = {
         if (tp =:= NullTp) NullConst
         else if (tp.isInstanceOf[SingletonType]) ValueConst.fromType(tp)
@@ -2257,7 +2278,7 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
 
     lazy val NullTp = ConstantType(Constant(null))
     case object NullConst extends Const {
-      protected def tp     = NullTp
+      def tp     = NullTp
       protected def wideTp = NullTp
 
       def isValue = true
@@ -2471,14 +2492,15 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
 
         // when does the match fail?
         val matchFails = Not(\/(symbolicCases))
+        val vars = gatherVariables(matchFails)
 
   // debug output:
         // patmatDebug ("analysing:")
         showTreeMakers(cases)
         showTests(tests)
 
-        // patmatDebug ("\nvars:\n"+ (gatherVariables(matchFails) map (_.describe) mkString ("\n")))
-        // patmatDebug ("\nmatchFails as CNF:\n"+ cnfString(propToSolvable(matchFails)))
+        // patmatDebug("\nvars:\n"+ (vars map (_.describe) mkString ("\n")))
+        // patmatDebug("\nmatchFails as CNF:\n"+ cnfString(propToSolvable(matchFails)))
 
         try {
           // find the models (under which the match fails)
@@ -2514,13 +2536,13 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
     }
     case class ValueExample(c: ValueConst) extends CounterExample { override def toString = c.toString }
     case class TypeExample(c: Const)  extends CounterExample { override def toString = "(_ : "+ c +")" }
-    case class NegativeExample(nonTrivialNonEqualTo: List[Const]) extends CounterExample {
+    case class NegativeExample(eqTo: Const, nonTrivialNonEqualTo: List[Const]) extends CounterExample {
       // require(nonTrivialNonEqualTo.nonEmpty, nonTrivialNonEqualTo)
       override def toString = {
         val negation =
           if (nonTrivialNonEqualTo.tail.isEmpty) nonTrivialNonEqualTo.head.toString
-          else nonTrivialNonEqualTo.map(_.toString).sorted.mkString("in (", ", ", ")")
-        "<not "+ negation +">"
+          else nonTrivialNonEqualTo.map(_.toString).sorted.mkString("(", ", ", ")")
+        "(x: "+ eqTo +" forSome x not in "+ negation +")"
       }
     }
     case class ListExample(ctorArgs: List[CounterExample]) extends CounterExample {
@@ -2566,7 +2588,7 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
     def varAssignmentString(varAssignment: Map[Var, (Seq[Const], Seq[Const])]) =
       varAssignment.toSeq.sortBy(_._1.toString).map { case (v, (trues, falses)) =>
          val assignment = "== "+ (trues mkString("(", ", ", ")")) +"  != ("+ (falses mkString(", ")) +")"
-         v +"(="+ v.path +": "+ v.domainTp +") "+ assignment
+         v +"(="+ v.path +": "+ v.staticTpCheckable +") "+ assignment
        }.mkString("\n")
 
     def modelString(model: Model) = varAssignmentString(modelToVarAssignment(model))
@@ -2631,8 +2653,9 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
       // node in the tree that describes how to construct a counter-example
       case class VariableAssignment(variable: Var, equalTo: List[Const], notEqualTo: List[Const], fields: collection.mutable.Map[Symbol, VariableAssignment]) {
         // need to prune since the model now incorporates all super types of a constant (needed for reachability)
-        private lazy val prunedEqualTo = equalTo filterNot (subsumed => equalTo.exists(better => (better ne subsumed) && (better implies subsumed)))
-        private lazy val ctor       = (prunedEqualTo match { case List(TypeConst(tp)) => tp case _ => variable.domainTp }).typeSymbol.primaryConstructor
+        private lazy val uniqueEqualTo = equalTo filterNot (subsumed => equalTo.exists(better => (better ne subsumed) && (better implies subsumed)))
+        private lazy val prunedEqualTo = uniqueEqualTo filterNot (subsumed => variable.staticTpCheckable <:< subsumed.tp)
+        private lazy val ctor       = (prunedEqualTo match { case List(TypeConst(tp)) => tp case _ => variable.staticTpCheckable }).typeSymbol.primaryConstructor
         private lazy val ctorParams = if (ctor == NoSymbol || ctor.paramss.isEmpty) Nil else ctor.paramss.head
         private lazy val cls        = if (ctor == NoSymbol) NoSymbol else ctor.owner
         private lazy val caseFieldAccs = if (cls == NoSymbol) Nil else cls.caseFieldAccessors
@@ -2657,9 +2680,9 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
               // constructor call
               // or we did not gather any information about equality but we have information about the fields
               //  --> typical example is when the scrutinee is a tuple and all the cases first unwrap that tuple and only then test something interesting
-              case _ if cls != NoSymbol &&
-                        (  prunedEqualTo.nonEmpty
-                        || (fields.nonEmpty && !isPrimitiveValueClass(cls) && prunedEqualTo.isEmpty && notEqualTo.isEmpty)) =>
+              case _ if cls != NoSymbol && !isPrimitiveValueClass(cls) &&
+                        (  uniqueEqualTo.nonEmpty
+                        || (fields.nonEmpty && prunedEqualTo.isEmpty && notEqualTo.isEmpty)) =>
 
                 @inline def args(brevity: Boolean = beBrief) = {
                   // figure out the constructor arguments from the field assignment
@@ -2680,7 +2703,11 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
               // negative information
               case Nil if nonTrivialNonEqualTo.nonEmpty =>
                 // negation tends to get pretty verbose
-                if (beBrief) WildcardExample else NegativeExample(nonTrivialNonEqualTo)
+                if (beBrief) WildcardExample
+                else {
+                  val eqTo = equalTo.headOption getOrElse TypeConst(variable.staticTpCheckable)
+                  NegativeExample(eqTo, nonTrivialNonEqualTo)
+                }
 
               // not a valid counter-example, possibly since we have a definite type but there was a field mismatch
               // TODO: improve reasoning -- in the mean time, a false negative is better than an annoying false positive
