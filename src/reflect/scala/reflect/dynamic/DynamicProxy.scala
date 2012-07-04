@@ -178,7 +178,7 @@ trait DynamicProxy extends Dynamic {
 
       if (selection.length == 1) {
         val method = im.reflectMethod(selection.head)
-        val arguments = fixArguments(selection.head).get.map(_._2)
+        val arguments = fixArguments(selection.head).get.map(_._2) 
         val evalDefaults = arguments.map {
           case Left(a) => a
           case Right(d) => im.reflectMethod(d).apply()
@@ -276,6 +276,11 @@ trait DynamicProxy extends Dynamic {
       points(method1, method2) > points(method2, method1)
     }
 
+    // Each argument is an Either[Any, u.MethodSymbol] This is because the argument may
+    // be explicit or default. If it's explicit, it's a left. If it's default, it's a
+    // right. It's a u.MethodSymobl for a default argument because the argument may have
+    // side-effects that need to occur every time it's passed. Returns None if the method
+    // is not applicable to call's arguments.
     def fixArguments(method: u.MethodSymbol): Option[Seq[(u.Type, Either[Any, u.MethodSymbol])]] = {
 
       val defaults = defaultValues(method)
@@ -330,13 +335,20 @@ trait DynamicProxy extends Dynamic {
     ): Seq[u.MethodSymbol] =
       filters.foldLeft(alternatives)((a, f) => if (a.tail nonEmpty) f(a) else a)
 
+    // Drop arguments that take the wrong number of type
+    // arguments. Presently, this is all methods that take
+    // any type arguments.
     val posTargLength: Seq[u.MethodSymbol] => Seq[u.MethodSymbol] =
       _.filter(a => a.typeSignature.typeParams.length == posTargs.length)
 
     def defaultFilteringOps =
       Seq(posTargLength, shapeApplicable, applicable, noDefaults, mostSpecific)
 
+    // Drop methods that are not applicable to the shape
+    // of the arguments
     val shapeApplicable: Seq[u.MethodSymbol] => Seq[u.MethodSymbol] = _.filter{ a =>
+      // Note: fixArguments returns None if a is not applicable and 
+      // None.exists(_ => true) == false
       fixArguments(a) exists { args =>
         val tpes = args.map(_._1)
         val shapes = tpes.map(shape)
@@ -344,16 +356,26 @@ trait DynamicProxy extends Dynamic {
       }
     }
 
+    // Drop methods that are not applicable to the arguments
     val applicable: Seq[u.MethodSymbol] => Seq[u.MethodSymbol] = _.filter { a =>
+      // Note: fixArguments returns None if a is not applicable and
+      // None.exists(_ => true) == false
       fixArguments(a) exists { args =>
         val tpes = args.map(_._1)
         (tpes, paramTypes(a)).zipped.forall(_ <:< _)
       }
     }
 
+    // Always prefer methods that don't need to use default
+    // arguments over those that do.
+    // e.g. when resolving foo(1), prefer def foo(x: Int) over
+    // def foo(x: Int, y: Int = 4)
     val noDefaults: Seq[u.MethodSymbol] => Seq[u.MethodSymbol] =
       _.filter(a => defaultValues(a).size == 0)
 
+    // Try to select the most specific method. If that's not possible,
+    // return all of the candidates (this will likely cause an error
+    // higher up in the call stack)
     val mostSpecific: Seq[u.MethodSymbol] => Seq[u.MethodSymbol] = { alts =>
       val sorted = alts.sortWith(moreSpecific)
       val mostSpecific = sorted.head
