@@ -23,35 +23,35 @@ object Test extends App {
   try{
     p1.foo(6,bar=8) // <- expected exception, but none thrown
     assert( false ) 
-  } catch {  case e:AssertionError => throw e ;case e:java.util.NoSuchElementException => throw e;case _: Throwable => () }
+  } catch {  case e:AssertionError => throw e ;case e:java.util.NoSuchElementException => println(e) ;case _: Throwable => () }
 
   // probably not intended (or at least not speaking): java.util.NoSuchElementException: None.get in DynamicProxy line 181
   try{
     p2.foo // <- expected exception, but probably not java.util.NoSuchElementException
     assert( false )
-  } catch {  case e:AssertionError => throw e ;case e:java.util.NoSuchElementException => throw e;case _: Throwable => () }
+  } catch {  case e:AssertionError => throw e ;case e:java.util.NoSuchElementException => println(e);case _: Throwable => () }
 
   // probably not intended (or at least not speaking): java.util.NoSuchElementException: None.get in DynamicProxy line 181
   try{
     p2.foo() // <- expected exception, but probably not java.util.NoSuchElementException
     assert( false )
-  } catch {  case e:AssertionError => throw e ;case e:java.util.NoSuchElementException => throw e;case _: Throwable => () }
+  } catch {  case e:AssertionError => throw e ;case e:java.util.NoSuchElementException => println(e);case _: Throwable => () }
 
   // probably not intended (or at least not speaking): java.util.NoSuchElementException: None.get in DynamicProxy line 181
   try{
     p2.foo(6, xyz = "foo") // <- expected exception, but probably not java.util.NoSuchElementException
     assert( false )
-  } catch {  case e:AssertionError => throw e ;case e:java.util.NoSuchElementException => throw e;case _: Throwable => () }
+  } catch {  case e:AssertionError => throw e ;case e:java.util.NoSuchElementException => println(e);case _: Throwable => () }
 
   // test fails
   try{
     p2.foo(6, "test", xyz = "foo") // <- expected exception, but none thrown
     assert( false )
-  } catch {  case e:AssertionError => throw e ;case e:java.util.NoSuchElementException => throw e;case _: Throwable => () }
+  } catch {  case e:AssertionError => throw e ;case e:java.util.NoSuchElementException => println(e);case _: Throwable => () }
 
   // probably not intended (or at least not speaking): java.util.NoSuchElementException: None.get in DynamicProxy line 181
   try{
     p2.foo(6, name="test", xyz = "foo") // <- expected exception, but probably not java.util.NoSuchElementException
     assert( false )
-  } catch { case e:AssertionError => throw e ;case e:java.util.NoSuchElementException => throw e;case _: Throwable => () }
+  } catch { case e:AssertionError => throw e ;case e:java.util.NoSuchElementException => println(e);case _: Throwable => () }
 }

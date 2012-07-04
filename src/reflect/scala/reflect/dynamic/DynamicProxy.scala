@@ -97,12 +97,12 @@ trait DynamicProxy extends Dynamic {
    * @param tpe the type of the value
    * @param value the actual value
    */
-  case class Boxed(tpe: u.Type, value: Any)
+  protected case class Boxed(tpe: u.Type, value: Any)
 
   /** Companion for class `Boxed` used to house implicit conversions from any object
    * to a Boxed instance.
    */
-  object Boxed {
+  protected object Boxed {
     /** implicit conversion from any type to a `Boxed` instance.
      * @param v the object to be boxed\
      * @return the a `Boxed` instance where the `value` is `v` and the `tpe` is `v`'s type
@@ -308,16 +308,20 @@ trait DynamicProxy extends Dynamic {
     }
 
     def fixArguments(method: u.MethodSymbol): Option[Seq[(u.Type, Either[Any, u.MethodSymbol])]] = {
+
       val defaults = defaultValues(method)
       val base = posVargs.map(x => Some((x._1, Left(x._2))))
       val params = valueParams(method)
-      val rest = {
-        val offset = base.length
-        val unfilledParams = params.zipWithIndex.drop(offset)
-        val canAcceptAllArgs = nameVargs.forall { a =>
-          unfilledParams.exists(_._1.name == u.newTermName(a._1))
-        }
-        if (canAcceptAllArgs) {
+
+      val offset = base.length
+      val unfilledParams = params.zipWithIndex.drop(offset)
+      val canAcceptAllNameVargs = nameVargs.forall { a =>
+        unfilledParams.exists(_._1.name == u.newTermName(a._1))
+      }
+
+      if (canAcceptAllNameVargs) {
+
+        val rest = {
           unfilledParams.map { case (param, index) =>
             val matchingArgument =
               nameVargs.find(arg => u.newTermName(arg._1).encodedName == param.name.encodedName)
@@ -336,12 +340,14 @@ trait DynamicProxy extends Dynamic {
               else None
             }
           }
-        } else Seq(None)
-      }
-      val maybe = base ++ rest
-      val flat = maybe.flatten
-      if (flat.length == params.length) Some(flat)
-      else None
+        }
+
+        val maybe = base ++ rest
+        val flat = maybe.flatten
+        if (flat.length == params.length) Some(flat)
+        else None
+
+      } else None
     }
     
   }
