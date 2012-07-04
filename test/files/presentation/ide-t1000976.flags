@@ -1,0 +1,4 @@
+-sourcepath files/presentation/ide-t1000976/src
+
+# Any option can be passed this way, like presentation debug
+# -Ypresentation-debug -Ypresentation-verbose

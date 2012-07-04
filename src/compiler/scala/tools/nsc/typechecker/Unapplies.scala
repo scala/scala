@@ -23,6 +23,14 @@ trait Unapplies extends ast.TreeDSL
 
   private val unapplyParamName = nme.x_0
 
+
+  // In the typeCompleter (templateSig) of a case class (resp it's module),
+  // synthetic `copy` (reps `apply`, `unapply`) methods are added. To compute
+  // their signatures, the corresponding ClassDef is needed. During naming (in
+  // `enterClassDef`), the case class ClassDef is added as an attachment to the
+  // moduleClass symbol of the companion module.
+  class ClassForCaseCompanionAttachment(val caseClass: ClassDef)
+
   /** returns type list for return type of the extraction */
   def unapplyTypeList(ufn: Symbol, ufntpe: Type) = {
     assert(ufn.isMethod, ufn)
