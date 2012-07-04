@@ -97,12 +97,12 @@ trait DynamicProxy extends Dynamic {
    * @param tpe the type of the value
    * @param value the actual value
    */
-  protected case class Boxed(tpe: u.Type, value: Any)
+  case class Boxed(tpe: u.Type, value: Any)
 
   /** Companion for class `Boxed` used to house implicit conversions from any object
    * to a Boxed instance.
    */
-  protected object Boxed {
+  object Boxed {
     /** implicit conversion from any type to a `Boxed` instance.
      * @param v the object to be boxed\
      * @return the a `Boxed` instance where the `value` is `v` and the `tpe` is `v`'s type
@@ -258,20 +258,13 @@ trait DynamicProxy extends Dynamic {
   private[this] trait ConcreteCorrelationHelpers extends CorrelationHelpers {
     self: ReflectionHelpers with KnowsArgs =>
 
-    class Target
-
     def shape(arg: u.Type): u.Type = {
 
-      val functionTypes =
-        0 to 22 map (x => u.appliedType(FunctionClass(x).asType, (1 to x map (_ => AnyClass.asType)).toList :+ u.typeOf[Target]))
-
-      val argErasure = arg.erasure
-      val functionShape = functionTypes.find(argErasure <:< _.erasure)
-
-      functionShape.map { fs =>
-        val returnShape = shape(arg.typeArguments.last)
-        fs.map(t => if (t =:= u.typeOf[Target]) returnShape else t)
-      }.getOrElse(u.typeOf[Nothing])
+      arg.typeArguments.lastOption flatMap { possibleReturn =>
+        val functionTypes =
+          0 to 22 map (x => u.appliedType(FunctionClass(x).asType, (1 to x map (_ => AnyClass.asType)).toList :+ possibleReturn))
+        functionTypes.find(arg <:< _)
+      } getOrElse u.typeOf[Nothing]
 
     }
 
