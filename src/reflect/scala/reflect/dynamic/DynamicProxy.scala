@@ -91,18 +91,15 @@ trait DynamicProxy extends Dynamic {
 
   /** Used to capture the types of arguments along with their values.
    *
-   *  This class's existance is an implementation detail and you
-   *  should never have to create instances of it yourself.
-   * 
    * @param tpe the type of the value
    * @param value the actual value
    */
-  case class Boxed(tpe: u.Type, value: Any)
+  protected case class Boxed(tpe: u.Type, value: Any)
 
   /** Companion for class `Boxed` used to house implicit conversions from any object
    * to a Boxed instance.
    */
-  object Boxed {
+  protected object Boxed {
     /** implicit conversion from any type to a `Boxed` instance.
      * @param v the object to be boxed\
      * @return the a `Boxed` instance where the `value` is `v` and the `tpe` is `v`'s type
