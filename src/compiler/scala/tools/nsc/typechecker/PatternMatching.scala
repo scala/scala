@@ -1616,7 +1616,16 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
 
     type Const <: AbsConst
     trait AbsConst {
+      // when we know V = C, which other equalities must hold
+      // in general, equality to some type implies equality to its supertypes
+      // (this multi-valued kind of equality is necessary for unreachability)
+      // note that we use subtyping as a model for implication between instanceof tests
+      // i.e., when S <:< T we assume x.isInstanceOf[S] implies x.isInstanceOf[T]
+      // unfortunately this is not true in general (see e.g. SI-6022)
       def implies(other: Const): Boolean
+
+      // does V = C preclude V having value `other`?  V = null is an exclusive assignment,
+      // but V = 1 does not preclude V = Int, or V = Any
       def excludes(other: Const): Boolean
     }
 
@@ -2164,11 +2173,30 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
 
       def isAny = wideTp.typeSymbol == AnyClass
 
+      // we use subtyping as a model for implication between instanceof tests
+      // i.e., when S <:< T we assume x.isInstanceOf[S] implies x.isInstanceOf[T]
+      // unfortunately this is not true in general:
+      // SI-6022 expects instanceOfTpImplies(ProductClass.tpe, AnyRefClass.tpe)
+      private def instanceOfTpImplies(tp: Type, tpImplied: Type) = {
+        val tpValue    = tp.typeSymbol.isPrimitiveValueClass
+
+        // pretend we're comparing to Any when we're actually comparing to AnyVal or AnyRef
+        // (and the subtype is respectively a value type or not a value type)
+        // this allows us to reuse subtyping as a model for implication between instanceOf tests
+        // the latter don't see a difference between AnyRef, Object or Any when comparing non-value types -- SI-6022
+        val tpImpliedNormalizedToAny =
+          if ((tpValue && tpImplied =:= AnyValClass.tpe) ||
+              (!tpValue && tpImplied =:= AnyRefClass.tpe)) AnyClass.tpe
+          else tpImplied
+
+        tp <:< tpImpliedNormalizedToAny
+      }
+
       final def implies(other: Const): Boolean = {
         val r = (this, other) match {
           case (_: ValueConst, _: ValueConst) => this == other // hashconsed
-          case (_: ValueConst, _: TypeConst)  => tp <:< other.tp
-          case (_: TypeConst,  _)             => tp <:< other.tp
+          case (_: ValueConst, _: TypeConst)  => instanceOfTpImplies(tp, other.tp)
+          case (_: TypeConst,  _)             => instanceOfTpImplies(tp, other.tp)
           case _                              => false
         }
         // if(r) patmatDebug("implies    : "+(this, other))
@@ -2185,12 +2213,12 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
           // this causes false negative for unreachability, but that's ok:
           // example: val X = 1; val Y = 1; (2: Int) match { case X => case Y => /* considered reachable */ }
           case (_: ValueConst, _: ValueConst) => this != other
-          case (_: ValueConst, _: TypeConst)  => !((tp <:< other.tp) || (other.tp <:< wideTp))
-          case (_: TypeConst,  _: ValueConst) => !((other.tp <:< tp) || (tp <:< other.wideTp))
-          case (_: TypeConst,  _: TypeConst)  => !((tp <:< other.tp) || (other.tp <:< tp))
+          case (_: ValueConst, _: TypeConst)  => !(instanceOfTpImplies(tp, other.tp) || instanceOfTpImplies(other.tp, wideTp))
+          case (_: TypeConst,  _: ValueConst) => !(instanceOfTpImplies(other.tp, tp) || instanceOfTpImplies(tp, other.wideTp))
+          case (_: TypeConst,  _: TypeConst)  => !(instanceOfTpImplies(tp, other.tp) || instanceOfTpImplies(other.tp, tp))
           case _                              => false
         }
-        // if(r) patmatDebug("excludes    : "+(this, this.tp, other, other.tp, (tp <:< other.tp), (tp <:< other.wideTp), (other.tp <:< tp), (other.tp <:< wideTp)))
+        // if(r) patmatDebug("excludes    : "+(this, this.tp, other, other.tp))
         // else  patmatDebug("NOT excludes: "+(this, other))
         r
       }
@@ -2752,7 +2780,7 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
         def simplify(c: Cond): Set[Cond] = c match {
           case AndCond(a, b)  => simplify(a) ++ simplify(b)
           case OrCond(_, _)   => Set(FalseCond) // TODO: make more precise
-          case NonNullCond(_) => Set(TrueCond) // not worth remembering
+          case NonNullCond(_) => Set(TrueCond)  // not worth remembering
           case _              => Set(c)
         }
         val conds = simplify(cond)
@@ -2768,7 +2796,7 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
               case (priorTest, deps) =>
                 ((simplify(priorTest.cond) == nonTrivial) || // our conditions are implied by priorTest if it checks the same thing directly
                  (nonTrivial subsetOf deps)                  // or if it depends on a superset of our conditions
-                ) && (deps subsetOf tested)             // the conditions we've tested when we are here in the match satisfy the prior test, and hence what it tested
+                ) && (deps subsetOf tested)                  // the conditions we've tested when we are here in the match satisfy the prior test, and hence what it tested
             } foreach {
               case (priorTest, _) =>
                 // if so, note the dependency in both tests
