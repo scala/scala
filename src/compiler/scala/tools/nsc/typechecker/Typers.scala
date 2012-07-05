@@ -1380,7 +1380,7 @@ trait Typers extends Modes with Adaptations with Tags {
             for (stat <- body)
               if (!treeInfo.isAllowedInUniversalTrait(stat) && !isUnderlyingAcc(stat.symbol))
                 unit.error(stat.pos,
-                  if (stat.symbol hasFlag PARAMACCESSOR) "illegal parameter for value class"
+                  if (stat.symbol != null && (stat.symbol hasFlag PARAMACCESSOR)) "illegal parameter for value class"
                   else "this statement is not allowed in value class: " + stat)
           case x =>
             unit.error(clazz.pos, "value class needs to have exactly one public val parameter")
