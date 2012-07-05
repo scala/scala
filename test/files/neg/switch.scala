@@ -24,8 +24,8 @@ object Main {
     case _                => false
   }
   
-  // has a guard
-  def fail1(c: Char) = (c: @switch) match {
+  // has a guard, but since SI-5830 that's ok
+  def succ_guard(c: Char) = (c: @switch) match {
     case 'A' | 'B' | 'C'  => true
     case x if x == 'A'    => true
     case _                => false
