@@ -21,6 +21,8 @@ abstract class Taggers {
     BooleanTpe -> nme.Boolean,
     UnitTpe -> nme.Unit,
     AnyTpe -> nme.Any,
+    AnyValTpe -> nme.AnyVal,
+    AnyRefTpe -> nme.AnyRef,
     ObjectTpe -> nme.Object,
     NothingTpe -> nme.Nothing,
     NullTpe -> nme.Null)
