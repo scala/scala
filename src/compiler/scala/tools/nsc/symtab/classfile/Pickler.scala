@@ -156,6 +156,7 @@ abstract class Pickler extends SubComponent {
 
             putChildren(sym, children.toList sortBy (_.sealedSortName))
           }
+          if (sym.isTypeParameter && sym.hasAnnotation(definitions.SpecializedClass)) sym.setFlag(SPECIALIZED)
           for (annot <- (sym.annotations filter (ann => ann.isStatic && !ann.isErroneous)).reverse)
             putAnnotation(sym, annot)
         }

@@ -631,7 +631,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
         overloads(specMember) ::= Overload(om, typeEnv(om))
         enterMember(om)
       }
-
+      
       for (m <- normMembers ; if needsSpecialization(outerEnv ++ env, m) && satisfiable(fullEnv)) {
         if (!m.isDeferred)
           addConcreteSpecMethod(m)
@@ -1573,7 +1573,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
               }
 
             case fwd @ Forward(_) =>
-              debuglog("forward: " + fwd + ", " + ddef)
+              debuglog("forward: " + fwd + ", " + ddef + ", " + tree.symbol.owner)
               val rhs1 = forwardCall(tree.pos, gen.mkAttributedRef(symbol.owner.thisType, fwd.target), vparamss)
               debuglog("-->d completed forwarder to specialized overload: " + fwd.target + ": " + rhs1)
               reportError {
