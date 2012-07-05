@@ -20,14 +20,14 @@
 409c408,417
 <     103	THROW(MyException)
 ---
->     ?	STORE_LOCAL(value ex5)
+>     ?	STORE_LOCAL(value ex6)
 >     ?	JUMP 17
 >     
 >   17: 
->     101	LOAD_LOCAL(value ex5)
->     101	STORE_LOCAL(value x3)
->     101	SCOPE_ENTER value x3
->     106	LOAD_LOCAL(value x3)
+>     101	LOAD_LOCAL(value ex6)
+>     101	STORE_LOCAL(value x4)
+>     101	SCOPE_ENTER value x4
+>     106	LOAD_LOCAL(value x4)
 >     106	IS_INSTANCE REF(class MyException)
 >     106	CZJUMP (BOOL)NE ? 5 : 11
 422,424d429
@@ -125,29 +125,29 @@
 737c786,793
 <     172	THROW(MyException)
 ---
->     ?	STORE_LOCAL(value ex5)
+>     ?	STORE_LOCAL(value ex6)
 >     ?	JUMP 32
 >     
 >   32: 
->     170	LOAD_LOCAL(value ex5)
->     170	STORE_LOCAL(value x3)
->     170	SCOPE_ENTER value x3
+>     170	LOAD_LOCAL(value ex6)
+>     170	STORE_LOCAL(value x4)
+>     170	SCOPE_ENTER value x4
 >     170	JUMP 18
 793c849,850
 <     177	THROW(MyException)
 ---
->     ?	STORE_LOCAL(value ex5)
+>     ?	STORE_LOCAL(value ex6)
 >     ?	JUMP 33
 797c854,861
 <     170	THROW(Throwable)
 ---
->     ?	STORE_LOCAL(value ex5)
+>     ?	STORE_LOCAL(value ex6)
 >     ?	JUMP 33
 >     
 >   33: 
->     169	LOAD_LOCAL(value ex5)
->     169	STORE_LOCAL(value x3)
->     169	SCOPE_ENTER value x3
+>     169	LOAD_LOCAL(value ex6)
+>     169	STORE_LOCAL(value x4)
+>     169	SCOPE_ENTER value x4
 >     169	JUMP 5
 830c894,895
 <     182	THROW(MyException)
@@ -188,13 +188,13 @@
 909c988,995
 <     124	THROW(MyException)
 ---
->     ?	STORE_LOCAL(value ex5)
+>     ?	STORE_LOCAL(value ex6)
 >     ?	JUMP 20
 >     
 >   20: 
->     122	LOAD_LOCAL(value ex5)
->     122	STORE_LOCAL(value x3)
->     122	SCOPE_ENTER value x3
+>     122	LOAD_LOCAL(value ex6)
+>     122	STORE_LOCAL(value x4)
+>     122	SCOPE_ENTER value x4
 >     122	JUMP 7
 969c1055
 <     catch (IllegalArgumentException) in ArrayBuffer(6, 7, 8, 11, 14, 16, 17, 19) starting at: 3
@@ -207,14 +207,14 @@
 1019c1105,1114
 <     148	THROW(MyException)
 ---
->     ?	STORE_LOCAL(value ex5)
+>     ?	STORE_LOCAL(value ex6)
 >     ?	JUMP 20
 >     
 >   20: 
->     145	LOAD_LOCAL(value ex5)
->     145	STORE_LOCAL(value x3)
->     145	SCOPE_ENTER value x3
->     154	LOAD_LOCAL(value x3)
+>     145	LOAD_LOCAL(value ex6)
+>     145	STORE_LOCAL(value x4)
+>     145	SCOPE_ENTER value x4
+>     154	LOAD_LOCAL(value x4)
 >     154	IS_INSTANCE REF(class MyException)
 >     154	CZJUMP (BOOL)NE ? 5 : 11
 1040,1042d1134
@@ -243,19 +243,19 @@
 1372c1471,1472
 <     203	THROW(MyException)
 ---
->     ?	STORE_LOCAL(value ex5)
+>     ?	STORE_LOCAL(value ex6)
 >     ?	JUMP 20
 1392c1492,1501
 <     209	THROW(MyException)
 ---
->     ?	STORE_LOCAL(value ex5)
+>     ?	STORE_LOCAL(value ex6)
 >     ?	JUMP 20
 >     
 >   20: 
->     200	LOAD_LOCAL(value ex5)
->     200	STORE_LOCAL(value x3)
->     200	SCOPE_ENTER value x3
->     212	LOAD_LOCAL(value x3)
+>     200	LOAD_LOCAL(value ex6)
+>     200	STORE_LOCAL(value x4)
+>     200	SCOPE_ENTER value x4
+>     212	LOAD_LOCAL(value x4)
 >     212	IS_INSTANCE REF(class MyException)
 >     212	CZJUMP (BOOL)NE ? 5 : 11
 1405,1407d1513

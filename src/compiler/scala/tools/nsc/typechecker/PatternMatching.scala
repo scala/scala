@@ -143,6 +143,15 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
     val typer: Typer
     val matchOwner = typer.context.owner
 
+    def reportUnreachable(pos: Position) = typer.context.unit.warning(pos, "unreachable code")
+    def reportMissingCases(pos: Position, counterExamples: List[String]) = {
+      val ceString =
+        if (counterExamples.tail.isEmpty) "input: " + counterExamples.head
+        else "inputs: " + counterExamples.mkString(", ")
+
+      typer.context.unit.warning(pos, "match may not be exhaustive.\nIt would fail on the following "+ ceString)
+    }
+
     def inMatchMonad(tp: Type): Type
     def pureType(tp: Type): Type
     final def matchMonadResult(tp: Type): Type =
@@ -792,7 +801,7 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
     def optimizeCases(prevBinder: Symbol, cases: List[List[TreeMaker]], pt: Type, unchecked: Boolean): (List[List[TreeMaker]], List[Tree]) =
       (cases, Nil)
 
-    def emitSwitch(scrut: Tree, scrutSym: Symbol, cases: List[List[TreeMaker]], pt: Type, matchFailGenOverride: Option[Tree => Tree]): Option[Tree] =
+    def emitSwitch(scrut: Tree, scrutSym: Symbol, cases: List[List[TreeMaker]], pt: Type, matchFailGenOverride: Option[Tree => Tree], unchecked: Boolean): Option[Tree] =
       None
 
     // for catch (no need to customize match failure)
@@ -1103,9 +1112,9 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
       combineCasesNoSubstOnly(scrut, scrutSym, casesNoSubstOnly, pt, owner, matchFailGenOverride)
     }
 
+    // pt is the fully defined type of the cases (either pt or the lub of the types of the cases)
     def combineCasesNoSubstOnly(scrut: Tree, scrutSym: Symbol, casesNoSubstOnly: List[List[TreeMaker]], pt: Type, owner: Symbol, matchFailGenOverride: Option[Tree => Tree]): Tree =
       fixerUpper(owner, scrut.pos){
-        val ptDefined    = if (isFullyDefined(pt)) pt else NoType
         def matchFailGen = (matchFailGenOverride orElse Some(CODE.MATCHERROR(_: Tree)))
         // patmatDebug("combining cases: "+ (casesNoSubstOnly.map(_.mkString(" >> ")).mkString("{", "\n", "}")))
 
@@ -1120,7 +1129,7 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
               (false, false)
           }
 
-        emitSwitch(scrut, scrutSym, casesNoSubstOnly, pt, matchFailGenOverride).getOrElse{
+        emitSwitch(scrut, scrutSym, casesNoSubstOnly, pt, matchFailGenOverride, unchecked).getOrElse{
           if (requireSwitch) typer.context.unit.warning(scrut.pos, "could not emit switch for @switch annotated match")
 
           if (casesNoSubstOnly nonEmpty) {
@@ -1208,6 +1217,7 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
 
       // local / context-free
       def _asInstanceOf(b: Symbol, tp: Type): Tree
+      def _asInstanceOf(t: Tree, tp: Type, force: Boolean = false): Tree
       def _equals(checker: Tree, binder: Symbol): Tree
       def _isInstanceOf(b: Symbol, tp: Type): Tree
       def and(a: Tree, b: Tree): Tree
@@ -2918,36 +2928,150 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
 
       def alternativesSupported: Boolean
 
+      // when collapsing guarded switch cases we may sometimes need to jump to the default case
+      // however, that's not supported in exception handlers, so when we can't jump when we need it, don't emit a switch
+      // TODO: make more fine-grained, as we don't always need to jump
+      def canJump: Boolean
+
+      def unchecked: Boolean
+
+
       def isDefault(x: CaseDef): Boolean
       def defaultSym: Symbol
       def defaultBody: Tree
-      def defaultCase(scrutSym: Symbol = defaultSym, body: Tree = defaultBody): CaseDef
+      def defaultCase(scrutSym: Symbol = defaultSym, guard: Tree = EmptyTree, body: Tree = defaultBody): CaseDef
 
       private def sequence[T](xs: List[Option[T]]): Option[List[T]] =
         if (xs exists (_.isEmpty)) None else Some(xs.flatten)
+
+      object GuardAndBodyTreeMakers {
+          def unapply(tms: List[TreeMaker]): Option[(Tree, Tree)] = {
+            tms match {
+              case (btm@BodyTreeMaker(body, _)) :: Nil => Some((EmptyTree, btm.substitution(body)))
+              case (gtm@GuardTreeMaker(guard)) :: (btm@BodyTreeMaker(body, _)) :: Nil => Some((gtm.substitution(guard), btm.substitution(body)))
+              case _ => None
+            }
+          }
+      }
+
+      private val defaultLabel: Symbol =  NoSymbol.newLabel(freshName("default"), NoPosition) setFlag SYNTH_CASE
+
+      /** Collapse guarded cases that switch on the same constant (the last case may be unguarded).
+       *
+       * `{case C if(G_i) => B_i | case C'_j if G'_j => B'_j}*`  is rewritten to
+       * `case C => {if(G_i) B_i}*` ++ rewrite({case C'_j if G'_j => B'_j}*)
+       *
+       */
+      private def collapseGuardedCases(cases: List[CaseDef]) = {
+        // requires(switchesOnSameConst.forall(caseChecksSameConst(switchesOnSameConst.head)))
+        def collapse(switchesOnSameConst: List[CaseDef]): List[CaseDef] =
+          if (switchesOnSameConst.tail.isEmpty && (switchesOnSameConst.head.guard == EmptyTree)) switchesOnSameConst
+          else {
+            val commonPattern = switchesOnSameConst.head.pat
+
+            // jump to default case (either the user-supplied one or the synthetic one)
+            // unless we're collapsing the default case, then re-use the same body as the synthetic catchall (throwing a matcherror, rethrowing the exception)
+            val jumpToDefault: Tree =
+              if (!canJump || isDefault(CaseDef(commonPattern, EmptyTree, EmptyTree))) defaultBody
+              else Apply(Ident(defaultLabel), Nil)
+
+            val guardedBody = switchesOnSameConst.foldRight(jumpToDefault){
+              // the last case may be un-guarded (we know it's the last one since fold's accum == jumpToDefault)
+              // --> replace jumpToDefault by the un-guarded case's body
+              case (CaseDef(_, EmptyTree, b), `jumpToDefault`)  => b
+              case (CaseDef(_, g, b), els) if g != EmptyTree => If(g, b, els)
+              // error: the un-guarded case did not come last
+              case _ =>
+                return switchesOnSameConst
+            }
+
+            // if the cases that we're going to collapse bind variables,
+            // must replace them by the single binder introduced by the collapsed case
+            val binders = switchesOnSameConst.collect{case CaseDef(x@Bind(_, _), _, _) if x.symbol != NoSymbol => x.symbol}
+            val (pat, guardedBodySubst) =
+              if (binders.isEmpty) (commonPattern, guardedBody)
+              else {
+                // create a single fresh binder to subsume the old binders (and their types)
+                // TODO: I don't think the binder's types can actually be different (due to checks in caseChecksSameConst)
+                // if they do somehow manage to diverge, the lub might not be precise enough and we could get a type error
+                val binder = freshSym(binders.head.pos, lub(binders.map(_.tpe)))
+
+                // the patterns in switchesOnSameConst are equal (according to caseChecksSameConst) and modulo variable-binding
+                // we can thus safely pick the first one arbitrarily, provided we correct binding
+                val origPatWithoutBind = commonPattern match {
+                  case Bind(b, orig) => orig
+                  case o => o
+                }
+                // need to replace `defaultSym` as well -- it's used in `defaultBody` (see `jumpToDefault` above)
+                val unifiedBody = guardedBody.substituteSymbols(defaultSym :: binders, binder :: binders.map(_ => binder))
+                (Bind(binder, origPatWithoutBind), unifiedBody)
+              }
+
+            List(CaseDef(pat, EmptyTree, guardedBodySubst))
+          }
+
+        @annotation.tailrec def partitionAndCollapse(cases: List[CaseDef], accum: List[CaseDef] = Nil): List[CaseDef] =
+          if (cases.isEmpty) accum
+          else {
+            val (same, others) = cases.tail partition (caseChecksSameConst(cases.head))
+            partitionAndCollapse(others, accum ++ collapse(cases.head :: same))
+          }
+
+        // common case: no rewrite needed when there are no guards
+        if (cases.forall(c => c.guard == EmptyTree)) cases
+        else partitionAndCollapse(cases)
+      }
+
+      private def caseChecksSameConst(x: CaseDef)(y: CaseDef) = (x, y) match {
+        // regular switch
+        case (CaseDef(Literal(Constant(cx)), _, _), CaseDef(Literal(Constant(cy)), _, _)) => cx == cy
+        case (CaseDef(Ident(nme.WILDCARD), _, _), CaseDef(Ident(nme.WILDCARD), _, _)) => true
+        // type-switch for catch
+        case (CaseDef(Bind(_, Typed(Ident(nme.WILDCARD), tpX)), _, _), CaseDef(Bind(_, Typed(Ident(nme.WILDCARD), tpY)), _, _)) => tpX.tpe =:= tpY.tpe
+        case _ => false
+      }
+
+      private def checkNoGuards(cs: List[CaseDef]) =
+        if (cs.exists{case CaseDef(_, g, _) => g != EmptyTree case _ => false}) None
+        else Some(cs)
+
+      // requires(cs.forall(_.guard == EmptyTree))
+      private def unreachableCase(cs: List[CaseDef]): Option[CaseDef] = {
+        var cases = cs
+        var unreachable: Option[CaseDef] = None
+
+        while (cases.nonEmpty && unreachable.isEmpty) {
+          if (isDefault(cases.head) && cases.tail.nonEmpty) unreachable = Some(cases.tail.head)
+          else unreachable = cases.tail.find(caseChecksSameConst(cases.head))
+
+          cases = cases.tail
+        }
+
+        unreachable
+      }
 
       // empty list ==> failure
       def apply(cases: List[(Symbol, List[TreeMaker])], pt: Type): List[CaseDef] = {
         val caseDefs = cases map { case (scrutSym, makers) =>
           makers match {
             // default case
-            case (btm@BodyTreeMaker(body, _)) :: Nil =>
-              Some(defaultCase(scrutSym, btm.substitution(body)))
+            case GuardAndBodyTreeMakers(guard, body) =>
+              Some(defaultCase(scrutSym, guard, body))
             // constant (or typetest for typeSwitch)
-            case SwitchableTreeMaker(pattern) :: (btm@BodyTreeMaker(body, _)) :: Nil =>
-              Some(CaseDef(pattern, EmptyTree, btm.substitution(body)))
+            case SwitchableTreeMaker(pattern) :: GuardAndBodyTreeMakers(guard, body) =>
+              Some(CaseDef(pattern, guard, body))
             // alternatives
-            case AlternativesTreeMaker(_, altss, _) :: (btm@BodyTreeMaker(body, _)) :: Nil if alternativesSupported =>
-              val casePatterns = altss map {
+            case AlternativesTreeMaker(_, altss, _) :: GuardAndBodyTreeMakers(guard, body) if alternativesSupported =>
+              val switchableAlts = altss map {
                 case SwitchableTreeMaker(pattern) :: Nil =>
                   Some(pattern)
                 case _ =>
                   None
               }
 
-              sequence(casePatterns) map { patterns =>
-                val substedBody  = btm.substitution(body)
-                CaseDef(Alternative(patterns), EmptyTree, substedBody)
+              // succeed if they were all switchable
+              sequence(switchableAlts) map { switchableAlts =>
+                CaseDef(Alternative(switchableAlts), guard, body)
               }
             case _ => // patmatDebug("can't emit switch for "+ makers)
               None //failure (can't translate pattern to a switch)
@@ -2955,18 +3079,45 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
         }
 
         (for(
-          caseDefs <- sequence(caseDefs)) yield
-            if (caseDefs exists isDefault) caseDefs
-            else {
-              caseDefs :+ defaultCase()
+          caseDefsWithGuards <- sequence(caseDefs);
+          collapsed = collapseGuardedCases(caseDefsWithGuards);
+          caseDefs <- checkNoGuards(collapsed)) yield {
+            if (!unchecked)
+              unreachableCase(caseDefs) foreach (cd => reportUnreachable(cd.body.pos))
+
+            // if we rewrote, we may need the default label to jump there (but then again, we may not)
+            // TODO: make more precise; we don't need the default label if
+            //  - all collapsed cases included an un-guarded case (some of the guards of each case will always be true)
+            //  - or: there was no default case (if all the guards of a case fail, it's a matcherror for sure)
+            val needDefaultLabel = (collapsed != caseDefsWithGuards)
+
+            def wrapInDefaultLabelDef(cd: CaseDef): CaseDef =
+              if (needDefaultLabel && canJump) deriveCaseDef(cd){ b =>
+                // TODO: can b.tpe ever be null? can't really use pt, see e.g. pos/t2683 or cps/match1.scala
+                defaultLabel setInfo MethodType(Nil, if (b.tpe != null) b.tpe else pt)
+                LabelDef(defaultLabel, Nil, b)
+              } else cd
+
+            (caseDefs partition isDefault) match {
+              case (Nil, caseDefs) => caseDefs :+ wrapInDefaultLabelDef(defaultCase())
+              case (default :: Nil, caseDefs) if canJump || !needDefaultLabel =>
+                // we either didn't collapse (and thus definitely didn't have to emit a jump),
+                // or we canJump (and then the potential jumps in collapsed are ok)
+                caseDefs :+ wrapInDefaultLabelDef(default)
+              case _ => Nil
+                // TODO: if (canJump) error message (but multiple defaults should be caught by unreachability)
+                // if (!canJump) we got ourselves in the situation where we might need to emit a jump when we can't (in exception handler)
+                //  --> TODO: refine the condition to detect whether we actually really needed to jump, but this seems relatively rare
             }
+          }
         ) getOrElse Nil
       }
     }
 
-    class RegularSwitchMaker(scrutSym: Symbol, matchFailGenOverride: Option[Tree => Tree]) extends SwitchMaker {
+    class RegularSwitchMaker(scrutSym: Symbol, matchFailGenOverride: Option[Tree => Tree], val unchecked: Boolean) extends SwitchMaker {
       val switchableTpe = Set(ByteClass.tpe, ShortClass.tpe, IntClass.tpe, CharClass.tpe)
       val alternativesSupported = true
+      val canJump = true
 
       object SwitchablePattern { def unapply(pat: Tree): Option[Tree] = pat match {
         case Literal(const@Constant((_: Byte ) | (_: Short) | (_: Int  ) | (_: Char ))) =>
@@ -2988,13 +3139,13 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
 
       def defaultSym: Symbol = scrutSym
       def defaultBody: Tree  = { import CODE._; matchFailGenOverride map (gen => gen(REF(scrutSym))) getOrElse MATCHERROR(REF(scrutSym)) }
-      def defaultCase(scrutSym: Symbol = defaultSym, body: Tree = defaultBody): CaseDef = { import CODE._; atPos(body.pos) {
-        DEFAULT ==> body
+      def defaultCase(scrutSym: Symbol = defaultSym, guard: Tree = EmptyTree, body: Tree = defaultBody): CaseDef = { import CODE._; atPos(body.pos) {
+        (DEFAULT IF guard) ==> body
       }}
     }
 
-    override def emitSwitch(scrut: Tree, scrutSym: Symbol, cases: List[List[TreeMaker]], pt: Type, matchFailGenOverride: Option[Tree => Tree]): Option[Tree] = { import CODE._
-      val regularSwitchMaker = new RegularSwitchMaker(scrutSym, matchFailGenOverride)
+    override def emitSwitch(scrut: Tree, scrutSym: Symbol, cases: List[List[TreeMaker]], pt: Type, matchFailGenOverride: Option[Tree => Tree], unchecked: Boolean): Option[Tree] = { import CODE._
+      val regularSwitchMaker = new RegularSwitchMaker(scrutSym, matchFailGenOverride, unchecked)
       // TODO: if patterns allow switch but the type of the scrutinee doesn't, cast (type-test) the scrutinee to the corresponding switchable type and switch on the result
       if (regularSwitchMaker.switchableTpe(scrutSym.tpe)) {
         val caseDefsWithDefault = regularSwitchMaker(cases map {c => (scrutSym, c)}, pt)
@@ -3014,8 +3165,10 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
 
     // for the catch-cases in a try/catch
     private object typeSwitchMaker extends SwitchMaker {
+      val unchecked = false
       def switchableTpe(tp: Type) = true
       val alternativesSupported = false // TODO: needs either back-end support of flattening of alternatives during typers
+      val canJump = false
 
       // TODO: there are more treemaker-sequences that can be handled by type tests
       // analyze the result of approximateTreeMaker rather than the TreeMaker itself
@@ -3037,8 +3190,8 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
 
       lazy val defaultSym: Symbol = freshSym(NoPosition, ThrowableClass.tpe)
       def defaultBody: Tree       = Throw(CODE.REF(defaultSym))
-      def defaultCase(scrutSym: Symbol = defaultSym, body: Tree = defaultBody): CaseDef = { import CODE._; atPos(body.pos) {
-        CASE (Bind(scrutSym, Typed(Ident(nme.WILDCARD), TypeTree(ThrowableClass.tpe)))) ==> body
+      def defaultCase(scrutSym: Symbol = defaultSym, guard: Tree = EmptyTree, body: Tree = defaultBody): CaseDef = { import CODE._; atPos(body.pos) {
+        (CASE (Bind(scrutSym, Typed(Ident(nme.WILDCARD), TypeTree(ThrowableClass.tpe)))) IF guard) ==> body
       }}
     }
 
@@ -3082,34 +3235,34 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
         matchEnd setInfo MethodType(List(matchRes), restpe)
 
         def newCaseSym = NoSymbol.newLabel(freshName("case"), NoPosition) setInfo MethodType(Nil, restpe) setFlag SYNTH_CASE
-        var nextCase = newCaseSym
-        def caseDef(mkCase: Casegen => Tree): Tree = {
-          val currCase = nextCase
-          nextCase = newCaseSym
-          val casegen = new OptimizedCasegen(matchEnd, nextCase, restpe)
-          LabelDef(currCase, Nil, mkCase(casegen))
+        var _currCase = newCaseSym
+
+        val caseDefs = cases map { (mkCase: Casegen => Tree) =>
+          val currCase = _currCase
+          val nextCase = newCaseSym
+          _currCase = nextCase
+
+          LabelDef(currCase, Nil, mkCase(new OptimizedCasegen(matchEnd, nextCase, restpe)))
         }
 
-        def catchAll = matchFailGen map { matchFailGen =>
-          val scrutRef = if(scrutSym ne NoSymbol) REF(scrutSym) else EmptyTree // for alternatives
-          // must jump to matchEnd, use result generated by matchFailGen (could be `FALSE` for isDefinedAt)
-          LabelDef(nextCase, Nil, matchEnd APPLY (matchFailGen(scrutRef)))
-          // don't cast the arg to matchEnd when using PartialFun synth in uncurry, since it won't detect the throw (see gen.withDefaultCase)
-          // the cast is necessary when using typedMatchAnonFun-style PartialFun synth:
-          // (_asInstanceOf(matchFailGen(scrutRef), restpe))
-        } toList
+        // must compute catchAll after caseLabels (side-effects nextCase)
         // catchAll.isEmpty iff no synthetic default case needed (the (last) user-defined case is a default)
         // if the last user-defined case is a default, it will never jump to the next case; it will go immediately to matchEnd
+        val catchAllDef = matchFailGen map { matchFailGen =>
+          val scrutRef = if(scrutSym ne NoSymbol) REF(scrutSym) else EmptyTree // for alternatives
+
+          LabelDef(_currCase, Nil, matchEnd APPLY (matchFailGen(scrutRef)))
+        } toList // at most 1 element
+
+        // scrutSym == NoSymbol when generating an alternatives matcher
+        val scrutDef = if(scrutSym ne NoSymbol) List(VAL(scrutSym)  === scrut) else Nil // for alternatives
 
         // the generated block is taken apart in TailCalls under the following assumptions
           // the assumption is once we encounter a case, the remainder of the block will consist of cases
           // the prologue may be empty, usually it is the valdef that stores the scrut
           // val (prologue, cases) = stats span (s => !s.isInstanceOf[LabelDef])
-
-        // scrutSym == NoSymbol when generating an alternatives matcher
-        val scrutDef = if(scrutSym ne NoSymbol) List(VAL(scrutSym)  === scrut) else Nil // for alternatives
         Block(
-          scrutDef ++ (cases map caseDef) ++ catchAll,
+          scrutDef ++ caseDefs ++ catchAllDef,
           LabelDef(matchEnd, List(matchRes), REF(matchRes))
         )
       }
@@ -3179,16 +3332,11 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
     override def optimizeCases(prevBinder: Symbol, cases: List[List[TreeMaker]], pt: Type, unchecked: Boolean): (List[List[TreeMaker]], List[Tree]) = {
       if (!unchecked) {
         unreachableCase(prevBinder, cases, pt) foreach { caseIndex =>
-          typer.context.unit.warning(cases(caseIndex).last.pos, "unreachable code")
+          reportUnreachable(cases(caseIndex).last.pos)
         }
-      }
-      val counterExamples = if (unchecked) Nil else exhaustive(prevBinder, cases, pt)
-      if (counterExamples.nonEmpty) {
-        val ceString =
-          if (counterExamples.tail.isEmpty) "input: " + counterExamples.head
-          else "inputs: " + counterExamples.mkString(", ")
-
-        typer.context.unit.warning(prevBinder.pos, "match may not be exhaustive.\nIt would fail on the following "+ ceString)
+        val counterExamples = exhaustive(prevBinder, cases, pt)
+        if (counterExamples.nonEmpty)
+          reportMissingCases(prevBinder.pos, counterExamples)
       }
 
       val optCases = doCSE(prevBinder, doDCE(prevBinder, cases, pt), pt)
