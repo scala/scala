@@ -4632,10 +4632,14 @@ trait Typers extends Modes with Adaptations with Tags {
                 // the prefix from which they came.
                 def t1 = imports.head.qual.tpe memberType impSym
                 def t2 = imports1.head.qual.tpe memberType impSym1
-                // Monomorphism restriction is because type aliases could have the
-                // same target type but attach different variance to the parameters.
+                // Monomorphism restriction on types is because type aliases could have
+                // the same target type but attach different variance to the parameters.
                 // Maybe it can be relaxed, but doesn't seem worth it at present.
-                if (impSym.isMonomorphicType && impSym1.isMonomorphicType && (t1 =:= t2))
+                def symbolsMatch = (
+                     (impSym == impSym1)                                      // values - exact same symbol
+                  || (impSym.isMonomorphicType && impSym1.isMonomorphicType)  // types - any monomorphic will do
+                )
+                if (symbolsMatch && (t1 =:= t2))
                   log(s"Suppressing ambiguous import: $impSym and $impSym1 refer to the same type")
                 else {
                   log(s"Import is genuinely ambiguous: !($t1 =:= $t2)")
