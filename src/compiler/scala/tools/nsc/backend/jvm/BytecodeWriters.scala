@@ -37,7 +37,7 @@ trait BytecodeWriters {
     getFile(outputDirectory(sym), clsName, suffix)
 
   trait BytecodeWriter {
-    def writeClass(label: String, jclassName: String, jclassBytes: Array[Byte], sym: Symbol): Unit
+    def writeClass(label: String, jclassName: String, jclassBytes: Array[Byte], outfile: AbstractFile): Unit
     def close(): Unit = ()
   }
 
@@ -48,7 +48,9 @@ trait BytecodeWriters {
     )
     val writer = new Jar(jfile).jarWriter(jarMainAttrs: _*)
 
-    def writeClass(label: String, jclassName: String, jclassBytes: Array[Byte], sym: Symbol) {
+    def writeClass(label: String, jclassName: String, jclassBytes: Array[Byte], outfile: AbstractFile) {
+      assert(outfile == null,
+             "The outfile formal param is there just because ClassBytecodeWriter overrides this method and uses it.")
       val path = jclassName + ".class"
       val out  = writer.newOutputStream(path)
 
@@ -72,21 +74,21 @@ trait BytecodeWriters {
       try javap(Seq("-verbose", "dummy")) foreach (_.show())
       finally pw.close()
     }
-    abstract override def writeClass(label: String, jclassName: String, jclassBytes: Array[Byte], sym: Symbol) {
-      super.writeClass(label, jclassName, jclassBytes, sym)
+    abstract override def writeClass(label: String, jclassName: String, jclassBytes: Array[Byte], outfile: AbstractFile) {
+      super.writeClass(label, jclassName, jclassBytes, outfile)
 
-      val bytes     = getFile(sym, jclassName, ".class").toByteArray
       val segments  = jclassName.split("[./]")
       val javapFile = segments.foldLeft(baseDir: Path)(_ / _) changeExtension "javap" toFile;
 
       javapFile.parent.createDirectory()
-      emitJavap(bytes, javapFile)
+      emitJavap(jclassBytes, javapFile)
     }
   }
 
   trait ClassBytecodeWriter extends BytecodeWriter {
-    def writeClass(label: String, jclassName: String, jclassBytes: Array[Byte], sym: Symbol) {
-      val outfile   = getFile(sym, jclassName, ".class")
+    def writeClass(label: String, jclassName: String, jclassBytes: Array[Byte], outfile: AbstractFile) {
+      assert(outfile != null,
+             "Precisely this override requires its invoker to hand out a non-null AbstractFile.")
       val outstream = new DataOutputStream(outfile.bufferedOutput)
 
       try outstream.write(jclassBytes, 0, jclassBytes.length)
@@ -98,8 +100,8 @@ trait BytecodeWriters {
   trait DumpBytecodeWriter extends BytecodeWriter {
     val baseDir = Directory(settings.Ydumpclasses.value).createDirectory()
 
-    abstract override def writeClass(label: String, jclassName: String, jclassBytes: Array[Byte], sym: Symbol) {
-      super.writeClass(label, jclassName, jclassBytes, sym)
+    abstract override def writeClass(label: String, jclassName: String, jclassBytes: Array[Byte], outfile: AbstractFile) {
+      super.writeClass(label, jclassName, jclassBytes, outfile)
 
       val pathName = jclassName
       var dumpFile = pathName.split("[./]").foldLeft(baseDir: Path) (_ / _) changeExtension "class" toFile;

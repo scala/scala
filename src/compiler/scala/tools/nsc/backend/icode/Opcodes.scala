@@ -15,37 +15,48 @@ import scala.reflect.internal.util.{Position,NoPosition}
 /*
   A pattern match
 
-  case THIS(clasz) =>
-  case STORE_THIS(kind) =>
-  case CONSTANT(const) =>
-  case LOAD_ARRAY_ITEM(kind) =>
-  case LOAD_LOCAL(local) =>
-  case LOAD_FIELD(field, isStatic) =>
-  case LOAD_MODULE(module) =>
-  case STORE_ARRAY_ITEM(kind) =>
-  case STORE_LOCAL(local) =>
-  case STORE_FIELD(field, isStatic) =>
-  case CALL_PRIMITIVE(primitive) =>
-  case CALL_METHOD(method, style) =>
-  case NEW(kind) =>
-  case CREATE_ARRAY(elem, dims) =>
-  case IS_INSTANCE(tpe) =>
-  case CHECK_CAST(tpe) =>
-  case SWITCH(tags, labels) =>
-  case JUMP(whereto) =>
-  case CJUMP(success, failure, cond, kind) =>
-  case CZJUMP(success, failure, cond, kind) =>
-  case RETURN(kind) =>
-  case THROW(clasz) =>
-  case DROP(kind) =>
-  case DUP(kind) =>
-  case MONITOR_ENTER() =>
-  case MONITOR_EXIT() =>
-  case BOX(boxType) =>
-  case UNBOX(tpe) =>
-  case SCOPE_ENTER(lv) =>
-  case SCOPE_EXIT(lv) =>
-  case LOAD_EXCEPTION(clasz) =>
+  // locals
+    case THIS(clasz) =>
+    case STORE_THIS(kind) =>
+    case LOAD_LOCAL(local) =>
+    case STORE_LOCAL(local) =>
+    case SCOPE_ENTER(lv) =>
+    case SCOPE_EXIT(lv) =>
+  // stack
+    case LOAD_MODULE(module) =>
+    case LOAD_EXCEPTION(clasz) =>
+    case DROP(kind) =>
+    case DUP(kind) =>
+  // constants
+    case CONSTANT(const) =>
+  // arithlogic
+    case CALL_PRIMITIVE(primitive) =>
+  // casts
+    case IS_INSTANCE(tpe) =>
+    case CHECK_CAST(tpe) =>
+  // objs
+    case NEW(kind) =>
+    case MONITOR_ENTER() =>
+    case MONITOR_EXIT() =>
+    case BOX(boxType) =>
+    case UNBOX(tpe) =>
+  // flds
+    case LOAD_FIELD(field, isStatic) =>
+    case STORE_FIELD(field, isStatic) =>
+  // mthds
+    case CALL_METHOD(method, style) =>
+  // arrays
+    case LOAD_ARRAY_ITEM(kind) =>
+    case STORE_ARRAY_ITEM(kind) =>
+    case CREATE_ARRAY(elem, dims) =>
+  // jumps
+    case SWITCH(tags, labels) =>
+    case JUMP(whereto) =>
+    case CJUMP(success, failure, cond, kind) =>
+    case CZJUMP(success, failure, cond, kind) =>
+  // ret
+    case RETURN(kind) =>
+    case THROW(clasz) =>
 */
 
 
@@ -58,10 +69,25 @@ import scala.reflect.internal.util.{Position,NoPosition}
 trait Opcodes { self: ICodes =>
   import global.{Symbol, NoSymbol, Type, Name, Constant};
 
+  // categories of ICode instructions
+  final val localsCat =  1
+  final val stackCat  =  2
+  final val constCat  =  3
+  final val arilogCat =  4
+  final val castsCat  =  5
+  final val objsCat   =  6
+  final val fldsCat   =  7
+  final val mthdsCat  =  8
+  final val arraysCat =  9
+  final val jumpsCat  = 10
+  final val retCat    = 11
+
   /** This class represents an instruction of the intermediate code.
    *  Each case subclass will represent a specific operation.
    */
   abstract class Instruction extends Cloneable {
+
+    def category: Int = 0 // undefined
 
     /** This abstract method returns the number of used elements on the stack */
     def consumed : Int = 0
@@ -118,6 +144,8 @@ trait Opcodes { self: ICodes =>
       override def produced = 1
 
       override def producedTypes = List(REFERENCE(clasz))
+
+      override def category = localsCat
     }
 
     /** Loads a constant on the stack.
@@ -130,6 +158,8 @@ trait Opcodes { self: ICodes =>
       override def produced = 1
 
       override def producedTypes = List(toTypeKind(constant.tpe))
+
+      override def category = constCat
     }
 
     /** Loads an element of an array. The array and the index should
@@ -143,6 +173,8 @@ trait Opcodes { self: ICodes =>
 
       override def consumedTypes = List(ARRAY(kind), INT)
       override def producedTypes = List(kind)
+
+      override def category = arraysCat
     }
 
     /** Load a local variable on the stack. It can be a method argument.
@@ -154,6 +186,8 @@ trait Opcodes { self: ICodes =>
       override def produced = 1
 
       override def producedTypes = List(local.kind)
+
+      override def category = localsCat
     }
 
     /** Load a field on the stack. The object to which it refers should be
@@ -176,6 +210,8 @@ trait Opcodes { self: ICodes =>
       // see #4283
       var hostClass: Symbol = field.owner
       def setHostClass(cls: Symbol): this.type = { hostClass = cls; this }
+
+      override def category = fldsCat
     }
 
     case class LOAD_MODULE(module: Symbol) extends Instruction {
@@ -187,6 +223,8 @@ trait Opcodes { self: ICodes =>
       override def produced = 1
 
       override def producedTypes = List(REFERENCE(module))
+
+      override def category = stackCat
     }
 
     /** Store a value into an array at a specified index.
@@ -198,6 +236,8 @@ trait Opcodes { self: ICodes =>
       override def produced = 0
 
       override def consumedTypes = List(ARRAY(kind), INT, kind)
+
+      override def category = arraysCat
     }
 
     /** Store a value into a local variable. It can be an argument.
@@ -209,6 +249,8 @@ trait Opcodes { self: ICodes =>
       override def produced = 0
 
       override def consumedTypes = List(local.kind)
+
+      override def category = localsCat
     }
 
     /** Store a value into a field.
@@ -228,6 +270,8 @@ trait Opcodes { self: ICodes =>
           List(toTypeKind(field.tpe))
         else
           List(REFERENCE(field.owner), toTypeKind(field.tpe));
+
+      override def category = fldsCat
     }
 
     /** Store a value into the 'this' pointer.
@@ -238,6 +282,7 @@ trait Opcodes { self: ICodes =>
       override def consumed = 1
       override def produced = 0
       override def consumedTypes = List(kind)
+      override def category = localsCat
     }
 
     /** Call a primitive function.
@@ -292,6 +337,8 @@ trait Opcodes { self: ICodes =>
         case StartConcat         => List(ConcatClass)
         case EndConcat           => List(REFERENCE(global.definitions.StringClass))
       }
+
+      override def category = arilogCat
    }
 
     /** This class represents a CALL_METHOD instruction
@@ -347,6 +394,8 @@ trait Opcodes { self: ICodes =>
        *  being able to store such instructions into maps, when more
        *  than one CALL_METHOD to the same method might exist.
        */
+
+      override def category = mthdsCat
     }
 
     case class BOX(boxType: TypeKind) extends Instruction {
@@ -355,6 +404,7 @@ trait Opcodes { self: ICodes =>
       override def consumed = 1
       override def consumedTypes = boxType :: Nil
       override def produced = 1
+      override def category = objsCat
     }
 
     case class UNBOX(boxType: TypeKind) extends Instruction {
@@ -363,6 +413,7 @@ trait Opcodes { self: ICodes =>
       override def consumed = 1
       override def consumedTypes = ObjectReference :: Nil
       override def produced = 1
+      override def category = objsCat
     }
 
     /** Create a new instance of a class through the specified constructor
@@ -378,6 +429,8 @@ trait Opcodes { self: ICodes =>
 
       /** The corresponding constructor call. */
       var init: CALL_METHOD = _
+
+      override def category = objsCat
     }
 
 
@@ -392,6 +445,8 @@ trait Opcodes { self: ICodes =>
       override def consumed = dims;
       override def consumedTypes = List.fill(dims)(INT)
       override def produced = 1;
+
+      override def category = arraysCat
     }
 
     /** This class represents a IS_INSTANCE instruction
@@ -405,6 +460,8 @@ trait Opcodes { self: ICodes =>
       override def consumed = 1
       override def consumedTypes = ObjectReference :: Nil
       override def produced = 1
+
+      override def category = castsCat
     }
 
     /** This class represents a CHECK_CAST instruction
@@ -419,6 +476,8 @@ trait Opcodes { self: ICodes =>
       override def produced = 1
       override val consumedTypes = List(ObjectReference)
       override def producedTypes = List(typ)
+
+      override def category = castsCat
     }
 
     /** This class represents a SWITCH instruction
@@ -439,6 +498,8 @@ trait Opcodes { self: ICodes =>
       override val consumedTypes = List(INT)
 
       def flatTagsCount: Int = { var acc = 0; var rest = tags; while(rest.nonEmpty) { acc += rest.head.length; rest = rest.tail }; acc } // a one-liner
+
+      override def category = jumpsCat
     }
 
     /** This class represents a JUMP instruction
@@ -451,6 +512,8 @@ trait Opcodes { self: ICodes =>
 
       override def consumed = 0
       override def produced = 0
+
+      override def category = jumpsCat
     }
 
     /** This class represents a CJUMP instruction
@@ -474,6 +537,8 @@ trait Opcodes { self: ICodes =>
       override def produced = 0
 
       override val consumedTypes = List(kind, kind)
+
+      override def category = jumpsCat
     }
 
     /** This class represents a CZJUMP instruction
@@ -495,6 +560,8 @@ trait Opcodes { self: ICodes =>
       override def produced = 0
 
       override val consumedTypes = List(kind)
+
+      override def category = jumpsCat
     }
 
 
@@ -507,6 +574,8 @@ trait Opcodes { self: ICodes =>
       override def produced = 0
 
       // TODO override val consumedTypes = List(kind)
+
+      override def category = retCat
     }
 
     /** This class represents a THROW instruction
@@ -522,6 +591,8 @@ trait Opcodes { self: ICodes =>
 
       override def consumed = 1
       override def produced = 0
+
+      override def category = retCat
     }
 
     /** This class represents a DROP instruction
@@ -534,6 +605,8 @@ trait Opcodes { self: ICodes =>
 
       override def consumed = 1
       override def produced = 0
+
+      override def category = stackCat
     }
 
     /** This class represents a DUP instruction
@@ -543,6 +616,7 @@ trait Opcodes { self: ICodes =>
     case class DUP (typ: TypeKind) extends Instruction {
       override def consumed = 1
       override def produced = 2
+      override def category = stackCat
     }
 
     /** This class represents a MONITOR_ENTER instruction
@@ -555,6 +629,8 @@ trait Opcodes { self: ICodes =>
 
       override def consumed = 1
       override def produced = 0
+
+      override def category = objsCat
     }
 
     /** This class represents a MONITOR_EXIT instruction
@@ -567,6 +643,8 @@ trait Opcodes { self: ICodes =>
 
       override def consumed = 1;
       override def produced = 0;
+
+      override def category = objsCat
     }
 
     /** A local variable becomes visible at this point in code.
@@ -577,6 +655,7 @@ trait Opcodes { self: ICodes =>
       override def toString(): String = "SCOPE_ENTER " + lv
       override def consumed = 0
       override def produced = 0
+      override def category = localsCat
     }
 
     /** A local variable leaves its scope at this point in code.
@@ -587,6 +666,7 @@ trait Opcodes { self: ICodes =>
       override def toString(): String = "SCOPE_EXIT " + lv
       override def consumed = 0
       override def produced = 0
+      override def category = localsCat
     }
 
     /** Fake instruction. It designates the VM who pushes an exception
@@ -598,6 +678,7 @@ trait Opcodes { self: ICodes =>
       override def consumed = sys.error("LOAD_EXCEPTION does clean the whole stack, no idea how many things it consumes!")
       override def produced = 1
       override def producedTypes = REFERENCE(clasz) :: Nil
+      override def category = stackCat
     }
 
     /** This class represents a method invocation style. */
@@ -658,6 +739,8 @@ trait Opcodes { self: ICodes =>
       override def produced = 1
 
       override def producedTypes = List(msil_mgdptr(local.kind))
+
+      override def category = localsCat
   }
 
     case class CIL_LOAD_FIELD_ADDRESS(field: Symbol, isStatic: Boolean) extends Instruction {
@@ -670,6 +753,8 @@ trait Opcodes { self: ICodes =>
 
       override def consumedTypes = if (isStatic) Nil else List(REFERENCE(field.owner));
       override def producedTypes = List(msil_mgdptr(REFERENCE(field.owner)));
+
+      override def category = fldsCat
 }
 
     case class CIL_LOAD_ARRAY_ITEM_ADDRESS(kind: TypeKind) extends Instruction {
@@ -681,6 +766,8 @@ trait Opcodes { self: ICodes =>
 
       override def consumedTypes = List(ARRAY(kind), INT)
       override def producedTypes = List(msil_mgdptr(kind))
+
+      override def category = arraysCat
     }
 
     case class CIL_UNBOX(valueType: TypeKind) extends Instruction {
@@ -689,6 +776,7 @@ trait Opcodes { self: ICodes =>
       override def consumedTypes = ObjectReference :: Nil // actually consumes a 'boxed valueType'
       override def produced = 1
       override def producedTypes = List(msil_mgdptr(valueType))
+      override def category = objsCat
     }
 
     case class CIL_INITOBJ(valueType: TypeKind) extends Instruction {
@@ -696,6 +784,7 @@ trait Opcodes { self: ICodes =>
       override def consumed = 1
       override def consumedTypes = ObjectReference :: Nil // actually consumes a managed pointer
       override def produced = 0
+      override def category = objsCat
     }
 
     case class CIL_NEWOBJ(method: Symbol) extends Instruction {
@@ -705,6 +794,7 @@ trait Opcodes { self: ICodes =>
       override def consumedTypes = method.tpe.paramTypes map toTypeKind
       override def produced = 1
       override def producedTypes = List(toTypeKind(method.tpe.resultType))
+      override def category = objsCat
     }
 
   }
