@@ -1753,6 +1753,12 @@ trait Typers extends Modes with Adaptations with Tags {
       if (clazz.info.firstParent.typeSymbol == AnyValClass)
         validateDerivedValueClass(clazz, body1)
 
+      if (clazz.isTrait) {
+        for (decl <- clazz.info.decls if decl.isTerm && decl.isEarlyInitialized) {
+          unit.warning(decl.pos, "Implementation restriction: early definitions in traits are not initialized before the super class is initialized.")
+        }
+      }
+
       treeCopy.Template(templ, parents1, self1, body1) setType clazz.tpe
     }
 
