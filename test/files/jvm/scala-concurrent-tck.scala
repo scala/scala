@@ -138,7 +138,7 @@ trait FutureCallbacks extends TestBase {
   testOnSuccessWhenFailed()
   testOnFailure()
   testOnFailureWhenSpecialThrowable(5, new Error)
-  testOnFailureWhenSpecialThrowable(6, new scala.util.control.ControlThrowable { })
+  // testOnFailureWhenSpecialThrowable(6, new scala.util.control.ControlThrowable { })
   //TODO: this test is currently problematic, because NonFatal does not match InterruptedException
   //testOnFailureWhenSpecialThrowable(7, new InterruptedException)
   testOnFailureWhenTimeoutException()
@@ -599,10 +599,10 @@ trait FutureProjections extends TestBase {
       throw cause
     }
     f.failed onComplete {
-      case Success(t) =>
+      case Right(t) =>
         assert(t == cause)
         done()
-      case Failure(t) =>
+      case Left(t) =>
         assert(false)
     }
   }
@@ -624,9 +624,9 @@ trait FutureProjections extends TestBase {
     done =>
     val f = future { 0 }
     f.failed onComplete {
-      case Success(t) =>
+      case Right(t) =>
         assert(false)
-      case Failure(t) =>
+      case Left(t) =>
         assert(t.isInstanceOf[NoSuchElementException])
         done()
     }
@@ -733,80 +733,80 @@ trait Exceptions extends TestBase {
   
 }
 
-trait TryEitherExtractor extends TestBase {
+// trait TryEitherExtractor extends TestBase {
 
-  import scala.util.{Try, Success, Failure}
+//   import scala.util.{Try, Success, Failure}
 
-  def testSuccessMatch(): Unit = once {
-    done => 
-    val thisIsASuccess = Success(42)
-    thisIsASuccess match {
-      case Success(v) => 
-        done()
-        assert(v == 42)
-      case Failure(e) =>
-        done()
-        assert(false)
-      case other =>
-        done()
-        assert(false)
-    }
-  }
+//   def testSuccessMatch(): Unit = once {
+//     done =>
+//     val thisIsASuccess = Success(42)
+//     thisIsASuccess match {
+//       case Success(v) =>
+//         done()
+//         assert(v == 42)
+//       case Failure(e) =>
+//         done()
+//         assert(false)
+//       case other =>
+//         done()
+//         assert(false)
+//     }
+//   }
 
-  def testRightMatch(): Unit = once {
-    done =>
-    val thisIsNotASuccess: Right[Throwable, Int] = Right(43)
-    thisIsNotASuccess match {
-      case Success(v) =>
-        done()
-        assert(v == 43)
-      case Failure(e) =>
-        done()
-        assert(false)
-      case other =>
-        done()
-        assert(false)
-    }
-  }
+//   def testRightMatch(): Unit = once {
+//     done =>
+//     val thisIsNotASuccess: Right[Throwable, Int] = Right(43)
+//     thisIsNotASuccess match {
+//       case Success(v) =>
+//         done()
+//         assert(v == 43)
+//       case Failure(e) =>
+//         done()
+//         assert(false)
+//       case other =>
+//         done()
+//         assert(false)
+//     }
+//   }
 
-  def testFailureMatch(): Unit = once {
-    done =>
-    val thisIsAFailure = Failure(new Exception("I'm an exception"))
-    thisIsAFailure match {
-      case Success(v) =>
-        done()
-        assert(false)
-      case Failure(e) =>
-        done()
-        assert(e.getMessage == "I'm an exception")
-      case other =>
-        done()
-        assert(false)
-    }
-  }
+//   def testFailureMatch(): Unit = once {
+//     done =>
+//     val thisIsAFailure = Failure(new Exception("I'm an exception"))
+//     thisIsAFailure match {
+//       case Success(v) =>
+//         done()
+//         assert(false)
+//       case Failure(e) =>
+//         done()
+//         assert(e.getMessage == "I'm an exception")
+//       case other =>
+//         done()
+//         assert(false)
+//     }
+//   }
 
-  def testLeftMatch(): Unit = once {
-    done =>
-    val thisIsNotAFailure: Left[Throwable, Int] = Left(new Exception("I'm an exception"))
-    thisIsNotAFailure match {
-      case Success(v) => 
-        done()
-        assert(false)
-      case Failure(e) =>
-        done()
-        assert(e.getMessage == "I'm an exception")
-      case other =>
-        done()
-        assert(false)
-    }
+//   def testLeftMatch(): Unit = once {
+//     done =>
+//     val thisIsNotAFailure: Left[Throwable, Int] = Left(new Exception("I'm an exception"))
+//     thisIsNotAFailure match {
+//       case Success(v) =>
+//         done()
+//         assert(false)
+//       case Failure(e) =>
+//         done()
+//         assert(e.getMessage == "I'm an exception")
+//       case other =>
+//         done()
+//         assert(false)
+//     }
     
-  }
+//   }
 
-  testSuccessMatch()
-  testRightMatch()
-  testFailureMatch()
-  testLeftMatch()
-}
+//   testSuccessMatch()
+//   testRightMatch()
+//   testFailureMatch()
+//   testLeftMatch()
+// }
 
 trait CustomExecutionContext extends TestBase {
   import scala.concurrent.{ ExecutionContext, Awaitable }
@@ -935,7 +935,7 @@ with FutureCombinators
 with FutureProjections
 with Promises
 with Exceptions
-with TryEitherExtractor
+// with TryEitherExtractor
 with CustomExecutionContext
 {
   System.exit(0)

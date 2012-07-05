@@ -6,8 +6,7 @@
 **                          |/                                          **
 \*                                                                      */
 
-package scala.concurrent
-package impl
+package scala.util.control
 
 /**
  * Extractor of non-fatal Throwables. Will not match fatal errors
@@ -24,14 +23,13 @@ package impl
  *   }
  * }}}
  */
-private[concurrent] object NonFatal {
+object NonFatal {
 
   def unapply(t: Throwable): Option[Throwable] = t match {
     case e: StackOverflowError ⇒ Some(e) // StackOverflowError ok even though it is a VirtualMachineError
     // VirtualMachineError includes OutOfMemoryError and other fatal errors
-    case _: VirtualMachineError | _: ThreadDeath | _: InterruptedException | _: LinkageError ⇒ None
+    case _: VirtualMachineError | _: ThreadDeath | _: InterruptedException | _: LinkageError | _: ControlThrowable | _: NotImplementedError => None
     case e ⇒ Some(e)
   }
 
 }
-

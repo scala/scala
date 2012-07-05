@@ -18,8 +18,9 @@ import java.{ lang => jl }
 import java.util.concurrent.atomic.{ AtomicReferenceFieldUpdater, AtomicInteger, AtomicBoolean }
 
 import scala.concurrent.util.Duration
-import scala.concurrent.impl.NonFatal
+import scala.util.control.NonFatal
 import scala.Option
+import scala.util.{Try, Success, Failure}
 
 import scala.annotation.tailrec
 import scala.collection.mutable.Stack
