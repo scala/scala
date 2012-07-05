@@ -502,32 +502,29 @@ trait Namers extends MethodSynthesis {
       noDuplicates(selectors map (_.rename), AppearsTwice)
     }
 
-    def enterCopyMethodOrGetter(tree: Tree, tparams: List[TypeDef]): Symbol = {
-      val sym          = tree.symbol
-      val lazyType     = completerOf(tree, tparams)
-      def completeCopyFirst = sym.isSynthetic && (!sym.hasDefault || sym.owner.info.member(nme.copy).isSynthetic)
-      def completeCopyMethod(clazz: Symbol) {
-        // the 'copy' method of case classes needs a special type completer to make
-        // bug0054.scala (and others) work. the copy method has to take exactly the same
-        // parameter types as the primary constructor.
-        val constructorType = clazz.primaryConstructor.tpe
-        val subst           = new SubstSymMap(clazz.typeParams, tparams map (_.symbol))
-        val vparamss        = tree match { case x: DefDef => x.vparamss ; case _ => Nil }
-        val cparamss        = constructorType.paramss
+    def enterCopyMethod(copyDefDef: Tree, tparams: List[TypeDef]): Symbol = {
+      val sym      = copyDefDef.symbol
+      val lazyType = completerOf(copyDefDef, tparams)
 
-        map2(vparamss, cparamss)((vparams, cparams) =>
-          map2(vparams, cparams)((param, cparam) =>
-            // need to clone the type cparam.tpe???
-            // problem is: we don't have the new owner yet (the new param symbol)
-            param.tpt setType subst(cparam.tpe)
+      /** Assign the types of the class parameters to the parameters of the
+       *  copy method. See comment in `Unapplies.caseClassCopyMeth` */
+      def assignParamTypes() {
+        val clazz = sym.owner
+        val constructorType = clazz.primaryConstructor.tpe
+        val subst = new SubstSymMap(clazz.typeParams, tparams map (_.symbol))
+        val classParamss = constructorType.paramss
+        val DefDef(_, _, _, copyParamss, _, _) = copyDefDef
+
+        map2(copyParamss, classParamss)((copyParams, classParams) =>
+          map2(copyParams, classParams)((copyP, classP) =>
+            copyP.tpt setType subst(classP.tpe)
           )
         )
       }
-      sym setInfo {
-        mkTypeCompleter(tree) { copySym =>
-          if (completeCopyFirst)
-            completeCopyMethod(copySym.owner)
 
+      sym setInfo {
+        mkTypeCompleter(copyDefDef) { sym =>
+          assignParamTypes()
           lazyType complete sym
         }
       }
@@ -604,8 +601,8 @@ trait Namers extends MethodSynthesis {
         val bridgeFlag = if (mods hasAnnotationNamed tpnme.bridgeAnnot) BRIDGE else 0
         val sym = assignAndEnterSymbol(tree) setFlag bridgeFlag
 
-        if (name == nme.copy || tree.symbol.name.startsWith(nme.copy + nme.DEFAULT_GETTER_STRING))
-          enterCopyMethodOrGetter(tree, tparams)
+        if (name == nme.copy && sym.isSynthetic)
+          enterCopyMethod(tree, tparams)
         else
           sym setInfo completerOf(tree, tparams)
     }
