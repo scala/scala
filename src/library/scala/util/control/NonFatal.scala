@@ -9,17 +9,20 @@
 package scala.util.control
 
 /**
- * Extractor of non-fatal Throwables. Will not match fatal errors
- * like VirtualMachineError (OutOfMemoryError)
- * ThreadDeath, LinkageError and InterruptedException.
- * StackOverflowError is matched, i.e. considered non-fatal.
+ * Extractor of non-fatal Throwables. Will not match fatal errors like `VirtualMachineError`
+ * (for example, `OutOfMemoryError`, a subclass of `VirtualMachineError`), `ThreadDeath`,
+ * `LinkageError`, `InterruptedException`, `ControlThrowable`, or `NotImplementedError`.
+ * However, `StackOverflowError` is matched, i.e. considered non-fatal.
  *
- * Usage to catch all harmless throwables:
+ * Note that [[scala.util.control.ControlThrowable]], an internal Throwable, is not matched by
+ * `NonFatal` (and would therefore be thrown).
+ *
+ * For example, all harmless Throwables can be caught by:
  * {{{
  *   try {
  *     // dangerous stuff
  *   } catch {
- *     case NonFatal(e) => log.error(e, "Something not that bad")
+ *     case NonFatal(e) => log.error(e, "Something not that bad.")
  *   }
  * }}}
  */
