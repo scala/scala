@@ -4620,10 +4620,33 @@ trait Typers extends Modes with Adaptations with Tags {
             if (impSym.exists) {
               var impSym1: Symbol = NoSymbol
               var imports1 = imports.tail
+
+              /** It's possible that seemingly conflicting identifiers are
+               *  identifiably the same after type normalization.  In such cases,
+               *  allow compilation to proceed.  A typical example is:
+               *    package object foo { type InputStream = java.io.InputStream }
+               *    import foo._, java.io._
+               */
               def ambiguousImport() = {
-                if (!(imports.head.qual.tpe =:= imports1.head.qual.tpe && impSym == impSym1))
-                  ambiguousError(
-                    "it is imported twice in the same scope by\n"+imports.head +  "\nand "+imports1.head)
+                // Comparing types of imported symbols, seen as members of
+                // the prefix from which they came.
+                def t1 = imports.head.qual.tpe
+                def t2 = imports1.head.qual.tpe
+                // Monomorphism restriction on types is because type aliases could have
+                // the same target type but attach different variance to the parameters.
+                // Maybe it can be relaxed, but doesn't seem worth it at present.
+                def sameAfterNormalization = (
+                     (impSym.isMonomorphicType && impSym1.isMonomorphicType)
+                  && ((t1 memberType impSym) =:= (t2 memberType impSym1))
+                )
+                if ((impSym1 == impSym1) && (t1 =:= t2))
+                  log(s"Suppressing ambiguous import: ($t1, $impSym) == ($t2, $impSym1)")
+                else if (name.isTypeName && sameAfterNormalization)
+                  log(s"Suppressing ambiguous import: $impSym == $impSym1 after normalization")
+                else {
+                  log(s"Import is genuinely ambiguous: !($t1 =:= $t2)")
+                  ambiguousError(s"it is imported twice in the same scope by\n${imports.head}\nand ${imports1.head}")
+                }
               }
               while (errorContainer == null && !imports1.isEmpty &&
                      (!imports.head.isExplicitImport(name) ||
