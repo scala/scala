@@ -204,7 +204,11 @@ abstract class UnPickler /*extends reflect.generic.UnPickler*/ {
         def fromName(name: Name) = name.toTermName match {
           case nme.ROOT     => loadingMirror.RootClass
           case nme.ROOTPKG  => loadingMirror.RootPackage
-          case _            => adjust(owner.info.decl(name))
+          case _            =>
+            adjust(owner.info.decl(name) orElse (
+              if (isCompilerUniverse) NoSymbol
+              else loadingMirror.tryMissingHooks(owner, name)
+            ))
         }
         def nestedObjectSymbol: Symbol = {
           // If the owner is overloaded (i.e. a method), it's not possible to select the
@@ -846,7 +850,11 @@ abstract class UnPickler /*extends reflect.generic.UnPickler*/ {
           sym.setInfo(adaptToNewRunMap(tp))
       }
       catch {
-        case e: MissingRequirementError => throw toTypeError(e)
+        case e: MissingRequirementError => {
+          e.printStackTrace()
+          println("==============")
+          throw toTypeError(e)
+        }
       }
       override def load(sym: Symbol) { complete(sym) }
     }
