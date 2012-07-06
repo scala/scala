@@ -46,7 +46,7 @@ class DotRunner(settings: doc.Settings) {
       if (dotRestarts == settings.docDiagramsDotRestart.value) {
         settings.printMsg("\n")
         settings.printMsg("**********************************************************************")
-        settings.printMsg("Diagrams will be disabled for this run beucause the graphviz dot tool")
+        settings.printMsg("Diagrams will be disabled for this run because the graphviz dot tool")
         settings.printMsg("has malfunctioned too many times. These scaladoc flags may help:")
         settings.printMsg("")
         val baseList = List(settings.docDiagramsDebug,

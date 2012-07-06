@@ -147,7 +147,7 @@ class Settings(error: String => Unit, val printMsg: String => Unit = println(_))
 
   val docDiagramsDotTimeout = IntSetting(
     "-diagrams-dot-timeout",
-    "The timeout before the graphviz dot util is forecefully closed, in seconds (default: 10)",
+    "The timeout before the graphviz dot util is forcefully closed, in seconds (default: 10)",
     10,
     None,
     _ => None
