@@ -7,7 +7,7 @@ It would fail on the following input: Nil
   def fail2[T](xs: List[T]) = xs match {
                               ^
 exhausting.scala:32: error: match may not be exhaustive.
-It would fail on the following input: List(<not in (1, 2)>)
+It would fail on the following input: List((x: Int forSome x not in (1, 2)))
   def fail3a(xs: List[Int]) = xs match {
                               ^
 exhausting.scala:39: error: match may not be exhaustive.

@@ -1,0 +1,13 @@
+t4691_exhaust_extractor.scala:17: error: match may not be exhaustive.
+It would fail on the following input: Bar3()
+  def f1(x: Foo) = x match {
+                   ^
+t4691_exhaust_extractor.scala:23: error: match may not be exhaustive.
+It would fail on the following input: Bar3()
+  def f2(x: Foo) = x match {
+                   ^
+t4691_exhaust_extractor.scala:29: error: match may not be exhaustive.
+It would fail on the following input: Bar3()
+  def f3(x: Foo) = x match {
+                   ^
+three errors found
