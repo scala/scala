@@ -15,6 +15,7 @@ import java.util.Collection
 import scala.concurrent.forkjoin._
 import scala.concurrent.{ ExecutionContext, Awaitable }
 import scala.concurrent.util.Duration
+import scala.util.control.NonFatal
 
 
 

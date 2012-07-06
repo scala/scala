@@ -13,6 +13,7 @@ package scala.concurrent.impl
 import scala.concurrent.util.Duration
 import scala.concurrent.{Awaitable, ExecutionContext, CanAwait}
 import scala.collection.mutable.Stack
+import scala.util.control.NonFatal
 
 
 private[concurrent] trait Future[+T] extends scala.concurrent.Future[T] with Awaitable[T] {
