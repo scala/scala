@@ -20,7 +20,7 @@ trait BuildUtils extends base.BuildUtils { self: SymbolTable =>
       val result = owner.info decl name
       if (result ne NoSymbol) result
       else
-        mirrorThatLoaded(owner).tryMissingHooks(owner, name) orElse
+        mirrorThatLoaded(owner).missingHook(owner, name) orElse
         MissingRequirementError.notFound("%s %s in %s".format(if (name.isTermName) "term" else "type", name, owner.fullName))
     }
 
