@@ -693,28 +693,21 @@ trait Types extends api.Types { self: SymbolTable =>
      *      = Int
      */
     def asSeenFrom(pre: Type, clazz: Symbol): Type = {
-      if (isTrivial || phase.erasedTypes && pre.typeSymbol != ArrayClass) this
-      else {
-        // scala.tools.nsc.util.trace.when(pre.isInstanceOf[ExistentialType])("X "+this+".asSeenfrom("+pre+","+clazz+" = ")
-        Statistics.incCounter(asSeenFromCount)
-        val start = Statistics.pushTimer(typeOpsStack, asSeenFromNanos)
-        val pre1 = pre.normalize
-
-        val result: Type = (
-          if (pre1.isTrivial && (clazz.isPackageClass || !clazz.isClass)) this
-          else {
-            val m = new AsSeenFromMap(pre1, clazz)
-            val tp = m apply this
-            val tp1 = existentialAbstraction(m.capturedParams, tp)
-            if (m.capturedSkolems.isEmpty) tp1
-            else deriveType(m.capturedSkolems, _.cloneSymbol setFlag CAPTURED)(tp1)
-          }
+      TypesStats.timedTypeOp(asSeenFromNanos) {
+        val trivial = (
+             this.isTrivial
+          || phase.erasedTypes && pre.typeSymbol != ArrayClass
+          || pre.normalize.isTrivial && !isPossiblePrefix(clazz)
         )
-        Statistics.popTimer(typeOpsStack, start)
-        if ((result ne this) && pre1.isTrivial)
-          debuglog(s"asSeenFrom($pre1, $clazz)\n  old: ${this}\n  new: $result")
+        if (trivial) this
+        else {
+          val m     = new AsSeenFromMap(pre.normalize, clazz)
+          val tp    = m(this)
+          val tp1   = existentialAbstraction(m.capturedParams, tp)
 
-        result
+          if (m.capturedSkolems.isEmpty) tp1
+          else deriveType(m.capturedSkolems, _.cloneSymbol setFlag CAPTURED)(tp1)
+        }
       }
     }
 
@@ -4265,15 +4258,21 @@ trait Types extends api.Types { self: SymbolTable =>
 
   def singletonBounds(hi: Type) = TypeBounds.upper(intersectionType(List(hi, SingletonClass.tpe)))
 
+  /** Might the given symbol be important when calculating the prefix
+   *  of a type? When tp.asSeenFrom(pre, clazz) is called on `tp`,
+   *  the result will be `tp` unchanged if `pre` is trivial and `clazz`
+   *  is a symbol such that isPossiblePrefix(clazz) == false.
+   */
+  def isPossiblePrefix(clazz: Symbol) = clazz.isClass && !clazz.isPackageClass
+
   /** A map to compute the asSeenFrom method  */
   class AsSeenFromMap(pre: Type, clazz: Symbol) extends TypeMap with KeepOnlyTypeConstraints {
     var capturedSkolems: List[Symbol] = List()
     var capturedParams: List[Symbol] = List()
 
     @inline private def skipPrefixOf(pre: Type, clazz: Symbol) = (
-      (pre eq NoType) || (pre eq NoPrefix) || !clazz.isClass
+      (pre eq NoType) || (pre eq NoPrefix) || !isPossiblePrefix(clazz)
     )
-
     override def mapOver(tree: Tree, giveup: ()=>Nothing): Tree = {
       object annotationArgRewriter extends TypeMapTransformer {
         private def canRewriteThis(sym: Symbol) = (
@@ -6922,4 +6921,10 @@ object TypesStats {
   val typerefBaseTypeSeqCount = Statistics.newSubCounter("  of which for typerefs", baseTypeSeqCount)
   val singletonBaseTypeSeqCount = Statistics.newSubCounter("  of which for singletons", baseTypeSeqCount)
   val typeOpsStack = Statistics.newTimerStack()
+
+  @inline final def timedTypeOp[T](c: Statistics.StackableTimer)(op: => T): T = {
+    val start = Statistics.pushTimer(typeOpsStack, c)
+    try op
+    finally Statistics.popTimer(typeOpsStack, start)
+  }
 }
