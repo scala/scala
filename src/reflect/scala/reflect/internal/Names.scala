@@ -10,12 +10,18 @@ import scala.io.Codec
 import java.security.MessageDigest
 import language.implicitConversions
 
+trait LowPriorityNames {
+  self: Names =>
+
+  implicit def nameToNameOps(name: Name): NameOps[Name] = new NameOps[Name](name)
+}
+
 /** The class Names ...
  *
  *  @author  Martin Odersky
  *  @version 1.0, 05/02/2005
  */
-trait Names extends api.Names {
+trait Names extends api.Names with LowPriorityNames {
   implicit def promoteTermNamesAsNecessary(name: Name): TermName = name.toTermName
 
 // Operations -------------------------------------------------------------
@@ -356,11 +362,6 @@ trait Names extends api.Names {
     final def endsWith(char: Char): Boolean     = len > 0 && endChar == char
     final def endsWith(name: String): Boolean   = endsWith(newTermName(name))
 
-    def dropRight(n: Int): ThisNameType = subName(0, len - n)
-    def drop(n: Int): ThisNameType = subName(n, len)
-    def stripSuffix(suffix: Name): ThisNameType =
-      if (this endsWith suffix) dropRight(suffix.length) else thisName
-
     def indexOf(ch: Char) = {
       val idx = pos(ch)
       if (idx == length) -1 else idx
@@ -427,6 +428,16 @@ trait Names extends api.Names {
     def isOperatorName: Boolean = decode != toString
     def longString: String      = nameKind + " " + decode
     def debugString = { val s = decode ; if (isTypeName) s + "!" else s }
+  }
+
+  implicit def TermNameOps(name: TermName): NameOps[TermName] = new NameOps(name)
+  implicit def TypeNameOps(name: TypeName): NameOps[TypeName] = new NameOps(name)
+
+  final class NameOps[T <: Name](name: T) {
+    def stripSuffix(suffix: Name): T = if (name endsWith suffix) dropRight(suffix.length) else name
+    def dropRight(n: Int): T         = name.subName(0, name.length - n).asInstanceOf[T]
+    def drop(n: Int): T              = name.subName(n, name.length).asInstanceOf[T]
+    def nonEmpty: Boolean            = name.length > 0
   }
 
   implicit val NameTag = ClassTag[Name](classOf[Name])

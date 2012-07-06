@@ -42,7 +42,7 @@ trait NodePrinters {
           val buf = new collection.mutable.ListBuffer[String]
 
           val annotations = m.group(3)
-          if (buf.nonEmpty || annotations.nonEmpty)
+          if (buf.nonEmpty || annotations != "")
             buf.append("List(" + annotations + ")")
 
           val privateWithin = "" + m.group(2)
