@@ -87,6 +87,11 @@ object BigInt {
   def apply(x: String, radix: Int): BigInt =
     new BigInt(new BigInteger(x, radix))
 
+  /** Translates a `java.math.BigInteger` into a BigInt.
+   */
+  def apply(x: BigInteger): BigInt =
+    new BigInt(x)
+
   /** Returns a positive BigInt that is probably prime, with the specified bitLength.
    */
   def probablePrime(bitLength: Int, rnd: scala.util.Random): BigInt =
@@ -96,9 +101,13 @@ object BigInt {
    */
   implicit def int2bigInt(i: Int): BigInt = apply(i)
 
-  /** Implicit conversion from long to BigInt
+  /** Implicit conversion from `Long` to `BigInt`.
    */
   implicit def long2bigInt(l: Long): BigInt = apply(l)
+
+  /** Implicit conversion from `java.math.BigInteger` to `scala.BigInt`.
+   */
+  implicit def javaBigInteger2bigInt(x: BigInteger): BigInt = apply(x)
 }
 
 /**
