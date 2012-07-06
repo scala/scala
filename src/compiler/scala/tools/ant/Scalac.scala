@@ -99,7 +99,7 @@ class Scalac extends ScalaMatchingTask with ScalacShared {
 
   /** Defines valid values for the `target` property. */
   object Target extends PermissibleValue {
-    val values = List("jvm-1.5", "msil")
+    val values = List("jvm-1.5", "msil") // TODO "jvm-1.6"
   }
 
   /** Defines valid values for the `deprecation` and `unchecked` properties. */
