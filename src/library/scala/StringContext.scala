@@ -82,43 +82,8 @@ case class StringContext(parts: String*) {
    *      string literally. This is achieved by replacing each such occurrence by the
    *      format specifier `%%`.
    */
-  def f(args: Any*): String = {
-    checkLengths(args: _*)
-    val pi = parts.iterator
-    val bldr = new java.lang.StringBuilder
-    def copyString(first: Boolean): Unit = {
-      val str = treatEscapes(pi.next())
-      val strIsEmpty = str.length == 0
-      var start = 0
-      var idx = 0
-      if (!first) {
-        if (strIsEmpty || (str charAt 0) != '%') {
-          bldr append "%s"
-        }
-        idx = 1
-      }
-      if (!strIsEmpty) {
-        val len = str.length
-        while (idx < len) {
-          if (str(idx) == '%') {
-            bldr append (str substring (start, idx)) append "%%"
-            start = idx + 1
-          }
-          idx += 1
-        }
-        bldr append (str substring (start, idx))
-      }
-    }
-    copyString(first = true)
-    while (pi.hasNext) {
-      copyString(first = false)
-    }
-    bldr.toString format (args: _*)
-  }
-
-//  TODO The above method will be replaced by the following two lines as soon as the new STARR is available
-//  // The implementation is magically hardwired into `scala.tools.reflect.MacroImplementations.macro_StringInterpolation_f`
-//  def f(args: Any*): String = macro ???
+  // The implementation is magically hardwired into `scala.tools.reflect.MacroImplementations.macro_StringInterpolation_f`
+  def f(args: Any*): String = macro ???
 }
 
 object StringContext {
