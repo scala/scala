@@ -4630,17 +4630,19 @@ trait Typers extends Modes with Adaptations with Tags {
               def ambiguousImport() = {
                 // Comparing types of imported symbols, seen as members of
                 // the prefix from which they came.
-                def t1 = imports.head.qual.tpe memberType impSym
-                def t2 = imports1.head.qual.tpe memberType impSym1
+                def t1 = imports.head.qual.tpe
+                def t2 = imports1.head.qual.tpe
                 // Monomorphism restriction on types is because type aliases could have
                 // the same target type but attach different variance to the parameters.
                 // Maybe it can be relaxed, but doesn't seem worth it at present.
-                def symbolsMatch = (
-                     (impSym == impSym1)                                      // values - exact same symbol
-                  || (impSym.isMonomorphicType && impSym1.isMonomorphicType)  // types - any monomorphic will do
+                def sameAfterNormalization = (
+                     (impSym.isMonomorphicType && impSym1.isMonomorphicType)
+                  && ((t1 memberType impSym) =:= (t2 memberType impSym1))
                 )
-                if (symbolsMatch && (t1 =:= t2))
-                  log(s"Suppressing ambiguous import: $impSym and $impSym1 refer to the same type")
+                if ((impSym1 == impSym1) && (t1 =:= t2))
+                  log(s"Suppressing ambiguous import: ($t1, $impSym) == ($t2, $impSym1)")
+                else if (name.isTypeName && sameAfterNormalization)
+                  log(s"Suppressing ambiguous import: $impSym == $impSym1 after normalization")
                 else {
                   log(s"Import is genuinely ambiguous: !($t1 =:= $t2)")
                   ambiguousError(s"it is imported twice in the same scope by\n${imports.head}\nand ${imports1.head}")
