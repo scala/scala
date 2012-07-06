@@ -69,8 +69,7 @@ abstract class MacroImplementations {
         case 'c' | 'C' =>
           checkType(arg, CharTpe, ByteTpe, ShortTpe, IntTpe)
         case 'd' | 'o' | 'x' | 'X' =>
-          checkType(arg, IntTpe, LongTpe, ByteTpe, ShortTpe, typeOf[BigInt], typeOf[java.math.BigInteger])
-          // BigInteger can be removed as soon as an implicit conversion is defined from BigInteger to BigInt
+          checkType(arg, IntTpe, LongTpe, ByteTpe, ShortTpe, typeOf[BigInt])
         case 'e' | 'E' | 'g' | 'G' | 'f' | 'a' | 'A'  =>
           checkType(arg, DoubleTpe, FloatTpe, typeOf[BigDecimal])
         case 't' | 'T' =>
