@@ -8,7 +8,7 @@
 
 package scala
 
-import collection.mutable.ArrayBuffer
+import language.experimental.macros
 
 /** A class to support string interpolation.
  *  This class supports string interpolation as outlined in Scala SIP-11.
@@ -42,7 +42,7 @@ case class StringContext(parts: String*) {
    *  @throws A `StringContext.InvalidEscapeException` if if a `parts` string contains a backslash (`\`) character
    *          that does not start a valid escape sequence.
    */
-  def s(args: Any*) = {
+  def s(args: Any*): String = {
     checkLengths(args: _*)
     val pi = parts.iterator
     val ai = args.iterator
@@ -82,7 +82,7 @@ case class StringContext(parts: String*) {
    *      string literally. This is achieved by replacing each such occurrence by the
    *      format specifier `%%`.
    */
-  def f(args: Any*) = {
+  def f(args: Any*): String = {
     checkLengths(args: _*)
     val pi = parts.iterator
     val bldr = new java.lang.StringBuilder
@@ -92,8 +92,9 @@ case class StringContext(parts: String*) {
       var start = 0
       var idx = 0
       if (!first) {
-        if (strIsEmpty || (str charAt 0) != '%')
+        if (strIsEmpty || (str charAt 0) != '%') {
           bldr append "%s"
+        }
         idx = 1
       }
       if (!strIsEmpty) {
@@ -114,6 +115,10 @@ case class StringContext(parts: String*) {
     }
     bldr.toString format (args: _*)
   }
+
+//  TODO The above method will be replaced by the following two lines as soon as the new STARR is available
+//  // The implementation is magically hardwired into `scala.tools.reflect.MacroImplementations.macro_StringInterpolation_f`
+//  def f(args: Any*): String = macro ???
 }
 
 object StringContext {
