@@ -5125,7 +5125,7 @@ trait Types extends api.Types { self: SymbolTable =>
       false
 
   private def equalSymsAndPrefixes(sym1: Symbol, pre1: Type, sym2: Symbol, pre2: Type): Boolean =
-    if (sym1 == sym2) sym1.hasPackageFlag || phase.erasedTypes || pre1 =:= pre2
+    if (sym1 == sym2) sym1.hasPackageFlag || sym1.owner.hasPackageFlag || phase.erasedTypes || pre1 =:= pre2
     else (sym1.name == sym2.name) && isUnifiable(pre1, pre2)
 
   /** Do `tp1` and `tp2` denote equivalent types? */
@@ -5612,7 +5612,7 @@ trait Types extends api.Types { self: SymbolTable =>
             val sym2 = tr2.sym
             val pre1 = tr1.pre
             val pre2 = tr2.pre
-            (((if (sym1 == sym2) phase.erasedTypes || isSubType(pre1, pre2, depth)
+            (((if (sym1 == sym2) phase.erasedTypes || sym1.owner.hasPackageFlag || isSubType(pre1, pre2, depth)
                else (sym1.name == sym2.name && !sym1.isModuleClass && !sym2.isModuleClass &&
                      (isUnifiable(pre1, pre2) ||
                       isSameSpecializedSkolem(sym1, sym2, pre1, pre2) ||
