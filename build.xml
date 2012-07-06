@@ -116,6 +116,12 @@ END-USER TARGETS
     <antcall target="test.done"/>
   </target>
 
+  <target name="replacestarrwin-opt"
+    description="Creates a new Starr on Windows. Manually execute 'ant locker.clean build' first!">
+    <antcall target="replacestarrwin">
+      <param name="scalac.args.optimise" value="-optimise"/>
+    </antcall>
+  </target>
   <target name="replacelocker"
     description="Replaces the Locker compiler and library by fresh ones built from current sources.">
     <antcall target="palo.clean"/>
