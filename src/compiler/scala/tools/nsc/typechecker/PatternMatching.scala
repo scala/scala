@@ -1635,12 +1635,12 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
       def registerEquality(c: Const): Unit
 
       // call this to indicate null is part of the domain
-      def considerNull: Unit
+      def registerNull: Unit
 
       // can this variable be null?
-      def consideringNull: Boolean
+      def mayBeNull: Boolean
 
-      // compute the domain and return it (call considerNull first!)
+      // compute the domain and return it (call registerNull first!)
       def domainSyms: Option[Set[Sym]]
 
       // the symbol for this variable being equal to its statically known type
@@ -1724,7 +1724,7 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
     //
     // TODO: for V1 representing x1 and V2 standing for x1.head, encode that
     //       V1 = Nil implies -(V2 = Ci) for all Ci in V2's domain (i.e., it is unassignable)
-    def removeVarEq(props: List[Prop], considerNull: Boolean = false): (Prop, List[Prop]) = {
+    def removeVarEq(props: List[Prop], modelNull: Boolean = false): (Prop, List[Prop]) = {
       val start = Statistics.startTimer(patmatAnaVarEq)
 
       val vars = new collection.mutable.HashSet[Var]
@@ -1746,7 +1746,7 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
       }
 
       props foreach gatherEqualities.apply
-      if (considerNull) vars foreach (_.considerNull)
+      if (modelNull) vars foreach (_.registerNull)
 
       val pure = props map rewriteEqualsToProp.apply
 
@@ -1775,8 +1775,10 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
 
         // when this variable cannot be null the equality corresponding to the type test `(x: T)`, where T is x's static type,
         // is always true; when the variable may be null we use the implication `(x != null) => (x: T)` for the axiom
-        if (!v.consideringNull) v.symForStaticTp foreach addAxiom
-        else v.symForStaticTp foreach { symForStaticTp => addAxiom(Or(v.propForEqualsTo(NullConst), symForStaticTp)) }
+        v.symForStaticTp foreach { symForStaticTp =>
+          if (v.mayBeNull) addAxiom(Or(v.propForEqualsTo(NullConst), symForStaticTp))
+          else addAxiom(symForStaticTp)
+        }
 
         val syms = v.equalitySyms
         // patmatDebug ("eqSyms "+(v, syms))
@@ -1817,7 +1819,7 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
 
     // may throw an CNFBudgetExceeded
     def propToSolvable(p: Prop) = {
-      val (eqAxioms, pure :: Nil) = removeVarEq(List(p), considerNull = false)
+      val (eqAxioms, pure :: Nil) = removeVarEq(List(p), modelNull = false)
       eqFreePropToSolvable(And(eqAxioms, pure))
     }
 
@@ -2057,9 +2059,9 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
       // when looking at the domain, we only care about types we can check at run time
       val staticTpCheckable: Type = checkableType(staticTp)
 
-      private[this] var _consideringNull = false
-      def considerNull: Unit = { ensureCanModify; if (NullTp <:< staticTpCheckable) _consideringNull = true }
-      def consideringNull: Boolean = _consideringNull
+      private[this] var _mayBeNull = false
+      def registerNull: Unit = { ensureCanModify; if (NullTp <:< staticTpCheckable) _mayBeNull = true }
+      def mayBeNull: Boolean = _mayBeNull
 
       // case None => domain is unknown,
       // case Some(List(tps: _*)) => domain is exactly tps
@@ -2076,16 +2078,16 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
         }
 
         val allConsts =
-          if (!consideringNull) subConsts
-          else {
+          if (mayBeNull) {
             registerEquality(NullConst)
             subConsts map (_ + NullConst)
-          }
+          } else
+            subConsts
 
         observed; allConsts
       }
 
-      // accessing after calling considerNull will result in inconsistencies
+      // accessing after calling registerNull will result in inconsistencies
       lazy val domainSyms: Option[Set[Sym]] = domain map { _ map symForEqualsTo }
 
       lazy val symForStaticTp: Option[Sym]  = symForEqualsTo.get(TypeConst(staticTpCheckable))
@@ -2102,7 +2104,7 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
       def propForEqualsTo(c: Const): Prop = {observed; symForEqualsTo.getOrElse(c, False)}
 
 
-      // don't call until all equalities have been registered and considerNull has been called (if needed)
+      // don't call until all equalities have been registered and registerNull has been called (if needed)
       def describe = toString + ": " + staticTp + domain.map(_.mkString(" ::= ", " | ", "// "+ symForEqualsTo.keys)).getOrElse(symForEqualsTo.keys.mkString(" ::= ", " | ", " | ...")) + " // = " + path
       override def toString = "V"+ id
     }
@@ -2330,8 +2332,8 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
 
       val propsCasesOk   = testCasesOk   map (t => symbolicCase(t, modelNull = true))
       val propsCasesFail = testCasesFail map (t => Not(symbolicCase(t, modelNull = true)))
-      val (eqAxiomsFail, symbolicCasesFail) = removeVarEq(propsCasesFail, considerNull = true)
-      val (eqAxiomsOk, symbolicCasesOk)     = removeVarEq(propsCasesOk,   considerNull = true)
+      val (eqAxiomsFail, symbolicCasesFail) = removeVarEq(propsCasesFail, modelNull = true)
+      val (eqAxiomsOk, symbolicCasesOk)     = removeVarEq(propsCasesOk,   modelNull = true)
 
       try {
         // most of the time eqAxiomsFail == eqAxiomsOk, but the different approximations might cause different variables to disapper in general
