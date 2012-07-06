@@ -84,6 +84,9 @@ trait StdNames {
 
   abstract class CommonNames extends NamesApi {
     type NameType >: Null <: Name
+    // Masking some implicits so as to allow our targeted => NameType.
+    protected val stringToTermName = null
+    protected val stringToTypeName = null
     protected implicit def createNameType(name: String): NameType
 
     def flattenedName(segments: Name*): NameType =
@@ -963,7 +966,7 @@ trait StdNames {
         case -1     => if (name == "") scala.Nil else scala.List(mkName(name, assumeTerm))
         // otherwise, we can tell based on whether '#' or '.' is the following char.
         case idx    =>
-          val (simple, div, rest) = (name take idx, name charAt idx, newTermName(name) drop (idx + 1))
+          val (simple, div, rest) = (name take idx, name charAt idx, name drop idx + 1)
           mkName(simple, div == '.') :: segments(rest, assumeTerm)
       }
     }
@@ -1038,6 +1041,8 @@ trait StdNames {
   }
 
   abstract class SymbolNames {
+    protected val stringToTermName = null
+    protected val stringToTypeName = null
     protected implicit def createNameType(s: String): TypeName = newTypeNameCached(s)
 
     val BeanProperty        : TypeName

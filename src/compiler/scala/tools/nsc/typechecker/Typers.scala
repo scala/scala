@@ -4283,7 +4283,7 @@ trait Typers extends Modes with Adaptations with Tags {
       }
 
       def convertToAssignment(fun: Tree, qual: Tree, name: Name, args: List[Tree]): Tree = {
-        val prefix = name stripSuffix nme.EQL
+        val prefix = name.toTermName stripSuffix nme.EQL
         def mkAssign(vble: Tree): Tree =
           Assign(
             vble,
