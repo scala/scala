@@ -75,24 +75,21 @@ pushJarFile() {
   local jar_dir=$(dirname $jar)
   local jar_name=${jar#$jar_dir/}
   pushd $jar_dir >/dev/null
-  local jar_sha1=$(shasum -p $jar_name)
-  local version=${jar_sha1% ?$jar_name}
+  local version=$(makeJarSha $jar_name)
   local remote_uri=${version}${jar#$basedir}
   echo "  Pushing to ${remote_urlbase}/${remote_uri} ..."
   echo "	$curl"
   curlUpload $remote_uri $jar_name $user $pw
   echo "  Making new sha1 file ...."
-  echo "$jar_sha1" > "${jar_name}${desired_ext}"
+  echo "$version ?$jar_name" > "${jar_name}${desired_ext}"
   popd >/dev/null
   # TODO - Git remove jar and git add jar.desired.sha1
   # rm $jar
 }
 
-getJarSha() {
+makeJarSha() {
   local jar=$1
-  if [[ ! -f "$jar" ]]; then
-    echo ""
-  elif which sha1sum 2>/dev/null >/dev/null; then
+  if which sha1sum 2>/dev/null >/dev/null; then
     shastring=$(sha1sum "$jar")
     echo "$shastring" | sed 's/ .*//'
   elif which shasum 2>/dev/null >/dev/null; then
@@ -101,6 +98,15 @@ getJarSha() {
   else
     shastring=$(openssl sha1 "$jar")
     echo "$shastring" | sed 's/^.*= //'
+  fi
+}
+
+getJarSha() {
+  local jar=$1
+  if [[ ! -f "$jar" ]]; then
+    echo ""
+  else
+    echo $(makeJarSha $jar)
   fi
 }
 
