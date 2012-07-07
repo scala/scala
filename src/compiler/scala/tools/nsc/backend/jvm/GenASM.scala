@@ -1942,6 +1942,15 @@ abstract class GenASM extends SubComponent with BytecodeWriters {
           i += 1
         }
 
+        // check for duplicate keys to avoid "VerifyError: unsorted lookupswitch" (SI-6011)
+        i = 1
+        while (i < keys.length) {
+          if(keys(i-1) == keys(i)) {
+            abort("duplicate keys in SWITCH, can't pick arbitrarily one of them to evict, see SI-6011.")
+          }
+          i += 1
+        }
+
         val keyMin = keys(0)
         val keyMax = keys(keys.length - 1)
 
