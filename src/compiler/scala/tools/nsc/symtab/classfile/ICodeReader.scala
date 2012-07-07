@@ -725,21 +725,18 @@ abstract class ICodeReader extends ClassfileParser {
         import analysis.typeFlowLattice.IState
 
         /** Abstract interpretation for one instruction. */
-        override def interpret(in: typeFlowLattice.Elem, i: Instruction): typeFlowLattice.Elem = {
-          var out = IState(new VarBinding(in.vars), new TypeStack(in.stack))
+        override def mutatingInterpret(out: typeFlowLattice.Elem, i: Instruction): typeFlowLattice.Elem = {
           val bindings = out.vars
           val stack = out.stack
           import stack.push
           i match {
-            case DUP_X1 =>
+            case DUP_X1 => // for example, scala.tools.asm.ClassWriter sports a DUP_X1 , showing it can happen for "scala" classes too.
               val (one, two) = stack.pop2
               push(one); push(two); push(one);
-              out = IState(bindings, stack)
 
             case DUP_X2 =>
               val (one, two, three) = stack.pop3
               push(one); push(three); push(two); push(one);
-              out = IState(bindings, stack)
 
             case DUP2_X1 =>
               val (one, two) = stack.pop2
@@ -749,7 +746,6 @@ abstract class ICodeReader extends ClassfileParser {
                 val three = stack.pop
                 push(two); push(one); push(three); push(two); push(one);
               }
-              out = IState(bindings, stack)
 
             case DUP2_X2 =>
               val (one, two) = stack.pop2
@@ -768,10 +764,9 @@ abstract class ICodeReader extends ClassfileParser {
                   push(two); push(one); push(four); push(one); push(three); push(two); push(one);
                 }
               }
-              out = IState(bindings, stack)
 
             case _ =>
-              out = super.interpret(in, i)
+              super.mutatingInterpret(out, i)
           }
           out
         }
@@ -933,12 +928,12 @@ abstract class ICodeReader extends ClassfileParser {
       def checkValidIndex() {
         locals.get(idx - 1) match {
           case Some(others) if others exists (_._2.isWideType) =>
-            global.globalError("Illegal index: " + idx + " points in the middle of another local")
+            MissingRequirementError.signal("Illegal index: " + idx + " points in the middle of another local")
           case _ => ()
         }
         kind match {
           case LONG | DOUBLE if (locals.isDefinedAt(idx + 1)) =>
-            global.globalError("Illegal index: " + idx + " overlaps " + locals(idx + 1) + "\nlocals: " + locals)
+            MissingRequirementError.signal("Illegal index: " + idx + " overlaps " + locals(idx + 1) + "\nlocals: " + locals)
           case _ => ()
         }
       }

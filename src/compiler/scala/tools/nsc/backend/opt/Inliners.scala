@@ -160,6 +160,10 @@ abstract class Inliners extends SubComponent {
   def hasInline(sym: Symbol)    = sym hasAnnotation ScalaInlineClass
   def hasNoInline(sym: Symbol)  = sym hasAnnotation ScalaNoInlineClass
 
+  def isJDKClass(csym: Symbol)  = csym.isJavaDefined && csym.fullName.startsWith("java") // TODO this needs improvement
+  def isIface(csym: Symbol)     = csym.isTrait && !csym.isImplClass
+  def isNative(msym: Symbol)    = msym.hasAnnotation(definitions.NativeAttr)
+
   /**
    * Simple inliner.
    */
@@ -338,6 +342,7 @@ abstract class Inliners extends SubComponent {
         assert(bb.toList contains i, "Candidate callsite does not belong to BasicBlock.")
 
         var inlined = false
+
         val shouldWarn = hasInline(i.method)
 
             def warnNoInline(reason: String) = {
@@ -346,7 +351,18 @@ abstract class Inliners extends SubComponent {
               }
             }
 
-        var isAvailable = icodes available concreteMethod.enclClass
+        if(isIface(receiver)) {
+          warnNoInline("type-flow analysis approximated the actual receiver class as an interface: " + receiver)
+          return false
+        }
+
+        if(isJDKClass(receiver)) {
+          warnNoInline("we don't inline methods from JDK classes: " + receiver.fullName)
+          return false
+        }
+
+
+        var isAvailable = icodes available receiver
 
         if (!isAvailable && shouldLoadImplFor(concreteMethod, receiver)) {
           // Until r22824 this line was:
@@ -357,7 +373,7 @@ abstract class Inliners extends SubComponent {
           // was the proximate cause for SI-3882:
           //   error: Illegal index: 0 overlaps List((variable par1,LONG))
           //   error: Illegal index: 0 overlaps List((variable par1,LONG))
-          isAvailable = icodes.load(concreteMethod.enclClass)
+          isAvailable = icodes.load(receiver)
         }
 
             def isCandidate = (
@@ -555,7 +571,7 @@ abstract class Inliners extends SubComponent {
       def alwaysLoad    = (receiver.enclosingPackage == RuntimePackage) || (receiver == PredefModule.moduleClass)
       def loadCondition = sym.isEffectivelyFinal && isMonadicMethod(sym) && isHigherOrderMethod(sym)
 
-      val res = hasInline(sym) || alwaysLoad || loadCondition
+      val res = receiver.isEffectivelyFinal || hasInline(sym) || alwaysLoad || loadCondition
       debuglog("shouldLoadImplFor: " + receiver + "." + sym + ": " + res)
       res
     }
@@ -918,6 +934,7 @@ abstract class Inliners extends SubComponent {
             if(inc.isRecursive)    { rs ::= "is recursive"           }
             if(isInlineForbidden)  { rs ::= "is annotated @noinline" }
             if(inc.isSynchronized) { rs ::= "is synchronized method" }
+            if(isNative(inc.sym))  { rs ::= "is native method"       }
             if(rs.isEmpty) null else rs.mkString("", ", and ", "")
           }
 
@@ -1013,10 +1030,29 @@ abstract class Inliners extends SubComponent {
       }
     }
 
-    def lookupIMethod(meth: Symbol, receiver: Symbol): Option[IMethod] = {
-      def tryParent(sym: Symbol) = icodes icode sym flatMap (_ lookupMethod meth)
-
-      (receiver.info.baseClasses.iterator map tryParent find (_.isDefined)).flatten
+    // look up methSym for a receiver instance of classSym:
+    def lookupIMethod(methSym: Symbol, classSym: Symbol): Option[IMethod] = {
+      var actualClass = classSym
+      var actualMeth = methSym
+      while ((actualClass != NoSymbol) && !isJDKClass(actualClass)) {
+        val ov = actualMeth.overridingSymbol(actualClass)
+        if (ov != NoSymbol) {
+          actualMeth = ov
+          if(isNative(actualMeth)) { return None }
+          assert(actualMeth.owner == actualClass)
+          val icOpt = {
+            if(!icodes.available(actualClass)) {
+              icodes.load(actualClass)
+            }
+            icodes.icode(actualClass)
+          }
+          val res = icOpt flatMap { ic => ic.lookupMethod(actualMeth) }
+          return res
+        } else {
+          actualClass = actualClass.superClass
+        }
+      }
+      None
     }
   } /* class Inliner */
 } /* class Inliners */
