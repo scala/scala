@@ -8,20 +8,20 @@ package <empty> {
     };
     private[this] val field: Int = 0;
     <stable> <accessor> def field(): Int = T.this.field;
-    def foo(methodParam$1: Int): Function0 = {
-      val methodLocal$1: Int = 0;
+    def foo(methodParam: Int): Function0 = {
+      val methodLocal: Int = 0;
       {
-        (new anonymous class $anonfun$foo$1(T.this, methodParam$1, methodLocal$1): Function0)
+        (new anonymous class $anonfun$foo$1(T.this, methodParam, methodLocal): Function0)
       }
     };
-    def bar(barParam$1: Int): Object = {
-      @volatile var MethodLocalObject$module$1: scala.runtime.VolatileObjectRef = new scala.runtime.VolatileObjectRef(<empty>);
-      T.this.MethodLocalObject$1(barParam$1, MethodLocalObject$module$1)
+    def bar(barParam: Int): Object = {
+      @volatile var MethodLocalObject$module: scala.runtime.VolatileObjectRef = new scala.runtime.VolatileObjectRef(<empty>);
+      T.this.MethodLocalObject$1(barParam, MethodLocalObject$module)
     };
-    def tryy(tryyParam$1: Int): Function0 = {
-      var tryyLocal$1: scala.runtime.IntRef = new scala.runtime.IntRef(0);
+    def tryy(tryyParam: Int): Function0 = {
+      var tryyLocal: scala.runtime.IntRef = new scala.runtime.IntRef(0);
       {
-        (new anonymous class $anonfun$tryy$1(T.this, tryyParam$1, tryyLocal$1): Function0)
+        (new anonymous class $anonfun$tryy$1(T.this, tryyParam, tryyLocal): Function0)
       }
     };
     @SerialVersionUID(0) final <synthetic> class $anonfun$foo$1 extends scala.runtime.AbstractFunction0$mcI$sp with Serializable {

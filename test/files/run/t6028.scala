@@ -14,7 +14,6 @@ object Test extends DirectTest {
                         |""".stripMargin.trim
 
   override def show(): Unit = {
-    // redirect err to out, for logging
     Console.withErr(System.out) {
       compile()
     }
