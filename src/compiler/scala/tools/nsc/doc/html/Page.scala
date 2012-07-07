@@ -8,6 +8,8 @@ package scala.tools.nsc.doc.html
 import scala.tools.nsc.doc.model._
 import java.io.{FileOutputStream, File}
 import scala.reflect.NameTransformer
+import java.nio.channels.Channels
+import java.io.Writer
 
 abstract class Page {
   thisPage =>
@@ -20,13 +22,25 @@ abstract class Page {
 
   def absoluteLinkTo(path: List[String]) = path.reverse.mkString("/")
 
-  def createFileOutputStream(site: HtmlFactory) = {
-    val file = new File(site.siteRoot, absoluteLinkTo(thisPage.path))
+  def createFileOutputStream(site: HtmlFactory, suffix: String = "") = {
+    val file = new File(site.siteRoot, absoluteLinkTo(thisPage.path) + suffix)
     val folder = file.getParentFile
     if (! folder.exists) {
       folder.mkdirs
     }
     new FileOutputStream(file.getPath)
+  }
+
+  def writeFile(site: HtmlFactory, suffix: String = "")(fn: Writer => Unit) = {
+    val fos = createFileOutputStream(site, suffix)
+    val w = Channels.newWriter(fos.getChannel, site.encoding)
+    try {
+      fn(w)
+    }
+    finally {
+      w.close()
+      fos.close()
+    }
   }
 
   /** Writes this page as a file. The file's location is relative to the
@@ -44,7 +58,7 @@ abstract class Page {
 
   def templateToPath(tpl: TemplateEntity): List[String] = {
     def doName(tpl: TemplateEntity): String =
-      NameTransformer.encode(tpl.name) + (if (tpl.isObject) "$" else "")
+      (if (tpl.inPackageObject) "package$$" else "") + NameTransformer.encode(tpl.name) + (if (tpl.isObject) "$" else "")
     def downPacks(pack: Package): List[String] =
       if (pack.isRootPackage) Nil else (doName(pack) :: downPacks(pack.inTemplate))
     def downInner(nme: String, tpl: TemplateEntity): (String, Package) = {
@@ -82,19 +96,5 @@ abstract class Page {
         List.fill(fss.length - 1)("..") ::: tss
     }
     relativize(thisPage.path.reverse, destPath.reverse).mkString("/")
-  }
-
-  def isExcluded(dtpl: DocTemplateEntity) = {
-    val qname = dtpl.qualifiedName
-    ( ( qname.startsWith("scala.Tuple") || qname.startsWith("scala.Product") ||
-       qname.startsWith("scala.Function") || qname.startsWith("scala.runtime.AbstractFunction")
-     ) && !(
-      qname == "scala.Tuple1" || qname == "scala.Tuple2" ||
-      qname == "scala.Product" || qname == "scala.Product1" || qname == "scala.Product2" ||
-      qname == "scala.Function" || qname == "scala.Function1" || qname == "scala.Function2" ||
-      qname == "scala.runtime.AbstractFunction0" || qname == "scala.runtime.AbstractFunction1" ||
-      qname == "scala.runtime.AbstractFunction2"
-    )
-   )
   }
 }

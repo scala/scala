@@ -67,8 +67,8 @@ final case class Bold(text: Inline) extends Inline
 final case class Underline(text: Inline) extends Inline
 final case class Superscript(text: Inline) extends Inline
 final case class Subscript(text: Inline) extends Inline
+final case class EntityLink(target: String, template: () => Option[TemplateEntity]) extends Inline
 final case class Link(target: String, title: Inline) extends Inline
-final case class EntityLink(target: TemplateEntity) extends Inline
 final case class Monospace(text: Inline) extends Inline
 final case class Text(text: String) extends Inline
 final case class HtmlTag(data: String) extends Inline {

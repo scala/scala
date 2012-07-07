@@ -13,6 +13,9 @@ object Test extends ScaladocModelTest {
     // get the quick access implicit defs in scope (_package(s), _class(es), _trait(s), object(s) _method(s), _value(s))
     import access._
 
+    def isShadowed(mbr: MemberEntity): Boolean =
+      mbr.byConversion.map(_.source.implicitsShadowing.get(mbr).map(_.isShadowed).getOrElse(false)).getOrElse(false)
+
     // SEE THE test/resources/implicits-chaining-res.scala FOR THE EXPLANATION OF WHAT'S CHECKED HERE:
     val base = root._package("scala")._package("test")._package("scaladoc")._package("implicits")._object("shadowing")
     var conv: ImplicitConversion = null
@@ -22,12 +25,8 @@ object Test extends ScaladocModelTest {
     val A = base._class("A")
 
     conv = A._conversion(base._object("A").qualifiedName + ".AtoZ")
-    assert(conv.members.length == 5)
-    conv._member("conv5")
-    conv._member("conv8")
-    conv._member("conv9")
-    conv._member("conv10")
-    conv._member("conv11")
+    assert(conv.members.length == 11)
+    assert(conv.members.forall(isShadowed(_)))
     assert(conv.constraints.length == 0)
 
 //// class B ///////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -35,11 +34,8 @@ object Test extends ScaladocModelTest {
     val B = base._class("B")
 
     conv = B._conversion(base._object("A").qualifiedName + ".AtoZ")
-    assert(conv.members.length == 4)
-    conv._member("conv5")
-    conv._member("conv8")
-    conv._member("conv9")
-    conv._member("conv11")
+    assert(conv.members.length == 11)
+    assert(conv.members.forall(isShadowed(_)))
     assert(conv.constraints.length == 0)
 
 //// class C ///////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -47,12 +43,8 @@ object Test extends ScaladocModelTest {
     val C = base._class("C")
 
     conv = C._conversion(base._object("A").qualifiedName + ".AtoZ")
-    assert(conv.members.length == 5)
-    conv._member("conv5")
-    conv._member("conv8")
-    conv._member("conv9")
-    conv._member("conv10")
-    conv._member("conv11")
+    assert(conv.members.length == 11)
+    assert(conv.members.forall(isShadowed(_)))
     assert(conv.constraints.length == 0)
 
 //// class D ///////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -60,11 +52,8 @@ object Test extends ScaladocModelTest {
     val D = base._class("D")
 
     conv = D._conversion(base._object("A").qualifiedName + ".AtoZ")
-    assert(conv.members.length == 4)
-    conv._member("conv5")
-    conv._member("conv8")
-    conv._member("conv9")
-    conv._member("conv10")
+    assert(conv.members.length == 11)
+    assert(conv.members.forall(isShadowed(_)))
     assert(conv.constraints.length == 0)
   }
 }

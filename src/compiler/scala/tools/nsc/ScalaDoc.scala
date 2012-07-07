@@ -20,7 +20,8 @@ class ScalaDoc {
 
   def process(args: Array[String]): Boolean = {
     var reporter: ConsoleReporter = null
-    val docSettings = new doc.Settings(msg => reporter.error(FakePos("scaladoc"), msg + "\n  scaladoc -help  gives more information"))
+    val docSettings = new doc.Settings(msg => reporter.error(FakePos("scaladoc"), msg + "\n  scaladoc -help  gives more information"),
+                                       msg => reporter.printMessage(msg))
     reporter = new ConsoleReporter(docSettings) {
       // need to do this so that the Global instance doesn't trash all the
       // symbols just because there was an error

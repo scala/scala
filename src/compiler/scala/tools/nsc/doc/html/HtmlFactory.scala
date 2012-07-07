@@ -11,6 +11,9 @@ import model._
 import java.io.{ File => JFile }
 import io.{ Streamable, Directory }
 import scala.collection._
+import page.diagram._
+
+import html.page.diagram.DiagramGenerator
 
 /** A class that can generate Scaladoc sites to some fixed root folder.
   * @author David Bernard
@@ -29,21 +32,27 @@ class HtmlFactory(val universe: doc.Universe, index: doc.Index) {
     "jquery.js",
     "jquery.layout.js",
     "scheduler.js",
+    "diagrams.js",
     "template.js",
     "tools.tooltip.js",
+    "modernizr.custom.js",
 
     "index.css",
     "ref-index.css",
     "template.css",
+    "diagrams.css",
 
     "class.png",
     "class_big.png",
+    "class_diagram.png",
     "object.png",
     "object_big.png",
+    "object_diagram.png",
     "package.png",
     "package_big.png",
     "trait.png",
     "trait_big.png",
+    "trait_diagram.png",
 
     "class_to_object_big.png",
     "object_to_class_big.png",
@@ -105,6 +114,8 @@ class HtmlFactory(val universe: doc.Universe, index: doc.Index) {
       finally out.close()
     }
 
+    DiagramGenerator.initialize(universe.settings)
+
     libResources foreach (s => copyResource("lib/" + s))
 
     new page.Index(universe, index) writeFor this
@@ -115,14 +126,17 @@ class HtmlFactory(val universe: doc.Universe, index: doc.Index) {
     for (letter <- index.firstLetterIndex) {
       new html.page.ReferenceIndex(letter._1, index, universe) writeFor this
     }
+
+    DiagramGenerator.cleanup()
   }
 
   def writeTemplates(writeForThis: HtmlPage => Unit) {
     val written = mutable.HashSet.empty[DocTemplateEntity]
+    val diagramGenerator: DiagramGenerator = new DotDiagramGenerator(universe.settings)
 
     def writeTemplate(tpl: DocTemplateEntity) {
       if (!(written contains tpl)) {
-        writeForThis(new page.Template(universe, tpl))
+        writeForThis(new page.Template(universe, diagramGenerator, tpl))
         written += tpl
         tpl.templates map writeTemplate
       }
