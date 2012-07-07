@@ -4293,18 +4293,6 @@ trait Types extends api.Types { self: SymbolTable =>
           qvar
       }).tpe
 
-    /** Return `pre.baseType(clazz)`, or if that's `NoType` and `clazz` is a refinement, `pre` itself.
-     *  See bug397.scala for an example where the second alternative is needed.
-     *  The problem is that when forming the base type sequence of an abstract type,
-     *  any refinements in the base type list might be regenerated, and thus acquire
-     *  new class symbols. However, since refinements always have non-interesting prefixes
-     *  it looks OK to me to just take the prefix directly. */
-    def base(pre: Type, clazz: Symbol) = {
-      val b = pre.baseType(clazz)
-      if (b == NoType && clazz.isRefinementClass) pre
-      else b
-    }
-
     def apply(tp: Type): Type =
       if ((pre eq NoType) || (pre eq NoPrefix) || !clazz.isClass) tp
       else tp match {
@@ -4325,7 +4313,7 @@ trait Types extends api.Types { self: SymbolTable =>
                 pre1
               }
             } else {
-              toPrefix(base(pre, clazz).prefix, clazz.owner)
+              toPrefix(pre.baseType(clazz).prefix, clazz.owner)
             }
           toPrefix(pre, clazz)
         case SingleType(pre, sym) =>
@@ -4405,7 +4393,7 @@ trait Types extends api.Types { self: SymbolTable =>
                   case t =>
                     throwError
                 }
-              } else toInstance(base(pre, clazz).prefix, clazz.owner)
+              } else toInstance(pre.baseType(clazz).prefix, clazz.owner)
             }
           toInstance(pre, clazz)
         case _ =>
