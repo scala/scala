@@ -11,8 +11,9 @@ import java.lang.System
 import language.postfixOps
 
 /** An extended version of compiler settings, with additional Scaladoc-specific options.
-  * @param error A function that prints a string to the appropriate error stream. */
-class Settings(error: String => Unit) extends scala.tools.nsc.Settings(error) {
+  * @param error A function that prints a string to the appropriate error stream
+  * @param print A function that prints the string, without any extra boilerplate of error */
+class Settings(error: String => Unit, val printMsg: String => Unit = println(_)) extends scala.tools.nsc.Settings(error) {
 
   /** A setting that defines in which format the documentation is output. ''Note:'' this setting is currently always
     * `html`. */
@@ -104,6 +105,12 @@ class Settings(error: String => Unit) extends scala.tools.nsc.Settings(error) {
     "(for example conversions that require Numeric[String] to be in scope)"
   )
 
+  val docImplicitsSoundShadowing = BooleanSetting (
+    "-implicits-sound-shadowing",
+    "Use a sound implicit shadowing calculation. Note: this interacts badly with usecases, so " +
+    "only use it if you haven't defined usecase for implicitly inherited members."
+  )
+
   val docDiagrams = BooleanSetting (
     "-diagrams",
     "Create inheritance diagrams for classes, traits and packages."
@@ -116,8 +123,47 @@ class Settings(error: String => Unit) extends scala.tools.nsc.Settings(error) {
 
   val docDiagramsDotPath = PathSetting (
     "-diagrams-dot-path",
-    "The path to the dot executable used to generate the inheritance diagrams. Ex: /usr/bin/dot",
+    "The path to the dot executable used to generate the inheritance diagrams. Eg: /usr/bin/dot",
     "dot" // by default, just pick up the system-wide dot
+  )
+
+  /** The maxium nuber of normal classes to show in the diagram */
+  val docDiagramsMaxNormalClasses = IntSetting(
+    "-diagrams-max-classes",
+    "The maximum number of superclasses or subclasses to show in a diagram",
+    15,
+    None,
+    _ => None
+  )
+
+  /** The maxium nuber of implcit classes to show in the diagram */
+  val docDiagramsMaxImplicitClasses = IntSetting(
+    "-diagrams-max-implicits",
+    "The maximum number of implicitly converted classes to show in a diagram",
+    10,
+    None,
+    _ => None
+  )
+
+  val docDiagramsDotTimeout = IntSetting(
+    "-diagrams-dot-timeout",
+    "The timeout before the graphviz dot util is forecefully closed, in seconds (default: 10)",
+    10,
+    None,
+    _ => None
+  )
+
+  val docDiagramsDotRestart = IntSetting(
+    "-diagrams-dot-restart",
+    "The number of times to restart a malfunctioning dot process before disabling diagrams (default: 5)",
+    5,
+    None,
+    _ => None
+  )
+
+  val docRawOutput = BooleanSetting (
+    "-raw-output",
+    "For each html file, create another .html.raw file containing only the text. (can be used for quickly diffing two scaladoc outputs)"
   )
 
   // Somewhere slightly before r18708 scaladoc stopped building unless the
@@ -129,14 +175,16 @@ class Settings(error: String => Unit) extends scala.tools.nsc.Settings(error) {
   def scaladocSpecific = Set[Settings#Setting](
     docformat, doctitle, docfooter, docversion, docUncompilable, docsourceurl, docgenerator, docRootContent, useStupidTypes,
     docDiagrams, docDiagramsDebug, docDiagramsDotPath,
-    docImplicits, docImplicitsDebug, docImplicitsShowAll
+    docDiagramsDotTimeout, docDiagramsDotRestart,
+    docImplicits, docImplicitsDebug, docImplicitsShowAll,
+    docDiagramsMaxNormalClasses, docDiagramsMaxImplicitClasses
   )
   val isScaladocSpecific: String => Boolean = scaladocSpecific map (_.name)
 
   override def isScaladoc = true
 
-  // unset by the testsuite, we don't need to count the entities in the model
-  var reportModel = true
+  // set by the testsuite, when checking test output
+  var scaladocQuietRun = false
 
   /**
    *  This is the hardcoded area of Scaladoc. This is where "undesirable" stuff gets eliminated. I know it's not pretty,
@@ -150,15 +198,16 @@ class Settings(error: String => Unit) extends scala.tools.nsc.Settings(error) {
      *  the function result should be a humanly-understandable description of the type class
      */
     val knownTypeClasses: Map[String, String => String] = Map() +
-      ("<root>.scala.package.Numeric"       -> ((tparam: String) => tparam + " is a numeric class, such as Int, Long, Float or Double")) +
-      ("<root>.scala.package.Integral"      -> ((tparam: String) => tparam + " is an integral numeric class, such as Int or Long")) +
-      ("<root>.scala.package.Fractional"    -> ((tparam: String) => tparam + " is a fractional numeric class, such as Float or Double")) +
-      ("<root>.scala.reflect.Manifest"      -> ((tparam: String) => tparam + " is accompanied by a Manifest, which is a runtime representation of its type that survives erasure")) +
-      ("<root>.scala.reflect.ClassManifest" -> ((tparam: String) => tparam + " is accompanied by a ClassManifest, which is a runtime representation of its type that survives erasure")) +
-      ("<root>.scala.reflect.OptManifest"   -> ((tparam: String) => tparam + " is accompanied by an OptManifest, which can be either a runtime representation of its type or the NoManifest, which means the runtime type is not available")) +
-      ("<root>.scala.reflect.ClassTag"      -> ((tparam: String) => tparam + " is accompanied by a ClassTag, which is a runtime representation of its type that survives erasure")) +
-      ("<root>.scala.reflect.AbsTypeTag"    -> ((tparam: String) => tparam + " is accompanied by an AbsTypeTag, which is a runtime representation of its type that survives erasure")) +
-      ("<root>.scala.reflect.TypeTag"       -> ((tparam: String) => tparam + " is accompanied by a TypeTag, which is a runtime representation of its type that survives erasure"))
+      // TODO: Bring up to date and test these
+      ("scala.package.Numeric"       -> ((tparam: String) => tparam + " is a numeric class, such as Int, Long, Float or Double")) +
+      ("scala.package.Integral"      -> ((tparam: String) => tparam + " is an integral numeric class, such as Int or Long")) +
+      ("scala.package.Fractional"    -> ((tparam: String) => tparam + " is a fractional numeric class, such as Float or Double")) +
+      ("scala.reflect.Manifest"      -> ((tparam: String) => tparam + " is accompanied by a Manifest, which is a runtime representation of its type that survives erasure")) +
+      ("scala.reflect.ClassManifest" -> ((tparam: String) => tparam + " is accompanied by a ClassManifest, which is a runtime representation of its type that survives erasure")) +
+      ("scala.reflect.OptManifest"   -> ((tparam: String) => tparam + " is accompanied by an OptManifest, which can be either a runtime representation of its type or the NoManifest, which means the runtime type is not available")) +
+      ("scala.reflect.ClassTag"      -> ((tparam: String) => tparam + " is accompanied by a ClassTag, which is a runtime representation of its type that survives erasure")) +
+      ("scala.reflect.AbsTypeTag"    -> ((tparam: String) => tparam + " is accompanied by an AbsTypeTag, which is a runtime representation of its type that survives erasure")) +
+      ("scala.reflect.TypeTag"       -> ((tparam: String) => tparam + " is accompanied by a TypeTag, which is a runtime representation of its type that survives erasure"))
 
     /**
      * Set of classes to exclude from index and diagrams
@@ -182,7 +231,8 @@ class Settings(error: String => Unit) extends scala.tools.nsc.Settings(error) {
       "scala.Predef.any2stringfmt",
       "scala.Predef.any2stringadd",
       "scala.Predef.any2ArrowAssoc",
-      "scala.Predef.any2Ensuring")
+      "scala.Predef.any2Ensuring",
+      "scala.collection.TraversableOnce.alternateImplicit")
 
     /** There's a reason all these are specialized by hand but documenting each of them is beyond the point */
     val arraySkipConversions = List(

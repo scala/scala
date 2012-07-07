@@ -61,7 +61,7 @@ class Index(universe: doc.Universe, index: doc.Index) extends HtmlPage {
             }
             <ol class="templates">{
               val tpls: Map[String, Seq[DocTemplateEntity]] =
-                (pack.templates filter (t => !t.isPackage && !isExcluded(t) )) groupBy (_.name)
+                (pack.templates filter (t => !t.isPackage && !universe.settings.hardcoded.isExcluded(t.qualifiedName) )) groupBy (_.name)
 
               val placeholderSeq: NodeSeq = <div class="placeholder"></div>
 
