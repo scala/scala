@@ -751,7 +751,7 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
 
     private def load(path: String): Class[_] = {
       try Class.forName(path, true, classLoader)
-      catch { case ex => evalError(path, unwrap(ex)) }
+      catch { case ex: Throwable => evalError(path, unwrap(ex)) }
     }
 
     var evalCaught: Option[Throwable] = None
@@ -989,7 +989,7 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
     /** load and run the code using reflection */
     def loadAndRun: (String, Boolean) = {
       try   { ("" + (lineRep call sessionNames.print), true) }
-      catch { case ex => (lineRep.bindError(ex), false) }
+      catch { case ex: Throwable => (lineRep.bindError(ex), false) }
     }
 
     override def toString = "Request(line=%s, %s trees)".format(line, trees.size)
