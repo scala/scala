@@ -498,7 +498,8 @@ abstract class Erasure extends AddInterfaces
         ldef setType ldef.rhs.tpe
       case _ =>
         val tree1 = tree.tpe match {
-          case ErasedValueType(clazz) =>
+          case ErasedValueType(tref) =>
+            val clazz = tref.sym
             tree match {
               case Unboxed(arg) if arg.tpe.typeSymbol == clazz =>
                 log("shortcircuiting unbox -> box "+arg); arg
@@ -554,12 +555,13 @@ abstract class Erasure extends AddInterfaces
         ldef setType ldef.rhs.tpe
       case _ =>
         val tree1 = pt match {
-          case ErasedValueType(clazz) =>
+          case ErasedValueType(tref) =>
             tree match {
               case Boxed(arg) if arg.tpe.isInstanceOf[ErasedValueType] =>
                 log("shortcircuiting box -> unbox "+arg)
                 arg
               case _ =>
+                val clazz = tref.sym
                 log("not boxed: "+tree)
                 val tree0 = adaptToType(tree, clazz.tpe)
                 cast(Apply(Select(tree0, clazz.firstParamAccessor), List()), pt)
@@ -629,7 +631,7 @@ abstract class Erasure extends AddInterfaces
      *   - `x != y` for != in class Any becomes `!(x equals y)` with equals in class Object.
      *   - x.asInstanceOf[T] becomes x.$asInstanceOf[T]
      *   - x.isInstanceOf[T] becomes x.$isInstanceOf[T]
-     *   - x.isInstanceOf[ErasedValueType(clazz)] becomes x.isInstanceOf[clazz.tpe]
+     *   - x.isInstanceOf[ErasedValueType(tref)] becomes x.isInstanceOf[tref.sym.tpe]
      *   - x.m where m is some other member of Any becomes x.m where m is a member of class Object.
      *   - x.m where x has unboxed value type T and m is not a directly translated member of T becomes T.box(x).m
      *   - x.m where x is a reference type and m is a directly translated member of value type T becomes x.TValue().m
@@ -656,7 +658,7 @@ abstract class Erasure extends AddInterfaces
         case Apply(TypeApply(sel @ Select(qual, name), List(targ)), List())
         if tree.symbol == Any_isInstanceOf =>
           targ.tpe match {
-            case ErasedValueType(clazz) => targ.setType(clazz.tpe)
+            case ErasedValueType(tref) => targ.setType(tref.sym.tpe)
             case _ =>
           }
             tree
@@ -712,8 +714,15 @@ abstract class Erasure extends AddInterfaces
         tree match {
           case InjectDerivedValue(arg) =>
             val clazz = tree.symbol
-            val result = typed1(arg, mode, underlyingOfValueClass(clazz)) setType ErasedValueType(clazz)
-            log("transforming inject "+arg+":"+underlyingOfValueClass(clazz)+"/"+ErasedValueType(clazz)+" = "+result)
+            val targetType = (
+              if (atPhase(currentRun.erasurePhase)(valueClassIsParametric(clazz)))
+                appliedType(clazz, arg.tpe)
+              else
+                clazz.tpe).asInstanceOf[TypeRef]
+            val argPt = atPhase(currentRun.erasurePhase)(erasedValueClassArg(targetType))
+            val result =
+              typed1(arg, mode, argPt) setType ErasedValueType(targetType)
+            log(s"transforming inject $arg -> $targetType/$argPt = $result")
             return result
 
           case _ =>

@@ -75,6 +75,30 @@ trait Erasure {
   def underlyingOfValueClass(clazz: Symbol): Type =
     clazz.firstParamAccessor.tpe.resultType
 
+  /** The type of the argument of a value class reference after erasure
+   *  This method needs to be called at a phase no later than erasurephase
+   */
+  def erasedValueClassArg(tref: TypeRef): Type = {
+    assert(!phase.erasedTypes)
+    val clazz = tref.sym
+    if (valueClassIsParametric(clazz)) {
+      val underlying = tref.memberType(clazz.firstParamAccessor).resultType
+      boxingErasure(underlying)
+    } else {
+      scalaErasure(underlyingOfValueClass(clazz))
+    }
+  }
+
+  /** Does this vakue class have an underlying type that's a type parameter of
+   *  the class itself?
+   *  This method needs to be called at a phase no later than erasurephase
+   */
+  def valueClassIsParametric(clazz: Symbol): Boolean = {
+    assert(!phase.erasedTypes)
+    clazz.typeParams contains
+      clazz.firstParamAccessor.tpe.resultType.normalize.typeSymbol
+  }
+
   abstract class ErasureMap extends TypeMap {
     private lazy val ObjectArray  = arrayType(ObjectClass.tpe)
     private lazy val ErasedObject = erasedTypeRef(ObjectClass)
@@ -84,15 +108,14 @@ trait Erasure {
     def eraseNormalClassRef(pre: Type, clazz: Symbol): Type =
       typeRef(apply(rebindInnerClass(pre, clazz)), clazz, List()) // #2585
 
-    protected def eraseDerivedValueClassRef(clazz: Symbol): Type =
-      scalaErasure(underlyingOfValueClass(clazz))
+    protected def eraseDerivedValueClassRef(tref: TypeRef): Type = erasedValueClassArg(tref)
 
     def apply(tp: Type): Type = tp match {
       case ConstantType(_) =>
         tp
       case st: SubType =>
         apply(st.supertype)
-      case TypeRef(pre, sym, args) =>
+      case tref @ TypeRef(pre, sym, args) =>
         if (sym == ArrayClass)
           if (unboundedGenericArrayLevel(tp) == 1) ObjectClass.tpe
           else if (args.head.typeSymbol.isBottomClass) ObjectArray
@@ -100,7 +123,7 @@ trait Erasure {
         else if (sym == AnyClass || sym == AnyValClass || sym == SingletonClass || sym == NotNullClass) ErasedObject
         else if (sym == UnitClass) erasedTypeRef(BoxedUnitClass)
         else if (sym.isRefinementClass) apply(mergeParents(tp.parents))
-        else if (sym.isDerivedValueClass) eraseDerivedValueClassRef(sym)
+        else if (sym.isDerivedValueClass) eraseDerivedValueClassRef(tref)
         else if (sym.isClass) eraseNormalClassRef(pre, sym)
         else apply(sym.info) // alias type or abstract type
       case PolyType(tparams, restpe) =>
@@ -236,7 +259,8 @@ trait Erasure {
    *  are then later converted to the underlying parameter type in phase posterasure.
    */
   object specialScalaErasure extends ScalaErasureMap {
-    override def eraseDerivedValueClassRef(clazz: Symbol): Type = ErasedValueType(clazz)
+    override def eraseDerivedValueClassRef(tref: TypeRef): Type =
+      ErasedValueType(tref)
   }
 
   object javaErasure extends JavaErasureMap
@@ -249,6 +273,14 @@ trait Erasure {
         log("Identified divergence between java/scala erasure:\n  scala: " + old + "\n   java: " + res)
       res
     }
+  }
+
+  object boxingErasure extends ScalaErasureMap {
+    override def eraseNormalClassRef(pre: Type, clazz: Symbol) =
+      if (isPrimitiveValueClass(clazz)) boxedClass(clazz).tpe
+      else super.eraseNormalClassRef(pre, clazz)
+    override def eraseDerivedValueClassRef(tref: TypeRef) =
+      super.eraseNormalClassRef(tref.pre, tref.sym)
   }
 
   /** The intersection dominator (SLS 3.7) of a list of types is computed as follows.
