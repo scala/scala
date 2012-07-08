@@ -301,11 +301,11 @@ self =>
   def ++[B1 >: B](xs: GenTraversableOnce[(A, B1)]): Map[A, B1] =
     ((repr: Map[A, B1]) /: xs.seq) (_ + _)
 
-  /** Returns a new map with all key/value pairs for which the predicate
+  /** Returns a new map obtained by removing all key/value pairs for which the predicate
    *  `p` returns `true`.
    *
-   *  '''Note:'''    This method works by successively removing elements fro which the
-   *           predicate is false from this set.
+   *  '''Note:'''    This method works by successively removing elements for which the
+   *           predicate is true from this set.
    *           If removal is slow, or you expect that most elements of the set
    *           will be removed, you might consider using `filter`
    *           with a negated predicate instead.
