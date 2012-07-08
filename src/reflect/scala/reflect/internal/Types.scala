@@ -66,7 +66,7 @@ import util.Statistics
     // inst is the instantiation and constr is a list of bounds.
   case DeBruijnIndex(level, index)
     // for dependent method types: a type referring to a method parameter.
-  case ErasedValueType(tp)
+  case ErasedValueType(clazz, underlying)
     // only used during erasure of derived value classes.
 */
 
@@ -3305,16 +3305,21 @@ trait Types extends api.Types { self: SymbolTable =>
     }
   }
 
-  abstract case class ErasedValueType(sym: Symbol) extends Type {
-    override def safeToString = sym.name+"$unboxed"
+  /** A temporary type representing the reasure of a user-defined value type.
+   *  Created during phase reasure, elimintaed again in posterasure.
+   *  @param   sym The value class symbol
+   *  @param   underlying  The underlying type before erasure
+   */
+  abstract case class ErasedValueType(original: TypeRef) extends Type {
+    override def safeToString = "ErasedValueType("+original+")"
   }
 
-  final class UniqueErasedValueType(sym: Symbol) extends ErasedValueType(sym) with UniqueType
+  final class UniqueErasedValueType(original: TypeRef) extends ErasedValueType(original) with UniqueType
 
   object ErasedValueType {
-    def apply(sym: Symbol): Type = {
-      assert(sym ne NoSymbol, "ErasedValueType cannot be NoSymbol")
-      unique(new UniqueErasedValueType(sym))
+    def apply(original: TypeRef): Type = {
+      assert(original.sym ne NoSymbol, "ErasedValueType over NoSymbol")
+      unique(new UniqueErasedValueType(original))
     }
   }
 
