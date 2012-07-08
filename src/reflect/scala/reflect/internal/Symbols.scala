@@ -748,13 +748,13 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
 
     /** Is this symbol an accessor method for outer? */
     final def isOuterAccessor = {
-      hasFlag(STABLE | SYNTHETIC) &&
+      hasFlag(STABLE | HIDDEN) &&
       originalName == nme.OUTER
     }
 
     /** Is this symbol an accessor method for outer? */
     final def isOuterField = {
-      hasFlag(SYNTHETIC) &&
+      hasFlag(HIDDEN) &&
       originalName == nme.OUTER_LOCAL
     }
 
