@@ -4431,7 +4431,7 @@ trait Typers extends Modes with Adaptations with Tags {
 
           if (!qual.tpe.widen.isErroneous) {
             if ((mode & QUALmode) != 0) {
-              val lastTry = missingHook(qual.tpe.typeSymbol, name)
+              val lastTry = rootMirror.missingHook(qual.tpe.typeSymbol, name)
               if (lastTry != NoSymbol) return typed1(tree setSymbol lastTry, mode, pt)
             }
             NotAMemberError(tree, qual, name)
@@ -4673,7 +4673,7 @@ trait Typers extends Modes with Adaptations with Tags {
               log("Allowing empty package member " + name + " due to settings.")
             else {
               if ((mode & QUALmode) != 0) {
-                val lastTry = missingHook(rootMirror.RootClass, name)
+                val lastTry = rootMirror.missingHook(rootMirror.RootClass, name)
                 if (lastTry != NoSymbol) return typed1(tree setSymbol lastTry, mode, pt)
               }
               if (settings.debug.value) {
