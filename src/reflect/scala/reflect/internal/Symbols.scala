@@ -2908,8 +2908,19 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     override def name: TypeName = {
       Statistics.incCounter(nameCount)
       if (needsFlatClasses) {
-        if (flatname eq null)
-          flatname = nme.flattenedName(rawowner.name, rawname).toTypeName
+        if (flatname eq null) {
+          val ownerForName = (
+            // We can't use .isAnonmousXxx here, as that would trigger a call .name.
+            if ((rawname containsName tpnme.ANON_CLASS_NAME) || (rawname containsName tpnme.ANON_FUN_NAME)) {
+              // We know that the `rawname` is unique within this compilation unit, so the flattened name
+              // need not include the full owner chain. Instead, just use the enclosing top level class name
+              // as the prefix.
+              val rawownerChain = Iterator.iterate(rawowner)(_.rawowner)
+              rawownerChain.find(_.rawowner.isPackageClass).getOrElse(rawowner)
+            } else rawowner
+          )
+          flatname = nme.flattenedName(ownerForName.name, rawname).toTypeName
+        }
 
         flatname
       }
