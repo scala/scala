@@ -1,0 +1,91 @@
+[[syntax trees at end of                   flatten]] // newSource1
+package <empty> {
+  object O extends Object {
+    def <init>(): ... = {
+      O.super.<init>();
+      {
+        new anonymous class O$$anon$2()
+      };
+      ()
+    }
+  };
+  abstract trait T1 extends Object;
+  abstract trait T2 extends Object;
+  abstract trait T3 extends Object;
+  abstract trait T3$class extends Object with T3 {
+    def /*T3$class*/$init$(): Unit = {
+      {
+        (new anonymous class T3$$anonfun$2(T3$class.this): Function0)
+      };
+      ()
+    }
+  };
+  class O$C$D extends Object {
+    <synthetic> <paramaccessor> protected val $outer: O$C = _;
+    <synthetic> <stable> def O$C$D$$$outer(): O$C = O$C$D.this.$outer;
+    def <init>($outer: O$C): O$C$D = {
+      if ($outer.eq(null))
+        throw new NullPointerException()
+      else
+        O$C$D.this.$outer = $outer;
+      O$C$D.super.<init>();
+      ()
+    }
+  };
+  final class O$C$$anon$1 extends Object with T1 with T2 {
+    def <init>($outer: O$C): anonymous class O$C$$anon$1 = {
+      O$C$$anon$1.super.<init>();
+      ()
+    }
+  };
+  class O$C extends Object {
+    def <init>(): O$C = {
+      O$C.super.<init>();
+      {
+        new anonymous class O$C$$anon$1(O$C.this)
+      };
+      ()
+    }
+  };
+  @SerialVersionUID(0) final <synthetic> class O$$anon$2$$anonfun$1 extends scala.runtime.AbstractFunction0$mcI$sp with Serializable {
+    final def apply(): Int = O$$anon$2$$anonfun$1.this.apply$mcI$sp();
+    <specialized> def apply$mcI$sp(): Int = 0;
+    final <bridge> def apply(): Object = scala.Int.box(O$$anon$2$$anonfun$1.this.apply());
+    def <init>($outer: anonymous class O$$anon$2): anonymous class O$$anon$2$$anonfun$1 = {
+      O$$anon$2$$anonfun$1.super.<init>();
+      ()
+    }
+  };
+  final class O$$anon$2$$anon$3 extends Object {
+    def <init>($outer: anonymous class O$$anon$2): anonymous class O$$anon$2$$anon$3 = {
+      O$$anon$2$$anon$3.super.<init>();
+      ()
+    }
+  };
+  final class O$$anon$2 extends Object {
+    def <init>(): anonymous class O$$anon$2 = {
+      O$$anon$2.super.<init>();
+      {
+        (new anonymous class O$$anon$2$$anonfun$1(O$$anon$2.this): Function0)
+      };
+      {
+        new anonymous class O$$anon$2$$anon$3(O$$anon$2.this)
+      };
+      ()
+    }
+  };
+  final class T3$$anonfun$2$$anon$4 extends Object {
+    def <init>($outer: anonymous class T3$$anonfun$2): anonymous class T3$$anonfun$2$$anon$4 = {
+      T3$$anonfun$2$$anon$4.super.<init>();
+      ()
+    }
+  };
+  @SerialVersionUID(0) final <synthetic> class T3$$anonfun$2 extends scala.runtime.AbstractFunction0 with Serializable {
+    final def apply(): Object = new anonymous class T3$$anonfun$2$$anon$4(T3$$anonfun$2.this);
+    def <init>($outer: T3): anonymous class T3$$anonfun$2 = {
+      T3$$anonfun$2.super.<init>();
+      ()
+    }
+  }
+}
+
