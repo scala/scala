@@ -83,8 +83,6 @@ trait ModelFactoryTypeSupport {
           val owner =
             if ((preSym != NoSymbol) &&                  /* it needs a prefix */
                 (preSym != bSym.owner) &&                /* prefix is different from owner */
-                // ((preSym != inTpl.sym) &&             /* prevent prefixes from being shown inside the defining class */
-                // (preSym != inTpl.sym.moduleClass)) && /* or object */
                 (aSym == bSym))                          /* normalization doesn't play tricks on us */
               preSym
             else
@@ -112,8 +110,14 @@ trait ModelFactoryTypeSupport {
           // but we won't show the prefix if our symbol is among them, only if *it's not* -- that's equal to showing
           // the prefix only for ambiguous references, not for overloaded ones.
           def needsPrefix: Boolean = {
-            if (owner != bSym.owner && (normalizeTemplate(owner) != inTpl.sym))
+            if ((owner != bSym.owner || preSym.isRefinementClass) && (normalizeTemplate(owner) != inTpl.sym))
               return true
+            // don't get tricked into prefixng method type params and existentials:
+            // I tried several tricks BUT adding the method for which I'm creating the type => that simply won't scale,
+            // as ValueParams are independent of their parent member, and I really don't want to add this information to
+            // all terms, as we're already over the allowed memory footprint
+            if (aSym.isTypeParameterOrSkolem || aSym.isExistentiallyBound /* existential or existential skolem */)
+              return false
 
             for (tpl <- inTpl.sym.ownerChain) {
               tpl.info.member(bSym.name) match {
@@ -137,8 +141,16 @@ trait ModelFactoryTypeSupport {
 
           val prefix =
             if (!settings.docNoPrefixes.value && needsPrefix && (bSym != AnyRefClass /* which we normalize */)) {
-              val qualifiedName = makeQualifiedName(owner, Some(inTpl.sym))
-              if (qualifiedName != "") qualifiedName + "." else ""
+              if (!owner.isRefinementClass) {
+                val qName = makeQualifiedName(owner, Some(inTpl.sym))
+                if (qName != "") qName + "." else ""
+              }
+              else {
+                nameBuffer append "("
+                appendType0(pre)
+                nameBuffer append ")#"
+                "" // we already appended the prefix
+              }
             } else ""
 
           //DEBUGGING:
@@ -175,15 +187,117 @@ trait ModelFactoryTypeSupport {
         case NullaryMethodType(result) =>
           nameBuffer append '⇒'
           appendType0(result)
+
         /* Polymorphic types */
         case PolyType(tparams, result) => assert(tparams.nonEmpty)
-//          throw new Error("Polymorphic type '" + tpe + "' cannot be printed as a type")
           def typeParamsToString(tps: List[Symbol]): String = if (tps.isEmpty) "" else
             tps.map{tparam =>
               tparam.varianceString + tparam.name + typeParamsToString(tparam.typeParams)
             }.mkString("[", ", ", "]")
           nameBuffer append typeParamsToString(tparams)
           appendType0(result)
+
+        case et@ExistentialType(quantified, underlying) =>
+
+          def appendInfoStringReduced(sym: Symbol, tp: Type): Unit = {
+            if (sym.isType && !sym.isAliasType && !sym.isClass) {
+                tp match {
+                  case PolyType(tparams, _) =>
+                    nameBuffer append "["
+                    appendTypes0(tparams.map(_.tpe), ", ")
+                    nameBuffer append "]"
+                  case _ =>
+                }
+                tp.resultType match {
+                  case rt @ TypeBounds(_, _) =>
+                    appendType0(rt)
+                  case rt                    =>
+                    nameBuffer append " <: "
+                    appendType0(rt)
+                }
+            } else {
+              // fallback to the Symbol infoString
+              nameBuffer append sym.infoString(tp)
+            }
+          }
+
+          def appendClauses = {
+            nameBuffer append " forSome {"
+            var first = true
+            val qset = quantified.toSet
+            for (sym <- quantified) {
+              if (!first) { nameBuffer append ", " } else first = false
+              if (sym.isSingletonExistential) {
+                nameBuffer append "val "
+                nameBuffer append tpnme.dropSingletonName(sym.name)
+                nameBuffer append ": "
+                appendType0(dropSingletonType(sym.info.bounds.hi))
+              } else {
+                if (sym.flagString != "") nameBuffer append (sym.flagString + " ")
+                if (sym.keyString != "") nameBuffer append (sym.keyString + " ")
+                nameBuffer append sym.varianceString
+                nameBuffer append sym.nameString
+                appendInfoStringReduced(sym, sym.info)
+              }
+            }
+            nameBuffer append "}"
+          }
+
+          underlying match {
+            case TypeRef(pre, sym, args) if et.isRepresentableWithWildcards =>
+              appendType0(typeRef(pre, sym, Nil))
+              nameBuffer append "["
+              var first = true
+              val qset = quantified.toSet
+              for (arg <- args) {
+                if (!first) { nameBuffer append ", " } else first = false
+                arg match {
+                  case TypeRef(_, sym, _) if (qset contains sym) =>
+                    nameBuffer append "_"
+                    appendInfoStringReduced(sym, sym.info)
+                  case arg =>
+                    appendType0(arg)
+                }
+              }
+              nameBuffer append "]"
+            case MethodType(_, _) | NullaryMethodType(_) | PolyType(_, _) =>
+              nameBuffer append "("
+              appendType0(underlying)
+              nameBuffer append ")"
+              appendClauses
+            case _ =>
+              appendType0(underlying)
+              appendClauses
+          }
+
+        case tb@TypeBounds(lo, hi) =>
+          if (tb.lo != TypeBounds.empty.lo) {
+            nameBuffer append " >: "
+            appendType0(lo)
+          }
+          if (tb.hi != TypeBounds.empty.hi) {
+            nameBuffer append " <: "
+            appendType0(hi)
+          }
+        // case tpen: ThisType | SingleType | SuperType =>
+        //   if (tpen.isInstanceOf[ThisType] && tpen.asInstanceOf[ThisType].sym.isEffectiveRoot) {
+        //     appendType0 typeRef(NoPrefix, sym, Nil)
+        //   } else {
+        //     val underlying =
+        //     val pre = underlying.typeSymbol.skipPackageObject
+        //     if (pre.isOmittablePrefix) pre.fullName + ".type"
+        //     else prefixString + "type"
+        case tpen@ThisType(sym) =>
+          appendType0(typeRef(NoPrefix, sym, Nil))
+          nameBuffer append ".this"
+          if (!tpen.underlying.typeSymbol.skipPackageObject.isOmittablePrefix) nameBuffer append ".type"
+        case tpen@SuperType(thistpe, supertpe) =>
+          nameBuffer append "super["
+          appendType0(supertpe)
+          nameBuffer append "]"
+        case tpen@SingleType(pre, sym) =>
+          appendType0(typeRef(pre, sym, Nil))
+          if (!tpen.underlying.typeSymbol.skipPackageObject.isOmittablePrefix) nameBuffer append ".type"
         case tpen =>
           nameBuffer append tpen.toString
       }

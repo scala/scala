@@ -1,5 +1,6 @@
 package scala.test.scaladoc {
 
+  // testing inherited <documented> templates (Enum.Value is included in the source, thus is documented in scaladoc)
   package test1 {
     class Enum {
       abstract class Value
@@ -12,6 +13,8 @@ package scala.test.scaladoc {
     }
   }
 
+  // testing inherited <not documented> templates (scala.Enumeration.Value is taken from the library, thus is not
+  // documented in the scaladoc pages -- but should be inherited to make things clear!)
   package test2 {
     trait WeekDayTrait extends Enumeration {
       type WeekDay = Value
@@ -65,6 +68,18 @@ package scala.test.scaladoc {
       def isWorkingDay7(d: Value) = ! (d == Sat || d == Sun)
       def isWorkingDay8(d: WeekDay) = ! (d == Sat || d == Sun)
       def isWorkingDay9(d: WeekDayObject.Value) = ! (d == Sat || d == Sun)
+    }
+  }
+
+  // testing type lambdas and useless prefixes (should be referenced as T instead of foo.T in the first example)
+  package test3 {
+    import language.higherKinds
+    object `package` {
+      trait T
+      trait A
+      trait X
+      def foo[T](x: T) = 7
+      def bar[A](x: ({type Lambda[X] <: Either[A, X]})#Lambda[String]) = 5
     }
   }
 }
