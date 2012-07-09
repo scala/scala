@@ -485,28 +485,6 @@ abstract class Erasure extends AddInterfaces
     private def isPrimitiveValueMember(sym: Symbol) =
       sym != NoSymbol && isPrimitiveValueClass(sym.owner)
 
-    private object BoxDerivedValueClass {
-      def apply(tpe: Type, tree: Tree) = {
-        val clazz = tpe.typeSymbol
-        val box = boxMethod(clazz)
-        val arg = cast(tree, underlyingOfValueClass(clazz))
-        if (box.exists) gen.mkMethodCall(box, List(arg))
-        else New(clazz, arg)
-      }
-      def unapply(tree: Tree): Option[(Type, Tree)] = tree match {
-        case Apply(fn, List(arg)) =>
-          val fn = tree.symbol
-          val candidate =
-            if (fn.name == nme.box) fn.owner.companionClass
-            else if (fn.isPrimaryConstructor) fn.owner
-            else NoSymbol
-          if (candidate.isDerivedValueClass) Some(tree.tpe, arg)
-          else None
-        case _ =>
-          None
-      }
-    }
-
     private def box(tree: Tree, target: => String): Tree = {
       val result = box1(tree)
       log("boxing "+tree+":"+tree.tpe+" to "+target+" = "+result+":"+result.tpe)
@@ -526,8 +504,7 @@ abstract class Erasure extends AddInterfaces
               case Unboxed(arg) if arg.tpe.typeSymbol == clazz =>
                 log("shortcircuiting unbox -> box "+arg); arg
               case _ =>
-                BoxDerivedValueClass(tref, tree)
-                //@@@ New(clazz, cast(tree, underlyingOfValueClass(clazz)))
+                New(clazz, cast(tree, underlyingOfValueClass(clazz)))
             }
           case _ =>
             tree.tpe.typeSymbol match {
@@ -1026,7 +1003,7 @@ abstract class Erasure extends AddInterfaces
         case Apply(Select(New(tpt), nme.CONSTRUCTOR), List(arg)) if (tpt.tpe.typeSymbol.isDerivedValueClass) =>
 //          println("inject derived: "+arg+" "+tpt.tpe)
           InjectDerivedValue(arg) addAttachment //@@@ setSymbol tpt.tpe.typeSymbol
-            new TypeRefAttachment(tree.tpe.asInstanceOf[TypeRef]) 
+            new TypeRefAttachment(tree.tpe.asInstanceOf[TypeRef])
         case Apply(fn, args) =>
           def qualifier = fn match {
             case Select(qual, _) => qual
