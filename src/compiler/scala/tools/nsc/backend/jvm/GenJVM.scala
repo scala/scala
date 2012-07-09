@@ -726,6 +726,21 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
       nannots
     }
 
+    def isValidSignature(sym: Symbol, sig: String) = {
+      def wrap(op: => Unit) = {
+        try   { op; true }
+        catch { case _ => false }
+      }
+      // Run the signature parser to catch bogus signatures.
+      wrap {
+        import scala.tools.asm.util.SignatureChecker
+        // requires asm-util.jar //XXX this comment seems outdated.
+        if (sym.isMethod)    { SignatureChecker checkMethodSignature sig }
+        else if (sym.isTerm) { SignatureChecker checkFieldSignature  sig }
+        else                 { SignatureChecker checkClassSignature  sig }
+      }
+    }
+
     // @M don't generate java generics sigs for (members of) implementation
     // classes, as they are monomorphic (TODO: ok?)
     private def needsGenericSignature(sym: Symbol) = !(
@@ -747,21 +762,44 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
         erasure.javaSig(sym, memberTpe) foreach { sig =>
           // This seems useful enough in the general case.
           log(sig)
-          if (checkSignatures) {
+          if (settings.Xverify.value && !isValidSignature(sym, sig)) {
+            clasz.cunit.warning(sym.pos,
+              """|compiler bug: created invalid generic signature for %s in %s
+                 |signature: %s
+                 |if this is reproducible, please report bug at https://issues.scala-lang.org/
+              """.trim.stripMargin.format(sym, sym.owner.skipPackageObject.fullName, sig))
+            return
+          }
+          //There is a bug here, which becomes less bad if we omit generating
+          //the generic signature. See
+          //https://issues.scala-lang.org/browse/SI-3452.
+          //Please uncomment the 'if' statement when that bug is fixed, to make
+          //the checking conditional again.
+          //if (checkSignatures) {
             val normalizedTpe = beforeErasure(erasure.prepareSigMap(memberTpe))
-            val bytecodeTpe = owner.thisType.memberInfo(sym)
-            if (!sym.isType && !sym.isConstructor && !(erasure.erasure(sym)(normalizedTpe) =:= bytecodeTpe)) {
+            val bytecodeTpe0 = owner.thisType.memberInfo(sym)
+            val bytecodeTpe = erasure.minimalSigMap(bytecodeTpe0)
+            val erasedNormalizedType = beforeErasure(erasure.erasure(sym)(normalizedTpe))
+            /* XXX: This is not necessarily related to sig! To write this check,
+             * javaSig should be split into two functions:
+             * - a function erasing a Scala method type to a Scala method type
+             *   which can be represented faithfully in a Java generic
+             *   signature; this should be similar to prepareSigMap.
+             * - a second function encoding a Scala type (output by the first
+             *   function) into a Java generic signature. Paolo G. */
+            if (!sym.isType && !sym.isConstructor && !(erasedNormalizedType =:= bytecodeTpe)) {
               clasz.cunit.warning(sym.pos,
                   """|compiler bug: created generic signature for %s in %s that does not conform to its erasure
                      |signature: %s
                      |original type: %s
                      |normalized type: %s
+                     |erased normalized type: %s
                      |erasure type: %s
                      |if this is reproducible, please report bug at https://issues.scala-lang.org/
-                  """.trim.stripMargin.format(sym, sym.owner.skipPackageObject.fullName, sig, memberTpe, normalizedTpe, bytecodeTpe))
+                  """.trim.stripMargin.format(sym, sym.owner.skipPackageObject.fullName, sig, memberTpe, normalizedTpe, erasedNormalizedType, bytecodeTpe))
                return
             }
-          }
+          //}
           val index = jmember.getConstantPool.addUtf8(sig).toShort
           if (opt.verboseDebug)
             beforeErasure(println("add generic sig "+sym+":"+sym.info+" ==> "+sig+" @ "+index))

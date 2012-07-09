@@ -94,7 +94,21 @@ abstract class Erasure extends AddInterfaces
     }
   }
 
-  /** This object is only used for sanity testing when -check:genjvm is set.
+  val minimalSigMap = new TypeMap {
+    override def apply(tp: Type) = tp.normalize match {
+      case tp1 @ TypeRef(pre, sym, args) =>
+        if (sym == NothingClass)
+          RuntimeNothingClass.tpe
+        else if (sym == NullClass)
+          RuntimeNullClass.tpe
+        else
+          mapOver(tp1)
+      case tp1 =>
+        mapOver(tp1)
+    }
+  }
+
+  /** This object is only used for sanity testing when -check:jvm is set.
    *  In that case we make sure that the erasure of the `normalized` type
    *  is the same as the erased type that's generated. Normalization means
    *  unboxing some primitive types and further simplifications as they are done in jsig.
@@ -274,8 +288,8 @@ abstract class Erasure extends AddInterfaces
           "("+(params map (_.tpe) map (jsig(_))).mkString+")"+
           (if (restpe.typeSymbol == UnitClass || sym0.isConstructor) VOID_TAG.toString else jsig(restpe))
 
-        case RefinedType(parent :: _, decls) =>
-          boxedSig(parent)
+        case RefinedType(parents, decls) =>
+          boxedSig(intersectionDominator(parents))
         case ClassInfoType(parents, _, _) =>
           superSig(parents)
         case AnnotatedType(_, atp, _) =>
