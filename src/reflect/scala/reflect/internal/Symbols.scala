@@ -2032,7 +2032,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     /** If this is a derived value class, return its unbox method
      *  or NoSymbol if it does not exist.
      */
-    def firstParamAccessor: Symbol = NoSymbol
+    def derivedValueClassUnbox: Symbol = NoSymbol
 
      /** The case module corresponding to this case class
      *  @pre case class is a member of some other class or package
@@ -2936,8 +2936,10 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
       clone
     }
 
-    override def firstParamAccessor =
-      info.decls.find(_ hasAllFlags PARAMACCESSOR | METHOD) getOrElse NoSymbol
+    override def derivedValueClassUnbox =
+      (info.decl(nme.unbox)) orElse
+      (info.decls.find(_ hasAllFlags PARAMACCESSOR | METHOD) getOrElse 
+       NoSymbol)
 
     private[this] var childSet: Set[Symbol] = Set()
     override def children = childSet

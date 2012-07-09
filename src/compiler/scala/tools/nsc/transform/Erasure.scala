@@ -351,7 +351,7 @@ abstract class Erasure extends AddInterfaces
         List())
       if cast.symbol == Object_asInstanceOf &&
         tpt.tpe.typeSymbol.isDerivedValueClass &&
-        sel.symbol == tpt.tpe.typeSymbol.firstParamAccessor =>
+        sel.symbol == tpt.tpe.typeSymbol.derivedValueClassUnbox =>
         Some(arg)
       case _ =>
         None
@@ -526,8 +526,8 @@ abstract class Erasure extends AddInterfaces
               case Unboxed(arg) if arg.tpe.typeSymbol == clazz =>
                 log("shortcircuiting unbox -> box "+arg); arg
               case _ =>
-                //!!! BoxDerivedValueClass(tref, tree)
-                New(clazz, cast(tree, underlyingOfValueClass(clazz)))
+                BoxDerivedValueClass(tref, tree)
+                //@@@ New(clazz, cast(tree, underlyingOfValueClass(clazz)))
             }
           case _ =>
             tree.tpe.typeSymbol match {
@@ -587,7 +587,7 @@ abstract class Erasure extends AddInterfaces
                 val clazz = tref.sym
                 log("not boxed: "+tree)
                 val tree0 = adaptToType(tree, clazz.tpe)
-                cast(Apply(Select(tree0, clazz.firstParamAccessor), List()), pt)
+                cast(Apply(Select(tree0, clazz.derivedValueClassUnbox), List()), pt)
             }
           case _ =>
             pt.typeSymbol match {
@@ -600,7 +600,6 @@ abstract class Erasure extends AddInterfaces
                 Apply(unboxMethod(pt.typeSymbol), tree)
             }
         }
-        println("unboxing "+tree1)
         typedPos(tree.pos)(tree1)
     }
 
@@ -678,14 +677,14 @@ abstract class Erasure extends AddInterfaces
           else
 */
           if (isPrimitiveValueType(targ.tpe) || isErasedValueType(targ.tpe)) {
-            val noNullCheckNeeded = true /*!!! targ.tpe match { //!!!
+            val noNullCheckNeeded = targ.tpe match {
               case ErasedValueType(tref) =>
                 atPhase(currentRun.erasurePhase) {
                   isPrimitiveValueClass(erasedValueClassArg(tref).typeSymbol)
                 }
               case _ =>
                 true
-            }*/
+            }
             if (noNullCheckNeeded) unbox(qual1, targ.tpe)
             else {
               def nullConst = Literal(Constant(null)) setType NullClass.tpe
@@ -1026,8 +1025,8 @@ abstract class Erasure extends AddInterfaces
 
         case Apply(Select(New(tpt), nme.CONSTRUCTOR), List(arg)) if (tpt.tpe.typeSymbol.isDerivedValueClass) =>
 //          println("inject derived: "+arg+" "+tpt.tpe)
-          InjectDerivedValue(arg) setSymbol tpt.tpe.typeSymbol addAttachment
-            new TypeRefAttachment(tree.tpe.asInstanceOf[TypeRef]) //!!!
+          InjectDerivedValue(arg) addAttachment //@@@ setSymbol tpt.tpe.typeSymbol
+            new TypeRefAttachment(tree.tpe.asInstanceOf[TypeRef]) 
         case Apply(fn, args) =>
           def qualifier = fn match {
             case Select(qual, _) => qual

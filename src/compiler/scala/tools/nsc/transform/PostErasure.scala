@@ -39,7 +39,7 @@ trait PostErasure extends InfoTransform with TypingTransformers {
             acc), List())
         if atPhase(currentRun.erasurePhase) {
           tpt.tpe.typeSymbol.isDerivedValueClass &&
-          sel.symbol == tpt.tpe.typeSymbol.firstParamAccessor
+          sel.symbol == tpt.tpe.typeSymbol.derivedValueClassUnbox
         } =>
           if (settings.debug.value) log("Removing "+tree+" -> "+arg)
           arg

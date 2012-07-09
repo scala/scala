@@ -81,7 +81,7 @@ trait Erasure {
      NoSymbol)
 
   def underlyingOfValueClass(clazz: Symbol): Type =
-    clazz.firstParamAccessor.tpe.resultType
+    clazz.derivedValueClassUnbox.tpe.resultType
 
   /** The type of the argument of a value class reference after erasure
    *  This method needs to be called at a phase no later than erasurephase
@@ -90,7 +90,7 @@ trait Erasure {
     assert(!phase.erasedTypes)
     val clazz = tref.sym
     if (valueClassIsParametric(clazz)) {
-      val underlying = tref.memberType(clazz.firstParamAccessor).resultType
+      val underlying = tref.memberType(clazz.derivedValueClassUnbox).resultType
       boxingErasure(underlying)
     } else {
       scalaErasure(underlyingOfValueClass(clazz))
@@ -104,7 +104,7 @@ trait Erasure {
   def valueClassIsParametric(clazz: Symbol): Boolean = {
     assert(!phase.erasedTypes)
     clazz.typeParams contains
-      clazz.firstParamAccessor.tpe.resultType.normalize.typeSymbol
+      clazz.derivedValueClassUnbox.tpe.resultType.normalize.typeSymbol
   }
 
   abstract class ErasureMap extends TypeMap {
