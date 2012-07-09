@@ -232,23 +232,23 @@ trait Symbols extends base.Symbols { self: Universe =>
     /** The overloaded alternatives of this symbol */
     def alternatives: List[Symbol]
 
-    /** Resolves an overloaded TermSymbol to a single non-overloaded TermSymbol that accepts
-     *  the specified argument types.
-     *  @param pre The prefix type. By passing a prefix type, type-level type parameters
-     *             can be converted within the member's type. Any example of a prefix would be
-     *             `List[Int]`, which would replace references to the type parameter `A` with the type
-     *             `Int`.
-     * @param targs Only alternatives that can accept these type arguments will be considered. In all
-     *              alternatives that can accept these type arguments, they will be considered with these
-     *              substituted for their corresponding type parameters.
-     * @param posVargs A sequence of the positional (normal) type arguments that a candidate alternative must
-     *                 accept.
-     * @param nameVargs A sequence of the named-parameter type arguments that a candidate alternative must
-     *                  accept. Each element in the sequence should be a pair of a parameter name and an
-     *                  argument type
-     * @param expected A candidate member must have a return type compatible with this type.
-     * @return Either a single, non-overloaded, Symbol referring the selected member or NoSymbol no single
-     *         member could be selected given the passed arguments.
+    /** Performs method overloading resolution. More precisely, resolves an overloaded TermSymbol
+     *  to a single, non-overloaded TermSymbol that accepts the specified argument types.
+     *  @param pre The prefix type, i.e. the type of the value the method is dispatched on.
+     *             This is required when resolving references to type parameters of the type
+     *             the method is declared in. For example if the method is declared in class `List[A]`,
+     *             providing the prefix as `List[Int]` allows the overloading resolution to use
+     *             `Int` instead of `A`.
+     * @param targs Type arguments that a candidate alternative must be able to accept. Candidates
+     *              will be considered with these arguments substituted for their corresponding
+     *              type parameters.
+     * @param posVargs Positional argument types that a candidate alternative must be able to accept.
+     * @param nameVargs Named argument types that a candidate alternative must be able to accept.
+     *                  Each element in the sequence should be a pair of a parameter name and an
+     *                  argument type.
+     * @param expected Return type that a candidate alternative has to be compatible with.
+     * @return Either a single, non-overloaded Symbol referring to the selected alternative
+     *         or NoSymbol if no single member could be selected given the passed arguments.
      */
     def resolveOverloaded(
       pre: Type = NoPrefix,
