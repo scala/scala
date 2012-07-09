@@ -26,7 +26,7 @@ import java.lang.reflect.{Array => jArray, Method => jMethod}
  *    def fooBar[T: c.TypeTag]
  *           (c: scala.reflect.makro.Context)
  *           (xs: c.Expr[List[T]])
- *           : c.Tree = {
+ *           : c.Expr[T] = {
  *      ...
  *    }
  *
@@ -601,7 +601,7 @@ trait Macros extends scala.tools.reflect.FastTrack with Traces {
 
     if (settings.XmacroPrimaryClasspath.value != "") {
       macroLogVerbose("primary macro classloader: initializing from -Xmacro-primary-classpath: %s".format(settings.XmacroPrimaryClasspath.value))
-      val classpath = toURLs(settings.XmacroFallbackClasspath.value)
+      val classpath = toURLs(settings.XmacroPrimaryClasspath.value)
       ScalaClassLoader.fromURLs(classpath, self.getClass.getClassLoader)
     } else {
       macroLogVerbose("primary macro classloader: initializing from -cp: %s".format(global.classPath.asURLs))
