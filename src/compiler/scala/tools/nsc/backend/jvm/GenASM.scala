@@ -780,6 +780,12 @@ abstract class GenASM extends SubComponent with BytecodeWriters {
   /** functionality for building plain and mirror classes */
   abstract class JCommonBuilder(wuQ: WorkUnitQueue, needsOutfileForSymbol: Boolean) extends JBuilder(wuQ, needsOutfileForSymbol) {
 
+    def debugLevel = settings.debuginfo.indexOfChoice
+
+    val emitSource = debugLevel >= 1
+    val emitLines  = debugLevel >= 2
+    val emitVars   = debugLevel >= 3
+
     // -----------------------------------------------------------------------------------------
     // more constants
     // -----------------------------------------------------------------------------------------
@@ -1427,8 +1433,10 @@ abstract class GenASM extends SubComponent with BytecodeWriters {
       // typestate: entering mode with valid call sequences:
       //   [ visitSource ] [ visitOuterClass ] ( visitAnnotation | visitAttribute )*
 
-      jclass.visitSource(c.cunit.source.toString,
-                         null /* SourceDebugExtension */)
+      if(emitSource) {
+        jclass.visitSource(c.cunit.source.toString,
+                           null /* SourceDebugExtension */)
+      }
 
       val enclM = getEnclosingMethodAttribute()
       if(enclM != null) {
@@ -1555,12 +1563,6 @@ abstract class GenASM extends SubComponent with BytecodeWriters {
       emitAnnotations(jfield, f.symbol.annotations)
       jfield.visitEnd()
     }
-
-    def debugLevel = settings.debuginfo.indexOfChoice
-
-    // val emitSource = debugLevel >= 1
-    val emitLines  = debugLevel >= 2
-    val emitVars   = debugLevel >= 3
 
     var method:  IMethod = _
     var jmethod: asm.MethodVisitor = _
@@ -1936,6 +1938,15 @@ abstract class GenASM extends SubComponent with BytecodeWriters {
               branches(j - 1) = tmpL
             }
             j += 1
+          }
+          i += 1
+        }
+
+        // check for duplicate keys to avoid "VerifyError: unsorted lookupswitch" (SI-6011)
+        i = 1
+        while (i < keys.length) {
+          if(keys(i-1) == keys(i)) {
+            abort("duplicate keys in SWITCH, can't pick arbitrarily one of them to evict, see SI-6011.")
           }
           i += 1
         }
@@ -2957,8 +2968,10 @@ abstract class GenASM extends SubComponent with BytecodeWriters {
       // typestate: entering mode with valid call sequences:
       //   [ visitSource ] [ visitOuterClass ] ( visitAnnotation | visitAttribute )*
 
-      mirrorClass.visitSource("" + cunit.source,
-                              null /* SourceDebugExtension */)
+      if(emitSource) {
+        mirrorClass.visitSource("" + cunit.source,
+                                null /* SourceDebugExtension */)
+      }
 
       val ssa = getAnnotPickle(mirrorName, modsym.companionSymbol)
       mirrorClass.visitAttribute(if(ssa.isDefined) pickleMarkerLocal else pickleMarkerForeign)
