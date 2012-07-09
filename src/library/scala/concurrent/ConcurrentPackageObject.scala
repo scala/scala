@@ -17,23 +17,6 @@ import language.implicitConversions
 /** This package object contains primitives for concurrent and parallel programming.
  */
 abstract class ConcurrentPackageObject {
-  /** A global execution environment for executing lightweight tasks.
-   */
-  lazy val defaultExecutionContext: ExecutionContext with Executor = impl.ExecutionContextImpl.fromExecutor(null: Executor)
-
-  val currentExecutionContext = new ThreadLocal[ExecutionContext]
-  
-  val handledFutureException: PartialFunction[Throwable, Throwable] = {
-    case t: Throwable if isFutureThrowable(t) => t
-  }
-
-  // TODO rename appropriately and make public
-  private[concurrent] def isFutureThrowable(t: Throwable) = t match {
-    case e: Error                               => false
-    case t: scala.util.control.ControlThrowable => false
-    case i: InterruptedException                => false
-    case _                                      => true
-  }
 
   /* concurrency constructs */
 
@@ -46,8 +29,7 @@ abstract class ConcurrentPackageObject {
    *  @param execctx  the execution context on which the future is run
    *  @return         the `Future` holding the result of the computation
    */
-  def future[T](body: =>T)(implicit execctx: ExecutionContext = defaultExecutionContext): Future[T] =
-    Future[T](body)
+  def future[T](body: =>T)(implicit execctx: ExecutionContext): Future[T] = Future[T](body)
 
   /** Creates a promise object which can be completed with a value.
    *  
@@ -55,8 +37,7 @@ abstract class ConcurrentPackageObject {
    *  @param execctx  the execution context on which the promise is created on
    *  @return         the newly created `Promise` object
    */
-  def promise[T]()(implicit execctx: ExecutionContext = defaultExecutionContext): Promise[T] =
-    Promise[T]()
+  def promise[T]()(implicit execctx: ExecutionContext): Promise[T] = Promise[T]()
 
   /** Used to block on a piece of code which potentially blocks.
    *
@@ -67,8 +48,7 @@ abstract class ConcurrentPackageObject {
    *  - InterruptedException - in the case that a wait within the blockable object was interrupted
    *  - TimeoutException - in the case that the blockable object timed out
    */
-  def blocking[T](body: =>T): T =
-    blocking(impl.Future.body2awaitable(body), Duration.Inf)
+  def blocking[T](body: =>T): T = blocking(impl.Future.body2awaitable(body), Duration.Inf)
 
   /** Blocks on an awaitable object.
    *
@@ -79,12 +59,8 @@ abstract class ConcurrentPackageObject {
    *  - InterruptedException - in the case that a wait within the blockable object was interrupted
    *  - TimeoutException - in the case that the blockable object timed out
    */
-  def blocking[T](awaitable: Awaitable[T], atMost: Duration): T = {
-    currentExecutionContext.get match {
-      case null => awaitable.result(atMost)(Await.canAwaitEvidence)
-      case ec => ec.internalBlockingCall(awaitable, atMost)
-    }
-  }
+  def blocking[T](awaitable: Awaitable[T], atMost: Duration): T =
+    BlockContext.current.internalBlockingCall(awaitable, atMost)
 
   @inline implicit final def int2durationops(x: Int): DurationOps = new DurationOps(x)
 }

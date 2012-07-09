@@ -34,6 +34,15 @@ trait Promise[T] {
    */
   def future: Future[T]
 
+  /** Returns whether the promise has already been completed with
+   *  a value or an exception.
+   *
+   *  $nonDeterministic
+   *
+   *  @return    `true` if the promise is already completed, `false` otherwise
+   */
+  def isCompleted: Boolean
+
   /** Completes the promise with either an exception or a value.
    *
    *  @param result     Either the value or the exception to complete the promise with.
