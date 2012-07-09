@@ -232,7 +232,13 @@ trait Symbols extends base.Symbols { self: Universe =>
     /** The overloaded alternatives of this symbol */
     def alternatives: List[Symbol]
 
-    def resolveOverloaded(pre: Type = NoPrefix, targs: Seq[Type] = List(), actuals: Seq[Type]): Symbol
+    def resolveOverloaded(
+      pre: Type = NoPrefix,
+      targs: Seq[Type] = List(),
+      posVargs: Seq[Type] = List(),
+      nameVargs: Seq[(TermName, Type)] = List(),
+      expected: Type = NoType
+    ): Symbol
   }
 
   /** The API of type symbols */
