@@ -485,6 +485,28 @@ abstract class Erasure extends AddInterfaces
     private def isPrimitiveValueMember(sym: Symbol) =
       sym != NoSymbol && isPrimitiveValueClass(sym.owner)
 
+    private object BoxDerivedValueClass {
+      def apply(tpe: Type, tree: Tree) = {
+        val clazz = tpe.typeSymbol
+        val box = boxMethod(clazz)
+        val arg = cast(tree, underlyingOfValueClass(clazz))
+        if (box.exists) gen.mkMethodCall(box, List(arg))
+        else New(clazz, arg)
+      }
+      def unapply(tree: Tree): Option[(Type, Tree)] = tree match {
+        case Apply(fn, List(arg)) =>
+          val fn = tree.symbol
+          val candidate =
+            if (fn.name == nme.box) fn.owner.companionClass
+            else if (fn.isPrimaryConstructor) fn.owner
+            else NoSymbol
+          if (candidate.isDerivedValueClass) Some(tree.tpe, arg)
+          else None
+        case _ =>
+          None
+      }
+    }
+
     private def box(tree: Tree, target: => String): Tree = {
       val result = box1(tree)
       log("boxing "+tree+":"+tree.tpe+" to "+target+" = "+result+":"+result.tpe)
@@ -504,6 +526,7 @@ abstract class Erasure extends AddInterfaces
               case Unboxed(arg) if arg.tpe.typeSymbol == clazz =>
                 log("shortcircuiting unbox -> box "+arg); arg
               case _ =>
+                //!!! BoxDerivedValueClass(tref, tree)
                 New(clazz, cast(tree, underlyingOfValueClass(clazz)))
             }
           case _ =>
@@ -568,15 +591,16 @@ abstract class Erasure extends AddInterfaces
             }
           case _ =>
             pt.typeSymbol match {
-          case UnitClass  =>
-            if (treeInfo isExprSafeToInline tree) UNIT
-            else BLOCK(tree, UNIT)
-          case x          =>
-            assert(x != ArrayClass)
-            // don't `setType pt` the Apply tree, as the Apply's fun won't be typechecked if the Apply tree already has a type
-            Apply(unboxMethod(pt.typeSymbol), tree)
+              case UnitClass  =>
+                if (treeInfo isExprSafeToInline tree) UNIT
+                else BLOCK(tree, UNIT)
+              case x          =>
+                assert(x != ArrayClass)
+                // don't `setType pt` the Apply tree, as the Apply's fun won't be typechecked if the Apply tree already has a type
+                Apply(unboxMethod(pt.typeSymbol), tree)
             }
         }
+        println("unboxing "+tree1)
         typedPos(tree.pos)(tree1)
     }
 
@@ -603,7 +627,7 @@ abstract class Erasure extends AddInterfaces
      *  @return     the adapted tree
      */
     private def adaptToType(tree: Tree, pt: Type): Tree = {
-      if (settings.debug.value && pt != WildcardType)
+      //if (settings.debug.value && pt != WildcardType)
         log("adapting " + tree + ":" + tree.tpe + " : " +  tree.tpe.parents + " to " + pt)//debug
       if (tree.tpe <:< pt)
         tree
@@ -653,8 +677,29 @@ abstract class Erasure extends AddInterfaces
             atPos(tree.pos)(Apply(Select(qual1, "to" + targClass.name), List()))
           else
 */
-          if (isPrimitiveValueType(targ.tpe) || isErasedValueType(targ.tpe)) unbox(qual1, targ.tpe)
-          else tree
+          if (isPrimitiveValueType(targ.tpe) || isErasedValueType(targ.tpe)) {
+            val noNullCheckNeeded = true /*!!! targ.tpe match { //!!!
+              case ErasedValueType(tref) =>
+                atPhase(currentRun.erasurePhase) {
+                  isPrimitiveValueClass(erasedValueClassArg(tref).typeSymbol)
+                }
+              case _ =>
+                true
+            }*/
+            if (noNullCheckNeeded) unbox(qual1, targ.tpe)
+            else {
+              def nullConst = Literal(Constant(null)) setType NullClass.tpe
+              val untyped =
+//                util.trace("new asinstanceof test") {
+                  gen.evalOnce(qual1, context.owner, context.unit) { qual =>
+                    If(Apply(Select(qual(), nme.eq), List(Literal(Constant(null)) setType NullClass.tpe)),
+                       Literal(Constant(null)) setType targ.tpe,
+                       unbox(qual(), targ.tpe))
+                  }
+//                }
+              typed(untyped)
+            }
+          } else tree
         case Apply(TypeApply(sel @ Select(qual, name), List(targ)), List())
         if tree.symbol == Any_isInstanceOf =>
           targ.tpe match {
@@ -713,24 +758,22 @@ abstract class Erasure extends AddInterfaces
       val tree1 = try {
         tree match {
           case InjectDerivedValue(arg) =>
-            val clazz = tree.symbol
-            val targetType = (
-              if (atPhase(currentRun.erasurePhase)(valueClassIsParametric(clazz)))
-                appliedType(clazz, arg.tpe)
-              else
-                clazz.tpe).asInstanceOf[TypeRef]
-            val argPt = atPhase(currentRun.erasurePhase)(erasedValueClassArg(targetType))
-            val result =
-              typed1(arg, mode, argPt) setType ErasedValueType(targetType)
-            log(s"transforming inject $arg -> $targetType/$argPt = $result")
-            return result
+            (tree.attachments.get[TypeRefAttachment]: @unchecked) match {
+              case Some(itype) =>
+                val tref = itype.tpe
+                val argPt = atPhase(currentRun.erasurePhase)(erasedValueClassArg(tref))
+                log(s"transforming inject $arg -> $tref/$argPt")
+                val result = typed(arg, mode, argPt)
+                log(s"transformed inject $arg -> $tref/$argPt = $result:${result.tpe}")
+                return result setType ErasedValueType(tref)
 
+            }
           case _ =>
-        super.typed1(adaptMember(tree), mode, pt)
+            super.typed1(adaptMember(tree), mode, pt)
         }
       } catch {
         case er: TypeError =>
-          Console.println("exception when typing " + tree)
+          Console.println("exception when typing " + tree+"/"+tree.getClass)
           Console.println(er.msg + " in file " + context.owner.sourceFile)
           er.printStackTrace
           abort("unrecoverable error")
@@ -740,6 +783,7 @@ abstract class Erasure extends AddInterfaces
           finally throw ex
           throw ex
       }
+
       def adaptCase(cdef: CaseDef): CaseDef = {
         val newCdef = deriveCaseDef(cdef)(adaptToType(_, tree1.tpe))
         newCdef setType newCdef.body.tpe
@@ -979,8 +1023,11 @@ abstract class Erasure extends AddInterfaces
           else
             tree
 
+
         case Apply(Select(New(tpt), nme.CONSTRUCTOR), List(arg)) if (tpt.tpe.typeSymbol.isDerivedValueClass) =>
-          InjectDerivedValue(arg) setSymbol tpt.tpe.typeSymbol
+//          println("inject derived: "+arg+" "+tpt.tpe)
+          InjectDerivedValue(arg) setSymbol tpt.tpe.typeSymbol addAttachment
+            new TypeRefAttachment(tree.tpe.asInstanceOf[TypeRef]) //!!!
         case Apply(fn, args) =>
           def qualifier = fn match {
             case Select(qual, _) => qual
@@ -1134,4 +1181,6 @@ abstract class Erasure extends AddInterfaces
       }
     }
   }
+
+  private class TypeRefAttachment(val tpe: TypeRef)
 }

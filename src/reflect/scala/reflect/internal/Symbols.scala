@@ -2029,7 +2029,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
       base.info.decl(sname) filter (_.hasAccessorFlag)
     }
 
-    /** Return the accessor method of the first parameter of this class.
+    /** If this is a derived value class, return its unbox method
      *  or NoSymbol if it does not exist.
      */
     def firstParamAccessor: Symbol = NoSymbol

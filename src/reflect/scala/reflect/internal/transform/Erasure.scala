@@ -2,7 +2,7 @@ package scala.reflect
 package internal
 package transform
 
-import Flags.PARAMACCESSOR
+import Flags.{PARAMACCESSOR, METHOD}
 
 trait Erasure {
 
@@ -71,6 +71,14 @@ trait Erasure {
   protected def rebindInnerClass(pre: Type, cls: Symbol): Type = {
     if (cls.owner.isClass) cls.owner.tpe else pre // why not cls.isNestedClass?
   }
+
+  def boxMethod(clazz: Symbol) =
+    clazz.companionModule.info.decl(nme.box) filter (_.isMethod)
+
+  def unboxDerivedValueClassMethod(clazz: Symbol): Symbol =
+    (clazz.info.decl(nme.unbox)) orElse
+    (clazz.info.decls.find(_ hasAllFlags PARAMACCESSOR | METHOD) getOrElse
+     NoSymbol)
 
   def underlyingOfValueClass(clazz: Symbol): Type =
     clazz.firstParamAccessor.tpe.resultType
