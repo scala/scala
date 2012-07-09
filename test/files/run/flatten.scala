@@ -14,7 +14,12 @@ object Test extends DirectTest {
       |  }
       |  class C {
       |    new T1 with T2 {}
-      |    class D
+      |    class D {
+      |      def method {
+      |        () => "anon fun in method".isEmpty
+      |        new { "anon class in method".isEmpty }
+      |      }
+      |    }
       |  }
       |}
       |

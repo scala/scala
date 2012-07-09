@@ -20,7 +20,32 @@ package <empty> {
       ()
     }
   };
+  final class O$$anon$4 extends Object {
+    def <init>($outer: anonymous class O$$anonfun$method$1): anonymous class O$$anon$4 = {
+      O$$anon$4.super.<init>();
+      "anon class in method".isEmpty();
+      ()
+    }
+  };
+  @SerialVersionUID(0) final <synthetic> class O$$anonfun$method$1 extends scala.runtime.AbstractFunction0 with Serializable {
+    final def apply(): Object = {
+      "anon fun in method".isEmpty();
+      {
+        new anonymous class O$$anon$4(O$$anonfun$method$1.this)
+      }
+    };
+    def <init>($outer: O$C$D): anonymous class O$$anonfun$method$1 = {
+      O$$anonfun$method$1.super.<init>();
+      ()
+    }
+  };
   class O$C$D extends Object {
+    def method(): Unit = {
+      {
+        (new anonymous class O$$anonfun$method$1(O$C$D.this): Function0)
+      };
+      ()
+    };
     <synthetic> <paramaccessor> protected val $outer: O$C = _;
     <synthetic> <stable> def O$C$D$$$outer(): O$C = O$C$D.this.$outer;
     def <init>($outer: O$C): O$C$D = {
@@ -74,14 +99,14 @@ package <empty> {
       ()
     }
   };
-  final class T3$$anon$4 extends Object {
-    def <init>($outer: anonymous class T3$$anonfun$2): anonymous class T3$$anon$4 = {
-      T3$$anon$4.super.<init>();
+  final class T3$$anon$5 extends Object {
+    def <init>($outer: anonymous class T3$$anonfun$2): anonymous class T3$$anon$5 = {
+      T3$$anon$5.super.<init>();
       ()
     }
   };
   @SerialVersionUID(0) final <synthetic> class T3$$anonfun$2 extends scala.runtime.AbstractFunction0 with Serializable {
-    final def apply(): Object = new anonymous class T3$$anon$4(T3$$anonfun$2.this);
+    final def apply(): Object = new anonymous class T3$$anon$5(T3$$anonfun$2.this);
     def <init>($outer: T3): anonymous class T3$$anonfun$2 = {
       T3$$anonfun$2.super.<init>();
       ()
