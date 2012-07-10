@@ -116,6 +116,12 @@ END-USER TARGETS
     <antcall target="test.done"/>
   </target>
 
+  <target name="replacestarrwin-opt"
+    description="Creates a new Starr on Windows. Manually execute 'ant locker.clean build' first!">
+    <antcall target="replacestarrwin">
+      <param name="scalac.args.optimise" value="-optimise"/>
+    </antcall>
+  </target>
   <target name="replacelocker"
     description="Replaces the Locker compiler and library by fresh ones built from current sources.">
     <antcall target="palo.clean"/>
@@ -2564,53 +2570,39 @@ STABLE REFERENCE (STARR)
     <delete file="${basedir}/lib/scala-reflect.jar"/>
     <delete file="${basedir}/lib/scala-compiler.jar"/>
     <delete file="${basedir}/lib/scala-library-src.jar"/>
+    <delete file="${basedir}/lib/scala-reflect-src.jar"/>
+    <delete file="${basedir}/lib/scala-compiler-src.jar"/>
   </target>
 
-  <target name="starr.lib" depends="starr.start">
-    <jar destfile="${basedir}/lib/scala-library.jar">
-      <fileset dir="${basedir}/build/quick/classes/library"/>
-    </jar>
+  <target name="starr.jars" depends="starr.start">
+    <copy toDir="${basedir}/lib/" overwrite="yes">
+      <fileset dir="${build-pack.dir}/lib">
+        <include name="scala-library.jar"/>
+        <include name="scala-reflect.jar"/>
+        <include name="scala-compiler.jar"/>
+      </fileset>
+    </copy>
   </target>
 
-  <target name="starr.reflect" depends="starr.lib">
-    <jar destfile="${basedir}/lib/scala-reflect.jar">
-      <fileset dir="${basedir}/build/quick/classes/reflect"/>
-    </jar>
-  </target>
-
-  <target name="starr.comp" depends="starr.reflect">
-    <jar destfile="${basedir}/lib/scala-compiler.jar">
-      <fileset dir="${basedir}/build/quick/classes/compiler"/>
-    </jar>
-  </target>
-
-  <target name="starr.src" depends="starr.comp">
+  <target name="starr.src" depends="starr.jars">
     <jar destfile="${basedir}/lib/scala-library-src.jar">
       <fileset dir="${basedir}/src/library"/>
       <fileset dir="${basedir}/src/swing"/>
       <fileset dir="${basedir}/src/actors"/>
+      <fileset dir="${basedir}/src/forkjoin"/>
+    </jar>
+    <jar destfile="${basedir}/lib/scala-reflect-src.jar">
+      <fileset dir="${basedir}/src/reflect"/>
+    </jar>
+    <jar destfile="${basedir}/lib/scala-compiler-src.jar">
+      <fileset dir="${basedir}/src/compiler"/>
+      <fileset dir="${basedir}/src/asm"/>
+      <fileset dir="${basedir}/src/fjbg"/>
+      <fileset dir="${basedir}/src/msil"/>
     </jar>
   </target>
 
-  <target name="starr.libs" depends="starr.src, forkjoin.done, fjbg.done">
-    <!-- TODO - Do we even *need* this in starr? -->
-    <copy toDir="${lib.dir}" overwrite="yes">
-      <fileset dir="${build-libs.dir}">
-        <include name="fjbg.jar"/>
-        <include name="forkjoin.jar"/>
-      </fileset>
-    </copy>
-    <!-- remove SHA1 files for no starr, so we don't loose artifacts. -->
-    <delete>
-      <fileset dir="${lib.dir}">
-        <include name="fjbg.jar.desired.sha1"/>
-        <include name="msil.jar.desired.sha1"/>
-        <include name="forkjoin.jar.desired.sha1"/>
-      </fileset>
-    </delete>
-  </target>
-
-  <target name="starr.removesha1" depends="starr.libs">
+  <target name="starr.removesha1" depends="starr.src">
     <!-- remove SHA1 files for no starr, so we don't loose artifacts. -->
     <delete>
       <fileset dir="${lib.dir}">
@@ -2618,11 +2610,13 @@ STABLE REFERENCE (STARR)
         <include name="scala-reflect.jar.desired.sha1"/>
         <include name="scala-library.jar.desired.sha1"/>
         <include name="scala-library-src.jar.desired.sha1"/>
+        <include name="scala-reflect-src.jar.desired.sha1"/>
+        <include name="scala-compiler-src.jar.desired.sha1"/>
       </fileset>
     </delete>
   </target>
 
-  <target name="starr.done" depends="starr.libs, starr.removesha1"/>
+  <target name="starr.done" depends="starr.jars, starr.removesha1"/>
 
 <!-- ===========================================================================
 FORWARDED TARGETS FOR PACKAGING
