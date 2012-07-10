@@ -1150,7 +1150,7 @@ QUICK BUILD (QUICK)
     </javac>
     <scalacfork
       destdir="${build-quick.dir}/classes/compiler"
-      compilerpathref="starr.classpath"
+      compilerpathref="locker.classpath"
       params="${scalac.args.all}"
       srcdir="${src.dir}/msil"
       jvmargs="${scalacfork.jvmargs}">
