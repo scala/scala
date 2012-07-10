@@ -486,7 +486,9 @@ abstract class UnPickler /*extends reflect.generic.UnPickler*/ {
         errorBadSignature("symbol annotation expected ("+ tag +")")
       val end = readNat() + readIndex
       val target = readSymbolRef()
-      target.addAnnotation(readAnnotationInfo(end))
+      val annot = readAnnotationInfo(end)
+      target.addAnnotation(annot)
+      if (target.hasAnnotation(definitions.SpecializedClass)) target.setFlag(SPECIALIZED)
     }
 
     /** Read an annotation and return it. Used when unpickling
