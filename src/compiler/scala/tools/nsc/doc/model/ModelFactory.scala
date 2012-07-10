@@ -449,9 +449,9 @@ class ModelFactory(val global: Global, val settings: doc.Settings) {
       case _ => None
     }
 
-    // We make the diagram a lazy val, since we're not sure we'll include the diagrams in the page
-    lazy val inheritanceDiagram = makeInheritanceDiagram(this)
-    lazy val contentDiagram = makeContentDiagram(this)
+    // These are generated on-demand, make sure you don't call them more than once
+    def inheritanceDiagram = makeInheritanceDiagram(this)
+    def contentDiagram = makeContentDiagram(this)
   }
 
   abstract class PackageImpl(sym: Symbol, inTpl: PackageImpl) extends DocTemplateImpl(sym, inTpl) with Package {

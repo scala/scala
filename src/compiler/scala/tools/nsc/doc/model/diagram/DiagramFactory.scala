@@ -61,9 +61,8 @@ trait DiagramFactory extends DiagramDirectiveParser {
 
         // subclasses
         var subclasses: List[Node] =
-          tpl.directSubClasses.flatMap {
-            case d: TemplateImpl if !classExcluded(d) => List(NormalNode(makeType(d.sym.tpe, tpl), Some(d))())
-            case _ => Nil
+          tpl.directSubClasses.collect {
+            case d: TemplateImpl if !classExcluded(d) => NormalNode(makeType(d.sym.tpe, tpl), Some(d))()
           }.sortBy(_.tpl.get.name)(implicitly[Ordering[String]].reverse)
 
         // outgoing implicit coversions

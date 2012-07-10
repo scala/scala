@@ -101,7 +101,6 @@ class DocFactory(val reporter: Reporter, val settings: doc.Settings) { processor
           println("no documentable class found in compilation units")
         None
     }
-
   }
 
   object NoCompilerRunException extends ControlThrowable { }

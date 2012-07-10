@@ -30,8 +30,7 @@ trait ModelFactoryTypeSupport {
   import definitions.{ ObjectClass, NothingClass, AnyClass, AnyValClass, AnyRefClass }
   import rootMirror.{ RootPackage, RootClass, EmptyPackage }
 
-  protected var typeCache = new mutable.LinkedHashMap[(Type, TemplateImpl), TypeEntity]
-  protected var typeCacheNoPrefix = new mutable.LinkedHashMap[Type, TypeEntity]
+  protected var typeCache = new mutable.LinkedHashMap[Type, TypeEntity]
 
   /** */
   def makeType(aType: Type, inTpl: TemplateImpl): TypeEntity = {
@@ -309,21 +308,16 @@ trait ModelFactoryTypeSupport {
 
     // SI-4360: Entity caching depends on both the type AND the template it's in, as the prefixes might change for the
     // same type based on the template the type is shown in.
-    val cached =
-      if (!settings.docNoPrefixes.value)
-        typeCache.get((aType, inTpl))
-      else
-        typeCacheNoPrefix.get(aType)
-
-    cached match {
-      case Some(typeEntity) => typeEntity
-      case None =>
-        val typeEntity = createTypeEntity
-        if (!settings.docNoPrefixes.value)
-          typeCache += (aType, inTpl) -> typeEntity
-        else
-          typeCacheNoPrefix += aType -> typeEntity
-        typeEntity
-    }
+    if (settings.docNoPrefixes.value) {
+      val cached = typeCache.get(aType)
+      cached match {
+        case Some(typeEntity) =>
+          typeEntity
+        case None =>
+          val typeEntity = createTypeEntity
+          typeCache += aType -> typeEntity
+          typeEntity
+      }
+    } else createTypeEntity
   }
 }
