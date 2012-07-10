@@ -28,8 +28,6 @@ final class Analyzer(val global: CallbackGlobal) extends Compat
 		def name = Analyzer.name
 		def run
 		{
-			val outputDirectory = new File(global.settings.outdir.value)
-
 			for(unit <- currentRun.units if !unit.isJava)
 			{
 				// build dependencies structure
@@ -64,8 +62,7 @@ final class Analyzer(val global: CallbackGlobal) extends Compat
 					val sym = iclass.symbol
 					def addGenerated(separatorRequired: Boolean)
 					{
-						val classFile = fileForClass(outputDirectory, sym, separatorRequired)
-						if(classFile.exists)
+						for(classFile <- outputDirs map (fileForClass(_, sym, separatorRequired)) find (_.exists))
 							callback.generatedClass(sourceFile, classFile, className(sym, '.', separatorRequired))
 					}
 					if(sym.isModuleClass && !sym.isImplClass)

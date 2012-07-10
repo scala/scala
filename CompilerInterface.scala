@@ -4,7 +4,7 @@
 package xsbt
 
 import xsbti.{AnalysisCallback,Logger,Problem,Reporter,Severity}
-import xsbti.compile.{CachedCompiler, DependencyChanges}
+import xsbti.compile._
 import scala.tools.nsc.{backend, io, reporters, symtab, util, Phase, Global, Settings, SubComponent}
 import backend.JavaPlatform
 import scala.tools.util.PathResolver
@@ -19,19 +19,25 @@ import java.io.File
 
 final class CompilerInterface
 {
-	def newCompiler(options: Array[String], initialLog: Logger, initialDelegate: Reporter, resident: Boolean): CachedCompiler =
-		new CachedCompiler0(options, new WeakLog(initialLog, initialDelegate), resident)
+	def newCompiler(options: Array[String], output: Output, initialLog: Logger, initialDelegate: Reporter, resident: Boolean): CachedCompiler =
+		new CachedCompiler0(options, output, new WeakLog(initialLog, initialDelegate), resident)
 
-	def run(sources: Array[File], changes: DependencyChanges, callback: AnalysisCallback, log: Logger, delegate: Reporter, cached: CachedCompiler): Unit =
-		cached.run(sources, changes, callback, log, delegate)
+	def run(sources: Array[File], changes: DependencyChanges, callback: AnalysisCallback, log: Logger, delegate: Reporter, progress: CompileProgress, cached: CachedCompiler): Unit =
+		cached.run(sources, changes, callback, log, delegate, progress)
 }
 // for compatibility with Scala versions without Global.registerTopLevelSym (2.8.1 and earlier)
 sealed trait GlobalCompat { self: Global =>
 	def registerTopLevelSym(sym: Symbol): Unit
 }
-sealed abstract class CallbackGlobal(settings: Settings, reporter: reporters.Reporter) extends Global(settings, reporter) with GlobalCompat {
+sealed abstract class CallbackGlobal(settings: Settings, reporter: reporters.Reporter, output: Output) extends Global(settings, reporter) with GlobalCompat {
 	def callback: AnalysisCallback
 	def findClass(name: String): Option[(AbstractFile,Boolean)]
+	lazy val outputDirs: Iterable[File] = {
+		output match {
+			case single: SingleOutput => List(single.outputDirectory)
+			case multi: MultipleOutput => multi.outputGroups.toStream map (_.outputDirectory)
+		}
+	}
 }
 class InterfaceCompileFailed(val arguments: Array[String], val problems: Array[Problem], override val toString: String) extends xsbti.CompileFailed
 
@@ -49,9 +55,17 @@ private final class WeakLog(private[this] var log: Logger, private[this] var del
 	}
 }
 
-private final class CachedCompiler0(args: Array[String], initialLog: WeakLog, resident: Boolean) extends CachedCompiler
+private final class CachedCompiler0(args: Array[String], output: Output, initialLog: WeakLog, resident: Boolean) extends CachedCompiler
 {
 	val settings = new Settings(s => initialLog(s))
+	output match {
+		case multi: MultipleOutput =>
+			for (out <- multi.outputGroups)
+				settings.outputDirs.add(out.sourceDirectory.getAbsolutePath, out.outputDirectory.getAbsolutePath)
+		case single: SingleOutput =>
+			settings.outputDirs.setSingleOutput(single.outputDirectory.getAbsolutePath)
+	}
+
 	val command = Command(args.toList, settings)
 	private[this] val dreporter = DelegatingReporter(settings, initialLog.reporter)
 	try {
@@ -65,14 +79,14 @@ private final class CachedCompiler0(args: Array[String], initialLog: WeakLog, re
 
 	def noErrors(dreporter: DelegatingReporter) = !dreporter.hasErrors && command.ok
 
-	def run(sources: Array[File], changes: DependencyChanges, callback: AnalysisCallback, log: Logger, delegate: Reporter): Unit = synchronized
+	def run(sources: Array[File], changes: DependencyChanges, callback: AnalysisCallback, log: Logger, delegate: Reporter, progress: CompileProgress): Unit = synchronized
 	{
 		debug(log, "Running cached compiler " + hashCode.toHexString + ", interfacing (CompilerInterface) with Scala compiler " + scala.tools.nsc.Properties.versionString)
 		val dreporter = DelegatingReporter(settings, delegate)
-		try { run(sources.toList, changes, callback, log, dreporter) }
+		try { run(sources.toList, changes, callback, log, dreporter, progress) }
 		finally { dreporter.dropDelegate() }
 	}
-	private[this] def run(sources: List[File], changes: DependencyChanges, callback: AnalysisCallback, log: Logger, dreporter: DelegatingReporter)
+	private[this] def run(sources: List[File], changes: DependencyChanges, callback: AnalysisCallback, log: Logger, dreporter: DelegatingReporter, compileProgress: CompileProgress)
 	{
 		if(command.shouldStopWithInfo)
 		{
@@ -84,8 +98,16 @@ private final class CachedCompiler0(args: Array[String], initialLog: WeakLog, re
 			debug(log, args.mkString("Calling Scala compiler with arguments  (CompilerInterface):\n\t", "\n\t", ""))
 			compiler.set(callback, dreporter)
 			try {
-				val run = new compiler.Run
-				if(resident) compiler.reload(changes)
+				val run = new compiler.Run {
+					override def informUnitStarting(phase: Phase, unit: compiler.CompilationUnit) {
+						compileProgress.startUnit(phase.name, unit.source.path)
+					}
+					override def progress(current: Int, total: Int) {
+						if (!compileProgress.advance(current, total))
+							cancel
+					}
+				}
+				if (resident) compiler.reload(changes)
 				val sortedSourceFiles = sources.map(_.getAbsolutePath).sortWith(_ < _)
 				run compile sortedSourceFiles
 				processUnreportedWarnings(run)
@@ -113,7 +135,7 @@ private final class CachedCompiler0(args: Array[String], initialLog: WeakLog, re
 		if(!warnings.isEmpty)
 			compiler.logUnreportedWarnings(warnings.map(cw => ("" /*cw.what*/, cw.warnings.toList)))
 	}
-	object compiler extends CallbackGlobal(command.settings, dreporter)
+	object compiler extends CallbackGlobal(command.settings, dreporter, output)
 	{
 		object dummy // temporary fix for #4426
 		object sbtAnalyzer extends
@@ -145,7 +167,6 @@ private final class CachedCompiler0(args: Array[String], initialLog: WeakLog, re
 			def name = phaseName
 		}
 
-		val out = new File(settings.outdir.value)
 		override lazy val phaseDescriptors =
 		{
 			phasesSet += sbtAnalyzer
@@ -187,8 +208,9 @@ private final class CachedCompiler0(args: Array[String], initialLog: WeakLog, re
 
 		def getOutputClass(name: String): Option[AbstractFile] =
 		{
-			val f = new File(out, name.replace('.', '/') + ".class")
-			if(f.exists) Some(AbstractFile.getFile(f)) else None
+			// This could be improved if a hint where to look is given.
+			val className = name.replace('.', '/') + ".class"
+			outputDirs map (new File(_, className)) find (_.exists) map (AbstractFile.getFile(_))
 		}
 
 		def findOnClassPath(name: String): Option[AbstractFile] =
@@ -213,7 +235,7 @@ private final class CachedCompiler0(args: Array[String], initialLog: WeakLog, re
 		//   must drop whole CachedCompiler when !changes.isEmpty
 		def reload(changes: DependencyChanges)
 		{
-			inv(settings.outdir.value)
+				for ((_,out) <- settings.outputDirs.outputs) inv(out.path)
 		}
 
 		private[this] var toForget = mutable.Set[Symbol]()
