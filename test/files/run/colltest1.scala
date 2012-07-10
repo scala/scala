@@ -131,6 +131,10 @@ object Test extends App {
     assert((ten zip ten.indices) == ten.zipWithIndex)
     assert(ten.sortWith(_ < _) == ten)
     assert(ten.sortWith(_ > _) == ten.reverse)
+    val sorten = (ten :+ 13).sorted
+    assert(sorten.binarySearch(3) == Right(2))
+    assert(sorten.binarySearch(5, 3, 8) == Right(4))
+    assert(sorten.binarySearch(12) == Left(9))
   }
 
   def setTest(empty: => Set[String]) {

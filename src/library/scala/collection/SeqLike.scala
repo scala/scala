@@ -12,6 +12,7 @@ import mutable.{ ListBuffer, ArraySeq }
 import immutable.{ List, Range }
 import generic._
 import parallel.ParSeq
+import scala.annotation.tailrec
 import scala.math.Ordering
 
 /** A template trait for sequences of type `Seq[A]`
@@ -610,6 +611,56 @@ trait SeqLike[+A, +Repr] extends Any with IterableLike[A, Repr] with GenSeqLike[
     b.sizeHint(len)
     for (x <- arr) b += x
     b.result
+  }
+
+  /** Search this $coll for a specific element using a binary search algorithm.
+   *
+   *  This $coll should be sorted with the same `Ordering` before calling; otherwise,
+   *  the results are undefined.
+   *
+   *  @see [[scala.math.Ordering]]
+   *  @see [[scala.collection.SeqLike]], method `sorted`
+   *
+   *  @param elem the element to find.
+   *  @param ord  the ordering to be used to compare elements.
+   *  @return a `Right` value containing the index corresponding to the element in the
+   *          $coll, or a `Left` value containing the index where the element would be
+   *          inserted if the element is not in the $coll.
+   */
+  def binarySearch[B >: A](elem: B)(implicit ord: Ordering[B]): Either[Int, Int] =
+    binarySearch(elem, 0, length)(ord)
+
+  /** Search within an interval in this $coll for a specific element using
+   *  a binary search algorithm.
+   *
+   *  This $coll should be sorted with the same `Ordering` before calling; otherwise,
+   *  the results are undefined.
+   * 
+   *  @see [[scala.math.Ordering]]
+   *  @see [[scala.collection.SeqLike]], method `sorted`
+   *
+   *  @param elem the element to find.
+   *  @param from the index where the search starts.
+   *  @param to   the index following where the search ends.
+   *  @param ord  the ordering to be used to compare elements.
+   *  @return a `Right` value containing the index corresponding to the element in the
+   *          $coll, or a `Left` value containing the index where the element would be
+   *          inserted if the element is not in the $coll.
+   */
+  def binarySearch[B >: A](elem: B, from: Int, to: Int)(implicit ord: Ordering[B]): Either[Int, Int] = {
+    @tailrec
+    def search(elem: B, from: Int, to: Int): Either[Int, Int] = {
+      if ((to-from) == 1) Left(from) else {
+        val idx = (to+from)/2
+        math.signum(ord.compare(elem, this(idx))) match {
+          case -1 => search(elem, from, idx)
+          case  1 => search(elem, idx, to)
+          case  _ => Right(idx)
+        }
+      }
+    }
+
+    search(elem, (from max 0)-1, (to min length))
   }
 
   /** Converts this $coll to a sequence.
