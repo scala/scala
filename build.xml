@@ -1823,7 +1823,7 @@ BOOTSTRAPPING BUILD (STRAP)
     </javac>
     <scalacfork
       destdir="${build-strap.dir}/classes/compiler"
-      compilerpathref="starr.classpath"
+      compilerpathref="pack.classpath"
       params="${scalac.args.all}"
       srcdir="${src.dir}/msil"
       jvmargs="${scalacfork.jvmargs}">
