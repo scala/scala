@@ -47,7 +47,6 @@ trait Typers extends Modes with Adaptations with Tags {
   def resetTyper() {
     //println("resetTyper called")
     resetContexts()
-    resetNamer()
     resetImplicits()
     transformed.clear()
   }
