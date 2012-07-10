@@ -442,6 +442,9 @@ abstract class TreeInfo {
       }
 */
 
+  /** Is this case guarded? */
+  def isGuardedCase(cdef: CaseDef) = cdef.guard != EmptyTree
+
   /** Is this pattern node a sequence-valued pattern? */
   def isSequenceValued(tree: Tree): Boolean = unbind(tree) match {
     case Alternative(ts)            => ts exists isSequenceValued

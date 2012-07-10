@@ -1,4 +1,7 @@
 t5830.scala:6: error: unreachable code
     case 'a' => println("b") // unreachable
                        ^
-one error found
+t5830.scala:4: error: could not emit switch for @switch annotated match
+  def unreachable(ch: Char) = (ch: @switch) match {
+                                    ^
+two errors found
