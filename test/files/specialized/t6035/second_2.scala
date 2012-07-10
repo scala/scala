@@ -11,7 +11,7 @@ object Test {
   def main(args: Array[String]) {
     val baz = new Baz
     baz.foo(1)
-    println(runtime.BoxesRunTime.integerBoxCount)
+    //println(runtime.BoxesRunTime.integerBoxCount)
   }
   
 }
