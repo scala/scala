@@ -1,0 +1,70 @@
+stringinterpolation_macro-neg.scala:8: error: too few parts
+  new StringContext().f()
+  ^
+stringinterpolation_macro-neg.scala:9: error: too few arguments for interpolated string
+  new StringContext("", " is ", "%2d years old").f(s)
+                                                   ^
+stringinterpolation_macro-neg.scala:10: error: too many arguments for interpolated string
+  new StringContext("", " is ", "%2d years old").f(s, d, d)
+                                                         ^
+stringinterpolation_macro-neg.scala:11: error: too few arguments for interpolated string
+  new StringContext("", "").f()
+                             ^
+stringinterpolation_macro-neg.scala:14: error: type mismatch;
+ found   : String
+ required: Boolean
+  f"$s%b"
+     ^
+stringinterpolation_macro-neg.scala:15: error: type mismatch;
+ found   : String
+ required: Char
+  f"$s%c"
+     ^
+stringinterpolation_macro-neg.scala:16: error: type mismatch;
+ found   : Double
+ required: Char
+  f"$f%c"
+     ^
+stringinterpolation_macro-neg.scala:17: error: type mismatch;
+ found   : String
+ required: Int
+  f"$s%x"
+     ^
+stringinterpolation_macro-neg.scala:18: error: type mismatch;
+ found   : Boolean
+ required: Int
+  f"$b%d"
+     ^
+stringinterpolation_macro-neg.scala:19: error: type mismatch;
+ found   : String
+ required: Int
+  f"$s%d"
+     ^
+stringinterpolation_macro-neg.scala:20: error: type mismatch;
+ found   : Double
+ required: Int
+  f"$f%o"
+     ^
+stringinterpolation_macro-neg.scala:21: error: type mismatch;
+ found   : String
+ required: Double
+  f"$s%e"
+     ^
+stringinterpolation_macro-neg.scala:22: error: type mismatch;
+ found   : Boolean
+ required: Double
+  f"$b%f"
+     ^
+stringinterpolation_macro-neg.scala:27: error: type mismatch;
+ found   : String
+ required: Int
+Note that implicit conversions are not applicable because they are ambiguous:
+ both value strToInt2 of type String => Int
+ and value strToInt1 of type String => Int
+ are possible conversion functions from String to Int
+    f"$s%d"
+       ^
+stringinterpolation_macro-neg.scala:30: error: illegal conversion character
+  f"$s%i"
+     ^
+15 errors found

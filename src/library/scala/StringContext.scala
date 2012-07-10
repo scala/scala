@@ -8,7 +8,7 @@
 
 package scala
 
-import collection.mutable.ArrayBuffer
+import language.experimental.macros
 
 /** A class to support string interpolation.
  *  This class supports string interpolation as outlined in Scala SIP-11.
@@ -42,7 +42,7 @@ case class StringContext(parts: String*) {
    *  @throws A `StringContext.InvalidEscapeException` if if a `parts` string contains a backslash (`\`) character
    *          that does not start a valid escape sequence.
    */
-  def s(args: Any*) = {
+  def s(args: Any*): String = {
     checkLengths(args: _*)
     val pi = parts.iterator
     val ai = args.iterator
@@ -82,38 +82,8 @@ case class StringContext(parts: String*) {
    *      string literally. This is achieved by replacing each such occurrence by the
    *      format specifier `%%`.
    */
-  def f(args: Any*) = {
-    checkLengths(args: _*)
-    val pi = parts.iterator
-    val bldr = new java.lang.StringBuilder
-    def copyString(first: Boolean): Unit = {
-      val str = treatEscapes(pi.next())
-      val strIsEmpty = str.length == 0
-      var start = 0
-      var idx = 0
-      if (!first) {
-        if (strIsEmpty || (str charAt 0) != '%')
-          bldr append "%s"
-        idx = 1
-      }
-      if (!strIsEmpty) {
-        val len = str.length
-        while (idx < len) {
-          if (str(idx) == '%') {
-            bldr append (str substring (start, idx)) append "%%"
-            start = idx + 1
-          }
-          idx += 1
-        }
-        bldr append (str substring (start, idx))
-      }
-    }
-    copyString(first = true)
-    while (pi.hasNext) {
-      copyString(first = false)
-    }
-    bldr.toString format (args: _*)
-  }
+  // The implementation is magically hardwired into `scala.tools.reflect.MacroImplementations.macro_StringInterpolation_f`
+  def f(args: Any*): String = macro ???
 }
 
 object StringContext {
