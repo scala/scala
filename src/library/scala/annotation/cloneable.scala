@@ -6,11 +6,10 @@
 **                          |/                                          **
 \*                                                                      */
 
-
-
 package scala.annotation
 
 /**
  * An annotation that designates the class to which it is applied as cloneable
  */
+@deprecated("instead of `@cloneable class C`, use `class C extends Cloneable`", "2.10.0")
 class cloneable extends annotation.StaticAnnotation
