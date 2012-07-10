@@ -1150,7 +1150,7 @@ QUICK BUILD (QUICK)
     </javac>
     <scalacfork
       destdir="${build-quick.dir}/classes/compiler"
-      compilerpathref="starr.classpath"
+      compilerpathref="locker.classpath"
       params="${scalac.args.all}"
       srcdir="${src.dir}/msil"
       jvmargs="${scalacfork.jvmargs}">
@@ -1407,6 +1407,7 @@ QUICK BUILD (QUICK)
       <path refid="forkjoin.classpath"/>
       <path refid="fjbg.classpath"/>
       <path refid="aux.libs"/>
+      <path refid="asm.classpath"/>
       <pathelement location="${jline.jar}"/>
     </path>
     <taskdef name="quick-bin" classname="scala.tools.ant.ScalaTool" classpathref="quick.bin.classpath"/>
