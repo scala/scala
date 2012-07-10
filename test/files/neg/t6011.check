@@ -1,0 +1,4 @@
+t6011.scala:4: error: unreachable code
+    case 'a' | 'c' => 1 // unreachable
+                      ^
+one error found
