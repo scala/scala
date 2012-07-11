@@ -64,7 +64,7 @@ class Template(universe: doc.Universe, generator: DiagramGenerator, tpl: DocTemp
     nonAbsValueMembers partition (_.deprecation.isDefined)
 
   val (concValueMembers, shadowedImplicitMembers) =
-    nonDeprValueMembers partition (!Template.isShadowedOrAmbiguousImplicit(_))
+    nonDeprValueMembers partition (!_.isShadowedOrAmbiguousImplicit)
 
   val typeMembers =
     tpl.abstractTypes ++ tpl.aliasTypes ++ tpl.templates.filter(x => x.isTrait || x.isClass) sorted
@@ -387,7 +387,7 @@ class Template(universe: doc.Universe, generator: DiagramGenerator, tpl: DocTemp
             { constraintText }
           </dd>
         } ++ {
-          if (Template.isShadowedOrAmbiguousImplicit(mbr)) {
+          if (mbr.isShadowedOrAmbiguousImplicit) {
             // These are the members that are shadowing or ambiguating the current implicit
             // see ImplicitMemberShadowing trait for more information
             val shadowingSuggestion = {
@@ -402,10 +402,10 @@ class Template(universe: doc.Universe, generator: DiagramGenerator, tpl: DocTemp
             }
 
             val shadowingWarning: NodeSeq =
-              if (Template.isShadowedImplicit(mbr))
+              if (mbr.isShadowedImplicit)
                   xml.Text("This implicitly inherited member is shadowed by one or more members in this " +
                   "class.") ++ shadowingSuggestion
-              else if (Template.isAmbiguousImplicit(mbr))
+              else if (mbr.isAmbiguousImplicit)
                   xml.Text("This implicitly inherited member is ambiguous. One or more implicitly " +
                   "inherited members have similar signatures, so calling this member may produce an ambiguous " +
                   "implicit conversion compiler error.") ++ shadowingSuggestion
@@ -646,13 +646,13 @@ class Template(universe: doc.Universe, generator: DiagramGenerator, tpl: DocTemp
       case PrivateInTemplate(owner) if (owner == mbr.inTemplate) =>
         Some(Paragraph(CText("private")))
       case PrivateInTemplate(owner) =>
-        Some(Paragraph(Chain(List(CText("private["), EntityLink(owner.qualifiedName, () => Some(owner)), CText("]")))))
+        Some(Paragraph(Chain(List(CText("private["), EntityLink(comment.Text(owner.qualifiedName), LinkToTpl(owner)), CText("]")))))
       case ProtectedInInstance() =>
         Some(Paragraph(CText("protected[this]")))
       case ProtectedInTemplate(owner) if (owner == mbr.inTemplate) =>
         Some(Paragraph(CText("protected")))
       case ProtectedInTemplate(owner) =>
-        Some(Paragraph(Chain(List(CText("protected["), EntityLink(owner.qualifiedName, () => Some(owner)), CText("]")))))
+        Some(Paragraph(Chain(List(CText("protected["), EntityLink(comment.Text(owner.qualifiedName), LinkToTpl(owner)), CText("]")))))
       case Public() =>
         None
     }
@@ -669,8 +669,8 @@ class Template(universe: doc.Universe, generator: DiagramGenerator, tpl: DocTemp
       <span class="symbol">
         {
           val nameClass =
-            if (Template.isImplicit(mbr))
-              if (Template.isShadowedOrAmbiguousImplicit(mbr))
+            if (mbr.isImplicitlyInherited)
+              if (mbr.isShadowedOrAmbiguousImplicit)
                 "implicit shadowed"
               else
                 "implicit"
@@ -933,13 +933,6 @@ class Template(universe: doc.Universe, generator: DiagramGenerator, tpl: DocTemp
 object Template {
   /* Vlad: Lesson learned the hard way: don't put any stateful code that references the model here,
    * it won't be garbage collected and you'll end up filling the heap with garbage */
-
-  def isImplicit(mbr: MemberEntity) = mbr.byConversion.isDefined
-  def isShadowedImplicit(mbr: MemberEntity): Boolean =
-    mbr.byConversion.map(_.source.implicitsShadowing.get(mbr).map(_.isShadowed).getOrElse(false)).getOrElse(false)
-  def isAmbiguousImplicit(mbr: MemberEntity): Boolean =
-    mbr.byConversion.map(_.source.implicitsShadowing.get(mbr).map(_.isAmbiguous).getOrElse(false)).getOrElse(false)
-  def isShadowedOrAmbiguousImplicit(mbr: MemberEntity) = isShadowedImplicit(mbr) || isAmbiguousImplicit(mbr)
 
   def lowerFirstLetter(s: String) = if (s.length >= 1) s.substring(0,1).toLowerCase() + s.substring(1) else s
 }

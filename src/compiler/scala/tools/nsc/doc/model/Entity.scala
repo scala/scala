@@ -56,6 +56,12 @@ trait Entity {
 
   /** Whether or not the template was defined in a package object */
   def inPackageObject: Boolean
+
+  /** Indicates whether this entity lives in the types namespace (classes, traits, abstract/alias types) */
+  def isType: Boolean
+
+  /** Indicates whether this entity lives in the terms namespace (objects, packages, methods, values) */
+  def isTerm: Boolean
 }
 
 object Entity {
@@ -183,6 +189,19 @@ trait MemberEntity extends Entity {
 
   /** The identity of this member, used for linking */
   def signature: String
+
+  /** Indicates whether the member is inherited by implicit conversion */
+  def isImplicitlyInherited: Boolean
+
+  /** Indicates whether there is another member with the same name in the template that will take precendence */
+  def isShadowedImplicit: Boolean
+
+  /** Indicates whether there are other implicitly inherited members that have similar signatures (and thus they all
+   *  become ambiguous) */
+  def isAmbiguousImplicit: Boolean
+
+  /** Indicates whether the implicitly inherited member is shadowed or ambiguous in its template */
+  def isShadowedOrAmbiguousImplicit: Boolean
 }
 
 object MemberEntity {

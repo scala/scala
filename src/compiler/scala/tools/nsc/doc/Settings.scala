@@ -171,6 +171,11 @@ class Settings(error: String => Unit, val printMsg: String => Unit = println(_))
     "Prevents generating prefixes in types, possibly creating ambiguous references, but significantly speeding up scaladoc."
   )
 
+  val docNoLinkWarnings = BooleanSetting (
+    "-no-link-warnings",
+    "Avoid warnings for ambiguous and incorrect links."
+  )
+
   // Somewhere slightly before r18708 scaladoc stopped building unless the
   // self-type check was suppressed.  I hijacked the slotted-for-removal-anyway
   // suppress-vt-warnings option and renamed it for this purpose.
@@ -183,7 +188,7 @@ class Settings(error: String => Unit, val printMsg: String => Unit = println(_))
     docDiagramsDotTimeout, docDiagramsDotRestart,
     docImplicits, docImplicitsDebug, docImplicitsShowAll,
     docDiagramsMaxNormalClasses, docDiagramsMaxImplicitClasses,
-    docNoPrefixes
+    docNoPrefixes, docNoLinkWarnings, docRawOutput
   )
   val isScaladocSpecific: String => Boolean = scaladocSpecific map (_.name)
 

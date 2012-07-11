@@ -44,7 +44,6 @@ final case class Body(blocks: Seq[Block]) {
       case inlines => Some(Chain(inlines))
     }
   }
-
 }
 
 /** A block-level element of text, such as a paragraph or code block. */
@@ -67,10 +66,14 @@ final case class Bold(text: Inline) extends Inline
 final case class Underline(text: Inline) extends Inline
 final case class Superscript(text: Inline) extends Inline
 final case class Subscript(text: Inline) extends Inline
-final case class EntityLink(target: String, template: () => Option[TemplateEntity]) extends Inline
 final case class Link(target: String, title: Inline) extends Inline
 final case class Monospace(text: Inline) extends Inline
 final case class Text(text: String) extends Inline
+abstract class EntityLink(val title: Inline) extends Inline { def link: LinkTo }
+object EntityLink {
+  def apply(title: Inline, linkTo: LinkTo) = new EntityLink(title) { def link: LinkTo = linkTo}
+  def unapply(el: EntityLink): Option[(Inline, LinkTo)] = Some((el.title, el.link))
+}
 final case class HtmlTag(data: String) extends Inline {
   def canClose(open: HtmlTag) = {
     open.data.stripPrefix("<") == data.stripPrefix("</")

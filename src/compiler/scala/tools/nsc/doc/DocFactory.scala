@@ -48,8 +48,8 @@ class DocFactory(val reporter: Reporter, val settings: doc.Settings) { processor
 
   /** Creates a scaladoc site for all symbols defined in this call's `source`,
     * as well as those defined in `sources` of previous calls to the same processor.
-    * @param files The list of paths (relative to the compiler's source path,
-    *        or absolute) of files to document. */
+    * @param source The list of paths (relative to the compiler's source path,
+    *        or absolute) of files to document or the source code. */
   def makeUniverse(source: Either[List[String], String]): Option[Universe] = {
     assert(settings.docformat.value == "html")
     source match {
@@ -84,7 +84,8 @@ class DocFactory(val reporter: Reporter, val settings: doc.Settings) { processor
         with model.ModelFactoryTypeSupport
         with model.diagram.DiagramFactory
         with model.comment.CommentFactory
-        with model.TreeFactory {
+        with model.TreeFactory
+        with model.MemberLookup {
           override def templateShouldDocument(sym: compiler.Symbol, inTpl: TemplateImpl) =
             extraTemplatesToDocument(sym) || super.templateShouldDocument(sym, inTpl)
         }

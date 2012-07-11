@@ -24,7 +24,8 @@ class ModelFactory(val global: Global, val settings: doc.Settings) {
                with ModelFactoryTypeSupport
                with DiagramFactory
                with CommentFactory
-               with TreeFactory =>
+               with TreeFactory
+               with MemberLookup =>
 
   import global._
   import definitions.{ ObjectClass, NothingClass, AnyClass, AnyValClass, AnyRefClass }
@@ -92,6 +93,8 @@ class ModelFactory(val global: Global, val settings: doc.Settings) {
     def qualifiedName = name
     def annotations = sym.annotations.map(makeAnnotation)
     def inPackageObject: Boolean = sym.owner.isModuleClass && sym.owner.sourceModule.isPackageObject
+    def isType = sym.name.isTypeName
+    def isTerm = sym.name.isTermName
   }
 
   trait TemplateImpl extends EntityImpl with TemplateEntity {
@@ -108,7 +111,7 @@ class ModelFactory(val global: Global, val settings: doc.Settings) {
 
   abstract class MemberImpl(sym: Symbol, implConv: ImplicitConversionImpl, inTpl: DocTemplateImpl) extends EntityImpl(sym, inTpl) with MemberEntity {
     lazy val comment = {
-      val commentTpl =
+      val inRealTpl =
         /* Variable precendence order for implicitly added members: Take the variable defifinitions from ...
          * 1. the target of the implicit conversion
          * 2. the definition template (owner)
@@ -121,7 +124,11 @@ class ModelFactory(val global: Global, val settings: doc.Settings) {
             case _ => inTpl
           }
         } else inTpl
-      if (commentTpl != null) thisFactory.comment(sym, commentTpl) else None
+      val thisTpl = this match {
+        case d: DocTemplateImpl => Some(d)
+        case _ => None
+      }
+      if (inRealTpl != null) thisFactory.comment(sym, thisTpl, inRealTpl) else None
     }
     override def inTemplate = inTpl
     override def toRoot: List[MemberImpl] = this :: inTpl.toRoot
@@ -167,9 +174,9 @@ class ModelFactory(val global: Global, val settings: doc.Settings) {
     def deprecation =
       if (sym.isDeprecated)
         Some((sym.deprecationMessage, sym.deprecationVersion) match {
-          case (Some(msg), Some(ver)) => parseWiki("''(Since version " + ver + ")'' " + msg, NoPosition)
-          case (Some(msg), None) => parseWiki(msg, NoPosition)
-          case (None, Some(ver)) =>  parseWiki("''(Since version " + ver + ")''", NoPosition)
+          case (Some(msg), Some(ver)) => parseWiki("''(Since version " + ver + ")'' " + msg, NoPosition, Some(inTpl))
+          case (Some(msg), None) => parseWiki(msg, NoPosition, Some(inTpl))
+          case (None, Some(ver)) =>  parseWiki("''(Since version " + ver + ")''", NoPosition, Some(inTpl))
           case (None, None) => Body(Nil)
         })
       else
@@ -177,9 +184,9 @@ class ModelFactory(val global: Global, val settings: doc.Settings) {
     def migration =
       if(sym.hasMigrationAnnotation)
         Some((sym.migrationMessage, sym.migrationVersion) match {
-          case (Some(msg), Some(ver)) => parseWiki("''(Changed in version " + ver + ")'' " + msg, NoPosition)
-          case (Some(msg), None) => parseWiki(msg, NoPosition)
-          case (None, Some(ver)) =>  parseWiki("''(Changed in version " + ver + ")''", NoPosition)
+          case (Some(msg), Some(ver)) => parseWiki("''(Changed in version " + ver + ")'' " + msg, NoPosition, Some(inTpl))
+          case (Some(msg), None) => parseWiki(msg, NoPosition, Some(inTpl))
+          case (None, Some(ver)) =>  parseWiki("''(Changed in version " + ver + ")''", NoPosition, Some(inTpl))
           case (None, None) => Body(Nil)
         })
       else
@@ -213,28 +220,34 @@ class ModelFactory(val global: Global, val settings: doc.Settings) {
     def byConversion = if (implConv ne null) Some(implConv) else None
     lazy val signature = {
 
-      val defParamsString = this match {
+      def defParams(mbr: Any): String = mbr match {
         case d: MemberEntity with Def =>
           val paramLists: List[String] =
-          if (d.valueParams.isEmpty) Nil
-          else d.valueParams map (ps => ps map (_.resultType.name) mkString ("(",",",")"))
-
-          val tParams = if (d.typeParams.isEmpty) "" else {
-            def boundsToString(hi: Option[TypeEntity], lo: Option[TypeEntity]): String = {
-              def bound0(bnd: Option[TypeEntity], pre: String): String = bnd match {
-                case None => ""
-                case Some(tpe) => pre ++ tpe.toString
-              }
-              bound0(hi, "<:") ++ bound0(lo, ">:")
-            }
-            "[" + d.typeParams.map(tp => tp.variance + tp.name + boundsToString(tp.hi, tp.lo)).mkString(", ") + "]"
-          }
-
-          tParams + paramLists.mkString
+            if (d.valueParams.isEmpty) Nil
+            else d.valueParams map (ps => ps map (_.resultType.name) mkString ("(",",",")"))
+          paramLists.mkString
         case _ => ""
       }
-      name + defParamsString +":"+ resultType.name
+
+      def tParams(mbr: Any): String = mbr match {
+        case hk: HigherKinded if !hk.typeParams.isEmpty =>
+          def boundsToString(hi: Option[TypeEntity], lo: Option[TypeEntity]): String = {
+            def bound0(bnd: Option[TypeEntity], pre: String): String = bnd match {
+              case None => ""
+              case Some(tpe) => pre ++ tpe.toString
+            }
+            bound0(hi, "<:") ++ bound0(lo, ">:")
+          }
+          "[" + hk.typeParams.map(tp => tp.variance + tp.name + tParams(tp) + boundsToString(tp.hi, tp.lo)).mkString(", ") + "]"
+        case _ => ""
+      }
+
+      (name + tParams(this) + defParams(this) +":"+ resultType.name).replaceAll("\\s","") // no spaces allowed, they break links
     }
+    def isImplicitlyInherited = { assert(modelFinished); byConversion.isDefined }
+    def isShadowedImplicit    = isImplicitlyInherited && inTpl.implicitsShadowing.get(this).map(_.isShadowed).getOrElse(false)
+    def isAmbiguousImplicit   = isImplicitlyInherited && inTpl.implicitsShadowing.get(this).map(_.isAmbiguous).getOrElse(false)
+    def isShadowedOrAmbiguousImplicit = isShadowedImplicit || isAmbiguousImplicit
   }
 
   /** A template that is not documented at all. The class is instantiated during lookups, to indicate that the class
@@ -546,7 +559,7 @@ class ModelFactory(val global: Global, val settings: doc.Settings) {
           import Streamable._
           Path(settings.docRootContent.value) match {
             case f : File => {
-              val rootComment = closing(f.inputStream)(is => parse(slurp(is), "", NoPosition))
+              val rootComment = closing(f.inputStream)(is => parse(slurp(is), "", NoPosition, Option(inTpl)))
               Some(rootComment)
             }
             case _ => None
@@ -658,7 +671,7 @@ class ModelFactory(val global: Global, val settings: doc.Settings) {
       if (bSym.isGetter && bSym.isLazy)
           Some(new NonTemplateMemberImpl(bSym, implConv, inTpl) with Val {
             override lazy val comment = // The analyser does not duplicate the lazy val's DocDef when it introduces its accessor.
-              thisFactory.comment(bSym.accessed, inTpl.asInstanceOf[DocTemplateImpl]) // This hack should be removed after analyser is fixed.
+              thisFactory.comment(bSym.accessed, None, inTpl.asInstanceOf[DocTemplateImpl]) // This hack should be removed after analyser is fixed.
             override def isLazyVal = true
             override def useCaseOf = _useCaseOf
           })
@@ -744,6 +757,7 @@ class ModelFactory(val global: Global, val settings: doc.Settings) {
     inTpl.members.find(_.sym == aSym)
   }
 
+  @deprecated("2.10", "Use findLinkTarget instead!")
   def findTemplate(query: String): Option[DocTemplateImpl] = {
     assert(modelFinished)
     docTemplatesCache.values find { (tpl: DocTemplateImpl) => tpl.qualifiedName == query && !packageDropped(tpl) && !tpl.isObject }
@@ -775,7 +789,6 @@ class ModelFactory(val global: Global, val settings: doc.Settings) {
         makeNoDocTemplate(bSym, if (inTpl.isDefined) inTpl.get else makeTemplate(bSym.owner))
     }
   }
-
 
   /** */
   def makeAnnotation(annot: AnnotationInfo): Annotation = {

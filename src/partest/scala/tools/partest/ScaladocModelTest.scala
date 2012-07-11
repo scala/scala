@@ -12,7 +12,7 @@ import scala.tools.nsc.util.CommandLineParser
 import scala.tools.nsc.doc.{Settings, DocFactory, Universe}
 import scala.tools.nsc.doc.model._
 import scala.tools.nsc.reporters.ConsoleReporter
-import scala.tools.nsc.doc.model.comment.Comment
+import scala.tools.nsc.doc.model.comment._
 
 /** A class for testing scaladoc model generation
  *   - you need to specify the code in the `code` method
@@ -165,10 +165,21 @@ abstract class ScaladocModelTest extends DirectTest {
     def extractCommentText(c: Comment) = {
       def extractText(body: Any): String = body match {
         case s: String  => s
+        case s: Seq[_]  => s.toList.map(extractText(_)).mkString
         case p: Product => p.productIterator.toList.map(extractText(_)).mkString
         case _          => ""
       }
       extractText(c.body)
+    }
+
+    def countLinks(c: Comment, p: EntityLink => Boolean) = {
+      def countLinks(body: Any): Int = body match {
+        case el: EntityLink if p(el) => 1
+        case s: Seq[_]  => s.toList.map(countLinks(_)).sum
+        case p: Product => p.productIterator.toList.map(countLinks(_)).sum
+        case _          => 0
+      }
+      countLinks(c.body)
     }
   }
 }

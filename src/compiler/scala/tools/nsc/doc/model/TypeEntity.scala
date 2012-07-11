@@ -9,10 +9,6 @@ package model
 
 import scala.collection._
 
-abstract sealed class LinkTo
-case class LinkToTpl(tpl: TemplateEntity) extends LinkTo
-case class LinkToMember(mbr: MemberEntity, inTpl: DocTemplateEntity) extends LinkTo
-
 /** A type. Note that types and templates contain the same information only for the simplest types. For example, a type
   * defines how a template's type parameters are instantiated (as in `List[Cow]`), what the template's prefix is
   * (as in `johnsFarm.Cow`), and supports compound or structural types. */
@@ -28,5 +24,4 @@ abstract class TypeEntity {
 
   /** The human-readable representation of this type. */
   override def toString = name
-
 }

@@ -100,8 +100,8 @@ trait ModelFactoryTypeSupport {
                 // (1) the owner's class
                 LinkToMember(bMbr.get.get, oTpl.get) //ugh
               else
-                // (2) if we still couldn't find the owner, make a noDocTemplate for everything (in the correct owner!)
-                LinkToTpl(makeTemplate(bSym, Some(makeTemplate(owner))))
+                // (2) if we still couldn't find the owner, show a tooltip with the qualified name
+                Tooltip(makeQualifiedName(bSym))
             }
 
           // SI-4360 Showing prefixes when necessary
