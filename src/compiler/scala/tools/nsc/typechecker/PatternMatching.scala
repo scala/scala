@@ -2950,91 +2950,147 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
 
       /** Collapse guarded cases that switch on the same constant (the last case may be unguarded).
        *
-       * `{case C if(G_i) => B_i | case C'_j if G'_j => B'_j}*`  is rewritten to
-       * `case C => {if(G_i) B_i}*` ++ rewrite({case C'_j if G'_j => B'_j}*)
+       * Cases with patterns A and B switch on the same constant iff for all values x that match A also match B and vice versa.
+       * (This roughly corresponds to equality on trees modulo alpha renaming and reordering of alternatives.)
        *
+       * The rewrite only applies if some of the cases are guarded (this must be checked before invoking this method).
+       *
+       * The rewrite proceeds by grouping the cases into subsequences of overlapping cases
+       * (since for any input, and when disregarding their guards, they either all match or they don't).
+       * They are then merged into one case with their guards pushed into the body as follows (with P representing the overlapping pattern):
+       *
+       * `{case P if(G_i) => B_i }*` is rewritten to `case P => {if(G_i) B_i}*`
+       *
+       * The rewrite fails (and returns Nil) when:
+       *   (1) there is a subsequence of overlapping cases that has an unguarded case in the middle;
+       *       only the last case may be unguarded
+       *
+       *   (2) there are overlapping cases that differ (tested by `caseImplies`)
+       *       cases with patterns A and B are overlapping if for SOME value x, A matches x implies B matches y OR vice versa  <-- note the difference with case equality defined above
+       *       for example `case 'a' | 'b' =>` and `case 'b' =>` are different and overlapping (overlapping and equality disregard guards)
+       *
+       * The second component of the returned tuple indicates whether we'll need to emit a labeldef to jump to the default case.
        */
-      private def collapseGuardedCases(cases: List[CaseDef]) = {
-        // requires(switchesOnSameConst.forall(caseChecksSameConst(switchesOnSameConst.head)))
-        def collapse(switchesOnSameConst: List[CaseDef]): List[CaseDef] =
-          if (switchesOnSameConst.tail.isEmpty && (switchesOnSameConst.head.guard == EmptyTree)) switchesOnSameConst
-          else {
-            val commonPattern = switchesOnSameConst.head.pat
+      private def collapseGuardedCases(cases: List[CaseDef]): (List[CaseDef], Boolean) = {
+        // requires(same.forall(caseEquals(same.head)))
+        @inline def collapse(same: List[CaseDef], isDefault: Boolean): CaseDef = {
+          val commonPattern = same.head.pat
+          // jump to default case (either the user-supplied one or the synthetic one)
+          // unless we're collapsing the default case, then re-use the same body as the synthetic catchall (throwing a matcherror, rethrowing the exception)
+          val jumpToDefault: Tree =
+            if (isDefault || !canJump) defaultBody
+            else Apply(Ident(defaultLabel), Nil)
 
-            // jump to default case (either the user-supplied one or the synthetic one)
-            // unless we're collapsing the default case, then re-use the same body as the synthetic catchall (throwing a matcherror, rethrowing the exception)
-            val jumpToDefault: Tree =
-              if (!canJump || isDefault(CaseDef(commonPattern, EmptyTree, EmptyTree))) defaultBody
-              else Apply(Ident(defaultLabel), Nil)
+          val guardedBody = same.foldRight(jumpToDefault){
+            // the last case may be un-guarded (we know it's the last one since fold's accum == jumpToDefault)
+            // --> replace jumpToDefault by the un-guarded case's body
+            case (CaseDef(_, EmptyTree, b), `jumpToDefault`)  => b
+            case (CaseDef(_, g, b), els) if g != EmptyTree    => If(g, b, els)
+          }
 
-            val guardedBody = switchesOnSameConst.foldRight(jumpToDefault){
-              // the last case may be un-guarded (we know it's the last one since fold's accum == jumpToDefault)
-              // --> replace jumpToDefault by the un-guarded case's body
-              case (CaseDef(_, EmptyTree, b), `jumpToDefault`)  => b
-              case (CaseDef(_, g, b), els) if g != EmptyTree => If(g, b, els)
-              // error: the un-guarded case did not come last
-              case _ =>
-                return switchesOnSameConst
+          // if the cases that we're going to collapse bound variables,
+          // must replace them by the single binder introduced by the collapsed case
+          val binders = same.collect{case CaseDef(x@Bind(_, _), _, _) if x.symbol != NoSymbol => x.symbol}
+          val (pat, guardedBodySubst) =
+            if (binders.isEmpty) (commonPattern, guardedBody)
+            else {
+              // create a single fresh binder to subsume the old binders (and their types)
+              // TODO: I don't think the binder's types can actually be different (due to checks in caseEquals)
+              // if they do somehow manage to diverge, the lub might not be precise enough and we could get a type error
+              val binder = freshSym(binders.head.pos, lub(binders.map(_.tpe)))
+
+              // the patterns in same are equal (according to caseEquals)
+              // we can thus safely pick the first one arbitrarily, provided we correct binding
+              val origPatWithoutBind = commonPattern match {
+                case Bind(b, orig) => orig
+                case o => o
+              }
+              // need to replace `defaultSym` as well -- it's used in `defaultBody` (see `jumpToDefault` above)
+              val unifiedBody = guardedBody.substituteSymbols(defaultSym :: binders, binder :: binders.map(_ => binder))
+              (Bind(binder, origPatWithoutBind), unifiedBody)
             }
 
-            // if the cases that we're going to collapse bind variables,
-            // must replace them by the single binder introduced by the collapsed case
-            val binders = switchesOnSameConst.collect{case CaseDef(x@Bind(_, _), _, _) if x.symbol != NoSymbol => x.symbol}
-            val (pat, guardedBodySubst) =
-              if (binders.isEmpty) (commonPattern, guardedBody)
-              else {
-                // create a single fresh binder to subsume the old binders (and their types)
-                // TODO: I don't think the binder's types can actually be different (due to checks in caseChecksSameConst)
-                // if they do somehow manage to diverge, the lub might not be precise enough and we could get a type error
-                val binder = freshSym(binders.head.pos, lub(binders.map(_.tpe)))
+          atPos(commonPattern.pos)(CaseDef(pat, EmptyTree, guardedBodySubst))
+        }
 
-                // the patterns in switchesOnSameConst are equal (according to caseChecksSameConst) and modulo variable-binding
-                // we can thus safely pick the first one arbitrarily, provided we correct binding
-                val origPatWithoutBind = commonPattern match {
-                  case Bind(b, orig) => orig
-                  case o => o
-                }
-                // need to replace `defaultSym` as well -- it's used in `defaultBody` (see `jumpToDefault` above)
-                val unifiedBody = guardedBody.substituteSymbols(defaultSym :: binders, binder :: binders.map(_ => binder))
-                (Bind(binder, origPatWithoutBind), unifiedBody)
-              }
+        // requires cases.exists(_.guard != EmptyTree) (otherwise the rewrite is pointless)
+        var remainingCases = cases
+        val collapsed      = collection.mutable.ListBuffer.empty[CaseDef]
 
-            List(CaseDef(pat, EmptyTree, guardedBodySubst))
+        // when some of collapsed cases (except for the default case itself) did not include an un-guarded case
+        // we'll need to emit a labeldef for the default case
+        var needDefault  = false
+
+        while (remainingCases.nonEmpty) {
+          val currCase              = remainingCases.head
+          val currIsDefault         = isDefault(CaseDef(currCase.pat, EmptyTree, EmptyTree))
+          val (overlapping, others) = remainingCases.tail partition (caseImplies(currCase))
+
+          val unguardedComesLastOrAbsent = (currCase.guard == EmptyTree && overlapping.isEmpty) || {
+            val unguarded = overlapping.indexWhere(_.guard == EmptyTree)
+            // if all cases are guarded we will have to jump to the default case in the final else
+            // (except if we're collapsing the default case itself)
+            ((unguarded == -1 && {if (!currIsDefault) needDefault = true; true}) ||
+            // last case is not guarded, no need to jump to the default here
+             (unguarded == overlapping.length-1))
           }
 
-        @annotation.tailrec def partitionAndCollapse(cases: List[CaseDef], accum: List[CaseDef] = Nil): List[CaseDef] =
-          if (cases.isEmpty) accum
-          else {
-            val (same, others) = cases.tail partition (caseChecksSameConst(cases.head))
-            partitionAndCollapse(others, accum ++ collapse(cases.head :: same))
-          }
+          if (unguardedComesLastOrAbsent /*(1)*/ && overlapping.forall(caseEquals(currCase)) /*(2)*/) {
+            collapsed += (
+              if (overlapping.isEmpty && currCase.guard == EmptyTree) currCase
+              else collapse(currCase :: overlapping, currIsDefault)
+            )
 
-        // common case: no rewrite needed when there are no guards
-        if (cases.forall(c => c.guard == EmptyTree)) cases
-        else partitionAndCollapse(cases)
+            remainingCases = others
+          } else { // fail
+            collapsed.clear()
+            remainingCases = Nil
+          }
+        }
+
+        (collapsed.toList, needDefault)
       }
 
-      private def caseChecksSameConst(x: CaseDef)(y: CaseDef) = (x, y) match {
+      private def caseEquals(x: CaseDef)(y: CaseDef) = patternEquals(x.pat)(y.pat)
+      private def patternEquals(x: Tree)(y: Tree): Boolean = (x, y) match {
+        case (Alternative(pats), _) => pats.forall(p => patternEquals(p)(y))
+        case (_, Alternative(pats)) => pats.forall(q => patternEquals(x)(q))
         // regular switch
-        case (CaseDef(Literal(Constant(cx)), _, _), CaseDef(Literal(Constant(cy)), _, _)) => cx == cy
-        case (CaseDef(Ident(nme.WILDCARD), _, _), CaseDef(Ident(nme.WILDCARD), _, _)) => true
+        case (Literal(Constant(cx)), Literal(Constant(cy))) => cx == cy
+        case (Ident(nme.WILDCARD), Ident(nme.WILDCARD))     => true
         // type-switch for catch
-        case (CaseDef(Bind(_, Typed(Ident(nme.WILDCARD), tpX)), _, _), CaseDef(Bind(_, Typed(Ident(nme.WILDCARD), tpY)), _, _)) => tpX.tpe =:= tpY.tpe
+        case (Bind(_, Typed(Ident(nme.WILDCARD), tpX)), Bind(_, Typed(Ident(nme.WILDCARD), tpY))) => tpX.tpe =:= tpY.tpe
         case _ => false
       }
 
-      private def checkNoGuards(cs: List[CaseDef]) =
-        if (cs.exists{case CaseDef(_, g, _) => g != EmptyTree case _ => false}) None
-        else Some(cs)
+      private def caseImplies(x: CaseDef)(y: CaseDef) = patternImplies(x.pat)(y.pat)
+      private def patternImplies(x: Tree)(y: Tree): Boolean = (x, y) match {
+        // since alternatives are flattened, must treat them as separate cases
+        case (Alternative(pats), _) => pats.exists(p => patternImplies(p)(y))
+        case (_, Alternative(pats)) => pats.exists(q => patternImplies(x)(q))
+        // regular switch
+        case (Literal(Constant(cx)), Literal(Constant(cy))) => cx == cy
+        case (Ident(nme.WILDCARD), _)                       => true
+        // type-switch for catch -- TODO: instanceOfTpImplies
+        case (Bind(_, Typed(Ident(nme.WILDCARD), tpX)), Bind(_, Typed(Ident(nme.WILDCARD), tpY))) => tpY.tpe <:< tpX.tpe
+        case _ => false
+      }
 
-      // requires(cs.forall(_.guard == EmptyTree))
+      private def noGuards(cs: List[CaseDef]): Boolean = cs.forall{ _.guard == EmptyTree }
+
+      // must do this before removing guards from cases and collapsing (SI-6011, SI-6048)
       private def unreachableCase(cs: List[CaseDef]): Option[CaseDef] = {
         var cases = cs
         var unreachable: Option[CaseDef] = None
 
         while (cases.nonEmpty && unreachable.isEmpty) {
-          if (isDefault(cases.head) && cases.tail.nonEmpty) unreachable = Some(cases.tail.head)
-          else unreachable = cases.tail.find(caseChecksSameConst(cases.head))
+          val currCase = cases.head
+          if (isDefault(currCase) && cases.tail.nonEmpty) // subsumed by the else if that follows, but faster
+            unreachable = Some(cases.tail.head)
+          else if (currCase.guard == EmptyTree || currCase.guard.tpe =:= ConstantType(Constant(true)))
+            unreachable = cases.tail.find(caseImplies(currCase))
+          else if (currCase.guard.tpe =:= ConstantType(Constant(false)))
+            unreachable = Some(currCase)
 
           cases = cases.tail
         }
@@ -3043,68 +3099,80 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
       }
 
       // empty list ==> failure
-      def apply(cases: List[(Symbol, List[TreeMaker])], pt: Type): List[CaseDef] = {
-        val caseDefs = cases map { case (scrutSym, makers) =>
-          makers match {
-            // default case
-            case GuardAndBodyTreeMakers(guard, body) =>
-              Some(defaultCase(scrutSym, guard, body))
-            // constant (or typetest for typeSwitch)
-            case SwitchableTreeMaker(pattern) :: GuardAndBodyTreeMakers(guard, body) =>
-              Some(CaseDef(pattern, guard, body))
-            // alternatives
-            case AlternativesTreeMaker(_, altss, _) :: GuardAndBodyTreeMakers(guard, body) if alternativesSupported =>
-              val switchableAlts = altss map {
-                case SwitchableTreeMaker(pattern) :: Nil =>
-                  Some(pattern)
-                case _ =>
-                  None
-              }
+      def apply(cases: List[(Symbol, List[TreeMaker])], pt: Type): List[CaseDef] =
+        // generate if-then-else for 1 case switch (avoids verify error... can't imagine a one-case switch being faster than if-then-else anyway)
+        if (cases.isEmpty || cases.tail.isEmpty) Nil
+        else {
+          val caseDefs = cases map { case (scrutSym, makers) =>
+            makers match {
+              // default case
+              case GuardAndBodyTreeMakers(guard, body) =>
+                Some(defaultCase(scrutSym, guard, body))
+              // constant (or typetest for typeSwitch)
+              case SwitchableTreeMaker(pattern) :: GuardAndBodyTreeMakers(guard, body) =>
+                Some(CaseDef(pattern, guard, body))
+              // alternatives
+              case AlternativesTreeMaker(_, altss, _) :: GuardAndBodyTreeMakers(guard, body) if alternativesSupported =>
+                val switchableAlts = altss map {
+                  case SwitchableTreeMaker(pattern) :: Nil =>
+                    Some(pattern)
+                  case _ =>
+                    None
+                }
 
-              // succeed if they were all switchable
-              sequence(switchableAlts) map { switchableAlts =>
-                CaseDef(Alternative(switchableAlts), guard, body)
-              }
-            case _ =>
-              // patmatDebug("can't emit switch for "+ makers)
-              None //failure (can't translate pattern to a switch)
-          }
-        }
-
-        (for(
-          caseDefsWithGuards <- sequence(caseDefs);
-          collapsed = collapseGuardedCases(caseDefsWithGuards);
-          caseDefs <- checkNoGuards(collapsed)) yield {
-            if (!unchecked)
-              unreachableCase(caseDefs) foreach (cd => reportUnreachable(cd.body.pos))
-
-            // if we rewrote, we may need the default label to jump there (but then again, we may not)
-            // TODO: make more precise; we don't need the default label if
-            //  - all collapsed cases included an un-guarded case (some of the guards of each case will always be true)
-            //  - or: there was no default case (if all the guards of a case fail, it's a matcherror for sure)
-            val needDefaultLabel = (collapsed != caseDefsWithGuards)
-
-            def wrapInDefaultLabelDef(cd: CaseDef): CaseDef =
-              if (needDefaultLabel && canJump) deriveCaseDef(cd){ b =>
-                // TODO: can b.tpe ever be null? can't really use pt, see e.g. pos/t2683 or cps/match1.scala
-                defaultLabel setInfo MethodType(Nil, if (b.tpe != null) b.tpe else pt)
-                LabelDef(defaultLabel, Nil, b)
-              } else cd
-
-            (caseDefs partition isDefault) match {
-              case (Nil, caseDefs) => caseDefs :+ wrapInDefaultLabelDef(defaultCase())
-              case (default :: Nil, caseDefs) if canJump || !needDefaultLabel =>
-                // we either didn't collapse (and thus definitely didn't have to emit a jump),
-                // or we canJump (and then the potential jumps in collapsed are ok)
-                caseDefs :+ wrapInDefaultLabelDef(default)
-              case _ => Nil
-                // TODO: if (canJump) error message (but multiple defaults should be caught by unreachability)
-                // if (!canJump) we got ourselves in the situation where we might need to emit a jump when we can't (in exception handler)
-                //  --> TODO: refine the condition to detect whether we actually really needed to jump, but this seems relatively rare
+                // succeed if they were all switchable
+                sequence(switchableAlts) map { switchableAlts =>
+                  CaseDef(Alternative(switchableAlts), guard, body)
+                }
+              case _ =>
+                // patmatDebug("can't emit switch for "+ makers)
+                None //failure (can't translate pattern to a switch)
             }
           }
-        ) getOrElse Nil
-      }
+
+          val caseDefsWithGuards = sequence(caseDefs) match {
+            case None      => return Nil
+            case Some(cds) => cds
+          }
+
+          val allReachable =
+            if (unchecked) true
+            else {
+              val unreachables = unreachableCase(caseDefsWithGuards)
+              unreachables foreach {cd => reportUnreachable(cd.body.pos)}
+              // a switch with duplicate cases yields a verify error,
+              // and a switch with duplicate cases and guards cannot soundly be rewritten to an unguarded switch
+              // (even though the verify error would disappear, the behaviour would change)
+              unreachables.isEmpty
+            }
+
+          if (!allReachable) Nil
+          else if (noGuards(caseDefsWithGuards)) {
+            if (isDefault(caseDefsWithGuards.last)) caseDefsWithGuards
+            else caseDefsWithGuards :+ defaultCase()
+          } else {
+            // collapse identical cases with different guards, push guards into body for all guarded cases
+            // this translation is only sound if there are no unreachable (duplicate) cases
+            // it should only be run if there are guarded cases, and on failure it returns Nil
+            val (collapsed, needDefaultLabel) = collapseGuardedCases(caseDefsWithGuards)
+
+            if (collapsed.isEmpty || (needDefaultLabel && !canJump)) Nil
+            else {
+              def wrapInDefaultLabelDef(cd: CaseDef): CaseDef =
+                if (needDefaultLabel) deriveCaseDef(cd){ b =>
+                  // TODO: can b.tpe ever be null? can't really use pt, see e.g. pos/t2683 or cps/match1.scala
+                  defaultLabel setInfo MethodType(Nil, if (b.tpe != null) b.tpe else pt)
+                  LabelDef(defaultLabel, Nil, b)
+                } else cd
+
+              val last = collapsed.last
+              if (isDefault(last)) {
+                if (!needDefaultLabel) collapsed
+                else collapsed.init :+ wrapInDefaultLabelDef(last)
+              } else collapsed :+ wrapInDefaultLabelDef(defaultCase())
+            }
+          }
+        }
     }
 
     class RegularSwitchMaker(scrutSym: Symbol, matchFailGenOverride: Option[Tree => Tree], val unchecked: Boolean) extends SwitchMaker {
