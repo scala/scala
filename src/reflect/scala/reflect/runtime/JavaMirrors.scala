@@ -133,15 +133,22 @@ trait JavaMirrors extends internal.SymbolTable with api.JavaUniverse { self: Sym
       def symbol = wholemirror.classSymbol(obj.getClass)
       def reflectField(field: TermSymbol): FieldMirror = {
         // [Eugene+++] check whether `field` represents a member of a `symbol`
-        if (field.isMethod || field.isModule) throw new Error(s"""
-          |expected a field symbol, you provided a ${field.kind} symbol
-          |A typical cause of this problem is using a field accessor symbol instead of a field symbol.
-          |To obtain a field symbol append nme.LOCAL_SUFFIX_STRING to the name of the field,
-          |when searching for a member with Type.members or Type.declarations.
-          |This is a temporary inconvenience that will be resolved before 2.10.0-final.
-          |More information can be found here: https://issues.scala-lang.org/browse/SI-5895.
-        """.trim.stripMargin)
-        new JavaFieldMirror(obj, field)
+        if ((field.isMethod && !field.isAccessor) || field.isModule) throw new Error(s"expected a field or accessor method symbol, you provided a ${field.kind} symbol")
+        val name =
+          if (field.isGetter) nme.getterToLocal(field.name)
+          else if (field.isSetter) nme.getterToLocal(nme.setterToGetter(field.name))
+          else field.name
+        val field1 = (field.owner.info decl name).asTermSymbol
+        try fieldToJava(field1)
+        catch {
+          case _: NoSuchFieldException =>
+            throw new Error(s"""
+              |this Scala field isn't represented as a Java field, neither it has a Java accessor method
+              |note that private parameters of class constructors don't get mapped onto fields and/or accessors,
+              |unless they are used outside of their declaring constructors.
+            """.trim.stripMargin)
+        }
+        new JavaFieldMirror(obj, field1)
       }
       def reflectMethod(method: MethodSymbol): MethodMirror = {
         // [Eugene+++] check whether `method` represents a member of a `symbol`
