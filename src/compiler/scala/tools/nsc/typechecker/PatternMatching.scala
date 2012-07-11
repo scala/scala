@@ -8,7 +8,7 @@ package scala.tools.nsc
 package typechecker
 
 import symtab._
-import Flags.{MUTABLE, METHOD, LABEL, SYNTHETIC}
+import Flags.{MUTABLE, METHOD, LABEL, SYNTHETIC, HIDDEN}
 import language.postfixOps
 import scala.tools.nsc.transform.TypingTransformers
 import scala.tools.nsc.transform.Transform
@@ -949,7 +949,7 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
 
           // ExplicitOuter replaces `Select(q, outerSym) OBJ_EQ expectedPrefix` by `Select(q, outerAccessor(outerSym.owner)) OBJ_EQ expectedPrefix`
           // if there's an outer accessor, otherwise the condition becomes `true` -- TODO: can we improve needsOuterTest so there's always an outerAccessor?
-          val outer = expectedTp.typeSymbol.newMethod(vpmName.outer) setInfo expectedTp.prefix setFlag SYNTHETIC
+          val outer = expectedTp.typeSymbol.newMethod(vpmName.outer) setInfo expectedTp.prefix setFlag SYNTHETIC | HIDDEN
 
           (Select(codegen._asInstanceOf(testedBinder, expectedTp), outer)) OBJ_EQ expectedOuter
         }
