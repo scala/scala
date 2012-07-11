@@ -10,7 +10,7 @@ package model
 
 import scala.collection._
 import comment._
-
+import diagram._
 
 /** An entity in a Scaladoc universe. Entities are declarations in the program and correspond to symbols in the
   * compiler. Entities model the following Scala concepts:
@@ -23,6 +23,9 @@ import comment._
   *  - type and value parameters;
   *  - annotations. */
 trait Entity {
+
+  /** Similar to symbols, so we can track entities */
+  def id: Int
 
   /** The name of the entity. Note that the name does not qualify this entity uniquely; use its `qualifiedName`
     * instead. */
@@ -48,6 +51,8 @@ trait Entity {
   /** The annotations attached to this entity, if any. */
   def annotations: List[Annotation]
 
+  /** The kind of the entity */
+  def kind: String
 }
 
 object Entity {
@@ -86,9 +91,14 @@ trait TemplateEntity extends Entity {
   /** Whether this template is a case class. */
   def isCaseClass: Boolean
 
+  /** Whether or not the template was defined in a package object */
+  def inPackageObject: Boolean
+
   /** The self-type of this template, if it differs from the template type. */
   def selfType : Option[TypeEntity]
 
+  /** The type of this entity, with type members */
+  def ownType: TypeEntity
 }
 
 
@@ -167,6 +177,10 @@ trait MemberEntity extends Entity {
   /** Whether this member is abstract. */
   def isAbstract: Boolean
 
+  /** If this symbol is a use case, the useCaseOf will contain the member it was derived from, containing the full
+    * signature and the complete parameter descriptions. */
+  def useCaseOf: Option[MemberEntity] = None
+
   /** If this member originates from an implicit conversion, we set the implicit information to the correct origin */
   def byConversion: Option[ImplicitConversion]
 }
@@ -177,7 +191,7 @@ object MemberEntity {
 }
 
 /** An entity that is parameterized by types */
-trait HigherKinded extends Entity {
+trait HigherKinded {
 
   /** The type parameters of this entity. */
   def typeParams: List[TypeParam]
@@ -187,8 +201,14 @@ trait HigherKinded extends Entity {
 
 /** A template (class, trait, object or package) which is referenced in the universe, but for which no further
   * documentation is available. Only templates for which a source file is given are documented by Scaladoc. */
-trait NoDocTemplate extends TemplateEntity
+trait NoDocTemplate extends TemplateEntity {
+  def kind = "<no doc>"
+}
 
+/** TODO: Document */
+trait NoDocTemplateMemberEntity extends TemplateEntity with MemberEntity {
+  def kind = "<no doc, mbr>"
+}
 
 /** A template (class, trait, object or package) for which documentation is available. Only templates for which
   * a source file is given are documented by Scaladoc. */
@@ -206,11 +226,10 @@ trait DocTemplateEntity extends TemplateEntity with MemberEntity {
     * only if the `docsourceurl` setting has been set. */
   def sourceUrl: Option[java.net.URL]
 
-  /** The direct super-type of this template. */
-  def parentType: Option[TypeEntity]
-
-  @deprecated("Use `linearizationTemplates` and `linearizationTypes` instead", "2.9.0")
-  def linearization: List[(TemplateEntity, TypeEntity)]
+  /** The direct super-type of this template
+      e.g: {{{class A extends B[C[Int]] with D[E]}}} will have two direct parents: class B and D
+      NOTE: we are dropping the refinement here! */
+  def parentTypes: List[(TemplateEntity, TypeEntity)]
 
   /** All class, trait and object templates which are part of this template's linearization, in lineratization order.
     * This template's linearization contains all of its direct and indirect super-classes and super-traits. */
@@ -220,9 +239,13 @@ trait DocTemplateEntity extends TemplateEntity with MemberEntity {
     * This template's linearization contains all of its direct and indirect super-types. */
   def linearizationTypes: List[TypeEntity]
 
-  /**All class, trait and object templates for which this template is a direct or indirect super-class or super-trait.
-   * Only templates for which documentation is available in the universe (`DocTemplateEntity`) are listed. */
-  def subClasses: List[DocTemplateEntity]
+  /** All class, trait and object templates for which this template is a direct or indirect super-class or super-trait.
+   *  Only templates for which documentation is available in the universe (`DocTemplateEntity`) are listed. */
+  def allSubClasses: List[DocTemplateEntity]
+
+  /** All class, trait and object templates for which this template is a *direct* super-class or super-trait.
+   *  Only templates for which documentation is available in the universe (`DocTemplateEntity`) are listed. */
+  def directSubClasses: List[DocTemplateEntity]
 
   /** All members of this template. If this template is a package, only templates for which documentation is available
     * in the universe (`DocTemplateEntity`) are listed. */
@@ -250,11 +273,29 @@ trait DocTemplateEntity extends TemplateEntity with MemberEntity {
 
   /** The implicit conversions this template (class or trait, objects and packages are not affected) */
   def conversions: List[ImplicitConversion]
+
+  /** The shadowing information for the implicitly added members */
+  def implicitsShadowing: Map[MemberEntity, ImplicitMemberShadowing]
+
+  /** Classes that can be implcitly converted to this class */
+  def incomingImplicitlyConvertedClasses: List[(DocTemplateEntity, ImplicitConversion)]
+
+  /** Classes to which this class can be implicitly converted to
+      NOTE: Some classes might not be included in the scaladoc run so they will be NoDocTemplateEntities */
+  def outgoingImplicitlyConvertedClasses: List[(TemplateEntity, TypeEntity, ImplicitConversion)]
+
+  /** If this template takes place in inheritance and implicit conversion relations, it will be shown in this diagram */
+  def inheritanceDiagram: Option[Diagram]
+
+  /** If this template contains other templates, such as classes and traits, they will be shown in this diagram */
+  def contentDiagram: Option[Diagram]
 }
 
 
 /** A trait template. */
-trait Trait extends DocTemplateEntity with HigherKinded
+trait Trait extends DocTemplateEntity with HigherKinded {
+  def kind = "trait"
+}
 
 
 /** A class template. */
@@ -270,11 +311,14 @@ trait Class extends Trait with HigherKinded {
     * parameters cannot be curried, the outer list has exactly one element. */
   def valueParams: List[List[ValueParam]]
 
+  override def kind = "class"
 }
 
 
 /** An object template. */
-trait Object extends DocTemplateEntity
+trait Object extends DocTemplateEntity {
+  def kind = "object"
+}
 
 
 /** A package template. A package is in the universe if it is declared as a package object, or if it
@@ -290,6 +334,8 @@ trait Package extends Object {
 
   /** All packages that are member of this package. */
   def packages: List[Package]
+
+  override def kind = "package"
 }
 
 
@@ -305,10 +351,6 @@ trait NonTemplateMemberEntity extends MemberEntity {
     * It corresponds to a real member, and provides a simplified, yet compatible signature for that member. */
   def isUseCase: Boolean
 
-  /** If this symbol is a use case, the useCaseOf will contain the member it was derived from, containing the full
-    * signature and the complete parameter descriptions. */
-  def useCaseOf: Option[MemberEntity]
-
   /** Whether this member is a bridge member. A bridge member does only exist for binary compatibility reasons
     * and should not appear in ScalaDoc. */
   def isBridge: Boolean
@@ -323,6 +365,7 @@ trait Def extends NonTemplateMemberEntity with HigherKinded {
     * Each parameter block is a list of value parameters. */
   def valueParams : List[List[ValueParam]]
 
+  def kind = "method"
 }
 
 
@@ -337,11 +380,14 @@ trait Constructor extends NonTemplateMemberEntity {
     * element. */
   def valueParams : List[List[ValueParam]]
 
+  def kind = "constructor"
 }
 
 
 /** A value (`val`), lazy val (`lazy val`) or variable (`var`) of a template. */
-trait Val extends NonTemplateMemberEntity
+trait Val extends NonTemplateMemberEntity {
+  def kind = "[lazy] value/variable"
+}
 
 
 /** An abstract type member of a template. */
@@ -353,6 +399,7 @@ trait AbstractType extends NonTemplateMemberEntity with HigherKinded {
   /** The upper bound for this abstract type, if it has been defined. */
   def hi: Option[TypeEntity]
 
+  def kind = "abstract type"
 }
 
 
@@ -362,18 +409,14 @@ trait AliasType extends NonTemplateMemberEntity with HigherKinded {
   /** The type aliased by this type alias. */
   def alias: TypeEntity
 
+  def kind = "type alias"
 }
 
 
 /** A parameter to an entity. */
-trait ParameterEntity extends Entity {
+trait ParameterEntity {
 
-  /** Whether this parameter is a type parameter. */
-  def isTypeParam: Boolean
-
-  /** Whether this parameter is a value parameter. */
-  def isValueParam: Boolean
-
+  def name: String
 }
 
 
@@ -388,7 +431,6 @@ trait TypeParam extends ParameterEntity with HigherKinded {
 
   /** The upper bound for this type parameter, if it has been defined. */
   def hi: Option[TypeEntity]
-
 }
 
 
@@ -403,7 +445,6 @@ trait ValueParam extends ParameterEntity {
 
   /** Whether this value parameter is implicit. */
   def isImplicit: Boolean
-
 }
 
 
@@ -416,6 +457,7 @@ trait Annotation extends Entity {
   /** The arguments passed to the constructor of the annotation class. */
   def arguments: List[ValueArgument]
 
+  def kind = "annotation"
 }
 
 /** A trait that signals the member results from an implicit conversion */
@@ -426,6 +468,15 @@ trait ImplicitConversion {
 
   /** The result type after the conversion */
   def targetType: TypeEntity
+
+  /** The result type after the conversion
+   *  Note: not all targetTypes have a corresponding template. Examples include conversions resulting in refinement
+   *  types. Need to check it's not option!
+   */
+  def targetTemplate: Option[TemplateEntity]
+
+  /** The components of the implicit conversion type parents */
+  def targetTypeComponents: List[(TemplateEntity, TypeEntity)]
 
   /** The entity for the method that performed the conversion, if it's documented (or just its name, otherwise) */
   def convertorMethod: Either[MemberEntity, String]
@@ -446,11 +497,29 @@ trait ImplicitConversion {
   def members: List[MemberEntity]
 }
 
-/** A trait that encapsulates a constraint necessary for implicit conversion */
-trait Constraint {
-  // /** The implicit conversion during which this constraint appears */
-  // def conversion: ImplicitConversion
+/** Shadowing captures the information that the member is shadowed by some other members
+ *  There are two cases of implicitly added member shadowing:
+ *  1) shadowing from a original class member (the class already has that member)
+ *     in this case, it won't be possible to call the member directly, the type checker will fail attempting to adapt
+ *     the call arguments (or if they fit it will call the original class' method)
+ *  2) shadowing from other possible implicit conversions ()
+ *     this will result in an ambiguous implicit converion error
+ */
+trait ImplicitMemberShadowing {
+  /** The members that shadow the current entry use .inTemplate to get to the template name */
+  def shadowingMembers: List[MemberEntity]
+
+  /** The members that ambiguate this implicit conversion
+      Note: for ambiguatingMembers you have the following invariant:
+      assert(ambiguatingMembers.foreach(_.byConversion.isDefined) */
+  def ambiguatingMembers: List[MemberEntity]
+
+  def isShadowed: Boolean = !shadowingMembers.isEmpty
+  def isAmbiguous: Boolean = !ambiguatingMembers.isEmpty
 }
+
+/** A trait that encapsulates a constraint necessary for implicit conversion */
+trait Constraint
 
 /** A constraint involving a type parameter which must be in scope */
 trait ImplicitInScopeConstraint extends Constraint {

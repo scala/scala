@@ -1,2 +1,3 @@
-List((test.B,B), (test.A,A), (scala.AnyRef,AnyRef), (scala.Any,Any))
+List(test.B, test.A, scala.AnyRef, scala.Any)
+List(B, A, AnyRef, Any)
 Done.

@@ -9,6 +9,7 @@
 
 /**
  * Core Scala types. They are always available without an explicit import.
+ * @contentDiagram hideNodes "scala.Serializable"
  */
 package object scala {
   type Throwable = java.lang.Throwable
@@ -104,6 +105,15 @@ package object scala {
 
   type PartialOrdering[T] = scala.math.PartialOrdering[T]
   type PartiallyOrdered[T] = scala.math.PartiallyOrdered[T]
+
+  type Either[+A, +B] = scala.util.Either[A, B]
+  val Either = scala.util.Either
+
+  type Left[+A, +B] = scala.util.Left[A, B]
+  val Left = scala.util.Left
+
+  type Right[+A, +B] = scala.util.Right[A, B]
+  val Right = scala.util.Right
 
   // Annotations which we might move to annotation.*
 /*

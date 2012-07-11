@@ -41,7 +41,7 @@ trait Mirrors extends api.Mirrors {
       if (result != NoSymbol) result
       else {
         if (settings.debug.value) { log(sym.info); log(sym.info.members) }//debug
-        tryMissingHooks(owner, name) orElse {
+        thisMirror.missingHook(owner, name) orElse {
           MissingRequirementError.notFound((if (path.isTermName) "object " else "class ")+path+" in "+thisMirror)
         }
       }
@@ -51,7 +51,7 @@ trait Mirrors extends api.Mirrors {
 
     protected def symbolTableMissingHook(owner: Symbol, name: Name): Symbol = self.missingHook(owner, name)
 
-    private[reflect] def tryMissingHooks(owner: Symbol, name: Name): Symbol = mirrorMissingHook(owner, name) orElse symbolTableMissingHook(owner, name)
+    private[scala] def missingHook(owner: Symbol, name: Name): Symbol = mirrorMissingHook(owner, name) orElse symbolTableMissingHook(owner, name)
 
     /** If you're looking for a class, pass a type name.
      *  If a module, a term name.

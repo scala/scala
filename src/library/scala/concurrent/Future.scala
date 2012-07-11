@@ -8,7 +8,7 @@
 
 package scala.concurrent
 
-
+import language.higherKinds
 
 import java.util.concurrent.{ ConcurrentLinkedQueue, TimeUnit, Callable }
 import java.util.concurrent.TimeUnit.{ NANOSECONDS => NANOS, MILLISECONDS ⇒ MILLIS }
@@ -18,15 +18,14 @@ import java.{ lang => jl }
 import java.util.concurrent.atomic.{ AtomicReferenceFieldUpdater, AtomicInteger, AtomicBoolean }
 
 import scala.concurrent.util.Duration
-import scala.concurrent.impl.NonFatal
+import scala.util.control.NonFatal
 import scala.Option
+import scala.util.{Try, Success, Failure}
 
 import scala.annotation.tailrec
-import scala.collection.mutable.Stack
 import scala.collection.mutable.Builder
 import scala.collection.generic.CanBuildFrom
 import scala.reflect.ClassTag
-import language.higherKinds
 
 
 
@@ -137,7 +136,7 @@ trait Future[+T] extends Awaitable[T] {
    *  $callbackInContext
    */
   def onFailure[U](callback: PartialFunction[Throwable, U])(implicit executor: ExecutionContext): Unit = onComplete {
-    case Left(t) if (isFutureThrowable(t) && callback.isDefinedAt(t)) => callback(t)
+    case Left(t) if (impl.Future.isFutureThrowable(t) && callback.isDefinedAt(t)) => callback(t)
     case _ =>
   }(executor)
 
@@ -579,6 +578,20 @@ object Future {
     classOf[Double]  -> classOf[jl.Double],
     classOf[Unit]    -> classOf[scala.runtime.BoxedUnit]
   )
+
+  /** Creates an already completed Future with the specified exception.
+   *  
+   *  @tparam T       the type of the value in the future
+   *  @return         the newly created `Future` object
+   */
+  def failed[T](exception: Throwable): Future[T] = Promise.failed(exception).future
+
+  /** Creates an already completed Future with the specified result.
+   *  
+   *  @tparam T       the type of the value in the future
+   *  @return         the newly created `Future` object
+   */
+  def successful[T](result: T): Future[T] = Promise.successful(result).future
   
   /** Starts an asynchronous computation and returns a `Future` object with the result of that computation.
   *
@@ -709,5 +722,12 @@ object Future {
   }
 }
 
-
+/** A marker indicating that a `java.lang.Runnable` provided to `scala.concurrent.ExecutionContext`
+ * wraps a callback provided to `Future.onComplete`.
+ * All callbacks provided to a `Future` end up going through `onComplete`, so this allows an
+ * `ExecutionContext` to special-case callbacks that were executed by `Future` if desired.
+ */
+trait OnCompleteRunnable {
+  self: Runnable =>
+}
 

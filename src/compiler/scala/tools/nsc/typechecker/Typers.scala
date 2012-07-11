@@ -47,7 +47,6 @@ trait Typers extends Modes with Adaptations with Tags {
   def resetTyper() {
     //println("resetTyper called")
     resetContexts()
-    resetNamer()
     resetImplicits()
     transformed.clear()
   }
@@ -4431,7 +4430,7 @@ trait Typers extends Modes with Adaptations with Tags {
 
           if (!qual.tpe.widen.isErroneous) {
             if ((mode & QUALmode) != 0) {
-              val lastTry = missingHook(qual.tpe.typeSymbol, name)
+              val lastTry = rootMirror.missingHook(qual.tpe.typeSymbol, name)
               if (lastTry != NoSymbol) return typed1(tree setSymbol lastTry, mode, pt)
             }
             NotAMemberError(tree, qual, name)
@@ -4620,10 +4619,33 @@ trait Typers extends Modes with Adaptations with Tags {
             if (impSym.exists) {
               var impSym1: Symbol = NoSymbol
               var imports1 = imports.tail
+
+              /** It's possible that seemingly conflicting identifiers are
+               *  identifiably the same after type normalization.  In such cases,
+               *  allow compilation to proceed.  A typical example is:
+               *    package object foo { type InputStream = java.io.InputStream }
+               *    import foo._, java.io._
+               */
               def ambiguousImport() = {
-                if (!(imports.head.qual.tpe =:= imports1.head.qual.tpe && impSym == impSym1))
-                  ambiguousError(
-                    "it is imported twice in the same scope by\n"+imports.head +  "\nand "+imports1.head)
+                // The types of the qualifiers from which the ambiguous imports come.
+                // If the ambiguous name is a value, these must be the same.
+                def t1  = imports.head.qual.tpe
+                def t2  = imports1.head.qual.tpe
+                // The types of the ambiguous symbols, seen as members of their qualifiers.
+                // If the ambiguous name is a monomorphic type, we can relax this far.
+                def mt1 = t1 memberType impSym
+                def mt2 = t2 memberType impSym1
+                // Monomorphism restriction on types is in part because type aliases could have the
+                // same target type but attach different variance to the parameters. Maybe it can be
+                // relaxed, but doesn't seem worth it at present.
+                if (t1 =:= t2 && impSym == impSym1)
+                  log(s"Suppressing ambiguous import: $t1 =:= $t2 && $impSym == $impSym1")
+                else if (mt1 =:= mt2 && name.isTypeName && impSym.isMonomorphicType && impSym1.isMonomorphicType)
+                  log(s"Suppressing ambiguous import: $mt1 =:= $mt2 && $impSym and $impSym1 are equivalent")
+                else {
+                  log(s"Import is genuinely ambiguous: !($t1 =:= $t2)")
+                  ambiguousError(s"it is imported twice in the same scope by\n${imports.head}\nand ${imports1.head}")
+                }
               }
               while (errorContainer == null && !imports1.isEmpty &&
                      (!imports.head.isExplicitImport(name) ||
@@ -4650,7 +4672,7 @@ trait Typers extends Modes with Adaptations with Tags {
               log("Allowing empty package member " + name + " due to settings.")
             else {
               if ((mode & QUALmode) != 0) {
-                val lastTry = missingHook(rootMirror.RootClass, name)
+                val lastTry = rootMirror.missingHook(rootMirror.RootClass, name)
                 if (lastTry != NoSymbol) return typed1(tree setSymbol lastTry, mode, pt)
               }
               if (settings.debug.value) {
@@ -5091,7 +5113,7 @@ trait Typers extends Modes with Adaptations with Tags {
 
         case SelectFromTypeTree(qual, selector) =>
           val qual1 = typedType(qual, mode)
-          if (qual1.tpe.isVolatile) TypeSelectionFromVolatileTypeError(tree, qual)
+          if (qual1.tpe.isVolatile) TypeSelectionFromVolatileTypeError(tree, qual1)
           else typedSelect(qual1, selector)
 
         case CompoundTypeTree(templ) =>

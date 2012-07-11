@@ -12,12 +12,12 @@ object Test extends ScaladocModelTest {
             def foo = ()
           }
 
-          trait B {
+          trait B extends A {
             @bridge()
             def foo = ()
           }
 
-          class C extends A with B
+          class C extends B
         }
     """
 

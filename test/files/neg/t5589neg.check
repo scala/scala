@@ -1,4 +1,4 @@
-t5589neg.scala:2: warning: `withFilter' method does not yet exist on Either.RightProjection[Int,String], using `filter' method instead
+t5589neg.scala:2: warning: `withFilter' method does not yet exist on scala.util.Either.RightProjection[Int,String], using `filter' method instead
   def f5(x: Either[Int, String])        = for ((y1, y2: String) <- x.right) yield ((y1, y2))
                                                                      ^
 t5589neg.scala:2: error: constructor cannot be instantiated to expected type;
@@ -6,7 +6,7 @@ t5589neg.scala:2: error: constructor cannot be instantiated to expected type;
  required: String
   def f5(x: Either[Int, String])        = for ((y1, y2: String) <- x.right) yield ((y1, y2))
                                                ^
-t5589neg.scala:3: warning: `withFilter' method does not yet exist on Either.RightProjection[Int,String], using `filter' method instead
+t5589neg.scala:3: warning: `withFilter' method does not yet exist on scala.util.Either.RightProjection[Int,String], using `filter' method instead
   def f6(x: Either[Int, String])        = for ((y1, y2: Any) <- x.right) yield ((y1, y2))
                                                                   ^
 t5589neg.scala:3: error: constructor cannot be instantiated to expected type;

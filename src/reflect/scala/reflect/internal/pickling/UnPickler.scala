@@ -818,7 +818,7 @@ abstract class UnPickler /*extends reflect.generic.UnPickler*/ {
       throw new RuntimeException("malformed Scala signature of " + classRoot.name + " at " + readIndex + "; " + msg)
 
     protected def errorMissingRequirement(name: Name, owner: Symbol): Symbol =
-      missingHook(owner, name) orElse MissingRequirementError.signal(
+      mirrorThatLoaded(owner).missingHook(owner, name) orElse MissingRequirementError.signal(
         s"bad reference while unpickling $filename: ${name.longString} not found in ${owner.tpe.widen}"
       )
 
@@ -832,8 +832,10 @@ abstract class UnPickler /*extends reflect.generic.UnPickler*/ {
      *  Similar in intent to what SymbolLoader does (but here we don't have access to
      *  error reporting, so we rely on the typechecker to report the error).
      */
-    def toTypeError(e: MissingRequirementError) =
+    def toTypeError(e: MissingRequirementError) = {
+      // e.printStackTrace()
       new TypeError(e.msg)
+    }
 
     /** A lazy type which when completed returns type at index `i`. */
     private class LazyTypeRef(i: Int) extends LazyType {

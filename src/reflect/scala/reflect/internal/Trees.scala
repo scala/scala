@@ -15,20 +15,13 @@ trait Trees extends api.Trees { self: SymbolTable =>
 
   private[scala] var nodeCount = 0
 
-  abstract class Tree extends TreeContextApiImpl with Product {
+  abstract class Tree extends TreeContextApiImpl with Attachable with Product {
     val id = nodeCount // TODO: add to attachment?
     nodeCount += 1
 
     Statistics.incCounter(TreesStats.nodeByType, getClass)
 
-    @inline final def pos: Position = rawatt.pos
-    def pos_=(pos: Position): Unit = rawatt = (rawatt withPos pos)
-    def setPos(newpos: Position): this.type = { pos = newpos; this }
-
-    private var rawatt: Attachments { type Pos = Position } = NoPosition
-    def attachments = rawatt
-    def addAttachment(attachment: Any): this.type = { rawatt = rawatt.add(attachment); this }
-    def removeAttachment[T: ClassTag]: this.type = { rawatt = rawatt.remove[T]; this }
+    @inline final override def pos: Position = rawatt.pos
 
     private[this] var rawtpe: Type = _
     @inline final def tpe = rawtpe

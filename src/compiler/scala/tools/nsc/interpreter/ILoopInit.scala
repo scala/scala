@@ -93,7 +93,7 @@ trait ILoopInit {
       postInitThunks foreach (f => addThunk(f()))
       runThunks()
     } catch {
-      case ex =>
+      case ex: Throwable =>
         val message = new java.io.StringWriter()
         ex.printStackTrace(new java.io.PrintWriter(message))
         initError = message.toString

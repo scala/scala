@@ -62,6 +62,10 @@ trait Types extends base.Types { self: Universe =>
      *  the empty list for all other types */
     def typeParams: List[Symbol]
 
+    /** For a (nullary) method or poly type, its direct result type,
+     *  the type itself for all other types. */
+    def resultType: Type
+
     /** Is this type a type constructor that is missing its type arguments?
      */
     def isHigherKinded: Boolean   // !!! This should be called "isTypeConstructor", no?

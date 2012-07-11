@@ -4299,21 +4299,6 @@ trait Types extends api.Types { self: SymbolTable =>
       }
     }
 
-    /** Return `pre.baseType(clazz)`, or if that's `NoType` and `clazz` is a refinement, `pre` itself.
-     *  See bug397.scala for an example where the second alternative is needed.
-     *  The problem is that when forming the base type sequence of an abstract type,
-     *  any refinements in the base type list might be regenerated, and thus acquire
-     *  new class symbols. However, since refinements always have non-interesting prefixes
-     *  it looks OK to me to just take the prefix directly. */
-    def base(pre: Type, clazz: Symbol) = {
-      val b = pre.baseType(clazz)
-      // We come through here 20,000,000 times on a lib compile.
-      // Thus "NoType eq b" (reference, known type on left) rather
-      // than the more typical "b == NoType".
-      if ((NoType eq b) && clazz.isRefinementClass) pre
-      else b
-    }
-
     def apply(tp: Type): Type =
       if (skipPrefixOf(pre, clazz)) tp
       else tp match {
@@ -4334,7 +4319,7 @@ trait Types extends api.Types { self: SymbolTable =>
                 pre1
               }
             } else {
-              toPrefix(base(pre, clazz).prefix, clazz.owner)
+              toPrefix(pre.baseType(clazz).prefix, clazz.owner)
             }
           toPrefix(pre, clazz)
         case SingleType(pre, sym) =>
@@ -4414,7 +4399,7 @@ trait Types extends api.Types { self: SymbolTable =>
                   case t =>
                     throwError
                 }
-              } else toInstance(base(pre, clazz).prefix, clazz.owner)
+              } else toInstance(pre.baseType(clazz).prefix, clazz.owner)
             }
           toInstance(pre, clazz)
         case _ =>
@@ -5134,7 +5119,7 @@ trait Types extends api.Types { self: SymbolTable =>
       false
 
   private def equalSymsAndPrefixes(sym1: Symbol, pre1: Type, sym2: Symbol, pre2: Type): Boolean =
-    if (sym1 == sym2) sym1.hasPackageFlag || phase.erasedTypes || pre1 =:= pre2
+    if (sym1 == sym2) sym1.hasPackageFlag || sym1.owner.hasPackageFlag || phase.erasedTypes || pre1 =:= pre2
     else (sym1.name == sym2.name) && isUnifiable(pre1, pre2)
 
   /** Do `tp1` and `tp2` denote equivalent types? */
@@ -5621,7 +5606,7 @@ trait Types extends api.Types { self: SymbolTable =>
             val sym2 = tr2.sym
             val pre1 = tr1.pre
             val pre2 = tr2.pre
-            (((if (sym1 == sym2) phase.erasedTypes || isSubType(pre1, pre2, depth)
+            (((if (sym1 == sym2) phase.erasedTypes || sym1.owner.hasPackageFlag || isSubType(pre1, pre2, depth)
                else (sym1.name == sym2.name && !sym1.isModuleClass && !sym2.isModuleClass &&
                      (isUnifiable(pre1, pre2) ||
                       isSameSpecializedSkolem(sym1, sym2, pre1, pre2) ||

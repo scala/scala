@@ -1,0 +1,4 @@
+t6042.scala:7: error: illegal type selection from volatile type a.OpSemExp (with upper bound LazyExp[a.OpSemExp] with _$1)
+  def foo[AA <: LazyExp[_]](a: AA): a.OpSemExp#Val = ??? // a.OpSemExp is volatile, because of `with This`
+                                               ^
+one error found

@@ -9,7 +9,8 @@ object Test extends ScaladocModelTest {
     import access._
 
     val p = root._package("test")
-    println(p.linearization)
+    println(p.linearizationTemplates)
+    println(p.linearizationTypes)
   }
 }
 
