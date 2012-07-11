@@ -10,6 +10,7 @@ import scala.collection.{ mutable, immutable }
 import scala.collection.mutable.ListBuffer
 import util.Statistics
 import Flags._
+import base.Attachments
 
 trait Symbols extends api.Symbols { self: SymbolTable =>
   import definitions._
@@ -363,7 +364,8 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
   abstract class Symbol protected[Symbols] (initOwner: Symbol, initPos: Position, initName: Name)
           extends SymbolContextApiImpl
              with HasFlags
-             with Annotatable[Symbol] {
+             with Annotatable[Symbol]
+             with Attachable {
 
     type AccessBoundaryType = Symbol
     type AnnotationType     = AnnotationInfo
@@ -385,7 +387,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     def rawowner = _rawowner
     def rawflags = _rawflags
 
-    private var rawpos = initPos
+    rawatt = initPos
 
     val id = nextId() // identity displayed when -uniqid
     //assert(id != 3390, initName)
@@ -398,8 +400,6 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     def validTo = _validTo
     def validTo_=(x: Period) { _validTo = x}
 
-    def pos = rawpos
-    def setPos(pos: Position): this.type = { this.rawpos = pos; this }
     def setName(name: Name): this.type = { this.name = asNameType(name) ; this }
 
     // Update the surrounding scopes
@@ -1821,6 +1821,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
           setInfo (this.info cloneInfo clone)
           setAnnotations this.annotations
       )
+      this.attachments.all.foreach(clone.addAttachment)
       if (clone.thisSym != clone)
         clone.typeOfThis = (clone.typeOfThis cloneInfo clone)
 

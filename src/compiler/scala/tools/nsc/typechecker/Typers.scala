@@ -47,7 +47,6 @@ trait Typers extends Modes with Adaptations with Tags {
   def resetTyper() {
     //println("resetTyper called")
     resetContexts()
-    resetNamer()
     resetImplicits()
     transformed.clear()
   }
@@ -5114,7 +5113,7 @@ trait Typers extends Modes with Adaptations with Tags {
 
         case SelectFromTypeTree(qual, selector) =>
           val qual1 = typedType(qual, mode)
-          if (qual1.tpe.isVolatile) TypeSelectionFromVolatileTypeError(tree, qual)
+          if (qual1.tpe.isVolatile) TypeSelectionFromVolatileTypeError(tree, qual1)
           else typedSelect(qual1, selector)
 
         case CompoundTypeTree(templ) =>
