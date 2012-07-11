@@ -52,27 +52,6 @@ trait Namers extends MethodSynthesis {
   def newNamerFor(context: Context, tree: Tree): Namer =
     newNamer(context.makeNewScope(tree, tree.symbol))
 
-  // In the typeCompleter (templateSig) of a case class (resp it's module),
-  // synthetic `copy` (reps `apply`, `unapply`) methods are added. To compute
-  // their signatures, the corresponding ClassDef is needed.
-  // During naming, for each case class module symbol, the corresponding ClassDef
-  // is stored in this map. The map is cleared lazily, i.e. when the new symbol
-  // is created with the same name, the old one (if present) is wiped out, or the
-  // entry is deleted when it is used and no longer needed.
-  private val classOfModuleClass = perRunCaches.newWeakMap[Symbol, WeakReference[ClassDef]]()
-
-  // Default getters of constructors are added to the companion object in the
-  // typeCompleter of the constructor (methodSig). To compute the signature,
-  // we need the ClassDef. To create and enter the symbols into the companion
-  // object, we need the templateNamer of that module class.
-  // This map is extended during naming of classes, the Namer is added in when
-  // it's available, i.e. in the type completer (templateSig) of the module class.
-  private[typechecker] val classAndNamerOfModule = perRunCaches.newMap[Symbol, (ClassDef, Namer)]()
-
-  def resetNamer() {
-    classAndNamerOfModule.clear()
-  }
-
   abstract class Namer(val context: Context) extends MethodSynth with NamerContextErrors { thisNamer =>
 
     import NamerErrorGen._
@@ -618,7 +597,7 @@ trait Namers extends MethodSynthesis {
           MaxParametersCaseClassError(tree)
 
         val m = ensureCompanionObject(tree, caseModuleDef)
-        classOfModuleClass(m.moduleClass) = new WeakReference(tree)
+        m.moduleClass.addAttachment(new ClassForCaseCompanionAttachment(tree))
       }
       val hasDefault = impl.body exists {
         case DefDef(_, nme.CONSTRUCTOR, _, vparamss, _, _)  => mexists(vparamss)(_.mods.hasDefault)
@@ -626,7 +605,7 @@ trait Namers extends MethodSynthesis {
       }
       if (hasDefault) {
         val m = ensureCompanionObject(tree)
-        classAndNamerOfModule(m) = (tree, null)
+        m.addAttachment(new ConstructorDefaultsAttachment(tree, null))
       }
       val owner = tree.symbol.owner
       if (settings.lint.value && owner.isPackageObjectClass && !mods.isImplicit) {
@@ -657,7 +636,8 @@ trait Namers extends MethodSynthesis {
         if (sym.isLazy)
           sym.lazyAccessor andAlso enterIfNotThere
 
-        defaultParametersOfMethod(sym) foreach { symRef => enterIfNotThere(symRef()) }
+        for (defAtt <- sym.attachments.get[DefaultsOfLocalMethodAttachment])
+          defAtt.defaultGetters foreach enterIfNotThere
       }
       this.context
     }
@@ -846,23 +826,20 @@ trait Namers extends MethodSynthesis {
       // add apply and unapply methods to companion objects of case classes,
       // unless they exist already; here, "clazz" is the module class
       if (clazz.isModuleClass) {
-        Namers.this.classOfModuleClass get clazz foreach { cdefRef =>
-          val cdef = cdefRef()
-          if (cdef.mods.isCase) addApplyUnapply(cdef, templateNamer)
-          classOfModuleClass -= clazz
+        clazz.attachments.get[ClassForCaseCompanionAttachment] foreach { cma =>
+          val cdef = cma.caseClass
+          assert(cdef.mods.isCase, "expected case class: "+ cdef)
+          addApplyUnapply(cdef, templateNamer)
         }
       }
 
       // add the copy method to case classes; this needs to be done here, not in SyntheticMethods, because
       // the namer phase must traverse this copy method to create default getters for its parameters.
       // here, clazz is the ClassSymbol of the case class (not the module).
-      // @check: this seems to work only if the type completer of the class runs before the one of the
-      // module class: the one from the module class removes the entry from classOfModuleClass (see above).
       if (clazz.isClass && !clazz.hasModuleFlag) {
         val modClass = companionSymbolOf(clazz, context).moduleClass
-        Namers.this.classOfModuleClass get modClass map { cdefRef =>
-          val cdef = cdefRef()
-
+        modClass.attachments.get[ClassForCaseCompanionAttachment] foreach { cma =>
+          val cdef = cma.caseClass
           def hasCopy(decls: Scope) = (decls lookup nme.copy) != NoSymbol
           if (cdef.mods.isCase && !hasCopy(decls) &&
                   !parents.exists(p => hasCopy(p.typeSymbol.info.decls)) &&
@@ -874,9 +851,8 @@ trait Namers extends MethodSynthesis {
       // if default getters (for constructor defaults) need to be added to that module, here's the namer
       // to use. clazz is the ModuleClass. sourceModule works also for classes defined in methods.
       val module = clazz.sourceModule
-      classAndNamerOfModule get module foreach {
-        case (cdef, _) =>
-          classAndNamerOfModule(module) = (cdef, templateNamer)
+      for (cda <- module.attachments.get[ConstructorDefaultsAttachment]) {
+        cda.companionModuleClassNamer = templateNamer
       }
       ClassInfoType(parents, decls, clazz)
     }
@@ -1097,13 +1073,15 @@ trait Namers extends MethodSynthesis {
                 val module = companionSymbolOf(clazz, context)
                 module.initialize // call type completer (typedTemplate), adds the
                                   // module's templateNamer to classAndNamerOfModule
-                classAndNamerOfModule get module match {
-                  case s @ Some((cdef, nmr)) if nmr != null =>
-                    moduleNamer = s
-                    (cdef, nmr)
+                module.attachments.get[ConstructorDefaultsAttachment] match {
+                  // by martin: the null case can happen in IDE; this is really an ugly hack on top of an ugly hack but it seems to work
+                  // later by lukas: disabled when fixing SI-5975, i think it cannot happen anymore
+                  case Some(cda) /*if cma.companionModuleClassNamer == null*/ =>
+                    val p = (cda.classWithDefault, cda.companionModuleClassNamer)
+                    moduleNamer = Some(p)
+                    p
                   case _ =>
                     return // fix #3649 (prevent crash in erroneous source code)
-                           // nmr == null can happen in IDE; this is really an ugly hack on top[ of an ugly hack but it seems to work
                 }
               }
               deftParams = cdef.tparams map copyUntypedInvariant
@@ -1141,11 +1119,14 @@ trait Namers extends MethodSynthesis {
               clazz.resetFlag(INTERFACE) // there's a concrete member now
             val default = parentNamer.enterSyntheticSym(defaultTree)
             if (forInteractive && default.owner.isTerm) {
-              // enter into map from method symbols to default arguments.
-              // if compiling the same local block several times (which can happen in interactive mode)
-              // we might otherwise not find the default symbol, because the second time it the
-              // method symbol will be re-entered in the scope but the default parameter will not.
-              defaultParametersOfMethod(meth) += new WeakReference(default)
+              // save the default getters as attachments in the method symbol. if compiling the
+              // same local block several times (which can happen in interactive mode) we might
+              // otherwise not find the default symbol, because the second time it the method
+              // symbol will be re-entered in the scope but the default parameter will not.
+              val att = meth.attachments.get[DefaultsOfLocalMethodAttachment] match {
+                case Some(att) => att.defaultGetters += default
+                case None => meth.addAttachment(new DefaultsOfLocalMethodAttachment(default))
+              }
             }
           } else if (baseHasDefault) {
             // the parameter does not have a default itself, but the

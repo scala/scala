@@ -135,7 +135,7 @@ class Flags extends ModifierFlags {
   final val CAPTURED      = 1 << 16       // variable is accessed from nested function.  Set by LambdaLift.
   final val LABEL         = 1 << 17       // method symbol is a label. Set by TailCall
   final val INCONSTRUCTOR = 1 << 17       // class symbol is defined in this/superclass constructor.
-  final val SYNTHETIC     = 1 << 21       // symbol is compiler-generated
+  final val SYNTHETIC     = 1 << 21       // symbol is compiler-generated (compare with HIDDEN)
   final val STABLE        = 1 << 22       // functions that are assumed to be stable
                                           // (typically, access methods for valdefs)
                                           // or classes that do not contain abstract types.
@@ -165,6 +165,7 @@ class Flags extends ModifierFlags {
                                           // A Java method's type is ``cooked'' by transforming raw types to existentials
 
   final val SYNCHRONIZED  = 1L << 45      // symbol is a method which should be marked ACC_SYNCHRONIZED
+  final val HIDDEN        = 1L << 46      // symbol should be ignored when typechecking; will be marked ACC_SYNTHETIC in bytecode
 
   // ------- shift definitions -------------------------------------------------------
 
@@ -175,6 +176,11 @@ class Flags extends ModifierFlags {
   final val AntiShift     = 56L
 
   // Flags which sketchily share the same slot
+  // 16:   BYNAMEPARAM/M      CAPTURED COVARIANT/M
+  // 17: CONTRAVARIANT/M INCONSTRUCTOR       LABEL
+  // 25:  DEFAULTPARAM/M       TRAIT/M
+  // 35:     EXISTENTIAL       MIXEDIN
+  // 37:       IMPLCLASS    PRESUPER/M
   val OverloadedFlagsMask = 0L | BYNAMEPARAM | CONTRAVARIANT | DEFAULTPARAM | EXISTENTIAL | IMPLCLASS
 
   // ------- late flags (set by a transformer phase) ---------------------------------
@@ -282,6 +288,10 @@ class Flags extends ModifierFlags {
 
   /** These flags are not pickled */
   final val FlagsNotPickled = IS_ERROR | OVERLOADED | LIFTED | TRANS_FLAG | LOCKED | TRIEDCOOKING
+  
+  // A precaution against future additions to FlagsNotPickled turning out
+  // to be overloaded flags thus not-pickling more than intended.
+  assert((OverloadedFlagsMask & FlagsNotPickled) == 0, flagsToString(OverloadedFlagsMask & FlagsNotPickled))
   
   /** These flags are pickled */
   final val PickledFlags  = InitialFlags & ~FlagsNotPickled

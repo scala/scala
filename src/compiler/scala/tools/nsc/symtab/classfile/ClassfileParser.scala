@@ -862,7 +862,7 @@ abstract class ClassfileParser {
           }
           else in.skip(attrLen)
         case tpnme.SyntheticATTR =>
-          sym.setFlag(SYNTHETIC)
+          sym.setFlag(SYNTHETIC | HIDDEN)
           in.skip(attrLen)
         case tpnme.BridgeATTR =>
           sym.setFlag(BRIDGE)

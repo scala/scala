@@ -295,6 +295,7 @@ abstract class GenASM extends SubComponent with BytecodeWriters {
       if (finalFlag && !sym.hasAbstractFlag) ACC_FINAL else 0,
       if (sym.isStaticMember) ACC_STATIC else 0,
       if (sym.isBridge) ACC_BRIDGE | ACC_SYNTHETIC else 0,
+      if (sym.isHidden) ACC_SYNTHETIC else 0,
       if (sym.isClass && !sym.isInterface) ACC_SUPER else 0,
       if (sym.isVarargsMethod) ACC_VARARGS else 0,
       if (sym.hasFlag(Flags.SYNCHRONIZED)) ACC_SYNCHRONIZED else 0
@@ -849,7 +850,7 @@ abstract class GenASM extends SubComponent with BytecodeWriters {
       // without it.  This is particularly bad because the availability of
       // generic information could disappear as a consequence of a seemingly
       // unrelated change.
-         sym.isSynthetic
+         sym.isHidden
       || sym.isLiftedMethod
       || sym.isBridge
       || (sym.ownerChain exists (_.isImplClass))
@@ -2191,9 +2192,15 @@ abstract class GenASM extends SubComponent with BytecodeWriters {
             val st = pending.getOrElseUpdate(lv, mutable.Stack.empty[Label])
             st.push(start)
           }
-          def popScope(lv: Local, end: Label) {
-            val start = pending(lv).pop()
-            seen ::= LocVarEntry(lv, start, end)
+          def popScope(lv: Local, end: Label, iPos: Position) {
+            pending.get(lv) match {
+              case Some(st) if st.nonEmpty =>
+                val start = st.pop()
+                seen ::= LocVarEntry(lv, start, end)
+              case _ =>
+                // TODO SI-6049
+                getCurrentCUnit().warning(iPos, "Visited SCOPE_EXIT before visiting corresponding SCOPE_ENTER. SI-6049")
+            }
           }
 
           def getMerged(): collection.Map[Local, List[Interval]] = {
@@ -2406,7 +2413,7 @@ abstract class GenASM extends SubComponent with BytecodeWriters {
                     // similarly, these labels aren't tracked in the `labels` map.
                     val end = new asm.Label
                     jmethod.visitLabel(end)
-                    scoping.popScope(lv, end)
+                    scoping.popScope(lv, end, instr.pos)
                   }
             }
 
