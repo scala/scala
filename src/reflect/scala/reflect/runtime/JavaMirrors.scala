@@ -18,7 +18,7 @@ import collection.mutable.{ HashMap, ListBuffer }
 import internal.Flags._
 //import scala.tools.nsc.util.ScalaClassLoader
 //import scala.tools.nsc.util.ScalaClassLoader._
-import ReflectionUtils.{singletonInstance}
+import ReflectionUtils.{staticSingletonInstance, innerSingletonInstance}
 import language.existentials
 
 trait JavaMirrors extends internal.SymbolTable with api.JavaUniverse { self: SymbolTable =>
@@ -233,8 +233,11 @@ trait JavaMirrors extends internal.SymbolTable with api.JavaUniverse { self: Sym
       def erasure = symbol.moduleClass.asClassSymbol
       def isStatic = true
       def instance = {
-        if (!symbol.owner.isPackageClass) throw new Error("inner and nested modules are not supported yet")
-        singletonInstance(classLoader, symbol.fullName)
+        if (symbol.owner.isPackageClass)
+          staticSingletonInstance(classLoader, symbol.fullName)
+        else
+          if (outer == null) staticSingletonInstance(classToJava(symbol.moduleClass.asClassSymbol))
+          else innerSingletonInstance(outer, symbol.name)
       }
       def companion: Option[ClassMirror] = symbol.companionClass match {
         case cls: ClassSymbol => Some(new JavaClassMirror(outer, cls))
