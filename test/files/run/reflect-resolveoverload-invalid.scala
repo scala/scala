@@ -27,7 +27,7 @@ object Test extends App {
   val d = t member u.newTermName("d") asTermSymbol
   val e = t member u.newTermName("e") asTermSymbol
 
-  val n1 = a.resolveOverloaded(posVargs = List(u.typeOf[Char]))
+  val n1 = a.resolveOverloaded(posVargs = List(u.typeOf[Long]))
   val n2 = b.resolveOverloaded(posVargs = List(u.typeOf[A]))
   val n3 = c.resolveOverloaded(posVargs = List(u.typeOf[B], u.typeOf[B]))
   val n4 = d.resolveOverloaded(targs = List(u.typeOf[Int]))

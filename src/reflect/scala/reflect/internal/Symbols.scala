@@ -93,6 +93,16 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
 
       // Begin Correlation Helpers
 
+      def weaklyConforms(a: Type, f: Type): Boolean = (a =:= f) || {
+        if(a =:= typeOf[Byte]) weaklyConforms(typeOf[Short], f)
+        else if(a =:= typeOf[Short]) weaklyConforms(typeOf[Int], f)
+        else if(a =:= typeOf[Char]) weaklyConforms(typeOf[Int], f)
+        else if(a =:= typeOf[Int]) weaklyConforms(typeOf[Long], f)
+        else if(a =:= typeOf[Long]) weaklyConforms(typeOf[Float], f)
+        else if(a =:= typeOf[Float]) weaklyConforms(typeOf[Double], f)
+        else false
+      }
+
       def isCompatible(tp: Type, pt: Type): Boolean = {
         def isCompatibleByName(tp: Type, pt: Type): Boolean = pt match {
           case TypeRef(_, ByNameParamClass, List(res)) if !definitions.isByNameParamType(tp) =>
@@ -100,13 +110,13 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
           case _ =>
             false
         }
-        (tp <:< pt) || isCompatibleByName(tp, pt)
+        (tp <:< pt) || weaklyConforms(tp, pt) || isCompatibleByName(tp, pt)
       }
 
       def signatureAsSpecific(method1: MethodSymbol, method2: MethodSymbol): Boolean = {
         (substituteTypeParams(method1), substituteTypeParams(method2)) match {
           case (NullaryMethodType(r1), NullaryMethodType(r2)) =>
-            r1 <:< r2
+            r1 <:< r2 || weaklyConforms(r1, r2)
           case (NullaryMethodType(_), MethodType(_, _)) =>
             true
           case (MethodType(_, _), NullaryMethodType(_)) =>
@@ -298,7 +308,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
           else {
             val a = argTypes
             val p = extend(paramTypes, argTypes.length)
-            (a corresponds p)(_ <:< _)
+            (a corresponds p)((a, f) => a <:< f || weaklyConforms(a, f))
           }
         }
       }
