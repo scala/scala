@@ -15,8 +15,7 @@ import parallel.immutable.ParHashMap
 
 /** This class implements immutable maps using a hash trie.
  *
- *  '''Note:''' the builder of a hash map returns specialized representations EmptyMap,Map1,..., Map4
- *  for maps of size <= 4.
+ *  '''Note:''' The builder of this hash map may return specialized representations for small maps.
  *
  *  @tparam A      the type of the keys contained in this hash map.
  *  @tparam B      the type of the values associated with the keys.
