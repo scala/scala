@@ -71,6 +71,8 @@ object ReflectionUtils {
 
   def innerSingletonInstance(outer: AnyRef, className: String): AnyRef = {
     val name = if (className endsWith "$") className.substring(0, className.length - 1) else className
-    outer.getClass.getMethod(name) invoke outer
+    val accessor = outer.getClass getDeclaredMethod name
+    accessor setAccessible true
+    accessor invoke outer
   }
 }

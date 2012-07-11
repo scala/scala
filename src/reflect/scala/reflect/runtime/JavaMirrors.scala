@@ -920,12 +920,25 @@ trait JavaMirrors extends internal.SymbolTable with api.JavaUniverse { self: Sym
         noClass
       else if (clazz.owner.isPackageClass)
         javaClass(clazz.javaClassName)
-      else if (clazz.owner.isClass)
-        classToJava(clazz.owner.asClassSymbol)
-          .getDeclaredClasses
-          .find(_.getSimpleName == clazz.name.toString)
-          .getOrElse(noClass)
-      else
+      else if (clazz.owner.isClass) {
+        val childOfClass = !clazz.owner.isModuleClass
+        val childOfTopLevel = clazz.owner.owner.isPackageClass
+        val childOfTopLevelObject = clazz.owner.isModuleClass && childOfTopLevel
+
+        // suggested in https://issues.scala-lang.org/browse/SI-4023?focusedCommentId=54759#comment-54759
+        var ownerClazz = classToJava(clazz.owner.asClassSymbol)
+        if (childOfTopLevelObject) ownerClazz = Class.forName(ownerClazz.getName stripSuffix "$", true, ownerClazz.getClassLoader)
+        val ownerChildren = ownerClazz.getDeclaredClasses
+
+        var fullNameOfJavaClass = ownerClazz.getName
+        if (childOfClass || childOfTopLevel) fullNameOfJavaClass += "$"
+        fullNameOfJavaClass += clazz.name
+        if (clazz.isModuleClass) fullNameOfJavaClass += "$"
+
+        // println(s"ownerChildren = ${ownerChildren.toList}")
+        // println(s"fullNameOfJavaClass = $fullNameOfJavaClass")
+        ownerChildren.find(_.getName == fullNameOfJavaClass).getOrElse(noClass)
+      } else
         noClass
     }
 
