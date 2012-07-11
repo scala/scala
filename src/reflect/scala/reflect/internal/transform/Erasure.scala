@@ -72,9 +72,6 @@ trait Erasure {
     if (cls.owner.isClass) cls.owner.tpe else pre // why not cls.isNestedClass?
   }
 
-  def boxMethod(clazz: Symbol) =
-    clazz.companionModule.info.decl(nme.box) filter (_.isMethod)
-
   def unboxDerivedValueClassMethod(clazz: Symbol): Symbol =
     (clazz.info.decl(nme.unbox)) orElse
     (clazz.info.decls.find(_ hasAllFlags PARAMACCESSOR | METHOD) getOrElse
