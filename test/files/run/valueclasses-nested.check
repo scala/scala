@@ -1,0 +1,5 @@
+Val(1) Val(Val(1)) Val(Val(Val(1))) Val(Val((1,1)))
+Val(1)is a val of 1
+Val(Val(1))is a val^2 of 1
+Val(Val(Val(1)))is a val^3 of 1
+Val(Val((1,1)))is a val^2 of (1,1)

@@ -169,7 +169,7 @@ quant)
       nanos = nanos0 + System.nanoTime() - start
       timings += 1
     }
-    protected def show(ns: Long) = s"${ns/1000}ms"
+    protected def show(ns: Long) = s"${ns/1000000}ms"
     override def toString = s"$timings spans, ${show(nanos)}"
   }
 

@@ -319,7 +319,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
       def ccon = Class.forName(name).getConstructor(classOf[CharsetDecoder], classOf[Reporter])
 
       try Some(ccon.newInstance(charset.newDecoder(), reporter).asInstanceOf[SourceReader])
-      catch { case x: Exception =>
+      catch { case ex: Throwable =>
         globalError("exception while trying to instantiate source reader '" + name + "'")
         None
       }
@@ -1546,7 +1546,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
 
     def compileUnits(units: List[CompilationUnit], fromPhase: Phase) {
       try compileUnitsInternal(units, fromPhase)
-      catch { case ex =>
+      catch { case ex: Throwable =>
         val shown = if (settings.verbose.value) {
           val pw = new java.io.PrintWriter(new java.io.StringWriter)
           ex.printStackTrace(pw)
