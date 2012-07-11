@@ -37,6 +37,9 @@ package object scala {
   @deprecated("instead of `@serializable class C`, use `class C extends Serializable`", "2.9.0")
   type serializable = annotation.serializable
 
+  @deprecated("instead of `@cloneable class C`, use `class C extends Cloneable`", "2.10.0")
+  type cloneable = annotation.cloneable
+
   type TraversableOnce[+A] = scala.collection.TraversableOnce[A]
 
   type Traversable[+A] = scala.collection.Traversable[A]
