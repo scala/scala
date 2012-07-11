@@ -6,7 +6,7 @@
 package scala.reflect.runtime
 
 import java.lang.{Class => jClass}
-import java.lang.reflect.{ InvocationTargetException, UndeclaredThrowableException }
+import java.lang.reflect.{ Method, InvocationTargetException, UndeclaredThrowableException }
 
 /** A few java-reflection oriented utility functions useful during reflection bootstrapping.
  */
@@ -72,8 +72,15 @@ object ReflectionUtils {
   def staticSingletonInstance(clazz: Class[_]): AnyRef = clazz getField "MODULE$" get null
 
   def innerSingletonInstance(outer: AnyRef, className: String): AnyRef = {
-    val name = if (className endsWith "$") className.substring(0, className.length - 1) else className
-    val accessor = outer.getClass getDeclaredMethod name
+    val accessorName = if (className endsWith "$") className.substring(0, className.length - 1) else className
+    def singletonAccessor(clazz: Class[_]): Option[Method] =
+      if (clazz == null) None
+      else {
+        val declaredAccessor = clazz.getDeclaredMethods.filter(_.getName == accessorName).headOption
+        declaredAccessor orElse singletonAccessor(clazz.getSuperclass)
+      }
+
+    val accessor = singletonAccessor(outer.getClass) getOrElse { throw new NoSuchMethodException(s"${outer.getClass.getName}.$accessorName") }
     accessor setAccessible true
     accessor invoke outer
   }
