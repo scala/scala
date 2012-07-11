@@ -12,6 +12,9 @@ trait MemberLookup {
 
   import global._
 
+  def makeEntityLink(title: Inline, pos: Position, query: String, inTplOpt: Option[DocTemplateImpl]) =
+    new EntityLink(title) { lazy val link = memberLookup(pos, query, inTplOpt) }
+
   def memberLookup(pos: Position, query: String, inTplOpt: Option[DocTemplateImpl]): LinkTo = {
     assert(modelFinished)
 

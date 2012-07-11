@@ -744,7 +744,7 @@ trait CommentFactory { thisFactory: ModelFactory with CommentFactory with Member
         case (SchemeUri(uri), optTitle) =>
           Link(uri, optTitle getOrElse Text(uri))
         case (qualName, optTitle) =>
-          new EntityLink(optTitle getOrElse Text(target)) { def link = memberLookup(pos, target, inTplOpt) }
+          makeEntityLink(optTitle getOrElse Text(target), pos, target, inTplOpt)
       }
     }
 
