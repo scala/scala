@@ -58,13 +58,13 @@ import annotation.{migration, bridge}
  *  mutates the collection in place, unlike similar but
  *  undeprecated methods throughout the collections hierarchy.
  */
-@cloneable
 trait BufferLike[A, +This <: BufferLike[A, This] with Buffer[A]]
                 extends Growable[A]
                    with Shrinkable[A]
                    with Scriptable[A]
                    with Subtractable[A, This]
                    with SeqLike[A, This]
+                   with scala.Cloneable
 { self : This =>
 
   // Abstract methods from Seq:
