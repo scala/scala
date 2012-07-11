@@ -115,7 +115,7 @@ trait ModelFactoryImplicitSupport {
 
       // Put the class-specific conversions in front
       val (ownConversions, commonConversions) =
-        conversions.partition(conv => !hardcoded.commonConversionTargets.contains(conv.conversionQualifiedName))
+        conversions.partition(!_.isCommonConversion)
 
       ownConversions ::: commonConversions
     }
@@ -347,7 +347,7 @@ trait ModelFactoryImplicitSupport {
       if (convSym != NoSymbol)
         makeTemplate(convSym.owner)
       else {
-        error("Scaladoc implicits: Implicit conversion from " + sym.tpe + " to " + toType + " done by " + convSym + " = NoSymbol!")
+        error("Scaladoc implicits: " + toString + " = NoSymbol!")
         makeRootPackage
       }
 
@@ -415,6 +415,10 @@ trait ModelFactoryImplicitSupport {
     }
 
     lazy val members: List[MemberEntity] = memberImpls
+
+    def isCommonConversion = hardcoded.commonConversionTargets.contains(conversionQualifiedName)
+
+    override def toString = "Implcit conversion from " + sym.tpe + " to " + toType + " done by " + convSym
   }
 
   /* ========================= HELPER METHODS ========================== */

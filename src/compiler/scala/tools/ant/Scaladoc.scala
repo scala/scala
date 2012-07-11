@@ -677,5 +677,4 @@ class Scaladoc extends ScalaMatchingTask {
           "(no error message provided); see the error output for details.")
     }
   }
-
 }

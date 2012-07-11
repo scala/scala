@@ -520,6 +520,9 @@ trait ImplicitConversion {
 
   /** The members inherited by this implicit conversion */
   def members: List[MemberEntity]
+
+  /** Is this a common implicit conversion (aka conversion that affects all classes, in Predef?) */
+  def isCommonConversion: Boolean
 }
 
 /** Shadowing captures the information that the member is shadowed by some other members
