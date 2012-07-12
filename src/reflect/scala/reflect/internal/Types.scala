@@ -668,7 +668,8 @@ trait Types extends api.Types { self: SymbolTable =>
      *  Note: unfortunately it doesn't work to exclude DEFERRED this way.
      */
     def membersBasedOnFlags(excludedFlags: Long, requiredFlags: Long): List[Symbol] =
-      findMember(nme.ANYNAME, excludedFlags, requiredFlags, false).alternatives
+      findMembers(excludedFlags, requiredFlags)
+//      findMember(nme.ANYNAME, excludedFlags, requiredFlags, false).alternatives
 
     def memberBasedOnName(name: Name, excludedFlags: Long): Symbol =
       findMember(name, excludedFlags, 0, false)
@@ -1016,6 +1017,71 @@ trait Types extends api.Types { self: SymbolTable =>
       if (alts.isEmpty) sym
       else (baseClasses.head.newOverloaded(this, alts))
     }
+    
+    def findMembers(excludedFlags: Long, requiredFlags: Long): List[Symbol] = {
+      // if this type contains type variables, put them to sleep for a while -- don't just wipe them out by
+      // replacing them by the corresponding type parameter, as that messes up (e.g.) type variables in type refinements
+      // without this, the matchesType call would lead to type variables on both sides
+      // of a subtyping/equality judgement, which can lead to recursive types being constructed.
+      // See (t0851) for a situation where this happens.
+      val suspension: List[TypeVar] = if (this.isGround) null else suspendTypeVarsInType(this)
+
+      Statistics.incCounter(findMembersCount)
+      val start = Statistics.pushTimer(typeOpsStack, findMembersNanos)
+
+      //Console.println("find member " + name.decode + " in " + this + ":" + this.baseClasses)//DEBUG
+      var members: Scope = null
+      var excluded = excludedFlags | DEFERRED
+      var continue = true
+      var self: Type = null
+      var membertpe: Type = null
+      while (continue) {
+        continue = false
+        val bcs0 = baseClasses
+        var bcs = bcs0
+        while (!bcs.isEmpty) {
+          val decls = bcs.head.info.decls
+          var entry = decls.elems 
+          while (entry ne null) {
+            val sym = entry.sym
+            if (sym hasAllFlags requiredFlags) {
+              val excl = sym.getFlag(excluded)
+              if (excl == 0L &&
+                  (// omit PRIVATE LOCALS unless selector class is contained in class owning the def.
+                   (bcs eq bcs0) ||
+                   !sym.isPrivateLocal ||
+                   (bcs0.head.hasTransOwner(bcs.head)))) {
+                if (members eq null) members = newScope
+                var prevEntry = members.lookupEntry(sym.name)
+                var symtpe: Type = null
+                while ((prevEntry ne null) &&
+                    !((prevEntry.sym eq sym) ||
+                        (prevEntry.sym.owner ne sym.owner) &&
+                        !sym.hasFlag(PRIVATE) && {
+                          if (self eq null) self = this.narrow
+                          if (symtpe eq null) symtpe = self.memberType(sym)
+                          self.memberType(prevEntry.sym) matches symtpe
+                    })) {
+                  prevEntry = members lookupNextEntry prevEntry
+                }
+                if (prevEntry eq null) {
+                  members enter sym
+                }
+              } else if (excl == DEFERRED) {
+                continue = true
+              }
+            }
+            entry = entry.next
+          } // while (entry ne null)
+          // excluded = excluded | LOCAL
+          bcs = bcs.tail
+        } // while (!bcs.isEmpty)
+        excluded = excludedFlags
+      } // while (continue)
+      Statistics.popTimer(typeOpsStack, start)
+      if (suspension ne null) suspension foreach (_.suspended = false)
+      if (members eq null) Nil else members.toList
+    }
 
     /**
      *  Find member(s) in this type. If several members matching criteria are found, they are
@@ -1122,6 +1188,7 @@ trait Types extends api.Types { self: SymbolTable =>
         baseClasses.head.newOverloaded(this, members.toList)
       }
     }
+    
     /** The (existential or otherwise) skolems and existentially quantified variables which are free in this type */
     def skolemsExceptMethodTypeParams: List[Symbol] = {
       var boundSyms: List[Symbol] = List()
@@ -6906,12 +6973,14 @@ object TypesStats {
   val lubCount            = Statistics.newCounter   ("#toplevel lubs/glbs")
   val nestedLubCount      = Statistics.newCounter   ("#all lubs/glbs")
   val findMemberCount     = Statistics.newCounter   ("#findMember ops")
+  val findMembersCount    = Statistics.newCounter   ("#findMembers ops")
   val noMemberCount       = Statistics.newSubCounter("  of which not found", findMemberCount)
   val multMemberCount     = Statistics.newSubCounter("  of which multiple overloaded", findMemberCount)
   val typerNanos          = Statistics.newTimer     ("time spent typechecking", "typer")
   val lubNanos            = Statistics.newStackableTimer("time spent in lubs", typerNanos)
   val subtypeNanos        = Statistics.newStackableTimer("time spent in <:<", typerNanos)
   val findMemberNanos     = Statistics.newStackableTimer("time spent in findmember", typerNanos)
+  val findMembersNanos    = Statistics.newStackableTimer("time spent in findmembers", typerNanos)
   val asSeenFromNanos     = Statistics.newStackableTimer("time spent in asSeenFrom", typerNanos)
   val baseTypeSeqNanos    = Statistics.newStackableTimer("time spent in baseTypeSeq", typerNanos)
   val baseClassesNanos    = Statistics.newStackableTimer("time spent in baseClasses", typerNanos)
