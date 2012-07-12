@@ -16,7 +16,7 @@ import scala.util.control.NonFatal
 
 /**
  * The `Try` type represents a computation that may either result in an exception, or return a
- * successfully computed value. It's similar to, but semantically different from the [[scala.Either]] type.
+ * successfully computed value. It's similar to, but semantically different from the [[scala.util.Either]] type.
  *
  * Instances of `Try[T]`, are either an instance of [[scala.util.Success]][T] or [[scala.util.Failure]][T].
  *

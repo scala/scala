@@ -268,9 +268,9 @@ sealed abstract class Option[+A] extends Product with Serializable {
   def toList: List[A] =
     if (isEmpty) List() else List(this.get)
 
-  /** Returns a [[scala.Left]] containing the given
+  /** Returns a [[scala.util.Left]] containing the given
    * argument `left` if this $option is empty, or
-   * a [[scala.Right]] containing this $option's value if
+   * a [[scala.util.Right]] containing this $option's value if
    * this is nonempty.
    *
    * @param left the expression to evaluate and return if this is empty
@@ -279,9 +279,9 @@ sealed abstract class Option[+A] extends Product with Serializable {
   @inline final def toRight[X](left: => X) =
     if (isEmpty) Left(left) else Right(this.get)
 
-  /** Returns a [[scala.Right]] containing the given
+  /** Returns a [[scala.util.Right]] containing the given
    * argument `right` if this is empty, or
-   * a [[scala.Left]] containing this $option's value
+   * a [[scala.util.Left]] containing this $option's value
    * if this $option is nonempty.
    *
    * @param right the expression to evaluate and return if this is empty
