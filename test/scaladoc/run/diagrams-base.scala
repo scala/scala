@@ -42,7 +42,7 @@ object Test extends ScaladocModelTest {
     assert(diag.nodes.filter(_.isThisNode).length == 1)
 
     // 1. check class E diagram
-    assert(diag.isClassDiagram)
+    assert(diag.isInheritanceDiagram)
 
     val (incoming, outgoing) = diag.edges.partition(!_._1.isThisNode)
     assert(incoming.length == 5)
@@ -56,14 +56,14 @@ object Test extends ScaladocModelTest {
     assert(incomingSubclass.length == 2)
     assert(incomingImplicit.length == 3)
 
-    val classDiag = diag.asInstanceOf[ClassDiagram]
+    val classDiag = diag.asInstanceOf[InheritanceDiagram]
     assert(classDiag.incomingImplicits.length == 3)
     assert(classDiag.outgoingImplicits.length == 1)
 
     // 2. check package diagram
     // NOTE: Z should be eliminated because it's isolated
     val packDiag = base.contentDiagram.get
-    assert(packDiag.isPackageDiagram)
+    assert(packDiag.isContentDiagram)
     assert(packDiag.nodes.length == 8) // check singular object removal
     assert(packDiag.edges.length == 4)
     assert(packDiag.edges.foldLeft(0)(_ + _._2.length) == 6)

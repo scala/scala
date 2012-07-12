@@ -13,18 +13,18 @@ import model._
 abstract class Diagram {
   def nodes: List[Node]
   def edges: List[(Node, List[Node])]
-  def isPackageDiagram = false
-  def isClassDiagram = false
+  def isContentDiagram = false     // Implemented by ContentDiagram
+  def isInheritanceDiagram = false // Implemented by InheritanceDiagram
   def depthInfo: DepthInfo
 }
 
-case class PackageDiagram(nodes:List[/*Class*/Node], edges:List[(Node, List[Node])]) extends Diagram {
-  override def isPackageDiagram = true
-  lazy val depthInfo = new PackageDiagramDepth(this)
+case class ContentDiagram(nodes:List[/*Class*/Node], edges:List[(Node, List[Node])]) extends Diagram {
+  override def isContentDiagram = true
+  lazy val depthInfo = new ContentDiagramDepth(this)
 }
 
 /** A class diagram */
-case class ClassDiagram(thisNode: ThisNode,
+case class InheritanceDiagram(thisNode: ThisNode,
                         superClasses: List[/*Class*/Node],
                         subClasses: List[/*Class*/Node],
                         incomingImplicits: List[ImplicitNode],
@@ -33,7 +33,7 @@ case class ClassDiagram(thisNode: ThisNode,
   def edges = (thisNode -> (superClasses ::: outgoingImplicits)) ::
               (subClasses ::: incomingImplicits).map(_ -> List(thisNode))
 
-  override def isClassDiagram = true
+  override def isInheritanceDiagram = true
   lazy val depthInfo = new DepthInfo {
     def maxDepth = 3
     def nodeDepth(node: Node) =
@@ -115,7 +115,7 @@ case class OutsideNode(tpe: TypeEntity, tpl: Option[TemplateEntity], tooltip: Op
 
 
 // Computing and offering node depth information
-class PackageDiagramDepth(pack: PackageDiagram) extends DepthInfo {
+class ContentDiagramDepth(pack: ContentDiagram) extends DepthInfo {
   private[this] var _maxDepth = 0
   private[this] var _nodeDepth = Map[Node, Int]()
   private[this] var seedNodes = Set[Node]()

@@ -858,8 +858,28 @@ class ModelFactory(val global: Global, val settings: doc.Settings) {
           parents
         else
           parents.filterNot((p: Type) => ignoreParents(p.typeSymbol))
+
+      /** Returns:
+       *   - a DocTemplate if the type's symbol is documented
+       *   - a NoDocTemplateMember if the type's symbol is not documented in its parent but in another template
+       *   - a NoDocTemplate if the type's symbol is not documented at all */
+      def makeTemplateOrMemberTemplate(parent: Type): TemplateImpl = {
+        def noDocTemplate = makeTemplate(parent.typeSymbol)
+        findTemplateMaybe(parent.typeSymbol) match {
+          case Some(tpl) => tpl
+          case None => parent match {
+            case TypeRef(pre, sym, args) =>
+              findTemplateMaybe(pre.typeSymbol) match {
+                case Some(tpl) => findMember(parent.typeSymbol, tpl).collect({case t: TemplateImpl => t}).getOrElse(noDocTemplate)
+                case None => noDocTemplate
+              }
+            case _ => noDocTemplate
+          }
+        }
+      }
+
       filtParents.map(parent => {
-        val templateEntity = makeTemplate(parent.typeSymbol)
+        val templateEntity = makeTemplateOrMemberTemplate(parent)
         val typeEntity = makeType(parent, inTpl)
         (templateEntity, typeEntity)
       })

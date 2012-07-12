@@ -93,7 +93,7 @@ trait DiagramFactory extends DiagramDirectiveParser {
         val filteredImplicitOutgoingNodes = if (diagramFilter.hideOutgoingImplicits) Nil else outgoingImplicitNodes
 
         // final diagram filter
-        filterDiagram(ClassDiagram(thisNode, filteredSuperclasses.reverse, filteredSubclasses.reverse, filteredIncomingImplicits, filteredImplicitOutgoingNodes), diagramFilter)
+        filterDiagram(InheritanceDiagram(thisNode, filteredSuperclasses.reverse, filteredSubclasses.reverse, filteredIncomingImplicits, filteredImplicitOutgoingNodes), diagramFilter)
       }
 
     tModel += System.currentTimeMillis
@@ -173,9 +173,9 @@ trait DiagramFactory extends DiagramDirectiveParser {
               val anyRefSubtypes = Nil
               val allAnyRefTypes = aggregationNode("All AnyRef subtypes")
               val nullTemplate = makeTemplate(NullClass)
-              PackageDiagram(allAnyRefTypes::nodes, (mapNodes(nullTemplate), allAnyRefTypes::anyRefSubtypes)::edges.filterNot(_._1.tpl == Some(nullTemplate)))
+              ContentDiagram(allAnyRefTypes::nodes, (mapNodes(nullTemplate), allAnyRefTypes::anyRefSubtypes)::edges.filterNot(_._1.tpl == Some(nullTemplate)))
             } else
-              PackageDiagram(nodes, edges)
+              ContentDiagram(nodes, edges)
 
           filterDiagram(diagram, diagramFilter)
         }
@@ -200,10 +200,10 @@ trait DiagramFactory extends DiagramDirectiveParser {
       else {
         // Final diagram, with the filtered nodes and edges
         diagram match {
-          case ClassDiagram(thisNode, _, _, _, _) if diagramFilter.hideNode(thisNode) =>
+          case InheritanceDiagram(thisNode, _, _, _, _) if diagramFilter.hideNode(thisNode) =>
             None
 
-          case ClassDiagram(thisNode, superClasses, subClasses, incomingImplicits, outgoingImplicits) =>
+          case InheritanceDiagram(thisNode, superClasses, subClasses, incomingImplicits, outgoingImplicits) =>
 
             def hideIncoming(node: Node): Boolean =
               diagramFilter.hideNode(node) || diagramFilter.hideEdge(node, thisNode)
@@ -214,13 +214,13 @@ trait DiagramFactory extends DiagramDirectiveParser {
             // println(thisNode)
             // println(superClasses.map(cl => "super: " + cl + "  " + hideOutgoing(cl)).mkString("\n"))
             // println(subClasses.map(cl => "sub: " + cl + "  " + hideIncoming(cl)).mkString("\n"))
-            Some(ClassDiagram(thisNode,
+            Some(InheritanceDiagram(thisNode,
                              superClasses.filterNot(hideOutgoing(_)),
                              subClasses.filterNot(hideIncoming(_)),
                              incomingImplicits.filterNot(hideIncoming(_)),
                              outgoingImplicits.filterNot(hideOutgoing(_))))
 
-          case PackageDiagram(nodes0, edges0) =>
+          case ContentDiagram(nodes0, edges0) =>
             // Filter out all edges that:
             // (1) are sources of hidden classes
             // (2) are manually hidden by the user
@@ -242,7 +242,7 @@ trait DiagramFactory extends DiagramDirectiveParser {
             val sourceNodes = edges.map(_._1)
             val sinkNodes = edges.map(_._2).flatten
             val nodes = (sourceNodes ::: sinkNodes).distinct
-            Some(PackageDiagram(nodes, edges))
+            Some(ContentDiagram(nodes, edges))
         }
       }
 

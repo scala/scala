@@ -25,7 +25,7 @@ class DotDiagramGenerator(settings: doc.Settings) extends DiagramGenerator {
   // maps an index to its corresponding node
   private var index2Node: Map[Int, Node] = null
   // true if the current diagram is a class diagram
-  private var isClassDiagram = false
+  private var isInheritanceDiagram = false
   // incoming implicit nodes (needed for determining the CSS class of a node)
   private var incomingImplicitNodes: List[Node] = List()
   // the suffix used when there are two many classes to show
@@ -66,10 +66,10 @@ class DotDiagramGenerator(settings: doc.Settings) extends DiagramGenerator {
     var superClasses = List[Node]()
     var incomingImplicits = List[Node]()
     var outgoingImplicits = List[Node]()
-    isClassDiagram = false
+    isInheritanceDiagram = false
 
     d match {
-      case ClassDiagram(_thisNode, _superClasses, _subClasses, _incomingImplicits, _outgoingImplicits) =>
+      case InheritanceDiagram(_thisNode, _superClasses, _subClasses, _incomingImplicits, _outgoingImplicits) =>
 
         def textTypeEntity(text: String) =
           new TypeEntity {
@@ -108,7 +108,7 @@ class DotDiagramGenerator(settings: doc.Settings) extends DiagramGenerator {
         nodes = List()
         edges = (thisNode -> superClasses) :: subClasses.map(_ -> List(thisNode))
         node2Index = (thisNode::subClasses:::superClasses:::incomingImplicits:::outgoingImplicits).zipWithIndex.toMap
-        isClassDiagram = true
+        isInheritanceDiagram = true
         incomingImplicitNodes = incomingImplicits
       case _ =>
         nodes = d.nodes
@@ -119,7 +119,7 @@ class DotDiagramGenerator(settings: doc.Settings) extends DiagramGenerator {
     index2Node = node2Index map {_.swap}
 
     val implicitsDot = {
-      if (!isClassDiagram) ""
+      if (!isInheritanceDiagram) ""
       else {
         // dot cluster containing thisNode
         val thisCluster = "subgraph clusterThis {\n" +
@@ -360,7 +360,7 @@ class DotDiagramGenerator(settings: doc.Settings) extends DiagramGenerator {
   private def transform(e:scala.xml.Node): scala.xml.Node = e match {
     // add an id and class attribute to the SVG element
     case Elem(prefix, "svg", attribs, scope, child @ _*) => {
-      val klass = if (isClassDiagram) "class-diagram" else "package-diagram"
+      val klass = if (isInheritanceDiagram) "class-diagram" else "package-diagram"
       Elem(prefix, "svg", attribs, scope, child map(x => transform(x)) : _*) %
       new UnprefixedAttribute("id", "graph" + counter, Null) %
       new UnprefixedAttribute("class", klass, Null)
