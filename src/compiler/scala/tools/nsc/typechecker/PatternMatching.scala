@@ -15,6 +15,7 @@ import scala.tools.nsc.transform.Transform
 import scala.collection.mutable.HashSet
 import scala.collection.mutable.HashMap
 import reflect.internal.util.Statistics
+import scala.reflect.internal.Types
 
 /** Translate pattern matching.
   *
@@ -71,7 +72,15 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
       case Match(sel, cases) =>
         val origTp = tree.tpe
         // setType origTp intended for CPS -- TODO: is it necessary?
-        localTyper.typed(translator.translateMatch(treeCopy.Match(tree, transform(sel), transformTrees(cases).asInstanceOf[List[CaseDef]]))) setType origTp
+        val translated = translator.translateMatch(treeCopy.Match(tree, transform(sel), transformTrees(cases).asInstanceOf[List[CaseDef]]))
+        try {
+          localTyper.typed(translated) setType origTp
+        } catch {
+          case x: (Types#TypeError) =>
+            // TODO: this should never happen; error should've been reported during type checking
+            unit.error(tree.pos, "error during expansion of this match (this is a scalac bug).\nThe underlying error was: "+ x.msg)
+            translated
+        }
       case Try(block, catches, finalizer) =>
         treeCopy.Try(tree, transform(block), translator.translateTry(transformTrees(catches).asInstanceOf[List[CaseDef]], tree.tpe, tree.pos), transform(finalizer))
       case _ => super.transform(tree)
@@ -547,7 +556,10 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
         if(isSeq) {
           val TypeRef(pre, SeqClass, args) = seqTp
           // do repeated-parameter expansion to match up with the expected number of arguments (in casu, subpatterns)
-          formalTypes(rawSubPatTypes.init :+ typeRef(pre, RepeatedParamClass, args), nbSubPats)
+          val formalsWithRepeated = rawSubPatTypes.init :+ typeRef(pre, RepeatedParamClass, args)
+
+          if (lastIsStar) formalTypes(formalsWithRepeated, nbSubPats - 1) :+ seqTp
+          else formalTypes(formalsWithRepeated, nbSubPats)
         } else rawSubPatTypes
 
       protected def rawSubPatTypes: List[Type]
@@ -637,7 +649,7 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
       // binder has type paramType
       def treeMaker(binder: Symbol, pos: Position): TreeMaker = {
         // checks binder ne null before chaining to the next extractor
-        ProductExtractorTreeMaker(binder, lengthGuard(binder))(Substitution(subPatBinders, subPatRefs(binder)))
+        ProductExtractorTreeMaker(binder, lengthGuard(binder))(subPatBinders, subPatRefs(binder))
       }
 
       // reference the (i-1)th case accessor if it exists, otherwise the (i-1)th tuple component
@@ -681,7 +693,7 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
         // the extractor call (applied to the binder bound by the flatMap corresponding to the previous (i.e., enclosing/outer) pattern)
         val extractorApply = atPos(pos)(spliceApply(patBinderOrCasted))
         val binder         = freshSym(pos, pureType(resultInMonad)) // can't simplify this when subPatBinders.isEmpty, since UnitClass.tpe is definitely wrong when isSeq, and resultInMonad should always be correct since it comes directly from the extractor's result type
-        ExtractorTreeMaker(extractorApply, lengthGuard(binder), binder)(Substitution(subPatBinders, subPatRefs(binder)), resultType.typeSymbol == BooleanClass, checkedLength, patBinderOrCasted)
+        ExtractorTreeMaker(extractorApply, lengthGuard(binder), binder)(subPatBinders, subPatRefs(binder), resultType.typeSymbol == BooleanClass, checkedLength, patBinderOrCasted)
       }
 
       override protected def seqTree(binder: Symbol): Tree =
@@ -837,6 +849,20 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
       }
       private[this] var currSub: Substitution = null
 
+      /** The substitution that specifies the trees that compute the values of the subpattern binders.
+       *
+       * Should not be used to perform actual substitution!
+       * Only used to reason symbolically about the values the subpattern binders are bound to.
+       * See TreeMakerToCond#updateSubstitution.
+       *
+       * Overridden in PreserveSubPatBinders to pretend it replaces the subpattern binders by subpattern refs
+       * (Even though we don't do so anymore -- see SI-5158, SI-5739 and SI-6070.)
+       *
+       * TODO: clean this up, would be nicer to have some higher-level way to compute
+       * the binders bound by this tree maker and the symbolic values that correspond to them
+       */
+      def subPatternsAsSubstitution: Substitution = substitution
+
       // build Tree that chains `next` after the current extractor
       def chainBefore(next: Tree)(casegen: Casegen): Tree
     }
@@ -885,6 +911,23 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
         atPos(pos)(casegen.flatMapCond(cond, res, nextBinder, substitution(next)))
     }
 
+    trait PreserveSubPatBinders extends NoNewBinders {
+      val subPatBinders: List[Symbol]
+      val subPatRefs: List[Tree]
+
+      /** The substitution that specifies the trees that compute the values of the subpattern binders.
+       *
+       * We pretend to replace the subpattern binders by subpattern refs
+       * (Even though we don't do so anymore -- see SI-5158, SI-5739 and SI-6070.)
+       */
+      override def subPatternsAsSubstitution =
+        Substitution(subPatBinders, subPatRefs) >> super.subPatternsAsSubstitution
+
+      import CODE._
+      def bindSubPats(in: Tree): Tree =
+        Block((subPatBinders, subPatRefs).zipped.map { case (sym, ref) => VAL(sym) === ref }, in)
+    }
+
     /**
      * Make a TreeMaker that will result in an extractor call specified by `extractor`
      * the next TreeMaker (here, we don't know which it'll be) is chained after this one by flatMap'ing
@@ -892,12 +935,23 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
      * the function's body is determined by the next TreeMaker
      * in this function's body, and all the subsequent ones, references to the symbols in `from` will be replaced by the corresponding tree in `to`
      */
-    case class ExtractorTreeMaker(extractor: Tree, extraCond: Option[Tree], nextBinder: Symbol)(val localSubstitution: Substitution, extractorReturnsBoolean: Boolean, val checkedLength: Option[Int], val prevBinder: Symbol) extends FunTreeMaker {
+    case class ExtractorTreeMaker(extractor: Tree, extraCond: Option[Tree], nextBinder: Symbol)(
+          val subPatBinders: List[Symbol],
+          val subPatRefs: List[Tree],
+          extractorReturnsBoolean: Boolean,
+          val checkedLength: Option[Int],
+          val prevBinder: Symbol) extends FunTreeMaker with PreserveSubPatBinders {
+
       def chainBefore(next: Tree)(casegen: Casegen): Tree = {
-        val condAndNext = extraCond map (casegen.ifThenElseZero(_, next)) getOrElse next
+        val condAndNext = extraCond match {
+          case Some(cond) =>
+            casegen.ifThenElseZero(substitution(cond), bindSubPats(substitution(next)))
+          case _ =>
+            bindSubPats(substitution(next))
+        }
         atPos(extractor.pos)(
-          if (extractorReturnsBoolean) casegen.flatMapCond(extractor, CODE.UNIT, nextBinder, substitution(condAndNext))
-          else casegen.flatMap(extractor, nextBinder, substitution(condAndNext))
+          if (extractorReturnsBoolean) casegen.flatMapCond(extractor, CODE.UNIT, nextBinder, condAndNext)
+          else casegen.flatMap(extractor, nextBinder, condAndNext)
         )
       }
 
@@ -905,12 +959,17 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
     }
 
     // TODO: allow user-defined unapplyProduct
-    case class ProductExtractorTreeMaker(prevBinder: Symbol, extraCond: Option[Tree])(val localSubstitution: Substitution) extends FunTreeMaker { import CODE._
+    case class ProductExtractorTreeMaker(prevBinder: Symbol, extraCond: Option[Tree])(
+          val subPatBinders: List[Symbol],
+          val subPatRefs: List[Tree]) extends FunTreeMaker with PreserveSubPatBinders {
+
+      import CODE._
       val nextBinder = prevBinder // just passing through
+
       def chainBefore(next: Tree)(casegen: Casegen): Tree = {
         val nullCheck = REF(prevBinder) OBJ_NE NULL
         val cond = extraCond map (nullCheck AND _) getOrElse nullCheck
-        casegen.ifThenElseZero(cond, substitution(next))
+        casegen.ifThenElseZero(cond, bindSubPats(substitution(next)))
       }
 
       override def toString = "P"+(prevBinder.name,  extraCond getOrElse "", localSubstitution)
@@ -1541,7 +1600,7 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
          * TODO: don't ignore outer-checks
          */
         def apply(tm: TreeMaker): Cond = {
-          if (!substitutionComputed) updateSubstitution(tm.substitution)
+          if (!substitutionComputed) updateSubstitution(tm.subPatternsAsSubstitution)
 
           tm match {
             case ttm@TypeTestTreeMaker(prevBinder, testedBinder, pt, _)   =>
