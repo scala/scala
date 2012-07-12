@@ -1035,7 +1035,6 @@ trait Types extends api.Types { self: SymbolTable =>
       var excluded = excludedFlags | DEFERRED
       var continue = true
       var self: Type = null
-      var membertpe: Type = null
       while (continue) {
         continue = false
         val bcs0 = baseClasses
@@ -1045,12 +1044,13 @@ trait Types extends api.Types { self: SymbolTable =>
           var entry = decls.elems 
           while (entry ne null) {
             val sym = entry.sym
-            if (sym hasAllFlags requiredFlags) {
-              val excl = sym.getFlag(excluded)
+            val flags = sym.flags
+            if ((flags & requiredFlags) == requiredFlags) {
+              val excl = flags & excluded
               if (excl == 0L &&
                   (// omit PRIVATE LOCALS unless selector class is contained in class owning the def.
                    (bcs eq bcs0) ||
-                   !sym.isPrivateLocal ||
+                   (flags & PrivateLocal) != PrivateLocal ||
                    (bcs0.head.hasTransOwner(bcs.head)))) {
                 if (members eq null) members = newScope
                 var prevEntry = members.lookupEntry(sym.name)
@@ -1119,61 +1119,60 @@ trait Types extends api.Types { self: SymbolTable =>
         var bcs = bcs0
         while (!bcs.isEmpty) {
           val decls = bcs.head.info.decls
-          var entry =
-            if (name eq nme.ANYNAME) decls.elems 
-            else if ((fingerPrint & decls.fingerPrints) == 0) null
-            else decls.lookupEntry(name)
-          while (entry ne null) {
-            val sym = entry.sym
-            if (sym hasAllFlags requiredFlags) {
-              val excl = sym.getFlag(excluded)
-              if (excl == 0L &&
-                  (// omit PRIVATE LOCALS unless selector class is contained in class owning the def.
-                   (bcs eq bcs0) ||
-                   !sym.isPrivateLocal ||
-                   (bcs0.head.hasTransOwner(bcs.head)))) {
-                if (name.isTypeName || stableOnly && sym.isStable) {
-                  Statistics.popTimer(typeOpsStack, start)
-                  if (suspension ne null) suspension foreach (_.suspended = false)
-                  return sym
-                } else if (member eq NoSymbol) {
-                  member = sym
-                } else if (members eq null) {
-                  if ((member.name ne sym.name) ||
-                      !((member eq sym) ||
-                        (member.owner ne sym.owner) &&
-                        !sym.isPrivate && {
-                          if (self eq null) self = this.narrow
-                          if (membertpe eq null) membertpe = self.memberType(member)
-                          (membertpe matches self.memberType(sym))
-                        })) {
+          if ((fingerPrint & decls.fingerPrints) != 0) {
+            var entry = decls.lookupEntry(name)
+            while (entry ne null) {
+              val sym = entry.sym
+              val flags = sym.flags
+              if ((flags & requiredFlags) == requiredFlags) {
+                val excl = flags & excluded
+                if (excl == 0L &&
+                    (// omit PRIVATE LOCALS unless selector class is contained in class owning the def.
+                     (bcs eq bcs0) ||
+                     (flags & PrivateLocal) != PrivateLocal ||
+                     (bcs0.head.hasTransOwner(bcs.head)))) {
+                  if (name.isTypeName || stableOnly && sym.isStable) {
+                    Statistics.popTimer(typeOpsStack, start)
+                    if (suspension ne null) suspension foreach (_.suspended = false)
+                    return sym
+                  } else if (member eq NoSymbol) {
+                    member = sym
+                  } else if (members eq null) {
+                    if (!((member eq sym) ||
+                          (member.owner ne sym.owner) &&
+                          (flags & PRIVATE) == 0 && {
+                            if (self eq null) self = this.narrow
+                            if (membertpe eq null) membertpe = self.memberType(member)
+                            (membertpe matches self.memberType(sym))
+                          })) {
                     members = newScope
                     members enter member
                     members enter sym
+                    }
+                  } else {
+                    var prevEntry = members.lookupEntry(sym.name)
+                    var symtpe: Type = null
+                    while ((prevEntry ne null) &&
+                           !((prevEntry.sym eq sym) ||
+                             (prevEntry.sym.owner ne sym.owner) &&
+                             (flags & PRIVATE) == 0 && {
+                               if (self eq null) self = this.narrow
+                               if (symtpe eq null) symtpe = self.memberType(sym)
+                               self.memberType(prevEntry.sym) matches symtpe
+                             })) {
+                      prevEntry = members lookupNextEntry prevEntry
+                    }
+                    if (prevEntry eq null) {
+                      members enter sym
+                    }
                   }
-                } else {
-                  var prevEntry = members.lookupEntry(sym.name)
-                  var symtpe: Type = null
-                  while ((prevEntry ne null) &&
-                         !((prevEntry.sym eq sym) ||
-                           (prevEntry.sym.owner ne sym.owner) &&
-                           !sym.hasFlag(PRIVATE) && {
-                             if (self eq null) self = this.narrow
-                             if (symtpe eq null) symtpe = self.memberType(sym)
-                             self.memberType(prevEntry.sym) matches symtpe
-                           })) {
-                    prevEntry = members lookupNextEntry prevEntry
-                  }
-                  if (prevEntry eq null) {
-                    members enter sym
-                  }
+                } else if (excl == DEFERRED) {
+                  continue = true
                 }
-              } else if (excl == DEFERRED.toLong) {
-                continue = true
               }
-            }
-            entry = if (name == nme.ANYNAME) entry.next else decls lookupNextEntry entry
-          } // while (entry ne null)
+              entry = decls lookupNextEntry entry
+            } // while (entry ne null)
+          } // if (fingerPrint matches)
           // excluded = excluded | LOCAL
           bcs = if (name == nme.CONSTRUCTOR) Nil else bcs.tail
         } // while (!bcs.isEmpty)
