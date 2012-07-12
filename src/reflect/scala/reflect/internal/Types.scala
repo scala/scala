@@ -1017,7 +1017,7 @@ trait Types extends api.Types { self: SymbolTable =>
       if (alts.isEmpty) sym
       else (baseClasses.head.newOverloaded(this, alts))
     }
-    
+
     def findMembers(excludedFlags: Long, requiredFlags: Long): List[Symbol] = {
       // if this type contains type variables, put them to sleep for a while -- don't just wipe them out by
       // replacing them by the corresponding type parameter, as that messes up (e.g.) type variables in type refinements
@@ -1040,7 +1040,7 @@ trait Types extends api.Types { self: SymbolTable =>
         var bcs = bcs0
         while (!bcs.isEmpty) {
           val decls = bcs.head.info.decls
-          var entry = decls.elems 
+          var entry = decls.elems
           while (entry ne null) {
             val sym = entry.sym
             val flags = sym.flags
@@ -1105,7 +1105,8 @@ trait Types extends api.Types { self: SymbolTable =>
       val start = Statistics.pushTimer(typeOpsStack, findMemberNanos)
 
       //Console.println("find member " + name.decode + " in " + this + ":" + this.baseClasses)//DEBUG
-      var members: Scope = null
+      var members: List[Symbol] = null
+      var lastM: ::[Symbol] = null
       var member: Symbol = NoSymbol
       var excluded = excludedFlags | DEFERRED
       var continue = true
@@ -1144,25 +1145,26 @@ trait Types extends api.Types { self: SymbolTable =>
                             if (membertpe eq null) membertpe = self.memberType(member)
                             (membertpe matches self.memberType(sym))
                           })) {
-                    members = newScope
-                    members enter member
-                    members enter sym
+                      lastM = new ::(sym, null)
+                      members = member :: lastM
                     }
                   } else {
-                    var prevEntry = members.lookupEntry(sym.name)
+                    var others = members
                     var symtpe: Type = null
-                    while ((prevEntry ne null) &&
-                           !((prevEntry.sym eq sym) ||
-                             (prevEntry.sym.owner ne sym.owner) &&
+                    while ((others ne null) &&
+                           !((others.head eq sym) ||
+                             (others.head.owner ne sym.owner) &&
                              (flags & PRIVATE) == 0 && {
                                if (self eq null) self = this.narrow
                                if (symtpe eq null) symtpe = self.memberType(sym)
-                               self.memberType(prevEntry.sym) matches symtpe
+                               self.memberType(others.head) matches symtpe
                              })) {
-                      prevEntry = members lookupNextEntry prevEntry
+                      others = others.tail
                     }
-                    if (prevEntry eq null) {
-                      members enter sym
+                    if (others eq null) {
+                      val lastM1 = new ::(sym, null)
+                      lastM.tl = lastM1
+                      lastM = lastM1
                     }
                   }
                 } else if (excl == DEFERRED) {
@@ -1184,10 +1186,11 @@ trait Types extends api.Types { self: SymbolTable =>
         member
       } else {
         Statistics.incCounter(multMemberCount)
-        baseClasses.head.newOverloaded(this, members.toList)
+        lastM.tl = Nil
+        baseClasses.head.newOverloaded(this, members)
       }
     }
-    
+
     /** The (existential or otherwise) skolems and existentially quantified variables which are free in this type */
     def skolemsExceptMethodTypeParams: List[Symbol] = {
       var boundSyms: List[Symbol] = List()
