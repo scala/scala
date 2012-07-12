@@ -153,6 +153,8 @@ class Scaladoc extends ScalaMatchingTask {
   /** Instruct the scaladoc to produce textual ouput from html pages, for easy diff-ing */
   private var docRawOutput: Boolean = false
 
+  /** Instruct the scaladoc not to generate prefixes */
+  private var docNoPrefixes: Boolean = false
 
 /*============================================================================*\
 **                             Properties setters                             **
@@ -427,6 +429,12 @@ class Scaladoc extends ScalaMatchingTask {
   def setRawOutput(input: String) =
     docRawOutput = Flag.getBooleanValue(input, "rawOutput")
 
+  /** Set the `noPrefixes` bit to prevent Scaladoc from generating prefixes in
+   *  front of types -- may lead to confusion, but significantly speeds up the generation.
+   *  @param input One of the flags `yes/no` or `on/off`. Default if no/off. */
+  def setNoPrefixes(input: String) =
+    docNoPrefixes = Flag.getBooleanValue(input, "noPrefixes")
+
 /*============================================================================*\
 **                             Properties getters                             **
 \*============================================================================*/
@@ -625,6 +633,7 @@ class Scaladoc extends ScalaMatchingTask {
     docSettings.docDiagrams.value = docDiagrams
     docSettings.docDiagramsDebug.value = docDiagramsDebug
     docSettings.docRawOutput.value = docRawOutput
+    docSettings.docNoPrefixes.value = docNoPrefixes
     if(!docDiagramsDotPath.isEmpty) docSettings.docDiagramsDotPath.value = docDiagramsDotPath.get
 
     if (!docgenerator.isEmpty) docSettings.docgenerator.value = docgenerator.get

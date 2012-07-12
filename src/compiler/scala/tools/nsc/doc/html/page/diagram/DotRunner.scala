@@ -28,7 +28,7 @@ class DotRunner(settings: doc.Settings) {
     if (dotProcess == null) {
       if (dotRestarts < settings.docDiagramsDotRestart.value) {
         if (dotRestarts != 0)
-          settings.printMsg("A new graphviz dot process will be created...\n")
+          settings.printMsg("Graphviz will be restarted...\n")
         dotRestarts += 1
         dotProcess = new DotProcess(settings)
       } else
@@ -145,9 +145,10 @@ class DotProcess(settings: doc.Settings) {
         settings.printMsg("**********************************************************************")
       } else {
         // we shouldn't just sit there for 50s not reporting anything, no?
-        settings.printMsg("Graphviz dot encountered an error when generating the diagram for")
-        settings.printMsg(templateName + ". Use the " + settings.docDiagramsDebug.name + " flag")
-        settings.printMsg("for more information.")
+        settings.printMsg("Graphviz dot encountered an error when generating the diagram for:")
+        settings.printMsg(templateName)
+        settings.printMsg("These are usually spurious errors, but if you notice a persistant error on")
+        settings.printMsg("a diagram, please use the " + settings.docDiagramsDebug.name + " flag and report a bug with the output.")
       }
     }
   }

@@ -48,15 +48,15 @@ object Test extends ScaladocModelTest {
       val WeekDayInObject = test2._object("WeekDayObject")._member("WeekDay")
 
       val expected = List(
-        ("isWorkingDay1", "Value",   ValueInClass),
-        ("isWorkingDay2", "Value",   ValueInClass),
-        ("isWorkingDay3", "Value",   ValueInTrait),
-        ("isWorkingDay4", "Value",   ValueInTrait),
-        ("isWorkingDay5", "Value",   ValueInObject),
+        ("isWorkingDay1", "WeekDayClass.Value",   ValueInClass),
+        ("isWorkingDay2", "WeekDayClass.Value",   ValueInClass),
+        ("isWorkingDay3", "WeekDayTrait.Value",   ValueInTrait),
+        ("isWorkingDay4", "WeekDayTrait.Value",   ValueInTrait),
+        ("isWorkingDay5", "WeekDayObject.Value",   ValueInObject),
         ("isWorkingDay6", "WeekDay", WeekDayInObject),
-        ("isWorkingDay7", "Value",   ValueInObject),
+        ("isWorkingDay7", "WeekDayObject.Value",   ValueInObject),
         ("isWorkingDay8", "WeekDay", WeekDayInObject),
-        ("isWorkingDay9", "Value",   ValueInObject))
+        ("isWorkingDay9", "WeekDayObject.Value",   ValueInObject))
 
       for ((method, name, ref) <- expected) {
         assert(doc._method(method).valueParams(0)(0).resultType.name == name,

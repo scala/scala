@@ -86,22 +86,22 @@ class DotDiagramGenerator(settings: doc.Settings) extends DiagramGenerator {
         //   them by on node with a corresponding tooltip
         superClasses = if (_superClasses.length > settings.docDiagramsMaxNormalClasses.value) {
           val superClassesTooltip = Some(limitSize(_superClasses.map(_.tpe.name).mkString(", ")))
-          List(NormalNode(textTypeEntity(_superClasses.length + MultiSuffix), None, superClassesTooltip))
+          List(NormalNode(textTypeEntity(_superClasses.length + MultiSuffix), None)(superClassesTooltip))
         } else _superClasses
 
         subClasses = if (_subClasses.length > settings.docDiagramsMaxNormalClasses.value) {
           val subClassesTooltip = Some(limitSize(_subClasses.map(_.tpe.name).mkString(", ")))
-          List(NormalNode(textTypeEntity(_subClasses.length + MultiSuffix), None, subClassesTooltip))
+          List(NormalNode(textTypeEntity(_subClasses.length + MultiSuffix), None)(subClassesTooltip))
         } else _subClasses
 
         incomingImplicits = if (_incomingImplicits.length > settings.docDiagramsMaxImplicitClasses.value) {
           val incomingImplicitsTooltip = Some(limitSize(_incomingImplicits.map(_.tpe.name).mkString(", ")))
-          List(ImplicitNode(textTypeEntity(_incomingImplicits.length + MultiSuffix), None, incomingImplicitsTooltip))
+          List(ImplicitNode(textTypeEntity(_incomingImplicits.length + MultiSuffix), None)(incomingImplicitsTooltip))
         } else _incomingImplicits
 
         outgoingImplicits = if (_outgoingImplicits.length > settings.docDiagramsMaxImplicitClasses.value) {
           val outgoingImplicitsTooltip = Some(limitSize(_outgoingImplicits.map(_.tpe.name).mkString(", ")))
-          List(ImplicitNode(textTypeEntity(_outgoingImplicits.length + MultiSuffix), None, outgoingImplicitsTooltip))
+          List(ImplicitNode(textTypeEntity(_outgoingImplicits.length + MultiSuffix), None)(outgoingImplicitsTooltip))
         } else _outgoingImplicits
 
         thisNode = _thisNode

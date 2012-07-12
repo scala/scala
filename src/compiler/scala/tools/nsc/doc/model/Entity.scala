@@ -96,9 +96,6 @@ trait TemplateEntity extends Entity {
 
   /** The self-type of this template, if it differs from the template type. */
   def selfType : Option[TypeEntity]
-
-  /** The type of this entity, with type members */
-  def ownType: TypeEntity
 }
 
 
@@ -206,7 +203,8 @@ trait HigherKinded {
 /** A template (class, trait, object or package) which is referenced in the universe, but for which no further
   * documentation is available. Only templates for which a source file is given are documented by Scaladoc. */
 trait NoDocTemplate extends TemplateEntity {
-  def kind = "<no doc>"
+  def kind = ""
+  //def kind = "(not documented) template"
 }
 
 /** An inherited template that was not documented in its original owner - example:
@@ -214,7 +212,8 @@ trait NoDocTemplate extends TemplateEntity {
  *  in the source: trait U extends T -- C appears in U as a NoDocTemplateMemberImpl
  *    -- that is, U has a member for it but C doesn't get its own page */
 trait NoDocTemplateMemberEntity extends TemplateEntity with MemberEntity {
-  def kind = "<no doc, mbr>"
+  def kind = ""
+  //def kind = "(not documented) member template"
 }
 
 /** A template (class, trait, object or package) for which documentation is available. Only templates for which

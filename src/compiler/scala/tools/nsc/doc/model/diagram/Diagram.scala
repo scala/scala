@@ -98,20 +98,20 @@ object OtherNode   { def unapply(n: Node): Option[(TypeEntity, Option[TemplateEn
 
 
 /** The node for the current class */
-case class ThisNode(tpe: TypeEntity, tpl: Option[TemplateEntity], tooltip: Option[String] = None) extends Node { override def isThisNode = true }
+case class ThisNode(tpe: TypeEntity, tpl: Option[TemplateEntity])(val tooltip: Option[String] = None) extends Node { override def isThisNode = true }
 
 /** The usual node */
-case class NormalNode(tpe: TypeEntity, tpl: Option[TemplateEntity], tooltip: Option[String] = None) extends Node { override def isNormalNode = true }
+case class NormalNode(tpe: TypeEntity, tpl: Option[TemplateEntity])(val tooltip: Option[String] = None) extends Node { override def isNormalNode = true }
 
 /** A class or trait the thisnode can be converted to by an implicit conversion
  *  TODO: I think it makes more sense to use the tpe links to templates instead of the TemplateEntity for implicit nodes
  *  since some implicit conversions convert the class to complex types that cannot be represented as a single tmeplate
  */
-case class ImplicitNode(tpe: TypeEntity, tpl: Option[TemplateEntity], tooltip: Option[String] = None) extends Node { override def isImplicitNode = true }
+case class ImplicitNode(tpe: TypeEntity, tpl: Option[TemplateEntity])(val tooltip: Option[String] = None) extends Node { override def isImplicitNode = true }
 
 /** An outside node is shown in packages when a class from a different package makes it to the package diagram due to
  * its relation to a class in the template (see @contentDiagram hideInheritedNodes annotation) */
-case class OutsideNode(tpe: TypeEntity, tpl: Option[TemplateEntity], tooltip: Option[String] = None) extends Node { override def isOutsideNode = true }
+case class OutsideNode(tpe: TypeEntity, tpl: Option[TemplateEntity])(val tooltip: Option[String] = None) extends Node { override def isOutsideNode = true }
 
 
 // Computing and offering node depth information

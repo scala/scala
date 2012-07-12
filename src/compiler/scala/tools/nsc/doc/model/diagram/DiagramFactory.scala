@@ -18,21 +18,14 @@ import scala.collection.immutable.SortedMap
  *  @author Vlad Ureche
  */
 trait DiagramFactory extends DiagramDirectiveParser {
-  this: ModelFactory with DiagramFactory with CommentFactory with TreeFactory =>
+  this: ModelFactory with ModelFactoryTypeSupport with DiagramFactory with CommentFactory with TreeFactory =>
 
   import this.global.definitions._
   import this.global._
 
   // the following can used for hardcoding different relations into the diagram, for bootstrapping purposes
-  lazy val AnyNode = normalNode(AnyClass)
-  lazy val AnyRefNode = normalNode(AnyRefClass)
-  lazy val AnyValNode = normalNode(AnyValClass)
-  lazy val NullNode = normalNode(NullClass)
-  lazy val NothingNode = normalNode(NothingClass)
-  def normalNode(sym: Symbol) =
-    NormalNode(makeTemplate(sym).ownType, Some(makeTemplate(sym)))
   def aggregationNode(text: String) =
-    NormalNode(new TypeEntity { val name = text; val refEntity = SortedMap[Int, (LinkTo, Int)]() }, None)
+    NormalNode(new TypeEntity { val name = text; val refEntity = SortedMap[Int, (LinkTo, Int)]() }, None)()
 
   /** Create the inheritance diagram for this template */
   def makeInheritanceDiagram(tpl: DocTemplateImpl): Option[Diagram] = {
@@ -52,31 +45,31 @@ trait DiagramFactory extends DiagramDirectiveParser {
         None
       else {
         // the main node
-        val thisNode = ThisNode(tpl.ownType, Some(tpl), Some(tpl.qualifiedName + " (this " + tpl.kind + ")"))
+        val thisNode = ThisNode(tpl.resultType, Some(tpl))(Some(tpl.qualifiedName + " (this " + tpl.kind + ")"))
 
         // superclasses
         var superclasses: List[Node] =
           tpl.parentTypes.collect {
-            case p: (TemplateEntity, TypeEntity) if !classExcluded(p._1) => NormalNode(p._2, Some(p._1))
+            case p: (TemplateEntity, TypeEntity) if !classExcluded(p._1) => NormalNode(p._2, Some(p._1))()
           }.reverse
 
         // incoming implcit conversions
         lazy val incomingImplicitNodes = tpl.incomingImplicitlyConvertedClasses.map {
           case (incomingTpl, conv) =>
-            ImplicitNode(incomingTpl.ownType, Some(incomingTpl), implicitTooltip(from=incomingTpl, to=tpl, conv=conv))
+            ImplicitNode(makeType(incomingTpl.sym.tpe, tpl), Some(incomingTpl))(implicitTooltip(from=incomingTpl, to=tpl, conv=conv))
         }
 
         // subclasses
         var subclasses: List[Node] =
           tpl.directSubClasses.flatMap {
-            case d: TemplateEntity if !classExcluded(d) => List(NormalNode(d.ownType, Some(d)))
+            case d: TemplateImpl if !classExcluded(d) => List(NormalNode(makeType(d.sym.tpe, tpl), Some(d))())
             case _ => Nil
           }.sortBy(_.tpl.get.name)(implicitly[Ordering[String]].reverse)
 
         // outgoing implicit coversions
         lazy val outgoingImplicitNodes = tpl.outgoingImplicitlyConvertedClasses.map {
           case (outgoingTpl, outgoingType, conv) =>
-            ImplicitNode(outgoingType, Some(outgoingTpl), implicitTooltip(from=tpl, to=tpl, conv=conv))
+            ImplicitNode(outgoingType, Some(outgoingTpl))(implicitTooltip(from=tpl, to=tpl, conv=conv))
         }
 
         // TODO: Everyone should be able to use the @{inherit,content}Diagram annotation to change the diagrams.
@@ -149,7 +142,12 @@ trait DiagramFactory extends DiagramDirectiveParser {
             case _ =>
           }
 
-          mapNodes += node -> (if (node.inTemplate == pack) NormalNode(node.ownType, Some(node)) else OutsideNode(node.ownType, Some(node)))
+          mapNodes += node -> (
+            if (node.inTemplate == pack)
+              NormalNode(node.resultType, Some(node))()
+            else
+              OutsideNode(node.resultType, Some(node))()
+          )
         }
 
         if (nodesShown.isEmpty)
@@ -173,7 +171,10 @@ trait DiagramFactory extends DiagramDirectiveParser {
               val anyRefSubtypes = Nil
               val allAnyRefTypes = aggregationNode("All AnyRef subtypes")
               val nullTemplate = makeTemplate(NullClass)
-              ContentDiagram(allAnyRefTypes::nodes, (mapNodes(nullTemplate), allAnyRefTypes::anyRefSubtypes)::edges.filterNot(_._1.tpl == Some(nullTemplate)))
+              if (nullTemplate.isDocTemplate)
+                ContentDiagram(allAnyRefTypes::nodes, (mapNodes(nullTemplate), allAnyRefTypes::anyRefSubtypes)::edges.filterNot(_._1.tpl == Some(nullTemplate)))
+              else
+                ContentDiagram(nodes, edges)
             } else
               ContentDiagram(nodes, edges)
 

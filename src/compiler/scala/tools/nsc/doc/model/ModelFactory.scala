@@ -19,7 +19,12 @@ import model.{ RootPackage => RootPackageEntity }
 
 /** This trait extracts all required information for documentation from compilation units */
 class ModelFactory(val global: Global, val settings: doc.Settings) {
-  thisFactory: ModelFactory with ModelFactoryImplicitSupport with DiagramFactory with CommentFactory with TreeFactory =>
+  thisFactory: ModelFactory
+               with ModelFactoryImplicitSupport
+               with ModelFactoryTypeSupport
+               with DiagramFactory
+               with CommentFactory
+               with TreeFactory =>
 
   import global._
   import definitions.{ ObjectClass, NothingClass, AnyClass, AnyValClass, AnyRefClass }
@@ -32,7 +37,7 @@ class ModelFactory(val global: Global, val settings: doc.Settings) {
   private var universe: Universe = null
 
   private def dbg(msg: String) = if (sys.props contains "scala.scaladoc.debug") println(msg)
-  private def closestPackage(sym: Symbol) = {
+  protected def closestPackage(sym: Symbol) = {
     if (sym.isPackage || sym.isPackageClass) sym
     else sym.enclosingPackage
   }
@@ -63,7 +68,10 @@ class ModelFactory(val global: Global, val settings: doc.Settings) {
   private val droppedPackages = mutable.Set[PackageImpl]()
   protected val docTemplatesCache = new mutable.LinkedHashMap[Symbol, DocTemplateImpl]
   protected val noDocTemplatesCache = new mutable.LinkedHashMap[Symbol, NoDocTemplateImpl]
-  protected var typeCache = new mutable.LinkedHashMap[Type, TypeEntity]
+  def packageDropped(tpl: DocTemplateImpl) = tpl match {
+    case p: PackageImpl => droppedPackages(p)
+    case _ => false
+  }
 
   def optimize(str: String): String =
     if (str.length < 16) str.intern else str
@@ -95,7 +103,6 @@ class ModelFactory(val global: Global, val settings: doc.Settings) {
     def isObject = sym.isModule && !sym.isPackage
     def isCaseClass = sym.isCaseClass
     def isRootPackage = false
-    def ownType = makeType(sym.tpe, this)
     def selfType = if (sym.thisSym eq sym) None else Some(makeType(sym.thisSym.typeOfThis, this))
   }
 
@@ -338,14 +345,14 @@ class ModelFactory(val global: Global, val settings: doc.Settings) {
     def directSubClasses = allSubClasses.filter(_.parentTypes.map(_._1).contains(this))
 
     /* Implcitly convertible class cache */
-    private var implicitlyConvertibleClassesCache: mutable.ListBuffer[(DocTemplateEntity, ImplicitConversionImpl)] = null
-    def registerImplicitlyConvertibleClass(dtpl: DocTemplateEntity, conv: ImplicitConversionImpl): Unit = {
+    private var implicitlyConvertibleClassesCache: mutable.ListBuffer[(DocTemplateImpl, ImplicitConversionImpl)] = null
+    def registerImplicitlyConvertibleClass(dtpl: DocTemplateImpl, conv: ImplicitConversionImpl): Unit = {
       if (implicitlyConvertibleClassesCache == null)
-        implicitlyConvertibleClassesCache = mutable.ListBuffer[(DocTemplateEntity, ImplicitConversionImpl)]()
+        implicitlyConvertibleClassesCache = mutable.ListBuffer[(DocTemplateImpl, ImplicitConversionImpl)]()
       implicitlyConvertibleClassesCache += ((dtpl, conv))
     }
 
-    def incomingImplicitlyConvertedClasses: List[(DocTemplateEntity, ImplicitConversionImpl)] =
+    def incomingImplicitlyConvertedClasses: List[(DocTemplateImpl, ImplicitConversionImpl)] =
       if (implicitlyConvertibleClassesCache == null)
         List()
       else
@@ -408,7 +415,7 @@ class ModelFactory(val global: Global, val settings: doc.Settings) {
           conv.targetTypeComponents map {
             case pair@(template, tpe) =>
               template match {
-                case d: DocTemplateImpl => d.registerImplicitlyConvertibleClass(this, conv)
+                case d: DocTemplateImpl if (d != this) => d.registerImplicitlyConvertibleClass(this, conv)
                 case _ => // nothing
               }
               (pair._1, pair._2, conv)
@@ -508,6 +515,8 @@ class ModelFactory(val global: Global, val settings: doc.Settings) {
       normalizeTemplate(aSym.owner)
     case _ if aSym.isModuleClass =>
       normalizeTemplate(aSym.sourceModule)
+    // case t: ThisType =>
+    //   t.
     case _ =>
       aSym
   }
@@ -737,12 +746,12 @@ class ModelFactory(val global: Global, val settings: doc.Settings) {
 
   def findTemplate(query: String): Option[DocTemplateImpl] = {
     assert(modelFinished)
-    docTemplatesCache.values find { (tpl: TemplateImpl) => tpl.qualifiedName == query && !tpl.isObject }
+    docTemplatesCache.values find { (tpl: DocTemplateImpl) => tpl.qualifiedName == query && !packageDropped(tpl) && !tpl.isObject }
   }
 
   def findTemplateMaybe(aSym: Symbol): Option[DocTemplateImpl] = {
     assert(modelFinished)
-    docTemplatesCache.get(normalizeTemplate(aSym))
+    docTemplatesCache.get(normalizeTemplate(aSym)).filterNot(packageDropped(_))
   }
 
   def makeTemplate(aSym: Symbol): TemplateImpl = makeTemplate(aSym, None)
@@ -890,158 +899,25 @@ class ModelFactory(val global: Global, val settings: doc.Settings) {
       List((makeTemplate(aType.typeSymbol), makeType(aType, inTpl)))
   }
 
-  /** */
-  def makeType(aType: Type, inTpl: TemplateImpl): TypeEntity = {
-    def templatePackage = closestPackage(inTpl.sym)
+  def makeQualifiedName(sym: Symbol, relativeTo: Option[Symbol] = None): String = {
+    val stop = if (relativeTo.isDefined) relativeTo.get.ownerChain.toSet else Set[Symbol]()
+    var sym1 = sym
+    var path = new StringBuilder()
+    // var path = List[Symbol]()
 
-    def createTypeEntity = new TypeEntity {
-      private val nameBuffer = new StringBuilder
-      private var refBuffer = new immutable.TreeMap[Int, (LinkTo, Int)]
-      private def appendTypes0(types: List[Type], sep: String): Unit = types match {
-        case Nil =>
-        case tp :: Nil =>
-          appendType0(tp)
-        case tp :: tps =>
-          appendType0(tp)
-          nameBuffer append sep
-          appendTypes0(tps, sep)
+    while ((sym1 != NoSymbol) && (path.isEmpty || !stop(sym1))) {
+      val sym1Norm = normalizeTemplate(sym1)
+      if (!sym1.sourceModule.isPackageObject && sym1Norm != RootPackage) {
+        if (path.length != 0)
+          path.insert(0, ".")
+        path.insert(0, sym1Norm.nameString)
+        // path::= sym1Norm
       }
-
-      private def appendType0(tpe: Type): Unit = tpe match {
-        /* Type refs */
-        case tp: TypeRef if definitions.isFunctionType(tp) =>
-          val args = tp.normalize.typeArgs
-          nameBuffer append '('
-          appendTypes0(args.init, ", ")
-          nameBuffer append ") ⇒ "
-          appendType0(args.last)
-        case tp: TypeRef if definitions.isScalaRepeatedParamType(tp) =>
-          appendType0(tp.args.head)
-          nameBuffer append '*'
-        case tp: TypeRef if definitions.isByNameParamType(tp) =>
-          nameBuffer append "⇒ "
-          appendType0(tp.args.head)
-        case tp: TypeRef if definitions.isTupleType(tp) =>
-          val args = tp.normalize.typeArgs
-          nameBuffer append '('
-          appendTypes0(args, ", ")
-          nameBuffer append ')'
-        case TypeRef(pre, aSym, targs) =>
-          val preSym = pre.widen.typeSymbol
-          // There's a work in progress here trying to deal with the
-          // places where undesirable prefixes are printed.
-          // ...
-          // If the prefix is something worthy of printing, see if the prefix type
-          // is in the same package as the enclosing template.  If so, print it
-          // unqualified and they'll figure it out.
-          //
-          // val stripPrefixes = List(templatePackage.fullName + ".", "package.", "java.lang.")
-          // if (!preSym.printWithoutPrefix) {
-          //   nameBuffer append stripPrefixes.foldLeft(pre.prefixString)(_ stripPrefix _)
-          // }
-
-          // SI-3314/SI-4888: Classes, Traits and Types can be inherited from a template to another:
-          // class Enum { abstract class Value }
-          // class Day extends Enum { object Mon extends Value /*...*/ }
-          // ===> in such cases we have two options:
-          // (0) if there's no inheritance taking place (Enum#Value) we can link to the template directly
-          // (1) if we generate the doc template for Day, we can link to the correct member
-          // (2) if we don't generate the doc template, we should at least indicate the correct prefix in the tooltip
-          val bSym = normalizeTemplate(aSym)
-          val owner =
-            if ((preSym != NoSymbol) &&                  /* it needs a prefix */
-                (preSym != bSym.owner) &&                /* prefix is different from owner */
-                // ((preSym != inTpl.sym) &&             /* prevent prefixes from being shown inside the defining class */
-                // (preSym != inTpl.sym.moduleClass)) && /* or object */
-                (aSym == bSym))                          /* normalization doesn't play tricks on us */
-              preSym
-            else
-              bSym.owner
-
-          val bTpl = findTemplateMaybe(bSym)
-          val link =
-            if (owner == bSym.owner && bTpl.isDefined)
-              // (0) the owner's class is linked AND has a template - lovely
-              LinkToTpl(bTpl.get)
-            else {
-              val oTpl = findTemplateMaybe(owner)
-              val bMbr = oTpl.map(findMember(bSym, _))
-              if (oTpl.isDefined && bMbr.isDefined && bMbr.get.isDefined)
-                // (1) the owner's class
-                LinkToMember(bMbr.get.get, oTpl.get) //ugh
-              else
-                // (2) if we still couldn't find the owner, make a noDocTemplate for everything (in the correct owner!)
-                LinkToTpl(makeTemplate(bSym, Some(makeTemplate(owner))))
-            }
-
-          // TODO: The name might include a prefix, take care of that!
-          val name = bSym.nameString
-          val pos0 = nameBuffer.length
-          refBuffer += pos0 -> ((link, name.length))
-          nameBuffer append name
-
-          // if (bSym.isNonClassType && bSym != AnyRefClass) {
-          //   nameBuffer append bSym.decodedName
-          // } else {
-          //   val tpl = makeTemplate(bSym)
-          //   val pos0 = nameBuffer.length
-          //   refBuffer += pos0 -> ((LinkToTpl(tpl), tpl.name.length))
-          //   nameBuffer append tpl.name
-          // }
-
-          if (!targs.isEmpty) {
-            nameBuffer append '['
-            appendTypes0(targs, ", ")
-            nameBuffer append ']'
-          }
-        /* Refined types */
-        case RefinedType(parents, defs) =>
-          val ignoreParents = Set[Symbol](AnyClass, ObjectClass)
-          val filtParents = parents filterNot (x => ignoreParents(x.typeSymbol)) match {
-            case Nil    => parents
-            case ps     => ps
-          }
-          appendTypes0(filtParents, " with ")
-          // XXX Still todo: properly printing refinements.
-          // Since I didn't know how to go about displaying a multi-line type, I went with
-          // printing single method refinements (which should be the most common) and printing
-          // the number of members if there are more.
-          defs.toList match {
-            case Nil      => ()
-            case x :: Nil => nameBuffer append (" { " + x.defString + " }")
-            case xs       => nameBuffer append (" { ... /* %d definitions in type refinement */ }" format xs.size)
-          }
-        /* Eval-by-name types */
-        case NullaryMethodType(result) =>
-          nameBuffer append '⇒'
-          appendType0(result)
-        /* Polymorphic types */
-        case PolyType(tparams, result) => assert(tparams.nonEmpty)
-//          throw new Error("Polymorphic type '" + tpe + "' cannot be printed as a type")
-          def typeParamsToString(tps: List[Symbol]): String = if (tps.isEmpty) "" else
-            tps.map{tparam =>
-              tparam.varianceString + tparam.name + typeParamsToString(tparam.typeParams)
-            }.mkString("[", ", ", "]")
-          nameBuffer append typeParamsToString(tparams)
-          appendType0(result)
-        case tpen =>
-          nameBuffer append tpen.toString
-      }
-      appendType0(aType)
-      val refEntity = refBuffer
-      val name = optimize(nameBuffer.toString)
+      sym1 = sym1.owner
     }
 
-    if (aType.isTrivial)
-      typeCache.get(aType) match {
-        case Some(typeEntity) => typeEntity
-        case None =>
-          val typeEntity = createTypeEntity
-          typeCache += aType -> typeEntity
-          typeEntity
-      }
-    else
-      createTypeEntity
+    optimize(path.toString)
+    //path.mkString(".")
   }
 
   def normalizeOwner(aSym: Symbol): Symbol =

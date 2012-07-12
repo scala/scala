@@ -166,6 +166,11 @@ class Settings(error: String => Unit, val printMsg: String => Unit = println(_))
     "For each html file, create another .html.raw file containing only the text. (can be used for quickly diffing two scaladoc outputs)"
   )
 
+  val docNoPrefixes = BooleanSetting (
+    "-no-prefixes",
+    "Prevents generating prefixes in types, possibly creating ambiguous references, but significantly speeding up scaladoc."
+  )
+
   // Somewhere slightly before r18708 scaladoc stopped building unless the
   // self-type check was suppressed.  I hijacked the slotted-for-removal-anyway
   // suppress-vt-warnings option and renamed it for this purpose.
@@ -177,7 +182,8 @@ class Settings(error: String => Unit, val printMsg: String => Unit = println(_))
     docDiagrams, docDiagramsDebug, docDiagramsDotPath,
     docDiagramsDotTimeout, docDiagramsDotRestart,
     docImplicits, docImplicitsDebug, docImplicitsShowAll,
-    docDiagramsMaxNormalClasses, docDiagramsMaxImplicitClasses
+    docDiagramsMaxNormalClasses, docDiagramsMaxImplicitClasses,
+    docNoPrefixes
   )
   val isScaladocSpecific: String => Boolean = scaladocSpecific map (_.name)
 

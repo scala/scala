@@ -53,7 +53,7 @@ import model.{ RootPackage => RootPackageEntity }
  * TODO: Give an overview here
  */
 trait ModelFactoryImplicitSupport {
-  thisFactory: ModelFactory with CommentFactory with TreeFactory =>
+  thisFactory: ModelFactory with ModelFactoryTypeSupport with CommentFactory with TreeFactory =>
 
   import global._
   import global.analyzer._
@@ -328,11 +328,6 @@ trait ModelFactoryImplicitSupport {
         }
       }
     }
-
-  def makeQualifiedName(sym: Symbol): String = {
-    val remove = Set[Symbol](RootPackage, RootClass, EmptyPackage, EmptyPackageClass)
-    sym.ownerChain.filterNot(remove.contains(_)).reverse.map(_.nameString).mkString(".")
-  }
 
   /* ============== IMPLEMENTATION PROVIDING ENTITY TYPES ============== */
 

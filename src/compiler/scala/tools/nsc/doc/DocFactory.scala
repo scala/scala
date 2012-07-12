@@ -81,6 +81,7 @@ class DocFactory(val reporter: Reporter, val settings: doc.Settings) { processor
       new { override val global: compiler.type = compiler }
         with model.ModelFactory(compiler, settings)
         with model.ModelFactoryImplicitSupport
+        with model.ModelFactoryTypeSupport
         with model.diagram.DiagramFactory
         with model.comment.CommentFactory
         with model.TreeFactory {
