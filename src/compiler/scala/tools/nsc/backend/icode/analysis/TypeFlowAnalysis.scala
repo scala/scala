@@ -516,7 +516,7 @@ abstract class TypeFlowAnalysis {
          * but the effect on method size could be explored.  */
       putOnRadar(m.linearizedBlocks(linearizer))
       populatePerimeter()
-      assert(relevantBBs.isEmpty || relevantBBs.contains(m.startBlock), "you gave me dead code")
+      // usually but not always true (counterexample in SI-6015) `(relevantBBs.isEmpty || relevantBBs.contains(m.startBlock))`
     }
 
     def conclusives(b: BasicBlock): List[opcodes.CALL_METHOD] = {
