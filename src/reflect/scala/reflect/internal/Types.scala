@@ -1045,7 +1045,7 @@ trait Types extends api.Types { self: SymbolTable =>
       var continue = true
       var self: Type = null
       var membertpe: Type = null
-      val fingerPrint: Long = (1L << name.start)
+      val fingerPrint: Long = name.fingerPrint
       while (continue) {
         continue = false
         val bcs0 = baseClasses
@@ -1612,8 +1612,13 @@ trait Types extends api.Types { self: SymbolTable =>
     if (period != currentPeriod) {
       tpe.baseClassesPeriod = currentPeriod
       if (!isValidForBaseClasses(period)) {
-        tpe.baseClassesCache = null
-        tpe.baseClassesCache = tpe.memo(computeBaseClasses)(tpe.typeSymbol :: _.baseClasses.tail)
+        val start = Statistics.pushTimer(typeOpsStack, baseClassesNanos)
+        try {
+          tpe.baseClassesCache = null
+          tpe.baseClassesCache = tpe.memo(computeBaseClasses)(tpe.typeSymbol :: _.baseClasses.tail)
+        } finally {
+          Statistics.popTimer(typeOpsStack, start)
+        }
       }
     }
     if (tpe.baseClassesCache eq null)
@@ -6909,6 +6914,7 @@ object TypesStats {
   val findMemberNanos     = Statistics.newStackableTimer("time spent in findmember", typerNanos)
   val asSeenFromNanos     = Statistics.newStackableTimer("time spent in asSeenFrom", typerNanos)
   val baseTypeSeqNanos    = Statistics.newStackableTimer("time spent in baseTypeSeq", typerNanos)
+  val baseClassesNanos    = Statistics.newStackableTimer("time spent in baseClasses", typerNanos)
   val compoundBaseTypeSeqCount = Statistics.newSubCounter("  of which for compound types", baseTypeSeqCount)
   val typerefBaseTypeSeqCount = Statistics.newSubCounter("  of which for typerefs", baseTypeSeqCount)
   val singletonBaseTypeSeqCount = Statistics.newSubCounter("  of which for singletons", baseTypeSeqCount)
