@@ -1053,7 +1053,7 @@ trait Types extends api.Types { self: SymbolTable =>
         while (!bcs.isEmpty) {
           val decls = bcs.head.info.decls
           var entry =
-            if (name == nme.ANYNAME) decls.elems 
+            if (name eq nme.ANYNAME) decls.elems 
             else if ((fingerPrint & decls.fingerPrints) == 0) null
             else decls.lookupEntry(name)
           while (entry ne null) {
@@ -1069,12 +1069,12 @@ trait Types extends api.Types { self: SymbolTable =>
                   Statistics.popTimer(typeOpsStack, start)
                   if (suspension ne null) suspension foreach (_.suspended = false)
                   return sym
-                } else if (member == NoSymbol) {
+                } else if (member eq NoSymbol) {
                   member = sym
                 } else if (members eq null) {
-                  if (member.name != sym.name ||
-                      !(member == sym ||
-                        member.owner != sym.owner &&
+                  if ((member.name ne sym.name) ||
+                      !((member eq sym) ||
+                        (member.owner ne sym.owner) &&
                         !sym.isPrivate && {
                           if (self eq null) self = this.narrow
                           if (membertpe eq null) membertpe = self.memberType(member)
@@ -1088,8 +1088,8 @@ trait Types extends api.Types { self: SymbolTable =>
                   var prevEntry = members.lookupEntry(sym.name)
                   var symtpe: Type = null
                   while ((prevEntry ne null) &&
-                         !(prevEntry.sym == sym ||
-                           prevEntry.sym.owner != sym.owner &&
+                         !((prevEntry.sym eq sym) ||
+                           (prevEntry.sym.owner ne sym.owner) &&
                            !sym.hasFlag(PRIVATE) && {
                              if (self eq null) self = this.narrow
                              if (symtpe eq null) symtpe = self.memberType(sym)
