@@ -53,7 +53,6 @@ object Stack extends SeqFactory[Stack] {
  *  @define mayNotTerminateInf
  *  @define willNotTerminateInf
  */
-@cloneable
 class Stack[A] private (var elems: List[A])
 extends AbstractSeq[A]
    with Seq[A]

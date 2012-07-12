@@ -727,7 +727,7 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
       // without it.  This is particularly bad because the availability of
       // generic information could disappear as a consequence of a seemingly
       // unrelated change.
-         sym.isSynthetic
+         sym.isHidden
       || sym.isLiftedMethod
       || sym.isBridge
       || (sym.ownerChain exists (_.isImplClass))
@@ -1972,6 +1972,7 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
       if (finalFlag && !sym.hasAbstractFlag) ACC_FINAL else 0,
       if (sym.isStaticMember) ACC_STATIC else 0,
       if (sym.isBridge) ACC_BRIDGE | ACC_SYNTHETIC else 0,
+      if (sym.isHidden) ACC_SYNTHETIC else 0,
       if (sym.isClass && !sym.isInterface) ACC_SUPER else 0,
       if (sym.isVarargsMethod) ACC_VARARGS else 0,
       if (sym.hasFlag(Flags.SYNCHRONIZED)) JAVA_ACC_SYNCHRONIZED else 0

@@ -1,4 +1,0 @@
-error: type _$1 is defined twice
-  conflicting symbols both originated in file 't5504/s_1.scala'
-  Note: this may be due to a bug in the compiler involving wildcards in package objects
-one error found

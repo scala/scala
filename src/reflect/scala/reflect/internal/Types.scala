@@ -66,7 +66,7 @@ import util.Statistics
     // inst is the instantiation and constr is a list of bounds.
   case DeBruijnIndex(level, index)
     // for dependent method types: a type referring to a method parameter.
-  case ErasedValueType(tp)
+  case ErasedValueType(clazz, underlying)
     // only used during erasure of derived value classes.
 */
 
@@ -693,20 +693,21 @@ trait Types extends api.Types { self: SymbolTable =>
      *      = Int
      */
     def asSeenFrom(pre: Type, clazz: Symbol): Type = {
-      if (isTrivial || phase.erasedTypes && pre.typeSymbol != ArrayClass) this
-      else {
-//        scala.tools.nsc.util.trace.when(pre.isInstanceOf[ExistentialType])("X "+this+".asSeenfrom("+pre+","+clazz+" = ") {
-        Statistics.incCounter(asSeenFromCount)
-        val start = Statistics.pushTimer(typeOpsStack, asSeenFromNanos)
-        val m = new AsSeenFromMap(pre.normalize, clazz)
-        val tp = m apply this
-        val tp1 = existentialAbstraction(m.capturedParams, tp)
-        val result: Type =
+      TypesStats.timedTypeOp(asSeenFromNanos) {
+        val trivial = (
+             this.isTrivial
+          || phase.erasedTypes && pre.typeSymbol != ArrayClass
+          || pre.normalize.isTrivial && !isPossiblePrefix(clazz)
+        )
+        if (trivial) this
+        else {
+          val m     = new AsSeenFromMap(pre.normalize, clazz)
+          val tp    = m(this)
+          val tp1   = existentialAbstraction(m.capturedParams, tp)
+
           if (m.capturedSkolems.isEmpty) tp1
           else deriveType(m.capturedSkolems, _.cloneSymbol setFlag CAPTURED)(tp1)
-
-        Statistics.popTimer(typeOpsStack, start)
-        result
+        }
       }
     }
 
@@ -1289,7 +1290,7 @@ trait Types extends api.Types { self: SymbolTable =>
   /** A class for this-types of the form <sym>.this.type
    */
   abstract case class ThisType(sym: Symbol) extends SingletonType with ThisTypeApi {
-    assert(sym.isClass)
+    assert(sym.isClass, sym)
     //assert(sym.isClass && !sym.isModuleClass || sym.isRoot, sym)
     override def isTrivial: Boolean = sym.isPackageClass
     override def isNotNull = true
@@ -2207,6 +2208,8 @@ trait Types extends api.Types { self: SymbolTable =>
    * @M: a higher-kinded type is represented as a TypeRef with sym.typeParams.nonEmpty, but args.isEmpty
    */
   abstract case class TypeRef(pre: Type, sym: Symbol, args: List[Type]) extends Type with TypeRefApi {
+    override val isTrivial: Boolean = !sym.isTypeParameter && pre.isTrivial && args.forall(_.isTrivial)
+
     private[reflect] var parentsCache: List[Type]      = _
     private[reflect] var parentsPeriod                 = NoPeriod
     private[reflect] var baseTypeSeqCache: BaseTypeSeq = _
@@ -2268,9 +2271,6 @@ trait Types extends api.Types { self: SymbolTable =>
     override def typeOfThis       = transform(sym.typeOfThis)
     override def typeSymbol       = sym
     override def typeSymbolDirect = sym
-
-    override lazy val isTrivial: Boolean =
-      !sym.isTypeParameter && pre.isTrivial && args.forall(_.isTrivial)
 
     override def isNotNull =
       sym.isModuleClass || sym == NothingClass || (sym isNonBottomSubClass NotNullClass) || super.isNotNull
@@ -2435,11 +2435,15 @@ trait Types extends api.Types { self: SymbolTable =>
    */
   case class MethodType(override val params: List[Symbol],
                         override val resultType: Type) extends Type with MethodTypeApi {
-    override def isTrivial: Boolean = isTrivial0 && (resultType eq resultType.withoutAnnotations)
-    private lazy val isTrivial0 =
-      resultType.isTrivial && params.forall{p => p.tpe.isTrivial &&  (
-        !(params.exists(_.tpe.contains(p)) || resultType.contains(p)))
-      }
+
+    override lazy val isTrivial: Boolean =
+      isTrivialResult && (params forall isTrivialParam)
+
+    private def isTrivialResult =
+      resultType.isTrivial && (resultType eq resultType.withoutAnnotations)
+
+    private def isTrivialParam(p: Symbol) =
+      p.tpe.isTrivial && !(params.exists(_.tpe contains p) || (resultType contains p))
 
     def isImplicit = params.nonEmpty && params.head.isImplicit
     def isJava = false // can we do something like for implicits? I.e. do Java methods without parameters need to be recognized?
@@ -3211,8 +3215,7 @@ trait Types extends api.Types { self: SymbolTable =>
 
     override protected def rewrap(tp: Type) = copy(underlying = tp)
 
-    override def isTrivial: Boolean = isTrivial0
-    private lazy val isTrivial0 = underlying.isTrivial && annotations.forall(_.isTrivial)
+    override def isTrivial: Boolean = underlying.isTrivial && annotations.forall(_.isTrivial)
 
     override def safeToString = annotations.mkString(underlying + " @", " @", "")
 
@@ -3305,16 +3308,21 @@ trait Types extends api.Types { self: SymbolTable =>
     }
   }
 
-  abstract case class ErasedValueType(sym: Symbol) extends Type {
-    override def safeToString = sym.name+"$unboxed"
+  /** A temporary type representing the reasure of a user-defined value type.
+   *  Created during phase reasure, elimintaed again in posterasure.
+   *  @param   sym The value class symbol
+   *  @param   underlying  The underlying type before erasure
+   */
+  abstract case class ErasedValueType(original: TypeRef) extends Type {
+    override def safeToString = "ErasedValueType("+original+")"
   }
 
-  final class UniqueErasedValueType(sym: Symbol) extends ErasedValueType(sym) with UniqueType
+  final class UniqueErasedValueType(original: TypeRef) extends ErasedValueType(original) with UniqueType
 
   object ErasedValueType {
-    def apply(sym: Symbol): Type = {
-      assert(sym ne NoSymbol, "ErasedValueType cannot be NoSymbol")
-      unique(new UniqueErasedValueType(sym))
+    def apply(original: TypeRef): Type = {
+      assert(original.sym ne NoSymbol, "ErasedValueType over NoSymbol")
+      unique(new UniqueErasedValueType(original))
     }
   }
 
@@ -4250,55 +4258,58 @@ trait Types extends api.Types { self: SymbolTable =>
 
   def singletonBounds(hi: Type) = TypeBounds.upper(intersectionType(List(hi, SingletonClass.tpe)))
 
+  /** Might the given symbol be important when calculating the prefix
+   *  of a type? When tp.asSeenFrom(pre, clazz) is called on `tp`,
+   *  the result will be `tp` unchanged if `pre` is trivial and `clazz`
+   *  is a symbol such that isPossiblePrefix(clazz) == false.
+   */
+  def isPossiblePrefix(clazz: Symbol) = clazz.isClass && !clazz.isPackageClass
+
   /** A map to compute the asSeenFrom method  */
   class AsSeenFromMap(pre: Type, clazz: Symbol) extends TypeMap with KeepOnlyTypeConstraints {
     var capturedSkolems: List[Symbol] = List()
     var capturedParams: List[Symbol] = List()
-    var capturedPre = emptySymMap
 
+    @inline private def skipPrefixOf(pre: Type, clazz: Symbol) = (
+      (pre eq NoType) || (pre eq NoPrefix) || !isPossiblePrefix(clazz)
+    )
     override def mapOver(tree: Tree, giveup: ()=>Nothing): Tree = {
       object annotationArgRewriter extends TypeMapTransformer {
+        private def canRewriteThis(sym: Symbol) = (
+             (sym isNonBottomSubClass clazz)
+          && (pre.widen.typeSymbol isNonBottomSubClass sym)
+          && (pre.isStable || giveup())
+        )
+        // what symbol should really be used?
+        private def newTermSym() = {
+          val p = pre.typeSymbol
+          p.owner.newValue(p.name.toTermName, p.pos) setInfo pre
+        }
         /** Rewrite `This` trees in annotation argument trees */
-        def rewriteThis(tree: Tree): Tree =
-          tree match {
-            case This(_)
-            if (tree.symbol isNonBottomSubClass clazz) &&
-               (pre.widen.typeSymbol isNonBottomSubClass tree.symbol) =>
-              if (pre.isStable) { // XXX why is this in this method? pull it out and guard the call `annotationArgRewriter.transform(tree)`?
-                val termSym = (
-                  pre.typeSymbol.owner.newValue(pre.typeSymbol.name.toTermName, pre.typeSymbol.pos) // what symbol should really be used?
-                    setInfo pre
-                )
-                gen.mkAttributedQualifier(pre, termSym)
-              } else
-                giveup()
-
-            case tree => tree
-          }
-
-        override def transform(tree: Tree): Tree = {
-          val tree1 = rewriteThis(super.transform(tree))
-          tree1
+        override def transform(tree: Tree): Tree = super.transform(tree) match {
+          case This(_) if canRewriteThis(tree.symbol) => gen.mkAttributedQualifier(pre, newTermSym())
+          case tree                                   => tree
         }
       }
-
       annotationArgRewriter.transform(tree)
     }
 
-    def stabilize(pre: Type, clazz: Symbol): Type =
-      capturedPre.getOrElse(clazz, {
-          val qvar = clazz freshExistential ".type" setInfo singletonBounds(pre)
-          capturedPre += (clazz -> qvar)
-          capturedParams = qvar :: capturedParams
-          qvar
-      }).tpe
+    def stabilize(pre: Type, clazz: Symbol): Type = {
+      capturedParams find (_.owner == clazz) match {
+        case Some(qvar) => qvar.tpe
+        case _          =>
+          val qvar = clazz freshExistential nme.SINGLETON_SUFFIX setInfo singletonBounds(pre)
+          capturedParams ::= qvar
+          qvar.tpe
+      }
+    }
 
     def apply(tp: Type): Type =
-      if ((pre eq NoType) || (pre eq NoPrefix) || !clazz.isClass) tp
+      if (skipPrefixOf(pre, clazz)) tp
       else tp match {
         case ThisType(sym) =>
           def toPrefix(pre: Type, clazz: Symbol): Type =
-            if ((pre eq NoType) || (pre eq NoPrefix) || !clazz.isClass) tp
+            if (skipPrefixOf(pre, clazz)) tp
             else if ((sym isNonBottomSubClass clazz) &&
                      (pre.widen.typeSymbol isNonBottomSubClass sym)) {
               val pre1 = pre match {
@@ -4334,7 +4345,7 @@ trait Types extends api.Types { self: SymbolTable =>
         // (skolems also aren't affected: they are ruled out by the isTypeParameter check)
         case TypeRef(prefix, sym, args) if (sym.isTypeParameter && sym.owner.isClass) =>
           def toInstance(pre: Type, clazz: Symbol): Type =
-            if ((pre eq NoType) || (pre eq NoPrefix) || !clazz.isClass) mapOver(tp)
+            if (skipPrefixOf(pre, clazz)) mapOver(tp)
             //@M! see test pos/tcpoly_return_overriding.scala why mapOver is necessary
             else {
               def throwError = abort("" + tp + sym.locationString + " cannot be instantiated from " + pre.widen)
@@ -4604,7 +4615,7 @@ trait Types extends api.Types { self: SymbolTable =>
       if (existentials(pid) eq null) {
         val param = params(pid)
         existentials(pid) = (
-          param.owner.newExistential(newTypeName(param.name + ".type"), param.pos, param.flags)
+          param.owner.newExistential(param.name.toTypeName append nme.SINGLETON_SUFFIX, param.pos, param.flags)
             setInfo singletonBounds(actuals(pid))
         )
       }
@@ -6910,4 +6921,10 @@ object TypesStats {
   val typerefBaseTypeSeqCount = Statistics.newSubCounter("  of which for typerefs", baseTypeSeqCount)
   val singletonBaseTypeSeqCount = Statistics.newSubCounter("  of which for singletons", baseTypeSeqCount)
   val typeOpsStack = Statistics.newTimerStack()
+
+  @inline final def timedTypeOp[T](c: Statistics.StackableTimer)(op: => T): T = {
+    val start = Statistics.pushTimer(typeOpsStack, c)
+    try op
+    finally Statistics.popTimer(typeOpsStack, start)
+  }
 }
