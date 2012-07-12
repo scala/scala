@@ -92,6 +92,7 @@ trait HasFlags {
   def isCaseAccessor     = hasFlag(CASEACCESSOR)
   def isDeferred         = hasFlag(DEFERRED)
   def isFinal            = hasFlag(FINAL)
+  def isHidden           = hasFlag(HIDDEN)
   def isImplicit         = hasFlag(IMPLICIT)
   def isInterface        = hasFlag(INTERFACE)
   def isJavaDefined      = hasFlag(JAVA)

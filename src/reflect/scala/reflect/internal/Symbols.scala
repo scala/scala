@@ -957,13 +957,13 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
 
     /** Is this symbol an accessor method for outer? */
     final def isOuterAccessor = {
-      hasFlag(STABLE | SYNTHETIC) &&
+      hasFlag(STABLE | HIDDEN) &&
       originalName == nme.OUTER
     }
 
     /** Is this symbol an accessor method for outer? */
     final def isOuterField = {
-      hasFlag(SYNTHETIC) &&
+      hasFlag(HIDDEN) &&
       originalName == nme.OUTER_LOCAL
     }
 
@@ -2239,10 +2239,10 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
       base.info.decl(sname) filter (_.hasAccessorFlag)
     }
 
-    /** Return the accessor method of the first parameter of this class.
+    /** If this is a derived value class, return its unbox method
      *  or NoSymbol if it does not exist.
      */
-    def firstParamAccessor: Symbol = NoSymbol
+    def derivedValueClassUnbox: Symbol = NoSymbol
 
      /** The case module corresponding to this case class
      *  @pre case class is a member of some other class or package
@@ -3146,8 +3146,10 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
       clone
     }
 
-    override def firstParamAccessor =
-      info.decls.find(_ hasAllFlags PARAMACCESSOR | METHOD) getOrElse NoSymbol
+    override def derivedValueClassUnbox =
+      (info.decl(nme.unbox)) orElse
+      (info.decls.find(_ hasAllFlags PARAMACCESSOR | METHOD) getOrElse
+       NoSymbol)
 
     private[this] var childSet: Set[Symbol] = Set()
     override def children = childSet
