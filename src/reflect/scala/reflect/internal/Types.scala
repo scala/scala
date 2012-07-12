@@ -1046,6 +1046,7 @@ trait Types extends api.Types { self: SymbolTable =>
       var continue = true
       var self: Type = null
       var membertpe: Type = null
+      val fingerPrint: Long = (1L << name.start)
       while (continue) {
         continue = false
         val bcs0 = baseClasses
@@ -1053,7 +1054,9 @@ trait Types extends api.Types { self: SymbolTable =>
         while (!bcs.isEmpty) {
           val decls = bcs.head.info.decls
           var entry =
-            if (name == nme.ANYNAME) decls.elems else decls.lookupEntry(name)
+            if (name == nme.ANYNAME) decls.elems 
+            else if ((fingerPrint & decls.fingerPrints) == 0) null
+            else decls.lookupEntry(name)
           while (entry ne null) {
             val sym = entry.sym
             if (sym hasAllFlags requiredFlags) {
