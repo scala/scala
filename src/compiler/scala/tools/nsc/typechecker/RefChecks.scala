@@ -119,7 +119,7 @@ abstract class RefChecks extends InfoTransform with reflect.internal.transform.R
       // those with the DEFAULTPARAM flag, and infer the methods. Looking for the methods
       // directly requires inspecting the parameter list of every one. That modification
       // shaved 95% off the time spent in this method.
-      val defaultGetters     = clazz.info.findMember(nme.ANYNAME, 0L, DEFAULTPARAM, false).alternatives
+      val defaultGetters     = clazz.info.findMembers(0L, DEFAULTPARAM)
       val defaultMethodNames = defaultGetters map (sym => nme.defaultGetterToMethod(sym.name))
 
       defaultMethodNames.distinct foreach { name =>
