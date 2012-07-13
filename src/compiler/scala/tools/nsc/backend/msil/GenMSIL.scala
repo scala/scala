@@ -45,8 +45,8 @@ abstract class GenMSIL extends SubComponent {
 
       //classes is ICodes.classes, a HashMap[Symbol, IClass]
       classes.values foreach codeGenerator.findEntryPoint
-      if( opt.showClass.isDefined && (codeGenerator.entryPoint == null) ) { // TODO introduce dedicated setting instead
-        val entryclass = opt.showClass.get.toString
+      if( settings.Xshowcls.isSetByUser && (codeGenerator.entryPoint == null) ) { // TODO introduce dedicated setting instead
+        val entryclass = settings.Xshowcls.value.toString
         warning("Couldn't find entry class " + entryclass)
       }
 
@@ -1731,8 +1731,8 @@ abstract class GenMSIL extends SubComponent {
         false
       }
 
-      if((entryPoint == null) && opt.showClass.isDefined) {  // TODO introduce dedicated setting instead
-        val entryclass = opt.showClass.get.toString
+      if((entryPoint == null) && settings.Xshowcls.isSetByUser) {  // TODO introduce dedicated setting instead
+        val entryclass = settings.Xshowcls.value.toString
         val cfn = cls.symbol.fullName
         if(cfn == entryclass) {
           for (m <- cls.methods; if isEntryPoint(m.symbol)) { entryPoint = m.symbol }

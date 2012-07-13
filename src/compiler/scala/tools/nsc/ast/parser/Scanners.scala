@@ -398,7 +398,7 @@ trait Scanners extends ScannersCommon {
              *  there a realistic situation where one would need it?
              */
             if (isDigit(ch)) {
-              if (opt.future) syntaxError("Non-zero numbers may not have a leading zero.")
+              if (settings.future.value) syntaxError("Non-zero numbers may not have a leading zero.")
               else deprecationWarning("Treating numbers with a leading zero as octal is deprecated.")
             }
             base = 8
@@ -975,9 +975,9 @@ trait Scanners extends ScannersCommon {
         val c = lookahead.getc()
 
         /** As of scala 2.11, it isn't a number unless c here is a digit, so
-         *  opt.future excludes the rest of the logic.
+         *  settings.future.value excludes the rest of the logic.
          */
-        if (opt.future && !isDigit(c))
+        if (settings.future.value && !isDigit(c))
           return setStrVal()
 
         val isDefinitelyNumber = (c: @switch) match {
