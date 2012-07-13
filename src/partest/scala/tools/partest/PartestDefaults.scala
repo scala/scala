@@ -4,6 +4,7 @@ package partest
 import nsc.io.{ File, Path, Directory }
 import util.{ PathResolver }
 import nsc.Properties.{ propOrElse, propOrNone, propOrEmpty }
+import java.lang.Runtime.getRuntime
 
 object PartestDefaults {
   import nsc.Properties._
@@ -22,10 +23,9 @@ object PartestDefaults {
   def javaOpts    = propOrElse("partest.java_opts", "")
   def scalacOpts  = propOrElse("partest.scalac_opts", "-deprecation")
 
-  def testBuild   = propOrNone("partest.build")
-  def errorCount  = propOrElse("partest.errors", "0").toInt
-  def numActors   = propOrElse("partest.actors", "6").toInt
-  def poolSize    = wrapAccessControl(propOrNone("actors.corePoolSize"))
+  def testBuild  = propOrNone("partest.build")
+  def errorCount = propOrElse("partest.errors", "0").toInt
+  def numThreads = propOrNone("partest.threads") map (_.toInt) getOrElse getRuntime.availableProcessors
 
   def timeout     = "1200000"
 }
