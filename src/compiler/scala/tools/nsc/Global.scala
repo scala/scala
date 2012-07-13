@@ -319,7 +319,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
       def ccon = Class.forName(name).getConstructor(classOf[CharsetDecoder], classOf[Reporter])
 
       try Some(ccon.newInstance(charset.newDecoder(), reporter).asInstanceOf[SourceReader])
-      catch { case x =>
+      catch { case x: Exception =>
         globalError("exception while trying to instantiate source reader '" + name + "'")
         None
       }

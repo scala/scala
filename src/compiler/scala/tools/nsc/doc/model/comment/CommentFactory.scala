@@ -30,12 +30,12 @@ trait CommentFactory { thisFactory: ModelFactory with CommentFactory =>
 
   protected val commentCache = mutable.HashMap.empty[(global.Symbol, TemplateImpl), Comment]
 
-  def addCommentBody(sym: global.Symbol, inTpl: => TemplateImpl, docStr: String, docPos: global.Position): global.Symbol = {
+  def addCommentBody(sym: global.Symbol, inTpl: TemplateImpl, docStr: String, docPos: global.Position): global.Symbol = {
     commentCache += (sym, inTpl) -> parse(docStr, docStr, docPos)
     sym
   }
 
-  def comment(sym: global.Symbol, inTpl: => DocTemplateImpl): Option[Comment] = {
+  def comment(sym: global.Symbol, inTpl: DocTemplateImpl): Option[Comment] = {
     val key = (sym, inTpl)
     if (commentCache isDefinedAt key)
       Some(commentCache(key))
@@ -50,7 +50,7 @@ trait CommentFactory { thisFactory: ModelFactory with CommentFactory =>
     * cases we have to give some `inTpl` comments (parent class for example)
     * to the comment of the symbol.
     * This function manages some of those cases : Param accessor and Primary constructor */
-  def defineComment(sym: global.Symbol, inTpl: => DocTemplateImpl):Option[Comment] = {
+  def defineComment(sym: global.Symbol, inTpl: DocTemplateImpl):Option[Comment] = {
 
     //param accessor case
     // We just need the @param argument, we put it into the body
@@ -97,37 +97,41 @@ trait CommentFactory { thisFactory: ModelFactory with CommentFactory =>
 
   /* Creates comments with necessary arguments */
   def createComment (
-    body0:        Option[Body]     = None,
-    authors0:     List[Body]       = List.empty,
-    see0:         List[Body]       = List.empty,
-    result0:      Option[Body]     = None,
-    throws0:      Map[String,Body] = Map.empty,
-    valueParams0: Map[String,Body] = Map.empty,
-    typeParams0:  Map[String,Body] = Map.empty,
-    version0:     Option[Body]     = None,
-    since0:       Option[Body]     = None,
-    todo0:        List[Body]       = List.empty,
-    deprecated0:  Option[Body]     = None,
-    note0:        List[Body]       = List.empty,
-    example0:     List[Body]       = List.empty,
-    constructor0: Option[Body]     = None,
-    source0:      Option[String]   = None
+    body0:           Option[Body]     = None,
+    authors0:        List[Body]       = List.empty,
+    see0:            List[Body]       = List.empty,
+    result0:         Option[Body]     = None,
+    throws0:         Map[String,Body] = Map.empty,
+    valueParams0:    Map[String,Body] = Map.empty,
+    typeParams0:     Map[String,Body] = Map.empty,
+    version0:        Option[Body]     = None,
+    since0:          Option[Body]     = None,
+    todo0:           List[Body]       = List.empty,
+    deprecated0:     Option[Body]     = None,
+    note0:           List[Body]       = List.empty,
+    example0:        List[Body]       = List.empty,
+    constructor0:    Option[Body]     = None,
+    source0:         Option[String]   = None,
+    inheritDiagram0: List[String]     = List.empty,
+    contentDiagram0: List[String]     = List.empty
   ) : Comment = new Comment{
-    val body        = if(body0 isDefined) body0.get else Body(Seq.empty)
-    val authors     = authors0
-    val see         = see0
-    val result      = result0
-    val throws      = throws0
-    val valueParams = valueParams0
-    val typeParams  = typeParams0
-    val version     = version0
-    val since       = since0
-    val todo        = todo0
-    val deprecated  = deprecated0
-    val note        = note0
-    val example     = example0
-    val constructor = constructor0
-    val source      = source0
+    val body           = if(body0 isDefined) body0.get else Body(Seq.empty)
+    val authors        = authors0
+    val see            = see0
+    val result         = result0
+    val throws         = throws0
+    val valueParams    = valueParams0
+    val typeParams     = typeParams0
+    val version        = version0
+    val since          = since0
+    val todo           = todo0
+    val deprecated     = deprecated0
+    val note           = note0
+    val example        = example0
+    val constructor    = constructor0
+    val source         = source0
+    val inheritDiagram = inheritDiagram0
+    val contentDiagram = contentDiagram0
   }
 
   protected val endOfText = '\u0003'
@@ -185,6 +189,10 @@ trait CommentFactory { thisFactory: ModelFactory with CommentFactory =>
     new Regex("""((&\w+;)|(&#\d+;)|(</?(abbr|acronym|address|area|a|bdo|big|blockquote|br|button|b|caption|cite|code|col|colgroup|dd|del|dfn|em|fieldset|form|hr|img|input|ins|i|kbd|label|legend|link|map|object|optgroup|option|param|pre|q|samp|select|small|span|strong|sub|sup|table|tbody|td|textarea|tfoot|th|thead|tr|tt|var)( [^>]*)?/?>))""")
 
   protected val safeTagMarker = '\u000E'
+
+  /** A Scaladoc tag not linked to a symbol and not followed by text */
+  protected val SingleTag =
+    new Regex("""\s*@(\S+)\s*""")
 
   /** A Scaladoc tag not linked to a symbol. Returns the name of the tag, and the rest of the line. */
   protected val SimpleTag =
@@ -306,6 +314,11 @@ trait CommentFactory { thisFactory: ModelFactory with CommentFactory =>
         val value = body :: tags.getOrElse(key, Nil)
         parse0(docBody, tags + (key -> value), Some(key), ls, inCodeBlock)
 
+      case SingleTag(name) :: ls if (!inCodeBlock) =>
+        val key = SimpleTagKey(name)
+        val value = "" :: tags.getOrElse(key, Nil)
+        parse0(docBody, tags + (key -> value), Some(key), ls, inCodeBlock)
+
       case line :: ls if (lastTagKey.isDefined) =>
         val key = lastTagKey.get
         val value =
@@ -321,9 +334,24 @@ trait CommentFactory { thisFactory: ModelFactory with CommentFactory =>
         parse0(docBody, tags, lastTagKey, ls, inCodeBlock)
 
       case Nil =>
+        // Take the {inheritance, content} diagram keys aside, as it doesn't need any parsing
+        val inheritDiagramTag = SimpleTagKey("inheritanceDiagram")
+        val contentDiagramTag = SimpleTagKey("contentDiagram")
+
+        val inheritDiagramText: List[String] = tags.get(inheritDiagramTag) match {
+          case Some(list) => list
+          case None => List.empty
+        }
+
+        val contentDiagramText: List[String] = tags.get(contentDiagramTag) match {
+          case Some(list) => list
+          case None => List.empty
+        }
+
+        val tagsWithoutDiagram = tags.filterNot(pair => pair._1 == inheritDiagramTag || pair._1 == contentDiagramTag)
 
         val bodyTags: mutable.Map[TagKey, List[Body]] =
-          mutable.Map(tags mapValues {tag => tag map (parseWiki(_, pos))} toSeq: _*)
+          mutable.Map(tagsWithoutDiagram mapValues {tag => tag map (parseWiki(_, pos))} toSeq: _*)
 
         def oneTag(key: SimpleTagKey): Option[Body] =
           ((bodyTags remove key): @unchecked) match {
@@ -356,21 +384,23 @@ trait CommentFactory { thisFactory: ModelFactory with CommentFactory =>
         }
 
         val com = createComment (
-          body0        = Some(parseWiki(docBody.toString, pos)),
-          authors0     = allTags(SimpleTagKey("author")),
-          see0         = allTags(SimpleTagKey("see")),
-          result0      = oneTag(SimpleTagKey("return")),
-          throws0      = allSymsOneTag(SimpleTagKey("throws")),
-          valueParams0 = allSymsOneTag(SimpleTagKey("param")),
-          typeParams0  = allSymsOneTag(SimpleTagKey("tparam")),
-          version0     = oneTag(SimpleTagKey("version")),
-          since0       = oneTag(SimpleTagKey("since")),
-          todo0        = allTags(SimpleTagKey("todo")),
-          deprecated0  = oneTag(SimpleTagKey("deprecated")),
-          note0        = allTags(SimpleTagKey("note")),
-          example0     = allTags(SimpleTagKey("example")),
-          constructor0 = oneTag(SimpleTagKey("constructor")),
-          source0      = Some(clean(src).mkString("\n"))
+          body0           = Some(parseWiki(docBody.toString, pos)),
+          authors0        = allTags(SimpleTagKey("author")),
+          see0            = allTags(SimpleTagKey("see")),
+          result0         = oneTag(SimpleTagKey("return")),
+          throws0         = allSymsOneTag(SimpleTagKey("throws")),
+          valueParams0    = allSymsOneTag(SimpleTagKey("param")),
+          typeParams0     = allSymsOneTag(SimpleTagKey("tparam")),
+          version0        = oneTag(SimpleTagKey("version")),
+          since0          = oneTag(SimpleTagKey("since")),
+          todo0           = allTags(SimpleTagKey("todo")),
+          deprecated0     = oneTag(SimpleTagKey("deprecated")),
+          note0           = allTags(SimpleTagKey("note")),
+          example0        = allTags(SimpleTagKey("example")),
+          constructor0    = oneTag(SimpleTagKey("constructor")),
+          source0         = Some(clean(src).mkString("\n")),
+          inheritDiagram0 = inheritDiagramText,
+          contentDiagram0 = contentDiagramText
         )
 
         for ((key, _) <- bodyTags)
@@ -686,13 +716,6 @@ trait CommentFactory { thisFactory: ModelFactory with CommentFactory =>
       )
     }
 
-    def entityLink(query: String): Inline = findTemplate(query) match {
-      case Some(tpl) =>
-        EntityLink(tpl)
-      case None =>
-        Text(query)
-    }
-
     def link(): Inline = {
       val SchemeUri = """([^:]+:.*)""".r
       jump("[[")
@@ -717,7 +740,8 @@ trait CommentFactory { thisFactory: ModelFactory with CommentFactory =>
           if (!qualName.contains(".") && !definitions.packageExists(qualName))
             reportError(pos, "entity link to " + qualName + " should be a fully qualified name")
 
-          entityLink(qualName)
+          // move the template resolution as late as possible
+          EntityLink(qualName, () => findTemplate(qualName))
       }
     }
 
@@ -733,8 +757,8 @@ trait CommentFactory { thisFactory: ModelFactory with CommentFactory =>
         nextChar()
     }
 
-    /** 
-     *  Eliminates the (common) leading spaces in all lines, based on the first line 
+    /**
+     *  Eliminates the (common) leading spaces in all lines, based on the first line
      *  For indented pieces of code, it reduces the indent to the least whitespace prefix:
      *    {{{
      *       indented example
@@ -757,11 +781,11 @@ trait CommentFactory { thisFactory: ModelFactory with CommentFactory =>
       while (index < code.length) {
         code(index) match {
           case ' ' =>
-            if (wsArea) 
+            if (wsArea)
               crtSkip += 1
           case c =>
             wsArea = (c == '\n')
-            maxSkip = if (firstLine || emptyLine) maxSkip else if (maxSkip <= crtSkip) maxSkip else crtSkip 
+            maxSkip = if (firstLine || emptyLine) maxSkip else if (maxSkip <= crtSkip) maxSkip else crtSkip
             crtSkip = if (c == '\n') 0 else crtSkip
             firstLine = if (c == '\n') false else firstLine
             emptyLine = if (c == '\n') true else false

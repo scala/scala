@@ -496,6 +496,9 @@ trait Definitions extends api.StandardDefinitions {
          def MacroInternal_materializeAbsTypeTag = getMemberMethod(MacroInternalPackage, nme.materializeAbsTypeTag)
          def MacroInternal_materializeTypeTag    = getMemberMethod(MacroInternalPackage, nme.materializeTypeTag)
 
+    lazy val StringContextClass                  = requiredClass[scala.StringContext]
+         def StringContext_f                     = getMemberMethod(StringContextClass, nme.f)
+
     lazy val ScalaSignatureAnnotation = requiredClass[scala.reflect.ScalaSignature]
     lazy val ScalaLongSignatureAnnotation = requiredClass[scala.reflect.ScalaLongSignature]
 
@@ -1125,6 +1128,39 @@ trait Definitions extends api.StandardDefinitions {
 
     /** Is symbol a phantom class for which no runtime representation exists? */
     lazy val isPhantomClass = Set[Symbol](AnyClass, AnyValClass, NullClass, NothingClass)
+    lazy val magicSymbols = List(
+      AnnotationDefaultAttr, // #2264
+      RepeatedParamClass,
+      JavaRepeatedParamClass,
+      ByNameParamClass,
+      AnyClass,
+      AnyRefClass,
+      AnyValClass,
+      NullClass,
+      NothingClass,
+      SingletonClass,
+      EqualsPatternClass,
+      Any_==,
+      Any_!=,
+      Any_equals,
+      Any_hashCode,
+      Any_toString,
+      Any_getClass,
+      Any_isInstanceOf,
+      Any_asInstanceOf,
+      Any_##,
+      Object_eq,
+      Object_ne,
+      Object_==,
+      Object_!=,
+      Object_##,
+      Object_synchronized,
+      Object_isInstanceOf,
+      Object_asInstanceOf,
+      String_+,
+      ComparableClass,
+      JavaSerializableClass
+    )
 
     /** Is the symbol that of a parent which is added during parsing? */
     lazy val isPossibleSyntheticParent = ProductClass.toSet[Symbol] + ProductRootClass + SerializableClass
@@ -1188,41 +1224,7 @@ trait Definitions extends api.StandardDefinitions {
 
     def init() {
       if (isInitialized) return
-
-      val forced = List( // force initialization of every symbol that is entered as a side effect
-        AnnotationDefaultAttr, // #2264
-        RepeatedParamClass,
-        JavaRepeatedParamClass,
-        ByNameParamClass,
-        AnyClass,
-        AnyRefClass,
-        AnyValClass,
-        NullClass,
-        NothingClass,
-        SingletonClass,
-        EqualsPatternClass,
-        Any_==,
-        Any_!=,
-        Any_equals,
-        Any_hashCode,
-        Any_toString,
-        Any_getClass,
-        Any_isInstanceOf,
-        Any_asInstanceOf,
-        Any_##,
-        Object_eq,
-        Object_ne,
-        Object_==,
-        Object_!=,
-        Object_##,
-        Object_synchronized,
-        Object_isInstanceOf,
-        Object_asInstanceOf,
-        String_+,
-        ComparableClass,
-        JavaSerializableClass
-      )
-
+      val forced = magicSymbols // force initialization of every symbol that is entered as a side effect
       isInitialized = true
     } //init
 

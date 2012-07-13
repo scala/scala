@@ -1,5 +1,3 @@
 import scala.tools.nsc.interactive.tests.InteractiveTest
 
-object Test extends InteractiveTest {
-
-}
+object Test extends InteractiveTest

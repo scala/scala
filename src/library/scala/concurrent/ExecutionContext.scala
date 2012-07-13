@@ -9,28 +9,19 @@
 package scala.concurrent
 
 
-
-import java.util.concurrent.atomic.{ AtomicInteger }
-import java.util.concurrent.{ Executors, Future => JFuture, Callable, ExecutorService, Executor }
+import java.util.concurrent.{ ExecutorService, Executor }
 import scala.concurrent.util.Duration
-import scala.concurrent.forkjoin.{ ForkJoinPool, RecursiveTask => FJTask, RecursiveAction, ForkJoinWorkerThread }
-import scala.collection.generic.CanBuildFrom
-import collection._
+import scala.annotation.implicitNotFound
 
-
-
+/**
+ * An `ExecutionContext` is an abstraction over an entity that can execute program logic.
+ */
+@implicitNotFound("Cannot find an implicit ExecutionContext, either require one yourself or import ExecutionContext.Implicits.global")
 trait ExecutionContext {
   
   /** Runs a block of code on this execution context.
    */
   def execute(runnable: Runnable): Unit
-  
-  /** Used internally by the framework - blocks execution for at most `atMost` time while waiting
-   *  for an `awaitable` object to become ready.
-   *  
-   *  Clients should use `scala.concurrent.blocking` instead.
-   */
-  def internalBlockingCall[T](awaitable: Awaitable[T], atMost: Duration): T
   
   /** Reports that an asynchronous computation failed.
    */
@@ -38,29 +29,60 @@ trait ExecutionContext {
   
 }
 
+/**
+ * Union interface since Java does not support union types
+ */
+trait ExecutionContextExecutor extends ExecutionContext with Executor
+
+/**
+ * Union interface since Java does not support union types
+ */
+trait ExecutionContextExecutorService extends ExecutionContextExecutor with ExecutorService
+
 
 /** Contains factory methods for creating execution contexts.
  */
 object ExecutionContext {
-  
-  implicit def defaultExecutionContext: ExecutionContext = scala.concurrent.defaultExecutionContext
-  
+  /**
+   * The `ExecutionContext` associated with the current `Thread`
+   */
+  val currentExecutionContext: ThreadLocal[ExecutionContext] = new ThreadLocal //FIXME might want to set the initial value to an executionContext that throws an exception on execute and warns that it's not set
+
+  /**
+   * This is the explicit global ExecutionContext,
+   * call this when you want to provide the global ExecutionContext explicitly
+   */
+  def global: ExecutionContextExecutor = Implicits.global
+
+  object Implicits {
+    /**
+     * This is the implicit global ExecutionContext,
+     * import this when you want to provide the global ExecutionContext implicitly
+     */
+    implicit lazy val global: ExecutionContextExecutor = impl.ExecutionContextImpl.fromExecutor(null: Executor)
+  }
+    
   /** Creates an `ExecutionContext` from the given `ExecutorService`.
    */
-  def fromExecutorService(e: ExecutorService, reporter: Throwable => Unit = defaultReporter): ExecutionContext with ExecutorService =
+  def fromExecutorService(e: ExecutorService, reporter: Throwable => Unit): ExecutionContextExecutorService =
     impl.ExecutionContextImpl.fromExecutorService(e, reporter)
+
+  /** Creates an `ExecutionContext` from the given `ExecutorService` with the default Reporter.
+   */
+  def fromExecutorService(e: ExecutorService): ExecutionContextExecutorService = fromExecutorService(e, defaultReporter)
   
   /** Creates an `ExecutionContext` from the given `Executor`.
    */
-  def fromExecutor(e: Executor, reporter: Throwable => Unit = defaultReporter): ExecutionContext with Executor =
+  def fromExecutor(e: Executor, reporter: Throwable => Unit): ExecutionContextExecutor =
     impl.ExecutionContextImpl.fromExecutor(e, reporter)
+
+  /** Creates an `ExecutionContext` from the given `Executor` with the default Reporter.
+   */
+  def fromExecutor(e: Executor): ExecutionContextExecutor = fromExecutor(e, defaultReporter)
   
-  def defaultReporter: Throwable => Unit = {
-    // re-throwing `Error`s here causes an exception handling test to fail.
-    //case e: Error => throw e
-    case t => t.printStackTrace()
-  }
-  
+  /** The default reporter simply prints the stack trace of the `Throwable` to System.err.
+   */
+  def defaultReporter: Throwable => Unit = { case t => t.printStackTrace() }
 }
 
 

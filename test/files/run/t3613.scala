@@ -8,7 +8,7 @@ class Boopy {
             case "Boopy" => fireIntervalAdded( model, 0, 1 )
         }
         def getSize = 0
-        def getElementAt( idx: Int ) : AnyRef = "egal"
+        def getElementAt( idx: Int ) = ???
     }
     
 }

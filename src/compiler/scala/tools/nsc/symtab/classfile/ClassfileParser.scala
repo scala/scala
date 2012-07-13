@@ -613,8 +613,8 @@ abstract class ClassfileParser {
       parseAttributes(sym, info)
       getScope(jflags).enter(sym)
 
-      // sealed java enums (experimental)
-      if (isEnum && opt.experimental) {
+      // sealed java enums
+      if (isEnum) {
         val enumClass = sym.owner.linkedClassOfClass
         if (!enumClass.isSealed)
           enumClass setFlag (SEALED | ABSTRACT)
@@ -862,7 +862,7 @@ abstract class ClassfileParser {
           }
           else in.skip(attrLen)
         case tpnme.SyntheticATTR =>
-          sym.setFlag(SYNTHETIC)
+          sym.setFlag(SYNTHETIC | HIDDEN)
           in.skip(attrLen)
         case tpnme.BridgeATTR =>
           sym.setFlag(BRIDGE)

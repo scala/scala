@@ -23,16 +23,23 @@ package scala.util.control
  *     // dangerous stuff
  *   } catch {
  *     case NonFatal(e) => log.error(e, "Something not that bad.")
+ *    // or
+ *     case e if NonFatal(e) => log.error(e, "Something not that bad.")
  *   }
  * }}}
  */
 object NonFatal {
-
-  def unapply(t: Throwable): Option[Throwable] = t match {
-    case e: StackOverflowError ⇒ Some(e) // StackOverflowError ok even though it is a VirtualMachineError
-    // VirtualMachineError includes OutOfMemoryError and other fatal errors
-    case _: VirtualMachineError | _: ThreadDeath | _: InterruptedException | _: LinkageError | _: ControlThrowable | _: NotImplementedError => None
-    case e ⇒ Some(e)
-  }
-
+   /**
+    * Returns true if the provided `Throwable` is to be considered non-fatal, or false if it is to be considered fatal
+    */
+   def apply(t: Throwable): Boolean = t match {
+     case _: StackOverflowError => true // StackOverflowError ok even though it is a VirtualMachineError
+     // VirtualMachineError includes OutOfMemoryError and other fatal errors
+     case _: VirtualMachineError | _: ThreadDeath | _: InterruptedException | _: LinkageError | _: ControlThrowable | _: NotImplementedError => false
+     case _ => true
+   }
+  /**
+   * Returns Some(t) if NonFatal(t) == true, otherwise None
+   */
+  def unapply(t: Throwable): Option[Throwable] = if (apply(t)) Some(t) else None
 }

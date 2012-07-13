@@ -116,6 +116,12 @@ END-USER TARGETS
     <antcall target="test.done"/>
   </target>
 
+  <target name="replacestarrwin-opt"
+    description="Creates a new Starr on Windows. Manually execute 'ant locker.clean build' first!">
+    <antcall target="replacestarrwin">
+      <param name="scalac.args.optimise" value="-optimise"/>
+    </antcall>
+  </target>
   <target name="replacelocker"
     description="Replaces the Locker compiler and library by fresh ones built from current sources.">
     <antcall target="palo.clean"/>
@@ -1144,7 +1150,7 @@ QUICK BUILD (QUICK)
     </javac>
     <scalacfork
       destdir="${build-quick.dir}/classes/compiler"
-      compilerpathref="starr.classpath"
+      compilerpathref="locker.classpath"
       params="${scalac.args.all}"
       srcdir="${src.dir}/msil"
       jvmargs="${scalacfork.jvmargs}">
@@ -1401,6 +1407,7 @@ QUICK BUILD (QUICK)
       <path refid="forkjoin.classpath"/>
       <path refid="fjbg.classpath"/>
       <path refid="aux.libs"/>
+      <path refid="asm.classpath"/>
       <pathelement location="${jline.jar}"/>
     </path>
     <taskdef name="quick-bin" classname="scala.tools.ant.ScalaTool" classpathref="quick.bin.classpath"/>
@@ -1816,7 +1823,7 @@ BOOTSTRAPPING BUILD (STRAP)
     </javac>
     <scalacfork
       destdir="${build-strap.dir}/classes/compiler"
-      compilerpathref="starr.classpath"
+      compilerpathref="pack.classpath"
       params="${scalac.args.all}"
       srcdir="${src.dir}/msil"
       jvmargs="${scalacfork.jvmargs}">
@@ -2064,6 +2071,9 @@ DOCUMENTATION
     <!-- Compute the URL and show it -->
     <property name="scaladoc.url" value="https://github.com/scala/scala/tree/${scaladoc.git.commit}/src"/>
     <echo message="Scaladoc will point to ${scaladoc.url} for source files."/>
+
+    <!-- Unless set with -Dscaladoc.raw.output, it won't be activated -->
+    <property name="scaladoc.raw.output" value="no"/>
   </target>
 
   <target name="docs.pre-lib" depends="docs.start">
@@ -2091,7 +2101,7 @@ DOCUMENTATION
       classpathref="pack.classpath"
       addparams="${scalac.args.all}"
       docRootContent="${src.dir}/library/rootdoc.txt"
-      implicits="on" diagrams="on">
+      implicits="on" diagrams="on" rawOutput="${scaladoc.raw.output}">
       <src>
         <files includes="${src.dir}/actors-migration"/>
         <files includes="${src.dir}/actors"/>
@@ -2175,7 +2185,7 @@ DOCUMENTATION
       srcdir="${src.dir}/compiler"
       docRootContent="${src.dir}/compiler/rootdoc.txt"
       addparams="${scalac.args.all}"
-      implicits="on" diagrams="on">
+      implicits="on" diagrams="on" rawOutput="${scaladoc.raw.output}">
       <include name="**/*.scala"/>
     </scaladoc>
     <touch file="${build-docs.dir}/compiler.complete" verbose="no"/>
@@ -2197,7 +2207,7 @@ DOCUMENTATION
       classpathref="pack.classpath"
       srcdir="${src.dir}/jline/src/main/java"
       addparams="${scalac.args.all}"
-      implicits="on" diagrams="on">
+      implicits="on" diagrams="on" rawOutput="${scaladoc.raw.output}">
       <include name="**/*.scala"/>
       <include name="**/*.java"/>
     </scaladoc>
@@ -2221,7 +2231,7 @@ DOCUMENTATION
       classpathref="pack.classpath"
       srcdir="${src.dir}/scalap"
       addparams="${scalac.args.all}"
-      implicits="on" diagrams="on">
+      implicits="on" diagrams="on" rawOutput="${scaladoc.raw.output}">
       <include name="**/*.scala"/>
     </scaladoc>
     <touch file="${build-docs.dir}/scalap.complete" verbose="no"/>
@@ -2243,7 +2253,7 @@ DOCUMENTATION
       classpathref="pack.classpath"
       srcdir="${src.dir}/partest"
       addparams="${scalac.args.all}"
-      implicits="on" diagrams="on">
+      implicits="on" diagrams="on" rawOutput="${scaladoc.raw.output}">
       <include name="**/*.scala"/>
     </scaladoc>
     <touch file="${build-docs.dir}/partest.complete" verbose="no"/>
@@ -2265,7 +2275,7 @@ DOCUMENTATION
       classpathref="pack.classpath"
       srcdir="${src.dir}/continuations/plugin"
       addparams="${scalac.args.all}"
-      implicits="on" diagrams="on">
+      implicits="on" diagrams="on" rawOutput="${scaladoc.raw.output}">
       <include name="**/*.scala"/>
     </scaladoc>
     <touch file="${build-docs.dir}/continuations-plugin.complete" verbose="no"/>
@@ -2287,7 +2297,7 @@ DOCUMENTATION
       classpathref="pack.classpath"
       srcdir="${src.dir}/actors-migration"
       addparams="${scalac.args.all}"
-      implicits="on" diagrams="on">
+      implicits="on" diagrams="on" rawOutput="${scaladoc.raw.output}">
       <include name="**/*.scala"/>
     </scaladoc>
     <touch file="${build-docs.dir}/actors-migration.complete" verbose="no"/>
@@ -2561,53 +2571,39 @@ STABLE REFERENCE (STARR)
     <delete file="${basedir}/lib/scala-reflect.jar"/>
     <delete file="${basedir}/lib/scala-compiler.jar"/>
     <delete file="${basedir}/lib/scala-library-src.jar"/>
+    <delete file="${basedir}/lib/scala-reflect-src.jar"/>
+    <delete file="${basedir}/lib/scala-compiler-src.jar"/>
   </target>
 
-  <target name="starr.lib" depends="starr.start">
-    <jar destfile="${basedir}/lib/scala-library.jar">
-      <fileset dir="${basedir}/build/quick/classes/library"/>
-    </jar>
+  <target name="starr.jars" depends="starr.start">
+    <copy toDir="${basedir}/lib/" overwrite="yes">
+      <fileset dir="${build-pack.dir}/lib">
+        <include name="scala-library.jar"/>
+        <include name="scala-reflect.jar"/>
+        <include name="scala-compiler.jar"/>
+      </fileset>
+    </copy>
   </target>
 
-  <target name="starr.reflect" depends="starr.lib">
-    <jar destfile="${basedir}/lib/scala-reflect.jar">
-      <fileset dir="${basedir}/build/quick/classes/reflect"/>
-    </jar>
-  </target>
-
-  <target name="starr.comp" depends="starr.reflect">
-    <jar destfile="${basedir}/lib/scala-compiler.jar">
-      <fileset dir="${basedir}/build/quick/classes/compiler"/>
-    </jar>
-  </target>
-
-  <target name="starr.src" depends="starr.comp">
+  <target name="starr.src" depends="starr.jars">
     <jar destfile="${basedir}/lib/scala-library-src.jar">
       <fileset dir="${basedir}/src/library"/>
       <fileset dir="${basedir}/src/swing"/>
       <fileset dir="${basedir}/src/actors"/>
+      <fileset dir="${basedir}/src/forkjoin"/>
+    </jar>
+    <jar destfile="${basedir}/lib/scala-reflect-src.jar">
+      <fileset dir="${basedir}/src/reflect"/>
+    </jar>
+    <jar destfile="${basedir}/lib/scala-compiler-src.jar">
+      <fileset dir="${basedir}/src/compiler"/>
+      <fileset dir="${basedir}/src/asm"/>
+      <fileset dir="${basedir}/src/fjbg"/>
+      <fileset dir="${basedir}/src/msil"/>
     </jar>
   </target>
 
-  <target name="starr.libs" depends="starr.src, forkjoin.done, fjbg.done">
-    <!-- TODO - Do we even *need* this in starr? -->
-    <copy toDir="${lib.dir}" overwrite="yes">
-      <fileset dir="${build-libs.dir}">
-        <include name="fjbg.jar"/>
-        <include name="forkjoin.jar"/>
-      </fileset>
-    </copy>
-    <!-- remove SHA1 files for no starr, so we don't loose artifacts. -->
-    <delete>
-      <fileset dir="${lib.dir}">
-        <include name="fjbg.jar.desired.sha1"/>
-        <include name="msil.jar.desired.sha1"/>
-        <include name="forkjoin.jar.desired.sha1"/>
-      </fileset>
-    </delete>
-  </target>
-
-  <target name="starr.removesha1" depends="starr.libs">
+  <target name="starr.removesha1" depends="starr.src">
     <!-- remove SHA1 files for no starr, so we don't loose artifacts. -->
     <delete>
       <fileset dir="${lib.dir}">
@@ -2615,11 +2611,13 @@ STABLE REFERENCE (STARR)
         <include name="scala-reflect.jar.desired.sha1"/>
         <include name="scala-library.jar.desired.sha1"/>
         <include name="scala-library-src.jar.desired.sha1"/>
+        <include name="scala-reflect-src.jar.desired.sha1"/>
+        <include name="scala-compiler-src.jar.desired.sha1"/>
       </fileset>
     </delete>
   </target>
 
-  <target name="starr.done" depends="starr.libs, starr.removesha1"/>
+  <target name="starr.done" depends="starr.jars, starr.removesha1"/>
 
 <!-- ===========================================================================
 FORWARDED TARGETS FOR PACKAGING

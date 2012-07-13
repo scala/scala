@@ -135,7 +135,7 @@ class Flags extends ModifierFlags {
   final val CAPTURED      = 1 << 16       // variable is accessed from nested function.  Set by LambdaLift.
   final val LABEL         = 1 << 17       // method symbol is a label. Set by TailCall
   final val INCONSTRUCTOR = 1 << 17       // class symbol is defined in this/superclass constructor.
-  final val SYNTHETIC     = 1 << 21       // symbol is compiler-generated
+  final val SYNTHETIC     = 1 << 21       // symbol is compiler-generated (compare with HIDDEN)
   final val STABLE        = 1 << 22       // functions that are assumed to be stable
                                           // (typically, access methods for valdefs)
                                           // or classes that do not contain abstract types.
@@ -165,6 +165,7 @@ class Flags extends ModifierFlags {
                                           // A Java method's type is ``cooked'' by transforming raw types to existentials
 
   final val SYNCHRONIZED  = 1L << 45      // symbol is a method which should be marked ACC_SYNCHRONIZED
+  final val HIDDEN        = 1L << 46      // symbol should be ignored when typechecking; will be marked ACC_SYNTHETIC in bytecode
   // ------- shift definitions -------------------------------------------------------
 
   final val InitialFlags  = 0x0001FFFFFFFFFFFFL // flags that are enabled from phase 1.

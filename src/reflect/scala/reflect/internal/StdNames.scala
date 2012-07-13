@@ -665,6 +665,7 @@ trait StdNames {
     val eval: NameType                 = "eval"
     val ex: NameType                   = "ex"
     val experimental: NameType         = "experimental"
+    val f: NameType                    = "f"
     val false_ : NameType              = "false"
     val filter: NameType               = "filter"
     val finalize_ : NameType           = if (forMSIL) "Finalize" else "finalize"
