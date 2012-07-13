@@ -16,6 +16,7 @@ import scala.tools.nsc.Properties.{ versionMsg, setProp }
 import scala.tools.nsc.util.CommandLineParser
 import scala.tools.nsc.io
 import io.{ Path }
+import scala.collection.{ mutable, immutable }
 
 class ConsoleRunner extends DirectRunner {
   import PathSettings.{ srcDir, testRoot }
@@ -105,8 +106,6 @@ class ConsoleRunner extends DirectRunner {
     if (parsed isSet "--timeout") fileManager.timeout = parsed("--timeout")
     if (parsed isSet "--debug") setProp("partest.debug", "true")
 
-    setProperties() // must be done after processing command line arguments such as --debug
-
     def addTestFile(file: File) = {
       if (!file.exists)
         NestUI.failure("Test file '%s' not found, skipping.\n" format file)
@@ -171,13 +170,10 @@ class ConsoleRunner extends DirectRunner {
     if (grepMessage != "")
       NestUI.normal(grepMessage + "\n")
 
-    val start = System.currentTimeMillis
-    val (successes, failures) = testCheckAll(enabledTestSets)
-    val end = System.currentTimeMillis
-
+    val ((successes, failures), elapsedMillis) = timed(testCheckAll(enabledTestSets))
     val total = successes + failures
 
-    val elapsedSecs = (end - start)/1000
+    val elapsedSecs = elapsedMillis/1000
     val elapsedMins = elapsedSecs/60
     val elapsedHrs  = elapsedMins/60
     val dispMins = elapsedMins - elapsedHrs  * 60
@@ -188,7 +184,6 @@ class ConsoleRunner extends DirectRunner {
       form(elapsedHrs)+":"+form(dispMins)+":"+form(dispSecs)
     }
 
-    println
     if (failures == 0)
       NestUI.success("All of "+total+" tests were successful (elapsed time: "+dispElapsed+")\n")
     else
