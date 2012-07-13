@@ -835,13 +835,15 @@ trait Namers extends MethodSynthesis {
 
       // add the copy method to case classes; this needs to be done here, not in SyntheticMethods, because
       // the namer phase must traverse this copy method to create default getters for its parameters.
-      // here, clazz is the ClassSymbol of the case class (not the module).
-      if (clazz.isClass && !clazz.hasModuleFlag) {
+      // here, clazz is the ClassSymbol of the case class (not the module). (!clazz.hasModuleFlag) excludes
+      // the moduleClass symbol of the companion object when the companion is a "case object".
+      if (clazz.isCaseClass && !clazz.hasModuleFlag) {
         val modClass = companionSymbolOf(clazz, context).moduleClass
         modClass.attachments.get[ClassForCaseCompanionAttachment] foreach { cma =>
           val cdef = cma.caseClass
           def hasCopy(decls: Scope) = (decls lookup nme.copy) != NoSymbol
-          if (cdef.mods.isCase && !hasCopy(decls) &&
+          // SI-5956 needs (cdef.symbol == clazz): there can be multiple class symbols with the same name
+          if (cdef.symbol == clazz && !hasCopy(decls) &&
                   !parents.exists(p => hasCopy(p.typeSymbol.info.decls)) &&
                   !parents.flatMap(_.baseClasses).distinct.exists(bc => hasCopy(bc.info.decls)))
             addCopyMethod(cdef, templateNamer)
