@@ -1110,6 +1110,7 @@ trait Types extends api.Types { self: SymbolTable =>
       var lastM: ::[Symbol] = null
       var membertpe: Type = null
       var membertpes: Array[Type] = null
+      var required = requiredFlags
       var excluded = excludedFlags | DEFERRED
       var continue = true
       var self: Type = null
@@ -1142,7 +1143,7 @@ trait Types extends api.Types { self: SymbolTable =>
             while (entry ne null) {
               val sym = entry.sym
               val flags = sym.flags
-              if ((flags & requiredFlags) == requiredFlags) {
+              if ((flags & required) == required) {
                 val excl = flags & excluded
                 if (excl == 0L &&
                     (// omit PRIVATE LOCALS unless selector class is contained in class owning the def.
@@ -1205,6 +1206,7 @@ trait Types extends api.Types { self: SymbolTable =>
           bcs = if (name == nme.CONSTRUCTOR) Nil else bcs.tail
         } // while (!bcs.isEmpty)
         excluded = excludedFlags
+        required |= DEFERRED
       } // while (continue)
       Statistics.popTimer(typeOpsStack, start)
       if (suspension ne null) suspension foreach (_.suspended = false)
