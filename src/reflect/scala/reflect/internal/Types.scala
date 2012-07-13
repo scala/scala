@@ -4199,6 +4199,20 @@ trait Types extends api.Types { self: SymbolTable =>
         mapOver(tp)
     }
   }
+  /***
+   *@M: I think this is more desirable, but Martin prefers to leave raw-types as-is as much as possible
+    object rawToExistentialInJava extends TypeMap {
+      def apply(tp: Type): Type = tp match {
+        // any symbol that occurs in a java sig, not just java symbols
+        // see http://lampsvn.epfl.ch/trac/scala/ticket/2454#comment:14
+        case TypeRef(pre, sym, List()) if !sym.typeParams.isEmpty =>
+          val eparams = typeParamsToExistentials(sym, sym.typeParams)
+          existentialAbstraction(eparams, TypeRef(pre, sym, eparams map (_.tpe)))
+        case _ =>
+          mapOver(tp)
+      }
+    }
+  */
 
   /** Used by existentialAbstraction.
    */
