@@ -1,0 +1,10 @@
+static-annot.scala:8: error: Only members of top-level objects and their nested objects can be annotated with @static.
+  @static val bar = 1
+              ^
+static-annot.scala:27: error: @static annotated field bar  has the same name as a member of class Conflicting
+  @static val bar = 1
+              ^
+static-annot.scala:14: error: Only members of top-level objects and their nested objects can be annotated with @static.
+    @static val blah = 2
+                ^
+three errors found

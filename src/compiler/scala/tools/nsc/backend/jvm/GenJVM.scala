@@ -1020,6 +1020,8 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
 
        	  method = m
        	  jmethod = clinitMethod
+          
+          computeLocalVarsIndex(m)
        	  genCode(m)
        	case None =>
           legacyStaticInitializer(cls, clinit)
@@ -1113,7 +1115,7 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
         linkedClass.info.members collect { case sym if sym.name.isTermName => sym.name } toSet
       }
       debuglog("Potentially conflicting names for forwarders: " + conflictingNames)
-
+      
       for (m <- moduleClass.info.membersBasedOnFlags(ExcludedForwarderFlags, Flags.METHOD)) {
         if (m.isType || m.isDeferred || (m.owner eq ObjectClass) || m.isConstructor)
           debuglog("No forwarder for '%s' from %s to '%s'".format(m, className, moduleClass))
@@ -1121,7 +1123,9 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
           log("No forwarder for " + m + " due to conflict with " + linkedClass.info.member(m.name))
         else {
           log("Adding static forwarder for '%s' from %s to '%s'".format(m, className, moduleClass))
-          addForwarder(jclass, moduleClass, m)
+          if (m.isAccessor && m.accessed.hasStaticAnnotation) {
+            log("@static: accessor " + m + ", accessed: " + m.accessed)
+          } else addForwarder(jclass, moduleClass, m)
         }
       }
     }
@@ -1303,7 +1307,7 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
                                 jclass.getType())
           }
         }
-
+         
         style match {
           case Static(true)                         => dbg("invokespecial");    jcode.emitINVOKESPECIAL(jowner, jname, jtype)
           case Static(false)                        => dbg("invokestatic");      jcode.emitINVOKESTATIC(jowner, jname, jtype)
@@ -1884,7 +1888,7 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
      */
     def computeLocalVarsIndex(m: IMethod) {
       var idx = if (m.symbol.isStaticMember) 0 else 1;
-
+      
       for (l <- m.params) {
         debuglog("Index value for " + l + "{" + l.## + "}: " + idx)
         l.index = idx
