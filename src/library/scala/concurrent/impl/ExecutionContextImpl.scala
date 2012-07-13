@@ -59,15 +59,14 @@ private[scala] class ExecutionContextImpl private[impl] (es: Executor, reporter:
     def range(floor: Int, desired: Int, ceiling: Int): Int =
       if (ceiling < floor) range(ceiling, desired, floor) else scala.math.min(scala.math.max(desired, floor), ceiling)
 
-    val minThreads = getInt("scala.concurrent.ec.minThreads", _.toInt)
-    val maxThreads = getInt("scala.concurrent.ec.maxThreads", _.toInt)
-    val numThreads = getInt("scala.concurrent.ec.numThreads", {
+    val desiredParallelism = range(
+      getInt("scala.concurrent.context.minThreads", _.toInt),
+      getInt("scala.concurrent.context.numThreads", {
         case null | "" => Runtime.getRuntime.availableProcessors
         case s if s.charAt(0) == 'x' => (Runtime.getRuntime.availableProcessors * s.substring(1).toDouble).ceil.toInt
         case other => other.toInt
-      })
-
-    val desiredParallelism = range(minThreads, numThreads, maxThreads)
+      }),
+      getInt("scala.concurrent.context.maxThreads", _.toInt))
 
     val threadFactory = new DefaultThreadFactory(daemonic = true)
     
