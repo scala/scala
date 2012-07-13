@@ -44,11 +44,6 @@ trait ExecutionContextExecutorService extends ExecutionContextExecutor with Exec
  */
 object ExecutionContext {
   /**
-   * The `ExecutionContext` associated with the current `Thread`
-   */
-  val currentExecutionContext: ThreadLocal[ExecutionContext] = new ThreadLocal //FIXME might want to set the initial value to an executionContext that throws an exception on execute and warns that it's not set
-
-  /**
    * This is the explicit global ExecutionContext,
    * call this when you want to provide the global ExecutionContext explicitly
    */
