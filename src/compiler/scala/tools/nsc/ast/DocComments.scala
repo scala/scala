@@ -522,7 +522,7 @@ trait DocComments { self: Global =>
 
       val substAliases = new TypeMap {
         def apply(tp: Type) = mapOver(tp) match {
-          case tp1 @ TypeRef(pre, sym, args) if (sym.name.length > 1 && sym.name(0) == '$') =>
+          case tp1 @ TypeRef(pre, sym, args) if (sym.name.length > 1 && sym.name.startChar == '$') =>
             subst(sym, aliases, aliasExpansions) match {
               case TypeRef(pre1, sym1, _) =>
                 typeRef(pre1, sym1, args)

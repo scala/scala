@@ -540,7 +540,7 @@ trait MethodSynthesis {
       val ValDef(mods, name, _, _) = tree
       val beans = beanAccessorsFromNames(tree)
       if (beans.nonEmpty) {
-        if (!name(0).isLetter)
+        if (!name.charAt(0).isLetter)
           BeanPropertyAnnotationFieldWithoutLetterError(tree)
         else if (mods.isPrivate)  // avoids name clashes with private fields in traits
           BeanPropertyAnnotationPrivateFieldError(tree)

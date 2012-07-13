@@ -11,6 +11,9 @@ package base
  *  `name1 == name2` implies `name1 eq name2`.
  */
 trait Names {
+  /** Intentionally no implicit from String => Name. */
+  implicit def stringToTermName(s: String): TermName = newTermName(s)
+  implicit def stringToTypeName(s: String): TypeName = newTypeName(s)
 
   /** The abstract type of names */
   type Name >: Null <: NameBase
