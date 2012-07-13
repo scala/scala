@@ -316,7 +316,7 @@ abstract class TreeInfo {
 
   /** Is name a variable name? */
   def isVariableName(name: Name): Boolean = {
-    val first = name(0)
+    val first = name.startChar
     ((first.isLower && first.isLetter) || first == '_') && !reserved(name)
   }
 

@@ -763,7 +763,7 @@ self =>
     def precedence(operator: Name): Int =
       if (operator eq nme.ERROR) -1
       else {
-        val firstCh = operator(0)
+        val firstCh = operator.startChar
         if (isScalaLetter(firstCh)) 1
         else if (nme.isOpAssignmentName(operator)) 0
         else firstCh match {

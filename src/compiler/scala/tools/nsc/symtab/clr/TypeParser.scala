@@ -35,8 +35,6 @@ abstract class TypeParser {
 
   protected var busy: Boolean = false       // lock to detect recursive reads
 
-  private implicit def stringToTermName(s: String): TermName = newTermName(s)
-
   private object unpickler extends UnPickler {
     val global: TypeParser.this.global.type = TypeParser.this.global
   }
@@ -260,8 +258,8 @@ abstract class TypeParser {
 				                                 || ntype.IsInterface /* TODO why shouldn't nested ifaces be type-parsed too? */ )
       {
         val loader = new loaders.MsilFileLoader(new MsilFile(ntype))
-	val nclazz = statics.newClass(ntype.Name.toTypeName)
-	val nmodule = statics.newModule(ntype.Name)
+              val nclazz = statics.newClass(ntype.Name)
+        val nmodule = statics.newModule(ntype.Name)
 	nclazz.setInfo(loader)
 	nmodule.setInfo(loader)
 	staticDefs.enter(nclazz)
@@ -311,7 +309,7 @@ abstract class TypeParser {
 	    assert(prop.PropertyType == getter.ReturnType);
 	    val gparams: Array[ParameterInfo] = getter.GetParameters();
 	    gparamsLength = gparams.length;
-	    val name: Name = if (gparamsLength == 0) prop.Name else nme.apply;
+            val name: TermName = if (gparamsLength == 0) prop.Name else nme.apply;
 	    val flags = translateAttributes(getter);
 	    val owner: Symbol = if (getter.IsStatic) statics else clazz;
             val methodSym = owner.newMethod(name, NoPosition, flags)
@@ -333,7 +331,7 @@ abstract class TypeParser {
 	    if(getter != null)
 	      assert(sparams.length == gparamsLength + 1, "" + getter + "; " + setter);
 
-	    val name: Name = if (gparamsLength == 0) nme.getterToSetter(prop.Name)
+            val name: TermName = if (gparamsLength == 0) nme.getterToSetter(prop.Name)
 			     else nme.update;
 	    val flags = translateAttributes(setter);
 	    val mtype = methodType(setter, definitions.UnitClass.tpe);
@@ -494,13 +492,13 @@ abstract class TypeParser {
     else clrTypes.methods(methodSym) = method.asInstanceOf[MethodInfo];
   }
 
-  private def createMethod(name: Name, flags: Long, args: Array[MSILType], retType: MSILType, method: MethodInfo, statik: Boolean): Symbol = {
+  private def createMethod(name: TermName, flags: Long, args: Array[MSILType], retType: MSILType, method: MethodInfo, statik: Boolean): Symbol = {
     val mtype = methodType(args, getCLSType(retType))
     assert(mtype != null)
     createMethod(name, flags, mtype, method, statik)
   }
 
-  private def createMethod(name: Name, flags: Long, mtype: Symbol => Type, method: MethodInfo, statik: Boolean): Symbol = {
+  private def createMethod(name: TermName, flags: Long, mtype: Symbol => Type, method: MethodInfo, statik: Boolean): Symbol = {
     val methodSym: Symbol = (if (statik)  statics else clazz).newMethod(name)
     methodSym.setFlag(flags).setInfo(mtype(methodSym))
     (if (statik) staticDefs else instanceDefs).enter(methodSym)
@@ -541,7 +539,7 @@ abstract class TypeParser {
     s = createMethod(nme.MINUS, flags, args, typ, clrTypes.DELEGATE_REMOVE, false);
   }
 
-  private def getName(method: MethodBase): Name = {
+  private def getName(method: MethodBase): TermName = {
 
     def operatorOverload(name : String, paramsArity : Int) : Option[Name] = paramsArity match {
       case 1 => name match {
@@ -653,7 +651,7 @@ abstract class TypeParser {
 
   private def getClassType(typ: MSILType): Type = {
     assert(typ != null);
-    val res = rootMirror.getClassByName(typ.FullName.replace('+', '.')).tpe;
+    val res = rootMirror.getClassByName(typ.FullName.replace('+', '.') : TypeName).tpe;
     //if (res.isError())
     //  global.reporter.error("unknown class reference " + type.FullName);
     res
