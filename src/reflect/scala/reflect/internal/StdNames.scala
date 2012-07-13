@@ -374,9 +374,9 @@ trait StdNames {
     */
     def originalName(name: Name): Name = {
       var i = name.length
-      while (i >= 2 && !(name(i - 1) == '$' && name(i - 2) == '$')) i -= 1
+      while (i >= 2 && !(name.charAt(i - 1) == '$' && name.charAt(i - 2) == '$')) i -= 1
       if (i >= 2) {
-        while (i >= 3 && name(i - 3) == '$') i -= 1
+        while (i >= 3 && name.charAt(i - 3) == '$') i -= 1
         name.subName(i, name.length)
       } else name
     }
@@ -455,10 +455,10 @@ trait StdNames {
     // Otherwise return the argument.
     def stripAnonNumberSuffix(name: Name): Name = {
       var pos = name.length
-      while (pos > 0 && name(pos - 1).isDigit)
+      while (pos > 0 && name.charAt(pos - 1).isDigit)
       pos -= 1
 
-      if (pos <= 0 || pos == name.length || name(pos - 1) != '$') name
+      if (pos <= 0 || pos == name.length || name.charAt(pos - 1) != '$') name
       else name.subName(0, pos - 1)
     }
 

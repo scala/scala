@@ -145,7 +145,7 @@ trait Names extends api.Names with LowPriorityNames {
    *  or Strings as Names.  Give names the key functions the absence of which
    *  make people want Strings all the time.
    */
-  sealed abstract class Name(protected val index: Int, protected val len: Int) extends NameApi with Function1[Int, Char] {
+  sealed abstract class Name(protected val index: Int, protected val len: Int) extends NameApi {
     type ThisNameType >: Null <: Name
     protected[this] def thisName: ThisNameType
 
@@ -226,7 +226,7 @@ trait Names extends api.Names with LowPriorityNames {
     }
 
     /** @return the i'th Char of this name */
-    final def apply(i: Int): Char = chrs(index + i)
+    final def charAt(i: Int): Char = chrs(index + i)
 
     /** @return the index of first occurrence of char c in this name, length if not found */
     final def pos(c: Char): Int = pos(c, 0)
@@ -355,8 +355,8 @@ trait Names extends api.Names with LowPriorityNames {
     /** Some thoroughly self-explanatory convenience functions.  They
      *  assume that what they're being asked to do is known to be valid.
      */
-    final def startChar: Char                   = apply(0)
-    final def endChar: Char                     = apply(len - 1)
+    final def startChar: Char                   = this charAt 0
+    final def endChar: Char                     = this charAt len - 1
     final def startsWith(char: Char): Boolean   = len > 0 && startChar == char
     final def startsWith(name: String): Boolean = startsWith(newTermName(name))
     final def endsWith(char: Char): Boolean     = len > 0 && endChar == char
@@ -380,7 +380,7 @@ trait Names extends api.Names with LowPriorityNames {
       val cs = new Array[Char](len)
       var i = 0
       while (i < len) {
-        val ch = this(i)
+        val ch = charAt(i)
         cs(i) = if (ch == from) to else ch
         i += 1
       }
