@@ -1106,14 +1106,32 @@ trait Types extends api.Types { self: SymbolTable =>
       val start = Statistics.pushTimer(typeOpsStack, findMemberNanos)
 
       //Console.println("find member " + name.decode + " in " + this + ":" + this.baseClasses)//DEBUG
+      var member: Symbol = NoSymbol
       var members: List[Symbol] = null
       var lastM: ::[Symbol] = null
-      var member: Symbol = NoSymbol
+      var membertpe: Type = null
+      var membertpes: Array[Type] = null
       var excluded = excludedFlags | DEFERRED
       var continue = true
       var self: Type = null
-      var membertpe: Type = null
       val fingerPrint: Long = name.fingerPrint
+
+      def getMtpe(sym: Symbol, idx: Int): Type = {
+        var result = membertpes(idx)
+        if (result eq null) { result = self memberType sym; membertpes(idx) = result }
+        result
+      }
+
+      def addMtpe(xs: Array[Type], tpe: Type, idx: Int): Array[Type] =
+        if (idx < xs.length ) {
+          xs(idx) = tpe
+          xs
+        } else {
+          val ys = new Array[Type](xs.length * 2)
+          Array.copy(xs, 0, ys, 0, xs.length)
+          addMtpe(ys, tpe, idx)
+        }
+
       while (continue) {
         continue = false
         val bcs0 = baseClasses
@@ -1139,33 +1157,42 @@ trait Types extends api.Types { self: SymbolTable =>
                   } else if (member eq NoSymbol) {
                     member = sym
                   } else if (members eq null) {
-                    if (!((member eq sym) ||
-                          (member.owner ne sym.owner) &&
-                          (flags & PRIVATE) == 0 && {
-                            if (self eq null) self = this.narrow
-                            if (membertpe eq null) membertpe = self.memberType(member)
-                            (membertpe matches self.memberType(sym))
-                          })) {
+                    var symtpe: Type = null
+                    if ((member ne sym) &&
+                        ((member.owner eq sym.owner) ||
+                         (flags & PRIVATE) != 0 || {
+                           if (self eq null) self = this.narrow
+                           if (membertpe eq null) membertpe = self.memberType(member)
+                           symtpe = self.memberType(sym)
+                           !(membertpe matches symtpe)
+                         })) {
                       lastM = new ::(sym, null)
                       members = member :: lastM
+                      membertpes = new Array[Type](8)
+                      membertpes(0) = membertpe
+                      membertpes(1) = symtpe
                     }
                   } else {
                     var others = members
+                    var idx = 0
                     var symtpe: Type = null
-                    while ((others ne null) &&
-                           !((others.head eq sym) ||
-                             (others.head.owner ne sym.owner) &&
-                             (flags & PRIVATE) == 0 && {
-                               if (self eq null) self = this.narrow
-                               if (symtpe eq null) symtpe = self.memberType(sym)
-                               self.memberType(others.head) matches symtpe
-                             })) {
+                    while ((others ne null) && {
+                             val other = others.head
+                             (other ne sym) &&
+                             ((other.owner eq sym.owner) ||
+                              (flags & PRIVATE) != 0 || {
+                                if (self eq null) self = this.narrow
+                                if (symtpe eq null) symtpe = self.memberType(sym)
+                                !(getMtpe(other, idx) matches symtpe)
+                             })}) {
                       others = others.tail
+                      idx += 1
                     }
                     if (others eq null) {
                       val lastM1 = new ::(sym, null)
                       lastM.tl = lastM1
                       lastM = lastM1
+                      membertpes = addMtpe(membertpes, symtpe, idx)
                     }
                   }
                 } else if (excl == DEFERRED) {
@@ -5143,7 +5170,7 @@ trait Types extends api.Types { self: SymbolTable =>
    */
   def needsOuterTest(patType: Type, selType: Type, currentOwner: Symbol) = {
     def createDummyClone(pre: Type): Type = {
-      val dummy = currentOwner.enclClass.newValue(nme.ANYNAME).setInfo(pre.widen)
+      val dummy = currentOwner.enclClass.newValue(nme.ANYname).setInfo(pre.widen)
       singleType(ThisType(currentOwner.enclClass), dummy)
     }
     def maybeCreateDummyClone(pre: Type, sym: Symbol): Type = pre match {
