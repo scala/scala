@@ -1,5 +1,4 @@
 import scala.tools.nsc.doc.model._
-import scala.tools.nsc.doc.model.diagram._
 import scala.tools.partest.ScaladocModelTest
 
 object Test extends ScaladocModelTest {
@@ -17,14 +16,6 @@ object Test extends ScaladocModelTest {
     val base = rootPackage._package("scala")._package("test")._package("scaladoc")
 
     val diagrams = base._package("diagrams")
-    def testDiagram(doc: DocTemplateEntity, diag: Option[Diagram], nodes: Int, edges: Int) = {
-      assert(diag.isDefined, doc.qualifiedName + " diagram missing")
-      assert(diag.get.nodes.length == nodes,
-             doc.qualifiedName + "'s diagram: node count " + diag.get.nodes.length + " == " + nodes)
-      assert(diag.get.edges.length == edges,
-             doc.qualifiedName + "'s diagram: edge count " + diag.get.edges.length + " == " + edges)
-    }
-
     val templates = List(diagrams._trait("WeekDayTraitWithDiagram"), diagrams._class("WeekDayClassWithDiagram"), diagrams._object("WeekDayObjectWithDiagram"))
 
     for (template <- templates) {

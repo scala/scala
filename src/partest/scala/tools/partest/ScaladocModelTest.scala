@@ -11,8 +11,9 @@ import scala.tools.nsc._
 import scala.tools.nsc.util.CommandLineParser
 import scala.tools.nsc.doc.{Settings, DocFactory, Universe}
 import scala.tools.nsc.doc.model._
-import scala.tools.nsc.reporters.ConsoleReporter
+import scala.tools.nsc.doc.model.diagram._
 import scala.tools.nsc.doc.model.comment._
+import scala.tools.nsc.reporters.ConsoleReporter
 
 /** A class for testing scaladoc model generation
  *   - you need to specify the code in the `code` method
@@ -180,6 +181,14 @@ abstract class ScaladocModelTest extends DirectTest {
         case _          => 0
       }
       countLinks(c.body)
+    }
+
+    def testDiagram(doc: DocTemplateEntity, diag: Option[Diagram], nodes: Int, edges: Int) = {
+      assert(diag.isDefined, doc.qualifiedName + " diagram missing")
+      assert(diag.get.nodes.length == nodes,
+             doc.qualifiedName + "'s diagram: node count " + diag.get.nodes.length + " == " + nodes)
+      assert(diag.get.edges.map(_._2.length).sum == edges,
+             doc.qualifiedName + "'s diagram: edge count " + diag.get.edges.length + " == " + edges)
     }
   }
 }

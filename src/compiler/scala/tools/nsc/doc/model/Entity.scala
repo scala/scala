@@ -97,6 +97,9 @@ trait TemplateEntity extends Entity {
   /** Whether documentation is available for this template. */
   def isDocTemplate: Boolean
 
+  /** Whether documentation is available for this template. */
+  def isNoDocMemberTemplate: Boolean
+
   /** Whether this template is a case class. */
   def isCaseClass: Boolean
 

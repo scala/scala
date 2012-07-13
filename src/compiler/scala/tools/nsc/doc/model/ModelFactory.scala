@@ -106,6 +106,7 @@ class ModelFactory(val global: Global, val settings: doc.Settings) {
     def isObject = sym.isModule && !sym.isPackage
     def isCaseClass = sym.isCaseClass
     def isRootPackage = false
+    def isNoDocMemberTemplate = false
     def selfType = if (sym.thisSym eq sym) None else Some(makeType(sym.thisSym.typeOfThis, this))
   }
 
@@ -270,6 +271,7 @@ class ModelFactory(val global: Global, val settings: doc.Settings) {
     // no templates cache for this class, each owner gets its own instance
     override def isTemplate = true
     def isDocTemplate = false
+    override def isNoDocMemberTemplate = true
     lazy val definitionName = optimize(inDefinitionTemplates.head.qualifiedName + "." + name)
   }
 
@@ -518,7 +520,29 @@ class ModelFactory(val global: Global, val settings: doc.Settings) {
   }
   /* ============== MAKER METHODS ============== */
 
-  /** */
+  /** This method makes it easier to work with the different kinds of symbols created by scalac
+   *
+   * Okay, here's the explanation of what happens. The code:
+   *
+   * package foo {
+   *   object `package` {
+   *     class Bar
+   *   }
+   * }
+   *
+   * will yield this Symbol structure:
+   *
+   * +---------------+         +--------------------------+
+   * | package foo#1 ----(1)---> module class foo#2       |
+   * +---------------+         | +----------------------+ |         +-------------------------+
+   *                           | | package object foo#3 ------(1)---> module class package#4  |
+   *                           | +----------------------+ |         | +---------------------+ |
+   *                           +--------------------------+         | | class package$Bar#5 | |
+   *                                                                | +---------------------+ |
+   *                                                                +-------------------------+
+   * (1) sourceModule
+   * (2) you get out of owners with .owner
+   */
   def normalizeTemplate(aSym: Symbol): Symbol = aSym match {
     case null | rootMirror.EmptyPackage | NoSymbol =>
       normalizeTemplate(RootPackage)
@@ -528,8 +552,6 @@ class ModelFactory(val global: Global, val settings: doc.Settings) {
       normalizeTemplate(aSym.owner)
     case _ if aSym.isModuleClass =>
       normalizeTemplate(aSym.sourceModule)
-    // case t: ThisType =>
-    //   t.
     case _ =>
       aSym
   }
@@ -720,6 +742,7 @@ class ModelFactory(val global: Global, val settings: doc.Settings) {
           override def useCaseOf = _useCaseOf
         })
       else if (bSym.isPackage && !modelFinished)
+        if (settings.skipPackage(makeQualifiedName(bSym))) None else
         inTpl match {
           case inPkg: PackageImpl => modelCreation.createTemplate(bSym, inTpl) match {
             case p: PackageImpl if droppedPackages contains p => None
@@ -933,33 +956,8 @@ class ModelFactory(val global: Global, val settings: doc.Settings) {
     //path.mkString(".")
   }
 
-  def normalizeOwner(aSym: Symbol): Symbol =
-    /*
-     * Okay, here's the explanation of what happens. The code:
-     *
-     * package foo {
-     *   object `package` {
-     *     class Bar
-     *   }
-     * }
-     *
-     * will yield this Symbol structure:
-     *
-     * +---------------+         +--------------------------+
-     * | package foo#1 ----(1)---> module class foo#2       |
-     * +---------------+         | +----------------------+ |         +-------------------------+
-     *                           | | package object foo#3 ------(1)---> module class package#4  |
-     *                           | +----------------------+ |         | +---------------------+ |
-     *                           +--------------------------+         | | class package$Bar#5 | |
-     *                                                                | +---------------------+ |
-     *                                                                +-------------------------+
-     * (1) sourceModule
-     * (2) you get out of owners with .owner
-     */
-    normalizeTemplate(aSym)
-
   def inOriginalOwner(aSym: Symbol, inTpl: TemplateImpl): Boolean =
-    normalizeOwner(aSym.owner) == normalizeOwner(inTpl.sym)
+    normalizeTemplate(aSym.owner) == normalizeTemplate(inTpl.sym)
 
   def templateShouldDocument(aSym: Symbol, inTpl: TemplateImpl): Boolean =
     (aSym.isClass || aSym.isModule || aSym == AnyRefClass) &&
@@ -968,7 +966,7 @@ class ModelFactory(val global: Global, val settings: doc.Settings) {
     // either it's inside the original owner or we can document it later:
     (!inOriginalOwner(aSym, inTpl) || (aSym.isPackageClass || (aSym.sourceFile != null)))
 
-  def membersShouldDocument(sym: Symbol, inTpl: TemplateImpl) =
+  def membersShouldDocument(sym: Symbol, inTpl: TemplateImpl) = {
     // pruning modules that shouldn't be documented
     // Why Symbol.isInitialized? Well, because we need to avoid exploring all the space available to scaladoc
     // from the classpath -- scaladoc is a hog, it will explore everything starting from the root package unless we
@@ -981,6 +979,7 @@ class ModelFactory(val global: Global, val settings: doc.Settings) {
     (!sym.isConstructor || sym.owner == inTpl.sym) &&
     // If the @bridge annotation overrides a normal member, show it
     !isPureBridge(sym)
+  }
 
   def isEmptyJavaObject(aSym: Symbol): Boolean =
     aSym.isModule && aSym.isJavaDefined &&

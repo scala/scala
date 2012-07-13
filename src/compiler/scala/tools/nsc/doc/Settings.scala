@@ -176,6 +176,13 @@ class Settings(error: String => Unit, val printMsg: String => Unit = println(_))
     "Avoid warnings for ambiguous and incorrect links."
   )
 
+  val docSkipPackages = StringSetting (
+    "-skip-packages",
+    "<package1>:...:<packageN>",
+    "A colon-delimited list of fully qualified package names that will be skipped from scaladoc.",
+    ""
+  )
+
   // Somewhere slightly before r18708 scaladoc stopped building unless the
   // self-type check was suppressed.  I hijacked the slotted-for-removal-anyway
   // suppress-vt-warnings option and renamed it for this purpose.
@@ -188,7 +195,7 @@ class Settings(error: String => Unit, val printMsg: String => Unit = println(_))
     docDiagramsDotTimeout, docDiagramsDotRestart,
     docImplicits, docImplicitsDebug, docImplicitsShowAll,
     docDiagramsMaxNormalClasses, docDiagramsMaxImplicitClasses,
-    docNoPrefixes, docNoLinkWarnings, docRawOutput
+    docNoPrefixes, docNoLinkWarnings, docRawOutput, docSkipPackages
   )
   val isScaladocSpecific: String => Boolean = scaladocSpecific map (_.name)
 
@@ -196,6 +203,15 @@ class Settings(error: String => Unit, val printMsg: String => Unit = println(_))
 
   // set by the testsuite, when checking test output
   var scaladocQuietRun = false
+
+  lazy val skipPackageNames =
+    if (docSkipPackages.value == "")
+      Set[String]()
+    else
+      docSkipPackages.value.toLowerCase.split(':').toSet
+
+  def skipPackage(qname: String) =
+    skipPackageNames(qname.toLowerCase)
 
   /**
    *  This is the hardcoded area of Scaladoc. This is where "undesirable" stuff gets eliminated. I know it's not pretty,
