@@ -34,7 +34,7 @@ private[scala] class ExecutionContextImpl private[impl] (es: Executor, reporter:
       thread
     }
 
-    def newThread(runnable: Runnable): Thread = wire(new Thread())
+    def newThread(runnable: Runnable): Thread = wire(new Thread(runnable))
 
     def newThread(fjp: ForkJoinPool): ForkJoinWorkerThread = wire(new ForkJoinWorkerThread(fjp) with BlockContext {
       override def internalBlockingCall[T](awaitable: Awaitable[T], atMost: Duration): T = {
