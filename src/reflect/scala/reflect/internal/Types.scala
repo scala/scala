@@ -14,6 +14,7 @@ import Flags._
 import scala.util.control.ControlThrowable
 import scala.annotation.tailrec
 import util.Statistics
+import scala.runtime.ObjectRef
 
 /* A standard type pattern match:
   case ErrorType =>
@@ -1031,9 +1032,21 @@ trait Types extends api.Types { self: SymbolTable =>
 
       //Console.println("find member " + name.decode + " in " + this + ":" + this.baseClasses)//DEBUG
       var members: Scope = null
+      var membertpes: mutable.Map[Symbol, Type] = null
+      var required = requiredFlags
       var excluded = excludedFlags | DEFERRED
       var continue = true
       var self: Type = null
+
+      def getMtpe(cache: mutable.Map[Symbol, Type], sym: Symbol): Type = cache get sym match {
+        case Some(tpe) if tpe ne null =>
+          tpe
+        case _ =>
+          val result = self memberType sym
+          cache(sym) = result
+          result
+      }
+
       while (continue) {
         continue = false
         val bcs0 = baseClasses
@@ -1044,29 +1057,31 @@ trait Types extends api.Types { self: SymbolTable =>
           while (entry ne null) {
             val sym = entry.sym
             val flags = sym.flags
-            if ((flags & requiredFlags) == requiredFlags) {
+            if ((flags & required) == required) {
               val excl = flags & excluded
               if (excl == 0L &&
                   (// omit PRIVATE LOCALS unless selector class is contained in class owning the def.
                    (bcs eq bcs0) ||
                    (flags & PrivateLocal) != PrivateLocal ||
                    (bcs0.head.hasTransOwner(bcs.head)))) {
-                if (members eq null) members = newScope
-                var prevEntry = members.lookupEntry(sym.name)
+                if (members eq null) {
+                  members = newScope
+                  membertpes = new mutable.HashMap
+                }
+                var others: ScopeEntry = members.lookupEntry(sym.name)
                 var symtpe: Type = null
-                while ((prevEntry ne null) &&
-                    !((prevEntry.sym eq sym) ||
-                        (prevEntry.sym.owner ne sym.owner) &&
-                        !sym.hasFlag(PRIVATE) && {
-                          if (self eq null) self = this.narrow
-                          if (symtpe eq null) symtpe = self.memberType(sym)
-                          self.memberType(prevEntry.sym) matches symtpe
-                    })) {
-                  prevEntry = members lookupNextEntry prevEntry
+                while ((others ne null) && {
+                         val other = others.sym
+                         (other ne sym) &&
+                         ((other.owner eq sym.owner) ||
+                          (flags & PRIVATE) != 0 || {
+                             if (self eq null) self = this.narrow
+                             if (symtpe eq null) symtpe = self.memberType(sym)
+                             !(getMtpe(membertpes, other) matches symtpe)
+                          })}) {
+                  others = members lookupNextEntry others
                 }
-                if (prevEntry eq null) {
-                  members enter sym
-                }
+                if (others eq null) members enter sym
               } else if (excl == DEFERRED) {
                 continue = true
               }
@@ -1076,6 +1091,7 @@ trait Types extends api.Types { self: SymbolTable =>
           // excluded = excluded | LOCAL
           bcs = bcs.tail
         } // while (!bcs.isEmpty)
+        required |= DEFERRED
         excluded = excludedFlags
       } // while (continue)
       Statistics.popTimer(typeOpsStack, start)
@@ -1116,20 +1132,23 @@ trait Types extends api.Types { self: SymbolTable =>
       var self: Type = null
       val fingerPrint: Long = name.fingerPrint
 
-      def getMtpe(sym: Symbol, idx: Int): Type = {
+      def getMtpe(idx: Int, sym: Symbol): Type = {
         var result = membertpes(idx)
-        if (result eq null) { result = self memberType sym; membertpes(idx) = result }
+        if (result eq null) {
+          result = self memberType sym
+          membertpes(idx) = result
+        }
         result
       }
 
-      def addMtpe(xs: Array[Type], tpe: Type, idx: Int): Array[Type] =
-        if (idx < xs.length ) {
+      def addMtpe(xs: Array[Type], idx: Int, tpe: Type): Array[Type] =
+        if (idx < xs.length) {
           xs(idx) = tpe
           xs
         } else {
           val ys = new Array[Type](xs.length * 2)
           Array.copy(xs, 0, ys, 0, xs.length)
-          addMtpe(ys, tpe, idx)
+          addMtpe(ys, idx, tpe)
         }
 
       while (continue) {
@@ -1173,7 +1192,7 @@ trait Types extends api.Types { self: SymbolTable =>
                       membertpes(1) = symtpe
                     }
                   } else {
-                    var others = members
+                    var others: List[Symbol] = members
                     var idx = 0
                     var symtpe: Type = null
                     while ((others ne null) && {
@@ -1183,7 +1202,7 @@ trait Types extends api.Types { self: SymbolTable =>
                               (flags & PRIVATE) != 0 || {
                                 if (self eq null) self = this.narrow
                                 if (symtpe eq null) symtpe = self.memberType(sym)
-                                !(getMtpe(other, idx) matches symtpe)
+                                !(getMtpe(idx, other) matches symtpe)
                              })}) {
                       others = others.tail
                       idx += 1
@@ -1192,7 +1211,7 @@ trait Types extends api.Types { self: SymbolTable =>
                       val lastM1 = new ::(sym, null)
                       lastM.tl = lastM1
                       lastM = lastM1
-                      membertpes = addMtpe(membertpes, symtpe, idx)
+                      membertpes = addMtpe(membertpes, idx, symtpe)
                     }
                   }
                 } else if (excl == DEFERRED) {
@@ -1205,8 +1224,8 @@ trait Types extends api.Types { self: SymbolTable =>
           // excluded = excluded | LOCAL
           bcs = if (name == nme.CONSTRUCTOR) Nil else bcs.tail
         } // while (!bcs.isEmpty)
-        excluded = excludedFlags
         required |= DEFERRED
+        excluded = excludedFlags
       } // while (continue)
       Statistics.popTimer(typeOpsStack, start)
       if (suspension ne null) suspension foreach (_.suspended = false)
