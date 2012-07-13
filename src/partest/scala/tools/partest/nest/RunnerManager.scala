@@ -185,7 +185,7 @@ class RunnerManager(kind: String, val fileManager: FileManager, params: TestRunP
       outDir
     }
 
-    private def execTest(outDir: File, logFile: File, classpathPrefix: String = ""): Boolean = {
+    private def execTest(outDir: File, logFile: File, classpathPrefix: String = "", javaOpts: String = ""): Boolean = {
       // check whether there is a ".javaopts" file
       val argsFile  = new File(logFile.getParentFile, fileBase + ".javaopts")
       val argString = file2String(argsFile)
@@ -228,7 +228,7 @@ class RunnerManager(kind: String, val fileManager: FileManager, params: TestRunP
 
       val classpath = if (classpathPrefix != "") join(classpathPrefix, CLASSPATH) else CLASSPATH
       val cmd = javaCmd +: (
-        (JAVA_OPTS.split(' ') ++ argString.split(' ')).map(_.trim).filter(_ != "") ++ Seq(
+        (JAVA_OPTS.split(' ') ++ javaOpts.split(' ') ++ argString.split(' ')).map(_.trim).filter(_ != "") ++ Seq(
           "-classpath",
           join(outDir.toString, classpath)
         ) ++ propertyOptions ++ Seq(
@@ -426,6 +426,15 @@ class RunnerManager(kind: String, val fileManager: FileManager, params: TestRunP
         )
       })
 
+    def runInstrumentedTest(file: File): (Boolean, LogContext) =
+      runTestCommon(file, expectFailure = false)((logFile, outDir) => {
+        val dir       = file.getParentFile
+
+        // adding the javagent option with path to instrumentation agent
+        execTest(outDir, logFile, javaOpts = "-javaagent:"+PathSettings.instrumentationAgentLib) &&
+        diffCheck(file, compareOutput(dir, logFile))
+      })
+
     def processSingleFile(file: File): (Boolean, LogContext) = kind match {
       case "scalacheck" =>
         val succFn: (File, File) => Boolean = { (logFile, outDir) =>
@@ -474,6 +483,9 @@ class RunnerManager(kind: String, val fileManager: FileManager, params: TestRunP
 
       case "specialized" =>
         runSpecializedTest(file)
+
+      case "instrumented" =>
+        runInstrumentedTest(file)
 
       case "presentation" =>
         runJvmTest(file) // for the moment, it's exactly the same as for a run test

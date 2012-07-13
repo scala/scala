@@ -1337,7 +1337,7 @@ QUICK BUILD (QUICK)
     <stopwatch name="quick.scalap.timer" action="total"/>
   </target>
 
-  <target name="quick.pre-partest" depends="quick.scalap">
+  <target name="quick.pre-partest" depends="quick.scalap, asm.done">
     <uptodate property="quick.partest.available" targetfile="${build-quick.dir}/partest.complete">
       <srcfiles dir="${src.dir}/partest"/>
     </uptodate>
@@ -1356,6 +1356,7 @@ QUICK BUILD (QUICK)
         <pathelement location="${build-quick.dir}/classes/compiler"/>
         <pathelement location="${build-quick.dir}/classes/scalap"/>
         <pathelement location="${build-quick.dir}/classes/partest"/>
+        <path refid="asm.classpath"/>
       </classpath>
       <include name="**/*.java"/>
       <compilerarg line="${javac.args}"/>
@@ -1575,7 +1576,14 @@ PACKED QUICK BUILD (PACK)
   <target name="pack.partest" depends="pack.pre-partest" unless="pack.partest.available">
     <mkdir dir="${build-pack.dir}/lib"/>
     <jar destfile="${build-pack.dir}/lib/scala-partest.jar">
-      <fileset dir="${build-quick.dir}/classes/partest"/>
+      <fileset dir="${build-quick.dir}/classes/partest">
+        <exclude name="scala/tools/partest/javaagent/**"/>
+      </fileset>
+    </jar>
+    <jar destfile="${build-pack.dir}/lib/scala-partest-javaagent.jar" manifest="${src.dir}/partest/scala/tools/partest/javaagent/MANIFEST.MF">
+      <fileset dir="${build-quick.dir}/classes/partest">
+        <include name="scala/tools/partest/javaagent/**"/>
+      </fileset>
     </jar>
   </target>
 
@@ -1974,7 +1982,7 @@ BOOTSTRAPPING BUILD (STRAP)
     <stopwatch name="strap.scalap.timer" action="total"/>
   </target>
 
-  <target name="strap.pre-partest" depends="strap.scalap">
+  <target name="strap.pre-partest" depends="strap.scalap, asm.done">
     <uptodate property="strap.partest.available" targetfile="${build-strap.dir}/partest.complete">
       <srcfiles dir="${src.dir}/partest"/>
     </uptodate>
@@ -1993,6 +2001,7 @@ BOOTSTRAPPING BUILD (STRAP)
         <pathelement location="${build-strap.dir}/classes/compiler"/>
         <pathelement location="${build-strap.dir}/classes/scalap"/>
         <pathelement location="${build-strap.dir}/classes/partest"/>
+        <path refid="asm.classpath"/>
       </classpath>
       <include name="**/*.java"/>
       <compilerarg line="${javac.args}"/>
@@ -2012,6 +2021,7 @@ BOOTSTRAPPING BUILD (STRAP)
         <pathelement location="${build-strap.dir}/classes/partest"/>
         <pathelement location="${ant.jar}"/>
         <path refid="forkjoin.classpath"/>
+        <path refid="asm.classpath"/>
         <pathelement location="${scalacheck.jar}"/>
       </compilationpath>
     </scalacfork>
@@ -2393,6 +2403,9 @@ BOOTRAPING TEST AND TEST SUITE
       <specializedtests dir="${partest.dir}/${partest.srcdir}/specialized">
         <include name="*.scala"/>
       </specializedtests>
+      <instrumentedtests dir="${partest.dir}/${partest.srcdir}/instrumented">
+        <include name="*.scala"/>
+      </instrumentedtests>
       <presentationtests dir="${partest.dir}/${partest.srcdir}/presentation">
         <include name="*/*.scala"/>
       </presentationtests>
