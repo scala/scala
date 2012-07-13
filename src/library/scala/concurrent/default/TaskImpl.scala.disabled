@@ -9,7 +9,7 @@ import scala.util.Try
 import scala.util
 import scala.concurrent.util.Duration
 import scala.annotation.tailrec
-
+import scala.util.control.NonFatal
 
 
 private[concurrent] trait Completable[T] {
@@ -167,7 +167,7 @@ extends RecursiveAction with Task[T] with Future[T] with Completable[T] {
       val res = body
       processCallbacks(tryCompleteState(Success(res)), util.Success(res))
     } catch {
-      case t if isFutureThrowable(t) =>
+      case t if NonFatal(t) =>
         processCallbacks(tryCompleteState(Failure(t)), util.Failure(t))
       case t =>
         val ee = new ExecutionException(t)

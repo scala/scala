@@ -46,26 +46,13 @@ private[concurrent] object Future {
   
   def boxedType(c: Class[_]): Class[_] = if (c.isPrimitive) toBoxed(c) else c
 
-  // TODO rename appropriately and make public
-  private[concurrent] def isFutureThrowable(t: Throwable) = t match {
-    case e: Error                               => false
-    case t: scala.util.control.ControlThrowable => false
-    case i: InterruptedException                => false
-    case _                                      => true
-  }
-
   private[impl] class PromiseCompletingRunnable[T](body: => T)
     extends Runnable {
     val promise = new Promise.DefaultPromise[T]()
 
     override def run() = {
       promise complete {
-        try Right(body) catch {
-          case NonFatal(e) =>
-            // Commenting out reporting for now, since it produces too much output in the tests
-            //executor.reportFailure(e)
-            Left(e)
-        }
+        try Right(body) catch { case NonFatal(e) => Left(e) }
       }
     }
   }
