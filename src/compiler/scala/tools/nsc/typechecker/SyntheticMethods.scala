@@ -77,7 +77,7 @@ trait SyntheticMethods extends ast.TreeDSL {
     // like Tags and Arrays which are not robust and infer things
     // which they shouldn't.
     val accessorLub  = (
-      if (opt.experimental) {
+      if (settings.Xexperimental.value) {
         global.weakLub(accessors map (_.tpe.finalResultType))._1 match {
           case RefinedType(parents, decls) if !decls.isEmpty => intersectionType(parents)
           case tp                                            => tp

@@ -42,7 +42,7 @@ abstract class ICodes extends AnyRef
 
   /** Debugging flag */
   def shouldCheckIcode = settings.check contains global.genicode.phaseName
-  def checkerDebug(msg: String) = if (shouldCheckIcode && global.opt.debug) println(msg)
+  def checkerDebug(msg: String) = if (shouldCheckIcode && global.settings.debug.value) println(msg)
 
   /** The ICode linearizer. */
   val linearizer: Linearizer = settings.Xlinearizer.value match {

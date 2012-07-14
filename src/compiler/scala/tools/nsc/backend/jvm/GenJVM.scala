@@ -755,7 +755,7 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
             }
           }
           val index = jmember.getConstantPool.addUtf8(sig).toShort
-          if (opt.verboseDebug)
+          if (settings.verbose.value && settings.debug.value)
             beforeErasure(println("add generic sig "+sym+":"+sym.info+" ==> "+sig+" @ "+index))
 
           val buf = ByteBuffer.allocate(2)
