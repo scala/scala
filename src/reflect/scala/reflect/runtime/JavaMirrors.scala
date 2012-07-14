@@ -658,7 +658,7 @@ trait JavaMirrors extends internal.SymbolTable with api.JavaUniverse { self: Sym
       val ownerModule: ModuleSymbol =
         if (split > 0) packageNameToScala(fullname take split) else this.RootPackage
       val owner = ownerModule.moduleClass
-      val name = newTermName(fullname drop (split + 1))
+      val name = (fullname: TermName) drop split + 1
       val opkg = owner.info decl name
       if (opkg.isPackage)
         opkg.asModuleSymbol
