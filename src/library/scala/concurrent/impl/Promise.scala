@@ -59,7 +59,7 @@ object Promise {
   /** Default promise implementation.
    */
   class DefaultPromise[T] extends AbstractPromise with Promise[T] { self =>
-    updateState(null, Nil) // Start at "No callbacks" //FIXME switch to Unsafe instead of ARFU
+    updateState(null, Nil) // Start at "No callbacks"
     
     protected final def tryAwait(atMost: Duration): Boolean = {
       @tailrec
@@ -80,7 +80,6 @@ object Promise {
         } else
           isCompleted
       }
-      //FIXME do not do this if there'll be no waiting
       awaitUnsafe(if (atMost.isFinite) atMost.toNanos else Long.MaxValue)
     }
 

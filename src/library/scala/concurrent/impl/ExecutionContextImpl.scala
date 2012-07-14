@@ -10,7 +10,7 @@ package scala.concurrent.impl
 
 
 
-import java.util.concurrent.{ Callable, Executor, ExecutorService, Executors, ThreadFactory, TimeUnit }
+import java.util.concurrent.{ LinkedBlockingQueue, Callable, Executor, ExecutorService, Executors, ThreadFactory, TimeUnit, ThreadPoolExecutor }
 import java.util.Collection
 import scala.concurrent.forkjoin._
 import scala.concurrent.{ BlockContext, ExecutionContext, Awaitable, ExecutionContextExecutor, ExecutionContextExecutorService }
@@ -27,48 +27,70 @@ private[scala] class ExecutionContextImpl private[impl] (es: Executor, reporter:
   }
 
   // Implement BlockContext on FJP threads
-  def forkJoinPoolThreadFactory = new ForkJoinPool.ForkJoinWorkerThreadFactory {
-    def newThread(fjp: ForkJoinPool) = new ForkJoinWorkerThread(fjp) with BlockContext {
+  class DefaultThreadFactory(daemonic: Boolean) extends ThreadFactory with ForkJoinPool.ForkJoinWorkerThreadFactory { 
+    def wire[T <: Thread](thread: T): T = {
+      thread.setDaemon(daemonic)
+      //Potentially set things like uncaught exception handler, name etc
+      thread
+    }
+
+    def newThread(runnable: Runnable): Thread = wire(new Thread(runnable))
+
+    def newThread(fjp: ForkJoinPool): ForkJoinWorkerThread = wire(new ForkJoinWorkerThread(fjp) with BlockContext {
       override def internalBlockingCall[T](awaitable: Awaitable[T], atMost: Duration): T = {
         var result: T = null.asInstanceOf[T]
         ForkJoinPool.managedBlock(new ForkJoinPool.ManagedBlocker {
           @volatile var isdone = false
           def block(): Boolean = {
-            result = awaitable.result(atMost)(scala.concurrent.Await.canAwaitEvidence) // FIXME what happens if there's an exception thrown here?
-            isdone = true
+            result = try awaitable.result(atMost)(scala.concurrent.Await.canAwaitEvidence) finally { isdone = true }
             true
           }
           def isReleasable = isdone
         })
         result
       }
-    }
+    })
   }
 
-  def createExecutorService: ExecutorService = try {
+  def createExecutorService: ExecutorService = {
+
     def getInt(name: String, f: String => Int): Int =
-      try f(System.getProperty(name)) catch { case e: Exception => Runtime.getRuntime.availableProcessors }
+        try f(System.getProperty(name)) catch { case e: Exception => Runtime.getRuntime.availableProcessors }
     def range(floor: Int, desired: Int, ceiling: Int): Int =
       if (ceiling < floor) range(ceiling, desired, floor) else scala.math.min(scala.math.max(desired, floor), ceiling)
+
+    val desiredParallelism = range(
+      getInt("scala.concurrent.context.minThreads", _.toInt),
+      getInt("scala.concurrent.context.numThreads", {
+        case null | "" => Runtime.getRuntime.availableProcessors
+        case s if s.charAt(0) == 'x' => (Runtime.getRuntime.availableProcessors * s.substring(1).toDouble).ceil.toInt
+        case other => other.toInt
+      }),
+      getInt("scala.concurrent.context.maxThreads", _.toInt))
+
+    val threadFactory = new DefaultThreadFactory(daemonic = true)
     
-    new ForkJoinPool(
-      range(
-        getInt("scala.concurrent.ec.minThreads", _.toInt),
-        getInt("scala.concurrent.ec.numThreads", {
-          case null | "" => Runtime.getRuntime.availableProcessors
-          case s if s.charAt(0) == 'x' => (Runtime.getRuntime.availableProcessors * s.substring(1).toDouble).ceil.toInt
-          case other => other.toInt
-        }),
-        getInt("scala.concurrent.ec.maxThreads", _.toInt)
-      ),
-      forkJoinPoolThreadFactory,
-      null, //FIXME we should have an UncaughtExceptionHandler, see what Akka does
-      true) //FIXME I really think this should be async...
-  } catch {
-    case NonFatal(t) =>
-      System.err.println("Failed to create ForkJoinPool for the default ExecutionContext, falling back to Executors.newCachedThreadPool")
-      t.printStackTrace(System.err)
-      Executors.newCachedThreadPool() //FIXME use the same desired parallelism here too?
+    try {
+      new ForkJoinPool(
+        desiredParallelism,
+        threadFactory,
+        null, //FIXME we should have an UncaughtExceptionHandler, see what Akka does
+        true) // Async all the way baby
+    } catch {
+      case NonFatal(t) =>
+        System.err.println("Failed to create ForkJoinPool for the default ExecutionContext, falling back to ThreadPoolExecutor")
+        t.printStackTrace(System.err)
+        val exec = new ThreadPoolExecutor(
+          desiredParallelism,
+          desiredParallelism,
+          5L,
+          TimeUnit.MINUTES,
+          new LinkedBlockingQueue[Runnable],
+          threadFactory
+        )
+        exec.allowCoreThreadTimeOut(true)
+        exec
+    }
   }
 
   def execute(runnable: Runnable): Unit = executor match {

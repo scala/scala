@@ -136,7 +136,7 @@ trait Future[+T] extends Awaitable[T] {
    *  $callbackInContext
    */
   def onFailure[U](callback: PartialFunction[Throwable, U])(implicit executor: ExecutionContext): Unit = onComplete {
-    case Left(t) if (impl.Future.isFutureThrowable(t) && callback.isDefinedAt(t)) => callback(t)
+    case Left(t) if NonFatal(t) && callback.isDefinedAt(t) => callback(t)
     case _ =>
   }(executor)
 

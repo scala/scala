@@ -41,10 +41,15 @@ trait Scopes extends api.Scopes { self: SymbolTable =>
    *  This is necessary because when run from reflection every scope needs to have a
    *  SynchronizedScope as mixin.
    */
-  class Scope protected[Scopes] (initElems: ScopeEntry = null) extends Iterable[Symbol] {
+  class Scope protected[Scopes] (initElems: ScopeEntry = null, initFingerPrints: Long = 0L) extends Iterable[Symbol] {
+    
+    /** A bitset containing the last 6 bits of the start value of every name 
+     *  stored in this scope.
+     */
+    var fingerPrints: Long = initFingerPrints
 
     protected[Scopes] def this(base: Scope) = {
-      this(base.elems)
+      this(base.elems, base.fingerPrints)
       nestinglevel = base.nestinglevel + 1
     }
 
@@ -95,7 +100,7 @@ trait Scopes extends api.Scopes { self: SymbolTable =>
      *
      *  @param e ...
      */
-    protected def enter(e: ScopeEntry) {
+    protected def enterEntry(e: ScopeEntry) {
       elemsCache = null
       if (hashtable ne null)
         enterInHash(e)
@@ -113,7 +118,11 @@ trait Scopes extends api.Scopes { self: SymbolTable =>
      *
      *  @param sym ...
      */
-    def enter[T <: Symbol](sym: T): T = { enter(newScopeEntry(sym, this)); sym }
+    def enter[T <: Symbol](sym: T): T = { 
+      fingerPrints |= sym.name.fingerPrint
+      enterEntry(newScopeEntry(sym, this)) 
+      sym 
+    }
 
     /** enter a symbol, asserting that no symbol with same name exists in scope
      *
@@ -147,6 +156,7 @@ trait Scopes extends api.Scopes { self: SymbolTable =>
     }
 
     def rehash(sym: Symbol, newname: Name) {
+      fingerPrints |= newname.fingerPrint
       if (hashtable ne null) {
         val index = sym.name.start & HASHMASK
         var e1 = hashtable(index)
@@ -344,7 +354,7 @@ trait Scopes extends api.Scopes { self: SymbolTable =>
   /** The empty scope (immutable).
    */
   object EmptyScope extends Scope {
-    override def enter(e: ScopeEntry) {
+    override def enterEntry(e: ScopeEntry) {
       abort("EmptyScope.enter")
     }
   }
