@@ -5,12 +5,16 @@
     <content url="file://$MODULE_DIR$/../../test" />
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
-    <orderEntry type="module" module-name="actors" />
-    <orderEntry type="module" module-name="compiler" />
-    <orderEntry type="module" module-name="continuations" />
     <orderEntry type="module" module-name="library" />
+    <orderEntry type="module" module-name="reflect" />
+    <orderEntry type="module" module-name="compiler" />
+    <orderEntry type="module" module-name="actors" />
     <orderEntry type="module" module-name="swing" />
     <orderEntry type="module" module-name="partest" />
+    <orderEntry type="module" module-name="asm" />
+    <orderEntry type="module" module-name="fjbg" />
+    <orderEntry type="module" module-name="forkjoin" />
+    <orderEntry type="module" module-name="msil" />
   </component>
 </module>
 

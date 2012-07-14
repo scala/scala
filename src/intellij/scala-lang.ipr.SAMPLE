@@ -32,7 +32,7 @@
   <component name="Encoding" useUTFGuessing="true" native2AsciiForPropertiesFiles="false" />
   <component name="EntryPointsManager">
     <entry_points version="2.0" />
-  </component>  
+  </component>
   <component name="InspectionProjectProfileManager">
     <profiles>
       <profile version="1.0" is_locked="false">
@@ -196,9 +196,13 @@
   <component name="ProjectModuleManager">
     <modules>
       <module fileurl="file://$PROJECT_DIR$/actors.iml" filepath="$PROJECT_DIR$/actors.iml" />
+      <module fileurl="file://$PROJECT_DIR$/asm.iml" filepath="$PROJECT_DIR$/asm.iml" />
       <module fileurl="file://$PROJECT_DIR$/compiler.iml" filepath="$PROJECT_DIR$/compiler.iml" />
+      <module fileurl="file://$PROJECT_DIR$/fjbg.iml" filepath="$PROJECT_DIR$/fjbg.iml" />
+      <module fileurl="file://$PROJECT_DIR$/forkjoin.iml" filepath="$PROJECT_DIR$/forkjoin.iml" />
       <module fileurl="file://$PROJECT_DIR$/library.iml" filepath="$PROJECT_DIR$/library.iml" />
       <module fileurl="file://$PROJECT_DIR$/manual.iml" filepath="$PROJECT_DIR$/manual.iml" />
+      <module fileurl="file://$PROJECT_DIR$/msil.iml" filepath="$PROJECT_DIR$/msil.iml" />
       <module fileurl="file://$PROJECT_DIR$/partest.iml" filepath="$PROJECT_DIR$/partest.iml" />
       <module fileurl="file://$PROJECT_DIR$/reflect.iml" filepath="$PROJECT_DIR$/reflect.iml" />
       <module fileurl="file://$PROJECT_DIR$/scala.iml" filepath="$PROJECT_DIR$/scala.iml" />
@@ -213,6 +217,10 @@
   <component name="ProjectRootManager" version="2" languageLevel="JDK_1_6" assert-keyword="true" jdk-15="true" project-jdk-name="1.6" project-jdk-type="JavaSDK">
     <output url="file://$PROJECT_DIR$/../../out" />
   </component>
+  <component name="ScalacSettings">
+    <option name="COMPILER_LIBRARY_NAME" value="compiler-locker" />
+    <option name="COMPILER_LIBRARY_LEVEL" value="Project" />
+  </component>
   <component name="VcsDirectoryMappings">
     <mapping directory="$PROJECT_DIR$/../.." vcs="Git" />
   </component>
@@ -221,31 +229,19 @@
       <CLASSES>
         <root url="file://$PROJECT_DIR$/../../build/locker/classes/library" />
         <root url="file://$PROJECT_DIR$/../../build/locker/classes/compiler" />
-        <root url="jar://$PROJECT_DIR$/../../lib/forkjoin.jar!/" />
-        <root url="jar://$PROJECT_DIR$/../../lib/fjbg.jar!/" />
-        <root url="jar://$PROJECT_DIR$/../../lib/msil.jar!/" />
+        <root url="file://$PROJECT_DIR$/../../build/locker/classes/reflect" />
+        <root url="file://$PROJECT_DIR$/../../build/libs/classes/fjbg" />
+        <root url="file://$PROJECT_DIR$/../../build/asm/classes" />
       </CLASSES>
       <JAVADOC />
       <SOURCES />
     </library>
-    <library name="lib">
+    <library name="jline">
       <CLASSES>
         <root url="jar://$PROJECT_DIR$/../../lib/jline.jar!/" />
-        <root url="jar://$PROJECT_DIR$/../../lib/forkjoin.jar!/" />
-        <root url="jar://$PROJECT_DIR$/../../lib/fjbg.jar!/" />
-        <root url="jar://$PROJECT_DIR$/../../lib/msil.jar!/" />
       </CLASSES>
       <JAVADOC />
       <SOURCES />
-    </library>
-    <library name="quicklib">
-      <CLASSES>
-        <root url="file://$PROJECT_DIR$/../../build/quick/classes/library" />
-      </CLASSES>
-      <JAVADOC />
-      <SOURCES>
-        <root url="file://$PROJECT_DIR$/../library" />
-      </SOURCES>
     </library>
   </component>
 </project>
