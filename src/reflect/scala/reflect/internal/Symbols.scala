@@ -1441,9 +1441,9 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     }
 
     /** Set initial info. */
-    def setInfo(info: Type): this.type                      = { info_=(info); this }
+    def setInfo(info: Type): this.type  = { info_=(info); this }
     /** Modifies this symbol's info in place. */
-    def modifyInfo(f: Type => Type): this.type              = setInfo(f(info))
+    def modifyInfo(f: Type => Type): this.type = setInfo(f(info))
     /** Substitute second list of symbols for first in current info. */
     def substInfo(syms0: List[Symbol], syms1: List[Symbol]): this.type =
       if (syms0.isEmpty) this
@@ -1572,13 +1572,18 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
      * This is done in checkAccessible and overriding checks in refchecks
      * We can't do this on class loading because it would result in infinite cycles.
      */
-    final def cookJavaRawInfo() {
-      if (hasFlag(TRIEDCOOKING)) return else setFlag(TRIEDCOOKING) // only try once...
-      val oldInfo = info
-      doCookJavaRawInfo()
-    }
+    def cookJavaRawInfo(): Unit = {
+      // only try once...
+      if (this hasFlag TRIEDCOOKING)
+        return
 
-    protected def doCookJavaRawInfo(): Unit
+      this setFlag TRIEDCOOKING
+      info  // force the current info
+      if (isJavaDefined || isType && owner.isJavaDefined)
+        this modifyInfo rawToExistential
+      else if (isOverloaded)
+        alternatives withFilter (_.isJavaDefined) foreach (_ modifyInfo rawToExistential)
+    }
 
     /** The type constructor of a symbol is:
      *  For a type symbol, the type corresponding to the symbol itself,
@@ -2666,36 +2671,6 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
         name = nme.expandedName(name.toTermName, base)
       }
     }
-
-    protected def doCookJavaRawInfo() {
-      def cook(sym: Symbol) {
-        require(sym.isJavaDefined, sym)
-        // @M: I think this is more desirable, but Martin prefers to leave raw-types as-is as much as possible
-        // object rawToExistentialInJava extends TypeMap {
-        //   def apply(tp: Type): Type = tp match {
-        //     // any symbol that occurs in a java sig, not just java symbols
-        //     // see http://lampsvn.epfl.ch/trac/scala/ticket/2454#comment:14
-        //     case TypeRef(pre, sym, List()) if !sym.typeParams.isEmpty =>
-        //       val eparams = typeParamsToExistentials(sym, sym.typeParams)
-        //       existentialAbstraction(eparams, TypeRef(pre, sym, eparams map (_.tpe)))
-        //     case _ =>
-        //       mapOver(tp)
-        //   }
-        // }
-        val tpe1 = rawToExistential(sym.tpe)
-        // println("cooking: "+ sym +": "+ sym.tpe +" to "+ tpe1)
-        if (tpe1 ne sym.tpe) {
-          sym.setInfo(tpe1)
-        }
-      }
-
-      if (isJavaDefined)
-        cook(this)
-      else if (isOverloaded)
-        for (sym2 <- alternatives)
-          if (sym2.isJavaDefined)
-            cook(sym2)
-    }
   }
   implicit val TermSymbolTag = ClassTag[TermSymbol](classOf[TermSymbol])
 
@@ -2924,15 +2899,6 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
      * public class Test1<T extends Test3> {}
      * info for T in Test1 should be >: Nothing <: Test3[_]
      */
-    protected def doCookJavaRawInfo() {
-      if (isJavaDefined || owner.isJavaDefined) {
-        val tpe1 = rawToExistential(info)
-        // println("cooking type: "+ this +": "+ info +" to "+ tpe1)
-        if (tpe1 ne info) {
-          setInfo(tpe1)
-        }
-      }
-    }
 
     Statistics.incCounter(typeSymbolCount)
   }
@@ -3305,7 +3271,6 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     override def info: Type = NoType
     override def existentialBound: Type = NoType
     override def rawInfo: Type = NoType
-    protected def doCookJavaRawInfo() {}
     override def accessBoundary(base: Symbol): Symbol = enclosingRootClass
     def cloneSymbolImpl(owner: Symbol, newFlags: Long) = abort("NoSymbol.clone()")
     override def originalEnclosingMethod = this
