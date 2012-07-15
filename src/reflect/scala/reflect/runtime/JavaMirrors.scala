@@ -151,6 +151,8 @@ trait JavaMirrors extends internal.SymbolTable with api.JavaUniverse { self: Sym
         new JavaFieldMirror(obj, field1)
       }
       def reflectMethod(method: MethodSymbol): MethodMirror = {
+        symbol.info.member(method.name).alternatives contains method
+
         // [Eugene+++] check whether `method` represents a member of a `symbol`
         new JavaMethodMirror(obj, method)
       }
@@ -240,6 +242,7 @@ trait JavaMirrors extends internal.SymbolTable with api.JavaUniverse { self: Sym
       def erasure = symbol.moduleClass.asClassSymbol
       def isStatic = true
       def instance = {
+        classToJava(symbol.moduleClass.asClassSymbol)
         if (symbol.owner.isPackageClass)
           staticSingletonInstance(classLoader, symbol.fullName)
         else
@@ -918,26 +921,26 @@ trait JavaMirrors extends internal.SymbolTable with api.JavaUniverse { self: Sym
         valueClassToJavaType(clazz)
       else if (clazz == ArrayClass)
         noClass
-      else if (clazz.owner.isPackageClass)
-        javaClass(clazz.javaClassName)
       else if (clazz.owner.isClass) {
-        val childOfClass = !clazz.owner.isModuleClass
-        val childOfTopLevel = clazz.owner.owner.isPackageClass
-        val childOfTopLevelObject = clazz.owner.isModuleClass && childOfTopLevel
+        val javaClassName_calculated =
+          if (clazz.owner.isPackageClass) clazz.javaClassName
+          else {
+            val childOfClass = !clazz.owner.isModuleClass
+            val childOfTopLevel = clazz.owner.owner.isPackageClass
+            val childOfTopLevelObject = clazz.owner.isModuleClass && childOfTopLevel
 
-        // suggested in https://issues.scala-lang.org/browse/SI-4023?focusedCommentId=54759#comment-54759
-        var ownerClazz = classToJava(clazz.owner.asClassSymbol)
-        if (childOfTopLevelObject) ownerClazz = Class.forName(ownerClazz.getName stripSuffix "$", true, ownerClazz.getClassLoader)
-        val ownerChildren = ownerClazz.getDeclaredClasses
+            var ownerClazz = classToJava(clazz.owner.asClassSymbol)
+            if (childOfTopLevelObject) ownerClazz = Class.forName(ownerClazz.getName stripSuffix "$", true, ownerClazz.getClassLoader)
 
-        var fullNameOfJavaClass = ownerClazz.getName
-        if (childOfClass || childOfTopLevel) fullNameOfJavaClass += "$"
-        fullNameOfJavaClass += clazz.name
-        if (clazz.isModuleClass) fullNameOfJavaClass += "$"
-
-        // println(s"ownerChildren = ${ownerChildren.toList}")
-        // println(s"fullNameOfJavaClass = $fullNameOfJavaClass")
-        ownerChildren.find(_.getName == fullNameOfJavaClass).getOrElse(noClass)
+            var fullNameOfJavaClass = ownerClazz.getName
+            if (childOfClass || childOfTopLevel) fullNameOfJavaClass += "$"
+            fullNameOfJavaClass += clazz.name
+            if (clazz.isModuleClass) fullNameOfJavaClass += "$"
+            fullNameOfJavaClass
+          }
+        val javaClassName_signature = signature(clazz.asType)
+        println(s"actual name = $javaClassName_calculated, javaSimpleName = ${clazz.javaSimpleName}, javaBinaryName = ${clazz.javaBinaryName}, javaClassName = ${clazz.javaClassName}, signature = ${javaClassName_signature}")
+        javaClass(javaClassName_signature)
       } else
         noClass
     }

@@ -309,6 +309,8 @@ trait Symbols extends base.Symbols { self: Universe =>
 
     /** The type `C.this`, where `C` is the current class */
     def thisPrefix: Type
+
+    def binaryName: String
   }
 
   /** The API of free term symbols */
