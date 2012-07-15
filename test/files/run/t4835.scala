@@ -1,6 +1,6 @@
 /*
  * Test case for SI-4835.  This tests confirm that the fix
- * doesn't break laziness.  To test memory consumption, 
+ * doesn't break laziness.  To test memory consumption,
  * I need to confirm that OutOfMemoryError doesn't occur.
  * I could create such tests.  However, such tests consume
  * too much time and memory.
