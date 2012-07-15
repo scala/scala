@@ -18,7 +18,7 @@ import collection.mutable.{ HashMap, ListBuffer }
 import internal.Flags._
 //import scala.tools.nsc.util.ScalaClassLoader
 //import scala.tools.nsc.util.ScalaClassLoader._
-import ReflectionUtils.{singletonInstance}
+import ReflectionUtils.{staticSingletonInstance, innerSingletonInstance}
 import language.existentials
 
 trait JavaMirrors extends internal.SymbolTable with api.JavaUniverse { self: SymbolTable =>
@@ -133,17 +133,26 @@ trait JavaMirrors extends internal.SymbolTable with api.JavaUniverse { self: Sym
       def symbol = wholemirror.classSymbol(obj.getClass)
       def reflectField(field: TermSymbol): FieldMirror = {
         // [Eugene+++] check whether `field` represents a member of a `symbol`
-        if (field.isMethod || field.isModule) throw new Error(s"""
-          |expected a field symbol, you provided a ${field.kind} symbol
-          |A typical cause of this problem is using a field accessor symbol instead of a field symbol.
-          |To obtain a field symbol append nme.LOCAL_SUFFIX_STRING to the name of the field,
-          |when searching for a member with Type.members or Type.declarations.
-          |This is a temporary inconvenience that will be resolved before 2.10.0-final.
-          |More information can be found here: https://issues.scala-lang.org/browse/SI-5895.
-        """.trim.stripMargin)
-        new JavaFieldMirror(obj, field)
+        if ((field.isMethod && !field.isAccessor) || field.isModule) throw new Error(s"expected a field or accessor method symbol, you provided a ${field.kind} symbol")
+        val name =
+          if (field.isGetter) nme.getterToLocal(field.name)
+          else if (field.isSetter) nme.getterToLocal(nme.setterToGetter(field.name))
+          else field.name
+        val field1 = (field.owner.info decl name).asTermSymbol
+        try fieldToJava(field1)
+        catch {
+          case _: NoSuchFieldException =>
+            throw new Error(s"""
+              |this Scala field isn't represented as a Java field, neither it has a Java accessor method
+              |note that private parameters of class constructors don't get mapped onto fields and/or accessors,
+              |unless they are used outside of their declaring constructors.
+            """.trim.stripMargin)
+        }
+        new JavaFieldMirror(obj, field1)
       }
       def reflectMethod(method: MethodSymbol): MethodMirror = {
+        symbol.info.member(method.name).alternatives contains method
+
         // [Eugene+++] check whether `method` represents a member of a `symbol`
         new JavaMethodMirror(obj, method)
       }
@@ -233,8 +242,12 @@ trait JavaMirrors extends internal.SymbolTable with api.JavaUniverse { self: Sym
       def erasure = symbol.moduleClass.asClassSymbol
       def isStatic = true
       def instance = {
-        if (!symbol.owner.isPackageClass) throw new Error("inner and nested modules are not supported yet")
-        singletonInstance(classLoader, symbol.fullName)
+        classToJava(symbol.moduleClass.asClassSymbol)
+        if (symbol.owner.isPackageClass)
+          staticSingletonInstance(classLoader, symbol.fullName)
+        else
+          if (outer == null) staticSingletonInstance(classToJava(symbol.moduleClass.asClassSymbol))
+          else innerSingletonInstance(outer, symbol.name)
       }
       def companion: Option[ClassMirror] = symbol.companionClass match {
         case cls: ClassSymbol => Some(new JavaClassMirror(outer, cls))
@@ -908,14 +921,27 @@ trait JavaMirrors extends internal.SymbolTable with api.JavaUniverse { self: Sym
         valueClassToJavaType(clazz)
       else if (clazz == ArrayClass)
         noClass
-      else if (clazz.owner.isPackageClass)
-        javaClass(clazz.javaClassName)
-      else if (clazz.owner.isClass)
-        classToJava(clazz.owner.asClassSymbol)
-          .getDeclaredClasses
-          .find(_.getSimpleName == clazz.name.toString)
-          .getOrElse(noClass)
-      else
+      else if (clazz.owner.isClass) {
+        val javaClassName_calculated =
+          if (clazz.owner.isPackageClass) clazz.javaClassName
+          else {
+            val childOfClass = !clazz.owner.isModuleClass
+            val childOfTopLevel = clazz.owner.owner.isPackageClass
+            val childOfTopLevelObject = clazz.owner.isModuleClass && childOfTopLevel
+
+            var ownerClazz = classToJava(clazz.owner.asClassSymbol)
+            if (childOfTopLevelObject) ownerClazz = Class.forName(ownerClazz.getName stripSuffix "$", true, ownerClazz.getClassLoader)
+
+            var fullNameOfJavaClass = ownerClazz.getName
+            if (childOfClass || childOfTopLevel) fullNameOfJavaClass += "$"
+            fullNameOfJavaClass += clazz.name
+            if (clazz.isModuleClass) fullNameOfJavaClass += "$"
+            fullNameOfJavaClass
+          }
+        val javaClassName_signature = signature(clazz.asType)
+        println(s"actual name = $javaClassName_calculated, javaSimpleName = ${clazz.javaSimpleName}, javaBinaryName = ${clazz.javaBinaryName}, javaClassName = ${clazz.javaClassName}, signature = ${javaClassName_signature}")
+        javaClass(javaClassName_signature)
+      } else
         noClass
     }
 
