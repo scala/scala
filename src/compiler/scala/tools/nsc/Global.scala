@@ -15,7 +15,6 @@ import reporters.{ Reporter, ConsoleReporter }
 import util.{ Exceptional, ClassPath, MergedClassPath, StatisticsInfo, ScalaClassLoader, returning }
 import scala.reflect.internal.util.{ NoPosition, SourceFile, NoSourceFile, BatchSourceFile, ScriptSourceFile }
 import scala.reflect.internal.pickling.{ PickleBuffer, PickleFormat }
-import settings.{ AestheticSettings }
 import symtab.{ Flags, SymbolTable, SymbolLoaders, SymbolTrackers }
 import symtab.classfile.Pickler
 import dependencies.DependencyAnalysis
@@ -224,7 +223,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
   def globalError(msg: String) = reporter.error(NoPosition, msg)
   def inform(msg: String)      = reporter.echo(msg)
   def warning(msg: String)     =
-    if (opt.fatalWarnings) globalError(msg)
+    if (settings.fatalWarnings.value) globalError(msg)
     else reporter.warning(NoPosition, msg)
 
   // Getting in front of Predef's asserts to supplement with more info.
@@ -265,7 +264,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
     msg + " in " + (currentTime - start) + "ms"
 
   def informComplete(msg: String): Unit    = reporter.withoutTruncating(inform(msg))
-  def informProgress(msg: String)          = if (opt.verbose) inform("[" + msg + "]")
+  def informProgress(msg: String)          = if (settings.verbose.value) inform("[" + msg + "]")
   def inform[T](msg: String, value: T): T  = returning(value)(x => inform(msg + x))
   def informTime(msg: String, start: Long) = informProgress(elapsedMessage(msg, start))
 
@@ -310,7 +309,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
           None
       }
 
-    val charset = opt.encoding flatMap loadCharset getOrElse {
+    val charset = ( if (settings.encoding.isSetByUser) Some(settings.encoding.value) else None ) flatMap loadCharset getOrElse {
       settings.encoding.value = defaultEncoding // A mandatory charset
       Charset.forName(defaultEncoding)
     }
@@ -325,7 +324,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
       }
     }
 
-    opt.sourceReader flatMap loadReader getOrElse {
+    ( if (settings.sourceReader.isSetByUser) Some(settings.sourceReader.value) else None ) flatMap loadReader getOrElse {
       new SourceReader(charset.newDecoder(), reporter)
     }
   }
@@ -333,52 +332,10 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
   if (!dependencyAnalysis.off)
     dependencyAnalysis.loadDependencyAnalysis()
 
-  if (opt.verbose || opt.logClasspath) {
+  if (settings.verbose.value || settings.Ylogcp.value) {
     // Uses the "do not truncate" inform
     informComplete("[search path for source files: " + classPath.sourcepaths.mkString(",") + "]")
     informComplete("[search path for class files: " + classPath.asClasspathString + "]")
-  }
-
-  object opt extends AestheticSettings {
-    def settings = Global.this.settings
-
-    // protected implicit lazy val globalPhaseOrdering: Ordering[Phase] = Ordering[Int] on (_.id)
-    def isActive(ph: Settings#PhasesSetting)  = ph containsPhase globalPhase
-    def wasActive(ph: Settings#PhasesSetting) = ph containsPhase globalPhase.prev
-
-    // Allows for syntax like scalac -Xshow-class Random@erasure,typer
-    private def splitClassAndPhase(str: String, term: Boolean): Name = {
-      def mkName(s: String) = if (term) newTermName(s) else newTypeName(s)
-      (str indexOf '@') match {
-        case -1   => mkName(str)
-        case idx  =>
-          val phasePart = str drop (idx + 1)
-          settings.Yshow.tryToSetColon(phasePart split ',' toList)
-          mkName(str take idx)
-      }
-    }
-
-    // behavior
-
-    // debugging
-    def checkPhase = wasActive(settings.check)
-    def logPhase   = isActive(settings.log)
-
-    // Write *.icode files right after GenICode when -Xprint-icode was given.
-    def writeICodeAtICode = settings.writeICode.isSetByUser && isActive(settings.writeICode)
-
-    // showing/printing things
-    def browsePhase   = isActive(settings.browse)
-    def echoFilenames = opt.debug && (opt.verbose || currentRun.size < 5)
-    def noShow        = settings.Yshow.isDefault
-    def printLate     = settings.printLate.value
-    def printPhase    = isActive(settings.Xprint)
-    def showNames     = List(showClass, showObject).flatten
-    def showPhase     = isActive(settings.Yshow)
-    def showSymbols   = settings.Yshowsyms.value
-    def showTrees     = settings.Xshowtrees.value || settings.XshowtreesCompact.value || settings.XshowtreesStringified.value
-    val showClass     = optSetting[String](settings.Xshowcls) map (x => splitClassAndPhase(x, false))
-    val showObject    = optSetting[String](settings.Xshowobj) map (x => splitClassAndPhase(x, true))
   }
 
   // The current division between scala.reflect.* and scala.tools.nsc.* is pretty
@@ -389,11 +346,8 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
   // Here comes another one...
   override protected val enableTypeVarExperimentals = settings.Xexperimental.value
 
-  // True if -Xscript has been set, indicating a script run.
-  def isScriptRun = opt.script.isDefined
-
   def getSourceFile(f: AbstractFile): BatchSourceFile =
-    if (isScriptRun) ScriptSourceFile(f, reader read f)
+    if (settings.script.isSetByUser) ScriptSourceFile(f, reader read f)
     else new BatchSourceFile(f, reader read f)
 
   def getSourceFile(name: String): SourceFile = {
@@ -448,7 +402,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
       if ((unit ne null) && unit.exists)
         lastSeenSourceFile = unit.source
 
-      if (opt.echoFilenames)
+      if (settings.debug.value && (settings.verbose.value || currentRun.size < 5))
         inform("[running phase " + name + " on " + unit + "]")
 
       val unit0 = currentUnit
@@ -1171,7 +1125,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
     val info3: List[String] = (
          ( List("== Enclosing template or block ==", nodePrinters.nodeToString(enclosing).trim) )
       ++ ( if (tpe eq null) Nil else List("== Expanded type of tree ==", typeDeconstruct.show(tpe)) )
-      ++ ( if (!opt.debug) Nil else List("== Current unit body ==", nodePrinters.nodeToString(currentUnit.body)) )
+      ++ ( if (!settings.debug.value) Nil else List("== Current unit body ==", nodePrinters.nodeToString(currentUnit.body)) )
       ++ ( List(errorMessage) )
     )
 
@@ -1185,7 +1139,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
 
   def echoPhaseSummary(ph: Phase) = {
     /** Only output a summary message under debug if we aren't echoing each file. */
-    if (opt.debug && !opt.echoFilenames)
+    if (settings.debug.value && !(settings.verbose.value || currentRun.size < 5))
       inform("[running phase " + ph.name + " on " + currentRun.size +  " compilation units]")
   }
 
@@ -1490,8 +1444,24 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
       }
     }
 
-    private def showMembers() =
-      opt.showNames foreach (x => showDef(x, opt.declsOnly, globalPhase))
+    private def showMembers() = {
+      // Allows for syntax like scalac -Xshow-class Random@erasure,typer
+      def splitClassAndPhase(str: String, term: Boolean): Name = {
+        def mkName(s: String) = if (term) newTermName(s) else newTypeName(s)
+        (str indexOf '@') match {
+          case -1   => mkName(str)
+          case idx  =>
+            val phasePart = str drop (idx + 1)
+            settings.Yshow.tryToSetColon(phasePart split ',' toList)
+            mkName(str take idx)
+        }
+      }
+      if (settings.Xshowcls.isSetByUser)
+        showDef(splitClassAndPhase(settings.Xshowcls.value, false), false, globalPhase)
+
+      if (settings.Xshowobj.isSetByUser)
+        showDef(splitClassAndPhase(settings.Xshowobj.value, true), false, globalPhase)
+    }
 
     // Similarly, this will only be created under -Yshow-syms.
     object trackerFactory extends SymbolTrackers {
@@ -1576,37 +1546,40 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
         // progress update
         informTime(globalPhase.description, startTime)
         phaseTimings(globalPhase) = currentTime - startTime
-
-        if (opt.writeICodeAtICode || (opt.printPhase && runIsAtOptimiz)) {
+        val shouldWriteIcode = (
+             (settings.writeICode.isSetByUser && (settings.writeICode containsPhase globalPhase))
+          || (!settings.Xprint.doAllPhases && (settings.Xprint containsPhase globalPhase) && runIsAtOptimiz)
+        )
+        if (shouldWriteIcode) {
           // Write *.icode files when -Xprint-icode or -Xprint:<some-optimiz-phase> was given.
           writeICode()
-        } else if (opt.printPhase || opt.printLate && runIsAt(cleanupPhase)) {
+        } else if ((settings.Xprint containsPhase globalPhase) || settings.printLate.value && runIsAt(cleanupPhase)) {
           // print trees
-          if (opt.showTrees) nodePrinters.printAll()
+          if (settings.Xshowtrees.value || settings.XshowtreesCompact.value || settings.XshowtreesStringified.value) nodePrinters.printAll()
           else printAllUnits()
         }
 
         // print the symbols presently attached to AST nodes
-        if (opt.showSymbols)
+        if (settings.Yshowsyms.value)
           trackerFactory.snapshot()
 
         // print members
-        if (opt.showPhase)
+        if (settings.Yshow containsPhase globalPhase)
           showMembers()
 
         // browse trees with swing tree viewer
-        if (opt.browsePhase)
+        if (settings.browse containsPhase globalPhase)
           treeBrowser browse (phase.name, units)
 
         // move the pointer
         globalPhase = globalPhase.next
 
         // run tree/icode checkers
-        if (opt.checkPhase)
+        if (settings.check containsPhase globalPhase.prev)
           runCheckers()
 
         // output collected statistics
-        if (opt.printStats)
+        if (settings.Ystatistics.value)
           statistics.print(phase)
 
         advancePhase
@@ -1616,7 +1589,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
         units map (_.body) foreach (traceSymbols recordSymbolsInTree _)
 
       // In case no phase was specified for -Xshow-class/object, show it now for sure.
-      if (opt.noShow)
+      if (settings.Yshow.isDefault)
         showMembers()
 
       reportCompileErrors()
@@ -1648,7 +1621,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
     def compile(filenames: List[String]) {
       try {
         val sources: List[SourceFile] =
-          if (isScriptRun && filenames.size > 1) returning(Nil)(_ => globalError("can only compile one script at a time"))
+          if (settings.script.isSetByUser && filenames.size > 1) returning(Nil)(_ => globalError("can only compile one script at a time"))
           else filenames map getSourceFile
 
         compileSources(sources)
@@ -1795,7 +1768,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
         informProgress("wrote " + file)
       } catch {
         case ex: IOException =>
-          if (opt.debug) ex.printStackTrace()
+          if (settings.debug.value) ex.printStackTrace()
         globalError("could not write file " + file)
       }
     })
@@ -1806,8 +1779,8 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
   // and forScaladoc default to onlyPresentation, which is the same as defaulting
   // to false except in old code.  The downside is that this leaves us calling a
   // deprecated method: but I see no simple way out, so I leave it for now.
-  def forJVM           = opt.jvm
-  override def forMSIL = opt.msil
+  def forJVM           = settings.target.value startsWith "jvm"
+  override def forMSIL = settings.target.value startsWith "msil"
   def forInteractive   = onlyPresentation
   def forScaladoc      = onlyPresentation
   def createJavadoc    = false

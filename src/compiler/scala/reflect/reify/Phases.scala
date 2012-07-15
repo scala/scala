@@ -26,7 +26,7 @@ trait Phases extends Reshape
     if (reifyDebug) println("[reshape phase]")
     tree = reshape.transform(tree)
     if (reifyDebug) println("[interlude]")
-    if (reifyDebug) println("reifee = " + (if (opt.showTrees) "\n" + nodePrinters.nodeToString(tree).trim else tree.toString))
+    if (reifyDebug) println("reifee = " + (if (settings.Xshowtrees.value || settings.XshowtreesCompact.value || settings.XshowtreesStringified.value) "\n" + nodePrinters.nodeToString(tree).trim else tree.toString))
 
     if (reifyDebug) println("[calculate phase]")
     calculate.traverse(tree)

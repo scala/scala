@@ -91,16 +91,16 @@ abstract class TreeGen extends reflect.internal.TreeGen with TreeDSL {
       case Block((vd: ValDef) :: Nil, orig@Match(selector, cases)) => // println("block match: "+ (selector, cases, vd) + "for:\n"+ matchExpr )
         caseMatch(matchExpr, selector, cases, m => copyBlock(matchExpr, List(vd), m))
       // virtpatmat
-      case Apply(Apply(TypeApply(Select(tgt, nme.runOrElse), targs), List(scrut)), List(matcher)) if opt.virtPatmat => // println("virt match: "+ (tgt, targs, scrut, matcher) + "for:\n"+ matchExpr )
+      case Apply(Apply(TypeApply(Select(tgt, nme.runOrElse), targs), List(scrut)), List(matcher)) if !settings.XoldPatmat.value => // println("virt match: "+ (tgt, targs, scrut, matcher) + "for:\n"+ matchExpr )
         caseVirtualizedMatch(matchExpr, tgt, targs, scrut, matcher)
       // optimized version of virtpatmat
-      case Block(stats, matchEndDef) if opt.virtPatmat && (stats forall hasSynthCaseSymbol) =>
+      case Block(stats, matchEndDef) if !settings.XoldPatmat.value && (stats forall hasSynthCaseSymbol) =>
         // the assumption is once we encounter a case, the remainder of the block will consist of cases
         // the prologue may be empty, usually it is the valdef that stores the scrut
         val (prologue, cases) = stats span (s => !s.isInstanceOf[LabelDef])
         caseVirtualizedMatchOpt(matchExpr, prologue, cases, matchEndDef, identity)
       // optimized version of virtpatmat
-      case Block(outerStats, orig@Block(stats, matchEndDef)) if opt.virtPatmat && (stats forall hasSynthCaseSymbol) =>
+      case Block(outerStats, orig@Block(stats, matchEndDef)) if !settings.XoldPatmat.value && (stats forall hasSynthCaseSymbol) =>
         val (prologue, cases) = stats span (s => !s.isInstanceOf[LabelDef])
         caseVirtualizedMatchOpt(matchExpr, prologue, cases, matchEndDef, m => copyBlock(matchExpr, outerStats, m))
       case other =>
@@ -111,7 +111,7 @@ abstract class TreeGen extends reflect.internal.TreeGen with TreeDSL {
     def copyBlock(orig: Tree, stats: List[Tree], expr: Tree): Block = Block(stats, expr)
 
     def dropSyntheticCatchAll(cases: List[CaseDef]): List[CaseDef] =
-      if (!opt.virtPatmat) cases
+      if (settings.XoldPatmat.value) cases
       else cases filter {
              case CaseDef(pat, EmptyTree, Throw(Apply(Select(New(exTpt), nme.CONSTRUCTOR), _))) if (treeInfo.isWildcardArg(pat) && (exTpt.tpe.typeSymbol eq MatchErrorClass)) => false
              case CaseDef(pat, guard, body) => true

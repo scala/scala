@@ -52,7 +52,7 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
   // @inline final def patmatDebug(s: => String) = if (printPatmat) println(s)
 
   def newTransformer(unit: CompilationUnit): Transformer =
-    if (opt.virtPatmat) new MatchTransformer(unit)
+    if (!settings.XoldPatmat.value) new MatchTransformer(unit)
     else noopTransformer
 
   // duplicated from CPSUtils (avoid dependency from compiler -> cps plugin...)

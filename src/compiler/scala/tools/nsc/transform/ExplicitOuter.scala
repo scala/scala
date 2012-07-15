@@ -516,11 +516,11 @@ abstract class ExplicitOuter extends InfoTransform
           super.transform(treeCopy.Apply(tree, sel, outerVal :: args))
 
         // entry point for pattern matcher translation
-        case mch: Match if (!opt.virtPatmat) => // don't use old pattern matcher as fallback when the user wants the virtualizing one
+        case mch: Match if settings.XoldPatmat.value => // don't use old pattern matcher as fallback when the user wants the virtualizing one
           matchTranslation(mch)
 
         case _ =>
-          if (opt.virtPatmat) { // this turned out to be expensive, hence the hacky `if` and `return`
+          if (!settings.XoldPatmat.value) { // this turned out to be expensive, hence the hacky `if` and `return`
             tree match {
               // for patmatvirtualiser
               // base.<outer>.eq(o) --> base.$outer().eq(o) if there's an accessor, else the whole tree becomes TRUE
