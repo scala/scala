@@ -350,7 +350,8 @@ trait CommentFactory { thisFactory: ModelFactory with CommentFactory with Member
           case None => List.empty
         }
 
-        val tagsWithoutDiagram = tags.filterNot(pair => pair._1 == inheritDiagramTag || pair._1 == contentDiagramTag)
+        val stripTags=List(inheritDiagramTag, contentDiagramTag, SimpleTagKey("template"))
+        val tagsWithoutDiagram = tags.filterNot(pair => stripTags.contains(pair._1))
 
         val bodyTags: mutable.Map[TagKey, List[Body]] =
           mutable.Map(tagsWithoutDiagram mapValues {tag => tag map (parseWiki(_, pos, inTplOpt))} toSeq: _*)

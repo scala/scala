@@ -671,7 +671,7 @@ class Scaladoc extends ScalaMatchingTask {
         exception.printStackTrace()
         safeBuildError("Document failed because of an internal documenter error (" +
           exception.getMessage + "); see the error output for details.")
-      case exception =>
+      case exception : Throwable =>
         exception.printStackTrace()
         safeBuildError("Document failed because of an internal documenter error " +
           "(no error message provided); see the error output for details.")

@@ -241,6 +241,11 @@ trait MemberTemplateEntity extends TemplateEntity with MemberEntity with HigherK
   /** The value parameters of this case class, or an empty list if this class is not a case class. As case class value
     * parameters cannot be curried, the outer list has exactly one element. */
   def valueParams: List[List[ValueParam]]
+
+  /** The direct super-type of this template
+      e.g: {{{class A extends B[C[Int]] with D[E]}}} will have two direct parents: class B and D
+      NOTE: we are dropping the refinement here! */
+  def parentTypes: List[(TemplateEntity, TypeEntity)]
 }
 
 /** A template (class, trait, object or package) for which documentation is available. Only templates for which
@@ -258,11 +263,6 @@ trait DocTemplateEntity extends MemberTemplateEntity {
   /** An HTTP address at which the source of this template is available, if it is available. An address is available
     * only if the `docsourceurl` setting has been set. */
   def sourceUrl: Option[java.net.URL]
-
-  /** The direct super-type of this template
-      e.g: {{{class A extends B[C[Int]] with D[E]}}} will have two direct parents: class B and D
-      NOTE: we are dropping the refinement here! */
-  def parentTypes: List[(TemplateEntity, TypeEntity)]
 
   /** All class, trait and object templates which are part of this template's linearization, in lineratization order.
     * This template's linearization contains all of its direct and indirect super-classes and super-traits. */

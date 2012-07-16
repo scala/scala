@@ -211,10 +211,12 @@ abstract class HtmlPage extends Page { thisPage =>
     else if (ety.isTrait) "trait_big.png"
     else if (ety.isClass && !ety.companion.isEmpty && ety.companion.get.visibility.isPublic && ety.companion.get.inSource != None) "class_to_object_big.png"
     else if (ety.isClass) "class_big.png"
+    else if ((ety.isAbstractType || ety.isAliasType) && !ety.companion.isEmpty && ety.companion.get.visibility.isPublic && ety.companion.get.inSource != None) "type_to_object_big.png"
+    else if ((ety.isAbstractType || ety.isAliasType)) "type_big.png"
     else if (ety.isObject && !ety.companion.isEmpty && ety.companion.get.visibility.isPublic && ety.companion.get.inSource != None && ety.companion.get.isClass) "object_to_class_big.png"
     else if (ety.isObject && !ety.companion.isEmpty && ety.companion.get.visibility.isPublic && ety.companion.get.inSource != None && ety.companion.get.isTrait) "object_to_trait_big.png"
+    else if (ety.isObject && !ety.companion.isEmpty && ety.companion.get.visibility.isPublic && ety.companion.get.inSource != None && (ety.companion.get.isAbstractType || ety.companion.get.isAliasType)) "object_to_trait_big.png"
     else if (ety.isObject) "object_big.png"
     else if (ety.isPackage) "package_big.png"
     else "class_big.png"  // FIXME: an entity *should* fall into one of the above categories, but AnyRef is somehow not
-
 }

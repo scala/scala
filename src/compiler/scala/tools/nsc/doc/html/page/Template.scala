@@ -92,7 +92,7 @@ class Template(universe: doc.Universe, generator: DiagramGenerator, tpl: DocTemp
         <p id="owner">{ templatesToHtml(tpl.inTemplate.toRoot.reverse.tail, xml.Text(".")) }</p>
     }
 
-    <body class={ if (tpl.isTrait || tpl.isClass || tpl.qualifiedName == "scala.AnyRef") "type" else "value" }>
+    <body class={ if (tpl.isType) "type" else "value" }>
       <div id="definition">
         {
           tpl.companion match {
@@ -734,20 +734,21 @@ class Template(universe: doc.Universe, generator: DiagramGenerator, tpl: DocTemp
           }
         }{ if (isReduced) NodeSeq.Empty else {
           mbr match {
-            case tpl: DocTemplateEntity if !tpl.parentTypes.isEmpty =>
-              <span class="result"> extends { typeToHtml(tpl.parentTypes.map(_._2), hasLinks) }</span>
-
             case tme: MemberEntity if (tme.isDef || tme.isVal || tme.isLazyVal || tme.isVar) =>
               <span class="result">: { typeToHtml(tme.resultType, hasLinks) }</span>
 
-            case abt: AbstractType =>
+            case abt: MemberEntity with AbstractType =>
               val b2s = boundsToHtml(abt.hi, abt.lo, hasLinks)
               if (b2s != NodeSeq.Empty)
                 <span class="result">{ b2s }</span>
               else NodeSeq.Empty
 
-            case alt: AliasType =>
+            case alt: MemberEntity with AliasType =>
               <span class="result"> = { typeToHtml(alt.alias, hasLinks) }</span>
+
+            case tpl: MemberTemplateEntity if !tpl.parentTypes.isEmpty =>
+              <span class="result"> extends { typeToHtml(tpl.parentTypes.map(_._2), hasLinks) }</span>
+
             case _ => NodeSeq.Empty
           }
         }}

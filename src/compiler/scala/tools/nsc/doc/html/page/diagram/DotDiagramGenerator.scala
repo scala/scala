@@ -242,6 +242,8 @@ class DotDiagramGenerator(settings: doc.Settings) extends DiagramGenerator {
       attr ++= classStyle
     else if(node.isObjectNode)
       attr ++= objectStyle
+    else if(node.isTypeNode)
+      attr ++= typeStyle
     else
       attr ++= defaultStyle
 
@@ -254,6 +256,8 @@ class DotDiagramGenerator(settings: doc.Settings) extends DiagramGenerator {
       img = "class_diagram.png"
     else if(node.isObjectNode)
       img = "object_diagram.png"
+    else if(node.isTypeNode)
+      img = "type_diagram.png"
 
     if(!img.equals("")) {
       img = "<TD><IMG SCALE=\"TRUE\" SRC=\"" + settings.outdir.value + "/lib/" + img + "\" /></TD>"
@@ -307,6 +311,8 @@ class DotDiagramGenerator(settings: doc.Settings) extends DiagramGenerator {
       space + "trait"
     else if (node.isObjectNode)
       space + "object"
+    else if (node.isTypeNode)
+      space + "type"
     else
       default
 
@@ -488,6 +494,12 @@ class DotDiagramGenerator(settings: doc.Settings) extends DiagramGenerator {
   private val objectStyle = Map(
     "color" -> "#102966",
     "fillcolor" -> "#3556a7",
+    "fontcolor" -> "#ffffff"
+  )
+
+  private val typeStyle = Map(
+    "color" -> "#115F3B",
+    "fillcolor" -> "#0A955B",
     "fontcolor" -> "#ffffff"
   )
 

@@ -121,12 +121,10 @@ trait DiagramFactory extends DiagramDirectiveParser {
         // for each node, add its subclasses
         for (node <- nodesAll if !classExcluded(node)) {
           node match {
-            case dnode: DocTemplateImpl =>
-              var superClasses = dnode.parentTypes.map(_._1)
+            case dnode: MemberTemplateImpl =>
+              var superClasses = dnode.parentTypes.map(_._1).filter(nodesAll.contains(_))
 
-              superClasses = superClasses.filter(nodesAll.contains(_))
-
-              // TODO: Everyone should be able to use the @{inherit,content}Diagram annotation to change the diagrams.
+              // TODO: Everyone should be able to use the @{inherit,content}Diagram annotation to add nodes to diagrams.
               if (pack.sym == ScalaPackage)
                 if (dnode.sym == NullClass)
                   superClasses = List(makeTemplate(AnyRefClass))
@@ -142,7 +140,7 @@ trait DiagramFactory extends DiagramDirectiveParser {
           }
 
           mapNodes += node -> (
-            if (node.inTemplate == pack && !node.isNoDocMemberTemplate)
+            if (node.inTemplate == pack && (node.isDocTemplate || node.isAbstractType || node.isAliasType))
               NormalNode(node.resultType, Some(node))()
             else
               OutsideNode(node.resultType, Some(node))()

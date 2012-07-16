@@ -32,6 +32,8 @@ object Test extends ScaladocModelTest {
     val B = b._class("B")
     val D = b._class("D")
     testDiagram(B, B.contentDiagram, 2, 1)
-    testDiagram(D, D.contentDiagram, 2, 1)
+    // unfortunately not all packages, as B1 extends A.this.A1 and it gets the wrong member -- maybe we should model
+    // things as we do for symbols?
+    testDiagram(D, D.contentDiagram, 3, 2)
   }
 }

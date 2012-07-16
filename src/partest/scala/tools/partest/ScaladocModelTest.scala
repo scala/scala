@@ -130,11 +130,17 @@ abstract class ScaladocModelTest extends DirectTest {
       def _conversion(name: String): ImplicitConversion = getTheFirst(_conversions(name), tpl.qualifiedName + ".conversion(" + name + ")")
       def _conversions(name: String): List[ImplicitConversion] = tpl.conversions.filter(_.conversionQualifiedName == name)
 
-      def _absType(name: String): MemberEntity = getTheFirst(_methods(name), tpl.qualifiedName + ".abstractType(" + name + ")")
+      def _absType(name: String): MemberEntity = getTheFirst(_absTypes(name), tpl.qualifiedName + ".abstractType(" + name + ")")
       def _absTypes(name: String): List[MemberEntity] = tpl.members.filter(mbr => mbr.name == name && mbr.isAbstractType)
 
-      def _aliasType(name: String): MemberEntity = getTheFirst(_methods(name), tpl.qualifiedName + ".aliasType(" + name + ")")
+      def _absTypeTpl(name: String): DocTemplateEntity = getTheFirst(_absTypeTpls(name), tpl.qualifiedName + ".abstractType(" + name + ")")
+      def _absTypeTpls(name: String): List[DocTemplateEntity] = tpl.members.collect({ case dtpl: DocTemplateEntity with AbstractType if dtpl.name == name => dtpl })
+
+      def _aliasType(name: String): MemberEntity = getTheFirst(_aliasTypes(name), tpl.qualifiedName + ".aliasType(" + name + ")")
       def _aliasTypes(name: String): List[MemberEntity] = tpl.members.filter(mbr => mbr.name == name && mbr.isAliasType)
+
+      def _aliasTypeTpl(name: String): DocTemplateEntity = getTheFirst(_aliasTypeTpls(name), tpl.qualifiedName + ".aliasType(" + name + ")")
+      def _aliasTypeTpls(name: String): List[DocTemplateEntity] = tpl.members.collect({ case dtpl: DocTemplateEntity with AliasType if dtpl.name == name => dtpl })
     }
 
     class PackageAccess(pack: Package) extends TemplateAccess(pack) {

@@ -183,6 +183,11 @@ class Settings(error: String => Unit, val printMsg: String => Unit = println(_))
     ""
   )
 
+  val docExpandAllTypes = BooleanSetting (
+    "-expand-all-types",
+    "Expand all type aliases and abstract types into full template pages. (locally this can be done with the @template annotation)"
+  )
+
   // Somewhere slightly before r18708 scaladoc stopped building unless the
   // self-type check was suppressed.  I hijacked the slotted-for-removal-anyway
   // suppress-vt-warnings option and renamed it for this purpose.
@@ -195,7 +200,8 @@ class Settings(error: String => Unit, val printMsg: String => Unit = println(_))
     docDiagramsDotTimeout, docDiagramsDotRestart,
     docImplicits, docImplicitsDebug, docImplicitsShowAll,
     docDiagramsMaxNormalClasses, docDiagramsMaxImplicitClasses,
-    docNoPrefixes, docNoLinkWarnings, docRawOutput, docSkipPackages
+    docNoPrefixes, docNoLinkWarnings, docRawOutput, docSkipPackages,
+    docExpandAllTypes
   )
   val isScaladocSpecific: String => Boolean = scaladocSpecific map (_.name)
 
