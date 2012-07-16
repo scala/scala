@@ -727,7 +727,8 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
       // without it.  This is particularly bad because the availability of
       // generic information could disappear as a consequence of a seemingly
       // unrelated change.
-         sym.isHidden
+         settings.Ynogenericsig.value
+      || sym.isHidden
       || sym.isLiftedMethod
       || sym.isBridge
       || (sym.ownerChain exists (_.isImplClass))
