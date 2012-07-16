@@ -410,7 +410,7 @@ trait ModelFactoryImplicitSupport {
         // at the same time, the member itself is in the inTpl, not in the new template -- but should pick up
         // variables from the old template. Ugly huh? We'll always create the member inTpl, but it will change
         // the template when expanding variables in the comment :)
-        makeMember(aSym, this, inTpl)
+        makeMember(aSym, Some(this), inTpl)
       })
     }
 

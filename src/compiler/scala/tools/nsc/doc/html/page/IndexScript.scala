@@ -27,7 +27,7 @@ class IndexScript(universe: doc.Universe, index: doc.Index) extends Page {
 
         val ary = merged.keys.toList.sortBy(_.toLowerCase).map(key => {
           val pairs = merged(key).map(
-            t => docEntityKindToString(t) -> relativeLinkTo(t)
+            t => kindToString(t) -> relativeLinkTo(t)
           ) :+ ("name" -> key)
 
           JSONObject(scala.collection.immutable.Map(pairs : _*))

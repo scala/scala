@@ -67,7 +67,7 @@ class Template(universe: doc.Universe, generator: DiagramGenerator, tpl: DocTemp
     nonDeprValueMembers partition (!_.isShadowedOrAmbiguousImplicit)
 
   val typeMembers =
-    tpl.abstractTypes ++ tpl.aliasTypes ++ tpl.templates.filter(x => x.isTrait || x.isClass) sorted
+    tpl.abstractTypes ++ tpl.aliasTypes ++ tpl.templates.filter(x => x.isTrait || x.isClass) sorted (implicitly[Ordering[MemberEntity]])
 
   val constructors = (tpl match {
     case cls: Class => (cls.constructors: List[MemberEntity]).sorted
@@ -613,20 +613,6 @@ class Template(universe: doc.Universe, generator: DiagramGenerator, tpl: DocTemp
     } else NodeSeq.Empty // diagrams not generated
 
     memberComment ++ paramComments ++ attributesBlock ++ linearization ++ subclasses ++ typeHierarchy ++ contentHierarchy
-  }
-
-  def kindToString(mbr: MemberEntity): String = {
-    mbr match {
-      case tpl: DocTemplateEntity => docEntityKindToString(tpl)
-      case tpl: NoDocTemplateMemberEntity => docEntityKindToString(tpl)
-      case ctor: Constructor => "new"
-      case tme: MemberEntity =>
-        ( if (tme.isDef) "def"
-          else if (tme.isVal) "val"
-          else if (tme.isLazyVal) "lazy val"
-          else if (tme.isVar) "var"
-          else "type")
-    }
   }
 
   def boundsToHtml(hi: Option[TypeEntity], lo: Option[TypeEntity], hasLinks: Boolean): NodeSeq = {

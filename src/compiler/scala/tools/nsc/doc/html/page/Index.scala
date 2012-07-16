@@ -68,7 +68,7 @@ class Index(universe: doc.Universe, val index: doc.Index) extends HtmlPage {
               val placeholderSeq: NodeSeq = <div class="placeholder"></div>
 
               def createLink(entity: DocTemplateEntity, includePlaceholder: Boolean, includeText: Boolean) = {
-                val entityType = docEntityKindToString(entity)
+                val entityType = kindToString(entity)
                 val linkContent = (
                   { if (includePlaceholder) placeholderSeq else NodeSeq.Empty }
                   ++

@@ -185,7 +185,7 @@ trait MemberEntity extends Entity {
 
   /** If this symbol is a use case, the useCaseOf will contain the member it was derived from, containing the full
     * signature and the complete parameter descriptions. */
-  def useCaseOf: Option[MemberEntity] = None
+  def useCaseOf: Option[MemberEntity]
 
   /** If this member originates from an implicit conversion, we set the implicit information to the correct origin */
   def byConversion: Option[ImplicitConversion]
@@ -225,22 +225,27 @@ trait HigherKinded {
 /** A template (class, trait, object or package) which is referenced in the universe, but for which no further
   * documentation is available. Only templates for which a source file is given are documented by Scaladoc. */
 trait NoDocTemplate extends TemplateEntity {
-  def kind = ""
-  //def kind = "(not documented) template"
+  def kind =
+    if (isClass) "class"
+    else if (isTrait) "trait"
+    else if (isObject) "object"
+    else ""
 }
 
 /** An inherited template that was not documented in its original owner - example:
  *  in classpath:  trait T { class C } -- T (and implicitly C) are not documented
- *  in the source: trait U extends T -- C appears in U as a NoDocTemplateMemberImpl
+ *  in the source: trait U extends T -- C appears in U as a MemberTemplateImpl
  *    -- that is, U has a member for it but C doesn't get its own page */
-trait NoDocTemplateMemberEntity extends TemplateEntity with MemberEntity {
-  def kind = ""
-  //def kind = "(not documented) member template"
+trait MemberTemplateEntity extends TemplateEntity with MemberEntity with HigherKinded {
+
+  /** The value parameters of this case class, or an empty list if this class is not a case class. As case class value
+    * parameters cannot be curried, the outer list has exactly one element. */
+  def valueParams: List[List[ValueParam]]
 }
 
 /** A template (class, trait, object or package) for which documentation is available. Only templates for which
   * a source file is given are documented by Scaladoc. */
-trait DocTemplateEntity extends TemplateEntity with MemberEntity {
+trait DocTemplateEntity extends MemberTemplateEntity {
 
   /** The list of templates such that each is a member of the template that follows it; the first template is always
     * this template, the last the root package entity. */
@@ -295,6 +300,12 @@ trait DocTemplateEntity extends TemplateEntity with MemberEntity {
   /** All type aliases that are members of this template. */
   def aliasTypes: List[AliasType]
 
+  /** The primary constructor of this class, if it has been defined. */
+  def primaryConstructor: Option[Constructor]
+
+  /** All constructors of this class, including the primary constructor. */
+  def constructors: List[Constructor]
+
   /** The companion of this template, or none. If a class and an object are defined as a pair of the same name, the
     * other entity of the pair is the companion. */
   def companion: Option[DocTemplateEntity]
@@ -319,39 +330,24 @@ trait DocTemplateEntity extends TemplateEntity with MemberEntity {
   def contentDiagram: Option[Diagram]
 }
 
-
 /** A trait template. */
-trait Trait extends DocTemplateEntity with HigherKinded {
+trait Trait extends MemberTemplateEntity {
   def kind = "trait"
 }
 
-
 /** A class template. */
-trait Class extends Trait with HigherKinded {
-
-  /** The primary constructor of this class, if it has been defined. */
-  def primaryConstructor: Option[Constructor]
-
-  /** All constructors of this class, including the primary constructor. */
-  def constructors: List[Constructor]
-
-  /** The value parameters of this case class, or an empty list if this class is not a case class. As case class value
-    * parameters cannot be curried, the outer list has exactly one element. */
-  def valueParams: List[List[ValueParam]]
-
+trait Class extends MemberTemplateEntity {
   override def kind = "class"
 }
 
-
 /** An object template. */
-trait Object extends DocTemplateEntity {
+trait Object extends MemberTemplateEntity {
   def kind = "object"
 }
 
-
 /** A package template. A package is in the universe if it is declared as a package object, or if it
   * contains at least one template. */
-trait Package extends Object {
+trait Package extends DocTemplateEntity {
 
   /** The package of which this package is a member. */
   def inTemplate: Package
@@ -382,7 +378,6 @@ trait NonTemplateMemberEntity extends MemberEntity {
   /** Whether this member is a bridge member. A bridge member does only exist for binary compatibility reasons
     * and should not appear in ScalaDoc. */
   def isBridge: Boolean
-
 }
 
 
@@ -419,7 +414,7 @@ trait Val extends NonTemplateMemberEntity {
 
 
 /** An abstract type member of a template. */
-trait AbstractType extends NonTemplateMemberEntity with HigherKinded {
+trait AbstractType extends MemberTemplateEntity with HigherKinded {
 
   /** The lower bound for this abstract type, if it has been defined. */
   def lo: Option[TypeEntity]
@@ -432,7 +427,7 @@ trait AbstractType extends NonTemplateMemberEntity with HigherKinded {
 
 
 /** An type alias of a template. */
-trait AliasType extends NonTemplateMemberEntity with HigherKinded {
+trait AliasType extends MemberTemplateEntity with HigherKinded {
 
   /** The type aliased by this type alias. */
   def alias: TypeEntity

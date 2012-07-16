@@ -106,20 +106,20 @@ abstract class ScaladocModelTest extends DirectTest {
       def _class(name: String): DocTemplateEntity = getTheFirst(_classes(name), tpl.qualifiedName + ".class(" + name + ")")
       def _classes(name: String): List[DocTemplateEntity] = tpl.templates.filter(_.name == name).collect({ case c: DocTemplateEntity with Class => c})
 
-      def _classMbr(name: String): NoDocTemplateMemberEntity = getTheFirst(_classesMbr(name), tpl.qualifiedName + ".classMember(" + name + ")")
-      def _classesMbr(name: String): List[NoDocTemplateMemberEntity] = tpl.templates.filter(_.name == name).collect({ case c: NoDocTemplateMemberEntity if c.isClass => c})
+      def _classMbr(name: String): MemberTemplateEntity = getTheFirst(_classesMbr(name), tpl.qualifiedName + ".classMember(" + name + ")")
+      def _classesMbr(name: String): List[MemberTemplateEntity] = tpl.templates.filter(_.name == name).collect({ case c: MemberTemplateEntity if c.isClass => c})
 
       def _trait(name: String): DocTemplateEntity = getTheFirst(_traits(name), tpl.qualifiedName + ".trait(" + name + ")")
       def _traits(name: String): List[DocTemplateEntity] = tpl.templates.filter(_.name == name).collect({ case t: DocTemplateEntity with Trait => t})
 
-      def _traitMbr(name: String): NoDocTemplateMemberEntity = getTheFirst(_traitsMbr(name), tpl.qualifiedName + ".traitMember(" + name + ")")
-      def _traitsMbr(name: String): List[NoDocTemplateMemberEntity] = tpl.templates.filter(_.name == name).collect({ case t: NoDocTemplateMemberEntity if t.isTrait => t})
+      def _traitMbr(name: String): MemberTemplateEntity = getTheFirst(_traitsMbr(name), tpl.qualifiedName + ".traitMember(" + name + ")")
+      def _traitsMbr(name: String): List[MemberTemplateEntity] = tpl.templates.filter(_.name == name).collect({ case t: MemberTemplateEntity if t.isTrait => t})
 
       def _object(name: String): DocTemplateEntity = getTheFirst(_objects(name), tpl.qualifiedName + ".object(" + name + ")")
       def _objects(name: String): List[DocTemplateEntity] = tpl.templates.filter(_.name == name).collect({ case o: DocTemplateEntity with Object => o})
 
-      def _objectMbr(name: String): NoDocTemplateMemberEntity = getTheFirst(_objectsMbr(name), tpl.qualifiedName + ".objectMember(" + name + ")")
-      def _objectsMbr(name: String): List[NoDocTemplateMemberEntity] = tpl.templates.filter(_.name == name).collect({ case o: NoDocTemplateMemberEntity if o.isObject => o})
+      def _objectMbr(name: String): MemberTemplateEntity = getTheFirst(_objectsMbr(name), tpl.qualifiedName + ".objectMember(" + name + ")")
+      def _objectsMbr(name: String): List[MemberTemplateEntity] = tpl.templates.filter(_.name == name).collect({ case o: MemberTemplateEntity if o.isObject => o})
 
       def _method(name: String): Def = getTheFirst(_methods(name), tpl.qualifiedName + ".method(" + name + ")")
       def _methods(name: String): List[Def] = tpl.methods.filter(_.name == name)
