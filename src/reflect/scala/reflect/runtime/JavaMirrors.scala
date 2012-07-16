@@ -1001,7 +1001,7 @@ trait JavaMirrors extends internal.SymbolTable with api.JavaUniverse { self: Sym
 
   private lazy val magicSymbols: Map[(String, Name), Symbol] = {
     def mapEntry(sym: Symbol): ((String, Name), Symbol) = (sym.owner.fullName, sym.name) -> sym
-    Map() ++ (definitions.magicSymbols filter (_.isClass) map mapEntry)
+    Map() ++ (definitions.magicSymbols filter (_.isType) map mapEntry)
   }
 
   /** 1. If `owner` is a package class (but not the empty package) and `name` is a term name, make a new package
