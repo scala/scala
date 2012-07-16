@@ -48,6 +48,7 @@ import org.apache.tools.ant.types.Commandline.Argument
  *  - `scalaptests`,
  *  - `scalachecktests`,
  *  - `specializedtests`,
+ *  - `instrumentedtests`,
  *  - `presentationtests`,
  *  - `scripttests`.
  *
@@ -97,6 +98,10 @@ class PartestTask extends Task with CompilationPathProperty {
 
   def addConfiguredSpecializedTests(input: FileSet) {
     specializedFiles = Some(input)
+  }
+
+  def addConfiguredInstrumentedTests(input: FileSet) {
+    instrumentedFiles = Some(input)
   }
 
   def addConfiguredPresentationTests(input: FileSet) {
@@ -189,6 +194,7 @@ class PartestTask extends Task with CompilationPathProperty {
   private var shootoutFiles: Option[FileSet] = None
   private var scalapFiles: Option[FileSet] = None
   private var specializedFiles: Option[FileSet] = None
+  private var instrumentedFiles: Option[FileSet] = None
   private var presentationFiles: Option[FileSet] = None
   private var antFiles: Option[FileSet] = None
   private var errorOnFailed: Boolean = false
@@ -245,6 +251,7 @@ class PartestTask extends Task with CompilationPathProperty {
   private def getShootoutFiles     = getFiles(shootoutFiles)
   private def getScalapFiles       = getFiles(scalapFiles)
   private def getSpecializedFiles  = getFiles(specializedFiles)
+  private def getInstrumentedFiles = getFilesAndDirs(instrumentedFiles)
   private def getPresentationFiles = getDirs(presentationFiles)
   private def getAntFiles          = getFiles(antFiles)
 
@@ -375,6 +382,7 @@ class PartestTask extends Task with CompilationPathProperty {
       (getShootoutFiles, "shootout", "Running shootout tests"),
       (getScalapFiles, "scalap", "Running scalap tests"),
       (getSpecializedFiles, "specialized", "Running specialized files"),
+      (getInstrumentedFiles, "instrumented", "Running instrumented files"),
       (getPresentationFiles, "presentation", "Running presentation compiler test files"),
       (getAntFiles, "ant", "Running ant task tests")
     )

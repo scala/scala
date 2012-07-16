@@ -40,6 +40,7 @@ class ConsoleRunner extends DirectRunner {
       TestSet("scalacheck", stdFilter, "Testing ScalaCheck tests"),
       TestSet("scalap", _.isDirectory, "Run scalap decompiler tests"),
       TestSet("specialized", stdFilter, "Testing specialized tests"),
+      TestSet("instrumented", stdFilter, "Testing instrumented tests"),
       TestSet("presentation", _.isDirectory, "Testing presentation compiler tests."),
       TestSet("ant", antFilter, "Run Ant task tests.")
     )
