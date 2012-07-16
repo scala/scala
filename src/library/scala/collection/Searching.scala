@@ -19,36 +19,51 @@ import scala.math.Ordering
   *    import scala.collection.Searching._
   *    val l = List(1, 2, 3, 4, 5)
   *    l.search(3)
-  *    // == 2
+  *    // == Found(2)
   * }}}
   */
 object Searching {
+  sealed abstract class SearchResult {
+    def insertionPoint: Int
+  }
+
+  case class Found(foundIndex: Int) extends SearchResult {
+    override def insertionPoint = foundIndex
+  }
+  case class InsertionPoint(insertionPoint: Int) extends SearchResult
+
   class SearchImpl[A, Repr](val coll: SeqLike[A, Repr]) {
-    /** Search the sorted sequence for a specific element.
+    /** Search the sorted sequence for a specific element. If the sequence is an
+      * `IndexedSeq`, a binary search is used. Otherwise, a linear search is used.
       *
       * The sequence should be sorted with the same `Ordering` before calling; otherwise,
       * the results are undefined.
       *
+      * @see [[scala.math.IndexedSeq]]
       * @see [[scala.math.Ordering]]
       * @see [[scala.collection.SeqLike]], method `sorted`
       *
       * @param elem the element to find.
       * @param ord  the ordering to be used to compare elements.
-      * @return a `Right` value containing the index corresponding to the element in the
-      *         $coll, or a `Left` value containing the index where the element would be
-      *         inserted if the element is not in the $coll.
+      *
+      * @return a `Found` value containing the index corresponding to the element in the
+      *         sequence, or the `InsertionPoint` where the element would be inserted if
+      *         the element is not in the sequence.
       */
-    final def search[B >: A](elem: B)(implicit ord: Ordering[B]): Either[Int, Int] = 
+    final def search[B >: A](elem: B)(implicit ord: Ordering[B]): SearchResult = 
       coll match {
-        case _: IndexedSeqLike[A, Repr] => binarySearch(elem, -1, coll.length)(ord)
+        case _: IndexedSeq[A] => binarySearch(elem, -1, coll.length)(ord)
         case _ => linearSearch(coll.view, elem, 0)(ord)
       }
 
-    /** Search within an interval in the sorted sequence for a specific element.
+    /** Search within an interval in the sorted sequence for a specific element. If the
+      * sequence is an IndexedSeq, a binary search is used. Otherwise, a linear search
+      * is used.
       *
       * The sequence should be sorted with the same `Ordering` before calling; otherwise,
       * the results are undefined.
       *
+      * @see [[scala.math.IndexedSeq]]
       * @see [[scala.math.Ordering]]
       * @see [[scala.collection.SeqLike]], method `sorted`
       *
@@ -56,41 +71,42 @@ object Searching {
       * @param from the index where the search starts.
       * @param to   the index following where the search ends.
       * @param ord  the ordering to be used to compare elements.
-      * @return a `Right` value containing the index corresponding to the element in the
-      *         $coll, or a `Left` value containing the index where the element would be
-      *         inserted if the element is not in the $coll.
+      *
+      * @return a `Found` value containing the index corresponding to the element in the
+      *         sequence, or the `InsertionPoint` where the element would be inserted if
+      *         the element is not in the sequence.
       */
     final def search[B >: A](elem: B, from: Int, to: Int)
-    (implicit ord: Ordering[B]): Either[Int, Int] = 
+    (implicit ord: Ordering[B]): SearchResult = 
       coll match {
-        case _: IndexedSeqLike[A, Repr] => binarySearch(elem, from-1, to)(ord)
+        case _: IndexedSeq[A] => binarySearch(elem, from-1, to)(ord)
         case _ => linearSearch(coll.view(from, to), elem, from)(ord)
       }
 
     @tailrec
     private def binarySearch[B >: A](elem: B, from: Int, to: Int)
-    (implicit ord: Ordering[B]): Either[Int, Int] = {
-      if ((to-from) == 1) Left(from) else {
-        val idx = (to+from)/2
+    (implicit ord: Ordering[B]): SearchResult = {
+      if ((to-from) == 1) InsertionPoint(from) else {
+        val idx = from+(to-from)/2
         math.signum(ord.compare(elem, coll(idx))) match {
           case -1 => binarySearch(elem, from, idx)(ord)
           case  1 => binarySearch(elem, idx, to)(ord)
-          case  _ => Right(idx)
+          case  _ => Found(idx)
         }
       }
     }
 
     private def linearSearch[B >: A](c: SeqView[A, Repr], elem: B, offset: Int)
-    (implicit ord: Ordering[B]): Either[Int, Int] = {
+    (implicit ord: Ordering[B]): SearchResult = {
       var idx = offset
       val it = c.iterator
       while (it.hasNext) {
         val cur = it.next()
-        if (ord.equiv(elem, cur)) return Right(idx)
-        else if (ord.lt(elem, cur)) return Left(idx-1)
+        if (ord.equiv(elem, cur)) return Found(idx)
+        else if (ord.lt(elem, cur)) return InsertionPoint(idx-1)
         idx += 1
       }
-      Left(idx)
+      InsertionPoint(idx)
     }
 
   }

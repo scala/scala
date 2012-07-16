@@ -1,6 +1,6 @@
 object Test extends App {
   import scala.collection.{LinearSeq, IndexedSeq}
-  import scala.collection.Searching._
+  import scala.collection.Searching.search
 
   val ls = LinearSeq(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 13)
   println(ls.search(3))
