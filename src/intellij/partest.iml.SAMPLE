@@ -6,7 +6,7 @@
         <option name="compilerLibraryLevel" value="Project" />
         <option name="compilerLibraryName" value="compiler-locker" />
         <option name="maximumHeapSize" value="1536" />
-        <option name="vmOptions" value="-Xms1536m -Xss1m -XX:MaxPermSize=128M -d32 -server -XX:+UseParallelGC" />
+        <option name="vmOptions" value="-Xms1536m -Xss1m -XX:MaxPermSize=512M -XX:ReservedCodeCacheSize=256m -XX:+CMSClassUnloadingEnabled -XX:+UseCompressedOops -XX:+UseParallelGC" />
       </configuration>
     </facet>
   </component>
@@ -17,11 +17,11 @@
     </content>
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
-    <orderEntry type="module" module-name="compiler" />
     <orderEntry type="module" module-name="library" />
+    <orderEntry type="module" module-name="reflect" />
     <orderEntry type="module" module-name="actors" />
     <orderEntry type="module" module-name="scalap" />
-    <orderEntry type="library" name="lib" level="project" />
+    <orderEntry type="module" module-name="compiler" />
     <orderEntry type="library" name="ant" level="application" />
   </component>
 </module>
