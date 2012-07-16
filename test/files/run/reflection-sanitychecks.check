@@ -1,0 +1,8 @@
+field: 1
+method: 2
+class: CC
+object: CO
+field: java.lang.Error: expected a member of class C, you provided value D.foo
+method: java.lang.Error: expected a member of class C, you provided method D.bar
+class: java.lang.Error: expected a member of class C, you provided class D.C
+object: java.lang.Error: expected a member of class C, you provided object D.O
