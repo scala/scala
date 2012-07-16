@@ -1,0 +1,10 @@
+t6048.scala:3: error: unreachable code
+    case _ if false => x // unreachable
+                       ^
+t6048.scala:8: error: unreachable code
+    case _ if false => x // unreachable
+                       ^
+t6048.scala:14: error: unreachable code
+    case 5 if true  => x // unreachable
+                       ^
+three errors found
