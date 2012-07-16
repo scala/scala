@@ -1,0 +1,4 @@
+true
+Method call statistics:
+    1  scala/Predef$.println(Ljava/lang/Object;)V
+    1  scala/runtime/BoxesRunTime.boxToBoolean(Z)Ljava/lang/Boolean;

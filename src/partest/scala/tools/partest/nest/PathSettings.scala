@@ -49,6 +49,12 @@ object PathSettings {
       getOrElse sys.error("No code.jar found in %s".format(srcCodeLibDir))
   )
 
+  lazy val instrumentationAgentLib: File = {
+    findJar(buildPackLibDir.files, "scala-partest-javaagent") getOrElse {
+      sys.error("No partest-javaagent jar found in '%s' or '%s'".format(buildPackLibDir, srcLibDir))
+    }
+  }
+
   // Directory <root>/build
   lazy val buildDir: Directory = {
     val bases      = testRoot :: testRoot.parents

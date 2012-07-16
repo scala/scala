@@ -1,0 +1,15 @@
+Tests in `instrumented` directory are executed the same way as in `run` but
+they have additional byte-code instrumentation performed for profiling. You
+should put your tests in `instrumented` directory if you are interested in
+method call counts. Examples include tests for specialization (you want to
+count boxing and unboxing method calls) or high-level tests for optimizer
+where you are interested if methods are successfuly inlined (so they should
+not be called at runtime) or closures are eliminated (so no constructors
+of closures are called).
+
+Check `scala.tools.partest.instrumented.Instrumentation` to learn how to
+use the instrumentation infrastructure.
+
+The instrumentation itself is achieved by attaching a Java agent to the forked
+VM process that injects calls to profiler. Check
+`scala.tools.partest.instrumented.Instrumentation`.
