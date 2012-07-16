@@ -868,7 +868,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
         rhs match {
           case Block(List(assign), returnTree) =>
             val Assign(moduleVarRef, _) = assign
-            val cond                    = Apply(Select(moduleVarRef, nme.eq), List(NULL))
+            val cond                    = Apply(Select(moduleVarRef, Object_eq), List(NULL))
             mkFastPathBody(clazz, moduleSym, cond, List(assign), List(NULL), returnTree, attrThis, args)
           case _ =>
             assert(false, "Invalid getter " + rhs + " for module in class " + clazz)
