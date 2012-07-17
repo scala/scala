@@ -29,14 +29,24 @@ trait Mirrors extends api.Mirrors {
       else definitions.findNamedMember(segs.tail, RootClass.info member segs.head)
     }
 
+    /** If you're looking for a class, pass a type name.
+     *  If a module, a term name.
+     *
+     *  `tryPackageless` tells this function to search for requested a requested symbol in EmptyPackageClass as well.
+     *  Compiler might ignore them, but they should be loadable with macros if the programmer wishes.
+     *  More info here: http://groups.google.com/group/scala-internals/browse_thread/thread/5146021fd7c0cec
+     */
+    private def getModuleOrClass(path: Name, tryPackageless: Boolean): Symbol = getModuleOrClass(path, path.length, tryPackageless)
+
     /** Todo: organize similar to mkStatic in reflect.Base */
-    private def getModuleOrClass(path: Name, len: Int): Symbol = {
+    private def getModuleOrClass(path: Name, len: Int, tryPackageless: Boolean): Symbol = {
       val point = path lastPos('.', len - 1)
       val owner =
-        if (point > 0) getModuleOrClass(path.toTermName, point)
+        if (point > 0) getModuleOrClass(path.toTermName, point, tryPackageless)
         else RootClass
       val name = path subName (point + 1, len)
-      val sym = owner.info member name
+      var sym = owner.info member name
+      if (sym == NoSymbol && owner == RootClass && tryPackageless) sym = EmptyPackageClass.info decl name
       val result = if (path.isTermName) sym.suchThat(_ hasFlag MODULE) else sym
       if (result != NoSymbol) result
       else {
@@ -53,17 +63,12 @@ trait Mirrors extends api.Mirrors {
 
     private[scala] def missingHook(owner: Symbol, name: Name): Symbol = mirrorMissingHook(owner, name) orElse universeMissingHook(owner, name)
 
-    /** If you're looking for a class, pass a type name.
-     *  If a module, a term name.
-     */
-    private def getModuleOrClass(path: Name): Symbol = getModuleOrClass(path, path.length)
+    // todo: get rid of most the methods here and keep just staticClass/Module/Package
 
-    override def staticClass(fullName: String): ClassSymbol = getRequiredClass(fullName)
+    /************************ loaders of class symbols ************************/
 
-    // todo: get rid of most creation methods and keep just staticClass/Module/Package
-
-    def getClassByName(fullname: Name): ClassSymbol = {
-      var result = getModuleOrClass(fullname.toTypeName)
+    private def getClassImpl(fullname: TypeName, tryPackageless: Boolean): ClassSymbol = {
+      var result = getModuleOrClass(fullname.toTypeName, tryPackageless)
       while (result.isAliasType) result = result.info.typeSymbol
       result match {
         case x: ClassSymbol => x
@@ -71,45 +76,50 @@ trait Mirrors extends api.Mirrors {
       }
     }
 
-    override def staticModule(fullName: String): ModuleSymbol = getRequiredModule(fullName)
-
-    def getModule(fullname: Name): ModuleSymbol =
-      // [Eugene++] should be a ClassCastException instead?
-      getModuleOrClass(fullname.toTermName) match {
-        case x: ModuleSymbol => x
-        case _               => MissingRequirementError.notFound("object " + fullname)
-      }
-
-    def getPackage(fullname: Name): ModuleSymbol = getModule(fullname)
-
-    def getRequiredPackage(fullname: String): ModuleSymbol =
-      getPackage(newTermNameCached(fullname))
-
     @deprecated("Use getClassByName", "2.10.0")
-    def getClass(fullname: Name): ClassSymbol = getClassByName(fullname)
+    def getClass(fullname: Name): ClassSymbol =
+      getClassByName(fullname)
+
+    def getClassByName(fullname: Name): ClassSymbol =
+      getClassImpl(fullname.toTypeName, tryPackageless = false)
 
     def getRequiredClass(fullname: String): ClassSymbol =
-      getClassByName(newTypeNameCached(fullname)) match {
-        case x: ClassSymbol => x
-        case _              => MissingRequirementError.notFound("class " + fullname)
-      }
-
-    def getRequiredModule(fullname: String): ModuleSymbol =
-      getModule(newTermNameCached(fullname))
-
-    def erasureName[T: ClassTag] : String = {
-      /** We'd like the String representation to be a valid
-       *  scala type, so we have to decode the jvm's secret language.
-       */
-      def erasureString(clazz: Class[_]): String = {
-        if (clazz.isArray) "Array[" + erasureString(clazz.getComponentType) + "]"
-        else clazz.getName
-      }
-      erasureString(classTag[T].runtimeClass)
-    }
+      getClassByName(newTypeNameCached(fullname))
 
     def requiredClass[T: ClassTag] : ClassSymbol =
       getRequiredClass(erasureName[T])
+
+    def getClassIfDefined(fullname: String): Symbol =
+      getClassIfDefined(newTypeName(fullname))
+
+    def getClassIfDefined(fullname: Name): Symbol =
+      wrapMissing(getClassByName(fullname.toTypeName))
+
+    /** Unlike getClassByName/getRequiredClass this function can also load packageless symbols.
+     *  Compiler might ignore them, but they should be loadable with macros.
+     */
+    override def staticClass(fullname: String): ClassSymbol =
+      getClassImpl(newTypeNameCached(fullname), tryPackageless = true)
+
+    /************************ loaders of module symbols ************************/
+
+    private def getModuleImpl(fullname: TermName, tryPackageless: Boolean): ModuleSymbol = {
+      var result = getModuleOrClass(fullname, tryPackageless)
+      result match {
+        case x: ModuleSymbol => x
+        case _               => MissingRequirementError.notFound("object " + fullname)
+      }
+    }
+
+    @deprecated("Use getModuleByName", "2.10.0")
+    def getModule(fullname: Name): ModuleSymbol =
+      getModuleByName(fullname)
+
+    def getModuleByName(fullname: Name): ModuleSymbol =
+      getModuleImpl(fullname.toTermName, tryPackageless = false)
+
+    def getRequiredModule(fullname: String): ModuleSymbol =
+      getModule(newTermNameCached(fullname))
 
     // TODO: What syntax do we think should work here? Say you have an object
     // like scala.Predef.  You can't say requiredModule[scala.Predef] since there's
@@ -121,17 +131,24 @@ trait Mirrors extends api.Mirrors {
     def requiredModule[T: ClassTag] : ModuleSymbol =
       getRequiredModule(erasureName[T] stripSuffix "$")
 
-    def getClassIfDefined(fullname: String): Symbol =
-      getClassIfDefined(newTypeName(fullname))
-
-    def getClassIfDefined(fullname: Name): Symbol =
-      wrapMissing(getClassByName(fullname.toTypeName))
-
     def getModuleIfDefined(fullname: String): Symbol =
       getModuleIfDefined(newTermName(fullname))
 
     def getModuleIfDefined(fullname: Name): Symbol =
       wrapMissing(getModule(fullname.toTermName))
+
+    /** Unlike getModule/getRequiredModule this function can also load packageless symbols.
+     *  Compiler might ignore them, but they should be loadable with macros.
+     */
+    override def staticModule(fullname: String): ModuleSymbol =
+      getModuleImpl(newTermNameCached(fullname), tryPackageless = true)
+
+    /************************ loaders of package symbols ************************/
+
+    def getPackage(fullname: Name): ModuleSymbol = getModule(fullname)
+
+    def getRequiredPackage(fullname: String): ModuleSymbol =
+      getPackage(newTermNameCached(fullname))
 
     def getPackageObject(fullname: String): ModuleSymbol =
       (getModule(newTermName(fullname)).info member nme.PACKAGE) match {
@@ -149,6 +166,19 @@ trait Mirrors extends api.Mirrors {
           case _               => NoSymbol
         }
       }
+    }
+
+    /************************ helpers ************************/
+
+    def erasureName[T: ClassTag] : String = {
+      /** We'd like the String representation to be a valid
+       *  scala type, so we have to decode the jvm's secret language.
+       */
+      def erasureString(clazz: Class[_]): String = {
+        if (clazz.isArray) "Array[" + erasureString(clazz.getComponentType) + "]"
+        else clazz.getName
+      }
+      erasureString(classTag[T].runtimeClass)
     }
 
    @inline private def wrapMissing(body: => Symbol): Symbol =
