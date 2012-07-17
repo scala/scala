@@ -77,7 +77,7 @@ object ExecutionContext {
   
   /** The default reporter simply prints the stack trace of the `Throwable` to System.err.
    */
-  def defaultReporter: Throwable => Unit = { case t => t.printStackTrace() }
+  def defaultReporter: Throwable => Unit = (t: Throwable) => t.printStackTrace()
 }
 
 
