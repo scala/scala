@@ -33,8 +33,4 @@ trait Context extends Aliases
 
   /** The prefix tree from which the macro is selected */
   val prefix: Expr[PrefixType]
-
-  /** Alias to the underlying mirror's reify */
-  // [Eugene] obsoleted. should be removed once I redeploy a starr
-  protected def reify[T](expr: T): Expr[T] = ???
 }
