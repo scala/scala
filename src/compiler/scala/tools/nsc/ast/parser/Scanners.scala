@@ -734,7 +734,7 @@ trait Scanners extends ScannersCommon {
             next.token = kwArray(idx)
           }
         } else {
-          syntaxError("invalid string interpolation: $$, $ident or $block expected")
+          syntaxError("invalid string interpolation: `$$', `$'ident or `$'BlockExpr expected")
         }
       } else {
         val isUnclosedLiteral = !isUnicodeEscape && (ch == SU || (!multiLine && (ch == CR || ch == LF)))
