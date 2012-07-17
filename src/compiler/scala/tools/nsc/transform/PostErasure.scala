@@ -21,6 +21,8 @@ trait PostErasure extends InfoTransform with TypingTransformers {
 
   object elimErasedValueType extends TypeMap {
     def apply(tp: Type) = tp match {
+      case ConstantType(Constant(tp: Type)) =>
+        ConstantType(Constant(apply(tp)))
       case ErasedValueType(tref) =>
         atPhase(currentRun.erasurePhase)(erasure.erasedValueClassArg(tref))
       case _ => mapOver(tp)
