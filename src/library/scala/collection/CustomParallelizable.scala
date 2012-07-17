@@ -9,9 +9,10 @@
 package scala.collection
 
 import parallel.Combiner
+import parallel.TaskSupport
 
 trait CustomParallelizable[+A, +ParRepr <: Parallel] extends Parallelizable[A, ParRepr] {
-  override def par: ParRepr
+  override def par(implicit ts: TaskSupport): ParRepr
   override protected[this] def parCombiner: Combiner[A, ParRepr] = throw new UnsupportedOperationException("")
 }
 

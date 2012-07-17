@@ -1,3 +1,8 @@
+
+
+import collection.parallel.Implicits.defaultTaskSupport
+
+
 object Test {
   
   def checkPar(sz: Int) {

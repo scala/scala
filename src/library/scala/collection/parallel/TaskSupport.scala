@@ -14,6 +14,7 @@ package scala.collection.parallel
 import java.util.concurrent.ThreadPoolExecutor
 import scala.concurrent.forkjoin.ForkJoinPool
 import scala.concurrent.ExecutionContext
+import scala.annotation.implicitNotFound
 
 
 
@@ -54,6 +55,7 @@ import scala.concurrent.ExecutionContext
  *  @see [[http://docs.scala-lang.org/overviews/parallel-collections/configuration.html Configuring Parallel Collections]] section
  *    on the parallel collection's guide for more information.
  */
+@implicitNotFound(msg = "Cannot construct a parallel collection without a task support implementation in scope.")
 trait TaskSupport extends Tasks
 
 

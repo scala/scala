@@ -1,3 +1,9 @@
+
+
+
+import collection.parallel.Implicits.defaultTaskSupport
+
+
 // #4608
 object Test {
   

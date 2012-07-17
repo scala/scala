@@ -13,6 +13,8 @@ package mutable
 
 import generic._
 import parallel.mutable.ParArray
+import parallel.TaskSupport
+import parallel.setTaskSupport
 
 /** An implementation of the `Buffer` class using an array to
  *  represent the assembled sequence internally. Append, update and random
@@ -71,7 +73,7 @@ class ArrayBuffer[A](override protected val initialSize: Int)
     }
   }
 
-  override def par = ParArray.handoff[A](array.asInstanceOf[Array[A]], size)
+  override def par(implicit ts: TaskSupport) = setTaskSupport(ParArray.handoff[A](array.asInstanceOf[Array[A]], size), ts)
 
   /** Appends a single element to this buffer and returns
    *  the identity of the buffer. It takes constant amortized time.

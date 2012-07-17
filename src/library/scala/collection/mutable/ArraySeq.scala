@@ -13,6 +13,8 @@ package mutable
 
 import generic._
 import parallel.mutable.ParArray
+import parallel.TaskSupport
+import parallel.setTaskSupport
 
 /** A class for polymorphic arrays of elements that's represented
  *  internally by an array of objects. This means that elements of
@@ -55,7 +57,7 @@ extends AbstractSeq[A]
 
   val array: Array[AnyRef] = new Array[AnyRef](length)
 
-  override def par = ParArray.handoff(array.asInstanceOf[Array[A]], length)
+  override def par(implicit ts: TaskSupport) = setTaskSupport(ParArray.handoff(array.asInstanceOf[Array[A]], length), ts)
 
   def apply(idx: Int): A = {
     if (idx >= length) throw new IndexOutOfBoundsException(idx.toString)

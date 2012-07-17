@@ -2,6 +2,7 @@
 
 
 import collection.concurrent.TrieMap
+import collection.parallel.Implicits.defaultTaskSupport
 
 
 object ConcurrentMapSpec extends Spec {

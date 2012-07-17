@@ -11,6 +11,8 @@ package mutable
 
 import generic._
 import scala.collection.parallel.mutable.ParHashMap
+import scala.collection.parallel.TaskSupport
+import scala.collection.parallel.setTaskSupport
 
 /** This class implements mutable maps using a hashtable.
  *
@@ -54,7 +56,7 @@ extends AbstractMap[A, B]
 
   def this() = this(null)
 
-  override def par = new ParHashMap[A, B](hashTableContents)
+  override def par(implicit ts: TaskSupport) = setTaskSupport(new ParHashMap[A, B](hashTableContents), ts)
 
   // contains and apply overridden to avoid option allocations.
   override def contains(key: A) = findEntry(key) != null

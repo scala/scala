@@ -23,6 +23,7 @@ import scala.collection.parallel.SeqSplitter
 import scala.collection.parallel.ParSeqLike
 import scala.collection.parallel.Task
 import scala.collection.parallel.CHECK_RATE
+import scala.collection.parallel.setTaskSupport
 import scala.collection.mutable.ArraySeq
 import scala.collection.mutable.Builder
 import scala.collection.GenTraversableOnce
@@ -591,7 +592,7 @@ self =>
     tasksupport.executeAndWaitResult(new Map[S](f, targetarr, 0, length))
 
     // wrap it into a parallel array
-    (new ParArray[S](targarrseq)).asInstanceOf[That]
+    setTaskSupport((new ParArray[S](targarrseq)).asInstanceOf[That], tasksupport)
   } else super.map(f)(bf)
 
   override def scan[U >: T, That](z: U)(op: (U, U) => U)(implicit cbf: CanBuildFrom[ParArray[T], U, That]): That =
@@ -607,7 +608,7 @@ self =>
       })
 
       // wrap the array into a parallel array
-      (new ParArray[U](targarrseq)).asInstanceOf[That]
+      setTaskSupport((new ParArray[U](targarrseq)).asInstanceOf[That], tasksupport)
     } else super.scan(z)(op)(cbf)
 
   /* tasks */

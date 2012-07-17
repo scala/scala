@@ -1,4 +1,6 @@
 import collection._
+import collection.parallel.Implicits.defaultTaskSupport
+
 
 object Test {
   def main(args: Array[String]) {
