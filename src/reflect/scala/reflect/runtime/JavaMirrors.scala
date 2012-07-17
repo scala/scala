@@ -18,7 +18,7 @@ import collection.mutable.{ HashMap, ListBuffer }
 import internal.Flags._
 //import scala.tools.nsc.util.ScalaClassLoader
 //import scala.tools.nsc.util.ScalaClassLoader._
-import ReflectionUtils.{singletonInstance}
+import ReflectionUtils.{staticSingletonInstance, innerSingletonInstance}
 import language.existentials
 
 trait JavaMirrors extends internal.SymbolTable with api.JavaUniverse { self: SymbolTable =>
@@ -107,15 +107,28 @@ trait JavaMirrors extends internal.SymbolTable with api.JavaUniverse { self: Sym
 
 // ----------- Implementations of mirror operations and classes  -------------------
 
+    private def ErrorInnerClass(wannabe: Symbol) = throw new Error(s"$wannabe is an inner class, use reflectClass on an InstanceMirror to obtain its ClassMirror")
+    private def ErrorInnerModule(wannabe: Symbol) = throw new Error(s"$wannabe is an inner module, use reflectModule on an InstanceMirror to obtain its ModuleMirror")
+    private def ErrorStaticClass(wannabe: Symbol) = throw new Error(s"$wannabe is a static class, use reflectClass on a RuntimeMirror to obtain its ClassMirror")
+    private def ErrorStaticModule(wannabe: Symbol) = throw new Error(s"$wannabe is a static module, use reflectModule on a RuntimeMirror to obtain its ModuleMirror")
+    private def ErrorNotMember(wannabe: Symbol, owner: Symbol) = throw new Error(s"expected a member of $owner, you provided ${wannabe.kind} ${wannabe.fullName}")
+    private def ErrorNotField(wannabe: Symbol) = throw new Error(s"expected a field or an accessor method symbol, you provided $wannabe}")
+    private def ErrorNonExistentField(wannabe: Symbol) = throw new Error(s"""
+      |Scala field ${wannabe.name} isn't represented as a Java field, neither it has a Java accessor method
+      |note that private parameters of class constructors don't get mapped onto fields and/or accessors,
+      |unless they are used outside of their declaring constructors.
+    """.trim.stripMargin)
+    private def ErrorSetImmutableField(wannabe: Symbol) = throw new Error(s"cannot set an immutable field ${wannabe.name}")
+
     def reflect(obj: Any): InstanceMirror = new JavaInstanceMirror(obj.asInstanceOf[AnyRef])
 
     def reflectClass(cls: ClassSymbol): ClassMirror = {
-      if (!cls.isStatic) throw new Error("this is an inner class, use reflectClass on an InstanceMirror to obtain its ClassMirror")
+      if (!cls.isStatic) ErrorInnerClass(cls)
       new JavaClassMirror(null, cls)
     }
 
     def reflectModule(mod: ModuleSymbol): ModuleMirror = {
-      if (!mod.isStatic) throw new Error("this is an inner module, use reflectModule on an InstanceMirror to obtain its ModuleMirror")
+      if (!mod.isStatic) ErrorInnerModule(mod)
       new JavaModuleMirror(null, mod)
     }
 
@@ -127,34 +140,38 @@ trait JavaMirrors extends internal.SymbolTable with api.JavaUniverse { self: Sym
 
     def moduleSymbol(rtcls: RuntimeClass): ModuleSymbol = classToScala(rtcls).companionModule.asModuleSymbol
 
+    private implicit class RichSymbol(sym: Symbol) { def isMemberOf(other: Symbol) = other.info.member(sym.name).alternatives contains sym }
+
     private class JavaInstanceMirror(obj: AnyRef)
             extends InstanceMirror {
       def instance = obj
       def symbol = wholemirror.classSymbol(obj.getClass)
       def reflectField(field: TermSymbol): FieldMirror = {
-        // [Eugene+++] check whether `field` represents a member of a `symbol`
-        if (field.isMethod || field.isModule) throw new Error(s"""
-          |expected a field symbol, you provided a ${field.kind} symbol
-          |A typical cause of this problem is using a field accessor symbol instead of a field symbol.
-          |To obtain a field symbol append nme.LOCAL_SUFFIX_STRING to the name of the field,
-          |when searching for a member with Type.members or Type.declarations.
-          |This is a temporary inconvenience that will be resolved before 2.10.0-final.
-          |More information can be found here: https://issues.scala-lang.org/browse/SI-5895.
-        """.trim.stripMargin)
-        new JavaFieldMirror(obj, field)
+        if (!field.isMemberOf(symbol)) ErrorNotMember(field, symbol)
+        if ((field.isMethod && !field.isAccessor) || field.isModule) ErrorNotField(field)
+        val name =
+          if (field.isGetter) nme.getterToLocal(field.name)
+          else if (field.isSetter) nme.getterToLocal(nme.setterToGetter(field.name))
+          else field.name
+        val field1 = (field.owner.info decl name).asTermSymbol
+        try fieldToJava(field1)
+        catch {
+          case _: NoSuchFieldException => ErrorNonExistentField(field1)
+        }
+        new JavaFieldMirror(obj, field1)
       }
       def reflectMethod(method: MethodSymbol): MethodMirror = {
-        // [Eugene+++] check whether `method` represents a member of a `symbol`
+        if (!method.isMemberOf(symbol)) ErrorNotMember(method, symbol)
         new JavaMethodMirror(obj, method)
       }
       def reflectClass(cls: ClassSymbol): ClassMirror = {
-        // [Eugene+++] check whether `cls` represents a member of a `symbol`
-        if (cls.isStatic) throw new Error("this is a static class, use reflectClass on a RuntimeMirror to obtain its ClassMirror")
+        if (cls.isStatic) ErrorStaticClass(cls)
+        if (!cls.isMemberOf(symbol)) ErrorNotMember(cls, symbol)
         new JavaClassMirror(instance, cls)
       }
       def reflectModule(mod: ModuleSymbol): ModuleMirror = {
-        // [Eugene+++] check whether `mod` represents a member of a `symbol`
-        if (mod.isStatic) throw new Error("this is a static module, use reflectModule on a RuntimeMirror to obtain its ModuleMirror")
+        if (mod.isStatic) ErrorStaticModule(mod)
+        if (!mod.isMemberOf(symbol)) ErrorNotMember(mod, symbol)
         new JavaModuleMirror(instance, mod)
       }
     }
@@ -168,7 +185,7 @@ trait JavaMirrors extends internal.SymbolTable with api.JavaUniverse { self: Sym
       }
       def get = jfield.get(receiver)
       def set(value: Any) = {
-        if (!symbol.isMutable) throw new Error("cannot set an immutable field")
+        if (!symbol.isMutable) ErrorSetImmutableField(symbol)
         jfield.set(receiver, value)
       }
     }
@@ -186,7 +203,7 @@ trait JavaMirrors extends internal.SymbolTable with api.JavaUniverse { self: Sym
             case nme.length => jArray.getLength(receiver)
             case nme.apply => jArray.get(receiver, args(0).asInstanceOf[Int])
             case nme.update => jArray.set(receiver, args(0).asInstanceOf[Int], args(1))
-            case _ => throw new Error(s"unexpected array method $symbol")
+            case _ => assert(false, s"unexpected array method: $symbol")
           }
         else
           jmeth.invoke(receiver, args.asInstanceOf[Seq[AnyRef]]: _*)
@@ -233,8 +250,11 @@ trait JavaMirrors extends internal.SymbolTable with api.JavaUniverse { self: Sym
       def erasure = symbol.moduleClass.asClassSymbol
       def isStatic = true
       def instance = {
-        if (!symbol.owner.isPackageClass) throw new Error("inner and nested modules are not supported yet")
-        singletonInstance(classLoader, symbol.fullName)
+        if (symbol.owner.isPackageClass)
+          staticSingletonInstance(classLoader, symbol.fullName)
+        else
+          if (outer == null) staticSingletonInstance(classToJava(symbol.moduleClass.asClassSymbol))
+          else innerSingletonInstance(outer, symbol.name)
       }
       def companion: Option[ClassMirror] = symbol.companionClass match {
         case cls: ClassSymbol => Some(new JavaClassMirror(outer, cls))
