@@ -55,7 +55,8 @@ import scala.annotation.implicitNotFound
  *  @see [[http://docs.scala-lang.org/overviews/parallel-collections/configuration.html Configuring Parallel Collections]] section
  *    on the parallel collection's guide for more information.
  */
-@implicitNotFound(msg = "Cannot construct a parallel collection without a task support implementation in scope.")
+@implicitNotFound(msg = "Cannot construct a parallel collection without a task support implementation in scope. " +
+                  "To use the default, `import collection.parallel.Implicits.defaultTaskSupport`.")
 trait TaskSupport extends Tasks
 
 
