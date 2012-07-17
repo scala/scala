@@ -1,2 +1,2 @@
-this is an inner class, use reflectClass on an InstanceMirror to obtain its ClassMirror
+class R is an inner class, use reflectClass on an InstanceMirror to obtain its ClassMirror
 ()
