@@ -49,9 +49,9 @@ trait Mirrors extends api.Mirrors {
 
     protected def mirrorMissingHook(owner: Symbol, name: Name): Symbol = NoSymbol
 
-    protected def symbolTableMissingHook(owner: Symbol, name: Name): Symbol = self.missingHook(owner, name)
+    protected def universeMissingHook(owner: Symbol, name: Name): Symbol = self.missingHook(owner, name)
 
-    private[scala] def missingHook(owner: Symbol, name: Name): Symbol = mirrorMissingHook(owner, name) orElse symbolTableMissingHook(owner, name)
+    private[scala] def missingHook(owner: Symbol, name: Name): Symbol = mirrorMissingHook(owner, name) orElse universeMissingHook(owner, name)
 
     /** If you're looking for a class, pass a type name.
      *  If a module, a term name.
