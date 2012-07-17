@@ -35,6 +35,6 @@ trait Context extends Aliases
   val prefix: Expr[PrefixType]
 
   /** Alias to the underlying mirror's reify */
-  // implementation is magically hardwired to `scala.reflect.makro.runtime.ContextReifiers`
-  def reify[T](expr: T): Expr[T] = macro ???
+  // [Eugene] obsoleted. should be removed once I redeploy a starr
+  protected def reify[T](expr: T): Expr[T] = ???
 }

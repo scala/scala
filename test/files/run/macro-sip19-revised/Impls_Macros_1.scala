@@ -11,7 +11,7 @@ object Macros {
     val fileName = fun.pos.fileInfo.getName
     val line = fun.pos.line
     val charOffset = fun.pos.point
-    c.reify { SourceLocation1(outer.splice, c.literal(fileName).splice, c.literal(line).splice, c.literal(charOffset).splice) }
+    c.universe.reify { SourceLocation1(outer.splice, c.literal(fileName).splice, c.literal(line).splice, c.literal(charOffset).splice) }
   }
 
   implicit def sourceLocation: SourceLocation1 = macro impl
