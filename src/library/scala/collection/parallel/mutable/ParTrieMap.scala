@@ -22,6 +22,7 @@ import scala.collection.concurrent.SNode
 import scala.collection.concurrent.INode
 import scala.collection.concurrent.TrieMap
 import scala.collection.concurrent.TrieMapIterator
+import scala.collection.parallel.TaskSupport
 
 
 
@@ -53,7 +54,7 @@ extends ParMap[K, V]
 
   override def seq = ctrie
 
-  def splitter = new ParTrieMapSplitter(0, ctrie.readOnlySnapshot().asInstanceOf[TrieMap[K, V]], true)
+  def splitter = new ParTrieMapSplitter(0, ctrie.readOnlySnapshot().asInstanceOf[TrieMap[K, V]], tasksupport, true)
 
   override def clear() = ctrie.clear()
 
@@ -120,15 +121,15 @@ extends ParMap[K, V]
 }
 
 
-private[collection] class ParTrieMapSplitter[K, V](lev: Int, ct: TrieMap[K, V], mustInit: Boolean)
+private[collection] class ParTrieMapSplitter[K, V](lev: Int, ct: TrieMap[K, V], ts: TaskSupport, mustInit: Boolean)
 extends TrieMapIterator[K, V](lev, ct, mustInit)
    with IterableSplitter[(K, V)]
 {
   // only evaluated if `remaining` is invoked (which is not used by most tasks)
-  lazy val totalsize = ct.par.size
+  lazy val totalsize = ct.par(ts).size
   var iterated = 0
 
-  protected override def newIterator(_lev: Int, _ct: TrieMap[K, V], _mustInit: Boolean) = new ParTrieMapSplitter[K, V](_lev, _ct, _mustInit)
+  protected override def newIterator(_lev: Int, _ct: TrieMap[K, V], _mustInit: Boolean) = new ParTrieMapSplitter[K, V](_lev, _ct, ts, _mustInit)
 
   override def shouldSplitFurther[S](coll: collection.parallel.ParIterable[S], parallelismLevel: Int) = {
     val maxsplits = 3 + Integer.highestOneBit(parallelismLevel)

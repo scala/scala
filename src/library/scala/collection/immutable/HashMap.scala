@@ -11,6 +11,8 @@ package immutable
 
 import generic._
 import annotation.unchecked.{ uncheckedVariance=> uV }
+import parallel.TaskSupport
+import parallel.setTaskSupport
 import parallel.immutable.ParHashMap
 
 /** This class implements immutable maps using a hash trie.
@@ -117,7 +119,7 @@ class HashMap[A, +B] extends AbstractMap[A, B]
   
   protected def merge0[B1 >: B](that: HashMap[A, B1], level: Int, merger: Merger[A, B1]): HashMap[A, B1] = that
 
-  override def par = ParHashMap.fromTrie(this)
+  override def par(implicit ts: TaskSupport) = setTaskSupport(ParHashMap.fromTrie(this), ts)
 
 }
 

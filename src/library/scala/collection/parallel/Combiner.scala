@@ -36,7 +36,7 @@ trait Combiner[-Elem, +To] extends Builder[Elem, To] with Sizing with Parallel {
   
   @transient
   @volatile
-  var _combinerTaskSupport = defaultTaskSupport
+  private[parallel] var _combinerTaskSupport = defaultTaskSupport
   
   def combinerTaskSupport = {
     val cts = _combinerTaskSupport
@@ -46,7 +46,7 @@ trait Combiner[-Elem, +To] extends Builder[Elem, To] with Sizing with Parallel {
     } else cts
   }
   
-  def combinerTaskSupport_=(cts: TaskSupport) = _combinerTaskSupport = cts
+  private[parallel] def combinerTaskSupport_=(cts: TaskSupport) = _combinerTaskSupport = cts
   
   /** Combines the contents of the receiver builder and the `other` builder,
    *  producing a new builder containing both their elements.

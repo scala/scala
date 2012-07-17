@@ -14,6 +14,8 @@ import compat.Platform
 import scala.collection.generic._
 import scala.collection.mutable.Builder
 import scala.collection.parallel.immutable.ParVector
+import scala.collection.parallel.TaskSupport
+import scala.collection.parallel.setTaskSupport
 
 /** Companion object to the Vector class
  */
@@ -75,7 +77,7 @@ override def companion: GenericCompanion[Vector] = Vector
 
   def length = endIndex - startIndex
 
-  override def par = new ParVector(this)
+  override def par(implicit ts: TaskSupport) = setTaskSupport(new ParVector(this), ts)
 
   override def toVector: Vector[A] = this
 
