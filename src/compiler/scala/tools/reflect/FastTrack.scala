@@ -43,7 +43,7 @@ trait FastTrack {
     ApiUniverseReify bindTo { case (c, Apply(TypeApply(_, List(tt)), List(expr))) => c.materializeExpr(c.prefix.tree, EmptyTree, expr) }
     MacroContextReify bindTo { case (c, Apply(TypeApply(_, List(tt)), List(expr))) => c.materializeExprForMacroContext(c.prefix.tree, expr) }
     ReflectRuntimeCurrentMirror bindTo { case (c, _) => scala.reflect.runtime.Macros.currentMirror(c).tree }
-    StringContext_f bindTo { case (c, Apply(Select(Apply(_, parts), _), args)) => c.macro_StringInterpolation_f(parts, args) }
+    StringContext_f bindTo { case (c, app@Apply(Select(Apply(_, parts), _), args)) => c.macro_StringInterpolation_f(parts, args, app.pos) }
     registry
   }
 }
