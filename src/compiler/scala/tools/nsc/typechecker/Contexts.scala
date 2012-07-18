@@ -636,6 +636,12 @@ trait Contexts { self: Analyzer =>
       collect(imp.tree.selectors)
     }
 
+    /* SI-5892 / SI-4270: `implicitss` can return results which are not accessible at the
+     * point where implicit search is triggered. Example: implicits in (annotations of)
+     * class type parameters (SI-5892). The `context.owner` is the class symbol, therefore
+     * `implicitss` will return implicit conversions defined inside the class. These are
+     * filtered out later by `eligibleInfos` (SI-4270 / 9129cfe9), as they don't type-check.
+     */
     def implicitss: List[List[ImplicitInfo]] = {
       if (implicitsRunId != currentRunId) {
         implicitsRunId = currentRunId
