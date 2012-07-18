@@ -10,14 +10,11 @@ package scala.concurrent.impl
 
 
 
-import java.util.concurrent.TimeUnit.{ NANOSECONDS, MILLISECONDS }
-import scala.concurrent.{ Awaitable, ExecutionContext, blocking, CanAwait, OnCompleteRunnable, TimeoutException, ExecutionException }
-//import scala.util.continuations._
+import java.util.concurrent.TimeUnit.NANOSECONDS
+import scala.concurrent.{ ExecutionContext, CanAwait, OnCompleteRunnable, TimeoutException, ExecutionException }
 import scala.concurrent.util.Duration
-import scala.util
 import scala.annotation.tailrec
 import scala.util.control.NonFatal
-//import scala.concurrent.NonDeterministic
 
 
 
@@ -41,7 +38,7 @@ private class CallbackRunnable[T](val executor: ExecutionContext, val onComplete
   }
 }
 
-object Promise {
+private[concurrent] object Promise {
 
   private def resolveEither[T](source: Either[Throwable, T]): Either[Throwable, T] = source match {
     case Left(t) => resolver(t)

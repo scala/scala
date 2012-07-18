@@ -14,7 +14,6 @@ import java.util.concurrent.{ ConcurrentLinkedQueue, TimeUnit, Callable }
 import java.util.concurrent.TimeUnit.{ NANOSECONDS => NANOS, MILLISECONDS ⇒ MILLIS }
 import java.lang.{ Iterable => JIterable }
 import java.util.{ LinkedList => JLinkedList }
-import java.{ lang => jl }
 import java.util.concurrent.atomic.{ AtomicReferenceFieldUpdater, AtomicInteger, AtomicBoolean }
 
 import scala.concurrent.util.Duration
@@ -565,17 +564,15 @@ trait Future[+T] extends Awaitable[T] {
  */
 object Future {
   
-  import java.{ lang => jl }
-  
   private[concurrent] val toBoxed = Map[Class[_], Class[_]](
-    classOf[Boolean] -> classOf[jl.Boolean],
-    classOf[Byte]    -> classOf[jl.Byte],
-    classOf[Char]    -> classOf[jl.Character],
-    classOf[Short]   -> classOf[jl.Short],
-    classOf[Int]     -> classOf[jl.Integer],
-    classOf[Long]    -> classOf[jl.Long],
-    classOf[Float]   -> classOf[jl.Float],
-    classOf[Double]  -> classOf[jl.Double],
+    classOf[Boolean] -> classOf[java.lang.Boolean],
+    classOf[Byte]    -> classOf[java.lang.Byte],
+    classOf[Char]    -> classOf[java.lang.Character],
+    classOf[Short]   -> classOf[java.lang.Short],
+    classOf[Int]     -> classOf[java.lang.Integer],
+    classOf[Long]    -> classOf[java.lang.Long],
+    classOf[Float]   -> classOf[java.lang.Float],
+    classOf[Double]  -> classOf[java.lang.Double],
     classOf[Unit]    -> classOf[scala.runtime.BoxedUnit]
   )
 
@@ -603,9 +600,6 @@ object Future {
   *  @return         the `Future` holding the result of the computation
   */
   def apply[T](body: =>T)(implicit execctx: ExecutionContext): Future[T] = impl.Future(body)
-
-  import scala.collection.mutable.Builder
-  import scala.collection.generic.CanBuildFrom
 
   /** Simple version of `Futures.traverse`. Transforms a `TraversableOnce[Future[A]]` into a `Future[TraversableOnce[A]]`.
    *  Useful for reducing many `Future`s into a single `Future`.

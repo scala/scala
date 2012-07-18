@@ -21,19 +21,6 @@ private[concurrent] trait Future[+T] extends scala.concurrent.Future[T] with Awa
 }
 
 private[concurrent] object Future {
-  import java.{ lang => jl }
-
-  private val toBoxed = Map[Class[_], Class[_]](
-    classOf[Boolean] -> classOf[jl.Boolean],
-    classOf[Byte]    -> classOf[jl.Byte],
-    classOf[Char]    -> classOf[jl.Character],
-    classOf[Short]   -> classOf[jl.Short],
-    classOf[Int]     -> classOf[jl.Integer],
-    classOf[Long]    -> classOf[jl.Long],
-    classOf[Float]   -> classOf[jl.Float],
-    classOf[Double]  -> classOf[jl.Double],
-    classOf[Unit]    -> classOf[scala.runtime.BoxedUnit]
-  )
 
   /** Wraps a block of code into an awaitable object. */
   private[concurrent] def body2awaitable[T](body: =>T) = new Awaitable[T] {
@@ -44,7 +31,7 @@ private[concurrent] object Future {
     def result(atMost: Duration)(implicit permit: CanAwait) = body
   }
   
-  def boxedType(c: Class[_]): Class[_] = if (c.isPrimitive) toBoxed(c) else c
+  def boxedType(c: Class[_]): Class[_] = if (c.isPrimitive) scala.concurrent.Future.toBoxed(c) else c
 
   private[impl] class PromiseCompletingRunnable[T](body: => T)
     extends Runnable {
