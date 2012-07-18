@@ -169,14 +169,19 @@ abstract class ScaladocModelTest extends DirectTest {
                   }).mkString(", ") + "]")
     }
 
-    def extractCommentText(c: Comment) = {
+    def extractCommentText(c: Any) = {
       def extractText(body: Any): String = body match {
         case s: String  => s
         case s: Seq[_]  => s.toList.map(extractText(_)).mkString
         case p: Product => p.productIterator.toList.map(extractText(_)).mkString
         case _          => ""
       }
-      extractText(c.body)
+      c match {
+        case c: Comment =>
+          extractText(c.body)
+        case b: Body =>
+          extractText(b)
+      }
     }
 
     def countLinks(c: Comment, p: EntityLink => Boolean) = {

@@ -110,10 +110,26 @@ class Template(universe: doc.Universe, generator: DiagramGenerator, tpl: DocTemp
 
       <div id="mbrsel">
         <div id='textfilter'><span class='pre'/><span class='input'><input id='mbrsel-input' type='text' accesskey='/'/></span><span class='post'/></div>
-        { if (tpl.linearizationTemplates.isEmpty && tpl.conversions.isEmpty) NodeSeq.Empty else
+        { if (tpl.linearizationTemplates.isEmpty && tpl.conversions.isEmpty && (!universe.settings.docGroups.value || (tpl.members.map(_.group).distinct.length == 1)))
+            NodeSeq.Empty
+          else
             <div id="order">
               <span class="filtertype">Ordering</span>
-              <ol><li class="alpha in"><span>Alphabetic</span></li><li class="inherit out"><span>By inheritance</span></li></ol>
+              <ol>
+                {
+                  if (!universe.settings.docGroups.value || (tpl.members.map(_.group).distinct.length == 1))
+                    NodeSeq.Empty
+                  else
+                    <li class="group out"><span>Grouped</span></li>
+                }
+                <li class="alpha in"><span>Alphabetic</span></li>
+                {
+                  if (tpl.linearizationTemplates.isEmpty && tpl.conversions.isEmpty)
+                    NodeSeq.Empty
+                  else
+                    <li class="inherit out"><span>By inheritance</span></li>
+                }
+              </ol>
             </div>
         }
         { if (tpl.linearizationTemplates.isEmpty && tpl.conversions.isEmpty) NodeSeq.Empty else
@@ -223,6 +239,25 @@ class Template(universe: doc.Universe, generator: DiagramGenerator, tpl: DocTemp
         }
         </div>
 
+        <div id="groupedMembers">
+        {
+          val allGroups = tpl.members.map(_.group).distinct
+          val orderedGroups = allGroups.map(group => (tpl.groupPriority(group), group)).sorted.map(_._2)
+          // linearization
+          NodeSeq fromSeq (for (group <- orderedGroups) yield
+            <div class="group" name={ group }>
+              <h3>{ tpl.groupName(group) }</h3>
+              {
+                tpl.groupDescription(group) match {
+                  case Some(body) => <div class="comment cmt">{ bodyToHtml(body) }</div>
+                  case _ => NodeSeq.Empty
+                }
+              }
+            </div>
+          )
+        }
+        </div>
+
       </div>
 
       <div id="tooltip" ></div>
@@ -242,7 +277,8 @@ class Template(universe: doc.Universe, generator: DiagramGenerator, tpl: DocTemp
     val memberComment = memberToCommentHtml(mbr, inTpl, false)
     <li name={ mbr.definitionName } visbl={ if (mbr.visibility.isProtected) "prt" else "pub" }
       data-isabs={ mbr.isAbstract.toString }
-      fullComment={ if(memberComment.filter(_.label=="div").isEmpty) "no" else "yes" }>
+      fullComment={ if(memberComment.filter(_.label=="div").isEmpty) "no" else "yes" }
+      group={ mbr.group }>
       <a id={ mbr.signature }/>
       { signature(mbr, false) }
       { memberComment }

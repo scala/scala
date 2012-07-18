@@ -121,6 +121,7 @@ class ModelFactory(val global: Global, val settings: doc.Settings) {
       }
       if (inTpl != null) thisFactory.comment(sym, thisTpl, inTpl) else None
     }
+    def group = if (comment.isDefined) comment.get.group.getOrElse("No Group") else "No Group"
     override def inTemplate = inTpl
     override def toRoot: List[MemberImpl] = this :: inTpl.toRoot
     def inDefinitionTemplates = this match {
@@ -479,9 +480,29 @@ class ModelFactory(val global: Global, val settings: doc.Settings) {
         case None => List()
       }
       else List.empty
+
     // These are generated on-demand, make sure you don't call them more than once
     def inheritanceDiagram = makeInheritanceDiagram(this)
     def contentDiagram = makeContentDiagram(this)
+
+    def groupSearch[T](extractor: Comment => T, default: T): T = {
+      // query this template
+      if (comment.isDefined) {
+        val entity = extractor(comment.get)
+        if (entity != default) return entity
+      }
+      // query linearization
+      if (!sym.isAliasType && !sym.isAbstractType)
+        for (tpl <- linearizationTemplates.collect{ case dtpl: DocTemplateImpl if dtpl!=this => dtpl}) {
+          val entity = tpl.groupSearch(extractor, default)
+          if (entity != default) return entity
+        }
+      default
+    }
+
+    def groupDescription(group: String): Option[Body] = groupSearch(_.groupDesc.get(group), None)
+    def groupPriority(group: String): Int = groupSearch(_.groupPrio.get(group) match { case Some(prio) => prio; case _ => 0 }, 0)
+    def groupName(group: String): String = groupSearch(_.groupNames.get(group) match { case Some(name) => name; case _ => group }, group)
   }
 
   abstract class PackageImpl(sym: Symbol, inTpl: PackageImpl) extends DocTemplateImpl(sym, inTpl) with Package {

@@ -171,15 +171,15 @@ trait DocComments { self: Global =>
    *  3. If there is no @return section in `dst` but there is one in `src`, copy it.
    */
   def merge(src: String, dst: String, sym: Symbol, copyFirstPara: Boolean = false): String = {
-    val srcSections = tagIndex(src)
-    val dstSections = tagIndex(dst)
-    val srcParams   = paramDocs(src, "@param", srcSections)
-    val dstParams   = paramDocs(dst, "@param", dstSections)
-    val srcTParams  = paramDocs(src, "@tparam", srcSections)
-    val dstTParams  = paramDocs(dst, "@tparam", dstSections)
-    val out         = new StringBuilder
-    var copied      = 0
-    var tocopy      = startTag(dst, dstSections dropWhile (!isMovable(dst, _)))
+    val srcSections  = tagIndex(src)
+    val dstSections  = tagIndex(dst)
+    val srcParams    = paramDocs(src, "@param", srcSections)
+    val dstParams    = paramDocs(dst, "@param", dstSections)
+    val srcTParams   = paramDocs(src, "@tparam", srcSections)
+    val dstTParams   = paramDocs(dst, "@tparam", dstSections)
+    val out          = new StringBuilder
+    var copied       = 0
+    var tocopy       = startTag(dst, dstSections dropWhile (!isMovable(dst, _)))
 
     if (copyFirstPara) {
       val eop = // end of comment body (first para), which is delimited by blank line, or tag, or end of comment
@@ -209,6 +209,11 @@ trait DocComments { self: Global =>
     for (tparam <- sym.typeParams)
       mergeSection(srcTParams get tparam.name.toString, dstTParams get tparam.name.toString)
     mergeSection(returnDoc(src, srcSections), returnDoc(dst, dstSections))
+    if (sym.name.toString == "isEmpty") {
+      println(groupDoc(src, srcSections))
+      println(groupDoc(dst, dstSections))
+    }
+    mergeSection(groupDoc(src, srcSections), groupDoc(dst, dstSections))
 
     if (out.length == 0) dst
     else {

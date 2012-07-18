@@ -188,6 +188,11 @@ class Settings(error: String => Unit, val printMsg: String => Unit = println(_))
     "Expand all type aliases and abstract types into full template pages. (locally this can be done with the @template annotation)"
   )
 
+  val docGroups = BooleanSetting (
+    "-groups",
+    "Group similar functions together (based on the @group annotation)"
+  )
+
   // Somewhere slightly before r18708 scaladoc stopped building unless the
   // self-type check was suppressed.  I hijacked the slotted-for-removal-anyway
   // suppress-vt-warnings option and renamed it for this purpose.
@@ -201,7 +206,7 @@ class Settings(error: String => Unit, val printMsg: String => Unit = println(_))
     docImplicits, docImplicitsDebug, docImplicitsShowAll,
     docDiagramsMaxNormalClasses, docDiagramsMaxImplicitClasses,
     docNoPrefixes, docNoLinkWarnings, docRawOutput, docSkipPackages,
-    docExpandAllTypes
+    docExpandAllTypes, docGroups
   )
   val isScaladocSpecific: String => Boolean = scaladocSpecific map (_.name)
 

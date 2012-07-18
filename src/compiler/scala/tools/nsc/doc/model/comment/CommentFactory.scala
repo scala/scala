@@ -114,7 +114,11 @@ trait CommentFactory { thisFactory: ModelFactory with CommentFactory with Member
     constructor0:    Option[Body]     = None,
     source0:         Option[String]   = None,
     inheritDiagram0: List[String]     = List.empty,
-    contentDiagram0: List[String]     = List.empty
+    contentDiagram0: List[String]     = List.empty,
+    group0:          Option[Body]     = None,
+    groupDesc0:      Map[String,Body] = Map.empty,
+    groupNames0:     Map[String,Body] = Map.empty,
+    groupPrio0:      Map[String,Body] = Map.empty
   ) : Comment = new Comment{
     val body           = if(body0 isDefined) body0.get else Body(Seq.empty)
     val authors        = authors0
@@ -133,6 +137,35 @@ trait CommentFactory { thisFactory: ModelFactory with CommentFactory with Member
     val source         = source0
     val inheritDiagram = inheritDiagram0
     val contentDiagram = contentDiagram0
+    val groupDesc      = groupDesc0
+    val group          =
+      group0 match {
+        case Some(Body(List(Paragraph(Chain(List(Summary(Text(groupId)))))))) => Some(groupId.toString.trim)
+        case _                                                                => None
+      }
+    val groupPrio      = groupPrio0 flatMap {
+      case (group, body) =>
+        try {
+          body match {
+            case Body(List(Paragraph(Chain(List(Summary(Text(prio))))))) => List(group -> prio.toInt)
+            case _                                                       => List()
+          }
+        } catch {
+          case _: java.lang.NumberFormatException => List()
+        }
+    }
+    val groupNames     = groupNames0 flatMap {
+      case (group, body) =>
+        try {
+          body match {
+            case Body(List(Paragraph(Chain(List(Summary(Text(name))))))) if (!name.trim.contains("\n")) => List(group -> (name.trim))
+            case _                                                       => List()
+          }
+        } catch {
+          case _: java.lang.NumberFormatException => List()
+        }
+    }
+
   }
 
   protected val endOfText = '\u0003'
@@ -202,7 +235,7 @@ trait CommentFactory { thisFactory: ModelFactory with CommentFactory with Member
   /** A Scaladoc tag linked to a symbol. Returns the name of the tag, the name
     * of the symbol, and the rest of the line. */
   protected val SymbolTag =
-    new Regex("""\s*@(param|tparam|throws)\s+(\S*)\s*(.*)""")
+    new Regex("""\s*@(param|tparam|throws|groupdesc|groupname|groupprio)\s+(\S*)\s*(.*)""")
 
   /** The start of a scaladoc code block */
   protected val CodeBlockStart =
@@ -403,7 +436,11 @@ trait CommentFactory { thisFactory: ModelFactory with CommentFactory with Member
           constructor0    = oneTag(SimpleTagKey("constructor")),
           source0         = Some(clean(src).mkString("\n")),
           inheritDiagram0 = inheritDiagramText,
-          contentDiagram0 = contentDiagramText
+          contentDiagram0 = contentDiagramText,
+          group0          = oneTag(SimpleTagKey("group")),
+          groupDesc0      = allSymsOneTag(SimpleTagKey("groupdesc")),
+          groupNames0     = allSymsOneTag(SimpleTagKey("groupname")),
+          groupPrio0      = allSymsOneTag(SimpleTagKey("groupprio"))
         )
 
         for ((key, _) <- bodyTags)

@@ -2044,7 +2044,7 @@ BOOTSTRAPPING BUILD (STRAP)
 LIBRARIES (Forkjoin, FJBG, ASM)
 ============================================================================ -->
 
- 
+
   <target name="libs.clean" depends="pack.clean, asm.clean">
     <delete dir="${build-libs.dir}" includeemptydirs="yes" quiet="yes" failonerror="no"/>
   </target>
@@ -2112,9 +2112,10 @@ DOCUMENTATION
       classpathref="pack.classpath"
       addparams="${scalac.args.all}"
       docRootContent="${src.dir}/library/rootdoc.txt"
-      implicits="on" 
-      diagrams="on" 
-      rawOutput="${scaladoc.raw.output}" 
+      implicits="on"
+      diagrams="on"
+      groups="on"
+      rawOutput="${scaladoc.raw.output}"
       noPrefixes="${scaladoc.no.prefixes}">
       <src>
         <files includes="${src.dir}/actors-migration"/>
@@ -2199,8 +2200,9 @@ DOCUMENTATION
       srcdir="${src.dir}/compiler"
       docRootContent="${src.dir}/compiler/rootdoc.txt"
       addparams="${scalac.args.all}"
-      implicits="on" 
-      diagrams="on" 
+      implicits="on"
+      diagrams="on"
+      groups="on"
       rawOutput="${scaladoc.raw.output}"
       noPrefixes="${scaladoc.no.prefixes}">
       <include name="**/*.scala"/>
@@ -2224,8 +2226,9 @@ DOCUMENTATION
       classpathref="pack.classpath"
       srcdir="${src.dir}/jline/src/main/java"
       addparams="${scalac.args.all}"
-      implicits="on" 
-      diagrams="on" 
+      implicits="on"
+      diagrams="on"
+      groups="on"
       rawOutput="${scaladoc.raw.output}"
       noPrefixes="${scaladoc.no.prefixes}">
       <include name="**/*.scala"/>
@@ -2252,7 +2255,8 @@ DOCUMENTATION
       srcdir="${src.dir}/scalap"
       addparams="${scalac.args.all}"
       implicits="on"
-      diagrams="on" 
+      diagrams="on"
+      groups="on"
       rawOutput="${scaladoc.raw.output}"
       noPrefixes="${scaladoc.no.prefixes}">
       <include name="**/*.scala"/>
@@ -2276,8 +2280,9 @@ DOCUMENTATION
       classpathref="pack.classpath"
       srcdir="${src.dir}/partest"
       addparams="${scalac.args.all}"
-      implicits="on" 
-      diagrams="on" 
+      implicits="on"
+      diagrams="on"
+      groups="on"
       rawOutput="${scaladoc.raw.output}"
       noPrefixes="${scaladoc.no.prefixes}">
       <include name="**/*.scala"/>
@@ -2301,8 +2306,9 @@ DOCUMENTATION
       classpathref="pack.classpath"
       srcdir="${src.dir}/continuations/plugin"
       addparams="${scalac.args.all}"
-      implicits="on" 
-      diagrams="on" 
+      implicits="on"
+      diagrams="on"
+      groups="on"
       rawOutput="${scaladoc.raw.output}"
       noPrefixes="${scaladoc.no.prefixes}">
       <include name="**/*.scala"/>
@@ -2326,8 +2332,9 @@ DOCUMENTATION
       classpathref="pack.classpath"
       srcdir="${src.dir}/actors-migration"
       addparams="${scalac.args.all}"
-      implicits="on" 
-      diagrams="on" 
+      implicits="on"
+      diagrams="on"
+      groups="on"
       rawOutput="${scaladoc.raw.output}"
       noPrefixes="${scaladoc.no.prefixes}">
       <include name="**/*.scala"/>

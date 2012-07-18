@@ -116,6 +116,9 @@ trait MemberEntity extends Entity {
   /** The comment attached to this member, if any. */
   def comment: Option[Comment]
 
+  /** The group this member is from */
+  def group: String
+
   /** The template of which this entity is a member. */
   def inTemplate: DocTemplateEntity
 
@@ -218,7 +221,6 @@ trait HigherKinded {
 
   /** The type parameters of this entity. */
   def typeParams: List[TypeParam]
-
 }
 
 
@@ -328,6 +330,15 @@ trait DocTemplateEntity extends MemberTemplateEntity {
 
   /** If this template contains other templates, such as classes and traits, they will be shown in this diagram */
   def contentDiagram: Option[Diagram]
+
+  /** Returns the group description taken either from this template or its linearizationTypes */
+  def groupDescription(group: String): Option[Body]
+
+  /** Returns the group description taken either from this template or its linearizationTypes */
+  def groupPriority(group: String): Int
+
+  /** Returns the group description taken either from this template or its linearizationTypes */
+  def groupName(group: String): String
 }
 
 /** A trait template. */

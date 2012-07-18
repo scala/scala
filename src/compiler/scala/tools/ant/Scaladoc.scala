@@ -156,6 +156,9 @@ class Scaladoc extends ScalaMatchingTask {
   /** Instruct the scaladoc not to generate prefixes */
   private var docNoPrefixes: Boolean = false
 
+  /** Instruct the scaladoc tool to group similar functions together */
+  private var docGroups: Boolean = false
+
 /*============================================================================*\
 **                             Properties setters                             **
 \*============================================================================*/
@@ -435,6 +438,10 @@ class Scaladoc extends ScalaMatchingTask {
   def setNoPrefixes(input: String) =
     docNoPrefixes = Flag.getBooleanValue(input, "noPrefixes")
 
+  /** Instruct the scaladoc tool to group similar functions together */
+  def setGroups(input: String) =
+    docGroups = Flag.getBooleanValue(input, "groups")
+
 /*============================================================================*\
 **                             Properties getters                             **
 \*============================================================================*/
@@ -634,6 +641,7 @@ class Scaladoc extends ScalaMatchingTask {
     docSettings.docDiagramsDebug.value = docDiagramsDebug
     docSettings.docRawOutput.value = docRawOutput
     docSettings.docNoPrefixes.value = docNoPrefixes
+    docSettings.docGroups.value = docGroups
     if(!docDiagramsDotPath.isEmpty) docSettings.docDiagramsDotPath.value = docDiagramsDotPath.get
 
     if (!docgenerator.isEmpty) docSettings.docgenerator.value = docgenerator.get

@@ -144,6 +144,12 @@ object DocStrings {
     }
 
   /** Optionally start and end index of return section in `str`, or `None`
+   *  if `str` does not have a @group. */
+  def groupDoc(str: String, sections: List[(Int, Int)]): Option[(Int, Int)] =
+    sections find (startsWithTag(str, _, "@group"))
+
+
+  /** Optionally start and end index of return section in `str`, or `None`
    *  if `str` does not have a @return.
    */
   def returnDoc(str: String, sections: List[(Int, Int)]): Option[(Int, Int)] =
