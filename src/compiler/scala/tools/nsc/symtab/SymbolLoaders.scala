@@ -34,8 +34,7 @@ abstract class SymbolLoaders {
   /** Enter class with given `name` into scope of `root`
    *  and give them `completer` as type.
    */
-  def enterClass(root: Symbol, name: String, completer: SymbolLoader): Symbol = {
-    val owner = root.ownerOfNewSymbols
+  def enterClass(owner: Symbol, name: String, completer: SymbolLoader): Symbol = {
     val clazz = owner.newClass(newTypeName(name))
     clazz setInfo completer
     enterIfNew(owner, clazz, completer)
@@ -44,8 +43,7 @@ abstract class SymbolLoaders {
   /** Enter module with given `name` into scope of `root`
    *  and give them `completer` as type.
    */
-  def enterModule(root: Symbol, name: String, completer: SymbolLoader): Symbol = {
-    val owner = root.ownerOfNewSymbols
+  def enterModule(owner: Symbol, name: String, completer: SymbolLoader): Symbol = {
     val module = owner.newModule(newTermName(name))
     module setInfo completer
     module.moduleClass setInfo moduleClassLoader
@@ -217,15 +215,18 @@ abstract class SymbolLoaders {
       root.setInfo(new PackageClassInfoType(newScope, root))
 
       val sourcepaths = classpath.sourcepaths
-      for (classRep <- classpath.classes if platform.doLoad(classRep)) {
-        initializeFromClassPath(root, classRep)
+      if (!root.isRoot) {
+        for (classRep <- classpath.classes if platform.doLoad(classRep)) {
+          initializeFromClassPath(root, classRep)
+        }
       }
+      if (!root.isEmptyPackageClass) {
+        for (pkg <- classpath.packages) {
+          enterPackage(root, pkg.name, new PackageLoader(pkg))
+        }
 
-      for (pkg <- classpath.packages) {
-        enterPackage(root, pkg.name, new PackageLoader(pkg))
+        openPackageModule(root)
       }
-
-      openPackageModule(root)
     }
   }
 
