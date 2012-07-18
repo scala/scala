@@ -59,7 +59,8 @@ trait DirectRunner {
     val futures   = kindFiles map (f => (f, pool submit callable(manager runTest f))) toMap
 
     pool.shutdown()
-    pool.awaitTermination(1, TimeUnit.HOURS)
+    if (!pool.awaitTermination(4, TimeUnit.HOURS))
+      NestUI.warning("Thread pool timeout elapsed before all tests were complete!")
 
     for ((file, future) <- futures) yield {
       val state = if (future.isCancelled) TestState.Timeout else future.get

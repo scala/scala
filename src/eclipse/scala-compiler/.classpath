@@ -5,7 +5,6 @@
 	<classpathentry combineaccessrules="false" kind="src" path="/scala-library"/>
 	<classpathentry combineaccessrules="false" kind="src" path="/fjbg"/>
 	<classpathentry combineaccessrules="false" kind="src" path="/asm"/>
-	<classpathentry kind="con" path="org.scala-ide.sdt.launching.SCALA_CONTAINER"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
 	<classpathentry kind="lib" path="lib/ant/ant.jar"/>
 	<classpathentry kind="lib" path="lib/jline.jar"/>

@@ -78,3 +78,4 @@ case class SpecializedTestFile(file: JFile, fileManager: FileManager) extends Te
 }
 case class PresentationTestFile(file: JFile, fileManager: FileManager) extends TestFile("presentation")
 case class AntTestFile(file: JFile, fileManager: FileManager) extends TestFile("ant")
+case class InstrumentedTestFile(file: JFile, fileManager: FileManager) extends TestFile("instrumented")

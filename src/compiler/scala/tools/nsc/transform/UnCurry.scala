@@ -564,12 +564,6 @@ abstract class UnCurry extends InfoTransform
       }
 
       val sym = tree.symbol
-      // Take a pass looking for @specialize annotations and set all
-      // their SPECIALIZE flags for cheaper recognition.
-      if ((sym ne null) && (sym.isClass || sym.isMethod)) {
-        for (tp <- sym.typeParams ; if tp hasAnnotation SpecializedClass)
-          tp setFlag SPECIALIZED
-      }
       val result = (
         // TODO - settings.noassertions.value temporarily retained to avoid
         // breakage until a reasonable interface is settled upon.

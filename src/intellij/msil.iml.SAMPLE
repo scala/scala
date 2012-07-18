@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<module type="JAVA_MODULE" version="4">
+  <component name="FacetManager">
+    <facet type="scala" name="Scala">
+      <configuration>
+        <option name="compilerLibraryLevel" value="Project" />
+        <option name="compilerLibraryName" value="compiler-locker" />
+        <option name="maximumHeapSize" value="1536" />
+        <option name="vmOptions" value="-Xms1536m -Xss1m -XX:MaxPermSize=512M -XX:ReservedCodeCacheSize=256m -XX:+CMSClassUnloadingEnabled -XX:+UseCompressedOops -XX:+UseParallelGC" />
+      </configuration>
+    </facet>
+  </component>
+  <component name="NewModuleRootManager" inherit-compiler-output="true">
+    <exclude-output />
+    <content url="file://$MODULE_DIR$/../msil">
+      <sourceFolder url="file://$MODULE_DIR$/../msil" isTestSource="false" />
+      <excludeFolder url="file://$MODULE_DIR$/../msil/ch/epfl/lamp/compiler/msil/tests" />
+    </content>
+    <orderEntry type="inheritedJdk" />
+    <orderEntry type="sourceFolder" forTests="false" />
+    <orderEntry type="module" module-name="library" />
+  </component>
+</module>
+

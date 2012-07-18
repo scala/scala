@@ -13,12 +13,12 @@ package scala.util
 import language.implicitConversions
 
 /** Represents a value of one of two possible types (a disjoint union.)
- *  Instances of Either are either an instance of [[scala.Left]] or [[scala.Right]].
+ *  Instances of Either are either an instance of [[scala.util.Left]] or [[scala.util.Right]].
  *
  *  A common use of Either is as an alternative to [[scala.Option]] for dealing
  *  with possible missing values.  In this usage, [[scala.None]] is replaced
- *  with a [[scala.Left]] which can contain useful information.
- *  [[scala.Right]] takes the place of [[scala.Some]].  Convention dictates
+ *  with a [[scala.util.Left]] which can contain useful information.
+ *  [[scala.util.Right]] takes the place of [[scala.Some]].  Convention dictates
  *  that Left is used for failure and Right is used for success.
  *
  *  For example, you could use ``Either[String, Int]`` to detect whether a
@@ -181,7 +181,7 @@ sealed abstract class Either[+A, +B] {
 }
 
 /**
- * The left side of the disjoint union, as opposed to the [[scala.Right]] side.
+ * The left side of the disjoint union, as opposed to the [[scala.util.Right]] side.
  *
  * @author <a href="mailto:research@workingmouse.com">Tony Morris</a>, Workingmouse
  * @version 1.0, 11/10/2008
@@ -192,7 +192,7 @@ final case class Left[+A, +B](a: A) extends Either[A, B] {
 }
 
 /**
- * The right side of the disjoint union, as opposed to the [[scala.Left]] side.
+ * The right side of the disjoint union, as opposed to the [[scala.util.Left]] side.
  *
  * @author <a href="mailto:research@workingmouse.com">Tony Morris</a>, Workingmouse
  * @version 1.0, 11/10/2008
@@ -283,7 +283,7 @@ object Either {
      * Right(12).left.get // NoSuchElementException
      * }}}
      *
-     * @throws Predef.NoSuchElementException if the projection is [[scala.Right]]
+     * @throws Predef.NoSuchElementException if the projection is [[scala.util.Right]]
      */
     def get = e match {
       case Left(a) => a

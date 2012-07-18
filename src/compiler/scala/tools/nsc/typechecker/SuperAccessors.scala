@@ -19,6 +19,10 @@ import symtab.Flags._
  *  of class-members which are private up to an enclosing non-package
  *  class, in order to avoid overriding conflicts.
  *
+ *  This phase also sets SPECIALIZED flag on type parameters with
+ *  `@specialized` annotation. We put this logic here because the
+ *  flag must be set before pickling.
+ *
  *  @author  Martin Odersky
  *  @version 1.0
  */
@@ -207,6 +211,15 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
 
         case TypeApply(sel @ Select(This(_), name), args) =>
           mayNeedProtectedAccessor(sel, args, false)
+
+        // set a flag for all type parameters with `@specialized` annotation so it can be pickled
+        case typeDef: TypeDef if typeDef.symbol.deSkolemize.hasAnnotation(definitions.SpecializedClass) =>
+          debuglog("setting SPECIALIZED flag on typeDef.symbol.deSkolemize where typeDef = " + typeDef)
+          // we need to deSkolemize symbol so we get the same symbol as others would get when
+          // inspecting type parameter from "outside"; see the discussion of skolems here:
+          // https://groups.google.com/d/topic/scala-internals/0j8laVNTQsI/discussion
+          typeDef.symbol.deSkolemize.setFlag(SPECIALIZED)
+          typeDef
 
         case sel @ Select(qual @ This(_), name) =>
           // warn if they are selecting a private[this] member which
