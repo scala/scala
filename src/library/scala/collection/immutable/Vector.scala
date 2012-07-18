@@ -22,7 +22,7 @@ object Vector extends SeqFactory[Vector] {
     override def apply() = newBuilder[Nothing]
   }
   
-  lazy val VectorReusableCBF: GenericCanBuildFrom[Nothing] = new VectorReusableCBF
+  private val VectorReusableCBF: GenericCanBuildFrom[Nothing] = new VectorReusableCBF
   
   @inline implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, Vector[A]] =
     VectorReusableCBF.asInstanceOf[CanBuildFrom[Coll, A, Vector[A]]]
