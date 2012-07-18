@@ -180,7 +180,7 @@ trait Mirrors extends api.Mirrors {
       // Still fiddling with whether it's cleaner to do some of this setup here
       // or from constructors.  The latter approach tends to invite init order issues.
 
-      EmptyPackageClass setInfo ClassInfoType(Nil, newPackageScope(EmptyPackageClass), EmptyPackageClass)
+      EmptyPackageClass setInfo rootLoader
       EmptyPackage setInfo EmptyPackageClass.tpe
 
       connectModuleToClass(EmptyPackage, EmptyPackageClass)
@@ -231,7 +231,6 @@ trait Mirrors extends api.Mirrors {
       override def isEffectiveRoot   = true
       override def isStatic          = true
       override def isNestedClass     = false
-      override def ownerOfNewSymbols = EmptyPackageClass
     }
     // The empty package, which holds all top level types without given packages.
     final object EmptyPackage extends ModuleSymbol(RootClass, NoPosition, nme.EMPTY_PACKAGE_NAME) with WellKnownSymbol {

@@ -813,11 +813,6 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
      */
     def isEffectiveRoot = false
 
-    /** For RootClass, this is EmptyPackageClass.  For all other symbols,
-     *  the symbol itself.
-     */
-    def ownerOfNewSymbols = this
-
     final def isLazyAccessor       = isLazy && lazyAccessor != NoSymbol
     final def isOverridableMember  = !(isClass || isEffectivelyFinal) && (this ne NoSymbol) && owner.isClass
 
