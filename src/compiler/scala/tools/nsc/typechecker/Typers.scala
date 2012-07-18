@@ -1972,9 +1972,7 @@ trait Typers extends Modes with Adaptations with Tags {
                 case SilentResultValue(tpt) =>
                   val alias = enclClass.newAliasType(name.toTypeName, useCase.pos)
                   val tparams = cloneSymbolsAtOwner(tpt.tpe.typeSymbol.typeParams, alias)
-                  /* Unless we treat no-tparams usecases differently they blow up in typeFun
-                   * def typeFun = PolyType(tparams, tpe) // <- which asserts (!tparams.isEmpty) */
-                  val newInfo = if (tparams.isEmpty) tpt.tpe else typeFun(tparams, appliedType(tpt.tpe, tparams map (_.tpe)))
+                  val newInfo = genPolyType(tparams, appliedType(tpt.tpe, tparams map (_.tpe)))
                   alias setInfo newInfo
                   context.scope.enter(alias)
                 case _ =>
