@@ -206,18 +206,12 @@ abstract class Constructors extends Transform with ast.TreeDSL {
       // A sorted set of symbols that are known to be accessed outside the primary constructor.
       val accessedSyms = new TreeSet[Symbol]((x, y) => x isLess y)
 
-      // a list of outer accessor symbols and their bodies
-      var outerAccessors: List[(Symbol, Tree)] = List()
 
-      // Could symbol's definition be omitted, provided it is not accessed?
-      // This is the case if the symbol is defined in the current class, and
-      // ( the symbol is an object private parameter accessor field, or
-      //   the symbol is an outer accessor of a final class which does not override another outer accessor. )
-      def maybeOmittable(sym: Symbol) = sym.owner == clazz && (
-        sym.isParamAccessor && sym.isPrivateLocal ||
-        sym.isOuterAccessor && sym.owner.isEffectivelyFinal && !sym.isOverridingSymbol &&
-        !(clazz isSubClass DelayedInitClass)
-      )
+      // An object private parameter accessor defined in the current class can be omitted if it's not accessed.
+      // (We used to drop outer fields as well, but without breaking separate compilation
+      //  we can't know where they are accessed -- they may be inserted by pattern matches anywhere --
+      //  thus, we can't decide whether to omit them.)
+      def maybeOmittable(sym: Symbol) = sym.owner == clazz && sym.isParamAccessor && sym.isPrivateLocal
 
       // Is symbol known to be accessed outside of the primary constructor,
       // or is it a symbol whose definition cannot be omitted anyway?
@@ -227,15 +221,12 @@ abstract class Constructors extends Transform with ast.TreeDSL {
       val accessTraverser = new Traverser {
         override def traverse(tree: Tree) = {
           tree match {
-            case DefDef(_, _, _, _, _, body)
-            if (tree.symbol.isOuterAccessor && tree.symbol.owner == clazz && clazz.isEffectivelyFinal) =>
-              debuglog("outerAccessors += " + tree.symbol.fullName)
-              outerAccessors ::= ((tree.symbol, body))
             case Select(_, _) =>
               if (!mustbeKept(tree.symbol)) {
                 debuglog("accessedSyms += " + tree.symbol.fullName)
                 accessedSyms addEntry tree.symbol
               }
+
               super.traverse(tree)
             case _ =>
               super.traverse(tree)
@@ -243,16 +234,9 @@ abstract class Constructors extends Transform with ast.TreeDSL {
         }
       }
 
-      // first traverse all definitions except outeraccesors
-      // (outeraccessors are avoided in accessTraverser)
+      // traverse all definitions in which the symbol could potentially be accessed
       for (stat <- defBuf.iterator ++ auxConstructorBuf.iterator)
         accessTraverser.traverse(stat)
-
-      // then traverse all bodies of outeraccessors which are accessed themselves
-      // note: this relies on the fact that an outer accessor never calls another
-      // outer accessor in the same class.
-      for ((accSym, accBody) <- outerAccessors)
-        if (mustbeKept(accSym)) accessTraverser.traverse(accBody)
 
       // Initialize all parameters fields that must be kept.
       val paramInits = paramAccessors filter mustbeKept map { acc =>
