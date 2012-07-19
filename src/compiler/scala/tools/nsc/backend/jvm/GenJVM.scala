@@ -1811,7 +1811,7 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
      *  Synthetic locals are skipped. All variables are method-scoped.
      */
     private def genLocalVariableTable(m: IMethod, jcode: JCode) {
-      val vars = m.locals filterNot (_.sym.isSynthetic)
+      val vars = m.locals filterNot (_.sym.isHidden)
       if (vars.isEmpty) return
 
       val pool = jclass.getConstantPool

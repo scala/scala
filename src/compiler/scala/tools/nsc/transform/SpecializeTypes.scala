@@ -798,7 +798,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
         var specializingOn = specializedParams(sym)
         val unusedStvars   = specializingOn filterNot specializedTypeVars(sym.info)
 
-        if (unusedStvars.nonEmpty && currentRun.compiles(sym) && !sym.isSynthetic) {
+        if (unusedStvars.nonEmpty && currentRun.compiles(sym) && !sym.isHidden) {
           reporter.warning(sym.pos,
             "%s %s unused or used in non-specializable positions.".format(
               unusedStvars.mkString("", ", ", ""),
