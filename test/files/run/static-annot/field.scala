@@ -182,6 +182,43 @@ object Test7 extends Check {
 
 
 
+/* TEST 8 */
+
+object Foo8 {
+  @static val field = 7
+  
+  val function: () => Int = () => {
+    field + 1
+  }
+  
+  val anon = new Runnable {
+    def run() {
+      assert(field == 7, "runnable asserting field is 7")
+    }
+  }
+  
+  @static var mutable = 10
+  
+  val mutation: () => Unit = () => {
+    mutable += 1
+  }
+}
+
+object Test8 {
+  def test() {
+    assert(Foo8.function() == 8, "function must return 8")
+    Foo8.anon.run()
+    assert(Foo8.mutable == 10, "mutable is 10")
+    Foo8.mutation()
+    assert(Foo8.mutable == 11, "mutable is 11")
+    Foo8.mutation()
+    assert(Foo8.mutable == 12, "mutable is 12")
+  }
+}
+
+
+
+
 /* main */
 
 object Test {
@@ -194,6 +231,7 @@ object Test {
     Test5.test()
     Test6.test()
     Test7.test()
+    Test8.test()
   }
   
 }

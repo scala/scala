@@ -566,11 +566,22 @@ abstract class CleanUp extends Transform with ast.TreeDSL {
         val owner = sym.owner
         
         val staticBeforeLifting = atPhase(currentRun.erasurePhase) { owner.isStatic }
+        val isPrivate = atPhase(currentRun.typerPhase) { sym.getter(owner).hasFlag(PRIVATE) }
+        val isProtected = atPhase(currentRun.typerPhase) { sym.getter(owner).hasFlag(PROTECTED) }
+        val isLazy = atPhase(currentRun.typerPhase) { sym.getter(owner).hasFlag(LAZY) }
         if (!owner.isModuleClass || !staticBeforeLifting) {
           if (!sym.isSynthetic) {
             reporter.error(tree.pos, "Only members of top-level objects and their nested objects can be annotated with @static.")
             tree.symbol.removeAnnotation(StaticClass)
           }
+          super.transform(tree)
+        } else if (isPrivate || isProtected) {
+          reporter.error(tree.pos, "The @static annotation is only allowed on public members.")
+          tree.symbol.removeAnnotation(StaticClass)
+          super.transform(tree)
+        } else if (isLazy) {
+          reporter.error(tree.pos, "The @static annotation is not allowed on lazy members.")
+          tree.symbol.removeAnnotation(StaticClass)
           super.transform(tree)
         } else if (owner.isModuleClass) {
           val linkedClass = owner.companionClass match {
