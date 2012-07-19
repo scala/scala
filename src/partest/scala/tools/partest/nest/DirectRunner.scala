@@ -61,8 +61,9 @@ trait DirectRunner {
     pool.shutdown()
     try if (!pool.awaitTermination(4, TimeUnit.HOURS))
       NestUI.warning("Thread pool timeout elapsed before all tests were complete!")
-    catch { case _: InterruptedException =>
+    catch { case t: InterruptedException =>
       NestUI.warning("Thread pool was interrupted")
+      t.printStackTrace()
     }
 
     for ((file, future) <- futures) yield {
