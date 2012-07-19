@@ -125,7 +125,7 @@ trait TraceSymbolActivity {
     }
     ph
   }
-  private def runBeforeErasure[T](body: => T): T = atPhase(findErasurePhase)(body)
+  private def runBeforeErasure[T](body: => T): T = enteringPhase(findErasurePhase)(body)
 
   def showAllSymbols() {
     if (!traceSymbolActivity) return

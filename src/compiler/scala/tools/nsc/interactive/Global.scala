@@ -1066,7 +1066,7 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "")
      *  @return true iff typechecked correctly
      */
     private def applyPhase(phase: Phase, unit: CompilationUnit) {
-      atPhase(phase) { phase.asInstanceOf[GlobalPhase] applyPhase unit }
+      enteringPhase(phase) { phase.asInstanceOf[GlobalPhase] applyPhase unit }
     }
   }
 

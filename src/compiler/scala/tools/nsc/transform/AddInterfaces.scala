@@ -112,7 +112,7 @@ abstract class AddInterfaces extends InfoTransform { self: Erasure =>
   def implClass(iface: Symbol): Symbol = {
     iface.info
 
-    implClassMap.getOrElse(iface, atPhase(implClassPhase) {
+    implClassMap.getOrElse(iface, enteringPhase(implClassPhase) {
       log("Creating implClass for " + iface)
       if (iface.implClass ne NoSymbol)
         log("%s.implClass already exists: %s".format(iface, iface.implClass))
@@ -196,7 +196,7 @@ abstract class AddInterfaces extends InfoTransform { self: Erasure =>
         case PolyType(_, restpe) =>
           implType(restpe)
       }
-      implSym setInfo implType(beforeErasure(iface.info))
+      implSym setInfo implType(enteringErasure(iface.info))
     }
 
     override def load(clazz: Symbol) { complete(clazz) }
@@ -353,7 +353,7 @@ abstract class AddInterfaces extends InfoTransform { self: Erasure =>
           val mix1 = mix
             if (mix == tpnme.EMPTY) mix
             else {
-              val ps = beforeErasure {
+              val ps = enteringErasure {
                 sym.info.parents dropWhile (p => p.symbol.name != mix)
               }
               assert(!ps.isEmpty, tree);

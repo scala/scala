@@ -191,5 +191,5 @@ trait Imports {
     prevRequestList flatMap (req => req.handlers map (req -> _))
 
   private def membersAtPickler(sym: Symbol): List[Symbol] =
-    beforePickler(sym.info.nonPrivateMembers)
+    enteringPickler(sym.info.nonPrivateMembers)
 }
