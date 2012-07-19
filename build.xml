@@ -499,7 +499,7 @@ LOCAL DEPENDENCY (Adapted ASM)
       destdir="${build-asm.dir}/classes"
       classpath="${build-asm.dir}/classes"
       includes="**/*.java"
-      target="1.5" source="1.5">
+      target="1.6" source="1.5">
         <compilerarg line="${javac.args} -XDignore.symbol.file"/>
     </javac>
     <touch file="${build-asm.dir}/asm.complete" verbose="no"/>
@@ -540,7 +540,7 @@ LOCAL DEPENDENCY (FORKJOIN)
       classpath="${build-libs.dir}/classes/forkjoin"
       includes="**/*.java"
       debug="true"
-      target="1.5" source="1.5">
+      target="1.6" source="1.5">
         <compilerarg line="${javac.args} -XDignore.symbol.file"/>
     </javac>
     <touch file="${build-libs.dir}/forkjoin.complete" verbose="no"/>
@@ -587,7 +587,7 @@ LOCAL DEPENDENCY (FJBG)
       classpath="${build-libs.dir}/classes/fjbg"
       includes="**/*.java"
       debug="true"
-      target="1.5" source="1.4">
+      target="1.6" source="1.4">
         <compilerarg line="${javac.args} -XDignore.symbol.file"/>
     </javac>
     <touch file="${build-libs.dir}/fjbg.complete" verbose="no"/>
@@ -635,7 +635,7 @@ LOCAL REFERENCE BUILD (LOCKER)
       srcdir="${src.dir}/library"
       destdir="${build-locker.dir}/classes/library"
       includes="**/*.java"
-      target="1.5" source="1.5">
+      target="1.6" source="1.5">
         <compilerarg line="${javac.args} -XDignore.symbol.file"/>
         <classpath>
           <path refid="forkjoin.classpath"/>
@@ -749,7 +749,7 @@ LOCAL REFERENCE BUILD (LOCKER)
           includes="**/*.java"
           excludes="**/tests/**"
           debug="true"
-          target="1.5" source="1.4">
+          target="1.6" source="1.4">
             <compilerarg line="${javac.args}"/>
         </javac>
         <scalacfork
@@ -1009,7 +1009,7 @@ QUICK BUILD (QUICK)
       srcdir="${src.dir}/library"
       destdir="${build-quick.dir}/classes/library"
       includes="**/*.java"
-      target="1.5" source="1.5">
+      target="1.6" source="1.5">
       <compilerarg line="${javac.args} -XDignore.symbol.file"/>
       <classpath>
         <path refid="forkjoin.classpath"/>
@@ -1020,7 +1020,7 @@ QUICK BUILD (QUICK)
       srcdir="${src.dir}/actors"
       destdir="${build-quick.dir}/classes/library"
       includes="**/*.java"
-      target="1.5" source="1.5">
+      target="1.6" source="1.5">
       <compilerarg line="${javac.args}"/>
       <classpath>
         <path refid="forkjoin.classpath"/>
@@ -1145,7 +1145,7 @@ QUICK BUILD (QUICK)
       includes="**/*.java"
       excludes="**/tests/**"
       debug="true"
-      target="1.5" source="1.4">
+      target="1.6" source="1.4">
         <compilerarg line="${javac.args}"/>
     </javac>
     <scalacfork
@@ -1349,7 +1349,7 @@ QUICK BUILD (QUICK)
     <javac
       srcdir="${src.dir}/partest"
       destdir="${build-quick.dir}/classes/partest"
-      target="1.5" source="1.5">
+      target="1.6" source="1.5">
       <classpath>
         <pathelement location="${build-quick.dir}/classes/library"/>
         <pathelement location="${build-quick.dir}/classes/reflect"/>
@@ -1691,7 +1691,7 @@ BOOTSTRAPPING BUILD (STRAP)
       srcdir="${src.dir}/library"
       destdir="${build-strap.dir}/classes/library"
       includes="**/*.java"
-      target="1.5" source="1.5">
+      target="1.6" source="1.5">
       <compilerarg line="${javac.args} -XDignore.symbol.file"/>
       <classpath>
         <path refid="forkjoin.classpath"/>
@@ -1702,7 +1702,7 @@ BOOTSTRAPPING BUILD (STRAP)
       srcdir="${src.dir}/actors"
       destdir="${build-strap.dir}/classes/library"
       includes="**/*.java"
-      target="1.5" source="1.5">
+      target="1.6" source="1.5">
       <compilerarg line="${javac.args}"/>
       <classpath>
         <path refid="forkjoin.classpath"/>
@@ -1826,7 +1826,7 @@ BOOTSTRAPPING BUILD (STRAP)
       includes="**/*.java"
       excludes="**/tests/**"
       debug="true"
-      target="1.5" source="1.4">
+      target="1.6" source="1.4">
         <compilerarg line="${javac.args}"/>
     </javac>
     <scalacfork
@@ -1994,7 +1994,7 @@ BOOTSTRAPPING BUILD (STRAP)
     <javac
       srcdir="${src.dir}/partest"
       destdir="${build-strap.dir}/classes/partest"
-      target="1.5" source="1.5">
+      target="1.6" source="1.5">
       <classpath>
         <pathelement location="${build-strap.dir}/classes/library"/>
         <pathelement location="${build-strap.dir}/classes/reflect"/>
