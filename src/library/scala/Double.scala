@@ -370,9 +370,6 @@ object Double extends AnyValCompanion {
   final val PositiveInfinity = java.lang.Double.POSITIVE_INFINITY
   final val NegativeInfinity = java.lang.Double.NEGATIVE_INFINITY
 
-  @deprecated("use Double.MinPositiveValue instead", "2.9.0")
-  final val Epsilon  = MinPositiveValue
-
   /** The negative number with the greatest (finite) absolute value which is representable
    *  by a Double.  Note that it differs from [[java.lang.Double.MIN_VALUE]], which
    *  is the smallest positive value representable by a Double.  In Scala that number
