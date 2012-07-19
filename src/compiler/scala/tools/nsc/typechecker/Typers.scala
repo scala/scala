@@ -1428,8 +1428,15 @@ trait Typers extends Modes with Adaptations with Tags {
               nme.CONSTRUCTOR)
         }
 
+        // check type arguments to parent type
+        // [ to appease pos/z1730 after fixing SI-4440, don't do this after erasure,
+        //   especially not after constructors, since it will have inserted assignments
+        //   to the private[this] outer accessor, which will only type check when the ctor
+        //   is type checked in the proper context; here, it's type checked in a context
+        //   outside the class to avoid circular dependency errors
+        //   (the constructor will be type checked for real in typedTemplate anyway) ]
         treeInfo.firstConstructor(templ.body) match {
-          case constr @ DefDef(_, _, _, vparamss, _, cbody @ Block(cstats, cunit)) =>
+          case constr @ DefDef(_, _, _, vparamss, _, cbody @ Block(cstats, cunit)) if !phase.erasedTypes =>
             // Convert constructor body to block in environment and typecheck it
             val (preSuperStats, superCall) = {
               val (stats, rest) = cstats span (x => !treeInfo.isSuperConstrCall(x))
