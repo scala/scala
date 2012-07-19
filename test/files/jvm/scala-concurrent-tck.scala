@@ -4,7 +4,9 @@ import scala.concurrent.{
   TimeoutException,
   SyncVar,
   ExecutionException,
-  ExecutionContext
+  ExecutionContext,
+  CanAwait,
+  Await
 }
 import scala.concurrent.{ future, promise, blocking }
 import scala.util.{ Try, Success, Failure }
@@ -647,7 +649,7 @@ trait FutureProjections extends TestBase {
     val f = future {
       throw cause
     }
-    assert(blocking(f.failed, Duration(500, "ms")) == cause)
+    assert(Await.result(f.failed, Duration(500, "ms")) == cause)
     done()
   }
   
@@ -655,7 +657,7 @@ trait FutureProjections extends TestBase {
     done =>
     val f = future { 0 }
     try {
-      blocking(f.failed, Duration(500, "ms"))
+      Await.result(f.failed, Duration(500, "ms"))
       assert(false)
     } catch {
       case nsee: NoSuchElementException => done()
@@ -678,7 +680,7 @@ trait Blocking extends TestBase {
   def testAwaitSuccess(): Unit = once {
     done =>
     val f = future { 0 }
-    blocking(f, Duration(500, "ms"))
+    Await.result(f, Duration(500, "ms"))
     done()
   }
   
@@ -689,7 +691,7 @@ trait Blocking extends TestBase {
       throw cause
     }
     try {
-      blocking(f, Duration(500, "ms"))
+      Await.result(f, Duration(500, "ms"))
       assert(false)
     } catch {
       case t =>
@@ -708,7 +710,7 @@ trait BlockContexts extends TestBase {
   import scala.concurrent.{ Await, Awaitable, BlockContext }
 
   private def getBlockContext(body: => BlockContext): BlockContext = {
-    blocking(Future { body }, Duration(500, "ms"))
+    Await.result(Future { body }, Duration(500, "ms"))
   }
 
   // test outside of an ExecutionContext
@@ -727,8 +729,7 @@ trait BlockContexts extends TestBase {
   def testPushCustom(): Unit = {
     val orig = BlockContext.current
     val customBC = new BlockContext() {
-      override def internalBlockingCall[T](awaitable: Awaitable[T], atMost: Duration): T =
-        orig.internalBlockingCall(awaitable, atMost)
+      override def blockOn[T](thunk: =>T)(implicit permission: CanAwait): T = orig.blockOn(thunk)
     }
 
     val bc = getBlockContext({
@@ -744,8 +745,7 @@ trait BlockContexts extends TestBase {
   def testPopCustom(): Unit = {
     val orig = BlockContext.current
     val customBC = new BlockContext() {
-      override def internalBlockingCall[T](awaitable: Awaitable[T], atMost: Duration): T =
-        orig.internalBlockingCall(awaitable, atMost)
+      override def blockOn[T](thunk: =>T)(implicit permission: CanAwait): T = orig.blockOn(thunk)
     }
 
     val bc = getBlockContext({
