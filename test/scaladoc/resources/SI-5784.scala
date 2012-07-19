@@ -8,7 +8,7 @@ package test.templates {
 
   /** @contentDiagram */
   trait Base {
-    /** @template */
+    /** @documentable */
     type String = test.templates.String
     /** @template
      * @inheritanceDiagram */
@@ -20,7 +20,7 @@ package test.templates {
 
   /** @contentDiagram */
   trait Api extends Base {
-    /** @template
+    /** @documentable
      *  @inheritanceDiagram */
     override type T <: FooApi
     trait FooApi extends Foo { def bar: String }

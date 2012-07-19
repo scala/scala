@@ -1075,6 +1075,7 @@ class ModelFactory(val global: Global, val settings: doc.Settings) {
   // whether or not to create a page for an {abstract,alias} type
   def typeShouldDocument(bSym: Symbol, inTpl: DocTemplateImpl) =
     (settings.docExpandAllTypes.value && (bSym.sourceFile != null)) ||
-    global.expandedDocComment(bSym, inTpl.sym).contains("@template")
+    { val rawComment = global.expandedDocComment(bSym, inTpl.sym)
+      rawComment.contains("@template") || rawComment.contains("@documentable") }
 }
 

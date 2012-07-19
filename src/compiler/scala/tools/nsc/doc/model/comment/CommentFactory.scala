@@ -383,7 +383,7 @@ trait CommentFactory { thisFactory: ModelFactory with CommentFactory with Member
           case None => List.empty
         }
 
-        val stripTags=List(inheritDiagramTag, contentDiagramTag, SimpleTagKey("template"))
+        val stripTags=List(inheritDiagramTag, contentDiagramTag, SimpleTagKey("template"), SimpleTagKey("documentable"))
         val tagsWithoutDiagram = tags.filterNot(pair => stripTags.contains(pair._1))
 
         val bodyTags: mutable.Map[TagKey, List[Body]] =
