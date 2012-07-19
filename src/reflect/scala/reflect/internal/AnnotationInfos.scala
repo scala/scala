@@ -160,12 +160,7 @@ trait AnnotationInfos extends api.AnnotationInfos { self: SymbolTable =>
    */
   final class LazyAnnotationInfo(lazyInfo: => AnnotationInfo) extends AnnotationInfo {
     private var forced = false
-    private lazy val forcedInfo =
-      try {
-        val result = lazyInfo
-        if (result.pos == NoPosition) result setPos pos
-        result
-      } finally forced = true
+    private lazy val forcedInfo = try lazyInfo finally forced = true
 
     def atp: Type                               = forcedInfo.atp
     def args: List[Tree]                        = forcedInfo.args
