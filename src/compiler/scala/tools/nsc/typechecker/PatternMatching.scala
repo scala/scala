@@ -1024,7 +1024,7 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
         else expectedTp match {
           // TODO: [SPEC] the spec requires `eq` instead of `==` for singleton types
           // this implies sym.isStable
-          case SingleType(_, sym)                       => and(equalsTest(CODE.REF(sym), testedBinder), typeTest(testedBinder, expectedTp.widen))
+          case SingleType(_, sym)                       => and(equalsTest(gen.mkAttributedQualifier(expectedTp), testedBinder), typeTest(testedBinder, expectedTp.widen))
           // must use == to support e.g. List() == Nil
           case ThisType(sym) if sym.isModule            => and(equalsTest(CODE.REF(sym), testedBinder), typeTest(testedBinder, expectedTp.widen))
           case ConstantType(Constant(null)) if testedBinder.info.widen <:< AnyRefClass.tpe
