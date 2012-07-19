@@ -492,11 +492,10 @@ class ModelFactory(val global: Global, val settings: doc.Settings) {
         if (entity != default) return entity
       }
       // query linearization
-      if (!sym.isAliasType && !sym.isAbstractType)
-        for (tpl <- linearizationTemplates.collect{ case dtpl: DocTemplateImpl if dtpl!=this => dtpl}) {
-          val entity = tpl.groupSearch(extractor, default)
-          if (entity != default) return entity
-        }
+      for (tpl <- linearizationTemplates.collect{ case dtpl: DocTemplateImpl if dtpl!=this => dtpl}) {
+        val entity = tpl.groupSearch(extractor, default)
+        if (entity != default) return entity
+      }
       default
     }
 
@@ -601,9 +600,10 @@ class ModelFactory(val global: Global, val settings: doc.Settings) {
   }
   /* ============== MAKER METHODS ============== */
 
-  /** This method makes it easier to work with the different kinds of symbols created by scalac
+  /** This method makes it easier to work with the different kinds of symbols created by scalac by stripping down the
+   * package object abstraction and placing members directly in the package.
    *
-   * Okay, here's the explanation of what happens. The code:
+   * Here's the explanation of what we do. The code:
    *
    * package foo {
    *   object `package` {
@@ -612,17 +612,22 @@ class ModelFactory(val global: Global, val settings: doc.Settings) {
    * }
    *
    * will yield this Symbol structure:
-   *
-   * +---------------+         +--------------------------+
-   * | package foo#1 ----(1)---> module class foo#2       |
-   * +---------------+         | +----------------------+ |         +-------------------------+
-   *                           | | package object foo#3 ------(1)---> module class package#4  |
-   *                           | +----------------------+ |         | +---------------------+ |
-   *                           +--------------------------+         | | class package$Bar#5 | |
-   *                                                                | +---------------------+ |
-   *                                                                +-------------------------+
+   *                                       +---------+ (2)
+   *                                       |         |
+   * +---------------+         +---------- v ------- | ---+                              +--------+ (2)
+   * | package foo#1 <---(1)---- module class foo#2  |    |                              |        |
+   * +---------------+         | +------------------ | -+ |         +------------------- v ---+   |
+   *                           | | package object foo#3 <-----(1)---- module class package#4  |   |
+   *                           | +----------------------+ |         | +---------------------+ |   |
+   *                           +--------------------------+         | | class package$Bar#5 | |   |
+   *                                                                | +----------------- | -+ |   |
+   *                                                                +------------------- | ---+   |
+   *                                                                                     |        |
+   *                                                                                     +--------+
    * (1) sourceModule
    * (2) you get out of owners with .owner
+   *
+   * and normalizeTemplate(Bar.owner) will get us the package, instead of the module class of the package object.
    */
   def normalizeTemplate(aSym: Symbol): Symbol = aSym match {
     case null | rootMirror.EmptyPackage | NoSymbol =>
