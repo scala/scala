@@ -43,7 +43,6 @@ trait StandardNames extends base.StandardNames {
     val SUPER_PREFIX_STRING: String
     val TRAIT_SETTER_SEPARATOR_STRING: String
 
-    val ANYNAME: TermName
     val FAKE_LOCAL_THIS: TermName
     val INITIALIZER: TermName
     val LAZY_LOCAL: TermName

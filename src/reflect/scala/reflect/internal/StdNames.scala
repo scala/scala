@@ -297,7 +297,7 @@ trait StdNames {
     val WHILE_PREFIX                  = "while$"
 
     // Compiler internal names
-    val ANYNAME: NameType                  = "<anyname>"
+    val ANYname: NameType                  = "<anyname>"
     val CONSTRUCTOR: NameType              = "<init>"
     val EQEQ_LOCAL_VAR: NameType           = "eqEqTemp$"
     val FAKE_LOCAL_THIS: NameType          = "this$"

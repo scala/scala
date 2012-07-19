@@ -14,6 +14,7 @@ import Flags._
 import scala.util.control.ControlThrowable
 import scala.annotation.tailrec
 import util.Statistics
+import scala.runtime.ObjectRef
 
 /* A standard type pattern match:
   case ErrorType =>
@@ -668,7 +669,8 @@ trait Types extends api.Types { self: SymbolTable =>
      *  Note: unfortunately it doesn't work to exclude DEFERRED this way.
      */
     def membersBasedOnFlags(excludedFlags: Long, requiredFlags: Long): List[Symbol] =
-      findMember(nme.ANYNAME, excludedFlags, requiredFlags, false).alternatives
+      findMembers(excludedFlags, requiredFlags)
+//      findMember(nme.ANYNAME, excludedFlags, requiredFlags, false).alternatives
 
     def memberBasedOnName(name: Name, excludedFlags: Long): Symbol =
       findMember(name, excludedFlags, 0, false)
@@ -1018,6 +1020,72 @@ trait Types extends api.Types { self: SymbolTable =>
       else (baseClasses.head.newOverloaded(this, alts))
     }
 
+    def findMembers(excludedFlags: Long, requiredFlags: Long): List[Symbol] = {
+      // if this type contains type variables, put them to sleep for a while -- don't just wipe them out by
+      // replacing them by the corresponding type parameter, as that messes up (e.g.) type variables in type refinements
+      // without this, the matchesType call would lead to type variables on both sides
+      // of a subtyping/equality judgement, which can lead to recursive types being constructed.
+      // See (t0851) for a situation where this happens.
+      val suspension: List[TypeVar] = if (this.isGround) null else suspendTypeVarsInType(this)
+
+      Statistics.incCounter(findMembersCount)
+      val start = Statistics.pushTimer(typeOpsStack, findMembersNanos)
+
+      //Console.println("find member " + name.decode + " in " + this + ":" + this.baseClasses)//DEBUG
+      var members: Scope = null
+      var required = requiredFlags
+      var excluded = excludedFlags | DEFERRED
+      var continue = true
+      var self: Type = null
+      while (continue) {
+        continue = false
+        val bcs0 = baseClasses
+        var bcs = bcs0
+        while (!bcs.isEmpty) {
+          val decls = bcs.head.info.decls
+          var entry = decls.elems
+          while (entry ne null) {
+            val sym = entry.sym
+            val flags = sym.flags
+            if ((flags & required) == required) {
+              val excl = flags & excluded
+              if (excl == 0L &&
+                  (// omit PRIVATE LOCALS unless selector class is contained in class owning the def.
+                   (bcs eq bcs0) ||
+                   (flags & PrivateLocal) != PrivateLocal ||
+                   (bcs0.head.hasTransOwner(bcs.head)))) {
+                if (members eq null) members = newScope
+                var others: ScopeEntry = members.lookupEntry(sym.name)
+                var symtpe: Type = null
+                while ((others ne null) && {
+                         val other = others.sym
+                         (other ne sym) &&
+                         ((other.owner eq sym.owner) ||
+                          (flags & PRIVATE) != 0 || {
+                             if (self eq null) self = this.narrow
+                             if (symtpe eq null) symtpe = self.memberType(sym)
+                             !(self.memberType(other) matches symtpe)
+                          })}) {
+                  others = members lookupNextEntry others
+                }
+                if (others eq null) members enter sym
+              } else if (excl == DEFERRED) {
+                continue = true
+              }
+            }
+            entry = entry.next
+          } // while (entry ne null)
+          // excluded = excluded | LOCAL
+          bcs = bcs.tail
+        } // while (!bcs.isEmpty)
+        required |= DEFERRED
+        excluded &= ~(DEFERRED.toLong)
+      } // while (continue)
+      Statistics.popTimer(typeOpsStack, start)
+      if (suspension ne null) suspension foreach (_.suspended = false)
+      if (members eq null) Nil else members.toList
+    }
+
     /**
      *  Find member(s) in this type. If several members matching criteria are found, they are
      *  returned in an OverloadedSymbol
@@ -1040,75 +1108,83 @@ trait Types extends api.Types { self: SymbolTable =>
       val start = Statistics.pushTimer(typeOpsStack, findMemberNanos)
 
       //Console.println("find member " + name.decode + " in " + this + ":" + this.baseClasses)//DEBUG
-      var members: Scope = null
       var member: Symbol = NoSymbol
+      var members: List[Symbol] = null
+      var lastM: ::[Symbol] = null
+      var membertpe: Type = null
+      var required = requiredFlags
       var excluded = excludedFlags | DEFERRED
       var continue = true
       var self: Type = null
-      var membertpe: Type = null
+      val fingerPrint: Long = name.fingerPrint
+
       while (continue) {
         continue = false
         val bcs0 = baseClasses
         var bcs = bcs0
         while (!bcs.isEmpty) {
           val decls = bcs.head.info.decls
-          var entry =
-            if (name == nme.ANYNAME) decls.elems else decls.lookupEntry(name)
-          while (entry ne null) {
-            val sym = entry.sym
-            if (sym hasAllFlags requiredFlags) {
-              val excl = sym.getFlag(excluded)
-              if (excl == 0L &&
-                  (// omit PRIVATE LOCALS unless selector class is contained in class owning the def.
-                   (bcs eq bcs0) ||
-                   !sym.isPrivateLocal ||
-                   (bcs0.head.hasTransOwner(bcs.head)))) {
-                if (name.isTypeName || stableOnly && sym.isStable) {
-                  Statistics.popTimer(typeOpsStack, start)
-                  if (suspension ne null) suspension foreach (_.suspended = false)
-                  return sym
-                } else if (member == NoSymbol) {
-                  member = sym
-                } else if (members eq null) {
-                  if (member.name != sym.name ||
-                      !(member == sym ||
-                        member.owner != sym.owner &&
-                        !sym.isPrivate && {
-                          if (self eq null) self = this.narrow
-                          if (membertpe eq null) membertpe = self.memberType(member)
-                          (membertpe matches self.memberType(sym))
-                        })) {
-                    members = newScope
-                    members enter member
-                    members enter sym
+          if ((fingerPrint & decls.fingerPrints) != 0) {
+            var entry = decls.lookupEntry(name)
+            while (entry ne null) {
+              val sym = entry.sym
+              val flags = sym.flags
+              if ((flags & required) == required) {
+                val excl = flags & excluded
+                if (excl == 0L &&
+                    (// omit PRIVATE LOCALS unless selector class is contained in class owning the def.
+                     (bcs eq bcs0) ||
+                     (flags & PrivateLocal) != PrivateLocal ||
+                     (bcs0.head.hasTransOwner(bcs.head)))) {
+                  if (name.isTypeName || stableOnly && sym.isStable) {
+                    Statistics.popTimer(typeOpsStack, start)
+                    if (suspension ne null) suspension foreach (_.suspended = false)
+                    return sym
+                  } else if (member eq NoSymbol) {
+                    member = sym
+                  } else if (members eq null) {
+                    if ((member ne sym) &&
+                        ((member.owner eq sym.owner) ||
+                         (flags & PRIVATE) != 0 || {
+                           if (self eq null) self = this.narrow
+                           if (membertpe eq null) membertpe = self.memberType(member)
+                           !(membertpe matches self.memberType(sym))
+                         })) {
+                      lastM = new ::(sym, null)
+                      members = member :: lastM
+                    }
+                  } else {
+                    var others: List[Symbol] = members
+                    var symtpe: Type = null
+                    while ((others ne null) && {
+                             val other = others.head
+                             (other ne sym) &&
+                             ((other.owner eq sym.owner) ||
+                              (flags & PRIVATE) != 0 || {
+                                if (self eq null) self = this.narrow
+                                if (symtpe eq null) symtpe = self.memberType(sym)
+                                !(self.memberType(other) matches symtpe)
+                             })}) {
+                      others = others.tail
+                    }
+                    if (others eq null) {
+                      val lastM1 = new ::(sym, null)
+                      lastM.tl = lastM1
+                      lastM = lastM1
+                    }
                   }
-                } else {
-                  var prevEntry = members.lookupEntry(sym.name)
-                  var symtpe: Type = null
-                  while ((prevEntry ne null) &&
-                         !(prevEntry.sym == sym ||
-                           prevEntry.sym.owner != sym.owner &&
-                           !sym.hasFlag(PRIVATE) && {
-                             if (self eq null) self = this.narrow
-                             if (symtpe eq null) symtpe = self.memberType(sym)
-                             self.memberType(prevEntry.sym) matches symtpe
-                           })) {
-                    prevEntry = members lookupNextEntry prevEntry
-                  }
-                  if (prevEntry eq null) {
-                    members enter sym
-                  }
+                } else if (excl == DEFERRED) {
+                  continue = true
                 }
-              } else if (excl == DEFERRED.toLong) {
-                continue = true
               }
-            }
-            entry = if (name == nme.ANYNAME) entry.next else decls lookupNextEntry entry
-          } // while (entry ne null)
+              entry = decls lookupNextEntry entry
+            } // while (entry ne null)
+          } // if (fingerPrint matches)
           // excluded = excluded | LOCAL
           bcs = if (name == nme.CONSTRUCTOR) Nil else bcs.tail
         } // while (!bcs.isEmpty)
-        excluded = excludedFlags
+        required |= DEFERRED
+        excluded &= ~(DEFERRED.toLong)
       } // while (continue)
       Statistics.popTimer(typeOpsStack, start)
       if (suspension ne null) suspension foreach (_.suspended = false)
@@ -1117,9 +1193,11 @@ trait Types extends api.Types { self: SymbolTable =>
         member
       } else {
         Statistics.incCounter(multMemberCount)
-        baseClasses.head.newOverloaded(this, members.toList)
+        lastM.tl = Nil
+        baseClasses.head.newOverloaded(this, members)
       }
     }
+
     /** The (existential or otherwise) skolems and existentially quantified variables which are free in this type */
     def skolemsExceptMethodTypeParams: List[Symbol] = {
       var boundSyms: List[Symbol] = List()
@@ -1610,8 +1688,13 @@ trait Types extends api.Types { self: SymbolTable =>
     if (period != currentPeriod) {
       tpe.baseClassesPeriod = currentPeriod
       if (!isValidForBaseClasses(period)) {
-        tpe.baseClassesCache = null
-        tpe.baseClassesCache = tpe.memo(computeBaseClasses)(tpe.typeSymbol :: _.baseClasses.tail)
+        val start = Statistics.pushTimer(typeOpsStack, baseClassesNanos)
+        try {
+          tpe.baseClassesCache = null
+          tpe.baseClassesCache = tpe.memo(computeBaseClasses)(tpe.typeSymbol :: _.baseClasses.tail)
+        } finally {
+          Statistics.popTimer(typeOpsStack, start)
+        }
       }
     }
     if (tpe.baseClassesCache eq null)
@@ -5066,7 +5149,7 @@ trait Types extends api.Types { self: SymbolTable =>
    */
   def needsOuterTest(patType: Type, selType: Type, currentOwner: Symbol) = {
     def createDummyClone(pre: Type): Type = {
-      val dummy = currentOwner.enclClass.newValue(nme.ANYNAME).setInfo(pre.widen)
+      val dummy = currentOwner.enclClass.newValue(nme.ANYname).setInfo(pre.widen)
       singleType(ThisType(currentOwner.enclClass), dummy)
     }
     def maybeCreateDummyClone(pre: Type, sym: Symbol): Type = pre match {
@@ -6909,14 +6992,17 @@ object TypesStats {
   val lubCount            = Statistics.newCounter   ("#toplevel lubs/glbs")
   val nestedLubCount      = Statistics.newCounter   ("#all lubs/glbs")
   val findMemberCount     = Statistics.newCounter   ("#findMember ops")
+  val findMembersCount    = Statistics.newCounter   ("#findMembers ops")
   val noMemberCount       = Statistics.newSubCounter("  of which not found", findMemberCount)
   val multMemberCount     = Statistics.newSubCounter("  of which multiple overloaded", findMemberCount)
   val typerNanos          = Statistics.newTimer     ("time spent typechecking", "typer")
   val lubNanos            = Statistics.newStackableTimer("time spent in lubs", typerNanos)
   val subtypeNanos        = Statistics.newStackableTimer("time spent in <:<", typerNanos)
   val findMemberNanos     = Statistics.newStackableTimer("time spent in findmember", typerNanos)
+  val findMembersNanos    = Statistics.newStackableTimer("time spent in findmembers", typerNanos)
   val asSeenFromNanos     = Statistics.newStackableTimer("time spent in asSeenFrom", typerNanos)
   val baseTypeSeqNanos    = Statistics.newStackableTimer("time spent in baseTypeSeq", typerNanos)
+  val baseClassesNanos    = Statistics.newStackableTimer("time spent in baseClasses", typerNanos)
   val compoundBaseTypeSeqCount = Statistics.newSubCounter("  of which for compound types", baseTypeSeqCount)
   val typerefBaseTypeSeqCount = Statistics.newSubCounter("  of which for typerefs", baseTypeSeqCount)
   val singletonBaseTypeSeqCount = Statistics.newSubCounter("  of which for singletons", baseTypeSeqCount)
