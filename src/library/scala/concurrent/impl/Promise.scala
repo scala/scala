@@ -18,7 +18,7 @@ import scala.util.control.NonFatal
 
 
 
-private[concurrent] trait Promise[T] extends scala.concurrent.Promise[T] with Future[T] {
+private[concurrent] trait Promise[T] extends scala.concurrent.Promise[T] with scala.concurrent.Future[T] {
   def future: this.type = this
 }
 
