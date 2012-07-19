@@ -33,6 +33,14 @@ import language.postfixOps
  *  - convert implicit method types to method types
  *  - convert non-trivial catches in try statements to matches
  *  - convert non-local returns to throws with enclosing try statements.
+ *  - convert try-catch expressions in contexts where there might be values on the stack to
+ *      a local method and a call to it (since an exception empties the evaluation stack):
+ *      
+ *      meth(x_1,..., try { x_i } catch { ..}, .. x_b0) ==> 
+ *        {
+ *          def liftedTry$1 = try { x_i } catch { .. }
+ *          meth(x_1, .., liftedTry$1(), .. )
+ *        }
  */
 /*</export> */
 abstract class UnCurry extends InfoTransform
@@ -633,6 +641,13 @@ abstract class UnCurry extends InfoTransform
 
           case ret @ Return(_) if (isNonLocalReturn(ret)) =>
             withNeedLift(true) { super.transform(ret) }
+
+          case Try(_, Nil, _) => 
+            // try-finally does not need lifting: lifting is needed only for try-catch
+            // expressions that are evaluated in a context where the stack might not be empty.
+            // `finally` does not attempt to continue evaluation after an exception, so the fact
+            // that values on the stack are 'lost' does not matter
+            super.transform(tree)
 
           case Try(block, catches, finalizer) =>
             if (needTryLift || shouldBeLiftedAnyway(tree)) transform(liftTree(tree))
