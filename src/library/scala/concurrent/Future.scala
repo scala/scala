@@ -707,11 +707,9 @@ object Future {
   // doesn't need to create defaultExecutionContext as
   // a side effect.
   private[concurrent] object InternalCallbackExecutor extends ExecutionContext {
-    def execute(runnable: Runnable): Unit =
+    override def execute(runnable: Runnable): Unit =
       runnable.run()
-    def internalBlockingCall[T](awaitable: Awaitable[T], atMost: Duration): T =
-      throw new IllegalStateException("bug in scala.concurrent, called blocking() from internal callback")
-    def reportFailure(t: Throwable): Unit =
+    override def reportFailure(t: Throwable): Unit =
       throw new IllegalStateException("problem in scala.concurrent internal callback", t)
   }
 }
