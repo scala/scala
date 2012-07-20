@@ -34,7 +34,7 @@ class ReferenceIndex(letter: Char, index: doc.Index, universe: Universe) extends
       } else {
         html
       }
-    })
+    }).toList.distinct
 
     <div class="entry">
       <div class="name">{

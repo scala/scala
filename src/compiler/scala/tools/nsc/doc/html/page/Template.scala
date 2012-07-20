@@ -64,10 +64,10 @@ class Template(universe: doc.Universe, generator: DiagramGenerator, tpl: DocTemp
     nonAbsValueMembers partition (_.deprecation.isDefined)
 
   val (concValueMembers, shadowedImplicitMembers) =
-    nonDeprValueMembers partition (!Template.isShadowedOrAmbiguousImplicit(_))
+    nonDeprValueMembers partition (!_.isShadowedOrAmbiguousImplicit)
 
   val typeMembers =
-    tpl.abstractTypes ++ tpl.aliasTypes ++ tpl.templates.filter(x => x.isTrait || x.isClass) sorted
+    tpl.abstractTypes ++ tpl.aliasTypes ++ tpl.templates.filter(x => x.isTrait || x.isClass) sorted (implicitly[Ordering[MemberEntity]])
 
   val constructors = (tpl match {
     case cls: Class => (cls.constructors: List[MemberEntity]).sorted
@@ -92,7 +92,7 @@ class Template(universe: doc.Universe, generator: DiagramGenerator, tpl: DocTemp
         <p id="owner">{ templatesToHtml(tpl.inTemplate.toRoot.reverse.tail, xml.Text(".")) }</p>
     }
 
-    <body class={ if (tpl.isTrait || tpl.isClass || tpl.qualifiedName == "scala.AnyRef") "type" else "value" }>
+    <body class={ if (tpl.isType) "type" else "value" }>
       <div id="definition">
         {
           tpl.companion match {
@@ -110,10 +110,26 @@ class Template(universe: doc.Universe, generator: DiagramGenerator, tpl: DocTemp
 
       <div id="mbrsel">
         <div id='textfilter'><span class='pre'/><span class='input'><input id='mbrsel-input' type='text' accesskey='/'/></span><span class='post'/></div>
-        { if (tpl.linearizationTemplates.isEmpty && tpl.conversions.isEmpty) NodeSeq.Empty else
+        { if (tpl.linearizationTemplates.isEmpty && tpl.conversions.isEmpty && (!universe.settings.docGroups.value || (tpl.members.map(_.group).distinct.length == 1)))
+            NodeSeq.Empty
+          else
             <div id="order">
               <span class="filtertype">Ordering</span>
-              <ol><li class="alpha in"><span>Alphabetic</span></li><li class="inherit out"><span>By inheritance</span></li></ol>
+              <ol>
+                {
+                  if (!universe.settings.docGroups.value || (tpl.members.map(_.group).distinct.length == 1))
+                    NodeSeq.Empty
+                  else
+                    <li class="group out"><span>Grouped</span></li>
+                }
+                <li class="alpha in"><span>Alphabetic</span></li>
+                {
+                  if (tpl.linearizationTemplates.isEmpty && tpl.conversions.isEmpty)
+                    NodeSeq.Empty
+                  else
+                    <li class="inherit out"><span>By inheritance</span></li>
+                }
+              </ol>
             </div>
         }
         { if (tpl.linearizationTemplates.isEmpty && tpl.conversions.isEmpty) NodeSeq.Empty else
@@ -223,6 +239,25 @@ class Template(universe: doc.Universe, generator: DiagramGenerator, tpl: DocTemp
         }
         </div>
 
+        <div id="groupedMembers">
+        {
+          val allGroups = tpl.members.map(_.group).distinct
+          val orderedGroups = allGroups.map(group => (tpl.groupPriority(group), group)).sorted.map(_._2)
+          // linearization
+          NodeSeq fromSeq (for (group <- orderedGroups) yield
+            <div class="group" name={ group }>
+              <h3>{ tpl.groupName(group) }</h3>
+              {
+                tpl.groupDescription(group) match {
+                  case Some(body) => <div class="comment cmt">{ bodyToHtml(body) }</div>
+                  case _ => NodeSeq.Empty
+                }
+              }
+            </div>
+          )
+        }
+        </div>
+
       </div>
 
       <div id="tooltip" ></div>
@@ -238,44 +273,13 @@ class Template(universe: doc.Universe, generator: DiagramGenerator, tpl: DocTemp
     </body>
   }
 
-  def boundsToString(hi: Option[TypeEntity], lo: Option[TypeEntity]): String = {
-    def bound0(bnd: Option[TypeEntity], pre: String): String = bnd match {
-      case None => ""
-      case Some(tpe) => pre ++ tpe.toString
-    }
-    bound0(hi, "<:") ++ bound0(lo, ">:")
-  }
-
-  def tparamsToString(tpss: List[TypeParam]): String = {
-    if (tpss.isEmpty) "" else {
-      def tparam0(tp: TypeParam): String =
-         tp.variance + tp.name + boundsToString(tp.hi, tp.lo)
-      def tparams0(tpss: List[TypeParam]): String = (tpss: @unchecked) match {
-        case tp :: Nil => tparam0(tp)
-        case tp :: tps => tparam0(tp) ++ ", " ++ tparams0(tps)
-      }
-      "[" + tparams0(tpss) + "]"
-    }
-  }
-
-  def defParamsToString(d: MemberEntity with Def): String = {
-    val paramLists: List[String] =
-      if (d.valueParams.isEmpty) Nil
-      else d.valueParams map (ps => ps map (_.resultType.name) mkString ("(",",",")"))
-
-    tparamsToString(d.typeParams) + paramLists.mkString
-  }
-
   def memberToHtml(mbr: MemberEntity, inTpl: DocTemplateEntity): NodeSeq = {
-    val defParamsString = mbr match {
-      case d:MemberEntity with Def => defParamsToString(d)
-      case _ => ""
-    }
     val memberComment = memberToCommentHtml(mbr, inTpl, false)
     <li name={ mbr.definitionName } visbl={ if (mbr.visibility.isProtected) "prt" else "pub" }
       data-isabs={ mbr.isAbstract.toString }
-      fullComment={ if(memberComment.filter(_.label=="div").isEmpty) "no" else "yes" }>
-      <a id={ mbr.name +defParamsString +":"+ mbr.resultType.name}/>
+      fullComment={ if(memberComment.filter(_.label=="div").isEmpty) "no" else "yes" }
+      group={ mbr.group }>
+      <a id={ mbr.signature }/>
       { signature(mbr, false) }
       { memberComment }
     </li>
@@ -419,7 +423,7 @@ class Template(universe: doc.Universe, generator: DiagramGenerator, tpl: DocTemp
             { constraintText }
           </dd>
         } ++ {
-          if (Template.isShadowedOrAmbiguousImplicit(mbr)) {
+          if (mbr.isShadowedOrAmbiguousImplicit) {
             // These are the members that are shadowing or ambiguating the current implicit
             // see ImplicitMemberShadowing trait for more information
             val shadowingSuggestion = {
@@ -434,10 +438,10 @@ class Template(universe: doc.Universe, generator: DiagramGenerator, tpl: DocTemp
             }
 
             val shadowingWarning: NodeSeq =
-              if (Template.isShadowedImplicit(mbr))
+              if (mbr.isShadowedImplicit)
                   xml.Text("This implicitly inherited member is shadowed by one or more members in this " +
                   "class.") ++ shadowingSuggestion
-              else if (Template.isAmbiguousImplicit(mbr))
+              else if (mbr.isAmbiguousImplicit)
                   xml.Text("This implicitly inherited member is ambiguous. One or more implicitly " +
                   "inherited members have similar signatures, so calling this member may produce an ambiguous " +
                   "implicit conversion compiler error.") ++ shadowingSuggestion
@@ -633,31 +637,18 @@ class Template(universe: doc.Universe, generator: DiagramGenerator, tpl: DocTemp
     }
 
     val typeHierarchy = if (s.docDiagrams.isSetByUser) mbr match {
-      case dtpl: DocTemplateEntity if isSelf && !isReduced && dtpl.inheritanceDiagram.isDefined =>
+      case dtpl: DocTemplateEntity if isSelf && !isReduced =>
         makeDiagramHtml(dtpl, dtpl.inheritanceDiagram, "Type Hierarchy", "inheritance-diagram")
       case _ => NodeSeq.Empty
     } else NodeSeq.Empty // diagrams not generated
 
     val contentHierarchy = if (s.docDiagrams.isSetByUser) mbr match {
-      case dtpl: DocTemplateEntity if isSelf && !isReduced && dtpl.contentDiagram.isDefined =>
+      case dtpl: DocTemplateEntity if isSelf && !isReduced =>
         makeDiagramHtml(dtpl, dtpl.contentDiagram, "Content Hierarchy", "content-diagram")
       case _ => NodeSeq.Empty
     } else NodeSeq.Empty // diagrams not generated
 
     memberComment ++ paramComments ++ attributesBlock ++ linearization ++ subclasses ++ typeHierarchy ++ contentHierarchy
-  }
-
-  def kindToString(mbr: MemberEntity): String = {
-    mbr match {
-      case tpl: DocTemplateEntity => docEntityKindToString(tpl)
-      case ctor: Constructor => "new"
-      case tme: MemberEntity =>
-        ( if (tme.isDef) "def"
-          else if (tme.isVal) "val"
-          else if (tme.isLazyVal) "lazy val"
-          else if (tme.isVar) "var"
-          else "type")
-    }
   }
 
   def boundsToHtml(hi: Option[TypeEntity], lo: Option[TypeEntity], hasLinks: Boolean): NodeSeq = {
@@ -677,13 +668,13 @@ class Template(universe: doc.Universe, generator: DiagramGenerator, tpl: DocTemp
       case PrivateInTemplate(owner) if (owner == mbr.inTemplate) =>
         Some(Paragraph(CText("private")))
       case PrivateInTemplate(owner) =>
-        Some(Paragraph(Chain(List(CText("private["), EntityLink(owner.qualifiedName, () => Some(owner)), CText("]")))))
+        Some(Paragraph(Chain(List(CText("private["), EntityLink(comment.Text(owner.qualifiedName), LinkToTpl(owner)), CText("]")))))
       case ProtectedInInstance() =>
         Some(Paragraph(CText("protected[this]")))
       case ProtectedInTemplate(owner) if (owner == mbr.inTemplate) =>
         Some(Paragraph(CText("protected")))
       case ProtectedInTemplate(owner) =>
-        Some(Paragraph(Chain(List(CText("protected["), EntityLink(owner.qualifiedName, () => Some(owner)), CText("]")))))
+        Some(Paragraph(Chain(List(CText("protected["), EntityLink(comment.Text(owner.qualifiedName), LinkToTpl(owner)), CText("]")))))
       case Public() =>
         None
     }
@@ -700,8 +691,8 @@ class Template(universe: doc.Universe, generator: DiagramGenerator, tpl: DocTemp
       <span class="symbol">
         {
           val nameClass =
-            if (Template.isImplicit(mbr))
-              if (Template.isShadowedOrAmbiguousImplicit(mbr))
+            if (mbr.isImplicitlyInherited)
+              if (mbr.isShadowedOrAmbiguousImplicit)
                 "implicit shadowed"
               else
                 "implicit"
@@ -779,20 +770,21 @@ class Template(universe: doc.Universe, generator: DiagramGenerator, tpl: DocTemp
           }
         }{ if (isReduced) NodeSeq.Empty else {
           mbr match {
-            case tpl: DocTemplateEntity if !tpl.parentTypes.isEmpty =>
-              <span class="result"> extends { typeToHtml(tpl.parentTypes.map(_._2), hasLinks) }</span>
-
             case tme: MemberEntity if (tme.isDef || tme.isVal || tme.isLazyVal || tme.isVar) =>
               <span class="result">: { typeToHtml(tme.resultType, hasLinks) }</span>
 
-            case abt: AbstractType =>
+            case abt: MemberEntity with AbstractType =>
               val b2s = boundsToHtml(abt.hi, abt.lo, hasLinks)
               if (b2s != NodeSeq.Empty)
                 <span class="result">{ b2s }</span>
               else NodeSeq.Empty
 
-            case alt: AliasType =>
+            case alt: MemberEntity with AliasType =>
               <span class="result"> = { typeToHtml(alt.alias, hasLinks) }</span>
+
+            case tpl: MemberTemplateEntity if !tpl.parentTypes.isEmpty =>
+              <span class="result"> extends { typeToHtml(tpl.parentTypes.map(_._2), hasLinks) }</span>
+
             case _ => NodeSeq.Empty
           }
         }}
@@ -800,7 +792,7 @@ class Template(universe: doc.Universe, generator: DiagramGenerator, tpl: DocTemp
       </xml:group>
     mbr match {
       case dte: DocTemplateEntity if !isSelf =>
-        <h4 class="signature">{ inside(hasLinks = false, nameLink = relativeLinkTo(dte)) }</h4>
+        <h4 class="signature">{ inside(hasLinks = true, nameLink = relativeLinkTo(dte)) }</h4>
       case _ if isSelf =>
         <h4 id="signature" class="signature">{ inside(hasLinks = true) }</h4>
       case _ =>
@@ -850,17 +842,12 @@ class Template(universe: doc.Universe, generator: DiagramGenerator, tpl: DocTemp
             val link = relativeLinkTo(mbr)
             myXml ++= <span class="name"><a href={link}>{str.substring(from, to)}</a></span>
           case mbr: MemberEntity =>
-            val anchor = "#" + mbr.name + defParamsString(mbr) + ":" + mbr.resultType.name
+            val anchor = "#" + mbr.signature
             val link = relativeLinkTo(mbr.inTemplate)
             myXml ++= <span class="name"><a href={link ++ anchor}>{str.substring(from, to)}</a></span>
         }
         index = to
       }
-    }
-    // function used in the MemberEntity case above
-    def defParamsString(mbr: Entity):String = mbr match {
-      case d:MemberEntity with Def => defParamsToString(d)
-      case _ => ""
     }
 
     if (index <= length-1)
@@ -952,16 +939,18 @@ class Template(universe: doc.Universe, generator: DiagramGenerator, tpl: DocTemp
   }
 
   def makeDiagramHtml(tpl: DocTemplateEntity, diagram: Option[Diagram], description: String, id: String) = {
-    val s = universe.settings
-    val diagramSvg = generator.generate(diagram.get, tpl, this)
-    if (diagramSvg != NodeSeq.Empty) {
-      <div class="toggleContainer block diagram-container" id={ id + "-container"}>
-        <span class="toggle diagram-link">{ description }</span>
-        <a href="http://docs.scala-lang.org/overviews/scaladoc/usage.html#diagrams" target="_blank" class="diagram-help">Learn more about scaladoc diagrams</a>
-        <div class="diagram" id={ id }>{
-          diagramSvg
-        }</div>
-      </div>
+    if (diagram.isDefined) {
+      val s = universe.settings
+      val diagramSvg = generator.generate(diagram.get, tpl, this)
+      if (diagramSvg != NodeSeq.Empty) {
+        <div class="toggleContainer block diagram-container" id={ id + "-container"}>
+          <span class="toggle diagram-link">{ description }</span>
+          <a href="http://docs.scala-lang.org/overviews/scaladoc/usage.html#diagrams" target="_blank" class="diagram-help">Learn more about scaladoc diagrams</a>
+          <div class="diagram" id={ id }>{
+            diagramSvg
+          }</div>
+        </div>
+      } else NodeSeq.Empty
     } else NodeSeq.Empty
   }
 }
@@ -969,13 +958,6 @@ class Template(universe: doc.Universe, generator: DiagramGenerator, tpl: DocTemp
 object Template {
   /* Vlad: Lesson learned the hard way: don't put any stateful code that references the model here,
    * it won't be garbage collected and you'll end up filling the heap with garbage */
-
-  def isImplicit(mbr: MemberEntity) = mbr.byConversion.isDefined
-  def isShadowedImplicit(mbr: MemberEntity): Boolean =
-    mbr.byConversion.map(_.source.implicitsShadowing.get(mbr).map(_.isShadowed).getOrElse(false)).getOrElse(false)
-  def isAmbiguousImplicit(mbr: MemberEntity): Boolean =
-    mbr.byConversion.map(_.source.implicitsShadowing.get(mbr).map(_.isAmbiguous).getOrElse(false)).getOrElse(false)
-  def isShadowedOrAmbiguousImplicit(mbr: MemberEntity) = isShadowedImplicit(mbr) || isAmbiguousImplicit(mbr)
 
   def lowerFirstLetter(s: String) = if (s.length >= 1) s.substring(0,1).toLowerCase() + s.substring(1) else s
 }
