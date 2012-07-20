@@ -19,7 +19,7 @@ abstract class InterruptReq {
     try {
       result = Some(Left(todo()))
     } catch {
-      case t => result = Some(Right(t))
+      case t: Throwable => result = Some(Right(t))
     }
     notify()
   }

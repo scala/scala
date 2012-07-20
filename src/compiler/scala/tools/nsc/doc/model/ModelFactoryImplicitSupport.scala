@@ -242,7 +242,7 @@ trait ModelFactoryImplicitSupport {
 
           available = Some(search.tree != EmptyTree)
         } catch {
-          case _ =>
+          case _ => // !!! [Martin]: One should never silently catch all Throwables. Please sharpen the exception type.
         }
       }
 

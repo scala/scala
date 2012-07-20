@@ -36,7 +36,7 @@ final class PresentationCompilerThread(var compiler: Global, name: String = "")
 
         // make sure we don't keep around stale instances
         compiler = null
-      case ex =>
+      case ex: Throwable =>
         compiler.log.flush()
 
         ex match {
