@@ -422,7 +422,7 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
               The pattern matches any value v such that r == v (§12.1).
               The type of r must conform to the expected type of the pattern.
         **/
-        case Literal(Constant(_)) | Ident(_) | Select(_, _) =>
+        case Literal(Constant(_)) | Ident(_) | Select(_, _) | This(_) =>
           noFurtherSubPats(EqualityTestTreeMaker(patBinder, patTree, pos))
 
         case Alternative(alts)    =>
@@ -439,7 +439,7 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
           patmatDebug("WARNING: Bind tree with unbound symbol "+ patTree)
           noFurtherSubPats() // there's no symbol -- something's wrong... don't fail here though (or should we?)
 
-        // case Star(_) | ArrayValue | This => error("stone age pattern relics encountered!")
+        // case Star(_) | ArrayValue  => error("stone age pattern relics encountered!")
 
         case _                       =>
           error("unsupported pattern: "+ patTree +"(a "+ patTree.getClass +")")
