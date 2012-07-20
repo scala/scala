@@ -575,8 +575,18 @@ trait Infer {
             "argument expression's type is not compatible with formal parameter type" + foundReqMsg(tp1, pt1))
         }
       }
+      
+      /** Determine which variance to assume for the type paraneter. We first chose the variance
+       *  that minimizes any formal parameters. If that is still undetermined, because the type parameter
+       *  does not appear as a formal parameter type, then we pick the variance so that it minimizes the
+       *  method's result type instead.
+       */
+      def inferVariance(tparam: Symbol): Int = {
+        val v = varianceInTypes(formals)(tparam)
+        if (v != VarianceFlags) v else varianceInType(restpe)(tparam)
+      }
       val targs = solvedTypes(
-        tvars, tparams, tparams map varianceInTypes(formals),
+        tvars, tparams, tparams map inferVariance,
         false, lubDepth(formals) max lubDepth(argtpes)
       )
       adjustTypeArgs(tparams, tvars, targs, restpe)
