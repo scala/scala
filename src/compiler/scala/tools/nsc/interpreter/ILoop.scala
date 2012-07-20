@@ -25,7 +25,7 @@ import ScalaClassLoader._
 import scala.tools.util._
 import language.{implicitConversions, existentials}
 import scala.reflect.{ClassTag, classTag}
-import scala.tools.reflect.StdTags._
+import scala.tools.reflect.StdRuntimeTags._
 
 /** The Scala interactive shell.  It provides a read-eval-print loop
  *  around the Interpreter class.

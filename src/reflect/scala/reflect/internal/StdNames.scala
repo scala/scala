@@ -754,6 +754,7 @@ trait StdNames {
     val splice: NameType               = "splice"
     val staticClass : NameType         = "staticClass"
     val staticModule : NameType        = "staticModule"
+    val staticPackage : NameType       = "staticPackage"
     val synchronized_ : NameType       = "synchronized"
     val tail: NameType                 = "tail"
     val `then` : NameType              = "then"

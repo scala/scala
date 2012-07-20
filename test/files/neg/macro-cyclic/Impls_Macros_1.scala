@@ -2,7 +2,7 @@ import scala.reflect.makro.Context
 
 object Macros {
   def impl(c: Context) = {
-    c.reify { implicitly[SourceLocation] }
+    c.universe.reify { implicitly[SourceLocation] }
   }
 
   implicit def sourceLocation: SourceLocation1 = macro impl

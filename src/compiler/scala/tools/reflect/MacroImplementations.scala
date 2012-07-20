@@ -57,6 +57,9 @@ abstract class MacroImplementations {
       )
     }
 
+    val stdContextTags = new { val tc: c.type = c } with StdContextTags
+    import stdContextTags._
+
     def conversionType(ch: Char, arg: Tree): Option[Type] = {
       ch match {
         case 'b' | 'B' =>
@@ -68,11 +71,11 @@ abstract class MacroImplementations {
         case 'c' | 'C' =>
           checkType(arg, CharTpe, ByteTpe, ShortTpe, IntTpe)
         case 'd' | 'o' | 'x' | 'X' =>
-          checkType(arg, IntTpe, LongTpe, ByteTpe, ShortTpe, typeOf[BigInt])
+          checkType(arg, IntTpe, LongTpe, ByteTpe, ShortTpe, tagOfBigInt.tpe)
         case 'e' | 'E' | 'g' | 'G' | 'f' | 'a' | 'A'  =>
-          checkType(arg, DoubleTpe, FloatTpe, typeOf[BigDecimal])
+          checkType(arg, DoubleTpe, FloatTpe, tagOfBigDecimal.tpe)
         case 't' | 'T' =>
-          checkType(arg, LongTpe, typeOf[java.util.Calendar], typeOf[java.util.Date])
+          checkType(arg, LongTpe, tagOfCalendar.tpe, tagOfDate.tpe)
         case _ => None
       }
     }
