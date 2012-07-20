@@ -924,8 +924,7 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
         Substitution(subPatBinders, subPatRefs) >> super.subPatternsAsSubstitution
 
       import CODE._
-      def bindSubPats(in: Tree): Tree =
-        Block((subPatBinders, subPatRefs).zipped.map { case (sym, ref) => VAL(sym) === ref }, in)
+      def bindSubPats(in: Tree): Tree = Block(map2(subPatBinders, subPatRefs)(VAL(_) === _), in)
     }
 
     /**
@@ -933,7 +932,11 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
      * the next TreeMaker (here, we don't know which it'll be) is chained after this one by flatMap'ing
      * a function with binder `nextBinder` over our extractor's result
      * the function's body is determined by the next TreeMaker
-     * in this function's body, and all the subsequent ones, references to the symbols in `from` will be replaced by the corresponding tree in `to`
+     * (furthermore, the interpretation of `flatMap` depends on the codegen instance we're using).
+     *
+     * The values for the subpatterns, as computed by the extractor call in `extractor`,
+     * are stored in local variables that re-use the symbols in `subPatBinders`.
+     * This makes extractor patterns more debuggable (SI-5739).
      */
     case class ExtractorTreeMaker(extractor: Tree, extraCond: Option[Tree], nextBinder: Symbol)(
           val subPatBinders: List[Symbol],
@@ -958,7 +961,28 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
       override def toString = "X"+(extractor, nextBinder.name)
     }
 
-    // TODO: allow user-defined unapplyProduct
+    /**
+     * An optimized version of ExtractorTreeMaker for Products.
+     * For now, this is hard-coded to case classes, and we simply extract the case class fields.
+     *
+     * The values for the subpatterns, as specified by the case class fields at the time of extraction,
+     * are stored in local variables that re-use the symbols in `subPatBinders`.
+     * This makes extractor patterns more debuggable (SI-5739) as well as
+     * avoiding mutation after the pattern has been matched (SI-5158, SI-6070)
+     *
+     * TODO: make this user-definable as follows
+     *   When a companion object defines a method `def unapply_1(x: T): U_1`, but no `def unapply` or `def unapplySeq`,
+     *   the extractor is considered to match any non-null value of type T
+     *   the pattern is expected to have as many sub-patterns as there are `def unapply_I(x: T): U_I` methods,
+     *   and the type of the I'th sub-pattern is `U_I`.
+     *   The same exception for Seq patterns applies: if the last extractor is of type `Seq[U_N]`,
+     *   the pattern must have at least N arguments (exactly N if the last argument is annotated with `: _*`).
+     *   The arguments starting at N (and beyond) are taken from the sequence returned by apply_N,
+     *   and it is checked that that sequence has enough elements to provide values for all expected sub-patterns.
+     *
+     *   For a case class C, the implementation is assumed to be `def unapply_I(x: C) = x._I`,
+     *   and the extractor call is inlined under that assumption.
+     */
     case class ProductExtractorTreeMaker(prevBinder: Symbol, extraCond: Option[Tree])(
           val subPatBinders: List[Symbol],
           val subPatRefs: List[Tree]) extends FunTreeMaker with PreserveSubPatBinders {
