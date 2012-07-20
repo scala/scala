@@ -1169,7 +1169,12 @@ self =>
           if (inPattern) dropAnyBraces(pattern())
           else {
             if (in.token == IDENTIFIER) atPos(in.offset)(Ident(ident()))
-            else expr()
+            else if(in.token == LBRACE) expr()
+            else if(in.token == THIS) { in.nextToken(); atPos(in.offset)(This(tpnme.EMPTY)) }
+            else {
+               syntaxErrorOrIncomplete("error in interpolated string: identifier or block expected", true)
+               EmptyTree
+            }
           }
         }
       }
