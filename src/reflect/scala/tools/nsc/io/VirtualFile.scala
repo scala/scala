@@ -55,7 +55,7 @@ class VirtualFile(val name: String, override val path: String) extends AbstractF
     }
   }
 
-  def container: AbstractFile =  unsupported
+  def container: AbstractFile = NoAbstractFile
 
   /** Is this abstract file a directory? */
   def isDirectory: Boolean = false
