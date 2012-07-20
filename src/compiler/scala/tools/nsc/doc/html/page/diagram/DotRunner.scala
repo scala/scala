@@ -106,7 +106,7 @@ class DotProcess(settings: doc.Settings) {
       result
 
     } catch {
-      case exc =>
+      case exc: Throwable =>
         errorBuffer.append("  Main thread in " + templateName + ": " +
           (if (exc.isInstanceOf[NoSuchElementException]) "Timeout" else "Exception: " + exc))
         error = true
@@ -173,7 +173,7 @@ class DotProcess(settings: doc.Settings) {
       }
       stdin.close()
     } catch {
-      case exc =>
+      case exc: Throwable =>
         error = true
         stdin.close()
         errorBuffer.append("  Input thread in " + templateName + ": Exception: " + exc + "\n")
@@ -199,7 +199,7 @@ class DotProcess(settings: doc.Settings) {
       outputString.put(buffer.toString)
       stdOut.close()
     } catch {
-      case exc =>
+      case exc: Throwable =>
         error = true
         stdOut.close()
         errorBuffer.append("  Output thread in " + templateName + ": Exception: " + exc + "\n")
@@ -218,7 +218,7 @@ class DotProcess(settings: doc.Settings) {
       }
       stdErr.close()
     } catch {
-      case exc =>
+      case exc: Throwable =>
         error = true
         stdErr.close()
         errorBuffer.append("  Error thread in " + templateName + ": Exception: " + exc + "\n")

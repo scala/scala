@@ -13,7 +13,7 @@ object VerifyClass {
       Class.forName(name, true, cl)
       (name, None)
     } catch {
-      case x => (name, Some(x.toString))
+      case x: Throwable => (name, Some(x.toString))
     }
   }
 
