@@ -246,6 +246,7 @@ trait StdNames {
     final val BeanPropertyAnnot: NameType = "BeanProperty"
     final val BooleanBeanPropertyAnnot: NameType = "BooleanBeanProperty"
     final val bridgeAnnot: NameType = "bridge"
+    final val staticAnnot: NameType = "static"
 
     // Classfile Attributes
     final val AnnotationDefaultATTR: NameType      = "AnnotationDefault"
