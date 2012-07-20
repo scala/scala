@@ -10,7 +10,13 @@ import scala.tools.nsc.doc.model.diagram._
 
 class Factory(val g: Global, val s: doc.Settings)
   extends doc.model.ModelFactory(g, s) {
-  thisFactory: Factory with ModelFactoryImplicitSupport with DiagramFactory with CommentFactory with doc.model.TreeFactory =>
+  thisFactory: Factory
+  with ModelFactoryImplicitSupport
+  with ModelFactoryTypeSupport
+  with DiagramFactory
+  with CommentFactory
+  with doc.model.TreeFactory
+  with MemberLookup =>
 
   def strip(c: Comment): Option[Inline] = {
     c.body match {
@@ -31,7 +37,13 @@ object Test extends Properties("CommentFactory") {
     val settings = new doc.Settings((str: String) => {})
     val reporter = new scala.tools.nsc.reporters.ConsoleReporter(settings)
     val g = new Global(settings, reporter)
-    (new Factory(g, settings) with ModelFactoryImplicitSupport with DiagramFactory with CommentFactory with doc.model.TreeFactory)
+    (new Factory(g, settings)
+      with ModelFactoryImplicitSupport
+      with ModelFactoryTypeSupport
+      with DiagramFactory
+      with CommentFactory
+      with doc.model.TreeFactory
+      with MemberLookup)
   }
 
   def parse(src: String, dst: Inline) = {

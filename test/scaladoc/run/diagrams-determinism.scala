@@ -49,19 +49,19 @@ object Test extends ScaladocModelTest {
     assert(run2 == run3)
 
     // 2. check the order in the diagram: this node, subclasses, and then implicit conversions
-    def assertRightOrder(diagram: Diagram) = {
+    def assertRightOrder(template: DocTemplateEntity, diagram: Diagram) =
       for ((node, subclasses) <- diagram.edges)
         assert(subclasses == subclasses.filter(_.isThisNode) :::
-                             subclasses.filter(_.isNormalNode) :::
-                             subclasses.filter(_.isImplicitNode))
-    }
+                             subclasses.filter(node => node.isNormalNode || node.isOutsideNode) :::
+                             subclasses.filter(_.isImplicitNode),
+               "Diagram order for " + template + ": " + subclasses)
 
     val base = rootPackage._package("scala")._package("test")._package("scaladoc")._package("diagrams")
-    assertRightOrder(base.contentDiagram.get)
-    assertRightOrder(base._trait("A").inheritanceDiagram.get)
-    assertRightOrder(base._trait("B").inheritanceDiagram.get)
-    assertRightOrder(base._trait("C").inheritanceDiagram.get)
-    assertRightOrder(base._trait("D").inheritanceDiagram.get)
-    assertRightOrder(base._trait("E").inheritanceDiagram.get)
+    assertRightOrder(base, base.contentDiagram.get)
+    assertRightOrder(base._trait("A"), base._trait("A").inheritanceDiagram.get)
+    assertRightOrder(base._trait("B"), base._trait("B").inheritanceDiagram.get)
+    assertRightOrder(base._trait("C"), base._trait("C").inheritanceDiagram.get)
+    assertRightOrder(base._trait("D"), base._trait("D").inheritanceDiagram.get)
+    assertRightOrder(base._trait("E"), base._trait("E").inheritanceDiagram.get)
   }
 }

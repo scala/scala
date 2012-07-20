@@ -10,6 +10,7 @@ package scala
 
 /** Class `AnyRef` is the root class of all ''reference types''.
  *  All types except the value types descend from this class.
+ *  @template
  */
 trait AnyRef extends Any {
 

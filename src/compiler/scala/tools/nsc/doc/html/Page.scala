@@ -48,13 +48,21 @@ abstract class Page {
     * @param generator The generator that is writing this page. */
   def writeFor(site: HtmlFactory): Unit
 
-  def docEntityKindToString(ety: DocTemplateEntity) =
-  	if (ety.isTrait) "trait"
-  	else if (ety.isCaseClass) "case class"
-  	else if (ety.isClass) "class"
-  	else if (ety.isObject) "object"
-  	else if (ety.isPackage) "package"
-  	else "class"	// FIXME: an entity *should* fall into one of the above categories, but AnyRef is somehow not
+  def kindToString(mbr: MemberEntity) =
+    mbr match {
+      case c: Class => if (c.isCaseClass) "case class" else "class"
+      case _: Trait => "trait"
+      case _: Package => "package"
+      case _: Object => "object"
+      case _: AbstractType => "type"
+      case _: AliasType => "type"
+      case _: Constructor => "new"
+      case v: Def => "def"
+      case v: Val if (v.isLazyVal) => "lazy val"
+      case v: Val if (v.isVal) => "val"
+      case v: Val if (v.isVar) => "var"
+      case _ => sys.error("Cannot create kind for: " + mbr + " of class " + mbr.getClass)
+    }
 
   def templateToPath(tpl: TemplateEntity): List[String] = {
     def doName(tpl: TemplateEntity): String =
