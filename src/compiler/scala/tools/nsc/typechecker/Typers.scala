@@ -3883,40 +3883,51 @@ trait Typers extends Modes with Adaptations with Tags {
         }
       }
 
-      def typedBind(name: Name, body: Tree) = {
-        var vble = tree.symbol
-        def typedBindType(name: TypeName) = {
-          assert(body == EmptyTree, context.unit + " typedBind: " + name.debugString + " " + body + " " + body.getClass)
-          if (vble == NoSymbol)
-            vble =
-              if (isFullyDefined(pt))
-                context.owner.newAliasType(name, tree.pos) setInfo pt
-              else
-                context.owner.newAbstractType(name, tree.pos) setInfo TypeBounds.empty
-          val rawInfo = vble.rawInfo
-          vble = if (vble.name == tpnme.WILDCARD) context.scope.enter(vble)
-                 else namer.enterInScope(vble)
-          tree setSymbol vble setType vble.tpe
-        }
-        def typedBindTerm(name: TermName) = {
-          if (vble == NoSymbol)
-            vble = context.owner.newValue(name, tree.pos)
-          if (vble.name.toTermName != nme.WILDCARD) {
-            if ((mode & ALTmode) != 0)
-              VariableInPatternAlternativeError(tree)
-            vble = namer.enterInScope(vble)
-          }
-          val body1 = typed(body, mode, pt)
-          vble.setInfo(
-            if (treeInfo.isSequenceValued(body)) seqType(body1.tpe)
-            else body1.tpe)
-          treeCopy.Bind(tree, name, body1) setSymbol vble setType body1.tpe   // burak, was: pt
-        }
+      def typedBind(name: Name, body: Tree) =
         name match {
-          case x: TypeName  => typedBindType(x)
-          case x: TermName  => typedBindTerm(x)
+          case name: TypeName  => assert(body == EmptyTree, context.unit + " typedBind: " + name.debugString + " " + body + " " + body.getClass)
+            val sym =
+              if (tree.symbol != NoSymbol) tree.symbol
+              else {
+                if (isFullyDefined(pt))
+                  context.owner.newAliasType(name, tree.pos) setInfo pt
+                else
+                  context.owner.newAbstractType(name, tree.pos) setInfo TypeBounds.empty
+              }
+
+            if (name != tpnme.WILDCARD) namer.enterInScope(sym)
+            else context.scope.enter(sym)
+
+            tree setSymbol sym setType sym.tpe
+
+          case name: TermName  =>
+            val sym =
+              if (tree.symbol != NoSymbol) tree.symbol
+              else context.owner.newValue(name, tree.pos)
+
+            if (name != nme.WILDCARD) {
+              if ((mode & ALTmode) != 0) VariableInPatternAlternativeError(tree)
+              namer.enterInScope(sym)
+            }
+
+            val body1 = typed(body, mode, pt)
+            val symTp =
+              if (treeInfo.isSequenceValued(body)) seqType(body1.tpe)
+              else body1.tpe
+            sym setInfo symTp
+
+            // have to imperatively set the symbol for this bind to keep it in sync with the symbols used in the body of a case
+            // when type checking a case we imperatively update the symbols in the body of the case
+            // those symbols are bound by the symbols in the Binds in the pattern of the case,
+            // so, if we set the symbols in the case body, but not in the patterns,
+            // then re-type check the casedef (for a second try in typedApply for example -- SI-1832),
+            // we are no longer in sync: the body has symbols set that do not appear in the patterns
+            // since body1 is not necessarily equal to body, we must return a copied tree,
+            // but we must still mutate the original bind
+            tree setSymbol sym
+            treeCopy.Bind(tree, name, body1) setSymbol sym setType body1.tpe
         }
-      }
+
 
       def typedArrayValue(elemtpt: Tree, elems: List[Tree]) = {
         val elemtpt1 = typedType(elemtpt, mode)
