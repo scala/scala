@@ -116,14 +116,14 @@ abstract class GenICode extends SubComponent  {
           if (m.symbol.isAccessor && m.symbol.accessed.hasStaticAnnotation) {
             // in companion object accessors to @static fields, we access the static field directly
             val hostClass = m.symbol.owner.companionClass
-            val staticfield = hostClass.info.decls.find(_.name.toString.trim == m.symbol.accessed.name.toString.trim)
+            val staticfield = hostClass.info.findMember(m.symbol.accessed.name, NoFlags, NoFlags, false)
             
             if (m.symbol.isGetter) {
-              ctx1.bb.emit(LOAD_FIELD(staticfield.get, true) setHostClass hostClass, tree.pos)
+              ctx1.bb.emit(LOAD_FIELD(staticfield, true) setHostClass hostClass, tree.pos)
               ctx1.bb.closeWith(RETURN(m.returnType))
             } else if (m.symbol.isSetter) {
               ctx1.bb.emit(LOAD_LOCAL(m.locals.head), tree.pos)
-              ctx1.bb.emit(STORE_FIELD(staticfield.get, true), tree.pos)
+              ctx1.bb.emit(STORE_FIELD(staticfield, true), tree.pos)
               ctx1.bb.closeWith(RETURN(m.returnType))
             } else assert(false, "unreachable")
           } else {
@@ -878,14 +878,14 @@ abstract class GenICode extends SubComponent  {
           val sym = fun.symbol
           generatedType = toTypeKind(sym.accessed.info)
           val hostClass = qual.tpe.typeSymbol.orElse(sym.owner).companionClass
-          val staticfield = hostClass.info.decls.find(_.name.toString.trim == sym.accessed.name.toString.trim)
+          val staticfield = hostClass.info.findMember(sym.accessed.name, NoFlags, NoFlags, false)
           
           if (sym.isGetter) {
-            ctx.bb.emit(LOAD_FIELD(staticfield.get, true) setHostClass hostClass, tree.pos)
+            ctx.bb.emit(LOAD_FIELD(staticfield, true) setHostClass hostClass, tree.pos)
             ctx
           } else if (sym.isSetter) {
             val ctx1 = genLoadArguments(args, sym.info.paramTypes, ctx)
-            ctx1.bb.emit(STORE_FIELD(staticfield.get, true), tree.pos)
+            ctx1.bb.emit(STORE_FIELD(staticfield, true), tree.pos)
             ctx1.bb.emit(CONSTANT(Constant(false)), tree.pos)
             ctx1
           } else {
