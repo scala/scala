@@ -598,7 +598,7 @@ abstract class GenASM extends SubComponent with BytecodeWriters {
             reverseJavaName.put(internalName, trackedSym)
           case Some(oldsym) =>
             assert((oldsym == trackedSym) || (oldsym == RuntimeNothingClass) || (oldsym == RuntimeNullClass), // In contrast, neither NothingClass nor NullClass show up bytecode-level.
-                   "how can getCommonSuperclass() do its job if different class symbols get the same bytecode-level internal name.")
+                   "how can getCommonSuperclass() do its job if different class symbols get the same bytecode-level internal name: " + internalName)
         }
       }
 
