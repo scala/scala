@@ -700,9 +700,18 @@ trait Blocking extends TestBase {
     }
   }
   
+  def testFQCNForAwaitAPI(): Unit = once {
+    done =>
+    
+    assert(classOf[CanAwait].getName == "scala.concurrent.CanAwait")
+    assert(Await.getClass.getName == "scala.concurrent.Await")
+    
+    done()
+  }
+  
   testAwaitSuccess()
   testAwaitFailure()
-  
+  testFQCNForAwaitAPI()
 }
 
 trait BlockContexts extends TestBase {

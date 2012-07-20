@@ -18,41 +18,6 @@ package object concurrent {
   type CancellationException = java.util.concurrent.CancellationException
   type TimeoutException =      java.util.concurrent.TimeoutException
 
-  @implicitNotFound("Don't call `Awaitable` methods directly, use the `Await` object.")
-  sealed trait CanAwait
-  private implicit object AwaitPermission extends CanAwait
-  
-  /**
-   * `Await` is what is used to ensure proper handling of blocking for `Awaitable` instances.
-   */
-  object Await {
-    /**
-     * Invokes ready() on the awaitable, properly wrapped by a call to `scala.concurrent.blocking`.
-     * ready() blocks until the awaitable has completed or the timeout expires.
-     *
-     * Throws a TimeoutException if the timeout expires, as that is in the contract of `Awaitable.ready`.
-     * @param awaitable   the `Awaitable` on which `ready` is to be called
-     * @param atMost      the maximum timeout for which to wait
-     * @return            the result of `awaitable.ready` which is defined to be the awaitable itself.
-     */
-    @throws(classOf[TimeoutException])
-    def ready[T](awaitable: Awaitable[T], atMost: Duration): awaitable.type =
-      blocking(awaitable.ready(atMost))
-    
-    /**
-     * Invokes result() on the awaitable, properly wrapped by a call to `scala.concurrent.blocking`.
-     * result() blocks until the awaitable has completed or the timeout expires.
-     *
-     * Throws a TimeoutException if the timeout expires, or any exception thrown by `Awaitable.result`.
-     * @param awaitable   the `Awaitable` on which `result` is to be called
-     * @param atMost      the maximum timeout for which to wait
-     * @return            the result of `awaitable.result`
-     */
-    @throws(classOf[Exception])
-    def result[T](awaitable: Awaitable[T], atMost: Duration): T =
-      blocking(awaitable.result(atMost))
-  }
-
   /** Starts an asynchronous computation and returns a `Future` object with the result of that computation.
    *  
    *  The result becomes available once the asynchronous computation is completed.
@@ -85,5 +50,46 @@ package object concurrent {
    *  - TimeoutException - in the case that the blockable object timed out
    */
   @throws(classOf[Exception])
-  def blocking[T](body: =>T): T = BlockContext.current.blockOn(body)
+  def blocking[T](body: =>T): T = BlockContext.current.blockOn(body)(scala.concurrent.AwaitPermission)
+}
+
+package concurrent {
+  @implicitNotFound("Don't call `Awaitable` methods directly, use the `Await` object.")
+  sealed trait CanAwait
+  
+  /**
+   * Internal usage only, implementation detail.
+   */
+  private[concurrent] object AwaitPermission extends CanAwait
+  
+  /**
+   * `Await` is what is used to ensure proper handling of blocking for `Awaitable` instances.
+   */
+  object Await {
+    /**
+     * Invokes ready() on the awaitable, properly wrapped by a call to `scala.concurrent.blocking`.
+     * ready() blocks until the awaitable has completed or the timeout expires.
+     *
+     * Throws a TimeoutException if the timeout expires, as that is in the contract of `Awaitable.ready`.
+     * @param awaitable   the `Awaitable` on which `ready` is to be called
+     * @param atMost      the maximum timeout for which to wait
+     * @return            the result of `awaitable.ready` which is defined to be the awaitable itself.
+     */
+    @throws(classOf[TimeoutException])
+    def ready[T](awaitable: Awaitable[T], atMost: Duration): awaitable.type =
+      blocking(awaitable.ready(atMost)(AwaitPermission))
+    
+    /**
+     * Invokes result() on the awaitable, properly wrapped by a call to `scala.concurrent.blocking`.
+     * result() blocks until the awaitable has completed or the timeout expires.
+     *
+     * Throws a TimeoutException if the timeout expires, or any exception thrown by `Awaitable.result`.
+     * @param awaitable   the `Awaitable` on which `result` is to be called
+     * @param atMost      the maximum timeout for which to wait
+     * @return            the result of `awaitable.result`
+     */
+    @throws(classOf[Exception])
+    def result[T](awaitable: Awaitable[T], atMost: Duration): T =
+      blocking(awaitable.result(atMost)(AwaitPermission))
+  }
 }
