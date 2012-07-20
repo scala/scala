@@ -877,7 +877,7 @@ abstract class GenASM extends SubComponent with BytecodeWriters {
 
           def wrap(op: => Unit) = {
             try   { op; true }
-            catch { case _ => false }
+            catch { case _: Throwable => false }
           }
 
       if (settings.Xverify.value) {

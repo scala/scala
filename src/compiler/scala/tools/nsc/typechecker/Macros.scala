@@ -1140,7 +1140,7 @@ trait Macros extends scala.tools.reflect.FastTrack with Traces {
     }
 
     try macroExpandInternal
-    catch { case ex => handleMacroExpansionException(typer, expandee, ex) }
+    catch { case ex: Throwable => handleMacroExpansionException(typer, expandee, ex) }
   }
 
   private def macroExpandWithoutRuntime(typer: Typer, expandee: Tree): MacroExpansionResult = {

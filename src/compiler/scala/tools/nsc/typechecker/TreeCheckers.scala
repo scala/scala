@@ -129,7 +129,7 @@ abstract class TreeCheckers extends Analyzer {
 
   private def wrap[T](msg: => Any)(body: => Unit) {
     try body
-    catch { case x =>
+    catch { case x: Throwable =>
       Console.println("Caught " + x)
       Console.println(msg)
       x.printStackTrace
