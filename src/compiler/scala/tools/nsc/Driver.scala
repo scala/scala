@@ -53,7 +53,7 @@ abstract class Driver {
         else
           doCompile(compiler)
       } catch {
-        case ex =>
+        case ex: Throwable =>
           compiler.logThrowable(ex)
           ex match {
             case FatalError(msg)  => reporter.error(null, "fatal error: " + msg)
