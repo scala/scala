@@ -29,24 +29,14 @@ trait Mirrors extends api.Mirrors {
       else definitions.findNamedMember(segs.tail, RootClass.info member segs.head)
     }
 
-    /** If you're looking for a class, pass a type name.
-     *  If a module, a term name.
-     *
-     *  `tryPackageless` tells this function to search for requested a requested symbol in EmptyPackageClass as well.
-     *  Compiler might ignore them, but they should be loadable with macros if the programmer wishes.
-     *  More info here: http://groups.google.com/group/scala-internals/browse_thread/thread/5146021fd7c0cec
-     */
-    private def getModuleOrClass(path: Name, tryPackageless: Boolean): Symbol = getModuleOrClass(path, path.length, tryPackageless)
-
     /** Todo: organize similar to mkStatic in reflect.Base */
-    private def getModuleOrClass(path: Name, len: Int, tryPackageless: Boolean): Symbol = {
+    private def getModuleOrClass(path: Name, len: Int): Symbol = {
       val point = path lastPos('.', len - 1)
       val owner =
-        if (point > 0) getModuleOrClass(path.toTermName, point, tryPackageless)
+        if (point > 0) getModuleOrClass(path.toTermName, point)
         else RootClass
       val name = path subName (point + 1, len)
       var sym = owner.info member name
-      if (sym == NoSymbol && owner == RootClass && tryPackageless) sym = EmptyPackageClass.info decl name
       val result = if (path.isTermName) sym.suchThat(_ hasFlag MODULE) else sym
       if (result != NoSymbol) result
       else {
@@ -55,6 +45,27 @@ trait Mirrors extends api.Mirrors {
           MissingRequirementError.notFound((if (path.isTermName) "object " else "class ")+path+" in "+thisMirror)
         }
       }
+    }
+
+    /** If you're looking for a class, pass a type name.
+     *  If a module, a term name.
+     *
+     *  Unlike `getModuleOrClass`, this function
+     *  loads unqualified names from the root package.
+     */
+    private def getModuleOrClass(path: Name): Symbol =
+      getModuleOrClass(path, path.length)
+
+    /** If you're looking for a class, pass a type name.
+     *  If a module, a term name.
+     *
+     *  Unlike `getModuleOrClass`, this function
+     *  loads unqualified names from the empty package.
+     */
+    private def staticModuleOrClass(path: Name): Symbol = {
+      val isPackageless = path.pos('.') == path.length
+      if (isPackageless) EmptyPackageClass.info decl path
+      else getModuleOrClass(path)
     }
 
     protected def mirrorMissingHook(owner: Symbol, name: Name): Symbol = NoSymbol
@@ -67,8 +78,8 @@ trait Mirrors extends api.Mirrors {
 
     /************************ loaders of class symbols ************************/
 
-    private def getClassImpl(fullname: TypeName, tryPackageless: Boolean): ClassSymbol = {
-      var result = getModuleOrClass(fullname.toTypeName, tryPackageless)
+    private def ensureClassSymbol(fullname: String, sym: Symbol): ClassSymbol = {
+      var result = sym
       while (result.isAliasType) result = result.info.typeSymbol
       result match {
         case x: ClassSymbol => x
@@ -81,7 +92,7 @@ trait Mirrors extends api.Mirrors {
       getClassByName(fullname)
 
     def getClassByName(fullname: Name): ClassSymbol =
-      getClassImpl(fullname.toTypeName, tryPackageless = false)
+      ensureClassSymbol(fullname.toString, getModuleOrClass(fullname.toTypeName))
 
     def getRequiredClass(fullname: String): ClassSymbol =
       getClassByName(newTypeNameCached(fullname))
@@ -90,33 +101,33 @@ trait Mirrors extends api.Mirrors {
       getRequiredClass(erasureName[T])
 
     def getClassIfDefined(fullname: String): Symbol =
-      getClassIfDefined(newTypeName(fullname))
+      getClassIfDefined(newTypeNameCached(fullname))
 
     def getClassIfDefined(fullname: Name): Symbol =
       wrapMissing(getClassByName(fullname.toTypeName))
 
-    /** Unlike getClassByName/getRequiredClass this function can also load packageless symbols.
+    /** @inheritdoc
+     *
+     *  Unlike getClassByName/getRequiredClass this function can also load packageless symbols.
      *  Compiler might ignore them, but they should be loadable with macros.
      */
     override def staticClass(fullname: String): ClassSymbol =
-      getClassImpl(newTypeNameCached(fullname), tryPackageless = true)
+      ensureClassSymbol(fullname, staticModuleOrClass(newTypeNameCached(fullname)))
 
     /************************ loaders of module symbols ************************/
 
-    private def getModuleImpl(fullname: TermName, tryPackageless: Boolean): ModuleSymbol = {
-      var result = getModuleOrClass(fullname, tryPackageless)
-      result match {
-        case x: ModuleSymbol => x
-        case _               => MissingRequirementError.notFound("object " + fullname)
+    private def ensureModuleSymbol(fullname: String, sym: Symbol, allowPackages: Boolean): ModuleSymbol =
+      sym match {
+        case x: ModuleSymbol if allowPackages || !x.isPackage => x
+        case _                                                => MissingRequirementError.notFound("object " + fullname)
       }
-    }
 
     @deprecated("Use getModuleByName", "2.10.0")
     def getModule(fullname: Name): ModuleSymbol =
       getModuleByName(fullname)
 
     def getModuleByName(fullname: Name): ModuleSymbol =
-      getModuleImpl(fullname.toTermName, tryPackageless = false)
+      ensureModuleSymbol(fullname.toString, getModuleOrClass(fullname.toTermName), allowPackages = true)
 
     def getRequiredModule(fullname: String): ModuleSymbol =
       getModule(newTermNameCached(fullname))
@@ -132,41 +143,47 @@ trait Mirrors extends api.Mirrors {
       getRequiredModule(erasureName[T] stripSuffix "$")
 
     def getModuleIfDefined(fullname: String): Symbol =
-      getModuleIfDefined(newTermName(fullname))
+      getModuleIfDefined(newTermNameCached(fullname))
 
     def getModuleIfDefined(fullname: Name): Symbol =
       wrapMissing(getModule(fullname.toTermName))
 
-    /** Unlike getModule/getRequiredModule this function can also load packageless symbols.
+    /** @inheritdoc
+     *
+     *  Unlike getModule/getRequiredModule this function can also load packageless symbols.
      *  Compiler might ignore them, but they should be loadable with macros.
      */
     override def staticModule(fullname: String): ModuleSymbol =
-      getModuleImpl(newTermNameCached(fullname), tryPackageless = true)
+      ensureModuleSymbol(fullname, staticModuleOrClass(newTermNameCached(fullname)), allowPackages = false)
 
     /************************ loaders of package symbols ************************/
 
-    def getPackage(fullname: Name): ModuleSymbol = getModule(fullname)
+    private def ensurePackageSymbol(fullname: String, sym: Symbol, allowModules: Boolean): ModuleSymbol =
+      sym match {
+        case x: ModuleSymbol if allowModules || x.isPackage => x
+        case _                                              => MissingRequirementError.notFound("package " + fullname)
+      }
+
+    def getPackage(fullname: Name): ModuleSymbol =
+      ensurePackageSymbol(fullname.toString, getModuleOrClass(fullname), allowModules = true)
 
     def getRequiredPackage(fullname: String): ModuleSymbol =
       getPackage(newTermNameCached(fullname))
 
     def getPackageObject(fullname: String): ModuleSymbol =
-      (getModule(newTermName(fullname)).info member nme.PACKAGE) match {
+      (getPackage(newTermName(fullname)).info member nme.PACKAGE) match {
         case x: ModuleSymbol => x
         case _               => MissingRequirementError.notFound("package object " + fullname)
       }
 
-    def getPackageObjectIfDefined(fullname: String): Symbol = {
-      val module = getModuleIfDefined(newTermName(fullname))
-      if (module == NoSymbol) NoSymbol
-      else {
-        val packageObject = module.info member nme.PACKAGE
-        packageObject match {
-          case x: ModuleSymbol => x
-          case _               => NoSymbol
-        }
-      }
-    }
+    def getPackageObjectIfDefined(fullname: String): Symbol =
+      getPackageObjectIfDefined(newTermNameCached(fullname))
+
+    def getPackageObjectIfDefined(fullname: Name): Symbol =
+      wrapMissing(getPackageObject(fullname.toTermName))
+
+    override def staticPackage(fullname: String): ModuleSymbol =
+      ensurePackageSymbol(fullname.toString, getModuleOrClass(newTermNameCached(fullname)), allowModules = false)
 
     /************************ helpers ************************/
 

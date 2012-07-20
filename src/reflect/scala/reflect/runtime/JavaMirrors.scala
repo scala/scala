@@ -72,6 +72,18 @@ trait JavaMirrors extends internal.SymbolTable with api.JavaUniverse { self: Sym
       override def complete(sym: Symbol) = sym setInfo new LazyPackageType
     }
 
+    // reflective mirrors can't know the exhaustive list of available packages
+    // (that's because compiler mirrors are based on directories and reflective mirrors are based on classloaders,
+    // and unlike directories classloaders might make up stuff on the fly)
+    // hence we need to be optimistic and create packages out of thin air
+    // the same thing is done by the `missingHook` below
+    override def staticPackage(fullname: String): ModuleSymbol =
+      try super.staticPackage(fullname)
+      catch {
+        case _: MissingRequirementError =>
+          makeScalaPackage(fullname)
+      }
+
 // ----------- Caching ------------------------------------------------------------------
 
     // [Eugene++ to Martin] not weak? why?
