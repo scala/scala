@@ -1,4 +1,5 @@
-t4425.scala:3: error: isInstanceOf cannot test if value types are references.
+t4425.scala:3: error: error during expansion of this match (this is a scalac bug).
+The underlying error was: value _1 is not a member of object Foo.X
   42 match { case _ X _ => () }
-                    ^
+     ^
 one error found
