@@ -30,7 +30,7 @@ object QueryableMacros{
         Apply(Select(c.prefix.tree, newTermName( name )), List( projection.tree ))
        ).asInstanceOf[Tree]
       )))
-    c.reify{ Queryable.factory[S]( foo.splice )}
+    c.universe.reify{ Queryable.factory[S]( foo.splice )}
   }
   def map[T:c.TypeTag, S:c.TypeTag]
                (c: scala.reflect.makro.Context)

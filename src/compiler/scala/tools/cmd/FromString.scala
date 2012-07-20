@@ -8,7 +8,7 @@ package cmd
 
 import nsc.io.{ Path, File, Directory }
 import scala.reflect.runtime.{universe => ru}
-import scala.tools.reflect.StdTags._
+import scala.tools.reflect.StdRuntimeTags._
 
 /** A general mechanism for defining how a command line argument
  *  (always a String) is transformed into an arbitrary type.  A few

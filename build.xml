@@ -397,7 +397,7 @@ INITIALISATION
   </target>
 
   <target name="init" depends="init.jars, init.maven.jars, init.version.done, init.fail.bad.jdk, init.warn.jdk7">
-    <property name="scalac.args.always" value="" />
+    <property name="scalac.args.always" value="-Yreify-copypaste" />
   <!-- scalac.args.optimise is selectively overridden in certain antcall tasks. -->
     <property name="scalac.args.optimise" value=""/>
   <!-- scalac.args.quickonly are added to quick.* targets but not others (particularly, locker.)

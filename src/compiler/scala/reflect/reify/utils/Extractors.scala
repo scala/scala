@@ -27,7 +27,7 @@ trait Extractors {
   //       def applyImpl[U >: Nothing <: scala.reflect.api.Universe with Singleton]($m$untyped: scala.reflect.base.MirrorOf[U]): U#Tree = {
   //         val $u: U = $m$untyped.universe;
   //         val $m: $u.Mirror = $m$untyped.asInstanceOf[$u.Mirror];
-  //         $u.Apply($u.Select($u.Select($u.build.This($m.staticModule("scala.collection.immutable").moduleClass), $u.newTermName("List")), $u.newTermName("apply")), List($u.Literal($u.Constant(1)), $u.Literal($u.Constant(2))))
+  //         $u.Apply($u.Select($u.Select($u.build.This($m.staticPackage("scala.collection.immutable").moduleClass), $u.newTermName("List")), $u.newTermName("apply")), List($u.Literal($u.Constant(1)), $u.Literal($u.Constant(2))))
   //       }
   //     };
   //     new $treecreator1()
@@ -40,7 +40,7 @@ trait Extractors {
   //       def apply[U >: Nothing <: scala.reflect.base.Universe with Singleton]($m$untyped: scala.reflect.base.MirrorOf[U]): U#Type = {
   //         val $u: U = $m$untyped.universe;
   //         val $m: $u.Mirror = $m$untyped.asInstanceOf[$u.Mirror];
-  //         $u.TypeRef($u.ThisType($m.staticModule("scala.collection.immutable").moduleClass), $m.staticClass("scala.collection.immutable.List"), List($m.staticClass("scala.Int").asTypeConstructor))
+  //         $u.TypeRef($u.ThisType($m.staticPackage("scala.collection.immutable").moduleClass), $m.staticClass("scala.collection.immutable.List"), List($m.staticClass("scala.Int").asTypeConstructor))
   //       }
   //     };
   //     new $typecreator1()
