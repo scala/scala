@@ -209,10 +209,6 @@ trait DocComments { self: Global =>
     for (tparam <- sym.typeParams)
       mergeSection(srcTParams get tparam.name.toString, dstTParams get tparam.name.toString)
     mergeSection(returnDoc(src, srcSections), returnDoc(dst, dstSections))
-    if (sym.name.toString == "isEmpty") {
-      println(groupDoc(src, srcSections))
-      println(groupDoc(dst, dstSections))
-    }
     mergeSection(groupDoc(src, srcSections), groupDoc(dst, dstSections))
 
     if (out.length == 0) dst
