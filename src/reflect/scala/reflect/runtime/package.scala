@@ -1,7 +1,5 @@
 package scala.reflect
 
-import language.experimental.macros
-
 package object runtime {
 
   // type is api.JavaUniverse because we only want to expose the `scala.reflect.api.*` subset of reflection
@@ -9,7 +7,8 @@ package object runtime {
 
   // [Eugene++ to Martin] removed `mirrorOfLoader`, because one can use `universe.runtimeMirror` instead
 
-  def currentMirror: universe.Mirror = macro Macros.currentMirror
+  // implementation magically hardwired to the `currentMirror` method below
+  def currentMirror: universe.Mirror = ??? // macro
 }
 
 package runtime {
