@@ -96,8 +96,8 @@ class Base extends Universe { self =>
 
   // todo. write a decent toString that doesn't crash on recursive types
   class Type extends TypeBase {
-    def typeSymbol: Symbol = NoSymbol
     def termSymbol: Symbol = NoSymbol
+    def typeSymbol: Symbol = NoSymbol
   }
   implicit val TypeTagg = ClassTag[Type](classOf[Type])
 
