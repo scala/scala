@@ -31,7 +31,6 @@ trait MemberLookup {
         linkTo = lookupInTemplate(pos, members, currentTpl)
         currentTpl = currentTpl.inTemplate
       }
-      if (currentTpl == null) println("\n\n\n\n\nnull found in:" + inTplOpt + "\n\n\n\n\n\n\n\n")
     }
 
     // (3) Look at external links
