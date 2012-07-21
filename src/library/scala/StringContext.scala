@@ -8,8 +8,6 @@
 
 package scala
 
-import language.experimental.macros
-
 /** A class to support string interpolation.
  *  This class supports string interpolation as outlined in Scala SIP-11.
  *  It needs to be fully documented once the SIP is accepted.
@@ -99,7 +97,7 @@ case class StringContext(parts: String*) {
    *      format specifier `%%`.
    */
   // The implementation is magically hardwired into `scala.tools.reflect.MacroImplementations.macro_StringInterpolation_f`
-  def f(args: Any*): String = macro ???
+  def f(args: Any*): String = ??? // macro
 }
 
 object StringContext {
