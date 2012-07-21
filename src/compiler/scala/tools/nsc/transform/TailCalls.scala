@@ -397,6 +397,9 @@ abstract class TailCalls extends Transform {
       case Apply(fun, arg :: Nil) if hasSynthCaseSymbol(fun) && tailLabels(fun.symbol) =>
         traverse(arg)
 
+      case Apply(fun, args) if (fun.symbol == Boolean_or || fun.symbol == Boolean_and) =>
+        traverseTrees(args)
+
       // a translated casedef
       case LabelDef(_, _, body) if hasSynthCaseSymbol(tree) =>
         traverse(body)
