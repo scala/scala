@@ -4652,15 +4652,28 @@ trait Typers extends Modes with Adaptations with Tags {
                 // If the ambiguous name is a monomorphic type, we can relax this far.
                 def mt1 = t1 memberType impSym
                 def mt2 = t2 memberType impSym1
+                def characterize = List(
+                  s"types:  $t1 =:= $t2  ${t1 =:= t2}  members: ${mt1 =:= mt2}",
+                  s"member type 1: $mt1",
+                  s"member type 2: $mt2",
+                  s"$impSym == $impSym1  ${impSym == impSym1}",
+                  s"${impSym.debugLocationString} ${impSym.getClass}",
+                  s"${impSym1.debugLocationString} ${impSym1.getClass}"
+                ).mkString("\n  ")
+
+                // The symbol names are checked rather than the symbols themselves because
+                // each time an overloaded member is looked up it receives a new symbol.
+                // So foo.member("x") != foo.member("x") if x is overloaded.  This seems
+                // likely to be the cause of other bugs too...
+                if (t1 =:= t2 && impSym.name == impSym1.name)
+                  log(s"Suppressing ambiguous import: $t1 =:= $t2 && $impSym == $impSym1")
                 // Monomorphism restriction on types is in part because type aliases could have the
                 // same target type but attach different variance to the parameters. Maybe it can be
                 // relaxed, but doesn't seem worth it at present.
-                if (t1 =:= t2 && impSym == impSym1)
-                  log(s"Suppressing ambiguous import: $t1 =:= $t2 && $impSym == $impSym1")
                 else if (mt1 =:= mt2 && name.isTypeName && impSym.isMonomorphicType && impSym1.isMonomorphicType)
                   log(s"Suppressing ambiguous import: $mt1 =:= $mt2 && $impSym and $impSym1 are equivalent")
                 else {
-                  log(s"Import is genuinely ambiguous: !($t1 =:= $t2)")
+                  log(s"Import is genuinely ambiguous:\n  " + characterize)
                   ambiguousError(s"it is imported twice in the same scope by\n${imports.head}\nand ${imports1.head}")
                 }
               }
