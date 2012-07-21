@@ -69,10 +69,18 @@ abstract class BrowsingLoaders extends SymbolLoaders {
         case _ =>
           throw new MalformedInput(pkg.pos.point, "illegal tree node in package prefix: "+pkg)
       }
+
+      private def inPackagePrefix(pkg: Tree)(op: => Unit): Unit = {
+        val oldPrefix = packagePrefix
+        addPackagePrefix(pkg)
+        op
+        packagePrefix = oldPrefix
+      }
+
       override def traverse(tree: Tree): Unit = tree match {
         case PackageDef(pkg, body) =>
-          addPackagePrefix(pkg)
-          body foreach traverse
+          inPackagePrefix(pkg) { body foreach traverse }
+
         case ClassDef(_, name, _, _) =>
           if (packagePrefix == root.fullName) {
             enterClass(root, name.toString, new SourcefileLoader(src))
