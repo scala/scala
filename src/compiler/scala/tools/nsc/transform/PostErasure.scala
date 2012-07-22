@@ -52,7 +52,7 @@ trait PostErasure extends InfoTransform with TypingTransformers {
             List(Apply(Select(New(tpt2), nme.CONSTRUCTOR), List(arg2))))
         if atPhase(currentRun.erasurePhase) {
           tpt1.tpe.typeSymbol.isDerivedValueClass &&
-          (cmp == nme.EQ || cmp == nme.NE) &&
+          (sel.symbol == Object_== || sel.symbol == Object_!=) &&
           tpt2.tpe.typeSymbol == tpt1.tpe.typeSymbol
         } =>
           val result = Apply(Select(arg1, cmp) setPos sel.pos, List(arg2)) setPos tree.pos
