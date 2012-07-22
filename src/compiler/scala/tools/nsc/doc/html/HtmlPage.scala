@@ -122,17 +122,30 @@ abstract class HtmlPage extends Page { thisPage =>
     case Text(text) => xml.Text(text)
     case Summary(in) => inlineToHtml(in)
     case HtmlTag(tag) => xml.Unparsed(tag)
-    case EntityLink(target, template) => template() match {
-      case Some(tpl) =>
-        templateToHtml(tpl)
-      case None =>
-        xml.Text(target)
-    }
+    case EntityLink(target, link) => linkToHtml(target, link, true)
+  }
+
+  def linkToHtml(text: Inline, link: LinkTo, hasLinks: Boolean) = link match {
+    case LinkToTpl(dtpl) =>
+      if (hasLinks)
+        <a href={ relativeLinkTo(dtpl) } class="extype" name={ dtpl.qualifiedName }>{ inlineToHtml(text) }</a>
+      else
+        <span class="extype" name={ dtpl.qualifiedName }>{ inlineToHtml(text) }</span>
+    case LinkToMember(mbr, inTpl) =>
+      if (hasLinks)
+        <a href={ relativeLinkTo(inTpl) + "#" + mbr.signature } class="extmbr" name={ mbr.qualifiedName }>{ inlineToHtml(text) }</a>
+      else
+        <span class="extmbr" name={ mbr.qualifiedName }>{ inlineToHtml(text) }</span>
+    case Tooltip(tooltip) =>
+      <span class="extype" name={ tooltip }>{ inlineToHtml(text) }</span>
+    // TODO: add case LinkToExternal here
+    case NoLink =>
+      inlineToHtml(text)
   }
 
   def typeToHtml(tpes: List[model.TypeEntity], hasLinks: Boolean): NodeSeq = tpes match {
     case Nil =>
-      sys.error("Internal Scaladoc error")
+      NodeSeq.Empty
     case List(tpe) =>
       typeToHtml(tpe, hasLinks)
     case tpe :: rest =>
@@ -153,15 +166,9 @@ abstract class HtmlPage extends Page { thisPage =>
       }
     }
     def toLinksIn(inPos: Int, starts: List[Int]): NodeSeq = {
-      val (tpl, width) = tpe.refEntity(inPos)
-      (tpl match {
-        case dtpl:DocTemplateEntity if hasLinks =>
-          <a href={ relativeLinkTo(dtpl) } class="extype" name={ dtpl.qualifiedName }>{
-            string.slice(inPos, inPos + width)
-          }</a>
-        case tpl =>
-          <span class="extype" name={ tpl.qualifiedName }>{ string.slice(inPos, inPos + width) }</span>
-      }) ++ toLinksOut(inPos + width, starts.tail)
+      val (link, width) = tpe.refEntity(inPos)
+      val text = comment.Text(string.slice(inPos, inPos + width))
+      linkToHtml(text, link, hasLinks) ++ toLinksOut(inPos + width, starts.tail)
     }
     if (hasLinks)
       toLinksOut(0, tpe.refEntity.keySet.toList)
@@ -204,10 +211,12 @@ abstract class HtmlPage extends Page { thisPage =>
     else if (ety.isTrait) "trait_big.png"
     else if (ety.isClass && !ety.companion.isEmpty && ety.companion.get.visibility.isPublic && ety.companion.get.inSource != None) "class_to_object_big.png"
     else if (ety.isClass) "class_big.png"
+    else if ((ety.isAbstractType || ety.isAliasType) && !ety.companion.isEmpty && ety.companion.get.visibility.isPublic && ety.companion.get.inSource != None) "type_to_object_big.png"
+    else if ((ety.isAbstractType || ety.isAliasType)) "type_big.png"
     else if (ety.isObject && !ety.companion.isEmpty && ety.companion.get.visibility.isPublic && ety.companion.get.inSource != None && ety.companion.get.isClass) "object_to_class_big.png"
     else if (ety.isObject && !ety.companion.isEmpty && ety.companion.get.visibility.isPublic && ety.companion.get.inSource != None && ety.companion.get.isTrait) "object_to_trait_big.png"
+    else if (ety.isObject && !ety.companion.isEmpty && ety.companion.get.visibility.isPublic && ety.companion.get.inSource != None && (ety.companion.get.isAbstractType || ety.companion.get.isAliasType)) "object_to_trait_big.png"
     else if (ety.isObject) "object_big.png"
     else if (ety.isPackage) "package_big.png"
     else "class_big.png"  // FIXME: an entity *should* fall into one of the above categories, but AnyRef is somehow not
-
 }

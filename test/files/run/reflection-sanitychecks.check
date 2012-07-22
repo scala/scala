@@ -1,0 +1,8 @@
+field: 1
+method: 2
+class: CC
+object: java.lang.Error: inner and nested modules are not supported yet
+field: scala.ScalaReflectionException: expected a member of class C, you provided value D.foo
+method: scala.ScalaReflectionException: expected a member of class C, you provided method D.bar
+class: scala.ScalaReflectionException: expected a member of class C, you provided class D.C
+object: scala.ScalaReflectionException: expected a member of class C, you provided object D.O

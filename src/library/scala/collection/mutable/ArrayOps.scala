@@ -30,7 +30,7 @@ import parallel.mutable.ParArray
  *
  *  @tparam T   type of the elements contained in this array.
  *
- *  @define Coll `ArrayOps`
+ *  @define Coll `Array`
  *  @define orderDependent
  *  @define orderDependentFold
  *  @define mayNotTerminateInf

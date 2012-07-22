@@ -12,9 +12,10 @@ import java.lang.Thread
 import scala.concurrent.util.Duration
 
 /**
- * A context to be notified by `scala.concurrent.blocking()` when
+ * A context to be notified by `scala.concurrent.blocking` when
  * a thread is about to block. In effect this trait provides
- * the implementation for `scala.concurrent.blocking()`. `scala.concurrent.blocking()`
+ * the implementation for `scala.concurrent.Await`.
+ * `scala.concurrent.Await.result()` and `scala.concurrent.Await.ready()`
  * locates an instance of `BlockContext` by first looking for one
  * provided through `BlockContext.withBlockContext()` and failing that,
  * checking whether `Thread.currentThread` is an instance of `BlockContext`.
@@ -27,11 +28,11 @@ import scala.concurrent.util.Duration
  * {{{
  *  val oldContext = BlockContext.current
  *  val myContext = new BlockContext {
- *    override def internalBlockingCall[T](awaitable: Awaitable[T], atMost: Duration): T = {
+ *    override def blockOn[T](thunk: =>T)(implicit permission: CanAwait): T = {
  *      // you'd have code here doing whatever you need to do
  *      // when the thread is about to block.
  *      // Then you'd chain to the previous context:
- *      oldContext.internalBlockingCall(awaitable, atMost)
+ *      oldContext.blockOn(thunk)
  *    }
  *  }
  *  BlockContext.withBlockContext(myContext) {
@@ -42,35 +43,33 @@ import scala.concurrent.util.Duration
  */
 trait BlockContext {
 
-  /** Used internally by the framework; blocks execution for at most
-   * `atMost` time while waiting for an `awaitable` object to become ready.
+  /** Used internally by the framework;
+   * Designates (and eventually executes) a thunk which potentially blocks the calling `Thread`.
    *
-   * Clients should use `scala.concurrent.blocking` instead; this is
-   * the implementation of `scala.concurrent.blocking`, generally
-   * provided by a `scala.concurrent.ExecutionContext` or `java.util.concurrent.Executor`.
+   * Clients must use `scala.concurrent.blocking` or `scala.concurrent.Await` instead.
    */
-  def internalBlockingCall[T](awaitable: Awaitable[T], atMost: Duration): T
+  def blockOn[T](thunk: =>T)(implicit permission: CanAwait): T
 }
 
 object BlockContext {
   private object DefaultBlockContext extends BlockContext {
-    override def internalBlockingCall[T](awaitable: Awaitable[T], atMost: Duration): T =
-      awaitable.result(atMost)(Await.canAwaitEvidence)
+    override def blockOn[T](thunk: =>T)(implicit permission: CanAwait): T = thunk
   }
 
-  private val contextLocal = new ThreadLocal[BlockContext]() {
-    override def initialValue = Thread.currentThread match {
+  private val contextLocal = new ThreadLocal[BlockContext]()
+
+  /** Obtain the current thread's current `BlockContext`. */
+  def current: BlockContext = contextLocal.get match {
+    case null => Thread.currentThread match {
       case ctx: BlockContext => ctx
       case _ => DefaultBlockContext
     }
+    case some => some
   }
-
-  /** Obtain the current thread's current `BlockContext`. */
-  def current: BlockContext = contextLocal.get
 
   /** Pushes a current `BlockContext` while executing `body`. */
   def withBlockContext[T](blockContext: BlockContext)(body: => T): T = {
-    val old = contextLocal.get
+    val old = contextLocal.get // can be null
     try {
       contextLocal.set(blockContext)
       body

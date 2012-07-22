@@ -9,6 +9,7 @@
 package scala
 
 import scala.concurrent.util.Duration
+import scala.annotation.implicitNotFound
 
 /** This package object contains primitives for concurrent and parallel programming.
  */
@@ -36,7 +37,10 @@ package object concurrent {
    */
   def promise[T]()(implicit execctx: ExecutionContext): Promise[T] = Promise[T]()
 
-  /** Used to block on a piece of code which potentially blocks.
+  /** Used to designate a piece of code which potentially blocks, allowing the BlockContext to adjust the runtime's behavior.
+   *  Properly marking blocking code may improve performance or avoid deadlocks. 
+   *
+   *  If you have an `Awaitable` then you should use Await.result instead of `blocking`.
    *
    *  @param body         A piece of code which contains potentially blocking or long running calls.
    *
@@ -45,37 +49,47 @@ package object concurrent {
    *  - InterruptedException - in the case that a wait within the blockable object was interrupted
    *  - TimeoutException - in the case that the blockable object timed out
    */
-  def blocking[T](body: =>T): T = blocking(impl.Future.body2awaitable(body), Duration.Inf)
-
-  /** Blocks on an awaitable object.
-   *
-   *  @param awaitable    An object with a `block` method which runs potentially blocking or long running calls.
-   *
-   *  Calling this method may throw the following exceptions:
-   *  - CancellationException - if the computation was cancelled
-   *  - InterruptedException - in the case that a wait within the blockable object was interrupted
-   *  - TimeoutException - in the case that the blockable object timed out
-   */
-  def blocking[T](awaitable: Awaitable[T], atMost: Duration): T =
-    BlockContext.current.internalBlockingCall(awaitable, atMost)
+  @throws(classOf[Exception])
+  def blocking[T](body: =>T): T = BlockContext.current.blockOn(body)(scala.concurrent.AwaitPermission)
 }
 
-/* concurrency constructs */
 package concurrent {
-  
+  @implicitNotFound("Don't call `Awaitable` methods directly, use the `Await` object.")
   sealed trait CanAwait
   
+  /**
+   * Internal usage only, implementation detail.
+   */
+  private[concurrent] object AwaitPermission extends CanAwait
+  
+  /**
+   * `Await` is what is used to ensure proper handling of blocking for `Awaitable` instances.
+   */
   object Await {
-    private[concurrent] implicit val canAwaitEvidence = new CanAwait {}
+    /**
+     * Invokes ready() on the awaitable, properly wrapped by a call to `scala.concurrent.blocking`.
+     * ready() blocks until the awaitable has completed or the timeout expires.
+     *
+     * Throws a TimeoutException if the timeout expires, as that is in the contract of `Awaitable.ready`.
+     * @param awaitable   the `Awaitable` on which `ready` is to be called
+     * @param atMost      the maximum timeout for which to wait
+     * @return            the result of `awaitable.ready` which is defined to be the awaitable itself.
+     */
+    @throws(classOf[TimeoutException])
+    def ready[T](awaitable: Awaitable[T], atMost: Duration): awaitable.type =
+      blocking(awaitable.ready(atMost)(AwaitPermission))
     
-    def ready[T](awaitable: Awaitable[T], atMost: Duration): awaitable.type = {
-      blocking(awaitable, atMost)
-      awaitable
-    }
-    
-    def result[T](awaitable: Awaitable[T], atMost: Duration): T = {
-      blocking(awaitable, atMost)
-    }
-    
+    /**
+     * Invokes result() on the awaitable, properly wrapped by a call to `scala.concurrent.blocking`.
+     * result() blocks until the awaitable has completed or the timeout expires.
+     *
+     * Throws a TimeoutException if the timeout expires, or any exception thrown by `Awaitable.result`.
+     * @param awaitable   the `Awaitable` on which `result` is to be called
+     * @param atMost      the maximum timeout for which to wait
+     * @return            the result of `awaitable.result`
+     */
+    @throws(classOf[Exception])
+    def result[T](awaitable: Awaitable[T], atMost: Duration): T =
+      blocking(awaitable.result(atMost)(AwaitPermission))
   }
 }

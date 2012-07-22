@@ -1,4 +1,7 @@
 unicode-unterminated-quote.scala:2: error: unclosed string literal
   val x = /u0022
                ^
-one error found
+unicode-unterminated-quote.scala:2: error: '}' expected but eof found.
+  val x = /u0022
+                ^
+two errors found

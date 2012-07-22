@@ -246,6 +246,7 @@ trait StdNames {
     final val BeanPropertyAnnot: NameType = "BeanProperty"
     final val BooleanBeanPropertyAnnot: NameType = "BooleanBeanProperty"
     final val bridgeAnnot: NameType = "bridge"
+    final val staticAnnot: NameType = "static"
 
     // Classfile Attributes
     final val AnnotationDefaultATTR: NameType      = "AnnotationDefault"
@@ -297,7 +298,7 @@ trait StdNames {
     val WHILE_PREFIX                  = "while$"
 
     // Compiler internal names
-    val ANYNAME: NameType                  = "<anyname>"
+    val ANYname: NameType                  = "<anyname>"
     val CONSTRUCTOR: NameType              = "<init>"
     val EQEQ_LOCAL_VAR: NameType           = "eqEqTemp$"
     val FAKE_LOCAL_THIS: NameType          = "this$"
@@ -754,6 +755,7 @@ trait StdNames {
     val splice: NameType               = "splice"
     val staticClass : NameType         = "staticClass"
     val staticModule : NameType        = "staticModule"
+    val staticPackage : NameType       = "staticPackage"
     val synchronized_ : NameType       = "synchronized"
     val tail: NameType                 = "tail"
     val `then` : NameType              = "then"

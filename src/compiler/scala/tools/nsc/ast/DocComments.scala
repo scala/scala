@@ -171,15 +171,15 @@ trait DocComments { self: Global =>
    *  3. If there is no @return section in `dst` but there is one in `src`, copy it.
    */
   def merge(src: String, dst: String, sym: Symbol, copyFirstPara: Boolean = false): String = {
-    val srcSections = tagIndex(src)
-    val dstSections = tagIndex(dst)
-    val srcParams   = paramDocs(src, "@param", srcSections)
-    val dstParams   = paramDocs(dst, "@param", dstSections)
-    val srcTParams  = paramDocs(src, "@tparam", srcSections)
-    val dstTParams  = paramDocs(dst, "@tparam", dstSections)
-    val out         = new StringBuilder
-    var copied      = 0
-    var tocopy      = startTag(dst, dstSections dropWhile (!isMovable(dst, _)))
+    val srcSections  = tagIndex(src)
+    val dstSections  = tagIndex(dst)
+    val srcParams    = paramDocs(src, "@param", srcSections)
+    val dstParams    = paramDocs(dst, "@param", dstSections)
+    val srcTParams   = paramDocs(src, "@tparam", srcSections)
+    val dstTParams   = paramDocs(dst, "@tparam", dstSections)
+    val out          = new StringBuilder
+    var copied       = 0
+    var tocopy       = startTag(dst, dstSections dropWhile (!isMovable(dst, _)))
 
     if (copyFirstPara) {
       val eop = // end of comment body (first para), which is delimited by blank line, or tag, or end of comment
@@ -209,6 +209,7 @@ trait DocComments { self: Global =>
     for (tparam <- sym.typeParams)
       mergeSection(srcTParams get tparam.name.toString, dstTParams get tparam.name.toString)
     mergeSection(returnDoc(src, srcSections), returnDoc(dst, dstSections))
+    mergeSection(groupDoc(src, srcSections), groupDoc(dst, dstSections))
 
     if (out.length == 0) dst
     else {
@@ -457,22 +458,16 @@ trait DocComments { self: Global =>
           case List() => NoType
           case site :: sites1 => select(site.thisType, name, findIn(sites1))
         }
-        val (classes, pkgs) = site.ownerChain.span(!_.isPackageClass)
-        findIn(classes ::: List(pkgs.head, rootMirror.RootClass))
+        // Previously, searching was taking place *only* in the current package and in the root package
+        // now we're looking for it everywhere in the hierarchy, so we'll be able to link variable expansions like
+        // immutable.Seq in package immutable
+        //val (classes, pkgs) = site.ownerChain.span(!_.isPackageClass)
+        //val sites = (classes ::: List(pkgs.head, rootMirror.RootClass)))
+        //findIn(sites)
+        findIn(site.ownerChain ::: List(definitions.EmptyPackage))
       }
 
-      def getType(_str: String, variable: String): Type = {
-        /*
-         * work around the backticks issue suggested by Simon in
-         * https://groups.google.com/forum/?hl=en&fromgroups#!topic/scala-internals/z7s1CCRCz74
-         * ideally, we'd have a removeWikiSyntax method in the CommentFactory to completely eliminate the wiki markup
-         */
-        val str =
-          if (_str.length >= 2 && _str.startsWith("`") && _str.endsWith("`"))
-            _str.substring(1, _str.length - 2)
-          else
-            _str
-
+      def getType(str: String, variable: String): Type = {
         def getParts(start: Int): List[String] = {
           val end = skipIdent(str, start)
           if (end == start) List()
@@ -484,7 +479,7 @@ trait DocComments { self: Global =>
         val parts = getParts(0)
         if (parts.isEmpty) {
           reporter.error(comment.codePos, "Incorrect variable expansion for " + variable + " in use case. Does the " +
-                             "variable expand to wiki syntax when documenting " + site + "?")
+                                          "variable expand to wiki syntax when documenting " + site + "?")
           return ErrorType
         }
         val partnames = (parts.init map newTermName) :+ newTypeName(parts.last)
@@ -498,25 +493,46 @@ trait DocComments { self: Global =>
           case _ =>
             (getSite(partnames.head), partnames.tail)
         }
-        (start /: rest)(select(_, _, NoType))
+        val result = (start /: rest)(select(_, _, NoType))
+        if (result == NoType)
+          reporter.warning(comment.codePos, "Could not find the type " + variable + " points to while expanding it " +
+                                            "for the usecase signature of " + sym + " in " + site + "." +
+                                            "In this context, " + variable + " = \"" + str + "\".")
+        result
       }
 
-      val aliasExpansions: List[Type] =
+      /**
+       * work around the backticks issue suggested by Simon in
+       * https://groups.google.com/forum/?hl=en&fromgroups#!topic/scala-internals/z7s1CCRCz74
+       * ideally, we'd have a removeWikiSyntax method in the CommentFactory to completely eliminate the wiki markup
+       */
+      def cleanupVariable(str: String) = {
+        val tstr = str.trim
+        if (tstr.length >= 2 && tstr.startsWith("`") && tstr.endsWith("`"))
+          tstr.substring(1, tstr.length - 1)
+        else
+          tstr
+      }
+
+      // the Boolean tells us whether we can normalize: if we found an actual type, then yes, we can normalize, else no,
+      // use the synthetic alias created for the variable
+      val aliasExpansions: List[(Type, Boolean)] =
         for (alias <- aliases) yield
           lookupVariable(alias.name.toString.substring(1), site) match {
             case Some(repl) =>
-              val tpe = getType(repl.trim, alias.name.toString)
-              if (tpe != NoType) tpe
+              val repl2 = cleanupVariable(repl)
+              val tpe = getType(repl2, alias.name.toString)
+              if (tpe != NoType) (tpe, true)
               else {
-                val alias1 = alias.cloneSymbol(rootMirror.RootClass, alias.rawflags, newTypeName(repl))
-                typeRef(NoPrefix, alias1, Nil)
+                val alias1 = alias.cloneSymbol(rootMirror.RootClass, alias.rawflags, newTypeName(repl2))
+                (typeRef(NoPrefix, alias1, Nil), false)
               }
             case None =>
-              typeRef(NoPrefix, alias, Nil)
+              (typeRef(NoPrefix, alias, Nil), false)
           }
 
-      def subst(sym: Symbol, from: List[Symbol], to: List[Type]): Type =
-        if (from.isEmpty) sym.tpe
+      def subst(sym: Symbol, from: List[Symbol], to: List[(Type, Boolean)]): (Type, Boolean) =
+        if (from.isEmpty) (sym.tpe, false)
         else if (from.head == sym) to.head
         else subst(sym, from.tail, to.tail)
 
@@ -524,8 +540,9 @@ trait DocComments { self: Global =>
         def apply(tp: Type) = mapOver(tp) match {
           case tp1 @ TypeRef(pre, sym, args) if (sym.name.length > 1 && sym.name.startChar == '$') =>
             subst(sym, aliases, aliasExpansions) match {
-              case TypeRef(pre1, sym1, _) =>
-                typeRef(pre1, sym1, args)
+              case (TypeRef(pre1, sym1, _), canNormalize) =>
+                val tpe = typeRef(pre1, sym1, args)
+                if (canNormalize) tpe.normalize else tpe
               case _ =>
                 tp1
             }

@@ -47,9 +47,12 @@ abstract class ExplicitOuter extends InfoTransform
     case TypeRef(pre, sym, _)   =>
       val owner = clazz.owner
 
+      //println(s"have same outer $parent $clazz $sym ${sym.owner} $owner $pre")
+
       sym.isClass && owner.isClass &&
-      owner == sym.owner &&
+      (owner isSubClass sym.owner) && 
       owner.thisType =:= pre
+       
     case _                      => false
   }
 
@@ -480,7 +483,7 @@ abstract class ExplicitOuter extends InfoTransform
                 val vparamss1 =
                   if (isInner(clazz)) { // (4)
                     val outerParam =
-                      sym.newValueParameter(nme.OUTER, sym.pos) setInfo outerField(clazz).info
+                      sym.newValueParameter(nme.OUTER, sym.pos) setInfo clazz.outerClass.thisType
                     ((ValDef(outerParam) setType NoType) :: vparamss.head) :: vparamss.tail
                   } else vparamss
                 super.transform(copyDefDef(tree)(vparamss = vparamss1))

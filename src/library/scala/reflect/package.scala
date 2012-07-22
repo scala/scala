@@ -65,3 +65,6 @@ package object reflect {
   @deprecated("Use `@scala.beans.ScalaBeanInfo` instead", "2.10.0")
   type ScalaBeanInfo = scala.beans.ScalaBeanInfo
 }
+
+/** An exception that indicates an error during Scala reflection */
+case class ScalaReflectionException(msg: String) extends Exception(msg)

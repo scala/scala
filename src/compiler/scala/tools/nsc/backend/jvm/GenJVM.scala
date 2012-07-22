@@ -1021,6 +1021,8 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
 
        	  method = m
        	  jmethod = clinitMethod
+          
+          computeLocalVarsIndex(m)
        	  genCode(m)
        	case None =>
           legacyStaticInitializer(cls, clinit)
@@ -1122,7 +1124,9 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
           log("No forwarder for " + m + " due to conflict with " + linkedClass.info.member(m.name))
         else {
           log("Adding static forwarder for '%s' from %s to '%s'".format(m, className, moduleClass))
-          addForwarder(jclass, moduleClass, m)
+          if (m.isAccessor && m.accessed.hasStaticAnnotation) {
+            log("@static: accessor " + m + ", accessed: " + m.accessed)
+          } else addForwarder(jclass, moduleClass, m)
         }
       }
     }

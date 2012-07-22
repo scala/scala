@@ -38,7 +38,8 @@ abstract class DirectTest extends App {
   // new compiler
   def newCompiler(args: String*): Global = {
     val settings = newSettings((CommandLineParser tokenize extraSettings) ++ args.toList)
-    new Global(settings)
+    if (settings.Yrangepos.value) new Global(settings) with interactive.RangePositions
+    else new Global(settings)
   }
   def newSources(sourceCodes: String*) = sourceCodes.toList.zipWithIndex map {
     case (src, idx) => new BatchSourceFile("newSource" + (idx + 1), src)
@@ -69,7 +70,7 @@ abstract class DirectTest extends App {
 
   /**  Constructor/main body  **/
   try show()
-  catch { case t => println(t) ; t.printStackTrace ; sys.exit(1) }
+  catch { case t => println(t.getMessage) ; t.printStackTrace ; sys.exit(1) }
 
   /** Debugger interest only below this line **/
   protected def isDebug       = (sys.props contains "partest.debug") || (sys.env contains "PARTEST_DEBUG")

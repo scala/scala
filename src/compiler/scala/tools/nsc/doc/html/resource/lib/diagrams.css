@@ -119,6 +119,14 @@ svg.class-diagram .node.this.trait.over polygon
 	fill: #235d7b;
 }
 
+svg.package-diagram .node.type.over polygon,
+svg.class-diagram .node.this.type.over polygon
+{
+	fill: #098552;
+	fill: #04663e;
+}
+
+
 svg.package-diagram .node.object.over polygon
 {
 	fill: #183377;

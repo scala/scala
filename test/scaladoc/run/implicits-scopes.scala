@@ -24,7 +24,7 @@ object Test extends ScaladocModelTest {
       val test1 = base._package("test1")
       val A = test1._class("A")
 
-      conv = A._conversion(test1.qualifiedName + ".package.toB") // the .package means it's the package object
+      conv = A._conversion(test1.qualifiedName + ".toB")
       assert(conv.members.length == 1)
       assert(conv.constraints.length == 0)
     }
@@ -36,7 +36,9 @@ object Test extends ScaladocModelTest {
       val classes = test2._package("classes")
       val A = classes._class("A")
 
-      assert(A._conversions(test2.qualifiedName + ".toB").isEmpty)
+      conv = A._conversion(test2.qualifiedName + ".toB")
+      assert(conv.members.length == 1)
+      assert(conv.constraints.length == 0)
     }
 
 //// test3 /////////////////////////////////////////////////////////////////////////////////////////////////////////////

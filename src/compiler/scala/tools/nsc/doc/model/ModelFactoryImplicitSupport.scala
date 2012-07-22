@@ -53,7 +53,7 @@ import model.{ RootPackage => RootPackageEntity }
  * TODO: Give an overview here
  */
 trait ModelFactoryImplicitSupport {
-  thisFactory: ModelFactory with CommentFactory with TreeFactory =>
+  thisFactory: ModelFactory with ModelFactoryTypeSupport with CommentFactory with TreeFactory =>
 
   import global._
   import global.analyzer._
@@ -115,7 +115,7 @@ trait ModelFactoryImplicitSupport {
 
       // Put the class-specific conversions in front
       val (ownConversions, commonConversions) =
-        conversions.partition(conv => !hardcoded.commonConversionTargets.contains(conv.conversionQualifiedName))
+        conversions.partition(!_.isCommonConversion)
 
       ownConversions ::: commonConversions
     }
@@ -242,7 +242,7 @@ trait ModelFactoryImplicitSupport {
 
           available = Some(search.tree != EmptyTree)
         } catch {
-          case _ =>
+          case _: TypeError =>
         }
       }
 
@@ -329,11 +329,6 @@ trait ModelFactoryImplicitSupport {
       }
     }
 
-  def makeQualifiedName(sym: Symbol): String = {
-    val remove = Set[Symbol](RootPackage, RootClass, EmptyPackage, EmptyPackageClass)
-    sym.ownerChain.filterNot(remove.contains(_)).reverse.map(_.nameString).mkString(".")
-  }
-
   /* ============== IMPLEMENTATION PROVIDING ENTITY TYPES ============== */
 
   class ImplicitConversionImpl(
@@ -352,7 +347,7 @@ trait ModelFactoryImplicitSupport {
       if (convSym != NoSymbol)
         makeTemplate(convSym.owner)
       else {
-        error("Scaladoc implicits: Implicit conversion from " + sym.tpe + " to " + toType + " done by " + convSym + " = NoSymbol!")
+        error("Scaladoc implicits: " + toString + " = NoSymbol!")
         makeRootPackage
       }
 
@@ -408,29 +403,22 @@ trait ModelFactoryImplicitSupport {
       debug("")
 
       memberSyms.flatMap({ aSym =>
-        makeTemplate(aSym.owner) match {
-          case d: DocTemplateImpl =>
-            // we can't just pick up nodes from the previous template, although that would be very convenient:
-            // they need the byConversion field to be attached to themselves -- this is design decision I should
-            // revisit soon
-            //
-            // d.ownMembers.collect({
-            //   // it's either a member or has a couple of usecases it's hidden behind
-            //   case m: MemberImpl if m.sym == aSym =>
-            //     m // the member itself
-            //   case m: MemberImpl if m.useCaseOf.isDefined && m.useCaseOf.get.asInstanceOf[MemberImpl].sym == aSym =>
-            //     m.useCaseOf.get.asInstanceOf[MemberImpl] // the usecase
-            // })
-            makeMember(aSym, this, d)
-          case _ =>
-            // should only happen if the code for this template is not part of the scaladoc run =>
-            // members won't have any comments
-            makeMember(aSym, this, inTpl)
-        }
+        // we can't just pick up nodes from the original template, although that would be very convenient:
+        // they need the byConversion field to be attached to themselves and the types to be transformed by
+        // asSeenFrom
+
+        // at the same time, the member itself is in the inTpl, not in the new template -- but should pick up
+        // variables from the old template. Ugly huh? We'll always create the member inTpl, but it will change
+        // the template when expanding variables in the comment :)
+        makeMember(aSym, Some(this), inTpl)
       })
     }
 
     lazy val members: List[MemberEntity] = memberImpls
+
+    def isCommonConversion = hardcoded.commonConversionTargets.contains(conversionQualifiedName)
+
+    override def toString = "Implcit conversion from " + sym.tpe + " to " + toType + " done by " + convSym
   }
 
   /* ========================= HELPER METHODS ========================== */
