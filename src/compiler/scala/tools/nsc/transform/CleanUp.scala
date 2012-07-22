@@ -58,23 +58,6 @@ abstract class CleanUp extends Transform with ast.TreeDSL {
     }
     private def mkTerm(prefix: String): TermName = unit.freshTermName(prefix)
     
-    /** Kludge to provide a safe fix for #4560:
-     *  If we generate a reference in an implementation class, we
-     *  watch out for embedded This(..) nodes that point to the interface.
-     *  These must be wrong. We fix them by setting symbol and type to
-     *  the enclosing implementation class instead.
-     */
-    def safeREF(sym: Symbol) = {
-      def fix(tree: Tree): Unit = tree match {
-        case Select(qual @ This(_), name) if qual.symbol != currentClass =>
-          qual.setSymbol(currentClass).setType(currentClass.tpe)
-        case _ =>
-      }
-      val tree = REF(sym)
-      if (currentClass.isImplClass && sym.owner == currentClass) fix(tree)
-      tree
-    }
-
     //private val classConstantMeth = new HashMap[String, Symbol]
     //private val symbolStaticFields = new HashMap[String, (Symbol, Tree, Tree)]
 
@@ -164,7 +147,7 @@ abstract class CleanUp extends Transform with ast.TreeDSL {
           val varDef = typedPos( VAL(varSym) === forInit )
           newStaticMembers append transform(varDef)
 
-          val varInit = typedPos( safeREF(varSym) === forInit )
+          val varInit = typedPos( REF(varSym) === forInit )
           newStaticInits append transform(varInit)
 
           varSym
@@ -200,7 +183,7 @@ abstract class CleanUp extends Transform with ast.TreeDSL {
                 addStaticVariableToClass(nme.reflParamsCacheName, arrayType(ClassClass.tpe), fromTypesToClassArrayLiteral(paramTypes), true)
 
               addStaticMethodToClass((_, forReceiverSym) =>
-                gen.mkMethodCall(REF(forReceiverSym), Class_getMethod, Nil, List(LIT(method), safeREF(reflParamsCacheSym)))
+                gen.mkMethodCall(REF(forReceiverSym), Class_getMethod, Nil, List(LIT(method), REF(reflParamsCacheSym)))
               )
 
             case MONO_CACHE =>
@@ -239,11 +222,11 @@ abstract class CleanUp extends Transform with ast.TreeDSL {
               addStaticMethodToClass((_, forReceiverSym) =>
                 BLOCK(
                   IF (isCacheEmpty(forReceiverSym)) THEN BLOCK(
-                    safeREF(reflMethodCacheSym) === ((REF(forReceiverSym) DOT Class_getMethod)(LIT(method), safeREF(reflParamsCacheSym))) ,
-                    safeREF(reflClassCacheSym) === gen.mkSoftRef(REF(forReceiverSym)),
+                    REF(reflMethodCacheSym) === ((REF(forReceiverSym) DOT Class_getMethod)(LIT(method), REF(reflParamsCacheSym))) ,
+                    REF(reflClassCacheSym) === gen.mkSoftRef(REF(forReceiverSym)),
                     UNIT
                   ) ENDIF,
-                  safeREF(reflMethodCacheSym)
+                  REF(reflMethodCacheSym)
                 )
               )
 
@@ -277,22 +260,22 @@ abstract class CleanUp extends Transform with ast.TreeDSL {
               val reflPolyCacheSym: Symbol = (
                 addStaticVariableToClass(nme.reflPolyCacheName, SoftReferenceClass.tpe, mkNewPolyCache, false)
               )
-              def getPolyCache = gen.mkCast(fn(safeREF(reflPolyCacheSym), nme.get), MethodCacheClass.tpe)
+              def getPolyCache = gen.mkCast(fn(REF(reflPolyCacheSym), nme.get), MethodCacheClass.tpe)
 
               addStaticMethodToClass((reflMethodSym, forReceiverSym) => {
                 val methodSym = reflMethodSym.newVariable(mkTerm("method"), ad.pos) setInfo MethodClass.tpe
 
                 BLOCK(
-                  IF (getPolyCache OBJ_EQ NULL) THEN (safeREF(reflPolyCacheSym) === mkNewPolyCache) ENDIF,
+                  IF (getPolyCache OBJ_EQ NULL) THEN (REF(reflPolyCacheSym) === mkNewPolyCache) ENDIF,
                   VAL(methodSym) === ((getPolyCache DOT methodCache_find)(REF(forReceiverSym))) ,
                   IF (REF(methodSym) OBJ_!= NULL) .
                     THEN (Return(REF(methodSym)))
                   ELSE {
-                    def methodSymRHS  = ((REF(forReceiverSym) DOT Class_getMethod)(LIT(method), safeREF(reflParamsCacheSym)))
+                    def methodSymRHS  = ((REF(forReceiverSym) DOT Class_getMethod)(LIT(method), REF(reflParamsCacheSym)))
                     def cacheRHS      = ((getPolyCache DOT methodCache_add)(REF(forReceiverSym), REF(methodSym)))
                     BLOCK(
                       REF(methodSym)        === (REF(ensureAccessibleMethod) APPLY (methodSymRHS)),
-                      safeREF(reflPolyCacheSym) === gen.mkSoftRef(cacheRHS),
+                      REF(reflPolyCacheSym) === gen.mkSoftRef(cacheRHS),
                       Return(REF(methodSym))
                     )
                   }
@@ -400,7 +383,7 @@ abstract class CleanUp extends Transform with ast.TreeDSL {
             def genDefaultCall = {
               // reflective method call machinery
               val invokeName  = MethodClass.tpe member nme.invoke_                                  // reflect.Method.invoke(...)
-              def cache       = safeREF(reflectiveMethodCache(ad.symbol.name.toString, paramTypes)) // cache Symbol
+              def cache       = REF(reflectiveMethodCache(ad.symbol.name.toString, paramTypes)) // cache Symbol
               def lookup      = Apply(cache, List(qual1() GETCLASS))                                // get Method object from cache
               def invokeArgs  = ArrayValue(TypeTree(ObjectClass.tpe), params)                       // args for invocation
               def invocation  = (lookup DOT invokeName)(qual1(), invokeArgs)                        // .invoke(qual1, ...)
@@ -495,7 +478,7 @@ abstract class CleanUp extends Transform with ast.TreeDSL {
 
               typedPos {
                 val sym = currentOwner.newValue(mkTerm("qual"), ad.pos) setInfo qual0.tpe
-                qual = safeREF(sym)
+                qual = REF(sym)
 
                 BLOCK(
                   VAL(sym) === qual0,
@@ -678,7 +661,7 @@ abstract class CleanUp extends Transform with ast.TreeDSL {
         val rhs = gen.mkMethodCall(Symbol_apply, arg :: Nil)
         val staticFieldSym = getSymbolStaticField(tree.pos, symname, rhs, tree)
         // create a reference to a static field
-        val ntree = typedWithPos(tree.pos)(safeREF(staticFieldSym))
+        val ntree = typedWithPos(tree.pos)(REF(staticFieldSym))
         super.transform(ntree)
 
       // This transform replaces Array(Predef.wrapArray(Array(...)), <tag>)
@@ -711,7 +694,7 @@ abstract class CleanUp extends Transform with ast.TreeDSL {
 
         // create field definition and initialization
         val stfieldDef  = theTyper.typedPos(pos)(VAL(stfieldSym) === rhs)
-        val stfieldInit = theTyper.typedPos(pos)(safeREF(stfieldSym) === rhs)
+        val stfieldInit = theTyper.typedPos(pos)(REF(stfieldSym) === rhs)
 
         // add field definition to new defs
         newStaticMembers append stfieldDef
@@ -777,8 +760,8 @@ abstract class CleanUp extends Transform with ast.TreeDSL {
           
           val stfieldDef  = localTyper.typedPos(tree.pos)(VAL(stfieldSym) === EmptyTree)
           val flattenedInit = fixedrhs match {
-            case Block(stats, expr) => Block(stats, safeREF(stfieldSym) === expr)
-            case rhs => safeREF(stfieldSym) === rhs
+            case Block(stats, expr) => Block(stats, REF(stfieldSym) === expr)
+            case rhs => REF(stfieldSym) === rhs
           }
           val stfieldInit = localTyper.typedPos(tree.pos)(flattenedInit)
           
