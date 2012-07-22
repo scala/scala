@@ -20,7 +20,7 @@ abstract class Flatten extends InfoTransform {
 
   /** Updates the owning scope with the given symbol; returns the old symbol.
    */
-  private def replaceSymbolInCurrentScope(sym: Symbol): Symbol = afterFlatten {
+  private def replaceSymbolInCurrentScope(sym: Symbol): Symbol = exitingFlatten {
     val scope = sym.owner.info.decls
     val old   = scope lookup sym.name
     if (old ne NoSymbol)
@@ -53,7 +53,7 @@ abstract class Flatten extends InfoTransform {
     clazz.isClass && !clazz.isPackageClass && {
       // Cannot flatten here: class A[T] { object B }
       // was "at erasurePhase.prev"
-      beforeErasure(clazz.typeParams.isEmpty)
+      enteringErasure(clazz.typeParams.isEmpty)
     }
   }
 
@@ -67,11 +67,11 @@ abstract class Flatten extends InfoTransform {
         val decls1 = scopeTransform(clazz) {
           val decls1 = newScope
           if (clazz.isPackageClass) {
-            afterFlatten { decls foreach (decls1 enter _) }
+            exitingFlatten { decls foreach (decls1 enter _) }
           }
           else {
             val oldowner = clazz.owner
-            afterFlatten { oldowner.info }
+            exitingFlatten { oldowner.info }
             parents1 = parents mapConserve (this)
 
             for (sym <- decls) {
@@ -123,7 +123,7 @@ abstract class Flatten extends InfoTransform {
           liftedDefs(sym.enclosingTopLevelClass.owner) += tree
           EmptyTree
         case Select(qual, name) if (sym.isStaticModule && !sym.owner.isPackageClass) =>
-          afterFlatten(atPos(tree.pos)(gen.mkAttributedRef(sym)))
+          exitingFlatten(atPos(tree.pos)(gen.mkAttributedRef(sym)))
         case _ =>
           tree
       }

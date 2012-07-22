@@ -208,10 +208,10 @@ trait MemberHandlers {
     def importedSymbols = individualSymbols ++ wildcardSymbols
 
     lazy val individualSymbols: List[Symbol] =
-      beforePickler(individualNames map (targetType nonPrivateMember _))
+      enteringPickler(individualNames map (targetType nonPrivateMember _))
 
     lazy val wildcardSymbols: List[Symbol] =
-      if (importsWildcard) beforePickler(targetType.nonPrivateMembers)
+      if (importsWildcard) enteringPickler(targetType.nonPrivateMembers)
       else Nil
 
     /** Complete list of names imported by a wildcard */

@@ -38,7 +38,7 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
   override def newPhase(p: Phase): Phase = new JvmPhase(p)
 
   private def outputDirectory(sym: Symbol): AbstractFile =
-    settings.outputDirs outputDirFor beforeFlatten(sym.sourceFile)
+    settings.outputDirs outputDirFor enteringFlatten(sym.sourceFile)
 
   private def getFile(base: AbstractFile, clsName: String, suffix: String): AbstractFile = {
     var dir = base
@@ -85,7 +85,7 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
       // succeed or warn that it isn't.
       hasApproximate && {
         // Before erasure so we can identify generic mains.
-        beforeErasure {
+        enteringErasure {
           val companion     = sym.linkedClassOfClass
           val companionMain = companion.tpe.member(nme.main)
 
@@ -316,7 +316,7 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
        * of inner class all until root class.
        */
       def collectInnerClass(s: Symbol): Unit = {
-        // TODO: some beforeFlatten { ... } which accounts for
+        // TODO: some enteringFlatten { ... } which accounts for
         // being nested in parameterized classes (if we're going to selectively flatten.)
         val x = innerClassSymbolFor(s)
         if(x ne NoSymbol) {
@@ -446,7 +446,7 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
 
         // it must be a top level class (name contains no $s)
         def isCandidateForForwarders(sym: Symbol): Boolean =
-          afterPickler {
+          exitingPickler {
             !(sym.name.toString contains '$') && sym.hasModuleFlag && !sym.isImplClass && !sym.isNestedClass
           }
 
@@ -735,13 +735,13 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
     )
     def addGenericSignature(jmember: JMember, sym: Symbol, owner: Symbol) {
       if (needsGenericSignature(sym)) {
-        val memberTpe = beforeErasure(owner.thisType.memberInfo(sym))
+        val memberTpe = enteringErasure(owner.thisType.memberInfo(sym))
 
         erasure.javaSig(sym, memberTpe) foreach { sig =>
           // This seems useful enough in the general case.
           log(sig)
           if (checkSignatures) {
-            val normalizedTpe = beforeErasure(erasure.prepareSigMap(memberTpe))
+            val normalizedTpe = enteringErasure(erasure.prepareSigMap(memberTpe))
             val bytecodeTpe = owner.thisType.memberInfo(sym)
             if (!sym.isType && !sym.isConstructor && !(erasure.erasure(sym)(normalizedTpe) =:= bytecodeTpe)) {
               clasz.cunit.warning(sym.pos,
@@ -757,7 +757,7 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
           }
           val index = jmember.getConstantPool.addUtf8(sig).toShort
           if (settings.verbose.value && settings.debug.value)
-            beforeErasure(println("add generic sig "+sym+":"+sym.info+" ==> "+sig+" @ "+index))
+            enteringErasure(println("add generic sig "+sym+":"+sym.info+" ==> "+sig+" @ "+index))
 
           val buf = ByteBuffer.allocate(2)
           buf putShort index
@@ -833,7 +833,7 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
           innerSym.rawname + innerSym.moduleSuffix
 
       // add inner classes which might not have been referenced yet
-      afterErasure {
+      exitingErasure {
         for (sym <- List(clasz.symbol, clasz.symbol.linkedClassOfClass); m <- sym.info.decls.map(innerClassSymbolFor) if m.isClass)
           innerClassBuffer += m
       }
@@ -1988,7 +1988,7 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
   )
 
   def isTopLevelModule(sym: Symbol): Boolean =
-    afterPickler { sym.isModuleClass && !sym.isImplClass && !sym.isNestedClass }
+    exitingPickler { sym.isModuleClass && !sym.isImplClass && !sym.isNestedClass }
 
   def isStaticModule(sym: Symbol): Boolean = {
     sym.isModuleClass && !sym.isImplClass && !sym.isLifted

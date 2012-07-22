@@ -28,7 +28,7 @@ trait SymbolLoaders { self: SymbolTable =>
       debugInfo("completing "+sym+"/"+clazz.fullName)
       assert(sym == clazz || sym == module || sym == module.moduleClass)
 //      try {
-      atPhaseNotLaterThan(picklerPhase) {
+      enteringPhaseNotLaterThan(picklerPhase) {
         val loadingMirror = mirrorThatLoaded(sym)
         val javaClass = loadingMirror.javaClass(clazz.javaClassName)
         loadingMirror.unpickleClass(clazz, module, javaClass)

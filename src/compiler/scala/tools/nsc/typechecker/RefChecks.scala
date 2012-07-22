@@ -543,13 +543,13 @@ abstract class RefChecks extends InfoTransform with reflect.internal.transform.R
               def uncurryAndErase(tp: Type) = erasure.erasure(sym)(uncurry.transformInfo(sym, tp))
               val tp1 = uncurryAndErase(clazz.thisType.memberType(sym))
               val tp2 = uncurryAndErase(clazz.thisType.memberType(other))
-              afterErasure(tp1 matches tp2)
+              exitingErasure(tp1 matches tp2)
             })
 
         def ignoreDeferred(member: Symbol) = (
           (member.isAbstractType && !member.isFBounded) || (
             member.isJavaDefined &&
-            // the test requires afterErasure so shouldn't be
+            // the test requires exitingErasure so shouldn't be
             // done if the compiler has no erasure phase available
             (currentRun.erasurePhase == NoPhase || javaErasedOverridingSym(member) != NoSymbol)
           )
@@ -1239,7 +1239,7 @@ abstract class RefChecks extends InfoTransform with reflect.internal.transform.R
           case vsym     => ValDef(vsym)
         }
       }
-      def createStaticModuleAccessor() = afterRefchecks {
+      def createStaticModuleAccessor() = exitingRefchecks {
         val method = (
           sym.owner.newMethod(sym.name.toTermName, sym.pos, (sym.flags | STABLE) & ~MODULE)
             setInfoAndEnter NullaryMethodType(sym.moduleClass.tpe)
@@ -1250,7 +1250,7 @@ abstract class RefChecks extends InfoTransform with reflect.internal.transform.R
         vdef,
         localTyper.typedPos(tree.pos) {
           val vsym = vdef.symbol
-          afterRefchecks {
+          exitingRefchecks {
             val rhs  = gen.newModule(sym, vsym.tpe)
             val body = if (sym.owner.isTrait) rhs else gen.mkAssignAndReturn(vsym, rhs)
             DefDef(sym, body.changeOwner(vsym -> sym))
@@ -1291,7 +1291,7 @@ abstract class RefChecks extends InfoTransform with reflect.internal.transform.R
       if (hasUnitType) List(typed(lazyDef))
       else List(
         typed(ValDef(vsym)),
-        afterRefchecks(typed(lazyDef))
+        exitingRefchecks(typed(lazyDef))
       )
     }
 

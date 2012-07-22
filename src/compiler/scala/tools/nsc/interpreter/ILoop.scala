@@ -65,7 +65,7 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
     import global._
 
     def printAfterTyper(msg: => String) =
-      intp.reporter printUntruncatedMessage afterTyper(msg)
+      intp.reporter printUntruncatedMessage exitingTyper(msg)
 
     /** Strip NullaryMethodType artifacts. */
     private def replInfo(sym: Symbol) = {
@@ -342,7 +342,7 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
 
         // This groups the members by where the symbol is defined
         val byOwner = syms groupBy (_.owner)
-        val sortedOwners = byOwner.toList sortBy { case (owner, _) => afterTyper(source.info.baseClasses indexOf owner) }
+        val sortedOwners = byOwner.toList sortBy { case (owner, _) => exitingTyper(source.info.baseClasses indexOf owner) }
 
         sortedOwners foreach {
           case (owner, members) =>

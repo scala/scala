@@ -69,7 +69,7 @@ abstract class ExtensionMethods extends Transform with TypingTransformers {
 
   /** Return the extension method that corresponds to given instance method `meth`.
    */
-  def extensionMethod(imeth: Symbol): Symbol = atPhase(currentRun.refchecksPhase) {
+  def extensionMethod(imeth: Symbol): Symbol = enteringPhase(currentRun.refchecksPhase) {
     val companionInfo = imeth.owner.companionModule.info
     val candidates = extensionNames(imeth) map (companionInfo.decl(_))
     val matching = candidates filter (alt => normalize(alt.tpe, imeth.owner) matches imeth.tpe)

@@ -402,7 +402,7 @@ abstract class UnCurry extends InfoTransform
 
         // when calling into scala varargs, make sure it's a sequence.
         def arrayToSequence(tree: Tree, elemtp: Type) = {
-          afterUncurry {
+          exitingUncurry {
             localTyper.typedPos(pos) {
               val pt = arrayType(elemtp)
               val adaptedTree = // might need to cast to Array[elemtp], as arrays are not covariant
@@ -432,7 +432,7 @@ abstract class UnCurry extends InfoTransform
               case _          => EmptyTree
             }
           }
-          afterUncurry {
+          exitingUncurry {
             localTyper.typedPos(pos) {
               gen.mkMethodCall(tree, toArraySym, Nil, List(traversableClassTag(tree.tpe)))
             }
@@ -456,7 +456,7 @@ abstract class UnCurry extends InfoTransform
             else arrayToSequence(mkArray, varargsElemType)
           }
 
-        afterUncurry {
+        exitingUncurry {
           if (isJava && !isReferenceArray(suffix.tpe) && isArrayOfSymbol(fun.tpe.params.last.tpe, ObjectClass)) {
             // The array isn't statically known to be a reference array, so call ScalaRuntime.toObjectArray.
             suffix = localTyper.typedPos(pos) {
@@ -664,7 +664,7 @@ abstract class UnCurry extends InfoTransform
       result setType uncurryTreeType(result.tpe)
     }
 
-    def postTransform(tree: Tree): Tree = afterUncurry {
+    def postTransform(tree: Tree): Tree = exitingUncurry {
       def applyUnary(): Tree = {
         // TODO_NMT: verify that the inner tree of a type-apply also gets parens if the
         // whole tree is a polymorphic nullary method application
