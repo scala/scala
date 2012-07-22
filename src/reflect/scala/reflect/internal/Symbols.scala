@@ -813,11 +813,6 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
      */
     def isEffectiveRoot = false
 
-    /** For RootClass, this is EmptyPackageClass.  For all other symbols,
-     *  the symbol itself.
-     */
-    def ownerOfNewSymbols = this
-
     final def isLazyAccessor       = isLazy && lazyAccessor != NoSymbol
     final def isOverridableMember  = !(isClass || isEffectivelyFinal) && (this ne NoSymbol) && owner.isClass
 
@@ -938,6 +933,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
       || hasAnnotation(SerializableAttr) // last part can be removed, @serializable annotation is deprecated
     )
     def hasBridgeAnnotation = hasAnnotation(BridgeClass)
+    def hasStaticAnnotation = hasAnnotation(StaticClass)
     def isDeprecated        = hasAnnotation(DeprecatedAttr)
     def deprecationMessage  = getAnnotation(DeprecatedAttr) flatMap (_ stringArg 0)
     def deprecationVersion  = getAnnotation(DeprecatedAttr) flatMap (_ stringArg 1)

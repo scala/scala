@@ -627,7 +627,7 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "")
         response raise ex
         throw ex
 
-      case ex =>
+      case ex: Throwable =>
         if (debugIDE) {
           println("exception thrown during response: "+ex)
           ex.printStackTrace()

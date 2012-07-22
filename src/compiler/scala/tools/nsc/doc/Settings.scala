@@ -147,7 +147,7 @@ class Settings(error: String => Unit, val printMsg: String => Unit = println(_))
 
   val docDiagramsDotTimeout = IntSetting(
     "-diagrams-dot-timeout",
-    "The timeout before the graphviz dot util is forecefully closed, in seconds (default: 10)",
+    "The timeout before the graphviz dot util is forcefully closed, in seconds (default: 10)",
     10,
     None,
     _ => None
@@ -166,6 +166,33 @@ class Settings(error: String => Unit, val printMsg: String => Unit = println(_))
     "For each html file, create another .html.raw file containing only the text. (can be used for quickly diffing two scaladoc outputs)"
   )
 
+  val docNoPrefixes = BooleanSetting (
+    "-no-prefixes",
+    "Prevents generating prefixes in types, possibly creating ambiguous references, but significantly speeding up scaladoc."
+  )
+
+  val docNoLinkWarnings = BooleanSetting (
+    "-no-link-warnings",
+    "Avoid warnings for ambiguous and incorrect links."
+  )
+
+  val docSkipPackages = StringSetting (
+    "-skip-packages",
+    "<package1>:...:<packageN>",
+    "A colon-delimited list of fully qualified package names that will be skipped from scaladoc.",
+    ""
+  )
+
+  val docExpandAllTypes = BooleanSetting (
+    "-expand-all-types",
+    "Expand all type aliases and abstract types into full template pages. (locally this can be done with the @template annotation)"
+  )
+
+  val docGroups = BooleanSetting (
+    "-groups",
+    "Group similar functions together (based on the @group annotation)"
+  )
+
   // Somewhere slightly before r18708 scaladoc stopped building unless the
   // self-type check was suppressed.  I hijacked the slotted-for-removal-anyway
   // suppress-vt-warnings option and renamed it for this purpose.
@@ -177,7 +204,9 @@ class Settings(error: String => Unit, val printMsg: String => Unit = println(_))
     docDiagrams, docDiagramsDebug, docDiagramsDotPath,
     docDiagramsDotTimeout, docDiagramsDotRestart,
     docImplicits, docImplicitsDebug, docImplicitsShowAll,
-    docDiagramsMaxNormalClasses, docDiagramsMaxImplicitClasses
+    docDiagramsMaxNormalClasses, docDiagramsMaxImplicitClasses,
+    docNoPrefixes, docNoLinkWarnings, docRawOutput, docSkipPackages,
+    docExpandAllTypes, docGroups
   )
   val isScaladocSpecific: String => Boolean = scaladocSpecific map (_.name)
 
@@ -185,6 +214,15 @@ class Settings(error: String => Unit, val printMsg: String => Unit = println(_))
 
   // set by the testsuite, when checking test output
   var scaladocQuietRun = false
+
+  lazy val skipPackageNames =
+    if (docSkipPackages.value == "")
+      Set[String]()
+    else
+      docSkipPackages.value.toLowerCase.split(':').toSet
+
+  def skipPackage(qname: String) =
+    skipPackageNames(qname.toLowerCase)
 
   /**
    *  This is the hardcoded area of Scaladoc. This is where "undesirable" stuff gets eliminated. I know it's not pretty,
@@ -198,16 +236,15 @@ class Settings(error: String => Unit, val printMsg: String => Unit = println(_))
      *  the function result should be a humanly-understandable description of the type class
      */
     val knownTypeClasses: Map[String, String => String] = Map() +
-      // TODO: Bring up to date and test these
-      ("scala.package.Numeric"       -> ((tparam: String) => tparam + " is a numeric class, such as Int, Long, Float or Double")) +
-      ("scala.package.Integral"      -> ((tparam: String) => tparam + " is an integral numeric class, such as Int or Long")) +
-      ("scala.package.Fractional"    -> ((tparam: String) => tparam + " is a fractional numeric class, such as Float or Double")) +
-      ("scala.reflect.Manifest"      -> ((tparam: String) => tparam + " is accompanied by a Manifest, which is a runtime representation of its type that survives erasure")) +
-      ("scala.reflect.ClassManifest" -> ((tparam: String) => tparam + " is accompanied by a ClassManifest, which is a runtime representation of its type that survives erasure")) +
-      ("scala.reflect.OptManifest"   -> ((tparam: String) => tparam + " is accompanied by an OptManifest, which can be either a runtime representation of its type or the NoManifest, which means the runtime type is not available")) +
-      ("scala.reflect.ClassTag"      -> ((tparam: String) => tparam + " is accompanied by a ClassTag, which is a runtime representation of its type that survives erasure")) +
-      ("scala.reflect.AbsTypeTag"    -> ((tparam: String) => tparam + " is accompanied by an AbsTypeTag, which is a runtime representation of its type that survives erasure")) +
-      ("scala.reflect.TypeTag"       -> ((tparam: String) => tparam + " is accompanied by a TypeTag, which is a runtime representation of its type that survives erasure"))
+      ("scala.math.Numeric"                  -> ((tparam: String) => tparam + " is a numeric class, such as Int, Long, Float or Double")) +
+      ("scala.math.Integral"                 -> ((tparam: String) => tparam + " is an integral numeric class, such as Int or Long")) +
+      ("scala.math.Fractional"               -> ((tparam: String) => tparam + " is a fractional numeric class, such as Float or Double")) +
+      ("scala.reflect.Manifest"              -> ((tparam: String) => tparam + " is accompanied by a Manifest, which is a runtime representation of its type that survives erasure")) +
+      ("scala.reflect.ClassManifest"         -> ((tparam: String) => tparam + " is accompanied by a ClassManifest, which is a runtime representation of its type that survives erasure")) +
+      ("scala.reflect.OptManifest"           -> ((tparam: String) => tparam + " is accompanied by an OptManifest, which can be either a runtime representation of its type or the NoManifest, which means the runtime type is not available")) +
+      ("scala.reflect.ClassTag"              -> ((tparam: String) => tparam + " is accompanied by a ClassTag, which is a runtime representation of its type that survives erasure")) +
+      ("scala.reflect.AbsTypeTag"            -> ((tparam: String) => tparam + " is accompanied by an AbsTypeTag, which is a runtime representation of its type that survives erasure")) +
+      ("scala.reflect.base.TypeTags.TypeTag" -> ((tparam: String) => tparam + " is accompanied by a TypeTag, which is a runtime representation of its type that survives erasure"))
 
     /**
      * Set of classes to exclude from index and diagrams

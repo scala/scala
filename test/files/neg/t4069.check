@@ -12,5 +12,5 @@ t4069.scala:4: error:  I encountered a '}' where I didn't expect one, maybe this
              ^
 t4069.scala:10: error: '}' expected but eof found.
 }
-^
+ ^
 5 errors found

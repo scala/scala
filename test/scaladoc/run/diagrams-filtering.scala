@@ -65,7 +65,7 @@ object Test extends ScaladocModelTest {
     assert(!C.inheritanceDiagram.isDefined)
 
     // trait G
-    val G = base._trait("G")
+    val G = base._class("G")
     assert(!G.inheritanceDiagram.isDefined)
 
     // trait E

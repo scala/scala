@@ -37,10 +37,40 @@ trait GenSymbols {
       mirrorMirrorSelect(nme.EmptyPackageClass)
     else if (sym.isModuleClass)
       Select(Select(reify(sym.sourceModule), nme.asModuleSymbol), nme.moduleClass)
+    else if (sym.isPackage)
+      mirrorMirrorCall(nme.staticPackage, reify(sym.fullName))
     else if (sym.isLocatable) {
-      // [Eugene] am I doing this right?
-//      if (sym.isStaticOwner) { // no good for us, because it returns false for packages
-      if (sym.isStatic && (sym.isClass || sym.isModule)) {
+      /** This is a fancy conundrum that stems from the fact that Scala allows
+       *  packageless packages and packageless objects with the same names in the same program.
+       *
+       *  For more details read the docs to staticModule and staticPackage.
+       *  Here I'll just provide the examples of how reify works for different kinds of symbols.
+       *
+       *    // 1) packageless
+       *    // packageless classes are non-ambiguous, but modules vs packages might be
+       *    // that's why we have separate methods to reify those
+       *    // note that staticModule will never resolve to a package if an object is missing and an homonymous package is present and vice versa
+       *    // otherwise reification would be unsound
+       *    class C => staticClass("C")
+       *    object B => staticModule("B")
+       *    package B => staticPackage("B")
+       *
+       *    // 2) classes and modules enclosed in a package
+       *    // staticXXX methods always look into parent packages and ignores parent modules, so for fully qualified names they are non-ambiguous
+       *    // namely even if there's an object B { class C } next to package B { class C }, then staticClass("B.C") will resolve to a packageful class
+       *    // this closely mirrors Scala's behavior, read up the docs to staticModule/staticPackage for more information
+       *    package B { class C } => staticClass("B.C")
+       *    package B { object B } => staticModule("B.B")
+       *    package B { package B } => staticPackage("B.B")
+       *
+       *    // 3) classes and modules enclosed in a packageless module
+       *    // staticClass/staticModule won't look into EmptyPackageClass, so we reify such symbols in a roundabout way
+       *    object B { class C } => selectType(staticModule("B"), "C")
+       *    object B { object B } => selectType(staticModule("B"), "B")
+       *    object B { package B } => impossible
+       */
+      val hasPackagelessParent = sym.ownerChain.tail.tail exists (_.isEmptyPackageClass)
+      if (sym.isStatic && (sym.isClass || sym.isModule) && !hasPackagelessParent) {
         val resolver = if (sym.isType) nme.staticClass else nme.staticModule
         mirrorMirrorCall(resolver, reify(sym.fullName))
       } else {

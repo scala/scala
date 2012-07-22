@@ -598,7 +598,7 @@ abstract class GenASM extends SubComponent with BytecodeWriters {
             reverseJavaName.put(internalName, trackedSym)
           case Some(oldsym) =>
             assert((oldsym == trackedSym) || (oldsym == RuntimeNothingClass) || (oldsym == RuntimeNullClass), // In contrast, neither NothingClass nor NullClass show up bytecode-level.
-                   "how can getCommonSuperclass() do its job if different class symbols get the same bytecode-level internal name.")
+                   "how can getCommonSuperclass() do its job if different class symbols get the same bytecode-level internal name: " + internalName)
         }
       }
 
@@ -877,7 +877,7 @@ abstract class GenASM extends SubComponent with BytecodeWriters {
 
           def wrap(op: => Unit) = {
             try   { op; true }
-            catch { case _ => false }
+            catch { case _: Throwable => false }
           }
 
       if (settings.Xverify.value) {
@@ -1170,7 +1170,9 @@ abstract class GenASM extends SubComponent with BytecodeWriters {
           log("No forwarder for " + m + " due to conflict with " + linkedClass.info.member(m.name))
         else {
           log("Adding static forwarder for '%s' from %s to '%s'".format(m, jclassName, moduleClass))
-          addForwarder(isRemoteClass, jclass, moduleClass, m)
+          if (m.isAccessor && m.accessed.hasStaticAnnotation) {
+            log("@static: accessor " + m + ", accessed: " + m.accessed)
+          } else addForwarder(isRemoteClass, jclass, moduleClass, m)
         }
       }
     }
@@ -1675,6 +1677,7 @@ abstract class GenASM extends SubComponent with BytecodeWriters {
        	  jmethod = clinitMethod
           jMethodName = CLASS_CONSTRUCTOR_NAME
           jmethod.visitCode()
+          computeLocalVarsIndex(m)
        	  genCode(m, false, true)
           jmethod.visitMaxs(0, 0) // just to follow protocol, dummy arguments
           jmethod.visitEnd()

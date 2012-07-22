@@ -114,6 +114,18 @@ abstract class Comment {
   /** A set of diagram directives for the content diagram */
   def contentDiagram: List[String]
 
+  /** The group this member is part of */
+  def group: Option[String]
+
+  /** Member group descriptions */
+  def groupDesc: Map[String,Body]
+
+  /** Member group names (overriding the short tag) */
+  def groupNames: Map[String,String]
+
+  /** Member group priorities */
+  def groupPrio: Map[String,Int]
+
   override def toString =
     body.toString + "\n" +
     (authors map ("@author " + _.toString)).mkString("\n") +

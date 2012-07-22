@@ -8,7 +8,6 @@ abstract class Context extends scala.reflect.makro.Context
                          with CapturedVariables
                          with Infrastructure
                          with Enclosures
-                         with Mirrors
                          with Names
                          with Reifiers
                          with FrontEnds
@@ -23,7 +22,7 @@ abstract class Context extends scala.reflect.makro.Context
 
   val universe: Global
 
-  val mirror: MirrorOf[universe.type] = new ContextMirror
+  val mirror: MirrorOf[universe.type] = universe.rootMirror
 
   val callsiteTyper: universe.analyzer.Typer
 

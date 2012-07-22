@@ -72,8 +72,8 @@ package extest {
   """
 
   def check(source: String, unit: global.CompilationUnit) = {
-    getRequiredModule("extest").moduleClass.info.decls.toList.filter(_.isType).map(_.initialize).sortBy(_.name.toString) foreach { clazz =>
-      exitingTyper {
+    getRequiredPackage("extest").moduleClass.info.decls.toList.filter(_.isType).map(_.initialize).sortBy(_.name.toString) foreach { clazz =>
+      afterTyper {
         clazz.info
         println(clazz.defString)
         println("    " + classExistentialType(clazz) + "\n")

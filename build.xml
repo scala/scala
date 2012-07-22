@@ -397,7 +397,7 @@ INITIALISATION
   </target>
 
   <target name="init" depends="init.jars, init.maven.jars, init.version.done, init.fail.bad.jdk, init.warn.jdk7">
-    <property name="scalac.args.always" value="" />
+    <property name="scalac.args.always" value="-Yreify-copypaste" />
   <!-- scalac.args.optimise is selectively overridden in certain antcall tasks. -->
     <property name="scalac.args.optimise" value=""/>
   <!-- scalac.args.quickonly are added to quick.* targets but not others (particularly, locker.)
@@ -499,7 +499,7 @@ LOCAL DEPENDENCY (Adapted ASM)
       destdir="${build-asm.dir}/classes"
       classpath="${build-asm.dir}/classes"
       includes="**/*.java"
-      target="1.5" source="1.5">
+      target="1.6" source="1.5">
         <compilerarg line="${javac.args} -XDignore.symbol.file"/>
     </javac>
     <touch file="${build-asm.dir}/asm.complete" verbose="no"/>
@@ -540,7 +540,7 @@ LOCAL DEPENDENCY (FORKJOIN)
       classpath="${build-libs.dir}/classes/forkjoin"
       includes="**/*.java"
       debug="true"
-      target="1.5" source="1.5">
+      target="1.6" source="1.5">
         <compilerarg line="${javac.args} -XDignore.symbol.file"/>
     </javac>
     <touch file="${build-libs.dir}/forkjoin.complete" verbose="no"/>
@@ -587,7 +587,7 @@ LOCAL DEPENDENCY (FJBG)
       classpath="${build-libs.dir}/classes/fjbg"
       includes="**/*.java"
       debug="true"
-      target="1.5" source="1.4">
+      target="1.6" source="1.4">
         <compilerarg line="${javac.args} -XDignore.symbol.file"/>
     </javac>
     <touch file="${build-libs.dir}/fjbg.complete" verbose="no"/>
@@ -635,7 +635,7 @@ LOCAL REFERENCE BUILD (LOCKER)
       srcdir="${src.dir}/library"
       destdir="${build-locker.dir}/classes/library"
       includes="**/*.java"
-      target="1.5" source="1.5">
+      target="1.6" source="1.5">
         <compilerarg line="${javac.args} -XDignore.symbol.file"/>
         <classpath>
           <path refid="forkjoin.classpath"/>
@@ -749,7 +749,7 @@ LOCAL REFERENCE BUILD (LOCKER)
           includes="**/*.java"
           excludes="**/tests/**"
           debug="true"
-          target="1.5" source="1.4">
+          target="1.6" source="1.4">
             <compilerarg line="${javac.args}"/>
         </javac>
         <scalacfork
@@ -1009,7 +1009,7 @@ QUICK BUILD (QUICK)
       srcdir="${src.dir}/library"
       destdir="${build-quick.dir}/classes/library"
       includes="**/*.java"
-      target="1.5" source="1.5">
+      target="1.6" source="1.5">
       <compilerarg line="${javac.args} -XDignore.symbol.file"/>
       <classpath>
         <path refid="forkjoin.classpath"/>
@@ -1020,7 +1020,7 @@ QUICK BUILD (QUICK)
       srcdir="${src.dir}/actors"
       destdir="${build-quick.dir}/classes/library"
       includes="**/*.java"
-      target="1.5" source="1.5">
+      target="1.6" source="1.5">
       <compilerarg line="${javac.args}"/>
       <classpath>
         <path refid="forkjoin.classpath"/>
@@ -1145,7 +1145,7 @@ QUICK BUILD (QUICK)
       includes="**/*.java"
       excludes="**/tests/**"
       debug="true"
-      target="1.5" source="1.4">
+      target="1.6" source="1.4">
         <compilerarg line="${javac.args}"/>
     </javac>
     <scalacfork
@@ -1349,7 +1349,7 @@ QUICK BUILD (QUICK)
     <javac
       srcdir="${src.dir}/partest"
       destdir="${build-quick.dir}/classes/partest"
-      target="1.5" source="1.5">
+      target="1.6" source="1.5">
       <classpath>
         <pathelement location="${build-quick.dir}/classes/library"/>
         <pathelement location="${build-quick.dir}/classes/reflect"/>
@@ -1691,7 +1691,7 @@ BOOTSTRAPPING BUILD (STRAP)
       srcdir="${src.dir}/library"
       destdir="${build-strap.dir}/classes/library"
       includes="**/*.java"
-      target="1.5" source="1.5">
+      target="1.6" source="1.5">
       <compilerarg line="${javac.args} -XDignore.symbol.file"/>
       <classpath>
         <path refid="forkjoin.classpath"/>
@@ -1702,7 +1702,7 @@ BOOTSTRAPPING BUILD (STRAP)
       srcdir="${src.dir}/actors"
       destdir="${build-strap.dir}/classes/library"
       includes="**/*.java"
-      target="1.5" source="1.5">
+      target="1.6" source="1.5">
       <compilerarg line="${javac.args}"/>
       <classpath>
         <path refid="forkjoin.classpath"/>
@@ -1826,7 +1826,7 @@ BOOTSTRAPPING BUILD (STRAP)
       includes="**/*.java"
       excludes="**/tests/**"
       debug="true"
-      target="1.5" source="1.4">
+      target="1.6" source="1.4">
         <compilerarg line="${javac.args}"/>
     </javac>
     <scalacfork
@@ -1994,7 +1994,7 @@ BOOTSTRAPPING BUILD (STRAP)
     <javac
       srcdir="${src.dir}/partest"
       destdir="${build-strap.dir}/classes/partest"
-      target="1.5" source="1.5">
+      target="1.6" source="1.5">
       <classpath>
         <pathelement location="${build-strap.dir}/classes/library"/>
         <pathelement location="${build-strap.dir}/classes/reflect"/>
@@ -2044,7 +2044,7 @@ BOOTSTRAPPING BUILD (STRAP)
 LIBRARIES (Forkjoin, FJBG, ASM)
 ============================================================================ -->
 
- 
+
   <target name="libs.clean" depends="pack.clean, asm.clean">
     <delete dir="${build-libs.dir}" includeemptydirs="yes" quiet="yes" failonerror="no"/>
   </target>
@@ -2082,8 +2082,9 @@ DOCUMENTATION
     <property name="scaladoc.url" value="https://github.com/scala/scala/tree/${scaladoc.git.commit}/src"/>
     <echo message="Scaladoc will point to ${scaladoc.url} for source files."/>
 
-    <!-- Unless set with -Dscaladoc.raw.output, it won't be activated -->
+    <!-- Unless set with -Dscaladoc.<...>, these won't be activated -->
     <property name="scaladoc.raw.output" value="no"/>
+    <property name="scaladoc.no.prefixes" value="no"/>
   </target>
 
   <target name="docs.pre-lib" depends="docs.start">
@@ -2111,7 +2112,11 @@ DOCUMENTATION
       classpathref="pack.classpath"
       addparams="${scalac.args.all}"
       docRootContent="${src.dir}/library/rootdoc.txt"
-      implicits="on" diagrams="on" rawOutput="${scaladoc.raw.output}">
+      implicits="on"
+      diagrams="on"
+      groups="on"
+      rawOutput="${scaladoc.raw.output}"
+      noPrefixes="${scaladoc.no.prefixes}">
       <src>
         <files includes="${src.dir}/actors-migration"/>
         <files includes="${src.dir}/actors"/>
@@ -2195,7 +2200,11 @@ DOCUMENTATION
       srcdir="${src.dir}/compiler"
       docRootContent="${src.dir}/compiler/rootdoc.txt"
       addparams="${scalac.args.all}"
-      implicits="on" diagrams="on" rawOutput="${scaladoc.raw.output}">
+      implicits="on"
+      diagrams="on"
+      groups="on"
+      rawOutput="${scaladoc.raw.output}"
+      noPrefixes="${scaladoc.no.prefixes}">
       <include name="**/*.scala"/>
     </scaladoc>
     <touch file="${build-docs.dir}/compiler.complete" verbose="no"/>
@@ -2217,7 +2226,11 @@ DOCUMENTATION
       classpathref="pack.classpath"
       srcdir="${src.dir}/jline/src/main/java"
       addparams="${scalac.args.all}"
-      implicits="on" diagrams="on" rawOutput="${scaladoc.raw.output}">
+      implicits="on"
+      diagrams="on"
+      groups="on"
+      rawOutput="${scaladoc.raw.output}"
+      noPrefixes="${scaladoc.no.prefixes}">
       <include name="**/*.scala"/>
       <include name="**/*.java"/>
     </scaladoc>
@@ -2241,7 +2254,11 @@ DOCUMENTATION
       classpathref="pack.classpath"
       srcdir="${src.dir}/scalap"
       addparams="${scalac.args.all}"
-      implicits="on" diagrams="on" rawOutput="${scaladoc.raw.output}">
+      implicits="on"
+      diagrams="on"
+      groups="on"
+      rawOutput="${scaladoc.raw.output}"
+      noPrefixes="${scaladoc.no.prefixes}">
       <include name="**/*.scala"/>
     </scaladoc>
     <touch file="${build-docs.dir}/scalap.complete" verbose="no"/>
@@ -2263,7 +2280,11 @@ DOCUMENTATION
       classpathref="pack.classpath"
       srcdir="${src.dir}/partest"
       addparams="${scalac.args.all}"
-      implicits="on" diagrams="on" rawOutput="${scaladoc.raw.output}">
+      implicits="on"
+      diagrams="on"
+      groups="on"
+      rawOutput="${scaladoc.raw.output}"
+      noPrefixes="${scaladoc.no.prefixes}">
       <include name="**/*.scala"/>
     </scaladoc>
     <touch file="${build-docs.dir}/partest.complete" verbose="no"/>
@@ -2285,7 +2306,11 @@ DOCUMENTATION
       classpathref="pack.classpath"
       srcdir="${src.dir}/continuations/plugin"
       addparams="${scalac.args.all}"
-      implicits="on" diagrams="on" rawOutput="${scaladoc.raw.output}">
+      implicits="on"
+      diagrams="on"
+      groups="on"
+      rawOutput="${scaladoc.raw.output}"
+      noPrefixes="${scaladoc.no.prefixes}">
       <include name="**/*.scala"/>
     </scaladoc>
     <touch file="${build-docs.dir}/continuations-plugin.complete" verbose="no"/>
@@ -2307,7 +2332,11 @@ DOCUMENTATION
       classpathref="pack.classpath"
       srcdir="${src.dir}/actors-migration"
       addparams="${scalac.args.all}"
-      implicits="on" diagrams="on" rawOutput="${scaladoc.raw.output}">
+      implicits="on"
+      diagrams="on"
+      groups="on"
+      rawOutput="${scaladoc.raw.output}"
+      noPrefixes="${scaladoc.no.prefixes}">
       <include name="**/*.scala"/>
     </scaladoc>
     <touch file="${build-docs.dir}/actors-migration.complete" verbose="no"/>

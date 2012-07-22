@@ -7,7 +7,7 @@ object QueryableMacros{
          : c.Expr[scala.collection.slick.Queryable[S]] = {
     import c.universe._
     val code = EmptyTree
-    c.reify{
+    c.universe.reify{
       Queryable.factory[S]( code.asInstanceOf[reflect.runtime.universe.Tree] )
     }
   }

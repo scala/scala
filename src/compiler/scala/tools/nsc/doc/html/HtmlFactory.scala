@@ -53,11 +53,16 @@ class HtmlFactory(val universe: doc.Universe, index: doc.Index) {
     "trait.png",
     "trait_big.png",
     "trait_diagram.png",
+    "type.png",
+    "type_big.png",
+    "type_diagram.png",
 
     "class_to_object_big.png",
     "object_to_class_big.png",
-    "object_to_trait_big.png",
     "trait_to_object_big.png",
+    "object_to_trait_big.png",
+    "type_to_object_big.png",
+    "object_to_type_big.png",
 
     "arrow-down.png",
     "arrow-right.png",
@@ -138,7 +143,7 @@ class HtmlFactory(val universe: doc.Universe, index: doc.Index) {
       if (!(written contains tpl)) {
         writeForThis(new page.Template(universe, diagramGenerator, tpl))
         written += tpl
-        tpl.templates map writeTemplate
+        tpl.templates collect { case d: DocTemplateEntity => d } map writeTemplate
       }
     }
 

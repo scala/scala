@@ -507,6 +507,12 @@ object FutureTests extends MinimalScalaTest {
       }
       Await.ready(complex, defaultTimeout).isCompleted mustBe (true)
     }
+
+    "should not throw when Await.ready" in {
+      val expected = try Right(5 / 0) catch { case a: ArithmeticException => Left(a) }
+      val f = future(5).map(_ / 0)
+      Await.ready(f, defaultTimeout).value.get.toString mustBe expected.toString
+    }
     
   }
   

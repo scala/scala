@@ -13,7 +13,7 @@ package scala.concurrent.impl
 import java.util.concurrent.{ LinkedBlockingQueue, Callable, Executor, ExecutorService, Executors, ThreadFactory, TimeUnit, ThreadPoolExecutor }
 import java.util.Collection
 import scala.concurrent.forkjoin._
-import scala.concurrent.{ BlockContext, ExecutionContext, Awaitable, ExecutionContextExecutor, ExecutionContextExecutorService }
+import scala.concurrent.{ BlockContext, ExecutionContext, Awaitable, CanAwait, ExecutionContextExecutor, ExecutionContextExecutorService }
 import scala.concurrent.util.Duration
 import scala.util.control.NonFatal
 
@@ -37,15 +37,15 @@ private[scala] class ExecutionContextImpl private[impl] (es: Executor, reporter:
     def newThread(runnable: Runnable): Thread = wire(new Thread(runnable))
 
     def newThread(fjp: ForkJoinPool): ForkJoinWorkerThread = wire(new ForkJoinWorkerThread(fjp) with BlockContext {
-      override def internalBlockingCall[T](awaitable: Awaitable[T], atMost: Duration): T = {
+      override def blockOn[T](thunk: =>T)(implicit permission: CanAwait): T = {
         var result: T = null.asInstanceOf[T]
         ForkJoinPool.managedBlock(new ForkJoinPool.ManagedBlocker {
           @volatile var isdone = false
-          def block(): Boolean = {
-            result = try awaitable.result(atMost)(scala.concurrent.Await.canAwaitEvidence) finally { isdone = true }
+          override def block(): Boolean = {
+            result = try thunk finally { isdone = true }
             true
           }
-          def isReleasable = isdone
+          override def isReleasable = isdone
         })
         result
       }

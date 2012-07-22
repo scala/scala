@@ -17,7 +17,7 @@ object Test extends ScaladocModelTest {
       mbr.byConversion.map(_.source.implicitsShadowing.get(mbr).map(_.isAmbiguous).getOrElse(false)).getOrElse(false)
 
     // SEE THE test/resources/implicits-chaining-res.scala FOR THE EXPLANATION OF WHAT'S CHECKED HERE:
-    val base = root._package("scala")._package("test")._package("scaladoc")._package("implicits")._object("ambiguating")
+    val base = root._package("scala")._package("test")._package("scaladoc")._package("implicits")._package("ambiguating")
     var conv1: ImplicitConversion = null
     var conv2: ImplicitConversion = null
 

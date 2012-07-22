@@ -15,6 +15,7 @@ import scala.tools.nsc.transform.Transform
 import scala.collection.mutable.HashSet
 import scala.collection.mutable.HashMap
 import reflect.internal.util.Statistics
+import scala.reflect.internal.Types
 
 /** Translate pattern matching.
   *
@@ -53,6 +54,25 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
   }
   import debugging.patmatDebug
 
+  // to govern how much time we spend analyzing matches for unreachability/exhaustivity
+  object AnalysisBudget {
+    import scala.tools.cmd.FromString.IntFromString
+    val max = sys.props.get("scalac.patmat.analysisBudget").collect(IntFromString.orElse{case "off" => Integer.MAX_VALUE}).getOrElse(256)
+
+    abstract class Exception extends RuntimeException("CNF budget exceeded") {
+      val advice: String
+      def warn(pos: Position, kind: String) = currentUnit.uncheckedWarning(pos, s"Cannot check match for $kind.\n$advice")
+    }
+
+    object exceeded extends Exception {
+      val advice = s"(The analysis required more space than allowed. Please try with scalac -Dscalac.patmat.analysisBudget=${AnalysisBudget.max*2} or -Dscalac.patmat.analysisBudget=off.)"
+    }
+
+    object stackOverflow extends Exception {
+      val advice = "(There was a stack overflow. Please try increasing the stack available to the compiler using e.g., -Xss2m.)"
+    }
+  }
+
   def newTransformer(unit: CompilationUnit): Transformer =
     if (!settings.XoldPatmat.value) new MatchTransformer(unit)
     else noopTransformer
@@ -71,7 +91,15 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
       case Match(sel, cases) =>
         val origTp = tree.tpe
         // setType origTp intended for CPS -- TODO: is it necessary?
-        localTyper.typed(translator.translateMatch(treeCopy.Match(tree, transform(sel), transformTrees(cases).asInstanceOf[List[CaseDef]]))) setType origTp
+        val translated = translator.translateMatch(treeCopy.Match(tree, transform(sel), transformTrees(cases).asInstanceOf[List[CaseDef]]))
+        try {
+          localTyper.typed(translated) setType origTp
+        } catch {
+          case x: (Types#TypeError) =>
+            // TODO: this should never happen; error should've been reported during type checking
+            unit.error(tree.pos, "error during expansion of this match (this is a scalac bug).\nThe underlying error was: "+ x.msg)
+            translated
+        }
       case Try(block, catches, finalizer) =>
         treeCopy.Try(tree, transform(block), translator.translateTry(transformTrees(catches).asInstanceOf[List[CaseDef]], tree.tpe, tree.pos), transform(finalizer))
       case _ => super.transform(tree)
@@ -413,7 +441,7 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
               The pattern matches any value v such that r == v (§12.1).
               The type of r must conform to the expected type of the pattern.
         **/
-        case Literal(Constant(_)) | Ident(_) | Select(_, _) =>
+        case Literal(Constant(_)) | Ident(_) | Select(_, _) | This(_) =>
           noFurtherSubPats(EqualityTestTreeMaker(patBinder, patTree, pos))
 
         case Alternative(alts)    =>
@@ -430,7 +458,7 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
           patmatDebug("WARNING: Bind tree with unbound symbol "+ patTree)
           noFurtherSubPats() // there's no symbol -- something's wrong... don't fail here though (or should we?)
 
-        // case Star(_) | ArrayValue | This => error("stone age pattern relics encountered!")
+        // case Star(_) | ArrayValue  => error("stone age pattern relics encountered!")
 
         case _                       =>
           error("unsupported pattern: "+ patTree +"(a "+ patTree.getClass +")")
@@ -547,7 +575,10 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
         if(isSeq) {
           val TypeRef(pre, SeqClass, args) = seqTp
           // do repeated-parameter expansion to match up with the expected number of arguments (in casu, subpatterns)
-          formalTypes(rawSubPatTypes.init :+ typeRef(pre, RepeatedParamClass, args), nbSubPats)
+          val formalsWithRepeated = rawSubPatTypes.init :+ typeRef(pre, RepeatedParamClass, args)
+
+          if (lastIsStar) formalTypes(formalsWithRepeated, nbSubPats - 1) :+ seqTp
+          else formalTypes(formalsWithRepeated, nbSubPats)
         } else rawSubPatTypes
 
       protected def rawSubPatTypes: List[Type]
@@ -637,7 +668,7 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
       // binder has type paramType
       def treeMaker(binder: Symbol, pos: Position): TreeMaker = {
         // checks binder ne null before chaining to the next extractor
-        ProductExtractorTreeMaker(binder, lengthGuard(binder))(Substitution(subPatBinders, subPatRefs(binder)))
+        ProductExtractorTreeMaker(binder, lengthGuard(binder))(subPatBinders, subPatRefs(binder))
       }
 
       // reference the (i-1)th case accessor if it exists, otherwise the (i-1)th tuple component
@@ -681,7 +712,7 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
         // the extractor call (applied to the binder bound by the flatMap corresponding to the previous (i.e., enclosing/outer) pattern)
         val extractorApply = atPos(pos)(spliceApply(patBinderOrCasted))
         val binder         = freshSym(pos, pureType(resultInMonad)) // can't simplify this when subPatBinders.isEmpty, since UnitClass.tpe is definitely wrong when isSeq, and resultInMonad should always be correct since it comes directly from the extractor's result type
-        ExtractorTreeMaker(extractorApply, lengthGuard(binder), binder)(Substitution(subPatBinders, subPatRefs(binder)), resultType.typeSymbol == BooleanClass, checkedLength, patBinderOrCasted)
+        ExtractorTreeMaker(extractorApply, lengthGuard(binder), binder)(subPatBinders, subPatRefs(binder), resultType.typeSymbol == BooleanClass, checkedLength, patBinderOrCasted)
       }
 
       override protected def seqTree(binder: Symbol): Tree =
@@ -837,6 +868,20 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
       }
       private[this] var currSub: Substitution = null
 
+      /** The substitution that specifies the trees that compute the values of the subpattern binders.
+       *
+       * Should not be used to perform actual substitution!
+       * Only used to reason symbolically about the values the subpattern binders are bound to.
+       * See TreeMakerToCond#updateSubstitution.
+       *
+       * Overridden in PreserveSubPatBinders to pretend it replaces the subpattern binders by subpattern refs
+       * (Even though we don't do so anymore -- see SI-5158, SI-5739 and SI-6070.)
+       *
+       * TODO: clean this up, would be nicer to have some higher-level way to compute
+       * the binders bound by this tree maker and the symbolic values that correspond to them
+       */
+      def subPatternsAsSubstitution: Substitution = substitution
+
       // build Tree that chains `next` after the current extractor
       def chainBefore(next: Tree)(casegen: Casegen): Tree
     }
@@ -885,32 +930,89 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
         atPos(pos)(casegen.flatMapCond(cond, res, nextBinder, substitution(next)))
     }
 
+    trait PreserveSubPatBinders extends NoNewBinders {
+      val subPatBinders: List[Symbol]
+      val subPatRefs: List[Tree]
+
+      /** The substitution that specifies the trees that compute the values of the subpattern binders.
+       *
+       * We pretend to replace the subpattern binders by subpattern refs
+       * (Even though we don't do so anymore -- see SI-5158, SI-5739 and SI-6070.)
+       */
+      override def subPatternsAsSubstitution =
+        Substitution(subPatBinders, subPatRefs) >> super.subPatternsAsSubstitution
+
+      import CODE._
+      def bindSubPats(in: Tree): Tree = Block(map2(subPatBinders, subPatRefs)(VAL(_) === _), in)
+    }
+
     /**
      * Make a TreeMaker that will result in an extractor call specified by `extractor`
      * the next TreeMaker (here, we don't know which it'll be) is chained after this one by flatMap'ing
      * a function with binder `nextBinder` over our extractor's result
      * the function's body is determined by the next TreeMaker
-     * in this function's body, and all the subsequent ones, references to the symbols in `from` will be replaced by the corresponding tree in `to`
+     * (furthermore, the interpretation of `flatMap` depends on the codegen instance we're using).
+     *
+     * The values for the subpatterns, as computed by the extractor call in `extractor`,
+     * are stored in local variables that re-use the symbols in `subPatBinders`.
+     * This makes extractor patterns more debuggable (SI-5739).
      */
-    case class ExtractorTreeMaker(extractor: Tree, extraCond: Option[Tree], nextBinder: Symbol)(val localSubstitution: Substitution, extractorReturnsBoolean: Boolean, val checkedLength: Option[Int], val prevBinder: Symbol) extends FunTreeMaker {
+    case class ExtractorTreeMaker(extractor: Tree, extraCond: Option[Tree], nextBinder: Symbol)(
+          val subPatBinders: List[Symbol],
+          val subPatRefs: List[Tree],
+          extractorReturnsBoolean: Boolean,
+          val checkedLength: Option[Int],
+          val prevBinder: Symbol) extends FunTreeMaker with PreserveSubPatBinders {
+
       def chainBefore(next: Tree)(casegen: Casegen): Tree = {
-        val condAndNext = extraCond map (casegen.ifThenElseZero(_, next)) getOrElse next
+        val condAndNext = extraCond match {
+          case Some(cond) =>
+            casegen.ifThenElseZero(substitution(cond), bindSubPats(substitution(next)))
+          case _ =>
+            bindSubPats(substitution(next))
+        }
         atPos(extractor.pos)(
-          if (extractorReturnsBoolean) casegen.flatMapCond(extractor, CODE.UNIT, nextBinder, substitution(condAndNext))
-          else casegen.flatMap(extractor, nextBinder, substitution(condAndNext))
+          if (extractorReturnsBoolean) casegen.flatMapCond(extractor, CODE.UNIT, nextBinder, condAndNext)
+          else casegen.flatMap(extractor, nextBinder, condAndNext)
         )
       }
 
       override def toString = "X"+(extractor, nextBinder.name)
     }
 
-    // TODO: allow user-defined unapplyProduct
-    case class ProductExtractorTreeMaker(prevBinder: Symbol, extraCond: Option[Tree])(val localSubstitution: Substitution) extends FunTreeMaker { import CODE._
+    /**
+     * An optimized version of ExtractorTreeMaker for Products.
+     * For now, this is hard-coded to case classes, and we simply extract the case class fields.
+     *
+     * The values for the subpatterns, as specified by the case class fields at the time of extraction,
+     * are stored in local variables that re-use the symbols in `subPatBinders`.
+     * This makes extractor patterns more debuggable (SI-5739) as well as
+     * avoiding mutation after the pattern has been matched (SI-5158, SI-6070)
+     *
+     * TODO: make this user-definable as follows
+     *   When a companion object defines a method `def unapply_1(x: T): U_1`, but no `def unapply` or `def unapplySeq`,
+     *   the extractor is considered to match any non-null value of type T
+     *   the pattern is expected to have as many sub-patterns as there are `def unapply_I(x: T): U_I` methods,
+     *   and the type of the I'th sub-pattern is `U_I`.
+     *   The same exception for Seq patterns applies: if the last extractor is of type `Seq[U_N]`,
+     *   the pattern must have at least N arguments (exactly N if the last argument is annotated with `: _*`).
+     *   The arguments starting at N (and beyond) are taken from the sequence returned by apply_N,
+     *   and it is checked that that sequence has enough elements to provide values for all expected sub-patterns.
+     *
+     *   For a case class C, the implementation is assumed to be `def unapply_I(x: C) = x._I`,
+     *   and the extractor call is inlined under that assumption.
+     */
+    case class ProductExtractorTreeMaker(prevBinder: Symbol, extraCond: Option[Tree])(
+          val subPatBinders: List[Symbol],
+          val subPatRefs: List[Tree]) extends FunTreeMaker with PreserveSubPatBinders {
+
+      import CODE._
       val nextBinder = prevBinder // just passing through
+
       def chainBefore(next: Tree)(casegen: Casegen): Tree = {
         val nullCheck = REF(prevBinder) OBJ_NE NULL
         val cond = extraCond map (nullCheck AND _) getOrElse nullCheck
-        casegen.ifThenElseZero(cond, substitution(next))
+        casegen.ifThenElseZero(cond, bindSubPats(substitution(next)))
       }
 
       override def toString = "P"+(prevBinder.name,  extraCond getOrElse "", localSubstitution)
@@ -1024,7 +1126,7 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
         else expectedTp match {
           // TODO: [SPEC] the spec requires `eq` instead of `==` for singleton types
           // this implies sym.isStable
-          case SingleType(_, sym)                       => and(equalsTest(CODE.REF(sym), testedBinder), typeTest(testedBinder, expectedTp.widen))
+          case SingleType(_, sym)                       => and(equalsTest(gen.mkAttributedQualifier(expectedTp), testedBinder), typeTest(testedBinder, expectedTp.widen))
           // must use == to support e.g. List() == Nil
           case ThisType(sym) if sym.isModule            => and(equalsTest(CODE.REF(sym), testedBinder), typeTest(testedBinder, expectedTp.widen))
           case ConstantType(Constant(null)) if testedBinder.info.widen <:< AnyRefClass.tpe
@@ -1541,7 +1643,7 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
          * TODO: don't ignore outer-checks
          */
         def apply(tm: TreeMaker): Cond = {
-          if (!substitutionComputed) updateSubstitution(tm.substitution)
+          if (!substitutionComputed) updateSubstitution(tm.subPatternsAsSubstitution)
 
           tm match {
             case ttm@TypeTestTreeMaker(prevBinder, testedBinder, pt, _)   =>
@@ -1863,14 +1965,14 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
     type Formula
     def andFormula(a: Formula, b: Formula): Formula
 
-    class CNFBudgetExceeded extends RuntimeException("CNF budget exceeded")
 
-    // may throw an CNFBudgetExceeded
-    def propToSolvable(p: Prop) = {
+    // may throw an AnalysisBudget.Exception
+    def propToSolvable(p: Prop): Formula = {
       val (eqAxioms, pure :: Nil) = removeVarEq(List(p), modelNull = false)
       eqFreePropToSolvable(And(eqAxioms, pure))
     }
 
+    // may throw an AnalysisBudget.Exception
     def eqFreePropToSolvable(p: Prop): Formula
     def cnfString(f: Formula): String
 
@@ -1896,7 +1998,7 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
     type Lit
     def Lit(sym: Sym, pos: Boolean = true): Lit
 
-    // throws an CNFBudgetExceeded when the prop results in a CNF that's too big
+    // throws an AnalysisBudget.Exception when the prop results in a CNF that's too big
     def eqFreePropToSolvable(p: Prop): Formula = {
       // TODO: for now, reusing the normalization from DPLL
       def negationNormalForm(p: Prop): Prop = p match {
@@ -1918,9 +2020,9 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
       def lit(s: Sym)    = formula(clause(Lit(s)))
       def negLit(s: Sym) = formula(clause(Lit(s, false)))
 
-      def conjunctiveNormalForm(p: Prop, budget: Int = 256): Formula = {
+      def conjunctiveNormalForm(p: Prop, budget: Int = AnalysisBudget.max): Formula = {
         def distribute(a: Formula, b: Formula, budget: Int): Formula =
-          if (budget <= 0) throw new CNFBudgetExceeded
+          if (budget <= 0) throw AnalysisBudget.exceeded
           else
             (a, b) match {
               // true \/ _ = true
@@ -1935,7 +2037,7 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
                 big flatMap (c => distribute(formula(c), small, budget - (big.size*small.size)))
             }
 
-        if (budget <= 0) throw new CNFBudgetExceeded
+        if (budget <= 0) throw AnalysisBudget.exceeded
 
         p match {
           case True        => TrueF
@@ -1954,9 +2056,17 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
       }
 
       val start = Statistics.startTimer(patmatCNF)
-      val res = conjunctiveNormalForm(negationNormalForm(p))
+      val res =
+        try {
+          conjunctiveNormalForm(negationNormalForm(p))
+        } catch { case ex : StackOverflowError =>
+          throw AnalysisBudget.stackOverflow
+        }
+
       Statistics.stopTimer(patmatCNF, start)
-      patmatCNFSizes(res.size).value += 1
+
+      //
+      if (Statistics.enabled) patmatCNFSizes(res.size).value += 1
 
 //      patmatDebug("cnf for\n"+ p +"\nis:\n"+cnfString(res))
       res
@@ -2357,6 +2467,7 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
     // right now hackily implement this by pruning counter-examples
     // unreachability would also benefit from a more faithful representation
 
+
     // reachability (dead code)
 
     // computes the first 0-based case index that is unreachable (if any)
@@ -2425,9 +2536,8 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
 
         if (reachable) None else Some(caseIndex)
       } catch {
-        case e : CNFBudgetExceeded =>
-//          debugWarn(util.Position.formatMessage(prevBinder.pos, "Cannot check match for reachability", false))
-//          e.printStackTrace()
+        case ex: AnalysisBudget.Exception =>
+          ex.warn(prevBinder.pos, "unreachability")
           None // CNF budget exceeded
       }
     }
@@ -2568,9 +2678,8 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
           Statistics.stopTimer(patmatAnaExhaust, start)
           pruned
         } catch {
-          case e : CNFBudgetExceeded =>
-            patmatDebug(util.Position.formatMessage(prevBinder.pos, "Cannot check match for exhaustivity", false))
-            // e.printStackTrace()
+          case ex : AnalysisBudget.Exception =>
+            ex.warn(prevBinder.pos, "exhaustivity")
             Nil // CNF budget exceeded
         }
       }

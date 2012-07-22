@@ -41,8 +41,7 @@ trait GenTypes {
       case tpe @ ThisType(empty) if empty.isEmptyPackageClass =>
         mirrorBuildCall(nme.thisPrefix, mirrorMirrorSelect(nme.EmptyPackageClass))
       case tpe @ ThisType(clazz) if clazz.isModuleClass && clazz.isStatic =>
-        // [Eugene++ to Martin] makes sense?
-        val module = mirrorMirrorCall(nme.staticModule, reify(clazz.fullName))
+        val module = reify(clazz.sourceModule)
         val moduleClass = Select(Select(module, nme.asModuleSymbol), nme.moduleClass)
         mirrorFactoryCall(nme.ThisType, moduleClass)
       case tpe @ ThisType(_) =>

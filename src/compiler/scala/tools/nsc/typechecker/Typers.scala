@@ -1972,7 +1972,8 @@ trait Typers extends Modes with Adaptations with Tags {
                 case SilentResultValue(tpt) =>
                   val alias = enclClass.newAliasType(name.toTypeName, useCase.pos)
                   val tparams = cloneSymbolsAtOwner(tpt.tpe.typeSymbol.typeParams, alias)
-                  alias setInfo typeFun(tparams, appliedType(tpt.tpe, tparams map (_.tpe)))
+                  val newInfo = genPolyType(tparams, appliedType(tpt.tpe, tparams map (_.tpe)))
+                  alias setInfo newInfo
                   context.scope.enter(alias)
                 case _ =>
               }
@@ -3883,40 +3884,51 @@ trait Typers extends Modes with Adaptations with Tags {
         }
       }
 
-      def typedBind(name: Name, body: Tree) = {
-        var vble = tree.symbol
-        def typedBindType(name: TypeName) = {
-          assert(body == EmptyTree, context.unit + " typedBind: " + name.debugString + " " + body + " " + body.getClass)
-          if (vble == NoSymbol)
-            vble =
+      def typedBind(name: Name, body: Tree) =
+        name match {
+          case name: TypeName  => assert(body == EmptyTree, context.unit + " typedBind: " + name.debugString + " " + body + " " + body.getClass)
+            val sym =
+              if (tree.symbol != NoSymbol) tree.symbol
+              else {
               if (isFullyDefined(pt))
                 context.owner.newAliasType(name, tree.pos) setInfo pt
               else
                 context.owner.newAbstractType(name, tree.pos) setInfo TypeBounds.empty
-          val rawInfo = vble.rawInfo
-          vble = if (vble.name == tpnme.WILDCARD) context.scope.enter(vble)
-                 else namer.enterInScope(vble)
-          tree setSymbol vble setType vble.tpe
         }
-        def typedBindTerm(name: TermName) = {
-          if (vble == NoSymbol)
-            vble = context.owner.newValue(name, tree.pos)
-          if (vble.name.toTermName != nme.WILDCARD) {
-            if ((mode & ALTmode) != 0)
-              VariableInPatternAlternativeError(tree)
-            vble = namer.enterInScope(vble)
+
+            if (name != tpnme.WILDCARD) namer.enterInScope(sym)
+            else context.scope.enter(sym)
+
+            tree setSymbol sym setType sym.tpe
+
+          case name: TermName  =>
+            val sym =
+              if (tree.symbol != NoSymbol) tree.symbol
+              else context.owner.newValue(name, tree.pos)
+
+            if (name != nme.WILDCARD) {
+              if ((mode & ALTmode) != 0) VariableInPatternAlternativeError(tree)
+              namer.enterInScope(sym)
           }
+
           val body1 = typed(body, mode, pt)
-          vble.setInfo(
+            val symTp =
             if (treeInfo.isSequenceValued(body)) seqType(body1.tpe)
-            else body1.tpe)
-          treeCopy.Bind(tree, name, body1) setSymbol vble setType body1.tpe   // burak, was: pt
-        }
-        name match {
-          case x: TypeName  => typedBindType(x)
-          case x: TermName  => typedBindTerm(x)
-        }
+              else body1.tpe
+            sym setInfo symTp
+
+            // have to imperatively set the symbol for this bind to keep it in sync with the symbols used in the body of a case
+            // when type checking a case we imperatively update the symbols in the body of the case
+            // those symbols are bound by the symbols in the Binds in the pattern of the case,
+            // so, if we set the symbols in the case body, but not in the patterns,
+            // then re-type check the casedef (for a second try in typedApply for example -- SI-1832),
+            // we are no longer in sync: the body has symbols set that do not appear in the patterns
+            // since body1 is not necessarily equal to body, we must return a copied tree,
+            // but we must still mutate the original bind
+            tree setSymbol sym
+            treeCopy.Bind(tree, name, body1) setSymbol sym setType body1.tpe
       }
+
 
       def typedArrayValue(elemtpt: Tree, elems: List[Tree]) = {
         val elemtpt1 = typedType(elemtpt, mode)
@@ -4510,6 +4522,8 @@ trait Typers extends Modes with Adaptations with Tags {
           errorContainer = tree
         }
 
+        val fingerPrint: Long = name.fingerPrint
+
         var defSym: Symbol = tree.symbol  // the directly found symbol
         var pre: Type = NoPrefix          // the prefix type of defSym, if a class member
         var qual: Tree = EmptyTree        // the qualifier tree if transformed tree is a select
@@ -4547,7 +4561,10 @@ trait Typers extends Modes with Adaptations with Tags {
           var cx = startingIdentContext
           while (defSym == NoSymbol && cx != NoContext && (cx.scope ne null)) { // cx.scope eq null arises during FixInvalidSyms in Duplicators
             pre = cx.enclClass.prefix
-            defEntry = cx.scope.lookupEntry(name)
+            defEntry = {
+                val scope = cx.scope
+                if ((fingerPrint & scope.fingerPrints) != 0) scope.lookupEntry(name) else null
+              }
             if ((defEntry ne null) && qualifies(defEntry.sym)) {
               // Right here is where SI-1987, overloading in package objects, can be
               // seen to go wrong. There is an overloaded symbol, but when referring

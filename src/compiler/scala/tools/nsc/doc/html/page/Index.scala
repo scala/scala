@@ -14,7 +14,7 @@ import scala.collection._
 import scala.xml._
 import scala.util.parsing.json.{JSONObject, JSONArray}
 
-class Index(universe: doc.Universe, index: doc.Index) extends HtmlPage {
+class Index(universe: doc.Universe, val index: doc.Index) extends HtmlPage {
 
   def path = List("index.html")
 
@@ -61,12 +61,14 @@ class Index(universe: doc.Universe, index: doc.Index) extends HtmlPage {
             }
             <ol class="templates">{
               val tpls: Map[String, Seq[DocTemplateEntity]] =
-                (pack.templates filter (t => !t.isPackage && !universe.settings.hardcoded.isExcluded(t.qualifiedName) )) groupBy (_.name)
+                (pack.templates collect {
+                  case t: DocTemplateEntity if !t.isPackage && !universe.settings.hardcoded.isExcluded(t.qualifiedName) => t
+                }) groupBy (_.name)
 
               val placeholderSeq: NodeSeq = <div class="placeholder"></div>
 
               def createLink(entity: DocTemplateEntity, includePlaceholder: Boolean, includeText: Boolean) = {
-                val entityType = docEntityKindToString(entity)
+                val entityType = kindToString(entity)
                 val linkContent = (
                   { if (includePlaceholder) placeholderSeq else NodeSeq.Empty }
                   ++
