@@ -11,7 +11,7 @@ object Macros {
       val greeting = c.reifyTree(c.runtimeUniverse, EmptyTree, c.typeCheck(Apply(Select(Literal(Constant("hello ")), newTermName("$plus")), List(c.unreifyTree(world)))))
       val typedGreeting = c.Expr[String](greeting)
 
-      c.reify {
+      c.universe.reify {
         println("hello " + s.splice + " = " + typedGreeting.splice)
       }
     }

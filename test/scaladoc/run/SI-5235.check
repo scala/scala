@@ -1,0 +1,4 @@
+newSource:10: warning: Could not find the type $Coll points to while expanding it for the usecase signature of method reverse in trait SpecificColl.In this context, $Coll = "BullSh".
+             * @usecase def reverse(): $Coll
+                        ^
+Done.

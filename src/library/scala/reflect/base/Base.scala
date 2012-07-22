@@ -357,6 +357,9 @@ class Base extends Universe { self =>
     def staticModule(fullName: String): ModuleSymbol =
       mkStatic[ModuleSymbol](fullName)
 
+    def staticPackage(fullName: String): ModuleSymbol =
+      staticModule(fullName) // this toy universe doesn't care about the distinction between packages and modules
+
     private def mkStatic[S <: Symbol : ClassTag](fullName: String): S =
       cached(fullName) {
         val point = fullName lastIndexOf '.'

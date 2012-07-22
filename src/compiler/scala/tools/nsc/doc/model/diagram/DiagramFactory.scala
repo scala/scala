@@ -18,21 +18,14 @@ import scala.collection.immutable.SortedMap
  *  @author Vlad Ureche
  */
 trait DiagramFactory extends DiagramDirectiveParser {
-  this: ModelFactory with DiagramFactory with CommentFactory with TreeFactory =>
+  this: ModelFactory with ModelFactoryTypeSupport with DiagramFactory with CommentFactory with TreeFactory =>
 
   import this.global.definitions._
   import this.global._
 
   // the following can used for hardcoding different relations into the diagram, for bootstrapping purposes
-  lazy val AnyNode = normalNode(AnyClass)
-  lazy val AnyRefNode = normalNode(AnyRefClass)
-  lazy val AnyValNode = normalNode(AnyValClass)
-  lazy val NullNode = normalNode(NullClass)
-  lazy val NothingNode = normalNode(NothingClass)
-  def normalNode(sym: Symbol) =
-    NormalNode(makeTemplate(sym).ownType, Some(makeTemplate(sym)))
   def aggregationNode(text: String) =
-    NormalNode(new TypeEntity { val name = text; val refEntity = SortedMap[Int, (TemplateEntity, Int)]() }, None)
+    NormalNode(new TypeEntity { val name = text; val refEntity = SortedMap[Int, (LinkTo, Int)]() }, None)()
 
   /** Create the inheritance diagram for this template */
   def makeInheritanceDiagram(tpl: DocTemplateImpl): Option[Diagram] = {
@@ -52,31 +45,30 @@ trait DiagramFactory extends DiagramDirectiveParser {
         None
       else {
         // the main node
-        val thisNode = ThisNode(tpl.ownType, Some(tpl), Some(tpl.qualifiedName + " (this " + tpl.kind + ")"))
+        val thisNode = ThisNode(tpl.resultType, Some(tpl))(Some(tpl.qualifiedName + " (this " + tpl.kind + ")"))
 
         // superclasses
         var superclasses: List[Node] =
           tpl.parentTypes.collect {
-            case p: (TemplateEntity, TypeEntity) if !classExcluded(p._1) => NormalNode(p._2, Some(p._1))
+            case p: (TemplateEntity, TypeEntity) if !classExcluded(p._1) => NormalNode(p._2, Some(p._1))()
           }.reverse
 
         // incoming implcit conversions
         lazy val incomingImplicitNodes = tpl.incomingImplicitlyConvertedClasses.map {
           case (incomingTpl, conv) =>
-            ImplicitNode(incomingTpl.ownType, Some(incomingTpl), implicitTooltip(from=incomingTpl, to=tpl, conv=conv))
+            ImplicitNode(makeType(incomingTpl.sym.tpe, tpl), Some(incomingTpl))(implicitTooltip(from=incomingTpl, to=tpl, conv=conv))
         }
 
         // subclasses
         var subclasses: List[Node] =
-          tpl.directSubClasses.flatMap {
-            case d: TemplateEntity if !classExcluded(d) => List(NormalNode(d.ownType, Some(d)))
-            case _ => Nil
+          tpl.directSubClasses.collect {
+            case d: TemplateImpl if !classExcluded(d) => NormalNode(makeType(d.sym.tpe, tpl), Some(d))()
           }.sortBy(_.tpl.get.name)(implicitly[Ordering[String]].reverse)
 
         // outgoing implicit coversions
         lazy val outgoingImplicitNodes = tpl.outgoingImplicitlyConvertedClasses.map {
           case (outgoingTpl, outgoingType, conv) =>
-            ImplicitNode(outgoingType, Some(outgoingTpl), implicitTooltip(from=tpl, to=tpl, conv=conv))
+            ImplicitNode(outgoingType, Some(outgoingTpl))(implicitTooltip(from=tpl, to=tpl, conv=conv))
         }
 
         // TODO: Everyone should be able to use the @{inherit,content}Diagram annotation to change the diagrams.
@@ -93,7 +85,7 @@ trait DiagramFactory extends DiagramDirectiveParser {
         val filteredImplicitOutgoingNodes = if (diagramFilter.hideOutgoingImplicits) Nil else outgoingImplicitNodes
 
         // final diagram filter
-        filterDiagram(ClassDiagram(thisNode, filteredSuperclasses.reverse, filteredSubclasses.reverse, filteredIncomingImplicits, filteredImplicitOutgoingNodes), diagramFilter)
+        filterDiagram(InheritanceDiagram(thisNode, filteredSuperclasses.reverse, filteredSubclasses.reverse, filteredIncomingImplicits, filteredImplicitOutgoingNodes), diagramFilter)
       }
 
     tModel += System.currentTimeMillis
@@ -129,12 +121,10 @@ trait DiagramFactory extends DiagramDirectiveParser {
         // for each node, add its subclasses
         for (node <- nodesAll if !classExcluded(node)) {
           node match {
-            case dnode: DocTemplateImpl =>
-              var superClasses = dnode.parentTypes.map(_._1)
+            case dnode: MemberTemplateImpl =>
+              var superClasses = dnode.parentTypes.map(_._1).filter(nodesAll.contains(_))
 
-              superClasses = superClasses.filter(nodesAll.contains(_))
-
-              // TODO: Everyone should be able to use the @{inherit,content}Diagram annotation to change the diagrams.
+              // TODO: Everyone should be able to use the @{inherit,content}Diagram annotation to add nodes to diagrams.
               if (pack.sym == ScalaPackage)
                 if (dnode.sym == NullClass)
                   superClasses = List(makeTemplate(AnyRefClass))
@@ -149,7 +139,12 @@ trait DiagramFactory extends DiagramDirectiveParser {
             case _ =>
           }
 
-          mapNodes += node -> (if (node.inTemplate == pack) NormalNode(node.ownType, Some(node)) else OutsideNode(node.ownType, Some(node)))
+          mapNodes += node -> (
+            if (node.inTemplate == pack && (node.isDocTemplate || node.isAbstractType || node.isAliasType))
+              NormalNode(node.resultType, Some(node))()
+            else
+              OutsideNode(node.resultType, Some(node))()
+          )
         }
 
         if (nodesShown.isEmpty)
@@ -173,9 +168,12 @@ trait DiagramFactory extends DiagramDirectiveParser {
               val anyRefSubtypes = Nil
               val allAnyRefTypes = aggregationNode("All AnyRef subtypes")
               val nullTemplate = makeTemplate(NullClass)
-              PackageDiagram(allAnyRefTypes::nodes, (mapNodes(nullTemplate), allAnyRefTypes::anyRefSubtypes)::edges.filterNot(_._1.tpl == Some(nullTemplate)))
+              if (nullTemplate.isDocTemplate)
+                ContentDiagram(allAnyRefTypes::nodes, (mapNodes(nullTemplate), allAnyRefTypes::anyRefSubtypes)::edges.filterNot(_._1.tpl == Some(nullTemplate)))
+              else
+                ContentDiagram(nodes, edges)
             } else
-              PackageDiagram(nodes, edges)
+              ContentDiagram(nodes, edges)
 
           filterDiagram(diagram, diagramFilter)
         }
@@ -200,10 +198,10 @@ trait DiagramFactory extends DiagramDirectiveParser {
       else {
         // Final diagram, with the filtered nodes and edges
         diagram match {
-          case ClassDiagram(thisNode, _, _, _, _) if diagramFilter.hideNode(thisNode) =>
+          case InheritanceDiagram(thisNode, _, _, _, _) if diagramFilter.hideNode(thisNode) =>
             None
 
-          case ClassDiagram(thisNode, superClasses, subClasses, incomingImplicits, outgoingImplicits) =>
+          case InheritanceDiagram(thisNode, superClasses, subClasses, incomingImplicits, outgoingImplicits) =>
 
             def hideIncoming(node: Node): Boolean =
               diagramFilter.hideNode(node) || diagramFilter.hideEdge(node, thisNode)
@@ -214,13 +212,13 @@ trait DiagramFactory extends DiagramDirectiveParser {
             // println(thisNode)
             // println(superClasses.map(cl => "super: " + cl + "  " + hideOutgoing(cl)).mkString("\n"))
             // println(subClasses.map(cl => "sub: " + cl + "  " + hideIncoming(cl)).mkString("\n"))
-            Some(ClassDiagram(thisNode,
+            Some(InheritanceDiagram(thisNode,
                              superClasses.filterNot(hideOutgoing(_)),
                              subClasses.filterNot(hideIncoming(_)),
                              incomingImplicits.filterNot(hideIncoming(_)),
                              outgoingImplicits.filterNot(hideOutgoing(_))))
 
-          case PackageDiagram(nodes0, edges0) =>
+          case ContentDiagram(nodes0, edges0) =>
             // Filter out all edges that:
             // (1) are sources of hidden classes
             // (2) are manually hidden by the user
@@ -242,7 +240,7 @@ trait DiagramFactory extends DiagramDirectiveParser {
             val sourceNodes = edges.map(_._1)
             val sinkNodes = edges.map(_._2).flatten
             val nodes = (sourceNodes ::: sinkNodes).distinct
-            Some(PackageDiagram(nodes, edges))
+            Some(ContentDiagram(nodes, edges))
         }
       }
 

@@ -1,10 +1,12 @@
 package scala.tools.nsc
 
 import scala.tools.nsc.reporters.{Reporter, ConsoleReporter}
-import Properties.{ versionString, copyrightString }
+import Properties.{ versionString, copyrightString, residentPromptString }
 import scala.reflect.internal.util.{ BatchSourceFile, FakePos }
 
 abstract class Driver {
+  
+  val prompt = residentPromptString
 
   val versionMsg = "Scala compiler " +
     versionString + " -- " +
@@ -51,7 +53,7 @@ abstract class Driver {
         else
           doCompile(compiler)
       } catch {
-        case ex =>
+        case ex: Throwable =>
           compiler.logThrowable(ex)
           ex match {
             case FatalError(msg)  => reporter.error(null, "fatal error: " + msg)

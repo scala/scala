@@ -490,7 +490,6 @@ trait Definitions extends api.StandardDefinitions {
          def MacroContextPrefixType              = if (MacroContextClass != NoSymbol) getMemberType(MacroContextClass, tpnme.PrefixType) else NoSymbol
          def MacroContextUniverse                = if (MacroContextClass != NoSymbol) getMemberMethod(MacroContextClass, nme.universe) else NoSymbol
          def MacroContextMirror                  = if (MacroContextClass != NoSymbol) getMemberMethod(MacroContextClass, nme.mirror) else NoSymbol
-         def MacroContextReify                   = if (MacroContextClass != NoSymbol) getMemberMethod(MacroContextClass, nme.reify) else NoSymbol
     lazy val MacroImplAnnotation                 = requiredClass[scala.reflect.makro.internal.macroImpl]
     lazy val MacroInternalPackage                = getPackageObject("scala.reflect.makro.internal")
          def MacroInternal_materializeClassTag   = getMemberMethod(MacroInternalPackage, nme.materializeClassTag)
@@ -899,6 +898,7 @@ trait Definitions extends api.StandardDefinitions {
     lazy val SwitchClass                = requiredClass[scala.annotation.switch]
     lazy val TailrecClass               = requiredClass[scala.annotation.tailrec]
     lazy val VarargsClass               = requiredClass[scala.annotation.varargs]
+    lazy val StaticClass                = requiredClass[scala.annotation.static]
     lazy val uncheckedStableClass       = requiredClass[scala.annotation.unchecked.uncheckedStable]
     lazy val uncheckedVarianceClass     = requiredClass[scala.annotation.unchecked.uncheckedVariance]
 

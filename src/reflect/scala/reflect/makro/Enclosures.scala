@@ -36,10 +36,6 @@ trait Enclosures {
    */
   val enclosingPosition: Position
 
-  /** Tree that corresponds to the enclosing application, or EmptyTree if not applicable.
-   */
-  val enclosingApplication: Tree
-
   /** Tree that corresponds to the enclosing method, or EmptyTree if not applicable.
    */
   val enclosingMethod: Tree

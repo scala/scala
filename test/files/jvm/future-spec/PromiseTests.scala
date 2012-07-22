@@ -78,7 +78,7 @@ object PromiseTests extends MinimalScalaTest {
     
     "contain a value" in { f((future, result) => future.value mustBe (Some(Right(result)))) }
     
-    "return result with 'blocking'" in { f((future, result) => blocking(future, defaultTimeout) mustBe (result)) }
+    "return when ready with 'Await.ready'" in { f((future, result) => Await.ready(future, defaultTimeout).isCompleted mustBe (true)) }
     
     "return result with 'Await.result'" in { f((future, result) => Await.result(future, defaultTimeout) mustBe (result)) }
     
@@ -163,12 +163,9 @@ object PromiseTests extends MinimalScalaTest {
       })
     }
     
-    "throw exception with 'blocking'" in {
+    "throw not throw exception with 'Await.ready'" in {
       f {
-        (future, message) =>
-        intercept[E] {
-          blocking(future, defaultTimeout)
-        }.getMessage mustBe (message)
+        (future, message) => Await.ready(future, defaultTimeout).isCompleted mustBe (true)
       }
     }
     

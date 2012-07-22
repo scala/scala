@@ -36,7 +36,7 @@ trait CPSUtils {
   lazy val MarkerCPSAdaptMinus = rootMirror.getRequiredClass("scala.util.continuations.cpsMinus")
 
   lazy val Context = rootMirror.getRequiredClass("scala.util.continuations.ControlContext")
-  lazy val ModCPS = rootMirror.getRequiredModule("scala.util.continuations")
+  lazy val ModCPS = rootMirror.getRequiredPackage("scala.util.continuations")
 
   lazy val MethShiftUnit  = definitions.getMember(ModCPS, cpsNames.shiftUnit)
   lazy val MethShiftUnit0 = definitions.getMember(ModCPS, cpsNames.shiftUnit0)

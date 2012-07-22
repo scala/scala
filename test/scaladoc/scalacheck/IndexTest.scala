@@ -16,7 +16,7 @@ object Test extends Properties("Index") {
     val morepaths = Thread.currentThread.getContextClassLoader.getParent.asInstanceOf[URLClassLoader].getURLs.map(u => URLDecoder.decode(u.getPath))
     (paths ++ morepaths).mkString(java.io.File.pathSeparator)
   }
-  
+
   val docFactory = {
     val settings = new doc.Settings({Console.err.println(_)})
 
@@ -27,9 +27,9 @@ object Test extends Properties("Index") {
 
     new doc.DocFactory(reporter, settings)
   }
-  
+
   val indexModelFactory = doc.model.IndexModelFactory
-  
+
   def createIndex(path: String): Option[Index] = {
 
     val maybeUniverse = {
@@ -76,6 +76,13 @@ object Test extends Properties("Index") {
       case Some(index) =>
         (index.browser \ "script").size == 1
 
+      case None => false
+    }
+  }
+  property("package objects in index") = {
+    createIndex("test/scaladoc/resources/SI-5558.scala") match {
+      case Some(index) =>
+        index.index.firstLetterIndex('f') isDefinedAt "foo"
       case None => false
     }
   }
