@@ -1615,7 +1615,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
      */
     def unsafeTypeParams: List[Symbol] =
       if (isMonomorphicType) Nil
-      else atPhase(unsafeTypeParamPhase)(rawInfo.typeParams)
+      else enteringPhase(unsafeTypeParamPhase)(rawInfo.typeParams)
 
     /** The type parameters of this symbol.
      *  assumption: if a type starts out as monomorphic, it will not acquire
@@ -1627,9 +1627,9 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
         // analogously to the "info" getter, here we allow for two completions:
         //   one: sourceCompleter to LazyType, two: LazyType to completed type
         if (validTo == NoPeriod)
-          atPhase(phaseOf(infos.validFrom))(rawInfo load this)
+          enteringPhase(phaseOf(infos.validFrom))(rawInfo load this)
         if (validTo == NoPeriod)
-          atPhase(phaseOf(infos.validFrom))(rawInfo load this)
+          enteringPhase(phaseOf(infos.validFrom))(rawInfo load this)
 
         rawInfo.typeParams
       }
