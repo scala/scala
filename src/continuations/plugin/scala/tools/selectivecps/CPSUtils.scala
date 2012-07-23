@@ -29,6 +29,8 @@ trait CPSUtils {
     val shiftUnit0      = newTermName("shiftUnit0")
     val shiftUnit       = newTermName("shiftUnit")
     val shiftUnitR      = newTermName("shiftUnitR")
+    val reset           = newTermName("reset")
+    val reset0          = newTermName("reset0")
   }
 
   lazy val MarkerCPSSym        = definitions.getClass("scala.util.continuations.cpsSym")
@@ -47,9 +49,14 @@ trait CPSUtils {
   lazy val MethShiftR     = definitions.getMember(ModCPS, cpsNames.shiftR)
   lazy val MethReify      = definitions.getMember(ModCPS, cpsNames.reify)
   lazy val MethReifyR     = definitions.getMember(ModCPS, cpsNames.reifyR)
+  lazy val MethReset      = definitions.getMember(ModCPS, cpsNames.reset)
+  lazy val MethReset0     = definitions.getMember(ModCPS, cpsNames.reset0)
 
   lazy val allCPSAnnotations = List(MarkerCPSSym, MarkerCPSTypes, MarkerCPSSynth,
     MarkerCPSAdaptPlus, MarkerCPSAdaptMinus)
+
+  lazy val allCPSMethods = List(MethShiftUnit, MethShiftUnit0, MethShiftUnitR, MethShift, MethShiftR,
+    MethReify, MethReifyR, MethReset, MethReset0)
 
   def debuglog(s: => String): Unit = {
     //Console.err.println(s)

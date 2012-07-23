@@ -32,6 +32,84 @@ abstract class SelectiveANFTransform extends PluginComponent with Transform with
     implicit val _unit = unit // allow code in CPSUtils.scala to report errors
     var cpsAllowed: Boolean = false // detect cps code in places we do not handle (yet)
 
+    /* Does not attempt to remove tail returns.
+     * Only checks whether the method contains returns as well as calls to CPS methods.
+     */
+    class CheckCPSMethodsTraverser extends Traverser {
+      var cpsMethodsSeen = false
+      var returnsSeen: Option[Tree] = None
+      override def traverse(tree: Tree): Unit = tree match {
+        case Ident(_) | Select(_, _) =>
+          if (tree.hasSymbol && (allCPSMethods contains tree.symbol))
+            cpsMethodsSeen = true
+          super.traverse(tree)
+        case Return(_) =>
+          returnsSeen = Some(tree)
+        case _ =>
+          super.traverse(tree)
+      }
+    }
+    
+    /* Also checks whether the method calls a CPS method in which case an error is produced
+     */
+    class RemoveTailReturnsTransformer extends Transformer {
+      var cpsMethodsSeen = false
+      var returnsSeen: Option[Tree] = None
+      override def transform(tree: Tree): Tree = tree match {
+        case Block(stms, r @ Return(expr)) =>
+          returnsSeen = Some(r)
+          treeCopy.Block(tree, stms, expr)
+
+        case Block(stms, expr) =>
+          treeCopy.Block(tree, stms, transform(expr))
+
+        case If(cond, r1 @ Return(thenExpr), r2 @ Return(elseExpr)) =>
+          returnsSeen = Some(r1)
+          treeCopy.If(tree, cond, transform(thenExpr), transform(elseExpr))
+
+        case If(cond, thenExpr, elseExpr) =>
+          treeCopy.If(tree, cond, transform(thenExpr), transform(elseExpr))
+
+        case Try(block, catches, finalizer) =>
+          treeCopy.Try(tree,
+                       transform(block),
+                       (catches map (t => transform(t))).asInstanceOf[List[CaseDef]],
+                       transform(finalizer))
+
+        case CaseDef(pat, guard, r @ Return(expr)) =>
+          returnsSeen = Some(r)
+          treeCopy.CaseDef(tree, pat, guard, expr)
+
+        case CaseDef(pat, guard, body) =>
+          treeCopy.CaseDef(tree, pat, guard, transform(body))
+
+        case Return(_) =>
+          unit.error(tree.pos, "return expressions in CPS code must be in tail position")
+          tree
+
+        case Ident(_) | Select(_, _) =>
+          if (tree.hasSymbol && (allCPSMethods contains tree.symbol))
+            cpsMethodsSeen = true
+          super.transform(tree)
+
+        case _ =>
+          super.transform(tree)
+      }
+    }
+
+    def removeTailReturns(body: Tree): Tree = {
+      // support body with single return expression
+      body match {
+        case Return(expr) => expr
+        case _ =>
+          val tr = new RemoveTailReturnsTransformer
+          val res = tr.transform(body)
+          if (tr.returnsSeen.nonEmpty && tr.cpsMethodsSeen)
+            unit.error(tr.returnsSeen.get.pos, "return expressions not allowed, since method calls CPS method")
+          res
+      }
+    }
+
     override def transform(tree: Tree): Tree = {
       if (!cpsEnabled) return tree
 
@@ -46,10 +124,19 @@ abstract class SelectiveANFTransform extends PluginComponent with Transform with
         // this would cause infinite recursion. But we could remove the
         // ValDef case here.
 
-        case dd @ DefDef(mods, name, tparams, vparamss, tpt, rhs) =>
+        case dd @ DefDef(mods, name, tparams, vparamss, tpt, rhs0) =>
           debuglog("transforming " + dd.symbol)
 
           atOwner(dd.symbol) {
+            val rhs =
+              if (cpsParamTypes(tpt.tpe).nonEmpty) removeTailReturns(rhs0)
+              else {
+                val checker = new CheckCPSMethodsTraverser
+                checker.traverse(rhs0)
+                if (checker.returnsSeen.nonEmpty && checker.cpsMethodsSeen)
+                  unit.error(checker.returnsSeen.get.pos, "return expressions not allowed, since method calls CPS method")
+                rhs0
+              }
             val rhs1 = transExpr(rhs, None, getExternalAnswerTypeAnn(tpt.tpe))
 
             debuglog("result "+rhs1)
