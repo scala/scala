@@ -4050,7 +4050,10 @@ trait Typers extends Modes with Adaptations with Tags {
             ReturnWithoutTypeError(tree, enclMethod.owner)
           } else {
             context.enclMethod.returnsSeen = true
-            val expr1: Tree = typed(expr, EXPRmode | BYVALmode, restpt.tpe)
+            if (!canAdaptReturnAnnotations(expr, EXPRmode | BYVALmode | RETmode, restpt.tpe, enclMethod.tree))
+              unit.error(tree.pos, "return expression not allowed due to annotation checking")
+            val expr1: Tree = typed(expr, EXPRmode | BYVALmode | RETmode, restpt.tpe)
+            
             // Warn about returning a value if no value can be returned.
             if (restpt.tpe.typeSymbol == UnitClass) {
               // The typing in expr1 says expr is Unit (it has already been coerced if
