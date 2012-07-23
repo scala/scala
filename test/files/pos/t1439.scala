@@ -2,7 +2,7 @@
 class View[C[A]] { }
 
 object Test {
-  null match {
+  (null: Any) match {
     case v: View[_] =>
   }
 }

@@ -1278,8 +1278,10 @@ trait Infer {
             } else {
               for (arg <- args) {
                 if (sym == ArrayClass) check(arg, bound)
-                else if (arg.typeArgs.nonEmpty) ()              // avoid spurious warnings with higher-kinded types
-                else if (sym == NonLocalReturnControlClass) ()  // no way to suppress unchecked warnings on try/catch
+                // avoid spurious warnings with higher-kinded types
+                else if (arg.typeArgs exists (_.typeSymbol.isTypeParameterOrSkolem)) ()
+                // no way to suppress unchecked warnings on try/catch
+                else if (sym == NonLocalReturnControlClass) ()
                 else arg match {
                   case TypeRef(_, sym, _) if isLocalBinding(sym) =>
                     ;
@@ -1423,7 +1425,7 @@ trait Infer {
         )
 
       // Intentionally *not* using `Type#typeSymbol` here, which would normalize `tp`
-      // and collect symbols from the result type of any resulting `PolyType`s, which 
+      // and collect symbols from the result type of any resulting `PolyType`s, which
       // are not free type parameters of `tp`.
       //
       // Contrast with `isFreeTypeParamNoSkolem`.
@@ -1456,7 +1458,7 @@ trait Infer {
     def inferExprAlternative(tree: Tree, pt: Type) = tree.tpe match {
       case OverloadedType(pre, alts) => tryTwice { isSecondTry =>
         val alts0          = alts filter (alt => isWeaklyCompatible(pre.memberType(alt), pt))
-        val noAlternatives = alts0.isEmpty 
+        val noAlternatives = alts0.isEmpty
         val alts1          = if (noAlternatives) alts else alts0
 
         //println("trying "+alts1+(alts1 map (_.tpe))+(alts1 map (_.locationString))+" for "+pt)
@@ -1614,7 +1616,7 @@ trait Infer {
         val saved = context.state
         var fallback = false
         context.setBufferErrors()
-        // We cache the current buffer because it is impossible to 
+        // We cache the current buffer because it is impossible to
         // distinguish errors that occurred before entering tryTwice
         // and our first attempt in 'withImplicitsDisabled'. If the
         // first attempt fails we try with implicits on *and* clean
