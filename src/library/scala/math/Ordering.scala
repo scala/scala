@@ -28,7 +28,7 @@ import language.{implicitConversions, higherKinds}
   * Sorting.quickSort(pairs)(Ordering.by[(String, Int, Int), Int](_._2)
   *
   * // sort by the 3rd element, then 1st
-  * Sorting.quickSort(pairs)(Ordering[(Int, String)].on[(String, Int, Int)]((_._3, _._1))
+  * Sorting.quickSort(pairs)(Ordering[(Int, String)].on(x => (x._3, x._1)))
   * }}}
   *
   * An Ordering[T] is implemented by specifying compare(a:T, b:T), which
