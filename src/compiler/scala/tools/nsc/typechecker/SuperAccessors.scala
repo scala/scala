@@ -57,8 +57,8 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
       val clazz              = qual.symbol
       val supername          = nme.superName(name)
       val superAcc = clazz.info.decl(supername).suchThat(_.alias == sym) orElse {
-        debuglog("add super acc " + sym + sym.locationString + " to `" + clazz);//debug
-        val acc = clazz.newMethod(supername, sel.pos, SUPERACCESSOR | PRIVATE) setAlias sym
+        debuglog(s"add super acc ${sym.fullLocationString} to $clazz")
+        val acc = clazz.newMethod(supername, sel.pos, SUPERACCESSOR | PRIVATE | HIDDEN) setAlias sym
         val tpe = clazz.thisType memberType sym match {
           case t if sym.isModule && !sym.isMethod => NullaryMethodType(t)
           case t                                  => t
@@ -370,7 +370,7 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
       }
 
       val protAcc = clazz.info.decl(accName).suchThat(s => s == NoSymbol || s.tpe =:= accType(s)) orElse {
-        val newAcc = clazz.newMethod(nme.protName(sym.originalName), tree.pos)
+        val newAcc = clazz.newMethod(nme.protName(sym.originalName), tree.pos, newFlags = HIDDEN)
         newAcc setInfoAndEnter accType(newAcc)
 
         val code = DefDef(newAcc, {
@@ -381,7 +381,7 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
           args.foldLeft(base)(Apply(_, _))
         })
 
-        debuglog("" + code)
+        debuglog("created protected accessor: " + code)
         storeAccessorDefinition(clazz, code)
         newAcc
       }
@@ -393,7 +393,7 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
           case _          => mkApply(TypeApply(selection, targs))
         }
       }
-      debuglog("Replaced " + tree + " with " + res)
+      debuglog(s"Replaced $tree with $res")
       if (hasArgs) localTyper.typedOperator(res) else localTyper.typed(res)
     }
 
@@ -432,7 +432,7 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
 
       val accName = nme.protSetterName(field.originalName)
       val protectedAccessor = clazz.info decl accName orElse {
-        val protAcc      = clazz.newMethod(accName, field.pos)
+        val protAcc      = clazz.newMethod(accName, field.pos, newFlags = HIDDEN)
         val paramTypes   = List(clazz.typeOfThis, field.tpe)
         val params       = protAcc newSyntheticValueParams paramTypes
         val accessorType = MethodType(params, UnitClass.tpe)

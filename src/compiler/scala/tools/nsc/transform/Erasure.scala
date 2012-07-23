@@ -413,7 +413,7 @@ abstract class Erasure extends AddInterfaces
       if (!bridgeNeeded)
         return
 
-      val newFlags = (member.flags | BRIDGE) & ~(ACCESSOR | DEFERRED | LAZY | lateDEFERRED)
+      val newFlags = (member.flags | BRIDGE | HIDDEN) & ~(ACCESSOR | DEFERRED | LAZY | lateDEFERRED)
       val bridge   = other.cloneSymbolImpl(owner, newFlags) setPos owner.pos
 
       debuglog("generating bridge from %s (%s): %s to %s: %s".format(

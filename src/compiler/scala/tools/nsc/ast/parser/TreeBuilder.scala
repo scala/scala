@@ -191,7 +191,7 @@ abstract class TreeBuilder {
       } else {
         val x = freshTermName()
         Block(
-          List(ValDef(Modifiers(SYNTHETIC), x, TypeTree(), stripParens(left))),
+          List(ValDef(Modifiers(SYNTHETIC | HIDDEN), x, TypeTree(), stripParens(left))),
           Apply(atPos(opPos union right.pos) { Select(stripParens(right), op.encode) }, List(Ident(x))))
       }
     } else {
@@ -488,7 +488,7 @@ abstract class TreeBuilder {
   def makeCatchFromExpr(catchExpr: Tree): CaseDef = {
     val binder   = freshTermName("x")
     val pat      = Bind(binder, Typed(Ident(nme.WILDCARD), Ident(tpnme.Throwable)))
-    val catchDef = ValDef(NoMods, freshTermName("catchExpr"), TypeTree(), catchExpr)
+    val catchDef = ValDef(Modifiers(HIDDEN), freshTermName("catchExpr"), TypeTree(), catchExpr)
     val catchFn  = Ident(catchDef.name)
     val body     = atPos(catchExpr.pos.makeTransparent)(Block(
       List(catchDef),
@@ -562,7 +562,7 @@ abstract class TreeBuilder {
           val tmp = freshTermName()
           val firstDef =
             atPos(matchExpr.pos) {
-              ValDef(Modifiers(PrivateLocal | SYNTHETIC | (mods.flags & LAZY)),
+              ValDef(Modifiers(PrivateLocal | SYNTHETIC | HIDDEN | (mods.flags & LAZY)),
                      tmp, TypeTree(), matchExpr)
             }
           var cnt = 0

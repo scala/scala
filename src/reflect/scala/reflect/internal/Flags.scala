@@ -116,6 +116,20 @@ class ModifierFlags {
   final val LAZY          = 1L << 31      // symbol is a lazy val. can't have MUTABLE unless transformed by typer
   final val PRESUPER      = 1L << 37      // value is evaluated before super call
   final val DEFAULTINIT   = 1L << 41      // symbol is initialized to the default value: used by -Xcheckinit
+  final val HIDDEN        = 1L << 46      // symbol should be ignored when typechecking; will be marked ACC_SYNTHETIC in bytecode
+
+  /** Symbols which are marked HIDDEN. (Expand this list?)
+   *
+   *  - $outer fields and accessors
+   *  - super accessors
+   *  - protected accessors
+   *  - lazy local accessors
+   *  - bridge methods
+   *  - default argument getters
+   *  - evaluation-order preserving locals for right-associative and out-of-order named arguments
+   *  - catch-expression storing vals
+   *  - anything else which feels a setFlag(HIDDEN)
+   */
 
   // Overridden.
   def flagToString(flag: Long): String = ""
@@ -165,7 +179,6 @@ class Flags extends ModifierFlags {
                                           // A Java method's type is ``cooked'' by transforming raw types to existentials
 
   final val SYNCHRONIZED  = 1L << 45      // symbol is a method which should be marked ACC_SYNCHRONIZED
-  final val HIDDEN        = 1L << 46      // symbol should be ignored when typechecking; will be marked ACC_SYNTHETIC in bytecode
 
   // ------- shift definitions -------------------------------------------------------
 
@@ -248,7 +261,7 @@ class Flags extends ModifierFlags {
   /** These modifiers appear in TreePrinter output. */
   final val PrintableFlags =
     ExplicitFlags | BridgeFlags | LOCAL | SYNTHETIC | STABLE | CASEACCESSOR | MACRO |
-    ACCESSOR | SUPERACCESSOR | PARAMACCESSOR | STATIC | SPECIALIZED | SYNCHRONIZED
+    ACCESSOR | SUPERACCESSOR | PARAMACCESSOR | STATIC | SPECIALIZED | SYNCHRONIZED | HIDDEN
 
   /** When a symbol for a field is created, only these flags survive
    *  from Modifiers.  Others which may be applied at creation time are:
@@ -414,7 +427,7 @@ class Flags extends ModifierFlags {
     case             VARARGS => "<varargs>"                           // (1L << 43)
     case        TRIEDCOOKING => "<triedcooking>"                      // (1L << 44)
     case        SYNCHRONIZED => "<synchronized>"                      // (1L << 45)
-    case     0x400000000000L => ""                                    // (1L << 46)
+    case              HIDDEN => "<hidden>"                            // (1L << 46)
     case     0x800000000000L => ""                                    // (1L << 47)
     case    0x1000000000000L => ""                                    // (1L << 48)
     case    0x2000000000000L => ""                                    // (1L << 49)
