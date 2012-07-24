@@ -218,11 +218,6 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
       if(phase.id >= currentRun.uncurryPhase.id) debugwarn("running translateMatch at "+ phase +" on "+ selector +" match "+ cases)
       patmatDebug("translating "+ cases.mkString("{", "\n", "}"))
 
-      def repeatedToSeq(tp: Type): Type = (tp baseType RepeatedParamClass) match {
-        case TypeRef(_, RepeatedParamClass, arg :: Nil) => seqType(arg)
-        case _                                          => tp
-      }
-
       val start = Statistics.startTimer(patmatNanos)
 
       val selectorTp = repeatedToSeq(elimAnonymousClass(selector.tpe.widen.withoutAnnotations))
