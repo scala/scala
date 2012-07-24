@@ -2749,6 +2749,14 @@ trait Typers extends Modes with Adaptations with Tags {
     def typedArgs(args: List[Tree], mode: Int) =
       args mapConserve (arg => typedArg(arg, mode, 0, WildcardType))
 
+    /** Type trees in `args0` against corresponding expected type in `adapted0`.
+     *
+     * The mode in which each argument is typed is derived from `mode` and
+     * whether the arg was originally by-name or var-arg (need `formals0` for that)
+     * the default is by-val, of course.
+     *
+     * (docs reverse-engineered -- AM)
+     */
     def typedArgs(args0: List[Tree], mode: Int, formals0: List[Type], adapted0: List[Type]): List[Tree] = {
       val sticky = onlyStickyModes(mode)
       def loop(args: List[Tree], formals: List[Type], adapted: List[Type]): List[Tree] = {
@@ -3157,12 +3165,13 @@ trait Typers extends Modes with Adaptations with Tags {
 
       if (fun1.tpe.isErroneous) duplErrTree
       else {
-        val formals0 = unapplyTypeList(fun1.symbol, fun1.tpe)
-        val formals1 = formalTypes(formals0, args.length)
+        val resTp     = fun1.tpe.finalResultType.normalize
+        val nbSubPats = args.length
 
-        if (!sameLength(formals1, args)) duplErrorTree(WrongNumberArgsPatternError(tree, fun))
+        val (formals, formalsExpanded) = extractorFormalTypes(resTp, nbSubPats, fun1.symbol)
+        if (formals == null) duplErrorTree(WrongNumberArgsPatternError(tree, fun))
         else {
-          val args1 = typedArgs(args, mode, formals0, formals1)
+          val args1 = typedArgs(args, mode, formals, formalsExpanded)
           // This used to be the following (failing) assert:
           //   assert(isFullyDefined(pt), tree+" ==> "+UnApply(fun1, args1)+", pt = "+pt)
           // I modified as follows.  See SI-1048.
@@ -4880,7 +4889,7 @@ trait Typers extends Modes with Adaptations with Tags {
 
         case UnApply(fun, args) =>
           val fun1 = typed(fun)
-          val tpes = formalTypes(unapplyTypeList(fun.symbol, fun1.tpe), args.length)
+          val tpes = formalTypes(unapplyTypeList(fun.symbol, fun1.tpe, args.length), args.length)
           val args1 = map2(args, tpes)(typedPattern)
           treeCopy.UnApply(tree, fun1, args1) setType pt
 

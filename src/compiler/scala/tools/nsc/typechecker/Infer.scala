@@ -49,6 +49,69 @@ trait Infer {
     } else formals1
   }
 
+  /** Returns `(formals, formalsExpanded)` where `formalsExpanded` are the expected types
+   * for the `nbSubPats` sub-patterns of an extractor pattern, of which the corresponding
+   * unapply[Seq] call is assumed to have result type `resTp`.
+   *
+   * `formals` are the formal types before expanding a potential repeated parameter (must come last in `formals`, if at all)
+   *
+   * @throws TypeError when the unapply[Seq] definition is ill-typed
+   * @returns (null, null) when the expected number of sub-patterns cannot be satisfied by the given extractor
+   *
+   * From the spec:
+   *   8.1.8 ExtractorPatterns
+   *
+   *   An extractor pattern x(p1, ..., pn) where n ≥ 0 is of the same syntactic form as a constructor pattern.
+   *   However, instead of a case class, the stable identifier x denotes an object which has a member method named unapply or unapplySeq that matches the pattern.
+   *   An unapply method in an object x matches the pattern x(p1, ..., pn) if it takes exactly one argument and one of the following applies:
+   *
+   *   n = 0 and unapply’s result type is Boolean.
+   *
+   *   n = 1 and unapply’s result type is Option[T], for some type T.
+   *     the (only) argument pattern p1 is typed in turn with expected type T
+   *
+   *   n > 1 and unapply’s result type is Option[(T1, ..., Tn)], for some types T1, ..., Tn.
+   *     the argument patterns p1, ..., pn are typed in turn with expected types T1, ..., Tn
+   */
+  def extractorFormalTypes(resTp: Type, nbSubPats: Int, unappSym: Symbol): (List[Type], List[Type]) = {
+    val isUnapplySeq     = unappSym.name == nme.unapplySeq
+    val booleanExtractor = resTp.typeSymbolDirect == BooleanClass
+
+    @inline def seqToRepeatedChecked(tp: Type) = {
+      val toRepeated = seqToRepeated(tp)
+      if (tp eq toRepeated) throw new TypeError("(the last tuple-component of) the result type of an unapplySeq must be a Seq[_]")
+      else toRepeated
+    }
+
+    val formals =
+      if (nbSubPats == 0 && booleanExtractor && !isUnapplySeq)  Nil
+      else resTp.baseType(OptionClass).typeArgs match {
+        case optionTArg :: Nil =>
+          if (nbSubPats == 1)
+            if (isUnapplySeq) List(seqToRepeatedChecked(optionTArg))
+            else List(optionTArg)
+          // TODO: update spec to reflect we allow any ProductN, not just TupleN
+          else getProductArgs(optionTArg) match {
+            case Nil if isUnapplySeq => List(seqToRepeatedChecked(optionTArg))
+            case tps if isUnapplySeq => tps.init :+ seqToRepeatedChecked(tps.last)
+            case tps => tps
+          }
+        case _ =>
+          if (isUnapplySeq)
+            throw new TypeError(s"result type $resTp of unapplySeq defined in ${unappSym.owner+unappSym.owner.locationString} not in {Option[_], Some[_]}")
+          else
+            throw new TypeError(s"result type $resTp of unapply defined in ${unappSym.owner+unappSym.owner.locationString} not in {Boolean, Option[_], Some[_]}")
+      }
+
+    // for unapplySeq, replace last vararg by as many instances as required by nbSubPats
+    val formalsExpanded =
+      if (isUnapplySeq && formals.nonEmpty) formalTypes(formals, nbSubPats)
+      else formals
+
+    if (formalsExpanded.lengthCompare(nbSubPats) != 0) (null, null)
+    else (formals, formalsExpanded)
+  }
+
   def actualTypes(actuals: List[Type], nformals: Int): List[Type] =
     if (nformals == 1 && !hasLength(actuals, 1))
       List(if (actuals.isEmpty) UnitClass.tpe else tupleType(actuals))
