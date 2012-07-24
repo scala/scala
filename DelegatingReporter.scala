@@ -27,6 +27,12 @@ private final class DelegatingReporter(warnFatal: Boolean, private[this] var del
 	override def hasErrors = delegate.hasErrors
 	override def hasWarnings = delegate.hasWarnings
 	def problems = delegate.problems
+	override def comment(pos: Position, msg: String) {
+		delegate match {
+			case ext: xsbti.ExtendedReporter => ext.comment(convert(pos), msg)
+			case _ =>
+		}
+	}
 
 	override def reset =
 	{
