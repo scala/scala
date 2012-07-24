@@ -1,7 +1,7 @@
-import scala.reflect.makro.Context
+import scala.reflect.macros.Context
 
 object Impls {
-  def impl[A](c: reflect.makro.Context) = c.universe.reify(())
+  def impl[A](c: reflect.macros.Context) = c.universe.reify(())
 }
 
 object Macros {
