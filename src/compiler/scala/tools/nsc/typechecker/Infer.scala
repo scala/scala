@@ -90,8 +90,7 @@ trait Infer {
           if (nbSubPats == 1)
             if (isUnapplySeq) List(seqToRepeatedChecked(optionTArg))
             else List(optionTArg)
-          // in principle, the spec doesn't allow just any subtype of Product, it *must* be TupleN[...] -- see run/virtpatmat_extends_product.scala
-          // should check `isTupleType(optionTArg)` -- this breaks plenty of stuff, though...
+          // TODO: update spec to reflect we allow any ProductN, not just TupleN
           else getProductArgs(optionTArg) match {
             case Nil if isUnapplySeq => List(seqToRepeatedChecked(optionTArg))
             case tps if isUnapplySeq => tps.init :+ seqToRepeatedChecked(tps.last)
