@@ -3,24 +3,13 @@ package base
 
 trait Types { self: Universe =>
 
-  /** The base API that all types support */
-  abstract class TypeBase {
-
-    /** The term symbol associated with the type, or `NoSymbol` for types
-     *  that do not refer to a term symbol.
-     */
-    def termSymbol: Symbol
-
-    /** The type symbol associated with the type, or `NoSymbol` for types
-     *  that do not refer to a type symbol.
-     */
-    def typeSymbol: Symbol
-  }
-
   /** The type of Scala types, and also Scala type signatures.
    *  (No difference is internally made between the two).
    */
   type Type >: Null <: TypeBase
+
+  /** The base API that all types support */
+  abstract class TypeBase
 
   /** A tag that preserves the identity of the `Type` abstract type from erasure.
    *  Can be used for pattern matching, instance tests, serialization and likes.

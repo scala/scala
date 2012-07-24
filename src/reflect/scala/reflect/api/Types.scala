@@ -8,6 +8,15 @@ trait Types extends base.Types { self: Universe =>
   /** The extended API of types
    */
   abstract class TypeApi extends TypeBase {
+    /** The term symbol associated with the type, or `NoSymbol` for types
+     *  that do not refer to a term symbol.
+     */
+    def termSymbol: Symbol
+
+    /** The type symbol associated with the type, or `NoSymbol` for types
+     *  that do not refer to a type symbol.
+     */
+    def typeSymbol: Symbol
 
     /** The defined or declared members with name `name` in this type;
      *  an OverloadedSymbol if several exist, NoSymbol if none exist.
