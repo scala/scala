@@ -591,53 +591,34 @@ trait Macros extends scala.tools.reflect.FastTrack with Traces {
     runtimeType
   }
 
-  /** Primary classloader that is used to resolve and run macro implementations.
-   *  Loads classes from -Xmacro-primary-classpath, or from -cp if the option is not specified.
+  /** Macro classloader that is used to resolve and run macro implementations.
+   *  Loads classes from from -cp (aka the library classpath).
    *  Is also capable of detecting REPL and reusing its classloader.
    */
-  private lazy val primaryClassloader: ClassLoader = {
+  private lazy val macroClassloader: ClassLoader = {
     if (global.forMSIL)
       throw new UnsupportedOperationException("Scala reflection not available on this platform")
 
-    if (settings.XmacroPrimaryClasspath.value != "") {
-      macroLogVerbose("primary macro classloader: initializing from -Xmacro-primary-classpath: %s".format(settings.XmacroPrimaryClasspath.value))
-      val classpath = toURLs(settings.XmacroPrimaryClasspath.value)
-      ScalaClassLoader.fromURLs(classpath, self.getClass.getClassLoader)
+    val classpath = global.classPath.asURLs
+    macroLogVerbose("macro classloader: initializing from -cp: %s".format(classpath))
+    val loader = ScalaClassLoader.fromURLs(classpath, self.getClass.getClassLoader)
+
+    // [Eugene] a heuristic to detect the REPL
+    if (global.settings.exposeEmptyPackage.value) {
+      macroLogVerbose("macro classloader: initializing from a REPL classloader".format(global.classPath.asURLs))
+      import scala.tools.nsc.interpreter._
+      val virtualDirectory = global.settings.outputDirs.getSingleOutput.get
+      new AbstractFileClassLoader(virtualDirectory, loader) {}
     } else {
-      macroLogVerbose("primary macro classloader: initializing from -cp: %s".format(global.classPath.asURLs))
-      val classpath = global.classPath.asURLs
-      var loader: ClassLoader = ScalaClassLoader.fromURLs(classpath, self.getClass.getClassLoader)
-
-      // [Eugene] a heuristic to detect the REPL
-      if (global.settings.exposeEmptyPackage.value) {
-        macroLogVerbose("primary macro classloader: initializing from a REPL classloader".format(global.classPath.asURLs))
-        import scala.tools.nsc.interpreter._
-        val virtualDirectory = global.settings.outputDirs.getSingleOutput.get
-        loader = new AbstractFileClassLoader(virtualDirectory, loader) {}
-      }
-
       loader
     }
   }
 
-  /** Fallback classloader that is used to resolve and run macro implementations when `primaryClassloader` fails.
-   *  Loads classes from -Xmacro-fallback-classpath.
-   */
-  private lazy val fallbackClassloader: ClassLoader = {
-    if (global.forMSIL)
-      throw new UnsupportedOperationException("Scala reflection not available on this platform")
-
-    macroLogVerbose("fallback macro classloader: initializing from -Xmacro-fallback-classpath: %s".format(settings.XmacroFallbackClasspath.value))
-    val classpath = toURLs(settings.XmacroFallbackClasspath.value)
-    ScalaClassLoader.fromURLs(classpath, self.getClass.getClassLoader)
-  }
-
   /** Produces a function that can be used to invoke macro implementation for a given macro definition:
    *    1) Looks up macro implementation symbol in this universe.
-   *    2) Loads its enclosing class from the primary classloader.
-   *    3) Loads the companion of that enclosing class from the primary classloader.
+   *    2) Loads its enclosing class from the macro classloader.
+   *    3) Loads the companion of that enclosing class from the macro classloader.
    *    4) Resolves macro implementation within the loaded companion.
-   *    5) If 2-4 fails, repeats them for the fallback classloader.
    *
    *  @return Some(runtime) if macro implementation can be loaded successfully from either of the mirrors,
    *          None otherwise.
@@ -742,25 +723,10 @@ trait Macros extends scala.tools.reflect.FastTrack with Traces {
             }
           }
 
-          val primary = loadMacroImpl(primaryClassloader)
-          primary match {
-            case Some((implObj, implMeth)) =>
+          loadMacroImpl(macroClassloader) map {
+            case (implObj, implMeth) =>
               def runtime(args: List[Any]) = implMeth.invoke(implObj, (args map (_.asInstanceOf[AnyRef])): _*).asInstanceOf[Any]
-              Some(runtime _)
-            case None =>
-              if (settings.XmacroFallbackClasspath.value != "") {
-                macroLogVerbose("trying to load macro implementation from the fallback mirror: %s".format(settings.XmacroFallbackClasspath.value))
-                val fallback = loadMacroImpl(fallbackClassloader)
-                fallback match {
-                  case Some((implObj, implMeth)) =>
-                    def runtime(args: List[Any]) = implMeth.invoke(implObj, (args map (_.asInstanceOf[AnyRef])): _*).asInstanceOf[Any]
-                    Some(runtime _)
-                  case None =>
-                    None
-                }
-              } else {
-                None
-              }
+              runtime _
           }
         }
 
@@ -1147,9 +1113,7 @@ trait Macros extends scala.tools.reflect.FastTrack with Traces {
     val macroDef = expandee.symbol
     def notFound() = {
       typer.context.error(expandee.pos, "macro implementation not found: " + macroDef.name + " " +
-        "(the most common reason for that is that you cannot use macro implementations in the same compilation run that defines them)\n" +
-        "if you do need to define macro implementations along with the rest of your program, consider two-phase compilation with -Xmacro-fallback-classpath " +
-        "in the second phase pointing to the output of the first phase")
+        "(the most common reason for that is that you cannot use macro implementations in the same compilation run that defines them)")
       None
     }
     def fallBackToOverridden(tree: Tree): Option[Tree] = {
