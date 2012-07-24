@@ -1,5 +1,4 @@
 Impls_Macros_Test_1.scala:36: error: macro implementation not found: foo (the most common reason for that is that you cannot use macro implementations in the same compilation run that defines them)
-if you do need to define macro implementations along with the rest of your program, consider two-phase compilation with -Xmacro-fallback-classpath in the second phase pointing to the output of the first phase
   println(foo(2) + Macros.bar(2) * new Macros().quux(4))
              ^
 one error found
