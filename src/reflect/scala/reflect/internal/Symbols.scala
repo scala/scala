@@ -585,10 +585,16 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
       skolem setInfo (basis.info cloneInfo skolem)
     }
 
+    // don't test directly -- use isGADTSkolem
+    // used to single out a gadt skolem symbol in deskolemizeGADT
+    // gadtskolems are created in adaptConstrPattern and removed at the end of typedCase
+    @inline final protected[Symbols] def GADT_SKOLEM_FLAGS = CASEACCESSOR | SYNTHETIC
+
     // flags set up to maintain TypeSkolem's invariant: origin.isInstanceOf[Symbol] == !hasFlag(EXISTENTIAL)
-    // CASEACCESSOR | SYNTHETIC used to single this symbol out in deskolemizeGADT
+    // GADT_SKOLEM_FLAGS (== CASEACCESSOR | SYNTHETIC) used to single this symbol out in deskolemizeGADT
+    // TODO: it would be better to allocate a new bit in the flag long for GADTSkolem rather than OR'ing together CASEACCESSOR | SYNTHETIC
     def newGADTSkolem(name: TypeName, origin: Symbol, info: Type): TypeSkolem =
-      newTypeSkolemSymbol(name, origin, origin.pos, origin.flags & ~(EXISTENTIAL | PARAM) | CASEACCESSOR | SYNTHETIC) setInfo info
+      newTypeSkolemSymbol(name, origin, origin.pos, origin.flags & ~(EXISTENTIAL | PARAM) | GADT_SKOLEM_FLAGS) setInfo info
 
     final def freshExistential(suffix: String): TypeSymbol =
       newExistential(freshExistentialName(suffix), pos)
@@ -2958,7 +2964,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     // a type symbol bound by an existential type, for instance the T in
     // List[T] forSome { type T }
     override def isExistentialSkolem = this hasFlag EXISTENTIAL
-    override def isGADTSkolem        = this hasFlag CASEACCESSOR | SYNTHETIC
+    override def isGADTSkolem        = this hasAllFlags GADT_SKOLEM_FLAGS
     override def isTypeSkolem        = this hasFlag PARAM
     override def isAbstractType      = this hasFlag DEFERRED
 
