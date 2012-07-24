@@ -1,8 +1,8 @@
 package scala.reflect.reify
 
 import scala.tools.nsc.Global
-import scala.reflect.makro.ReificationError
-import scala.reflect.makro.UnexpectedReificationError
+import scala.reflect.macros.ReificationError
+import scala.reflect.macros.UnexpectedReificationError
 import scala.reflect.reify.utils.Utils
 
 /** Given a tree or a type, generate a tree that when executed at runtime produces the original tree or type.

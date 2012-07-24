@@ -8,7 +8,7 @@ import scala.reflect.runtime.ReflectionUtils
 import scala.collection.mutable.ListBuffer
 import scala.compat.Platform.EOL
 import reflect.internal.util.Statistics
-import scala.reflect.makro.util._
+import scala.reflect.macros.util._
 import java.lang.{Class => jClass}
 import java.lang.reflect.{Array => jArray, Method => jMethod}
 
@@ -24,7 +24,7 @@ import java.lang.reflect.{Array => jArray, Method => jMethod}
  *  Then fooBar needs to point to a static method of the following form:
  *
  *    def fooBar[T: c.TypeTag]
- *           (c: scala.reflect.makro.Context)
+ *           (c: scala.reflect.macros.Context)
  *           (xs: c.Expr[List[T]])
  *           : c.Expr[T] = {
  *      ...
@@ -51,7 +51,7 @@ trait Macros extends scala.tools.reflect.FastTrack with Traces {
   /** A list of compatible macro implementation signatures.
    *
    *  In the example above:
-   *    (c: scala.reflect.makro.Context)(xs: c.Expr[List[T]]): c.Expr[T]
+   *    (c: scala.reflect.macros.Context)(xs: c.Expr[List[T]]): c.Expr[T]
    *
    *  @param macroDef The macro definition symbol
    *  @param tparams  The type parameters of the macro definition
@@ -879,7 +879,7 @@ trait Macros extends scala.tools.reflect.FastTrack with Traces {
   }
 
   /** Keeps track of macros in-flight.
-   *  See more informations in comments to ``openMacros'' in ``scala.reflect.makro.Context''.
+   *  See more informations in comments to ``openMacros'' in ``scala.reflect.macros.Context''.
    */
   var openMacros = List[MacroContext]()
   def enclosingMacroPosition = openMacros map (_.macroApplication.pos) find (_ ne NoPosition) getOrElse NoPosition
@@ -1155,7 +1155,7 @@ trait Macros extends scala.tools.reflect.FastTrack with Traces {
     // [Eugene] any ideas about how to improve this one?
     val realex = ReflectionUtils.unwrapThrowable(ex)
     realex match {
-      case realex: reflect.makro.runtime.AbortMacroException =>
+      case realex: reflect.macros.runtime.AbortMacroException =>
         macroLogVerbose("macro expansion has failed: %s".format(realex.msg))
         fail(typer, expandee) // error has been reported by abort
       case err: TypeError =>

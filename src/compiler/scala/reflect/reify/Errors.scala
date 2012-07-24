@@ -1,7 +1,7 @@
 package scala.reflect.reify
 
-import scala.reflect.makro.ReificationError
-import scala.reflect.makro.UnexpectedReificationError
+import scala.reflect.macros.ReificationError
+import scala.reflect.macros.UnexpectedReificationError
 
 trait Errors {
   self: Reifier =>

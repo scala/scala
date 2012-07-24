@@ -495,13 +495,13 @@ trait Definitions extends api.StandardDefinitions {
     lazy val TypeCreatorClass      = requiredClass[scala.reflect.base.TypeCreator]
     lazy val TreeCreatorClass      = requiredClass[scala.reflect.base.TreeCreator]
 
-    lazy val MacroContextClass                   = getClassIfDefined("scala.reflect.makro.Context") // defined in scala-reflect.jar, so we need to be careful
+    lazy val MacroContextClass                   = getClassIfDefined("scala.reflect.macros.Context") // defined in scala-reflect.jar, so we need to be careful
          def MacroContextPrefix                  = if (MacroContextClass != NoSymbol) getMemberMethod(MacroContextClass, nme.prefix) else NoSymbol
          def MacroContextPrefixType              = if (MacroContextClass != NoSymbol) getMemberType(MacroContextClass, tpnme.PrefixType) else NoSymbol
          def MacroContextUniverse                = if (MacroContextClass != NoSymbol) getMemberMethod(MacroContextClass, nme.universe) else NoSymbol
          def MacroContextMirror                  = if (MacroContextClass != NoSymbol) getMemberMethod(MacroContextClass, nme.mirror) else NoSymbol
-    lazy val MacroImplAnnotation                 = requiredClass[scala.reflect.makro.internal.macroImpl]
-    lazy val MacroInternalPackage                = getPackageObject("scala.reflect.makro.internal")
+    lazy val MacroImplAnnotation                 = requiredClass[scala.reflect.macros.internal.macroImpl]
+    lazy val MacroInternalPackage                = getPackageObject("scala.reflect.macros.internal")
          def MacroInternal_materializeClassTag   = getMemberMethod(MacroInternalPackage, nme.materializeClassTag)
          def MacroInternal_materializeAbsTypeTag = getMemberMethod(MacroInternalPackage, nme.materializeAbsTypeTag)
          def MacroInternal_materializeTypeTag    = getMemberMethod(MacroInternalPackage, nme.materializeTypeTag)
