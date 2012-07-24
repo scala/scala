@@ -9,6 +9,7 @@ package interpreter
 import scala.collection.{ mutable, immutable }
 import scala.PartialFunction.cond
 import scala.reflect.internal.Chars
+import scala.reflect.internal.Flags._
 import language.implicitConversions
 
 trait MemberHandlers {
@@ -126,7 +127,7 @@ trait MemberHandlers {
 
   class DefHandler(member: DefDef) extends MemberDefHandler(member) {
     private def vparamss = member.vparamss
-    private def isMacro = member.mods.hasFlag(scala.reflect.internal.Flags.MACRO)
+    private def isMacro = member.symbol hasFlag MACRO
     // true if not a macro and 0-arity
     override def definesValue = !isMacro && flattensToEmpty(vparamss)
     override def resultExtractionCode(req: Request) =
