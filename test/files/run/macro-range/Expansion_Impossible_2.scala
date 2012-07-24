@@ -1,4 +1,4 @@
-import reflect.makro.Context
+import reflect.macros.Context
 
 object Impls {
   def foreach(c: Context)(f: c.Expr[Int => Unit]): c.Expr[Unit] = {

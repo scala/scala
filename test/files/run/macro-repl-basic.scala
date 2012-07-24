@@ -3,7 +3,7 @@ import scala.tools.partest.ReplTest
 object Test extends ReplTest {
   def code = """
     |import language.experimental.macros
-    |import scala.reflect.makro.{Context => Ctx}
+    |import scala.reflect.macros.{Context => Ctx}
     |
     |object Impls {
     |  def foo(c: Ctx)(x: c.Expr[Int]) = {

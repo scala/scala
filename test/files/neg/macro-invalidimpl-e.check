@@ -1,12 +1,12 @@
 Macros_Test_2.scala:2: error: ambiguous reference to overloaded definition,
-both method foo in object Impls of type (c: scala.reflect.makro.Context)(x: c.Expr[Any], y: c.Expr[Any])Nothing
-and  method foo in object Impls of type (c: scala.reflect.makro.Context)(x: c.Expr[Any])Nothing
+both method foo in object Impls of type (c: scala.reflect.macros.Context)(x: c.Expr[Any], y: c.Expr[Any])Nothing
+and  method foo in object Impls of type (c: scala.reflect.macros.Context)(x: c.Expr[Any])Nothing
 match expected type ?
   def foo(x: Any) = macro Impls.foo
                                 ^
 Macros_Test_2.scala:3: error: ambiguous reference to overloaded definition,
-both method foo in object Impls of type (c: scala.reflect.makro.Context)(x: c.Expr[Any], y: c.Expr[Any])Nothing
-and  method foo in object Impls of type (c: scala.reflect.makro.Context)(x: c.Expr[Any])Nothing
+both method foo in object Impls of type (c: scala.reflect.macros.Context)(x: c.Expr[Any], y: c.Expr[Any])Nothing
+and  method foo in object Impls of type (c: scala.reflect.macros.Context)(x: c.Expr[Any])Nothing
 match expected type ?
   def foo(x: Any, y: Any) = macro Impls.foo
                                         ^

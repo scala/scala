@@ -1,5 +1,5 @@
 import scala.reflect.runtime.universe._
-import scala.reflect.makro.{Context => Ctx}
+import scala.reflect.macros.{Context => Ctx}
 
 object Impls {
   def foo[T, U: c.AbsTypeTag, V](c: Ctx)(implicit T: c.AbsTypeTag[T], V: c.AbsTypeTag[V]): c.Expr[Unit] = {
