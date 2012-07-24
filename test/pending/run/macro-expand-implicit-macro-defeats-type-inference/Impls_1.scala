@@ -1,4 +1,4 @@
-import scala.reflect.makro.Context
+import scala.reflect.macros.Context
 
 object Impls {
   def foo[T: c.TypeTag](c: Context): c.Expr[List[T]] = c.universe.reify {

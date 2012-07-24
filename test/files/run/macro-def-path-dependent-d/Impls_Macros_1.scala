@@ -1,5 +1,5 @@
 import scala.reflect.runtime.universe._
-import scala.reflect.makro.Context
+import scala.reflect.macros.Context
 import scala.reflect.api.Universe
 
 object Test {

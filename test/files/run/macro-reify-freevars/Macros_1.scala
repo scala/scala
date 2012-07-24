@@ -2,7 +2,7 @@ package scala.collection.slick
 
 object QueryableMacros{
   def map[T:c.TypeTag, S:c.TypeTag]
-         (c: scala.reflect.makro.Context)
+         (c: scala.reflect.macros.Context)
          (projection: c.Expr[T => S])
          : c.Expr[scala.collection.slick.Queryable[S]] = {
     import c.universe._
