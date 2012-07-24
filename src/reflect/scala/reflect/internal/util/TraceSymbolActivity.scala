@@ -8,7 +8,8 @@ trait TraceSymbolActivity {
   val global: SymbolTable
   import global._
 
-  if (traceSymbolActivity && global.isCompilerUniverse)
+  private[this] var enabled = traceSymbolActivity
+  if (enabled && global.isCompilerUniverse)
     scala.sys addShutdownHook showAllSymbols()
 
   private type Set[T] = scala.collection.immutable.Set[T]
@@ -21,23 +22,26 @@ trait TraceSymbolActivity {
   val allTrees    = mutable.Set[Tree]()
 
   def recordSymbolsInTree(tree: Tree) {
-    allTrees += tree
+    if (enabled)
+      allTrees += tree
   }
 
   def recordNewSymbol(sym: Symbol) {
-    if (sym.id > 1) {
+    if (enabled && sym.id > 1) {
       allSymbols(sym.id) = sym
       allChildren(sym.owner.id) ::= sym.id
     }
   }
   def recordNewSymbolOwner(sym: Symbol, newOwner: Symbol) {
-    val sid = sym.id
-    val oid = sym.owner.id
-    val nid = newOwner.id
+    if (enabled) {
+      val sid = sym.id
+      val oid = sym.owner.id
+      val nid = newOwner.id
 
-    prevOwners(sid) ::= (oid -> phase)
-    allChildren(oid) = allChildren(oid) filterNot (_ == sid)
-    allChildren(nid) ::= sid
+      prevOwners(sid) ::= (oid -> phase)
+      allChildren(oid) = allChildren(oid) filterNot (_ == sid)
+      allChildren(nid) ::= sid
+    }
   }
 
   /** TODO.
@@ -86,7 +90,7 @@ trait TraceSymbolActivity {
     def prefix = ("  " * (sym.ownerChain.length - 1)) + sym.id
     try println("%s#%s %s".format(prefix, sym.accurateKindString, sym.name.decode))
     catch {
-      case x => println(prefix + " failed: " + x)
+      case x: Throwable => println(prefix + " failed: " + x)
     }
     allChildren(sym.id).sorted foreach showIdAndRemove
   }
@@ -128,7 +132,8 @@ trait TraceSymbolActivity {
   private def runBeforeErasure[T](body: => T): T = atPhase(findErasurePhase)(body)
 
   def showAllSymbols() {
-    if (!traceSymbolActivity) return
+    if (!enabled) return
+    enabled = false
     allSymbols(1) = NoSymbol
 
     println("" + allSymbols.size + " symbols created.")
