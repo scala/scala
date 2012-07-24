@@ -401,7 +401,11 @@ trait TypeDiagnostics {
 
     object checkDead {
       private var expr: Symbol = NoSymbol
-      private def exprOK = expr != Object_synchronized
+
+      private def exprOK =
+        (expr != Object_synchronized) &&
+        !(expr.isLabel && treeInfo.isSynthCaseSymbol(expr)) // it's okay to jump to matchEnd (or another case) with an argument of type nothing
+
       private def treeOK(tree: Tree) = tree.tpe != null && tree.tpe.typeSymbol == NothingClass
 
       def updateExpr(fn: Tree) = {
