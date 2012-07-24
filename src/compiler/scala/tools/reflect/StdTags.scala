@@ -52,7 +52,7 @@ object StdRuntimeTags extends StdTags {
 }
 
 abstract class StdContextTags extends StdTags {
-  val tc: scala.reflect.makro.Context
+  val tc: scala.reflect.macros.Context
   val u: tc.universe.type = tc.universe
   val m = tc.mirror
 }

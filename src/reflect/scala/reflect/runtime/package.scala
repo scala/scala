@@ -13,7 +13,7 @@ package object runtime {
 
 package runtime {
   object Macros {
-    def currentMirror(c: scala.reflect.makro.Context): c.Expr[universe.Mirror] = {
+    def currentMirror(c: scala.reflect.macros.Context): c.Expr[universe.Mirror] = {
       import c.universe._
       val runtimeClass = c.reifyEnclosingRuntimeClass
       if (runtimeClass.isEmpty) c.abort(c.enclosingPosition, "call site does not have an enclosing class")

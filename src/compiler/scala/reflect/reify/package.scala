@@ -2,7 +2,7 @@ package scala.reflect
 
 import language.implicitConversions
 import scala.reflect.base.{Universe => BaseUniverse}
-import scala.reflect.makro.{Context, ReificationError, UnexpectedReificationError}
+import scala.reflect.macros.{Context, ReificationError, UnexpectedReificationError}
 import scala.tools.nsc.Global
 
 package object reify {
