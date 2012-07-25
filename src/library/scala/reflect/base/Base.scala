@@ -1,7 +1,6 @@
 package scala.reflect
 package base
 
-import language.experimental.macros
 import java.io.PrintWriter
 import scala.annotation.switch
 import scala.ref.WeakReference

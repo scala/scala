@@ -1,6 +1,6 @@
 package scala.reflect
 
 package object makro {
-
-  type MirrorOf[U <: base.Universe with Singleton] = base.MirrorOf[U]
+  @deprecated("Use scala.reflect.macros.Context instead", "2.10.0")
+  type Context = scala.reflect.macros.Context
 }

@@ -2116,7 +2116,8 @@ DOCUMENTATION
       diagrams="on"
       groups="on"
       rawOutput="${scaladoc.raw.output}"
-      noPrefixes="${scaladoc.no.prefixes}">
+      noPrefixes="${scaladoc.no.prefixes}"
+      skipPackages="scala.reflect.makro">
       <src>
         <files includes="${src.dir}/actors-migration"/>
         <files includes="${src.dir}/actors"/>

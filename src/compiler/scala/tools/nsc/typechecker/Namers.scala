@@ -983,15 +983,10 @@ trait Namers extends MethodSynthesis {
       }
       addDefaultGetters(meth, vparamss, tparams, overriddenSymbol)
 
-      // macro defs need to be typechecked in advance
-      // because @macroImpl annotation only gets assigned during typechecking
-      // otherwise we might find ourselves in the situation when we specified -Xmacro-fallback-classpath
-      // but macros still don't expand
-      // that might happen because macro def doesn't have its link a macro impl yet
-      if (ddef.symbol.isTermMacro) {
-        val pt = resultPt.substSym(tparamSyms, tparams map (_.symbol))
-        typer.computeMacroDefType(ddef, pt)
-      }
+      // fast track macros, i.e. macros defined inside the compiler, are hardcoded
+      // hence we make use of that and let them have whatever right-hand side they need
+      // (either "macro ???" as they used to or just "???" to maximally simplify their compilation)
+      if (fastTrack contains ddef.symbol) ddef.symbol setFlag MACRO
 
       thisMethodType({
         val rt = (
