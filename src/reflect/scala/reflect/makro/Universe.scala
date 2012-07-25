@@ -24,8 +24,15 @@ abstract class Universe extends scala.reflect.api.Universe {
    */
   trait SymbolContextApi extends SymbolApi with AttachableApi { this: Symbol =>
 
-    // [Eugene++ to Martin] should we also add mutability methods here (similarly to what's done below for trees)?
-    // I'm talking about `setAnnotations` and friends
+    def setFlags(flags: FlagSet): this.type
+
+    def setTypeSignature(tpe: Type): this.type
+
+    def setAnnotations(annots: AnnotationInfo*): this.type
+
+    def setName(name: Name): this.type
+
+    def setPrivateWithin(sym: Symbol): this.type
   }
 
   // Tree extensions ---------------------------------------------------------------
