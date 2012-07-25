@@ -1,0 +1,13 @@
+t4440.scala:12: error: The outer reference in this type test cannot be checked at run time.
+    case _: b.Inner => println("b")
+          ^
+t4440.scala:13: error: The outer reference in this type test cannot be checked at run time.
+    case _: a.Inner => println("a") // this is the case we want
+          ^
+t4440.scala:16: error: The outer reference in this type test cannot be checked at run time.
+    case _: a.Inner => println("a")
+          ^
+t4440.scala:17: error: The outer reference in this type test cannot be checked at run time.
+    case _: b.Inner => println("b") // this is the case we want
+          ^
+four errors found
