@@ -190,10 +190,12 @@ object REPL {
       val source = toSourceFile(arguments.head)
       // strip right hand side comment column and any trailing spaces from all lines
       val strippedSource = new BatchSourceFile(source.file, SourceInserter.stripRight(source.content))
+      println("stripped source = "+strippedSource)
       comp.askReload(List(strippedSource), reloadResult)
       comp.askInstrumented(strippedSource, line, instrumentedResult)
       using(instrumentedResult) {
         case (iFullName, iContents) =>
+          println(s"instrumented source $iFullName = ${iContents.mkString}")
           val iSourceName = writeInstrumented(iFullName, iContents)
           val vdirOpt = compileInstrumented(iSourceName, arguments.tail)
           runInstrumented(vdirOpt, iFullName, strippedSource.content)

@@ -15,6 +15,7 @@ object Executor {
   /** Execute module with given name, redirecting all output to given
    *  source inserter. Catch all exceptions and print stacktrace of underlying causes.
    */
+  @deprecated("use $execute instead")
   def execute(name: String, si: SourceInserter, classLoader: ClassLoader = getClass.getClassLoader) {
     val oldSysOut = System.out
     val oldSysErr = System.err
@@ -29,7 +30,7 @@ object Executor {
     Console.setErr(newOut)
     try {
       singletonInstance(classLoader, name)
-    } catch {
+     } catch {
       case ex: Throwable =>
         unwrapThrowable(ex) match {
           case _: StopException => ;
@@ -43,6 +44,34 @@ object Executor {
       Console.setErr(oldConsErr)
       currentWriter = oldCwr
     }
+  }
+  
+  def $execute(op: => Unit)(source: String) = {
+    val oldSysOut = System.out
+    val oldSysErr = System.err
+    val oldConsOut = Console.out
+    val oldConsErr = Console.err
+    val si = new SourceInserter(source.toCharArray)
+    currentWriter = new CommentWriter(si)
+    val newOut = new PrintStream(new CommentOutputStream(currentWriter))
+    System.setOut(newOut)
+    System.setErr(newOut)
+    Console.setOut(newOut)
+    Console.setErr(newOut)
+    try {
+      op
+    } catch {
+      case ex: StopException => 
+      case ex: Throwable => ex.printStackTrace()
+    } finally {
+      currentWriter.close()
+      System.setOut(oldSysOut)
+      System.setErr(oldSysErr)
+      Console.setOut(oldConsOut)
+      Console.setErr(oldConsErr)
+      println("done")
+      println(si.currentContents.mkString)
+    }    
   }
 
   def $skip(n: Int) = currentWriter.skip(n)
