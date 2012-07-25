@@ -8,6 +8,7 @@ import scala.tools.nsc.symtab._
 import scala.tools.nsc.plugins._
 
 import scala.tools.nsc.ast._
+import scala.collection.mutable.ListBuffer
 
 /**
  * In methods marked @cps, explicitly name results of calls to other @cps methods
@@ -32,6 +33,47 @@ abstract class SelectiveANFTransform extends PluginComponent with Transform with
     implicit val _unit = unit // allow code in CPSUtils.scala to report errors
     var cpsAllowed: Boolean = false // detect cps code in places we do not handle (yet)
 
+    def removeTailReturns(body: Tree): Tree = {
+      def removeTailReturn(tree: Tree): Tree = tree match {
+        case Block(stms, r @ Return(expr)) =>
+          treeCopy.Block(tree, stms, expr)
+
+        case Block(stms, expr) =>
+          treeCopy.Block(tree, stms, removeTailReturn(expr))
+
+        case If(cond, r1 @ Return(thenExpr), r2 @ Return(elseExpr)) =>
+          treeCopy.If(tree, cond, removeTailReturn(thenExpr), removeTailReturn(elseExpr))
+
+        case If(cond, thenExpr, elseExpr) =>
+          treeCopy.If(tree, cond, removeTailReturn(thenExpr), removeTailReturn(elseExpr))
+
+        case Try(block, catches, finalizer) =>
+          treeCopy.Try(tree,
+                       removeTailReturn(block),
+                       (catches map (t => removeTailReturn(t))).asInstanceOf[List[CaseDef]],
+                       removeTailReturn(finalizer))
+
+        case CaseDef(pat, guard, r @ Return(expr)) =>
+          treeCopy.CaseDef(tree, pat, guard, expr)
+
+        case CaseDef(pat, guard, body) =>
+          treeCopy.CaseDef(tree, pat, guard, removeTailReturn(body))
+
+        case Return(_) =>
+          unit.error(tree.pos, "return expressions in CPS code must be in tail position")
+          tree
+
+        case _ =>
+          tree
+      }
+
+      // support body with single return expression
+      body match {
+        case Return(expr) => expr
+        case _ => removeTailReturn(body)
+      }
+    }
+
     override def transform(tree: Tree): Tree = {
       if (!cpsEnabled) return tree
 
@@ -46,10 +88,13 @@ abstract class SelectiveANFTransform extends PluginComponent with Transform with
         // this would cause infinite recursion. But we could remove the
         // ValDef case here.
 
-        case dd @ DefDef(mods, name, tparams, vparamss, tpt, rhs) =>
+        case dd @ DefDef(mods, name, tparams, vparamss, tpt, rhs0) =>
           debuglog("transforming " + dd.symbol)
 
           atOwner(dd.symbol) {
+            val rhs =
+              if (cpsParamTypes(tpt.tpe).nonEmpty) removeTailReturns(rhs0)
+              else rhs0
             val rhs1 = transExpr(rhs, None, getExternalAnswerTypeAnn(tpt.tpe))
 
             debuglog("result "+rhs1)
