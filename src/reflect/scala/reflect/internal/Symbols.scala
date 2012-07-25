@@ -191,7 +191,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
 
         } else None
       }
-      
+
       // Begin Reflection Helpers
 
       // Replaces a repeated parameter type at the end of the parameter list
@@ -354,7 +354,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
       val selection = select(alts, defaultFilteringOps)
 
       val knownApplicable = applicable(selection)
-      
+
       if (knownApplicable.size == 1) knownApplicable.head
       else NoSymbol
     }
@@ -1016,6 +1016,14 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
 
     def isTopLevelModule = hasFlag(MODULE) && owner.isPackageClass
 
+    /** A helper function for isEffectivelyFinal. */
+    private def isNotOverridden = (
+      owner.isClass && (
+           owner.isEffectivelyFinal
+        || owner.isSealed && owner.children.forall(c => c.isEffectivelyFinal && (overridingSymbol(c) == NoSymbol))
+      )
+    )
+
     /** Is this symbol effectively final? I.e, it cannot be overridden */
     final def isEffectivelyFinal: Boolean = (
          (this hasFlag FINAL | PACKAGE)
@@ -1023,8 +1031,8 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
       || isTerm && (
              isPrivate
           || isLocal
-          || owner.isClass && owner.isEffectivelyFinal
-      )
+          || isNotOverridden
+         )
     )
 
     /** Is this symbol locally defined? I.e. not accessed from outside `this` instance */
