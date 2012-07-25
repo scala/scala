@@ -34,7 +34,7 @@ private[runtime] class TwoWayCache[J, S] {
     toScalaMap get key match {
       case SomeRef(v) =>
         v
-      case None =>
+      case _ =>
         val result = body
         enter(key, result)
         result
@@ -45,7 +45,7 @@ private[runtime] class TwoWayCache[J, S] {
     toJavaMap get key match {
       case SomeRef(v) =>
         v
-      case None =>
+      case _ =>
         val result = body
         enter(result, key)
         result
@@ -56,7 +56,7 @@ private[runtime] class TwoWayCache[J, S] {
     toJavaMap get key match {
       case SomeRef(v) =>
         Some(v)
-      case None =>
+      case _ =>
         val result = body
         for (value <- result) enter(value, key)
         result
