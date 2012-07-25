@@ -31,11 +31,11 @@
       <url>https://issues.scala-lang.org/</url>
    </issueManagement>
    <dependencies>
-      <dependency>
+      <!--<dependency>
          <groupId>com.typesafe</groupId>
          <artifactId>config</artifactId>
          <version>0.4.0</version>
-     </dependency>
+     </dependency>-->
    </dependencies>
    <distributionManagement>
       <repository>
