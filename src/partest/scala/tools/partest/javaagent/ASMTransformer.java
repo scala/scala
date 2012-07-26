@@ -21,7 +21,9 @@ public class ASMTransformer implements ClassFileTransformer {
         // we instrument all classes from empty package
         (!className.contains("/") ||
         // we instrument all classes from scala package
-        className.startsWith("scala/"));
+        className.startsWith("scala/") ||
+        // we instrument all classes from `instrumented` package
+        className.startsWith("instrumented/"));
   }
 	
 	public byte[] transform(ClassLoader loader, String className, Class<?> classBeingRedefined, ProtectionDomain protectionDomain, byte[] classfileBuffer) {
