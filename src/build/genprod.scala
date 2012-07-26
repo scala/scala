@@ -15,6 +15,7 @@
  *  @author  Burak Emir, Stephane Micheloud, Geoffrey Washburn, Paul Phillips
  *  @version 1.1
  */
+import language.postfixOps
 object genprod extends App {
   val MAX_ARITY = 22
   def arities = (1 to MAX_ARITY).toList
@@ -75,7 +76,7 @@ package %s
 
   if (args.length != 1) {
     println("please give path of output directory")
-    exit(-1)
+    sys.exit(-1)
   }
   val out = args(0)
   def writeFile(node: scala.xml.Node) {
@@ -111,8 +112,8 @@ object FunctionZero extends Function(0) {
 
 object FunctionOne extends Function(1) {
   override def classAnnotation    = "@annotation.implicitNotFound(msg = \"No implicit view available from ${T1} => ${R}.\")\n"
-  override def contravariantSpecs = "@specialized(scala.Int, scala.Long, scala.Float, scala.Double, scala.AnyRef) "
-  override def covariantSpecs     = "@specialized(scala.Unit, scala.Boolean, scala.Int, scala.Float, scala.Long, scala.Double, scala.AnyRef) "
+  override def contravariantSpecs = "@specialized(scala.Int, scala.Long, scala.Float, scala.Double/*, scala.AnyRef*/) "
+  override def covariantSpecs     = "@specialized(scala.Unit, scala.Boolean, scala.Int, scala.Float, scala.Long, scala.Double/*, scala.AnyRef*/) "
 
   override def descriptiveComment = "  " + functionNTemplate.format("succ", "anonfun1",
 """
@@ -275,7 +276,7 @@ object TupleOne extends Tuple(1)
 object TupleTwo extends Tuple(2)
 {
   override def imports = Tuple.zipImports
-  override def covariantSpecs = "@specialized(Int, Long, Double, Char, Boolean, AnyRef) "
+  override def covariantSpecs = "@specialized(Int, Long, Double, Char, Boolean/*, AnyRef*/) "
   override def moreMethods = """
   /** Swaps the elements of this `Tuple`.
    * @return a new Tuple where the first element is the second element of this Tuple and the
