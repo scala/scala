@@ -1,0 +1,16 @@
+unchecked.scala:14: error: non variable type-argument String in type pattern Iterable[String] is unchecked since it is eliminated by erasure
+    case xs: Iterable[String] => xs.head // unchecked
+             ^
+unchecked.scala:18: error: non variable type-argument Any in type pattern Set[Any] is unchecked since it is eliminated by erasure
+    case xs: Set[Any]    => xs.head // unchecked
+             ^
+unchecked.scala:22: error: non variable type-argument Any in type pattern Map[Any,Any] is unchecked since it is eliminated by erasure
+    case xs: Map[Any, Any] => xs.head // unchecked
+             ^
+unchecked.scala:27: error: non variable type-argument Int in type pattern Test.Exp[Int] is unchecked since it is eliminated by erasure
+    case ArrayApply(x: Exp[Array[T]], i: Exp[Int], _) => x // okay - shouldn't warn, TODO
+                                         ^
+unchecked.scala:32: error: non variable type-argument String in type pattern Test.Exp[String] is unchecked since it is eliminated by erasure
+    case ArrayApply(x: Exp[Array[T]], _, j: Exp[String]) => x // unchecked
+                                            ^
+5 errors found

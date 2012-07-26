@@ -1267,16 +1267,18 @@ trait Infer {
         tp match {
           case SingleType(pre, _) =>
             check(pre, bound)
+          case TypeRef(_, NothingClass | NullClass | AnyValClass, _) =>
+            TypePatternOrIsInstanceTestError(tree, tp)
           case TypeRef(pre, sym, args) =>
             if (sym.isAbstractType) {
               // we only use the extractor for top-level type tests, type arguments (see below) remain unchecked
               if (!isLocalBinding(sym) && !canRemedy) patternWarning(tp, "abstract type ")
-            } else if (sym.isAliasType) {
+            }
+            else if (sym.isAliasType) {
               check(tp.normalize, bound)
-            } else if (sym == NothingClass || sym == NullClass || sym == AnyValClass) {
-              TypePatternOrIsInstanceTestError(tree, tp)
-            } else {
-              for (arg <- args) {
+            }
+            else {
+              for ((param, arg) <- sym.typeParams zip args) {
                 if (sym == ArrayClass) check(arg, bound)
                 // avoid spurious warnings with higher-kinded types
                 else if (arg.typeArgs exists (_.typeSymbol.isTypeParameterOrSkolem)) ()
@@ -1289,7 +1291,12 @@ trait Infer {
                     // Want to warn about type arguments, not type parameters. Otherwise we'll
                     // see warnings about "invisible" types, like: val List(x0) = x1 leading to "non
                     // variable type-argument A in type pattern List[A]..."
-                    if (!arg.typeSymbol.isTypeParameterOrSkolem)
+                    if (arg.typeSymbol.isTypeParameterOrSkolem)
+                      log("Suppressing unchecked warning for 'invisible' type " + arg)
+                    // case _: Seq[Any] should not warn about "Any"
+                    else if (param.isCovariant && arg.typeSymbol == AnyClass)
+                      log("Suppressing unchecked warning for 'Any' in covariant position")
+                    else
                       patternWarning(arg, "non variable type-argument ")
                 }
               }
