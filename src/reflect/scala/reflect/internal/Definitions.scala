@@ -328,10 +328,38 @@ trait Definitions extends api.StandardDefinitions {
       (sym.name == name) && (sym.owner == PredefModule.moduleClass)
     )
 
-    /** Specialization.
-     */
+    /* specialization */
     lazy val SpecializableModule  = requiredModule[Specializable]
     lazy val GroupOfSpecializable = getMemberClass(SpecializableModule, tpnme.Group)
+    val specializationTypeOrdering: Ordering[Type] = Ordering[String] on (_.typeSymbol.name.toString)
+    /** The specializable types are the types used as the default set of value types when @specialized is used without
+     *  argumentst. They include ONLY the JVM value types and Unit: Unit, Boolean, Byte, Short, Char, Int, Long, Float, 
+     *  Double. Currently specialization doesn't work for value classes and the AnyRef specialization is put under a 
+     *  flag `-Xanyref-specialization` and is not included by default.
+     *  
+     *  In order to specialize on all value types AND AnyRef use:
+     *  {{{ @specialized(Everything) }}} 
+     *  This way the specialized notation keeps the same semantic as version 2.9. AnyRef may be added in 2.1
+     */
+    //lazy val specializableTypes: List[Type] = ScalaValueClasses map (_.tpe) sorted (specializationTypeOrdering)
+    lazy val specializableCompanions = ScalaValueClasses map (_.companionModule.tpe) 
+    def specializableTypes(sym: Symbol): List[Type] = sym.getAnnotation(SpecializedClass) match {
+      case Some(AnnotationInfo(_, args, _)) =>
+        args match {
+          case Nil => specializableCompanions
+          case _ =>
+            args.map(_.tpe).flatMap { tp =>
+              tp baseType GroupOfSpecializable match {
+                case TypeRef(_, GroupOfSpecializable, arg :: Nil) =>
+                  arg.typeArgs
+                case _ =>
+                  List(tp)
+              }
+            }
+        }
+      case _ => Nil
+    }
+    /* end specialization */
 
     lazy val ConsoleModule      = requiredModule[scala.Console.type]
     lazy val ScalaRunTimeModule = requiredModule[scala.runtime.ScalaRunTime.type]

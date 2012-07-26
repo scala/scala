@@ -20,8 +20,11 @@ import symtab.Flags._
  *  class, in order to avoid overriding conflicts.
  *
  *  This phase also sets SPECIALIZED flag on type parameters with
- *  `@specialized` annotation. We put this logic here because the
- *  flag must be set before pickling.
+ *  `@specialized` annotation. If the -Xanyref-specialization flag
+ *  is not set, we clear the AnyRef specialization from the annotation. 
+ *  We put this logic here because the flag must be set before pickling,
+ *  so this information is later unpickled when loading the symbols 
+ *  from the .class file.
  *
  *  @author  Martin Odersky
  *  @version 1.0
@@ -212,13 +215,46 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
         case TypeApply(sel @ Select(This(_), name), args) =>
           mayNeedProtectedAccessor(sel, args, false)
 
-        // set a flag for all type parameters with `@specialized` annotation so it can be pickled
+        // process and expand the @specialized notation
         case typeDef: TypeDef if typeDef.symbol.deSkolemize.hasAnnotation(definitions.SpecializedClass) =>
-          debuglog("setting SPECIALIZED flag on typeDef.symbol.deSkolemize where typeDef = " + typeDef)
-          // we need to deSkolemize symbol so we get the same symbol as others would get when
-          // inspecting type parameter from "outside"; see the discussion of skolems here:
-          // https://groups.google.com/d/topic/scala-internals/0j8laVNTQsI/discussion
-          typeDef.symbol.deSkolemize.setFlag(SPECIALIZED)
+          import definitions.{GroupOfSpecializable, SpecializedClass, AnyRefModule, AnyRefClass, specializableTypes}
+
+          // if the -Xanyref-specialization flag is not set and the symbol has the @specialize notation and will be
+          // specialized for AnyRef, we need to correct this information before pickling the annotation. Thus we expand
+          // the @specialize annotation to the exact types that will be specialized and remove AnyRef here.
+          // Tasks:
+          // (1) unpack @specialize to types
+          // (2) filter AnyRef out if flag is not set (and warn)
+          // (3) replace annotation
+          // (4) add expanded annotation and set the SPECIALIZED flag
+
+          // (1) unpack @specialize to types
+          val sym = typeDef.symbol.deSkolemize
+          val ann = sym.getAnnotation(SpecializedClass).get
+          val tps = specializableTypes(sym)
+
+          // (2) filter AnyRef out of the specialization if the -Xanyref-specialization flag is not set
+          val filtTps = if (settings.XanyrefSpec.value) tps else tps.filter(_.termSymbol != AnyRefModule)
+          if (filtTps.length != tps.length)
+            reporter.warning(typeDef.pos, "Specialization on AnyRef needs to be explicitly enabled using the " + 
+                settings.XanyrefSpec.name + " flag.")
+
+          // (3) remove the current annotation, which is not expanded 
+          sym.removeAnnotation(SpecializedClass)
+
+          // (4) add expanded annotation and set the SPECIALIZED flag 
+          if (!filtTps.isEmpty) {
+            // add the expanded annotation
+            val newAnnotation = AnnotationInfo(ann.atp, filtTps.map(TypeTree(_)), Nil)
+            sym.addAnnotation(newAnnotation)
+
+            debuglog("setting SPECIALIZED flag on typeDef.symbol.deSkolemize where typeDef = " + typeDef)
+            // we need to deSkolemize symbol so we get the same symbol as others would get when
+            // inspecting type parameter from "outside"; see the discussion of skolems here:
+            // https://groups.google.com/d/topic/scala-internals/0j8laVNTQsI/discussion
+            typeDef.symbol.deSkolemize.setFlag(SPECIALIZED)
+          }
+
           typeDef
 
         case sel @ Select(qual @ This(_), name) =>

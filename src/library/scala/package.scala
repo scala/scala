@@ -29,8 +29,12 @@ package object scala {
   type AbstractMethodError             = java.lang.AbstractMethodError
   type InterruptedException            = java.lang.InterruptedException
 
-  // A dummy used by the specialization annotation.
-  val AnyRef = new Specializable {
+  // Normally it's bad juju to place objects inside package objects,
+  // but there's no choice here as we'd have to be AnyRef's companion
+  // and defined in the same file - except there is no such file.
+  // @Vlad: this was previously transformed into a val by Paul, but in Definitions
+  // we expose AnyRefModule, which crashes unless we have this as an object
+  object AnyRef extends Specializable {
     override def toString = "object AnyRef"
   }
 
