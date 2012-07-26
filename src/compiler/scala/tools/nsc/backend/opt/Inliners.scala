@@ -129,11 +129,15 @@ abstract class Inliners extends SubComponent {
     override def apply(c: IClass) { queue += c }
 
     override def run() {
+      knownLacksInline.clear()
+      knownHasInline.clear()
       try {
         super.run()
         for(c <- queue) { inliner analyzeClass c }
       } finally {
         inliner.clearCaches()
+        knownLacksInline.clear()
+        knownHasInline.clear()
       }
     }
   }
@@ -157,7 +161,21 @@ abstract class Inliners extends SubComponent {
     }
   }
 
-  def hasInline(sym: Symbol)    = sym hasAnnotation ScalaInlineClass
+  val knownLacksInline = mutable.Set.empty[Symbol] // cache to avoid multiple inliner.hasInline() calls.
+  val knownHasInline   = mutable.Set.empty[Symbol] // as above. Motivated by the need to warn on "inliner failures".
+
+  def hasInline(sym: Symbol)    = {
+    if     (knownLacksInline(sym)) false
+    else if(knownHasInline(sym))   true
+    else {
+      val b = (sym hasAnnotation ScalaInlineClass)
+      if(b) { knownHasInline   += sym }
+      else  { knownLacksInline += sym }
+
+      b
+    }
+  }
+
   def hasNoInline(sym: Symbol)  = sym hasAnnotation ScalaNoInlineClass
 
   /**
@@ -536,6 +554,10 @@ abstract class Inliners extends SubComponent {
       }
       while (retry && count < MAX_INLINE_RETRY)
 
+      for(inlFail <- tfa.warnIfInlineFails) {
+        warn(inlFail.pos, "At the end of the day, could not inline @inline-marked method " + inlFail.method.originalName.decode)
+      }
+
       m.normalize
       if (sizeBeforeInlining > 0) {
         val instrAfterInlining = m.code.instructionCount
@@ -731,6 +753,7 @@ abstract class Inliners extends SubComponent {
 
         tfa.remainingCALLs.remove(instr) // this bookkpeeping is done here and not in MTFAGrowable.reinit due to (1st) convenience and (2nd) necessity.
         tfa.isOnWatchlist.remove(instr)  // ditto
+        tfa.warnIfInlineFails.remove(instr)
 
         val targetPos = instr.pos
         log("Inlining " + inc.m + " in " + caller.m + " at pos: " + posToStr(targetPos))
