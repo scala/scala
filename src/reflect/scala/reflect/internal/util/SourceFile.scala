@@ -98,7 +98,7 @@ class ScriptSourceFile(underlying: BatchSourceFile, content: Array[Char], overri
 
   override def positionInUltimateSource(pos: Position) =
     if (!pos.isDefined) super.positionInUltimateSource(pos)
-    else new OffsetPosition(underlying, pos.point + start)
+    else pos.withSource(underlying, start)
 }
 
 /** a file whose contents do not change over time */
