@@ -64,13 +64,11 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
   type TypeEnv = immutable.Map[Symbol, Type]
   def emptyEnv: TypeEnv = Map[Symbol, Type]()
 
-  private implicit val typeOrdering: Ordering[Type] = Ordering[String] on ("" + _.typeSymbol.name)
-
   import definitions.{
     BooleanClass, UnitClass, ArrayClass,
     ScalaValueClasses, isPrimitiveValueClass, isPrimitiveValueType,
     SpecializedClass, UnspecializedClass, AnyRefClass, ObjectClass, AnyRefModule,
-    GroupOfSpecializable, uncheckedVarianceClass, ScalaInlineClass
+    GroupOfSpecializable, uncheckedVarianceClass, ScalaInlineClass, specializationTypeOrdering
   }
   import rootMirror.RootClass
 
@@ -104,17 +102,12 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
   private def specializedTypes(tps: List[Symbol]) = tps filter (_.isSpecialized)
   private def specializedOn(sym: Symbol): List[Symbol] = {
     sym getAnnotation SpecializedClass match {
-      case Some(AnnotationInfo(_, Nil, _)) => specializableTypes.map(_.typeSymbol)
-      case Some(ann @ AnnotationInfo(_, args, _)) => {
-        args map (_.tpe) flatMap { tp =>
-          tp baseType GroupOfSpecializable match {
-            case TypeRef(_, GroupOfSpecializable, arg :: Nil) =>
-              arg.typeArgs map (_.typeSymbol)
-            case _ =>
-              List(tp.typeSymbol)
-          }
-        }
-      }
+      // The logic to decide the types this gets specialized on is now in Definitions.
+      // The reason is that we have the -Xanyref-specialization flag, as it is necessary
+      // to eliminate any AnyRef specialization before the annotation is pickled, so the
+      // next run doesn't pick up an incorrect specialization and link to non-existant
+      // classes or methods.
+      case Some(ann @ AnnotationInfo(_, args, _)) => args map (_.tpe.typeSymbol)
       case _ => Nil
     }
   }
@@ -326,8 +319,6 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
     }
   }
 
-  lazy val specializableTypes = (ScalaValueClasses :+ AnyRefClass) map (_.tpe) sorted
-
   /** If the symbol is the companion of a value class, the value class.
    *  Otherwise, AnyRef.
    */
@@ -345,7 +336,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
     val types = if (!sym.isSpecialized)
       Nil // no @specialized Annotation
     else
-      specializedOn(sym) map (s => specializesClass(s).tpe) sorted
+      specializedOn(sym) map (s => specializesClass(s).tpe) sorted (specializationTypeOrdering)
 
     if (isBoundedGeneric(sym.tpe) && (types contains AnyRefClass))
       reporter.warning(sym.pos, sym + " is always a subtype of " + AnyRefClass.tpe + ".")
