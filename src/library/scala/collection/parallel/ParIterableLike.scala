@@ -30,7 +30,7 @@ import java.util.concurrent.atomic.AtomicBoolean
 
 import annotation.unchecked.uncheckedVariance
 import annotation.unchecked.uncheckedStable
-import language.implicitConversions
+import language.{ higherKinds, implicitConversions }
 
 
 /** A template trait for parallel collections of type `ParIterable[T]`.

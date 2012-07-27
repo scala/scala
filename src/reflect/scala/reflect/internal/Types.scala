@@ -600,7 +600,7 @@ trait Types extends api.Types { self: SymbolTable =>
     def decl(name: Name): Symbol = findDecl(name, 0)
 
     /** A list of all non-private members defined or declared in this type. */
-    def nonPrivateDecls: List[Symbol] = decls filter (x => !x.isPrivate) toList
+    def nonPrivateDecls: List[Symbol] = decls.filterNot(_.isPrivate).toList
 
     /** The non-private defined or declared members with name `name` in this type;
      *  an OverloadedSymbol if several exist, NoSymbol if none exist.
@@ -2613,7 +2613,7 @@ trait Types extends api.Types { self: SymbolTable =>
   case class PolyType(override val typeParams: List[Symbol], override val resultType: Type)
        extends Type with PolyTypeApi {
     //assert(!(typeParams contains NoSymbol), this)
-    assert(typeParams nonEmpty, this) // used to be a marker for nullary method type, illegal now (see @NullaryMethodType)
+    assert(typeParams.nonEmpty, this) // used to be a marker for nullary method type, illegal now (see @NullaryMethodType)
 
     override def paramSectionCount: Int = resultType.paramSectionCount
     override def paramss: List[List[Symbol]] = resultType.paramss
@@ -3275,7 +3275,7 @@ trait Types extends api.Types { self: SymbolTable =>
       // to never be resumed with the current implementation
       assert(!suspended, this)
       TypeVar.trace("clone", originLocation)(
-        TypeVar(origin, constr cloneInternal, typeArgs, params) // @M TODO: clone args/params?
+        TypeVar(origin, constr.cloneInternal, typeArgs, params) // @M TODO: clone args/params?
       )
     }
   }
@@ -3637,7 +3637,7 @@ trait Types extends api.Types { self: SymbolTable =>
    */
   object GenPolyType {
     def apply(tparams: List[Symbol], tpe: Type): Type = (
-      if (tparams nonEmpty) typeFun(tparams, tpe)
+      if (tparams.nonEmpty) typeFun(tparams, tpe)
       else tpe // it's okay to be forgiving here
     )
     def unapply(tpe: Type): Option[(List[Symbol], Type)] = tpe match {
@@ -4652,14 +4652,14 @@ trait Types extends api.Types { self: SymbolTable =>
 // dependent method types
   object IsDependentCollector extends TypeCollector(false) {
     def traverse(tp: Type) {
-      if(tp isImmediatelyDependent) result = true
+      if (tp.isImmediatelyDependent) result = true
       else if (!result) mapOver(tp)
     }
   }
 
   object ApproximateDependentMap extends TypeMap {
     def apply(tp: Type): Type =
-      if(tp isImmediatelyDependent) WildcardType
+      if (tp.isImmediatelyDependent) WildcardType
       else mapOver(tp)
   }
 
@@ -6159,7 +6159,7 @@ trait Types extends api.Types { self: SymbolTable =>
     }
 
     val sorted       = btsMap.toList.sortWith((x, y) => x._1.typeSymbol isLess y._1.typeSymbol)
-    val maxSeqLength = sorted map (_._2.size) max
+    val maxSeqLength = sorted.map(_._2.size).max
     val padded       = sorted map (_._2.padTo(maxSeqLength, NoType))
     val transposed   = padded.transpose
 
@@ -6265,7 +6265,7 @@ trait Types extends api.Types { self: SymbolTable =>
             }).mkString("")
 
             println("Frontier(\n" + str + ")")
-            printLubMatrix(ts zip tsBts toMap, lubListDepth)
+            printLubMatrix((ts zip tsBts).toMap, lubListDepth)
           }
 
           loop(newtps)
@@ -6275,7 +6275,7 @@ trait Types extends api.Types { self: SymbolTable =>
 
     val initialBTSes = ts map (_.baseTypeSeq.toList)
     if (printLubs)
-      printLubMatrix(ts zip initialBTSes toMap, depth)
+      printLubMatrix((ts zip initialBTSes).toMap, depth)
 
     loop(initialBTSes)
   }
@@ -6483,7 +6483,7 @@ trait Types extends api.Types { self: SymbolTable =>
                 map2(narrowts, syms)((t, sym) => t.memberInfo(sym).substThis(t.typeSymbol, lubThisType))
               if (proto.isTerm) // possible problem: owner of info is still the old one, instead of new refinement class
                 proto.cloneSymbol(lubRefined.typeSymbol).setInfoOwnerAdjusted(lub(symtypes, decr(depth)))
-              else if (symtypes.tail forall (symtypes.head =:=))
+              else if (symtypes.tail forall (symtypes.head =:= _))
                 proto.cloneSymbol(lubRefined.typeSymbol).setInfoOwnerAdjusted(symtypes.head)
               else {
                 def lubBounds(bnds: List[TypeBounds]): TypeBounds =
@@ -6857,7 +6857,7 @@ trait Types extends api.Types { self: SymbolTable =>
     tps map {
       case MethodType(params1, res) if (isSameTypes(params1 map (_.tpe), pts)) =>
         res
-      case NullaryMethodType(res) if pts isEmpty =>
+      case NullaryMethodType(res) if pts.isEmpty =>
         res
       case _ =>
         throw new NoCommonType(tps)

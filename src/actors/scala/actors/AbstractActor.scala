@@ -6,8 +6,9 @@
 **                          |/                                          **
 \*                                                                      */
 
-
 package scala.actors
+
+import language.higherKinds
 
 /**
  * @author Philipp Haller

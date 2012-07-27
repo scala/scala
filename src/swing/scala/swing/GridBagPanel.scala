@@ -6,12 +6,9 @@
 **                          |/                                          **
 \*                                                                      */
 
-
-
 package scala.swing
 
 import java.awt.{GridBagConstraints, GridBagLayout}
-
 
 object GridBagPanel {
   object Fill extends Enumeration {

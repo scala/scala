@@ -14,6 +14,9 @@ package object swing {
   type Image = java.awt.Image
   type Font = java.awt.Font
 
+  implicit lazy val reflectiveCalls     = language.reflectiveCalls
+  implicit lazy val implicitConversions = language.implicitConversions
+
   private[swing] def ifNull[A](o: Object, a: A): A = if(o eq null) a else o.asInstanceOf[A]
   private[swing] def toOption[A](o: Object): Option[A] = if(o eq null) None else Some(o.asInstanceOf[A])
   private[swing] def toAnyRef(x: Any): AnyRef = x.asInstanceOf[AnyRef]
