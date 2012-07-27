@@ -145,14 +145,12 @@ abstract class ScaladocModelTest extends DirectTest {
 
     trait WithMembers {
       def members: List[MemberEntity]
+      def _member(name: String): MemberEntity = getTheFirst(_members(name), this.toString + ".member(" + name + ")")
+      def _members(name: String): List[MemberEntity] = members.filter(_.name == name)
     }
     implicit class PackageAccess(pack: Package) extends TemplateAccess(pack) {
       def _package(name: String): Package = getTheFirst(_packages(name), pack.qualifiedName + ".package(" + name + ")")
       def _packages(name: String): List[Package] = pack.packages.filter(_.name == name)
-    }
-    implicit class MemberAccess(mbrs: WithMembers) {
-      def _member(name: String): MemberEntity = getTheFirst(_members(name), mbrs.toString + ".member(" + name + ")")
-      def _members(name: String): List[MemberEntity] = mbrs.members.filter(_.name == name)
     }
     implicit class DocTemplateEntityMembers(val underlying: DocTemplateEntity) extends WithMembers {
       def members = underlying.members
