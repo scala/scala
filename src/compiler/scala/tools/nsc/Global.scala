@@ -1500,8 +1500,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
 
     /** Compile list of source files */
     def compileSources(_sources: List[SourceFile]) {
-      val depSources = dependencyAnalysis calculateFiles _sources.distinct
-      val sources    = coreClassesFirst(depSources)
+      val sources = dependencyAnalysis calculateFiles _sources.distinct
       // there is a problem already, e.g. a plugin was passed a bad option
       if (reporter.hasErrors)
         return
@@ -1660,46 +1659,6 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
         pclazz.setInfo(enteringPhase(typerPhase)(pclazz.info))
       }
       if (!pclazz.isRoot) resetPackageClass(pclazz.owner)
-    }
-
-    /**
-     * Re-orders the source files to
-     *  1. This Space Intentionally Left Blank
-     *  2. LowPriorityImplicits / EmbeddedControls (i.e. parents of Predef)
-     *  3. the rest
-     *
-     * 1 is to avoid cyclic reference errors.
-     * 2 is due to the following. When completing "Predef" (*), typedIdent is called
-     * for its parents (e.g. "LowPriorityImplicits"). typedIdent checks whether
-     * the symbol reallyExists, which tests if the type of the symbol after running
-     * its completer is != NoType.
-     * If the "namer" phase has not yet run for "LowPriorityImplicits", the symbol
-     * has a SourcefileLoader as type. Calling "doComplete" on it does nothing at
-     * all, because the source file is part of the files to be compiled anyway.
-     * So the "reallyExists" test will return "false".
-     * Only after the namer, the symbol has a lazy type which actually computes
-     * the info, and "reallyExists" behaves as expected.
-     * So we need to make sure that the "namer" phase is run on predef's parents
-     * before running it on predef.
-     *
-     * (*) Predef is completed early when calling "mkAttributedRef" during the
-     *   addition of "import Predef._" to sourcefiles. So this situation can't
-     *   happen for user classes.
-     *
-     */
-    private def coreClassesFirst(files: List[SourceFile]) = {
-      val goLast = 4
-      def rank(f: SourceFile) = {
-        if (f.file.container.name != "scala") goLast
-        else f.file.name match {
-          case "LowPriorityImplicits.scala"   => 2
-          case "StandardEmbeddings.scala"     => 2
-          case "EmbeddedControls.scala"       => 2
-          case "Predef.scala"                 => 3 /* Predef.scala before Any.scala, etc. */
-          case _                              => goLast
-        }
-      }
-      files sortBy rank
     }
   } // class Run
 
