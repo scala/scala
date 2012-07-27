@@ -135,7 +135,7 @@ abstract class Action(title0: String) {
   def accelerator: Option[KeyStroke] =
     toOption(peer.getValue(javax.swing.Action.ACCELERATOR_KEY))
   def accelerator_=(k: Option[KeyStroke]) {
-    peer.putValue(javax.swing.Action.ACCELERATOR_KEY, k orNull)
+    peer.putValue(javax.swing.Action.ACCELERATOR_KEY, k.orNull)
   }
 
   /**

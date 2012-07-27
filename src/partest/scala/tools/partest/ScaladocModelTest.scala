@@ -102,7 +102,7 @@ abstract class ScaladocModelTest extends DirectTest {
   // finally, enable easy navigation inside the entities
   object access {
 
-    class TemplateAccess(tpl: DocTemplateEntity) {
+    implicit class TemplateAccess(tpl: DocTemplateEntity) {
       def _class(name: String): DocTemplateEntity = getTheFirst(_classes(name), tpl.qualifiedName + ".class(" + name + ")")
       def _classes(name: String): List[DocTemplateEntity] = tpl.templates.filter(_.name == name).collect({ case c: DocTemplateEntity with Class => c})
 
@@ -143,21 +143,23 @@ abstract class ScaladocModelTest extends DirectTest {
       def _aliasTypeTpls(name: String): List[DocTemplateEntity] = tpl.members.collect({ case dtpl: DocTemplateEntity with AliasType if dtpl.name == name => dtpl })
     }
 
-    class PackageAccess(pack: Package) extends TemplateAccess(pack) {
+    trait WithMembers {
+      def members: List[MemberEntity]
+    }
+    implicit class PackageAccess(pack: Package) extends TemplateAccess(pack) {
       def _package(name: String): Package = getTheFirst(_packages(name), pack.qualifiedName + ".package(" + name + ")")
       def _packages(name: String): List[Package] = pack.packages.filter(_.name == name)
     }
-
-    class MemberAccess(mbrs: WithMembers) {
+    implicit class MemberAccess(mbrs: WithMembers) {
       def _member(name: String): MemberEntity = getTheFirst(_members(name), mbrs.toString + ".member(" + name + ")")
       def _members(name: String): List[MemberEntity] = mbrs.members.filter(_.name == name)
     }
-
-    type WithMembers = { def members: List[MemberEntity]; def toString: String } /* DocTemplates and ImplicitConversions */
-
-    implicit def templateAccess(tpl: DocTemplateEntity) = new TemplateAccess(tpl)
-    implicit def packageAccess(pack: Package) = new PackageAccess(pack)
-    implicit def membersAccess(mbrs: WithMembers) = new MemberAccess(mbrs)
+    implicit class DocTemplateEntityMembers(val underlying: DocTemplateEntity) extends WithMembers {
+      def members = underlying.members
+    }
+    implicit class ImplicitConversionMembers(val underlying: ImplicitConversion) extends WithMembers {
+      def members = underlying.members
+    }
 
     def getTheFirst[T](list: List[T], expl: String): T = list.length match {
       case 1 => list.head
