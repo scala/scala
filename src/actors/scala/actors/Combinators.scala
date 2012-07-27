@@ -10,6 +10,8 @@
 
 package scala.actors
 
+import language.implicitConversions
+
 private[actors] trait Combinators {
 
   /**

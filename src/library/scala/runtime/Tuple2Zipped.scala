@@ -10,6 +10,7 @@ package scala.runtime
 
 import scala.collection.{ TraversableLike, IterableLike }
 import scala.collection.generic.{ CanBuildFrom => CBF }
+import language.{ higherKinds, implicitConversions }
 
 /** This interface is intended as a minimal interface, not complicated
  *  by the requirement to resolve type constructors, for implicit search (which only

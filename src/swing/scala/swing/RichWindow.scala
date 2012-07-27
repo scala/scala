@@ -145,7 +145,7 @@ object Dialog {
                   initial: Int): Result.Value = {
     val r = JOptionPane.showOptionDialog(nullPeer(parent), message, title,
       optionType.id, messageType.id, Swing.wrapIcon(icon),
-      entries map toAnyRef toArray, entries(initial))
+      (entries map toAnyRef).toArray, entries(initial))
     Result(r)
   }
 
@@ -157,7 +157,7 @@ object Dialog {
                    entries: Seq[A] = Nil,
                    initial: A): Option[A] = {
     val e = if (entries.isEmpty) null
-    else entries map toAnyRef toArray
+    else (entries map toAnyRef).toArray
     val r = JOptionPane.showInputDialog(nullPeer(parent), message, title,
       messageType.id, Swing.wrapIcon(icon),
       e, initial)

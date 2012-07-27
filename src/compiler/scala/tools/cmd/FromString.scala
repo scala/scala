@@ -43,7 +43,7 @@ object FromString {
       else cmd.runAndExit(println("'%s' is not an existing directory." format s))
   }
   def ExistingDirRelativeTo(root: Directory) = new FromString[Directory]()(tagOfDirectory) {
-    private def resolve(s: String) = toDir(s) toAbsoluteWithRoot root toDirectory
+    private def resolve(s: String) = (toDir(s) toAbsoluteWithRoot root).toDirectory
     override def isDefinedAt(s: String) = resolve(s).isDirectory
     def apply(s: String): Directory =
       if (isDefinedAt(s)) resolve(s)

@@ -163,8 +163,8 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
             val passedIn = named.collect {
               case (argName, argType) if argName == paramName => argType
             }.headOption
-            if (passedIn isDefined) passedIn
-            else defaults.get(paramIndex).map(_.asInstanceOf[Type])
+
+            passedIn orElse defaults.get(paramIndex).map(_.asInstanceOf[Type])
           }
 
           val rest1 = {
