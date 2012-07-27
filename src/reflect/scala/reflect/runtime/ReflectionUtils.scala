@@ -38,6 +38,8 @@ object ReflectionUtils {
   )
 
   def show(cl: ClassLoader): String = {
+    import language.reflectiveCalls
+
     def isAbstractFileClassLoader(clazz: Class[_]): Boolean = {
       if (clazz == null) return false
       if (clazz.getName == "scala.tools.nsc.interpreter.AbstractFileClassLoader") return true

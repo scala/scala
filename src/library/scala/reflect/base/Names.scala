@@ -1,6 +1,8 @@
 package scala.reflect
 package base
 
+import language.implicitConversions
+
 /** A trait that manages names.
  *  A name is a string in one of two name universes: terms and types.
  *  The same string can be a name in both universes.

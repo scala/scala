@@ -51,7 +51,7 @@ abstract class Window extends UIElement with RootPanel with Publisher { outer =>
     peer.getRootPane.setDefaultButton(b.peer)
   }
   def defaultButton_=(b: Option[Button]) {
-    peer.getRootPane.setDefaultButton(b map (_.peer) orNull)
+    peer.getRootPane.setDefaultButton(b.map(_.peer).orNull)
   }
 
   def dispose() { peer.dispose() }

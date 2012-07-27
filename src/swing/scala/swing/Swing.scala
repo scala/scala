@@ -15,6 +15,7 @@ import javax.swing.event._
 import javax.swing.border._
 import javax.swing.{JComponent, Icon, BorderFactory, SwingUtilities}
 
+
 /**
  * Helpers for this package.
  */

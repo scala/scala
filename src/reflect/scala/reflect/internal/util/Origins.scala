@@ -96,7 +96,7 @@ object Origins {
     || (el.getClassName startsWith "java.lang.")
   )
   private def findCutoff() = {
-    val cutoff = Thread.currentThread.getStackTrace dropWhile preCutoff head;
+    val cutoff = (Thread.currentThread.getStackTrace dropWhile preCutoff).head
     OriginId(cutoff.getClassName, cutoff.getMethodName)
   }
 
