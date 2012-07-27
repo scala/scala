@@ -58,7 +58,7 @@ class CodeWriter(writer: Writer) {
       try {
         writer.write(nl)
       } catch {
-        case e => sys.error("IO error")
+        case e: Exception => sys.error("IO error")
       }
       line = align
       align = true
@@ -127,7 +127,7 @@ class CodeWriter(writer: Writer) {
     line = false
     this
   } catch {
-    case e => sys.error("IO error")
+    case e: Exception => sys.error("IO error")
   }
 
   override def toString(): String = writer.toString()
