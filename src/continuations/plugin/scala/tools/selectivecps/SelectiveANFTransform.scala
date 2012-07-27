@@ -475,7 +475,7 @@ abstract class SelectiveANFTransform extends PluginComponent with Transform with
         val (prologue, rest) = (anfStats :+ anfExpr) span (s => !s.isInstanceOf[DefDef]) // find first case
         // println("rest: "+ rest)
         // val (defs, calls) = rest partition (_.isInstanceOf[DefDef])
-        if (rest nonEmpty){
+        if (rest.nonEmpty) {
           // the filter drops the ()'s emitted when transValue encountered a LabelDef
           val stats = prologue ++ (rest filter (_.isInstanceOf[DefDef])).reverse // ++ calls
           // println("REVERSED "+ (stats mkString ("{", "\n", "}")))

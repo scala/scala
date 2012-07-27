@@ -3663,7 +3663,8 @@ trait Typers extends Modes with Adaptations with Tags {
             typedClassOf(tree, args.head, true)
           else {
             if (!isPastTyper && fun.symbol == Any_isInstanceOf && !targs.isEmpty)
-              checkCheckable(tree, targs.head, inPattern = false)
+              checkCheckable(tree, targs.head, AnyClass.tpe, inPattern = false)
+
             val resultpe = restpe.instantiateTypeParams(tparams, targs)
             //@M substitution in instantiateParams needs to be careful!
             //@M example: class Foo[a] { def foo[m[x]]: m[a] = error("") } (new Foo[Int]).foo[List] : List[Int]

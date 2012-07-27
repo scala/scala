@@ -120,13 +120,13 @@ class File(jfile: JFile)(implicit constructorCodec: Codec) extends Path(jfile) w
   def writeAll(strings: String*): Unit = {
     val out = bufferedWriter()
     try strings foreach (out write _)
-    finally out close
+    finally out.close()
   }
 
   def writeBytes(bytes: Array[Byte]): Unit = {
     val out = bufferedOutput()
     try out write bytes
-    finally out close
+    finally out.close()
   }
 
   def appendAll(strings: String*): Unit = {
@@ -139,7 +139,7 @@ class File(jfile: JFile)(implicit constructorCodec: Codec) extends Path(jfile) w
   def printlnAll(strings: String*): Unit = {
     val out = printWriter()
     try strings foreach (out println _)
-    finally out close
+    finally out.close()
   }
 
   def safeSlurp(): Option[String] =

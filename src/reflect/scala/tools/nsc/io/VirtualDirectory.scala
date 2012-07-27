@@ -48,7 +48,7 @@ extends AbstractFile {
   def iterator = files.values.toList.iterator
 
   override def lookupName(name: String, directory: Boolean): AbstractFile =
-    files get name filter (_.isDirectory == directory) orNull
+    (files get name filter (_.isDirectory == directory)).orNull
 
   override def fileNamed(name: String): AbstractFile =
     Option(lookupName(name, false)) getOrElse {

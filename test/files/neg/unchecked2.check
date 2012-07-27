@@ -1,19 +1,19 @@
-unchecked2.scala:2: error: non variable type-argument Int in type Option[Int] is unchecked since it is eliminated by erasure
+unchecked2.scala:2: error: non-variable type argument Int in type Option[Int] is unchecked since it is eliminated by erasure
   Some(123).isInstanceOf[Option[Int]]
                         ^
-unchecked2.scala:3: error: non variable type-argument String in type Option[String] is unchecked since it is eliminated by erasure
+unchecked2.scala:3: error: non-variable type argument String in type Option[String] is unchecked since it is eliminated by erasure
   Some(123).isInstanceOf[Option[String]]
                         ^
-unchecked2.scala:4: error: non variable type-argument List[String] in type Option[List[String]] is unchecked since it is eliminated by erasure
+unchecked2.scala:4: error: non-variable type argument List[String] in type Option[List[String]] is unchecked since it is eliminated by erasure
   Some(123).isInstanceOf[Option[List[String]]]
                         ^
-unchecked2.scala:5: error: non variable type-argument List[Int => String] in type Option[List[Int => String]] is unchecked since it is eliminated by erasure
+unchecked2.scala:5: error: non-variable type argument List[Int => String] in type Option[List[Int => String]] is unchecked since it is eliminated by erasure
   Some(123).isInstanceOf[Option[List[Int => String]]]
                         ^
-unchecked2.scala:6: error: non variable type-argument (String, Double) in type Option[(String, Double)] is unchecked since it is eliminated by erasure
+unchecked2.scala:6: error: non-variable type argument (String, Double) in type Option[(String, Double)] is unchecked since it is eliminated by erasure
   Some(123).isInstanceOf[Option[(String, Double)]]
                         ^
-unchecked2.scala:7: error: non variable type-argument String => Double in type Option[String => Double] is unchecked since it is eliminated by erasure
+unchecked2.scala:7: error: non-variable type argument String => Double in type Option[String => Double] is unchecked since it is eliminated by erasure
   Some(123).isInstanceOf[Option[String => Double]]
                         ^
 6 errors found

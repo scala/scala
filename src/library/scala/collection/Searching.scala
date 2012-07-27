@@ -11,6 +11,7 @@ package scala.collection
 import scala.annotation.tailrec
 import scala.collection.generic.IsSeqLike
 import scala.math.Ordering
+import language.implicitConversions
 
 /** A collection of wrappers that provide sequence classes with search functionality.
   *
