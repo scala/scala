@@ -208,7 +208,7 @@ final case class Success[+T](value: T) extends Try[T] {
   def flatMap[U](f: T => Try[U]): Try[U] =
     try f(value)
     catch {
-      case e => Failure(e)
+      case e: Throwable => Failure(e)
     }
   def flatten[U](implicit ev: T <:< Try[U]): Try[U] = value
   def foreach[U](f: T => U): Unit = f(value)

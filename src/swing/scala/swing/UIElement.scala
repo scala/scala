@@ -37,7 +37,7 @@ object UIElement {
       case c: javax.swing.JComponent => c.getClientProperty(ClientKey)
       case _ => wrapperCache.get(c)
     }
-    try { w.asInstanceOf[C] } catch { case _ => null }
+    try { w.asInstanceOf[C] } catch { case _: Exception => null }
   }
 
   /**

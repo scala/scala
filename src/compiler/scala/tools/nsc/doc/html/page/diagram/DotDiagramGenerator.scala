@@ -333,7 +333,7 @@ class DotDiagramGenerator(settings: doc.Settings) extends DiagramGenerator {
         else
           NodeSeq.Empty
       } catch {
-        case exc =>
+        case exc: Exception =>
           if (settings.docDiagramsDebug.value) {
             settings.printMsg("\n\n**********************************************************************")
             settings.printMsg("Encountered an error while generating page for " + template.qualifiedName)

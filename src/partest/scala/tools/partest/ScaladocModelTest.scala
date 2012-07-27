@@ -72,7 +72,7 @@ abstract class ScaladocModelTest extends DirectTest {
       testModel(universe.rootPackage)
       println("Done.")
     } catch {
-      case e =>
+      case e: Exception =>
         println(e)
         e.printStackTrace
     }
