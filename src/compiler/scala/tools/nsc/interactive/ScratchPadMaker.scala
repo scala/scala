@@ -29,18 +29,10 @@ trait ScratchPadMaker { self: Global =>
     private def nameType(sym: Symbol): String = nameType(sym.name.toString, sym.tpe)
 
     private def literal(str: String) = "\"\"\""+str+"\"\"\""
-    
-    private val prologue = "import scala.tools.nsc.scratchpad.Executor._; def main(args: Array[String])=$execute{"
-      
-    def stringifiedContents = {
-      contents flatMap { 
-        case '$' => """$$"""
-        case '"' => """${'"'}"""
-        case c => c.toString
-      }
-    }.mkString
-    
-    private def epilogue = "}(s\"\"\"" + stringifiedContents + "\"\"\")"
+
+    private val prologue = "import scala.runtime.WorksheetSupport._; def main(args: Array[String])=$execute{"
+
+    private val epilogue = "}"
 
     private def applyPendingPatches(offset: Int) = {
       if (skipped == 0) patches += Patch(offset, prologue)
