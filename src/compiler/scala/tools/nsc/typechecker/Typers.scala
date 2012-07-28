@@ -1385,6 +1385,11 @@ trait Typers extends Modes with Adaptations with Tags {
             unit.error(clazz.pos, "value class needs to have exactly one public val parameter")
         }
       }
+      body foreach {
+        case md: ModuleDef => unit.error(md.pos, "value class may not have nested module definitions")
+        case cd: ClassDef => unit.error(cd.pos, "value class may not have nested class definitions")
+        case _ =>
+      }
       for (tparam <- clazz.typeParams)
         if (tparam hasAnnotation definitions.SpecializedClass)
           unit.error(tparam.pos, "type parameter of value class may not be specialized")
@@ -4531,7 +4536,7 @@ trait Typers extends Modes with Adaptations with Tags {
           assert(errorContainer == null, "Cannot set ambiguous error twice for identifier")
           errorContainer = tree
         }
-        
+
         val fingerPrint: Long = name.fingerPrint
 
         var defSym: Symbol = tree.symbol  // the directly found symbol
