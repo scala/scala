@@ -1228,7 +1228,7 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
           if (settings.XnoPatmatAnalysis.value) (true, false)
           else scrut match {
             case Typed(_, tpt) =>
-              (treeInfo.isUncheckedAnnotation(tpt.tpe),
+              (tpt.tpe hasAnnotation UncheckedClass,
                // matches with two or fewer cases need not apply for switchiness (if-then-else will do)
                treeInfo.isSwitchAnnotation(tpt.tpe) && casesNoSubstOnly.lengthCompare(2) > 0)
             case _ =>

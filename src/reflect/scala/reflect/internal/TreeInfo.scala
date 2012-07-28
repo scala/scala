@@ -326,9 +326,6 @@ abstract class TreeInfo {
     case _ => false
   }
 
-  /** a Match(Typed(_, tpt), _) is unchecked if isUncheckedAnnotation(tpt.tpe) */
-  def isUncheckedAnnotation(tpe: Type) = tpe hasAnnotation definitions.UncheckedClass
-
   /** a Match(Typed(_, tpt), _) must be translated into a switch if isSwitchAnnotation(tpt.tpe) */
   def isSwitchAnnotation(tpe: Type) = tpe hasAnnotation definitions.SwitchClass
 
