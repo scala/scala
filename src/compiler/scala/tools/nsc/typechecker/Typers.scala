@@ -1194,30 +1194,46 @@ trait Typers extends Modes with Adaptations with Tags {
               }
 
               val found = tree.tpe
-              val req = pt
-              if (!found.isErroneous && !req.isErroneous) {
-                if (!context.reportErrors && isPastTyper && req.skolemsExceptMethodTypeParams.nonEmpty) {
-                  // Ignore type errors raised in later phases that are due to mismatching types with existential skolems
-                  // We have lift crashing in 2.9 with an adapt failure in the pattern matcher.
-                  // Here's my hypothsis why this happens. The pattern matcher defines a variable of type
-                  //
-                  //   val x: T = expr
-                  //
-                  // where T is the type of expr, but T contains existential skolems ts.
-                  // In that case, this value definition does not typecheck.
-                  // The value definition
-                  //
-                  //   val x: T forSome { ts } = expr
-                  //
-                  // would typecheck. Or one can simply leave out the type of the `val`:
-                  //
-                  //   val x = expr
-                  context.unit.warning(tree.pos, "recovering from existential Skolem type error in tree \n" + tree + "\nwith type " + tree.tpe + "\n expected type = " + pt + "\n context = " + context.tree)
-                  adapt(tree, mode, deriveTypeWithWildcards(pt.skolemsExceptMethodTypeParams)(pt))
-                } else {
-                  // create an actual error
-                  AdaptTypeError(tree, found, req)
+              if (!found.isErroneous && !pt.isErroneous) {
+                if (!context.reportErrors && isPastTyper) {
+                  val (bound, req) = pt match {
+                    case ExistentialType(qs, tpe) => (qs, tpe)
+                    case _ => (Nil, pt)
+                  }
+                  val boundOrSkolems = bound ++ pt.skolemsExceptMethodTypeParams
+                  if (boundOrSkolems.nonEmpty) {
+                    // Ignore type errors raised in later phases that are due to mismatching types with existential skolems
+                    // We have lift crashing in 2.9 with an adapt failure in the pattern matcher.
+                    // Here's my hypothsis why this happens. The pattern matcher defines a variable of type
+                    //
+                    //   val x: T = expr
+                    //
+                    // where T is the type of expr, but T contains existential skolems ts.
+                    // In that case, this value definition does not typecheck.
+                    // The value definition
+                    //
+                    //   val x: T forSome { ts } = expr
+                    //
+                    // would typecheck. Or one can simply leave out the type of the `val`:
+                    //
+                    //   val x = expr
+                    //
+                    // SI-6029 shows another case where we also fail (in uncurry), but this time the expected
+                    // type is an existential type.
+                    //
+                    // The reason for both failures have to do with the way we (don't) transform
+                    // skolem types along with the trees that contain them. We'd need a
+                    // radically different approach to do it. But before investing a lot of time to
+                    // to do this (I have already sunk 3 full days with in the end futile attempts
+                    // to consistently transform skolems and fix 6029), I'd like to
+                    // investigate ways to avoid skolems completely.
+                    //
+                    log("recovering from existential or skolem type error in tree \n" + tree + "\nwith type " + tree.tpe + "\n expected type = " + pt + "\n context = " + context.tree)
+                    return adapt(tree, mode, deriveTypeWithWildcards(boundOrSkolems)(pt))
+                  }
                 }
+                // create an actual error
+                AdaptTypeError(tree, found, pt)
               }
               setError(tree)
             }
@@ -4531,7 +4547,7 @@ trait Typers extends Modes with Adaptations with Tags {
           assert(errorContainer == null, "Cannot set ambiguous error twice for identifier")
           errorContainer = tree
         }
-        
+
         val fingerPrint: Long = name.fingerPrint
 
         var defSym: Symbol = tree.symbol  // the directly found symbol
