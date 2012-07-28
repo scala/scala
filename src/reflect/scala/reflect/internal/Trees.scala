@@ -469,7 +469,7 @@ trait Trees extends api.Trees { self: SymbolTable =>
     private var orig: Tree = null
     private[scala] var wasEmpty: Boolean = false
 
-    override def symbol = if (tpe == null) null else tpe.typeSymbol
+    override def symbol = typeTreeSymbol(this) // if (tpe == null) null else tpe.typeSymbol
     override def isEmpty = (tpe eq null) || tpe == NoType
 
     def original: Tree = orig
@@ -1024,6 +1024,14 @@ trait Trees extends api.Trees { self: SymbolTable =>
     }
   }
 
+    
+  /** Delegate for a TypeTree symbol. This operation is unsafe because
+   *  it may trigger type checking when forcing the type symbol of the
+   *  underlying type.
+   */
+  protected def typeTreeSymbol(tree: TypeTree): Symbol =
+    if (tree.tpe == null) null else tree.tpe.typeSymbol
+  
   // --- generic traversers and transformers
 
   override protected def itraverse(traverser: Traverser, tree: Tree): Unit = {

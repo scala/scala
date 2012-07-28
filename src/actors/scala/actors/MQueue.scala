@@ -121,7 +121,7 @@ private[actors] class MQueue[Msg >: Null](protected val label: String) {
    *  or `'''null'''` if `p` fails for all of them.
    */
   def extractFirst(p: (Msg, OutputChannel[Any]) => Boolean): MQueueElement[Msg] =
-    removeInternal(0)(p) orNull
+    removeInternal(0)(p).orNull
 
   def extractFirst(pf: PartialFunction[Msg, Any]): MQueueElement[Msg] = {
     if (isEmpty)    // early return

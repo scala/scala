@@ -52,7 +52,6 @@ class Base extends Universe { self =>
       else if (isFreeTerm) "free term"
       else if (isTerm) "value"
       else "symbol"
-    // [Eugene++ to Martin] base names should expose `decode`
     override def toString() = s"$kindString $name"
   }
   implicit val SymbolTag = ClassTag[Symbol](classOf[Symbol])
@@ -96,8 +95,8 @@ class Base extends Universe { self =>
 
   // todo. write a decent toString that doesn't crash on recursive types
   class Type extends TypeBase {
-    def typeSymbol: Symbol = NoSymbol
     def termSymbol: Symbol = NoSymbol
+    def typeSymbol: Symbol = NoSymbol
   }
   implicit val TypeTagg = ClassTag[Type](classOf[Type])
 
@@ -204,20 +203,22 @@ class Base extends Universe { self =>
 
   object nme extends TermNamesBase {
     type NameType = TermName
-    val EMPTY              = newTermName("")
-    val ROOT               = newTermName("<root>")
-    val EMPTY_PACKAGE_NAME = newTermName("<empty>")
-    val CONSTRUCTOR        = newTermName("<init>")
+    val WILDCARD             = newTermName("_")
+    val CONSTRUCTOR          = newTermName("<init>")
+    val ROOTPKG              = newTermName("_root_")
+    val EMPTY                = newTermName("")
+    val EMPTY_PACKAGE_NAME   = newTermName("<empty>")
+    val ROOT                 = newTermName("<root>")
     val NO_NAME            = newTermName("<none>")
-    val WILDCARD           = newTermName("_")
   }
 
   object tpnme extends TypeNamesBase {
     type NameType = TypeName
-    val EMPTY              = nme.EMPTY.toTypeName
-    val ROOT               = nme.ROOT.toTypeName
-    val EMPTY_PACKAGE_NAME = nme.EMPTY_PACKAGE_NAME.toTypeName
-    val WILDCARD           = nme.WILDCARD.toTypeName
+    val WILDCARD             = nme.WILDCARD.toTypeName
+    val EMPTY                = nme.EMPTY.toTypeName
+    val WILDCARD_STAR        = newTypeName("_*")
+    val EMPTY_PACKAGE_NAME   = nme.EMPTY_PACKAGE_NAME.toTypeName
+    val ROOT                 = nme.ROOT.toTypeName
   }
 
   type FlagSet = Long

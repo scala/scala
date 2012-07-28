@@ -8,6 +8,10 @@ package scala.tools
 package object cmd {
   def returning[T](x: T)(f: T => Unit): T = { f(x) ; x }
 
+  // make some language features in this package compile without warning
+  implicit def implicitConversions = language.implicitConversions
+  implicit def postfixOps = language.postfixOps
+
   private[cmd] def debug(msg: String) = println(msg)
 
   def runAndExit(body: => Unit): Nothing = {

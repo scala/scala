@@ -6,8 +6,6 @@
 **                          |/                                          **
 \*                                                                      */
 
-
-
 package scala.swing
 
 import event._
@@ -205,6 +203,6 @@ class ComboBox[A](items: Seq[A]) extends Component with Publisher {
 
   def prototypeDisplayValue: Option[A] = toOption[A](peer.getPrototypeDisplayValue)
   def prototypeDisplayValue_=(v: Option[A]) {
-    peer.setPrototypeDisplayValue(v map toAnyRef orNull)
+    peer.setPrototypeDisplayValue((v map toAnyRef).orNull)
   }
 }

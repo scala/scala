@@ -280,7 +280,7 @@ INITIALISATION
   <!-- Resolve maven dependencies -->
   <target name="init.maven.jars" depends="init.maven.tasks">
     <artifact:dependencies pathId="dependency.classpath" filesetId="dependency.fileset">
-      <dependency groupId="com.typesafe" artifactId="config" version="0.4.0"/>
+      <!--<dependency groupId="com.typesafe" artifactId="config" version="0.4.0"/>-->
     </artifact:dependencies>
   </target>
 
@@ -1294,7 +1294,7 @@ QUICK BUILD (QUICK)
     <scalacfork
       destdir="${build-quick.dir}/classes/scalacheck"
       compilerpathref="quick.classpath"
-      params="${scalac.args.quick}"
+      params="${scalac.args.quick} -nowarn"
       srcdir="${src.dir}/scalacheck"
       jvmargs="${scalacfork.jvmargs}">
       <include name="**/*.scala"/>
@@ -1942,7 +1942,7 @@ BOOTSTRAPPING BUILD (STRAP)
     <scalacfork
       destdir="${build-strap.dir}/classes/scalacheck"
       compilerpathref="pack.classpath"
-      params="${scalac.args.quick}"
+      params="${scalac.args.quick} -nowarn"
       srcdir="${src.dir}/scalacheck"
       jvmargs="${scalacfork.jvmargs}">
       <include name="**/*.scala"/>
