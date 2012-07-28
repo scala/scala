@@ -143,6 +143,8 @@ abstract class TreeGen extends makro.TreeBuilder {
 
   /** Computes stable type for a tree if possible */
   def stableTypeFor(tree: Tree): Option[Type] = tree match {
+    case This(_) if tree.symbol != null && !tree.symbol.isError =>
+      Some(ThisType(tree.symbol))
     case Ident(_) if tree.symbol.isStable =>
       Some(singleType(tree.symbol.owner.thisType, tree.symbol))
     case Select(qual, _) if ((tree.symbol ne null) && (qual.tpe ne null)) && // turned assert into guard for #4064
