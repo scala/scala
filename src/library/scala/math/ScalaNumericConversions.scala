@@ -69,12 +69,6 @@ trait ScalaNumericConversions extends ScalaNumber {
     */
   def isValidChar  = isWhole && (toInt >= Char.MinValue && toInt <= Char.MaxValue)
 
-  protected def unifiedPrimitiveHashcode() = {
-    val lv = toLong
-    if (lv >= Int.MinValue && lv <= Int.MaxValue) lv.toInt
-    else lv.##
-  }
-
   /** Should only be called after all known non-primitive
    *  types have been excluded.  This method won't dispatch
    *  anywhere else after checking against the primitives

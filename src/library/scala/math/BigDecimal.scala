@@ -175,9 +175,12 @@ extends ScalaNumber with ScalaNumericConversions with Serializable {
    *  which deems 2 == 2.00, whereas in java these are unequal
    *  with unequal hashCodes.
    */
-  override def hashCode(): Int =
-    if (isWhole) unifiedPrimitiveHashcode
-    else doubleValue.##
+  override def hashCode(): Int = (
+    if (isValidInt) toInt
+    else if (isValidLong) toLong.toInt
+    else if (isWhole) toBigInt.bigInteger.hashCode
+    else bigDecimal.hashCode
+  )
 
   /** Compares this BigDecimal with the specified value for equality.
    */
