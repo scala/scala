@@ -2,6 +2,7 @@ package scala.tools.nsc
 package util
 
 /** A class of work items to be used in interrupt requests.
+ *  Todo: we should replace the Eithers by Futures or Try's.
  */
 abstract class InterruptReq {
   /** The result type of the operation
@@ -11,8 +12,13 @@ abstract class InterruptReq {
   /** The operation to be performed */
   protected val todo: () => R
 
+  type Continuation = Either[R, Throwable] => Unit
+
   /** The result provided */
   private var result: Option[Either[R, Throwable]] = None
+
+  /** The continuations waiting asynchronously on a provided result */
+  private var waiting: List[Continuation] = Nil
 
   /** To be called from interrupted server to execute demanded task */
   def execute(): Unit = synchronized {
@@ -22,6 +28,7 @@ abstract class InterruptReq {
       case t: Throwable => result = Some(Right(t))
     } finally {
       notify()
+      for (k <- waiting.reverse) k(result.get)
     }
   }
 
@@ -37,6 +44,10 @@ abstract class InterruptReq {
       case Left(res) => res
       case Right(t) => throw new FailedInterrupt(t)
     }
+  }
+
+  def onComplete(k: Continuation) = synchronized {
+    waiting = k :: waiting
   }
 }
 

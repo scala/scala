@@ -30,8 +30,12 @@ trait ScratchPadMaker { self: Global =>
 
     private def literal(str: String) = "\"\"\""+str+"\"\"\""
 
+    private val prologue = "import scala.runtime.WorksheetSupport._; def main(args: Array[String])=$execute{"
+
+    private val epilogue = "}"
+
     private def applyPendingPatches(offset: Int) = {
-      if (skipped == 0) patches += Patch(offset, "import scala.tools.nsc.scratchpad.Executor._; ")
+      if (skipped == 0) patches += Patch(offset, prologue)
       for (msg <- toPrint) patches += Patch(offset, ";System.out.println("+msg+")")
       toPrint.clear()
     }
@@ -92,10 +96,12 @@ trait ScratchPadMaker { self: Global =>
       case PackageDef(_, _) =>
         super.traverse(tree)
       case ModuleDef(_, name, Template(_, _, body)) =>
-        if (objectName.length == 0)
-          objectName = tree.symbol.fullName
+        val topLevel = objectName.isEmpty
+        if (topLevel) objectName = tree.symbol.fullName
         body foreach traverseStat
         applyPendingPatches(skipped)
+        if (topLevel)
+          patches += Patch(skipped, epilogue)
       case _ =>
     }
 

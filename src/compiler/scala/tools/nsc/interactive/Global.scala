@@ -1030,11 +1030,15 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "")
     }
   }
 
-  def getInstrumented(source: SourceFile, line: Int, response: Response[(String, Array[Char])]) {
-    respond(response) {
-      instrument(source, line)
+  def getInstrumented(source: SourceFile, line: Int, response: Response[(String, Array[Char])]) =
+    try {
+      interruptsEnabled = false
+      respond(response) {
+        instrument(source, line)
+      }
+    } finally {
+      interruptsEnabled = true
     }
-  }
 
   // ---------------- Helper classes ---------------------------
 
