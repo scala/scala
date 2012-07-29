@@ -11,6 +11,7 @@ package scala.collection
 import scala.reflect.ClassTag
 import scala.collection.generic.CanBuildFrom
 import scala.annotation.unchecked.{ uncheckedVariance => uV }
+import language.higherKinds
 
 /** A template trait for all traversable-once objects which may be
  *  traversed in parallel.

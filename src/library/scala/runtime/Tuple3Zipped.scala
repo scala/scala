@@ -10,6 +10,7 @@ package scala.runtime
 
 import scala.collection.{ TraversableLike, IterableLike }
 import scala.collection.generic.{ CanBuildFrom => CBF }
+import language.{ higherKinds, implicitConversions }
 
 /** See comment on ZippedTraversable2. */
 trait ZippedTraversable3[+El1, +El2, +El3] {

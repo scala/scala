@@ -2749,6 +2749,14 @@ trait Typers extends Modes with Adaptations with Tags {
     def typedArgs(args: List[Tree], mode: Int) =
       args mapConserve (arg => typedArg(arg, mode, 0, WildcardType))
 
+    /** Type trees in `args0` against corresponding expected type in `adapted0`.
+     *
+     * The mode in which each argument is typed is derived from `mode` and
+     * whether the arg was originally by-name or var-arg (need `formals0` for that)
+     * the default is by-val, of course.
+     *
+     * (docs reverse-engineered -- AM)
+     */
     def typedArgs(args0: List[Tree], mode: Int, formals0: List[Type], adapted0: List[Type]): List[Tree] = {
       val sticky = onlyStickyModes(mode)
       def loop(args: List[Tree], formals: List[Type], adapted: List[Type]): List[Tree] = {
@@ -3157,12 +3165,13 @@ trait Typers extends Modes with Adaptations with Tags {
 
       if (fun1.tpe.isErroneous) duplErrTree
       else {
-        val formals0 = unapplyTypeList(fun1.symbol, fun1.tpe)
-        val formals1 = formalTypes(formals0, args.length)
+        val resTp     = fun1.tpe.finalResultType.normalize
+        val nbSubPats = args.length
 
-        if (!sameLength(formals1, args)) duplErrorTree(WrongNumberArgsPatternError(tree, fun))
+        val (formals, formalsExpanded) = extractorFormalTypes(resTp, nbSubPats, fun1.symbol)
+        if (formals == null) duplErrorTree(WrongNumberArgsPatternError(tree, fun))
         else {
-          val args1 = typedArgs(args, mode, formals0, formals1)
+          val args1 = typedArgs(args, mode, formals, formalsExpanded)
           // This used to be the following (failing) assert:
           //   assert(isFullyDefined(pt), tree+" ==> "+UnApply(fun1, args1)+", pt = "+pt)
           // I modified as follows.  See SI-1048.
@@ -3663,7 +3672,8 @@ trait Typers extends Modes with Adaptations with Tags {
             typedClassOf(tree, args.head, true)
           else {
             if (!isPastTyper && fun.symbol == Any_isInstanceOf && !targs.isEmpty)
-              checkCheckable(tree, targs.head, inPattern = false)
+              checkCheckable(tree, targs.head, AnyClass.tpe, inPattern = false)
+
             val resultpe = restpe.instantiateTypeParams(tparams, targs)
             //@M substitution in instantiateParams needs to be careful!
             //@M example: class Foo[a] { def foo[m[x]]: m[a] = error("") } (new Foo[Int]).foo[List] : List[Int]
@@ -4652,15 +4662,28 @@ trait Typers extends Modes with Adaptations with Tags {
                 // If the ambiguous name is a monomorphic type, we can relax this far.
                 def mt1 = t1 memberType impSym
                 def mt2 = t2 memberType impSym1
+                def characterize = List(
+                  s"types:  $t1 =:= $t2  ${t1 =:= t2}  members: ${mt1 =:= mt2}",
+                  s"member type 1: $mt1",
+                  s"member type 2: $mt2",
+                  s"$impSym == $impSym1  ${impSym == impSym1}",
+                  s"${impSym.debugLocationString} ${impSym.getClass}",
+                  s"${impSym1.debugLocationString} ${impSym1.getClass}"
+                ).mkString("\n  ")
+
+                // The symbol names are checked rather than the symbols themselves because
+                // each time an overloaded member is looked up it receives a new symbol.
+                // So foo.member("x") != foo.member("x") if x is overloaded.  This seems
+                // likely to be the cause of other bugs too...
+                if (t1 =:= t2 && impSym.name == impSym1.name)
+                  log(s"Suppressing ambiguous import: $t1 =:= $t2 && $impSym == $impSym1")
                 // Monomorphism restriction on types is in part because type aliases could have the
                 // same target type but attach different variance to the parameters. Maybe it can be
                 // relaxed, but doesn't seem worth it at present.
-                if (t1 =:= t2 && impSym == impSym1)
-                  log(s"Suppressing ambiguous import: $t1 =:= $t2 && $impSym == $impSym1")
                 else if (mt1 =:= mt2 && name.isTypeName && impSym.isMonomorphicType && impSym1.isMonomorphicType)
                   log(s"Suppressing ambiguous import: $mt1 =:= $mt2 && $impSym and $impSym1 are equivalent")
                 else {
-                  log(s"Import is genuinely ambiguous: !($t1 =:= $t2)")
+                  log(s"Import is genuinely ambiguous:\n  " + characterize)
                   ambiguousError(s"it is imported twice in the same scope by\n${imports.head}\nand ${imports1.head}")
                 }
               }
@@ -4880,7 +4903,7 @@ trait Typers extends Modes with Adaptations with Tags {
 
         case UnApply(fun, args) =>
           val fun1 = typed(fun)
-          val tpes = formalTypes(unapplyTypeList(fun.symbol, fun1.tpe), args.length)
+          val tpes = formalTypes(unapplyTypeList(fun.symbol, fun1.tpe, args.length), args.length)
           val args1 = map2(args, tpes)(typedPattern)
           treeCopy.UnApply(tree, fun1, args1) setType pt
 

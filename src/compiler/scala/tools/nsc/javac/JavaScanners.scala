@@ -139,7 +139,7 @@ trait JavaScanners extends ast.parser.ScannersCommon {
       kwOffset = offset
       arr
     }
-    final val tokenName = allKeywords map (_.swap) toMap
+    final val tokenName = allKeywords.map(_.swap).toMap
 
 //Token representation -----------------------------------------------------
 

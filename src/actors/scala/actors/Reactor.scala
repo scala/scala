@@ -12,6 +12,7 @@ package scala.actors
 import scala.actors.scheduler.{DelegatingScheduler, ExecutorScheduler,
                                ForkJoinScheduler, ThreadPoolConfig}
 import java.util.concurrent.{ThreadPoolExecutor, TimeUnit, LinkedBlockingQueue}
+import language.implicitConversions
 
 private[actors] object Reactor {
 

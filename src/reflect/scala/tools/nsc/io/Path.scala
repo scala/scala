@@ -78,7 +78,7 @@ object Path {
     else new Path(jfile)
 
   /** Avoiding any shell/path issues by only using alphanumerics. */
-  private[io] def randomPrefix = alphanumeric take 6 mkString
+  private[io] def randomPrefix = alphanumeric take 6 mkString ""
   private[io] def fail(msg: String) = throw FileOperationException(msg)
 }
 import Path._
