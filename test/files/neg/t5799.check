@@ -1,0 +1,4 @@
+t5799.scala:2: error: value class may not have secondary constructors
+  def this(s: String) = this(s.toDouble)
+      ^
+one error found

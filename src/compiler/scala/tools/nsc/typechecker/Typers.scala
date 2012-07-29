@@ -1386,8 +1386,12 @@ trait Typers extends Modes with Adaptations with Tags {
         }
       }
       body foreach {
-        case md: ModuleDef => unit.error(md.pos, "value class may not have nested module definitions")
-        case cd: ClassDef => unit.error(cd.pos, "value class may not have nested class definitions")
+        case md: ModuleDef =>
+          unit.error(md.pos, "value class may not have nested module definitions")
+        case cd: ClassDef =>
+          unit.error(cd.pos, "value class may not have nested class definitions")
+        case md: DefDef if md.symbol.isConstructor && !md.symbol.isPrimaryConstructor =>
+          unit.error(md.pos, "value class may not have secondary constructors")
         case _ =>
       }
       for (tparam <- clazz.typeParams)
