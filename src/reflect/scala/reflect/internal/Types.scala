@@ -1392,11 +1392,9 @@ trait Types extends api.Types { self: SymbolTable =>
   final class UniqueThisType(sym: Symbol) extends ThisType(sym) with UniqueType { }
 
   object ThisType extends ThisTypeExtractor {
-    def apply(sym: Symbol): Type = {
-      if (!phase.erasedTypes) unique(new UniqueThisType(sym))
-      else if (sym.isImplClass) sym.typeOfThis
-      else sym.tpe
-    }
+    def apply(sym: Symbol): Type =
+      if (phase.erasedTypes) sym.tpe
+      else unique(new UniqueThisType(sym))
   }
 
   /** A class for singleton types of the form `<prefix>.<sym.name>.type`.
