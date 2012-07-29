@@ -397,6 +397,16 @@ trait Definitions extends api.StandardDefinitions {
       case _                           => false
     }
 
+    def repeatedToSeq(tp: Type): Type = (tp baseType RepeatedParamClass) match {
+      case TypeRef(_, RepeatedParamClass, arg :: Nil) => seqType(arg)
+      case _                                          => tp
+    }
+
+    def seqToRepeated(tp: Type): Type = (tp baseType SeqClass) match {
+      case TypeRef(_, SeqClass, arg :: Nil) => scalaRepeatedType(arg)
+      case _                                => tp
+    }
+
     def isPrimitiveArray(tp: Type) = tp match {
       case TypeRef(_, ArrayClass, arg :: Nil) => isPrimitiveValueClass(arg.typeSymbol)
       case _                                  => false

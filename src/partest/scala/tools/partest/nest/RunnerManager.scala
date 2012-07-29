@@ -82,7 +82,7 @@ class RunnerManager(kind: String, val fileManager: FileManager, params: TestRunP
 
   private def compareFiles(f1: File, f2: File): String =
     try fileManager.compareFiles(f1, f2)
-    catch { case t => t.toString }
+    catch { case t: Exception => t.toString }
 
   /** This does something about absolute paths and file separator
    *  chars before diffing.
@@ -779,11 +779,11 @@ class RunnerManager(kind: String, val fileManager: FileManager, params: TestRunP
         logStackTrace(logFile, t, "Possible compiler crash during test of: " + testFile + "\n")
         LogContext(logFile)
       }
-      catch { case t => LogContext(null) }
+      catch { case t: Throwable => LogContext(null) }
     }
 
     def run(): (Boolean, LogContext) = {
-      val result = try processSingleFile(testFile) catch { case t => (false, crashContext(t)) }
+      val result = try processSingleFile(testFile) catch { case t: Throwable => (false, crashContext(t)) }
       passed = Some(result._1)
       result
     }

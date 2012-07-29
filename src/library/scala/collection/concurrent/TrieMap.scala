@@ -188,7 +188,7 @@ private[collection] final class INode[K, V](bn: MainNode[K, V], g: Gen) extends 
                 if (sn.hc == hc && equal(sn.k, k, ct)) {
                   if (GCAS(cn, cn.updatedAt(pos, new SNode(k, v, hc), gen), ct)) Some(sn.v) else null
                 } else None
-              case otherv: V =>
+              case otherv =>
                 if (sn.hc == hc && equal(sn.k, k, ct) && sn.v == otherv) {
                   if (GCAS(cn, cn.updatedAt(pos, new SNode(k, v, hc), gen), ct)) Some(sn.v) else null
                 } else None
@@ -200,7 +200,7 @@ private[collection] final class INode[K, V](bn: MainNode[K, V], g: Gen) extends 
             val ncnode = rn.insertedAt(pos, flag, new SNode(k, v, hc), gen)
             if (GCAS(cn, ncnode, ct)) None else null
           case INode.KEY_PRESENT => None
-          case otherv: V => None
+          case otherv => None
         }
       case sn: TNode[K, V] =>
         clean(parent, ct, lev - 5)
@@ -224,9 +224,9 @@ private[collection] final class INode[K, V](bn: MainNode[K, V], g: Gen) extends 
               case Some(v0) => if (insertln()) Some(v0) else null
               case None => None
             }
-          case otherv: V =>
+          case otherv =>
             ln.get(k) match {
-              case Some(v0) if v0 == otherv => if (insertln()) Some(otherv) else null
+              case Some(v0) if v0 == otherv => if (insertln()) Some(otherv.asInstanceOf[V]) else null
               case _ => None
             }
         }

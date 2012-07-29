@@ -20,9 +20,6 @@ trait Names extends base.Names {
    */
   abstract class NameApi extends NameBase {
 
-    // [Eugene++] this functionality should be in base
-    // this is because stuff will be reified in mangled state, and people will need a way to figure it out
-
     /** Replaces all occurrences of \$op_names in this name by corresponding operator symbols.
      *  Example: `foo_\$plus\$eq` becomes `foo_+=`
      */

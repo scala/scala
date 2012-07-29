@@ -41,7 +41,7 @@ abstract class SourceFile {
     (content drop offset) startsWith text
 
   def lineToString(index: Int): String =
-    content drop lineToOffset(index) takeWhile (c => !isLineBreakChar(c.toChar)) mkString
+    content drop lineToOffset(index) takeWhile (c => !isLineBreakChar(c.toChar)) mkString ""
 
   @tailrec
   final def skipWhitespace(offset: Int): Int =

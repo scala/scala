@@ -1,6 +1,7 @@
 package scala.reflect.internal.util
 
 import TableDef._
+import language.postfixOps
 
 /** A class for representing tabular data in a way that preserves
  *  its inner beauty.  See Exceptional for an example usage.

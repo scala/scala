@@ -13,6 +13,7 @@ import mutable.{ Builder }
 import annotation.{tailrec, migration, bridge}
 import annotation.unchecked.{ uncheckedVariance => uV }
 import parallel.ParIterable
+import language.higherKinds
 
 /** A template trait for traversable collections of type `Traversable[A]`.
  *

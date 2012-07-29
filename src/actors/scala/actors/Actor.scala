@@ -1,5 +1,3 @@
-
-
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
 **    / __/ __// _ | / /  / _ |    (c) 2005-2011, LAMP/EPFL             **
@@ -12,6 +10,7 @@ package scala.actors
 
 import scala.util.control.ControlThrowable
 import java.util.{Timer, TimerTask}
+import language.implicitConversions
 
 /**
  * Provides functions for the definition of actors, as well as actor

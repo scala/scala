@@ -31,59 +31,18 @@ trait Unapplies extends ast.TreeDSL
   // moduleClass symbol of the companion module.
   class ClassForCaseCompanionAttachment(val caseClass: ClassDef)
 
-  /** returns type list for return type of the extraction */
-  def unapplyTypeList(ufn: Symbol, ufntpe: Type) = {
+  /** returns type list for return type of the extraction
+   * @see extractorFormalTypes
+   */
+  def unapplyTypeList(ufn: Symbol, ufntpe: Type, nbSubPats: Int) = {
     assert(ufn.isMethod, ufn)
     //Console.println("utl "+ufntpe+" "+ufntpe.typeSymbol)
     ufn.name match {
-      case nme.unapply    => unapplyTypeListFromReturnType(ufntpe)
-      case nme.unapplySeq => unapplyTypeListFromReturnTypeSeq(ufntpe)
-      case _              => throw new TypeError(ufn+" is not an unapply or unapplySeq")
-    }
-  }
-  /** (the inverse of unapplyReturnTypeSeq)
-   *  for type Boolean, returns Nil
-   *  for type Option[T] or Some[T]:
-   *   - returns T0...Tn if n>0 and T <: Product[T0...Tn]]
-   *   - returns T otherwise
-   */
-  def unapplyTypeListFromReturnType(tp1: Type): List[Type] = {
-    val tp = unapplyUnwrap(tp1)
-    tp.typeSymbol match {                             // unapplySeqResultToMethodSig
-      case BooleanClass             => Nil
-      case OptionClass | SomeClass  =>
-        val prod  = tp.typeArgs.head
-// the spec doesn't allow just any subtype of Product, it *must* be TupleN[...] -- see run/virtpatmat_extends_product.scala
-// this breaks plenty of stuff, though...
-//        val targs =
-//          if (isTupleType(prod)) getProductArgs(prod)
-//          else List(prod)
-        val targs = getProductArgs(prod)
-
-        if (targs.isEmpty || targs.tail.isEmpty) List(prod) // special n == 0 ||  n == 1
-        else targs  // n > 1
-      case _                        =>
-        throw new TypeError("result type "+tp+" of unapply not in {Boolean, Option[_], Some[_]}")
-    }
-  }
-
-  /** let type be the result type of the (possibly polymorphic) unapply method
-   *  for type Option[T] or Some[T]
-   *  -returns T0...Tn-1,Tn* if n>0 and T <: Product[T0...Tn-1,Seq[Tn]]],
-   *  -returns R* if T = Seq[R]
-   */
-  def unapplyTypeListFromReturnTypeSeq(tp1: Type): List[Type] = {
-    val tp = unapplyUnwrap(tp1)
-    tp.typeSymbol match {
-      case OptionClass | SomeClass  =>
-        val ts = unapplyTypeListFromReturnType(tp1)
-        val last1 = (ts.last baseType SeqClass) match {
-          case TypeRef(pre, SeqClass, args) => typeRef(pre, RepeatedParamClass, args)
-          case _                            => throw new TypeError("last not seq")
-        }
-        ts.init :+ last1
-      case _                        =>
-        throw new TypeError("result type "+tp+" of unapply not in {Option[_], Some[_]}")
+      case nme.unapply | nme.unapplySeq =>
+        val (formals, _) = extractorFormalTypes(unapplyUnwrap(ufntpe), nbSubPats, ufn)
+        if (formals == null) throw new TypeError(s"$ufn of type $ufntpe cannot extract $nbSubPats sub-patterns")
+        else formals
+      case _ => throw new TypeError(ufn+" is not an unapply or unapplySeq")
     }
   }
 
