@@ -1,0 +1,10 @@
+catch-all.scala:2: error: This catches all Throwables. If this is really intended, use `case _ : Throwable` to clear this warning.
+  try { "warn" } catch { case _ => }
+                              ^
+catch-all.scala:4: error: This catches all Throwables. If this is really intended, use `case x : Throwable` to clear this warning.
+  try { "warn" } catch { case x => }
+                              ^
+catch-all.scala:6: error: This catches all Throwables. If this is really intended, use `case x : Throwable` to clear this warning.
+  try { "warn" } catch { case _: RuntimeException => ; case x => }
+                                                            ^
+three errors found

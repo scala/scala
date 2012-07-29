@@ -1,0 +1,53 @@
+Type in expressions to have them evaluated.
+Type :help for more information.
+
+scala> 
+
+scala> class X {
+   def methodIntIntInt(x: Int, y: Int) = x+y
+}
+defined class X
+
+scala> 
+
+scala> import scala.reflect.runtime.universe._
+import scala.reflect.runtime.universe._
+
+scala> import scala.reflect.runtime.{ currentMirror => cm }
+import scala.reflect.runtime.{currentMirror=>cm}
+
+scala> def im: InstanceMirror = cm.reflect(new X)
+im: reflect.runtime.universe.InstanceMirror
+
+scala> val cs: ClassSymbol = im.symbol
+cs: reflect.runtime.universe.ClassSymbol = class X
+
+scala> val ts: Type = cs.typeSignature
+ts: reflect.runtime.universe.Type = 
+java.lang.Object {
+  def <init>: <?>
+  def methodIntIntInt: <?>
+}
+
+scala> val ms: MethodSymbol = ts.declaration(newTermName("methodIntIntInt")).asMethodSymbol
+ms: reflect.runtime.universe.MethodSymbol = method methodIntIntInt
+
+scala> val MethodType( _, t1 ) = ms.typeSignature
+t1: reflect.runtime.universe.Type = scala.Int
+
+scala> val t2 = typeOf[scala.Int]
+t2: reflect.runtime.universe.Type = Int
+
+scala> t1 == t2
+res0: Boolean = false
+
+scala> t1 =:= t2
+res1: Boolean = true
+
+scala> t1 <:< t2
+res2: Boolean = true
+
+scala> t2 <:< t1
+res3: Boolean = true
+
+scala> 

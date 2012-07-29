@@ -28,11 +28,11 @@ trait Trees { self: Universe =>
     def isType: Boolean
 
     /** Obtains string representation of a tree */
-    override def toString: String = show(this)
+    override def toString: String = treeToString(this)
   }
 
   /** Obtains string representation of a tree */
-  def show(tree: Tree): String
+  protected def treeToString(tree: Tree): String
 
   /** Tree is the basis for scala's abstract syntax. The nodes are
    *  implemented as case classes, and the parameters which initialize

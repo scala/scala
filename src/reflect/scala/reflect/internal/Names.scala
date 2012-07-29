@@ -10,12 +10,18 @@ import scala.io.Codec
 import java.security.MessageDigest
 import language.implicitConversions
 
+trait LowPriorityNames {
+  self: Names =>
+
+  implicit def nameToNameOps(name: Name): NameOps[Name] = new NameOps[Name](name)
+}
+
 /** The class Names ...
  *
  *  @author  Martin Odersky
  *  @version 1.0, 05/02/2005
  */
-trait Names extends api.Names {
+trait Names extends api.Names with LowPriorityNames {
   implicit def promoteTermNamesAsNecessary(name: Name): TermName = name.toTermName
 
 // Operations -------------------------------------------------------------
@@ -139,7 +145,7 @@ trait Names extends api.Names {
    *  or Strings as Names.  Give names the key functions the absence of which
    *  make people want Strings all the time.
    */
-  sealed abstract class Name(protected val index: Int, protected val len: Int) extends NameApi with Function1[Int, Char] {
+  sealed abstract class Name(protected val index: Int, protected val len: Int) extends NameApi {
     type ThisNameType >: Null <: Name
     protected[this] def thisName: ThisNameType
 
@@ -220,7 +226,7 @@ trait Names extends api.Names {
     }
 
     /** @return the i'th Char of this name */
-    final def apply(i: Int): Char = chrs(index + i)
+    final def charAt(i: Int): Char = chrs(index + i)
 
     /** @return the index of first occurrence of char c in this name, length if not found */
     final def pos(c: Char): Int = pos(c, 0)
@@ -349,17 +355,12 @@ trait Names extends api.Names {
     /** Some thoroughly self-explanatory convenience functions.  They
      *  assume that what they're being asked to do is known to be valid.
      */
-    final def startChar: Char                   = apply(0)
-    final def endChar: Char                     = apply(len - 1)
+    final def startChar: Char                   = this charAt 0
+    final def endChar: Char                     = this charAt len - 1
     final def startsWith(char: Char): Boolean   = len > 0 && startChar == char
     final def startsWith(name: String): Boolean = startsWith(newTermName(name))
     final def endsWith(char: Char): Boolean     = len > 0 && endChar == char
     final def endsWith(name: String): Boolean   = endsWith(newTermName(name))
-
-    def dropRight(n: Int): ThisNameType = subName(0, len - n)
-    def drop(n: Int): ThisNameType = subName(n, len)
-    def stripSuffix(suffix: Name): ThisNameType =
-      if (this endsWith suffix) dropRight(suffix.length) else thisName
 
     def indexOf(ch: Char) = {
       val idx = pos(ch)
@@ -379,7 +380,7 @@ trait Names extends api.Names {
       val cs = new Array[Char](len)
       var i = 0
       while (i < len) {
-        val ch = this(i)
+        val ch = charAt(i)
         cs(i) = if (ch == from) to else ch
         i += 1
       }
@@ -414,6 +415,9 @@ trait Names extends api.Names {
       }
       else toString
     }
+    
+    @inline
+    final def fingerPrint: Long = (1L << start)
 
     /** TODO - find some efficiency. */
     def append(ch: Char)        = newName("" + this + ch)
@@ -427,6 +431,16 @@ trait Names extends api.Names {
     def isOperatorName: Boolean = decode != toString
     def longString: String      = nameKind + " " + decode
     def debugString = { val s = decode ; if (isTypeName) s + "!" else s }
+  }
+
+  implicit def TermNameOps(name: TermName): NameOps[TermName] = new NameOps(name)
+  implicit def TypeNameOps(name: TypeName): NameOps[TypeName] = new NameOps(name)
+
+  final class NameOps[T <: Name](name: T) {
+    def stripSuffix(suffix: Name): T = if (name endsWith suffix) dropRight(suffix.length) else name
+    def dropRight(n: Int): T         = name.subName(0, name.length - n).asInstanceOf[T]
+    def drop(n: Int): T              = name.subName(n, name.length).asInstanceOf[T]
+    def nonEmpty: Boolean            = name.length > 0
   }
 
   implicit val NameTag = ClassTag[Name](classOf[Name])

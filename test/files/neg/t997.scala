@@ -3,7 +3,7 @@ object Foo { def unapply(x : String)  = Some(Pair(x, x)) }
 
 object Test extends App {
 
-// Prints 'x'; ought not to compile (or maybe a should be the Pair?).
+// Prints '(x, x)'. Should compile as per SI-6111.
 "x" match { case Foo(a) => Console.println(a) }
 
 // Prints '(x,x)' as expected.

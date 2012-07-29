@@ -82,13 +82,17 @@ abstract class InteractiveTest
 
   /** Test's entry point */
   def main(args: Array[String]) {
+    try execute()
+    finally shutdown()
+  }
+
+  protected def execute(): Unit = {
     loadSources()
-    runTests()
-    shutdown()
+    runDefaultTests()
   }
 
   /** Load all sources before executing the test. */
-  private def loadSources() {
+  protected def loadSources() {
     // ask the presentation compiler to track all sources. We do
     // not wait for the file to be entirely typed because we do want
     // to exercise the presentation compiler on scoped type requests.
@@ -100,7 +104,7 @@ abstract class InteractiveTest
   }
 
   /** Run all defined `PresentationCompilerTestDef` */
-  protected def runTests() {
+  protected def runDefaultTests() {
     //TODO: integrate random tests!, i.e.: if (runRandomTests) randomTests(20, sourceFiles)
     testActions.foreach(_.runTest())
   }
@@ -109,7 +113,7 @@ abstract class InteractiveTest
   private def randomTests(n: Int, files: Array[SourceFile]) {
     val tester = new Tester(n, files, settings) {
       override val compiler = self.compiler
-      override val reporter = compilerReporter
+      override val reporter = new reporters.StoreReporter
     }
     tester.run()
   }

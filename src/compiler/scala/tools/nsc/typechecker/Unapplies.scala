@@ -23,59 +23,26 @@ trait Unapplies extends ast.TreeDSL
 
   private val unapplyParamName = nme.x_0
 
-  /** returns type list for return type of the extraction */
-  def unapplyTypeList(ufn: Symbol, ufntpe: Type) = {
+
+  // In the typeCompleter (templateSig) of a case class (resp it's module),
+  // synthetic `copy` (reps `apply`, `unapply`) methods are added. To compute
+  // their signatures, the corresponding ClassDef is needed. During naming (in
+  // `enterClassDef`), the case class ClassDef is added as an attachment to the
+  // moduleClass symbol of the companion module.
+  class ClassForCaseCompanionAttachment(val caseClass: ClassDef)
+
+  /** returns type list for return type of the extraction
+   * @see extractorFormalTypes
+   */
+  def unapplyTypeList(ufn: Symbol, ufntpe: Type, nbSubPats: Int) = {
     assert(ufn.isMethod, ufn)
     //Console.println("utl "+ufntpe+" "+ufntpe.typeSymbol)
     ufn.name match {
-      case nme.unapply    => unapplyTypeListFromReturnType(ufntpe)
-      case nme.unapplySeq => unapplyTypeListFromReturnTypeSeq(ufntpe)
-      case _              => throw new TypeError(ufn+" is not an unapply or unapplySeq")
-    }
-  }
-  /** (the inverse of unapplyReturnTypeSeq)
-   *  for type Boolean, returns Nil
-   *  for type Option[T] or Some[T]:
-   *   - returns T0...Tn if n>0 and T <: Product[T0...Tn]]
-   *   - returns T otherwise
-   */
-  def unapplyTypeListFromReturnType(tp1: Type): List[Type] = {
-    val tp = unapplyUnwrap(tp1)
-    tp.typeSymbol match {                             // unapplySeqResultToMethodSig
-      case BooleanClass             => Nil
-      case OptionClass | SomeClass  =>
-        val prod  = tp.typeArgs.head
-// the spec doesn't allow just any subtype of Product, it *must* be TupleN[...] -- see run/virtpatmat_extends_product.scala
-// this breaks plenty of stuff, though...
-//        val targs =
-//          if (isTupleType(prod)) getProductArgs(prod)
-//          else List(prod)
-        val targs = getProductArgs(prod)
-
-        if (targs.isEmpty || targs.tail.isEmpty) List(prod) // special n == 0 ||  n == 1
-        else targs  // n > 1
-      case _                        =>
-        throw new TypeError("result type "+tp+" of unapply not in {Boolean, Option[_], Some[_]}")
-    }
-  }
-
-  /** let type be the result type of the (possibly polymorphic) unapply method
-   *  for type Option[T] or Some[T]
-   *  -returns T0...Tn-1,Tn* if n>0 and T <: Product[T0...Tn-1,Seq[Tn]]],
-   *  -returns R* if T = Seq[R]
-   */
-  def unapplyTypeListFromReturnTypeSeq(tp1: Type): List[Type] = {
-    val tp = unapplyUnwrap(tp1)
-    tp.typeSymbol match {
-      case OptionClass | SomeClass  =>
-        val ts = unapplyTypeListFromReturnType(tp1)
-        val last1 = (ts.last baseType SeqClass) match {
-          case TypeRef(pre, SeqClass, args) => typeRef(pre, RepeatedParamClass, args)
-          case _                            => throw new TypeError("last not seq")
-        }
-        ts.init :+ last1
-      case _                        =>
-        throw new TypeError("result type "+tp+" of unapply not in {Option[_], Some[_]}")
+      case nme.unapply | nme.unapplySeq =>
+        val (formals, _) = extractorFormalTypes(unapplyUnwrap(ufntpe), nbSubPats, ufn)
+        if (formals == null) throw new TypeError(s"$ufn of type $ufntpe cannot extract $nbSubPats sub-patterns")
+        else formals
+      case _ => throw new TypeError(ufn+" is not an unapply or unapplySeq")
     }
   }
 
@@ -197,42 +164,61 @@ trait Unapplies extends ast.TreeDSL
     )
   }
 
+  /**
+   * Generates copy methods for case classes. Copy only has defaults on the first
+   * parameter list, as of SI-5009.
+   *
+   * The parameter types of the copy method need to be exactly the same as the parameter
+   * types of the primary constructor. Just copying the TypeTree is not enough: a type `C`
+   * might refer to something else *inside* the class (i.e. as parameter type of `copy`)
+   * than *outside* the class (i.e. in the class parameter list).
+   *
+   * One such example is t0054.scala:
+   *   class A {
+   *     case class B(x: C) extends A { def copy(x: C = x) = ... }
+   *     class C {}      ^                          ^
+   *   }                (1)                        (2)
+   *
+   * The reference (1) to C is `A.this.C`. The reference (2) is `B.this.C` - not the same.
+   *
+   * This is fixed with a hack currently. `Unapplies.caseClassCopyMeth`, which creates the
+   * copy method, uses empty `TypeTree()` nodes for parameter types.
+   *
+   * In `Namers.enterDefDef`, the copy method gets a special type completer (`enterCopyMethod`).
+   * Before computing the body type of `copy`, the class parameter types are assigned the copy
+   * method parameters.
+   *
+   * This attachment class stores the copy method parameter ValDefs as an attachment in the
+   * ClassDef of the case class.
+   */
   def caseClassCopyMeth(cdef: ClassDef): Option[DefDef] = {
     def isDisallowed(vd: ValDef) = isRepeatedParamType(vd.tpt) || isByNameParamType(vd.tpt)
-    val cparamss  = constrParamss(cdef)
-    val flat      = cparamss.flatten
+    val classParamss  = constrParamss(cdef)
 
-    if (cdef.symbol.hasAbstractFlag || (flat exists isDisallowed)) None
+    if (cdef.symbol.hasAbstractFlag || mexists(classParamss)(isDisallowed)) None
     else {
+      def makeCopyParam(vd: ValDef, putDefault: Boolean) = {
+        val rhs = if (putDefault) toIdent(vd) else EmptyTree
+        val flags = PARAM | (vd.mods.flags & IMPLICIT) | (if (putDefault) DEFAULTPARAM else 0)
+        // empty tpt: see comment above
+        val tpt = atPos(vd.pos.focus)(TypeTree() setOriginal vd.tpt)
+        treeCopy.ValDef(vd, Modifiers(flags), vd.name, tpt, rhs)
+      }
+
       val tparams = cdef.tparams map copyUntypedInvariant
-      // the parameter types have to be exactly the same as the constructor's parameter types; so it's
-      // not good enough to just duplicated the (untyped) tpt tree; the parameter types are removed here
-      // and re-added in ``finishWith'' in the namer.
-      def paramWithDefault(vd: ValDef) =
-        treeCopy.ValDef(vd, vd.mods | DEFAULTPARAM, vd.name, atPos(vd.pos.focus)(TypeTree() setOriginal vd.tpt), toIdent(vd))
-        
-      val (copyParamss, funParamss) = cparamss match {
-        case Nil => (Nil, Nil)
+      val paramss = classParamss match {
+        case Nil => Nil
         case ps :: pss =>
-          (List(ps.map(paramWithDefault)), mmap(pss)(p => copyUntyped[ValDef](p).copy(rhs = EmptyTree)))
+          ps.map(makeCopyParam(_, putDefault = true)) :: mmap(pss)(makeCopyParam(_, putDefault = false))
       }
 
       val classTpe = classType(cdef, tparams)
-      val bodyTpe = funParamss.foldRight(classTpe)((params, restp) => gen.scalaFunctionConstr(params.map(_.tpt), restp))
-
-      val argss = copyParamss match {
-        case Nil     => Nil
-        case ps :: _ => mmap(ps :: funParamss)(toIdent)
-      }
-      def mkFunction(vparams: List[ValDef], body: Tree) = Function(vparams, body)
-      val body = funParamss.foldRight(New(classTpe, argss): Tree)(mkFunction)
-      // [Eugene++] no longer compiles after I moved the `Function` case class into scala.reflect.internal
-      // val body = funParamss.foldRight(New(classTpe, argss): Tree)(Function)
-
-      Some(atPos(cdef.pos.focus)(
-        DefDef(Modifiers(SYNTHETIC), nme.copy, tparams, copyParamss, bodyTpe,
-          body)
-      ))
+      val argss = mmap(paramss)(toIdent)
+      val body: Tree = New(classTpe, argss)
+      val copyDefDef = atPos(cdef.pos.focus)(
+        DefDef(Modifiers(SYNTHETIC), nme.copy, tparams, paramss, TypeTree(), body)
+      )
+      Some(copyDefDef)
     }
   }
 }

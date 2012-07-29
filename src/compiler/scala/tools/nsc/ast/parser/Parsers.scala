@@ -253,7 +253,18 @@ self =>
   final val InBlock = 1
   final val InTemplate = 2
 
-  lazy val ScalaValueClassNames = tpnme.AnyVal :: definitions.ScalaValueClasses.map(_.name)
+  // These symbols may not yet be loaded (e.g. in the ide) so don't go
+  // through definitions to obtain the names.
+  lazy val ScalaValueClassNames = Seq(tpnme.AnyVal,
+      tpnme.Unit,
+      tpnme.Boolean,
+      tpnme.Byte,
+      tpnme.Short,
+      tpnme.Char,
+      tpnme.Int,
+      tpnme.Long,
+      tpnme.Float,
+      tpnme.Double)
 
   import nme.raw
 
@@ -752,7 +763,7 @@ self =>
     def precedence(operator: Name): Int =
       if (operator eq nme.ERROR) -1
       else {
-        val firstCh = operator(0)
+        val firstCh = operator.startChar
         if (isScalaLetter(firstCh)) 1
         else if (nme.isOpAssignmentName(operator)) 0
         else firstCh match {
@@ -1158,7 +1169,12 @@ self =>
           if (inPattern) dropAnyBraces(pattern())
           else {
             if (in.token == IDENTIFIER) atPos(in.offset)(Ident(ident()))
-            else expr()
+            else if(in.token == LBRACE) expr()
+            else if(in.token == THIS) { in.nextToken(); atPos(in.offset)(This(tpnme.EMPTY)) }
+            else {
+               syntaxErrorOrIncomplete("error in interpolated string: identifier or block expected", true)
+               EmptyTree
+            }
           }
         }
       }

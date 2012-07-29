@@ -1,0 +1,2 @@
+error: bad reference while unpickling Imports.class: term memberHandlers not found in scala.tools.nsc.interpreter.IMain
+one error found

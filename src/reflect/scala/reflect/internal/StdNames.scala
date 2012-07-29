@@ -84,6 +84,9 @@ trait StdNames {
 
   abstract class CommonNames extends NamesApi {
     type NameType >: Null <: Name
+    // Masking some implicits so as to allow our targeted => NameType.
+    protected val stringToTermName = null
+    protected val stringToTypeName = null
     protected implicit def createNameType(name: String): NameType
 
     def flattenedName(segments: Name*): NameType =
@@ -232,6 +235,7 @@ trait StdNames {
 
     final val Annotation: NameType          = "Annotation"
     final val ClassfileAnnotation: NameType = "ClassfileAnnotation"
+    final val ClassManifest: NameType       = "ClassManifest"
     final val Enum: NameType                = "Enum"
     final val Group: NameType               = "Group"
     final val Tree: NameType                = "Tree"
@@ -242,6 +246,7 @@ trait StdNames {
     final val BeanPropertyAnnot: NameType = "BeanProperty"
     final val BooleanBeanPropertyAnnot: NameType = "BooleanBeanProperty"
     final val bridgeAnnot: NameType = "bridge"
+    final val staticAnnot: NameType = "static"
 
     // Classfile Attributes
     final val AnnotationDefaultATTR: NameType      = "AnnotationDefault"
@@ -293,7 +298,7 @@ trait StdNames {
     val WHILE_PREFIX                  = "while$"
 
     // Compiler internal names
-    val ANYNAME: NameType                  = "<anyname>"
+    val ANYname: NameType                  = "<anyname>"
     val CONSTRUCTOR: NameType              = "<init>"
     val EQEQ_LOCAL_VAR: NameType           = "eqEqTemp$"
     val FAKE_LOCAL_THIS: NameType          = "this$"
@@ -370,9 +375,9 @@ trait StdNames {
     */
     def originalName(name: Name): Name = {
       var i = name.length
-      while (i >= 2 && !(name(i - 1) == '$' && name(i - 2) == '$')) i -= 1
+      while (i >= 2 && !(name.charAt(i - 1) == '$' && name.charAt(i - 2) == '$')) i -= 1
       if (i >= 2) {
-        while (i >= 3 && name(i - 3) == '$') i -= 1
+        while (i >= 3 && name.charAt(i - 3) == '$') i -= 1
         name.subName(i, name.length)
       } else name
     }
@@ -451,10 +456,10 @@ trait StdNames {
     // Otherwise return the argument.
     def stripAnonNumberSuffix(name: Name): Name = {
       var pos = name.length
-      while (pos > 0 && name(pos - 1).isDigit)
+      while (pos > 0 && name.charAt(pos - 1).isDigit)
       pos -= 1
 
-      if (pos <= 0 || pos == name.length || name(pos - 1) != '$') name
+      if (pos <= 0 || pos == name.length || name.charAt(pos - 1) != '$') name
       else name.subName(0, pos - 1)
     }
 
@@ -639,8 +644,8 @@ trait StdNames {
     val bytes: NameType                = "bytes"
     val canEqual_ : NameType           = "canEqual"
     val checkInitialized: NameType     = "checkInitialized"
+    val ClassManifestFactory: NameType = "ClassManifestFactory"
     val classOf: NameType              = "classOf"
-    val classTagToClassManifest: NameType = "classTagToClassManifest"
     val clone_ : NameType              = if (forMSIL) "MemberwiseClone" else "clone" // sn.OClone causes checkinit failure
     val conforms: NameType             = "conforms"
     val copy: NameType                 = "copy"
@@ -661,6 +666,7 @@ trait StdNames {
     val eval: NameType                 = "eval"
     val ex: NameType                   = "ex"
     val experimental: NameType         = "experimental"
+    val f: NameType                    = "f"
     val false_ : NameType              = "false"
     val filter: NameType               = "filter"
     val finalize_ : NameType           = if (forMSIL) "Finalize" else "finalize"
@@ -696,6 +702,7 @@ trait StdNames {
     val macroContext : NameType        = "c"
     val main: NameType                 = "main"
     val manifest: NameType             = "manifest"
+    val ManifestFactory: NameType      = "ManifestFactory"
     val manifestToTypeTag: NameType    = "manifestToTypeTag"
     val map: NameType                  = "map"
     val materializeClassTag: NameType  = "materializeClassTag"
@@ -748,6 +755,7 @@ trait StdNames {
     val splice: NameType               = "splice"
     val staticClass : NameType         = "staticClass"
     val staticModule : NameType        = "staticModule"
+    val staticPackage : NameType       = "staticPackage"
     val synchronized_ : NameType       = "synchronized"
     val tail: NameType                 = "tail"
     val `then` : NameType              = "then"
@@ -961,7 +969,7 @@ trait StdNames {
         case -1     => if (name == "") scala.Nil else scala.List(mkName(name, assumeTerm))
         // otherwise, we can tell based on whether '#' or '.' is the following char.
         case idx    =>
-          val (simple, div, rest) = (name take idx, name charAt idx, newTermName(name) drop (idx + 1))
+          val (simple, div, rest) = (name take idx, name charAt idx, name drop idx + 1)
           mkName(simple, div == '.') :: segments(rest, assumeTerm)
       }
     }
@@ -1036,6 +1044,8 @@ trait StdNames {
   }
 
   abstract class SymbolNames {
+    protected val stringToTermName = null
+    protected val stringToTypeName = null
     protected implicit def createNameType(s: String): TypeName = newTypeNameCached(s)
 
     val BeanProperty        : TypeName

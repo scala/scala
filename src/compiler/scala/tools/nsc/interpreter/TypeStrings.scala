@@ -57,7 +57,7 @@ trait StructuredTypeStrings extends DestructureTypes {
     else block(level, grouping)(name, nodes)
   }
   private def shortClass(x: Any) = {
-    if (opt.debug) {
+    if (settings.debug.value) {
       val name   = (x.getClass.getName split '.').last
       val isAnon = name.reverse takeWhile (_ != '$') forall (_.isDigit)
       val str    = if (isAnon) name else (name split '$').last

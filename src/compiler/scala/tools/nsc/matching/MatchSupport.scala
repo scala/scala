@@ -7,7 +7,7 @@ package scala.tools.nsc
 package matching
 
 import transform.ExplicitOuter
-import ast.{ TreePrinters, Trees }
+import ast.{ Printers, Trees }
 import java.io.{ StringWriter, PrintWriter }
 import annotation.elidable
 import language.postfixOps

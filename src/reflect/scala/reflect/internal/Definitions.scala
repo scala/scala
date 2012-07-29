@@ -35,7 +35,6 @@ trait Definitions extends api.StandardDefinitions {
   lazy val AnyRefTpe  = definitions.AnyRefClass.asType
   lazy val NothingTpe = definitions.NothingClass.asType
   lazy val NullTpe    = definitions.NullClass.asType
-  lazy val StringTpe  = definitions.StringClass.asType
 
   /** Since both the value parameter types and the result type may
    *  require access to the type parameter symbols, we model polymorphic
@@ -179,7 +178,7 @@ trait Definitions extends api.StandardDefinitions {
     val EmptyPackage: ModuleSymbol = rootMirror.EmptyPackage
 
     @deprecated("Moved to rootMirror.EmptyPackageClass", "2.10.0")
-    val EmptyPackageClass: ClassSymbol = rootMirror.RootClass
+    val EmptyPackageClass: ClassSymbol = rootMirror.EmptyPackageClass
 
     // It becomes tricky to create dedicated objects for other symbols because
     // of initialization order issues.
@@ -369,6 +368,7 @@ trait Definitions extends api.StandardDefinitions {
     lazy val SerializableClass     = requiredClass[scala.Serializable]
     lazy val JavaSerializableClass = requiredClass[java.io.Serializable] modifyInfo fixupAsAnyTrait
     lazy val ComparableClass       = requiredClass[java.lang.Comparable[_]] modifyInfo fixupAsAnyTrait
+    lazy val CloneableClass        = requiredClass[scala.Cloneable]
     lazy val JavaCloneableClass    = requiredClass[java.lang.Cloneable]
     lazy val JavaNumberClass       = requiredClass[java.lang.Number]
     lazy val RemoteInterfaceClass  = requiredClass[java.rmi.Remote]
@@ -395,6 +395,16 @@ trait Definitions extends api.StandardDefinitions {
       case MethodType(formals, restpe) => isScalaVarArgs(formals) || hasRepeatedParam(restpe)
       case PolyType(_, restpe)         => hasRepeatedParam(restpe)
       case _                           => false
+    }
+
+    def repeatedToSeq(tp: Type): Type = (tp baseType RepeatedParamClass) match {
+      case TypeRef(_, RepeatedParamClass, arg :: Nil) => seqType(arg)
+      case _                                          => tp
+    }
+
+    def seqToRepeated(tp: Type): Type = (tp baseType SeqClass) match {
+      case TypeRef(_, SeqClass, arg :: Nil) => scalaRepeatedType(arg)
+      case _                                => tp
     }
 
     def isPrimitiveArray(tp: Type) = tp match {
@@ -454,10 +464,10 @@ trait Definitions extends api.StandardDefinitions {
          def ReflectRuntimeUniverse      = if (ReflectRuntimePackage != NoSymbol) getMemberValue(ReflectRuntimePackage, nme.universe) else NoSymbol
          def ReflectRuntimeCurrentMirror = if (ReflectRuntimePackage != NoSymbol) getMemberMethod(ReflectRuntimePackage, nme.currentMirror) else NoSymbol
 
-    lazy val PartialManifestClass  = requiredClass[scala.reflect.ClassManifest[_]]
-    lazy val PartialManifestModule = requiredModule[scala.reflect.ClassManifest.type]
+    lazy val PartialManifestClass  = getMemberType(ReflectPackage, tpnme.ClassManifest)
+    lazy val PartialManifestModule = requiredModule[scala.reflect.ClassManifestFactory.type]
     lazy val FullManifestClass     = requiredClass[scala.reflect.Manifest[_]]
-    lazy val FullManifestModule    = requiredModule[scala.reflect.Manifest.type]
+    lazy val FullManifestModule    = requiredModule[scala.reflect.ManifestFactory.type]
     lazy val OptManifestClass      = requiredClass[scala.reflect.OptManifest[_]]
     lazy val NoManifest            = requiredModule[scala.reflect.NoManifest.type]
 
@@ -490,12 +500,14 @@ trait Definitions extends api.StandardDefinitions {
          def MacroContextPrefixType              = if (MacroContextClass != NoSymbol) getMemberType(MacroContextClass, tpnme.PrefixType) else NoSymbol
          def MacroContextUniverse                = if (MacroContextClass != NoSymbol) getMemberMethod(MacroContextClass, nme.universe) else NoSymbol
          def MacroContextMirror                  = if (MacroContextClass != NoSymbol) getMemberMethod(MacroContextClass, nme.mirror) else NoSymbol
-         def MacroContextReify                   = if (MacroContextClass != NoSymbol) getMemberMethod(MacroContextClass, nme.reify) else NoSymbol
     lazy val MacroImplAnnotation                 = requiredClass[scala.reflect.makro.internal.macroImpl]
     lazy val MacroInternalPackage                = getPackageObject("scala.reflect.makro.internal")
          def MacroInternal_materializeClassTag   = getMemberMethod(MacroInternalPackage, nme.materializeClassTag)
          def MacroInternal_materializeAbsTypeTag = getMemberMethod(MacroInternalPackage, nme.materializeAbsTypeTag)
          def MacroInternal_materializeTypeTag    = getMemberMethod(MacroInternalPackage, nme.materializeTypeTag)
+
+    lazy val StringContextClass                  = requiredClass[scala.StringContext]
+         def StringContext_f                     = getMemberMethod(StringContextClass, nme.f)
 
     lazy val ScalaSignatureAnnotation = requiredClass[scala.reflect.ScalaSignature]
     lazy val ScalaLongSignatureAnnotation = requiredClass[scala.reflect.ScalaLongSignature]
@@ -841,8 +853,8 @@ trait Definitions extends api.StandardDefinitions {
     lazy val Object_!= = enterNewMethod(ObjectClass, nme.NE, anyrefparam, booltype, FINAL)
     lazy val Object_eq = enterNewMethod(ObjectClass, nme.eq, anyrefparam, booltype, FINAL)
     lazy val Object_ne = enterNewMethod(ObjectClass, nme.ne, anyrefparam, booltype, FINAL)
-    lazy val Object_isInstanceOf = newT1NoParamsMethod(ObjectClass, nme.isInstanceOf_Ob, FINAL | SYNTHETIC)(_ => booltype)
-    lazy val Object_asInstanceOf = newT1NoParamsMethod(ObjectClass, nme.asInstanceOf_Ob, FINAL | SYNTHETIC)(_.typeConstructor)
+    lazy val Object_isInstanceOf = newT1NoParamsMethod(ObjectClass, nme.isInstanceOf_Ob, FINAL | SYNTHETIC | HIDDEN)(_ => booltype)
+    lazy val Object_asInstanceOf = newT1NoParamsMethod(ObjectClass, nme.asInstanceOf_Ob, FINAL | SYNTHETIC | HIDDEN)(_.typeConstructor)
     lazy val Object_synchronized = newPolyMethod(1, ObjectClass, nme.synchronized_, FINAL)(tps =>
       (Some(List(tps.head.typeConstructor)), tps.head.typeConstructor)
     )
@@ -896,12 +908,13 @@ trait Definitions extends api.StandardDefinitions {
     lazy val SwitchClass                = requiredClass[scala.annotation.switch]
     lazy val TailrecClass               = requiredClass[scala.annotation.tailrec]
     lazy val VarargsClass               = requiredClass[scala.annotation.varargs]
+    lazy val StaticClass                = requiredClass[scala.annotation.static]
     lazy val uncheckedStableClass       = requiredClass[scala.annotation.unchecked.uncheckedStable]
     lazy val uncheckedVarianceClass     = requiredClass[scala.annotation.unchecked.uncheckedVariance]
 
     lazy val BeanPropertyAttr           = requiredClass[scala.beans.BeanProperty]
     lazy val BooleanBeanPropertyAttr    = requiredClass[scala.beans.BooleanBeanProperty]
-    lazy val CloneableAttr              = requiredClass[scala.cloneable]
+    lazy val CloneableAttr              = requiredClass[scala.annotation.cloneable]
     lazy val DeprecatedAttr             = requiredClass[scala.deprecated]
     lazy val DeprecatedNameAttr         = requiredClass[scala.deprecatedName]
     lazy val NativeAttr                 = requiredClass[scala.native]
@@ -1126,6 +1139,39 @@ trait Definitions extends api.StandardDefinitions {
 
     /** Is symbol a phantom class for which no runtime representation exists? */
     lazy val isPhantomClass = Set[Symbol](AnyClass, AnyValClass, NullClass, NothingClass)
+    lazy val magicSymbols = List(
+      AnnotationDefaultAttr, // #2264
+      RepeatedParamClass,
+      JavaRepeatedParamClass,
+      ByNameParamClass,
+      AnyClass,
+      AnyRefClass,
+      AnyValClass,
+      NullClass,
+      NothingClass,
+      SingletonClass,
+      EqualsPatternClass,
+      Any_==,
+      Any_!=,
+      Any_equals,
+      Any_hashCode,
+      Any_toString,
+      Any_getClass,
+      Any_isInstanceOf,
+      Any_asInstanceOf,
+      Any_##,
+      Object_eq,
+      Object_ne,
+      Object_==,
+      Object_!=,
+      Object_##,
+      Object_synchronized,
+      Object_isInstanceOf,
+      Object_asInstanceOf,
+      String_+,
+      ComparableClass,
+      JavaSerializableClass
+    )
 
     /** Is the symbol that of a parent which is added during parsing? */
     lazy val isPossibleSyntheticParent = ProductClass.toSet[Symbol] + ProductRootClass + SerializableClass
@@ -1189,41 +1235,7 @@ trait Definitions extends api.StandardDefinitions {
 
     def init() {
       if (isInitialized) return
-
-      val forced = List( // force initialization of every symbol that is entered as a side effect
-        AnnotationDefaultAttr, // #2264
-        RepeatedParamClass,
-        JavaRepeatedParamClass,
-        ByNameParamClass,
-        AnyClass,
-        AnyRefClass,
-        AnyValClass,
-        NullClass,
-        NothingClass,
-        SingletonClass,
-        EqualsPatternClass,
-        Any_==,
-        Any_!=,
-        Any_equals,
-        Any_hashCode,
-        Any_toString,
-        Any_getClass,
-        Any_isInstanceOf,
-        Any_asInstanceOf,
-        Any_##,
-        Object_eq,
-        Object_ne,
-        Object_==,
-        Object_!=,
-        Object_##,
-        Object_synchronized,
-        Object_isInstanceOf,
-        Object_asInstanceOf,
-        String_+,
-        ComparableClass,
-        JavaSerializableClass
-      )
-
+      val forced = magicSymbols // force initialization of every symbol that is entered as a side effect
       isInitialized = true
     } //init
 

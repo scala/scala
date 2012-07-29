@@ -41,8 +41,8 @@ class Breaks {
     }
   }
 
-  trait TryBlock {
-    def catchBreak(onBreak: => Unit): Unit
+  sealed trait TryBlock[T] {
+    def catchBreak(onBreak: =>T): T
   }
 
   /**
@@ -57,8 +57,8 @@ class Breaks {
    * }
    * }}}
    */
-  def tryBreakable(op: => Unit) = new TryBlock {
-    def catchBreak(onBreak: => Unit) = try {
+  def tryBreakable[T](op: =>T) = new TryBlock[T] {
+    def catchBreak(onBreak: =>T) = try {
       op
     } catch {
       case ex: BreakControl =>
@@ -73,7 +73,7 @@ class Breaks {
    *
    * @note This might be different than the statically closest enclosing block!
    */
-  def break() { throw breakException }
+  def break(): Nothing = { throw breakException }
 }
 
 /** An object that can be used for the break control abstraction.

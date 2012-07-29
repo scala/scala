@@ -23,7 +23,7 @@ package scala.concurrent
  *  @author  Paul Phillips
  *  @version 2.8
  */
-class DelayedLazyVal[T](f: () => T, body: => Unit) {
+class DelayedLazyVal[T](f: () => T, body: => Unit)(implicit exec: ExecutionContext){
   @volatile private[this] var _isDone = false
   private[this] lazy val complete = f()
 
@@ -39,9 +39,5 @@ class DelayedLazyVal[T](f: () => T, body: => Unit) {
    */
   def apply(): T = if (isDone) complete else f()
 
-  // TODO replace with scala.concurrent.future { ... }
-  future {
-    body
-    _isDone = true
-  }
+  exec.execute(new Runnable { def run = { body; _isDone = true } })
 }

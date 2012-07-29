@@ -116,6 +116,20 @@ class ModifierFlags {
   final val LAZY          = 1L << 31      // symbol is a lazy val. can't have MUTABLE unless transformed by typer
   final val PRESUPER      = 1L << 37      // value is evaluated before super call
   final val DEFAULTINIT   = 1L << 41      // symbol is initialized to the default value: used by -Xcheckinit
+  final val HIDDEN        = 1L << 46      // symbol should be ignored when typechecking; will be marked ACC_SYNTHETIC in bytecode
+
+  /** Symbols which are marked HIDDEN. (Expand this list?)
+   *
+   *  - $outer fields and accessors
+   *  - super accessors
+   *  - protected accessors
+   *  - lazy local accessors
+   *  - bridge methods
+   *  - default argument getters
+   *  - evaluation-order preserving locals for right-associative and out-of-order named arguments
+   *  - catch-expression storing vals
+   *  - anything else which feels a setFlag(HIDDEN)
+   */
 
   // Overridden.
   def flagToString(flag: Long): String = ""
@@ -135,7 +149,7 @@ class Flags extends ModifierFlags {
   final val CAPTURED      = 1 << 16       // variable is accessed from nested function.  Set by LambdaLift.
   final val LABEL         = 1 << 17       // method symbol is a label. Set by TailCall
   final val INCONSTRUCTOR = 1 << 17       // class symbol is defined in this/superclass constructor.
-  final val SYNTHETIC     = 1 << 21       // symbol is compiler-generated
+  final val SYNTHETIC     = 1 << 21       // symbol is compiler-generated (compare with HIDDEN)
   final val STABLE        = 1 << 22       // functions that are assumed to be stable
                                           // (typically, access methods for valdefs)
                                           // or classes that do not contain abstract types.
@@ -165,6 +179,7 @@ class Flags extends ModifierFlags {
                                           // A Java method's type is ``cooked'' by transforming raw types to existentials
 
   final val SYNCHRONIZED  = 1L << 45      // symbol is a method which should be marked ACC_SYNCHRONIZED
+
   // ------- shift definitions -------------------------------------------------------
 
   final val InitialFlags  = 0x0001FFFFFFFFFFFFL // flags that are enabled from phase 1.
@@ -174,6 +189,11 @@ class Flags extends ModifierFlags {
   final val AntiShift     = 56L
 
   // Flags which sketchily share the same slot
+  // 16:   BYNAMEPARAM/M      CAPTURED COVARIANT/M
+  // 17: CONTRAVARIANT/M INCONSTRUCTOR       LABEL
+  // 25:  DEFAULTPARAM/M       TRAIT/M
+  // 35:     EXISTENTIAL       MIXEDIN
+  // 37:       IMPLCLASS    PRESUPER/M
   val OverloadedFlagsMask = 0L | BYNAMEPARAM | CONTRAVARIANT | DEFAULTPARAM | EXISTENTIAL | IMPLCLASS
 
   // ------- late flags (set by a transformer phase) ---------------------------------
@@ -211,7 +231,7 @@ class Flags extends ModifierFlags {
   /** To be a little clearer to people who aren't habitual bit twiddlers.
    */
   final val AllFlags = -1L
-
+  
   /** These flags can be set when class or module symbol is first created.
    *  They are the only flags to survive a call to resetFlags().
    */
@@ -241,7 +261,7 @@ class Flags extends ModifierFlags {
   /** These modifiers appear in TreePrinter output. */
   final val PrintableFlags =
     ExplicitFlags | BridgeFlags | LOCAL | SYNTHETIC | STABLE | CASEACCESSOR | MACRO |
-    ACCESSOR | SUPERACCESSOR | PARAMACCESSOR | STATIC | SPECIALIZED | SYNCHRONIZED
+    ACCESSOR | SUPERACCESSOR | PARAMACCESSOR | STATIC | SPECIALIZED | SYNCHRONIZED | HIDDEN
 
   /** When a symbol for a field is created, only these flags survive
    *  from Modifiers.  Others which may be applied at creation time are:
@@ -279,6 +299,16 @@ class Flags extends ModifierFlags {
   /** Module flags inherited by their module-class */
   final val ModuleToClassFlags = AccessFlags | TopLevelCreationFlags | CASE | SYNTHETIC
 
+  /** These flags are not pickled */
+  final val FlagsNotPickled = IS_ERROR | OVERLOADED | LIFTED | TRANS_FLAG | LOCKED | TRIEDCOOKING
+  
+  // A precaution against future additions to FlagsNotPickled turning out
+  // to be overloaded flags thus not-pickling more than intended.
+  assert((OverloadedFlagsMask & FlagsNotPickled) == 0, flagsToString(OverloadedFlagsMask & FlagsNotPickled))
+  
+  /** These flags are pickled */
+  final val PickledFlags  = InitialFlags & ~FlagsNotPickled
+
   def getterFlags(fieldFlags: Long): Long = ACCESSOR + (
     if ((fieldFlags & MUTABLE) != 0) fieldFlags & ~MUTABLE & ~PRESUPER
     else fieldFlags & ~PRESUPER | STABLE
@@ -307,47 +337,45 @@ class Flags extends ModifierFlags {
 
   private final val PKL_MASK       = 0x00000FFF
 
-  final val PickledFlags  = 0xFFFFFFFFL
-
-  private def rawPickledCorrespondence = Array(
-    (IMPLICIT, IMPLICIT_PKL),
-    (FINAL, FINAL_PKL),
-    (PRIVATE, PRIVATE_PKL),
-    (PROTECTED, PROTECTED_PKL),
-    (SEALED, SEALED_PKL),
-    (OVERRIDE, OVERRIDE_PKL),
-    (CASE, CASE_PKL),
-    (ABSTRACT, ABSTRACT_PKL),
-    (DEFERRED, DEFERRED_PKL),
+  /** Pickler correspondence, ordered roughly by frequency of occurrence */
+  private def rawPickledCorrespondence = Array[(Long, Long)](
     (METHOD, METHOD_PKL),
+    (PRIVATE, PRIVATE_PKL),
+    (FINAL, FINAL_PKL),
+    (PROTECTED, PROTECTED_PKL),
+    (CASE, CASE_PKL),
+    (DEFERRED, DEFERRED_PKL),
     (MODULE, MODULE_PKL),
-    (INTERFACE, INTERFACE_PKL)
+    (OVERRIDE, OVERRIDE_PKL),
+    (INTERFACE, INTERFACE_PKL),
+    (IMPLICIT, IMPLICIT_PKL),
+    (SEALED, SEALED_PKL),
+    (ABSTRACT, ABSTRACT_PKL)
   )
-  private val rawFlags: Array[Int]     = rawPickledCorrespondence map (_._1)
-  private val pickledFlags: Array[Int] = rawPickledCorrespondence map (_._2)
-
-  private def r2p(flags: Int): Int = {
-    var result = 0
-    var i      = 0
-    while (i < rawFlags.length) {
-      if ((flags & rawFlags(i)) != 0)
-        result |= pickledFlags(i)
-
-      i += 1
+  
+  private val mappedRawFlags = rawPickledCorrespondence map (_._1)
+  private val mappedPickledFlags = rawPickledCorrespondence map (_._2)
+  
+  private class MapFlags(from: Array[Long], to: Array[Long]) extends (Long => Long) {
+    val fromSet = (0L /: from) (_ | _)
+    
+    def apply(flags: Long): Long = {
+      var result = flags & ~fromSet
+      var tobeMapped = flags & fromSet
+      var i = 0
+      while (tobeMapped != 0) {
+        if ((tobeMapped & from(i)) != 0) {
+          result |= to(i)
+          tobeMapped &= ~from(i)
+        }
+        i += 1
+      }
+      result
     }
-    result
   }
-  private def p2r(flags: Int): Int = {
-    var result = 0
-    var i      = 0
-    while (i < rawFlags.length) {
-      if ((flags & pickledFlags(i)) != 0)
-        result |= rawFlags(i)
-
-      i += 1
-    }
-    result
-  }
+  
+  val rawToPickledFlags: Long => Long = new MapFlags(mappedRawFlags, mappedPickledFlags)
+  val pickledToRawFlags: Long => Long = new MapFlags(mappedPickledFlags, mappedRawFlags)
 
   // ------ displaying flags --------------------------------------------------------
 
@@ -399,7 +427,7 @@ class Flags extends ModifierFlags {
     case             VARARGS => "<varargs>"                           // (1L << 43)
     case        TRIEDCOOKING => "<triedcooking>"                      // (1L << 44)
     case        SYNCHRONIZED => "<synchronized>"                      // (1L << 45)
-    case     0x400000000000L => ""                                    // (1L << 46)
+    case              HIDDEN => "<hidden>"                            // (1L << 46)
     case     0x800000000000L => ""                                    // (1L << 47)
     case    0x1000000000000L => ""                                    // (1L << 48)
     case    0x2000000000000L => ""                                    // (1L << 49)
@@ -462,18 +490,12 @@ class Flags extends ModifierFlags {
     }
   }
 
-  def rawFlagsToPickled(flags: Long): Long =
-    (flags & ~PKL_MASK) | r2p(flags.toInt & PKL_MASK)
-
-  def pickledToRawFlags(pflags: Long): Long =
-    (pflags & ~PKL_MASK) | p2r(pflags.toInt & PKL_MASK)
-
   // List of the raw flags, in pickled order
   final val MaxBitPosition = 62
 
   final val pickledListOrder: List[Long] = {
     val all   = 0 to MaxBitPosition map (1L << _)
-    val front = rawFlags map (_.toLong)
+    val front = mappedRawFlags map (_.toLong)
 
     front.toList ++ (all filterNot (front contains _))
   }

@@ -116,10 +116,27 @@ trait Symbols extends base.Symbols { self: Universe =>
      */
     def isValue: Boolean
 
+    /** Does this symbol denote a stable value? */
+    def isStable: Boolean
+
     /** Does this symbol represent a mutable value?
      *  If yes, `isTerm` and `isValue` are also guaranteed to be true.
      */
     def isVariable: Boolean
+
+    /** Does this symbol represent a getter or a setter?
+     */
+    def isAccessor: Boolean
+
+    /** Does this symbol represent a getter of a field?
+     *  If yes, `isTerm` and `isMethod` are also guaranteed to be true.
+     */
+    def isGetter: Boolean
+
+    /** Does this symbol represent a setter of a field?
+     *  If yes, `isTerm` and `isMethod` are also guaranteed to be true.
+     */
+    def isSetter: Boolean
 
     /** Does this symbol represent the definition of a package?
      *  If yes, `isTerm` is also guaranteed to be true.
@@ -177,6 +194,25 @@ trait Symbols extends base.Symbols { self: Universe =>
      */
     def isErroneous : Boolean
 
+    /** Can this symbol be loaded by a reflective mirror?
+     *
+     *  Scalac relies on `ScalaSignature' annotation to retain symbols across compilation runs.
+     *  Such annotations (also called "pickles") are applied on top-level classes and include information
+     *  about all symbols reachable from the annotee. However, local symbols (e.g. classes or definitions local to a block)
+     *  are typically unreachable and information about them gets lost.
+     *
+     *  This method is useful for macro writers who wish to save certain ASTs to be used at runtime.
+     *  With `isLocatable' it's possible to check whether a tree can be retained as is, or it needs special treatment.
+     */
+    def isLocatable: Boolean
+
+    /** Is this symbol static (i.e. with no outer instance)?
+     *  Q: When exactly is a sym marked as STATIC?
+     *  A: If it's a member of a toplevel object, or of an object contained in a toplevel object, or any number of levels deep.
+     *  http://groups.google.com/group/scala-internals/browse_thread/thread/d385bcd60b08faf6
+     */
+    def isStatic: Boolean
+
     /** The type signature of this symbol seen as a member of given type `site`.
      */
     def typeSignatureIn(site: Type): Type
@@ -196,7 +232,31 @@ trait Symbols extends base.Symbols { self: Universe =>
     /** The overloaded alternatives of this symbol */
     def alternatives: List[Symbol]
 
-    def resolveOverloaded(pre: Type = NoPrefix, targs: Seq[Type] = List(), actuals: Seq[Type]): Symbol
+    /** Performs method overloading resolution. More precisely, resolves an overloaded TermSymbol
+     *  to a single, non-overloaded TermSymbol that accepts the specified argument types.
+     *  @param pre The prefix type, i.e. the type of the value the method is dispatched on.
+     *             This is required when resolving references to type parameters of the type
+     *             the method is declared in. For example if the method is declared in class `List[A]`,
+     *             providing the prefix as `List[Int]` allows the overloading resolution to use
+     *             `Int` instead of `A`.
+     * @param targs Type arguments that a candidate alternative must be able to accept. Candidates
+     *              will be considered with these arguments substituted for their corresponding
+     *              type parameters.
+     * @param posVargs Positional argument types that a candidate alternative must be able to accept.
+     * @param nameVargs Named argument types that a candidate alternative must be able to accept.
+     *                  Each element in the sequence should be a pair of a parameter name and an
+     *                  argument type.
+     * @param expected Return type that a candidate alternative has to be compatible with.
+     * @return Either a single, non-overloaded Symbol referring to the selected alternative
+     *         or NoSymbol if no single member could be selected given the passed arguments.
+     */
+    def resolveOverloaded(
+      pre: Type = NoPrefix,
+      targs: Seq[Type] = List(),
+      posVargs: Seq[Type] = List(),
+      nameVargs: Seq[(TermName, Type)] = List(),
+      expected: Type = NoType
+    ): Symbol
   }
 
   /** The API of type symbols */

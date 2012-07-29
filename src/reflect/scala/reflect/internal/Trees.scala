@@ -9,23 +9,19 @@ package internal
 import Flags._
 import base.Attachments
 import collection.mutable.{ListBuffer, LinkedHashSet}
+import util.Statistics
 
 trait Trees extends api.Trees { self: SymbolTable =>
 
   private[scala] var nodeCount = 0
 
-  abstract class Tree extends TreeContextApiImpl with Product {
+  abstract class Tree extends TreeContextApiImpl with Attachable with Product {
     val id = nodeCount // TODO: add to attachment?
     nodeCount += 1
 
-    @inline final def pos: Position = rawatt.pos
-    def pos_=(pos: Position): Unit = rawatt = (rawatt withPos pos)
-    def setPos(newpos: Position): this.type = { pos = newpos; this }
+    Statistics.incCounter(TreesStats.nodeByType, getClass)
 
-    private var rawatt: Attachments { type Pos = Position } = NoPosition
-    def attachments = rawatt
-    def addAttachment(attachment: Any): this.type = { rawatt = rawatt.add(attachment); this }
-    def removeAttachment[T: ClassTag]: this.type = { rawatt = rawatt.remove[T]; this }
+    @inline final override def pos: Position = rawatt.pos
 
     private[this] var rawtpe: Type = _
     @inline final def tpe = rawtpe
@@ -473,7 +469,7 @@ trait Trees extends api.Trees { self: SymbolTable =>
     private var orig: Tree = null
     private[scala] var wasEmpty: Boolean = false
 
-    override def symbol = if (tpe == null) null else tpe.typeSymbol
+    override def symbol = typeTreeSymbol(this) // if (tpe == null) null else tpe.typeSymbol
     override def isEmpty = (tpe eq null) || tpe == NoType
 
     def original: Tree = orig
@@ -809,7 +805,7 @@ trait Trees extends api.Trees { self: SymbolTable =>
     }
   }
 
-  // Belongs in TreeInfo but then I can't reach it from TreePrinters.
+  // Belongs in TreeInfo but then I can't reach it from Printers.
   def isReferenceToScalaMember(t: Tree, Id: Name) = t match {
     case Ident(Id)                                          => true
     case Select(Ident(nme.scala_), Id)                      => true
@@ -1028,6 +1024,14 @@ trait Trees extends api.Trees { self: SymbolTable =>
     }
   }
 
+    
+  /** Delegate for a TypeTree symbol. This operation is unsafe because
+   *  it may trigger type checking when forcing the type symbol of the
+   *  underlying type.
+   */
+  protected def typeTreeSymbol(tree: TypeTree): Symbol =
+    if (tree.tpe == null) null else tree.tpe.typeSymbol
+  
   // --- generic traversers and transformers
 
   override protected def itraverse(traverser: Traverser, tree: Tree): Unit = {
@@ -1592,4 +1596,11 @@ trait Trees extends api.Trees { self: SymbolTable =>
   implicit val TypeBoundsTreeTag = ClassTag[TypeBoundsTree](classOf[TypeBoundsTree])
   implicit val ExistentialTypeTreeTag = ClassTag[ExistentialTypeTree](classOf[ExistentialTypeTree])
   implicit val TypeTreeTag = ClassTag[TypeTree](classOf[TypeTree])
+
+  val treeNodeCount = Statistics.newView("#created tree nodes")(nodeCount)
+}
+
+object TreesStats {
+  // statistics
+  val nodeByType = Statistics.newByClass("#created tree nodes by type")(Statistics.newCounter(""))
 }

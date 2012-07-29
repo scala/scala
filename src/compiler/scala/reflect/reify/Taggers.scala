@@ -11,20 +11,21 @@ abstract class Taggers {
   import treeBuild._
 
   val coreTags = Map(
-    ByteClass.asType -> nme.Byte,
-    ShortClass.asType -> nme.Short,
-    CharClass.asType -> nme.Char,
-    IntClass.asType -> nme.Int,
-    LongClass.asType -> nme.Long,
-    FloatClass.asType -> nme.Float,
-    DoubleClass.asType -> nme.Double,
-    BooleanClass.asType -> nme.Boolean,
-    UnitClass.asType -> nme.Unit,
-    AnyClass.asType -> nme.Any,
-    ObjectClass.asType -> nme.Object,
-    NothingClass.asType -> nme.Nothing,
-    NullClass.asType -> nme.Null,
-    StringClass.asType -> nme.String)
+    ByteTpe -> nme.Byte,
+    ShortTpe -> nme.Short,
+    CharTpe -> nme.Char,
+    IntTpe -> nme.Int,
+    LongTpe -> nme.Long,
+    FloatTpe -> nme.Float,
+    DoubleTpe -> nme.Double,
+    BooleanTpe -> nme.Boolean,
+    UnitTpe -> nme.Unit,
+    AnyTpe -> nme.Any,
+    AnyValTpe -> nme.AnyVal,
+    AnyRefTpe -> nme.AnyRef,
+    ObjectTpe -> nme.Object,
+    NothingTpe -> nme.Nothing,
+    NullTpe -> nme.Null)
 
   def materializeClassTag(prefix: Tree, tpe: Type): Tree = {
     val tagModule = ClassTagModule
@@ -36,23 +37,21 @@ abstract class Taggers {
   }
 
   def materializeTypeTag(universe: Tree, mirror: Tree, tpe: Type, concrete: Boolean): Tree = {
-    if (universe.symbol == MacroContextUniverse && mirror == EmptyTree) {
-      import scala.reflect.makro.runtime.ContextReifiers
-      import language.implicitConversions
-      implicit def context2contextreifiers(c0: Context) : ContextReifiers { val c: c0.type } = new { val c: c0.type = c0 } with ContextReifiers
-      val Select(prefix, _) = universe
-      c.materializeTypeTagForMacroContext(prefix, tpe, concrete)
-    } else {
-      val tagType = if (concrete) TypeTagClass else AbsTypeTagClass
-      val unaffiliatedTagTpe = TypeRef(BaseUniverseClass.asTypeConstructor, tagType, List(tpe))
-      val unaffiliatedTag = c.inferImplicitValue(unaffiliatedTagTpe, silent = true, withMacrosDisabled = true)
-      unaffiliatedTag match {
-        case success if !success.isEmpty =>
-          Apply(Select(success, nme.in), List(mirror orElse mkDefaultMirrorRef(c.universe)(universe, c.callsiteTyper)))
-        case _ =>
-          val tagModule = if (concrete) TypeTagModule else AbsTypeTagModule
-          materializeTag(universe, tpe, tagModule, c.reifyType(universe, mirror, tpe, concrete = concrete))
-      }
+    val tagType = if (concrete) TypeTagClass else AbsTypeTagClass
+    // what we need here is to compose a type BaseUniverse # TypeTag[$tpe]
+    // to look for an implicit that conforms to this type
+    // that's why neither appliedType(tagType, List(tpe)) aka TypeRef(TypeTagsClass.thisType, tagType, List(tpe))
+    // nor TypeRef(BaseUniverseClass.thisType, tagType, List(tpe)) won't fit here
+    // scala> :type -v def foo: scala.reflect.base.Universe#TypeTag[Int] = ???
+    // NullaryMethodType(TypeRef(pre = TypeRef(TypeSymbol(Universe)), TypeSymbol(TypeTag), args = List($tpe))))
+    val unaffiliatedTagTpe = TypeRef(BaseUniverseClass.typeConstructor, tagType, List(tpe))
+    val unaffiliatedTag = c.inferImplicitValue(unaffiliatedTagTpe, silent = true, withMacrosDisabled = true)
+    unaffiliatedTag match {
+      case success if !success.isEmpty =>
+        Apply(Select(success, nme.in), List(mirror orElse mkDefaultMirrorRef(c.universe)(universe, c.callsiteTyper)))
+      case _ =>
+        val tagModule = if (concrete) TypeTagModule else AbsTypeTagModule
+        materializeTag(universe, tpe, tagModule, c.reifyType(universe, mirror, tpe, concrete = concrete))
     }
   }
 

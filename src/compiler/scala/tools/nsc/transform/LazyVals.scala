@@ -275,7 +275,7 @@ abstract class LazyVals extends Transform with TypingTransformers with ast.TreeD
         bmps(n)
       else {
         val sym = meth.newVariable(nme.newBitmapName(nme.BITMAP_NORMAL, n), meth.pos).setInfo(ByteClass.tpe)
-        beforeTyper {
+        enteringTyper {
           sym addAnnotation VolatileAttr
         }
 

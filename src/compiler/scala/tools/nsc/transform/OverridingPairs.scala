@@ -31,11 +31,11 @@ abstract class OverridingPairs {
     private val self = base.thisType
 
     /** Symbols to exclude: Here these are constructors, private locals,
-     *  and bridges. But it may be refined in subclasses.
+     *  and hidden symbols, including bridges. But it may be refined in subclasses.
      *
      */
     protected def exclude(sym: Symbol): Boolean =
-      sym.isConstructor || sym.isPrivateLocal || sym.hasFlag(BRIDGE)
+      sym.isConstructor || sym.isPrivateLocal || sym.isHidden
 
     /** The parents of base (may also be refined).
      */

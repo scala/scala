@@ -77,7 +77,7 @@ trait SyntheticMethods extends ast.TreeDSL {
     // like Tags and Arrays which are not robust and infer things
     // which they shouldn't.
     val accessorLub  = (
-      if (opt.experimental) {
+      if (settings.Xexperimental.value) {
         global.weakLub(accessors map (_.tpe.finalResultType))._1 match {
           case RefinedType(parents, decls) if !decls.isEmpty => intersectionType(parents)
           case tp                                            => tp
@@ -196,14 +196,14 @@ trait SyntheticMethods extends ast.TreeDSL {
      *     (this.underlying == that.underlying
      */
     def equalsDerivedValueClassMethod: Tree = createMethod(nme.equals_, List(AnyClass.tpe), BooleanClass.tpe) { m =>
-      equalsCore(m, List(clazz.firstParamAccessor))
+      equalsCore(m, List(clazz.derivedValueClassUnbox))
     }
 
     /** The hashcode method for value classes
      * def hashCode(): Int = this.underlying.hashCode
      */
     def hashCodeDerivedValueClassMethod: Tree = createMethod(nme.hashCode_, Nil, IntClass.tpe) { m =>
-      Select(mkThisSelect(clazz.firstParamAccessor), nme.hashCode_)
+      Select(mkThisSelect(clazz.derivedValueClassUnbox), nme.hashCode_)
     }
 
     /** The _1, _2, etc. methods to implement ProductN.

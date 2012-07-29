@@ -174,6 +174,12 @@ trait Symbols { self: Universe =>
      */
     def isClass: Boolean = false
 
+    /** Does this symbol represent the definition of a class implicitly associated
+     *  with an object definition (module class in scala compiler parlance).
+     *  If yes, `isType` is also guaranteed to be true.
+     */
+    def isModuleClass: Boolean = false
+
     /** This symbol cast to a ClassSymbol representing a class or trait.
      *  Returns ClassCastException if `isClass` is false.
      */
@@ -244,6 +250,8 @@ trait Symbols { self: Universe =>
   /** The base API that all module symbols support */
   trait ModuleSymbolBase extends TermSymbolBase { this: ModuleSymbol =>
     /** The class implicitly associated with the object definition.
+     *  One can go back from a module class to the associated module symbol
+     *  by inspecting its `selfType.termSymbol`.
      */
     def moduleClass: Symbol // needed for tree traversals
     // [Eugene++] when this becomes `moduleClass: ClassSymbol`, it will be the happiest day in my life

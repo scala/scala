@@ -7,6 +7,7 @@ import scala.collection.{ mutable, immutable }
 import scala.collection.parallel.CompositeThrowable
 import java.security.MessageDigest
 
+case class Credentials(user: String, pw: String)
 
 /** Helpers to resolve SHA artifacts from typesafe repo. */
 object ShaResolve {
@@ -19,7 +20,8 @@ object ShaResolve {
 
   def settings: Seq[Setting[_]] = Seq(
     binaryLibCache in ThisBuild := file(System.getProperty("user.home")) / ".sbt" / "cache" / "scala",
-    pullBinaryLibs in ThisBuild <<= (baseDirectory, binaryLibCache, streams) map resolveLibs
+    pullBinaryLibs in ThisBuild <<= (baseDirectory, binaryLibCache, streams) map resolveLibs,
+    pushBinaryLibs in ThisBuild <<= (baseDirectory, streams) map getCredentialsAndPushFiles
   )
 
   def resolveLibs(dir: File, cacheDir: File, s: TaskStreams): Unit = loggingParallelExceptions(s) {
@@ -31,6 +33,34 @@ object ShaResolve {
        if !jar.exists || !isValidSha(file)
        sha = getShaFromShafile(file)
      } pullFile(jar, sha + "/" + uri, cacheDir, sha, s)
+  }
+
+  /** This method removes all SHA1 files that don't match their corresponding JAR. */
+  def removeInvalidShaFiles(dir: File): Unit = {
+    val files = (dir / "test" / "files" ** "*.desired.sha1") +++ (dir / "lib" ** "*.desired.sha1")
+    for {
+      (file, name) <- (files x relativeTo(dir)).par
+      uri = name.dropRight(13).replace('\\', '/')       
+      jar = dir / uri
+      if !jar.exists || !isValidSha(file)
+    } IO.delete(jar)
+  }
+  def getCredentials: Credentials = System.out.synchronized {
+    val user = (SimpleReader.readLine("Please enter your STARR username> ") getOrElse error("No username provided."))
+    val password = (SimpleReader.readLine("Please enter your STARR password> ", Some('*')) getOrElse error("No password provided."))
+    Credentials(user, password)
+  }
+
+  def getCredentialsAndPushFiles(dir: File, s: TaskStreams): Unit =
+    pushFiles(dir, getCredentials, s)
+
+  def pushFiles(dir: File, cred: Credentials, s: TaskStreams): Unit = loggingParallelExceptions(s) {
+    val files = (dir / "test" / "files" ** "*.jar") +++ (dir / "lib" ** "*.jar")
+    for {
+      (jar, name) <- (files x relativeTo(dir)).par
+      shafile = dir / (name + ".desired.sha1")
+      if !shafile.exists || !isValidSha(shafile)
+    } pushFile(jar, name, cred, s)
   }
 
   @inline final def loggingParallelExceptions[U](s: TaskStreams)(f: => U): U = try f catch {
@@ -60,24 +90,17 @@ object ShaResolve {
     sha
   }
 
-  // TODO - Prettier way of doing this...
-  private def convertToHex(data: Array[Byte]): String = { 
+  def convertToHex(data: Array[Byte]): String = {
+    def byteToHex(b: Int) =
+      if ((0 <= b) && (b <= 9)) ('0' + b).toChar
+      else ('a' + (b-10)).toChar
     val buf = new StringBuffer
-    for (i <- 0 until data.length) { 
-      var halfbyte = (data(i) >>> 4) & 0x0F;
-      var two_halfs = 0;
-      while(two_halfs < 2) { 
-        if ((0 <= halfbyte) && (halfbyte <= 9)) 
-          buf.append(('0' + halfbyte).toChar)
-        else 
-          buf.append(('a' + (halfbyte - 10)).toChar);
-        halfbyte = data(i) & 0x0F;
-        two_halfs += 1
-      }
-    } 
-    return buf.toString
-  } 
-
+    for (i <- 0 until data.length) {
+      buf append byteToHex((data(i) >>> 4) & 0x0F)
+      buf append byteToHex(data(i) & 0x0F)
+    }
+    buf.toString
+  }
   // Parses a sha file into a file and a sha.
   def parseShaFile(file: File): (File, String) =
     IO.read(file).split("\\s") match {
@@ -110,10 +133,15 @@ object ShaResolve {
     IO.copyFile(cachedFile, file)
   }
   
-  def pushFile(file: File, uri: String, user: String, pw: String): Unit = {
-    val url = remote_urlbase + "/" + uri
-    val sender = dispatch.url(url).PUT.as(user,pw) <<< (file, "application/java-archive")
+  // Pushes a file and writes the new .desired.sha1 for git.
+  def pushFile(file: File, uri: String, cred: Credentials, s: TaskStreams): Unit = {
+    val sha = calculateSha(file)
+    val url = remote_urlbase + "/" + sha + "/" + uri
+    val sender = dispatch.url(url).PUT.as(cred.user,cred.pw) <<< (file, "application/java-archive")
     // TODO - output to logger.
     Http(sender >>> System.out)
+    val shafile = file.getParentFile / (file.getName + ".desired.sha1")
+    IO.touch(shafile)
+    IO.write(shafile, sha + " ?" + file.getName)
   }
 }

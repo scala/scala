@@ -2,7 +2,6 @@ package scala.tools
 package reflect
 
 import scala.tools.nsc.reporters._
-import scala.tools.nsc.ReflectGlobal
 import scala.tools.nsc.CompilerCommand
 import scala.tools.nsc.Global
 import scala.tools.nsc.typechecker.Modes
@@ -126,7 +125,10 @@ abstract class ToolBoxFactory[U <: JavaUniverse](val u: U) { factorySelf =>
         wrapper(currentTyper.silent(_.typed(expr, analyzer.EXPRmode, pt)) match {
           case analyzer.SilentResultValue(result) =>
             trace("success: ")(showAttributed(result, true, true, settings.Yshowsymkinds.value))
-            var Block(dummies, unwrapped) = result
+            var (dummies, unwrapped) = result match {
+              case Block(dummies, unwrapped) => (dummies, unwrapped)
+              case unwrapped => (Nil, unwrapped)
+            }
             var invertedIndex = freeTerms map (_.swap)
             // todo. also fixup singleton types
             unwrapped = new Transformer {
@@ -214,7 +216,7 @@ abstract class ToolBoxFactory[U <: JavaUniverse](val u: U) { factorySelf =>
         (singleton, jmeth)
       }
 
-      def runExpr(expr: Tree, freeTypes: Map[TypeName, Type] = Map[TypeName, Type]()): Any = {
+      def runExpr(expr: Tree): Any = {
         val freeTerms = expr.freeTerms // need to calculate them here, because later on they will be erased
         val thunks = freeTerms map (fte => () => fte.value) // need to be lazy in order not to distort evaluation order
 

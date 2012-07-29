@@ -1,0 +1,19 @@
+static-annot.scala:8: error: Only members of top-level objects and their nested objects can be annotated with @static.
+  @static val bar = 1
+              ^
+static-annot.scala:27: error: @static annotated field bar  has the same name as a member of class Conflicting
+  @static val bar = 1
+              ^
+static-annot.scala:37: error: The @static annotation is only allowed on public members.
+  @static private val bar = 1
+                      ^
+static-annot.scala:38: error: The @static annotation is only allowed on public members.
+  @static private val baz = 2
+                      ^
+static-annot.scala:39: error: The @static annotation is not allowed on lazy members.
+  @static lazy val bam = 3
+                   ^
+static-annot.scala:14: error: Only members of top-level objects and their nested objects can be annotated with @static.
+    @static val blah = 2
+                ^
+6 errors found

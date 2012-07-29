@@ -69,7 +69,7 @@ abstract class ExtensionMethods extends Transform with TypingTransformers {
 
   /** Return the extension method that corresponds to given instance method `meth`.
    */
-  def extensionMethod(imeth: Symbol): Symbol = atPhase(currentRun.refchecksPhase) {
+  def extensionMethod(imeth: Symbol): Symbol = enteringPhase(currentRun.refchecksPhase) {
     val companionInfo = imeth.owner.companionModule.info
     val candidates = extensionNames(imeth) map (companionInfo.decl(_))
     val matching = candidates filter (alt => normalize(alt.tpe, imeth.owner) matches imeth.tpe)
@@ -107,7 +107,7 @@ abstract class ExtensionMethods extends Transform with TypingTransformers {
 
     def extensionMethInfo(extensionMeth: Symbol, origInfo: Type, clazz: Symbol): Type = {
       var newTypeParams = cloneSymbolsAtOwner(clazz.typeParams, extensionMeth)
-      val thisParamType = appliedType(clazz.typeConstructor, newTypeParams map (_.tpe))
+      val thisParamType = appliedType(clazz.typeConstructor, newTypeParams map (_.tpeHK))
       val thisParam     = extensionMeth.newValueParameter(nme.SELF, extensionMeth.pos) setInfo thisParamType
       def transform(clonedType: Type): Type = clonedType match {
         case MethodType(params, restpe) =>
@@ -159,7 +159,7 @@ abstract class ExtensionMethods extends Transform with TypingTransformers {
               .changeOwner((origMeth, extensionMeth))
           extensionDefs(companion) += atPos(tree.pos) { DefDef(extensionMeth, extensionBody) }
           val extensionCallPrefix = Apply(
-              gen.mkTypeApply(gen.mkAttributedRef(companion), extensionMeth, origTpeParams map (_.tpe)),
+              gen.mkTypeApply(gen.mkAttributedRef(companion), extensionMeth, origTpeParams map (_.tpeHK)),
               List(This(currentOwner)))
           val extensionCall = atOwner(origMeth) {
             localTyper.typedPos(rhs.pos) {

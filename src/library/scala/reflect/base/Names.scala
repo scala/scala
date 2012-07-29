@@ -1,6 +1,8 @@
 package scala.reflect
 package base
 
+import language.implicitConversions
+
 /** A trait that manages names.
  *  A name is a string in one of two name universes: terms and types.
  *  The same string can be a name in both universes.
@@ -11,6 +13,9 @@ package base
  *  `name1 == name2` implies `name1 eq name2`.
  */
 trait Names {
+  /** Intentionally no implicit from String => Name. */
+  implicit def stringToTermName(s: String): TermName = newTermName(s)
+  implicit def stringToTypeName(s: String): TypeName = newTypeName(s)
 
   /** The abstract type of names */
   type Name >: Null <: NameBase

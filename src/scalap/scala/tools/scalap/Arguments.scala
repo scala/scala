@@ -48,7 +48,7 @@ object Arguments {
 
     def parseBinding(str: String, separator: Char): (String, String) = (str indexOf separator) match {
       case -1   => argumentError("missing '" + separator + "' in binding '" + str + "'") ; Pair("", "")
-      case idx  => Pair(str take idx trim, str drop (idx + 1) trim)
+      case idx  => Pair((str take idx).trim, (str drop (idx + 1)).trim)
     }
 
     def parse(args: Array[String]): Arguments = {

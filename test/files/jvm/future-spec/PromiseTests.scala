@@ -10,7 +10,8 @@ import scala.runtime.NonLocalReturnControl
 
 
 object PromiseTests extends MinimalScalaTest {
-  
+  import ExecutionContext.Implicits._
+
   val defaultTimeout = Inf
   
   /* promise specification */
@@ -20,11 +21,13 @@ object PromiseTests extends MinimalScalaTest {
     "not be completed" in {
       val p = Promise()
       p.future.isCompleted mustBe (false)
+      p.isCompleted mustBe (false)
     }
     
     "have no value" in {
       val p = Promise()
       p.future.value mustBe (None)
+      p.isCompleted mustBe (false)
     }
     
     "return supplied value on timeout" in {
@@ -45,14 +48,16 @@ object PromiseTests extends MinimalScalaTest {
   
   "A successful Promise" should {
     val result = "test value"
-    val future = Promise[String]().complete(Right(result)).future
-    futureWithResult(_(future, result))
+    val promise = Promise[String]().complete(Right(result))
+    promise.isCompleted mustBe (true)
+    futureWithResult(_(promise.future, result))
   }
   
   "A failed Promise" should {
     val message = "Expected Exception"
-    val future = Promise[String]().complete(Left(new RuntimeException(message))).future
-    futureWithException[RuntimeException](_(future, message))
+    val promise = Promise[String]().complete(Left(new RuntimeException(message)))
+    promise.isCompleted mustBe (true)
+    futureWithException[RuntimeException](_(promise.future, message))
   }
   
   "An interrupted Promise" should {
@@ -73,7 +78,7 @@ object PromiseTests extends MinimalScalaTest {
     
     "contain a value" in { f((future, result) => future.value mustBe (Some(Right(result)))) }
     
-    "return result with 'blocking'" in { f((future, result) => blocking(future, defaultTimeout) mustBe (result)) }
+    "return when ready with 'Await.ready'" in { f((future, result) => Await.ready(future, defaultTimeout).isCompleted mustBe (true)) }
     
     "return result with 'Await.result'" in { f((future, result) => Await.result(future, defaultTimeout) mustBe (result)) }
     
@@ -158,12 +163,9 @@ object PromiseTests extends MinimalScalaTest {
       })
     }
     
-    "throw exception with 'blocking'" in {
+    "throw not throw exception with 'Await.ready'" in {
       f {
-        (future, message) =>
-        intercept[E] {
-          blocking(future, defaultTimeout)
-        }.getMessage mustBe (message)
+        (future, message) => Await.ready(future, defaultTimeout).isCompleted mustBe (true)
       }
     }
     

@@ -115,6 +115,7 @@ class ElementValidator() extends Function1[Node,Boolean] {
           (dfa delta q).getOrElse(e, throw ValidationException("element %s not allowed here" format e))
         }
       }
+    case _ => false
   }
 
   /** applies various validations - accumulates error messages in exc

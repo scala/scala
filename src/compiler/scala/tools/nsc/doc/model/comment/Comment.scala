@@ -108,6 +108,24 @@ abstract class Comment {
   /** A description for the primary constructor */
   def constructor: Option[Body]
 
+  /** A set of diagram directives for the inheritance diagram */
+  def inheritDiagram: List[String]
+
+  /** A set of diagram directives for the content diagram */
+  def contentDiagram: List[String]
+
+  /** The group this member is part of */
+  def group: Option[String]
+
+  /** Member group descriptions */
+  def groupDesc: Map[String,Body]
+
+  /** Member group names (overriding the short tag) */
+  def groupNames: Map[String,String]
+
+  /** Member group priorities */
+  def groupPrio: Map[String,Int]
+
   override def toString =
     body.toString + "\n" +
     (authors map ("@author " + _.toString)).mkString("\n") +

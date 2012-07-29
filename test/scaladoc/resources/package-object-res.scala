@@ -1,4 +1,4 @@
-/** This package have A and B.
+/** This package has A and B.
   */
 package test {
   trait A { def hi = "hello" }

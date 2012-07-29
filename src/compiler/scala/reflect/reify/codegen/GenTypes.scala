@@ -11,9 +11,8 @@ trait GenTypes {
    *  Reify a type.
    *  For internal use only, use ``reified'' instead.
    */
-  def reifyType(tpe0: Type): Tree = {
-    assert(tpe0 != null, "tpe is null")
-    val tpe = tpe0.dealias
+  def reifyType(tpe: Type): Tree = {
+    assert(tpe != null, "tpe is null")
 
     if (tpe.isErroneous)
       CannotReifyErroneousReifee(tpe)
@@ -29,9 +28,9 @@ trait GenTypes {
     if (spliced != EmptyTree)
       return spliced
 
-    val tsym = tpe.typeSymbol
+    val tsym = tpe.typeSymbolDirect
     if (tsym.isClass && tpe == tsym.typeConstructor && tsym.isStatic)
-      Select(Select(reify(tpe.typeSymbol), nme.asTypeSymbol), nme.asTypeConstructor)
+      Select(Select(reify(tsym), nme.asTypeSymbol), nme.asTypeConstructor)
     else tpe match {
       case tpe @ NoType =>
         reifyMirrorObject(tpe)
@@ -42,8 +41,7 @@ trait GenTypes {
       case tpe @ ThisType(empty) if empty.isEmptyPackageClass =>
         mirrorBuildCall(nme.thisPrefix, mirrorMirrorSelect(nme.EmptyPackageClass))
       case tpe @ ThisType(clazz) if clazz.isModuleClass && clazz.isStatic =>
-        // [Eugene++ to Martin] makes sense?
-        val module = mirrorMirrorCall(nme.staticModule, reify(clazz.fullName))
+        val module = reify(clazz.sourceModule)
         val moduleClass = Select(Select(module, nme.asModuleSymbol), nme.moduleClass)
         mirrorFactoryCall(nme.ThisType, moduleClass)
       case tpe @ ThisType(_) =>
@@ -107,13 +105,11 @@ trait GenTypes {
   }
 
   private def spliceAsManifest(tpe: Type): Tree = {
-    val ManifestClass = rootMirror.staticClass("scala.reflect.Manifest")
-    val ManifestModule = rootMirror.staticModule("scala.reflect.Manifest")
-    def isSynthetic(manifest: Tree) = manifest exists (sub => sub.symbol != null && (sub.symbol == ManifestModule || sub.symbol.owner == ManifestModule))
+    def isSynthetic(manifest: Tree) = manifest exists (sub => sub.symbol != null && (sub.symbol == FullManifestModule || sub.symbol.owner == FullManifestModule))
     def searchForManifest(typer: analyzer.Typer): Tree =
       analyzer.inferImplicit(
         EmptyTree,
-        appliedType(ManifestClass.asTypeConstructor, List(tpe)),
+        appliedType(FullManifestClass.asTypeConstructor, List(tpe)),
         reportAmbiguous = false,
         isView = false,
         context = typer.context,

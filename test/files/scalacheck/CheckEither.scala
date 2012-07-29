@@ -3,7 +3,6 @@ import org.scalacheck.Arbitrary.{arbitrary, arbThrowable}
 import org.scalacheck.Gen.oneOf
 import org.scalacheck.util.StdRand
 import org.scalacheck.Prop._
-import org.scalacheck.ConsoleReporter.{testReport, propReport}
 import org.scalacheck.Test.{Params, check}
 import org.scalacheck.ConsoleReporter.testStatsEx
 import Function.tupled

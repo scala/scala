@@ -7,7 +7,6 @@ package scala.tools
 package cmd
 
 import scala.collection.mutable.ListBuffer
-import language.postfixOps
 
 trait CommandLineConfig {
   def enforceArity: Boolean = true

@@ -8,6 +8,8 @@ package scala.tools.nsc.doc.html
 import scala.tools.nsc.doc.model._
 import java.io.{FileOutputStream, File}
 import scala.reflect.NameTransformer
+import java.nio.channels.Channels
+import java.io.Writer
 
 abstract class Page {
   thisPage =>
@@ -20,8 +22,8 @@ abstract class Page {
 
   def absoluteLinkTo(path: List[String]) = path.reverse.mkString("/")
 
-  def createFileOutputStream(site: HtmlFactory) = {
-    val file = new File(site.siteRoot, absoluteLinkTo(thisPage.path))
+  def createFileOutputStream(site: HtmlFactory, suffix: String = "") = {
+    val file = new File(site.siteRoot, absoluteLinkTo(thisPage.path) + suffix)
     val folder = file.getParentFile
     if (! folder.exists) {
       folder.mkdirs
@@ -29,22 +31,42 @@ abstract class Page {
     new FileOutputStream(file.getPath)
   }
 
+  def writeFile(site: HtmlFactory, suffix: String = "")(fn: Writer => Unit) = {
+    val fos = createFileOutputStream(site, suffix)
+    val w = Channels.newWriter(fos.getChannel, site.encoding)
+    try {
+      fn(w)
+    }
+    finally {
+      w.close()
+      fos.close()
+    }
+  }
+
   /** Writes this page as a file. The file's location is relative to the
     * generator's site root, and the encoding is also defined by the generator.
     * @param generator The generator that is writing this page. */
   def writeFor(site: HtmlFactory): Unit
 
-  def docEntityKindToString(ety: DocTemplateEntity) =
-  	if (ety.isTrait) "trait"
-  	else if (ety.isCaseClass) "case class"
-  	else if (ety.isClass) "class"
-  	else if (ety.isObject) "object"
-  	else if (ety.isPackage) "package"
-  	else "class"	// FIXME: an entity *should* fall into one of the above categories, but AnyRef is somehow not
+  def kindToString(mbr: MemberEntity) =
+    mbr match {
+      case c: Class => if (c.isCaseClass) "case class" else "class"
+      case _: Trait => "trait"
+      case _: Package => "package"
+      case _: Object => "object"
+      case _: AbstractType => "type"
+      case _: AliasType => "type"
+      case _: Constructor => "new"
+      case v: Def => "def"
+      case v: Val if (v.isLazyVal) => "lazy val"
+      case v: Val if (v.isVal) => "val"
+      case v: Val if (v.isVar) => "var"
+      case _ => sys.error("Cannot create kind for: " + mbr + " of class " + mbr.getClass)
+    }
 
   def templateToPath(tpl: TemplateEntity): List[String] = {
     def doName(tpl: TemplateEntity): String =
-      NameTransformer.encode(tpl.name) + (if (tpl.isObject) "$" else "")
+      (if (tpl.inPackageObject) "package$$" else "") + NameTransformer.encode(tpl.name) + (if (tpl.isObject) "$" else "")
     def downPacks(pack: Package): List[String] =
       if (pack.isRootPackage) Nil else (doName(pack) :: downPacks(pack.inTemplate))
     def downInner(nme: String, tpl: TemplateEntity): (String, Package) = {
@@ -82,19 +104,5 @@ abstract class Page {
         List.fill(fss.length - 1)("..") ::: tss
     }
     relativize(thisPage.path.reverse, destPath.reverse).mkString("/")
-  }
-
-  def isExcluded(dtpl: DocTemplateEntity) = {
-    val qname = dtpl.qualifiedName
-    ( ( qname.startsWith("scala.Tuple") || qname.startsWith("scala.Product") ||
-       qname.startsWith("scala.Function") || qname.startsWith("scala.runtime.AbstractFunction")
-     ) && !(
-      qname == "scala.Tuple1" || qname == "scala.Tuple2" ||
-      qname == "scala.Product" || qname == "scala.Product1" || qname == "scala.Product2" ||
-      qname == "scala.Function" || qname == "scala.Function1" || qname == "scala.Function2" ||
-      qname == "scala.runtime.AbstractFunction0" || qname == "scala.runtime.AbstractFunction1" ||
-      qname == "scala.runtime.AbstractFunction2"
-    )
-   )
   }
 }

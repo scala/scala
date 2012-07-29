@@ -33,7 +33,7 @@ abstract class GenASM extends SubComponent with BytecodeWriters {
   override def newPhase(p: Phase): Phase = new AsmPhase(p)
 
   private def outputDirectory(sym: Symbol): AbstractFile =
-    settings.outputDirs outputDirFor beforeFlatten(sym.sourceFile)
+    settings.outputDirs outputDirFor enteringFlatten(sym.sourceFile)
 
   private def getFile(base: AbstractFile, clsName: String, suffix: String): AbstractFile = {
     var dir = base
@@ -81,7 +81,7 @@ abstract class GenASM extends SubComponent with BytecodeWriters {
       // At this point it's a module with a main-looking method, so either succeed or warn that it isn't.
       hasApproximate && {
         // Before erasure so we can identify generic mains.
-        beforeErasure {
+        enteringErasure {
           val companion     = sym.linkedClassOfClass
           val companionMain = companion.tpe.member(nme.main)
 
@@ -295,6 +295,7 @@ abstract class GenASM extends SubComponent with BytecodeWriters {
       if (finalFlag && !sym.hasAbstractFlag) ACC_FINAL else 0,
       if (sym.isStaticMember) ACC_STATIC else 0,
       if (sym.isBridge) ACC_BRIDGE | ACC_SYNTHETIC else 0,
+      if (sym.isHidden) ACC_SYNTHETIC else 0,
       if (sym.isClass && !sym.isInterface) ACC_SUPER else 0,
       if (sym.isVarargsMethod) ACC_VARARGS else 0,
       if (sym.hasFlag(Flags.SYNCHRONIZED)) ACC_SYNCHRONIZED else 0
@@ -310,7 +311,7 @@ abstract class GenASM extends SubComponent with BytecodeWriters {
   }
 
   def isTopLevelModule(sym: Symbol): Boolean =
-    afterPickler { sym.isModuleClass && !sym.isImplClass && !sym.isNestedClass }
+    exitingPickler { sym.isModuleClass && !sym.isImplClass && !sym.isNestedClass }
 
   def isStaticModule(sym: Symbol): Boolean = {
     sym.isModuleClass && !sym.isImplClass && !sym.isLifted
@@ -458,6 +459,10 @@ abstract class GenASM extends SubComponent with BytecodeWriters {
     val CLASS_CONSTRUCTOR_NAME    = "<clinit>"
     val INSTANCE_CONSTRUCTOR_NAME = "<init>"
 
+    val INNER_CLASSES_FLAGS =
+      (asm.Opcodes.ACC_PUBLIC    | asm.Opcodes.ACC_PRIVATE | asm.Opcodes.ACC_PROTECTED |
+       asm.Opcodes.ACC_STATIC    | asm.Opcodes.ACC_INTERFACE | asm.Opcodes.ACC_ABSTRACT)
+
     // -----------------------------------------------------------------------------------------
     // factory methods
     // -----------------------------------------------------------------------------------------
@@ -564,7 +569,7 @@ abstract class GenASM extends SubComponent with BytecodeWriters {
          * of inner class all until root class.
          */
         def collectInnerClass(s: Symbol): Unit = {
-          // TODO: some beforeFlatten { ... } which accounts for
+          // TODO: some enteringFlatten { ... } which accounts for
           // being nested in parameterized classes (if we're going to selectively flatten.)
           val x = innerClassSymbolFor(s)
           if(x ne NoSymbol) {
@@ -593,7 +598,7 @@ abstract class GenASM extends SubComponent with BytecodeWriters {
             reverseJavaName.put(internalName, trackedSym)
           case Some(oldsym) =>
             assert((oldsym == trackedSym) || (oldsym == RuntimeNothingClass) || (oldsym == RuntimeNullClass), // In contrast, neither NothingClass nor NullClass show up bytecode-level.
-                   "how can getCommonSuperclass() do its job if different class symbols get the same bytecode-level internal name.")
+                   "how can getCommonSuperclass() do its job if different class symbols get the same bytecode-level internal name: " + internalName)
         }
       }
 
@@ -644,19 +649,101 @@ abstract class GenASM extends SubComponent with BytecodeWriters {
 
     def isDeprecated(sym: Symbol): Boolean = { sym.annotations exists (_ matches definitions.DeprecatedAttr) }
 
+    def addInnerClasses(csym: Symbol, jclass: asm.ClassVisitor) {
+      /** The outer name for this inner class. Note that it returns null
+       *  when the inner class should not get an index in the constant pool.
+       *  That means non-member classes (anonymous). See Section 4.7.5 in the JVMS.
+       */
+      def outerName(innerSym: Symbol): String = {
+        if (innerSym.originalEnclosingMethod != NoSymbol)
+          null
+        else {
+          val outerName = javaName(innerSym.rawowner)
+          if (isTopLevelModule(innerSym.rawowner)) "" + nme.stripModuleSuffix(newTermName(outerName))
+          else outerName
+        }
+      }
+
+      def innerName(innerSym: Symbol): String =
+        if (innerSym.isAnonymousClass || innerSym.isAnonymousFunction)
+          null
+        else
+          innerSym.rawname + innerSym.moduleSuffix
+
+      // add inner classes which might not have been referenced yet
+      exitingErasure {
+        for (sym <- List(csym, csym.linkedClassOfClass); m <- sym.info.decls.map(innerClassSymbolFor) if m.isClass)
+          innerClassBuffer += m
+      }
+
+      val allInners: List[Symbol] = innerClassBuffer.toList
+      if (allInners.nonEmpty) {
+        debuglog(csym.fullName('.') + " contains " + allInners.size + " inner classes.")
+
+        // entries ready to be serialized into the classfile, used to detect duplicates.
+        val entries = mutable.Map.empty[String, String]
+
+        // sort them so inner classes succeed their enclosing class to satisfy the Eclipse Java compiler
+        for (innerSym <- allInners sortBy (_.name.length)) { // TODO why not sortBy (_.name.toString()) ??
+          val flags = mkFlags(
+            if (innerSym.rawowner.hasModuleFlag) asm.Opcodes.ACC_STATIC else 0,
+            javaFlags(innerSym),
+            if(isDeprecated(innerSym)) asm.Opcodes.ACC_DEPRECATED else 0 // ASM pseudo-access flag
+          ) & (INNER_CLASSES_FLAGS | asm.Opcodes.ACC_DEPRECATED)
+          val jname = javaName(innerSym)  // never null
+          val oname = outerName(innerSym) // null when method-enclosed
+          val iname = innerName(innerSym) // null for anonymous inner class
+
+          // Mimicking javap inner class output
+          debuglog(
+            if (oname == null || iname == null) "//class " + jname
+            else "//%s=class %s of class %s".format(iname, jname, oname)
+          )
+
+          assert(jname != null, "javaName is broken.") // documentation
+          val doAdd = entries.get(jname) match {
+            // TODO is it ok for prevOName to be null? (Someone should really document the invariants of the InnerClasses bytecode attribute)
+            case Some(prevOName) =>
+              // this occurs e.g. when innerClassBuffer contains both class Thread$State, object Thread$State,
+              // i.e. for them it must be the case that oname == java/lang/Thread
+              assert(prevOName == oname, "duplicate")
+              false
+            case None => true
+          }
+
+          if(doAdd) {
+            entries += (jname -> oname)
+            jclass.visitInnerClass(jname, oname, iname, flags)
+          }
+
+          /*
+           * TODO assert (JVMS 4.7.6 The InnerClasses attribute)
+           * If a class file has a version number that is greater than or equal to 51.0, and
+           * has an InnerClasses attribute in its attributes table, then for all entries in the
+           * classes array of the InnerClasses attribute, the value of the
+           * outer_class_info_index item must be zero if the value of the
+           * inner_name_index item is zero.
+           */
+
+        }
+      }
+    }
+
   } // end of class JBuilder
 
 
   /** functionality for building plain and mirror classes */
   abstract class JCommonBuilder(bytecodeWriter: BytecodeWriter) extends JBuilder(bytecodeWriter) {
 
+    def debugLevel = settings.debuginfo.indexOfChoice
+
+    val emitSource = debugLevel >= 1
+    val emitLines  = debugLevel >= 2
+    val emitVars   = debugLevel >= 3
+
     // -----------------------------------------------------------------------------------------
     // more constants
     // -----------------------------------------------------------------------------------------
-
-    val INNER_CLASSES_FLAGS =
-      (asm.Opcodes.ACC_PUBLIC    | asm.Opcodes.ACC_PRIVATE | asm.Opcodes.ACC_PROTECTED |
-       asm.Opcodes.ACC_STATIC    | asm.Opcodes.ACC_INTERFACE | asm.Opcodes.ACC_ABSTRACT)
 
     val PublicStatic      = asm.Opcodes.ACC_PUBLIC | asm.Opcodes.ACC_STATIC
     val PublicStaticFinal = asm.Opcodes.ACC_PUBLIC | asm.Opcodes.ACC_STATIC | asm.Opcodes.ACC_FINAL
@@ -763,7 +850,8 @@ abstract class GenASM extends SubComponent with BytecodeWriters {
       // without it.  This is particularly bad because the availability of
       // generic information could disappear as a consequence of a seemingly
       // unrelated change.
-         sym.isSynthetic
+         settings.Ynogenericsig.value
+      || sym.isHidden
       || sym.isLiftedMethod
       || sym.isBridge
       || (sym.ownerChain exists (_.isImplClass))
@@ -779,7 +867,7 @@ abstract class GenASM extends SubComponent with BytecodeWriters {
 
       if (!needsGenericSignature(sym)) { return null }
 
-      val memberTpe = beforeErasure(owner.thisType.memberInfo(sym))
+      val memberTpe = enteringErasure(owner.thisType.memberInfo(sym))
 
       val jsOpt: Option[String] = erasure.javaSig(sym, memberTpe)
       if (jsOpt.isEmpty) { return null }
@@ -789,7 +877,7 @@ abstract class GenASM extends SubComponent with BytecodeWriters {
 
           def wrap(op: => Unit) = {
             try   { op; true }
-            catch { case _ => false }
+            catch { case _: Throwable => false }
           }
 
       if (settings.Xverify.value) {
@@ -813,7 +901,7 @@ abstract class GenASM extends SubComponent with BytecodeWriters {
       }
 
       if ((settings.check containsName phaseName)) {
-        val normalizedTpe = beforeErasure(erasure.prepareSigMap(memberTpe))
+        val normalizedTpe = enteringErasure(erasure.prepareSigMap(memberTpe))
         val bytecodeTpe = owner.thisType.memberInfo(sym)
         if (!sym.isType && !sym.isConstructor && !(erasure.erasure(sym)(normalizedTpe) =:= bytecodeTpe)) {
           getCurrentCUnit().warning(sym.pos,
@@ -969,86 +1057,6 @@ abstract class GenASM extends SubComponent with BytecodeWriters {
       }
     }
 
-    def addInnerClasses(csym: Symbol, jclass: asm.ClassVisitor) {
-      /** The outer name for this inner class. Note that it returns null
-       *  when the inner class should not get an index in the constant pool.
-       *  That means non-member classes (anonymous). See Section 4.7.5 in the JVMS.
-       */
-      def outerName(innerSym: Symbol): String = {
-        if (innerSym.originalEnclosingMethod != NoSymbol)
-          null
-        else {
-          val outerName = javaName(innerSym.rawowner)
-          if (isTopLevelModule(innerSym.rawowner)) "" + nme.stripModuleSuffix(newTermName(outerName))
-          else outerName
-        }
-      }
-
-      def innerName(innerSym: Symbol): String =
-        if (innerSym.isAnonymousClass || innerSym.isAnonymousFunction)
-          null
-        else
-          innerSym.rawname + innerSym.moduleSuffix
-
-      // add inner classes which might not have been referenced yet
-      afterErasure {
-        for (sym <- List(csym, csym.linkedClassOfClass); m <- sym.info.decls.map(innerClassSymbolFor) if m.isClass)
-          innerClassBuffer += m
-      }
-
-      val allInners: List[Symbol] = innerClassBuffer.toList
-      if (allInners.nonEmpty) {
-        debuglog(csym.fullName('.') + " contains " + allInners.size + " inner classes.")
-
-        // entries ready to be serialized into the classfile, used to detect duplicates.
-        val entries = mutable.Map.empty[String, String]
-
-        // sort them so inner classes succeed their enclosing class to satisfy the Eclipse Java compiler
-        for (innerSym <- allInners sortBy (_.name.length)) { // TODO why not sortBy (_.name.toString()) ??
-          val flags = mkFlags(
-            if (innerSym.rawowner.hasModuleFlag) asm.Opcodes.ACC_STATIC else 0,
-            javaFlags(innerSym),
-            if(isDeprecated(innerSym)) asm.Opcodes.ACC_DEPRECATED else 0 // ASM pseudo-access flag
-          ) & (INNER_CLASSES_FLAGS | asm.Opcodes.ACC_DEPRECATED)
-          val jname = javaName(innerSym)  // never null
-          val oname = outerName(innerSym) // null when method-enclosed
-          val iname = innerName(innerSym) // null for anonymous inner class
-
-          // Mimicking javap inner class output
-          debuglog(
-            if (oname == null || iname == null) "//class " + jname
-            else "//%s=class %s of class %s".format(iname, jname, oname)
-          )
-
-          assert(jname != null, "javaName is broken.") // documentation
-          val doAdd = entries.get(jname) match {
-            // TODO is it ok for prevOName to be null? (Someone should really document the invariants of the InnerClasses bytecode attribute)
-            case Some(prevOName) =>
-              // this occurs e.g. when innerClassBuffer contains both class Thread$State, object Thread$State,
-              // i.e. for them it must be the case that oname == java/lang/Thread
-              assert(prevOName == oname, "duplicate")
-              false
-            case None => true
-          }
-
-          if(doAdd) {
-            entries += (jname -> oname)
-            jclass.visitInnerClass(jname, oname, iname, flags)
-          }
-
-          /*
-           * TODO assert (JVMS 4.7.6 The InnerClasses attribute)
-           * If a class file has a version number that is greater than or equal to 51.0, and
-           * has an InnerClasses attribute in its attributes table, then for all entries in the
-           * classes array of the InnerClasses attribute, the value of the
-           * outer_class_info_index item must be zero if the value of the
-           * inner_name_index item is zero.
-           */
-
-        }
-      }
-    }
-
     /** Adds a @remote annotation, actual use unknown.
      *
      * Invoked from genMethod() and addForwarder().
@@ -1151,7 +1159,7 @@ abstract class GenASM extends SubComponent with BytecodeWriters {
       val linkedClass  = moduleClass.companionClass
       val linkedModule = linkedClass.companionSymbol
       lazy val conflictingNames: Set[Name] = {
-        linkedClass.info.members collect { case sym if sym.name.isTermName => sym.name } toSet
+        (linkedClass.info.members collect { case sym if sym.name.isTermName => sym.name }).toSet
       }
       debuglog("Potentially conflicting names for forwarders: " + conflictingNames)
 
@@ -1162,7 +1170,9 @@ abstract class GenASM extends SubComponent with BytecodeWriters {
           log("No forwarder for " + m + " due to conflict with " + linkedClass.info.member(m.name))
         else {
           log("Adding static forwarder for '%s' from %s to '%s'".format(m, jclassName, moduleClass))
-          addForwarder(isRemoteClass, jclass, moduleClass, m)
+          if (m.isAccessor && m.accessed.hasStaticAnnotation) {
+            log("@static: accessor " + m + ", accessed: " + m.accessed)
+          } else addForwarder(isRemoteClass, jclass, moduleClass, m)
         }
       }
     }
@@ -1316,7 +1326,7 @@ abstract class GenASM extends SubComponent with BytecodeWriters {
         // Additional interface parents based on annotations and other cues
         def newParentForAttr(attr: Symbol): Option[Symbol] = attr match {
           case SerializableAttr => Some(SerializableClass)
-          case CloneableAttr    => Some(JavaCloneableClass)
+          case CloneableAttr    => Some(CloneableClass)
           case RemoteAttr       => Some(RemoteInterfaceClass)
           case _                => None
         }
@@ -1341,7 +1351,7 @@ abstract class GenASM extends SubComponent with BytecodeWriters {
 
       val ps = c.symbol.info.parents
       val superInterfaces0: List[Symbol] = if(ps.isEmpty) Nil else c.symbol.mixinClasses;
-      val superInterfaces = superInterfaces0 ++ c.symbol.annotations.flatMap(ann => newParentForAttr(ann.symbol)) distinct
+      val superInterfaces = (superInterfaces0 ++ c.symbol.annotations.flatMap(ann => newParentForAttr(ann.symbol))).distinct
 
       if(superInterfaces.isEmpty) EMPTY_STRING_ARRAY
       else mkArray(minimizeInterfaces(superInterfaces) map javaName)
@@ -1381,8 +1391,10 @@ abstract class GenASM extends SubComponent with BytecodeWriters {
       // typestate: entering mode with valid call sequences:
       //   [ visitSource ] [ visitOuterClass ] ( visitAnnotation | visitAttribute )*
 
-      jclass.visitSource(c.cunit.source.toString,
-                         null /* SourceDebugExtension */)
+      if(emitSource) {
+        jclass.visitSource(c.cunit.source.toString,
+                           null /* SourceDebugExtension */)
+      }
 
       val enclM = getEnclosingMethodAttribute()
       if(enclM != null) {
@@ -1417,7 +1429,7 @@ abstract class GenASM extends SubComponent with BytecodeWriters {
           if (lmoc != NoSymbol) {
             // it must be a top level class (name contains no $s)
             val isCandidateForForwarders = {
-              afterPickler { !(lmoc.name.toString contains '$') && lmoc.hasModuleFlag && !lmoc.isImplClass && !lmoc.isNestedClass }
+              exitingPickler { !(lmoc.name.toString contains '$') && lmoc.hasModuleFlag && !lmoc.isImplClass && !lmoc.isNestedClass }
             }
             if (isCandidateForForwarders) {
               log("Adding static forwarders from '%s' to implementations in '%s'".format(c.symbol, lmoc))
@@ -1509,12 +1521,6 @@ abstract class GenASM extends SubComponent with BytecodeWriters {
       emitAnnotations(jfield, f.symbol.annotations)
       jfield.visitEnd()
     }
-
-    def debugLevel = settings.debuginfo.indexOfChoice
-
-    // val emitSource = debugLevel >= 1
-    val emitLines  = debugLevel >= 2
-    val emitVars   = debugLevel >= 3
 
     var method:  IMethod = _
     var jmethod: asm.MethodVisitor = _
@@ -1671,6 +1677,7 @@ abstract class GenASM extends SubComponent with BytecodeWriters {
        	  jmethod = clinitMethod
           jMethodName = CLASS_CONSTRUCTOR_NAME
           jmethod.visitCode()
+          computeLocalVarsIndex(m)
        	  genCode(m, false, true)
           jmethod.visitMaxs(0, 0) // just to follow protocol, dummy arguments
           jmethod.visitEnd()
@@ -1890,6 +1897,15 @@ abstract class GenASM extends SubComponent with BytecodeWriters {
               branches(j - 1) = tmpL
             }
             j += 1
+          }
+          i += 1
+        }
+
+        // check for duplicate keys to avoid "VerifyError: unsorted lookupswitch" (SI-6011)
+        i = 1
+        while (i < keys.length) {
+          if(keys(i-1) == keys(i)) {
+            abort("duplicate keys in SWITCH, can't pick arbitrarily one of them to evict, see SI-6011.")
           }
           i += 1
         }
@@ -2180,9 +2196,15 @@ abstract class GenASM extends SubComponent with BytecodeWriters {
             val st = pending.getOrElseUpdate(lv, mutable.Stack.empty[Label])
             st.push(start)
           }
-          def popScope(lv: Local, end: Label) {
-            val start = pending(lv).pop()
-            seen ::= LocVarEntry(lv, start, end)
+          def popScope(lv: Local, end: Label, iPos: Position) {
+            pending.get(lv) match {
+              case Some(st) if st.nonEmpty =>
+                val start = st.pop()
+                seen ::= LocVarEntry(lv, start, end)
+              case _ =>
+                // TODO SI-6049
+                getCurrentCUnit().warning(iPos, "Visited SCOPE_EXIT before visiting corresponding SCOPE_ENTER. SI-6049")
+            }
           }
 
           def getMerged(): collection.Map[Local, List[Interval]] = {
@@ -2366,251 +2388,269 @@ abstract class GenASM extends SubComponent with BytecodeWriters {
             }
           }
 
-          instr match {
-            case THIS(_)               => jmethod.visitVarInsn(Opcodes.ALOAD, 0)
+          (instr.category: @scala.annotation.switch) match {
 
-            case CONSTANT(const)       => genConstant(jmethod, const)
+            case icodes.localsCat => (instr: @unchecked) match {
+                case THIS(_)            => jmethod.visitVarInsn(Opcodes.ALOAD, 0)
+                case LOAD_LOCAL(local)  => jcode.load(indexOf(local), local.kind)
+                case STORE_LOCAL(local) => jcode.store(indexOf(local), local.kind)
+                case STORE_THIS(_)      =>
+                  // this only works for impl classes because the self parameter comes first
+                  // in the method signature. If that changes, this code has to be revisited.
+                  jmethod.visitVarInsn(Opcodes.ASTORE, 0)
 
-            case LOAD_ARRAY_ITEM(kind) => jcode.aload(kind)
-
-            case LOAD_LOCAL(local)     => jcode.load(indexOf(local), local.kind)
-
-            case lf @ LOAD_FIELD(field, isStatic) =>
-              var owner = javaName(lf.hostClass)
-              debuglog("LOAD_FIELD with owner: " + owner + " flags: " + Flags.flagsToString(field.owner.flags))
-              val fieldJName = javaName(field)
-              val fieldDescr = descriptor(field)
-              val opc = if (isStatic) Opcodes.GETSTATIC else Opcodes.GETFIELD
-              jmethod.visitFieldInsn(opc, owner, fieldJName, fieldDescr)
-
-            case LOAD_MODULE(module) =>
-              // assert(module.isModule, "Expected module: " + module)
-              debuglog("generating LOAD_MODULE for: " + module + " flags: " + Flags.flagsToString(module.flags));
-              if (clasz.symbol == module.moduleClass && jMethodName != nme.readResolve.toString) {
-                jmethod.visitVarInsn(Opcodes.ALOAD, 0)
-              } else {
-                jmethod.visitFieldInsn(
-                  Opcodes.GETSTATIC,
-                  javaName(module) /* + "$" */ ,
-                  strMODULE_INSTANCE_FIELD,
-                  descriptor(module)
-                )
-              }
-
-            case STORE_ARRAY_ITEM(kind) => jcode.astore(kind)
-
-            case STORE_LOCAL(local) => jcode.store(indexOf(local), local.kind)
-
-            case STORE_THIS(_) =>
-              // this only works for impl classes because the self parameter comes first
-              // in the method signature. If that changes, this code has to be revisited.
-              jmethod.visitVarInsn(Opcodes.ASTORE, 0)
-
-            case STORE_FIELD(field, isStatic) =>
-              val owner = javaName(field.owner)
-              val fieldJName = javaName(field)
-              val fieldDescr = descriptor(field)
-              val opc = if (isStatic) Opcodes.PUTSTATIC else Opcodes.PUTFIELD
-              jmethod.visitFieldInsn(opc, owner, fieldJName, fieldDescr)
-
-            case CALL_PRIMITIVE(primitive) => genPrimitive(primitive, instr.pos)
-
-            /** Special handling to access native Array.clone() */
-            case call @ CALL_METHOD(definitions.Array_clone, Dynamic) =>
-              val target: String = javaType(call.targetTypeKind).getInternalName
-              jcode.invokevirtual(target, "clone", mdesc_arrayClone)
-
-            case call @ CALL_METHOD(method, style) => genCallMethod(call)
-
-            case BOX(kind) =>
-              val MethodNameAndType(mname, mdesc) = jBoxTo(kind)
-              jcode.invokestatic(BoxesRunTime, mname, mdesc)
-
-            case UNBOX(kind) =>
-              val MethodNameAndType(mname, mdesc) = jUnboxTo(kind)
-              jcode.invokestatic(BoxesRunTime, mname, mdesc)
-
-            case NEW(REFERENCE(cls)) =>
-              val className = javaName(cls)
-              jmethod.visitTypeInsn(Opcodes.NEW, className)
-
-            case CREATE_ARRAY(elem, 1) => jcode newarray elem
-
-            case CREATE_ARRAY(elem, dims) =>
-              jmethod.visitMultiANewArrayInsn(descriptor(ArrayN(elem, dims)), dims)
-
-            case IS_INSTANCE(tpe) =>
-              val jtyp: asm.Type =
-                tpe match {
-                  case REFERENCE(cls) => asm.Type.getObjectType(javaName(cls))
-                  case ARRAY(elem)    => javaArrayType(javaType(elem))
-                  case _              => abort("Unknown reference type in IS_INSTANCE: " + tpe)
-                }
-              jmethod.visitTypeInsn(Opcodes.INSTANCEOF, jtyp.getInternalName)
-
-            case CHECK_CAST(tpe) =>
-              tpe match {
-
-                case REFERENCE(cls) =>
-                  if (cls != ObjectClass) { // No need to checkcast for Objects
-                    jmethod.visitTypeInsn(Opcodes.CHECKCAST, javaName(cls))
+                case SCOPE_ENTER(lv) =>
+                  // locals removed by closelim (via CopyPropagation) may have left behind SCOPE_ENTER, SCOPE_EXIT that are to be ignored
+                  val relevant = (!lv.sym.isSynthetic && m.locals.contains(lv))
+                  if(relevant) { // TODO check: does GenICode emit SCOPE_ENTER, SCOPE_EXIT for synthetic vars?
+                    // this label will have DEBUG bit set in its flags (ie ASM ignores it for dataflow purposes)
+                    // similarly, these labels aren't tracked in the `labels` map.
+                    val start = new asm.Label
+                    jmethod.visitLabel(start)
+                    scoping.pushScope(lv, start)
                   }
 
-                case ARRAY(elem)    =>
-                  val iname = javaArrayType(javaType(elem)).getInternalName
-                  jmethod.visitTypeInsn(Opcodes.CHECKCAST, iname)
+                case SCOPE_EXIT(lv) =>
+                  val relevant = (!lv.sym.isSynthetic && m.locals.contains(lv))
+                  if(relevant) {
+                    // this label will have DEBUG bit set in its flags (ie ASM ignores it for dataflow purposes)
+                    // similarly, these labels aren't tracked in the `labels` map.
+                    val end = new asm.Label
+                    jmethod.visitLabel(end)
+                    scoping.popScope(lv, end, instr.pos)
+                  }
+            }
 
-                case _              => abort("Unknown reference type in IS_INSTANCE: " + tpe)
-              }
+            case icodes.stackCat => (instr: @unchecked) match {
 
-            case sw @ SWITCH(tagss, branches) =>
-              assert(branches.length == tagss.length + 1, sw)
-              val flatSize     = sw.flatTagsCount
-              val flatKeys     = new Array[Int](flatSize)
-              val flatBranches = new Array[asm.Label](flatSize)
-
-              var restTagss    = tagss
-              var restBranches = branches
-              var k = 0 // ranges over flatKeys and flatBranches
-              while(restTagss.nonEmpty) {
-                val currLabel = labels(restBranches.head)
-                for(cTag <- restTagss.head) {
-                  flatKeys(k)     = cTag;
-                  flatBranches(k) = currLabel
-                  k += 1
-                }
-                restTagss    = restTagss.tail
-                restBranches = restBranches.tail
-              }
-              val defaultLabel = labels(restBranches.head)
-              assert(restBranches.tail.isEmpty)
-              debuglog("Emitting SWITCH:\ntags: " + tagss + "\nbranches: " + branches)
-              jcode.emitSWITCH(flatKeys, flatBranches, defaultLabel, MIN_SWITCH_DENSITY)
-
-            case JUMP(whereto) =>
-              if (nextBlock != whereto) {
-                jcode goTo labels(whereto)
-              }
-
-            case CJUMP(success, failure, cond, kind) =>
-              if(kind.isIntSizedType) { // BOOL, BYTE, CHAR, SHORT, or INT
-                if (nextBlock == success) {
-                  jcode.emitIF_ICMP(cond.negate, labels(failure))
-                  // .. and fall through to success label
+              case LOAD_MODULE(module) =>
+                // assert(module.isModule, "Expected module: " + module)
+                debuglog("generating LOAD_MODULE for: " + module + " flags: " + Flags.flagsToString(module.flags));
+                if (clasz.symbol == module.moduleClass && jMethodName != nme.readResolve.toString) {
+                  jmethod.visitVarInsn(Opcodes.ALOAD, 0)
                 } else {
-                  jcode.emitIF_ICMP(cond, labels(success))
-                  if (nextBlock != failure) { jcode goTo labels(failure) }
+                  jmethod.visitFieldInsn(
+                    Opcodes.GETSTATIC,
+                    javaName(module) /* + "$" */ ,
+                    strMODULE_INSTANCE_FIELD,
+                    descriptor(module)
+                  )
                 }
-              } else if(kind.isRefOrArrayType) { // REFERENCE(_) | ARRAY(_)
-                if (nextBlock == success) {
-                  jcode.emitIF_ACMP(cond.negate, labels(failure))
-                  // .. and fall through to success label
+
+              case DROP(kind)   => emit(if(kind.isWideType) Opcodes.POP2 else Opcodes.POP)
+
+              case DUP(kind)    => emit(if(kind.isWideType) Opcodes.DUP2 else Opcodes.DUP)
+
+              case LOAD_EXCEPTION(_) => ()
+            }
+
+            case icodes.constCat => genConstant(jmethod, instr.asInstanceOf[CONSTANT].constant)
+
+            case icodes.arilogCat => genPrimitive(instr.asInstanceOf[CALL_PRIMITIVE].primitive, instr.pos)
+
+            case icodes.castsCat => (instr: @unchecked) match {
+
+              case IS_INSTANCE(tpe) =>
+                val jtyp: asm.Type =
+                  tpe match {
+                    case REFERENCE(cls) => asm.Type.getObjectType(javaName(cls))
+                    case ARRAY(elem)    => javaArrayType(javaType(elem))
+                    case _              => abort("Unknown reference type in IS_INSTANCE: " + tpe)
+                  }
+                jmethod.visitTypeInsn(Opcodes.INSTANCEOF, jtyp.getInternalName)
+
+              case CHECK_CAST(tpe) =>
+                tpe match {
+
+                  case REFERENCE(cls) =>
+                    if (cls != ObjectClass) { // No need to checkcast for Objects
+                      jmethod.visitTypeInsn(Opcodes.CHECKCAST, javaName(cls))
+                    }
+
+                  case ARRAY(elem)    =>
+                    val iname = javaArrayType(javaType(elem)).getInternalName
+                    jmethod.visitTypeInsn(Opcodes.CHECKCAST, iname)
+
+                  case _              => abort("Unknown reference type in IS_INSTANCE: " + tpe)
+                }
+
+            }
+
+            case icodes.objsCat  => (instr: @unchecked) match {
+
+              case BOX(kind) =>
+                val MethodNameAndType(mname, mdesc) = jBoxTo(kind)
+                jcode.invokestatic(BoxesRunTime, mname, mdesc)
+
+              case UNBOX(kind) =>
+                val MethodNameAndType(mname, mdesc) = jUnboxTo(kind)
+                jcode.invokestatic(BoxesRunTime, mname, mdesc)
+
+              case NEW(REFERENCE(cls)) =>
+                val className = javaName(cls)
+                jmethod.visitTypeInsn(Opcodes.NEW, className)
+
+              case MONITOR_ENTER() => emit(Opcodes.MONITORENTER)
+              case MONITOR_EXIT()  => emit(Opcodes.MONITOREXIT)
+            }
+
+            case icodes.fldsCat  => (instr: @unchecked) match {
+
+              case lf @ LOAD_FIELD(field, isStatic) =>
+                var owner = javaName(lf.hostClass)
+                debuglog("LOAD_FIELD with owner: " + owner + " flags: " + Flags.flagsToString(field.owner.flags))
+                val fieldJName = javaName(field)
+                val fieldDescr = descriptor(field)
+                val opc = if (isStatic) Opcodes.GETSTATIC else Opcodes.GETFIELD
+                jmethod.visitFieldInsn(opc, owner, fieldJName, fieldDescr)
+
+              case STORE_FIELD(field, isStatic) =>
+                val owner = javaName(field.owner)
+                val fieldJName = javaName(field)
+                val fieldDescr = descriptor(field)
+                val opc = if (isStatic) Opcodes.PUTSTATIC else Opcodes.PUTFIELD
+                jmethod.visitFieldInsn(opc, owner, fieldJName, fieldDescr)
+
+            }
+
+            case icodes.mthdsCat => (instr: @unchecked) match {
+
+              /** Special handling to access native Array.clone() */
+              case call @ CALL_METHOD(definitions.Array_clone, Dynamic) =>
+                val target: String = javaType(call.targetTypeKind).getInternalName
+                jcode.invokevirtual(target, "clone", mdesc_arrayClone)
+
+              case call @ CALL_METHOD(method, style) => genCallMethod(call)
+
+            }
+
+            case icodes.arraysCat => (instr: @unchecked) match {
+              case LOAD_ARRAY_ITEM(kind)    => jcode.aload(kind)
+              case STORE_ARRAY_ITEM(kind)   => jcode.astore(kind)
+              case CREATE_ARRAY(elem, 1)    => jcode newarray elem
+              case CREATE_ARRAY(elem, dims) => jmethod.visitMultiANewArrayInsn(descriptor(ArrayN(elem, dims)), dims)
+            }
+
+            case icodes.jumpsCat => (instr: @unchecked) match {
+
+              case sw @ SWITCH(tagss, branches) =>
+                assert(branches.length == tagss.length + 1, sw)
+                val flatSize     = sw.flatTagsCount
+                val flatKeys     = new Array[Int](flatSize)
+                val flatBranches = new Array[asm.Label](flatSize)
+
+                var restTagss    = tagss
+                var restBranches = branches
+                var k = 0 // ranges over flatKeys and flatBranches
+                while(restTagss.nonEmpty) {
+                  val currLabel = labels(restBranches.head)
+                  for(cTag <- restTagss.head) {
+                    flatKeys(k)     = cTag;
+                    flatBranches(k) = currLabel
+                    k += 1
+                  }
+                  restTagss    = restTagss.tail
+                  restBranches = restBranches.tail
+                }
+                val defaultLabel = labels(restBranches.head)
+                assert(restBranches.tail.isEmpty)
+                debuglog("Emitting SWITCH:\ntags: " + tagss + "\nbranches: " + branches)
+                jcode.emitSWITCH(flatKeys, flatBranches, defaultLabel, MIN_SWITCH_DENSITY)
+
+              case JUMP(whereto) =>
+                if (nextBlock != whereto) {
+                  jcode goTo labels(whereto)
+                }
+
+              case CJUMP(success, failure, cond, kind) =>
+                if(kind.isIntSizedType) { // BOOL, BYTE, CHAR, SHORT, or INT
+                  if (nextBlock == success) {
+                    jcode.emitIF_ICMP(cond.negate, labels(failure))
+                    // .. and fall through to success label
+                  } else {
+                    jcode.emitIF_ICMP(cond, labels(success))
+                    if (nextBlock != failure) { jcode goTo labels(failure) }
+                  }
+                } else if(kind.isRefOrArrayType) { // REFERENCE(_) | ARRAY(_)
+                  if (nextBlock == success) {
+                    jcode.emitIF_ACMP(cond.negate, labels(failure))
+                    // .. and fall through to success label
+                  } else {
+                    jcode.emitIF_ACMP(cond, labels(success))
+                    if (nextBlock != failure) { jcode goTo labels(failure) }
+                  }
                 } else {
-                  jcode.emitIF_ACMP(cond, labels(success))
-                  if (nextBlock != failure) { jcode goTo labels(failure) }
+                  (kind: @unchecked) match {
+                    case LONG   => emit(Opcodes.LCMP)
+                    case FLOAT  =>
+                      if (cond == LT || cond == LE) emit(Opcodes.FCMPG)
+                      else emit(Opcodes.FCMPL)
+                    case DOUBLE =>
+                      if (cond == LT || cond == LE) emit(Opcodes.DCMPG)
+                      else emit(Opcodes.DCMPL)
+                  }
+                  if (nextBlock == success) {
+                    jcode.emitIF(cond.negate, labels(failure))
+                    // .. and fall through to success label
+                  } else {
+                    jcode.emitIF(cond, labels(success))
+                    if (nextBlock != failure) { jcode goTo labels(failure) }
+                  }
                 }
-              } else {
-                (kind: @unchecked) match {
-                  case LONG   => emit(Opcodes.LCMP)
-                  case FLOAT  =>
-                    if (cond == LT || cond == LE) emit(Opcodes.FCMPG)
-                    else emit(Opcodes.FCMPL)
-                  case DOUBLE =>
-                    if (cond == LT || cond == LE) emit(Opcodes.DCMPG)
-                    else emit(Opcodes.DCMPL)
-                }
-                if (nextBlock == success) {
-                  jcode.emitIF(cond.negate, labels(failure))
-                  // .. and fall through to success label
+
+              case CZJUMP(success, failure, cond, kind) =>
+                if(kind.isIntSizedType) { // BOOL, BYTE, CHAR, SHORT, or INT
+                  if (nextBlock == success) {
+                    jcode.emitIF(cond.negate, labels(failure))
+                  } else {
+                    jcode.emitIF(cond, labels(success))
+                    if (nextBlock != failure) { jcode goTo labels(failure) }
+                  }
+                } else if(kind.isRefOrArrayType) { // REFERENCE(_) | ARRAY(_)
+                  val Success = success
+                  val Failure = failure
+                  // @unchecked because references aren't compared with GT, GE, LT, LE.
+                  ((cond, nextBlock) : @unchecked) match {
+                    case (EQ, Success) => jcode emitIFNONNULL labels(failure)
+                    case (NE, Failure) => jcode emitIFNONNULL labels(success)
+                    case (EQ, Failure) => jcode emitIFNULL    labels(success)
+                    case (NE, Success) => jcode emitIFNULL    labels(failure)
+                    case (EQ, _) =>
+                      jcode emitIFNULL labels(success)
+                      jcode goTo labels(failure)
+                    case (NE, _) =>
+                      jcode emitIFNONNULL labels(success)
+                      jcode goTo labels(failure)
+                  }
                 } else {
-                  jcode.emitIF(cond, labels(success))
-                  if (nextBlock != failure) { jcode goTo labels(failure) }
+                  (kind: @unchecked) match {
+                    case LONG   =>
+                      emit(Opcodes.LCONST_0)
+                      emit(Opcodes.LCMP)
+                    case FLOAT  =>
+                      emit(Opcodes.FCONST_0)
+                      if (cond == LT || cond == LE) emit(Opcodes.FCMPG)
+                      else emit(Opcodes.FCMPL)
+                    case DOUBLE =>
+                      emit(Opcodes.DCONST_0)
+                      if (cond == LT || cond == LE) emit(Opcodes.DCMPG)
+                      else emit(Opcodes.DCMPL)
+                  }
+                  if (nextBlock == success) {
+                    jcode.emitIF(cond.negate, labels(failure))
+                  } else {
+                    jcode.emitIF(cond, labels(success))
+                    if (nextBlock != failure) { jcode goTo labels(failure) }
+                  }
                 }
-              }
 
-            case CZJUMP(success, failure, cond, kind) =>
-              if(kind.isIntSizedType) { // BOOL, BYTE, CHAR, SHORT, or INT
-                if (nextBlock == success) {
-                  jcode.emitIF(cond.negate, labels(failure))
-                } else {
-                  jcode.emitIF(cond, labels(success))
-                  if (nextBlock != failure) { jcode goTo labels(failure) }
-                }
-              } else if(kind.isRefOrArrayType) { // REFERENCE(_) | ARRAY(_)
-                val Success = success
-                val Failure = failure
-                // @unchecked because references aren't compared with GT, GE, LT, LE.
-                ((cond, nextBlock) : @unchecked) match {
-                  case (EQ, Success) => jcode emitIFNONNULL labels(failure)
-                  case (NE, Failure) => jcode emitIFNONNULL labels(success)
-                  case (EQ, Failure) => jcode emitIFNULL    labels(success)
-                  case (NE, Success) => jcode emitIFNULL    labels(failure)
-                  case (EQ, _) =>
-                    jcode emitIFNULL labels(success)
-                    jcode goTo labels(failure)
-                  case (NE, _) =>
-                    jcode emitIFNONNULL labels(success)
-                    jcode goTo labels(failure)
-                }
-              } else {
-                (kind: @unchecked) match {
-                  case LONG   =>
-                    emit(Opcodes.LCONST_0)
-                    emit(Opcodes.LCMP)
-                  case FLOAT  =>
-                    emit(Opcodes.FCONST_0)
-                    if (cond == LT || cond == LE) emit(Opcodes.FCMPG)
-                    else emit(Opcodes.FCMPL)
-                  case DOUBLE =>
-                    emit(Opcodes.DCONST_0)
-                    if (cond == LT || cond == LE) emit(Opcodes.DCMPG)
-                    else emit(Opcodes.DCMPL)
-                }
-                if (nextBlock == success) {
-                  jcode.emitIF(cond.negate, labels(failure))
-                } else {
-                  jcode.emitIF(cond, labels(success))
-                  if (nextBlock != failure) { jcode goTo labels(failure) }
-                }
-              }
+            }
 
-            case RETURN(kind) => jcode emitRETURN kind
+            case icodes.retCat   => (instr: @unchecked) match {
+              case RETURN(kind) => jcode emitRETURN kind
+              case THROW(_)     => emit(Opcodes.ATHROW)
+            }
 
-            case THROW(_)     => emit(Opcodes.ATHROW)
-
-            case DROP(kind)   =>
-              emit(if(kind.isWideType) Opcodes.POP2 else Opcodes.POP)
-
-            case DUP(kind)    =>
-              emit(if(kind.isWideType) Opcodes.DUP2 else Opcodes.DUP)
-
-            case MONITOR_ENTER() => emit(Opcodes.MONITORENTER)
-
-            case MONITOR_EXIT()  => emit(Opcodes.MONITOREXIT)
-
-            case SCOPE_ENTER(lv) =>
-              // locals removed by closelim (via CopyPropagation) may have left behind SCOPE_ENTER, SCOPE_EXIT that are to be ignored
-              val relevant = (!lv.sym.isSynthetic && m.locals.contains(lv))
-              if(relevant) { // TODO check: does GenICode emit SCOPE_ENTER, SCOPE_EXIT for synthetic vars?
-                // this label will have DEBUG bit set in its flags (ie ASM ignores it for dataflow purposes)
-                // similarly, these labels aren't tracked in the `labels` map.
-                val start = new asm.Label
-                jmethod.visitLabel(start)
-                scoping.pushScope(lv, start)
-              }
-
-            case SCOPE_EXIT(lv) =>
-              val relevant = (!lv.sym.isSynthetic && m.locals.contains(lv))
-              if(relevant) {
-                // this label will have DEBUG bit set in its flags (ie ASM ignores it for dataflow purposes)
-                // similarly, these labels aren't tracked in the `labels` map.
-                val end = new asm.Label
-                jmethod.visitLabel(end)
-                scoping.popScope(lv, end)
-              }
-
-            case LOAD_EXCEPTION(_) =>
-              ()
           }
 
         }
@@ -2893,8 +2933,10 @@ abstract class GenASM extends SubComponent with BytecodeWriters {
       // typestate: entering mode with valid call sequences:
       //   [ visitSource ] [ visitOuterClass ] ( visitAnnotation | visitAttribute )*
 
-      mirrorClass.visitSource("" + cunit.source,
-                              null /* SourceDebugExtension */)
+      if(emitSource) {
+        mirrorClass.visitSource("" + cunit.source,
+                                null /* SourceDebugExtension */)
+      }
 
       val ssa = getAnnotPickle(mirrorName, modsym.companionSymbol)
       mirrorClass.visitAttribute(if(ssa.isDefined) pickleMarkerLocal else pickleMarkerForeign)
@@ -3033,9 +3075,7 @@ abstract class GenASM extends SubComponent with BytecodeWriters {
       constructor.visitMaxs(0, 0) // just to follow protocol, dummy arguments
       constructor.visitEnd()
 
-      // TODO no inner classes attribute is written. Confirm intent.
-      assert(innerClassBuffer.isEmpty, innerClassBuffer)
-
+      addInnerClasses(clasz.symbol, beanInfoClass)
       beanInfoClass.visitEnd()
 
       writeIfNotTooBig("BeanInfo ", beanInfoName, beanInfoClass, clasz.symbol)
@@ -3143,7 +3183,7 @@ abstract class GenASM extends SubComponent with BytecodeWriters {
             hops ::= prev
             if (hops.contains(dest)) {
               // leave infinite-loops in place
-              return (dest, hops filterNot (dest eq))
+              return (dest, hops filterNot (dest eq _))
             }
             prev = dest;
             false

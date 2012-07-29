@@ -28,7 +28,7 @@ trait SymbolLoaders { self: SymbolTable =>
       debugInfo("completing "+sym+"/"+clazz.fullName)
       assert(sym == clazz || sym == module || sym == module.moduleClass)
 //      try {
-      atPhaseNotLaterThan(picklerPhase) {
+      enteringPhaseNotLaterThan(picklerPhase) {
         val loadingMirror = mirrorThatLoaded(sym)
         val javaClass = loadingMirror.javaClass(clazz.javaClassName)
         loadingMirror.unpickleClass(clazz, module, javaClass)
@@ -99,8 +99,10 @@ trait SymbolLoaders { self: SymbolTable =>
     0 < dp && dp < (name.length - 1)
   }
 
-  class PackageScope(pkgClass: Symbol) extends Scope() with SynchronizedScope {
+  class PackageScope(pkgClass: Symbol) extends Scope(initFingerPrints = -1L) // disable fingerprinting as we do not know entries beforehand
+      with SynchronizedScope {
     assert(pkgClass.isType)
+    // disable fingerprinting as we do not know entries beforehand
     private val negatives = mutable.Set[Name]() // Syncnote: Performance only, so need not be protected.
     override def lookupEntry(name: Name): ScopeEntry = {
       val e = super.lookupEntry(name)

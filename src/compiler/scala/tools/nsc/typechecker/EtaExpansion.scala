@@ -88,9 +88,11 @@ trait EtaExpansion { self: Analyzer =>
           defs ++= stats
           liftoutPrefix(fun)
         case Apply(fn, args) =>
-          val byName = fn.tpe.params.map(p => definitions.isByNameParamType(p.tpe))
-          // zipAll: with repeated params, there might be more args than params
-          val newArgs = args.zipAll(byName, EmptyTree, false) map { case (arg, byN) => liftout(arg, byN) }
+          val byName: Int => Option[Boolean] = fn.tpe.params.map(p => definitions.isByNameParamType(p.tpe)).lift
+          val newArgs = mapWithIndex(args) { (arg, i) =>
+            // with repeated params, there might be more or fewer args than params
+            liftout(arg, byName(i).getOrElse(false))
+          }
           treeCopy.Apply(tree, liftoutPrefix(fn), newArgs) setType null
         case TypeApply(fn, args) =>
           treeCopy.TypeApply(tree, liftoutPrefix(fn), args) setType null
@@ -107,11 +109,20 @@ trait EtaExpansion { self: Analyzer =>
      */
     def expand(tree: Tree, tpe: Type): Tree = tpe match {
       case mt @ MethodType(paramSyms, restpe) if !mt.isImplicit =>
-        val params = paramSyms map (sym =>
-          ValDef(Modifiers(SYNTHETIC | PARAM),
-                 sym.name.toTermName, TypeTree(sym.tpe) , EmptyTree))
+        val params: List[(ValDef, Boolean)] = paramSyms.map {
+          sym =>
+            val origTpe = sym.tpe
+            val isRepeated = definitions.isRepeatedParamType(origTpe)
+            // SI-4176 Don't leak A* in eta-expanded function types. See t4176b.scala
+            val droppedStarTpe = if (settings.etaExpandKeepsStar.value) origTpe else dropRepeatedParamType(origTpe)
+            val valDef = ValDef(Modifiers(SYNTHETIC | PARAM), sym.name.toTermName, TypeTree(droppedStarTpe), EmptyTree)
+            (valDef, isRepeated)
+        }
         atPos(tree.pos.makeTransparent) {
-          Function(params, expand(Apply(tree, params map gen.paramToArg), restpe))
+          val args = params.map {
+            case (valDef, isRepeated) => gen.paramToArg(Ident(valDef.name), isRepeated)
+          }
+          Function(params.map(_._1), expand(Apply(tree, args), restpe))
         }
       case _ =>
         tree

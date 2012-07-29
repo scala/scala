@@ -1,0 +1,50 @@
+#!/bin/bash
+#
+# Script to compare scaladoc raw files. For an explanation read the next echos.
+#
+
+if [ $# -ne 2 ]
+then
+  echo
+  echo "scaladoc-compare will compare the scaladoc-generated pages in two different locations and output the diff"
+  echo "it's main purpose is to track changes to scaladoc and prevent updates that break things."
+  echo
+  echo "This script is meant to be used with the scaladoc -raw-output option, as it compares .html.raw files "
+  echo "instead of markup-heavy .html files."
+  echo
+  echo "Script usage $0 <new api files path> <old api files path>"
+  echo "   eg: $0 build/scaladoc/library build/scaladoc-prev/library | less"
+  echo 
+  exit 1
+fi
+
+NEW_PATH=$1
+OLD_PATH=$2
+
+FILES=`find $NEW_PATH -name '*.html.raw'`
+if [ "$FILES" == "" ]
+then
+  echo "No .html.raw files found in $NEW_PATH!"
+  exit 1
+fi
+
+for NEW_FILE in $FILES
+do
+  OLD_FILE=${NEW_FILE/$NEW_PATH/$OLD_PATH}
+  if [ -f $OLD_FILE ]
+  then
+    #echo $NEW_FILE" => "$OLD_FILE
+    DIFF=`diff -q -w $NEW_FILE $OLD_FILE 2>&1`
+    if [ "$DIFF" != "" ]
+    then
+      # Redo the full diff
+      echo "$NEW_FILE:"
+      diff -w $NEW_FILE $OLD_FILE 2>&1
+      echo -e "\n\n"
+    fi
+  else
+    echo -e "$NEW_FILE: No corresponding file (expecting $OLD_FILE)\n\n"
+  fi
+done
+
+echo Done.

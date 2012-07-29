@@ -9,6 +9,7 @@
 package scala.collection
 
 import mutable.{ Buffer, Builder, ListBuffer, ArrayBuffer }
+import generic.CanBuildFrom
 import annotation.unchecked.{ uncheckedVariance => uV }
 import language.{implicitConversions, higherKinds}
 import reflect.ClassTag
@@ -239,17 +240,25 @@ trait TraversableOnce[+A] extends Any with GenTraversableOnce[A] {
 
   def toTraversable: Traversable[A]
 
-  def toList: List[A] = (new ListBuffer[A] ++= seq).toList
+  def toList: List[A] = to[List]
 
   def toIterable: Iterable[A] = toStream
 
   def toSeq: Seq[A] = toStream
 
-  def toIndexedSeq: immutable.IndexedSeq[A] = immutable.IndexedSeq() ++ seq
+  def toIndexedSeq: immutable.IndexedSeq[A] = to[immutable.IndexedSeq]
 
-  def toBuffer[B >: A]: mutable.Buffer[B] = new ArrayBuffer[B] ++= seq
+  def toBuffer[B >: A]: mutable.Buffer[B] = to[ArrayBuffer].asInstanceOf[mutable.Buffer[B]]
 
-  def toSet[B >: A]: immutable.Set[B] = immutable.Set() ++ seq
+  def toSet[B >: A]: immutable.Set[B] = to[immutable.Set].asInstanceOf[immutable.Set[B]]
+
+  def toVector: Vector[A] = to[Vector]
+
+  def to[Col[_]](implicit cbf: CanBuildFrom[Nothing, A, Col[A @uV]]): Col[A @uV] = {
+    val b = cbf()
+    b ++= seq
+    b.result
+  }
 
   def toMap[T, U](implicit ev: A <:< (T, U)): immutable.Map[T, U] = {
     val b = immutable.Map.newBuilder[T, U]

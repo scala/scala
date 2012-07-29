@@ -13,6 +13,7 @@ import mutable.{ Builder }
 import annotation.{tailrec, migration, bridge}
 import annotation.unchecked.{ uncheckedVariance => uV }
 import parallel.ParIterable
+import language.higherKinds
 
 /** A template trait for traversable collections of type `Traversable[A]`.
  *
@@ -616,6 +617,13 @@ trait TraversableLike[+A, +Repr] extends Any
   def toTraversable: Traversable[A] = thisCollection
   def toIterator: Iterator[A] = toStream.iterator
   def toStream: Stream[A] = toBuffer.toStream
+  // Override to provide size hint.
+  override def to[Col[_]](implicit cbf: CanBuildFrom[Nothing, A, Col[A @uV]]): Col[A @uV] = {
+    val b = cbf()
+    b.sizeHint(this)
+    b ++= thisCollection
+    b.result
+  }
 
   /** Converts this $coll to a string.
    *

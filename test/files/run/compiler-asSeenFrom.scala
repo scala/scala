@@ -107,7 +107,7 @@ package ll {
   def check(source: String, unit: global.CompilationUnit) = {
     import syms._
 
-    afterTyper {
+    exitingTyper {
       val typeArgs = List[Type](IntClass.tpe, ListClass[Int]) ++ tparams.map(_.tpe)
       permute(typeArgs) foreach println
     }

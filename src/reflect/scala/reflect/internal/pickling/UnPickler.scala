@@ -373,12 +373,7 @@ abstract class UnPickler /*extends reflect.generic.UnPickler*/ {
             NullaryMethodType(restpe)
         case EXISTENTIALtpe =>
           val restpe  = readTypeRef()
-          // @PP: Where is the flag setting supposed to happen? I infer
-          // from the lack of flag setting in the rest of the unpickler
-          // that it isn't right here. See #4757 for the immediate
-          // motivation to fix it.
-          val tparams = until(end, readSymbolRef) map (_ setFlag EXISTENTIAL)
-          newExistentialType(tparams, restpe)
+          newExistentialType(until(end, readSymbolRef), restpe)
 
         case ANNOTATEDtpe =>
           var typeRef = readNat()
@@ -818,7 +813,7 @@ abstract class UnPickler /*extends reflect.generic.UnPickler*/ {
       throw new RuntimeException("malformed Scala signature of " + classRoot.name + " at " + readIndex + "; " + msg)
 
     protected def errorMissingRequirement(name: Name, owner: Symbol): Symbol =
-      missingHook(owner, name) orElse MissingRequirementError.signal(
+      mirrorThatLoaded(owner).missingHook(owner, name) orElse MissingRequirementError.signal(
         s"bad reference while unpickling $filename: ${name.longString} not found in ${owner.tpe.widen}"
       )
 
@@ -832,8 +827,10 @@ abstract class UnPickler /*extends reflect.generic.UnPickler*/ {
      *  Similar in intent to what SymbolLoader does (but here we don't have access to
      *  error reporting, so we rely on the typechecker to report the error).
      */
-    def toTypeError(e: MissingRequirementError) =
+    def toTypeError(e: MissingRequirementError) = {
+      // e.printStackTrace()
       new TypeError(e.msg)
+    }
 
     /** A lazy type which when completed returns type at index `i`. */
     private class LazyTypeRef(i: Int) extends LazyType {
@@ -841,7 +838,7 @@ abstract class UnPickler /*extends reflect.generic.UnPickler*/ {
       private val p = phase
       override def complete(sym: Symbol) : Unit = try {
         val tp = at(i, () => readType(sym.isTerm)) // after NMT_TRANSITION, revert `() => readType(sym.isTerm)` to `readType`
-        atPhase(p) (sym setInfo tp)
+        enteringPhase(p) (sym setInfo tp)
         if (currentRunId != definedAtRunId)
           sym.setInfo(adaptToNewRunMap(tp))
       }
@@ -859,7 +856,7 @@ abstract class UnPickler /*extends reflect.generic.UnPickler*/ {
         super.complete(sym)
         var alias = at(j, readSymbol)
         if (alias.isOverloaded)
-          alias = atPhase(picklerPhase)((alias suchThat (alt => sym.tpe =:= sym.owner.thisType.memberType(alt))))
+          alias = enteringPhase(picklerPhase)((alias suchThat (alt => sym.tpe =:= sym.owner.thisType.memberType(alt))))
 
         sym.asInstanceOf[TermSymbol].setAlias(alias)
       }

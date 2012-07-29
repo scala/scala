@@ -3,7 +3,7 @@ reload: CrashOnLoad.scala
 askTypeCompletion at CrashOnLoad.scala(6,12)
 ================================================================================
 [response] aksTypeCompletion at (6,12)
-retrieved 124 members
+retrieved 126 members
 [accessible:  true] `class GroupedIteratorIterator[B]#GroupedIterator`
 [accessible:  true] `method !=(x$1: Any)Boolean`
 [accessible:  true] `method !=(x$1: AnyRef)Boolean`
@@ -109,6 +109,8 @@ retrieved 124 members
 [accessible:  true] `method toStream=> scala.collection.immutable.Stream[B]`
 [accessible:  true] `method toString()String`
 [accessible:  true] `method toTraversable=> Traversable[B]`
+[accessible:  true] `method toVector=> Vector[B]`
+[accessible:  true] `method to[Col[_]](implicit cbf: scala.collection.generic.CanBuildFrom[Nothing,B,Col[B]])Col[B]`
 [accessible:  true] `method wait()Unit`
 [accessible:  true] `method wait(x$1: Long)Unit`
 [accessible:  true] `method wait(x$1: Long, x$2: Int)Unit`

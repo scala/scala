@@ -139,7 +139,7 @@ trait JavaScanners extends ast.parser.ScannersCommon {
       kwOffset = offset
       arr
     }
-    final val tokenName = allKeywords map (_.swap) toMap
+    final val tokenName = allKeywords.map(_.swap).toMap
 
 //Token representation -----------------------------------------------------
 
@@ -778,7 +778,7 @@ trait JavaScanners extends ast.parser.ScannersCommon {
      */
     def intVal(negated: Boolean): Long = {
       if (token == CHARLIT && !negated) {
-        if (name.length > 0) name(0) else 0
+        if (name.length > 0) name.charAt(0) else 0
       } else {
         var value: Long = 0
         val divider = if (base == 10) 1 else 2
@@ -787,7 +787,7 @@ trait JavaScanners extends ast.parser.ScannersCommon {
         var i = 0
         val len = name.length
         while (i < len) {
-          val d = digit2int(name(i), base)
+          val d = digit2int(name.charAt(i), base)
           if (d < 0) {
             syntaxError("malformed integer number")
             return 0

@@ -15,15 +15,15 @@ var lastHash = "";
 
 $(document).ready(function() {
     $('body').layout({ west__size: '20%' });
-    $('#browser').layout({  
+    $('#browser').layout({
         center__paneSelector: ".ui-west-center"
         //,center__initClosed:true
         ,north__paneSelector: ".ui-west-north"
-    }); 
+    });
     $('iframe').bind("load", function(){
         var subtitle = $(this).contents().find('title').text();
         $(document).attr('title', (title ? title + " - " : "") + subtitle);
-        
+
         setUrlFragmentFromFrameSrc();
     });
 
@@ -81,16 +81,16 @@ function setUrlFragmentFromFrameSrc() {
     var commonLength = location.pathname.lastIndexOf("/");
     var frameLocation = frames["template"].location;
     var relativePath = frameLocation.pathname.slice(commonLength + 1);
-    
+
     if(!relativePath || frameLocation.pathname.indexOf("/") < 0)
       return;
-    
+
     // Add #, remove ".html" and replace "/" with "."
     fragment = "#" + relativePath.replace(/\.html$/, "").replace(/\//g, ".");
-    
+
     // Add the frame's hash after an @
     if(frameLocation.hash) fragment += ("@" + frameLocation.hash.slice(1));
-  
+
     // Use replace to not add history items
     lastFragment = fragment;
     location.replace(fragment);
@@ -109,7 +109,7 @@ var Index = {};
         if (type == 'object') {
             href = t['object'];
         } else {
-            href = t['class'] || t['trait'] || t['case class'];
+            href = t['class'] || t['trait'] || t['case class'] || t['type'];
         }
         return [
             '<a class="tplshow" target="template" href="',
@@ -142,10 +142,10 @@ var Index = {};
             inner += openLink(template, 'object');
         }
 
-        if (template['class'] || template['trait'] || template['case class']) {
+        if (template['class'] || template['trait'] || template['case class'] || template['type']) {
             inner += (inner == '') ?
                 '<div class="placeholder" />' : '</a>';
-            inner += openLink(template, template['trait'] ? 'trait' : 'class');
+            inner += openLink(template, template['trait'] ? 'trait' : template['type'] ? 'type' : 'class');
         } else {
             inner += '<div class="placeholder"/>';
         }
@@ -245,6 +245,7 @@ function configureEntityList() {
 function prepareEntityList() {
     var classIcon = $("#library > img.class");
     var traitIcon = $("#library > img.trait");
+    var typeIcon = $("#library > img.type");
     var objectIcon = $("#library > img.object");
     var packageIcon = $("#library > img.package");
 
@@ -252,6 +253,7 @@ function prepareEntityList() {
     $('#tpl li.pack').each(function () {
         $("span.class", this).each(function() { $(this).replaceWith(classIcon.clone()); });
         $("span.trait", this).each(function() { $(this).replaceWith(traitIcon.clone()); });
+        $("span.type", this).each(function() { $(this).replaceWith(typeIcon.clone()); });
         $("span.object", this).each(function() { $(this).replaceWith(objectIcon.clone()); });
         $("span.package", this).each(function() { $(this).replaceWith(packageIcon.clone()); });
     });
@@ -265,11 +267,11 @@ function keyboardScrolldownLeftPane() {
     scheduler.add("init", function() {
         $("#textfilter input").blur();
         var $items = $("#tpl li");
-        $items.first().addClass('selected');       
+        $items.first().addClass('selected');
 
         $(window).bind("keydown", function(e) {
             var $old = $items.filter('.selected'),
-                $new;    
+                $new;
 
             switch ( e.keyCode ) {
 
@@ -286,7 +288,7 @@ function keyboardScrolldownLeftPane() {
             case 27: // escape
                 $old.removeClass('selected');
                 $(window).unbind(e);
-                $("#textfilter input").focus();    
+                $("#textfilter input").focus();
 
                 break;
 
@@ -296,7 +298,7 @@ function keyboardScrolldownLeftPane() {
                 if (!$new.length) {
                     $new = $old.parent().prev();
                 }
-                
+
                 if ($new.is('ol') && $new.children(':last').is('ol')) {
                     $new = $new.children().children(':last');
                 } else if ($new.is('ol')) {
@@ -313,17 +315,17 @@ function keyboardScrolldownLeftPane() {
                 if ($new.is('ol')) {
                     $new = $new.children(':first');
                 }
-                break; 
-            } 
-            
+                break;
+            }
+
             if ($new.is('li')) {
                 $old.removeClass('selected');
-                $new.addClass('selected');  
+                $new.addClass('selected');
             } else if (e.keyCode == 38) {
                 $(window).unbind(e);
                 $("#textfilter input").focus();
             }
-        });   
+        });
     });
 }
 
@@ -342,13 +344,13 @@ function configureTextFilter() {
                 $("#template").contents().find("#mbrsel-input").focus();
                 input.attr("value", "");
                 return false;
-            } 
+            }
             if (event.keyCode == 40) { // down arrow
                 $(window).unbind("keydown");
                 keyboardScrolldownLeftPane();
                 return false;
-            }              
-            textFilter();          
+            }
+            textFilter();
         });
         input.focus(function(event) { input.select(); });
     });
@@ -419,7 +421,7 @@ function textFilter() {
         });
         configureHideFilter();
     };
-    
+
     scheduler.add('filter', searchLoop);
 }
 

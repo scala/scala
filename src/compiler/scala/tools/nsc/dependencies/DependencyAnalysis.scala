@@ -145,7 +145,7 @@ trait DependencyAnalysis extends SubComponent with Files {
           val name = d.toString
           d.symbol match {
             case s : ModuleClassSymbol =>
-              val isTopLevelModule = afterPickler { !s.isImplClass && !s.isNestedClass }
+              val isTopLevelModule = exitingPickler { !s.isImplClass && !s.isNestedClass }
 
               if (isTopLevelModule && (s.companionModule != NoSymbol)) {
                 dependencies.emits(source, nameToFile(unit.source.file, name))
@@ -183,7 +183,7 @@ trait DependencyAnalysis extends SubComponent with Files {
             // was "at uncurryPhase.prev", which is actually non-deterministic
             // because the continuations plugin may or may not supply uncurry's
             // immediately preceding phase.
-            beforeRefchecks(checkType(tree.symbol.tpe))
+            enteringRefchecks(checkType(tree.symbol.tpe))
           }
 
           tree match {
@@ -191,7 +191,7 @@ trait DependencyAnalysis extends SubComponent with Files {
                                    !cdef.symbol.isAnonymousFunction =>
               if (cdef.symbol != NoSymbol) buf += cdef.symbol
               // was "at erasurePhase.prev"
-              beforeExplicitOuter {
+              enteringExplicitOuter {
                 for (s <- cdef.symbol.info.decls)
                   s match {
                     case ts: TypeSymbol if !ts.isClass =>
@@ -203,7 +203,7 @@ trait DependencyAnalysis extends SubComponent with Files {
 
             case ddef: DefDef =>
               // was "at typer.prev"
-              beforeTyper { checkType(ddef.symbol.tpe) }
+              enteringTyper { checkType(ddef.symbol.tpe) }
               super.traverse(tree)
             case a @ Select(q, n) if ((a.symbol != NoSymbol) && (q.symbol != null)) => // #2556
               if (!a.symbol.isConstructor &&

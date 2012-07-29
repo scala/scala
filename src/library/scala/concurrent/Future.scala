@@ -8,25 +8,23 @@
 
 package scala.concurrent
 
-
+import language.higherKinds
 
 import java.util.concurrent.{ ConcurrentLinkedQueue, TimeUnit, Callable }
 import java.util.concurrent.TimeUnit.{ NANOSECONDS => NANOS, MILLISECONDS ⇒ MILLIS }
 import java.lang.{ Iterable => JIterable }
 import java.util.{ LinkedList => JLinkedList }
-import java.{ lang => jl }
 import java.util.concurrent.atomic.{ AtomicReferenceFieldUpdater, AtomicInteger, AtomicBoolean }
 
 import scala.concurrent.util.Duration
-import scala.concurrent.impl.NonFatal
+import scala.util.control.NonFatal
 import scala.Option
+import scala.util.{Try, Success, Failure}
 
 import scala.annotation.tailrec
-import scala.collection.mutable.Stack
 import scala.collection.mutable.Builder
 import scala.collection.generic.CanBuildFrom
 import scala.reflect.ClassTag
-import language.higherKinds
 
 
 
@@ -137,7 +135,7 @@ trait Future[+T] extends Awaitable[T] {
    *  $callbackInContext
    */
   def onFailure[U](callback: PartialFunction[Throwable, U])(implicit executor: ExecutionContext): Unit = onComplete {
-    case Left(t) if (isFutureThrowable(t) && callback.isDefinedAt(t)) => callback(t)
+    case Left(t) if NonFatal(t) && callback.isDefinedAt(t) => callback(t)
     case _ =>
   }(executor)
 
@@ -566,19 +564,31 @@ trait Future[+T] extends Awaitable[T] {
  */
 object Future {
   
-  import java.{ lang => jl }
-  
   private[concurrent] val toBoxed = Map[Class[_], Class[_]](
-    classOf[Boolean] -> classOf[jl.Boolean],
-    classOf[Byte]    -> classOf[jl.Byte],
-    classOf[Char]    -> classOf[jl.Character],
-    classOf[Short]   -> classOf[jl.Short],
-    classOf[Int]     -> classOf[jl.Integer],
-    classOf[Long]    -> classOf[jl.Long],
-    classOf[Float]   -> classOf[jl.Float],
-    classOf[Double]  -> classOf[jl.Double],
+    classOf[Boolean] -> classOf[java.lang.Boolean],
+    classOf[Byte]    -> classOf[java.lang.Byte],
+    classOf[Char]    -> classOf[java.lang.Character],
+    classOf[Short]   -> classOf[java.lang.Short],
+    classOf[Int]     -> classOf[java.lang.Integer],
+    classOf[Long]    -> classOf[java.lang.Long],
+    classOf[Float]   -> classOf[java.lang.Float],
+    classOf[Double]  -> classOf[java.lang.Double],
     classOf[Unit]    -> classOf[scala.runtime.BoxedUnit]
   )
+
+  /** Creates an already completed Future with the specified exception.
+   *  
+   *  @tparam T       the type of the value in the future
+   *  @return         the newly created `Future` object
+   */
+  def failed[T](exception: Throwable): Future[T] = Promise.failed(exception).future
+
+  /** Creates an already completed Future with the specified result.
+   *  
+   *  @tparam T       the type of the value in the future
+   *  @return         the newly created `Future` object
+   */
+  def successful[T](result: T): Future[T] = Promise.successful(result).future
   
   /** Starts an asynchronous computation and returns a `Future` object with the result of that computation.
   *
@@ -590,9 +600,6 @@ object Future {
   *  @return         the `Future` holding the result of the computation
   */
   def apply[T](body: =>T)(implicit execctx: ExecutionContext): Future[T] = impl.Future(body)
-
-  import scala.collection.mutable.Builder
-  import scala.collection.generic.CanBuildFrom
 
   /** Simple version of `Futures.traverse`. Transforms a `TraversableOnce[Future[A]]` into a `Future[TraversableOnce[A]]`.
    *  Useful for reducing many `Future`s into a single `Future`.
@@ -700,14 +707,19 @@ object Future {
   // doesn't need to create defaultExecutionContext as
   // a side effect.
   private[concurrent] object InternalCallbackExecutor extends ExecutionContext {
-    def execute(runnable: Runnable): Unit =
+    override def execute(runnable: Runnable): Unit =
       runnable.run()
-    def internalBlockingCall[T](awaitable: Awaitable[T], atMost: Duration): T =
-      throw new IllegalStateException("bug in scala.concurrent, called blocking() from internal callback")
-    def reportFailure(t: Throwable): Unit =
+    override def reportFailure(t: Throwable): Unit =
       throw new IllegalStateException("problem in scala.concurrent internal callback", t)
   }
 }
 
-
+/** A marker indicating that a `java.lang.Runnable` provided to `scala.concurrent.ExecutionContext`
+ * wraps a callback provided to `Future.onComplete`.
+ * All callbacks provided to a `Future` end up going through `onComplete`, so this allows an
+ * `ExecutionContext` to special-case callbacks that were executed by `Future` if desired.
+ */
+trait OnCompleteRunnable {
+  self: Runnable =>
+}
 

@@ -15,6 +15,7 @@ import language.implicitConversions
  *
  *  @author Philipp Haller
  */
+@deprecated("Use `ExecutionContext` instead.", "2.10.0")
 class ThreadRunner extends FutureTaskRunner {
 
   type Task[T] = () => T
@@ -47,6 +48,7 @@ class ThreadRunner extends FutureTaskRunner {
     () => result.get.fold[S](throw _, identity _)
   }
 
+  @deprecated("Use `blocking` instead.", "2.10.0")
   def managedBlock(blocker: ManagedBlocker) {
     blocker.block()
   }

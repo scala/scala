@@ -14,7 +14,7 @@ import util.returning
 abstract class TreeCheckers extends Analyzer {
   import global._
 
-  private def classstr(x: AnyRef) = x.getClass.getName split """\\.|\\$""" last;
+  private def classstr(x: AnyRef) = (x.getClass.getName split """\\.|\\$""").last
   private def typestr(x: Type)    = " (tpe = " + x + ")"
   private def treestr(t: Tree)    = t + " [" + classstr(t) + "]" + typestr(t.tpe)
   private def ownerstr(s: Symbol) = "'" + s + "'" + s.locationString
@@ -129,7 +129,7 @@ abstract class TreeCheckers extends Analyzer {
 
   private def wrap[T](msg: => Any)(body: => Unit) {
     try body
-    catch { case x =>
+    catch { case x: Throwable =>
       Console.println("Caught " + x)
       Console.println(msg)
       x.printStackTrace

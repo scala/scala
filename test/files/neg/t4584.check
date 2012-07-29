@@ -1,4 +1,7 @@
-t4584.scala:1: error: incomplete unicode escape
+t4584.scala:1: error: error in unicode escape
+class A { val /u2
+                 ^
+t4584.scala:1: error: illegal character '/uffff'
 class A { val /u2
                 ^
-one error found
+two errors found

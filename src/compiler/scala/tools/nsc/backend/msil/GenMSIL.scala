@@ -45,8 +45,8 @@ abstract class GenMSIL extends SubComponent {
 
       //classes is ICodes.classes, a HashMap[Symbol, IClass]
       classes.values foreach codeGenerator.findEntryPoint
-      if( opt.showClass.isDefined && (codeGenerator.entryPoint == null) ) { // TODO introduce dedicated setting instead
-        val entryclass = opt.showClass.get.toString
+      if( settings.Xshowcls.isSetByUser && (codeGenerator.entryPoint == null) ) { // TODO introduce dedicated setting instead
+        val entryclass = settings.Xshowcls.value.toString
         warning("Couldn't find entry class " + entryclass)
       }
 
@@ -1126,7 +1126,7 @@ abstract class GenMSIL extends SubComponent {
               }
 
               // method: implicit view(FunctionX[PType0, PType1, ...,PTypeN, ResType]):DelegateType
-              val (isDelegateView, paramType, resType) = beforeTyper {
+              val (isDelegateView, paramType, resType) = enteringTyper {
                 msym.tpe match {
                   case MethodType(params, resultType)
                   if (params.length == 1 && msym.name == nme.view_) =>
@@ -1731,8 +1731,8 @@ abstract class GenMSIL extends SubComponent {
         false
       }
 
-      if((entryPoint == null) && opt.showClass.isDefined) {  // TODO introduce dedicated setting instead
-        val entryclass = opt.showClass.get.toString
+      if((entryPoint == null) && settings.Xshowcls.isSetByUser) {  // TODO introduce dedicated setting instead
+        val entryclass = settings.Xshowcls.value.toString
         val cfn = cls.symbol.fullName
         if(cfn == entryclass) {
           for (m <- cls.methods; if isEntryPoint(m.symbol)) { entryPoint = m.symbol }
@@ -1955,7 +1955,7 @@ abstract class GenMSIL extends SubComponent {
     } // createClassMembers0
 
     private def isTopLevelModule(sym: Symbol): Boolean =
-      beforeRefchecks {
+      enteringRefchecks {
         sym.isModuleClass && !sym.isImplClass && !sym.isNestedClass
       }
 

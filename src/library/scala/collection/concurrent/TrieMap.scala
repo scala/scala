@@ -188,7 +188,7 @@ private[collection] final class INode[K, V](bn: MainNode[K, V], g: Gen) extends 
                 if (sn.hc == hc && equal(sn.k, k, ct)) {
                   if (GCAS(cn, cn.updatedAt(pos, new SNode(k, v, hc), gen), ct)) Some(sn.v) else null
                 } else None
-              case otherv: V =>
+              case otherv =>
                 if (sn.hc == hc && equal(sn.k, k, ct) && sn.v == otherv) {
                   if (GCAS(cn, cn.updatedAt(pos, new SNode(k, v, hc), gen), ct)) Some(sn.v) else null
                 } else None
@@ -200,7 +200,7 @@ private[collection] final class INode[K, V](bn: MainNode[K, V], g: Gen) extends 
             val ncnode = rn.insertedAt(pos, flag, new SNode(k, v, hc), gen)
             if (GCAS(cn, ncnode, ct)) None else null
           case INode.KEY_PRESENT => None
-          case otherv: V => None
+          case otherv => None
         }
       case sn: TNode[K, V] =>
         clean(parent, ct, lev - 5)
@@ -224,9 +224,9 @@ private[collection] final class INode[K, V](bn: MainNode[K, V], g: Gen) extends 
               case Some(v0) => if (insertln()) Some(v0) else null
               case None => None
             }
-          case otherv: V =>
+          case otherv =>
             ln.get(k) match {
-              case Some(v0) if v0 == otherv => if (insertln()) Some(otherv) else null
+              case Some(v0) if v0 == otherv => if (insertln()) Some(otherv.asInstanceOf[V]) else null
               case _ => None
             }
         }
@@ -473,7 +473,11 @@ extends CNodeBase[K, V] {
   private def computeSize(ct: TrieMap[K, V]): Int = {
     var i = 0
     var sz = 0
-    val offset = math.abs(util.Random.nextInt()) % array.length
+    val offset =
+      if (array.length > 0)
+        //util.Random.nextInt(array.length) /* <-- benchmarks show that this causes observable contention */
+        scala.concurrent.forkjoin.ThreadLocalRandom.current.nextInt(0, array.length)
+      else 0
     while (i < array.length) {
       val pos = (i + offset) % array.length
       array(pos) match {

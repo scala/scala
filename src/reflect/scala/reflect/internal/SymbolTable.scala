@@ -28,7 +28,7 @@ abstract class SymbolTable extends makro.Universe
                               with AnnotationInfos
                               with AnnotationCheckers
                               with Trees
-                              with TreePrinters
+                              with Printers
                               with Positions
                               with TypeDebugging
                               with Importers
@@ -40,7 +40,7 @@ abstract class SymbolTable extends makro.Universe
 {
 
   val gen = new TreeGen { val global: SymbolTable.this.type = SymbolTable.this }
-  val treeBuild = gen
+  lazy val treeBuild = gen
 
   def log(msg: => AnyRef): Unit
   def abort(msg: String): Nothing = throw new FatalError(supplementErrorMessage(msg))
@@ -127,13 +127,17 @@ abstract class SymbolTable extends makro.Universe
   type RunId = Int
   final val NoRunId = 0
 
-  // sigh, this has to be public or atPhase doesn't inline.
+  // sigh, this has to be public or enteringPhase doesn't inline.
   var phStack: List[Phase] = Nil
-  private var ph: Phase = NoPhase
-  private var per = NoPeriod
+  private[this] var ph: Phase = NoPhase
+  private[this] var per = NoPeriod
 
   final def atPhaseStack: List[Phase] = phStack
-  final def phase: Phase = ph
+  final def phase: Phase = {
+    if (Statistics.hotEnabled)
+      Statistics.incCounter(SymbolTableStats.phaseCounter)
+    ph
+  }
 
   def atPhaseStackMessage = atPhaseStack match {
     case Nil    => ""
@@ -186,23 +190,17 @@ abstract class SymbolTable extends makro.Universe
     p != NoPhase && phase.id > p.id
 
   /** Perform given operation at given phase. */
-  @inline final def atPhase[T](ph: Phase)(op: => T): T = {
+  @inline final def enteringPhase[T](ph: Phase)(op: => T): T = {
     val saved = pushPhase(ph)
     try op
     finally popPhase(saved)
   }
 
+  @inline final def exitingPhase[T](ph: Phase)(op: => T): T = enteringPhase(ph.next)(op)
+  @inline final def enteringPrevPhase[T](op: => T): T       = enteringPhase(phase.prev)(op)
 
-  /** Since when it is to be "at" a phase is inherently ambiguous,
-   *  a couple unambiguously named methods.
-   */
-  @inline final def beforePhase[T](ph: Phase)(op: => T): T = atPhase(ph)(op)
-  @inline final def afterPhase[T](ph: Phase)(op: => T): T  = atPhase(ph.next)(op)
-  @inline final def afterCurrentPhase[T](op: => T): T      = atPhase(phase.next)(op)
-  @inline final def beforePrevPhase[T](op: => T): T        = atPhase(phase.prev)(op)
-
-  @inline final def atPhaseNotLaterThan[T](target: Phase)(op: => T): T =
-    if (isAtPhaseAfter(target)) atPhase(target)(op) else op
+  @inline final def enteringPhaseNotLaterThan[T](target: Phase)(op: => T): T =
+    if (isAtPhaseAfter(target)) enteringPhase(target)(op) else op
 
   final def isValid(period: Period): Boolean =
     period != 0 && runId(period) == currentRunId && {
@@ -329,4 +327,13 @@ abstract class SymbolTable extends makro.Universe
   /** Is this symbol table a part of a compiler universe?
    */
   def isCompilerUniverse = false
+
+  @deprecated("Use enteringPhase", "2.10.0")
+  @inline final def atPhase[T](ph: Phase)(op: => T): T = enteringPhase(ph)(op)
+  @deprecated("Use enteringPhaseNotLaterThan", "2.10.0")
+  @inline final def atPhaseNotLaterThan[T](target: Phase)(op: => T): T = enteringPhaseNotLaterThan(target)(op)
+}
+
+object SymbolTableStats {
+  val phaseCounter = Statistics.newCounter("#phase calls")
 }

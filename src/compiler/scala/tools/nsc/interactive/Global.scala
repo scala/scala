@@ -485,8 +485,8 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "")
       } catch {
         case ex: FreshRunReq => throw ex           // propagate a new run request
         case ShutdownReq     => throw ShutdownReq  // propagate a shutdown request
-
-        case ex =>
+        case ex: ControlThrowable => throw ex
+        case ex: Throwable =>
           println("[%s]: exception during background compile: ".format(unit.source) + ex)
           ex.printStackTrace()
           for (r <- waitLoadedTypeResponses(unit.source)) {
@@ -627,7 +627,7 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "")
         response raise ex
         throw ex
 
-      case ex =>
+      case ex: Throwable =>
         if (debugIDE) {
           println("exception thrown during response: "+ex)
           ex.printStackTrace()
@@ -755,7 +755,9 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "")
             val tp1 = pre.memberType(alt) onTypeError NoType
             val tp2 = adaptToNewRunMap(sym.tpe) substSym (originalTypeParams, sym.owner.typeParams)
             matchesType(tp1, tp2, false)
-          } catch {
+          }
+          catch {
+            case ex: ControlThrowable => throw ex
             case ex: Throwable =>
               println("error in hyperlinking: " + ex)
               ex.printStackTrace()
@@ -1064,7 +1066,7 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "")
      *  @return true iff typechecked correctly
      */
     private def applyPhase(phase: Phase, unit: CompilationUnit) {
-      atPhase(phase) { phase.asInstanceOf[GlobalPhase] applyPhase unit }
+      enteringPhase(phase) { phase.asInstanceOf[GlobalPhase] applyPhase unit }
     }
   }
 

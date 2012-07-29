@@ -4,17 +4,6 @@ package base
 import scala.runtime.ScalaRunTime._
 
 trait TagInterop { self: Universe =>
-  def classTagToClassManifest[T](tag: ClassTag[T]): ClassManifest[T] = {
-    val runtimeClass = tag.runtimeClass
-    if (runtimeClass.isArray) {
-      val elementClass = arrayElementClass(runtimeClass)
-      val elementManifest = classTagToClassManifest(ClassTag(elementClass))
-      ClassManifest.arrayType(elementManifest).asInstanceOf[ClassManifest[T]]
-    } else {
-      ClassManifest.fromClass(runtimeClass.asInstanceOf[Class[T]])
-    }
-  }
-
   // [Eugene++] `mirror` parameters are now of type `Any`, because I can't make these path-dependent types work
   // if you're brave enough, replace `Any` with `Mirror`, recompile and run interop_typetags_are_manifests.scala
 

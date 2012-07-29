@@ -119,7 +119,7 @@ abstract class RefChecks extends InfoTransform with reflect.internal.transform.R
       // those with the DEFAULTPARAM flag, and infer the methods. Looking for the methods
       // directly requires inspecting the parameter list of every one. That modification
       // shaved 95% off the time spent in this method.
-      val defaultGetters     = clazz.info.findMember(nme.ANYNAME, 0L, DEFAULTPARAM, false).alternatives
+      val defaultGetters     = clazz.info.findMembers(0L, DEFAULTPARAM)
       val defaultMethodNames = defaultGetters map (sym => nme.defaultGetterToMethod(sym.name))
 
       defaultMethodNames.distinct foreach { name =>
@@ -172,7 +172,7 @@ abstract class RefChecks extends InfoTransform with reflect.internal.transform.R
         def varargBridge(member: Symbol, bridgetpe: Type): Tree = {
           log("Generating varargs bridge for " + member.fullLocationString + " of type " + bridgetpe)
 
-          val bridge = member.cloneSymbolImpl(clazz, member.flags | VBRIDGE) setPos clazz.pos
+          val bridge = member.cloneSymbolImpl(clazz, member.flags | VBRIDGE | HIDDEN) setPos clazz.pos
           bridge.setInfo(bridgetpe.cloneInfo(bridge))
           clazz.info.decls enter bridge
 
@@ -536,20 +536,20 @@ abstract class RefChecks extends InfoTransform with reflect.internal.transform.R
 
         def javaErasedOverridingSym(sym: Symbol): Symbol =
           clazz.tpe.nonPrivateMemberAdmitting(sym.name, BRIDGE).filter(other =>
-            !other.isDeferred && other.isJavaDefined && {
+            !other.isDeferred && other.isJavaDefined && !sym.enclClass.isSubClass(other.enclClass) && {
               // #3622: erasure operates on uncurried types --
               // note on passing sym in both cases: only sym.isType is relevant for uncurry.transformInfo
               // !!! erasure.erasure(sym, uncurry.transformInfo(sym, tp)) gives erreneous of inaccessible type - check whether that's still the case!
               def uncurryAndErase(tp: Type) = erasure.erasure(sym)(uncurry.transformInfo(sym, tp))
               val tp1 = uncurryAndErase(clazz.thisType.memberType(sym))
               val tp2 = uncurryAndErase(clazz.thisType.memberType(other))
-              afterErasure(tp1 matches tp2)
+              exitingErasure(tp1 matches tp2)
             })
 
         def ignoreDeferred(member: Symbol) = (
           (member.isAbstractType && !member.isFBounded) || (
             member.isJavaDefined &&
-            // the test requires afterErasure so shouldn't be
+            // the test requires exitingErasure so shouldn't be
             // done if the compiler has no erasure phase available
             (currentRun.erasurePhase == NoPhase || javaErasedOverridingSym(member) != NoSymbol)
           )
@@ -766,7 +766,16 @@ abstract class RefChecks extends InfoTransform with reflect.internal.transform.R
       for (member <- clazz.info.decls)
         if (member.isAnyOverride && !(clazz.thisType.baseClasses exists (hasMatchingSym(_, member)))) {
           // for (bc <- clazz.info.baseClasses.tail) Console.println("" + bc + " has " + bc.info.decl(member.name) + ":" + bc.info.decl(member.name).tpe);//DEBUG
-          unit.error(member.pos, member.toString() + " overrides nothing");
+
+          val nonMatching: List[Symbol] = clazz.info.member(member.name).alternatives.filterNot(_.owner == clazz).filterNot(_.isFinal)
+          def issueError(suffix: String) = unit.error(member.pos, member.toString() + " overrides nothing" + suffix);
+          nonMatching match {
+            case Nil =>
+              issueError("")
+            case ms =>
+              val superSigs = ms.map(m => m.defStringSeenAs(clazz.tpe memberType m)).mkString("\n")
+              issueError(s".\nNote: the super classes of ${member.owner} contain the following, non final members named ${member.name}:\n${superSigs}")
+          }
           member resetFlag (OVERRIDE | ABSOVERRIDE)  // Any Override
         }
     }
@@ -1141,7 +1150,7 @@ abstract class RefChecks extends InfoTransform with reflect.internal.transform.R
             nonSensiblyNew()
           else if (isNew(args.head) && (receiver.isEffectivelyFinal || isReferenceOp))   // object X ; X == new Y
             nonSensiblyNew()
-          else if (receiver.isEffectivelyFinal && !(receiver isSubClass actual)) {  // object X, Y; X == Y
+          else if (receiver.isEffectivelyFinal && !(receiver isSubClass actual) && !actual.isRefinementClass) {  // object X, Y; X == Y
             if (isEitherNullable)
               nonSensible("non-null ", false)
             else
@@ -1230,7 +1239,7 @@ abstract class RefChecks extends InfoTransform with reflect.internal.transform.R
           case vsym     => ValDef(vsym)
         }
       }
-      def createStaticModuleAccessor() = afterRefchecks {
+      def createStaticModuleAccessor() = exitingRefchecks {
         val method = (
           sym.owner.newMethod(sym.name.toTermName, sym.pos, (sym.flags | STABLE) & ~MODULE)
             setInfoAndEnter NullaryMethodType(sym.moduleClass.tpe)
@@ -1241,7 +1250,7 @@ abstract class RefChecks extends InfoTransform with reflect.internal.transform.R
         vdef,
         localTyper.typedPos(tree.pos) {
           val vsym = vdef.symbol
-          afterRefchecks {
+          exitingRefchecks {
             val rhs  = gen.newModule(sym, vsym.tpe)
             val body = if (sym.owner.isTrait) rhs else gen.mkAssignAndReturn(vsym, rhs)
             DefDef(sym, body.changeOwner(vsym -> sym))
@@ -1282,7 +1291,7 @@ abstract class RefChecks extends InfoTransform with reflect.internal.transform.R
       if (hasUnitType) List(typed(lazyDef))
       else List(
         typed(ValDef(vsym)),
-        afterRefchecks(typed(lazyDef))
+        exitingRefchecks(typed(lazyDef))
       )
     }
 

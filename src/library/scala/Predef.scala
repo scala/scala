@@ -100,11 +100,19 @@ object Predef extends LowPriorityImplicits {
   // def AnyRef = scala.AnyRef
 
   // Manifest types, companions, and incantations for summoning
+  @annotation.implicitNotFound(msg = "No ClassManifest available for ${T}.")
+  @deprecated("Use scala.reflect.ClassTag instead", "2.10.0")
   type ClassManifest[T] = scala.reflect.ClassManifest[T]
+  @deprecated("This notion doesn't have a corresponding concept in 2.10, because scala.reflect.runtime.universe.TypeTag can capture arbitrary types. Use type tags instead of manifests, and there will be no need in opt manifests.", "2.10.0")
   type OptManifest[T]   = scala.reflect.OptManifest[T]
+  @annotation.implicitNotFound(msg = "No Manifest available for ${T}.")
+  @deprecated("Use scala.reflect.ClassTag (to capture erasures) or scala.reflect.runtime.universe.TypeTag (to capture types) or both instead", "2.10.0")
   type Manifest[T]      = scala.reflect.Manifest[T]
+  @deprecated("Use scala.reflect.ClassTag instead", "2.10.0")
   val ClassManifest     = scala.reflect.ClassManifest
+  @deprecated("Use scala.reflect.ClassTag (to capture erasures) or scala.reflect.runtime.universe.TypeTag (to capture types) or both instead", "2.10.0")
   val Manifest          = scala.reflect.Manifest
+  @deprecated("This notion doesn't have a corresponding concept in 2.10, because scala.reflect.runtime.universe.TypeTag can capture arbitrary types. Use type tags instead of manifests, and there will be no need in opt manifests.", "2.10.0")
   val NoManifest        = scala.reflect.NoManifest
 
   def manifest[T](implicit m: Manifest[T])           = m
@@ -121,16 +129,16 @@ object Predef extends LowPriorityImplicits {
 
   // Deprecated
 
-  @deprecated("Use sys.error(message) instead", "2.9.0")
+  @deprecated("Use `sys.error(message)` instead", "2.9.0")
   def error(message: String): Nothing = sys.error(message)
 
-  @deprecated("Use sys.exit() instead", "2.9.0")
+  @deprecated("Use `sys.exit()` instead", "2.9.0")
   def exit(): Nothing = sys.exit()
 
-  @deprecated("Use sys.exit(status) instead", "2.9.0")
+  @deprecated("Use `sys.exit(status)` instead", "2.9.0")
   def exit(status: Int): Nothing = sys.exit(status)
 
-  @deprecated("Use formatString.format(args: _*) or arg.formatted(formatString) instead", "2.9.0")
+  @deprecated("Use `formatString.format(args: _*)` or `arg.formatted(formatString)` instead", "2.9.0")
   def format(text: String, xs: Any*) = augmentString(text).format(xs: _*)
 
   // errors and asserts -------------------------------------------------
@@ -219,7 +227,7 @@ object Predef extends LowPriorityImplicits {
   final class Ensuring[A](val __resultOfEnsuring: A) extends AnyVal {
     // `__resultOfEnsuring` must be a public val to allow inlining.
     // See comments in ArrowAssoc for more.
-    @deprecated("Use __resultOfEnsuring instead", "2.10.0")
+    @deprecated("Use `__resultOfEnsuring` instead", "2.10.0")
     def x = __resultOfEnsuring
 
     def ensuring(cond: Boolean): A = { assert(cond); __resultOfEnsuring }
@@ -255,7 +263,7 @@ object Predef extends LowPriorityImplicits {
     // being confused why they get an ambiguous implicit conversion
     // error. (`foo.x` used to produce this error since both
     // any2Ensuring and any2ArrowAssoc pimped an `x` onto everything)
-    @deprecated("Use __leftOfArrow instead", "2.10.0")
+    @deprecated("Use `__leftOfArrow` instead", "2.10.0")
     def x = __leftOfArrow
 
     @inline def -> [B](y: B): Tuple2[A, B] = Tuple2(__leftOfArrow, y)
@@ -320,30 +328,30 @@ object Predef extends LowPriorityImplicits {
 
   // Primitive Widenings --------------------------------------------------------------
 
-  @deprecated("Use a method in an AnyVal's companion object", "2.10.0") def byte2short(x: Byte): Short = x.toShort
-  @deprecated("Use a method in an AnyVal's companion object", "2.10.0") def byte2int(x: Byte): Int = x.toInt
-  @deprecated("Use a method in an AnyVal's companion object", "2.10.0") def byte2long(x: Byte): Long = x.toLong
-  @deprecated("Use a method in an AnyVal's companion object", "2.10.0") def byte2float(x: Byte): Float = x.toFloat
-  @deprecated("Use a method in an AnyVal's companion object", "2.10.0") def byte2double(x: Byte): Double = x.toDouble
+  @deprecated("Use `.toShort` for explicit conversion and `Byte.byte2short` for implicit conversion", "2.10.0") def byte2short(x: Byte): Short = x.toShort
+  @deprecated("Use `.toInt` for explicit conversion and `Byte.byte2int` for implicit conversion", "2.10.0") def byte2int(x: Byte): Int = x.toInt
+  @deprecated("Use `.toLong` for explicit conversion and `Byte.byte2long for implicit conversion", "2.10.0") def byte2long(x: Byte): Long = x.toLong
+  @deprecated("Use `.toFloat` for explicit conversion and `Byte.byte2float` for implicit conversion", "2.10.0") def byte2float(x: Byte): Float = x.toFloat
+  @deprecated("Use `.toDouble` for explicit conversion and `Byte.byte2double` for implicit conversion", "2.10.0") def byte2double(x: Byte): Double = x.toDouble
 
-  @deprecated("Use a method in an AnyVal's companion object", "2.10.0") def short2int(x: Short): Int = x.toInt
-  @deprecated("Use a method in an AnyVal's companion object", "2.10.0") def short2long(x: Short): Long = x.toLong
-  @deprecated("Use a method in an AnyVal's companion object", "2.10.0") def short2float(x: Short): Float = x.toFloat
-  @deprecated("Use a method in an AnyVal's companion object", "2.10.0") def short2double(x: Short): Double = x.toDouble
+  @deprecated("Use `.toInt` for explicit conversion and `Short.short2int` for implicit conversion", "2.10.0") def short2int(x: Short): Int = x.toInt
+  @deprecated("Use `.toLong` for explicit conversion and `Short.short2long` for implicit conversion", "2.10.0") def short2long(x: Short): Long = x.toLong
+  @deprecated("Use `.toFloat` for explicit conversion and `Short.short2float` for implicit conversion", "2.10.0") def short2float(x: Short): Float = x.toFloat
+  @deprecated("Use `.toDouble` for explicit conversion and `Short.short2double` for implicit conversion", "2.10.0") def short2double(x: Short): Double = x.toDouble
 
-  @deprecated("Use a method in an AnyVal's companion object", "2.10.0") def char2int(x: Char): Int = x.toInt
-  @deprecated("Use a method in an AnyVal's companion object", "2.10.0") def char2long(x: Char): Long = x.toLong
-  @deprecated("Use a method in an AnyVal's companion object", "2.10.0") def char2float(x: Char): Float = x.toFloat
-  @deprecated("Use a method in an AnyVal's companion object", "2.10.0") def char2double(x: Char): Double = x.toDouble
+  @deprecated("Use `.toInt` for explicit conversion and `Char.char2int` for implicit conversion", "2.10.0") def char2int(x: Char): Int = x.toInt
+  @deprecated("Use `.toLong` for explicit conversion and `Char.char2long` for implicit conversion", "2.10.0") def char2long(x: Char): Long = x.toLong
+  @deprecated("Use `.toFloat` for explicit conversion and `Char.char2float` for implicit conversion", "2.10.0") def char2float(x: Char): Float = x.toFloat
+  @deprecated("Use `.toDouble` for explicit conversion and `Char.char2double` for implicit conversion", "2.10.0") def char2double(x: Char): Double = x.toDouble
 
-  @deprecated("Use a method in an AnyVal's companion object", "2.10.0") def int2long(x: Int): Long = x.toLong
-  @deprecated("Use a method in an AnyVal's companion object", "2.10.0") def int2float(x: Int): Float = x.toFloat
-  @deprecated("Use a method in an AnyVal's companion object", "2.10.0") def int2double(x: Int): Double = x.toDouble
+  @deprecated("Use `.toLong` for explicit conversion and `Int.int2long` for implicit conversion", "2.10.0") def int2long(x: Int): Long = x.toLong
+  @deprecated("Use `.toFloat` for explicit conversion and `Int.int2float` for implicit conversion", "2.10.0") def int2float(x: Int): Float = x.toFloat
+  @deprecated("Use `.toDouble` for explicit conversion and `Int.int2double` for implicit conversion", "2.10.0") def int2double(x: Int): Double = x.toDouble
 
-  @deprecated("Use a method in an AnyVal's companion object", "2.10.0") def long2float(x: Long): Float = x.toFloat
-  @deprecated("Use a method in an AnyVal's companion object", "2.10.0") def long2double(x: Long): Double = x.toDouble
+  @deprecated("Use `.toFloat` for explicit conversion and `Long.long2float` for implicit conversion", "2.10.0") def long2float(x: Long): Float = x.toFloat
+  @deprecated("Use `.toDouble` for explicit conversion and `Long.long2double` for implicit conversion", "2.10.0") def long2double(x: Long): Double = x.toDouble
 
-  @deprecated("Use a method in an AnyVal's companion object", "2.10.0") def float2double(x: Float): Double = x.toDouble
+  @deprecated("Use `.toDouble` for explicit conversion and `Float.float2double` for implicit conversion", "2.10.0") def float2double(x: Float): Double = x.toDouble
 
   // "Autoboxing" and "Autounboxing" ---------------------------------------------------
 
@@ -385,7 +393,7 @@ object Predef extends LowPriorityImplicits {
   implicit def any2stringadd(x: Any) = new runtime.StringAdd(x)
   implicit def unaugmentString(x: StringOps): String = x.repr
 
-  @deprecated("Use StringCanBuildFrom", "2.10.0")
+  @deprecated("Use `StringCanBuildFrom`", "2.10.0")
   def stringCanBuildFrom: CanBuildFrom[String, Char, String] = StringCanBuildFrom
 
   implicit val StringCanBuildFrom: CanBuildFrom[String, Char, String] = new CanBuildFrom[String, Char, String] {

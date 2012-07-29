@@ -12,7 +12,7 @@ object Test {
     fatal[Int]
     cpsIntStringInt
   } catch {
-    case ex =>
+    case ex: Throwable =>
       cpsIntStringInt
   }
 
@@ -20,7 +20,7 @@ object Test {
     fatal[Int]
     cpsIntStringInt
   } catch {
-    case ex =>
+    case ex: Throwable =>
       cpsIntStringInt
   }
 

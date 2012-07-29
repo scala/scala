@@ -1,0 +1,31 @@
+t5856.scala:10: error: invalid string interpolation: `$$', `$'ident or `$'BlockExpr expected
+  val s9 = s"$"
+            ^
+t5856.scala:10: error: unclosed string literal
+  val s9 = s"$"
+              ^
+t5856.scala:2: error: error in interpolated string: identifier or block expected
+  val s1 = s"$null"
+              ^
+t5856.scala:3: error: error in interpolated string: identifier or block expected
+  val s2 = s"$false"
+              ^
+t5856.scala:4: error: error in interpolated string: identifier or block expected
+  val s3 = s"$true"
+              ^
+t5856.scala:5: error: error in interpolated string: identifier or block expected
+  val s4 = s"$yield"
+              ^
+t5856.scala:6: error: error in interpolated string: identifier or block expected
+  val s5 = s"$return"
+              ^
+t5856.scala:7: error: error in interpolated string: identifier or block expected
+  val s6 = s"$new"
+              ^
+t5856.scala:8: error: error in interpolated string: identifier or block expected
+  val s7 = s"$s1 $null $super"
+                  ^
+t5856.scala:9: error: error in interpolated string: identifier or block expected
+  val s8 = s"$super"
+              ^
+10 errors found

@@ -28,7 +28,7 @@ import typechecker.Analyzer
 import language.implicitConversions
 import scala.reflect.runtime.{ universe => ru }
 import scala.reflect.{ ClassTag, classTag }
-import scala.tools.reflect.StdTags._
+import scala.tools.reflect.StdRuntimeTags._
 
 /** directory to save .class files to */
 private class ReplVirtualDirectory(out: JPrintWriter) extends VirtualDirectory("(memory)", None) {
@@ -751,7 +751,7 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
 
     private def load(path: String): Class[_] = {
       try Class.forName(path, true, classLoader)
-      catch { case ex => evalError(path, unwrap(ex)) }
+      catch { case ex: Throwable => evalError(path, unwrap(ex)) }
     }
 
     var evalCaught: Option[Throwable] = None
@@ -770,7 +770,7 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
       val readRoot  = getRequiredModule(readPath)   // the outermost wrapper
       (accessPath split '.').foldLeft(readRoot: Symbol) {
         case (sym, "")    => sym
-        case (sym, name)  => afterTyper(termMember(sym, name))
+        case (sym, name)  => exitingTyper(termMember(sym, name))
       }
     }
     /** We get a bunch of repeated warnings for reasons I haven't
@@ -962,7 +962,7 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
     }
 
     lazy val resultSymbol = lineRep.resolvePathToSymbol(accessPath)
-    def applyToResultMember[T](name: Name, f: Symbol => T) = afterTyper(f(resultSymbol.info.nonPrivateDecl(name)))
+    def applyToResultMember[T](name: Name, f: Symbol => T) = exitingTyper(f(resultSymbol.info.nonPrivateDecl(name)))
 
     /* typeOf lookup with encoding */
     def lookupTypeOf(name: Name) = typeOf.getOrElse(name, typeOf(global.encode(name.toString)))
@@ -974,10 +974,10 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
     /** Types of variables defined by this request. */
     lazy val compilerTypeOf = typeMap[Type](x => x) withDefaultValue NoType
     /** String representations of same. */
-    lazy val typeOf         = typeMap[String](tp => afterTyper(tp.toString))
+    lazy val typeOf         = typeMap[String](tp => exitingTyper(tp.toString))
 
     // lazy val definedTypes: Map[Name, Type] = {
-    //   typeNames map (x => x -> afterTyper(resultSymbol.info.nonPrivateDecl(x).tpe)) toMap
+    //   typeNames map (x => x -> exitingTyper(resultSymbol.info.nonPrivateDecl(x).tpe)) toMap
     // }
     lazy val definedSymbols = (
       termNames.map(x => x -> applyToResultMember(x, x => x)) ++
@@ -989,7 +989,7 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
     /** load and run the code using reflection */
     def loadAndRun: (String, Boolean) = {
       try   { ("" + (lineRep call sessionNames.print), true) }
-      catch { case ex => (lineRep.bindError(ex), false) }
+      catch { case ex: Throwable => (lineRep.bindError(ex), false) }
     }
 
     override def toString = "Request(line=%s, %s trees)".format(line, trees.size)
@@ -1074,7 +1074,7 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
       else NoType
     }
   }
-  def cleanMemberDecl(owner: Symbol, member: Name): Type = afterTyper {
+  def cleanMemberDecl(owner: Symbol, member: Name): Type = exitingTyper {
     normalizeNonPublic {
       owner.info.nonPrivateDecl(member).tpe match {
         case NullaryMethodType(tp) => tp
@@ -1163,7 +1163,7 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
 
   def symbolDefString(sym: Symbol) = {
     TypeStrings.quieter(
-      afterTyper(sym.defString),
+      exitingTyper(sym.defString),
       sym.owner.name + ".this.",
       sym.owner.fullName + "."
     )

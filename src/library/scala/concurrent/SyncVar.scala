@@ -53,6 +53,8 @@ class SyncVar[A] {
     value
   }
 
+  /** Waits for this SyncVar to become defined and returns
+   *  the result */
   def take(): A = synchronized {
     try get
     finally unsetVal()
@@ -64,7 +66,8 @@ class SyncVar[A] {
    *  the SyncVar.
    *
    *  @param timeout     the amount of milliseconds to wait, 0 means forever
-   *  @return            `None` if variable is undefined after `timeout`, `Some(value)` otherwise
+   *  @return            the value or a throws an exception if the timeout occurs
+   *  @throws NoSuchElementException on timeout
    */
   def take(timeout: Long): A = synchronized {
     try get(timeout).get
@@ -72,25 +75,28 @@ class SyncVar[A] {
   }
 
   // TODO: this method should be private
-  // [Heather] the reason why: it doesn't take into consideration 
+  // [Heather] the reason why: it doesn't take into consideration
   // whether or not the SyncVar is already defined. So, set has been
   // deprecated in order to eventually be able to make "setting" private
   @deprecated("Use `put` instead, as `set` is potentionally error-prone", "2.10.0")
   def set(x: A): Unit = setVal(x)
 
+  /** Places a value in the SyncVar. If the SyncVar already has a stored value,
+   * it waits until another thread takes it */
   def put(x: A): Unit = synchronized {
     while (isDefined) wait()
     setVal(x)
   }
 
+  /** Checks whether a value is stored in the synchronized variable */
   def isSet: Boolean = synchronized {
     isDefined
   }
 
   // TODO: this method should be private
-  // [Heather] the reason why: it doesn't take into consideration 
+  // [Heather] the reason why: it doesn't take into consideration
   // whether or not the SyncVar is already defined. So, unset has been
-  // deprecated in order to eventually be able to make "unsetting" private  
+  // deprecated in order to eventually be able to make "unsetting" private
   @deprecated("Use `take` instead, as `unset` is potentionally error-prone", "2.10.0")
   def unset(): Unit = synchronized {
     isDefined = false
@@ -98,7 +104,7 @@ class SyncVar[A] {
     notifyAll()
   }
 
-  // `setVal` exists so as to retroactively deprecate `set` without 
+  // `setVal` exists so as to retroactively deprecate `set` without
   // deprecation warnings where we use `set` internally. The
   // implementation of `set` was moved to `setVal` to achieve this
   private def setVal(x: A): Unit = synchronized {
@@ -107,13 +113,13 @@ class SyncVar[A] {
     notifyAll()
   }
 
-  // `unsetVal` exists so as to retroactively deprecate `unset` without 
+  // `unsetVal` exists so as to retroactively deprecate `unset` without
   // deprecation warnings where we use `unset` internally. The
   // implementation of `unset` was moved to `unsetVal` to achieve this
   private def unsetVal(): Unit = synchronized {
     isDefined = false
     value = None
-    notifyAll()    
+    notifyAll()
   }
 
 }

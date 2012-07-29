@@ -100,6 +100,12 @@ trait Contexts { self: Analyzer =>
     var outer: Context = _                  // The next outer context
     var enclClass: Context = _              // The next outer context whose tree is a
                                             // template or package definition
+    @inline final def savingEnclClass[A](c: Context)(a: => A): A = {
+      val saved = enclClass
+      enclClass = c
+      try a finally enclClass = saved
+    }
+
     var enclMethod: Context = _             // The next outer context whose tree is a method
     var variance: Int = _                   // Variance relative to enclosing class
     private var _undetparams: List[Symbol] = List() // Undetermined type parameters,
@@ -630,6 +636,12 @@ trait Contexts { self: Analyzer =>
       collect(imp.tree.selectors)
     }
 
+    /* SI-5892 / SI-4270: `implicitss` can return results which are not accessible at the
+     * point where implicit search is triggered. Example: implicits in (annotations of)
+     * class type parameters (SI-5892). The `context.owner` is the class symbol, therefore
+     * `implicitss` will return implicit conversions defined inside the class. These are
+     * filtered out later by `eligibleInfos` (SI-4270 / 9129cfe9), as they don't type-check.
+     */
     def implicitss: List[List[ImplicitInfo]] = {
       if (implicitsRunId != currentRunId) {
         implicitsRunId = currentRunId
@@ -638,11 +650,12 @@ trait Contexts { self: Analyzer =>
           if (owner != nextOuter.owner && owner.isClass && !owner.isPackageClass && !inSelfSuperCall) {
             if (!owner.isInitialized) return nextOuter.implicitss
             // debuglog("collect member implicits " + owner + ", implicit members = " + owner.thisType.implicitMembers)//DEBUG
-            val savedEnclClass = enclClass
-            this.enclClass = this
-            val res = collectImplicits(owner.thisType.implicitMembers, owner.thisType)
-            this.enclClass = savedEnclClass
-            res
+            savingEnclClass(this) {
+              // !!! In the body of `class C(implicit a: A) { }`, `implicitss` returns `List(List(a), List(a), List(<predef..)))`
+              //     it handled correctly by implicit search, which considers the second `a` to be shadowed, but should be
+              //     remedied nonetheless.
+              collectImplicits(owner.thisType.implicitMembers, owner.thisType)
+            }
           } else if (scope != nextOuter.scope && !owner.isPackageClass) {
             debuglog("collect local implicits " + scope.toList)//DEBUG
             collectImplicits(scope.toList, NoPrefix)

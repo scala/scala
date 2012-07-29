@@ -11,6 +11,8 @@ package scala.collection
 import mutable.ArrayBuffer
 import annotation.migration
 import immutable.Stream
+import scala.collection.generic.CanBuildFrom
+import scala.annotation.unchecked.{ uncheckedVariance => uV }
 
 /** The `Iterator` object provides various functions for creating specialized iterators.
  *
@@ -1138,6 +1140,7 @@ trait Iterator[+A] extends TraversableOnce[A] {
   def toStream: Stream[A] =
     if (self.hasNext) Stream.cons(self.next, self.toStream)
     else Stream.empty[A]
+  
 
   /** Converts this iterator to a string.
    *

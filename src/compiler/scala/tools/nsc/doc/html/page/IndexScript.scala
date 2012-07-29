@@ -15,14 +15,8 @@ class IndexScript(universe: doc.Universe, index: doc.Index) extends Page {
   def path = List("index.js")
 
   override def writeFor(site: HtmlFactory) {
-    val stream = createFileOutputStream(site)
-    val writer = Channels.newWriter(stream.getChannel, site.encoding)
-    try {
-      writer.write("Index.PACKAGES = " + packages.toString() + ";")
-    }
-    finally {
-      writer.close
-      stream.close
+    writeFile(site) {
+      _.write("Index.PACKAGES = " + packages.toString() + ";")
     }
   }
 
@@ -33,7 +27,7 @@ class IndexScript(universe: doc.Universe, index: doc.Index) extends Page {
 
         val ary = merged.keys.toList.sortBy(_.toLowerCase).map(key => {
           val pairs = merged(key).map(
-            t => docEntityKindToString(t) -> relativeLinkTo(t)
+            t => kindToString(t) -> relativeLinkTo(t)
           ) :+ ("name" -> key)
 
           JSONObject(scala.collection.immutable.Map(pairs : _*))
@@ -68,7 +62,9 @@ class IndexScript(universe: doc.Universe, index: doc.Index) extends Page {
 
   def allPackagesWithTemplates = {
     Map(allPackages.map((key) => {
-      key -> key.templates.filter(t => !t.isPackage && !isExcluded(t))
+      key -> key.templates.collect {
+        case t: DocTemplateEntity if !t.isPackage && !universe.settings.hardcoded.isExcluded(t.qualifiedName) => t
+      }
     }) : _*)
   }
 }

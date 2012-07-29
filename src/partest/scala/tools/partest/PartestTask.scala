@@ -9,7 +9,6 @@
 package scala.tools
 package partest
 
-import scala.actors.Actor._
 import scala.util.Properties.setProp
 import scala.tools.nsc.io.{ Directory, Path => SPath }
 import nsc.util.ClassPath
@@ -49,6 +48,7 @@ import org.apache.tools.ant.types.Commandline.Argument
  *  - `scalaptests`,
  *  - `scalachecktests`,
  *  - `specializedtests`,
+ *  - `instrumentedtests`,
  *  - `presentationtests`,
  *  - `scripttests`.
  *
@@ -98,6 +98,10 @@ class PartestTask extends Task with CompilationPathProperty {
 
   def addConfiguredSpecializedTests(input: FileSet) {
     specializedFiles = Some(input)
+  }
+
+  def addConfiguredInstrumentedTests(input: FileSet) {
+    instrumentedFiles = Some(input)
   }
 
   def addConfiguredPresentationTests(input: FileSet) {
@@ -190,6 +194,7 @@ class PartestTask extends Task with CompilationPathProperty {
   private var shootoutFiles: Option[FileSet] = None
   private var scalapFiles: Option[FileSet] = None
   private var specializedFiles: Option[FileSet] = None
+  private var instrumentedFiles: Option[FileSet] = None
   private var presentationFiles: Option[FileSet] = None
   private var antFiles: Option[FileSet] = None
   private var errorOnFailed: Boolean = false
@@ -246,6 +251,7 @@ class PartestTask extends Task with CompilationPathProperty {
   private def getShootoutFiles     = getFiles(shootoutFiles)
   private def getScalapFiles       = getFiles(scalapFiles)
   private def getSpecializedFiles  = getFiles(specializedFiles)
+  private def getInstrumentedFiles = getFilesAndDirs(instrumentedFiles)
   private def getPresentationFiles = getDirs(presentationFiles)
   private def getAntFiles          = getFiles(antFiles)
 
@@ -376,6 +382,7 @@ class PartestTask extends Task with CompilationPathProperty {
       (getShootoutFiles, "shootout", "Running shootout tests"),
       (getScalapFiles, "scalap", "Running scalap tests"),
       (getSpecializedFiles, "specialized", "Running specialized files"),
+      (getInstrumentedFiles, "instrumented", "Running instrumented files"),
       (getPresentationFiles, "presentation", "Running presentation compiler test files"),
       (getAntFiles, "ant", "Running ant task tests")
     )
@@ -385,12 +392,12 @@ class PartestTask extends Task with CompilationPathProperty {
       if (files.isEmpty) (0, 0, List())
       else {
         log(msg)
-        val results: Iterable[(String, Int)] = antRunner.reflectiveRunTestsForFiles(files, name)
+        val results: Iterable[(String, TestState)] = antRunner.reflectiveRunTestsForFiles(files, name)
         val (succs, fails) = resultsToStatistics(results)
 
         val failed: Iterable[String] = results collect {
-          case (path, 1)    => path + " [FAILED]"
-          case (path, 2)    => path + " [TIMOUT]"
+          case (path, TestState.Fail)    => path + " [FAILED]"
+          case (path, TestState.Timeout) => path + " [TIMOUT]"
         }
 
         // create JUnit Report xml files if directory was specified
@@ -422,16 +429,16 @@ class PartestTask extends Task with CompilationPathProperty {
     f(msg)
   }
 
-  private def oneResult(res: (String, Int)) =
+  private def oneResult(res: (String, TestState)) =
     <testcase name={res._1}>{
       res._2 match {
-        case 0 => scala.xml.NodeSeq.Empty
-        case 1 => <failure message="Test failed"/>
-        case 2 => <failure message="Test timed out"/>
+        case TestState.Ok      => scala.xml.NodeSeq.Empty
+        case TestState.Fail    => <failure message="Test failed"/>
+        case TestState.Timeout => <failure message="Test timed out"/>
       }
     }</testcase>
 
-  private def testReport(kind: String, results: Iterable[(String, Int)], succs: Int, fails: Int) =
+  private def testReport(kind: String, results: Iterable[(String, TestState)], succs: Int, fails: Int) =
     <testsuite name={kind} tests={(succs + fails).toString} failures={fails.toString}>
       <properties/>
       {

@@ -8,6 +8,15 @@ trait Types extends base.Types { self: Universe =>
   /** The extended API of types
    */
   abstract class TypeApi extends TypeBase {
+    /** The term symbol associated with the type, or `NoSymbol` for types
+     *  that do not refer to a term symbol.
+     */
+    def termSymbol: Symbol
+
+    /** The type symbol associated with the type, or `NoSymbol` for types
+     *  that do not refer to a type symbol.
+     */
+    def typeSymbol: Symbol
 
     /** The defined or declared members with name `name` in this type;
      *  an OverloadedSymbol if several exist, NoSymbol if none exist.
@@ -61,6 +70,10 @@ trait Types extends base.Types { self: Universe =>
     /** For a (potentially wrapped) poly type, its type parameters,
      *  the empty list for all other types */
     def typeParams: List[Symbol]
+
+    /** For a (nullary) method or poly type, its direct result type,
+     *  the type itself for all other types. */
+    def resultType: Type
 
     /** Is this type a type constructor that is missing its type arguments?
      */
@@ -121,7 +134,7 @@ trait Types extends base.Types { self: Universe =>
      *    class C extends p.D[Int]
      *    T.asSeenFrom(ThisType(C), D)  (where D is owner of m)
      *      = Int
-     *  }}} 
+     *  }}}
      */
     def asSeenFrom(pre: Type, clazz: Symbol): Type
 
@@ -170,6 +183,15 @@ trait Types extends base.Types { self: Universe =>
      *  <o.x.type>.widen = o.C
      */
     def widen: Type
+
+    /** Map to a singleton type which is a subtype of this type.
+     *  The fallback implemented here gives:
+     *  {{{
+     *    T.narrow  =  (T {}).this.type
+     *  }}}
+     *  Overridden where we know more about where types come from.
+     */
+    def narrow: Type
 
     /** The string discriminator of this type; useful for debugging */
     def kind: String
@@ -365,4 +387,3 @@ trait Types extends base.Types { self: Universe =>
    */
   def existentialAbstraction(tparams: List[Symbol], tpe0: Type): Type
 }
-

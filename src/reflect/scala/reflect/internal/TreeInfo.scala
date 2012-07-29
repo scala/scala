@@ -316,7 +316,7 @@ abstract class TreeInfo {
 
   /** Is name a variable name? */
   def isVariableName(name: Name): Boolean = {
-    val first = name(0)
+    val first = name.startChar
     ((first.isLower && first.isLetter) || first == '_') && !reserved(name)
   }
 
@@ -441,6 +441,9 @@ abstract class TreeInfo {
           false
       }
 */
+
+  /** Is this case guarded? */
+  def isGuardedCase(cdef: CaseDef) = cdef.guard != EmptyTree
 
   /** Is this pattern node a sequence-valued pattern? */
   def isSequenceValued(tree: Tree): Boolean = unbind(tree) match {

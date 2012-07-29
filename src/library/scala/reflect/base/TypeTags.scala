@@ -134,10 +134,11 @@ trait TypeTags { self: Universe =>
     val Boolean : AbsTypeTag[scala.Boolean]    = TypeTag.Boolean
     val Unit    : AbsTypeTag[scala.Unit]       = TypeTag.Unit
     val Any     : AbsTypeTag[scala.Any]        = TypeTag.Any
+    val AnyVal  : AbsTypeTag[scala.AnyVal]     = TypeTag.AnyVal
+    val AnyRef  : AbsTypeTag[scala.AnyRef]     = TypeTag.AnyRef
     val Object  : AbsTypeTag[java.lang.Object] = TypeTag.Object
     val Nothing : AbsTypeTag[scala.Nothing]    = TypeTag.Nothing
     val Null    : AbsTypeTag[scala.Null]       = TypeTag.Null
-    val String  : AbsTypeTag[java.lang.String] = TypeTag.String
 
     def apply[T](mirror1: MirrorOf[self.type], tpec1: TypeCreator): AbsTypeTag[T] =
       tpec1(mirror1) match {
@@ -151,10 +152,11 @@ trait TypeTags { self: Universe =>
         case BooleanTpe => AbsTypeTag.Boolean.asInstanceOf[AbsTypeTag[T]]
         case UnitTpe    => AbsTypeTag.Unit.asInstanceOf[AbsTypeTag[T]]
         case AnyTpe     => AbsTypeTag.Any.asInstanceOf[AbsTypeTag[T]]
+        case AnyValTpe  => AbsTypeTag.AnyVal.asInstanceOf[AbsTypeTag[T]]
+        case AnyRefTpe  => AbsTypeTag.AnyRef.asInstanceOf[AbsTypeTag[T]]
         case ObjectTpe  => AbsTypeTag.Object.asInstanceOf[AbsTypeTag[T]]
         case NothingTpe => AbsTypeTag.Nothing.asInstanceOf[AbsTypeTag[T]]
         case NullTpe    => AbsTypeTag.Null.asInstanceOf[AbsTypeTag[T]]
-        case StringTpe  => AbsTypeTag.String.asInstanceOf[AbsTypeTag[T]]
         case _          => new AbsTypeTagImpl[T](mirror1.asInstanceOf[Mirror], tpec1)
       }
 
@@ -197,10 +199,11 @@ trait TypeTags { self: Universe =>
     val Boolean: TypeTag[scala.Boolean]    = new PredefTypeTag[scala.Boolean]    (BooleanTpe, _.TypeTag.Boolean)
     val Unit:    TypeTag[scala.Unit]       = new PredefTypeTag[scala.Unit]       (UnitTpe,    _.TypeTag.Unit)
     val Any:     TypeTag[scala.Any]        = new PredefTypeTag[scala.Any]        (AnyTpe,     _.TypeTag.Any)
+    val AnyVal:  TypeTag[scala.AnyVal]     = new PredefTypeTag[scala.AnyVal]     (AnyValTpe,  _.TypeTag.AnyVal)
+    val AnyRef:  TypeTag[scala.AnyRef]     = new PredefTypeTag[scala.AnyRef]     (AnyRefTpe,  _.TypeTag.AnyRef)
     val Object:  TypeTag[java.lang.Object] = new PredefTypeTag[java.lang.Object] (ObjectTpe,  _.TypeTag.Object)
     val Nothing: TypeTag[scala.Nothing]    = new PredefTypeTag[scala.Nothing]    (NothingTpe, _.TypeTag.Nothing)
     val Null:    TypeTag[scala.Null]       = new PredefTypeTag[scala.Null]       (NullTpe,    _.TypeTag.Null)
-    val String:  TypeTag[java.lang.String] = new PredefTypeTag[java.lang.String] (StringTpe,  _.TypeTag.String)
 
     def apply[T](mirror1: MirrorOf[self.type], tpec1: TypeCreator): TypeTag[T] =
       tpec1(mirror1) match {
@@ -214,10 +217,11 @@ trait TypeTags { self: Universe =>
         case BooleanTpe => TypeTag.Boolean.asInstanceOf[TypeTag[T]]
         case UnitTpe    => TypeTag.Unit.asInstanceOf[TypeTag[T]]
         case AnyTpe     => TypeTag.Any.asInstanceOf[TypeTag[T]]
+        case AnyValTpe  => TypeTag.AnyVal.asInstanceOf[TypeTag[T]]
+        case AnyRefTpe  => TypeTag.AnyRef.asInstanceOf[TypeTag[T]]
         case ObjectTpe  => TypeTag.Object.asInstanceOf[TypeTag[T]]
         case NothingTpe => TypeTag.Nothing.asInstanceOf[TypeTag[T]]
         case NullTpe    => TypeTag.Null.asInstanceOf[TypeTag[T]]
-        case StringTpe  => TypeTag.String.asInstanceOf[TypeTag[T]]
         case _          => new TypeTagImpl[T](mirror1.asInstanceOf[Mirror], tpec1)
       }
 

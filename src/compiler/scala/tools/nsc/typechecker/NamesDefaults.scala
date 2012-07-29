@@ -21,8 +21,19 @@ trait NamesDefaults { self: Analyzer =>
   import definitions._
   import NamesDefaultsErrorsGen._
 
-  val defaultParametersOfMethod =
-    perRunCaches.newWeakMap[Symbol, Set[WeakReference[Symbol]]]() withDefaultValue Set()
+  // Default getters of constructors are added to the companion object in the
+  // typeCompleter of the constructor (methodSig). To compute the signature,
+  // we need the ClassDef. To create and enter the symbols into the companion
+  // object, we need the templateNamer of that module class. These two are stored
+  // as an attachment in the companion module symbol
+  class ConstructorDefaultsAttachment(val classWithDefault: ClassDef, var companionModuleClassNamer: Namer)
+
+  // To attach the default getters of local (term-owned) methods to the method symbol.
+  // Used in Namer.enterExistingSym: it needs to re-enter the method symbol and also
+  // default getters, which could not be found otherwise.
+  class DefaultsOfLocalMethodAttachment(val defaultGetters: mutable.Set[Symbol]) {
+    def this(default: Symbol) = this(mutable.Set(default))
+  }
 
   case class NamedApplyInfo(
     qual:       Option[Tree],
@@ -153,7 +164,7 @@ trait NamesDefaults { self: Analyzer =>
 
       // never used for constructor calls, they always have a stable qualifier
       def blockWithQualifier(qual: Tree, selected: Name) = {
-        val sym = blockTyper.context.owner.newValue(unit.freshTermName("qual$"), qual.pos) setInfo qual.tpe
+        val sym = blockTyper.context.owner.newValue(unit.freshTermName("qual$"), qual.pos, newFlags = HIDDEN) setInfo qual.tpe
         blockTyper.context.scope enter sym
         val vd = atPos(sym.pos)(ValDef(sym, qual) setType NoType)
         // it stays in Vegas: SI-5720, SI-5727
@@ -270,7 +281,7 @@ trait NamesDefaults { self: Analyzer =>
           }
           else arg.tpe
         ).widen // have to widen or types inferred from literal defaults will be singletons
-        val s = context.owner.newValue(unit.freshTermName("x$"), arg.pos) setInfo (
+        val s = context.owner.newValue(unit.freshTermName("x$"), arg.pos, newFlags = HIDDEN) setInfo (
           if (byName) functionType(Nil, argTpe) else argTpe
         )
         (context.scope.enter(s), byName, repeated)

@@ -6,12 +6,9 @@ object Test extends App {
   println(c)
   println(c.l)
 
-  val f1a = c.copy(y = 20, x = 7283)
+  println(c.copy(y = 20, x = 7283)("enwa", b = false)(l = -1, s = new Object))
 
-  val f1b = c.copy[Int, String, Object](y = 20, x = 7283)
-  val f2b = f1b("lkdjen", false)
-  val res = f2b(new Object, 100)
+  val res = c.copy[Int, String, Object](y = -3, x = 66)("lkdjen", false)(new Object, 100)
   println(res)
   println(res.l)
-  
 }

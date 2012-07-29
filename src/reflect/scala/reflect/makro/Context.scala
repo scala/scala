@@ -33,8 +33,4 @@ trait Context extends Aliases
 
   /** The prefix tree from which the macro is selected */
   val prefix: Expr[PrefixType]
-
-  /** Alias to the underlying mirror's reify */
-  // implementation is magically hardwired to `scala.reflect.makro.runtime.ContextReifiers`
-  def reify[T](expr: T): Expr[T] = macro ???
 }

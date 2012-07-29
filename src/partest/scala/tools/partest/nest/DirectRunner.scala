@@ -13,16 +13,15 @@ import scala.util.Properties.setProp
 import scala.tools.nsc.util.ScalaClassLoader
 import scala.tools.nsc.io.Path
 import scala.collection.{ mutable, immutable }
-import scala.actors.Actor._
-import scala.actors.TIMEOUT
+import java.util.concurrent._
+import scala.collection.convert.decorateAll._
 
 case class TestRunParams(val scalaCheckParentClassLoader: ScalaClassLoader)
 
 trait DirectRunner {
-
   def fileManager: FileManager
 
-  import PartestDefaults.numActors
+  import PartestDefaults.numThreads
 
   def denotesTestFile(arg: String) = Path(arg).hasExtension("scala", "res", "xml")
   def denotesTestDir(arg: String)  = Path(arg).ifDirectory(_.files.nonEmpty) exists (x => x)
@@ -37,53 +36,39 @@ trait DirectRunner {
       false
     })
   }
-
-  def setProperties() {
-    if (isPartestDebug)
-      scala.actors.Debug.level = 3
-
-    if (PartestDefaults.poolSize.isEmpty) {
-      scala.actors.Debug.info("actors.corePoolSize not defined")
-      setProp("actors.corePoolSize", "12")
-    }
-  }
-
-  def runTestsForFiles(_kindFiles: List[File], kind: String): immutable.Map[String, Int] = {
-    val kindFiles = onlyValidTestPaths(_kindFiles)
-    val groupSize = (kindFiles.length / numActors) + 1
-
+  def runTestsForFiles(_kindFiles: List[File], kind: String): immutable.Map[String, TestState] = {
     // @partest maintainer: we cannot create a fresh file manager here
     // since the FM must respect --buildpath and --classpath from the command line
     // for example, see how it's done in ReflectiveRunner
     //val consFM = new ConsoleFileManager
     //import consFM.{ latestCompFile, latestLibFile, latestPartestFile }
-    val latestCompFile = new File(fileManager.LATEST_COMP)
+    val latestCompFile    = new File(fileManager.LATEST_COMP)
     val latestReflectFile = new File(fileManager.LATEST_REFLECT)
-    val latestLibFile = new File(fileManager.LATEST_LIB)
+    val latestLibFile     = new File(fileManager.LATEST_LIB)
     val latestPartestFile = new File(fileManager.LATEST_PARTEST)
-    val latestActorsFile = new File(fileManager.LATEST_ACTORS)
-    val latestActMigFile = new File(fileManager.LATEST_ACTORS_MIGRATION)
-    val scalacheckURL = PathSettings.scalaCheck.toURL
+    val latestActorsFile  = new File(fileManager.LATEST_ACTORS)
+    val latestActMigFile  = new File(fileManager.LATEST_ACTORS_MIGRATION)
+    val scalacheckURL     = PathSettings.scalaCheck.toURL
     val scalaCheckParentClassLoader = ScalaClassLoader.fromURLs(
       scalacheckURL :: (List(latestCompFile, latestReflectFile, latestLibFile, latestActorsFile, latestActMigFile, latestPartestFile).map(_.toURI.toURL))
     )
-    Output.init()
 
-    val workers = kindFiles.grouped(groupSize).toList map { toTest =>
-      val worker = new Worker(fileManager, TestRunParams(scalaCheckParentClassLoader))
-      worker.start()
-      worker ! RunTests(kind, toTest)
-      worker
+    val kindFiles = onlyValidTestPaths(_kindFiles)
+    val pool      = Executors.newFixedThreadPool(numThreads)
+    val manager   = new RunnerManager(kind, fileManager, TestRunParams(scalaCheckParentClassLoader))
+    val futures   = kindFiles map (f => (f, pool submit callable(manager runTest f))) toMap
+
+    pool.shutdown()
+    try if (!pool.awaitTermination(4, TimeUnit.HOURS))
+      NestUI.warning("Thread pool timeout elapsed before all tests were complete!")
+    catch { case t: InterruptedException =>
+      NestUI.warning("Thread pool was interrupted")
+      t.printStackTrace()
     }
 
-    workers map { w =>
-      receiveWithin(3600 * 1000) {
-        case Results(testResults) => testResults
-        case TIMEOUT =>
-          // add at least one failure
-          NestUI.verbose("worker timed out; adding failed test")
-          Map("worker timed out; adding failed test" -> 2)
-      }
-    } reduceLeft (_ ++ _)
+    for ((file, future) <- futures) yield {
+      val state = if (future.isCancelled) TestState.Timeout else future.get
+      (file.getAbsolutePath, state)
+    }
   }
 }
