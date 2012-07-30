@@ -1401,6 +1401,15 @@ trait Typers extends Modes with Adaptations with Tags {
             unit.error(clazz.pos, "value class needs to have exactly one public val parameter")
         }
       }
+      body foreach {
+        case md: ModuleDef =>
+          unit.error(md.pos, "value class may not have nested module definitions")
+        case cd: ClassDef =>
+          unit.error(cd.pos, "value class may not have nested class definitions")
+        case md: DefDef if md.symbol.isConstructor && !md.symbol.isPrimaryConstructor =>
+          unit.error(md.pos, "value class may not have secondary constructors")
+        case _ =>
+      }
       for (tparam <- clazz.typeParams)
         if (tparam hasAnnotation definitions.SpecializedClass)
           unit.error(tparam.pos, "type parameter of value class may not be specialized")
