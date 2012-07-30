@@ -232,31 +232,6 @@ trait Symbols extends base.Symbols { self: Universe =>
     /** The overloaded alternatives of this symbol */
     def alternatives: List[Symbol]
 
-    /** Performs method overloading resolution. More precisely, resolves an overloaded TermSymbol
-     *  to a single, non-overloaded TermSymbol that accepts the specified argument types.
-     *  @param pre The prefix type, i.e. the type of the value the method is dispatched on.
-     *             This is required when resolving references to type parameters of the type
-     *             the method is declared in. For example if the method is declared in class `List[A]`,
-     *             providing the prefix as `List[Int]` allows the overloading resolution to use
-     *             `Int` instead of `A`.
-     * @param targs Type arguments that a candidate alternative must be able to accept. Candidates
-     *              will be considered with these arguments substituted for their corresponding
-     *              type parameters.
-     * @param posVargs Positional argument types that a candidate alternative must be able to accept.
-     * @param nameVargs Named argument types that a candidate alternative must be able to accept.
-     *                  Each element in the sequence should be a pair of a parameter name and an
-     *                  argument type.
-     * @param expected Return type that a candidate alternative has to be compatible with.
-     * @return Either a single, non-overloaded Symbol referring to the selected alternative
-     *         or NoSymbol if no single member could be selected given the passed arguments.
-     */
-    def resolveOverloaded(
-      pre: Type = NoPrefix,
-      targs: Seq[Type] = List(),
-      posVargs: Seq[Type] = List(),
-      nameVargs: Seq[(TermName, Type)] = List(),
-      expected: Type = NoType
-    ): Symbol
   }
 
   /** The API of type symbols */
