@@ -683,7 +683,7 @@ trait Trees extends base.Trees { self: Universe =>
 
   type Modifiers >: Null <: ModifiersApi
 
-  abstract class ModifiersApi extends ModifiersBase with HasFlagsApi
+  abstract class ModifiersApi extends ModifiersBase
 
 }
 

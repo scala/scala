@@ -1356,10 +1356,7 @@ trait Trees { self: Universe =>
   implicit val ModifiersTag: ClassTag[Modifiers]
 
   /** ... */
-  abstract class ModifiersBase {
-    def flags: FlagSet
-    def hasFlag(flags: FlagSet): Boolean
-    def hasAllFlags(flags: FlagSet): Boolean
+  abstract class ModifiersBase extends HasFlagsBase {
     def privateWithin: Name  // default: EmptyTypeName
     def annotations: List[Tree] // default: List()
     def mapAnnotations(f: List[Tree] => List[Tree]): Modifiers =
