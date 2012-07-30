@@ -380,7 +380,7 @@ class ModelFactory(val global: Global, val settings: doc.Settings) {
       if (settings.docImplicits.value) makeImplicitConversions(sym, this) else Nil
 
     // members as given by the compiler
-    lazy val memberSyms      = sym.info.members.filter(s => membersShouldDocument(s, this))
+    lazy val memberSyms      = sym.info.members.filter(s => membersShouldDocument(s, this)).toList
 
     // the inherited templates (classes, traits or objects)
     var memberSymsLazy  = memberSyms.filter(t => templateShouldDocument(t, this) && !inOriginalOwner(t, this))
@@ -712,7 +712,7 @@ class ModelFactory(val global: Global, val settings: doc.Settings) {
           override def inheritedFrom = Nil
           override def isRootPackage = true
           override lazy val memberSyms =
-            (bSym.info.members ++ EmptyPackage.info.members) filter { s =>
+            (bSym.info.members ++ EmptyPackage.info.members).toList filter { s =>
               s != EmptyPackage && s != RootPackage
             }
         })

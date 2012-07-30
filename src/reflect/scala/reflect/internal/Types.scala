@@ -612,21 +612,21 @@ trait Types extends api.Types { self: SymbolTable =>
      *  Members appear in linearization order of their owners.
      *  Members with the same owner appear in reverse order of their declarations.
      */
-    def members: List[Symbol] = membersBasedOnFlags(0, 0)
+    def members: Scope = membersBasedOnFlags(0, 0)
 
     /** A list of all non-private members of this type (defined or inherited) */
-    def nonPrivateMembers: List[Symbol] = membersBasedOnFlags(BridgeAndPrivateFlags, 0)
+    def nonPrivateMembers: Scope = membersBasedOnFlags(BridgeAndPrivateFlags, 0)
 
     /** A list of all non-private members of this type  (defined or inherited),
      *  admitting members with given flags `admit`
      */
-    def nonPrivateMembersAdmitting(admit: Long): List[Symbol] = membersBasedOnFlags(BridgeAndPrivateFlags & ~admit, 0)
+    def nonPrivateMembersAdmitting(admit: Long): Scope = membersBasedOnFlags(BridgeAndPrivateFlags & ~admit, 0)
 
     /** A list of all implicit symbols of this type  (defined or inherited) */
-    def implicitMembers: List[Symbol] = membersBasedOnFlags(BridgeFlags, IMPLICIT)
+    def implicitMembers: Scope = membersBasedOnFlags(BridgeFlags, IMPLICIT)
 
     /** A list of all deferred symbols of this type  (defined or inherited) */
-    def deferredMembers: List[Symbol] = membersBasedOnFlags(BridgeFlags, DEFERRED)
+    def deferredMembers: Scope = membersBasedOnFlags(BridgeFlags, DEFERRED)
 
     /** The member with given name,
      *  an OverloadedSymbol if several exist, NoSymbol if none exist */
@@ -642,12 +642,12 @@ trait Types extends api.Types { self: SymbolTable =>
 
     /** All members with the given flags, excluding bridges.
      */
-    def membersWithFlags(requiredFlags: Long): List[Symbol] =
+    def membersWithFlags(requiredFlags: Long): Scope =
       membersBasedOnFlags(BridgeFlags, requiredFlags)
 
     /** All non-private members with the given flags, excluding bridges.
      */
-    def nonPrivateMembersWithFlags(requiredFlags: Long): List[Symbol] =
+    def nonPrivateMembersWithFlags(requiredFlags: Long): Scope =
       membersBasedOnFlags(BridgeAndPrivateFlags, requiredFlags)
 
     /** The non-private member with given name, admitting members with given flags `admit`.
@@ -668,7 +668,7 @@ trait Types extends api.Types { self: SymbolTable =>
     /** Members excluding and requiring the given flags.
      *  Note: unfortunately it doesn't work to exclude DEFERRED this way.
      */
-    def membersBasedOnFlags(excludedFlags: Long, requiredFlags: Long): List[Symbol] =
+    def membersBasedOnFlags(excludedFlags: Long, requiredFlags: Long): Scope =
       findMembers(excludedFlags, requiredFlags)
 //      findMember(nme.ANYNAME, excludedFlags, requiredFlags, false).alternatives
 
@@ -1020,7 +1020,7 @@ trait Types extends api.Types { self: SymbolTable =>
       else (baseClasses.head.newOverloaded(this, alts))
     }
 
-    def findMembers(excludedFlags: Long, requiredFlags: Long): List[Symbol] = {
+    def findMembers(excludedFlags: Long, requiredFlags: Long): Scope = {
       // if this type contains type variables, put them to sleep for a while -- don't just wipe them out by
       // replacing them by the corresponding type parameter, as that messes up (e.g.) type variables in type refinements
       // without this, the matchesType call would lead to type variables on both sides
@@ -1054,7 +1054,7 @@ trait Types extends api.Types { self: SymbolTable =>
                    (bcs eq bcs0) ||
                    (flags & PrivateLocal) != PrivateLocal ||
                    (bcs0.head.hasTransOwner(bcs.head)))) {
-                if (members eq null) members = newScope
+                if (members eq null) members = newFindMemberScope
                 var others: ScopeEntry = members.lookupEntry(sym.name)
                 var symtpe: Type = null
                 while ((others ne null) && {
@@ -1083,7 +1083,7 @@ trait Types extends api.Types { self: SymbolTable =>
       } // while (continue)
       Statistics.popTimer(typeOpsStack, start)
       if (suspension ne null) suspension foreach (_.suspended = false)
-      if (members eq null) Nil else members.toList
+      if (members eq null) EmptyScope else members
     }
 
     /**

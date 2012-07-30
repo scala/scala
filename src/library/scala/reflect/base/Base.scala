@@ -170,12 +170,17 @@ class Base extends Universe { self =>
   object BoundedWildcardType extends BoundedWildcardTypeExtractor
   implicit val BoundedWildcardTypeTag = ClassTag[BoundedWildcardType](classOf[BoundedWildcardType])
 
-  type Scope = Iterable[Symbol]
+  class Scope(elems: Iterable[Symbol]) extends ScopeBase with MemberScopeBase {
+    def iterator = elems.iterator
+    def sorted = elems.toList
+  }
+  type MemberScope = Scope
   implicit val ScopeTag = ClassTag[Scope](classOf[Scope])
+  implicit val MemberScopeTag = ClassTag[MemberScope](classOf[MemberScope])
 
-  def newScope = newScopeWith()
-  def newNestedScope(outer: Iterable[Symbol]) = newScope
-  def newScopeWith(elems: Symbol*): Scope = elems
+  def newScope: Scope = newScopeWith()
+  def newNestedScope(outer: Scope): Scope = newScope
+  def newScopeWith(elems: Symbol*): Scope = new Scope(elems)
 
   abstract class Name(str: String) extends NameBase {
     override def toString = str
