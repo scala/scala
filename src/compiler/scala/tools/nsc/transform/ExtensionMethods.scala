@@ -78,13 +78,13 @@ abstract class ExtensionMethods extends Transform with TypingTransformers {
   }
 
   /** This method removes the `$this` argument from the parameter list a method.
-   *  
+   *
    *  A method may be a `PolyType`, in which case we tear out the `$this` and the class
    *  type params from its nested `MethodType`.
    *  It may be a `MethodType`, either with a curried parameter list in which the first argument
    *  is a `$this` - we just return the rest of the list.
    *  This means that the corresponding symbol was generated during `extmethods`.
-   *  
+   *
    *  It may also be a `MethodType` in which the `$this` does not appear in a curried parameter list.
    *  The curried lists disappear during `uncurry`, and the methods may be duplicated afterwards,
    *  for instance, during `specialize`.
@@ -104,6 +104,14 @@ abstract class ExtensionMethods extends Transform with TypingTransformers {
   class Extender(unit: CompilationUnit) extends TypingTransformer(unit) {
 
     private val extensionDefs = mutable.Map[Symbol, mutable.ListBuffer[Tree]]()
+
+    def checkNonCyclic(pos: Position, seen: Set[Symbol], clazz: Symbol): Unit =
+      if (seen contains clazz)
+        unit.error(pos, "value class may not unbox to itself")
+      else {
+        val unboxed = erasure.underlyingOfValueClass(clazz).typeSymbol
+        if (unboxed.isDerivedValueClass) checkNonCyclic(pos, seen + clazz, unboxed)
+      }
 
     def extensionMethInfo(extensionMeth: Symbol, origInfo: Type, clazz: Symbol): Type = {
       var newTypeParams = cloneSymbolsAtOwner(clazz.typeParams, extensionMeth)
@@ -129,6 +137,7 @@ abstract class ExtensionMethods extends Transform with TypingTransformers {
       tree match {
         case Template(_, _, _) =>
           if (currentOwner.isDerivedValueClass) {
+            checkNonCyclic(currentOwner.pos, Set(), currentOwner)
             extensionDefs(currentOwner.companionModule) = new mutable.ListBuffer[Tree]
             currentOwner.primaryConstructor.makeNotPrivate(NoSymbol)
             super.transform(tree)
