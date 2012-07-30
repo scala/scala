@@ -957,7 +957,7 @@ trait Implicits {
                 companion.moduleClass match {
                   case mc: ModuleClassSymbol =>
                     val infos =
-                      for (im <- mc.implicitMembers) yield new ImplicitInfo(im.name, singleType(pre, companion), im)
+                      for (im <- mc.implicitMembers.toList) yield new ImplicitInfo(im.name, singleType(pre, companion), im)
                     if (infos.nonEmpty)
                       infoMap += (sym -> infos)
                   case _ =>

@@ -2891,7 +2891,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     private[this] var typeOfThisCache: Type = _
     private[this] var typeOfThisPeriod      = NoPeriod
 
-    private var implicitMembersCacheValue: List[Symbol] = Nil
+    private var implicitMembersCacheValue: Scope = EmptyScope
     private var implicitMembersCacheKey1: Type = NoType
     private var implicitMembersCacheKey2: ScopeEntry = null
 
@@ -2910,7 +2910,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
       typeOfThisCache
     }
 
-    def implicitMembers: List[Symbol] = {
+    def implicitMembers: Scope = {
       val tp = info
       if ((implicitMembersCacheKey1 ne tp) || (implicitMembersCacheKey2 ne tp.decls.elems)) {
         // Skip a package object class, because the members are also in

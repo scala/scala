@@ -24,33 +24,26 @@ trait Types extends base.Types { self: Universe =>
      */
     def declaration(name: Name): Symbol
 
-    /** The collection of declarations in this type
-     *  [Eugene++] why not List?
+    /** A `Scope` containing directly declared members of this type.
+     *  Unlike `members` this method doesn't returns inherited members.
+     *
+     *  Members in the returned scope might appear in arbitrary order.
+     *  Use `declarations.sorted` to get an ordered list of members.
      */
-    def declarations: Iterable[Symbol]
+    def declarations: MemberScope
 
     /** The member with given name, either directly declared or inherited,
      *  an OverloadedSymbol if several exist, NoSymbol if none exist.
      */
     def member(name: Name): Symbol
 
-    /** The non-private member with given name, either directly declared or inherited,
-     *  an OverloadedSymbol if several exist, NoSymbol if none exist.
+    /** A `Scope` containing all members of this type (directly declared or inherited).
+     *  Unlike `declarations` this method also returns inherited members.
+     *
+     *  Members in the returned scope might appear in arbitrary order.
+     *  Use `declarations.sorted` to get an ordered list of members.
      */
-    def nonPrivateMember(name: Name): Symbol
-
-    /** An iterable containing all members of this type (directly declared or inherited)
-     *  Members appear in the linearization order of their owners.
-     *  Members with the same owner appear in reverse order of their declarations.
-     *  [Eugene++] the order needs to be reversed back, at least in the public API
-     */
-    def members: Iterable[Symbol]
-
-    /** An iterable containing all non-private members of this type (directly declared or inherited)
-     *  Members appear in the linearization order of their owners.
-     *  Members with the same owner appear in reverse order of their declarations.
-     */
-    def nonPrivateMembers: Iterable[Symbol]
+    def members: MemberScope
 
     /** Substitute symbols in `to` for corresponding occurrences of references to
      *  symbols `from` in this type.

@@ -360,7 +360,7 @@ trait Contexts { self: Analyzer =>
 
     private def unitError(pos: Position, msg: String) =
       unit.error(pos, if (checking) "\n**** ERROR DURING INTERNAL CHECKING ****\n" + msg else msg)
-    
+
     @inline private def issueCommon(err: AbsTypeError)(pf: PartialFunction[AbsTypeError, Unit]) {
       debugwarn("issue error: " + err.errMsg)
       if (settings.Yissuedebug.value) (new Exception).printStackTrace()
@@ -611,8 +611,8 @@ trait Contexts { self: Analyzer =>
         (e ne null) && (e.owner == scope)
       })
 
-    private def collectImplicits(syms: List[Symbol], pre: Type, imported: Boolean = false): List[ImplicitInfo] =
-      for (sym <- syms if isQualifyingImplicit(sym.name, sym, pre, imported)) yield
+    private def collectImplicits(syms: Scope, pre: Type, imported: Boolean = false): List[ImplicitInfo] =
+      for (sym <- syms.toList if isQualifyingImplicit(sym.name, sym, pre, imported)) yield
         new ImplicitInfo(sym.name, pre, sym)
 
     private def collectImplicitImports(imp: ImportInfo): List[ImplicitInfo] = {
@@ -657,7 +657,7 @@ trait Contexts { self: Analyzer =>
             }
           } else if (scope != nextOuter.scope && !owner.isPackageClass) {
             debuglog("collect local implicits " + scope.toList)//DEBUG
-            collectImplicits(scope.toList, NoPrefix)
+            collectImplicits(scope, NoPrefix)
           } else if (imports != nextOuter.imports) {
             assert(imports.tail == nextOuter.imports, (imports, nextOuter.imports))
             collectImplicitImports(imports.head)
@@ -725,7 +725,7 @@ trait Contexts { self: Analyzer =>
       result
     }
 
-    def allImportedSymbols: List[Symbol] =
+    def allImportedSymbols: Iterable[Symbol] =
       qual.tpe.members flatMap (transformImport(tree.selectors, _))
 
     private def transformImport(selectors: List[ImportSelector], sym: Symbol): List[Symbol] = selectors match {

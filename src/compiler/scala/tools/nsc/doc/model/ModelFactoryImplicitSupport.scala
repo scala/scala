@@ -386,7 +386,7 @@ trait ModelFactoryImplicitSupport {
 
     lazy val memberImpls: List[MemberImpl] = {
       // Obtain the members inherited by the implicit conversion
-      val memberSyms = toType.members.filter(implicitShouldDocument(_))
+      val memberSyms = toType.members.filter(implicitShouldDocument(_)).toList
       val existingSyms = sym.info.members
 
       // Debugging part :)
