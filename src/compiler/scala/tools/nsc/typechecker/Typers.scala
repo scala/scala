@@ -1791,12 +1791,9 @@ trait Typers extends Modes with Adaptations with Tags {
       var tpt1 = checkNoEscaping.privates(sym, typer1.typedType(vdef.tpt))
       checkNonCyclic(vdef, tpt1)
 
-      if (sym.hasAnnotation(definitions.VolatileAttr)) {
-        if (!sym.isMutable)
-          VolatileValueError(vdef)
-        else if (sym.isFinal)
-          FinalVolatileVarError(vdef)
-      }
+      if (sym.hasAnnotation(definitions.VolatileAttr) && !sym.isMutable)
+        VolatileValueError(vdef)
+
       val rhs1 =
         if (vdef.rhs.isEmpty) {
           if (sym.isVariable && sym.owner.isTerm && !isPastTyper)
