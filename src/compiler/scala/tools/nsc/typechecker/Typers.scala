@@ -5019,7 +5019,9 @@ trait Typers extends Modes with Adaptations with Tags {
           if (isPatternMode) {
             val uncheckedTypeExtractor = extractorForUncheckedType(tpt.pos, tptTyped.tpe)
             val ownType = inferTypedPattern(tptTyped, tptTyped.tpe, pt, canRemedy = uncheckedTypeExtractor.nonEmpty)
-            treeTyped setType ownType
+            // println(s"Typed($expr, ${tpt.tpe}) : $pt --> $ownType  (${isFullyDefined(ownType)}, ${makeFullyDefined(ownType)})")
+            // make fully defined to avoid bounded wildcard types that may be in pt from calling dropExistential (SI-2038)
+            treeTyped setType (if (isFullyDefined(ownType)) ownType else makeFullyDefined(ownType)) //ownType
 
             uncheckedTypeExtractor match {
               case None => treeTyped
