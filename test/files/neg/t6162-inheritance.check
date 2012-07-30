@@ -1,0 +1,4 @@
+t6162-inheritance.scala:4: error: class SubFoo inherits from class Foo, but inheriting from that class is deprecated: `Foo` will be made final in a future version.
+class SubFoo extends Foo
+      ^
+one error found
