@@ -4932,7 +4932,7 @@ trait Typers extends Modes with Adaptations with Tags {
           var catches1 = typedCases(catches, ThrowableClass.tpe, pt)
 
           for (cdef <- catches1 if cdef.guard.isEmpty) {
-            def warn(name: Name) = context.warning(cdef.pat.pos, s"This catches all Throwables. If this is really intended, use `case ${name.decoded} : Throwable` to clear this warning.")
+            def warn(name: Name) = context.warning(cdef.pat.pos, s"This catches all Throwables. If this is really intended, use `case ${name.decoded}: Throwable` to clear this warning.")
             def unbound(t: Tree) = t.symbol == null || t.symbol == NoSymbol
             cdef.pat match {
               case Bind(name, i@Ident(_)) if unbound(i) => warn(name)
