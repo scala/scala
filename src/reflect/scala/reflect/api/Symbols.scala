@@ -12,15 +12,8 @@ trait Symbols extends base.Symbols { self: Universe =>
   override type FreeTermSymbol >: Null <: TermSymbol with FreeTermSymbolApi
   override type FreeTypeSymbol >: Null <: TypeSymbol with FreeTypeSymbolApi
 
-  trait HasFlagsApi {
-    def flags: FlagSet
-    def hasFlag(fs: FlagSet): Boolean
-    def hasAllFlags(fs: FlagSet): Boolean
-    def flagString: String
-  }
-
   /** The API of symbols */
-  trait SymbolApi extends SymbolBase with HasFlagsApi { this: Symbol =>
+  trait SymbolApi extends SymbolBase with HasFlagsBase { this: Symbol =>
 
     /** The position of this symbol
      */
@@ -228,14 +221,14 @@ trait Symbols extends base.Symbols { self: Universe =>
   }
 
   /** The API of term symbols */
-  trait TermSymbolApi extends SymbolApi with HasFlagsApi with TermSymbolBase { this: TermSymbol =>
+  trait TermSymbolApi extends SymbolApi with TermSymbolBase { this: TermSymbol =>
     /** The overloaded alternatives of this symbol */
     def alternatives: List[Symbol]
 
   }
 
   /** The API of type symbols */
-  trait TypeSymbolApi extends SymbolApi with HasFlagsApi with TypeSymbolBase { this: TypeSymbol =>
+  trait TypeSymbolApi extends SymbolApi with TypeSymbolBase { this: TypeSymbol =>
     /** Is the type parameter represented by this symbol contravariant?
      */
     def isContravariant : Boolean
