@@ -112,11 +112,23 @@ abstract class SymbolLoaders {
     enterClassAndModule(root, name, new SourcefileLoader(src))
   }
 
+  /** The package objects of scala and scala.reflect should always
+   *  be loaded in binary if classfiles are available, even if sourcefiles
+   *  are newer. Late-compiling these objects from source leads to compilation
+   *  order issues.
+   *  Note: We do a name-base comparison here because the method is called before we even
+   *  have ReflectPackage defined.
+   */
+  def binaryOnly(owner: Symbol, name: String): Boolean =
+    name == "package" &&
+    (owner.fullName == "scala" || owner.fullName == "scala.reflect")
+
   /** Initialize toplevel class and module symbols in `owner` from class path representation `classRep`
    */
   def initializeFromClassPath(owner: Symbol, classRep: ClassPath[platform.BinaryRepr]#ClassRep) {
     ((classRep.binary, classRep.source) : @unchecked) match {
-      case (Some(bin), Some(src)) if platform.needCompile(bin, src) =>
+      case (Some(bin), Some(src))
+      if platform.needCompile(bin, src) && !binaryOnly(owner, classRep.name) =>
         if (settings.verbose.value) inform("[symloader] picked up newer source file for " + src.path)
         global.loaders.enterToplevelsFromSource(owner, classRep.name, src)
       case (None, Some(src)) =>
