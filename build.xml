@@ -2122,7 +2122,8 @@ DOCUMENTATION
         <files includes="${src.dir}/actors"/>
         <files includes="${src.dir}/library"/>
         <files includes="${src.dir}/reflect"/>
-        <files includes="${src.dir}/swing"/>
+        <!-- there are more elegant ways of doing this, but they're all too verbose -->
+        <!--<files includes="${src.dir}/swing"/>-->
         <files includes="${src.dir}/continuations/library"/>
       </src>
       <include name="**/*.scala"/>
