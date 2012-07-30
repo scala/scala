@@ -103,34 +103,6 @@ trait Symbols extends base.Symbols { self: Universe =>
      */
     def enclosingTopLevelClass: Symbol
 
-    /** Does this symbol represent a value, i.e. not a module and not a method?
-     *  If yes, `isTerm` is also guaranteed to be true.
-     *  [Eugene++] I need a review of the implementation
-     */
-    def isValue: Boolean
-
-    /** Does this symbol denote a stable value? */
-    def isStable: Boolean
-
-    /** Does this symbol represent a mutable value?
-     *  If yes, `isTerm` and `isValue` are also guaranteed to be true.
-     */
-    def isVariable: Boolean
-
-    /** Does this symbol represent a getter or a setter?
-     */
-    def isAccessor: Boolean
-
-    /** Does this symbol represent a getter of a field?
-     *  If yes, `isTerm` and `isMethod` are also guaranteed to be true.
-     */
-    def isGetter: Boolean
-
-    /** Does this symbol represent a setter of a field?
-     *  If yes, `isTerm` and `isMethod` are also guaranteed to be true.
-     */
-    def isSetter: Boolean
-
     /** Does this symbol represent the definition of a package?
      *  If yes, `isTerm` is also guaranteed to be true.
      */
@@ -141,49 +113,7 @@ trait Symbols extends base.Symbols { self: Universe =>
      */
     def isPackageClass: Boolean
 
-    /** Is this symbol an overloaded method?
-     */
-    def isOverloaded   : Boolean
-
-    /** Does this symbol represent the definition of a primitive class?
-     *  Namely, is it one of [[scala.Double]], [[scala.Float]], [[scala.Long]], [[scala.Int]], [[scala.Char]],
-     *  [[scala.Short]], [[scala.Byte]], [[scala.Unit]] or [[scala.Boolean]]?
-     */
-    def isPrimitiveValueClass: Boolean
-
-    /** Does this symbol represent the definition of a numeric value class?
-     *  Namely, is it one of [[scala.Double]], [[scala.Float]], [[scala.Long]], [[scala.Int]], [[scala.Char]],
-     *  [[scala.Short]], [[scala.Byte]], [[scala.Unit]] or [[scala.Boolean]]?
-     */
-    def isNumericValueClass: Boolean
-
-    /** Does this symbol represent the definition of a custom value class?
-     *  Namely, is AnyVal among its parent classes?
-     *  TODO: Why not just have in reflect.internal?
-     *  [Eugene++] because it's useful for macros
-     */
-    def isDerivedValueClass: Boolean
-
-    /** Does this symbol represent the definition of a type alias?
-     *  If yes, `isType` is also guaranteed to be true.
-     */
-    def isAliasType    : Boolean
-
-    /** Does this symbol represent the definition of an abstract type?
-     *  If yes, `isType` is also guaranteed to be true.
-     */
-    def isAbstractType : Boolean
-
-    /** Does this symbol represent an existentially bound type?
-     *  If yes, `isType` is also guaranteed to be true.
-     */
-    def isExistential  : Boolean
-
-    /** Does this symbol represent a free type captured by reification?
-     */
-    def isFreeType     : Boolean
-
-   /** Does this symbol or its underlying type represent a typechecking error?
+    /** Does this symbol or its underlying type represent a typechecking error?
      */
     def isErroneous : Boolean
 
@@ -222,9 +152,39 @@ trait Symbols extends base.Symbols { self: Universe =>
 
   /** The API of term symbols */
   trait TermSymbolApi extends SymbolApi with TermSymbolBase { this: TermSymbol =>
+    /** Does this symbol represent a value, i.e. not a module and not a method?
+     *  [Eugene++] I need a review of the implementation
+     */
+    def isValue: Boolean
+
+    /** Does this symbol denote a stable value? */
+    def isStable: Boolean
+
+    /** Does this symbol represent a mutable value?
+     */
+    def isVariable: Boolean
+
+    /** Does this symbol represent a getter or a setter?
+     */
+    def isAccessor: Boolean
+
+    /** Does this symbol represent a getter of a field?
+     *  If yes, `isMethod` is also guaranteed to be true.
+     */
+    def isGetter: Boolean
+
+    /** Does this symbol represent a setter of a field?
+     *  If yes, `isMethod` is also guaranteed to be true.
+     */
+    def isSetter: Boolean
+
+    /** Does this symbol represent an overloaded method?
+     *  If yes, `isMethod` is false, and the list of the enclosed alternatives can be found out via `alternatives`.
+     */
+    def isOverloaded   : Boolean
+
     /** The overloaded alternatives of this symbol */
     def alternatives: List[Symbol]
-
   }
 
   /** The API of type symbols */
@@ -239,9 +199,37 @@ trait Symbols extends base.Symbols { self: Universe =>
 
     /** Does this symbol represent the definition of a skolem?
      *  Skolems are used during typechecking to represent type parameters viewed from inside their scopes.
-     *  If yes, `isType` is also guaranteed to be true.
      */
     def isSkolem       : Boolean
+
+    /** Does this symbol represent the definition of a primitive class?
+     *  Namely, is it one of [[scala.Double]], [[scala.Float]], [[scala.Long]], [[scala.Int]], [[scala.Char]],
+     *  [[scala.Short]], [[scala.Byte]], [[scala.Unit]] or [[scala.Boolean]]?
+     */
+    def isPrimitiveValueClass: Boolean
+
+    /** Does this symbol represent the definition of a numeric value class?
+     *  Namely, is it one of [[scala.Double]], [[scala.Float]], [[scala.Long]], [[scala.Int]], [[scala.Char]],
+     *  [[scala.Short]], [[scala.Byte]], [[scala.Unit]] or [[scala.Boolean]]?
+     */
+    def isNumericValueClass: Boolean
+
+    /** Does this symbol represent the definition of a custom value class?
+     *  Namely, is AnyVal among its parent classes?
+     */
+    def isDerivedValueClass: Boolean
+
+    /** Does this symbol represent the definition of a type alias?
+     */
+    def isAliasType    : Boolean
+
+    /** Does this symbol represent the definition of an abstract type?
+     */
+    def isAbstractType : Boolean
+
+    /** Does this symbol represent an existentially bound type?
+     */
+    def isExistential  : Boolean
 
     /** A type reference that refers to this type symbol seen
      *  as a member of given type `site`.
