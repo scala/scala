@@ -239,9 +239,6 @@ trait ContextErrors {
       def VolatileValueError(vdef: Tree) =
         issueNormalTypeError(vdef, "values cannot be volatile")
 
-      def FinalVolatileVarError(vdef: Tree) =
-        issueNormalTypeError(vdef, "final vars cannot be volatile")
-
       def LocalVarUninitializedError(vdef: Tree) =
         issueNormalTypeError(vdef, "local variables must be initialized")
 
