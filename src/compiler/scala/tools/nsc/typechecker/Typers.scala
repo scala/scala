@@ -2277,7 +2277,7 @@ trait Typers extends Modes with Adaptations with Tags {
         // but not in real life (i.e., now that's we've reset the method's type skolems'
         //   infos back to their pre-GADT-constraint state)
         if (isFullyDefined(pt) && !(body1.tpe <:< pt))
-          body1 = typedPos(body1.pos)(gen.mkCast(body1, pt))
+          body1 = typedPos(body1.pos)(gen.mkCast(body1, pt.normalize))
 
       }
 
