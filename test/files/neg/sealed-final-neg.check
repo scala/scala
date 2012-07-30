@@ -1,0 +1,4 @@
+sealed-final-neg.scala:41: error: expected class or object definition
+"Due to SI-6142 this emits no warnings, so we'll just break it until that's fixed."
+^
+one error found
