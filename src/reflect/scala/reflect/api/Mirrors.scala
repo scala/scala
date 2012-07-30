@@ -34,7 +34,7 @@ trait Mirrors { self: Universe =>
      *  that can be used to get and, if appropriate, set the value of the field.
      *
      *  To get a field symbol by the name of the field you would like to reflect,
-     *  use `<this mirror>.symbol.typeSignature.member(newTermName(<name of the field>)).asTermSymbol`.
+     *  use `<this mirror>.symbol.typeSignature.member(newTermName(<name of the field>)).asTermSymbol.accessed`.
      *  For further information about member lookup refer to `Symbol.typeSignature`.
      *
      *  The input symbol can be either private or non-private (Scala reflection transparently deals with visibility).
