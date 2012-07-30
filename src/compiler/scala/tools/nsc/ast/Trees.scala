@@ -95,11 +95,12 @@ trait Trees extends reflect.internal.Trees { self: Global =>
     val (edefs, rest) = body span treeInfo.isEarlyDef
     val (evdefs, etdefs) = edefs partition treeInfo.isEarlyValDef
     val gvdefs = evdefs map {
-      case vdef @ ValDef(_, _, tpt, _) => copyValDef(vdef)(
-        // !!! I know "atPos in case" wasn't intentionally planted to
-        // add an air of mystery to this file, but it is the sort of
-        // comment which only its author could love.
-        tpt = atPos(vdef.pos.focus)(TypeTree() setOriginal tpt setPos tpt.pos.focus), // atPos in case
+      case vdef @ ValDef(_, _, tpt, _) =>
+        copyValDef(vdef)(
+        // atPos for the new tpt is necessary, since the original tpt might have no position
+        // (when missing type annotation for ValDef for example), so even though setOriginal modifies the
+        // position of TypeTree, it would still be NoPosition. That's what the author meant.
+        tpt = atPos(vdef.pos.focus)(TypeTree() setOriginal tpt setPos tpt.pos.focus),
         rhs = EmptyTree
       )
     }
@@ -125,7 +126,7 @@ trait Trees extends reflect.internal.Trees { self: Global =>
             DefDef(constrMods, nme.CONSTRUCTOR, List(), vparamss1, TypeTree(), Block(lvdefs ::: List(superCall), Literal(Constant())))))
       }
     }
-    constrs foreach (ensureNonOverlapping(_, parents ::: gvdefs))
+    constrs foreach (ensureNonOverlapping(_, parents ::: gvdefs, focus=false))
     // Field definitions for the class - remove defaults.
     val fieldDefs = vparamss.flatten map (vd => copyValDef(vd)(mods = vd.mods &~ DEFAULTPARAM, rhs = EmptyTree))
 

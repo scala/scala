@@ -1,0 +1,29 @@
+[[syntax trees at end of                    parser]] // newSource1
+[0:241]package [0:0]<empty> {
+  [0:82]abstract trait Greeting extends [15:82][83]scala.AnyRef {
+    [15]def $init$() = [15]{
+      [15]()
+    };
+    [23:39]val name: [33:39]String;
+    [46:76]val msg = [56:76][56:72][56:71]"How are you, ".$plus([72:76]name)
+  };
+  [87:209]class C extends [94:209][151:159]Greeting {
+    [119:139]val nameElse = _;
+    [95:101]<paramaccessor> private[this] val i: [98:101]Int = _;
+    <119:139>def <init>([95]i: [98]Int) = <119:139>{
+      <119:139>val nameElse = <134:139>"Bob";
+      [94][94][94]super.<init>();
+      [94]()
+    };
+    [168:184]val name = [179:184]"avc";
+    [191:203][191:198]println([199:202]msg)
+  };
+  [215:241]object Test extends [227:241][235:238]App {
+    [227]def <init>() = [227]{
+      [227][227][227]super.<init>();
+      [227]()
+    };
+    [NoPosition]<empty>
+  }
+}
+
