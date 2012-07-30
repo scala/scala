@@ -150,7 +150,7 @@ trait JavaMirrors extends internal.SymbolTable with api.JavaUniverse { self: Sym
 
     def classSymbol(rtcls: RuntimeClass): ClassSymbol = classToScala(rtcls)
 
-    def moduleSymbol(rtcls: RuntimeClass): ModuleSymbol = classToScala(rtcls).companionModule.asModuleSymbol
+    def moduleSymbol(rtcls: RuntimeClass): ModuleSymbol = classToScala(rtcls).companionModule.asModule
 
     private def checkMemberOf(wannabe: Symbol, owner: Symbol) =
       if (!owner.info.member(wannabe.name).alternatives.contains(wannabe)) ErrorNotMember(wannabe, owner)
@@ -166,7 +166,7 @@ trait JavaMirrors extends internal.SymbolTable with api.JavaUniverse { self: Sym
           if (field.isGetter) nme.getterToLocal(field.name)
           else if (field.isSetter) nme.getterToLocal(nme.setterToGetter(field.name))
           else field.name
-        val field1 = (field.owner.info decl name).asTermSymbol
+        val field1 = (field.owner.info decl name).asTerm
         try fieldToJava(field1)
         catch {
           case _: NoSuchFieldException => ErrorNonExistentField(field1)
@@ -260,7 +260,7 @@ trait JavaMirrors extends internal.SymbolTable with api.JavaUniverse { self: Sym
 
     private class JavaModuleMirror(val outer: AnyRef, val symbol: ModuleSymbol)
             extends JavaTemplateMirror with ModuleMirror {
-      def erasure = symbol.moduleClass.asClassSymbol
+      def erasure = symbol.moduleClass.asClass
       def isStatic = true
       def instance = {
         if (!symbol.owner.isPackageClass) throw new Error("inner and nested modules are not supported yet")
@@ -629,7 +629,7 @@ trait JavaMirrors extends internal.SymbolTable with api.JavaUniverse { self: Sym
       val preOwner = classToScala(jOwner)
       val owner = followStatic(preOwner, jmeth.getModifiers)
       (lookup(owner, jmeth.getName) suchThat (erasesTo(_, jmeth)) orElse jmethodAsScala(jmeth))
-        .asMethodSymbol
+        .asMethod
     }
 
     /**
@@ -643,7 +643,7 @@ trait JavaMirrors extends internal.SymbolTable with api.JavaUniverse { self: Sym
     private def constructorToScala1(jconstr: jConstructor[_]): MethodSymbol = {
       val owner = followStatic(classToScala(jconstr.getDeclaringClass), jconstr.getModifiers)
       (lookup(owner, jconstr.getName) suchThat (erasesTo(_, jconstr)) orElse jconstrAsScala(jconstr))
-        .asMethodSymbol
+        .asMethod
     }
 
     /**
@@ -657,8 +657,7 @@ trait JavaMirrors extends internal.SymbolTable with api.JavaUniverse { self: Sym
 
     private def fieldToScala1(jfield: jField): TermSymbol = {
       val owner = followStatic(classToScala(jfield.getDeclaringClass), jfield.getModifiers)
-      (lookup(owner, jfield.getName) suchThat (!_.isMethod) orElse jfieldAsScala(jfield))
-        .asTermSymbol
+      (lookup(owner, jfield.getName) suchThat (!_.isMethod) orElse jfieldAsScala(jfield)).asTerm
     }
 
     /**
@@ -691,7 +690,7 @@ trait JavaMirrors extends internal.SymbolTable with api.JavaUniverse { self: Sym
       val name = (fullname: TermName) drop split + 1
       val opkg = owner.info decl name
       if (opkg.isPackage)
-        opkg.asModuleSymbol
+        opkg.asModule
       else if (opkg == NoSymbol) {
         val pkg = owner.newPackage(name)
         pkg.moduleClass setInfo new LazyPackageType
@@ -758,7 +757,7 @@ trait JavaMirrors extends internal.SymbolTable with api.JavaUniverse { self: Sym
           s"""${if (cls == NoSymbol) "not a type: symbol" else "no symbol could be"}
              | loaded from $jclazz in $owner with name $simpleName and classloader $classLoader""".stripMargin)
 
-        cls.asClassSymbol
+        cls.asClass
       }
     }
 
@@ -773,7 +772,7 @@ trait JavaMirrors extends internal.SymbolTable with api.JavaUniverse { self: Sym
     private def typeParamToScala1(jparam: jTypeVariable[_ <: GenericDeclaration]): TypeSymbol = {
       val owner = genericDeclarationToScala(jparam.getGenericDeclaration)
       owner.info match {
-        case PolyType(tparams, _) => tparams.find(_.name.toString == jparam.getName).get.asTypeSymbol
+        case PolyType(tparams, _) => tparams.find(_.name.toString == jparam.getName).get.asType
       }
     }
 
@@ -941,7 +940,7 @@ trait JavaMirrors extends internal.SymbolTable with api.JavaUniverse { self: Sym
       else if (clazz.owner.isPackageClass)
         javaClass(clazz.javaClassName)
       else if (clazz.owner.isClass)
-        classToJava(clazz.owner.asClassSymbol)
+        classToJava(clazz.owner.asClass)
           .getDeclaredClasses
           .find(_.getSimpleName == clazz.name.toString)
           .getOrElse(noClass)
@@ -957,7 +956,7 @@ trait JavaMirrors extends internal.SymbolTable with api.JavaUniverse { self: Sym
      *  @param   meth The Scala field.
      */
     def fieldToJava(fld: TermSymbol): jField = fieldCache.toJava(fld) {
-      val jclazz = classToJava(fld.owner.asClassSymbol)
+      val jclazz = classToJava(fld.owner.asClass)
       val jname = nme.dropLocalSuffix(fld.name).toString
       try jclazz getDeclaredField jname
       catch {
@@ -969,7 +968,7 @@ trait JavaMirrors extends internal.SymbolTable with api.JavaUniverse { self: Sym
      *  @param   meth The Scala method
      */
     def methodToJava(meth: MethodSymbol): jMethod = methodCache.toJava(meth) {
-      val jclazz = classToJava(meth.owner.asClassSymbol)
+      val jclazz = classToJava(meth.owner.asClass)
       val paramClasses = transformedType(meth).paramTypes map typeToJavaClass
       val jname = nme.dropLocalSuffix(meth.name).toString
       try jclazz getDeclaredMethod (jname, paramClasses: _*)
@@ -983,7 +982,7 @@ trait JavaMirrors extends internal.SymbolTable with api.JavaUniverse { self: Sym
      *  @param   constr The Scala constructor
      */
     def constructorToJava(constr: MethodSymbol): jConstructor[_] = constructorCache.toJava(constr) {
-      val jclazz = classToJava(constr.owner.asClassSymbol)
+      val jclazz = classToJava(constr.owner.asClass)
       val paramClasses = transformedType(constr).paramTypes map typeToJavaClass
       val effectiveParamClasses =
         if (!constr.owner.owner.isStaticOwner) jclazz.getEnclosingClass +: paramClasses
@@ -1001,7 +1000,7 @@ trait JavaMirrors extends internal.SymbolTable with api.JavaUniverse { self: Sym
     def typeToJavaClass(tpe: Type): jClass[_] = tpe match {
       case ExistentialType(_, rtpe) => typeToJavaClass(rtpe)
       case TypeRef(_, ArrayClass, List(elemtpe)) => jArrayClass(typeToJavaClass(elemtpe))
-      case TypeRef(_, sym: ClassSymbol, _) => classToJava(sym.asClassSymbol)
+      case TypeRef(_, sym: ClassSymbol, _) => classToJava(sym.asClass)
       case tpe @ TypeRef(_, sym: AliasTypeSymbol, _) => typeToJavaClass(tpe.dealias)
       case _ => throw new NoClassDefFoundError("no Java class corresponding to "+tpe+" found")
     }

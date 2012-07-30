@@ -8,7 +8,7 @@ object Test extends App {
     val code = reify{val x: T = "2".asInstanceOf[T]; println("ima worx: %s".format(x)); x}
     println(code.tree.freeTypes)
     val T = code.tree.freeTypes(0)
-    cm.mkToolBox().runExpr(code.tree, Map(T -> definitions.StringClass.asType))
+    cm.mkToolBox().runExpr(code.tree, Map(T -> definitions.StringClass.toType))
   }
 
   new C[String]

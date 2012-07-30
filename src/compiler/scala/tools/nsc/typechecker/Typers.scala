@@ -5080,7 +5080,7 @@ trait Typers extends Modes with Adaptations with Tags {
               // convert new Array^N[T](len) for N > 1 to evidence[ClassTag[Array[...Array[T]...]]].newArray(len), where Array HK gets applied (N-1) times
               // [Eugene] no more MaxArrayDims. ClassTags are flexible enough to allow creation of arrays of arbitrary dimensionality (w.r.t JVM restrictions)
               val Some((level, componentType)) = erasure.GenericArray.unapply(tpt.tpe)
-              val tagType = List.iterate(componentType, level)(tpe => appliedType(ArrayClass.asType, List(tpe))).last
+              val tagType = List.iterate(componentType, level)(tpe => appliedType(ArrayClass.toTypeConstructor, List(tpe))).last
               val newArrayApp = atPos(tree.pos) {
                 val tag = resolveClassTag(tree.pos, tagType)
                 if (tag.isEmpty) MissingClassTagError(tree, tagType)

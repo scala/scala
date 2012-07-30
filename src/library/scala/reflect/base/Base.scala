@@ -62,7 +62,9 @@ class Base extends Universe { self =>
 
   class TypeSymbol(val owner: Symbol, override val name: TypeName, flags: FlagSet)
       extends Symbol(name, flags) with TypeSymbolBase {
-    override val asTypeConstructor = TypeRef(ThisType(owner), this, Nil)
+    override def toTypeConstructor = TypeRef(ThisType(owner), this, Nil)
+    override def toType = TypeRef(ThisType(owner), this, Nil)
+    override def toTypeIn(site: Type) = TypeRef(ThisType(owner), this, Nil)
   }
   implicit val TypeSymbolTag = ClassTag[TypeSymbol](classOf[TypeSymbol])
 
@@ -295,16 +297,16 @@ class Base extends Universe { self =>
   object build extends BuildBase {
     def selectType(owner: Symbol, name: String): TypeSymbol = {
       val clazz = new ClassSymbol(owner, newTypeName(name), NoFlags)
-      cached(clazz.fullName)(clazz).asTypeSymbol
+      cached(clazz.fullName)(clazz).asType
     }
 
     def selectTerm(owner: Symbol, name: String): TermSymbol = {
       val valu = new MethodSymbol(owner, newTermName(name), NoFlags)
-      cached(valu.fullName)(valu).asTermSymbol
+      cached(valu.fullName)(valu).asTerm
     }
 
     def selectOverloadedMethod(owner: Symbol, name: String, index: Int): MethodSymbol =
-      selectTerm(owner, name).asMethodSymbol
+      selectTerm(owner, name).asMethod
 
     def newNestedSymbol(owner: Symbol, name: Name, pos: Position, flags: Long, isClass: Boolean): Symbol =
       if (name.isTypeName)
@@ -384,7 +386,7 @@ class Base extends Universe { self =>
 
   object definitions extends DefinitionsBase {
     lazy val ScalaPackage = staticModule("scala")
-    lazy val ScalaPackageClass = ScalaPackage.moduleClass.asClassSymbol
+    lazy val ScalaPackageClass = ScalaPackage.moduleClass.asClass
 
     lazy val AnyClass     = staticClass("scala.Any")
     lazy val AnyValClass  = staticClass("scala.Any")

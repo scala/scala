@@ -13,12 +13,12 @@ class C {
 }
 
 object Test extends App {
-  println(typeOf[C].member(newTermName("x1")).asMethodSymbol.params)
-  println(typeOf[C].member(newTermName("x2")).asMethodSymbol.params)
-  println(typeOf[C].member(newTermName("x3")).asMethodSymbol.params)
-  println(typeOf[C].member(newTermName("x4")).asMethodSymbol.params)
-  println(typeOf[C].member(newTermName("y1")).asMethodSymbol.params)
-  println(typeOf[C].member(newTermName("y2")).asMethodSymbol.params)
-  println(typeOf[C].member(newTermName("y3")).asMethodSymbol.params)
-  println(typeOf[C].member(newTermName("y4")).asMethodSymbol.params)
+  println(typeOf[C].member(newTermName("x1")).asMethod.params)
+  println(typeOf[C].member(newTermName("x2")).asMethod.params)
+  println(typeOf[C].member(newTermName("x3")).asMethod.params)
+  println(typeOf[C].member(newTermName("x4")).asMethod.params)
+  println(typeOf[C].member(newTermName("y1")).asMethod.params)
+  println(typeOf[C].member(newTermName("y2")).asMethod.params)
+  println(typeOf[C].member(newTermName("y3")).asMethod.params)
+  println(typeOf[C].member(newTermName("y4")).asMethod.params)
 }

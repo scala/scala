@@ -47,10 +47,10 @@ package ll {
       for (p <- typeRefPrefixes ; c <- classes filter (isPossibleEnclosure(p.typeSymbol, _)) ; a <- targs) yield
         typeRef(p, c, List(a))
     )
-    
+
     val wfmt      = "%-" + 25 + "s"
     def to_s(x: Any): String    = wfmt.format(x.toString.replaceAll("""\bll\.""", ""))
-    
+
     def fmt(args: Any*): String = {
       (args map to_s mkString "  ").replaceAll("""\s+$""", "")
     }
@@ -61,7 +61,7 @@ package ll {
     }
 
     def permuteAsSeenFrom(targs: List[Type]) = (
-      for { 
+      for {
         tp <- typeRefs(targs filterNot (_ eq NoType))
         prefix <- asSeenPrefixes
         if tp.prefix != prefix
@@ -72,11 +72,11 @@ package ll {
       }
       yield ((site, tp, prefix, seen))
     )
-    
+
     def block(label: Any)(lines: List[String]): List[String] = {
       val first = "" + label + " {"
       val  last = "}"
-      
+
       first +: lines.map("  " + _) :+ last
     }
 
@@ -84,7 +84,7 @@ package ll {
       permuteAsSeenFrom(targs).groupBy(_._1).toList.sortBy(_._1.toString) flatMap {
         case (site, xs) =>
           block(fmt(site)) {
-            fmt("type", "seen from prefix", "is") :: 
+            fmt("type", "seen from prefix", "is") ::
             fmt("----", "----------------", "--") :: {
               xs.groupBy(_._2).toList.sortBy(_._1.toString) flatMap {
                 case (tp, ys) =>
@@ -95,15 +95,15 @@ package ll {
       }
     }
   }
-  
+
   def pretty(xs: List[_]) = if (xs.isEmpty) "" else xs.mkString("\n  ", "\n  ", "\n")
 
   def signaturesIn(info: Type): List[String] = (
-    info.members 
+    info.members.toList
       filterNot (s => s.isType || s.owner == ObjectClass || s.owner == AnyClass || s.isConstructor)
       map (_.defString)
   )
-  
+
   def check(source: String, unit: global.CompilationUnit) = {
     import syms._
 

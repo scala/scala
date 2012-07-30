@@ -75,9 +75,9 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     def typeSignature: Type               = info
     def typeSignatureIn(site: Type): Type = site memberInfo this
 
-    def asType: Type = tpe
-    def asTypeIn(site: Type): Type = site.memberType(this)
-    def asTypeConstructor: Type = typeConstructor
+    def toType: Type = tpe
+    def toTypeIn(site: Type): Type = site.memberType(this)
+    def toTypeConstructor: Type = typeConstructor
     def setFlags(flags: FlagSet): this.type = setInternalFlags(flags)
     def setInternalFlags(flag: Long): this.type = { setFlag(flag); this }
     def setTypeSignature(tpe: Type): this.type = { setInfo(tpe); this }
