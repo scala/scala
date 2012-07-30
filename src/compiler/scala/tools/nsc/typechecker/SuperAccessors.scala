@@ -20,8 +20,11 @@ import symtab.Flags._
  *  class, in order to avoid overriding conflicts.
  *
  *  This phase also sets SPECIALIZED flag on type parameters with
- *  `@specialized` annotation. We put this logic here because the
- *  flag must be set before pickling.
+ *  `@specialized` annotation. If the -Xanyref-specialization flag
+ *  is not set, we add another annotation that tells specialization
+ *  the symbol shouldn't be specialized on AnyRef. The annotations
+ *  will be pickled, so future compiler runs have this information
+ *  available.
  *
  *  @author  Martin Odersky
  *  @version 1.0
@@ -67,7 +70,7 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
         storeAccessorDefinition(clazz, DefDef(acc, EmptyTree))
         acc
       }
-      
+
       atPos(sel.pos)(Select(gen.mkAttributedThis(clazz), superAcc) setType sel.tpe)
     }
 
@@ -218,6 +221,8 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
           // we need to deSkolemize symbol so we get the same symbol as others would get when
           // inspecting type parameter from "outside"; see the discussion of skolems here:
           // https://groups.google.com/d/topic/scala-internals/0j8laVNTQsI/discussion
+          if (!settings.XanyrefSpec.value)
+            typeDef.symbol.deSkolemize.addAnnotation(AnnotationInfo(definitions.SpecializedExcludeAnyRef.tpe, Nil, Nil))
           typeDef.symbol.deSkolemize.setFlag(SPECIALIZED)
           typeDef
 
@@ -263,7 +268,7 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
             // FIXME - this should be unified with needsProtectedAccessor, but some
             // subtlety which presently eludes me is foiling my attempts.
             val shouldEnsureAccessor = (
-                 currentClass.isTrait 
+                 currentClass.isTrait
               && sym.isProtected
               && sym.enclClass != currentClass
               && !sym.owner.isTrait
@@ -483,7 +488,7 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
           )
         true
       }
-      isCandidate && !host.isPackageClass && !isSelfType 
+      isCandidate && !host.isPackageClass && !isSelfType
     }
 
     /** Return the innermost enclosing class C of referencingClass for which either

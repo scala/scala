@@ -24,9 +24,14 @@ import Specializable._
  *
  *  @since 2.8
  */
-// class tspecialized[T](group: Group[T]) extends annotation.StaticAnnotation {
-
 class specialized(group: SpecializedGroup) extends annotation.StaticAnnotation {
   def this(types: Specializable*) = this(new Group(types.toList))
-  def this() = this(Everything)
+  def this() = this(Primitives)
 }
+
+/** This annotation is used internally by the compiler to denote classes that
+ *  were compiled without the -Xanyref-specialization flag. It is an anti-
+ *  annotation marking that the type parameter should not be specialized on
+ *  AnyRef, iregardless of what the @specialized annotation says.
+ */
+private class specializedExcludeAnyRef extends annotation.StaticAnnotation

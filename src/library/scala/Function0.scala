@@ -6,7 +6,7 @@
 **                          |/                                          **
 \*                                                                      */
 // GENERATED CODE: DO NOT EDIT.
-// genprod generated these sources at: Mon Apr 30 07:46:11 PDT 2012
+// genprod generated these sources at: Thu Jul 26 15:08:15 CEST 2012
 
 package scala
 

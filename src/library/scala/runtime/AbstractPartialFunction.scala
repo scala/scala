@@ -26,7 +26,7 @@ package scala.runtime
  *  @author  Pavel Pavlov
  *  @since   2.10
  */
-abstract class AbstractPartialFunction[@specialized(scala.Int, scala.Long, scala.Float, scala.Double, scala.AnyRef) -T1, @specialized(scala.Unit, scala.Boolean, scala.Int, scala.Float, scala.Long, scala.Double, scala.AnyRef) +R] extends Function1[T1, R] with PartialFunction[T1, R] { self =>
+abstract class AbstractPartialFunction[@specialized(scala.Int, scala.Long, scala.Float, scala.Double/*, scala.AnyRef*/) -T1, @specialized(scala.Unit, scala.Boolean, scala.Int, scala.Float, scala.Long, scala.Double/*, scala.AnyRef*/) +R] extends Function1[T1, R] with PartialFunction[T1, R] { self =>
   // this method must be overridden for better performance,
   // for backwards compatibility, fall back to the one inherited from PartialFunction
   // this assumes the old-school partial functions override the apply method, though
@@ -59,7 +59,7 @@ abstract class AbstractPartialFunction[@specialized(scala.Int, scala.Long, scala
  *  @author  Pavel Pavlov
  *  @since   2.10
  */
-abstract class AbstractTotalFunction[@specialized(scala.Int, scala.Long, scala.Float, scala.Double, scala.AnyRef) -T1, @specialized(scala.Unit, scala.Boolean, scala.Int, scala.Float, scala.Long, scala.Double, scala.AnyRef) +R] extends Function1[T1, R] with PartialFunction[T1, R] {
+abstract class AbstractTotalFunction[@specialized(scala.Int, scala.Long, scala.Float, scala.Double/*, scala.AnyRef*/) -T1, @specialized(scala.Unit, scala.Boolean, scala.Int, scala.Float, scala.Long, scala.Double/*, scala.AnyRef*/) +R] extends Function1[T1, R] with PartialFunction[T1, R] {
   final def isDefinedAt(x: T1): Boolean = true
   @annotation.unspecialized override final def applyOrElse[A1 <: T1, B1 >: R](x: A1, default: A1 => B1): B1 = apply(x)
   @annotation.unspecialized override final def orElse[A1 <: T1, B1 >: R](that: PartialFunction[A1, B1]): PartialFunction[A1, B1] = this
