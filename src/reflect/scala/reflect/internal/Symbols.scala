@@ -2486,6 +2486,29 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
       mtpeResult = res
       res
     }
+
+    override def allParams: List[List[Symbol]] = paramss
+
+    override def params: List[Symbol] = {
+      def loop(tpe: Type): List[Symbol] =
+        tpe match {
+          case NullaryMethodType(_) => Nil
+          case MethodType(params, _) => params
+          case PolyType(_, tpe) => loop(tpe)
+        }
+      loop(info)
+    }
+
+    override def resultType: Type = {
+      def loop(tpe: Type): Type =
+        tpe match {
+          case NullaryMethodType(ret) => loop(ret)
+          case MethodType(_, ret) => loop(ret)
+          case PolyType(_, tpe) => loop(tpe)
+          case tpe => tpe
+        }
+      loop(info)
+    }
   }
   implicit val MethodSymbolTag = ClassTag[MethodSymbol](classOf[MethodSymbol])
 

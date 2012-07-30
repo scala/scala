@@ -43,23 +43,6 @@ trait Symbols extends base.Symbols { self: Universe =>
      */
     def hasAnnotation(sym: Symbol): Boolean
 
-    /** ...
-     */
-    def orElse(alt: => Symbol): Symbol
-
-    /** ...
-     */
-    def filter(cond: Symbol => Boolean): Symbol
-
-    /** If this is a NoSymbol, returns NoSymbol, otherwise
-     *  returns the result of applying `f` to this symbol.
-     */
-    def map(f: Symbol => Symbol): Symbol
-
-    /** ...
-     */
-    def suchThat(cond: Symbol => Boolean): Symbol
-
     /**
      * Set when symbol has a modifier of the form private[X], NoSymbol otherwise.
      *
@@ -93,15 +76,17 @@ trait Symbols extends base.Symbols { self: Universe =>
      */
     def companionSymbol: Symbol
 
-    /** If this symbol is a package class, this symbol; otherwise the next enclosing
-     *  package class, or `NoSymbol` if none exists.
+    /** The type signature of this symbol seen as a member of given type `site`.
      */
-    def enclosingPackageClass: Symbol
+    def typeSignatureIn(site: Type): Type
 
-    /** If this symbol is a top-level class, this symbol; otherwise the next enclosing
-     *  top-level class, or `NoSymbol` if none exists.
+    /** The type signature of this symbol.
+     *  Note if the symbol is a member of a class, one almost always is interested
+     *  in `typeSignatureIn` with a site type instead.
      */
-    def enclosingTopLevelClass: Symbol
+    def typeSignature: Type
+
+    /******************* tests *******************/
 
     /** Does this symbol represent the definition of a package?
      *  If yes, `isTerm` is also guaranteed to be true.
@@ -136,15 +121,24 @@ trait Symbols extends base.Symbols { self: Universe =>
      */
     def isStatic: Boolean
 
-    /** The type signature of this symbol seen as a member of given type `site`.
-     */
-    def typeSignatureIn(site: Type): Type
+    /******************* helpers *******************/
 
-    /** The type signature of this symbol.
-     *  Note if the symbol is a member of a class, one almost always is interested
-     *  in `typeSignatureIn` with a site type instead.
+    /** ...
      */
-    def typeSignature: Type
+    def orElse(alt: => Symbol): Symbol
+
+    /** ...
+     */
+    def filter(cond: Symbol => Boolean): Symbol
+
+    /** If this is a NoSymbol, returns NoSymbol, otherwise
+     *  returns the result of applying `f` to this symbol.
+     */
+    def map(f: Symbol => Symbol): Symbol
+
+    /** ...
+     */
+    def suchThat(cond: Symbol => Boolean): Symbol
 
     /** The string discriminator of this symbol; useful for debugging */
     def kind: String
@@ -263,10 +257,33 @@ trait Symbols extends base.Symbols { self: Universe =>
   }
 
   /** The API of method symbols */
-  type MethodSymbolApi = MethodSymbolBase
+  trait MethodSymbolApi extends TermSymbolApi with MethodSymbolBase { this: MethodSymbol =>
+    /** For a polymorphic method, its type parameters, the empty list for all other methods */
+    def typeParams: List[Symbol]
+
+    /** The first parameter list of the method.
+     *
+     *  For a nullary method, returns the empty list.
+     *  For a method with an empty parameter list, returns the empty list.
+     *  To distinguish between those, use `allParams`.
+     */
+    def params: List[Symbol]
+
+    /** All parameter lists of the method.
+     *
+     *  Can be used to distinguish nullary methods and methods with empty parameter lists.
+     *  For a nullary method, returns the empty list (i.e. `List()`).
+     *  For a method with an empty parameter list, returns a list that contains the empty list (i.e. `List(List())`).
+     */
+    def allParams: List[List[Symbol]]
+
+    /** The result type of the method */
+    def resultType: Type
+  }
 
   /** The API of module symbols */
-  type ModuleSymbolApi = ModuleSymbolBase
+  trait ModuleSymbolApi extends TermSymbolApi with ModuleSymbolBase { this: ModuleSymbol =>
+  }
 
   /** The API of class symbols */
   trait ClassSymbolApi extends TypeSymbolApi with ClassSymbolBase { this: ClassSymbol =>
