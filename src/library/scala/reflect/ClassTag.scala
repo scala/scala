@@ -64,7 +64,6 @@ trait ClassTag[T] extends ClassManifestDeprecatedApis[T] with Equals with Serial
 }
 
 object ClassTag {
-  private val NothingTYPE = classOf[scala.runtime.Nothing$]
   private val NullTYPE = classOf[scala.runtime.Null$]
   private val ObjectTYPE = classOf[java.lang.Object]
 
@@ -81,7 +80,13 @@ object ClassTag {
   val Object  : ClassTag[java.lang.Object] = new ClassTag[java.lang.Object]{ def runtimeClass = ObjectTYPE; private def readResolve() = ClassTag.Object }
   val AnyVal  : ClassTag[scala.AnyVal]     = ClassTag.Object.asInstanceOf[ClassTag[scala.AnyVal]]
   val AnyRef  : ClassTag[scala.AnyRef]     = ClassTag.Object.asInstanceOf[ClassTag[scala.AnyRef]]
-  val Nothing : ClassTag[scala.Nothing]    = new ClassTag[scala.Nothing]{ def runtimeClass = NothingTYPE; private def readResolve() = ClassTag.Nothing }
+  val Nothing : ClassTag[scala.Nothing]    = new ClassTag[scala.Nothing]{
+    def runtimeClass = throw new Exception("Nothing is a bottom type, therefore its erasure does not return a value")
+    private def readResolve() = ClassTag.Nothing
+    override def equals(x: Any) = x.isInstanceOf[ClassTag[_]] && (x.asInstanceOf[AnyRef] eq ClassTag.Nothing)
+    override def hashCode = System.identityHashCode(this)
+    override def toString = "ClassTag[Nothing]"
+  }
   val Null    : ClassTag[scala.Null]       = new ClassTag[scala.Null]{ def runtimeClass = NullTYPE; private def readResolve() = ClassTag.Null }
 
   def apply[T](runtimeClass1: jClass[_]): ClassTag[T] =
