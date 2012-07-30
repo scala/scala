@@ -236,24 +236,6 @@ trait Symbols extends base.Symbols { self: Universe =>
     /** Does this symbol represent an existentially bound type?
      */
     def isExistential  : Boolean
-
-    /** A type reference that refers to this type symbol seen
-     *  as a member of given type `site`.
-     */
-    def asTypeIn(site: Type): Type
-
-    /**  A type reference that refers to this type symbol
-      *  Note if symbol is a member of a class, one almost always is interested
-      *  in `asTypeIn` with a site type instead.
-      *
-      *  Example: Given a class declaration `class C[T] { ... } `, that generates a symbol
-      *  `C`. Then `C.asType` is the type `C[T]`.
-      *
-      *  By contrast, `C.typeSignature` would be a type signature of form
-      *  `PolyType(ClassInfoType(...))` that describes type parameters, value
-      *  parameters, parent types, and members of `C`.
-      */
-     def asType: Type  // !!! Same as typeSignature.
   }
 
   /** The API of method symbols */

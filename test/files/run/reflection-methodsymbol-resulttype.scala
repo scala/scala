@@ -13,12 +13,12 @@ class C {
 }
 
 object Test extends App {
-  println(typeOf[C].member(newTermName("x1")).asMethodSymbol.resultType)
-  println(typeOf[C].member(newTermName("x2")).asMethodSymbol.resultType)
-  println(typeOf[C].member(newTermName("x3")).asMethodSymbol.resultType)
-  println(typeOf[C].member(newTermName("x4")).asMethodSymbol.resultType)
-  println(typeOf[C].member(newTermName("y1")).asMethodSymbol.resultType)
-  println(typeOf[C].member(newTermName("y2")).asMethodSymbol.resultType)
-  println(typeOf[C].member(newTermName("y3")).asMethodSymbol.resultType)
-  println(typeOf[C].member(newTermName("y4")).asMethodSymbol.resultType)
+  println(typeOf[C].member(newTermName("x1")).asMethod.resultType)
+  println(typeOf[C].member(newTermName("x2")).asMethod.resultType)
+  println(typeOf[C].member(newTermName("x3")).asMethod.resultType)
+  println(typeOf[C].member(newTermName("x4")).asMethod.resultType)
+  println(typeOf[C].member(newTermName("y1")).asMethod.resultType)
+  println(typeOf[C].member(newTermName("y2")).asMethod.resultType)
+  println(typeOf[C].member(newTermName("y3")).asMethod.resultType)
+  println(typeOf[C].member(newTermName("y4")).asMethod.resultType)
 }
