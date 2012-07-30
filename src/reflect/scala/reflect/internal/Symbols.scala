@@ -84,6 +84,8 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     def getAnnotations: List[AnnotationInfo] = { initialize; annotations }
     def setAnnotations(annots: AnnotationInfo*): this.type = { setAnnotations(annots.toList); this }
 
+    def getter: Symbol = getter(owner)
+    def setter: Symbol = setter(owner)
   }
 
   /** The class for all symbols */

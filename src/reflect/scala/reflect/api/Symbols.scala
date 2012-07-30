@@ -185,6 +185,18 @@ trait Symbols extends base.Symbols { self: Universe =>
 
     /** The overloaded alternatives of this symbol */
     def alternatives: List[Symbol]
+
+    /** Backing field for an accessor method, NoSymbol for all other term symbols.
+     */
+    def accessed: Symbol
+
+    /** Getter method for a backing field of a val or a val, NoSymbol for all other term symbols.
+     */
+    def getter: Symbol
+
+    /** Setter method for a backing field of a val or a val, NoSymbol for all other term symbols.
+     */
+    def setter: Symbol
   }
 
   /** The API of type symbols */
