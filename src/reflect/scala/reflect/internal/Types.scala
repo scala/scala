@@ -323,6 +323,7 @@ trait Types extends api.Types { self: SymbolTable =>
 
     /** Is this type higher-kinded, i.e., is it a type constructor @M */
     def isHigherKinded: Boolean = false
+    def takesTypeArgs: Boolean = this.isHigherKinded
 
     /** Does this type denote a stable reference (i.e. singleton type)? */
     def isStable: Boolean = false

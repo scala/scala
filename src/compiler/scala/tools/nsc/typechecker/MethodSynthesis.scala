@@ -70,11 +70,8 @@ trait MethodSynthesis {
     // [Eugene++->Martin] now this compiles, will soon check it out
     def newMethodType[F](owner: Symbol)(implicit t: TT[F]): Type = {
       val fnSymbol = compilerSymbolFromTag(t)
-      assert(fnSymbol isSubClass FunctionClass(t.tpe.typeArguments.size - 1), (owner, t))
-      // [Eugene++ to Paul] needs review!!
-      // val symbols = m.typeArguments map (m => manifestToSymbol(m))
-      // val formals = symbols.init map (_.typeConstructor)
       val formals = compilerTypeFromTag(t).typeArguments
+      assert(fnSymbol isSubClass FunctionClass(formals.size - 1), (owner, t))
       val params  = owner newSyntheticValueParams formals
       MethodType(params, formals.last)
     }
