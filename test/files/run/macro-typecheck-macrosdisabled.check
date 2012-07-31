@@ -8,11 +8,6 @@
         ()
       };
       def apply[U >: Nothing <: scala.reflect.base.Universe with Singleton]($m$untyped: scala.reflect.base.MirrorOf[U]): U#Tree = {
-        val $u: scala.reflect.api.Universe = $m$untyped.universe.asInstanceOf[scala.reflect.api.Universe];
-        val $m: $u.Mirror = $m$untyped.asInstanceOf[$u.Mirror];
-        $treecreator1.this.applyImpl[$u.type]($m).asInstanceOf[U#Tree]
-      };
-      private def applyImpl[U >: Nothing <: scala.reflect.api.Universe with Singleton]($m$untyped: scala.reflect.base.MirrorOf[U]): scala.reflect.base.Universe#Tree = {
         val $u: U = $m$untyped.universe;
         val $m: $u.Mirror = $m$untyped.asInstanceOf[$u.Mirror];
         $u.Literal.apply($u.Constant.apply(2))

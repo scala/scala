@@ -616,7 +616,6 @@ trait StdNames {
     val apply: NameType                = "apply"
     val applyDynamic: NameType         = "applyDynamic"
     val applyDynamicNamed: NameType    = "applyDynamicNamed"
-    val applyImpl: NameType            = "applyImpl"
     val applyOrElse: NameType          = "applyOrElse"
     val args : NameType                = "args"
     val argv : NameType                = "argv"
