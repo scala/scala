@@ -46,7 +46,7 @@ trait ScratchPadMaker { self: Global =>
         patches += Patch(stat.pos.start, ";$stop()")
       var end = stat.pos.end
       if (end > skipped) {
-        while (end < contents.length && !(isLineBreakChar(contents(end)))) end += 1
+        while (end < contents.length && !isLineBreakChar(contents(end))) end += 1
         patches += Patch(stat.pos.start, ";$skip("+(end-skipped)+"); ")
         skipped = end
       }
