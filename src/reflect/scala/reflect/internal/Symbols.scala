@@ -456,6 +456,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     def isAliasType    = false
     def isAbstractType = false
     def isSkolem       = false
+    def isMacro        = this hasFlag MACRO
 
     /** A Type, but not a Class. */
     def isNonClassType = false
@@ -2487,19 +2488,9 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
       res
     }
 
-    override def allParams: List[List[Symbol]] = paramss
+    override def params: List[List[Symbol]] = paramss
 
-    override def params: List[Symbol] = {
-      def loop(tpe: Type): List[Symbol] =
-        tpe match {
-          case NullaryMethodType(_) => Nil
-          case MethodType(params, _) => params
-          case PolyType(_, tpe) => loop(tpe)
-        }
-      loop(info)
-    }
-
-    override def resultType: Type = {
+    override def returnType: Type = {
       def loop(tpe: Type): Type =
         tpe match {
           case NullaryMethodType(ret) => loop(ret)
@@ -2772,8 +2763,10 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     override def isJavaInterface         = hasAllFlags(JAVA | TRAIT)
     override def isNestedClass           = !owner.isPackageClass
     override def isNumericValueClass     = definitions.isNumericValueClass(this)
+    override def isNumeric               = isNumericValueClass
     override def isPackageObjectClass    = isModuleClass && (name == tpnme.PACKAGE)
     override def isPrimitiveValueClass   = definitions.isPrimitiveValueClass(this)
+    override def isPrimitive             = isPrimitiveValueClass
 
     // The corresponding interface is the last parent by convention.
     private def lastParent = if (tpe.parents.isEmpty) NoSymbol else tpe.parents.last.typeSymbol

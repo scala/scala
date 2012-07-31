@@ -110,9 +110,8 @@ trait SynchronizedSymbols extends internal.Symbols { self: SymbolTable =>
 
   trait SynchronizedMethodSymbol extends MethodSymbol with SynchronizedTermSymbol {
     override def typeAsMemberOf(pre: Type): Type = synchronized { super.typeAsMemberOf(pre) }
-    override def allParams: List[List[Symbol]] = synchronized { super.allParams }
-    override def params: List[Symbol] = synchronized { super.params }
-    override def resultType: Type = synchronized { super.resultType }
+    override def params: List[List[Symbol]] = synchronized { super.params }
+    override def returnType: Type = synchronized { super.returnType }
   }
 
   trait SynchronizedTypeSymbol extends TypeSymbol with SynchronizedSymbol {

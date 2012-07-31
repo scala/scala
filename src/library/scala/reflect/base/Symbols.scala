@@ -80,10 +80,6 @@ trait Symbols { self: Universe =>
   /** The base API that all symbols support */
   trait SymbolBase { this: Symbol =>
 
-    /** An id number which is unique for all symbols in this universe */
-    // [Eugene++ to Martin] do we leave this here?
-    def id: Int
-
     /** The owner of this symbol. This is the symbol
      *  that directly contains the current symbol's definition.
      *  The `NoSymbol` symbol does not have an owner, and calling this method
@@ -111,18 +107,6 @@ trait Symbols { self: Universe =>
      *  are separated by periods.
      */
     def fullName: String
-
-    /** If this symbol is a class, this symbol; otherwise the next enclosing
-     *  class, or `NoSymbol` if none exists.
-     */
-    def enclosingClass: Symbol =
-      if (isClass || this == NoSymbol) this else owner.enclosingClass
-
-    /** If this symbol is a method, this symbol; otherwise the next enclosing
-     *  method, or `NoSymbol` if none exists.
-     */
-    def enclosingMethod: Symbol =
-      if (isMethod || this == NoSymbol) this else owner.enclosingMethod
 
     /** Does this symbol represent the definition of a type?
      *  Note that every symbol is either a term or a type.

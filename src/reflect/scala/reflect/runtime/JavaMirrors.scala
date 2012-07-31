@@ -216,7 +216,7 @@ trait JavaMirrors extends internal.SymbolTable with api.JavaUniverse { self: Sym
         def showTparams(tparams: List[Symbol]) = "[" + (tparams map showTparam mkString ", ") + "]"
         sig += showTparams(symbol.typeParams)
       }
-      if (symbol.allParams.nonEmpty) {
+      if (symbol.params.nonEmpty) {
         def showParam(param: Symbol) = s"${param.name}: ${param.typeSignature}"
         def showParams(params: List[Symbol]) = {
           val s_mods = if (params.nonEmpty && params(0).hasFlag(IMPLICIT)) "implicit " else ""
@@ -224,9 +224,9 @@ trait JavaMirrors extends internal.SymbolTable with api.JavaUniverse { self: Sym
           "(" + s_mods + s_params + ")"
         }
         def showParamss(paramss: List[List[Symbol]]) = paramss map showParams mkString ""
-        sig += showParamss(symbol.allParams)
+        sig += showParamss(symbol.params)
       }
-      sig += s": ${symbol.resultType}"
+      sig += s": ${symbol.returnType}"
       sig
     }
 

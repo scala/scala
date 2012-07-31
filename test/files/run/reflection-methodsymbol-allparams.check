@@ -1,8 +1,0 @@
-List()
-List(List())
-List(List(value x))
-List(List(value x), List(value y))
-List()
-List(List())
-List(List(value x))
-List(List(value x), List(value y))
