@@ -1,0 +1,5 @@
+Id.scala:3: error: Companions 'class Test' and 'object Test' must be defined in same file:
+  Found in t5031/package.scala and t5031/Id.scala
+object Test
+       ^
+one error found
