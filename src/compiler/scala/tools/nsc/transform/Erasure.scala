@@ -563,8 +563,16 @@ abstract class Erasure extends AddInterfaces
               case _ =>
                 val clazz = tref.sym
                 log("not boxed: "+tree)
-                val tree0 = adaptToType(tree, clazz.tpe)
-                cast(Apply(Select(tree0, clazz.derivedValueClassUnbox), List()), pt)
+                lazy val underlying = underlyingOfValueClass(clazz)
+                val tree0 =
+                  if (tree.tpe.typeSymbol == NullClass &&
+                      isPrimitiveValueClass(underlying.typeSymbol)) {
+                    // convert `null` directly to underlying type, as going
+                    // via the unboxed type would yield a NPE (see SI-5866)
+                    unbox1(tree, underlying)
+                  } else
+                    Apply(Select(adaptToType(tree, clazz.tpe), clazz.derivedValueClassUnbox), List())
+                cast(tree0, pt)
             }
           case _ =>
             pt.typeSymbol match {
