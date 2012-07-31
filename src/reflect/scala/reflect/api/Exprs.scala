@@ -7,6 +7,7 @@ package scala.reflect
 package api
 
 import scala.reflect.base.TreeCreator
+import java.io.{ObjectInputStream, ObjectOutputStream}
 
 trait Exprs { self: Universe =>
 
@@ -34,7 +35,7 @@ trait Exprs { self: Universe =>
     def unapply[T](expr: Expr[T]): Option[Tree] = Some(expr.tree)
   }
 
-  private class ExprImpl[+T: AbsTypeTag](val mirror: Mirror, val treec: TreeCreator) extends Expr[T] {
+  private class ExprImpl[+T: AbsTypeTag](var mirror: Mirror, var treec: TreeCreator) extends Expr[T] {
     def in[U <: Universe with Singleton](otherMirror: MirrorOf[U]): U # Expr[T] = {
       val otherMirror1 = otherMirror.asInstanceOf[MirrorOf[otherMirror.universe.type]]
       val tag1 = (implicitly[AbsTypeTag[T]] in otherMirror).asInstanceOf[otherMirror.universe.AbsTypeTag[T]]
@@ -58,5 +59,14 @@ trait Exprs { self: Universe =>
       |if you want to splice the underlying expression, use `<your expr>.splice`.
       |if you want to get a value of the underlying expression, add scala-compiler.jar to the classpath,
       |import `scala.tools.reflect.Eval` and call `<your expr>.eval` instead.""".trim.stripMargin)
+
+    private def writeObject(out: ObjectOutputStream) {
+      out.writeObject(treec)
+    }
+
+    private def readObject(in: ObjectInputStream) {
+      mirror = scala.reflect.basis
+      treec = in.readObject()
+    }
   }
 }
