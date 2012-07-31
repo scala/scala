@@ -6,6 +6,7 @@
 package scala.reflect
 package base
 
+import java.io.{ObjectInputStream, ObjectOutputStream}
 import java.lang.{ Class => jClass }
 import language.implicitConversions
 
@@ -228,10 +229,19 @@ trait TypeTags { self: Universe =>
     def unapply[T](ttag: TypeTag[T]): Option[Type] = Some(ttag.tpe)
   }
 
-  private class TypeTagImpl[T](mirror: Mirror, tpec: TypeCreator) extends AbsTypeTagImpl[T](mirror, tpec) with TypeTag[T] {
+  private class TypeTagImpl[T](var mirror: Mirror, var tpec: TypeCreator) extends AbsTypeTagImpl[T](mirror, tpec) with TypeTag[T] {
     override def in[U <: Universe with Singleton](otherMirror: MirrorOf[U]): U # TypeTag[T] = {
       val otherMirror1 = otherMirror.asInstanceOf[MirrorOf[otherMirror.universe.type]]
       otherMirror.universe.TypeTag[T](otherMirror1, tpec)
+    }
+
+    private def writeObject(out: ObjectOutputStream) {
+      out.writeObject(tpec)
+    }
+
+    private def readObject(in: ObjectInputStream) {
+      mirror = scala.reflect.basis
+      tpec = in.readObject()
     }
   }
 
