@@ -2078,7 +2078,8 @@ trait Types extends api.Types { self: SymbolTable =>
     override protected def finishPrefix(rest: String) = objectPrefix + rest
     override def directObjectString = super.safeToString
     override def toLongString = toString
-    override def safeToString = narrow.toString
+    override def safeToString = prefixString + "type"
+    override def prefixString = if (sym.isOmittablePrefix) "" else prefix.prefixString + sym.nameString + "."
   }
   class PackageTypeRef(pre0: Type, sym0: Symbol) extends ModuleTypeRef(pre0, sym0) {
     require(sym.isPackageClass, sym)
@@ -6950,8 +6951,13 @@ trait Types extends api.Types { self: SymbolTable =>
   private var tostringRecursions = 0
 
   protected def typeToString(tpe: Type): String =
-    if (tostringRecursions >= maxTostringRecursions)
+    if (tostringRecursions >= maxTostringRecursions) {
+      debugwarn("Exceeded recursion depth attempting to print type.")
+      if (settings.debug.value)
+        (new Throwable).printStackTrace
+
       "..."
+    }
     else
       try {
         tostringRecursions += 1
