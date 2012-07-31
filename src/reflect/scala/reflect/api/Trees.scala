@@ -640,8 +640,16 @@ trait Trees extends base.Trees { self: Universe =>
   abstract class Transformer {
     val treeCopy: TreeCopier = newLazyTreeCopier
     protected[scala] var currentOwner: Symbol = rootMirror.RootClass
-    protected def currentMethod = currentOwner.enclosingMethod
-    protected def currentClass = currentOwner.enclosingClass
+    protected def currentMethod = {
+      def enclosingMethod(sym: Symbol): Symbol =
+        if (sym.isMethod || sym == NoSymbol) sym else enclosingMethod(sym.owner)
+      enclosingMethod(currentOwner)
+    }
+    protected def currentClass = {
+      def enclosingClass(sym: Symbol): Symbol =
+        if (sym.isClass || sym == NoSymbol) sym else enclosingClass(sym.owner)
+      enclosingClass(currentOwner)
+    }
 //    protected def currentPackage = currentOwner.enclosingTopLevelClass.owner
     def transform(tree: Tree): Tree = itransform(this, tree)
 

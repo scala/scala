@@ -97,9 +97,5 @@ trait FlagSets { self: Universe =>
 
     /** Flag indicating that parameter has a default value */
     val DEFAULTPARAM: FlagSet
-
-    /** Flag indicating that trait has neither method implementations nor fields.
-     *  This means the trait can be represented as a Java interface. */
-    val INTERFACE: FlagSet
   }
 }
