@@ -1760,7 +1760,6 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
 
     /** Is this symbol defined in the same scope and compilation unit as `that` symbol? */
     def isCoDefinedWith(that: Symbol) = {
-      import language.reflectiveCalls
       (this.rawInfo ne NoType) &&
       (this.effectiveOwner == that.effectiveOwner) && {
         !this.effectiveOwner.isPackageClass ||
@@ -2431,7 +2430,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
 
     override def moduleClass = referenced
     override def companionClass =
-      flatOwnerInfo.decl(name.toTypeName).suchThat(_ isCoDefinedWith this)
+      flatOwnerInfo.decl(name.toTypeName).suchThat(sym => sym.isClass && (sym isCoDefinedWith this))
 
     override def owner = {
       Statistics.incCounter(ownerCount)
@@ -2796,7 +2795,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
      */
     protected final def companionModule0: Symbol =
       flatOwnerInfo.decl(name.toTermName).suchThat(
-        sym => sym.hasFlag(MODULE) && (sym isCoDefinedWith this) && !sym.isMethod)
+        sym => sym.isModule && (sym isCoDefinedWith this) && !sym.isMethod)
 
     override def companionModule    = companionModule0
     override def companionSymbol    = companionModule0
@@ -3119,7 +3118,6 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
   }
 
   case class InvalidCompanions(sym1: Symbol, sym2: Symbol) extends Throwable({
-    import language.reflectiveCalls
     "Companions '" + sym1 + "' and '" + sym2 + "' must be defined in same file:\n" +
     "  Found in " + sym1.sourceFile.canonicalPath + " and " + sym2.sourceFile.canonicalPath
   }) {
