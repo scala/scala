@@ -187,6 +187,7 @@ trait JavaMirrors extends internal.SymbolTable with api.JavaUniverse { self: Sym
         checkMemberOf(mod, symbol)
         new JavaModuleMirror(instance, mod)
       }
+      override def toString = s"instance mirror for $obj"
     }
 
     private class JavaFieldMirror(val receiver: AnyRef, val symbol: TermSymbol)
@@ -201,6 +202,32 @@ trait JavaMirrors extends internal.SymbolTable with api.JavaUniverse { self: Sym
         if (!symbol.isMutable) ErrorSetImmutableField(symbol)
         jfield.set(receiver, value)
       }
+      override def toString = s"field mirror for ${symbol.fullName} (bound to $receiver)"
+    }
+
+    private def showMethodSig(symbol: MethodSymbol): String = {
+      var sig = s"${symbol.fullName}"
+      if (symbol.typeParams.nonEmpty) {
+        def showTparam(tparam: Symbol) =
+          tparam.typeSignature match {
+            case tpe @ TypeBounds(_, _) => s"${tparam.name}$tpe"
+            case _ => tparam.name
+          }
+        def showTparams(tparams: List[Symbol]) = "[" + (tparams map showTparam mkString ", ") + "]"
+        sig += showTparams(symbol.typeParams)
+      }
+      if (symbol.allParams.nonEmpty) {
+        def showParam(param: Symbol) = s"${param.name}: ${param.typeSignature}"
+        def showParams(params: List[Symbol]) = {
+          val s_mods = if (params.nonEmpty && params(0).hasFlag(IMPLICIT)) "implicit " else ""
+          val s_params = params map showParam mkString ", "
+          "(" + s_mods + s_params + ")"
+        }
+        def showParamss(paramss: List[List[Symbol]]) = paramss map showParams mkString ""
+        sig += showParamss(symbol.allParams)
+      }
+      sig += s": ${symbol.resultType}"
+      sig
     }
 
     private class JavaMethodMirror(val receiver: AnyRef, val symbol: MethodSymbol)
@@ -220,6 +247,7 @@ trait JavaMirrors extends internal.SymbolTable with api.JavaUniverse { self: Sym
           }
         else
           jmeth.invoke(receiver, args.asInstanceOf[Seq[AnyRef]]: _*)
+      override def toString = s"method mirror for ${showMethodSig(symbol)} (bound to $receiver)"
     }
 
     private class JavaConstructorMirror(val outer: AnyRef, val symbol: MethodSymbol)
@@ -236,8 +264,8 @@ trait JavaMirrors extends internal.SymbolTable with api.JavaUniverse { self: Sym
           else outer +: args.asInstanceOf[Seq[AnyRef]]
         jconstr.newInstance(effectiveArgs: _*)
       }
+      override def toString = s"constructor mirror for ${showMethodSig(symbol)} (bound to $outer)"
     }
-
 
     private abstract class JavaTemplateMirror
             extends TemplateMirror {
@@ -256,6 +284,7 @@ trait JavaMirrors extends internal.SymbolTable with api.JavaUniverse { self: Sym
        case module: ModuleSymbol => Some(new JavaModuleMirror(outer, module))
        case _ => None
       }
+      override def toString = s"class mirror for ${symbol.fullName} (bound to $outer)"
     }
 
     private class JavaModuleMirror(val outer: AnyRef, val symbol: ModuleSymbol)
@@ -270,6 +299,7 @@ trait JavaMirrors extends internal.SymbolTable with api.JavaUniverse { self: Sym
         case cls: ClassSymbol => Some(new JavaClassMirror(outer, cls))
         case _ => None
       }
+      override def toString = s"module mirror for ${symbol.fullName} (bound to $outer)"
     }
 
 // -------------------- Java to Scala  -----------------------------------
