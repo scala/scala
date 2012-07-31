@@ -17,5 +17,7 @@ trait Importers { self: Universe =>
     def importType(tpe: from.Type): Type
 
     def importTree(tree: from.Tree): Tree
+
+    def importPosition(pos: from.Position): Position
   }
 }
