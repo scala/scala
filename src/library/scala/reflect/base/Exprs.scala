@@ -56,5 +56,24 @@ trait Exprs { self: Universe =>
       |if you want to splice the underlying expression, use `<your expr>.splice`.
       |if you want to get a value of the underlying expression, add scala-compiler.jar to the classpath,
       |import `scala.tools.reflect.Eval` and call `<your expr>.eval` instead.""".trim.stripMargin)
+
+    private def writeReplace(): AnyRef = new SerializedExpr(treec, implicitly[AbsTypeTag[T]].in(scala.reflect.basis.rootMirror))
+  }
+}
+
+private[scala] class SerializedExpr(var treec: TreeCreator, var tag: scala.reflect.basis.AbsTypeTag[_]) extends Serializable {
+  private def writeObject(out: java.io.ObjectOutputStream): Unit = {
+    out.writeObject(treec)
+    out.writeObject(tag)
+  }
+
+  private def readObject(in: java.io.ObjectInputStream): Unit = {
+    treec = in.readObject().asInstanceOf[TreeCreator]
+    tag = in.readObject().asInstanceOf[scala.reflect.basis.AbsTypeTag[_]]
+  }
+
+  private def readResolve(): AnyRef = {
+    import scala.reflect.basis._
+    Expr(rootMirror, treec)(tag)
   }
 }
