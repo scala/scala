@@ -28,6 +28,9 @@ final class CompilerInterface
 // for compatibility with Scala versions without Global.registerTopLevelSym (2.8.1 and earlier)
 sealed trait GlobalCompat { self: Global =>
 	def registerTopLevelSym(sym: Symbol): Unit
+	sealed trait RunCompat {
+		def informUnitStarting(phase: Phase, unit: CompilationUnit) {}
+	}
 }
 sealed abstract class CallbackGlobal(settings: Settings, reporter: reporters.Reporter, output: Output) extends Global(settings, reporter) with GlobalCompat {
 	def callback: AnalysisCallback
@@ -98,7 +101,7 @@ private final class CachedCompiler0(args: Array[String], output: Output, initial
 			debug(log, args.mkString("Calling Scala compiler with arguments  (CompilerInterface):\n\t", "\n\t", ""))
 			compiler.set(callback, dreporter)
 			try {
-				val run = new compiler.Run {
+				val run = new compiler.Run with compiler.RunCompat {
 					override def informUnitStarting(phase: Phase, unit: compiler.CompilationUnit) {
 						compileProgress.startUnit(phase.name, unit.source.path)
 					}
@@ -338,7 +341,7 @@ private final class CachedCompiler0(args: Array[String], output: Output, initial
 		// type parameter T, `dummy` value for inference, and reflection are source compatibility hacks
 		//   to work around JavaPackageLoader and PackageLoader changes between 2.9 and 2.10 
 		//   and in particular not being able to say JavaPackageLoader in 2.10 in a compatible way (it no longer exists)
-		private[this] def newPackageLoaderCompat[T](dummy: => T)(classpath: ClassPath[AbstractFile])(implicit mf: ClassManifest[T]): T =
+		private[this] def newPackageLoaderCompat[T](dummy: => T)(classpath: ClassPath[AbstractFile]): T =
 			newPackageLoader0[T](classpath)
 
 		private[this] def newPackageLoader0[T](classpath: ClassPath[AbstractFile]): T =
