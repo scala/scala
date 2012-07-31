@@ -15,16 +15,16 @@ package <empty> {
       }
     };
     def bar(barParam: Int): Object = {
-      @volatile var MethodLocalObject$module: scala.runtime.VolatileObjectRef = new scala.runtime.VolatileObjectRef(<empty>);
+      @volatile var MethodLocalObject$module: runtime.VolatileObjectRef = new runtime.VolatileObjectRef(<empty>);
       T.this.MethodLocalObject$1(barParam, MethodLocalObject$module)
     };
     def tryy(tryyParam: Int): Function0 = {
-      var tryyLocal: scala.runtime.IntRef = new scala.runtime.IntRef(0);
+      var tryyLocal: runtime.IntRef = new runtime.IntRef(0);
       {
         (new anonymous class $anonfun$tryy$1(T.this, tryyParam, tryyLocal): Function0)
       }
     };
-    @SerialVersionUID(0) final <synthetic> class $anonfun$foo$1 extends scala.runtime.AbstractFunction0$mcI$sp with Serializable {
+    @SerialVersionUID(0) final <synthetic> class $anonfun$foo$1 extends runtime.AbstractFunction0$mcI$sp with Serializable {
       def <init>($outer: T, methodParam$1: Int, methodLocal$1: Int): anonymous class $anonfun$foo$1 = {
         $anonfun$foo$1.super.<init>();
         ()
@@ -41,7 +41,7 @@ package <empty> {
       <synthetic> <stable> def T$MethodLocalTrait$$$outer(): T
     };
     object MethodLocalObject$2 extends Object with T#MethodLocalTrait$1 {
-      def <init>($outer: T, barParam$1: Int): ... = {
+      def <init>($outer: T, barParam$1: Int): T#MethodLocalObject$2.type = {
         MethodLocalObject$2.super.<init>();
         MethodLocalObject$2.this.$asInstanceOf[T#MethodLocalTrait$1$class]()./*MethodLocalTrait$1$class*/$init$(barParam$1);
         ()
@@ -50,9 +50,9 @@ package <empty> {
       <synthetic> <stable> def T$MethodLocalObject$$$outer(): T = MethodLocalObject$2.this.$outer;
       <synthetic> <stable> def T$MethodLocalTrait$$$outer(): T = MethodLocalObject$2.this.$outer
     };
-    final <stable> private[this] def MethodLocalObject$1(barParam$1: Int, MethodLocalObject$module$1: scala.runtime.VolatileObjectRef): ... = {
-      MethodLocalObject$module$1.elem = new ...(T.this, barParam$1);
-      MethodLocalObject$module$1.elem.$asInstanceOf[...]()
+    final <stable> private[this] def MethodLocalObject$1(barParam$1: Int, MethodLocalObject$module$1: runtime.VolatileObjectRef): T#MethodLocalObject$2.type = {
+      MethodLocalObject$module$1.elem = new T#MethodLocalObject$2.type(T.this, barParam$1);
+      MethodLocalObject$module$1.elem.$asInstanceOf[T#MethodLocalObject$2.type]()
     };
     abstract trait MethodLocalTrait$1$class extends Object with T#MethodLocalTrait$1 {
       def /*MethodLocalTrait$1$class*/$init$(barParam$1: Int): Unit = {
@@ -60,8 +60,8 @@ package <empty> {
       };
       scala.this.Predef.print(scala.Int.box(barParam$1))
     };
-    @SerialVersionUID(0) final <synthetic> class $anonfun$tryy$1 extends scala.runtime.AbstractFunction0$mcV$sp with Serializable {
-      def <init>($outer: T, tryyParam$1: Int, tryyLocal$1: scala.runtime.IntRef): anonymous class $anonfun$tryy$1 = {
+    @SerialVersionUID(0) final <synthetic> class $anonfun$tryy$1 extends runtime.AbstractFunction0$mcV$sp with Serializable {
+      def <init>($outer: T, tryyParam$1: Int, tryyLocal$1: runtime.IntRef): anonymous class $anonfun$tryy$1 = {
         $anonfun$tryy$1.super.<init>();
         ()
       };
@@ -76,7 +76,7 @@ package <empty> {
         scala.runtime.BoxedUnit.UNIT
       };
       <synthetic> <paramaccessor> private[this] val tryyParam$1: Int = _;
-      <synthetic> <paramaccessor> private[this] val tryyLocal$1: scala.runtime.IntRef = _
+      <synthetic> <paramaccessor> private[this] val tryyLocal$1: runtime.IntRef = _
     }
   }
 }
