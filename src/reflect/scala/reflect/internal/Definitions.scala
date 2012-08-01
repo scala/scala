@@ -471,11 +471,11 @@ trait Definitions extends api.StandardDefinitions {
     lazy val OptManifestClass      = requiredClass[scala.reflect.OptManifest[_]]
     lazy val NoManifest            = requiredModule[scala.reflect.NoManifest.type]
 
-    lazy val ExprsClass            = getClassIfDefined("scala.reflect.api.Exprs") // defined in scala-reflect.jar, so we need to be careful
-    lazy val ExprClass             = if (ExprsClass != NoSymbol) getMemberClass(ExprsClass, tpnme.Expr) else NoSymbol
-         def ExprSplice            = if (ExprsClass != NoSymbol) getMemberMethod(ExprClass, nme.splice) else NoSymbol
-         def ExprValue             = if (ExprsClass != NoSymbol) getMemberMethod(ExprClass, nme.value) else NoSymbol
-    lazy val ExprModule            = if (ExprsClass != NoSymbol) getMemberModule(ExprsClass, nme.Expr) else NoSymbol
+    lazy val ExprsClass            = requiredClass[scala.reflect.base.Exprs]
+    lazy val ExprClass             = getMemberClass(ExprsClass, tpnme.Expr)
+         def ExprSplice            = getMemberMethod(ExprClass, nme.splice)
+         def ExprValue             = getMemberMethod(ExprClass, nme.value)
+    lazy val ExprModule            = getMemberModule(ExprsClass, nme.Expr)
 
     lazy val ClassTagModule        = requiredModule[scala.reflect.ClassTag[_]]
     lazy val ClassTagClass         = requiredClass[scala.reflect.ClassTag[_]]
@@ -486,8 +486,7 @@ trait Definitions extends api.StandardDefinitions {
     lazy val TypeTagModule         = getMemberModule(TypeTagsClass, nme.TypeTag)
 
     lazy val BaseUniverseClass     = requiredClass[scala.reflect.base.Universe]
-    lazy val ApiUniverseClass      = getClassIfDefined("scala.reflect.api.Universe") // defined in scala-reflect.jar, so we need to be careful
-         def ApiUniverseReify      = if (ApiUniverseClass != NoSymbol) getMemberMethod(ApiUniverseClass, nme.reify) else NoSymbol
+         def BaseUniverseReify     = getMemberMethod(BaseUniverseClass, nme.reify)
     lazy val JavaUniverseClass     = getClassIfDefined("scala.reflect.api.JavaUniverse") // defined in scala-reflect.jar, so we need to be careful
 
     lazy val MirrorOfClass         = requiredClass[scala.reflect.base.MirrorOf[_]]

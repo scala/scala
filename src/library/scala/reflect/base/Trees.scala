@@ -34,6 +34,9 @@ trait Trees { self: Universe =>
   /** Obtains string representation of a tree */
   protected def treeToString(tree: Tree): String
 
+  /** Obtains the type of the tree (we intentionally don't expose `tree.tpe` in base) */
+  protected def treeType(tree: Tree): Type
+
   /** Tree is the basis for scala's abstract syntax. The nodes are
    *  implemented as case classes, and the parameters which initialize
    *  a given tree are immutable: however Trees have several mutable

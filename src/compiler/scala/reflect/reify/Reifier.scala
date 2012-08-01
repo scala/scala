@@ -115,7 +115,7 @@ abstract class Reifier extends States
       // todo. maybe try `resetLocalAttrs` once the dust settles
       var importantSymbols = Set[Symbol](
         NothingClass, AnyClass, SingletonClass, PredefModule, ScalaRunTimeModule, TypeCreatorClass, TreeCreatorClass, MirrorOfClass,
-        BaseUniverseClass, ApiUniverseClass, JavaUniverseClass, ReflectRuntimePackage, ReflectRuntimeCurrentMirror)
+        BaseUniverseClass, JavaUniverseClass, ReflectRuntimePackage, ReflectRuntimeCurrentMirror)
       importantSymbols ++= importantSymbols map (_.companionSymbol)
       importantSymbols ++= importantSymbols map (_.moduleClass)
       importantSymbols ++= importantSymbols map (_.linkedClassOfClass)
