@@ -109,6 +109,8 @@ trait Trees extends base.Trees { self: Universe =>
     def duplicate: this.type
   }
 
+  override protected def treeType(tree: Tree) = tree.tpe
+
   override type TermTree >: Null <: Tree with TermTreeApi
 
   /** The API that all term trees support */

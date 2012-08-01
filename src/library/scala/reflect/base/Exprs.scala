@@ -4,9 +4,7 @@
  */
 
 package scala.reflect
-package api
-
-import scala.reflect.base.TreeCreator
+package base
 
 trait Exprs { self: Universe =>
 
@@ -46,7 +44,7 @@ trait Exprs { self: Universe =>
       // !!! remove when we have improved type inference for singletons
       // search for .type] to find other instances
     lazy val staticTpe: Type = implicitly[AbsTypeTag[T]].tpe
-    def actualTpe: Type = tree.tpe
+    def actualTpe: Type = treeType(tree)
 
     def splice: T = throw new UnsupportedOperationException("""
       |the function you're calling has not been spliced by the compiler.
