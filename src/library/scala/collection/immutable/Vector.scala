@@ -197,6 +197,8 @@ override def companion: GenericCompanion[Vector] = Vector
       Vector.empty
   }
 
+  override /*IterableLike*/ def isEmpty: Boolean = length == 0
+
   override /*IterableLike*/ def head: A = {
     if (isEmpty) throw new UnsupportedOperationException("empty.head")
     apply(0)
