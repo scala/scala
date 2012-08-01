@@ -852,7 +852,7 @@ object SeqLike {
   /** Finds a particular index at which one sequence occurs in another sequence.
    *  Like `indexOf`, but finds the latest occurrence rather than earliest.
    *
-   *  @see  [[scala.collection.SeqLike], method `indexOf`
+   *  @see  [[scala.collection.SeqLike]], method `indexOf`
    */
   def lastIndexOf[B](
     source: Seq[B], sourceOffset: Int, sourceCount: Int,
