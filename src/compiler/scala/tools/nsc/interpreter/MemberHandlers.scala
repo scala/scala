@@ -211,7 +211,7 @@ trait MemberHandlers {
       beforePickler(individualNames map (targetType nonPrivateMember _))
 
     lazy val wildcardSymbols: List[Symbol] =
-      if (importsWildcard) beforePickler(targetType.nonPrivateMembers)
+      if (importsWildcard) beforePickler(targetType.nonPrivateMembers.toList)
       else Nil
 
     /** Complete list of names imported by a wildcard */

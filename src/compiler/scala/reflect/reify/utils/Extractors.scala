@@ -40,7 +40,7 @@ trait Extractors {
   //       def apply[U >: Nothing <: scala.reflect.base.Universe with Singleton]($m$untyped: scala.reflect.base.MirrorOf[U]): U#Type = {
   //         val $u: U = $m$untyped.universe;
   //         val $m: $u.Mirror = $m$untyped.asInstanceOf[$u.Mirror];
-  //         $u.TypeRef($u.ThisType($m.staticPackage("scala.collection.immutable").moduleClass), $m.staticClass("scala.collection.immutable.List"), List($m.staticClass("scala.Int").asTypeConstructor))
+  //         $u.TypeRef($u.ThisType($m.staticPackage("scala.collection.immutable").moduleClass), $m.staticClass("scala.collection.immutable.List"), List($m.staticClass("scala.Int").toTypeConstructor))
   //       }
   //     };
   //     new $typecreator1()

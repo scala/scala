@@ -61,7 +61,7 @@ trait Tags {
      */
     def resolveTypeTag(pos: Position, pre: Type, tp: Type, concrete: Boolean, allowMaterialization: Boolean = true): Tree = {
       val tagSym = if (concrete) TypeTagClass else AbsTypeTagClass
-      val tagTp =  if (pre == NoType) TypeRef(BaseUniverseClass.asTypeConstructor, tagSym, List(tp)) else singleType(pre, pre member tagSym.name)
+      val tagTp =  if (pre == NoType) TypeRef(BaseUniverseClass.toTypeConstructor, tagSym, List(tp)) else singleType(pre, pre member tagSym.name)
       val taggedTp = appliedType(tagTp, List(tp))
       resolveTag(pos, taggedTp, allowMaterialization)
     }
