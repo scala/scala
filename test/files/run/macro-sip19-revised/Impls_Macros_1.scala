@@ -1,10 +1,10 @@
-import scala.reflect.makro.Context
+import scala.reflect.macros.Context
 
 object Macros {
   def impl(c: Context) = {
     import c.universe._
 
-    val inscope = c.inferImplicitValue(c.mirror.staticClass("SourceLocation").asType)
+    val inscope = c.inferImplicitValue(c.mirror.staticClass("SourceLocation").toType)
     val outer = c.Expr[SourceLocation](if (!inscope.isEmpty) inscope else Literal(Constant(null)))
 
     val Apply(fun, args) = c.enclosingImplicits(0)._2

@@ -1,7 +1,7 @@
 package scala.reflect
 package internal
 
-abstract class TreeGen extends makro.TreeBuilder {
+abstract class TreeGen extends macros.TreeBuilder {
   val global: SymbolTable
 
   import global._

@@ -85,7 +85,7 @@ abstract class ToolBoxFactory[U <: JavaUniverse](val u: U) { factorySelf =>
             if (tree.hasSymbol && tree.symbol.isFreeTerm) {
               tree match {
                 case Ident(_) =>
-                  val freeTermRef = Ident(freeTermNames(tree.symbol.asFreeTermSymbol))
+                  val freeTermRef = Ident(freeTermNames(tree.symbol.asFreeTerm))
                   if (wrapFreeTermRefs) Apply(freeTermRef, List()) else freeTermRef
                 case _ =>
                   throw new Error("internal error: %s (%s, %s) is not supported".format(tree, tree.productPrefix, tree.getClass))
@@ -350,7 +350,7 @@ abstract class ToolBoxFactory[U <: JavaUniverse](val u: U) { factorySelf =>
     }
 
     def inferImplicitView(tree: u.Tree, from: u.Type, to: u.Type, silent: Boolean = true, withMacrosDisabled: Boolean = false, pos: u.Position = u.NoPosition): u.Tree = {
-      val viewTpe = u.appliedType(u.definitions.FunctionClass(1).asTypeConstructor, List(from, to))
+      val viewTpe = u.appliedType(u.definitions.FunctionClass(1).toTypeConstructor, List(from, to))
       inferImplicit(tree, viewTpe, isView = true, silent = silent, withMacrosDisabled = withMacrosDisabled, pos = pos)
     }
 

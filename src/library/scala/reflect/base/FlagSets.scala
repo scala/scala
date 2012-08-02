@@ -13,5 +13,11 @@ trait FlagSets { self: Universe =>
 
   /** The empty set of flags */
   val NoFlags: FlagSet
+
+  /** The base API all flag bearers support */
+  trait HasFlagsBase {
+    def flags: FlagSet
+    def hasFlag(flags: FlagSet): Boolean
+  }
 }
 

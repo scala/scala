@@ -75,15 +75,17 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     def typeSignature: Type               = info
     def typeSignatureIn(site: Type): Type = site memberInfo this
 
-    def asType: Type = tpe
-    def asTypeIn(site: Type): Type = site.memberType(this)
-    def asTypeConstructor: Type = typeConstructor
+    def toType: Type = tpe
+    def toTypeIn(site: Type): Type = site.memberType(this)
+    def toTypeConstructor: Type = typeConstructor
     def setFlags(flags: FlagSet): this.type = setInternalFlags(flags)
     def setInternalFlags(flag: Long): this.type = { setFlag(flag); this }
     def setTypeSignature(tpe: Type): this.type = { setInfo(tpe); this }
     def getAnnotations: List[AnnotationInfo] = { initialize; annotations }
     def setAnnotations(annots: AnnotationInfo*): this.type = { setAnnotations(annots.toList); this }
 
+    def getter: Symbol = getter(owner)
+    def setter: Symbol = setter(owner)
   }
 
   /** The class for all symbols */
@@ -454,6 +456,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     def isAliasType    = false
     def isAbstractType = false
     def isSkolem       = false
+    def isMacro        = this hasFlag MACRO
 
     /** A Type, but not a Class. */
     def isNonClassType = false
@@ -2484,6 +2487,19 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
       mtpeResult = res
       res
     }
+
+    override def params: List[List[Symbol]] = paramss
+
+    override def returnType: Type = {
+      def loop(tpe: Type): Type =
+        tpe match {
+          case NullaryMethodType(ret) => loop(ret)
+          case MethodType(_, ret) => loop(ret)
+          case PolyType(_, tpe) => loop(tpe)
+          case tpe => tpe
+        }
+      loop(info)
+    }
   }
   implicit val MethodSymbolTag = ClassTag[MethodSymbol](classOf[MethodSymbol])
 
@@ -2747,8 +2763,10 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     override def isJavaInterface         = hasAllFlags(JAVA | TRAIT)
     override def isNestedClass           = !owner.isPackageClass
     override def isNumericValueClass     = definitions.isNumericValueClass(this)
+    override def isNumeric               = isNumericValueClass
     override def isPackageObjectClass    = isModuleClass && (name == tpnme.PACKAGE)
     override def isPrimitiveValueClass   = definitions.isPrimitiveValueClass(this)
+    override def isPrimitive             = isPrimitiveValueClass
 
     // The corresponding interface is the last parent by convention.
     private def lastParent = if (tpe.parents.isEmpty) NoSymbol else tpe.parents.last.typeSymbol
@@ -2890,7 +2908,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     private[this] var typeOfThisCache: Type = _
     private[this] var typeOfThisPeriod      = NoPeriod
 
-    private var implicitMembersCacheValue: List[Symbol] = Nil
+    private var implicitMembersCacheValue: Scope = EmptyScope
     private var implicitMembersCacheKey1: Type = NoType
     private var implicitMembersCacheKey2: ScopeEntry = null
 
@@ -2909,7 +2927,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
       typeOfThisCache
     }
 
-    def implicitMembers: List[Symbol] = {
+    def implicitMembers: Scope = {
       val tp = info
       if ((implicitMembersCacheKey1 ne tp) || (implicitMembersCacheKey2 ne tp.decls.elems)) {
         // Skip a package object class, because the members are also in
