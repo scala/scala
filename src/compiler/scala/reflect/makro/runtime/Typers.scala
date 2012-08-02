@@ -10,8 +10,9 @@ trait Typers {
 
   def typeCheck(tree: Tree, pt: Type = universe.WildcardType, silent: Boolean = false, withImplicitViewsDisabled: Boolean = false, withMacrosDisabled: Boolean = false): Tree = {
     macroLogVerbose("typechecking %s with expected type %s, implicit views = %s, macros = %s".format(tree, pt, !withImplicitViewsDisabled, !withMacrosDisabled))
-    val wrapper1 = if (!withImplicitViewsDisabled) (callsiteTyper.context.withImplicitsEnabled[Tree] _) else (callsiteTyper.context.withImplicitsDisabled[Tree] _)
-    val wrapper2 = if (!withMacrosDisabled) (callsiteTyper.context.withMacrosEnabled[Tree] _) else (callsiteTyper.context.withMacrosDisabled[Tree] _)
+    val context = callsiteTyper.context
+    val wrapper1 = if (!withImplicitViewsDisabled) (context.withImplicitsEnabled[Tree] _) else (context.withImplicitsDisabled[Tree] _)
+    val wrapper2 = if (!withMacrosDisabled) (context.withMacrosEnabled[Tree] _) else (context.withMacrosDisabled[Tree] _)
     def wrapper (tree: => Tree) = wrapper1(wrapper2(tree))
     // if you get a "silent mode is not available past typer" here
     // don't rush to change the typecheck not to use the silent method when the silent parameter is false
@@ -31,29 +32,21 @@ trait Typers {
 
   def inferImplicitValue(pt: Type, silent: Boolean = true, withMacrosDisabled: Boolean = false, pos: Position = enclosingPosition): Tree = {
     macroLogVerbose("inferring implicit value of type %s, macros = %s".format(pt, !withMacrosDisabled))
-    import universe.analyzer.SearchResult
-    val context = callsiteTyper.context
-    val wrapper1 = if (!withMacrosDisabled) (context.withMacrosEnabled[SearchResult] _) else (context.withMacrosDisabled[SearchResult] _)
-    def wrapper (inference: => SearchResult) = wrapper1(inference)
-    wrapper(universe.analyzer.inferImplicit(universe.EmptyTree, pt, true, false, context, !silent, pos)) match {
-      case failure if failure.tree.isEmpty =>
-        macroLogVerbose("implicit search has failed. to find out the reason, turn on -Xlog-implicits")
-        if (context.hasErrors) throw new universe.TypeError(context.errBuffer.head.errPos, context.errBuffer.head.errMsg)
-        universe.EmptyTree
-      case success =>
-        success.tree
-    }
+    inferImplicit(universe.EmptyTree, pt, isView = false, silent = silent, withMacrosDisabled = withMacrosDisabled, pos = pos)
   }
 
-  def inferImplicitView(tree: Tree, from: Type, to: Type, silent: Boolean = true, withMacrosDisabled: Boolean = false, reportAmbiguous: Boolean = true, pos: Position = enclosingPosition): Tree = {
-    macroLogVerbose("inferring implicit view from %s to %s for %s, macros = %s, reportAmbiguous = %s".format(from, to, tree, !withMacrosDisabled, reportAmbiguous))
+  def inferImplicitView(tree: Tree, from: Type, to: Type, silent: Boolean = true, withMacrosDisabled: Boolean = false, pos: Position = enclosingPosition): Tree = {
+    macroLogVerbose("inferring implicit view from %s to %s for %s, macros = %s".format(from, to, tree, !withMacrosDisabled))
+    val viewTpe = universe.appliedType(universe.definitions.FunctionClass(1).asTypeConstructor, List(from, to))
+    inferImplicit(tree, viewTpe, isView = true, silent = silent, withMacrosDisabled = withMacrosDisabled, pos = pos)
+  }
+
+  private def inferImplicit(tree: Tree, pt: Type, isView: Boolean, silent: Boolean, withMacrosDisabled: Boolean, pos: Position): Tree = {
     import universe.analyzer.SearchResult
     val context = callsiteTyper.context
     val wrapper1 = if (!withMacrosDisabled) (context.withMacrosEnabled[SearchResult] _) else (context.withMacrosDisabled[SearchResult] _)
     def wrapper (inference: => SearchResult) = wrapper1(inference)
-    val fun1 = universe.definitions.FunctionClass(1)
-    val viewTpe = universe.TypeRef(fun1.typeConstructor.prefix, fun1, List(from, to))
-    wrapper(universe.analyzer.inferImplicit(tree, viewTpe, reportAmbiguous, true, context, !silent, pos)) match {
+    wrapper(universe.analyzer.inferImplicit(tree, pt, reportAmbiguous = true, isView = isView, context = context, saveAmbiguousDivergent = !silent, pos = pos)) match {
       case failure if failure.tree.isEmpty =>
         macroLogVerbose("implicit search has failed. to find out the reason, turn on -Xlog-implicits")
         if (context.hasErrors) throw new universe.TypeError(context.errBuffer.head.errPos, context.errBuffer.head.errMsg)
