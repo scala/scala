@@ -18,7 +18,7 @@ object WorksheetSupport {
     protected def width = 80                // output width, by default 80 characters
     protected def tabInc = 8                // tab increment, by default 8 characters
     private var lastFlush: Long = 0L
-    private var col = 0
+    private var col = -1
     override def write(b: Array[Byte], off: Int, len: Int) = {
       for (idx <- off until (off + len min b.length)) writeOne(b(idx))
       flush()
@@ -35,16 +35,18 @@ object WorksheetSupport {
       }
     }
     def writeOne(c: Int) {
-      if (col == 0)
+      if (col < 0) {
+        col = 0
         write((currentOffset+" ").getBytes)
+      }
       out.write(c)
       col = 
-        if (c == '\n') 0
+        if (c == '\n') -1
         else if (c == '\t') (col / tabInc) * tabInc + tabInc 
         else col + 1
       if (col >= width) writeOne('\n')
     }
-    def ensureNewLine() = if (col != 0) writeOne('\n')
+    def ensureNewLine() = if (col > 0) writeOne('\n')
   }
 
   private val flushedOut = new FlushedOutputStream(System.out)
@@ -73,7 +75,7 @@ object WorksheetSupport {
     try op
     catch {
       case ex: StopException => ;
-      case ex => ex.printStackTrace()
+      case ex: Throwable => ex.printStackTrace()
     }
   }
 
