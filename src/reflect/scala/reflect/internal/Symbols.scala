@@ -390,6 +390,16 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
       case x: TermName  => newErrorValue(x)
     }
 
+    /** Creates a placeholder symbol for when a name is encountered during
+     *  unpickling for which there is no corresponding classfile.  This defers
+     *  failure to the point when that name is used for something, which is
+     *  often to the point of never.
+     */
+    def newStubSymbol(name: Name): Symbol = name match {
+      case n: TypeName  => new StubClassSymbol(this, n)
+      case _            => new StubTermSymbol(this, name.toTermName)
+    }
+
     @deprecated("Use the other signature", "2.10.0")
     def newClass(pos: Position, name: TypeName): Symbol        = newClass(name, pos)
     @deprecated("Use the other signature", "2.10.0")
@@ -2994,6 +3004,27 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
       || info.parents.exists(_.typeSymbol hasTransOwner sym)
     )
   }
+  trait StubSymbol extends Symbol {
+    locally {
+      this setInfo NoType
+      this.associatedFile = owner.associatedFile
+    }
+    protected def stubWarning = {
+      def in = if (owner == NoSymbol) "" else " in " + owner
+      def from = if (associatedFile == null) "" else s" - referenced from ${associatedFile.canonicalPath}"
+      s"${name.longString}$in$from (a classfile may be missing)"
+    }
+    private def fail(): Nothing = MissingRequirementError.signal(s"bad symbolic reference to " + stubWarning)
+
+    override def tpe              = fail()
+    override def rawInfo          = fail()
+    override def companionSymbol  = fail()
+    override def toString = s"<stub:$name>"
+  }
+  class StubClassSymbol(owner: Symbol, name0: TypeName) extends ClassSymbol(NoSymbol, NoPosition, name0) with StubSymbol {
+    warning("creating stub symbol for " + stubWarning)
+  }
+  class StubTermSymbol(owner: Symbol, name0: TermName) extends TermSymbol(NoSymbol, NoPosition, name0) with StubSymbol { }
 
   trait FreeSymbol extends Symbol {
     def origin: String
