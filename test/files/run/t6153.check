@@ -1,2 +1,4 @@
 smallNumbers.size = 100
 largeNumbers.size = 100
+flippedBitsInt.size = 100
+flippedBitsDec.size = 100

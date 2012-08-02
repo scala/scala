@@ -174,13 +174,38 @@ extends ScalaNumber with ScalaNumericConversions with Serializable {
    *  hashCode because we compare BigDecimals with compareTo
    *  which deems 2 == 2.00, whereas in java these are unequal
    *  with unequal hashCodes.
+   *  
+   *  We also want the hashCode to be equivalent to hashcodes 
+   *  for equivalent values stored in other numeric types.
+   *  For example, if this is an integer, it's hashcode should
+   *  be the same as the equivalent number stored in BigInteger
    */
-  override def hashCode(): Int = (
-    if (isValidInt) toInt
-    else if (isValidLong) toLong.toInt
-    else if (isWhole) toBigInt.bigInteger.hashCode
-    else bigDecimal.hashCode
-  )
+  override def hashCode(): Int = _hashCode
+
+  private lazy val _hashCode: Int = {
+    if (isValidInt)
+      intValue
+    else if (isValidLong) 
+      longValue.##
+    else if (isValidDouble)
+      doubleValue.##
+    else {
+      val str = this.bigDecimal.toPlainString
+
+      //Chop off trailing 0s if there's a decimal part, then return the string hash
+      //This ensures 2 and 2.00 have the same hash code
+      if (str.contains('.')) {
+        var i = str.length - 1
+
+        while (i > 0 && str(i) == '0') {
+          i -= 1;
+        }
+
+        if (str(i) == '.') str.substring(0, i).## else str.substring(0, i + 1).##
+      }
+      else str.##
+    }
+  }
 
   /** Compares this BigDecimal with the specified value for equality.
    */

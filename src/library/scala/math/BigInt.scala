@@ -17,7 +17,6 @@ import language.implicitConversions
  *  @since 2.1
  */
 object BigInt {
-
   private val minCached = -1024
   private val maxCached = 1024
   private val cache = new Array[BigInt](maxCached - minCached + 1)
@@ -115,12 +114,21 @@ object BigInt {
  *  @version 1.0, 15/07/2003
  */
 class BigInt(val bigInteger: BigInteger) extends ScalaNumber with ScalaNumericConversions with Serializable {
-  /** Returns the hash code for this BigInt. */
-  override def hashCode(): Int = (
-    if (isValidInt) toInt
-    else if (isValidLong) toLong.toInt
-    else bigInteger.hashCode
-  )
+  /** Returns the hash code for this BigInt.
+   *  Should return same value as BigDecimal(this).##
+   */
+  override def hashCode(): Int = _hashCode
+
+  private lazy val _hashCode: Int = {
+    if (isValidInt)
+      intValue
+    else if (isValidLong) 
+      longValue.##
+    else if (isValidDouble)
+      doubleValue.##
+    else
+      this.bigInteger.toString.##
+  }
 
   /** Compares this BigInt with the specified value for equality.
    */
