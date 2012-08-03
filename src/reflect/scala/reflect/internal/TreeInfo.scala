@@ -236,7 +236,7 @@ abstract class TreeInfo {
     case _ =>
       tree
   }
-  
+
   /** Is tree a self or super constructor call? */
   def isSelfOrSuperConstrCall(tree: Tree) = {
     // stripNamedApply for SI-3584: adaptToImplicitMethod in Typers creates a special context
@@ -373,6 +373,13 @@ abstract class TreeInfo {
     case Apply(fn, _)            => firstTypeArg(fn)
     case TypeApply(_, targ :: _) => targ
     case _                       => EmptyTree
+  }
+
+  /** If this tree represents a type application the type arguments. Otherwise Nil.
+   */
+  def typeArguments(tree: Tree): List[Tree] = tree match {
+    case TypeApply(_, targs) => targs
+    case _                   => Nil
   }
 
   /** If this tree has type parameters, those.  Otherwise Nil.
