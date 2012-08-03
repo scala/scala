@@ -1,4 +1,4 @@
-import scala.reflect.makro.Context
+import scala.reflect.macros.Context
 import java.io.InputStream
 
 object Macros {

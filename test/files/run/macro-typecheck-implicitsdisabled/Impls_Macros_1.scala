@@ -1,4 +1,4 @@
-import scala.reflect.makro.Context
+import scala.reflect.macros.Context
 
 object Macros {
   def impl_with_implicits_enabled(c: Context) = {

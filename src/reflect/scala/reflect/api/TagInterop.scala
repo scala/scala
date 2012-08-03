@@ -27,8 +27,8 @@ trait TagInterop { self: JavaUniverse =>
             val jm = mirror.asInstanceOf[ju.Mirror]
             val sym = jm.classSymbol(manifest.erasure)
             val tpe =
-              if (manifest.typeArguments.isEmpty) sym.asType
-              else ju.appliedType(sym.asTypeConstructor, manifest.typeArguments map (targ => ju.manifestToTypeTag(jm, targ)) map (_.in(jm).tpe))
+              if (manifest.typeArguments.isEmpty) sym.toType
+              else ju.appliedType(sym.toTypeConstructor, manifest.typeArguments map (targ => ju.manifestToTypeTag(jm, targ)) map (_.in(jm).tpe))
             tpe.asInstanceOf[U # Type]
           case u =>
             u.manifestToTypeTag(mirror.asInstanceOf[u.Mirror], manifest).in(mirror).tpe

@@ -122,7 +122,7 @@ abstract class RefChecks extends InfoTransform with reflect.internal.transform.R
       val defaultGetters     = clazz.info.findMembers(0L, DEFAULTPARAM)
       val defaultMethodNames = defaultGetters map (sym => nme.defaultGetterToMethod(sym.name))
 
-      defaultMethodNames.distinct foreach { name =>
+      defaultMethodNames.toList.distinct foreach { name =>
         val methods      = clazz.info.findMember(name, 0L, METHOD, false).alternatives
         val haveDefaults = methods filter (sym => sym.hasParamWhich(_.hasDefault) && !nme.isProtectedAccessorName(sym.name))
 
@@ -628,7 +628,7 @@ abstract class RefChecks extends InfoTransform with reflect.internal.transform.R
 
               matchingArity match {
                 // So far so good: only one candidate method
-                case concrete :: Nil   =>
+                case Scope(concrete)   =>
                   val mismatches  = abstractParams zip concrete.tpe.paramTypes filterNot { case (x, y) => x =:= y }
                   mismatches match {
                     // Only one mismatched parameter: say something useful.

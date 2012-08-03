@@ -20,7 +20,7 @@ trait StdTags {
         def apply[U <: BaseUniverse with Singleton](m: MirrorOf[U]): U # Type = {
           val u = m.universe
           val pre = u.ThisType(m.staticPackage("scala.collection.immutable").moduleClass.asInstanceOf[u.Symbol])
-          u.TypeRef(pre, u.definitions.ListClass, List(u.definitions.StringClass.asTypeConstructor))
+          u.TypeRef(pre, u.definitions.ListClass, List(u.definitions.StringClass.toTypeConstructor))
         }
       })
 
@@ -29,7 +29,7 @@ trait StdTags {
       m,
       new TypeCreator {
         def apply[U <: BaseUniverse with Singleton](m: MirrorOf[U]): U # Type =
-          m.staticClass(classTag[T].runtimeClass.getName).asTypeConstructor.asInstanceOf[U # Type]
+          m.staticClass(classTag[T].runtimeClass.getName).toTypeConstructor.asInstanceOf[U # Type]
       })
   lazy val tagOfInt = u.TypeTag.Int
   lazy val tagOfString = tagOfStaticClass[String]
@@ -52,7 +52,7 @@ object StdRuntimeTags extends StdTags {
 }
 
 abstract class StdContextTags extends StdTags {
-  val tc: scala.reflect.makro.Context
+  val tc: scala.reflect.macros.Context
   val u: tc.universe.type = tc.universe
   val m = tc.mirror
 }

@@ -19,10 +19,10 @@ object Test extends App {
 
   def test(tpe: Type): Unit = {
     def failsafe(action: => Any): Any = try action catch { case ex: Throwable => ex.toString }
-    println("field: " + failsafe(im.reflectField(tpe.member(newTermName("foo")).asTermSymbol).get))
-    println("method: " + failsafe(im.reflectMethod(tpe.member(newTermName("bar")).asMethodSymbol)()))
-    println("class: " + failsafe(im.reflectClass(tpe.member(newTypeName("C")).asClassSymbol).reflectConstructor(typeOf[C].member(newTypeName("C")).asClassSymbol.typeSignature.member(newTermName("<init>")).asMethodSymbol)()))
-    println("object: " + failsafe(im.reflectModule(tpe.member(newTermName("O")).asModuleSymbol).instance))
+    println("field: " + failsafe(im.reflectField(tpe.member(newTermName("foo")).asTerm).get))
+    println("method: " + failsafe(im.reflectMethod(tpe.member(newTermName("bar")).asMethod)()))
+    println("class: " + failsafe(im.reflectClass(tpe.member(newTypeName("C")).asClass).reflectConstructor(typeOf[C].member(newTypeName("C")).asClass.typeSignature.member(newTermName("<init>")).asMethod)()))
+    println("object: " + failsafe(im.reflectModule(tpe.member(newTermName("O")).asModule).instance))
   }
 
   test(typeOf[C])

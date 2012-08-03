@@ -1,7 +1,7 @@
 package scala.tools.reflect
 
-import scala.reflect.makro.{ReificationError, UnexpectedReificationError}
-import scala.reflect.makro.runtime.Context
+import scala.reflect.macros.{ReificationError, UnexpectedReificationError}
+import scala.reflect.macros.runtime.Context
 import scala.collection.mutable.ListBuffer
 import scala.collection.mutable.Stack
 
@@ -25,9 +25,9 @@ abstract class MacroImplementations {
         c.abort(args(parts.length-1).pos,
             "too many arguments for interpolated string")
     }
-    val stringParts = parts map { 
+    val stringParts = parts map {
       case Literal(Constant(s: String)) => s;
-      case _ => throw new IllegalArgumentException("argument parts must be a list of string literals") 
+      case _ => throw new IllegalArgumentException("argument parts must be a list of string literals")
     }
 
     val pi = stringParts.iterator

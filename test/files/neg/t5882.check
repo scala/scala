@@ -1,0 +1,15 @@
+t5882.scala:2: warning: case classes without a parameter list have been deprecated;
+use either case objects or case classes with `()' as parameter list.
+  case class Scope
+                  ^
+t5882.scala:2: error: value class may not have nested class definitions
+  case class Scope
+             ^
+t5882.scala:3: error: value class may not have nested class definitions
+  class Foo
+        ^
+t5882.scala:4: error: value class may not have nested module definitions
+  object Bar
+         ^
+one warning found
+three errors found
