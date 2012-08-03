@@ -1050,6 +1050,7 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "")
     } finally {
       interruptsEnabled = true
     }
+  }
 
   // ---------------- Helper classes ---------------------------
 
