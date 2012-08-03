@@ -52,10 +52,10 @@ class JLineCompletion(val intp: IMain) extends Completion with CompletionOutput 
 
     // XXX we'd like to say "filterNot (_.isDeprecated)" but this causes the
     // compiler to crash for reasons not yet known.
-    def members     = afterTyper((effectiveTp.nonPrivateMembers ++ anyMembers) filter (_.isPublic))
-    def methods     = members filter (_.isMethod)
-    def packages    = members filter (_.isPackage)
-    def aliases     = members filter (_.isAliasType)
+    def members     = afterTyper((effectiveTp.nonPrivateMembers.toList ++ anyMembers) filter (_.isPublic))
+    def methods     = members.toList filter (_.isMethod)
+    def packages    = members.toList filter (_.isPackage)
+    def aliases     = members.toList filter (_.isAliasType)
 
     def memberNames   = members map tos
     def methodNames   = methods map tos

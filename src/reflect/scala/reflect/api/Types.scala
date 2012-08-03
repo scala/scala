@@ -24,72 +24,34 @@ trait Types extends base.Types { self: Universe =>
      */
     def declaration(name: Name): Symbol
 
-    /** The collection of declarations in this type
-     *  [Eugene++] why not List?
+    /** A `Scope` containing directly declared members of this type.
+     *  Unlike `members` this method doesn't returns inherited members.
+     *
+     *  Members in the returned scope might appear in arbitrary order.
+     *  Use `declarations.sorted` to get an ordered list of members.
      */
-    def declarations: Iterable[Symbol]
+    def declarations: MemberScope
 
     /** The member with given name, either directly declared or inherited,
      *  an OverloadedSymbol if several exist, NoSymbol if none exist.
      */
     def member(name: Name): Symbol
 
-    /** The non-private member with given name, either directly declared or inherited,
-     *  an OverloadedSymbol if several exist, NoSymbol if none exist.
+    /** A `Scope` containing all members of this type (directly declared or inherited).
+     *  Unlike `declarations` this method also returns inherited members.
+     *
+     *  Members in the returned scope might appear in arbitrary order.
+     *  Use `declarations.sorted` to get an ordered list of members.
      */
-    def nonPrivateMember(name: Name): Symbol
-
-    /** An iterable containing all members of this type (directly declared or inherited)
-     *  Members appear in the linearization order of their owners.
-     *  Members with the same owner appear in reverse order of their declarations.
-     *  [Eugene++] the order needs to be reversed back, at least in the public API
-     */
-    def members: Iterable[Symbol]
-
-    /** An iterable containing all non-private members of this type (directly declared or inherited)
-     *  Members appear in the linearization order of their owners.
-     *  Members with the same owner appear in reverse order of their declarations.
-     */
-    def nonPrivateMembers: Iterable[Symbol]
-
-    /** Substitute symbols in `to` for corresponding occurrences of references to
-     *  symbols `from` in this type.
-     */
-    def substituteSymbols(from: List[Symbol], to: List[Symbol]): Type
-
-    /** Substitute types in `to` for corresponding occurrences of references to
-     *  symbols `from` in this type.
-     */
-    def substituteTypes(from: List[Symbol], to: List[Type]): Type
-
-    /** If this is a parameterized types, the type arguments.
-     *  Otherwise the empty list
-     */
-    def typeArguments: List[Type]
-
-    /** For a (potentially wrapped) poly type, its type parameters,
-     *  the empty list for all other types */
-    def typeParams: List[Symbol]
-
-    /** For a (nullary) method or poly type, its direct result type,
-     *  the type itself for all other types. */
-    def resultType: Type
+    def members: MemberScope
 
     /** Is this type a type constructor that is missing its type arguments?
      */
-    def isHigherKinded: Boolean   // !!! This should be called "isTypeConstructor", no?
+    def takesTypeArgs: Boolean
 
     /** Returns the corresponding type constructor (e.g. List for List[T] or List[String])
      */
     def typeConstructor: Type
-
-    /** Does this type refer to spliceable types or is a spliceable type?
-     */
-    def isConcrete: Boolean
-
-    /** Is this type an abstract type that needs to be resolved?
-     */
-    def isSpliceable: Boolean
 
     /**
      *  Expands type aliases and converts higher-kinded TypeRefs to PolyTypes.
@@ -99,7 +61,7 @@ trait Types extends base.Types { self: Universe =>
      *    TypeRef(pre, <List>, List()) is replaced by
      *    PolyType(X, TypeRef(pre, <List>, List(X)))
      */
-    def normalize: Type     // !!! Alternative name? "normalize" is used to mean too many things.
+    def normalize: Type
 
     /** Does this type conform to given type argument `that`? */
     def <:< (that: Type): Boolean
@@ -111,7 +73,7 @@ trait Types extends base.Types { self: Universe =>
      *  in reverse linearization order, starting with the class itself and ending
      *  in class Any.
      */
-    def baseClasses: List[Symbol]   // !!! Alternative name, perhaps linearization?
+    def baseClasses: List[Symbol]
 
     /** The least type instance of given class which is a supertype
      *  of this type.  Example:
@@ -141,36 +103,7 @@ trait Types extends base.Types { self: Universe =>
     /** The erased type corresponding to this type after
      *  all transformations from Scala to Java have been performed.
      */
-    def erasure: Type    // !!! "erasedType", compare with "widen" (so "erase") or "underlying" (so "erased")
-                         // why not name it "erasure"?
-
-   /** Apply `f` to each part of this type, returning
-    *  a new type. children get mapped before their parents */
-    def map(f: Type => Type): Type
-
-    /** Apply `f` to each part of this type, for side effects only */
-    def foreach(f: Type => Unit)
-
-    /** Returns optionally first type (in a preorder traversal) which satisfies predicate `p`,
-     *  or None if none exists.
-     */
-    def find(p: Type => Boolean): Option[Type]
-
-    /** Is there part of this type which satisfies predicate `p`? */
-    def exists(p: Type => Boolean): Boolean
-
-    /** Does this type contain a reference to given symbol? */
-    def contains(sym: Symbol): Boolean
-
-    /** If this is a compound type, the list of its parent types;
-     *  otherwise the empty list
-     */
-    def parents: List[Type]
-
-    /** If this is a singleton type, returns the type underlying it;
-     *  otherwise returns this type itself.
-     */
-    def underlying: Type
+    def erasure: Type
 
     /** If this is a singleton type, widen it to its nearest underlying non-singleton
      *  base type by applying one or more `underlying` dereferences.
@@ -192,6 +125,36 @@ trait Types extends base.Types { self: Universe =>
      *  Overridden where we know more about where types come from.
      */
     def narrow: Type
+
+    /******************* helpers *******************/
+
+    /** Substitute symbols in `to` for corresponding occurrences of references to
+     *  symbols `from` in this type.
+     */
+    def substituteSymbols(from: List[Symbol], to: List[Symbol]): Type
+
+    /** Substitute types in `to` for corresponding occurrences of references to
+     *  symbols `from` in this type.
+     */
+    def substituteTypes(from: List[Symbol], to: List[Type]): Type
+
+   /** Apply `f` to each part of this type, returning
+    *  a new type. children get mapped before their parents */
+    def map(f: Type => Type): Type
+
+    /** Apply `f` to each part of this type, for side effects only */
+    def foreach(f: Type => Unit)
+
+    /** Returns optionally first type (in a preorder traversal) which satisfies predicate `p`,
+     *  or None if none exists.
+     */
+    def find(p: Type => Boolean): Option[Type]
+
+    /** Is there part of this type which satisfies predicate `p`? */
+    def exists(p: Type => Boolean): Boolean
+
+    /** Does this type contain a reference to given symbol? */
+    def contains(sym: Symbol): Boolean
 
     /** The string discriminator of this type; useful for debugging */
     def kind: String

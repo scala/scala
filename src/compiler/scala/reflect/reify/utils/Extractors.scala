@@ -20,11 +20,6 @@ trait Extractors {
   //         ()
   //       };
   //       def apply[U >: Nothing <: scala.reflect.base.Universe with Singleton]($m$untyped: scala.reflect.base.MirrorOf[U]): U#Tree = {
-  //         val $u: scala.reflect.api.Universe = $m$untyped.universe.asInstanceOf[scala.reflect.api.Universe];
-  //         val $m: $u.Mirror = $m$untyped.asInstanceOf[$u.Mirror];
-  //         applyImpl($m).asInstanceOf[U#Tree];
-  //       }
-  //       def applyImpl[U >: Nothing <: scala.reflect.api.Universe with Singleton]($m$untyped: scala.reflect.base.MirrorOf[U]): U#Tree = {
   //         val $u: U = $m$untyped.universe;
   //         val $m: $u.Mirror = $m$untyped.asInstanceOf[$u.Mirror];
   //         $u.Apply($u.Select($u.Select($u.build.This($m.staticPackage("scala.collection.immutable").moduleClass), $u.newTermName("List")), $u.newTermName("apply")), List($u.Literal($u.Constant(1)), $u.Literal($u.Constant(2))))
@@ -40,7 +35,7 @@ trait Extractors {
   //       def apply[U >: Nothing <: scala.reflect.base.Universe with Singleton]($m$untyped: scala.reflect.base.MirrorOf[U]): U#Type = {
   //         val $u: U = $m$untyped.universe;
   //         val $m: $u.Mirror = $m$untyped.asInstanceOf[$u.Mirror];
-  //         $u.TypeRef($u.ThisType($m.staticPackage("scala.collection.immutable").moduleClass), $m.staticClass("scala.collection.immutable.List"), List($m.staticClass("scala.Int").asTypeConstructor))
+  //         $u.TypeRef($u.ThisType($m.staticPackage("scala.collection.immutable").moduleClass), $m.staticClass("scala.collection.immutable.List"), List($m.staticClass("scala.Int").toTypeConstructor))
   //       }
   //     };
   //     new $typecreator1()
@@ -51,23 +46,7 @@ trait Extractors {
     val tparamu = newTypeName("U")
     val (reifierBase, reifierName, reifierTpt, reifierUniverse) = flavor match {
       case tpnme.REIFY_TYPECREATOR_PREFIX => (TypeCreatorClass, nme.apply, SelectFromTypeTree(Ident(tparamu), tpnme.Type), BaseUniverseClass)
-      case tpnme.REIFY_TREECREATOR_PREFIX => (TreeCreatorClass, nme.applyImpl, SelectFromTypeTree(Ident(BaseUniverseClass), tpnme.Tree), ApiUniverseClass)
-      case _ => throw new Error(s"unexpected flavor $flavor")
-    }
-    val reifierPreamble = flavor match {
-      case tpnme.REIFY_TYPECREATOR_PREFIX => Nil
-      case tpnme.REIFY_TREECREATOR_PREFIX => List[Tree](
-        DefDef(NoMods,
-          nme.apply,
-          List(TypeDef(Modifiers(PARAM), tparamu, List(), TypeBoundsTree(Ident(NothingClass), CompoundTypeTree(Template(List(Ident(BaseUniverseClass), Ident(SingletonClass)), emptyValDef, List()))))),
-          List(List(ValDef(Modifiers(PARAM), nme.MIRROR_UNTYPED, AppliedTypeTree(Ident(MirrorOfClass), List(Ident(tparamu))), EmptyTree))),
-          SelectFromTypeTree(Ident(tparamu), tpnme.Tree),
-          Block(
-            ValDef(NoMods, nme.UNIVERSE_SHORT, Ident(ApiUniverseClass), TypeApply(Select(Select(Ident(nme.MIRROR_UNTYPED), nme.universe), nme.asInstanceOf_), List(Ident(ApiUniverseClass)))),
-            ValDef(NoMods, nme.MIRROR_SHORT, Select(Ident(nme.UNIVERSE_SHORT), tpnme.Mirror), TypeApply(Select(Ident(nme.MIRROR_UNTYPED), nme.asInstanceOf_), List(Select(Ident(nme.UNIVERSE_SHORT), tpnme.Mirror)))),
-            TypeApply(Select(Apply(TypeApply(Ident(reifierName), List(SingletonTypeTree(Ident(nme.UNIVERSE_SHORT)))), List(Ident(nme.MIRROR_SHORT))), nme.asInstanceOf_), List(SelectFromTypeTree(Ident(tparamu), tpnme.Tree)))
-          ))
-      )
+      case tpnme.REIFY_TREECREATOR_PREFIX => (TreeCreatorClass, nme.apply, SelectFromTypeTree(Ident(tparamu), tpnme.Tree), BaseUniverseClass)
       case _ => throw new Error(s"unexpected flavor $flavor")
     }
     val reifierBody = {
@@ -98,8 +77,7 @@ trait Extractors {
       Template(List(Ident(reifierBase)),
       emptyValDef,
       List(
-        DefDef(NoMods, nme.CONSTRUCTOR, List(), List(List()), TypeTree(), Block(List(Apply(Select(Super(This(tpnme.EMPTY), tpnme.EMPTY), nme.CONSTRUCTOR), List())), Literal(Constant(()))))
-        ) ++ reifierPreamble ++ List(
+        DefDef(NoMods, nme.CONSTRUCTOR, List(), List(List()), TypeTree(), Block(List(Apply(Select(Super(This(tpnme.EMPTY), tpnme.EMPTY), nme.CONSTRUCTOR), List())), Literal(Constant(())))),
         DefDef(NoMods,
           reifierName,
           List(TypeDef(Modifiers(PARAM), tparamu, List(), TypeBoundsTree(Ident(NothingClass), CompoundTypeTree(Template(List(Ident(reifierUniverse), Ident(SingletonClass)), emptyValDef, List()))))),
@@ -128,7 +106,7 @@ trait Extractors {
       case Block(
         List(udef @ ValDef(_, _, _, universe), mdef @ ValDef(_, _, _, mirror)),
         Apply(
-          Apply(TypeApply(_, List(ttpe @ TypeTree())), List(_, Block(List(ClassDef(_, _, _, Template(_, _, List(_, _, DefDef(_, _, _, _, _, Block(_ :: _ :: symbolTable1, rtree)))))), _))),
+          Apply(TypeApply(_, List(ttpe @ TypeTree())), List(_, Block(List(ClassDef(_, _, _, Template(_, _, List(_, DefDef(_, _, _, _, _, Block(_ :: _ :: symbolTable1, rtree)))))), _))),
           // todo. doesn't take into account optimizations such as $u.TypeTag.Int or the upcoming closure optimization
           List(Apply(TypeApply(tagFactory @ Select(_, _), _), List(_, Block(List(ClassDef(_, _, _, Template(_, _, List(_, DefDef(_, _, _, _, _, Block(_ :: _ :: symbolTable2, rtpe)))))), _))))))
         if udef.name == nme.UNIVERSE_SHORT && mdef.name == nme.MIRROR_SHORT =>

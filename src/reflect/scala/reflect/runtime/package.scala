@@ -1,7 +1,5 @@
 package scala.reflect
 
-import language.experimental.macros
-
 package object runtime {
 
   // type is api.JavaUniverse because we only want to expose the `scala.reflect.api.*` subset of reflection
@@ -9,12 +7,13 @@ package object runtime {
 
   // [Eugene++ to Martin] removed `mirrorOfLoader`, because one can use `universe.runtimeMirror` instead
 
-  def currentMirror: universe.Mirror = macro Macros.currentMirror
+  // implementation magically hardwired to the `currentMirror` method below
+  def currentMirror: universe.Mirror = ??? // macro
 }
 
 package runtime {
   object Macros {
-    def currentMirror(c: scala.reflect.makro.Context): c.Expr[universe.Mirror] = {
+    def currentMirror(c: scala.reflect.macros.Context): c.Expr[universe.Mirror] = {
       import c.universe._
       val runtimeClass = c.reifyEnclosingRuntimeClass
       if (runtimeClass.isEmpty) c.abort(c.enclosingPosition, "call site does not have an enclosing class")

@@ -1,4 +1,4 @@
-import scala.reflect.makro.Context
+import scala.reflect.macros.Context
 
 class Logger {
   def error(message: String) = macro Impls.error
