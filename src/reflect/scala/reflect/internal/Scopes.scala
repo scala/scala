@@ -41,9 +41,9 @@ trait Scopes extends api.Scopes { self: SymbolTable =>
    *  This is necessary because when run from reflection every scope needs to have a
    *  SynchronizedScope as mixin.
    */
-  class Scope protected[Scopes] (initElems: ScopeEntry = null, initFingerPrints: Long = 0L) extends Iterable[Symbol] {
-    
-    /** A bitset containing the last 6 bits of the start value of every name 
+  class Scope protected[Scopes] (initElems: ScopeEntry = null, initFingerPrints: Long = 0L) extends ScopeBase with MemberScopeBase {
+
+    /** A bitset containing the last 6 bits of the start value of every name
      *  stored in this scope.
      */
     var fingerPrints: Long = initFingerPrints
@@ -118,10 +118,10 @@ trait Scopes extends api.Scopes { self: SymbolTable =>
      *
      *  @param sym ...
      */
-    def enter[T <: Symbol](sym: T): T = { 
+    def enter[T <: Symbol](sym: T): T = {
       fingerPrints |= sym.name.fingerPrint
-      enterEntry(newScopeEntry(sym, this)) 
-      sym 
+      enterEntry(newScopeEntry(sym, this))
+      sym
     }
 
     /** enter a symbol, asserting that no symbol with same name exists in scope
@@ -282,6 +282,10 @@ trait Scopes extends api.Scopes { self: SymbolTable =>
       elemsCache
     }
 
+    /** Vanilla scope - symbols are stored in declaration order.
+     */
+    def sorted: List[Symbol] = toList
+
     /** Return the nesting level of this scope, i.e. the number of times this scope
      *  was nested in another */
     def nestingLevel = nestinglevel
@@ -324,13 +328,45 @@ trait Scopes extends api.Scopes { self: SymbolTable =>
       toList.map(_.defString).mkString(start, sep, end)
 
     override def toString(): String = mkString("Scope{\n  ", ";\n  ", "\n}")
-
   }
 
   implicit val ScopeTag = ClassTag[Scope](classOf[Scope])
 
+  type MemberScope = Scope
+
+  implicit val MemberScopeTag = ClassTag[MemberScope](classOf[MemberScope])
+
   /** Create a new scope */
   def newScope: Scope = new Scope()
+
+  /** Create a new scope to be used in `findMembers`.
+   *
+   *  But why do we need a special scope for `findMembers`?
+   *  Let me tell you a story.
+   *
+   * `findMembers` creates a synthetic scope and then iterates over
+   *  base classes in linearization order, and for every scrutinized class
+   *  iterates over `decls`, the collection of symbols declared in that class.
+   *  Declarations that fit the filter get appended to the created scope.
+   *
+   *  The problem is that `decls` returns a Scope, and to iterate a scope performantly
+   *  one needs to go from its end to its beginning.
+   *
+   *  Hence the `findMembers` scope is populated in a wicked order:
+   *  symbols that belong to the same declaring class come in reverse order of their declaration,
+   *  however, the scope itself is ordered w.r.t the linearization of the target type.
+   *
+   *  Once `members` became a public API, this has been confusing countless numbers of users.
+   *  Therefore we introduce a special flavor of scopes to accommodate this quirk of `findMembers`
+   */
+  private[scala] def newFindMemberScope: Scope = new Scope() {
+    override def sorted = {
+      val members = toList
+      val owners = members.map(_.owner).distinct
+      val grouped = members groupBy (_.owner)
+      owners.flatMap(owner => grouped(owner).reverse)
+    }
+  }
 
   /** Create a new scope nested in another one with which it shares its elements */
   def newNestedScope(outer: Scope): Scope = new Scope(outer)

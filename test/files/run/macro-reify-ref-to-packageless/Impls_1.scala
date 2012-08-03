@@ -1,4 +1,4 @@
-import scala.reflect.makro.{Context => Ctx}
+import scala.reflect.macros.{Context => Ctx}
 
 object Impls {
   val `Answer to the Ultimate Question of Life, the Universe, and Everything` = 42

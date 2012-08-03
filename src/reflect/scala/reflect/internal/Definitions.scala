@@ -20,21 +20,21 @@ trait Definitions extends api.StandardDefinitions {
   object definitions extends DefinitionsClass
 
   // [Eugene] find a way to make these non-lazy
-  lazy val ByteTpe    = definitions.ByteClass.asType
-  lazy val ShortTpe   = definitions.ShortClass.asType
-  lazy val CharTpe    = definitions.CharClass.asType
-  lazy val IntTpe     = definitions.IntClass.asType
-  lazy val LongTpe    = definitions.LongClass.asType
-  lazy val FloatTpe   = definitions.FloatClass.asType
-  lazy val DoubleTpe  = definitions.DoubleClass.asType
-  lazy val BooleanTpe = definitions.BooleanClass.asType
-  lazy val UnitTpe    = definitions.UnitClass.asType
-  lazy val AnyTpe     = definitions.AnyClass.asType
-  lazy val ObjectTpe  = definitions.ObjectClass.asType
-  lazy val AnyValTpe  = definitions.AnyValClass.asType
-  lazy val AnyRefTpe  = definitions.AnyRefClass.asType
-  lazy val NothingTpe = definitions.NothingClass.asType
-  lazy val NullTpe    = definitions.NullClass.asType
+  lazy val ByteTpe    = definitions.ByteClass.toTypeConstructor
+  lazy val ShortTpe   = definitions.ShortClass.toTypeConstructor
+  lazy val CharTpe    = definitions.CharClass.toTypeConstructor
+  lazy val IntTpe     = definitions.IntClass.toTypeConstructor
+  lazy val LongTpe    = definitions.LongClass.toTypeConstructor
+  lazy val FloatTpe   = definitions.FloatClass.toTypeConstructor
+  lazy val DoubleTpe  = definitions.DoubleClass.toTypeConstructor
+  lazy val BooleanTpe = definitions.BooleanClass.toTypeConstructor
+  lazy val UnitTpe    = definitions.UnitClass.toTypeConstructor
+  lazy val AnyTpe     = definitions.AnyClass.toTypeConstructor
+  lazy val ObjectTpe  = definitions.ObjectClass.toTypeConstructor
+  lazy val AnyValTpe  = definitions.AnyValClass.toTypeConstructor
+  lazy val AnyRefTpe  = definitions.AnyRefClass.toTypeConstructor
+  lazy val NothingTpe = definitions.NothingClass.toTypeConstructor
+  lazy val NullTpe    = definitions.NullClass.toTypeConstructor
 
   /** Since both the value parameter types and the result type may
    *  require access to the type parameter symbols, we model polymorphic
@@ -183,11 +183,11 @@ trait Definitions extends api.StandardDefinitions {
     // It becomes tricky to create dedicated objects for other symbols because
     // of initialization order issues.
     lazy val JavaLangPackage      = getRequiredPackage(sn.JavaLang)
-    lazy val JavaLangPackageClass = JavaLangPackage.moduleClass.asClassSymbol
+    lazy val JavaLangPackageClass = JavaLangPackage.moduleClass.asClass
     lazy val ScalaPackage         = getRequiredPackage(nme.scala_)
-    lazy val ScalaPackageClass    = ScalaPackage.moduleClass.asClassSymbol
+    lazy val ScalaPackageClass    = ScalaPackage.moduleClass.asClass
     lazy val RuntimePackage       = getRequiredPackage("scala.runtime")
-    lazy val RuntimePackageClass  = RuntimePackage.moduleClass.asClassSymbol
+    lazy val RuntimePackageClass  = RuntimePackage.moduleClass.asClass
 
     lazy val JavaLangEnumClass = requiredClass[java.lang.Enum[_]]
 
@@ -471,11 +471,11 @@ trait Definitions extends api.StandardDefinitions {
     lazy val OptManifestClass      = requiredClass[scala.reflect.OptManifest[_]]
     lazy val NoManifest            = requiredModule[scala.reflect.NoManifest.type]
 
-    lazy val ExprsClass            = getClassIfDefined("scala.reflect.api.Exprs") // defined in scala-reflect.jar, so we need to be careful
-    lazy val ExprClass             = if (ExprsClass != NoSymbol) getMemberClass(ExprsClass, tpnme.Expr) else NoSymbol
-         def ExprSplice            = if (ExprsClass != NoSymbol) getMemberMethod(ExprClass, nme.splice) else NoSymbol
-         def ExprValue             = if (ExprsClass != NoSymbol) getMemberMethod(ExprClass, nme.value) else NoSymbol
-    lazy val ExprModule            = if (ExprsClass != NoSymbol) getMemberModule(ExprsClass, nme.Expr) else NoSymbol
+    lazy val ExprsClass            = requiredClass[scala.reflect.base.Exprs]
+    lazy val ExprClass             = getMemberClass(ExprsClass, tpnme.Expr)
+         def ExprSplice            = getMemberMethod(ExprClass, nme.splice)
+         def ExprValue             = getMemberMethod(ExprClass, nme.value)
+    lazy val ExprModule            = getMemberModule(ExprsClass, nme.Expr)
 
     lazy val ClassTagModule        = requiredModule[scala.reflect.ClassTag[_]]
     lazy val ClassTagClass         = requiredClass[scala.reflect.ClassTag[_]]
@@ -486,8 +486,7 @@ trait Definitions extends api.StandardDefinitions {
     lazy val TypeTagModule         = getMemberModule(TypeTagsClass, nme.TypeTag)
 
     lazy val BaseUniverseClass     = requiredClass[scala.reflect.base.Universe]
-    lazy val ApiUniverseClass      = getClassIfDefined("scala.reflect.api.Universe") // defined in scala-reflect.jar, so we need to be careful
-         def ApiUniverseReify      = if (ApiUniverseClass != NoSymbol) getMemberMethod(ApiUniverseClass, nme.reify) else NoSymbol
+         def BaseUniverseReify     = getMemberMethod(BaseUniverseClass, nme.reify)
     lazy val JavaUniverseClass     = getClassIfDefined("scala.reflect.api.JavaUniverse") // defined in scala-reflect.jar, so we need to be careful
 
     lazy val MirrorOfClass         = requiredClass[scala.reflect.base.MirrorOf[_]]
@@ -495,13 +494,13 @@ trait Definitions extends api.StandardDefinitions {
     lazy val TypeCreatorClass      = requiredClass[scala.reflect.base.TypeCreator]
     lazy val TreeCreatorClass      = requiredClass[scala.reflect.base.TreeCreator]
 
-    lazy val MacroContextClass                   = getClassIfDefined("scala.reflect.makro.Context") // defined in scala-reflect.jar, so we need to be careful
+    lazy val MacroContextClass                   = getClassIfDefined("scala.reflect.macros.Context") // defined in scala-reflect.jar, so we need to be careful
          def MacroContextPrefix                  = if (MacroContextClass != NoSymbol) getMemberMethod(MacroContextClass, nme.prefix) else NoSymbol
          def MacroContextPrefixType              = if (MacroContextClass != NoSymbol) getMemberType(MacroContextClass, tpnme.PrefixType) else NoSymbol
          def MacroContextUniverse                = if (MacroContextClass != NoSymbol) getMemberMethod(MacroContextClass, nme.universe) else NoSymbol
          def MacroContextMirror                  = if (MacroContextClass != NoSymbol) getMemberMethod(MacroContextClass, nme.mirror) else NoSymbol
-    lazy val MacroImplAnnotation                 = requiredClass[scala.reflect.makro.internal.macroImpl]
-    lazy val MacroInternalPackage                = getPackageObject("scala.reflect.makro.internal")
+    lazy val MacroImplAnnotation                 = requiredClass[scala.reflect.macros.internal.macroImpl]
+    lazy val MacroInternalPackage                = getPackageObject("scala.reflect.macros.internal")
          def MacroInternal_materializeClassTag   = getMemberMethod(MacroInternalPackage, nme.materializeClassTag)
          def MacroInternal_materializeAbsTypeTag = getMemberMethod(MacroInternalPackage, nme.materializeAbsTypeTag)
          def MacroInternal_materializeTypeTag    = getMemberMethod(MacroInternalPackage, nme.materializeTypeTag)
@@ -1045,7 +1044,7 @@ trait Definitions extends api.StandardDefinitions {
       // System.err.println("isMethod = " + result.isMethod)
       // System.err.println("isTerm = " + result.isTerm)
       // System.err.println("isValue = " + result.isValue)
-      // result.asMethodSymbol
+      // result.asMethod
       //
       // prints this:
       //
@@ -1074,8 +1073,8 @@ trait Definitions extends api.StandardDefinitions {
       // [scalacfork]
       // [scalacfork] uncaught exception during compilation: java.lang.ClassCastException
       // [scalacfork] error: java.lang.ClassCastException: value apply
-      // [scalacfork]  at scala.reflect.base.Symbols$SymbolBase$class.asMethodSymbol(Symbols.scala:118)
-      // [scalacfork]  at scala.reflect.internal.Symbols$SymbolContextApiImpl.asMethodSymbol(Symbols.scala:63)
+      // [scalacfork]  at scala.reflect.base.Symbols$SymbolBase$class.asMethod(Symbols.scala:118)
+      // [scalacfork]  at scala.reflect.internal.Symbols$SymbolContextApiImpl.asMethod(Symbols.scala:63)
       // [scalacfork]  at scala.reflect.internal.Definitions$DefinitionsClass.Symbol_apply(Definitions.scala:381)
 
       // [Eugene++] should be a ClassCastException instead?

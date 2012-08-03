@@ -14,6 +14,7 @@ trait Importers { self: SymbolTable =>
         def importSymbol(sym: from.Symbol) = sym.asInstanceOf[self.Symbol]
         def importType(tpe: from.Type) = tpe.asInstanceOf[self.Type]
         def importTree(tree: from.Tree) = tree.asInstanceOf[self.Tree]
+        def importPosition(pos: from.Position) = pos.asInstanceOf[self.Position]
       }
     } else {
       // todo. fix this loophole

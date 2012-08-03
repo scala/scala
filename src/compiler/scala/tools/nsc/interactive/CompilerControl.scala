@@ -252,6 +252,19 @@ trait CompilerControl { self: Global =>
   /** Asks for a computation to be done quickly on the presentation compiler thread */
   def ask[A](op: () => A): A = if (self.onCompilerThread) op() else scheduler doQuickly op
 
+  /** Asks for a computation to be done on presentation compiler thread, returning
+   *  a response with the result or an exception
+   */
+  def askForResponse[A](op: () => A): Response[A] = {
+    val r = new Response[A]
+    val ir = scheduler askDoQuickly op
+    ir onComplete {
+      case Left(result) => r set result
+      case Right(exc) => r raise exc
+    }
+    r
+  }
+
   def onCompilerThread = Thread.currentThread == compileRunner
 
   /** Info given for every member found by completion
@@ -390,7 +403,7 @@ trait CompilerControl { self: Global =>
         case _ => println("don't know what to do with this " + action.getClass)
       }
     }
-    
+
     override def doQuickly[A](op: () => A): A = {
       throw new FailedInterrupt(new Exception("Posted a work item to a compiler that's shutting down"))
     }

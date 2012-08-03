@@ -1,6 +1,6 @@
 Macros_Test_2.scala:2: error: macro implementation has wrong shape:
- required: (c: scala.reflect.makro.Context): c.Expr[Any]
- found   : (c: scala.reflect.makro.Context): reflect.basis.Literal
+ required: (c: scala.reflect.macros.Context): c.Expr[Any]
+ found   : (c: scala.reflect.macros.Context): reflect.basis.Literal
 type mismatch for return type: reflect.basis.Literal does not conform to c.Expr[Any]
   def foo = macro Impls.foo
                         ^

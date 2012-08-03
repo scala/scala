@@ -55,6 +55,10 @@ public class Profiler {
 		isProfiling = false;
 	}
 	
+	public static boolean isProfiling() {
+	  return isProfiling;
+	}
+
 	public static void resetProfiling() {
 	  counts = new HashMap<MethodCallTrace, Integer>();
 	}

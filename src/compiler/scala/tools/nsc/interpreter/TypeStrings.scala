@@ -212,8 +212,7 @@ trait TypeStrings {
   }
 
   private def tparamString[T: ru.TypeTag] : String = {
-    // [Eugene++ to Paul] needs review!!
-    def typeArguments: List[ru.Type] = ru.typeOf[T].typeArguments
+    def typeArguments: List[ru.Type] = ru.typeOf[T] match { case ru.TypeRef(_, _, args) => args; case _ => Nil }
     // [Eugene++] todo. need to use not the `rootMirror`, but a mirror with the REPL's classloader
     // how do I get to it? acquiring context classloader seems unreliable because of multithreading
     def typeVariables: List[java.lang.Class[_]] = typeArguments map (targ => ru.rootMirror.runtimeClass(targ))

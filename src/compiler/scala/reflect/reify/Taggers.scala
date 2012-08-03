@@ -1,7 +1,7 @@
 package scala.reflect.reify
 
-import scala.reflect.makro.{ReificationError, UnexpectedReificationError}
-import scala.reflect.makro.runtime.Context
+import scala.reflect.macros.{ReificationError, UnexpectedReificationError}
+import scala.reflect.macros.runtime.Context
 
 abstract class Taggers {
   val c: Context

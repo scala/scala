@@ -73,6 +73,14 @@ abstract class GenICode extends SubComponent  {
       ctx1
     }
 
+    /** If the selector type has a member with the right name,
+     *  it is the host class; otherwise the symbol's owner.
+     */
+    def findHostClass(selector: Type, sym: Symbol) = selector member sym.name match {
+      case NoSymbol   => log(s"Rejecting $selector as host class for $sym") ; sym.owner
+      case _          => selector.typeSymbol
+    }
+
     /////////////////// Code generation ///////////////////////
 
     def gen(tree: Tree, ctx: Context): Context = tree match {
@@ -949,13 +957,14 @@ abstract class GenICode extends SubComponent  {
              */
             fun match {
               case Select(qual, _) =>
-                val qualSym = qual.tpe.typeSymbol
+                val qualSym = findHostClass(qual.tpe, sym)
+
                 if (qualSym == ArrayClass) cm setTargetTypeKind toTypeKind(qual.tpe)
                 else cm setHostClass qualSym
 
-                debuglog(
+                log(
                   if (qualSym == ArrayClass) "Stored target type kind " + toTypeKind(qual.tpe) + " for " + sym.fullName
-                  else "Set more precise host class for " + sym.fullName + " host: " + qualSym
+                  else s"Set more precise host class for ${sym.fullName} hostClass: $qualSym"
                 )
               case _ =>
             }
@@ -1005,13 +1014,14 @@ abstract class GenICode extends SubComponent  {
         case Select(qualifier, selector) =>
           val sym = tree.symbol
           generatedType = toTypeKind(sym.info)
-          val hostClass = qualifier.tpe.typeSymbol.orElse(sym.owner)
+          val hostClass = findHostClass(qualifier.tpe, sym)
+          log(s"Host class of $sym with qual $qualifier (${qualifier.tpe}) is $hostClass")
 
           if (sym.isModule) {
             genLoadModule(ctx, tree)
           }
           else if (sym.isStaticMember) {
-            ctx.bb.emit(LOAD_FIELD(sym, true)  setHostClass hostClass, tree.pos)
+            ctx.bb.emit(LOAD_FIELD(sym, true) setHostClass hostClass, tree.pos)
             ctx
           }
           else {

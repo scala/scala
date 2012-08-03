@@ -8,7 +8,6 @@ package doc
 package model
 
 import scala.collection._
-import language.reflectiveCalls
 
 object IndexModelFactory {
 
