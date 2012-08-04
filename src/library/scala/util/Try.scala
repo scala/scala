@@ -54,6 +54,7 @@ import language.implicitConversions
  *
  * `Try` comes to the Scala standard library after years of use as an integral part of Twitter's stack.
  *
+ * @author based on Marius Eriksen's original implementation in com.twitter.util.
  * @since 2.10
  */
 sealed abstract class Try[+T] {
@@ -102,7 +103,7 @@ sealed abstract class Try[+T] {
    * Applies the given function `f` if this is a `Failure`, otherwise returns this if this is a `Success`.
    * This is like `flatMap` for the exception.
    */
-  def rescue[U >: T](f: PartialFunction[Throwable, Try[U]]): Try[U]
+  def recoverWith[U >: T](f: PartialFunction[Throwable, Try[U]]): Try[U]
 
   /**
    * Applies the given function `f` if this is a `Failure`, otherwise returns this if this is a `Success`.
@@ -150,20 +151,6 @@ sealed abstract class Try[+T] {
 
 object Try {
 
-  implicit def try2either[T](tr: Try[T]): Either[Throwable, T] = {
-    tr match {
-      case Success(v) => Right(v)
-      case Failure(t) => Left(t)
-    }
-  }
-
-  implicit def either2try[T](ei: Either[Throwable, T]): Try[T] = {
-    ei match {
-      case Right(v) => Success(v)
-      case Left(t) => Failure(t)
-    }
-  }
-
   def apply[T](r: => T): Try[T] = {
     try { Success(r) } catch {
       case NonFatal(e) => Failure(e)
@@ -175,7 +162,7 @@ object Try {
 final case class Failure[+T](val exception: Throwable) extends Try[T] {
   def isFailure: Boolean = true
   def isSuccess: Boolean = false
-  def rescue[U >: T](f: PartialFunction[Throwable, Try[U]]): Try[U] =
+  def recoverWith[U >: T](f: PartialFunction[Throwable, Try[U]]): Try[U] =
     if (f.isDefinedAt(exception)) f(exception) else this
   def get: T = throw exception
   def flatMap[U](f: T => Try[U]): Try[U] = Failure[U](exception)
@@ -201,12 +188,12 @@ final case class Failure[+T](val exception: Throwable) extends Try[T] {
 final case class Success[+T](value: T) extends Try[T] {
   def isFailure: Boolean = false
   def isSuccess: Boolean = true
-  def rescue[U >: T](f: PartialFunction[Throwable, Try[U]]): Try[U] = Success(value)
+  def recoverWith[U >: T](f: PartialFunction[Throwable, Try[U]]): Try[U] = Success(value)
   def get = value
   def flatMap[U](f: T => Try[U]): Try[U] =
     try f(value)
     catch {
-      case e: Throwable => Failure(e)
+      case NonFatal(e) => Failure(e)
     }
   def flatten[U](implicit ev: T <:< Try[U]): Try[U] = value
   def foreach[U](f: T => U): Unit = f(value)
