@@ -20,6 +20,7 @@ import internal.Flags._
 //import scala.tools.nsc.util.ScalaClassLoader._
 import ReflectionUtils.{singletonInstance}
 import language.existentials
+import scala.runtime.ScalaRunTime
 
 trait JavaMirrors extends internal.SymbolTable with api.JavaUniverse { self: SymbolTable =>
 
@@ -152,8 +153,15 @@ trait JavaMirrors extends internal.SymbolTable with api.JavaUniverse { self: Sym
 
     def moduleSymbol(rtcls: RuntimeClass): ModuleSymbol = classToScala(rtcls).companionModule.asModule
 
-    private def checkMemberOf(wannabe: Symbol, owner: Symbol) =
-      if (!owner.info.member(wannabe.name).alternatives.contains(wannabe)) ErrorNotMember(wannabe, owner)
+    private def checkMemberOf(wannabe: Symbol, owner: ClassSymbol) {
+      if (wannabe.owner == AnyClass || wannabe.owner == AnyRefClass || wannabe.owner == ObjectClass) {
+       // do nothing
+      } else if (wannabe.owner == AnyValClass) {
+        if (!owner.isPrimitiveValueClass && !owner.isDerivedValueClass) ErrorNotMember(wannabe, owner)
+      } else {
+        if (!owner.info.member(wannabe.name).alternatives.contains(wannabe)) ErrorNotMember(wannabe, owner)
+      }
+    }
 
     private class JavaInstanceMirror(obj: AnyRef)
             extends InstanceMirror {
@@ -175,7 +183,7 @@ trait JavaMirrors extends internal.SymbolTable with api.JavaUniverse { self: Sym
       }
       def reflectMethod(method: MethodSymbol): MethodMirror = {
         checkMemberOf(method, symbol)
-        new JavaMethodMirror(obj, method)
+        mkJavaMethodMirror(obj, method)
       }
       def reflectClass(cls: ClassSymbol): ClassMirror = {
         if (cls.isStatic) ErrorStaticClass(cls)
@@ -230,25 +238,92 @@ trait JavaMirrors extends internal.SymbolTable with api.JavaUniverse { self: Sym
       sig
     }
 
-    private class JavaMethodMirror(val receiver: AnyRef, val symbol: MethodSymbol)
+    // the "symbol == Any_getClass || symbol == Object_getClass" test doesn't cut it
+    // because both AnyVal and its primitive descendants define their own getClass methods
+    private def isGetClass(meth: MethodSymbol) = meth.name.toString == "getClass" && meth.params.flatten.isEmpty
+    private def isMagicPrimitiveMethod(meth: MethodSymbol) = meth.owner.isPrimitiveValueClass
+    private def isStringConcat(meth: MethodSymbol) = meth == String_+ || (isMagicPrimitiveMethod(meth) && meth.returnType =:= StringClass.toType)
+    lazy val magicMethodOwners = Set[Symbol](AnyClass, AnyValClass, AnyRefClass, ObjectClass, ArrayClass) ++ ScalaPrimitiveValueClasses
+    lazy val nonMagicObjectMethods = Set[Symbol](Object_clone, Object_equals, Object_finalize, Object_hashCode, Object_toString,
+                                     Object_notify, Object_notifyAll) ++ ObjectClass.info.member(nme.wait_).asTerm.alternatives.map(_.asMethod)
+    private def isMagicMethod(meth: MethodSymbol): Boolean = {
+      if (isGetClass(meth) || isStringConcat(meth) || isMagicPrimitiveMethod(meth) || meth == Predef_classOf || meth.isTermMacro) return true
+      magicMethodOwners(meth.owner) && !nonMagicObjectMethods(meth)
+    }
+
+    // unlike other mirrors, method mirrors are created by a factory
+    // that's because we want to have decent performance
+    // therefore we move special cases into separate subclasses
+    // rather than have them on a hot path them in a unified implementation of the `apply` method
+    private def mkJavaMethodMirror(receiver: AnyRef, symbol: MethodSymbol): JavaMethodMirror = {
+      if (isMagicMethod(symbol)) new JavaMagicMethodMirror(receiver, symbol)
+      else new JavaVanillaMethodMirror(receiver, symbol)
+    }
+
+    private abstract class JavaMethodMirror(val receiver: AnyRef, val symbol: MethodSymbol)
             extends MethodMirror {
       lazy val jmeth = {
         val jmeth = methodToJava(symbol)
         if (!jmeth.isAccessible) jmeth.setAccessible(true)
         jmeth
       }
-      def apply(args: Any*): Any =
-        if (symbol.owner == ArrayClass)
-          symbol.name match {
-            case nme.length => jArray.getLength(receiver)
-            case nme.apply => jArray.get(receiver, args(0).asInstanceOf[Int])
-            case nme.update => jArray.set(receiver, args(0).asInstanceOf[Int], args(1))
-            case _ => assert(false, s"unexpected array method: $symbol")
-          }
-        else
-          jmeth.invoke(receiver, args.asInstanceOf[Seq[AnyRef]]: _*)
+
       override def toString = s"method mirror for ${showMethodSig(symbol)} (bound to $receiver)"
     }
+
+    private class JavaVanillaMethodMirror(receiver: AnyRef, symbol: MethodSymbol)
+            extends JavaMethodMirror(receiver, symbol) {
+      def apply(args: Any*): Any = jmeth.invoke(receiver, args.asInstanceOf[Seq[AnyRef]]: _*)
+    }
+
+    private class JavaMagicMethodMirror(receiver: AnyRef, symbol: MethodSymbol)
+            extends JavaMethodMirror(receiver, symbol) {
+       def apply(args: Any*): Any = {
+        // checking type conformance is too much of a hassle, so we don't do it here
+        // actually it's not even necessary, because we manually dispatch arguments to magic methods below
+        val params = symbol.paramss.flatten
+        val perfectMatch = args.length == params.length
+        // todo. this doesn't account for multiple vararg parameter lists
+        // however those aren't supported by the mirror API: https://issues.scala-lang.org/browse/SI-6182
+        // hence I leave this code as is, to be fixed when the corresponding bug is fixed
+        val varargMatch = args.length >= params.length - 1 && isVarArgsList(params)
+        if (!perfectMatch && !varargMatch) {
+          val n_arguments = if (isVarArgsList(params)) s"${params.length - 1} or more" else s"${params.length}"
+          var s_arguments = if (params.length == 1 && !isVarArgsList(params)) "argument" else "arguments"
+          throw new ScalaReflectionException(s"${showMethodSig(symbol)} takes $n_arguments $s_arguments")
+        }
+
+        def objArg0           = args(0).asInstanceOf[AnyRef]
+        def objArgs           = args.asInstanceOf[Seq[AnyRef]]
+        def fail(msg: String) = throw new ScalaReflectionException(msg + ", it cannot be invoked with mirrors")
+
+        symbol match {
+          case Any_== | Object_==                 => ScalaRunTime.inlinedEquals(receiver, objArg0)
+          case Any_!= | Object_!=                 => !ScalaRunTime.inlinedEquals(receiver, objArg0)
+          case Any_## | Object_##                 => ScalaRunTime.hash(receiver)
+          case Any_equals                         => receiver.equals(objArg0)
+          case Any_hashCode                       => receiver.hashCode
+          case Any_toString                       => receiver.toString
+          case Object_eq                          => receiver eq objArg0
+          case Object_ne                          => receiver ne objArg0
+          case Object_synchronized                => receiver.synchronized(objArg0)
+          case sym if isGetClass(sym)             => receiver.getClass
+          case Any_asInstanceOf                   => fail("Any.asInstanceOf requires a type argument")
+          case Any_isInstanceOf                   => fail("Any.isInstanceOf requires a type argument")
+          case Object_asInstanceOf                => fail("AnyRef.$asInstanceOf is an internal method")
+          case Object_isInstanceOf                => fail("AnyRef.$isInstanceOf is an internal method")
+          case Array_length                       => ScalaRunTime.array_length(receiver)
+          case Array_apply                        => ScalaRunTime.array_apply(receiver, args(0).asInstanceOf[Int])
+          case Array_update                       => ScalaRunTime.array_update(receiver, args(0).asInstanceOf[Int], args(1))
+          case Array_clone                        => ScalaRunTime.array_clone(receiver)
+          case sym if isStringConcat(sym)         => receiver.toString + objArg0
+          case sym if isMagicPrimitiveMethod(sym) => fail("implementation restriction: ${symbol.fullName} is a magic primitive method")
+          case sym if sym == Predef_classOf       => fail("Predef.classOf is a compile-time function")
+          case sym if sym.isTermMacro             => fail(s"${symbol.fullName} is a macro, i.e. a compile-time function")
+          case _                                  => assert(false, this)
+        }
+      }
+   }
 
     private class JavaConstructorMirror(val outer: AnyRef, val symbol: MethodSymbol)
             extends MethodMirror {
@@ -259,6 +334,9 @@ trait JavaMirrors extends internal.SymbolTable with api.JavaUniverse { self: Sym
         jconstr
       }
       def apply(args: Any*): Any = {
+        if (symbol.owner == ArrayClass)
+          throw new ScalaReflectionException("Cannot instantiate arrays with mirrors. Consider using `scala.reflect.ClassTag(<class of element>).newArray(<length>)` instead")
+
         val effectiveArgs =
           if (outer == null) args.asInstanceOf[Seq[AnyRef]]
           else outer +: args.asInstanceOf[Seq[AnyRef]]
@@ -1067,7 +1145,7 @@ trait JavaMirrors extends internal.SymbolTable with api.JavaUniverse { self: Sym
     mirrors(rootToLoader getOrElseUpdate(root, findLoader)).get.get
   }
 
-  private lazy val magicSymbols: Map[(String, Name), Symbol] = {
+  private lazy val magicClasses: Map[(String, Name), Symbol] = {
     def mapEntry(sym: Symbol): ((String, Name), Symbol) = (sym.owner.fullName, sym.name) -> sym
     Map() ++ (definitions.magicSymbols filter (_.isType) map mapEntry)
   }
@@ -1088,7 +1166,7 @@ trait JavaMirrors extends internal.SymbolTable with api.JavaUniverse { self: Sym
       if (name.isTermName && !owner.isEmptyPackageClass)
         return mirror.makeScalaPackage(
           if (owner.isRootSymbol) name.toString else owner.fullName+"."+name)
-      magicSymbols get (owner.fullName, name) match {
+      magicClasses get (owner.fullName, name) match {
         case Some(tsym) =>
           owner.info.decls enter tsym
           return tsym
