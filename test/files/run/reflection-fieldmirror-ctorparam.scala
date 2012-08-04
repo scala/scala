@@ -13,7 +13,7 @@ object Test extends App {
   val f = cs.typeSignature.declaration(newTermName("x")).asTerm
   try {
     val fm: FieldMirror = im.reflectField(f)
-    println(fm.get)
+    println(fm.get())
   } catch {
     case ex: Throwable =>
       println(s"${ex.getClass}: ${ex.getMessage}")

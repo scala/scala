@@ -125,13 +125,14 @@ trait JavaMirrors extends internal.SymbolTable with api.JavaUniverse { self: Sym
     private def ErrorStaticClass(wannabe: Symbol) = throw new ScalaReflectionException(s"$wannabe is a static class, use reflectClass on a RuntimeMirror to obtain its ClassMirror")
     private def ErrorStaticModule(wannabe: Symbol) = throw new ScalaReflectionException(s"$wannabe is a static module, use reflectModule on a RuntimeMirror to obtain its ModuleMirror")
     private def ErrorNotMember(wannabe: Symbol, owner: Symbol) = throw new ScalaReflectionException(s"expected a member of $owner, you provided ${wannabe.kind} ${wannabe.fullName}")
-    private def ErrorNotField(wannabe: Symbol) = throw new ScalaReflectionException(s"expected a field or an accessor method symbol, you provided $wannabe}")
+    private def ErrorNotField(wannabe: Symbol) = throw new ScalaReflectionException(s"expected a field or an accessor method symbol, you provided $wannabe")
     private def ErrorNonExistentField(wannabe: Symbol) = throw new ScalaReflectionException(s"""
       |Scala field ${wannabe.name} isn't represented as a Java field, neither it has a Java accessor method
       |note that private parameters of class constructors don't get mapped onto fields and/or accessors,
       |unless they are used outside of their declaring constructors.
     """.trim.stripMargin)
     private def ErrorSetImmutableField(wannabe: Symbol) = throw new ScalaReflectionException(s"cannot set an immutable field ${wannabe.name}")
+    private def ErrorNotConstructor(wannabe: Symbol, owner: Symbol) = throw new ScalaReflectionException(s"expected a constructor of $owner, you provided $wannabe")
 
     def reflect(obj: Any): InstanceMirror = new JavaInstanceMirror(obj.asInstanceOf[AnyRef])
 
@@ -159,7 +160,11 @@ trait JavaMirrors extends internal.SymbolTable with api.JavaUniverse { self: Sym
       } else if (wannabe.owner == AnyValClass) {
         if (!owner.isPrimitiveValueClass && !owner.isDerivedValueClass) ErrorNotMember(wannabe, owner)
       } else {
-        if (!owner.info.member(wannabe.name).alternatives.contains(wannabe)) ErrorNotMember(wannabe, owner)
+        def isMemberOf(wannabe: Symbol, owner: ClassSymbol): Boolean = {
+          val isNonShadowedMember = owner.info.member(wannabe.name).alternatives.contains(wannabe)
+          isNonShadowedMember || owner.info.baseClasses.tail.exists(base => isMemberOf(wannabe, base.asClass))
+        }
+        if (!isMemberOf(wannabe, owner)) ErrorNotMember(wannabe, owner)
       }
     }
 
@@ -200,15 +205,21 @@ trait JavaMirrors extends internal.SymbolTable with api.JavaUniverse { self: Sym
 
     private class JavaFieldMirror(val receiver: AnyRef, val symbol: TermSymbol)
             extends FieldMirror {
-      lazy val jfield = {
-        val jfield = fieldToJava(symbol)
+      lazy val baseJfield = fieldToJava(symbol)
+      lazy val overridingJfield = {
+        val overridingSymbol = wholemirror.classSymbol(receiver.getClass).typeSignature.member(nme.dropLocalSuffix(symbol.name)).asTerm
+        if (symbol == overridingSymbol) fieldToJava(symbol)
+        else new JavaFieldMirror(receiver, overridingSymbol).baseJfield
+      }
+      def jfield(preferOverriding: Boolean = true) = {
+        val jfield = if (preferOverriding) overridingJfield else baseJfield
         if (!jfield.isAccessible) jfield.setAccessible(true)
         jfield
       }
-      def get = jfield.get(receiver)
-      def set(value: Any) = {
+      def get(preferOverriding: Boolean = true) = jfield(preferOverriding).get(receiver)
+      def set(value: Any, preferOverriding: Boolean = true) = {
         if (!symbol.isMutable) ErrorSetImmutableField(symbol)
-        jfield.set(receiver, value)
+        jfield(preferOverriding).set(receiver, value)
       }
       override def toString = s"field mirror for ${symbol.fullName} (bound to $receiver)"
     }
@@ -321,7 +332,11 @@ trait JavaMirrors extends internal.SymbolTable with api.JavaUniverse { self: Sym
             extends JavaTemplateMirror with ClassMirror {
       def erasure = symbol
       def isStatic = false
-      def reflectConstructor(constructor: MethodSymbol) = new JavaConstructorMirror(outer, constructor)
+      def reflectConstructor(constructor: MethodSymbol) = {
+        if (!constructor.isClassConstructor) ErrorNotConstructor(constructor, symbol)
+        if (!symbol.info.decls.toList.filter(_.isConstructor).contains(constructor)) ErrorNotConstructor(constructor, symbol)
+        new JavaConstructorMirror(outer, constructor)
+      }
       def companion: Option[ModuleMirror] = symbol.companionModule match {
        case module: ModuleSymbol => Some(new JavaModuleMirror(outer, module))
        case _ => None

@@ -13,7 +13,7 @@ object Test extends App {
   val f = cs.typeSignature.declaration(newTermName("x")).asTerm
   val fm: FieldMirror = im.reflectField(f)
   println(fm.symbol.isVariable)
-  println(fm.get)
+  println(fm.get())
   fm.set(2)
-  println(fm.get)
+  println(fm.get())
 }

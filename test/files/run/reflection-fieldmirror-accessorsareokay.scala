@@ -15,9 +15,9 @@ object Test extends App {
     try {
       val fm: FieldMirror = im.reflectField(f.asTerm)
       println(fm.symbol.isVariable)
-      println(fm.get)
+      println(fm.get())
       fm.set(2)
-      println(fm.get)
+      println(fm.get())
     } catch {
       case ex: Throwable =>
         println(ex.getMessage)
