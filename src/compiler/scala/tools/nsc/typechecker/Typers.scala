@@ -4522,7 +4522,9 @@ trait Typers extends Modes with Adaptations with Tags {
                 }) setType qual.tpe setPos qual.pos,
                 name)
             case _ if accessibleError.isDefined =>
-              val qual1 = adaptToMemberWithArgs(tree, qual, name, mode, false, false)
+              // don't adapt constructor, SI-6074
+              val qual1 = if (name == nme.CONSTRUCTOR) qual
+                          else adaptToMemberWithArgs(tree, qual, name, mode, false, false)
               if (!qual1.isErrorTyped && (qual1 ne qual))
                 typed(Select(qual1, name) setPos tree.pos, mode, pt)
               else
