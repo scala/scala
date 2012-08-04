@@ -22,7 +22,9 @@ private[concurrent] trait Promise[T] extends scala.concurrent.Promise[T] with sc
   def future: this.type = this
 }
 
-private class CallbackRunnable[T](val executor: ExecutionContext, val onComplete: (Try[T]) => Any) extends Runnable with OnCompleteRunnable {
+/* Precondition: `executor` is prepared, i.e., `executor` has been returned from invocation of `prepare` on some other `ExecutionContext`.
+ */
+private class CallbackRunnable[T](val executor: ExecutionContext, val onComplete: Try[T] => Any) extends Runnable with OnCompleteRunnable {
   // must be filled in before running it
   var value: Try[T] = null
 
@@ -34,6 +36,8 @@ private class CallbackRunnable[T](val executor: ExecutionContext, val onComplete
   def executeWithValue(v: Try[T]): Unit = {
     require(value eq null) // can't complete it twice
     value = v
+    // Note that we cannot prepare the ExecutionContext at this point, since we might
+    // already be running on a different thread!
     executor.execute(this)
   }
 }
@@ -125,7 +129,8 @@ private[concurrent] object Promise {
     }
 
     def onComplete[U](func: Try[T] => U)(implicit executor: ExecutionContext): Unit = {
-      val runnable = new CallbackRunnable[T](executor, func)
+      val preparedEC = executor.prepare(func)
+      val runnable = new CallbackRunnable[T](preparedEC, func)
 
       @tailrec //Tries to add the callback, if already completed, it dispatches the callback to be executed
       def dispatchOrAddCallback(): Unit =
@@ -151,7 +156,8 @@ private[concurrent] object Promise {
 
     def onComplete[U](func: Try[T] => U)(implicit executor: ExecutionContext): Unit = {
       val completedAs = value.get
-      (new CallbackRunnable(executor, func)).executeWithValue(completedAs)
+      val preparedEC = executor.prepare(func)
+      (new CallbackRunnable(preparedEC, func)).executeWithValue(completedAs)
     }
 
     def ready(atMost: Duration)(implicit permit: CanAwait): this.type = this
