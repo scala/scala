@@ -113,7 +113,6 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
   import definitions._
   import analyzer._ //Typer
 
-  val SYNTH_CASE = Flags.CASE | SYNTHETIC
 
   case class DefaultOverrideMatchAttachment(default: Tree)
 
@@ -241,7 +240,8 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
       // append the default to the list of cases and suppress the unreachable case error that may arise (once we detect that...)
       val matchFailGenOverride = match_.attachments.get[DefaultOverrideMatchAttachment].map{case DefaultOverrideMatchAttachment(default) => ((scrut: Tree) => default)}
 
-      val selectorSym  = freshSym(selector.pos, pureType(selectorTp)) setFlag SYNTH_CASE
+      val selectorSym  = freshSym(selector.pos, pureType(selectorTp)) setFlag treeInfo.SYNTH_CASE_FLAGS
+
       // pt = Any* occurs when compiling test/files/pos/annotDepMethType.scala  with -Xexperimental
       val combined = combineCases(selector, selectorSym, cases map translateCase(selectorSym, pt), pt, matchOwner, matchFailGenOverride)
 
@@ -1317,6 +1317,9 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
     def freshSym(pos: Position, tp: Type = NoType, prefix: String = "x") =
       NoSymbol.newTermSymbol(freshName(prefix), pos) setInfo tp
 
+    def newSynthCaseLabel(name: String) =
+      NoSymbol.newLabel(freshName(name), NoPosition) setFlag treeInfo.SYNTH_CASE_FLAGS
+
     // codegen relevant to the structure of the translation (how extractors are combined)
     trait AbsCodegen {
       def matcher(scrut: Tree, scrutSym: Symbol, restpe: Type)(cases: List[Casegen => Tree], matchFailGen: Option[Tree => Tree]): Tree
@@ -1487,7 +1490,7 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
     case object FalseCond extends Cond {override def toString = "F"}
 
     case class AndCond(a: Cond, b: Cond) extends Cond {override def toString = a +"/\\"+ b}
-    case class OrCond(a: Cond, b: Cond) extends Cond  {override def toString = "("+a+") \\/ ("+ b +")"}
+    case class OrCond(a: Cond, b: Cond)  extends Cond {override def toString = "("+a+") \\/ ("+ b +")"}
 
     object EqualityCond {
       private val uniques = new collection.mutable.HashMap[(Tree, Tree), EqualityCond]
@@ -3109,7 +3112,7 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
           }
       }
 
-      private val defaultLabel: Symbol =  NoSymbol.newLabel(freshName("default"), NoPosition) setFlag SYNTH_CASE
+      private val defaultLabel: Symbol =  newSynthCaseLabel("default")
 
       /** Collapse guarded cases that switch on the same constant (the last case may be unguarded).
        *
@@ -3477,11 +3480,11 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
        * if keepGoing is false, the result Some(x) of the naive translation is encoded as matchRes == x
        */
       def matcher(scrut: Tree, scrutSym: Symbol, restpe: Type)(cases: List[Casegen => Tree], matchFailGen: Option[Tree => Tree]): Tree = {
-        val matchEnd = NoSymbol.newLabel(freshName("matchEnd"), NoPosition) setFlag SYNTH_CASE
+        val matchEnd = newSynthCaseLabel("matchEnd")
         val matchRes = NoSymbol.newValueParameter(newTermName("x"), NoPosition, SYNTHETIC) setInfo restpe.withoutAnnotations //
         matchEnd setInfo MethodType(List(matchRes), restpe)
 
-        def newCaseSym = NoSymbol.newLabel(freshName("case"), NoPosition) setInfo MethodType(Nil, restpe) setFlag SYNTH_CASE
+        def newCaseSym = newSynthCaseLabel("case") setInfo MethodType(Nil, restpe)
         var _currCase = newCaseSym
 
         val caseDefs = cases map { (mkCase: Casegen => Tree) =>
