@@ -169,6 +169,7 @@ trait TypeTags { self: Universe =>
       val otherMirror1 = otherMirror.asInstanceOf[MirrorOf[otherMirror.universe.type]]
       otherMirror.universe.AbsTypeTag[T](otherMirror1, tpec)
     }
+    private def writeReplace(): AnyRef = new SerializedTypeTag(tpec, concrete = false)
   }
 
   /**
@@ -233,13 +234,18 @@ trait TypeTags { self: Universe =>
       val otherMirror1 = otherMirror.asInstanceOf[MirrorOf[otherMirror.universe.type]]
       otherMirror.universe.TypeTag[T](otherMirror1, tpec)
     }
+    private def writeReplace(): AnyRef = new SerializedTypeTag(tpec, concrete = true)
   }
 
-  private class PredefTypeTag[T](_tpe: Type, copyIn: Universe => Universe # TypeTag[T]) extends TypeTagImpl[T](rootMirror, null) {
+  private class PredefTypeCreator[T](copyIn: Universe => Universe # TypeTag[T]) extends TypeCreator {
+    def apply[U <: Universe with Singleton](m: MirrorOf[U]): U # Type = {
+      copyIn(m.universe).asInstanceOf[U # TypeTag[T]].tpe
+    }
+  }
+
+  private class PredefTypeTag[T](_tpe: Type, copyIn: Universe => Universe # TypeTag[T]) extends TypeTagImpl[T](rootMirror, new PredefTypeCreator(copyIn)) {
     override lazy val tpe: Type = _tpe
-    override def in[U <: Universe with Singleton](otherMirror: MirrorOf[U]): U # TypeTag[T] =
-      copyIn(otherMirror.universe).asInstanceOf[U # TypeTag[T]]
-    private def readResolve() = copyIn(self)
+    private def writeReplace(): AnyRef = new SerializedTypeTag(tpec, concrete = true)
   }
 
   // incantations
@@ -247,4 +253,22 @@ trait TypeTags { self: Universe =>
 
   // big thanks to Viktor Klang for this brilliant idea!
   def typeOf[T](implicit ttag: TypeTag[T]): Type = ttag.tpe
+}
+
+private[scala] class SerializedTypeTag(var tpec: TypeCreator, var concrete: Boolean) extends Serializable {
+  private def writeObject(out: java.io.ObjectOutputStream): Unit = {
+    out.writeObject(tpec)
+    out.writeBoolean(concrete)
+  }
+
+  private def readObject(in: java.io.ObjectInputStream): Unit = {
+    tpec = in.readObject().asInstanceOf[TypeCreator]
+    concrete = in.readBoolean()
+  }
+
+  private def readResolve(): AnyRef = {
+    import scala.reflect.basis._
+    if (concrete) TypeTag(rootMirror, tpec)
+    else AbsTypeTag(rootMirror, tpec)
+  }
 }

@@ -62,7 +62,7 @@ class Power[ReplValsImpl <: ReplVals : ru.TypeTag: ClassTag](val intp: IMain, re
     def discarded = seen.size - keep.size
 
     def members(x: Symbol): List[Symbol] =
-      if (x.rawInfo.isComplete) x.info.members
+      if (x.rawInfo.isComplete) x.info.members.toList
       else Nil
 
     var lastCount = -1
@@ -216,7 +216,7 @@ class Power[ReplValsImpl <: ReplVals : ru.TypeTag: ClassTag](val intp: IMain, re
     def declsOriginal = membersDeclared filterNot (_.isOverride)
 
     def members           = membersUnabridged filterNot excludeMember
-    def membersUnabridged = tpe.members
+    def membersUnabridged = tpe.members.toList
     def membersDeclared   = members filterNot excludeMember
     def membersInherited  = members filterNot (membersDeclared contains _)
     def memberTypes       = members filter (_.name.isTypeName)

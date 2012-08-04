@@ -27,4 +27,4 @@ ClassTag[class java.lang.Object]
 true
 ClassTag[class scala.runtime.Null$]
 true
-ClassTag[class scala.runtime.Nothing$]
+ClassTag[Nothing]

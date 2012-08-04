@@ -54,6 +54,11 @@ class WorkScheduler {
 
   /** Called from client: have interrupt executed by server and return result */
   def doQuickly[A](op: () => A): A = {
+    val ir = askDoQuickly(op)
+    ir.getResult()
+  }
+
+  def askDoQuickly[A](op: () => A): InterruptReq { type R = A } = {
     val ir = new InterruptReq {
       type R = A
       val todo = op
@@ -62,7 +67,7 @@ class WorkScheduler {
       interruptReqs enqueue ir
       notify()
     }
-    ir.getResult()
+    ir
   }
 
   /** Called from client: have action executed by server */

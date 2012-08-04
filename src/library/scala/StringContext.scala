@@ -8,8 +8,6 @@
 
 package scala
 
-import language.experimental.macros
-
 /** A class to support string interpolation.
  *  This class supports string interpolation as outlined in Scala SIP-11.
  *  It needs to be fully documented once the SIP is accepted.
@@ -26,7 +24,7 @@ case class StringContext(parts: String*) {
    *  @param `args` The arguments to be checked.
    *  @throws An `IllegalArgumentException` if this is not the case.
    */
-  def checkLengths(args: Any*): Unit =
+  def checkLengths(args: Seq[Any]): Unit =
     if (parts.length != args.length + 1)
       throw new IllegalArgumentException("wrong number of arguments for interpolated string")
 
@@ -42,11 +40,27 @@ case class StringContext(parts: String*) {
    *  @throws A `StringContext.InvalidEscapeException` if if a `parts` string contains a backslash (`\`) character
    *          that does not start a valid escape sequence.
    */
-  def s(args: Any*): String = {
-    checkLengths(args: _*)
+  def s(args: Any*): String = standardInterpolator(treatEscapes, args)
+
+  /** The raw string interpolator.
+   *
+   *  It inserts its arguments between corresponding parts of the string context.
+   *  As opposed to the simple string interpolator `s`, this one does not treat
+   *  standard escape sequences as defined in the Scala specification.
+   *  @param `args` The arguments to be inserted into the resulting string.
+   *  @throws An `IllegalArgumentException`
+   *          if the number of `parts` in the enclosing `StringContext` does not exceed
+   *          the number of arguments `arg` by exactly 1.
+   *  @throws A `StringContext.InvalidEscapeException` if if a `parts` string contains a backslash (`\`) character
+   *          that does not start a valid escape sequence.
+   */
+  def raw(args: Any*): String = standardInterpolator(identity, args)
+
+  def standardInterpolator(process: String => String, args: Seq[Any]): String = {
+    checkLengths(args)
     val pi = parts.iterator
     val ai = args.iterator
-    val bldr = new java.lang.StringBuilder(treatEscapes(pi.next()))
+    val bldr = new java.lang.StringBuilder(process(pi.next()))
     while (ai.hasNext) {
       bldr append ai.next
       bldr append treatEscapes(pi.next())
@@ -83,7 +97,7 @@ case class StringContext(parts: String*) {
    *      format specifier `%%`.
    */
   // The implementation is magically hardwired into `scala.tools.reflect.MacroImplementations.macro_StringInterpolation_f`
-  def f(args: Any*): String = macro ???
+  def f(args: Any*): String = ??? // macro
 }
 
 object StringContext {

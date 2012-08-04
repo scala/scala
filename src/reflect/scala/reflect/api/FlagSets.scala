@@ -9,8 +9,7 @@ trait FlagSets { self: Universe =>
 
   trait FlagOps extends Any {
     def | (right: FlagSet): FlagSet
-    def & (right: FlagSet): FlagSet
-    def containsAll (right: FlagSet): Boolean
+    def hasFlag(flags: FlagSet): Boolean
   }
 
   implicit def addFlagOps(left: FlagSet): FlagOps
@@ -18,8 +17,6 @@ trait FlagSets { self: Universe =>
   val Flag: FlagValues
 
   type FlagValues >: Null <: FlagValuesApi
-
-  // [Eugene++] any other flags we would like to expose?
 
   trait FlagValuesApi {
 
@@ -100,13 +97,5 @@ trait FlagSets { self: Universe =>
 
     /** Flag indicating that parameter has a default value */
     val DEFAULTPARAM: FlagSet
-
-    /** Flag indicating that trait has neither method implementations nor fields.
-     *  This means the trait can be represented as a Java interface. */
-    val INTERFACE: FlagSet
-
-    def union(flags: FlagSet*): FlagSet
-    def intersection(flag: FlagSet*): FlagSet
-    def containsAll(superset: FlagSet, subset: FlagSet): Boolean
   }
 }

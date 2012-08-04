@@ -30,7 +30,7 @@ trait GenTypes {
 
     val tsym = tpe.typeSymbolDirect
     if (tsym.isClass && tpe == tsym.typeConstructor && tsym.isStatic)
-      Select(Select(reify(tsym), nme.asTypeSymbol), nme.asTypeConstructor)
+      Select(Select(reify(tsym), nme.asType), nme.toTypeConstructor)
     else tpe match {
       case tpe @ NoType =>
         reifyMirrorObject(tpe)
@@ -42,7 +42,7 @@ trait GenTypes {
         mirrorBuildCall(nme.thisPrefix, mirrorMirrorSelect(nme.EmptyPackageClass))
       case tpe @ ThisType(clazz) if clazz.isModuleClass && clazz.isStatic =>
         val module = reify(clazz.sourceModule)
-        val moduleClass = Select(Select(module, nme.asModuleSymbol), nme.moduleClass)
+        val moduleClass = Select(Select(module, nme.asModule), nme.moduleClass)
         mirrorFactoryCall(nme.ThisType, moduleClass)
       case tpe @ ThisType(_) =>
         reifyProduct(tpe)
@@ -94,7 +94,7 @@ trait GenTypes {
             }
           case success =>
             if (reifyDebug) println("implicit search has produced a result: " + success)
-            state.reificationIsConcrete &= concrete || success.tpe <:< TypeTagClass.asTypeConstructor
+            state.reificationIsConcrete &= concrete || success.tpe <:< TypeTagClass.toTypeConstructor
             Select(Apply(Select(success, nme.in), List(Ident(nme.MIRROR_SHORT))), nme.tpe)
         }
       if (result != EmptyTree) return result
@@ -109,7 +109,7 @@ trait GenTypes {
     def searchForManifest(typer: analyzer.Typer): Tree =
       analyzer.inferImplicit(
         EmptyTree,
-        appliedType(FullManifestClass.asTypeConstructor, List(tpe)),
+        appliedType(FullManifestClass.toTypeConstructor, List(tpe)),
         reportAmbiguous = false,
         isView = false,
         context = typer.context,

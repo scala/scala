@@ -1,8 +1,8 @@
 package scala.reflect.reify
 
 import scala.tools.nsc.Global
-import scala.reflect.makro.ReificationError
-import scala.reflect.makro.UnexpectedReificationError
+import scala.reflect.macros.ReificationError
+import scala.reflect.macros.UnexpectedReificationError
 import scala.reflect.reify.utils.Utils
 
 /** Given a tree or a type, generate a tree that when executed at runtime produces the original tree or type.
@@ -115,7 +115,7 @@ abstract class Reifier extends States
       // todo. maybe try `resetLocalAttrs` once the dust settles
       var importantSymbols = Set[Symbol](
         NothingClass, AnyClass, SingletonClass, PredefModule, ScalaRunTimeModule, TypeCreatorClass, TreeCreatorClass, MirrorOfClass,
-        BaseUniverseClass, ApiUniverseClass, JavaUniverseClass, ReflectRuntimePackage, ReflectRuntimeCurrentMirror)
+        BaseUniverseClass, JavaUniverseClass, ReflectRuntimePackage, ReflectRuntimeCurrentMirror)
       importantSymbols ++= importantSymbols map (_.companionSymbol)
       importantSymbols ++= importantSymbols map (_.moduleClass)
       importantSymbols ++= importantSymbols map (_.linkedClassOfClass)

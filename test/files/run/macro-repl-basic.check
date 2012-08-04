@@ -6,8 +6,8 @@ scala>
 scala> import language.experimental.macros
 import language.experimental.macros
 
-scala> import scala.reflect.makro.{Context => Ctx}
-import scala.reflect.makro.{Context=>Ctx}
+scala> import scala.reflect.macros.{Context => Ctx}
+import scala.reflect.macros.{Context=>Ctx}
 
 scala> 
 

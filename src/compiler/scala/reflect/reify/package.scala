@@ -1,9 +1,8 @@
 package scala.reflect
 
 import language.implicitConversions
-import language.experimental.macros
 import scala.reflect.base.{Universe => BaseUniverse}
-import scala.reflect.makro.{Context, ReificationError, UnexpectedReificationError}
+import scala.reflect.macros.{Context, ReificationError, UnexpectedReificationError}
 import scala.tools.nsc.Global
 
 package object reify {
@@ -29,7 +28,7 @@ package object reify {
     import definitions._
     val enclosingErasure = reifyEnclosingRuntimeClass(global)(typer0)
     // JavaUniverse is defined in scala-reflect.jar, so we must be very careful in case someone reifies stuff having only scala-library.jar on the classpath
-    val isJavaUniverse = JavaUniverseClass != NoSymbol && universe.tpe <:< JavaUniverseClass.asTypeConstructor
+    val isJavaUniverse = JavaUniverseClass != NoSymbol && universe.tpe <:< JavaUniverseClass.toTypeConstructor
     if (isJavaUniverse && !enclosingErasure.isEmpty) Apply(Select(universe, nme.runtimeMirror), List(Select(enclosingErasure, sn.GetClassLoader)))
     else Select(universe, nme.rootMirror)
   }
@@ -69,7 +68,7 @@ package object reify {
     if (isThisInScope) {
       val enclosingClasses = typer0.context.enclosingContextChain map (_.tree) collect { case classDef: ClassDef => classDef }
       val classInScope = enclosingClasses.headOption getOrElse EmptyTree
-      if (!classInScope.isEmpty) reifyRuntimeClass(global)(typer0, classInScope.symbol.asTypeConstructor, concrete = true)
+      if (!classInScope.isEmpty) reifyRuntimeClass(global)(typer0, classInScope.symbol.toTypeConstructor, concrete = true)
       else Select(This(tpnme.EMPTY), sn.GetClass)
     } else EmptyTree
   }

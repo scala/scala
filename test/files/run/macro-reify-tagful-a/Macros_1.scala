@@ -1,5 +1,5 @@
 import scala.reflect.runtime.universe._
-import scala.reflect.makro.{Context => Ctx}
+import scala.reflect.macros.{Context => Ctx}
 
 object Macros {
   def foo[T](s: T) = macro Impls.foo[T]
