@@ -3005,10 +3005,6 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     )
   }
   trait StubSymbol extends Symbol {
-    locally {
-      this setInfo NoType
-      this.associatedFile = owner.associatedFile
-    }
     protected def stubWarning = {
       def in = if (owner == NoSymbol) "" else " in " + owner
       def from = if (associatedFile == null) "" else s" - referenced from ${associatedFile.canonicalPath}"
@@ -3016,6 +3012,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     }
     private def fail(): Nothing = MissingRequirementError.signal(s"bad symbolic reference to " + stubWarning)
 
+    override def associatedFile   = owner.associatedFile
     override def tpe              = fail()
     override def rawInfo          = fail()
     override def companionSymbol  = fail()
