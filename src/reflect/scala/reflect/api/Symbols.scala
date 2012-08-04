@@ -229,6 +229,9 @@ trait Symbols extends base.Symbols { self: Universe =>
     /** The overloaded alternatives of this symbol */
     def alternatives: List[Symbol]
 
+    /** Used to provide a better error message for `asMethod` */
+    override protected def isOverloadedMethod = alternatives exists (_.isMethod)
+
     /** Backing field for an accessor method, NoSymbol for all other term symbols.
      */
     def accessed: Symbol
