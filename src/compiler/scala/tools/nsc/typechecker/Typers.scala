@@ -769,7 +769,7 @@ trait Typers extends Modes with Adaptations with Tags {
         val featureName = (nestedOwners map (_.name + ".")).mkString + featureTrait.name
         def action(): Boolean = {
           def hasImport = inferImplicit(EmptyTree: Tree, featureTrait.tpe, true, false, context) != SearchFailure
-          def hasOption = settings.language.value contains featureName
+          def hasOption = settings.language.value exists (s => s == featureName || s == "_")
           val OK = hasImport || hasOption
           if (!OK) {
             val Some(AnnotationInfo(_, List(Literal(Constant(featureDesc: String)), Literal(Constant(required: Boolean))), _)) =
