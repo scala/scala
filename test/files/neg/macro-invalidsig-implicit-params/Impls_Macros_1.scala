@@ -7,7 +7,7 @@ object Impls {
     import c.universe._
     val body = Block(
       Apply(Select(Ident(definitions.PredefModule), newTermName("println")), List(Literal(Constant("invoking foo_targs...")))),
-      Apply(Select(Ident(definitions.PredefModule), newTermName("println")), List(Literal(Constant("type of prefix is: " + prefix.staticTpe)))),
+      Apply(Select(Ident(definitions.PredefModule), newTermName("println")), List(Literal(Constant("type of prefix is: " + prefix.staticType)))),
       Apply(Select(Ident(definitions.PredefModule), newTermName("println")), List(Literal(Constant("U is: " + implicitly[c.TypeTag[U]].tpe)))),
       Literal(Constant(())))
     c.Expr[Unit](body)
