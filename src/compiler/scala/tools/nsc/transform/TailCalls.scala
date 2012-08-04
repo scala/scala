@@ -36,7 +36,7 @@ abstract class TailCalls extends Transform {
     }
   }
 
-  import gen.hasSynthCaseSymbol
+  import treeInfo.hasSynthCaseSymbol
 
   /**
    * A Tail Call Transformer
