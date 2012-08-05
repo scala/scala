@@ -1,3 +1,12 @@
+t3692-old.scala:13: warning: non-variable type argument Int in type pattern Map[Int,Int] is unchecked since it is eliminated by erasure
+      case m0: Map[Int, Int] => new java.util.HashMap[Integer, Integer]
+               ^
+t3692-old.scala:14: warning: non-variable type argument Int in type pattern Map[Int,V] is unchecked since it is eliminated by erasure
+      case m1: Map[Int, V] => new java.util.HashMap[Integer, V]
+               ^
+t3692-old.scala:15: warning: non-variable type argument Int in type pattern Map[T,Int] is unchecked since it is eliminated by erasure
+      case m2: Map[T, Int] => new java.util.HashMap[T, Integer]
+               ^
 t3692-old.scala:11: warning: type Manifest in object Predef is deprecated: Use scala.reflect.ClassTag (to capture erasures) or scala.reflect.runtime.universe.TypeTag (to capture types) or both instead
   private final def toJavaMap[T, V](map: Map[T, V])(implicit m1: Manifest[T], m2: Manifest[V]): java.util.Map[_, _] = {
                                                                  ^
@@ -7,5 +16,5 @@ t3692-old.scala:11: warning: type Manifest in object Predef is deprecated: Use s
 t3692-old.scala:15: error: unreachable code
       case m2: Map[T, Int] => new java.util.HashMap[T, Integer]
                               ^
-two warnings found
+5 warnings found
 one error found

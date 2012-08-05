@@ -3220,7 +3220,7 @@ trait Typers extends Modes with Adaptations with Tags {
       // we don't create a new Context for a Match, so find the CaseDef, then go out one level and navigate back to the match that has this case
       // val thisCase = context.nextEnclosing(_.tree.isInstanceOf[CaseDef])
       // val unchecked = thisCase.outer.tree.collect{case Match(selector, cases) if cases contains thisCase => selector} match {
-      //   case List(Typed(_, tpt)) if treeInfo.isUncheckedAnnotation(tpt.tpe) => true
+      //   case List(Typed(_, tpt)) if tpt.tpe hasAnnotation UncheckedClass => true
       //   case t => println("outer tree: "+ (t, thisCase, thisCase.outer.tree)); false
       // }
       // println("wrapClassTagUnapply"+ (!isPastTyper && infer.containsUnchecked(pt), pt, uncheckedPattern))
