@@ -35,9 +35,9 @@ scala>
 
 scala> object Stuff {
   val x = "hello"
-  val y : Int @Annot(x) = 10
+  val y: Int @Annot(x) = 10
 }
-defined module Stuff
+defined object Stuff
 
 scala> 
 
@@ -99,7 +99,7 @@ scala>
 
 scala> def m = {
   val x = "three"
-  val y : String @Annot(x) = x
+  val y: String @Annot(x) = x
   y
 } // x should not escape the local scope with a narrow type
 warning: there were 1 feature warnings; re-run with -feature for details
@@ -108,7 +108,7 @@ m: String @Annot(x) forSome { val x: String }
 scala> 
 
 scala> def n(y: String) = {
-  def m(x: String) : String @Annot(x) = {
+  def m(x: String): String @Annot(x) = {
     (if (x == "")
       m("default")
     else
@@ -126,8 +126,8 @@ defined class rep
 
 scala> 
 
-scala> object A { val x = "hello" : String @ rep }
-defined module A
+scala> object A { val x = "hello": String @ rep }
+defined object A
 warning: previously defined class A is not a companion to object A.
 Companions must be defined together; you may wish to use :paste mode for this.
 
@@ -138,10 +138,10 @@ y: String = hello
 
 scala> 
 
-scala> val x = 3 : Int @Annot(e+f+g+h) // should have a graceful error message
+scala> val x = 3: Int @Annot(e+f+g+h) // should have a graceful error message
 <console>:8: error: not found: value e
-       val x = 3 : Int @Annot(e+f+g+h) // should have a graceful error message
-                              ^
+       val x = 3: Int @Annot(e+f+g+h) // should have a graceful error message
+                             ^
 
 scala> 
 
@@ -150,7 +150,7 @@ defined class Where
 
 scala> 
 
-scala> val x : Int @Where(self > 0 && self < 100) = 3
+scala> val x: Int @Where(self > 0 && self < 100) = 3
 x: Int @Where(self.>(0).&&(self.<(100))) = 3
 
 scala> 
