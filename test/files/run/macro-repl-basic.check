@@ -30,7 +30,7 @@ scala> object Impls {
     c.Expr[Int](body)
   }
 }
-defined module Impls
+defined object Impls
 
 scala> object Macros {
   object Shmacros {
@@ -40,7 +40,7 @@ scala> object Macros {
 }; class Macros {
   def quux(x: Int): Int = macro Impls.quux
 }
-defined module Macros
+defined object Macros
 defined class Macros
 
 scala> 

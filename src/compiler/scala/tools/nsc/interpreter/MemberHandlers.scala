@@ -157,7 +157,7 @@ trait MemberHandlers {
     override def definesValue = true
     override def isLegalTopLevel = true
 
-    override def resultExtractionCode(req: Request) = codegenln("defined module ", name)
+    override def resultExtractionCode(req: Request) = codegenln("defined object ", name)
   }
 
   class ClassHandler(member: ClassDef) extends MemberDefHandler(member) {
