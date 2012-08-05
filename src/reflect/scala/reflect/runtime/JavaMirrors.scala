@@ -270,7 +270,6 @@ trait JavaMirrors extends internal.SymbolTable with api.JavaUniverse { self: Sym
             case Object_eq => receiver eq args(0).asInstanceOf[AnyRef]
             case Object_ne => receiver ne args(0).asInstanceOf[AnyRef]
             case Object_synchronized => receiver.synchronized(args(0))
-            case getClass if getClass.name.toString == "getClass" && params.isEmpty => receiver.getClass
             case Any_asInstanceOf => throw new ScalaReflectionException("Any.asInstanceOf requires a type argument, it cannot be invoked with mirrors")
             case Any_isInstanceOf => throw new ScalaReflectionException("Any.isInstanceOf requires a type argument, it cannot be invoked with mirrors")
             case Object_asInstanceOf => throw new ScalaReflectionException("AnyRef.$asInstanceOf is an internal method, it cannot be invoked with mirrors")
@@ -280,7 +279,7 @@ trait JavaMirrors extends internal.SymbolTable with api.JavaUniverse { self: Sym
             case Array_apply => ScalaRunTime.array_apply(receiver, args(0).asInstanceOf[Int])
             case Array_update => ScalaRunTime.array_update(receiver, args(0).asInstanceOf[Int], args(1))
             case Array_clone => ScalaRunTime.array_clone(receiver)
-            case String_+ => "" + receiver + args(0)
+            case String_+ => receiver.toString + args(0)
             case sym if sym == Predef_classOf => throw new ScalaReflectionException("Predef.classOf is a compile-time function, it cannot be invoked with mirrors")
             case sym if sym.isTermMacro => throw new ScalaReflectionException(s"${symbol.fullName} is a macro, i.e. a compile-time function, it cannot be invoked with mirrors")
             case _ => jmeth.invoke(receiver, args.asInstanceOf[Seq[AnyRef]]: _*)
