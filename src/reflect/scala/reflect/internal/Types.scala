@@ -3822,6 +3822,7 @@ trait Types extends api.Types { self: SymbolTable =>
     Statistics.incCounter(rawTypeCount)
     if (uniqueRunId != currentRunId) {
       uniques = util.HashSet[Type]("uniques", initialUniquesCapacity)
+      perRunCaches.recordCache(uniques)
       uniqueRunId = currentRunId
     }
     (uniques findEntryOrUpdate tp).asInstanceOf[T]
