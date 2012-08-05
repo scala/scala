@@ -334,7 +334,7 @@ trait JavaMirrors extends internal.SymbolTable with api.JavaUniverse { self: Sym
       def isStatic = false
       def reflectConstructor(constructor: MethodSymbol) = {
         if (!constructor.isClassConstructor) ErrorNotConstructor(constructor, symbol)
-        if (!symbol.info.decls.toList.filter(_.isConstructor).contains(constructor)) ErrorNotConstructor(constructor, symbol)
+        if (!symbol.info.decls.toList.contains(constructor)) ErrorNotConstructor(constructor, symbol)
         new JavaConstructorMirror(outer, constructor)
       }
       def companion: Option[ModuleMirror] = symbol.companionModule match {
