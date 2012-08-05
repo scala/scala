@@ -777,7 +777,16 @@ trait JavaMirrors extends internal.SymbolTable with api.JavaUniverse { self: Sym
             lookupClass
           else if (jclazz.isLocalClass0 || isInvalidClassName(jname))
             // local classes and implementation classes not preserved by unpickling - treat as Java
-            jclassAsScala(jclazz)
+            //
+            // upd. but only if they cannot be loaded as top-level classes
+            // otherwise we may mistake mangled symbolic names for mangled nested names
+            //
+            // in case when a Java binary name can be treated both as a top-level class and as a nested class
+            // (as described in http://groups.google.com/group/scala-internals/browse_thread/thread/10855403bbf04298)
+            // we check for a top-level class first
+            // this is totally correct, because a top-level class and a nested class with the same name cannot coexist
+            // so it's either one or another, but not both - therefore we always load $-bearing classes correctly
+            lookupClass orElse jclassAsScala(jclazz)
           else if (jclazz.isArray)
             ArrayClass
           else
