@@ -91,7 +91,7 @@ trait Mirrors { self: Universe =>
   trait FieldMirror {
 
     /** The object containing the field */
-    def receiver: AnyRef
+    def receiver: Any
 
     /** The field symbol representing the field.
      *
@@ -125,7 +125,7 @@ trait Mirrors { self: Universe =>
   trait MethodMirror {
 
     /** The receiver object of the method */
-    def receiver: AnyRef
+    def receiver: Any
 
     /** The method symbol representing the method */
     def symbol: MethodSymbol
@@ -226,7 +226,7 @@ trait Mirrors { self: Universe =>
      *  Such a mirror can be used to further reflect against the members of the object
      *  to get/set fields, invoke methods and inspect inner classes and objects.
      */
-    def reflect(obj: Any): InstanceMirror
+    def reflect[T: ClassTag](obj: T): InstanceMirror
 
     /** Reflects against a static class symbol and returns a mirror
      *  that can be used to create instances of the class, inspect its companion object or perform further reflections.
