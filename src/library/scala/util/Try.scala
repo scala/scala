@@ -142,7 +142,7 @@ sealed abstract class Try[+T] {
   /** Completes this `Try` by applying the function `f` to this if this is of type `Failure`, or conversely, by applying
    *  `s` if this is a `Success`.
    */
-  def transform[U](f: Throwable => Try[U], s: T => Try[U]): Try[U] = this match {
+  def transform[U](s: T => Try[U], f: Throwable => Try[U]): Try[U] = this match {
     case Success(v) => s(v)
     case Failure(e) => f(e)
   }

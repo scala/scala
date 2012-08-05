@@ -55,12 +55,12 @@ object TryTests extends MinimalScalaTest {
         Failure[Int](e) flatMap(x => Success(1 + x)) mustEqual Failure(e)
       }
 
-      "when there is an exception" in {
-        Success(1).flatMap[Int](_ => throw e) mustEqual Failure(e)
+      // "when there is an exception" in {
+      //   Success(1).flatMap[Int](_ => throw e) mustEqual Failure(e)
 
-        val e2 = new Exception
-        Failure[Int](e).flatMap[Int](_ => throw e2) mustEqual Failure(e)
-      }
+      //   val e2 = new Exception
+      //   Failure[Int](e).flatMap[Int](_ => throw e2) mustEqual Failure(e)
+      // }
     }
 
     "flatten" in {
