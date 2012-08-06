@@ -130,7 +130,7 @@ object HashSet extends ImmutableSetFactory[HashSet] {
     override def removed0(key: A, hash: Int, level: Int): HashSet[A] =
       if (hash == this.hash && key == this.key) HashSet.empty[A] else this
 
-    override def filter0(p: A => Boolean) : HashSet[A] =
+    protected override def filter0(p: A => Boolean) : HashSet[A] =
       if(!p(key)) HashSet.empty[A] else this
 
     override def iterator: Iterator[A] = Iterator(key)
@@ -164,7 +164,7 @@ object HashSet extends ImmutableSetFactory[HashSet] {
           HashSet.empty[A]
       } else this
 
-    override def filter0(p: A => Boolean) : HashSet[A] = {
+    protected override def filter0(p: A => Boolean) : HashSet[A] = {
       val ks1 = ks.filter(p)
       ks1.size match {
         case 0 => HashSet.empty[A]
@@ -263,7 +263,7 @@ object HashSet extends ImmutableSetFactory[HashSet] {
       }
     }
 
-    override def filter0(p: A => Boolean): HashSet[A] = {
+    protected override def filter0(p: A => Boolean): HashSet[A] = {
       var index = 0
       var offset = 0
       var tgtOffset = 0
