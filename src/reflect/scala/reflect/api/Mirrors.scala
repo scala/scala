@@ -33,6 +33,14 @@ trait Mirrors { self: Universe =>
     /** Reflects against a field symbol and returns a mirror
      *  that can be used to get and, if appropriate, set the value of the field.
      *
+     *  FieldMirrors are the only way to get at private[this] vals and vars and
+     *  might be useful to inspect the data of underlying Java fields.
+     *  For all other uses, it's better to go through the fields accessor.
+     *
+     *  In particular, there should be no need to ever access a field mirror
+     *  when reflecting on just the public members of a class or trait.
+     *  Note also that only accessor MethodMirrors, but not FieldMirrors will accurately reflect overriding behavior.
+     *
      *  To get a field symbol by the name of the field you would like to reflect,
      *  use `<this mirror>.symbol.typeSignature.member(newTermName(<name of the field>)).asTerm.accessed`.
      *  For further information about member lookup refer to `Symbol.typeSignature`.
@@ -107,6 +115,10 @@ trait Mirrors { self: Universe =>
      *  Scala reflection uses reflection capabilities of the underlying platform,
      *  so `FieldMirror.get` might throw platform-specific exceptions associated
      *  with getting a field or invoking a getter method of the field.
+     *
+     *  If `symbol` represents a field of a base class with respect to the class of the receiver,
+     *  and this base field is overriden in the class of the receiver, then this method will retrieve
+     *  the value of the base field. To achieve overriding behavior, use reflectMethod on an accessor.
      */
     def get: Any
 
@@ -117,6 +129,10 @@ trait Mirrors { self: Universe =>
      *  Scala reflection uses reflection capabilities of the underlying platform,
      *  so `FieldMirror.get` might throw platform-specific exceptions associated
      *  with setting a field or invoking a setter method of the field.
+     *
+     *  If `symbol` represents a field of a base class with respect to the class of the receiver,
+     *  and this base field is overriden in the class of the receiver, then this method will set
+     *  the value of the base field. To achieve overriding behavior, use reflectMethod on an accessor.
      */
     def set(value: Any): Unit
   }

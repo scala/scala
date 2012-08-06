@@ -161,7 +161,11 @@ trait JavaMirrors extends internal.SymbolTable with api.JavaUniverse { self: Sym
       } else if (wannabe.owner == AnyValClass) {
         if (!owner.isPrimitiveValueClass && !owner.isDerivedValueClass) ErrorNotMember(wannabe, owner)
       } else {
-        if (!owner.info.member(wannabe.name).alternatives.contains(wannabe)) ErrorNotMember(wannabe, owner)
+        def isMemberOf(wannabe: Symbol, owner: ClassSymbol): Boolean = {
+          val isNonShadowedMember = owner.info.member(wannabe.name).alternatives.contains(wannabe)
+          isNonShadowedMember || owner.info.baseClasses.tail.exists(base => isMemberOf(wannabe, base.asClass))
+        }
+        if (!isMemberOf(wannabe, owner)) ErrorNotMember(wannabe, owner)
       }
     }
 
