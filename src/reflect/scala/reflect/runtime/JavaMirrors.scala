@@ -21,6 +21,7 @@ import internal.Flags._
 import ReflectionUtils.{singletonInstance}
 import language.existentials
 import scala.runtime.{ScalaRunTime, BoxesRunTime}
+import scala.reflect.internal.util.Collections._
 
 trait JavaMirrors extends internal.SymbolTable with api.JavaUniverse { self: SymbolTable =>
 
@@ -262,6 +263,7 @@ trait JavaMirrors extends internal.SymbolTable with api.JavaUniverse { self: Sym
     // rather than have them on a hot path them in a unified implementation of the `apply` method
     private def mkJavaMethodMirror[T: ClassTag](receiver: T, symbol: MethodSymbol): JavaMethodMirror = {
       if (isMagicMethod(symbol)) new JavaMagicMethodMirror(receiver, symbol)
+      else if (symbol.params.flatten exists (p => isByNameParamType(p.info))) new JavaByNameMethodMirror(receiver, symbol)
       else new JavaVanillaMethodMirror(receiver, symbol)
     }
 
@@ -279,6 +281,14 @@ trait JavaMirrors extends internal.SymbolTable with api.JavaUniverse { self: Sym
     private class JavaVanillaMethodMirror(val receiver: Any, symbol: MethodSymbol)
             extends JavaMethodMirror(symbol) {
       def apply(args: Any*): Any = jmeth.invoke(receiver, args.asInstanceOf[Seq[AnyRef]]: _*)
+    }
+
+    private class JavaByNameMethodMirror(val receiver: Any, symbol: MethodSymbol)
+            extends JavaMethodMirror(symbol) {
+      def apply(args: Any*): Any = {
+        val transformed = map2(args.toList, symbol.params.flatten)((arg, param) => if (isByNameParamType(param.info)) () => arg else arg)
+        jmeth.invoke(receiver, transformed.asInstanceOf[Seq[AnyRef]]: _*)
+      }
     }
 
     private class JavaMagicMethodMirror[T: ClassTag](val receiver: T, symbol: MethodSymbol)
