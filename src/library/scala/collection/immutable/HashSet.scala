@@ -232,7 +232,10 @@ object HashSet extends ImmutableSetFactory[HashSet] {
             Array.copy(elems, 0, elemsNew, 0, offset)
             Array.copy(elems, offset + 1, elemsNew, offset, elems.length - offset - 1)
             val sizeNew = size - sub.size
-            new HashTrieSet(bitmapNew, elemsNew, sizeNew)
+            if(elemsNew.length == 1)
+              elemsNew(0)
+            else
+              new HashTrieSet(bitmapNew, elemsNew, sizeNew)
           } else
             HashSet.empty[A]
         } else {
