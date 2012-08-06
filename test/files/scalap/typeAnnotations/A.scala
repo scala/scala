@@ -1,3 +1,5 @@
+// This test is run with -Xanyref-specialization so the compiler does not
+// introduce the @specializeExcludeAnyRef annotation automatically
 abstract class TypeAnnotations[@specialized R] {
   @specialized val x = 10
   @specialized type T

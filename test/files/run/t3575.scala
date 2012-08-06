@@ -1,8 +1,8 @@
 // This is here to tell me if the behavior changes, not because
 // the output is endorsed.
 case class Two[
-  @specialized A,
-  @specialized B
+  @specialized(Specializable.Everything) A,
+  @specialized(Specializable.Everything) B
 ](v: A, w: B)
 
 case class TwoLong[
@@ -16,8 +16,8 @@ case class TwoCool[
 ](v: A, w: B)
 
 case class TwoShort[
-  @specialized() A,
-  @specialized() B
+  @specialized(Specializable.Everything) A,
+  @specialized(Specializable.Everything) B
 ](v: A, w: B)
 
 case class TwoMinimal[

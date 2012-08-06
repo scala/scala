@@ -1,0 +1,4 @@
+anyref-flag_2.scala:6: error: Specialization on AnyRef needs to be explicitly enabled using the -Xanyref-specialization flag.
+class SpecTest2[@specialized(Int, AnyRef) T, @specialized(Int) U](t: T, u: U) {
+                                          ^
+one error found
