@@ -16,8 +16,8 @@ import collection.mutable.ListBuffer
 class JLineCompletion(val intp: IMain) extends Completion with CompletionOutput {
   val global: intp.global.type = intp.global
   import global._
-  import definitions.{ PredefModule, AnyClass, AnyRefClass, ScalaPackage, JavaLangPackage }
-  import rootMirror.{ RootClass, getModuleIfDefined }
+  import definitions.{ PredefObject, AnyClass, AnyRefClass, ScalaPackage, JavaLangPackage }
+  import rootMirror.{ RootClass, getObjectIfDefined }
   type ExecResult = Any
   import intp.{ debugging }
 
@@ -25,13 +25,13 @@ class JLineCompletion(val intp: IMain) extends Completion with CompletionOutput 
   private var verbosity: Int = 0
   def resetVerbosity() = verbosity = 0
 
-  def getSymbol(name: String, isModule: Boolean) = (
-    if (isModule) getModuleIfDefined(name)
-    else getModuleIfDefined(name)
+  def getSymbol(name: String, isObject: Boolean) = (
+    if (isObject) getObjectIfDefined(name)
+    else getObjectIfDefined(name)
   )
-  def getType(name: String, isModule: Boolean) = getSymbol(name, isModule).tpe
+  def getType(name: String, isObject: Boolean) = getSymbol(name, isObject).tpe
   def typeOf(name: String)                     = getType(name, false)
-  def moduleOf(name: String)                   = getType(name, true)
+  def objectOf(name: String)                   = getType(name, true)
 
   trait CompilerCompletion {
     def tp: Type
@@ -213,7 +213,7 @@ class JLineCompletion(val intp: IMain) extends Completion with CompletionOutput 
     }
   }
   // members of Predef
-  object predef extends TypeMemberCompletion(PredefModule.tpe) {
+  object predef extends TypeMemberCompletion(PredefObject.tpe) {
     override def excludeEndsWith    = super.excludeEndsWith ++ List("Wrapper", "ArrayOps")
     override def excludeStartsWith  = super.excludeStartsWith ++ List("wrap")
     override def excludeNames       = anyref.methodNames

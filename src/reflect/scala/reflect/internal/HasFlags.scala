@@ -82,7 +82,7 @@ trait HasFlags {
   def hasAccessorFlag    = hasFlag(ACCESSOR)
   def hasDefault         = hasAllFlags(DEFAULTPARAM | PARAM)
   def hasLocalFlag       = hasFlag(LOCAL)
-  def hasModuleFlag      = hasFlag(MODULE)
+  def hasObjectFlag      = hasFlag(OBJECT)
   def hasPackageFlag     = hasFlag(PACKAGE)
   def hasStableFlag      = hasFlag(STABLE)
   def hasStaticFlag      = hasFlag(STATIC)

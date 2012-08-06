@@ -92,7 +92,7 @@ trait StdNames {
     def flattenedName(segments: Name*): NameType =
       compactify(segments mkString NAME_JOIN_STRING)
 
-    val MODULE_SUFFIX_STRING: String = NameTransformer.MODULE_SUFFIX_STRING
+    val OBJECT_SUFFIX_STRING: String = NameTransformer.OBJECT_SUFFIX_STRING
     val NAME_JOIN_STRING: String     = NameTransformer.NAME_JOIN_STRING
     val SINGLETON_SUFFIX: String     = ".type"
 
@@ -102,8 +102,8 @@ trait StdNames {
     val EMPTY_PACKAGE_NAME: NameType = "<empty>"
     val IMPL_CLASS_SUFFIX            = "$class"
     val IMPORT: NameType             = "<import>"
-    val MODULE_SUFFIX_NAME: NameType = MODULE_SUFFIX_STRING
-    val MODULE_VAR_SUFFIX: NameType  = "$module"
+    val OBJECT_SUFFIX_NAME: NameType = OBJECT_SUFFIX_STRING
+    val OBJECT_VAR_SUFFIX: NameType  = "$module"
     val NAME_JOIN_NAME: NameType     = NAME_JOIN_STRING
     val PACKAGE: NameType            = "package"
     val ROOT: NameType               = "<root>"
@@ -318,7 +318,7 @@ trait StdNames {
     val REIFY_FREE_VALUE_SUFFIX: NameType  = "$value"
     val REIFY_SYMDEF_PREFIX: NameType      = "symdef$"
     val MIXIN_CONSTRUCTOR: NameType        = "$init$"
-    val MODULE_INSTANCE_FIELD: NameType    = NameTransformer.MODULE_INSTANCE_NAME  // "MODULE$"
+    val OBJECT_INSTANCE_FIELD: NameType    = NameTransformer.OBJECT_INSTANCE_NAME  // "MODULE$"
     val OUTER: NameType                    = "$outer"
     val OUTER_LOCAL: NameType              = OUTER + LOCAL_SUFFIX_STRING // "$outer ", note the space
     val OUTER_SYNTH: NameType              = "<outer>" // emitted by virtual pattern matcher, replaced by outer accessor in explicitouter
@@ -347,7 +347,7 @@ trait StdNames {
     def isSetterName(name: Name)            = name endsWith SETTER_SUFFIX
     def isTraitSetterName(name: Name)       = isSetterName(name) && (name containsName TRAIT_SETTER_SEPARATOR_STRING)
     def isSingletonName(name: Name)         = name endsWith SINGLETON_SUFFIX
-    def isModuleName(name: Name)            = name endsWith MODULE_SUFFIX_NAME
+    def isObjectName(name: Name)            = name endsWith OBJECT_SUFFIX_NAME
 
     def isDeprecatedIdentifierName(name: Name) = name.toTermName match {
       case nme.`then` | nme.`macro` => true
@@ -463,8 +463,8 @@ trait StdNames {
       else name.subName(0, pos - 1)
     }
 
-    def stripModuleSuffix(name: Name): Name = (
-      if (isModuleName(name)) name dropRight MODULE_SUFFIX_STRING.length else name
+    def stripObjectSuffix(name: Name): Name = (
+      if (isObjectName(name)) name dropRight OBJECT_SUFFIX_STRING.length else name
     )
     def localDummyName(clazz: Symbol): TermName = newTermName(LOCALDUMMY_PREFIX + clazz.name + ">")
     def superName(name: Name): TermName         = newTermName(SUPER_PREFIX_STRING + name)
@@ -628,7 +628,7 @@ trait StdNames {
     val array_update : NameType        = "array_update"
     val arraycopy: NameType            = "arraycopy"
     val asTerm: NameType               = "asTerm"
-    val asModule: NameType             = "asModule"
+    val asObject: NameType             = "asObject"
     val asMethod: NameType             = "asMethod"
     val asType: NameType               = "asType"
     val asClass: NameType              = "asClass"
@@ -707,7 +707,7 @@ trait StdNames {
     val materializeAbsTypeTag: NameType = "materializeAbsTypeTag"
     val materializeTypeTag: NameType   = "materializeTypeTag"
     val mirror : NameType              = "mirror"
-    val moduleClass : NameType         = "moduleClass"
+    val objectClass : NameType         = "objectClass"
     val name: NameType                 = "name"
     val ne: NameType                   = "ne"
     val newArray: NameType             = "newArray"
@@ -752,7 +752,7 @@ trait StdNames {
     val setTypeSignature: NameType     = "setTypeSignature"
     val splice: NameType               = "splice"
     val staticClass : NameType         = "staticClass"
-    val staticModule : NameType        = "staticModule"
+    val staticObject : NameType        = "staticObject"
     val staticPackage : NameType       = "staticPackage"
     val synchronized_ : NameType       = "synchronized"
     val tail: NameType                 = "tail"
@@ -1006,11 +1006,11 @@ trait StdNames {
   // why do we even have stuff in object nme? cf. object tpnme
   object nme extends TermNames {
 
-    def isModuleVarName(name: Name): Boolean =
-      stripAnonNumberSuffix(name) endsWith MODULE_VAR_SUFFIX
+    def isObjectVarName(name: Name): Boolean =
+      stripAnonNumberSuffix(name) endsWith OBJECT_VAR_SUFFIX
 
-    def moduleVarName(name: TermName): TermName =
-      newTermNameCached("" + name + MODULE_VAR_SUFFIX)
+    def objectVarName(name: TermName): TermName =
+      newTermNameCached("" + name + OBJECT_VAR_SUFFIX)
 
     def getCause         = sn.GetCause
     def getClass_        = sn.GetClass

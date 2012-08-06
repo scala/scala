@@ -23,7 +23,7 @@ import scala.reflect.internal.util.{Position,NoPosition}
     case SCOPE_ENTER(lv) =>
     case SCOPE_EXIT(lv) =>
   // stack
-    case LOAD_MODULE(module) =>
+    case LOAD_OBJECT(objct) =>
     case LOAD_EXCEPTION(clasz) =>
     case DROP(kind) =>
     case DUP(kind) =>
@@ -214,15 +214,15 @@ trait Opcodes { self: ICodes =>
       override def category = fldsCat
     }
 
-    case class LOAD_MODULE(module: Symbol) extends Instruction {
-      assert(module != NoSymbol, "Invalid module symbol")
+    case class LOAD_OBJECT(objct: Symbol) extends Instruction {
+      assert(objct != NoSymbol, "Invalid object symbol")
       /** Returns a string representation of this instruction */
-      override def toString(): String = "LOAD_MODULE " + module
+      override def toString(): String = "LOAD_OBJECT " + objct
 
       override def consumed = 0
       override def produced = 1
 
-      override def producedTypes = List(REFERENCE(module))
+      override def producedTypes = List(REFERENCE(objct))
 
       override def category = stackCat
     }

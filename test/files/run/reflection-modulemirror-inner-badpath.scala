@@ -6,9 +6,9 @@ class Foo{
  object R { override def toString = "R" }
  def foo = {
   val classTag = implicitly[ClassTag[R.type]]
-  val sym = cm.moduleSymbol(classTag.runtimeClass)
+  val sym = cm.objectSymbol(classTag.runtimeClass)
   try {
-    val cls = cm.reflectModule(sym)
+    val cls = cm.reflectObject(sym)
     cls.instance
     println("this indicates a failure")
   } catch {

@@ -19,7 +19,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
   val phaseName: String = "mixin"
 
   /** The phase might set the following new flags: */
-  override def phaseNewFlags: Long = lateMODULE | notOVERRIDE
+  override def phaseNewFlags: Long = lateOBJECT | notOVERRIDE
 
   /** This map contains a binding (class -> info) if
    *  the class with this info at phase mixinPhase has been treated for mixin composition
@@ -32,20 +32,20 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
 // --------- helper functions -----------------------------------------------
 
   /** A member of a trait is implemented statically if its implementation after the
-   *  mixin transform is in the static implementation module. To be statically
+   *  mixin transform is in the static implementation object. To be statically
    *  implemented, a member must be a method that belonged to the trait's implementation class
    *  before (e.g. it is not abstract). Not statically implemented are
-   *   - non-private modules: these are implemented directly in the mixin composition class
-   *     (private modules, on the other hand, are implemented statically, but their
-   *      module variable is not. all such private modules are lifted, because
-   *      non-lifted private modules have been eliminated in ExplicitOuter)
+   *   - non-private objects: these are implemented directly in the mixin composition class
+   *     (private objects, on the other hand, are implemented statically, but their
+   *      object variable is not. all such private objects are lifted, because
+   *      non-lifted private objects have been eliminated in ExplicitOuter)
    *   - field accessors and superaccessors, except for lazy value accessors which become initializer
    *     methods in the impl class (because they can have arbitrary initializers)
    */
   private def isImplementedStatically(sym: Symbol) = (
        sym.owner.isImplClass
     && sym.isMethod
-    && (!sym.isModule || sym.hasFlag(PRIVATE | LIFTED))
+    && (!sym.isObject || sym.hasFlag(PRIVATE | LIFTED))
     && (!(sym hasFlag (ACCESSOR | SUPERACCESSOR)) || sym.isLazy)
   )
 
@@ -190,7 +190,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
     else !field.isMutable
   )
 
-  /** Add getters and setters for all non-module fields of an implementation
+  /** Add getters and setters for all non-object fields of an implementation
    *  class to its interface unless they are already present. This is done
    *  only once per class. The mixedin flag is used to remember whether late
    *  members have been added to an interface.
@@ -232,7 +232,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
       val impl = implClass(clazz) orElse abort("No impl class for " + clazz)
 
       for (member <- impl.info.decls) {
-        if (!member.isMethod && !member.isModule && !member.isModuleVar) {
+        if (!member.isMethod && !member.isObject && !member.isObjectVar) {
           assert(member.isTerm && !member.isDeferred, member)
           if (member.getter(impl).isPrivate) {
             member.makeNotPrivate(clazz) // this will also make getter&setter not private
@@ -258,7 +258,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
    *        The alias of the forwarder is the static member it forwards to.
    *      - for every abstract accessor in T, add a field and an implementation for that accessor
    *      - for every super accessor in T, add an implementation of that accessor
-   *      - for every module in T, add a module
+   *      - for every object in T, add a object
    */
   def addMixedinMembers(clazz: Symbol, unit: CompilationUnit) {
     def cloneAndAddMixinMember(mixinClass: Symbol, mixinMember: Symbol): Symbol = (
@@ -344,7 +344,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
               superAccessor.asInstanceOf[TermSymbol] setAlias alias1
           }
         }
-        else if (mixinMember.isMethod && mixinMember.isModule && mixinMember.hasNoFlags(LIFTED | BRIDGE)) {
+        else if (mixinMember.isMethod && mixinMember.isObject && mixinMember.hasNoFlags(LIFTED | BRIDGE)) {
           // mixin objects: todo what happens with abstract objects?
           addMember(clazz, mixinMember.cloneSymbol(clazz, mixinMember.flags & ~(DEFERRED | lateDEFERRED)) setPos clazz.pos)
         }
@@ -372,7 +372,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
 
   /** The info transform for this phase does the following:
    *   - The parents of every class are mapped from implementation class to interface
-   *   - Implementation classes become modules that inherit nothing
+   *   - Implementation classes become objects that inherit nothing
    *     and that define all.
    */
   override def transformInfo(sym: Symbol, tp: Type): Type = tp match {
@@ -382,26 +382,26 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
       if (!clazz.isPackageClass) {
         afterMixin(clazz.owner.info)
         if (clazz.isImplClass) {
-          clazz setFlag lateMODULE
-          var sourceModule = clazz.owner.info.decls.lookup(sym.name.toTermName)
-          if (sourceModule != NoSymbol) {
-            sourceModule setPos sym.pos
-            if (sourceModule.flags != MODULE) {
-              log("!!! Directly setting sourceModule flags from %s to MODULE".format(flagsToString(sourceModule.flags)))
-              sourceModule.flags = MODULE
+          clazz setFlag lateOBJECT
+          var sourceObject = clazz.owner.info.decls.lookup(sym.name.toTermName)
+          if (sourceObject != NoSymbol) {
+            sourceObject setPos sym.pos
+            if (sourceObject.flags != OBJECT) {
+              log("!!! Directly setting sourceObject flags from %s to OBJECT".format(flagsToString(sourceObject.flags)))
+              sourceObject.flags = OBJECT
             }
           }
           else {
-            sourceModule = (
-              clazz.owner.newModuleSymbol(sym.name.toTermName, sym.pos, MODULE)
-                setModuleClass sym.asInstanceOf[ClassSymbol]
+            sourceObject = (
+              clazz.owner.newObjectSymbol(sym.name.toTermName, sym.pos, OBJECT)
+                setObjectClass sym.asInstanceOf[ClassSymbol]
             )
-            clazz.owner.info.decls enter sourceModule
+            clazz.owner.info.decls enter sourceObject
           }
-          sourceModule setInfo sym.tpe
-          // Companion module isn't visible for anonymous class at this point anyway
-          assert(clazz.sourceModule != NoSymbol || clazz.isAnonymousClass,
-            clazz + " has no sourceModule: sym = " + sym + " sym.tpe = " + sym.tpe)
+          sourceObject setInfo sym.tpe
+          // Companion object isn't visible for anonymous class at this point anyway
+          assert(clazz.sourceObject != NoSymbol || clazz.isAnonymousClass,
+            clazz + " has no sourceObject: sym = " + sym + " sym.tpe = " + sym.tpe)
           parents1 = List()
           decls1 = newScopeWith(decls.toList filter isImplementedStatically: _*)
         } else if (!parents.isEmpty) {
@@ -592,17 +592,17 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
     }
 
     /** Create a static reference to given symbol <code>sym</code> of the
-     *  form <code>M.sym</code> where M is the symbol's implementation module.
+     *  form <code>M.sym</code> where M is the symbol's implementation object.
      */
     private def staticRef(sym: Symbol): Tree = {
       sym.owner.info        //todo: needed?
       sym.owner.owner.info  //todo: needed?
 
       assert(
-        sym.owner.sourceModule ne NoSymbol,
+        sym.owner.sourceObject ne NoSymbol,
         "" + sym.fullLocationString + " in " + sym.owner.owner + " " + sym.owner.owner.info.decls
       )
-      REF(sym.owner.sourceModule) DOT sym
+      REF(sym.owner.sourceObject) DOT sym
     }
 
     def needsInitAndHasOffset(sym: Symbol) =
@@ -637,8 +637,8 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
      *       - A field for every in a mixin class
      *       - Setters and getters for such fields
      *           - getters for mixed in lazy fields are completed
-     *       - module variables and module creators for every module in a mixin class
-     *         (except if module is lifted -- in this case the module variable
+     *       - object variables and object creators for every object in a mixin class
+     *         (except if object is lifted -- in this case the object variable
      *          is local to some function, and the creator method is static.)
      *       - A super accessor for every super accessor in a mixin class
      *       - Forwarders for all methods that are implemented statically
@@ -864,14 +864,14 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
         typedPos(init.head.pos)(mkFastPathLazyBody(clazz, lzyVal, cond, syncBody, nulls, retVal))
       }
 
-      def mkInnerClassAccessorDoubleChecked(attrThis: Tree, rhs: Tree, moduleSym: Symbol, args: List[Tree]): Tree =
+      def mkInnerClassAccessorDoubleChecked(attrThis: Tree, rhs: Tree, objectSym: Symbol, args: List[Tree]): Tree =
         rhs match {
           case Block(List(assign), returnTree) =>
-            val Assign(moduleVarRef, _) = assign
-            val cond                    = Apply(Select(moduleVarRef, nme.eq), List(NULL))
-            mkFastPathBody(clazz, moduleSym, cond, List(assign), List(NULL), returnTree, attrThis, args)
+            val Assign(objectVarRef, _) = assign
+            val cond                    = Apply(Select(objectVarRef, nme.eq), List(NULL))
+            mkFastPathBody(clazz, objectSym, cond, List(assign), List(NULL), returnTree, attrThis, args)
           case _ =>
-            assert(false, "Invalid getter " + rhs + " for module in class " + clazz)
+            assert(false, "Invalid getter " + rhs + " for object in class " + clazz)
             EmptyTree
         }
 
@@ -930,7 +930,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
               deriveDefDef(stat)(rhs => Block(List(rhs, localTyper.typed(mkSetFlag(clazz, fieldOffset(getter), getter, bitmapKind(getter)))), UNIT))
             else stat
           }
-          else if (sym.isModule && (!clazz.isTrait || clazz.isImplClass) && !sym.isBridge) {
+          else if (sym.isObject && (!clazz.isTrait || clazz.isImplClass) && !sym.isBridge) {
             deriveDefDef(stat)(rhs =>
               typedPos(stat.pos)(
                 mkInnerClassAccessorDoubleChecked(
@@ -1068,12 +1068,12 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
                 gen.mkCheckInit(accessedRef)
             })
           }
-          else if (sym.isModule && !(sym hasFlag LIFTED | BRIDGE)) {
-            // add modules
-            val vdef = gen.mkModuleVarDef(sym)
+          else if (sym.isObject && !(sym hasFlag LIFTED | BRIDGE)) {
+            // add objects
+            val vdef = gen.mkObjectVarDef(sym)
             addDef(position(sym), vdef)
 
-            val rhs          = gen.newModule(sym, vdef.symbol.tpe)
+            val rhs          = gen.newObject(sym, vdef.symbol.tpe)
             val assignAndRet = gen.mkAssignAndReturn(vdef.symbol, rhs)
             val attrThis     = gen.mkAttributedThis(clazz)
             val rhs1         = mkInnerClassAccessorDoubleChecked(attrThis, assignAndRet, sym, List())
@@ -1124,10 +1124,10 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
      *    - add all new definitions to a class or interface
      *    - remove widening casts
      *    - change calls to methods which are defined only in implementation classes
-     *      to static calls of methods in implementation modules (@see staticCall)
+     *      to static calls of methods in implementation objects (@see staticCall)
      *    - change super calls to methods in implementation classes to static calls
      *      (@see staticCall)
-     *    - change `this` in implementation modules to references to the self parameter
+     *    - change `this` in implementation objects to references to the self parameter
      *    - refer to fields in some implementation class via an abstract method in the interface.
      */
     private def postTransform(tree: Tree): Tree = {
@@ -1154,7 +1154,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
 
         case Apply(Select(qual, _), args) =>
           /** Changes <code>qual.m(args)</code> where m refers to an implementation
-           *  class method to Q.m(S, args) where Q is the implementation module of
+           *  class method to Q.m(S, args) where Q is the implementation object of
            *  <code>m</code> and S is the self parameter for the call, which
            *  is determined as follows:
            *     - if qual != super, qual itself
@@ -1173,7 +1173,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
 
           if (isStaticOnly(sym)) {
             // change calls to methods which are defined only in implementation
-            // classes to static calls of methods in implementation modules
+            // classes to static calls of methods in implementation objects
             staticCall(sym)
           }
           else qual match {

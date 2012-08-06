@@ -2,7 +2,7 @@ Type in expressions to have them evaluated.
 Type :help for more information.
 
 scala> object o { val file = sys.props("partest.cwd") + "/t4671.scala" }
-defined module o
+defined object o
 
 scala> val s = scala.io.Source.fromFile(o.file)
 s: scala.io.BufferedSource = non-empty iterator

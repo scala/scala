@@ -50,12 +50,12 @@ trait Reshape {
           body1 = trimSyntheticCaseClassMembers(classDef, body1)
           var impl1 = Template(parents, self, body1).copyAttrs(impl)
           ClassDef(mods, name, params, impl1).copyAttrs(classDef)
-        case moduledef @ ModuleDef(mods, name, impl) =>
+        case objectdef @ ObjectDef(mods, name, impl) =>
           val Template(parents, self, body) = impl
-          var body1 = trimAccessors(moduledef, body)
-          body1 = trimSyntheticCaseClassMembers(moduledef, body1)
+          var body1 = trimAccessors(objectdef, body)
+          body1 = trimSyntheticCaseClassMembers(objectdef, body1)
           var impl1 = Template(parents, self, body1).copyAttrs(impl)
-          ModuleDef(mods, name, impl1).copyAttrs(moduledef)
+          ObjectDef(mods, name, impl1).copyAttrs(objectdef)
         case template @ Template(parents, self, body) =>
           val discardedParents = parents collect { case tt: TypeTree => tt } filter isDiscarded
           if (reifyDebug && discardedParents.length > 0) println("discarding parents in Template: " + discardedParents.mkString(", "))
@@ -235,7 +235,7 @@ trait Reshape {
           case LiteralAnnotArg(const) =>
             Literal(const)
           case ArrayAnnotArg(arr) =>
-            Apply(Ident(definitions.ArrayModule), arr.toList map toScalaAnnotation)
+            Apply(Ident(definitions.ArrayObject), arr.toList map toScalaAnnotation)
           case NestedAnnotArg(ann) =>
             toPreTyperAnnotation(ann)
         }
@@ -314,10 +314,10 @@ trait Reshape {
       })
 
     private def trimSyntheticCaseClassCompanions(stats: List[Tree]): List[Tree] =
-      stats diff (stats collect { case moddef: ModuleDef => moddef } filter (moddef => {
+      stats diff (stats collect { case moddef: ObjectDef => moddef } filter (moddef => {
         val isSynthetic = moddef.symbol.isSynthetic
         // this doesn't work for local classes, e.g. for ones that are top-level to a quasiquote (see comments to companionClass)
-        // that's why I replace the check with an assumption that all synthetic modules are, in fact, companions of case classes
+        // that's why I replace the check with an assumption that all synthetic objects are, in fact, companions of case classes
         // val isCaseCompanion = moddef.symbol.companionClass.isCaseClass
         val isCaseCompanion = true
         if (isSynthetic && isCaseCompanion && reifyDebug) println("discarding synthetic case class companion: " + moddef)

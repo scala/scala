@@ -69,7 +69,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
   import definitions.{
     BooleanClass, UnitClass, ArrayClass,
     ScalaValueClasses, isPrimitiveValueClass, isPrimitiveValueType,
-    SpecializedClass, UnspecializedClass, AnyRefClass, ObjectClass, AnyRefModule,
+    SpecializedClass, UnspecializedClass, AnyRefClass, ObjectClass, AnyRefObject,
     GroupOfSpecializable, uncheckedVarianceClass, ScalaInlineClass
   }
   import rootMirror.RootClass
@@ -1494,7 +1494,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
           tree.symbol.info // make sure specializations have been performed
           atOwner(tree, symbol) {
             val specMembers = implSpecClasses(stats) map localTyper.typed
-            treeCopy.PackageDef(tree, pid, transformStats(stats ::: specMembers, symbol.moduleClass))
+            treeCopy.PackageDef(tree, pid, transformStats(stats ::: specMembers, symbol.objectClass))
           }
 
         case Template(parents, self, body) =>

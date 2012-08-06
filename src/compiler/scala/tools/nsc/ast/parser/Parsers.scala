@@ -332,7 +332,7 @@ self =>
       val stmts = templateStats()
       accept(EOF)
 
-      def mainModuleName = newTermName(settings.script.value)
+      def mainObjectName = newTermName(settings.script.value)
       /** If there is only a single object template in the file and it has a
        *  suitable main method, we will use it rather than building another object
        *  around it.  Since objects are loaded lazily the whole script would have
@@ -349,11 +349,11 @@ self =>
           case _                                        => false
         }
         /** For now we require there only be one top level object. */
-        var seenModule = false
+        var seenObject = false
         val newStmts = stmts collect {
           case t @ Import(_, _) => t
-          case md @ ModuleDef(mods, name, template) if !seenModule && (md exists isMainMethod) =>
-            seenModule = true
+          case md @ ObjectDef(mods, name, template) if !seenObject && (md exists isMainMethod) =>
+            seenObject = true
             /** This slightly hacky situation arises because we have no way to communicate
              *  back to the scriptrunner what the name of the program is.  Even if we were
              *  willing to take the sketchy route of settings.script.value = progName, that
@@ -361,8 +361,8 @@ self =>
              *  whole additional parse.  So instead, if the actual object's name differs from
              *  what the script is expecting, we transform it to match.
              */
-            if (name == mainModuleName) md
-            else treeCopy.ModuleDef(md, mods, mainModuleName, template)
+            if (name == mainObjectName) md
+            else treeCopy.ObjectDef(md, mods, mainObjectName, template)
           case _ =>
             /** If we see anything but the above, fail. */
             return None
@@ -370,15 +370,15 @@ self =>
         Some(makePackaging(0, emptyPkg, newStmts))
       }
 
-      if (mainModuleName == newTermName(ScriptRunner.defaultScriptMain))
+      if (mainObjectName == newTermName(ScriptRunner.defaultScriptMain))
         searchForMain() foreach { return _ }
 
       /** Here we are building an AST representing the following source fiction,
-       *  where `moduleName` is from -Xscript (defaults to "Main") and <stmts> are
+       *  where `objectName` is from -Xscript (defaults to "Main") and <stmts> are
        *  the result of parsing the script file.
        *
        *  {{{
-       *  object moduleName {
+       *  object objectName {
        *    def main(argv: Array[String]): Unit = {
        *      val args = argv
        *      new AnyRef {
@@ -408,12 +408,12 @@ self =>
       def mainDef       = DefDef(NoMods, nme.main, Nil, List(mainParameter), scalaDot(tpnme.Unit), Block(mainSetArgv, mainNew))
 
       // object Main
-      def moduleName  = newTermName(ScriptRunner scriptMain settings)
-      def moduleBody  = Template(List(atPos(o2p(in.offset))(scalaAnyRefConstr)), emptyValDef, List(emptyInit, mainDef))
-      def moduleDef   = ModuleDef(NoMods, moduleName, moduleBody)
+      def objectName  = newTermName(ScriptRunner scriptMain settings)
+      def objectBody  = Template(List(atPos(o2p(in.offset))(scalaAnyRefConstr)), emptyValDef, List(emptyInit, mainDef))
+      def objectDef   = ObjectDef(NoMods, objectName, objectBody)
 
       // package <empty> { ... }
-      makePackaging(0, emptyPkg, List(moduleDef))
+      makePackaging(0, emptyPkg, List(objectDef))
     }
 
 /* --------------- PLACEHOLDERS ------------------------------------------- */
@@ -2712,7 +2712,7 @@ self =>
      *  ObjectDef       ::= Id ClassTemplateOpt
      *  }}}
      */
-    def objectDef(start: Int, mods: Modifiers): ModuleDef = {
+    def objectDef(start: Int, mods: Modifiers): ObjectDef = {
       in.nextToken
       val nameOffset = in.offset
       val name = ident()
@@ -2720,7 +2720,7 @@ self =>
       atPos(start, if (name == nme.ERROR) start else nameOffset) {
         val mods1 = if (in.token == SUBTYPE) mods | Flags.DEFERRED else mods
         val template = templateOpt(mods1, name, NoMods, Nil, tstart)
-        ModuleDef(mods1, name, template)
+        ObjectDef(mods1, name, template)
       }
     }
 
@@ -2882,10 +2882,10 @@ self =>
      *    }
      *  }}}
      */
-    def makePackageObject(start: Int, objDef: ModuleDef): PackageDef = objDef match {
-      case ModuleDef(mods, name, impl) =>
+    def makePackageObject(start: Int, objDef: ObjectDef): PackageDef = objDef match {
+      case ObjectDef(mods, name, impl) =>
         makePackaging(
-          start, atPos(o2p(objDef.pos.startOrPoint)){ Ident(name) }, List(ModuleDef(mods, nme.PACKAGEkw, impl)))
+          start, atPos(o2p(objDef.pos.startOrPoint)){ Ident(name) }, List(ObjectDef(mods, nme.PACKAGEkw, impl)))
     }
 
     /** {{{

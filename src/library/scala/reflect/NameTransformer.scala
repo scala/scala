@@ -14,9 +14,9 @@ package scala.reflect
 object NameTransformer {
   // XXX Short term: providing a way to alter these without having to recompile
   // the compiler before recompiling the compiler.
-  val MODULE_SUFFIX_STRING = sys.props.getOrElse("SCALA_MODULE_SUFFIX_STRING", "$")
+  val OBJECT_SUFFIX_STRING = sys.props.getOrElse("SCALA_OBJECT_SUFFIX_STRING", "$")
   val NAME_JOIN_STRING     = sys.props.getOrElse("SCALA_NAME_JOIN_STRING", "$")
-  val MODULE_INSTANCE_NAME = "MODULE$"
+  val OBJECT_INSTANCE_NAME = "MODULE$"
 
   private val nops = 128
   private val ncodes = 26 * 26

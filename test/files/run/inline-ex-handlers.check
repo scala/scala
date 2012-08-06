@@ -64,7 +64,7 @@
 >     ?	JUMP 13
 >     
 >   13: 
->     310	LOAD_MODULE object Predef
+>     310	LOAD_OBJECT object Predef
 >     310	CALL_PRIMITIVE(StartConcat)
 >     310	CONSTANT("Caught crash: ")
 >     310	CALL_PRIMITIVE(StringConcat(REF(class String)))
@@ -103,7 +103,7 @@
 >     ?	JUMP 12
 >     
 >   12: 
->     83	LOAD_MODULE object Predef
+>     83	LOAD_OBJECT object Predef
 >     83	CONSTANT("finally")
 >     83	CALL_METHOD scala.Predef.println (dynamic)
 >     84	LOAD_LOCAL(variable result)
@@ -161,7 +161,7 @@
 >     ?	JUMP 34
 842a909,921
 >   34: 
->     184	LOAD_MODULE object Predef
+>     184	LOAD_OBJECT object Predef
 >     184	CONSTANT("finally")
 >     184	CALL_METHOD scala.Predef.println (dynamic)
 >     185	LOAD_LOCAL(variable result)
@@ -232,7 +232,7 @@
 >     ?	JUMP 8
 >     
 >   8: 
->     42	LOAD_MODULE object Predef
+>     42	LOAD_OBJECT object Predef
 >     42	CONSTANT("IllegalArgumentException")
 >     42	CALL_METHOD scala.Predef.println (dynamic)
 >     42	JUMP 2
@@ -273,7 +273,7 @@
 >     ?	JUMP 8
 >     
 >   8: 
->     62	LOAD_MODULE object Predef
+>     62	LOAD_OBJECT object Predef
 >     62	CONSTANT("RuntimeException")
 >     62	CALL_METHOD scala.Predef.println (dynamic)
 >     62	JUMP 2

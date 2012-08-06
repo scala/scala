@@ -40,10 +40,10 @@ trait GenTypes {
         mirrorBuildCall(nme.thisPrefix, mirrorMirrorSelect(nme.RootClass))
       case tpe @ ThisType(empty) if empty.isEmptyPackageClass =>
         mirrorBuildCall(nme.thisPrefix, mirrorMirrorSelect(nme.EmptyPackageClass))
-      case tpe @ ThisType(clazz) if clazz.isModuleClass && clazz.isStatic =>
-        val module = reify(clazz.sourceModule)
-        val moduleClass = Select(Select(module, nme.asModule), nme.moduleClass)
-        mirrorFactoryCall(nme.ThisType, moduleClass)
+      case tpe @ ThisType(clazz) if clazz.isObjectClass && clazz.isStatic =>
+        val objct = reify(clazz.sourceObject)
+        val objectClass = Select(Select(objct, nme.asObject), nme.objectClass)
+        mirrorFactoryCall(nme.ThisType, objectClass)
       case tpe @ ThisType(_) =>
         reifyProduct(tpe)
       case tpe @ SuperType(thistpe, supertpe) =>
@@ -105,7 +105,7 @@ trait GenTypes {
   }
 
   private def spliceAsManifest(tpe: Type): Tree = {
-    def isSynthetic(manifest: Tree) = manifest exists (sub => sub.symbol != null && (sub.symbol == FullManifestModule || sub.symbol.owner == FullManifestModule))
+    def isSynthetic(manifest: Tree) = manifest exists (sub => sub.symbol != null && (sub.symbol == FullManifestObject || sub.symbol.owner == FullManifestObject))
     def searchForManifest(typer: analyzer.Typer): Tree =
       analyzer.inferImplicit(
         EmptyTree,

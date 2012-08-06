@@ -120,7 +120,7 @@ trait GenTrees {
   private def reifyBoundTerm(tree: Tree): Tree = tree match {
     case tree @ This(_) if tree.symbol == NoSymbol =>
       throw new Error("unexpected: bound term that doesn't have a symbol: " + showRaw(tree))
-    case tree @ This(_) if tree.symbol.isClass && !tree.symbol.isModuleClass && !tree.symbol.isLocalToReifee =>
+    case tree @ This(_) if tree.symbol.isClass && !tree.symbol.isObjectClass && !tree.symbol.isLocalToReifee =>
       val sym = tree.symbol
       if (reifyDebug) println("This for %s, reified as freeVar".format(sym))
       if (reifyDebug) println("Free: " + sym)

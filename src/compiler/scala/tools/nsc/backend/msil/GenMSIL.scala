@@ -74,7 +74,7 @@ abstract class GenMSIL extends SubComponent {
    */
   class BytecodeGenerator {
 
-    val MODULE_INSTANCE_NAME = "MODULE$"
+    val OBJECT_INSTANCE_NAME = "MODULE$"
 
     import clrTypes.{VOID => MVOID, BOOLEAN => MBOOL, BYTE => MBYTE, SHORT => MSHORT,
                    CHAR => MCHAR, INT => MINT, LONG => MLONG, FLOAT => MFLOAT,
@@ -119,7 +119,7 @@ abstract class GenMSIL extends SubComponent {
     val toFloat:  MethodInfo = SystemConvert.GetMethod("ToSingle",  objParam)
     val toDouble: MethodInfo = SystemConvert.GetMethod("ToDouble",  objParam)
 
-    //val boxedUnit: FieldInfo = msilType(definitions.BoxedUnitModule.info).GetField("UNIT")
+    //val boxedUnit: FieldInfo = msilType(definitions.BoxedUnitObject.info).GetField("UNIT")
     val boxedUnit: FieldInfo = fields(definitions.BoxedUnit_UNIT)
 
     // Scala attributes
@@ -167,7 +167,7 @@ abstract class GenMSIL extends SubComponent {
     var firstSourceName = ""
     var outDir: File = _
     var srcPath: File = _
-    var moduleName: String = _
+    var objectName: String = _
 
     def initAssembly() {
 
@@ -176,7 +176,7 @@ abstract class GenMSIL extends SubComponent {
       if (assemName == "") {
         if (entryPoint != null) {
           assemName = msilName(entryPoint.enclClass)
-          // remove the $ at the end (from module-name)
+          // remove the $ at the end (from object-name)
           assemName = assemName.substring(0, assemName.length() - 1)
         } else {
           // assuming filename of first source file
@@ -200,10 +200,10 @@ abstract class GenMSIL extends SubComponent {
       assemblyName.Name = assemName
       massembly = AssemblyBuilderFactory.DefineDynamicAssembly(assemblyName)
 
-      moduleName = assemName // + (if (entryPoint == null) ".dll" else ".exe")
+      objectName = assemName // + (if (entryPoint == null) ".dll" else ".exe")
       // filename here: .dll or .exe (in both parameters), second: give absolute-path
-      mmodule = massembly.DefineDynamicModule(moduleName,
-                                              new File(outDir, moduleName).getAbsolutePath())
+      mmodule = massembly.DefineDynamicModule(objectName,
+                                              new File(outDir, objectName).getAbsolutePath())
       assert (mmodule != null)
     }
 
@@ -228,7 +228,7 @@ abstract class GenMSIL extends SubComponent {
       }
 
       // both conditions are needed (why exactly..?)
-      if (tBuilder.Name.endsWith("$") || sym.isModuleClass) {
+      if (tBuilder.Name.endsWith("$") || sym.isObjectClass) {
         addMarker()
       } else {
         currentRun.symData.get(sym) match {
@@ -417,7 +417,7 @@ abstract class GenMSIL extends SubComponent {
 
     def writeAssembly() {
       if (entryPoint != null) {
-        assert(entryPoint.enclClass.isModuleClass, entryPoint.enclClass)
+        assert(entryPoint.enclClass.isObjectClass, entryPoint.enclClass)
         val mainMethod = methods(entryPoint)
         val stringArrayTypes: Array[MsilType] = Array(MSTRING_ARRAY)
         val globalMain = mmodule.DefineGlobalMethod(
@@ -426,8 +426,8 @@ abstract class GenMSIL extends SubComponent {
         globalMain.DefineParameter(0, ParameterAttributes.None, "args")
         massembly.SetEntryPoint(globalMain)
         val code = globalMain.GetILGenerator()
-        val moduleField = getModuleInstanceField(entryPoint.enclClass)
-        code.Emit(OpCodes.Ldsfld, moduleField)
+        val objectField = getObjectInstanceField(entryPoint.enclClass)
+        code.Emit(OpCodes.Ldsfld, objectField)
         code.Emit(OpCodes.Ldarg_0)
         code.Emit(OpCodes.Callvirt, mainMethod)
         code.Emit(OpCodes.Ret)
@@ -493,11 +493,11 @@ abstract class GenMSIL extends SubComponent {
       val line = sym.pos.line
       tBuilder.setPosition(line, ilasmFileName(iclass))
 
-      if (isTopLevelModule(sym)) {
+      if (isTopLevelObject(sym)) {
         if (sym.companionClass == NoSymbol)
           generateMirrorClass(sym)
         else
-          log("No mirror class for module with linked class: " +
+          log("No mirror class for object with linked class: " +
               sym.fullName)
       }
 
@@ -1007,9 +1007,9 @@ abstract class GenMSIL extends SubComponent {
             val constructorInfo: ConstructorInfo = getConstructor(msym)
             mcode.Emit(OpCodes.Newobj, constructorInfo)
 
-          case LOAD_MODULE(module) =>
-            debuglog("Generating LOAD_MODULE for: " + showsym(module))
-            mcode.Emit(OpCodes.Ldsfld, getModuleInstanceField(module))
+          case LOAD_OBJECT(objct) =>
+            debuglog("Generating LOAD_OBJECT for: " + showsym(objct))
+            mcode.Emit(OpCodes.Ldsfld, getObjectInstanceField(objct))
 
           case STORE_ARRAY_ITEM(kind) =>
             (kind: @unchecked) match {
@@ -1089,13 +1089,13 @@ abstract class GenMSIL extends SubComponent {
                     mcode.Emit(OpCodes.Newobj, constructorInfo)
                 case SuperCall(_) =>
                   mcode.Emit(OpCodes.Call, constructorInfo)
-                  if (isStaticModule(clasz.symbol) &&
-                      notInitializedModules.contains(clasz.symbol) &&
+                  if (isStaticObject(clasz.symbol) &&
+                      notInitializedObjects.contains(clasz.symbol) &&
                       method.symbol.isClassConstructor)
                     {
-                      notInitializedModules -= clasz.symbol
+                      notInitializedObjects -= clasz.symbol
                       mcode.Emit(OpCodes.Ldarg_0)
-                      mcode.Emit(OpCodes.Stsfld, getModuleInstanceField(clasz.symbol))
+                      mcode.Emit(OpCodes.Stsfld, getObjectInstanceField(clasz.symbol))
                     }
               }
 
@@ -1604,7 +1604,7 @@ abstract class GenMSIL extends SubComponent {
      * not exist in the classpath: the type checker will be very confused.
      */
     def msilName(sym: Symbol): String = {
-      val suffix = sym.moduleSuffix
+      val suffix = sym.objectSuffix
       // Flags.JAVA: "symbol was not defined by a scala-class" (java, or .net-class)
 
       if (sym == definitions.NothingClass)
@@ -1612,7 +1612,7 @@ abstract class GenMSIL extends SubComponent {
       else if (sym == definitions.NullClass)
         return "scala.runtime.Null$"
 
-      (if (sym.isClass || (sym.isModule && !sym.isMethod)) {
+      (if (sym.isClass || (sym.isObject && !sym.isMethod)) {
         if (sym.isNestedClass) sym.simpleName
         else sym.fullName
        } else
@@ -1670,8 +1670,8 @@ abstract class GenMSIL extends SubComponent {
         mf = mf | MethodAttributes.Static
       }
 
-      // constructors of module classes should be private
-      if (sym.isPrimaryConstructor && isTopLevelModule(sym.owner)) {
+      // constructors of object classes should be private
+      if (sym.isPrimaryConstructor && isTopLevelObject(sym.owner)) {
         mf |= MethodAttributes.Private
         mf &= ~(MethodAttributes.Public)
       }
@@ -1707,7 +1707,7 @@ abstract class GenMSIL extends SubComponent {
 
     var entryPoint: Symbol = _
 
-    val notInitializedModules = mutable.HashSet[Symbol]()
+    val notInitializedObjects = mutable.HashSet[Symbol]()
 
     // TODO: create fields also in def createType, and not in genClass,
     // add a getField method (it only works as it is because fields never
@@ -1718,7 +1718,7 @@ abstract class GenMSIL extends SubComponent {
     private[GenMSIL] def findEntryPoint(cls: IClass) {
 
       def isEntryPoint(sym: Symbol):Boolean = {
-        if (isStaticModule(sym.owner) && msilName(sym) == "main")
+        if (isStaticObject(sym.owner) && msilName(sym) == "main")
           if (sym.tpe.paramTypes.length == 1) {
             toTypeKind(sym.tpe.paramTypes(0)) match {
               case ARRAY(elem) =>
@@ -1789,7 +1789,7 @@ abstract class GenMSIL extends SubComponent {
           def typeString(sym: Symbol): String = {
             val s = if (sym.isNestedClass) typeString(sym.owner) +"+"+ sym.simpleName
                     else sym.fullName
-            if (sym.isModuleClass && !sym.isTrait) s + "$" else s
+            if (sym.isObjectClass && !sym.isTrait) s + "$" else s
           }
           val name = typeString(sym)
           val typ = clrTypes.getType(name)
@@ -1895,7 +1895,7 @@ abstract class GenMSIL extends SubComponent {
         addAttributes(fBuilder, sym.annotations)
       } // all iclass.fields iterated over
 
-      if (isStaticModule(iclass.symbol)) {
+      if (isStaticObject(iclass.symbol)) {
         val sc = iclass.lookupStaticCtor
         if (sc.isDefined) {
           val m = sc.get
@@ -1944,9 +1944,9 @@ abstract class GenMSIL extends SubComponent {
       }
       } // method builders created for non-array iclass
 
-      if (isStaticModule(iclass.symbol)) {
-        addModuleInstanceField(iclass.symbol)
-        notInitializedModules += iclass.symbol
+      if (isStaticObject(iclass.symbol)) {
+        addObjectInstanceField(iclass.symbol)
+        notInitializedObjects += iclass.symbol
         if (iclass.lookupStaticCtor.isEmpty) {
           addStaticInit(iclass.symbol)
         }
@@ -1954,18 +1954,18 @@ abstract class GenMSIL extends SubComponent {
 
     } // createClassMembers0
 
-    private def isTopLevelModule(sym: Symbol): Boolean =
+    private def isTopLevelObject(sym: Symbol): Boolean =
       beforeRefchecks {
-        sym.isModuleClass && !sym.isImplClass && !sym.isNestedClass
+        sym.isObjectClass && !sym.isImplClass && !sym.isNestedClass
       }
 
-    // if the module is lifted it does not need to be initialized in
+    // if the object is lifted it does not need to be initialized in
     // its static constructor, and the MODULE$ field is not required.
     // the outer class will care about it.
-    private def isStaticModule(sym: Symbol): Boolean = {
+    private def isStaticObject(sym: Symbol): Boolean = {
       // .net inner classes: removed '!sym.hasFlag(Flags.LIFTED)', added
       // 'sym.isStatic'. -> no longer compatible without skipping flatten!
-      sym.isModuleClass && sym.isStatic && !sym.isImplClass
+      sym.isObjectClass && sym.isStatic && !sym.isImplClass
     }
 
     private def isCloneable(sym: Symbol): Boolean = {
@@ -1975,10 +1975,10 @@ abstract class GenMSIL extends SubComponent {
       })
     }
 
-    private def addModuleInstanceField(sym: Symbol) {
-      debuglog("Adding Module-Instance Field for " + showsym(sym))
+    private def addObjectInstanceField(sym: Symbol) {
+      debuglog("Adding Object-Instance Field for " + showsym(sym))
       val tBuilder = getType(sym).asInstanceOf[TypeBuilder]
-      val fb = tBuilder.DefineField(MODULE_INSTANCE_NAME,
+      val fb = tBuilder.DefineField(OBJECT_INSTANCE_NAME,
                            tBuilder,
                            (FieldAttributes.Public |
                             //FieldAttributes.InitOnly |
@@ -1987,34 +1987,34 @@ abstract class GenMSIL extends SubComponent {
     }
 
 
-    // the symbol may be a object-symbol (module-symbol), or a module-class-symbol
-    private def getModuleInstanceField(sym: Symbol): FieldInfo = {
-      assert(sym.isModule || sym.isModuleClass, "Expected module: " + showsym(sym))
+    // the symbol may be a object-symbol or a object-class-symbol
+    private def getObjectInstanceField(sym: Symbol): FieldInfo = {
+      assert(sym.isObject || sym.isObjectClass, "Expected object: " + showsym(sym))
 
-      // when called by LOAD_MODULE, the corresponding type maybe doesn't
+      // when called by LOAD_OBJECT, the corresponding type maybe doesn't
       // exist yet -> make a getType
-      val moduleClassSym = if (sym.isModule) sym.moduleClass else sym
+      val objectClassSym = if (sym.isObject) sym.objectClass else sym
 
-      // TODO: get module field for modules not defined in the
+      // TODO: get object field for objects not defined in the
       // source currently compiling (e.g. Console)
 
-      fields get moduleClassSym match {
+      fields get objectClassSym match {
         case Some(sym) => sym
         case None =>
-          //val mclass = types(moduleClassSym)
-          val nameInMetadata = nestingAwareFullClassname(moduleClassSym)
+          //val mclass = types(objectClassSym)
+          val nameInMetadata = nestingAwareFullClassname(objectClassSym)
           val mClass = clrTypes.getType(nameInMetadata)
           val mfield = mClass.GetField("MODULE$")
-          assert(mfield ne null, "module not found " + showsym(moduleClassSym))
-          fields(moduleClassSym) = mfield
+          assert(mfield ne null, "object not found " + showsym(objectClassSym))
+          fields(objectClassSym) = mfield
           mfield
       }
 
-      //fields(moduleClassSym)
+      //fields(objectClassSym)
     }
 
     def nestingAwareFullClassname(csym: Symbol) : String = {
-      val suffix = csym.moduleSuffix
+      val suffix = csym.objectSuffix
       val res = if (csym.isNestedClass)
         nestingAwareFullClassname(csym.owner) + "+" + csym.encodedName
       else
@@ -2022,9 +2022,9 @@ abstract class GenMSIL extends SubComponent {
       res + suffix
     }
 
-    /** Adds a static initializer which creates an instance of the module
+    /** Adds a static initializer which creates an instance of the object
      *  class (calls the primary constructor). A special primary constructor
-     *  will be generated (notInitializedModules) which stores the new instance
+     *  will be generated (notInitializedObjects) which stores the new instance
      *  in the MODULE$ field right after the super call.
      */
     private def addStaticInit(sym: Symbol) {
@@ -2040,7 +2040,7 @@ abstract class GenMSIL extends SubComponent {
       val instanceConstructor = constructors(sym.primaryConstructor)
 
       // there are no constructor parameters. assuming the constructor takes no parameter
-      // is fine: we call (in the static constructor) the constructor of the module class,
+      // is fine: we call (in the static constructor) the constructor of the object class,
       // which takes no arguments - an object definition cannot take constructor arguments.
       sicode.Emit(OpCodes.Newobj, instanceConstructor)
       // the stsfld is done in the instance constructor, just after the super call.
@@ -2051,10 +2051,10 @@ abstract class GenMSIL extends SubComponent {
 
     private def generateMirrorClass(sym: Symbol) {
       val tBuilder = getType(sym)
-      assert(sym.isModuleClass, "Can't generate Mirror-Class for the Non-Module class " + sym)
+      assert(sym.isObjectClass, "Can't generate Mirror-Class for the Non-Object class " + sym)
       debuglog("Dumping mirror class for object: " + sym)
-      val moduleName = msilName(sym)
-      val mirrorName = moduleName.substring(0, moduleName.length() - 1)
+      val objectName = msilName(sym)
+      val mirrorName = objectName.substring(0, objectName.length() - 1)
       val mirrorTypeBuilder = mmodule.DefineType(mirrorName,
                                                  TypeAttributes.Class |
                                                  TypeAttributes.Public |
@@ -2089,7 +2089,7 @@ abstract class GenMSIL extends SubComponent {
           }
 
           val mirrorCode = mirrorMethod.GetILGenerator()
-          mirrorCode.Emit(OpCodes.Ldsfld, getModuleInstanceField(sym))
+          mirrorCode.Emit(OpCodes.Ldsfld, getObjectInstanceField(sym))
           val mInfo = getMethod(m)
           for (paramidx <- 0.until(paramTypes.length)) {
             val mInfoParams = mInfo.GetParameters
@@ -2101,7 +2101,7 @@ abstract class GenMSIL extends SubComponent {
           mirrorCode.Emit(OpCodes.Ret)
         }
 
-      addSymtabAttribute(sym.sourceModule, mirrorTypeBuilder)
+      addSymtabAttribute(sym.sourceObject, mirrorTypeBuilder)
 
       mirrorTypeBuilder.CreateType()
       mirrorTypeBuilder.setSourceFilepath(iclass.cunit.source.file.path)

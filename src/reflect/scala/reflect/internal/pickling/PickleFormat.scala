@@ -21,7 +21,7 @@ object PickleFormat {
  *                  | 4 TYPEsym len_Nat SymbolInfo
  *                  | 5 ALIASsym len_Nat SymbolInfo
  *                  | 6 CLASSsym len_Nat SymbolInfo [thistype_Ref]
- *                  | 7 MODULEsym len_Nat SymbolInfo
+ *                  | 7 OBJECTsym len_Nat SymbolInfo
  *                  | 8 VALsym len_Nat [defaultGetter_Ref /* no longer needed*/] SymbolInfo [alias_Ref]
  *                  | 9 EXTref len_Nat name_Ref [owner_Ref]
  *                  | 10 EXTMODCLASSref len_Nat name_Ref [owner_Ref]
@@ -61,7 +61,7 @@ object PickleFormat {
  *                  | 49 TREE len_Nat 1 EMPTYtree
  *                  | 49 TREE len_Nat 2 PACKAGEtree type_Ref sym_Ref mods_Ref name_Ref {tree_Ref}
  *                  | 49 TREE len_Nat 3 CLASStree type_Ref sym_Ref mods_Ref name_Ref tree_Ref {tree_Ref}
- *                  | 49 TREE len_Nat 4 MODULEtree type_Ref sym_Ref mods_Ref name_Ref tree_Ref
+ *                  | 49 TREE len_Nat 4 OBJECTtree type_Ref sym_Ref mods_Ref name_Ref tree_Ref
  *                  | 49 TREE len_Nat 5 VALDEFtree type_Ref sym_Ref mods_Ref name_Ref tree_Ref tree_Ref
  *                  | 49 TREE len_Nat 6 DEFDEFtree type_Ref sym_Ref mods_Ref name_Ref numtparams_Nat {tree_Ref} numparamss_Nat {numparams_Nat {tree_Ref}} tree_Ref tree_Ref
  *                  | 49 TREE len_Nat 7 TYPEDEFtree type_Ref sym_Ref mods_Ref name_Ref tree_Ref {tree_Ref}
@@ -123,7 +123,7 @@ object PickleFormat {
   final val TYPEsym = 4
   final val ALIASsym = 5
   final val CLASSsym = 6
-  final val MODULEsym = 7
+  final val OBJECTsym = 7
   final val VALsym = 8
   final val EXTref = 9
   final val EXTMODCLASSref = 10
@@ -168,7 +168,7 @@ object PickleFormat {
     final val EMPTYtree = 1
     final val PACKAGEtree = 2
     final val CLASStree = 3
-    final val MODULEtree = 4
+    final val OBJECTtree = 4
     final val VALDEFtree = 5
     final val DEFDEFtree = 6
     final val TYPEDEFtree = 7

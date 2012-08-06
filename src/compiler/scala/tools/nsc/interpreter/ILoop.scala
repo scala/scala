@@ -409,7 +409,7 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
             val clazz = flat :: rest mkString NAME_JOIN_STRING
             val bytes = super.tryClass(clazz)
             if (bytes.nonEmpty) bytes
-            else super.tryClass(clazz + MODULE_SUFFIX_STRING)
+            else super.tryClass(clazz + OBJECT_SUFFIX_STRING)
           case _          => super.tryClass(path)
         }
       }
@@ -418,11 +418,11 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
         // we have to drop the $ to find object Foo, then tack it back onto
         // the end of the flattened name.
         def className  = intp flatName path
-        def moduleName = (intp flatName path.stripSuffix(MODULE_SUFFIX_STRING)) + MODULE_SUFFIX_STRING
+        def objectName = (intp flatName path.stripSuffix(OBJECT_SUFFIX_STRING)) + OBJECT_SUFFIX_STRING
 
         val bytes = super.tryClass(className)
         if (bytes.nonEmpty) bytes
-        else super.tryClass(moduleName)
+        else super.tryClass(objectName)
       }
     }
   }

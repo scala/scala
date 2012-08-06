@@ -24,17 +24,17 @@ abstract class UnPickler /*extends reflect.generic.UnPickler*/ {
   val global: SymbolTable
   import global._
 
-  /** Unpickle symbol table information descending from a class and/or module root
+  /** Unpickle symbol table information descending from a class and/or object root
    *  from an array of bytes.
    *  @param bytes      bytearray from which we unpickle
    *  @param offset     offset from which unpickling starts
    *  @param classroot  the top-level class which is unpickled, or NoSymbol if inapplicable
-   *  @param moduleroot the top-level module which is unpickled, or NoSymbol if inapplicable
+   *  @param objectroot the top-level object which is unpickled, or NoSymbol if inapplicable
    *  @param filename   filename associated with bytearray, only used for error messages
    */
-  def unpickle(bytes: Array[Byte], offset: Int, classRoot: Symbol, moduleRoot: Symbol, filename: String) {
+  def unpickle(bytes: Array[Byte], offset: Int, classRoot: Symbol, objectRoot: Symbol, filename: String) {
     try {
-      new Scan(bytes, offset, classRoot, moduleRoot, filename).run()
+      new Scan(bytes, offset, classRoot, objectRoot, filename).run()
     } catch {
       case ex: IOException =>
         throw ex
@@ -46,8 +46,8 @@ abstract class UnPickler /*extends reflect.generic.UnPickler*/ {
     }
   }
 
-  class Scan(_bytes: Array[Byte], offset: Int, classRoot: Symbol, moduleRoot: Symbol, filename: String) extends PickleBuffer(_bytes, offset, -1) {
-    //println("unpickle " + classRoot + " and " + moduleRoot)//debug
+  class Scan(_bytes: Array[Byte], offset: Int, classRoot: Symbol, objectRoot: Symbol, filename: String) extends PickleBuffer(_bytes, offset, -1) {
+    //println("unpickle " + classRoot + " and " + objectRoot)//debug
 
     protected def debug = settings.debug.value
 
@@ -64,7 +64,7 @@ abstract class UnPickler /*extends reflect.generic.UnPickler*/ {
     /** A map from symbols to their associated `decls` scopes */
     private val symScopes = mutable.HashMap[Symbol, Scope]()
 
-    //println("unpickled " + classRoot + ":" + classRoot.rawInfo + ", " + moduleRoot + ":" + moduleRoot.rawInfo);//debug
+    //println("unpickled " + classRoot + ":" + classRoot.rawInfo + ", " + objectRoot + ":" + objectRoot.rawInfo);//debug
 
     // Laboriously unrolled for performance.
     def run() {
@@ -199,7 +199,7 @@ abstract class UnPickler /*extends reflect.generic.UnPickler*/ {
         val name  = readNameRef()
         val owner = if (atEnd) loadingMirror.RootClass else readSymbolRef()
 
-        def adjust(sym: Symbol) = if (tag == EXTref) sym else sym.moduleClass
+        def adjust(sym: Symbol) = if (tag == EXTref) sym else sym.objectClass
 
         def fromName(name: Name) = name.toTermName match {
           case nme.ROOT     => loadingMirror.RootClass
@@ -215,9 +215,9 @@ abstract class UnPickler /*extends reflect.generic.UnPickler*/ {
             return NoSymbol
 
           if (tag == EXTMODCLASSref) {
-            val moduleVar = owner.info.decl(nme.moduleVarName(name.toTermName))
-            if (moduleVar.isLazyAccessor)
-              return moduleVar.lazyAccessor.lazyAccessor
+            val objectVar = owner.info.decl(nme.objectVarName(name.toTermName))
+            if (objectVar.isLazyAccessor)
+              return objectVar.lazyAccessor.lazyAccessor
           }
           NoSymbol
         }
@@ -258,9 +258,9 @@ abstract class UnPickler /*extends reflect.generic.UnPickler*/ {
           pw
         }
 
-      def isModuleFlag = (flags & MODULE) != 0L
+      def isObjectFlag = (flags & OBJECT) != 0L
       def isClassRoot  = (name == classRoot.name) && (owner == classRoot.owner)
-      def isModuleRoot = (name == moduleRoot.name) && (owner == moduleRoot.owner)
+      def isObjectRoot = (name == objectRoot.name) && (owner == objectRoot.owner)
       def pflags       = flags & PickledFlags
 
       def finishSym(sym: Symbol): Symbol = {
@@ -275,8 +275,8 @@ abstract class UnPickler /*extends reflect.generic.UnPickler*/ {
             newLazyTypeRefAndAlias(inforef, readNat())
           }
         )
-        if (sym.owner.isClass && sym != classRoot && sym != moduleRoot &&
-            !sym.isModuleClass && !sym.isRefinementClass && !sym.isTypeParameter && !sym.isExistentiallyBound)
+        if (sym.owner.isClass && sym != classRoot && sym != objectRoot &&
+            !sym.isObjectClass && !sym.isRefinementClass && !sym.isTypeParameter && !sym.isExistentiallyBound)
           symScope(sym.owner) enter sym
 
         sym
@@ -288,7 +288,7 @@ abstract class UnPickler /*extends reflect.generic.UnPickler*/ {
         case CLASSsym =>
           val sym = (
             if (isClassRoot) {
-              if (isModuleFlag) moduleRoot.moduleClass setFlag pflags
+              if (isObjectFlag) objectRoot.objectClass setFlag pflags
               else classRoot setFlag pflags
             }
             else owner.newClassSymbol(name.toTypeName, NoPosition, pflags)
@@ -297,12 +297,12 @@ abstract class UnPickler /*extends reflect.generic.UnPickler*/ {
             sym.typeOfThis = newLazyTypeRef(readNat())
 
           sym
-        case MODULEsym =>
+        case OBJECTsym =>
           val clazz = at(inforef, () => readType()).typeSymbol // after the NMT_TRANSITION period, we can leave off the () => ... ()
-          if (isModuleRoot) moduleRoot setFlag pflags
-          else owner.newLinkedModule(clazz, pflags)
+          if (isObjectRoot) objectRoot setFlag pflags
+          else owner.newLinkedObject(clazz, pflags)
         case VALsym =>
-          if (isModuleRoot) { assert(false); NoSymbol }
+          if (isObjectRoot) { assert(false); NoSymbol }
           else owner.newTermSymbol(name.toTermName, NoPosition, pflags)
 
         case _ =>
@@ -542,9 +542,9 @@ abstract class UnPickler /*extends reflect.generic.UnPickler*/ {
           val tparams = until(end, readTypeDefRef)
           ClassDef(mods, name.toTypeName, tparams, impl)
 
-        case MODULEtree =>
+        case OBJECTtree =>
           setSymModsName()
-          ModuleDef(mods, name.toTermName, readTemplateRef())
+          ObjectDef(mods, name.toTermName, readTemplateRef())
 
         case VALDEFtree =>
           setSymModsName()

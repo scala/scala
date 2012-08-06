@@ -15,7 +15,7 @@ object Macros {
   def impl_with_macros_disabled(c: Context) = {
     import c.universe._
 
-    val rupkg = c.mirror.staticModule("scala.reflect.runtime.package")
+    val rupkg = c.mirror.staticObject("scala.reflect.runtime.package")
     val rusym = build.selectTerm(rupkg, "universe")
     val NullaryMethodType(rutpe) = rusym.typeSignature
     val ru = build.newFreeTerm("ru", rutpe, scala.reflect.runtime.universe)

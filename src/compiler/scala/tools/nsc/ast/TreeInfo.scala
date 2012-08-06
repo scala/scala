@@ -36,7 +36,7 @@ abstract class TreeInfo extends reflect.internal.TreeInfo {
   }
 
  /** Does list of trees start with a definition of
-   *  a class of module with given name (ignoring imports)
+   *  a class of object with given name (ignoring imports)
    */
   override def firstDefinesClassOrObject(trees: List[Tree], name: Name): Boolean = trees match {
     case ClassDef(_, `name`, _, _) :: Nil => true

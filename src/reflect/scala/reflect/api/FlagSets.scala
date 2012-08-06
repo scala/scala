@@ -23,8 +23,8 @@ trait FlagSets { self: Universe =>
     /** Flag indicating that symbol or tree represents a trait */
     val TRAIT: FlagSet
 
-    /** Flag indicating that symbol or tree represents a module or its internal module class */
-    val MODULE: FlagSet
+    /** Flag indicating that symbol or tree represents an object or its internal object class */
+    val OBJECT: FlagSet
 
     /** Flag indicating that symbol or tree represents a mutable variable */
     val MUTABLE: FlagSet

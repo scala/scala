@@ -39,7 +39,7 @@ trait StandardDefinitions extends StandardTypes {
   trait DefinitionsBase {
     // packages
     def ScalaPackageClass: ClassSymbol
-    def ScalaPackage: ModuleSymbol
+    def ScalaPackage: ObjectSymbol
 
     // top types
     def AnyClass   : ClassSymbol
@@ -69,6 +69,6 @@ trait StandardDefinitions extends StandardTypes {
     def ListClass   : ClassSymbol // [Eugene] I'd say List has earned its right to be here
 
     // the Predef object
-    def PredefModule: ModuleSymbol
+    def PredefObject: ObjectSymbol
   }
 }

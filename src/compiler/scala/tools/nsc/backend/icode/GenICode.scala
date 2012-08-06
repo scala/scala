@@ -25,8 +25,8 @@ abstract class GenICode extends SubComponent  {
   import icodes._
   import icodes.opcodes._
   import definitions.{
-    ArrayClass, ObjectClass, ThrowableClass, StringClass, StringModule, AnyRefClass,
-    Object_equals, Object_isInstanceOf, Object_asInstanceOf, ScalaRunTimeModule,
+    ArrayClass, ObjectClass, ThrowableClass, StringClass, StringObject, AnyRefClass,
+    Object_equals, Object_isInstanceOf, Object_asInstanceOf, ScalaRunTimeObject,
     BoxedNumberClass, BoxedCharacterClass,
     getMember
   }
@@ -101,9 +101,9 @@ abstract class GenICode extends SubComponent  {
         ctx.clazz.fields  = ctx.clazz.fields.reverse  // preserve textual order
         ctx setClass outerClass
 
-      // !! modules should be eliminated by refcheck... or not?
-      case ModuleDef(mods, name, impl) =>
-        abort("Modules should not reach backend! " + tree)
+      // !! objects should be eliminated by refcheck... or not?
+      case ObjectDef(mods, name, impl) =>
+        abort("Objects should not reach backend! " + tree)
 
       case ValDef(mods, name, tpt, rhs) =>
         ctx // we use the symbol to add fields
@@ -528,7 +528,7 @@ abstract class GenICode extends SubComponent  {
       var resCtx: Context = tree match {
 
         // emits CIL_LOAD_FIELD_ADDRESS
-        case Select(qualifier, selector) if (!tree.symbol.isModule) =>
+        case Select(qualifier, selector) if (!tree.symbol.isObject) =>
           addressTaken = true
           val sym = tree.symbol
           generatedType = toTypeKind(sym.info)
@@ -543,7 +543,7 @@ abstract class GenICode extends SubComponent  {
           }
 
         // emits CIL_LOAD_LOCAL_ADDRESS
-        case Ident(name) if (!tree.symbol.isPackage && !tree.symbol.isModule)=>
+        case Ident(name) if (!tree.symbol.isPackage && !tree.symbol.isObject)=>
           addressTaken = true
           val sym = tree.symbol
           try {
@@ -989,11 +989,11 @@ abstract class GenICode extends SubComponent  {
           // ctx1
 
         case This(qual) =>
-          assert(tree.symbol == ctx.clazz.symbol || tree.symbol.isModuleClass,
+          assert(tree.symbol == ctx.clazz.symbol || tree.symbol.isObjectClass,
                  "Trying to access the this of another class: " +
                  "tree.symbol = " + tree.symbol + ", ctx.clazz.symbol = " + ctx.clazz.symbol + " compilation unit:"+unit)
-          if (tree.symbol.isModuleClass && tree.symbol != ctx.clazz.symbol) {
-            genLoadModule(ctx, tree)
+          if (tree.symbol.isObjectClass && tree.symbol != ctx.clazz.symbol) {
+            genLoadObject(ctx, tree)
             generatedType = REFERENCE(tree.symbol)
           }
           else {
@@ -1004,12 +1004,12 @@ abstract class GenICode extends SubComponent  {
           }
           ctx
 
-        case Select(Ident(nme.EMPTY_PACKAGE_NAME), module) =>
-          debugassert(tree.symbol.isModule,
-            "Selection of non-module from empty package: " + tree +
+        case Select(Ident(nme.EMPTY_PACKAGE_NAME), objct) =>
+          debugassert(tree.symbol.isObject,
+            "Selection of non-object from empty package: " + tree +
             " sym: " + tree.symbol + " at: " + (tree.pos)
           )
-          genLoadModule(ctx, tree)
+          genLoadObject(ctx, tree)
 
         case Select(qualifier, selector) =>
           val sym = tree.symbol
@@ -1017,8 +1017,8 @@ abstract class GenICode extends SubComponent  {
           val hostClass = findHostClass(qualifier.tpe, sym)
           log(s"Host class of $sym with qual $qualifier (${qualifier.tpe}) is $hostClass")
 
-          if (sym.isModule) {
-            genLoadModule(ctx, tree)
+          if (sym.isObject) {
+            genLoadObject(ctx, tree)
           }
           else if (sym.isStaticMember) {
             ctx.bb.emit(LOAD_FIELD(sym, true) setHostClass hostClass, tree.pos)
@@ -1033,8 +1033,8 @@ abstract class GenICode extends SubComponent  {
         case Ident(name) =>
           val sym = tree.symbol
           if (!sym.isPackage) {
-            if (sym.isModule) {
-              genLoadModule(ctx, tree)
+            if (sym.isObject) {
+              genLoadObject(ctx, tree)
               generatedType = toTypeKind(sym.info)
             }
             else {
@@ -1250,18 +1250,18 @@ abstract class GenICode extends SubComponent  {
           genLoad(arg, res, toTypeKind(tpe))
       }
 
-    private def genLoadModule(ctx: Context, tree: Tree): Context = {
+    private def genLoadObject(ctx: Context, tree: Tree): Context = {
       // Working around SI-5604.  Rather than failing the compile when we see
       // a package here, check if there's a package object.
       val sym = (
         if (!tree.symbol.isPackageClass) tree.symbol
         else tree.symbol.info.member(nme.PACKAGE) match {
           case NoSymbol => assert(false, "Cannot use package as value: " + tree) ; NoSymbol
-          case s        => debugwarn("Bug: found package class where package object expected.  Converting.") ; s.moduleClass
+          case s        => debugwarn("Bug: found package class where package object expected.  Converting.") ; s.objectClass
         }
       )
-      debuglog("LOAD_MODULE from %s: %s".format(tree.shortClass, sym))
-      ctx.bb.emit(LOAD_MODULE(sym), tree.pos)
+      debuglog("LOAD_OBJECT from %s: %s".format(tree.shortClass, sym))
+      ctx.bb.emit(LOAD_OBJECT(sym), tree.pos)
       ctx
     }
 
@@ -1364,7 +1364,7 @@ abstract class GenICode extends SubComponent  {
 
     /** The Object => String overload.
      */
-    private lazy val String_valueOf: Symbol = getMember(StringModule, nme.valueOf) filter (sym =>
+    private lazy val String_valueOf: Symbol = getMember(StringObject, nme.valueOf) filter (sym =>
       sym.info.paramTypes match {
         case List(pt) => pt.typeSymbol == ObjectClass
         case _        => false
@@ -1376,7 +1376,7 @@ abstract class GenICode extends SubComponent  {
     // case we want to get more precise.
     //
     // private def valueOfForType(tp: Type): Symbol = {
-    //   val xs = getMember(StringModule, nme.valueOf) filter (sym =>
+    //   val xs = getMember(StringObject, nme.valueOf) filter (sym =>
     //     // We always exclude the Array[Char] overload because java throws an NPE if
     //     // you pass it a null.  It will instead find the Object one, which doesn't.
     //     sym.info.paramTypes match {
@@ -1422,8 +1422,8 @@ abstract class GenICode extends SubComponent  {
      */
     def genScalaHash(tree: Tree, ctx: Context): Context = {
       val hashMethod = {
-        ctx.bb.emit(LOAD_MODULE(ScalaRunTimeModule))
-        getMember(ScalaRunTimeModule, nme.hash_)
+        ctx.bb.emit(LOAD_OBJECT(ScalaRunTimeObject))
+        getMember(ScalaRunTimeObject, nme.hash_)
       }
 
       val ctx1 = genLoad(tree, ctx, ObjectReference)
@@ -1611,8 +1611,8 @@ abstract class GenICode extends SubComponent  {
             }
           }
           else {
-            ctx.bb.emit(LOAD_MODULE(ScalaRunTimeModule))
-            getMember(ScalaRunTimeModule, nme.inlinedEquals)
+            ctx.bb.emit(LOAD_OBJECT(ScalaRunTimeObject))
+            getMember(ScalaRunTimeObject, nme.inlinedEquals)
           }
 
         val ctx1 = genLoad(l, ctx, ObjectReference)
@@ -1665,16 +1665,16 @@ abstract class GenICode extends SubComponent  {
       debugassert(ctx.clazz.symbol eq cls,
                "Classes are not the same: " + ctx.clazz.symbol + ", " + cls)
 
-      /** Non-method term members are fields, except for module members. Module
+      /** Non-method term members are fields, except for object members. Object
        *  members can only happen on .NET (no flatten) for inner traits. There,
-       *  a module symbol is generated (transformInfo in mixin) which is used
+       *  a object symbol is generated (transformInfo in mixin) which is used
        *  as owner for the members of the implementation class (so that the
        *  backend emits them as static).
-       *  No code is needed for this module symbol.
+       *  No code is needed for this object symbol.
        */
       for (
         f <- cls.info.decls;
-        if !f.isMethod && f.isTerm && !f.isModule && !(f.owner.isModuleClass && f.hasStaticAnnotation)
+        if !f.isMethod && f.isTerm && !f.isObject && !(f.owner.isObjectClass && f.hasStaticAnnotation)
       ) {
         ctx.clazz addField new IField(f)
       }

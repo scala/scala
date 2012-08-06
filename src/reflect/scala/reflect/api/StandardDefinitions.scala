@@ -12,9 +12,9 @@ trait StandardDefinitions extends base.StandardDefinitions {
 
   trait DefinitionsApi extends DefinitionsBase {
     def JavaLangPackageClass: ClassSymbol
-    def JavaLangPackage: ModuleSymbol
-    def ArrayModule: ModuleSymbol
-    def ArrayModule_overloadedApply: TermSymbol // todo. fix the bug in Definitions.getMemberMethod
+    def JavaLangPackage: ObjectSymbol
+    def ArrayObject: ObjectSymbol
+    def ArrayObject_overloadedApply: TermSymbol // todo. fix the bug in Definitions.getMemberMethod
     def Array_apply: TermSymbol // todo. fix the bug in Definitions.getMemberMethod
     def Array_clone: TermSymbol // todo. fix the bug in Definitions.getMemberMethod
     def Array_length: TermSymbol // todo. fix the bug in Definitions.getMemberMethod
@@ -24,20 +24,20 @@ trait StandardDefinitions extends base.StandardDefinitions {
     def FunctionClass : Array[ClassSymbol]
     def IterableClass: ClassSymbol
     def IteratorClass: ClassSymbol
-    def IteratorModule: ModuleSymbol
+    def IteratorObject: ObjectSymbol
     def Iterator_apply: TermSymbol // todo. fix the bug in Definitions.getMemberMethod
     def JavaRepeatedParamClass: ClassSymbol
-    def ListModule: ModuleSymbol
+    def ListObject: ObjectSymbol
     def List_apply: TermSymbol // todo. fix the bug in Definitions.getMemberMethod
-    def NilModule: ModuleSymbol
-    def NoneModule: ModuleSymbol
+    def NilObject: ObjectSymbol
+    def NoneObject: ObjectSymbol
     def OptionClass: ClassSymbol
     def ProductClass  : Array[ClassSymbol]
     def RepeatedParamClass: ClassSymbol
     def SeqClass: ClassSymbol
-    def SeqModule: ModuleSymbol
+    def SeqObject: ObjectSymbol
     def SomeClass: ClassSymbol
-    def SomeModule: ModuleSymbol
+    def SomeObject: ObjectSymbol
     def StringBuilderClass: ClassSymbol
     def SymbolClass : ClassSymbol
     def TraversableClass: ClassSymbol

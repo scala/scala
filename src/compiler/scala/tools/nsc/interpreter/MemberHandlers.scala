@@ -56,7 +56,7 @@ trait MemberHandlers {
     case member: DefDef        => new DefHandler(member)
     case member: ValDef        => new ValHandler(member)
     case member: Assign        => new AssignHandler(member)
-    case member: ModuleDef     => new ModuleHandler(member)
+    case member: ObjectDef     => new ObjectHandler(member)
     case member: ClassDef      => new ClassHandler(member)
     case member: TypeDef       => new TypeAliasHandler(member)
     case member: Import        => new ImportHandler(member)
@@ -152,12 +152,12 @@ trait MemberHandlers {
     }
   }
 
-  class ModuleHandler(module: ModuleDef) extends MemberDefHandler(module) {
+  class ObjectHandler(objct: ObjectDef) extends MemberDefHandler(objct) {
     override def definesTerm = Some(name)
     override def definesValue = true
     override def isLegalTopLevel = true
 
-    override def resultExtractionCode(req: Request) = codegenln("defined module ", name)
+    override def resultExtractionCode(req: Request) = codegenln("defined object ", name)
   }
 
   class ClassHandler(member: ClassDef) extends MemberDefHandler(member) {

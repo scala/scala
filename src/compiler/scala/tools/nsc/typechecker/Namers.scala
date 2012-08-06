@@ -62,7 +62,7 @@ trait Namers extends MethodSynthesis {
 
     def createNamer(tree: Tree): Namer = {
       val sym = tree match {
-        case ModuleDef(_, _, _) => tree.symbol.moduleClass
+        case ObjectDef(_, _, _) => tree.symbol.objectClass
         case _                  => tree.symbol
       }
       newNamer(context.makeNewScope(tree, sym))
@@ -114,7 +114,7 @@ trait Namers extends MethodSynthesis {
     )
     def noFinishGetterSetter(vd: ValDef) = (
          vd.mods.isPrivateLocal
-      || vd.symbol.isModuleVar
+      || vd.symbol.isObjectVar
       || vd.symbol.isLazy
     )
 
@@ -129,14 +129,14 @@ trait Namers extends MethodSynthesis {
       if (owner.isConstructor && !context.inConstructorSuffix || owner.isEarlyInitialized) INCONSTRUCTOR
       else 0l
 
-    def moduleClassFlags(moduleFlags: Long) =
-      (moduleFlags & ModuleToClassFlags) | inConstructorFlag
+    def objectClassFlags(objectFlags: Long) =
+      (objectFlags & ObjectToClassFlags) | inConstructorFlag
 
     def updatePosFlags(sym: Symbol, pos: Position, flags: Long): Symbol = {
       debuglog("[overwrite] " + sym)
       val newFlags = (sym.flags & LOCKED) | flags
       sym reset NoType setFlag newFlags setPos pos
-      sym.moduleClass andAlso (updatePosFlags(_, pos, moduleClassFlags(flags)))
+      sym.objectClass andAlso (updatePosFlags(_, pos, objectClassFlags(flags)))
 
       if (sym.owner.isPackageClass) {
         companionSymbolOf(sym, context) andAlso { companion =>
@@ -208,7 +208,7 @@ trait Namers extends MethodSynthesis {
         tree match {
           case tree @ PackageDef(_, _)                       => enterPackage(tree)
           case tree @ ClassDef(_, _, _, _)                   => enterClassDef(tree)
-          case tree @ ModuleDef(_, _, _)                     => enterModuleDef(tree)
+          case tree @ ObjectDef(_, _, _)                     => enterObjectDef(tree)
           case tree @ ValDef(_, _, _, _)                     => enterValDef(tree)
           case tree @ DefDef(_, _, _, _, _, _)               => enterDefDef(tree)
           case tree @ TypeDef(_, _, _, _)                    => enterTypeDef(tree)
@@ -276,7 +276,7 @@ trait Namers extends MethodSynthesis {
         case DefDef(_, nme.CONSTRUCTOR, _, _, _, _) => owner.newConstructor(pos, flags)
         case DefDef(_, _, _, _, _, _)               => owner.newMethod(name.toTermName, pos, flags)
         case ClassDef(_, _, _, _)                   => owner.newClassSymbol(name.toTypeName, pos, flags)
-        case ModuleDef(_, _, _)                     => owner.newModule(name, pos, flags)
+        case ObjectDef(_, _, _)                     => owner.newObject(name, pos, flags)
         case PackageDef(pid, _)                     => createPackageSymbol(pos, pid)
         case ValDef(_, _, _, _)                     =>
           if (isParameter) owner.newValueParameter(name, pos, flags)
@@ -293,7 +293,7 @@ trait Namers extends MethodSynthesis {
     private def createPackageSymbol(pos: Position, pid: RefTree): Symbol = {
       val pkgOwner = pid match {
         case Ident(_)                 => if (owner.isEmptyPackageClass) rootMirror.RootClass else owner
-        case Select(qual: RefTree, _) => createPackageSymbol(pos, qual).moduleClass
+        case Select(qual: RefTree, _) => createPackageSymbol(pos, qual).objectClass
       }
       val existing = pkgOwner.info.decls.lookup(pid.name)
 
@@ -301,7 +301,7 @@ trait Namers extends MethodSynthesis {
         existing
       else {
         val pkg          = pkgOwner.newPackage(pid.name.toTermName, pos)
-        val pkgClass     = pkg.moduleClass
+        val pkgClass     = pkg.objectClass
         val pkgClassInfo = new PackageClassInfoType(newPackageScope(pkgClass), pkgClass)
 
         pkgClass setInfo pkgClassInfo
@@ -347,33 +347,33 @@ trait Namers extends MethodSynthesis {
       }
     }
 
-    def enterModuleDef(tree: ModuleDef) = {
-      val sym = enterModuleSymbol(tree)
-      sym.moduleClass setInfo namerOf(sym).moduleClassTypeCompleter(tree)
+    def enterObjectDef(tree: ObjectDef) = {
+      val sym = enterObjectSymbol(tree)
+      sym.objectClass setInfo namerOf(sym).objectClassTypeCompleter(tree)
       sym setInfo completerOf(tree)
     }
 
-    /** Enter a module symbol. The tree parameter can be either
-     *  a module definition or a class definition.
+    /** Enter an object symbol. The tree parameter can be either
+     *  an object definition or a class definition.
      */
-    def enterModuleSymbol(tree : ModuleDef): Symbol = {
+    def enterObjectSymbol(tree: ObjectDef): Symbol = {
       var m: Symbol = context.scope.lookup(tree.name)
-      val moduleFlags = tree.mods.flags | MODULE
-      if (m.isModule && !m.isPackage && inCurrentScope(m) && (currentRun.canRedefine(m) || m.isSynthetic)) {
-        updatePosFlags(m, tree.pos, moduleFlags)
+      val objectFlags = tree.mods.flags | OBJECT
+      if (m.isObject && !m.isPackage && inCurrentScope(m) && (currentRun.canRedefine(m) || m.isSynthetic)) {
+        updatePosFlags(m, tree.pos, objectFlags)
         setPrivateWithin(tree, m)
-        m.moduleClass andAlso (setPrivateWithin(tree, _))
+        m.objectClass andAlso (setPrivateWithin(tree, _))
         context.unit.synthetics -= m
         tree.symbol = m
       }
       else {
         m = assignAndEnterSymbol(tree)
-        m.moduleClass setFlag moduleClassFlags(moduleFlags)
-        setPrivateWithin(tree, m.moduleClass)
+        m.objectClass setFlag objectClassFlags(objectFlags)
+        setPrivateWithin(tree, m.objectClass)
       }
       if (m.owner.isPackageClass && !m.isPackage) {
-        m.moduleClass.sourceFile = contextFile
-        currentRun.symSource(m) = m.moduleClass.sourceFile
+        m.objectClass.sourceFile = contextFile
+        currentRun.symSource(m) = m.objectClass.sourceFile
         registerTopLevelSym(m)
       }
       m
@@ -394,7 +394,7 @@ trait Namers extends MethodSynthesis {
      *  class definition tree.
      *  @return the companion object symbol.
      */
-    def ensureCompanionObject(cdef: ClassDef, creator: ClassDef => Tree = companionModuleDef(_)): Symbol = {
+    def ensureCompanionObject(cdef: ClassDef, creator: ClassDef => Tree = companionObjectDef(_)): Symbol = {
       val m = companionSymbolOf(cdef.symbol, context)
       // @luc: not sure why "currentRun.compiles(m)" is needed, things breaks
       // otherwise. documentation welcome.
@@ -453,7 +453,7 @@ trait Namers extends MethodSynthesis {
         if (from != nme.WILDCARD && base != ErrorType) {
           if (isValid(from)) {
             // for Java code importing Scala objects
-            if (!nme.isModuleName(from) || isValid(nme.stripModuleSuffix(from))) {
+            if (!nme.isObjectName(from) || isValid(nme.stripObjectSuffix(from))) {
               typer.TyperErrorGen.NotAMemberError(tree, expr, from)
               typer.infer.setError(tree)
             }
@@ -569,7 +569,7 @@ trait Namers extends MethodSynthesis {
     }
     def enterPackage(tree: PackageDef) {
       val sym = assignSymbol(tree)
-      newNamer(context.make(tree, sym.moduleClass, sym.info.decls)) enterSyms tree.stats
+      newNamer(context.make(tree, sym.objectClass, sym.info.decls)) enterSyms tree.stats
     }
     def enterTypeDef(tree: TypeDef) = assignAndEnterFinishedSymbol(tree)
 
@@ -596,8 +596,8 @@ trait Namers extends MethodSynthesis {
         if (primaryConstructorArity > MaxFunctionArity)
           MaxParametersCaseClassError(tree)
 
-        val m = ensureCompanionObject(tree, caseModuleDef)
-        m.moduleClass.addAttachment(new ClassForCaseCompanionAttachment(tree))
+        val m = ensureCompanionObject(tree, caseObjectDef)
+        m.objectClass.addAttachment(new ClassForCaseCompanionAttachment(tree))
       }
       val hasDefault = impl.body exists {
         case DefDef(_, nme.CONSTRUCTOR, _, vparamss, _, _)  => mexists(vparamss)(_.mods.hasDefault)
@@ -687,11 +687,11 @@ trait Namers extends MethodSynthesis {
       // }
     }
 
-    def moduleClassTypeCompleter(tree: Tree) = {
+    def objectClassTypeCompleter(tree: Tree) = {
       mkTypeCompleter(tree) { sym =>
-        val moduleSymbol = tree.symbol
-        assert(moduleSymbol.moduleClass == sym, moduleSymbol.moduleClass)
-        moduleSymbol.info // sets moduleClass info as a side effect.
+        val objectSymbol = tree.symbol
+        assert(objectSymbol.objectClass == sym, objectSymbol.objectClass)
+        objectSymbol.info // sets objectClass info as a side effect.
       }
     }
 
@@ -748,7 +748,7 @@ trait Namers extends MethodSynthesis {
 
       // This infers Foo.type instead of "object Foo"
       // See Infer#adjustTypeArgs for the polymorphic case.
-      if (tpe.typeSymbolDirect.isModuleClass) tpe1
+      if (tpe.typeSymbolDirect.isObjectClass) tpe1
       else if (sym.isVariable || sym.isMethod && !sym.hasAccessorFlag)
         if (tpe2 <:< pt) tpe2 else tpe1
       else if (isHidden(tpe)) tpe2
@@ -824,8 +824,8 @@ trait Namers extends MethodSynthesis {
       templateNamer enterSyms templ.body
 
       // add apply and unapply methods to companion objects of case classes,
-      // unless they exist already; here, "clazz" is the module class
-      if (clazz.isModuleClass) {
+      // unless they exist already; here, "clazz" is the object class
+      if (clazz.isObjectClass) {
         clazz.attachments.get[ClassForCaseCompanionAttachment] foreach { cma =>
           val cdef = cma.caseClass
           assert(cdef.mods.isCase, "expected case class: "+ cdef)
@@ -835,10 +835,10 @@ trait Namers extends MethodSynthesis {
 
       // add the copy method to case classes; this needs to be done here, not in SyntheticMethods, because
       // the namer phase must traverse this copy method to create default getters for its parameters.
-      // here, clazz is the ClassSymbol of the case class (not the module). (!clazz.hasModuleFlag) excludes
-      // the moduleClass symbol of the companion object when the companion is a "case object".
-      if (clazz.isCaseClass && !clazz.hasModuleFlag) {
-        val modClass = companionSymbolOf(clazz, context).moduleClass
+      // here, clazz is the ClassSymbol of the case class (not the object). (!clazz.hasObjectFlag) excludes
+      // the objectClass symbol of the companion object when the companion is a "case object".
+      if (clazz.isCaseClass && !clazz.hasObjectFlag) {
+        val modClass = companionSymbolOf(clazz, context).objectClass
         modClass.attachments.get[ClassForCaseCompanionAttachment] foreach { cma =>
           val cdef = cma.caseClass
           def hasCopy(decls: Scope) = (decls lookup nme.copy) != NoSymbol
@@ -850,11 +850,11 @@ trait Namers extends MethodSynthesis {
         }
       }
 
-      // if default getters (for constructor defaults) need to be added to that module, here's the namer
-      // to use. clazz is the ModuleClass. sourceModule works also for classes defined in methods.
-      val module = clazz.sourceModule
-      for (cda <- module.attachments.get[ConstructorDefaultsAttachment]) {
-        cda.companionModuleClassNamer = templateNamer
+      // if default getters (for constructor defaults) need to be added to that object, here's the namer
+      // to use. clazz is the ObjectClass. sourceObject works also for classes defined in methods.
+      val objct = clazz.sourceObject
+      for (cda <- objct.attachments.get[ConstructorDefaultsAttachment]) {
+        cda.companionObjectClassNamer = templateNamer
       }
       ClassInfoType(parents, decls, clazz)
     }
@@ -1033,7 +1033,7 @@ trait Namers extends MethodSynthesis {
 
       // cache the namer used for entering the default getter symbols
       var ownerNamer: Option[Namer] = None
-      var moduleNamer: Option[(ClassDef, Namer)] = None
+      var objectNamer: Option[(ClassDef, Namer)] = None
       var posCounter = 1
 
       // For each value parameter, create the getter method if it has a
@@ -1066,16 +1066,16 @@ trait Namers extends MethodSynthesis {
             }
 
             val parentNamer = if (isConstr) {
-              val (cdef, nmr) = moduleNamer.getOrElse {
-                val module = companionSymbolOf(clazz, context)
-                module.initialize // call type completer (typedTemplate), adds the
-                                  // module's templateNamer to classAndNamerOfModule
-                module.attachments.get[ConstructorDefaultsAttachment] match {
+              val (cdef, nmr) = objectNamer.getOrElse {
+                val objct = companionSymbolOf(clazz, context)
+                objct.initialize // call type completer (typedTemplate), adds the
+                                  // object's templateNamer to classAndNamerOfObject
+                objct.attachments.get[ConstructorDefaultsAttachment] match {
                   // by martin: the null case can happen in IDE; this is really an ugly hack on top of an ugly hack but it seems to work
                   // later by lukas: disabled when fixing SI-5975, i think it cannot happen anymore
-                  case Some(cda) /*if cma.companionModuleClassNamer == null*/ =>
-                    val p = (cda.classWithDefault, cda.companionModuleClassNamer)
-                    moduleNamer = Some(p)
+                  case Some(cda) /*if cma.companionObjectClassNamer == null*/ =>
+                    val p = (cda.classWithDefault, cda.companionObjectClassNamer)
+                    objectNamer = Some(p)
                     p
                   case _ =>
                     return // fix #3649 (prevent crash in erroneous source code)
@@ -1181,13 +1181,13 @@ trait Namers extends MethodSynthesis {
      *  where <ret-val> is the caseClassUnapplyReturnValue of class C (see UnApplies.scala)
      *
      * @param cdef is the class definition of the case class
-     * @param namer is the namer of the module class (the comp. obj)
+     * @param namer is the namer of the object class (the comp. obj)
      */
     def addApplyUnapply(cdef: ClassDef, namer: Namer) {
       if (!cdef.symbol.hasAbstractFlag)
-        namer.enterSyntheticSym(caseModuleApplyMeth(cdef))
+        namer.enterSyntheticSym(caseObjectApplyMeth(cdef))
 
-      namer.enterSyntheticSym(caseModuleUnapplyMeth(cdef))
+      namer.enterSyntheticSym(caseObjectUnapplyMeth(cdef))
     }
 
     def addCopyMethod(cdef: ClassDef, namer: Namer) {
@@ -1223,13 +1223,13 @@ trait Namers extends MethodSynthesis {
 
       val sym: Symbol = tree.symbol
       // @Lukas: I am not sure this is the right way to do things.
-      // We used to only decorate the module class with annotations, which is
+      // We used to only decorate the object class with annotations, which is
       // clearly wrong. Now we decorate both the class and the object.
       // But maybe some annotations are only meant for one of these but not for the other?
       //
       // TODO: meta-annotations to indicate class vs. object.
       annotate(sym)
-      if (sym.isModule) annotate(sym.moduleClass)
+      if (sym.isObject) annotate(sym.objectClass)
 
       def getSig = tree match {
         case cdef @ ClassDef(_, name, tparams, impl) =>
@@ -1243,8 +1243,8 @@ trait Namers extends MethodSynthesis {
           }
           result
 
-        case ModuleDef(_, _, impl) =>
-          val clazz = sym.moduleClass
+        case ObjectDef(_, _, impl) =>
+          val clazz = sym.objectClass
           clazz setInfo createNamer(tree).templateSig(impl)
           clazz.tpe
 
@@ -1411,7 +1411,7 @@ trait Namers extends MethodSynthesis {
         // Does the symbol owner require no undefined members?
         def ownerRequiresConcrete = (
              !sym.owner.isClass
-          ||  sym.owner.isModuleClass
+          ||  sym.owner.isObjectClass
           ||  sym.owner.isAnonymousClass
         )
         if (sym hasAnnotation NativeAttr)
@@ -1510,15 +1510,15 @@ trait Namers extends MethodSynthesis {
   @deprecated("Use underlyingSymbol instead", "2.10.0")
   def underlying(member: Symbol): Symbol = underlyingSymbol(member)
   @deprecated("Use `companionSymbolOf` instead", "2.10.0")
-  def companionClassOf(module: Symbol, ctx: Context): Symbol = companionSymbolOf(module, ctx)
+  def companionClassOf(objct: Symbol, ctx: Context): Symbol = companionSymbolOf(objct, ctx)
   @deprecated("Use `companionSymbolOf` instead", "2.10.0")
-  def companionModuleOf(clazz: Symbol, ctx: Context): Symbol = companionSymbolOf(clazz, ctx)
+  def companionObjectOf(clazz: Symbol, ctx: Context): Symbol = companionSymbolOf(clazz, ctx)
 
-  /** The companion class or companion module of `original`.
-   *  Calling .companionModule does not work for classes defined inside methods.
+  /** The companion class or companion object of `original`.
+   *  Calling .companionObject does not work for classes defined inside methods.
    *
-   *  !!! Then why don't we fix companionModule? Does the presence of these
-   *  methods imply all the places in the compiler calling sym.companionModule are
+   *  !!! Then why don't we fix companionObject? Does the presence of these
+   *  methods imply all the places in the compiler calling sym.companionObject are
    *  bugs waiting to be reported? If not, why not? When exactly do we need to
    *  call this method?
    */
@@ -1526,7 +1526,7 @@ trait Namers extends MethodSynthesis {
     try {
       original.companionSymbol orElse {
         ctx.lookup(original.name.companionName, original.owner).suchThat(sym =>
-          (original.isTerm || sym.hasModuleFlag) &&
+          (original.isTerm || sym.hasObjectFlag) &&
           (sym isCoDefinedWith original)
         )
       }

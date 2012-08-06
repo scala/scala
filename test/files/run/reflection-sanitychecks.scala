@@ -22,7 +22,7 @@ object Test extends App {
     println("field: " + failsafe(im.reflectField(tpe.member(newTermName("foo")).asTerm).get))
     println("method: " + failsafe(im.reflectMethod(tpe.member(newTermName("bar")).asMethod)()))
     println("class: " + failsafe(im.reflectClass(tpe.member(newTypeName("C")).asClass).reflectConstructor(typeOf[C].member(newTypeName("C")).asClass.typeSignature.member(newTermName("<init>")).asMethod)()))
-    println("object: " + failsafe(im.reflectModule(tpe.member(newTermName("O")).asModule).instance))
+    println("object: " + failsafe(im.reflectObject(tpe.member(newTermName("O")).asObject).instance))
   }
 
   test(typeOf[C])

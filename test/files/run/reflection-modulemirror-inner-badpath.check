@@ -1,2 +1,2 @@
-object R is an inner module, use reflectModule on an InstanceMirror to obtain its ModuleMirror
+object R is an inner object, use reflectObject on an InstanceMirror to obtain its ObjectMirror
 ()

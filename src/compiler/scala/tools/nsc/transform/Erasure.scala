@@ -201,7 +201,7 @@ abstract class Erasure extends AddInterfaces
       else tparams map paramSig mkString ("<", "", ">")
     )
 
-    // Anything which could conceivably be a module (i.e. isn't known to be
+    // Anything which could conceivably be an object (i.e. isn't known to be
     // a type parameter or similar) must go through here or the signature is
     // likely to end up with Foo<T>.Empty where it needs Foo<T>.Empty$.
     def fullNameInSig(sym: Symbol) = "L" + beforeIcode(sym.javaBinaryName)
@@ -452,7 +452,7 @@ abstract class Erasure extends AddInterfaces
         val pt        = member.tpe.resultType
         lazy val zero =
           if      (_false.tpe <:< pt)    _false
-          else if (NoneModule.tpe <:< pt) REF(NoneModule)
+          else if (NoneObject.tpe <:< pt) REF(NoneObject)
           else EmptyTree
 
         if (guardExtractor && (zero ne EmptyTree)) {

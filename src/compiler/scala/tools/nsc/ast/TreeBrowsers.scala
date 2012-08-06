@@ -385,7 +385,7 @@ abstract class TreeBrowsers {
       case PackageDef(pid, stats) =>
         stats
 
-      case ModuleDef(mods, name, impl) =>
+      case ObjectDef(mods, name, impl) =>
         mods.annotations ::: List(impl)
 
       case ValDef(mods, name, tpe, rhs) =>

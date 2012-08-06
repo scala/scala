@@ -22,7 +22,7 @@ trait FlagSets extends api.FlagSets { self: SymbolTable =>
 
   object Flag extends FlagValues {
     val TRAIT         : FlagSet = Flags.TRAIT
-    val MODULE        : FlagSet = Flags.MODULE
+    val OBJECT        : FlagSet = Flags.OBJECT
     val MUTABLE       : FlagSet = Flags.MUTABLE
     val PACKAGE       : FlagSet = Flags.PACKAGE
     val METHOD        : FlagSet = Flags.METHOD

@@ -242,7 +242,7 @@ trait Trees extends api.Trees { self: SymbolTable =>
       case TypeDef(_, _, _, _)      => "type"
       case ClassDef(mods, _, _, _)  => if (mods hasFlag TRAIT) "trait" else "class"
       case DefDef(_, _, _, _, _, _) => "def"
-      case ModuleDef(_, _, _)       => "object"
+      case ObjectDef(_, _, _)       => "object"
       case PackageDef(_, _)         => "package"
       case ValDef(mods, _, _, _)    => if (mods hasFlag MUTABLE) "var" else "val"
       case _ => ""
@@ -264,9 +264,9 @@ trait Trees extends api.Trees { self: SymbolTable =>
        extends ImplDef with ClassDefApi
   object ClassDef extends ClassDefExtractor
 
-  case class ModuleDef(mods: Modifiers, name: TermName, impl: Template)
-        extends ImplDef with ModuleDefApi
-  object ModuleDef extends ModuleDefExtractor
+  case class ObjectDef(mods: Modifiers, name: TermName, impl: Template)
+        extends ImplDef with ObjectDefApi
+  object ObjectDef extends ObjectDefExtractor
 
   abstract class ValOrDefDef extends MemberDef with ValOrDefDefApi {
     def name: Name
@@ -497,8 +497,8 @@ trait Trees extends api.Trees { self: SymbolTable =>
       new ClassDef(mods, name.toTypeName, tparams, impl).copyAttrs(tree)
     def PackageDef(tree: Tree, pid: RefTree, stats: List[Tree]) =
       new PackageDef(pid, stats).copyAttrs(tree)
-    def ModuleDef(tree: Tree, mods: Modifiers, name: Name, impl: Template) =
-      new ModuleDef(mods, name.toTermName, impl).copyAttrs(tree)
+    def ObjectDef(tree: Tree, mods: Modifiers, name: Name, impl: Template) =
+      new ObjectDef(mods, name.toTermName, impl).copyAttrs(tree)
     def ValDef(tree: Tree, mods: Modifiers, name: Name, tpt: Tree, rhs: Tree) =
       new ValDef(mods, name.toTermName, tpt, rhs).copyAttrs(tree)
     def DefDef(tree: Tree, mods: Modifiers, name: Name, tparams: List[TypeDef], vparamss: List[List[ValDef]], tpt: Tree, rhs: Tree) =
@@ -598,10 +598,10 @@ trait Trees extends api.Trees { self: SymbolTable =>
       if (pid0 == pid) && (stats0 == stats) => t
       case _ => treeCopy.PackageDef(tree, pid, stats)
     }
-    def ModuleDef(tree: Tree, mods: Modifiers, name: Name, impl: Template) = tree match {
-      case t @ ModuleDef(mods0, name0, impl0)
+    def ObjectDef(tree: Tree, mods: Modifiers, name: Name, impl: Template) = tree match {
+      case t @ ObjectDef(mods0, name0, impl0)
       if (mods0 == mods) && (name0 == name) && (impl0 == impl) => t
-      case _ => treeCopy.ModuleDef(tree, mods, name, impl)
+      case _ => treeCopy.ObjectDef(tree, mods, name, impl)
     }
     def ValDef(tree: Tree, mods: Modifiers, name: Name, tpt: Tree, rhs: Tree) = tree match {
       case t @ ValDef(mods0, name0, tpt0, rhs0)
@@ -900,9 +900,9 @@ trait Trees extends api.Trees { self: SymbolTable =>
    *  @param sym       the class symbol
    *  @param impl      the implementation template
    */
-  def ModuleDef(sym: Symbol, impl: Template): ModuleDef =
+  def ObjectDef(sym: Symbol, impl: Template): ObjectDef =
     atPos(sym.pos) {
-      ModuleDef(Modifiers(sym.flags), sym.name.toTermName, impl) setSymbol sym
+      ObjectDef(Modifiers(sym.flags), sym.name.toTermName, impl) setSymbol sym
     }
 
   def ValDef(sym: Symbol, rhs: Tree): ValDef =
@@ -1048,7 +1048,7 @@ trait Trees extends api.Trees { self: SymbolTable =>
         atOwner(tree.symbol) {
           traverseTrees(mods.annotations); traverseTrees(tparams); traverse(impl)
         }
-      case ModuleDef(mods, name, impl) =>
+      case ObjectDef(mods, name, impl) =>
         atOwner(mclass(tree.symbol)) {
           traverseTrees(mods.annotations); traverse(impl)
         }
@@ -1164,9 +1164,9 @@ trait Trees extends api.Trees { self: SymbolTable =>
           treeCopy.ClassDef(tree, transformModifiers(mods), name,
                             transformTypeDefs(tparams), transformTemplate(impl))
         }
-      case ModuleDef(mods, name, impl) =>
+      case ObjectDef(mods, name, impl) =>
         atOwner(mclass(tree.symbol)) {
-          treeCopy.ModuleDef(tree, transformModifiers(mods),
+          treeCopy.ObjectDef(tree, transformModifiers(mods),
                              name, transformTemplate(impl))
         }
       case ValDef(mods, name, tpt, rhs) =>
@@ -1266,7 +1266,7 @@ trait Trees extends api.Trees { self: SymbolTable =>
     }
   }
 
-  private def mclass(sym: Symbol) = sym map (_.asModule.moduleClass)
+  private def mclass(sym: Symbol) = sym map (_.asObject.objectClass)
 
   // --- specific traversers and transformers
 
@@ -1522,11 +1522,11 @@ trait Trees extends api.Trees { self: SymbolTable =>
     case t =>
       sys.error("Not a ClassDef: " + t + "/" + t.getClass)
   }
-  def deriveModuleDef(mdef: Tree)(applyToImpl: Template => Template): ModuleDef = mdef match {
-    case ModuleDef(mods0, name0, impl0) =>
-      treeCopy.ModuleDef(mdef, mods0, name0, applyToImpl(impl0))
+  def deriveObjectDef(odef: Tree)(applyToImpl: Template => Template): ObjectDef = odef match {
+    case ObjectDef(mods0, name0, impl0) =>
+      treeCopy.ObjectDef(odef, mods0, name0, applyToImpl(impl0))
     case t =>
-      sys.error("Not a ModuleDef: " + t + "/" + t.getClass)
+      sys.error("Not a ObjectDef: " + t + "/" + t.getClass)
   }
   def deriveCaseDef(cdef: Tree)(applyToBody: Tree => Tree): CaseDef = cdef match {
     case CaseDef(pat0, guard0, body0) =>
@@ -1552,7 +1552,7 @@ trait Trees extends api.Trees { self: SymbolTable =>
   implicit val PackageDefTag = ClassTag[PackageDef](classOf[PackageDef])
   implicit val ImplDefTag = ClassTag[ImplDef](classOf[ImplDef])
   implicit val ClassDefTag = ClassTag[ClassDef](classOf[ClassDef])
-  implicit val ModuleDefTag = ClassTag[ModuleDef](classOf[ModuleDef])
+  implicit val ObjectDefTag = ClassTag[ObjectDef](classOf[ObjectDef])
   implicit val ValOrDefDefTag = ClassTag[ValOrDefDef](classOf[ValOrDefDef])
   implicit val ValDefTag = ClassTag[ValDef](classOf[ValDef])
   implicit val DefDefTag = ClassTag[DefDef](classOf[DefDef])

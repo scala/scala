@@ -42,13 +42,13 @@ trait Symbols { self: Universe =>
    */
   implicit val MethodSymbolTag: ClassTag[MethodSymbol]
 
-  /** The abstract type of module symbols representing object declarations */
-  type ModuleSymbol >: Null <: TermSymbol with ModuleSymbolBase
+  /** The abstract type of object symbols representing object declarations */
+  type ObjectSymbol >: Null <: TermSymbol with ObjectSymbolBase
 
-  /** A tag that preserves the identity of the `ModuleSymbol` abstract type from erasure.
+  /** A tag that preserves the identity of the `ObjectSymbol` abstract type from erasure.
    *  Can be used for pattern matching, instance tests, serialization and likes.
    */
-  implicit val ModuleSymbolTag: ClassTag[ModuleSymbol]
+  implicit val ObjectSymbolTag: ClassTag[ObjectSymbol]
 
   /** The abstract type of class symbols representing class and trait definitions */
   type ClassSymbol >: Null <: TypeSymbol with ClassSymbolBase
@@ -142,16 +142,16 @@ trait Symbols { self: Universe =>
      */
     def asMethod: MethodSymbol = throw new ClassCastException(toString)
 
-    /** Does this symbol represent the definition of a module (i.e. it
+    /** Does this symbol represent the definition of an object (i.e. it
      *  results from an object definition?).
      *  If yes, `isTerm` is also guaranteed to be true.
      */
-    def isModule: Boolean = false
+    def isObject: Boolean = false
 
-    /** This symbol cast to a ModuleSymbol defined by an object definition.
-     *  Returns ClassCastException if `isModule` is false.
+    /** This symbol cast to a ObjectSymbol defined by an object definition.
+     *  Returns ClassCastException if `isObject` is false.
      */
-    def asModule: ModuleSymbol = throw new ClassCastException(toString)
+    def asObject: ObjectSymbol = throw new ClassCastException(toString)
 
     /** Does this symbol represent the definition of a class or trait?
      *  If yes, `isType` is also guaranteed to be true.
@@ -159,10 +159,10 @@ trait Symbols { self: Universe =>
     def isClass: Boolean = false
 
     /** Does this symbol represent the definition of a class implicitly associated
-     *  with an object definition (module class in scala compiler parlance).
+     *  with an object definition (object class in scala compiler parlance).
      *  If yes, `isType` is also guaranteed to be true.
      */
-    def isModuleClass: Boolean = false
+    def isObjectClass: Boolean = false
 
     /** This symbol cast to a ClassSymbol representing a class or trait.
      *  Returns ClassCastException if `isClass` is false.
@@ -190,7 +190,7 @@ trait Symbols { self: Universe =>
     def asFreeType: FreeTypeSymbol = throw new ClassCastException(toString)
 
     def newTermSymbol(name: TermName, pos: Position = NoPosition, flags: FlagSet = NoFlags): TermSymbol
-    def newModuleAndClassSymbol(name: Name, pos: Position = NoPosition, flags: FlagSet = NoFlags): (ModuleSymbol, ClassSymbol)
+    def newObjectAndClassSymbol(name: Name, pos: Position = NoPosition, flags: FlagSet = NoFlags): (ObjectSymbol, ClassSymbol)
     def newMethodSymbol(name: TermName, pos: Position = NoPosition, flags: FlagSet = NoFlags): MethodSymbol
     def newTypeSymbol(name: TypeName, pos: Position = NoPosition, flags: FlagSet = NoFlags): TypeSymbol
     def newClassSymbol(name: TypeName, pos: Position = NoPosition, flags: FlagSet = NoFlags): ClassSymbol
@@ -249,17 +249,17 @@ trait Symbols { self: Universe =>
     final override def asMethod = this
   }
 
-  /** The base API that all module symbols support */
-  trait ModuleSymbolBase extends TermSymbolBase { this: ModuleSymbol =>
+  /** The base API that all object symbols support */
+  trait ObjectSymbolBase extends TermSymbolBase { this: ObjectSymbol =>
     /** The class implicitly associated with the object definition.
-     *  One can go back from a module class to the associated module symbol
+     *  One can go back from a object class to the associated object symbol
      *  by inspecting its `selfType.termSymbol`.
      */
-    def moduleClass: Symbol // needed for tree traversals
-    // [Eugene++] when this becomes `moduleClass: ClassSymbol`, it will be the happiest day in my life
+    def objectClass: Symbol // needed for tree traversals
+    // [Eugene++] when this becomes `objectClass: ClassSymbol`, it will be the happiest day in my life
 
-    final override def isModule = true
-    final override def asModule = this
+    final override def isObject = true
+    final override def asObject = this
   }
 
   /** The base API that all class symbols support */

@@ -10,7 +10,7 @@
 
 package scala
 
-/** A module defining utility methods for higher-order functional programming.
+/** An object defining utility methods for higher-order functional programming.
  *
  *  @author  Martin Odersky
  *  @version 1.0, 29/11/2006

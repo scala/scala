@@ -22,7 +22,7 @@ import scala.collection.{ mutable, immutable }
 //  5:         FINAL/M
 //  6:          METHOD
 //  7:     INTERFACE/M
-//  8:          MODULE
+//  8:          OBJECT
 //  9:      IMPLICIT/M
 // 10:        SEALED/M
 // 11:          CASE/M
@@ -44,7 +44,7 @@ import scala.collection.{ mutable, immutable }
 // 27:        ACCESSOR
 // 28:   SUPERACCESSOR
 // 29: PARAMACCESSOR/M
-// 30:       MODULEVAR
+// 30:       OBJECTVAR
 // 31:          LAZY/M
 // 32:        IS_ERROR
 // 33:      OVERLOADED
@@ -69,7 +69,7 @@ import scala.collection.{ mutable, immutable }
 // 52:       lateFINAL
 // 53:      lateMETHOD
 // 54:   lateINTERFACE
-// 55:      lateMODULE
+// 55:      lateOBJECT
 // 56:    notPROTECTED
 // 57:     notOVERRIDE
 // 58:      notPRIVATE
@@ -129,7 +129,7 @@ object ModifierFlags extends ModifierFlags
 /** All flags and associated operatins */
 class Flags extends ModifierFlags {
   final val METHOD        = 1 << 6        // a method
-  final val MODULE        = 1 << 8        // symbol is module or class implementing a module
+  final val OBJECT        = 1 << 8        // symbol is object or class implementing a object
   final val PACKAGE       = 1 << 14       // symbol is a java package
 
   final val CAPTURED      = 1 << 16       // variable is accessed from nested function.  Set by LambdaLift.
@@ -143,7 +143,7 @@ class Flags extends ModifierFlags {
   final val ACCESSOR      = 1 << 27       // a value or variable accessor (getter or setter)
 
   final val SUPERACCESSOR = 1 << 28       // a super accessor
-  final val MODULEVAR     = 1 << 30       // for variables: is the variable caching a module value
+  final val OBJECTVAR     = 1 << 30       // for variables: is the variable caching a object value
 
   final val IS_ERROR      = 1L << 32      // symbol is an error symbol
   final val OVERLOADED    = 1L << 33      // symbol is overloaded
@@ -200,14 +200,14 @@ class Flags extends ModifierFlags {
   // notPROTECTED set in ExplicitOuter#transform.
   // lateDEFERRED set in AddInterfaces, Mixin, etc.
   // lateINTERFACE set in AddInterfaces#transformMixinInfo.
-  // lateMODULE set in Mixin#transformInfo.
+  // lateOBJECT set in Mixin#transformInfo.
   // notOVERRIDE set in Mixin#preTransform.
 
   final val lateDEFERRED  = (DEFERRED: Long) << LateShift
   final val lateFINAL     = (FINAL: Long) << LateShift
   final val lateINTERFACE = (INTERFACE: Long) << LateShift
   final val lateMETHOD    = (METHOD: Long) << LateShift
-  final val lateMODULE    = (MODULE: Long) << LateShift
+  final val lateOBJECT    = (OBJECT: Long) << LateShift
 
   final val notOVERRIDE   = (OVERRIDE: Long) << AntiShift
   final val notPRIVATE    = (PRIVATE: Long) << AntiShift
@@ -219,11 +219,11 @@ class Flags extends ModifierFlags {
    */
   final val AllFlags = -1L
   
-  /** These flags can be set when class or module symbol is first created.
+  /** These flags can be set when class or object symbol is first created.
    *  They are the only flags to survive a call to resetFlags().
    */
   final val TopLevelCreationFlags =
-    MODULE | PACKAGE | FINAL | JAVA
+    OBJECT | PACKAGE | FINAL | JAVA
 
   // TODO - there's no call to slap four flags onto every package.
   final val PackageFlags = TopLevelCreationFlags
@@ -231,7 +231,7 @@ class Flags extends ModifierFlags {
   // FINAL not included here due to possibility of object overriding.
   // In fact, FINAL should not be attached regardless.  We should be able
   // to reconstruct whether an object was marked final in source.
-  final val ModuleFlags = MODULE
+  final val ObjectFlags = OBJECT
 
   /** These modifiers can be set explicitly in source programs.  This is
    *  used only as the basis for the default flag mask (which ones to display
@@ -283,8 +283,8 @@ class Flags extends ModifierFlags {
    */
   final val ConstrFlags = JAVA
 
-  /** Module flags inherited by their module-class */
-  final val ModuleToClassFlags = AccessFlags | TopLevelCreationFlags | CASE | SYNTHETIC
+  /** Object flags inherited by their object-class */
+  final val ObjectToClassFlags = AccessFlags | TopLevelCreationFlags | CASE | SYNTHETIC
 
   /** These flags are not pickled */
   final val FlagsNotPickled = IS_ERROR | OVERLOADED | LIFTED | TRANS_FLAG | LOCKED | TRIEDCOOKING
@@ -319,7 +319,7 @@ class Flags extends ModifierFlags {
   private final val ABSTRACT_PKL   = (1 << 7)
   private final val DEFERRED_PKL   = (1 << 8)
   private final val METHOD_PKL     = (1 << 9)
-  private final val MODULE_PKL     = (1 << 10)
+  private final val OBJECT_PKL     = (1 << 10)
   private final val INTERFACE_PKL  = (1 << 11)
 
   private final val PKL_MASK       = 0x00000FFF
@@ -332,7 +332,7 @@ class Flags extends ModifierFlags {
     (PROTECTED, PROTECTED_PKL),
     (CASE, CASE_PKL),
     (DEFERRED, DEFERRED_PKL),
-    (MODULE, MODULE_PKL),
+    (OBJECT, OBJECT_PKL),
     (OVERRIDE, OVERRIDE_PKL),
     (INTERFACE, INTERFACE_PKL),
     (IMPLICIT, IMPLICIT_PKL),
@@ -376,7 +376,7 @@ class Flags extends ModifierFlags {
     case               FINAL => "final"                               // (1L << 5)
     case              METHOD => "<method>"                            // (1L << 6)
     case           INTERFACE => "<interface>"                         // (1L << 7)
-    case              MODULE => "<module>"                            // (1L << 8)
+    case              OBJECT => "<module>"                            // (1L << 8)
     case            IMPLICIT => "implicit"                            // (1L << 9)
     case              SEALED => "sealed"                              // (1L << 10)
     case                CASE => "case"                                // (1L << 11)
@@ -398,7 +398,7 @@ class Flags extends ModifierFlags {
     case            ACCESSOR => "<accessor>"                          // (1L << 27)
     case       SUPERACCESSOR => "<superaccessor>"                     // (1L << 28)
     case       PARAMACCESSOR => "<paramaccessor>"                     // (1L << 29)
-    case           MODULEVAR => "<modulevar>"                         // (1L << 30)
+    case           OBJECTVAR => "<modulevar>"                         // (1L << 30)
     case                LAZY => "lazy"                                // (1L << 31)
     case            IS_ERROR => "<is_error>"                          // (1L << 32)
     case          OVERLOADED => "<overloaded>"                        // (1L << 33)
@@ -423,7 +423,7 @@ class Flags extends ModifierFlags {
     case         `lateFINAL` => "<latefinal>"                         // (1L << 52)
     case        `lateMETHOD` => "<latemethod>"                        // (1L << 53)
     case     `lateINTERFACE` => "<lateinterface>"                     // (1L << 54)
-    case        `lateMODULE` => "<latemodule>"                        // (1L << 55)
+    case        `lateOBJECT` => "<latemodule>"                        // (1L << 55)
     case      `notPROTECTED` => "<notprotected>"                      // (1L << 56)
     case       `notOVERRIDE` => "<notoverride>"                       // (1L << 57)
     case        `notPRIVATE` => "<notprivate>"                        // (1L << 58)
