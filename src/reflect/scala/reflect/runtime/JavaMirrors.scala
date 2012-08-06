@@ -20,6 +20,7 @@ import internal.Flags._
 //import scala.tools.nsc.util.ScalaClassLoader._
 import ReflectionUtils.{singletonInstance}
 import language.existentials
+import scala.runtime.ScalaRunTime
 
 trait JavaMirrors extends internal.SymbolTable with api.JavaUniverse { self: SymbolTable =>
 
@@ -152,8 +153,15 @@ trait JavaMirrors extends internal.SymbolTable with api.JavaUniverse { self: Sym
 
     def moduleSymbol(rtcls: RuntimeClass): ModuleSymbol = classToScala(rtcls).companionModule.asModule
 
-    private def checkMemberOf(wannabe: Symbol, owner: Symbol) =
-      if (!owner.info.member(wannabe.name).alternatives.contains(wannabe)) ErrorNotMember(wannabe, owner)
+    private def checkMemberOf(wannabe: Symbol, owner: ClassSymbol) {
+      if (wannabe.owner == AnyClass || wannabe.owner == AnyRefClass || wannabe.owner == ObjectClass) {
+       // do nothing
+      } else if (wannabe.owner == AnyValClass) {
+        if (!owner.isPrimitiveValueClass && !owner.isDerivedValueClass) ErrorNotMember(wannabe, owner)
+      } else {
+        if (!owner.info.member(wannabe.name).alternatives.contains(wannabe)) ErrorNotMember(wannabe, owner)
+      }
+    }
 
     private class JavaInstanceMirror(obj: AnyRef)
             extends InstanceMirror {
@@ -237,16 +245,56 @@ trait JavaMirrors extends internal.SymbolTable with api.JavaUniverse { self: Sym
         if (!jmeth.isAccessible) jmeth.setAccessible(true)
         jmeth
       }
-      def apply(args: Any*): Any =
-        if (symbol.owner == ArrayClass)
-          symbol.name match {
-            case nme.length => jArray.getLength(receiver)
-            case nme.apply => jArray.get(receiver, args(0).asInstanceOf[Int])
-            case nme.update => jArray.set(receiver, args(0).asInstanceOf[Int], args(1))
-            case _ => assert(false, s"unexpected array method: $symbol")
+      def apply(args: Any*): Any = {
+        // checking type conformance is too much of a hassle, so we don't do it here
+        // it will be checked either by Java reflection or by asInstanceOf casts when calling magic methods
+        val params = symbol.paramss.flatten
+        val perfectMatch = args.length == params.length
+        val varargMatch = args.length >= params.length - 1 && isVarArgsList(params)
+        if (!perfectMatch && !varargMatch) {
+          val n_arguments = if (isVarArgsList(params)) s"${params.length - 1} or more" else s"${params.length}"
+          var s_arguments = if (params.length == 1 && !isVarArgsList(params)) "argument" else "arguments"
+          throw new ScalaReflectionException(s"${showMethodSig(symbol)} takes $n_arguments $s_arguments")
+        }
+
+        def applyCore(args: Any*): Any = {
+          // todo. after https://issues.scala-lang.org/browse/SI-6179 is fixed
+          // implement reflective invocation for methods of primitive and derived value classes
+          // also what about fields and constructors of those?
+
+          symbol match {
+            case Any_== | Any_equals | Object_== => ScalaRunTime.inlinedEquals(receiver, args(0).asInstanceOf[AnyRef])
+            case Any_!= | Object_!= => !ScalaRunTime.inlinedEquals(receiver, args(0).asInstanceOf[AnyRef])
+            case Any_## | Any_hashCode | Object_## => ScalaRunTime.hash(receiver)
+            case Any_toString => receiver.toString
+            case Object_eq => receiver eq args(0).asInstanceOf[AnyRef]
+            case Object_ne => receiver ne args(0).asInstanceOf[AnyRef]
+            case Object_synchronized => receiver.synchronized(args(0))
+            case Any_asInstanceOf => throw new ScalaReflectionException("Any.asInstanceOf requires a type argument, it cannot be invoked with mirrors")
+            case Any_isInstanceOf => throw new ScalaReflectionException("Any.isInstanceOf requires a type argument, it cannot be invoked with mirrors")
+            case Object_asInstanceOf => throw new ScalaReflectionException("AnyRef.$asInstanceOf is an internal method, it cannot be invoked with mirrors")
+            case Object_isInstanceOf => throw new ScalaReflectionException("AnyRef.$isInstanceOf is an internal method, it cannot be invoked with mirrors")
+            case getClass if getClass.name.toString == "getClass" && params.isEmpty => receiver.getClass
+            case Array_length => ScalaRunTime.array_length(receiver)
+            case Array_apply => ScalaRunTime.array_apply(receiver, args(0).asInstanceOf[Int])
+            case Array_update => ScalaRunTime.array_update(receiver, args(0).asInstanceOf[Int], args(1))
+            case Array_clone => ScalaRunTime.array_clone(receiver)
+            case String_+ => receiver.toString + args(0)
+            case sym if sym == Predef_classOf => throw new ScalaReflectionException("Predef.classOf is a compile-time function, it cannot be invoked with mirrors")
+            case sym if sym.isTermMacro => throw new ScalaReflectionException(s"${symbol.fullName} is a macro, i.e. a compile-time function, it cannot be invoked with mirrors")
+            case _ => jmeth.invoke(receiver, args.asInstanceOf[Seq[AnyRef]]: _*)
           }
-        else
-          jmeth.invoke(receiver, args.asInstanceOf[Seq[AnyRef]]: _*)
+        }
+
+        // parameters cannot be both by-name and varargs
+        // http://groups.google.com/group/scala-internals/browse_thread/thread/49e96e38bf66054f
+        // so byname-to-thunk conversion is as simple as that
+        applyCore(args zip params map {
+          case (arg, param) if isByNameParamType(param.info) => () => arg
+          case (arg, _) => arg
+        }: _*)
+      }
+
       override def toString = s"method mirror for ${showMethodSig(symbol)} (bound to $receiver)"
     }
 
@@ -259,6 +307,9 @@ trait JavaMirrors extends internal.SymbolTable with api.JavaUniverse { self: Sym
         jconstr
       }
       def apply(args: Any*): Any = {
+        if (symbol.owner == ArrayClass)
+          throw new ScalaReflectionException("Cannot instantiate arrays with mirrors. Consider using `scala.reflect.ClassTag(<class of element>).newArray(<length>)` instead")
+
         val effectiveArgs =
           if (outer == null) args.asInstanceOf[Seq[AnyRef]]
           else outer +: args.asInstanceOf[Seq[AnyRef]]
