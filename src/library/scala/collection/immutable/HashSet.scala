@@ -269,6 +269,7 @@ object HashSet extends ImmutableSetFactory[HashSet] {
       var tgtOffset = 0
       var bitmapNew = 0
       var elemsNew: Array[HashSet[A]] = null
+	  var sizeNew = 0
       // iterate over all 32 indices even though just a few of them might be occupied.
       while (index < 32) {
         val mask = (1 << index)
@@ -286,6 +287,7 @@ object HashSet extends ImmutableSetFactory[HashSet] {
               }
               elemsNew(tgtOffset) = subNew
             }
+			sizeNew += subNew.size
             bitmapNew |= mask
             tgtOffset += 1
           }
@@ -304,14 +306,14 @@ object HashSet extends ImmutableSetFactory[HashSet] {
       else if (tgtOffset == 1)
       // we don't need a HashTrieSet with one element
         elemsNew(0)
-      else if (tgtOffset == size0)
+      else if (tgtOffset == offset)
       // use elemsNew as is
-        if(elemsNew eq elems) this else new HashTrieSet[A](bitmapNew, elemsNew, tgtOffset)
+        if(elemsNew eq elems) this else new HashTrieSet[A](bitmapNew, elemsNew, sizeNew)
       else {
         // resize elemsNew
         val elemsNew2 = new Array[HashSet[A]](tgtOffset)
         Array.copy(elemsNew, 0, elemsNew2, 0, tgtOffset)
-        new HashTrieSet[A](bitmapNew, elemsNew2, tgtOffset)
+        new HashTrieSet[A](bitmapNew, elemsNew2, sizeNew)
       }
     }
 
