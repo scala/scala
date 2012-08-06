@@ -981,8 +981,8 @@ abstract class Inliners extends SubComponent {
           return DontInlineHere("too low score (heuristics)")
         }
 
-        if(inc.hasHandlers && (stackLength != 0)) {
-          // TODO pending return DontInlineHere("callee contains exception handlers / finally clause, and is invoked with non-empty operand stack") // SI-6157
+        if(inc.hasHandlers && (stackLength > inc.minimumStack)) {
+          return DontInlineHere("callee contains exception handlers / finally clause, and is invoked with non-empty operand stack") // SI-6157
         }
 
         if(isKnownToInlineSafely) { return InlineableAtThisCaller }
