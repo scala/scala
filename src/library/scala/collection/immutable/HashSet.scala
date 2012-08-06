@@ -166,6 +166,7 @@ object HashSet extends ImmutableSetFactory[HashSet] {
 
     protected override def filter0(p: A => Boolean) : HashSet[A] = {
       val ks1 = ks.filter(p)
+	  // call to ListSet.size is O(N), and ks1.head might also be inefficient. 
       ks1.size match {
         case 0 => HashSet.empty[A]
         case 1 => new HashSet1(ks1.head, hash)
