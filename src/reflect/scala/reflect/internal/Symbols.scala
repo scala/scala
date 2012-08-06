@@ -64,6 +64,8 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
 
     def kind: String = kindString
     def isExistential: Boolean = this.isExistentiallyBound
+    def isParamWithDefault: Boolean = this.hasDefault
+    def isByNameParam: Boolean = this.isValueParameter && (this hasFlag BYNAMEPARAM)
 
     def newNestedSymbol(name: Name, pos: Position, newFlags: Long, isClass: Boolean): Symbol = name match {
       case n: TermName => newTermSymbol(n, pos, newFlags)
@@ -2495,6 +2497,8 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     }
 
     override def params: List[List[Symbol]] = paramss
+
+    override def isVarargs: Boolean = definitions.isVarArgsList(paramss.flatten)
 
     override def returnType: Type = {
       def loop(tpe: Type): Type =
