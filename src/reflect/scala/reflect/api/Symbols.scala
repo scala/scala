@@ -158,9 +158,21 @@ trait Symbols extends base.Symbols { self: Universe =>
      */
     def isOverride: Boolean
 
+    /** Is this symbol labelled as "abstract override"?
+     */
+    def isAbstractOverride: Boolean
+
     /** Is this symbol a macro?
      */
     def isMacro: Boolean
+
+    /** Is this symbol a parameter (either a method parameter or a type parameter)?
+     */
+    def isParameter: Boolean
+
+    /** Is this symbol a specialized type parameter or a generated specialized member?
+     */
+    def isSpecialized: Boolean
 
     /******************* helpers *******************/
 
@@ -240,6 +252,25 @@ trait Symbols extends base.Symbols { self: Universe =>
     /** Setter method for a backing field of a val or a val, NoSymbol for all other term symbols.
      */
     def setter: Symbol
+
+    /** Does this symbol represent a field of a class
+     *  that was generated from a parameter of that class?
+     */
+    def isParamAccessor: Boolean
+
+    /** Does this symbol represent a field of a case class
+     *  that corresponds to a parameter in the first parameter list of the
+     *  primary constructor of that class?
+     */
+    def isCaseAccessor: Boolean
+
+    /** Does this symbol represent a parameter with a default value?
+     */
+    def isParamWithDefault: Boolean
+
+    /** Does this symbol represent a by-name parameter?
+     */
+    def isByNameParam: Boolean
   }
 
   /** The API of type symbols */
@@ -275,6 +306,13 @@ trait Symbols extends base.Symbols { self: Universe =>
 
   /** The API of method symbols */
   trait MethodSymbolApi extends TermSymbolApi with MethodSymbolBase { this: MethodSymbol =>
+    /** Does this method represent a constructor?
+     *
+     *  If `owner` is a class, then this is a vanilla JVM constructor.
+     *  If `owner` is a trait, then this is a mixin constructor.
+     */
+    def isConstructor: Boolean
+
     /** For a polymorphic method, its type parameters, the empty list for all other methods */
     def typeParams: List[Symbol]
 
@@ -285,6 +323,10 @@ trait Symbols extends base.Symbols { self: Universe =>
      *  For a method with an empty parameter list, returns a list that contains the empty list (i.e. `List(List())`).
      */
     def params: List[List[Symbol]]
+
+    /** Does this method support variable length argument lists?
+     */
+    def isVarargs: Boolean
 
     /** The return type of the method */
     def returnType: Type
