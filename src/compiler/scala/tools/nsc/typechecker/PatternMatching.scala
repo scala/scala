@@ -1043,8 +1043,9 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
 
         def outerTest(testedBinder: Symbol, expectedTp: Type): Tree = {
           val expectedOuter = expectedTp.prefix match {
-            case ThisType(clazz)  => THIS(clazz)
-            case pre              => REF(pre.prefix, pre.termSymbol)
+            case ThisType(clazz)      => THIS(clazz)
+            case pre if pre != NoType => REF(pre.prefix, pre.termSymbol)
+            case _ => TRUE_typed // fallback for SI-6183
           }
 
           // ExplicitOuter replaces `Select(q, outerSym) OBJ_EQ expectedPrefix` by `Select(q, outerAccessor(outerSym.owner)) OBJ_EQ expectedPrefix`
