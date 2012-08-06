@@ -68,7 +68,7 @@ testing Object.==: true
 testing Object.clone: class java.lang.CloneNotSupportedException: java.lang.String
 testing Object.eq: true
 testing Object.equals: true
-testing Object.finalize: null
+testing Object.finalize: ()
 testing Object.getClass: class java.lang.String
 testing Object.hashCode: 50
 testing Object.ne: false

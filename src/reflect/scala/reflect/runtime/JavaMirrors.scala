@@ -280,19 +280,25 @@ trait JavaMirrors extends internal.SymbolTable with api.JavaUniverse { self: Sym
         jmeth
       }
 
+      def jinvoke(jmeth: jMethod, receiver: Any, args: Seq[Any]): Any = {
+        val result = jmeth.invoke(receiver, args.asInstanceOf[Seq[AnyRef]]: _*)
+        if (jmeth.getReturnType == java.lang.Void.TYPE) ()
+        else result
+      }
+
       override def toString = s"method mirror for ${showMethodSig(symbol)} (bound to $receiver)"
     }
 
     private class JavaVanillaMethodMirror(val receiver: Any, symbol: MethodSymbol)
             extends JavaMethodMirror(symbol) {
-      def apply(args: Any*): Any = jmeth.invoke(receiver, args.asInstanceOf[Seq[AnyRef]]: _*)
+      def apply(args: Any*): Any = jinvoke(jmeth, receiver, args)
     }
 
     private class JavaByNameMethodMirror(val receiver: Any, symbol: MethodSymbol)
             extends JavaMethodMirror(symbol) {
       def apply(args: Any*): Any = {
         val transformed = map2(args.toList, symbol.params.flatten)((arg, param) => if (isByNameParamType(param.info)) () => arg else arg)
-        jmeth.invoke(receiver, transformed.asInstanceOf[Seq[AnyRef]]: _*)
+        jinvoke(jmeth, receiver, transformed)
       }
     }
 
@@ -321,7 +327,7 @@ trait JavaMirrors extends internal.SymbolTable with api.JavaUniverse { self: Sym
         def invokeMagicPrimitiveMethod = {
           val jmeths = classOf[BoxesRunTime].getDeclaredMethods.filter(_.getName == nme.primitiveMethodName(symbol.name).toString)
           assert(jmeths.length == 1, jmeths.toList)
-          jmeths.head.invoke(null, (objReceiver +: objArgs): _*)
+          jinvoke(jmeths.head, null, objReceiver +: objArgs)
         }
 
         symbol match {
