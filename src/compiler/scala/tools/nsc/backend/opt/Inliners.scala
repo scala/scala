@@ -405,6 +405,12 @@ abstract class Inliners extends SubComponent {
               val inc   = new IMethodInfo(callee)
               val pair  = new CallerCalleeInfo(caller, inc, fresh, inlinedMethodCount)
 
+              if(inc.hasHandlers && (stackLength == -1)) {
+                // no inlining is done, yet don't warn about it, stackLength == -1 indicates we're trying to inlineWithoutTFA.
+                // Shortly, a TFA will be computed and an error message reported if indeed inlining not possible.
+                return false
+              }
+
                (pair isStampedForInlining stackLength) match {
 
                  case inlInfo if inlInfo.isSafe =>
@@ -605,7 +611,7 @@ abstract class Inliners extends SubComponent {
       def isSmall       = (length <= SMALL_METHOD_SIZE) && blocks(0).length < 10
       def isLarge       = length > MAX_INLINE_SIZE
       def isRecursive   = m.recursive
-      def hasHandlers   = handlers.nonEmpty
+      def hasHandlers   = handlers.nonEmpty || m.bytecodeHasEHs
 
       def isSynchronized         = sym.hasFlag(Flags.SYNCHRONIZED)
       def hasNonFinalizerHandler = handlers exists {
@@ -941,6 +947,7 @@ abstract class Inliners extends SubComponent {
             if(inc.isRecursive)    { rs ::= "is recursive"           }
             if(isInlineForbidden)  { rs ::= "is annotated @noinline" }
             if(inc.isSynchronized) { rs ::= "is synchronized method" }
+            if(inc.m.bytecodeHasEHs) { rs ::= "bytecode contains exception handlers / finally clause" } // SI-6188
             if(rs.isEmpty) null else rs.mkString("", ", and ", "")
           }
 
@@ -972,6 +979,10 @@ abstract class Inliners extends SubComponent {
           // During inlining retry, a previous caller-callee pair that scored low may pass.
           // Thus, adding the callee to tfa.knownUnsafe isn't warranted.
           return DontInlineHere("too low score (heuristics)")
+        }
+
+        if(inc.hasHandlers && (stackLength > inc.minimumStack)) {
+          return DontInlineHere("callee contains exception handlers / finally clause, and is invoked with non-empty operand stack") // SI-6157
         }
 
         if(isKnownToInlineSafely) { return InlineableAtThisCaller }
