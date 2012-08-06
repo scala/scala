@@ -230,17 +230,17 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
           removeCPSAdaptAnnotations(origPt)
         else origPt
 
-      // we've packed the type for each case in typedMatch so that if all cases have the same existential case, we get a clean lub
-      // here, we should open up the existential again
       // relevant test cases: pos/existentials-harmful.scala, pos/gadt-gilles.scala, pos/t2683.scala, pos/virtpatmat_exist4.scala
-      // TODO: fix skolemizeExistential (it should preserve annotations, right?)
-      val pt = repeatedToSeq(ptUnCPS.skolemizeExistential(context.owner, context.tree) withAnnotations ptUnCPS.annotations)
+      // pt is the skolemized version
+      val pt = repeatedToSeq(ptUnCPS)
+
+      // val packedPt = repeatedToSeq(typer.packedType(match_, context.owner))
 
       // the alternative to attaching the default case override would be to simply
       // append the default to the list of cases and suppress the unreachable case error that may arise (once we detect that...)
       val matchFailGenOverride = match_.attachments.get[DefaultOverrideMatchAttachment].map{case DefaultOverrideMatchAttachment(default) => ((scrut: Tree) => default)}
 
-      val selectorSym  = freshSym(selector.pos, pureType(selectorTp)) setFlag treeInfo.SYNTH_CASE_FLAGS
+      val selectorSym = freshSym(selector.pos, pureType(selectorTp)) setFlag treeInfo.SYNTH_CASE_FLAGS
 
       // pt = Any* occurs when compiling test/files/pos/annotDepMethType.scala  with -Xexperimental
       val combined = combineCases(selector, selectorSym, cases map translateCase(selectorSym, pt), pt, matchOwner, matchFailGenOverride)
@@ -1326,7 +1326,7 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
 
       // local / context-free
       def _asInstanceOf(b: Symbol, tp: Type): Tree
-      def _asInstanceOf(t: Tree, tp: Type, force: Boolean = false): Tree
+      def _asInstanceOf(t: Tree, tp: Type): Tree
       def _equals(checker: Tree, binder: Symbol): Tree
       def _isInstanceOf(b: Symbol, tp: Type): Tree
       def and(a: Tree, b: Tree): Tree
@@ -1384,7 +1384,7 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
         Typed(gen.mkAsInstanceOf(t, tp.withoutAnnotations, true, false), TypeTree() setType tp)
 
       // the force is needed mainly to deal with the GADT typing hack (we can't detect it otherwise as tp nor pt need contain an abstract type, we're just casting wildly)
-      def _asInstanceOf(t: Tree, tp: Type, force: Boolean = false): Tree = if (!force && (t.tpe ne NoType) && t.isTyped && typesConform(t.tpe, tp)) t else mkCast(t, tp)
+      def _asInstanceOf(t: Tree, tp: Type): Tree = if (t.tpe != NoType && t.isTyped && typesConform(t.tpe, tp)) t else mkCast(t, tp)
       def _asInstanceOf(b: Symbol, tp: Type): Tree = if (typesConform(b.info, tp)) REF(b) else mkCast(REF(b), tp)
       def _isInstanceOf(b: Symbol, tp: Type): Tree = gen.mkIsInstanceOf(REF(b), tp.withoutAnnotations, true, false)
       //   if (typesConform(b.info, tpX)) { patmatDebug("warning: emitted spurious isInstanceOf: "+(b, tp)); TRUE }
@@ -3481,7 +3481,7 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
        */
       def matcher(scrut: Tree, scrutSym: Symbol, restpe: Type)(cases: List[Casegen => Tree], matchFailGen: Option[Tree => Tree]): Tree = {
         val matchEnd = newSynthCaseLabel("matchEnd")
-        val matchRes = NoSymbol.newValueParameter(newTermName("x"), NoPosition, SYNTHETIC) setInfo restpe.withoutAnnotations //
+        val matchRes = NoSymbol.newValueParameter(newTermName("x"), NoPosition, SYNTHETIC) setInfo restpe.withoutAnnotations
         matchEnd setInfo MethodType(List(matchRes), restpe)
 
         def newCaseSym = newSynthCaseLabel("case") setInfo MethodType(Nil, restpe)
@@ -3492,7 +3492,7 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
           val nextCase = newCaseSym
           _currCase = nextCase
 
-          LabelDef(currCase, Nil, mkCase(new OptimizedCasegen(matchEnd, nextCase, restpe)))
+          LabelDef(currCase, Nil, mkCase(new OptimizedCasegen(matchEnd, nextCase)))
         }
 
         // must compute catchAll after caseLabels (side-effects nextCase)
@@ -3517,14 +3517,14 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
         )
       }
 
-      class OptimizedCasegen(matchEnd: Symbol, nextCase: Symbol, restpe: Type) extends CommonCodegen with Casegen {
+      class OptimizedCasegen(matchEnd: Symbol, nextCase: Symbol) extends CommonCodegen with Casegen {
         def matcher(scrut: Tree, scrutSym: Symbol, restpe: Type)(cases: List[Casegen => Tree], matchFailGen: Option[Tree => Tree]): Tree =
           optimizedCodegen.matcher(scrut, scrutSym, restpe)(cases, matchFailGen)
 
         // only used to wrap the RHS of a body
         // res: T
         // returns MatchMonad[T]
-        def one(res: Tree): Tree = matchEnd APPLY (_asInstanceOf(res, restpe)) // need cast for GADT magic
+        def one(res: Tree): Tree = matchEnd APPLY (res) // a jump to a case label is special-cased in typedApply
         protected def zero: Tree = nextCase APPLY ()
 
         // prev: MatchMonad[T]
