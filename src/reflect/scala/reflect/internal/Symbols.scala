@@ -594,6 +594,8 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
 
     final def isInitializedToDefault = !isType && hasAllFlags(DEFAULTINIT | ACCESSOR)
     final def isStaticObject = isObject && isStatic && !isMethod
+    @deprecated("Use `isStaticObject` instead.", "2.10.0")
+    final def isStaticModule = isStaticObject
     final def isThisSym = isTerm && owner.thisSym == this
     final def isError = hasFlag(IS_ERROR)
     final def isErroneous = isError || isInitialized && tpe.isErroneous
@@ -1433,6 +1435,8 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
 
     def typeOfThis_=(tp: Type)       { throw new UnsupportedOperationException("typeOfThis_= inapplicable for " + this) }
     def sourceObject_=(sym: Symbol)  { throw new UnsupportedOperationException("sourceObject_= inapplicable for " + this) }
+    @deprecated("Use `sourceObject_=` instead.", "2.10.0")
+    def sourceModule_=(sym: Symbol)  = sourceObject_=(sym)
     def addChild(sym: Symbol)        { throw new UnsupportedOperationException("addChild inapplicable for " + this) }
 
 // ----- annotations ------------------------------------------------------------
@@ -1631,6 +1635,9 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
      *  is not updated when an object is cloned), or NoSymbol if this is not a ObjectClass.
      */
     def sourceObject: Symbol = NoSymbol
+
+    @deprecated("Use `sourceObject` instead.", "2.10.0")
+    def sourceModule: Symbol = sourceObject
 
     /** The implementation class of a trait.  If available it will be the
      *  symbol with the same owner, and the name of this symbol with $class
@@ -1875,6 +1882,8 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     /** The object class corresponding to this object.
      */
     def objectClass: Symbol = NoSymbol
+    @deprecated("Use `objectClass` instead.", "2.10.0")
+    def moduleClass: Symbol = objectClass
 
     /** The non-private symbol whose type matches the type of this symbol
      *  in in given class.
@@ -2293,12 +2302,16 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
 
     override def companionSymbol: Symbol = companionClass
     override def objectClass = if (isObject) referenced else NoSymbol
+    @deprecated("Use `objectClass` instead.", "2.10.0")
+    override def moduleClass: Symbol = objectClass
 
     override def hasDefault         = this hasFlag DEFAULTPARAM // overloaded with TRAIT
     override def isBridge           = this hasFlag BRIDGE
     override def isEarlyInitialized = this hasFlag PRESUPER
     override def isMethod           = this hasFlag METHOD
     override def isObject           = this hasFlag OBJECT
+    @deprecated("Use `isObject` instead.", "2.10.0")
+    override def isModule           = isObject
     override def isOverloaded       = this hasFlag OVERLOADED
     override def isPackage          = this hasFlag PACKAGE
     override def isValueParameter   = this hasFlag PARAM
@@ -2438,6 +2451,8 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     override def associatedFile_=(f: AbstractFileType) { objectClass.associatedFile = f }
 
     override def objectClass = referenced
+    @deprecated("Use `objectClass` instead.", "2.10.0")
+    override def moduleClass: Symbol = objectClass
     override def companionClass =
       flatOwnerInfo.decl(name.toTypeName).suchThat(sym => sym.isClass && (sym isCoDefinedWith this))
 
@@ -2827,6 +2842,9 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
 
     override def sourceObject       = if (isObjectClass) companionObject else NoSymbol
 
+    @deprecated("", "2.10.0")
+    override def sourceModule       = sourceObject
+
     override def existentialBound = GenPolyType(this.typeParams, TypeBounds.upper(this.classBound))
 
     def primaryConstructorName = if (this hasFlag TRAIT | IMPLCLASS) nme.MIXIN_CONSTRUCTOR else nme.CONSTRUCTOR
@@ -2910,7 +2928,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
    */
   class ObjectClassSymbol protected[Symbols] (owner: Symbol, pos: Position, name: TypeName)
   extends ClassSymbol(owner, pos, name) {
-    private[this] var objct: Symbol        = _
+    private[this] var obj: Symbol           = _
     private[this] var typeOfThisCache: Type = _
     private[this] var typeOfThisPeriod      = NoPeriod
 
@@ -2947,8 +2965,13 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
       implicitMembersCacheValue
     }
     // The null check seems to be necessary for the reifier.
-    override def sourceObject = if (objct ne null) objct else companionObject
-    override def sourceObject_=(objct: Symbol) { this.objct = objct }
+    override def sourceObject = if (obj ne null) obj else companionObject
+    override def sourceObject_=(obj: Symbol) { this.obj = obj }
+
+    @deprecated("Use `sourceObject` instead.", "2.10.0")
+    override def sourceModule = sourceObject
+    @deprecated("Use `sourceObject_=` instead.", "2.10.0")
+    override def sourceModule_=(module: Symbol) = sourceObject_=(module)
   }
 
   class PackageObjectClassSymbol protected[Symbols] (owner0: Symbol, pos0: Position)
@@ -2963,6 +2986,8 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
 
   trait ImplClassSymbol extends ClassSymbol {
     override def sourceObject = companionObject
+    @deprecated("Use `sourceObject` instead.", "2.10.0")
+    override def sourceModule = sourceObject
     // override def isImplClass = true
     override def typeOfThis  = thisSym.tpe // don't use the ObjectClassSymbol typeOfThisCache.
   }
@@ -2970,6 +2995,8 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
   class PackageClassSymbol protected[Symbols] (owner0: Symbol, pos0: Position, name0: TypeName)
   extends ObjectClassSymbol(owner0, pos0, name0) {
     override def sourceObject = companionObject
+    @deprecated("Use `sourceObject` instead.", "2.10.0")
+    override def sourceModule = sourceObject
     override def enclClassChain = Nil
     override def isPackageClass = true
   }

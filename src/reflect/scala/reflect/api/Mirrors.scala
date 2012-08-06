@@ -84,7 +84,10 @@ trait Mirrors { self: Universe =>
      *  The input symbol can be either private or non-private (Scala reflection transparently deals with visibility).
      *  It must be a member (declared or inherited) of the instance underlying this mirror.
      */
-    def reflectObject(mod: ObjectSymbol): ObjectMirror
+    def reflectObject(obj: ObjectSymbol): ObjectMirror
+
+    @deprecated("Use `reflectObject` instead.", "2.10.0")
+    def reflectModule(mod: ObjectSymbol): ObjectMirror = reflectObject(mod)
   }
 
   /** A mirror that reflects a field */
@@ -248,7 +251,10 @@ trait Mirrors { self: Universe =>
      *  The input symbol can be either private or non-private (Scala reflection transparently deals with visibility).
      *  It must be static, i.e. either top-level or nested within one or several static objects.
      */
-    def reflectObject(mod: ObjectSymbol): ObjectMirror
+    def reflectObject(obj: ObjectSymbol): ObjectMirror
+
+    @deprecated("Use `reflectObject` instead.", "2.10.0")
+    def reflectModule(mod: ObjectSymbol): ObjectMirror = reflectObject(mod)
   }
 
   /** The API of a mirror for a reflective universe */
@@ -280,5 +286,8 @@ trait Mirrors { self: Universe =>
      *  to do: throws anything else?
      */
     def objectSymbol(rtcls: RuntimeClass): ObjectSymbol
+
+    @deprecated("Use `objectSymbol` instead.", "2.10.0")
+    def moduleSymbol(rtcls: RuntimeClass): ObjectSymbol = objectSymbol(rtcls)
   }
 }

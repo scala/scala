@@ -152,7 +152,7 @@ trait MemberHandlers {
     }
   }
 
-  class ObjectHandler(objct: ObjectDef) extends MemberDefHandler(objct) {
+  class ObjectHandler(obj: ObjectDef) extends MemberDefHandler(obj) {
     override def definesTerm = Some(name)
     override def definesValue = true
     override def isLegalTopLevel = true

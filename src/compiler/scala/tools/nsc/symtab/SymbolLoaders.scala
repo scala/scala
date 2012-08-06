@@ -44,10 +44,10 @@ abstract class SymbolLoaders {
    *  and give them `completer` as type.
    */
   def enterObject(owner: Symbol, name: String, completer: SymbolLoader): Symbol = {
-    val objct = owner.newObject(newTermName(name))
-    objct setInfo completer
-    objct.objectClass setInfo objectClassLoader
-    enterIfNew(owner, objct, completer)
+    val obj = owner.newObject(newTermName(name))
+    obj setInfo completer
+    obj.objectClass setInfo objectClassLoader
+    enterIfNew(owner, obj, completer)
   }
 
   /** Enter package with given `name` into scope of `root`
@@ -95,10 +95,10 @@ abstract class SymbolLoaders {
    */
   def enterClassAndObject(root: Symbol, name: String, completer: SymbolLoader) {
     val clazz = enterClass(root, name, completer)
-    val objct = enterObject(root, name, completer)
+    val obj = enterObject(root, name, completer)
     if (!clazz.isAnonymousClass) {
-      assert(clazz.companionObject == objct, objct)
-      assert(objct.companionClass == clazz, clazz)
+      assert(clazz.companionObject == obj, obj)
+      assert(obj.companionClass == clazz, clazz)
     }
   }
 

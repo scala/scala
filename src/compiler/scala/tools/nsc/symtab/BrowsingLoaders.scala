@@ -88,11 +88,11 @@ abstract class BrowsingLoaders extends SymbolLoaders {
           } else println("prefixes differ: "+packagePrefix+","+root.fullName)
         case ObjectDef(_, name, _) =>
           if (packagePrefix == root.fullName) {
-            val objct = enterObject(root, name.toString, new SourcefileLoader(src))
+            val obj = enterObject(root, name.toString, new SourcefileLoader(src))
             entered += 1
             if (name == nme.PACKAGEkw) {
-              println("open package object: "+objct)
-              openPackageObject(objct, root)
+              println("open package object: "+obj)
+              openPackageObject(obj, root)
             }
           } else println("prefixes differ: "+packagePrefix+","+root.fullName)
         case _ =>

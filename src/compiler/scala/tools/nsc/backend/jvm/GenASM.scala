@@ -1091,9 +1091,9 @@ abstract class GenASM extends SubComponent with BytecodeWriters {
     }
 
     /** Add a forwarder for method m. Used only from addForwarders(). */
-    private def addForwarder(isRemoteClass: Boolean, jclass: asm.ClassVisitor, objct: Symbol, m: Symbol) {
-      val objectName     = javaName(objct)
-      val methodInfo     = objct.thisType.memberInfo(m)
+    private def addForwarder(isRemoteClass: Boolean, jclass: asm.ClassVisitor, obj: Symbol, m: Symbol) {
+      val objectName     = javaName(obj)
+      val methodInfo     = obj.thisType.memberInfo(m)
       val paramJavaTypes: List[asm.Type] = methodInfo.paramTypes map javaType
       // val paramNames     = 0 until paramJavaTypes.length map ("x_" + _)
 
@@ -1108,7 +1108,7 @@ abstract class GenASM extends SubComponent with BytecodeWriters {
       )
 
       // TODO needed? for(ann <- m.annotations) { ann.symbol.initialize }
-      val jgensig = if (m.isDeferred) null else getGenericSignature(m, objct); // only add generic signature if method concrete; bug #1745
+      val jgensig = if (m.isDeferred) null else getGenericSignature(m, obj); // only add generic signature if method concrete; bug #1745
       addRemoteExceptionAnnot(isRemoteClass, hasPublicBitSet(flags), m)
       val (throws, others) = m.annotations partition (_.symbol == ThrowsClass)
       val thrownExceptions: List[String] = getExceptions(throws)
@@ -1135,7 +1135,7 @@ abstract class GenASM extends SubComponent with BytecodeWriters {
 
       mirrorMethod.visitCode()
 
-      mirrorMethod.visitFieldInsn(asm.Opcodes.GETSTATIC, objectName, strOBJECT_INSTANCE_FIELD, descriptor(objct))
+      mirrorMethod.visitFieldInsn(asm.Opcodes.GETSTATIC, objectName, strOBJECT_INSTANCE_FIELD, descriptor(obj))
 
       var index = 0
       for(jparamType <- paramJavaTypes) {
@@ -2428,17 +2428,17 @@ abstract class GenASM extends SubComponent with BytecodeWriters {
 
             case icodes.stackCat => (instr: @unchecked) match {
 
-              case LOAD_OBJECT(objct) =>
-                // assert(objct.isObject, "Expected object: " + objct)
-                debuglog("generating LOAD_OBJECT for: " + objct + " flags: " + Flags.flagsToString(objct.flags));
-                if (clasz.symbol == objct.objectClass && jMethodName != nme.readResolve.toString) {
+              case LOAD_OBJECT(obj) =>
+                // assert(obj.isObject, "Expected object: " + obj)
+                debuglog("generating LOAD_OBJECT for: " + obj + " flags: " + Flags.flagsToString(obj.flags));
+                if (clasz.symbol == obj.objectClass && jMethodName != nme.readResolve.toString) {
                   jmethod.visitVarInsn(Opcodes.ALOAD, 0)
                 } else {
                   jmethod.visitFieldInsn(
                     Opcodes.GETSTATIC,
-                    javaName(objct) /* + "$" */ ,
+                    javaName(obj) /* + "$" */ ,
                     strOBJECT_INSTANCE_FIELD,
-                    descriptor(objct)
+                    descriptor(obj)
                   )
                 }
 

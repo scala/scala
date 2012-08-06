@@ -18,7 +18,7 @@ trait Flags {
 
   def isDeferred = hasFlag(0x00000100)
   def isMethod = hasFlag(0x00000200)
-  def isModule = hasFlag(0x00000400)
+  def isObject = hasFlag(0x00000400)
   def isInterface = hasFlag(0x00000800)
 
   def isMutable = hasFlag(0x00001000)
@@ -50,7 +50,7 @@ trait Flags {
   def isSuperAccessor = hasFlag(0x10000000)
   def isParamAccessor = hasFlag(0x20000000)
 
-  def isModuleVar = hasFlag(0x40000000) // for variables: is the variable caching a module value
+  def isObjectVar = hasFlag(0x40000000) // for variables: is the variable caching an object value
   def isMonomorphic = hasFlag(0x40000000) // for type symbols: does not have type parameters
   def isLazy = hasFlag(0x80000000L) // symbol is a lazy val. can't have MUTABLE unless transformed by typer
 

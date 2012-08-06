@@ -41,31 +41,31 @@ abstract class Detach extends PluginComponent
     private val Functions = FunctionClass.toList // see method isFuncType
 
     private val RemoteClass =
-      definitions.getClass("java.rmi.Remote")
+      definitions.getClassByName("java.rmi.Remote")
 
     private val UIDClass =
-      definitions.getClass("java.rmi.server.UID")
+      definitions.getClassByName("java.rmi.server.UID")
 
     private val UnicastRemoteObjectClass =
-      definitions.getClass("java.rmi.server.UnicastRemoteObject")
+      definitions.getClassByName("java.rmi.server.UnicastRemoteObject")
 
     private val UnreferencedClass =
-      definitions.getClass("java.rmi.server.Unreferenced")
+      definitions.getClassByName("java.rmi.server.Unreferenced")
 
-    private val DetachModule =
-      definitions.getModule("scala.remoting.detach")
+    private val DetachObject =
+      definitions.getObjectByName("scala.remoting.detach")
 
-    private val DebugModule =
-      definitions.getModule("scala.remoting.Debug")
+    private val DebugObject =
+      definitions.getObjectByName("scala.remoting.Debug")
 
-    private val RemoteRefModule =
-      definitions.getModule("scala.runtime.RemoteRef")
+    private val RemoteRefObject =
+      definitions.getObjectByName("scala.runtime.RemoteRef")
 
-    private val ThreadModule =
-      definitions.getModule("java.lang.Thread")
+    private val ThreadObject =
+      definitions.getObjectByName("java.lang.Thread")
 
-    private val UnicastRemoteObjectModule =
-      definitions.getModule("java.rmi.server.UnicastRemoteObject")
+    private val UnicastRemoteObjectObject =
+      definitions.getObjectByName("java.rmi.server.UnicastRemoteObject")
 
     private val remoteAnnotationInfo = {
       val RemoteAttr: Symbol = definitions.getClass("scala.remote")
@@ -169,7 +169,7 @@ abstract class Detach extends PluginComponent
       override def traverse(tree: Tree) {
         val sym = tree.symbol
         val owner =
-          if (currentOwner.isModule) currentOwner
+          if (currentOwner.isObject) currentOwner
           else currentOwner.enclClass
         tree match {
           case cdef @ ClassDef(_, _, _, impl) =>
@@ -181,7 +181,7 @@ abstract class Detach extends PluginComponent
             }
 
           case Apply(Select(qual, _), List(arg))
-          if (qual.tpe <:< DetachModule.tpe) =>
+          if (qual.tpe <:< DetachObject.tpe) =>
             assert(isFuncType(arg.tpe))//debug
             val t = getClosureApply(arg)
             if (!t.fun.symbol.isConstructor)
@@ -200,7 +200,7 @@ abstract class Detach extends PluginComponent
             super.traverse(arg)
 
           case Select(qual @ This(_), name)
-          if qual.symbol.isModuleClass && !qual.symbol.isPackageClass =>
+          if qual.symbol.isObjectClass && !qual.symbol.isPackageClass =>
             val qsym = qual.symbol
             symSet(capturedFuncs, owner) += sym
             symSet(capturedObjects, owner) += qsym
@@ -212,7 +212,7 @@ abstract class Detach extends PluginComponent
               !(sym.owner hasFlag JAVA)) =>
             val qsym = qual.symbol
             symSet(capturedFuncs, owner) += sym
-            if (qsym.isStaticModule && !qsym.isPackage) {
+            if (qsym.isStaticObject && !qsym.isPackage) {
               //println("*****1******* capturedObjects("+owner+") += "+qsym)
               symSet(capturedObjects, owner) += qsym
             }
@@ -860,7 +860,7 @@ abstract class Detach extends PluginComponent
       val proxyBody =
         DefDef(unreferenced, List(List()), Block(
           List(Apply( //stats
-            Select(gen.mkAttributedRef(DebugModule), "info"),
+            Select(gen.mkAttributedRef(DebugObject), "info"),
             List(Apply(
               Select(Literal(Constant("unreferenced: ")), "$plus"),
               // Variant 1: rebind/unbind
@@ -870,7 +870,7 @@ abstract class Detach extends PluginComponent
             ))
           )),
           Apply( //expr
-            Select(gen.mkAttributedRef(RemoteRefModule), nme_unbind),
+            Select(gen.mkAttributedRef(RemoteRefObject), nme_unbind),
             // Variant 1: rebind/unbind
             List(Select(This(proxyImpl), param1.name))
             // Variant 2: un-/exportObject
@@ -985,13 +985,13 @@ abstract class Detach extends PluginComponent
         val sym = currentOwner.newValue(csym.pos, freshProxyName)
           .setFlag(SYNTHETIC)
           .setInfo(iface.tpe)
-        val bind = Select(gen.mkAttributedRef(RemoteRefModule), nme_bind)
+        val bind = Select(gen.mkAttributedRef(RemoteRefObject), nme_bind)
         val name = Apply(
           Select(Literal(Constant(sym.fullName('/')+"$")), String_+),
           List(Ident(uid.symbol))
         )
         val thiz =
-          if (csym.isModule) gen.mkAttributedIdent(csym)
+          if (csym.isObject) gen.mkAttributedIdent(csym)
           else gen.mkAttributedThis(csym)
         val args = List(name,
                         Apply(Select(New(TypeTree(proxy.tpe)), nme.CONSTRUCTOR),
@@ -1031,7 +1031,7 @@ abstract class Detach extends PluginComponent
             val proxy = currentOwner.newValue(param.pos, freshProxyName)
               .setFlag(SYNTHETIC)
               .setInfo(mkRemoteRefClass(param.tpe))
-            val bind = Select(gen.mkAttributedRef(RemoteRefModule), nme_bind)
+            val bind = Select(gen.mkAttributedRef(RemoteRefObject), nme_bind)
             //val name = Literal(Constant(proxy.fullName('/')))
             val name = Apply(
               Select(Literal(Constant(proxy.fullName('/')+"$")), String_+),

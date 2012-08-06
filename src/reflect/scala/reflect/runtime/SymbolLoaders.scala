@@ -60,25 +60,25 @@ trait SymbolLoaders { self: SymbolTable =>
   protected def createClassObject(owner: Symbol, name: TypeName, completer: (Symbol, Symbol) => LazyType) = {
     assert(!(name.toString endsWith "[]"), name)
     val clazz = owner.newClass(name)
-    val objct = owner.newObject(name.toTermName)
+    val obj = owner.newObject(name.toTermName)
     // [Eugene++] am I doing this right?
     // todo: drop condition, see what goes wrong
     // [Eugene++ to Martin] test/files/run/t5256g and test/files/run/t5256h will crash
     // reflection meeting verdict: need to enter the symbols into the first symbol in the owner chain that has a non-empty scope
     if (owner.info.decls != EmptyScope) {
       owner.info.decls enter clazz
-      owner.info.decls enter objct
+      owner.info.decls enter obj
     }
-    initClassObject(clazz, objct, completer(clazz, objct))
-    (clazz, objct)
+    initClassObject(clazz, obj, completer(clazz, obj))
+    (clazz, obj)
   }
 
-  protected def setAllInfos(clazz: Symbol, objct: Symbol, info: Type) = {
-    List(clazz, objct, objct.objectClass) foreach (_ setInfo info)
+  protected def setAllInfos(clazz: Symbol, obj: Symbol, info: Type) = {
+    List(clazz, obj, obj.objectClass) foreach (_ setInfo info)
   }
 
-  protected def initClassObject(clazz: Symbol, objct: Symbol, completer: LazyType) =
-    setAllInfos(clazz, objct, completer)
+  protected def initClassObject(clazz: Symbol, obj: Symbol, completer: LazyType) =
+    setAllInfos(clazz, obj, completer)
 
   /** The type completer for packages.
    */
@@ -118,7 +118,7 @@ trait SymbolLoaders { self: SymbolTable =>
         currentMirror.tryJavaClass(path) match {
           case Some(cls) =>
             val loadingMirror = currentMirror.mirrorDefining(cls)
-            val (clazz, objct) =
+            val (clazz, obj) =
               if (loadingMirror eq currentMirror) {
                 createClassObject(pkgClass, name.toTypeName, new TopClassCompleter(_, _))
               } else {
@@ -131,7 +131,7 @@ trait SymbolLoaders { self: SymbolTable =>
                 pkgClass.info.decls enter objct
                 (clazz, objct)
               }
-            debugInfo(s"created $objct/${objct.objectClass} in $pkgClass")
+            debugInfo(s"created $obj/${obj.objectClass} in $pkgClass")
             lookupEntry(name)
           case none =>
             debugInfo("*** not found : "+path)

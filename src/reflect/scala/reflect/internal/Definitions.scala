@@ -968,11 +968,14 @@ trait Definitions extends api.StandardDefinitions {
       attr
     }
 
-    @deprecated("Moved to rootMirror.getClass", "2.10.0")
+    @deprecated("Moved to rootMirror.getClassByName", "2.10.0")
     def getClass(fullname: Name): ClassSymbol = rootMirror.getClassByName(fullname)
 
-    @deprecated("Moved to rootMirror.getObject", "2.10.0")
-    def getObject(fullname: Name): ObjectSymbol = rootMirror.getObject(fullname)
+    @deprecated("Moved to rootMirror.getObjectByName", "2.10.0")
+    def getObject(fullname: Name): ObjectSymbol = rootMirror.getObjectByName(fullname)
+
+    @deprecated("Moved to rootMirror.getObjectByName", "2.10.0")    
+    def getModule(fullname: Name): ObjectSymbol = rootMirror.getObjectByName(fullname)
 
     private def fatalMissingSymbol(owner: Symbol, name: Name, what: String = "member") = {
       throw new FatalError(owner + " does not have a " + what + " " + name)

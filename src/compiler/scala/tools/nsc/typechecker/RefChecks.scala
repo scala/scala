@@ -1509,10 +1509,10 @@ abstract class RefChecks extends InfoTransform with reflect.internal.transform.R
       def isClassTypeAccessible(tree: Tree): Boolean = tree match {
         case TypeApply(fun, targs) =>
           isClassTypeAccessible(fun)
-        case Select(objct, apply) =>
+        case Select(obj, apply) =>
           // Fixes SI-5626. Classes in refinement types cannot be constructed with `new`. In this case,
           // the companion class is actually not a ClassSymbol, but a reference to an abstract type.
-          objct.symbol.companionClass.isClass
+          obj.symbol.companionClass.isClass
       }
 
       val doTransform =

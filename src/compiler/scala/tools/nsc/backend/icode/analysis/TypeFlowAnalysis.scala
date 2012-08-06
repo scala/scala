@@ -194,7 +194,7 @@ abstract class TypeFlowAnalysis {
           if (!isStatic) { stack.pop }
           stack push toTypeKind(field.tpe)
 
-        case LOAD_OBJECT(objct)    => stack push toTypeKind(objct.tpe)
+        case LOAD_OBJECT(obj)       => stack push toTypeKind(obj.tpe)
         case STORE_ARRAY_ITEM(kind) => stack.pop3
         case STORE_LOCAL(local)     => val t = stack.pop; bindings += (local -> t)
         case STORE_THIS(_)          => stack.pop

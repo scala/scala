@@ -53,7 +53,7 @@ class ScalaSigPrinter(stream: PrintStream, printPrivates: Boolean) {
               printObject(level, o)
             }
           }
-        case c: ClassSymbol if !refinementClass(c) && !c.isModule =>
+        case c: ClassSymbol if !refinementClass(c) && !c.isObject =>
           indent
           printClass(level, c)
         case m: MethodSymbol =>

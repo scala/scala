@@ -83,6 +83,9 @@ abstract class MirrorOf[U <: base.Universe with Singleton] {
    */
   def staticObject(fullName: String): U#ObjectSymbol
 
+  @deprecated("Use `staticObject` instead.", "2.10.0")
+  def staticModule(fullName: String): U#ObjectSymbol = staticObject(fullName)
+
   /** The symbol corresponding to a package with the
    *  given fully qualified name `fullName`.
    */

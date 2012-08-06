@@ -1052,9 +1052,9 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
     }
 
     /** Add a forwarder for method m */
-    def addForwarder(jclass: JClass, objct: Symbol, m: Symbol) {
-      val objectName     = javaName(objct)
-      val methodInfo     = objct.thisType.memberInfo(m)
+    def addForwarder(jclass: JClass, obj: Symbol, m: Symbol) {
+      val objectName     = javaName(obj)
+      val methodInfo     = obj.thisType.memberInfo(m)
       val paramJavaTypes = methodInfo.paramTypes map javaType
       val paramNames     = 0 until paramJavaTypes.length map ("x_" + _)
       // TODO: evaluate the other flags we might be dropping on the floor here.
@@ -1092,7 +1092,7 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
       addRemoteException(mirrorMethod, m)
       // only add generic signature if the method is concrete; bug #1745
       if (!m.isDeferred)
-        addGenericSignature(mirrorMethod, m, objct)
+        addGenericSignature(mirrorMethod, m, obj)
 
       val (throws, others) = m.annotations partition (_.symbol == ThrowsClass)
       addExceptionsAttribute(mirrorMethod, throws)

@@ -200,12 +200,12 @@ trait NamesDefaults { self: Analyzer =>
         if (pre == NoType) {
           None
         } else {
-          val objct = companionSymbolOf(baseFun.symbol.owner, context)
-          if (objct == NoSymbol) None
+          val obj = companionSymbolOf(baseFun.symbol.owner, context)
+          if (obj == NoSymbol) None
           else {
-            val ref = atPos(pos.focus)(gen.mkAttributedRef(pre, objct))
-            if (objct.isStable && pre.isStable)    // fixes #4524. the type checker does the same for
-              ref.setType(singleType(pre, objct))  // typedSelect, it calls "stabilize" on the result.
+            val ref = atPos(pos.focus)(gen.mkAttributedRef(pre, obj))
+            if (obj.isStable && pre.isStable)    // fixes #4524. the type checker does the same for
+              ref.setType(singleType(pre, obj))  // typedSelect, it calls "stabilize" on the result.
             Some(ref)
           }
         }

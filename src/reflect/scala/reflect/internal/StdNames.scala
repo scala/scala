@@ -348,6 +348,8 @@ trait StdNames {
     def isTraitSetterName(name: Name)       = isSetterName(name) && (name containsName TRAIT_SETTER_SEPARATOR_STRING)
     def isSingletonName(name: Name)         = name endsWith SINGLETON_SUFFIX
     def isObjectName(name: Name)            = name endsWith OBJECT_SUFFIX_NAME
+    @deprecated("Use `isObjectName` instead.", "2.10.0")
+    def isModuleName(name: Name)            = isObjectName(name)
 
     def isDeprecatedIdentifierName(name: Name) = name.toTermName match {
       case nme.`then` | nme.`macro` => true
@@ -629,6 +631,8 @@ trait StdNames {
     val arraycopy: NameType            = "arraycopy"
     val asTerm: NameType               = "asTerm"
     val asObject: NameType             = "asObject"
+    @deprecated("Use `asObject` instead.", "2.10.0")
+    def asModule: NameType             = asObject
     val asMethod: NameType             = "asMethod"
     val asType: NameType               = "asType"
     val asClass: NameType              = "asClass"
@@ -708,6 +712,8 @@ trait StdNames {
     val materializeTypeTag: NameType   = "materializeTypeTag"
     val mirror : NameType              = "mirror"
     val objectClass : NameType         = "objectClass"
+    @deprecated("Use `objectClass` instead.", "2.10.0")
+    def moduleClass: NameType          = objectClass
     val name: NameType                 = "name"
     val ne: NameType                   = "ne"
     val newArray: NameType             = "newArray"
@@ -751,8 +757,10 @@ trait StdNames {
     val setType: NameType              = "setType"
     val setTypeSignature: NameType     = "setTypeSignature"
     val splice: NameType               = "splice"
-    val staticClass : NameType         = "staticClass"
-    val staticObject : NameType        = "staticObject"
+    val staticClass: NameType          = "staticClass"
+    val staticObject: NameType         = "staticObject"
+    @deprecated("Use `staticObject` instead.", "2.10.0")
+    def staticModule: NameType         = staticObject
     val staticPackage : NameType       = "staticPackage"
     val synchronized_ : NameType       = "synchronized"
     val tail: NameType                 = "tail"

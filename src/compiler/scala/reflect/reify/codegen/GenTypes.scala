@@ -41,8 +41,8 @@ trait GenTypes {
       case tpe @ ThisType(empty) if empty.isEmptyPackageClass =>
         mirrorBuildCall(nme.thisPrefix, mirrorMirrorSelect(nme.EmptyPackageClass))
       case tpe @ ThisType(clazz) if clazz.isObjectClass && clazz.isStatic =>
-        val objct = reify(clazz.sourceObject)
-        val objectClass = Select(Select(objct, nme.asObject), nme.objectClass)
+        val obj = reify(clazz.sourceObject)
+        val objectClass = Select(Select(obj, nme.asObject), nme.objectClass)
         mirrorFactoryCall(nme.ThisType, objectClass)
       case tpe @ ThisType(_) =>
         reifyProduct(tpe)

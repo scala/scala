@@ -149,8 +149,8 @@ abstract class DeadCodeElimination extends SubComponent {
       }
     }
 
-    private def isLoadNeeded(objct: Symbol): Boolean = {
-      objct.info.member(nme.CONSTRUCTOR).filter(isSideEffecting) != NoSymbol
+    private def isLoadNeeded(obj: Symbol): Boolean = {
+      obj.info.member(nme.CONSTRUCTOR).filter(isSideEffecting) != NoSymbol
     }
 
     /** Mark useful instructions. Instructions in the worklist are each inspected and their

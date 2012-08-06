@@ -852,8 +852,8 @@ trait Namers extends MethodSynthesis {
 
       // if default getters (for constructor defaults) need to be added to that object, here's the namer
       // to use. clazz is the ObjectClass. sourceObject works also for classes defined in methods.
-      val objct = clazz.sourceObject
-      for (cda <- objct.attachments.get[ConstructorDefaultsAttachment]) {
+      val obj = clazz.sourceObject
+      for (cda <- obj.attachments.get[ConstructorDefaultsAttachment]) {
         cda.companionObjectClassNamer = templateNamer
       }
       ClassInfoType(parents, decls, clazz)
@@ -1510,7 +1510,7 @@ trait Namers extends MethodSynthesis {
   @deprecated("Use underlyingSymbol instead", "2.10.0")
   def underlying(member: Symbol): Symbol = underlyingSymbol(member)
   @deprecated("Use `companionSymbolOf` instead", "2.10.0")
-  def companionClassOf(objct: Symbol, ctx: Context): Symbol = companionSymbolOf(objct, ctx)
+  def companionClassOf(obj: Symbol, ctx: Context): Symbol = companionSymbolOf(obj, ctx)
   @deprecated("Use `companionSymbolOf` instead", "2.10.0")
   def companionObjectOf(clazz: Symbol, ctx: Context): Symbol = companionSymbolOf(clazz, ctx)
 

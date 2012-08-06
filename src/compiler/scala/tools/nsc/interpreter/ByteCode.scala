@@ -25,17 +25,17 @@ object ByteCode {
   }
 
   private lazy val aliasMap = {
-    for (module <- DECODER ; method <- decoderMethod("typeAliases", classOf[String])) yield
-      method.invoke(module, _: String).asInstanceOf[Option[Map[String, String]]]
+    for (objInstance <- DECODER ; method <- decoderMethod("typeAliases", classOf[String])) yield
+      method.invoke(objInstance, _: String).asInstanceOf[Option[Map[String, String]]]
   }
 
   /** Scala sig bytes.
    */
   def scalaSigBytesForPath(path: String) =
     for {
-      module <- DECODER
+      objInstance <- DECODER
       method <- decoderMethod("scalaSigAnnotationBytes", classOf[String])
-      names <- method.invoke(module, path).asInstanceOf[Option[Array[Byte]]]
+      names <- method.invoke(objInstance, path).asInstanceOf[Option[Array[Byte]]]
     }
     yield names
 
@@ -43,9 +43,9 @@ object ByteCode {
    */
   def caseParamNamesForPath(path: String) =
     for {
-      module <- DECODER
+      objInstance <- DECODER
       method <- decoderMethod("caseParamNames", classOf[String])
-      names <- method.invoke(module, path).asInstanceOf[Option[List[String]]]
+      names <- method.invoke(objInstance, path).asInstanceOf[Option[List[String]]]
     }
     yield names
 

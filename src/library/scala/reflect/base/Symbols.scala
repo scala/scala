@@ -153,6 +153,12 @@ trait Symbols { self: Universe =>
      */
     def asObject: ObjectSymbol = throw new ClassCastException(toString)
 
+    @deprecated("Use `isObject` instead.", "2.10.0")
+    def isModule = isObject
+
+    @deprecated("Use `asObject` instead.", "2.10.0")
+    def asModule = asObject
+
     /** Does this symbol represent the definition of a class or trait?
      *  If yes, `isType` is also guaranteed to be true.
      */
@@ -163,6 +169,9 @@ trait Symbols { self: Universe =>
      *  If yes, `isType` is also guaranteed to be true.
      */
     def isObjectClass: Boolean = false
+
+    @deprecated("Use `isObjectClass` instead.", "2.10.0")
+    def isModuleClass = isObjectClass
 
     /** This symbol cast to a ClassSymbol representing a class or trait.
      *  Returns ClassCastException if `isClass` is false.
@@ -260,6 +269,10 @@ trait Symbols { self: Universe =>
 
     final override def isObject = true
     final override def asObject = this
+    @deprecated("Use `isObject` instead.", "2.10.0")
+    final override def isModule = isObject
+    @deprecated("Use `asObject` instead.", "2.10.0")
+    final override def asModule = asObject
   }
 
   /** The base API that all class symbols support */

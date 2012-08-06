@@ -139,9 +139,9 @@ trait JavaMirrors extends internal.SymbolTable with api.JavaUniverse { self: Sym
       new JavaClassMirror(null, cls)
     }
 
-    def reflectObject(objct: ObjectSymbol): ObjectMirror = {
-      if (!objct.isStatic) ErrorInnerObject(objct)
-      new JavaObjectMirror(null, objct)
+    def reflectObject(obj: ObjectSymbol): ObjectMirror = {
+      if (!obj.isStatic) ErrorInnerObject(obj)
+      new JavaObjectMirror(null, obj)
     }
 
     def runtimeClass(tpe: Type): RuntimeClass = typeToJavaClass(tpe)
@@ -350,8 +350,8 @@ trait JavaMirrors extends internal.SymbolTable with api.JavaUniverse { self: Sym
      *  @param   jclazz  The Java class which contains the unpickled information in a
      *                   ScalaSignature or ScalaLongSignature annotation.
      */
-    def unpickleClass(clazz: Symbol, objct: Symbol, jclazz: jClass[_]): Unit = {
-      def markAbsent(tpe: Type) = setAllInfos(clazz, objct, tpe)
+    def unpickleClass(clazz: Symbol, obj: Symbol, jclazz: jClass[_]): Unit = {
+      def markAbsent(tpe: Type) = setAllInfos(clazz, obj, tpe)
       def handleError(ex: Exception) = {
         markAbsent(ErrorType)
         if (settings.debug.value) ex.printStackTrace()
@@ -383,14 +383,14 @@ trait JavaMirrors extends internal.SymbolTable with api.JavaUniverse { self: Sym
         markAbsent(NoType)
         loadBytes[String]("scala.reflect.ScalaSignature") match {
           case Some(ssig) =>
-            info(s"unpickling Scala $clazz and $objct, owner = ${clazz.owner}")
+            info(s"unpickling Scala $clazz and $obj, owner = ${clazz.owner}")
             val bytes = ssig.getBytes
             val len = ByteCodecs.decode(bytes)
-            unpickler.unpickle(bytes take len, 0, clazz, objct, jclazz.getName)
+            unpickler.unpickle(bytes take len, 0, clazz, obj, jclazz.getName)
           case None =>
             loadBytes[Array[String]]("scala.reflect.ScalaLongSignature") match {
               case Some(slsig) =>
-                info(s"unpickling Scala $clazz and $objct with long Scala signature")
+                info(s"unpickling Scala $clazz and $obj with long Scala signature")
                 val byteSegments = slsig map (_.getBytes)
                 val lens = byteSegments map ByteCodecs.decode
                 val bytes = Array.ofDim[Byte](lens.sum)
@@ -399,11 +399,11 @@ trait JavaMirrors extends internal.SymbolTable with api.JavaUniverse { self: Sym
                   bs.copyToArray(bytes, len, l)
                   len += l
                 }
-                unpickler.unpickle(bytes, 0, clazz, objct, jclazz.getName)
+                unpickler.unpickle(bytes, 0, clazz, obj, jclazz.getName)
               case None =>
                 // class does not have a Scala signature; it's a Java class
                 info("translating reflection info for Java " + jclazz) //debug
-                initClassObject(clazz, objct, new FromJavaClassCompleter(clazz, objct, jclazz))
+                initClassObject(clazz, obj, new FromJavaClassCompleter(clazz, obj, jclazz))
             }
         }
       } catch {
@@ -871,7 +871,7 @@ trait JavaMirrors extends internal.SymbolTable with api.JavaUniverse { self: Sym
 
     private def jclassAsScala(jclazz: jClass[_], owner: Symbol): ClassSymbol = {
       val name = scalaSimpleName(jclazz)
-      val completer = (clazz: Symbol, objct: Symbol) => new FromJavaClassCompleter(clazz, objct, jclazz)
+      val completer = (clazz: Symbol, obj: Symbol) => new FromJavaClassCompleter(clazz, obj, jclazz)
       val (clazz, objct) = createClassObject(owner, name, completer)
       classCache enter (jclazz, clazz)
       clazz

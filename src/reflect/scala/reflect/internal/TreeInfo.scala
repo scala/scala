@@ -23,7 +23,7 @@ abstract class TreeInfo {
   def isOwnerDefinition(tree: Tree): Boolean = tree match {
     case PackageDef(_, _)
        | ClassDef(_, _, _, _)
-       | OoduleDef(_, _, _)
+       | ObjectDef(_, _, _)
        | DefDef(_, _, _, _, _, _)
        | Import(_, _) => true
     case _ => false
