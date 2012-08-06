@@ -275,6 +275,14 @@ trait Symbols extends base.Symbols { self: Universe =>
 
   /** The API of method symbols */
   trait MethodSymbolApi extends TermSymbolApi with MethodSymbolBase { this: MethodSymbol =>
+    /** Does this symbol represent a class constructor?
+     */
+    def isClassConstructor: Boolean
+
+    /** Does this symbol represent a mixin constructor?
+     */
+    def isMixinConstructor: Boolean
+
     /** For a polymorphic method, its type parameters, the empty list for all other methods */
     def typeParams: List[Symbol]
 

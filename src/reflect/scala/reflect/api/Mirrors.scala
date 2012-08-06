@@ -104,21 +104,40 @@ trait Mirrors { self: Universe =>
 
     /** Retrieves the value stored in the field.
      *
+     *  If `symbol` represents a field overriden in `receiver`,
+     *  then this method has two choices:
+     *    1) Go for the value of the base field,
+     *    2) Go for the overriding value in `receiver`.
+     *  The optional `preferOverriding` parameter governs that choice
+     *  (if the field is not overriden, then the value of this parameter is ignored).
+     *  Default behaviour is to prefer the overriding value.
+     *
      *  Scala reflection uses reflection capabilities of the underlying platform,
      *  so `FieldMirror.get` might throw platform-specific exceptions associated
      *  with getting a field or invoking a getter method of the field.
      */
-    def get: Any
+    def get(preferOverriding: Boolean = true): Any
 
     /** Updates the value stored in the field.
      *
-     *  If a field is immutable, a `ScalaReflectionException` will be thrown.
+     *  If the field is immutable, a `ScalaReflectionException` will be thrown.
+     *
+     *  If `symbol` represents a field overriden in `receiver`,
+     *  then this method has two choices:
+     *    1) Go for the value of the base field,
+     *    2) Go for the overriding value in `receiver`.
+     *  The optional `preferOverriding` parameter governs that choice
+     *  (if the field is not overriden, then the value of this parameter is ignored).
+     *  Default behaviour is to prefer the overriding value.
+     *
+     *  Currently it is impossible to define a var that overrides another var,
+     *  however in future this possibility might be added to Scala.
      *
      *  Scala reflection uses reflection capabilities of the underlying platform,
      *  so `FieldMirror.get` might throw platform-specific exceptions associated
      *  with setting a field or invoking a setter method of the field.
      */
-    def set(value: Any): Unit
+    def set(value: Any, preferOverriding: Boolean = true): Unit
   }
 
   /** A mirror that reflects a method handle */

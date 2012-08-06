@@ -20,6 +20,7 @@ import internal.Flags._
 //import scala.tools.nsc.util.ScalaClassLoader._
 import ReflectionUtils.{singletonInstance}
 import language.existentials
+import scala.runtime.ScalaRunTime
 
 trait JavaMirrors extends internal.SymbolTable with api.JavaUniverse { self: SymbolTable =>
 
@@ -124,13 +125,14 @@ trait JavaMirrors extends internal.SymbolTable with api.JavaUniverse { self: Sym
     private def ErrorStaticClass(wannabe: Symbol) = throw new ScalaReflectionException(s"$wannabe is a static class, use reflectClass on a RuntimeMirror to obtain its ClassMirror")
     private def ErrorStaticModule(wannabe: Symbol) = throw new ScalaReflectionException(s"$wannabe is a static module, use reflectModule on a RuntimeMirror to obtain its ModuleMirror")
     private def ErrorNotMember(wannabe: Symbol, owner: Symbol) = throw new ScalaReflectionException(s"expected a member of $owner, you provided ${wannabe.kind} ${wannabe.fullName}")
-    private def ErrorNotField(wannabe: Symbol) = throw new ScalaReflectionException(s"expected a field or an accessor method symbol, you provided $wannabe}")
+    private def ErrorNotField(wannabe: Symbol) = throw new ScalaReflectionException(s"expected a field or an accessor method symbol, you provided $wannabe")
     private def ErrorNonExistentField(wannabe: Symbol) = throw new ScalaReflectionException(s"""
       |Scala field ${wannabe.name} isn't represented as a Java field, neither it has a Java accessor method
       |note that private parameters of class constructors don't get mapped onto fields and/or accessors,
       |unless they are used outside of their declaring constructors.
     """.trim.stripMargin)
     private def ErrorSetImmutableField(wannabe: Symbol) = throw new ScalaReflectionException(s"cannot set an immutable field ${wannabe.name}")
+    private def ErrorNotConstructor(wannabe: Symbol, owner: Symbol) = throw new ScalaReflectionException(s"expected a constructor of $owner, you provided $wannabe")
 
     def reflect(obj: Any): InstanceMirror = new JavaInstanceMirror(obj.asInstanceOf[AnyRef])
 
@@ -152,8 +154,19 @@ trait JavaMirrors extends internal.SymbolTable with api.JavaUniverse { self: Sym
 
     def moduleSymbol(rtcls: RuntimeClass): ModuleSymbol = classToScala(rtcls).companionModule.asModule
 
-    private def checkMemberOf(wannabe: Symbol, owner: Symbol) =
-      if (!owner.info.member(wannabe.name).alternatives.contains(wannabe)) ErrorNotMember(wannabe, owner)
+    private def checkMemberOf(wannabe: Symbol, owner: ClassSymbol) {
+      if (wannabe.owner == AnyClass || wannabe.owner == AnyRefClass || wannabe.owner == ObjectClass) {
+       // do nothing
+      } else if (wannabe.owner == AnyValClass) {
+        if (!owner.isPrimitiveValueClass && !owner.isDerivedValueClass) ErrorNotMember(wannabe, owner)
+      } else {
+        def isMemberOf(wannabe: Symbol, owner: ClassSymbol): Boolean = {
+          val isNonShadowedMember = owner.info.member(wannabe.name).alternatives.contains(wannabe)
+          isNonShadowedMember || owner.info.baseClasses.tail.exists(base => isMemberOf(wannabe, base.asClass))
+        }
+        if (!isMemberOf(wannabe, owner)) ErrorNotMember(wannabe, owner)
+      }
+    }
 
     private class JavaInstanceMirror(obj: AnyRef)
             extends InstanceMirror {
@@ -192,15 +205,21 @@ trait JavaMirrors extends internal.SymbolTable with api.JavaUniverse { self: Sym
 
     private class JavaFieldMirror(val receiver: AnyRef, val symbol: TermSymbol)
             extends FieldMirror {
-      lazy val jfield = {
-        val jfield = fieldToJava(symbol)
+      lazy val baseJfield = fieldToJava(symbol)
+      lazy val overridingJfield = {
+        val overridingSymbol = wholemirror.classSymbol(receiver.getClass).typeSignature.member(nme.dropLocalSuffix(symbol.name)).asTerm
+        if (symbol == overridingSymbol) fieldToJava(symbol)
+        else new JavaFieldMirror(receiver, overridingSymbol).baseJfield
+      }
+      def jfield(preferOverriding: Boolean = true) = {
+        val jfield = if (preferOverriding) overridingJfield else baseJfield
         if (!jfield.isAccessible) jfield.setAccessible(true)
         jfield
       }
-      def get = jfield.get(receiver)
-      def set(value: Any) = {
+      def get(preferOverriding: Boolean = true) = jfield(preferOverriding).get(receiver)
+      def set(value: Any, preferOverriding: Boolean = true) = {
         if (!symbol.isMutable) ErrorSetImmutableField(symbol)
-        jfield.set(receiver, value)
+        jfield(preferOverriding).set(receiver, value)
       }
       override def toString = s"field mirror for ${symbol.fullName} (bound to $receiver)"
     }
@@ -237,16 +256,47 @@ trait JavaMirrors extends internal.SymbolTable with api.JavaUniverse { self: Sym
         if (!jmeth.isAccessible) jmeth.setAccessible(true)
         jmeth
       }
-      def apply(args: Any*): Any =
-        if (symbol.owner == ArrayClass)
-          symbol.name match {
-            case nme.length => jArray.getLength(receiver)
-            case nme.apply => jArray.get(receiver, args(0).asInstanceOf[Int])
-            case nme.update => jArray.set(receiver, args(0).asInstanceOf[Int], args(1))
-            case _ => assert(false, s"unexpected array method: $symbol")
-          }
-        else
-          jmeth.invoke(receiver, args.asInstanceOf[Seq[AnyRef]]: _*)
+      def apply(args: Any*): Any = {
+        // checking type conformance is too much of a hassle, so we don't do it here
+        // it will be checked either by Java reflection or by asInstanceOf casts when calling magic methods
+        val params = symbol.paramss.flatten
+        val perfectMatch = args.length == params.length
+        val varargMatch = args.length >= params.length - 1 && isVarArgsList(params)
+        if (!perfectMatch && !varargMatch) {
+          val n_arguments = if (isVarArgsList(params)) s"${params.length - 1} or more" else s"${params.length}"
+          var s_arguments = if (params.length == 1 && !isVarArgsList(params)) "argument" else "arguments"
+          throw new ScalaReflectionException(s"${showMethodSig(symbol)} takes $n_arguments $s_arguments")
+        }
+
+        // todo. after https://issues.scala-lang.org/browse/SI-6179 is fixed
+        // implement reflective invocation for methods of primitive and derived value classes
+        // also what about fields and constructors of those?
+
+        symbol match {
+          case Any_== | Any_equals | Object_== => ScalaRunTime.inlinedEquals(receiver, args(0).asInstanceOf[AnyRef])
+          case Any_!= | Object_!= => !ScalaRunTime.inlinedEquals(receiver, args(0).asInstanceOf[AnyRef])
+          case Any_## | Any_hashCode | Object_## => ScalaRunTime.hash(receiver)
+          case Any_toString => receiver.toString
+          case Object_eq => receiver eq args(0).asInstanceOf[AnyRef]
+          case Object_ne => receiver ne args(0).asInstanceOf[AnyRef]
+          case Object_synchronized => receiver.synchronized(args(0))
+          case getClass if getClass.name.toString == "getClass" && params.isEmpty => receiver.getClass
+          case Any_asInstanceOf => throw new ScalaReflectionException("Any.asInstanceOf requires a type argument, it cannot be invoked with mirrors")
+          case Any_isInstanceOf => throw new ScalaReflectionException("Any.isInstanceOf requires a type argument, it cannot be invoked with mirrors")
+          case Object_asInstanceOf => throw new ScalaReflectionException("AnyRef.$asInstanceOf is an internal method, it cannot be invoked with mirrors")
+          case Object_isInstanceOf => throw new ScalaReflectionException("AnyRef.$isInstanceOf is an internal method, it cannot be invoked with mirrors")
+          case getClass if getClass.name.toString == "getClass" && params.isEmpty => receiver.getClass
+          case Array_length => ScalaRunTime.array_length(receiver)
+          case Array_apply => ScalaRunTime.array_apply(receiver, args(0).asInstanceOf[Int])
+          case Array_update => ScalaRunTime.array_update(receiver, args(0).asInstanceOf[Int], args(1))
+          case Array_clone => ScalaRunTime.array_clone(receiver)
+          case String_+ => "" + receiver + args(0)
+          case sym if sym == Predef_classOf => throw new ScalaReflectionException("Predef.classOf is a compile-time function, it cannot be invoked with mirrors")
+          case sym if sym.isTermMacro => throw new ScalaReflectionException(s"${symbol.fullName} is a macro, i.e. a compile-time function, it cannot be invoked with mirrors")
+          case _ => jmeth.invoke(receiver, args.asInstanceOf[Seq[AnyRef]]: _*)
+        }
+      }
+
       override def toString = s"method mirror for ${showMethodSig(symbol)} (bound to $receiver)"
     }
 
@@ -259,6 +309,9 @@ trait JavaMirrors extends internal.SymbolTable with api.JavaUniverse { self: Sym
         jconstr
       }
       def apply(args: Any*): Any = {
+        if (symbol.owner == ArrayClass)
+          throw new ScalaReflectionException("Cannot instantiate arrays with mirrors. Consider using `scala.reflect.ClassTag(<class of element>).newArray(<length>)` instead")
+
         val effectiveArgs =
           if (outer == null) args.asInstanceOf[Seq[AnyRef]]
           else outer +: args.asInstanceOf[Seq[AnyRef]]
@@ -279,7 +332,11 @@ trait JavaMirrors extends internal.SymbolTable with api.JavaUniverse { self: Sym
             extends JavaTemplateMirror with ClassMirror {
       def erasure = symbol
       def isStatic = false
-      def reflectConstructor(constructor: MethodSymbol) = new JavaConstructorMirror(outer, constructor)
+      def reflectConstructor(constructor: MethodSymbol) = {
+        if (!constructor.isClassConstructor) ErrorNotConstructor(constructor, symbol)
+        if (!symbol.info.decls.toList.contains(constructor)) ErrorNotConstructor(constructor, symbol)
+        new JavaConstructorMirror(outer, constructor)
+      }
       def companion: Option[ModuleMirror] = symbol.companionModule match {
        case module: ModuleSymbol => Some(new JavaModuleMirror(outer, module))
        case _ => None
