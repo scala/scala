@@ -1173,6 +1173,8 @@ abstract class GenASM extends SubComponent with BytecodeWriters {
           debuglog("No forwarder for '%s' from %s to '%s'".format(m, jclassName, moduleClass))
         else if (conflictingNames(m.name))
           log("No forwarder for " + m + " due to conflict with " + linkedClass.info.member(m.name))
+        else if (m.hasAccessBoundary)
+          log(s"No forwarder for non-public member $m")
         else {
           log("Adding static forwarder for '%s' from %s to '%s'".format(m, jclassName, moduleClass))
           if (m.isAccessor && m.accessed.hasStaticAnnotation) {
