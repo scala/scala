@@ -3,6 +3,7 @@ class C {
   def bar = 2
   class C { override def toString = "CC" }
   object O { override def toString = "CO" }
+  override def toString = "an instance of class C"
 }
 
 class D {
@@ -10,6 +11,7 @@ class D {
   def bar = 4
   class C { override def toString = "DC" }
   object O { override def toString = "DO" }
+  override def toString = "an instance of class D"
 }
 
 object Test extends App {
@@ -21,6 +23,8 @@ object Test extends App {
     def failsafe(action: => Any): Any = try action catch { case ex: Throwable => ex.toString }
     println("field: " + failsafe(im.reflectField(tpe.member(newTermName("foo")).asTerm).get))
     println("method: " + failsafe(im.reflectMethod(tpe.member(newTermName("bar")).asMethod)()))
+    println("constructor #1: " + failsafe(cm.reflectClass(im.symbol).reflectConstructor(tpe.member(newTermName("bar")).asMethod)()))
+    println("constructor #2: " + failsafe(cm.reflectClass(im.symbol).reflectConstructor(tpe.member(newTermName("<init>")).asMethod)()))
     println("class: " + failsafe(im.reflectClass(tpe.member(newTypeName("C")).asClass).reflectConstructor(typeOf[C].member(newTypeName("C")).asClass.typeSignature.member(newTermName("<init>")).asMethod)()))
     println("object: " + failsafe(im.reflectModule(tpe.member(newTermName("O")).asModule).instance))
   }
