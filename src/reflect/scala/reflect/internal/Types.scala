@@ -2201,7 +2201,15 @@ trait Types extends api.Types { self: SymbolTable =>
     override protected def normalizeImpl =
       if (typeParamsMatchArgs) betaReduce.normalize
       else if (isHigherKinded) super.normalizeImpl
-      else ErrorType
+      else {
+        // if we are overriding a type alias in an erroneous way, don't just
+        // return an ErrorType since that will result in useless error msg.
+        // Instead let's try to recover from it and rely on refcheck reporting the correct error,
+        // if that fails fallback to the old behaviour.
+        val overriddenSym = sym.nextOverriddenSymbol
+        if (overriddenSym != NoSymbol) pre.memberType(overriddenSym).normalize
+        else ErrorType
+      }
 
     // isHKSubType0 introduces synthetic type params so that
     // betaReduce can first apply sym.info to typeArgs before calling
