@@ -136,7 +136,7 @@ abstract class ExplicitOuter extends InfoTransform
    *      </p>
    *    </li>
    *    <li>
-   *      Make all super accessors and modules in traits non-private, mangling
+   *      Make all super accessors and objects in traits non-private, mangling
    *      their names.
    *    </li>
    *    <li>
@@ -149,7 +149,7 @@ abstract class ExplicitOuter extends InfoTransform
   def transformInfo(sym: Symbol, tp: Type): Type = tp match {
     case MethodType(params, restpe1) =>
       val restpe = transformInfo(sym, restpe1)
-      if (sym.owner.isTrait && ((sym hasFlag (ACCESSOR | SUPERACCESSOR)) || sym.isModule)) { // 5
+      if (sym.owner.isTrait && ((sym hasFlag (ACCESSOR | SUPERACCESSOR)) || sym.isObject)) { // 5
         sym.makeNotPrivate(sym.owner)
       }
       if (sym.owner.isTrait && sym.isProtected) sym setFlag notPROTECTED // 6
@@ -493,7 +493,7 @@ abstract class ExplicitOuter extends InfoTransform
             super.transform(tree)
 
         case This(qual) =>
-          if (sym == currentClass || sym.hasModuleFlag && sym.isStatic) tree
+          if (sym == currentClass || sym.hasObjectFlag && sym.isStatic) tree
           else atPos(tree.pos)(outerPath(outerValue, currentClass.outerClass, sym)) // (5)
 
         case Select(qual, name) =>

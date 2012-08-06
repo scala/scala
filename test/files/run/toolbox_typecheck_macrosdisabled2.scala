@@ -5,7 +5,7 @@ import scala.tools.reflect.ToolBox
 
 object Test extends App {
   val toolbox = cm.mkToolBox()
-  val rupkg = cm.staticModule("scala.reflect.runtime.package")
+  val rupkg = cm.staticObject("scala.reflect.runtime.package")
   val rusym = build.selectTerm(rupkg, "universe")
   val NullaryMethodType(rutpe) = rusym.typeSignature
   val ru = build.newFreeTerm("ru", rutpe, scala.reflect.runtime.universe)

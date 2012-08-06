@@ -62,7 +62,7 @@ abstract class GenASM extends SubComponent with BytecodeWriters {
           sym.name + " has a main method with parameter type Array[String], but " + sym.fullName('.') + " will not be a runnable program.\n" +
           "  Reason: " + msg
           // TODO: make this next claim true, if possible
-          //   by generating valid main methods as static in module classes
+          //   by generating valid main methods as static in object classes
           //   not sure what the jvm allows here
           // + "  You can still run the program by calling it as " + sym.javaSimpleName + " instead."
         )
@@ -71,14 +71,14 @@ abstract class GenASM extends SubComponent with BytecodeWriters {
       def failNoForwarder(msg: String) = {
         fail(msg + ", which means no static forwarder can be generated.\n")
       }
-      val possibles = if (sym.hasModuleFlag) (sym.tpe nonPrivateMember nme.main).alternatives else Nil
+      val possibles = if (sym.hasObjectFlag) (sym.tpe nonPrivateMember nme.main).alternatives else Nil
       val hasApproximate = possibles exists { m =>
         m.info match {
           case MethodType(p :: Nil, _) => p.tpe.typeSymbol == ArrayClass
           case _                       => false
         }
       }
-      // At this point it's a module with a main-looking method, so either succeed or warn that it isn't.
+      // At this point it's an object with a main-looking method, so either succeed or warn that it isn't.
       hasApproximate && {
         // Before erasure so we can identify generic mains.
         beforeErasure {
@@ -169,11 +169,11 @@ abstract class GenASM extends SubComponent with BytecodeWriters {
       while(!sortedClasses.isEmpty) {
         val c = sortedClasses.head
 
-        if (isStaticModule(c.symbol) && isTopLevelModule(c.symbol)) {
+        if (isStaticObject(c.symbol) && isTopLevelObject(c.symbol)) {
           if (c.symbol.companionClass == NoSymbol) {
             mirrorCodeGen.genMirrorClass(c.symbol, c.cunit)
           } else {
-            log("No mirror class for module with linked class: " + c.symbol.fullName)
+            log("No mirror class for object with linked class: " + c.symbol.fullName)
           }
         }
 
@@ -250,10 +250,10 @@ abstract class GenASM extends SubComponent with BytecodeWriters {
    *      and they would fail verification after lifted.
    */
   def javaFlags(sym: Symbol): Int = {
-    // constructors of module classes should be private
+    // constructors of object classes should be private
     // PP: why are they only being marked private at this stage and not earlier?
     val privateFlag =
-      sym.isPrivate || (sym.isPrimaryConstructor && isTopLevelModule(sym.owner))
+      sym.isPrivate || (sym.isPrimaryConstructor && isTopLevelObject(sym.owner))
 
     // Final: the only fields which can receive ACC_FINAL are eager vals.
     // Neither vars nor lazy vals can, because:
@@ -277,7 +277,7 @@ abstract class GenASM extends SubComponent with BytecodeWriters {
     // Nested objects won't receive ACC_FINAL in order to allow for their overriding.
 
     val finalFlag = (
-         (sym.hasFlag(Flags.FINAL) || isTopLevelModule(sym))
+         (sym.hasFlag(Flags.FINAL) || isTopLevelObject(sym))
       && !sym.enclClass.isInterface
       && !sym.isClassConstructor
       && !sym.isMutable // lazy vals and vars both
@@ -310,11 +310,11 @@ abstract class GenASM extends SubComponent with BytecodeWriters {
     )
   }
 
-  def isTopLevelModule(sym: Symbol): Boolean =
-    afterPickler { sym.isModuleClass && !sym.isImplClass && !sym.isNestedClass }
+  def isTopLevelObject(sym: Symbol): Boolean =
+    afterPickler { sym.isObjectClass && !sym.isImplClass && !sym.isNestedClass }
 
-  def isStaticModule(sym: Symbol): Boolean = {
-    sym.isModuleClass && !sym.isImplClass && !sym.isLifted
+  def isStaticObject(sym: Symbol): Boolean = {
+    sym.isObjectClass && !sym.isImplClass && !sym.isLifted
   }
 
   // -----------------------------------------------------------------------------------------
@@ -346,7 +346,7 @@ abstract class GenASM extends SubComponent with BytecodeWriters {
   def inameToSymbol(iname: String): Symbol = {
     val name = global.newTypeName(iname)
     val res0 =
-      if (nme.isModuleName(name)) rootMirror.getModule(nme.stripModuleSuffix(name))
+      if (nme.isObjectName(name)) rootMirror.getObject(nme.stripObjectSuffix(name))
       else                        rootMirror.getClassByName(name.replace('/', '.')) // TODO fails for inner classes (but this hasn't been tested).
     assert(res0 != NoSymbol)
     val res = jsymbol(res0)
@@ -354,9 +354,9 @@ abstract class GenASM extends SubComponent with BytecodeWriters {
   }
 
   def jsymbol(sym: Symbol): Symbol = {
-    if(sym.isJavaDefined && sym.isModuleClass) sym.linkedClassOfClass
-    else if(sym.isModule) sym.moduleClass
-    else sym // we track only module-classes and plain-classes
+    if(sym.isJavaDefined && sym.isObjectClass) sym.linkedClassOfClass
+    else if(sym.isObject) sym.objectClass
+    else sym // we track only object-classes and plain-classes
   }
 
   private def superClasses(s: Symbol): List[Symbol] = {
@@ -546,7 +546,7 @@ abstract class GenASM extends SubComponent with BytecodeWriters {
      *    A$C$ symbol for A.C.
      */
     def innerClassSymbolFor(s: Symbol): Symbol =
-      if (s.isClass) s else if (s.isModule) s.moduleClass else NoSymbol
+      if (s.isClass) s else if (s.isObject) s.objectClass else NoSymbol
 
     /** Return the a name of this symbol that can be used on the Java platform.  It removes spaces from names.
      *
@@ -584,7 +584,7 @@ abstract class GenASM extends SubComponent with BytecodeWriters {
 
       collectInnerClass(sym)
 
-      var hasInternalName = (sym.isClass || (sym.isModule && !sym.isMethod))
+      var hasInternalName = (sym.isClass || (sym.isObject && !sym.isMethod))
       val cachedJN = javaNameCache.getOrElseUpdate(sym, {
         if (hasInternalName) { sym.javaBinaryName }
         else                 { sym.javaSimpleName }
@@ -659,7 +659,7 @@ abstract class GenASM extends SubComponent with BytecodeWriters {
           null
         else {
           val outerName = javaName(innerSym.rawowner)
-          if (isTopLevelModule(innerSym.rawowner)) "" + nme.stripModuleSuffix(newTermName(outerName))
+          if (isTopLevelObject(innerSym.rawowner)) "" + nme.stripObjectSuffix(newTermName(outerName))
           else outerName
         }
       }
@@ -668,7 +668,7 @@ abstract class GenASM extends SubComponent with BytecodeWriters {
         if (innerSym.isAnonymousClass || innerSym.isAnonymousFunction)
           null
         else
-          innerSym.rawname + innerSym.moduleSuffix
+          innerSym.rawname + innerSym.objectSuffix
 
       // add inner classes which might not have been referenced yet
       afterErasure {
@@ -686,7 +686,7 @@ abstract class GenASM extends SubComponent with BytecodeWriters {
         // sort them so inner classes succeed their enclosing class to satisfy the Eclipse Java compiler
         for (innerSym <- allInners sortBy (_.name.length)) { // TODO why not sortBy (_.name.toString()) ??
           val flags = mkFlags(
-            if (innerSym.rawowner.hasModuleFlag) asm.Opcodes.ACC_STATIC else 0,
+            if (innerSym.rawowner.hasObjectFlag) asm.Opcodes.ACC_STATIC else 0,
             javaFlags(innerSym),
             if(isDeprecated(innerSym)) asm.Opcodes.ACC_DEPRECATED else 0 // ASM pseudo-access flag
           ) & (INNER_CLASSES_FLAGS | asm.Opcodes.ACC_DEPRECATED)
@@ -748,7 +748,7 @@ abstract class GenASM extends SubComponent with BytecodeWriters {
     val PublicStatic      = asm.Opcodes.ACC_PUBLIC | asm.Opcodes.ACC_STATIC
     val PublicStaticFinal = asm.Opcodes.ACC_PUBLIC | asm.Opcodes.ACC_STATIC | asm.Opcodes.ACC_FINAL
 
-    val strMODULE_INSTANCE_FIELD = nme.MODULE_INSTANCE_FIELD.toString
+    val strOBJECT_INSTANCE_FIELD = nme.OBJECT_INSTANCE_FIELD.toString
 
     // -----------------------------------------------------------------------------------------
     // Custom attribute (JVMS 4.7.1) "ScalaSig" used as marker only
@@ -801,7 +801,7 @@ abstract class GenASM extends SubComponent with BytecodeWriters {
      */
     def getAnnotPickle(jclassName: String, sym: Symbol): Option[AnnotationInfo] = {
       currentRun.symData get sym match {
-        case Some(pickle) if !nme.isModuleName(newTermName(jclassName)) =>
+        case Some(pickle) if !nme.isObjectName(newTermName(jclassName)) =>
           val scalaAnnot = {
             val sigBytes = ScalaSigBytes(pickle.bytes.take(pickle.writeIndex))
             AnnotationInfo(sigBytes.sigAnnot, Nil, List((nme.bytes, sigBytes)))
@@ -1081,7 +1081,7 @@ abstract class GenASM extends SubComponent with BytecodeWriters {
 
     // -----------------------------------------------------------------------------------------
     // Static forwarders (related to mirror classes but also present in
-    // a plain class lacking companion module, for details see `isCandidateForForwarders`).
+    // a plain class lacking companion object, for details see `isCandidateForForwarders`).
     // -----------------------------------------------------------------------------------------
 
     val ExcludedForwarderFlags = {
@@ -1091,9 +1091,9 @@ abstract class GenASM extends SubComponent with BytecodeWriters {
     }
 
     /** Add a forwarder for method m. Used only from addForwarders(). */
-    private def addForwarder(isRemoteClass: Boolean, jclass: asm.ClassVisitor, module: Symbol, m: Symbol) {
-      val moduleName     = javaName(module)
-      val methodInfo     = module.thisType.memberInfo(m)
+    private def addForwarder(isRemoteClass: Boolean, jclass: asm.ClassVisitor, objct: Symbol, m: Symbol) {
+      val objectName     = javaName(objct)
+      val methodInfo     = objct.thisType.memberInfo(m)
       val paramJavaTypes: List[asm.Type] = methodInfo.paramTypes map javaType
       // val paramNames     = 0 until paramJavaTypes.length map ("x_" + _)
 
@@ -1108,7 +1108,7 @@ abstract class GenASM extends SubComponent with BytecodeWriters {
       )
 
       // TODO needed? for(ann <- m.annotations) { ann.symbol.initialize }
-      val jgensig = if (m.isDeferred) null else getGenericSignature(m, module); // only add generic signature if method concrete; bug #1745
+      val jgensig = if (m.isDeferred) null else getGenericSignature(m, objct); // only add generic signature if method concrete; bug #1745
       addRemoteExceptionAnnot(isRemoteClass, hasPublicBitSet(flags), m)
       val (throws, others) = m.annotations partition (_.symbol == ThrowsClass)
       val thrownExceptions: List[String] = getExceptions(throws)
@@ -1135,7 +1135,7 @@ abstract class GenASM extends SubComponent with BytecodeWriters {
 
       mirrorMethod.visitCode()
 
-      mirrorMethod.visitFieldInsn(asm.Opcodes.GETSTATIC, moduleName, strMODULE_INSTANCE_FIELD, descriptor(module))
+      mirrorMethod.visitFieldInsn(asm.Opcodes.GETSTATIC, objectName, strOBJECT_INSTANCE_FIELD, descriptor(objct))
 
       var index = 0
       for(jparamType <- paramJavaTypes) {
@@ -1144,7 +1144,7 @@ abstract class GenASM extends SubComponent with BytecodeWriters {
         index += jparamType.getSize()
       }
 
-      mirrorMethod.visitMethodInsn(asm.Opcodes.INVOKEVIRTUAL, moduleName, mirrorMethodName, javaType(m).getDescriptor)
+      mirrorMethod.visitMethodInsn(asm.Opcodes.INVOKEVIRTUAL, objectName, mirrorMethodName, javaType(m).getDescriptor)
       mirrorMethod.visitInsn(jReturnType.getOpcode(asm.Opcodes.IRETURN))
 
       mirrorMethod.visitMaxs(0, 0) // just to follow protocol, dummy arguments
@@ -1152,32 +1152,32 @@ abstract class GenASM extends SubComponent with BytecodeWriters {
 
     }
 
-    /** Add forwarders for all methods defined in `module` that don't conflict
-     *  with methods in the companion class of `module`. A conflict arises when
+    /** Add forwarders for all methods defined in `object` that don't conflict
+     *  with methods in the companion class of `object`. A conflict arises when
      *  a method with the same name is defined both in a class and its companion object:
      *  method signature is not taken into account.
      */
-    def addForwarders(isRemoteClass: Boolean, jclass: asm.ClassVisitor, jclassName: String, moduleClass: Symbol) {
-      assert(moduleClass.isModuleClass, moduleClass)
-      debuglog("Dumping mirror class for object: " + moduleClass)
+    def addForwarders(isRemoteClass: Boolean, jclass: asm.ClassVisitor, jclassName: String, objectClass: Symbol) {
+      assert(objectClass.isObjectClass, objectClass)
+      debuglog("Dumping mirror class for object: " + objectClass)
 
-      val linkedClass  = moduleClass.companionClass
-      val linkedModule = linkedClass.companionSymbol
+      val linkedClass  = objectClass.companionClass
+      val linkedObject = linkedClass.companionSymbol
       lazy val conflictingNames: Set[Name] = {
         (linkedClass.info.members collect { case sym if sym.name.isTermName => sym.name }).toSet
       }
       debuglog("Potentially conflicting names for forwarders: " + conflictingNames)
 
-      for (m <- moduleClass.info.membersBasedOnFlags(ExcludedForwarderFlags, Flags.METHOD)) {
+      for (m <- objectClass.info.membersBasedOnFlags(ExcludedForwarderFlags, Flags.METHOD)) {
         if (m.isType || m.isDeferred || (m.owner eq ObjectClass) || m.isConstructor)
-          debuglog("No forwarder for '%s' from %s to '%s'".format(m, jclassName, moduleClass))
+          debuglog("No forwarder for '%s' from %s to '%s'".format(m, jclassName, objectClass))
         else if (conflictingNames(m.name))
           log("No forwarder for " + m + " due to conflict with " + linkedClass.info.member(m.name))
         else {
-          log("Adding static forwarder for '%s' from %s to '%s'".format(m, jclassName, moduleClass))
+          log("Adding static forwarder for '%s' from %s to '%s'".format(m, jclassName, objectClass))
           if (m.isAccessor && m.accessed.hasStaticAnnotation) {
             log("@static: accessor " + m + ", accessed: " + m.accessed)
-          } else addForwarder(isRemoteClass, jclass, moduleClass, m)
+          } else addForwarder(isRemoteClass, jclass, objectClass, m)
         }
       }
     }
@@ -1208,7 +1208,7 @@ abstract class GenASM extends SubComponent with BytecodeWriters {
         clasz.symbol.newValue(newTermName(androidFieldName), NoPosition, Flags.STATIC | Flags.FINAL)
           setInfo AndroidCreatorClass.tpe
       )
-      val methodSymbol = definitions.getMember(clasz.symbol.companionModule, androidFieldName)
+      val methodSymbol = definitions.getMember(clasz.symbol.companionObject, androidFieldName)
       clasz addField new IField(fieldSymbol)
       block emit CALL_METHOD(methodSymbol, Static(false))
       block emit STORE_FIELD(fieldSymbol, true)
@@ -1226,20 +1226,20 @@ abstract class GenASM extends SubComponent with BytecodeWriters {
         null  // no initial value
       ).visitEnd()
 
-      val moduleName = javaName(clasz.symbol)+"$"
+      val objectName = javaName(clasz.symbol)+"$"
 
-      // GETSTATIC `moduleName`.MODULE$ : `moduleName`;
+      // GETSTATIC `objectName`.MODULE$ : `objectName`;
       clinit.visitFieldInsn(
         asm.Opcodes.GETSTATIC,
-        moduleName,
-        strMODULE_INSTANCE_FIELD,
-        asm.Type.getObjectType(moduleName).getDescriptor
+        objectName,
+        strOBJECT_INSTANCE_FIELD,
+        asm.Type.getObjectType(objectName).getDescriptor
       )
 
-      // INVOKEVIRTUAL `moduleName`.CREATOR() : android.os.Parcelable$Creator;
+      // INVOKEVIRTUAL `objectName`.CREATOR() : android.os.Parcelable$Creator;
       clinit.visitMethodInsn(
         asm.Opcodes.INVOKEVIRTUAL,
-        moduleName,
+        objectName,
         androidFieldName,
         asm.Type.getMethodDescriptor(creatorType, Array.empty[asm.Type]: _*)
       )
@@ -1417,9 +1417,9 @@ abstract class GenASM extends SubComponent with BytecodeWriters {
       // typestate: entering mode with valid call sequences:
       //   ( visitInnerClass | visitField | visitMethod )* visitEnd
 
-      if (isStaticModule(c.symbol) || isParcelableClass) {
+      if (isStaticObject(c.symbol) || isParcelableClass) {
 
-        if (isStaticModule(c.symbol)) { addModuleInstanceField() }
+        if (isStaticObject(c.symbol)) { addObjectInstanceField() }
         addStaticInit(c.lookupStaticCtor)
 
       } else {
@@ -1429,16 +1429,16 @@ abstract class GenASM extends SubComponent with BytecodeWriters {
         }
         val skipStaticForwarders = (c.symbol.isInterface || settings.noForwarders.value)
         if (!skipStaticForwarders) {
-          val lmoc = c.symbol.companionModule
+          val lmoc = c.symbol.companionObject
           // add static forwarders if there are no name conflicts; see bugs #363 and #1735
           if (lmoc != NoSymbol) {
             // it must be a top level class (name contains no $s)
             val isCandidateForForwarders = {
-              afterPickler { !(lmoc.name.toString contains '$') && lmoc.hasModuleFlag && !lmoc.isImplClass && !lmoc.isNestedClass }
+              afterPickler { !(lmoc.name.toString contains '$') && lmoc.hasObjectFlag && !lmoc.isImplClass && !lmoc.isNestedClass }
             }
             if (isCandidateForForwarders) {
               log("Adding static forwarders from '%s' to implementations in '%s'".format(c.symbol, lmoc))
-              addForwarders(isRemote(clasz.symbol), jclass, thisName, lmoc.moduleClass)
+              addForwarders(isRemote(clasz.symbol), jclass, thisName, lmoc.objectClass)
             }
           }
         }
@@ -1632,10 +1632,10 @@ abstract class GenASM extends SubComponent with BytecodeWriters {
 
     }
 
-    def addModuleInstanceField() {
+    def addObjectInstanceField() {
       val fv =
         jclass.visitField(PublicStaticFinal, // TODO confirm whether we really don't want ACC_SYNTHETIC nor ACC_DEPRECATED
-                          strMODULE_INSTANCE_FIELD,
+                          strOBJECT_INSTANCE_FIELD,
                           thisDescr,
                           null, // no java-generic-signature
                           null  // no initial value
@@ -1667,7 +1667,7 @@ abstract class GenASM extends SubComponent with BytecodeWriters {
           val lastBlock = m.newBlock()
           oldLastBlock.replaceInstruction(oldLastBlock.length - 1, JUMP(lastBlock))
 
-          if (isStaticModule(clasz.symbol)) {
+          if (isStaticObject(clasz.symbol)) {
             // call object's private ctor from static ctor
             lastBlock emit NEW(REFERENCE(m.symbol.enclClass))
             lastBlock emit CALL_METHOD(m.symbol.enclClass.primaryConstructor, Static(true))
@@ -1698,7 +1698,7 @@ abstract class GenASM extends SubComponent with BytecodeWriters {
 
     /* used only from addStaticInit() */
     private def legacyStaticInitializer(clinit: asm.MethodVisitor) {
-      if (isStaticModule(clasz.symbol)) {
+      if (isStaticObject(clasz.symbol)) {
         clinit.visitTypeInsn(asm.Opcodes.NEW, thisName)
         clinit.visitMethodInsn(asm.Opcodes.INVOKESPECIAL,
                                thisName, INSTANCE_CONSTRUCTOR_NAME, mdesc_arglessvoid)
@@ -2027,7 +2027,7 @@ abstract class GenASM extends SubComponent with BytecodeWriters {
       val linearization: List[BasicBlock] = linearizer.linearize(m)
       if(linearization.isEmpty) { return }
 
-      var isModuleInitialized = false
+      var isObjectInitialized = false
 
       val labels: collection.Map[BasicBlock, asm.Label] = mutable.HashMap(linearization map (_ -> new asm.Label()) : _*)
 
@@ -2347,14 +2347,14 @@ abstract class GenASM extends SubComponent with BytecodeWriters {
           debuglog("%s %s %s.%s:%s".format(invoke, receiver.accessString, jowner, jname, jtype))
         }
 
-        def initModule() {
+        def initObject() {
           // we initialize the MODULE$ field immediately after the super ctor
-          if (isStaticModule(siteSymbol) && !isModuleInitialized &&
+          if (isStaticObject(siteSymbol) && !isObjectInitialized &&
               jMethodName == INSTANCE_CONSTRUCTOR_NAME &&
               jname == INSTANCE_CONSTRUCTOR_NAME) {
-            isModuleInitialized = true
+            isObjectInitialized = true
             jmethod.visitVarInsn(asm.Opcodes.ALOAD, 0)
-            jmethod.visitFieldInsn(asm.Opcodes.PUTSTATIC, thisName, strMODULE_INSTANCE_FIELD, thisDescr)
+            jmethod.visitFieldInsn(asm.Opcodes.PUTSTATIC, thisName, strOBJECT_INSTANCE_FIELD, thisDescr)
           }
         }
 
@@ -2366,7 +2366,7 @@ abstract class GenASM extends SubComponent with BytecodeWriters {
           case SuperCall(_)                         =>
             dbg("invokespecial")
             jcode.invokespecial(jowner, jname, jtype)
-            initModule()
+            initObject()
         }
       } // end of genCode()'s genCallMethod()
 
@@ -2428,17 +2428,17 @@ abstract class GenASM extends SubComponent with BytecodeWriters {
 
             case icodes.stackCat => (instr: @unchecked) match {
 
-              case LOAD_MODULE(module) =>
-                // assert(module.isModule, "Expected module: " + module)
-                debuglog("generating LOAD_MODULE for: " + module + " flags: " + Flags.flagsToString(module.flags));
-                if (clasz.symbol == module.moduleClass && jMethodName != nme.readResolve.toString) {
+              case LOAD_OBJECT(objct) =>
+                // assert(objct.isObject, "Expected object: " + objct)
+                debuglog("generating LOAD_OBJECT for: " + objct + " flags: " + Flags.flagsToString(objct.flags));
+                if (clasz.symbol == objct.objectClass && jMethodName != nme.readResolve.toString) {
                   jmethod.visitVarInsn(Opcodes.ALOAD, 0)
                 } else {
                   jmethod.visitFieldInsn(
                     Opcodes.GETSTATIC,
-                    javaName(module) /* + "$" */ ,
-                    strMODULE_INSTANCE_FIELD,
-                    descriptor(module)
+                    javaName(objct) /* + "$" */ ,
+                    strOBJECT_INSTANCE_FIELD,
+                    descriptor(objct)
                   )
                 }
 
@@ -2913,7 +2913,7 @@ abstract class GenASM extends SubComponent with BytecodeWriters {
     private var cunit: CompilationUnit = _
     def getCurrentCUnit(): CompilationUnit = cunit;
 
-    /** Generate a mirror class for a top-level module. A mirror class is a class
+    /** Generate a mirror class for a top-level object. A mirror class is a class
      *  containing only static methods that forward to the corresponding method
      *  on the MODULE instance of the given Scala object.  It will only be
      *  generated if there is no companion class: if there is, an attempt will
@@ -2923,8 +2923,8 @@ abstract class GenASM extends SubComponent with BytecodeWriters {
       assert(modsym.companionClass == NoSymbol, modsym)
       innerClassBuffer.clear()
       this.cunit = cunit
-      val moduleName = javaName(modsym) // + "$"
-      val mirrorName = moduleName.substring(0, moduleName.length() - 1)
+      val objectName = javaName(modsym) // + "$"
+      val mirrorName = objectName.substring(0, objectName.length() - 1)
 
       val flags = (asm.Opcodes.ACC_SUPER | asm.Opcodes.ACC_PUBLIC | asm.Opcodes.ACC_FINAL)
       val mirrorClass = createJClass(flags,

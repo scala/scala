@@ -35,43 +35,43 @@ trait GenSymbols {
       mirrorMirrorSelect(nme.EmptyPackage)
     else if (sym.isEmptyPackageClass)
       mirrorMirrorSelect(nme.EmptyPackageClass)
-    else if (sym.isModuleClass)
-      Select(Select(reify(sym.sourceModule), nme.asModule), nme.moduleClass)
+    else if (sym.isObjectClass)
+      Select(Select(reify(sym.sourceObject), nme.asObject), nme.objectClass)
     else if (sym.isPackage)
       mirrorMirrorCall(nme.staticPackage, reify(sym.fullName))
     else if (sym.isLocatable) {
       /** This is a fancy conundrum that stems from the fact that Scala allows
        *  packageless packages and packageless objects with the same names in the same program.
        *
-       *  For more details read the docs to staticModule and staticPackage.
+       *  For more details read the docs to staticObject and staticPackage.
        *  Here I'll just provide the examples of how reify works for different kinds of symbols.
        *
        *    // 1) packageless
-       *    // packageless classes are non-ambiguous, but modules vs packages might be
+       *    // packageless classes are non-ambiguous, but objects vs packages might be
        *    // that's why we have separate methods to reify those
-       *    // note that staticModule will never resolve to a package if an object is missing and an homonymous package is present and vice versa
+       *    // note that staticObject will never resolve to a package if an object is missing and an homonymous package is present and vice versa
        *    // otherwise reification would be unsound
        *    class C => staticClass("C")
-       *    object B => staticModule("B")
+       *    object B => staticObject("B")
        *    package B => staticPackage("B")
        *
-       *    // 2) classes and modules enclosed in a package
-       *    // staticXXX methods always look into parent packages and ignores parent modules, so for fully qualified names they are non-ambiguous
+       *    // 2) classes and objects enclosed in a package
+       *    // staticXXX methods always look into parent packages and ignores parent objects, so for fully qualified names they are non-ambiguous
        *    // namely even if there's an object B { class C } next to package B { class C }, then staticClass("B.C") will resolve to a packageful class
-       *    // this closely mirrors Scala's behavior, read up the docs to staticModule/staticPackage for more information
+       *    // this closely mirrors Scala's behavior, read up the docs to staticObject/staticPackage for more information
        *    package B { class C } => staticClass("B.C")
-       *    package B { object B } => staticModule("B.B")
+       *    package B { object B } => staticObject("B.B")
        *    package B { package B } => staticPackage("B.B")
        *
-       *    // 3) classes and modules enclosed in a packageless module
-       *    // staticClass/staticModule won't look into EmptyPackageClass, so we reify such symbols in a roundabout way
-       *    object B { class C } => selectType(staticModule("B"), "C")
-       *    object B { object B } => selectType(staticModule("B"), "B")
+       *    // 3) classes and objects enclosed in a packageless object
+       *    // staticClass/staticObject won't look into EmptyPackageClass, so we reify such symbols in a roundabout way
+       *    object B { class C } => selectType(staticObject("B"), "C")
+       *    object B { object B } => selectType(staticObject("B"), "B")
        *    object B { package B } => impossible
        */
       val hasPackagelessParent = sym.ownerChain.tail.tail exists (_.isEmptyPackageClass)
-      if (sym.isStatic && (sym.isClass || sym.isModule) && !hasPackagelessParent) {
-        val resolver = if (sym.isType) nme.staticClass else nme.staticModule
+      if (sym.isStatic && (sym.isClass || sym.isObject) && !hasPackagelessParent) {
+        val resolver = if (sym.isType) nme.staticClass else nme.staticObject
         mirrorMirrorCall(resolver, reify(sym.fullName))
       } else {
         if (reifyDebug) println("Locatable: %s (%s) owned by %s (%s) at %s".format(sym, sym.accurateKindString, sym.owner, sym.owner.accurateKindString, sym.owner.fullNameString))

@@ -77,7 +77,7 @@ trait GenJVMUtil {
      */
     def javaName(sym: Symbol): String =
       javaNameCache.getOrElseUpdate(sym, {
-        if (sym.isClass || (sym.isModule && !sym.isMethod))
+        if (sym.isClass || (sym.isObject && !sym.isMethod))
           sym.javaBinaryName
         else
           sym.javaSimpleName

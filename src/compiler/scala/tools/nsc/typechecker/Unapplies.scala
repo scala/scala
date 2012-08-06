@@ -24,11 +24,11 @@ trait Unapplies extends ast.TreeDSL
   private val unapplyParamName = nme.x_0
 
 
-  // In the typeCompleter (templateSig) of a case class (resp it's module),
+  // In the typeCompleter (templateSig) of a case class (resp it's object),
   // synthetic `copy` (reps `apply`, `unapply`) methods are added. To compute
   // their signatures, the corresponding ClassDef is needed. During naming (in
   // `enterClassDef`), the case class ClassDef is added as an attachment to the
-  // moduleClass symbol of the companion module.
+  // objectClass symbol of the companion object.
   class ClassForCaseCompanionAttachment(val caseClass: ClassDef)
 
   /** returns type list for return type of the extraction
@@ -102,9 +102,9 @@ trait Unapplies extends ast.TreeDSL
     }
   }
 
-  /** The module corresponding to a case class; overrides toString to show the module's name
+  /** The object corresponding to a case class; overrides toString to show the object's name
    */
-  def caseModuleDef(cdef: ClassDef): ModuleDef = {
+  def caseObjectDef(cdef: ClassDef): ObjectDef = {
     // > MaxFunctionArity is caught in Namers, but for nice error reporting instead of
     // an abrupt crash we trim the list here.
     def primaries      = constrParamss(cdef).head take MaxFunctionArity map (_.tpt)
@@ -119,11 +119,11 @@ trait Unapplies extends ast.TreeDSL
       TypeTree(),
       Literal(Constant(cdef.name.decode)))
 
-    companionModuleDef(cdef, parents, List(toString))
+    companionObjectDef(cdef, parents, List(toString))
   }
 
-  def companionModuleDef(cdef: ClassDef, parents: List[Tree] = Nil, body: List[Tree] = Nil): ModuleDef = atPos(cdef.pos.focus) {
-    ModuleDef(
+  def companionObjectDef(cdef: ClassDef, parents: List[Tree] = Nil, body: List[Tree] = Nil): ObjectDef = atPos(cdef.pos.focus) {
+    ObjectDef(
       Modifiers(cdef.mods.flags & AccessFlags | SYNTHETIC, cdef.mods.privateWithin),
       cdef.name.toTermName,
       Template(parents, emptyValDef, NoMods, Nil, List(Nil), body, cdef.impl.pos.focus))
@@ -145,18 +145,18 @@ trait Unapplies extends ast.TreeDSL
 
   /** The apply method corresponding to a case class
    */
-  def caseModuleApplyMeth(cdef: ClassDef): DefDef = factoryMeth(caseMods, nme.apply, cdef, symbolic = true)
+  def caseObjectApplyMeth(cdef: ClassDef): DefDef = factoryMeth(caseMods, nme.apply, cdef, symbolic = true)
 
   /** The unapply method corresponding to a case class
    */
-  def caseModuleUnapplyMeth(cdef: ClassDef): DefDef = {
+  def caseObjectUnapplyMeth(cdef: ClassDef): DefDef = {
     val tparams   = cdef.tparams map copyUntypedInvariant
     val method    = constrParamss(cdef) match {
       case xs :: _ if xs.nonEmpty && isRepeatedParamType(xs.last.tpt) => nme.unapplySeq
       case _                                                          => nme.unapply
     }
     val cparams   = List(ValDef(Modifiers(PARAM | SYNTHETIC), unapplyParamName, classType(cdef, tparams), EmptyTree))
-    val ifNull    = if (constrParamss(cdef).head.isEmpty) FALSE else REF(NoneModule)
+    val ifNull    = if (constrParamss(cdef).head.isEmpty) FALSE else REF(NoneObject)
     val body      = nullSafe({ case Ident(x) => caseClassUnapplyReturnValue(x, cdef.symbol) }, ifNull)(Ident(unapplyParamName))
 
     atPos(cdef.pos.focus)(

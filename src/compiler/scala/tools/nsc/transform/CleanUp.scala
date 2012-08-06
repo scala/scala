@@ -537,7 +537,7 @@ abstract class CleanUp extends Transform with ast.TreeDSL {
             if (tpe.typeSymbol == UnitClass)
               REF(BoxedUnit_TYPE)
             else
-              Select(REF(boxedModule(tpe.typeSymbol)), nme.TYPE_)
+              Select(REF(boxedObject(tpe.typeSymbol)), nme.TYPE_)
           }
 
           else tree
@@ -552,7 +552,7 @@ abstract class CleanUp extends Transform with ast.TreeDSL {
         val isPrivate = atPhase(currentRun.typerPhase) { sym.getter(owner).hasFlag(PRIVATE) }
         val isProtected = atPhase(currentRun.typerPhase) { sym.getter(owner).hasFlag(PROTECTED) }
         val isLazy = atPhase(currentRun.typerPhase) { sym.getter(owner).hasFlag(LAZY) }
-        if (!owner.isModuleClass || !staticBeforeLifting) {
+        if (!owner.isObjectClass || !staticBeforeLifting) {
           if (!sym.isSynthetic) {
             reporter.error(tree.pos, "Only members of top-level objects and their nested objects can be annotated with @static.")
             tree.symbol.removeAnnotation(StaticClass)
@@ -566,7 +566,7 @@ abstract class CleanUp extends Transform with ast.TreeDSL {
           reporter.error(tree.pos, "The @static annotation is not allowed on lazy members.")
           tree.symbol.removeAnnotation(StaticClass)
           super.transform(tree)
-        } else if (owner.isModuleClass) {
+        } else if (owner.isObjectClass) {
           val linkedClass = owner.companionClass match {
             case NoSymbol =>
               // create the companion class if it does not exist
@@ -668,7 +668,7 @@ abstract class CleanUp extends Transform with ast.TreeDSL {
       // with just Array(...)
       case Apply(appMeth, List(Apply(wrapRefArrayMeth, List(array)), _))
       if (wrapRefArrayMeth.symbol == Predef_wrapRefArray &&
-          appMeth.symbol == ArrayModule_overloadedApply.suchThat {
+          appMeth.symbol == ArrayObject_overloadedApply.suchThat {
             _.tpe.resultType.dealias.typeSymbol == ObjectClass
           }) =>
         super.transform(array)
@@ -749,7 +749,7 @@ abstract class CleanUp extends Transform with ast.TreeDSL {
     
     private def addStaticDeclarations(tree: Template, clazz: Symbol) {
       // add static field initializer statements for each static field in clazz
-      if (!clazz.isModuleClass) for {
+      if (!clazz.isObjectClass) for {
         staticSym <- clazz.info.decls
         if staticSym.hasStaticAnnotation
       } staticSym match {

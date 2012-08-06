@@ -36,7 +36,7 @@ abstract class LazyVals extends Transform with TypingTransformers with ast.TreeD
             d.symbol.resetFlag(symtab.Flags.LAZY)
             result = true
 
-          case ClassDef(_, _, _, _) | DefDef(_, _, _, _, _, _) | ModuleDef(_, _, _) =>
+          case ClassDef(_, _, _, _) | DefDef(_, _, _, _, _, _) | ObjectDef(_, _, _) =>
 
           case LabelDef(name, _, _) if nme.isLoopHeaderLabel(name) =>
 
@@ -137,7 +137,7 @@ abstract class LazyVals extends Transform with TypingTransformers with ast.TreeD
           deriveTemplate(tree)(_ => innerClassBitmaps ++ stats)
         }
 
-        case ValDef(_, _, _, _) if !sym.owner.isModule && !sym.owner.isClass =>
+        case ValDef(_, _, _, _) if !sym.owner.isObject && !sym.owner.isClass =>
           deriveValDef(tree) { rhs0 =>
             val rhs = transform(rhs0)
             if (LocalLazyValFinder.find(rhs)) typed(addBitmapDefs(sym, rhs)) else rhs

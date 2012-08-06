@@ -548,7 +548,7 @@ trait ParallelMatching extends ast.TreeDSL
           val (s, p) = (pattern.tpe, head.necessaryType)
 
           def isEquivalent  = head.necessaryType =:= pattern.tpe
-          def isObjectTest  = pattern.isObject && (p =:= pattern.necessaryType)
+          def isObjectTest  = pattern.isInstance && (p =:= pattern.necessaryType)
 
           def sMatchesP = matches(s, p)
           def pMatchesS = matches(p, s)
@@ -843,7 +843,7 @@ trait ParallelMatching extends ast.TreeDSL
           case ConstantType(const)                    => scrutTree MEMBER_== Literal(const)
           case SingleType(NoPrefix, sym)              => genEquals(sym)
           case SingleType(pre, sym) if sym.isStable   => genEquals(sym)
-          case ThisType(sym) if sym.isModule          => genEquals(sym)
+          case ThisType(sym) if sym.isObject          => genEquals(sym)
           case _ if isMatchUnlessNull                 => scrutTree OBJ_NE NULL
           case _                                      => scrutTree IS tpe
         }

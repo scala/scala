@@ -9,9 +9,9 @@ abstract class MirrorOf[U <: base.Universe with Singleton] {
 
   /** .. */
   def RootClass: U#ClassSymbol
-  def RootPackage: U#ModuleSymbol
+  def RootPackage: U#ObjectSymbol
   def EmptyPackageClass: U#ClassSymbol
-  def EmptyPackage: U#ModuleSymbol
+  def EmptyPackage: U#ObjectSymbol
 
   /** The symbol corresponding to the globally accessible class with the
    *  given fully qualified name `fullName`.
@@ -26,9 +26,9 @@ abstract class MirrorOf[U <: base.Universe with Singleton] {
    *    res1: String = scala.collection.immutable.List
    *
    *    scala> cm.staticPackage("scala")
-   *    res2: reflect.runtime.universe.ModuleSymbol = package scala
+   *    res2: reflect.runtime.universe.ObjectSymbol = package scala
    *
-   *    scala> res2.moduleClass.typeSignature member newTypeName("List")
+   *    scala> res2.objectClass.typeSignature member newTypeName("List")
    *    res3: reflect.runtime.universe.Symbol = type List
    *
    *    scala> res3.fullName
@@ -53,7 +53,7 @@ abstract class MirrorOf[U <: base.Universe with Singleton] {
    *  fully qualified class name is written inside any package in a Scala program).
    *
    *  In the example above, to load a symbol that corresponds to the class B declared in the object foo,
-   *  use staticModule("foo") to load the module symbol and then navigate typeSignature.members of its moduleClass.
+   *  use staticObject("foo") to load the object symbol and then navigate typeSignature.members of its objectClass.
    */
   def staticClass(fullName: String): U#ClassSymbol
 
@@ -74,17 +74,17 @@ abstract class MirrorOf[U <: base.Universe with Singleton] {
    *      object B
    *    }
    *
-   *  staticModule("foo.B") will resolve to the symbol corresponding to the object B declared in the package foo, and
-   *  staticModule("foo.A") will throw a MissingRequirementException (which is exactly what scalac would do if this
+   *  staticObject("foo.B") will resolve to the symbol corresponding to the object B declared in the package foo, and
+   *  staticObject("foo.A") will throw a MissingRequirementException (which is exactly what scalac would do if this
    *  fully qualified class name is written inside any package in a Scala program).
    *
    *  In the example above, to load a symbol that corresponds to the object B declared in the object foo,
-   *  use staticModule("foo") to load the module symbol and then navigate typeSignature.members of its moduleClass.
+   *  use staticObject("foo") to load the object symbol and then navigate typeSignature.members of its objectClass.
    */
-  def staticModule(fullName: String): U#ModuleSymbol
+  def staticObject(fullName: String): U#ObjectSymbol
 
   /** The symbol corresponding to a package with the
    *  given fully qualified name `fullName`.
    */
-  def staticPackage(fullName: String): U#ModuleSymbol
+  def staticPackage(fullName: String): U#ObjectSymbol
 }

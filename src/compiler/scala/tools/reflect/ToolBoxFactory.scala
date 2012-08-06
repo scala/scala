@@ -41,7 +41,7 @@ abstract class ToolBoxFactory[U <: JavaUniverse](val u: U) { factorySelf =>
 
       private final val wrapperMethodName = "wrapper"
 
-      private def nextWrapperModuleName() = {
+      private def nextWrapperObjectName() = {
         wrapCount += 1
         // we need to use UUIDs here, because our toolbox might be spawned by another toolbox
         // that already has, say, __wrapper$1 in its virtual directory, which will shadow our codegen
@@ -102,7 +102,7 @@ abstract class ToolBoxFactory[U <: JavaUniverse](val u: U) { factorySelf =>
 
         // need to wrap the expr, because otherwise you won't be able to typecheck macros against something that contains free vars
         var (expr, freeTerms) = extractFreeTerms(expr0, wrapFreeTermRefs = false)
-        val dummies = freeTerms.map{ case (freeTerm, name) => ValDef(NoMods, name, TypeTree(freeTerm.info), Select(Ident(PredefModule), newTermName("$qmark$qmark$qmark"))) }.toList
+        val dummies = freeTerms.map{ case (freeTerm, name) => ValDef(NoMods, name, TypeTree(freeTerm.info), Select(Ident(PredefObject), newTermName("$qmark$qmark$qmark"))) }.toList
         expr = Block(dummies, expr)
 
         // [Eugene] how can we implement that?
@@ -177,14 +177,14 @@ abstract class ToolBoxFactory[U <: JavaUniverse](val u: U) { factorySelf =>
         def wrapExpr(expr0: Tree): Tree = {
           val (expr, freeTerms) = extractFreeTerms(expr0, wrapFreeTermRefs = true)
 
-          val (obj, mclazz) = rootMirror.EmptyPackageClass.newModuleAndClassSymbol(
-            nextWrapperModuleName())
+          val (obj, mclazz) = rootMirror.EmptyPackageClass.newObjectAndClassSymbol(
+            nextWrapperObjectName())
 
-          val minfo = ClassInfoType(List(ObjectClass.tpe), newScope, obj.moduleClass)
-          obj.moduleClass setInfo minfo
-          obj setInfo obj.moduleClass.tpe
+          val minfo = ClassInfoType(List(ObjectClass.tpe), newScope, obj.objectClass)
+          obj.objectClass setInfo minfo
+          obj setInfo obj.objectClass.tpe
 
-          val meth = obj.moduleClass.newMethod(newTermName(wrapperMethodName))
+          val meth = obj.objectClass.newMethod(newTermName(wrapperMethodName))
           def makeParam(schema: (FreeTermSymbol, TermName)) = {
             val (fv, name) = schema
             // [Eugene] conventional way of doing this?
@@ -201,7 +201,7 @@ abstract class ToolBoxFactory[U <: JavaUniverse](val u: U) { factorySelf =>
           trace("wrapping ")(defOwner(expr) -> meth)
           val methdef = DefDef(meth, expr changeOwner (defOwner(expr) -> meth))
 
-          val moduledef = ModuleDef(
+          val objectdef = ObjectDef(
               obj,
               Template(
                   List(TypeTree(ObjectClass.tpe)),
@@ -211,9 +211,9 @@ abstract class ToolBoxFactory[U <: JavaUniverse](val u: U) { factorySelf =>
                   List(List()),
                   List(methdef),
                   NoPosition))
-          trace("wrapped: ")(showAttributed(moduledef, true, true, settings.Yshowsymkinds.value))
+          trace("wrapped: ")(showAttributed(objectdef, true, true, settings.Yshowsymkinds.value))
 
-          var cleanedUp = resetLocalAttrs(moduledef)
+          var cleanedUp = resetLocalAttrs(objectdef)
           trace("cleaned up: ")(showAttributed(cleanedUp, true, true, settings.Yshowsymkinds.value))
           cleanedUp
         }
@@ -230,10 +230,10 @@ abstract class ToolBoxFactory[U <: JavaUniverse](val u: U) { factorySelf =>
 
         val className = mdef.symbol.fullName
         if (settings.debug.value) println("generated: "+className)
-        def moduleFileName(className: String) = className + "$"
-        val jclazz = jClass.forName(moduleFileName(className), true, classLoader)
+        def objectFileName(className: String) = className + "$"
+        val jclazz = jClass.forName(objectFileName(className), true, classLoader)
         val jmeth = jclazz.getDeclaredMethods.find(_.getName == wrapperMethodName).get
-        val jfield = jclazz.getDeclaredFields.find(_.getName == NameTransformer.MODULE_INSTANCE_NAME).get
+        val jfield = jclazz.getDeclaredFields.find(_.getName == NameTransformer.OBJECT_INSTANCE_NAME).get
         val singleton = jfield.get(null)
         (singleton, jmeth)
       }
@@ -269,7 +269,7 @@ abstract class ToolBoxFactory[U <: JavaUniverse](val u: U) { factorySelf =>
         val parser = new syntaxAnalyzer.UnitParser(unit)
         val wrappedTree = parser.parse()
         throwIfErrors()
-        val PackageDef(_, List(ModuleDef(_, _, Template(_, _, _ :: parsed)))) = wrappedTree
+        val PackageDef(_, List(ObjectDef(_, _, Template(_, _, _ :: parsed)))) = wrappedTree
         parsed match {
           case expr :: Nil => expr
           case stats :+ expr => Block(stats, expr)

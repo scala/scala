@@ -56,7 +56,7 @@ package ll {
     }
     def fname(sym: Symbol) = {
       val p = "" + sym.owner.name
-      val x = if (sym.owner.isPackageClass || sym.owner.isModuleClass || sym.owner.isTerm) "." else "#"
+      val x = if (sym.owner.isPackageClass || sym.owner.isObjectClass || sym.owner.isTerm) "." else "#"
       sym.kindString + " " + p + x + sym.name
     }
 

@@ -216,21 +216,20 @@ trait Trees { self: Universe =>
     def unapply(classDef: ClassDef): Option[(Modifiers, TypeName, List[TypeDef], Template)]
   }
 
-  /** An object definition, e.g. `object Foo`.  Internally, objects are
-   *  quite frequently called modules to reduce ambiguity.
+  /** An object definition, e.g. `object Foo`.
    *  Eliminated by refcheck.
    */
-  type ModuleDef >: Null <: ImplDef
+  type ObjectDef >: Null <: ImplDef
 
-  /** A tag that preserves the identity of the `ModuleDef` abstract type from erasure.
+  /** A tag that preserves the identity of the `ObjectDef` abstract type from erasure.
    *  Can be used for pattern matching, instance tests, serialization and likes.
    */
-  implicit val ModuleDefTag: ClassTag[ModuleDef]
+  implicit val ObjectDefTag: ClassTag[ObjectDef]
 
-  /** The constructor/deconstructor for `ModuleDef` instances. */
-  val ModuleDef: ModuleDefExtractor
+  /** The constructor/deconstructor for `ObjectDef` instances. */
+  val ObjectDef: ObjectDefExtractor
 
-  /** An extractor class to create and pattern match with syntax `ModuleDef(mods, name, impl)`.
+  /** An extractor class to create and pattern match with syntax `ObjectDef(mods, name, impl)`.
    *  This AST node corresponds to the following Scala code:
    *
    *    mods `object` name impl
@@ -239,9 +238,9 @@ trait Trees { self: Universe =>
    *
    *    `extends` parents { defs }
    */
-  abstract class ModuleDefExtractor {
-    def apply(mods: Modifiers, name: TermName, impl: Template): ModuleDef
-    def unapply(moduleDef: ModuleDef): Option[(Modifiers, TermName, Template)]
+  abstract class ObjectDefExtractor {
+    def apply(mods: Modifiers, name: TermName, impl: Template): ObjectDef
+    def unapply(objectDef: ObjectDef): Option[(Modifiers, TermName, Template)]
   }
 
   /** A common base class for ValDefs and DefDefs.
@@ -859,7 +858,7 @@ trait Trees { self: Universe =>
     def unapply(throw_ : Throw): Option[Tree]
   }
 
-  /** Object instantiation
+  /** Instantiation
    *  One should always use factory method below to build a user level new.
    *
    *  @param tpt    a class type
@@ -1391,7 +1390,7 @@ trait Trees { self: Universe =>
    *  @param sym       the class symbol
    *  @param impl      the implementation template
    */
-  def ModuleDef(sym: Symbol, impl: Template): ModuleDef
+  def ObjectDef(sym: Symbol, impl: Template): ObjectDef
 
   def ValDef(sym: Symbol, rhs: Tree): ValDef
 
@@ -1428,7 +1427,7 @@ trait Trees { self: Universe =>
 
   def Throw(tpe: Type, args: Tree*): Throw
 
-  /** Factory method for object creation `new tpt(args_1)...(args_n)`
+  /** Factory method for instance creation `new tpt(args_1)...(args_n)`
    *  A `New(t, as)` is expanded to: `(new t).<init>(as)`
    */
   def New(tpt: Tree, argss: List[List[Tree]]): Tree

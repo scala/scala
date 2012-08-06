@@ -39,7 +39,7 @@ trait MSILPlatform extends Platform {
     genMSIL   // generate .msil files
   )
 
-  lazy val externalEquals = getMember(ComparatorClass.companionModule, nme.equals_)
+  lazy val externalEquals = getMember(ComparatorClass.companionObject, nme.equals_)
   def isMaybeBoxed(sym: Symbol) = sym isNonBottomSubClass BoxedNumberClass
 
   def newClassLoader(bin: MsilFile): loaders.SymbolLoader =  new loaders.MsilFileLoader(bin)
@@ -47,7 +47,7 @@ trait MSILPlatform extends Platform {
   /**
    * Tells whether a class should be loaded and entered into the package
    * scope. On .NET, this method returns `false` for all synthetic classes
-   * (anonymous classes, implementation classes, module classes), their
+   * (anonymous classes, implementation classes, object classes), their
    * symtab is encoded in the pickle of another class.
    */
   def doLoad(cls: ClassPath[BinaryRepr]#ClassRep): Boolean = {

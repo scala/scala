@@ -74,17 +74,17 @@ trait Mirrors { self: Universe =>
      */
     def reflectClass(cls: ClassSymbol): ClassMirror
 
-    /** Reflects against an inner module symbol and returns a mirror
+    /** Reflects against an inner object symbol and returns a mirror
      *  that can be used to get the instance of the object or inspect its companion class.
      *
-     *  To get a module symbol by the name of the object you would like to reflect,
-     *  use `<this mirror>.symbol.typeSignature.member(newTermName(<name of the object>)).asModule`.
+     *  To get a object symbol by the name of the object you would like to reflect,
+     *  use `<this mirror>.symbol.typeSignature.member(newTermName(<name of the object>)).asObject`.
      *  For further information about member lookup refer to `Symbol.typeSignature`.
      *
      *  The input symbol can be either private or non-private (Scala reflection transparently deals with visibility).
      *  It must be a member (declared or inherited) of the instance underlying this mirror.
      */
-    def reflectModule(mod: ModuleSymbol): ModuleMirror
+    def reflectObject(mod: ObjectSymbol): ObjectMirror
   }
 
   /** A mirror that reflects a field */
@@ -149,7 +149,7 @@ trait Mirrors { self: Universe =>
      *  if a runtime class or the companion object of a Scala class.
      *  One has:
      *
-     *    this.isStatic == this.isInstanceOf[ModuleMirror]
+     *    this.isStatic == this.isInstanceOf[ObjectMirror]
      *    !this.isStatic == this.isInstanceOf[ClassMirror]
      */
     def isStatic: Boolean
@@ -171,10 +171,10 @@ trait Mirrors { self: Universe =>
   }
 
   /** A mirror that reflects a Scala object definition or the static parts of a runtime class */
-  trait ModuleMirror extends TemplateMirror {
+  trait ObjectMirror extends TemplateMirror {
 
-    /** The Scala module symbol corresponding to the reflected object */
-    override def symbol: ModuleSymbol
+    /** The Scala object symbol corresponding to the reflected object */
+    override def symbol: ObjectSymbol
 
     /** If the reflected runtime class corresponds to a Scala object definition,
      *  returns the single instance representing that object.
@@ -215,7 +215,7 @@ trait Mirrors { self: Universe =>
      *  Otherwise, if the mirror represents a runtime instance class, a mirror representing the static
      *  part of the same class.
      */
-    def companion: Option[ModuleMirror]
+    def companion: Option[ObjectMirror]
   }
 
   /** A mirror that reflects instances and static classes */
@@ -239,16 +239,16 @@ trait Mirrors { self: Universe =>
      */
     def reflectClass(cls: ClassSymbol): ClassMirror
 
-    /** Reflects against a static module symbol and returns a mirror
+    /** Reflects against a static object symbol and returns a mirror
      *  that can be used to get the instance of the object or inspect its companion class.
      *
-     *  To get a module symbol by the name of its companion class you would like to reflect,
+     *  To get a object symbol by the name of its companion class you would like to reflect,
      *  use `<this mirror>.classSymbol(<runtime class loaded by its name>).companion.get`.
      *
      *  The input symbol can be either private or non-private (Scala reflection transparently deals with visibility).
      *  It must be static, i.e. either top-level or nested within one or several static objects.
      */
-    def reflectModule(mod: ModuleSymbol): ModuleMirror
+    def reflectObject(mod: ObjectSymbol): ObjectMirror
   }
 
   /** The API of a mirror for a reflective universe */
@@ -273,12 +273,12 @@ trait Mirrors { self: Universe =>
      */
     def classSymbol(rtcls: RuntimeClass): ClassSymbol
 
-    /** A module symbol for the specified runtime class.
-     *  @return The module symbol for the runtime class in the current class loader.
+    /** An object symbol for the specified runtime class.
+     *  @return The object symbol for the runtime class in the current class loader.
      *  @throws java.lang.ClassNotFoundException if no class with that name exists
      *  @throws scala.reflect.internal.MissingRequirementError if no corresponding symbol exists
      *  to do: throws anything else?
      */
-    def moduleSymbol(rtcls: RuntimeClass): ModuleSymbol
+    def objectSymbol(rtcls: RuntimeClass): ObjectSymbol
   }
 }

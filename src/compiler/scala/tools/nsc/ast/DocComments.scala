@@ -84,8 +84,8 @@ trait DocComments { self: Global =>
    *                                  interpreted as a recursive variable definition.
    */
   def expandedDocComment(sym: Symbol, site: Symbol, docStr: String = ""): String = {
-    // when parsing a top level class or module, use the (module-)class itself to look up variable definitions
-    val site1 = if ((sym.isModule || sym.isClass) && site.hasPackageFlag) sym
+    // when parsing a top level class or object, use the (object-)class itself to look up variable definitions
+    val site1 = if ((sym.isObject || sym.isClass) && site.hasPackageFlag) sym
                 else site
     expandVariables(cookedDocComment(sym, docStr), sym, site1)
   }
@@ -314,7 +314,7 @@ trait DocComments { self: Global =>
     case NoSymbol => None
     case _        =>
       val searchList =
-        if (site.isModule) site :: site.info.baseClasses
+        if (site.isObject) site :: site.info.baseClasses
         else site.info.baseClasses
 
       searchList collectFirst { case x if defs(x) contains vble => defs(x)(vble) } match {

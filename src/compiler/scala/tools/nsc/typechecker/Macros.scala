@@ -63,7 +63,7 @@ trait Macros extends scala.tools.reflect.FastTrack with Traces {
     object SigGenerator {
       val hasThis = macroDef.owner.isClass
       val ownerTpe = macroDef.owner match {
-        case owner if owner.isModuleClass => new UniqueThisType(macroDef.owner)
+        case owner if owner.isObjectClass => new UniqueThisType(macroDef.owner)
         case owner if owner.isClass => macroDef.owner.tpe
         case _ => NoType
       }
@@ -244,10 +244,10 @@ trait Macros extends scala.tools.reflect.FastTrack with Traces {
           reportError(implpos, "macro implementation must be in statically accessible object")
 
         def ensureRoot(sym: Symbol) =
-          if (!sym.isModule && !sym.isModuleClass) errorNotStatic()
+          if (!sym.isObject && !sym.isObjectClass) errorNotStatic()
 
-        def ensureModule(sym: Symbol) =
-          if (!sym.isModule) errorNotStatic()
+        def ensureObject(sym: Symbol) =
+          if (!sym.isObject) errorNotStatic()
 
         tree match {
           case TypeApply(fun, _) =>
@@ -260,12 +260,12 @@ trait Macros extends scala.tools.reflect.FastTrack with Traces {
           case Select(qual, name) if name.isTypeName =>
             loop(qual)
           case Select(qual, name) if name.isTermName =>
-            if (tree.symbol != rhs1.symbol) ensureModule(tree.symbol)
+            if (tree.symbol != rhs1.symbol) ensureObject(tree.symbol)
             loop(qual)
           case Ident(name) if name.isTypeName =>
             ;
           case Ident(name) if name.isTermName =>
-            if (tree.symbol != rhs1.symbol) ensureModule(tree.symbol)
+            if (tree.symbol != rhs1.symbol) ensureObject(tree.symbol)
           case _ =>
             invalidBodyError()
         }
@@ -649,7 +649,7 @@ trait Macros extends scala.tools.reflect.FastTrack with Traces {
           def loadMacroImpl(cl: ClassLoader): Option[(Object, jMethod)] = {
             try {
               // this logic relies on the assumptions that were valid for the old macro prototype
-              // namely that macro implementations can only be defined in top-level classes and modules
+              // namely that macro implementations can only be defined in top-level classes and objects
               // with the new prototype that materialized in a SIP, macros need to be statically accessible, which is different
               // for example, a macro def could be defined in a trait that is implemented by an object
               // there are some more clever cases when seemingly non-static method ends up being statically accessible
@@ -664,14 +664,14 @@ trait Macros extends scala.tools.reflect.FastTrack with Traces {
               def classfile(sym: Symbol): String = {
                 def recur(sym: Symbol): String = sym match {
                   case sym if sym.owner.isPackageClass =>
-                    val suffix = if (sym.isModuleClass) "$" else ""
+                    val suffix = if (sym.isObjectClass) "$" else ""
                     sym.fullName + suffix
                   case sym =>
-                    val separator = if (sym.owner.isModuleClass) "" else "$"
+                    val separator = if (sym.owner.isObjectClass) "" else "$"
                     recur(sym.owner) + separator + sym.javaSimpleName.toString
                 }
 
-                if (sym.isClass || sym.isModule) recur(sym)
+                if (sym.isClass || sym.isObject) recur(sym)
                 else recur(sym.enclClass)
               }
 

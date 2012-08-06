@@ -28,10 +28,10 @@ abstract class Taggers {
     NullTpe -> nme.Null)
 
   def materializeClassTag(prefix: Tree, tpe: Type): Tree = {
-    val tagModule = ClassTagModule
-    materializeTag(prefix, tpe, tagModule, {
+    val tagObject = ClassTagObject
+    materializeTag(prefix, tpe, tagObject, {
       val erasure = c.reifyRuntimeClass(tpe, concrete = true)
-      val factory = TypeApply(Select(Ident(tagModule), nme.apply), List(TypeTree(tpe)))
+      val factory = TypeApply(Select(Ident(tagObject), nme.apply), List(TypeTree(tpe)))
       Apply(factory, List(erasure))
     })
   }
@@ -50,16 +50,16 @@ abstract class Taggers {
       case success if !success.isEmpty =>
         Apply(Select(success, nme.in), List(mirror orElse mkDefaultMirrorRef(c.universe)(universe, c.callsiteTyper)))
       case _ =>
-        val tagModule = if (concrete) TypeTagModule else AbsTypeTagModule
-        materializeTag(universe, tpe, tagModule, c.reifyType(universe, mirror, tpe, concrete = concrete))
+        val tagObject = if (concrete) TypeTagObject else AbsTypeTagObject
+        materializeTag(universe, tpe, tagObject, c.reifyType(universe, mirror, tpe, concrete = concrete))
     }
   }
 
-  private def materializeTag(prefix: Tree, tpe: Type, tagModule: Symbol, materializer: => Tree): Tree = {
+  private def materializeTag(prefix: Tree, tpe: Type, tagObject: Symbol, materializer: => Tree): Tree = {
     val result =
       tpe match {
         case coreTpe if coreTags contains coreTpe =>
-          val ref = if (tagModule.owner.isPackageClass) Ident(tagModule) else Select(prefix, tagModule.name)
+          val ref = if (tagObject.owner.isPackageClass) Ident(tagObject) else Select(prefix, tagObject.name)
           Select(ref, coreTags(coreTpe))
         case _ =>
           translatingReificationErrors(materializer)
@@ -89,10 +89,10 @@ abstract class Taggers {
     val Apply(TypeApply(fun, List(tpeTree)), _) = c.macroApplication
     val tpe = tpeTree.tpe
     val PolyType(_, MethodType(_, tagTpe)) = fun.tpe
-    val tagModule = tagTpe.typeSymbol.companionSymbol
+    val tagObject = tagTpe.typeSymbol.companionSymbol
     if (c.compilerSettings.contains("-Xlog-implicits"))
-      c.echo(c.enclosingPosition, s"cannot materialize ${tagModule.name}[$tpe] as $result because:\n$reason")
-    c.abort(c.enclosingPosition, "No %s available for %s".format(tagModule.name, tpe))
+      c.echo(c.enclosingPosition, s"cannot materialize ${tagObject.name}[$tpe] as $result because:\n$reason")
+    c.abort(c.enclosingPosition, "No %s available for %s".format(tagObject.name, tpe))
   }
 
   private def failExpr(result: Tree, reason: Any): Nothing = {

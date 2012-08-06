@@ -62,8 +62,8 @@ trait Reifiers {
    */
   def reifyRuntimeClass(tpe: Type, concrete: Boolean = true): Tree
 
-  /** Given a type, generate a tree that when compiled and executed produces the runtime class of the enclosing class or module.
-   *  Returns `EmptyTree` if there does not exist an enclosing class or module.
+  /** Given a type, generate a tree that when compiled and executed produces the runtime class of the enclosing class or object.
+   *  Returns `EmptyTree` if there does not exist an enclosing class or object.
    */
   def reifyEnclosingRuntimeClass: Tree
 

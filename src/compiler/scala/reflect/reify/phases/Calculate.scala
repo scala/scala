@@ -42,10 +42,10 @@ trait Calculate {
         if (reifyDebug) println("boundSym: %s of type %s".format(tree.symbol, (tree.productIterator.toList collect { case tt: TypeTree => tt }).headOption.getOrElse(TypeTree(tree.tpe))))
         registerLocalSymbol(tree.symbol, currMetalevel)
 
-        bindRelatedSymbol(tree.symbol.sourceModule, "sourceModule")
-        bindRelatedSymbol(tree.symbol.moduleClass, "moduleClass")
+        bindRelatedSymbol(tree.symbol.sourceObject, "sourceObject")
+        bindRelatedSymbol(tree.symbol.objectClass, "objectClass")
         bindRelatedSymbol(tree.symbol.companionClass, "companionClass")
-        bindRelatedSymbol(tree.symbol.companionModule, "companionModule")
+        bindRelatedSymbol(tree.symbol.companionObject, "companionObject")
         Some(tree.symbol) collect { case termSymbol: TermSymbol => bindRelatedSymbol(termSymbol.referenced, "referenced") }
         Some(tree) collect { case labelDef: LabelDef => labelDef.params foreach (param => bindRelatedSymbol(param.symbol, "labelParam")) }
         def bindRelatedSymbol(related: Symbol, name: String): Unit =

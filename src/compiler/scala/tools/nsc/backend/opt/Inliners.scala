@@ -43,7 +43,7 @@ abstract class Inliners extends SubComponent {
   import icodes.opcodes._
   import definitions.{
     NullClass, NothingClass, ObjectClass,
-    PredefModule, RuntimePackage, ScalaInlineClass, ScalaNoInlineClass,
+    PredefObject, RuntimePackage, ScalaInlineClass, ScalaNoInlineClass,
     isFunctionType
   }
 
@@ -147,7 +147,7 @@ abstract class Inliners extends SubComponent {
 
   /** Is the given class a closure? */
   def isClosureClass(cls: Symbol): Boolean =
-    cls.isFinal && cls.isSynthetic && !cls.isModuleClass && cls.isAnonymousFunction
+    cls.isFinal && cls.isSynthetic && !cls.isObjectClass && cls.isAnonymousFunction
 
   /*
       TODO now that Inliner runs faster we could consider additional "monadic methods" (in the limit, all those taking a closure as last arg)
@@ -574,7 +574,7 @@ abstract class Inliners extends SubComponent {
 
     /** Should method 'sym' being called in 'receiver' be loaded from disk? */
     def shouldLoadImplFor(sym: Symbol, receiver: Symbol): Boolean = {
-      def alwaysLoad    = (receiver.enclosingPackage == RuntimePackage) || (receiver == PredefModule.moduleClass)
+      def alwaysLoad    = (receiver.enclosingPackage == RuntimePackage) || (receiver == PredefObject.objectClass)
       def loadCondition = sym.isEffectivelyFinal && isMonadicMethod(sym) && isHigherOrderMethod(sym)
 
       val res = hasInline(sym) || alwaysLoad || loadCondition

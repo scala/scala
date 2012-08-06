@@ -28,10 +28,10 @@ abstract class TypeParser {
 
   private var clazz: Symbol = _
   private var instanceDefs: Scope = _   // was members
-  private var staticModule: Symbol = _  // was staticsClass
+  private var staticObject: Symbol = _  // was staticsClass
   private var staticDefs: Scope = _     // was statics
 
-  protected def statics: Symbol = staticModule.moduleClass
+  protected def statics: Symbol = staticObject.objectClass
 
   protected var busy: Boolean = false       // lock to detect recursive reads
 
@@ -48,12 +48,12 @@ abstract class TypeParser {
     assert(!busy)
     busy = true
 
-    if (root.isModule) {
+    if (root.isObject) {
       this.clazz = root.companionClass
-      this.staticModule = root
+      this.staticObject = root
     } else {
       this.clazz = root
-      this.staticModule = root.companionModule
+      this.staticObject = root.companionObject
     }
     try {
       parseClass(typ)
@@ -136,13 +136,13 @@ abstract class TypeParser {
       val a = attrs(0).asInstanceOf[MSILAttribute];
       assert (a.getConstructor() == clrTypes.SYMTAB_CONSTR);
       val symtab = a.getConstructorArguments()(0).asInstanceOf[Array[Byte]]
-      unpickler.unpickle(symtab, 0, clazz, staticModule, typ.FullName);
+      unpickler.unpickle(symtab, 0, clazz, staticObject, typ.FullName);
       val mClass = clrTypes.getType(typ.FullName + "$");
       if (mClass != null) {
         clrTypes.types(statics) = mClass;
-        val moduleInstance = mClass.GetField("MODULE$");
-        assert (moduleInstance != null, mClass);
-        clrTypes.fields(statics) = moduleInstance;
+        val objectInstance = mClass.GetField("MODULE$");
+        assert (objectInstance != null, mClass);
+        clrTypes.fields(statics) = objectInstance;
       }
       return
     }
@@ -233,15 +233,15 @@ abstract class TypeParser {
                      else genPolyType(ownTypeParams, classInfoAsInMetadata) )
     }
 
-    // TODO I don't remember if statics.setInfo and staticModule.setInfo should also know about type params
+    // TODO I don't remember if statics.setInfo and staticObject.setInfo should also know about type params
     statics.setFlag(Flags.JAVA)
     statics.setInfo(staticInfo)
-    staticModule.setFlag(Flags.JAVA)
-    staticModule.setInfo(statics.tpe)
+    staticObject.setFlag(Flags.JAVA)
+    staticObject.setInfo(statics.tpe)
 
 
     if (canBeTakenAddressOf) {
-      //  implicit conversions are owned by staticModule.moduleClass
+      //  implicit conversions are owned by staticObject.objectClass
       createViewFromTo("2Boxed", clazz.tpe, clazzBoxed.tpe, addToboxMethodMap = true, isAddressOf = false)
       // createViewFromTo("2Object", clazz.tpe, definitions.ObjectClass.tpe, addToboxMethodMap = true, isAddressOf = false)
       createViewFromTo("2MgdPtr", clazz.tpe, clazzMgdPtr.tpe, addToboxMethodMap = false, isAddressOf = true)
@@ -259,14 +259,14 @@ abstract class TypeParser {
       {
         val loader = new loaders.MsilFileLoader(new MsilFile(ntype))
               val nclazz = statics.newClass(ntype.Name)
-        val nmodule = statics.newModule(ntype.Name)
+        val nobject = statics.newObject(ntype.Name)
 	nclazz.setInfo(loader)
-	nmodule.setInfo(loader)
+	nobject.setInfo(loader)
 	staticDefs.enter(nclazz)
-	staticDefs.enter(nmodule)
+	staticDefs.enter(nobject)
 
-	assert(nclazz.companionModule == nmodule, nmodule)
-	assert(nmodule.companionClass == nclazz, nclazz)
+	assert(nclazz.companionObject == nobject, nobject)
+	assert(nobject.companionClass == nclazz, nclazz)
       }
 
     val fields = typ.getFields()

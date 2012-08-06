@@ -23,7 +23,7 @@ abstract class Changes {
 
   private val flagsToCheck = IMPLICIT | FINAL | PRIVATE | PROTECTED | SEALED |
                              OVERRIDE | CASE | ABSTRACT | DEFERRED | METHOD |
-                             MODULE | INTERFACE | PARAM | BYNAMEPARAM | CONTRAVARIANT |
+                             OBJECT | INTERFACE | PARAM | BYNAMEPARAM | CONTRAVARIANT |
                              DEFAULTPARAM | ACCESSOR | LAZY | SPECIALIZED
 
   /** Are the new modifiers more restrictive than the old ones? */

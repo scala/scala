@@ -261,10 +261,10 @@ abstract class NodePrinters {
             traverseList("[]", "type parameter")(tparams)
             traverse(impl)
           }
-        case md @ ModuleDef(mods, name, impl) =>
+        case od @ ObjectDef(mods, name, impl) =>
           printMultiline(tree) {
-            printModifiers(md)
-            println(showDefTreeName(md))
+            printModifiers(od)
+            println(showDefTreeName(od))
             traverse(impl)
           }
         case dd @ DefDef(mods, name, tparams, vparamss, tpt, rhs) =>

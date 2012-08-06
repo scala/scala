@@ -1,5 +1,5 @@
-TypeRef(SingleType(SingleType(SingleType(NoPrefix,class <root>),module scala),module package),class List,List(TypeRef(ThisType(class scala),class Int,List())))
+TypeRef(SingleType(SingleType(SingleType(NoPrefix,class <root>),object scala),object package),class List,List(TypeRef(ThisType(class scala),class Int,List())))
 List[Int]
-TypeRef(SingleType(ThisType(class scala),module Predef),class Map,List(TypeRef(SingleType(ThisType(class scala),module Predef),class String,List()), TypeRef(SingleType(ThisType(class scala),module Predef),class String,List())))
+TypeRef(SingleType(ThisType(class scala),object Predef),class Map,List(TypeRef(SingleType(ThisType(class scala),object Predef),class String,List()), TypeRef(SingleType(ThisType(class scala),object Predef),class String,List())))
 Map[String,String]
-TypeTag[TypeRef(SingleType(ThisType(class scala),module Predef),class Map,List(TypeRef(SingleType(ThisType(class scala),module Predef),class String,List()), TypeRef(SingleType(ThisType(class scala),module Predef),class String,List())))]
+TypeTag[TypeRef(SingleType(ThisType(class scala),object Predef),class Map,List(TypeRef(SingleType(ThisType(class scala),object Predef),class String,List()), TypeRef(SingleType(ThisType(class scala),object Predef),class String,List())))]

@@ -985,7 +985,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
     def invalidateOrRemove(root: ClassSymbol) = {
       allEntries match {
         case Some(cp) => root setInfo new loaders.PackageLoader(cp)
-        case None => root.owner.info.decls unlink root.sourceModule
+        case None => root.owner.info.decls unlink root.sourceObject
       }
       invalidated += root
     }
@@ -1013,7 +1013,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
               loaders.enterPackage(root, pstr, new loaders.PackageLoader(allEntries.get))
             }
             reSync(
-                pkg.moduleClass.asInstanceOf[ClassSymbol],
+                pkg.objectClass.asInstanceOf[ClassSymbol],
                 subPackage(allEntries.get, pstr), subPackage(oldcp, pstr), subPackage(newcp, pstr),
                 invalidated, failed)
           }
@@ -1317,8 +1317,8 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
       for (sym <- root.info.decls) {
         if (sym.isInitialized && clearOnNextRun(sym))
           if (sym.isPackage) {
-            resetProjectClasses(sym.moduleClass)
-            openPackageModule(sym.moduleClass)
+            resetProjectClasses(sym.objectClass)
+            openPackageObject(sym.objectClass)
           } else {
             unlink(sym)
             unlink(root.info.decls.lookup(
@@ -1462,12 +1462,12 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
 
     def registerPickle(sym: Symbol): Unit = ()
 
-    /** does this run compile given class, module, or case factory? */
+    /** does this run compile given class, object, or case factory? */
     def compiles(sym: Symbol): Boolean =
       if (sym == NoSymbol) false
       else if (symSource.isDefinedAt(sym)) true
       else if (!sym.owner.isPackageClass) compiles(sym.enclosingTopLevelClass)
-      else if (sym.isModuleClass) compiles(sym.sourceModule)
+      else if (sym.isObjectClass) compiles(sym.sourceObject)
       else false
 
     /** Is this run allowed to redefine the given symbol? Usually this is true
@@ -1515,7 +1515,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
         for ((sym, file) <- symSource.iterator) {
           sym.reset(new loaders.SourcefileLoader(file))
           if (sym.isTerm)
-            sym.moduleClass reset loaders.moduleClassLoader
+            sym.objectClass reset loaders.objectClassLoader
         }
       }
       else {
@@ -1786,7 +1786,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
   private def writeICode() {
     val printer = new icodes.TextPrinter(null, icodes.linearizer)
     icodes.classes.values.foreach((cls) => {
-      val suffix = if (cls.symbol.hasModuleFlag) "$.icode" else ".icode"
+      val suffix = if (cls.symbol.hasObjectFlag) "$.icode" else ".icode"
       var file = getFile(cls.symbol, suffix)
 //      if (file.exists())
 //        file = new File(file.getParentFile(), file.getName() + "1")

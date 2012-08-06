@@ -140,13 +140,13 @@ trait TypeDiagnostics {
 
     def nullMessage       = "expression of type " + tree.tpe
     def overloadedMessage = "overloaded method " + sym + " with alternatives:\n" + alternativesString(tree)
-    def moduleMessage     = "" + sym
-    def defaultMessage    = moduleMessage + preResultString + tree.tpe
+    def objectMessage     = "" + sym
+    def defaultMessage    = objectMessage + preResultString + tree.tpe
     def applyMessage      = defaultMessage + tree.symbol.locationString
 
     if (sym == null) nullMessage
     else if (sym.isOverloaded) overloadedMessage
-    else if (sym.isModule) moduleMessage
+    else if (sym.isObject) objectMessage
     else if (sym.name == nme.apply) applyMessage
     else defaultMessage
   }

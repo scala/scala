@@ -176,7 +176,7 @@ trait TypeStrings {
   } toMap
 
   def scalaName(s: String): String = {
-    if (s endsWith MODULE_SUFFIX_STRING) s.init + ".type"
+    if (s endsWith OBJECT_SUFFIX_STRING) s.init + ".type"
     else if (s == "void") "scala.Unit"
     else if (primitives(s)) "scala." + s.capitalize
     else primitiveMap.getOrElse(s, NameTransformer.decode(s))
@@ -186,7 +186,7 @@ trait TypeStrings {
     val name      = clazz.getName
     val isAnon    = clazz.isScalaAnonymous
     val enclClass = clazz.getEnclosingClass
-    def enclPre   = enclClass.getName + MODULE_SUFFIX_STRING
+    def enclPre   = enclClass.getName + OBJECT_SUFFIX_STRING
     def enclMatch = name startsWith enclPre
 
     scalaName(

@@ -87,10 +87,10 @@ trait SyntheticMethods extends ast.TreeDSL {
     )
 
     def forwardToRuntime(method: Symbol): Tree =
-      forwardMethod(method, getMember(ScalaRunTimeModule, (method.name prepend "_").asInstanceOf[Name]))(mkThis :: _) // [Eugene++] why do we need this cast?
+      forwardMethod(method, getMember(ScalaRunTimeObject, (method.name prepend "_").asInstanceOf[Name]))(mkThis :: _) // [Eugene++] why do we need this cast?
 
     def callStaticsMethod(name: String)(args: Tree*): Tree = {
-      val method = termMember(RuntimeStaticsModule, name)
+      val method = termMember(RuntimeStaticsObject, name)
       Apply(gen.mkAttributedRef(method), args.toList)
     }
 
@@ -112,7 +112,7 @@ trait SyntheticMethods extends ast.TreeDSL {
     }
     def productIteratorMethod = {
       createMethod(nme.productIterator, iteratorOfType(accessorLub))(_ =>
-        gen.mkMethodCall(ScalaRunTimeModule, nme.typedProductIterator, List(accessorLub), List(mkThis))
+        gen.mkMethodCall(ScalaRunTimeObject, nme.typedProductIterator, List(accessorLub), List(mkThis))
       )
     }
     def projectionMethod(accessor: Symbol, num: Int) = {
@@ -290,7 +290,7 @@ trait SyntheticMethods extends ast.TreeDSL {
      *  for all case objects.)
      */
     def needsReadResolve = (
-         clazz.isModuleClass
+         clazz.isObjectClass
       && clazz.isSerializable
       && !hasConcreteImpl(nme.readResolve)
     )
@@ -299,7 +299,7 @@ trait SyntheticMethods extends ast.TreeDSL {
       val methods = (
         if (clazz.isCase)
           if (clazz.isDerivedValueClass) valueCaseClassMethods
-          else if (clazz.isModuleClass) caseObjectMethods
+          else if (clazz.isObjectClass) caseObjectMethods
           else caseClassMethods
         else if (clazz.isDerivedValueClass) valueClassMethods
         else Nil
@@ -312,7 +312,7 @@ trait SyntheticMethods extends ast.TreeDSL {
           // This method should be generated as private, but apparently if it is, then
           // it is name mangled afterward.  (Wonder why that is.) So it's only protected.
           // For sure special methods like "readResolve" should not be mangled.
-          List(createMethod(nme.readResolve, Nil, ObjectClass.tpe)(m => { m setFlag PRIVATE ; REF(clazz.sourceModule) }))
+          List(createMethod(nme.readResolve, Nil, ObjectClass.tpe)(m => { m setFlag PRIVATE ; REF(clazz.sourceObject) }))
         }
         else Nil
       )

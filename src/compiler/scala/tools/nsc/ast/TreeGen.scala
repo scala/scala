@@ -133,12 +133,12 @@ abstract class TreeGen extends reflect.internal.TreeGen with TreeDSL {
     Block(Assign(lhsRef, rhs) :: Nil, lhsRef)
   }
 
-  def mkModuleVarDef(accessor: Symbol) = {
+  def mkObjectVarDef(accessor: Symbol) = {
     val inClass    = accessor.owner.isClass
     val extraFlags = if (inClass) PrivateLocal | SYNTHETIC else 0
 
     val mval = (
-      accessor.owner.newVariable(nme.moduleVarName(accessor.name), accessor.pos.focus, MODULEVAR | extraFlags)
+      accessor.owner.newVariable(nme.objectVarName(accessor.name), accessor.pos.focus, OBJECTVAR | extraFlags)
         setInfo accessor.tpe.finalResultType
         addAnnotation VolatileAttr
     )
@@ -150,27 +150,27 @@ abstract class TreeGen extends reflect.internal.TreeGen with TreeDSL {
 
   // def m: T = { if (m$ eq null) m$ = new m$class(...) m$ }
   // where (...) are eventual outer accessors
-  def mkCachedModuleAccessDef(accessor: Symbol, mvar: Symbol) =
-    DefDef(accessor, mkCached(mvar, newModule(accessor, mvar.tpe)))
+  def mkCachedObjectAccessDef(accessor: Symbol, mvar: Symbol) =
+    DefDef(accessor, mkCached(mvar, newObject(accessor, mvar.tpe)))
 
-  def mkModuleAccessDef(accessor: Symbol, msym: Symbol) =
+  def mkObjectAccessDef(accessor: Symbol, msym: Symbol) =
     DefDef(accessor, Select(This(msym.owner), msym))
 
-  def newModule(accessor: Symbol, tpe: Type) = {
+  def newObject(accessor: Symbol, tpe: Type) = {
     val ps = tpe.typeSymbol.primaryConstructor.info.paramTypes
     if (ps.isEmpty) New(tpe)
     else New(tpe, This(accessor.owner.enclClass))
   }
 
   // def m: T;
-  def mkModuleAccessDcl(accessor: Symbol) =
+  def mkObjectAccessDcl(accessor: Symbol) =
     DefDef(accessor setFlag lateDEFERRED, EmptyTree)
 
   def mkRuntimeCall(meth: Name, args: List[Tree]): Tree =
     mkRuntimeCall(meth, Nil, args)
 
   def mkRuntimeCall(meth: Name, targs: List[Type], args: List[Tree]): Tree =
-    mkMethodCall(ScalaRunTimeModule, meth, targs, args)
+    mkMethodCall(ScalaRunTimeObject, meth, targs, args)
 
   def mkSysErrorCall(message: String): Tree =
     mkMethodCall(Sys_error, List(Literal(Constant(message))))
@@ -185,7 +185,7 @@ abstract class TreeGen extends reflect.internal.TreeGen with TreeDSL {
    */
   def mkManifestFactoryCall(full: Boolean, constructor: String, tparg: Type, args: List[Tree]): Tree =
     mkMethodCall(
-      if (full) FullManifestModule else PartialManifestModule,
+      if (full) FullManifestObject else PartialManifestObject,
       newTermName(constructor),
       List(tparg),
       args
@@ -230,7 +230,7 @@ abstract class TreeGen extends reflect.internal.TreeGen with TreeDSL {
    */
   def mkWrapArray(tree: Tree, elemtp: Type) = {
     mkMethodCall(
-      PredefModule,
+      PredefObject,
       wrapArrayMethodName(elemtp),
       if (isPrimitiveValueType(elemtp)) Nil else List(elemtp),
       List(tree)

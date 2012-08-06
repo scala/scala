@@ -184,10 +184,10 @@ trait Trees extends base.Trees { self: Universe =>
     val impl: Template
   }
 
-  override type ModuleDef >: Null <: ImplDef with ModuleDefApi
+  override type ObjectDef >: Null <: ImplDef with ObjectDefApi
 
-  /** The API that all module defs support */
-  trait ModuleDefApi extends ImplDefApi { this: ModuleDef =>
+  /** The API that all object defs support */
+  trait ObjectDefApi extends ImplDefApi { this: ObjectDef =>
     val mods: Modifiers
     val name: TermName
     val impl: Template
@@ -560,7 +560,7 @@ trait Trees extends base.Trees { self: Universe =>
   abstract class TreeCopierOps {
     def ClassDef(tree: Tree, mods: Modifiers, name: Name, tparams: List[TypeDef], impl: Template): ClassDef
     def PackageDef(tree: Tree, pid: RefTree, stats: List[Tree]): PackageDef
-    def ModuleDef(tree: Tree, mods: Modifiers, name: Name, impl: Template): ModuleDef
+    def ObjectDef(tree: Tree, mods: Modifiers, name: Name, impl: Template): ObjectDef
     def ValDef(tree: Tree, mods: Modifiers, name: Name, tpt: Tree, rhs: Tree): ValDef
     def DefDef(tree: Tree, mods: Modifiers, name: Name, tparams: List[TypeDef], vparamss: List[List[ValDef]], tpt: Tree, rhs: Tree): DefDef
     def TypeDef(tree: Tree, mods: Modifiers, name: Name, tparams: List[TypeDef], rhs: Tree): TypeDef

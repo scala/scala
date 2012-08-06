@@ -12,7 +12,7 @@ trait Imports {
   self: IMain =>
 
   import global._
-  import definitions.{ ScalaPackage, JavaLangPackage, PredefModule }
+  import definitions.{ ScalaPackage, JavaLangPackage, PredefObject }
   import memberHandlers._
 
   def isNoImports = settings.noimports.value
@@ -30,7 +30,7 @@ trait Imports {
   }
 
   /** Symbols whose contents are language-defined to be imported. */
-  def languageWildcardSyms: List[Symbol] = List(JavaLangPackage, ScalaPackage, PredefModule)
+  def languageWildcardSyms: List[Symbol] = List(JavaLangPackage, ScalaPackage, PredefObject)
   def languageWildcards: List[Type] = languageWildcardSyms map (_.tpe)
   def languageWildcardHandlers = languageWildcardSyms map makeWildcardImportHandler
 

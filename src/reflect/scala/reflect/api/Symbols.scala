@@ -7,7 +7,7 @@ trait Symbols extends base.Symbols { self: Universe =>
   override type TypeSymbol >: Null <: Symbol with TypeSymbolApi
   override type TermSymbol >: Null <: Symbol with TermSymbolApi
   override type MethodSymbol >: Null <: TermSymbol with MethodSymbolApi
-  override type ModuleSymbol >: Null <: TermSymbol with ModuleSymbolApi
+  override type ObjectSymbol >: Null <: TermSymbol with ObjectSymbolApi
   override type ClassSymbol >: Null <: TypeSymbol with ClassSymbolApi
   override type FreeTermSymbol >: Null <: TermSymbol with FreeTermSymbolApi
   override type FreeTypeSymbol >: Null <: TypeSymbol with FreeTypeSymbolApi
@@ -43,8 +43,8 @@ trait Symbols extends base.Symbols { self: Universe =>
      */
     def hasAnnotation(sym: Symbol): Boolean
 
-    /** For a class: the module or case class factory with the same name in the same package.
-     *  For a module: the class with the same name in the same package.
+    /** For a class: the object or case class factory with the same name in the same package.
+     *  For an object: the class with the same name in the same package.
      *  For all others: NoSymbol
      */
     def companionSymbol: Symbol
@@ -187,7 +187,7 @@ trait Symbols extends base.Symbols { self: Universe =>
 
   /** The API of term symbols */
   trait TermSymbolApi extends SymbolApi with TermSymbolBase { this: TermSymbol =>
-    /** Does this symbol represent a value, i.e. not a module and not a method?
+    /** Does this symbol represent a value, i.e. not an object and not a method?
      *  [Eugene++] I need a review of the implementation
      */
     def isValue: Boolean
@@ -290,8 +290,8 @@ trait Symbols extends base.Symbols { self: Universe =>
     def returnType: Type
   }
 
-  /** The API of module symbols */
-  trait ModuleSymbolApi extends TermSymbolApi with ModuleSymbolBase { this: ModuleSymbol =>
+  /** The API of object symbols */
+  trait ObjectSymbolApi extends TermSymbolApi with ObjectSymbolBase { this: ObjectSymbol =>
   }
 
   /** The API of class symbols */

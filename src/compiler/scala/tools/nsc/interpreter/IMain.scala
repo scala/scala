@@ -200,7 +200,7 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
 
   import global._
   import definitions.{ScalaPackage, JavaLangPackage, termMember, typeMember}
-  import rootMirror.{RootClass, getClassIfDefined, getModuleIfDefined, getRequiredModule, getRequiredClass}
+  import rootMirror.{RootClass, getClassIfDefined, getObjectIfDefined, getRequiredObject, getRequiredClass}
 
   implicit class ReplTypeOps(tp: Type) {
     def orElse(other: => Type): Type    = if (tp ne NoType) tp else other
@@ -336,7 +336,7 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
    *  }}}
    */
   def generatedName(simpleName: String): Option[String] = {
-    if (simpleName endsWith nme.MODULE_SUFFIX_STRING) optFlatName(simpleName.init) map (_ + nme.MODULE_SUFFIX_STRING)
+    if (simpleName endsWith nme.OBJECT_SUFFIX_STRING) optFlatName(simpleName.init) map (_ + nme.OBJECT_SUFFIX_STRING)
     else optFlatName(simpleName)
   }
   def flatName(id: String)    = optFlatName(id) getOrElse id
@@ -767,7 +767,7 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
       * following accessPath into the outer one.
       */
     def resolvePathToSymbol(accessPath: String): Symbol = {
-      val readRoot  = getRequiredModule(readPath)   // the outermost wrapper
+      val readRoot  = getRequiredObject(readPath)   // the outermost wrapper
       (accessPath split '.').foldLeft(readRoot: Symbol) {
         case (sym, "")    => sym
         case (sym, name)  => afterTyper(termMember(sym, name))
@@ -1004,7 +1004,7 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
     else "" + (mostRecentlyHandledTree.get match {
       case x: ValOrDefDef           => x.name
       case Assign(Ident(name), _)   => name
-      case ModuleDef(_, name, _)    => name
+      case ObjectDef(_, name, _)    => name
       case _                        => naming.mostRecentVar
     })
 
@@ -1119,7 +1119,7 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
   }
   def terms(name: String): Symbol = {
     val termname = newTypeName(name)
-    findName(termname) orElse getModuleIfDefined(termname)
+    findName(termname) orElse getObjectIfDefined(termname)
   }
   // [Eugene to Paul] possibly you could make use of TypeTags here
   def types[T: ClassTag] : Symbol = types(classTag[T].runtimeClass.getName)

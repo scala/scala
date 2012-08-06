@@ -24,9 +24,9 @@ trait NamesDefaults { self: Analyzer =>
   // Default getters of constructors are added to the companion object in the
   // typeCompleter of the constructor (methodSig). To compute the signature,
   // we need the ClassDef. To create and enter the symbols into the companion
-  // object, we need the templateNamer of that module class. These two are stored
-  // as an attachment in the companion module symbol
-  class ConstructorDefaultsAttachment(val classWithDefault: ClassDef, var companionModuleClassNamer: Namer)
+  // object, we need the templateNamer of that object class. These two are stored
+  // as an attachment in the companion object symbol
+  class ConstructorDefaultsAttachment(val classWithDefault: ClassDef, var companionObjectClassNamer: Namer)
 
   // To attach the default getters of local (term-owned) methods to the method symbol.
   // Used in Namer.enterExistingSym: it needs to re-enter the method symbol and also
@@ -194,18 +194,18 @@ trait NamesDefaults { self: Analyzer =>
         b
       }
 
-      def moduleQual(pos: Position, classType: Type) = {
+      def objectQual(pos: Position, classType: Type) = {
         // prefix does 'normalize', which fixes #3384
         val pre = classType.prefix
         if (pre == NoType) {
           None
         } else {
-          val module = companionSymbolOf(baseFun.symbol.owner, context)
-          if (module == NoSymbol) None
+          val objct = companionSymbolOf(baseFun.symbol.owner, context)
+          if (objct == NoSymbol) None
           else {
-            val ref = atPos(pos.focus)(gen.mkAttributedRef(pre, module))
-            if (module.isStable && pre.isStable)    // fixes #4524. the type checker does the same for
-              ref.setType(singleType(pre, module))  // typedSelect, it calls "stabilize" on the result.
+            val ref = atPos(pos.focus)(gen.mkAttributedRef(pre, objct))
+            if (objct.isStable && pre.isStable)    // fixes #4524. the type checker does the same for
+              ref.setType(singleType(pre, objct))  // typedSelect, it calls "stabilize" on the result.
             Some(ref)
           }
         }
@@ -215,36 +215,36 @@ trait NamesDefaults { self: Analyzer =>
         // constructor calls
 
         case Select(New(tp @ TypeTree()), _) if isConstr =>
-          // 'moduleQual' fixes #3338. Same qualifier for selecting the companion object as for the class.
-          blockWithoutQualifier(moduleQual(tp.pos, tp.tpe))
+          // 'objectQual' fixes #3338. Same qualifier for selecting the companion object as for the class.
+          blockWithoutQualifier(objectQual(tp.pos, tp.tpe))
         case Select(TypeApply(New(tp @ TypeTree()), _), _) if isConstr =>
-          blockWithoutQualifier(moduleQual(tp.pos, tp.tpe))
+          blockWithoutQualifier(objectQual(tp.pos, tp.tpe))
 
         case Select(New(tp @ Ident(_)), _) if isConstr =>
-          // 'moduleQual' fixes #3344
-          blockWithoutQualifier(moduleQual(tp.pos, tp.tpe))
+          // 'objectQual' fixes #3344
+          blockWithoutQualifier(objectQual(tp.pos, tp.tpe))
         case Select(TypeApply(New(tp @ Ident(_)), _), _) if isConstr =>
-          blockWithoutQualifier(moduleQual(tp.pos, tp.tpe))
+          blockWithoutQualifier(objectQual(tp.pos, tp.tpe))
 
         case Select(New(tp @ Select(qual, _)), _) if isConstr =>
           // in `new q.C()', q is always stable
           assert(treeInfo.isExprSafeToInline(qual), qual)
-          // 'moduleQual' fixes #2057
-          blockWithoutQualifier(moduleQual(tp.pos, tp.tpe))
+          // 'objectQual' fixes #2057
+          blockWithoutQualifier(objectQual(tp.pos, tp.tpe))
         case Select(TypeApply(New(tp @ Select(qual, _)), _), _) if isConstr =>
           assert(treeInfo.isExprSafeToInline(qual), qual)
-          blockWithoutQualifier(moduleQual(tp.pos, tp.tpe))
+          blockWithoutQualifier(objectQual(tp.pos, tp.tpe))
 
         // super constructor calls
         case Select(sp @ Super(_, _), _) if isConstr =>
-          // 'moduleQual' fixes #3207. selection of the companion module of the
+          // 'objectQual' fixes #3207. selection of the companion object of the
           // superclass needs to have the same prefix as the superclass.
-          blockWithoutQualifier(moduleQual(baseFun.pos, sp.symbol.tpe.firstParent))
+          blockWithoutQualifier(objectQual(baseFun.pos, sp.symbol.tpe.firstParent))
 
         // self constructor calls (in secondary constructors)
         case Select(tp, name) if isConstr =>
           assert(treeInfo.isExprSafeToInline(tp), tp)
-          blockWithoutQualifier(moduleQual(tp.pos, tp.tpe))
+          blockWithoutQualifier(objectQual(tp.pos, tp.tpe))
 
         // other method calls
 
@@ -299,7 +299,7 @@ trait NamesDefaults { self: Analyzer =>
                 case Typed(expr, Ident(tpnme.WILDCARD_STAR)) =>
                   expr
                 case _ =>
-                  val factory = Select(gen.mkAttributedRef(SeqModule), nme.apply)
+                  val factory = Select(gen.mkAttributedRef(SeqObject), nme.apply)
                   blockTyper.typed(Apply(factory, List(resetLocalAttrs(arg))))
               } else arg
             }
@@ -430,7 +430,7 @@ trait NamesDefaults { self: Analyzer =>
         mod.info.member(defGetterName)
       }
       else {
-        // isClass also works for methods in objects, owner is the ModuleClassSymbol
+        // isClass also works for methods in objects, owner is the ObjectClassSymbol
         if (param.owner.owner.isClass) {
           // .toInterface: otherwise we get the method symbol of the impl class
           param.owner.owner.toInterface.info.member(defGetterName)

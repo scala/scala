@@ -109,7 +109,7 @@ trait ScratchPadMaker { self: Global =>
     override def traverse(tree: Tree): Unit = tree match {
       case PackageDef(_, _) =>
         super.traverse(tree)
-      case ModuleDef(_, name, Template(_, _, body)) =>
+      case ObjectDef(_, name, Template(_, _, body)) =>
         val topLevel = objectName.isEmpty
         if (topLevel) objectName = tree.symbol.fullName
         body foreach traverseStat

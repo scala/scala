@@ -92,7 +92,7 @@ class ModelFactory(val global: Global, val settings: doc.Settings) {
     def toRoot: List[EntityImpl] = this :: inTpl.toRoot
     def qualifiedName = name
     def annotations = sym.annotations.map(makeAnnotation)
-    def inPackageObject: Boolean = sym.owner.isModuleClass && sym.owner.sourceModule.isPackageObject
+    def inPackageObject: Boolean = sym.owner.isObjectClass && sym.owner.sourceObject.isPackageObject
     def isType = sym.name.isTypeName
     def isTerm = sym.name.isTermName
   }
@@ -103,7 +103,7 @@ class ModelFactory(val global: Global, val settings: doc.Settings) {
     def isPackage = sym.isPackage
     def isTrait = sym.isTrait
     def isClass = sym.isClass && !sym.isTrait
-    def isObject = sym.isModule && !sym.isPackage
+    def isObject = sym.isObject && !sym.isPackage
     def isCaseClass = sym.isCaseClass
     def isRootPackage = false
     def isNoDocMemberTemplate = false
@@ -160,7 +160,7 @@ class ModelFactory(val global: Global, val settings: doc.Settings) {
        * the type the method returns is TraversableOps, which has all-abstract symbols. But in reality, it couldn't have
        * any abstract terms, otherwise it would fail compilation. So we reset the DEFERRED flag. */
       if (!sym.isTrait && (sym hasFlag Flags.DEFERRED) && (!isImplicitlyInherited)) fgs += Paragraph(Text("abstract"))
-      if (!sym.isModule && (sym hasFlag Flags.FINAL)) fgs += Paragraph(Text("final"))
+      if (!sym.isObject && (sym hasFlag Flags.FINAL)) fgs += Paragraph(Text("final"))
       fgs.toList
     }
     def deprecation =
@@ -463,7 +463,7 @@ class ModelFactory(val global: Global, val settings: doc.Settings) {
     def companion =
       companionSymbol match {
         case NoSymbol => None
-        case comSym if !isEmptyJavaObject(comSym) && (comSym.isClass || comSym.isModule) =>
+        case comSym if !isEmptyJavaObject(comSym) && (comSym.isClass || comSym.isObject) =>
           makeTemplate(comSym) match {
             case d: DocTemplateImpl => Some(d)
             case _ => None
@@ -615,19 +615,19 @@ class ModelFactory(val global: Global, val settings: doc.Settings) {
    *                                       +---------+ (2)
    *                                       |         |
    * +---------------+         +---------- v ------- | ---+                              +--------+ (2)
-   * | package foo#1 <---(1)---- module class foo#2  |    |                              |        |
+   * | package foo#1 <---(1)---- object class foo#2  |    |                              |        |
    * +---------------+         | +------------------ | -+ |         +------------------- v ---+   |
-   *                           | | package object foo#3 <-----(1)---- module class package#4  |   |
+   *                           | | package object foo#3 <-----(1)---- object class package#4  |   |
    *                           | +----------------------+ |         | +---------------------+ |   |
    *                           +--------------------------+         | | class package$Bar#5 | |   |
    *                                                                | +----------------- | -+ |   |
    *                                                                +------------------- | ---+   |
    *                                                                                     |        |
    *                                                                                     +--------+
-   * (1) sourceModule
+   * (1) sourceObject
    * (2) you get out of owners with .owner
    *
-   * and normalizeTemplate(Bar.owner) will get us the package, instead of the module class of the package object.
+   * and normalizeTemplate(Bar.owner) will get us the package, instead of the object class of the package object.
    */
   def normalizeTemplate(aSym: Symbol): Symbol = aSym match {
     case null | rootMirror.EmptyPackage | NoSymbol =>
@@ -636,8 +636,8 @@ class ModelFactory(val global: Global, val settings: doc.Settings) {
       normalizeTemplate(AnyRefClass)
     case _ if aSym.isPackageObject =>
       normalizeTemplate(aSym.owner)
-    case _ if aSym.isModuleClass =>
-      normalizeTemplate(aSym.sourceModule)
+    case _ if aSym.isObjectClass =>
+      normalizeTemplate(aSym.sourceObject)
     case _ =>
       aSym
   }
@@ -683,7 +683,7 @@ class ModelFactory(val global: Global, val settings: doc.Settings) {
           new DocTemplateImpl(bSym, inTpl) with AliasImpl with AliasType { override def isAliasType = true }
         else if (bSym.isAbstractType)
           new DocTemplateImpl(bSym, inTpl) with TypeBoundsImpl with AbstractType { override def isAbstractType = true }
-        else if (bSym.isModule)
+        else if (bSym.isObject)
           new DocTemplateImpl(bSym, inTpl) with Object {}
         else if (bSym.isTrait)
           new DocTemplateImpl(bSym, inTpl) with Trait {}
@@ -751,7 +751,7 @@ class ModelFactory(val global: Global, val settings: doc.Settings) {
       // Code is duplicate because the anonymous classes are created statically
       def createNoDocMemberTemplate(bSym: Symbol, inTpl: DocTemplateImpl): MemberTemplateImpl = {
         assert(modelFinished) // only created AFTER the model is finished
-        if (bSym.isModule || (bSym.isAliasType && bSym.tpe.typeSymbol.isModule))
+        if (bSym.isObject || (bSym.isAliasType && bSym.tpe.typeSymbol.isObject))
           new MemberTemplateImpl(bSym, inTpl) with Object {}
         else if (bSym.isTrait || (bSym.isAliasType && bSym.tpe.typeSymbol.isTrait))
           new MemberTemplateImpl(bSym, inTpl) with Trait {}
@@ -796,7 +796,7 @@ class ModelFactory(val global: Global, val settings: doc.Settings) {
         Some(new NonTemplateMemberImpl(bSym, conversion, useCaseOf, inTpl) with Val {
           override def isVar = true
         })
-      else if (bSym.isMethod && !bSym.hasAccessorFlag && !bSym.isConstructor && !bSym.isModule) {
+      else if (bSym.isMethod && !bSym.hasAccessorFlag && !bSym.isConstructor && !bSym.isObject) {
         val cSym = { // This unsightly hack closes issue #4086.
           if (bSym == definitions.Object_synchronized) {
             val cSymInfo = (bSym.info: @unchecked) match {
@@ -838,7 +838,7 @@ class ModelFactory(val global: Global, val settings: doc.Settings) {
         None
     }
 
-    if (!localShouldDocument(aSym) || aSym.isModuleClass || aSym.isPackageObject || aSym.isMixinConstructor)
+    if (!localShouldDocument(aSym) || aSym.isObjectClass || aSym.isPackageObject || aSym.isMixinConstructor)
       Nil
     else {
       val allSyms = useCases(aSym, inTpl.sym) map { case (bSym, bComment, bPos) =>
@@ -965,12 +965,12 @@ class ModelFactory(val global: Global, val settings: doc.Settings) {
   /** */
   def makeTypeInTemplateContext(aType: Type, inTpl: TemplateImpl, dclSym: Symbol): TypeEntity = {
     def ownerTpl(sym: Symbol): Symbol =
-      if (sym.isClass || sym.isModule || sym == NoSymbol) sym else ownerTpl(sym.owner)
+      if (sym.isClass || sym.isObject || sym == NoSymbol) sym else ownerTpl(sym.owner)
     val tpe =
       if (thisFactory.settings.useStupidTypes.value) aType else {
         def ownerTpl(sym: Symbol): Symbol =
-          if (sym.isClass || sym.isModule || sym == NoSymbol) sym else ownerTpl(sym.owner)
-        val fixedSym = if (inTpl.sym.isModule) inTpl.sym.moduleClass else inTpl.sym
+          if (sym.isClass || sym.isObject || sym == NoSymbol) sym else ownerTpl(sym.owner)
+        val fixedSym = if (inTpl.sym.isObject) inTpl.sym.objectClass else inTpl.sym
         aType.asSeenFrom(fixedSym.thisType, ownerTpl(dclSym))
       }
     makeType(tpe, inTpl)
@@ -982,7 +982,7 @@ class ModelFactory(val global: Global, val settings: doc.Settings) {
       val ignoreParents = Set[Symbol](AnyClass, AnyRefClass, ObjectClass)
       val filtParents =
         // we don't want to expose too many links to AnyRef, that will just be redundant information
-        if (tpl.isDefined && { val sym = tpl.get.sym; (!sym.isModule && parents.length < 2) || (sym == AnyValClass) || (sym == AnyRefClass) || (sym == AnyClass) })
+        if (tpl.isDefined && { val sym = tpl.get.sym; (!sym.isObject && parents.length < 2) || (sym == AnyValClass) || (sym == AnyRefClass) || (sym == AnyClass) })
           parents
         else
           parents.filterNot((p: Type) => ignoreParents(p.typeSymbol))
@@ -1023,7 +1023,7 @@ class ModelFactory(val global: Global, val settings: doc.Settings) {
 
     while ((sym1 != NoSymbol) && (path.isEmpty || !stop(sym1))) {
       val sym1Norm = normalizeTemplate(sym1)
-      if (!sym1.sourceModule.isPackageObject && sym1Norm != RootPackage) {
+      if (!sym1.sourceObject.isPackageObject && sym1Norm != RootPackage) {
         if (path.length != 0)
           path.insert(0, ".")
         path.insert(0, sym1Norm.nameString)
@@ -1040,19 +1040,19 @@ class ModelFactory(val global: Global, val settings: doc.Settings) {
     normalizeTemplate(aSym.owner) == normalizeTemplate(inTpl.sym)
 
   def templateShouldDocument(aSym: Symbol, inTpl: TemplateImpl): Boolean =
-    (aSym.isTrait || aSym.isClass || aSym.isModule) &&
+    (aSym.isTrait || aSym.isClass || aSym.isObject) &&
     localShouldDocument(aSym) &&
     !isEmptyJavaObject(aSym) &&
     // either it's inside the original owner or we can document it later:
     (!inOriginalOwner(aSym, inTpl) || (aSym.isPackageClass || (aSym.sourceFile != null)))
 
   def membersShouldDocument(sym: Symbol, inTpl: TemplateImpl) = {
-    // pruning modules that shouldn't be documented
+    // pruning objects that shouldn't be documented
     // Why Symbol.isInitialized? Well, because we need to avoid exploring all the space available to scaladoc
     // from the classpath -- scaladoc is a hog, it will explore everything starting from the root package unless we
     // somehow prune the tree. And isInitialized is a good heuristic for prunning -- if the package was not explored
     // during typer and refchecks, it's not necessary for the current application and there's no need to explore it.
-    (!sym.isModule || sym.moduleClass.isInitialized) &&
+    (!sym.isObject || sym.objectClass.isInitialized) &&
     // documenting only public and protected members
     localShouldDocument(sym) &&
     // Only this class's constructors are part of its members, inherited constructors are not.
@@ -1062,7 +1062,7 @@ class ModelFactory(val global: Global, val settings: doc.Settings) {
   }
 
   def isEmptyJavaObject(aSym: Symbol): Boolean =
-    aSym.isModule && aSym.isJavaDefined &&
+    aSym.isObject && aSym.isJavaDefined &&
     aSym.info.members.exists(s => localShouldDocument(s) && (!s.isConstructor || s.owner == aSym))
 
   def localShouldDocument(aSym: Symbol): Boolean =

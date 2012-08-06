@@ -1124,7 +1124,7 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
           // this implies sym.isStable
           case SingleType(_, sym)                       => and(equalsTest(gen.mkAttributedQualifier(expectedTp), testedBinder), typeTest(testedBinder, expectedTp.widen))
           // must use == to support e.g. List() == Nil
-          case ThisType(sym) if sym.isModule            => and(equalsTest(CODE.REF(sym), testedBinder), typeTest(testedBinder, expectedTp.widen))
+          case ThisType(sym) if sym.isObject            => and(equalsTest(CODE.REF(sym), testedBinder), typeTest(testedBinder, expectedTp.widen))
           case ConstantType(Constant(null)) if testedBinder.info.widen <:< AnyRefClass.tpe
                                                         => eqTest(expTp(CODE.NULL), testedBinder)
           case ConstantType(const)                      => equalsTest(expTp(Literal(const)), testedBinder)
@@ -1286,8 +1286,8 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
               assert(d.symbol.lazyAccessor != NoSymbol && d.symbol.lazyAccessor.owner == d.symbol.owner, d.symbol.lazyAccessor)
               d.symbol.lazyAccessor.owner = currentOwner
             }
-            if(d.symbol.moduleClass ne NoSymbol)
-              d.symbol.moduleClass.owner = currentOwner
+            if(d.symbol.objectClass ne NoSymbol)
+              d.symbol.objectClass.owner = currentOwner
 
             d.symbol.owner = currentOwner
           // case _ if (t.symbol != NoSymbol) && (t.symbol ne null) =>
@@ -1687,7 +1687,7 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
       private val rewriteListPattern: PartialFunction[TreeMaker, Cond] = {
         case p @ ExtractorTreeMaker(_, _, testedBinder)
           if testedBinder.tpe.typeSymbol == ListClass && p.checkedLength == Some(0) =>
-            EqualityCond(binderToUniqueTree(p.prevBinder), unique(Ident(NilModule) setType NilModule.tpe))
+            EqualityCond(binderToUniqueTree(p.prevBinder), unique(Ident(NilObject) setType NilObject.tpe))
       }
       val fullRewrite      = (irrefutableExtractor orElse rewriteListPattern)
       val refutableRewrite = irrefutableExtractor
@@ -2552,7 +2552,7 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
         case BooleanClass =>
           Some(List(ConstantType(Constant(true)), ConstantType(Constant(false))))
         // TODO case _ if tp.isTupleType => // recurse into component types
-        case modSym: ModuleClassSymbol =>
+        case modSym: ObjectClassSymbol =>
           Some(List(tp))
         // make sure it's not a primitive, else (5: Byte) match { case 5 => ... } sees no Byte
         case sym if !sym.isSealed || isPrimitiveValueClass(sym) =>
@@ -2734,7 +2734,7 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
         }
     }
     case class ConstructorExample(cls: Symbol, ctorArgs: List[CounterExample]) extends CounterExample {
-      override def toString = cls.decodedName + (if (cls.isModuleClass) "" else ctorArgs.mkString("(", ", ", ")"))
+      override def toString = cls.decodedName + (if (cls.isObjectClass) "" else ctorArgs.mkString("(", ", ", ")"))
     }
 
     case object WildcardExample extends CounterExample { override def toString = "_" }

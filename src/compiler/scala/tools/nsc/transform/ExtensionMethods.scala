@@ -70,7 +70,7 @@ abstract class ExtensionMethods extends Transform with TypingTransformers {
   /** Return the extension method that corresponds to given instance method `meth`.
    */
   def extensionMethod(imeth: Symbol): Symbol = atPhase(currentRun.refchecksPhase) {
-    val companionInfo = imeth.owner.companionModule.info
+    val companionInfo = imeth.owner.companionObject.info
     val candidates = extensionNames(imeth) map (companionInfo.decl(_))
     val matching = candidates filter (alt => normalize(alt.tpe, imeth.owner) matches imeth.tpe)
     assert(matching.nonEmpty, "no extension method found for "+imeth+" among "+candidates+"/"+extensionNames(imeth))
@@ -138,17 +138,17 @@ abstract class ExtensionMethods extends Transform with TypingTransformers {
         case Template(_, _, _) =>
           if (currentOwner.isDerivedValueClass) {
             checkNonCyclic(currentOwner.pos, Set(), currentOwner)
-            extensionDefs(currentOwner.companionModule) = new mutable.ListBuffer[Tree]
+            extensionDefs(currentOwner.companionObject) = new mutable.ListBuffer[Tree]
             currentOwner.primaryConstructor.makeNotPrivate(NoSymbol)
             super.transform(tree)
           } else if (currentOwner.isStaticOwner) {
             super.transform(tree)
           } else tree
         case DefDef(_, _, tparams, vparamss, _, rhs) if tree.symbol.isMethodWithExtension =>
-          val companion = currentOwner.companionModule
+          val companion = currentOwner.companionObject
           val origMeth = tree.symbol
           val extensionName = extensionNames(origMeth).head
-          val extensionMeth = companion.moduleClass.newMethod(extensionName, origMeth.pos, origMeth.flags & ~OVERRIDE & ~PROTECTED | FINAL)
+          val extensionMeth = companion.objectClass.newMethod(extensionName, origMeth.pos, origMeth.flags & ~OVERRIDE & ~PROTECTED | FINAL)
             .setAnnotations(origMeth.annotations)
           companion.info.decls.enter(extensionMeth)
           val newInfo = extensionMethInfo(extensionMeth, origMeth.info, currentOwner)
@@ -185,12 +185,12 @@ abstract class ExtensionMethods extends Transform with TypingTransformers {
 
     override def transformStats(stats: List[Tree], exprOwner: Symbol): List[Tree] =
       super.transformStats(stats, exprOwner) map {
-        case md @ ModuleDef(_, _, _) if extensionDefs contains md.symbol =>
+        case md @ ObjectDef(_, _, _) if extensionDefs contains md.symbol =>
           val defns = extensionDefs(md.symbol).toList map (member =>
             atOwner(md.symbol)(localTyper.typedPos(md.pos.focus)(member))
           )
           extensionDefs -= md.symbol
-          deriveModuleDef(md)(tmpl => deriveTemplate(tmpl)(_ ++ defns))
+          deriveObjectDef(md)(tmpl => deriveTemplate(tmpl)(_ ++ defns))
         case stat =>
           stat
       }

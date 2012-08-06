@@ -21,7 +21,7 @@ object ShowPickled extends Names {
   case class PickleBufferEntry(num: Int, startIndex: Int, tag: Int, bytes: Array[Byte]) {
     def isName = tag == TERMname || tag == TYPEname
     def hasName = tag match {
-      case TYPEsym | ALIASsym | CLASSsym | MODULEsym | VALsym | EXTref | EXTMODCLASSref => true
+      case TYPEsym | ALIASsym | CLASSsym | OBJECTsym | VALsym | EXTref | EXTMODCLASSref => true
       case _                                                                            => false
     }
     def readName =
@@ -59,7 +59,7 @@ object ShowPickled extends Names {
     case TYPEsym        => "TYPEsym"
     case ALIASsym       => "ALIASsym"
     case CLASSsym       => "CLASSsym"
-    case MODULEsym      => "MODULEsym"
+    case OBJECTsym      => "OBJECTsym"
     case VALsym         => "VALsym"
     case EXTref         => "EXTref"
     case EXTMODCLASSref => "EXTMODCLASSref"
@@ -198,7 +198,7 @@ object ShowPickled extends Names {
           out.print(" ")
           out.print(newTypeName(buf.bytes, buf.readIndex, len))
           buf.readIndex = end
-        case TYPEsym | ALIASsym | CLASSsym | MODULEsym | VALsym =>
+        case TYPEsym | ALIASsym | CLASSsym | OBJECTsym | VALsym =>
           printSymInfo(end)
           if (tag == CLASSsym && (buf.readIndex < end)) printTypeRef()
         case EXTref | EXTMODCLASSref =>

@@ -21,10 +21,10 @@ class Base extends Universe { self =>
     def newTermSymbol(name: TermName, pos: Position = NoPosition, flags: FlagSet = NoFlags): TermSymbol =
       new TermSymbol(this, name, flags)
 
-    def newModuleAndClassSymbol(name: Name, pos: Position = NoPosition, flags: FlagSet = NoFlags): (ModuleSymbol, ClassSymbol) = {
-      val c = new ModuleClassSymbol(this, name.toTypeName, flags)
-      val m = new ModuleSymbol(this, name.toTermName, flags, c)
-      (m, c)
+    def newObjectAndClassSymbol(name: Name, pos: Position = NoPosition, flags: FlagSet = NoFlags): (ObjectSymbol, ClassSymbol) = {
+      val c = new ObjectClassSymbol(this, name.toTypeName, flags)
+      val o = new ObjectSymbol(this, name.toTermName, flags, c)
+      (o, c)
     }
 
     def newMethodSymbol(name: TermName, pos: Position = NoPosition, flags: FlagSet = NoFlags): MethodSymbol
@@ -43,7 +43,7 @@ class Base extends Universe { self =>
       new FreeTypeSymbol(this, name, flags)
 
     private def kindString: String =
-      if (isModule) "module"
+      if (isObject) "object"
       else if (isClass) "class"
       else if (isFreeType) "free type"
       else if (isType) "type"
@@ -71,14 +71,14 @@ class Base extends Universe { self =>
       extends TermSymbol(owner, name, flags) with MethodSymbolBase
   implicit val MethodSymbolTag = ClassTag[MethodSymbol](classOf[MethodSymbol])
 
-  class ModuleSymbol(owner: Symbol, name: TermName, flags: FlagSet, override val moduleClass: Symbol)
-      extends TermSymbol(owner, name, flags) with ModuleSymbolBase
-  implicit val ModuleSymbolTag = ClassTag[ModuleSymbol](classOf[ModuleSymbol])
+  class ObjectSymbol(owner: Symbol, name: TermName, flags: FlagSet, override val objectClass: Symbol)
+      extends TermSymbol(owner, name, flags) with ObjectSymbolBase
+  implicit val ObjectSymbolTag = ClassTag[ObjectSymbol](classOf[ObjectSymbol])
 
   class ClassSymbol(owner: Symbol, name: TypeName, flags: FlagSet)
       extends TypeSymbol(owner, name, flags) with ClassSymbolBase
-  class ModuleClassSymbol(owner: Symbol, name: TypeName, flags: FlagSet)
-      extends ClassSymbol(owner, name, flags) { override def isModuleClass = true }
+  class ObjectClassSymbol(owner: Symbol, name: TypeName, flags: FlagSet)
+      extends ClassSymbol(owner, name, flags) { override def isObjectClass = true }
   implicit val ClassSymbolTag = ClassTag[ClassSymbol](classOf[ClassSymbol])
 
   class FreeTermSymbol(owner: Symbol, name: TermName, flags: FlagSet)
@@ -352,30 +352,30 @@ class Base extends Universe { self =>
   class Mirror extends MirrorOf[self.type] {
     val universe: self.type = self
 
-    lazy val RootClass    = new ClassSymbol(NoSymbol, tpnme.ROOT, NoFlags) { override def isModuleClass = true }
-    lazy val RootPackage  = new ModuleSymbol(NoSymbol, nme.ROOT, NoFlags, RootClass)
-    lazy val EmptyPackageClass = new ClassSymbol(RootClass, tpnme.EMPTY_PACKAGE_NAME, NoFlags) { override def isModuleClass = true }
-    lazy val EmptyPackage = new ModuleSymbol(RootClass, nme.EMPTY_PACKAGE_NAME, NoFlags, EmptyPackageClass)
+    lazy val RootClass    = new ClassSymbol(NoSymbol, tpnme.ROOT, NoFlags) { override def isObjectClass = true }
+    lazy val RootPackage  = new ObjectSymbol(NoSymbol, nme.ROOT, NoFlags, RootClass)
+    lazy val EmptyPackageClass = new ClassSymbol(RootClass, tpnme.EMPTY_PACKAGE_NAME, NoFlags) { override def isObjectClass = true }
+    lazy val EmptyPackage = new ObjectSymbol(RootClass, nme.EMPTY_PACKAGE_NAME, NoFlags, EmptyPackageClass)
 
     def staticClass(fullName: String): ClassSymbol =
       mkStatic[ClassSymbol](fullName)
 
-    def staticModule(fullName: String): ModuleSymbol =
-      mkStatic[ModuleSymbol](fullName)
+    def staticObject(fullName: String): ObjectSymbol =
+      mkStatic[ObjectSymbol](fullName)
 
-    def staticPackage(fullName: String): ModuleSymbol =
-      staticModule(fullName) // this toy universe doesn't care about the distinction between packages and modules
+    def staticPackage(fullName: String): ObjectSymbol =
+      staticObject(fullName) // this toy universe doesn't care about the distinction between packages and objects
 
     private def mkStatic[S <: Symbol : ClassTag](fullName: String): S =
       cached(fullName) {
         val point = fullName lastIndexOf '.'
         val owner =
-          if (point > 0) staticModule(fullName take point).moduleClass
+          if (point > 0) staticObject(fullName take point).objectClass
           else rootMirror.RootClass
         val name = fullName drop point + 1
         val symtag = implicitly[ClassTag[S]]
         if (symtag == ClassSymbolTag) new ClassSymbol(owner, newTypeName(name), NoFlags)
-        else owner.newModuleAndClassSymbol(newTermName(name))._1
+        else owner.newObjectAndClassSymbol(newTermName(name))._1
       }.asInstanceOf[S]
   }
 
@@ -384,8 +384,8 @@ class Base extends Universe { self =>
   import rootMirror._
 
   object definitions extends DefinitionsBase {
-    lazy val ScalaPackage = staticModule("scala")
-    lazy val ScalaPackageClass = ScalaPackage.moduleClass.asClass
+    lazy val ScalaPackage = staticObject("scala")
+    lazy val ScalaPackageClass = ScalaPackage.objectClass.asClass
 
     lazy val AnyClass     = staticClass("scala.Any")
     lazy val AnyValClass  = staticClass("scala.Any")
@@ -410,14 +410,14 @@ class Base extends Universe { self =>
     lazy val ArrayClass   = staticClass("scala.Array")
     lazy val ListClass    = staticClass("scala.List")
 
-    lazy val PredefModule = staticModule("scala.Predef")
+    lazy val PredefObject = staticObject("scala.Predef")
   }
 
   import definitions._
 
-  private def thisModuleType(fullName: String): Type = ThisType(staticModule(fullName).moduleClass)
-  private lazy val ScalaPrefix = thisModuleType("scala")
-  private lazy val JavaLangPrefix = thisModuleType("java.lang")
+  private def thisObjectType(fullName: String): Type = ThisType(staticObject(fullName).objectClass)
+  private lazy val ScalaPrefix = thisObjectType("scala")
+  private lazy val JavaLangPrefix = thisObjectType("java.lang")
 
   lazy val ByteTpe    = TypeRef(ScalaPrefix, ByteClass, Nil)
   lazy val ShortTpe   = TypeRef(ScalaPrefix, ShortClass, Nil)
@@ -511,9 +511,9 @@ class Base extends Universe { self =>
        extends ImplDef
   object ClassDef extends ClassDefExtractor
 
-  case class ModuleDef(mods: Modifiers, name: TermName, impl: Template)
+  case class ObjectDef(mods: Modifiers, name: TermName, impl: Template)
         extends ImplDef
-  object ModuleDef extends ModuleDefExtractor
+  object ObjectDef extends ObjectDefExtractor
 
   abstract class ValOrDefDef extends MemberDef {
     val name: Name
@@ -700,7 +700,7 @@ class Base extends Universe { self =>
   implicit val PackageDefTag = ClassTag[PackageDef](classOf[PackageDef])
   implicit val ImplDefTag = ClassTag[ImplDef](classOf[ImplDef])
   implicit val ClassDefTag = ClassTag[ClassDef](classOf[ClassDef])
-  implicit val ModuleDefTag = ClassTag[ModuleDef](classOf[ModuleDef])
+  implicit val ObjectDefTag = ClassTag[ObjectDef](classOf[ObjectDef])
   implicit val ValOrDefDefTag = ClassTag[ValOrDefDef](classOf[ValOrDefDef])
   implicit val ValDefTag = ClassTag[ValDef](classOf[ValDef])
   implicit val DefDefTag = ClassTag[DefDef](classOf[DefDef])
@@ -747,7 +747,7 @@ class Base extends Universe { self =>
 
   // [Eugene++] to be removed after SI-5863 is fixed
   def ClassDef(sym: Symbol, impl: Template): ClassDef = ???
-  def ModuleDef(sym: Symbol, impl: Template): ModuleDef = ???
+  def ObjectDef(sym: Symbol, impl: Template): ObjectDef = ???
   def ValDef(sym: Symbol, rhs: Tree): ValDef = ???
   def ValDef(sym: Symbol): ValDef = ???
   def DefDef(sym: Symbol, mods: Modifiers, vparamss: List[List[ValDef]], rhs: Tree): DefDef = ???

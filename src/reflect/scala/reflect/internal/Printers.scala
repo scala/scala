@@ -200,7 +200,7 @@ trait Printers extends api.Printers { self: SymbolTable =>
           printModifiers(tree, mods)
           val word =
             if (mods.isTrait) "trait"
-            else if (ifSym(tree, _.isModuleClass)) "object"
+            else if (ifSym(tree, _.isObjectClass)) "object"
             else "class"
 
           print(word, " ", symName(tree, name))
@@ -211,7 +211,7 @@ trait Printers extends api.Printers { self: SymbolTable =>
           printAnnotations(tree)
           print("package ", packaged); printColumn(stats, " {", ";", "}")
 
-        case ModuleDef(mods, name, impl) =>
+        case ObjectDef(mods, name, impl) =>
           printAnnotations(tree)
           printModifiers(tree, mods);
           print("object " + symName(tree, name), " extends ", impl)
@@ -581,7 +581,7 @@ trait Printers extends api.Printers { self: SymbolTable =>
               case _ => // do nothing
             })
         case sym: Symbol =>
-          if (sym.isStatic && (sym.isClass || sym.isModule)) print(sym.fullName)
+          if (sym.isStatic && (sym.isClass || sym.isObject)) print(sym.fullName)
           else print(sym.name)
           if (printIds) print("#", sym.id)
           if (printKinds) print("#", sym.abbreviatedKindString)

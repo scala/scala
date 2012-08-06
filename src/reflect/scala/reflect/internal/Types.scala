@@ -272,7 +272,7 @@ trait Types extends api.Types { self: SymbolTable =>
           case PolyType(undets, underlying) => existentialAbstraction(undets, underlying) // we don't want undets in the result
           case _ => result
         }
-        // [Eugene] erasure screws up all ThisTypes for modules into PackageTypeRefs
+        // [Eugene] erasure screws up all ThisTypes for objects into PackageTypeRefs
         // we need to unscrew them, or certain typechecks will fail mysteriously
         // http://groups.google.com/group/scala-internals/browse_thread/thread/6d3277ae21b6d581
         result = result.map(tpe => tpe match {
@@ -980,12 +980,12 @@ trait Types extends api.Types { self: SymbolTable =>
     def toLongString = {
       val str = toString
       if (str == "type") widen.toString
-      else if ((str endsWith ".type") && !typeSymbol.isModuleClass) str + " (with underlying type " + widen + ")"
+      else if ((str endsWith ".type") && !typeSymbol.isObjectClass) str + " (with underlying type " + widen + ")"
       else str
     }
 
     /** The string representation of this type when the direct object in a sentence.
-     *  Normally this is no different from the regular representation, but modules
+     *  Normally this is no different from the regular representation, but objects
      *  read better as "object Foo" here and "Foo.type" the rest of the time.
      */
     def directObjectString = safeToString
@@ -1096,7 +1096,7 @@ trait Types extends api.Types { self: SymbolTable =>
      *  @param requiredFlags  Returned members do have these flags
      *  @param stableOnly     If set, return only members that are types or stable values
      */
-    //TODO: use narrow only for modules? (correct? efficiency gain?)
+    //TODO: use narrow only for objects? (correct? efficiency gain?)
     def findMember(name: Name, excludedFlags: Long, requiredFlags: Long, stableOnly: Boolean): Symbol = {
       // if this type contains type variables, put them to sleep for a while -- don't just wipe them out by
       // replacing them by the corresponding type parameter, as that messes up (e.g.) type variables in type refinements
@@ -1370,7 +1370,7 @@ trait Types extends api.Types { self: SymbolTable =>
    */
   abstract case class ThisType(sym: Symbol) extends SingletonType with ThisTypeApi {
     assert(sym.isClass, sym)
-    //assert(sym.isClass && !sym.isModuleClass || sym.isRoot, sym)
+    //assert(sym.isClass && !sym.isObjectClass || sym.isRoot, sym)
     override def isTrivial: Boolean = sym.isPackageClass
     override def isNotNull = true
     override def typeSymbol = sym
@@ -1381,7 +1381,7 @@ trait Types extends api.Types { self: SymbolTable =>
       if (settings.debug.value) sym.nameString + ".this."
       else if (sym.isAnonOrRefinementClass) "this."
       else if (sym.isOmittablePrefix) ""
-      else if (sym.isModuleClass) sym.fullNameString + "."
+      else if (sym.isObjectClass) sym.fullNameString + "."
       else sym.nameString + ".this."
     override def safeToString: String =
       if (sym.isEffectiveRoot) "" + sym.name
@@ -1428,7 +1428,7 @@ trait Types extends api.Types { self: SymbolTable =>
       else {
         val thissym = refinedType(List(this), sym.owner, EmptyScope).typeSymbol
         if (sym.owner != NoSymbol) {
-          //Console.println("narrowing module " + sym + thissym.owner);
+          //Console.println("narrowing object " + sym + thissym.owner);
           thissym.typeOfThis = this
         }
         thissym.thisType
@@ -2065,13 +2065,13 @@ trait Types extends api.Types { self: SymbolTable =>
     override def typeConstructor = TypeRef(pre, sym, Nil)
   }
 
-  class ModuleTypeRef(pre0: Type, sym0: Symbol) extends NoArgsTypeRef(pre0, sym0) with ClassTypeRef {
-    require(sym.isModuleClass, sym)
+  class ObjectTypeRef(pre0: Type, sym0: Symbol) extends NoArgsTypeRef(pre0, sym0) with ClassTypeRef {
+    require(sym.isObjectClass, sym)
     private[this] var narrowedCache: Type = _
     override def isStable = true
     override def narrow = {
       if (narrowedCache eq null)
-        narrowedCache = singleType(pre, sym.sourceModule)
+        narrowedCache = singleType(pre, sym.sourceObject)
 
       narrowedCache
     }
@@ -2082,7 +2082,7 @@ trait Types extends api.Types { self: SymbolTable =>
     override def safeToString = prefixString + "type"
     override def prefixString = if (sym.isOmittablePrefix) "" else prefix.prefixString + sym.nameString + "."
   }
-  class PackageTypeRef(pre0: Type, sym0: Symbol) extends ModuleTypeRef(pre0, sym0) {
+  class PackageTypeRef(pre0: Type, sym0: Symbol) extends ObjectTypeRef(pre0, sym0) {
     require(sym.isPackageClass, sym)
     override protected def finishPrefix(rest: String) = packagePrefix + rest
   }
@@ -2127,7 +2127,7 @@ trait Types extends api.Types { self: SymbolTable =>
       appliedType(asSeenFromOwner(tp), dummyArgs)
 
     override def narrow =
-      if (sym.isModuleClass) singleType(pre, sym.sourceModule)
+      if (sym.isObjectClass) singleType(pre, sym.sourceObject)
       else super.narrow
 
     override def typeConstructor = this
@@ -2356,7 +2356,7 @@ trait Types extends api.Types { self: SymbolTable =>
     override def typeSymbolDirect = sym
 
     override def isNotNull =
-      sym.isModuleClass || sym == NothingClass || (sym isNonBottomSubClass NotNullClass) || super.isNotNull
+      sym.isObjectClass || sym == NothingClass || (sym isNonBottomSubClass NotNullClass) || super.isNotNull
 
     override def parents: List[Type] = {
       val cache = parentsCache
@@ -2473,7 +2473,7 @@ trait Types extends api.Types { self: SymbolTable =>
         else if (sym.isAbstractType)      new NoArgsTypeRef(pre, sym) with AbstractTypeRef
         else if (sym.isRefinementClass)   new RefinementTypeRef(pre, sym)
         else if (sym.isPackageClass)      new PackageTypeRef(pre, sym)
-        else if (sym.isModuleClass)       new ModuleTypeRef(pre, sym)
+        else if (sym.isObjectClass)       new ObjectTypeRef(pre, sym)
         else                              new NoArgsTypeRef(pre, sym) with ClassTypeRef
       }
     })
@@ -3450,7 +3450,7 @@ trait Types extends api.Types { self: SymbolTable =>
     if (phase.erasedTypes)
       sym.tpe.resultType
     else if (sym.isRootPackage)
-      ThisType(sym.moduleClass)
+      ThisType(sym.objectClass)
     else {
       var sym1 = rebind(pre, sym)
       val pre1 = removeSuper(pre, sym1)
@@ -4402,7 +4402,7 @@ trait Types extends api.Types { self: SymbolTable =>
               }
               if (!(pre1.isStable ||
                     pre1.typeSymbol.isPackageClass ||
-                    pre1.typeSymbol.isModuleClass && pre1.typeSymbol.isStatic)) {
+                    pre1.typeSymbol.isObjectClass && pre1.typeSymbol.isStatic)) {
                 stabilize(pre1, sym)
               } else {
                 pre1
@@ -4910,12 +4910,12 @@ trait Types extends api.Types { self: SymbolTable =>
     private def adaptToNewRun(pre: Type, sym: Symbol): Symbol = {
       if (phase.flatClasses || sym.isRootSymbol || (pre eq NoPrefix) || (pre eq NoType) || sym.isPackageClass)
         sym
-      else if (sym.isModuleClass) {
-        val sourceModule1 = adaptToNewRun(pre, sym.sourceModule)
+      else if (sym.isObjectClass) {
+        val sourceObject1 = adaptToNewRun(pre, sym.sourceObject)
 
-        sourceModule1.moduleClass orElse sourceModule1.initialize.moduleClass orElse {
-          val msg = "Cannot adapt module class; sym = %s, sourceModule = %s, sourceModule.moduleClass = %s => sourceModule1 = %s, sourceModule1.moduleClass = %s"
-          debuglog(msg.format(sym, sym.sourceModule, sym.sourceModule.moduleClass, sourceModule1, sourceModule1.moduleClass))
+        sourceObject1.objectClass orElse sourceObject1.initialize.objectClass orElse {
+          val msg = "Cannot adapt object class; sym = %s, sourceObject = %s, sourceObject.objectClass = %s => sourceObject1 = %s, sourceObject1.objectClass = %s"
+          debuglog(msg.format(sym, sym.sourceObject, sym.sourceObject.objectClass, sourceObject1, sourceObject1.objectClass))
           sym
         }
       }
@@ -5155,9 +5155,9 @@ trait Types extends api.Types { self: SymbolTable =>
     }
     def maybeCreateDummyClone(pre: Type, sym: Symbol): Type = pre match {
       case SingleType(pre1, sym1) =>
-        if (sym1.isModule && sym1.isStatic) {
+        if (sym1.isObject && sym1.isStatic) {
           NoType
-        } else if (sym1.isModule && sym.owner == sym1.moduleClass) {
+        } else if (sym1.isObject && sym.owner == sym1.objectClass) {
           val pre2 = maybeCreateDummyClone(pre1, sym1)
           if (pre2 eq NoType) pre2
           else singleType(pre2, sym1)
@@ -5165,7 +5165,7 @@ trait Types extends api.Types { self: SymbolTable =>
           createDummyClone(pre)
         }
       case ThisType(clazz) =>
-        if (clazz.isModuleClass)
+        if (clazz.isObjectClass)
           maybeCreateDummyClone(clazz.typeOfThis, sym)
         else if (sym.owner == clazz && (sym.hasFlag(PRIVATE) || sym.privateWithin == clazz))
           NoType
@@ -5282,13 +5282,13 @@ trait Types extends api.Types { self: SymbolTable =>
         true
 /*
       case (SingleType(pre1, sym1), ThisType(sym2))
-      if (sym1.isModule &&
-          sym1.moduleClass == sym2 &&
+      if (sym1.isObject &&
+          sym1.objectClass == sym2 &&
           pre1 =:= sym2.owner.thisType) =>
         true
       case (ThisType(sym1), SingleType(pre2, sym2))
-      if (sym2.isModule &&
-          sym2.moduleClass == sym1 &&
+      if (sym2.isObject &&
+          sym2.objectClass == sym1 &&
           pre2 =:= sym1.owner.thisType) =>
         true
 */
@@ -5410,7 +5410,7 @@ trait Types extends api.Types { self: SymbolTable =>
           case st2: SingleType =>
             if (equalSymsAndPrefixes(st1.sym, st1.pre, st2.sym, st2.pre)) return true
           case TypeRef(pre2, sym2, Nil) =>
-            if (sym2.isModuleClass && equalSymsAndPrefixes(st1.sym, st1.pre, sym2.sourceModule, pre2)) return true
+            if (sym2.isObjectClass && equalSymsAndPrefixes(st1.sym, st1.pre, sym2.sourceObject, pre2)) return true
           case _ =>
         }
       case ct1: ConstantType =>
@@ -5696,7 +5696,7 @@ trait Types extends api.Types { self: SymbolTable =>
             val pre1 = tr1.pre
             val pre2 = tr2.pre
             (((if (sym1 == sym2) phase.erasedTypes || sym1.owner.hasPackageFlag || isSubType(pre1, pre2, depth)
-               else (sym1.name == sym2.name && !sym1.isModuleClass && !sym2.isModuleClass &&
+               else (sym1.name == sym2.name && !sym1.isObjectClass && !sym2.isObjectClass &&
                      (isUnifiable(pre1, pre2) ||
                       isSameSpecializedSkolem(sym1, sym2, pre1, pre2) ||
                       sym2.isAbstractType && isSubPre(pre1, pre2, sym2)))) &&
@@ -5841,8 +5841,8 @@ trait Types extends api.Types { self: SymbolTable =>
           case _: ClassSymbol =>
             if (isRaw(sym1, tr1.args))
               isSubType(rawToExistential(tp1), tp2, depth)
-            else if (sym1.isModuleClass) tp2 match {
-              case SingleType(pre2, sym2) => equalSymsAndPrefixes(sym1.sourceModule, pre1, sym2, pre2)
+            else if (sym1.isObjectClass) tp2 match {
+              case SingleType(pre2, sym2) => equalSymsAndPrefixes(sym1.sourceObject, pre1, sym2, pre2)
               case _                      => false
             }
             else if (sym1.isRefinementClass)
@@ -5942,7 +5942,7 @@ trait Types extends api.Types { self: SymbolTable =>
           case ExistentialType(_, res2) =>
             alwaysMatchSimple && matchesType(tp1, res2, true)
           case TypeRef(_, sym, Nil) =>
-            params1.isEmpty && sym.isModuleClass && matchesType(res1, tp2, alwaysMatchSimple)
+            params1.isEmpty && sym.isObjectClass && matchesType(res1, tp2, alwaysMatchSimple)
           case _ =>
             false
         }
@@ -5954,7 +5954,7 @@ trait Types extends api.Types { self: SymbolTable =>
             matchesType(res1, res2, alwaysMatchSimple)
           case ExistentialType(_, res2) =>
             alwaysMatchSimple && matchesType(tp1, res2, true)
-          case TypeRef(_, sym, Nil) if sym.isModuleClass =>
+          case TypeRef(_, sym, Nil) if sym.isObjectClass =>
             matchesType(res1, tp2, alwaysMatchSimple)
           case _ =>
             matchesType(res1, tp2, alwaysMatchSimple)
@@ -5979,7 +5979,7 @@ trait Types extends api.Types { self: SymbolTable =>
             if (alwaysMatchSimple) matchesType(res1, tp2, true)
             else lastTry
         }
-      case TypeRef(_, sym, Nil) if sym.isModuleClass =>
+      case TypeRef(_, sym, Nil) if sym.isObjectClass =>
         tp2 match {
           case MethodType(Nil, res2)   => matchesType(tp1, res2, alwaysMatchSimple)
           case NullaryMethodType(res2) => matchesType(tp1, res2, alwaysMatchSimple)

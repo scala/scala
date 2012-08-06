@@ -9,16 +9,16 @@ trait SymbolLoaders { self: SymbolTable =>
 
   /** The standard completer for top-level classes
    *  @param clazz   The top-level class
-   *  @param module  The companion object of `clazz`
-   *  Calling `complete` on this type will assign the infos of `clazz` and `module`
+   *  @param object  The companion object of `clazz`
+   *  Calling `complete` on this type will assign the infos of `clazz` and `objct`
    *  by unpickling information from the corresponding Java class. If no Java class
    *  is found, a package is created instead.
    */
-  class TopClassCompleter(clazz: Symbol, module: Symbol) extends SymLoader {
+  class TopClassCompleter(clazz: Symbol, objct: Symbol) extends SymLoader {
 //    def makePackage() {
 //      println("wrong guess; making package "+clazz)
-//      val ptpe = newPackageType(module.moduleClass)
-//      for (sym <- List(clazz, module, module.moduleClass)) {
+//      val ptpe = newPackageType(objct.objectClass)
+//      for (sym <- List(clazz, objct, objct.objectClass)) {
 //        sym setFlag Flags.PACKAGE
 //        sym setInfo ptpe
 //      }
@@ -26,12 +26,12 @@ trait SymbolLoaders { self: SymbolTable =>
 
     override def complete(sym: Symbol) = {
       debugInfo("completing "+sym+"/"+clazz.fullName)
-      assert(sym == clazz || sym == module || sym == module.moduleClass)
+      assert(sym == clazz || sym == objct || sym == objct.objectClass)
 //      try {
       atPhaseNotLaterThan(picklerPhase) {
         val loadingMirror = mirrorThatLoaded(sym)
         val javaClass = loadingMirror.javaClass(clazz.javaClassName)
-        loadingMirror.unpickleClass(clazz, module, javaClass)
+        loadingMirror.unpickleClass(clazz, objct, javaClass)
 //      } catch {
 //        case ex: ClassNotFoundException => makePackage()
 //        case ex: NoClassDefFoundError => makePackage()
@@ -55,30 +55,30 @@ trait SymbolLoaders { self: SymbolTable =>
    *  and initialize with a lazy type completer.
    *  @param owner   The owner of the newly created class and object
    *  @param name    The simple name of the newly created class
-   *  @param completer  The completer to be used to set the info of the class and the module
+   *  @param completer  The completer to be used to set the info of the class and the object
    */
-  protected def createClassModule(owner: Symbol, name: TypeName, completer: (Symbol, Symbol) => LazyType) = {
+  protected def createClassObject(owner: Symbol, name: TypeName, completer: (Symbol, Symbol) => LazyType) = {
     assert(!(name.toString endsWith "[]"), name)
     val clazz = owner.newClass(name)
-    val module = owner.newModule(name.toTermName)
+    val objct = owner.newObject(name.toTermName)
     // [Eugene++] am I doing this right?
     // todo: drop condition, see what goes wrong
     // [Eugene++ to Martin] test/files/run/t5256g and test/files/run/t5256h will crash
     // reflection meeting verdict: need to enter the symbols into the first symbol in the owner chain that has a non-empty scope
     if (owner.info.decls != EmptyScope) {
       owner.info.decls enter clazz
-      owner.info.decls enter module
+      owner.info.decls enter objct
     }
-    initClassModule(clazz, module, completer(clazz, module))
-    (clazz, module)
+    initClassObject(clazz, objct, completer(clazz, objct))
+    (clazz, objct)
   }
 
-  protected def setAllInfos(clazz: Symbol, module: Symbol, info: Type) = {
-    List(clazz, module, module.moduleClass) foreach (_ setInfo info)
+  protected def setAllInfos(clazz: Symbol, objct: Symbol, info: Type) = {
+    List(clazz, objct, objct.objectClass) foreach (_ setInfo info)
   }
 
-  protected def initClassModule(clazz: Symbol, module: Symbol, completer: LazyType) =
-    setAllInfos(clazz, module, completer)
+  protected def initClassObject(clazz: Symbol, objct: Symbol, completer: LazyType) =
+    setAllInfos(clazz, objct, completer)
 
   /** The type completer for packages.
    */
@@ -87,7 +87,7 @@ trait SymbolLoaders { self: SymbolTable =>
       assert(sym.isPackageClass)
       sym setInfo new ClassInfoType(List(), new PackageScope(sym), sym)
         // override def safeToString = pkgClass.toString
-      openPackageModule(sym)
+      openPackageObject(sym)
     }
   }
 
@@ -118,20 +118,20 @@ trait SymbolLoaders { self: SymbolTable =>
         currentMirror.tryJavaClass(path) match {
           case Some(cls) =>
             val loadingMirror = currentMirror.mirrorDefining(cls)
-            val (clazz, module) =
+            val (clazz, objct) =
               if (loadingMirror eq currentMirror) {
-                createClassModule(pkgClass, name.toTypeName, new TopClassCompleter(_, _))
+                createClassObject(pkgClass, name.toTypeName, new TopClassCompleter(_, _))
               } else {
                 val origOwner = loadingMirror.packageNameToScala(pkgClass.fullName)
                 val clazz = origOwner.info decl name.toTypeName
-                val module = origOwner.info decl name.toTermName
+                val objct = origOwner.info decl name.toTermName
                 assert(clazz != NoSymbol)
-                assert(module != NoSymbol)
+                assert(objct != NoSymbol)
                 pkgClass.info.decls enter clazz
-                pkgClass.info.decls enter module
-                (clazz, module)
+                pkgClass.info.decls enter objct
+                (clazz, objct)
               }
-            debugInfo(s"created $module/${module.moduleClass} in $pkgClass")
+            debugInfo(s"created $objct/${objct.objectClass} in $pkgClass")
             lookupEntry(name)
           case none =>
             debugInfo("*** not found : "+path)

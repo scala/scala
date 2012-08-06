@@ -28,7 +28,7 @@ abstract class BrowsingLoaders extends SymbolLoaders {
   override protected def enterIfNew(owner: Symbol, member: Symbol, completer: SymbolLoader): Symbol = {
     completer.sourcefile match {
       case Some(src) =>
-        (if (member.isModule) member.moduleClass else member).sourceFile = src
+        (if (member.isObject) member.objectClass else member).sourceFile = src
       case _ =>
     }
     val decls = owner.info.decls
@@ -52,7 +52,7 @@ abstract class BrowsingLoaders extends SymbolLoaders {
   }
 
   /** Browse the top-level of given abstract file `src` and enter
-   *  eny encountered top-level classes and modules in `root`
+   *  eny encountered top-level classes and objects in `root`
    */
   def browseTopLevel(root: Symbol, src: AbstractFile) {
 
@@ -86,13 +86,13 @@ abstract class BrowsingLoaders extends SymbolLoaders {
             enterClass(root, name.toString, new SourcefileLoader(src))
             entered += 1
           } else println("prefixes differ: "+packagePrefix+","+root.fullName)
-        case ModuleDef(_, name, _) =>
+        case ObjectDef(_, name, _) =>
           if (packagePrefix == root.fullName) {
-            val module = enterModule(root, name.toString, new SourcefileLoader(src))
+            val objct = enterObject(root, name.toString, new SourcefileLoader(src))
             entered += 1
             if (name == nme.PACKAGEkw) {
-              println("open package module: "+module)
-              openPackageModule(module, root)
+              println("open package object: "+objct)
+              openPackageObject(objct, root)
             }
           } else println("prefixes differ: "+packagePrefix+","+root.fullName)
         case _ =>
