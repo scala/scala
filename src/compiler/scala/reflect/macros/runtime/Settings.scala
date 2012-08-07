@@ -5,9 +5,9 @@ trait Settings {
   self: Context =>
 
   def settings: List[String] = {
-    val optionName = universe.settings.XmacroSettings.name
-    val settings = compilerSettings.find(opt => opt.startsWith(optionName)).map(opt => opt.substring(optionName.length + 1)).getOrElse("")
-    settings.split(",").toList
+    val us = universe.settings
+    import us._
+    userSetSettings collectFirst { case x: MultiStringSetting if x.name == XmacroSettings.name => x.value } getOrElse Nil
   }
 
   def compilerSettings: List[String] = universe.settings.recreateArgs
