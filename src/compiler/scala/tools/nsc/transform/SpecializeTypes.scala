@@ -69,7 +69,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
   import definitions.{
     BooleanClass, UnitClass, ArrayClass,
     ScalaValueClasses, isPrimitiveValueClass, isPrimitiveValueType,
-    SpecializedClass, UnspecializedClass, AnyRefClass, ObjectClass, AnyRefModule,
+    SpecializedClass, UnspecializedClass, AnyRefClass, ObjectClass,
     GroupOfSpecializable, uncheckedVarianceClass, ScalaInlineClass
   }
   import rootMirror.RootClass
@@ -326,7 +326,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
     }
   }
 
-  lazy val specializableTypes = (ScalaValueClasses :+ AnyRefClass) map (_.tpe) sorted
+  lazy val specializableTypes = ScalaValueClasses map (_.tpe) sorted
 
   /** If the symbol is the companion of a value class, the value class.
    *  Otherwise, AnyRef.
