@@ -1,6 +1,6 @@
 /* NSC -- new Scala compiler
  *
- * Copyright 2012 LAMP/EPFL
+ * Copyright 2011-2012 LAMP/EPFL
  * @author Adriaan Moors
  */
 

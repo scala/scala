@@ -1,5 +1,5 @@
 /* FJBG -- Fast Java Bytecode Generator
- * Copyright 2002-2011 LAMP/EPFL
+ * Copyright 2002-2012 LAMP/EPFL
  * @author  Michel Schinz
  */
 
