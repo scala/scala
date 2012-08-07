@@ -19,7 +19,7 @@ package runtime {
       if (runtimeClass.isEmpty) c.abort(c.enclosingPosition, "call site does not have an enclosing class")
       val runtimeUniverse = Select(Select(Select(Ident(newTermName("scala")), newTermName("reflect")), newTermName("runtime")), newTermName("universe"))
       val currentMirror = Apply(Select(runtimeUniverse, newTermName("runtimeMirror")), List(Select(runtimeClass, newTermName("getClassLoader"))))
-      c.Expr[Nothing](currentMirror)(c.TypeTag.Nothing)
+      c.Expr[Nothing](currentMirror)(c.AbsTypeTag.Nothing)
     }
   }
 }
