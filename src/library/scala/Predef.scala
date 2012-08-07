@@ -115,8 +115,11 @@ object Predef extends LowPriorityImplicits {
   @deprecated("This notion doesn't have a corresponding concept in 2.10, because scala.reflect.runtime.universe.TypeTag can capture arbitrary types. Use type tags instead of manifests, and there will be no need in opt manifests.", "2.10.0")
   val NoManifest        = scala.reflect.NoManifest
 
+  @deprecated("Use scala.reflect.classTag[T] and scala.reflect.runtime.universe.typeTag[T] instead", "2.10.0")
   def manifest[T](implicit m: Manifest[T])           = m
+  @deprecated("Use scala.reflect.classTag[T] instead", "2.10.0")
   def classManifest[T](implicit m: ClassManifest[T]) = m
+  @deprecated("This notion doesn't have a corresponding concept in 2.10, because scala.reflect.runtime.universe.TypeTag can capture arbitrary types. Use type tags instead of manifests, and there will be no need in opt manifests.", "2.10.0")
   def optManifest[T](implicit m: OptManifest[T])     = m
 
   // Minor variations on identity functions

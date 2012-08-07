@@ -6,32 +6,30 @@
 **                          |/                                          **
 \*                                                                      */
 
-
-
 package scala
 
-/** An annotation that gets applied to a selector in a match expression.
- *  If it is present, exhaustiveness warnings for that expression will be
- *  suppressed.
- *  For example, compiling the code:
+/** An annotation to designate that the annotated entity
+ *  should not be considered for additional compiler checks.
+ *  Specific applications include annotating the subject of
+ *  a match expression to suppress exhaustiveness warnings, and
+ *  annotating a type argument in a match case to suppress
+ *  unchecked warnings.
+ *
+ *  Such suppression should be used with caution, without which
+ *  one may encounter [[scala.MatchError]] or [[java.lang.ClassCastException]]
+ *  at runtime.  In most cases one can and should address the
+ *  warning instead of suppressing it.
+ *
  *  {{{
- *    object test extends App {
- *      def f(x: Option[Int]) = x match {
- *        case Some(y) => y
- *      }
- *      f(None)
+ *    object Test extends App {
+ *      // This would normally warn "match is not exhaustive"
+ *      // because `None` is not covered.
+ *      def f(x: Option[String]) = (x: @unchecked) match { case Some(y) => y }
+ *      // This would normally warn "type pattern is unchecked"
+ *      // but here will blindly cast the head element to String.
+ *      def g(xs: Any) = xs match { case x: List[String @unchecked] => x.head }
  *    }
- *  }}}
- *  will display the following warning:
- *  {{{
- *    test.scala:2: warning: does not cover case {object None}
- *      def f(x: Option[int]) = x match {
- *                              ^
- *    one warning found
- *  }}}
- *  The above message may be suppressed by substituting the expression `x`
- *  with `(x: @unchecked)`. Then the modified code will compile silently,
- *  but, in any case, a [[scala.MatchError]] will be raised at runtime.
+ * }}}
  *
  *  @since 2.4
  */

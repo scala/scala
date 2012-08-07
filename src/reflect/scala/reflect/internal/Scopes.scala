@@ -324,6 +324,9 @@ trait Scopes extends api.Scopes { self: SymbolTable =>
     override def filter(p: Symbol => Boolean): Scope =
       if (!(toList forall p)) newScopeWith(toList filter p: _*) else this
 
+    @deprecated("Use `toList.reverse` instead", "2.10.0")
+    def reverse: List[Symbol] = toList.reverse
+
     override def mkString(start: String, sep: String, end: String) =
       toList.map(_.defString).mkString(start, sep, end)
 
