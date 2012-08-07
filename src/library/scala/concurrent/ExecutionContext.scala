@@ -28,12 +28,10 @@ trait ExecutionContext {
    */
   def reportFailure(t: Throwable): Unit
   
-  /** Prepares for the execution of callback `f`. Returns the prepared
-   *  execution context which should be used to schedule the execution
-   *  of the task associated with `f`.
+  /** Prepares for the execution of a task. Returns the prepared
+   *  execution context.
    */
-  def prepare[T, U](f: Try[T] => U): ExecutionContext =
-    this
+  def prepare(): ExecutionContext = this
 
 }
 

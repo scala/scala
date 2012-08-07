@@ -54,7 +54,7 @@ import language.implicitConversions
  *
  * `Try` comes to the Scala standard library after years of use as an integral part of Twitter's stack.
  *
- * @author based on Marius Eriksen's original implementation in com.twitter.util.
+ * @author based on Twitter's original implementation in com.twitter.util.
  * @since 2.10
  */
 sealed abstract class Try[+T] {
@@ -115,17 +115,6 @@ sealed abstract class Try[+T] {
    * Returns `None` if this is a `Failure` or a `Some` containing the value if this is a `Success`.
    */
   def toOption = if (isSuccess) Some(get) else None
-
-  /**
-   * Returns an empty `Seq` (usually a `List`) if this is a `Failure` or a `Seq` containing the value if this is a `Success`.
-   */
-  def toSeq = if (isSuccess) Seq(get) else Seq()
-
-  /**
-   * Returns the given function applied to the value from this `Success` or returns this if this is a `Failure`.
-   * Alias for `flatMap`.
-   */
-  def andThen[U](f: T => Try[U]): Try[U] = flatMap(f)
 
   /**
    * Transforms a nested `Try`, ie, a `Try` of type `Try[Try[T]]`,

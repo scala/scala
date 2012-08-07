@@ -103,6 +103,20 @@ trait TryStandard {
 		}
 	}
 
+	def testSuccessTransform(): Unit = {
+		val s = Success(1)
+		val succ = (x: Int) => Success(x * 10)
+		val fail = (x: Throwable) => Success(0)
+		assert(s.transform(succ, fail).get == s.get)
+	}
+
+	def testFailureTransform(): Unit = {
+		val f = Failure(new Exception("foo"))
+		val succ = (x: Int) => Success(x * 10)
+		val fail = (x: Throwable) => Success(0)
+		assert(f.transform(succ, fail).get == 0)
+	}
+
 	testForeachSuccess()
 	testForeachFailure()
 	testFlatMapSuccess()

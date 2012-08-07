@@ -129,7 +129,7 @@ private[concurrent] object Promise {
     }
 
     def onComplete[U](func: Try[T] => U)(implicit executor: ExecutionContext): Unit = {
-      val preparedEC = executor.prepare(func)
+      val preparedEC = executor.prepare
       val runnable = new CallbackRunnable[T](preparedEC, func)
 
       @tailrec //Tries to add the callback, if already completed, it dispatches the callback to be executed
@@ -156,16 +156,13 @@ private[concurrent] object Promise {
 
     def onComplete[U](func: Try[T] => U)(implicit executor: ExecutionContext): Unit = {
       val completedAs = value.get
-      val preparedEC = executor.prepare(func)
+      val preparedEC = executor.prepare
       (new CallbackRunnable(preparedEC, func)).executeWithValue(completedAs)
     }
 
     def ready(atMost: Duration)(implicit permit: CanAwait): this.type = this
 
-    def result(atMost: Duration)(implicit permit: CanAwait): T = value.get match {
-      case Failure(e)  => throw e
-      case Success(r) => r
-    }
+    def result(atMost: Duration)(implicit permit: CanAwait): T = value.get.get
   }
 
 }
