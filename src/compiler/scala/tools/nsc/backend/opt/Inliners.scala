@@ -247,7 +247,7 @@ abstract class Inliners extends SubComponent {
         debuglog("Analyzing " + cls)
 
         this.currentIClazz = cls
-        val ms = cls.methods filterNot { _.symbol.isConstructor } sorted imethodOrdering
+        val ms = cls.methods sorted imethodOrdering
         ms foreach { im =>
           if(hasInline(im.symbol)) {
             log("Not inlining into " + im.symbol.originalName.decode + " because it is marked @inline.")
