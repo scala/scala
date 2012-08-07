@@ -28,7 +28,7 @@ trait FastTrack {
     def run(args: List[Any]): Any = {
       val c = args(0).asInstanceOf[MacroContext]
       val result = expander((c, c.expandee))
-      c.Expr[Nothing](result)(c.TypeTag.Nothing)
+      c.Expr[Nothing](result)(c.AbsTypeTag.Nothing)
     }
   }
 

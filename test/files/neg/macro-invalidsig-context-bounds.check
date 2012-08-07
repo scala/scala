@@ -1,4 +1,4 @@
-Impls_1.scala:5: error: macro implementations cannot have implicit parameters other than TypeTag evidences
-  def foo[U: c.TypeTag: Numeric](c: Ctx) = {
+Impls_1.scala:5: error: macro implementations cannot have implicit parameters other than AbsTypeTag evidences
+  def foo[U: c.AbsTypeTag: Numeric](c: Ctx) = {
       ^
 one error found
