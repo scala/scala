@@ -99,11 +99,11 @@ abstract class SelectiveANFTransform extends PluginComponent with Transform with
                 treeCopy.Block(body, List(transform(selDef)), transformPureMatch(mat, selector, cases))
 
               // virtpatmat
-              case b@Block(matchStats@((selDef: ValDef) :: cases), matchEnd) if ext.isDefined && pureBody && (matchStats forall gen.hasSynthCaseSymbol) =>
+              case b@Block(matchStats@((selDef: ValDef) :: cases), matchEnd) if ext.isDefined && pureBody && (matchStats forall treeInfo.hasSynthCaseSymbol) =>
                 transformPureVirtMatch(b, selDef, cases, matchEnd)
 
               // virtpatmat that stores the scrut separately -- TODO: can we eliminate this case??
-              case Block(List(selDef0: ValDef), mat@Block(matchStats@((selDef: ValDef) :: cases), matchEnd)) if ext.isDefined && pureBody  && (matchStats forall gen.hasSynthCaseSymbol)=>
+              case Block(List(selDef0: ValDef), mat@Block(matchStats@((selDef: ValDef) :: cases), matchEnd)) if ext.isDefined && pureBody  && (matchStats forall treeInfo.hasSynthCaseSymbol)=>
                 treeCopy.Block(body, List(transform(selDef0)), transformPureVirtMatch(mat, selDef, cases, matchEnd))
 
               case _ =>
@@ -253,7 +253,7 @@ abstract class SelectiveANFTransform extends PluginComponent with Transform with
             // calling each labeldef is wrong, since some labels may be jumped over
             // we can get away with this for now since the only other labels we emit are for tailcalls/while loops,
             // which do not have consecutive labeldefs (and thus fall-through is irrelevant)
-            if (gen.hasSynthCaseSymbol(ldef)) (List(stm1), localTyper.typed{Literal(Constant(()))}, cpsA)
+            if (treeInfo.hasSynthCaseSymbol(ldef)) (List(stm1), localTyper.typed{Literal(Constant(()))}, cpsA)
             else {
               assert(params.isEmpty, "problem in ANF transforming label with non-empty params "+ ldef)
               (List(stm1), localTyper.typed{Apply(Ident(sym), List())}, cpsA)
@@ -469,9 +469,9 @@ abstract class SelectiveANFTransform extends PluginComponent with Transform with
 
       val (anfStats, anfExpr) = rec(stms, cpsA, List())
       // println("\nanf-block:\n"+ ((stms :+ expr) mkString ("{", "\n", "}")) +"\nBECAME\n"+ ((anfStats :+ anfExpr) mkString ("{", "\n", "}")))
-      // println("synth case? "+ (anfStats map (t => (t, t.isDef, gen.hasSynthCaseSymbol(t)))))
+      // println("synth case? "+ (anfStats map (t => (t, t.isDef, treeInfo.hasSynthCaseSymbol(t)))))
       // SUPER UGLY HACK: handle virtpatmat-style matches, whose labels have already been turned into DefDefs
-      if (anfStats.nonEmpty && (anfStats forall (t => !t.isDef || gen.hasSynthCaseSymbol(t)))) {
+      if (anfStats.nonEmpty && (anfStats forall (t => !t.isDef || treeInfo.hasSynthCaseSymbol(t)))) {
         val (prologue, rest) = (anfStats :+ anfExpr) span (s => !s.isInstanceOf[DefDef]) // find first case
         // println("rest: "+ rest)
         // val (defs, calls) = rest partition (_.isInstanceOf[DefDef])

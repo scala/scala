@@ -416,7 +416,7 @@ abstract class ExplicitOuter extends InfoTransform
 
       val (checkExhaustive, requireSwitch) = nselector match {
         case Typed(nselector1, tpt) =>
-          val unchecked = treeInfo.isUncheckedAnnotation(tpt.tpe)
+          val unchecked = tpt.tpe hasAnnotation UncheckedClass
           if (unchecked)
             nselector = nselector1
 

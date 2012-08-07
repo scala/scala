@@ -14,9 +14,11 @@ object WorksheetSupport {
    *  By default it is 30ms.
    */
   private class FlushedOutputStream(out: OutputStream) extends OutputStream {
+    protected def flushInterval = 30000000L // interval between flushes, by default 30ms
+    protected def width = 80                // output width, by default 80 characters
+    protected def tabInc = 8                // tab increment, by default 8 characters
     private var lastFlush: Long = 0L
-    protected val flushInterval = 30000000L // 30ms
-    private var lastCh: Int = '\n'
+    private var col = -1
     override def write(b: Array[Byte], off: Int, len: Int) = {
       for (idx <- off until (off + len min b.length)) writeOne(b(idx))
       flush()
@@ -33,14 +35,18 @@ object WorksheetSupport {
       }
     }
     def writeOne(c: Int) {
-      if (lastCh == '\n') {
-        lastCh = 0
+      if (col < 0) {
+        col = 0
         write((currentOffset+" ").getBytes)
       }
       out.write(c)
-      lastCh = c
+      col = 
+        if (c == '\n') -1
+        else if (c == '\t') (col / tabInc) * tabInc + tabInc 
+        else col + 1
+      if (col >= width) writeOne('\n')
     }
-    def ensureNewLine() = if (lastCh != '\n') writeOne('\n')
+    def ensureNewLine() = if (col > 0) writeOne('\n')
   }
 
   private val flushedOut = new FlushedOutputStream(System.out)
@@ -69,7 +75,7 @@ object WorksheetSupport {
     try op
     catch {
       case ex: StopException => ;
-      case ex => ex.printStackTrace()
+      case ex: Throwable => ex.printStackTrace()
     }
   }
 

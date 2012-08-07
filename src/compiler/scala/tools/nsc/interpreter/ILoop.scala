@@ -438,7 +438,10 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
   }
 
   private def warningsCommand(): Result = {
-    intp.lastWarnings foreach { case (pos, msg) => intp.reporter.warning(pos, msg) }
+    if (intp.lastWarnings.isEmpty)
+      "Can't find any cached warnings."
+    else
+      intp.lastWarnings foreach { case (pos, msg) => intp.reporter.warning(pos, msg) }
   }
 
   private def javapCommand(line: String): Result = {

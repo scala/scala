@@ -12,7 +12,7 @@ package parsing
 import scala.io.Source
 
 /** An XML Parser that preserves `CDATA` blocks and knows about
- *  [[scala.xml.parsing.HtmlEntities]].
+ *  [[scala.xml.parsing.XhtmlEntities]].
  *
  *  @author (c) David Pollak, 2007 WorldWide Conferencing, LLC.
  */

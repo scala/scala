@@ -769,7 +769,7 @@ trait Typers extends Modes with Adaptations with Tags {
         val featureName = (nestedOwners map (_.name + ".")).mkString + featureTrait.name
         def action(): Boolean = {
           def hasImport = inferImplicit(EmptyTree: Tree, featureTrait.tpe, true, false, context) != SearchFailure
-          def hasOption = settings.language.value contains featureName
+          def hasOption = settings.language.value exists (s => s == featureName || s == "_")
           val OK = hasImport || hasOption
           if (!OK) {
             val Some(AnnotationInfo(_, List(Literal(Constant(featureDesc: String)), Literal(Constant(required: Boolean))), _)) =
@@ -2283,7 +2283,7 @@ trait Typers extends Modes with Adaptations with Tags {
         // but not in real life (i.e., now that's we've reset the method's type skolems'
         //   infos back to their pre-GADT-constraint state)
         if (isFullyDefined(pt) && !(body1.tpe <:< pt))
-          body1 = typedPos(body1.pos)(gen.mkCast(body1, pt))
+          body1 = typedPos(body1.pos)(gen.mkCast(body1, pt.normalize))
 
       }
 
@@ -3217,7 +3217,7 @@ trait Typers extends Modes with Adaptations with Tags {
       // we don't create a new Context for a Match, so find the CaseDef, then go out one level and navigate back to the match that has this case
       // val thisCase = context.nextEnclosing(_.tree.isInstanceOf[CaseDef])
       // val unchecked = thisCase.outer.tree.collect{case Match(selector, cases) if cases contains thisCase => selector} match {
-      //   case List(Typed(_, tpt)) if treeInfo.isUncheckedAnnotation(tpt.tpe) => true
+      //   case List(Typed(_, tpt)) if tpt.tpe hasAnnotation UncheckedClass => true
       //   case t => println("outer tree: "+ (t, thisCase, thisCase.outer.tree)); false
       // }
       // println("wrapClassTagUnapply"+ (!isPastTyper && infer.containsUnchecked(pt), pt, uncheckedPattern))
@@ -4519,7 +4519,9 @@ trait Typers extends Modes with Adaptations with Tags {
                 }) setType qual.tpe setPos qual.pos,
                 name)
             case _ if accessibleError.isDefined =>
-              val qual1 = adaptToMemberWithArgs(tree, qual, name, mode, false, false)
+              // don't adapt constructor, SI-6074
+              val qual1 = if (name == nme.CONSTRUCTOR) qual
+                          else adaptToMemberWithArgs(tree, qual, name, mode, false, false)
               if (!qual1.isErrorTyped && (qual1 ne qual))
                 typed(Select(qual1, name) setPos tree.pos, mode, pt)
               else

@@ -170,6 +170,7 @@ trait Members {
     var sourceFile: SourceFile = NoSourceFile
     var returnType: TypeKind = _
     var recursive: Boolean = false
+    var bytecodeHasEHs = false // set by ICodeReader only, used by Inliner to prevent inlining (SI-6188)
 
     /** local variables and method parameters */
     var locals: List[Local] = Nil
