@@ -2565,6 +2565,19 @@ abstract class GenASM extends SubComponent with BytecodeWriters {
               case JUMP(whereto) =>
                 if (nextBlock != whereto) {
                   jcode goTo labels(whereto)
+                } else if(m.exh.exists(eh => eh.covers(b))) {
+                  // SI-6102: Determine whether eliding this JUMP results in an empty range being covered by some EH.
+                  // If so, emit a NOP in place of the elided JUMP, to avoid "java.lang.ClassFormatError: Illegal exception table range"
+                  val isSthgLeft = b.toList.exists {
+                    case _: LOAD_EXCEPTION => false
+                    case _: SCOPE_ENTER    => false
+                    case _: SCOPE_EXIT     => false
+                    case _: JUMP           => false
+                    case _ => true
+                  }
+                  if(!isSthgLeft) {
+                    emit(asm.Opcodes.NOP)
+                  }
                 }
 
               case CJUMP(success, failure, cond, kind) =>
