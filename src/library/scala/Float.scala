@@ -373,7 +373,7 @@ object Float extends AnyValCompanion {
   /** Upper bound on the relative error which occurs when a real number is rounded
    *  to its nearest Float floating-point number.
    */
-  final val Epsilon = java.lang.Float.intBitsToFloat(0x33800000)
+  final val Epsilon = 5.9604644775390625E-08f
 
   /** The negative number with the greatest (finite) absolute value which is representable
    *  by a Float.  Note that it differs from [[java.lang.Float.MIN_VALUE]], which

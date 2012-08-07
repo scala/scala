@@ -373,7 +373,7 @@ object Double extends AnyValCompanion {
   /** Upper bound on the relative error which occurs when a real number is rounded
    *  to its nearest Double floating-point number.
    */
-  final val Epsilon = java.lang.Double.longBitsToDouble(0x3ca0000000000000L)
+  final val Epsilon = 1.1102230246251565E-16
 
   /** The negative number with the greatest (finite) absolute value which is representable
    *  by a Double.  Note that it differs from [[java.lang.Double.MIN_VALUE]], which
