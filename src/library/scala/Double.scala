@@ -29,12 +29,12 @@ final abstract class Double private extends AnyVal {
   def toDouble: Double
 
   /**
- * Returns this value, unmodified.
- */
+  * Returns this value, unmodified.
+  */
   def unary_+ : Double
   /**
- * Returns the negation of this value.
- */
+  * Returns the negation of this value.
+  */
   def unary_- : Double
 
   def +(x: String): String
@@ -370,6 +370,11 @@ object Double extends AnyValCompanion {
   final val PositiveInfinity = java.lang.Double.POSITIVE_INFINITY
   final val NegativeInfinity = java.lang.Double.NEGATIVE_INFINITY
 
+  /** Upper bound on the relative error which occurs when a real number is rounded
+   *  to its nearest Double floating-point number.
+   */
+  final val Epsilon = java.lang.Double.longBitsToDouble(0x3ca0000000000000L)
+
   /** The negative number with the greatest (finite) absolute value which is representable
    *  by a Double.  Note that it differs from [[java.lang.Double.MIN_VALUE]], which
    *  is the smallest positive value representable by a Double.  In Scala that number
@@ -379,7 +384,7 @@ object Double extends AnyValCompanion {
 
   /** The largest finite positive number representable as a Double. */
   final val MaxValue = java.lang.Double.MAX_VALUE
-
+  
   /** Transform a value type into a boxed reference type.
    *
    *  @param  x   the Double to be boxed

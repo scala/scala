@@ -29,12 +29,12 @@ final abstract class Float private extends AnyVal {
   def toDouble: Double
 
   /**
- * Returns this value, unmodified.
- */
+  * Returns this value, unmodified.
+  */
   def unary_+ : Float
   /**
- * Returns the negation of this value.
- */
+  * Returns the negation of this value.
+  */
   def unary_- : Float
 
   def +(x: String): String
@@ -369,6 +369,11 @@ object Float extends AnyValCompanion {
   final val NaN              = java.lang.Float.NaN
   final val PositiveInfinity = java.lang.Float.POSITIVE_INFINITY
   final val NegativeInfinity = java.lang.Float.NEGATIVE_INFINITY
+
+  /** Upper bound on the relative error which occurs when a real number is rounded
+   *  to its nearest Float floating-point number.
+   */
+  final val Epsilon = java.lang.Float.intBitsToFloat(0x33800000)
 
   /** The negative number with the greatest (finite) absolute value which is representable
    *  by a Float.  Note that it differs from [[java.lang.Float.MIN_VALUE]], which
