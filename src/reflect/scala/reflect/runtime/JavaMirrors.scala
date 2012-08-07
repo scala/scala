@@ -18,7 +18,7 @@ import collection.mutable.{ HashMap, ListBuffer }
 import internal.Flags._
 //import scala.tools.nsc.util.ScalaClassLoader
 //import scala.tools.nsc.util.ScalaClassLoader._
-import ReflectionUtils.{singletonInstance}
+import ReflectionUtils.{staticSingletonInstance, innerSingletonInstance}
 import language.existentials
 
 trait JavaMirrors extends internal.SymbolTable with api.JavaUniverse { self: SymbolTable =>
@@ -292,8 +292,11 @@ trait JavaMirrors extends internal.SymbolTable with api.JavaUniverse { self: Sym
       def erasure = symbol.moduleClass.asClass
       def isStatic = true
       def instance = {
-        if (!symbol.owner.isPackageClass) throw new Error("inner and nested modules are not supported yet")
-        singletonInstance(classLoader, symbol.fullName)
+        if (symbol.owner.isPackageClass)
+          staticSingletonInstance(classLoader, symbol.fullName)
+        else
+          if (outer == null) staticSingletonInstance(classToJava(symbol.moduleClass.asClass))
+          else innerSingletonInstance(outer, symbol.name)
       }
       def companion: Option[ClassMirror] = symbol.companionClass match {
         case cls: ClassSymbol => Some(new JavaClassMirror(outer, cls))
@@ -978,12 +981,25 @@ trait JavaMirrors extends internal.SymbolTable with api.JavaUniverse { self: Sym
         noClass
       else if (clazz.owner.isPackageClass)
         javaClass(clazz.javaClassName)
-      else if (clazz.owner.isClass)
-        classToJava(clazz.owner.asClass)
-          .getDeclaredClasses
-          .find(_.getSimpleName == clazz.name.toString)
-          .getOrElse(noClass)
-      else
+      else if (clazz.owner.isClass) {
+        val childOfClass = !clazz.owner.isModuleClass
+        val childOfTopLevel = clazz.owner.owner.isPackageClass
+        val childOfTopLevelObject = clazz.owner.isModuleClass && childOfTopLevel
+
+        // suggested in https://issues.scala-lang.org/browse/SI-4023?focusedCommentId=54759#comment-54759
+        var ownerClazz = classToJava(clazz.owner.asClass)
+        if (childOfTopLevelObject) ownerClazz = Class.forName(ownerClazz.getName stripSuffix "$", true, ownerClazz.getClassLoader)
+        val ownerChildren = ownerClazz.getDeclaredClasses
+
+        var fullNameOfJavaClass = ownerClazz.getName
+        if (childOfClass || childOfTopLevel) fullNameOfJavaClass += "$"
+        fullNameOfJavaClass += clazz.name
+        if (clazz.isModuleClass) fullNameOfJavaClass += "$"
+
+        // println(s"ownerChildren = ${ownerChildren.toList}")
+        // println(s"fullNameOfJavaClass = $fullNameOfJavaClass")
+        ownerChildren.find(_.getName == fullNameOfJavaClass).getOrElse(noClass)
+      } else
         noClass
     }
 
