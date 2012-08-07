@@ -242,6 +242,8 @@ trait Mirrors { self: Universe =>
      *  Such a mirror can be used to further reflect against the members of the object
      *  to get/set fields, invoke methods and inspect inner classes and objects.
      */
+    // we need a ClassTag here to preserve boxity of primitives
+    // the class tag lets us tell apart `mirror.reflect(2)` and `mirror.reflect(new Integer(2))`
     def reflect[T: ClassTag](obj: T): InstanceMirror
 
     /** Reflects against a static class symbol and returns a mirror
