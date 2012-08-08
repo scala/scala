@@ -15,6 +15,8 @@ import scala.reflect.ClassTag
 import scala.runtime.ScalaRunTime._
 import scala.collection.generic._
 import scala.collection.parallel.mutable.ParArray
+import scala.collection.parallel.TaskSupport
+import scala.collection.parallel.setTaskSupport
 
 /**
  *  A class representing `Array[T]`.
@@ -59,7 +61,7 @@ extends AbstractSeq[T]
   /** The underlying array */
   def array: Array[T]
 
-  override def par = ParArray.handoff(array)
+  override def par(implicit ts: TaskSupport) = setTaskSupport(ParArray.handoff(array), ts)
 
   private def elementClass: Class[_] =
     arrayElementClass(repr.getClass)

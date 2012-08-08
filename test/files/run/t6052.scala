@@ -1,7 +1,7 @@
 
 
 
-
+import collection.parallel.Implicits.defaultTaskSupport
 
 
 

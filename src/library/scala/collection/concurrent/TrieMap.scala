@@ -13,6 +13,8 @@ package concurrent
 
 import java.util.concurrent.atomic._
 import collection.immutable.{ ListMap => ImmutableListMap }
+import collection.parallel.TaskSupport
+import collection.parallel.setTaskSupport
 import collection.parallel.mutable.ParTrieMap
 import util.hashing.Hashing
 import generic._
@@ -780,7 +782,7 @@ extends scala.collection.concurrent.Map[K, V]
 
   override def seq = this
 
-  override def par = new ParTrieMap(this)
+  override def par(implicit ts: TaskSupport) = setTaskSupport(new ParTrieMap(this), ts)
 
   override def empty: TrieMap[K, V] = new TrieMap[K, V]
 

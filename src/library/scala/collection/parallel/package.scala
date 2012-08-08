@@ -49,9 +49,14 @@ package object parallel {
 
   val defaultTaskSupport: TaskSupport = getTaskSupport
   
+  object Implicits {
+    implicit def defaultTaskSupport = collection.parallel.defaultTaskSupport
+  }
+  
   def setTaskSupport[Coll](c: Coll, t: TaskSupport): Coll = {
     c match {
       case pc: ParIterableLike[_, _, _] => pc.tasksupport = t
+      case cb: Combiner[_, _] => cb.combinerTaskSupport = t
       case _ => // do nothing
     }
     c

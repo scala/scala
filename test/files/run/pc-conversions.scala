@@ -1,6 +1,7 @@
 
 
 import collection._
+import collection.parallel.Implicits.defaultTaskSupport
 
 
 // test conversions between collections

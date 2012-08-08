@@ -13,6 +13,8 @@ package mutable
 
 import generic._
 import collection.parallel.mutable.ParHashSet
+import collection.parallel.TaskSupport
+import collection.parallel.setTaskSupport
 
 /** This class implements mutable sets using a hashtable.
  *
@@ -61,7 +63,7 @@ extends AbstractSet[A]
 
   def -= (elem: A): this.type = { removeEntry(elem); this }
 
-  override def par = new ParHashSet(hashTableContents)
+  override def par(implicit ts: TaskSupport) = setTaskSupport(new ParHashSet(hashTableContents), ts)
 
   override def add(elem: A): Boolean = addEntry(elem)
 

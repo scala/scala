@@ -129,6 +129,19 @@ import language.{ higherKinds, implicitConversions }
  *  Method `size` is implemented as a constant time operation for parallel collections, and parallel collection
  *  operations rely on this assumption.
  *
+ *  A task support object can be set to a parallel collection when it is created.
+ *  Here is a way to change the task support of a parallel collection:
+ *  
+ *  {{{
+ *  import scala.collection.parallel._
+ *  implicit val myTaskSupport = new ForkJoinTaskSupport(
+ *    new scala.concurrent.forkjoin.ForkJoinPool(2))
+ *  val pc = Array(1, 2, 3).par
+ *  }}}
+ *
+ *  Clients should import `scala.collection.parallel.Implicits.defaultTaskSupport` to
+ *  use the default task support with `par`.
+ *  
  *  @author Aleksandar Prokopec
  *  @since 2.9
  *
@@ -185,22 +198,12 @@ self: ParIterableLike[T, Repr, Sequential] =>
   /** Changes the task support object which is responsible for scheduling and
    *  load-balancing tasks to processors.
    *
-   *  A task support object can be changed in a parallel collection after it
-   *  has been created, but only during a quiescent period, i.e. while there
-   *  are no concurrent invocations to parallel collection methods.
-   *                                                                              
-   *  Here is a way to change the task support of a parallel collection:          
-   *                                                                              
-   *  {{{                                                                         
-   *  import scala.collection.parallel._                                          
-   *  val pc = mutable.ParArray(1, 2, 3)                                          
-   *  pc.tasksupport = new ForkJoinTaskSupport(                                   
-   *    new scala.concurrent.forkjoin.ForkJoinPool(2))                            
-   *  }}}                                                                         
-   *
+   *  This method is used internally by the framework. Clients should specify
+   *  the task support when creating the parallel collection with a `par` method.
+   *  
    *  @see [[scala.collection.parallel.TaskSupport]]
    */     
-  def tasksupport_=(ts: TaskSupport) = _tasksupport = ts
+  private[parallel] def tasksupport_=(ts: TaskSupport) = _tasksupport = ts
 
   def seq: Sequential
 
@@ -246,7 +249,7 @@ self: ParIterableLike[T, Repr, Sequential] =>
    */
   def iterator: Splitter[T] = splitter
 
-  override def par: Repr = repr
+  override def par(implicit ts: TaskSupport): Repr = if (ts eq tasksupport) repr else seq.par(ts).asInstanceOf[Repr]
 
   /** Denotes whether this parallel collection has strict splitters.
    *
@@ -339,11 +342,11 @@ self: ParIterableLike[T, Repr, Sequential] =>
   }
 
   protected[this] def bf2seq[S, That](bf: CanBuildFrom[Repr, S, That]) = new CanBuildFrom[Sequential, S, That] {
-    def apply(from: Sequential) = bf.apply(from.par.asInstanceOf[Repr]) // !!! we only use this on `this.seq`, and know that `this.seq.par.getClass == this.getClass`
+    def apply(from: Sequential) = bf.apply(from.par(tasksupport).asInstanceOf[Repr]) // !!! we only use this on `this.seq`, and know that `this.seq.par.getClass == this.getClass`
     def apply() = bf.apply()
   }
 
-  protected[this] def sequentially[S, That <: Parallel](b: Sequential => Parallelizable[S, That]) = b(seq).par.asInstanceOf[Repr]
+  protected[this] def sequentially[S, That <: Parallel](b: Sequential => Parallelizable[S, That]) = b(seq).par(tasksupport).asInstanceOf[Repr]
 
   def mkString(start: String, sep: String, end: String): String = seq.mkString(start, sep, end)
 
@@ -497,23 +500,14 @@ self: ParIterableLike[T, Repr, Sequential] =>
   def map[S, That](f: T => S)(implicit bf: CanBuildFrom[Repr, S, That]): That = if (bf(repr).isCombiner) {
     tasksupport.executeAndWaitResult(new Map[S, That](f, combinerFactory(() => bf(repr).asCombiner), splitter) mapResult { _.resultWithTaskSupport })
   } else setTaskSupport(seq.map(f)(bf2seq(bf)), tasksupport)
-  /*bf ifParallel { pbf =>
-    tasksupport.executeAndWaitResult(new Map[S, That](f, pbf, splitter) mapResult { _.result })
-  } otherwise seq.map(f)(bf2seq(bf))*/
 
   def collect[S, That](pf: PartialFunction[T, S])(implicit bf: CanBuildFrom[Repr, S, That]): That = if (bf(repr).isCombiner) {
     tasksupport.executeAndWaitResult(new Collect[S, That](pf, combinerFactory(() => bf(repr).asCombiner), splitter) mapResult { _.resultWithTaskSupport })
   } else setTaskSupport(seq.collect(pf)(bf2seq(bf)), tasksupport)
-  /*bf ifParallel { pbf =>
-    tasksupport.executeAndWaitResult(new Collect[S, That](pf, pbf, splitter) mapResult { _.result })
-  } otherwise seq.collect(pf)(bf2seq(bf))*/
 
   def flatMap[S, That](f: T => GenTraversableOnce[S])(implicit bf: CanBuildFrom[Repr, S, That]): That = if (bf(repr).isCombiner) {
     tasksupport.executeAndWaitResult(new FlatMap[S, That](f, combinerFactory(() => bf(repr).asCombiner), splitter) mapResult { _.resultWithTaskSupport })
   } else setTaskSupport(seq.flatMap(f)(bf2seq(bf)), tasksupport)
-  /*bf ifParallel { pbf =>
-    tasksupport.executeAndWaitResult(new FlatMap[S, That](f, pbf, splitter) mapResult { _.result })
-  } otherwise seq.flatMap(f)(bf2seq(bf))*/
 
   /** Tests whether a predicate holds for all elements of this $coll.
    *
@@ -565,26 +559,26 @@ self: ParIterableLike[T, Repr, Sequential] =>
    */
   protected[this] def combinerFactory = {
     val combiner = newCombiner
-    combiner.combinerTaskSupport = tasksupport
     if (combiner.canBeShared) new CombinerFactory[T, Repr] {
-      val shared = combiner
+      val shared = setTaskSupport(combiner, tasksupport)
       def apply() = shared
       def doesShareCombiners = true
     } else new CombinerFactory[T, Repr] {
-      def apply() = newCombiner
+      def apply() = setTaskSupport(newCombiner, tasksupport)
       def doesShareCombiners = false
     }
   }
 
   protected[this] def combinerFactory[S, That](cbf: () => Combiner[S, That]) = {
     val combiner = cbf()
-    combiner.combinerTaskSupport = tasksupport
     if (combiner.canBeShared) new CombinerFactory[S, That] {
-      val shared = combiner
+      val shared = setTaskSupport(combiner, tasksupport)
       def apply() = shared
       def doesShareCombiners = true
     } else new CombinerFactory[S, That] {
-      def apply() = cbf()
+      def apply() = {
+        setTaskSupport(cbf(), tasksupport)
+      }
       def doesShareCombiners = false
     }
   }
