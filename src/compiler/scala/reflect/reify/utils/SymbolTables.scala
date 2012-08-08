@@ -25,8 +25,8 @@ trait SymbolTables {
 
     def symName(sym: Symbol): TermName =
       symtab.get(sym) match {
-        case Some(FreeDef(_, name, _, _, _)) => name
-        case Some(SymDef(_, name, _, _)) => name
+        case Some(FreeDef(_, name, _, _, _, _)) => name
+        case Some(SymDef(_, name, _, _, _)) => name
         case None => EmptyTermName
       }
 
@@ -38,15 +38,15 @@ trait SymbolTables {
 
     def symBinding(sym: Symbol): Tree =
       symtab.get(sym) match {
-        case Some(FreeDef(_, _, binding, _, _)) => binding
-        case Some(SymDef(_, _, _, _)) => throw new UnsupportedOperationException(s"${symtab(sym)} is a symdef, hence it doesn't have a binding")
+        case Some(FreeDef(_, _, binding, _, _, _)) => binding
+        case Some(SymDef(_, _, _, _, _)) => throw new UnsupportedOperationException(s"${symtab(sym)} is a symdef, hence it doesn't have a binding")
         case None => EmptyTree
       }
 
     def symRef(sym: Symbol): Tree =
       symtab.get(sym) match {
-        case Some(FreeDef(_, name, _, _, _)) => Ident(name) addAttachment ReifyBindingAttachment(sym)
-        case Some(SymDef(_, name, _, _)) => Ident(name) addAttachment ReifyBindingAttachment(sym)
+        case Some(FreeDef(_, name, _, _, _, _)) => Ident(name) addAttachment ReifyBindingAttachment(sym)
+        case Some(SymDef(_, name, _, _, _)) => Ident(name) addAttachment ReifyBindingAttachment(sym)
         case None => EmptyTree
       }
 
@@ -69,8 +69,8 @@ trait SymbolTables {
       val sym = binding(symDef)
       assert(sym != NoSymbol, showRaw(symDef))
       val name = symDef match {
-        case FreeDef(_, name, _, _, _) => name
-        case SymDef(_, name, _, _) => name
+        case FreeDef(_, name, _, _, _, _) => name
+        case SymDef(_, name, _, _, _) => name
       }
       val newSymtab = if (!(symtab contains sym)) symtab + (sym -> symDef) else symtab
       val newAliases = aliases :+ (sym -> name)
@@ -169,21 +169,18 @@ trait SymbolTables {
 
         def fillInSymbol(sym: Symbol): Tree = {
           if (reifyDebug) println("Filling in: %s (%s)".format(sym, sym.accurateKindString))
-          val isFree = currtab.symName(sym) startsWith nme.REIFY_FREE_PREFIX
-          if (isFree) {
-            if (sym.annotations.isEmpty) EmptyTree
-            else Apply(Select(currtab.symRef(sym), nme.setAnnotations), List(reifier.reify(sym.annotations)))
-          } else {
-           import scala.reflect.internal.Flags._
-           if (sym hasFlag LOCKED) {
-             // [Eugene] better to have a symbol without a type signature, than to crash with a CyclicReference
-             EmptyTree
-           } else {
-             val rset = reifier.mirrorBuildCall(nme.setTypeSignature, currtab.symRef(sym), reifier.reify(sym.info))
-             if (sym.annotations.isEmpty) rset
-             else reifier.mirrorBuildCall(nme.setAnnotations, rset, reifier.mkList(sym.annotations map reifier.reifyAnnotationInfo))
-           }
-          }
+          // SI-6204 don't reify signatures for incomplete symbols, because this might lead to cyclic reference errors
+          val signature =
+            if (sym.hasCompleteInfo) {
+              if (sym.isCapturedVariable) capturedVariableType(sym)
+              else sym.info
+            } else NoType
+          val rset = reifier.mirrorBuildCall(nme.setTypeSignatureIfEmpty, currtab.symRef(sym), reifier.reify(signature))
+          // `Symbol.annotations` doesn't initialize the symbol, so we don't need to do anything special here
+          // also since we call `sym.info` a few lines above, by now the symbol will be initialized (if possible)
+          // so the annotations will be filled in and will be waiting to be reified (unless symbol initialization is prohibited as described above)
+          if (sym.annotations.isEmpty) rset
+          else reifier.mirrorBuildCall(nme.setAnnotationsIfEmpty, rset, reifier.mkList(sym.annotations map reifier.reifyAnnotationInfo))
         }
 
         // `fillInSymbol` might add symbols to `symtab`, that's why this is done iteratively

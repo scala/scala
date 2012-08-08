@@ -158,18 +158,18 @@ trait Extractors {
   }
 
   object FreeDef {
-    def unapply(tree: Tree): Option[(Tree, TermName, Tree, Long, String)] = tree match {
-      case FreeTermDef(uref, name, binding, flags, origin) =>
-        Some(uref, name, binding, flags, origin)
-      case FreeTypeDef(uref, name, binding, flags, origin) =>
-        Some(uref, name, binding, flags, origin)
+    def unapply(tree: Tree): Option[(Tree, TermName, Tree, Long, String, Int)] = tree match {
+      case FreeTermDef(uref, name, binding, flags, origin, protoid) =>
+        Some(uref, name, binding, flags, origin, protoid)
+      case FreeTypeDef(uref, name, binding, flags, origin, protoid) =>
+        Some(uref, name, binding, flags, origin, protoid)
       case _ =>
         None
     }
   }
 
   object FreeTermDef {
-    def unapply(tree: Tree): Option[(Tree, TermName, Tree, Long, String)] = tree match {
+    def unapply(tree: Tree): Option[(Tree, TermName, Tree, Long, String, Int)] = tree match {
       case
         ValDef(_, name, _, Apply(
           Select(Select(uref1 @ Ident(_), build1), newFreeTerm),
@@ -178,17 +178,18 @@ trait Extractors {
             _,
             binding,
             Apply(Select(Select(uref2 @ Ident(_), build2), flagsFromBits), List(Literal(Constant(flags: Long)))),
-            Literal(Constant(origin: String)))))
+            Literal(Constant(origin: String)),
+            Literal(Constant(protoid: Int)))))
       if uref1.name == nme.UNIVERSE_SHORT && build1 == nme.build && newFreeTerm == nme.newFreeTerm &&
          uref2.name == nme.UNIVERSE_SHORT && build2 == nme.build && flagsFromBits == nme.flagsFromBits =>
-        Some(uref1, name, binding, flags, origin)
+        Some(uref1, name, binding, flags, origin, protoid)
       case _ =>
         None
     }
   }
 
   object FreeTypeDef {
-    def unapply(tree: Tree): Option[(Tree, TermName, Tree, Long, String)] = tree match {
+    def unapply(tree: Tree): Option[(Tree, TermName, Tree, Long, String, Int)] = tree match {
       case
         ValDef(_, name, _, Apply(
           Select(Select(uref1 @ Ident(_), build1), newFreeType),
@@ -197,16 +198,17 @@ trait Extractors {
             _,
             value,
             Apply(Select(Select(uref2 @ Ident(_), build2), flagsFromBits), List(Literal(Constant(flags: Long)))),
-            Literal(Constant(origin: String)))))
+            Literal(Constant(origin: String)),
+            Literal(Constant(protoid: Int)))))
       if uref1.name == nme.UNIVERSE_SHORT && build1 == nme.build && (newFreeType == nme.newFreeType || newFreeType == nme.newFreeExistential) &&
          uref2.name == nme.UNIVERSE_SHORT && build2 == nme.build && flagsFromBits == nme.flagsFromBits =>
         value match {
           case Apply(TypeApply(Select(Select(uref3 @ Ident(_), typeTag), apply), List(binding)), List(Literal(Constant(null)), _))
           if uref3.name == nme.UNIVERSE_SHORT && typeTag == nme.TypeTag && apply == nme.apply =>
-            Some(uref1, name, binding, flags, origin)
+            Some(uref1, name, binding, flags, origin, protoid)
           case Apply(TypeApply(Select(uref3 @ Ident(_), typeTag), List(binding)), List(Literal(Constant(null)), _))
           if uref3.name == nme.UNIVERSE_SHORT && typeTag == nme.TypeTag =>
-            Some(uref1, name, binding, flags, origin)
+            Some(uref1, name, binding, flags, origin, protoid)
           case _ =>
             throw new Error("unsupported free type def: %s%n%s".format(value, showRaw(value)))
         }
@@ -226,7 +228,7 @@ trait Extractors {
   }
 
   object SymDef {
-    def unapply(tree: Tree): Option[(Tree, TermName, Long, Boolean)] = tree match {
+    def unapply(tree: Tree): Option[(Tree, TermName, Long, Boolean, Int)] = tree match {
       case
         ValDef(_, name, _, Apply(
           Select(Select(uref1 @ Ident(_), build1), newNestedSymbol),
@@ -235,10 +237,11 @@ trait Extractors {
             _,
             _,
             Apply(Select(Select(uref2 @ Ident(_), build2), flagsFromBits), List(Literal(Constant(flags: Long)))),
-            Literal(Constant(isClass: Boolean)))))
+            Literal(Constant(isClass: Boolean)),
+            Literal(Constant(protoid: Int)))))
       if uref1.name == nme.UNIVERSE_SHORT && build1 == nme.build && newNestedSymbol == nme.newNestedSymbol &&
          uref2.name == nme.UNIVERSE_SHORT && build2 == nme.build && flagsFromBits == nme.flagsFromBits =>
-        Some(uref1, name, flags, isClass)
+        Some(uref1, name, flags, isClass, protoid)
       case _ =>
         None
     }
