@@ -92,8 +92,8 @@ trait Typers extends Modes with Adaptations with Tags {
   // when true:
   //  - we may virtualize matches (if -Xexperimental and there's a suitable __match in scope)
   //  - we synthesize PartialFunction implementations for `x => x match {...}` and `match {...}` when the expected type is PartialFunction
-  // this is disabled by: -Xoldpatmat, scaladoc or interactive compilation
-  @inline private def newPatternMatching = opt.virtPatmat && !forScaladoc && !forInteractive // && (phase.id < currentRun.uncurryPhase.id)
+  // this is disabled by: -Xoldpatmat or interactive compilation (we run it for scaladoc due to SI-5933)
+  @inline private def newPatternMatching = opt.virtPatmat && !forInteractive //&& !forScaladoc && (phase.id < currentRun.uncurryPhase.id)
 
   abstract class Typer(context0: Context) extends TyperDiagnostics with Adaptation with Tag with TyperContextErrors {
     import context0.unit
