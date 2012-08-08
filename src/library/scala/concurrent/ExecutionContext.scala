@@ -29,7 +29,8 @@ trait ExecutionContext {
   def reportFailure(t: Throwable): Unit
   
   /** Prepares for the execution of a task. Returns the prepared
-   *  execution context.
+   *  execution context. A valid implementation of `prepare` is one
+   *  that simply returns `this`.
    */
   def prepare(): ExecutionContext = this
 

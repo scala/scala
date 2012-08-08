@@ -1,4 +1,3 @@
-x
 // This is a port of the com.twitter.util Try spec.
 // --
 // It lives in the future-spec directory simply because it requires a specs-like

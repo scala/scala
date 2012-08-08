@@ -312,7 +312,7 @@ trait Future[+T] extends Awaitable[T] {
       case Success(v) =>
         try {
           if (pred(v)) p success v
-          else p failure new NoSuchElementException("Future.filter predicate is not satisfied by: " + v)
+          else p failure new NoSuchElementException("Future.filter predicate is not satisfied")
         } catch {
           case NonFatal(t) => p failure t
         }

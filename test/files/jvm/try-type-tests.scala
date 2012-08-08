@@ -107,7 +107,7 @@ trait TryStandard {
 		val s = Success(1)
 		val succ = (x: Int) => Success(x * 10)
 		val fail = (x: Throwable) => Success(0)
-		assert(s.transform(succ, fail).get == s.get)
+		assert(s.transform(succ, fail).get == 10)
 	}
 
 	def testFailureTransform(): Unit = {
@@ -133,6 +133,8 @@ trait TryStandard {
 	testFlattenSuccess()
 	testFailedSuccess()
 	testFailedFailure()
+	testSuccessTransform()
+	testFailureTransform()
 }
 
 object Test
