@@ -497,16 +497,7 @@ abstract class ExplicitOuter extends InfoTransform
           else atPos(tree.pos)(outerPath(outerValue, currentClass.outerClass, sym)) // (5)
 
         case Select(qual, name) =>
-          /** return closest enclosing method, unless shadowed by an enclosing class;
-           *  no use of closures here in the interest of speed.
-           */
-          def closestEnclMethod(from: Symbol): Symbol =
-            if (from.isSourceMethod) from
-            else if (from.isClass) NoSymbol
-            else closestEnclMethod(from.owner)
-
-          if (currentClass != sym.owner ||
-              (closestEnclMethod(currentOwner) hasAnnotation ScalaInlineClass))
+          if (currentClass != sym.owner)
             sym.makeNotPrivate(sym.owner)
 
           val qsym = qual.tpe.widen.typeSymbol
