@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2011 LAMP/EPFL
+ * Copyright 2005-2012 LAMP/EPFL
  * @author  Martin Odersky
  */
 
@@ -3822,6 +3822,7 @@ trait Types extends api.Types { self: SymbolTable =>
     Statistics.incCounter(rawTypeCount)
     if (uniqueRunId != currentRunId) {
       uniques = util.HashSet[Type]("uniques", initialUniquesCapacity)
+      perRunCaches.recordCache(uniques)
       uniqueRunId = currentRunId
     }
     (uniques findEntryOrUpdate tp).asInstanceOf[T]

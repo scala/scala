@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2011 LAMP/EPFL
+ * Copyright 2005-2012 LAMP/EPFL
  * @author  Paul Phillips
  */
 
@@ -43,7 +43,7 @@ trait StandardScalaSettings {
   val target =          ChoiceSetting ("-target", "target", "Target platform for object files. All JVM 1.5 targets are deprecated.",
                                        List("jvm-1.5", "jvm-1.5-fjbg", "jvm-1.5-asm", "jvm-1.6", "jvm-1.7", "msil"),
                                        "jvm-1.6")
-  val unchecked =      BooleanSetting ("-unchecked", "Enable detailed unchecked (erasure) warnings.")
+  val unchecked =      BooleanSetting ("-unchecked", "Enable additional warnings where generated code depends on assumptions.")
   val uniqid =         BooleanSetting ("-uniqid", "Uniquely tag all identifiers in debugging output.")
   val usejavacp =      BooleanSetting ("-usejavacp", "Utilize the java.class.path in classpath resolution.")
   val verbose =        BooleanSetting ("-verbose", "Output messages about what the compiler is doing.")

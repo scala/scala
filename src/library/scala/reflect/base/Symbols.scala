@@ -116,9 +116,9 @@ trait Symbols { self: Universe =>
     def isType: Boolean = false
 
     /** This symbol cast to a TypeSymbol.
-     *  Returns ClassCastException if `isType` is false.
+     *  @throws ScalaReflectionException if `isType` is false.
      */
-    def asType: TypeSymbol = throw new ClassCastException(toString)
+    def asType: TypeSymbol = throw new ScalaReflectionException(s"$this is not a type")
 
     /** Does this symbol represent the definition of a term?
      *  Note that every symbol is either a term or a term.
@@ -128,9 +128,9 @@ trait Symbols { self: Universe =>
     def isTerm: Boolean = false
 
     /** This symbol cast to a TermSymbol.
-     *  Returns ClassCastException if `isTerm` is false.
+     *  @throws ScalaReflectionException if `isTerm` is false.
      */
-    def asTerm: TermSymbol = throw new ClassCastException(toString)
+    def asTerm: TermSymbol = throw new ScalaReflectionException(s"$this is not a term")
 
     /** Does this symbol represent the definition of a method?
      *  If yes, `isTerm` is also guaranteed to be true.
@@ -138,9 +138,19 @@ trait Symbols { self: Universe =>
     def isMethod: Boolean = false
 
     /** This symbol cast to a MethodSymbol.
-     *  Returns ClassCastException if `isMethod` is false.
+     *  @throws ScalaReflectionException if `isMethod` is false.
      */
-    def asMethod: MethodSymbol = throw new ClassCastException(toString)
+    def asMethod: MethodSymbol = {
+      def overloadedMsg =
+        "encapsulates multiple overloaded alternatives and cannot be treated as a method. "+
+        "Consider invoking `<offending symbol>.asTerm.alternatives` and manually picking the required method"
+      def vanillaMsg = "is not a method"
+      val msg = if (isOverloadedMethod) overloadedMsg else vanillaMsg
+      throw new ScalaReflectionException(s"$this $msg")
+    }
+
+    /** Used to provide a better error message for `asMethod` */
+    protected def isOverloadedMethod = false
 
     /** Does this symbol represent the definition of a module (i.e. it
      *  results from an object definition?).
@@ -149,9 +159,9 @@ trait Symbols { self: Universe =>
     def isModule: Boolean = false
 
     /** This symbol cast to a ModuleSymbol defined by an object definition.
-     *  Returns ClassCastException if `isModule` is false.
+     *  @throws ScalaReflectionException if `isModule` is false.
      */
-    def asModule: ModuleSymbol = throw new ClassCastException(toString)
+    def asModule: ModuleSymbol = throw new ScalaReflectionException(s"$this is not a module")
 
     /** Does this symbol represent the definition of a class or trait?
      *  If yes, `isType` is also guaranteed to be true.
@@ -165,9 +175,9 @@ trait Symbols { self: Universe =>
     def isModuleClass: Boolean = false
 
     /** This symbol cast to a ClassSymbol representing a class or trait.
-     *  Returns ClassCastException if `isClass` is false.
+     *  @throws ScalaReflectionException if `isClass` is false.
      */
-    def asClass: ClassSymbol = throw new ClassCastException(toString)
+    def asClass: ClassSymbol = throw new ScalaReflectionException(s"$this is not a class")
 
     /** Does this symbol represent a free term captured by reification?
      *  If yes, `isTerm` is also guaranteed to be true.
@@ -175,9 +185,9 @@ trait Symbols { self: Universe =>
     def isFreeTerm: Boolean = false
 
     /** This symbol cast to a free term symbol.
-     *  Returns ClassCastException if `isFreeTerm` is false.
+     *  @throws ScalaReflectionException if `isFreeTerm` is false.
      */
-    def asFreeTerm: FreeTermSymbol = throw new ClassCastException(toString)
+    def asFreeTerm: FreeTermSymbol = throw new ScalaReflectionException(s"$this is not a free term")
 
     /** Does this symbol represent a free type captured by reification?
      *  If yes, `isType` is also guaranteed to be true.
@@ -185,9 +195,9 @@ trait Symbols { self: Universe =>
     def isFreeType: Boolean = false
 
     /** This symbol cast to a free type symbol.
-     *  Returns ClassCastException if `isFreeType` is false.
+     *  @throws ScalaReflectionException if `isFreeType` is false.
      */
-    def asFreeType: FreeTypeSymbol = throw new ClassCastException(toString)
+    def asFreeType: FreeTypeSymbol = throw new ScalaReflectionException(s"$this is not a free type")
 
     def newTermSymbol(name: TermName, pos: Position = NoPosition, flags: FlagSet = NoFlags): TermSymbol
     def newModuleAndClassSymbol(name: Name, pos: Position = NoPosition, flags: FlagSet = NoFlags): (ModuleSymbol, ClassSymbol)

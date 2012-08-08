@@ -23,7 +23,7 @@ class Mixer {
       val nextSpace = comments indexOf (' ', idx)
       var nextNL = comments indexOf ('\n', nextSpace + 1)
       if (nextNL < 0) nextNL = comments.length
-      val result = 
+      val result =
         (new String(comments.slice(idx, nextSpace)).toInt, comments.slice(nextSpace + 1, nextNL))
       idx = nextNL + 1
       result
@@ -46,7 +46,10 @@ class Mixer {
         mixed += '\n'
         col = 0
       }
-      mixed ++= (" " * (sepColumn - col))
+      while (col < sepColumn) {
+        mixed += ' '
+        col += 1
+      }
     }
     for ((offset, cs) <- parseComments(comments)) {
       val sep =

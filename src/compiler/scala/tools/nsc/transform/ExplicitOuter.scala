@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2011 LAMP/EPFL
+ * Copyright 2005-2012 LAMP/EPFL
  * @author Martin Odersky
  */
 
@@ -46,13 +46,13 @@ abstract class ExplicitOuter extends InfoTransform
   private def haveSameOuter(parent: Type, clazz: Symbol) = parent match {
     case TypeRef(pre, sym, _)   =>
       val owner = clazz.owner
-      
+
       //println(s"have same outer $parent $clazz $sym ${sym.owner} $owner $pre")
 
       sym.isClass && owner.isClass &&
-      (owner isSubClass sym.owner) && 
+      (owner isSubClass sym.owner) &&
       owner.thisType =:= pre
-       
+
     case _                      => false
   }
 
@@ -416,7 +416,7 @@ abstract class ExplicitOuter extends InfoTransform
 
       val (checkExhaustive, requireSwitch) = nselector match {
         case Typed(nselector1, tpt) =>
-          val unchecked = treeInfo.isUncheckedAnnotation(tpt.tpe)
+          val unchecked = tpt.tpe hasAnnotation UncheckedClass
           if (unchecked)
             nselector = nselector1
 
@@ -497,8 +497,18 @@ abstract class ExplicitOuter extends InfoTransform
           else atPos(tree.pos)(outerPath(outerValue, currentClass.outerClass, sym)) // (5)
 
         case Select(qual, name) =>
-          if (currentClass != sym.owner) // (3)
+          /** return closest enclosing method, unless shadowed by an enclosing class;
+           *  no use of closures here in the interest of speed.
+           */
+          def closestEnclMethod(from: Symbol): Symbol =
+            if (from.isSourceMethod) from
+            else if (from.isClass) NoSymbol
+            else closestEnclMethod(from.owner)
+
+          if (currentClass != sym.owner ||
+              (closestEnclMethod(currentOwner) hasAnnotation ScalaInlineClass))
             sym.makeNotPrivate(sym.owner)
+
           val qsym = qual.tpe.widen.typeSymbol
           if (sym.isProtected && //(4)
               (qsym.isTrait || !(qual.isInstanceOf[Super] || (qsym isSubClass currentClass))))

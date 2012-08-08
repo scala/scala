@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2011 LAMP/EPFL
+ * Copyright 2005-2012 LAMP/EPFL
  * @author  Martin Odersky
  */
 
@@ -326,9 +326,6 @@ abstract class TreeInfo {
     case _ => false
   }
 
-  /** a Match(Typed(_, tpt), _) is unchecked if isUncheckedAnnotation(tpt.tpe) */
-  def isUncheckedAnnotation(tpe: Type) = tpe hasAnnotation definitions.UncheckedClass
-
   /** a Match(Typed(_, tpt), _) must be translated into a switch if isSwitchAnnotation(tpt.tpe) */
   def isSwitchAnnotation(tpe: Type) = tpe hasAnnotation definitions.SwitchClass
 
@@ -463,6 +460,16 @@ abstract class TreeInfo {
     case Star(_)  => true
     case _        => false
   }
+
+
+  // used in the symbols for labeldefs and valdefs emitted by the pattern matcher
+  // tailcalls, cps,... use this flag combination to detect translated matches
+  // TODO: move to Flags
+  final val SYNTH_CASE_FLAGS  = CASE | SYNTHETIC
+
+  def isSynthCaseSymbol(sym: Symbol) = sym hasAllFlags SYNTH_CASE_FLAGS
+  def hasSynthCaseSymbol(t: Tree)    = t.symbol != null && isSynthCaseSymbol(t.symbol)
+
 
   /** The method part of an application node
    */

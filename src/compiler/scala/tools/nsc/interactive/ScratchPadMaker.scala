@@ -3,7 +3,7 @@ package interactive
 
 import scala.reflect.internal.util.{SourceFile, BatchSourceFile, RangePosition}
 import collection.mutable.ArrayBuffer
-import reflect.internal.Chars.isLineBreakChar
+import reflect.internal.Chars.{isLineBreakChar, isWhitespace}
 
 trait ScratchPadMaker { self: Global =>
 
@@ -40,14 +40,28 @@ trait ScratchPadMaker { self: Global =>
       toPrint.clear()
     }
 
+    /** The position where to insert an instrumentation statement in front of giuven statement.
+     *  This is at the latest `stat.pos.start`. But in order not to mess with column numbers
+     *  in position we try to insert it at the end of the preceding line instead.
+     *  To be safe, this can be done only if there's only whitespace between that position and
+     *  statement's start position.
+     */
+    private def instrumentPos(stat: Tree): Int = {
+      var start = stat.pos.start
+      while (start > 0 && isWhitespace(contents(start - 1))) start -= 1
+      if (start > 0 && isLineBreakChar(contents(start - 1))) start -= 1
+      start
+    }
+
     private def addSkip(stat: Tree): Unit = {
-      if (stat.pos.start > skipped) applyPendingPatches(stat.pos.start)
+      val ipos = instrumentPos(stat)
+      if (stat.pos.start > skipped) applyPendingPatches(ipos)
       if (stat.pos.start >= endOffset)
-        patches += Patch(stat.pos.start, ";$stop()")
+        patches += Patch(ipos, ";$stop()")
       var end = stat.pos.end
       if (end > skipped) {
-        while (end < contents.length && !(isLineBreakChar(contents(end)))) end += 1
-        patches += Patch(stat.pos.start, ";$skip("+(end-skipped)+"); ")
+        while (end < contents.length && !isLineBreakChar(contents(end))) end += 1
+        patches += Patch(ipos, ";$skip("+(end-skipped)+"); ")
         skipped = end
       }
     }

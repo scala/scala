@@ -220,6 +220,8 @@ PROPERTIES
   <property name="build-strap.dir" value="${build.dir}/strap"/>
   <property name="build-docs.dir" value="${build.dir}/scaladoc"/>
   <property name="build-libs.dir" value="${build.dir}/libs"/>
+  <property name="build-sbt.dir" value="${build.dir}/sbt-interface"/>
+
 
   <property name="dists.dir" value="${basedir}/dists"/>
 
@@ -2050,6 +2052,74 @@ LIBRARIES (Forkjoin, FJBG, ASM)
   </target>
 
 <!-- ===========================================================================
+SBT Compiler Interface
+============================================================================ -->
+
+  <target name="sbt.start" depends="init">
+    <!-- TODO - Put this in init?   Allow this to be overriden simply -->
+    <property name="sbt.latest.version" value="0.12.0"/>
+
+
+    <property name="sbt.src.dir" value="${build-sbt.dir}/${sbt.latest.version}/src"/>
+    <property name="sbt.lib.dir" value="${build-sbt.dir}/${sbt.latest.version}/lib"/>
+
+
+
+    <property name="sbt.interface.jar" value="${sbt.lib.dir}/interface.jar"/>
+    <property name="sbt.interface.url" value="http://typesafe.artifactoryonline.com/typesafe/ivy-releases/org.scala-sbt/interface/${sbt.latest.version}/jars/interface.jar"/>
+    <property name="sbt.interface.src.jar" value="${sbt.src.dir}/compiler-interface-src.jar"/>
+    <property name="sbt.interface.src.url" value="http://typesafe.artifactoryonline.com/typesafe/ivy-releases/org.scala-sbt/compiler-interface/${sbt.latest.version}/jars/compiler-interface-src.jar"/>
+
+    <!-- Ensure directories exist -->
+    <mkdir dir="${sbt.src.dir}"/>
+    <mkdir dir="${sbt.lib.dir}"/>
+
+    <condition property="sbt.available">
+      <and>
+        <available file="${sbt.interface.jar}"/>
+        <available file="${sbt.interface.src.jar}"/>
+      </and>
+    </condition>
+
+  </target>
+
+  <target name="sbt.libs" depends="sbt.start" unless="sbt.available">
+    <get src="${sbt.interface.url}" dest="${sbt.interface.jar}"/>
+    <get src="${sbt.interface.src.url}" dest="${sbt.interface.src.jar}"/>
+    <!-- Explode sources -->
+    <unzip src="${sbt.interface.src.jar}" dest="${sbt.src.dir}"/>
+  </target>
+
+  <target name="sbt.compile" depends="sbt.libs,quick.done">
+    <stopwatch name="quick.sbt-interface.timer"/>
+    <mkdir dir="${build-sbt.dir}/classes"/>
+    <scalacfork
+      destdir="${build-sbt.dir}/classes"
+      compilerpathref="quick.classpath"
+      params="${scalac.args.quick}"
+      srcdir="${sbt.src.dir}"
+      jvmargs="${scalacfork.jvmargs}">
+      <include name="**/*.scala"/>
+      <compilationpath>
+        <pathelement location="${build-quick.dir}/classes/library"/>
+        <pathelement location="${build-quick.dir}/classes/reflect"/>
+        <pathelement location="${build-quick.dir}/classes/compiler"/>
+        <pathelement location="${sbt.interface.jar}"/>
+        <path refid="forkjoin.classpath"/>
+      </compilationpath>
+    </scalacfork>
+    <touch file="${build-sbt.dir}/sbt-interface.complete" verbose="no"/>
+    <stopwatch name="quick.sbt-interface.timer" action="total"/>
+  </target>
+
+  <target name="sbt.done" depends="sbt.compile">
+  </target>
+
+  <target name="sbt.clean" depends="init">
+    <delete dir="${build-sbt.dir}" includeemptydirs="yes" quiet="yes" failonerror="no"/>
+  </target>
+
+<!-- ===========================================================================
 DOCUMENTATION
 ============================================================================ -->
 
@@ -2372,6 +2442,10 @@ BOOTRAPING TEST AND TEST SUITE
   </target>
 
   <!-- this target will run only those tests found in test/debug -->
+  <target name="test.sbt" depends="sbt.done">
+  </target>
+
+  <!-- this target will run only those tests found in test/debug -->
   <target name="test.debug">
     <antcall target="test.suite">
       <param name="partest.srcdir" value="debug" />
@@ -2470,7 +2544,7 @@ BOOTRAPING TEST AND TEST SUITE
     </partest>
   </target>
 
-  <target name="test.done" depends="test.suite, test.continuations.suite, test.scaladoc, test.stability"/>
+  <target name="test.done" depends="test.suite, test.continuations.suite, test.scaladoc, test.stability, test.sbt"/>
 
 <!-- ===========================================================================
 DISTRIBUTION
@@ -2586,7 +2660,7 @@ TEST AND DISTRIBUTION BUNDLE (ALL)
 
   <target name="all.done" depends="dist.done, test.done"/>
 
-  <target name="all.clean" depends="locker.clean, docs.clean, dist.clean"/>
+  <target name="all.clean" depends="locker.clean, docs.clean, dist.clean, sbt.clean"/>
 
 <!-- ===========================================================================
 STABLE REFERENCE (STARR)
