@@ -221,6 +221,9 @@ abstract class CPSAnnotationChecker extends CPSUtils with Modes {
       } else if (retMode && !hasPlusMarker(tree.tpe) && annotsTree.isEmpty && annotsExpected.nonEmpty) {
         // add a marker annotation that will make tree.tpe behave as pt, subtyping wise
         // tree will look like having no annotation
+        
+        // note that we are only adding a plus marker if the method's result type is a CPS type
+        // (annotsExpected.nonEmpty == cpsParamAnnotation(pt).nonEmpty)
         val res = tree modifyType (_ withAnnotations List(newPlusMarker()))
         vprintln("adapted annotations (return) of " + tree + " to " + res.tpe)
         res

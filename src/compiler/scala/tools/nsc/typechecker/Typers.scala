@@ -4088,7 +4088,6 @@ trait Typers extends Modes with Adaptations with Tags {
           } else {
             context.enclMethod.returnsSeen = true
             val expr1: Tree = typed(expr, EXPRmode | BYVALmode | RETmode, restpt.tpe)
-            
             // Warn about returning a value if no value can be returned.
             if (restpt.tpe.typeSymbol == UnitClass) {
               // The typing in expr1 says expr is Unit (it has already been coerced if
