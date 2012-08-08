@@ -22,17 +22,17 @@ abstract class Universe extends scala.reflect.api.Universe {
 
   /** The extended API of symbols that's supported in macro context universes
    */
-  trait SymbolContextApi extends SymbolApi with AttachableApi { this: Symbol =>
+  trait SymbolContextApi extends SymbolApi with AttachableApi { self: Symbol =>
 
-    def setFlags(flags: FlagSet): this.type
+    def setFlags(flags: FlagSet): Symbol
 
-    def setTypeSignature(tpe: Type): this.type
+    def setTypeSignature(tpe: Type): Symbol
 
-    def setAnnotations(annots: AnnotationInfo*): this.type
+    def setAnnotations(annots: AnnotationInfo*): Symbol
 
-    def setName(name: Name): this.type
+    def setName(name: Name): Symbol
 
-    def setPrivateWithin(sym: Symbol): this.type
+    def setPrivateWithin(sym: Symbol): Symbol
   }
 
   // Tree extensions ---------------------------------------------------------------
@@ -41,20 +41,20 @@ abstract class Universe extends scala.reflect.api.Universe {
 
   /** The extended API of trees that's supported in macro context universes
    */
-  trait TreeContextApi extends TreeApi with AttachableApi { this: Tree =>
+  trait TreeContextApi extends TreeApi with AttachableApi { self: Tree =>
 
     /** ... */
     def pos_=(pos: Position): Unit
 
     /** ... */
-    def setPos(newpos: Position): this.type
+    def setPos(newpos: Position): Tree
 
     /** ... */
     def tpe_=(t: Type): Unit
 
     /** Set tpe to give `tp` and return this.
      */
-    def setType(tp: Type): this.type
+    def setType(tp: Type): Tree
 
     /** Like `setType`, but if this is a previously empty TypeTree that
      *  fact is remembered so that resetAllAttrs will snap back.
@@ -73,13 +73,13 @@ abstract class Universe extends scala.reflect.api.Universe {
      *  and therefore should be abandoned if the current line of type
      *  inquiry doesn't work out.
      */
-    def defineType(tp: Type): this.type
+    def defineType(tp: Type): Tree
 
     /** ... */
     def symbol_=(sym: Symbol): Unit
 
     /** ... */
-    def setSymbol(sym: Symbol): this.type
+    def setSymbol(sym: Symbol): Tree
   }
 
   override type SymTree >: Null <: Tree with SymTreeContextApi
