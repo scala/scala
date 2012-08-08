@@ -937,7 +937,7 @@ trait ExecutionContextPrepare extends TestBase {
     override def execute(runnable: Runnable): Unit =
       delegate.execute(runnable)
     
-    override def prepare[T, U](f: Try[T] => U): ExecutionContext = {
+    override def prepare(): ExecutionContext = {
       // save object stored in ThreadLocal storage
       val localData = theLocal.get
       new PreparingExecutionContext {
