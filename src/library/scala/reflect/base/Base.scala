@@ -12,6 +12,7 @@ class Base extends Universe { self =>
 
   abstract class Symbol(val name: Name, val flags: FlagSet) extends SymbolBase {
     val id = { nextId += 1; nextId }
+    var protoid = 0
     def owner: Symbol
     def fullName: String =
       if (isEffectiveRoot || owner.isEffectiveRoot) name.toString else owner.fullName + "." + name
@@ -281,17 +282,24 @@ class Base extends Universe { self =>
 
   def atPos[T <: Tree](pos: Position)(tree: T): T = tree
 
-  private val generated = new mutable.HashMap[String, WeakReference[Symbol]]
+  private val generatedByName = new mutable.HashMap[String, WeakReference[Symbol]]
+  private val generatedByIds = new mutable.HashMap[(Int, Int), WeakReference[Symbol]]
 
-  private def cached(name: String)(symExpr: => Symbol): Symbol =
-    generated get name match {
+  private def lookup[T, S <: Symbol](cache: mutable.HashMap[T, WeakReference[Symbol]], key: T, symExpr: => S): S =
+    cache get key match {
       case Some(WeakReference(sym)) =>
-        sym
+        sym.asInstanceOf[S]
       case _ =>
         val sym = symExpr
-        generated(name) = WeakReference(sym)
+        cache(key) = WeakReference(sym)
         sym
     }
+
+  private def cached[S <: Symbol](name: String)(symExpr: => S) = lookup(generatedByName, name, symExpr)
+  private def cached[S <: Symbol](ownerid: Int, protoid: Int)(symExpr: => S) = {
+    if (protoid == 0) symExpr
+    else lookup(generatedByIds, (ownerid, protoid), symExpr)
+  }
 
   object build extends BuildBase {
     def selectType(owner: Symbol, name: String): TypeSymbol = {
@@ -307,24 +315,30 @@ class Base extends Universe { self =>
     def selectOverloadedMethod(owner: Symbol, name: String, index: Int): MethodSymbol =
       selectTerm(owner, name).asMethod
 
-    def newNestedSymbol(owner: Symbol, name: Name, pos: Position, flags: Long, isClass: Boolean): Symbol =
-      if (name.isTypeName)
-        if (isClass) new ClassSymbol(owner, name.toTypeName, flags)
-        else new TypeSymbol(owner, name.toTypeName, flags)
-      else new TermSymbol(owner, name.toTermName, flags)
+    def newNestedSymbol(owner: Symbol, name: Name, pos: Position, flags: Long, isClass: Boolean, protoid: Int = 0): Symbol =
+      cached(owner.id, protoid) {
+        if (name.isTypeName)
+          if (isClass) new ClassSymbol(owner, name.toTypeName, flags)
+          else new TypeSymbol(owner, name.toTypeName, flags)
+        else new TermSymbol(owner, name.toTermName, flags)
+      }
 
-    def newFreeTerm(name: String, info: Type, value: => Any, flags: Long = 0L, origin: String = null): FreeTermSymbol =
-      new FreeTermSymbol(rootMirror.RootClass, newTermName(name), flags)
+    def newFreeTerm(name: String, info: Type, value: => Any, flags: Long = 0L, origin: String = null, protoid: Int = 0): FreeTermSymbol =
+      cached(0, protoid)(new FreeTermSymbol(rootMirror.RootClass, newTermName(name), flags))
 
-    def newFreeType(name: String, info: Type, value: => Any, flags: Long = 0L, origin: String = null): FreeTypeSymbol =
-      new FreeTypeSymbol(rootMirror.RootClass, newTypeName(name), flags)
+    def newFreeType(name: String, info: Type, value: => Any, flags: Long = 0L, origin: String = null, protoid: Int = 0): FreeTypeSymbol =
+      cached(0, protoid)(new FreeTypeSymbol(rootMirror.RootClass, newTypeName(name), flags))
 
-    def newFreeExistential(name: String, info: Type, value: => Any, flags: Long = 0L, origin: String = null): FreeTypeSymbol =
-      new FreeTypeSymbol(rootMirror.RootClass, newTypeName(name), flags)
+    def newFreeExistential(name: String, info: Type, value: => Any, flags: Long = 0L, origin: String = null, protoid: Int = 0): FreeTypeSymbol =
+      cached(0, protoid)(new FreeTypeSymbol(rootMirror.RootClass, newTypeName(name), flags))
 
     def setTypeSignature[S <: Symbol](sym: S, tpe: Type): S = sym
 
+    def setTypeSignatureIfEmpty[S <: Symbol](sym: S, tpe: Type): S = sym
+
     def setAnnotations[S <: Symbol](sym: S, annots: List[AnnotationInfo]): S = sym
+
+    def setAnnotationsIfEmpty[S <: Symbol](sym: S, annots: List[AnnotationInfo]): S = sym
 
     def flagsFromBits(bits: Long): FlagSet = bits
 

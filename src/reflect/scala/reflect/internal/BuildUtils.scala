@@ -2,6 +2,7 @@ package scala.reflect
 package internal
 
 import Flags._
+import scala.ref.WeakReference
 
 trait BuildUtils extends base.BuildUtils { self: SymbolTable =>
 
@@ -30,23 +31,47 @@ trait BuildUtils extends base.BuildUtils { self: SymbolTable =>
       else MissingRequirementError.notFound("overloaded method %s #%d in %s".format(name, index, owner.fullName))
     }
 
-    def newFreeTerm(name: String, info: Type, value: => Any, flags: Long = 0L, origin: String = null): FreeTermSymbol =
-      newFreeTermSymbol(newTermName(name), info, value, flags, origin)
+    private val cache = new scala.collection.mutable.HashMap[(Int, Int), WeakReference[Symbol]]
+    private def cached[S <: Symbol](ownerid: Int, protoid: Int)(symExpr: => S): S = {
+      if (protoid == 0) symExpr
+      else {
+        val key = (ownerid, protoid)
+        cache get key match {
+          case Some(WeakReference(sym)) =>
+            sym.asInstanceOf[S]
+          case _ =>
+            val sym = symExpr
+            cache(key) = WeakReference(sym)
+            sym
+        }
+      }
+    }
 
-    def newFreeType(name: String, info: Type, value: => Any, flags: Long = 0L, origin: String = null): FreeTypeSymbol =
-      newFreeTypeSymbol(newTypeName(name), info, value, (if (flags == 0L) PARAM else flags) | DEFERRED, origin)
+    def newFreeTerm(name: String, info: Type, value: => Any, flags: Long = 0L, origin: String = null, protoid: Int = 0): FreeTermSymbol =
+      cached(0, protoid)(newFreeTermSymbol(newTermName(name), info, value, flags, origin))
 
-    def newFreeExistential(name: String, info: Type, value: => Any, flags: Long = 0L, origin: String = null): FreeTypeSymbol =
-      newFreeTypeSymbol(newTypeName(name), info, value, (if (flags == 0L) EXISTENTIAL else flags) | DEFERRED, origin)
+    def newFreeType(name: String, info: Type, value: => Any, flags: Long = 0L, origin: String = null, protoid: Int = 0): FreeTypeSymbol =
+      cached(0, protoid)(newFreeTypeSymbol(newTypeName(name), info, value, (if (flags == 0L) PARAM else flags) | DEFERRED, origin))
 
-    def newNestedSymbol(owner: Symbol, name: Name, pos: Position, flags: Long, isClass: Boolean): Symbol =
-      owner.newNestedSymbol(name, pos, flags, isClass)
+    def newFreeExistential(name: String, info: Type, value: => Any, flags: Long = 0L, origin: String = null, protoid: Int = 0): FreeTypeSymbol =
+      cached(0, protoid)(newFreeTypeSymbol(newTypeName(name), info, value, (if (flags == 0L) EXISTENTIAL else flags) | DEFERRED, origin))
+
+    def newNestedSymbol(owner: Symbol, name: Name, pos: Position, flags: Long, isClass: Boolean, protoid: Int = 0): Symbol =
+      cached(owner.id, protoid)(owner.newNestedSymbol(name, pos, flags, isClass))
 
     def setAnnotations[S <: Symbol](sym: S, annots: List[AnnotationInfo]): S =
       sym.setAnnotations(annots)
 
+    def setAnnotationsIfEmpty[S <: Symbol](sym: S, annots: List[AnnotationInfo]): S =
+      if (sym.getAnnotations.isEmpty) sym.setAnnotations(annots)
+      else sym
+
     def setTypeSignature[S <: Symbol](sym: S, tpe: Type): S =
       sym.setTypeSignature(tpe)
+
+    def setTypeSignatureIfEmpty[S <: Symbol](sym: S, tpe: Type): S =
+      if (!sym.hasRawInfo) setTypeSignature(sym, tpe)
+      else sym
 
     def flagsFromBits(bits: Long): FlagSet = bits
 

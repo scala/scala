@@ -103,9 +103,9 @@ trait GenSymbols {
         assert(value.isInstanceOf[Ident], showRaw(value))
         val capturedTpe = capturedVariableType(sym)
         val capturedValue = referenceCapturedVariable(sym)
-        (name, mirrorBuildCall(nme.newFreeTerm, reify(sym.name.toString), reify(capturedTpe), capturedValue, mirrorBuildCall(nme.flagsFromBits, reify(sym.flags)), reify(origin(sym))))
+        (name, mirrorBuildCall(nme.newFreeTerm, reify(sym.name.toString), reify(capturedTpe), capturedValue, mirrorBuildCall(nme.flagsFromBits, reify(sym.flags)), reify(origin(sym)), reify(sym.id)))
       } else {
-        (name, mirrorBuildCall(nme.newFreeTerm, reify(sym.name.toString), reify(sym.tpe), value, mirrorBuildCall(nme.flagsFromBits, reify(sym.flags)), reify(origin(sym))))
+        (name, mirrorBuildCall(nme.newFreeTerm, reify(sym.name.toString), reify(sym.tpe), value, mirrorBuildCall(nme.flagsFromBits, reify(sym.flags)), reify(origin(sym)), reify(sym.id)))
       }
     }
 
@@ -115,7 +115,7 @@ trait GenSymbols {
       var name = newTermName(nme.REIFY_FREE_PREFIX + sym.name)
       val phantomTypeTag = Apply(TypeApply(Select(Ident(nme.UNIVERSE_SHORT), nme.TypeTag), List(value)), List(Literal(Constant(null)), Literal(Constant(null))))
       val flavor = if (sym.isExistential) nme.newFreeExistential else nme.newFreeType
-      (name, mirrorBuildCall(flavor, reify(sym.name.toString), reify(sym.info), phantomTypeTag, mirrorBuildCall(nme.flagsFromBits, reify(sym.flags)), reify(origin(sym))))
+      (name, mirrorBuildCall(flavor, reify(sym.name.toString), reify(sym.info), phantomTypeTag, mirrorBuildCall(nme.flagsFromBits, reify(sym.flags)), reify(origin(sym)), reify(sym.id)))
     }
 
   def reifySymDef(sym: Symbol): Tree =
@@ -124,7 +124,7 @@ trait GenSymbols {
       assert(!sym.isLocatable, sym) // if this assertion fires, then tough type reification needs to be rethought
       sym.owner.ownersIterator find (!_.isLocatable) foreach reifySymDef
       var name = newTermName(nme.REIFY_SYMDEF_PREFIX + sym.name)
-      (name, mirrorBuildCall(nme.newNestedSymbol, reify(sym.owner), reify(sym.name), reify(sym.pos), mirrorBuildCall(nme.flagsFromBits, reify(sym.flags)), reify(sym.isClass)))
+      (name, mirrorBuildCall(nme.newNestedSymbol, reify(sym.owner), reify(sym.name), reify(sym.pos), mirrorBuildCall(nme.flagsFromBits, reify(sym.flags)), reify(sym.isClass), reify(sym.id)))
     }
 
   private def reifyIntoSymtab(sym: Symbol)(reificode: => (TermName, Tree)): Tree ={

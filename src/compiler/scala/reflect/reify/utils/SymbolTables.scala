@@ -25,8 +25,8 @@ trait SymbolTables {
 
     def symName(sym: Symbol): TermName =
       symtab.get(sym) match {
-        case Some(FreeDef(_, name, _, _, _)) => name
-        case Some(SymDef(_, name, _, _)) => name
+        case Some(FreeDef(_, name, _, _, _, _)) => name
+        case Some(SymDef(_, name, _, _, _)) => name
         case None => EmptyTermName
       }
 
@@ -38,15 +38,15 @@ trait SymbolTables {
 
     def symBinding(sym: Symbol): Tree =
       symtab.get(sym) match {
-        case Some(FreeDef(_, _, binding, _, _)) => binding
-        case Some(SymDef(_, _, _, _)) => throw new UnsupportedOperationException(s"${symtab(sym)} is a symdef, hence it doesn't have a binding")
+        case Some(FreeDef(_, _, binding, _, _, _)) => binding
+        case Some(SymDef(_, _, _, _, _)) => throw new UnsupportedOperationException(s"${symtab(sym)} is a symdef, hence it doesn't have a binding")
         case None => EmptyTree
       }
 
     def symRef(sym: Symbol): Tree =
       symtab.get(sym) match {
-        case Some(FreeDef(_, name, _, _, _)) => Ident(name) addAttachment ReifyBindingAttachment(sym)
-        case Some(SymDef(_, name, _, _)) => Ident(name) addAttachment ReifyBindingAttachment(sym)
+        case Some(FreeDef(_, name, _, _, _, _)) => Ident(name) addAttachment ReifyBindingAttachment(sym)
+        case Some(SymDef(_, name, _, _, _)) => Ident(name) addAttachment ReifyBindingAttachment(sym)
         case None => EmptyTree
       }
 
@@ -69,8 +69,8 @@ trait SymbolTables {
       val sym = binding(symDef)
       assert(sym != NoSymbol, showRaw(symDef))
       val name = symDef match {
-        case FreeDef(_, name, _, _, _) => name
-        case SymDef(_, name, _, _) => name
+        case FreeDef(_, name, _, _, _, _) => name
+        case SymDef(_, name, _, _, _) => name
       }
       val newSymtab = if (!(symtab contains sym)) symtab + (sym -> symDef) else symtab
       val newAliases = aliases :+ (sym -> name)
@@ -174,14 +174,14 @@ trait SymbolTables {
             if (sym.annotations.isEmpty) EmptyTree
             else Apply(Select(currtab.symRef(sym), nme.setAnnotations), List(reifier.reify(sym.annotations)))
           } else {
-           import scala.reflect.internal.Flags._
-           if (sym hasFlag LOCKED) {
-             // [Eugene] better to have a symbol without a type signature, than to crash with a CyclicReference
-             EmptyTree
-           } else {
-             val rset = reifier.mirrorBuildCall(nme.setTypeSignature, currtab.symRef(sym), reifier.reify(sym.info))
-             if (sym.annotations.isEmpty) rset
-             else reifier.mirrorBuildCall(nme.setAnnotations, rset, reifier.mkList(sym.annotations map reifier.reifyAnnotationInfo))
+            import scala.reflect.internal.Flags._
+            if (sym hasFlag LOCKED) {
+              // [Eugene] better to have a symbol without a type signature, than to crash with a CyclicReference
+              EmptyTree
+            } else {
+              val rset = reifier.mirrorBuildCall(nme.setTypeSignatureIfEmpty, currtab.symRef(sym), reifier.reify(sym.info))
+              if (sym.annotations.isEmpty) rset
+              else reifier.mirrorBuildCall(nme.setAnnotationsIfEmpty, rset, reifier.mkList(sym.annotations map reifier.reifyAnnotationInfo))
            }
           }
         }
