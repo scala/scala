@@ -6,7 +6,7 @@
 **                          |/                                          **
 \*                                                                      */
 // GENERATED CODE: DO NOT EDIT.
-// genprod generated these sources at: Mon Apr 30 07:46:11 PDT 2012
+// genprod generated these sources at: Tue Aug 07 11:54:44 CEST 2012
 
 package scala
 
@@ -33,7 +33,7 @@ package scala
  *  latter can specify inputs which it will not handle.
 
  */
-trait Function0[@specialized +R] extends AnyRef { self =>
+trait Function0[@specialized(Specializable.Primitives) +R] extends AnyRef { self =>
   /** Apply the body of this function to the arguments.
    *  @return   the result of function application.
    */

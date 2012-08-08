@@ -28,5 +28,5 @@ import Specializable._
 
 class specialized(group: SpecializedGroup) extends annotation.StaticAnnotation {
   def this(types: Specializable*) = this(new Group(types.toList))
-  def this() = this(Everything)
+  def this() = this(Primitives)
 }

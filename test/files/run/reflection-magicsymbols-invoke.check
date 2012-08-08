@@ -1,0 +1,124 @@
+============
+Any
+it's important to print the list of Any's members
+if some of them change (possibly, adding and/or removing magic symbols), we must update this test
+method !=: (x$1: Any)Boolean
+method ##: ()Int
+method ==: (x$1: Any)Boolean
+method asInstanceOf: [T0]=> T0
+method equals: (x$1: Any)Boolean
+method getClass: ()java.lang.Class[_]
+method hashCode: ()Int
+method isInstanceOf: [T0]=> Boolean
+method toString: ()java.lang.String
+testing Any.!=: false
+testing Any.##: 50
+testing Any.==: true
+testing Any.asInstanceOf: class scala.ScalaReflectionException: Any.asInstanceOf requires a type argument, it cannot be invoked with mirrors
+testing Any.asInstanceOf: class scala.ScalaReflectionException: scala.Any.asInstanceOf[T0]: T0 takes 0 arguments
+testing Any.equals: true
+testing Any.getClass: class java.lang.String
+testing Any.hashCode: 50
+testing Any.isInstanceOf: class scala.ScalaReflectionException: Any.isInstanceOf requires a type argument, it cannot be invoked with mirrors
+testing Any.isInstanceOf: class scala.ScalaReflectionException: scala.Any.isInstanceOf[T0]: Boolean takes 0 arguments
+testing Any.toString: 2
+============
+AnyVal
+it's important to print the list of AnyVal's members
+if some of them change (possibly, adding and/or removing magic symbols), we must update this test
+constructor AnyVal: ()AnyVal
+method getClass: ()Class[_ <: AnyVal]
+testing AnyVal.<init>: class java.lang.InstantiationException: null
+testing AnyVal.getClass: class scala.ScalaReflectionException: expected a member of class Integer, you provided method scala.AnyVal.getClass
+============
+AnyRef
+it's important to print the list of AnyRef's members
+if some of them change (possibly, adding and/or removing magic symbols), we must update this test
+constructor Object: ()java.lang.Object
+method !=: (x$1: Any)Boolean
+method !=: (x$1: AnyRef)Boolean
+method ##: ()Int
+method $asInstanceOf: [T0]()T0
+method $isInstanceOf: [T0]()Boolean
+method ==: (x$1: Any)Boolean
+method ==: (x$1: AnyRef)Boolean
+method asInstanceOf: [T0]=> T0
+method clone: ()java.lang.Object
+method eq: (x$1: AnyRef)Boolean
+method equals: (x$1: Any)Boolean
+method finalize: ()Unit
+method getClass: ()java.lang.Class[_]
+method hashCode: ()Int
+method isInstanceOf: [T0]=> Boolean
+method ne: (x$1: AnyRef)Boolean
+method notify: ()Unit
+method notifyAll: ()Unit
+method synchronized: [T0](x$1: T0)T0
+method toString: ()java.lang.String
+method wait: ()Unit
+method wait: (x$1: Long)Unit
+method wait: (x$1: Long, x$2: Int)Unit
+testing Object.!=: false
+testing Object.##: 50
+testing Object.$asInstanceOf: class scala.ScalaReflectionException: AnyRef.$asInstanceOf is an internal method, it cannot be invoked with mirrors
+testing Object.$asInstanceOf: class scala.ScalaReflectionException: java.lang.Object.$asInstanceOf[T0](): T0 takes 0 arguments
+testing Object.$isInstanceOf: class scala.ScalaReflectionException: AnyRef.$isInstanceOf is an internal method, it cannot be invoked with mirrors
+testing Object.$isInstanceOf: class scala.ScalaReflectionException: java.lang.Object.$isInstanceOf[T0](): Boolean takes 0 arguments
+testing Object.==: true
+testing Object.clone: class java.lang.CloneNotSupportedException: java.lang.String
+testing Object.eq: true
+testing Object.equals: true
+testing Object.finalize: ()
+testing Object.getClass: class java.lang.String
+testing Object.hashCode: 50
+testing Object.ne: false
+testing Object.notify: class java.lang.IllegalMonitorStateException: null
+testing Object.notifyAll: class java.lang.IllegalMonitorStateException: null
+testing Object.synchronized: 2
+testing Object.toString: 2
+TODO: also test AnyRef.wait overloads
+============
+Array
+it's important to print the list of Array's members
+if some of them change (possibly, adding and/or removing magic symbols), we must update this test
+constructor Array: (_length: Int)Array[T]
+constructor Object: ()java.lang.Object
+method !=: (x$1: Any)Boolean
+method !=: (x$1: AnyRef)Boolean
+method ##: ()Int
+method $asInstanceOf: [T0]()T0
+method $isInstanceOf: [T0]()Boolean
+method ==: (x$1: Any)Boolean
+method ==: (x$1: AnyRef)Boolean
+method apply: (i: <?>)T
+method asInstanceOf: [T0]=> T0
+method clone: ()Array[T]
+method eq: (x$1: AnyRef)Boolean
+method equals: (x$1: Any)Boolean
+method finalize: ()Unit
+method getClass: ()java.lang.Class[_]
+method hashCode: ()Int
+method isInstanceOf: [T0]=> Boolean
+method length: => Int
+method ne: (x$1: AnyRef)Boolean
+method notify: ()Unit
+method notifyAll: ()Unit
+method synchronized: [T0](x$1: T0)T0
+method toString: ()java.lang.String
+method update: (i: <?>, x: <?>)Unit
+method wait: ()Unit
+method wait: (x$1: Long)Unit
+method wait: (x$1: Long, x$2: Int)Unit
+value _length: Int
+testing Array.length: 2
+testing Array.apply: 1
+testing Array.update: ()
+testing Array.clone: List(1, 2)
+============
+Other
+testing String.+: 23
+============
+CTM
+testing Predef.classOf: class scala.ScalaReflectionException: Predef.classOf is a compile-time function, it cannot be invoked with mirrors
+testing Predef.classOf: class scala.ScalaReflectionException: scala.Predef.classOf[T]: Class[T] takes 0 arguments
+testing Universe.reify: class scala.ScalaReflectionException: scala.reflect.base.Universe.reify is a macro, i.e. a compile-time function, it cannot be invoked with mirrors

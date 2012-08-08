@@ -35,7 +35,7 @@ trait Infrastructure {
    *
    *    def staticEval[T](x: T) = macro staticEval[T]
    *
-   *    def staticEval[T: c.TypeTag](c: Context)(x: c.Expr[T]) = {
+   *    def staticEval[T](c: Context)(x: c.Expr[T]) = {
    *      import scala.reflect.runtime.{universe => ru}
    *      val mirror = ru.runtimeMirror(c.libraryClassLoader)
    *      import scala.tools.reflect.ToolBox

@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2011 LAMP/EPFL
+ * Copyright 2005-2012 LAMP/EPFL
  * @author Iulian Dragos
  */
 
@@ -594,6 +594,7 @@ abstract class ICodeReader extends ClassfileParser {
     while (pc < codeLength) parseInstruction
 
     val exceptionEntries = in.nextChar.toInt
+    code.containsEHs = (exceptionEntries != 0)
     var i = 0
     while (i < exceptionEntries) {
       // skip start end PC
@@ -647,6 +648,7 @@ abstract class ICodeReader extends ClassfileParser {
 
     var containsDUPX = false
     var containsNEW  = false
+    var containsEHs  = false
 
     def emit(i: Instruction) {
       instrs += ((pc, i))
@@ -664,6 +666,7 @@ abstract class ICodeReader extends ClassfileParser {
 
       val code = new Code(method)
       method.setCode(code)
+      method.bytecodeHasEHs = containsEHs
       var bb = code.startBlock
 
       def makeBasicBlocks: mutable.Map[Int, BasicBlock] =

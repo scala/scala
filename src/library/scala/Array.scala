@@ -439,10 +439,10 @@ object Array extends FallbackArrayBuilding {
  *  example code.
  *  Line 2 is translated into a call to `apply(Int)`, while line 3 is translated into a call to
  *  `update(Int, T)`.
- *  
+ *
  *  Two implicit conversions exist in [[scala.Predef]] that are frequently applied to arrays: a conversion
  *  to [[scala.collection.mutable.ArrayOps]] (shown on line 4 of the example above) and a conversion
- *  to [[scala.collection.mutable.WrappedArray]] (a subtype of [[scala.collections.Seq]]).
+ *  to [[scala.collection.mutable.WrappedArray]] (a subtype of [[scala.collection.Seq]]).
  *  Both types make available many of the standard operations found in the Scala collections API.
  *  The conversion to `ArrayOps` is temporary, as all operations defined on `ArrayOps` return an `Array`,
  *  while the conversion to `WrappedArray` is permanent as all operations return a `WrappedArray`.

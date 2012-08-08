@@ -256,7 +256,8 @@ abstract class ToolBoxFactory[U <: JavaUniverse](val u: U) { factorySelf =>
         // }
         val (singleton, jmeth) = compileExpr(expr)
         val result = jmeth.invoke(singleton, thunks map (_.asInstanceOf[AnyRef]): _*)
-        result
+        if (jmeth.getReturnType == java.lang.Void.TYPE) ()
+        else result
       }
 
       def parseExpr(code: String): Tree = {

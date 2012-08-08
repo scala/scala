@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2011 LAMP/EPFL
+ * Copyright 2005-2012 LAMP/EPFL
  * @author  Martin Odersky
  */
 // $Id$
@@ -14,6 +14,7 @@ abstract class MutableSettings extends AbsSettings {
   type Setting <: SettingValue
   type BooleanSetting <: Setting { type T = Boolean }
   type IntSetting <: Setting { type T = Int }
+  type MultiStringSetting <: Setting { type T = List[String] }
 
   // basically this is a value which remembers if it's been modified
   trait SettingValue extends AbsSettingValue {

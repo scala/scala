@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2006-2011 LAMP/EPFL
+ * Copyright 2006-2012 LAMP/EPFL
  * @author  Lex Spoon
  */
 
@@ -57,6 +57,10 @@ class MainGenericRunner {
 
     def isI   = !settings.loadfiles.isDefault
     def dashi = settings.loadfiles.value
+
+    // Deadlocks on startup under -i unless we disable async.
+    if (isI)
+      settings.Yreplsync.value = true
 
     def combinedCode  = {
       val files   = if (isI) dashi map (file => File(file).slurp()) else Nil

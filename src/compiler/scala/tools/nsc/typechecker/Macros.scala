@@ -23,7 +23,7 @@ import java.lang.reflect.{Array => jArray, Method => jMethod}
  *
  *  Then fooBar needs to point to a static method of the following form:
  *
- *    def fooBar[T: c.TypeTag]
+ *    def fooBar[T: c.AbsTypeTag]
  *           (c: scala.reflect.macros.Context)
  *           (xs: c.Expr[List[T]])
  *           : c.Expr[T] = {
@@ -156,7 +156,7 @@ trait Macros extends scala.tools.reflect.FastTrack with Traces {
       case TypeRef(SingleType(NoPrefix, contextParam), sym, List(tparam)) =>
         var wannabe = sym
         while (wannabe.isAliasType) wannabe = wannabe.info.typeSymbol
-        if (wannabe != definitions.AbsTypeTagClass && wannabe != definitions.TypeTagClass)
+        if (wannabe != definitions.AbsTypeTagClass)
           List(param)
         else
           transform(param, tparam.typeSymbol) map (_ :: Nil) getOrElse Nil
@@ -202,7 +202,6 @@ trait Macros extends scala.tools.reflect.FastTrack with Traces {
       def abbreviateCoreAliases: String = { // hack!
         var result = s
         result = result.replace("c.universe.AbsTypeTag", "c.AbsTypeTag")
-        result = result.replace("c.universe.TypeTag", "c.TypeTag")
         result = result.replace("c.universe.Expr", "c.Expr")
         result
       }
@@ -440,7 +439,7 @@ trait Macros extends scala.tools.reflect.FastTrack with Traces {
       // we don't have to do this, but it appears to be more clear than allowing them
       val implicitParams = actparamss.flatten filter (_.isImplicit)
       if (implicitParams.length > 0) {
-        reportError(implicitParams.head.pos, "macro implementations cannot have implicit parameters other than TypeTag evidences")
+        reportError(implicitParams.head.pos, "macro implementations cannot have implicit parameters other than AbsTypeTag evidences")
         macroTraceVerbose("macro def failed to satisfy trivial preconditions: ")(macroDef)
       }
 
@@ -854,9 +853,6 @@ trait Macros extends scala.tools.reflect.FastTrack with Traces {
           param.tpe.typeSymbol match {
             case definitions.AbsTypeTagClass =>
               // do nothing
-            case definitions.TypeTagClass =>
-              if (!tpe.isConcrete) context.abort(context.enclosingPosition, "cannot create TypeTag from a type %s having unresolved type parameters".format(tpe))
-              // otherwise do nothing
             case _ =>
               throw new Error("unsupported tpe: " + tpe)
           }
@@ -1019,7 +1015,7 @@ trait Macros extends scala.tools.reflect.FastTrack with Traces {
       )
       val forgotten = (
         if (sym.isTerm) "splice when splicing this variable into a reifee"
-        else "c.TypeTag annotation for this type parameter"
+        else "c.AbsTypeTag annotation for this type parameter"
       )
       typer.context.error(expandee.pos,
         template.replaceAllLiterally("@kind@", sym.name.nameKind).format(
