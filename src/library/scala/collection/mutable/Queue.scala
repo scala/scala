@@ -32,6 +32,7 @@ import generic._
  */
 class Queue[A]
 extends MutableList[A]
+   with LinearSeqOptimized[A, Queue[A]]
    with GenericTraversableTemplate[A, Queue]
    with Cloneable[Queue[A]]
    with Serializable
@@ -165,6 +166,17 @@ extends MutableList[A]
    *  @return the first element.
    */
   def front: A = head
+
+
+  // TODO - Don't override this just for new to create appropriate type....
+  override def tail: Queue[A] = {
+    require(nonEmpty, "tail of empty list")
+    val tl = new Queue[A]
+    tl.first0 = first0.tail
+    tl.last0 = last0
+    tl.len = len - 1
+    tl
+  }
 }
 
 
