@@ -1,0 +1,27 @@
+newpat_unreachable.scala:6: error: patterns after a variable pattern cannot match (SLS 8.1.1)
+If you intended to match against parameter b of method contrivedExample, you must use backticks, like: case `b` =>
+      case b => println("matched b")
+           ^
+newpat_unreachable.scala:7: error: unreachable code due to variable pattern 'b' on line 6
+If you intended to match against parameter c of method contrivedExample, you must use backticks, like: case `c` =>
+      case c => println("matched c")
+                       ^
+newpat_unreachable.scala:8: error: unreachable code due to variable pattern 'b' on line 6
+If you intended to match against value d in class A, you must use backticks, like: case `d` =>
+      case d => println("matched d")
+                       ^
+newpat_unreachable.scala:9: error: unreachable code due to variable pattern 'b' on line 6
+      case _ => println("matched neither")
+                       ^
+newpat_unreachable.scala:22: error: patterns after a variable pattern cannot match (SLS 8.1.1)
+If you intended to match against parameter b of method g, you must use backticks, like: case `b` =>
+          case b => 1
+               ^
+newpat_unreachable.scala:23: error: unreachable code due to variable pattern 'b' on line 22
+If you intended to match against parameter c of method h, you must use backticks, like: case `c` =>
+          case c => 2
+                    ^
+newpat_unreachable.scala:24: error: unreachable code due to variable pattern 'b' on line 22
+          case _ => 3
+                    ^
+7 errors found
