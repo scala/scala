@@ -601,10 +601,10 @@ trait FutureProjections extends TestBase {
       throw cause
     }
     f.failed onComplete {
-      case Right(t) =>
+      case Success(t) =>
         assert(t == cause)
         done()
-      case Left(t) =>
+      case Failure(t) =>
         assert(false)
     }
   }
@@ -626,9 +626,9 @@ trait FutureProjections extends TestBase {
     done =>
     val f = future { 0 }
     f.failed onComplete {
-      case Right(t) =>
+      case Success(t) =>
         assert(false)
-      case Left(t) =>
+      case Failure(t) =>
         assert(t.isInstanceOf[NoSuchElementException])
         done()
     }
@@ -803,81 +803,6 @@ trait Exceptions extends TestBase {
 
 }
 
-// trait TryEitherExtractor extends TestBase {
-
-//   import scala.util.{Try, Success, Failure}
-
-//   def testSuccessMatch(): Unit = once {
-//     done =>
-//     val thisIsASuccess = Success(42)
-//     thisIsASuccess match {
-//       case Success(v) =>
-//         done()
-//         assert(v == 42)
-//       case Failure(e) =>
-//         done()
-//         assert(false)
-//       case other =>
-//         done()
-//         assert(false)
-//     }
-//   }
-
-//   def testRightMatch(): Unit = once {
-//     done =>
-//     val thisIsNotASuccess: Right[Throwable, Int] = Right(43)
-//     thisIsNotASuccess match {
-//       case Success(v) =>
-//         done()
-//         assert(v == 43)
-//       case Failure(e) =>
-//         done()
-//         assert(false)
-//       case other =>
-//         done()
-//         assert(false)
-//     }
-//   }
-
-//   def testFailureMatch(): Unit = once {
-//     done =>
-//     val thisIsAFailure = Failure(new Exception("I'm an exception"))
-//     thisIsAFailure match {
-//       case Success(v) =>
-//         done()
-//         assert(false)
-//       case Failure(e) =>
-//         done()
-//         assert(e.getMessage == "I'm an exception")
-//       case other =>
-//         done()
-//         assert(false)
-//     }
-//   }
-
-//   def testLeftMatch(): Unit = once {
-//     done =>
-//     val thisIsNotAFailure: Left[Throwable, Int] = Left(new Exception("I'm an exception"))
-//     thisIsNotAFailure match {
-//       case Success(v) =>
-//         done()
-//         assert(false)
-//       case Failure(e) =>
-//         done()
-//         assert(e.getMessage == "I'm an exception")
-//       case other =>
-//         done()
-//         assert(false)
-//     }
-    
-//   }
-
-//   testSuccessMatch()
-//   testRightMatch()
-//   testFailureMatch()
-//   testLeftMatch()
-// }
-
 trait CustomExecutionContext extends TestBase {
   import scala.concurrent.{ ExecutionContext, Awaitable }
 
@@ -975,13 +900,13 @@ trait CustomExecutionContext extends TestBase {
            } flatMap { x =>
              Promise.successful(x + 1).future.map(addOne).map(addOne)
            } onComplete {
-            case Left(t) =>
+            case Failure(t) =>
               try {
                 throw new AssertionError("error in test: " + t.getMessage, t)
               } finally {
                 done()
               }
-            case Right(x) =>
+            case Success(x) =>
               assertEC()
               assert(x == 14)
               done()
@@ -1001,6 +926,66 @@ trait CustomExecutionContext extends TestBase {
   testCallbackChainCustomEC()
 }
 
+trait ExecutionContextPrepare extends TestBase {
+  val theLocal = new ThreadLocal[String] {
+    override protected def initialValue(): String = ""
+  }
+  
+  class PreparingExecutionContext extends ExecutionContext {
+    def delegate = ExecutionContext.global
+    
+    override def execute(runnable: Runnable): Unit =
+      delegate.execute(runnable)
+    
+    override def prepare(): ExecutionContext = {
+      // save object stored in ThreadLocal storage
+      val localData = theLocal.get
+      new PreparingExecutionContext {
+        override def execute(runnable: Runnable): Unit = {
+          val wrapper = new Runnable {
+            override def run(): Unit = {
+              // now we're on the new thread
+              // put localData into theLocal
+              theLocal.set(localData)
+              runnable.run()
+            }
+          }
+          delegate.execute(wrapper)
+        }
+      }
+    }
+    
+    override def reportFailure(t: Throwable): Unit =
+      delegate.reportFailure(t)
+  }
+  
+  implicit val ec = new PreparingExecutionContext
+  
+  def testOnComplete(): Unit = once {
+    done =>
+    theLocal.set("secret")
+    val fut = future { 42 }
+    fut onComplete {
+      case _ =>
+        assert(theLocal.get == "secret")
+        done()
+    }
+  }
+  
+  def testMap(): Unit = once {
+    done =>
+    theLocal.set("secret2")
+    val fut = future { 42 }
+    fut map { x =>
+      assert(theLocal.get == "secret2")
+      done()
+    }
+  }
+  
+  testOnComplete()
+  testMap()
+}
+
 object Test
 extends App
 with FutureCallbacks
@@ -1009,12 +994,9 @@ with FutureProjections
 with Promises
 with BlockContexts
 with Exceptions
-// with TryEitherExtractor
 with CustomExecutionContext
+with ExecutionContextPrepare
 {
   System.exit(0)
 }
-
-
-
 

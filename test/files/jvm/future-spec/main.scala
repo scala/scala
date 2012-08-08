@@ -12,6 +12,7 @@ object Test {
   def main(args: Array[String]) {
     FutureTests.check()
     PromiseTests.check()
+    TryTests.check()
   }
   
 }
@@ -47,7 +48,7 @@ trait MinimalScalaTest extends Output {
         snippet
         bufferPrintln("[OK] Test passed.")
       } catch {
-        case e =>
+        case e: Throwable =>
           bufferPrintln("[FAILED] " + e)
           bufferPrintln(e.getStackTrace().mkString("\n"))
           throwables += e
@@ -59,6 +60,7 @@ trait MinimalScalaTest extends Output {
   implicit def objectops(obj: Any) = new {
     
     def mustBe(other: Any) = assert(obj == other, obj + " is not " + other)
+    def mustEqual(other: Any) = mustBe(other)
     
   }
   

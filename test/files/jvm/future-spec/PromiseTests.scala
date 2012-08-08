@@ -6,7 +6,7 @@ import scala.concurrent.util.duration._
 import scala.concurrent.util.Duration.Inf
 import scala.collection._
 import scala.runtime.NonLocalReturnControl
-
+import scala.util.{Try,Success,Failure}
 
 
 object PromiseTests extends MinimalScalaTest {
@@ -48,27 +48,27 @@ object PromiseTests extends MinimalScalaTest {
   
   "A successful Promise" should {
     val result = "test value"
-    val promise = Promise[String]().complete(Right(result))
+    val promise = Promise[String]().complete(Success(result))
     promise.isCompleted mustBe (true)
     futureWithResult(_(promise.future, result))
   }
   
   "A failed Promise" should {
     val message = "Expected Exception"
-    val promise = Promise[String]().complete(Left(new RuntimeException(message)))
+    val promise = Promise[String]().complete(Failure(new RuntimeException(message)))
     promise.isCompleted mustBe (true)
     futureWithException[RuntimeException](_(promise.future, message))
   }
   
   "An interrupted Promise" should {
     val message = "Boxed InterruptedException"
-    val future = Promise[String]().complete(Left(new InterruptedException(message))).future
+    val future = Promise[String]().complete(Failure(new InterruptedException(message))).future
     futureWithException[ExecutionException](_(future, message))
   }
   
   "A NonLocalReturnControl failed Promise" should {
     val result = "test value"
-    val future = Promise[String]().complete(Left(new NonLocalReturnControl[String]("test", result))).future
+    val future = Promise[String]().complete(Failure(new NonLocalReturnControl[String]("test", result))).future
     futureWithResult(_(future, result))
   }
   
@@ -76,7 +76,7 @@ object PromiseTests extends MinimalScalaTest {
     
     "be completed" in { f((future, _) => future.isCompleted mustBe (true)) }
     
-    "contain a value" in { f((future, result) => future.value mustBe (Some(Right(result)))) }
+    "contain a value" in { f((future, result) => future.value mustBe (Some(Success(result)))) }
     
     "return when ready with 'Await.ready'" in { f((future, result) => Await.ready(future, defaultTimeout).isCompleted mustBe (true)) }
     
@@ -159,7 +159,7 @@ object PromiseTests extends MinimalScalaTest {
     
     "contain a value" in {
       f((future, message) => {
-        future.value.get.left.get.getMessage mustBe (message)
+        future.value.get.failed.get.getMessage mustBe (message)
       })
     }
     

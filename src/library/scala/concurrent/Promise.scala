@@ -8,6 +8,8 @@
 
 package scala.concurrent
 
+import scala.util.{ Try, Success, Failure }
+
 /** Promise is an object which can be completed with a value or failed
  *  with an exception.
  *
@@ -49,7 +51,7 @@ trait Promise[T] {
    *
    *  $promiseCompletion
    */
-  def complete(result: Either[Throwable, T]): this.type =
+  def complete(result: Try[T]): this.type =
     if (tryComplete(result)) this else throw new IllegalStateException("Promise already completed.")
 
   /** Tries to complete the promise with either a value or the exception.
@@ -58,7 +60,7 @@ trait Promise[T] {
    *
    *  @return    If the promise has already been completed returns `false`, or `true` otherwise.
    */
-  def tryComplete(result: Either[Throwable, T]): Boolean
+  def tryComplete(result: Try[T]): Boolean
 
   /** Completes this promise with the specified future, once that future is completed.
    *
@@ -84,7 +86,7 @@ trait Promise[T] {
    *
    *  $promiseCompletion
    */
-  def success(v: T): this.type = complete(Right(v))
+  def success(v: T): this.type = complete(Success(v))
 
   /** Tries to complete the promise with a value.
    *
@@ -92,7 +94,7 @@ trait Promise[T] {
    *
    *  @return    If the promise has already been completed returns `false`, or `true` otherwise.
    */
-  def trySuccess(value: T): Boolean = tryComplete(Right(value))
+  def trySuccess(value: T): Boolean = tryComplete(Success(value))
 
   /** Completes the promise with an exception.
    *
@@ -102,7 +104,7 @@ trait Promise[T] {
    *
    *  $promiseCompletion
    */
-  def failure(t: Throwable): this.type = complete(Left(t))
+  def failure(t: Throwable): this.type = complete(Failure(t))
 
   /** Tries to complete the promise with an exception.
    *
@@ -110,7 +112,7 @@ trait Promise[T] {
    *
    *  @return    If the promise has already been completed returns `false`, or `true` otherwise.
    */
-  def tryFailure(t: Throwable): Boolean = tryComplete(Left(t))
+  def tryFailure(t: Throwable): Boolean = tryComplete(Failure(t))
 }
 
 
@@ -129,14 +131,14 @@ object Promise {
    *  @tparam T       the type of the value in the promise
    *  @return         the newly created `Promise` object
    */
-  def failed[T](exception: Throwable): Promise[T] = new impl.Promise.KeptPromise[T](Left(exception))
+  def failed[T](exception: Throwable): Promise[T] = new impl.Promise.KeptPromise[T](Failure(exception))
 
   /** Creates an already completed Promise with the specified result.
    *  
    *  @tparam T       the type of the value in the promise
    *  @return         the newly created `Promise` object
    */
-  def successful[T](result: T): Promise[T] = new impl.Promise.KeptPromise[T](Right(result))
+  def successful[T](result: T): Promise[T] = new impl.Promise.KeptPromise[T](Success(result))
   
 }
 
