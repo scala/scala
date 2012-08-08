@@ -36,7 +36,8 @@ trait GenSymbols {
     else if (sym.isEmptyPackageClass)
       mirrorMirrorSelect(nme.EmptyPackageClass)
     else if (sym.isModuleClass)
-      Select(Select(reify(sym.sourceModule), nme.asModule), nme.moduleClass)
+      if (sym.sourceModule.isLocatable) Select(Select(reify(sym.sourceModule), nme.asModule), nme.moduleClass)
+      else reifyFreeType(sym, Ident(sym))
     else if (sym.isPackage)
       mirrorMirrorCall(nme.staticPackage, reify(sym.fullName))
     else if (sym.isLocatable) {
