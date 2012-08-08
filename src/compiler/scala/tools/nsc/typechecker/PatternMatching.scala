@@ -2396,15 +2396,9 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
     // e.g., when we know some value must be of type T, can it still be of type S? (this is the positive formulation of what `excludes` on Const computes)
     // since we're talking values, there must have been a class involved in creating it, so rephrase our types in terms of classes
     // (At least conceptually: `true` is an instance of class `Boolean`)
-    private def widenToClass(tp: Type) = {
-      // getOrElse to err on the safe side -- all BTS should end in Any, right?
-      val wideTp = tp.widen
-      val clsTp =
-        if (wideTp.typeSymbol.isClass) wideTp
-        else wideTp.baseTypeSeq.toList.find(_.typeSymbol.isClass).getOrElse(AnyClass.tpe)
-      // patmatDebug("Widening to class: "+ (tp, clsTp, tp.widen, tp.widen.baseTypeSeq, tp.widen.baseTypeSeq.toList.find(_.typeSymbol.isClass)))
-      clsTp
-    }
+    private def widenToClass(tp: Type): Type =
+      if (tp.typeSymbol.isClass) tp
+      else tp.baseType(tp.baseClasses.head)
 
     object TypeConst extends TypeConstExtractor {
       def apply(tp: Type) = {
@@ -2623,17 +2617,20 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
     // TODO: this is subject to the availability of TypeTags (since an abstract type with a type tag is checkable at run time)
     def checkableType(tp: Type): Type = {
       // TODO: this is extremely rough...
-      object toCheckable extends TypeMap {
-        def apply(tp: Type) = tp match {
-          case TypeRef(pre, sym, a :: as) if sym ne ArrayClass =>
-            // replace type args by existentials, since they can't be checked
-            // TODO: when type tags are available, we will check -- when this is implemented, can we take that into account here?
-            // TODO: don't reuse sym.typeParams, they have bounds (and those must not be considered)
-            newExistentialType(sym.typeParams, sym.tpe).asSeenFrom(pre, sym.owner)
-          case _ => mapOver(tp)
+      // replace type args by wildcards, since they can't be checked (don't use existentials: overkill)
+      // TODO: when type tags are available, we will check -- when this is implemented, can we take that into account here?
+      // similar to typer.infer.approximateAbstracts
+      object typeArgsToWildcardsExceptArray extends TypeMap {
+        def apply(tp: Type): Type = tp match {
+          case TypeRef(pre, sym, as) if as.nonEmpty && (sym ne ArrayClass) =>
+            val wildArgs = List.fill(as.length)(WildcardType)
+            TypeRef(pre, sym, wildArgs)
+          case _ =>
+            mapOver(tp)
         }
       }
-      val res = toCheckable(tp)
+
+      val res = typeArgsToWildcardsExceptArray(tp)
       patmatDebug("checkable "+(tp, res))
       res
     }
