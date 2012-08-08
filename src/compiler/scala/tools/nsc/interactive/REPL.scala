@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2009-2011 Scala Solutions and LAMP/EPFL
+ * Copyright 2009-2012 Scala Solutions and LAMP/EPFL
  * @author Martin Odersky
  */
 package scala.tools.nsc
@@ -124,9 +124,9 @@ object REPL {
      *  @param iContents  An Array[Char] containing the instrumented source
      *  @return The name of the instrumented source file
      */
-    def writeInstrumented(iFullName: String, iContents: Array[Char]): String = {
+    def writeInstrumented(iFullName: String, suffix: String, iContents: Array[Char]): String = {
       val iSimpleName = iFullName drop ((iFullName lastIndexOf '.') + 1)
-      val iSourceName = iSimpleName + "$instrumented.scala"
+      val iSourceName = iSimpleName + suffix
       val ifile = new FileWriter(iSourceName)
       ifile.write(iContents)
       ifile.close()
@@ -186,18 +186,20 @@ object REPL {
      *                    and outputs in the right column, or None if the presentation compiler
      *                    does not respond to askInstrumented.
      */
-    def instrument(arguments: List[String], line: Int): Option[String] = {
+    def instrument(arguments: List[String], line: Int): Option[(String, String)] = {
       val source = toSourceFile(arguments.head)
       // strip right hand side comment column and any trailing spaces from all lines
-      val strippedSource = new BatchSourceFile(source.file, SourceInserter.stripRight(source.content))
+      val strippedContents = SourceInserter.stripRight(source.content)
+      val strippedSource = new BatchSourceFile(source.file, strippedContents)
       println("stripped source = "+strippedSource)
       comp.askReload(List(strippedSource), reloadResult)
       comp.askInstrumented(strippedSource, line, instrumentedResult)
       using(instrumentedResult) {
         case (iFullName, iContents) =>
           println(s"instrumented source $iFullName = ${iContents.mkString}")
-          val iSourceName = writeInstrumented(iFullName, iContents)
-          iSourceName
+          val iSourceName = writeInstrumented(iFullName, "$instrumented.scala", iContents)
+          val sSourceName = writeInstrumented(iFullName, "$stripped.scala", strippedContents)
+          (iSourceName, sSourceName)
 /*
  *           val vdirOpt = compileInstrumented(iSourceName, arguments.tail)
           runInstrumented(vdirOpt, iFullName, strippedSource.content)
@@ -227,9 +229,9 @@ object REPL {
         case List("complete", file, off1) =>
           doComplete(makePos(file, off1, off1))
         case "instrument" :: arguments =>
-          println(instrument(arguments, -1).map(_.mkString))
+          println(instrument(arguments, -1))
         case "instrumentTo" :: line :: arguments =>
-          println(instrument(arguments, line.toInt).map(_.mkString))
+          println(instrument(arguments, line.toInt))
         case List("quit") =>
           comp.askShutdown()
           exit(1) // Don't use sys yet as this has to run on 2.8.2 also.

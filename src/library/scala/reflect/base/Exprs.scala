@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2011 LAMP/EPFL
+ * Copyright 2005-2012 LAMP/EPFL
  * @author  Martin Odersky
  */
 
@@ -14,8 +14,8 @@ trait Exprs { self: Universe =>
     def in[U <: Universe with Singleton](otherMirror: MirrorOf[U]): U # Expr[T]
 
     def tree: Tree
-    def staticTpe: Type
-    def actualTpe: Type
+    def staticType: Type
+    def actualType: Type
 
     def splice: T
     val value: T
@@ -24,7 +24,7 @@ trait Exprs { self: Universe =>
     override def canEqual(x: Any) = x.isInstanceOf[Expr[_]]
     override def equals(x: Any) = x.isInstanceOf[Expr[_]] && this.mirror == x.asInstanceOf[Expr[_]].mirror && this.tree == x.asInstanceOf[Expr[_]].tree
     override def hashCode = mirror.hashCode * 31 + tree.hashCode
-    override def toString = "Expr["+staticTpe+"]("+tree+")"
+    override def toString = "Expr["+staticType+"]("+tree+")"
   }
 
   object Expr {
@@ -43,8 +43,8 @@ trait Exprs { self: Universe =>
       // [Eugene++] this is important
       // !!! remove when we have improved type inference for singletons
       // search for .type] to find other instances
-    lazy val staticTpe: Type = implicitly[AbsTypeTag[T]].tpe
-    def actualTpe: Type = treeType(tree)
+    lazy val staticType: Type = implicitly[AbsTypeTag[T]].tpe
+    def actualType: Type = treeType(tree)
 
     def splice: T = throw new UnsupportedOperationException("""
       |the function you're calling has not been spliced by the compiler.

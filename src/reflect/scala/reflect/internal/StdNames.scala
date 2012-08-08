@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2011 LAMP/EPFL
+ * Copyright 2005-2012 LAMP/EPFL
  * @author  Martin Odersky
  */
 
@@ -936,6 +936,12 @@ trait StdNames {
       case `toDouble` => toDouble
       case _          => NO_NAME
     }
+
+    def primitiveMethodName(name: Name): TermName =
+      primitiveInfixMethodName(name) match {
+        case NO_NAME => primitivePostfixMethodName(name)
+        case name => name
+      }
 
     /** Translate a String into a list of simple TypeNames and TermNames.
      *  In all segments before the last, type/term is determined by whether

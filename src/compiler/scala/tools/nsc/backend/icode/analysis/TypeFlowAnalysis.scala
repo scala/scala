@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2011 LAMP/EPFL
+ * Copyright 2005-2012 LAMP/EPFL
  * @author  Martin Odersky
  */
 
@@ -736,7 +736,13 @@ abstract class TypeFlowAnalysis {
               val succs = point.successors filter relevantBBs
               succs foreach { p =>
                 assert((p.predecessors filter isOnPerimeter).isEmpty)
-                val updated = lattice.lub(List(output, in(p)), p.exceptionHandlerStart)
+                val existing = in(p)
+                // TODO move the following assertion to typeFlowLattice.lub2 for wider applicability (ie MethodTFA in addition to MTFAGrowable).
+                assert(existing == lattice.bottom ||
+                       p.exceptionHandlerStart    ||
+                       (output.stack.length == existing.stack.length),
+                       "Trying to merge non-bottom type-stacks with different stack heights. For a possible cause see SI-6157.")
+                val updated = lattice.lub(List(output, existing), p.exceptionHandlerStart)
                 if(updated != in(p)) {
                   in(p) = updated
                   enqueue(p)

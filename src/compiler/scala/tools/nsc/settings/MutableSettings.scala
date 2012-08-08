@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2011 LAMP/EPFL
+ * Copyright 2005-2012 LAMP/EPFL
  * @author  Martin Odersky
  */
 // $Id$
@@ -68,7 +68,7 @@ class MutableSettings(val errorFn: String => Unit)
         if (isOpt) {
           val newArgs = parseParams(args)
           if (args eq newArgs) {
-            errorFn("bad option: '" + x + "'")
+            errorFn(s"bad option: '$x'")
             (false, args)
           }
           // discard empties, sometimes they appear because of ant or etc.
@@ -536,7 +536,7 @@ class MutableSettings(val errorFn: String => Unit)
     }
     override def tryToSetColon(args: List[String]) = tryToSet(args)
     override def tryToSetFromPropertyValue(s: String) = tryToSet(s.trim.split(',').toList)
-    def unparse: List[String] = value map { name + ":" + _ }
+    def unparse: List[String] = name :: value
 
     withHelpSyntax(name + ":<" + arg + ">")
   }

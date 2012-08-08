@@ -6,6 +6,8 @@
 **                          |/                                          **
 \*                                                                      */
 
+import language.postfixOps
+
 /** This program generates the ProductN, TupleN, FunctionN,
  *  and AbstractFunctionN, where 0 <= N <= MAX_ARITY.
  *
@@ -75,7 +77,7 @@ package %s
 
   if (args.length != 1) {
     println("please give path of output directory")
-    exit(-1)
+    sys.exit(-1)
   }
   val out = args(0)
   def writeFile(node: scala.xml.Node) {
@@ -96,7 +98,7 @@ zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz */
 
 object FunctionZero extends Function(0) {
   override def genprodString  = "\n// genprod generated these sources at: " + new java.util.Date()
-  override def covariantSpecs = "@specialized "
+  override def covariantSpecs = "@specialized(Specializable.Primitives) "
   override def descriptiveComment = "  " + functionNTemplate.format("javaVersion", "anonfun0",
 """
  *    val javaVersion = () => sys.props("java.version")
@@ -111,8 +113,8 @@ object FunctionZero extends Function(0) {
 
 object FunctionOne extends Function(1) {
   override def classAnnotation    = "@annotation.implicitNotFound(msg = \"No implicit view available from ${T1} => ${R}.\")\n"
-  override def contravariantSpecs = "@specialized(scala.Int, scala.Long, scala.Float, scala.Double, scala.AnyRef) "
-  override def covariantSpecs     = "@specialized(scala.Unit, scala.Boolean, scala.Int, scala.Float, scala.Long, scala.Double, scala.AnyRef) "
+  override def contravariantSpecs = "@specialized(scala.Int, scala.Long, scala.Float, scala.Double/*, scala.AnyRef*/) "
+  override def covariantSpecs     = "@specialized(scala.Unit, scala.Boolean, scala.Int, scala.Float, scala.Long, scala.Double/*, scala.AnyRef*/) "
 
   override def descriptiveComment = "  " + functionNTemplate.format("succ", "anonfun1",
 """
@@ -169,7 +171,7 @@ object Function {
 
 class Function(val i: Int) extends Group("Function") with Arity {
   def descriptiveComment  = ""
-  def functionNTemplate = 
+  def functionNTemplate =
 """
  *  In the following example, the definition of %s is a
  *  shorthand for the anonymous class definition %s:
@@ -226,7 +228,7 @@ class Function(val i: Int) extends Group("Function") with Arity {
   }
 
   def tupleMethod = {
-    def comment = 
+    def comment =
 """  /** Creates a tupled version of this function: instead of %d arguments,
    *  it accepts a single [[scala.Tuple%d]] argument.
    *
@@ -275,7 +277,7 @@ object TupleOne extends Tuple(1)
 object TupleTwo extends Tuple(2)
 {
   override def imports = Tuple.zipImports
-  override def covariantSpecs = "@specialized(Int, Long, Double, Char, Boolean, AnyRef) "
+  override def covariantSpecs = "@specialized(Int, Long, Double, Char, Boolean/*, AnyRef*/) "
   override def moreMethods = """
   /** Swaps the elements of this `Tuple`.
    * @return a new Tuple where the first element is the second element of this Tuple and the

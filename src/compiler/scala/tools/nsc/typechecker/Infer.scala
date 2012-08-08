@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2011 LAMP/EPFL
+ * Copyright 2005-2012 LAMP/EPFL
  * @author  Martin Odersky
  */
 
@@ -1366,14 +1366,16 @@ trait Infer {
             else if (param.isContravariant) >:>
             else =:=
           )
-          val TypeRef(_, sym, args) = arg
+          (arg hasAnnotation UncheckedClass) || {
+            val TypeRef(_, sym, args) = arg.withoutAnnotations
 
-          (    isLocalBinding(sym)
-            || arg.typeSymbol.isTypeParameterOrSkolem
-            || (sym.name == tpnme.WILDCARD) // avoid spurious warnings on HK types
-            || check(arg, param.tpe, conforms)
-            || warn("non-variable type argument " + arg)
-          )
+            (    isLocalBinding(sym)
+              || arg.typeSymbol.isTypeParameterOrSkolem
+              || (sym.name == tpnme.WILDCARD) // avoid spurious warnings on HK types
+              || check(arg, param.tpe, conforms)
+              || warn("non-variable type argument " + arg)
+            )
+          }
         }
 
         // Checking if pt (the expected type of the pattern, and the type
@@ -1404,8 +1406,11 @@ trait Infer {
         case _ =>
           def where = ( if (inPattern) "pattern " else "" ) + typeToTest
           if (check(typeToTest, typeEnsured, =:=)) ()
+          // Note that this is a regular warning, not an uncheckedWarning,
+          // which is now the province of such notifications as "pattern matcher
+          // exceeded its analysis budget."
           else warningMessages foreach (m =>
-            context.unit.uncheckedWarning(tree.pos, s"$m in type $where is unchecked since it is eliminated by erasure"))
+            context.unit.warning(tree.pos, s"$m in type $where is unchecked since it is eliminated by erasure"))
       }
     }
 

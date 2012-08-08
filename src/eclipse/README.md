@@ -29,7 +29,7 @@ inside `src/library` with the following contents:
         version.number=2.10.0-20120603-141530-b34313db72
         maven.version.number=2.10.0-SNAPSHOT
         osgi.version.number=2.10.0.v20120603-141530-b34313db72
-        copyright.string=Copyright 2002-2011, LAMP/EPFL
+        copyright.string=Copyright 2002-2012 LAMP/EPFL
 
 4. Project files are tracked by Git, so adding them to `.gitignore` won't prevent them
 from being shown as dirty in `git status`. You can still ignore them by telling Git to

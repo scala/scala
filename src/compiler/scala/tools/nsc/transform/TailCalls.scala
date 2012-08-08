@@ -1,5 +1,5 @@
 /* NSC -- new scala compiler
- * Copyright 2005-2011 LAMP/EPFL
+ * Copyright 2005-2012 LAMP/EPFL
  * @author Iulian Dragos
  */
 
@@ -36,7 +36,7 @@ abstract class TailCalls extends Transform {
     }
   }
 
-  import gen.hasSynthCaseSymbol
+  import treeInfo.hasSynthCaseSymbol
 
   /**
    * A Tail Call Transformer
