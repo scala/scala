@@ -426,6 +426,7 @@ abstract class RefChecks extends InfoTransform with reflect.internal.transform.R
             overrideError("cannot override a macro")
           } else {
             checkOverrideTypes()
+            checkOverrideDeprecated()
             if (settings.warnNullaryOverride.value) {
               if (other.paramss.isEmpty && !member.paramss.isEmpty) {
                 unit.warning(member.pos, "non-nullary method overrides nullary method")
@@ -502,6 +503,16 @@ abstract class RefChecks extends InfoTransform with reflect.internal.transform.R
                 case _ =>
               }
             }
+          }
+        }
+        
+        def checkOverrideDeprecated() {
+          if (other.hasDeprecatedOverridingAnnotation) {
+            val msg = 
+              member.toString + member.locationString + " overrides " + other.toString + other.locationString + 
+              ", but overriding this member is deprecated" + 
+              other.deprecatedOverridingMessage.map(": " + _).getOrElse(".")
+            unit.deprecationWarning(member.pos, msg)
           }
         }
       }

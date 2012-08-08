@@ -1567,6 +1567,15 @@ trait Typers extends Modes with Adaptations with Tags {
           if (psym.isFinal)
             pending += ParentFinalInheritanceError(parent, psym)
 
+          if (psym.hasDeprecatedInheritanceAnnotation) {
+            val sym = selfType.typeSymbol
+            val msg = 
+              sym.toString + sym.locationString + " inherits from " + psym.toString + psym.locationString + 
+              ", but inheriting from that class is deprecated" + 
+              psym.deprecatedInheritanceMessage.map(": " + _).getOrElse(".")
+            unit.deprecationWarning(sym.pos, msg)
+          }
+
           if (psym.isSealed && !phase.erasedTypes)
             if (context.unit.source.file == psym.sourceFile)
               psym addChild context.owner
