@@ -1,0 +1,3 @@
+Method call statistics:
+    1  instrumented/Bar.<init>(Z)V
+    1  instrumented/Foo.<init>(I)V
