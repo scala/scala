@@ -1551,10 +1551,15 @@ trait Typers extends Modes with Adaptations with Tags {
      */
     def validateParentClasses(parents: List[Tree], selfType: Type) {
       val pending = ListBuffer[AbsTypeError]()
-      def validateParentClass(parent: Tree, superclazz: Symbol) {
+      @inline def validateDynamicParent(parent: Symbol) =
+        if (parent == DynamicClass) checkFeature(parent.pos, DynamicsFeature)
+
+      def validateParentClass(parent: Tree, superclazz: Symbol) =
         if (!parent.isErrorTyped) {
           val psym = parent.tpe.typeSymbol.initialize
+
           checkStablePrefixClassType(parent)
+
           if (psym != superclazz) {
             if (psym.isTrait) {
               val ps = psym.info.parents
@@ -1564,6 +1569,7 @@ trait Typers extends Modes with Adaptations with Tags {
               pending += ParentNotATraitMixinError(parent, psym)
             }
           }
+
           if (psym.isFinal)
             pending += ParentFinalInheritanceError(parent, psym)
 
@@ -1586,12 +1592,17 @@ trait Typers extends Modes with Adaptations with Tags {
             pending += ParentSelfTypeConformanceError(parent, selfType)
             if (settings.explaintypes.value) explainTypes(selfType, parent.tpe.typeOfThis)
           }
+
           if (parents exists (p => p != parent && p.tpe.typeSymbol == psym && !psym.isError))
             pending += ParentInheritedTwiceError(parent, psym)
+
+          validateDynamicParent(psym)
         }
+
+      if (!parents.isEmpty && parents.forall(!_.isErrorTyped)) {
+        val superclazz = parents.head.tpe.typeSymbol
+        for (p <- parents) validateParentClass(p, superclazz)
       }
-      if (!parents.isEmpty && parents.forall(!_.isErrorTyped))
-        for (p <- parents) validateParentClass(p, parents.head.tpe.typeSymbol)
 
 /*
       if (settings.Xshowcls.value != "" &&
