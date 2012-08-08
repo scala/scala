@@ -101,11 +101,10 @@ trait GenSymbols {
       if (sym.isType) name = name.append(nme.REIFY_FREE_THIS_SUFFIX)
       if (sym.isCapturedVariable) {
         assert(value.isInstanceOf[Ident], showRaw(value))
-        val capturedTpe = capturedVariableType(sym)
         val capturedValue = referenceCapturedVariable(sym)
-        (name, mirrorBuildCall(nme.newFreeTerm, reify(sym.name.toString), reify(capturedTpe), capturedValue, mirrorBuildCall(nme.flagsFromBits, reify(sym.flags)), reify(origin(sym)), reify(sym.id)))
+        (name, mirrorBuildCall(nme.newFreeTerm, reify(sym.name.toString), capturedValue, mirrorBuildCall(nme.flagsFromBits, reify(sym.flags)), reify(origin(sym)), reify(sym.id)))
       } else {
-        (name, mirrorBuildCall(nme.newFreeTerm, reify(sym.name.toString), reify(sym.tpe), value, mirrorBuildCall(nme.flagsFromBits, reify(sym.flags)), reify(origin(sym)), reify(sym.id)))
+        (name, mirrorBuildCall(nme.newFreeTerm, reify(sym.name.toString), value, mirrorBuildCall(nme.flagsFromBits, reify(sym.flags)), reify(origin(sym)), reify(sym.id)))
       }
     }
 

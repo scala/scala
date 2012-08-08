@@ -37,10 +37,10 @@ class Base extends Universe { self =>
     def newClassSymbol(name: TypeName, pos: Position = NoPosition, flags: FlagSet = NoFlags): ClassSymbol =
       new ClassSymbol(this, name, flags)
 
-    def newFreeTermSymbol(name: TermName, info: Type, value: => Any, flags: FlagSet = NoFlags, origin: String = null) =
+    def newFreeTermSymbol(name: TermName, value: => Any, flags: FlagSet = NoFlags, origin: String = null) =
       new FreeTermSymbol(this, name, flags)
 
-    def newFreeTypeSymbol(name: TypeName, info: Type, value: => Any, flags: FlagSet = NoFlags, origin: String = null) =
+    def newFreeTypeSymbol(name: TypeName, value: => Any = null, flags: FlagSet = NoFlags, origin: String = null) =
       new FreeTypeSymbol(this, name, flags)
 
     private def kindString: String =
@@ -323,13 +323,13 @@ class Base extends Universe { self =>
         else new TermSymbol(owner, name.toTermName, flags)
       }
 
-    def newFreeTerm(name: String, info: Type, value: => Any, flags: Long = 0L, origin: String = null, protoid: Int = 0): FreeTermSymbol =
+    def newFreeTerm(name: String, value: => Any, flags: Long = 0L, origin: String = null, protoid: Int = 0): FreeTermSymbol =
       cached(0, protoid)(new FreeTermSymbol(rootMirror.RootClass, newTermName(name), flags))
 
-    def newFreeType(name: String, info: Type, value: => Any, flags: Long = 0L, origin: String = null, protoid: Int = 0): FreeTypeSymbol =
+    def newFreeType(name: String, value: => Any = null, flags: Long = 0L, origin: String = null, protoid: Int = 0): FreeTypeSymbol =
       cached(0, protoid)(new FreeTypeSymbol(rootMirror.RootClass, newTypeName(name), flags))
 
-    def newFreeExistential(name: String, info: Type, value: => Any, flags: Long = 0L, origin: String = null, protoid: Int = 0): FreeTypeSymbol =
+    def newFreeExistential(name: String, value: => Any = null, flags: Long = 0L, origin: String = null, protoid: Int = 0): FreeTypeSymbol =
       cached(0, protoid)(new FreeTypeSymbol(rootMirror.RootClass, newTypeName(name), flags))
 
     def setTypeSignature[S <: Symbol](sym: S, tpe: Type): S = sym

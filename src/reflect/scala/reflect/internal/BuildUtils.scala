@@ -47,14 +47,14 @@ trait BuildUtils extends base.BuildUtils { self: SymbolTable =>
       }
     }
 
-    def newFreeTerm(name: String, info: Type, value: => Any, flags: Long = 0L, origin: String = null, protoid: Int = 0): FreeTermSymbol =
-      cached(0, protoid)(newFreeTermSymbol(newTermName(name), info, value, flags, origin))
+    def newFreeTerm(name: String, value: => Any = null, flags: Long = 0L, origin: String = null, protoid: Int = 0): FreeTermSymbol =
+      cached(0, protoid)(newFreeTermSymbol(newTermName(name), value, flags, origin))
 
-    def newFreeType(name: String, info: Type, value: => Any, flags: Long = 0L, origin: String = null, protoid: Int = 0): FreeTypeSymbol =
-      cached(0, protoid)(newFreeTypeSymbol(newTypeName(name), info, value, (if (flags == 0L) PARAM else flags) | DEFERRED, origin))
+    def newFreeType(name: String, value: => Any = null, flags: Long = 0L, origin: String = null, protoid: Int = 0): FreeTypeSymbol =
+      cached(0, protoid)(newFreeTypeSymbol(newTypeName(name), value, (if (flags == 0L) PARAM else flags) | DEFERRED, origin))
 
-    def newFreeExistential(name: String, info: Type, value: => Any, flags: Long = 0L, origin: String = null, protoid: Int = 0): FreeTypeSymbol =
-      cached(0, protoid)(newFreeTypeSymbol(newTypeName(name), info, value, (if (flags == 0L) EXISTENTIAL else flags) | DEFERRED, origin))
+    def newFreeExistential(name: String, value: => Any = null, flags: Long = 0L, origin: String = null, protoid: Int = 0): FreeTypeSymbol =
+      cached(0, protoid)(newFreeTypeSymbol(newTypeName(name), value, (if (flags == 0L) EXISTENTIAL else flags) | DEFERRED, origin))
 
     def newNestedSymbol(owner: Symbol, name: Name, pos: Position, flags: Long, isClass: Boolean, protoid: Int = 0): Symbol =
       cached(owner.id, protoid)(owner.newNestedSymbol(name, pos, flags, isClass))
