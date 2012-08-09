@@ -17,7 +17,6 @@ trait FlagSets { self: Universe =>
   /** The base API all flag bearers support */
   trait HasFlagsBase {
     def flags: FlagSet
-    def hasFlag(flags: FlagSet): Boolean
   }
 }
 
