@@ -72,6 +72,10 @@ class HashSet[A] extends AbstractSet[A]
 
   private[collection] def computeHash(key: A) = improve(elemHashCode(key))
 
+  override def filter(p: (A) => Boolean) = filter0(p)
+
+  protected def filter0(p: A => Boolean) = this
+
   protected def get0(key: A, hash: Int, level: Int): Boolean = false
 
   def updated0(key: A, hash: Int, level: Int): HashSet[A] =
@@ -126,6 +130,9 @@ object HashSet extends ImmutableSetFactory[HashSet] {
     override def removed0(key: A, hash: Int, level: Int): HashSet[A] =
       if (hash == this.hash && key == this.key) HashSet.empty[A] else this
 
+    protected override def filter0(p: A => Boolean) : HashSet[A] =
+      if(!p(key)) HashSet.empty[A] else this
+
     override def iterator: Iterator[A] = Iterator(key)
     override def foreach[U](f: A => U): Unit = f(key)
   }
@@ -156,6 +163,15 @@ object HashSet extends ImmutableSetFactory[HashSet] {
         else
           HashSet.empty[A]
       } else this
+
+    protected override def filter0(p: A => Boolean) : HashSet[A] = {
+      val ks1 = ks.filter(p)
+      // check for size==1 and return HashSet1 as soon as this is possible in O(1)
+      if (!ks1.isEmpty)
+        new HashSetCollision1(hash, ks1)
+      else
+        HashSet.empty[A]
+    }
 
     override def iterator: Iterator[A] = ks.iterator
     override def foreach[U](f: A => U): Unit = ks.foreach(f)
@@ -248,6 +264,63 @@ object HashSet extends ImmutableSetFactory[HashSet] {
         }
       } else {
         this
+      }
+    }
+
+    protected override def filter0(p: A => Boolean): HashSet[A] = {
+      var offset = 0
+      var tgtOffset = 0
+      var bitmapNew = 0
+      var elemsNew: Array[HashSet[A]] = null
+      var sizeNew = 0
+      // iterate over all 32 masks even though just a few of them might be occupied.
+      // this iteration is much cheaper than doing calling Integer.bitCount
+      var mask = 1
+      while (mask != 0) {
+        if ((bitmap & mask) != 0) {
+          val sub = elems(offset)
+          val subNew = sub.filter(p)
+          if (!subNew.isEmpty) {
+            if (elemsNew eq null) {
+              // test if we need elemsNew
+              // we need elemsNew if we need to store a reference to a changed sub node, or
+              // if we need to shift elements because one of the former calls to sub.filter was empty
+              if ((sub ne subNew) || (tgtOffset != offset)) {
+                // allocate array and copy previous elements
+                elemsNew = new Array[HashSet[A]](elems.length)
+                Array.copy(elems, 0, elemsNew, 0, tgtOffset)
+                elemsNew(tgtOffset) = subNew
+              }
+            } else
+              elemsNew(tgtOffset) = subNew
+            sizeNew += subNew.size
+            bitmapNew |= mask
+            tgtOffset += 1
+          }
+          // increase the offset for each occupied slot. That way we don't have to invoke Integer.bitCount
+          offset += 1
+        }
+        mask <<= 1
+      }
+
+      // from here on nothing is written to elemsNew, so it is safe to use elems
+      if (elemsNew == null)
+        elemsNew = elems
+
+      if (tgtOffset == 0)
+      // all subNew were empty
+        HashSet.empty[A]
+      else if (tgtOffset == 1 && !elemsNew(0).isInstanceOf[HashTrieSet[_]])
+      // we don't need a HashTrieSet with one element unless the child is a HashTrieSet as well.
+        elemsNew(0)
+      else if (tgtOffset == offset)
+      // use elemsNew as is, or return this if nothing has changed
+        if (elemsNew eq elems) this else new HashTrieSet[A](bitmapNew, elemsNew, sizeNew)
+      else {
+        // resize elemsNew
+        val elemsNew2 = new Array[HashSet[A]](tgtOffset)
+        Array.copy(elemsNew, 0, elemsNew2, 0, tgtOffset)
+        new HashTrieSet[A](bitmapNew, elemsNew2, sizeNew)
       }
     }
 
