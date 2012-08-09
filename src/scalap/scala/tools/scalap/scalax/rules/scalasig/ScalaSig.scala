@@ -167,7 +167,7 @@ object ScalaSigEntryParsers extends RulesWithState with MemoisableRules {
 
   val symbolInfo = nameRef ~ symbolRef ~ nat ~ (symbolRef?) ~ ref ~ get ^~~~~~^ SymbolInfo
 
-  def symHeader(key: Int) = (key -~ none | (key + 64) -~ nat)
+  def symHeader(key: Int): EntryParser[Any] = (key -~ none | (key + 64) -~ nat)
 
   def symbolEntry(key : Int) = symHeader(key) -~ symbolInfo
 
@@ -263,7 +263,7 @@ object ScalaSigEntryParsers extends RulesWithState with MemoisableRules {
       47 -~ typeLevel ~ typeIndex ^~^ DeBruijnIndexType,
       48 -~ typeRef ~ (symbolRef*) ^~^ ExistentialType) as "type"
 
-  lazy val literal = oneOf(
+  lazy val literal: EntryParser[Any] = oneOf(
       24 -^ (()),
       25 -~ longValue ^^ (_ != 0L),
       26 -~ longValue ^^ (_.toByte),
