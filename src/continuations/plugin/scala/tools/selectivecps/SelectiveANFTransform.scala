@@ -43,12 +43,6 @@ abstract class SelectiveANFTransform extends PluginComponent with Transform with
         case If(cond, r1 @ Return(thenExpr), r2 @ Return(elseExpr)) =>
           treeCopy.If(tree, cond, transform(thenExpr), transform(elseExpr))
 
-        case If(cond, r1 @ Return(thenExpr), elseExpr) =>
-          treeCopy.If(tree, cond, transform(thenExpr), transform(elseExpr))
-
-        case If(cond, thenExpr, r2 @ Return(elseExpr)) =>
-          treeCopy.If(tree, cond, transform(thenExpr), transform(elseExpr))
-
         case If(cond, thenExpr, elseExpr) =>
           treeCopy.If(tree, cond, transform(thenExpr), transform(elseExpr))
 
@@ -446,9 +440,7 @@ abstract class SelectiveANFTransform extends PluginComponent with Transform with
         // all is well
 
         if (hasPlusMarker(expr.tpe)) {
-          // the following warning no longer applies, since expr may have originated from a tail return expr
-          // note that it would be illegal to remove the plus marker (thus disabling required transformations)
-          //unit.warning(tree.pos, "expression " + expr + " of type " + expr.tpe + " is not expected to have a cps type")
+          unit.warning(tree.pos, "expression " + expr + " of type " + expr.tpe + " is not expected to have a cps type")
           expr modifyType removeAllCPSAnnotations
         }
 

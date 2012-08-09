@@ -29,17 +29,6 @@ object Test extends App {
 
   def nocps(x: Int): Int = { return x; x }
 
-  def foo2(x:Int): Int @cps[Int] = 7
-  def bar2(x:Int): Int @cps[Int] = { foo2(x); return 7 }
-  def bar3(x:Int): Int @cps[Int] = { foo2(x); if (x == 7) return 7 else return foo2(x) }
-  def bar4(x:Int): Int @cps[Int] = { foo2(x); if (x == 7) return 7 else foo2(x) }
-  def bar5(x:Int): Int @cps[Int] = { foo2(x); if (x == 7) return 7 else 8 }
-  println(reset { bar2(10) })
-  println(reset { bar3(10) })
-  println(reset { bar4(10) })
-  println(reset { bar5(10) })
-  
-  /* original test case */
   val repro = new ReturnRepro
   repro.caller
   repro.caller2

@@ -96,8 +96,13 @@ trait CPSUtils {
 
   // anf transform
 
-  def getExternalAnswerTypeAnn(tp: Type) =
-    cpsParamTypes(tp) orElse None
+  def getExternalAnswerTypeAnn(tp: Type) = {
+    cpsParamTypes(tp) orElse {
+      if (hasPlusMarker(tp))
+        global.warning("trying to instantiate type " + tp + " to unknown cps type")
+      None
+    }
+  }
 
   def getAnswerTypeAnn(tp: Type): Option[(Type, Type)] =
     cpsParamTypes(tp) filterNot (_ => hasPlusMarker(tp))
