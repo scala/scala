@@ -72,19 +72,8 @@ class HashMap[A, +B] extends AbstractMap[A, B]
   }
 
   private[collection] def computeHash(key: A) = improve(elemHashCode(key))
-
-  protected type MergeFunction[A1, B1] = ((A1, B1), (A1, B1)) => (A1, B1);
   
-  import HashMap.Merger
-  
-  protected def liftMerger[A1, B1](mergef: MergeFunction[A1, B1]): Merger[A1, B1] = if (mergef == null) null else new Merger[A1, B1] {
-    self =>
-    def apply(kv1: (A1, B1), kv2: (A1, B1)): (A1, B1) = mergef(kv1, kv2)
-    val invert: Merger[A1, B1] = new Merger[A1, B1] {
-      def apply(kv1: (A1, B1), kv2: (A1, B1)): (A1, B1) = mergef(kv2, kv1)
-      def invert: Merger[A1, B1] = self
-    }
-  }
+  import HashMap.{Merger, MergeFunction, liftMerger}
 
   private[collection] def get0(key: A, hash: Int, level: Int): Option[B] = None
 
@@ -130,11 +119,26 @@ class HashMap[A, +B] extends AbstractMap[A, B]
  */
 object HashMap extends ImmutableMapFactory[HashMap] with BitOperations.Int {
   
-  private[immutable] abstract class Merger[A, B] {
+  private abstract class Merger[A, B] {
     def apply(kv1: (A, B), kv2: (A, B)): (A, B)
     def invert: Merger[A, B]
   }
-  
+
+  private type MergeFunction[A1, B1] = ((A1, B1), (A1, B1)) => (A1, B1)
+
+  private def liftMerger[A1, B1](mergef: MergeFunction[A1, B1]): Merger[A1, B1] =
+    if (mergef == null) defaultMerger.asInstanceOf[Merger[A1, B1]] else liftMerger0(mergef)
+
+  private[this] val defaultMerger : Merger[Any, Any] = liftMerger0((a,b) => a)
+
+  private[this] def liftMerger0[A1, B1](mergef: MergeFunction[A1, B1]): Merger[A1, B1] = new Merger[A1, B1] {
+    self =>
+    def apply(kv1: (A1, B1), kv2: (A1, B1)): (A1, B1) = mergef(kv1, kv2)
+    val invert: Merger[A1, B1] = new Merger[A1, B1] {
+      def apply(kv1: (A1, B1), kv2: (A1, B1)): (A1, B1) = mergef(kv2, kv1)
+      def invert: Merger[A1, B1] = self
+    }
+  }
   
   /** $mapCanBuildFromInfo */
   implicit def canBuildFrom[A, B]: CanBuildFrom[Coll, (A, B), HashMap[A, B]] = new MapCanBuildFrom[A, B]
