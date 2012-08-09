@@ -176,7 +176,7 @@ trait SymbolTables {
           } else {
             // SI-6204 don't reify signatures for incomplete symbols, because this might lead to cyclic reference errors
             val signature =
-              if (sym.hasCompleteInfo) {
+              if (sym.isInitialized) {
                 if (sym.isCapturedVariable) capturedVariableType(sym)
                 else sym.info
               } else NoType
