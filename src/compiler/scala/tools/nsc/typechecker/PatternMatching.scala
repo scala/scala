@@ -2246,44 +2246,77 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
       // (registerEquality(c) must have been called prior, either when constructing the domain or from outside)
       def propForEqualsTo(c: Const): Prop = {observed; symForEqualsTo.getOrElse(c, False)}
 
-      // don't access until all potential equalities have been registered using registerEquality
+      // [implementation NOTE: don't access until all potential equalities have been registered using registerEquality]p
+      /** the information needed to construct the boolean proposition that encods the equality proposition (V = C)
+       *
+       * that models a type test pattern `_: C` or constant pattern `C`, where the type test gives rise to a TypeConst C,
+       * and the constant pattern yields a ValueConst C
+       *
+       * for exhaustivity, we really only need implication (e.g., V = 1 implies that V = 1 /\ V = Int, if both tests occur in the match,
+       * and thus in this variable's equality symbols), but reachability also requires us to model things like V = 1 precluding V = "1"
+       */
       lazy val implications = {
-        // when we know V = C, which other equalities must hold
-        // in general, equality to some type implies equality to its supertypes
-        // (this multi-valued kind of equality is necessary for unreachability)
-        // note that we use subtyping as a model for implication between instanceof tests
-        // i.e., when S <:< T we assume x.isInstanceOf[S] implies x.isInstanceOf[T]
-        // unfortunately this is not true in general (see e.g. SI-6022)
-        def implies(me: Const, other: Const): Boolean = {
-          val r = (me, other) match {
-            case (_: ValueConst, _: ValueConst) => me == other // hashconsed
-            case (_: ValueConst, _: TypeConst)  => instanceOfTpImplies(me.tp, other.tp)
-            case (_: TypeConst,  _)             => instanceOfTpImplies(me.tp, other.tp)
-            case _                              => false
-          }
-          // if(r) patmatDebug("implies    : "+(me, other))
-          // else  patmatDebug("NOT implies: "+(me, other))
-          r
-        }
+        /** when we know V = C, which other equalities must hold
+         *
+         * in general, equality to some type implies equality to its supertypes
+         * (this multi-valued kind of equality is necessary for unreachability)
+         * note that we use subtyping as a model for implication between instanceof tests
+         * i.e., when S <:< T we assume x.isInstanceOf[S] implies x.isInstanceOf[T]
+         * unfortunately this is not true in general (see e.g. SI-6022)
+         */
+        def implies(lower: Const, upper: Const): Boolean =
+          // values and null
+            lower == upper ||
+          // type implication
+            (lower != NullConst && !upper.isValue &&
+             instanceOfTpImplies(if (lower.isValue) lower.wideTp else lower.tp, upper.tp))
 
-        // does V = C preclude V having value `other`?  V = null is an exclusive assignment,
-        // but V = 1 does not preclude V = Int, or V = Any
-        def excludes(me: Const, other: Const): Boolean = {
-          val r = (me, other) match {
-            case (_, NullConst)                 => true
-            case (NullConst, _)                 => true
-            // this causes false negative for unreachability, but that's ok:
-            // example: val X = 1; val Y = 1; (2: Int) match { case X => case Y => /* considered reachable */ }
-            case (_: ValueConst, _: ValueConst) => me != other
-            case (_: ValueConst, _: TypeConst)  => !(instanceOfTpImplies(me.tp, other.tp) || instanceOfTpImplies(other.tp, me.wideTp))
-            case (_: TypeConst,  _: ValueConst) => !(instanceOfTpImplies(other.tp, me.tp) || instanceOfTpImplies(me.tp, other.wideTp))
-            case (_: TypeConst,  _: TypeConst)  => !(instanceOfTpImplies(me.tp, other.tp) || instanceOfTpImplies(other.tp, me.tp))
-            case _                              => false
-          }
-          // if(r) patmatDebug("excludes    : "+(me, me.tp, other, other.tp))
-          // else  patmatDebug("NOT excludes: "+(me, other))
-          r
-        }
+          // if(r) patmatDebug("implies    : "+(lower, lower.tp, upper, upper.tp))
+          // else  patmatDebug("NOT implies: "+(lower, upper))
+
+
+        /** does V = C preclude V having value `other`?
+         (1) V = null is an exclusive assignment,
+         (2) V = A and V = B, for A and B value constants, are mutually exclusive unless A == B
+             we err on the safe side, for example:
+               - assume `val X = 1; val Y = 1`, then
+                 (2: Int) match { case X => case Y =>  <falsely considered reachable>  }
+               - V = 1 does not preclude V = Int, or V = Any, it could be said to preclude V = String, but we don't model that
+
+         (3) for types we could try to do something fancy, but be conservative and just say no
+         */
+        def excludes(a: Const, b: Const): Boolean =
+          a != b && ((a == NullConst || b == NullConst) || (a.isValue && b.isValue))
+
+          // if(r) patmatDebug("excludes    : "+(a, a.tp, b, b.tp))
+          // else  patmatDebug("NOT excludes: "+(a, b))
+
+/*
+[ HALF BAKED FANCINESS: //!equalitySyms.exists(common => implies(common.const, a) && implies(common.const, b)))
+ when type tests are involved, we reason (conservatively) under a closed world assumption,
+ since we are really only trying to counter the effects of the symbols that we introduce to model type tests
+ we don't aim to model the whole subtyping hierarchy, simply to encode enough about subtyping to do unreachability properly
+
+ consider the following hierarchy:
+
+    trait A
+    trait B
+    trait C
+    trait AB extends B with A
+
+  // two types are mutually exclusive if there is no equality symbol whose constant implies both
+  object Test extends App {
+    def foo(x: Any) = x match {
+      case _ : C  => println("C")
+      case _ : AB => println("AB")
+      case _ : (A with B) => println("AB'")
+      case _ : B  => println("B")
+      case _ : A  => println("A")
+    }
+
+ of course this kind of reasoning is not true in general,
+ but we can safely pretend types are mutually exclusive as long as there are no counter-examples in the match we're analyzing}
+*/
 
         val excludedPair = new collection.mutable.HashSet[ExcludedPair]
 
@@ -2380,6 +2413,7 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
       def wideTp: Type
 
       def isAny = wideTp.typeSymbol == AnyClass
+      def isValue: Boolean //= tp.isStable
 
       // note: use reference equality on Const since they're hash-consed (doing type equality all the time is too expensive)
       // the equals inherited from AnyRef does just this
@@ -2416,7 +2450,7 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
       private[this] val id: Int = Const.nextTypeId
 
       val wideTp = widenToClass(tp)
-
+      def isValue = false
       override def toString = tp.toString //+"#"+ id
     }
 
@@ -2460,8 +2494,9 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
     }
     sealed class ValueConst(val tp: Type, val wideTp: Type, override val toString: String) extends Const {
       // patmatDebug("VC"+(tp, wideTp, toString))
-      assert(!(tp =:= NullTp))
+      assert(!(tp =:= NullTp)) // TODO: assert(!tp.isStable)
       private[this] val id: Int = Const.nextValueId
+      def isValue = true
     }
 
     lazy val NullTp = ConstantType(Constant(null))
