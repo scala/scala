@@ -381,10 +381,9 @@ abstract class ICodeCheckers {
       for (instr <- b) {
         this.instruction = instr
 
-        def checkLocal(local: Local): Unit = {
-          method lookupLocal local.sym.name getOrElse {
-            icodeError(" " + local + " is not defined in method " + method)
-          }
+        def checkLocal(local: Local) {
+          if ((method lookupLocal local.sym.name).isEmpty)
+            icodeError(s" $local is not defined in method $method")
         }
         def checkField(obj: TypeKind, field: Symbol): Unit = obj match {
           case REFERENCE(sym) =>
