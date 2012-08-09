@@ -492,6 +492,8 @@ trait Macros extends scala.tools.reflect.FastTrack with Traces {
       } else {
         if (!macroImpl.isMethod)
            invalidBodyError()
+        if (!macroImpl.isPublic)
+          reportError(implpos, "macro implementation must be public")
         if (macroImpl.isOverloaded)
           reportError(implpos, "macro implementation cannot be overloaded")
         if (!macroImpl.typeParams.isEmpty && (!rhs1.isInstanceOf[TypeApply]))
