@@ -29,10 +29,15 @@ MAIN DISTRIBUTION PACKAGING
       <tarfileset dir="${dist.dir}" prefix="${dist.name}" excludes="bin/**"/>
     </tar>
     <gzip src="${dists.dir}/archives/${dist.name}.tar" destfile="${dists.dir}/archives/${dist.name}.tgz"/>
-    <exec executable="xz" failifexecutionfails="false">
-      <arg line="-k -9e -S .xz ${dists.dir}/archives/${dist.name}.tar"/>
-    </exec> 
-    <move file="${dists.dir}/archives/${dist.name}.tar.xz" tofile="${dists.dir}/archives/${dist.name}.txz" failonerror="false"/>
+    <if>
+      <not><equals arg1="${archives.skipxz}" arg2="true" /></not>
+      <then>
+        <exec executable="xz" failifexecutionfails="false">
+          <arg line="-k -9e -S .xz ${dists.dir}/archives/${dist.name}.tar"/>
+        </exec>
+        <move file="${dists.dir}/archives/${dist.name}.tar.xz" tofile="${dists.dir}/archives/${dist.name}.txz" failonerror="false"/>
+      </then>
+    </if>
     <delete file="${dists.dir}/archives/${dist.name}.tar" />
     <checksum fileext=".md5">
       <fileset dir="${dists.dir}/archives">
@@ -54,10 +59,15 @@ MAIN DISTRIBUTION PACKAGING
       <tarfileset dir="${dist.dir}/doc/scala-devel-docs" prefix="${dist.name}-devel-docs"/>
     </tar>
     <gzip src="${dists.dir}/archives/${dist.name}-devel-docs.tar" destfile="${dists.dir}/archives/${dist.name}-devel-docs.tgz"/>
-    <exec executable="xz" failifexecutionfails="false">
-      <arg line="-k -9e -S .xz ${dists.dir}/archives/${dist.name}-devel-docs.tar"/>
-    </exec> 
-    <move file="${dists.dir}/archives/${dist.name}-devel-docs.tar.xz" tofile="${dists.dir}/archives/${dist.name}-devel-docs.txz" failonerror="false"/>
+    <if>
+      <not><equals arg1="${archives.skipxz}" arg2="true" /></not>
+      <then>
+        <exec executable="xz" failifexecutionfails="false">
+          <arg line="-k -9e -S .xz ${dists.dir}/archives/${dist.name}-devel-docs.tar"/>
+        </exec>
+        <move file="${dists.dir}/archives/${dist.name}-devel-docs.tar.xz" tofile="${dists.dir}/archives/${dist.name}-devel-docs.txz" failonerror="false"/>
+      </then>
+    </if>
     <delete file="${dists.dir}/archives/${dist.name}-devel-docs.tar" />
     <checksum fileext=".md5">
       <fileset dir="${dists.dir}/archives">
@@ -84,10 +94,15 @@ MAIN DISTRIBUTION PACKAGING
       </tarfileset>
     </tar>
     <gzip src="${dists.dir}/archives/${dist.name}-sources.tar" destfile="${dists.dir}/archives/${dist.name}-sources.tgz"/>
-    <exec executable="xz" failifexecutionfails="false">
-      <arg line="-k -9e -S .xz ${dists.dir}/archives/${dist.name}-sources.tar"/>
-    </exec>
-    <move file="${dists.dir}/archives/${dist.name}-sources.tar.xz" tofile="${dists.dir}/archives/${dist.name}-sources.txz" failonerror="false"/>
+    <if>
+      <not><equals arg1="${archives.skipxz}" arg2="true" /></not>
+      <then>
+        <exec executable="xz" failifexecutionfails="false">
+          <arg line="-k -9e -S .xz ${dists.dir}/archives/${dist.name}-sources.tar"/>
+        </exec>
+        <move file="${dists.dir}/archives/${dist.name}-sources.tar.xz" tofile="${dists.dir}/archives/${dist.name}-sources.txz" failonerror="false"/>
+      </then>
+    </if>
     <delete file="${dists.dir}/archives/${dist.name}-sources.tar" />
     <checksum fileext=".md5">
       <fileset dir="${dists.dir}/archives">
