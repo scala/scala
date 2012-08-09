@@ -7,18 +7,33 @@ import scala.reflect.internal.util.SourceFile
 import reflect.internal.Chars._
 
 object SourceInserter {
-  def stripRight(cs: Array[Char]): Array[Char] = {
-    val lines =
-      new String(cs) split "\n"
-    def leftPart(str: String) =
-      (str split """//>|//\|""").head
+  /** Strip right hand side comments from sources
+   *  @param cs   The original program source
+   *  @param oldcaret The caret position in the original source
+   *                  a value of -1 indicates caret is at end of source
+   *  @return         A pair consisting of
+   *                  - The stripped source
+   *                  - The new position of the caret in the stripped source
+   */
+  def stripRight(cs: Array[Char], oldcaret: Int = -1): (Array[Char], Int) = {
+    val caret = if (oldcaret == -1) cs.length else oldcaret
+    val lines = new String(cs) split "\n"
     def isContinuation(str: String) =
       ((str contains "//>") || (str contains "//|")) && (leftPart(str) forall isWhitespace)
+    def leftPart(str: String) =
+      (str split """//>|//\|""").head
     def stripTrailingWS(str: String) =
       str take (str lastIndexWhere (!isWhitespace(_))) + 1
     val prefixes =
       lines filterNot isContinuation map leftPart map stripTrailingWS
-    (prefixes mkString "\n").toArray
+    val newChars =
+      (prefixes mkString "\n").toArray
+    val newCaret = {
+      val caretLine = cs.view take caret count (_ == '\n')
+      val caretCol = caret - 1 - (cs lastIndexOf ('\n', caret - 1))
+      (caretCol /: (prefixes.view take caretLine)) ((n, line) => n + line.length + 1)
+    }
+    (newChars, newCaret)
   }
 }
 class SourceInserter(contents: Array[Char], start: Int = 0, tabInc: Int = 8) extends Writer {

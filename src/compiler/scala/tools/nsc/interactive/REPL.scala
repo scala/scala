@@ -189,7 +189,7 @@ object REPL {
     def instrument(arguments: List[String], line: Int): Option[(String, String)] = {
       val source = toSourceFile(arguments.head)
       // strip right hand side comment column and any trailing spaces from all lines
-      val strippedContents = SourceInserter.stripRight(source.content)
+      val (strippedContents, _) = SourceInserter.stripRight(source.content)
       val strippedSource = new BatchSourceFile(source.file, strippedContents)
       println("stripped source = "+strippedSource)
       comp.askReload(List(strippedSource), reloadResult)

@@ -30,9 +30,27 @@ class Mixer {
     }
   }
 
-  def mix(source: Array[Char], comments: Array[Char]): Array[Char] = {
+  /** Combine source characters with righ-hand side comments.
+   *  @param source   The stripped program source
+   *  @param comments The right hand side program comments, in the format produced by
+   *                  the worksheet evaluator. Every line consists of a source
+   *                  offset (an integer number) and the comment line, separated by a space.
+   *  @param oldcaret The caret position in the stripped source,
+   *                  a value of -1 indicates caret is at end of source
+   *  @return         A pair consisting of
+   *                  - The combination of source and comments
+   *                  - The new position of the caret in the combined source
+   */
+  def mix(source: Array[Char], comments: Array[Char], oldcaret: Int = -1): (Array[Char], Int) = {
     val mixed = new ArrayBuffer[Char]
-    var written = 0
+    var written = 0  // # written characters of original source
+    var inserted = 0 // # inserted comment characters
+    val caret = if (oldcaret == -1) source.length else oldcaret
+    var newcaret = caret // new caret position
+    def insert(str: Char*) {
+      mixed ++= str
+      inserted += str.length
+    }
     def align() = {
       var idx = mixed.lastIndexOf('\n') + 1
       var col = 0
@@ -43,11 +61,11 @@ class Mixer {
         idx += 1
       }
       if (col > sepColumn) {
-        mixed += '\n'
+        insert('\n')
         col = 0
       }
       while (col < sepColumn) {
-        mixed += ' '
+        insert(' ')
         col += 1
       }
     }
@@ -58,14 +76,16 @@ class Mixer {
           written = offset
           stdSeparator
         } else {
-          mixed += '\n'
+          insert('\n')
           ctdSeparator
         }
       align()
-      mixed ++= sep ++= cs
+      insert(sep: _*)
+      insert(cs: _*)
+      if (written < caret) newcaret = caret + inserted
     }
     mixed ++= source.view(written, source.length)
-    mixed.toArray
+    (mixed.toArray, newcaret)
   }
 
 }
@@ -91,7 +111,7 @@ object Mixer extends Mixer {
       require(args.length == 2, "required arguments: file1 file2")
       val source = contents(args(0))
       val comments = contents(args(1))
-      val mixed = mixer.mix(source, comments)
+      val (mixed, _) = mixer.mix(source, comments)
       println(mixed.mkString)
     } catch {
       case ex: IOException =>
