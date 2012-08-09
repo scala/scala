@@ -24,7 +24,14 @@ trait Repository {
   def available(sym: Symbol) = classes.contains(sym) || loaded.contains(sym)
 
   /** The icode of the given class, if available */
-  def icode(sym: Symbol): Option[IClass] = (classes get sym) orElse (loaded get sym)
+  def icode(sym: Symbol): Option[IClass] = {
+    debuglog("icode for: " + sym)
+    debuglog("classes: " + (classes get sym) + "  all:   " + classes.keys.mkString(" "))
+    debuglog("loaded: " + (loaded get sym) + "  all:   " + loaded.keys.mkString(" "))
+    val result = (classes get sym) orElse (loaded get sym)
+    debuglog("icode for: " + sym + " ==> " + result)
+    result
+  }
 
   /** The icode of the given class. If not available, it loads
    *  its bytecode.

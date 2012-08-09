@@ -13,6 +13,9 @@ import backend.icode._
 import ClassfileConstants._
 import scala.reflect.internal.Flags._
 
+// signal the ICodeReader encountered an error and it's likely the ICode produced is broken
+class ICodeReaderException(message: String) extends Exception(message)
+
 /** ICode reader from Java bytecode.
  *
  *  @author Iulian Dragos
@@ -56,6 +59,8 @@ abstract class ICodeReader extends ClassfileParser {
     else super.getOwner(jflags)
 
   override def parseClass() {
+    debuglog("parseClass: instance = " + clazz)
+    debuglog("parseClass: module = " + staticModule)
     this.instanceCode = new IClass(clazz)
     this.staticCode   = new IClass(staticModule)
     val jflags = in.nextChar
@@ -87,28 +92,36 @@ abstract class ICodeReader extends ClassfileParser {
     val owner    = getOwner(jflags)
     val dummySym = owner.newMethod(name, owner.pos, toScalaMethodFlags(jflags))
 
+    debuglog("parseMember: Looking for " + name + " in " + owner)
+    debuglog(owner.info.toString)
+
     try {
       val ch  = in.nextChar
       val tpe = pool.getType(dummySym, ch)
+      debuglog("parseMember: Got type: " + tpe)
 
       if ("<clinit>" == name.toString)
         (jflags, NoSymbol)
       else {
         val owner = getOwner(jflags)
         var sym = owner.info.findMember(name, 0, 0, false).suchThat(old => sameType(old.tpe, tpe))
+        debuglog("parseMember: Looking for member with name " + name + " and type " + tpe)
         if (sym == NoSymbol)
           sym = owner.info.findMember(newTermName(name + nme.LOCAL_SUFFIX_STRING), 0, 0, false).suchThat(_.tpe =:= tpe)
         if (sym == NoSymbol) {
-          log("Could not find symbol for " + name + ": " + tpe)
-          log(owner.info.member(name).tpe + " : " + tpe)
+          debuglog("parseMember: Could not find symbol for " + name + ": " + tpe)
+          debuglog(owner.info.member(name).tpe + " : " + tpe)
           sym = if (field) owner.newValue(name, owner.pos, toScalaFieldFlags(jflags)) else dummySym
           sym setInfoAndEnter tpe
-          log("added " + sym + ": " + sym.tpe)
+          debuglog("parseMember: added " + sym + ": " + sym.tpe)
         }
+        debuglog("parseMember: Result for " + name + " => " + sym)
         (jflags, sym)
       }
     } catch {
       case e: MissingRequirementError =>
+        debuglog("parseMember: failed finding " + name + " in " + owner)
+        //e.printStackTrace
         (jflags, NoSymbol)
     }
   }
@@ -125,26 +138,32 @@ abstract class ICodeReader extends ClassfileParser {
       tp1 =:= tp2
   }
 
-  override def parseMethod() {
+  override def parseMethod():Unit = {
     val (jflags, sym) = parseMember(false)
+    debuglog("parseMethod: started for " + sym)
     var beginning = in.bp
     try {
-      if (sym != NoSymbol) {
+      if (sym != NoSymbol && sym.tpe.resultType != NoType) {
         this.method = new IMethod(sym)
         this.method.returnType = toTypeKind(sym.tpe.resultType)
-        getCode(jflags).addMethod(this.method)
+        val to = getCode(jflags)
+        debuglog("parseMethod: to = " + to.symbol)
+        to.addMethod(this.method)
+        debuglog("parseMethod: to methods " + to.methods)
         if ((jflags & JAVA_ACC_NATIVE) != 0)
           this.method.native = true
         val attributeCount = in.nextChar
+        debuglog("parseMethod: parse attributes")
         for (i <- 0 until attributeCount) parseAttribute()
+        debuglog("parseMethod: finished")
       } else {
-        debuglog("Skipping non-existent method.");
+        log("Skipping non-existent method.");
         skipAttributes();
       }
     } catch {
       case e: MissingRequirementError =>
         in.bp = beginning; skipAttributes
-        debuglog("Skipping non-existent method. " + e.msg);
+        log("Skipping non-existent method. " + e.msg);
     }
   }
 
@@ -160,26 +179,39 @@ abstract class ICodeReader extends ClassfileParser {
   }
 
   override def classNameToSymbol(name: Name) = {
-    val sym = if (name == fulltpnme.RuntimeNothing)
+    debuglog("classNameToSymbol(" + name +")")
+    val sym = if (name == fulltpnme.RuntimeNothing) {
+      debuglog("classNameToSymbol: found scala.Nothing")
       definitions.NothingClass
-    else if (name == fulltpnme.RuntimeNull)
+    } else if (name == fulltpnme.RuntimeNull) {
+      debuglog("classNameToSymbol: found scala.Null")
       definitions.NullClass
-    else if (nme.isImplClassName(name)) {
-      val iface = rootMirror.getClassByName(tpnme.interfaceName(name))
-      log("forcing " + iface.owner + " at phase: " + phase + " impl: " + iface.implClass)
-      iface.owner.info // force the mixin type-transformer
-      rootMirror.getClassByName(name)
+    } else if (nme.isImplClassName(name)) {
+      debuglog("classNameToSymbol: found implementation class")
+      val iface = rootMirror.staticClass(tpnme.interfaceName(name).toString)
+      debuglog("classNameToSymbol: forcing " + iface.owner + " at phase: " + phase + " impl: " + iface.implClass)
+      debuglog("classNameToSymbol: iface: " + iface)
+      iface.owner.info                              // force the mixin type-transformer
+      val result = beforeFlatten{ iface.implClass } // why beforeFlatten? explained in method postTransform in Mixins.scala
+      debuglog("classNameToSymbol: impl: " + result)
+      result
     }
     else if (nme.isModuleName(name)) {
+      debuglog("classNameToSymbol: found module name")
       val strippedName = nme.stripModuleSuffix(name)
-      val sym = forceMangledName(newTermName(strippedName.decode), true)
-
-      if (sym == NoSymbol) rootMirror.getModule(strippedName)
-      else sym
+      var sym = forceMangledName(newTermName(strippedName.decode), true)
+      debuglog("classNameToSymbol: forced: " + sym)
+      sym = if (sym == NoSymbol) try { rootMirror.staticModule(strippedName.toString)  } catch { case _: MissingRequirementError => NoSymbol } else sym
+      debuglog("classNameToSymbol: result: " + sym)
+      sym
     }
     else {
+      debuglog("classNameToSymbol: found type name")
       forceMangledName(name, false)
-      afterFlatten(rootMirror.getClassByName(name.toTypeName))
+      debuglog("classNameToSymbol: forced")
+      val result = try { afterFlatten(rootMirror.staticClass(name.toTypeName.toString)) } catch { case _: MissingRequirementError => NoSymbol }
+      debuglog("classNameToSymbol: result: " + result)
+      result
     }
     if (sym.isModule)
       sym.moduleClass
@@ -584,6 +616,8 @@ abstract class ICodeReader extends ClassfileParser {
     // add parameters
     var idx = if (method.isStatic) 0 else 1
     for (t <- method.symbol.tpe.paramTypes) {
+      if (t == NoType)
+        throw new ICodeReaderException("Found NoType in: " + method.symbol + " from " + method.symbol.owner)
       val kind = toTypeKind(t)
       this.method addParam code.enterParam(idx, kind)
       val width = if (kind.isWideType) 2 else 1
@@ -637,7 +671,8 @@ abstract class ICodeReader extends ClassfileParser {
    *  There are two possible classes, the static part and the instance part.
    */
   def getCode(flags: Int): IClass =
-    if (isScalaModule) staticCode
+    if (instanceCode.symbol.isImplClass) instanceCode // trait implementation class
+    else if (isScalaModule) staticCode
     else if ((flags & JAVA_ACC_STATIC) != 0) staticCode
     else instanceCode
 
@@ -931,12 +966,12 @@ abstract class ICodeReader extends ClassfileParser {
       def checkValidIndex() {
         locals.get(idx - 1) match {
           case Some(others) if others exists (_._2.isWideType) =>
-            global.globalError("Illegal index: " + idx + " points in the middle of another local")
+            throw new ICodeReaderException("Illegal index: " + idx + " points in the middle of another local")
           case _ => ()
         }
         kind match {
           case LONG | DOUBLE if (locals.isDefinedAt(idx + 1)) =>
-            global.globalError("Illegal index: " + idx + " overlaps " + locals(idx + 1) + "\nlocals: " + locals)
+            throw new ICodeReaderException("Illegal index: " + idx + " overlaps " + locals(idx + 1) + "\nlocals: " + locals)
           case _ => ()
         }
       }
@@ -947,11 +982,7 @@ abstract class ICodeReader extends ClassfileParser {
           l match {
             case Some((loc, _)) => loc
             case None =>
-              val l = freshLocal(kind)
-              locals(idx) = (l, kind) :: locals(idx)
-              log("Expected kind " + kind + " for local " + idx +
-                " but only " + ls + " found. Added new local.")
-              l
+              throw new ICodeReaderException("Expected kind " + kind + " for local " + idx + " but only " + ls + " found.")
           }
         case None =>
           checkValidIndex

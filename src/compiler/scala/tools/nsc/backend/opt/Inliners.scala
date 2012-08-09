@@ -358,11 +358,11 @@ abstract class Inliners extends SubComponent {
         var inlined = false
         val shouldWarn = hasInline(i.method)
 
-            def warnNoInline(reason: String) = {
-              if (shouldWarn) {
-                warn(i.pos, "Could not inline required method %s because %s.".format(i.method.originalName.decode, reason))
-              }
-            }
+        def warnNoInline(reason: String) = {
+          if (shouldWarn) {
+            warn(i.pos, "Could not inline required method %s because %s.".format(i.method.originalName.decode, reason))
+          }
+        }
 
         var isAvailable = icodes available concreteMethod.enclClass
 
@@ -378,24 +378,24 @@ abstract class Inliners extends SubComponent {
           isAvailable = icodes.load(concreteMethod.enclClass)
         }
 
-            def isCandidate = (
-                 isClosureClass(receiver)
-              || concreteMethod.isEffectivelyFinal
-              || receiver.isEffectivelyFinal
-            )
+        def isCandidate = (
+             isClosureClass(receiver)
+          || concreteMethod.isEffectivelyFinal
+          || receiver.isEffectivelyFinal
+        )
 
-            def isApply     = concreteMethod.name == nme.apply
+        def isApply     = concreteMethod.name == nme.apply
 
-            def isCountable = !(
-                 isClosureClass(receiver)
-              || isApply
-              || isMonadicMethod(concreteMethod)
-              || receiver.enclosingPackage == definitions.RuntimePackage
-            )   // only count non-closures
+        def isCountable = !(
+             isClosureClass(receiver)
+          || isApply
+          || isMonadicMethod(concreteMethod)
+          || receiver.enclosingPackage == definitions.RuntimePackage
+        )   // only count non-closures
 
         debuglog("Treating " + i
               + "\n\treceiver: " + receiver
-              + "\n\ticodes.available: " + isAvailable
+              + "\n\ticodes.available: " + isAvailable + " candidate: " + isCandidate
               + "\n\tconcreteMethod.isEffectivelyFinal: " + concreteMethod.isEffectivelyFinal)
 
         if (isAvailable && isCandidate) {
@@ -790,8 +790,12 @@ abstract class Inliners extends SubComponent {
 
         assert(!instrAfter.isEmpty, "CALL_METHOD cannot be the last instruction in block!")
 
-        // store the '$this' into the special local
-        val inlinedThis = newLocal("$inlThis", REFERENCE(ObjectClass))
+        // store the '$this' into the special local, unless we're doing a static call
+        val inlinedThis =
+          if (instr.style.hasInstance)
+            Some(newLocal("$inlThis", REFERENCE(ObjectClass)))
+          else
+            None
 
         /** buffer for the returned value */
         val retVal = inc.m.returnType match {
@@ -806,7 +810,8 @@ abstract class Inliners extends SubComponent {
           val b = caller.m.code.newBlock
           activeHandlers foreach (_ addCoveredBlock b)
           if (retVal ne null) b.varsInScope += retVal
-          b.varsInScope += inlinedThis
+          if (inlinedThis.isDefined)
+            b.varsInScope += inlinedThis.get
           b.varsInScope ++= varsInScope
           b
         }
@@ -841,8 +846,8 @@ abstract class Inliners extends SubComponent {
           def isInlined(l: Local) = inlinedLocals isDefinedAt l
 
           val newInstr = i match {
-            case THIS(clasz)                    => LOAD_LOCAL(inlinedThis)
-            case STORE_THIS(_)                  => STORE_LOCAL(inlinedThis)
+            case THIS(clasz)                    => LOAD_LOCAL(inlinedThis.get)  // if inlinedThis is None, it means we're
+            case STORE_THIS(_)                  => STORE_LOCAL(inlinedThis.get) // in a static call, so no THIS/STORE_THIS
             case JUMP(whereto)                  => JUMP(inlinedBlock(whereto))
             case CJUMP(succ, fail, cond, kind)  => CJUMP(inlinedBlock(succ), inlinedBlock(fail), cond, kind)
             case CZJUMP(succ, fail, cond, kind) => CZJUMP(inlinedBlock(succ), inlinedBlock(fail), cond, kind)
@@ -871,7 +876,8 @@ abstract class Inliners extends SubComponent {
         }
 
         caller addLocals (inc.locals map dupLocal)
-        caller addLocal inlinedThis
+        if (inlinedThis.isDefined)
+          caller addLocal inlinedThis.get
 
         if (retVal ne null)
           caller addLocal retVal
@@ -888,7 +894,8 @@ abstract class Inliners extends SubComponent {
 
         // store the arguments into special locals
         inc.m.params.reverse foreach (p => blockEmit(STORE_LOCAL(inlinedLocals(p))))
-        blockEmit(STORE_LOCAL(inlinedThis))
+        if (inlinedThis.isDefined)
+          blockEmit(STORE_LOCAL(inlinedThis.get))
 
         // jump to the start block of the callee
         blockEmit(JUMP(inlinedBlock(inc.m.startBlock)))
@@ -1050,9 +1057,16 @@ abstract class Inliners extends SubComponent {
     }
 
     def lookupIMethod(meth: Symbol, receiver: Symbol): Option[IMethod] = {
-      def tryParent(sym: Symbol) = icodes icode sym flatMap (_ lookupMethod meth)
+      debuglog("lookupIMethod(" + meth + " in " + receiver + ")")
+      def tryParent(sym: Symbol) = {
+        val result = icodes icode sym flatMap (_ lookupMethod meth)
+        debuglog("lookupIMethod: tryParent: " + sym + ": " + result)
+        result
+      }
 
-      (receiver.info.baseClasses.iterator map tryParent find (_.isDefined)).flatten
+      val result = (receiver.info.baseClasses.iterator map tryParent find (_.isDefined)).flatten
+      debuglog("lookupIMethod(" + meth + ", " + receiver + ") => " + result)
+      result
     }
   } /* class Inliner */
 } /* class Inliners */

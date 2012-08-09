@@ -1,0 +1,1 @@
+-optimize -Yinline-warnings -Ylog:inliner -Xfatal-warnings -uniqid

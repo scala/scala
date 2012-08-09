@@ -56,6 +56,23 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
   private def isStaticOnly(sym: Symbol) =
     isImplementedStatically(sym) && sym.isImplOnly
 
+  /** A member of a trait that can be automatically inlined, such
+   *  as an @inline final member. In this case we inline the result
+   *  immediately.
+   */
+  private def isInlineable(sym: Symbol) = {
+    val condition = (settings.inline.value) &&
+                    (sym.isFinal) &&
+                    (!sym.isConstructor) &&
+                    (!sym.isGetter || !sym.isSetter) &&
+                    (sym.hasAnnotation(definitions.ScalaInlineClass)) &&
+                    (sym.owner != NoSymbol) &&
+                    (sym.owner.isTrait) &&
+                    (sym.owner.implClass != NoSymbol)
+    condition
+  }
+
+
   /** A member of a trait is forwarded if it is implemented statically and it
    *  is also visible in the trait's interface. In that case, a forwarder to
    *  the member's static implementation will be added to the class that
@@ -492,19 +509,19 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
      *  fields count as fields defined by the class itself.
      */
     private val fieldOffset = perRunCaches.newMap[Symbol, Int]()
-    
+
     private val bitmapKindForCategory = perRunCaches.newMap[Name, ClassSymbol]()
-    
+
     // ByteClass, IntClass, LongClass
     private def bitmapKind(field: Symbol): ClassSymbol = bitmapKindForCategory(bitmapCategory(field))
-    
+
     private def flagsPerBitmap(field: Symbol): Int = bitmapKind(field) match {
       case BooleanClass => 1
       case ByteClass    => 8
       case IntClass     => 32
       case LongClass    => 64
     }
-    
+
 
     /** The first transform; called in a pre-order traversal at phase mixin
      *  (that is, every node is processed before its children).
@@ -718,7 +735,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
         val sym        = clazz0.info.decl(bitmapName)
 
         assert(!sym.isOverloaded, sym)
-        
+
         def createBitmap: Symbol = {
           val bitmapKind =  bitmapKindForCategory(category)
           val sym = clazz0.newVariable(bitmapName, clazz0.pos) setInfo bitmapKind.tpe
@@ -732,7 +749,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
             case BooleanClass => VAL(sym) === FALSE
             case _            => VAL(sym) === ZERO
           }
-          
+
           sym setFlag PrivateLocal
           clazz0.info.decls.enter(sym)
           addDef(clazz0.pos, init)
@@ -744,7 +761,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
         else
           createBitmap
       }
-      
+
       def maskForOffset(offset: Int, sym: Symbol, kind: ClassSymbol): Tree = {
         def realOffset = offset % flagsPerBitmap(sym)
         if (kind == LongClass ) LIT(1L << realOffset) else LIT(1 << realOffset)
@@ -755,9 +772,9 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
         val bmp      = bitmapFor(clazz, offset, valSym)
         def mask     = maskForOffset(offset, valSym, kind)
         def x        = This(clazz) DOT bmp
-        def newValue = if (kind == BooleanClass) TRUE else (x GEN_| (mask, kind)) 
+        def newValue = if (kind == BooleanClass) TRUE else (x GEN_| (mask, kind))
 
-        x === newValue 
+        x === newValue
       }
 
       /** Return an (untyped) tree of the form 'clazz.this.bitmapSym & mask (==|!=) 0', the
@@ -775,7 +792,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
             else              lhs GEN_!= (ZERO, kind)
         }
       }
-      
+
       def mkSlowPathDef(clazz: Symbol, lzyVal: Symbol, cond: Tree, syncBody: List[Tree],
                         stats: List[Tree], retVal: Tree, attrThis: Tree, args: List[Tree]): Symbol = {
         val defSym = clazz.newMethod(nme.newLazyValSlowComputeName(lzyVal.name), lzyVal.pos, PRIVATE)
@@ -791,25 +808,25 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
                              stats: List[Tree], retVal: Tree): Tree = {
         mkFastPathBody(clazz, lzyVal, cond, syncBody, stats, retVal, gen.mkAttributedThis(clazz), List())
       }
-      
+
       def mkFastPathBody(clazz: Symbol, lzyVal: Symbol, cond: Tree, syncBody: List[Tree],
                         stats: List[Tree], retVal: Tree, attrThis: Tree, args: List[Tree]): Tree = {
         val slowPathSym: Symbol = mkSlowPathDef(clazz, lzyVal, cond, syncBody, stats, retVal, attrThis, args)
         If(cond, fn (This(clazz), slowPathSym, args.map(arg => Ident(arg.symbol)): _*), retVal)
       }
-      
-        
-	  /** Always copy the tree if we are going to perform sym substitution,
-	   *  otherwise we will side-effect on the tree that is used in the fast path
-	   */
-	  class TreeSymSubstituterWithCopying(from: List[Symbol], to: List[Symbol]) extends TreeSymSubstituter(from, to) {
-	    override def transform(tree: Tree): Tree =
-	      if (tree.hasSymbol && from.contains(tree.symbol))
-	        super.transform(tree.duplicate)
-	      else super.transform(tree.duplicate)
-	    
-	    override def apply[T <: Tree](tree: T): T = if (from.isEmpty) tree else super.apply(tree)
-	  }
+
+
+      /** Always copy the tree if we are going to perform sym substitution,
+       *  otherwise we will side-effect on the tree that is used in the fast path
+       */
+      class TreeSymSubstituterWithCopying(from: List[Symbol], to: List[Symbol]) extends TreeSymSubstituter(from, to) {
+        override def transform(tree: Tree): Tree =
+          if (tree.hasSymbol && from.contains(tree.symbol))
+            super.transform(tree.duplicate)
+          else super.transform(tree.duplicate)
+
+        override def apply[T <: Tree](tree: T): T = if (from.isEmpty) tree else super.apply(tree)
+      }
 
       /** return a 'lazified' version of rhs. It uses double-checked locking to ensure
        *  initialization is performed at most once. For performance reasons the double-checked
@@ -827,8 +844,8 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
        *  The result will be a tree of the form
        *  { if ((bitmap&n & MASK) == 0) this.l$compute()
        *    else l$
-       *    
-       *    ... 
+       *
+       *    ...
        *    def l$compute() = { synchronized(this) {
        *      if ((bitmap$n & MASK) == 0) {
        *        init // l$ = <rhs>
@@ -836,7 +853,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
        *      }}
        *      l$
        *    }
-       *    
+       *
        *    ...
        *    this.f1 = null
        *    ... this.fn = null
@@ -846,7 +863,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
        *  For Int bitmap it is 32 and then 'n' in the above code is: (offset / 32),
        *  the MASK is (1 << (offset % 32)).
        *  If the class contains only a single lazy val then the bitmap is represented
-       *  as a Boolean and the condition checking is a simple bool test. 
+       *  as a Boolean and the condition checking is a simple bool test.
        */
       def mkLazyDef(clazz: Symbol, lzyVal: Symbol, init: List[Tree], retVal: Tree, offset: Int): Tree = {
         def nullify(sym: Symbol) = Select(This(clazz), sym.accessedOrSelf) === LIT(null)
@@ -878,7 +895,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
       def mkCheckedAccessor(clazz: Symbol, retVal: Tree, offset: Int, pos: Position, fieldSym: Symbol): Tree = {
         val sym = fieldSym.getter(fieldSym.owner)
         val bitmapSym = bitmapFor(clazz, offset, sym)
-        val kind      = bitmapKind(sym) 
+        val kind      = bitmapKind(sym)
         val mask      = maskForOffset(offset, sym, kind)
         val msg       = "Uninitialized field: " + unit.source + ": " + pos.line
         val result    =
@@ -1091,7 +1108,6 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
           else {
             // add forwarders
             assert(sym.alias != NoSymbol, sym)
-            // debuglog("New forwarder: " + sym.defString + " => " + sym.alias.defString)
             if (!sym.isTermMacro) addDefDef(sym, Apply(staticRef(sym.alias), gen.mkAttributedThis(clazz) :: sym.paramss.head.map(Ident)))
           }
         }
@@ -1175,8 +1191,49 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
             // change calls to methods which are defined only in implementation
             // classes to static calls of methods in implementation modules
             staticCall(sym)
-          }
-          else qual match {
+          } else if (!qual.isInstanceOf[Super] && isInlineable(sym)) {
+            def warnAndAbort(msg: String) = { global.reporter.warning(tree.pos, msg); tree }
+            // Inlining methods in traits:
+            //
+            // Traits consist of interfaces and implementation classes. A class that inherits from a trait will actually
+            // implement the interface and unless it overrides the member, will get a forwarder to the implementation
+            // class like this:
+            //  class FooImpl extends Object with Foo {
+            //    @scala.this.inline <method> final <existential/mixedin> <triedcooking> def foo(x: Int): Unit = Foo$class.foo(FooImpl.this, x);
+            //    ...
+            //  };
+            // If in the signature we get a trait, the type is a java interface, thus any call to the trait's methods is
+            // translated to a call to the interface, so the inliner has no implementation to inline.
+            //
+            // So, if a trait has a final method and that final method has an implementation in the implementation class
+            // we want to avoid the call through the interface, which prevents the inliner from inlining the call. We do
+            // this by rewriting the call to target the implementation class instead of the interface.
+            //
+            // We only do this if the method is final and marked with @inline -- look for def isInlineable for the full
+            // condition set
+            val ifaceMethod = sym
+            val ifaceClass = sym.owner
+            // the dance of rain to compute the implementation class corresponding to the trait:
+            ifaceClass.info // force the info on the trait, so the implementation class symbol is created
+            val implClass = beforeFlatten { ifaceClass.implClass } // load it, but before flatten
+            // why beforeFlatten? well, if the trait's info hasn't been forced by this time, the actual
+            // implementation class will be added to an old version of the scope, before flatten has gotten a chance
+            // to duplicate the scope. Thus we need to look at the old scope, as there is the place we'll find the
+            // correct symbol. If we look at the current symbol, we'll see the Classloader-created symbol, which
+            // doesn't have the desired symbol
+            // find the implementation method's symbol
+            val implMethodLst = beforeMixin(implClass.info.decls.collect {
+                case impl: Symbol if isForwarded(impl) && (impl overriddenSymbol ifaceClass) == ifaceMethod => impl })
+            implMethodLst match {
+              case List(implMethod) => // found symbol, build and retype the tree now
+                val newTree = Apply(Select(Ident(implClass), implMethod), qual :: args)
+                localTyper.silent(_.typed(atPos(tree.pos)(newTree))) match {
+                  case global.erasure.SilentResultValue(newTree: Tree) => newTree
+                  case _ => warnAndAbort("Could not inline the final @inline " + ifaceMethod + " here: could not adapt signature.")
+                }
+              case _ => warnAndAbort("Could not inline the final @inline " + ifaceMethod + " here: could not find the implementation.")
+            }
+          } else qual match {
             case Super(_, mix) =>
               // change super calls to methods in implementation classes to static calls.
               // Transform references super.m(args) as follows:

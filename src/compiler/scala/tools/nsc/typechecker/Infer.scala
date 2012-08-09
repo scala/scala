@@ -907,11 +907,13 @@ trait Infer {
 */
     /** Is sym1 (or its companion class in case it is a module) a subclass of
      *  sym2 (or its companion class in case it is a module)?
+     *  NOTE: The check sym1.linkedClassOfClass is in place because the combination of loading a trait implementation
+     *        class from the classpath and generating it during erasure creates an infinite loop.
      */
     def isProperSubClassOrObject(sym1: Symbol, sym2: Symbol): Boolean =
       sym1 != sym2 && sym1 != NoSymbol && (sym1 isSubClass sym2) ||
-      sym1.isModuleClass && isProperSubClassOrObject(sym1.linkedClassOfClass, sym2) ||
-      sym2.isModuleClass && isProperSubClassOrObject(sym1, sym2.linkedClassOfClass)
+      sym1.isModuleClass && !sym1.linkedClassOfClass.isModuleClass && isProperSubClassOrObject(sym1.linkedClassOfClass, sym2) ||
+      sym2.isModuleClass && !sym2.linkedClassOfClass.isModuleClass && isProperSubClassOrObject(sym1, sym2.linkedClassOfClass)
 
     /** is symbol `sym1` defined in a proper subclass of symbol `sym2`?
      */
