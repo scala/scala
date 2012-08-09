@@ -151,10 +151,12 @@ object HashSet extends ImmutableSetFactory[HashSet] {
     override def removed0(key: A, hash: Int, level: Int): HashSet[A] =
       if (hash == this.hash) {
         val ks1 = ks - key
-        if (!ks1.isEmpty)
-          new HashSetCollision1(hash, ks1)
-        else
+        if(ks1.isEmpty)
           HashSet.empty[A]
+        else if(ks1.tail.isEmpty)
+          new HashSet1(ks1.head, hash)
+        else
+          new HashSetCollision1(hash, ks1)
       } else this
 
     override def iterator: Iterator[A] = ks.iterator
