@@ -135,7 +135,7 @@ class Flags extends ModifierFlags {
   final val CAPTURED      = 1 << 16       // variable is accessed from nested function.  Set by LambdaLift.
   final val LABEL         = 1 << 17       // method symbol is a label. Set by TailCall
   final val INCONSTRUCTOR = 1 << 17       // class symbol is defined in this/superclass constructor.
-  final val SYNTHETIC     = 1 << 21       // symbol is compiler-generated (compare with HIDDEN)
+  final val SYNTHETIC     = 1 << 21       // symbol is compiler-generated (compare with ARTIFACT)
   final val STABLE        = 1 << 22       // functions that are assumed to be stable
                                           // (typically, access methods for valdefs)
                                           // or classes that do not contain abstract types.
@@ -165,7 +165,7 @@ class Flags extends ModifierFlags {
                                           // A Java method's type is ``cooked'' by transforming raw types to existentials
 
   final val SYNCHRONIZED  = 1L << 45      // symbol is a method which should be marked ACC_SYNCHRONIZED
-  final val HIDDEN        = 1L << 46      // symbol should be ignored when typechecking; will be marked ACC_SYNTHETIC in bytecode
+  final val ARTIFACT      = 1L << 46      // symbol should be ignored when typechecking; will be marked ACC_SYNTHETIC in bytecode
 
   // ------- shift definitions -------------------------------------------------------
 
@@ -218,7 +218,7 @@ class Flags extends ModifierFlags {
   /** To be a little clearer to people who aren't habitual bit twiddlers.
    */
   final val AllFlags = -1L
-  
+
   /** These flags can be set when class or module symbol is first created.
    *  They are the only flags to survive a call to resetFlags().
    */
@@ -288,11 +288,11 @@ class Flags extends ModifierFlags {
 
   /** These flags are not pickled */
   final val FlagsNotPickled = IS_ERROR | OVERLOADED | LIFTED | TRANS_FLAG | LOCKED | TRIEDCOOKING
-  
+
   // A precaution against future additions to FlagsNotPickled turning out
   // to be overloaded flags thus not-pickling more than intended.
   assert((OverloadedFlagsMask & FlagsNotPickled) == 0, flagsToString(OverloadedFlagsMask & FlagsNotPickled))
-  
+
   /** These flags are pickled */
   final val PickledFlags  = InitialFlags & ~FlagsNotPickled
 
@@ -339,13 +339,13 @@ class Flags extends ModifierFlags {
     (SEALED, SEALED_PKL),
     (ABSTRACT, ABSTRACT_PKL)
   )
-  
+
   private val mappedRawFlags = rawPickledCorrespondence map (_._1)
   private val mappedPickledFlags = rawPickledCorrespondence map (_._2)
-  
+
   private class MapFlags(from: Array[Long], to: Array[Long]) extends (Long => Long) {
     val fromSet = (0L /: from) (_ | _)
-    
+
     def apply(flags: Long): Long = {
       var result = flags & ~fromSet
       var tobeMapped = flags & fromSet
@@ -360,7 +360,7 @@ class Flags extends ModifierFlags {
       result
     }
   }
-  
+
   val rawToPickledFlags: Long => Long = new MapFlags(mappedRawFlags, mappedPickledFlags)
   val pickledToRawFlags: Long => Long = new MapFlags(mappedPickledFlags, mappedRawFlags)
 
@@ -434,7 +434,7 @@ class Flags extends ModifierFlags {
     case 0x8000000000000000L => ""                                    // (1L << 63)
     case _ => ""
   }
-  
+
   private def accessString(flags: Long, privateWithin: String)= (
     if (privateWithin == "") {
       if ((flags & PrivateLocal) == PrivateLocal) "private[this]"
@@ -446,7 +446,7 @@ class Flags extends ModifierFlags {
     else if ((flags & PROTECTED) != 0) "protected[" + privateWithin + "]"
     else "private[" + privateWithin + "]"
   )
-  
+
   @deprecated("Use flagString on the flag-carrying member", "2.10.0")
   def flagsToString(flags: Long, privateWithin: String): String = {
     val access    = accessString(flags, privateWithin)
