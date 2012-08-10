@@ -402,11 +402,15 @@ abstract class TreeInfo {
   def catchesThrowable(cdef: CaseDef) = catchesAllOf(cdef, ThrowableClass.tpe)
 
   /** Does this CaseDef catch everything of a certain Type? */
-  def catchesAllOf(cdef: CaseDef, threshold: Type) =
-    isDefaultCase(cdef) || (cdef.guard.isEmpty && (unbind(cdef.pat) match {
-      case Typed(Ident(nme.WILDCARD), tpt)  => (tpt.tpe != null) && (threshold <:< tpt.tpe)
-      case _                                => false
-    }))
+  def catchesAllOf(cdef: CaseDef, threshold: Type) = {
+    def unbound(t: Tree) = t.symbol == null || t.symbol == NoSymbol
+    cdef.guard.isEmpty && (unbind(cdef.pat) match {
+      case Ident(nme.WILDCARD)       => true
+      case i@Ident(name)             => unbound(i)
+      case Typed(_, tpt)             => (tpt.tpe != null) && (threshold <:< tpt.tpe)
+      case _                         => false
+    })
+  }
 
   /** Is this pattern node a catch-all or type-test pattern? */
   def isCatchCase(cdef: CaseDef) = cdef match {
