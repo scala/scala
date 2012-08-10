@@ -160,7 +160,7 @@ trait Trees extends api.Trees { self: SymbolTable =>
       new ThisSubstituter(clazz, to) transform this
 
     def hasSymbolWhich(f: Symbol => Boolean) =
-      hasSymbol && symbol != null && f(symbol)
+      (symbol ne null) && (symbol ne NoSymbol) && f(symbol)
 
     def isErroneous = (tpe ne null) && tpe.isErroneous
     def isTyped     = (tpe ne null) && !tpe.isErroneous
