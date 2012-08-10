@@ -222,9 +222,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
   def error(msg: String)       = globalError(msg)
   def globalError(msg: String) = reporter.error(NoPosition, msg)
   def inform(msg: String)      = reporter.echo(msg)
-  def warning(msg: String)     =
-    if (settings.fatalWarnings.value) globalError(msg)
-    else reporter.warning(NoPosition, msg)
+  def warning(msg: String)     = reporter.warning(NoPosition, msg)
 
   // Getting in front of Predef's asserts to supplement with more info.
   // This has the happy side effect of masking the one argument forms
@@ -1481,6 +1479,9 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
     }
 
     def reportCompileErrors() {
+      if (!reporter.hasErrors && reporter.hasWarnings && settings.fatalWarnings.value)
+        globalError("No warnings can be incurred under -Xfatal-warnings.")
+
       if (reporter.hasErrors) {
         for ((sym, file) <- symSource.iterator) {
           sym.reset(new loaders.SourcefileLoader(file))
