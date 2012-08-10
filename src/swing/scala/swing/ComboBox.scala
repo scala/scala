@@ -182,7 +182,7 @@ class ComboBox[A](items: Seq[A]) extends Component with Publisher {
    * of the component to its own defaults _after_ the renderer has been
    * configured. That's Swing's principle of most suprise.
    */
-  def renderer: ListView.Renderer[A] = ListView.Renderer.wrap(peer.getRenderer)
+  def renderer: ListView.Renderer[A] = ListView.Renderer.wrap[A](peer.getRenderer)
   def renderer_=(r: ListView.Renderer[A]) { peer.setRenderer(r.peer) }
 
   /* XXX: currently not safe to expose:

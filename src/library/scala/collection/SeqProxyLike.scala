@@ -50,7 +50,7 @@ trait SeqProxyLike[+A, +Repr <: SeqLike[A, Repr] with Seq[A]] extends SeqLike[A,
   override def lastIndexOfSlice[B >: A](that: GenSeq[B]): Int = self.lastIndexOfSlice(that)
   override def lastIndexOfSlice[B >: A](that: GenSeq[B], end: Int): Int = self.lastIndexOfSlice(that, end)
   override def containsSlice[B](that: GenSeq[B]): Boolean = self.indexOfSlice(that) != -1
-  override def contains(elem: Any): Boolean = self.contains(elem)
+  override def contains[A1 >: A](elem: A1): Boolean = self.contains(elem)
   override def union[B >: A, That](that: GenSeq[B])(implicit bf: CanBuildFrom[Repr, B, That]): That = self.union(that)(bf)
   override def diff[B >: A](that: GenSeq[B]): Repr = self.diff(that)
   override def intersect[B >: A](that: GenSeq[B]): Repr = self.intersect(that)

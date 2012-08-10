@@ -3111,9 +3111,8 @@ trait Typers extends Modes with Adaptations with Tags {
                 // define the undetparams which have been fixed by this param list, replace the corresponding symbols in "fun"
                 // returns those undetparams which have not been instantiated.
                 val undetparams = inferMethodInstance(fun, tparams, args1, pt)
-                val result = doTypedApply(tree, fun, args1, mode, pt)
-                context.undetparams = undetparams
-                result
+                try doTypedApply(tree, fun, args1, mode, pt)
+                finally context.undetparams = undetparams
               }
             }
           }
@@ -4555,7 +4554,7 @@ trait Typers extends Modes with Adaptations with Tags {
           assert(errorContainer == null, "Cannot set ambiguous error twice for identifier")
           errorContainer = tree
         }
-        
+
         val fingerPrint: Long = name.fingerPrint
 
         var defSym: Symbol = tree.symbol  // the directly found symbol

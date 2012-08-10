@@ -50,7 +50,7 @@ class StdLexical extends Lexical with StdTokens {
   def identChar = letter | elem('_')
 
   // see `whitespace in `Scanners`
-  def whitespace: Parser[Any] = rep(
+  def whitespace: Parser[Any] = rep[Any](
       whitespaceChar
     | '/' ~ '*' ~ comment
     | '/' ~ '/' ~ rep( chrExcept(EofCh, '\n') )
