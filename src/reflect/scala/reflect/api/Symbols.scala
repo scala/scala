@@ -13,7 +13,7 @@ trait Symbols extends base.Symbols { self: Universe =>
   override type FreeTypeSymbol >: Null <: TypeSymbol with FreeTypeSymbolApi
 
   /** The API of symbols */
-  trait SymbolApi extends SymbolBase with HasFlagsBase { this: Symbol =>
+  trait SymbolApi extends SymbolBase { this: Symbol =>
 
     /** The position of this symbol
      */
