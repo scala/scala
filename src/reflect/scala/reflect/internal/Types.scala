@@ -6219,25 +6219,26 @@ trait Types extends api.Types { self: SymbolTable =>
    *  @See baseTypeSeq  for a definition of sorted and upwards closed.
    */
   private def lubList(ts: List[Type], depth: Int): List[Type] = {
-    // Matching the type params of one of the initial types means dummies.
-    val initialTypeParams = ts map (_.typeParams)
-    def isHotForTs(xs: List[Type]) = initialTypeParams contains xs.map(_.typeSymbol)
-
-    def elimHigherOrderTypeParam(tp: Type) = tp match {
-      case TypeRef(pre, sym, args) if args.nonEmpty && isHotForTs(args) => tp.typeConstructor
-      case _                                                            => tp
-    }
     var lubListDepth = 0
-    def loop(tsBts: List[List[Type]]): List[Type] = {
+    // This catches some recursive situations which would otherwise
+    // befuddle us, e.g. pos/hklub0.scala
+    def isHotForTs(xs: List[Type]) = ts exists (_.typeParams == xs.map(_.typeSymbol))
+    def elimHigherOrderTypeParam(tp: Type) = tp match {
+      case TypeRef(_, _, args) if args.nonEmpty && isHotForTs(args) =>
+        logResult("Retracting dummies from " + tp + " in lublist")(tp.typeConstructor)
+      case _ => tp
+    }
+    // pretypes is a tail-recursion-preserving accumulator.
+    @annotation.tailrec def loop(pretypes: List[Type], tsBts: List[List[Type]]): List[Type] = {
       lubListDepth += 1
 
-      if (tsBts.isEmpty || tsBts.exists(_.isEmpty)) Nil
-      else if (tsBts.tail.isEmpty) tsBts.head
+      if (tsBts.isEmpty || tsBts.exists(_.isEmpty)) pretypes.reverse
+      else if (tsBts.tail.isEmpty) pretypes.reverse ++ tsBts.head
       else {
         // ts0 is the 1-dimensional frontier of symbols cutting through 2-dimensional tsBts.
         // Invariant: all symbols "under" (closer to the first row) the frontier
         // are smaller (according to _.isLess) than the ones "on and beyond" the frontier
-        val ts0  = tsBts map (_.head)
+        val ts0     = tsBts map (_.head)
 
         // Is the frontier made up of types with the same symbol?
         val isUniformFrontier = (ts0: @unchecked) match {
@@ -6250,23 +6251,23 @@ trait Types extends api.Types { self: SymbolTable =>
         // merging, strip targs that refer to bound tparams (when we're computing the lub of type
         // constructors.) Also filter out all types that are a subtype of some other type.
         if (isUniformFrontier) {
-          if (settings.debug.value || printLubs) {
-            val fbounds = findRecursiveBounds(ts0)
-            if (fbounds.nonEmpty) {
-              println("Encountered " + fbounds.size + " recursive bounds while lubbing " + ts0.size + " types.")
-              for ((p0, p1) <- fbounds) {
-                val desc = if (p0 == p1) "its own bounds" else "the bounds of " + p1
+          val fbounds     = findRecursiveBounds(ts0) map (_._2)
+          val tcLubList   = typeConstructorLubList(ts0)
+          def isRecursive(tp: Type) = tp.typeSymbol.typeParams exists fbounds.contains
 
-                println("  " + p0.fullLocationString + " appears in " + desc)
-                println("    " + p1 + " " + p1.info.bounds)
+          val ts1 = ts0 map { t =>
+            if (isRecursive(t)) {
+              tcLubList map (t baseType _.typeSymbol) find (t => !isRecursive(t)) match {
+                case Some(tp) => logResult(s"Breaking recursion in lublist, substituting weaker type.\n  Was: $t\n  Now")(tp)
+                case _        => t
               }
-              println("")
             }
+            else t
           }
           val tails = tsBts map (_.tail)
-          mergePrefixAndArgs(elimSub(ts0 map elimHigherOrderTypeParam, depth), 1, depth) match {
-            case Some(tp) => tp :: loop(tails)
-            case _        => loop(tails)
+          mergePrefixAndArgs(elimSub(ts1, depth) map elimHigherOrderTypeParam, 1, depth) match {
+            case Some(tp) => loop(tp :: pretypes, tails)
+            case _        => loop(pretypes, tails)
           }
         }
         else {
@@ -6283,7 +6284,7 @@ trait Types extends api.Types { self: SymbolTable =>
             printLubMatrix((ts zip tsBts).toMap, lubListDepth)
           }
 
-          loop(newtps)
+          loop(pretypes, newtps)
         }
       }
     }
@@ -6292,7 +6293,7 @@ trait Types extends api.Types { self: SymbolTable =>
     if (printLubs)
       printLubMatrix((ts zip initialBTSes).toMap, depth)
 
-    loop(initialBTSes)
+    loop(Nil, initialBTSes)
   }
 
   /** The minimal symbol (wrt Symbol.isLess) of a list of types */
@@ -6427,6 +6428,23 @@ trait Types extends api.Types { self: SymbolTable =>
   private val lubResults = new mutable.HashMap[(Int, List[Type]), Type]
   private val glbResults = new mutable.HashMap[(Int, List[Type]), Type]
 
+  /** Given a list of types, finds all the base classes they have in
+   *  common, then returns a list of type constructors derived directly
+   *  from the symbols (so any more specific type information is ignored.)
+   *  The list is filtered such that every type constructor in the list
+   *  expects the same number of type arguments, which is chosen based
+   *  on the deepest class among the common baseclasses.
+   */
+  def typeConstructorLubList(ts: List[Type]): List[Type] = {
+    val bcs   = ts.flatMap(_.baseClasses).distinct sortWith (_ isLess _)
+    val tcons = bcs filter (clazz => ts forall (_.typeSymbol isSubClass clazz))
+
+    tcons map (_.typeConstructor) match {
+      case Nil      => Nil
+      case t :: ts  => t :: ts.filter(_.typeParams.size == t.typeParams.size)
+    }
+  }
+
   def lub(ts: List[Type]): Type = ts match {
     case List() => NothingClass.tpe
     case List(t) => t
@@ -6434,8 +6452,20 @@ trait Types extends api.Types { self: SymbolTable =>
       Statistics.incCounter(lubCount)
       val start = Statistics.pushTimer(typeOpsStack, lubNanos)
       try {
-         lub(ts, lubDepth(ts))
-      } finally {
+        val res = lub(ts, lubDepth(ts))
+        // If the number of unapplied type parameters in all incoming
+        // types is consistent, and the lub does not match that, return
+        // the type constructor of the calculated lub instead.  This
+        // is because lubbing type constructors tends to result in types
+        // which have been applied to dummies or Nothing.
+        ts.map(_.typeParams.size).distinct match {
+          case x :: Nil if res.typeParams.size != x =>
+            logResult(s"Stripping type args from lub because $res is not consistent with $ts")(res.typeConstructor)
+          case _                                    =>
+            res
+        }
+      }
+      finally {
         lubResults.clear()
         glbResults.clear()
         Statistics.popTimer(typeOpsStack, start)
@@ -6469,13 +6499,13 @@ trait Types extends api.Types { self: SymbolTable =>
         }
     }
     def lub1(ts0: List[Type]): Type = {
-      val (ts, tparams) = stripExistentialsAndTypeVars(ts0)
+      val (ts, tparams)            = stripExistentialsAndTypeVars(ts0)
       val lubBaseTypes: List[Type] = lubList(ts, depth)
-      val lubParents = spanningTypes(lubBaseTypes)
-      val lubOwner = commonOwner(ts)
-      val lubBase = intersectionType(lubParents, lubOwner)
+      val lubParents               = spanningTypes(lubBaseTypes)
+      val lubOwner                 = commonOwner(ts)
+      val lubBase                  = intersectionType(lubParents, lubOwner)
       val lubType =
-        if (phase.erasedTypes || depth == 0) lubBase
+        if (phase.erasedTypes || depth == 0 ) lubBase
         else {
           val lubRefined  = refinedType(lubParents, lubOwner)
           val lubThisType = lubRefined.typeSymbol.thisType
@@ -6492,6 +6522,7 @@ trait Types extends api.Types { self: SymbolTable =>
             val syms = narrowts map (t =>
               t.nonPrivateMember(proto.name).suchThat(sym =>
                 sym.tpe matches prototp.substThis(lubThisType.typeSymbol, t)))
+
             if (syms contains NoSymbol) NoSymbol
             else {
               val symtypes =
@@ -6518,10 +6549,8 @@ trait Types extends api.Types { self: SymbolTable =>
           // add a refinement symbol for all non-class members of lubBase
           // which are refined by every type in ts.
           for (sym <- lubBase.nonPrivateMembers ; if !excludeFromLub(sym)) {
-            try {
-              val lsym = lubsym(sym)
-              if (lsym != NoSymbol) addMember(lubThisType, lubRefined, lsym, depth)
-            } catch {
+            try lubsym(sym) andAlso (addMember(lubThisType, lubRefined, _, depth))
+            catch {
               case ex: NoCommonType =>
             }
           }
@@ -6765,18 +6794,16 @@ trait Types extends api.Types { self: SymbolTable =>
             debuglog("transposed irregular matrix!?" +(tps, argss))
             None
           case Some(argsst) =>
-            val args = map2(sym.typeParams, argsst) { (tparam, as) =>
-              if (depth == 0) {
-                if (tparam.variance == variance) {
-                  // Take the intersection of the upper bounds of the type parameters
-                  // rather than falling all the way back to "Any", otherwise we end up not
-                  // conforming to bounds.
-                  val bounds0 = sym.typeParams map (_.info.bounds.hi) filterNot (_.typeSymbol == AnyClass)
-                  if (bounds0.isEmpty) AnyClass.tpe
-                  else intersectionType(bounds0 map (b => b.asSeenFrom(tps.head, sym)))
-                }
-                else if (tparam.variance == -variance) NothingClass.tpe
-                else NoType
+            val args = map2(sym.typeParams, argsst) { (tparam, as0) =>
+              val as = as0.distinct
+              if (as.size == 1) as.head
+              else if (depth == 0) {
+                log("Giving up merging args: can't unify %s under %s".format(as.mkString(", "), tparam.fullLocationString))
+                // Don't return "Any" (or "Nothing") when we have to give up due to
+                // recursion depth. Return NoType, which prevents us from poisoning
+                // lublist's results. It can recognize the recursion and deal with it, but
+                // only if we aren't returning invalid types.
+                NoType
               }
               else {
                 if (tparam.variance == variance) lub(as, decr(depth))
@@ -6785,7 +6812,7 @@ trait Types extends api.Types { self: SymbolTable =>
                   val l = lub(as, decr(depth))
                   val g = glb(as, decr(depth))
                   if (l <:< g) l
-                else { // Martin: I removed this, because incomplete. Not sure there is a good way to fix it. For the moment we
+                  else { // Martin: I removed this, because incomplete. Not sure there is a good way to fix it. For the moment we
                        // just err on the conservative side, i.e. with a bound that is too high.
                        // if(!(tparam.info.bounds contains tparam))   //@M can't deal with f-bounds, see #2251
 
