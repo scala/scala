@@ -4,4 +4,10 @@ pat_unreachable.scala:5: error: unreachable code
 pat_unreachable.scala:9: error: unreachable code
     case Seq(x, y) => List(x, y)
                           ^
-two errors found
+pat_unreachable.scala:23: error: unreachable code
+    case c => println("matched c")
+                     ^
+pat_unreachable.scala:24: error: unreachable code
+    case _ => println("matched neither")
+                     ^
+four errors found
