@@ -333,7 +333,7 @@ trait GenTraversableLike[+A, +Repr] extends Any with GenTraversableOnce[A] with 
 
   /** Selects first ''n'' elements.
    *  $orderDependent
-   *  @param  n    Tt number of elements to take from this $coll.
+   *  @param  n    the number of elements to take from this $coll.
    *  @return a $coll consisting only of the first `n` elements of this $coll,
    *          or else the whole $coll, if it has less than `n` elements.
    */
