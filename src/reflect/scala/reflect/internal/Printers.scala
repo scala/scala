@@ -670,7 +670,8 @@ trait Printers extends api.Printers { self: SymbolTable =>
     if (flags == NoFlags) nme.NoFlags.toString
     else {
       val s_flags = new collection.mutable.ListBuffer[String]
-      for (i <- 0 to 63 if (flags hasFlag (1L << i)))
+      def hasFlag(left: Long, right: Long): Boolean = (left & right) != 0
+      for (i <- 0 to 63 if hasFlag(flags, 1L << i))
         s_flags += flagToString(1L << i).replace("<", "").replace(">", "").toUpperCase
       s_flags mkString " | "
     }
