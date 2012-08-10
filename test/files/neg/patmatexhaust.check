@@ -1,40 +1,42 @@
-patmatexhaust.scala:7: error: match may not be exhaustive.
+patmatexhaust.scala:7: warning: match may not be exhaustive.
 It would fail on the following input: Baz
     def ma1(x:Foo) = x match {
                      ^
-patmatexhaust.scala:11: error: match may not be exhaustive.
+patmatexhaust.scala:11: warning: match may not be exhaustive.
 It would fail on the following input: Bar(_)
     def ma2(x:Foo) = x match {
                      ^
-patmatexhaust.scala:23: error: match may not be exhaustive.
+patmatexhaust.scala:23: warning: match may not be exhaustive.
 It would fail on the following inputs: (Kult(_), Kult(_)), (Qult(), Qult())
     def ma3(x:Mult) = (x,x) match { // not exhaustive
                       ^
-patmatexhaust.scala:49: error: match may not be exhaustive.
+patmatexhaust.scala:49: warning: match may not be exhaustive.
 It would fail on the following inputs: Gp(), Gu
     def ma4(x:Deep) = x match { // missing cases: Gu, Gp
                       ^
-patmatexhaust.scala:55: error: unreachable code
+patmatexhaust.scala:55: warning: unreachable code
       case _ if 1 == 0 => 
                        ^
-patmatexhaust.scala:53: error: match may not be exhaustive.
+patmatexhaust.scala:53: warning: match may not be exhaustive.
 It would fail on the following input: Gp()
     def ma5(x:Deep) = x match {
                       ^
-patmatexhaust.scala:75: error: match may not be exhaustive.
+patmatexhaust.scala:75: warning: match may not be exhaustive.
 It would fail on the following input: B()
   def ma9(x: B) = x match {
                   ^
-patmatexhaust.scala:100: error: match may not be exhaustive.
+patmatexhaust.scala:100: warning: match may not be exhaustive.
 It would fail on the following input: C1()
     def ma10(x: C) = x match { // not exhaustive: C1 is not sealed.
                      ^
-patmatexhaust.scala:114: error: match may not be exhaustive.
+patmatexhaust.scala:114: warning: match may not be exhaustive.
 It would fail on the following inputs: D1, D2()
     def ma10(x: C) = x match {  // not exhaustive: C1 has subclasses.
                      ^
-patmatexhaust.scala:126: error: match may not be exhaustive.
+patmatexhaust.scala:126: warning: match may not be exhaustive.
 It would fail on the following input: C1()
     def ma10(x: C) = x match { // not exhaustive: C1 is not abstract.
                      ^
-10 errors found
+error: No warnings can be incurred under -Xfatal-warnings.
+10 warnings found
+one error found
