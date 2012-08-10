@@ -521,7 +521,7 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
         // case Star(_) | ArrayValue  => error("stone age pattern relics encountered!")
 
         case _                       =>
-          error("unsupported pattern: "+ patTree +"(a "+ patTree.getClass +")")
+          typer.context.unit.error(patTree.pos, s"unsupported pattern: $patTree (a ${patTree.getClass}).\n This is a scalac bug. Tree diagnostics: ${asCompactDebugString(patTree)}.")
           noFurtherSubPats()
       }
 
