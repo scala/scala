@@ -43,6 +43,7 @@ abstract class SymbolTable extends macros.Universe
   lazy val treeBuild = gen
 
   def log(msg: => AnyRef): Unit
+  def warning(msg: String): Unit = Console.err.println(msg)
   def abort(msg: String): Nothing = throw new FatalError(supplementErrorMessage(msg))
 
   @deprecated("Give us a reason", "2.10.0")
