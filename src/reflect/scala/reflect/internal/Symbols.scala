@@ -876,7 +876,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
 // ------ owner attribute --------------------------------------------------------------
 
     def owner: Symbol = {
-      Statistics.incCounter(ownerCount)
+      if (Statistics.hotEnabled) Statistics.incCounter(ownerCount)
       rawowner
     }
 
@@ -2272,7 +2272,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     private[this] var _rawname: TermName = initName
     def rawname = _rawname
     def name = {
-      Statistics.incCounter(nameCount)
+      if (Statistics.hotEnabled) Statistics.incCounter(nameCount)
       _rawname
     }
     def name_=(name: Name) {
@@ -2444,12 +2444,12 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
       flatOwnerInfo.decl(name.toTypeName).suchThat(sym => sym.isClass && (sym isCoDefinedWith this))
 
     override def owner = {
-      Statistics.incCounter(ownerCount)
+      if (Statistics.hotEnabled) Statistics.incCounter(ownerCount)
       if (!isMethod && needsFlatClasses) rawowner.owner
       else rawowner
     }
     override def name: TermName = {
-      Statistics.incCounter(nameCount)
+      if (Statistics.hotEnabled) Statistics.incCounter(nameCount)
       if (!isMethod && needsFlatClasses) {
         if (flatname eq null)
           flatname = nme.flattenedName(rawowner.name, rawname)
@@ -2543,7 +2543,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
 
     def rawname = _rawname
     def name = {
-      Statistics.incCounter(nameCount)
+      if (Statistics.hotEnabled) Statistics.incCounter(nameCount)
       _rawname
     }
     final def asNameType(n: Name) = n.toTypeName
@@ -2681,7 +2681,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
       }
     }
 
-    Statistics.incCounter(typeSymbolCount)
+    if (Statistics.hotEnabled) Statistics.incCounter(typeSymbolCount)
   }
   implicit val TypeSymbolTag = ClassTag[TypeSymbol](classOf[TypeSymbol])
 
@@ -2860,7 +2860,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     }
 
     override def owner: Symbol = {
-      Statistics.incCounter(ownerCount)
+      if (Statistics.hotEnabled) Statistics.incCounter(ownerCount)
       if (needsFlatClasses) rawowner.owner else rawowner
     }
 
@@ -2904,7 +2904,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     override def children = childSet
     override def addChild(sym: Symbol) { childSet = childSet + sym }
 
-    Statistics.incCounter(classSymbolCount)
+    if (Statistics.hotEnabled) Statistics.incCounter(classSymbolCount)
   }
   implicit val ClassSymbolTag = ClassTag[ClassSymbol](classOf[ClassSymbol])
 
