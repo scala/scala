@@ -233,7 +233,9 @@ class Base extends Universe { self =>
 
   class Modifiers(override val flags: FlagSet,
                   override val privateWithin: Name,
-                  override val annotations: List[Tree]) extends ModifiersBase
+                  override val annotations: List[Tree]) extends ModifiersBase {
+    def hasFlag(flags: FlagSet) = (this.flags & flags) != 0
+  }
 
   implicit val ModifiersTag = ClassTag[Modifiers](classOf[Modifiers])
 

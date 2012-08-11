@@ -24,8 +24,6 @@ abstract class Universe extends scala.reflect.api.Universe {
    */
   trait SymbolContextApi extends SymbolApi with AttachableApi { self: Symbol =>
 
-    def setFlags(flags: FlagSet): Symbol
-
     def setTypeSignature(tpe: Type): Symbol
 
     def setAnnotations(annots: AnnotationInfo*): Symbol
