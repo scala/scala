@@ -2622,9 +2622,8 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
       // similar to typer.infer.approximateAbstracts
       object typeArgsToWildcardsExceptArray extends TypeMap {
         def apply(tp: Type): Type = tp match {
-          case TypeRef(pre, sym, as) if as.nonEmpty && (sym ne ArrayClass) =>
-            val wildArgs = List.fill(as.length)(WildcardType)
-            TypeRef(pre, sym, wildArgs)
+          case TypeRef(pre, sym, args) if args.nonEmpty && (sym ne ArrayClass) =>
+            TypeRef(pre, sym, args map (_ => WildcardType))
           case _ =>
             mapOver(tp)
         }
