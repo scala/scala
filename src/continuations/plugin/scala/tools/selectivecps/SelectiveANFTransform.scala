@@ -43,6 +43,12 @@ abstract class SelectiveANFTransform extends PluginComponent with Transform with
         case If(cond, r1 @ Return(thenExpr), r2 @ Return(elseExpr)) =>
           treeCopy.If(tree, cond, transform(thenExpr), transform(elseExpr))
 
+        case If(cond, r1 @ Return(thenExpr), elseExpr) =>
+          treeCopy.If(tree, cond, transform(thenExpr), transform(elseExpr))
+
+        case If(cond, thenExpr, r2 @ Return(elseExpr)) =>
+          treeCopy.If(tree, cond, transform(thenExpr), transform(elseExpr))
+
         case If(cond, thenExpr, elseExpr) =>
           treeCopy.If(tree, cond, transform(thenExpr), transform(elseExpr))
 
