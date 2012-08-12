@@ -220,14 +220,30 @@ abstract class CPSAnnotationChecker extends CPSUtils with Modes {
         res
       } else if (retMode && !hasPlusMarker(tree.tpe) && annotsTree.isEmpty && annotsExpected.nonEmpty) {
         // add a marker annotation that will make tree.tpe behave as pt, subtyping wise
-        // tree will look like having no annotation
+        // tree will look like having any possible annotation
         
-        // note that we are only adding a plus marker if the method's result type is a CPS type
-        // (annotsExpected.nonEmpty == cpsParamAnnotation(pt).nonEmpty)
+        // note 1: we are only adding a plus marker if the method's result type is a cps type
+        //         (annotsExpected.nonEmpty == cpsParamAnnotation(pt).nonEmpty)
+        // note 2: we are not adding the expected cps annotations, since they will be added
+        //         by adaptTypeOfReturn (see below).
         val res = tree modifyType (_ withAnnotations List(newPlusMarker()))
         vprintln("adapted annotations (return) of " + tree + " to " + res.tpe)
         res
       } else tree
+    }
+
+    // only adapt type if this return will
+    // (a) be removed (in tail position and method's result type (pt) is cps type), or
+    // (b) cause an error
+    override def adaptTypeOfReturn(tree: Tree, pt: Type, default: => Type): Type = {
+      // only adapt if method's result type (pt) is cps type
+      val annots = cpsParamAnnotation(pt)
+      if (annots.nonEmpty) {
+        // return type of `tree` without plus marker, but only if it doesn't have other cps annots
+        if (hasPlusMarker(tree.tpe) && !hasCpsParamTypes(tree.tpe))
+          tree.setType(removeAttribs(tree.tpe, MarkerCPSAdaptPlus))
+        tree.tpe
+      } else default
     }
 
     def updateAttributesFromChildren(tpe: Type, childAnnots: List[AnnotationInfo], byName: List[Tree]): Type = {
@@ -482,13 +498,6 @@ abstract class CPSAnnotationChecker extends CPSUtils with Modes {
             tree.symbol modifyInfo removeAllCPSAnnotations
           }
           tpe
-
-        case ret @ Return(expr) =>
-          // only change type if this return will (a) be removed (in tail position) or (b) cause
-          // an error (not in tail position)
-          if (expr.tpe != null && hasPlusMarker(expr.tpe))
-            ret setType expr.tpe
-          ret.tpe
 
         case _ =>
           tpe
