@@ -594,20 +594,23 @@ abstract class ICodeReader extends ClassfileParser {
     while (pc < codeLength) parseInstruction
 
     val exceptionEntries = in.nextChar.toInt
-    code.containsEHs = (exceptionEntries != 0)
     var i = 0
+    var ehHandlers: List[EHEntry] = Nil
     while (i < exceptionEntries) {
-      // skip start end PC
-      in.skip(4)
-      // read the handler PC
-      code.jmpTargets += in.nextChar
-      // skip the exception type
-      in.skip(2)
+      val startPC   = in.nextChar.toInt
+      val endPC     = in.nextChar.toInt
+      val handlerPC = in.nextChar.toInt
+      code.jmpTargets += handlerPC // thus `jmpTargets` may include the mythical "one-past-last-instruction" pc
+      val excIdx = in.nextChar.toInt
+      val exc =
+        if(excIdx == 0) null // finalizer handler
+        else pool.getClassSymbol(excIdx).asInstanceOf[ClassSymbol]
+      ehHandlers ::= EHEntry(startPC, endPC, handlerPC, exc)
       i += 1
     }
     skipAttributes()
 
-    code.toBasicBlock
+    code.toBasicBlock(ehHandlers.reverse)
     assert(method.hasCode, method)
     // reverse parameters, as they were prepended during code generation
     method.params = method.params.reverse
@@ -641,6 +644,21 @@ abstract class ICodeReader extends ClassfileParser {
     else if ((flags & JAVA_ACC_STATIC) != 0) staticCode
     else instanceCode
 
+  /**
+   * Holds the values for an entry in the `exception_table` contained in a `Code` JVM attribute.
+   *
+   * Quoting from JVMS:
+   *   The values of the two items start_pc and end_pc indicate
+   *   the ranges in the code array at which the exception handler is active.
+   *   ...
+   *   The start_pc is inclusive and end_pc is exclusive; that is,
+   *   the exception handler must be active while the program
+   *   counter is within the interval [start_pc, end_pc).
+   **/
+  case class EHEntry(startPC: Int, endPC: Int, handlerPC: Int, cls: ClassSymbol) {
+    def isFinalizer = (cls == null || cls == NoSymbol)
+  }
+
   class LinearCode {
     var instrs: ListBuffer[(Int, Instruction)] = new ListBuffer
     var jmpTargets: mutable.Set[Int] = perRunCaches.newSet[Int]()
@@ -648,7 +666,6 @@ abstract class ICodeReader extends ClassfileParser {
 
     var containsDUPX = false
     var containsNEW  = false
-    var containsEHs  = false
 
     def emit(i: Instruction) {
       instrs += ((pc, i))
@@ -661,18 +678,47 @@ abstract class ICodeReader extends ClassfileParser {
     /** Break this linear code in basic block representation
      *  As a side effect, it sets the `code` field of the current
      */
-    def toBasicBlock: Code = {
+    def toBasicBlock(ehHandlers: List[EHEntry]): Code = {
       import opcodes._
 
       val code = new Code(method)
       method.setCode(code)
-      method.bytecodeHasEHs = containsEHs
+      method.bytecodeHasEHs = ehHandlers.nonEmpty
+
+      assert(code.startBlock ne NoBasicBlock, "someone forgot to initialize code.startBlock")
+      assert(!jmpTargets(0), "about to duplicate the method's entry block.")
+      val blocks = (jmpTargets.toSeq map (_ -> code.newBlock)).toMap + (0 -> code.startBlock)
+      jmpTargets += 0 // do this only after `blocks` have been instantiated (without `jmpTargets` containing 0).
+
+          def createICodeEH(ehRow: EHEntry): ExceptionHandler = {
+            val lbl  = newTermNameCached("" + ehRow.handlerPC)
+            val res =
+              if(ehRow.isFinalizer) { new Finalizer(method, lbl, NoPosition) }
+              else { new ExceptionHandler(method, lbl, ehRow.cls, NoPosition) }
+            method.addHandler(res)
+            // handler block
+            val sb = blocks(ehRow.handlerPC)
+            res setStartBlock sb
+            sb.exceptionHandlerStart = true
+            res addBlock sb
+            if(!ehRow.isFinalizer) {
+              sb.emit(LOAD_EXCEPTION(ehRow.cls))
+            }
+            // covered blocks are added by the caller
+            res
+          }
+
+      for(ehRow <- ehHandlers) {
+        // usually, but not necessarily: method.exh.find( e => (e.startBlock == blocks(ehRow.handlerPC)) && (e.cls == ehRow.cls) ).isEmpty
+        val icEH = createICodeEH(ehRow)
+        // covered blocks
+        val coveredPCs    = ((ehRow.startPC until ehRow.endPC) filter jmpTargets)
+        val coveredBlocks = coveredPCs map blocks
+        coveredBlocks foreach icEH.addCoveredBlock
+        // please notice icEH.resultKind remains uninitialized
+      }
+
       var bb = code.startBlock
-
-      def makeBasicBlocks: mutable.Map[Int, BasicBlock] =
-        mutable.Map(jmpTargets.toSeq map (_ -> code.newBlock): _*)
-
-      val blocks = makeBasicBlocks
       var otherBlock: BasicBlock = NoBasicBlock
       var disableJmpTarget = false
 

@@ -175,6 +175,7 @@ abstract class ClassfileParser {
       internalized(index)
     }
 
+    /* can return a ModuleSymbol or a ClassSymbol */
     def getClassSymbol(index: Int): Symbol = {
       if (index <= 0 || len <= index) errorBadIndex(index)
       var c = values(index).asInstanceOf[Symbol]
