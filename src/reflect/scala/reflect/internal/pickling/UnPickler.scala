@@ -230,9 +230,11 @@ abstract class UnPickler /*extends reflect.generic.UnPickler*/ {
           fromName(nme.expandedName(name.toTermName, owner)) orElse {
             // (3) Try as a nested object symbol.
             nestedObjectSymbol orElse {
-              // (4) Otherwise, fail.
-              //System.err.println("missing "+name+" in "+owner+"/"+owner.id+" "+owner.info.decls)
-              adjust(errorMissingRequirement(name, owner))
+              // (4) Call the mirror's "missing" hook.
+              adjust(mirrorThatLoaded(owner).missingHook(owner, name)) orElse {
+                // (5) Create a stub symbol to defer hard failure a little longer.
+                owner.newStubSymbol(name)
+              }
             }
           }
         }
