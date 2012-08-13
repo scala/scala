@@ -2644,7 +2644,6 @@ trait Typers extends Modes with Adaptations with Tags {
       def includesTargetPos(tree: Tree) =
         tree.pos.isRange && context.unit.exists && (tree.pos includes context.unit.targetPos)
       val localTarget = stats exists includesTargetPos
-      val statsErrors = scala.collection.mutable.LinkedHashSet[AbsTypeError]()
       def typedStat(stat: Tree): Tree = {
         if (context.owner.isRefinementClass && !treeInfo.isDeclarationOrTypeDef(stat))
           OnlyDeclarationsError(stat)
@@ -2663,7 +2662,6 @@ trait Typers extends Modes with Adaptations with Tags {
                 stat
               } else {
                 val localTyper = if (inBlock || (stat.isDef && !stat.isInstanceOf[LabelDef])) {
-                  context.flushBuffer()
                   this
                 } else newTyper(context.make(stat, exprOwner))
                 // XXX this creates a spurious dead code warning if an exception is thrown
@@ -2680,7 +2678,6 @@ trait Typers extends Modes with Adaptations with Tags {
                   "a pure expression does nothing in statement position; " +
                   "you may be omitting necessary parentheses"
                 )
-                statsErrors ++= localTyper.context.errBuffer
                 result
               }
           }
@@ -2763,12 +2760,7 @@ trait Typers extends Modes with Adaptations with Tags {
         }
       }
 
-      val stats1 = withSavedContext(context) {
-        val result = stats mapConserve typedStat
-        context.flushBuffer()
-        result
-      }
-      context.updateBuffer(statsErrors)
+      val stats1 = stats mapConserve typedStat
       if (phase.erasedTypes) stats1
       else {
         checkNoDoubleDefs(stats1)
