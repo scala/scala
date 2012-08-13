@@ -812,9 +812,11 @@ abstract class Inliners extends SubComponent {
         }
 
         def translateExh(e: ExceptionHandler) = {
-          val handler: ExceptionHandler = e.dup
-          handler.covered = handler.covered map inlinedBlock
+          val handler = new ExceptionHandler(caller.m, e.label, e.cls, e.pos)
+          handler.covered = e.covered map inlinedBlock
+          handler.blocks  = e.blocks  map inlinedBlock
           handler setStartBlock inlinedBlock(e.startBlock)
+          // TODO map e.finalizer to handler.finalizer ???
           handler
         }
 
@@ -949,7 +951,7 @@ abstract class Inliners extends SubComponent {
             if(inc.isRecursive)    { rs ::= "is recursive"           }
             if(isInlineForbidden)  { rs ::= "is annotated @noinline" }
             if(inc.isSynchronized) { rs ::= "is synchronized method" }
-            if(inc.m.bytecodeHasEHs) { rs ::= "bytecode contains exception handlers / finally clause" } // SI-6188
+            // SI-6188 if(inc.m.bytecodeHasEHs) { rs ::= "bytecode contains exception handlers / finally clause" }
             if(rs.isEmpty) null else rs.mkString("", ", and ", "")
           }
 
