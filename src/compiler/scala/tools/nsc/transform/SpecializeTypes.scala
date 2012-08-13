@@ -652,11 +652,10 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
 
               info(specMember)    = Implementation(original)
               typeEnv(specMember) = env ++ typeEnv(m)
-            }
-            else debuglog({
+            } else {
               val om = forwardToOverload(m)
-              "normalizedMember " + m + " om: " + om + " " + pp(typeEnv(om))
-            })
+              debuglog("normalizedMember " + m + " om: " + om + " " + pp(typeEnv(om)))
+            }
           }
           else
             debuglog("conflicting env for " + m + " env: " + env)
