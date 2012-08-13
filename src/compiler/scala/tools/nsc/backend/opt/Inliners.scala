@@ -645,29 +645,15 @@ abstract class Inliners extends SubComponent {
           else if (sym.isProtected) Protected
           else Public
 
+        /* Everything accessed by @inline methods has access-level widened to public in ExplicitOuter.
+         * In tandem with that, here we retro-actively widen the access-level of everything accessed by a callee being inlined, whether separately compiled or not.
+         *
+         * Less aggressive: add the condition "compiled in this run" ie not grabbed from external library:
+         *   (m.sourceFile ne NoSourceFile) && (m.sourceFile ne null) &&
+         * */
         def canMakePublic(f: Symbol): Boolean =
-          (m.sourceFile ne NoSourceFile) &&
-          (f.isSynthetic || f.isParamAccessor) &&
+          hasInline(f.owner) &&
           { toBecomePublic = f :: toBecomePublic; true }
-
-        /* A safety check to consider as private, for the purposes of inlining, a public field that:
-         *   (1) is defined in an external library, and
-         *   (2) can be presumed synthetic (due to a dollar sign in its name).
-         * Such field was made public by `doMakePublic()` and we don't want to rely on that,
-         * because under other compilation conditions (ie no -optimize) that won't be the case anymore.
-         *
-         * This allows aggressive intra-library inlining (making public if needed)
-         * that does not break inter-library scenarios (see comment for `Inliners`).
-         *
-         * TODO handle more robustly the case of a trait var changed at the source-level from public to private[this]
-         *      (eg by having ICodeReader use unpickler, see SI-5442).
-         
-         DISABLED
-         
-        def potentiallyPublicized(f: Symbol): Boolean = {
-          (m.sourceFile eq NoSourceFile) && f.name.containsChar('$')
-        }
-        */
 
         def checkField(f: Symbol)   = check(f, f.isPrivate && !canMakePublic(f))
         def checkSuper(n: Symbol)   = check(n, n.isPrivate || !n.isClassConstructor)
