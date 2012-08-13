@@ -9,6 +9,7 @@ package scala.tools.partest
 package nest
 
 import scala.tools.nsc.{ Global, Settings, CompilerCommand, FatalError, io }
+import scala.tools.nsc.io.{ File => SFile }
 import scala.tools.nsc.interactive.RangePositions
 import scala.tools.nsc.reporters.{ Reporter, ConsoleReporter }
 import scala.tools.nsc.util.{ ClassPath, FakePos }
@@ -94,7 +95,17 @@ class DirectCompiler(val fileManager: FileManager) extends SimpleCompiler {
     val logFile = basename(log.getName)
     val flagsFileName = "%s.flags" format (logFile.substring(0, logFile.lastIndexOf("-")))
     val argString = (io.File(log).parent / flagsFileName) ifFile (x => updatePluginPath(x.slurp())) getOrElse ""
-    val allOpts = fileManager.SCALAC_OPTS.toList ::: argString.split(' ').toList.filter(_.length > 0)
+
+    // slurp local flags (e.g., "A_1.flags")
+    val fstFile = SFile(files(0))
+    def isInGroup(num: Int) = fstFile.stripExtension endsWith ("_" + num)
+    val inGroup = (1 to 9) flatMap (group => if (isInGroup(group)) List(group) else List())
+    val localFlagsList = if (inGroup.nonEmpty) {
+      val localArgString = (fstFile.parent / (fstFile.stripExtension + ".flags")) ifFile (x => updatePluginPath(x.slurp())) getOrElse ""
+      localArgString.split(' ').toList.filter(_.length > 0)
+    } else List()
+
+    val allOpts = fileManager.SCALAC_OPTS.toList ::: argString.split(' ').toList.filter(_.length > 0) ::: localFlagsList
     val args = allOpts.toList
 
     NestUI.verbose("scalac options: "+allOpts)
