@@ -814,9 +814,8 @@ abstract class Inliners extends SubComponent {
         def translateExh(e: ExceptionHandler) = {
           val handler = new ExceptionHandler(caller.m, e.label, e.cls, e.pos)
           handler.covered = e.covered map inlinedBlock
-          val hsb = inlinedBlock(e.startBlock)
-          handler setStartBlock hsb
-          handler addBlock      hsb
+          handler.blocks  = e.blocks  map inlinedBlock
+          handler setStartBlock inlinedBlock(e.startBlock)
           // TODO map e.finalizer to handler.finalizer ???
           handler
         }
