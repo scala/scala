@@ -652,7 +652,7 @@ abstract class Inliners extends SubComponent {
          *   (m.sourceFile ne NoSourceFile) && (m.sourceFile ne null) &&
          * */
         def canMakePublic(f: Symbol): Boolean =
-          hasInline(f.owner) &&
+          hasInline(f.owner.enclMethod) &&
           { toBecomePublic = f :: toBecomePublic; true }
 
         def checkField(f: Symbol)   = check(f, f.isPrivate && !canMakePublic(f))
