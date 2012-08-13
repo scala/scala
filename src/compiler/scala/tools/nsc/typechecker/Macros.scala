@@ -144,32 +144,22 @@ trait Macros extends scala.tools.reflect.FastTrack with Traces {
     macroTraceVerbose("macroImplSigs are: ")(paramsss, implRetTpe)
   }
 
-  private def transformTypeTagEvidenceParams(paramss: List[List[Symbol]], transform: (Symbol, Symbol) => Option[Symbol]): List[List[Symbol]] = {
-    if (paramss.length == 0)
+  private def transformTypeTagEvidenceParams(paramss: List[List[Symbol]], transform: (Symbol, Symbol) => Symbol): List[List[Symbol]] = {
+    import definitions.{ AbsTypeTagClass, MacroContextClass }
+    if (paramss.isEmpty || paramss.last.isEmpty)
       return paramss
 
-    val wannabe = if (paramss.head.length == 1) paramss.head.head else NoSymbol
-    val contextParam = if (wannabe != NoSymbol && wannabe.tpe <:< definitions.MacroContextClass.tpe) wannabe else NoSymbol
-
-    val lastParamList0 = paramss.lastOption getOrElse Nil
-    val lastParamList = lastParamList0 flatMap (param => param.tpe match {
-      case TypeRef(SingleType(NoPrefix, contextParam), sym, List(tparam)) =>
-        var wannabe = sym
-        while (wannabe.isAliasType) wannabe = wannabe.info.typeSymbol
-        if (wannabe != definitions.AbsTypeTagClass)
-          List(param)
-        else
-          transform(param, tparam.typeSymbol) map (_ :: Nil) getOrElse Nil
-      case _ =>
-        List(param)
-    })
-
-    var result = paramss.dropRight(1) :+ lastParamList
-    if (lastParamList0.isEmpty ^ lastParamList.isEmpty) {
-      result = result dropRight 1
+    val ContextParam = paramss.head match {
+      case p :: Nil => p filter (_.tpe <:< definitions.MacroContextClass.tpe)
+      case _        => NoSymbol
     }
-
-    result
+    def isTag(sym: Symbol): Boolean = (sym == AbsTypeTagClass) || (sym.isAliasType && isTag(sym.info.typeSymbol))
+    def transformTag(param: Symbol): Symbol = param.tpe match {
+      case TypeRef(SingleType(NoPrefix, ContextParam), sym, tp :: Nil) if isTag(sym) => transform(param, tp.typeSymbol)
+      case _                                                                         => param
+    }
+    val last = paramss.last map transformTag filterNot (_ eq NoSymbol)
+    if (last.isEmpty) paramss.init else paramss.init :+ last
   }
 
   /** As specified above, body of a macro definition must reference its implementation.
@@ -429,7 +419,7 @@ trait Macros extends scala.tools.reflect.FastTrack with Traces {
       }
 
       var actparamss = macroImpl.paramss
-      actparamss = transformTypeTagEvidenceParams(actparamss, (param, tparam) => None)
+      actparamss = transformTypeTagEvidenceParams(actparamss, (param, tparam) => NoSymbol)
 
       val rettpe = if (!ddef.tpt.isEmpty) typer.typedType(ddef.tpt).tpe else computeMacroDefTypeFromMacroImpl(ddef, macroDef, macroImpl)
       val (reqparamsss0, reqres0) = macroImplSigs(macroDef, ddef.tparams, ddef.vparamss, rettpe)
@@ -550,7 +540,7 @@ trait Macros extends scala.tools.reflect.FastTrack with Traces {
 //      val defParamss = macroDef.paramss
       val defParamss = mmap(macroDdef.vparamss)(_.symbol)
       var implParamss = macroImpl.paramss
-      implParamss = transformTypeTagEvidenceParams(implParamss, (param, tparam) => None)
+      implParamss = transformTypeTagEvidenceParams(implParamss, (param, tparam) => NoSymbol)
 
       val implCtxParam = if (implParamss.length > 0 && implParamss(0).length > 0) implParamss(0)(0) else null
       def implParamToDefParam(implParam: Symbol): Symbol = {
@@ -799,7 +789,7 @@ trait Macros extends scala.tools.reflect.FastTrack with Traces {
         // empty-paramlist def + nullary invocation => uh-oh, we need to append a List() to argss
         // empty-paramlist def + empty-arglist invocation => paramss and argss match, everything is okay
         // that's almost it, but we need to account for the fact that paramss might have context bounds that mask the empty last paramlist
-        val paramss_without_evidences = transformTypeTagEvidenceParams(paramss, (param, tparam) => None)
+        val paramss_without_evidences = transformTypeTagEvidenceParams(paramss, (param, tparam) => NoSymbol)
         val isEmptyParamlistDef = paramss_without_evidences.nonEmpty && paramss_without_evidences.last.isEmpty
         val isEmptyArglistInvocation = argss.nonEmpty && argss.last.isEmpty
         if (isEmptyParamlistDef && !isEmptyArglistInvocation) {
@@ -856,7 +846,7 @@ trait Macros extends scala.tools.reflect.FastTrack with Traces {
             case _ =>
               throw new Error("unsupported tpe: " + tpe)
           }
-          Some(tparam)
+          tparam
         })
         val tags = paramss.last takeWhile (_.isType) map (resolved(_)) map (tpe => if (tpe.isConcrete) context.TypeTag(tpe) else context.AbsTypeTag(tpe))
         if (paramss.lastOption map (params => !params.isEmpty && params.forall(_.isType)) getOrElse false) argss = argss :+ Nil
