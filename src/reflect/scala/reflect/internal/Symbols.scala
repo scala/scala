@@ -390,6 +390,16 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
       case x: TermName  => newErrorValue(x)
     }
 
+    /** Creates a placeholder symbol for when a name is encountered during
+     *  unpickling for which there is no corresponding classfile.  This defers
+     *  failure to the point when that name is used for something, which is
+     *  often to the point of never.
+     */
+    def newStubSymbol(name: Name): Symbol = name match {
+      case n: TypeName  => new StubClassSymbol(this, n)
+      case _            => new StubTermSymbol(this, name.toTermName)
+    }
+
     @deprecated("Use the other signature", "2.10.0")
     def newClass(pos: Position, name: TypeName): Symbol        = newClass(name, pos)
     @deprecated("Use the other signature", "2.10.0")
@@ -2996,6 +3006,37 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
       || info.parents.exists(_.typeSymbol hasTransOwner sym)
     )
   }
+  trait StubSymbol extends Symbol {
+    protected def stubWarning = {
+      val from = if (associatedFile == null) "" else s" - referenced from ${associatedFile.canonicalPath}"
+      s"$kindString $nameString$locationString$from (a classfile may be missing)"
+    }
+    private def fail[T](alt: T): T = {
+      // Avoid issuing lots of redundant errors
+      if (!hasFlag(IS_ERROR)) {
+        globalError(s"bad symbolic reference to " + stubWarning)
+        if (settings.debug.value)
+          (new Throwable).printStackTrace
+
+        this setFlag IS_ERROR
+      }
+      alt
+    }
+    // This one doesn't call fail because SpecializeTypes winds up causing
+    // isMonomorphicType to be called, which calls this, which would fail us
+    // in all the scenarios we're trying to keep from failing.
+    override def originalInfo    = NoType
+    override def associatedFile  = owner.associatedFile
+    override def info            = fail(NoType)
+    override def rawInfo         = fail(NoType)
+    override def companionSymbol = fail(NoSymbol)
+
+    locally {
+      debugwarn("creating stub symbol for " + stubWarning)
+    }
+  }
+  class StubClassSymbol(owner0: Symbol, name0: TypeName) extends ClassSymbol(owner0, owner0.pos, name0) with StubSymbol
+  class StubTermSymbol(owner0: Symbol, name0: TermName) extends TermSymbol(owner0, owner0.pos, name0) with StubSymbol
 
   trait FreeSymbol extends Symbol {
     def origin: String

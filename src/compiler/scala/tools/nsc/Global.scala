@@ -220,11 +220,11 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
 
   // not deprecated yet, but a method called "error" imported into
   // nearly every trait really must go.  For now using globalError.
-  def error(msg: String)       = globalError(msg)
-  def globalError(msg: String) = reporter.error(NoPosition, msg)
-  def inform(msg: String)      = reporter.echo(msg)
-  def warning(msg: String)     =
-    if (opt.fatalWarnings) globalError(msg)
+  def error(msg: String)                = globalError(msg)
+  def inform(msg: String)               = reporter.echo(msg)
+  override def globalError(msg: String) = reporter.error(NoPosition, msg)
+  override def warning(msg: String)     =
+    if (settings.fatalWarnings.value) globalError(msg)
     else reporter.warning(NoPosition, msg)
 
   // Getting in front of Predef's asserts to supplement with more info.
