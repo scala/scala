@@ -1,0 +1,8 @@
+hello from A
+hello from B
+Method call statistics:
+    1  Test$$anon$1.<init>()V
+    1  instrumented/A$class.$init$(Linstrumented/A;)V
+    1  instrumented/B$class.$init$(Linstrumented/A;)V
+    2  instrumented/B$class.debug(Linstrumented/A;Ljava/lang/String;)V
+    2  scala/Predef$.println(Ljava/lang/Object;)V

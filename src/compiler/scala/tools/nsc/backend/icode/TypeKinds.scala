@@ -23,6 +23,8 @@ package icode
 
 */
 
+import symtab.classfile.ICodeReaderException
+
 trait TypeKinds { self: ICodes =>
   import global._
   import definitions.{ ArrayClass, AnyRefClass, ObjectClass, NullClass, NothingClass, arrayType }
@@ -394,10 +396,9 @@ trait TypeKinds { self: ICodes =>
     // For sure WildcardTypes shouldn't reach here either, but when
     // debugging such situations this may come in handy.
     // case WildcardType                    => REFERENCE(ObjectClass)
-    case norm => abort(
-      "Unknown type: %s, %s [%s, %s] TypeRef? %s".format(
-        t, norm, t.getClass, norm.getClass, t.isInstanceOf[TypeRef]
-      )
+    case norm =>
+      throw new ICodeReaderException("toTypeKind: Unknown type: %s, %s [%s, %s] TypeRef? %s".format(
+        t, norm, t.getClass, norm.getClass, t.isInstanceOf[TypeRef])
     )
   }
 

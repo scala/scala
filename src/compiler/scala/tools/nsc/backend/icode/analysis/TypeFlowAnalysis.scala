@@ -439,10 +439,16 @@ abstract class TypeFlowAnalysis {
           val cm = i.asInstanceOf[opcodes.CALL_METHOD]
           val msym = cm.method
           val paramsLength = msym.info.paramTypes.size
-          val receiver = result.stack.types.drop(paramsLength).head match {
-            case REFERENCE(s) => s
-            case _            => NoSymbol // e.g. the scrutinee is BOX(s) or ARRAY
-          }
+          val receiver =
+            // if the call style is static, the method owner is the receiver, else take receiver from the stack
+            if (cm.style.isStatic && !cm.style.hasInstance)
+              msym.owner
+            else
+              result.stack.types.drop(paramsLength).head match {
+                case REFERENCE(s) => s
+                case _            => NoSymbol // e.g. the scrutinee is BOX(s) or ARRAY
+              }
+
           val concreteMethod = inliner.lookupImplFor(msym, receiver)
           val isCandidate = {
             ( inliner.isClosureClass(receiver) || concreteMethod.isEffectivelyFinal || receiver.isEffectivelyFinal ) &&
@@ -501,7 +507,7 @@ abstract class TypeFlowAnalysis {
       !blackballed(msym)  &&
       !msym.isConstructor &&
       (!msym.isAccessor || inliner.isClosureClass(msym.owner)) &&
-      (style.isDynamic  || (style.hasInstance && style.isStatic))
+      (style.isStatic || style.isDynamic) // but not super calls
     }
 
     override def init(m: icodes.IMethod) {

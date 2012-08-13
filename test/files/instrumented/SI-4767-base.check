@@ -1,0 +1,9 @@
+7
+3
+3
+Gândăcel
+Method call statistics:
+    1  instrumented/Bar.bar(Linstrumented/Foo;I[Ljava/lang/String;[ILinstrumented/Gândăcel;)V
+    1  instrumented/Gândăcel.toString()Ljava/lang/String;
+    4  scala/Predef$.println(Ljava/lang/Object;)V
+    3  scala/runtime/BoxesRunTime.boxToInteger(I)Ljava/lang/Integer;

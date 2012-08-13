@@ -327,8 +327,11 @@ abstract class ClassfileParser {
 
     def getType(index: Int): Type = getType(null, index)
 
-    def getType(sym: Symbol, index: Int): Type =
-      sigToType(sym, getExternalName(index))
+    def getType(sym: Symbol, index: Int): Type = {
+      val name = getExternalName(index)
+      debuglog("getType: Getting type for " + name)
+      sigToType(sym, name)
+    }
 
     def getSuperClass(index: Int): Symbol =
       if (index == 0) definitions.AnyClass else getClassSymbol(index)
@@ -417,19 +420,24 @@ abstract class ClassfileParser {
    */
   def forceMangledName(name: Name, module: Boolean): Symbol = {
     val parts = name.decode.toString.split(Array('.', '$'))
-    var sym: Symbol = rootMirror.RootClass
+    var sym: Symbol = if (parts.length == 1) rootMirror.EmptyPackageClass else rootMirror.RootClass
+
+    debuglog("forceMangledName(" + name + ", " + module + ") parts = [" + parts.mkString(", ") + "]")
 
     // was "at flatten.prev"
     beforeFlatten {
       for (part0 <- parts; if !(part0 == ""); part = newTermName(part0)) {
+        debuglog("forceMangledName: looking for " + part + " in " + sym)
         val sym1 = beforeIcode {
           sym.linkedClassOfClass.info
           sym.info.decl(part.encode)
         }//.suchThat(module == _.isModule)
-
+        debuglog("forceMangledName: found " + sym1)
         sym = sym1 orElse sym.info.decl(part.encode.toTypeName)
+        debuglog("forceMangledName: found " + sym)
       }
     }
+    debuglog("forceMangledName: final answer " + sym)
     sym
   }
 
@@ -472,19 +480,24 @@ abstract class ClassfileParser {
     }
 
     def lookupClass(name: Name) = try {
-      if (name.pos('.') == name.length)
+      val result = if (name.pos('.') == name.length)
         definitions.getMember(rootMirror.EmptyPackageClass, name.toTypeName)
       else
         rootMirror.getClass(name) // see tickets #2464, #3756
+      debuglog("lookupClass(" + name + ") => " + result)
+      result
     } catch {
       case _: FatalError => loadClassSymbol(name)
     }
 
+    debuglog("classNameToSymbol looking up " + name)
+    debuglog("innerClasses: " + innerClasses)
+
     innerClasses.get(name) match {
       case Some(entry) =>
-        //println("found inner class " + name)
+        debuglog("found inner class " + name)
         val res = innerClasses.classSymbol(entry.externalName)
-        //println("\trouted to: " + res)
+        debuglog("\trouted to: " + res)
         res
       case None =>
         //if (name.toString.contains("$")) println("No inner class: " + name + innerClasses + " while parsing " + in.file.name)
@@ -684,7 +697,8 @@ abstract class ClassfileParser {
     }
     def sig2type(tparams: immutable.Map[Name,Symbol], skiptvs: Boolean): Type = {
       val tag = sig.charAt(index); index += 1
-      tag match {
+      debuglog("sig2type: " + tag)
+      val tpe = tag match {
         case BYTE_TAG   => definitions.ByteClass.tpe
         case CHAR_TAG   => definitions.CharClass.tpe
         case DOUBLE_TAG => definitions.DoubleClass.tpe
@@ -741,15 +755,17 @@ abstract class ClassfileParser {
                 val t = typeRef(pre, classSym, eparams.map(_.tpeHK))
                 val res = newExistentialType(eparams, t)
                 if (settings.debug.value && settings.verbose.value)
-                  println("raw type " + classSym + " -> " + res)
+                  log("raw type " + classSym + " -> " + res)
                 res
               }
             case tp =>
               assert(sig.charAt(index) != '<', tp)
               tp
           }
-
-          val classSym = classNameToSymbol(subName(c => c == ';' || c == '<'))
+          val name = subName(c => c == ';' || c == '<')
+          debuglog("sig2type: got class name: " + name)
+          val classSym = classNameToSymbol(name)
+          debuglog("sig2type: class sym: " + classSym)
           assert(!classSym.isOverloaded, classSym.alternatives)
           var tpe = processClassType(processInner(classSym.tpe))
           while (sig.charAt(index) == '.') {
@@ -776,17 +792,20 @@ abstract class ClassfileParser {
           definitions.arrayType(elemtp)
         case '(' =>
           // we need a method symbol. given in line 486 by calling getType(methodSym, ..)
+          debuglog("sig2type: parsing method type")
           assert(sym ne null, sig)
           val paramtypes = new ListBuffer[Type]()
           while (sig.charAt(index) != ')') {
             paramtypes += objToAny(sig2type(tparams, skiptvs))
           }
+          debuglog("sig2type: parsing result type")
           index += 1
           val restype = if (sym != null && sym.isClassConstructor) {
             accept('V')
             clazz.tpe
           } else
             sig2type(tparams, skiptvs)
+          debuglog("sig2type: done with method")
           JavaMethodType(sym.newSyntheticValueParams(paramtypes.toList), restype)
         case 'T' =>
           val n = subName(';'.==).toTypeName
@@ -794,6 +813,10 @@ abstract class ClassfileParser {
           if (skiptvs) definitions.AnyClass.tpe
           else tparams(n).typeConstructor
       }
+      debuglog("sig2type: finished: " + tpe)
+      if (tpe == NoType)
+        throw new ICodeReaderException("NoType generated by sig2type for: " + tag)
+      tpe
     } // sig2type(tparams, skiptvs)
 
     def sig2typeBounds(tparams: immutable.Map[Name, Symbol], skiptvs: Boolean): Type = {
@@ -1255,7 +1278,12 @@ abstract class ClassfileParser {
   }
 
   protected def getOwner(flags: Int): Symbol =
-    if (isStatic(flags)) moduleClass else clazz
+    if (clazz.isImplClass)
+      clazz
+    else if (isStatic(flags))
+      moduleClass
+    else
+      clazz
 
   protected def getScope(flags: Int): Scope =
     if (isStatic(flags)) staticScope else instanceScope
