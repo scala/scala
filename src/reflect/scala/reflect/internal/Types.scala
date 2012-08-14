@@ -293,7 +293,7 @@ trait Types extends api.Types { self: SymbolTable =>
         case SuperType(_, _) => false
         case SingleType(pre, sym) => notConcreteSym(sym)
         case ConstantType(_) => false
-        case TypeRef(_, sym, args) => notConcreteSym(sym) || (args exists (arg => notConcreteTpe(arg)))
+        case TypeRef(_, sym, args) => notConcreteSym(sym) || (args exists notConcreteTpe)
         case RefinedType(_, _) => false
         case ExistentialType(_, _) => false
         case AnnotatedType(_, tp, _) => notConcreteTpe(tp)
@@ -343,9 +343,9 @@ trait Types extends api.Types { self: SymbolTable =>
       */
     def isImmediatelyDependent: Boolean = false
 
-    /** Does this depend on an enclosing method parameter? */
-    def isDependent: Boolean = IsDependentCollector.collect(this)
-
+    /** Is this type a dependent method type? */
+    def isDependentMethodType: Boolean = false
+    
     /** True for WildcardType or BoundedWildcardType. */
     def isWildcard = false
 
@@ -1579,10 +1579,10 @@ trait Types extends api.Types { self: SymbolTable =>
     }
 
     override def narrow: Type = typeSymbol.thisType
-    override def isNotNull: Boolean = parents exists (_.isNotNull)
+    override def isNotNull: Boolean = parents exists typeIsNotNull
 
     override def isStructuralRefinement: Boolean =
-      typeSymbol.isAnonOrRefinementClass && decls.exists(_.isPossibleInRefinement)
+      typeSymbol.isAnonOrRefinementClass && (decls exists symbolIsPossibleInRefinement)
 
     // override def isNullable: Boolean =
     // parents forall (p => p.isNullable && !p.typeSymbol.isAbstractType);
@@ -1598,7 +1598,7 @@ trait Types extends api.Types { self: SymbolTable =>
     if (period != currentPeriod) {
       tpe.baseTypeSeqPeriod = currentPeriod
       if (!isValidForBaseClasses(period)) {
-        if (tpe.parents.exists(_.exists(_.isInstanceOf[TypeVar]))) {
+        if (tpe.parents exists typeContainsTypeVar) {
           // rename type vars to fresh type params, take base type sequence of
           // resulting type, and rename back all the entries in that sequence
           var tvs = Set[TypeVar]()
@@ -2399,7 +2399,7 @@ trait Types extends api.Types { self: SymbolTable =>
     private def needsPreString = (
          settings.debug.value
       || !shorthands(sym.fullName)
-      || sym.ownerChain.exists(s => !s.isClass)
+      || (sym.ownersIterator exists (s => !s.isClass))
     )
     private def preString  = if (needsPreString) pre.prefixString else ""
     private def argsString = if (args.isEmpty) "" else args.mkString("[", ",", "]")
@@ -2530,7 +2530,7 @@ trait Types extends api.Types { self: SymbolTable =>
       resultType.isTrivial && (resultType eq resultType.withoutAnnotations)
 
     private def isTrivialParam(p: Symbol) =
-      p.tpe.isTrivial && !(params.exists(_.tpe contains p) || (resultType contains p))
+      p.tpe.isTrivial && !typesContain(paramTypes, p) && !(resultType contains p)
 
     def isImplicit = params.nonEmpty && params.head.isImplicit
     def isJava = false // can we do something like for implicits? I.e. do Java methods without parameters need to be recognized?
@@ -2540,18 +2540,20 @@ trait Types extends api.Types { self: SymbolTable =>
 
     override def paramss: List[List[Symbol]] = params :: resultType.paramss
 
-    override def paramTypes = params map (_.tpe)
+    override lazy val paramTypes = params map (_.tpe)
 
     override def boundSyms = resultType.boundSyms ++ params
 
     override def resultType(actuals: List[Type]) =
       if (isTrivial || phase.erasedTypes) resultType
-      else if (sameLength(actuals, params)) {
+      else if (/*isDependentMethodType && */sameLength(actuals, params)) {
         val idm = new InstantiateDependentMap(params, actuals)
         val res = idm(resultType)
         existentialAbstraction(idm.existentialsNeeded, res)
       }
       else existentialAbstraction(params, resultType)
+
+    override lazy val isDependentMethodType: Boolean = IsDependentCollector.collect(resultType)
 
     // implicit args can only be depended on in result type:
     //TODO this may be generalised so that the only constraint is dependencies are acyclic
@@ -2567,7 +2569,7 @@ trait Types extends api.Types { self: SymbolTable =>
     }
 
     override def atOwner(owner: Symbol) =
-      if ((params exists (_.owner != owner)) || (resultType.atOwner(owner) ne resultType))
+      if (!allSymbolsHaveOwner(params, owner) || (resultType.atOwner(owner) ne resultType))
         cloneInfo(owner)
       else
         this
@@ -2655,7 +2657,7 @@ trait Types extends api.Types { self: SymbolTable =>
     }
 
     override def atOwner(owner: Symbol) =
-      if ((typeParams exists (_.owner != owner)) || (resultType.atOwner(owner) ne resultType))
+      if (!allSymbolsHaveOwner(typeParams, owner) || (resultType.atOwner(owner) ne resultType))
         cloneInfo(owner)
       else
         this
@@ -2759,7 +2761,7 @@ trait Types extends api.Types { self: SymbolTable =>
       createFromClonedSymbolsAtOwner(quantified, owner, underlying)(newExistentialType)
 
     override def atOwner(owner: Symbol) =
-      if (quantified exists (_.owner != owner)) cloneInfo(owner) else this
+      if (!allSymbolsHaveOwner(quantified, owner)) cloneInfo(owner) else this
 
     override def kind = "ExistentialType"
 
@@ -2870,7 +2872,7 @@ trait Types extends api.Types { self: SymbolTable =>
        *  any results.
        */
       if (propagateParameterBoundsToTypeVars) {
-        val exclude = bounds.isEmptyBounds || bounds.exists(_.typeSymbolDirect.isNonClassType)
+        val exclude = bounds.isEmptyBounds || (bounds exists typeIsNonClassType)
 
         if (exclude) new TypeConstraint
         else TypeVar.trace("constraint", "For " + tparam.fullLocationString)(new TypeConstraint(bounds))
@@ -2916,13 +2918,12 @@ trait Types extends api.Types { self: SymbolTable =>
     if (tp == NoType) tp
     else existentialAbstraction(existentialsInType(tp), tp)
   )
-  def containsExistential(tpe: Type) =
-    tpe exists (_.typeSymbol.isExistentiallyBound)
 
-  def existentialsInType(tpe: Type) = (
-    for (tp <- tpe ; if tp.typeSymbol.isExistentiallyBound) yield
-      tp.typeSymbol
-  )
+  def containsExistential(tpe: Type) =
+    tpe exists typeIsExistentiallyBound
+
+  def existentialsInType(tpe: Type) =
+    tpe withFilter typeIsExistentiallyBound map typeSymbolOfType
 
   /** Precondition: params.nonEmpty.  (args.nonEmpty enforced structurally.)
    */
@@ -4479,7 +4480,7 @@ trait Types extends api.Types { self: SymbolTable =>
                     if (sameLength(basesym.typeParams, baseargs))
                       instParam(basesym.typeParams, baseargs)
                     else
-                      if (symclazz.tpe.parents.exists(_.isErroneous))
+                      if (symclazz.tpe.parents exists typeIsErroneous)
                         ErrorType // don't be to overzealous with throwing exceptions, see #2641
                       else
                         throw new Error(
@@ -4530,7 +4531,7 @@ trait Types extends api.Types { self: SymbolTable =>
         else subst(tp, sym, from.tail, to.tail)
 
       val boundSyms = tp0.boundSyms
-      val tp1 = if (boundSyms exists from.contains) renameBoundSyms(tp0) else tp0
+      val tp1 = if (boundSyms.nonEmpty && (boundSyms exists from.contains)) renameBoundSyms(tp0) else tp0
       val tp = mapOver(tp1)
 
       tp match {
@@ -4671,6 +4672,8 @@ trait Types extends api.Types { self: SymbolTable =>
       else mapOver(tp)
   }
 
+  /** Note: This map is needed even for non-dependent method types, despite what the name might imply.
+   */
   class InstantiateDependentMap(params: List[Symbol], actuals0: List[Type]) extends TypeMap with KeepOnlyTypeConstraints {
     private val actuals      = actuals0.toIndexedSeq
     private val existentials = new Array[Symbol](actuals.size)
@@ -5897,9 +5900,16 @@ trait Types extends api.Types { self: SymbolTable =>
 
   def specializesSym(tp: Type, sym: Symbol, depth: Int): Boolean =
     tp.typeSymbol == NothingClass ||
-    tp.typeSymbol == NullClass && containsNull(sym.owner) ||
-    (tp.nonPrivateMember(sym.name).alternatives exists
-      (alt => sym == alt || specializesSym(tp.narrow, alt, sym.owner.thisType, sym, depth)))
+    tp.typeSymbol == NullClass && containsNull(sym.owner) || {
+      def specializedBy(membr: Symbol): Boolean =
+        membr == sym || specializesSym(tp.narrow, membr, sym.owner.thisType, sym, depth)
+      val member = tp.nonPrivateMember(sym.name)
+      if (member.isOverloaded) member.alternatives exists specializedBy
+      else specializedBy(member)
+      // was
+      // (tp.nonPrivateMember(sym.name).alternatives exists
+      //   (alt => sym == alt || specializesSym(tp.narrow, alt, sym.owner.thisType, sym, depth)))
+    }
 
   /** Does member `sym1` of `tp1` have a stronger type
    *  than member `sym2` of `tp2`?
@@ -6145,9 +6155,9 @@ trait Types extends api.Types { self: SymbolTable =>
    */
   def isWithinBounds(pre: Type, owner: Symbol, tparams: List[Symbol], targs: List[Type]): Boolean = {
     var bounds = instantiatedBounds(pre, owner, tparams, targs)
-    if (targs.exists(_.annotations.nonEmpty))
+    if (targs exists typeHasAnnotations)
       bounds = adaptBoundsToAnnotations(bounds, tparams, targs)
-    (bounds corresponds targs)(_ containsType _)
+    (bounds corresponds targs)(boundsContainType)
   }
 
   def instantiatedBounds(pre: Type, owner: Symbol, tparams: List[Symbol], targs: List[Type]): List[TypeBounds] =
@@ -6225,7 +6235,7 @@ trait Types extends api.Types { self: SymbolTable =>
     def loop(tsBts: List[List[Type]]): List[Type] = {
       lubListDepth += 1
 
-      if (tsBts.isEmpty || tsBts.exists(_.isEmpty)) Nil
+      if (tsBts.isEmpty || (tsBts exists typeListIsEmpty)) Nil
       else if (tsBts.tail.isEmpty) tsBts.head
       else {
         // ts0 is the 1-dimensional frontier of symbols cutting through 2-dimensional tsBts.
@@ -6307,10 +6317,12 @@ trait Types extends api.Types { self: SymbolTable =>
    *  of some other element of the list. */
   private def elimSuper(ts: List[Type]): List[Type] = ts match {
     case List() => List()
+    case List(t) => List(t)
     case t :: ts1 =>
       val rest = elimSuper(ts1 filter (t1 => !(t <:< t1)))
       if (rest exists (t1 => t1 <:< t)) rest else t :: rest
   }
+
   def elimAnonymousClass(t: Type) = t match {
     case TypeRef(pre, clazz, Nil) if clazz.isAnonymousClass =>
       clazz.classBound.asSeenFrom(pre, clazz.owner)
@@ -6327,6 +6339,7 @@ trait Types extends api.Types { self: SymbolTable =>
   private def elimSub(ts: List[Type], depth: Int): List[Type] = {
     def elimSub0(ts: List[Type]): List[Type] = ts match {
       case List() => List()
+      case List(t) => List(t)
       case t :: ts1 =>
         val rest = elimSub0(ts1 filter (t1 => !isSubType(t1, t, decr(depth))))
         if (rest exists (t1 => isSubType(t, t1, decr(depth)))) rest else t :: rest
@@ -6360,7 +6373,7 @@ trait Types extends api.Types { self: SymbolTable =>
 
   def weakLub(ts: List[Type]) =
     if (ts.nonEmpty && (ts forall isNumericValueType)) (numericLub(ts), true)
-    else if (ts.nonEmpty && (ts exists (_.annotations.nonEmpty)))
+    else if (ts exists typeHasAnnotations)
       (annotationsLub(lub(ts map (_.withoutAnnotations)), ts), true)
     else (lub(ts), false)
 
@@ -6369,7 +6382,7 @@ trait Types extends api.Types { self: SymbolTable =>
       val nglb = numericGlb(ts)
       if (nglb != NoType) (nglb, true)
       else (glb(ts), false)
-    } else if (ts.nonEmpty && (ts exists (_.annotations.nonEmpty))) {
+    } else if (ts exists typeHasAnnotations) {
       (annotationsGlb(glb(ts map (_.withoutAnnotations)), ts), true)
     } else (glb(ts), false)
   }
@@ -6554,7 +6567,7 @@ trait Types extends api.Types { self: SymbolTable =>
       indent = indent stripSuffix "  "
       println(indent + "lub of " + ts + " is " + res)//debug
     }
-    if (ts forall (_.isNotNull)) res.notNull else res
+    if (ts forall typeIsNotNull) res.notNull else res
   }
 
   val GlbFailure = new Throwable
@@ -6700,7 +6713,7 @@ trait Types extends api.Types { self: SymbolTable =>
 
     // if (settings.debug.value) { indent = indent.substring(0, indent.length() - 2); log(indent + "glb of " + ts + " is " + res) }//DEBUG
 
-    if (ts exists (_.isNotNull)) res.notNull else res
+    if (ts exists typeIsNotNull) res.notNull else res
   }
 
   /** A list of the typevars in a type. */
@@ -6742,7 +6755,7 @@ trait Types extends api.Types { self: SymbolTable =>
           // special treatment for lubs of array types after erasure:
           // if argss contain one value type and some other type, the lub is Object
           // if argss contain several reference types, the lub is an array over lub of argtypes
-          if (argss exists (_.isEmpty)) {
+          if (argss exists typeListIsEmpty) {
             None  // something is wrong: an array without a type arg.
           } else {
             val args = argss map (_.head)
@@ -6935,7 +6948,7 @@ trait Types extends api.Types { self: SymbolTable =>
   }
   // Add serializable to a list of parents, unless one of them already is
   def addSerializable(ps: Type*): List[Type] = (
-    if (ps exists (_ <:< SerializableClass.tpe)) ps.toList
+    if (ps exists typeIsSubTypeOfSerializable) ps.toList
     else (ps :+ SerializableClass.tpe).toList
   )
 
@@ -6976,6 +6989,33 @@ trait Types extends api.Types { self: SymbolTable =>
         tostringRecursions -= 1
       }
 
+// ----- Hoisted closures and convenience methods, for compile time reductions -------
+
+  private val typeIsNotNull = (tp: Type) => tp.isNotNull
+  private val symbolIsPossibleInRefinement = (sym: Symbol) => sym.isPossibleInRefinement
+  private val isTypeVar = (tp: Type) => tp.isInstanceOf[TypeVar]
+  private val typeContainsTypeVar = (tp: Type) => tp exists isTypeVar
+  private val typeIsNonClassType = (tp: Type) => tp.typeSymbolDirect.isNonClassType
+  private val typeIsExistentiallyBound = (tp: Type) => tp.typeSymbol.isExistentiallyBound
+  private val typeSymbolOfType = (tp: Type) => tp.typeSymbol
+  private val typeIsErroneous = (tp: Type) => tp.isErroneous
+  private val typeHasAnnotations = (tp: Type) => tp.annotations.nonEmpty
+  private val boundsContainType = (bounds: TypeBounds, tp: Type) => bounds containsType tp
+  private val typeListIsEmpty = (ts: List[Type]) => ts.isEmpty
+  private val typeIsSubTypeOfSerializable = (tp: Type) => tp <:< SerializableClass.tpe
+
+  @tailrec private def typesContain(tps: List[Type], sym: Symbol): Boolean = tps match {
+    case tp :: rest => (tp contains sym) || typesContain(rest, sym)
+    case _ => false
+  }
+
+  @tailrec private def allSymbolsHaveOwner(syms: List[Symbol], owner: Symbol): Boolean = syms match {
+    case sym :: rest => sym.owner == owner && allSymbolsHaveOwner(rest, owner)
+    case _ => true
+  }
+
+// -------------- Classtags --------------------------------------------------------
+
   implicit val AnnotatedTypeTag = ClassTag[AnnotatedType](classOf[AnnotatedType])
   implicit val BoundedWildcardTypeTag = ClassTag[BoundedWildcardType](classOf[BoundedWildcardType])
   implicit val ClassInfoTypeTag = ClassTag[ClassInfoType](classOf[ClassInfoType])
@@ -6994,7 +7034,10 @@ trait Types extends api.Types { self: SymbolTable =>
   implicit val TypeRefTag = ClassTag[TypeRef](classOf[TypeRef])
   implicit val TypeTagg = ClassTag[Type](classOf[Type])
 
+// -------------- Statistics --------------------------------------------------------
+
   Statistics.newView("#unique types") { if (uniques == null) 0 else uniques.size }
+
 }
 
 object TypesStats {

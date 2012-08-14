@@ -240,7 +240,7 @@ trait Infer {
   def normalize(tp: Type): Type = tp match {
     case mt @ MethodType(params, restpe) if mt.isImplicit =>
       normalize(restpe)
-    case mt @ MethodType(params, restpe) if !restpe.isDependent =>
+    case mt @ MethodType(params, restpe) if !mt.isDependentMethodType =>
       functionType(params map (_.tpe), normalize(restpe))
     case NullaryMethodType(restpe) =>
       normalize(restpe)
