@@ -880,12 +880,16 @@ abstract class GenICode extends SubComponent  {
 
         case app @ Apply(fun @ Select(qual, _), args)
         if !ctx.method.symbol.isStaticConstructor 
-        && fun.symbol.isAccessor && fun.symbol.accessed.hasStaticAnnotation =>
+        && fun.symbol.isAccessor && fun.symbol.accessed.hasStaticAnnotation
+        && qual.tpe.typeSymbol.orElse(fun.symbol.owner).companionClass != NoSymbol =>
           // bypass the accessor to the companion object and load the static field directly
-          // the only place were this bypass is not done, is the static intializer for the static field itself
+          // this bypass is not done:
+          // - if the static intializer for the static field itself
+          // - if there is no companion class of the object owner - this happens in the REPL
           val sym = fun.symbol
           generatedType = toTypeKind(sym.accessed.info)
-          val hostClass = qual.tpe.typeSymbol.orElse(sym.owner).companionClass
+          val hostOwner = qual.tpe.typeSymbol.orElse(sym.owner)
+          val hostClass = hostOwner.companionClass
           val staticfield = hostClass.info.findMember(sym.accessed.name, NoFlags, NoFlags, false)
           
           if (sym.isGetter) {

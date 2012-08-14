@@ -45,3 +45,9 @@ class PrivateProtectedLazy {
   println(PrivateProtectedLazy.baz)
   println(PrivateProtectedLazy.bam)
 }
+
+
+class StaticDef {
+  // this should not crash the compiler
+  @static def x = 42
+}
