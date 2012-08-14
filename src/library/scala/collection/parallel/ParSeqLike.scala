@@ -44,7 +44,7 @@ trait ParSeqLike[+T, +Repr <: ParSeq[T], +Sequential <: Seq[T] with SeqLike[T, S
 extends scala.collection.GenSeqLike[T, Repr]
    with ParIterableLike[T, Repr, Sequential] {
 self =>
-  
+
   type SuperParIterator = IterableSplitter[T]
 
   /** A more refined version of the iterator found in the `ParallelIterable` trait,
@@ -330,6 +330,7 @@ self =>
     def apply(idx: Int) = self(idx)
     override def seq = self.seq.view
     def splitter = self.splitter
+    override def isEmpty = size == 0
   }
 
   /* tasks */
