@@ -2056,21 +2056,29 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
     def Lit(sym: Sym, pos: Boolean = true): Lit
 
     // throws an AnalysisBudget.Exception when the prop results in a CNF that's too big
+    // TODO: be smarter/more efficient about this (http://lara.epfl.ch/w/sav09:tseitin_s_encoding)
     def eqFreePropToSolvable(p: Prop): Formula = {
-      // TODO: for now, reusing the normalization from DPLL
-      def negationNormalForm(p: Prop): Prop = p match {
-        case And(a, b)      => And(negationNormalForm(a), negationNormalForm(b))
-        case Or(a, b)       => Or(negationNormalForm(a), negationNormalForm(b))
-        case Not(And(a, b)) => negationNormalForm(Or(Not(a), Not(b)))
-        case Not(Or(a, b))  => negationNormalForm(And(Not(a), Not(b)))
-        case Not(Not(p))    => negationNormalForm(p)
-        case Not(True)      => False
-        case Not(False)     => True
-        case True
-           | False
-           | (_ : Sym)
-           | Not(_ : Sym)   => p
-      }
+      def negationNormalFormNot(p: Prop, budget: Int = AnalysisBudget.max): Prop =
+        if (budget <= 0) throw AnalysisBudget.exceeded
+        else p match {
+          case And(a, b) =>  Or(negationNormalFormNot(a, budget - 1), negationNormalFormNot(b, budget - 1))
+          case Or(a, b)  => And(negationNormalFormNot(a, budget - 1), negationNormalFormNot(b, budget - 1))
+          case Not(p)    => negationNormalForm(p, budget - 1)
+          case True      => False
+          case False     => True
+          case s: Sym    => Not(s)
+        }
+
+      def negationNormalForm(p: Prop, budget: Int = AnalysisBudget.max): Prop =
+        if (budget <= 0) throw AnalysisBudget.exceeded
+        else p match {
+          case And(a, b)      => And(negationNormalForm(a, budget - 1), negationNormalForm(b, budget - 1))
+          case Or(a, b)       =>  Or(negationNormalForm(a, budget - 1), negationNormalForm(b, budget - 1))
+          case Not(negated)   => negationNormalFormNot(negated, budget - 1)
+          case True
+             | False
+             | (_ : Sym)      => p
+        }
 
       val TrueF          = formula()
       val FalseF         = formula(clause())
@@ -2113,12 +2121,7 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
       }
 
       val start = Statistics.startTimer(patmatCNF)
-      val res =
-        try {
-          conjunctiveNormalForm(negationNormalForm(p))
-        } catch { case ex : StackOverflowError =>
-          throw AnalysisBudget.stackOverflow
-        }
+      val res   = conjunctiveNormalForm(negationNormalForm(p))
 
       Statistics.stopTimer(patmatCNF, start)
 
