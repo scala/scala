@@ -148,8 +148,13 @@ class Template(universe: doc.Universe, generator: DiagramGenerator, tpl: DocTemp
               <div id="ancestors">
                 <span class="filtertype">Implicitly<br/>
                 </span>
-                <ol id="implicits">
-                  { tpl.conversions.map(conv => <li class="in" name={ conv.conversionQualifiedName }><span>{ "by " + conv.conversionShortName }</span></li>) }
+                <ol id="implicits"> { 
+                  tpl.conversions.map { conv =>
+                    val name = conv.conversionQualifiedName
+                    val hide = universe.settings.hiddenImplicits(name)
+                    <li class="in" name={ name } data-hidden={ hide.toString }><span>{ "by " + conv.conversionShortName }</span></li>
+                  }
+                }
                 </ol>
               </div>
             else NodeSeq.Empty
