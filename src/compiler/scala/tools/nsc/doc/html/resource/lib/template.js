@@ -4,12 +4,11 @@
 $(document).ready(function(){
     var isHiddenClass = function (name) {
         return name == 'scala.Any' ||
-               name == 'scala.AnyRef' ||
-               name == 'scala.Predef.any2stringfmt' ||
-               name == 'scala.Predef.any2stringadd' ||
-               name == 'scala.Predef.any2ArrowAssoc' ||
-               name == 'scala.Predef.any2Ensuring' ||
-               name == 'scala.collection.TraversableOnce.alternateImplicit'
+               name == 'scala.AnyRef';
+    };
+
+    var isHidden = function (elem) {
+        return $(elem).attr("data-hidden") == 'true';
     };
 
     $("#linearization li:gt(0)").filter(function(){
@@ -17,7 +16,7 @@ $(document).ready(function(){
     }).removeClass("in").addClass("out");
 
     $("#implicits li").filter(function(){
-        return isHiddenClass($(this).attr("name"));
+        return isHidden(this);
     }).removeClass("in").addClass("out");
 
     // Pre-filter members
@@ -113,7 +112,7 @@ $(document).ready(function(){
 
         var filteredImplicits =
         $("#implicits li.out").filter(function() {
-            return ! isHiddenClass($(this).attr("name"));
+            return ! isHidden(this);
         });
         filteredImplicits.removeClass("out").addClass("in");
 
