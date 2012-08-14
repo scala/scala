@@ -271,8 +271,11 @@ abstract class Erasure extends AddInterfaces
           poly + jsig(restpe)
 
         case MethodType(params, restpe) =>
-          "("+(params map (_.tpe) map (jsig(_))).mkString+")"+
-          (if (restpe.typeSymbol == UnitClass || sym0.isConstructor) VOID_TAG.toString else jsig(restpe))
+          val buf = new StringBuffer("(")
+          params foreach (p => buf append jsig(p.tpe))
+          buf append ")"
+          buf append (if (restpe.typeSymbol == UnitClass || sym0.isConstructor) VOID_TAG.toString else jsig(restpe))
+          buf.toString
 
         case RefinedType(parent :: _, decls) =>
           boxedSig(parent)

@@ -482,7 +482,7 @@ abstract class CleanUp extends Transform with ast.TreeDSL {
 
                 BLOCK(
                   VAL(sym) === qual0,
-                  callAsReflective(mparams map (_.tpe), resType)
+                  callAsReflective(mparams map tpeOfSymbol, resType)
                 )
               }
           }

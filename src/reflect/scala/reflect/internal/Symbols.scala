@@ -11,6 +11,7 @@ import scala.collection.mutable.ListBuffer
 import util.Statistics
 import Flags._
 import base.Attachments
+import scala.annotation.tailrec
 
 trait Symbols extends api.Symbols { self: SymbolTable =>
   import definitions._
@@ -1378,7 +1379,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     /** The value parameter sections of this symbol.
      */
     def paramss: List[List[Symbol]] = info.paramss
-    
+
     /** The least proper supertype of a class; includes all parent types
      *  and refinement where needed. You need to compute that in a situation like this:
      *  {
@@ -2624,7 +2625,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
           tpeCache = NoType
           val targs =
             if (phase.erasedTypes && this != ArrayClass) List()
-            else unsafeTypeParams map (_.typeConstructor)
+            else unsafeTypeParams map typeConstructorOfSymbol
             //@M! use typeConstructor to generate dummy type arguments,
             // sym.tpe should not be called on a symbol that's supposed to be a higher-kinded type
             // memberType should be used instead, that's why it uses tpeHK and not tpe
@@ -3206,7 +3207,25 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     def toList: List[TypeHistory] = this :: ( if (prev eq null) Nil else prev.toList )
   }
 
+// ----- Hoisted closures and convenience methods, for compile time reductions -------
+
+  private[scala] final val symbolIsPossibleInRefinement = (sym: Symbol) => sym.isPossibleInRefinement
+  private[scala] final val symbolIsNonVariant = (sym: Symbol) => sym.variance == 0
+  private[scala] final val typeConstructorOfSymbol = (sym: Symbol) => sym.typeConstructor
+  private[scala] final val tpeOfSymbol = (sym: Symbol) => sym.tpe
+  private[scala] final val tpeHKOfSymbol = (sym: Symbol) => sym.tpeHK
+
+  @tailrec private[scala] final
+  def allSymbolsHaveOwner(syms: List[Symbol], owner: Symbol): Boolean = syms match {
+    case sym :: rest => sym.owner == owner && allSymbolsHaveOwner(rest, owner)
+    case _ => true
+  }
+
+
+// -------------- Statistics --------------------------------------------------------
+
   Statistics.newView("#symbols")(ids)
+
 }
 
 object SymbolsStats {

@@ -363,7 +363,7 @@ trait Types extends api.Types { self: SymbolTable =>
      *  and all type parameters (if any) are invariant.
      */
     def isFinalType =
-      typeSymbol.isFinal && (typeSymbol.typeParams forall (_.variance == 0))
+      typeSymbol.isFinal && (typeSymbol.typeParams forall symbolIsNonVariant)
 
     /** Is this type completed (i.e. not a lazy type)? */
     def isComplete: Boolean = true
@@ -484,7 +484,7 @@ trait Types extends api.Types { self: SymbolTable =>
     /** A list of placeholder types derived from the type parameters.
      *  Used by RefinedType and TypeRef.
      */
-    protected def dummyArgs: List[Type] = typeParams map (_.typeConstructor)
+    protected def dummyArgs: List[Type] = typeParams map typeConstructorOfSymbol
 
     /** For a (nullary) method or poly type, its direct result type,
      *  the type itself for all other types. */
@@ -835,7 +835,7 @@ trait Types extends api.Types { self: SymbolTable =>
         case (TypeRef(_, ArrayClass, List(arg1)), TypeRef(_, ArrayClass, List(arg2))) if arg2.typeSymbol.typeParams.nonEmpty =>
           arg1 matchesPattern arg2
         case (_, TypeRef(_, _, args)) =>
-          val newtp = existentialAbstraction(args map (_.typeSymbol), that)
+          val newtp = existentialAbstraction(args map typeSymbolOfType, that)
           !(that =:= newtp) && (this <:< newtp)
         case _ =>
           false
@@ -1495,8 +1495,8 @@ trait Types extends api.Types { self: SymbolTable =>
     }
     private def lowerString = if (emptyLowerBound) "" else " >: " + lo
     private def upperString = if (emptyUpperBound) "" else " <: " + hi
-    private def emptyLowerBound = lo.typeSymbolDirect eq NothingClass
-    private def emptyUpperBound = hi.typeSymbolDirect eq AnyClass
+    private def emptyLowerBound = typeIsNothing(lo)
+    private def emptyUpperBound = typeIsAny(hi)
     def isEmptyBounds = emptyLowerBound && emptyUpperBound
 
     // override def isNullable: Boolean = NullClass.tpe <:< lo;
@@ -1706,7 +1706,7 @@ trait Types extends api.Types { self: SymbolTable =>
 
     override def isHigherKinded = (
       parents.nonEmpty &&
-      (parents forall (_.isHigherKinded)) &&
+      (parents forall typeIsHigherKinded) &&
       !phase.erasedTypes
     )
 
@@ -1716,7 +1716,7 @@ trait Types extends api.Types { self: SymbolTable =>
 
     //@M may result in an invalid type (references to higher-order args become dangling )
     override def typeConstructor =
-      copyRefinedType(this, parents map (_.typeConstructor), decls)
+      copyRefinedType(this, parents map typeConstructorOfType, decls)
 
     final override def normalize: Type =
       if (phase.erasedTypes) normalizeImpl
@@ -2540,7 +2540,7 @@ trait Types extends api.Types { self: SymbolTable =>
 
     override def paramss: List[List[Symbol]] = params :: resultType.paramss
 
-    override def paramTypes = params map (_.tpe)
+    override def paramTypes = params map tpeOfSymbol
 
     override def boundSyms = resultType.boundSyms ++ params
 
@@ -3240,7 +3240,7 @@ trait Types extends api.Types { self: SymbolTable =>
       if (constr.instValid) constr.inst
       // get here when checking higher-order subtyping of the typevar by itself
       // TODO: check whether this ever happens?
-      else if (isHigherKinded) typeFun(params, applyArgs(params map (_.typeConstructor)))
+      else if (isHigherKinded) typeFun(params, applyArgs(params map typeConstructorOfSymbol))
       else super.normalize
     )
     override def typeSymbol = origin.typeSymbol
@@ -3625,7 +3625,7 @@ trait Types extends api.Types { self: SymbolTable =>
         val bounds   = args map (TypeBounds upper _)
         foreach2(eparams, bounds)(_ setInfo _)
 
-        newExistentialType(eparams, typeRef(pre, sym, eparams map (_.tpe)))
+        newExistentialType(eparams, typeRef(pre, sym, eparams map tpeOfSymbol))
       case _ =>
         appliedType(tycon, args)
     }
@@ -3862,8 +3862,8 @@ trait Types extends api.Types { self: SymbolTable =>
      *  guarding addLoBound/addHiBound somehow broke raw types so it
      *  only guards against being created with them.]
      */
-    private var lobounds = lo0 filterNot (_.typeSymbolDirect eq NothingClass)
-    private var hibounds = hi0 filterNot (_.typeSymbolDirect eq AnyClass)
+    private var lobounds = lo0 filterNot typeIsNothing
+    private var hibounds = hi0 filterNot typeIsAny
     private var numlo = numlo0
     private var numhi = numhi0
     private var avoidWidening = avoidWidening0
@@ -3919,8 +3919,8 @@ trait Types extends api.Types { self: SymbolTable =>
 
     override def toString = {
       val boundsStr = {
-        val lo    = loBounds filterNot (_.typeSymbolDirect eq NothingClass)
-        val hi    = hiBounds filterNot (_.typeSymbolDirect eq AnyClass)
+        val lo    = loBounds filterNot typeIsNothing
+        val hi    = hiBounds filterNot typeIsAny
         val lostr = if (lo.isEmpty) Nil else List(lo.mkString(" >: (", ", ", ")"))
         val histr = if (hi.isEmpty) Nil else List(hi.mkString(" <: (", ", ", ")"))
 
@@ -4281,7 +4281,7 @@ trait Types extends api.Types { self: SymbolTable =>
         else try {
           expanded += sym
           val eparams = mapOver(typeParamsToExistentials(sym))
-          existentialAbstraction(eparams, typeRef(apply(pre), sym, eparams map (_.tpe)))
+          existentialAbstraction(eparams, typeRef(apply(pre), sym, eparams map tpeOfSymbol))
         } finally {
           expanded -= sym
         }
@@ -6225,8 +6225,8 @@ trait Types extends api.Types { self: SymbolTable =>
    */
   private def lubList(ts: List[Type], depth: Int): List[Type] = {
     // Matching the type params of one of the initial types means dummies.
-    val initialTypeParams = ts map (_.typeParams)
-    def isHotForTs(xs: List[Type]) = initialTypeParams contains xs.map(_.typeSymbol)
+    val initialTypeParams = ts map typeParamsOfType
+    def isHotForTs(xs: List[Type]) = initialTypeParams contains (xs map typeSymbolOfType)
 
     def elimHigherOrderTypeParam(tp: Type) = tp match {
       case TypeRef(pre, sym, args) if args.nonEmpty && isHotForTs(args) => tp.typeConstructor
@@ -6459,8 +6459,8 @@ trait Types extends api.Types { self: SymbolTable =>
         val tparams1 = map2(tparams, matchingBounds(ts, tparams).transpose)((tparam, bounds) =>
           tparam.cloneSymbol.setInfo(glb(bounds, depth)))
         PolyType(tparams1, lub0(matchingInstTypes(ts, tparams1)))
-      case ts @ MethodType(params, _) :: rest =>
-        MethodType(params, lub0(matchingRestypes(ts, params map (_.tpe))))
+      case ts @ (mt @ MethodType(params, _)) :: rest =>
+        MethodType(params, lub0(matchingRestypes(ts, mt.paramTypes)))
       case ts @ NullaryMethodType(_) :: rest =>
         NullaryMethodType(lub0(matchingRestypes(ts, Nil)))
       case ts @ TypeBounds(_, _) :: rest =>
@@ -6614,8 +6614,8 @@ trait Types extends api.Types { self: SymbolTable =>
         val tparams1 = map2(tparams, matchingBounds(ts, tparams).transpose)((tparam, bounds) =>
           tparam.cloneSymbol.setInfo(lub(bounds, depth)))
         PolyType(tparams1, glbNorm(matchingInstTypes(ts, tparams1), depth))
-      case ts @ MethodType(params, _) :: rest =>
-        MethodType(params, glbNorm(matchingRestypes(ts, params map (_.tpe)), depth))
+      case ts @ (mt @ MethodType(params, _)) :: rest =>
+        MethodType(params, glbNorm(matchingRestypes(ts, mt.paramTypes), depth))
       case ts @ NullaryMethodType(_) :: rest =>
         NullaryMethodType(glbNorm(matchingRestypes(ts, Nil), depth))
       case ts @ TypeBounds(_, _) :: rest =>
@@ -6878,7 +6878,7 @@ trait Types extends api.Types { self: SymbolTable =>
    */
   private def matchingRestypes(tps: List[Type], pts: List[Type]): List[Type] =
     tps map {
-      case MethodType(params1, res) if (isSameTypes(params1 map (_.tpe), pts)) =>
+      case mt @ MethodType(params1, res) if isSameTypes(mt.paramTypes, pts) =>
         res
       case NullaryMethodType(res) if pts.isEmpty =>
         res
@@ -6992,27 +6992,28 @@ trait Types extends api.Types { self: SymbolTable =>
 
 // ----- Hoisted closures and convenience methods, for compile time reductions -------
 
-  private val typeIsNotNull = (tp: Type) => tp.isNotNull
-  private val symbolIsPossibleInRefinement = (sym: Symbol) => sym.isPossibleInRefinement
-  private val isTypeVar = (tp: Type) => tp.isInstanceOf[TypeVar]
-  private val typeContainsTypeVar = (tp: Type) => tp exists isTypeVar
-  private val typeIsNonClassType = (tp: Type) => tp.typeSymbolDirect.isNonClassType
-  private val typeIsExistentiallyBound = (tp: Type) => tp.typeSymbol.isExistentiallyBound
-  private val typeSymbolOfType = (tp: Type) => tp.typeSymbol
-  private val typeIsErroneous = (tp: Type) => tp.isErroneous
-  private val typeHasAnnotations = (tp: Type) => tp.annotations.nonEmpty
-  private val boundsContainType = (bounds: TypeBounds, tp: Type) => bounds containsType tp
-  private val typeListIsEmpty = (ts: List[Type]) => ts.isEmpty
-  private val typeIsSubTypeOfSerializable = (tp: Type) => tp <:< SerializableClass.tpe
+  private[scala] val typeIsNotNull = (tp: Type) => tp.isNotNull
+  private[scala] val isTypeVar = (tp: Type) => tp.isInstanceOf[TypeVar]
+  private[scala] val typeContainsTypeVar = (tp: Type) => tp exists isTypeVar
+  private[scala] val typeIsNonClassType = (tp: Type) => tp.typeSymbolDirect.isNonClassType
+  private[scala] val typeIsExistentiallyBound = (tp: Type) => tp.typeSymbol.isExistentiallyBound
+  private[scala] val typeIsErroneous = (tp: Type) => tp.isErroneous
+  private[scala] val typeIsError = (tp: Type) => tp.isError
+  private[scala] val typeHasAnnotations = (tp: Type) => tp.annotations.nonEmpty
+  private[scala] val boundsContainType = (bounds: TypeBounds, tp: Type) => bounds containsType tp
+  private[scala] val typeListIsEmpty = (ts: List[Type]) => ts.isEmpty
+  private[scala] val typeIsSubTypeOfSerializable = (tp: Type) => tp <:< SerializableClass.tpe
+  private[scala] val typeIsNothing = (tp: Type) => tp.typeSymbolDirect eq NothingClass
+  private[scala] val typeIsAny = (tp: Type) => tp.typeSymbolDirect eq AnyClass
+  private[scala] val typeIsHigherKinded = (tp: Type) => tp.isHigherKinded
+
+  private[scala] val typeSymbolOfType = (tp: Type) => tp.typeSymbol
+  private[scala] val typeParamsOfType = (tp: Type) => tp.typeParams
+  private[scala] val typeConstructorOfType = (tp: Type) => tp.typeConstructor
 
   @tailrec private def typesContain(tps: List[Type], sym: Symbol): Boolean = tps match {
     case tp :: rest => (tp contains sym) || typesContain(rest, sym)
     case _ => false
-  }
-
-  @tailrec private def allSymbolsHaveOwner(syms: List[Symbol], owner: Symbol): Boolean = syms match {
-    case sym :: rest => sym.owner == owner && allSymbolsHaveOwner(rest, owner)
-    case _ => true
   }
 
 // -------------- Classtags --------------------------------------------------------

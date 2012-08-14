@@ -941,9 +941,9 @@ abstract class RefChecks extends InfoTransform with reflect.internal.transform.R
           case TypeBounds(lo, hi) =>
             validateVariance(lo, -variance)
             validateVariance(hi, variance)
-          case MethodType(formals, result) =>
+          case mt @ MethodType(formals, result) =>
             if (inRefinement)
-              validateVariances(formals map (_.tpe), -variance)
+              validateVariances(mt.paramTypes, -variance)
             validateVariance(result, variance)
           case NullaryMethodType(result) =>
             validateVariance(result, variance)
@@ -1677,7 +1677,7 @@ abstract class RefChecks extends InfoTransform with reflect.internal.transform.R
             tree
 
           case TypeApply(fn, args) =>
-            checkBounds(tree, NoPrefix, NoSymbol, fn.tpe.typeParams, args map (_.tpe))
+            checkBounds(tree, NoPrefix, NoSymbol, fn.tpe.typeParams, args map tpeOfTree)
             transformCaseApply(tree, ())
 
           case x @ Apply(_, _)  =>

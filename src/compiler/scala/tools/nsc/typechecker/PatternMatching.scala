@@ -3294,7 +3294,7 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
               // TODO: I don't think the binder's types can actually be different (due to checks in caseEquals)
               // if they do somehow manage to diverge, the lub might not be precise enough and we could get a type error
               // TODO: reuse name exactly if there's only one binder in binders
-              val binder = freshSym(binders.head.pos, lub(binders.map(_.tpe)), binders.head.name.toString)
+              val binder = freshSym(binders.head.pos, lub(binders.map(tpeOfSymbol)), binders.head.name.toString)
 
               // the patterns in same are equal (according to caseEquals)
               // we can thus safely pick the first one arbitrarily, provided we correct binding

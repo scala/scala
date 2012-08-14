@@ -1540,6 +1540,12 @@ trait Trees extends api.Trees { self: SymbolTable =>
       sys.error("Not a LabelDef: " + t + "/" + t.getClass)
   }
 
+// ----- Hoisted closures and convenience methods, for compile time reductions -------
+
+  private[scala] final val tpeOfTree = (tree: Tree) => tree.tpe
+
+// -------------- Classtags --------------------------------------------------------
+
   implicit val TreeTag = ClassTag[Tree](classOf[Tree])
   implicit val TermTreeTag = ClassTag[TermTree](classOf[TermTree])
   implicit val TypTreeTag = ClassTag[TypTree](classOf[TypTree])
