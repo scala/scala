@@ -68,6 +68,8 @@ trait SeqLike[+A, +Repr] extends Any with IterableLike[A, Repr] with GenSeqLike[
   def apply(idx: Int): A
 
   protected[this] override def parCombiner = ParSeq.newCombiner[A]
+  
+  override /*IterableLike*/ def isEmpty: Boolean = lengthCompare(0) == 0
 
   /** Compares the length of this $coll to a test value.
    *
