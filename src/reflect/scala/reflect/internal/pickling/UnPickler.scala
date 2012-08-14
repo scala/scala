@@ -677,7 +677,7 @@ abstract class UnPickler /*extends reflect.generic.UnPickler*/ {
           val args = until(end, readTreeRef)
           if (fun.symbol.isOverloaded) {
             fun.setType(fun.symbol.info)
-            inferMethodAlternative(fun, args map (_.tpe), tpe)
+            inferMethodAlternative(fun, args map tpeOfTree, tpe)
           }
           Apply(fun, args)
 

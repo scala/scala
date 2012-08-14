@@ -181,8 +181,8 @@ trait Implicits {
         containsError(restpe)
       case NullaryMethodType(restpe) =>
         containsError(restpe)
-      case MethodType(params, restpe) =>
-        params.exists(_.tpe.isError) || containsError(restpe)
+      case mt @ MethodType(_, restpe) =>
+        (mt.paramTypes exists typeIsError) || containsError(restpe)
       case _ =>
         tp.isError
     }

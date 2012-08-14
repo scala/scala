@@ -141,7 +141,7 @@ trait Erasure {
           if (restpe.typeSymbol == UnitClass) erasedTypeRef(UnitClass)
           // this replaces each typeref that refers to an argument
           // by the type `p.tpe` of the actual argument p (p in params)
-          else apply(mt.resultType(params map (_.tpe))))
+          else apply(mt.resultType(mt.paramTypes)))
       case RefinedType(parents, decls) =>
         apply(mergeParents(parents))
       case AnnotatedType(_, atp, _) =>
@@ -220,7 +220,7 @@ trait Erasure {
         MethodType(
           cloneSymbolsAndModify(params, specialErasureAvoiding(clazz, _)),
           if (restpe.typeSymbol == UnitClass) erasedTypeRef(UnitClass)
-          else specialErasureAvoiding(clazz, (mt.resultType(params map (_.tpe)))))
+          else specialErasureAvoiding(clazz, (mt.resultType(mt.paramTypes))))
       case TypeRef(pre, `clazz`, args) =>
         typeRef(pre, clazz, List())
       case _ =>

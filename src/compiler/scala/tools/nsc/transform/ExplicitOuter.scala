@@ -385,7 +385,7 @@ abstract class ExplicitOuter extends InfoTransform
       def makeGuardDef(vs: List[Symbol], guard: Tree) = {
         val gdname = unit.freshTermName("gd")
         val method = currentOwner.newMethod(gdname, tree.pos, SYNTHETIC)
-        val params = method newSyntheticValueParams vs.map(_.tpe)
+        val params = method newSyntheticValueParams vs.map(tpeOfSymbol)
         method setInfo new MethodType(params, BooleanClass.tpe)
 
         localTyper typed {
