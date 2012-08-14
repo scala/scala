@@ -59,7 +59,7 @@ trait ViewMkString[+A] {
  *  $viewInfo
  *
  *  All views for traversable collections are defined by creating a new `foreach` method.
- *  
+ *
  *  @author Martin Odersky
  *  @version 2.8
  *  @since   2.8
@@ -162,7 +162,7 @@ trait TraversableViewLike[+A,
 //     if (b.isInstanceOf[NoBuilder[_]]) newFlatMapped(f).asInstanceOf[That]
 //    else super.flatMap[B, That](f)(bf)
   }
-  override def flatten[B](implicit asTraversable: A => /*<:<!!!*/ GenTraversableOnce[B]) = 
+  override def flatten[B](implicit asTraversable: A => /*<:<!!!*/ GenTraversableOnce[B]) =
     newFlatMapped(asTraversable)
   private[this] implicit def asThis(xs: Transformed[A]): This = xs.asInstanceOf[This]
 
@@ -192,6 +192,15 @@ trait TraversableViewLike[+A,
   override def takeWhile(p: A => Boolean): This = newTakenWhile(p)
   override def span(p: A => Boolean): (This, This) = (newTakenWhile(p), newDroppedWhile(p))
   override def splitAt(n: Int): (This, This) = (newTaken(n), newDropped(n))
+
+  // Without this, isEmpty tests go back to the Traversable default, which
+  // involves starting a foreach, which can force the first element of the
+  // view. This is just a backstop - it's overridden at all the "def view"
+  // instantiation points in the collections where the Coll type is known.
+  override def isEmpty = underlying match {
+    case x: GenTraversableOnce[_] => x.isEmpty
+    case _                        => super.isEmpty
+  }
 
   override def scanLeft[B, That](z: B)(op: (B, A) => B)(implicit bf: CanBuildFrom[This, B, That]): That =
     newForced(thisSeq.scanLeft(z)(op)).asInstanceOf[That]

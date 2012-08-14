@@ -12,6 +12,7 @@ package scala.concurrent
 import java.util.concurrent.{ ExecutorService, Executor }
 import scala.concurrent.util.Duration
 import scala.annotation.implicitNotFound
+import scala.util.Try
 
 /**
  * An `ExecutionContext` is an abstraction over an entity that can execute program logic.
@@ -27,6 +28,12 @@ trait ExecutionContext {
    */
   def reportFailure(t: Throwable): Unit
   
+  /** Prepares for the execution of a task. Returns the prepared
+   *  execution context. A valid implementation of `prepare` is one
+   *  that simply returns `this`.
+   */
+  def prepare(): ExecutionContext = this
+
 }
 
 /**

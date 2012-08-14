@@ -13,7 +13,7 @@ trait Symbols extends base.Symbols { self: Universe =>
   override type FreeTypeSymbol >: Null <: TypeSymbol with FreeTypeSymbolApi
 
   /** The API of symbols */
-  trait SymbolApi extends SymbolBase with HasFlagsBase { this: Symbol =>
+  trait SymbolApi extends SymbolBase { this: Symbol =>
 
     /** The position of this symbol
      */
@@ -110,10 +110,10 @@ trait Symbols extends base.Symbols { self: Universe =>
      *
      *  The java access levels translate as follows:
      *
-     *  java private:     hasFlag(PRIVATE)                && (privateWithin == NoSymbol)
-     *  java package:     !hasFlag(PRIVATE | PROTECTED)   && (privateWithin == enclosingPackage)
-     *  java protected:   hasFlag(PROTECTED)              && (privateWithin == enclosingPackage)
-     *  java public:      !hasFlag(PRIVATE | PROTECTED)   && (privateWithin == NoSymbol)
+     *  java private:     isPrivate                  && (privateWithin == NoSymbol)
+     *  java package:     !isPrivate && !isProtected && (privateWithin == enclosingPackage)
+     *  java protected:   isProtected                && (privateWithin == enclosingPackage)
+     *  java public:      !isPrivate && !isProtected && (privateWithin == NoSymbol)
      */
     def privateWithin: Symbol
 

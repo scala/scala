@@ -34,6 +34,9 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
   /** the following two members override abstract members in Transform */
   val phaseName: String = "superaccessors"
 
+  /** The following flags may be set by this phase: */
+  override def phaseNewFlags: Long = notPRIVATE
+
   protected def newTransformer(unit: CompilationUnit): Transformer =
     new SuperAccTransformer(unit)
 
@@ -192,9 +195,11 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
             }
           }
           super.transform(tree)
+
         case ModuleDef(_, _, _) =>
           checkCompanionNameClashes(sym)
           super.transform(tree)
+
         case Template(_, _, body) =>
           val ownAccDefs = new ListBuffer[Tree]
           accDefs(currentOwner) = ownAccDefs
@@ -221,81 +226,91 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
           typeDef.symbol.deSkolemize.setFlag(SPECIALIZED)
           typeDef
 
-        case sel @ Select(qual @ This(_), name) =>
-          // warn if they are selecting a private[this] member which
-          // also exists in a superclass, because they may be surprised
-          // to find out that a constructor parameter will shadow a
-          // field. See SI-4762.
-          if (settings.lint.value) {
-            if (sym.isPrivateLocal && sym.paramss.isEmpty) {
-              qual.symbol.ancestors foreach { parent =>
-                parent.info.decls filterNot (x => x.isPrivate || x.hasLocalFlag) foreach { m2 =>
-                  if (sym.name == m2.name && m2.isGetter && m2.accessed.isMutable) {
-                    unit.warning(sel.pos,
-                        sym.accessString + " " + sym.fullLocationString + " shadows mutable " + m2.name
-                      + " inherited from " + m2.owner + ".  Changes to " + m2.name + " will not be visible within "
-                      + sym.owner + " - you may want to give them distinct names."
-                    )
+        case sel @ Select(qual, name) =>
+          /** return closest enclosing method, unless shadowed by an enclosing class;
+           *  no use of closures here in the interest of speed.
+           */
+          def closestEnclMethod(from: Symbol): Symbol =
+            if (from.isSourceMethod) from
+            else if (from.isClass) NoSymbol
+            else closestEnclMethod(from.owner)
+
+          if (closestEnclMethod(currentOwner) hasAnnotation definitions.ScalaInlineClass)
+            sym.makeNotPrivate(sym.owner)
+
+          qual match {
+            case This(_) =>
+              // warn if they are selecting a private[this] member which
+              // also exists in a superclass, because they may be surprised
+              // to find out that a constructor parameter will shadow a
+              // field. See SI-4762.
+              if (settings.lint.value) {
+                if (sym.isPrivateLocal && sym.paramss.isEmpty) {
+                  qual.symbol.ancestors foreach { parent =>
+                    parent.info.decls filterNot (x => x.isPrivate || x.hasLocalFlag) foreach { m2 =>
+                      if (sym.name == m2.name && m2.isGetter && m2.accessed.isMutable) {
+                        unit.warning(sel.pos,
+                          sym.accessString + " " + sym.fullLocationString + " shadows mutable " + m2.name
+                            + " inherited from " + m2.owner + ".  Changes to " + m2.name + " will not be visible within "
+                            + sym.owner + " - you may want to give them distinct names.")
+                      }
+                    }
                   }
                 }
               }
-            }
-          }
 
-          // direct calls to aliases of param accessors to the superclass in order to avoid
-          // duplicating fields.
-          if (sym.isParamAccessor && sym.alias != NoSymbol) {
-            val result = (localTyper.typedPos(tree.pos) {
-              Select(Super(qual, tpnme.EMPTY) setPos qual.pos, sym.alias)
-            }).asInstanceOf[Select]
-            debuglog("alias replacement: " + tree + " ==> " + result);//debug
-            localTyper.typed(gen.maybeMkAsInstanceOf(transformSuperSelect(result), sym.tpe, sym.alias.tpe, true))
-          }
-          else {
-            /** A trait which extends a class and accesses a protected member
-             *  of that class cannot implement the necessary accessor method
-             *  because its implementation is in an implementation class (e.g.
-             *  Foo$class) which inherits nothing, and jvm access restrictions
-             *  require the call site to be in an actual subclass. So non-trait
-             *  classes inspect their ancestors for any such situations and
-             *  generate the accessors.  See SI-2296.
-             */
-            // FIXME - this should be unified with needsProtectedAccessor, but some
-            // subtlety which presently eludes me is foiling my attempts.
-            val shouldEnsureAccessor = (
-                 currentClass.isTrait 
-              && sym.isProtected
-              && sym.enclClass != currentClass
-              && !sym.owner.isTrait
-              && (sym.owner.enclosingPackageClass != currentClass.enclosingPackageClass)
-              && (qual.symbol.info.member(sym.name) ne NoSymbol)
-            )
-            if (shouldEnsureAccessor) {
-              log("Ensuring accessor for call to protected " + sym.fullLocationString + " from " + currentClass)
-              ensureAccessor(sel)
-            }
-            else
-              mayNeedProtectedAccessor(sel, List(EmptyTree), false)
-          }
+              // direct calls to aliases of param accessors to the superclass in order to avoid
+              // duplicating fields.
+              if (sym.isParamAccessor && sym.alias != NoSymbol) {
+                val result = (localTyper.typedPos(tree.pos) {
+                  Select(Super(qual, tpnme.EMPTY) setPos qual.pos, sym.alias)
+                }).asInstanceOf[Select]
+                debuglog("alias replacement: " + tree + " ==> " + result); //debug
+                localTyper.typed(gen.maybeMkAsInstanceOf(transformSuperSelect(result), sym.tpe, sym.alias.tpe, true))
+              } else {
+                /**
+                 * A trait which extends a class and accesses a protected member
+                 *  of that class cannot implement the necessary accessor method
+                 *  because its implementation is in an implementation class (e.g.
+                 *  Foo$class) which inherits nothing, and jvm access restrictions
+                 *  require the call site to be in an actual subclass. So non-trait
+                 *  classes inspect their ancestors for any such situations and
+                 *  generate the accessors.  See SI-2296.
+                 */
+                // FIXME - this should be unified with needsProtectedAccessor, but some
+                // subtlety which presently eludes me is foiling my attempts.
+                val shouldEnsureAccessor = (
+                  currentClass.isTrait
+                  && sym.isProtected
+                  && sym.enclClass != currentClass
+                  && !sym.owner.isTrait
+                  && (sym.owner.enclosingPackageClass != currentClass.enclosingPackageClass)
+                  && (qual.symbol.info.member(sym.name) ne NoSymbol))
+                if (shouldEnsureAccessor) {
+                  log("Ensuring accessor for call to protected " + sym.fullLocationString + " from " + currentClass)
+                  ensureAccessor(sel)
+                } else
+                  mayNeedProtectedAccessor(sel, List(EmptyTree), false)
+              }
 
-        case sel @ Select(Super(_, mix), name) =>
-          if (sym.isValue && !sym.isMethod || sym.hasAccessorFlag) {
-            if (!settings.overrideVars.value)
-              unit.error(tree.pos, "super may be not be used on "+ sym.accessedOrSelf)
+            case Super(_, mix) =>
+              if (sym.isValue && !sym.isMethod || sym.hasAccessorFlag) {
+                if (!settings.overrideVars.value)
+                  unit.error(tree.pos, "super may be not be used on " + sym.accessedOrSelf)
+              } else if (isDisallowed(sym)) {
+                unit.error(tree.pos, "super not allowed here: use this." + name.decode + " instead")
+              }
+              transformSuperSelect(sel)
+
+            case _ =>
+              mayNeedProtectedAccessor(sel, List(EmptyTree), true)
           }
-          else if (isDisallowed(sym)) {
-            unit.error(tree.pos, "super not allowed here: use this." + name.decode + " instead")
-          }
-          transformSuperSelect(sel)
 
         case DefDef(mods, name, tparams, vparamss, tpt, rhs) if tree.symbol.isMethodWithExtension =>
           treeCopy.DefDef(tree, mods, name, tparams, vparamss, tpt, withInvalidOwner(transform(rhs)))
 
         case TypeApply(sel @ Select(qual, name), args) =>
           mayNeedProtectedAccessor(sel, args, true)
-
-        case sel @ Select(qual, name) =>
-          mayNeedProtectedAccessor(sel, List(EmptyTree), true)
 
         case Assign(lhs @ Select(qual, name), rhs) =>
           if (lhs.symbol.isVariable &&
@@ -311,10 +326,12 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
         case Apply(fn, args) =>
           assert(fn.tpe != null, tree)
           treeCopy.Apply(tree, transform(fn), transformArgs(fn.tpe.params, args))
+
         case Function(vparams, body) =>
           withInvalidOwner {
             treeCopy.Function(tree, vparams, transform(body))
           }
+
         case _ =>
           super.transform(tree)
       }

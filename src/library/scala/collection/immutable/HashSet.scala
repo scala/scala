@@ -151,10 +151,12 @@ object HashSet extends ImmutableSetFactory[HashSet] {
     override def removed0(key: A, hash: Int, level: Int): HashSet[A] =
       if (hash == this.hash) {
         val ks1 = ks - key
-        if (!ks1.isEmpty)
-          new HashSetCollision1(hash, ks1)
-        else
+        if(ks1.isEmpty)
           HashSet.empty[A]
+        else if(ks1.tail.isEmpty)
+          new HashSet1(ks1.head, hash)
+        else
+          new HashSetCollision1(hash, ks1)
       } else this
 
     override def iterator: Iterator[A] = ks.iterator
@@ -236,7 +238,12 @@ object HashSet extends ImmutableSetFactory[HashSet] {
             Array.copy(elems, 0, elemsNew, 0, offset)
             Array.copy(elems, offset + 1, elemsNew, offset, elems.length - offset - 1)
             val sizeNew = size - sub.size
-            new HashTrieSet(bitmapNew, elemsNew, sizeNew)
+            // if we have only one child, which is not a HashTrieSet but a self-contained set like
+            // HashSet1 or HashSetCollision1, return the child instead
+            if (elemsNew.length == 1 && !elemsNew(0).isInstanceOf[HashTrieSet[_]])
+              elemsNew(0)
+            else
+              new HashTrieSet(bitmapNew, elemsNew, sizeNew)
           } else
             HashSet.empty[A]
         } else {

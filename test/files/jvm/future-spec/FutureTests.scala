@@ -6,6 +6,7 @@ import scala.concurrent.util.duration._
 import scala.concurrent.util.Duration.Inf
 import scala.collection._
 import scala.runtime.NonLocalReturnControl
+import scala.util.{Try,Success,Failure}
 
 
 
@@ -197,7 +198,7 @@ object FutureTests extends MinimalScalaTest {
         } andThen {
           case _ => q.add(2)
         } andThen {
-          case Right(0) => q.add(Int.MaxValue)
+          case Success(0) => q.add(Int.MaxValue)
         } andThen {
           case _ => q.add(3);
         }
@@ -260,13 +261,13 @@ object FutureTests extends MinimalScalaTest {
       }
       
       val futures = (0 to 9) map {
-        idx => async(idx, idx * 200)
+        idx => async(idx, idx * 20)
       }
       val folded = Future.fold(futures)(0)(_ + _)
       Await.result(folded, timeout) mustBe (45)
       
       val futuresit = (0 to 9) map {
-        idx => async(idx, idx * 200)
+        idx => async(idx, idx * 20)
       }
       val foldedit = Future.fold(futures)(0)(_ + _)
       Await.result(foldedit, timeout) mustBe (45)
@@ -279,7 +280,7 @@ object FutureTests extends MinimalScalaTest {
         add
       }
       def futures = (0 to 9) map { 
-        idx => async(idx, idx * 200)
+        idx => async(idx, idx * 20)
       }
       val folded = futures.foldLeft(Future(0)) {
         case (fr, fa) => for (r <- fr; a <- fa) yield (r + a)
@@ -295,7 +296,7 @@ object FutureTests extends MinimalScalaTest {
         add
       }
       def futures = (0 to 9) map {
-        idx => async(idx, idx * 100)
+        idx => async(idx, idx * 10)
       }
       val folded = Future.fold(futures)(0)(_ + _)
       intercept[IllegalArgumentException] {
@@ -326,7 +327,7 @@ object FutureTests extends MinimalScalaTest {
     
     "shouldReduceResults" in {
       def async(idx: Int) = future {
-        Thread.sleep(idx * 200)
+        Thread.sleep(idx * 20)
         idx
       }
       val timeout = 10000 millis
@@ -348,7 +349,7 @@ object FutureTests extends MinimalScalaTest {
       }
       val timeout = 10000 millis
       def futures = (1 to 10) map {
-        idx => async(idx, idx * 100)
+        idx => async(idx, idx * 10)
       }
       val failed = Future.reduce(futures)(_ + _)
       intercept[IllegalArgumentException] {
@@ -472,7 +473,7 @@ object FutureTests extends MinimalScalaTest {
       p1.future.isCompleted mustBe (false)
       f4.isCompleted mustBe (false)
       
-      p1 complete Right("Hello")
+      p1 complete Success("Hello")
       
       Await.ready(latch(7), TestLatch.DefaultTimeout)
       
@@ -509,7 +510,7 @@ object FutureTests extends MinimalScalaTest {
     }
 
     "should not throw when Await.ready" in {
-      val expected = try Right(5 / 0) catch { case a: ArithmeticException => Left(a) }
+      val expected = try Success(5 / 0) catch { case a: ArithmeticException => Failure(a) }
       val f = future(5).map(_ / 0)
       Await.ready(f, defaultTimeout).value.get.toString mustBe expected.toString
     }

@@ -661,13 +661,15 @@ abstract class Inliners extends SubComponent {
          *
          * TODO handle more robustly the case of a trait var changed at the source-level from public to private[this]
          *      (eg by having ICodeReader use unpickler, see SI-5442).
-         * */
+         
+         DISABLED
+         
         def potentiallyPublicized(f: Symbol): Boolean = {
           (m.sourceFile eq NoSourceFile) && f.name.containsChar('$')
         }
+        */
 
-        def checkField(f: Symbol)   = check(f, potentiallyPublicized(f) ||
-                                               (f.isPrivate && !canMakePublic(f)))
+        def checkField(f: Symbol)   = check(f, f.isPrivate && !canMakePublic(f))
         def checkSuper(n: Symbol)   = check(n, n.isPrivate || !n.isClassConstructor)
         def checkMethod(n: Symbol)  = check(n, n.isPrivate)
 

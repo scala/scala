@@ -1,0 +1,8 @@
+t5687.scala:4: error: type arguments [T] do not conform to class Template's type parameter bounds [T <: AnyRef]
+  type Repr[T]<:Template[T]
+                ^
+t5687.scala:20: error: overriding type Repr in class Template with bounds[T] <: Template[T];
+ type Repr has incompatible type
+  type Repr = CurveTemplate[T]
+       ^
+two errors found
