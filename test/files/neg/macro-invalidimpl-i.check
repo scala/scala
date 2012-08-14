@@ -1,0 +1,4 @@
+Macros_Test_2.scala:4: error: macro implementation must be public
+  def foo = macro Impls.impl
+                        ^
+one error found
