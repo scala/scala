@@ -1,5 +1,4 @@
 import collection._
-import collection.parallel.Implicits.defaultTaskSupport
 
 
 object Test {

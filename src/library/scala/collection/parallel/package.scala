@@ -47,11 +47,7 @@ package object parallel {
       else new ThreadPoolTaskSupport
     } else new ThreadPoolTaskSupport
 
-  val defaultTaskSupport: TaskSupport = getTaskSupport
-  
-  object Implicits {
-    implicit def defaultTaskSupport = collection.parallel.defaultTaskSupport
-  }
+  implicit val defaultTaskSupport: TaskSupport = getTaskSupport
   
   def setTaskSupport[Coll](c: Coll, t: TaskSupport): Coll = {
     c match {

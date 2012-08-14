@@ -2,7 +2,6 @@
 
 
 import collection.parallel.CompositeThrowable
-import collection.parallel.Implicits.defaultTaskSupport
 
 
 

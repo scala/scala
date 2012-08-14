@@ -1,6 +1,5 @@
 
 
-import collection.parallel.Implicits.defaultTaskSupport
 
 
 object Test {

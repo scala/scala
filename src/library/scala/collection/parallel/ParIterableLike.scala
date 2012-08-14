@@ -139,8 +139,7 @@ import language.{ higherKinds, implicitConversions }
  *  val pc = Array(1, 2, 3).par
  *  }}}
  *
- *  Clients should import `scala.collection.parallel.Implicits.defaultTaskSupport` to
- *  use the default task support with `par`.
+ *  Clients will by default use `scala.collection.parallel.defaultTaskSupport` with `par`.
  *  
  *  @author Aleksandar Prokopec
  *  @since 2.9
