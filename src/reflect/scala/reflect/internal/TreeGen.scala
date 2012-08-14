@@ -24,6 +24,9 @@ abstract class TreeGen extends macros.TreeBuilder {
     AppliedTypeTree(cls, argtpes :+ restpe)
   }
 
+  def newScalaRuntimeConst(body: Tree, arity: Int): Tree =
+    New(AppliedTypeTree(mkAttributedRef(definitions.Const(arity)), List(TypeTree(body.tpe))), List(List(body)))
+
   /** A creator for method calls, e.g. fn[T1, T2, ...](v1, v2, ...)
    *  There are a number of variations.
    *

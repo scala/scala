@@ -509,6 +509,13 @@ trait Definitions extends api.StandardDefinitions {
     lazy val ScalaSignatureAnnotation = requiredClass[scala.reflect.ScalaSignature]
     lazy val ScalaLongSignatureAnnotation = requiredClass[scala.reflect.ScalaLongSignature]
 
+    // Constant functions, used to avoid creating new $anonfun for certain closures and by-name arguments.
+    lazy val Const: List[ClassSymbol] = requiredClass[scala.runtime.Const0[_]] ::
+                                        requiredClass[scala.runtime.Const1[_]] ::
+                                        requiredClass[scala.runtime.Const2[_]] ::
+                                        requiredClass[scala.runtime.Const3[_]] :: Nil
+    lazy val MaxConstantFunctionArity = Const.length - 1
+
     // Option classes
     lazy val OptionClass: ClassSymbol = requiredClass[Option[_]]
     lazy val SomeClass: ClassSymbol   = requiredClass[Some[_]]

@@ -107,6 +107,17 @@ abstract class TreeInfo {
   @deprecated("Use isExprSafeToInline instead", "2.10.0")
   def isPureExpr(tree: Tree) = isExprSafeToInline(tree)
 
+  /**
+   * Can the expression `(a1, ..., aN) => body` be translated to `scala.runtime.ConstN(body)`?
+   */
+  def isSafeToUseConstantFunction(fun: Function): Boolean = {
+    def referencesParam = {
+      val paramSyms = fun.vparams.map(_.symbol).toSet
+      fun.body.exists(t => paramSyms contains t.symbol)
+    }
+    fun.vparams.length <= definitions.MaxConstantFunctionArity && isExprSafeToInline(fun.body) && !fun.body.hasSymbolWhich(_.isLazy) && !referencesParam
+  }
+
   def zipMethodParamsAndArgs(params: List[Symbol], args: List[Tree]): List[(Symbol, Tree)] =
     mapMethodParamsAndArgs(params, args)((param, arg) => ((param, arg)))
 
