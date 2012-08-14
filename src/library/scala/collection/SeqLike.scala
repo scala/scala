@@ -92,6 +92,8 @@ trait SeqLike[+A, +Repr] extends Any with IterableLike[A, Repr] with GenSeqLike[
     i - len
   }
 
+  override /*IterableLike*/ def isEmpty: Boolean = lengthCompare(0) == 0
+
   /** The size of this $coll, equivalent to `length`.
    *
    *  $willNotTerminateInf
