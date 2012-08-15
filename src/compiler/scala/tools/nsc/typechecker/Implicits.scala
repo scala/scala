@@ -1337,13 +1337,7 @@ trait Implicits {
     /** Materializes implicits of magic types (currently, manifests and tags).
      *  Will be replaced by implicit macros once we fix them.
      */
-    private def materializeImplicit(pt: Type): SearchResult = {
-      def fallback = {
-        searchImplicit(implicitsOfExpectedType, false)
-        // shouldn't we pass `pt` to `implicitsOfExpectedType`, or is the recursive case
-        // for an abstract type really only meant for tags?
-      }
-
+    private def materializeImplicit(pt: Type): SearchResult =
       pt match {
         case TypeRef(_, sym, _) if sym.isAbstractType =>
           materializeImplicit(pt.dealias.bounds.lo) // #3977: use pt.dealias, not pt (if pt is a type alias, pt.bounds.lo == pt)
@@ -1359,12 +1353,11 @@ trait Implicits {
             // unlike `dealias`, `betaReduce` performs at most one step of dealiasing
             // while dealias pops all aliases in a single invocation
             case sym if sym.isAliasType => materializeImplicit(pt.betaReduce)
-            case _ => fallback
+            case _ => SearchFailure
           }
         case _ =>
-          fallback
+          SearchFailure
       }
-    }
 
     /** The result of the implicit search:
      *  First search implicits visible in current context.
@@ -1396,6 +1389,10 @@ trait Implicits {
         val succstart = Statistics.startTimer(oftypeSucceedNanos)
 
         result = materializeImplicit(pt)
+
+        // `materializeImplicit` does some preprocessing for `pt`
+        // is it only meant for manifests/tags or we need to do the same for `implicitsOfExpectedType`?
+        if (result == SearchFailure) result = searchImplicit(implicitsOfExpectedType, false)
 
         if (result == SearchFailure) {
           context.updateBuffer(previousErrs)
