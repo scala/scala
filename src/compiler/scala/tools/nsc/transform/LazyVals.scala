@@ -55,6 +55,42 @@ abstract class LazyVals extends Transform with TypingTransformers with ast.TreeD
 
     import symtab.Flags._
 
+    /*
+     * (a) What is made public?
+     *     All accesses in @inline-marked methods result in `object pblzr` publicizing
+     *     the accessed fields/methods/constructors given by `Select(qual, name)` contained in the method in question,
+     *     irrespective of whether -optimize is in effect for this compiler run or not.
+     *
+     * (b) Why do we publicize?
+     *     See `canRegardAsPublic()` in Inliner, which relies on the publicizing performed here.
+     *     Also, why is this done here? It has to be done before lambdalift,
+     *     otherwise accesses in methods (not marked @inline) local to @inline-marked methods wouldn't be result in publicizing
+     *     (the local method, once lifted, does not carry itself an @inline annotation).
+     *
+     * (c) How does it work in separate-compilation scenarios?
+     *     As you can imagine, only those members compiled in this run can actually be publicized in this run.
+     *     For those separately compiled, we just hope their bytecode also went through this publicizing step.
+     *     To detect any deviation from these assumptions, the JVM option -Xverify:all can be of help.
+     **/
+    object pblzr extends Traverser {
+
+      private def unfeasibleToWiden(s: Symbol, name: Name): Boolean = {
+        (name.toString == "clone") // otherwise files/run/t2106.scala fails
+        // TODO not native method
+      }
+
+      override def traverse(tree: Tree) {
+        val s = tree.symbol
+        tree match {
+          case Select(qual, name) if !unfeasibleToWiden(s, name) =>
+            if(s.isPrivate)   { s.setFlag(notPRIVATE)    } // TODO find out why s.makeNotPrivate(s.owner) leads to crash in lambdalift
+            if(s.isProtected) { s.setFlag(notPROTECTED)  }
+          case _ => ()
+        }
+        super.traverse(tree)
+      }
+    }
+
     /** Perform the following transformations:
      *  - for a lazy accessor inside a method, make it check the initialization bitmap
      *  - for all methods, add enough int vars to allow one flag per lazy local value
@@ -80,7 +116,11 @@ abstract class LazyVals extends Transform with TypingTransformers with ast.TreeD
           })
           treeCopy.Block(block1, stats1, expr)
           
-        case DefDef(_, _, _, _, _, rhs) => atOwner(tree.symbol) {
+        case DefDef(_, _, _, _, _, rhs) =>
+          if (tree.symbol hasAnnotation ScalaInlineClass) {
+            pblzr.traverse(rhs)
+          }
+          atOwner(tree.symbol) {
           val (res, slowPathDef) = if (!sym.owner.isClass && sym.isLazy) {
             val enclosingClassOrDummyOrMethod = {
               val enclMethod = sym.enclMethod
