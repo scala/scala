@@ -275,9 +275,7 @@ trait Macros extends scala.tools.reflect.FastTrack with Traces {
       val paramCache = collection.mutable.Map[Symbol, Symbol]()
       def param(tree: Tree): Symbol =
         paramCache.getOrElseUpdate(tree.symbol, {
-          // [Eugene] deskolemization became necessary once I implemented inference of macro def return type
-          // please, verify this solution, but for now I'll leave it here - cargo cult for the win
-          val sym = tree.symbol.deSkolemize
+          val sym = tree.symbol
           val sigParam = makeParam(sym.name, sym.pos, implType(sym.isType, sym.tpe))
           if (sym.isSynthetic) sigParam.flags |= SYNTHETIC
           sigParam
@@ -479,22 +477,14 @@ trait Macros extends scala.tools.reflect.FastTrack with Traces {
       macroTraceVerbose("body of a macro def failed to typecheck: ")(ddef)
     } else {
       if (!hasError) {
-        if (macroImpl == null) {
-           invalidBodyError()
-        } else {
-          if (!macroImpl.isMethod)
-             invalidBodyError()
-          if (!macroImpl.isPublic)
-            reportError(implpos, "macro implementation must be public")
-          if (macroImpl.isOverloaded)
-            reportError(implpos, "macro implementation cannot be overloaded")
-          if (!macroImpl.typeParams.isEmpty && (!rhs1.isInstanceOf[TypeApply]))
-            reportError(implpos, "macro implementation reference needs type arguments")
-          if (!hasError)
-            validatePostTyper(rhs1)
+        if (macroImpl == null) invalidBodyError()
+        else {
+          if (!macroImpl.isMethod) invalidBodyError()
+          if (!macroImpl.isPublic) reportError(implpos, "macro implementation must be public")
+          if (macroImpl.isOverloaded) reportError(implpos, "macro implementation cannot be overloaded")
+          if (!macroImpl.typeParams.isEmpty && !rhs1.isInstanceOf[TypeApply]) reportError(implpos, "macro implementation reference needs type arguments")
+          if (!hasError) validatePostTyper(rhs1)
         }
-        if (hasError)
-          macroTraceVerbose("macro def failed to satisfy trivial preconditions: ")(macroDef)
       }
       if (!hasError) {
         bindMacroImpl(macroDef, rhs1) // we must bind right over here, because return type inference needs this info
@@ -631,29 +621,11 @@ trait Macros extends scala.tools.reflect.FastTrack with Traces {
   }
 
   def computeMacroDefTypeFromMacroImpl(macroDdef: DefDef, macroDef: Symbol, macroImpl: Symbol): Type = {
-    // get return type from method type
-    def unwrapRet(tpe: Type): Type = {
-      def loop(tpe: Type) = tpe match {
-        case NullaryMethodType(ret) => ret
-        case mtpe @ MethodType(_, ret) => unwrapRet(ret)
-        case _ => tpe
-      }
-
-      tpe match {
-        case PolyType(_, tpe) => loop(tpe)
-        case _ => loop(tpe)
-      }
-    }
-    var metaType = unwrapRet(macroImpl.tpe)
-
     // downgrade from metalevel-0 to metalevel-1
-    def inferRuntimeType(metaType: Type): Type = metaType match {
-      case TypeRef(pre, sym, args) if sym.name == tpnme.Expr && args.length == 1 =>
-        args.head
-      case _ =>
-        AnyClass.tpe
+    var runtimeType = macroImpl.tpe.finalResultType.dealias match {
+      case TypeRef(pre, sym, runtimeType :: Nil) if sym == ExprClass => runtimeType
+      case _ => AnyTpe
     }
-    var runtimeType = inferRuntimeType(metaType)
 
     // transform type parameters of a macro implementation into type parameters of a macro definition
     runtimeType = runtimeType map {
