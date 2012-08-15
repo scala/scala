@@ -2774,6 +2774,7 @@ abstract class GenASM extends SubComponent with BytecodeWriters {
           case Negation(kind) => jcode.neg(kind)
 
           case Arithmetic(op, kind) =>
+            def genArith = {
             op match {
 
               case ADD => jcode.add(kind)
@@ -2796,57 +2797,89 @@ abstract class GenASM extends SubComponent with BytecodeWriters {
               case _ =>
                 abort("Unknown arithmetic primitive " + primitive)
             }
+            }
+            genArith
 
           // TODO Logical's 2nd elem should be declared ValueTypeKind, to better approximate its allowed values (isIntSized, its comments appears to convey)
           // TODO GenICode uses `toTypeKind` to define that elem, `toValueTypeKind` would be needed instead.
           // TODO How about adding some asserts to Logical and similar ones to capture the remaining constraint (UNIT not allowed).
-          case Logical(op, kind) => ((op, kind): @unchecked) match {
-            case (AND, LONG) => emit(Opcodes.LAND)
-            case (AND, INT)  => emit(Opcodes.IAND)
-            case (AND, _)    =>
-              emit(Opcodes.IAND)
-              if (kind != BOOL) { emitT2T(INT, kind) }
+          case Logical(op, kind) => 
+            def genLogical = op match {
+              case AND => 
+                kind match {
+                  case LONG => emit(Opcodes.LAND)
+                  case INT  => emit(Opcodes.IAND)
+                  case _    =>
+                    emit(Opcodes.IAND)
+                    if (kind != BOOL) { emitT2T(INT, kind) }
+                }
+              case OR =>
+                kind match {
+                  case LONG => emit(Opcodes.LOR)
+                  case INT  => emit(Opcodes.IOR)
+                  case _ =>
+                    emit(Opcodes.IOR)
+                    if (kind != BOOL) { emitT2T(INT, kind) }
+                }
+              case XOR =>
+                kind match {
+                  case LONG => emit(Opcodes.LXOR)
+                  case INT  => emit(Opcodes.IXOR)
+                  case _ =>
+                    emit(Opcodes.IXOR)
+                    if (kind != BOOL) { emitT2T(INT, kind) }
+                }
+            }
+            genLogical
+          
+          case Shift(op, kind) => 
+            def genShift = op match {
+              case LSL =>
+                kind match {
+                  case LONG => emit(Opcodes.LSHL)
+                  case INT  => emit(Opcodes.ISHL)
+                  case _ =>
+                    emit(Opcodes.ISHL)
+                    emitT2T(INT, kind)
+                }
+              case ASR =>
+                kind match {
+                  case LONG => emit(Opcodes.LSHR)
+                  case INT  => emit(Opcodes.ISHR)
+                  case _ =>
+                    emit(Opcodes.ISHR)
+                    emitT2T(INT, kind)
+                }
+              case LSR =>
+                kind match {
+                  case LONG => emit(Opcodes.LUSHR)
+                  case INT  => emit(Opcodes.IUSHR)
+                  case  _ =>
+                    emit(Opcodes.IUSHR)
+                    emitT2T(INT, kind)
+                }
+            }
+            genShift
 
-            case (OR, LONG) => emit(Opcodes.LOR)
-            case (OR, INT)  => emit(Opcodes.IOR)
-            case (OR, _) =>
-              emit(Opcodes.IOR)
-              if (kind != BOOL) { emitT2T(INT, kind) }
-
-            case (XOR, LONG) => emit(Opcodes.LXOR)
-            case (XOR, INT)  => emit(Opcodes.IXOR)
-            case (XOR, _) =>
-              emit(Opcodes.IXOR)
-              if (kind != BOOL) { emitT2T(INT, kind) }
-          }
-
-          case Shift(op, kind) => ((op, kind): @unchecked) match {
-            case (LSL, LONG) => emit(Opcodes.LSHL)
-            case (LSL, INT)  => emit(Opcodes.ISHL)
-            case (LSL, _) =>
-              emit(Opcodes.ISHL)
-              emitT2T(INT, kind)
-
-            case (ASR, LONG) => emit(Opcodes.LSHR)
-            case (ASR, INT)  => emit(Opcodes.ISHR)
-            case (ASR, _) =>
-              emit(Opcodes.ISHR)
-              emitT2T(INT, kind)
-
-            case (LSR, LONG) => emit(Opcodes.LUSHR)
-            case (LSR, INT)  => emit(Opcodes.IUSHR)
-            case (LSR, _) =>
-              emit(Opcodes.IUSHR)
-              emitT2T(INT, kind)
-          }
-
-          case Comparison(op, kind) => ((op, kind): @unchecked) match {
-            case (CMP, LONG)    => emit(Opcodes.LCMP)
-            case (CMPL, FLOAT)  => emit(Opcodes.FCMPL)
-            case (CMPG, FLOAT)  => emit(Opcodes.FCMPG)
-            case (CMPL, DOUBLE) => emit(Opcodes.DCMPL)
-            case (CMPG, DOUBLE) => emit(Opcodes.DCMPL) // TODO bug? why not DCMPG? http://docs.oracle.com/javase/specs/jvms/se5.0/html/Instructions2.doc3.html
-          }
+          case Comparison(op, kind) => 
+            def genCompare = op match {
+              case CMP =>
+                (kind: @unchecked) match {
+                  case LONG =>  emit(Opcodes.LCMP)
+                }
+              case CMPL =>
+                (kind: @unchecked) match {
+                  case FLOAT  => emit(Opcodes.FCMPL)
+                  case DOUBLE => emit(Opcodes.DCMPL)
+                }
+              case CMPG =>
+                (kind: @unchecked) match {
+                  case FLOAT  => emit(Opcodes.FCMPG)
+                  case DOUBLE => emit(Opcodes.DCMPL) // TODO bug? why not DCMPG? http://docs.oracle.com/javase/specs/jvms/se5.0/html/Instructions2.doc3.html
+                
+                }
+            }
+            genCompare
 
           case Conversion(src, dst) =>
             debuglog("Converting from: " + src + " to: " + dst)
