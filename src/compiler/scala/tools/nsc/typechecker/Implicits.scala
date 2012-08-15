@@ -1185,10 +1185,6 @@ trait Implicits {
         // ClassTags are not path-dependent, so their materializer doesn't care about prefixes
         if (tagClass eq ClassTagClass) gen.mkBasisUniverseRef
         else pre match {
-          // [Eugene to Martin] this is the crux of the interaction between
-          // implicits and reifiers here we need to turn a (supposedly
-          // path-dependent) type into a tree that will be used as a prefix I'm
-          // not sure if I've done this right - please, review
           case SingleType(prePre, preSym) =>
             gen.mkAttributedRef(prePre, preSym) setType pre
           // necessary only to compile typetags used inside the Universe cake
@@ -1373,7 +1369,8 @@ trait Implicits {
     /** The result of the implicit search:
      *  First search implicits visible in current context.
      *  If that fails, search implicits in expected type `pt`.
-     *  // [Eugene] the following lines should be deleted after we migrate delegate tag materialization to implicit macros
+     *
+     *  todo. the following lines should be deleted after we migrate delegate tag materialization to implicit macros
      *  If that fails, and `pt` is an instance of a ClassTag, try to construct a class tag.
      *  If that fails, and `pt` is an instance of a TypeTag, try to construct a type tag.
      *  If that fails, and `pt` is an instance of a ClassManifest, try to construct a class manifest.

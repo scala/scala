@@ -132,9 +132,7 @@ trait Macros extends scala.tools.reflect.FastTrack with Traces {
       // there are some more clever cases when seemingly non-static method ends up being statically accessible
       // however, the code below doesn't account for these guys, because it'd take a look of time to get it right
       // for now I leave it as a todo and move along to more the important stuff
-      // [Eugene] relies on the fact that macro implementations can only be defined in static classes
-      // [Martin to Eugene++] There's similar logic buried in Symbol#flatname. Maybe we can refactor?
-      // [Eugene] we will refactor once I get my hands on https://issues.scala-lang.org/browse/SI-5498
+      // todo. refactor when fixing SI-5498
       def className: String = {
         def loop(sym: Symbol): String = sym match {
           case sym if sym.owner.isPackageClass =>
@@ -445,7 +443,7 @@ trait Macros extends scala.tools.reflect.FastTrack with Traces {
     // because it's adapt which is responsible for automatic expansion during typechecking
     def typecheckRhs(rhs: Tree): Tree = {
       try {
-        val prevNumErrors = reporter.ERROR.count // [Eugene] funnily enough, the isErroneous check is not enough
+        val prevNumErrors = reporter.ERROR.count
         var rhs1 = if (hasError) EmptyTree else typer.typed1(rhs, EXPRmode, WildcardType)
         def typecheckedWithErrors = (rhs1 exists (_.isErroneous)) || reporter.ERROR.count != prevNumErrors
         def rhsNeedsMacroExpansion = rhs1.symbol != null && rhs1.symbol.isTermMacro && !rhs1.symbol.isErroneous
@@ -681,8 +679,7 @@ trait Macros extends scala.tools.reflect.FastTrack with Traces {
     // transform type parameters of a macro implementation into type parameters of a macro definition
     runtimeType = runtimeType map {
       case TypeRef(pre, sym, args) =>
-        // [Eugene] not sure which of these deSkolemizes are necessary
-        // sym.paramPos is unreliable (see another case below)
+        // sym.paramPos is unreliable (see an example in `macroArgs`)
         val tparams = macroImpl.typeParams map (_.deSkolemize)
         val paramPos = tparams indexOf sym.deSkolemize
         val sym1 =
@@ -745,7 +742,7 @@ trait Macros extends scala.tools.reflect.FastTrack with Traces {
    *  Loads classes from from -cp (aka the library classpath).
    *  Is also capable of detecting REPL and reusing its classloader.
    */
-  private lazy val macroClassloader: ClassLoader = {
+  lazy val macroClassloader: ClassLoader = {
     if (global.forMSIL)
       throw new UnsupportedOperationException("Scala reflection not available on this platform")
 
@@ -753,7 +750,7 @@ trait Macros extends scala.tools.reflect.FastTrack with Traces {
     macroLogVerbose("macro classloader: initializing from -cp: %s".format(classpath))
     val loader = ScalaClassLoader.fromURLs(classpath, self.getClass.getClassLoader)
 
-    // [Eugene] a heuristic to detect the REPL
+    // a heuristic to detect the REPL
     if (global.settings.exposeEmptyPackage.value) {
       macroLogVerbose("macro classloader: initializing from a REPL classloader".format(global.classPath.asURLs))
       import scala.tools.nsc.interpreter._
@@ -787,9 +784,11 @@ trait Macros extends scala.tools.reflect.FastTrack with Traces {
         val methName = binding.methName
         macroLogVerbose(s"resolved implementation as $className.$methName")
 
-        // [Eugene++] I don't use Scala reflection here, because it seems to interfere with JIT magic
+        // I don't use Scala reflection here, because it seems to interfere with JIT magic
         // whenever you instantiate a mirror (and not do anything with in, just instantiate), performance drops by 15-20%
         // I'm not sure what's the reason - for me it's pure voodoo
+        // upd. my latest experiments show that everything's okay
+        // it seems that in 2.10.1 we can easily switch to Scala reflection
         try {
           macroTraceVerbose("loading implementation class: ")(className)
           macroTraceVerbose("classloader is: ")(ReflectionUtils.show(macroClassloader))
@@ -889,7 +888,7 @@ trait Macros extends scala.tools.reflect.FastTrack with Traces {
           val targ = binding.targs(paramPos).tpe.typeSymbol
           val tpe = if (targ.isTypeParameterOrSkolem) {
             if (targ.owner == macroDef) {
-              // [Eugene] doesn't work when macro def is compiled separately from its usages
+              // doesn't work when macro def is compiled separately from its usages
               // then targ is not a skolem and isn't equal to any of macroDef.typeParams
               // val argPos = targ.deSkolemize.paramPos
               val argPos = macroDef.typeParams.indexWhere(_.name == targ.name)
@@ -970,7 +969,6 @@ trait Macros extends scala.tools.reflect.FastTrack with Traces {
                                      // so I added this dummy local for the ease of debugging
             var expectedTpe = expandee.tpe
 
-            // [Eugene] weird situation. what's the conventional way to deal with it?
             val isNullaryInvocation = expandee match {
               case TypeApply(Select(_, _), _) => true
               case TypeApply(Ident(_), _) => true
@@ -1117,8 +1115,9 @@ trait Macros extends scala.tools.reflect.FastTrack with Traces {
         macroLogLite("typechecking macro expansion %s at %s".format(expandee, expandee.pos))
         macroArgs(typer, expandee).fold(failExpansion(): MacroExpansionResult) {
           args => (args: @unchecked) match {
-            // [Eugene++] crashes virtpatmat:
+            // crashes virtpatmat:
             // case args @ ((context: MacroContext) :: _) =>
+            // todo. extract a minimized test case
             case args @ (context0 :: _) =>
               val context = context0.asInstanceOf[MacroContext]
               if (nowDelayed) {
@@ -1197,7 +1196,6 @@ trait Macros extends scala.tools.reflect.FastTrack with Traces {
   }
 
   private def handleMacroExpansionException(typer: Typer, expandee: Tree, ex: Throwable): MacroExpansionResult = {
-    // [Eugene] any ideas about how to improve this one?
     val realex = ReflectionUtils.unwrapThrowable(ex)
     realex match {
       case realex: reflect.macros.runtime.AbortMacroException =>

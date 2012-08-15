@@ -436,7 +436,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
     val sClassMap = anyrefSpecCache.getOrElseUpdate(sClass, mutable.Map[Symbol, Symbol]())
 
     sClassMap.getOrElseUpdate(tparam,
-      tparam.cloneSymbol(sClass, tparam.flags, (tparam.name append tpnme.SPECIALIZED_SUFFIX).asInstanceOf[Name]) // [Eugene++] why do we need this cast?
+      tparam.cloneSymbol(sClass, tparam.flags, (tparam.name append tpnme.SPECIALIZED_SUFFIX).asInstanceOf[Name]) // [Eugene] why do we need this cast?
         modifyInfo (info => TypeBounds(info.bounds.lo, AnyRefClass.tpe))
     ).tpe
   }
@@ -1772,10 +1772,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
 
   private def forwardCall(pos: scala.reflect.internal.util.Position, receiver: Tree, paramss: List[List[ValDef]]): Tree = {
     val argss = mmap(paramss)(x => Ident(x.symbol))
-    def mkApply(fun: Tree, args: List[Tree]) = Apply(fun, args)
-    atPos(pos) { (receiver /: argss) (mkApply) }
-    // [Eugene++] no longer compiles after I moved the `Apply` case class into scala.reflect.internal
-    // atPos(pos) { (receiver /: argss) (Apply) }
+    atPos(pos) { (receiver /: argss) (Apply.apply) }
   }
 
   /** Forward to the generic class constructor. If the current class initializes
@@ -1817,10 +1814,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
       else
         Ident(x.symbol)
     )
-    def mkApply(fun: Tree, args: List[Tree]) = Apply(fun, args)
-    atPos(pos) { (receiver /: argss) (mkApply) }
-    // [Eugene++] no longer compiles after I moved the `Apply` case class into scala.reflect.internal
-    // atPos(pos) { (receiver /: argss) (Apply) }
+    atPos(pos) { (receiver /: argss) (Apply.apply) }
   }
 
   /** Add method m to the set of symbols for which we need an implementation tree

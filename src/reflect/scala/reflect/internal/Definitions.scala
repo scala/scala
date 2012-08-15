@@ -19,23 +19,6 @@ trait Definitions extends api.StandardDefinitions {
 
   object definitions extends DefinitionsClass
 
-  // [Eugene] find a way to make these non-lazy
-  lazy val ByteTpe    = definitions.ByteClass.toTypeConstructor
-  lazy val ShortTpe   = definitions.ShortClass.toTypeConstructor
-  lazy val CharTpe    = definitions.CharClass.toTypeConstructor
-  lazy val IntTpe     = definitions.IntClass.toTypeConstructor
-  lazy val LongTpe    = definitions.LongClass.toTypeConstructor
-  lazy val FloatTpe   = definitions.FloatClass.toTypeConstructor
-  lazy val DoubleTpe  = definitions.DoubleClass.toTypeConstructor
-  lazy val BooleanTpe = definitions.BooleanClass.toTypeConstructor
-  lazy val UnitTpe    = definitions.UnitClass.toTypeConstructor
-  lazy val AnyTpe     = definitions.AnyClass.toTypeConstructor
-  lazy val ObjectTpe  = definitions.ObjectClass.toTypeConstructor
-  lazy val AnyValTpe  = definitions.AnyValClass.toTypeConstructor
-  lazy val AnyRefTpe  = definitions.AnyRefClass.toTypeConstructor
-  lazy val NothingTpe = definitions.NothingClass.toTypeConstructor
-  lazy val NullTpe    = definitions.NullClass.toTypeConstructor
-
   /** Since both the value parameter types and the result type may
    *  require access to the type parameter symbols, we model polymorphic
    *  creation as a function from those symbols to (formal types, result type).
@@ -143,6 +126,16 @@ trait Definitions extends api.StandardDefinitions {
       lazy val Boolean_or  = getMemberMethod(BooleanClass, nme.ZOR)
       lazy val Boolean_not = getMemberMethod(BooleanClass, nme.UNARY_!)
 
+    lazy val UnitTpe    = UnitClass.toTypeConstructor
+    lazy val ByteTpe    = ByteClass.toTypeConstructor
+    lazy val ShortTpe   = ShortClass.toTypeConstructor
+    lazy val CharTpe    = CharClass.toTypeConstructor
+    lazy val IntTpe     = IntClass.toTypeConstructor
+    lazy val LongTpe    = LongClass.toTypeConstructor
+    lazy val FloatTpe   = FloatClass.toTypeConstructor
+    lazy val DoubleTpe  = DoubleClass.toTypeConstructor
+    lazy val BooleanTpe = BooleanClass.toTypeConstructor
+
     lazy val ScalaNumericValueClasses = ScalaValueClasses filterNot Set[Symbol](UnitClass, BooleanClass)
 
     def ScalaValueClassesNoUnit = ScalaValueClasses filterNot (_ eq UnitClass)
@@ -242,6 +235,9 @@ trait Definitions extends api.StandardDefinitions {
     lazy val AnyClass    = enterNewClass(ScalaPackageClass, tpnme.Any, Nil, ABSTRACT)
     lazy val AnyRefClass = newAlias(ScalaPackageClass, tpnme.AnyRef, ObjectClass.tpe)
     lazy val ObjectClass = getRequiredClass(sn.Object.toString)
+    lazy val AnyTpe     = definitions.AnyClass.toTypeConstructor
+    lazy val AnyRefTpe  = definitions.AnyRefClass.toTypeConstructor
+    lazy val ObjectTpe  = definitions.ObjectClass.toTypeConstructor
 
     // Note: this is not the type alias AnyRef, it's a companion-like
     // object used by the @specialize annotation.
@@ -255,6 +251,7 @@ trait Definitions extends api.StandardDefinitions {
       anyval.info.decls enter av_constr
       anyval
     }).asInstanceOf[ClassSymbol]
+    lazy val AnyValTpe  = definitions.AnyValClass.toTypeConstructor
 
     // bottom types
     lazy val RuntimeNothingClass  = getClassByName(fulltpnme.RuntimeNothing)
@@ -276,6 +273,8 @@ trait Definitions extends api.StandardDefinitions {
         || (that ne NothingClass) && (that isSubClass ObjectClass)
       )
     }
+    lazy val NothingTpe = definitions.NothingClass.toTypeConstructor
+    lazy val NullTpe    = definitions.NullClass.toTypeConstructor
 
     // exceptions and other throwables
     lazy val ClassCastExceptionClass        = requiredClass[ClassCastException]
@@ -302,7 +301,7 @@ trait Definitions extends api.StandardDefinitions {
       def Sys_error    = getMemberMethod(SysPackage, nme.error)
 
     // Modules whose members are in the default namespace
-    // [Eugene++] ScalaPackage and JavaLangPackage are never ever shared between mirrors
+    // SI-5941: ScalaPackage and JavaLangPackage are never ever shared between mirrors
     // as a result, `Int` becomes `scala.Int` and `String` becomes `java.lang.String`
     // I could just change `isOmittablePrefix`, but there's more to it, so I'm leaving this as a todo for now
     lazy val UnqualifiedModules = List(PredefModule, ScalaPackage, JavaLangPackage)
@@ -338,7 +337,6 @@ trait Definitions extends api.StandardDefinitions {
     lazy val SymbolModule       = requiredModule[scala.Symbol.type]
     lazy val Symbol_apply       = getMemberMethod(SymbolModule, nme.apply)
 
-      def SeqFactory = getMember(ScalaRunTimeModule, nme.Seq) // [Eugene++] obsolete?
       def arrayApplyMethod = getMemberMethod(ScalaRunTimeModule, nme.array_apply)
       def arrayUpdateMethod = getMemberMethod(ScalaRunTimeModule, nme.array_update)
       def arrayLengthMethod = getMemberMethod(ScalaRunTimeModule, nme.array_length)
@@ -978,12 +976,7 @@ trait Definitions extends api.StandardDefinitions {
       throw new FatalError(owner + " does not have a " + what + " " + name)
     }
 
-    def getLanguageFeature(name: String, owner: Symbol = languageFeatureModule): Symbol =
-      // [Eugene++] `getMemberClass` leads to crashes in mixin:
-      // "object languageFeature does not have a member class implicitConversions"
-      // that's because by that time `implicitConversions` becomes a module
-      // getMemberClass(owner, newTypeName(name))
-      getMember(owner, newTypeName(name))
+    def getLanguageFeature(name: String, owner: Symbol = languageFeatureModule): Symbol = getMember(owner, newTypeName(name))
 
     def termMember(owner: Symbol, name: String): Symbol = owner.info.member(newTermName(name))
     def typeMember(owner: Symbol, name: String): Symbol = owner.info.member(newTypeName(name))
@@ -1008,28 +1001,24 @@ trait Definitions extends api.StandardDefinitions {
       }
     }
     def getMemberValue(owner: Symbol, name: Name): TermSymbol = {
-      // [Eugene++] should be a ClassCastException instead?
       getMember(owner, name.toTermName) match {
         case x: TermSymbol => x
         case _             => fatalMissingSymbol(owner, name, "member value")
       }
     }
     def getMemberModule(owner: Symbol, name: Name): ModuleSymbol = {
-      // [Eugene++] should be a ClassCastException instead?
       getMember(owner, name.toTermName) match {
         case x: ModuleSymbol => x
         case _               => fatalMissingSymbol(owner, name, "member object")
       }
     }
     def getMemberType(owner: Symbol, name: Name): TypeSymbol = {
-      // [Eugene++] should be a ClassCastException instead?
       getMember(owner, name.toTypeName) match {
         case x: TypeSymbol => x
         case _             => fatalMissingSymbol(owner, name, "member type")
       }
     }
     def getMemberClass(owner: Symbol, name: Name): ClassSymbol = {
-      // [Eugene++] should be a ClassCastException instead?
       val y = getMember(owner, name.toTypeName)
       getMember(owner, name.toTypeName) match {
         case x: ClassSymbol => x
@@ -1037,48 +1026,8 @@ trait Definitions extends api.StandardDefinitions {
       }
     }
     def getMemberMethod(owner: Symbol, name: Name): TermSymbol = {
-      // [Eugene++] is this a bug?
-      //
-      // System.err.println(result.getClass)
-      // System.err.println(result.flags)
-      // System.err.println("isMethod = " + result.isMethod)
-      // System.err.println("isTerm = " + result.isTerm)
-      // System.err.println("isValue = " + result.isValue)
-      // result.asMethod
-      //
-      // prints this:
-      //
-      // quick.lib:
-      //     [javac] Compiling 1 source file to C:\Projects\KeplerUnderRefactoring\build\quick\classes\library
-      // [scalacfork] Compiling 769 files to C:\Projects\KeplerUnderRefactoring\build\quick\classes\library
-      // [scalacfork] class scala.reflect.internal.Symbols$TermSymbol
-      // [scalacfork] 8589934592
-      // [scalacfork] isMethod = false
-      // [scalacfork] isTerm = true
-      // [scalacfork] isValue = true
-      // [scalacfork]
-      // [scalacfork]      while compiling:  C:\Projects\KeplerUnderRefactoring\src\library\scala\LowPriorityImplicits.scala
-      // [scalacfork]        current phase:  cleanup
-      // [scalacfork]      library version:  version 2.10.0-20120507-185519-665d1d9127
-      // [scalacfork]     compiler version:  version 2.10.0-20120507-185519-665d1d9127
-      // [scalacfork]   reconstructed args:  -Xmacros -classpath C:\\Projects\\KeplerUnderRefactoring\\build\\quick\\classes\\library;C:\\Projects\\KeplerUnderRefactoring\\lib\\forkjoin.jar -d C:\\Projects\\KeplerUnderRefactoring\\build\\quick\\classes\\library -sourcepath C:\\Projects\\KeplerUnderRefactoring\\src\\library
-      // [scalacfork]
-      // [scalacfork] unhandled exception while transforming LowPriorityImplicits.scala
-      // [scalacfork] error:
-      // [scalacfork]      while compiling:  C:\Projects\KeplerUnderRefactoring\src\library\scala\LowPriorityImplicits.scala
-      // [scalacfork]        current phase:  cleanup
-      // [scalacfork]      library version:  version 2.10.0-20120507-185519-665d1d9127
-      // [scalacfork]     compiler version:  version 2.10.0-20120507-185519-665d1d9127
-      // [scalacfork]   reconstructed args:  -Xmacros -classpath C:\\Projects\\KeplerUnderRefactoring\\build\\quick\\classes\\library;C:\\Projects\\KeplerUnderRefactoring\\lib\\forkjoin.jar -d C:\\Projects\\KeplerUnderRefactoring\\build\\quick\\classes\\library -sourcepath C:\\Projects\\KeplerUnderRefactoring\\src\\library
-      // [scalacfork]
-      // [scalacfork] uncaught exception during compilation: java.lang.ClassCastException
-      // [scalacfork] error: java.lang.ClassCastException: value apply
-      // [scalacfork]  at scala.reflect.base.Symbols$SymbolBase$class.asMethod(Symbols.scala:118)
-      // [scalacfork]  at scala.reflect.internal.Symbols$SymbolContextApiImpl.asMethod(Symbols.scala:63)
-      // [scalacfork]  at scala.reflect.internal.Definitions$DefinitionsClass.Symbol_apply(Definitions.scala:381)
-
-      // [Eugene++] should be a ClassCastException instead?
       getMember(owner, name.toTermName) match {
+        // todo. member symbol becomes a term symbol in cleanup. is this a bug?
         // case x: MethodSymbol => x
         case x: TermSymbol => x
         case _             => fatalMissingSymbol(owner, name, "method")
