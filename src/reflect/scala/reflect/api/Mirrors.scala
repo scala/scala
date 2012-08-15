@@ -150,7 +150,7 @@ trait Mirrors { self: Universe =>
     def runtimeClass: RuntimeClass
 
     /** True if the mirror represents the static part
-     *  if a runtime class or the companion object of a Scala class.
+     *  of a runtime class or the companion object of a Scala class.
      *  One has:
      *
      *    this.isStatic == this.isInstanceOf[ModuleMirror]
@@ -192,7 +192,7 @@ trait Mirrors { self: Universe =>
      *  Otherwise, if the mirror represents the static part of a runtime class, the
      *  mirror representing the instance part of the same class.
      */
-    def companion: Option[ClassMirror]
+    override def companion: Option[ClassMirror]
   }
 
   /** A mirror that reflects the instance parts of a runtime class */
@@ -219,7 +219,7 @@ trait Mirrors { self: Universe =>
      *  Otherwise, if the mirror represents a runtime instance class, a mirror representing the static
      *  part of the same class.
      */
-    def companion: Option[ModuleMirror]
+    override def companion: Option[ModuleMirror]
   }
 
   /** A mirror that reflects instances and static classes */
