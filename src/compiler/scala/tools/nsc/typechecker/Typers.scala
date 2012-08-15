@@ -5180,9 +5180,7 @@ trait Typers extends Modes with Adaptations with Tags {
 
         case ReferenceToBoxed(idt @ Ident(_)) =>
           val id1 = typed1(idt, mode, pt) match { case id: Ident => id }
-          // [Eugene] am I doing it right?
-          val erasedTypes = phaseId(currentPeriod) >= currentRun.erasurePhase.id
-          val tpe = capturedVariableType(idt.symbol, erasedTypes = erasedTypes)
+          val tpe = capturedVariableType(idt.symbol, erasedTypes = phase.erasedTypes)
           treeCopy.ReferenceToBoxed(tree, id1) setType tpe
 
         case Literal(value) =>
