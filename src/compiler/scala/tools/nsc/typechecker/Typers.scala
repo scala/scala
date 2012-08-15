@@ -3870,7 +3870,9 @@ trait Typers extends Modes with Adaptations with Tags {
         case _ => NoType
       }
 
-      def typedAnnotated(ann: Tree, arg1: Tree): Tree = {
+      def typedAnnotated(atd: Annotated): Tree = {
+        val ann = atd.annot
+        val arg1 = typed(atd.arg, mode, pt)
         /** mode for typing the annotation itself */
         val annotMode = mode & ~TYPEmode | EXPRmode
 
@@ -3949,7 +3951,9 @@ trait Typers extends Modes with Adaptations with Tags {
         }
       }
 
-      def typedBind(name: Name, body: Tree) =
+      def typedBind(tree: Bind) = {
+        val name = tree.name
+        val body = tree.body
         name match {
           case name: TypeName  => assert(body == EmptyTree, context.unit + " typedBind: " + name.debugString + " " + body + " " + body.getClass)
             val sym =
@@ -3993,11 +3997,11 @@ trait Typers extends Modes with Adaptations with Tags {
             tree setSymbol sym
             treeCopy.Bind(tree, name, body1) setSymbol sym setType body1.tpe
         }
+      }
 
-
-      def typedArrayValue(elemtpt: Tree, elems: List[Tree]) = {
-        val elemtpt1 = typedType(elemtpt, mode)
-        val elems1 = elems mapConserve (elem => typed(elem, mode, elemtpt1.tpe))
+      def typedArrayValue(tree: ArrayValue) = {
+        val elemtpt1 = typedType(tree.elemtpt, mode)
+        val elems1 = tree.elems mapConserve (elem => typed(elem, mode, elemtpt1.tpe))
         treeCopy.ArrayValue(tree, elemtpt1, elems1)
           .setType(
             (if (isFullyDefined(pt) && !phase.erasedTypes) pt
@@ -4040,8 +4044,10 @@ trait Typers extends Modes with Adaptations with Tags {
         else fail()
       }
 
-      def typedIf(cond: Tree, thenp: Tree, elsep: Tree) = {
-        val cond1 = checkDead(typed(cond, EXPRmode | BYVALmode, BooleanClass.tpe))
+      def typedIf(tree: If) = {
+        val cond1 = checkDead(typed(tree.cond, EXPRmode | BYVALmode, BooleanClass.tpe))
+        val thenp = tree.thenp
+        val elsep = tree.elsep
         if (elsep.isEmpty) { // in the future, should be unnecessary
           val thenp1 = typed(thenp, UnitClass.tpe)
           treeCopy.If(tree, cond1, thenp1, elsep) setType thenp1.tpe
@@ -4075,7 +4081,9 @@ trait Typers extends Modes with Adaptations with Tags {
       // under -Xexperimental (and not -Xoldpatmat), and when there's a suitable __match in scope, virtualize the pattern match
       // otherwise, type the Match and leave it until phase `patmat` (immediately after typer)
       // empty-selector matches are transformed into synthetic PartialFunction implementations when the expected type demands it
-      def typedVirtualizedMatch(tree: Tree, selector: Tree, cases: List[CaseDef]): Tree =
+      def typedVirtualizedMatch(tree: Match): Tree = {
+        val selector = tree.selector
+        val cases = tree.cases
         if (selector == EmptyTree) {
           if (newPatternMatching && (pt.typeSymbol == PartialFunctionClass)) (new MatchFunTyper(tree, cases, mode, pt)).translated
           else {
@@ -4092,8 +4100,10 @@ trait Typers extends Modes with Adaptations with Tags {
           }
         } else
           virtualizedMatch(typedMatch(selector, cases, mode, pt, tree), mode, pt)
+      }
 
-      def typedReturn(expr: Tree) = {
+      def typedReturn(tree: Return) = {
+        val expr = tree.expr
         val enclMethod = context.enclMethod
         if (enclMethod == NoContext ||
             enclMethod.owner.isConstructor ||
@@ -4885,99 +4895,143 @@ trait Typers extends Modes with Adaptations with Tags {
         }
       }
 
-      // begin typed1
       val sym: Symbol = tree.symbol
       if ((sym ne null) && (sym ne NoSymbol)) sym.initialize
+
+      def typedPackageDef(pdef: PackageDef) = {
+        val pid1 = typedQualifier(pdef.pid).asInstanceOf[RefTree]
+        assert(sym.moduleClass ne NoSymbol, sym)
+        // complete lazy annotations
+        val annots = sym.annotations
+        val stats1 = newTyper(context.make(tree, sym.moduleClass, sym.info.decls))
+          .typedStats(pdef.stats, NoSymbol)
+        treeCopy.PackageDef(tree, pid1, stats1) setType NoType
+      }
+
+      def typedDocDef(docdef: DocDef) = {
+        val comment = docdef.comment
+        if (forScaladoc && (sym ne null) && (sym ne NoSymbol)) {
+          docComments(sym) = comment
+          comment.defineVariables(sym)
+          val typer1 = newTyper(context.makeNewScope(tree, context.owner))
+          for (useCase <- comment.useCases) {
+            typer1.silent(_.typedUseCase(useCase)) match {
+              case SilentTypeError(err) =>
+                unit.warning(useCase.pos, err.errMsg)
+              case _ =>
+            }
+            for (useCaseSym <- useCase.defined) {
+              if (sym.name != useCaseSym.name)
+                unit.warning(useCase.pos, "@usecase " + useCaseSym.name.decode + " does not match commented symbol: " + sym.name.decode)
+            }
+          }
+        }
+        typed(docdef.definition, mode, pt)
+      }
+
+      def defDefTyper(ddef: DefDef) = {
+        val flag = ddef.mods.hasDefaultFlag && sym.owner.isModuleClass &&
+            nme.defaultGetterToMethod(sym.name) == nme.CONSTRUCTOR
+        newTyper(context.makeNewScope(ddef, sym)).constrTyperIf(flag)
+      }
+
+      def typedAlternative(alt: Alternative) = {
+        val alts1 = alt.trees mapConserve (alt => typed(alt, mode | ALTmode, pt))
+        treeCopy.Alternative(tree, alts1) setType pt
+      }
+
+      def typedStar(tree: Star) = {
+        if ((mode & STARmode) == 0 && !isPastTyper)
+          StarPatternWithVarargParametersError(tree)
+        treeCopy.Star(tree, typed(tree.elem, mode, pt)) setType makeFullyDefined(pt)
+      }
+
+      def typedUnApply(tree: UnApply) = {
+        val fun1 = typed(tree.fun)
+        val tpes = formalTypes(unapplyTypeList(tree.fun.symbol, fun1.tpe, tree.args.length), tree.args.length)
+        val args1 = map2(tree.args, tpes)(typedPattern)
+        treeCopy.UnApply(tree, fun1, args1) setType pt
+      }
+
+      def typedTry(tree: Try) = {
+        var block1 = typed(tree.block, pt)
+        var catches1 = typedCases(tree.catches, ThrowableClass.tpe, pt)
+
+        for (cdef <- catches1 if cdef.guard.isEmpty) {
+          def warn(name: Name) = context.warning(cdef.pat.pos, s"This catches all Throwables. If this is really intended, use `case ${name.decoded} : Throwable` to clear this warning.")
+          def unbound(t: Tree) = t.symbol == null || t.symbol == NoSymbol
+          cdef.pat match {
+            case Bind(name, i @ Ident(_)) if unbound(i) => warn(name)
+            case i @ Ident(name) if unbound(i) => warn(name)
+            case _ =>
+          }
+        }
+
+        val finalizer1 =
+          if (tree.finalizer.isEmpty) tree.finalizer
+          else typed(tree.finalizer, UnitClass.tpe)
+        val (owntype, needAdapt) = ptOrLub(block1.tpe :: (catches1 map (_.tpe)), pt)
+        if (needAdapt) {
+          block1 = adapt(block1, mode, owntype)
+          catches1 = catches1 map (adaptCase(_, mode, owntype))
+        }
+
+        treeCopy.Try(tree, block1, catches1, finalizer1) setType owntype
+      }
+
+      // begin typed1
       //if (settings.debug.value && tree.isDef) log("typing definition of "+sym);//DEBUG
       tree match {
-        case PackageDef(pid, stats) =>
-          def typedPackageDef = {
-            val pid1 = typedQualifier(pid).asInstanceOf[RefTree]
-            assert(sym.moduleClass ne NoSymbol, sym)
-            // complete lazy annotations
-            val annots = sym.annotations
-            val stats1 = newTyper(context.make(tree, sym.moduleClass, sym.info.decls))
-              .typedStats(stats, NoSymbol)
-            treeCopy.PackageDef(tree, pid1, stats1) setType NoType
-          }
-          typedPackageDef
+        case tree: PackageDef =>
+          typedPackageDef(tree)
 
-        case tree @ ClassDef(_, _, _, _) =>
+        case tree: ClassDef =>
           newTyper(context.makeNewScope(tree, sym)).typedClassDef(tree)
 
-        case tree @ ModuleDef(_, _, _) =>
+        case tree: ModuleDef =>
           newTyper(context.makeNewScope(tree, sym.moduleClass)).typedModuleDef(tree)
 
-        case vdef @ ValDef(_, _, _, _) =>
-          typedValDef(vdef)
+        case tree: ValDef =>
+          typedValDef(tree)
 
-        case ddef @ DefDef(_, _, _, _, _, _) =>
+        case tree: DefDef =>
           // flag default getters for constructors. An actual flag would be nice. See SI-5543.
           //val flag = ddef.mods.hasDefaultFlag && ddef.mods.hasFlag(PRESUPER)
-          val flag = ddef.mods.hasDefaultFlag && sym.owner.isModuleClass &&
-                     nme.defaultGetterToMethod(sym.name) == nme.CONSTRUCTOR
-          newTyper(context.makeNewScope(tree, sym)).constrTyperIf(flag).typedDefDef(ddef)
+          defDefTyper(tree).typedDefDef(tree)
 
-        case tdef @ TypeDef(_, _, _, _) =>
-          typedTypeDef(tdef)
+        case tree: TypeDef =>
+          typedTypeDef(tree)
 
-        case ldef @ LabelDef(_, _, _) =>
-          labelTyper(ldef).typedLabelDef(ldef)
+        case tree: LabelDef =>
+          labelTyper(tree).typedLabelDef(tree)
 
-        case ddef @ DocDef(comment, defn) =>
-          def typedDocDef = {
-            if (forScaladoc && (sym ne null) && (sym ne NoSymbol)) {
-              docComments(sym) = comment
-              comment.defineVariables(sym)
-              val typer1 = newTyper(context.makeNewScope(tree, context.owner))
-              for (useCase <- comment.useCases) {
-                typer1.silent(_.typedUseCase(useCase)) match {
-                  case SilentTypeError(err) =>
-                    unit.warning(useCase.pos, err.errMsg)
-                  case _ =>
-                }
-                for (useCaseSym <- useCase.defined) {
-                  if (sym.name != useCaseSym.name)
-                    unit.warning(useCase.pos, "@usecase " + useCaseSym.name.decode + " does not match commented symbol: " + sym.name.decode)
-                }
-              }
-            }
-            typed(defn, mode, pt)
-          }
-          typedDocDef
+        case tree: DocDef =>
+         typedDocDef(tree)
 
-        case Annotated(constr, arg) =>
-          typedAnnotated(constr, typed(arg, mode, pt))
+        case tree: Annotated =>
+          typedAnnotated(tree)
 
-        case tree @ Block(_, _) =>
+        case tree: Block =>
           typerWithLocalContext(context.makeNewScope(tree, context.owner)){
             _.typedBlock(tree, mode, pt)
           }
 
-        case Alternative(alts) =>
-          val alts1 = alts mapConserve (alt => typed(alt, mode | ALTmode, pt))
-          treeCopy.Alternative(tree, alts1) setType pt
+        case tree: Alternative =>
+          typedAlternative(tree)
 
-        case Star(elem) =>
-          if ((mode & STARmode) == 0 && !isPastTyper)
-            StarPatternWithVarargParametersError(tree)
-          treeCopy.Star(tree, typed(elem, mode, pt)) setType makeFullyDefined(pt)
+        case tree: Star =>
+          typedStar(tree)
 
-        case Bind(name, body) =>
-          typedBind(name, body)
+        case tree: Bind =>
+          typedBind(tree)
 
-        case UnApply(fun, args) =>
-          def typedUnApply = {
-            val fun1 = typed(fun)
-            val tpes = formalTypes(unapplyTypeList(fun.symbol, fun1.tpe, args.length), args.length)
-            val args1 = map2(args, tpes)(typedPattern)
-            treeCopy.UnApply(tree, fun1, args1) setType pt
-          }
-          typedUnApply
-        case ArrayValue(elemtpt, elems) =>
-          typedArrayValue(elemtpt, elems)
+        case tree: UnApply =>
+          typedUnApply(tree)
 
-        case tree @ Function(_, _) =>
+        case tree: ArrayValue =>
+          typedArrayValue(tree)
+
+        case tree: Function =>
           if (tree.symbol == NoSymbol)
             tree.symbol = context.owner.newAnonymousFunctionValue(tree.pos)
           typerWithLocalContext(context.makeNewScope(tree, tree.symbol))(_.typedFunction(tree, mode, pt))
@@ -4988,41 +5042,17 @@ trait Typers extends Modes with Adaptations with Tags {
         case AssignOrNamedArg(lhs, rhs) => // called by NamesDefaults in silent typecheck
           typedAssign(lhs, rhs)
 
-        case If(cond, thenp, elsep) =>
-          typedIf(cond, thenp, elsep)
+        case tree: If =>
+          typedIf(tree)
 
-        case tree @ Match(selector, cases) =>
-          typedVirtualizedMatch(tree, selector, cases)
+        case tree: Match =>
+          typedVirtualizedMatch(tree)
 
-        case Return(expr) =>
-          typedReturn(expr)
+        case tree: Return =>
+          typedReturn(tree)
 
-        case Try(block, catches, finalizer) =>
-          def typedTry = {
-            var block1 = typed(block, pt)
-            var catches1 = typedCases(catches, ThrowableClass.tpe, pt)
-
-            for (cdef <- catches1 if cdef.guard.isEmpty) {
-              def warn(name: Name) = context.warning(cdef.pat.pos, s"This catches all Throwables. If this is really intended, use `case ${name.decoded} : Throwable` to clear this warning.")
-              def unbound(t: Tree) = t.symbol == null || t.symbol == NoSymbol
-              cdef.pat match {
-                case Bind(name, i @ Ident(_)) if unbound(i) => warn(name)
-                case i @ Ident(name) if unbound(i) => warn(name)
-                case _ =>
-              }
-            }
-
-            val finalizer1 = if (finalizer.isEmpty) finalizer
-            else typed(finalizer, UnitClass.tpe)
-            val (owntype, needAdapt) = ptOrLub(block1.tpe :: (catches1 map tpeOfTree), pt)
-            if (needAdapt) {
-              block1 = adapt(block1, mode, owntype)
-              catches1 = catches1 map (adaptCase(_, mode, owntype))
-            }
-
-            treeCopy.Try(tree, block1, catches1, finalizer1) setType owntype
-          }
-          typedTry
+        case tree: Try =>
+          typedTry(tree)
 
         case Throw(expr) =>
           val expr1 = typed(expr, EXPRmode | BYVALmode, ThrowableClass.tpe)
