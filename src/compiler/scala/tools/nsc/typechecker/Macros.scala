@@ -212,7 +212,7 @@ trait Macros extends scala.tools.reflect.FastTrack with Traces {
     MacroImplBinding.unpickle(pickle)
   }
 
-  /** A list of compatible macro implementation signatures.
+  /** A reference macro implementation signature compatible with a given macro definition.
    *
    *  In the example above:
    *    (c: scala.reflect.macros.Context)(xs: c.Expr[List[T]]): c.Expr[T]
@@ -222,7 +222,7 @@ trait Macros extends scala.tools.reflect.FastTrack with Traces {
    *  @param vparamss The value parameters of the macro definition
    *  @param retTpe   The return type of the macro definition
    */
-  private def macroImplSigs(macroDef: Symbol, tparams: List[TypeDef], vparamss: List[List[ValDef]], retTpe: Type): (List[List[List[Symbol]]], Type) = {
+  private def macroImplSig(macroDef: Symbol, tparams: List[TypeDef], vparamss: List[List[ValDef]], retTpe: Type): (List[List[Symbol]], Type) = {
     // had to move method's body to an object because of the recursive dependencies between sigma and param
     object SigGenerator {
       val hasThis = macroDef.owner.isClass
@@ -287,17 +287,8 @@ trait Macros extends scala.tools.reflect.FastTrack with Traces {
       val paramsThis = List(makeParam(nme.macroThis, macroDef.pos, implType(false, ownerTpe), SYNTHETIC))
       val paramsTparams = tparams map param
       val paramssParams = mmap(vparamss)(param)
-
-      var paramsss = List[List[List[Symbol]]]()
-      // tparams are no longer part of a signature, they get into macro implementations via context bounds
-//      if (hasTparams && hasThis) paramsss :+= paramsCtx :: paramsThis :: paramsTparams :: paramssParams
-//      if (hasTparams) paramsss :+= paramsCtx :: paramsTparams :: paramssParams
-      // _this params are no longer part of a signature, its gets into macro implementations via Context.prefix
-//      if (hasThis) paramsss :+= paramsCtx :: paramsThis :: paramssParams
-      paramsss :+= paramsCtx :: paramssParams
-
-      val tsym = getMember(MacroContextClass, tpnme.Expr)
-      val implRetTpe = typeRef(singleType(NoPrefix, ctxParam), tsym, List(sigma(retTpe)))
+      val paramss = paramsCtx :: paramssParams
+      val implRetTpe = typeRef(singleType(NoPrefix, ctxParam), getMember(MacroContextClass, tpnme.Expr), List(sigma(retTpe)))
     }
 
     import SigGenerator._
@@ -305,7 +296,7 @@ trait Macros extends scala.tools.reflect.FastTrack with Traces {
     macroTraceVerbose("tparams are: ")(tparams)
     macroTraceVerbose("vparamss are: ")(vparamss)
     macroTraceVerbose("retTpe is: ")(retTpe)
-    macroTraceVerbose("macroImplSigs are: ")(paramsss, implRetTpe)
+    macroTraceVerbose("macroImplSig is: ")(paramss, implRetTpe)
   }
 
   private def transformTypeTagEvidenceParams(paramss: List[List[Symbol]], transform: (Symbol, Symbol) => Symbol): List[List[Symbol]] = {
@@ -375,7 +366,6 @@ trait Macros extends scala.tools.reflect.FastTrack with Traces {
     def reportError(pos: Position, msg: String) = {
       setError()
       context.error(pos, msg)
-      macroDef setFlag IS_ERROR
     }
 
     def invalidBodyError() =
@@ -596,22 +586,19 @@ trait Macros extends scala.tools.reflect.FastTrack with Traces {
 
       var actparamss = macroImpl.paramss
       actparamss = transformTypeTagEvidenceParams(actparamss, (param, tparam) => NoSymbol)
-
-      val rettpe = if (!ddef.tpt.isEmpty) typer.typedType(ddef.tpt).tpe else computeMacroDefTypeFromMacroImpl(ddef, macroDef, macroImpl)
-      val (reqparamsss0, reqres0) = macroImplSigs(macroDef, ddef.tparams, ddef.vparamss, rettpe)
-      var reqparamsss = reqparamsss0
-
-      // prohibit implicit params on macro implementations
-      // we don't have to do this, but it appears to be more clear than allowing them
+      val actres = macroImpl.tpe.finalResultType
       val implicitParams = actparamss.flatten filter (_.isImplicit)
       if (implicitParams.length > 0) {
+        // prohibit implicit params on macro implementations
+        // we don't have to do this, but it appears to be more clear than allowing them
         reportError(implicitParams.head.pos, "macro implementations cannot have implicit parameters other than AbsTypeTag evidences")
         macroTraceVerbose("macro def failed to satisfy trivial preconditions: ")(macroDef)
       }
 
       if (!hasError) {
-        val reqres = reqres0
-        val actres = macroImpl.tpe.finalResultType
+        val rettpe = if (!ddef.tpt.isEmpty) typer.typedType(ddef.tpt).tpe else computeMacroDefTypeFromMacroImpl(ddef, macroDef, macroImpl)
+        val (reqparamss, reqres) = macroImplSig(macroDef, ddef.tparams, ddef.vparamss, rettpe)
+
         def showMeth(pss: List[List[Symbol]], restpe: Type, abbreviate: Boolean) = {
           var argsPart = (pss map (ps => ps map (_.defString) mkString ("(", ", ", ")"))).mkString
           if (abbreviate) argsPart = argsPart.abbreviateCoreAliases
@@ -622,29 +609,12 @@ trait Macros extends scala.tools.reflect.FastTrack with Traces {
         def compatibilityError(addendum: String) =
           reportError(implpos,
             "macro implementation has wrong shape:"+
-            "\n required: "+showMeth(reqparamsss.head, reqres, true) +
-            (reqparamsss.tail map (paramss => "\n or      : "+showMeth(paramss, reqres, true)) mkString "")+
+            "\n required: "+showMeth(reqparamss, reqres, true) +
             "\n found   : "+showMeth(actparamss, actres, false)+
             "\n"+addendum)
 
-        macroTraceVerbose("considering " + reqparamsss.length + " possibilities of compatible macro impl signatures for macro def: ")(ddef.name)
-        val results = reqparamsss map (checkCompatibility(_, actparamss, reqres, actres))
-        if (macroDebugVerbose) (reqparamsss zip results) foreach { case (reqparamss, result) =>
-          println("%s %s".format(if (result.isEmpty) "[  OK  ]" else "[FAILED]", reqparamss))
-          result foreach (errorMsg => println("  " + errorMsg))
-        }
-
-        if (results forall (!_.isEmpty)) {
-          var index = reqparamsss indexWhere (_.length == actparamss.length)
-          if (index == -1) index = 0
-          val mostRelevantMessage = results(index).head
-          compatibilityError(mostRelevantMessage)
-        } else {
-          assert((results filter (_.isEmpty)).length == 1, results)
-          if (macroDebugVerbose) (reqparamsss zip results) filter (_._2.isEmpty) foreach { case (reqparamss, result) =>
-            println("typechecked macro impl as: " + reqparamss)
-          }
-        }
+        val errors = checkCompatibility(reqparamss, actparamss, reqres, actres)
+        if (errors.nonEmpty) compatibilityError(errors mkString "\n")
       }
     }
 
