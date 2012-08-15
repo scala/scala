@@ -230,6 +230,7 @@ trait Trees extends api.Trees { self: SymbolTable =>
   }
 
   case object EmptyTree extends TermTree {
+    val asList = List(this)
     super.tpe_=(NoType)
     override def tpe_=(t: Type) =
       if (t != NoType) throw new UnsupportedOperationException("tpe_=("+t+") inapplicable for <empty>")
@@ -290,7 +291,10 @@ trait Trees extends api.Trees { self: SymbolTable =>
   object LabelDef extends LabelDefExtractor
 
   case class ImportSelector(name: Name, namePos: Int, rename: Name, renamePos: Int) extends ImportSelectorApi
-  object ImportSelector extends ImportSelectorExtractor
+  object ImportSelector extends ImportSelectorExtractor {
+    val wild     = ImportSelector(nme.WILDCARD, -1, null, -1)
+    val wildList = List(wild)
+  }
 
   case class Import(expr: Tree, selectors: List[ImportSelector])
        extends SymTree with ImportApi

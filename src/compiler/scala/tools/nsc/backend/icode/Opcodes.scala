@@ -82,6 +82,8 @@ trait Opcodes { self: ICodes =>
   final val jumpsCat  = 10
   final val retCat    = 11
 
+  private lazy val ObjectReferenceList = ObjectReference :: Nil
+
   /** This class represents an instruction of the intermediate code.
    *  Each case subclass will represent a specific operation.
    */
@@ -392,14 +394,13 @@ trait Opcodes { self: ICodes =>
         else args
       }
 
-      override def produced =
-        if (producedType == UNIT || method.isConstructor) 0
-        else 1
-
-      private def producedType: TypeKind = toTypeKind(method.info.resultType)
-      override def producedTypes =
-        if (produced == 0) Nil
-        else producedType :: Nil
+      private val producedList = toTypeKind(method.info.resultType) match {
+        case UNIT                      => Nil
+        case _ if method.isConstructor => Nil
+        case kind                      => kind :: Nil
+      }
+      override def produced = producedList.size
+      override def producedTypes = producedList
 
       /** object identity is equality for CALL_METHODs. Needed for
        *  being able to store such instructions into maps, when more
@@ -423,7 +424,7 @@ trait Opcodes { self: ICodes =>
       assert(boxType.isValueType && !boxType.isInstanceOf[BOXED] && (boxType ne UNIT)) // documentation
       override def toString(): String = "UNBOX " + boxType
       override def consumed = 1
-      override def consumedTypes = ObjectReference :: Nil
+      override def consumedTypes = ObjectReferenceList
       override def produced = 1
       override def producedTypes = boxType :: Nil
       override def category = objsCat
@@ -474,7 +475,7 @@ trait Opcodes { self: ICodes =>
 
       override def consumed = 1
       override def produced = 1
-      override def consumedTypes = ObjectReference :: Nil
+      override def consumedTypes = ObjectReferenceList
       override def producedTypes = BOOL :: Nil
 
       override def category = castsCat
@@ -490,7 +491,7 @@ trait Opcodes { self: ICodes =>
 
       override def consumed = 1
       override def produced = 1
-      override def consumedTypes = ObjectReference :: Nil
+      override def consumedTypes = ObjectReferenceList
       override def producedTypes = typ :: Nil
 
       override def category = castsCat
@@ -576,7 +577,6 @@ trait Opcodes { self: ICodes =>
       override def produced = 0
 
       override def consumedTypes = kind :: Nil
-
       override def category = jumpsCat
     }
 
@@ -799,7 +799,7 @@ trait Opcodes { self: ICodes =>
     case class CIL_UNBOX(valueType: TypeKind) extends Instruction {
       override def toString(): String = "CIL_UNBOX " + valueType
       override def consumed = 1
-      override def consumedTypes = ObjectReference :: Nil // actually consumes a 'boxed valueType'
+      override def consumedTypes = ObjectReferenceList // actually consumes a 'boxed valueType'
       override def produced = 1
       override def producedTypes = msil_mgdptr(valueType) :: Nil
       override def category = objsCat
@@ -808,7 +808,7 @@ trait Opcodes { self: ICodes =>
     case class CIL_INITOBJ(valueType: TypeKind) extends Instruction {
       override def toString(): String = "CIL_INITOBJ " + valueType
       override def consumed = 1
-      override def consumedTypes = ObjectReference :: Nil // actually consumes a managed pointer
+      override def consumedTypes = ObjectReferenceList // actually consumes a managed pointer
       override def produced = 0
       override def category = objsCat
     }

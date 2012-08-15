@@ -442,7 +442,7 @@ trait Types extends api.Types { self: SymbolTable =>
       if (phase.erasedTypes) this
       else {
         val cowner = commonOwner(this)
-        refinedType(List(this), cowner, EmptyScope, cowner.pos).narrow
+        refinedType(this :: Nil, cowner, EmptyScope, cowner.pos).narrow
       }
 
     /** For a TypeBounds type, itself;
@@ -1007,7 +1007,7 @@ trait Types extends api.Types { self: SymbolTable =>
         if (!e.sym.hasFlag(excludedFlags)) {
           if (sym == NoSymbol) sym = e.sym
           else {
-            if (alts.isEmpty) alts = List(sym)
+            if (alts.isEmpty) alts = sym :: Nil
             alts = e.sym :: alts
           }
         }

@@ -797,7 +797,7 @@ trait Macros extends scala.tools.reflect.FastTrack with Traces {
     collectMacroArgs(expandee)
 
     val argcDoesntMatch = macroDef.paramss.length != exprArgs.length
-    val nullaryArgsEmptyParams = exprArgs.isEmpty && macroDef.paramss == List(List())
+    val nullaryArgsEmptyParams = exprArgs.isEmpty && macroDef.paramss == ListOfNil
     if (argcDoesntMatch && !nullaryArgsEmptyParams) { typer.TyperErrorGen.MacroPartialApplicationError(expandee); return None }
 
     var argss: List[List[Any]] = List(context) :: exprArgs.toList

@@ -266,7 +266,7 @@ sealed abstract class Option[+A] extends Product with Serializable {
    * if it is nonempty, or the empty list if the $option is empty.
    */
   def toList: List[A] =
-    if (isEmpty) List() else List(this.get)
+    if (isEmpty) List() else new ::(this.get, Nil)
 
   /** Returns a [[scala.util.Left]] containing the given
    * argument `left` if this $option is empty, or

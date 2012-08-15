@@ -217,12 +217,12 @@ abstract class TreeBuilder {
             atPos(cpos) {
               ClassDef(
                 Modifiers(FINAL), x, Nil,
-                Template(parents, self, NoMods, List(Nil), argss, stats, cpos.focus))
+                Template(parents, self, NoMods, ListOfNil, argss, stats, cpos.focus))
             }),
           atPos(npos) {
             New(
               Ident(x) setPos npos.focus,
-              List(Nil))
+              ListOfNil)
           }
         )
       }
