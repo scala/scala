@@ -302,6 +302,15 @@ sealed abstract class List[+A] extends AbstractSeq[A]
     if (isEmpty) Stream.Empty
     else new Stream.Cons(head, tail.toStream)
 
+  @inline override final
+  def foreach[B](f: A => B) {
+    var these = this
+    while (!these.isEmpty) {
+      f(these.head)
+      these = these.tail
+    }
+  }
+
   @deprecated("use `distinct` instead", "2.8.0")
   def removeDuplicates: List[A] = distinct
 }
@@ -378,7 +387,6 @@ final case class ::[B](private var hd: B, private[scala] var tl: List[B]) extend
     while (!xs.isEmpty) { out.writeObject(xs.head); xs = xs.tail }
     out.writeObject(ListSerializeEnd)
   }
-
 }
 
 /** $factoryInfo
