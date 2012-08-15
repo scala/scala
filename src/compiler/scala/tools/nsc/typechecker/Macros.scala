@@ -299,22 +299,31 @@ trait Macros extends scala.tools.reflect.FastTrack with Traces {
     macroTraceVerbose("macroImplSig is: ")(paramss, implRetTpe)
   }
 
+  /** Transforms parameters lists of a macro impl.
+   *  The `transform` function is invoked only for AbsTypeTag evidence parameters.
+   *
+   *  The transformer takes two arguments: a value parameter from the parameter list
+   *  and a type parameter that is witnesses by the value parameter.
+   *
+   *  If the transformer returns a NoSymbol, the value parameter is not included from the result.
+   *  If the transformer returns something else, this something else is included in the result instead of the value parameter.
+   *
+   *  Despite of being highly esoteric, this function significantly simplifies signature analysis.
+   *  For example, it can be used to strip macroImpl.paramss from the evidences (necessary when checking def <-> impl correspondence)
+   *  or to streamline creation of the list of macro arguments.
+   */
   private def transformTypeTagEvidenceParams(paramss: List[List[Symbol]], transform: (Symbol, Symbol) => Symbol): List[List[Symbol]] = {
-    import definitions.{ AbsTypeTagClass, MacroContextClass }
-    if (paramss.isEmpty || paramss.last.isEmpty)
-      return paramss
-
-    val ContextParam = paramss.head match {
-      case p :: Nil => p filter (_.tpe <:< definitions.MacroContextClass.tpe)
-      case _        => NoSymbol
+    if (paramss.isEmpty || paramss.last.isEmpty) return paramss // no implicit parameters in the signature => nothing to do
+    if (paramss.head.isEmpty || !(paramss.head.head.tpe <:< MacroContextClass.tpe)) return paramss // no context parameter in the signature => nothing to do
+    def transformTag(param: Symbol): Symbol = param.tpe.dealias match {
+      case TypeRef(SingleType(SingleType(NoPrefix, c), universe), typetag, targ :: Nil)
+      if c == paramss.head.head && universe == MacroContextUniverse && typetag == AbsTypeTagClass =>
+        transform(param, targ.typeSymbol)
+      case _ =>
+        param
     }
-    def isTag(sym: Symbol): Boolean = (sym == AbsTypeTagClass) || (sym.isAliasType && isTag(sym.info.typeSymbol))
-    def transformTag(param: Symbol): Symbol = param.tpe match {
-      case TypeRef(SingleType(NoPrefix, ContextParam), sym, tp :: Nil) if isTag(sym) => transform(param, tp.typeSymbol)
-      case _                                                                         => param
-    }
-    val last = paramss.last map transformTag filterNot (_ eq NoSymbol)
-    if (last.isEmpty) paramss.init else paramss.init :+ last
+    val transformed = paramss.last map transformTag filter (_ ne NoSymbol)
+    if (transformed.isEmpty) paramss.init else paramss.init :+ transformed
   }
 
   /** As specified above, body of a macro definition must reference its implementation.
