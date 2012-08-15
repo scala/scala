@@ -345,7 +345,7 @@ trait Types extends api.Types { self: SymbolTable =>
 
     /** Is this type a dependent method type? */
     def isDependentMethodType: Boolean = false
-    
+
     /** True for WildcardType or BoundedWildcardType. */
     def isWildcard = false
 
@@ -1398,7 +1398,7 @@ trait Types extends api.Types { self: SymbolTable =>
    *  Cannot be created directly; one should always use `singleType` for creation.
    */
   abstract case class SingleType(pre: Type, sym: Symbol) extends SingletonType with SingleTypeApi {
-    override val isTrivial: Boolean = pre.isTrivial
+    override lazy val isTrivial: Boolean = pre.isTrivial
     override def isGround = sym.isPackageClass || pre.isGround
 
     // override def isNullable = underlying.isNullable
@@ -1464,7 +1464,7 @@ trait Types extends api.Types { self: SymbolTable =>
   }
 
   abstract case class SuperType(thistpe: Type, supertpe: Type) extends SingletonType with SuperTypeApi {
-    override val isTrivial: Boolean = thistpe.isTrivial && supertpe.isTrivial
+    override lazy val isTrivial: Boolean = thistpe.isTrivial && supertpe.isTrivial
     override def isNotNull = true;
     override def typeSymbol = thistpe.typeSymbol
     override def underlying = supertpe
@@ -1487,7 +1487,7 @@ trait Types extends api.Types { self: SymbolTable =>
    */
   abstract case class TypeBounds(lo: Type, hi: Type) extends SubType with TypeBoundsApi {
     def supertype = hi
-    override val isTrivial: Boolean = lo.isTrivial && hi.isTrivial
+    override lazy val isTrivial: Boolean = lo.isTrivial && hi.isTrivial
     override def bounds: TypeBounds = this
     def containsType(that: Type) = that match {
       case TypeBounds(_, _) => that <:< this
@@ -2295,7 +2295,8 @@ trait Types extends api.Types { self: SymbolTable =>
    * @M: a higher-kinded type is represented as a TypeRef with sym.typeParams.nonEmpty, but args.isEmpty
    */
   abstract case class TypeRef(pre: Type, sym: Symbol, args: List[Type]) extends Type with TypeRefApi {
-    override val isTrivial: Boolean = !sym.isTypeParameter && pre.isTrivial && args.forall(_.isTrivial)
+    override lazy val isTrivial: Boolean =
+      !sym.isTypeParameter && pre.isTrivial && areTrivialTypes(args)
 
     private[reflect] var parentsCache: List[Type]      = _
     private[reflect] var parentsPeriod                 = NoPeriod
@@ -2524,13 +2525,18 @@ trait Types extends api.Types { self: SymbolTable =>
                         override val resultType: Type) extends Type with MethodTypeApi {
 
     override lazy val isTrivial: Boolean =
-      isTrivialResult && (params forall isTrivialParam)
+      isTrivialResult && areTrivialParams(params)
 
     private def isTrivialResult =
       resultType.isTrivial && (resultType eq resultType.withoutAnnotations)
 
-    private def isTrivialParam(p: Symbol) =
-      p.tpe.isTrivial && !typesContain(paramTypes, p) && !(resultType contains p)
+    private def areTrivialParams(ps: List[Symbol]): Boolean = ps match {
+      case p :: rest => 
+        p.tpe.isTrivial && !typesContain(paramTypes, p) && !(resultType contains p) &&
+        areTrivialParams(rest)
+      case _ => 
+        true
+    }
 
     def isImplicit = params.nonEmpty && params.head.isImplicit
     def isJava = false // can we do something like for implicits? I.e. do Java methods without parameters need to be recognized?
@@ -7014,6 +7020,11 @@ trait Types extends api.Types { self: SymbolTable =>
   @tailrec private def typesContain(tps: List[Type], sym: Symbol): Boolean = tps match {
     case tp :: rest => (tp contains sym) || typesContain(rest, sym)
     case _ => false
+  }
+
+  @tailrec private def areTrivialTypes(tps: List[Type]): Boolean = tps match {
+    case tp :: rest => tp.isTrivial && areTrivialTypes(rest)
+    case _ => true
   }
 
 // -------------- Classtags --------------------------------------------------------
