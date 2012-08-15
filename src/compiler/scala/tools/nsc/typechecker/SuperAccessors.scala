@@ -170,6 +170,7 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
           treeCopy.CaseDef(tree, pat, transform(guard), transform(body))
 
         case ClassDef(_, _, _, _) =>
+          def transformClassDef = {
           checkCompanionNameClashes(sym)
           val decls = sym.info.decls
           for (s <- decls) {
@@ -195,12 +196,15 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
             }
           }
           super.transform(tree)
+          }
+          transformClassDef
 
         case ModuleDef(_, _, _) =>
           checkCompanionNameClashes(sym)
           super.transform(tree)
 
         case Template(_, _, body) =>
+          def transformTemplate = {
           val ownAccDefs = new ListBuffer[Tree]
           accDefs(currentOwner) = ownAccDefs
 
@@ -213,6 +217,8 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
           accDefs -= currentOwner
           ownAccDefs ++= body1
           deriveTemplate(tree)(_ => ownAccDefs.toList)
+          }
+          transformTemplate
 
         case TypeApply(sel @ Select(This(_), name), args) =>
           mayNeedProtectedAccessor(sel, args, false)
@@ -227,6 +233,7 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
           typeDef
 
         case sel @ Select(qual, name) =>
+          def transformSelect = {
           /** return closest enclosing method, unless shadowed by an enclosing class;
            *  no use of closures here in the interest of speed.
            */
@@ -305,6 +312,8 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
             case _ =>
               mayNeedProtectedAccessor(sel, EmptyTree.asList, true)
           }
+          }
+          transformSelect
 
         case DefDef(mods, name, tparams, vparamss, tpt, rhs) if tree.symbol.isMethodWithExtension =>
           treeCopy.DefDef(tree, mods, name, tparams, vparamss, tpt, withInvalidOwner(transform(rhs)))
@@ -313,6 +322,7 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
           mayNeedProtectedAccessor(sel, args, true)
 
         case Assign(lhs @ Select(qual, name), rhs) =>
+          def transformAssign = {
           if (lhs.symbol.isVariable &&
               lhs.symbol.isJavaDefined &&
               needsProtectedAccessor(lhs.symbol, tree.pos)) {
@@ -322,6 +332,8 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
             transform(localTyper.typed(Apply(setter, List(qual, rhs))))
           } else
             super.transform(tree)
+          }
+          transformAssign
 
         case Apply(fn, args) =>
           assert(fn.tpe != null, tree)
