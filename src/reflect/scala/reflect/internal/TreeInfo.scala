@@ -17,7 +17,7 @@ abstract class TreeInfo {
   val global: SymbolTable
 
   import global._
-  import definitions.{ isVarArgsList, isCastSymbol, ThrowableClass, TupleClass }
+  import definitions.{ isVarArgsList, isCastSymbol, ThrowableClass, TupleClass, MacroContextClass, MacroContextPrefixType }
 
   /* Does not seem to be used. Not sure what it does anyway.
   def isOwnerDefinition(tree: Tree): Boolean = tree match {
@@ -591,4 +591,20 @@ abstract class TreeInfo {
   object DynamicUpdate extends DynamicApplicationExtractor(_ == nme.updateDynamic)
   object DynamicApplication extends DynamicApplicationExtractor(isApplyDynamicName)
   object DynamicApplicationNamed extends DynamicApplicationExtractor(_ == nme.applyDynamicNamed)
+
+  object MacroImplReference {
+    def unapply(tree: Tree): Option[(Symbol, Symbol, List[Tree])] =
+      tree match {
+        case TypeApply(fun, targs) => unapply(fun) map { case (owner, sym, _) => (owner, sym, targs) }
+        case Select(pre, _) => Some(pre.symbol, tree.symbol, Nil)
+        case Ident(_) => Some(NoSymbol, tree.symbol, Nil)
+        case _ => None
+      }
+  }
+
+  def stripOffPrefixTypeRefinement(tpe: Type): Type =
+    tpe.dealias match {
+      case RefinedType(List(tpe), Scope(sym)) if tpe == MacroContextClass.tpe && sym.allOverriddenSymbols.contains(MacroContextPrefixType) => tpe
+      case _ => tpe
+    }
 }
