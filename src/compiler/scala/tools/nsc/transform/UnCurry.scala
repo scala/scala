@@ -484,11 +484,7 @@ abstract class UnCurry extends InfoTransform
           arg setType functionType(Nil, arg.tpe)
         }
         else {
-          log("byname | %s | %s | %s".format(
-            arg.pos.source.path + ":" + arg.pos.line, fun.fullName,
-            if (fun.isPrivate) "private" else "")
-          )
-
+          log(s"Argument '$arg' at line ${arg.pos.safeLine} is $formal from ${fun.fullName}")
           arg match {
             // don't add a thunk for by-name argument if argument already is an application of
             // a Function0. We can then remove the application and use the existing Function0.

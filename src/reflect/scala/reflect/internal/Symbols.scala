@@ -943,7 +943,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     /** If this symbol has an expanded name, its original name, otherwise its name itself.
      *  @see expandName
      */
-    def originalName: Name = nme.originalName(name)
+    def originalName: Name = nme.originalName(nme.dropLocalSuffix(name))
 
     /** The name of the symbol before decoding, e.g. `\$eq\$eq` instead of `==`.
      */
