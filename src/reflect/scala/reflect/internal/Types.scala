@@ -1240,7 +1240,7 @@ trait Types extends api.Types { self: SymbolTable =>
 // Subclasses ------------------------------------------------------------
 
   trait UniqueType extends Product {
-    final override val hashCode = scala.runtime.ScalaRunTime._hashCode(this)
+    final override val hashCode = super.hashCode // scala.runtime.ScalaRunTime._hashCode(this)
   }
 
  /** A base class for types that defer some operations
