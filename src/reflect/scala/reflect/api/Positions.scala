@@ -7,6 +7,10 @@ trait Positions extends base.Positions {
   /** .. */
   type Position >: Null <: PositionApi { type Pos = Position }
 
+  /** Assigns a given position to all position-less nodes of a given AST.
+   */
+  def atPos[T <: Tree](pos: Position)(tree: T): T
+
   /** A position that wraps a set of trees.
    *  The point of the wrapping position is the point of the default position.
    *  If some of the trees are ranges, returns a range position enclosing all ranges
@@ -20,14 +24,6 @@ trait Positions extends base.Positions {
    *  Otherwise returns a synthetic offset position to point.
    */
   def wrappingPos(trees: List[Tree]): Position
-
-  /** Ensure that given tree has no positions that overlap with
-   *  any of the positions of `others`. This is done by
-   *  shortening the range or assigning TransparentPositions
-   *  to some of the nodes in `tree`.
-   */
-  //def ensureNonOverlapping(tree: Tree, others: List[Tree])
-  // [Eugene++] can this method be of use for macros?
 }
 
 /** The Position class and its subclasses represent positions of ASTs and symbols.

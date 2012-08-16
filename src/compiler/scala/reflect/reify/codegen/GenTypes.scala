@@ -23,7 +23,7 @@ trait GenTypes {
     if (isSemiConcreteTypeMember(tpe))
       return reifySemiConcreteTypeMember(tpe)
 
-    // [Eugene] how do I check that the substitution is legal w.r.t tpe.info?
+    // SI-6242: splicing might violate type bounds
     val spliced = spliceType(tpe)
     if (spliced != EmptyTree)
       return spliced
@@ -69,7 +69,6 @@ trait GenTypes {
   def reificationIsConcrete: Boolean = state.reificationIsConcrete
 
   def spliceType(tpe: Type): Tree = {
-    // [Eugene] it seems that depending on the context the very same symbol can be either a spliceable tparam or a quantified existential. very weird!
     val quantified = currentQuantified
     if (tpe.isSpliceable && !(quantified contains tpe.typeSymbol)) {
       if (reifyDebug) println("splicing " + tpe)

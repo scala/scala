@@ -979,12 +979,7 @@ trait Trees extends api.Trees { self: SymbolTable =>
    */
   def New(tpt: Tree, argss: List[List[Tree]]): Tree = argss match {
     case Nil        => ApplyConstructor(tpt, Nil)
-    case xs :: rest => {
-      def mkApply(fun: Tree, args: List[Tree]) = Apply(fun, args)
-      rest.foldLeft(ApplyConstructor(tpt, xs): Tree)(mkApply)
-      // [Eugene++] no longer compiles after I moved the `Apply` case class here
-      // rest.foldLeft(ApplyConstructor(tpt, xs): Tree)(Apply)
-    }
+    case xs :: rest => rest.foldLeft(ApplyConstructor(tpt, xs): Tree)(Apply.apply)
   }
 
   /** 0-1 argument list new, based on a type.

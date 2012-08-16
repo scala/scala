@@ -88,7 +88,6 @@ trait JavaMirrors extends internal.SymbolTable with api.JavaUniverse { self: Sym
 
 // ----------- Caching ------------------------------------------------------------------
 
-    // [Eugene++ to Martin] not weak? why?
     private val classCache = new TwoWayCache[jClass[_], ClassSymbol]
     private val packageCache = new TwoWayCache[Package, ModuleSymbol]
     private val methodCache = new TwoWayCache[jMethod, MethodSymbol]
@@ -659,42 +658,32 @@ trait JavaMirrors extends internal.SymbolTable with api.JavaUniverse { self: Sym
     private def followStatic(clazz: Symbol, mods: Int) =
       if (jModifier.isStatic(mods)) clazz.companionModule.moduleClass else clazz
 
-    implicit class RichClass(jclazz: jClass[_]) {
-      // [Eugene++] `jclazz.isLocalClass` doesn't work because of problems with `getSimpleName`
-      // java.lang.Error: sOwner(class Test$A$1) has failed
-      // Caused by: java.lang.InternalError: Malformed class name
-      //        at java.lang.Class.getSimpleName(Class.java:1133)
-      //        at java.lang.Class.isAnonymousClass(Class.java:1188)
-      //        at java.lang.Class.isLocalClass(Class.java:1199)
-      // (see t5256c.scala for more details)
+  /** Methods which need to be treated with care
+   *  because they either are getSimpleName or call getSimpleName:
+   *
+   *    public String getSimpleName()
+   *    public boolean isAnonymousClass()
+   *    public boolean isLocalClass()
+   *    public String getCanonicalName()
+   *
+   *  A typical manifestation:
+   *
+   *    // java.lang.Error: sOwner(class Test$A$1) has failed
+   *    // Caused by: java.lang.InternalError: Malformed class name
+   *    //        at java.lang.Class.getSimpleName(Class.java:1133)
+   *    //        at java.lang.Class.isAnonymousClass(Class.java:1188)
+   *    //        at java.lang.Class.isLocalClass(Class.java:1199)
+   *    // (see t5256c.scala for more details)
+   *
+   *  TODO - find all such calls and wrap them.
+   *  TODO - create mechanism to avoid the recurrence of unwrapped calls.
+   */
+   implicit class RichClass(jclazz: jClass[_]) {
+      // `jclazz.isLocalClass` doesn't work because of problems with `getSimpleName`
       // hence we have to approximate by removing the `isAnonymousClass` check
 //      def isLocalClass0: Boolean = jclazz.isLocalClass
       def isLocalClass0: Boolean = jclazz.getEnclosingMethod != null || jclazz.getEnclosingConstructor != null
     }
-
-  // [Eugene++] overflow from Paul's changes made concurrently with reflection refactoring
-  // https://github.com/scala/scala/commit/90d2bee45b25844f809f8c5300aefcb1bfe9e336
-  //
-  // /** Methods which need to be wrapped because they either are getSimpleName
-  //  *  or call getSimpleName:
-  //  *
-  //  *    public String getSimpleName()
-  //  *    public boolean isAnonymousClass()
-  //  *    public boolean isLocalClass()
-  //  *    public boolean isMemberClass()
-  //  *    public String getCanonicalName()
-  //  *
-  //  *  TODO - find all such calls and wrap them.
-  //  *  TODO - create mechanism to avoid the recurrence of unwrapped calls.
-  //  */
-  // private def wrapClassCheck[T](alt: T)(body: => T): T =
-  //   try body catch { case x: InternalError if x.getMessage == "Malformed class name" => alt }
-
-  // private def wrapIsLocalClass(clazz: jClass[_]): Boolean =
-  //   wrapClassCheck(false)(clazz.isLocalClass)
-
-  // private def wrapGetSimpleName(clazz: jClass[_]): String =
-  //   wrapClassCheck("")(clazz.getSimpleName)
 
     /**
      * The Scala owner of the Scala class corresponding to the Java class `jclazz`
@@ -1208,7 +1197,7 @@ trait JavaMirrors extends internal.SymbolTable with api.JavaUniverse { self: Sym
   override def missingHook(owner: Symbol, name: Name): Symbol = {
     if (owner.hasPackageFlag) {
       val mirror = mirrorThatLoaded(owner)
-      // [Eugene++] this makes toolbox tests pass, but it's a mere workaround for SI-5865
+      // todo. this makes toolbox tests pass, but it's a mere workaround for SI-5865
 //      assert((owner.info decl name) == NoSymbol, s"already exists: $owner . $name")
       if (owner.isRootSymbol && mirror.tryJavaClass(name.toString).isDefined)
         return mirror.EmptyPackageClass.info decl name
