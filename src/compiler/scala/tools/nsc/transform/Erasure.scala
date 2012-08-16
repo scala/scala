@@ -488,7 +488,7 @@ abstract class Erasure extends AddInterfaces
     private def isPrimitiveValueMember(sym: Symbol) =
       sym != NoSymbol && isPrimitiveValueClass(sym.owner)
 
-    private def box(tree: Tree, target: => String): Tree = {
+    @inline private def box(tree: Tree, target: => String): Tree = {
       val result = box1(tree)
       log("boxing "+tree+":"+tree.tpe+" to "+target+" = "+result+":"+result.tpe)
       result

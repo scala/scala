@@ -3991,15 +3991,18 @@ trait Types extends api.Types { self: SymbolTable =>
     override def variance = _variance
     def variance_=(x: Int) = _variance = x
 
-    override protected def noChangeToSymbols(origSyms: List[Symbol]) = {
-      origSyms forall { sym =>
-        val v = variance
-        if (sym.isAliasType) variance = 0
-        val result = this(sym.info)
-        variance = v
-        result eq sym.info
+    override protected def noChangeToSymbols(origSyms: List[Symbol]) =
+      //OPT inline from forall to save on #closures
+      origSyms match {
+        case sym :: rest =>
+          val v = variance
+          if (sym.isAliasType) variance = 0
+          val result = this(sym.info)
+          variance = v
+          (result eq sym.info) && noChangeToSymbols(rest)
+        case _ =>
+          true
       }
-    }
 
     override protected def mapOverArgs(args: List[Type], tparams: List[Symbol]): List[Type] =
       map2Conserve(args, tparams) { (arg, tparam) =>
@@ -5131,14 +5134,14 @@ trait Types extends api.Types { self: SymbolTable =>
       1
   }
 
-  private def maxDepth(tps: Seq[Type], by: Type => Int): Int = {
+  private def maxDepth(tps: List[Type], by: Type => Int): Int = {
     var d = 0
     for (tp <- tps) d = d max by(tp) //!!!OPT!!!
     d
   }
 
-  private def typeDepth(tps: Seq[Type]): Int = maxDepth(tps, typeDepth)
-  private def baseTypeSeqDepth(tps: Seq[Type]): Int = maxDepth(tps, _.baseTypeSeqDepth)
+  private def typeDepth(tps: List[Type]): Int = maxDepth(tps, typeDepth)
+  private def baseTypeSeqDepth(tps: List[Type]): Int = maxDepth(tps, _.baseTypeSeqDepth)
 
   /** Is intersection of given types populated? That is,
    *  for all types tp1, tp2 in intersection

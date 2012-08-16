@@ -8,6 +8,7 @@ package internal
 
 import util._
 import pickling.ByteCodecs
+import scala.annotation.tailrec
 
 /** AnnotationInfo and its helpers */
 trait AnnotationInfos extends api.AnnotationInfos { self: SymbolTable =>
@@ -31,11 +32,27 @@ trait AnnotationInfos extends api.AnnotationInfos { self: SymbolTable =>
       case AnnotationInfo(tp, Literal(Constant(tpe: Type)) :: Nil, _) if tp.typeSymbol == ThrowsClass => tpe.typeSymbol
     }
 
-    /** Test for, get, or remove an annotation */
-    def hasAnnotation(cls: Symbol) = annotations exists (_ matches cls)
-    def getAnnotation(cls: Symbol) = annotations find (_ matches cls)
+    /** Tests for, get, or remove an annotation */    
+    def hasAnnotation(cls: Symbol): Boolean =
+      //OPT inlined from exists to save on #closures; was:  annotations exists (_ matches cls)
+      dropOtherAnnotations(annotations, cls).nonEmpty
+
+    def getAnnotation(cls: Symbol): Option[AnnotationInfo] =
+      //OPT inlined from exists to save on #closures; was:  annotations find (_ matches cls)
+      dropOtherAnnotations(annotations, cls) match {
+        case ann :: _ => Some(ann)
+        case _ => None
+      }
+    
     def removeAnnotation(cls: Symbol): Self = filterAnnotations(ann => !(ann matches cls))
+    
     final def withAnnotation(annot: AnnotationInfo): Self = withAnnotations(List(annot))
+
+    @tailrec private 
+    def dropOtherAnnotations(anns: List[AnnotationInfo], cls: Symbol): List[AnnotationInfo] = anns match {
+      case ann :: rest => if (ann matches cls) anns else dropOtherAnnotations(rest, cls)
+      case Nil => Nil
+    }
   }
 
   /** Arguments to classfile annotations (which are written to

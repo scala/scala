@@ -1897,10 +1897,16 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
      *  @param ofclazz   The class containing the symbol's definition
      *  @param site      The base type from which member types are computed
      */
-    final def matchingSymbol(ofclazz: Symbol, site: Type): Symbol =
-      ofclazz.info.nonPrivateDecl(name).filter(sym =>
-        !sym.isTerm || (site.memberType(this) matches site.memberType(sym)))
-
+    final def matchingSymbol(ofclazz: Symbol, site: Type): Symbol = {
+      //OPT cut down on #closures by special casing non-overloaded case
+      // was: ofclazz.info.nonPrivateDecl(name) filter (sym =>
+      //        !sym.isTerm || (site.memberType(this) matches site.memberType(sym)))
+      val result = ofclazz.info.nonPrivateDecl(name)
+      def qualifies(sym: Symbol) = !sym.isTerm || (site.memberType(this) matches site.memberType(sym))
+      if ((result eq NoSymbol) || !result.isOverloaded && qualifies(result)) result
+      else result filter qualifies
+    }
+    
     /** The non-private member of `site` whose type and name match the type of this symbol. */
     final def matchingSymbol(site: Type, admit: Long = 0L): Symbol =
       site.nonPrivateMemberAdmitting(name, admit).filter(sym =>
