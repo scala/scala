@@ -448,6 +448,17 @@ abstract class GenASM extends SubComponent with BytecodeWriters {
   val JAVA_LANG_OBJECT = asm.Type.getObjectType("java/lang/Object")
   val JAVA_LANG_STRING = asm.Type.getObjectType("java/lang/String")
 
+  /**
+   *  We call many Java varargs methods from ASM library that expect Arra[asm.Type] as argument so
+   *  we override default (compiler-generated) ClassTag so we can provide specialized newArray implementation.
+   *
+   *  Examples of methods that should pick our definition are: JBuilder.javaType and JPlainBuilder.genMethod.
+   */
+  private implicit val asmTypeTag: scala.reflect.ClassTag[asm.Type] = new scala.reflect.ClassTag[asm.Type] {
+    def runtimeClass: java.lang.Class[asm.Type] = classOf[asm.Type]
+    final override def newArray(len: Int): Array[asm.Type] = new Array[asm.Type](len)
+  }
+
   /** basic functionality for class file building */
   abstract class JBuilder(bytecodeWriter: BytecodeWriter) {
 
@@ -641,7 +652,7 @@ abstract class GenASM extends SubComponent with BytecodeWriters {
     def javaType(s: Symbol): asm.Type = {
       if (s.isMethod) {
         val resT: asm.Type = if (s.isClassConstructor) asm.Type.VOID_TYPE else javaType(s.tpe.resultType);
-        asm.Type.getMethodType( resT, (s.tpe.paramTypes map javaType): _* )
+        asm.Type.getMethodType( resT, (s.tpe.paramTypes map javaType): _*)
       } else { javaType(s.tpe) }
     }
 
