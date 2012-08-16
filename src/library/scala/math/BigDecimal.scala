@@ -318,6 +318,20 @@ extends ScalaNumber with ScalaNumericConversions with Serializable {
    */
   def ulp: BigDecimal = this.bigDecimal.ulp
 
+  /** Moves the decimal point to the left by the specified amount of digits.
+   *
+   *  @param by amount of digits by which the decimal point is moved to the left.
+   *  @return new BigDecimal with decimal point moved to the left
+   */
+  def movePointLeft(by: Int): BigDecimal = this.bigDecimal.movePointLeft(by)
+
+  /** Moves the decimal point to the right by the specified amount of digits.
+   *
+   *  @param by amount of digits by which the decimal point is moved to the right.
+   *  @return new BigDecimal with decimal point moved to the right
+   */
+  def movePointRight(by: Int): BigDecimal = this.bigDecimal.movePointRight(by)
+
   /** Returns a new BigDecimal based on the supplied MathContext.
    */
   def apply(mc: MathContext): BigDecimal = BigDecimal(this.bigDecimal.toString, mc)
