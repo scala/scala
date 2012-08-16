@@ -1075,7 +1075,7 @@ class ModelFactory(val global: Global, val settings: doc.Settings) {
   def classExcluded(clazz: TemplateEntity): Boolean = settings.hardcoded.isExcluded(clazz.qualifiedName)
 
   // the implicit conversions that are excluded from the pages should not appear in the diagram
-  def implicitExcluded(convertorMethod: String): Boolean = settings.hardcoded.commonConversionTargets.contains(convertorMethod)
+  def implicitExcluded(convertorMethod: String): Boolean = settings.hiddenImplicits(convertorMethod)
 
   // whether or not to create a page for an {abstract,alias} type
   def typeShouldDocument(bSym: Symbol, inTpl: DocTemplateImpl) =

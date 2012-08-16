@@ -278,6 +278,7 @@ trait Printers extends reflect.internal.Printers { this: Global =>
 
   def asString(t: Tree): String = render(t, newStandardTreePrinter, settings.printtypes.value, settings.uniqid.value, settings.Yshowsymkinds.value)
   def asCompactString(t: Tree): String = render(t, newCompactTreePrinter, settings.printtypes.value, settings.uniqid.value, settings.Yshowsymkinds.value)
+  def asCompactDebugString(t: Tree): String = render(t, newCompactTreePrinter, true, true, true)
 
   def newStandardTreePrinter(writer: PrintWriter): TreePrinter = new TreePrinter(writer)
   def newStandardTreePrinter(stream: OutputStream): TreePrinter = newStandardTreePrinter(new PrintWriter(stream))

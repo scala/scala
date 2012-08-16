@@ -372,6 +372,13 @@ abstract class TreeInfo {
     case _                       => EmptyTree
   }
 
+  /** If this tree represents a type application the type arguments. Otherwise Nil.
+   */
+  def typeArguments(tree: Tree): List[Tree] = tree match {
+    case TypeApply(_, targs) => targs
+    case _                   => Nil
+  }
+
   /** If this tree has type parameters, those.  Otherwise Nil.
    */
   def typeParameters(tree: Tree): List[TypeDef] = tree match {
