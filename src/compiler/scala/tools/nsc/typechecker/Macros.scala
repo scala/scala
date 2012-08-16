@@ -623,7 +623,7 @@ trait Macros extends scala.tools.reflect.FastTrack with Traces {
   def computeMacroDefTypeFromMacroImpl(macroDdef: DefDef, macroDef: Symbol, macroImpl: Symbol): Type = {
     // downgrade from metalevel-0 to metalevel-1
     var runtimeType = macroImpl.tpe.finalResultType.dealias match {
-      case TypeRef(pre, sym, runtimeType :: Nil) if sym == ExprClass => runtimeType
+      case TypeRef(_, ExprClass, runtimeType :: Nil) => runtimeType
       case _ => AnyTpe
     }
 
