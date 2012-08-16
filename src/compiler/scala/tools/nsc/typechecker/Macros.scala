@@ -225,33 +225,22 @@ trait Macros extends scala.tools.reflect.FastTrack with Traces {
   private def macroImplSig(macroDef: Symbol, tparams: List[TypeDef], vparamss: List[List[ValDef]], retTpe: Type): (List[List[Symbol]], Type) = {
     // had to move method's body to an object because of the recursive dependencies between sigma and param
     object SigGenerator {
-      val hasThis = macroDef.owner.isClass
-      val ownerTpe = macroDef.owner match {
-        case owner if owner.isModuleClass => new UniqueThisType(macroDef.owner)
-        case owner if owner.isClass => macroDef.owner.tpe
-        case _ => NoType
-      }
-      val hasTparams = !tparams.isEmpty
-
       def sigma(tpe: Type): Type = {
         class SigmaTypeMap extends TypeMap {
           def apply(tp: Type): Type = tp match {
             case TypeRef(pre, sym, args) =>
               val pre1 = pre match {
                 case ThisType(sym) if sym == macroDef.owner =>
-                  SingleType(SingleType(SingleType(NoPrefix, paramsCtx(0)), MacroContextPrefix), ExprValue)
+                  SingleType(SingleType(SingleType(NoPrefix, ctxParam), MacroContextPrefix), ExprValue)
                 case SingleType(NoPrefix, sym) =>
                   mfind(vparamss)(_.symbol == sym) match {
-                    case Some(macroDefParam) =>
-                      SingleType(SingleType(NoPrefix, param(macroDefParam)), ExprValue)
-                    case _ =>
-                      pre
+                    case Some(macroDefParam) => SingleType(SingleType(NoPrefix, param(macroDefParam)), ExprValue)
+                    case _ => pre
                   }
                 case _ =>
                   pre
               }
-              val args1 = args map mapOver
-              TypeRef(pre1, sym, args1)
+              TypeRef(pre1, sym, args map mapOver)
             case _ =>
               mapOver(tp)
           }
@@ -281,11 +270,7 @@ trait Macros extends scala.tools.reflect.FastTrack with Traces {
           sigParam
         })
 
-      val paramsCtx = List(ctxParam)
-      val paramsThis = List(makeParam(nme.macroThis, macroDef.pos, implType(false, ownerTpe), SYNTHETIC))
-      val paramsTparams = tparams map param
-      val paramssParams = mmap(vparamss)(param)
-      val paramss = paramsCtx :: paramssParams
+      val paramss = List(ctxParam) :: mmap(vparamss)(param)
       val implRetTpe = typeRef(singleType(NoPrefix, ctxParam), getMember(MacroContextClass, tpnme.Expr), List(sigma(retTpe)))
     }
 
