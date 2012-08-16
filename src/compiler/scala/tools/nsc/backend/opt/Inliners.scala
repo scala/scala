@@ -608,10 +608,11 @@ abstract class Inliners extends SubComponent {
       def instructions  = m.code.instructions
       // def linearized    = linearizer linearize m
 
-      def isSmall       = (length <= SMALL_METHOD_SIZE) && blocks(0).length < 10
-      def isLarge       = length > MAX_INLINE_SIZE
-      def isRecursive   = m.recursive
-      def hasHandlers   = handlers.nonEmpty || m.bytecodeHasEHs
+      def isSmall         = (length <= SMALL_METHOD_SIZE) && blocks(0).length < 10
+      def isLarge         = length > MAX_INLINE_SIZE
+      def isRecursive     = m.recursive
+      def hasHandlers     = handlers.nonEmpty || m.bytecodeHasEHs
+      def hasClosureParam = paramTypes exists (tp => isByNameParamType(tp) || isFunctionType(tp))
 
       def isSynchronized         = sym.hasFlag(Flags.SYNCHRONIZED)
       def hasNonFinalizerHandler = handlers exists {
@@ -661,9 +662,9 @@ abstract class Inliners extends SubComponent {
          *
          * TODO handle more robustly the case of a trait var changed at the source-level from public to private[this]
          *      (eg by having ICodeReader use unpickler, see SI-5442).
-         
+
          DISABLED
-         
+
         def potentiallyPublicized(f: Symbol): Boolean = {
           (m.sourceFile eq NoSourceFile) && f.name.containsChar('$')
         }
@@ -1022,7 +1023,7 @@ abstract class Inliners extends SubComponent {
        *   - it's bad (useless) to inline inside bridge methods
        */
       def isScoreOK: Boolean = {
-        debuglog("shouldInline: " + caller.m + " , callee:" + inc.m)
+        debuglog(s"shouldInline: ${caller.m} , callee: ${inc.m}")
 
         var score = 0
 
@@ -1031,10 +1032,11 @@ abstract class Inliners extends SubComponent {
         else if (caller.inlinedCalls < 1) score -= 1 // only monadic methods can trigger the first inline
 
         if (inc.isSmall) score += 1;
+        // if (inc.hasClosureParam) score += 2
         if (inc.isLarge) score -= 1;
         if (caller.isSmall && isLargeSum) {
           score -= 1
-          debuglog("shouldInline: score decreased to " + score + " because small " + caller + " would become large")
+          debuglog(s"shouldInline: score decreased to $score because small $caller would become large")
         }
 
         if (inc.isMonadic)          score += 3
@@ -1043,7 +1045,7 @@ abstract class Inliners extends SubComponent {
         if (inc.isInClosure)                 score += 2;
         if (inlinedMethodCount(inc.sym) > 2) score -= 2;
 
-        log("shouldInline(" + inc.m + ") score: " + score)
+        log(s"shouldInline(${inc.m}) score: $score")
 
         score > 0
       }
