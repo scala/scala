@@ -67,6 +67,11 @@ trait Symbols extends base.Symbols { self: Universe =>
      */
     def isSynthetic: Boolean
 
+    /** Does this symbol represent an implementation artifact that isn't meant for public use?
+     *  Examples of such artifacts are erasure bridges and $outer fields.
+     */
+    def isImplementationArtifact: Boolean
+
     /** Does this symbol represent a local declaration or definition?
      *
      *  If yes, either `isPrivate` or `isProtected` are guaranteed to be true.

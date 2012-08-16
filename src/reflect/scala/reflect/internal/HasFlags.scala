@@ -66,7 +66,7 @@ trait HasFlags {
    */
   def flagString: String = flagString(flagMask)
   def flagString(mask: Long): String = calculateFlagString(flags & mask)
-  
+
   /** The default mask determining which flags to display.
    */
   def flagMask: Long = AllFlags
@@ -92,7 +92,7 @@ trait HasFlags {
   def isCaseAccessor     = hasFlag(CASEACCESSOR)
   def isDeferred         = hasFlag(DEFERRED)
   def isFinal            = hasFlag(FINAL)
-  def isHidden           = hasFlag(HIDDEN)
+  def isArtifact         = hasFlag(ARTIFACT)
   def isImplicit         = hasFlag(IMPLICIT)
   def isInterface        = hasFlag(INTERFACE)
   def isJavaDefined      = hasFlag(JAVA)
@@ -136,7 +136,7 @@ trait HasFlags {
 
   def accessString: String = {
     val pw = if (hasAccessBoundary) privateWithin.toString else ""
-    
+
     if (pw == "") {
       if (hasAllFlags(PrivateLocal)) "private[this]"
       else if (hasAllFlags(ProtectedLocal)) "protected[this]"
@@ -150,7 +150,7 @@ trait HasFlags {
   protected def calculateFlagString(basis: Long): String = {
     val access    = accessString
     val nonAccess = flagBitsToString(basis & ~AccessFlags)
-    
+
     if (access == "") nonAccess
     else if (nonAccess == "") access
     else nonAccess + " " + access
