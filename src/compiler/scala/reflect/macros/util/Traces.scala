@@ -2,7 +2,7 @@ package scala.reflect.macros
 package util
 
 trait Traces {
-  def globalSettings: tools.nsc.Settings
+  def globalSettings: scala.tools.nsc.Settings
 
   val macroDebugLite = globalSettings.YmacrodebugLite.value
   val macroDebugVerbose = globalSettings.YmacrodebugVerbose.value

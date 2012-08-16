@@ -17,7 +17,7 @@ trait Settings {
     setCompilerSettings(options.split(" ").toList)
 
   def setCompilerSettings(options: List[String]): this.type = {
-    val settings = new tools.nsc.Settings(_ => ())
+    val settings = new scala.tools.nsc.Settings(_ => ())
     settings.copyInto(universe.settings)
     this
   }
