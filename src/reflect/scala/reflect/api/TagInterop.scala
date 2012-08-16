@@ -4,16 +4,10 @@ package api
 import scala.reflect.base.TypeCreator
 import scala.reflect.base.{Universe => BaseUniverse}
 
-// [Martin] Moved to compiler because it needs to see runtime.Universe
-// The two will be united in scala-reflect anyway.
 trait TagInterop { self: JavaUniverse =>
 
-  // [Eugene++] would be great if we could approximate the interop without any mirrors
-  // todo. think how to implement that
-
   override def typeTagToManifest[T: ClassTag](mirror0: Any, tag: base.Universe # TypeTag[T]): Manifest[T] = {
-    // [Eugene++] implement more sophisticated logic
-    // Martin said it'd be okay to simply copypaste `Implicits.manifestOfType`
+    // SI-6239: make this conversion more precise
     val mirror = mirror0.asInstanceOf[Mirror]
     val runtimeClass = mirror.runtimeClass(tag.in(mirror).tpe)
     Manifest.classType(runtimeClass).asInstanceOf[Manifest[T]]

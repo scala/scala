@@ -145,7 +145,7 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
   private def _initSources = List(new BatchSourceFile("<init>", "class $repl_$init { }"))
   private def _initialize() = {
     try {
-      // [Eugene] todo. if this crashes, REPL will hang
+      // todo. if this crashes, REPL will hang
       new _compiler.Run() compileSources _initSources
       _initializeComplete = true
       true

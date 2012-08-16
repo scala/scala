@@ -265,14 +265,14 @@ trait Types extends api.Types { self: SymbolTable =>
     def declarations = decls
     def typeArguments = typeArgs
     def erasure = this match {
-      case ConstantType(value) => widen.erasure // [Eugene to Martin] constant types are unaffected by erasure. weird.
+      case ConstantType(value) => widen.erasure
       case _ =>
         var result: Type = transformedType(this)
         result = result.normalize match { // necessary to deal with erasures of HK types, typeConstructor won't work
           case PolyType(undets, underlying) => existentialAbstraction(undets, underlying) // we don't want undets in the result
           case _ => result
         }
-        // [Eugene] erasure screws up all ThisTypes for modules into PackageTypeRefs
+        // erasure screws up all ThisTypes for modules into PackageTypeRefs
         // we need to unscrew them, or certain typechecks will fail mysteriously
         // http://groups.google.com/group/scala-internals/browse_thread/thread/6d3277ae21b6d581
         result = result.map(tpe => tpe match {
@@ -284,7 +284,6 @@ trait Types extends api.Types { self: SymbolTable =>
     def substituteSymbols(from: List[Symbol], to: List[Symbol]): Type = substSym(from, to)
     def substituteTypes(from: List[Symbol], to: List[Type]): Type = subst(from, to)
 
-    // [Eugene] to be discussed and refactored
     def isConcrete = {
       def notConcreteSym(sym: Symbol) =
         sym.isAbstractType && !sym.isExistential
@@ -304,11 +303,8 @@ trait Types extends api.Types { self: SymbolTable =>
       !notConcreteTpe(this)
     }
 
-    // [Eugene] is this comprehensive?
-    // the only thingies that we want to splice are: 1) type parameters, 2) type members
+    // the only thingies that we want to splice are: 1) type parameters, 2) abstract type members
     // the thingies that we don't want to splice are: 1) concrete types (obviously), 2) existential skolems
-    // this check seems to cover them all, right?
-    // todo. after we discuss this, move the check to subclasses
     def isSpliceable = {
       this.isInstanceOf[TypeRef] && typeSymbol.isAbstractType && !typeSymbol.isExistential
     }

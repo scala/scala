@@ -3,9 +3,6 @@ package base
 
 trait Symbols { self: Universe =>
 
-  // [Eugene++ to Martin] why is Symbol >: Null, whereas all other symbol types are not nullable?
-  // same question goes for Types
-
   /** The abstract type of symbols representing declarations */
   type Symbol >: Null <: SymbolBase
 
@@ -266,7 +263,7 @@ trait Symbols { self: Universe =>
      *  by inspecting its `selfType.termSymbol`.
      */
     def moduleClass: Symbol // needed for tree traversals
-    // [Eugene++] when this becomes `moduleClass: ClassSymbol`, it will be the happiest day in my life
+    // when this becomes `moduleClass: ClassSymbol`, it will be the happiest day in my life
 
     final override def isModule = true
     final override def asModule = this

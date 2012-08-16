@@ -21,7 +21,7 @@ trait Symbols extends base.Symbols { self: Universe =>
 
     /** A list of annotations attached to this Symbol.
      */
-    // [Eugene++] we cannot expose the `annotations` method because it doesn't auto-initialize a symbol (see SI-5423)
+    // we cannot expose the `annotations` method because it doesn't auto-initialize a symbol (see SI-5423)
     // there was an idea to use the `isCompilerUniverse` flag and auto-initialize symbols in `annotations` whenever this flag is false
     // but it doesn't work, because the unpickler (that is shared between reflective universes and global universes) is very picky about initialization
     // scala.reflect.internal.Types$TypeError: bad reference while unpickling scala.collection.immutable.Nil: type Nothing not found in scala.type not found.
@@ -205,7 +205,6 @@ trait Symbols extends base.Symbols { self: Universe =>
   /** The API of term symbols */
   trait TermSymbolApi extends SymbolApi with TermSymbolBase { this: TermSymbol =>
     /** Does this symbol represent a value, i.e. not a module and not a method?
-     *  [Eugene++] I need a review of the implementation
      */
     def isValue: Boolean
 

@@ -248,7 +248,6 @@ trait Reshape {
       New(TypeTree(ann.atp) setOriginal extractOriginal(ann.original), List(args))
     }
 
-    // [Eugene] is this implemented correctly?
     private def trimAccessors(deff: Tree, stats: List[Tree]): List[Tree] = {
       val symdefs = (stats collect { case vodef: ValOrDefDef => vodef } map (vodeff => vodeff.symbol -> vodeff)).toMap
       val accessors = collection.mutable.Map[ValDef, List[DefDef]]()
@@ -287,7 +286,7 @@ trait Reshape {
           val name1 = nme.dropLocalSuffix(name)
           val vdef1 = ValDef(mods2, name1, tpt, rhs)
           if (reifyDebug) println("resetting visibility of field: %s => %s".format(vdef, vdef1))
-          Some(vdef1) // no copyAttrs here, because new ValDef and old symbols are not out of sync
+          Some(vdef1) // no copyAttrs here, because new ValDef and old symbols are now out of sync
         case ddef @ DefDef(mods, name, tparams, vparamss, tpt, rhs) =>
           if (accessors.values.exists(_.contains(ddef))) {
             if (reifyDebug) println("discarding accessor method: " + ddef)

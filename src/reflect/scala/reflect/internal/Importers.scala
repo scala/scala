@@ -2,10 +2,9 @@ package scala.reflect
 package internal
 import scala.collection.mutable.WeakHashMap
 
-// todo: move importers to a mirror
+// SI-6241: move importers to a mirror
 trait Importers { self: SymbolTable =>
 
-  // [Eugene] possible to make this less cast-heavy?
   def mkImporter(from0: api.Universe): Importer { val from: from0.type } = (
     if (self eq from0) {
       new Importer {

@@ -1,8 +1,6 @@
 package scala.reflect
 package base
 
-// [Eugene++ to Martin] why was this a member of `scala.reflect`, but not `scala.reflect.base`?
-
 abstract class MirrorOf[U <: base.Universe with Singleton] {
   /** .. */
   val universe: U

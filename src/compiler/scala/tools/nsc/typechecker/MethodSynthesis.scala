@@ -31,7 +31,6 @@ trait MethodSynthesis {
       else DefDef(sym, body)
 
     def applyTypeInternal(tags: List[TT[_]]): Type = {
-      // [Eugene++ to Paul] needs review!!
       val symbols = tags map compilerSymbolFromTag
       val container :: args = symbols
       val tparams = container.typeConstructor.typeParams
@@ -53,21 +52,14 @@ trait MethodSynthesis {
       applyTypeInternal(List(t1))
 
     def applyType[CC[X1], X1](implicit t1: TT[CC[_]], t2: TT[X1]): Type =
-      applyTypeInternal(List[TT[_]](t1, t2))
+      applyTypeInternal(List(t1, t2))
 
     def applyType[CC[X1, X2], X1, X2](implicit t1: TT[CC[_,_]], t2: TT[X1], t3: TT[X2]): Type =
-    // [Eugene++] without an explicit type annotation for List, we get this:
-    // [scalacfork] C:\Projects\KeplerUnderRefactoring\src\compiler\scala\tools\nsc\typechecker\MethodSynthesis.scala:59: error: no type parameters for method apply: (xs: A*)List[A] in object List exist so that it can be applied to arguments (scala.tools.nsc.typechecker.MethodSynthesis.synthesisUtil.TT[CC[_, _]], scala.tools.nsc.typechecker.MethodSynthesis.synthesisUtil.TT[X1], scala.tools.nsc.typechecker.MethodSynthesis.synthesisUtil.TT[X2])
-    // [scalacfork]  --- because ---
-    // [scalacfork] undetermined type
-    // [scalacfork]       applyTypeInternal(List(t1, t2, t3))
-      applyTypeInternal(List[TT[_]](t1, t2, t3))
+      applyTypeInternal(List(t1, t2, t3))
 
     def applyType[CC[X1, X2, X3], X1, X2, X3](implicit t1: TT[CC[_,_,_]], t2: TT[X1], t3: TT[X2], t4: TT[X3]): Type =
-      applyTypeInternal(List[TT[_]](t1, t2, t3, t4))
+      applyTypeInternal(List(t1, t2, t3, t4))
 
-    // [Martin->Eugene]  !!! reinstantiate when typeables are in.
-    // [Eugene++->Martin] now this compiles, will soon check it out
     def newMethodType[F](owner: Symbol)(implicit t: TT[F]): Type = {
       val fnSymbol = compilerSymbolFromTag(t)
       val formals = compilerTypeFromTag(t).typeArguments

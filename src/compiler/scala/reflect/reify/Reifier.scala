@@ -52,7 +52,6 @@ abstract class Reifier extends States
    */
   lazy val reification: Tree = {
     try {
-      // [Eugene] conventional way of doing this?
       if (universe exists (_.isErroneous)) CannotReifyErroneousPrefix(universe)
       if (universe.tpe == null) CannotReifyUntypedPrefix(universe)
 
@@ -62,7 +61,6 @@ abstract class Reifier extends States
           reifyTrace("reifee is located at: ")(tree.pos)
           reifyTrace("universe = ")(universe)
           reifyTrace("mirror = ")(mirror)
-          // [Eugene] conventional way of doing this?
           if (tree exists (_.isErroneous)) CannotReifyErroneousReifee(tree)
           if (tree.tpe == null) CannotReifyUntypedReifee(tree)
           val pipeline = mkReificationPipeline
@@ -108,11 +106,7 @@ abstract class Reifier extends States
       //
       // todo. this is a common problem with non-trivial macros in our current macro system
       // needs to be solved some day
-      //
-      // list of non-hygienic transformations:
-      // todo. to be updated
-      // [Eugene++] yeah, ugly and extremely brittle, but we do need to do resetAttrs. will be fixed later
-      // todo. maybe try `resetLocalAttrs` once the dust settles
+      // maybe try `resetLocalAttrs` once the dust settles
       var importantSymbols = Set[Symbol](
         NothingClass, AnyClass, SingletonClass, PredefModule, ScalaRunTimeModule, TypeCreatorClass, TreeCreatorClass, MirrorOfClass,
         BaseUniverseClass, JavaUniverseClass, ReflectRuntimePackage, ReflectRuntimeCurrentMirror)

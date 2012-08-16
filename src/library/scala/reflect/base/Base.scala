@@ -279,8 +279,6 @@ class Base extends Universe { self =>
 
   val NoPosition = new Position
 
-  def atPos[T <: Tree](pos: Position)(tree: T): T = tree
-
   private val generated = new mutable.HashMap[String, WeakReference[Symbol]]
 
   private def cached(name: String)(symExpr: => Symbol): Symbol =
@@ -411,6 +409,22 @@ class Base extends Universe { self =>
     lazy val ListClass    = staticClass("scala.List")
 
     lazy val PredefModule = staticModule("scala.Predef")
+
+    lazy val ByteTpe    = TypeRef(ScalaPrefix, ByteClass, Nil)
+    lazy val ShortTpe   = TypeRef(ScalaPrefix, ShortClass, Nil)
+    lazy val CharTpe    = TypeRef(ScalaPrefix, CharClass, Nil)
+    lazy val IntTpe     = TypeRef(ScalaPrefix, IntClass, Nil)
+    lazy val LongTpe    = TypeRef(ScalaPrefix, LongClass, Nil)
+    lazy val FloatTpe   = TypeRef(ScalaPrefix, FloatClass, Nil)
+    lazy val DoubleTpe  = TypeRef(ScalaPrefix, DoubleClass, Nil)
+    lazy val BooleanTpe = TypeRef(ScalaPrefix, BooleanClass, Nil)
+    lazy val UnitTpe    = TypeRef(ScalaPrefix, UnitClass, Nil)
+    lazy val AnyTpe     = TypeRef(ScalaPrefix, AnyClass, Nil)
+    lazy val AnyValTpe  = TypeRef(ScalaPrefix, AnyValClass, Nil)
+    lazy val NothingTpe = TypeRef(ScalaPrefix, NothingClass, Nil)
+    lazy val NullTpe    = TypeRef(ScalaPrefix, NullClass, Nil)
+    lazy val ObjectTpe  = TypeRef(JavaLangPrefix, ObjectClass, Nil)
+    lazy val AnyRefTpe  = ObjectTpe
   }
 
   import definitions._
@@ -418,22 +432,6 @@ class Base extends Universe { self =>
   private def thisModuleType(fullName: String): Type = ThisType(staticModule(fullName).moduleClass)
   private lazy val ScalaPrefix = thisModuleType("scala")
   private lazy val JavaLangPrefix = thisModuleType("java.lang")
-
-  lazy val ByteTpe    = TypeRef(ScalaPrefix, ByteClass, Nil)
-  lazy val ShortTpe   = TypeRef(ScalaPrefix, ShortClass, Nil)
-  lazy val CharTpe    = TypeRef(ScalaPrefix, CharClass, Nil)
-  lazy val IntTpe     = TypeRef(ScalaPrefix, IntClass, Nil)
-  lazy val LongTpe    = TypeRef(ScalaPrefix, LongClass, Nil)
-  lazy val FloatTpe   = TypeRef(ScalaPrefix, FloatClass, Nil)
-  lazy val DoubleTpe  = TypeRef(ScalaPrefix, DoubleClass, Nil)
-  lazy val BooleanTpe = TypeRef(ScalaPrefix, BooleanClass, Nil)
-  lazy val UnitTpe    = TypeRef(ScalaPrefix, UnitClass, Nil)
-  lazy val AnyTpe     = TypeRef(ScalaPrefix, AnyClass, Nil)
-  lazy val AnyValTpe  = TypeRef(ScalaPrefix, AnyValClass, Nil)
-  lazy val NothingTpe = TypeRef(ScalaPrefix, NothingClass, Nil)
-  lazy val NullTpe    = TypeRef(ScalaPrefix, NullClass, Nil)
-  lazy val ObjectTpe  = TypeRef(JavaLangPrefix, ObjectClass, Nil)
-  lazy val AnyRefTpe  = ObjectTpe
 
   private var nodeCount = 0 // not synchronized
 
@@ -745,7 +743,6 @@ class Base extends Universe { self =>
   implicit val ExistentialTypeTreeTag = ClassTag[ExistentialTypeTree](classOf[ExistentialTypeTree])
   implicit val TypeTreeTag = ClassTag[TypeTree](classOf[TypeTree])
 
-  // [Eugene++] to be removed after SI-5863 is fixed
   def ClassDef(sym: Symbol, impl: Template): ClassDef = ???
   def ModuleDef(sym: Symbol, impl: Template): ModuleDef = ???
   def ValDef(sym: Symbol, rhs: Tree): ValDef = ???
