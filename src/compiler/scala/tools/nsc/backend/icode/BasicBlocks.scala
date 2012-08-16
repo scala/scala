@@ -20,6 +20,12 @@ trait BasicBlocks {
   import global.{ ifDebug, settings, log, nme }
   import nme.isExceptionResultName
 
+  /** Override Array creation for efficiency (to not go through reflection). */
+  private implicit val instructionTag: scala.reflect.ClassTag[Instruction] = new scala.reflect.ClassTag[Instruction] {
+    def runtimeClass: java.lang.Class[Instruction] = classOf[Instruction]
+    final override def newArray(len: Int): Array[Instruction] = new Array[Instruction](len)
+  }
+
   object NoBasicBlock extends BasicBlock(-1, null)
 
   /** This class represents a basic block. Each
