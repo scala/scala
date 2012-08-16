@@ -983,7 +983,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     private def fullNameInternal(separator: Char): Name = (
       if (isRoot || isRootPackage || this == NoSymbol) name
       else if (owner.isEffectiveRoot) name
-      else effectiveOwner.enclClass.fullNameAsName(separator) append separator append name
+      else ((effectiveOwner.enclClass.fullNameAsName(separator) append separator): Name) append name
     )
 
     def fullNameAsName(separator: Char): Name = nme.dropLocalSuffix(fullNameInternal(separator))

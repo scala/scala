@@ -149,11 +149,15 @@ trait Names extends api.Names with LowPriorityNames {
     type ThisNameType >: Null <: Name
     protected[this] def thisName: ThisNameType
 
+    // Note that "Name with ThisNameType" should be redundant
+    // because ThisNameType <: Name, but due to SI-6161 the
+    // compile loses track of this fact.
+
     /** Index into name table */
     def start: Int = index
 
     /** The next name in the same hash bucket. */
-    def next: ThisNameType
+    def next: Name with ThisNameType
 
     /** The length of this name. */
     final def length: Int = len
@@ -169,13 +173,13 @@ trait Names extends api.Names with LowPriorityNames {
     def bothNames: List[Name] = List(toTermName, toTypeName)
 
     /** Return the subname with characters from from to to-1. */
-    def subName(from: Int, to: Int): ThisNameType
+    def subName(from: Int, to: Int): Name with ThisNameType
 
     /** Return a new name of the same variety. */
-    def newName(str: String): ThisNameType
+    def newName(str: String): Name with ThisNameType
 
     /** Return a new name based on string transformation. */
-    def mapName(f: String => String): ThisNameType = newName(f(toString))
+    def mapName(f: String => String): Name with ThisNameType = newName(f(toString))
 
     /** Copy bytes of this name to buffer cs, starting at position `offset`. */
     final def copyChars(cs: Array[Char], offset: Int) =
