@@ -8,7 +8,7 @@ package scala.tools.nsc
 package typechecker
 
 import symtab._
-import Flags.{MUTABLE, METHOD, LABEL, SYNTHETIC, HIDDEN}
+import Flags.{MUTABLE, METHOD, LABEL, SYNTHETIC, ARTIFACT}
 import language.postfixOps
 import scala.tools.nsc.transform.TypingTransformers
 import scala.tools.nsc.transform.Transform
@@ -66,10 +66,6 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
 
     object exceeded extends Exception {
       val advice = s"(The analysis required more space than allowed. Please try with scalac -Dscalac.patmat.analysisBudget=${AnalysisBudget.max*2} or -Dscalac.patmat.analysisBudget=off.)"
-    }
-
-    object stackOverflow extends Exception {
-      val advice = "(There was a stack overflow. Please try increasing the stack available to the compiler using e.g., -Xss2m.)"
     }
   }
 
@@ -521,7 +517,7 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
         // case Star(_) | ArrayValue  => error("stone age pattern relics encountered!")
 
         case _                       =>
-          error("unsupported pattern: "+ patTree +"(a "+ patTree.getClass +")")
+          typer.context.unit.error(patTree.pos, s"unsupported pattern: $patTree (a ${patTree.getClass}).\n This is a scalac bug. Tree diagnostics: ${asCompactDebugString(patTree)}.")
           noFurtherSubPats()
       }
 
@@ -1147,7 +1143,7 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
 
           // ExplicitOuter replaces `Select(q, outerSym) OBJ_EQ expectedPrefix` by `Select(q, outerAccessor(outerSym.owner)) OBJ_EQ expectedPrefix`
           // if there's an outer accessor, otherwise the condition becomes `true` -- TODO: can we improve needsOuterTest so there's always an outerAccessor?
-          val outer = expectedTp.typeSymbol.newMethod(vpmName.outer) setInfo expectedTp.prefix setFlag SYNTHETIC | HIDDEN
+          val outer = expectedTp.typeSymbol.newMethod(vpmName.outer) setInfo expectedTp.prefix setFlag SYNTHETIC | ARTIFACT
 
           (Select(codegen._asInstanceOf(testedBinder, expectedTp), outer)) OBJ_EQ expectedOuter
         }
@@ -2056,21 +2052,29 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
     def Lit(sym: Sym, pos: Boolean = true): Lit
 
     // throws an AnalysisBudget.Exception when the prop results in a CNF that's too big
+    // TODO: be smarter/more efficient about this (http://lara.epfl.ch/w/sav09:tseitin_s_encoding)
     def eqFreePropToSolvable(p: Prop): Formula = {
-      // TODO: for now, reusing the normalization from DPLL
-      def negationNormalForm(p: Prop): Prop = p match {
-        case And(a, b)      => And(negationNormalForm(a), negationNormalForm(b))
-        case Or(a, b)       => Or(negationNormalForm(a), negationNormalForm(b))
-        case Not(And(a, b)) => negationNormalForm(Or(Not(a), Not(b)))
-        case Not(Or(a, b))  => negationNormalForm(And(Not(a), Not(b)))
-        case Not(Not(p))    => negationNormalForm(p)
-        case Not(True)      => False
-        case Not(False)     => True
-        case True
-           | False
-           | (_ : Sym)
-           | Not(_ : Sym)   => p
-      }
+      def negationNormalFormNot(p: Prop, budget: Int = AnalysisBudget.max): Prop =
+        if (budget <= 0) throw AnalysisBudget.exceeded
+        else p match {
+          case And(a, b) =>  Or(negationNormalFormNot(a, budget - 1), negationNormalFormNot(b, budget - 1))
+          case Or(a, b)  => And(negationNormalFormNot(a, budget - 1), negationNormalFormNot(b, budget - 1))
+          case Not(p)    => negationNormalForm(p, budget - 1)
+          case True      => False
+          case False     => True
+          case s: Sym    => Not(s)
+        }
+
+      def negationNormalForm(p: Prop, budget: Int = AnalysisBudget.max): Prop =
+        if (budget <= 0) throw AnalysisBudget.exceeded
+        else p match {
+          case And(a, b)      => And(negationNormalForm(a, budget - 1), negationNormalForm(b, budget - 1))
+          case Or(a, b)       =>  Or(negationNormalForm(a, budget - 1), negationNormalForm(b, budget - 1))
+          case Not(negated)   => negationNormalFormNot(negated, budget - 1)
+          case True
+             | False
+             | (_ : Sym)      => p
+        }
 
       val TrueF          = formula()
       val FalseF         = formula(clause())
@@ -2113,12 +2117,7 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
       }
 
       val start = Statistics.startTimer(patmatCNF)
-      val res =
-        try {
-          conjunctiveNormalForm(negationNormalForm(p))
-        } catch { case ex : StackOverflowError =>
-          throw AnalysisBudget.stackOverflow
-        }
+      val res   = conjunctiveNormalForm(negationNormalForm(p))
 
       Statistics.stopTimer(patmatCNF, start)
 

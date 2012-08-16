@@ -797,7 +797,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
         var specializingOn = specializedParams(sym)
         val unusedStvars   = specializingOn filterNot specializedTypeVars(sym.info)
 
-        // I think the last condition should be !sym.isHidden, but that made the
+        // I think the last condition should be !sym.isArtifact, but that made the
         // compiler start warning about Tuple1.scala and Tuple2.scala claiming
         // their type parameters are used in non-specializable positions.  Why is
         // unusedStvars.nonEmpty for these classes???

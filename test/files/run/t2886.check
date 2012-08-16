@@ -1,5 +1,5 @@
 ((x: String) => {
-  <hidden> val x$1 = x;
-  <hidden> val x$2 = x;
+  <artifact> val x$1 = x;
+  <artifact> val x$2 = x;
   Test.this.test(x$2, x$1)
 })

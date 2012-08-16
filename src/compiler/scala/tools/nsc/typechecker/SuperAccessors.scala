@@ -61,7 +61,7 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
       val supername          = nme.superName(name)
       val superAcc = clazz.info.decl(supername).suchThat(_.alias == sym) orElse {
         debuglog(s"add super acc ${sym.fullLocationString} to $clazz")
-        val acc = clazz.newMethod(supername, sel.pos, SUPERACCESSOR | PRIVATE | HIDDEN) setAlias sym
+        val acc = clazz.newMethod(supername, sel.pos, SUPERACCESSOR | PRIVATE | ARTIFACT) setAlias sym
         val tpe = clazz.thisType memberType sym match {
           case t if sym.isModule && !sym.isMethod => NullaryMethodType(t)
           case t                                  => t
@@ -387,7 +387,7 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
       }
 
       val protAcc = clazz.info.decl(accName).suchThat(s => s == NoSymbol || s.tpe =:= accType(s)) orElse {
-        val newAcc = clazz.newMethod(nme.protName(sym.originalName), tree.pos, newFlags = HIDDEN)
+        val newAcc = clazz.newMethod(nme.protName(sym.originalName), tree.pos, newFlags = ARTIFACT)
         newAcc setInfoAndEnter accType(newAcc)
 
         val code = DefDef(newAcc, {
@@ -449,7 +449,7 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
 
       val accName = nme.protSetterName(field.originalName)
       val protectedAccessor = clazz.info decl accName orElse {
-        val protAcc      = clazz.newMethod(accName, field.pos, newFlags = HIDDEN)
+        val protAcc      = clazz.newMethod(accName, field.pos, newFlags = ARTIFACT)
         val paramTypes   = List(clazz.typeOfThis, field.tpe)
         val params       = protAcc newSyntheticValueParams paramTypes
         val accessorType = MethodType(params, UnitClass.tpe)

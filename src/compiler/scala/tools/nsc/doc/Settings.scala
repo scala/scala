@@ -111,6 +111,12 @@ class Settings(error: String => Unit, val printMsg: String => Unit = println(_))
     "only use it if you haven't defined usecase for implicitly inherited members."
   )
 
+  val docImplicitsHide = MultiStringSetting (
+	  "-implicits-hide",
+    "implicit(s)",
+    "Hide the members inherited by the given comma separated, fully qualified implicit conversions. Add dot (.) to include default conversions."
+  )
+
   val docDiagrams = BooleanSetting (
     "-diagrams",
     "Create inheritance diagrams for classes, traits and packages."
@@ -203,7 +209,7 @@ class Settings(error: String => Unit, val printMsg: String => Unit = println(_))
     docformat, doctitle, docfooter, docversion, docUncompilable, docsourceurl, docgenerator, docRootContent, useStupidTypes,
     docDiagrams, docDiagramsDebug, docDiagramsDotPath,
     docDiagramsDotTimeout, docDiagramsDotRestart,
-    docImplicits, docImplicitsDebug, docImplicitsShowAll,
+    docImplicits, docImplicitsDebug, docImplicitsShowAll, docImplicitsHide,
     docDiagramsMaxNormalClasses, docDiagramsMaxImplicitClasses,
     docNoPrefixes, docNoLinkWarnings, docRawOutput, docSkipPackages,
     docExpandAllTypes, docGroups
@@ -223,6 +229,14 @@ class Settings(error: String => Unit, val printMsg: String => Unit = println(_))
 
   def skipPackage(qname: String) =
     skipPackageNames(qname.toLowerCase)
+
+  lazy val hiddenImplicits: Set[String] = {
+    if (docImplicitsHide.value.isEmpty) hardcoded.commonConversionTargets
+    else docImplicitsHide.value.toSet flatMap { name: String =>
+      if(name == ".") hardcoded.commonConversionTargets
+      else Set(name)
+    }
+  }
 
   /**
    *  This is the hardcoded area of Scaladoc. This is where "undesirable" stuff gets eliminated. I know it's not pretty,
@@ -264,7 +278,7 @@ class Settings(error: String => Unit, val printMsg: String => Unit = println(_))
     }
 
     /** Common conversion targets that affect any class in Scala */
-    val commonConversionTargets = List(
+    val commonConversionTargets = Set(
       "scala.Predef.any2stringfmt",
       "scala.Predef.any2stringadd",
       "scala.Predef.any2ArrowAssoc",
