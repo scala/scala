@@ -1114,7 +1114,6 @@ trait Types extends api.Types { self: SymbolTable =>
       var excluded = excludedFlags | DEFERRED
       var continue = true
       var self: Type = null
-      val fingerPrint: Long = name.fingerPrint
 
       while (continue) {
         continue = false
@@ -1122,62 +1121,60 @@ trait Types extends api.Types { self: SymbolTable =>
         var bcs = bcs0
         while (!bcs.isEmpty) {
           val decls = bcs.head.info.decls
-          if ((fingerPrint & decls.fingerPrints) != 0) {
-            var entry = decls.lookupEntry(name)
-            while (entry ne null) {
-              val sym = entry.sym
-              val flags = sym.flags
-              if ((flags & required) == required) {
-                val excl = flags & excluded
-                if (excl == 0L &&
+          var entry = decls.lookupEntry(name)
+          while (entry ne null) {
+            val sym = entry.sym
+            val flags = sym.flags
+            if ((flags & required) == required) {
+              val excl = flags & excluded
+              if (excl == 0L &&
                     (// omit PRIVATE LOCALS unless selector class is contained in class owning the def.
-                     (bcs eq bcs0) ||
-                     (flags & PrivateLocal) != PrivateLocal ||
-                     (bcs0.head.hasTransOwner(bcs.head)))) {
-                  if (name.isTypeName || stableOnly && sym.isStable) {
-                    Statistics.popTimer(typeOpsStack, start)
-                    if (suspension ne null) suspension foreach (_.suspended = false)
-                    return sym
-                  } else if (member eq NoSymbol) {
-                    member = sym
-                  } else if (members eq null) {
-                    if ((member ne sym) &&
-                        ((member.owner eq sym.owner) ||
-                         (flags & PRIVATE) != 0 || {
-                           if (self eq null) self = this.narrow
-                           if (membertpe eq null) membertpe = self.memberType(member)
-                           !(membertpe matches self.memberType(sym))
-                         })) {
-                      lastM = new ::(sym, null)
-                      members = member :: lastM
-                    }
-                  } else {
-                    var others: List[Symbol] = members
-                    var symtpe: Type = null
-                    while ((others ne null) && {
-                             val other = others.head
-                             (other ne sym) &&
-                             ((other.owner eq sym.owner) ||
-                              (flags & PRIVATE) != 0 || {
-                                if (self eq null) self = this.narrow
-                                if (symtpe eq null) symtpe = self.memberType(sym)
-                                !(self.memberType(other) matches symtpe)
-                             })}) {
-                      others = others.tail
-                    }
-                    if (others eq null) {
-                      val lastM1 = new ::(sym, null)
-                      lastM.tl = lastM1
-                      lastM = lastM1
-                    }
+                  (bcs eq bcs0) ||
+                  (flags & PrivateLocal) != PrivateLocal ||
+                  (bcs0.head.hasTransOwner(bcs.head)))) {
+                if (name.isTypeName || stableOnly && sym.isStable) {
+                  Statistics.popTimer(typeOpsStack, start)
+                  if (suspension ne null) suspension foreach (_.suspended = false)
+                  return sym
+                } else if (member eq NoSymbol) {
+                  member = sym
+                } else if (members eq null) {
+                  if ((member ne sym) &&
+                    ((member.owner eq sym.owner) ||
+                      (flags & PRIVATE) != 0 || {
+                        if (self eq null) self = this.narrow
+                        if (membertpe eq null) membertpe = self.memberType(member)
+                        !(membertpe matches self.memberType(sym))
+                      })) {
+                    lastM = new ::(sym, null)
+                    members = member :: lastM
                   }
-                } else if (excl == DEFERRED) {
-                  continue = true
+                } else {
+                  var others: List[Symbol] = members
+                  var symtpe: Type = null
+                  while ((others ne null) && {
+                    val other = others.head
+                    (other ne sym) &&
+                      ((other.owner eq sym.owner) ||
+                        (flags & PRIVATE) != 0 || {
+                          if (self eq null) self = this.narrow
+                          if (symtpe eq null) symtpe = self.memberType(sym)
+                          !(self.memberType(other) matches symtpe)
+                             })}) {
+                    others = others.tail
+                  }
+                  if (others eq null) {
+                    val lastM1 = new ::(sym, null)
+                    lastM.tl = lastM1
+                    lastM = lastM1
+                  }
                 }
+              } else if (excl == DEFERRED) {
+                continue = true
               }
-              entry = decls lookupNextEntry entry
-            } // while (entry ne null)
-          } // if (fingerPrint matches)
+            }
+            entry = decls lookupNextEntry entry
+          } // while (entry ne null)
           // excluded = excluded | LOCAL
           bcs = if (name == nme.CONSTRUCTOR) Nil else bcs.tail
         } // while (!bcs.isEmpty)
@@ -1239,14 +1236,17 @@ trait Types extends api.Types { self: SymbolTable =>
 
 // Subclasses ------------------------------------------------------------
 
-  trait UniqueType extends Product {
-    final override val hashCode = super.hashCode // scala.runtime.ScalaRunTime._hashCode(this)
+  /**
+   *  A type that can be passed to unique(..) and be stored in the uniques map.
+   */
+  abstract class UniqueType extends Type with Product {
+    final override val hashCode = scala.runtime.ScalaRunTime._hashCode(this)
   }
 
  /** A base class for types that defer some operations
    *  to their immediate supertype.
    */
-  abstract class SubType extends Type {
+  abstract class SubType extends UniqueType {
     def supertype: Type
     override def parents: List[Type] = supertype.parents
     override def decls: Scope = supertype.decls
@@ -1387,7 +1387,7 @@ trait Types extends api.Types { self: SymbolTable =>
     override def kind = "ThisType"
   }
 
-  final class UniqueThisType(sym: Symbol) extends ThisType(sym) with UniqueType { }
+  final class UniqueThisType(sym: Symbol) extends ThisType(sym) { }
 
   object ThisType extends ThisTypeExtractor {
     def apply(sym: Symbol): Type =
@@ -1448,7 +1448,7 @@ trait Types extends api.Types { self: SymbolTable =>
     override def kind = "SingleType"
   }
 
-  final class UniqueSingleType(pre: Type, sym: Symbol) extends SingleType(pre, sym) with UniqueType { }
+  final class UniqueSingleType(pre: Type, sym: Symbol) extends SingleType(pre, sym)
 
   object SingleType extends SingleTypeExtractor {
     def apply(pre: Type, sym: Symbol): Type = {
@@ -1483,7 +1483,7 @@ trait Types extends api.Types { self: SymbolTable =>
     override def kind = "SuperType"
   }
 
-  final class UniqueSuperType(thistp: Type, supertp: Type) extends SuperType(thistp, supertp) with UniqueType { }
+  final class UniqueSuperType(thistp: Type, supertp: Type) extends SuperType(thistp, supertp)
 
   object SuperType extends SuperTypeExtractor {
     def apply(thistp: Type, supertp: Type): Type = {
@@ -1513,7 +1513,7 @@ trait Types extends api.Types { self: SymbolTable =>
     override def kind = "TypeBoundsType"
   }
 
-  final class UniqueTypeBounds(lo: Type, hi: Type) extends TypeBounds(lo, hi) with UniqueType { }
+  final class UniqueTypeBounds(lo: Type, hi: Type) extends TypeBounds(lo, hi)
 
   object TypeBounds extends TypeBoundsExtractor {
     def empty: TypeBounds           = apply(NothingClass.tpe, AnyClass.tpe)
@@ -1998,7 +1998,7 @@ trait Types extends api.Types { self: SymbolTable =>
     override def kind = "ConstantType"
   }
 
-  final class UniqueConstantType(value: Constant) extends ConstantType(value) with UniqueType {
+  final class UniqueConstantType(value: Constant) extends ConstantType(value) {
     /** Save the type of `value`. For Java enums, it depends on finding the linked class,
      *  which might not be found after `flatten`. */
     private lazy val _tpe: Type = value.tpe
@@ -2046,7 +2046,7 @@ trait Types extends api.Types { self: SymbolTable =>
   private var volatileRecursions: Int = 0
   private val pendingVolatiles = new mutable.HashSet[Symbol]
 
-  class ArgsTypeRef(pre0: Type, sym0: Symbol, args0: List[Type]) extends TypeRef(pre0, sym0, args0) with UniqueType {
+  class ArgsTypeRef(pre0: Type, sym0: Symbol, args0: List[Type]) extends TypeRef(pre0, sym0, args0) {
     require(args0.nonEmpty, this)
 
     /** No unapplied type params size it has (should have) equally as many args. */
@@ -2099,7 +2099,7 @@ trait Types extends api.Types { self: SymbolTable =>
     override protected def finishPrefix(rest: String) = "" + thisInfo
   }
 
-  class NoArgsTypeRef(pre0: Type, sym0: Symbol) extends TypeRef(pre0, sym0, Nil) with UniqueType {
+  class NoArgsTypeRef(pre0: Type, sym0: Symbol) extends TypeRef(pre0, sym0, Nil) {
     // A reference (in a Scala program) to a type that has type parameters, but where the reference
     // does not include type arguments. Note that it doesn't matter whether the symbol refers
     // to a java or scala symbol, but it does matter whether it occurs in java or scala code.
@@ -2303,10 +2303,10 @@ trait Types extends api.Types { self: SymbolTable =>
    *
    * @M: a higher-kinded type is represented as a TypeRef with sym.typeParams.nonEmpty, but args.isEmpty
    */
-  abstract case class TypeRef(pre: Type, sym: Symbol, args: List[Type]) extends Type with TypeRefApi {
+  abstract case class TypeRef(pre: Type, sym: Symbol, args: List[Type]) extends UniqueType with TypeRefApi {
     private var trivial: ThreeValue = UNKNOWN
     override def isTrivial: Boolean = {
-      if (trivial == UNKNOWN) 
+      if (trivial == UNKNOWN)
         trivial = fromBoolean(!sym.isTypeParameter && pre.isTrivial && areTrivialTypes(args))
       toBoolean(trivial)
     }
@@ -2546,10 +2546,10 @@ trait Types extends api.Types { self: SymbolTable =>
       resultType.isTrivial && (resultType eq resultType.withoutAnnotations)
 
     private def areTrivialParams(ps: List[Symbol]): Boolean = ps match {
-      case p :: rest => 
+      case p :: rest =>
         p.tpe.isTrivial && !typesContain(paramTypes, p) && !(resultType contains p) &&
         areTrivialParams(rest)
-      case _ => 
+      case _ =>
         true
     }
 
@@ -2904,7 +2904,6 @@ trait Types extends api.Types { self: SymbolTable =>
       }
       else new TypeConstraint
     }
-    def unapply(tv: TypeVar): Some[(Type, TypeConstraint)]   = Some((tv.origin, tv.constr))
     def untouchable(tparam: Symbol): TypeVar                 = createTypeVar(tparam, untouchable = true)
     def apply(tparam: Symbol): TypeVar                       = createTypeVar(tparam, untouchable = false)
     def apply(origin: Type, constr: TypeConstraint): TypeVar = apply(origin, constr, Nil, Nil)
@@ -2917,7 +2916,7 @@ trait Types extends api.Types { self: SymbolTable =>
       val tv = (
         if (args.isEmpty && params.isEmpty) {
           if (untouchable) new TypeVar(origin, constr) with UntouchableTypeVar
-          else new TypeVar(origin, constr)
+          else new TypeVar(origin, constr) {}
         }
         else if (args.size == params.size) {
           if (untouchable) new AppliedTypeVar(origin, constr, params zip args) with UntouchableTypeVar
@@ -3007,9 +3006,9 @@ trait Types extends api.Types { self: SymbolTable =>
    *
    *  Precondition for this class, enforced structurally: args.isEmpty && params.isEmpty.
    */
-  class TypeVar(
+  abstract case class TypeVar(
     val origin: Type,
-    val constr0: TypeConstraint
+    var constr: TypeConstraint
   ) extends Type {
     def untouchable = false   // by other typevars
     override def params: List[Symbol] = Nil
@@ -3022,7 +3021,7 @@ trait Types extends api.Types { self: SymbolTable =>
      *  in operations that are exposed from types. Hence, no syncing of `constr`
      *  or `encounteredHigherLevel` or `suspended` accesses should be necessary.
      */
-    var constr = constr0
+//    var constr = constr0
     def instValid = constr.instValid
     override def isGround = instValid && constr.inst.isGround
 
@@ -3421,16 +3420,16 @@ trait Types extends api.Types { self: SymbolTable =>
     }
   }
 
-  /** A temporary type representing the reasure of a user-defined value type.
-   *  Created during phase reasure, elimintaed again in posterasure.
+  /** A temporary type representing the erasure of a user-defined value type.
+   *  Created during phase reasure, eliminated again in posterasure.
    *  @param   sym The value class symbol
    *  @param   underlying  The underlying type before erasure
    */
-  abstract case class ErasedValueType(original: TypeRef) extends Type {
+  abstract case class ErasedValueType(original: TypeRef) extends UniqueType {
     override def safeToString = "ErasedValueType("+original+")"
   }
 
-  final class UniqueErasedValueType(original: TypeRef) extends ErasedValueType(original) with UniqueType
+  final class UniqueErasedValueType(original: TypeRef) extends ErasedValueType(original)
 
   object ErasedValueType {
     def apply(original: TypeRef): Type = {
@@ -5125,7 +5124,7 @@ trait Types extends api.Types { self: SymbolTable =>
     case NullaryMethodType(result) =>
       typeDepth(result)
     case PolyType(tparams, result) =>
-      typeDepth(result) max typeDepth(tparams map (_.info)) + 1
+      typeDepth(result) max typeDepth(tparams map (_.info)) + 1 // !!!OPT!!!
     case ExistentialType(tparams, result) =>
       typeDepth(result) max typeDepth(tparams map (_.info)) + 1
     case _ =>
@@ -5134,7 +5133,7 @@ trait Types extends api.Types { self: SymbolTable =>
 
   private def maxDepth(tps: Seq[Type], by: Type => Int): Int = {
     var d = 0
-    for (tp <- tps) d = d max by(tp)
+    for (tp <- tps) d = d max by(tp) //!!!OPT!!!
     d
   }
 
