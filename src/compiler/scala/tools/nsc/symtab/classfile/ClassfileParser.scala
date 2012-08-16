@@ -869,10 +869,10 @@ abstract class ClassfileParser {
           }
           else in.skip(attrLen)
         case tpnme.SyntheticATTR =>
-          sym.setFlag(SYNTHETIC | HIDDEN)
+          sym.setFlag(SYNTHETIC | ARTIFACT)
           in.skip(attrLen)
         case tpnme.BridgeATTR =>
-          sym.setFlag(BRIDGE | HIDDEN)
+          sym.setFlag(BRIDGE | ARTIFACT)
           in.skip(attrLen)
         case tpnme.DeprecatedATTR =>
           val arg = Literal(Constant("see corresponding Javadoc for more information."))

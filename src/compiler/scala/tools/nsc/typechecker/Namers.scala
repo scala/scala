@@ -556,7 +556,7 @@ trait Namers extends MethodSynthesis {
       // via "x$lzy" as can be seen in test #3927.
       val sym = (
         if (owner.isClass) createFieldSymbol(tree)
-        else owner.newValue(tree.name append nme.LAZY_LOCAL, tree.pos, (tree.mods.flags | HIDDEN) & ~IMPLICIT)
+        else owner.newValue(tree.name append nme.LAZY_LOCAL, tree.pos, (tree.mods.flags | ARTIFACT) & ~IMPLICIT)
       )
       enterValSymbol(tree, sym setFlag MUTABLE setLazyAccessor lazyAccessor)
     }
@@ -577,7 +577,7 @@ trait Namers extends MethodSynthesis {
       case DefDef(_, nme.CONSTRUCTOR, _, _, _, _) =>
         assignAndEnterFinishedSymbol(tree)
       case DefDef(mods, name, tparams, _, _, _) =>
-        val bridgeFlag = if (mods hasAnnotationNamed tpnme.bridgeAnnot) BRIDGE | HIDDEN else 0
+        val bridgeFlag = if (mods hasAnnotationNamed tpnme.bridgeAnnot) BRIDGE | ARTIFACT else 0
         val sym = assignAndEnterSymbol(tree) setFlag bridgeFlag
 
         if (name == nme.copy && sym.isSynthetic)
@@ -987,6 +987,15 @@ trait Namers extends MethodSynthesis {
       // hence we make use of that and let them have whatever right-hand side they need
       // (either "macro ???" as they used to or just "???" to maximally simplify their compilation)
       if (fastTrack contains ddef.symbol) ddef.symbol setFlag MACRO
+
+      // macro defs need to be typechecked in advance
+      // because @macroImpl annotation only gets assigned during typechecking
+      // otherwise macro defs wouldn't be able to robustly coexist with their clients
+      // because a client could be typechecked before a macro def that it uses
+      if (ddef.symbol.isTermMacro) {
+        val pt = resultPt.substSym(tparamSyms, tparams map (_.symbol))
+        typer.computeMacroDefType(ddef, pt)
+      }
 
       thisMethodType({
         val rt = (

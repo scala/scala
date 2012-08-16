@@ -95,7 +95,7 @@ abstract class ExplicitOuter extends InfoTransform
     else findOrElse(clazz.info.decls)(_.outerSource == clazz)(NoSymbol)
   }
   def newOuterAccessor(clazz: Symbol) = {
-    val accFlags = SYNTHETIC | HIDDEN | METHOD | STABLE | ( if (clazz.isTrait) DEFERRED else 0 )
+    val accFlags = SYNTHETIC | ARTIFACT | METHOD | STABLE | ( if (clazz.isTrait) DEFERRED else 0 )
     val sym      = clazz.newMethod(nme.OUTER, clazz.pos, accFlags)
     val restpe   = if (clazz.isTrait) clazz.outerClass.tpe else clazz.outerClass.thisType
 
@@ -104,7 +104,7 @@ abstract class ExplicitOuter extends InfoTransform
     sym setInfo MethodType(Nil, restpe)
   }
   def newOuterField(clazz: Symbol) = {
-    val accFlags = SYNTHETIC | HIDDEN | PARAMACCESSOR | ( if (clazz.isEffectivelyFinal) PrivateLocal else PROTECTED )
+    val accFlags = SYNTHETIC | ARTIFACT | PARAMACCESSOR | ( if (clazz.isEffectivelyFinal) PrivateLocal else PROTECTED )
     val sym      = clazz.newValue(nme.OUTER_LOCAL, clazz.pos, accFlags)
 
     sym setInfo clazz.outerClass.thisType
