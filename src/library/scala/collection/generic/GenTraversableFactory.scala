@@ -40,11 +40,9 @@ abstract class GenTraversableFactory[CC[X] <: GenTraversable[X] with GenericTrav
 
   // A default implementation of GenericCanBuildFrom which can be cast
   // to whatever is desired.
-  private[collection] class ReusableCBF extends GenericCanBuildFrom[Nothing] {
+  val ReusableCBF: GenericCanBuildFrom[Nothing] = new GenericCanBuildFrom[Nothing] {
     override def apply() = newBuilder[Nothing]
   }
-  // Working around SI-4789 by using a lazy val instead of an object.
-  lazy val ReusableCBF: GenericCanBuildFrom[Nothing] = new ReusableCBF
 
   /** A generic implementation of the `CanBuildFrom` trait, which forwards
    *  all calls to `apply(from)` to the `genericBuilder` method of

@@ -29,9 +29,12 @@ trait IndexedSeq[+A] extends Seq[A]
  *  @define Coll `IndexedSeq`
  */
 object IndexedSeq extends SeqFactory[IndexedSeq] {
-  override lazy val ReusableCBF: GenericCanBuildFrom[Nothing] = new ReusableCBF
-  
-  implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, IndexedSeq[A]] = IndexedSeq.ReusableCBF.asInstanceOf[GenericCanBuildFrom[A]]
+  override val ReusableCBF: GenericCanBuildFrom[Nothing] = new GenericCanBuildFrom[Nothing] {
+    override def apply() = newBuilder[Nothing]
+  }
+  implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, IndexedSeq[A]] =
+    ReusableCBF.asInstanceOf[GenericCanBuildFrom[A]]
+
   def newBuilder[A]: Builder[A, IndexedSeq[A]] = immutable.IndexedSeq.newBuilder[A]
 }
 
