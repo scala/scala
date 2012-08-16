@@ -4679,8 +4679,6 @@ trait Typers extends Modes with Adaptations with Tags {
           errorContainer = tree
         }
 
-        val fingerPrint: Long = name.fingerPrint
-
         var defSym: Symbol = tree.symbol  // the directly found symbol
         var pre: Type = NoPrefix          // the prefix type of defSym, if a class member
         var qual: Tree = EmptyTree        // the qualifier tree if transformed tree is a select
@@ -4718,10 +4716,7 @@ trait Typers extends Modes with Adaptations with Tags {
           var cx = startingIdentContext
           while (defSym == NoSymbol && cx != NoContext && (cx.scope ne null)) { // cx.scope eq null arises during FixInvalidSyms in Duplicators
             pre = cx.enclClass.prefix
-            defEntry = {
-                val scope = cx.scope
-                if ((fingerPrint & scope.fingerPrints) != 0) scope.lookupEntry(name) else null
-              }
+            defEntry = cx.scope.lookupEntry(name)
             if ((defEntry ne null) && qualifies(defEntry.sym)) {
               // Right here is where SI-1987, overloading in package objects, can be
               // seen to go wrong. There is an overloaded symbol, but when referring
@@ -5069,7 +5064,7 @@ trait Typers extends Modes with Adaptations with Tags {
 
         treeCopy.Try(tree, block1, catches1, finalizer1) setType owntype
       }
-      
+
       def typedThrow(tree: Throw) = {
         val expr1 = typed(tree.expr, EXPRmode | BYVALmode, ThrowableClass.tpe)
         treeCopy.Throw(tree, expr1) setType NothingClass.tpe
@@ -5112,7 +5107,7 @@ trait Typers extends Modes with Adaptations with Tags {
               case _ =>
                 setError(tree)
             }
-            
+
           case _ =>
             val tptTyped = typedType(tpt, mode)
             val exprTyped = typed(expr, onlyStickyModes(mode), tptTyped.tpe.deconst)
@@ -5134,7 +5129,7 @@ trait Typers extends Modes with Adaptations with Tags {
               treeTyped setType tptTyped.tpe
         }
       }
-      
+
       def typedTypeApply(tree: TypeApply) = {
         val fun = tree.fun
         val args = tree.args
@@ -5206,11 +5201,11 @@ trait Typers extends Modes with Adaptations with Tags {
       }
 
       def typedSelectFromTypeTree(tree: SelectFromTypeTree) = {
-        val qual1 = typedType(tree.qualifier, mode) 
-        if (qual1.tpe.isVolatile) TypeSelectionFromVolatileTypeError(tree, qual1) 
+        val qual1 = typedType(tree.qualifier, mode)
+        if (qual1.tpe.isVolatile) TypeSelectionFromVolatileTypeError(tree, qual1)
         else typedSelect(tree, qual1, tree.name)
       }
-      
+
       def typedTypeBoundsTree(tree: TypeBoundsTree) = {
         val lo1 = typedType(tree.lo, mode)
         val hi1 = typedType(tree.hi, mode)
@@ -5250,7 +5245,7 @@ trait Typers extends Modes with Adaptations with Tags {
 
         case tree: TypeTree =>
           typedTypeTree(tree)
-         
+
         case tree: Literal =>
           typedLiteral(tree)
 
@@ -5292,7 +5287,7 @@ trait Typers extends Modes with Adaptations with Tags {
 
         case tree: New =>
           typedNew(tree)
-          
+
         case Assign(lhs, rhs) =>
           typedAssign(lhs, rhs)
 
@@ -5368,7 +5363,7 @@ trait Typers extends Modes with Adaptations with Tags {
         case tree: ReferenceToBoxed =>
           typedReferenceToBoxed(tree)
 
-        case tree: TypeTreeWithDeferredRefCheck => 
+        case tree: TypeTreeWithDeferredRefCheck =>
           tree // TODO: should we re-type the wrapped tree? then we need to change TypeTreeWithDeferredRefCheck's representation to include the wrapped tree explicitly (instead of in its closure)
 
         case tree: Import =>
