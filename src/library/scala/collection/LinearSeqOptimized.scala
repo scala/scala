@@ -93,6 +93,16 @@ trait LinearSeqOptimized[+A, +Repr <: LinearSeqOptimized[A, Repr]] extends Linea
     cnt
   }
 
+  override /*SeqLike*/
+  def contains(elem: Any): Boolean = {
+    var these = this
+    while (!these.isEmpty) {
+      if (these.head == elem) return true
+      these = these.tail
+    }
+    false
+  }
+  
   override /*IterableLike*/
   def find(p: A => Boolean): Option[A] = {
     var these = this
@@ -113,7 +123,54 @@ trait LinearSeqOptimized[+A, +Repr <: LinearSeqOptimized[A, Repr]] extends Linea
     }
     acc
   }
-
+  
+  override /*TraversableLike*/
+  def map[B, That](f: A => B)(implicit bf: CanBuildFrom[Repr, B, That]): That = {
+    val b = bf(repr)
+    b.sizeHint(this)
+    var these = this
+    while (!these.isEmpty) {
+      b += f(these.head)
+      these = these.tail
+    }
+    b.result
+  }
+  
+  override /*TraversableLike*/
+  def flatMap[B, That](f: A => GenTraversableOnce[B])(implicit bf: CanBuildFrom[Repr, B, That]): That = {
+    val b = bf(repr)
+    var these = this
+    while (!these.isEmpty) {
+      b ++= f(these.head).seq
+      these = these.tail
+    }
+    b.result
+  }
+  
+  override /*TraversableLike*/
+  def filter(p: A => Boolean): Repr = {
+    val b = newBuilder
+    var these = this
+    while (!these.isEmpty) {
+      val x = these.head
+      if (p(x)) b += x
+      these = these.tail
+    }
+    b.result
+  }  
+  
+  override /*TraversableLike*/
+  def filterNot(p: A => Boolean): Repr = {
+    val b = newBuilder
+    var these = this
+    while (!these.isEmpty) {
+      val x = these.head
+      if (!p(x)) b += x
+      these = these.tail
+    }
+    b.result
+  }  
+  
   override /*IterableLike*/
   def foldRight[B](z: B)(f: (A, B) => B): B =
     if (this.isEmpty) z

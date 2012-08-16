@@ -661,7 +661,13 @@ trait Infer {
         val restp1 = followApply(restp)
         if (restp1 eq restp) tp else restp1
       case _ =>
-        val appmeth = tp.nonPrivateMember(nme.apply) filter (_.isPublic)
+        val appmeth = {
+          //OPT cut down on #closures by special casing non-overloaded case
+          // was: tp.nonPrivateMember(nme.apply) filter (_.isPublic)
+          val result = tp.nonPrivateMember(nme.apply) 
+          if ((result eq NoSymbol) || !result.isOverloaded && result.isPublic) result
+          else result filter (_.isPublic)
+        }
         if (appmeth == NoSymbol) tp
         else OverloadedType(tp, appmeth.alternatives)
     }
