@@ -5,19 +5,7 @@ trait Mirrors { self: Universe =>
 
   type RuntimeClass >: Null
 
-  // [Eugene] also, it might make sense to provide shortcuts for the API
-  //
-  // for example, right now to invoke the same method for several different instances, you need:
-  // 1) get the method symbol
-  // 2) get the instance mirror for every instance
-  // 3) call reflectMethod on the instance mirrors for every instance
-  // 4) call apply for every instance (okay, this can be united with step #3, but still)
-  //
-  // I have several suggestions that we can discuss later:
-  // 1) For every `reflectXXX(sym: Symbol): XXXMirror`, add `reflectXXX(name: String, types: Type*): XXXMirror` and `reflectXXXs(): List[XXXMirror]`
-  // 2) Provide a way to skip obtaining InstanceMirror (step #2 in the outline provided above)
-
-  // [Eugene] another improvement would be have mirrors reproduce the structure of the reflection domain
+  // todo. an improvement might be having mirrors reproduce the structure of the reflection domain
   // e.g. a ClassMirror could also have a list of fields, methods, constructors and so on
   // read up more on the proposed design in "Reflecting Scala" by Y. Coppel
 
@@ -162,7 +150,7 @@ trait Mirrors { self: Universe =>
     def runtimeClass: RuntimeClass
 
     /** True if the mirror represents the static part
-     *  if a runtime class or the companion object of a Scala class.
+     *  of a runtime class or the companion object of a Scala class.
      *  One has:
      *
      *    this.isStatic == this.isInstanceOf[ModuleMirror]
@@ -204,7 +192,7 @@ trait Mirrors { self: Universe =>
      *  Otherwise, if the mirror represents the static part of a runtime class, the
      *  mirror representing the instance part of the same class.
      */
-    def companion: Option[ClassMirror]
+    override def companion: Option[ClassMirror]
   }
 
   /** A mirror that reflects the instance parts of a runtime class */
@@ -231,7 +219,7 @@ trait Mirrors { self: Universe =>
      *  Otherwise, if the mirror represents a runtime instance class, a mirror representing the static
      *  part of the same class.
      */
-    def companion: Option[ModuleMirror]
+    override def companion: Option[ModuleMirror]
   }
 
   /** A mirror that reflects instances and static classes */

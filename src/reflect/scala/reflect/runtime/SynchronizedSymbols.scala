@@ -134,8 +134,6 @@ trait SynchronizedSymbols extends internal.Symbols { self: SymbolTable =>
 
   trait SynchronizedModuleClassSymbol extends ModuleClassSymbol with SynchronizedClassSymbol {
     override def sourceModule = synchronized { super.sourceModule }
-    // [Eugene++ to Martin] doesn't override anything. no longer necessary?
-    // def sourceModule_=(module: ModuleSymbol) = synchronized { super.sourceModule_=(module) }
     override def implicitMembers: Scope = synchronized { super.implicitMembers }
   }
 }

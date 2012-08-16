@@ -99,8 +99,9 @@ import language.implicitConversions
  * 4) Certain manifest functions (such as `<:<`, `>:>` and `typeArguments`) weren't included in the tag API.
  *    Consider using reflection API provided by Java (for classes) and Scala (for types) instead.
  */
-// [Eugene++] implement serialization for typetags
 trait TypeTags { self: Universe =>
+
+  import definitions._
 
   /**
    * If an implicit value of type u.AbsTypeTag[T] is required, the compiler will make one up on demand.
@@ -164,7 +165,7 @@ trait TypeTags { self: Universe =>
   }
 
   private class AbsTypeTagImpl[T](val mirror: Mirror, val tpec: TypeCreator) extends AbsTypeTag[T] {
-    lazy val tpe: Type = tpec[self.type](mirror)
+    lazy val tpe: Type = tpec(mirror)
     def in[U <: Universe with Singleton](otherMirror: MirrorOf[U]): U # AbsTypeTag[T] = {
       val otherMirror1 = otherMirror.asInstanceOf[MirrorOf[otherMirror.universe.type]]
       otherMirror.universe.AbsTypeTag[T](otherMirror1, tpec)

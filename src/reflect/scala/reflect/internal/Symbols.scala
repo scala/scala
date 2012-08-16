@@ -840,7 +840,6 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     final def isInitialized: Boolean =
       validTo != NoPeriod
 
-    // [Eugene] todo. needs to be reviewed and [only then] rewritten without explicit returns
     /** Determines whether this symbol can be loaded by subsequent reflective compilation */
     final def isLocatable: Boolean = {
       if (this == NoSymbol) return false

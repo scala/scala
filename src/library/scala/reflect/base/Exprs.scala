@@ -39,10 +39,7 @@ trait Exprs { self: Universe =>
       otherMirror.universe.Expr[T](otherMirror1, treec)(tag1)
     }
 
-    lazy val tree: Tree = treec[Exprs.this.type](mirror)
-      // [Eugene++] this is important
-      // !!! remove when we have improved type inference for singletons
-      // search for .type] to find other instances
+    lazy val tree: Tree = treec(mirror)
     lazy val staticType: Type = implicitly[AbsTypeTag[T]].tpe
     def actualType: Type = treeType(tree)
 

@@ -4,11 +4,6 @@ package util
 trait Traces {
   def globalSettings: tools.nsc.Settings
 
-  // [Eugene] lots of ways to log:
-  // 1) trace(...)
-  // 2) log(...)
-  // 3) if (foo) { doStuff(); includingSomeLogs(); }
-  // what is the conventional way of unifying this?
   val macroDebugLite = globalSettings.YmacrodebugLite.value
   val macroDebugVerbose = globalSettings.YmacrodebugVerbose.value
   val macroTraceLite = scala.tools.nsc.util.trace when (macroDebugLite || macroDebugVerbose)
