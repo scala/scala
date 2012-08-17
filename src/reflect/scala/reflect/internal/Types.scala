@@ -120,6 +120,21 @@ trait Types extends api.Types { self: SymbolTable =>
     private type UndoPairs = List[(TypeVar, TypeConstraint)]
     private var log: UndoPairs = List()
 
+    /*
+     * These two methods provide explicit locking mechanism that is overridden in SynchronizedUndoLog.
+     *
+     * The idea behind explicit locking mechanism is that all public methods that access mutable state
+     * will have to obtain the lock for their entire execution so both reads and writes can be kept in
+     * right order. Originally, that was achieved by overriding those public methods in
+     * `SynchronizedUndoLog` which was fine but expensive. The reason is that those public methods take
+     * thunk as argument and if we keep them non-final there's no way to make them inlined so thunks
+     * can go away.
+     *
+     * By using explicit locking we can achieve inlining.
+     */
+    protected def lock(): Unit = ()
+    protected def unlock(): Unit = ()
+
     // register with the auto-clearing cache manager
     perRunCaches.recordCache(this)
 
@@ -141,30 +156,41 @@ trait Types extends api.Types { self: SymbolTable =>
     }
 
     def clear() {
-      if (settings.debug.value)
-        self.log("Clearing " + log.size + " entries from the undoLog.")
-
-      log = Nil
+      lock()
+      try {
+        if (settings.debug.value)
+          self.log("Clearing " + log.size + " entries from the undoLog.")
+        log = Nil
+      } finally unlock()
     }
-    def size = log.size
+    def size = {
+      lock()
+      try log.size finally unlock()
+    }
 
     // `block` should not affect constraints on typevars
     def undo[T](block: => T): T = {
-      val before = log
+      lock()
+      try {
+        val before = log
 
-      try block
-      finally undoTo(before)
+        try block
+        finally undoTo(before)
+      } finally unlock()
     }
 
     // if `block` evaluates to false, it should not affect constraints on typevars
     def undoUnless(block: => Boolean): Boolean = {
-      val before = log
-      var result = false
+      lock()
+      try {
+        val before = log
+        var result = false
 
-      try result = block
-      finally if (!result) undoTo(before)
+        try result = block
+        finally if (!result) undoTo(before)
 
-      result
+        result
+      } finally unlock()
     }
   }
 
