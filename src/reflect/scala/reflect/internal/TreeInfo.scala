@@ -593,13 +593,16 @@ abstract class TreeInfo {
   object DynamicApplicationNamed extends DynamicApplicationExtractor(_ == nme.applyDynamicNamed)
 
   object MacroImplReference {
-    def unapply(tree: Tree): Option[(Symbol, Symbol, List[Tree])] =
-      tree match {
-        case TypeApply(fun, targs) => unapply(fun) map { case (owner, sym, _) => (owner, sym, targs) }
-        case Select(pre, _) => Some(pre.symbol, tree.symbol, Nil)
-        case Ident(_) => Some(NoSymbol, tree.symbol, Nil)
-        case _ => None
-      }
+    private def refPart(tree: Tree): Tree = tree match {
+      case TypeApply(fun, _) => refPart(fun)
+      case ref: RefTree => ref
+      case _ => EmptyTree
+    }
+
+    def unapply(tree: Tree) = refPart(tree) match {
+      case ref: RefTree => Some((ref.qualifier.symbol, ref.symbol, typeArguments(tree)))
+      case _            => None
+    }
   }
 
   def stripOffPrefixTypeRefinement(tpe: Type): Type =
