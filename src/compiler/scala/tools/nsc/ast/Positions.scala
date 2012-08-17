@@ -11,13 +11,6 @@ trait Positions extends scala.reflect.internal.Positions {
 
   def validatePositions(tree: Tree) {}
 
-  // [Eugene] disabling this for now. imo it doesn't justify pollution of the public API
-  // override def _checkSetAnnotation(tree: Tree, annot: TreeAnnotation): Unit = {
-  //   if (tree.pos != NoPosition && tree.pos != annot.pos) debugwarn("Overwriting annotation "+ tree.annotation +" of tree "+ tree +" with annotation "+ annot)
-  //   // if ((tree.annotation.isInstanceOf[scala.reflect.internal.util.Position] || !annot.isInstanceOf[scala.reflect.internal.util.Position]) && tree.isInstanceOf[Block])
-  //   //   println("Updating block from "+ tree.annotation +" to "+ annot)
-  // }
-
   class ValidatingPosAssigner extends PosAssigner {
     var pos: Position = _
     override def traverse(t: Tree) {

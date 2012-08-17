@@ -194,7 +194,7 @@ abstract class TreeGen extends macros.TreeBuilder {
     mkTypeApply(mkAttributedSelect(target, method), targs map TypeTree)
 
   private def mkSingleTypeApply(value: Tree, tpe: Type, what: Symbol, wrapInApply: Boolean) = {
-    val tapp = mkAttributedTypeApply(value, what, List(tpe.normalize))
+    val tapp = mkAttributedTypeApply(value, what, tpe.normalize :: Nil)
     if (wrapInApply) Apply(tapp, Nil) else tapp
   }
   private def typeTestSymbol(any: Boolean) = if (any) Any_isInstanceOf else Object_isInstanceOf

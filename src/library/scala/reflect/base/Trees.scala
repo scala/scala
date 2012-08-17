@@ -5,10 +5,6 @@
 package scala.reflect
 package base
 
-// [Eugene++] of all reflection APIs, this one is in the biggest need of review and documentation
-
-// Syncnote: Trees are currently not thread-safe.
-// [Eugene++] now when trees are finally abstract types, can we do something for this?
 trait Trees { self: Universe =>
 
   /** The base API that all trees support */
@@ -81,7 +77,6 @@ trait Trees { self: Universe =>
    *  example is Parens, which is eliminated during parsing.
    */
   type Tree >: Null <: TreeBase
-  // [Eugene++] todo. discuss nullability of abstract types
 
   /** A tag that preserves the identity of the `Tree` abstract type from erasure.
    *  Can be used for pattern matching, instance tests, serialization and likes.
@@ -1381,7 +1376,6 @@ trait Trees { self: Universe =>
   /** ... */
   lazy val NoMods = Modifiers()
 
-  // [Eugene++] temporarily moved here until SI-5863 is fixed
 // ---------------------- factories ----------------------------------------------
 
   /** @param sym       the class symbol

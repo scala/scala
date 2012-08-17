@@ -1185,10 +1185,6 @@ trait Implicits {
         // ClassTags are not path-dependent, so their materializer doesn't care about prefixes
         if (tagClass eq ClassTagClass) gen.mkBasisUniverseRef
         else pre match {
-          // [Eugene to Martin] this is the crux of the interaction between
-          // implicits and reifiers here we need to turn a (supposedly
-          // path-dependent) type into a tree that will be used as a prefix I'm
-          // not sure if I've done this right - please, review
           case SingleType(prePre, preSym) =>
             gen.mkAttributedRef(prePre, preSym) setType pre
           // necessary only to compile typetags used inside the Universe cake
@@ -1341,13 +1337,7 @@ trait Implicits {
     /** Materializes implicits of magic types (currently, manifests and tags).
      *  Will be replaced by implicit macros once we fix them.
      */
-    private def materializeImplicit(pt: Type): SearchResult = {
-      def fallback = {
-        searchImplicit(implicitsOfExpectedType, false)
-        // shouldn't we pass `pt` to `implicitsOfExpectedType`, or is the recursive case
-        // for an abstract type really only meant for tags?
-      }
-
+    private def materializeImplicit(pt: Type): SearchResult =
       pt match {
         case TypeRef(_, sym, _) if sym.isAbstractType =>
           materializeImplicit(pt.dealias.bounds.lo) // #3977: use pt.dealias, not pt (if pt is a type alias, pt.bounds.lo == pt)
@@ -1363,17 +1353,17 @@ trait Implicits {
             // unlike `dealias`, `betaReduce` performs at most one step of dealiasing
             // while dealias pops all aliases in a single invocation
             case sym if sym.isAliasType => materializeImplicit(pt.betaReduce)
-            case _ => fallback
+            case _ => SearchFailure
           }
         case _ =>
-          fallback
+          SearchFailure
       }
-    }
 
     /** The result of the implicit search:
      *  First search implicits visible in current context.
      *  If that fails, search implicits in expected type `pt`.
-     *  // [Eugene] the following lines should be deleted after we migrate delegate tag materialization to implicit macros
+     *
+     *  todo. the following lines should be deleted after we migrate delegate tag materialization to implicit macros
      *  If that fails, and `pt` is an instance of a ClassTag, try to construct a class tag.
      *  If that fails, and `pt` is an instance of a TypeTag, try to construct a type tag.
      *  If that fails, and `pt` is an instance of a ClassManifest, try to construct a class manifest.
@@ -1399,6 +1389,10 @@ trait Implicits {
         val succstart = Statistics.startTimer(oftypeSucceedNanos)
 
         result = materializeImplicit(pt)
+
+        // `materializeImplicit` does some preprocessing for `pt`
+        // is it only meant for manifests/tags or we need to do the same for `implicitsOfExpectedType`?
+        if (result == SearchFailure) result = searchImplicit(implicitsOfExpectedType, false)
 
         if (result == SearchFailure) {
           context.updateBuffer(previousErrs)

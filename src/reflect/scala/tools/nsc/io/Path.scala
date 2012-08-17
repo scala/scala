@@ -43,8 +43,6 @@ object Path {
     if (i < 0) ""
     else name.substring(i + 1).toLowerCase
   }
-  // [Eugene++] I hope that noone relied on this method
-//  def isJarOrZip(f: Path, examineFile: Boolean = true) = Jar.isJarOrZip(f, examineFile)
 
   // not certain these won't be problematic, but looks good so far
   implicit def string2path(s: String): Path = apply(s)

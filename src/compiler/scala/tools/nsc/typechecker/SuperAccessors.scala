@@ -290,7 +290,7 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
                   log("Ensuring accessor for call to protected " + sym.fullLocationString + " from " + currentClass)
                   ensureAccessor(sel)
                 } else
-                  mayNeedProtectedAccessor(sel, List(EmptyTree), false)
+                  mayNeedProtectedAccessor(sel, EmptyTree.asList, false)
               }
 
             case Super(_, mix) =>
@@ -303,7 +303,7 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
               transformSuperSelect(sel)
 
             case _ =>
-              mayNeedProtectedAccessor(sel, List(EmptyTree), true)
+              mayNeedProtectedAccessor(sel, EmptyTree.asList, true)
           }
 
         case DefDef(mods, name, tparams, vparamss, tpt, rhs) if tree.symbol.isMethodWithExtension =>

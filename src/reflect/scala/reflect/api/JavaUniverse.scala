@@ -1,8 +1,6 @@
 package scala.reflect
 package api
 
-// [Martin] Moved to compiler because it needs to see runtime.Universe
-// The two will be united in scala-reflect anyway.
 trait JavaUniverse extends Universe with Mirrors with TagInterop { self =>
 
   type RuntimeClass = java.lang.Class[_]

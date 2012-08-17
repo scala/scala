@@ -14,7 +14,7 @@ trait Types { self: Universe =>
   /** A tag that preserves the identity of the `Type` abstract type from erasure.
    *  Can be used for pattern matching, instance tests, serialization and likes.
    */
-  implicit val TypeTagg: ClassTag[Type] // [Eugene++] rename!
+  implicit val TypeTagg: ClassTag[Type]
 
   /** This constant is used as a special value that indicates that no meaningful type exists.
    */

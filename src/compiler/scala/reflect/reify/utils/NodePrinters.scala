@@ -23,6 +23,7 @@ trait NodePrinters {
       // depended upon.  Of more fragile code I cannot conceive.
       // @Eugene: This stuff is only needed to debug-print out reifications in human-readable format
       // Rolling a full-fledged, robust TreePrinter would be several times more code.
+      // Also as of late we have tests that ensure that UX won't be broken by random changes to the reifier.
       val lines = (tree.toString.split(EOL) drop 1 dropRight 1).toList splitAt 2
       var (List(universe, mirror), reification) = lines
       reification = (for (line <- reification) yield {

@@ -277,7 +277,7 @@ abstract class UnCurry extends InfoTransform
 
           localTyper.typedPos(fun.pos) {
             Block(
-              List(ClassDef(anonClass, NoMods, List(List()), List(List()), List(applyMethodDef), fun.pos)),
+              List(ClassDef(anonClass, NoMods, ListOfNil, ListOfNil, List(applyMethodDef), fun.pos)),
               Typed(New(anonClass.tpe), TypeTree(fun.tpe)))
           }
 
@@ -402,7 +402,7 @@ abstract class UnCurry extends InfoTransform
 
       localTyper.typedPos(fun.pos) {
         Block(
-          List(ClassDef(anonClass, NoMods, List(List()), List(List()), List(applyOrElseMethodDef, isDefinedAtMethodDef), fun.pos)),
+          List(ClassDef(anonClass, NoMods, ListOfNil, ListOfNil, List(applyOrElseMethodDef, isDefinedAtMethodDef), fun.pos)),
           Typed(New(anonClass.tpe), TypeTree(fun.tpe)))
       }
     }
@@ -564,7 +564,7 @@ abstract class UnCurry extends InfoTransform
         sym.setInfo(MethodType(List(), tree.tpe))
         tree.changeOwner(currentOwner -> sym)
         localTyper.typedPos(tree.pos)(Block(
-          List(DefDef(sym, List(Nil), tree)),
+          List(DefDef(sym, ListOfNil, tree)),
           Apply(Ident(sym), Nil)
         ))
       }
@@ -717,8 +717,12 @@ abstract class UnCurry extends InfoTransform
           }
 
         case dd @ DefDef(_, _, _, vparamss0, _, rhs0) =>
+          val vparamss1 = vparamss0 match {
+            case _ :: Nil  => vparamss0
+            case _         => vparamss0.flatten :: Nil
+          }
           val flatdd = copyDefDef(dd)(
-            vparamss = List(vparamss0.flatten),
+            vparamss = vparamss1,
             rhs = nonLocalReturnKeys get dd.symbol match {
               case Some(k) => atPos(rhs0.pos)(nonLocalReturnTry(rhs0, k, dd.symbol))
               case None    => rhs0

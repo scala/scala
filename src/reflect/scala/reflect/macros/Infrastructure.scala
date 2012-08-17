@@ -46,10 +46,6 @@ trait Infrastructure {
    *      val valueOfX = toolBox.runExpr(imported).asInstanceOf[T]
    *      ...
    *    }
-   *
-   *  // [Eugene++] using this guy will tremendously slow down the compilation
-   *  // https://twitter.com/xeno_by/status/201248317831774208
-   *  // todo. we need to address this somehow
    */
   def libraryClassLoader: ClassLoader
 

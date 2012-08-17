@@ -6,37 +6,12 @@
 package scala.reflect
 package base
 
-// [Eugene++] not sure whether we need this in the top level of the universe
-trait StandardTypes {
-  self: Universe =>
-
-  val ByteTpe: Type
-  val ShortTpe: Type
-  val CharTpe: Type
-  val IntTpe: Type
-  val LongTpe: Type
-  val FloatTpe: Type
-  val DoubleTpe: Type
-  val BooleanTpe: Type
-  val UnitTpe: Type
-
-  val AnyTpe: Type
-  val AnyValTpe: Type
-  val AnyRefTpe: Type
-  val ObjectTpe: Type
-
-  val NothingTpe: Type
-  val NullTpe: Type
-}
-
-trait StandardDefinitions extends StandardTypes {
+trait StandardDefinitions {
   self: Universe =>
 
   val definitions: DefinitionsBase
 
-  // [Eugene] todo. shortcut to these fields if possible when generating tags
-  // todo. also shortcut to StandardTypes, of course
-  trait DefinitionsBase {
+  trait DefinitionsBase extends StandardTypes {
     // packages
     def ScalaPackageClass: ClassSymbol
     def ScalaPackage: ModuleSymbol
@@ -66,9 +41,32 @@ trait StandardDefinitions extends StandardTypes {
     def StringClass : ClassSymbol
     def ClassClass  : ClassSymbol
     def ArrayClass  : ClassSymbol
-    def ListClass   : ClassSymbol // [Eugene] I'd say List has earned its right to be here
+    def ListClass   : ClassSymbol
 
     // the Predef object
     def PredefModule: ModuleSymbol
+  }
+
+  trait StandardTypes {
+    // the scala value classes
+    val UnitTpe: Type
+    val ByteTpe: Type
+    val ShortTpe: Type
+    val CharTpe: Type
+    val IntTpe: Type
+    val LongTpe: Type
+    val FloatTpe: Type
+    val DoubleTpe: Type
+    val BooleanTpe: Type
+
+    // top types
+    val AnyTpe: Type
+    val AnyValTpe: Type
+    val AnyRefTpe: Type
+    val ObjectTpe: Type
+
+    // bottom types
+    val NothingTpe: Type
+    val NullTpe: Type
   }
 }

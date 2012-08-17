@@ -1,10 +1,6 @@
 package scala.reflect
 package macros
 
-// [Eugene] I added some stuff that was necessary for typetag materialization macros
-// but we should think it over and pick other generally useful stuff
-// same goes for tree traversers/transformers, type maps, etc
-// and once we expose all that, there's another question: how do we stay in sync?
 abstract class TreeBuilder {
   val global: Universe
 
