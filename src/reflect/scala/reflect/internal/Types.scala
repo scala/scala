@@ -118,7 +118,8 @@ trait Types extends api.Types { self: SymbolTable =>
 
   class UndoLog extends Clearable {
     private type UndoPairs = List[(TypeVar, TypeConstraint)]
-    private var log: UndoPairs = List()
+    //OPT this method is public so we can do `manual inlining`
+    var log: UndoPairs = List()
 
     /*
      * These two methods provide explicit locking mechanism that is overridden in SynchronizedUndoLog.
@@ -131,15 +132,20 @@ trait Types extends api.Types { self: SymbolTable =>
      * can go away.
      *
      * By using explicit locking we can achieve inlining.
+     *
+     * NOTE: They are made public for now so we can apply 'manual inlining' (copy&pasting into hot
+     * places implementation of `undo` or `undoUnless`). This should be changed back to protected
+     * once inliner is fixed.
      */
-    protected def lock(): Unit = ()
-    protected def unlock(): Unit = ()
+    def lock(): Unit = ()
+    def unlock(): Unit = ()
 
     // register with the auto-clearing cache manager
     perRunCaches.recordCache(this)
 
     /** Undo all changes to constraints to type variables upto `limit`. */
-    private def undoTo(limit: UndoPairs) {
+    //OPT this method is public so we can do `manual inlining`
+    def undoTo(limit: UndoPairs) {
       while ((log ne limit) && log.nonEmpty) {
         val (tv, constr) = log.head
         tv.constr = constr
@@ -5292,9 +5298,22 @@ trait Types extends api.Types { self: SymbolTable =>
   def isSameType(tp1: Type, tp2: Type): Boolean = try {
     Statistics.incCounter(sametypeCount)
     subsametypeRecursions += 1
-    undoLog undoUnless {
-      isSameType1(tp1, tp2)
-    }
+    //OPT cutdown on Function0 allocation
+    //was:
+//    undoLog undoUnless {
+//      isSameType1(tp1, tp2)
+//    }
+
+    undoLog.lock()
+    try {
+      val before = undoLog.log
+      var result = false
+
+      try result = {
+        isSameType1(tp1, tp2)
+      } finally if (!result) undoLog.undoTo(before)
+      result
+    } finally undoLog.unlock()
   } finally {
     subsametypeRecursions -= 1
     // XXX AM TODO: figure out when it is safe and needed to clear the log -- the commented approach below is too eager (it breaks #3281, #3866)
@@ -5645,22 +5664,49 @@ trait Types extends api.Types { self: SymbolTable =>
   def isSubType(tp1: Type, tp2: Type, depth: Int): Boolean = try {
     subsametypeRecursions += 1
 
-    undoLog undoUnless { // if subtype test fails, it should not affect constraints on typevars
-      if (subsametypeRecursions >= LogPendingSubTypesThreshold) {
-        val p = new SubTypePair(tp1, tp2)
-        if (pendingSubTypes(p))
-          false
-        else
-          try {
-            pendingSubTypes += p
-            isSubType2(tp1, tp2, depth)
-          } finally {
-            pendingSubTypes -= p
-          }
-      } else {
-        isSubType2(tp1, tp2, depth)
-      }
-    }
+    //OPT cutdown on Function0 allocation
+    //was:
+//    undoLog undoUnless { // if subtype test fails, it should not affect constraints on typevars
+//      if (subsametypeRecursions >= LogPendingSubTypesThreshold) {
+//        val p = new SubTypePair(tp1, tp2)
+//        if (pendingSubTypes(p))
+//          false
+//        else
+//          try {
+//            pendingSubTypes += p
+//            isSubType2(tp1, tp2, depth)
+//          } finally {
+//            pendingSubTypes -= p
+//          }
+//      } else {
+//        isSubType2(tp1, tp2, depth)
+//      }
+//    }
+
+    undoLog.lock()
+    try {
+      val before = undoLog.log
+      var result = false
+
+      try result = { // if subtype test fails, it should not affect constraints on typevars
+        if (subsametypeRecursions >= LogPendingSubTypesThreshold) {
+          val p = new SubTypePair(tp1, tp2)
+          if (pendingSubTypes(p))
+            false
+          else
+            try {
+              pendingSubTypes += p
+              isSubType2(tp1, tp2, depth)
+            } finally {
+              pendingSubTypes -= p
+            }
+        } else {
+          isSubType2(tp1, tp2, depth)
+        }
+      } finally if (!result) undoLog.undoTo(before)
+
+      result
+    } finally undoLog.unlock()
   } finally {
     subsametypeRecursions -= 1
     // XXX AM TODO: figure out when it is safe and needed to clear the log -- the commented approach below is too eager (it breaks #3281, #3866)

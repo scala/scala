@@ -16,8 +16,8 @@ trait SynchronizedTypes extends internal.Types { self: SymbolTable =>
   class SynchronizedUndoLog extends UndoLog {
     private val actualLock = new java.util.concurrent.locks.ReentrantLock
 
-    final override protected def lock(): Unit = actualLock.lock()
-    final override protected def unlock(): Unit = actualLock.unlock()
+    final override def lock(): Unit = actualLock.lock()
+    final override def unlock(): Unit = actualLock.unlock()
   }
 
   override protected def newUndoLog = new SynchronizedUndoLog
