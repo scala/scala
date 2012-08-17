@@ -1,4 +1,4 @@
-Macros_Test_2.scala:3: error: macro implementation reference needs type arguments
+Macros_Test_2.scala:3: error: wrong number of type parameters for method foo: [T, U, V](c: scala.reflect.macros.Context)(implicit evidence$1: c.AbsTypeTag[T], implicit evidence$2: c.AbsTypeTag[U], implicit V: c.AbsTypeTag[V])c.Expr[Unit]
     def foo[V] = macro Impls.foo
                              ^
 one error found
