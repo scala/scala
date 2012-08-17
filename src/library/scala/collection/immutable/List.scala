@@ -310,6 +310,62 @@ sealed abstract class List[+A] extends AbstractSeq[A]
       these = these.tail
     }
   }
+  
+  @inline override /*TraversableLike*/
+  def map[B, That](f: A => B)(implicit bf: CanBuildFrom[List[A], B, That]): That = {
+    val b = bf(repr)
+    var these = this
+    while (!these.isEmpty) {
+      b += f(these.head)
+      these = these.tail
+    }
+    b.result
+  }
+  
+  @inline override /*TraversableLike*/
+  def flatMap[B, That](f: A => GenTraversableOnce[B])(implicit bf: CanBuildFrom[List[A], B, That]): That = {
+    val b = bf(repr)
+    var these = this
+    while (!these.isEmpty) {
+      b ++= f(these.head).seq
+      these = these.tail
+    }
+    b.result
+  }
+  
+  @inline override /*TraversableLike*/
+  def filter(p: A => Boolean): List[A] = {
+    val b = newBuilder
+    var these = this
+    while (!these.isEmpty) {
+      val x = these.head
+      if (p(x)) b += x
+      these = these.tail
+    }
+    b.result
+  }  
+  
+  @inline override /*TraversableLike*/
+  def filterNot(p: A => Boolean): List[A] = {
+    val b = newBuilder
+    var these = this
+    while (!these.isEmpty) {
+      val x = these.head
+      if (!p(x)) b += x
+      these = these.tail
+    }
+    b.result
+  }  
+
+  @inline override /*SeqLike*/
+  def contains(elem: Any): Boolean = {
+    var these = this
+    while (!these.isEmpty) {
+      if (these.head == elem) return true
+      these = these.tail
+    }
+    false
+  }
 
   @deprecated("use `distinct` instead", "2.8.0")
   def removeDuplicates: List[A] = distinct
