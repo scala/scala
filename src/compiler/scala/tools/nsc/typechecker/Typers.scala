@@ -706,15 +706,15 @@ trait Typers extends Modes with Adaptations with Tags {
     def silent[T](op: Typer => T,
                   reportAmbiguousErrors: Boolean = context.ambiguousErrors,
                   newtree: Tree = context.tree): SilentResult[T] = {
-      val rawTypeStart = Statistics.startCounter(rawTypeFailed)
-      val findMemberStart = Statistics.startCounter(findMemberFailed)
-      val subtypeStart = Statistics.startCounter(subtypeFailed)
-      val failedSilentStart = Statistics.startTimer(failedSilentNanos)
+      val rawTypeStart = if (Statistics.canEnable) Statistics.startCounter(rawTypeFailed) else null
+      val findMemberStart = if (Statistics.canEnable) Statistics.startCounter(findMemberFailed) else null
+      val subtypeStart = if (Statistics.canEnable) Statistics.startCounter(subtypeFailed) else null
+      val failedSilentStart = if (Statistics.canEnable) Statistics.startTimer(failedSilentNanos) else null
       def stopStats() = {
-        Statistics.stopCounter(rawTypeFailed, rawTypeStart)
-        Statistics.stopCounter(findMemberFailed, findMemberStart)
-        Statistics.stopCounter(subtypeFailed, subtypeStart)
-        Statistics.stopTimer(failedSilentNanos, failedSilentStart)
+        if (Statistics.canEnable) Statistics.stopCounter(rawTypeFailed, rawTypeStart)
+        if (Statistics.canEnable) Statistics.stopCounter(findMemberFailed, findMemberStart)
+        if (Statistics.canEnable) Statistics.stopCounter(subtypeFailed, subtypeStart)
+        if (Statistics.canEnable) Statistics.stopTimer(failedSilentNanos, failedSilentStart)
       }
       try {
         if (context.reportErrors ||
@@ -3588,9 +3588,9 @@ trait Typers extends Modes with Adaptations with Tags {
 
     def isCapturedExistential(sym: Symbol) =
       (sym hasAllFlags (EXISTENTIAL | CAPTURED)) && {
-      val start = Statistics.startTimer(isReferencedNanos)
+      val start = if (Statistics.canEnable) Statistics.startTimer(isReferencedNanos) else null
       try !isReferencedFrom(context, sym)
-      finally Statistics.stopTimer(isReferencedNanos, start)
+      finally if (Statistics.canEnable) Statistics.stopTimer(isReferencedNanos, start)
     }
 
     def packCaptured(tpe: Type): Type = {
@@ -4239,10 +4239,10 @@ trait Typers extends Modes with Adaptations with Tags {
        *  insert an implicit conversion.
        */
       def tryTypedApply(fun: Tree, args: List[Tree]): Tree = {
-        val start = Statistics.startTimer(failedApplyNanos)
+        val start = if (Statistics.canEnable) Statistics.startTimer(failedApplyNanos) else null
 
         def onError(typeError: AbsTypeError): Tree = {
-            Statistics.stopTimer(failedApplyNanos, start)
+            if (Statistics.canEnable) Statistics.stopTimer(failedApplyNanos, start)
 
             // If the problem is with raw types, copnvert to existentials and try again.
             // See #4712 for a case where this situation arises,
@@ -4305,8 +4305,8 @@ trait Typers extends Modes with Adaptations with Tags {
           typed1(tree, mode & ~PATTERNmode | EXPRmode, pt)
         } else {
           val funpt = if (isPatternMode) pt else WildcardType
-          val appStart = Statistics.startTimer(failedApplyNanos)
-          val opeqStart = Statistics.startTimer(failedOpEqNanos)
+          val appStart = if (Statistics.canEnable) Statistics.startTimer(failedApplyNanos) else null
+          val opeqStart = if (Statistics.canEnable) Statistics.startTimer(failedOpEqNanos) else null
 
           def onError(reportError: => Tree): Tree = {
               fun match {
@@ -4314,14 +4314,14 @@ trait Typers extends Modes with Adaptations with Tags {
                 if !isPatternMode && nme.isOpAssignmentName(newTermName(name.decode)) =>
                   val qual1 = typedQualifier(qual)
                   if (treeInfo.isVariableOrGetter(qual1)) {
-                    Statistics.stopTimer(failedOpEqNanos, opeqStart)
+                    if (Statistics.canEnable) Statistics.stopTimer(failedOpEqNanos, opeqStart)
                     convertToAssignment(fun, qual1, name, args)
                   } else {
-                    Statistics.stopTimer(failedApplyNanos, appStart)
+                    if (Statistics.canEnable) Statistics.stopTimer(failedApplyNanos, appStart)
                       reportError
                   }
                 case _ =>
-                  Statistics.stopTimer(failedApplyNanos, appStart)
+                  if (Statistics.canEnable) Statistics.stopTimer(failedApplyNanos, appStart)
                   reportError
               }
           }
@@ -4330,7 +4330,7 @@ trait Typers extends Modes with Adaptations with Tags {
                  if ((mode & EXPRmode) != 0) tree else context.tree) match {
             case SilentResultValue(fun1) =>
               val fun2 = if (stableApplication) stabilizeFun(fun1, mode, pt) else fun1
-              Statistics.incCounter(typedApplyCount)
+              if (Statistics.canEnable) Statistics.incCounter(typedApplyCount)
               def isImplicitMethod(tpe: Type) = tpe match {
                 case mt: MethodType => mt.isImplicit
                 case _ => false
@@ -4626,7 +4626,7 @@ trait Typers extends Modes with Adaptations with Tags {
               // the qualifier type of a supercall constructor is its first parent class
             typedSelect(tree, qual1, nme.CONSTRUCTOR)
           case _ =>
-            Statistics.incCounter(typedSelectCount)
+            if (Statistics.canEnable) Statistics.incCounter(typedSelectCount)
             var qual1 = checkDead(typedQualifier(qual, mode))
             if (name.isTypeName) qual1 = checkStable(qual1)
 
@@ -4906,7 +4906,7 @@ trait Typers extends Modes with Adaptations with Tags {
 
       def typedIdentOrWildcard(tree: Ident) = {
         val name = tree.name
-        Statistics.incCounter(typedIdentCount)
+        if (Statistics.canEnable) Statistics.incCounter(typedIdentCount)
         if ((name == nme.WILDCARD && (mode & (PATTERNmode | FUNmode)) == PATTERNmode) ||
             (name == tpnme.WILDCARD && (mode & TYPEmode) != 0))
           tree setType makeFullyDefined(pt)
@@ -5386,8 +5386,8 @@ trait Typers extends Modes with Adaptations with Tags {
       indentTyping()
 
       var alreadyTyped = false
-      val startByType = Statistics.pushTimer(byTypeStack, byTypeNanos(tree.getClass))
-      Statistics.incCounter(visitsByType, tree.getClass)
+      val startByType = if (Statistics.canEnable) Statistics.pushTimer(byTypeStack, byTypeNanos(tree.getClass)) else null
+      if (Statistics.canEnable) Statistics.incCounter(visitsByType, tree.getClass)
       try {
         if (context.retyping &&
             (tree.tpe ne null) && (tree.tpe.isErroneous || !(tree.tpe <:< pt))) {
@@ -5442,7 +5442,7 @@ trait Typers extends Modes with Adaptations with Tags {
       }
       finally {
         deindentTyping()
-        Statistics.popTimer(byTypeStack, startByType)
+        if (Statistics.canEnable) Statistics.popTimer(byTypeStack, startByType)
       }
     }
 

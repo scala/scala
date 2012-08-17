@@ -2884,7 +2884,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     }
 
     override def name: TypeName = {
-      Statistics.incCounter(nameCount)
+      if (Statistics.canEnable) Statistics.incCounter(nameCount)
       if (needsFlatClasses) {
         if (flatname eq null)
           flatname = nme.flattenedName(rawowner.name, rawname).toTypeName

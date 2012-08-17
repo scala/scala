@@ -250,7 +250,7 @@ abstract class SymbolLoaders {
     protected def description = "class file "+ classfile.toString
 
     protected def doComplete(root: Symbol) {
-      val start = Statistics.startTimer(classReadNanos)
+      val start = if (Statistics.canEnable) Statistics.startTimer(classReadNanos) else null
       classfileParser.parse(classfile, root)
       if (root.associatedFile eq null) {
         root match {
@@ -262,7 +262,7 @@ abstract class SymbolLoaders {
             debuglog("Not setting associatedFile to %s because %s is a %s".format(classfile, root.name, root.shortSymbolClass))
         }
       }
-      Statistics.stopTimer(classReadNanos, start)
+      if (Statistics.canEnable) Statistics.stopTimer(classReadNanos, start)
     }
     override def sourcefile: Option[AbstractFile] = classfileParser.srcfile
   }
