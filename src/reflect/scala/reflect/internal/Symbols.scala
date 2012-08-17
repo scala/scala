@@ -3219,6 +3219,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
   private[scala] final val symbolIsNonVariant = (sym: Symbol) => sym.variance == 0
   private[scala] final val typeConstructorOfSymbol = (sym: Symbol) => sym.typeConstructor
   private[scala] final val tpeOfSymbol = (sym: Symbol) => sym.tpe
+  private[scala] final val infoOfSymbol = (sym: Symbol) => sym.info
   private[scala] final val tpeHKOfSymbol = (sym: Symbol) => sym.tpeHK
 
   @tailrec private[scala] final

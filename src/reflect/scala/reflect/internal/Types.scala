@@ -5174,19 +5174,26 @@ trait Types extends api.Types { self: SymbolTable =>
     case NullaryMethodType(result) =>
       typeDepth(result)
     case PolyType(tparams, result) =>
-      typeDepth(result) max typeDepth(tparams map (_.info)) + 1 // !!!OPT!!!
+      typeDepth(result) max typeDepth(tparams map infoOfSymbol) + 1 
     case ExistentialType(tparams, result) =>
-      typeDepth(result) max typeDepth(tparams map (_.info)) + 1
+      typeDepth(result) max typeDepth(tparams map infoOfSymbol) + 1
     case _ =>
       1
   }
 
   private def maxDepth(tps: List[Type], by: Type => Int): Int = {
-    var d = 0
-    for (tp <- tps) d = d max by(tp) //!!!OPT!!!
-    d
+    //OPT replaced with tailrecursive function to save on #closures
+    // was:
+    //    var d = 0
+    //    for (tp <- tps) d = d max by(tp) //!!!OPT!!!
+    //    d
+    def loop(tps: List[Type], acc: Int): Int = tps match {
+      case tp :: rest => loop(rest, acc max by(tp))
+      case _ => acc
+    }
+    loop(tps, 0)
   }
-
+  
   private def typeDepth(tps: List[Type]): Int = maxDepth(tps, typeDepth)
   private def baseTypeSeqDepth(tps: List[Type]): Int = maxDepth(tps, _.baseTypeSeqDepth)
 
