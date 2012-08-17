@@ -65,14 +65,14 @@ trait GenTraversableLike[+A, +Repr] extends Any with GenTraversableOnce[A] with 
    *  @throws `NoSuchElementException` if the $coll is empty.
    */
   def head: A
-  
+
   /** Optionally selects the first element.
    *  $orderDependent
    *  @return  the first element of this $coll if it is nonempty,
    *           `None` if it is empty.
    */
   def headOption: Option[A]
-  
+
   /** Tests whether this $coll can be repeatedly traversed.
    *  @return   `true`
    */
@@ -92,14 +92,14 @@ trait GenTraversableLike[+A, +Repr] extends Any with GenTraversableOnce[A] with 
     * @throws NoSuchElementException If the $coll is empty.
     */
   def last: A
-  
+
   /** Optionally selects the last element.
    *  $orderDependent
    *  @return  the last element of this $coll$ if it is nonempty,
    *           `None` if it is empty.
    */
   def lastOption: Option[A]
-  
+
   /** Selects all elements except the last.
    *  $orderDependent
    *  @return  a $coll consisting of all elements of this $coll
@@ -107,7 +107,7 @@ trait GenTraversableLike[+A, +Repr] extends Any with GenTraversableOnce[A] with 
    *  @throws `UnsupportedOperationException` if the $coll is empty.
    */
   def init: Repr
-  
+
   /** Computes a prefix scan of the elements of the collection.
    *
    *  Note: The neutral element `z` may be applied more than once.
@@ -210,7 +210,7 @@ trait GenTraversableLike[+A, +Repr] extends Any with GenTraversableOnce[A] with 
   def collect[B, That](pf: PartialFunction[A, B])(implicit bf: CanBuildFrom[Repr, B, That]): That
 
   /** Builds a new collection by applying a function to all elements of this $coll
-   *  and using the elements of the resulting collections. 
+   *  and using the elements of the resulting collections.
    *
    *  @param f      the function to apply to each element.
    *  @tparam B     the element type of the returned collection.

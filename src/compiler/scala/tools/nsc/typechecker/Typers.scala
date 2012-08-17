@@ -51,7 +51,6 @@ trait Typers extends Modes with Adaptations with Tags {
     transformed.clear()
   }
 
-  // [Eugene] shouldn't this be converted to resetAllAttrs?
   object UnTyper extends Traverser {
     override def traverse(tree: Tree) = {
       if (tree != EmptyTree) tree.tpe = null
@@ -195,16 +194,14 @@ trait Typers extends Modes with Adaptations with Tags {
         case PolyType(_, _) => EmptyTree
         case _ =>
           def wrapImplicit(from: Type): Tree = {
-            val result = inferImplicit(tree, functionType(List(from), to), reportAmbiguous, true, context, saveErrors)
+            val result = inferImplicit(tree, functionType(from :: Nil, to), reportAmbiguous, true, context, saveErrors)
             if (result.subst != EmptyTreeTypeSubstituter) {
               result.subst traverse tree
               notifyUndetparamsInferred(result.subst.from, result.subst.to)
             }
             result.tree
           }
-          val result = wrapImplicit(from)
-          if (result != EmptyTree) result
-          else wrapImplicit(byNameType(from))
+          wrapImplicit(from) orElse wrapImplicit(byNameType(from))
       }
     }
 
@@ -909,7 +906,7 @@ trait Typers extends Modes with Adaptations with Tags {
 
       def adaptType(): Tree = {
         if (inFunMode(mode)) {
-          // [Eugene++] the commented line below makes sense for typechecking, say, TypeApply(Ident(`some abstract type symbol`), List(...))
+          // todo. the commented line below makes sense for typechecking, say, TypeApply(Ident(`some abstract type symbol`), List(...))
           // because otherwise Ident will have its tpe set to a TypeRef, not to a PolyType, and `typedTypeApply` will fail
           // but this needs additional investigation, because it crashes t5228, gadts1 and maybe something else
           // tree setType tree.tpe.normalize
@@ -2502,7 +2499,7 @@ trait Typers extends Modes with Adaptations with Tags {
 
       def translated =
         if (members.head eq EmptyTree) setError(tree)
-        else typed(atPos(tree.pos)(Block(List(ClassDef(anonClass, NoMods, List(List()), List(List()), members, tree.pos.focus)), atPos(tree.pos.focus)(New(anonClass.tpe)))), mode, pt)
+        else typed(atPos(tree.pos)(Block(List(ClassDef(anonClass, NoMods, ListOfNil, ListOfNil, members, tree.pos.focus)), atPos(tree.pos.focus)(New(anonClass.tpe)))), mode, pt)
     }
 
     // Function(params, Match(sel, cases)) ==> new <Partial>Function { def apply<OrElse>(params) = `translateMatch('sel match { cases }')` }
@@ -2606,7 +2603,7 @@ trait Typers extends Modes with Adaptations with Tags {
         val stats1 = typedStats(stats, NoSymbol)
         // this code kicks in only after typer, so `stats` will never be filled in time
         // as a result, most of compound type trees with non-empty stats will fail to reify
-        // [Eugene++] todo. investigate whether something can be done about this
+        // todo. investigate whether something can be done about this
         val att = templ.attachments.get[CompoundTypeTreeOriginalAttachment].getOrElse(CompoundTypeTreeOriginalAttachment(Nil, Nil))
         templ.removeAttachment[CompoundTypeTreeOriginalAttachment]
         templ addAttachment att.copy(stats = stats1)
@@ -3412,7 +3409,7 @@ trait Typers extends Modes with Adaptations with Tags {
             }
 
             if (hasError) annotationError
-            else AnnotationInfo(annType, List(), nvPairs map {p => (p._1.asInstanceOf[Name], p._2.get)}).setOriginal(Apply(typedFun, args).setPos(ann.pos)) // [Eugene+] why do we need this cast?
+            else AnnotationInfo(annType, List(), nvPairs map {p => (p._1.asInstanceOf[Name], p._2.get)}).setOriginal(Apply(typedFun, args).setPos(ann.pos)) // [Eugene] why do we need this cast?
           }
         } else if (requireJava) {
           reportAnnotationError(NestedAnnotationError(ann, annType))
@@ -4029,9 +4026,9 @@ trait Typers extends Modes with Adaptations with Tags {
         } else {
           var thenp1 = typed(thenp, pt)
           var elsep1 = typed(elsep, pt)
+          def thenTp = packedType(thenp1, context.owner)
+          def elseTp = packedType(elsep1, context.owner)
 
-          lazy val thenTp = packedType(thenp1, context.owner)
-          lazy val elseTp = packedType(elsep1, context.owner)
           // println("typedIf: "+(thenp1.tpe, elsep1.tpe, ptOrLub(List(thenp1.tpe, elsep1.tpe)),"\n", thenTp, elseTp, thenTp =:= elseTp))
           val (owntype, needAdapt) =
             // in principle we should pack the types of each branch before lubbing, but lub doesn't really work for existentials anyway
@@ -4043,7 +4040,7 @@ trait Typers extends Modes with Adaptations with Tags {
               && thenTp =:= elseTp
                ) (thenp1.tpe, false) // use unpacked type
             // TODO: skolemize (lub of packed types) when that no longer crashes on files/pos/t4070b.scala
-            else ptOrLub(List(thenp1.tpe, elsep1.tpe), pt)
+            else ptOrLub(thenp1.tpe :: elsep1.tpe :: Nil, pt)
 
           if (needAdapt) { //isNumericValueType(owntype)) {
             thenp1 = adapt(thenp1, mode, owntype)
@@ -5101,7 +5098,7 @@ trait Typers extends Modes with Adaptations with Tags {
                 erasure.GenericArray.unapply(tpt.tpe).isDefined) => // !!! todo simplify by using extractor
               // convert new Array[T](len) to evidence[ClassTag[T]].newArray(len)
               // convert new Array^N[T](len) for N > 1 to evidence[ClassTag[Array[...Array[T]...]]].newArray(len), where Array HK gets applied (N-1) times
-              // [Eugene] no more MaxArrayDims. ClassTags are flexible enough to allow creation of arrays of arbitrary dimensionality (w.r.t JVM restrictions)
+              // no more MaxArrayDims. ClassTags are flexible enough to allow creation of arrays of arbitrary dimensionality (w.r.t JVM restrictions)
               val Some((level, componentType)) = erasure.GenericArray.unapply(tpt.tpe)
               val tagType = List.iterate(componentType, level)(tpe => appliedType(ArrayClass.toTypeConstructor, List(tpe))).last
               val newArrayApp = atPos(tree.pos) {
@@ -5177,9 +5174,7 @@ trait Typers extends Modes with Adaptations with Tags {
 
         case ReferenceToBoxed(idt @ Ident(_)) =>
           val id1 = typed1(idt, mode, pt) match { case id: Ident => id }
-          // [Eugene] am I doing it right?
-          val erasedTypes = phaseId(currentPeriod) >= currentRun.erasurePhase.id
-          val tpe = capturedVariableType(idt.symbol, erasedTypes = erasedTypes)
+          val tpe = capturedVariableType(idt.symbol, erasedTypes = phase.erasedTypes)
           treeCopy.ReferenceToBoxed(tree, id1) setType tpe
 
         case Literal(value) =>
@@ -5453,7 +5448,7 @@ trait Typers extends Modes with Adaptations with Tags {
 
       val isMacroBodyOkay = !tree.symbol.isErroneous && !(tree1 exists (_.isErroneous))
       val shouldInheritMacroImplReturnType = ddef.tpt.isEmpty
-      if (isMacroBodyOkay && shouldInheritMacroImplReturnType) computeMacroDefTypeFromMacroImpl(ddef, tree.symbol, tree1.symbol) else AnyClass.tpe
+      if (isMacroBodyOkay && shouldInheritMacroImplReturnType) computeMacroDefTypeFromMacroImpl(ddef, tree1.symbol) else AnyClass.tpe
     }
 
     def transformedOr(tree: Tree, op: => Tree): Tree = transformed.get(tree) match {

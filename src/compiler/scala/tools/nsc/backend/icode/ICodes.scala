@@ -2,11 +2,6 @@
  * Copyright 2005-2012 LAMP/EPFL
  * @author  Martin Odersky
  */
-/* NSC -- new scala compiler
- * Copyright 2005-2012 LAMP/EPFL
- * @author  Martin Odersky
- */
-
 
 package scala.tools.nsc
 package backend

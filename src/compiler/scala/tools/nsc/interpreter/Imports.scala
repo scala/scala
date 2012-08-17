@@ -23,7 +23,7 @@ trait Imports {
     val hd :: tl = sym.fullName.split('.').toList map newTermName
     val tree = Import(
       tl.foldLeft(Ident(hd): Tree)((x, y) => Select(x, y)),
-      List(ImportSelector(nme.WILDCARD, -1, null, -1))
+      ImportSelector.wildList
     )
     tree setSymbol sym
     new ImportHandler(tree)

@@ -265,14 +265,14 @@ trait Types extends api.Types { self: SymbolTable =>
     def declarations = decls
     def typeArguments = typeArgs
     def erasure = this match {
-      case ConstantType(value) => widen.erasure // [Eugene to Martin] constant types are unaffected by erasure. weird.
+      case ConstantType(value) => widen.erasure
       case _ =>
         var result: Type = transformedType(this)
         result = result.normalize match { // necessary to deal with erasures of HK types, typeConstructor won't work
           case PolyType(undets, underlying) => existentialAbstraction(undets, underlying) // we don't want undets in the result
           case _ => result
         }
-        // [Eugene] erasure screws up all ThisTypes for modules into PackageTypeRefs
+        // erasure screws up all ThisTypes for modules into PackageTypeRefs
         // we need to unscrew them, or certain typechecks will fail mysteriously
         // http://groups.google.com/group/scala-internals/browse_thread/thread/6d3277ae21b6d581
         result = result.map(tpe => tpe match {
@@ -284,7 +284,6 @@ trait Types extends api.Types { self: SymbolTable =>
     def substituteSymbols(from: List[Symbol], to: List[Symbol]): Type = substSym(from, to)
     def substituteTypes(from: List[Symbol], to: List[Type]): Type = subst(from, to)
 
-    // [Eugene] to be discussed and refactored
     def isConcrete = {
       def notConcreteSym(sym: Symbol) =
         sym.isAbstractType && !sym.isExistential
@@ -304,11 +303,8 @@ trait Types extends api.Types { self: SymbolTable =>
       !notConcreteTpe(this)
     }
 
-    // [Eugene] is this comprehensive?
-    // the only thingies that we want to splice are: 1) type parameters, 2) type members
+    // the only thingies that we want to splice are: 1) type parameters, 2) abstract type members
     // the thingies that we don't want to splice are: 1) concrete types (obviously), 2) existential skolems
-    // this check seems to cover them all, right?
-    // todo. after we discuss this, move the check to subclasses
     def isSpliceable = {
       this.isInstanceOf[TypeRef] && typeSymbol.isAbstractType && !typeSymbol.isExistential
     }
@@ -446,7 +442,7 @@ trait Types extends api.Types { self: SymbolTable =>
       if (phase.erasedTypes) this
       else {
         val cowner = commonOwner(this)
-        refinedType(List(this), cowner, EmptyScope, cowner.pos).narrow
+        refinedType(this :: Nil, cowner, EmptyScope, cowner.pos).narrow
       }
 
     /** For a TypeBounds type, itself;
@@ -1011,7 +1007,7 @@ trait Types extends api.Types { self: SymbolTable =>
         if (!e.sym.hasFlag(excludedFlags)) {
           if (sym == NoSymbol) sym = e.sym
           else {
-            if (alts.isEmpty) alts = List(sym)
+            if (alts.isEmpty) alts = sym :: Nil
             alts = e.sym :: alts
           }
         }
@@ -3719,10 +3715,11 @@ trait Types extends api.Types { self: SymbolTable =>
         case TypeRef(_, SingletonClass, _) =>
           AnyClass.tpe
         case tp1 @ RefinedType(parents, decls) =>
-          var parents1 = parents filter (_.typeSymbol != SingletonClass)
-          if (parents1.isEmpty) parents1 = List(AnyClass.tpe)
-          if (parents1.tail.isEmpty && decls.isEmpty) mapOver(parents1.head)
-          else mapOver(copyRefinedType(tp1, parents1, decls))
+          parents filter (_.typeSymbol != SingletonClass) match {
+            case Nil                       => AnyClass.tpe
+            case p :: Nil if decls.isEmpty => mapOver(p)
+            case ps                        => mapOver(copyRefinedType(tp1, ps, decls))
+          }
         case tp1 =>
           mapOver(tp1)
       }
@@ -4587,10 +4584,12 @@ trait Types extends api.Types { self: SymbolTable =>
       tp match {
         case TypeRef(pre, sym, args) if pre ne NoPrefix =>
           val newSym = subst(sym, from, to)
+          // mapOver takes care of subst'ing in args
+          mapOver ( if (sym eq newSym) tp else copyTypeRef(tp, pre, newSym, args) )
           // assert(newSym.typeParams.length == sym.typeParams.length, "typars mismatch in SubstSymMap: "+(sym, sym.typeParams, newSym, newSym.typeParams))
-          mapOver(copyTypeRef(tp, pre, newSym, args)) // mapOver takes care of subst'ing in args
         case SingleType(pre, sym) if pre ne NoPrefix =>
-          mapOver(singleType(pre, subst(sym, from, to)))
+          val newSym = subst(sym, from, to)
+          mapOver( if (sym eq newSym) tp else singleType(pre, newSym) )
         case _ =>
           super.apply(tp)
       }
@@ -5629,6 +5628,7 @@ trait Types extends api.Types { self: SymbolTable =>
       false
   }
 
+  @deprecated("The compiler doesn't use this so you shouldn't either - it will be removed", "2.10.0")
   def instTypeVar(tp: Type): Type = tp match {
     case TypeRef(pre, sym, args) =>
       copyTypeRef(tp, instTypeVar(pre), sym, args)

@@ -18,19 +18,7 @@ trait Infrastructure {
 
   val libraryClassPath: List[java.net.URL] = universe.classPath.asURLs
 
-  lazy val libraryClassLoader: ClassLoader = {
-    val classpath = libraryClassPath
-    var loader: ClassLoader = ScalaClassLoader.fromURLs(classpath, self.getClass.getClassLoader)
-
-    // [Eugene] a heuristic to detect REPL
-    if (universe.settings.exposeEmptyPackage.value) {
-      import scala.tools.nsc.interpreter._
-      val virtualDirectory = universe.settings.outputDirs.getSingleOutput.get
-      loader = new AbstractFileClassLoader(virtualDirectory, loader) {}
-    }
-
-    loader
-  }
+  lazy val libraryClassLoader: ClassLoader = universe.analyzer.macroClassloader
 
   type Run = universe.Run
 

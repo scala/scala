@@ -14,9 +14,4 @@ trait Positions {
 
   /** .. */
   val NoPosition: Position
-
-  /** Assigns a given position to all position-less nodes of a given AST.
-   */
-  def atPos[T <: Tree](pos: Position)(tree: T): T
-  // [Eugene++] why do we have this in base?
 }

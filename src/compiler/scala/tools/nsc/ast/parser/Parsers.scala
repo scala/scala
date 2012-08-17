@@ -192,7 +192,7 @@ self =>
 
     override def blockExpr(): Tree = skipBraces(EmptyTree)
 
-    override def templateBody(isPre: Boolean) = skipBraces((emptyValDef, List(EmptyTree)))
+    override def templateBody(isPre: Boolean) = skipBraces((emptyValDef, EmptyTree.asList))
   }
 
   class UnitParser(val unit: global.CompilationUnit, patches: List[BracePatch]) extends SourceFileParser(unit.source) {
@@ -395,7 +395,7 @@ self =>
         NoMods,
         nme.CONSTRUCTOR,
         Nil,
-        List(Nil),
+        ListOfNil,
         TypeTree(),
         Block(List(Apply(gen.mkSuperSelect, Nil)), Literal(Constant(())))
       )
@@ -404,7 +404,7 @@ self =>
       def mainParamType = AppliedTypeTree(Ident(tpnme.Array), List(Ident(tpnme.String)))
       def mainParameter = List(ValDef(Modifiers(Flags.PARAM), nme.argv, mainParamType, EmptyTree))
       def mainSetArgv   = List(ValDef(NoMods, nme.args, TypeTree(), Ident(nme.argv)))
-      def mainNew       = makeNew(Nil, emptyValDef, stmts, List(Nil), NoPosition, NoPosition)
+      def mainNew       = makeNew(Nil, emptyValDef, stmts, ListOfNil, NoPosition, NoPosition)
       def mainDef       = DefDef(NoMods, nme.main, Nil, List(mainParameter), scalaDot(tpnme.Unit), Block(mainSetArgv, mainNew))
 
       // object Main
@@ -2093,7 +2093,7 @@ self =>
     def annotationExpr(): Tree = atPos(in.offset) {
       val t = exprSimpleType()
       if (in.token == LPAREN) New(t, multipleArgumentExprs())
-      else New(t, List(Nil))
+      else New(t, ListOfNil)
     }
 
 /* -------- PARAMETERS ------------------------------------------- */
@@ -2732,10 +2732,10 @@ self =>
     def templateParents(isTrait: Boolean): (List[Tree], List[List[Tree]]) = {
       val parents = new ListBuffer[Tree] += startAnnotType()
       val argss = (
-        // TODO: the insertion of List(Nil) here is where "new Foo" becomes
+        // TODO: the insertion of ListOfNil here is where "new Foo" becomes
         // indistinguishable from "new Foo()".
         if (in.token == LPAREN && !isTrait) multipleArgumentExprs()
-        else List(Nil)
+        else ListOfNil
       )
 
       while (in.token == WITH) {
@@ -2773,7 +2773,7 @@ self =>
           val (self1, body1) = templateBodyOpt(traitParentSeen = isTrait)
           (parents, argss, self1, earlyDefs ::: body1)
         } else {
-          (List(), List(List()), self, body)
+          (List(), ListOfNil, self, body)
         }
       } else {
         val (parents, argss) = templateParents(isTrait = isTrait)
@@ -2800,7 +2800,7 @@ self =>
         else {
           newLineOptWhenFollowedBy(LBRACE)
           val (self, body) = templateBodyOpt(traitParentSeen = false)
-          (List(), List(List()), self, body)
+          (List(), ListOfNil, self, body)
         }
       )
       def anyrefParents() = {
@@ -2813,7 +2813,7 @@ self =>
       def anyvalConstructor() = (
         // Not a well-formed constructor, has to be finished later - see note
         // regarding AnyVal constructor in AddInterfaces.
-        DefDef(NoMods, nme.CONSTRUCTOR, Nil, List(Nil), TypeTree(), Block(Nil, Literal(Constant())))
+        DefDef(NoMods, nme.CONSTRUCTOR, Nil, ListOfNil, TypeTree(), Block(Nil, Literal(Constant())))
       )
       val tstart0 = if (body.isEmpty && in.lastOffset < tstart) in.lastOffset else tstart
 
@@ -2834,7 +2834,7 @@ self =>
      * @param isPre specifies whether in early initializer (true) or not (false)
      */
     def templateBody(isPre: Boolean) = inBraces(templateStatSeq(isPre = isPre)) match {
-      case (self, Nil)  => (self, List(EmptyTree))
+      case (self, Nil)  => (self, EmptyTree.asList)
       case result       => result
     }
     def templateBodyOpt(traitParentSeen: Boolean): (ValDef, List[Tree]) = {
@@ -2938,7 +2938,7 @@ self =>
     /** Informal - for the repl and other direct parser accessors.
      */
     def templateStats(): List[Tree] = templateStatSeq(isPre = false)._2 match {
-      case Nil    => List(EmptyTree)
+      case Nil    => EmptyTree.asList
       case stats  => stats
     }
 

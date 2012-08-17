@@ -27,6 +27,13 @@ trait Contexts { self: Analyzer =>
     override def implicitss: List[List[ImplicitInfo]] = Nil
     override def toString = "NoContext"
   }
+  private object RootImports {
+    import definitions._
+    // Possible lists of root imports
+    val javaList         = JavaLangPackage :: Nil
+    val javaAndScalaList = JavaLangPackage :: ScalaPackage :: Nil
+    val completeList     = JavaLangPackage :: ScalaPackage :: PredefModule :: Nil
+  }
 
   private val startContext = {
     NoContext.make(
@@ -46,13 +53,12 @@ trait Contexts { self: Analyzer =>
    *    among its leading imports, or if the tree is [[scala.Predef]], `Predef` is not imported.
    */
   protected def rootImports(unit: CompilationUnit): List[Symbol] = {
-    import definitions._
-    assert(isDefinitionsInitialized, "definitions uninitialized")
+    assert(definitions.isDefinitionsInitialized, "definitions uninitialized")
 
     if (settings.noimports.value) Nil
-    else if (unit.isJava) List(JavaLangPackage)
-    else if (settings.nopredef.value || treeInfo.noPredefImportForUnit(unit.body)) List(JavaLangPackage, ScalaPackage)
-    else List(JavaLangPackage, ScalaPackage, PredefModule)
+    else if (unit.isJava) RootImports.javaList
+    else if (settings.nopredef.value || treeInfo.noPredefImportForUnit(unit.body)) RootImports.javaAndScalaList
+    else RootImports.completeList
   }
 
   def rootContext(unit: CompilationUnit): Context             = rootContext(unit, EmptyTree, false)

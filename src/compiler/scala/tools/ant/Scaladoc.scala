@@ -44,7 +44,8 @@ import scala.tools.nsc.reporters.{Reporter, ConsoleReporter}
  *  - `docgenerator`,
  *  - `docrootcontent`,
  *  - `unchecked`,
- *  - `nofail`.
+ *  - `nofail`,
+ *  - `skipPackages`.
  *
  *  It also takes the following parameters as nested elements:
  *  - `src` (for srcdir),
@@ -158,6 +159,9 @@ class Scaladoc extends ScalaMatchingTask {
 
   /** Instruct the scaladoc tool to group similar functions together */
   private var docGroups: Boolean = false
+
+  /** Instruct the scaladoc tool to skip certain packages */
+  private var docSkipPackages: String = ""
 
 /*============================================================================*\
 **                             Properties setters                             **
@@ -442,6 +446,12 @@ class Scaladoc extends ScalaMatchingTask {
   def setGroups(input: String) =
     docGroups = Flag.getBooleanValue(input, "groups")
 
+  /** Instruct the scaladoc tool to skip certain packages.
+   *  @param input A colon-delimited list of fully qualified package names that will be skipped from scaladoc.
+   */
+  def setSkipPackages(input: String) =
+    docSkipPackages = input
+
 /*============================================================================*\
 **                             Properties getters                             **
 \*============================================================================*/
@@ -642,6 +652,7 @@ class Scaladoc extends ScalaMatchingTask {
     docSettings.docRawOutput.value = docRawOutput
     docSettings.docNoPrefixes.value = docNoPrefixes
     docSettings.docGroups.value = docGroups
+    docSettings.docSkipPackages.value = docSkipPackages
     if(!docDiagramsDotPath.isEmpty) docSettings.docDiagramsDotPath.value = docDiagramsDotPath.get
 
     if (!docgenerator.isEmpty) docSettings.docgenerator.value = docgenerator.get

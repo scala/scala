@@ -293,7 +293,6 @@ trait Types extends base.Types { self: Universe =>
 
   // Creators ---------------------------------------------------------------
   // too useful and too non-trivial to be left out of public API
-  // [Eugene to Paul] needs review!
 
   /** The canonical creator for single-types */
   def singleType(pre: Type, sym: Symbol): Type

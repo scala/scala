@@ -95,7 +95,7 @@ trait TreeDSL {
       def INT_>=  (other: Tree)     = fn(target, getMember(IntClass, nme.GE), other)
       def INT_==  (other: Tree)     = fn(target, getMember(IntClass, nme.EQ), other)
       def INT_!=  (other: Tree)     = fn(target, getMember(IntClass, nme.NE), other)
-      
+
       // generic operations on ByteClass, IntClass, LongClass
       def GEN_|   (other: Tree, kind: ClassSymbol)  = fn(target, getMember(kind, nme.OR), other)
       def GEN_&   (other: Tree, kind: ClassSymbol)  = fn(target, getMember(kind, nme.AND), other)
@@ -234,7 +234,7 @@ trait TreeDSL {
     }
     class DefTreeStart(val name: Name) extends TreeVODDStart with DefCreator {
       def tparams: List[TypeDef] = Nil
-      def vparamss: List[List[ValDef]] = List(Nil)
+      def vparamss: List[List[ValDef]] = ListOfNil
     }
 
     class IfStart(cond: Tree, thenp: Tree) {

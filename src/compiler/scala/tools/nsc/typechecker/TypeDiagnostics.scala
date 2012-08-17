@@ -462,7 +462,6 @@ trait TypeDiagnostics {
         case CyclicReference(sym, info: TypeCompleter) =>
           if (context0.owner.isTermMacro) {
             // see comments to TypeSigError for an explanation of this special case
-            // [Eugene] is there a better way?
             throw ex
           } else {
             val pos = info.tree match {
