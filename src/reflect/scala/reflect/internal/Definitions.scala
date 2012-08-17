@@ -137,9 +137,8 @@ trait Definitions extends api.StandardDefinitions {
     lazy val BooleanTpe = BooleanClass.toTypeConstructor
 
     lazy val ScalaNumericValueClasses = ScalaValueClasses filterNot Set[Symbol](UnitClass, BooleanClass)
-
-    def ScalaValueClassesNoUnit = ScalaValueClasses filterNot (_ eq UnitClass)
-    def ScalaValueClasses: List[ClassSymbol] = List(
+    lazy val ScalaValueClassesNoUnit  = ScalaValueClasses filterNot (_ eq UnitClass)
+    lazy val ScalaValueClasses: List[ClassSymbol] = List(
       UnitClass,
       BooleanClass,
       ByteClass,

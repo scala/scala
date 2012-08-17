@@ -111,7 +111,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
             case TypeRef(_, GroupOfSpecializable, arg :: Nil) =>
               arg.typeArgs map (_.typeSymbol)
             case _ =>
-              List(tp.typeSymbol)
+              tp.typeSymbol :: Nil
           }
         }
       }
@@ -362,7 +362,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
     // creating each permutation of concrete types
     def loop(ctypes: List[List[Type]]): List[List[Type]] = ctypes match {
       case Nil         => Nil
-      case set :: Nil  => set map (x => List(x))
+      case set :: Nil  => set map (_ :: Nil)
       case set :: sets => for (x <- set ; xs <- loop(sets)) yield x :: xs
     }
     // zip the keys with each permutation to create a TypeEnv.
@@ -424,7 +424,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
     case MethodType(argSyms, resTpe) => specializedTypeVars(resTpe :: argSyms.map(_.tpe))
     case ExistentialType(_, res)     => specializedTypeVars(res)
     case AnnotatedType(_, tp, _)     => specializedTypeVars(tp)
-    case TypeBounds(lo, hi)          => specializedTypeVars(List(lo, hi))
+    case TypeBounds(lo, hi)          => specializedTypeVars(lo :: hi :: Nil)
     case RefinedType(parents, _)     => parents flatMap specializedTypeVars toSet
     case _                           => Set()
   }

@@ -111,7 +111,7 @@ trait Trees extends reflect.internal.Trees { self: Global =>
         if (body forall treeInfo.isInterfaceMember) List()
         else List(
           atPos(wrappingPos(superPos, lvdefs)) (
-            DefDef(NoMods, nme.MIXIN_CONSTRUCTOR, List(), List(List()), TypeTree(), Block(lvdefs, Literal(Constant())))))
+            DefDef(NoMods, nme.MIXIN_CONSTRUCTOR, List(), ListOfNil, TypeTree(), Block(lvdefs, Literal(Constant())))))
       } else {
         // convert (implicit ... ) to ()(implicit ... ) if its the only parameter section
         if (vparamss1.isEmpty || !vparamss1.head.isEmpty && vparamss1.head.head.mods.isImplicit)

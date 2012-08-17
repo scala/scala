@@ -492,19 +492,19 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
      *  fields count as fields defined by the class itself.
      */
     private val fieldOffset = perRunCaches.newMap[Symbol, Int]()
-    
+
     private val bitmapKindForCategory = perRunCaches.newMap[Name, ClassSymbol]()
-    
+
     // ByteClass, IntClass, LongClass
     private def bitmapKind(field: Symbol): ClassSymbol = bitmapKindForCategory(bitmapCategory(field))
-    
+
     private def flagsPerBitmap(field: Symbol): Int = bitmapKind(field) match {
       case BooleanClass => 1
       case ByteClass    => 8
       case IntClass     => 32
       case LongClass    => 64
     }
-    
+
 
     /** The first transform; called in a pre-order traversal at phase mixin
      *  (that is, every node is processed before its children).
@@ -718,7 +718,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
         val sym        = clazz0.info.decl(bitmapName)
 
         assert(!sym.isOverloaded, sym)
-        
+
         def createBitmap: Symbol = {
           val bitmapKind =  bitmapKindForCategory(category)
           val sym = clazz0.newVariable(bitmapName, clazz0.pos) setInfo bitmapKind.tpe
@@ -732,7 +732,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
             case BooleanClass => VAL(sym) === FALSE
             case _            => VAL(sym) === ZERO
           }
-          
+
           sym setFlag PrivateLocal
           clazz0.info.decls.enter(sym)
           addDef(clazz0.pos, init)
@@ -744,7 +744,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
         else
           createBitmap
       }
-      
+
       def maskForOffset(offset: Int, sym: Symbol, kind: ClassSymbol): Tree = {
         def realOffset = offset % flagsPerBitmap(sym)
         if (kind == LongClass ) LIT(1L << realOffset) else LIT(1 << realOffset)
@@ -755,9 +755,9 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
         val bmp      = bitmapFor(clazz, offset, valSym)
         def mask     = maskForOffset(offset, valSym, kind)
         def x        = This(clazz) DOT bmp
-        def newValue = if (kind == BooleanClass) TRUE else (x GEN_| (mask, kind)) 
+        def newValue = if (kind == BooleanClass) TRUE else (x GEN_| (mask, kind))
 
-        x === newValue 
+        x === newValue
       }
 
       /** Return an (untyped) tree of the form 'clazz.this.bitmapSym & mask (==|!=) 0', the
@@ -775,7 +775,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
             else              lhs GEN_!= (ZERO, kind)
         }
       }
-      
+
       def mkSlowPathDef(clazz: Symbol, lzyVal: Symbol, cond: Tree, syncBody: List[Tree],
                         stats: List[Tree], retVal: Tree, attrThis: Tree, args: List[Tree]): Symbol = {
         val defSym = clazz.newMethod(nme.newLazyValSlowComputeName(lzyVal.name), lzyVal.pos, PRIVATE)
@@ -791,14 +791,14 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
                              stats: List[Tree], retVal: Tree): Tree = {
         mkFastPathBody(clazz, lzyVal, cond, syncBody, stats, retVal, gen.mkAttributedThis(clazz), List())
       }
-      
+
       def mkFastPathBody(clazz: Symbol, lzyVal: Symbol, cond: Tree, syncBody: List[Tree],
                         stats: List[Tree], retVal: Tree, attrThis: Tree, args: List[Tree]): Tree = {
         val slowPathSym: Symbol = mkSlowPathDef(clazz, lzyVal, cond, syncBody, stats, retVal, attrThis, args)
         If(cond, fn (This(clazz), slowPathSym, args.map(arg => Ident(arg.symbol)): _*), retVal)
       }
-      
-        
+
+
 	  /** Always copy the tree if we are going to perform sym substitution,
 	   *  otherwise we will side-effect on the tree that is used in the fast path
 	   */
@@ -807,7 +807,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
 	      if (tree.hasSymbol && from.contains(tree.symbol))
 	        super.transform(tree.duplicate)
 	      else super.transform(tree.duplicate)
-	    
+
 	    override def apply[T <: Tree](tree: T): T = if (from.isEmpty) tree else super.apply(tree)
 	  }
 
@@ -827,8 +827,8 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
        *  The result will be a tree of the form
        *  { if ((bitmap&n & MASK) == 0) this.l$compute()
        *    else l$
-       *    
-       *    ... 
+       *
+       *    ...
        *    def l$compute() = { synchronized(this) {
        *      if ((bitmap$n & MASK) == 0) {
        *        init // l$ = <rhs>
@@ -836,7 +836,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
        *      }}
        *      l$
        *    }
-       *    
+       *
        *    ...
        *    this.f1 = null
        *    ... this.fn = null
@@ -846,7 +846,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
        *  For Int bitmap it is 32 and then 'n' in the above code is: (offset / 32),
        *  the MASK is (1 << (offset % 32)).
        *  If the class contains only a single lazy val then the bitmap is represented
-       *  as a Boolean and the condition checking is a simple bool test. 
+       *  as a Boolean and the condition checking is a simple bool test.
        */
       def mkLazyDef(clazz: Symbol, lzyVal: Symbol, init: List[Tree], retVal: Tree, offset: Int): Tree = {
         def nullify(sym: Symbol) = Select(This(clazz), sym.accessedOrSelf) === LIT(null)
@@ -878,7 +878,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
       def mkCheckedAccessor(clazz: Symbol, retVal: Tree, offset: Int, pos: Position, fieldSym: Symbol): Tree = {
         val sym = fieldSym.getter(fieldSym.owner)
         val bitmapSym = bitmapFor(clazz, offset, sym)
-        val kind      = bitmapKind(sym) 
+        val kind      = bitmapKind(sym)
         val mask      = maskForOffset(offset, sym, kind)
         val msg       = "Uninitialized field: " + unit.source + ": " + pos.line
         val result    =
@@ -966,7 +966,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
             stats flatMap {
               case stat @ Assign(lhs @ Select(This(_), _), rhs) => stat :: checkedGetter(lhs)
               // remove initialization for default values
-              case Apply(lhs @ Select(Ident(self), _), List(EmptyTree)) if lhs.symbol.isSetter => Nil
+              case Apply(lhs @ Select(Ident(self), _), EmptyTree.asList) if lhs.symbol.isSetter => Nil
               case stat => List(stat)
             },
             exprOwner

@@ -487,6 +487,7 @@ class Base extends Universe { self =>
   }
 
   case object EmptyTree extends TermTree {
+    val asList = List(this)
     override def isEmpty = true
   }
 

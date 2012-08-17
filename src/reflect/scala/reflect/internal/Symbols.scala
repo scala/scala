@@ -294,13 +294,30 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     final def newExistential(name: TypeName, pos: Position = NoPosition, newFlags: Long = 0L): TypeSymbol =
       newAbstractType(name, pos, EXISTENTIAL | newFlags)
 
+    private def freshNamer: () => TermName = {
+      var cnt = 0
+      () => { cnt += 1; nme.syntheticParamName(cnt) }
+    }
+
     /** Synthetic value parameters when parameter symbols are not available
      */
-    final def newSyntheticValueParamss(argtypess: List[List[Type]]): List[List[TermSymbol]] = {
-      var cnt = 0
-      def freshName() = { cnt += 1; nme.syntheticParamName(cnt) }
-      mmap(argtypess)(tp => newValueParameter(freshName(), owner.pos.focus, SYNTHETIC) setInfo tp)
-    }
+    final def newSyntheticValueParamss(argtypess: List[List[Type]]): List[List[TermSymbol]] =
+      argtypess map (xs => newSyntheticValueParams(xs, freshNamer))
+
+    /** Synthetic value parameters when parameter symbols are not available.
+     *  Calling this method multiple times will re-use the same parameter names.
+     */
+    final def newSyntheticValueParams(argtypes: List[Type]): List[TermSymbol] =
+      newSyntheticValueParams(argtypes, freshNamer)
+
+    final def newSyntheticValueParams(argtypes: List[Type], freshName: () => TermName): List[TermSymbol] =
+      argtypes map (tp => newSyntheticValueParam(tp, freshName()))
+
+    /** Synthetic value parameter when parameter symbol is not available.
+     *  Calling this method multiple times will re-use the same parameter name.
+     */
+    final def newSyntheticValueParam(argtype: Type, name: TermName = nme.syntheticParamName(1)): TermSymbol =
+      newValueParameter(name, owner.pos.focus, SYNTHETIC) setInfo argtype
 
     def newSyntheticTypeParam(): TypeSymbol                             = newSyntheticTypeParam("T0", 0L)
     def newSyntheticTypeParam(name: String, newFlags: Long): TypeSymbol = newTypeParameter(newTypeName(name), NoPosition, newFlags) setInfo TypeBounds.empty
@@ -327,18 +344,6 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
 
     final def freshExistential(suffix: String): TypeSymbol =
       newExistential(freshExistentialName(suffix), pos)
-
-    /** Synthetic value parameters when parameter symbols are not available.
-     *  Calling this method multiple times will re-use the same parameter names.
-     */
-    final def newSyntheticValueParams(argtypes: List[Type]): List[TermSymbol] =
-      newSyntheticValueParamss(List(argtypes)).head
-
-    /** Synthetic value parameter when parameter symbol is not available.
-     *  Calling this method multiple times will re-use the same parameter name.
-     */
-    final def newSyntheticValueParam(argtype: Type): Symbol =
-      newSyntheticValueParams(List(argtype)).head
 
     /** Type skolems are type parameters ''seen from the inside''
      *  Assuming a polymorphic method m[T], its type is a PolyType which has a TypeParameter
@@ -1522,7 +1527,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
 
     def alternatives: List[Symbol] =
       if (isOverloaded) info.asInstanceOf[OverloadedType].alternatives
-      else List(this)
+      else this :: Nil
 
     def filter(cond: Symbol => Boolean): Symbol =
       if (isOverloaded) {
@@ -1626,7 +1631,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
       (info.decls filter (_.isCaseAccessorMethod)).toList
 
     final def constrParamAccessors: List[Symbol] =
-      info.decls.toList filter (sym => !sym.isMethod && sym.isParamAccessor)
+      info.decls.filter(sym => !sym.isMethod && sym.isParamAccessor).toList
 
     /** The symbol accessed by this accessor (getter or setter) function. */
     final def accessed: Symbol = accessed(owner.info)

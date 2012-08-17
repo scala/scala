@@ -44,7 +44,7 @@ abstract class TreeGen extends reflect.internal.TreeGen with TreeDSL {
           setInfo analyzer.ImportType(qual)
     )
     val importTree = (
-      Import(qual, List(ImportSelector(nme.WILDCARD, -1, null, -1)))
+      Import(qual, ImportSelector.wildList)
         setSymbol importSym
           setType NoType
     )
@@ -58,7 +58,7 @@ abstract class TreeGen extends reflect.internal.TreeGen with TreeDSL {
   def mkUnchecked(expr: Tree): Tree = atPos(expr.pos) {
     // This can't be "Annotated(New(UncheckedClass), expr)" because annotations
     // are very picky about things and it crashes the compiler with "unexpected new".
-    Annotated(New(scalaDot(UncheckedClass.name), List(Nil)), expr)
+    Annotated(New(scalaDot(UncheckedClass.name), ListOfNil), expr)
   }
   // if it's a Match, mark the selector unchecked; otherwise nothing.
   def mkUncheckedMatch(tree: Tree) = tree match {
@@ -357,8 +357,8 @@ abstract class TreeGen extends reflect.internal.TreeGen with TreeDSL {
    */
   def mkSynchronizedCheck(clazz: Symbol, cond: Tree, syncBody: List[Tree], stats: List[Tree]): Tree =
     mkSynchronizedCheck(mkAttributedThis(clazz), cond, syncBody, stats)
-    
-  def mkSynchronizedCheck(attrThis: Tree, cond: Tree, syncBody: List[Tree], stats: List[Tree]): Tree = 
+
+  def mkSynchronizedCheck(attrThis: Tree, cond: Tree, syncBody: List[Tree], stats: List[Tree]): Tree =
     Block(mkSynchronized(
       attrThis,
       If(cond, Block(syncBody: _*), EmptyTree)) ::
