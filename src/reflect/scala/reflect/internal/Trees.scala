@@ -19,7 +19,7 @@ trait Trees extends api.Trees { self: SymbolTable =>
     val id = nodeCount // TODO: add to attachment?
     nodeCount += 1
 
-    Statistics.incCounter(TreesStats.nodeByType, getClass)
+    if (Statistics.canEnable) Statistics.incCounter(TreesStats.nodeByType, getClass)
 
     @inline final override def pos: Position = rawatt.pos
 

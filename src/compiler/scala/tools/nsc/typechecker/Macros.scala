@@ -696,8 +696,8 @@ trait Macros extends scala.tools.reflect.FastTrack with Traces {
    *    the expandee with an error marker set   if there has been an error
    */
   def macroExpand(typer: Typer, expandee: Tree, mode: Int = EXPRmode, pt: Type = WildcardType): Tree = {
-    val start = Statistics.startTimer(macroExpandNanos)
-    Statistics.incCounter(macroExpandCount)
+    val start = if (Statistics.canEnable) Statistics.startTimer(macroExpandNanos) else null
+    if (Statistics.canEnable) Statistics.incCounter(macroExpandCount)
     try {
       macroExpand1(typer, expandee) match {
         case Success(expanded) =>
@@ -725,7 +725,7 @@ trait Macros extends scala.tools.reflect.FastTrack with Traces {
           result
       }
     } finally {
-      Statistics.stopTimer(macroExpandNanos, start)
+      if (Statistics.canEnable) Statistics.stopTimer(macroExpandNanos, start)
     }
   }
 
