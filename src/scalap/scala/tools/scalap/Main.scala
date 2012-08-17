@@ -10,10 +10,10 @@ package scala.tools.scalap
 import java.io.{ PrintStream, OutputStreamWriter, ByteArrayOutputStream }
 import scala.reflect.NameTransformer
 import scalax.rules.scalasig._
-import tools.nsc.util.{ ClassPath, JavaClassPath }
-import tools.util.PathResolver
+import scala.tools.nsc.util.{ ClassPath, JavaClassPath }
+import scala.tools.util.PathResolver
 import ClassPath.DefaultJavaContext
-import tools.nsc.io.{ PlainFile, AbstractFile }
+import scala.tools.nsc.io.{ PlainFile, AbstractFile }
 
 /**The main object used to execute scalap on the command-line.
  *
