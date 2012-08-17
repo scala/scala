@@ -15,6 +15,7 @@ import scala.util.control.ControlThrowable
 import scala.annotation.tailrec
 import util.Statistics
 import scala.runtime.ObjectRef
+import util.ThreeValues._
 
 /* A standard type pattern match:
   case ErrorType =>
@@ -1398,7 +1399,11 @@ trait Types extends api.Types { self: SymbolTable =>
    *  Cannot be created directly; one should always use `singleType` for creation.
    */
   abstract case class SingleType(pre: Type, sym: Symbol) extends SingletonType with SingleTypeApi {
-    override lazy val isTrivial: Boolean = pre.isTrivial
+    private var trivial: ThreeValue = UNKNOWN
+    override def isTrivial: Boolean = {
+      if (trivial == UNKNOWN) trivial = fromBoolean(pre.isTrivial)
+      toBoolean(trivial)
+    }
     override def isGround = sym.isPackageClass || pre.isGround
 
     // override def isNullable = underlying.isNullable
@@ -1464,7 +1469,11 @@ trait Types extends api.Types { self: SymbolTable =>
   }
 
   abstract case class SuperType(thistpe: Type, supertpe: Type) extends SingletonType with SuperTypeApi {
-    override lazy val isTrivial: Boolean = thistpe.isTrivial && supertpe.isTrivial
+    private var trivial: ThreeValue = UNKNOWN
+    override def isTrivial: Boolean = {
+      if (trivial == UNKNOWN) trivial = fromBoolean(thistpe.isTrivial && supertpe.isTrivial)
+      toBoolean(trivial)
+    }
     override def isNotNull = true;
     override def typeSymbol = thistpe.typeSymbol
     override def underlying = supertpe
@@ -1487,7 +1496,7 @@ trait Types extends api.Types { self: SymbolTable =>
    */
   abstract case class TypeBounds(lo: Type, hi: Type) extends SubType with TypeBoundsApi {
     def supertype = hi
-    override lazy val isTrivial: Boolean = lo.isTrivial && hi.isTrivial
+    override def isTrivial: Boolean = lo.isTrivial && hi.isTrivial
     override def bounds: TypeBounds = this
     def containsType(that: Type) = that match {
       case TypeBounds(_, _) => that <:< this
@@ -2295,9 +2304,12 @@ trait Types extends api.Types { self: SymbolTable =>
    * @M: a higher-kinded type is represented as a TypeRef with sym.typeParams.nonEmpty, but args.isEmpty
    */
   abstract case class TypeRef(pre: Type, sym: Symbol, args: List[Type]) extends Type with TypeRefApi {
-    override lazy val isTrivial: Boolean =
-      !sym.isTypeParameter && pre.isTrivial && areTrivialTypes(args)
-
+    private var trivial: ThreeValue = UNKNOWN
+    override def isTrivial: Boolean = {
+      if (trivial == UNKNOWN) 
+        trivial = fromBoolean(!sym.isTypeParameter && pre.isTrivial && areTrivialTypes(args))
+      toBoolean(trivial)
+    }
     private[reflect] var parentsCache: List[Type]      = _
     private[reflect] var parentsPeriod                 = NoPeriod
     private[reflect] var baseTypeSeqCache: BaseTypeSeq = _
@@ -2524,8 +2536,11 @@ trait Types extends api.Types { self: SymbolTable =>
   case class MethodType(override val params: List[Symbol],
                         override val resultType: Type) extends Type with MethodTypeApi {
 
-    override lazy val isTrivial: Boolean =
-      isTrivialResult && areTrivialParams(params)
+    private var trivial: ThreeValue = UNKNOWN
+    override def isTrivial: Boolean = {
+      if (trivial == UNKNOWN) trivial = fromBoolean(isTrivialResult && areTrivialParams(params))
+      toBoolean(trivial)
+    }
 
     private def isTrivialResult =
       resultType.isTrivial && (resultType eq resultType.withoutAnnotations)
@@ -2546,20 +2561,24 @@ trait Types extends api.Types { self: SymbolTable =>
 
     override def paramss: List[List[Symbol]] = params :: resultType.paramss
 
-    override lazy val paramTypes = params map tpeOfSymbol
+    override def paramTypes = params map tpeOfSymbol
 
     override def boundSyms = resultType.boundSyms ++ params
 
     override def resultType(actuals: List[Type]) =
       if (isTrivial || phase.erasedTypes) resultType
-      else if (/*isDependentMethodType && */sameLength(actuals, params)) {
+      else if (/*isDependentMethodType &&*/ sameLength(actuals, params)) {
         val idm = new InstantiateDependentMap(params, actuals)
         val res = idm(resultType)
         existentialAbstraction(idm.existentialsNeeded, res)
       }
       else existentialAbstraction(params, resultType)
 
-    override lazy val isDependentMethodType: Boolean = IsDependentCollector.collect(resultType)
+    private var isdepmeth: ThreeValue = UNKNOWN
+    override def isDependentMethodType: Boolean = {
+      if (isdepmeth == UNKNOWN) isdepmeth = fromBoolean(IsDependentCollector.collect(resultType))
+      toBoolean(isdepmeth)
+    }
 
     // implicit args can only be depended on in result type:
     //TODO this may be generalised so that the only constraint is dependencies are acyclic
