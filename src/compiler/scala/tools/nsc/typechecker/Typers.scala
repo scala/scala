@@ -194,16 +194,14 @@ trait Typers extends Modes with Adaptations with Tags {
         case PolyType(_, _) => EmptyTree
         case _ =>
           def wrapImplicit(from: Type): Tree = {
-            val result = inferImplicit(tree, functionType(List(from), to), reportAmbiguous, true, context, saveErrors)
+            val result = inferImplicit(tree, functionType(from :: Nil, to), reportAmbiguous, true, context, saveErrors)
             if (result.subst != EmptyTreeTypeSubstituter) {
               result.subst traverse tree
               notifyUndetparamsInferred(result.subst.from, result.subst.to)
             }
             result.tree
           }
-          val result = wrapImplicit(from)
-          if (result != EmptyTree) result
-          else wrapImplicit(byNameType(from))
+          wrapImplicit(from) orElse wrapImplicit(byNameType(from))
       }
     }
 
@@ -2504,7 +2502,7 @@ trait Typers extends Modes with Adaptations with Tags {
 
       def translated =
         if (members.head eq EmptyTree) setError(tree)
-        else typed(atPos(tree.pos)(Block(List(ClassDef(anonClass, NoMods, List(List()), List(List()), members, tree.pos.focus)), atPos(tree.pos.focus)(New(anonClass.tpe)))), mode, pt)
+        else typed(atPos(tree.pos)(Block(List(ClassDef(anonClass, NoMods, ListOfNil, ListOfNil, members, tree.pos.focus)), atPos(tree.pos.focus)(New(anonClass.tpe)))), mode, pt)
     }
 
     // Function(params, Match(sel, cases)) ==> new <Partial>Function { def apply<OrElse>(params) = `translateMatch('sel match { cases }')` }
@@ -4032,9 +4030,9 @@ trait Typers extends Modes with Adaptations with Tags {
         } else {
           var thenp1 = typed(thenp, pt)
           var elsep1 = typed(elsep, pt)
+          def thenTp = packedType(thenp1, context.owner)
+          def elseTp = packedType(elsep1, context.owner)
 
-          lazy val thenTp = packedType(thenp1, context.owner)
-          lazy val elseTp = packedType(elsep1, context.owner)
           // println("typedIf: "+(thenp1.tpe, elsep1.tpe, ptOrLub(List(thenp1.tpe, elsep1.tpe)),"\n", thenTp, elseTp, thenTp =:= elseTp))
           val (owntype, needAdapt) =
             // in principle we should pack the types of each branch before lubbing, but lub doesn't really work for existentials anyway
@@ -4046,7 +4044,7 @@ trait Typers extends Modes with Adaptations with Tags {
               && thenTp =:= elseTp
                ) (thenp1.tpe, false) // use unpacked type
             // TODO: skolemize (lub of packed types) when that no longer crashes on files/pos/t4070b.scala
-            else ptOrLub(List(thenp1.tpe, elsep1.tpe), pt)
+            else ptOrLub(thenp1.tpe :: elsep1.tpe :: Nil, pt)
 
           if (needAdapt) { //isNumericValueType(owntype)) {
             thenp1 = adapt(thenp1, mode, owntype)

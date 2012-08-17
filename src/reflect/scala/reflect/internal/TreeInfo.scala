@@ -521,20 +521,18 @@ abstract class TreeInfo {
    */
   def noPredefImportForUnit(body: Tree) = {
     // Top-level definition whose leading imports include Predef.
-    def containsLeadingPredefImport(defs: List[Tree]): Boolean = defs match {
-      case PackageDef(_, defs1) :: _ => containsLeadingPredefImport(defs1)
-      case Import(expr, _) :: rest   => isReferenceToPredef(expr) || containsLeadingPredefImport(rest)
-      case _                         => false
+    def isLeadingPredefImport(defn: Tree): Boolean = defn match {
+      case PackageDef(_, defs1) => defs1 exists isLeadingPredefImport
+      case Import(expr, _)      => isReferenceToPredef(expr)
+      case _                    => false
     }
-
     // Compilation unit is class or object 'name' in package 'scala'
     def isUnitInScala(tree: Tree, name: Name) = tree match {
       case PackageDef(Ident(nme.scala_), defs) => firstDefinesClassOrObject(defs, name)
       case _                                   => false
     }
 
-    (  isUnitInScala(body, nme.Predef)
-    || containsLeadingPredefImport(List(body)))
+    isUnitInScala(body, nme.Predef) || isLeadingPredefImport(body)
   }
 
   def isAbsTypeDef(tree: Tree) = tree match {

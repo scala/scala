@@ -1641,7 +1641,7 @@ trait Infer {
         // for functional values, the `apply` method might be overloaded
         val mtypes = followApply(alt.tpe) match {
           case OverloadedType(_, alts) => alts map (_.tpe)
-          case t                       => List(t)
+          case t                       => t :: Nil
         }
         // Drop those that use a default; keep those that use vararg/tupling conversion.
         mtypes exists (t =>

@@ -50,14 +50,14 @@ abstract class CleanUp extends Transform with ast.TreeDSL {
     private def transformTemplate(tree: Tree) = {
       val t @ Template(parents, self, body) = tree
       clearStatics()
-      
+
       val newBody = transformTrees(body)
       val templ   = deriveTemplate(tree)(_ => transformTrees(newStaticMembers.toList) ::: newBody)
       try addStaticInits(templ) // postprocess to include static ctors
       finally clearStatics()
     }
     private def mkTerm(prefix: String): TermName = unit.freshTermName(prefix)
-    
+
     //private val classConstantMeth = new HashMap[String, Symbol]
     //private val symbolStaticFields = new HashMap[String, (Symbol, Tree, Tree)]
 
@@ -542,12 +542,12 @@ abstract class CleanUp extends Transform with ast.TreeDSL {
 
           else tree
         }
-      
+
       case ValDef(mods, name, tpt, rhs) if tree.symbol.hasStaticAnnotation =>
         log("moving @static valdef field: " + name + ", in: " + tree.symbol.owner)
         val sym = tree.symbol
         val owner = sym.owner
-        
+
         val staticBeforeLifting = atPhase(currentRun.erasurePhase) { owner.isStatic }
         val isPrivate = atPhase(currentRun.typerPhase) { sym.getter(owner).hasFlag(PRIVATE) }
         val isProtected = atPhase(currentRun.typerPhase) { sym.getter(owner).hasFlag(PROTECTED) }
@@ -574,15 +574,15 @@ abstract class CleanUp extends Transform with ast.TreeDSL {
               val compclass = enclosing.newClass(newTypeName(owner.name.toString))
               compclass setInfo ClassInfoType(List(ObjectClass.tpe), newScope, compclass)
               enclosing.info.decls enter compclass
-              
-              val compclstree = ClassDef(compclass, NoMods, List(List()), List(List()), List(), tree.pos)
-              
+
+              val compclstree = ClassDef(compclass, NoMods, ListOfNil, ListOfNil, List(), tree.pos)
+
               syntheticClasses.getOrElseUpdate(enclosing, mutable.Set()) += compclstree
-              
+
               compclass
             case comp => comp
           }
-          
+
           // create a static field in the companion class for this @static field
           val stfieldSym = linkedClass.newVariable(newTermName(name), tree.pos, STATIC | SYNTHETIC | FINAL) setInfo sym.tpe
           stfieldSym.addAnnotation(StaticClass)
@@ -597,9 +597,9 @@ abstract class CleanUp extends Transform with ast.TreeDSL {
             )
           } else {
             linkedClass.info.decls enter stfieldSym
-            
+
             val initializerBody = rhs
-            
+
             // static field was previously initialized in the companion object itself, like this:
             //   staticBodies((linkedClass, stfieldSym)) = Select(This(owner), sym.getter(owner))
             // instead, we move the initializer to the static ctor of the companion class
@@ -608,7 +608,7 @@ abstract class CleanUp extends Transform with ast.TreeDSL {
           }
         }
         super.transform(tree)
-        
+
       /* MSIL requires that the stack is empty at the end of a try-block.
        * Hence, we here rewrite all try blocks with a result != {Unit, All} such that they
        * store their result in a local variable. The catch blocks are adjusted as well.
@@ -722,7 +722,7 @@ abstract class CleanUp extends Transform with ast.TreeDSL {
           case Block(stats, expr) => stats :+ expr
           case t => List(t)
         }
-        
+
         val newCtor = findStaticCtor(template) match {
           // in case there already were static ctors - augment existing ones
           // currently, however, static ctors aren't being generated anywhere else
@@ -746,7 +746,7 @@ abstract class CleanUp extends Transform with ast.TreeDSL {
         deriveTemplate(template)(newCtor :: _)
       }
     }
-    
+
     private def addStaticDeclarations(tree: Template, clazz: Symbol) {
       // add static field initializer statements for each static field in clazz
       if (!clazz.isModuleClass) for {
@@ -757,23 +757,23 @@ abstract class CleanUp extends Transform with ast.TreeDSL {
           val valdef = staticBodies((clazz, stfieldSym))
           val ValDef(_, _, _, rhs) = valdef
           val fixedrhs = rhs.changeOwner((valdef.symbol, clazz.info.decl(nme.CONSTRUCTOR)))
-          
+
           val stfieldDef  = localTyper.typedPos(tree.pos)(VAL(stfieldSym) === EmptyTree)
           val flattenedInit = fixedrhs match {
             case Block(stats, expr) => Block(stats, REF(stfieldSym) === expr)
             case rhs => REF(stfieldSym) === rhs
           }
           val stfieldInit = localTyper.typedPos(tree.pos)(flattenedInit)
-          
+
           // add field definition to new defs
           newStaticMembers append stfieldDef
           newStaticInits append stfieldInit
         case _ => // ignore @static on other members
       }
     }
-    
-    
-    
+
+
+
     override def transformStats(stats: List[Tree], exprOwner: Symbol): List[Tree] = {
       super.transformStats(stats, exprOwner) ++ {
         // flush pending synthetic classes created in this owner
@@ -786,22 +786,22 @@ abstract class CleanUp extends Transform with ast.TreeDSL {
         case clsdef @ ClassDef(mods, name, tparams, t @ Template(parent, self, body)) =>
           // process all classes in the package again to add static initializers
           clearStatics()
-          
+
           addStaticDeclarations(t, clsdef.symbol)
-          
+
           val templ  = deriveTemplate(t)(_ => transformTrees(newStaticMembers.toList) ::: body)
           val ntempl =
             try addStaticInits(templ)
             finally clearStatics()
-          
+
           val derived = deriveClassDef(clsdef)(_ => ntempl)
           classNames.remove(clsdef.symbol)
           derived
-          
+
         case stat => stat
       }
     }
-    
+
   } // CleanUpTransformer
 
 }

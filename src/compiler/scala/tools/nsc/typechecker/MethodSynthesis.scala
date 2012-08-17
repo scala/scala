@@ -242,7 +242,7 @@ trait MethodSynthesis {
             abort("No synthetics for " + meth + ": synthetics contains " + context.unit.synthetics.keys.mkString(", "))
         }
       case _ =>
-        List(stat)
+        stat :: Nil
       }
 
     def standardAccessors(vd: ValDef): List[DerivedFromValDef] = (
@@ -491,7 +491,7 @@ trait MethodSynthesis {
       // Derives a tree without attempting to use the original tree's symbol.
       override def derivedTree = {
         atPos(tree.pos.focus) {
-          DefDef(derivedMods, name, Nil, List(Nil), tree.tpt.duplicate,
+          DefDef(derivedMods, name, Nil, ListOfNil, tree.tpt.duplicate,
             if (isDeferred) EmptyTree else Select(This(owner), tree.name)
           )
         }
