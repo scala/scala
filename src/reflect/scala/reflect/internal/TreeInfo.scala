@@ -603,9 +603,10 @@ abstract class TreeInfo {
     }
   }
 
-  def stripOffPrefixTypeRefinement(tpe: Type): Type =
-    tpe.dealias match {
-      case RefinedType(List(tpe), Scope(sym)) if tpe == MacroContextClass.tpe && sym.allOverriddenSymbols.contains(MacroContextPrefixType) => tpe
-      case _ => tpe
-    }
+  def isNullaryInvocation(tree: Tree): Boolean =
+    tree.symbol != null && tree.symbol.isMethod && (tree match {
+      case TypeApply(fun, _) => isNullaryInvocation(fun)
+      case tree: RefTree => true
+      case _ => false
+    })
 }

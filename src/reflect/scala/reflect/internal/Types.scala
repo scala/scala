@@ -6939,6 +6939,12 @@ trait Types extends api.Types { self: SymbolTable =>
     else (ps :+ SerializableClass.tpe).toList
   )
 
+  def stripOffPrefixTypeRefinement(tpe: Type): Type =
+    tpe.dealias match {
+      case RefinedType(List(tpe), Scope(sym)) if tpe == MacroContextClass.tpe && sym.allOverriddenSymbols.contains(MacroContextPrefixType) => tpe
+      case _ => tpe
+    }
+
   def objToAny(tp: Type): Type =
     if (!phase.erasedTypes && tp.typeSymbol == ObjectClass) AnyClass.tpe
     else tp
