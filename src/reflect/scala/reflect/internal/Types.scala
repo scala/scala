@@ -3715,10 +3715,11 @@ trait Types extends api.Types { self: SymbolTable =>
         case TypeRef(_, SingletonClass, _) =>
           AnyClass.tpe
         case tp1 @ RefinedType(parents, decls) =>
-          var parents1 = parents filter (_.typeSymbol != SingletonClass)
-          if (parents1.isEmpty) parents1 = List(AnyClass.tpe)
-          if (parents1.tail.isEmpty && decls.isEmpty) mapOver(parents1.head)
-          else mapOver(copyRefinedType(tp1, parents1, decls))
+          parents filter (_.typeSymbol != SingletonClass) match {
+            case Nil                       => AnyClass.tpe
+            case p :: Nil if decls.isEmpty => mapOver(p)
+            case ps                        => mapOver(copyRefinedType(tp1, ps, decls))
+          }
         case tp1 =>
           mapOver(tp1)
       }
@@ -4569,10 +4570,12 @@ trait Types extends api.Types { self: SymbolTable =>
       tp match {
         case TypeRef(pre, sym, args) if pre ne NoPrefix =>
           val newSym = subst(sym, from, to)
+          // mapOver takes care of subst'ing in args
+          mapOver ( if (sym eq newSym) tp else copyTypeRef(tp, pre, newSym, args) )
           // assert(newSym.typeParams.length == sym.typeParams.length, "typars mismatch in SubstSymMap: "+(sym, sym.typeParams, newSym, newSym.typeParams))
-          mapOver(copyTypeRef(tp, pre, newSym, args)) // mapOver takes care of subst'ing in args
         case SingleType(pre, sym) if pre ne NoPrefix =>
-          mapOver(singleType(pre, subst(sym, from, to)))
+          val newSym = subst(sym, from, to)
+          mapOver( if (sym eq newSym) tp else singleType(pre, newSym) )
         case _ =>
           super.apply(tp)
       }
@@ -5611,6 +5614,7 @@ trait Types extends api.Types { self: SymbolTable =>
       false
   }
 
+  @deprecated("The compiler doesn't use this so you shouldn't either - it will be removed", "2.10.0")
   def instTypeVar(tp: Type): Type = tp match {
     case TypeRef(pre, sym, args) =>
       copyTypeRef(tp, instTypeVar(pre), sym, args)
