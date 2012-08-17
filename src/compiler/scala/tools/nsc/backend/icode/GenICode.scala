@@ -890,8 +890,19 @@ abstract class GenICode extends SubComponent  {
           generatedType = toTypeKind(sym.accessed.info)
           val hostOwner = qual.tpe.typeSymbol.orElse(sym.owner)
           val hostClass = hostOwner.companionClass
-          val staticfield = hostClass.info.findMember(sym.accessed.name, NoFlags, NoFlags, false)
-          
+          val staticfield = hostClass.info.findMember(sym.accessed.name, NoFlags, NoFlags, false) orElse {
+            if (!currentRun.compiles(hostOwner)) {
+              // hostOwner was separately compiled -- the static field symbol needs to be recreated in hostClass
+              import Flags._
+              debuglog("recreating sym.accessed.name: " + sym.accessed.name)
+              val objectfield = hostOwner.info.findMember(sym.accessed.name, NoFlags, NoFlags, false)
+              val staticfield = hostClass.newVariable(newTermName(sym.accessed.name.toString), tree.pos, STATIC | SYNTHETIC | FINAL) setInfo objectfield.tpe
+              staticfield.addAnnotation(definitions.StaticClass)
+              hostClass.info.decls enter staticfield
+              staticfield
+            } else NoSymbol
+          }
+
           if (sym.isGetter) {
             ctx.bb.emit(LOAD_FIELD(staticfield, true) setHostClass hostClass, tree.pos)
             ctx

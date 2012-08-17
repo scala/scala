@@ -23,8 +23,10 @@ class Foo
 trait Check {
   def checkStatic(cls: Class[_]) {
     cls.getDeclaredFields.find(_.getName == "bar") match {
-      case Some(f) => assert(Modifier.isStatic(f.getModifiers), "no static modifier")
-      case None => assert(false, "no static field bar in class")
+      case Some(f) =>
+        assert(Modifier.isStatic(f.getModifiers), "no static modifier")
+      case None =>
+        assert(false, "no static field bar in class")
     }
   }
   
@@ -170,6 +172,10 @@ object Foo7 {
     @static val bar = "string"
   }
   class AndHisFriend
+
+  object AndHisLonelyFriend {
+    @static val bar = "another"
+  }
 }
 
 
@@ -177,6 +183,9 @@ object Test7 extends Check {
   def test() {
     checkStatic(classOf[Foo7.AndHisFriend])
     assert(Foo7.AndHisFriend.bar == "string")
+
+    checkStatic(Class.forName("Foo7$AndHisLonelyFriend"))
+    assert(Foo7.AndHisLonelyFriend.bar == "another")
   }
 }
 
