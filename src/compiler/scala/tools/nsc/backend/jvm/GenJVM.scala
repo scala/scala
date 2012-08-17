@@ -1960,7 +1960,7 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
     // Nested objects won't receive ACC_FINAL in order to allow for their overriding.
 
     val finalFlag = (
-         (sym.hasFlag(Flags.FINAL) || isTopLevelModule(sym))
+         (((sym.rawflags & Flags.FINAL) != 0) || isTopLevelModule(sym))
       && !sym.enclClass.isInterface
       && !sym.isClassConstructor
       && !sym.isMutable   // lazy vals and vars both
