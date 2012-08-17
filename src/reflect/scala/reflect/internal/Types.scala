@@ -1266,7 +1266,8 @@ trait Types extends api.Types { self: SymbolTable =>
    *  A type that can be passed to unique(..) and be stored in the uniques map.
    */
   abstract class UniqueType extends Type with Product {
-    final override val hashCode = scala.runtime.ScalaRunTime._hashCode(this)
+    final override val hashCode = computeHashCode
+    protected def computeHashCode = scala.runtime.ScalaRunTime._hashCode(this)
   }
 
  /** A base class for types that defer some operations
@@ -2341,6 +2342,19 @@ trait Types extends api.Types { self: SymbolTable =>
     private[reflect] var baseTypeSeqCache: BaseTypeSeq = _
     private[reflect] var baseTypeSeqPeriod             = NoPeriod
     private var normalized: Type                       = _
+    
+    //OPT specialize hashCode
+    override final def computeHashCode = {
+      import scala.util.hashing.MurmurHash3._
+      val hasArgs = args.nonEmpty
+      var h = productSeed
+      h = mix(h, pre.hashCode)
+      h = mix(h, sym.hashCode)
+      if (hasArgs) 
+        finalizeHash(mix(h, args.hashCode), 3)
+      else  
+        finalizeHash(h, 2)
+    }
 
     // @M: propagate actual type params (args) to `tp`, by replacing
     // formal type parameters with actual ones. If tp is higher kinded,
