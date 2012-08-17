@@ -693,6 +693,46 @@ abstract class UnCurry extends InfoTransform
         else
           tree
       }
+      
+      def isThrowable(pat: Tree): Boolean = pat match {
+        case Typed(Ident(nme.WILDCARD), tpt) => 
+          tpt.tpe =:= ThrowableClass.tpe
+        case Bind(_, pat) => 
+          isThrowable(pat)
+        case _ =>
+          false
+      }
+      
+      def isDefaultCatch(cdef: CaseDef) = isThrowable(cdef.pat) && cdef.guard.isEmpty
+
+      def postTransformTry(tree: Try) = {
+        val body = tree.block
+        val catches = tree.catches
+        val finalizer = tree.finalizer
+        if (opt.virtPatmat) {
+          if (catches exists (cd => !treeInfo.isCatchCase(cd)))
+            debugwarn("VPM BUG! illegal try/catch " + catches)
+          tree
+        } else if (catches forall treeInfo.isCatchCase) {
+          tree
+        } else {
+          val exname = unit.freshTermName("ex$")
+          val cases =
+            if ((catches exists treeInfo.isDefaultCase) || isDefaultCatch(catches.last)) catches
+            else catches :+ CaseDef(Ident(nme.WILDCARD), EmptyTree, Throw(Ident(exname)))
+          val catchall =
+            atPos(tree.pos) {
+              CaseDef(
+                Bind(exname, Ident(nme.WILDCARD)),
+                EmptyTree,
+                Match(Ident(exname), cases))
+            }
+          debuglog("rewrote try: " + catches + " ==> " + catchall);
+          val catches1 = localTyper.typedCases(
+            List(catchall), ThrowableClass.tpe, WildcardType)
+          treeCopy.Try(tree, body, catches1, finalizer)
+        }
+      }
 
       tree match {
         /* Some uncurry post transformations add members to templates.
@@ -724,35 +764,12 @@ abstract class UnCurry extends InfoTransform
           )
           addJavaVarargsForwarders(dd, flatdd)
 
-        case Try(body, catches, finalizer) =>
-          if (opt.virtPatmat) { if(catches exists (cd => !treeInfo.isCatchCase(cd))) debugwarn("VPM BUG! illegal try/catch "+ catches); tree }
-          else if (catches forall treeInfo.isCatchCase) tree
-          else {
-            val exname = unit.freshTermName("ex$")
-            val cases =
-              if ((catches exists treeInfo.isDefaultCase) || (catches.last match {  // bq: handle try { } catch { ... case ex:Throwable => ...}
-                    case CaseDef(Typed(Ident(nme.WILDCARD), tpt), EmptyTree, _) if (tpt.tpe =:= ThrowableClass.tpe) =>
-                      true
-                    case CaseDef(Bind(_, Typed(Ident(nme.WILDCARD), tpt)), EmptyTree, _) if (tpt.tpe =:= ThrowableClass.tpe) =>
-                      true
-                    case _ =>
-                      false
-                  })) catches
-              else catches :+ CaseDef(Ident(nme.WILDCARD), EmptyTree, Throw(Ident(exname)))
-            val catchall =
-              atPos(tree.pos) {
-                CaseDef(
-                  Bind(exname, Ident(nme.WILDCARD)),
-                  EmptyTree,
-                  Match(Ident(exname), cases))
-              }
-            debuglog("rewrote try: " + catches + " ==> " + catchall);
-            val catches1 = localTyper.typedCases(
-              List(catchall), ThrowableClass.tpe, WildcardType)
-            treeCopy.Try(tree, body, catches1, finalizer)
-          }
+        case tree: Try =>
+          postTransformTry(tree)
+          
         case Apply(Apply(fn, args), args1) =>
           treeCopy.Apply(tree, fn, args ::: args1)
+          
         case Ident(name) =>
           assert(name != tpnme.WILDCARD_STAR, tree)
           applyUnary()

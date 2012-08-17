@@ -448,6 +448,17 @@ abstract class GenASM extends SubComponent with BytecodeWriters {
   val JAVA_LANG_OBJECT = asm.Type.getObjectType("java/lang/Object")
   val JAVA_LANG_STRING = asm.Type.getObjectType("java/lang/String")
 
+  /**
+   *  We call many Java varargs methods from ASM library that expect Arra[asm.Type] as argument so
+   *  we override default (compiler-generated) ClassTag so we can provide specialized newArray implementation.
+   *
+   *  Examples of methods that should pick our definition are: JBuilder.javaType and JPlainBuilder.genMethod.
+   */
+  private implicit val asmTypeTag: scala.reflect.ClassTag[asm.Type] = new scala.reflect.ClassTag[asm.Type] {
+    def runtimeClass: java.lang.Class[asm.Type] = classOf[asm.Type]
+    final override def newArray(len: Int): Array[asm.Type] = new Array[asm.Type](len)
+  }
+
   /** basic functionality for class file building */
   abstract class JBuilder(bytecodeWriter: BytecodeWriter) {
 
@@ -641,7 +652,7 @@ abstract class GenASM extends SubComponent with BytecodeWriters {
     def javaType(s: Symbol): asm.Type = {
       if (s.isMethod) {
         val resT: asm.Type = if (s.isClassConstructor) asm.Type.VOID_TYPE else javaType(s.tpe.resultType);
-        asm.Type.getMethodType( resT, (s.tpe.paramTypes map javaType): _* )
+        asm.Type.getMethodType( resT, (s.tpe.paramTypes map javaType): _*)
       } else { javaType(s.tpe) }
     }
 
@@ -2371,8 +2382,6 @@ abstract class GenASM extends SubComponent with BytecodeWriters {
       def genBlock(b: BasicBlock) {
         jmethod.visitLabel(labels(b))
 
-        import asm.Opcodes;
-
         debuglog("Generating code for block: " + b)
 
         // val lastInstr = b.lastInstruction
@@ -2391,287 +2400,308 @@ abstract class GenASM extends SubComponent with BytecodeWriters {
             }
           }
 
-          (instr.category: @scala.annotation.switch) match {
-
-            case icodes.localsCat => (instr: @unchecked) match {
-                case THIS(_)            => jmethod.visitVarInsn(Opcodes.ALOAD, 0)
-                case LOAD_LOCAL(local)  => jcode.load(indexOf(local), local.kind)
-                case STORE_LOCAL(local) => jcode.store(indexOf(local), local.kind)
-                case STORE_THIS(_)      =>
-                  // this only works for impl classes because the self parameter comes first
-                  // in the method signature. If that changes, this code has to be revisited.
-                  jmethod.visitVarInsn(Opcodes.ASTORE, 0)
-
-                case SCOPE_ENTER(lv) =>
-                  // locals removed by closelim (via CopyPropagation) may have left behind SCOPE_ENTER, SCOPE_EXIT that are to be ignored
-                  val relevant = (!lv.sym.isSynthetic && m.locals.contains(lv))
-                  if(relevant) { // TODO check: does GenICode emit SCOPE_ENTER, SCOPE_EXIT for synthetic vars?
-                    // this label will have DEBUG bit set in its flags (ie ASM ignores it for dataflow purposes)
-                    // similarly, these labels aren't tracked in the `labels` map.
-                    val start = new asm.Label
-                    jmethod.visitLabel(start)
-                    scoping.pushScope(lv, start)
-                  }
-
-                case SCOPE_EXIT(lv) =>
-                  val relevant = (!lv.sym.isSynthetic && m.locals.contains(lv))
-                  if(relevant) {
-                    // this label will have DEBUG bit set in its flags (ie ASM ignores it for dataflow purposes)
-                    // similarly, these labels aren't tracked in the `labels` map.
-                    val end = new asm.Label
-                    jmethod.visitLabel(end)
-                    scoping.popScope(lv, end, instr.pos)
-                  }
-            }
-
-            case icodes.stackCat => (instr: @unchecked) match {
-
-              case LOAD_MODULE(module) =>
-                // assert(module.isModule, "Expected module: " + module)
-                debuglog("generating LOAD_MODULE for: " + module + " flags: " + Flags.flagsToString(module.flags));
-                if (clasz.symbol == module.moduleClass && jMethodName != nme.readResolve.toString) {
-                  jmethod.visitVarInsn(Opcodes.ALOAD, 0)
-                } else {
-                  jmethod.visitFieldInsn(
-                    Opcodes.GETSTATIC,
-                    javaName(module) /* + "$" */ ,
-                    strMODULE_INSTANCE_FIELD,
-                    descriptor(module)
-                  )
-                }
-
-              case DROP(kind)   => emit(if(kind.isWideType) Opcodes.POP2 else Opcodes.POP)
-
-              case DUP(kind)    => emit(if(kind.isWideType) Opcodes.DUP2 else Opcodes.DUP)
-
-              case LOAD_EXCEPTION(_) => ()
-            }
-
-            case icodes.constCat => genConstant(jmethod, instr.asInstanceOf[CONSTANT].constant)
-
-            case icodes.arilogCat => genPrimitive(instr.asInstanceOf[CALL_PRIMITIVE].primitive, instr.pos)
-
-            case icodes.castsCat => (instr: @unchecked) match {
-
-              case IS_INSTANCE(tpe) =>
-                val jtyp: asm.Type =
-                  tpe match {
-                    case REFERENCE(cls) => asm.Type.getObjectType(javaName(cls))
-                    case ARRAY(elem)    => javaArrayType(javaType(elem))
-                    case _              => abort("Unknown reference type in IS_INSTANCE: " + tpe)
-                  }
-                jmethod.visitTypeInsn(Opcodes.INSTANCEOF, jtyp.getInternalName)
-
-              case CHECK_CAST(tpe) =>
-                tpe match {
-
-                  case REFERENCE(cls) =>
-                    if (cls != ObjectClass) { // No need to checkcast for Objects
-                      jmethod.visitTypeInsn(Opcodes.CHECKCAST, javaName(cls))
-                    }
-
-                  case ARRAY(elem)    =>
-                    val iname = javaArrayType(javaType(elem)).getInternalName
-                    jmethod.visitTypeInsn(Opcodes.CHECKCAST, iname)
-
-                  case _              => abort("Unknown reference type in IS_INSTANCE: " + tpe)
-                }
-
-            }
-
-            case icodes.objsCat  => (instr: @unchecked) match {
-
-              case BOX(kind) =>
-                val MethodNameAndType(mname, mdesc) = jBoxTo(kind)
-                jcode.invokestatic(BoxesRunTime, mname, mdesc)
-
-              case UNBOX(kind) =>
-                val MethodNameAndType(mname, mdesc) = jUnboxTo(kind)
-                jcode.invokestatic(BoxesRunTime, mname, mdesc)
-
-              case NEW(REFERENCE(cls)) =>
-                val className = javaName(cls)
-                jmethod.visitTypeInsn(Opcodes.NEW, className)
-
-              case MONITOR_ENTER() => emit(Opcodes.MONITORENTER)
-              case MONITOR_EXIT()  => emit(Opcodes.MONITOREXIT)
-            }
-
-            case icodes.fldsCat  => (instr: @unchecked) match {
-
-              case lf @ LOAD_FIELD(field, isStatic) =>
-                var owner = javaName(lf.hostClass)
-                debuglog("LOAD_FIELD with owner: " + owner + " flags: " + Flags.flagsToString(field.owner.flags))
-                val fieldJName = javaName(field)
-                val fieldDescr = descriptor(field)
-                val opc = if (isStatic) Opcodes.GETSTATIC else Opcodes.GETFIELD
-                jmethod.visitFieldInsn(opc, owner, fieldJName, fieldDescr)
-
-              case STORE_FIELD(field, isStatic) =>
-                val owner = javaName(field.owner)
-                val fieldJName = javaName(field)
-                val fieldDescr = descriptor(field)
-                val opc = if (isStatic) Opcodes.PUTSTATIC else Opcodes.PUTFIELD
-                jmethod.visitFieldInsn(opc, owner, fieldJName, fieldDescr)
-
-            }
-
-            case icodes.mthdsCat => (instr: @unchecked) match {
-
-              /** Special handling to access native Array.clone() */
-              case call @ CALL_METHOD(definitions.Array_clone, Dynamic) =>
-                val target: String = javaType(call.targetTypeKind).getInternalName
-                jcode.invokevirtual(target, "clone", mdesc_arrayClone)
-
-              case call @ CALL_METHOD(method, style) => genCallMethod(call)
-
-            }
-
-            case icodes.arraysCat => (instr: @unchecked) match {
-              case LOAD_ARRAY_ITEM(kind)    => jcode.aload(kind)
-              case STORE_ARRAY_ITEM(kind)   => jcode.astore(kind)
-              case CREATE_ARRAY(elem, 1)    => jcode newarray elem
-              case CREATE_ARRAY(elem, dims) => jmethod.visitMultiANewArrayInsn(descriptor(ArrayN(elem, dims)), dims)
-            }
-
-            case icodes.jumpsCat => (instr: @unchecked) match {
-
-              case sw @ SWITCH(tagss, branches) =>
-                assert(branches.length == tagss.length + 1, sw)
-                val flatSize     = sw.flatTagsCount
-                val flatKeys     = new Array[Int](flatSize)
-                val flatBranches = new Array[asm.Label](flatSize)
-
-                var restTagss    = tagss
-                var restBranches = branches
-                var k = 0 // ranges over flatKeys and flatBranches
-                while(restTagss.nonEmpty) {
-                  val currLabel = labels(restBranches.head)
-                  for(cTag <- restTagss.head) {
-                    flatKeys(k)     = cTag;
-                    flatBranches(k) = currLabel
-                    k += 1
-                  }
-                  restTagss    = restTagss.tail
-                  restBranches = restBranches.tail
-                }
-                val defaultLabel = labels(restBranches.head)
-                assert(restBranches.tail.isEmpty)
-                debuglog("Emitting SWITCH:\ntags: " + tagss + "\nbranches: " + branches)
-                jcode.emitSWITCH(flatKeys, flatBranches, defaultLabel, MIN_SWITCH_DENSITY)
-
-              case JUMP(whereto) =>
-                if (nextBlock != whereto) {
-                  jcode goTo labels(whereto)
-                } else if(m.exh.exists(eh => eh.covers(b))) {
-                  // SI-6102: Determine whether eliding this JUMP results in an empty range being covered by some EH.
-                  // If so, emit a NOP in place of the elided JUMP, to avoid "java.lang.ClassFormatError: Illegal exception table range"
-                  val isSthgLeft = b.toList.exists {
-                    case _: LOAD_EXCEPTION => false
-                    case _: SCOPE_ENTER    => false
-                    case _: SCOPE_EXIT     => false
-                    case _: JUMP           => false
-                    case _ => true
-                  }
-                  if(!isSthgLeft) {
-                    emit(asm.Opcodes.NOP)
-                  }
-                }
-
-              case CJUMP(success, failure, cond, kind) =>
-                if(kind.isIntSizedType) { // BOOL, BYTE, CHAR, SHORT, or INT
-                  if (nextBlock == success) {
-                    jcode.emitIF_ICMP(cond.negate, labels(failure))
-                    // .. and fall through to success label
-                  } else {
-                    jcode.emitIF_ICMP(cond, labels(success))
-                    if (nextBlock != failure) { jcode goTo labels(failure) }
-                  }
-                } else if(kind.isRefOrArrayType) { // REFERENCE(_) | ARRAY(_)
-                  if (nextBlock == success) {
-                    jcode.emitIF_ACMP(cond.negate, labels(failure))
-                    // .. and fall through to success label
-                  } else {
-                    jcode.emitIF_ACMP(cond, labels(success))
-                    if (nextBlock != failure) { jcode goTo labels(failure) }
-                  }
-                } else {
-                  (kind: @unchecked) match {
-                    case LONG   => emit(Opcodes.LCMP)
-                    case FLOAT  =>
-                      if (cond == LT || cond == LE) emit(Opcodes.FCMPG)
-                      else emit(Opcodes.FCMPL)
-                    case DOUBLE =>
-                      if (cond == LT || cond == LE) emit(Opcodes.DCMPG)
-                      else emit(Opcodes.DCMPL)
-                  }
-                  if (nextBlock == success) {
-                    jcode.emitIF(cond.negate, labels(failure))
-                    // .. and fall through to success label
-                  } else {
-                    jcode.emitIF(cond, labels(success))
-                    if (nextBlock != failure) { jcode goTo labels(failure) }
-                  }
-                }
-
-              case CZJUMP(success, failure, cond, kind) =>
-                if(kind.isIntSizedType) { // BOOL, BYTE, CHAR, SHORT, or INT
-                  if (nextBlock == success) {
-                    jcode.emitIF(cond.negate, labels(failure))
-                  } else {
-                    jcode.emitIF(cond, labels(success))
-                    if (nextBlock != failure) { jcode goTo labels(failure) }
-                  }
-                } else if(kind.isRefOrArrayType) { // REFERENCE(_) | ARRAY(_)
-                  val Success = success
-                  val Failure = failure
-                  // @unchecked because references aren't compared with GT, GE, LT, LE.
-                  ((cond, nextBlock) : @unchecked) match {
-                    case (EQ, Success) => jcode emitIFNONNULL labels(failure)
-                    case (NE, Failure) => jcode emitIFNONNULL labels(success)
-                    case (EQ, Failure) => jcode emitIFNULL    labels(success)
-                    case (NE, Success) => jcode emitIFNULL    labels(failure)
-                    case (EQ, _) =>
-                      jcode emitIFNULL labels(success)
-                      jcode goTo labels(failure)
-                    case (NE, _) =>
-                      jcode emitIFNONNULL labels(success)
-                      jcode goTo labels(failure)
-                  }
-                } else {
-                  (kind: @unchecked) match {
-                    case LONG   =>
-                      emit(Opcodes.LCONST_0)
-                      emit(Opcodes.LCMP)
-                    case FLOAT  =>
-                      emit(Opcodes.FCONST_0)
-                      if (cond == LT || cond == LE) emit(Opcodes.FCMPG)
-                      else emit(Opcodes.FCMPL)
-                    case DOUBLE =>
-                      emit(Opcodes.DCONST_0)
-                      if (cond == LT || cond == LE) emit(Opcodes.DCMPG)
-                      else emit(Opcodes.DCMPL)
-                  }
-                  if (nextBlock == success) {
-                    jcode.emitIF(cond.negate, labels(failure))
-                  } else {
-                    jcode.emitIF(cond, labels(success))
-                    if (nextBlock != failure) { jcode goTo labels(failure) }
-                  }
-                }
-
-            }
-
-            case icodes.retCat   => (instr: @unchecked) match {
-              case RETURN(kind) => jcode emitRETURN kind
-              case THROW(_)     => emit(Opcodes.ATHROW)
-            }
-
-          }
+          genInstr(instr, b)
 
         }
 
-      } // end of genCode()'s genBlock()
+      }
+
+      def genInstr(instr: Instruction, b: BasicBlock) {
+        import asm.Opcodes
+        (instr.category: @scala.annotation.switch) match {
+
+          case icodes.localsCat => 
+          def genLocalInstr = (instr: @unchecked) match {
+            case THIS(_) => jmethod.visitVarInsn(Opcodes.ALOAD, 0)
+            case LOAD_LOCAL(local) => jcode.load(indexOf(local), local.kind)
+            case STORE_LOCAL(local) => jcode.store(indexOf(local), local.kind)
+            case STORE_THIS(_) =>
+              // this only works for impl classes because the self parameter comes first
+              // in the method signature. If that changes, this code has to be revisited.
+              jmethod.visitVarInsn(Opcodes.ASTORE, 0)
+
+            case SCOPE_ENTER(lv) =>
+              // locals removed by closelim (via CopyPropagation) may have left behind SCOPE_ENTER, SCOPE_EXIT that are to be ignored
+              val relevant = (!lv.sym.isSynthetic && m.locals.contains(lv))
+              if (relevant) { // TODO check: does GenICode emit SCOPE_ENTER, SCOPE_EXIT for synthetic vars?
+                // this label will have DEBUG bit set in its flags (ie ASM ignores it for dataflow purposes)
+                // similarly, these labels aren't tracked in the `labels` map.
+                val start = new asm.Label
+                jmethod.visitLabel(start)
+                scoping.pushScope(lv, start)
+              }
+
+            case SCOPE_EXIT(lv) =>
+              val relevant = (!lv.sym.isSynthetic && m.locals.contains(lv))
+              if (relevant) {
+                // this label will have DEBUG bit set in its flags (ie ASM ignores it for dataflow purposes)
+                // similarly, these labels aren't tracked in the `labels` map.
+                val end = new asm.Label
+                jmethod.visitLabel(end)
+                scoping.popScope(lv, end, instr.pos)
+              }
+          }
+          genLocalInstr
+
+          case icodes.stackCat => 
+          def genStackInstr = (instr: @unchecked) match {
+
+            case LOAD_MODULE(module) =>
+              // assert(module.isModule, "Expected module: " + module)
+              debuglog("generating LOAD_MODULE for: " + module + " flags: " + Flags.flagsToString(module.flags));
+              if (clasz.symbol == module.moduleClass && jMethodName != nme.readResolve.toString) {
+                jmethod.visitVarInsn(Opcodes.ALOAD, 0)
+              } else {
+                jmethod.visitFieldInsn(
+                  Opcodes.GETSTATIC,
+                  javaName(module) /* + "$" */ ,
+                  strMODULE_INSTANCE_FIELD,
+                  descriptor(module))
+              }
+
+            case DROP(kind) => emit(if (kind.isWideType) Opcodes.POP2 else Opcodes.POP)
+
+            case DUP(kind) => emit(if (kind.isWideType) Opcodes.DUP2 else Opcodes.DUP)
+
+            case LOAD_EXCEPTION(_) => ()
+          }
+          genStackInstr
+
+          case icodes.constCat => genConstant(jmethod, instr.asInstanceOf[CONSTANT].constant)
+
+          case icodes.arilogCat => genPrimitive(instr.asInstanceOf[CALL_PRIMITIVE].primitive, instr.pos)
+
+          case icodes.castsCat => 
+          def genCastInstr = (instr: @unchecked) match {
+
+            case IS_INSTANCE(tpe) =>
+              val jtyp: asm.Type =
+                tpe match {
+                  case REFERENCE(cls) => asm.Type.getObjectType(javaName(cls))
+                  case ARRAY(elem) => javaArrayType(javaType(elem))
+                  case _ => abort("Unknown reference type in IS_INSTANCE: " + tpe)
+                }
+              jmethod.visitTypeInsn(Opcodes.INSTANCEOF, jtyp.getInternalName)
+
+            case CHECK_CAST(tpe) =>
+              tpe match {
+
+                case REFERENCE(cls) =>
+                  if (cls != ObjectClass) { // No need to checkcast for Objects
+                    jmethod.visitTypeInsn(Opcodes.CHECKCAST, javaName(cls))
+                  }
+
+                case ARRAY(elem) =>
+                  val iname = javaArrayType(javaType(elem)).getInternalName
+                  jmethod.visitTypeInsn(Opcodes.CHECKCAST, iname)
+
+                case _ => abort("Unknown reference type in IS_INSTANCE: " + tpe)
+              }
+
+          }
+          genCastInstr
+
+          case icodes.objsCat => 
+          def genObjsInstr = (instr: @unchecked) match {
+
+            case BOX(kind) =>
+              val MethodNameAndType(mname, mdesc) = jBoxTo(kind)
+              jcode.invokestatic(BoxesRunTime, mname, mdesc)
+
+            case UNBOX(kind) =>
+              val MethodNameAndType(mname, mdesc) = jUnboxTo(kind)
+              jcode.invokestatic(BoxesRunTime, mname, mdesc)
+
+            case NEW(REFERENCE(cls)) =>
+              val className = javaName(cls)
+              jmethod.visitTypeInsn(Opcodes.NEW, className)
+
+            case MONITOR_ENTER() => emit(Opcodes.MONITORENTER)
+            case MONITOR_EXIT() => emit(Opcodes.MONITOREXIT)
+          }
+          genObjsInstr
+
+          case icodes.fldsCat => 
+          def genFldsInstr = (instr: @unchecked) match {
+
+            case lf @ LOAD_FIELD(field, isStatic) =>
+              var owner = javaName(lf.hostClass)
+              debuglog("LOAD_FIELD with owner: " + owner + " flags: " + Flags.flagsToString(field.owner.flags))
+              val fieldJName = javaName(field)
+              val fieldDescr = descriptor(field)
+              val opc = if (isStatic) Opcodes.GETSTATIC else Opcodes.GETFIELD
+              jmethod.visitFieldInsn(opc, owner, fieldJName, fieldDescr)
+
+            case STORE_FIELD(field, isStatic) =>
+              val owner = javaName(field.owner)
+              val fieldJName = javaName(field)
+              val fieldDescr = descriptor(field)
+              val opc = if (isStatic) Opcodes.PUTSTATIC else Opcodes.PUTFIELD
+              jmethod.visitFieldInsn(opc, owner, fieldJName, fieldDescr)
+
+          }
+          genFldsInstr
+
+          case icodes.mthdsCat => 
+          def genMethodsInstr = (instr: @unchecked) match {
+
+            /** Special handling to access native Array.clone() */
+            case call @ CALL_METHOD(definitions.Array_clone, Dynamic) =>
+              val target: String = javaType(call.targetTypeKind).getInternalName
+              jcode.invokevirtual(target, "clone", mdesc_arrayClone)
+
+            case call @ CALL_METHOD(method, style) => genCallMethod(call)
+
+          }
+          genMethodsInstr
+
+          case icodes.arraysCat => 
+          def genArraysInstr = (instr: @unchecked) match {
+            case LOAD_ARRAY_ITEM(kind) => jcode.aload(kind)
+            case STORE_ARRAY_ITEM(kind) => jcode.astore(kind)
+            case CREATE_ARRAY(elem, 1) => jcode newarray elem
+            case CREATE_ARRAY(elem, dims) => jmethod.visitMultiANewArrayInsn(descriptor(ArrayN(elem, dims)), dims)
+          }
+          genArraysInstr
+
+          case icodes.jumpsCat => 
+          def genJumpInstr = (instr: @unchecked) match {
+
+            case sw @ SWITCH(tagss, branches) =>
+              assert(branches.length == tagss.length + 1, sw)
+              val flatSize = sw.flatTagsCount
+              val flatKeys = new Array[Int](flatSize)
+              val flatBranches = new Array[asm.Label](flatSize)
+
+              var restTagss = tagss
+              var restBranches = branches
+              var k = 0 // ranges over flatKeys and flatBranches
+              while (restTagss.nonEmpty) {
+                val currLabel = labels(restBranches.head)
+                for (cTag <- restTagss.head) {
+                  flatKeys(k) = cTag;
+                  flatBranches(k) = currLabel
+                  k += 1
+                }
+                restTagss = restTagss.tail
+                restBranches = restBranches.tail
+              }
+              val defaultLabel = labels(restBranches.head)
+              assert(restBranches.tail.isEmpty)
+              debuglog("Emitting SWITCH:\ntags: " + tagss + "\nbranches: " + branches)
+              jcode.emitSWITCH(flatKeys, flatBranches, defaultLabel, MIN_SWITCH_DENSITY)
+
+            case JUMP(whereto) =>
+              if (nextBlock != whereto) {
+                jcode goTo labels(whereto)
+              } else if (m.exh.exists(eh => eh.covers(b))) {
+                // SI-6102: Determine whether eliding this JUMP results in an empty range being covered by some EH.
+                // If so, emit a NOP in place of the elided JUMP, to avoid "java.lang.ClassFormatError: Illegal exception table range"
+                val isSthgLeft = b.toList.exists {
+                  case _: LOAD_EXCEPTION => false
+                  case _: SCOPE_ENTER => false
+                  case _: SCOPE_EXIT => false
+                  case _: JUMP => false
+                  case _ => true
+                }
+                if (!isSthgLeft) {
+                  emit(asm.Opcodes.NOP)
+                }
+              }
+
+            case CJUMP(success, failure, cond, kind) =>
+              if (kind.isIntSizedType) { // BOOL, BYTE, CHAR, SHORT, or INT
+                if (nextBlock == success) {
+                  jcode.emitIF_ICMP(cond.negate, labels(failure))
+                  // .. and fall through to success label
+                } else {
+                  jcode.emitIF_ICMP(cond, labels(success))
+                  if (nextBlock != failure) { jcode goTo labels(failure) }
+                }
+              } else if (kind.isRefOrArrayType) { // REFERENCE(_) | ARRAY(_)
+                if (nextBlock == success) {
+                  jcode.emitIF_ACMP(cond.negate, labels(failure))
+                  // .. and fall through to success label
+                } else {
+                  jcode.emitIF_ACMP(cond, labels(success))
+                  if (nextBlock != failure) { jcode goTo labels(failure) }
+                }
+              } else {
+                (kind: @unchecked) match {
+                  case LONG => emit(Opcodes.LCMP)
+                  case FLOAT =>
+                    if (cond == LT || cond == LE) emit(Opcodes.FCMPG)
+                    else emit(Opcodes.FCMPL)
+                  case DOUBLE =>
+                    if (cond == LT || cond == LE) emit(Opcodes.DCMPG)
+                    else emit(Opcodes.DCMPL)
+                }
+                if (nextBlock == success) {
+                  jcode.emitIF(cond.negate, labels(failure))
+                  // .. and fall through to success label
+                } else {
+                  jcode.emitIF(cond, labels(success))
+                  if (nextBlock != failure) { jcode goTo labels(failure) }
+                }
+              }
+
+            case CZJUMP(success, failure, cond, kind) =>
+              if (kind.isIntSizedType) { // BOOL, BYTE, CHAR, SHORT, or INT
+                if (nextBlock == success) {
+                  jcode.emitIF(cond.negate, labels(failure))
+                } else {
+                  jcode.emitIF(cond, labels(success))
+                  if (nextBlock != failure) { jcode goTo labels(failure) }
+                }
+              } else if (kind.isRefOrArrayType) { // REFERENCE(_) | ARRAY(_)
+                val Success = success
+                val Failure = failure
+                // @unchecked because references aren't compared with GT, GE, LT, LE.
+                ((cond, nextBlock): @unchecked) match {
+                  case (EQ, Success) => jcode emitIFNONNULL labels(failure)
+                  case (NE, Failure) => jcode emitIFNONNULL labels(success)
+                  case (EQ, Failure) => jcode emitIFNULL labels(success)
+                  case (NE, Success) => jcode emitIFNULL labels(failure)
+                  case (EQ, _) =>
+                    jcode emitIFNULL labels(success)
+                    jcode goTo labels(failure)
+                  case (NE, _) =>
+                    jcode emitIFNONNULL labels(success)
+                    jcode goTo labels(failure)
+                }
+              } else {
+                (kind: @unchecked) match {
+                  case LONG =>
+                    emit(Opcodes.LCONST_0)
+                    emit(Opcodes.LCMP)
+                  case FLOAT =>
+                    emit(Opcodes.FCONST_0)
+                    if (cond == LT || cond == LE) emit(Opcodes.FCMPG)
+                    else emit(Opcodes.FCMPL)
+                  case DOUBLE =>
+                    emit(Opcodes.DCONST_0)
+                    if (cond == LT || cond == LE) emit(Opcodes.DCMPG)
+                    else emit(Opcodes.DCMPL)
+                }
+                if (nextBlock == success) {
+                  jcode.emitIF(cond.negate, labels(failure))
+                } else {
+                  jcode.emitIF(cond, labels(success))
+                  if (nextBlock != failure) { jcode goTo labels(failure) }
+                }
+              }
+
+          }
+          genJumpInstr
+
+          case icodes.retCat => 
+          def genRetInstr = (instr: @unchecked) match {
+            case RETURN(kind) => jcode emitRETURN kind
+            case THROW(_) => emit(Opcodes.ATHROW)
+          }
+          genRetInstr
+        }
+      }
 
       /**
        * Emits one or more conversion instructions based on the types given as arguments.
@@ -2755,6 +2785,7 @@ abstract class GenASM extends SubComponent with BytecodeWriters {
           case Negation(kind) => jcode.neg(kind)
 
           case Arithmetic(op, kind) =>
+            def genArith = {
             op match {
 
               case ADD => jcode.add(kind)
@@ -2777,57 +2808,89 @@ abstract class GenASM extends SubComponent with BytecodeWriters {
               case _ =>
                 abort("Unknown arithmetic primitive " + primitive)
             }
+            }
+            genArith
 
           // TODO Logical's 2nd elem should be declared ValueTypeKind, to better approximate its allowed values (isIntSized, its comments appears to convey)
           // TODO GenICode uses `toTypeKind` to define that elem, `toValueTypeKind` would be needed instead.
           // TODO How about adding some asserts to Logical and similar ones to capture the remaining constraint (UNIT not allowed).
-          case Logical(op, kind) => ((op, kind): @unchecked) match {
-            case (AND, LONG) => emit(Opcodes.LAND)
-            case (AND, INT)  => emit(Opcodes.IAND)
-            case (AND, _)    =>
-              emit(Opcodes.IAND)
-              if (kind != BOOL) { emitT2T(INT, kind) }
+          case Logical(op, kind) => 
+            def genLogical = op match {
+              case AND => 
+                kind match {
+                  case LONG => emit(Opcodes.LAND)
+                  case INT  => emit(Opcodes.IAND)
+                  case _    =>
+                    emit(Opcodes.IAND)
+                    if (kind != BOOL) { emitT2T(INT, kind) }
+                }
+              case OR =>
+                kind match {
+                  case LONG => emit(Opcodes.LOR)
+                  case INT  => emit(Opcodes.IOR)
+                  case _ =>
+                    emit(Opcodes.IOR)
+                    if (kind != BOOL) { emitT2T(INT, kind) }
+                }
+              case XOR =>
+                kind match {
+                  case LONG => emit(Opcodes.LXOR)
+                  case INT  => emit(Opcodes.IXOR)
+                  case _ =>
+                    emit(Opcodes.IXOR)
+                    if (kind != BOOL) { emitT2T(INT, kind) }
+                }
+            }
+            genLogical
+          
+          case Shift(op, kind) => 
+            def genShift = op match {
+              case LSL =>
+                kind match {
+                  case LONG => emit(Opcodes.LSHL)
+                  case INT  => emit(Opcodes.ISHL)
+                  case _ =>
+                    emit(Opcodes.ISHL)
+                    emitT2T(INT, kind)
+                }
+              case ASR =>
+                kind match {
+                  case LONG => emit(Opcodes.LSHR)
+                  case INT  => emit(Opcodes.ISHR)
+                  case _ =>
+                    emit(Opcodes.ISHR)
+                    emitT2T(INT, kind)
+                }
+              case LSR =>
+                kind match {
+                  case LONG => emit(Opcodes.LUSHR)
+                  case INT  => emit(Opcodes.IUSHR)
+                  case  _ =>
+                    emit(Opcodes.IUSHR)
+                    emitT2T(INT, kind)
+                }
+            }
+            genShift
 
-            case (OR, LONG) => emit(Opcodes.LOR)
-            case (OR, INT)  => emit(Opcodes.IOR)
-            case (OR, _) =>
-              emit(Opcodes.IOR)
-              if (kind != BOOL) { emitT2T(INT, kind) }
-
-            case (XOR, LONG) => emit(Opcodes.LXOR)
-            case (XOR, INT)  => emit(Opcodes.IXOR)
-            case (XOR, _) =>
-              emit(Opcodes.IXOR)
-              if (kind != BOOL) { emitT2T(INT, kind) }
-          }
-
-          case Shift(op, kind) => ((op, kind): @unchecked) match {
-            case (LSL, LONG) => emit(Opcodes.LSHL)
-            case (LSL, INT)  => emit(Opcodes.ISHL)
-            case (LSL, _) =>
-              emit(Opcodes.ISHL)
-              emitT2T(INT, kind)
-
-            case (ASR, LONG) => emit(Opcodes.LSHR)
-            case (ASR, INT)  => emit(Opcodes.ISHR)
-            case (ASR, _) =>
-              emit(Opcodes.ISHR)
-              emitT2T(INT, kind)
-
-            case (LSR, LONG) => emit(Opcodes.LUSHR)
-            case (LSR, INT)  => emit(Opcodes.IUSHR)
-            case (LSR, _) =>
-              emit(Opcodes.IUSHR)
-              emitT2T(INT, kind)
-          }
-
-          case Comparison(op, kind) => ((op, kind): @unchecked) match {
-            case (CMP, LONG)    => emit(Opcodes.LCMP)
-            case (CMPL, FLOAT)  => emit(Opcodes.FCMPL)
-            case (CMPG, FLOAT)  => emit(Opcodes.FCMPG)
-            case (CMPL, DOUBLE) => emit(Opcodes.DCMPL)
-            case (CMPG, DOUBLE) => emit(Opcodes.DCMPL) // TODO bug? why not DCMPG? http://docs.oracle.com/javase/specs/jvms/se5.0/html/Instructions2.doc3.html
-          }
+          case Comparison(op, kind) => 
+            def genCompare = op match {
+              case CMP =>
+                (kind: @unchecked) match {
+                  case LONG =>  emit(Opcodes.LCMP)
+                }
+              case CMPL =>
+                (kind: @unchecked) match {
+                  case FLOAT  => emit(Opcodes.FCMPL)
+                  case DOUBLE => emit(Opcodes.DCMPL)
+                }
+              case CMPG =>
+                (kind: @unchecked) match {
+                  case FLOAT  => emit(Opcodes.FCMPG)
+                  case DOUBLE => emit(Opcodes.DCMPL) // TODO bug? why not DCMPG? http://docs.oracle.com/javase/specs/jvms/se5.0/html/Instructions2.doc3.html
+                
+                }
+            }
+            genCompare
 
           case Conversion(src, dst) =>
             debuglog("Converting from: " + src + " to: " + dst)

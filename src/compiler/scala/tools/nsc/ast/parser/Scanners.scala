@@ -360,16 +360,19 @@ trait Scanners extends ScannersCommon {
           if (ch == '"' && token == IDENTIFIER)
             token = INTERPOLATIONID
         case '<' => // is XMLSTART?
-          val last = if (charOffset >= 2) buf(charOffset - 2) else ' '
-          nextChar()
-          last match {
-            case ' '|'\t'|'\n'|'{'|'('|'>' if isNameStart(ch) || ch == '!' || ch == '?' =>
-              token = XMLSTART
-            case _ =>
-              // Console.println("found '<', but last is '"+in.last+"'"); // DEBUG
-              putChar('<')
-              getOperatorRest()
+          def fetchLT = {
+            val last = if (charOffset >= 2) buf(charOffset - 2) else ' '
+            nextChar()
+            last match {
+              case ' ' | '\t' | '\n' | '{' | '(' | '>' if isNameStart(ch) || ch == '!' || ch == '?' =>
+                token = XMLSTART
+              case _ =>
+                // Console.println("found '<', but last is '"+in.last+"'"); // DEBUG
+                putChar('<')
+                getOperatorRest()
+            }
           }
+          fetchLT
         case '~' | '!' | '@' | '#' | '%' |
              '^' | '*' | '+' | '-' | /*'<' | */
              '>' | '?' | ':' | '=' | '&' |
@@ -386,78 +389,87 @@ trait Scanners extends ScannersCommon {
             getOperatorRest()
           }
         case '0' =>
-          putChar(ch)
-          nextChar()
-          if (ch == 'x' || ch == 'X') {
+          def fetchZero = {
+            putChar(ch)
             nextChar()
-            base = 16
-          }
-          else {
-            /** What should leading 0 be in the future? It is potentially dangerous
-             *  to let it be base-10 because of history.  Should it be an error? Is
-             *  there a realistic situation where one would need it?
-             */
-            if (isDigit(ch)) {
-              if (opt.future) syntaxError("Non-zero numbers may not have a leading zero.")
-              else deprecationWarning("Treating numbers with a leading zero as octal is deprecated.")
+            if (ch == 'x' || ch == 'X') {
+              nextChar()
+              base = 16
+            } else {
+              /**
+               * What should leading 0 be in the future? It is potentially dangerous
+               *  to let it be base-10 because of history.  Should it be an error? Is
+               *  there a realistic situation where one would need it?
+               */
+              if (isDigit(ch)) {
+                if (opt.future) syntaxError("Non-zero numbers may not have a leading zero.")
+                else deprecationWarning("Treating numbers with a leading zero as octal is deprecated.")
+              }
+              base = 8
             }
-            base = 8
+            getNumber()
           }
-          getNumber()
+          fetchZero
         case '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9' =>
           base = 10
           getNumber()
         case '`' =>
           getBackquotedIdent()
         case '\"' =>
-          if (token == INTERPOLATIONID) {
-            nextRawChar()
-            if (ch == '\"') {
+          def fetchDoubleQuote = {
+            if (token == INTERPOLATIONID) {
               nextRawChar()
               if (ch == '\"') {
                 nextRawChar()
-                getStringPart(multiLine = true)
-                sepRegions = STRINGPART :: sepRegions // indicate string part
-                sepRegions = STRINGLIT :: sepRegions // once more to indicate multi line string part
+                if (ch == '\"') {
+                  nextRawChar()
+                  getStringPart(multiLine = true)
+                  sepRegions = STRINGPART :: sepRegions // indicate string part
+                  sepRegions = STRINGLIT :: sepRegions // once more to indicate multi line string part
+                } else {
+                  token = STRINGLIT
+                  strVal = ""
+                }
               } else {
-                token = STRINGLIT
-                strVal = ""
+                getStringPart(multiLine = false)
+                sepRegions = STRINGLIT :: sepRegions // indicate single line string part
               }
             } else {
-              getStringPart(multiLine = false)
-              sepRegions = STRINGLIT :: sepRegions // indicate single line string part
-            }
-          } else {
-            nextChar()
-            if (ch == '\"') {
               nextChar()
               if (ch == '\"') {
-                nextRawChar()
-                getRawStringLit()
+                nextChar()
+                if (ch == '\"') {
+                  nextRawChar()
+                  getRawStringLit()
+                } else {
+                  token = STRINGLIT
+                  strVal = ""
+                }
               } else {
-                token = STRINGLIT
-                strVal = ""
+                getStringLit()
               }
-            } else {
-              getStringLit()
             }
           }
+          fetchDoubleQuote
         case '\'' =>
-          nextChar()
-          if (isIdentifierStart(ch))
-            charLitOr(getIdentRest)
-          else if (isOperatorPart(ch) && (ch != '\\'))
-            charLitOr(getOperatorRest)
-          else {
-            getLitChar()
-            if (ch == '\'') {
-              nextChar()
-              token = CHARLIT
-              setStrVal()
-            } else {
-              syntaxError("unclosed character literal")
+          def fetchSingleQuote = {
+            nextChar()
+            if (isIdentifierStart(ch))
+              charLitOr(getIdentRest)
+            else if (isOperatorPart(ch) && (ch != '\\'))
+              charLitOr(getOperatorRest)
+            else {
+              getLitChar()
+              if (ch == '\'') {
+                nextChar()
+                token = CHARLIT
+                setStrVal()
+              } else {
+                syntaxError("unclosed character literal")
+              }
             }
           }
+          fetchSingleQuote
         case '.' =>
           nextChar()
           if ('0' <= ch && ch <= '9') {
@@ -488,22 +500,25 @@ trait Scanners extends ScannersCommon {
             nextChar()
           }
         case _ =>
-          if (ch == '\u21D2') {
-            nextChar(); token = ARROW
-          } else if (ch == '\u2190') {
-            nextChar(); token = LARROW
-          } else if (Character.isUnicodeIdentifierStart(ch)) {
-            putChar(ch)
-            nextChar()
-            getIdentRest()
-          } else if (isSpecial(ch)) {
-            putChar(ch)
-            nextChar()
-            getOperatorRest()
-          } else {
-            syntaxError("illegal character '" + ("" + '\\' + 'u' + "%04x".format(ch: Int)) + "'")
-            nextChar()
+          def fetchOther = {
+            if (ch == '\u21D2') {
+              nextChar(); token = ARROW
+            } else if (ch == '\u2190') {
+              nextChar(); token = LARROW
+            } else if (Character.isUnicodeIdentifierStart(ch)) {
+              putChar(ch)
+              nextChar()
+              getIdentRest()
+            } else if (isSpecial(ch)) {
+              putChar(ch)
+              nextChar()
+              getOperatorRest()
+            } else {
+              syntaxError("illegal character '" + ("" + '\\' + 'u' + "%04x".format(ch: Int)) + "'")
+              nextChar()
+            }
           }
+          fetchOther
       }
     }
 

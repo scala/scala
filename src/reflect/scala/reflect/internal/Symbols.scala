@@ -11,6 +11,7 @@ import scala.collection.mutable.ListBuffer
 import util.Statistics
 import Flags._
 import base.Attachments
+import scala.annotation.tailrec
 
 trait Symbols extends api.Symbols { self: SymbolTable =>
   import definitions._
@@ -1378,7 +1379,6 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     /** The value parameter sections of this symbol.
      */
     def paramss: List[List[Symbol]] = info.paramss
-    def hasParamWhich(cond: Symbol => Boolean) = mexists(paramss)(cond)
 
     /** The least proper supertype of a class; includes all parent types
      *  and refinement where needed. You need to compute that in a situation like this:
@@ -1897,10 +1897,16 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
      *  @param ofclazz   The class containing the symbol's definition
      *  @param site      The base type from which member types are computed
      */
-    final def matchingSymbol(ofclazz: Symbol, site: Type): Symbol =
-      ofclazz.info.nonPrivateDecl(name).filter(sym =>
-        !sym.isTerm || (site.memberType(this) matches site.memberType(sym)))
-
+    final def matchingSymbol(ofclazz: Symbol, site: Type): Symbol = {
+      //OPT cut down on #closures by special casing non-overloaded case
+      // was: ofclazz.info.nonPrivateDecl(name) filter (sym =>
+      //        !sym.isTerm || (site.memberType(this) matches site.memberType(sym)))
+      val result = ofclazz.info.nonPrivateDecl(name)
+      def qualifies(sym: Symbol) = !sym.isTerm || (site.memberType(this) matches site.memberType(sym))
+      if ((result eq NoSymbol) || !result.isOverloaded && qualifies(result)) result
+      else result filter qualifies
+    }
+    
     /** The non-private member of `site` whose type and name match the type of this symbol. */
     final def matchingSymbol(site: Type, admit: Long = 0L): Symbol =
       site.nonPrivateMemberAdmitting(name, admit).filter(sym =>
@@ -2625,7 +2631,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
           tpeCache = NoType
           val targs =
             if (phase.erasedTypes && this != ArrayClass) List()
-            else unsafeTypeParams map (_.typeConstructor)
+            else unsafeTypeParams map typeConstructorOfSymbol
             //@M! use typeConstructor to generate dummy type arguments,
             // sym.tpe should not be called on a symbol that's supposed to be a higher-kinded type
             // memberType should be used instead, that's why it uses tpeHK and not tpe
@@ -2878,7 +2884,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     }
 
     override def name: TypeName = {
-      Statistics.incCounter(nameCount)
+      if (Statistics.canEnable) Statistics.incCounter(nameCount)
       if (needsFlatClasses) {
         if (flatname eq null)
           flatname = nme.flattenedName(rawowner.name, rawname).toTypeName
@@ -3207,7 +3213,26 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     def toList: List[TypeHistory] = this :: ( if (prev eq null) Nil else prev.toList )
   }
 
+// ----- Hoisted closures and convenience methods, for compile time reductions -------
+
+  private[scala] final val symbolIsPossibleInRefinement = (sym: Symbol) => sym.isPossibleInRefinement
+  private[scala] final val symbolIsNonVariant = (sym: Symbol) => sym.variance == 0
+  private[scala] final val typeConstructorOfSymbol = (sym: Symbol) => sym.typeConstructor
+  private[scala] final val tpeOfSymbol = (sym: Symbol) => sym.tpe
+  private[scala] final val infoOfSymbol = (sym: Symbol) => sym.info
+  private[scala] final val tpeHKOfSymbol = (sym: Symbol) => sym.tpeHK
+
+  @tailrec private[scala] final
+  def allSymbolsHaveOwner(syms: List[Symbol], owner: Symbol): Boolean = syms match {
+    case sym :: rest => sym.owner == owner && allSymbolsHaveOwner(rest, owner)
+    case _ => true
+  }
+
+
+// -------------- Statistics --------------------------------------------------------
+
   Statistics.newView("#symbols")(ids)
+
 }
 
 object SymbolsStats {
