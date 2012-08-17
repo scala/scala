@@ -208,6 +208,21 @@ trait CompilerControl { self: Global =>
   def askParsedEntered(source: SourceFile, keepLoaded: Boolean, response: Response[Tree]) =
     postWorkItem(new AskParsedEnteredItem(source, keepLoaded, response))
 
+  /** Set sync var `response` to a pair consisting of
+   *                  - the fully qualified name of the first top-level object definition in the file.
+   *                    or "" if there are no object definitions.
+   *                  - the text of the instrumented program which, when run,
+   *                    prints its output and all defined values in a comment column.
+   *
+   *  @param source       The source file to be analyzed
+   *  @param keepLoaded   If set to `true`, source file will be kept as a loaded unit afterwards.
+   *                      If keepLoaded is `false` the operation is run at low priority, only after
+   *                      everything is brought up to date in a regular type checker run.
+   *  @param response     The response.
+   */
+  def askInstrumented(source: SourceFile, line: Int, response: Response[(String, Array[Char])]) =
+    postWorkItem(new AskInstrumentedItem(source, line, response))
+
   /** Cancels current compiler run and start a fresh one where everything will be re-typechecked
    *  (but not re-loaded).
    */
@@ -348,6 +363,14 @@ trait CompilerControl { self: Global =>
   case class AskParsedEnteredItem(val source: SourceFile, val keepLoaded: Boolean, response: Response[Tree]) extends WorkItem {
     def apply() = self.getParsedEntered(source, keepLoaded, response, this.onCompilerThread)
     override def toString = "getParsedEntered "+source+", keepLoaded = "+keepLoaded
+
+    def raiseMissing() =
+      response raise new MissingResponse
+  }
+
+  case class AskInstrumentedItem(val source: SourceFile, line: Int, response: Response[(String, Array[Char])]) extends WorkItem {
+    def apply() = self.getInstrumented(source, line, response)
+    override def toString = "getInstrumented "+source
 
     def raiseMissing() =
       response raise new MissingResponse
