@@ -41,7 +41,7 @@ trait FrontEnds extends scala.tools.reflect.FrontEnds {
   }
 
   def interactive(): Unit = universe.reporter match {
-    case reporter: tools.nsc.reporters.AbstractReporter => reporter.displayPrompt()
+    case reporter: scala.tools.nsc.reporters.AbstractReporter => reporter.displayPrompt()
     case _ => ()
   }
 }

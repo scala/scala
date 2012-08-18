@@ -1,0 +1,32 @@
+Type in expressions to have them evaluated.
+Type :help for more information.
+
+scala> 
+
+scala> import annotation.static
+import annotation.static
+
+scala> @static var x1 = 42
+x1: Int = 42
+
+scala> @static val x2 = 43
+x2: Int = 43
+
+scala> @static def x3 = 44
+x3: Int
+
+scala> x1
+res0: Int = 42
+
+scala> x2
+res1: Int = 43
+
+scala> x3
+res2: Int = 44
+
+scala> class Test {
+  @static def x = 42
+}
+defined class Test
+
+scala> 

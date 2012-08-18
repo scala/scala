@@ -973,7 +973,7 @@ trait Namers extends MethodSynthesis {
       // Add a () parameter section if this overrides some method with () parameters.
       if (clazz.isClass && vparamss.isEmpty && overriddenSymbol.alternatives.exists(
         _.info.isInstanceOf[MethodType])) {
-        vparamSymss = List(List())
+        vparamSymss = ListOfNil
       }
       mforeach(vparamss) { vparam =>
         if (vparam.tpt.isEmpty) {
@@ -1032,7 +1032,7 @@ trait Namers extends MethodSynthesis {
       var baseParamss = (vparamss, overridden.tpe.paramss) match {
         // match empty and missing parameter list
         case (Nil, List(Nil)) => Nil
-        case (List(Nil), Nil) => List(Nil)
+        case (List(Nil), Nil) => ListOfNil
         case (_, paramss)     => paramss
       }
       assert(

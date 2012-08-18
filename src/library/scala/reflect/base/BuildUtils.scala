@@ -5,6 +5,10 @@ trait BuildUtils { self: Universe =>
 
   val build: BuildBase
 
+  // this API abstracts away the functionality necessary for reification
+  // it's too gimmicky and unstructured to be exposed directly in the universe
+  // but we need it in a publicly available place for reification to work
+
   abstract class BuildBase {
     /** Selects type symbol with given simple name `name` from the defined members of `owner`.
      */
@@ -53,7 +57,6 @@ trait BuildUtils { self: Universe =>
      *                  the only usage for it is preserving the captured symbol for compile-time analysis
      *  @param   flags  (optional) flags of the free variable
      *  @param   origin (optional) debug information that tells where this symbol comes from
-     *  [Martin to Eugene: why needed?]
      */
     def newFreeExistential(name: String, info: Type, value: => Any, flags: FlagSet = NoFlags, origin: String = null): FreeTypeSymbol
 
@@ -67,9 +70,6 @@ trait BuildUtils { self: Universe =>
     def setAnnotations[S <: Symbol](sym: S, annots: List[AnnotationInfo]): S
 
     def flagsFromBits(bits: Long): FlagSet
-
-    // [Eugene++ to Martin] these are necessary for reification
-    // on a second thought, I added them to BuildUtils instead of base
 
     def emptyValDef: ValDef
 

@@ -16,9 +16,6 @@ import scala.reflect.NameTransformer
 import scala.reflect.api.JavaUniverse
 import scala.reflect.base.MirrorOf
 
-// [Eugene++ to Martin] by the way, toolboxes are unable to compile anything that involves packages
-// is this intentional?
-
 abstract class ToolBoxFactory[U <: JavaUniverse](val u: U) { factorySelf =>
 
   val mirror: u.Mirror
@@ -187,10 +184,7 @@ abstract class ToolBoxFactory[U <: JavaUniverse](val u: U) { factorySelf =>
           val meth = obj.moduleClass.newMethod(newTermName(wrapperMethodName))
           def makeParam(schema: (FreeTermSymbol, TermName)) = {
             val (fv, name) = schema
-            // [Eugene] conventional way of doing this?
-            val underlying = fv.tpe.resultType
-            val tpe = appliedType(definitions.FunctionClass(0).tpe, List(underlying))
-            meth.newValueParameter(name) setInfo tpe
+            meth.newValueParameter(name) setInfo appliedType(definitions.FunctionClass(0).tpe, List(fv.tpe.resultType))
           }
           meth setInfo MethodType(freeTerms.map(makeParam).toList, AnyClass.tpe)
           minfo.decls enter meth

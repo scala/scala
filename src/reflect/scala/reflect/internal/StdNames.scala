@@ -1008,8 +1008,6 @@ trait StdNames {
 
   val javanme = nme.javaKeywords
 
-  // [Eugene++ to Martin] had to move a lot of stuff from here to TermNames to satisfy the contract
-  // why do we even have stuff in object nme? cf. object tpnme
   object nme extends TermNames {
 
     def isModuleVarName(name: Name): Boolean =

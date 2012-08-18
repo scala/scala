@@ -966,7 +966,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
             stats flatMap {
               case stat @ Assign(lhs @ Select(This(_), _), rhs) => stat :: checkedGetter(lhs)
               // remove initialization for default values
-              case Apply(lhs @ Select(Ident(self), _), List(EmptyTree)) if lhs.symbol.isSetter => Nil
+              case Apply(lhs @ Select(Ident(self), _), EmptyTree.asList) if lhs.symbol.isSetter => Nil
               case stat => List(stat)
             },
             exprOwner

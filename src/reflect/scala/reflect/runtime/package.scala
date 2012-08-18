@@ -5,8 +5,6 @@ package object runtime {
   // type is api.JavaUniverse because we only want to expose the `scala.reflect.api.*` subset of reflection
   lazy val universe: api.JavaUniverse = new runtime.JavaUniverse
 
-  // [Eugene++ to Martin] removed `mirrorOfLoader`, because one can use `universe.runtimeMirror` instead
-
   // implementation magically hardwired to the `currentMirror` method below
   def currentMirror: universe.Mirror = ??? // macro
 }

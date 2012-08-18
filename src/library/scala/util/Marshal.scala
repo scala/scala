@@ -37,8 +37,6 @@ object Marshal {
     val in = new ObjectInputStream(new ByteArrayInputStream(buffer))
     val found = in.readObject.asInstanceOf[ClassTag[_]]
     try {
-      // [Eugene] needs review
-      // previously was: found <:< expected
       found.runtimeClass.asSubclass(expected.runtimeClass)
       in.readObject.asInstanceOf[A]
     } catch {
