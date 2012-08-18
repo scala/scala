@@ -1906,7 +1906,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
       if ((result eq NoSymbol) || !result.isOverloaded && qualifies(result)) result
       else result filter qualifies
     }
-    
+
     /** The non-private member of `site` whose type and name match the type of this symbol. */
     final def matchingSymbol(site: Type, admit: Long = 0L): Symbol =
       site.nonPrivateMemberAdmitting(name, admit).filter(sym =>
@@ -2631,7 +2631,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
           tpeCache = NoType
           val targs =
             if (phase.erasedTypes && this != ArrayClass) List()
-            else unsafeTypeParams map typeConstructorOfSymbol
+            else unsafeTypeParams map (_.typeConstructor)
             //@M! use typeConstructor to generate dummy type arguments,
             // sym.tpe should not be called on a symbol that's supposed to be a higher-kinded type
             // memberType should be used instead, that's why it uses tpeHK and not tpe
@@ -3217,10 +3217,6 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
 
   private[scala] final val symbolIsPossibleInRefinement = (sym: Symbol) => sym.isPossibleInRefinement
   private[scala] final val symbolIsNonVariant = (sym: Symbol) => sym.variance == 0
-  private[scala] final val typeConstructorOfSymbol = (sym: Symbol) => sym.typeConstructor
-  private[scala] final val tpeOfSymbol = (sym: Symbol) => sym.tpe
-  private[scala] final val infoOfSymbol = (sym: Symbol) => sym.info
-  private[scala] final val tpeHKOfSymbol = (sym: Symbol) => sym.tpeHK
 
   @tailrec private[scala] final
   def allSymbolsHaveOwner(syms: List[Symbol], owner: Symbol): Boolean = syms match {

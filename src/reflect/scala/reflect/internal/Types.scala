@@ -517,7 +517,7 @@ trait Types extends api.Types { self: SymbolTable =>
     /** A list of placeholder types derived from the type parameters.
      *  Used by RefinedType and TypeRef.
      */
-    protected def dummyArgs: List[Type] = typeParams map typeConstructorOfSymbol
+    protected def dummyArgs: List[Type] = typeParams map (_.typeConstructor)
 
     /** For a (nullary) method or poly type, its direct result type,
      *  the type itself for all other types. */
@@ -869,7 +869,7 @@ trait Types extends api.Types { self: SymbolTable =>
         case (TypeRef(_, ArrayClass, List(arg1)), TypeRef(_, ArrayClass, List(arg2))) if arg2.typeSymbol.typeParams.nonEmpty =>
           arg1 matchesPattern arg2
         case (_, TypeRef(_, _, args)) =>
-          val newtp = existentialAbstraction(args map typeSymbolOfType, that)
+          val newtp = existentialAbstraction(args map (_.typeSymbol), that)
           !(that =:= newtp) && (this <:< newtp)
         case _ =>
           false
@@ -1759,7 +1759,7 @@ trait Types extends api.Types { self: SymbolTable =>
 
     //@M may result in an invalid type (references to higher-order args become dangling )
     override def typeConstructor =
-      copyRefinedType(this, parents map typeConstructorOfType, decls)
+      copyRefinedType(this, parents map (_.typeConstructor), decls)
 
     final override def normalize: Type =
       if (phase.erasedTypes) normalizeImpl
@@ -2349,7 +2349,7 @@ trait Types extends api.Types { self: SymbolTable =>
     private[reflect] var baseTypeSeqCache: BaseTypeSeq = _
     private[reflect] var baseTypeSeqPeriod             = NoPeriod
     private var normalized: Type                       = _
-    
+
     //OPT specialize hashCode
     override final def computeHashCode = {
       import scala.util.hashing.MurmurHash3._
@@ -2357,9 +2357,9 @@ trait Types extends api.Types { self: SymbolTable =>
       var h = productSeed
       h = mix(h, pre.hashCode)
       h = mix(h, sym.hashCode)
-      if (hasArgs) 
+      if (hasArgs)
         finalizeHash(mix(h, args.hashCode), 3)
-      else  
+      else
         finalizeHash(h, 2)
     }
 
@@ -2608,7 +2608,7 @@ trait Types extends api.Types { self: SymbolTable =>
 
     override def paramss: List[List[Symbol]] = params :: resultType.paramss
 
-    override def paramTypes = params map tpeOfSymbol
+    override def paramTypes = params map (_.tpe)
 
     override def boundSyms = resultType.boundSyms ++ params
 
@@ -2994,7 +2994,7 @@ trait Types extends api.Types { self: SymbolTable =>
     tpe exists typeIsExistentiallyBound
 
   def existentialsInType(tpe: Type) =
-    tpe withFilter typeIsExistentiallyBound map typeSymbolOfType
+    tpe withFilter typeIsExistentiallyBound map (_.typeSymbol)
 
   /** Precondition: params.nonEmpty.  (args.nonEmpty enforced structurally.)
    */
@@ -3311,7 +3311,7 @@ trait Types extends api.Types { self: SymbolTable =>
       if (constr.instValid) constr.inst
       // get here when checking higher-order subtyping of the typevar by itself
       // TODO: check whether this ever happens?
-      else if (isHigherKinded) typeFun(params, applyArgs(params map typeConstructorOfSymbol))
+      else if (isHigherKinded) typeFun(params, applyArgs(params map (_.typeConstructor)))
       else super.normalize
     )
     override def typeSymbol = origin.typeSymbol
@@ -3696,7 +3696,7 @@ trait Types extends api.Types { self: SymbolTable =>
         val bounds   = args map (TypeBounds upper _)
         foreach2(eparams, bounds)(_ setInfo _)
 
-        newExistentialType(eparams, typeRef(pre, sym, eparams map tpeOfSymbol))
+        newExistentialType(eparams, typeRef(pre, sym, eparams map (_.tpe)))
       case _ =>
         appliedType(tycon, args)
     }
@@ -4355,7 +4355,7 @@ trait Types extends api.Types { self: SymbolTable =>
         else try {
           expanded += sym
           val eparams = mapOver(typeParamsToExistentials(sym))
-          existentialAbstraction(eparams, typeRef(apply(pre), sym, eparams map tpeOfSymbol))
+          existentialAbstraction(eparams, typeRef(apply(pre), sym, eparams map (_.tpe)))
         } finally {
           expanded -= sym
         }
@@ -5174,9 +5174,9 @@ trait Types extends api.Types { self: SymbolTable =>
     case NullaryMethodType(result) =>
       typeDepth(result)
     case PolyType(tparams, result) =>
-      typeDepth(result) max typeDepth(tparams map infoOfSymbol) + 1 
+      typeDepth(result) max typeDepth(tparams map (_.info)) + 1
     case ExistentialType(tparams, result) =>
-      typeDepth(result) max typeDepth(tparams map infoOfSymbol) + 1
+      typeDepth(result) max typeDepth(tparams map (_.info)) + 1
     case _ =>
       1
   }
@@ -5193,7 +5193,7 @@ trait Types extends api.Types { self: SymbolTable =>
     }
     loop(tps, 0)
   }
-  
+
   private def typeDepth(tps: List[Type]): Int = maxDepth(tps, typeDepth)
   private def baseTypeSeqDepth(tps: List[Type]): Int = maxDepth(tps, _.baseTypeSeqDepth)
 
@@ -6346,8 +6346,8 @@ trait Types extends api.Types { self: SymbolTable =>
    */
   private def lubList(ts: List[Type], depth: Int): List[Type] = {
     // Matching the type params of one of the initial types means dummies.
-    val initialTypeParams = ts map typeParamsOfType
-    def isHotForTs(xs: List[Type]) = initialTypeParams contains (xs map typeSymbolOfType)
+    val initialTypeParams = ts map (_.typeParams)
+    def isHotForTs(xs: List[Type]) = initialTypeParams contains (xs map (_.typeSymbol))
 
     def elimHigherOrderTypeParam(tp: Type) = tp match {
       case TypeRef(pre, sym, args) if args.nonEmpty && isHotForTs(args) => tp.typeConstructor
@@ -7128,10 +7128,6 @@ trait Types extends api.Types { self: SymbolTable =>
   private[scala] val typeIsAny = (tp: Type) => tp.typeSymbolDirect eq AnyClass
   private[scala] val typeIsHigherKinded = (tp: Type) => tp.isHigherKinded
 
-  private[scala] val typeSymbolOfType = (tp: Type) => tp.typeSymbol
-  private[scala] val typeParamsOfType = (tp: Type) => tp.typeParams
-  private[scala] val typeConstructorOfType = (tp: Type) => tp.typeConstructor
-
   @tailrec private def typesContain(tps: List[Type], sym: Symbol): Boolean = tps match {
     case tp :: rest => (tp contains sym) || typesContain(rest, sym)
     case _ => false
@@ -7197,7 +7193,7 @@ object TypesStats {
   @inline final def timedTypeOp[T](c: Statistics.StackableTimer)(op: => T): T = {
     val start = Statistics.pushTimer(typeOpsStack, c)
     try op
-    finally 
+    finally
   }
   */
 }

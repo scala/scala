@@ -664,7 +664,7 @@ trait Infer {
         val appmeth = {
           //OPT cut down on #closures by special casing non-overloaded case
           // was: tp.nonPrivateMember(nme.apply) filter (_.isPublic)
-          val result = tp.nonPrivateMember(nme.apply) 
+          val result = tp.nonPrivateMember(nme.apply)
           if ((result eq NoSymbol) || !result.isOverloaded && result.isPublic) result
           else result filter (_.isPublic)
         }
@@ -1646,7 +1646,7 @@ trait Infer {
       else eligible filter { alt =>
         // for functional values, the `apply` method might be overloaded
         val mtypes = followApply(alt.tpe) match {
-          case OverloadedType(_, alts) => alts map tpeOfSymbol
+          case OverloadedType(_, alts) => alts map (_.tpe)
           case t                       => t :: Nil
         }
         // Drop those that use a default; keep those that use vararg/tupling conversion.
@@ -1783,7 +1783,7 @@ trait Infer {
           else if (sym.isOverloaded) {
             val xs      = sym.alternatives
             val tparams = new AsSeenFromMap(pre, xs.head.owner) mapOver xs.head.typeParams
-            val bounds  = tparams map tpeHKOfSymbol // see e.g., #1236
+            val bounds  = tparams map (_.tpeHK) // see e.g., #1236
             val tpe     = PolyType(tparams, OverloadedType(AntiPolyType(pre, bounds), xs))
 
             (sym setInfo tpe, tpe)
