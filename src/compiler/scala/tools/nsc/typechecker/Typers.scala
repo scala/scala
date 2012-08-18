@@ -1315,7 +1315,7 @@ trait Typers extends Modes with Adaptations with Tags {
     def adaptToArguments(qual: Tree, name: Name, args: List[Tree], pt: Type, reportAmbiguous: Boolean, saveErrors: Boolean): Tree = {
       def doAdapt(restpe: Type) =
         //util.trace("adaptToArgs "+qual+", name = "+name+", argtpes = "+(args map (_.tpe))+", pt = "+pt+" = ")
-        adaptToMember(qual, HasMethodMatching(name, args map tpeOfTree, restpe), reportAmbiguous, saveErrors)
+        adaptToMember(qual, HasMethodMatching(name, args map (_.tpe), restpe), reportAmbiguous, saveErrors)
       if (pt != WildcardType) {
         silent(_ => doAdapt(pt)) match {
           case SilentResultValue(result) if result != qual =>
@@ -1443,7 +1443,7 @@ trait Typers extends Modes with Adaptations with Tags {
         val supertparams = if (supertpt.hasSymbol) supertpt.symbol.typeParams else List()
         var supertpe = supertpt.tpe
         if (!supertparams.isEmpty)
-          supertpe = PolyType(supertparams, appliedType(supertpe, supertparams map tpeHKOfSymbol))
+          supertpe = PolyType(supertparams, appliedType(supertpe, supertparams map (_.tpeHK)))
 
         // A method to replace a super reference by a New in a supercall
         def transformSuperCall(scall: Tree): Tree = (scall: @unchecked) match {
@@ -1877,7 +1877,7 @@ trait Typers extends Modes with Adaptations with Tags {
           val params = fn.tpe.params
           val args2 = if (params.isEmpty || !isRepeatedParamType(params.last.tpe)) args
                       else args.take(params.length - 1) :+ EmptyTree
-          assert(sameLength(args2, params) || call.isErrorTyped, "mismatch " + clazz + " " + (params map tpeOfSymbol) + " " + args2)//debug
+          assert(sameLength(args2, params) || call.isErrorTyped, "mismatch " + clazz + " " + (params map (_.tpe)) + " " + args2)//debug
           (superConstr, args1 ::: args2)
         case Block(stats, expr) if !stats.isEmpty =>
           decompose(stats.last)
@@ -2011,7 +2011,7 @@ trait Typers extends Modes with Adaptations with Tags {
                 case SilentResultValue(tpt) =>
                   val alias = enclClass.newAliasType(name.toTypeName, useCase.pos)
                   val tparams = cloneSymbolsAtOwner(tpt.tpe.typeSymbol.typeParams, alias)
-                  val newInfo = genPolyType(tparams, appliedType(tpt.tpe, tparams map tpeOfSymbol))
+                  val newInfo = genPolyType(tparams, appliedType(tpt.tpe, tparams map (_.tpe)))
                   alias setInfo newInfo
                   context.scope.enter(alias)
                 case _ =>
@@ -2340,7 +2340,7 @@ trait Typers extends Modes with Adaptations with Tags {
 
       val (resTp, needAdapt) =
         if (opt.virtPatmat) ptOrLubPacked(casesTyped, pt)
-        else ptOrLub(casesTyped map tpeOfTree, pt)
+        else ptOrLub(casesTyped map (_.tpe), pt)
 
       val casesAdapted = if (!needAdapt) casesTyped else casesTyped map (adaptCase(_, mode, resTp))
 
@@ -2428,7 +2428,7 @@ trait Typers extends Modes with Adaptations with Tags {
           val match_ = methodBodyTyper.typedMatch(gen.mkUnchecked(selector), cases, mode, ptRes)
           val resTp = match_.tpe
 
-          val methFormals = paramSyms map tpeOfSymbol
+          val methFormals = paramSyms map (_.tpe)
           val parents = (
             if (isPartial) parentsPartial(List(methFormals.head, resTp))
             else addSerializable(abstractFunctionType(methFormals, resTp))
@@ -2594,7 +2594,7 @@ trait Typers extends Modes with Adaptations with Tags {
     //        for (vparam <- vparams) {
     //          checkNoEscaping.locals(context.scope, WildcardType, vparam.tpt); ()
     //        }
-            val formals = vparamSyms map tpeOfSymbol
+            val formals = vparamSyms map (_.tpe)
             val body1 = typed(fun.body, respt)
             val restpe = packedType(body1, fun.symbol).deconst.resultType
             val funtpe = typeRef(clazz.tpe.prefix, clazz, formals :+ restpe)
@@ -3565,7 +3565,7 @@ trait Typers extends Modes with Adaptations with Tags {
       // Higher-kinded existentials are not yet supported, but this is
       // tpeHK for when they are: "if a type constructor is expected/allowed,
       // tpeHK must be called instead of tpe."
-      val typeParamTypes = typeParams map tpeHKOfSymbol
+      val typeParamTypes = typeParams map (_.tpeHK)
       def doSubst(info: Type) = info.subst(rawSyms, typeParamTypes)
 
       creator(typeParams map (_ modifyInfo doSubst), doSubst(tp))
@@ -3701,7 +3701,7 @@ trait Typers extends Modes with Adaptations with Tags {
     // lifted out of typed1 because it's needed in typedImplicit0
     protected def typedTypeApply(tree: Tree, mode: Int, fun: Tree, args: List[Tree]): Tree = fun.tpe match {
       case OverloadedType(pre, alts) =>
-        inferPolyAlternatives(fun, args map tpeOfTree)
+        inferPolyAlternatives(fun, args map (_.tpe))
         val tparams = fun.symbol.typeParams //@M TODO: fun.symbol.info.typeParams ? (as in typedAppliedTypeTree)
         val args1 = if (sameLength(args, tparams)) {
           //@M: in case TypeApply we can't check the kind-arities of the type arguments,
@@ -3721,7 +3721,7 @@ trait Typers extends Modes with Adaptations with Tags {
         typedTypeApply(tree, mode, fun setType fun.tpe.widen, args)
       case PolyType(tparams, restpe) if tparams.nonEmpty =>
         if (sameLength(tparams, args)) {
-          val targs = args map tpeOfTree
+          val targs = args map (_.tpe)
           checkBounds(tree, NoPrefix, NoSymbol, tparams, targs, "")
           if (fun.symbol == Predef_classOf)
             typedClassOf(tree, args.head, true)
@@ -4139,7 +4139,7 @@ trait Typers extends Modes with Adaptations with Tags {
               context.undetparams = cloneSymbols(tpt0.symbol.typeParams)
               notifyUndetparamsAdded(context.undetparams)
               TypeTree().setOriginal(tpt0)
-                        .setType(appliedType(tpt0.tpe, context.undetparams map tpeHKOfSymbol)) // @PP: tpeHK! #3343, #4018, #4347.
+                        .setType(appliedType(tpt0.tpe, context.undetparams map (_.tpeHK))) // @PP: tpeHK! #3343, #4018, #4347.
             } else tpt0
           else tpt0
         }
@@ -4921,7 +4921,7 @@ trait Typers extends Modes with Adaptations with Tags {
         else {
           val decls = newScope
           //Console.println("Owner: " + context.enclClass.owner + " " + context.enclClass.owner.id)
-          val self = refinedType(parents1 map tpeOfTree, context.enclClass.owner, decls, templ.pos)
+          val self = refinedType(parents1 map (_.tpe), context.enclClass.owner, decls, templ.pos)
           newTyper(context.make(templ, self.typeSymbol, decls)).typedRefinement(templ)
           templ addAttachment CompoundTypeTreeOriginalAttachment(parents1, Nil) // stats are set elsewhere
           tree setType self
@@ -4948,7 +4948,7 @@ trait Typers extends Modes with Adaptations with Tags {
                 //@M! the polytype denotes the expected kind
                 typedHigherKindedType(arg, mode, GenPolyType(tparam.typeParams, AnyClass.tpe))
               }
-            val argtypes = args1 map tpeOfTree
+            val argtypes = args1 map (_.tpe)
 
             foreach2(args, tparams)((arg, tparam) => arg match {
               // note: can't use args1 in selector, because Bind's got replaced

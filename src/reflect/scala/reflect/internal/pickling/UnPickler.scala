@@ -677,7 +677,7 @@ abstract class UnPickler /*extends reflect.generic.UnPickler*/ {
           val args = until(end, readTreeRef)
           if (fun.symbol.isOverloaded) {
             fun.setType(fun.symbol.info)
-            inferMethodAlternative(fun, args map tpeOfTree, tpe)
+            inferMethodAlternative(fun, args map (_.tpe), tpe)
           }
           Apply(fun, args)
 
@@ -782,7 +782,7 @@ abstract class UnPickler /*extends reflect.generic.UnPickler*/ {
       }
       r.asInstanceOf[Symbol]
     }
-    
+
     protected def readNameRef(): Name                 = at(readNat(), readName)
     protected def readTypeRef(): Type                 = at(readNat(), () => readType()) // after the NMT_TRANSITION period, we can leave off the () => ... ()
     protected def readConstantRef(): Constant         = at(readNat(), readConstant)
