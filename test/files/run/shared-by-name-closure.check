@@ -1,0 +1,129 @@
+[[syntax trees at end of                   uncurry]] // newSource1
+package <empty> {
+  class T extends Object {
+    def <init>(): T = {
+      T.super.<init>();
+      ()
+    };
+    def foo(a: () => Any): Unit = ();
+    private[this] val inlinable: Int = 1;
+    <stable> <accessor> def inlinable(): Int = T.this.inlinable;
+    def notInlinable(): Int = 2;
+    lazy private[this] var lazyNotInlinable: Int = _;
+    <stable> <accessor> lazy def lazyNotInlinable(): Int = {
+      T.this.lazyNotInlinable = 3;
+      T.this.lazyNotInlinable
+    };
+    T.this.foo(new scala.runtime.Const0[String("literal")]("literal"));
+    T.this.foo(new scala.runtime.Const0[Int](T.this.inlinable()));
+    T.this.foo({
+      @SerialVersionUID(0) final <synthetic> class $anonfun extends scala.runtime.AbstractFunction0[Int] with Serializable {
+        def <init>(): anonymous class $anonfun = {
+          $anonfun.super.<init>();
+          ()
+        };
+        final def apply(): Int = T.this.notInlinable()
+      };
+      (new anonymous class $anonfun(): () => Int)
+    });
+    T.this.foo({
+      @SerialVersionUID(0) final <synthetic> class $anonfun extends scala.runtime.AbstractFunction0[Int] with Serializable {
+        def <init>(): anonymous class $anonfun = {
+          $anonfun.super.<init>();
+          ()
+        };
+        final def apply(): Int = T.this.lazyNotInlinable()
+      };
+      (new anonymous class $anonfun(): () => Int)
+    });
+    new scala.runtime.Const0[String("literal")]("literal");
+    new scala.runtime.Const0[Int](T.this.inlinable());
+    {
+      @SerialVersionUID(0) final <synthetic> class $anonfun extends scala.runtime.AbstractFunction0[Int] with Serializable {
+        def <init>(): anonymous class $anonfun = {
+          $anonfun.super.<init>();
+          ()
+        };
+        final def apply(): Int = T.this.notInlinable()
+      };
+      (new anonymous class $anonfun(): () => Int)
+    };
+    {
+      @SerialVersionUID(0) final <synthetic> class $anonfun extends scala.runtime.AbstractFunction0[Int] with Serializable {
+        def <init>(): anonymous class $anonfun = {
+          $anonfun.super.<init>();
+          ()
+        };
+        final def apply(): Int = T.this.lazyNotInlinable()
+      };
+      (new anonymous class $anonfun(): () => Int)
+    };
+    new scala.runtime.Const1[String("literal")]("literal");
+    new scala.runtime.Const1[Int](T.this.inlinable());
+    {
+      @SerialVersionUID(0) final <synthetic> class $anonfun extends scala.runtime.AbstractFunction1[Int,Int] with Serializable {
+        def <init>(): anonymous class $anonfun = {
+          $anonfun.super.<init>();
+          ()
+        };
+        final def apply(x: Int): Int = T.this.notInlinable()
+      };
+      (new anonymous class $anonfun(): Int => Int)
+    };
+    {
+      @SerialVersionUID(0) final <synthetic> class $anonfun extends scala.runtime.AbstractFunction1[Int,Int] with Serializable {
+        def <init>(): anonymous class $anonfun = {
+          $anonfun.super.<init>();
+          ()
+        };
+        final def apply(x: Int): Int = T.this.lazyNotInlinable()
+      };
+      (new anonymous class $anonfun(): Int => Int)
+    };
+    new scala.runtime.Const2[String("literal")]("literal");
+    new scala.runtime.Const2[Int](T.this.inlinable());
+    {
+      @SerialVersionUID(0) final <synthetic> class $anonfun extends scala.runtime.AbstractFunction2[Int,String,Int] with Serializable {
+        def <init>(): anonymous class $anonfun = {
+          $anonfun.super.<init>();
+          ()
+        };
+        final def apply(x: Int, y: String): Int = T.this.notInlinable()
+      };
+      (new anonymous class $anonfun(): (Int, String) => Int)
+    };
+    {
+      @SerialVersionUID(0) final <synthetic> class $anonfun extends scala.runtime.AbstractFunction2[Int,String,Int] with Serializable {
+        def <init>(): anonymous class $anonfun = {
+          $anonfun.super.<init>();
+          ()
+        };
+        final def apply(x: Int, y: String): Int = T.this.lazyNotInlinable()
+      };
+      (new anonymous class $anonfun(): (Int, String) => Int)
+    };
+    new scala.runtime.Const3[String("literal")]("literal");
+    new scala.runtime.Const3[Int](T.this.inlinable());
+    {
+      @SerialVersionUID(0) final <synthetic> class $anonfun extends scala.runtime.AbstractFunction3[Int,String,Any,Int] with Serializable {
+        def <init>(): anonymous class $anonfun = {
+          $anonfun.super.<init>();
+          ()
+        };
+        final def apply(x: Int, y: String, z: Any): Int = T.this.notInlinable()
+      };
+      (new anonymous class $anonfun(): (Int, String, Any) => Int)
+    };
+    {
+      @SerialVersionUID(0) final <synthetic> class $anonfun extends scala.runtime.AbstractFunction3[Int,String,Any,Int] with Serializable {
+        def <init>(): anonymous class $anonfun = {
+          $anonfun.super.<init>();
+          ()
+        };
+        final def apply(x: Int, y: String, z: Any): Int = T.this.lazyNotInlinable()
+      };
+      (new anonymous class $anonfun(): (Int, String, Any) => Int)
+    }
+  }
+}
+
