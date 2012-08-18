@@ -236,19 +236,19 @@ quant)
 
   private var _enabled = false
   private val qs = new mutable.HashMap[String, Quantity]
- 
-  /** replace with 
-   * 
-   *    final val canEnable = true
-   *    
-   *  and rebuild, to allow for statistics to be enabled
-   */  
-  final val canEnable = false 
-  
-  /** replace with 
-   * 
+
+  /** replace with
+   *
+   *    final val canEnable = false
+   *
+   *  to remove all Statistics code from build
+   */
+  final val canEnable = _enabled
+
+  /** replace with
+   *
    *   final def hotEnabled = _enabled
-   *   
+   *
    * and rebuild, to also count tiny but super-hot methods
    * such as phase, flags, owner, name.
    */
