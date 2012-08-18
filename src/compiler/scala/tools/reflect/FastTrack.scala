@@ -17,16 +17,11 @@ trait FastTrack {
   private implicit def context2taggers(c0: MacroContext): Taggers { val c: c0.type } = new { val c: c0.type = c0 } with Taggers
   private implicit def context2macroimplementations(c0: MacroContext): MacroImplementations { val c: c0.type } = new { val c: c0.type = c0 } with MacroImplementations
 
-  implicit def fastTrackEntry2MacroRuntime(entry: FastTrackEntry): MacroRuntime = args => entry.run(args)
+  implicit def fastTrackEntry2MacroRuntime(entry: FastTrackEntry): MacroRuntime = args => entry.run(args.c)
   type FastTrackExpander = PartialFunction[(MacroContext, Tree), Tree]
   case class FastTrackEntry(sym: Symbol, expander: FastTrackExpander) {
-    def validate(argss: List[List[Any]]): Boolean = {
-      val c = argss.flatten.apply(0).asInstanceOf[MacroContext]
-      val isValid = expander isDefinedAt (c, c.expandee)
-      isValid
-    }
-    def run(args: List[Any]): Any = {
-      val c = args(0).asInstanceOf[MacroContext]
+    def validate(c: MacroContext): Boolean = expander.isDefinedAt((c, c.expandee))
+    def run(c: MacroContext): Any = {
       val result = expander((c, c.expandee))
       c.Expr[Nothing](result)(c.AbsTypeTag.Nothing)
     }

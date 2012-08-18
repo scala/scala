@@ -12,6 +12,8 @@ import symtab.Flags.{ PRIVATE, PROTECTED, IS_ERROR }
 import scala.compat.Platform.EOL
 import scala.reflect.runtime.ReflectionUtils
 import scala.reflect.macros.runtime.AbortMacroException
+import scala.util.control.NonFatal
+import scala.tools.nsc.util.stackTraceString
 
 trait ContextErrors {
   self: Analyzer =>
@@ -687,13 +689,14 @@ trait ContextErrors {
               relevantElements = relevantElements dropRight threshold
 
               realex.setStackTrace(relevantElements)
-              val message = new java.io.StringWriter()
-              realex.printStackTrace(new java.io.PrintWriter(message))
-              Some(EOL + message)
+              Some(EOL + stackTraceString(realex))
             }
           } catch {
             // if the magic above goes boom, just fall back to uninformative, but better than nothing, getMessage
-            case ex: Throwable =>
+            case NonFatal(ex) =>
+              macroLogVerbose("got an exception when processing a macro generated exception\n" +
+                              "offender = " + stackTraceString(realex) + "\n" +
+                              "error = " + stackTraceString(ex))
               None
           }
         } getOrElse {

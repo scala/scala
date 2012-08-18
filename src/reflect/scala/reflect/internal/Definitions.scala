@@ -462,7 +462,7 @@ trait Definitions extends api.StandardDefinitions {
          def ReflectRuntimeUniverse      = if (ReflectRuntimePackage != NoSymbol) getMemberValue(ReflectRuntimePackage, nme.universe) else NoSymbol
          def ReflectRuntimeCurrentMirror = if (ReflectRuntimePackage != NoSymbol) getMemberMethod(ReflectRuntimePackage, nme.currentMirror) else NoSymbol
 
-    lazy val PartialManifestClass  = getMemberType(ReflectPackage, tpnme.ClassManifest)
+    lazy val PartialManifestClass  = getTypeMember(ReflectPackage, tpnme.ClassManifest)
     lazy val PartialManifestModule = requiredModule[scala.reflect.ClassManifestFactory.type]
     lazy val FullManifestClass     = requiredClass[scala.reflect.Manifest[_]]
     lazy val FullManifestModule    = requiredModule[scala.reflect.ManifestFactory.type]
@@ -494,7 +494,7 @@ trait Definitions extends api.StandardDefinitions {
 
     lazy val MacroContextClass                   = getClassIfDefined("scala.reflect.macros.Context") // defined in scala-reflect.jar, so we need to be careful
          def MacroContextPrefix                  = if (MacroContextClass != NoSymbol) getMemberMethod(MacroContextClass, nme.prefix) else NoSymbol
-         def MacroContextPrefixType              = if (MacroContextClass != NoSymbol) getMemberType(MacroContextClass, tpnme.PrefixType) else NoSymbol
+         def MacroContextPrefixType              = if (MacroContextClass != NoSymbol) getTypeMember(MacroContextClass, tpnme.PrefixType) else NoSymbol
          def MacroContextUniverse                = if (MacroContextClass != NoSymbol) getMemberMethod(MacroContextClass, nme.universe) else NoSymbol
          def MacroContextMirror                  = if (MacroContextClass != NoSymbol) getMemberMethod(MacroContextClass, nme.mirror) else NoSymbol
     lazy val MacroImplAnnotation                 = requiredClass[scala.reflect.macros.internal.macroImpl]
@@ -1012,10 +1012,10 @@ trait Definitions extends api.StandardDefinitions {
         case _               => fatalMissingSymbol(owner, name, "member object")
       }
     }
-    def getMemberType(owner: Symbol, name: Name): TypeSymbol = {
+    def getTypeMember(owner: Symbol, name: Name): TypeSymbol = {
       getMember(owner, name.toTypeName) match {
         case x: TypeSymbol => x
-        case _             => fatalMissingSymbol(owner, name, "member type")
+        case _             => fatalMissingSymbol(owner, name, "type member")
       }
     }
     def getMemberClass(owner: Symbol, name: Name): ClassSymbol = {
