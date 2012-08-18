@@ -17,10 +17,10 @@ import scala.collection.parallel.immutable.ParVector
 
 /** Companion object to the Vector class
  */
-object Vector extends SeqFactory[Vector] {
-  @inline implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, Vector[A]] =
-    scala.collection.IndexedSeq.ReusableCBF.asInstanceOf[GenericCanBuildFrom[A]]
+object Vector extends IndexedSeqFactory[Vector] {
   def newBuilder[A]: Builder[A, Vector[A]] = new VectorBuilder[A]
+  implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, Vector[A]] =
+    ReusableCBF.asInstanceOf[GenericCanBuildFrom[A]]
   private[immutable] val NIL = new Vector[Nothing](0, 0, 0)
   @inline override def empty[A]: Vector[A] = NIL
 }

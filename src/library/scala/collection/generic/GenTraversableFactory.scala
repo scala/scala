@@ -38,11 +38,10 @@ import language.higherKinds
 abstract class GenTraversableFactory[CC[X] <: GenTraversable[X] with GenericTraversableTemplate[X, CC]]
   extends GenericCompanion[CC] {
 
-  // A default implementation of GenericCanBuildFrom which can be cast
-  // to whatever is desired.
-  val ReusableCBF: GenericCanBuildFrom[Nothing] = new GenericCanBuildFrom[Nothing] {
+  private[this] val ReusableCBFInstance: GenericCanBuildFrom[Nothing] = new GenericCanBuildFrom[Nothing] {
     override def apply() = newBuilder[Nothing]
   }
+  def ReusableCBF: GenericCanBuildFrom[Nothing] = ReusableCBFInstance
 
   /** A generic implementation of the `CanBuildFrom` trait, which forwards
    *  all calls to `apply(from)` to the `genericBuilder` method of
@@ -250,4 +249,3 @@ abstract class GenTraversableFactory[CC[X] <: GenTraversable[X] with GenericTrav
     b.result
   }
 }
-
