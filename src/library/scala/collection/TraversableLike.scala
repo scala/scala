@@ -235,11 +235,13 @@ trait TraversableLike[+A, +Repr] extends Any
     (that ++ seq)(breakOut)
 
   def map[B, That](f: A => B)(implicit bf: CanBuildFrom[Repr, B, That]): That = {
-    def builder = bf(repr)    // extracted to keep method size under 35 bytes, so that it can be JIT-inlined
+    def builder = { // extracted to keep method size under 35 bytes, so that it can be JIT-inlined
+      val b = bf(repr)
+      b.sizeHint(this)
+      b
+    }
     val b = builder
-    def mapBody = (x: A) => b += f(x) // extracted to keep method size under 35 bytes, so that it can be JIT-inlined
-    b.sizeHint(this)
-    this foreach mapBody
+    for (x <- this) b += f(x)
     b.result
   }
 
@@ -253,7 +255,7 @@ trait TraversableLike[+A, +Repr] extends Any
   /** Selects all elements of this $coll which satisfy a predicate.
    *
    *  @param p     the predicate used to test elements.
-   *  @return      a new $coll consisting of all elements of this $coll that satisfy the given
+   *  @return      a n*ew $coll consisting of all elements of this $coll that satisfy the given
    *               predicate `p`. The order of the elements is preserved.
    */
   def filter(p: A => Boolean): Repr = {
