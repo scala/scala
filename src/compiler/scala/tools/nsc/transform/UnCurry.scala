@@ -16,10 +16,10 @@ import language.postfixOps
  *  - for every curried application: f(args_1)...(args_n) ==> f(args_1, ..., args_n)
  *  - for every type application: f[Ts] ==> f[Ts]() unless followed by parameters
  *  - for every use of a parameterless function: f ==> f()  and  q.f ==> q.f()
- *  - for every def-parameter:  x: => T ==> x: () => T
- *  - for every use of a def-parameter: x ==> x.apply()
- *  - for every argument to a def parameter `x: => T':
- *      if argument is not a reference to a def parameter:
+ *  - for every by-name parameter: x: => T ==> () => x: () => T
+ *  - for every use of a by-name parameter: x ==> x.apply()
+ *  - for every argument to a by-name parameter `x: => T':
+ *      if argument is not a reference to a by-name parameter:
  *        convert argument `e` to (expansion of) `() => e'
  *  - for every repeated Scala parameter `x: T*' --> x: Seq[T].
  *  - for every repeated Java parameter `x: T...' --> x: Array[T], except:
@@ -104,9 +104,13 @@ abstract class UnCurry extends InfoTransform
 
     private def newFunction0(body: Tree): Tree = {
       val result = localTyper.typedPos(body.pos)(Function(Nil, body)).asInstanceOf[Function]
-      log("Change owner from %s to %s in %s".format(currentOwner, result.symbol, result.body))
-      result.body changeOwner (currentOwner -> result.symbol)
+      changeOwner(result.body, result)
       transformFunction(result)
+    }
+
+    private def changeOwner(tree: Tree, result: Tree) {
+      log("Change owner from %s to %s in %s".format(currentOwner, result.symbol, tree))
+      tree changeOwner (currentOwner -> result.symbol)
     }
 
     private lazy val serialVersionUIDAnnotation =
@@ -242,6 +246,12 @@ abstract class UnCurry extends InfoTransform
         case _ if fun.tpe.typeSymbol == PartialFunctionClass =>
           // only get here when running under -Xoldpatmat
           synthPartialFunction(fun)
+        case _ if treeInfo.isSafeToUseConstantFunction(fun) =>
+          import fun.body
+          val result = localTyper.typedPos(body.pos)(gen.newScalaRuntimeConst(body, fun.vparams.length))
+          log(s"Avoided a new anonymous function for inlinable expr: ${body}")
+          changeOwner(body, result)
+          result
         case _ =>
           val parents = (
             if (isFunctionType(fun.tpe)) addSerializable(abstractFunctionForFunctionType(fun.tpe))
@@ -250,7 +260,7 @@ abstract class UnCurry extends InfoTransform
           val anonClass = fun.symbol.owner newAnonymousFunctionClass(fun.pos, inConstructorFlag) addAnnotation serialVersionUIDAnnotation
           anonClass setInfo ClassInfoType(parents, newScope, anonClass)
 
-          val targs     = fun.tpe.typeArgs
+          val targs             = fun.tpe.typeArgs
           val (formals, restpe) = (targs.init, targs.last)
 
           val applyMethodDef = {
@@ -693,6 +703,46 @@ abstract class UnCurry extends InfoTransform
         else
           tree
       }
+      
+      def isThrowable(pat: Tree): Boolean = pat match {
+        case Typed(Ident(nme.WILDCARD), tpt) => 
+          tpt.tpe =:= ThrowableClass.tpe
+        case Bind(_, pat) => 
+          isThrowable(pat)
+        case _ =>
+          false
+      }
+      
+      def isDefaultCatch(cdef: CaseDef) = isThrowable(cdef.pat) && cdef.guard.isEmpty
+
+      def postTransformTry(tree: Try) = {
+        val body = tree.block
+        val catches = tree.catches
+        val finalizer = tree.finalizer
+        if (opt.virtPatmat) {
+          if (catches exists (cd => !treeInfo.isCatchCase(cd)))
+            debugwarn("VPM BUG! illegal try/catch " + catches)
+          tree
+        } else if (catches forall treeInfo.isCatchCase) {
+          tree
+        } else {
+          val exname = unit.freshTermName("ex$")
+          val cases =
+            if ((catches exists treeInfo.isDefaultCase) || isDefaultCatch(catches.last)) catches
+            else catches :+ CaseDef(Ident(nme.WILDCARD), EmptyTree, Throw(Ident(exname)))
+          val catchall =
+            atPos(tree.pos) {
+              CaseDef(
+                Bind(exname, Ident(nme.WILDCARD)),
+                EmptyTree,
+                Match(Ident(exname), cases))
+            }
+          debuglog("rewrote try: " + catches + " ==> " + catchall);
+          val catches1 = localTyper.typedCases(
+            List(catchall), ThrowableClass.tpe, WildcardType)
+          treeCopy.Try(tree, body, catches1, finalizer)
+        }
+      }
 
       tree match {
         /* Some uncurry post transformations add members to templates.
@@ -724,35 +774,12 @@ abstract class UnCurry extends InfoTransform
           )
           addJavaVarargsForwarders(dd, flatdd)
 
-        case Try(body, catches, finalizer) =>
-          if (opt.virtPatmat) { if(catches exists (cd => !treeInfo.isCatchCase(cd))) debugwarn("VPM BUG! illegal try/catch "+ catches); tree }
-          else if (catches forall treeInfo.isCatchCase) tree
-          else {
-            val exname = unit.freshTermName("ex$")
-            val cases =
-              if ((catches exists treeInfo.isDefaultCase) || (catches.last match {  // bq: handle try { } catch { ... case ex:Throwable => ...}
-                    case CaseDef(Typed(Ident(nme.WILDCARD), tpt), EmptyTree, _) if (tpt.tpe =:= ThrowableClass.tpe) =>
-                      true
-                    case CaseDef(Bind(_, Typed(Ident(nme.WILDCARD), tpt)), EmptyTree, _) if (tpt.tpe =:= ThrowableClass.tpe) =>
-                      true
-                    case _ =>
-                      false
-                  })) catches
-              else catches :+ CaseDef(Ident(nme.WILDCARD), EmptyTree, Throw(Ident(exname)))
-            val catchall =
-              atPos(tree.pos) {
-                CaseDef(
-                  Bind(exname, Ident(nme.WILDCARD)),
-                  EmptyTree,
-                  Match(Ident(exname), cases))
-              }
-            debuglog("rewrote try: " + catches + " ==> " + catchall);
-            val catches1 = localTyper.typedCases(
-              List(catchall), ThrowableClass.tpe, WildcardType)
-            treeCopy.Try(tree, body, catches1, finalizer)
-          }
+        case tree: Try =>
+          postTransformTry(tree)
+          
         case Apply(Apply(fn, args), args1) =>
           treeCopy.Apply(tree, fn, args ::: args1)
+          
         case Ident(name) =>
           assert(name != tpnme.WILDCARD_STAR, tree)
           applyUnary()

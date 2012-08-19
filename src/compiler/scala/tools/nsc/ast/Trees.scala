@@ -50,7 +50,7 @@ trait Trees extends reflect.internal.Trees { self: Global =>
 
  /** Array selection <qualifier> . <name> only used during erasure */
   case class SelectFromArray(qualifier: Tree, name: Name, erasure: Type)
-       extends TermTree with RefTree
+       extends RefTree with TermTree
 
   /** Derived value class injection (equivalent to: new C(arg) after easure); only used during erasure
    *  The class C is stored as the symbol of the tree node.
