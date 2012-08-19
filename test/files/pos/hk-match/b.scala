@@ -1,0 +1,1 @@
+trait Bippy[E[X]]

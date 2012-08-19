@@ -1372,7 +1372,7 @@ trait Infer {
             (    isLocalBinding(sym)
               || arg.typeSymbol.isTypeParameterOrSkolem
               || (sym.name == tpnme.WILDCARD) // avoid spurious warnings on HK types
-              || check(arg, param.tpe, conforms)
+              || check(arg, param.tpeHK, conforms)
               || warn("non-variable type argument " + arg)
             )
           }
