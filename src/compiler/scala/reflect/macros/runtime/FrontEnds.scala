@@ -35,10 +35,7 @@ trait FrontEnds extends scala.tools.reflect.FrontEnds {
 
   def error(pos: Position, msg: String): Unit = callsiteTyper.context.error(pos, msg)
 
-  def abort(pos: Position, msg: String): Nothing = {
-    callsiteTyper.context.error(pos, msg)
-    throw new AbortMacroException(pos, msg)
-  }
+  def abort(pos: Position, msg: String): Nothing = throw new AbortMacroException(pos, msg)
 
   def interactive(): Unit = universe.reporter match {
     case reporter: scala.tools.nsc.reporters.AbstractReporter => reporter.displayPrompt()

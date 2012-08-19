@@ -10,6 +10,10 @@ import scala.collection.{ mutable, immutable }
 import scala.reflect.internal.util.StringOps.{ countElementsAsString, countAsString }
 import symtab.Flags.{ PRIVATE, PROTECTED, IS_ERROR }
 import scala.compat.Platform.EOL
+import scala.reflect.runtime.ReflectionUtils
+import scala.reflect.macros.runtime.AbortMacroException
+import scala.util.control.NonFatal
+import scala.tools.nsc.util.stackTraceString
 
 trait ContextErrors {
   self: Analyzer =>
@@ -323,16 +327,6 @@ trait ContextErrors {
         setError(tree)
       }
 
-      def MacroEtaError(tree: Tree) = {
-        issueNormalTypeError(tree, "macros cannot be eta-expanded")
-        setError(tree)
-      }
-
-      def MacroPartialApplicationError(tree: Tree) = {
-        issueNormalTypeError(tree, "macros cannot be partially applied")
-        setError(tree)
-      }
-
       //typedReturn
       def ReturnOutsideOfDefError(tree: Tree) = {
         issueNormalTypeError(tree, "return outside method definition")
@@ -636,6 +630,106 @@ trait ContextErrors {
 
       def CyclicReferenceError(errPos: Position, lockedSym: Symbol) =
         issueTypeError(PosAndMsgTypeError(errPos, "illegal cyclic reference involving " + lockedSym))
+
+      // macro-related errors (also see MacroErrors below)
+
+      def MacroEtaError(tree: Tree) = {
+        issueNormalTypeError(tree, "macros cannot be eta-expanded")
+        setError(tree)
+      }
+
+      // same reason as for MacroBodyTypecheckException
+      case object MacroExpansionException extends Exception with scala.util.control.ControlThrowable
+
+      private def macroExpansionError(expandee: Tree, msg: String = null, pos: Position = NoPosition) = {
+        def msgForLog = if (msg != null && (msg contains "exception during macro expansion")) msg.split(EOL).drop(1).headOption.getOrElse("?") else msg
+        macroLogLite("macro expansion has failed: %s".format(msgForLog))
+        val errorPos = if (pos != NoPosition) pos else (if (expandee.pos != NoPosition) expandee.pos else enclosingMacroPosition)
+        if (msg != null) context.error(pos, msg) // issueTypeError(PosAndMsgTypeError(..)) won't work => swallows positions
+        setError(expandee)
+        throw MacroExpansionException
+      }
+
+      def MacroPartialApplicationError(expandee: Tree) = {
+        // macroExpansionError won't work => swallows positions, hence needed to do issueTypeError
+        // kinda contradictory to the comment in `macroExpansionError`, but this is how it works
+        issueNormalTypeError(expandee, "macros cannot be partially applied")
+        setError(expandee)
+        throw MacroExpansionException
+      }
+
+      def MacroGeneratedAbort(expandee: Tree, ex: AbortMacroException) = {
+        // errors have been reported by the macro itself, so we do nothing here
+        macroLogVerbose("macro expansion has been aborted")
+        macroExpansionError(expandee, ex.msg, ex.pos)
+      }
+
+      def MacroGeneratedTypeError(expandee: Tree, err: TypeError = null) =
+        if (err == null) {
+          // errors have been reported by the macro itself, so we do nothing here
+          macroExpansionError(expandee, null)
+        } else {
+          macroLogLite("macro expansion has failed: %s at %s".format(err.msg, err.pos))
+          throw err // this error must be propagated, don't report
+        }
+
+      def MacroGeneratedException(expandee: Tree, ex: Throwable) = {
+        val realex = ReflectionUtils.unwrapThrowable(ex)
+        val message = {
+          try {
+            // [Eugene] is there a better way?
+            // [Paul] See Exceptional.scala and Origins.scala.
+            val relevancyThreshold = realex.getStackTrace().indexWhere(_.getMethodName endsWith "macroExpand1")
+            if (relevancyThreshold == -1) None
+            else {
+              var relevantElements = realex.getStackTrace().take(relevancyThreshold + 1)
+              def isMacroInvoker(este: StackTraceElement) = este.isNativeMethod || (este.getClassName != null && (este.getClassName contains "fastTrack"))
+              var threshold = relevantElements.reverse.indexWhere(isMacroInvoker) + 1
+              while (threshold != relevantElements.length && isMacroInvoker(relevantElements(relevantElements.length - threshold - 1))) threshold += 1
+              relevantElements = relevantElements dropRight threshold
+
+              realex.setStackTrace(relevantElements)
+              Some(EOL + stackTraceString(realex))
+            }
+          } catch {
+            // if the magic above goes boom, just fall back to uninformative, but better than nothing, getMessage
+            case NonFatal(ex) =>
+              macroLogVerbose("got an exception when processing a macro generated exception\n" +
+                              "offender = " + stackTraceString(realex) + "\n" +
+                              "error = " + stackTraceString(ex))
+              None
+          }
+        } getOrElse {
+          val msg = realex.getMessage
+          if (msg != null) msg else realex.getClass.getName
+        }
+        macroExpansionError(expandee, "exception during macro expansion: " + message)
+      }
+
+      def MacroFreeSymbolError(expandee: Tree, sym: FreeSymbol) = {
+        def template(kind: String) = (
+            s"Macro expansion contains free $kind variable %s. Have you forgotten to use %s? "
+          + s"If you have troubles tracking free $kind variables, consider using -Xlog-free-${kind}s"
+        )
+        val forgotten = (
+          if (sym.isTerm) "splice when splicing this variable into a reifee"
+          else "c.AbsTypeTag annotation for this type parameter"
+        )
+        macroExpansionError(expandee, template(sym.name.nameKind).format(sym.name + " " + sym.origin, forgotten))
+      }
+
+      def MacroExpansionIsNotExprError(expandee: Tree, expanded: Any) =
+        macroExpansionError(expandee,
+          "macro must return a compiler-specific expr; returned value is " + (
+            if (expanded == null) "null"
+            else if (expanded.isInstanceOf[Expr[_]]) " Expr, but it doesn't belong to this compiler's universe"
+            else " of " + expanded.getClass
+        ))
+
+      def MacroImplementationNotFoundError(expandee: Tree) =
+        macroExpansionError(expandee,
+          "macro implementation not found: " + expandee.symbol.name + " " +
+          "(the most common reason for that is that you cannot use macro implementations in the same compilation run that defines them)")
     }
   }
 

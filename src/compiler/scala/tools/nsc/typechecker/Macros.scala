@@ -12,6 +12,8 @@ import scala.reflect.macros.util._
 import java.lang.{Class => jClass}
 import java.lang.reflect.{Array => jArray, Method => jMethod}
 import scala.reflect.internal.util.Collections._
+import scala.util.control.ControlThrowable
+import scala.reflect.macros.runtime.AbortMacroException
 
 /**
  *  Code to deal with macros, namely with:
@@ -396,7 +398,7 @@ trait Macros extends scala.tools.reflect.FastTrack with Traces {
                 macroLogVerbose("typechecked1:%n%s%n%s".format(typechecked, showRaw(typechecked)))
                 typechecked
               } finally {
-                openMacros = openMacros.tail
+                popMacroContext()
               }
             case Fallback(fallback) =>
               typer.typed1(fallback, EXPRmode, WildcardType)
@@ -459,7 +461,11 @@ trait Macros extends scala.tools.reflect.FastTrack with Traces {
       map2(aparamss.flatten, rparamss.flatten)((aparam, rparam) => {
         if (aparam.name != rparam.name && !rparam.isSynthetic) MacroImplParamNameMismatchError(aparam, rparam)
         if (isRepeated(aparam) ^ isRepeated(rparam)) MacroImplVarargMismatchError(aparam, rparam)
-        checkMacroImplParamTypeMismatch(stripOffPrefixTypeRefinement(atpeToRtpe(aparam.tpe)), rparam)
+        val aparamtpe = aparam.tpe.dealias match {
+          case RefinedType(List(tpe), Scope(sym)) if tpe == MacroContextClass.tpe && sym.allOverriddenSymbols.contains(MacroContextPrefixType) => tpe
+          case tpe => tpe
+        }
+        checkMacroImplParamTypeMismatch(atpeToRtpe(aparamtpe), rparam)
       })
 
       checkMacroImplResultTypeMismatch(atpeToRtpe(aret), rret)
@@ -508,7 +514,7 @@ trait Macros extends scala.tools.reflect.FastTrack with Traces {
    *  @return Requested runtime if macro implementation can be loaded successfully from either of the mirrors,
    *          `null` otherwise.
    */
-  type MacroRuntime = List[Any] => Any
+  type MacroRuntime = MacroArgs => Any
   private val macroRuntimesCache = perRunCaches.newWeakMap[Symbol, MacroRuntime]
   private def macroRuntime(macroDef: Symbol): MacroRuntime = {
     macroTraceVerbose("looking for macro implementation: ")(macroDef)
@@ -536,7 +542,7 @@ trait Macros extends scala.tools.reflect.FastTrack with Traces {
           val implMeths = implObj.getClass.getDeclaredMethods.find(_.getName == methName)
           val implMeth = implMeths getOrElse { throw new NoSuchMethodException(s"$className.$methName") }
           macroLogVerbose("successfully loaded macro impl as (%s, %s)".format(implObj, implMeth))
-          (args: List[Any]) => implMeth.invoke(implObj, (args map (_.asInstanceOf[AnyRef])): _*)
+          args => implMeth.invoke(implObj, ((args.c +: args.others) map (_.asInstanceOf[AnyRef])): _*)
         } catch {
           case ex: Exception =>
             macroTraceVerbose(s"macro runtime failed to load: ")(ex.toString)
@@ -553,19 +559,14 @@ trait Macros extends scala.tools.reflect.FastTrack with Traces {
       val callsiteTyper: universe.analyzer.Typer = typer.asInstanceOf[global.analyzer.Typer]
       val expandee = expandeeTree
     } with UnaffiliatedMacroContext {
-      // todo. infer precise typetag for this Expr, namely the PrefixType member of the Context refinement
       val prefix = Expr[Nothing](prefixTree)(TypeTag.Nothing)
       override def toString = "MacroContext(%s@%s +%d)".format(expandee.symbol.name, expandee.pos, enclosingMacros.length - 1 /* exclude myself */)
     }
 
   /** Calculate the arguments to pass to a macro implementation when expanding the provided tree.
-   *
-   *  This includes inferring the exact type and instance of the macro context to pass, and also
-   *  allowing for missing parameter sections in macro implementation (see `macroImplParamsss` for more info).
-   *
-   *  @return list of runtime objects to pass to the implementation obtained by `macroRuntime`
    */
-  private def macroArgs(typer: Typer, expandee: Tree): Option[List[Any]] = {
+  case class MacroArgs(c: MacroContext, others: List[Any])
+  private def macroArgs(typer: Typer, expandee: Tree): MacroArgs = {
     val macroDef   = expandee.symbol
     val prefixTree = expandee.collect{ case Select(qual, name) => qual }.headOption.getOrElse(EmptyTree)
     val context    = expandee.attachments.get[MacroRuntimeAttachment].flatMap(_.macroContext).getOrElse(macroContext(typer, prefixTree, expandee))
@@ -585,23 +586,16 @@ trait Macros extends scala.tools.reflect.FastTrack with Traces {
 
     val argcDoesntMatch = macroDef.paramss.length != exprArgs.length
     val nullaryArgsEmptyParams = exprArgs.isEmpty && macroDef.paramss == ListOfNil
-    if (argcDoesntMatch && !nullaryArgsEmptyParams) { typer.TyperErrorGen.MacroPartialApplicationError(expandee); return None }
+    if (argcDoesntMatch && !nullaryArgsEmptyParams) { typer.TyperErrorGen.MacroPartialApplicationError(expandee) }
 
-    var argss: List[List[Any]] = List(context) :: exprArgs.toList
+    var argss: List[List[Any]] = exprArgs.toList
+    macroTraceVerbose("context: ")(context)
     macroTraceVerbose("argss: ")(argss)
-    val rawArgss =
+
+    val preparedArgss: List[List[Any]] =
       if (fastTrack contains macroDef) {
-        if (fastTrack(macroDef) validate argss) argss
-        else {
-          // if you're getting here, it's not necessarily partial application that is at fault
-          // for example, if a signature of a hardwired macro has been changed without updated FastTrack
-          // then the corresponding partial function in FastTrack will refuse to process the expandee
-          // validation will return false, and control flow will end up here
-          // however, for simplicity sake, I didn't introduce the notion of error handling to FastTrack
-          // so all kinds of validation errors produce `MacroPartialApplicationError`
-          typer.TyperErrorGen.MacroPartialApplicationError(expandee)
-          return None
-        }
+        if (fastTrack(macroDef) validate context) argss
+        else typer.TyperErrorGen.MacroPartialApplicationError(expandee)
       } else {
         val binding = loadMacroImplBinding(macroDef)
         macroTraceVerbose("binding: ")(binding)
@@ -643,31 +637,41 @@ trait Macros extends scala.tools.reflect.FastTrack with Traces {
         argss = if (hasImplicitParams) argss.dropRight(1) :+ (tags ++ argss.last) else argss :+ tags
 
         // transforms argss taking into account varargness of paramss
-        // not all argument lists in argss map to macroDef.paramss, so we need to apply extra care
-        // namely:
-        // 1) the first argument list represents (c: Context) in macroImpl, so it doesn't have correspondence in macroDef
-        // 2) typetag context bounds are only declared on macroImpls, so this optional arglist also doesn't match macroDef
+        // note that typetag context bounds are only declared on macroImpls
+        // so this optional arglist might not match macroDef's paramlist
         // nb! varargs can apply to any parameter section, not necessarily to the last one
-        mapWithIndex(argss)((as, i_argss) => {
-          val i_paramss = i_argss - 1
-          val mapsToParamss = 0 <= i_paramss && i_paramss < macroDef.paramss.length
+        mapWithIndex(argss)((as, i) => {
+          val mapsToParamss = macroDef.paramss.indices contains i
           if (mapsToParamss) {
-            val ps = macroDef.paramss(i_paramss)
-            if (isVarArgsList(ps)) as.take(ps.length - 1) :+ as.drop(ps.length - 1)
-            else as
+            val ps = macroDef.paramss(i)
+            if (isVarArgsList(ps)) {
+              val (normal, varargs) = as splitAt (ps.length - 1)
+              normal :+ varargs // pack all varargs into a single List argument
+            } else as
           } else as
         })
       }
-    val rawArgs = rawArgss.flatten
-    macroTraceVerbose("rawArgs: ")(rawArgs)
-    Some(rawArgs)
+    macroTraceVerbose("preparedArgss: ")(preparedArgss)
+    MacroArgs(context, preparedArgss.flatten)
   }
 
   /** Keeps track of macros in-flight.
    *  See more informations in comments to `openMacros` in `scala.reflect.macros.Context`.
    */
-  var openMacros = List[MacroContext]()
+  private var _openMacros = List[MacroContext]()
+  def openMacros = _openMacros
+  private def pushMacroContext(c: MacroContext) = _openMacros ::= c
+  private def popMacroContext() = _openMacros = _openMacros.tail
   def enclosingMacroPosition = openMacros map (_.macroApplication.pos) find (_ ne NoPosition) getOrElse NoPosition
+
+  private sealed abstract class MacroExpansionResult
+  private case class Success(expanded: Tree) extends MacroExpansionResult
+  private case class Fallback(fallback: Tree) extends MacroExpansionResult { currentRun.seenMacroExpansionsFallingBack = true }
+  private case class Other(result: Tree) extends MacroExpansionResult
+  private def Delay(expanded: Tree) = Other(expanded)
+  private def Skip(expanded: Tree) = Other(expanded)
+  private def Cancel(expandee: Tree) = Other(expandee)
+  private def Failure(expandee: Tree) = Other(expandee)
 
   /** Performs macro expansion:
    *    1) Checks whether the expansion needs to be delayed (see `mustDelayMacroExpansion`)
@@ -692,51 +696,28 @@ trait Macros extends scala.tools.reflect.FastTrack with Traces {
    *    the expandee with an error marker set   if there has been an error
    */
   def macroExpand(typer: Typer, expandee: Tree, mode: Int = EXPRmode, pt: Type = WildcardType): Tree = {
-    def fail(what: String, tree: Tree): Tree = {
-      val err = typer.context.errBuffer.head
-      this.fail(typer, tree, err.errPos, "failed to %s: %s".format(what, err.errMsg))
-      return expandee
-    }
     val start = Statistics.startTimer(macroExpandNanos)
     Statistics.incCounter(macroExpandCount)
     try {
       macroExpand1(typer, expandee) match {
-        case Success(expanded0) =>
+        case Success(expanded) =>
           try {
-            val expanded = expanded0 // virtpatmat swallows the local for expandee from the match
-                                     // so I added this dummy local for the ease of debugging
+            def typecheck(phase: String, tree: Tree, pt: Type): Tree = {
+              if (tree.isErroneous) return tree
+              macroLogVerbose(s"typechecking against $phase $pt: $expanded")
+              val numErrors    = reporter.ERROR.count
+              def hasNewErrors = reporter.ERROR.count > numErrors
+              val result = typer.context.withImplicitsEnabled(typer.typed(tree, EXPRmode, pt))
+              macroTraceVerbose(s"""${if (hasNewErrors) "failed to typecheck" else "successfully typechecked"} against $phase $pt:\n$result\n""")(result)
+            }
+
             var expectedTpe = expandee.tpe
-
-            val isNullaryInvocation = expandee match {
-              case TypeApply(Select(_, _), _) => true
-              case TypeApply(Ident(_), _) => true
-              case Select(_, _) => true
-              case Ident(_) => true
-              case _ => false
-            }
-            if (isNullaryInvocation) expectedTpe match {
-              case NullaryMethodType(restpe) =>
-                macroTraceVerbose("nullary invocation of a nullary method. unwrapping expectedTpe from " + expectedTpe + " to: ")(restpe)
-                expectedTpe = restpe
-              case MethodType(Nil, restpe) =>
-                macroTraceVerbose("nullary invocation of a method with an empty parameter list. unwrapping expectedTpe from " + expectedTpe + " to: ")(restpe)
-                expectedTpe = restpe
-              case _ => ;
-            }
-
-            macroLogVerbose("typechecking1 against %s: %s".format(expectedTpe, expanded))
-            var typechecked = typer.context.withImplicitsEnabled(typer.typed(expanded, EXPRmode, expectedTpe))
-            if (typer.context.hasErrors) fail("typecheck against macro def return type", expanded)
-            macroLogVerbose("typechecked1:%n%s%n%s".format(typechecked, showRaw(typechecked)))
-
-            macroLogVerbose("typechecking2 against %s: %s".format(pt, expanded))
-            typechecked = typer.context.withImplicitsEnabled(typer.typed(typechecked, EXPRmode, pt))
-            if (typer.context.hasErrors) fail("typecheck against expected type", expanded)
-            macroLogVerbose("typechecked2:%n%s%n%s".format(typechecked, showRaw(typechecked)))
-
+            if (isNullaryInvocation(expandee)) expectedTpe = expectedTpe.finalResultType
+            var typechecked = typecheck("macro def return type", expanded, expectedTpe)
+            typechecked = typecheck("expected type", typechecked, pt)
             typechecked addAttachment MacroExpansionAttachment(expandee)
           } finally {
-            openMacros = openMacros.tail
+            popMacroContext()
           }
         case Fallback(fallback) =>
           typer.context.withImplicitsEnabled(typer.typed(fallback, EXPRmode, pt))
@@ -748,230 +729,94 @@ trait Macros extends scala.tools.reflect.FastTrack with Traces {
     }
   }
 
-  private sealed abstract class MacroExpansionResult extends Product with Serializable
-  private case class Success(expanded: Tree) extends MacroExpansionResult
-  private case class Fallback(fallback: Tree) extends MacroExpansionResult
-  private case class Other(result: Tree) extends MacroExpansionResult
-  private def Delay(expanded: Tree) = Other(expanded)
-  private def Skip(expanded: Tree) = Other(expanded)
-  private def Cancel(expandee: Tree) = Other(expandee)
-  private def Failure(expandee: Tree) = Other(expandee)
-  private def fail(typer: Typer, expandee: Tree, pos: Position = NoPosition, msg: String = null) = {
-    def msgForLog = if (msg != null && (msg contains "exception during macro expansion")) msg.split(EOL).drop(1).headOption.getOrElse("?") else msg
-    macroLogLite("macro expansion has failed: %s".format(msgForLog))
-    val errorPos = if (pos != NoPosition) pos else (if (expandee.pos != NoPosition) expandee.pos else enclosingMacroPosition)
-    if (msg != null) typer.context.error(errorPos, msg)
-    typer.infer.setError(expandee)
-    Failure(expandee)
-  }
-
   /** Does the same as `macroExpand`, but without typechecking the expansion
    *  Meant for internal use within the macro infrastructure, don't use it elsewhere.
    */
   private def macroExpand1(typer: Typer, expandee: Tree): MacroExpansionResult =
-    // InfoLevel.Verbose examines and prints out infos of symbols
-    // by the means of this'es these symbols can climb up the lexical scope
-    // when these symbols will be examined by a node printer
-    // they will enumerate and analyze their children (ask for infos and tpes)
-    // if one of those children involves macro expansion, things might get nasty
-    // that's why I'm temporarily turning this behavior off
+    // verbose printing might cause recursive macro expansions, so I'm shutting it down here
     withInfoLevel(nodePrinters.InfoLevel.Quiet) {
-      // if a macro implementation is incompatible or any of the arguments are erroneous
-      // there is no sense to expand the macro itself => it will only make matters worse
       if (expandee.symbol.isErroneous || (expandee exists (_.isErroneous))) {
         val reason = if (expandee.symbol.isErroneous) "not found or incompatible macro implementation" else "erroneous arguments"
         macroTraceVerbose("cancelled macro expansion because of %s: ".format(reason))(expandee)
         return Cancel(typer.infer.setError(expandee))
       }
 
-      val runtime = macroRuntime(expandee.symbol)
-      if (runtime != null) macroExpandWithRuntime(typer, expandee, runtime)
-      else macroExpandWithoutRuntime(typer, expandee)
+      try {
+        val runtime = macroRuntime(expandee.symbol)
+        if (runtime != null) macroExpandWithRuntime(typer, expandee, runtime)
+        else macroExpandWithoutRuntime(typer, expandee)
+      } catch {
+        case typer.TyperErrorGen.MacroExpansionException => Failure(expandee)
+      }
     }
 
   /** Expands a macro when a runtime (i.e. the macro implementation) can be successfully loaded
    *  Meant for internal use within the macro infrastructure, don't use it elsewhere.
    */
   private def macroExpandWithRuntime(typer: Typer, expandee: Tree, runtime: MacroRuntime): MacroExpansionResult = {
-    def issueFreeError(sym: FreeSymbol) = {
-      val template = (
-          "Macro expansion contains free @kind@ variable %s. Have you forgotten to use %s? "
-        + "If you have troubles tracking free @kind@ variables, consider using -Xlog-free-@kind@s"
-      )
-      val forgotten = (
-        if (sym.isTerm) "splice when splicing this variable into a reifee"
-        else "c.AbsTypeTag annotation for this type parameter"
-      )
-      typer.context.error(expandee.pos,
-        template.replaceAllLiterally("@kind@", sym.name.nameKind).format(
-          sym.name + " " + sym.origin, forgotten)
-      )
-    }
-    def macroExpandInternal = {
-      val wasDelayed  = isDelayed(expandee)
-      val undetparams = calculateUndetparams(expandee)
-      val nowDelayed  = !typer.context.macrosEnabled || undetparams.nonEmpty
+    val wasDelayed  = isDelayed(expandee)
+    val undetparams = calculateUndetparams(expandee)
+    val nowDelayed  = !typer.context.macrosEnabled || undetparams.nonEmpty
 
-      def failExpansion(msg: String = null) = fail(typer, expandee, msg = msg)
-      def performExpansion(args: List[Any]): MacroExpansionResult = {
-        val numErrors    = reporter.ERROR.count
-        def hasNewErrors = reporter.ERROR.count > numErrors
-
-        val expanded = runtime(args)
-
-        if (hasNewErrors)
-          failExpansion() // errors have been reported by the macro itself
-        else expanded match {
-          case expanded: Expr[_] =>
-            macroLogVerbose("original:")
-            macroLogLite("" + expanded.tree + "\n" + showRaw(expanded.tree))
-
-            expanded.tree.freeTerms foreach issueFreeError
-            expanded.tree.freeTypes foreach issueFreeError
-            if (hasNewErrors) failExpansion()
-
-            // inherit the position from the first position-ful expandee in macro callstack
-            // this is essential for sane error messages
-            // now macro expansion gets typechecked against the macro definition return type
-            // however, this happens in macroExpand, not here in macroExpand1
-            else Success(atPos(enclosingMacroPosition.focus)(expanded.tree))
-          case _ =>
-            failExpansion(
-              "macro must return a compiler-specific expr; returned value is " + (
-                if (expanded.isInstanceOf[Expr[_]]) " Expr, but it doesn't belong to this compiler's universe"
-                else " of " + expanded.getClass
-              )
-            )
-        }
-      }
-
-      if (wasDelayed) {
-        if (nowDelayed) Delay(expandee)
-        else Skip(macroExpandAll(typer, expandee))
-      }
-      else {
-        macroLogLite("typechecking macro expansion %s at %s".format(expandee, expandee.pos))
-        macroArgs(typer, expandee).fold(failExpansion(): MacroExpansionResult) {
-          args => (args: @unchecked) match {
-            // crashes virtpatmat:
-            // case args @ ((context: MacroContext) :: _) =>
-            // todo. extract a minimized test case
-            case args @ (context0 :: _) =>
-              val context = context0.asInstanceOf[MacroContext]
-              if (nowDelayed) {
-                macroLogLite("macro expansion is delayed: %s".format(expandee))
-                delayed += expandee -> undetparams
-                // need to save typer context for `macroExpandAll`
-                // need to save macro context to preserve enclosures
-                expandee addAttachment MacroRuntimeAttachment(delayed = true, typerContext = typer.context, macroContext = Some(context.asInstanceOf[MacroContext]))
-                Delay(expandee)
-              }
-              else {
-                // adding stuff to openMacros is easy, but removing it is a nightmare
-                // it needs to be sprinkled over several different code locations
-                // why? https://github.com/scala/scala/commit/bd3eacbae21f39b1ac7fe8ade4ed71fa98e1a28d#L2R1137
-                // todo. will be improved
-                openMacros ::= context
-                var isSuccess = false
-                try performExpansion(args) match {
-                  case x: Success => isSuccess = true ; x
-                  case x          => x
-                }
-                finally {
-                  expandee.removeAttachment[MacroRuntimeAttachment]
-                  if (!isSuccess) openMacros = openMacros.tail
-                }
-              }
-          }
-        }
-      }
-    }
-
-    try macroExpandInternal
-    catch { case ex: Throwable => handleMacroExpansionException(typer, expandee, ex) }
-  }
-
-  private def macroExpandWithoutRuntime(typer: Typer, expandee: Tree): MacroExpansionResult = {
-    val macroDef = expandee.symbol
-    def notFound() = {
-      typer.context.error(expandee.pos, "macro implementation not found: " + macroDef.name + " " +
-        "(the most common reason for that is that you cannot use macro implementations in the same compilation run that defines them)")
-      None
-    }
-    def fallBackToOverridden(tree: Tree): Option[Tree] = {
-      tree match {
-        case Select(qual, name) if (macroDef.isTermMacro) =>
-          macroDef.allOverriddenSymbols match {
-            case first :: _ =>
-              Some(Select(qual, name) setPos tree.pos setSymbol first)
+    (wasDelayed, nowDelayed) match {
+      case (true, true) => Delay(expandee)
+      case (true, false) => Skip(macroExpandAll(typer, expandee))
+      case (false, true) =>
+        macroLogLite("macro expansion is delayed: %s".format(expandee))
+        delayed += expandee -> undetparams
+        expandee addAttachment MacroRuntimeAttachment(delayed = true, typerContext = typer.context, macroContext = Some(macroArgs(typer, expandee).c))
+        Delay(expandee)
+      case (false, false) =>
+        import typer.TyperErrorGen._
+        macroLogLite("performing macro expansion %s at %s".format(expandee, expandee.pos))
+        val args = macroArgs(typer, expandee)
+        try {
+          val numErrors    = reporter.ERROR.count
+          def hasNewErrors = reporter.ERROR.count > numErrors
+          val expanded = { pushMacroContext(args.c); runtime(args) }
+          if (hasNewErrors) MacroGeneratedTypeError(expandee)
+          expanded match {
+            case expanded: Expr[_] =>
+              macroLogVerbose("original:")
+              macroLogLite("" + expanded.tree + "\n" + showRaw(expanded.tree))
+              val freeSyms = expanded.tree.freeTerms ++ expanded.tree.freeTypes
+              freeSyms foreach (sym => MacroFreeSymbolError(expandee, sym))
+              Success(atPos(enclosingMacroPosition.focus)(expanded.tree))
             case _ =>
-              macroTraceVerbose("macro is not overridden: ")(tree)
-              notFound()
+              MacroExpansionIsNotExprError(expandee, expanded)
           }
-        case Apply(fn, args) =>
-          fallBackToOverridden(fn) match {
-            case Some(fn1) => Some(Apply(fn1, args) setPos tree.pos)
-            case _         => None
-          }
-        case TypeApply(fn, args) =>
-          fallBackToOverridden(fn) match {
-            case Some(fn1) => Some(TypeApply(fn1, args) setPos tree.pos)
-            case _         => None
-          }
-        case _ =>
-          macroTraceVerbose("unexpected tree in fallback: ")(tree)
-          notFound()
-      }
-    }
-    fallBackToOverridden(expandee) match {
-      case Some(tree1) =>
-        macroTraceLite("falling back to: ")(tree1)
-        currentRun.macroExpansionFailed = true
-        Fallback(tree1)
-      case None =>
-        fail(typer, expandee)
+        } catch {
+          case ex: Throwable =>
+            popMacroContext()
+            val realex = ReflectionUtils.unwrapThrowable(ex)
+            realex match {
+              case ex: AbortMacroException => MacroGeneratedAbort(expandee, ex)
+              case ex: ControlThrowable => throw ex
+              case ex: TypeError => MacroGeneratedTypeError(expandee, ex)
+              case _ => MacroGeneratedException(expandee, realex)
+            }
+        } finally {
+          expandee.removeAttachment[MacroRuntimeAttachment]
+        }
     }
   }
 
-  private def handleMacroExpansionException(typer: Typer, expandee: Tree, ex: Throwable): MacroExpansionResult = {
-    val realex = ReflectionUtils.unwrapThrowable(ex)
-    realex match {
-      case realex: reflect.macros.runtime.AbortMacroException =>
-        macroLogVerbose("macro expansion has failed: %s".format(realex.msg))
-        fail(typer, expandee) // error has been reported by abort
-      case err: TypeError =>
-        macroLogLite("macro expansion has failed: %s at %s".format(err.msg, err.pos))
-        throw err // error should be propagated, don't report
-      case _ =>
-        val message = {
-          try {
-            // [Eugene] is there a better way?
-            // [Paul] See Exceptional.scala and Origins.scala.
-            val relevancyThreshold = realex.getStackTrace().indexWhere(_.getMethodName endsWith "macroExpand1")
-            if (relevancyThreshold == -1) None
-            else {
-              var relevantElements = realex.getStackTrace().take(relevancyThreshold + 1)
-              def isMacroInvoker(este: StackTraceElement) = este.isNativeMethod || (este.getClassName != null && (este.getClassName contains "fastTrack"))
-              var threshold = relevantElements.reverse.indexWhere(isMacroInvoker) + 1
-              while (threshold != relevantElements.length && isMacroInvoker(relevantElements(relevantElements.length - threshold - 1))) threshold += 1
-              relevantElements = relevantElements dropRight threshold
+  /** Expands a macro when a runtime (i.e. the macro implementation) cannot be loaded
+   *  Meant for internal use within the macro infrastructure, don't use it elsewhere.
+   */
+  private def macroExpandWithoutRuntime(typer: Typer, expandee: Tree): MacroExpansionResult = {
+    import typer.TyperErrorGen._
+    val fallbackSym = expandee.symbol.nextOverriddenSymbol orElse MacroImplementationNotFoundError(expandee)
+    macroTraceLite("falling back to: ")(fallbackSym)
 
-              realex.setStackTrace(relevantElements)
-              val message = new java.io.StringWriter()
-              realex.printStackTrace(new java.io.PrintWriter(message))
-              Some(EOL + message)
-            }
-          } catch {
-            // if the magic above goes boom, just fall back to uninformative, but better than nothing, getMessage
-            case ex: Throwable =>
-              None
-          }
-        } getOrElse {
-          val msg = realex.getMessage
-          if (msg != null) msg else realex.getClass.getName
-        }
-        fail(typer, expandee, msg = "exception during macro expansion: " + message)
+    def mkFallbackTree(tree: Tree): Tree = {
+      tree match {
+        case Select(qual, name) => Select(qual, name) setPos tree.pos setSymbol fallbackSym
+        case Apply(fn, args) => Apply(mkFallbackTree(fn), args) setPos tree.pos
+        case TypeApply(fn, args) => TypeApply(mkFallbackTree(fn), args) setPos tree.pos
+      }
     }
+    Fallback(mkFallbackTree(expandee))
   }
 
   /** Without any restrictions on macro expansion, macro applications will expand at will,
