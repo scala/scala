@@ -232,9 +232,13 @@ abstract class CPSAnnotationChecker extends CPSUtils with Modes {
       } else tree
     }
 
-    // only adapt type if this return will
-    // (a) be removed (in tail position and method's result type (pt) is cps type), or
-    // (b) cause an error
+    /** Returns an adapted type for a return expression if the method's result type (pt) is a CPS type.
+     *  Otherwise, it returns the `default` type (`typedReturn` passes `NothingClass.tpe`).
+     *  
+     *  A return expression in a method that has a CPS result type is an error unless the return
+     *  is in tail position. Therefore, we are making sure that only the types of return expressions
+     *  are adapted which will either be removed, or lead to an error.
+     */
     override def adaptTypeOfReturn(tree: Tree, pt: Type, default: => Type): Type = {
       // only adapt if method's result type (pt) is cps type
       val annots = cpsParamAnnotation(pt)
