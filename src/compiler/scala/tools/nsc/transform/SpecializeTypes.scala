@@ -1399,6 +1399,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
       curTree = tree
       tree match {
         case Apply(Select(New(tpt), nme.CONSTRUCTOR), args) =>
+          def transformNew = {
           debuglog("Attempting to specialize new %s(%s)".format(tpt, args.mkString(", ")))
           val found = findSpec(tpt.tpe)
           if (found.typeSymbol ne tpt.tpe.typeSymbol) {
@@ -1410,9 +1411,26 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
               _ => super.transform(tree)
             }
           } else super.transform(tree)
+          }
+          transformNew
+
+        case Apply(sel @ Select(sup @ Super(qual, name), name1), args)
+          if (sup.symbol.info.parents != beforePrevPhase(sup.symbol.info.parents)) =>
+          def transformSuperApply = {
+
+          def parents = sup.symbol.info.parents
+          debuglog(tree + " parents changed from: " + beforePrevPhase(parents) + " to: " + parents)
+
+          val res = localTyper.typed(
+            Apply(Select(Super(qual, name) setPos sup.pos, name1) setPos sel.pos, transformTrees(args)) setPos tree.pos)
+          debuglog("retyping call to super, from: " + symbol + " to " + res.symbol)
+          res
+          }
+          transformSuperApply
 
         case TypeApply(sel @ Select(qual, name), targs)
                 if (!specializedTypeVars(symbol.info).isEmpty && name != nme.CONSTRUCTOR) =>
+          def transformTypeApply = {
           debuglog("checking typeapp for rerouting: " + tree + " with sym.tpe: " + symbol.tpe + " tree.tpe: " + tree.tpe)
           val qual1 = transform(qual)
           // log(">>> TypeApply: " + tree + ", qual1: " + qual1)
@@ -1445,14 +1463,19 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
               // See pos/exponential-spec.scala - can't call transform on the whole tree again.
               // super.transform(tree)
           }
-
-        case Select(Super(_, _), name) if illegalSpecializedInheritance(currentClass) =>
-          val pos = tree.pos
-          debuglog(pos.source.file.name+":"+pos.line+": not specializing call to super inside illegal specialized inheritance class.")
-          debuglog(pos.lineContent)
-          tree
+          }
+          transformTypeApply
 
         case Select(qual, name) =>
+          def transformSelect = {
+            qual match {
+              case _: Super if illegalSpecializedInheritance(currentClass) => 
+                val pos = tree.pos
+                debuglog(pos.source.file.name+":"+pos.line+": not specializing call to super inside illegal specialized inheritance class.")
+                debuglog(pos.lineContent)
+                tree
+              case _ =>
+                
           debuglog("specializing Select %s [tree.tpe: %s]".format(symbol.defString, tree.tpe))
 
           //log("!!! select " + tree + " -> " + symbol.info + " specTypeVars: " + specializedTypeVars(symbol.info))
@@ -1488,6 +1511,9 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
               case None =>
                 super.transform(tree)
           }
+          }
+          }
+          transformSelect
 
         case PackageDef(pid, stats) =>
           tree.symbol.info // make sure specializations have been performed
@@ -1497,6 +1523,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
           }
 
         case Template(parents, self, body) =>
+          def transformTemplate = {
           val specMembers = makeSpecializedMembers(tree.symbol.enclClass) ::: (implSpecClasses(body) map localTyper.typed)
           if (!symbol.isPackageClass)
             (new CollectMethodBodies)(tree)
@@ -1507,8 +1534,11 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
             parents1    /*currentOwner.info.parents.map(tpe => TypeTree(tpe) setPos parents.head.pos)*/ ,
             self,
             atOwner(currentOwner)(transformTrees(body ::: specMembers)))
+          }
+          transformTemplate
 
         case ddef @ DefDef(_, _, _, vparamss, _, _) if info.isDefinedAt(symbol) =>
+          def transformDefDef = {
           // log("--> method: " + ddef + " in " + ddef.symbol.owner + ", " + info(symbol))
           def reportTypeError(body: =>Tree) = reportError(body)(_ => ddef)
 
@@ -1597,8 +1627,11 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
               debuglog("abstract: " + targ)
               localTyper.typed(deriveDefDef(tree)(rhs => rhs))
           }
+          }
+          transformDefDef
 
         case ValDef(_, _, _, _) if symbol.hasFlag(SPECIALIZED) && !symbol.isParamAccessor =>
+          def transformValDef = {
           assert(body.isDefinedAt(symbol.alias), body)
           val tree1 = deriveValDef(tree)(_ => body(symbol.alias).duplicate)
           debuglog("now typing: " + tree1 + " in " + tree.symbol.owner.fullName)
@@ -1612,17 +1645,8 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
             typeEnv(symbol.alias) ++ typeEnv(tree.symbol)
           )
           deriveValDef(newValDef)(transform)
-
-        case Apply(sel @ Select(sup @ Super(qual, name), name1), args)
-          if (sup.symbol.info.parents != beforePrevPhase(sup.symbol.info.parents)) =>
-
-          def parents = sup.symbol.info.parents
-          debuglog(tree + " parents changed from: " + beforePrevPhase(parents) + " to: " + parents)
-
-          val res = localTyper.typed(
-            Apply(Select(Super(qual, name) setPos sup.pos, name1) setPos sel.pos, transformTrees(args)) setPos tree.pos)
-          debuglog("retyping call to super, from: " + symbol + " to " + res.symbol)
-          res
+          }
+          transformValDef
 
         case _ =>
           super.transform(tree)

@@ -240,8 +240,8 @@ trait Infer {
   def normalize(tp: Type): Type = tp match {
     case mt @ MethodType(params, restpe) if mt.isImplicit =>
       normalize(restpe)
-    case mt @ MethodType(params, restpe) if !restpe.isDependent =>
-      functionType(params map (_.tpe), normalize(restpe))
+    case mt @ MethodType(_, restpe) if !mt.isDependentMethodType =>
+      functionType(mt.paramTypes, normalize(restpe))
     case NullaryMethodType(restpe) =>
       normalize(restpe)
     case ExistentialType(tparams, qtpe) =>
@@ -661,7 +661,13 @@ trait Infer {
         val restp1 = followApply(restp)
         if (restp1 eq restp) tp else restp1
       case _ =>
-        val appmeth = tp.nonPrivateMember(nme.apply) filter (_.isPublic)
+        val appmeth = {
+          //OPT cut down on #closures by special casing non-overloaded case
+          // was: tp.nonPrivateMember(nme.apply) filter (_.isPublic)
+          val result = tp.nonPrivateMember(nme.apply)
+          if ((result eq NoSymbol) || !result.isOverloaded && result.isPublic) result
+          else result filter (_.isPublic)
+        }
         if (appmeth == NoSymbol) tp
         else OverloadedType(tp, appmeth.alternatives)
     }
@@ -747,8 +753,8 @@ trait Infer {
           alts exists (alt => isApplicable(undetparams, pre.memberType(alt), argtpes0, pt))
         case ExistentialType(tparams, qtpe) =>
           isApplicable(undetparams, qtpe, argtpes0, pt)
-        case MethodType(params, _) =>
-          val formals = formalTypes(params map { _.tpe }, argtpes0.length, removeByName = false)
+        case mt @ MethodType(params, _) =>
+          val formals = formalTypes(mt.paramTypes, argtpes0.length, removeByName = false)
 
           def tryTupleApply: Boolean = {
             // if 1 formal, 1 argtpe (a tuple), otherwise unmodified argtpes0
@@ -854,8 +860,8 @@ trait Infer {
         isAsSpecific(res, ftpe2)
       case mt: MethodType if mt.isImplicit =>
         isAsSpecific(ftpe1.resultType, ftpe2)
-      case MethodType(params, _) if params.nonEmpty =>
-        var argtpes = params map (_.tpe)
+      case mt @ MethodType(params, _) if params.nonEmpty =>
+        var argtpes = mt.paramTypes
         if (isVarArgsList(params) && isVarArgsList(ftpe2.params))
           argtpes = argtpes map (argtpe =>
             if (isRepeatedParamType(argtpe)) argtpe.typeArgs.head else argtpe)
@@ -864,8 +870,8 @@ trait Infer {
         isAsSpecific(PolyType(tparams, res), ftpe2)
       case PolyType(tparams, mt: MethodType) if mt.isImplicit =>
         isAsSpecific(PolyType(tparams, mt.resultType), ftpe2)
-      case PolyType(_, MethodType(params, _)) if params.nonEmpty =>
-        isApplicable(List(), ftpe2, params map (_.tpe), WildcardType)
+      case PolyType(_, (mt @ MethodType(params, _))) if params.nonEmpty =>
+        isApplicable(List(), ftpe2, mt.paramTypes, WildcardType)
       // case NullaryMethodType(res) =>
       //   isAsSpecific(res, ftpe2)
       case ErrorType =>
@@ -1111,10 +1117,10 @@ trait Infer {
      */
     def inferMethodInstance(fn: Tree, undetparams: List[Symbol],
                             args: List[Tree], pt0: Type): List[Symbol] = fn.tpe match {
-      case MethodType(params0, _) =>
+      case mt @ MethodType(params0, _) =>
         try {
           val pt      = if (pt0.typeSymbol == UnitClass) WildcardType else pt0
-          val formals = formalTypes(params0 map (_.tpe), args.length)
+          val formals = formalTypes(mt.paramTypes, args.length)
           val argtpes = actualTypes(args map (x => elimAnonymousClass(x.tpe.deconst)), formals.length)
           val restpe  = fn.tpe.resultType(argtpes)
 

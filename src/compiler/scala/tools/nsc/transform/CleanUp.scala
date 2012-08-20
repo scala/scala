@@ -91,40 +91,9 @@ abstract class CleanUp extends Transform with ast.TreeDSL {
      */
     def toBoxedType(tp: Type) = if (isJavaValueType(tp)) boxedClass(tp.typeSymbol).tpe else tp
 
-    override def transform(tree: Tree): Tree = tree match {
-
-      /* Transforms dynamic calls (i.e. calls to methods that are undefined
-       * in the erased type space) to -- dynamically -- unsafe calls using
-       * reflection. This is used for structural sub-typing of refinement
-       * types, but may be used for other dynamic calls in the future.
-       * For 'a.f(b)' it will generate something like:
-       * 'a.getClass().
-       * '  getMethod("f", Array(classOf[b.type])).
-       * '  invoke(a, Array(b))
-       * plus all the necessary casting/boxing/etc. machinery required
-       * for type-compatibility (see fixResult).
-       *
-       * USAGE CONTRACT:
-       * There are a number of assumptions made on the way a dynamic apply
-       * is used. Assumptions relative to type are handled by the erasure
-       * phase.
-       * - The applied arguments are compatible with AnyRef, which means
-       *   that an argument tree typed as AnyVal has already been extended
-       *   with the necessary boxing calls. This implies that passed
-       *   arguments might not be strictly compatible with the method's
-       *   parameter types (a boxed integer while int is expected).
-       * - The expected return type is an AnyRef, even when the method's
-       *   return type is an AnyVal. This means that the tree containing the
-       *   call has already been extended with the necessary unboxing calls
-       *   (or is happy with the boxed type).
-       * - The type-checker has prevented dynamic applies on methods which
-       *   parameter's erased types are not statically known at the call site.
-       *   This is necessary to allow dispatching the call to the correct
-       *   method (dispatching on parameters is static in Scala). In practice,
-       *   this limitation only arises when the called method is defined as a
-       *   refinement, where the refinement defines a parameter based on a
-       *   type variable. */
-      case ad@ApplyDynamic(qual0, params) =>
+    def transformApplyDynamic(ad: ApplyDynamic) = {
+      val qual0 = ad.qual
+      val params = ad.args
         if (settings.logReflectiveCalls.value)
           unit.echo(ad.pos, "method invocation uses reflection")
 
@@ -516,6 +485,44 @@ abstract class CleanUp extends Transform with ast.TreeDSL {
           transform(t)
         }
         /* ### END OF DYNAMIC APPLY TRANSFORM ### */
+    }
+
+    override def transform(tree: Tree): Tree = tree match {
+
+      /* Transforms dynamic calls (i.e. calls to methods that are undefined
+       * in the erased type space) to -- dynamically -- unsafe calls using
+       * reflection. This is used for structural sub-typing of refinement
+       * types, but may be used for other dynamic calls in the future.
+       * For 'a.f(b)' it will generate something like:
+       * 'a.getClass().
+       * '  getMethod("f", Array(classOf[b.type])).
+       * '  invoke(a, Array(b))
+       * plus all the necessary casting/boxing/etc. machinery required
+       * for type-compatibility (see fixResult).
+       *
+       * USAGE CONTRACT:
+       * There are a number of assumptions made on the way a dynamic apply
+       * is used. Assumptions relative to type are handled by the erasure
+       * phase.
+       * - The applied arguments are compatible with AnyRef, which means
+       *   that an argument tree typed as AnyVal has already been extended
+       *   with the necessary boxing calls. This implies that passed
+       *   arguments might not be strictly compatible with the method's
+       *   parameter types (a boxed integer while int is expected).
+       * - The expected return type is an AnyRef, even when the method's
+       *   return type is an AnyVal. This means that the tree containing the
+       *   call has already been extended with the necessary unboxing calls
+       *   (or is happy with the boxed type).
+       * - The type-checker has prevented dynamic applies on methods which
+       *   parameter's erased types are not statically known at the call site.
+       *   This is necessary to allow dispatching the call to the correct
+       *   method (dispatching on parameters is static in Scala). In practice,
+       *   this limitation only arises when the called method is defined as a
+       *   refinement, where the refinement defines a parameter based on a
+       *   type variable. */
+
+      case tree: ApplyDynamic =>
+        transformApplyDynamic(tree)
 
       /* Some cleanup transformations add members to templates (classes, traits, etc).
        * When inside a template (i.e. the body of one of its members), two maps
@@ -544,6 +551,7 @@ abstract class CleanUp extends Transform with ast.TreeDSL {
         }
 
       case ValDef(mods, name, tpt, rhs) if tree.symbol.hasStaticAnnotation =>
+        def transformStaticValDef = {
         log("moving @static valdef field: " + name + ", in: " + tree.symbol.owner)
         val sym = tree.symbol
         val owner = sym.owner
@@ -608,12 +616,15 @@ abstract class CleanUp extends Transform with ast.TreeDSL {
           }
         }
         super.transform(tree)
+        }
+        transformStaticValDef
 
       /* MSIL requires that the stack is empty at the end of a try-block.
        * Hence, we here rewrite all try blocks with a result != {Unit, All} such that they
        * store their result in a local variable. The catch blocks are adjusted as well.
        * The try tree is subsituted by a block whose result expression is read of that variable. */
       case theTry @ Try(block, catches, finalizer) if shouldRewriteTry(theTry) =>
+        def transformTry = {
         val tpe = theTry.tpe.widen
         val tempVar = currentOwner.newVariable(mkTerm(nme.EXCEPTION_RESULT_PREFIX), theTry.pos).setInfo(tpe)
         def assignBlock(rhs: Tree) = super.transform(BLOCK(Ident(tempVar) === transform(rhs)))
@@ -624,7 +635,8 @@ abstract class CleanUp extends Transform with ast.TreeDSL {
         val newTry      = Try(newBlock, newCatches, super.transform(finalizer))
 
         typedWithPos(theTry.pos)(BLOCK(VAL(tempVar) === EmptyTree, newTry, Ident(tempVar)))
-
+        }
+        transformTry
      /*
       * This transformation should identify Scala symbol invocations in the tree and replace them
       * with references to a static member. Also, whenever a class has at least a single symbol invocation
@@ -657,12 +669,15 @@ abstract class CleanUp extends Transform with ast.TreeDSL {
       * have little in common.
       */
       case Apply(fn, (arg @ Literal(Constant(symname: String))) :: Nil) if fn.symbol == Symbol_apply =>
+        def transformApply = {
         // add the symbol name to a map if it's not there already
         val rhs = gen.mkMethodCall(Symbol_apply, arg :: Nil)
         val staticFieldSym = getSymbolStaticField(tree.pos, symname, rhs, tree)
         // create a reference to a static field
         val ntree = typedWithPos(tree.pos)(REF(staticFieldSym))
         super.transform(ntree)
+        }
+        transformApply
 
       // This transform replaces Array(Predef.wrapArray(Array(...)), <tag>)
       // with just Array(...)
