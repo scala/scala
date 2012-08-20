@@ -493,15 +493,6 @@ self =>
         throw new RuntimeException()
       }
 
-      /*
-      def tailMap = asStream[B](tail withFilter p map f)
-      if (isStreamBuilder(bf)) asThat(
-        if (isEmpty) Stream.Empty
-        else if (p(head)) cons(f(head), tailMap)
-        else tailMap
-        //XXX Alternative: what about having a Stream.step constructor?
-      )
-      */
       if (isStreamBuilder(bf)) asThat(tailMap(Stream.this))
       else super.map(f)(bf)
     }
@@ -521,14 +512,6 @@ self =>
         throw new RuntimeException()
       }
 
-      /*
-      def tailFlatMap = asStream[B](tail withFilter p flatMap f)
-      if (isStreamBuilder(bf)) asThat(
-        if (isEmpty) Stream.Empty
-        else if (p(head)) f(head).toStream append tailFlatMap
-        else tailFlatMap
-      )
-      */
       if (isStreamBuilder(bf)) asThat(tailFlatMap(Stream.this))
       else super.flatMap(f)(bf)
     }
