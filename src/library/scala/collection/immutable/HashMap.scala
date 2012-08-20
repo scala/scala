@@ -350,7 +350,10 @@ object HashMap extends ImmutableMapFactory[HashMap] with BitOperations.Int {
             Array.copy(elems, 0, elemsNew, 0, offset)
             Array.copy(elems, offset + 1, elemsNew, offset, elems.length - offset - 1)
             val sizeNew = size - sub.size
-            new HashTrieMap(bitmapNew, elemsNew, sizeNew)
+            if (elemsNew.length == 1 && !elemsNew(0).isInstanceOf[HashTrieMap[_,_]])
+              elemsNew(0)
+            else
+              new HashTrieMap(bitmapNew, elemsNew, sizeNew)
           } else
             HashMap.empty[A,B]
         } else {
