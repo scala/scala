@@ -28,11 +28,11 @@ object Function {
 
   /** Turns a function `A => Option[B]` into a `PartialFunction[A, B]`.
    *
-   *  TODO: check if the paragraph below is still correct
    *  '''Important note''': this transformation implies the original function
-   *  will be called 2 or more times on each logical invocation, because the
+   *  may be called 2 or more times on each logical invocation, because the
    *  only way to supply an implementation of `isDefinedAt` is to call the
    *  function and examine the return value.
+   *  See also [[scala.PartialFunction]], method `applyOrElse`.
    *
    *  @param   f    a function `T => Option[R]`
    *  @return       a partial function defined for those inputs where
