@@ -359,6 +359,8 @@ object HashMap extends ImmutableMapFactory[HashMap] with BitOperations.Int {
               new HashTrieMap(bitmapNew, elemsNew, sizeNew)
           } else
             HashMap.empty[A,B]
+        } else if(elems.length == 1 && !subNew.isInstanceOf[HashTrieMap[_,_]]) {
+          subNew
         } else {
           val elemsNew = new Array[HashMap[A,B]](elems.length)
           Array.copy(elems, 0, elemsNew, 0, elems.length)
