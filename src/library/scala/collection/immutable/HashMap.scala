@@ -147,29 +147,26 @@ object HashMap extends ImmutableMapFactory[HashMap] with BitOperations.Int {
   private object EmptyHashMap extends HashMap[Any, Nothing] { }
 
   // utility method to create a HashTrieMap from two leaf HashMaps (HashMap1 or HashMapCollision1) with non-colliding hash code)
-  private def makeHashTrieMap[A,B](hash0:Int, elem0:HashMap[A,B], hash1:Int, elem1:HashMap[A,B], level:Int, size:Int) : HashTrieMap[A,B] = {
-    var index0 = (hash0 >>> level) & 0x1f
-    var index1 = (hash1 >>> level) & 0x1f
-    var lvl = level
-    var top: HashTrieMap[A, B] = null
-    var prev: HashTrieMap[A, B] = null
-    while (index0 == index1) {
-      val newlevel = new HashTrieMap[A, B](1 << index0, new Array[HashMap[A, B]](1), size)
-      if (prev ne null) prev.elems(0) = newlevel else top = newlevel
-      prev = newlevel
-      lvl += 5
-      index0 = (hash0 >>> lvl) & 0x1f
-      index1 = (hash1 >>> lvl) & 0x1f
+  private def makeHashTrieMap[A, B](hash0:Int, elem0:HashMap[A, B], hash1:Int, elem1:HashMap[A, B], level:Int, size:Int) : HashTrieMap[A, B] = {
+    val index0 = (hash0 >>> level) & 0x1f
+    val index1 = (hash1 >>> level) & 0x1f
+    if(index0 != index1) {
+      val bitmap = (1 << index0) | (1 << index1)
+      val elems = new Array[HashMap[A,B]](2)
+      if(index0 < index1) {
+        elems(0) = elem0
+        elems(1) = elem1
+      } else {
+        elems(0) = elem1
+        elems(1) = elem0
+      }
+      new HashTrieMap[A, B](bitmap, elems, size)
+    } else {
+      val elems = new Array[HashMap[A,B]](1)
+      val bitmap = (1 << index0)
+      elems(0) = makeHashTrieMap(hash0, elem0, hash1, elem1, level + 5, size)
+      new HashTrieMap[A, B](bitmap, elems, size)
     }
-    val bottelems = new Array[HashMap[A,B]](2)
-    val ind = if (index0 < index1) 1 else 0
-    bottelems(1 - ind) = elem0
-    bottelems(ind) = elem1
-    val bottom = new HashTrieMap[A,B]((1 << index0) | (1 << index1), bottelems, size)
-    if (prev ne null) {
-      prev.elems(0) = bottom
-      top
-    } else bottom
   }
 
   // TODO: add HashMap2, HashMap3, ...
