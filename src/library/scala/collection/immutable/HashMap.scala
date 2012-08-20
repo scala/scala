@@ -221,7 +221,7 @@ object HashMap extends ImmutableMapFactory[HashMap] with BitOperations.Int {
     // this method may be called multiple times in a multithreaded environment, but that's ok
     private[HashMap] def ensurePair: (A,B) = if (kv ne null) kv else { kv = (key, value); kv }
     protected override def merge0[B1 >: B](that: HashMap[A, B1], level: Int, merger: Merger[A, B1]): HashMap[A, B1] = {
-      that.updated0(key, hash, level, value, kv, if (merger ne null) merger.invert else null)
+      that.updated0(key, hash, level, value, kv, merger.invert)
     }
   }
 
@@ -486,7 +486,7 @@ time { mNew.iterator.foreach( p => ()) }
         }
 
         new HashTrieMap[A, B1](this.bitmap | that.bitmap, merged, totalelems)
-      case hm: HashMapCollision1[_, _] => that.merge0(this, level, if (merger ne null) merger.invert else null)
+      case hm: HashMapCollision1[_, _] => that.merge0(this, level, merger.invert)
       case hm: HashMap[_, _] => this
       case _ => sys.error("section supposed to be unreachable.")
     }
