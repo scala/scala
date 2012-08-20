@@ -352,7 +352,7 @@ trait Typers extends Modes with Adaptations with Tags {
             if (formals exists (isRepeatedParamType(_)))
               error(pos, "methods with `*`-parameters cannot be converted to function values");
             */
-            if (restpe.isDependent)
+            if (tpe.isDependentMethodType)
               DependentMethodTpeConversionToFunctionError(tree, tpe)
             checkParamsConvertible(tree, restpe)
           case _ =>
