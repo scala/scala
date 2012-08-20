@@ -235,14 +235,19 @@ trait TraversableLike[+A, +Repr] extends Any
     (that ++ seq)(breakOut)
 
   def map[B, That](f: A => B)(implicit bf: CanBuildFrom[Repr, B, That]): That = {
-    val b = bf(repr)
-    b.sizeHint(this)
+    def builder = { // extracted to keep method size under 35 bytes, so that it can be JIT-inlined
+      val b = bf(repr)
+      b.sizeHint(this)
+      b
+    }
+    val b = builder
     for (x <- this) b += f(x)
     b.result
   }
 
   def flatMap[B, That](f: A => GenTraversableOnce[B])(implicit bf: CanBuildFrom[Repr, B, That]): That = {
-    val b = bf(repr)
+    def builder = bf(repr) // extracted to keep method size under 35 bytes, so that it can be JIT-inlined
+    val b = builder
     for (x <- this) b ++= f(x).seq
     b.result
   }
@@ -266,7 +271,12 @@ trait TraversableLike[+A, +Repr] extends Any
    *  @return      a new $coll consisting of all elements of this $coll that do not satisfy the given
    *               predicate `p`. The order of the elements is preserved.
    */
-  def filterNot(p: A => Boolean): Repr = filter(!p(_))
+  def filterNot(p: A => Boolean): Repr = {
+    val b = newBuilder
+    for (x <- this)
+      if (!p(x)) b += x
+    b.result
+  }
 
   def collect[B, That](pf: PartialFunction[A, B])(implicit bf: CanBuildFrom[Repr, B, That]): That = {
     val b = bf(repr)
