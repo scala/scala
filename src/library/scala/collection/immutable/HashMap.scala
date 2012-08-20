@@ -248,10 +248,13 @@ object HashMap extends ImmutableMapFactory[HashMap] with BitOperations.Int {
     override def removed0(key: A, hash: Int, level: Int): HashMap[A, B] =
       if (hash == this.hash) {
         val kvs1 = kvs - key
-        if (!kvs1.isEmpty)
-          new HashMapCollision1(hash, kvs1)
-        else
+        if (kvs1.isEmpty)
           HashMap.empty[A,B]
+        else if(kvs1.tail.isEmpty) {
+          val kv = kvs1.head
+          new HashMap1[A,B](kv._1,hash,kv._2,kv)
+        } else
+          new HashMapCollision1(hash, kvs1)
       } else this
 
     override def iterator: Iterator[(A,B)] = kvs.iterator
