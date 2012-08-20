@@ -479,22 +479,57 @@ self =>
   final class StreamWithFilter(p: A => Boolean) extends WithFilter(p) {
 
     override def map[B, That](f: A => B)(implicit bf: CanBuildFrom[Stream[A], B, That]): That = {
+      def tailMap(coll: Stream[A]): Stream[B] = {
+        var head: A = null.asInstanceOf[A]
+        var tail: Stream[A] = coll
+        while (true) {
+          if (tail.isEmpty)
+            return Stream.Empty
+          head = tail.head
+          tail = tail.tail
+          if (p(head))
+            return cons(f(head), tailMap(tail))
+        }
+        throw new RuntimeException()
+      }
+
+      /*
       def tailMap = asStream[B](tail withFilter p map f)
       if (isStreamBuilder(bf)) asThat(
         if (isEmpty) Stream.Empty
         else if (p(head)) cons(f(head), tailMap)
         else tailMap
+        //XXX Alternative: what about having a Stream.step constructor?
       )
+      */
+      if (isStreamBuilder(bf)) asThat(tailMap(Stream.this))
       else super.map(f)(bf)
     }
 
     override def flatMap[B, That](f: A => GenTraversableOnce[B])(implicit bf: CanBuildFrom[Stream[A], B, That]): That = {
+      def tailFlatMap(coll: Stream[A]): Stream[B] = {
+        var head: A = null.asInstanceOf[A]
+        var tail: Stream[A] = coll
+        while (true) {
+          if (tail.isEmpty)
+            return Stream.Empty
+          head = tail.head
+          tail = tail.tail
+          if (p(head))
+            return f(head).toStream append tailFlatMap(tail)
+        }
+        throw new RuntimeException()
+      }
+
+      /*
       def tailFlatMap = asStream[B](tail withFilter p flatMap f)
       if (isStreamBuilder(bf)) asThat(
         if (isEmpty) Stream.Empty
         else if (p(head)) f(head).toStream append tailFlatMap
         else tailFlatMap
       )
+      */
+      if (isStreamBuilder(bf)) asThat(tailFlatMap(Stream.this))
       else super.flatMap(f)(bf)
     }
 
