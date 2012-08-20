@@ -230,6 +230,7 @@ object HashMap extends ImmutableMapFactory[HashMap] with BitOperations.Int {
 
   private[collection] class HashMapCollision1[A, +B](private[collection] val hash: Int, val kvs: ListMap[A, B @uV])
           extends HashMap[A, B @uV] {
+    assert(kvs.size > 1)
 
     override def size = kvs.size
 
@@ -277,6 +278,9 @@ object HashMap extends ImmutableMapFactory[HashMap] with BitOperations.Int {
     private[collection] val elems: Array[HashMap[A, B @uV]],
     private[collection] val size0: Int
   ) extends HashMap[A, B @uV] {
+
+    assert(Integer.bitCount(bitmap) == elems.length)
+    assert(elems.length > 1 || (elems.length == 1 && elems(0).isInstanceOf[HashTrieMap[_,_]]))
 
 /*
     def this (level: Int, m1: HashMap1[A,B], m2: HashMap1[A,B]) = {
