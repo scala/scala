@@ -218,6 +218,11 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
     def target = t
   }
 
+  /** Symbol is a special overload of the super accessor. */
+  case class SpecialSuperAccessor(t: Symbol) extends SpecializedInfo {
+    def target = t
+  }
+
   /** Symbol is a specialized accessor for the `target` field. */
   case class SpecializedAccessor(target: Symbol) extends SpecializedInfo {
     override def isAccessor = true
@@ -865,6 +870,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
       }
 
       val specMember = subst(outerEnv)(specializedOverload(owner, sym, spec))
+      owner.info.decls.enter(specMember)
       typeEnv(specMember) = typeEnv(sym) ++ outerEnv ++ spec
       wasSpecializedForTypeVars(specMember) ++= spec collect { case (s, tp) if s.tpe == tp => s }
 
@@ -894,10 +900,11 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
   }
 
   /** Return the specialized overload of `m`, in the given environment. */
-  private def specializedOverload(owner: Symbol, sym: Symbol, env: TypeEnv): Symbol = {
+  private def specializedOverload(owner: Symbol, sym: Symbol, env: TypeEnv, nameSymbol: Symbol = NoSymbol): Symbol = {
     val newFlags = (sym.flags | SPECIALIZED) & ~(DEFERRED | CASEACCESSOR)
     // this method properly duplicates the symbol's info
-    ( sym.cloneSymbol(owner, newFlags, specializedName(sym, env))
+    val specname = specializedName(nameSymbol orElse sym, env)
+    ( sym.cloneSymbol(owner, newFlags, specname)
         modifyInfo (info => subst(env, info.asSeenFrom(owner.thisType, sym.owner)))
     )
   }
@@ -957,14 +964,32 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
     }
     (clazz.info.decls flatMap { overriding =>
       needsSpecialOverride(overriding) match {
-        case (NoSymbol, _)     => None
+        case (NoSymbol, _)     =>
+          if (overriding.isSuperAccessor) {
+            val alias = overriding.alias
+            debuglog("checking special overload for super accessor: %s, alias for %s".format(overriding.fullName, alias.fullName))
+            needsSpecialOverride(alias) match {
+              case nope @ (NoSymbol, _) => None
+              case (overridden, env) =>
+                val om = specializedOverload(clazz, overriding, env, overridden)
+                om.setName(nme.superName(om.name))
+                om.asInstanceOf[TermSymbol].setAlias(info(alias).target)
+                om.owner.info.decls.enter(om)
+                info(om) = SpecialSuperAccessor(om)
+                om.makeNotPrivate(om.owner)
+                overloads(overriding) ::= Overload(om, env)
+                Some(om)
+            }
+          } else None
         case (overridden, env) =>
           val om = specializedOverload(clazz, overridden, env)
+          clazz.info.decls.enter(om)
           debuglog("specialized overload %s for %s in %s: %s".format(om, overriding.name.decode, pp(env), om.info))
+          if (overriding.isAbstractOverride) om.setFlag(ABSOVERRIDE)
           typeEnv(om) = env
           addConcreteSpecMethod(overriding)
           info(om) = (
-            if (overriding.isDeferred) {    // abstract override
+            if (overriding.isDeferred) { // abstract override
               debuglog("abstract override " + overriding.fullName + " with specialized " + om.fullName)
               Forward(overriding)
             }
@@ -1287,7 +1312,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
         if (sym.isPrivate) debuglog(
           "seeing private member %s, currentClass: %s, owner: %s, isAccessible: %b, isLocalName: %b".format(
             sym, currentClass, sym.owner.enclClass, isAccessible(sym), nme.isLocalName(sym.name))
-        )
+          )
         if (shouldMakePublic(sym) && !isAccessible(sym)) {
           debuglog("changing private flag of " + sym)
           sym.makeNotPrivate(sym.owner)
@@ -1548,7 +1573,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
             case SpecialOverride(target) =>
               assert(body.isDefinedAt(target), "sym: " + symbol.fullName + " target: " + target.fullName)
               //debuglog("moving implementation, body of target " + target + ": " + body(target))
-              debuglog("%s is param accessor? %b".format(ddef.symbol, ddef.symbol.isParamAccessor))
+              log("%s is param accessor? %b".format(ddef.symbol, ddef.symbol.isParamAccessor))
               // we have an rhs, specialize it
               val tree1 = addBody(ddef, target)
               (new ChangeOwnerTraverser(target, tree1.symbol))(tree1.rhs)
@@ -1595,6 +1620,10 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
 
             case Abstract(targ) =>
               debuglog("abstract: " + targ)
+              localTyper.typed(deriveDefDef(tree)(rhs => rhs))
+
+            case SpecialSuperAccessor(targ) =>
+              debuglog("special super accessor: " + targ + " for " + tree)
               localTyper.typed(deriveDefDef(tree)(rhs => rhs))
           }
 
