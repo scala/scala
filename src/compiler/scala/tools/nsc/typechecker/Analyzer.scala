@@ -85,13 +85,13 @@ trait Analyzer extends AnyRef
       // compiler run). This is good enough for the resident compiler, which was the most affected.
       undoLog.clear()
       override def run() {
-        val start = Statistics.startTimer(typerNanos)
+        val start = if (Statistics.canEnable) Statistics.startTimer(typerNanos) else null
         global.echoPhaseSummary(this)
         currentRun.units foreach applyPhase
         undoLog.clear()
         // need to clear it after as well or 10K+ accumulated entries are
         // uncollectable the rest of the way.
-        Statistics.stopTimer(typerNanos, start)
+        if (Statistics.canEnable) Statistics.stopTimer(typerNanos, start)
       }
       def apply(unit: CompilationUnit) {
         try {

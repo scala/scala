@@ -82,17 +82,16 @@ trait LinearSeqOptimized[+A, +Repr <: LinearSeqOptimized[A, Repr]] extends Linea
     false
   }
 
-  override /*TraversableLike*/
-  def count(p: A => Boolean): Int = {
+  override /*SeqLike*/
+  def contains(elem: Any): Boolean = {
     var these = this
-    var cnt = 0
     while (!these.isEmpty) {
-      if (p(these.head)) cnt += 1
+      if (these.head == elem) return true
       these = these.tail
     }
-    cnt
+    false
   }
-
+  
   override /*IterableLike*/
   def find(p: A => Boolean): Option[A] = {
     var these = this
@@ -113,7 +112,7 @@ trait LinearSeqOptimized[+A, +Repr <: LinearSeqOptimized[A, Repr]] extends Linea
     }
     acc
   }
-
+  
   override /*IterableLike*/
   def foldRight[B](z: B)(f: (A, B) => B): B =
     if (this.isEmpty) z

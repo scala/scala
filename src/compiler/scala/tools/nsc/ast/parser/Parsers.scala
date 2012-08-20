@@ -1302,23 +1302,25 @@ self =>
       placeholderParams = placeholderParams ::: savedPlaceholderParams
       res
     }
+    
 
-    def expr0(location: Int): Tree = in.token match {
+    def expr0(location: Int): Tree = (in.token: @scala.annotation.switch) match {
       case IF =>
-        atPos(in.skipToken()) {
+        def parseIf = atPos(in.skipToken()) {
           val cond = condExpr()
           newLinesOpt()
           val thenp = expr()
           val elsep = if (in.token == ELSE) { in.nextToken(); expr() }
-                      else Literal(Constant())
+          else Literal(Constant())
           If(cond, thenp, elsep)
         }
+        parseIf
       case TRY =>
-        atPos(in.skipToken()) {
+        def parseTry = atPos(in.skipToken()) {
           val body = in.token match {
-            case LBRACE   => inBracesOrUnit(block())
-            case LPAREN   => inParensOrUnit(expr())
-            case _        => expr()
+            case LBRACE => inBracesOrUnit(block())
+            case LPAREN => inParensOrUnit(expr())
+            case _ => expr()
           }
           def catchFromExpr() = List(makeCatchFromExpr(expr()))
           val catches: List[CaseDef] =
@@ -1332,32 +1334,39 @@ self =>
               }
             }
           val finalizer = in.token match {
-            case FINALLY  => in.nextToken() ; expr()
-            case _        => EmptyTree
+            case FINALLY => in.nextToken(); expr()
+            case _ => EmptyTree
           }
           Try(body, catches, finalizer)
         }
+        parseTry
       case WHILE =>
-        val start = in.offset
-        atPos(in.skipToken()) {
-          val lname: Name = freshTermName(nme.WHILE_PREFIX)
-          val cond = condExpr()
-          newLinesOpt()
-          val body = expr()
-          makeWhile(lname, cond, body)
+        def parseWhile = {
+          val start = in.offset
+          atPos(in.skipToken()) {
+            val lname: Name = freshTermName(nme.WHILE_PREFIX)
+            val cond = condExpr()
+            newLinesOpt()
+            val body = expr()
+            makeWhile(lname, cond, body)
+          }
         }
+        parseWhile
       case DO =>
-        val start = in.offset
-        atPos(in.skipToken()) {
-          val lname: Name = freshTermName(nme.DO_WHILE_PREFIX)
-          val body = expr()
-          if (isStatSep) in.nextToken()
-          accept(WHILE)
-          val cond = condExpr()
-          makeDoWhile(lname, body, cond)
+        def parseDo = {
+          val start = in.offset
+          atPos(in.skipToken()) {
+            val lname: Name = freshTermName(nme.DO_WHILE_PREFIX)
+            val body = expr()
+            if (isStatSep) in.nextToken()
+            accept(WHILE)
+            val cond = condExpr()
+            makeDoWhile(lname, body, cond)
+          }
         }
+        parseDo
       case FOR =>
-        atPos(in.skipToken()) {
+        def parseFor = atPos(in.skipToken()) {
           val enums =
             if (in.token == LBRACE) inBracesOrNil(enumerators())
             else inParensOrNil(enumerators())
@@ -1369,70 +1378,78 @@ self =>
             makeFor(enums, expr())
           }
         }
+        parseFor
       case RETURN =>
-        atPos(in.skipToken()) {
-          Return(if (isExprIntro) expr() else Literal(Constant()))
-        }
+        def parseReturn =
+          atPos(in.skipToken()) {
+            Return(if (isExprIntro) expr() else Literal(Constant()))
+          }
+        parseReturn
       case THROW =>
-        atPos(in.skipToken()) {
-          Throw(expr())
-        }
+        def parseThrow =
+          atPos(in.skipToken()) {
+            Throw(expr())
+          }
+        parseThrow
       case IMPLICIT =>
         implicitClosure(in.skipToken(), location)
       case _ =>
-        var t = postfixExpr()
-        if (in.token == EQUALS) {
-          t match {
-            case Ident(_) | Select(_, _) | Apply(_, _) =>
-              t = atPos(t.pos.startOrPoint, in.skipToken()) { makeAssign(t, expr()) }
-            case _ =>
-          }
-        } else if (in.token == COLON) {
-          t = stripParens(t)
-          val colonPos = in.skipToken()
-          if (in.token == USCORE) {
-            //todo: need to handle case where USCORE is a wildcard in a type
-            val uscorePos = in.skipToken()
-            if (isIdent && in.name == nme.STAR) {
-              in.nextToken()
-              t = atPos(t.pos.startOrPoint, colonPos) {
-                Typed(t, atPos(uscorePos) { Ident(tpnme.WILDCARD_STAR) })
-              }
-            } else {
-              syntaxErrorOrIncomplete("`*' expected", true)
+        def parseOther = {
+          var t = postfixExpr()
+          if (in.token == EQUALS) {
+            t match {
+              case Ident(_) | Select(_, _) | Apply(_, _) =>
+                t = atPos(t.pos.startOrPoint, in.skipToken()) { makeAssign(t, expr()) }
+              case _ =>
             }
-          } else if (in.token == AT) {
-            t = (t /: annotations(skipNewLines = false)) (makeAnnotated)
-          } else {
-            t = atPos(t.pos.startOrPoint, colonPos) {
-              val tpt = typeOrInfixType(location)
-              if (isWildcard(t))
-                (placeholderParams: @unchecked) match {
-                  case (vd @ ValDef(mods, name, _, _)) :: rest =>
-                    placeholderParams = treeCopy.ValDef(vd, mods, name, tpt.duplicate, EmptyTree) :: rest
+          } else if (in.token == COLON) {
+            t = stripParens(t)
+            val colonPos = in.skipToken()
+            if (in.token == USCORE) {
+              //todo: need to handle case where USCORE is a wildcard in a type
+              val uscorePos = in.skipToken()
+              if (isIdent && in.name == nme.STAR) {
+                in.nextToken()
+                t = atPos(t.pos.startOrPoint, colonPos) {
+                  Typed(t, atPos(uscorePos) { Ident(tpnme.WILDCARD_STAR) })
                 }
-              // this does not correspond to syntax, but is necessary to
-              // accept closures. We might restrict closures to be between {...} only.
-              Typed(t, tpt)
+              } else {
+                syntaxErrorOrIncomplete("`*' expected", true)
+              }
+            } else if (in.token == AT) {
+              t = (t /: annotations(skipNewLines = false))(makeAnnotated)
+            } else {
+              t = atPos(t.pos.startOrPoint, colonPos) {
+                val tpt = typeOrInfixType(location)
+                if (isWildcard(t))
+                  (placeholderParams: @unchecked) match {
+                    case (vd @ ValDef(mods, name, _, _)) :: rest =>
+                      placeholderParams = treeCopy.ValDef(vd, mods, name, tpt.duplicate, EmptyTree) :: rest
+                  }
+                // this does not correspond to syntax, but is necessary to
+                // accept closures. We might restrict closures to be between {...} only.
+                Typed(t, tpt)
+              }
+            }
+          } else if (in.token == MATCH) {
+            t = atPos(t.pos.startOrPoint, in.skipToken())(Match(stripParens(t), inBracesOrNil(caseClauses())))
+          }
+          // in order to allow anonymous functions as statements (as opposed to expressions) inside
+          // templates, we have to disambiguate them from self type declarations - bug #1565
+          // The case still missed is unparenthesized single argument, like "x: Int => x + 1", which
+          // may be impossible to distinguish from a self-type and so remains an error.  (See #1564)
+          def lhsIsTypedParamList() = t match {
+            case Parens(xs) if xs forall (_.isInstanceOf[Typed]) => true
+            case _ => false
+          }
+          if (in.token == ARROW && (location != InTemplate || lhsIsTypedParamList)) {
+            t = atPos(t.pos.startOrPoint, in.skipToken()) {
+              Function(convertToParams(t), if (location != InBlock) expr() else block())
             }
           }
-        } else if (in.token == MATCH) {
-          t = atPos(t.pos.startOrPoint, in.skipToken())(Match(stripParens(t), inBracesOrNil(caseClauses())))
+          stripParens(t)
         }
-        // in order to allow anonymous functions as statements (as opposed to expressions) inside
-        // templates, we have to disambiguate them from self type declarations - bug #1565
-        // The case still missed is unparenthesized single argument, like "x: Int => x + 1", which
-        // may be impossible to distinguish from a self-type and so remains an error.  (See #1564)
-        def lhsIsTypedParamList() = t match {
-          case Parens(xs) if xs forall (_.isInstanceOf[Typed]) => true
-          case _ => false
-        }
-        if (in.token == ARROW && (location != InTemplate || lhsIsTypedParamList)) {
-          t = atPos(t.pos.startOrPoint, in.skipToken()) {
-            Function(convertToParams(t), if (location != InBlock) expr() else block())
-          }
-        }
-        stripParens(t)
+        parseOther
     }
 
     /** {{{

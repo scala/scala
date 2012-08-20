@@ -277,7 +277,7 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
       if(phase.id >= currentRun.uncurryPhase.id) debugwarn("running translateMatch at "+ phase +" on "+ selector +" match "+ cases)
       patmatDebug("translating "+ cases.mkString("{", "\n", "}"))
 
-      val start = Statistics.startTimer(patmatNanos)
+      val start = if (Statistics.canEnable) Statistics.startTimer(patmatNanos) else null
 
       val selectorTp = repeatedToSeq(elimAnonymousClass(selector.tpe.widen.withoutAnnotations))
 
@@ -305,7 +305,7 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
       // pt = Any* occurs when compiling test/files/pos/annotDepMethType.scala  with -Xexperimental
       val combined = combineCases(selector, selectorSym, cases map translateCase(selectorSym, pt), pt, matchOwner, matchFailGenOverride)
 
-      Statistics.stopTimer(patmatNanos, start)
+      if (Statistics.canEnable) Statistics.stopTimer(patmatNanos, start)
       combined
     }
 
@@ -1954,7 +1954,7 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
     // TODO: for V1 representing x1 and V2 standing for x1.head, encode that
     //       V1 = Nil implies -(V2 = Ci) for all Ci in V2's domain (i.e., it is unassignable)
     def removeVarEq(props: List[Prop], modelNull: Boolean = false): (Prop, List[Prop]) = {
-      val start = Statistics.startTimer(patmatAnaVarEq)
+      val start = if (Statistics.canEnable) Statistics.startTimer(patmatAnaVarEq) else null
 
       val vars = new collection.mutable.HashSet[Var]
 
@@ -2009,7 +2009,7 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
       patmatDebug("eqAxioms:\n"+ cnfString(eqFreePropToSolvable(eqAxioms)))
       patmatDebug("pure:"+ pure.map(p => cnfString(eqFreePropToSolvable(p))).mkString("\n"))
 
-      Statistics.stopTimer(patmatAnaVarEq, start)
+      if (Statistics.canEnable) Statistics.stopTimer(patmatAnaVarEq, start)
 
       (eqAxioms, pure)
     }
@@ -2040,6 +2040,11 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
   trait CNF extends Logic {
     // CNF: a formula is a conjunction of clauses
     type Formula = Array[Clause]
+    /** Override Array creation for efficiency (to not go through reflection). */
+    private implicit val formulaTag: scala.reflect.ClassTag[Formula] = new scala.reflect.ClassTag[Formula] {
+      def runtimeClass: java.lang.Class[Formula] = classOf[Formula]
+      final override def newArray(len: Int): Array[Formula] = new Array[Formula](len)
+    }
     def formula(c: Clause*): Formula = c.toArray
     def andFormula(a: Formula, b: Formula): Formula = a ++ b
 
@@ -2116,13 +2121,13 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
         }
       }
 
-      val start = Statistics.startTimer(patmatCNF)
+      val start = if (Statistics.canEnable) Statistics.startTimer(patmatCNF) else null
       val res   = conjunctiveNormalForm(negationNormalForm(p))
 
-      Statistics.stopTimer(patmatCNF, start)
+      if (Statistics.canEnable) Statistics.stopTimer(patmatCNF, start)
 
       //
-      if (Statistics.enabled) patmatCNFSizes(res.size).value += 1
+      if (Statistics.canEnable) patmatCNFSizes(res.size).value += 1
 
 //      patmatDebug("cnf for\n"+ p +"\nis:\n"+cnfString(res))
       res
@@ -2199,7 +2204,7 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
 
       patmatDebug("DPLL\n"+ cnfString(f))
 
-      val start = Statistics.startTimer(patmatAnaDPLL)
+      val start = if (Statistics.canEnable) Statistics.startTimer(patmatAnaDPLL) else null
 
       val satisfiableWithModel: Model =
         if (f isEmpty) EmptyModel
@@ -2237,7 +2242,7 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
             }
         }
 
-        Statistics.stopTimer(patmatAnaDPLL, start)
+        if (Statistics.canEnable) Statistics.stopTimer(patmatAnaDPLL, start)
 
         satisfiableWithModel
     }
@@ -2598,7 +2603,7 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
     // thus, the case is unreachable if there is no model for -(-P /\ C),
     // or, equivalently, P \/ -C, or C => P
     def unreachableCase(prevBinder: Symbol, cases: List[List[TreeMaker]], pt: Type): Option[Int] = {
-      val start = Statistics.startTimer(patmatAnaReach)
+      val start = if (Statistics.canEnable) Statistics.startTimer(patmatAnaReach) else null
 
       // use the same approximator so we share variables,
       // but need different conditions depending on whether we're conservatively looking for failure or success
@@ -2652,7 +2657,7 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
           }
         }
 
-        Statistics.stopTimer(patmatAnaReach, start)
+        if (Statistics.canEnable) Statistics.stopTimer(patmatAnaReach, start)
 
         if (reachable) None else Some(caseIndex)
       } catch {
@@ -2745,7 +2750,7 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
       // - back off (to avoid crying exhaustive too often) when:
       //    - there are guards -->
       //    - there are extractor calls (that we can't secretly/soundly) rewrite
-      val start = Statistics.startTimer(patmatAnaExhaust)
+      val start = if (Statistics.canEnable) Statistics.startTimer(patmatAnaExhaust) else null
       var backoff = false
 
       val approx = new TreeMakersToConds(prevBinder)
@@ -2797,7 +2802,7 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
 
           val pruned = CounterExample.prune(counterExamples).map(_.toString).sorted
 
-          Statistics.stopTimer(patmatAnaExhaust, start)
+          if (Statistics.canEnable) Statistics.stopTimer(patmatAnaExhaust, start)
           pruned
         } catch {
           case ex : AnalysisBudget.Exception =>
