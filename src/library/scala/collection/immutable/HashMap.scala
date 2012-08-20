@@ -146,6 +146,32 @@ object HashMap extends ImmutableMapFactory[HashMap] with BitOperations.Int {
 
   private object EmptyHashMap extends HashMap[Any, Nothing] { }
 
+  // utility method to create a HashTrieMap from two leaf HashMaps (HashMap1 or HashMapCollision1) with non-colliding hash code)
+  private def makeHashTrieMap[A,B](hash0:Int, elem0:HashMap[A,B], hash1:Int, elem1:HashMap[A,B], level:Int, size:Int) : HashTrieMap[A,B] = {
+    var index0 = (hash0 >>> level) & 0x1f
+    var index1 = (hash1 >>> level) & 0x1f
+    var lvl = level
+    var top: HashTrieMap[A, B] = null
+    var prev: HashTrieMap[A, B] = null
+    while (index0 == index1) {
+      val newlevel = new HashTrieMap[A, B](1 << index0, new Array[HashMap[A, B]](1), size)
+      if (prev ne null) prev.elems(0) = newlevel else top = newlevel
+      prev = newlevel
+      lvl += 5
+      index0 = (hash0 >>> lvl) & 0x1f
+      index1 = (hash1 >>> lvl) & 0x1f
+    }
+    val bottelems = new Array[HashMap[A,B]](2)
+    val ind = if (index0 < index1) 1 else 0
+    bottelems(1 - ind) = elem0
+    bottelems(ind) = elem1
+    val bottom = new HashTrieMap[A,B]((1 << index0) | (1 << index1), bottelems, size)
+    if (prev ne null) {
+      prev.elems(0) = bottom
+      top
+    } else bottom
+  }
+
   // TODO: add HashMap2, HashMap3, ...
 
   class HashMap1[A,+B](private[collection] val key: A, private[collection] val hash: Int, private[collection] val value: (B @uV), private[collection] var kv: (A,B @uV)) extends HashMap[A,B] {
@@ -183,30 +209,10 @@ object HashMap extends ImmutableMapFactory[HashMap] with BitOperations.Int {
           new HashMap1(nkv._1, hash, nkv._2, nkv)
         }
       } else {
-        var thatindex = (hash >>> level) & 0x1f
-        var thisindex = (this.hash >>> level) & 0x1f
         if (hash != this.hash) {
           // they have different hashes, but may collide at this level - find a level at which they don't
-          var lvl = level
-          var top: HashTrieMap[A, B1] = null
-          var prev: HashTrieMap[A, B1] = null
-          while (thisindex == thatindex) {
-            val newlevel = new HashTrieMap[A, B1](1 << thisindex, new Array[HashMap[A, B1]](1), 2)
-            if (prev ne null) prev.elems(0) = newlevel else top = newlevel
-            prev = newlevel
-            lvl += 5
-            thatindex = (hash >>> lvl) & 0x1f
-            thisindex = (this.hash >>> lvl) & 0x1f
-          }
-          val bottelems = new Array[HashMap[A,B1]](2)
-          val ind = if (thisindex < thatindex) 1 else 0
-          bottelems(1 - ind) = this
-          bottelems(ind) = new HashMap1[A, B1](key, hash, value, kv)
-          val bottom = new HashTrieMap[A,B1]((1 << thisindex) | (1 << thatindex), bottelems, 2)
-          if (prev ne null) {
-            prev.elems(0) = bottom
-            top
-          } else bottom
+          val that = new HashMap1[A, B1](key, hash, value, kv)
+          makeHashTrieMap[A,B1](this.hash, this, hash, that, level, 2)
         } else {
           // 32-bit hash collision (rare, but not impossible)
           new HashMapCollision1(hash, ListMap.empty.updated(this.key,this.value).updated(key,value))
@@ -238,11 +244,8 @@ object HashMap extends ImmutableMapFactory[HashMap] with BitOperations.Int {
         if ((merger eq null) || !kvs.contains(key)) new HashMapCollision1(hash, kvs.updated(key, value))
         else new HashMapCollision1(hash, kvs + merger((key, kvs(key)), kv))
       } else {
-        var m: HashMap[A,B1] = new HashTrieMap[A,B1](0,new Array[HashMap[A,B1]](0),0)
-        // might be able to save some ops here, but it doesn't seem to be worth it
-        for ((k,v) <- kvs)
-          m = m.updated0(k, this.hash, level, v, null, merger)
-        m.updated0(key, hash, level, value, kv, merger)
+        val that = new HashMap1(key, hash, value, kv)
+        makeHashTrieMap(this.hash, this, hash, that, level, size + 1)
       }
 
     override def removed0(key: A, hash: Int, level: Int): HashMap[A, B] =
