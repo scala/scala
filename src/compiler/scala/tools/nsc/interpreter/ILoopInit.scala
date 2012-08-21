@@ -8,6 +8,7 @@ package interpreter
 
 import scala.reflect.internal.util.Position
 import scala.util.control.Exception.ignoring
+import scala.tools.nsc.util.stackTraceString
 
 /**
  *  Machinery for the asynchronous initialization of the repl.
@@ -94,9 +95,7 @@ trait ILoopInit {
       runThunks()
     } catch {
       case ex: Throwable =>
-        val message = new java.io.StringWriter()
-        ex.printStackTrace(new java.io.PrintWriter(message))
-        initError = message.toString
+        initError = stackTraceString(ex)
         throw ex
     } finally {
       initIsComplete = true

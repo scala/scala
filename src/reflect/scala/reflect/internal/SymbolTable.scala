@@ -72,11 +72,13 @@ abstract class SymbolTable extends macros.Universe
     Console.err.println(msg + ": " + result)
     result
   }
-  private[scala] def logResult[T](msg: String)(result: T): T = {
+  @inline
+  final private[scala] def logResult[T](msg: => String)(result: T): T = {
     log(msg + ": " + result)
     result
   }
-  private[scala] def logResultIf[T](msg: String, cond: T => Boolean)(result: T): T = {
+  @inline
+  final private[scala] def logResultIf[T](msg: => String, cond: T => Boolean)(result: T): T = {
     if (cond(result))
       log(msg + ": " + result)
 

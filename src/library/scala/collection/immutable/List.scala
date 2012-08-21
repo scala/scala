@@ -388,7 +388,6 @@ final case class ::[B](private var hd: B, private[scala] var tl: List[B]) extend
     while (!xs.isEmpty) { out.writeObject(xs.head); xs = xs.tail }
     out.writeObject(ListSerializeEnd)
   }
-
 }
 
 /** $factoryInfo
