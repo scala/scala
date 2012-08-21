@@ -1,0 +1,10 @@
+not-possible-cause.scala:2: error: type mismatch;
+ found   : a.type (with underlying type A)
+ required: AnyRef
+Note that implicit conversions are not applicable because they are ambiguous:
+ both method any2stringfmt in object Predef of type (x: Any)scala.runtime.StringFormat
+ and method any2stringadd in object Predef of type (x: Any)scala.runtime.StringAdd
+ are possible conversion functions from a.type to AnyRef
+  def foo[A <: Product](a: A) { type X = a.type }
+                                         ^
+one error found
