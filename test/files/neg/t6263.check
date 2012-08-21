@@ -1,0 +1,6 @@
+t6263.scala:5: error: type mismatch;
+ found   : A.this.c.type (with underlying type C)
+ required: AnyRef
+  type t = c.type
+           ^
+one error found
