@@ -14,15 +14,10 @@ trait SynchronizedTypes extends internal.Types { self: SymbolTable =>
   override def unique[T <: Type](tp: T): T = uniqueLock.synchronized { super.unique(tp) }
 
   class SynchronizedUndoLog extends UndoLog {
+    private val actualLock = new java.util.concurrent.locks.ReentrantLock
 
-    override def clear() =
-      synchronized { super.clear() }
-
-    override def undo[T](block: => T): T =
-      synchronized { super.undo(block) }
-
-    override def undoUnless(block: => Boolean): Boolean =
-      synchronized { super.undoUnless(block) }
+    final override def lock(): Unit = actualLock.lock()
+    final override def unlock(): Unit = actualLock.unlock()
   }
 
   override protected def newUndoLog = new SynchronizedUndoLog

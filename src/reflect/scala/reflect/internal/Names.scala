@@ -415,9 +415,6 @@ trait Names extends api.Names with LowPriorityNames {
       }
       else toString
     }
-    
-    @inline
-    final def fingerPrint: Long = (1L << start)
 
     /** TODO - find some efficiency. */
     def append(ch: Char)        = newName("" + this + ch)

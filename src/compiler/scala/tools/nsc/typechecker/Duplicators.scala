@@ -283,14 +283,15 @@ abstract class Duplicators extends Analyzer {
 
           // the typer does not create the symbols for a LabelDef's params, so unless they were created before we need
           // to do it manually here -- but for the tailcalls-generated labels, ValDefs are created before the LabelDef,
-          // so we just need to plug in the name
+          // so we just need to change the tree to point to the updated symbols
           def newParam(p: Tree): Ident =
             if (isTailLabel)
-              Ident(p.symbol.name) // let the typer pick up the right symbol
+              Ident(updateSym(p.symbol))
             else {
               val newsym = p.symbol.cloneSymbol //(context.owner) // TODO owner?
               Ident(newsym.setInfo(fixType(p.symbol.info)))
             }
+
           val params1 = params map newParam
           val rhs1 = (new TreeSubstituter(params map (_.symbol), params1) transform rhs) // TODO: duplicate?
           rhs1.tpe = null
