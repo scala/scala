@@ -157,6 +157,20 @@ private[hashing] class MurmurHash3 {
     // Finalization
     finalizeHash(h, data.length)
   }
+
+  final def listHash(xs: collection.immutable.List[_], seed: Int): Int = {
+    var n = 0
+    var h = seed
+    var elems = xs
+    while (!elems.isEmpty) {
+      val head = elems.head
+      val tail = elems.tail
+      h = mix(h, head.##)
+      n += 1
+      elems = tail
+    }
+    finalizeHash(h, n)
+  }
 }
 
 /**
@@ -199,7 +213,11 @@ object MurmurHash3 extends MurmurHash3 {
 
   /** To offer some potential for optimization.
    */
-  def seqHash(xs: collection.Seq[_]): Int    = orderedHash(xs, seqSeed)
+  def seqHash(xs: collection.Seq[_]): Int    = xs match {
+    case xs: List[_] => listHash(xs, seqSeed)
+    case xs => orderedHash(xs, seqSeed)
+  }
+
   def mapHash(xs: collection.Map[_, _]): Int = unorderedHash(xs, mapSeed)
   def setHash(xs: collection.Set[_]): Int    = unorderedHash(xs, setSeed)
 

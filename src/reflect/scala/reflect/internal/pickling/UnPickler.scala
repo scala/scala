@@ -769,8 +769,21 @@ abstract class UnPickler /*extends reflect.generic.UnPickler*/ {
     }
 
     /* Read a reference to a pickled item */
+    protected def readSymbolRef(): Symbol             = {//OPT inlined from: at(readNat(), readSymbol) to save on closure creation
+      val i = readNat()
+      var r = entries(i)
+      if (r eq null) {
+        val savedIndex = readIndex
+        readIndex = index(i)
+        r = readSymbol()
+        assert(entries(i) eq null, entries(i))
+        entries(i) = r
+        readIndex = savedIndex
+      }
+      r.asInstanceOf[Symbol]
+    }
+
     protected def readNameRef(): Name                 = at(readNat(), readName)
-    protected def readSymbolRef(): Symbol             = at(readNat(), readSymbol)
     protected def readTypeRef(): Type                 = at(readNat(), () => readType()) // after the NMT_TRANSITION period, we can leave off the () => ... ()
     protected def readConstantRef(): Constant         = at(readNat(), readConstant)
     protected def readAnnotationRef(): AnnotationInfo = at(readNat(), readAnnotation)

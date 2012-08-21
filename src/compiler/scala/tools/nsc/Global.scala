@@ -1174,8 +1174,8 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
 
     var reportedFeature = Set[Symbol]()
 
-    /** A flag whether macro expansions failed */
-    var macroExpansionFailed = false
+    /** Has any macro expansion used a fallback during this run? */
+    var seenMacroExpansionsFallingBack = false
 
     /** To be initialized from firstPhase. */
     private var terminalPhase: Phase = NoPhase
@@ -1484,7 +1484,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
       else {
         allConditionalWarnings foreach (_.summarize)
 
-        if (macroExpansionFailed)
+        if (seenMacroExpansionsFallingBack)
           warning("some macros could not be expanded and code fell back to overridden methods;"+
                   "\nrecompiling with generated classfiles on the classpath might help.")
         // todo: migrationWarnings

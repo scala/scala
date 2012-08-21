@@ -237,6 +237,23 @@ quant)
   private var _enabled = false
   private val qs = new mutable.HashMap[String, Quantity]
 
+  /** replace with
+   *
+   *    final val canEnable = false
+   *
+   *  to remove all Statistics code from build
+   */
+  final val canEnable = _enabled
+
+  /** replace with
+   *
+   *   final def hotEnabled = _enabled
+   *
+   * and rebuild, to also count tiny but super-hot methods
+   * such as phase, flags, owner, name.
+   */
+  final val hotEnabled = false
+
   def enabled = _enabled
   def enabled_=(cond: Boolean) = {
     if (cond && !_enabled) {
@@ -253,9 +270,4 @@ quant)
       _enabled = true
     }
   }
-
-  /** replace rhs with enabled and rebuild to also count tiny but super-hot methods
-   * such as phase, flags, owner, name.
-   */
-  final val hotEnabled = false
 }

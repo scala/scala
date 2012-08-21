@@ -39,8 +39,8 @@ trait BaseTypeSeqs {
    */
   class BaseTypeSeq protected[BaseTypeSeqs] (private[BaseTypeSeqs] val parents: List[Type], private[BaseTypeSeqs] val elems: Array[Type]) {
   self =>
-    Statistics.incCounter(baseTypeSeqCount)
-    Statistics.incCounter(baseTypeSeqLenTotal, elems.length)
+    if (Statistics.canEnable) Statistics.incCounter(baseTypeSeqCount)
+    if (Statistics.canEnable) Statistics.incCounter(baseTypeSeqLenTotal, elems.length)
 
     /** The number of types in the sequence */
     def length: Int = elems.length
