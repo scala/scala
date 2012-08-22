@@ -37,6 +37,8 @@ object Test extends App {
 
   //Complete test case for withFilter + map/flatMap, as requested by @axel22.
   for (j <- (0 to 3) :+ 10000) {
-    testStream((1 to j).toStream)
+    val stream = (1 to j).toStream
+    assert(stream.toSeq == (1 to j).toSeq)
+    testStream(stream)
   }
 }
