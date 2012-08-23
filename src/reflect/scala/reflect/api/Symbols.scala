@@ -59,6 +59,9 @@ trait Symbols extends base.Symbols { self: Universe =>
      */
     def typeSignature: Type
 
+    /** Returns all symbols overriden by this symbol. */
+    def allOverriddenSymbols: List[Symbol]
+
     /******************* tests *******************/
 
     /** Does this symbol represent a synthetic (i.e. a compiler-generated) entity?
