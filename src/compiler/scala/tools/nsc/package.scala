@@ -21,6 +21,6 @@ package object nsc {
   // acts like 's' but calls stripMargin before returning
   // the string.
   implicit class StripMarginOps(val sc: StringContext) {
-    def sm(xs: Any*): String = sc.s(xs: _*).stripMargin
+    def sm(xs: Any*): String = sc.standardInterpolator(s => StringContext.treatEscapes(s).stripMargin, xs)
   }
 }
