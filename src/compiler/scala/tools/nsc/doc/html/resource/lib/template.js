@@ -101,6 +101,12 @@ $(document).ready(function(){
         $("#linearization li.in").removeClass("in").addClass("out");
         $("#linearization li:first").removeClass("out").addClass("in");
         $("#implicits li.in").removeClass("in").addClass("out");
+
+        if ($(this).hasClass("out") && $("#mbrsel > div[id=ancestors] > ol > li.showall").hasClass("in")) {
+            $(this).removeClass("out").addClass("in");
+            $("#mbrsel > div[id=ancestors] > ol > li.showall").removeClass("in").addClass("out");
+        }
+
         filter();
     })
     $("#mbrsel > div[id=ancestors] > ol > li.showall").click(function() {
@@ -115,6 +121,11 @@ $(document).ready(function(){
             return ! isHidden(this);
         });
         filteredImplicits.removeClass("out").addClass("in");
+
+        if ($(this).hasClass("out") && $("#mbrsel > div[id=ancestors] > ol > li.hideall").hasClass("in")) {
+            $(this).removeClass("out").addClass("in");
+            $("#mbrsel > div[id=ancestors] > ol > li.hideall").removeClass("in").addClass("out");
+        }
 
         filter();
     });
