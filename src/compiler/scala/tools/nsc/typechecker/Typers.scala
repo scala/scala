@@ -4730,8 +4730,13 @@ trait Typers extends Modes with Adaptations with Tags {
               if (isInPackageObject(defEntry.sym, pre.typeSymbol)) {
                 defSym = pre.member(defEntry.sym.name)
                 if (defSym ne defEntry.sym) {
-                  log("!!! Overloaded package object member resolved incorrectly.\n  Discarded: " +
-                    defEntry.sym.defString + "\n  Using: " + defSym.defString)
+                  qual = gen.mkAttributedQualifier(pre)
+                  log(s"""
+                    |  !!! Overloaded package object member resolved incorrectly.
+                    |        prefix: $pre
+                    |     Discarded: ${defEntry.sym.defString}
+                    |         Using: ${defSym.defString}
+                    """.stripMargin)
                 }
               }
               else
