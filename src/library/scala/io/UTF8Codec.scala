@@ -13,6 +13,7 @@ package scala.io
  *  @author  Martin Odersky
  *  @version 1.0, 04/10/2004
  */
+@deprecated("This class will be removed.", "2.10.0")
 object UTF8Codec {
   final val UNI_REPLACEMENT_CHAR: Int = 0x0000FFFD
   final val UNI_REPLACEMENT_BYTES = Array[Byte](-17, -65, -67)
