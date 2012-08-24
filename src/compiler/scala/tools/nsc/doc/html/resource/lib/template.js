@@ -2,6 +2,22 @@
 // code by Gilles Dubochet with contributions by Pedro Furlanetto
 
 $(document).ready(function(){
+
+    // Escapes special characters and returns a valid jQuery selector
+    function escapeJquery(str){
+        return str.replace(/([;&,\.\+\*\~':"\!\^#$%@\[\]\(\)=>\|])/g, '\\$1');
+    }
+
+    // highlight and jump to selected member
+    if (window.location.hash) {
+      var temp = window.location.hash.replace('#', '');
+      var elem = '#'+escapeJquery(temp);
+
+      window.scrollTo(0, 0);
+      $(elem).parent().effect("highlight", {color: "#FFCC85"}, 3000);
+      $('html,body').animate({scrollTop:$(elem).parent().offset().top}, 1000);
+    }
+    
     var isHiddenClass = function (name) {
         return name == 'scala.Any' ||
                name == 'scala.AnyRef';
