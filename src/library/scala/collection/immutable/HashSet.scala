@@ -284,6 +284,9 @@ object HashSet extends ImmutableSetFactory[HashSet] {
       var bitmapNew = 0
       var elemsNew: Array[HashSet[A]] = null
       var sizeNew = 0
+      // copy members into local vals
+      val elems = this.elems
+      val bitmap = this.bitmap
       // iterate over all 32 masks even though just a few of them might be occupied.
       // this iteration is much cheaper than doing calling Integer.bitCount
       var mask = 1
