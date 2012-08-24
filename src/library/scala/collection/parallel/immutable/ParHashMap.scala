@@ -202,7 +202,7 @@ extends collection.parallel.BucketCombiner[(K, V), ParHashMap[K, V], (K, V), Has
   def groupByKey[Repr](cbf: () => Combiner[V, Repr]): ParHashMap[K, Repr] = {
     val bucks = buckets.filter(_ != null).map(_.headPtr)
     val root = new Array[HashMap[K, AnyRef]](bucks.length)
-
+    
     combinerTaskSupport.executeAndWaitResult(new CreateGroupedTrie(cbf, bucks, root, 0, bucks.length))
 
     var bitmap = 0
@@ -306,8 +306,7 @@ extends collection.parallel.BucketCombiner[(K, V), ParHashMap[K, V], (K, V), Has
         unrolled = unrolled.next
       }
 
-      evaluateCombiners(trie)
-      trie.asInstanceOf[HashMap[K, Repr]]
+      evaluateCombiners(trie).asInstanceOf[HashMap[K, Repr]]
     }
     private def evaluateCombiners(trie: HashMap[K, Combiner[V, Repr]]): HashMap[K, Repr] = trie match {
       case hm1: HashMap.HashMap1[_, _] =>
