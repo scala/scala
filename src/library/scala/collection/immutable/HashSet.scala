@@ -73,11 +73,11 @@ class HashSet[A] extends AbstractSet[A]
   private[collection] def computeHash(key: A) = improve(elemHashCode(key))
 
   override def filter(p: (A) => Boolean) = {
-    val result = filter0(p)
+    val result = filter0(p, new HashSet.BufferPool())
     if(result eq null) HashSet.empty[A] else result
   }
 
-  protected def filter0(p: A => Boolean) = this
+  protected def filter0(p: A => Boolean, pool:HashSet.BufferPool[A]) = this
 
   protected def get0(key: A, hash: Int, level: Int): Boolean = false
 
@@ -110,27 +110,29 @@ object HashSet extends ImmutableSetFactory[HashSet] {
   // helper class for caching buffers for bulk operations
   private final class BufferPool[A] {
 
-    private var depth = 0
+    private[this] var depth = 0
 
-    private var buffers : Array[Array[HashSet[A]]] = null
+    private[this] var buffers : Array[Array[HashSet[A]]] = null
 
-    private def make(length: Int, bitmap: Int, size: Int) =
+    private[this] def make(buffer:Array[HashSet[A]], length: Int, bitmap: Int, size: Int) =
       if(length==0)
         null
       else {
-        val buffer = buffers(depth)
         if(length==1 && !buffer(0).isInstanceOf[HashTrieSet[_]])
           buffer(0)
         else {
-          val array1 = new Array[HashSet[A]](length)
-          System.arraycopy(buffer, 0, array1, 0, length)
-          new HashTrieSet(bitmap, array1, size)
+          val elems = new Array[HashSet[A]](length)
+          var i=0
+          while(i<elems.length) {
+            elems(i) = buffer(i)
+            i+=1
+          }     
+          new HashTrieSet(bitmap, elems, size)
         }
       }
 
-    private def allEq(proto:Array[HashSet[A]]) : Boolean = {
+    private[this] def allEq(buffer:Array[HashSet[A]], proto:Array[HashSet[A]]) : Boolean = {
       var i = 0
-      val buffer = buffers(depth)
       while(i<proto.length) {
         if(buffer(i) ne proto(i))
           return false
@@ -142,8 +144,10 @@ object HashSet extends ImmutableSetFactory[HashSet] {
     def alloc(): Array[HashSet[A]] = {
       if(buffers eq null)
         buffers = new Array[Array[HashSet[A]]](7)
-      if(buffers(depth) eq null)
+      if(buffers(depth) eq null) {
+        // println("alloc "+ depth)
         buffers(depth) = new Array[HashSet[A]](32)
+      }
       val result = buffers(depth)
       depth += 1
       result
@@ -153,25 +157,31 @@ object HashSet extends ImmutableSetFactory[HashSet] {
 
     def result(length: Int, bitmap: Int, size: Int) : HashSet[A] = {
       depth -= 1
-      make(length, bitmap, size)
+      make(buffers(depth), length, bitmap, size)
     }
 
     def result(length: Int, bitmap: Int, size: Int, a: HashTrieSet[A]) = {
       depth -= 1
-      if(bitmap==a.bitmap && allEq(a.elems))
+      val buffer = buffers(depth)
+      if(bitmap==a.bitmap && allEq(buffer, a.elems)) {
+        // println("reuse " + length + " at depth " + depth)
         a
-      else
-	make(length, bitmap, size)
+      }
+      else {
+        // println("make " + length + " at depth " + depth)
+	make(buffer, length, bitmap, size)
+      }
     }
 
     def result(length: Int, bitmap: Int, size: Int, a: HashTrieSet[A], b: HashTrieSet[A]) = {
       depth -= 1
-      if(bitmap==a.bitmap && allEq(a.elems))
+      val buffer = buffers(depth)
+      if(bitmap==a.bitmap && allEq(buffer, a.elems))
         a
-      else if(bitmap==b.bitmap && allEq(b.elems))
+      else if(bitmap==b.bitmap && allEq(buffer, b.elems))
         b
       else
-	make(length, bitmap, size)
+	make(buffer, length, bitmap, size)
     }
   }
 
@@ -201,7 +211,7 @@ object HashSet extends ImmutableSetFactory[HashSet] {
     override def removed0(key: A, hash: Int, level: Int): HashSet[A] =
       if (hash == this.hash && key == this.key) HashSet.empty[A] else this
 
-    protected override def filter0(p: A => Boolean) : HashSet[A] =
+    protected override def filter0(p: A => Boolean, pool:BufferPool[A]) : HashSet[A] =
       if(!p(key)) null else this
 
     override def iterator: Iterator[A] = Iterator(key)
@@ -237,7 +247,7 @@ object HashSet extends ImmutableSetFactory[HashSet] {
           new HashSetCollision1(hash, ks1)
       } else this
 
-    protected override def filter0(p: A => Boolean) : HashSet[A] = {
+    protected override def filter0(p: A => Boolean, pool:BufferPool[A]) : HashSet[A] = {
       val ks1 = ks.filter(p)
       if (ks1.isEmpty)
         null
@@ -346,11 +356,11 @@ object HashSet extends ImmutableSetFactory[HashSet] {
       }
     }
 
-    protected override def filter0(p: A => Boolean): HashSet[A] = {
+    protected override def filter0(p: A => Boolean, pool:BufferPool[A]): HashSet[A] = {
       var offset = 0
       var tgtOffset = 0
       var bitmapNew = 0
-      var elemsNew: Array[HashSet[A]] = null
+      val elemsNew = pool.alloc()
       var sizeNew = 0
       // copy members into local vals
       val elems = this.elems
@@ -361,20 +371,9 @@ object HashSet extends ImmutableSetFactory[HashSet] {
       while (mask != 0) {
         if ((bitmap & mask) != 0) {
           val sub = elems(offset)
-          val subNew = sub.filter0(p)
+          val subNew = sub.filter0(p, pool)
           if (subNew ne null) {
-            if (elemsNew eq null) {
-              // test if we need elemsNew
-              // we need elemsNew if we need to store a reference to a changed sub node, or
-              // if we need to shift elements because one of the former calls to sub.filter was empty
-              if ((sub ne subNew) || (tgtOffset != offset)) {
-                // allocate array and copy previous elements
-                elemsNew = new Array[HashSet[A]](elems.length)
-                Array.copy(elems, 0, elemsNew, 0, tgtOffset)
-                elemsNew(tgtOffset) = subNew
-              }
-            } else
-              elemsNew(tgtOffset) = subNew
+            elemsNew(tgtOffset) = subNew
             sizeNew += subNew.size
             bitmapNew |= mask
             tgtOffset += 1
@@ -385,6 +384,8 @@ object HashSet extends ImmutableSetFactory[HashSet] {
         mask <<= 1
       }
 
+      pool.result(tgtOffset, bitmapNew, sizeNew, this)
+/*
       // from here on nothing is written to elemsNew, so it is safe to use elems
       if (elemsNew == null)
         elemsNew = elems
@@ -403,7 +404,7 @@ object HashSet extends ImmutableSetFactory[HashSet] {
         val elemsNew2 = new Array[HashSet[A]](tgtOffset)
         Array.copy(elemsNew, 0, elemsNew2, 0, tgtOffset)
         new HashTrieSet[A](bitmapNew, elemsNew2, sizeNew)
-      }
+      }*/
     }
 
     override def iterator = new TrieIterator[A](elems.asInstanceOf[Array[Iterable[A]]]) {
