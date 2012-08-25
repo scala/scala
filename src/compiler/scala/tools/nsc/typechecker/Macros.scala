@@ -588,7 +588,7 @@ trait Macros extends scala.tools.reflect.FastTrack with Traces {
     val nullaryArgsEmptyParams = exprArgs.isEmpty && macroDef.paramss == ListOfNil
     if (argcDoesntMatch && !nullaryArgsEmptyParams) { typer.TyperErrorGen.MacroPartialApplicationError(expandee) }
 
-    var argss: List[List[Any]] = exprArgs.toList
+    val argss: List[List[Any]] = exprArgs.toList
     macroTraceVerbose("context: ")(context)
     macroTraceVerbose("argss: ")(argss)
 
@@ -597,9 +597,6 @@ trait Macros extends scala.tools.reflect.FastTrack with Traces {
         if (fastTrack(macroDef) validate context) argss
         else typer.TyperErrorGen.MacroPartialApplicationError(expandee)
       } else {
-        val binding = loadMacroImplBinding(macroDef)
-        macroTraceVerbose("binding: ")(binding)
-
         // if paramss have typetag context bounds, add an arglist to argss if necessary and instantiate the corresponding evidences
         // consider the following example:
         //
@@ -616,6 +613,8 @@ trait Macros extends scala.tools.reflect.FastTrack with Traces {
         // then T and U need to be inferred from the lexical scope of the call using `asSeenFrom`
         // whereas V won't be resolved by asSeenFrom and need to be loaded directly from `expandee` which needs to contain a TypeApply node
         // also, macro implementation reference may contain a regular type as a type argument, then we pass it verbatim
+        val binding = loadMacroImplBinding(macroDef)
+        macroTraceVerbose("binding: ")(binding)
         val tags = binding.signature filter (_ != -1) map (paramPos => {
           val targ = binding.targs(paramPos).tpe.typeSymbol
           val tpe = if (targ.isTypeParameterOrSkolem) {
@@ -633,14 +632,13 @@ trait Macros extends scala.tools.reflect.FastTrack with Traces {
             targ.tpe
           if (tpe.isConcrete) context.TypeTag(tpe) else context.AbsTypeTag(tpe)
         })
-        val hasImplicitParams = macroDef.paramss.flatten.lastOption exists (_.isImplicit)
-        argss = if (hasImplicitParams) argss.dropRight(1) :+ (tags ++ argss.last) else argss :+ tags
+        macroTraceVerbose("tags: ")(tags)
 
         // transforms argss taking into account varargness of paramss
         // note that typetag context bounds are only declared on macroImpls
         // so this optional arglist might not match macroDef's paramlist
         // nb! varargs can apply to any parameter section, not necessarily to the last one
-        mapWithIndex(argss)((as, i) => {
+        mapWithIndex(argss :+ tags)((as, i) => {
           val mapsToParamss = macroDef.paramss.indices contains i
           if (mapsToParamss) {
             val ps = macroDef.paramss(i)
