@@ -107,6 +107,74 @@ object HashSet extends ImmutableSetFactory[HashSet] {
   implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, HashSet[A]] = setCanBuildFrom[A]
   override def empty[A]: HashSet[A] = EmptyHashSet.asInstanceOf[HashSet[A]]
 
+  // helper class for caching buffers for bulk operations
+  private final class BufferPool[A] {
+
+    private var depth = 0
+
+    private var buffers : Array[Array[HashSet[A]]] = null
+
+    private def make(length: Int, bitmap: Int, size: Int) =
+      if(length==0)
+        null
+      else {
+        val buffer = buffers(depth)
+        if(length==1 && !buffer(0).isInstanceOf[HashTrieSet[_]])
+          buffer(0)
+        else {
+          val array1 = new Array[HashSet[A]](length)
+          System.arraycopy(buffer, 0, array1, 0, length)
+          new HashTrieSet(bitmap, array1, size)
+        }
+      }
+
+    private def allEq(proto:Array[HashSet[A]]) : Boolean = {
+      var i = 0
+      val buffer = buffers(depth)
+      while(i<proto.length) {
+        if(buffer(i) ne proto(i))
+          return false
+        i+=1
+      }
+      return true
+    }
+
+    def alloc(): Array[HashSet[A]] = {
+      if(buffers eq null)
+        buffers = new Array[Array[HashSet[A]]](7)
+      if(buffers(depth) eq null)
+        buffers(depth) = new Array[HashSet[A]](32)
+      val result = buffers(depth)
+      depth += 1
+      result
+    }
+
+    def level: Int = depth * 5
+
+    def result(length: Int, bitmap: Int, size: Int) : HashSet[A] = {
+      depth -= 1
+      make(length, bitmap, size)
+    }
+
+    def result(length: Int, bitmap: Int, size: Int, a: HashTrieSet[A]) = {
+      depth -= 1
+      if(bitmap==a.bitmap && allEq(a.elems))
+        a
+      else
+	make(length, bitmap, size)
+    }
+
+    def result(length: Int, bitmap: Int, size: Int, a: HashTrieSet[A], b: HashTrieSet[A]) = {
+      depth -= 1
+      if(bitmap==a.bitmap && allEq(a.elems))
+        a
+      else if(bitmap==b.bitmap && allEq(b.elems))
+        b
+      else
+	make(length, bitmap, size)
+    }
+  }
+
   private object EmptyHashSet extends HashSet[Any] { }
 
   // TODO: add HashSet2, HashSet3, ...
@@ -199,7 +267,7 @@ object HashSet extends ImmutableSetFactory[HashSet] {
 
   }
 
-  class HashTrieSet[A](private val bitmap: Int, private[collection] val elems: Array[HashSet[A]], private val size0: Int)
+  class HashTrieSet[A](private[collection] val bitmap: Int, private[collection] val elems: Array[HashSet[A]], private val size0: Int)
         extends HashSet[A] {
 
     override def size = size0
