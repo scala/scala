@@ -61,22 +61,22 @@
 >     ?	LOAD_LOCAL(variable monitor4)
 >     305	MONITOR_EXIT
 >     ?	JUMP 12
-550c557,563
+550c557
 <     ?	THROW(Throwable)
 ---
 >     ?	JUMP 12
+556c563,570
+<     ?	THROW(Throwable)
+---
+>     ?	STORE_LOCAL(value t)
+>     ?	JUMP 13
 >     
 >   12: 
 >     ?	LOAD_LOCAL(variable monitor3)
 >     304	MONITOR_EXIT
 >     ?	STORE_LOCAL(value t)
 >     ?	JUMP 13
-556c569,582
-<     ?	THROW(Throwable)
----
->     ?	STORE_LOCAL(value t)
->     ?	JUMP 13
->     
+571a586,597
 >   13: 
 >     310	LOAD_MODULE object Predef
 >     310	CALL_PRIMITIVE(StartConcat)
@@ -88,6 +88,7 @@
 >     310	CALL_PRIMITIVE(EndConcat)
 >     310	CALL_METHOD scala.Predef.println (dynamic)
 >     310	JUMP 2
+>     
 580c606
 <     catch (Throwable) in ArrayBuffer(7, 8, 9, 10) starting at: 6
 ---
@@ -110,12 +111,12 @@
 >     81	LOAD_LOCAL(value e)
 >     ?	STORE_LOCAL(variable exc1)
 >     ?	JUMP 12
-668c700,714
+668c700,701
 <     81	THROW(Exception)
 ---
 >     ?	STORE_LOCAL(variable exc1)
 >     ?	JUMP 12
->     
+684a718,730
 >   12: 
 >     83	LOAD_MODULE object Predef
 >     83	CONSTANT("finally")
@@ -128,6 +129,7 @@
 >     84	STORE_LOCAL(variable result)
 >     84	LOAD_LOCAL(variable exc1)
 >     84	THROW(Throwable)
+>     
 690c736
 <     catch (<none>) in ArrayBuffer(4, 6, 7, 9) starting at: 3
 ---
@@ -171,17 +173,18 @@
 ---
 >     ?	STORE_LOCAL(value ex6)
 >     ?	JUMP 33
-802c854,861
+802c854,855
 <     170	THROW(Throwable)
 ---
 >     ?	STORE_LOCAL(value ex6)
 >     ?	JUMP 33
->     
+811a865,870
 >   33: 
 >     169	LOAD_LOCAL(value ex6)
 >     169	STORE_LOCAL(value x4)
 >     169	SCOPE_ENTER value x4
 >     169	JUMP 5
+>     
 826,829d884
 <     180	LOAD_LOCAL(value x5)
 <     180	CALL_METHOD MyException.message (dynamic)
@@ -207,7 +210,7 @@
 ---
 >     ?	STORE_LOCAL(variable exc2)
 >     ?	JUMP 34
-842a902,914
+857a917,929
 >   34: 
 >     184	LOAD_MODULE object Predef
 >     184	CONSTANT("finally")
