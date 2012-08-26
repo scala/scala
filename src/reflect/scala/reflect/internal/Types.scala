@@ -341,6 +341,10 @@ trait Types extends api.Types { self: SymbolTable =>
     def isSpliceable = {
       this.isInstanceOf[TypeRef] && typeSymbol.isAbstractType && !typeSymbol.isExistential
     }
+
+    // `kind` seems to be a useful name as in http://en.wikipedia.org/wiki/Kind_(type_theory)
+    // don't want to tie the reflection API to it
+    def discr = kind
   }
 
   /** The base class for all types */

@@ -160,8 +160,15 @@ trait Types extends base.Types { self: Universe =>
     /** Does this type contain a reference to given symbol? */
     def contains(sym: Symbol): Boolean
 
-    /** The string discriminator of this type; useful for debugging */
-    def kind: String
+    /** The string discriminator of this type.
+     *
+     *  Useful for debugging and debug printing.
+     *
+     *  Values returned by this method should not be used to tell symbols apart.
+     *  These values can changed on a whim, depending on how the underlying implementation sees fit.
+     *  Use pattern matching against concrete subtypes instead.
+     */
+    def discr: String
   }
 
   /** .. */
