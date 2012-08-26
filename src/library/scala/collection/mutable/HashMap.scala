@@ -60,19 +60,19 @@ extends AbstractMap[A, B]
   override def contains(key: A) = findEntry(key) != null
   override def apply(key: A): B = {
     val result = findEntry(key)
-    if (result == null) default(key)
+    if (result eq null) default(key)
     else result.value
   }
 
   def get(key: A): Option[B] = {
     val e = findEntry(key)
-    if (e == null) None
+    if (e eq null) None
     else Some(e.value)
   }
 
   override def put(key: A, value: B): Option[B] = {
-    val e = findEntry(key)
-    if (e == null) { addEntry(new Entry(key, value)); None }
+    val e = findOrAddEntry(key, value)
+    if (e eq null) None
     else { val v = e.value; e.value = value; Some(v) }
   }
 
@@ -85,9 +85,8 @@ extends AbstractMap[A, B]
   }
 
   def += (kv: (A, B)): this.type = {
-    val e = findEntry(kv._1)
-    if (e == null) addEntry(new Entry(kv._1, kv._2))
-    else e.value = kv._2
+    val e = findOrAddEntry(kv._1, kv._2)
+    if (e ne null) e.value = kv._2
     this
   }
 
@@ -127,12 +126,19 @@ extends AbstractMap[A, B]
     if (!isSizeMapDefined) sizeMapInitAndRebuild
   } else sizeMapDisable
 
+  protected override def createNewEntry[B1](key: A, value: B1): Entry = {
+    new Entry(key, value.asInstanceOf[B])
+  }
+
   private def writeObject(out: java.io.ObjectOutputStream) {
-    serializeTo(out, _.value)
+    serializeTo(out, { entry =>
+      out.writeObject(entry.key)
+      out.writeObject(entry.value)
+    })
   }
 
   private def readObject(in: java.io.ObjectInputStream) {
-    init[B](in, new Entry(_, _))
+    init(in, createNewEntry(in.readObject().asInstanceOf[A], in.readObject()))
   }
 
 }

@@ -104,11 +104,14 @@ self =>
   }
 
   private def writeObject(out: java.io.ObjectOutputStream) {
-    serializeTo(out, _.value)
+    serializeTo(out, { entry =>
+      out.writeObject(entry.key)
+      out.writeObject(entry.value)
+    })
   }
 
   private def readObject(in: java.io.ObjectInputStream) {
-    init[V](in, new Entry(_, _))
+    init(in, new Entry(in.readObject().asInstanceOf[K], in.readObject().asInstanceOf[V]))
   }
 
   private[parallel] override def brokenInvariants = {
