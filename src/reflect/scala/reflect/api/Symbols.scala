@@ -201,8 +201,15 @@ trait Symbols extends base.Symbols { self: Universe =>
      */
     def suchThat(cond: Symbol => Boolean): Symbol
 
-    /** The string discriminator of this symbol; useful for debugging */
-    def kind: String
+    /** The string discriminator of this symbol.
+     *
+     *  Useful for debugging and debug printing.
+     *
+     *  Values returned by this method should not be used to tell symbols apart.
+     *  These values can changed on a whim, depending on how the underlying implementation sees fit.
+     *  Use one of the `isXXX` methods instead (e.g. isMethod or isGetter).
+     */
+    def discr: String
   }
 
   /** The API of term symbols */
