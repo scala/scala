@@ -212,16 +212,16 @@ trait Symbols extends base.Symbols { self: Universe =>
 
   /** The API of term symbols */
   trait TermSymbolApi extends SymbolApi with TermSymbolBase { this: TermSymbol =>
-    /** Does this symbol represent a value, i.e. not a module and not a method?
+    /** Is this symbol introduced as `val`?
      */
-    def isValue: Boolean
+    def isVal: Boolean
 
     /** Does this symbol denote a stable value? */
     def isStable: Boolean
 
-    /** Does this symbol represent a mutable value?
+    /** Is this symbol introduced as `var`?
      */
-    def isVariable: Boolean
+    def isVar: Boolean
 
     /** Does this symbol represent a getter or a setter?
      */
