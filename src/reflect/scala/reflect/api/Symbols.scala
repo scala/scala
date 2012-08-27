@@ -15,9 +15,10 @@ trait Symbols extends base.Symbols { self: Universe =>
   /** The API of symbols */
   trait SymbolApi extends SymbolBase { this: Symbol =>
 
-    /** The position of this symbol
+    /** Source file if this symbol is created during this compilation run,
+     *  or a class file if this symbol is loaded from a *.class or *.jar.
      */
-    def pos: Position
+    def associatedFile: scala.tools.nsc.io.AbstractFile
 
     /** A list of annotations attached to this Symbol.
      */
