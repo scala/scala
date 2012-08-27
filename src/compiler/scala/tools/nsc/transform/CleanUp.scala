@@ -550,6 +550,10 @@ abstract class CleanUp extends Transform with ast.TreeDSL {
           else tree
         }
 
+      case DefDef(mods, name, tps, vps, tp, rhs) if tree.symbol.hasStaticAnnotation =>
+        reporter.error(tree.pos, "The @static annotation is not allowed on method definitions.")
+        super.transform(tree)
+
       case ValDef(mods, name, tpt, rhs) if tree.symbol.hasStaticAnnotation =>
         def transformStaticValDef = {
         log("moving @static valdef field: " + name + ", in: " + tree.symbol.owner)
@@ -592,7 +596,8 @@ abstract class CleanUp extends Transform with ast.TreeDSL {
           }
 
           // create a static field in the companion class for this @static field
-          val stfieldSym = linkedClass.newVariable(newTermName(name), tree.pos, STATIC | SYNTHETIC | FINAL) setInfo sym.tpe
+          val stfieldSym = linkedClass.newValue(newTermName(name), tree.pos, STATIC | SYNTHETIC | FINAL) setInfo sym.tpe
+          if (sym.isMutable) stfieldSym.setFlag(MUTABLE)
           stfieldSym.addAnnotation(StaticClass)
 
           val names = classNames.getOrElseUpdate(linkedClass, linkedClass.info.decls.collect {
@@ -768,7 +773,8 @@ abstract class CleanUp extends Transform with ast.TreeDSL {
         staticSym <- clazz.info.decls
         if staticSym.hasStaticAnnotation
       } staticSym match {
-        case stfieldSym if stfieldSym.isVariable =>
+        case stfieldSym if (stfieldSym.isValue && !stfieldSym.isMethod) || stfieldSym.isVariable =>
+          log(stfieldSym + " is value: " + stfieldSym.isValue)
           val valdef = staticBodies((clazz, stfieldSym))
           val ValDef(_, _, _, rhs) = valdef
           val fixedrhs = rhs.changeOwner((valdef.symbol, clazz.info.decl(nme.CONSTRUCTOR)))
