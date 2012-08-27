@@ -75,6 +75,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     }
 
     def knownDirectSubclasses             = children
+    def baseClasses                       = info.baseClasses
     def thisPrefix: Type                  = thisType
     def selfType: Type                    = typeOfThis
     def typeSignature: Type               = info

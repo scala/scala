@@ -386,6 +386,12 @@ trait Symbols extends base.Symbols { self: Universe =>
      */
     def knownDirectSubclasses: Set[Symbol]
 
+    /** The list of all base classes of this type (including its own typeSymbol)
+     *  in reverse linearization order, starting with the class itself and ending
+     *  in class Any.
+     */
+    def baseClasses: List[Symbol]
+
     /** If this symbol is a class or trait, its self type, otherwise the type
      *  of the symbol itself.
      */
