@@ -74,6 +74,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
       case n: TypeName => if (isClass) newClassSymbol(n, pos, newFlags) else newNonClassSymbol(n, pos, newFlags)
     }
 
+    def knownDirectSubclasses             = children
     def thisPrefix: Type                  = thisType
     def selfType: Type                    = typeOfThis
     def typeSignature: Type               = info

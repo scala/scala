@@ -381,6 +381,11 @@ trait Symbols extends base.Symbols { self: Universe =>
      */
     def isSealed: Boolean
 
+    /** If this is a sealed class, its known direct subclasses.
+     *  Otherwise, the empty set.
+     */
+    def knownDirectSubclasses: Set[Symbol]
+
     /** If this symbol is a class or trait, its self type, otherwise the type
      *  of the symbol itself.
      */
