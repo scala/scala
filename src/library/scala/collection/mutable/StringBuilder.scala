@@ -223,7 +223,7 @@ final class StringBuilder(private val underlying: JavaStringBuilder)
    *  @param  xs  the characters to be appended.
    *  @return     this StringBuilder.
    */
-  def appendAll(xs: TraversableOnce[Char]): StringBuilder = appendAll(xs.toArray)
+  def appendAll(xs: GenTraversableOnce[Char]): StringBuilder = appendAll(xs.toArray)
 
   /** Appends all the Chars in the given Array[Char] to this sequence.
    *

@@ -63,7 +63,7 @@ trait Builder[-Elem, +To] extends Growable[Elem] {
    *
    *  @param coll  the collection which serves as a hint for the result's size.
    */
-  def sizeHint(coll: TraversableLike[_, _]) {
+  def sizeHint(coll: GenTraversableLike[_, _]) {
     if (coll.isInstanceOf[collection.IndexedSeqLike[_,_]]) {
       sizeHint(coll.size)
     }
@@ -82,7 +82,7 @@ trait Builder[-Elem, +To] extends Growable[Elem] {
    *  @param coll  the collection which serves as a hint for the result's size.
    *  @param delta a correction to add to the `coll.size` to produce the size hint.
    */
-  def sizeHint(coll: TraversableLike[_, _], delta: Int) {
+  def sizeHint(coll: GenTraversableLike[_, _], delta: Int) {
     if (coll.isInstanceOf[collection.IndexedSeqLike[_,_]]) {
       sizeHint(coll.size + delta)
     }
@@ -100,7 +100,7 @@ trait Builder[-Elem, +To] extends Growable[Elem] {
    *                       an IndexedSeqLike, then sizes larger
    *                       than collection's size are reduced.
    */
-  def sizeHintBounded(size: Int, boundingColl: TraversableLike[_, _]) {
+  def sizeHintBounded(size: Int, boundingColl: GenTraversableLike[_, _]) {
     if (boundingColl.isInstanceOf[collection.IndexedSeqLike[_,_]])
       sizeHint(size min boundingColl.size)
   }
@@ -117,9 +117,9 @@ trait Builder[-Elem, +To] extends Growable[Elem] {
       val self = Builder.this
       def +=(x: Elem): this.type = { self += x; this }
       def clear() = self.clear()
-      override def ++=(xs: TraversableOnce[Elem]): this.type = { self ++= xs; this }
+      override def ++=(xs: GenTraversableOnce[Elem]): this.type = { self ++= xs; this }
       override def sizeHint(size: Int) = self.sizeHint(size)
-      override def sizeHintBounded(size: Int, boundColl: TraversableLike[_, _]) = self.sizeHintBounded(size, boundColl)
+      override def sizeHintBounded(size: Int, boundColl: GenTraversableLike[_, _]) = self.sizeHintBounded(size, boundColl)
       def result: NewTo = f(self.result)
     }
 }

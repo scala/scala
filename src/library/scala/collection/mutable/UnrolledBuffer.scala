@@ -153,7 +153,7 @@ extends collection.mutable.AbstractBuffer[T]
     this
   }
 
-  def insertAll(idx: Int, elems: collection.Traversable[T]) =
+  def insertAll(idx: Int, elems: collection.GenTraversable[T]) =
     if (idx >= 0 && idx <= sz) {
       headptr.insertAll(idx, elems, this)
       sz += elems.size
@@ -285,7 +285,7 @@ object UnrolledBuffer extends ClassTagTraversableFactory[UnrolledBuffer] {
       if (next eq null) true else false // checks if last node was thrown out
     } else false
 
-    @tailrec final def insertAll(idx: Int, t: collection.Traversable[T], buffer: UnrolledBuffer[T]): Unit = if (idx < size) {
+    @tailrec final def insertAll(idx: Int, t: collection.GenTraversable[T], buffer: UnrolledBuffer[T]): Unit = if (idx < size) {
       // divide this node at the appropriate position and insert all into head
       // update new next
       val newnextnode = new Unrolled[T](0, new Array(array.length), null, buff)

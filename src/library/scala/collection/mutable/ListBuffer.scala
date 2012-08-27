@@ -174,10 +174,10 @@ final class ListBuffer[A]
     this
   }
 
-  override def ++=(xs: TraversableOnce[A]): this.type =
+  override def ++=(xs: GenTraversableOnce[A]): this.type =
     if (xs.asInstanceOf[AnyRef] eq this) ++= (this take size) else super.++=(xs)
 
-  override def ++=:(xs: TraversableOnce[A]): this.type =
+  override def ++=:(xs: GenTraversableOnce[A]): this.type =
     if (xs.asInstanceOf[AnyRef] eq this) ++=: (this take size) else super.++=:(xs)
 
   /** Clears the buffer contents.
@@ -211,10 +211,10 @@ final class ListBuffer[A]
    *  @param  seq   the iterable object providing all elements to insert.
    *  @throws Predef.IndexOutOfBoundsException if `n` is out of bounds.
    */
-  def insertAll(n: Int, seq: Traversable[A]) {
+  def insertAll(n: Int, xs: GenTraversable[A]) {
     try {
       if (exported) copy()
-      var elems = seq.toList.reverse
+      var elems = xs.toList.reverse
       len += elems.length
       if (n == 0) {
         while (!elems.isEmpty) {

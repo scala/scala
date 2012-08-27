@@ -50,7 +50,7 @@ abstract class PriorityQueueProxy[A](implicit ord: Ordering[A]) extends Priority
    *
    *  @param  it        an iterator
    */
-  override def ++=(it: TraversableOnce[A]): this.type = {
+  override def ++=(it: GenTraversableOnce[A]): this.type = {
     self ++= it
     this
   }

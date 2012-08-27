@@ -42,7 +42,7 @@ trait SynchronizedSet[A] extends Set[A] {
     super.+=(elem)
   }
 
-  override def ++=(xs: TraversableOnce[A]): this.type = synchronized[this.type] {
+  override def ++=(xs: GenTraversableOnce[A]): this.type = synchronized[this.type] {
     super.++=(xs)
   }
 
@@ -50,7 +50,7 @@ trait SynchronizedSet[A] extends Set[A] {
     super.-=(elem)
   }
 
-  override def --=(xs: TraversableOnce[A]): this.type = synchronized[this.type] {
+  override def --=(xs: GenTraversableOnce[A]): this.type = synchronized[this.type] {
     super.--=(xs)
   }
 

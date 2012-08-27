@@ -724,7 +724,7 @@ final class VectorBuilder[A]() extends Builder[A,Vector[A]] with VectorPointer[A
     this
   }
 
-  override def ++=(xs: TraversableOnce[A]): this.type =
+  override def ++=(xs: GenTraversableOnce[A]): this.type =
     super.++=(xs)
 
   def result: Vector[A] = {

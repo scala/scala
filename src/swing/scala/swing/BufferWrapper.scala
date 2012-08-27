@@ -20,9 +20,9 @@ protected[swing] abstract class BufferWrapper[A] extends Buffer[A] { outer =>
     remove(n)
     insertAt(n, a)
   }
-  def insertAll(n: Int, elems: Traversable[A]) {
+  def insertAll(n: Int, elems: collection.GenTraversable[A]) {
     var i = n
-    for (el <- elems) {
+    for (el <- elems.seq) {
       insertAt(i, el)
       i += 1
     }

@@ -44,7 +44,7 @@ import annotation.{migration, bridge}
  *       def clear()
  *       def +=(elem: A): this.type
  *       def +=:(elem: A): this.type
- *       def insertAll(n: Int, iter: Traversable[A])
+ *       def insertAll(n: Int, iter: GenTraversable[A])
  *       def remove(n: Int): A
  *    }}}
  *  @define coll buffer
@@ -93,7 +93,7 @@ trait BufferLike[A, +This <: BufferLike[A, This] with Buffer[A]]
    *  @throws   IndexOutOfBoundsException if the index `n` is not in the valid range
    *            `0 <= n <= length`.
    */
-  def insertAll(n: Int, elems: collection.Traversable[A])
+  def insertAll(n: Int, elems: collection.GenTraversable[A])
 
    /** Removes the element at a given index from this buffer.
     *
@@ -133,7 +133,7 @@ trait BufferLike[A, +This <: BufferLike[A, This] with Buffer[A]]
    *  @param xs  the TraversableOnce containing the elements to prepend.
    *  @return the buffer itself.
    */
-  def ++=:(xs: TraversableOnce[A]): this.type = { insertAll(0, xs.toTraversable); this }
+  def ++=:(xs: GenTraversableOnce[A]): this.type = { insertAll(0, xs.seq.toTraversable); this }
 
   /** Appends the given elements to this buffer.
    *
@@ -144,7 +144,7 @@ trait BufferLike[A, +This <: BufferLike[A, This] with Buffer[A]]
   /** Appends the elements contained in a traversable object to this buffer.
    *  @param xs  the traversable object containing the elements to append.
    */
-  def appendAll(xs: TraversableOnce[A]) { this ++= xs }
+  def appendAll(xs: GenTraversableOnce[A]) { this ++= xs.seq }
 
   /** Prepends given elements to this buffer.
    *  @param elems  the elements to prepend.
@@ -154,7 +154,7 @@ trait BufferLike[A, +This <: BufferLike[A, This] with Buffer[A]]
   /** Prepends the elements contained in a traversable object to this buffer.
    *  @param xs  the collection containing the elements to prepend.
    */
-  def prependAll(xs: TraversableOnce[A]) { xs ++=: this }
+  def prependAll(xs: GenTraversableOnce[A]) { xs.seq ++=: this }
 
   /** Inserts new elements at a given index into this buffer.
    *

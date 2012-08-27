@@ -92,7 +92,7 @@ class ArrayBuffer[A](override protected val initialSize: Int)
    *  @param xs    the traversable object.
    *  @return      the updated buffer.
    */
-  override def ++=(xs: TraversableOnce[A]): this.type = xs match {
+  override def ++=(xs: GenTraversableOnce[A]): this.type = xs.seq match {
     case v: collection.IndexedSeqLike[_, _] =>
       val n = v.length
       ensureSize(size0 + n)
@@ -124,7 +124,7 @@ class ArrayBuffer[A](override protected val initialSize: Int)
    *  @param xs    the traversable object.
    *  @return      the updated buffer.
    */
-  override def ++=:(xs: TraversableOnce[A]): this.type = { insertAll(0, xs.toTraversable); this }
+  override def ++=:(xs: GenTraversableOnce[A]): this.type = { insertAll(0, xs.seq.toTraversable); this }
 
   /** Inserts new elements at the index `n`. Opposed to method
    *  `update`, this method will not replace an element with a
@@ -134,9 +134,9 @@ class ArrayBuffer[A](override protected val initialSize: Int)
    *  @param seq   the traversable object providing all elements to insert.
    *  @throws Predef.IndexOutOfBoundsException if `n` is out of bounds.
    */
-  def insertAll(n: Int, seq: Traversable[A]) {
+  def insertAll(n: Int, genseq: GenTraversable[A]) {
     if (n < 0 || n > size0) throw new IndexOutOfBoundsException(n.toString)
-    val xs = seq.toList
+    val xs = genseq.toList
     val len = xs.length
     ensureSize(size0 + len)
     copy(n, n + len, size0 - n)
