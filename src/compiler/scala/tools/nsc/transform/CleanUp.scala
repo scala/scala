@@ -592,7 +592,8 @@ abstract class CleanUp extends Transform with ast.TreeDSL {
           }
 
           // create a static field in the companion class for this @static field
-          val stfieldSym = linkedClass.newVariable(newTermName(name), tree.pos, STATIC | SYNTHETIC | FINAL) setInfo sym.tpe
+          val stfieldSym = linkedClass.newValue(newTermName(name), tree.pos, STATIC | SYNTHETIC | FINAL) setInfo sym.tpe
+          if (sym.isMutable) stfieldSym.setFlag(MUTABLE)
           stfieldSym.addAnnotation(StaticClass)
 
           val names = classNames.getOrElseUpdate(linkedClass, linkedClass.info.decls.collect {
@@ -768,7 +769,7 @@ abstract class CleanUp extends Transform with ast.TreeDSL {
         staticSym <- clazz.info.decls
         if staticSym.hasStaticAnnotation
       } staticSym match {
-        case stfieldSym if stfieldSym.isVariable =>
+        case stfieldSym if stfieldSym.isValue || stfieldSym.isVariable =>
           val valdef = staticBodies((clazz, stfieldSym))
           val ValDef(_, _, _, rhs) = valdef
           val fixedrhs = rhs.changeOwner((valdef.symbol, clazz.info.decl(nme.CONSTRUCTOR)))
