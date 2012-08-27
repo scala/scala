@@ -400,6 +400,11 @@ trait Symbols extends base.Symbols { self: Universe =>
      */
     def baseClasses: List[Symbol]
 
+    /** The module corresponding to this module class,
+     *  or NoSymbol if this symbol is not a module class.
+     */
+    def module: Symbol
+
     /** If this symbol is a class or trait, its self type, otherwise the type
      *  of the symbol itself.
      */
