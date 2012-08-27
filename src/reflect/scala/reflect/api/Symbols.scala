@@ -182,6 +182,10 @@ trait Symbols extends base.Symbols { self: Universe =>
      */
     def isSpecialized: Boolean
 
+    /** Is this symbol defined by Java?
+     */
+    def isJava: Boolean
+
     /******************* helpers *******************/
 
     /** ...
