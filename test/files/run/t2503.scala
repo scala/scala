@@ -4,7 +4,7 @@ trait SB[A] extends Buffer[A] {
 
   import collection.Traversable
 
-  abstract override def insertAll(n: Int, iter: Traversable[A]): Unit = synchronized {
+  abstract override def insertAll(n: Int, iter: collection.GenTraversable[A]): Unit = synchronized {
      super.insertAll(n, iter)
   }
 
