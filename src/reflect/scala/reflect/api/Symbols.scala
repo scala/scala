@@ -327,6 +327,9 @@ trait Symbols extends base.Symbols { self: Universe =>
      */
     def isConstructor: Boolean
 
+    /** Does this symbol denote the primary constructor of its enclosing class? */
+    def isPrimaryConstructor: Boolean
+
     /** For a polymorphic method, its type parameters, the empty list for all other methods */
     def typeParams: List[Symbol]
 
