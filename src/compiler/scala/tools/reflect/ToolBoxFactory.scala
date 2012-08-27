@@ -26,7 +26,9 @@ abstract class ToolBoxFactory[U <: JavaUniverse](val u: U) { factorySelf =>
   private class ToolBoxImpl(val frontEnd: FrontEnd, val options: String) extends ToolBox[U] { toolBoxSelf =>
 
     val u: factorySelf.u.type = factorySelf.u
-    val mirror: u.Mirror = factorySelf.mirror
+
+    lazy val classLoader = new AbstractFileClassLoader(virtualDirectory, factorySelf.mirror.classLoader)
+    lazy val mirror: u.Mirror = u.runtimeMirror(classLoader)
 
     class ToolBoxGlobal(settings: scala.tools.nsc.Settings, reporter: Reporter)
     extends ReflectGlobal(settings, reporter, toolBoxSelf.classLoader) {
@@ -327,7 +329,6 @@ abstract class ToolBoxFactory[U <: JavaUniverse](val u: U) { factorySelf =>
 
     lazy val importer = compiler.mkImporter(u)
     lazy val exporter = importer.reverse
-    lazy val classLoader = new AbstractFileClassLoader(virtualDirectory, mirror.classLoader)
 
     def typeCheck(tree: u.Tree, expectedType: u.Type, silent: Boolean = false, withImplicitViewsDisabled: Boolean = false, withMacrosDisabled: Boolean = false): u.Tree = {
       if (compiler.settings.verbose.value) println("importing "+tree+", expectedType = "+expectedType)
