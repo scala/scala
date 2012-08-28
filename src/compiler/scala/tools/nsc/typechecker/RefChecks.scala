@@ -1618,6 +1618,8 @@ abstract class RefChecks extends InfoTransform with reflect.internal.transform.R
       if ((clazz isSubClass AnyValClass) && !isPrimitiveValueClass(clazz)) {
         if (clazz.isTrait)
           unit.error(clazz.pos, "Only classes (not traits) are allowed to extend AnyVal")
+        else if ((clazz != AnyValClass) && clazz.hasFlag(ABSTRACT))
+          unit.error(clazz.pos, "`abstract' modifier cannot be used with value classes")
       }
     }
 
