@@ -56,9 +56,9 @@ object RedBlackTree {
   def to[A: Ordering, B](tree: Tree[A, B], to: A): Tree[A, B] = blacken(doTo(tree, to))
   def until[A: Ordering, B](tree: Tree[A, B], key: A): Tree[A, B] = blacken(doUntil(tree, key))
 
-  def drop[A: Ordering, B](tree: Tree[A, B], n: Int): Tree[A, B] = blacken(doDrop(tree, n))
-  def take[A: Ordering, B](tree: Tree[A, B], n: Int): Tree[A, B] = blacken(doTake(tree, n))
-  def slice[A: Ordering, B](tree: Tree[A, B], from: Int, until: Int): Tree[A, B] = blacken(doSlice(tree, from, until))
+  def take[A, B](tree: Tree[A, B], n: Int): Tree[A, B] = blacken(doTake(tree, n))
+  def slice[A, B](tree: Tree[A, B], from: Int, until: Int): Tree[A, B] = blacken(doSlice(tree, from, until))
+  def drop[A, B](tree: Tree[A, B], n: Int): Tree[A, B] = blacken(doDrop(tree, n))
 
   def smallest[A, B](tree: Tree[A, B]): Tree[A, B] = {
     if (tree eq null) throw new NoSuchElementException("empty map")
@@ -129,6 +129,15 @@ object RedBlackTree {
     if (cmp < 0) balanceLeft(isBlackTree(tree), tree.key, tree.value, upd(tree.left, k, v, overwrite), tree.right)
     else if (cmp > 0) balanceRight(isBlackTree(tree), tree.key, tree.value, tree.left, upd(tree.right, k, v, overwrite))
     else if (overwrite || k != tree.key) mkTree(isBlackTree(tree), k, v, tree.left, tree.right)
+    else tree
+  }
+  private[this] def updNth[A, B, B1 >: B](tree: Tree[A, B], idx: Int, k: A, v: B1, overwrite: Boolean): Tree[A, B1] = if (tree eq null) {
+    RedTree(k, v, null, null)
+  } else {
+    val rank = count(tree.left) + 1
+    if (idx < rank) balanceLeft(isBlackTree(tree), tree.key, tree.value, updNth(tree.left, idx, k, v, overwrite), tree.right)
+    else if (idx > rank) balanceRight(isBlackTree(tree), tree.key, tree.value, tree.left, updNth(tree.right, idx - rank, k, v, overwrite))
+    else if (overwrite) mkTree(isBlackTree(tree), k, v, tree.left, tree.right)
     else tree
   }
 
@@ -248,27 +257,27 @@ object RedBlackTree {
     else rebalance(tree, newLeft, newRight)
   }
 
-  private[this] def doDrop[A: Ordering, B](tree: Tree[A, B], n: Int): Tree[A, B] = {
+  private[this] def doDrop[A, B](tree: Tree[A, B], n: Int): Tree[A, B] = {
     if (n <= 0) return tree
     if (n >= this.count(tree)) return null
     val count = this.count(tree.left)
     if (n > count) return doDrop(tree.right, n - count - 1)
     val newLeft = doDrop(tree.left, n)
     if (newLeft eq tree.left) tree
-    else if (newLeft eq null) upd(tree.right, tree.key, tree.value, false)
+    else if (newLeft eq null) updNth(tree.right, n - count - 1, tree.key, tree.value, false)
     else rebalance(tree, newLeft, tree.right)
   }
-  private[this] def doTake[A: Ordering, B](tree: Tree[A, B], n: Int): Tree[A, B] = {
+  private[this] def doTake[A, B](tree: Tree[A, B], n: Int): Tree[A, B] = {
     if (n <= 0) return null
     if (n >= this.count(tree)) return tree
     val count = this.count(tree.left)
     if (n <= count) return doTake(tree.left, n)
     val newRight = doTake(tree.right, n - count - 1)
     if (newRight eq tree.right) tree
-    else if (newRight eq null) upd(tree.left, tree.key, tree.value, false)
+    else if (newRight eq null) updNth(tree.left, n, tree.key, tree.value, false)
     else rebalance(tree, tree.left, newRight)
   }
-  private[this] def doSlice[A: Ordering, B](tree: Tree[A, B], from: Int, until: Int): Tree[A, B] = {
+  private[this] def doSlice[A, B](tree: Tree[A, B], from: Int, until: Int): Tree[A, B] = {
     if (tree eq null) return null
     val count = this.count(tree.left)
     if (from > count) return doSlice(tree.right, from - count - 1, until - count - 1)
@@ -276,8 +285,8 @@ object RedBlackTree {
     val newLeft = doDrop(tree.left, from)
     val newRight = doTake(tree.right, until - count - 1)
     if ((newLeft eq tree.left) && (newRight eq tree.right)) tree
-    else if (newLeft eq null) upd(newRight, tree.key, tree.value, false)
-    else if (newRight eq null) upd(newLeft, tree.key, tree.value, false)
+    else if (newLeft eq null) updNth(newRight, from - count - 1, tree.key, tree.value, false)
+    else if (newRight eq null) updNth(newLeft, until, tree.key, tree.value, false)
     else rebalance(tree, newLeft, newRight)
   }
 
@@ -379,7 +388,7 @@ object RedBlackTree {
     @(inline @getter) final val left: Tree[A, B],
     @(inline @getter) final val right: Tree[A, B])
   extends Serializable {
-    final val count: Int = 1 + RedBlackTree.count(left) + RedBlackTree.count(right)
+    @(inline @getter) final val count: Int = 1 + RedBlackTree.count(left) + RedBlackTree.count(right)
     def black: Tree[A, B]
     def red: Tree[A, B]
   }
