@@ -55,7 +55,7 @@ class SynchronizedStack[A] extends Stack[A] {
    *
    *  @param  xs        a traversable object
    */
-  override def pushAll(xs: TraversableOnce[A]): this.type = synchronized[this.type] { super.pushAll(elems) }
+  override def pushAll(xs: GenTraversableOnce[A]): this.type = synchronized[this.type] { super.pushAll(elems) }
 
   /** Returns the top element of the stack. This method will not remove
    *  the element from the stack. An error is signaled if there is no

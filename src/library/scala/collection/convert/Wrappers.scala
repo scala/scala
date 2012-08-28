@@ -89,7 +89,7 @@ private[collection] trait Wrappers {
     def update(i: Int, elem: A) = underlying.set(i, elem)
     def +=:(elem: A) = { underlying.subList(0, 0) add elem; this }
     def +=(elem: A): this.type = { underlying add elem; this }
-    def insertAll(i: Int, elems: Traversable[A]) = {
+    def insertAll(i: Int, elems: GenTraversable[A]) = {
       val ins = underlying.subList(0, i)
       elems.seq.foreach(ins.add(_))
     }

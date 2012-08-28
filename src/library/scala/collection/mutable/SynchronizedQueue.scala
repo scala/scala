@@ -45,7 +45,7 @@ class SynchronizedQueue[A] extends Queue[A] {
    *
    *  @param  xs        a traversable object
    */
-  override def ++=(xs: TraversableOnce[A]): this.type = synchronized[this.type] { super.++=(xs) }
+  override def ++=(xs: GenTraversableOnce[A]): this.type = synchronized[this.type] { super.++=(xs) }
 
   /** Adds all elements to the queue.
    *

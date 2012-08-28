@@ -69,13 +69,13 @@ abstract class GenTraversableFactory[CC[X] <: GenTraversable[X] with GenericTrav
    *  @param xss the collections that are to be concatenated.
    *  @return the concatenation of all the collections.
    */
-  def concat[A](xss: Traversable[A]*): CC[A] = {
+  def concat[A](xss: GenTraversable[A]*): CC[A] = {
     val b = newBuilder[A]
     // At present we're using IndexedSeq as a proxy for "has a cheap size method".
     if (xss forall (_.isInstanceOf[IndexedSeq[_]]))
       b.sizeHint(xss.map(_.size).sum)
 
-    for (xs <- xss.seq) b ++= xs
+    for (xs <- xss.seq) b ++= xs.seq
     b.result
   }
 

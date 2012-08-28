@@ -51,7 +51,7 @@ trait BufferProxy[A] extends Buffer[A] with Proxy {
    *  @param xs   the traversable object.
    *  @return     a reference to this $coll.
    */
-  override def ++=(xs: TraversableOnce[A]): this.type = { self.++=(xs); this }
+  override def ++=(xs: GenTraversableOnce[A]): this.type = { self.++=(xs); this }
 
   /** Appends a sequence of elements to this buffer.
    *
@@ -63,7 +63,7 @@ trait BufferProxy[A] extends Buffer[A] with Proxy {
    *
    *  @param xs   the traversable object.
    */
-  override def appendAll(xs: TraversableOnce[A]) { self.appendAll(xs) }
+  override def appendAll(xs: GenTraversableOnce[A]) { self.appendAll(xs) }
 
   /** Prepend a single element to this buffer and return
    *  the identity of the buffer.
@@ -73,7 +73,7 @@ trait BufferProxy[A] extends Buffer[A] with Proxy {
    */
   def +=:(elem: A): this.type = { self.+=:(elem); this }
 
-  override def ++=:(xs: TraversableOnce[A]): this.type = { self.++=:(xs); this }
+  override def ++=:(xs: GenTraversableOnce[A]): this.type = { self.++=:(xs); this }
 
   /** Prepend an element to this list.
    *
@@ -86,7 +86,7 @@ trait BufferProxy[A] extends Buffer[A] with Proxy {
    *
    *  @param xs  the traversable object.
    */
-  override def prependAll(xs: TraversableOnce[A]) { self.prependAll(xs) }
+  override def prependAll(xs: GenTraversableOnce[A]) { self.prependAll(xs) }
 
   /** Inserts new elements at the index `n`. Opposed to method
    *  `update`, this method will not replace an element with a
@@ -104,11 +104,11 @@ trait BufferProxy[A] extends Buffer[A] with Proxy {
    *  @param n     the index where a new element will be inserted.
    *  @param iter  the iterable object providing all elements to insert.
    */
-  def insertAll(n: Int, iter: scala.collection.Iterable[A]) {
+  def insertAll(n: Int, iter: scala.collection.GenIterable[A]) {
     self.insertAll(n, iter)
   }
 
-  override def insertAll(n: Int, iter: scala.collection.Traversable[A]) {
+  override def insertAll(n: Int, iter: scala.collection.GenTraversable[A]) {
     self.insertAll(n, iter)
   }
 
