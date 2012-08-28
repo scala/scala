@@ -47,11 +47,12 @@ package object parallel {
       else new ThreadPoolTaskSupport
     } else new ThreadPoolTaskSupport
 
-  val defaultTaskSupport: TaskSupport = getTaskSupport
+  implicit val defaultTaskSupport: TaskSupport = getTaskSupport
   
   def setTaskSupport[Coll](c: Coll, t: TaskSupport): Coll = {
     c match {
       case pc: ParIterableLike[_, _, _] => pc.tasksupport = t
+      case cb: Combiner[_, _] => cb.combinerTaskSupport = t
       case _ => // do nothing
     }
     c

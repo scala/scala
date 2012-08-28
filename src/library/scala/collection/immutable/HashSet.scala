@@ -14,6 +14,8 @@ package immutable
 import annotation.unchecked.{ uncheckedVariance => uV }
 import generic._
 import collection.parallel.immutable.ParHashSet
+import collection.parallel.TaskSupport
+import collection.parallel.setTaskSupport
 
 /** This class implements immutable sets using a hash trie.
  *
@@ -40,7 +42,7 @@ class HashSet[A] extends AbstractSet[A]
 
   //class HashSet[A] extends Set[A] with SetLike[A, HashSet[A]] {
 
-  override def par = ParHashSet.fromTrie(this)
+  override def par(implicit ts: TaskSupport) = setTaskSupport(ParHashSet.fromTrie(this), ts)
 
   override def size: Int = 0
 

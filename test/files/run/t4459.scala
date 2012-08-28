@@ -1,5 +1,6 @@
 import collection._
 
+
 object Test {
   def main(args: Array[String]) {
     for (i <- 0 until 2000) {

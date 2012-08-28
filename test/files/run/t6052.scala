@@ -4,7 +4,6 @@
 
 
 
-
 object Test extends App {
   def seqarr(i: Int) = Array[Int]() ++ (0 until i)
   def pararr(i: Int) = seqarr(i).par

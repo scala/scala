@@ -10,6 +10,8 @@
 package scala.collection.immutable
 
 import scala.collection.parallel.immutable.ParRange
+import scala.collection.parallel.TaskSupport
+import scala.collection.parallel.setTaskSupport
 
 /** The `Range` class represents integer values in range
  *  ''[start;end)'' with non-zero step value `step`.
@@ -48,7 +50,7 @@ extends collection.AbstractSeq[Int]
    with collection.CustomParallelizable[Int, ParRange]
    with Serializable
 {
-  override def par = new ParRange(this)
+  override def par(implicit ts: TaskSupport) = setTaskSupport(new ParRange(this), ts)
 
   private def gap           = end.toLong - start.toLong
   private def isExact       = gap % step == 0

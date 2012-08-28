@@ -16,6 +16,8 @@ import scala.reflect.ClassTag
 import scala.runtime.ScalaRunTime._
 
 import parallel.mutable.ParArray
+import parallel.TaskSupport
+import parallel.setTaskSupport
 
 
 /** This class serves as a wrapper for `Array`s with all the operations found in
@@ -55,7 +57,7 @@ abstract class ArrayOps[T] extends ArrayLike[T, Array[T]] with CustomParalleliza
       super.toArray[U]
   }
 
-  override def par = ParArray.handoff(repr)
+  override def par(implicit ts: TaskSupport) = setTaskSupport(ParArray.handoff(repr), ts)
 
   /** Flattens a two-dimensional array by concatenating all its rows
    *  into a single array.
