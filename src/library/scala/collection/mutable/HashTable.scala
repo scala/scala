@@ -55,7 +55,7 @@ trait HashTable[A, Entry >: Null <: HashEntry[A, Entry]] extends HashTable.HashU
    */
   @transient protected var sizemap: Array[Int] = null
 
-  @transient var seedvalue: Int = tableSizeSeed
+  @transient protected var seedvalue: Int = tableSizeSeed
 
   protected def tableSizeSeed = Integer.bitCount(table.length - 1)
 
