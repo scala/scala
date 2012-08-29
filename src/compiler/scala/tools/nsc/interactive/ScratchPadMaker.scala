@@ -9,7 +9,7 @@ trait ScratchPadMaker { self: Global =>
 
   import definitions._
 
-  private case class Patch(offset: Int, text: String)
+  private case class Patch(offset: Int, text: String) {
 
   private class Patcher(contents: Array[Char], endOffset: Int) extends Traverser {
     var objectName: String = ""
