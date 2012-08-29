@@ -159,9 +159,6 @@ trait Types extends base.Types { self: Universe =>
 
     /** Does this type contain a reference to given symbol? */
     def contains(sym: Symbol): Boolean
-
-    /** The string discriminator of this type; useful for debugging */
-    def kind: String
   }
 
   /** .. */
