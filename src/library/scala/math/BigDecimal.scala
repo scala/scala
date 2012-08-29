@@ -211,7 +211,7 @@ extends ScalaNumber with ScalaNumericConversions with Serializable {
     catch { case _: ArithmeticException => false }
   }
 
-  protected[math] def isWhole = (this remainder 1) == BigDecimal(0)
+  def isWhole() = (this remainder 1) == BigDecimal(0)
   def underlying = bigDecimal
 
   /** Compares this BigDecimal with the specified BigDecimal for equality.
