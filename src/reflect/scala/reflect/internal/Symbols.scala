@@ -63,7 +63,6 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
   abstract class SymbolContextApiImpl extends SymbolContextApi {
     this: Symbol =>
 
-    def kind: String = kindString
     def isExistential: Boolean = this.isExistentiallyBound
     def isParamWithDefault: Boolean = this.hasDefault
     def isByNameParam: Boolean = this.isValueParameter && (this hasFlag BYNAMEPARAM)

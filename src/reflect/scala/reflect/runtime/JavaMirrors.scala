@@ -124,7 +124,7 @@ trait JavaMirrors extends internal.SymbolTable with api.JavaUniverse { self: Sym
     private def ErrorInnerModule(wannabe: Symbol) = throw new ScalaReflectionException(s"$wannabe is an inner module, use reflectModule on an InstanceMirror to obtain its ModuleMirror")
     private def ErrorStaticClass(wannabe: Symbol) = throw new ScalaReflectionException(s"$wannabe is a static class, use reflectClass on a RuntimeMirror to obtain its ClassMirror")
     private def ErrorStaticModule(wannabe: Symbol) = throw new ScalaReflectionException(s"$wannabe is a static module, use reflectModule on a RuntimeMirror to obtain its ModuleMirror")
-    private def ErrorNotMember(wannabe: Symbol, owner: Symbol) = throw new ScalaReflectionException(s"expected a member of $owner, you provided ${wannabe.kind} ${wannabe.fullName}")
+    private def ErrorNotMember(wannabe: Symbol, owner: Symbol) = throw new ScalaReflectionException(s"expected a member of $owner, you provided ${wannabe.kindString} ${wannabe.fullName}")
     private def ErrorNotField(wannabe: Symbol) = throw new ScalaReflectionException(s"expected a field or an accessor method symbol, you provided $wannabe")
     private def ErrorNonExistentField(wannabe: Symbol) = throw new ScalaReflectionException(s"""
       |Scala field ${wannabe.name} isn't represented as a Java field, neither it has a Java accessor method
