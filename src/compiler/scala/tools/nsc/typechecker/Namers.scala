@@ -192,6 +192,10 @@ trait Namers extends MethodSynthesis {
       if (!allowsOverload(sym)) {
         val prev = scope.lookupEntry(sym.name)
         if ((prev ne null) && prev.owner == scope && conflict(sym, prev.sym)) {
+          if (sym.isSynthetic || prev.sym.isSynthetic) {
+            handleSyntheticNameConflict(sym, prev.sym)
+            handleSyntheticNameConflict(prev.sym, sym)
+          }
           DoubleDefError(sym, prev.sym)
           sym setInfo ErrorType
           scope unlink prev.sym // let them co-exist...
@@ -200,6 +204,14 @@ trait Namers extends MethodSynthesis {
         }
       }
       scope enter sym
+    }
+
+    /** Logic to handle name conflicts of synthetically generated symbols
+     *  We handle right now: t6227
+     */
+    def handleSyntheticNameConflict(sym1: Symbol, sym2: Symbol) = {
+      if (sym1.isImplicit && sym1.isMethod && sym2.isModule && sym2.companionClass.isCaseClass)
+        validate(sym2.companionClass)
     }
 
     def enterSym(tree: Tree): Context = {
@@ -1390,6 +1402,7 @@ trait Namers extends MethodSynthesis {
           fail(ImplicitAtToplevel)
       }
       if (sym.isClass) {
+        checkNoConflict(IMPLICIT, CASE)
         if (sym.isAnyOverride && !sym.hasFlag(TRAIT))
           fail(OverrideClass)
       } else {
