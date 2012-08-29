@@ -3,7 +3,7 @@ package internal
 import scala.collection.mutable.WeakHashMap
 
 // SI-6241: move importers to a mirror
-trait Importers { self: SymbolTable =>
+trait Importers extends api.Importers { self: SymbolTable =>
 
   def mkImporter(from0: api.Universe): Importer { val from: from0.type } = (
     if (self eq from0) {
