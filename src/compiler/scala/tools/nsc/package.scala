@@ -16,4 +16,11 @@ package object nsc {
   val MissingRequirementError = scala.reflect.internal.MissingRequirementError
 
   val ListOfNil = List(Nil)
+
+  // Creates a string interpolator called 'sm' which
+  // acts like 's' but calls stripMargin before returning
+  // the string.
+  implicit class StripMarginOps(val sc: StringContext) {
+    def sm(xs: Any*): String = sc.standardInterpolator(s => StringContext.treatEscapes(s).stripMargin, xs)
+  }
 }

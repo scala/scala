@@ -252,6 +252,13 @@ trait TypeDiagnostics {
     }
     ""    // no elaborable variance situation found
   }
+
+  // For found/required errors where AnyRef would have sufficed:
+  // explain in greater detail.
+  def explainAnyVsAnyRef(found: Type, req: Type): String = {
+    if (AnyRefClass.tpe <:< req) notAnyRefMessage(found) else ""
+  }
+
   // TODO - figure out how to avoid doing any work at all
   // when the message will never be seen.  I though context.reportErrors
   // being false would do that, but if I return "<suppressed>" under
@@ -261,7 +268,10 @@ trait TypeDiagnostics {
       ";\n found   : " + found.toLongString + existentialContext(found) + explainAlias(found) +
        "\n required: " + req + existentialContext(req) + explainAlias(req)
     )
-    withDisambiguation(Nil, found, req)(baseMessage) + explainVariance(found, req)
+    (   withDisambiguation(Nil, found, req)(baseMessage)
+      + explainVariance(found, req)
+      + explainAnyVsAnyRef(found, req)
+    )
   }
 
   case class TypeDiag(tp: Type, sym: Symbol) extends Ordered[TypeDiag] {

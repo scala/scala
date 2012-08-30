@@ -1010,7 +1010,11 @@ trait Types extends api.Types { self: SymbolTable =>
     def toLongString = {
       val str = toString
       if (str == "type") widen.toString
-      else if ((str endsWith ".type") && !typeSymbol.isModuleClass) str + " (with underlying type " + widen + ")"
+      else if ((str endsWith ".type") && !typeSymbol.isModuleClass)
+        widen match {
+          case RefinedType(_, _)                      => "" + widen
+          case _                                      => s"$str (with underlying type $widen)"
+        }
       else str
     }
 
@@ -1632,7 +1636,7 @@ trait Types extends api.Types { self: SymbolTable =>
 
     override def safeToString: String = parentsString(parents) + (
       (if (settings.debug.value || parents.isEmpty || (decls.elems ne null))
-        decls.mkString("{", "; ", "}") else "")
+        fullyInitializeScope(decls).mkString("{", "; ", "}") else "")
     )
   }
 
@@ -1819,7 +1823,6 @@ trait Types extends api.Types { self: SymbolTable =>
            false
        }))
     }
-
     override def kind = "RefinedType"
   }
 
@@ -2005,9 +2008,11 @@ trait Types extends api.Types { self: SymbolTable =>
     /** A nicely formatted string with newlines and such.
      */
     def formattedToString: String =
-      parents.mkString("\n        with ") +
-      (if (settings.debug.value || parents.isEmpty || (decls.elems ne null))
-        decls.mkString(" {\n  ", "\n  ", "\n}") else "")
+      parents.mkString("\n        with ") + (
+        if (settings.debug.value || parents.isEmpty || (decls.elems ne null))
+         fullyInitializeScope(decls).mkString(" {\n  ", "\n  ", "\n}")
+        else ""
+      )
   }
 
   object ClassInfoType extends ClassInfoTypeExtractor
@@ -2466,7 +2471,7 @@ trait Types extends api.Types { self: SymbolTable =>
 
     def refinementString = (
       if (sym.isStructuralRefinement) (
-        decls filter (sym => sym.isPossibleInRefinement && sym.isPublic)
+        fullyInitializeScope(decls) filter (sym => sym.isPossibleInRefinement && sym.isPublic)
           map (_.defString)
           mkString("{", "; ", "}")
       )
