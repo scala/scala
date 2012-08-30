@@ -1366,7 +1366,8 @@ self =>
         }
         parseDo
       case FOR =>
-        def parseFor = atPos(in.skipToken()) {
+        val start = in.skipToken()
+        def parseFor = atPos(start) {
           val enums =
             if (in.token == LBRACE) inBracesOrNil(enumerators())
             else inParensOrNil(enumerators())
@@ -1378,7 +1379,11 @@ self =>
             makeFor(enums, expr())
           }
         }
-        parseFor
+        def adjustStart(tree: Tree) =
+          if (tree.pos.isRange && start < tree.pos.start)
+            tree setPos tree.pos.withStart(start)
+          else tree
+        adjustStart(parseFor)
       case RETURN =>
         def parseReturn =
           atPos(in.skipToken()) {
