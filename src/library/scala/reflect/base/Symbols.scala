@@ -107,8 +107,8 @@ trait Symbols { self: Universe =>
 
     /** Does this symbol represent the definition of a type?
      *  Note that every symbol is either a term or a type.
-     *  So for every symbol `sym`, either `sym.isTerm` is true
-     *  or `sym.isType` is true.
+     *  So for every symbol `sym` (except for `NoSymbol`),
+     *  either `sym.isTerm` is true or `sym.isType` is true.
      */
     def isType: Boolean = false
 
@@ -118,9 +118,9 @@ trait Symbols { self: Universe =>
     def asType: TypeSymbol = throw new ScalaReflectionException(s"$this is not a type")
 
     /** Does this symbol represent the definition of a term?
-     *  Note that every symbol is either a term or a term.
-     *  So for every symbol `sym`, either `sym.isTerm` is true
-     *  or `sym.isTerm` is true.
+     *  Note that every symbol is either a term or a type.
+     *  So for every symbol `sym` (except for `NoSymbol`),
+     *  either `sym.isTerm` is true or `sym.isTerm` is true.
      */
     def isTerm: Boolean = false
 
@@ -234,10 +234,10 @@ trait Symbols { self: Universe =>
       *  `PolyType(ClassInfoType(...))` that describes type parameters, value
       *  parameters, parent types, and members of `C`.
       */
-     def toType: Type
+    def toType: Type
 
-    override def isType = true
-    override def asType = this
+    final override def isType = true
+    final override def asType = this
   }
 
   /** The base API that all term symbols support */
