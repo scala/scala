@@ -1,0 +1,4 @@
+t6227.scala:2: error: illegal combination of modifiers: implicit and case for: class IntOps
+  implicit case class IntOps( i: Int ) {
+                      ^
+one error found
