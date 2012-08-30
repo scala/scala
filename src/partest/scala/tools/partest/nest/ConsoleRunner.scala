@@ -70,10 +70,11 @@ class ConsoleRunner extends DirectRunner {
   // true if a test path matches the --grep expression.
   private def pathMatchesExpr(path: Path, expr: String) = {
     def pred(p: Path) = file2String(p.toFile) contains expr
-    def srcs = path.toDirectory.deepList() filter (_.hasExtension("scala", "java"))
+    def greppable(f: Path) = f.isFile && (f hasExtension ("scala", "java"))
+    def any(d: Path) = d.toDirectory.deepList() exists (f => greppable(f) && pred(f))
 
     (path.isFile && pred(path)) ||
-    (path.isDirectory && srcs.exists(pred)) ||
+    (path.isDirectory && any(path)) ||
     (pred(path changeExtension "check"))
   }
 
@@ -121,7 +122,7 @@ class ConsoleRunner extends DirectRunner {
     val grepOption = parsed get "--grep"
     val grepPaths = grepOption.toList flatMap { expr =>
       val subjectDirs = testSetKinds map (srcDir / _ toDirectory)
-      val testPaths   = subjectDirs flatMap (_.files filter stdFilter)
+      val testPaths   = subjectDirs flatMap (_.list filter stdFilter)
       val paths       = testPaths filter (p => pathMatchesExpr(p, expr))
 
       if (paths.isEmpty)
