@@ -8,7 +8,10 @@
 
 package scala.runtime
 
-final class RichLong(val self: Long) extends IntegralProxy[Long] {
+final class RichLong(val self: Long) extends AnyVal with IntegralProxy[Long] {
+  protected def num = scala.math.Numeric.LongIsIntegral
+  protected def ord = scala.math.Ordering.Long
+
   def toBinaryString: String = java.lang.Long.toBinaryString(self)
   def toHexString: String = java.lang.Long.toHexString(self)
   def toOctalString: String = java.lang.Long.toOctalString(self)

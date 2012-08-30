@@ -10,7 +10,10 @@ package scala.runtime
 
 import java.lang.Character
 
-final class RichChar(val self: Char) extends IntegralProxy[Char] {
+final class RichChar(val self: Char) extends AnyVal with IntegralProxy[Char] {
+  protected def num = scala.math.Numeric.CharIsIntegral
+  protected def ord = scala.math.Ordering.Char
+
   def asDigit: Int                      = Character.digit(self, Character.MAX_RADIX)
 
   def isControl: Boolean                = Character.isISOControl(self)

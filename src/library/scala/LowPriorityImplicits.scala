@@ -27,15 +27,20 @@ class LowPriorityImplicits {
    *  any potential conflicts.  Conflicts do exist because the wrappers
    *  need to implement ScalaNumber in order to have a symmetric equals
    *  method, but that implies implementing java.lang.Number as well.
+   *
+   *  Note - these are inlined because they are value classes, but
+   *  the call to xxxWrapper is not eliminated even though it does nothing.
+   *  Even inlined, every call site does a no-op retrieval of Predef's MODULE$
+   *  because maybe loading Predef has side effects!
    */
-  implicit def byteWrapper(x: Byte)       = new runtime.RichByte(x)
-  implicit def shortWrapper(x: Short)     = new runtime.RichShort(x)
-  implicit def intWrapper(x: Int)         = new runtime.RichInt(x)
-  implicit def charWrapper(c: Char)       = new runtime.RichChar(c)
-  implicit def longWrapper(x: Long)       = new runtime.RichLong(x)
-  implicit def floatWrapper(x: Float)     = new runtime.RichFloat(x)
-  implicit def doubleWrapper(x: Double)   = new runtime.RichDouble(x)
-  implicit def booleanWrapper(x: Boolean) = new runtime.RichBoolean(x)
+  @inline implicit def byteWrapper(x: Byte)       = new runtime.RichByte(x)
+  @inline implicit def shortWrapper(x: Short)     = new runtime.RichShort(x)
+  @inline implicit def intWrapper(x: Int)         = new runtime.RichInt(x)
+  @inline implicit def charWrapper(c: Char)       = new runtime.RichChar(c)
+  @inline implicit def longWrapper(x: Long)       = new runtime.RichLong(x)
+  @inline implicit def floatWrapper(x: Float)     = new runtime.RichFloat(x)
+  @inline implicit def doubleWrapper(x: Double)   = new runtime.RichDouble(x)
+  @inline implicit def booleanWrapper(x: Boolean) = new runtime.RichBoolean(x)
 
   // These eight implicits exist solely to exclude Null from the domain of
   // the boxed types, so that e.g. "var x: Int = null" is a compile time
