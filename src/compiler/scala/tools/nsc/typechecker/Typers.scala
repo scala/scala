@@ -2739,11 +2739,17 @@ trait Typers extends Modes with Adaptations with Tags {
           // this code by associating defaults and companion objects
           // with the original tree instead of the new symbol.
           def matches(stat: Tree, synt: Tree) = (stat, synt) match {
+            // synt is default arg for stat
             case (DefDef(_, statName, _, _, _, _), DefDef(mods, syntName, _, _, _, _)) =>
               mods.hasDefaultFlag && syntName.toString.startsWith(statName.toString)
 
+            // synt is companion module
             case (ClassDef(_, className, _, _), ModuleDef(_, moduleName, _)) =>
               className.toTermName == moduleName
+
+            // synt is implicit def for implicit class
+            case (ClassDef(clsMods, clsName, _, _), DefDef(mthMods, mthName, _, _, _, _)) =>
+              clsMods.isImplicit && mthMods.isImplicit && clsName.toTermName == mthName
 
             case _ => false
           }
