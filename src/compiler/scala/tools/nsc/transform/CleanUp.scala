@@ -441,19 +441,31 @@ abstract class CleanUp extends Transform with ast.TreeDSL {
            *   is a value type (int et al.) in which case it must cast to the boxed version
            *   because invoke only returns object and erasure made sure the result is
            *   expected to be an AnyRef. */
-          val t: Tree = ad.symbol.tpe match {
-            case MethodType(mparams, resType) =>
-              assert(params.length == mparams.length, mparams)
+          val t: Tree = {
+            val (mparams, resType) = ad.symbol.tpe match {
+              case MethodType(mparams, resType) =>
+                assert(params.length == mparams.length, ((params, mparams)))
+                (mparams, resType)
+              case tpe @ OverloadedType(pre, alts) =>
+                unit.warning(ad.pos, s"Overloaded type reached the backend! This is a bug in scalac.\n     Symbol: ${ad.symbol}\n  Overloads: $tpe\n  Arguments: " + ad.args.map(_.tpe))
+                alts filter (_.paramss.flatten.size == params.length) map (_.tpe) match {
+                  case mt @ MethodType(mparams, resType) :: Nil =>
+                    unit.warning(NoPosition, "Only one overload has the right arity, proceeding with overload " + mt)
+                    (mparams, resType)
+                  case _ =>
+                    unit.error(ad.pos, "Cannot resolve overload.")
+                    (Nil, NoType)
+                }
+            }
+            typedPos {
+              val sym = currentOwner.newValue(mkTerm("qual"), ad.pos) setInfo qual0.tpe
+              qual = REF(sym)
 
-              typedPos {
-                val sym = currentOwner.newValue(mkTerm("qual"), ad.pos) setInfo qual0.tpe
-                qual = REF(sym)
-
-                BLOCK(
-                  VAL(sym) === qual0,
-                  callAsReflective(mparams map (_.tpe), resType)
-                )
-              }
+              BLOCK(
+                VAL(sym) === qual0,
+                callAsReflective(mparams map (_.tpe), resType)
+              )
+            }
           }
 
           /* For testing purposes, the dynamic application's condition
