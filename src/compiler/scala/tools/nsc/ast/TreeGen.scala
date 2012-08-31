@@ -52,7 +52,10 @@ abstract class TreeGen extends reflect.internal.TreeGen with TreeDSL {
   }
 
   // wrap the given expression in a SoftReference so it can be gc-ed
-  def mkSoftRef(expr: Tree): Tree = atPos(expr.pos)(New(SoftReferenceClass.tpe, expr))
+  def mkSoftRef(expr: Tree): Tree = atPos(expr.pos) {
+    val constructor = SoftReferenceClass.info.nonPrivateMember(nme.CONSTRUCTOR).suchThat(_.paramss.flatten.size == 1)
+    NewFromConstructor(constructor, List(expr))
+  }
 
   // annotate the expression with @unchecked
   def mkUnchecked(expr: Tree): Tree = atPos(expr.pos) {

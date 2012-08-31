@@ -400,6 +400,14 @@ trait Trees extends api.Trees { self: SymbolTable =>
 
   def ApplyConstructor(tpt: Tree, args: List[Tree]) = Apply(Select(New(tpt), nme.CONSTRUCTOR), args)
 
+  def NewFromConstructor(constructor: Symbol, args: List[Tree]) = {
+    assert(constructor.isConstructor, constructor)
+    val instance = New(TypeTree(constructor.owner.tpe))
+    val init     = Select(instance, nme.CONSTRUCTOR) setSymbol constructor
+
+    Apply(init, args)
+  }
+
   case class ApplyDynamic(qual: Tree, args: List[Tree])
        extends SymTree with TermTree with ApplyDynamicApi
   object ApplyDynamic extends ApplyDynamicExtractor
