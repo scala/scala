@@ -63,7 +63,7 @@ abstract class SymbolTable extends macros.Universe
 
   private[scala] def printCaller[T](msg: String)(result: T) = {
     Console.err.println("%s: %s\nCalled from: %s".format(msg, result,
-      (new Throwable).getStackTrace.drop(2).take(15).mkString("\n")))
+      (new Throwable).getStackTrace.drop(2).take(50).mkString("\n")))
 
     result
   }
