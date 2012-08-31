@@ -162,7 +162,7 @@ class BigInt(val bigInteger: BigInteger) extends ScalaNumber with ScalaNumericCo
   }
   /** Some implementations of java.math.BigInteger allow huge values with bit length greater than Int.MaxValue .
    * The BigInteger.bitLength method returns truncated bit length in this case .
-   * This method tests if result of bitLength is valid. 
+   * This method tests if result of bitLength is valid.
    * This method will become unnecessary if BigInt constructors reject huge BigIntegers.
    */
   private def bitLengthOverflow = {
@@ -170,7 +170,7 @@ class BigInt(val bigInteger: BigInteger) extends ScalaNumber with ScalaNumericCo
     (shifted.signum != 0) && !(shifted equals BigInt.minusOne)
   }
 
-  protected[math] def isWhole = true
+  def isWhole() = true
   def underlying = bigInteger
 
   /** Compares this BigInt with the specified BigInt for equality.

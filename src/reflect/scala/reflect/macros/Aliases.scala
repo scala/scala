@@ -21,6 +21,8 @@ trait Aliases {
   type TypeTag[T] = universe.TypeTag[T]
   val AbsTypeTag = universe.AbsTypeTag
   val TypeTag = universe.TypeTag
+  def absTypeTag[T](implicit attag: AbsTypeTag[T]) = attag
   def typeTag[T](implicit ttag: TypeTag[T]) = ttag
+  def absTypeOf[T](implicit attag: AbsTypeTag[T]): Type = attag.tpe
   def typeOf[T](implicit ttag: TypeTag[T]): Type = ttag.tpe
 }

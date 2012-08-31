@@ -250,9 +250,11 @@ trait TypeTags { self: Universe =>
   }
 
   // incantations
+  def absTypeTag[T](implicit attag: AbsTypeTag[T]) = attag
   def typeTag[T](implicit ttag: TypeTag[T]) = ttag
 
   // big thanks to Viktor Klang for this brilliant idea!
+  def absTypeOf[T](implicit attag: AbsTypeTag[T]): Type = attag.tpe
   def typeOf[T](implicit ttag: TypeTag[T]): Type = ttag.tpe
 }
 

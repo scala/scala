@@ -1393,13 +1393,16 @@ trait Infer {
             else =:=
           )
           (arg hasAnnotation UncheckedClass) || {
-            val TypeRef(_, sym, args) = arg.withoutAnnotations
-
-            (    isLocalBinding(sym)
-              || arg.typeSymbol.isTypeParameterOrSkolem
-              || (sym.name == tpnme.WILDCARD) // avoid spurious warnings on HK types
-              || check(arg, param.tpeHK, conforms)
-              || warn("non-variable type argument " + arg)
+            arg.withoutAnnotations match {
+              case TypeRef(_, sym, args) =>
+                (    isLocalBinding(sym)
+                  || arg.typeSymbol.isTypeParameterOrSkolem
+                  || (sym.name == tpnme.WILDCARD) // avoid spurious warnings on HK types
+                  || check(arg, param.tpeHK, conforms)
+                  || warn("non-variable type argument " + arg)
+                )
+              case _ =>
+                warn("non-variable type argument " + arg)
             )
           }
         }
