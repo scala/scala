@@ -17,7 +17,7 @@ object language {
    *  of programs. Furthermore, dynamic member selection often relies on reflection,
    *  which is not available on all platforms.
    */
-  implicit lazy val dynamics: dynamics = ???
+  implicit lazy val dynamics: dynamics = languageFeature.dynamics
 
   /** Only where enabled, postfix operator notation `(expr op)` will be allowed.
    *
@@ -26,7 +26,7 @@ object language {
    *  _Why control it?_ Postfix operators interact poorly with semicolon inference.
    *   Most programmers avoid them for this reason.
    */
-  implicit lazy val postfixOps: postfixOps = ???
+  implicit lazy val postfixOps: postfixOps = languageFeature.postfixOps
 
   /** Only where enabled, accesses to members of structural types that need
    *  reflection are supported. Reminder: A structural type is a type of the form 
@@ -42,7 +42,7 @@ object language {
    *  such as ProGuard have problems dealing with it. Even where reflection is available,
    *  reflective dispatch can lead to surprising performance degradations.
    */
-  implicit lazy val reflectiveCalls: reflectiveCalls = ???
+  implicit lazy val reflectiveCalls: reflectiveCalls = languageFeature.reflectiveCalls
 
   /** Only where enabled, definitions of implicit conversions are allowed. An
    *  implicit conversion is an implicit value of unary function type `A => B`,
@@ -65,7 +65,7 @@ object language {
    *  most situations using implicit parameters leads to a better design than
    *  implicit conversions.
    */
-  implicit lazy val implicitConversions: implicitConversions = ???
+  implicit lazy val implicitConversions: implicitConversions = languageFeature.implicitConversions
 
   /** Only where this flag is enabled, higher-kinded types can be written.
    *
@@ -86,7 +86,7 @@ object language {
    *  enabling also serves as a warning that code involving higher-kinded types
    *  might have to be slightly revised in the future.
    */
-  implicit lazy val higherKinds: higherKinds = ???
+  implicit lazy val higherKinds: higherKinds = languageFeature.higherKinds
 
   /** Only where enabled, existential types that cannot be expressed as wildcard
    *  types can be written and are allowed in inferred types of values or return
@@ -102,7 +102,7 @@ object language {
    *  is generally perceived not to be a good idea. Also, complicated existential types
    *  might be no longer supported in a future simplification of the language.
    */
-  implicit lazy val existentials: existentials = ???
+  implicit lazy val existentials: existentials = languageFeature.existentials
 
   object experimental {
 
@@ -119,6 +119,6 @@ object language {
      *  _Why control it?_ For their very power, macros can lead to code that is hard
      *  to debug and understand.
      */
-    implicit lazy val macros: macros = ???
+    implicit lazy val macros: macros = languageFeature.experimental.macros
   }
 }
