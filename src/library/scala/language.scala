@@ -1,5 +1,11 @@
 package scala
 
+/** 
+ * Contains a set of language features for import only. 
+ * _Note: If you access one of these feature vals you'll
+ * experience a runtime exception!_
+ * Each value describes its purpose and what it allows.
+ */
 object language {
 
   import languageFeature._
