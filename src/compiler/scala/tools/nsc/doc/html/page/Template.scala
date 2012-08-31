@@ -49,7 +49,11 @@ class Template(universe: doc.Universe, generator: DiagramGenerator, tpl: DocTemp
          if(top === self) {{
             var url = '{ val p = templateToPath(tpl); "../" * (p.size - 1) + "index.html" }';
             var hash = '{ val p = templateToPath(tpl); (p.tail.reverse ::: List(p.head.replace(".html", ""))).mkString(".") }';
-            window.location.href = url + '#' + hash;
+            var anchor = window.location.hash;
+            var anchor_opt = '';
+            if (anchor.length { scala.xml.Unparsed(">=") /* unless we use Unparsed, it gets escaped and crashes the script */ } 1) 
+              anchor_opt = '@' + anchor.substring(1);
+            window.location.href = url + '#' + hash + anchor_opt;
          }}
    	  </script>
     </xml:group>

@@ -13,7 +13,17 @@ import java.{ lang => jl }
 /** Conversions which present a consistent conversion interface
  *  across all the numeric types.
  */
-trait ScalaNumericConversions extends ScalaNumber {
+trait ScalaNumericConversions extends Any {
+  def isWhole(): Boolean
+  def underlying(): Any
+
+  def byteValue(): Byte = intValue().toByte
+  def shortValue(): Short = intValue().toShort
+  def intValue(): Int
+  def longValue(): Long
+  def floatValue(): Float
+  def doubleValue(): Double
+
   /** Returns the value of this as a [[scala.Char]]. This may involve
     * rounding or truncation.
     */

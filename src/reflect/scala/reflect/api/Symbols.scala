@@ -59,6 +59,9 @@ trait Symbols extends base.Symbols { self: Universe =>
      */
     def typeSignature: Type
 
+    /** Returns all symbols overriden by this symbol. */
+    def allOverriddenSymbols: List[Symbol]
+
     /******************* tests *******************/
 
     /** Does this symbol represent a synthetic (i.e. a compiler-generated) entity?
@@ -197,9 +200,6 @@ trait Symbols extends base.Symbols { self: Universe =>
     /** ...
      */
     def suchThat(cond: Symbol => Boolean): Symbol
-
-    /** The string discriminator of this symbol; useful for debugging */
-    def kind: String
   }
 
   /** The API of term symbols */
