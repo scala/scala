@@ -283,6 +283,7 @@ trait Definitions extends api.StandardDefinitions {
     lazy val NonLocalReturnControlClass     = requiredClass[scala.runtime.NonLocalReturnControl[_]]
     lazy val NullPointerExceptionClass      = getClassByName(sn.NPException)
       lazy val NPEConstructor = getMemberMethod(NullPointerExceptionClass, nme.CONSTRUCTOR) suchThat (_.paramss.flatten.isEmpty)
+      lazy val UninitializedConstructor = getMemberMethod(UninitializedErrorClass, nme.CONSTRUCTOR) suchThat (_.paramss.flatten.size == 1)
     lazy val ThrowableClass                 = getClassByName(sn.Throwable)
     lazy val UninitializedErrorClass        = requiredClass[UninitializedFieldError]
 

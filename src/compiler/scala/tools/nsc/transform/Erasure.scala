@@ -959,7 +959,7 @@ abstract class Erasure extends AddInterfaces
             case TypeApply(sel @ Select(qual, name), List(targ)) =>
               if (qual.tpe != null && isPrimitiveValueClass(qual.tpe.typeSymbol) && targ.tpe != null && targ.tpe <:< AnyRefClass.tpe)
                 unit.error(sel.pos, "isInstanceOf cannot test if value types are references.")
-              
+
               def mkIsInstanceOf(q: () => Tree)(tp: Type): Tree =
                 Apply(
                   TypeApply(
@@ -1055,7 +1055,8 @@ abstract class Erasure extends AddInterfaces
                   SelectFromArray(qual, name, erasure(tree.symbol)(qual.tpe)).copyAttrs(fn),
                   args)
               }
-            } else if (args.isEmpty && interceptedMethods(fn.symbol)) {
+            }
+            else if (args.isEmpty && interceptedMethods(fn.symbol)) {
               if (fn.symbol == Any_## || fn.symbol == Object_##) {
                 // This is unattractive, but without it we crash here on ().## because after
                 // erasure the ScalaRunTime.hash overload goes from Unit => Int to BoxedUnit => Int.
@@ -1067,9 +1068,14 @@ abstract class Erasure extends AddInterfaces
                   case s @ (ShortClass | ByteClass | CharClass) => numericConversion(qual, s)
                   case BooleanClass                             => If(qual, LIT(true.##), LIT(false.##))
                   case _                                        =>
-                    global.typer.typed(gen.mkRuntimeCall(nme.hash_, List(qual)))
+                    val alts    = ScalaRunTimeModule.info.member(nme.hash_).alternatives
+                    def alt1    = alts find (_.info.paramTypes.head =:= qual.tpe)
+                    def alt2    = ScalaRunTimeModule.info.member(nme.hash_) suchThat (_.info.paramTypes.head.typeSymbol == AnyClass)
+                    val newTree = gen.mkRuntimeCall(nme.hash_, qual :: Nil) setSymbol (alt1 getOrElse alt2)
+
+                    global.typer.typed(newTree)
                 }
-              } else if (isPrimitiveValueClass(qual.tpe.typeSymbol)) { 
+              } else if (isPrimitiveValueClass(qual.tpe.typeSymbol)) {
                 // Rewrite 5.getClass to ScalaRunTime.anyValClass(5)
                 global.typer.typed(gen.mkRuntimeCall(nme.anyValClass, List(qual, typer.resolveClassTag(tree.pos, qual.tpe.widen))))
               } else {
