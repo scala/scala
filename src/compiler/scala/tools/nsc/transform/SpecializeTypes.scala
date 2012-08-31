@@ -1416,28 +1416,15 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
 
     def transform1(tree: Tree) = {
       val symbol = tree.symbol
-
       /** The specialized symbol of 'tree.symbol' for tree.tpe, if there is one */
-      def specSym(qual: Tree): Option[Symbol] = {
+      def specSym(qual: Tree): Symbol = {
         val env = unify(symbol.tpe, tree.tpe, emptyEnv, false)
-        debuglog("[specSym] checking for rerouting: %s with \n\tsym.tpe: %s, \n\ttree.tpe: %s \n\tenv: %s \n\tname: %s"
-                .format(tree, symbol.tpe, tree.tpe, env, specializedName(symbol, env)))
-        if (!env.isEmpty) {  // a method?
-          val specCandidates = qual.tpe.member(specializedName(symbol, env))
-          val specMember = specCandidates suchThat { s =>
-            doesConform(symbol, tree.tpe, qual.tpe.memberType(s), env)
-          }
-
-          debuglog("[specSym] found: " + specCandidates.tpe + ", instantiated as: " + tree.tpe)
-          debuglog("[specSym] found specMember: " + specMember)
-          if (specMember ne NoSymbol)
-            if (TypeEnv.includes(typeEnv(specMember), env)) Some(specMember)
-            else {
-              debuglog("wrong environments for specialized member: \n\ttypeEnv(%s) = %s\n\tenv = %s".format(specMember, typeEnv(specMember), env))
-              None
-            }
-          else None
-        } else None
+        def isMatch(member: Symbol) = (
+             doesConform(symbol, tree.tpe, qual.tpe memberType member, env)
+          && TypeEnv.includes(typeEnv(member), env)
+        )
+        if (env.isEmpty) NoSymbol
+        else qual.tpe member specializedName(symbol, env) suchThat isMatch
       }
 
       def matchingSymbolInPrefix(pre: Type, member: Symbol, env: TypeEnv): Symbol = {
@@ -1505,7 +1492,10 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
           val qual1 = transform(qual)
           // log(">>> TypeApply: " + tree + ", qual1: " + qual1)
           specSym(qual1) match {
-            case Some(specMember) =>
+            case NoSymbol =>
+              // See pos/exponential-spec.scala - can't call transform on the whole tree again.
+              treeCopy.TypeApply(tree, treeCopy.Select(sel, qual1, name), transformTrees(targs))
+            case specMember =>
               debuglog("found " + specMember.fullName)
               ifDebug(assert(symbol.info.typeParams.length == targs.length, symbol.info.typeParams + " / " + targs))
 
@@ -1527,11 +1517,6 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
                 debuglog("rewrote " + tree + " to " + tree1)
                 localTyper.typedOperator(atPos(tree.pos)(tree1)) // being polymorphic, it must be a method
               }
-
-            case None =>
-              treeCopy.TypeApply(tree, treeCopy.Select(sel, qual1, name), super.transformTrees(targs))
-              // See pos/exponential-spec.scala - can't call transform on the whole tree again.
-              // super.transform(tree)
           }
           }
           transformTypeApply
