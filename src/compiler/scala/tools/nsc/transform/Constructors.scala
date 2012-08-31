@@ -129,7 +129,7 @@ abstract class Constructors extends Transform with ast.TreeDSL {
 
         if (from.name != nme.OUTER) result
         else localTyper.typedPos(to.pos) {
-          IF (from OBJ_EQ NULL) THEN Throw(NewFromConstructor(NPEConstructor, Nil)) ELSE result
+          IF (from OBJ_EQ NULL) THEN Throw(NewFromConstructor(NPEConstructor)) ELSE result
         }
       }
 

@@ -400,12 +400,14 @@ trait Trees extends api.Trees { self: SymbolTable =>
 
   def ApplyConstructor(tpt: Tree, args: List[Tree]) = Apply(Select(New(tpt), nme.CONSTRUCTOR), args)
 
-  def NewFromConstructor(constructor: Symbol, args: List[Tree]) = {
+  // Creates a constructor call from the constructor symbol.  This is
+  // to avoid winding up with an OverloadedType for the constructor call.
+  def NewFromConstructor(constructor: Symbol, args: Tree*) = {
     assert(constructor.isConstructor, constructor)
     val instance = New(TypeTree(constructor.owner.tpe))
     val init     = Select(instance, nme.CONSTRUCTOR) setSymbol constructor
 
-    Apply(init, args)
+    Apply(init, args.toList)
   }
 
   case class ApplyDynamic(qual: Tree, args: List[Tree])

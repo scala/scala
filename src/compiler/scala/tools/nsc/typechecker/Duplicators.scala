@@ -336,9 +336,15 @@ abstract class Duplicators extends Analyzer {
                 case ((alt, tpe)) :: Nil =>
                   log(s"Arrested overloaded type in Duplicators, narrowing to ${alt.defStringSeenAs(tpe)}\n  Overload was: $memberString")
                   Select(This(newClassOwner), alt)
-                case _ =>
-                  log(s"Could not disambiguate $memberString in Duplicators. Attempting name-based selection, but this may not end well...")
-                  nameSelection
+                case xs =>
+                  alts filter (alt => (alt.paramss corresponds tree.symbol.paramss)(_.size == _.size)) match {
+                    case alt :: Nil =>
+                      log(s"Resorted to parameter list arity to disambiguate to $alt\n  Overload was: $memberString")
+                      Select(This(newClassOwner), alt)
+                    case _ =>
+                      log(s"Could not disambiguate $memberTypes. Attempting name-based selection, but we may crash later.")
+                      nameSelection
+                  }
               }
             }
             else nameSelection

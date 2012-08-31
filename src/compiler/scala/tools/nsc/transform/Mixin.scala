@@ -884,7 +884,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
         val result    =
           IF (mkTest(clazz, mask, bitmapSym, false, kind)) .
             THEN (retVal) .
-            ELSE (Throw(NewFromConstructor(UninitializedConstructor, List(LIT(msg)))))
+            ELSE (Throw(NewFromConstructor(UninitializedFieldConstructor, LIT(msg))))
 
         typedPos(pos)(BLOCK(result, retVal))
       }

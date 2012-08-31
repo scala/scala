@@ -4504,25 +4504,18 @@ trait Typers extends Modes with Adaptations with Tags {
        */
       def typedSelect(tree: Tree, qual: Tree, name: Name): Tree = {
         val t = typedSelectInternal(tree, qual, name)
+        // Checking for OverloadedTypes being handed out after overloading
+        // resolution has already happened.
         if (isPastTyper) t.tpe match {
           case OverloadedType(pre, alts) =>
             if (alts forall (s => (s.owner == ObjectClass) || (s.owner == AnyClass) || isPrimitiveValueClass(s.owner))) ()
-            else {
-              val msg =
-                s"""|Select received overloaded type during $phase, but typer is over.
-                    |We are likely doomed to crash in the backend.
-                    |$t has these overloads:
-                    |${alts map (s => "  " + s.defStringSeenAs(pre memberType s)) mkString "\n"}
-                    |""".stripMargin
-
-              if (context.reportErrors)
-                unit.warning(t.pos, msg)
-              else
-                Console.err.println(msg)
-
-              if (settings.debug.value)
-                (new Throwable).printStackTrace
-            }
+            else if (settings.debug.value) printCaller(
+              s"""|Select received overloaded type during $phase, but typer is over.
+                  |If this type reaches the backend, we are likely doomed to crash.
+                  |$t has these overloads:
+                  |${alts map (s => "  " + s.defStringSeenAs(pre memberType s)) mkString "\n"}
+                  |""".stripMargin
+            )("")
           case _ =>
         }
         t

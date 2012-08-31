@@ -54,7 +54,7 @@ abstract class TreeGen extends reflect.internal.TreeGen with TreeDSL {
   // wrap the given expression in a SoftReference so it can be gc-ed
   def mkSoftRef(expr: Tree): Tree = atPos(expr.pos) {
     val constructor = SoftReferenceClass.info.nonPrivateMember(nme.CONSTRUCTOR).suchThat(_.paramss.flatten.size == 1)
-    NewFromConstructor(constructor, List(expr))
+    NewFromConstructor(constructor, expr)
   }
 
   // annotate the expression with @unchecked
@@ -209,7 +209,7 @@ abstract class TreeGen extends reflect.internal.TreeGen with TreeDSL {
       else AppliedTypeTree(Ident(clazz), targs map TypeTree)
     ))
   }
-  def mkSuperSelect = Select(Super(This(tpnme.EMPTY), tpnme.EMPTY), nme.CONSTRUCTOR)
+  def mkSuperInitCall: Select = Select(Super(This(tpnme.EMPTY), tpnme.EMPTY), nme.CONSTRUCTOR)
 
   def wildcardStar(tree: Tree) =
     atPos(tree.pos) { Typed(tree, Ident(tpnme.WILDCARD_STAR)) }
@@ -360,8 +360,8 @@ abstract class TreeGen extends reflect.internal.TreeGen with TreeDSL {
    */
   def mkSynchronizedCheck(clazz: Symbol, cond: Tree, syncBody: List[Tree], stats: List[Tree]): Tree =
     mkSynchronizedCheck(mkAttributedThis(clazz), cond, syncBody, stats)
-    
-  def mkSynchronizedCheck(attrThis: Tree, cond: Tree, syncBody: List[Tree], stats: List[Tree]): Tree = 
+
+  def mkSynchronizedCheck(attrThis: Tree, cond: Tree, syncBody: List[Tree], stats: List[Tree]): Tree =
     Block(mkSynchronized(
       attrThis,
       If(cond, Block(syncBody: _*), EmptyTree)) ::
