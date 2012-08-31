@@ -121,7 +121,7 @@ class ModelFactory(val global: Global, val settings: doc.Settings) {
       }
       if (inTpl != null) thisFactory.comment(sym, thisTpl, inTpl) else None
     }
-    def group = if (comment.isDefined) comment.get.group.getOrElse("No Group") else "No Group"
+    def group = comment flatMap (_.group) getOrElse "No Group"
     override def inTemplate = inTpl
     override def toRoot: List[MemberImpl] = this :: inTpl.toRoot
     def inDefinitionTemplates = this match {
@@ -143,8 +143,10 @@ class ModelFactory(val global: Global, val settings: doc.Settings) {
           else None
         if (sym.isPrivate) PrivateInTemplate(inTpl)
         else if (sym.isProtected) ProtectedInTemplate(qual getOrElse inTpl)
-        else if (qual.isDefined) PrivateInTemplate(qual.get)
-        else Public()
+        else qual match {
+          case Some(q) => PrivateInTemplate(q)
+          case None => Public()
+        }
       }
     }
     def flags = {
@@ -487,8 +489,8 @@ class ModelFactory(val global: Global, val settings: doc.Settings) {
 
     def groupSearch[T](extractor: Comment => T, default: T): T = {
       // query this template
-      if (comment.isDefined) {
-        val entity = extractor(comment.get)
+      for (c <- comment) {
+        val entity = extractor(c)
         if (entity != default) return entity
       }
       // query linearization
@@ -544,8 +546,8 @@ class ModelFactory(val global: Global, val settings: doc.Settings) {
       // also remove property("package object") from test/scaladoc/scalacheck/HtmlFactoryTest.scala so you don't break
       // the test suite...
       val packageObject = if (inPackageObject) ".package" else ""
-      if (!conversion.isDefined) optimize(inDefinitionTemplates.head.qualifiedName + packageObject + "#" + name)
-      else                       optimize(conversion.get.conversionQualifiedName + packageObject + "#" + name)
+			val qualifiedName = conversion map (_.conversionQualifiedName) getOrElse inDefinitionTemplates.head.qualifiedName
+      optimize(qualifiedName + packageObject + "#" + name)
     }
     def isBridge = sym.isBridge
     def isUseCase = useCaseOf.isDefined
@@ -876,20 +878,12 @@ class ModelFactory(val global: Global, val settings: doc.Settings) {
   def makeTemplate(aSym: Symbol, inTpl: Option[TemplateImpl]): TemplateImpl = {
     assert(modelFinished)
 
-    def makeNoDocTemplate(aSym: Symbol, inTpl: TemplateImpl): NoDocTemplateImpl = {
-      val bSym = normalizeTemplate(aSym)
-      noDocTemplatesCache.get(bSym) match {
-        case Some(noDocTpl) => noDocTpl
-        case None => new NoDocTemplateImpl(bSym, inTpl)
-      }
-    }
+    def makeNoDocTemplate(aSym: Symbol, inTpl: TemplateImpl): NoDocTemplateImpl =
+      noDocTemplatesCache get aSym getOrElse new NoDocTemplateImpl(aSym, inTpl)
 
-    findTemplateMaybe(aSym) match {
-      case Some(dtpl) =>
-        dtpl
-      case None =>
-        val bSym = normalizeTemplate(aSym)
-        makeNoDocTemplate(bSym, if (inTpl.isDefined) inTpl.get else makeTemplate(bSym.owner))
+    findTemplateMaybe(aSym) getOrElse {
+      val bSym = normalizeTemplate(aSym)
+      makeNoDocTemplate(bSym, inTpl getOrElse makeTemplate(bSym.owner))
     }
   }
 
@@ -1016,7 +1010,7 @@ class ModelFactory(val global: Global, val settings: doc.Settings) {
   }
 
   def makeQualifiedName(sym: Symbol, relativeTo: Option[Symbol] = None): String = {
-    val stop = if (relativeTo.isDefined) relativeTo.get.ownerChain.toSet else Set[Symbol]()
+    val stop = relativeTo map (_.ownerChain.toSet) getOrElse Set[Symbol]()
     var sym1 = sym
     var path = new StringBuilder()
     // var path = List[Symbol]()
