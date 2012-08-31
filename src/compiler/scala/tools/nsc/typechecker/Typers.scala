@@ -4503,6 +4503,31 @@ trait Typers extends Modes with Adaptations with Tags {
        *  @return     ...
        */
       def typedSelect(tree: Tree, qual: Tree, name: Name): Tree = {
+        val t = typedSelectInternal(tree, qual, name)
+        if (isPastTyper) t.tpe match {
+          case OverloadedType(pre, alts) =>
+            if (alts forall (s => (s.owner == ObjectClass) || (s.owner == AnyClass) || isPrimitiveValueClass(s.owner))) ()
+            else {
+              val msg =
+                s"""|Select received overloaded type during $phase, but typer is over.
+                    |We are likely doomed to crash in the backend.
+                    |$t has these overloads:
+                    |${alts map (s => "  " + s.defStringSeenAs(pre memberType s)) mkString "\n"}
+                    |""".stripMargin
+
+              if (context.reportErrors)
+                unit.warning(t.pos, msg)
+              else
+                Console.err.println(msg)
+
+              if (settings.debug.value)
+                (new Throwable).printStackTrace
+            }
+          case _ =>
+        }
+        t
+      }
+      def typedSelectInternal(tree: Tree, qual: Tree, name: Name): Tree = {
         def asDynamicCall = dyna.mkInvoke(context.tree, tree, qual, name) map (typed1(_, mode, pt))
 
         val sym = tree.symbol orElse member(qual, name) orElse {
