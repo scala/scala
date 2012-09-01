@@ -11,5 +11,6 @@ object Test {
     } catch {
        case t => println(t.getMessage)
     }
+    println(nonFatalCatch withTry ("Hi".toDouble))
   }
 }

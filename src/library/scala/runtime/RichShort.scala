@@ -8,4 +8,7 @@
 
 package scala.runtime
 
-final class RichShort(val self: Short) extends ScalaWholeNumberProxy[Short] { }
+final class RichShort(val self: Short) extends AnyVal with ScalaWholeNumberProxy[Short] {
+  protected def num = scala.math.Numeric.ShortIsIntegral
+  protected def ord = scala.math.Ordering.Short
+}

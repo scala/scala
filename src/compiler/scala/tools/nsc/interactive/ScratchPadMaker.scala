@@ -113,9 +113,11 @@ trait ScratchPadMaker { self: Global =>
         val topLevel = objectName.isEmpty
         if (topLevel) objectName = tree.symbol.fullName
         body foreach traverseStat
-        applyPendingPatches(skipped)
-        if (topLevel)
-          patches += Patch(skipped, epilogue)
+        if (skipped != 0) { // don't issue prologue and epilogue if there are no instrumented statements
+          applyPendingPatches(skipped)
+          if (topLevel)
+            patches += Patch(skipped, epilogue)
+        }
       case _ =>
     }
 

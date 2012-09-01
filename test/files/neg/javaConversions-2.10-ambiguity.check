@@ -1,0 +1,6 @@
+javaConversions-2.10-ambiguity.scala:8: error: type mismatch;
+ found   : scala.collection.concurrent.Map[String,String]
+ required: scala.collection.mutable.ConcurrentMap[String,String]
+  assertType[mutable.ConcurrentMap[String, String]](a)
+                                                    ^
+one error found

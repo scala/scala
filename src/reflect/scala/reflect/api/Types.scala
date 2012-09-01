@@ -66,6 +66,10 @@ trait Types extends base.Types { self: Universe =>
     /** Does this type conform to given type argument `that`? */
     def <:< (that: Type): Boolean
 
+    /** Is this type a weak subtype of that type? True also for numeric types, i.e. Int weak_<:< Long.
+     */
+    def weak_<:<(that: Type): Boolean
+
     /** Is this type equivalent to given type argument `that`? */
     def =:= (that: Type): Boolean
 
@@ -155,9 +159,6 @@ trait Types extends base.Types { self: Universe =>
 
     /** Does this type contain a reference to given symbol? */
     def contains(sym: Symbol): Boolean
-
-    /** The string discriminator of this type; useful for debugging */
-    def kind: String
   }
 
   /** .. */

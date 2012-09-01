@@ -111,7 +111,7 @@ abstract class LazyVals extends Transform with TypingTransformers with ast.TreeD
           var added = false
           val stats =
             for (stat <- body1) yield stat match {
-              case Block(_, _) | Apply(_, _) | If(_, _, _) if !added =>
+              case Block(_, _) | Apply(_, _) | If(_, _, _) | Try(_, _, _) if !added =>
                 // Avoid adding bitmaps when they are fully overshadowed by those
                 // that are added inside loops
                 if (LocalLazyValFinder.find(stat)) {
