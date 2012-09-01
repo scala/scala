@@ -312,8 +312,8 @@ class RunnerManager(kind: String, val fileManager: FileManager, params: TestRunP
       val testFiles = dir.listFiles.toList filter isJavaOrScala
 
       def isInGroup(f: File, num: Int) = SFile(f).stripExtension endsWith ("_" + num)
-      val groups = (0 to 9).toList map (num => testFiles filter (f => isInGroup(f, num)))
-      val noGroupSuffix = testFiles filterNot (groups.flatten contains)
+      val groups = (0 to 9).toList map (num => (testFiles filter (f => isInGroup(f, num))).sorted)
+      val noGroupSuffix = (testFiles filterNot (groups.flatten contains)).sorted
 
       noGroupSuffix :: groups filterNot (_.isEmpty)
     }
