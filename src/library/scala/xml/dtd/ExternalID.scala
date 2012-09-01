@@ -73,3 +73,14 @@ case class PublicID(publicId: String, systemId: String) extends ExternalID {
   /** always empty */
   def child = Nil
 }
+
+/** A marker used when a `DocType` contains no external id.
+ *
+ *  @author Michael Bayne
+ */
+object NoExternalID extends ExternalID {
+  val publicId = null
+  val systemId = null
+
+  override def toString = ""
+}
