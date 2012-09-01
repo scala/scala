@@ -3712,10 +3712,15 @@ trait Types extends api.Types { self: SymbolTable =>
    *  may or may not be poly? (It filched the standard "canonical creator" name.)
    */
   object GenPolyType {
-    def apply(tparams: List[Symbol], tpe: Type): Type = (
+    def apply(tparams: List[Symbol], tpe: Type): Type = {
+      tpe match {
+        case MethodType(_, _) =>
+          assert(tparams forall (_.isInvariant), "Trying to create a method with variant type parameters: " + ((tparams, tpe)))
+        case _                =>
+      }
       if (tparams.nonEmpty) typeFun(tparams, tpe)
       else tpe // it's okay to be forgiving here
-    )
+    }
     def unapply(tpe: Type): Option[(List[Symbol], Type)] = tpe match {
       case PolyType(tparams, restpe) => Some((tparams, restpe))
       case _                         => Some((Nil, tpe))
