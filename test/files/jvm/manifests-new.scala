@@ -106,6 +106,6 @@ trait TestUtil {
 //    val t1: TypeTag[T] = read(write(t))
     val t1: TypeTag[T] = t
     val x1 = x.toString.replaceAll("@[0-9a-z]+$", "")
-    println("x="+x1+", t="+t1+", k="+t1.tpe.kind+", s="+t1.tpe.typeSymbol.toString)
+    println("x="+x1+", t="+t1+", k="+t1.tpe.asInstanceOf[Product].productPrefix+", s="+t1.tpe.typeSymbol.toString)
   }
 }

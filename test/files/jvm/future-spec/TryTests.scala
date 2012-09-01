@@ -46,6 +46,12 @@ object TryTests extends MinimalScalaTest {
         val e2 = new Exception
         Failure[Int](e) map(_ => throw e2) mustEqual Failure(e)
       }
+      "when there is a fatal exception" in {
+        val e3 = new ThreadDeath
+        intercept[ThreadDeath] {
+          Success(1) map (_ => throw e3)
+        }
+      }
     }
 
     "flatMap" in {
@@ -59,6 +65,12 @@ object TryTests extends MinimalScalaTest {
 
         val e2 = new Exception
         Failure[Int](e).flatMap[Int](_ => throw e2) mustEqual Failure(e)
+      }
+      "when there is a fatal exception" in {
+        val e3 = new ThreadDeath
+        intercept[ThreadDeath] {
+          Success(1).flatMap[Int](_ => throw e3)
+        }
       }
     }
 

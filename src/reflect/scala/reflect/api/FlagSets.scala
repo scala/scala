@@ -3,7 +3,7 @@ package api
 
 import scala.language.implicitConversions
 
-trait FlagSets { self: Universe =>
+trait FlagSets extends base.FlagSets { self: Universe =>
 
   type FlagSet
 

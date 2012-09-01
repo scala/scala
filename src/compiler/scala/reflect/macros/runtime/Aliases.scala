@@ -21,6 +21,8 @@ trait Aliases {
   override type TypeTag[T] = universe.TypeTag[T]
   override val AbsTypeTag = universe.AbsTypeTag
   override val TypeTag = universe.TypeTag
+  override def absTypeTag[T](implicit attag: AbsTypeTag[T]) = attag
   override def typeTag[T](implicit ttag: TypeTag[T]) = ttag
+  override def absTypeOf[T](implicit attag: AbsTypeTag[T]): Type = attag.tpe
   override def typeOf[T](implicit ttag: TypeTag[T]): Type = ttag.tpe
 }

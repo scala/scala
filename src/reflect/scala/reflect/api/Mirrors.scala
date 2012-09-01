@@ -1,7 +1,7 @@
 package scala.reflect
 package api
 
-trait Mirrors { self: Universe =>
+trait Mirrors extends base.Mirrors { self: Universe =>
 
   type RuntimeClass >: Null
 
