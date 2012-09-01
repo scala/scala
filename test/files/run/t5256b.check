@@ -1,6 +1,6 @@
 class A
 Test.A
 Object {
-  def <init>: <?>
-  def foo: <?>
+  def <init>(): Test.A
+  def foo: Nothing
 }
