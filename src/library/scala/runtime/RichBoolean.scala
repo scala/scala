@@ -8,6 +8,6 @@
 
 package scala.runtime
 
-final class RichBoolean(val self: Boolean) extends OrderedProxy[Boolean] {
-  protected val ord = math.Ordering[Boolean]
+final class RichBoolean(val self: Boolean) extends AnyVal with OrderedProxy[Boolean] {
+  protected def ord = scala.math.Ordering.Boolean
 }

@@ -593,7 +593,7 @@ trait Implicits {
             typed1(itree, EXPRmode, wildPt)
 
         if (context.hasErrors)
-          return fail("typed implicit %s has errors".format(info.sym.fullLocationString))
+          return fail(context.errBuffer.head.errMsg)
 
         if (Statistics.canEnable) Statistics.incCounter(typedImplicits)
 
@@ -615,7 +615,7 @@ trait Implicits {
         }
 
         if (context.hasErrors)
-          fail("hasMatchingSymbol reported threw error(s)")
+          fail("hasMatchingSymbol reported error: " + context.errBuffer.head.errMsg)
         else if (isLocal && !hasMatchingSymbol(itree1))
           fail("candidate implicit %s is shadowed by %s".format(
             info.sym.fullLocationString, itree1.symbol.fullLocationString))
@@ -639,7 +639,7 @@ trait Implicits {
             // #2421: check that we correctly instantiated type parameters outside of the implicit tree:
             checkBounds(itree2, NoPrefix, NoSymbol, undetParams, targs, "inferred ")
             if (context.hasErrors)
-              return fail("type parameters weren't correctly instantiated outside of the implicit tree")
+              return fail("type parameters weren't correctly instantiated outside of the implicit tree: " + context.errBuffer.head.errMsg)
 
             // filter out failures from type inference, don't want to remove them from undetParams!
             // we must be conservative in leaving type params in undetparams
@@ -675,7 +675,7 @@ trait Implicits {
             }
 
             if (context.hasErrors)
-              fail("typing TypeApply reported errors for the implicit tree")
+              fail("typing TypeApply reported errors for the implicit tree: " + context.errBuffer.head.errMsg)
             else {
               val result = new SearchResult(itree2, subst)
               if (Statistics.canEnable) Statistics.incCounter(foundImplicits)

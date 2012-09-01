@@ -8,8 +8,10 @@
 
 package scala.runtime
 
-final class RichFloat(val self: Float) extends FractionalProxy[Float] {
-  protected val integralNum = Numeric.FloatAsIfIntegral
+final class RichFloat(val self: Float) extends AnyVal with FractionalProxy[Float] {
+  protected def num         = scala.math.Numeric.FloatIsFractional
+  protected def ord         = scala.math.Ordering.Float
+  protected def integralNum = scala.math.Numeric.FloatAsIfIntegral
 
   def round: Int   = math.round(self)
   def ceil: Float  = math.ceil(self).toFloat

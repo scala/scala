@@ -281,6 +281,8 @@ INITIALISATION
 
   <!-- Resolve maven dependencies -->
   <target name="init.maven.jars" depends="init.maven.tasks">
+    <!-- This target has an issue where if the user directory does not exist, we BOMB. ugh. -->
+    <mkdir dir="${user.home}/.m2/repository"/>
     <artifact:dependencies pathId="dependency.classpath" filesetId="dependency.fileset">
       <!--<dependency groupId="com.typesafe" artifactId="config" version="0.4.0"/>-->
     </artifact:dependencies>
@@ -2178,7 +2180,7 @@ DOCUMENTATION
       docfooter="epfl"
       docsourceurl="${scaladoc.url}€{FILE_PATH}.scala#L1"
       docUncompilable="${src.dir}/library-aux"
-      skipPackages="scala.reflect.macros"
+      skipPackages="scala.reflect.macros.internal"
       sourcepath="${src.dir}"
       classpathref="pack.classpath"
       addparams="${scalac.args.all}"

@@ -17,4 +17,4 @@ import generic._
  *
  *  @since 2.8
  */
-trait IndexedSeqOptimized[A, +Repr] extends IndexedSeqLike[A, Repr] with scala.collection.IndexedSeqOptimized[A, Repr]
+trait IndexedSeqOptimized[A, +Repr] extends Any with IndexedSeqLike[A, Repr] with scala.collection.IndexedSeqOptimized[A, Repr]

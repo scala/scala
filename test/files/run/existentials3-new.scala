@@ -35,7 +35,7 @@ object Test {
 
   def printTpe(t: Type) = {
     val s = if (t.typeSymbol.isFreeType) t.typeSymbol.typeSignature.toString else t.typeSymbol.toString
-    println("%s, t=%s, s=%s".format(t, t.kind, s))
+    println("%s, t=%s, s=%s".format(t, t.asInstanceOf[Product].productPrefix, s))
   }
   def m[T: TypeTag](x: T) = printTpe(typeOf[T])
   def m2[T: AbsTypeTag](x: T) = printTpe(implicitly[AbsTypeTag[T]].tpe)
