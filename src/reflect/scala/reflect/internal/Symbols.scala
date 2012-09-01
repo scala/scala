@@ -516,6 +516,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     def isTypeParameterOrSkolem = false
     def isTypeSkolem            = false
     def isTypeMacro             = false
+    def isInvariant             = !isCovariant && !isContravariant
 
     /** Qualities of Terms, always false for TypeSymbols.
      */
