@@ -12,7 +12,7 @@ trait ToolBox[U <: Universe] {
 
   /** Underlying mirror of a ToolBox
    */
-  val mirror: MirrorOf[u.type]
+  val mirror: u.Mirror
 
   /** Front end of the toolbox.
    *
