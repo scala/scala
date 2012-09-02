@@ -546,7 +546,7 @@ class ModelFactory(val global: Global, val settings: doc.Settings) {
       // also remove property("package object") from test/scaladoc/scalacheck/HtmlFactoryTest.scala so you don't break
       // the test suite...
       val packageObject = if (inPackageObject) ".package" else ""
-			val qualifiedName = conversion map (_.conversionQualifiedName) getOrElse inDefinitionTemplates.head.qualifiedName
+      val qualifiedName = conversion.fold(inDefinitionTemplates.head.qualifiedName)(_.conversionQualifiedName)
       optimize(qualifiedName + packageObject + "#" + name)
     }
     def isBridge = sym.isBridge
@@ -879,7 +879,7 @@ class ModelFactory(val global: Global, val settings: doc.Settings) {
     assert(modelFinished)
 
     def makeNoDocTemplate(aSym: Symbol, inTpl: TemplateImpl): NoDocTemplateImpl =
-      noDocTemplatesCache get aSym getOrElse new NoDocTemplateImpl(aSym, inTpl)
+      noDocTemplatesCache getOrElse (aSym, new NoDocTemplateImpl(aSym, inTpl))
 
     findTemplateMaybe(aSym) getOrElse {
       val bSym = normalizeTemplate(aSym)
