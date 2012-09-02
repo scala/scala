@@ -18,8 +18,12 @@ package dtd
  *  @param  extID  None, or Some(external ID of this doctype)
  *  @param  intSubset sequence of internal subset declarations
  */
-case class DocType(name: String, extID: ExternalID, intSubset: Seq[dtd.Decl])
+case class DocType(name: String, extID: Option[ExternalID], intSubset: Seq[dtd.Decl])
 {
+  @deprecated("Use constructor that takes Option[ExternalID]", "2.10.0")
+  def this(name: String, extID: ExternalID, intSubset: Seq[dtd.Decl]) =
+    this(name, Some(extID), intSubset)
+
   if (!Utility.isName(name))
     throw new IllegalArgumentException(name+" must be an XML Name")
 
@@ -29,6 +33,16 @@ case class DocType(name: String, extID: ExternalID, intSubset: Seq[dtd.Decl])
       if (intSubset.isEmpty) ""
       else intSubset.mkString("[", "", "]")
 
-    """<!DOCTYPE %s %s%s>""".format(name, extID.toString, intString)
+    """<!DOCTYPE %s %s%s>""".format(name, extID.map(_.toString).getOrElse(""), intString)
   }
+}
+
+object DocType
+{
+  /** Creates a doctype with no extID, nor internal subset declarations. */
+  def apply(name: String): DocType = apply(name, None, Nil)
+
+  @deprecated("Use apply that takes Option[ExternalID]", "2.10.0")
+  def apply(name: String, extID: ExternalID, intSubset: Seq[dtd.Decl]): DocType =
+    apply(name, Some(extID), intSubset)
 }
