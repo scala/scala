@@ -45,7 +45,7 @@ package object partest {
 
   def path2String(path: String) = file2String(new JFile(path))
   def file2String(f: JFile) =
-    try SFile(f).slurp()
+    try SFile(f).slurp(scala.io.Codec.UTF8)
     catch { case _: FileNotFoundException => "" }
 
   def basename(name: String): String = Path(name).stripExtension
