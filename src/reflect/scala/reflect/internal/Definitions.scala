@@ -218,6 +218,32 @@ trait Definitions extends api.StandardDefinitions {
       case _            => null
     }
 
+    /** Fully initialize the symbol, type, or scope.
+     */
+    def fullyInitializeSymbol(sym: Symbol): Symbol = {
+      sym.initialize
+      fullyInitializeType(sym.info)
+      fullyInitializeType(sym.tpe)
+      sym
+    }
+    def fullyInitializeType(tp: Type): Type = {
+      tp.typeParams foreach fullyInitializeSymbol
+      tp.paramss.flatten foreach fullyInitializeSymbol
+      tp
+    }
+    def fullyInitializeScope(scope: Scope): Scope = {
+      scope.sorted foreach fullyInitializeSymbol
+      scope
+    }
+    /** Is this type equivalent to Any, AnyVal, or AnyRef? */
+    def isTrivialTopType(tp: Type) = (
+         tp =:= AnyClass.tpe
+      || tp =:= AnyValClass.tpe
+      || tp =:= AnyRefClass.tpe
+    )
+    /** Does this type have a parent which is none of Any, AnyVal, or AnyRef? */
+    def hasNonTrivialParent(tp: Type) = tp.parents exists (t => !isTrivialTopType(tp))
+
     private def fixupAsAnyTrait(tpe: Type): Type = tpe match {
       case ClassInfoType(parents, decls, clazz) =>
         if (parents.head.typeSymbol == AnyClass) tpe
@@ -383,7 +409,7 @@ trait Definitions extends api.StandardDefinitions {
     def isRepeated(param: Symbol)          = isRepeatedParamType(param.tpe)
     def isCastSymbol(sym: Symbol)          = sym == Any_asInstanceOf || sym == Object_asInstanceOf
 
-    def isJavaVarArgsMethod(m: Symbol)       = m.isMethod && isJavaVarArgs(m.info.params)
+    def isJavaVarArgsMethod(m: Symbol)      = m.isMethod && isJavaVarArgs(m.info.params)
     def isJavaVarArgs(params: Seq[Symbol])  = params.nonEmpty && isJavaRepeatedParamType(params.last.tpe)
     def isScalaVarArgs(params: Seq[Symbol]) = params.nonEmpty && isScalaRepeatedParamType(params.last.tpe)
     def isVarArgsList(params: Seq[Symbol])  = params.nonEmpty && isRepeatedParamType(params.last.tpe)
