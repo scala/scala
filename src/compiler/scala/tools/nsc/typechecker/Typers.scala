@@ -4686,6 +4686,9 @@ trait Typers extends Modes with Adaptations with Tags {
         var inaccessibleSym: Symbol = NoSymbol // the first symbol that was found but that was discarded
                                           // for being inaccessible; used for error reporting
         var inaccessibleExplanation: String = ""
+        def setQualFromPrefix() = {
+          qual = atPos(tree.pos.makeTransparent)(gen.mkAttributedQualifier(pre))
+        }
 
         // If a special setting is given, the empty package will be checked as a
         // last ditch effort before failing.  This method sets defSym and returns
@@ -4731,7 +4734,7 @@ trait Typers extends Modes with Adaptations with Tags {
               if (isInPackageObject(defEntry.sym, pre.typeSymbol)) {
                 defSym = pre.member(defEntry.sym.name)
                 if (defSym ne defEntry.sym) {
-                  qual = gen.mkAttributedQualifier(pre)
+                  setQualFromPrefix()
                   log(s"""
                     |  !!! Overloaded package object member resolved incorrectly.
                     |        prefix: $pre
@@ -4789,7 +4792,7 @@ trait Typers extends Modes with Adaptations with Tags {
             else if (!defSym.owner.isClass || defSym.owner.isPackageClass || defSym.isTypeParameterOrSkolem)
               pre = NoPrefix
             else
-              qual = atPos(tree.pos.focusStart)(gen.mkAttributedQualifier(pre))
+              setQualFromPrefix()
           } else {
             if (impSym.exists) {
               var impSym1: Symbol = NoSymbol
@@ -4888,7 +4891,7 @@ trait Typers extends Modes with Adaptations with Tags {
 
           // Inferring classOf type parameter from expected type.
           if (defSym.isThisSym) {
-            typed1(This(defSym.owner) setPos tree.pos, mode, pt)
+            typed1(This(defSym.owner) setPos tree.pos.focus, mode, pt)
           }
           // Inferring classOf type parameter from expected type.  Otherwise an
           // actual call to the stubbed classOf method is generated, returning null.
@@ -4898,7 +4901,7 @@ trait Typers extends Modes with Adaptations with Tags {
             val tree1 = (
               if (qual == EmptyTree) tree
               // atPos necessary because qualifier might come from startContext
-              else atPos(tree.pos)(Select(qual, name))
+              else atPos(tree.pos.makeTransparent)(Select(qual, name))
             )
             val (tree2, pre2) = makeAccessible(tree1, defSym, pre, qual)
             // assert(pre.typeArgs isEmpty) // no need to add #2416-style check here, right?
