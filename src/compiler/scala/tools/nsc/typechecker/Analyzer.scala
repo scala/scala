@@ -87,10 +87,10 @@ trait Analyzer extends AnyRef
       override def run() {
         val start = if (Statistics.canEnable) Statistics.startTimer(typerNanos) else null
         global.echoPhaseSummary(this)
-        currentRun.units foreach applyPhase
-        undoLog.clear()
-        // need to clear it after as well or 10K+ accumulated entries are
-        // uncollectable the rest of the way.
+        for (unit <- currentRun.units) {
+          applyPhase(unit)
+          undoLog.clear()
+        }
         if (Statistics.canEnable) Statistics.stopTimer(typerNanos, start)
       }
       def apply(unit: CompilationUnit) {
