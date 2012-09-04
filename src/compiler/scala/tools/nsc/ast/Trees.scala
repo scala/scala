@@ -116,7 +116,7 @@ trait Trees extends reflect.internal.Trees { self: Global =>
         // convert (implicit ... ) to ()(implicit ... ) if its the only parameter section
         if (vparamss1.isEmpty || !vparamss1.head.isEmpty && vparamss1.head.head.mods.isImplicit)
           vparamss1 = List() :: vparamss1;
-        val superRef: Tree = atPos(superPos)(gen.mkSuperSelect)
+        val superRef: Tree = atPos(superPos)(gen.mkSuperInitCall)
         val superCall = (superRef /: argss) (Apply.apply)
         List(
           atPos(wrappingPos(superPos, lvdefs ::: argss.flatten)) (

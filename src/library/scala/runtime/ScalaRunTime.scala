@@ -24,8 +24,7 @@ import java.lang.reflect.{ Modifier, Method => JMethod }
  *  outside the API and subject to change or removal without notice.
  */
 object ScalaRunTime {
-  def isArray(x: AnyRef): Boolean = isArray(x, 1)
-  def isArray(x: Any, atLevel: Int): Boolean =
+  def isArray(x: Any, atLevel: Int = 1): Boolean =
     x != null && isArrayClass(x.getClass, atLevel)
 
   private def isArrayClass(clazz: Class[_], atLevel: Int): Boolean =

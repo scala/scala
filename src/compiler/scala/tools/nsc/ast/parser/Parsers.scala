@@ -397,7 +397,7 @@ self =>
         Nil,
         ListOfNil,
         TypeTree(),
-        Block(List(Apply(gen.mkSuperSelect, Nil)), Literal(Constant(())))
+        Block(List(Apply(gen.mkSuperInitCall, Nil)), Literal(Constant(())))
       )
 
       // def main
@@ -1302,7 +1302,7 @@ self =>
       placeholderParams = placeholderParams ::: savedPlaceholderParams
       res
     }
-    
+
 
     def expr0(location: Int): Tree = (in.token: @scala.annotation.switch) match {
       case IF =>
