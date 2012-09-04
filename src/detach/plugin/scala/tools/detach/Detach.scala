@@ -72,8 +72,6 @@ abstract class Detach extends PluginComponent
       AnnotationInfo(RemoteAttr.tpe, List(), List())
     }
 
-    private val serializableAnnotationInfo =
-      AnnotationInfo(SerializableAttr.tpe, List(), List())
 /*
     private val throwsAnnotationInfo = {
       val RemoteExceptionClass = definitions.getClass("java.rmi.RemoteException")
