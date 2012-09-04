@@ -1267,7 +1267,8 @@ self =>
           makeDoWhile(lname, body, cond)
         }
       case FOR =>
-        atPos(in.skipToken()) {
+        val start = in.skipToken()
+        def parseFor = atPos(start) {
           val enums =
             if (in.token == LBRACE) inBracesOrNil(enumerators())
             else inParensOrNil(enumerators())
@@ -1279,6 +1280,11 @@ self =>
             makeFor(enums, expr())
           }
         }
+        def adjustStart(tree: Tree) =
+          if (tree.pos.isRange && start < tree.pos.start)
+            tree setPos tree.pos.withStart(start)
+          else tree
+        adjustStart(parseFor)
       case RETURN =>
         atPos(in.skipToken()) {
           Return(if (isExprIntro) expr() else Literal(()))
