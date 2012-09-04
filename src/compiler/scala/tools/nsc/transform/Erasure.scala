@@ -999,6 +999,7 @@ abstract class Erasure extends AddInterfaces
         } else if (fn.symbol == Any_isInstanceOf) {
           preEraseIsInstanceOf
         } else if (fn.symbol.owner.isRefinementClass && !fn.symbol.isOverridingSymbol) {
+          // !!! Another spot where we produce overloaded types (see test run/t6301)
           ApplyDynamic(qualifier, args) setSymbol fn.symbol setPos tree.pos
         } else if (fn.symbol.isMethodWithExtension) {
           Apply(gen.mkAttributedRef(extensionMethods.extensionMethod(fn.symbol)), qualifier :: args)
@@ -1068,6 +1069,12 @@ abstract class Erasure extends AddInterfaces
                   case s @ (ShortClass | ByteClass | CharClass) => numericConversion(qual, s)
                   case BooleanClass                             => If(qual, LIT(true.##), LIT(false.##))
                   case _                                        =>
+                    // Since we are past typer, we need to avoid creating trees carrying
+                    // overloaded types.  This logic is custom (and technically incomplete,
+                    // although serviceable) for def hash.  What is really needed is for
+                    // the overloading logic presently hidden away in a few different
+                    // places to be properly exposed so we can just call "resolveOverload"
+                    // after typer.  Until then:
                     val alts    = ScalaRunTimeModule.info.member(nme.hash_).alternatives
                     def alt1    = alts find (_.info.paramTypes.head =:= qual.tpe)
                     def alt2    = ScalaRunTimeModule.info.member(nme.hash_) suchThat (_.info.paramTypes.head.typeSymbol == AnyClass)
