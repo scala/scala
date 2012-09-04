@@ -37,7 +37,7 @@ abstract class ICodeReader extends ClassfileParser {
     cls.info // ensure accurate type information
 
     isScalaModule = cls.isModule && !cls.isJavaDefined
-    log("Reading class: " + cls + " isScalaModule?: " + isScalaModule)
+    log("ICodeReader reading " + cls)
     val name = cls.javaClassName
 
     classPath.findSourceFile(name) match {
@@ -99,11 +99,9 @@ abstract class ICodeReader extends ClassfileParser {
         if (sym == NoSymbol)
           sym = owner.info.findMember(newTermName(name + nme.LOCAL_SUFFIX_STRING), 0, 0, false).suchThat(_.tpe =:= tpe)
         if (sym == NoSymbol) {
-          log("Could not find symbol for " + name + ": " + tpe)
-          log(owner.info.member(name).tpe + " : " + tpe)
           sym = if (field) owner.newValue(name, owner.pos, toScalaFieldFlags(jflags)) else dummySym
           sym setInfoAndEnter tpe
-          log("added " + sym + ": " + sym.tpe)
+          log(s"ICodeReader could not locate ${name.decode} in $owner.  Created ${sym.defString}.")
         }
         (jflags, sym)
       }
@@ -172,10 +170,7 @@ abstract class ICodeReader extends ClassfileParser {
     }
     else if (nme.isModuleName(name)) {
       val strippedName = nme.stripModuleSuffix(name)
-      val sym = forceMangledName(newTermName(strippedName.decode), true)
-
-      if (sym == NoSymbol) rootMirror.getModule(strippedName)
-      else sym
+      forceMangledName(newTermName(strippedName.decode), true) orElse rootMirror.getModule(strippedName)
     }
     else {
       forceMangledName(name, false)
@@ -956,7 +951,7 @@ abstract class ICodeReader extends ClassfileParser {
         case None =>
           checkValidIndex
           val l = freshLocal(idx, kind, false)
-          log("Added new local for idx " + idx + ": " + kind)
+          debuglog("Added new local for idx " + idx + ": " + kind)
           locals += (idx -> List((l, kind)))
           l
       }

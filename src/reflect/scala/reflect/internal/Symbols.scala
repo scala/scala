@@ -114,7 +114,12 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     // with the proper specific type.
     def rawname: NameType
     def name: NameType
-    def name_=(n: Name): Unit
+    def name_=(n: Name): Unit = {
+      if (shouldLogAtThisPhase) {
+        val msg = s"Renaming $fullLocationString to $n"
+        if (isSpecialized) debuglog(msg) else log(msg)
+      }
+    }
     def asNameType(n: Name): NameType
 
     private[this] var _rawowner = initOwner // Syncnote: need not be protected, as only assignment happens in owner_=, which is not exposed to api
@@ -945,7 +950,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     /** If this symbol has an expanded name, its original name, otherwise its name itself.
      *  @see expandName
      */
-    def originalName: Name = nme.originalName(name)
+    def originalName: Name = nme.originalName(nme.dropLocalSuffix(name))
 
     /** The name of the symbol before decoding, e.g. `\$eq\$eq` instead of `==`.
      */
@@ -990,7 +995,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     private def fullNameInternal(separator: Char): Name = (
       if (isRoot || isRootPackage || this == NoSymbol) name
       else if (owner.isEffectiveRoot) name
-      else effectiveOwner.enclClass.fullNameAsName(separator) append separator append name
+      else ((effectiveOwner.enclClass.fullNameAsName(separator) append separator): Name) append name
     )
 
     def fullNameAsName(separator: Char): Name = nme.dropLocalSuffix(fullNameInternal(separator))
@@ -2188,10 +2193,10 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
      *  If settings.Yshowsymkinds, adds abbreviated symbol kind.
      */
     def nameString: String = (
-      if (!settings.uniqid.value && !settings.Yshowsymkinds.value) "" + decodedName
-      else if (settings.uniqid.value && !settings.Yshowsymkinds.value) decodedName + "#" + id
-      else if (!settings.uniqid.value && settings.Yshowsymkinds.value) decodedName + "#" + abbreviatedKindString
-      else decodedName + "#" + id + "#" + abbreviatedKindString
+      if (!settings.uniqid.value && !settings.Yshowsymkinds.value) "" + originalName.decode
+      else if (settings.uniqid.value && !settings.Yshowsymkinds.value) originalName.decode + "#" + id
+      else if (!settings.uniqid.value && settings.Yshowsymkinds.value) originalName.decode + "#" + abbreviatedKindString
+      else originalName.decode + "#" + id + "#" + abbreviatedKindString
     )
 
     def fullNameString: String = {
@@ -2301,9 +2306,9 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
       if (Statistics.hotEnabled) Statistics.incCounter(nameCount)
       _rawname
     }
-    def name_=(name: Name) {
+    override def name_=(name: Name) {
       if (name != rawname) {
-        log("Renaming %s %s %s to %s".format(shortSymbolClass, debugFlagString, rawname, name))
+        super.name_=(name)   // logging
         changeNameInOwners(name)
         _rawname = name.toTermName
       }
@@ -2604,9 +2609,9 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
 
     // TODO - don't allow names to be renamed in this unstructured a fashion.
     // Rename as little as possible.  Enforce invariants on all renames.
-    def name_=(name: Name) {
+    override def name_=(name: Name) {
       if (name != rawname) {
-        log("Renaming %s %s %s to %s".format(shortSymbolClass, debugFlagString, rawname, name))
+        super.name_=(name)  // logging
         changeNameInOwners(name)
         _rawname = name.toTypeName
       }
@@ -3077,7 +3082,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     def asNameType(n: Name) = n.toTermName
     def rawname = nme.NO_NAME
     def name = nme.NO_NAME
-    def name_=(n: Name) = abort("Cannot set NoSymbol's name to " + n)
+    override def name_=(n: Name) = abort("Cannot set NoSymbol's name to " + n)
 
     synchronized {
       setInfo(NoType)

@@ -79,12 +79,11 @@ abstract class AddInterfaces extends InfoTransform { self: Erasure =>
           // -optimise and not otherwise, but the classpath can use arbitrary
           // logic so the classpath must be queried.
           if (classPath.context.isValidName(implName + ".class")) {
-            log("unlinking impl class " + implSym)
             iface.owner.info.decls unlink implSym
             NoSymbol
           }
           else {
-            log("not unlinking existing " + implSym + " as the impl class is not visible on the classpath.")
+            log(s"not unlinking $iface's existing implClass ${implSym.name} because it is not on the classpath.")
             implSym
           }
       }
@@ -113,9 +112,10 @@ abstract class AddInterfaces extends InfoTransform { self: Erasure =>
     iface.info
 
     implClassMap.getOrElse(iface, atPhase(implClassPhase) {
-      log("Creating implClass for " + iface)
-      if (iface.implClass ne NoSymbol)
-        log("%s.implClass already exists: %s".format(iface, iface.implClass))
+      if (iface.implClass eq NoSymbol)
+        debuglog(s"${iface.fullLocationString} has no implClass yet, creating it now.")
+      else
+        log(s"${iface.fullLocationString} impl class is ${iface.implClass.nameString}")
 
       newImplClass(iface)
     })
@@ -137,7 +137,7 @@ abstract class AddInterfaces extends InfoTransform { self: Erasure =>
      *  given the decls ifaceDecls of its interface.
      */
     private def implDecls(implClass: Symbol, ifaceDecls: Scope): Scope = {
-      log("LazyImplClassType calculating decls for " + implClass)
+      debuglog("LazyImplClassType calculating decls for " + implClass)
 
       val decls = newScope
       if ((ifaceDecls lookup nme.MIXIN_CONSTRUCTOR) == NoSymbol) {
@@ -152,16 +152,16 @@ abstract class AddInterfaces extends InfoTransform { self: Erasure =>
       for (sym <- ifaceDecls) {
         if (isInterfaceMember(sym)) {
           if (needsImplMethod(sym)) {
-            log("Cloning " + sym + " for implementation method in " + implClass)
             val clone = sym.cloneSymbol(implClass).resetFlag(lateDEFERRED)
             if (currentRun.compiles(implClass)) implMethodMap(sym) = clone
             decls enter clone
             sym setFlag lateDEFERRED
+            if (!sym.isSpecialized)
+              log(s"Cloned ${sym.name} from ${sym.owner} into implClass ${implClass.fullName}")
           }
-          else log(sym + " needs no implementation method in " + implClass)
         }
         else {
-          log("Destructively modifying owner of %s from %s to %s".format(sym, sym.owner, implClass))
+          log(s"Destructively modifying owner of $sym from ${sym.owner} to $implClass")
           sym.owner = implClass
           // note: OK to destructively modify the owner here,
           // because symbol will not be accessible from outside the sourcefile.
@@ -174,7 +174,7 @@ abstract class AddInterfaces extends InfoTransform { self: Erasure =>
     }
 
     override def complete(implSym: Symbol) {
-      log("LazyImplClassType completing " + implSym)
+      debuglog("LazyImplClassType completing " + implSym)
 
       /** If `tp` refers to a non-interface trait, return a
        *  reference to its implementation class. Otherwise return `tp`.

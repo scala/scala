@@ -266,9 +266,8 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
     log("Running operation '%s' after every phase.\n".format(msg) + describeAfterEveryPhase(op))
   }
 
-  def shouldLogAtThisPhase = (
-       (settings.log.isSetByUser)
-    && ((settings.log containsPhase globalPhase) || (settings.log containsPhase phase))
+  override def shouldLogAtThisPhase = settings.log.isSetByUser && (
+    (settings.log containsPhase globalPhase) || (settings.log containsPhase phase)
   )
   // Over 200 closure objects are eliminated by inlining this.
   @inline final def log(msg: => AnyRef) {
