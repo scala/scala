@@ -747,13 +747,23 @@ class Global(settings: Settings, reporter: Reporter, projectName: String = "")
       val originalTypeParams = sym.owner.typeParams
       parseAndEnter(unit)
       val pre = adaptToNewRunMap(ThisType(sym.owner))
-      val newsym = pre.typeSymbol.info.decl(sym.name) filter { alt =>
+      val rawsym = pre.typeSymbol.info.decl(sym.name)
+      val newsym = rawsym filter { alt =>
         sym.isType || {
           try {
             val tp1 = pre.memberType(alt) onTypeError NoType
             val tp2 = adaptToNewRunMap(sym.tpe) substSym (originalTypeParams, sym.owner.typeParams)
-            matchesType(tp1, tp2, false)
-          } catch {
+            matchesType(tp1, tp2, false) || {
+              debugLog("getLinkPos matchesType(" + tp1 + ", " + tp2 + ") failed")
+              val tp3 = adaptToNewRunMap(sym.tpe) substSym (originalTypeParams, alt.owner.typeParams)
+              matchesType(tp1, tp3, false) || {
+                debugLog("getLinkPos fallback matchesType(" + tp1 + ", " + tp3 + ") failed")
+                false
+              }
+            }
+          }
+          catch {
+            case ex: ControlThrowable => throw ex
             case ex: Throwable =>
               println("error in hyperlinking: " + ex)
               ex.printStackTrace()
@@ -762,8 +772,11 @@ class Global(settings: Settings, reporter: Reporter, projectName: String = "")
         }
       }
       if (newsym == NoSymbol) {
-        debugLog("link not found " + sym + " " + source + " " + pre)
-        NoPosition
+        if (rawsym.exists && !rawsym.isOverloaded) rawsym.pos
+        else {
+          debugLog("link not found " + sym + " " + source + " " + pre)
+          NoPosition
+        }
       } else if (newsym.isOverloaded) {
         settings.uniqid.value = true
         debugLog("link ambiguous " + sym + " " + source + " " + pre + " " + newsym.alternatives)
