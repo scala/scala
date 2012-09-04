@@ -1234,8 +1234,10 @@ abstract class GenICode extends SubComponent  {
         case NothingReference                                          => ctx.bb.emit(THROW(ThrowableClass)) ; ctx.bb.enterIgnoreMode
         case NullReference                                             => ctx.bb.emit(Seq(DROP(from), CONSTANT(Constant(null))))
         case ThrowableReference if !(ThrowableClass.tpe <:< to.toType) => ctx.bb.emit(CHECK_CAST(to)) // downcast throwables
-        case BYTE | SHORT | CHAR | INT if to == LONG                   => coerce(INT, LONG)           // widen subrange types
-        case _                                                         => ()
+        case _                                                         =>
+          // widen subrange types
+          if (from.isIntSizedType && to == LONG)
+            coerce(INT, LONG)
       }
       else to match {
         case UNIT => ctx.bb.emit(DROP(from), pos)           // value discarding
