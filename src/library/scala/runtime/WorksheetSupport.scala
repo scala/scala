@@ -40,9 +40,9 @@ object WorksheetSupport {
         write((currentOffset+" ").getBytes)
       }
       out.write(c)
-      col = 
+      col =
         if (c == '\n') -1
-        else if (c == '\t') (col / tabInc) * tabInc + tabInc 
+        else if (c == '\t') (col / tabInc) * tabInc + tabInc
         else col + 1
       if (col >= width) writeOne('\n')
     }
@@ -86,7 +86,7 @@ object WorksheetSupport {
 
   def $stop() = throw new StopException
 
-  def $show(x: Any): String = stringOf(x, scala.Int.MaxValue)
+  def $show(x: Any): String = stringOf(x)
 }
 
 class StopException extends Exception
