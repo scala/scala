@@ -886,7 +886,7 @@ trait Typers extends Modes with Adaptations with Tags {
         if (!meth.isConstructor && !meth.isTermMacro && isFunctionType(pt)) { // (4.2)
           debuglog("eta-expanding " + tree + ":" + tree.tpe + " to " + pt)
           checkParamsConvertible(tree, tree.tpe)
-          val tree0 = etaExpand(context.unit, tree)
+          val tree0 = etaExpand(context.unit, tree, this)
           // println("eta "+tree+" ---> "+tree0+":"+tree0.tpe+" undet: "+context.undetparams+ " mode: "+Integer.toHexString(mode))
 
           if (context.undetparams.nonEmpty) {
