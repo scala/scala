@@ -25,6 +25,7 @@ package scala.testing
  *  where `&lt;result&gt;` is the result of evaluating the call.
  *
  */
+@deprecated("This class will be removed.", "2.10.0")
 trait Show {
 
   /** An implicit definition that adds an apply method to Symbol which forwards to `test`. 

@@ -22,6 +22,7 @@ package scala.util.logging
   * }}}
   * and the logging is sent to the [[scala.util.logging.ConsoleLogger]] object.
   */
+@deprecated("This class will be removed.", "2.10.0")
 trait Logged {
   /** This method should log the message given as argument somewhere
    *  as a side-effect.
