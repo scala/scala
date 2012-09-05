@@ -14,7 +14,7 @@ object Test extends App {
   def test(f: Symbol) = {
     try {
       val fm: FieldMirror = im.reflectField(f.asTerm)
-      println(fm.symbol.isVariable)
+      println(fm.symbol.isVar)
       println(fm.get)
       fm.set(2)
       println(fm.get)

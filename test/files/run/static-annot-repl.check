@@ -13,7 +13,9 @@ scala> @static val x2 = 43
 x2: Int = 43
 
 scala> @static def x3 = 44
-x3: Int
+<console>:8: error: The @static annotation is not allowed on method definitions.
+       @static def x3 = 44
+                   ^
 
 scala> x1
 res0: Int = 42
@@ -22,11 +24,15 @@ scala> x2
 res1: Int = 43
 
 scala> x3
-res2: Int = 44
+<console>:9: error: not found: value x3
+              x3
+              ^
 
 scala> class Test {
   @static def x = 42
 }
-defined class Test
+<console>:9: error: The @static annotation is not allowed on method definitions.
+         @static def x = 42
+                     ^
 
 scala> 

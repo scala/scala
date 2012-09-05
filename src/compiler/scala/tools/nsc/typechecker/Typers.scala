@@ -233,10 +233,11 @@ trait Typers extends Modes with Adaptations with Tags {
      *  @param tree ...
      *  @return     ...
      */
-    def checkStable(tree: Tree): Tree =
+    def checkStable(tree: Tree): Tree = (
       if (treeInfo.isExprSafeToInline(tree)) tree
       else if (tree.isErrorTyped) tree
       else UnstableTreeError(tree)
+    )
 
     /** Would tree be a stable (i.e. a pure expression) if the type
      *  of its symbol was not volatile?
@@ -578,7 +579,7 @@ trait Typers extends Modes with Adaptations with Tags {
           // to notice exhaustiveness and to generate good code when
           // List extractors are mixed with :: patterns. See Test5 in lists.scala.
           def dealias(sym: Symbol) =
-            (atPos(tree.pos) {gen.mkAttributedRef(sym)}, sym.owner.thisType)
+            (atPos(tree.pos.makeTransparent) {gen.mkAttributedRef(sym)} setPos tree.pos, sym.owner.thisType)
           sym.name match {
             case nme.List => return dealias(ListModule)
             case nme.Seq  => return dealias(SeqModule)
@@ -885,7 +886,7 @@ trait Typers extends Modes with Adaptations with Tags {
         if (!meth.isConstructor && !meth.isTermMacro && isFunctionType(pt)) { // (4.2)
           debuglog("eta-expanding " + tree + ":" + tree.tpe + " to " + pt)
           checkParamsConvertible(tree, tree.tpe)
-          val tree0 = etaExpand(context.unit, tree)
+          val tree0 = etaExpand(context.unit, tree, this)
           // println("eta "+tree+" ---> "+tree0+":"+tree0.tpe+" undet: "+context.undetparams+ " mode: "+Integer.toHexString(mode))
 
           if (context.undetparams.nonEmpty) {
@@ -1056,7 +1057,7 @@ trait Typers extends Modes with Adaptations with Tags {
           case other =>
             other
         }
-        typed(atPos(tree.pos)(Select(qual, nme.apply)), mode, pt)
+        typed(atPos(tree.pos)(Select(qual setPos tree.pos.makeTransparent, nme.apply)), mode, pt)
       }
 
       // begin adapt
@@ -2528,7 +2529,7 @@ trait Typers extends Modes with Adaptations with Tags {
      *  @param pt   ...
      *  @return     ...
      */
-    def typedFunction(fun: Function, mode: Int, pt: Type): Tree = {
+    private def typedFunction(fun: Function, mode: Int, pt: Type): Tree = {
       val numVparams = fun.vparams.length
       if (numVparams > definitions.MaxFunctionArity)
         return MaxFunctionArityError(fun)
@@ -5221,7 +5222,10 @@ trait Typers extends Modes with Adaptations with Tags {
 
       def typedSingletonTypeTree(tree: SingletonTypeTree) = {
         val ref1 = checkStable(
-          typed(tree.ref, EXPRmode | QUALmode | (mode & TYPEPATmode), AnyRefClass.tpe))
+          context.withImplicitsDisabled(
+            typed(tree.ref, EXPRmode | QUALmode | (mode & TYPEPATmode), AnyRefClass.tpe)
+          )
+        )
         tree setType ref1.tpe.resultType
       }
 
@@ -5254,149 +5258,60 @@ trait Typers extends Modes with Adaptations with Tags {
           // whatever type to tree; we just have to survive until a real error message is issued.
           tree setType AnyClass.tpe
       }
+      def typedFunction(fun: Function) = {
+        if (fun.symbol == NoSymbol)
+          fun.symbol = context.owner.newAnonymousFunctionValue(fun.pos)
+
+        typerWithLocalContext(context.makeNewScope(fun, fun.symbol))(_.typedFunction(fun, mode, pt))
+      }
 
       // begin typed1
       //if (settings.debug.value && tree.isDef) log("typing definition of "+sym);//DEBUG
-
       tree match {
-        case tree: Ident =>
-          typedIdentOrWildcard(tree)
-
-        case tree: Select =>
-          typedSelectOrSuperCall(tree)
-
-        case tree: Apply =>
-          typedApply(tree)
-
-        case tree: TypeTree =>
-          typedTypeTree(tree)
-
-        case tree: Literal =>
-          typedLiteral(tree)
-
-        case tree: This =>
-          typedThis(tree)
-
-        case tree: ValDef =>
-          typedValDef(tree)
-
-        case tree: DefDef =>
-          // flag default getters for constructors. An actual flag would be nice. See SI-5543.
-          //val flag = ddef.mods.hasDefaultFlag && ddef.mods.hasFlag(PRESUPER)
-          defDefTyper(tree).typedDefDef(tree)
-
-        case tree: Block =>
-          typerWithLocalContext(context.makeNewScope(tree, context.owner)){
-            _.typedBlock(tree, mode, pt)
-          }
-
-        case tree: If =>
-          typedIf(tree)
-
-        case tree: TypeApply =>
-          typedTypeApply(tree)
-
-        case tree: AppliedTypeTree =>
-          typedAppliedTypeTree(tree)
-
-        case tree: Bind =>
-          typedBind(tree)
-
-        case tree: Function =>
-          if (tree.symbol == NoSymbol)
-            tree.symbol = context.owner.newAnonymousFunctionValue(tree.pos)
-          typerWithLocalContext(context.makeNewScope(tree, tree.symbol))(_.typedFunction(tree, mode, pt))
-
-        case tree: Match =>
-          typedVirtualizedMatch(tree)
-
-        case tree: New =>
-          typedNew(tree)
-
-        case Assign(lhs, rhs) =>
-          typedAssign(lhs, rhs)
-
-        case AssignOrNamedArg(lhs, rhs) => // called by NamesDefaults in silent typecheck
-          typedAssign(lhs, rhs)
-
-        case tree: Super =>
-          typedSuper(tree)
-
-        case tree: TypeBoundsTree =>
-          typedTypeBoundsTree(tree)
-
-        case tree: Typed =>
-          typedTyped(tree)
-
-        case tree: ClassDef =>
-          newTyper(context.makeNewScope(tree, sym)).typedClassDef(tree)
-
-        case tree: ModuleDef =>
-          newTyper(context.makeNewScope(tree, sym.moduleClass)).typedModuleDef(tree)
-
-        case tree: TypeDef =>
-          typedTypeDef(tree)
-
-        case tree: LabelDef =>
-          labelTyper(tree).typedLabelDef(tree)
-
-        case tree: PackageDef =>
-          typedPackageDef(tree)
-
-        case tree: DocDef =>
-         typedDocDef(tree)
-
-        case tree: Annotated =>
-          typedAnnotated(tree)
-
-        case tree: SingletonTypeTree =>
-          typedSingletonTypeTree(tree)
-
-        case tree: SelectFromTypeTree =>
-          typedSelectFromTypeTree(tree)
-
-        case tree: CompoundTypeTree =>
-          typedCompoundTypeTree(tree)
-
-        case tree: ExistentialTypeTree =>
-          typedExistentialTypeTree(tree)
-
-        case tree: Return =>
-          typedReturn(tree)
-
-        case tree: Try =>
-          typedTry(tree)
-
-        case tree: Throw =>
-          typedThrow(tree)
-
-        case tree: Alternative =>
-          typedAlternative(tree)
-
-        case tree: Star =>
-          typedStar(tree)
-
-        case tree: UnApply =>
-          typedUnApply(tree)
-
-        case tree: ArrayValue =>
-          typedArrayValue(tree)
-
-        case tree: ApplyDynamic =>
-          typedApplyDynamic(tree)
-
-        case tree: ReferenceToBoxed =>
-          typedReferenceToBoxed(tree)
-
-        case tree: TypeTreeWithDeferredRefCheck =>
-          tree // TODO: should we re-type the wrapped tree? then we need to change TypeTreeWithDeferredRefCheck's representation to include the wrapped tree explicitly (instead of in its closure)
-
-        case tree: Import =>
-          assert(forInteractive, "!forInteractive") // should not happen in normal circumstances.
-          tree setType tree.symbol.tpe
-
-        case _ =>
-          abort("unexpected tree: " + tree.getClass + "\n" + tree)//debug
+        case tree: Ident                        => typedIdentOrWildcard(tree)
+        case tree: Select                       => typedSelectOrSuperCall(tree)
+        case tree: Apply                        => typedApply(tree)
+        case tree: TypeTree                     => typedTypeTree(tree)
+        case tree: Literal                      => typedLiteral(tree)
+        case tree: This                         => typedThis(tree)
+        case tree: ValDef                       => typedValDef(tree)
+        case tree: DefDef                       => defDefTyper(tree).typedDefDef(tree)
+        case tree: Block                        => typerWithLocalContext(context.makeNewScope(tree, context.owner))(_.typedBlock(tree, mode, pt))
+        case tree: If                           => typedIf(tree)
+        case tree: TypeApply                    => typedTypeApply(tree)
+        case tree: AppliedTypeTree              => typedAppliedTypeTree(tree)
+        case tree: Bind                         => typedBind(tree)
+        case tree: Function                     => typedFunction(tree)
+        case tree: Match                        => typedVirtualizedMatch(tree)
+        case tree: New                          => typedNew(tree)
+        case tree: Assign                       => typedAssign(tree.lhs, tree.rhs)
+        case tree: AssignOrNamedArg             => typedAssign(tree.lhs, tree.rhs) // called by NamesDefaults in silent typecheck
+        case tree: Super                        => typedSuper(tree)
+        case tree: TypeBoundsTree               => typedTypeBoundsTree(tree)
+        case tree: Typed                        => typedTyped(tree)
+        case tree: ClassDef                     => newTyper(context.makeNewScope(tree, sym)).typedClassDef(tree)
+        case tree: ModuleDef                    => newTyper(context.makeNewScope(tree, sym.moduleClass)).typedModuleDef(tree)
+        case tree: TypeDef                      => typedTypeDef(tree)
+        case tree: LabelDef                     => labelTyper(tree).typedLabelDef(tree)
+        case tree: PackageDef                   => typedPackageDef(tree)
+        case tree: DocDef                       => typedDocDef(tree)
+        case tree: Annotated                    => typedAnnotated(tree)
+        case tree: SingletonTypeTree            => typedSingletonTypeTree(tree)
+        case tree: SelectFromTypeTree           => typedSelectFromTypeTree(tree)
+        case tree: CompoundTypeTree             => typedCompoundTypeTree(tree)
+        case tree: ExistentialTypeTree          => typedExistentialTypeTree(tree)
+        case tree: Return                       => typedReturn(tree)
+        case tree: Try                          => typedTry(tree)
+        case tree: Throw                        => typedThrow(tree)
+        case tree: Alternative                  => typedAlternative(tree)
+        case tree: Star                         => typedStar(tree)
+        case tree: UnApply                      => typedUnApply(tree)
+        case tree: ArrayValue                   => typedArrayValue(tree)
+        case tree: ApplyDynamic                 => typedApplyDynamic(tree)
+        case tree: ReferenceToBoxed             => typedReferenceToBoxed(tree)
+        case tree: TypeTreeWithDeferredRefCheck => tree // TODO: retype the wrapped tree? TTWDRC would have to change to hold the wrapped tree (not a closure)
+        case tree: Import                       => assert(forInteractive, "!forInteractive") ; tree setType tree.symbol.tpe // should not happen in normal circumstances.
+        case _                                  => abort(s"unexpected tree: ${tree.getClass}\n$tree")
       }
     }
 

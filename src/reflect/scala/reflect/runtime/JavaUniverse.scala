@@ -8,8 +8,6 @@ import internal.{SomePhase, NoPhase, Phase, TreeGen}
  */
 class JavaUniverse extends internal.SymbolTable with ReflectSetup with runtime.SymbolTable { self =>
 
-  type AbstractFileType = AbstractFile
-
   def picklerPhase = SomePhase
 
   lazy val settings = new Settings
