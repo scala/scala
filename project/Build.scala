@@ -215,7 +215,7 @@ object ScalaBuild extends Build with Layers with Packaging with Testing {
 
   lazy val scalacheck = Project("scalacheck", file(".")) settings(compilerDependentProjectSettings:_*) dependsOn(actors % "provided")
   lazy val partestSettings = compilerDependentProjectSettings :+ externalDeps
-  lazy val partest = Project("partest", file(".")) settings(partestSettings:_*)  dependsOn(actors,forkjoin,scalap)
+  lazy val partest = Project("partest", file(".")) settings(partestSettings:_*)  dependsOn(actors,forkjoin,scalap,asm)
   lazy val scalapSettings = compilerDependentProjectSettings ++ Seq(
     name := "scalap",
     exportJars := true

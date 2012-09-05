@@ -1,0 +1,4 @@
+().dingo(bippy, 5)
+List(1, 2, 3).dingo(bippy, 5)
+().dingo(bippy, 5)
+List(1, 2, 3).dingo(bippy, 5)

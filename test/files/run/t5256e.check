@@ -1,6 +1,6 @@
 class A
 Test.C.A
 Object {
-  def <init>: <?>
-  def foo: <?>
+  def <init>(): C.this.A
+  def foo: Nothing
 }

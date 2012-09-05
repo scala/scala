@@ -1,12 +1,12 @@
 class A1
 Test.A1
 Object {
-  def <init>: <?>
-  def foo: <?>
+  def <init>(): Test.A1
+  def foo: Nothing
 }
 class A2
 Test.A2
 Object {
-  def <init>: <?>
-  def foo: <?>
+  def <init>(): Test.this.A2
+  def foo: Nothing
 }
