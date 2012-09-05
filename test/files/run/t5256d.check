@@ -23,8 +23,8 @@ $line8.$read.$iw.$iw.$iw.$iw.A
 
 scala> println(c.typeSignature)
 java.lang.Object {
-  def <init>: <?>
-  def foo: <?>
+  def <init>(): A
+  def foo: scala.Nothing
 }
 
 scala> 

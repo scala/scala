@@ -34,7 +34,7 @@ object SBTRunner extends DirectRunner {
                                 scalacOptions: Seq[String] = Seq(),
                                 justFailedTests: Boolean = false)
 
-  def mainReflect(args: Array[String]): java.util.Map[String, TestState] = {
+  def mainReflect(args: Array[String]): java.util.Map[String, String] = {
     setProp("partest.debug", "true")
 
     val Argument = new scala.util.matching.Regex("-(.*)")
@@ -73,9 +73,13 @@ object SBTRunner extends DirectRunner {
     (for {
      (testType, files) <- runs
      (path, result) <- reflectiveRunTestsForFiles(files,testType).asScala
-    } yield (path, result)).seq.asJava
+    } yield (path, fixResult(result))).seq.asJava
   }
-
+  def fixResult(result: TestState): String = result match {
+    case TestState.Ok => "OK"
+    case TestState.Fail => "FAIL"
+    case TestState.Timeout => "TIMEOUT"
+  }
   def main(args: Array[String]): Unit = {
     val failures = (
       for ((path, result) <- mainReflect(args).asScala ; if result != TestState.Ok) yield

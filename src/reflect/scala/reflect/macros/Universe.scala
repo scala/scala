@@ -24,6 +24,12 @@ abstract class Universe extends scala.reflect.api.Universe {
    */
   trait SymbolContextApi extends SymbolApi with AttachableApi { self: Symbol =>
 
+    def deSkolemize: Symbol
+
+    /** The position of this symbol
+     */
+    def pos: Position
+
     def setTypeSignature(tpe: Type): Symbol
 
     def setAnnotations(annots: AnnotationInfo*): Symbol

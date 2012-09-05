@@ -37,7 +37,7 @@ trait ExprTyper {
   }
 
   /** Parse a line into a sequence of trees. Returns None if the input is incomplete. */
-  def parse(line: String): Option[List[Tree]] = {
+  def parse(line: String): Option[List[Tree]] = debugging(s"""parse("$line")""")  {
     var isIncomplete = false
     reporter.withIncompleteHandler((_, _) => isIncomplete = true) {
       val trees = codeParser.stmts(line)

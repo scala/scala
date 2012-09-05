@@ -13,7 +13,10 @@ static-annot.scala:38: error: The @static annotation is only allowed on public m
 static-annot.scala:39: error: The @static annotation is not allowed on lazy members.
   @static lazy val bam = 3
                    ^
+static-annot.scala:52: error: The @static annotation is not allowed on method definitions.
+  @static def x = 42
+              ^
 static-annot.scala:14: error: Only members of top-level objects and their nested objects can be annotated with @static.
     @static val blah = 2
                 ^
-6 errors found
+7 errors found

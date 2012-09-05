@@ -10,6 +10,5 @@ B.scala:2: error: type mismatch;
  found   : a.T2
     (which expands to)  Long
  required: Int
- possible cause: missing arguments for method or constructor
   def x(a: A): Int = a.x
                        ^

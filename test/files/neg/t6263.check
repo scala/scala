@@ -1,0 +1,9 @@
+t6263.scala:5: error: type mismatch;
+ found   : A.this.c.type (with underlying type C)
+ required: AnyRef
+Note that C extends Any, not AnyRef.
+Such types can participate in value classes, but instances
+cannot appear in singleton types or in reference comparisons.
+  type t = c.type
+           ^
+one error found
