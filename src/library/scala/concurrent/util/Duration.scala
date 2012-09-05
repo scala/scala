@@ -10,20 +10,25 @@ package scala.concurrent.util
 
 import java.util.concurrent.TimeUnit
 import TimeUnit._
-import java.lang.{ Double => JDouble }
+import java.lang.{ Double => JDouble, Long => JLong }
 import language.implicitConversions
 
-case class Deadline private (time: Duration) {
+case class Deadline private (time: Duration) extends Ordered[Deadline] {
   def +(other: Duration): Deadline = copy(time = time + other)
   def -(other: Duration): Deadline = copy(time = time - other)
   def -(other: Deadline): Duration = time - other.time
   def timeLeft: Duration = this - Deadline.now
   def hasTimeLeft(): Boolean = !isOverdue()
   def isOverdue(): Boolean = (time.toNanos - System.nanoTime()) < 0
+  def compare(other: Deadline) = time compare other.time
 }
 
 object Deadline {
   def now: Deadline = Deadline(Duration(System.nanoTime, NANOSECONDS))
+
+  implicit object DeadlineIsOrdered extends Ordering[Deadline] {
+    def compare(a: Deadline, b: Deadline) = a compare b
+  }
 }
 
 // TODO: "Inf", "PlusInf", "MinusInf", where did these names come from?
@@ -48,9 +53,12 @@ object Duration {
       case "MinusInf" | "-Inf"        => MinusInf
       case _                          =>
         val unitName = s1.reverse takeWhile (_.isLetter) reverse;
-        def length   = JDouble.parseDouble(s1 dropRight unitName.length)
         timeUnit get unitName match {
-          case Some(unit) => Duration(length, unit)
+          case Some(unit) =>
+            val valueStr = s1 dropRight unitName.length
+            val valueD = JDouble.parseDouble(valueStr)
+            if (valueD <= 9007199254740992d && valueD >= -9007199254740992d) Duration(valueD, unit)
+            else Duration(JLong.parseLong(valueStr), unit)
           case _          => sys.error("format error " + s)
         }
     }
@@ -86,8 +94,11 @@ object Duration {
   def unapply(d: Duration): Option[(Long, TimeUnit)] =
     if (d.isFinite) Some((d.length, d.unit)) else None
 
-  def fromNanos(nanos: Double): FiniteDuration =
+  def fromNanos(nanos: Double): FiniteDuration = {
+    if (nanos > Long.MaxValue || nanos < Long.MinValue)
+      throw new IllegalArgumentException("trying to construct too large duration with " + nanos + "ns")
     fromNanos((nanos + 0.5).toLong)
+  }
 
   def fromNanos(nanos: Long): FiniteDuration = {
     if (nanos % 86400000000000L == 0) {
@@ -137,8 +148,12 @@ object Duration {
       if (other ne this) this
       else throw new IllegalArgumentException("illegal subtraction of infinities")
 
-    def *(factor: Double): Duration = this
-    def /(factor: Double): Duration = this
+    private def mult(f: Double) =
+      if (f == 0d) fail("multiply by zero")
+      else if (f < 0d) -this
+      else this
+    def *(factor: Double): Duration = mult(factor)
+    def /(factor: Double): Duration = mult(factor)
     def /(other: Duration): Double = other match {
       case _: Infinite => throw new IllegalArgumentException("illegal division of infinities")
       // maybe questionable but pragmatic: Inf / 0 => Inf
@@ -273,6 +288,23 @@ object FiniteDuration {
 class FiniteDuration(val length: Long, val unit: TimeUnit) extends Duration {
   import Duration._
 
+  require(unit match {
+      /*
+       * sorted so that the first cases should be most-used ones, because enum
+       * is checked one after the other.
+       */
+      case NANOSECONDS  ⇒ true
+      case MICROSECONDS ⇒ length <= 9223372036854775L && length >= -9223372036854775L
+      case MILLISECONDS ⇒ length <= 9223372036854L && length >= -9223372036854L
+      case SECONDS      ⇒ length <= 9223372036L && length >= -9223372036L
+      case MINUTES      ⇒ length <= 153722867L && length >= -153722867L
+      case HOURS        ⇒ length <= 2562047L && length >= -2562047L
+      case DAYS         ⇒ length <= 106751L && length >= -106751L
+      case _ ⇒
+        val v = unit.convert(length, DAYS)
+        v <= 106751L && v >= -106751L
+    }, "Duration is limited to 2^63ns (ca. 292 years)")
+
   def toNanos   = unit.toNanos(length)
   def toMicros  = unit.toMicros(length)
   def toMillis  = unit.toMillis(length)
@@ -289,12 +321,19 @@ class FiniteDuration(val length: Long, val unit: TimeUnit) extends Duration {
     case x: FiniteDuration => toNanos compare x.toNanos
     case _                 => -(other compare this)
   }
+
+  private def add(a: Long, b: Long): Long = {
+    val c = a + b
+    // check if the signs of the top bit of both summands differ from the sum
+    if (((a ^ c) & (b ^ c)) < 0) throw new IllegalArgumentException("integer overflow")
+    else c
+  }
   def +(other: Duration) = other match {
-    case x: FiniteDuration => fromNanos(toNanos + x.toNanos)
+    case x: FiniteDuration => fromNanos(add(toNanos, x.toNanos))
     case _                 => other
   }
   def -(other: Duration) = other match {
-    case x: FiniteDuration => fromNanos(toNanos - x.toNanos)
+    case x: FiniteDuration => fromNanos(add(toNanos, -x.toNanos))
     case _                 => other
   }
 
@@ -303,6 +342,16 @@ class FiniteDuration(val length: Long, val unit: TimeUnit) extends Duration {
   def /(factor: Double) = fromNanos(toNanos.toDouble / factor)
 
   def /(other: Duration) = if (other.isFinite) toNanos.toDouble / other.toNanos else 0
+
+  // overridden methods taking FiniteDurations, so that you can calculate while statically staying finite
+  def +(other: FiniteDuration) = fromNanos(add(toNanos, other.toNanos))
+  def -(other: FiniteDuration) = fromNanos(add(toNanos, -other.toNanos))
+  def plus(other: FiniteDuration) = this + other
+  def minus(other: FiniteDuration) = this - other
+  override def div(factor: Double) = this / factor
+  override def mul(factor: Double) = this * factor
+  def min(other: FiniteDuration) = if (this < other) this else other
+  def max(other: FiniteDuration) = if (this > other) this else other
 
   def unary_- = Duration(-length, unit)
 
