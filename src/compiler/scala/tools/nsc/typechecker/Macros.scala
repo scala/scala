@@ -630,7 +630,7 @@ trait Macros extends scala.tools.reflect.FastTrack with Traces {
                 macroDef.owner)
           } else
             targ.tpe
-          if (tpe.isConcrete) context.TypeTag(tpe) else context.AbsTypeTag(tpe)
+          context.AbsTypeTag(tpe)
         })
         macroTraceVerbose("tags: ")(tags)
 
