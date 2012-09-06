@@ -176,13 +176,13 @@ object ManifestFactory {
     private def readResolve(): Any = Manifest.AnyVal
   }
 
-  val Null: Manifest[scala.Null] = new PhantomManifest[scala.Null](ObjectTYPE, "Null") {
+  val Null: Manifest[scala.Null] = new PhantomManifest[scala.Null](NullTYPE, "Null") {
     override def <:<(that: ClassManifest[_]): Boolean =
       (that ne null) && (that ne Nothing) && !(that <:< AnyVal)
     private def readResolve(): Any = Manifest.Null
   }
 
-  val Nothing: Manifest[scala.Nothing] = new PhantomManifest[scala.Nothing](ObjectTYPE, "Nothing") {
+  val Nothing: Manifest[scala.Nothing] = new PhantomManifest[scala.Nothing](NothingTYPE, "Nothing") {
     override def <:<(that: ClassManifest[_]): Boolean = (that ne null)
     private def readResolve(): Any = Manifest.Nothing
   }
@@ -217,8 +217,8 @@ object ManifestFactory {
   def classType[T](prefix: Manifest[_], clazz: Predef.Class[_], args: Manifest[_]*): Manifest[T] =
     new ClassTypeManifest[T](Some(prefix), clazz, args.toList)
 
-  private abstract class PhantomManifest[T](override val runtimeClass: Predef.Class[_],
-                                            override val toString: String) extends ClassTypeManifest[T](None, runtimeClass, Nil) {
+  private abstract class PhantomManifest[T](_runtimeClass: Predef.Class[_],
+                                            override val toString: String) extends ClassTypeManifest[T](None, _runtimeClass, Nil) {
     override def equals(that: Any): Boolean = this eq that.asInstanceOf[AnyRef]
     override val hashCode = System.identityHashCode(this)
   }

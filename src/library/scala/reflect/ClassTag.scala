@@ -2,7 +2,7 @@ package scala.reflect
 
 import java.lang.{ Class => jClass }
 import language.{implicitConversions, existentials}
-import scala.runtime.ScalaRunTime.{ arrayClass }
+import scala.runtime.ScalaRunTime.{ arrayClass, arrayElementClass }
 
 /** A `ClassTag[T]` wraps a runtime class, which can be accessed via the `runtimeClass` method.
  *
@@ -60,7 +60,12 @@ trait ClassTag[T] extends ClassManifestDeprecatedApis[T] with Equals with Serial
   override def canEqual(x: Any) = x.isInstanceOf[ClassTag[_]]
   override def equals(x: Any) = x.isInstanceOf[ClassTag[_]] && this.runtimeClass == x.asInstanceOf[ClassTag[_]].runtimeClass
   override def hashCode = scala.runtime.ScalaRunTime.hash(runtimeClass)
-  override def toString = "ClassTag[" + runtimeClass + "]"
+  override def toString = {
+    def prettyprint(clazz: jClass[_]): String =
+      if (clazz.isArray) s"Array[${prettyprint(arrayElementClass(clazz))}]" else
+      clazz.getName
+    prettyprint(runtimeClass)
+  }
 }
 
 object ClassTag {
