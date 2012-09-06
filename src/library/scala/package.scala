@@ -34,9 +34,6 @@ package object scala {
     override def toString = "object AnyRef"
   }
 
-  @deprecated("instead of `@serializable class C`, use `class C extends Serializable`", "2.9.0")
-  type serializable = annotation.serializable
-
   @deprecated("instead of `@cloneable class C`, use `class C extends Cloneable`", "2.10.0")
   type cloneable = annotation.cloneable
 
