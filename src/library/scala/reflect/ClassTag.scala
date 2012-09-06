@@ -54,7 +54,26 @@ trait ClassTag[T] extends ClassManifestDeprecatedApis[T] with Equals with Serial
    * `SomeExtractor(...)` is turned into `ct(SomeExtractor(...))` if `T` in `SomeExtractor.unapply(x: T)`
    * is uncheckable, but we have an instance of `ClassTag[T]`.
    */
-  def unapply(x: Any): Option[T] = if (x != null && runtimeClass.isAssignableFrom(x.getClass)) Some(x.asInstanceOf[T]) else None
+  def unapply(x: Any): Option[T] = unapply_impl(x)
+  def unapply(x: Byte): Option[T] = unapply_impl(x)
+  def unapply(x: Short): Option[T] = unapply_impl(x)
+  def unapply(x: Char): Option[T] = unapply_impl(x)
+  def unapply(x: Int): Option[T] = unapply_impl(x)
+  def unapply(x: Long): Option[T] = unapply_impl(x)
+  def unapply(x: Float): Option[T] = unapply_impl(x)
+  def unapply(x: Double): Option[T] = unapply_impl(x)
+  def unapply(x: Boolean): Option[T] = unapply_impl(x)
+  def unapply(x: Unit): Option[T] = unapply_impl(x)
+
+  private def unapply_impl[U: ClassTag](x: U): Option[T] =
+    if (x == null) None
+    else {
+      val staticClass = classTag[U].runtimeClass
+      val dynamicClass = x.getClass
+      val effectiveClass = if (staticClass.isPrimitive) staticClass else dynamicClass
+      val conforms = runtimeClass.isAssignableFrom(effectiveClass)
+      if (conforms) Some(x.asInstanceOf[T]) else None
+    }
 
   /** case class accessories */
   override def canEqual(x: Any) = x.isInstanceOf[ClassTag[_]]
