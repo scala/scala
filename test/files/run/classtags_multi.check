@@ -1,5 +1,5 @@
-ClassTag[int]
-ClassTag[class [I]
-ClassTag[class [[I]
-ClassTag[class [[[I]
-ClassTag[class [[[[I]
+Int
+Array[int]
+Array[Array[int]]
+Array[Array[Array[int]]]
+Array[Array[Array[Array[int]]]]
