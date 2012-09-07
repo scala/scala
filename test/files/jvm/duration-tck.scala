@@ -88,6 +88,7 @@ object Test extends App {
 
   inputs filterNot (_.isFinite) foreach (x => x / zero mustBe x.toUnit(DAYS))
   inputs filterNot (_.isFinite) foreach (_ * 0d mustBe undef)
+  inputs filterNot (_.isFinite) foreach (_ * -0d mustBe undef)
   inputs filterNot (_.isFinite) foreach (x => x * Double.PositiveInfinity mustBe x)
   inputs filterNot (_.isFinite) foreach (x => x * Double.NegativeInfinity mustBe -x)
 
@@ -112,7 +113,13 @@ object Test extends App {
   inputs foreach (undef + _ mustBe undef)
   inputs foreach (undef - _ mustBe undef)
   inputs foreach (undef / _ mustBe nan)
-  inputs filter (_.isFinite) foreach (x => x / zero mustBe x.toUnit(SECONDS) / 0d)
+  undef / 1 mustBe undef
+  undef / nan mustBe undef
+  undef * 1 mustBe undef
+  undef * nan mustBe undef
+  inputs foreach (x => x / zero mustBe x.toUnit(SECONDS) / 0d)
+  inputs foreach (x => x / 0d mustBe Duration.fromNanos(x.toUnit(NANOSECONDS) / 0d))
+  inputs foreach (x => x / -0d mustBe Duration.fromNanos(x.toUnit(NANOSECONDS) / -0d))
 
   inputs filterNot (_ eq undef) foreach (_ compareTo undef mustBe -1)
   inputs filterNot (_ eq undef) foreach (undef compareTo _ mustBe 1)
@@ -170,12 +177,11 @@ object Test extends App {
   // test Deadline
   val dead = 2.seconds.fromNow
   val dead2 = 2 seconds fromNow
-  // view bounds vs. very local type inference vs. operator precedence: sigh
-  assert(dead.timeLeft > (1 second: Duration))
-  assert(dead2.timeLeft > (1 second: Duration))
+  assert(dead.timeLeft > 1.second)
+  assert(dead2.timeLeft > 1.second)
   Thread.sleep(1.second.toMillis)
-  assert(dead.timeLeft < (1 second: Duration))
-  assert(dead2.timeLeft < (1 second: Duration))
+  assert(dead.timeLeft < 1.second)
+  assert(dead2.timeLeft < 1.second)
   
 
   // check statically retaining finite-ness
