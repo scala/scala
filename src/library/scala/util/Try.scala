@@ -157,11 +157,10 @@ object Try {
    * method will ensure any non-fatal exception is caught and a
    * `Failure` object is returned.
    */
-  def apply[T](r: => T): Try[T] = {
-    try { Success(r) } catch {
+  def apply[T](r: => T): Try[T] =
+    try Success(r) catch {
       case NonFatal(e) => Failure(e)
     }
-  }
 
 }
 
@@ -175,18 +174,16 @@ final case class Failure[+T](val exception: Throwable) extends Try[T] {
       case NonFatal(e) => Failure(e)
     }
   def get: T = throw exception
-  def flatMap[U](f: T => Try[U]): Try[U] = Failure[U](exception)
-  def flatten[U](implicit ev: T <:< Try[U]): Try[U] = Failure[U](exception)
+  def flatMap[U](f: T => Try[U]): Try[U] = this.asInstanceOf[Try[U]]
+  def flatten[U](implicit ev: T <:< Try[U]): Try[U] = this.asInstanceOf[Try[U]]
   def foreach[U](f: T => U): Unit = ()
-  def map[U](f: T => U): Try[U] = Failure[U](exception)
+  def map[U](f: T => U): Try[U] = this.asInstanceOf[Try[U]]
   def filter(p: T => Boolean): Try[T] = this
   def recover[U >: T](rescueException: PartialFunction[Throwable, U]): Try[U] =
     try {
       if (rescueException isDefinedAt exception) {
         Try(rescueException(exception))
-      } else {
-        this
-      }
+      } else this
     } catch {
       case NonFatal(e) => Failure(e)
     }
@@ -197,7 +194,7 @@ final case class Failure[+T](val exception: Throwable) extends Try[T] {
 final case class Success[+T](value: T) extends Try[T] {
   def isFailure: Boolean = false
   def isSuccess: Boolean = true
-  def recoverWith[U >: T](f: PartialFunction[Throwable, Try[U]]): Try[U] = Success(value)
+  def recoverWith[U >: T](f: PartialFunction[Throwable, Try[U]]): Try[U] = this
   def get = value
   def flatMap[U](f: T => Try[U]): Try[U] =
     try f(value)
