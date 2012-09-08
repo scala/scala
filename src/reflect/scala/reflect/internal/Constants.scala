@@ -83,8 +83,16 @@ trait Constants extends api.Constants {
      */
     override def equals(other: Any): Boolean = other match {
       case that: Constant =>
-        this.tag == that.tag &&
-        (this.value == that.value || this.isNaN && that.isNaN)
+        // Consider two NaNs to be identical, despite non-equality
+        // Consider -0d to be distinct from 0d, despite equality
+        import java.lang.Double.doubleToRawLongBits
+        import java.lang.Float.floatToRawIntBits
+
+        this.tag == that.tag && ((value, that.value) match {
+          case (f1: Float, f2: Float)   => floatToRawIntBits(f1) == floatToRawIntBits(f2)
+          case (d1: Double, d2: Double) => doubleToRawLongBits(d1) == doubleToRawLongBits(d2)
+          case (v1, v2)                 => v1 == v2
+        })
       case _ => false
     }
 
