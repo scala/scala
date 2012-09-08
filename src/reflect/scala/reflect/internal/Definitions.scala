@@ -277,6 +277,7 @@ trait Definitions extends api.StandardDefinitions {
       anyval
     }).asInstanceOf[ClassSymbol]
     lazy val AnyValTpe  = definitions.AnyValClass.toTypeConstructor
+      def AnyVal_getClass = getMemberMethod(AnyValClass, nme.getClass_)
 
     // bottom types
     lazy val RuntimeNothingClass  = getClassByName(fulltpnme.RuntimeNothing)
