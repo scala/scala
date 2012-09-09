@@ -369,7 +369,7 @@ trait MethodSynthesis {
     }
 
     /** A synthetic method which performs the implicit conversion implied by
-     *  the declaration of an implicit class.  Yet to be written.
+     *  the declaration of an implicit class.
      */
     case class ImplicitClassWrapper(tree: ClassDef) extends DerivedFromClassDef {
       def completer(sym: Symbol): Type = ??? // not needed
@@ -377,7 +377,7 @@ trait MethodSynthesis {
       def derivedSym: Symbol = {
         // Only methods will do! Don't want to pick up any stray
         // companion objects of the same name.
-        val result = enclClass.info decl name suchThat (_.isMethod)
+        val result = enclClass.info decl name suchThat (x => x.isMethod && x.isSynthetic)
         assert(result != NoSymbol, "not found: "+name+" in "+enclClass+" "+enclClass.info.decls)
         result
       }
