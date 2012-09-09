@@ -205,12 +205,12 @@ object Duration {
       fromNanos((nanos + 0.5).toLong)
   }
 
-  private val  µs_per_ns = 1000L
-  private val  ms_per_ns =  µs_per_ns * 1000
-  private val   s_per_ns =  ms_per_ns * 1000
-  private val min_per_ns =   s_per_ns * 60
-  private val   h_per_ns = min_per_ns * 60
-  private val   d_per_ns =   h_per_ns * 24
+  private final val  µs_per_ns = 1000L
+  private final val  ms_per_ns =  µs_per_ns * 1000
+  private final val   s_per_ns =  ms_per_ns * 1000
+  private final val min_per_ns =   s_per_ns * 60
+  private final val   h_per_ns = min_per_ns * 60
+  private final val   d_per_ns =   h_per_ns * 24
 
   /**
    * Construct a finite duration from the given number of nanoseconds. The
@@ -620,16 +620,15 @@ class FiniteDuration(val length: Long, val unit: TimeUnit) extends Duration {
 
   require(unit match {
       /*
-       * sorted so that the first cases should be most-used ones, because enum
-       * is checked one after the other.
+       * enforce the 2^63-1 ns limit, must be pos/neg symmetrical because of unary_-
        */
-      case NANOSECONDS  ⇒ length != Long.MinValue
-      case MICROSECONDS ⇒ length <= 9223372036854775L && length >= -9223372036854775L
-      case MILLISECONDS ⇒ length <= 9223372036854L && length >= -9223372036854L
-      case SECONDS      ⇒ length <= 9223372036L && length >= -9223372036L
-      case MINUTES      ⇒ length <= 153722867L && length >= -153722867L
-      case HOURS        ⇒ length <= 2562047L && length >= -2562047L
-      case DAYS         ⇒ length <= 106751L && length >= -106751L
+      case NANOSECONDS  ⇒ length != Long.MinValue                                     // max_ns = Long.MaxValue
+      case MICROSECONDS ⇒ length <= 9223372036854775L && length >= -9223372036854775L // max_µs = max_ns / 1000
+      case MILLISECONDS ⇒ length <= 9223372036854L && length >= -9223372036854L       // max_ms = max_µs / 1000
+      case SECONDS      ⇒ length <= 9223372036L && length >= -9223372036L             // max_s  = max_ms / 1000
+      case MINUTES      ⇒ length <= 153722867L && length >= -153722867L               // max_min= max_s  / 60
+      case HOURS        ⇒ length <= 2562047L && length >= -2562047L                   // max_h  = max_min/ 60
+      case DAYS         ⇒ length <= 106751L && length >= -106751L                     // max_d  = max_h  / 24
       case _ ⇒
         val v = DAYS.convert(length, unit)
         v <= 106751L && v >= -106751L
