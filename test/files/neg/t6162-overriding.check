@@ -1,4 +1,7 @@
-t6162-overriding.scala:7: error: method bar in class SubBar overrides method bar in class Bar, but overriding this member is deprecated: `bar` will be made private in a future version.
+t6162-overriding.scala:14: error: overriding method bar in class Bar is deprecated: `bar` will be made private in a future version.
   override def bar = 43
                ^
-one error found
+t6162-overriding.scala:15: error: overriding method baz in class Bar is deprecated
+  override def baz = 43
+               ^
+two errors found

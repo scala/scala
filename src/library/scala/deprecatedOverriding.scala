@@ -15,5 +15,7 @@ package scala
  *  @param  message the message to print during compilation if the member was overridden
  *  @param  since   a string identifying the first version in which overriding was deprecated
  *  @since  2.10
+ *  @see    [[scala.deprecatedInheritance]]
  */
+private[scala] // for the same reasons as deprecatedInheritance
 class deprecatedOverriding(message: String = "", since: String = "") extends annotation.StaticAnnotation

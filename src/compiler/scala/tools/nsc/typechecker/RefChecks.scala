@@ -512,10 +512,8 @@ abstract class RefChecks extends InfoTransform with reflect.internal.transform.R
         
         def checkOverrideDeprecated() {
           if (other.hasDeprecatedOverridingAnnotation) {
-            val msg = 
-              member.toString + member.locationString + " overrides " + other.toString + other.locationString + 
-              ", but overriding this member is deprecated" + 
-              other.deprecatedOverridingMessage.map(": " + _).getOrElse(".")
+            val suffix = other.deprecatedOverridingMessage map (": " + _) getOrElse ""
+            val msg = s"overriding ${other.fullLocationString} is deprecated$suffix"
             unit.deprecationWarning(member.pos, msg)
           }
         }
