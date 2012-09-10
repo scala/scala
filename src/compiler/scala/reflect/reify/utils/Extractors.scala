@@ -176,12 +176,11 @@ trait Extractors {
           List(
             _,
             _,
-            binding,
             Apply(Select(Select(uref2 @ Ident(_), build2), flagsFromBits), List(Literal(Constant(flags: Long)))),
             Literal(Constant(origin: String)))))
       if uref1.name == nme.UNIVERSE_SHORT && build1 == nme.build && newFreeTerm == nme.newFreeTerm &&
          uref2.name == nme.UNIVERSE_SHORT && build2 == nme.build && flagsFromBits == nme.flagsFromBits =>
-        Some(uref1, name, binding, flags, origin)
+        Some(uref1, name, reifyBinding(tree), flags, origin)
       case _ =>
         None
     }
@@ -194,22 +193,11 @@ trait Extractors {
           Select(Select(uref1 @ Ident(_), build1), newFreeType),
           List(
             _,
-            _,
-            value,
             Apply(Select(Select(uref2 @ Ident(_), build2), flagsFromBits), List(Literal(Constant(flags: Long)))),
             Literal(Constant(origin: String)))))
       if uref1.name == nme.UNIVERSE_SHORT && build1 == nme.build && newFreeType == nme.newFreeType &&
          uref2.name == nme.UNIVERSE_SHORT && build2 == nme.build && flagsFromBits == nme.flagsFromBits =>
-        value match {
-          case Apply(TypeApply(Select(Select(uref3 @ Ident(_), typeTag), apply), List(binding)), List(Literal(Constant(null)), _))
-          if uref3.name == nme.UNIVERSE_SHORT && typeTag == nme.TypeTag && apply == nme.apply =>
-            Some(uref1, name, binding, flags, origin)
-          case Apply(TypeApply(Select(uref3 @ Ident(_), typeTag), List(binding)), List(Literal(Constant(null)), _))
-          if uref3.name == nme.UNIVERSE_SHORT && typeTag == nme.TypeTag =>
-            Some(uref1, name, binding, flags, origin)
-          case _ =>
-            throw new Error("unsupported free type def: %s%n%s".format(value, showRaw(value)))
-        }
+        Some(uref1, name, reifyBinding(tree), flags, origin)
       case _ =>
         None
     }
