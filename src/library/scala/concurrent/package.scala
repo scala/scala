@@ -74,8 +74,10 @@ package concurrent {
      * @param awaitable   the `Awaitable` on which `ready` is to be called
      * @param atMost      the maximum timeout for which to wait
      * @return            the result of `awaitable.ready` which is defined to be the awaitable itself.
+     * @throws InterruptedException if the wait call was interrupted
      */
     @throws(classOf[TimeoutException])
+    @throws(classOf[InterruptedException])
     def ready[T](awaitable: Awaitable[T], atMost: Duration): awaitable.type =
       blocking(awaitable.ready(atMost)(AwaitPermission))
     
@@ -87,6 +89,7 @@ package concurrent {
      * @param awaitable   the `Awaitable` on which `result` is to be called
      * @param atMost      the maximum timeout for which to wait
      * @return            the result of `awaitable.result`
+     * @throws InterruptedException if the wait call was interrupted
      */
     @throws(classOf[Exception])
     def result[T](awaitable: Awaitable[T], atMost: Duration): T =

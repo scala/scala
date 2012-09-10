@@ -65,29 +65,44 @@ private[concurrent] object Promise {
     protected final def tryAwait(atMost: Duration): Boolean = {
       @tailrec
       def awaitUnsafe(waitTimeNanos: Long): Boolean = {
-        if (value.isEmpty && waitTimeNanos > 0) {
+        if (!isCompleted && waitTimeNanos > 0) {
           val ms = NANOSECONDS.toMillis(waitTimeNanos)
           val ns = (waitTimeNanos % 1000000l).toInt // as per object.wait spec
           val start = System.nanoTime()
-          try {
-            synchronized {
-              if (!isCompleted) wait(ms, ns) // previously - this was a `while`, ending up in an infinite loop
-            }
-          } catch {
-            case e: InterruptedException =>
+          synchronized {
+            if (!isCompleted) wait(ms, ns) // previously - this was a `while`, ending up in an infinite loop
           }
 
           awaitUnsafe(waitTimeNanos - (System.nanoTime() - start))
         } else
           isCompleted
       }
-      awaitUnsafe(if (atMost.isFinite) atMost.toNanos else Long.MaxValue)
+      @tailrec
+      def awaitUnbounded(): Boolean = {
+        if (isCompleted) true
+        else {
+          synchronized {
+            if (!isCompleted) wait()
+          }
+          awaitUnbounded()
+        }
+      }
+
+      if (atMost <= Duration.Zero)
+        isCompleted
+      else if (atMost eq Duration.Undefined)
+        throw new IllegalArgumentException("cannot wait for Undefined period")
+      else if (atMost == Duration.Inf)
+        awaitUnbounded()
+      else
+        awaitUnsafe(atMost.toNanos)
     }
 
     @throws(classOf[TimeoutException])
+    @throws(classOf[InterruptedException])
     def ready(atMost: Duration)(implicit permit: CanAwait): this.type =
       if (isCompleted || tryAwait(atMost)) this
-      else throw new TimeoutException("Futures timed out after [" + atMost.toMillis + "] milliseconds")
+      else throw new TimeoutException("Futures timed out after [" + atMost + "]")
 
     @throws(classOf[Exception])
     def result(atMost: Duration)(implicit permit: CanAwait): T =

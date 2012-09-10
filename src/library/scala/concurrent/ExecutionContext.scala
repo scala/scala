@@ -10,7 +10,6 @@ package scala.concurrent
 
 
 import java.util.concurrent.{ ExecutorService, Executor }
-import scala.concurrent.util.Duration
 import scala.annotation.implicitNotFound
 import scala.util.Try
 

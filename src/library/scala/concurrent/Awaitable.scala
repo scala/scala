@@ -18,13 +18,18 @@ trait Awaitable[+T] {
   /**
    * Should throw [[scala.concurrent.TimeoutException]] if it times out
    * This method should not be called directly.
+   *
+   * @throws InterruptedException if the wait call was interrupted
    */
   @throws(classOf[TimeoutException])
+  @throws(classOf[InterruptedException])
   def ready(atMost: Duration)(implicit permit: CanAwait): this.type
   
   /**
    * Throws exceptions if it cannot produce a T within the specified time.
    * This method should not be called directly.
+   *
+   * @throws InterruptedException if the wait call was interrupted
    */
   @throws(classOf[Exception])
   def result(atMost: Duration)(implicit permit: CanAwait): T
