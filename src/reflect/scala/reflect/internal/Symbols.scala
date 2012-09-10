@@ -697,6 +697,18 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     def deprecationMessage  = getAnnotation(DeprecatedAttr) flatMap (_ stringArg 0)
     def deprecationVersion  = getAnnotation(DeprecatedAttr) flatMap (_ stringArg 1)
     def deprecatedParamName = getAnnotation(DeprecatedNameAttr) flatMap (_ symbolArg 0)
+    def hasDeprecatedInheritanceAnnotation
+                            = hasAnnotation(DeprecatedInheritanceAttr)
+    def deprecatedInheritanceMessage
+                            = getAnnotation(DeprecatedInheritanceAttr) flatMap (_ stringArg 0)
+    def deprecatedInheritanceVersion
+                            = getAnnotation(DeprecatedInheritanceAttr) flatMap (_ stringArg 1)
+    def hasDeprecatedOverridingAnnotation
+                            = hasAnnotation(DeprecatedOverridingAttr)
+    def deprecatedOverridingMessage
+                            = getAnnotation(DeprecatedOverridingAttr) flatMap (_ stringArg 0)
+    def deprecatedOverridingVersion
+                            = getAnnotation(DeprecatedOverridingAttr) flatMap (_ stringArg 1)
 
     // !!! when annotation arguments are not literal strings, but any sort of
     // assembly of strings, there is a fair chance they will turn up here not as
