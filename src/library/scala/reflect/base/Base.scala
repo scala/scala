@@ -317,9 +317,6 @@ class Base extends Universe { self =>
     def newFreeType(name: String, info: Type, value: => Any, flags: Long = 0L, origin: String = null): FreeTypeSymbol =
       new FreeTypeSymbol(rootMirror.RootClass, newTypeName(name), flags)
 
-    def newFreeExistential(name: String, info: Type, value: => Any, flags: Long = 0L, origin: String = null): FreeTypeSymbol =
-      new FreeTypeSymbol(rootMirror.RootClass, newTypeName(name), flags)
-
     def setTypeSignature[S <: Symbol](sym: S, tpe: Type): S = sym
 
     def setAnnotations[S <: Symbol](sym: S, annots: List[AnnotationInfo]): S = sym

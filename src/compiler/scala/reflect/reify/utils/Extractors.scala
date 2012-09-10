@@ -198,7 +198,7 @@ trait Extractors {
             value,
             Apply(Select(Select(uref2 @ Ident(_), build2), flagsFromBits), List(Literal(Constant(flags: Long)))),
             Literal(Constant(origin: String)))))
-      if uref1.name == nme.UNIVERSE_SHORT && build1 == nme.build && (newFreeType == nme.newFreeType || newFreeType == nme.newFreeExistential) &&
+      if uref1.name == nme.UNIVERSE_SHORT && build1 == nme.build && newFreeType == nme.newFreeType &&
          uref2.name == nme.UNIVERSE_SHORT && build2 == nme.build && flagsFromBits == nme.flagsFromBits =>
         value match {
           case Apply(TypeApply(Select(Select(uref3 @ Ident(_), typeTag), apply), List(binding)), List(Literal(Constant(null)), _))

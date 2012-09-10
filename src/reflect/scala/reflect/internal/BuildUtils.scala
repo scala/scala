@@ -34,10 +34,7 @@ trait BuildUtils extends base.BuildUtils { self: SymbolTable =>
       newFreeTermSymbol(newTermName(name), info, value, flags, origin)
 
     def newFreeType(name: String, info: Type, value: => Any, flags: Long = 0L, origin: String = null): FreeTypeSymbol =
-      newFreeTypeSymbol(newTypeName(name), info, value, (if (flags == 0L) PARAM else flags) | DEFERRED, origin)
-
-    def newFreeExistential(name: String, info: Type, value: => Any, flags: Long = 0L, origin: String = null): FreeTypeSymbol =
-      newFreeTypeSymbol(newTypeName(name), info, value, (if (flags == 0L) EXISTENTIAL else flags) | DEFERRED, origin)
+      newFreeTypeSymbol(newTypeName(name), info, value, flags, origin)
 
     def newNestedSymbol(owner: Symbol, name: Name, pos: Position, flags: Long, isClass: Boolean): Symbol =
       owner.newNestedSymbol(name, pos, flags, isClass)

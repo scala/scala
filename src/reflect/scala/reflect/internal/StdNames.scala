@@ -711,7 +711,6 @@ trait StdNames {
     val name: NameType                 = "name"
     val ne: NameType                   = "ne"
     val newArray: NameType             = "newArray"
-    val newFreeExistential: NameType   = "newFreeExistential"
     val newFreeTerm: NameType          = "newFreeTerm"
     val newFreeType: NameType          = "newFreeType"
     val newNestedSymbol: NameType      = "newNestedSymbol"

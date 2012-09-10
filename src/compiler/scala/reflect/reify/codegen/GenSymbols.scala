@@ -115,8 +115,7 @@ trait GenSymbols {
       if (reifyDebug) println("Free type: %s (%s)".format(sym, sym.accurateKindString))
       var name = newTermName(nme.REIFY_FREE_PREFIX + sym.name)
       val phantomTypeTag = Apply(TypeApply(Select(Ident(nme.UNIVERSE_SHORT), nme.TypeTag), List(value)), List(Literal(Constant(null)), Literal(Constant(null))))
-      val flavor = if (sym.isExistential) nme.newFreeExistential else nme.newFreeType
-      (name, mirrorBuildCall(flavor, reify(sym.name.toString), reify(sym.info), phantomTypeTag, mirrorBuildCall(nme.flagsFromBits, reify(sym.flags)), reify(origin(sym))))
+      (name, mirrorBuildCall(nme.newFreeType, reify(sym.name.toString), reify(sym.info), phantomTypeTag, mirrorBuildCall(nme.flagsFromBits, reify(sym.flags)), reify(origin(sym))))
     }
 
   def reifySymDef(sym: Symbol): Tree =

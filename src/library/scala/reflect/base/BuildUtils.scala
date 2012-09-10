@@ -36,7 +36,7 @@ trait BuildUtils { self: Universe =>
      */
     def newFreeTerm(name: String, info: Type, value: => Any, flags: FlagSet = NoFlags, origin: String = null): FreeTermSymbol
 
-    /** Create a fresh free non-existential type symbol.
+    /** Create a fresh free type symbol.
      *  @param   name   the name of the free variable
      *  @param   info   the type signature of the free variable
      *  @param   value  a type tag that captures the value of the free variable
@@ -47,18 +47,6 @@ trait BuildUtils { self: Universe =>
      *  @param   origin debug information that tells where this symbol comes from
      */
     def newFreeType(name: String, info: Type, value: => Any, flags: FlagSet = NoFlags, origin: String = null): FreeTypeSymbol
-
-    /** Create a fresh free existential type symbol.
-     *  @param   name   the name of the free variable
-     *  @param   info   the type signature of the free variable
-     *  @param   value  a type tag that captures the value of the free variable
-     *                  is completely phantom, since the captured type cannot be propagated to the runtime
-     *                  if it could be, we wouldn't be creating a free type to begin with
-     *                  the only usage for it is preserving the captured symbol for compile-time analysis
-     *  @param   flags  (optional) flags of the free variable
-     *  @param   origin (optional) debug information that tells where this symbol comes from
-     */
-    def newFreeExistential(name: String, info: Type, value: => Any, flags: FlagSet = NoFlags, origin: String = null): FreeTypeSymbol
 
     /** Set symbol's type signature to given type.
      *  @return the symbol itself
