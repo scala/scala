@@ -169,12 +169,6 @@ class ArrayBuffer[A](override protected val initialSize: Int)
     result
   }
 
-  /** Return a clone of this buffer.
-   *
-   *  @return an `ArrayBuffer` with the same elements.
-   */
-  override def clone(): ArrayBuffer[A] = new ArrayBuffer[A] ++= this
-
   def result: ArrayBuffer[A] = this
 
   /** Defines the prefix of the string representation.

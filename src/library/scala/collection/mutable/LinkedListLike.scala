@@ -180,4 +180,14 @@ trait LinkedListLike[A, This <: Seq[A] with LinkedListLike[A, This]] extends Seq
       these = these.next
     }
   }
+
+  /** Return a clone of this list.
+   *
+   *  @return a `LinkedList` with the same elements.
+   */
+  override def clone(): This = {
+    val bf = newBuilder
+    bf ++= this
+    bf.result
+  }
 }
