@@ -52,6 +52,8 @@ import language.implicitConversions
  * ''Note'': only non-fatal exceptions are caught by the combinators on `Try` (see [[scala.util.control.NonFatal]]).
  * Serious system errors, on the other hand, will be thrown.
  *
+ * ''Note:'': all Try combinators will catch exceptions and return failure unless otherwise specified in the documentation.
+ *
  * `Try` comes to the Scala standard library after years of use as an integral part of Twitter's stack.
  *
  * @author based on Twitter's original implementation in com.twitter.util.
@@ -68,12 +70,19 @@ sealed abstract class Try[+T] {
   def isSuccess: Boolean
 
   /** Returns the value from this `Success` or the given `default` argument if this is a `Failure`.
+   *
+   * ''Note:'': This will throw an exception if it is not a success and default throws an exception.
    */
-  def getOrElse[U >: T](default: => U) = if (isSuccess) get else default
+  def getOrElse[U >: T](default: => U): U =
+    if (isSuccess) get else default
 
   /** Returns this `Try` if it's a `Success` or the given `default` argument if this is a `Failure`.
    */
-  def orElse[U >: T](default: => Try[U]) = if (isSuccess) this else default
+  def orElse[U >: T](default: => Try[U]): Try[U] =
+    try if (isSuccess) this else default
+    catch {
+      case NonFatal(e) => Failure(e)
+    }
 
   /** Returns the value from this `Success` or throws the exception if this is a `Failure`.
    */
@@ -81,6 +90,8 @@ sealed abstract class Try[+T] {
 
   /**
    * Applies the given function `f` if this is a `Success`, otherwise returns `Unit` if this is a `Failure`.
+   *
+   * ''Note:'' If `f` throws, then this method may throw an exception.
    */
   def foreach[U](f: T => U): Unit
 
@@ -114,7 +125,7 @@ sealed abstract class Try[+T] {
   /**
    * Returns `None` if this is a `Failure` or a `Some` containing the value if this is a `Success`.
    */
-  def toOption = if (isSuccess) Some(get) else None
+  def toOption: Option[T] = if (isSuccess) Some(get) else None
 
   /**
    * Transforms a nested `Try`, ie, a `Try` of type `Try[Try[T]]`,
@@ -131,20 +142,25 @@ sealed abstract class Try[+T] {
   /** Completes this `Try` by applying the function `f` to this if this is of type `Failure`, or conversely, by applying
    *  `s` if this is a `Success`.
    */
-  def transform[U](s: T => Try[U], f: Throwable => Try[U]): Try[U] = this match {
-    case Success(v) => s(v)
-    case Failure(e) => f(e)
-  }
+  def transform[U](s: T => Try[U], f: Throwable => Try[U]): Try[U] =
+    try this match {
+      case Success(v) => s(v)
+      case Failure(e) => f(e)
+    } catch {
+      case NonFatal(e) => Failure(e)
+    }
 
 }
 
 object Try {
-
-  def apply[T](r: => T): Try[T] = {
-    try { Success(r) } catch {
+  /** Constructs a `Try` using the by-name parameter.  This
+   * method will ensure any non-fatal exception is caught and a
+   * `Failure` object is returned.
+   */
+  def apply[T](r: => T): Try[T] =
+    try Success(r) catch {
       case NonFatal(e) => Failure(e)
     }
-  }
 
 }
 
@@ -152,24 +168,25 @@ final case class Failure[+T](val exception: Throwable) extends Try[T] {
   def isFailure: Boolean = true
   def isSuccess: Boolean = false
   def recoverWith[U >: T](f: PartialFunction[Throwable, Try[U]]): Try[U] =
-    if (f.isDefinedAt(exception)) f(exception) else this
-  def get: T = throw exception
-  def flatMap[U](f: T => Try[U]): Try[U] = Failure[U](exception)
-  def flatten[U](implicit ev: T <:< Try[U]): Try[U] = Failure[U](exception)
-  def foreach[U](f: T => U): Unit = {}
-  def map[U](f: T => U): Try[U] = Failure[U](exception)
-  def filter(p: T => Boolean): Try[T] = this
-  def recover[U >: T](rescueException: PartialFunction[Throwable, U]): Try[U] = {
     try {
-      if (rescueException.isDefinedAt(exception)) {
-        Try(rescueException(exception))
-      } else {
-        this
-      }
+      if (f isDefinedAt exception) f(exception) else this
     } catch {
       case NonFatal(e) => Failure(e)
     }
-  }
+  def get: T = throw exception
+  def flatMap[U](f: T => Try[U]): Try[U] = this.asInstanceOf[Try[U]]
+  def flatten[U](implicit ev: T <:< Try[U]): Try[U] = this.asInstanceOf[Try[U]]
+  def foreach[U](f: T => U): Unit = ()
+  def map[U](f: T => U): Try[U] = this.asInstanceOf[Try[U]]
+  def filter(p: T => Boolean): Try[T] = this
+  def recover[U >: T](rescueException: PartialFunction[Throwable, U]): Try[U] =
+    try {
+      if (rescueException isDefinedAt exception) {
+        Try(rescueException(exception))
+      } else this
+    } catch {
+      case NonFatal(e) => Failure(e)
+    }
   def failed: Try[Throwable] = Success(exception)
 }
 
@@ -177,7 +194,7 @@ final case class Failure[+T](val exception: Throwable) extends Try[T] {
 final case class Success[+T](value: T) extends Try[T] {
   def isFailure: Boolean = false
   def isSuccess: Boolean = true
-  def recoverWith[U >: T](f: PartialFunction[Throwable, Try[U]]): Try[U] = Success(value)
+  def recoverWith[U >: T](f: PartialFunction[Throwable, Try[U]]): Try[U] = this
   def get = value
   def flatMap[U](f: T => Try[U]): Try[U] =
     try f(value)
