@@ -292,8 +292,7 @@ trait Typers extends Modes with Adaptations with Tags {
      */
     def checkNonCyclic(pos: Position, tp: Type): Boolean = {
       def checkNotLocked(sym: Symbol) = {
-        sym.initialize
-        sym.lockOK || { CyclicAliasingOrSubtypingError(pos, sym); false }
+        sym.initialize.lockOK || { CyclicAliasingOrSubtypingError(pos, sym); false }
       }
       tp match {
         case TypeRef(pre, sym, args) =>
@@ -320,7 +319,7 @@ trait Typers extends Modes with Adaptations with Tags {
     }
 
     def checkNonCyclic(pos: Position, tp: Type, lockedSym: Symbol): Boolean = try {
-      if (!lockedSym.lock(CyclicReferenceError(pos, lockedSym))) false
+      if (!lockedSym.lock(CyclicReferenceError(pos, tp, lockedSym))) false
       else checkNonCyclic(pos, tp)
     } finally {
       lockedSym.unlock()

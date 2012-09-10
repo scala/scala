@@ -1398,6 +1398,10 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
       if (!isInitialized) info
       this
     }
+    def maybeInitialize: this.type = {
+      try initialize
+      catch { case _: CyclicReference => debuglog("Encountering cycle in maybe-initialization of $this") ; this }
+    }
 
     /** Called when the programmer requests information that might require initialization of the underlying symbol.
      *

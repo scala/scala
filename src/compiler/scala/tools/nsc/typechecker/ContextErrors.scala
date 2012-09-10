@@ -657,8 +657,8 @@ trait ContextErrors {
       def CyclicAliasingOrSubtypingError(errPos: Position, sym0: Symbol) =
         issueTypeError(PosAndMsgTypeError(errPos, "cyclic aliasing or subtyping involving "+sym0))
 
-      def CyclicReferenceError(errPos: Position, lockedSym: Symbol) =
-        issueTypeError(PosAndMsgTypeError(errPos, "illegal cyclic reference involving " + lockedSym))
+      def CyclicReferenceError(errPos: Position, tp: Type, lockedSym: Symbol) =
+        issueTypeError(PosAndMsgTypeError(errPos, s"illegal cyclic reference involving $tp and $lockedSym"))
 
       // macro-related errors (also see MacroErrors below)
 

@@ -1046,6 +1046,12 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
   def currentUnit: CompilationUnit = if (currentRun eq null) NoCompilationUnit else currentRun.currentUnit
   def currentSource: SourceFile    = if (currentUnit.exists) currentUnit.source else lastSeenSourceFile
 
+  override def isPastTyper = (
+       (curRun ne null)
+    && (currentRun.typerPhase ne null)
+    && (globalPhase.id > currentRun.typerPhase.id)
+  )
+
   // TODO - trim these to the absolute minimum.
   @inline final def exitingErasure[T](op: => T): T        = exitingPhase(currentRun.erasurePhase)(op)
   @inline final def exitingPostErasure[T](op: => T): T    = exitingPhase(currentRun.posterasurePhase)(op)

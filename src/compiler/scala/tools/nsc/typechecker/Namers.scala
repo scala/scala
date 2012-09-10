@@ -711,8 +711,9 @@ trait Namers extends MethodSynthesis {
       tp match {
         case TypeBounds(lo, _) =>
           // check that lower bound is not an F-bound
+          // but carefully: class Foo[T <: Bar[_ >: T]] should be allowed
           for (TypeRef(_, sym, _) <- lo)
-            sym.initialize
+            sym.maybeInitialize
         case _ =>
       }
       tp
@@ -731,17 +732,6 @@ trait Namers extends MethodSynthesis {
         if (needsCycleCheck && !typer.checkNonCyclic(tree.pos, tp))
           sym setInfo ErrorType
       }
-      // tree match {
-      //   case ClassDef(_, _, _, impl) =>
-      //     val parentsOK = (
-      //          treeInfo.isInterface(sym, impl.body)
-      //       || (sym eq ArrayClass)
-      //       || (sym isSubClass AnyValClass)
-      //     )
-      //     if (!parentsOK)
-      //       ensureParent(sym, AnyRefClass)
-      //   case _ => ()
-      // }
     }
 
     def moduleClassTypeCompleter(tree: ModuleDef) = {
