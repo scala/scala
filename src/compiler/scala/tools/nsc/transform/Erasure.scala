@@ -1081,8 +1081,8 @@ abstract class Erasure extends AddInterfaces
               case New(tpt) if name == nme.CONSTRUCTOR && tpt.tpe.typeSymbol.isDerivedValueClass =>
                 // println("inject derived: "+arg+" "+tpt.tpe)
                 val List(arg) = args
-                InjectDerivedValue(arg) addAttachment //@@@ setSymbol tpt.tpe.typeSymbol
-                  new TypeRefAttachment(tree.tpe.asInstanceOf[TypeRef])
+                val attachment = new TypeRefAttachment(tree.tpe.asInstanceOf[TypeRef])
+                InjectDerivedValue(arg) addAttachment attachment
               case _ =>
                 preEraseNormalApply(tree)
             }

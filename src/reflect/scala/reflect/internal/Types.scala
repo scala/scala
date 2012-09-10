@@ -3454,9 +3454,9 @@ trait Types extends api.Types { self: SymbolTable =>
   }
 
   /** A temporary type representing the erasure of a user-defined value type.
-   *  Created during phase reasure, eliminated again in posterasure.
-   *  @param   sym The value class symbol
-   *  @param   underlying  The underlying type before erasure
+   *  Created during phase erasure, eliminated again in posterasure.
+   *
+   *  @param   original  The underlying type before erasure
    */
   abstract case class ErasedValueType(original: TypeRef) extends UniqueType {
     override def safeToString = "ErasedValueType("+original+")"
