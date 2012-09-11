@@ -133,6 +133,7 @@ trait JavaMirrors extends internal.SymbolTable with api.JavaUniverse { self: Sym
     """.trim.stripMargin)
     private def ErrorSetImmutableField(wannabe: Symbol) = throw new ScalaReflectionException(s"cannot set an immutable field ${wannabe.name}")
     private def ErrorNotConstructor(wannabe: Symbol, owner: Symbol) = throw new ScalaReflectionException(s"expected a constructor of $owner, you provided $wannabe")
+    private def ErrorFree(member: Symbol, freeType: Symbol) = throw new ScalaReflectionException(s"cannot reflect ${member.kindString} ${member.name}, because it's a member of a free type ${freeType.name}")
 
     def reflect[T: ClassTag](obj: T): InstanceMirror = new JavaInstanceMirror(obj)
 
@@ -154,13 +155,30 @@ trait JavaMirrors extends internal.SymbolTable with api.JavaUniverse { self: Sym
 
     def moduleSymbol(rtcls: RuntimeClass): ModuleSymbol = classToScala(rtcls).companionModule.asModule
 
+    private def ensuringNotFree(wannabe: Symbol)(body: => Any) {
+      val freeType = wannabe.ownerChain find (_.isFreeType)
+      freeType match {
+        case Some(freeType) => ErrorFree(wannabe, freeType)
+        case _ => body
+      }
+    }
+
     private def checkMemberOf(wannabe: Symbol, owner: ClassSymbol) {
       if (wannabe.owner == AnyClass || wannabe.owner == AnyRefClass || wannabe.owner == ObjectClass) {
         // do nothing
       } else if (wannabe.owner == AnyValClass) {
         if (!owner.isPrimitiveValueClass && !owner.isDerivedValueClass) ErrorNotMember(wannabe, owner)
       } else {
-        if (!(owner.info.baseClasses contains wannabe.owner)) ErrorNotMember(wannabe, owner)
+        ensuringNotFree(wannabe) {
+          if (!(owner.info.baseClasses contains wannabe.owner)) ErrorNotMember(wannabe, owner)
+        }
+      }
+    }
+
+    private def checkConstructorOf(wannabe: Symbol, owner: ClassSymbol) {
+      if (!wannabe.isClassConstructor) ErrorNotConstructor(wannabe, owner)
+      ensuringNotFree(wannabe) {
+        if (!owner.info.decls.toList.contains(wannabe)) ErrorNotConstructor(wannabe, owner)
       }
     }
 
@@ -386,8 +404,7 @@ trait JavaMirrors extends internal.SymbolTable with api.JavaUniverse { self: Sym
       def erasure = symbol
       def isStatic = false
       def reflectConstructor(constructor: MethodSymbol) = {
-        if (!constructor.isClassConstructor) ErrorNotConstructor(constructor, symbol)
-        if (!symbol.info.decls.toList.contains(constructor)) ErrorNotConstructor(constructor, symbol)
+        checkConstructorOf(constructor, symbol)
         new JavaConstructorMirror(outer, constructor)
       }
       def companion: Option[ModuleMirror] = symbol.companionModule match {
