@@ -6,6 +6,7 @@ import scala.concurrent.util._
 import duration._
 import scala.reflect._
 import java.util.concurrent.TimeUnit._
+import scala.tools.partest.TestUtil.intercept
 
 object Test extends App {
 
@@ -18,12 +19,6 @@ object Test extends App {
       case _                                           => assert(left == right, s"$left was not equal to $right")
     }
   }
-
-  def intercept[T <: Exception : ClassTag](code: => Unit) =
-    try { code; assert(false, "did not throw expected exception " + classTag[T]) }
-    catch {
-      case ex: Exception => if (classTag[T].runtimeClass isAssignableFrom ex.getClass) () else throw ex
-    }
 
   val zero = 0 seconds
   val one = 1 second

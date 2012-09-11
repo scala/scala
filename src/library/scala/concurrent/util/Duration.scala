@@ -306,8 +306,8 @@ object Duration {
   val Inf: Infinite = new Infinite {
     override def toString = "Duration.Inf"
     def compare(other: Duration) = other match {
-      case x if x eq Undefined => -1
-      case x if x eq this      => 0
+      case x if x eq Undefined => -1 // Undefined != Undefined
+      case x if x eq this      => 0  // `case Inf` will include null checks in the byte code
       case _                   => 1
     }
     def unary_- : Duration = MinusInf
