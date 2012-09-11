@@ -16,7 +16,6 @@ import java.lang.{ Iterable => JIterable }
 import java.util.{ LinkedList => JLinkedList }
 import java.util.concurrent.atomic.{ AtomicReferenceFieldUpdater, AtomicInteger, AtomicBoolean }
 
-import scala.concurrent.util.Duration
 import scala.util.control.NonFatal
 import scala.Option
 import scala.util.{Try, Success, Failure}
