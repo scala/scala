@@ -1197,6 +1197,18 @@ abstract class RefChecks extends InfoTransform with reflect.internal.transform.R
       case _ =>
     }
 
+    // SI-6276 warn for `def foo = foo` or `val bar: X = bar`, which come up more frequently than you might think.
+    def checkInfiniteLoop(valOrDef: ValOrDefDef) {
+      val trivialInifiniteLoop = (
+        !valOrDef.isErroneous
+     && !valOrDef.symbol.isValueParameter
+     && valOrDef.symbol.paramss.isEmpty
+     && valOrDef.rhs.hasSymbolWhich(_.accessedOrSelf == valOrDef.symbol)
+      )
+      if (trivialInifiniteLoop)
+        unit.warning(valOrDef.rhs.pos, s"${valOrDef.symbol.fullLocationString} does nothing other than call itself recursively")
+    }
+
 // Transformation ------------------------------------------------------------
 
     /* Convert a reference to a case factory of type `tpe` to a new of the class it produces. */
@@ -1640,6 +1652,7 @@ abstract class RefChecks extends InfoTransform with reflect.internal.transform.R
 
           case ValDef(_, _, _, _) | DefDef(_, _, _, _, _, _) =>
             checkDeprecatedOvers(tree)
+            checkInfiniteLoop(tree.asInstanceOf[ValOrDefDef])
             if (settings.warnNullaryUnit.value)
               checkNullaryMethodReturnType(sym)
             if (settings.warnInaccessible.value) {
