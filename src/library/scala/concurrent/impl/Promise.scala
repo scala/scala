@@ -12,7 +12,7 @@ package scala.concurrent.impl
 
 import java.util.concurrent.TimeUnit.NANOSECONDS
 import scala.concurrent.{ ExecutionContext, CanAwait, OnCompleteRunnable, TimeoutException, ExecutionException }
-import scala.concurrent.util.Duration
+import scala.concurrent.util.{ Duration, Deadline }
 import scala.annotation.tailrec
 import scala.util.control.NonFatal
 import scala.util.{ Try, Success, Failure }
@@ -64,16 +64,14 @@ private[concurrent] object Promise {
     
     protected final def tryAwait(atMost: Duration): Boolean = {
       @tailrec
-      def awaitUnsafe(waitTimeNanos: Long): Boolean = {
-        if (!isCompleted && waitTimeNanos > 0) {
-          val ms = NANOSECONDS.toMillis(waitTimeNanos)
-          val ns = (waitTimeNanos % 1000000l).toInt // as per object.wait spec
-          val start = System.nanoTime()
-          synchronized {
-            if (!isCompleted) wait(ms, ns) // previously - this was a `while`, ending up in an infinite loop
-          }
+      def awaitUnsafe(deadline: Deadline, nextWait: Duration): Boolean = {
+        if (!isCompleted && nextWait > Duration.Zero) {
+          val ms = nextWait.toMillis
+          val ns = (nextWait.toNanos % 1000000l).toInt // as per object.wait spec
 
-          awaitUnsafe(waitTimeNanos - (System.nanoTime() - start))
+          synchronized { if (!isCompleted) wait(ms, ns) }
+
+          awaitUnsafe(deadline, deadline.timeLeft)
         } else
           isCompleted
       }
@@ -81,21 +79,19 @@ private[concurrent] object Promise {
       def awaitUnbounded(): Boolean = {
         if (isCompleted) true
         else {
-          synchronized {
-            if (!isCompleted) wait()
-          }
+          synchronized { if (!isCompleted) wait() }
           awaitUnbounded()
         }
       }
 
-      if (atMost <= Duration.Zero)
-        isCompleted
-      else if (atMost eq Duration.Undefined)
+      if (atMost eq Duration.Undefined)
         throw new IllegalArgumentException("cannot wait for Undefined period")
+      else if (atMost <= Duration.Zero)
+        isCompleted
       else if (atMost == Duration.Inf)
         awaitUnbounded()
       else
-        awaitUnsafe(atMost.toNanos)
+        awaitUnsafe(atMost.fromNow, atMost)
     }
 
     @throws(classOf[TimeoutException])

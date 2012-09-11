@@ -1,5 +1,7 @@
 package scala.tools.partest
 
+import reflect.{ classTag, ClassTag }
+
 trait TestUtil {
   /** Given function and block of code, evaluates code block,
    *  calls function with nanoseconds elapsed, and returns block result.
@@ -29,6 +31,14 @@ trait TestUtil {
 
     assert(mult <= acceptableMultiple, "Performance difference too great: multiple = " + mult)
   }
+
+  def intercept[T <: Exception : ClassTag](code: => Unit): Unit =
+    try {
+      code
+      assert(false, "did not throw " + classTag[T])
+    } catch {
+      case ex: Exception if classTag[T].runtimeClass isInstance ex =>
+    }
 }
 
 object TestUtil extends TestUtil {

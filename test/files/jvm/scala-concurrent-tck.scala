@@ -12,6 +12,7 @@ import scala.concurrent.{ future, promise, blocking }
 import scala.util.{ Try, Success, Failure }
 import scala.concurrent.util.Duration
 import scala.reflect.{ classTag, ClassTag }
+import scala.tools.partest.TestUtil.intercept
 
 trait TestBase {
   
@@ -21,14 +22,6 @@ trait TestBase {
     sv.take(2000)
   }
 
-  def intercept[T <: Exception : ClassTag](code: => Unit): Unit =
-    try {
-      code
-      assert(false, "did not throw " + classTag[T])
-    } catch {
-      case ex: Exception if classTag[T].runtimeClass isInstance ex =>
-    }
-  
   // def assert(cond: => Boolean) {
   //   try {
   //     Predef.assert(cond)
