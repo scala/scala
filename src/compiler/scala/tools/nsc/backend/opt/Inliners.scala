@@ -645,31 +645,34 @@ abstract class Inliners extends SubComponent {
           else if (sym.isProtected) Protected
           else Public
 
-        def canMakePublic(f: Symbol): Boolean =
-          (m.sourceFile ne NoSourceFile) &&
-          (f.isSynthetic || f.isParamAccessor) &&
-          { toBecomePublic = f :: toBecomePublic; true }
+        /*
+         * (1) Everything accessed by @inline methods had its access-level widened to public by `object pblzr` in LazyVals.
+         *     We rely on that irrespective of whether the callee is being compiled in this run, or was separately compiled.
+         *
+         * (2) We also inline here *a few* other fields not publicized before,
+         *     as long as they're compiled in this run and are (synthetic, param accessors, or owned by an anon-closure).
+         *
+         * In all cases, `toBecomePublic` fields are made public at bytecode-level only, not in pickles.
+         *
+         **/
+        def canRegardAsPublic(f: Symbol): Boolean = {
 
-        /* A safety check to consider as private, for the purposes of inlining, a public field that:
-         *   (1) is defined in an external library, and
-         *   (2) can be presumed synthetic (due to a dollar sign in its name).
-         * Such field was made public by `doMakePublic()` and we don't want to rely on that,
-         * because under other compilation conditions (ie no -optimize) that won't be the case anymore.
-         *
-         * This allows aggressive intra-library inlining (making public if needed)
-         * that does not break inter-library scenarios (see comment for `Inliners`).
-         *
-         * TODO handle more robustly the case of a trait var changed at the source-level from public to private[this]
-         *      (eg by having ICodeReader use unpickler, see SI-5442).
-         
-         DISABLED
-         
-        def potentiallyPublicized(f: Symbol): Boolean = {
-          (m.sourceFile eq NoSourceFile) && f.name.containsChar('$')
+          val calleeSym = m.symbol
+          assert(if(hasInline(calleeSym) && currentRun.compiles(f)) { f.isPublic  } else { true },
+                 "All accesses in @inline-marked methods should have resulted in `object pblzr` publicizing the accessed field (also in separate compilation).")
+          val canForcePublic =
+            isClosureClass(f.owner) || /* ie is an anon-closure-class field, in particular when f.isOuterField */
+            (
+              currentRun.compiles(f) && ( // TODO `compiles()` returns false for, say, the outer-field of an anon-closure-class
+                f.isSynthetic     ||
+                f.isParamAccessor
+              )
+            )
+          if(canForcePublic) { toBecomePublic ::= f }
+          canForcePublic
         }
-        */
 
-        def checkField(f: Symbol)   = check(f, f.isPrivate && !canMakePublic(f))
+        def checkField(f: Symbol)   = check(f, f.isPrivate && !canRegardAsPublic(f))
         def checkSuper(n: Symbol)   = check(n, n.isPrivate || !n.isClassConstructor)
         def checkMethod(n: Symbol)  = check(n, n.isPrivate)
 
