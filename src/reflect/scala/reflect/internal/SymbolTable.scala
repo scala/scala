@@ -47,6 +47,8 @@ abstract class SymbolTable extends macros.Universe
   def globalError(msg: String): Unit = abort(msg)
   def abort(msg: String): Nothing    = throw new FatalError(supplementErrorMessage(msg))
 
+  def shouldLogAtThisPhase = false
+
   @deprecated("Give us a reason", "2.10.0")
   def abort(): Nothing = abort("unknown error")
 

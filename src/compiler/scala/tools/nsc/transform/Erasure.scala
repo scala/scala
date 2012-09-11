@@ -490,7 +490,7 @@ abstract class Erasure extends AddInterfaces
 
     @inline private def box(tree: Tree, target: => String): Tree = {
       val result = box1(tree)
-      log("boxing "+tree+":"+tree.tpe+" to "+target+" = "+result+":"+result.tpe)
+      log(s"boxing ${tree.summaryString}: ${tree.tpe} into $target: ${result.tpe}")
       result
     }
 
@@ -525,7 +525,7 @@ abstract class Erasure extends AddInterfaces
                *  fields (see TupleX). (ID)
                */
               case Apply(boxFun, List(arg)) if isUnbox(tree.symbol) && safeToRemoveUnbox(arg.tpe.typeSymbol) =>
-                log("boxing an unbox: " + tree + "/" + tree.symbol + " and replying with " + arg + " of type " + arg.tpe)
+                log(s"boxing an unbox: ${tree.symbol} -> ${arg.tpe}")
                 arg
               case _ =>
                 (REF(boxMethod(x)) APPLY tree) setPos (tree.pos) setType ObjectClass.tpe
@@ -537,7 +537,7 @@ abstract class Erasure extends AddInterfaces
 
     private def unbox(tree: Tree, pt: Type): Tree = {
       val result = unbox1(tree, pt)
-      log("unboxing "+tree+":"+tree.tpe+" to "+pt+" = "+result+":"+result.tpe)
+      log(s"unboxing ${tree.summaryString}: ${tree.tpe} with pt=$pt as type ${result.tpe}")
       result
     }
 
@@ -614,7 +614,7 @@ abstract class Erasure extends AddInterfaces
      *  @return     the adapted tree
      */
     private def adaptToType(tree: Tree, pt: Type): Tree = {
-      //if (settings.debug.value && pt != WildcardType)
+      if (settings.debug.value && pt != WildcardType)
         log("adapting " + tree + ":" + tree.tpe + " : " +  tree.tpe.parents + " to " + pt)//debug
       if (tree.tpe <:< pt)
         tree

@@ -22,12 +22,14 @@ abstract class Flatten extends InfoTransform {
    */
   private def replaceSymbolInCurrentScope(sym: Symbol): Symbol = afterFlatten {
     val scope = sym.owner.info.decls
-    val old   = scope lookup sym.name
-    if (old ne NoSymbol)
-      scope unlink old
-
+    val old   = scope lookup sym.name andAlso scope.unlink
     scope enter sym
-    log("lifted " + sym.fullLocationString)
+
+    if (old eq NoSymbol)
+      log(s"lifted ${sym.fullLocationString}")
+    else
+      log(s"lifted ${sym.fullLocationString} after unlinking existing $old from scope.")
+
     old
   }
 
@@ -35,9 +37,7 @@ abstract class Flatten extends InfoTransform {
     if (!sym.isLifted) {
       sym setFlag LIFTED
       debuglog("re-enter " + sym.fullLocationString)
-      val old = replaceSymbolInCurrentScope(sym)
-      if (old ne NoSymbol)
-        log("unlinked " + old.fullLocationString + " after lifting " + sym)
+      replaceSymbolInCurrentScope(sym)
     }
   }
   private def liftSymbol(sym: Symbol) {

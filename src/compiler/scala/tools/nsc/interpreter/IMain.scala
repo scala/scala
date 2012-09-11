@@ -387,8 +387,7 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
       newSym <- req.definedSymbols get name
       oldSym <- oldReq.definedSymbols get name.companionName
     } {
-      replwarn("warning: previously defined %s is not a companion to %s.".format(
-        stripString("" + oldSym), stripString("" + newSym)))
+      afterTyper(replwarn(s"warning: previously defined $oldSym is not a companion to $newSym."))
       replwarn("Companions must be defined together; you may wish to use :paste mode for this.")
     }
 
