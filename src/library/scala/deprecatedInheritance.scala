@@ -16,7 +16,7 @@ package scala
  *  @param  message the message to print during compilation if the class was sub-classed
  *  @param  since   a string identifying the first version in which inheritance was deprecated
  *  @since  2.10
- *  @see    [[scala.deprecatedInheritance]]
+ *  @see    [[scala.deprecatedOverriding]]
  */
 private[scala] // for now, this needs to be generalized to communicate other modifier deltas
 class deprecatedInheritance(message: String = "", since: String = "") extends annotation.StaticAnnotation
