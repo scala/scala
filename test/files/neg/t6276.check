@@ -1,13 +1,19 @@
-t6276.scala:4: error: method a does nothing other than call itself recursively
+t6276.scala:4: error: method a in class C does nothing other than call itself recursively
       def a: Any = a // warn
                    ^
-t6276.scala:5: error: value b does nothing other than call itself recursively
+t6276.scala:5: error: value b in class C does nothing other than call itself recursively
       val b: Any = b // warn
                    ^
-t6276.scala:10: error: method a does nothing other than call itself recursively
+t6276.scala:7: error: method c in class C does nothing other than call itself recursively
+      def c: Any = this.c // warn
+                        ^
+t6276.scala:8: error: method d in class C does nothing other than call itself recursively
+      def d: Any = C.this.d // warn
+                          ^
+t6276.scala:13: error: method a does nothing other than call itself recursively
       def a: Any = a // warn
                    ^
-t6276.scala:19: error: method a does nothing other than call itself recursively
+t6276.scala:22: error: method a does nothing other than call itself recursively
       def a = a // warn
               ^
-four errors found
+6 errors found

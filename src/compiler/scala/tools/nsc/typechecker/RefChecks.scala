@@ -1208,11 +1208,16 @@ abstract class RefChecks extends InfoTransform with reflect.internal.transform.R
 
     // SI-6276 warn for `def foo = foo` or `val bar: X = bar`, which come up more frequently than you might think.
     def checkInfiniteLoop(valOrDef: ValOrDefDef) {
+      def callsSelf = valOrDef.rhs match {
+        case t @ (Ident(_) | Select(This(_), _)) =>
+          t hasSymbolWhich (_.accessedOrSelf == valOrDef.symbol)
+        case _ => false
+      }
       val trivialInifiniteLoop = (
         !valOrDef.isErroneous
      && !valOrDef.symbol.isValueParameter
      && valOrDef.symbol.paramss.isEmpty
-     && valOrDef.rhs.hasSymbolWhich(_.accessedOrSelf == valOrDef.symbol)
+     && callsSelf
       )
       if (trivialInifiniteLoop)
         unit.warning(valOrDef.rhs.pos, s"${valOrDef.symbol.fullLocationString} does nothing other than call itself recursively")
