@@ -44,6 +44,7 @@ abstract class DeadCodeElimination extends SubComponent {
   class DeadCode {
 
     def analyzeClass(cls: IClass) {
+      log(s"Analyzing ${cls.methods.size} methods in $cls.")
       cls.methods.foreach { m =>
         this.method = m
         dieCodeDie(m)
@@ -73,7 +74,7 @@ abstract class DeadCodeElimination extends SubComponent {
 
     def dieCodeDie(m: IMethod) {
       if (m.hasCode) {
-        log("dead code elimination on " + m);
+        debuglog("dead code elimination on " + m);
         dropOf.clear()
         m.code.blocks.clear()
         accessedLocals = m.params.reverse
@@ -82,8 +83,10 @@ abstract class DeadCodeElimination extends SubComponent {
         mark
         sweep(m)
         accessedLocals = accessedLocals.distinct
-        if ((m.locals diff accessedLocals).nonEmpty) {
-          log("Removed dead locals: " + (m.locals diff accessedLocals))
+        val diff = m.locals diff accessedLocals
+        if (diff.nonEmpty) {
+          val msg = diff.map(_.sym.name)mkString(", ")
+          log(s"Removed ${diff.size} dead locals: $msg")
           m.locals = accessedLocals.reverse
         }
       }
@@ -126,7 +129,7 @@ abstract class DeadCodeElimination extends SubComponent {
             case RETURN(_) | JUMP(_) | CJUMP(_, _, _, _) | CZJUMP(_, _, _, _) | STORE_FIELD(_, _) |
                  THROW(_)   | LOAD_ARRAY_ITEM(_) | STORE_ARRAY_ITEM(_) | SCOPE_ENTER(_) | SCOPE_EXIT(_) | STORE_THIS(_) |
                  LOAD_EXCEPTION(_) | SWITCH(_, _) | MONITOR_ENTER() | MONITOR_EXIT() => worklist += ((bb, idx))
-            case CALL_METHOD(m1, _) if isSideEffecting(m1) => worklist += ((bb, idx)); log("marking " + m1)
+            case CALL_METHOD(m1, _) if isSideEffecting(m1) => worklist += ((bb, idx)); debuglog("marking " + m1)
             case CALL_METHOD(m1, SuperCall(_)) =>
               worklist += ((bb, idx)) // super calls to constructor
             case DROP(_) =>
@@ -173,7 +176,7 @@ abstract class DeadCodeElimination extends SubComponent {
           instr match {
             case LOAD_LOCAL(l1) =>
               for ((l2, bb1, idx1) <- defs((bb, idx)) if l1 == l2; if !useful(bb1)(idx1)) {
-                log("\tAdding " + bb1(idx1))
+                debuglog("\tAdding " + bb1(idx1))
                 worklist += ((bb1, idx1))
               }
 
@@ -197,7 +200,7 @@ abstract class DeadCodeElimination extends SubComponent {
 
             case _ =>
               for ((bb1, idx1) <- rdef.findDefs(bb, idx, instr.consumed) if !useful(bb1)(idx1)) {
-                log("\tAdding " + bb1(idx1))
+                debuglog("\tAdding " + bb1(idx1))
                 worklist += ((bb1, idx1))
               }
           }
@@ -232,7 +235,7 @@ abstract class DeadCodeElimination extends SubComponent {
           } else {
             i match {
               case NEW(REFERENCE(sym)) =>
-                log("skipped object creation: " + sym + "inside " + m)
+                log(s"Eliminated instantation of $sym inside $m")
               case _ => ()
             }
             debuglog("Skipped: bb_" + bb + ": " + idx + "( " + i + ")")
@@ -240,7 +243,7 @@ abstract class DeadCodeElimination extends SubComponent {
         }
 
         if (bb.nonEmpty) bb.close
-        else log("empty block encountered")
+        else log(s"empty block encountered in $m")
       }
     }
 
@@ -252,7 +255,7 @@ abstract class DeadCodeElimination extends SubComponent {
         foreachWithIndex(bb.toList) { (i, idx) =>
           if (!useful(bb)(idx)) {
             foreachWithIndex(i.consumedTypes.reverse) { (consumedType, depth) =>
-              log("Finding definitions of: " + i + "\n\t" + consumedType + " at depth: " + depth)
+              debuglog("Finding definitions of: " + i + "\n\t" + consumedType + " at depth: " + depth)
               val defs = rdef.findDefs(bb, idx, 1, depth)
               for (d <- defs) {
                 val (bb, idx) = d
