@@ -15,9 +15,10 @@ trait Symbols extends base.Symbols { self: Universe =>
   /** The API of symbols */
   trait SymbolApi extends SymbolBase { this: Symbol =>
 
-    /** The position of this symbol
+    /** Source file if this symbol is created during this compilation run,
+     *  or a class file if this symbol is loaded from a *.class or *.jar.
      */
-    def pos: Position
+    def associatedFile: scala.tools.nsc.io.AbstractFile
 
     /** A list of annotations attached to this Symbol.
      */
@@ -139,18 +140,6 @@ trait Symbols extends base.Symbols { self: Universe =>
      */
     def isErroneous : Boolean
 
-    /** Can this symbol be loaded by a reflective mirror?
-     *
-     *  Scalac relies on `ScalaSignature' annotation to retain symbols across compilation runs.
-     *  Such annotations (also called "pickles") are applied on top-level classes and include information
-     *  about all symbols reachable from the annotee. However, local symbols (e.g. classes or definitions local to a block)
-     *  are typically unreachable and information about them gets lost.
-     *
-     *  This method is useful for macro writers who wish to save certain ASTs to be used at runtime.
-     *  With `isLocatable' it's possible to check whether a tree can be retained as is, or it needs special treatment.
-     */
-    def isLocatable: Boolean
-
     /** Is this symbol static (i.e. with no outer instance)?
      *  Q: When exactly is a sym marked as STATIC?
      *  A: If it's a member of a toplevel object, or of an object contained in a toplevel object, or any number of levels deep.
@@ -182,6 +171,10 @@ trait Symbols extends base.Symbols { self: Universe =>
      */
     def isSpecialized: Boolean
 
+    /** Is this symbol defined by Java?
+     */
+    def isJava: Boolean
+
     /******************* helpers *******************/
 
     /** ...
@@ -204,16 +197,16 @@ trait Symbols extends base.Symbols { self: Universe =>
 
   /** The API of term symbols */
   trait TermSymbolApi extends SymbolApi with TermSymbolBase { this: TermSymbol =>
-    /** Does this symbol represent a value, i.e. not a module and not a method?
+    /** Is this symbol introduced as `val`?
      */
-    def isValue: Boolean
+    def isVal: Boolean
 
     /** Does this symbol denote a stable value? */
     def isStable: Boolean
 
-    /** Does this symbol represent a mutable value?
+    /** Is this symbol introduced as `var`?
      */
-    def isVariable: Boolean
+    def isVar: Boolean
 
     /** Does this symbol represent a getter or a setter?
      */
@@ -320,6 +313,9 @@ trait Symbols extends base.Symbols { self: Universe =>
      */
     def isConstructor: Boolean
 
+    /** Does this symbol denote the primary constructor of its enclosing class? */
+    def isPrimaryConstructor: Boolean
+
     /** For a polymorphic method, its type parameters, the empty list for all other methods */
     def typeParams: List[Symbol]
 
@@ -377,6 +373,22 @@ trait Symbols extends base.Symbols { self: Universe =>
     /** Does this symbol represent a sealed class?
      */
     def isSealed: Boolean
+
+    /** If this is a sealed class, its known direct subclasses.
+     *  Otherwise, the empty set.
+     */
+    def knownDirectSubclasses: Set[Symbol]
+
+    /** The list of all base classes of this type (including its own typeSymbol)
+     *  in reverse linearization order, starting with the class itself and ending
+     *  in class Any.
+     */
+    def baseClasses: List[Symbol]
+
+    /** The module corresponding to this module class,
+     *  or NoSymbol if this symbol is not a module class.
+     */
+    def module: Symbol
 
     /** If this symbol is a class or trait, its self type, otherwise the type
      *  of the symbol itself.

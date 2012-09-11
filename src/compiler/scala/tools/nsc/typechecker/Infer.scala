@@ -280,7 +280,16 @@ trait Infer {
 
     def issue(err: AbsTypeError): Unit = context.issue(err)
 
-    def isPossiblyMissingArgs(found: Type, req: Type) = (found.resultApprox ne found) && isWeaklyCompatible(found.resultApprox, req)
+    def isPossiblyMissingArgs(found: Type, req: Type) = (
+      false
+      /** However it is that this condition is expected to imply
+       *  "is possibly missing args", it is too weak.  It is
+       *  better to say nothing than to offer misleading guesses.
+
+         (found.resultApprox ne found)
+      && isWeaklyCompatible(found.resultApprox, req)
+      */
+    )
 
     def explainTypes(tp1: Type, tp2: Type) =
       withDisambiguation(List(), tp1, tp2)(global.explainTypes(tp1, tp2))
@@ -914,10 +923,13 @@ trait Infer {
     /** Is sym1 (or its companion class in case it is a module) a subclass of
      *  sym2 (or its companion class in case it is a module)?
      */
-    def isProperSubClassOrObject(sym1: Symbol, sym2: Symbol): Boolean =
-      sym1 != sym2 && sym1 != NoSymbol && (sym1 isSubClass sym2) ||
-      sym1.isModuleClass && isProperSubClassOrObject(sym1.linkedClassOfClass, sym2) ||
-      sym2.isModuleClass && isProperSubClassOrObject(sym1, sym2.linkedClassOfClass)
+    def isProperSubClassOrObject(sym1: Symbol, sym2: Symbol): Boolean = (
+      (sym1 != sym2) && (sym1 != NoSymbol) && (
+           (sym1 isSubClass sym2)
+        || (sym1.isModuleClass && isProperSubClassOrObject(sym1.linkedClassOfClass, sym2))
+        || (sym2.isModuleClass && isProperSubClassOrObject(sym1, sym2.linkedClassOfClass))
+      )
+    )
 
     /** is symbol `sym1` defined in a proper subclass of symbol `sym2`?
      */

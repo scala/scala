@@ -74,11 +74,6 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
   def this(settings: Settings) =
     this(settings, new ConsoleReporter(settings))
 
-  // fulfilling requirements
-  // Renamed AbstractFile to AbstractFileType for backward compatibility:
-  // it is difficult for sbt to work around the ambiguity errors which result.
-  type AbstractFileType = scala.tools.nsc.io.AbstractFile
-
   def mkAttributedQualifier(tpe: Type, termSym: Symbol): Tree = gen.mkAttributedQualifier(tpe, termSym)
 
   def picklerPhase: Phase = if (currentRun.isDefined) currentRun.picklerPhase else NoPhase

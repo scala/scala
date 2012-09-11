@@ -12,6 +12,7 @@ import util.Statistics
 import Flags._
 import base.Attachments
 import scala.annotation.tailrec
+import scala.tools.nsc.io.AbstractFile
 
 trait Symbols extends api.Symbols { self: SymbolTable =>
   import definitions._
@@ -67,12 +68,18 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     def isParamWithDefault: Boolean = this.hasDefault
     def isByNameParam: Boolean = this.isValueParameter && (this hasFlag BYNAMEPARAM)
     def isImplementationArtifact: Boolean = (this hasFlag BRIDGE) || (this hasFlag VBRIDGE) || (this hasFlag ARTIFACT)
+    def isJava: Boolean = this hasFlag JAVA
+    def isVal: Boolean = isTerm && !isModule && !isMethod && !isMutable
+    def isVar: Boolean = isTerm && !isModule && !isMethod && isMutable
 
     def newNestedSymbol(name: Name, pos: Position, newFlags: Long, isClass: Boolean): Symbol = name match {
       case n: TermName => newTermSymbol(n, pos, newFlags)
       case n: TypeName => if (isClass) newClassSymbol(n, pos, newFlags) else newNonClassSymbol(n, pos, newFlags)
     }
 
+    def knownDirectSubclasses             = children
+    def baseClasses                       = info.baseClasses
+    def module                            = sourceModule
     def thisPrefix: Type                  = thisType
     def selfType: Type                    = typeOfThis
     def typeSignature: Type               = info
@@ -695,6 +702,18 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     def deprecationMessage  = getAnnotation(DeprecatedAttr) flatMap (_ stringArg 0)
     def deprecationVersion  = getAnnotation(DeprecatedAttr) flatMap (_ stringArg 1)
     def deprecatedParamName = getAnnotation(DeprecatedNameAttr) flatMap (_ symbolArg 0)
+    def hasDeprecatedInheritanceAnnotation
+                            = hasAnnotation(DeprecatedInheritanceAttr)
+    def deprecatedInheritanceMessage
+                            = getAnnotation(DeprecatedInheritanceAttr) flatMap (_ stringArg 0)
+    def deprecatedInheritanceVersion
+                            = getAnnotation(DeprecatedInheritanceAttr) flatMap (_ stringArg 1)
+    def hasDeprecatedOverridingAnnotation
+                            = hasAnnotation(DeprecatedOverridingAttr)
+    def deprecatedOverridingMessage
+                            = getAnnotation(DeprecatedOverridingAttr) flatMap (_ stringArg 0)
+    def deprecatedOverridingVersion
+                            = getAnnotation(DeprecatedOverridingAttr) flatMap (_ stringArg 1)
 
     // !!! when annotation arguments are not literal strings, but any sort of
     // assembly of strings, there is a fair chance they will turn up here not as
@@ -851,7 +870,16 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     final def isInitialized: Boolean =
       validTo != NoPeriod
 
-    /** Determines whether this symbol can be loaded by subsequent reflective compilation */
+    /** Can this symbol be loaded by a reflective mirror?
+     *
+     *  Scalac relies on `ScalaSignature' annotation to retain symbols across compilation runs.
+     *  Such annotations (also called "pickles") are applied on top-level classes and include information
+     *  about all symbols reachable from the annotee. However, local symbols (e.g. classes or definitions local to a block)
+     *  are typically unreachable and information about them gets lost.
+     *
+     *  This method is useful for macro writers who wish to save certain ASTs to be used at runtime.
+     *  With `isLocatable' it's possible to check whether a tree can be retained as is, or it needs special treatment.
+     */
     final def isLocatable: Boolean = {
       if (this == NoSymbol) return false
       if (isRoot || isRootPackage) return true
@@ -1788,26 +1816,16 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
       } else owner.enclosingTopLevelClass
 
     /** Is this symbol defined in the same scope and compilation unit as `that` symbol? */
-    def isCoDefinedWith(that: Symbol) = {
-      (this.rawInfo ne NoType) &&
-      (this.effectiveOwner == that.effectiveOwner) && {
-        !this.effectiveOwner.isPackageClass ||
-        (this.sourceFile eq null) ||
-        (that.sourceFile eq null) ||
-        (this.sourceFile == that.sourceFile) || {
-          // recognize companion object in separate file and fail, else compilation
-          // appears to succeed but highly opaque errors come later: see bug #1286
-          if (this.sourceFile.path != that.sourceFile.path) {
-            // The cheaper check can be wrong: do the expensive normalization
-            // before failing.
-            if (this.sourceFile.canonicalPath != that.sourceFile.canonicalPath)
-              throw InvalidCompanions(this, that)
-          }
-
-          false
-        }
-      }
-    }
+    def isCoDefinedWith(that: Symbol) = (
+         (this.rawInfo ne NoType)
+      && (this.effectiveOwner == that.effectiveOwner)
+      && (   !this.effectiveOwner.isPackageClass
+          || (this.sourceFile eq null)
+          || (that.sourceFile eq null)
+          || (this.sourceFile.path == that.sourceFile.path)  // Cheap possibly wrong check, then expensive normalization
+          || (this.sourceFile.canonicalPath == that.sourceFile.canonicalPath)
+      )
+    )
 
     /** The internal representation of classes and objects:
      *
@@ -2063,21 +2081,21 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
      *  of sourceFile (which is expected at least in the IDE only to
      *  return actual source code.) So sourceFile has classfiles filtered out.
      */
-    private def sourceFileOnly(file: AbstractFileType): AbstractFileType =
+    private def sourceFileOnly(file: AbstractFile): AbstractFile =
       if ((file eq null) || (file.path endsWith ".class")) null else file
 
-    private def binaryFileOnly(file: AbstractFileType): AbstractFileType =
+    private def binaryFileOnly(file: AbstractFile): AbstractFile =
       if ((file eq null) || !(file.path endsWith ".class")) null else file
 
-    final def binaryFile: AbstractFileType = binaryFileOnly(associatedFile)
-    final def sourceFile: AbstractFileType = sourceFileOnly(associatedFile)
+    final def binaryFile: AbstractFile = binaryFileOnly(associatedFile)
+    final def sourceFile: AbstractFile = sourceFileOnly(associatedFile)
 
     /** Overridden in ModuleSymbols to delegate to the module class. */
-    def associatedFile: AbstractFileType = enclosingTopLevelClass.associatedFile
-    def associatedFile_=(f: AbstractFileType) { abort("associatedFile_= inapplicable for " + this) }
+    def associatedFile: AbstractFile = enclosingTopLevelClass.associatedFile
+    def associatedFile_=(f: AbstractFile) { abort("associatedFile_= inapplicable for " + this) }
 
     @deprecated("Use associatedFile_= instead", "2.10.0")
-    def sourceFile_=(f: AbstractFileType): Unit = associatedFile_=(f)
+    def sourceFile_=(f: AbstractFile): Unit = associatedFile_=(f)
 
     /** If this is a sealed class, its known direct subclasses.
      *  Otherwise, the empty set.
@@ -2461,7 +2479,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     private var flatname: TermName = null
 
     override def associatedFile = moduleClass.associatedFile
-    override def associatedFile_=(f: AbstractFileType) { moduleClass.associatedFile = f }
+    override def associatedFile_=(f: AbstractFile) { moduleClass.associatedFile = f }
 
     override def moduleClass = referenced
     override def companionClass =
@@ -2765,9 +2783,9 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
   extends TypeSymbol(initOwner, initPos, initName) with ClassSymbolApi {
     type TypeOfClonedSymbol = ClassSymbol
 
-    private[this] var flatname: TypeName                = _
-    private[this] var _associatedFile: AbstractFileType = _
-    private[this] var thissym: Symbol                   = this
+    private[this] var flatname: TypeName            = _
+    private[this] var _associatedFile: AbstractFile = _
+    private[this] var thissym: Symbol               = this
 
     private[this] var thisTypeCache: Type      = _
     private[this] var thisTypePeriod           = NoPeriod
@@ -2865,7 +2883,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     }
 
     override def associatedFile = if (owner.isPackageClass) _associatedFile else super.associatedFile
-    override def associatedFile_=(f: AbstractFileType) { _associatedFile = f }
+    override def associatedFile_=(f: AbstractFile) { _associatedFile = f }
 
     override def reset(completer: Type): this.type = {
       super.reset(completer)
@@ -3198,13 +3216,6 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
   case class CyclicReference(sym: Symbol, info: Type)
   extends TypeError("illegal cyclic reference involving " + sym) {
     if (settings.debug.value) printStackTrace()
-  }
-
-  case class InvalidCompanions(sym1: Symbol, sym2: Symbol) extends Throwable({
-    "Companions '" + sym1 + "' and '" + sym2 + "' must be defined in same file:\n" +
-    "  Found in " + sym1.sourceFile.canonicalPath + " and " + sym2.sourceFile.canonicalPath
-  }) {
-      override def toString = getMessage
   }
 
   /** A class for type histories */

@@ -359,10 +359,39 @@ trait Namers extends MethodSynthesis {
       }
     }
 
+    /** Given a ClassDef or ModuleDef, verifies there isn't a companion which
+     *  has been defined in a separate file.
+     */
+    private def validateCompanionDefs(tree: ImplDef) {
+      val sym = tree.symbol
+      if (sym eq NoSymbol) return
+
+      val ctx    = if (context.owner.isPackageObjectClass) context.outer else context
+      val module = if (sym.isModule) sym else ctx.scope lookup tree.name.toTermName
+      val clazz  = if (sym.isClass) sym else ctx.scope lookup tree.name.toTypeName
+      val fails  = (
+           module.isModule
+        && clazz.isClass
+        && !module.isSynthetic
+        && !clazz.isSynthetic
+        && (clazz.sourceFile ne null)
+        && (module.sourceFile ne null)
+        && !(module isCoDefinedWith clazz)
+      )
+      if (fails) {
+        context.unit.error(tree.pos, (
+            s"Companions '$clazz' and '$module' must be defined in same file:\n"
+          + s"  Found in ${clazz.sourceFile.canonicalPath} and ${module.sourceFile.canonicalPath}")
+        )
+      }
+    }
+
     def enterModuleDef(tree: ModuleDef) = {
       val sym = enterModuleSymbol(tree)
       sym.moduleClass setInfo namerOf(sym).moduleClassTypeCompleter(tree)
       sym setInfo completerOf(tree)
+      validateCompanionDefs(tree)
+      sym
     }
 
     /** Enter a module symbol. The tree parameter can be either
@@ -635,6 +664,7 @@ trait Namers extends MethodSynthesis {
         }
         else context.unit.error(tree.pos, "implicit classes must accept exactly one primary constructor parameter")
       }
+      validateCompanionDefs(tree)
     }
 
     // this logic is needed in case typer was interrupted half
@@ -699,7 +729,7 @@ trait Namers extends MethodSynthesis {
       // }
     }
 
-    def moduleClassTypeCompleter(tree: Tree) = {
+    def moduleClassTypeCompleter(tree: ModuleDef) = {
       mkTypeCompleter(tree) { sym =>
         val moduleSymbol = tree.symbol
         assert(moduleSymbol.moduleClass == sym, moduleSymbol.moduleClass)
@@ -1545,18 +1575,11 @@ trait Namers extends MethodSynthesis {
    *  call this method?
    */
   def companionSymbolOf(original: Symbol, ctx: Context): Symbol = {
-    try {
-      original.companionSymbol orElse {
-        ctx.lookup(original.name.companionName, original.owner).suchThat(sym =>
-          (original.isTerm || sym.hasModuleFlag) &&
-          (sym isCoDefinedWith original)
-        )
-      }
-    }
-    catch {
-      case e: InvalidCompanions =>
-        ctx.unit.error(original.pos, e.getMessage)
-        NoSymbol
+    original.companionSymbol orElse {
+      ctx.lookup(original.name.companionName, original.owner).suchThat(sym =>
+        (original.isTerm || sym.hasModuleFlag) &&
+        (sym isCoDefinedWith original)
+      )
     }
   }
 }

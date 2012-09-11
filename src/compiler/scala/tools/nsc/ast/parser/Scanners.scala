@@ -754,8 +754,12 @@ trait Scanners extends ScannersCommon {
       } else {
         val isUnclosedLiteral = !isUnicodeEscape && (ch == SU || (!multiLine && (ch == CR || ch == LF)))
         if (isUnclosedLiteral) {
-          syntaxError(if (!multiLine) "unclosed string literal" else "unclosed multi-line string literal")
-        } else {
+          if (multiLine)
+            incompleteInputError("unclosed multi-line string literal")
+          else
+            syntaxError("unclosed string literal")
+        }
+        else {
           putChar(ch)
           nextRawChar()
           getStringPart(multiLine)

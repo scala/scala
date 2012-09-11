@@ -317,25 +317,6 @@ trait Types extends api.Types { self: SymbolTable =>
     def substituteSymbols(from: List[Symbol], to: List[Symbol]): Type = substSym(from, to)
     def substituteTypes(from: List[Symbol], to: List[Type]): Type = subst(from, to)
 
-    def isConcrete = {
-      def notConcreteSym(sym: Symbol) =
-        sym.isAbstractType && !sym.isExistential
-
-      def notConcreteTpe(tpe: Type): Boolean = tpe match {
-        case ThisType(_) => false
-        case SuperType(_, _) => false
-        case SingleType(pre, sym) => notConcreteSym(sym)
-        case ConstantType(_) => false
-        case TypeRef(_, sym, args) => notConcreteSym(sym) || (args exists notConcreteTpe)
-        case RefinedType(_, _) => false
-        case ExistentialType(_, _) => false
-        case AnnotatedType(_, tp, _) => notConcreteTpe(tp)
-        case _ => true
-      }
-
-      !notConcreteTpe(this)
-    }
-
     // the only thingies that we want to splice are: 1) type parameters, 2) abstract type members
     // the thingies that we don't want to splice are: 1) concrete types (obviously), 2) existential skolems
     def isSpliceable = {
@@ -1010,7 +991,11 @@ trait Types extends api.Types { self: SymbolTable =>
     def toLongString = {
       val str = toString
       if (str == "type") widen.toString
-      else if ((str endsWith ".type") && !typeSymbol.isModuleClass) str + " (with underlying type " + widen + ")"
+      else if ((str endsWith ".type") && !typeSymbol.isModuleClass)
+        widen match {
+          case RefinedType(_, _)                      => "" + widen
+          case _                                      => s"$str (with underlying type $widen)"
+        }
       else str
     }
 
@@ -1632,7 +1617,7 @@ trait Types extends api.Types { self: SymbolTable =>
 
     override def safeToString: String = parentsString(parents) + (
       (if (settings.debug.value || parents.isEmpty || (decls.elems ne null))
-        decls.mkString("{", "; ", "}") else "")
+        fullyInitializeScope(decls).mkString("{", "; ", "}") else "")
     )
   }
 
@@ -1819,7 +1804,6 @@ trait Types extends api.Types { self: SymbolTable =>
            false
        }))
     }
-
     override def kind = "RefinedType"
   }
 
@@ -2005,9 +1989,11 @@ trait Types extends api.Types { self: SymbolTable =>
     /** A nicely formatted string with newlines and such.
      */
     def formattedToString: String =
-      parents.mkString("\n        with ") +
-      (if (settings.debug.value || parents.isEmpty || (decls.elems ne null))
-        decls.mkString(" {\n  ", "\n  ", "\n}") else "")
+      parents.mkString("\n        with ") + (
+        if (settings.debug.value || parents.isEmpty || (decls.elems ne null))
+         fullyInitializeScope(decls).mkString(" {\n  ", "\n  ", "\n}")
+        else ""
+      )
   }
 
   object ClassInfoType extends ClassInfoTypeExtractor
@@ -2466,7 +2452,7 @@ trait Types extends api.Types { self: SymbolTable =>
 
     def refinementString = (
       if (sym.isStructuralRefinement) (
-        decls filter (sym => sym.isPossibleInRefinement && sym.isPublic)
+        fullyInitializeScope(decls) filter (sym => sym.isPossibleInRefinement && sym.isPublic)
           map (_.defString)
           mkString("{", "; ", "}")
       )
@@ -3468,9 +3454,9 @@ trait Types extends api.Types { self: SymbolTable =>
   }
 
   /** A temporary type representing the erasure of a user-defined value type.
-   *  Created during phase reasure, eliminated again in posterasure.
-   *  @param   sym The value class symbol
-   *  @param   underlying  The underlying type before erasure
+   *  Created during phase erasure, eliminated again in posterasure.
+   *
+   *  @param   original  The underlying type before erasure
    */
   abstract case class ErasedValueType(original: TypeRef) extends UniqueType {
     override def safeToString = "ErasedValueType("+original+")"

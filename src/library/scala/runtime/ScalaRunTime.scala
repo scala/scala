@@ -167,35 +167,6 @@ object ScalaRunTime {
   def checkInitialized[T <: AnyRef](x: T): T =
     if (x == null) throw new UninitializedError else x
 
-  abstract class Try[+A] {
-    def Catch[B >: A](handler: PartialFunction[Throwable, B]): B
-    def Finally(fin: => Unit): A
-  }
-
-  def Try[A](block: => A): Try[A] = new Try[A] with Runnable {
-    private var result: A = _
-    private var exception: Throwable =
-      try   { run() ; null }
-      catch {
-        case e: ControlThrowable  => throw e  // don't catch non-local returns etc
-        case e: Throwable         => e
-      }
-
-    def run() { result = block }
-
-    def Catch[B >: A](handler: PartialFunction[Throwable, B]): B =
-      if (exception == null) result
-      else if (handler isDefinedAt exception) handler(exception)
-      else throw exception
-
-    def Finally(fin: => Unit): A = {
-      fin
-
-      if (exception == null) result
-      else throw exception
-    }
-  }
-
   def _toString(x: Product): String =
     x.productIterator.mkString(x.productPrefix + "(", ",", ")")
 
