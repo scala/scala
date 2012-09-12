@@ -326,7 +326,7 @@ abstract class Erasure extends AddInterfaces
   }
   // Methods on Any/Object which we rewrite here while we still know what
   // is a primitive and what arrived boxed.
-  private lazy val interceptedMethods = Set[Symbol](Any_##, Object_##, Any_getClass) ++ (
+  private lazy val interceptedMethods = Set[Symbol](Any_##, Object_##, Any_getClass, AnyVal_getClass) ++ (
     // Each value class has its own getClass for ultra-precise class object typing.
     ScalaValueClasses map (_.tpe member nme.getClass_)
   )
@@ -490,7 +490,7 @@ abstract class Erasure extends AddInterfaces
 
     @inline private def box(tree: Tree, target: => String): Tree = {
       val result = box1(tree)
-      log("boxing "+tree+":"+tree.tpe+" to "+target+" = "+result+":"+result.tpe)
+      log(s"boxing ${tree.summaryString}: ${tree.tpe} into $target: ${result.tpe}")
       result
     }
 
@@ -525,7 +525,7 @@ abstract class Erasure extends AddInterfaces
                *  fields (see TupleX). (ID)
                */
               case Apply(boxFun, List(arg)) if isUnbox(tree.symbol) && safeToRemoveUnbox(arg.tpe.typeSymbol) =>
-                log("boxing an unbox: " + tree + "/" + tree.symbol + " and replying with " + arg + " of type " + arg.tpe)
+                log(s"boxing an unbox: ${tree.symbol} -> ${arg.tpe}")
                 arg
               case _ =>
                 (REF(boxMethod(x)) APPLY tree) setPos (tree.pos) setType ObjectClass.tpe
@@ -537,7 +537,7 @@ abstract class Erasure extends AddInterfaces
 
     private def unbox(tree: Tree, pt: Type): Tree = {
       val result = unbox1(tree, pt)
-      log("unboxing "+tree+":"+tree.tpe+" to "+pt+" = "+result+":"+result.tpe)
+      log(s"unboxing ${tree.summaryString}: ${tree.tpe} with pt=$pt as type ${result.tpe}")
       result
     }
 
@@ -614,7 +614,7 @@ abstract class Erasure extends AddInterfaces
      *  @return     the adapted tree
      */
     private def adaptToType(tree: Tree, pt: Type): Tree = {
-      //if (settings.debug.value && pt != WildcardType)
+      if (settings.debug.value && pt != WildcardType)
         log("adapting " + tree + ":" + tree.tpe + " : " +  tree.tpe.parents + " to " + pt)//debug
       if (tree.tpe <:< pt)
         tree
@@ -1069,9 +1069,11 @@ abstract class Erasure extends AddInterfaces
                   case _                                        =>
                     global.typer.typed(gen.mkRuntimeCall(nme.hash_, List(qual)))
                 }
-              } else if (isPrimitiveValueClass(qual.tpe.typeSymbol)) { 
+              } else if (isPrimitiveValueClass(qual.tpe.typeSymbol)) {
                 // Rewrite 5.getClass to ScalaRunTime.anyValClass(5)
                 global.typer.typed(gen.mkRuntimeCall(nme.anyValClass, List(qual, typer.resolveClassTag(tree.pos, qual.tpe.widen))))
+              } else if (fn.symbol == AnyVal_getClass) {
+                tree setSymbol Object_getClass
               } else {
                 tree
               }
@@ -1079,8 +1081,8 @@ abstract class Erasure extends AddInterfaces
               case New(tpt) if name == nme.CONSTRUCTOR && tpt.tpe.typeSymbol.isDerivedValueClass =>
                 // println("inject derived: "+arg+" "+tpt.tpe)
                 val List(arg) = args
-                InjectDerivedValue(arg) addAttachment //@@@ setSymbol tpt.tpe.typeSymbol
-                  new TypeRefAttachment(tree.tpe.asInstanceOf[TypeRef])
+                val attachment = new TypeRefAttachment(tree.tpe.asInstanceOf[TypeRef])
+                InjectDerivedValue(arg) addAttachment attachment
               case _ =>
                 preEraseNormalApply(tree)
             }

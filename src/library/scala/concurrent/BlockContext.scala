@@ -8,9 +8,6 @@
 
 package scala.concurrent
 
-import java.lang.Thread
-import scala.concurrent.util.Duration
-
 /**
  * A context to be notified by `scala.concurrent.blocking` when
  * a thread is about to block. In effect this trait provides

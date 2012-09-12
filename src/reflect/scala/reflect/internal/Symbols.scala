@@ -114,7 +114,12 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     // with the proper specific type.
     def rawname: NameType
     def name: NameType
-    def name_=(n: Name): Unit
+    def name_=(n: Name): Unit = {
+      if (shouldLogAtThisPhase) {
+        val msg = s"Renaming $fullLocationString to $n"
+        if (isSpecialized) debuglog(msg) else log(msg)
+      }
+    }
     def asNameType(n: Name): NameType
 
     private[this] var _rawowner = initOwner // Syncnote: need not be protected, as only assignment happens in owner_=, which is not exposed to api
@@ -697,6 +702,18 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     def deprecationMessage  = getAnnotation(DeprecatedAttr) flatMap (_ stringArg 0)
     def deprecationVersion  = getAnnotation(DeprecatedAttr) flatMap (_ stringArg 1)
     def deprecatedParamName = getAnnotation(DeprecatedNameAttr) flatMap (_ symbolArg 0)
+    def hasDeprecatedInheritanceAnnotation
+                            = hasAnnotation(DeprecatedInheritanceAttr)
+    def deprecatedInheritanceMessage
+                            = getAnnotation(DeprecatedInheritanceAttr) flatMap (_ stringArg 0)
+    def deprecatedInheritanceVersion
+                            = getAnnotation(DeprecatedInheritanceAttr) flatMap (_ stringArg 1)
+    def hasDeprecatedOverridingAnnotation
+                            = hasAnnotation(DeprecatedOverridingAttr)
+    def deprecatedOverridingMessage
+                            = getAnnotation(DeprecatedOverridingAttr) flatMap (_ stringArg 0)
+    def deprecatedOverridingVersion
+                            = getAnnotation(DeprecatedOverridingAttr) flatMap (_ stringArg 1)
 
     // !!! when annotation arguments are not literal strings, but any sort of
     // assembly of strings, there is a fair chance they will turn up here not as
@@ -853,7 +870,16 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     final def isInitialized: Boolean =
       validTo != NoPeriod
 
-    /** Determines whether this symbol can be loaded by subsequent reflective compilation */
+    /** Can this symbol be loaded by a reflective mirror?
+     *
+     *  Scalac relies on `ScalaSignature' annotation to retain symbols across compilation runs.
+     *  Such annotations (also called "pickles") are applied on top-level classes and include information
+     *  about all symbols reachable from the annotee. However, local symbols (e.g. classes or definitions local to a block)
+     *  are typically unreachable and information about them gets lost.
+     *
+     *  This method is useful for macro writers who wish to save certain ASTs to be used at runtime.
+     *  With `isLocatable' it's possible to check whether a tree can be retained as is, or it needs special treatment.
+     */
     final def isLocatable: Boolean = {
       if (this == NoSymbol) return false
       if (isRoot || isRootPackage) return true
@@ -945,7 +971,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     /** If this symbol has an expanded name, its original name, otherwise its name itself.
      *  @see expandName
      */
-    def originalName: Name = nme.originalName(name)
+    def originalName: Name = nme.originalName(nme.dropLocalSuffix(name))
 
     /** The name of the symbol before decoding, e.g. `\$eq\$eq` instead of `==`.
      */
@@ -990,7 +1016,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     private def fullNameInternal(separator: Char): Name = (
       if (isRoot || isRootPackage || this == NoSymbol) name
       else if (owner.isEffectiveRoot) name
-      else effectiveOwner.enclClass.fullNameAsName(separator) append separator append name
+      else ((effectiveOwner.enclClass.fullNameAsName(separator) append separator): Name) append name
     )
 
     def fullNameAsName(separator: Char): Name = nme.dropLocalSuffix(fullNameInternal(separator))
@@ -1790,26 +1816,16 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
       } else owner.enclosingTopLevelClass
 
     /** Is this symbol defined in the same scope and compilation unit as `that` symbol? */
-    def isCoDefinedWith(that: Symbol) = {
-      (this.rawInfo ne NoType) &&
-      (this.effectiveOwner == that.effectiveOwner) && {
-        !this.effectiveOwner.isPackageClass ||
-        (this.sourceFile eq null) ||
-        (that.sourceFile eq null) ||
-        (this.sourceFile == that.sourceFile) || {
-          // recognize companion object in separate file and fail, else compilation
-          // appears to succeed but highly opaque errors come later: see bug #1286
-          if (this.sourceFile.path != that.sourceFile.path) {
-            // The cheaper check can be wrong: do the expensive normalization
-            // before failing.
-            if (this.sourceFile.canonicalPath != that.sourceFile.canonicalPath)
-              throw InvalidCompanions(this, that)
-          }
-
-          false
-        }
-      }
-    }
+    def isCoDefinedWith(that: Symbol) = (
+         (this.rawInfo ne NoType)
+      && (this.effectiveOwner == that.effectiveOwner)
+      && (   !this.effectiveOwner.isPackageClass
+          || (this.sourceFile eq null)
+          || (that.sourceFile eq null)
+          || (this.sourceFile.path == that.sourceFile.path)  // Cheap possibly wrong check, then expensive normalization
+          || (this.sourceFile.canonicalPath == that.sourceFile.canonicalPath)
+      )
+    )
 
     /** The internal representation of classes and objects:
      *
@@ -2188,10 +2204,10 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
      *  If settings.Yshowsymkinds, adds abbreviated symbol kind.
      */
     def nameString: String = (
-      if (!settings.uniqid.value && !settings.Yshowsymkinds.value) "" + decodedName
-      else if (settings.uniqid.value && !settings.Yshowsymkinds.value) decodedName + "#" + id
-      else if (!settings.uniqid.value && settings.Yshowsymkinds.value) decodedName + "#" + abbreviatedKindString
-      else decodedName + "#" + id + "#" + abbreviatedKindString
+      if (!settings.uniqid.value && !settings.Yshowsymkinds.value) "" + originalName.decode
+      else if (settings.uniqid.value && !settings.Yshowsymkinds.value) originalName.decode + "#" + id
+      else if (!settings.uniqid.value && settings.Yshowsymkinds.value) originalName.decode + "#" + abbreviatedKindString
+      else originalName.decode + "#" + id + "#" + abbreviatedKindString
     )
 
     def fullNameString: String = {
@@ -2301,9 +2317,9 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
       if (Statistics.hotEnabled) Statistics.incCounter(nameCount)
       _rawname
     }
-    def name_=(name: Name) {
+    override def name_=(name: Name) {
       if (name != rawname) {
-        log("Renaming %s %s %s to %s".format(shortSymbolClass, debugFlagString, rawname, name))
+        super.name_=(name)   // logging
         changeNameInOwners(name)
         _rawname = name.toTermName
       }
@@ -2604,9 +2620,9 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
 
     // TODO - don't allow names to be renamed in this unstructured a fashion.
     // Rename as little as possible.  Enforce invariants on all renames.
-    def name_=(name: Name) {
+    override def name_=(name: Name) {
       if (name != rawname) {
-        log("Renaming %s %s %s to %s".format(shortSymbolClass, debugFlagString, rawname, name))
+        super.name_=(name)  // logging
         changeNameInOwners(name)
         _rawname = name.toTypeName
       }
@@ -3077,7 +3093,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     def asNameType(n: Name) = n.toTermName
     def rawname = nme.NO_NAME
     def name = nme.NO_NAME
-    def name_=(n: Name) = abort("Cannot set NoSymbol's name to " + n)
+    override def name_=(n: Name) = abort("Cannot set NoSymbol's name to " + n)
 
     synchronized {
       setInfo(NoType)
@@ -3200,13 +3216,6 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
   case class CyclicReference(sym: Symbol, info: Type)
   extends TypeError("illegal cyclic reference involving " + sym) {
     if (settings.debug.value) printStackTrace()
-  }
-
-  case class InvalidCompanions(sym1: Symbol, sym2: Symbol) extends Throwable({
-    "Companions '" + sym1 + "' and '" + sym2 + "' must be defined in same file:\n" +
-    "  Found in " + sym1.sourceFile.canonicalPath + " and " + sym2.sourceFile.canonicalPath
-  }) {
-      override def toString = getMessage
   }
 
   /** A class for type histories */
