@@ -536,7 +536,7 @@ class MutableSettings(val errorFn: String => Unit)
     }
     override def tryToSetColon(args: List[String]) = tryToSet(args)
     override def tryToSetFromPropertyValue(s: String) = tryToSet(s.trim.split(',').toList)
-    def unparse: List[String] = name :: value
+    def unparse: List[String] = value map (name + ":" + _)
 
     withHelpSyntax(name + ":<" + arg + ">")
   }
