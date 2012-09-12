@@ -94,7 +94,7 @@ trait Extractors {
 
   object ReifiedTree {
     def apply(universe: Tree, mirror: Tree, symtab: SymbolTable, rtree: Tree, tpe: Type, rtpe: Tree, concrete: Boolean): Tree = {
-      val tagFactory = if (concrete) nme.TypeTag else nme.AbsTypeTag
+      val tagFactory = if (concrete) nme.TypeTag else nme.WeakTypeTag
       val tagCtor = TypeApply(Select(Select(Ident(nme.UNIVERSE_SHORT), tagFactory), nme.apply), List(TypeTree(tpe)))
       val exprCtor = TypeApply(Select(Select(Ident(nme.UNIVERSE_SHORT), nme.Expr), nme.apply), List(TypeTree(tpe)))
       val tagArgs = List(Ident(nme.MIRROR_SHORT), mkCreator(tpnme.REIFY_TYPECREATOR_PREFIX, symtab, rtpe))
@@ -122,7 +122,7 @@ trait Extractors {
 
   object ReifiedType {
     def apply(universe: Tree, mirror: Tree, symtab: SymbolTable, tpe: Type, rtpe: Tree, concrete: Boolean) = {
-      val tagFactory = if (concrete) nme.TypeTag else nme.AbsTypeTag
+      val tagFactory = if (concrete) nme.TypeTag else nme.WeakTypeTag
       val ctor = TypeApply(Select(Select(Ident(nme.UNIVERSE_SHORT), tagFactory), nme.apply), List(TypeTree(tpe)))
       val args = List(Ident(nme.MIRROR_SHORT), mkCreator(tpnme.REIFY_TYPECREATOR_PREFIX, symtab, rtpe))
       val unwrapped = Apply(ctor, args)

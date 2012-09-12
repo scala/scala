@@ -9,7 +9,7 @@ object Test {
   val g1 = g()
   val h1 = h()
 
-  def m[T: AbsTypeTag](x: T) = println(absTypeOf[T] + ", underlying = " + absTypeOf[T].typeSymbol.typeSignature)
+  def m[T: WeakTypeTag](x: T) = println(weakTypeOf[T] + ", underlying = " + weakTypeOf[T].typeSymbol.typeSignature)
 
   def main(args: Array[String]): Unit = {
     m(f)

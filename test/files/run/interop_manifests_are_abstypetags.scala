@@ -1,11 +1,11 @@
 import scala.reflect.runtime.universe._
 
 object Test extends App {
-  def manifestIsAbsTypeTag[T: Manifest] = {
-    println(implicitly[AbsTypeTag[T]].tpe)
+  def manifestIsWeakTypeTag[T: Manifest] = {
+    println(implicitly[WeakTypeTag[T]].tpe)
   }
 
-  manifestIsAbsTypeTag[Int]
-  manifestIsAbsTypeTag[String]
-  manifestIsAbsTypeTag[Array[Int]]
+  manifestIsWeakTypeTag[Int]
+  manifestIsWeakTypeTag[String]
+  manifestIsWeakTypeTag[Array[Int]]
 }

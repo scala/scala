@@ -73,7 +73,7 @@ trait GenTypes {
     if (tpe.isSpliceable && !(quantified contains tpe.typeSymbol)) {
       if (reifyDebug) println("splicing " + tpe)
 
-      val tagFlavor = if (concrete) tpnme.TypeTag.toString else tpnme.AbsTypeTag.toString
+      val tagFlavor = if (concrete) tpnme.TypeTag.toString else tpnme.WeakTypeTag.toString
       val key = (tagFlavor, tpe.typeSymbol)
       // if this fails, it might produce the dreaded "erroneous or inaccessible type" error
       // to find out the whereabouts of the error run scalac with -Ydebug

@@ -26,7 +26,7 @@ import scala.reflect.macros.runtime.AbortMacroException
  *
  *  Then fooBar needs to point to a static method of the following form:
  *
- *    def fooBar[T: c.AbsTypeTag] // type tag annotation is optional
+ *    def fooBar[T: c.WeakTypeTag] // type tag annotation is optional
  *           (c: scala.reflect.macros.Context)
  *           (xs: c.Expr[List[T]])
  *           : c.Expr[T] = {
@@ -84,7 +84,7 @@ trait Macros extends scala.tools.reflect.FastTrack with Traces {
     val methName: String,
     // flattens the macro impl's parameter lists having symbols replaced with metadata
     // currently metadata is an index of the type parameter corresponding to that type tag (if applicable)
-    // f.ex. for: def impl[T: AbsTypeTag, U: AbsTypeTag, V](c: Context)(x: c.Expr[T]): (U, V) = ???
+    // f.ex. for: def impl[T: WeakTypeTag, U: WeakTypeTag, V](c: Context)(x: c.Expr[T]): (U, V) = ???
     // `signature` will be equal to List(-1, -1, 0, 1)
     val signature: List[Int],
     // type arguments part of a macro impl ref (the right-hand side of a macro definition)
@@ -216,7 +216,7 @@ trait Macros extends scala.tools.reflect.FastTrack with Traces {
   }
 
   /** Transforms parameters lists of a macro impl.
-   *  The `transform` function is invoked only for AbsTypeTag evidence parameters.
+   *  The `transform` function is invoked only for WeakTypeTag evidence parameters.
    *
    *  The transformer takes two arguments: a value parameter from the parameter list
    *  and a type parameter that is witnesses by the value parameter.
@@ -232,7 +232,7 @@ trait Macros extends scala.tools.reflect.FastTrack with Traces {
     if (paramss.isEmpty || paramss.last.isEmpty) return paramss // no implicit parameters in the signature => nothing to do
     if (paramss.head.isEmpty || !(paramss.head.head.tpe <:< MacroContextClass.tpe)) return paramss // no context parameter in the signature => nothing to do
     def transformTag(param: Symbol): Symbol = param.tpe.dealias match {
-      case TypeRef(SingleType(SingleType(NoPrefix, c), universe), AbsTypeTagClass, targ :: Nil)
+      case TypeRef(SingleType(SingleType(NoPrefix, c), universe), WeakTypeTagClass, targ :: Nil)
       if c == paramss.head.head && universe == MacroContextUniverse =>
         transform(param, targ.typeSymbol)
       case _ =>
@@ -336,7 +336,7 @@ trait Macros extends scala.tools.reflect.FastTrack with Traces {
             RepeatedParamClass.typeConstructor,
             List(implType(isType, sigma(origTpe.typeArgs.head))))
         else {
-          val tsym = getMember(MacroContextClass, if (isType) tpnme.AbsTypeTag else tpnme.Expr)
+          val tsym = getMember(MacroContextClass, if (isType) tpnme.WeakTypeTag else tpnme.Expr)
           typeRef(singleType(NoPrefix, ctxParam), tsym, List(sigma(origTpe)))
         }
       val paramCache = collection.mutable.Map[Symbol, Symbol]()
@@ -630,7 +630,7 @@ trait Macros extends scala.tools.reflect.FastTrack with Traces {
                 macroDef.owner)
           } else
             targ.tpe
-          context.AbsTypeTag(tpe)
+          context.WeakTypeTag(tpe)
         })
         macroTraceVerbose("tags: ")(tags)
 

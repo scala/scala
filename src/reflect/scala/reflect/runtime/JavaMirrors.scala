@@ -133,7 +133,7 @@ trait JavaMirrors extends internal.SymbolTable with api.JavaUniverse { self: Sym
     """.trim.stripMargin)
     private def ErrorSetImmutableField(wannabe: Symbol) = throw new ScalaReflectionException(s"cannot set an immutable field ${wannabe.name}")
     private def ErrorNotConstructor(wannabe: Symbol, owner: Symbol) = throw new ScalaReflectionException(s"expected a constructor of $owner, you provided $wannabe")
-    private def ErrorFree(member: Symbol, freeType: Symbol) = throw new ScalaReflectionException(s"cannot reflect ${member.kindString} ${member.name}, because it's a member of a free type ${freeType.name}")
+    private def ErrorFree(member: Symbol, freeType: Symbol) = throw new ScalaReflectionException(s"cannot reflect ${member.kindString} ${member.name}, because it's a member of a weak type ${freeType.name}")
 
     def reflect[T: ClassTag](obj: T): InstanceMirror = new JavaInstanceMirror(obj)
 
