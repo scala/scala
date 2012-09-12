@@ -609,6 +609,15 @@ object FiniteDuration {
 
   def apply(length: Long, unit: TimeUnit) = new FiniteDuration(length, unit)
   def apply(length: Long, unit: String)   = new FiniteDuration(length, Duration.timeUnit(unit))
+
+  // limit on abs. value of durations in their units
+  private final val max_ns = Long.MaxValue
+  private final val max_µs = max_ns  / 1000
+  private final val max_ms = max_µs  / 1000
+  private final val max_s  = max_ms  / 1000
+  private final val max_min= max_s   / 60
+  private final val max_h  = max_min / 60
+  private final val max_d  = max_h   / 24
 }
 
 /**
@@ -616,22 +625,23 @@ object FiniteDuration {
  * this guarantee statically. The range of this class is limited to +-(2^63-1)ns, which is roughly 292 years.
  */
 class FiniteDuration(val length: Long, val unit: TimeUnit) extends Duration {
+  import FiniteDuration._
   import Duration._
 
   require(unit match {
       /*
        * enforce the 2^63-1 ns limit, must be pos/neg symmetrical because of unary_-
        */
-      case NANOSECONDS  ⇒ length != Long.MinValue                                     // max_ns = Long.MaxValue
-      case MICROSECONDS ⇒ length <= 9223372036854775L && length >= -9223372036854775L // max_µs = max_ns / 1000
-      case MILLISECONDS ⇒ length <= 9223372036854L && length >= -9223372036854L       // max_ms = max_µs / 1000
-      case SECONDS      ⇒ length <= 9223372036L && length >= -9223372036L             // max_s  = max_ms / 1000
-      case MINUTES      ⇒ length <= 153722867L && length >= -153722867L               // max_min= max_s  / 60
-      case HOURS        ⇒ length <= 2562047L && length >= -2562047L                   // max_h  = max_min/ 60
-      case DAYS         ⇒ length <= 106751L && length >= -106751L                     // max_d  = max_h  / 24
+      case NANOSECONDS  ⇒ -max_ns  <= length && length <= max_ns
+      case MICROSECONDS ⇒ -max_µs  <= length && length <= max_µs
+      case MILLISECONDS ⇒ -max_ms  <= length && length <= max_ms
+      case SECONDS      ⇒ -max_s   <= length && length <= max_s
+      case MINUTES      ⇒ -max_min <= length && length <= max_min
+      case HOURS        ⇒ -max_h   <= length && length <= max_h
+      case DAYS         ⇒ -max_d   <= length && length <= max_d
       case _ ⇒
         val v = DAYS.convert(length, unit)
-        v <= 106751L && v >= -106751L
+        -max_d <= v && v <= max_d
     }, "Duration is limited to +-(2^63-1)ns (ca. 292 years)")
 
   def toNanos   = unit.toNanos(length)
