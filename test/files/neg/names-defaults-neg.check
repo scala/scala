@@ -76,7 +76,7 @@ and  method f in object t8 of type (a: Int, b: Object)String
 match argument types (a: Int,b: String) and expected result type Any
   println(t8.f(a = 0, b = "1")) // ambigous reference
              ^
-names-defaults-neg.scala:69: error: wrong number of arguments for <none>: (x: Int, y: String)A1
+names-defaults-neg.scala:69: error: wrong number of arguments for pattern A1(x: Int,y: String)
   A1() match { case A1(_) => () }
                       ^
 names-defaults-neg.scala:76: error: no type parameters for method test4: (x: T[T[List[T[X forSome { type X }]]]])T[T[List[T[X forSome { type X }]]]] exist so that it can be applied to arguments (List[Int])

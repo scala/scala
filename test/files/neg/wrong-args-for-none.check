@@ -1,0 +1,4 @@
+wrong-args-for-none.scala:5: error: wrong number of arguments for pattern Test.Foo(x: Int,y: Int)
+  def f(x: Any) = x match { case Bar(Foo(5)) => }
+                                        ^
+one error found
