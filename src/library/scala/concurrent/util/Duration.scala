@@ -628,17 +628,19 @@ class FiniteDuration(val length: Long, val unit: TimeUnit) extends Duration {
   import FiniteDuration._
   import Duration._
 
+  private[this] def bounded(max: Long) = -max <= length && length <= max
+
   require(unit match {
       /*
        * enforce the 2^63-1 ns limit, must be pos/neg symmetrical because of unary_-
        */
-      case NANOSECONDS  ⇒ -max_ns  <= length && length <= max_ns
-      case MICROSECONDS ⇒ -max_µs  <= length && length <= max_µs
-      case MILLISECONDS ⇒ -max_ms  <= length && length <= max_ms
-      case SECONDS      ⇒ -max_s   <= length && length <= max_s
-      case MINUTES      ⇒ -max_min <= length && length <= max_min
-      case HOURS        ⇒ -max_h   <= length && length <= max_h
-      case DAYS         ⇒ -max_d   <= length && length <= max_d
+      case NANOSECONDS  ⇒ bounded(max_ns)
+      case MICROSECONDS ⇒ bounded(max_µs)
+      case MILLISECONDS ⇒ bounded(max_ms)
+      case SECONDS      ⇒ bounded(max_s)
+      case MINUTES      ⇒ bounded(max_min)
+      case HOURS        ⇒ bounded(max_h)
+      case DAYS         ⇒ bounded(max_d)
       case _ ⇒
         val v = DAYS.convert(length, unit)
         -max_d <= v && v <= max_d
