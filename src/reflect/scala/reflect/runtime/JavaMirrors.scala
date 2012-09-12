@@ -23,7 +23,7 @@ import language.existentials
 import scala.runtime.{ScalaRunTime, BoxesRunTime}
 import scala.reflect.internal.util.Collections._
 
-trait JavaMirrors extends internal.SymbolTable with api.JavaUniverse { self: SymbolTable =>
+trait JavaMirrors extends internal.SymbolTable with api.JavaUniverse { thisUniverse: SymbolTable =>
 
   private lazy val mirrors = new WeakHashMap[ClassLoader, WeakReference[JavaMirror]]()
 
@@ -62,9 +62,9 @@ trait JavaMirrors extends internal.SymbolTable with api.JavaUniverse { self: Sym
   class JavaMirror(owner: Symbol,
     /** Class loader that is a mastermind behind the reflexive mirror */
     val classLoader: ClassLoader
-  ) extends Roots(owner) with super.JavaMirror { wholemirror =>
+  ) extends Roots(owner) with super.JavaMirror { thisMirror =>
 
-    val universe: self.type = self
+    val universe: thisUniverse.type = thisUniverse
 
     import definitions._
 
@@ -172,7 +172,7 @@ trait JavaMirrors extends internal.SymbolTable with api.JavaUniverse { self: Sym
 
     private class JavaInstanceMirror[T: ClassTag](val instance: T)
             extends InstanceMirror {
-      def symbol = wholemirror.classSymbol(preciseClass(instance))
+      def symbol = thisMirror.classSymbol(preciseClass(instance))
       def reflectField(field: TermSymbol): FieldMirror = {
         checkMemberOf(field, symbol)
         if ((field.isMethod && !field.isAccessor) || field.isModule) ErrorNotField(field)
@@ -452,7 +452,7 @@ trait JavaMirrors extends internal.SymbolTable with api.JavaUniverse { self: Sym
     }
 
     private object unpickler extends UnPickler {
-      val global: self.type = self
+      val global: thisUniverse.type = thisUniverse
     }
 
     /** how connected????
@@ -599,7 +599,7 @@ trait JavaMirrors extends internal.SymbolTable with api.JavaUniverse { self: Sym
         completeRest()
       }
 
-      def completeRest(): Unit = self.synchronized {
+      def completeRest(): Unit = thisUniverse.synchronized {
         val tparams = clazz.rawInfo.typeParams
 
         val parents = try {
@@ -1183,9 +1183,9 @@ trait JavaMirrors extends internal.SymbolTable with api.JavaUniverse { self: Sym
     mirrors(rootToLoader getOrElseUpdate(root, findLoader)).get.get
   }
 
-  private lazy val magicClasses: Map[(String, Name), Symbol] = {
+  private lazy val magicallyEnteredClasses: Map[(String, Name), Symbol] = {
     def mapEntry(sym: Symbol): ((String, Name), Symbol) = (sym.owner.fullName, sym.name) -> sym
-    Map() ++ (definitions.magicSymbols filter (_.isType) map mapEntry)
+    Map() ++ (definitions.magicallyEnteredClasses filter (_.isType) map mapEntry)
   }
 
   /** 1. If `owner` is a package class (but not the empty package) and `name` is a term name, make a new package
@@ -1204,9 +1204,12 @@ trait JavaMirrors extends internal.SymbolTable with api.JavaUniverse { self: Sym
       if (name.isTermName && !owner.isEmptyPackageClass)
         return mirror.makeScalaPackage(
           if (owner.isRootSymbol) name.toString else owner.fullName+"."+name)
-      magicClasses get (owner.fullName, name) match {
+      magicallyEnteredClasses get (owner.fullName, name) match {
         case Some(tsym) =>
-          owner.info.decls enter tsym
+          // magically entered classes are only present in root mirrors
+          // because Definitions.scala, which initializes and enters them, only affects rootMirror
+          // therefore we need to enter them manually for non-root mirrors
+          if (mirror ne thisUniverse.rootMirror) owner.info.decls enter tsym
           return tsym
         case None =>
       }

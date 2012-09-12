@@ -1113,7 +1113,7 @@ trait Definitions extends api.StandardDefinitions {
 
     /** Is symbol a phantom class for which no runtime representation exists? */
     lazy val isPhantomClass = Set[Symbol](AnyClass, AnyValClass, NullClass, NothingClass)
-    lazy val magicSymbols = List(
+    lazy val magicallyEnteredClasses = List(
       AnnotationDefaultAttr, // #2264
       RepeatedParamClass,
       JavaRepeatedParamClass,
@@ -1124,7 +1124,9 @@ trait Definitions extends api.StandardDefinitions {
       NullClass,
       NothingClass,
       SingletonClass,
-      EqualsPatternClass,
+      EqualsPatternClass
+    )
+    lazy val magicallyEnteredMethods = List(
       Any_==,
       Any_!=,
       Any_equals,
@@ -1142,10 +1144,13 @@ trait Definitions extends api.StandardDefinitions {
       Object_synchronized,
       Object_isInstanceOf,
       Object_asInstanceOf,
-      String_+,
+      String_+
+    )
+    lazy val magicallyHijackedSymbols = List(
       ComparableClass,
       JavaSerializableClass
     )
+    lazy val magicSymbols = magicallyEnteredClasses ++ magicallyEnteredMethods ++ magicallyHijackedSymbols
 
     /** Is the symbol that of a parent which is added during parsing? */
     lazy val isPossibleSyntheticParent = ProductClass.toSet[Symbol] + ProductRootClass + SerializableClass
