@@ -145,12 +145,12 @@ object Duration {
   }
 
   // "ms milli millisecond" -> List("ms", "milli", "millis", "millisecond", "milliseconds")
-  private def words(s: String) = (s.trim split "\\s+").toList
-  private def expandLabels(labels: String): List[String] = {
+  private[this] def words(s: String) = (s.trim split "\\s+").toList
+  private[this] def expandLabels(labels: String): List[String] = {
     val hd :: rest = words(labels)
     hd :: rest.flatMap(s => List(s, s + "s"))
   }
-  private val timeUnitLabels = List(
+  private[this] val timeUnitLabels = List(
     DAYS         -> "d day",
     HOURS        -> "h hour",
     MINUTES      -> "min minute",
@@ -205,12 +205,12 @@ object Duration {
       fromNanos((nanos + 0.5).toLong)
   }
 
-  private final val  µs_per_ns = 1000L
-  private final val  ms_per_ns =  µs_per_ns * 1000
-  private final val   s_per_ns =  ms_per_ns * 1000
-  private final val min_per_ns =   s_per_ns * 60
-  private final val   h_per_ns = min_per_ns * 60
-  private final val   d_per_ns =   h_per_ns * 24
+  private[this] final val  µs_per_ns = 1000L
+  private[this] final val  ms_per_ns =  µs_per_ns * 1000
+  private[this] final val   s_per_ns =  ms_per_ns * 1000
+  private[this] final val min_per_ns =   s_per_ns * 60
+  private[this] final val   h_per_ns = min_per_ns * 60
+  private[this] final val   d_per_ns =   h_per_ns * 24
 
   /**
    * Construct a finite duration from the given number of nanoseconds. The
@@ -286,7 +286,7 @@ object Duration {
 
     final def isFinite() = false
 
-    private def fail(what: String) = throw new IllegalArgumentException(s"$what not allowed on infinite Durations")
+    private[this] def fail(what: String) = throw new IllegalArgumentException(s"$what not allowed on infinite Durations")
     final def length: Long    = fail("length")
     final def unit: TimeUnit  = fail("unit")
     final def toNanos: Long   = fail("toNanos")
@@ -624,7 +624,7 @@ object FiniteDuration {
  * This class represents a finite duration. Its addition and subtraction operators are overloaded to retain
  * this guarantee statically. The range of this class is limited to +-(2^63-1)ns, which is roughly 292 years.
  */
-class FiniteDuration(val length: Long, val unit: TimeUnit) extends Duration {
+final class FiniteDuration(val length: Long, val unit: TimeUnit) extends Duration {
   import FiniteDuration._
   import Duration._
 
@@ -655,7 +655,7 @@ class FiniteDuration(val length: Long, val unit: TimeUnit) extends Duration {
   def toDays    = unit.toDays(length)
   def toUnit(u: TimeUnit) = toNanos.toDouble / NANOSECONDS.convert(1, u)
 
-  private def unitString = timeUnitName(unit) + ( if (length == 1) "" else "s" )
+  private[this] def unitString = timeUnitName(unit) + ( if (length == 1) "" else "s" )
   override def toString = "" + length + " " + unitString
 
   def compare(other: Duration) = other match {
@@ -664,12 +664,12 @@ class FiniteDuration(val length: Long, val unit: TimeUnit) extends Duration {
   }
 
   // see https://www.securecoding.cert.org/confluence/display/java/NUM00-J.+Detect+or+prevent+integer+overflow
-  private def safeAdd(a: Long, b: Long): Long = {
+  private[this] def safeAdd(a: Long, b: Long): Long = {
     if ((b > 0) && (a > Long.MaxValue - b) ||
         (b < 0) && (a < Long.MinValue - b)) throw new IllegalArgumentException("integer overflow")
     a + b
   }
-  private def add(otherLength: Long, otherUnit: TimeUnit): FiniteDuration = {
+  private[this] def add(otherLength: Long, otherUnit: TimeUnit): FiniteDuration = {
     val commonUnit = if (otherUnit.convert(1, unit) == 0) unit else otherUnit
     val totalLength = safeAdd(commonUnit.convert(length, unit), commonUnit.convert(otherLength, otherUnit))
     new FiniteDuration(totalLength, commonUnit)
@@ -696,7 +696,7 @@ class FiniteDuration(val length: Long, val unit: TimeUnit) extends Duration {
     else Zero
 
   // if this is made a constant, then scalac will elide the conditional and always return +0.0, SI-6331
-  private def minusZero = -0d
+  private[this] def minusZero = -0d
   def /(other: Duration): Double =
     if (other.isFinite) toNanos.toDouble / other.toNanos
     else if (other eq Undefined) Double.NaN
