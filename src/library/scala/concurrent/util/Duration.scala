@@ -28,26 +28,26 @@ import language.implicitConversions
  * does not take into account changes to the system clock (such as leap
  * seconds).
  */
-case class Deadline private (time: Duration) extends Ordered[Deadline] {
+case class Deadline private (time: FiniteDuration) extends Ordered[Deadline] {
   /**
    * Return a deadline advanced (i.e. moved into the future) by the given duration.
    */
-  def +(other: Duration): Deadline = copy(time = time + other)
+  def +(other: FiniteDuration): Deadline = copy(time = time + other)
   /**
    * Return a deadline moved backwards (i.e. towards the past) by the given duration.
    */
-  def -(other: Duration): Deadline = copy(time = time - other)
+  def -(other: FiniteDuration): Deadline = copy(time = time - other)
   /**
    * Calculate time difference between this and the other deadline, where the result is directed (i.e. may be negative).
    */
-  def -(other: Deadline): Duration = time - other.time
+  def -(other: Deadline): FiniteDuration = time - other.time
   /**
    * Calculate time difference between this duration and now; the result is negative if the deadline has passed.
    *
    * '''''Note that on some systems this operation is costly because it entails a system call.'''''
    * Check `System.nanoTime` for your platform.
    */
-  def timeLeft: Duration = this - Deadline.now
+  def timeLeft: FiniteDuration = this - Deadline.now
   /**
    * Determine whether the deadline still lies in the future at the point where this method is called.
    *
@@ -552,10 +552,6 @@ sealed abstract class Duration extends Serializable with Ordered[Duration] {
    * Return the larger of this and that duration as determined by the natural ordering.
    */
   def max(other: Duration): Duration = if (this > other) this else other
-  /**
-   * Construct a [[Deadline]] from this duration by adding it to the current instant `Duration.now`.
-   */
-  def fromNow: Deadline = Deadline.now + this
 
   // Java API
 
@@ -654,6 +650,11 @@ final class FiniteDuration(val length: Long, val unit: TimeUnit) extends Duratio
   def toHours   = unit.toHours(length)
   def toDays    = unit.toDays(length)
   def toUnit(u: TimeUnit) = toNanos.toDouble / NANOSECONDS.convert(1, u)
+
+  /**
+   * Construct a [[Deadline]] from this duration by adding it to the current instant `Deadline.now`.
+   */
+  def fromNow: Deadline = Deadline.now + this
 
   private[this] def unitString = timeUnitName(unit) + ( if (length == 1) "" else "s" )
   override def toString = "" + length + " " + unitString
