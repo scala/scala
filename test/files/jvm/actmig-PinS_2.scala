@@ -1,4 +1,5 @@
-import scala.actors.{ MigrationSystem, StashingActor, ActorRef, Props, Exit }
+import scala.actors._
+import scala.actors.migration._
 import scala.concurrent.util.duration._
 import scala.concurrent.{ Promise, Await }
 

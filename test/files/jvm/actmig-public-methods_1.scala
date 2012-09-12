@@ -1,10 +1,11 @@
 import scala.collection.mutable.ArrayBuffer
 import scala.actors.Actor._
 import scala.actors._
+import scala.actors.migration._
 import scala.util._
 import java.util.concurrent.{ TimeUnit, CountDownLatch }
 import scala.concurrent.util.Duration
-import scala.actors.pattern._
+import scala.actors.migration.pattern._
 
 object Test {
   val NUMBER_OF_TESTS = 6
