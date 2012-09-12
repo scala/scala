@@ -12,7 +12,7 @@ package scala.concurrent.impl
 
 import java.util.concurrent.TimeUnit.NANOSECONDS
 import scala.concurrent.{ ExecutionContext, CanAwait, OnCompleteRunnable, TimeoutException, ExecutionException }
-import scala.concurrent.util.{ Duration, Deadline }
+import scala.concurrent.util.{ Duration, Deadline, FiniteDuration }
 import scala.annotation.tailrec
 import scala.util.control.NonFatal
 import scala.util.{ Try, Success, Failure }
@@ -64,7 +64,7 @@ private[concurrent] object Promise {
     
     protected final def tryAwait(atMost: Duration): Boolean = {
       @tailrec
-      def awaitUnsafe(deadline: Deadline, nextWait: Duration): Boolean = {
+      def awaitUnsafe(deadline: Deadline, nextWait: FiniteDuration): Boolean = {
         if (!isCompleted && nextWait > Duration.Zero) {
           val ms = nextWait.toMillis
           val ns = (nextWait.toNanos % 1000000l).toInt // as per object.wait spec
@@ -84,14 +84,13 @@ private[concurrent] object Promise {
         }
       }
 
-      if (atMost eq Duration.Undefined)
-        throw new IllegalArgumentException("cannot wait for Undefined period")
-      else if (atMost <= Duration.Zero)
-        isCompleted
-      else if (atMost == Duration.Inf)
-        awaitUnbounded()
-      else
-        awaitUnsafe(atMost.fromNow, atMost)
+      import Duration.Undefined
+      atMost match {
+        case u if u eq Undefined => throw new IllegalArgumentException("cannot wait for Undefined period")
+        case Duration.Inf        => awaitUnbounded
+        case Duration.MinusInf   => isCompleted
+        case f: FiniteDuration   => if (f > Duration.Zero) awaitUnsafe(f.fromNow, f) else isCompleted
+      }
     }
 
     @throws(classOf[TimeoutException])
