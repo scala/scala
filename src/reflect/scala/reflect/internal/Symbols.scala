@@ -56,6 +56,51 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
   def newFreeTypeSymbol(name: TypeName, info: Type, value: => Any, flags: Long = 0L, origin: String): FreeTypeSymbol =
     new FreeTypeSymbol(name, value, origin) initFlags flags setInfo info
 
+  protected def createAbstractTypeSymbol(owner: Symbol, name: TypeName, pos: Position, newFlags: Long): AbstractTypeSymbol =
+    new AbstractTypeSymbol(owner, pos, name) initFlags newFlags
+
+  protected def createAliasTypeSymbol(owner: Symbol, name: TypeName, pos: Position, newFlags: Long): AliasTypeSymbol =
+    new AliasTypeSymbol(owner, pos, name) initFlags newFlags
+
+  protected def createTypeSkolemSymbol(owner: Symbol, name: TypeName, origin: AnyRef, pos: Position, newFlags: Long): TypeSkolem =
+    new TypeSkolem(owner, pos, name, origin) initFlags newFlags
+
+  protected def createClassSymbol(owner: Symbol, name: TypeName, pos: Position, newFlags: Long): ClassSymbol =
+    new ClassSymbol(owner, pos, name) initFlags newFlags
+
+  protected def createModuleClassSymbol(owner: Symbol, name: TypeName, pos: Position, newFlags: Long): ModuleClassSymbol =
+    new ModuleClassSymbol(owner, pos, name) initFlags newFlags
+
+  protected def createPackageClassSymbol(owner: Symbol, name: TypeName, pos: Position, newFlags: Long): PackageClassSymbol =
+    new PackageClassSymbol(owner, pos, name) initFlags newFlags
+
+  protected def createRefinementClassSymbol(owner: Symbol, pos: Position, newFlags: Long): RefinementClassSymbol =
+    new RefinementClassSymbol(owner, pos) initFlags newFlags
+
+  protected def createPackageObjectClassSymbol(owner: Symbol, pos: Position, newFlags: Long): PackageObjectClassSymbol =
+    new PackageObjectClassSymbol(owner, pos) initFlags newFlags
+
+  protected def createImplClassSymbol(owner: Symbol, name: TypeName, pos: Position, newFlags: Long): ClassSymbol =
+    new ClassSymbol(owner, pos, name) with ImplClassSymbol initFlags newFlags
+
+  protected def createTermSymbol(owner: Symbol, name: TermName, pos: Position, newFlags: Long): TermSymbol =
+    new TermSymbol(owner, pos, name) initFlags newFlags
+
+  protected def createMethodSymbol(owner: Symbol, name: TermName, pos: Position, newFlags: Long): MethodSymbol =
+    new MethodSymbol(owner, pos, name) initFlags newFlags
+
+  protected def createModuleSymbol(owner: Symbol, name: TermName, pos: Position, newFlags: Long): ModuleSymbol =
+    new ModuleSymbol(owner, pos, name) initFlags newFlags
+
+  protected def createPackageSymbol(owner: Symbol, name: TermName, pos: Position, newFlags: Long): ModuleSymbol =
+    new ModuleSymbol(owner, pos, name) initFlags newFlags
+
+  protected def createValueParameterSymbol(owner: Symbol, name: TermName, pos: Position, newFlags: Long): TermSymbol =
+    new TermSymbol(owner, pos, name) initFlags newFlags
+
+  protected def createValueMemberSymbol(owner: Symbol, name: TermName, pos: Position, newFlags: Long): TermSymbol =
+    new TermSymbol(owner, pos, name) initFlags newFlags
+
   /** The original owner of a class. Used by the backend to generate
    *  EnclosingMethod attributes.
    */
@@ -89,7 +134,6 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     def toTypeIn(site: Type): Type = site.memberType(this)
     def toTypeConstructor: Type = typeConstructor
     def setTypeSignature(tpe: Type): this.type = { setInfo(tpe); this }
-    def getAnnotations: List[AnnotationInfo] = { initialize; annotations }
     def setAnnotations(annots: AnnotationInfo*): this.type = { setAnnotations(annots.toList); this }
 
     def getter: Symbol = getter(owner)
@@ -192,9 +236,9 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     final def newLocalDummy(pos: Position): TermSymbol =
       newTermSymbol(nme.localDummyName(this), pos) setInfo NoType
     final def newMethod(name: TermName, pos: Position = NoPosition, newFlags: Long = 0L): MethodSymbol =
-      createMethodSymbol(name, pos, METHOD | newFlags)
+      createMethodSymbol(this, name, pos, METHOD | newFlags)
     final def newMethodSymbol(name: TermName, pos: Position = NoPosition, newFlags: Long = 0L): MethodSymbol =
-      createMethodSymbol(name, pos, METHOD | newFlags)
+      createMethodSymbol(this, name, pos, METHOD | newFlags)
     final def newLabel(name: TermName, pos: Position = NoPosition): MethodSymbol =
       newMethod(name, pos, LABEL)
 
@@ -248,7 +292,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
       newClassSymbol(name, pos, newFlags).asInstanceOf[ModuleClassSymbol]
 
     final def newTypeSkolemSymbol(name: TypeName, origin: AnyRef, pos: Position = NoPosition, newFlags: Long = 0L): TypeSkolem =
-      createTypeSkolemSymbol(name, origin, pos, newFlags)
+      createTypeSkolemSymbol(this, name, origin, pos, newFlags)
 
     /** @param pre   type relative to which alternatives are seen.
      *  for instance:
@@ -279,12 +323,12 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     /** Symbol of a type definition  type T = ...
      */
     final def newAliasType(name: TypeName, pos: Position = NoPosition, newFlags: Long = 0L): AliasTypeSymbol =
-      createAliasTypeSymbol(name, pos, newFlags)
+      createAliasTypeSymbol(this, name, pos, newFlags)
 
     /** Symbol of an abstract type  type T >: ... <: ...
      */
     final def newAbstractType(name: TypeName, pos: Position = NoPosition, newFlags: Long = 0L): AbstractTypeSymbol =
-      createAbstractTypeSymbol(name, pos, DEFERRED | newFlags)
+      createAbstractTypeSymbol(this, name, pos, DEFERRED | newFlags)
 
     /** Symbol of a type parameter
      */
@@ -388,7 +432,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
      *  also have symbols, they are refinementClasses
      */
     final def newRefinementClass(pos: Position): RefinementClassSymbol =
-      createRefinementClassSymbol(pos, 0L)
+      createRefinementClassSymbol(this, pos, 0L)
 
     /** Create a new getter for current symbol (which must be a field)
      */
@@ -627,7 +671,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     // class C extends D( { class E { ... } ... } ). Here, E is a class local to a constructor
     def isClassLocalToConstructor = false
 
-    final def isDerivedValueClass =
+    def isDerivedValueClass =
       isClass && !hasFlag(PACKAGE | TRAIT) &&
       info.firstParent.typeSymbol == AnyValClass && !isPrimitiveValueClass
 
@@ -1013,84 +1057,39 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
      *  Symbol creation implementations.
      */
 
-    protected def createAbstractTypeSymbol(name: TypeName, pos: Position, newFlags: Long): AbstractTypeSymbol =
-      new AbstractTypeSymbol(this, pos, name) initFlags newFlags
-
-    protected def createAliasTypeSymbol(name: TypeName, pos: Position, newFlags: Long): AliasTypeSymbol =
-      new AliasTypeSymbol(this, pos, name) initFlags newFlags
-
-    protected def createTypeSkolemSymbol(name: TypeName, origin: AnyRef, pos: Position, newFlags: Long): TypeSkolem =
-      new TypeSkolem(this, pos, name, origin) initFlags newFlags
-
-    protected def createClassSymbol(name: TypeName, pos: Position, newFlags: Long): ClassSymbol =
-      new ClassSymbol(this, pos, name) initFlags newFlags
-
-    protected def createModuleClassSymbol(name: TypeName, pos: Position, newFlags: Long): ModuleClassSymbol =
-      new ModuleClassSymbol(this, pos, name) initFlags newFlags
-
-    protected def createPackageClassSymbol(name: TypeName, pos: Position, newFlags: Long): PackageClassSymbol =
-      new PackageClassSymbol(this, pos, name) initFlags newFlags
-
-    protected def createRefinementClassSymbol(pos: Position, newFlags: Long): RefinementClassSymbol =
-      new RefinementClassSymbol(this, pos) initFlags newFlags
-
-    protected def createPackageObjectClassSymbol(pos: Position, newFlags: Long): PackageObjectClassSymbol =
-      new PackageObjectClassSymbol(this, pos) initFlags newFlags
-
-    protected def createImplClassSymbol(name: TypeName, pos: Position, newFlags: Long): ClassSymbol =
-      new ClassSymbol(this, pos, name) with ImplClassSymbol initFlags newFlags
-
-    protected def createTermSymbol(name: TermName, pos: Position, newFlags: Long): TermSymbol =
-      new TermSymbol(this, pos, name) initFlags newFlags
-
-    protected def createMethodSymbol(name: TermName, pos: Position, newFlags: Long): MethodSymbol =
-      new MethodSymbol(this, pos, name) initFlags newFlags
-
-    protected def createModuleSymbol(name: TermName, pos: Position, newFlags: Long): ModuleSymbol =
-      new ModuleSymbol(this, pos, name) initFlags newFlags
-
-    protected def createPackageSymbol(name: TermName, pos: Position, newFlags: Long): ModuleSymbol =
-      new ModuleSymbol(this, pos, name) initFlags newFlags
-
-    protected def createValueParameterSymbol(name: TermName, pos: Position, newFlags: Long): TermSymbol =
-      new TermSymbol(this, pos, name) initFlags newFlags
-
-    protected def createValueMemberSymbol(name: TermName, pos: Position, newFlags: Long): TermSymbol =
-      new TermSymbol(this, pos, name) initFlags newFlags
-
     final def newTermSymbol(name: TermName, pos: Position = NoPosition, newFlags: Long = 0L): TermSymbol = {
       if ((newFlags & METHOD) != 0)
-        createMethodSymbol(name, pos, newFlags)
+        createMethodSymbol(this, name, pos, newFlags)
       else if ((newFlags & PACKAGE) != 0)
-        createPackageSymbol(name, pos, newFlags | PackageFlags)
+        createPackageSymbol(this, name, pos, newFlags | PackageFlags)
       else if ((newFlags & MODULE) != 0)
-        createModuleSymbol(name, pos, newFlags)
+        createModuleSymbol(this, name, pos, newFlags)
       else if ((newFlags & PARAM) != 0)
-        createValueParameterSymbol(name, pos, newFlags)
+        createValueParameterSymbol(this, name, pos, newFlags)
       else
-        createValueMemberSymbol(name, pos, newFlags)
+        createValueMemberSymbol(this, name, pos, newFlags)
     }
 
     final def newClassSymbol(name: TypeName, pos: Position = NoPosition, newFlags: Long = 0L): ClassSymbol = {
       if (name == tpnme.REFINE_CLASS_NAME)
-        createRefinementClassSymbol(pos, newFlags)
+        createRefinementClassSymbol(this, pos, newFlags)
       else if ((newFlags & PACKAGE) != 0)
-        createPackageClassSymbol(name, pos, newFlags | PackageFlags)
+        createPackageClassSymbol(this, name, pos, newFlags | PackageFlags)
       else if (name == tpnme.PACKAGE)
-        createPackageObjectClassSymbol(pos, newFlags)
+        createPackageObjectClassSymbol(this, pos, newFlags)
       else if ((newFlags & MODULE) != 0)
-        createModuleClassSymbol(name, pos, newFlags)
+        createModuleClassSymbol(this, name, pos, newFlags)
       else if ((newFlags & IMPLCLASS) != 0)
-        createImplClassSymbol(name, pos, newFlags)
+        createImplClassSymbol(this, name, pos, newFlags)
       else
-        createClassSymbol(name, pos, newFlags)
+        createClassSymbol(this, name, pos, newFlags)
     }
 
     final def newNonClassSymbol(name: TypeName, pos: Position = NoPosition, newFlags: Long = 0L): TypeSymbol = {
       if ((newFlags & DEFERRED) != 0)
-        createAbstractTypeSymbol(name, pos, newFlags)
+        createAbstractTypeSymbol(this, name, pos, newFlags)
       else
-        createAliasTypeSymbol(name, pos, newFlags)
+        createAliasTypeSymbol(this, name, pos, newFlags)
     }
 
     def newTypeSymbol(name: TypeName, pos: Position = NoPosition, newFlags: Long = 0L): TypeSymbol =
