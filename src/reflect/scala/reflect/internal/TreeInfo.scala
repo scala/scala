@@ -67,7 +67,7 @@ abstract class TreeInfo {
 
   /** Is tree an expression which can be inlined without affecting program semantics?
    *
-   *  Note that this is not called "isExprSafeToInline" since purity (lack of side-effects)
+   *  Note that this is not called "isExprPure" since purity (lack of side-effects)
    *  is not the litmus test.  References to modules and lazy vals are side-effecting,
    *  both because side-effecting code may be executed and because the first reference
    *  takes a different code path than all to follow; but they are safe to inline

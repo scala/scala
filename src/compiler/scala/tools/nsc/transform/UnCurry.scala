@@ -212,11 +212,6 @@ abstract class UnCurry extends InfoTransform
 
     /** Undo eta expansion for parameterless and nullary methods */
     def deEta(fun: Function): Tree = fun match {
-      case Function(List(), Apply(expr, List())) if treeInfo.isExprSafeToInline(expr) =>
-        if (expr hasSymbolWhich (_.isLazy))
-          fun
-        else
-          expr
       case Function(List(), expr) if isByNameRef(expr) =>
         noApply += expr
         expr
