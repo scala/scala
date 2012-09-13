@@ -3,6 +3,10 @@ import scala.reflect.runtime.{universe => ru}
 import scala.reflect.runtime.{currentMirror => cm}
 import scala.tools.reflect.ToolBox
 
+// Note: If you're looking at this test and you don't know why, you may
+// have accidentally changed the way type tags reify.  If so, validate
+// that your changes are accurate and update the check file.
+
 object Test extends App {
   val toolbox = cm.mkToolBox()
   val rupkg = cm.staticModule("scala.reflect.runtime.package")
