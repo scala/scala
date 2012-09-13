@@ -3,7 +3,8 @@
 # Library to push and pull binary artifacts from a remote repository using CURL.
 
 
-remote_urlbase="http://typesafe.artifactoryonline.com/typesafe/scala-sha-bootstrap/org/scala-lang/bootstrap"
+remote_urlget="http://repo.typesafe.com/typesafe/scala-sha-bootstrap/org/scala-lang/bootstrap"
+remote_urlpush="http://typesafe.artifactoryonline.com/typesafe/scala-sha-bootstrap/org/scala-lang/bootstrap"
 libraryJar="$(pwd)/lib/scala-library.jar"
 desired_ext=".desired.sha1"
 push_jar="$(pwd)/tools/push.jar"
@@ -34,8 +35,8 @@ curlUpload() {
   local data=$2
   local user=$3
   local password=$4
-  local url="${remote_urlbase}/${remote_location}"
-  java -jar $push_jar "$data" "$remote_location" "$user" "$password"
+  local url="${remote_urlpush}/${remote_location}"
+  java -jar $push_jar "$data" "$url" "$user" "$password"
   if (( $? != 0 )); then
     echo "Error uploading $data to $url"
     echo "$url"
@@ -77,7 +78,7 @@ pushJarFile() {
   local jar_sha1=$(shasum -p $jar_name)
   local version=${jar_sha1% ?$jar_name}
   local remote_uri=${version}${jar#$basedir}
-  echo "  Pushing to ${remote_urlbase}/${remote_uri} ..."
+  echo "  Pushing to ${remote_urlpush}/${remote_uri} ..."
   echo "	$curl"
   curlUpload $remote_uri $jar_name $user $pw
   echo "  Making new sha1 file ...."
@@ -113,7 +114,7 @@ pushJarFiles() {
   local user=$2
   local password=$3
   # TODO - ignore target/ and build/
-  local jarFiles="$(find ${basedir}/lib -name "*.jar") $(find ${basedir}/test/files -name "*.jar")"
+  local jarFiles="$(find ${basedir}/lib -name "*.jar") $(find ${basedir}/test/files -name "*.jar") $(find ${basedir}/tools -name "*.jar")"
   local changed="no"
   for jar in $jarFiles; do
     local valid=$(isJarFileValid $jar)
@@ -142,9 +143,14 @@ pullJarFileToCache() {
   if [[ ! -d $cdir ]]; then
     mkdir -p $cdir
   fi
-  # TODO - Check SHA of local cache is accurate.
-  if [[ ! -f $cache_loc ]]; then
-    curlDownload $cache_loc ${remote_urlbase}/${uri}
+  if [[ ! -f "$cache_loc" ]]; then
+    # Note: After we follow up with JFrog, we should check the more stable raw file server first
+    # before hitting the more flaky artifactory.
+    curlDownload $cache_loc ${remote_urlpush}/${uri}
+    if test "$(checkJarSha "$cache_loc" "$sha")" != "OK"; then
+      echo "Trouble downloading $uri.  Please try pull-binary-libs again when your internet connection is stable."
+      exit 2
+    fi
   fi
   echo "$cache_loc"
 }
