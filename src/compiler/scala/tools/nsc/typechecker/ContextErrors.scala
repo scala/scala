@@ -470,9 +470,6 @@ trait ContextErrors {
       def NamedAndDefaultArgumentsNotSupportedForMacros(tree: Tree, fun: Tree) =
         NormalTypeError(tree, "macros application do not support named and/or default arguments")
 
-      def WrongNumberOfArgsError(tree: Tree, fun: Tree) =
-        NormalTypeError(tree, "wrong number of arguments for "+ treeSymTypeMsg(fun))
-
       def TooManyArgsNamesDefaultsError(tree: Tree, fun: Tree) =
         NormalTypeError(tree, "too many arguments for "+treeSymTypeMsg(fun))
 
@@ -512,8 +509,8 @@ trait ContextErrors {
       def TooManyArgsPatternError(fun: Tree) =
         NormalTypeError(fun, "too many arguments for unapply pattern, maximum = "+definitions.MaxTupleArity)
 
-      def WrongNumberArgsPatternError(tree: Tree, fun: Tree) =
-        NormalTypeError(tree, "wrong number of arguments for "+treeSymTypeMsg(fun))
+      def WrongNumberOfArgsError(tree: Tree, fun: Tree) =
+        NormalTypeError(tree, "wrong number of arguments for "+ treeSymTypeMsg(fun))
 
       def ApplyWithoutArgsError(tree: Tree, fun: Tree) =
         NormalTypeError(tree, fun.tpe+" does not take parameters")

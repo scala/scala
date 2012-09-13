@@ -3237,7 +3237,7 @@ trait Typers extends Modes with Adaptations with Tags {
         val nbSubPats = args.length
 
         val (formals, formalsExpanded) = extractorFormalTypes(resTp, nbSubPats, fun1.symbol)
-        if (formals == null) duplErrorTree(WrongNumberArgsPatternError(tree, fun))
+        if (formals == null) duplErrorTree(WrongNumberOfArgsError(tree, fun))
         else {
           val args1 = typedArgs(args, mode, formals, formalsExpanded)
           // This used to be the following (failing) assert:
@@ -5452,7 +5452,7 @@ trait Typers extends Modes with Adaptations with Tags {
       // as a compromise, context.enrichmentEnabled tells adaptToMember to go ahead and enrich,
       // but arbitrary conversions (in adapt) are disabled
       // TODO: can we achieve the pattern matching bit of the string interpolation SIP without this?
-      context.withImplicitsDisabledAllowEnrichment(typed(tree, PATTERNmode, pt))
+      typingInPattern(context.withImplicitsDisabledAllowEnrichment(typed(tree, PATTERNmode, pt)))
     }
 
     /** Types a (fully parameterized) type tree */

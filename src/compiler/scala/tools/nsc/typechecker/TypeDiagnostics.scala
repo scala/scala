@@ -59,6 +59,19 @@ trait TypeDiagnostics {
    *  the map, the addendum should also be printed.
    */
   private var addendums = perRunCaches.newMap[Position, () => String]()
+  private var isTyperInPattern = false
+
+  /** Devising new ways of communicating error info out of
+   *  desperation to work on error messages.  This is used
+   *  by typedPattern to wrap its business so we can generate
+   *  a sensible error message when things go south.
+   */
+  def typingInPattern[T](body: => T): T = {
+    val saved = isTyperInPattern
+    isTyperInPattern = true
+    try body
+    finally isTyperInPattern = saved
+  }
 
   def setAddendum(pos: Position, msg: () => String) =
     if (pos != NoPosition)
@@ -138,13 +151,17 @@ trait TypeDiagnostics {
     def hasParams         = tree.tpe.paramSectionCount > 0
     def preResultString   = if (hasParams) ": " else " of type "
 
-    def nullMessage       = "expression of type " + tree.tpe
-    def overloadedMessage = "overloaded method " + sym + " with alternatives:\n" + alternativesString(tree)
+    def patternMessage    = "pattern " + tree.tpe.finalResultType + valueParamsString(tree.tpe)
+    def exprMessage       = "expression of type " + tree.tpe
+    def overloadedMessage = s"overloaded method $sym with alternatives:\n" + alternativesString(tree)
     def moduleMessage     = "" + sym
     def defaultMessage    = moduleMessage + preResultString + tree.tpe
     def applyMessage      = defaultMessage + tree.symbol.locationString
 
-    if (sym == null) nullMessage
+    if ((sym eq null) || (sym eq NoSymbol)) {
+      if (isTyperInPattern) patternMessage
+      else exprMessage
+    }
     else if (sym.isOverloaded) overloadedMessage
     else if (sym.isModule) moduleMessage
     else if (sym.name == nme.apply) applyMessage
