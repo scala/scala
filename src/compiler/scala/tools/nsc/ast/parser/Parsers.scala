@@ -280,14 +280,6 @@ self =>
     /** whether a non-continuable syntax error has been seen */
     private var lastErrorOffset : Int = -1
 
-    object treeBuilder extends TreeBuilder {
-      val global: self.global.type = self.global
-      def freshName(prefix: String): Name = freshTermName(prefix)
-      def freshTermName(prefix: String): TermName = Parser.this.freshTermName(prefix)
-      def freshTypeName(prefix: String): TypeName = Parser.this.freshTypeName(prefix)
-      def o2p(offset: Int) = Parser.this.o2p(offset)
-      def r2p(start: Int, point: Int, end: Int) = Parser.this.r2p(start, point, end)
-    }
     import treeBuilder.{global => _, _}
 
     /** The types of the context bounds of type parameters of the surrounding class
@@ -404,8 +396,7 @@ self =>
       def mainParamType = AppliedTypeTree(Ident(tpnme.Array), List(Ident(tpnme.String)))
       def mainParameter = List(ValDef(Modifiers(Flags.PARAM), nme.argv, mainParamType, EmptyTree))
       def mainSetArgv   = List(ValDef(NoMods, nme.args, TypeTree(), Ident(nme.argv)))
-      def mainNew       = makeNew(Nil, emptyValDef, stmts, ListOfNil, NoPosition, NoPosition)
-      def mainDef       = DefDef(NoMods, nme.main, Nil, List(mainParameter), scalaDot(tpnme.Unit), Block(mainSetArgv, mainNew))
+      def mainDef       = DefDef(NoMods, nme.main, Nil, List(mainParameter), scalaDot(tpnme.Unit), Block(mainSetArgv, makeAnonymousNew(stmts)))
 
       // object Main
       def moduleName  = newTermName(ScriptRunner scriptMain settings)
@@ -1302,7 +1293,7 @@ self =>
       placeholderParams = placeholderParams ::: savedPlaceholderParams
       res
     }
-    
+
 
     def expr0(location: Int): Tree = (in.token: @scala.annotation.switch) match {
       case IF =>

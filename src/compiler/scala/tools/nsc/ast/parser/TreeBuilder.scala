@@ -199,6 +199,15 @@ abstract class TreeBuilder {
     }
   }
 
+  /** Creates a tree representing new Object { stats }.
+   *  To make sure an anonymous subclass of Object is created,
+   *  if there are no stats, a () is added.
+   */
+  def makeAnonymousNew(stats: List[Tree]): Tree = {
+    val stats1 = if (stats.isEmpty) List(Literal(Constant(()))) else stats
+    makeNew(Nil, emptyValDef, stats1, ListOfNil, NoPosition, NoPosition)
+  }
+
   /** Create positioned tree representing an object creation <new parents { stats }
    *  @param npos  the position of the new
    *  @param cpos  the position of the anonymous class starting with parents

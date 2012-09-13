@@ -959,7 +959,7 @@ abstract class Erasure extends AddInterfaces
             case TypeApply(sel @ Select(qual, name), List(targ)) =>
               if (qual.tpe != null && isPrimitiveValueClass(qual.tpe.typeSymbol) && targ.tpe != null && targ.tpe <:< AnyRefClass.tpe)
                 unit.error(sel.pos, "isInstanceOf cannot test if value types are references.")
-              
+
               def mkIsInstanceOf(q: () => Tree)(tp: Type): Tree =
                 Apply(
                   TypeApply(

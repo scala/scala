@@ -1474,13 +1474,13 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
         case Select(qual, name) =>
           def transformSelect = {
             qual match {
-              case _: Super if illegalSpecializedInheritance(currentClass) => 
+              case _: Super if illegalSpecializedInheritance(currentClass) =>
                 val pos = tree.pos
                 debuglog(pos.source.file.name+":"+pos.line+": not specializing call to super inside illegal specialized inheritance class.")
                 debuglog(pos.lineContent)
                 tree
               case _ =>
-                
+
           debuglog("specializing Select %s [tree.tpe: %s]".format(symbol.defString, tree.tpe))
 
           //log("!!! select " + tree + " -> " + symbol.info + " specTypeVars: " + specializedTypeVars(symbol.info))
