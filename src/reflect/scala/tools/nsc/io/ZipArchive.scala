@@ -107,14 +107,14 @@ abstract class ZipArchive(override val file: JFile) extends AbstractFile with Eq
     // })
     dirs get path match {
       case Some(v) => v
-      case None =>           
+      case None =>
         val parent = ensureDir(dirs, dirName(path), null)
         val dir    = new DirEntry(path)
         parent.entries(baseName(path)) = dir
         dirs(path) = dir
         dir
     }
-    
+
   protected def getDir(dirs: mutable.Map[String, DirEntry], entry: ZipEntry): DirEntry = {
     if (entry.isDirectory) ensureDir(dirs, entry.getName, entry)
     else ensureDir(dirs, dirName(entry.getName), null)
@@ -177,7 +177,7 @@ final class URLZipArchive(val url: URL) extends ZipArchive(null) {
       class FileEntry() extends Entry(zipEntry.getName) {
         override val toByteArray: Array[Byte] = {
           val len    = zipEntry.getSize().toInt
-          val arr    = new Array[Byte](len)
+          val arr    = if (len == 0) Byte.emptyArray else new Array[Byte](len)
           var offset = 0
 
           def loop() {
