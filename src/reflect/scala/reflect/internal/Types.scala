@@ -3935,13 +3935,15 @@ trait Types extends api.Types { self: SymbolTable =>
     def avoidWiden: Boolean = avoidWidening
 
     def addLoBound(tp: Type, isNumericBound: Boolean = false) {
-      if (isNumericBound && isNumericValueType(tp)) {
-        if (numlo == NoType || isNumericSubType(numlo, tp))
-          numlo = tp
-        else if (!isNumericSubType(tp, numlo))
-          numlo = numericLoBound
+      if (!lobounds.contains(tp)) {
+        if (isNumericBound && isNumericValueType(tp)) {
+          if (numlo == NoType || isNumericSubType(numlo, tp))
+            numlo = tp
+          else if (!isNumericSubType(tp, numlo))
+            numlo = numericLoBound
+        }
+        else lobounds ::= tp
       }
-      else lobounds ::= tp
     }
 
     def checkWidening(tp: Type) {
@@ -3953,14 +3955,16 @@ trait Types extends api.Types { self: SymbolTable =>
     }
 
     def addHiBound(tp: Type, isNumericBound: Boolean = false) {
-      checkWidening(tp)
-      if (isNumericBound && isNumericValueType(tp)) {
-        if (numhi == NoType || isNumericSubType(tp, numhi))
-          numhi = tp
-        else if (!isNumericSubType(numhi, tp))
-          numhi = numericHiBound
+      if (!hibounds.contains(tp)) {
+        checkWidening(tp)
+        if (isNumericBound && isNumericValueType(tp)) {
+          if (numhi == NoType || isNumericSubType(tp, numhi))
+            numhi = tp
+          else if (!isNumericSubType(numhi, tp))
+            numhi = numericHiBound
+        }
+        else hibounds ::= tp
       }
-      else hibounds ::= tp
     }
 
     def isWithinBounds(tp: Type): Boolean =
