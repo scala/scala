@@ -103,11 +103,6 @@ trait TypeTags { self: Universe =>
 
   import definitions._
 
-  // should be removed in the subsequent commit
-  // after the starr is redeployed
-  trait AbsTypeTag[T]
-  object AbsTypeTag
-
   /**
    * If an implicit value of type u.WeakTypeTag[T] is required, the compiler will make one up on demand.
    * The implicitly created value contains in its tpe field a value of type u.Type that is a reflective representation of T.
