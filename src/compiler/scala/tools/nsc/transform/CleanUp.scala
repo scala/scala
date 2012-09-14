@@ -783,7 +783,6 @@ abstract class CleanUp extends Transform with ast.TreeDSL {
           // add field definition to new defs
           newStaticMembers append stfieldDef
           newStaticInits append stfieldInit
-        case _ => // ignore @static on other members
       }
     }
 
