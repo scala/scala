@@ -49,7 +49,7 @@ trait BuildUtils { self: Universe =>
 
     /** Set symbol's annotations to given annotations `annots`.
      */
-    def setAnnotations[S <: Symbol](sym: S, annots: List[AnnotationInfo]): S
+    def setAnnotations[S <: Symbol](sym: S, annots: List[Annotation]): S
 
     def flagsFromBits(bits: Long): FlagSet
 

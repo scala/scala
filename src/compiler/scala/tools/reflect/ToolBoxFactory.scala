@@ -47,7 +47,7 @@ abstract class ToolBoxFactory[U <: JavaUniverse](val u: U) { factorySelf =>
         newTermName("__wrapper$" + wrapCount + "$" + java.util.UUID.randomUUID.toString.replace("-", ""))
       }
 
-      def verifyExpr(expr: Tree): Unit = {
+      def verify(expr: Tree): Unit = {
         // Previously toolboxes used to typecheck their inputs before compiling.
         // Actually, the initial demo by Martin first typechecked the reified tree,
         // then ran it, which typechecked it again, and only then launched the
@@ -97,7 +97,7 @@ abstract class ToolBoxFactory[U <: JavaUniverse](val u: U) { factorySelf =>
       }
 
       def transformDuringTyper(expr0: Tree, withImplicitViewsDisabled: Boolean, withMacrosDisabled: Boolean)(transform: (analyzer.Typer, Tree) => Tree): Tree = {
-        verifyExpr(expr0)
+        verify(expr0)
 
         // need to wrap the expr, because otherwise you won't be able to typecheck macros against something that contains free vars
         var (expr, freeTerms) = extractFreeTerms(expr0, wrapFreeTermRefs = false)
@@ -140,7 +140,7 @@ abstract class ToolBoxFactory[U <: JavaUniverse](val u: U) { factorySelf =>
         unwrapped
       }
 
-      def typeCheckExpr(expr: Tree, pt: Type, silent: Boolean, withImplicitViewsDisabled: Boolean, withMacrosDisabled: Boolean): Tree =
+      def typeCheck(expr: Tree, pt: Type, silent: Boolean, withImplicitViewsDisabled: Boolean, withMacrosDisabled: Boolean): Tree =
         transformDuringTyper(expr, withImplicitViewsDisabled = withImplicitViewsDisabled, withMacrosDisabled = withMacrosDisabled)(
           (currentTyper, expr) => {
             trace("typing (implicit views = %s, macros = %s): ".format(!withImplicitViewsDisabled, !withMacrosDisabled))(showAttributed(expr, true, true, settings.Yshowsymkinds.value))
@@ -170,10 +170,12 @@ abstract class ToolBoxFactory[U <: JavaUniverse](val u: U) { factorySelf =>
             }
           })
 
-      def compileExpr(expr: Tree): (Object, java.lang.reflect.Method) = {
-        verifyExpr(expr)
+      def compile(expr: Tree): () => Any = {
+        val freeTerms = expr.freeTerms // need to calculate them here, because later on they will be erased
+        val thunks = freeTerms map (fte => () => fte.value) // need to be lazy in order not to distort evaluation order
+        verify(expr)
 
-        def wrapExpr(expr0: Tree): Tree = {
+        def wrap(expr0: Tree): Tree = {
           val (expr, freeTerms) = extractFreeTerms(expr0, wrapFreeTermRefs = true)
 
           val (obj, mclazz) = rootMirror.EmptyPackageClass.newModuleAndClassSymbol(
@@ -214,7 +216,7 @@ abstract class ToolBoxFactory[U <: JavaUniverse](val u: U) { factorySelf =>
           cleanedUp
         }
 
-        val mdef = wrapExpr(expr)
+        val mdef = wrap(expr)
         val pdef = PackageDef(Ident(nme.EMPTY_PACKAGE_NAME), List(mdef))
         val unit = new CompilationUnit(NoSourceFile)
         unit.body = pdef
@@ -231,12 +233,6 @@ abstract class ToolBoxFactory[U <: JavaUniverse](val u: U) { factorySelf =>
         val jmeth = jclazz.getDeclaredMethods.find(_.getName == wrapperMethodName).get
         val jfield = jclazz.getDeclaredFields.find(_.getName == NameTransformer.MODULE_INSTANCE_NAME).get
         val singleton = jfield.get(null)
-        (singleton, jmeth)
-      }
-
-      def runExpr(expr: Tree): Any = {
-        val freeTerms = expr.freeTerms // need to calculate them here, because later on they will be erased
-        val thunks = freeTerms map (fte => () => fte.value) // need to be lazy in order not to distort evaluation order
 
         // @odersky writes: Not sure we will be able to drop this. I forgot the reason why we dereference () functions,
         // but there must have been one. So I propose to leave old version in comments to be resurrected if the problem resurfaces.
@@ -250,13 +246,14 @@ abstract class ToolBoxFactory[U <: JavaUniverse](val u: U) { factorySelf =>
         //   val applyMeth = result.getClass.getMethod("apply")
         //   applyMeth.invoke(result)
         // }
-        val (singleton, jmeth) = compileExpr(expr)
-        val result = jmeth.invoke(singleton, thunks map (_.asInstanceOf[AnyRef]): _*)
-        if (jmeth.getReturnType == java.lang.Void.TYPE) ()
-        else result
+        () => {
+          val result = jmeth.invoke(singleton, thunks map (_.asInstanceOf[AnyRef]): _*)
+          if (jmeth.getReturnType == java.lang.Void.TYPE) ()
+          else result
+        }
       }
 
-      def parseExpr(code: String): Tree = {
+      def parse(code: String): Tree = {
         val run = new Run
         reporter.reset()
         val wrappedCode = "object wrapper {" + EOL + code + EOL + "}"
@@ -336,7 +333,7 @@ abstract class ToolBoxFactory[U <: JavaUniverse](val u: U) { factorySelf =>
       var cexpectedType: compiler.Type = importer.importType(expectedType)
 
       if (compiler.settings.verbose.value) println("typing "+ctree+", expectedType = "+expectedType)
-      val ttree: compiler.Tree = compiler.typeCheckExpr(ctree, cexpectedType, silent = silent, withImplicitViewsDisabled = withImplicitViewsDisabled, withMacrosDisabled = withMacrosDisabled)
+      val ttree: compiler.Tree = compiler.typeCheck(ctree, cexpectedType, silent = silent, withImplicitViewsDisabled = withImplicitViewsDisabled, withMacrosDisabled = withMacrosDisabled)
       val uttree = exporter.importTree(ttree)
       uttree
     }
@@ -379,20 +376,22 @@ abstract class ToolBoxFactory[U <: JavaUniverse](val u: U) { factorySelf =>
     def showAttributed(tree: u.Tree, printTypes: Boolean = true, printIds: Boolean = true, printKinds: Boolean = false): String =
       compiler.showAttributed(importer.importTree(tree), printTypes, printIds, printKinds)
 
-    def parseExpr(code: String): u.Tree = {
+    def parse(code: String): u.Tree = {
       if (compiler.settings.verbose.value) println("parsing "+code)
-      val ctree: compiler.Tree = compiler.parseExpr(code)
+      val ctree: compiler.Tree = compiler.parse(code)
       val utree = exporter.importTree(ctree)
       utree
     }
 
-    def runExpr(tree: u.Tree): Any = {
+    def compile(tree: u.Tree): () => Any = {
       if (compiler.settings.verbose.value) println("importing "+tree)
       var ctree: compiler.Tree = importer.importTree(tree)
 
-      if (compiler.settings.verbose.value) println("running "+ctree)
-      compiler.runExpr(ctree)
+      if (compiler.settings.verbose.value) println("compiling "+ctree)
+      compiler.compile(ctree)
     }
+
+    def eval(tree: u.Tree): Any = compile(tree)()
   }
 }
 

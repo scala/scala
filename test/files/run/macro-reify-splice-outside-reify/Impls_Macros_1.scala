@@ -15,7 +15,7 @@ object Impls {
     val importer = ru.mkImporter(c.universe).asInstanceOf[ru.Importer { val from: c.universe.type }]
     val tree = c.resetAllAttrs(x.tree.duplicate)
     val imported = importer.importTree(tree)
-    toolBox.runExpr(imported).asInstanceOf[T]
+    toolBox.eval(imported).asInstanceOf[T]
   }
 }
 

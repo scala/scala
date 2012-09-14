@@ -8,7 +8,7 @@ object Test extends App {
     val code = reify{val x: T[String] = null; println("ima worx"); x}.tree
     println(code.freeTypes)
     val T = code.freeTypes(0)
-    cm.mkToolBox().runExpr(code, Map(T -> definitions.ListClass.asType))
+    cm.mkToolBox().eval(code, Map(T -> definitions.ListClass.asType))
   }
 
   new C[List]
