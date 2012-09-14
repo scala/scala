@@ -12,7 +12,7 @@ package scala.collection
 package immutable
 
 import generic._
-import annotation.{tailrec, bridge}
+import scala.annotation.{tailrec, bridge}
 
 /** $factoryInfo
  *  @since 1

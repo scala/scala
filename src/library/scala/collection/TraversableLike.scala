@@ -10,10 +10,10 @@ package scala.collection
 
 import generic._
 import mutable.{ Builder }
-import annotation.{tailrec, migration, bridge}
-import annotation.unchecked.{ uncheckedVariance => uV }
+import scala.annotation.{tailrec, migration, bridge}
+import scala.annotation.unchecked.{ uncheckedVariance => uV }
 import parallel.ParIterable
-import language.higherKinds
+import scala.language.higherKinds
 
 /** A template trait for traversable collections of type `Traversable[A]`.
  *

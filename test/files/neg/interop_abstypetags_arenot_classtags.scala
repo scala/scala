@@ -2,11 +2,11 @@ import scala.reflect.runtime.universe._
 import scala.reflect.{ClassTag, classTag}
 
 object Test extends App {
-  def absTypeTagIsnotClassTag[T: AbsTypeTag] = {
+  def weakTypeTagIsnotClassTag[T: WeakTypeTag] = {
     println(classTag[T])
   }
 
-  absTypeTagIsnotClassTag[Int]
-  absTypeTagIsnotClassTag[String]
-  absTypeTagIsnotClassTag[Array[Int]]
+  weakTypeTagIsnotClassTag[Int]
+  weakTypeTagIsnotClassTag[String]
+  weakTypeTagIsnotClassTag[Array[Int]]
 }

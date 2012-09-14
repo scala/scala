@@ -86,7 +86,7 @@ trait Infrastructure {
    *  Needs to be used with extreme care, since memory leaks here will swiftly crash the presentation compiler.
    *  For example, Scala IDE typically launches a compiler run on every edit action so there might be hundreds of runs per minute.
    */
-  val globalCache: collection.mutable.Map[Any, Any]
+  val globalCache: scala.collection.mutable.Map[Any, Any]
 
   /** A cache shared by all invocations of the same macro within a single compilation run.
    *
@@ -95,5 +95,5 @@ trait Infrastructure {
    *
    *  To share data between different macros and/or different compilation runs, use ``globalCache''.
    */
-  val cache: collection.mutable.Map[Any, Any]
+  val cache: scala.collection.mutable.Map[Any, Any]
 }

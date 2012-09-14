@@ -13,7 +13,7 @@ package mutable
 
 import generic._
 import script._
-import annotation.{migration, bridge}
+import scala.annotation.{migration, bridge}
 
 /** A template trait for buffers of type `Buffer[A]`.
  *
@@ -93,7 +93,7 @@ trait BufferLike[A, +This <: BufferLike[A, This] with Buffer[A]]
    *  @throws   IndexOutOfBoundsException if the index `n` is not in the valid range
    *            `0 <= n <= length`.
    */
-  def insertAll(n: Int, elems: collection.Traversable[A])
+  def insertAll(n: Int, elems: scala.collection.Traversable[A])
 
    /** Removes the element at a given index from this buffer.
     *
@@ -252,4 +252,14 @@ trait BufferLike[A, +This <: BufferLike[A, This] with Buffer[A]]
    */
   @migration("`--` creates a new buffer. Use `--=` to remove an element from this buffer and return that buffer itself.", "2.8.0")
   override def --(xs: GenTraversableOnce[A]): This = clone() --= xs.seq
+
+  /** Return a clone of this buffer.
+   *
+   *  @return a `Buffer` with the same elements.
+   */
+  override def clone(): This = {
+    val bf = newBuilder
+    bf ++= this
+    bf.result.asInstanceOf[This]
+  }
 }

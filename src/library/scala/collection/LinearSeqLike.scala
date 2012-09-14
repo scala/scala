@@ -13,7 +13,7 @@ import generic._
 import mutable.ListBuffer
 import immutable.List
 import scala.util.control.Breaks._
-import annotation.tailrec
+import scala.annotation.tailrec
 
 /** A template trait for linear sequences of type `LinearSeq[A]`.
  *

@@ -16,7 +16,7 @@ import java.io.{
 import java.io.{ File => JFile }
 import java.nio.channels.{ Channel, FileChannel }
 import scala.io.Codec
-import language.{reflectiveCalls, implicitConversions}
+import scala.language.{reflectiveCalls, implicitConversions}
 
 object File {
   def pathSeparator = java.io.File.pathSeparator

@@ -7,13 +7,13 @@ package scala.tools.nsc
 
 import java.io.{ File, FileOutputStream, PrintWriter, IOException, FileNotFoundException }
 import java.nio.charset.{ Charset, CharsetDecoder, IllegalCharsetNameException, UnsupportedCharsetException }
-import compat.Platform.currentTime
+import scala.compat.Platform.currentTime
 import scala.tools.util.PathResolver
 import scala.collection.{ mutable, immutable }
 import io.{ SourceReader, AbstractFile, Path }
 import reporters.{ Reporter, ConsoleReporter }
 import util.{ Exceptional, ClassPath, MergedClassPath, StatisticsInfo, ScalaClassLoader, returning }
-import scala.reflect.internal.util.{ NoPosition, SourceFile, NoSourceFile, BatchSourceFile, ScriptSourceFile }
+import scala.reflect.internal.util.{ NoPosition, OffsetPosition, SourceFile, NoSourceFile, BatchSourceFile, ScriptSourceFile }
 import scala.reflect.internal.pickling.{ PickleBuffer, PickleFormat }
 import symtab.{ Flags, SymbolTable, SymbolLoaders, SymbolTrackers }
 import symtab.classfile.Pickler
@@ -28,8 +28,8 @@ import backend.{ ScalaPrimitives, Platform, MSILPlatform, JavaPlatform }
 import backend.jvm.{GenJVM, GenASM}
 import backend.opt.{ Inliners, InlineExceptionHandlers, ClosureElimination, DeadCodeElimination }
 import backend.icode.analysis._
-import language.postfixOps
-import reflect.internal.StdAttachments
+import scala.language.postfixOps
+import scala.reflect.internal.StdAttachments
 import scala.reflect.ClassTag
 
 class Global(var currentSettings: Settings, var reporter: Reporter)
@@ -95,11 +95,23 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
   /** Generate ASTs */
   type TreeGen = scala.tools.nsc.ast.TreeGen
 
+  /** Tree generation, usually based on existing symbols. */
   override object gen extends {
     val global: Global.this.type = Global.this
   } with TreeGen {
     def mkAttributedCast(tree: Tree, pt: Type): Tree =
       typer.typed(mkCast(tree, pt))
+  }
+
+  /** Trees fresh from the oven, mostly for use by the parser. */
+  object treeBuilder extends {
+    val global: Global.this.type = Global.this
+  } with TreeBuilder {
+    def freshName(prefix: String): Name               = freshTermName(prefix)
+    def freshTermName(prefix: String): TermName       = currentUnit.freshTermName(prefix)
+    def freshTypeName(prefix: String): TypeName       = currentUnit.freshTypeName(prefix)
+    def o2p(offset: Int): Position                    = new OffsetPosition(currentUnit.source, offset)
+    def r2p(start: Int, mid: Int, end: Int): Position = rangePos(currentUnit.source, start, mid, end)
   }
 
   /** Fold constants */
@@ -265,9 +277,8 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
     log("Running operation '%s' after every phase.\n".format(msg) + describeAfterEveryPhase(op))
   }
 
-  def shouldLogAtThisPhase = (
-       (settings.log.isSetByUser)
-    && ((settings.log containsPhase globalPhase) || (settings.log containsPhase phase))
+  override def shouldLogAtThisPhase = settings.log.isSetByUser && (
+    (settings.log containsPhase globalPhase) || (settings.log containsPhase phase)
   )
   // Over 200 closure objects are eliminated by inlining this.
   @inline final def log(msg: => AnyRef) {
@@ -883,7 +894,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
           reSync(RootClass, Some(classPath), Some(oldEntries), Some(newEntries), invalidated, failed)
         }
     }
-    def show(msg: String, syms: collection.Traversable[Symbol]) =
+    def show(msg: String, syms: scala.collection.Traversable[Symbol]) =
       if (syms.nonEmpty)
         informProgress(s"$msg: ${syms map (_.fullName) mkString ","}")
     show("invalidated packages", invalidated)

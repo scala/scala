@@ -21,9 +21,9 @@ case class Utils[C <: Context]( c:C ) {
   }
 }
 object QueryableMacros{
-  def _helper[C <: Context,S:c.AbsTypeTag]( c:C )( name:String, projection:c.Expr[_] ) = {
+  def _helper[C <: Context,S:c.WeakTypeTag]( c:C )( name:String, projection:c.Expr[_] ) = {
     import c.universe._
-    val element_type = implicitly[c.AbsTypeTag[S]].tpe
+    val element_type = implicitly[c.WeakTypeTag[S]].tpe
     val foo = c.Expr[ru.Expr[Queryable[S]]](
     c.reifyTree( c.runtimeUniverse, EmptyTree, c.typeCheck(
       Utils[c.type](c).removeDoubleReify(
@@ -32,7 +32,7 @@ object QueryableMacros{
       )))
     c.universe.reify{ Queryable.factory[S]( foo.splice )}
   }
-  def map[T:c.AbsTypeTag, S:c.AbsTypeTag]
+  def map[T:c.WeakTypeTag, S:c.WeakTypeTag]
                (c: scala.reflect.macros.Context)
                (projection: c.Expr[T => S]): c.Expr[Queryable[S]] = _helper[c.type,S]( c )( "_map", projection )
 }

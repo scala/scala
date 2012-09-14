@@ -1,7 +1,7 @@
 package scala.collection.slick
 
 object QueryableMacros{
-  def map[T:c.AbsTypeTag, S:c.AbsTypeTag]
+  def map[T:c.WeakTypeTag, S:c.WeakTypeTag]
          (c: scala.reflect.macros.Context)
          (projection: c.Expr[T => S])
          : c.Expr[scala.collection.slick.Queryable[S]] = {

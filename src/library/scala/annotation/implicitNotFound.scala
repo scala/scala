@@ -15,4 +15,4 @@ package scala.annotation
  * @author Adriaan Moors
  * @since 2.8.1
  */
-final class implicitNotFound(msg: String) extends annotation.StaticAnnotation {}
+final class implicitNotFound(msg: String) extends scala.annotation.StaticAnnotation {}

@@ -2,10 +2,10 @@ import scala.reflect.runtime.universe._
 import scala.reflect.macros.{Context => Ctx}
 
 object Impls {
-  def foo_targs[T, U: c.AbsTypeTag](c: Ctx = null)(x: c.Expr[Int] = null) = {
+  def foo_targs[T, U: c.WeakTypeTag](c: Ctx = null)(x: c.Expr[Int] = null) = {
     import c.{prefix => prefix}
     import c.universe._
-    val U = implicitly[c.AbsTypeTag[U]]
+    val U = implicitly[c.WeakTypeTag[U]]
     val body = Block(
       Apply(Select(Ident(definitions.PredefModule), newTermName("println")), List(Literal(Constant("invoking foo_targs...")))),
       Apply(Select(Ident(definitions.PredefModule), newTermName("println")), List(Literal(Constant("type of prefix is: " + prefix.staticType)))),

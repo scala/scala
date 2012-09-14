@@ -10,7 +10,7 @@ package scala.tools.ant
 
 import org.apache.tools.ant.Project
 import org.apache.tools.ant.types.{Path, Reference}
-import collection.JavaConverters._
+import scala.collection.JavaConverters._
 import scala.tools.util.VerifyClass
 
 class ClassloadVerify extends ScalaMatchingTask {

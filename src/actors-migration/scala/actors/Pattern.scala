@@ -1,7 +1,7 @@
 package scala.actors
 
 import scala.concurrent.util.Duration
-import language.implicitConversions
+import scala.language.implicitConversions
 
 object pattern {
 

@@ -14,12 +14,12 @@ import internal.MissingRequirementError
 import internal.pickling.ByteCodecs
 import internal.ClassfileConstants._
 import internal.pickling.UnPickler
-import collection.mutable.{ HashMap, ListBuffer }
+import scala.collection.mutable.{ HashMap, ListBuffer }
 import internal.Flags._
 //import scala.tools.nsc.util.ScalaClassLoader
 //import scala.tools.nsc.util.ScalaClassLoader._
 import ReflectionUtils.{staticSingletonInstance, innerSingletonInstance}
-import language.existentials
+import scala.language.existentials
 import scala.runtime.{ScalaRunTime, BoxesRunTime}
 import scala.reflect.internal.util.Collections._
 
@@ -120,19 +120,20 @@ trait JavaMirrors extends internal.SymbolTable with api.JavaUniverse { self: Sym
 
 // ----------- Implementations of mirror operations and classes  -------------------
 
-    private def ErrorInnerClass(wannabe: Symbol) = throw new ScalaReflectionException(s"$wannabe is an inner class, use reflectClass on an InstanceMirror to obtain its ClassMirror")
-    private def ErrorInnerModule(wannabe: Symbol) = throw new ScalaReflectionException(s"$wannabe is an inner module, use reflectModule on an InstanceMirror to obtain its ModuleMirror")
-    private def ErrorStaticClass(wannabe: Symbol) = throw new ScalaReflectionException(s"$wannabe is a static class, use reflectClass on a RuntimeMirror to obtain its ClassMirror")
-    private def ErrorStaticModule(wannabe: Symbol) = throw new ScalaReflectionException(s"$wannabe is a static module, use reflectModule on a RuntimeMirror to obtain its ModuleMirror")
-    private def ErrorNotMember(wannabe: Symbol, owner: Symbol) = throw new ScalaReflectionException(s"expected a member of $owner, you provided ${wannabe.kindString} ${wannabe.fullName}")
-    private def ErrorNotField(wannabe: Symbol) = throw new ScalaReflectionException(s"expected a field or an accessor method symbol, you provided $wannabe")
-    private def ErrorNonExistentField(wannabe: Symbol) = throw new ScalaReflectionException(s"""
-      |Scala field ${wannabe.name} isn't represented as a Java field, neither it has a Java accessor method
+    private def ErrorInnerClass(sym: Symbol) = throw new ScalaReflectionException(s"$sym is an inner class, use reflectClass on an InstanceMirror to obtain its ClassMirror")
+    private def ErrorInnerModule(sym: Symbol) = throw new ScalaReflectionException(s"$sym is an inner module, use reflectModule on an InstanceMirror to obtain its ModuleMirror")
+    private def ErrorStaticClass(sym: Symbol) = throw new ScalaReflectionException(s"$sym is a static class, use reflectClass on a RuntimeMirror to obtain its ClassMirror")
+    private def ErrorStaticModule(sym: Symbol) = throw new ScalaReflectionException(s"$sym is a static module, use reflectModule on a RuntimeMirror to obtain its ModuleMirror")
+    private def ErrorNotMember(sym: Symbol, owner: Symbol) = throw new ScalaReflectionException(s"expected a member of $owner, you provided ${sym.kindString} ${sym.fullName}")
+    private def ErrorNotField(sym: Symbol) = throw new ScalaReflectionException(s"expected a field or an accessor method symbol, you provided $sym")
+    private def ErrorNonExistentField(sym: Symbol) = throw new ScalaReflectionException(s"""
+      |Scala field ${sym.name} isn't represented as a Java field, neither it has a Java accessor method
       |note that private parameters of class constructors don't get mapped onto fields and/or accessors,
       |unless they are used outside of their declaring constructors.
     """.trim.stripMargin)
-    private def ErrorSetImmutableField(wannabe: Symbol) = throw new ScalaReflectionException(s"cannot set an immutable field ${wannabe.name}")
-    private def ErrorNotConstructor(wannabe: Symbol, owner: Symbol) = throw new ScalaReflectionException(s"expected a constructor of $owner, you provided $wannabe")
+    private def ErrorSetImmutableField(sym: Symbol) = throw new ScalaReflectionException(s"cannot set an immutable field ${sym.name}")
+    private def ErrorNotConstructor(sym: Symbol, owner: Symbol) = throw new ScalaReflectionException(s"expected a constructor of $owner, you provided $sym")
+    private def ErrorFree(member: Symbol, freeType: Symbol) = throw new ScalaReflectionException(s"cannot reflect ${member.kindString} ${member.name}, because it's a member of a weak type ${freeType.name}")
 
     def reflect[T: ClassTag](obj: T): InstanceMirror = new JavaInstanceMirror(obj)
 
@@ -154,13 +155,30 @@ trait JavaMirrors extends internal.SymbolTable with api.JavaUniverse { self: Sym
 
     def moduleSymbol(rtcls: RuntimeClass): ModuleSymbol = classToScala(rtcls).companionModule.asModule
 
-    private def checkMemberOf(wannabe: Symbol, owner: ClassSymbol) {
-      if (wannabe.owner == AnyClass || wannabe.owner == AnyRefClass || wannabe.owner == ObjectClass) {
+    private def ensuringNotFree(sym: Symbol)(body: => Any) {
+      val freeType = sym.ownerChain find (_.isFreeType)
+      freeType match {
+        case Some(freeType) => ErrorFree(sym, freeType)
+        case _ => body
+      }
+    }
+
+    private def checkMemberOf(sym: Symbol, owner: ClassSymbol) {
+      if (sym.owner == AnyClass || sym.owner == AnyRefClass || sym.owner == ObjectClass) {
         // do nothing
-      } else if (wannabe.owner == AnyValClass) {
-        if (!owner.isPrimitiveValueClass && !owner.isDerivedValueClass) ErrorNotMember(wannabe, owner)
+      } else if (sym.owner == AnyValClass) {
+        if (!owner.isPrimitiveValueClass && !owner.isDerivedValueClass) ErrorNotMember(sym, owner)
       } else {
-        if (!(owner.info.baseClasses contains wannabe.owner)) ErrorNotMember(wannabe, owner)
+        ensuringNotFree(sym) {
+          if (!(owner.info.baseClasses contains sym.owner)) ErrorNotMember(sym, owner)
+        }
+      }
+    }
+
+    private def checkConstructorOf(sym: Symbol, owner: ClassSymbol) {
+      if (!sym.isClassConstructor) ErrorNotConstructor(sym, owner)
+      ensuringNotFree(sym) {
+        if (!owner.info.decls.toList.contains(sym)) ErrorNotConstructor(sym, owner)
       }
     }
 
@@ -386,8 +404,7 @@ trait JavaMirrors extends internal.SymbolTable with api.JavaUniverse { self: Sym
       def erasure = symbol
       def isStatic = false
       def reflectConstructor(constructor: MethodSymbol) = {
-        if (!constructor.isClassConstructor) ErrorNotConstructor(constructor, symbol)
-        if (!symbol.info.decls.toList.contains(constructor)) ErrorNotConstructor(constructor, symbol)
+        checkConstructorOf(constructor, symbol)
         new JavaConstructorMirror(outer, constructor)
       }
       def companion: Option[ModuleMirror] = symbol.companionModule match {

@@ -10,7 +10,7 @@
 
 package scala
 
-import annotation.meta._
+import scala.annotation.meta._
 
 @field
-class volatile extends annotation.StaticAnnotation
+class volatile extends scala.annotation.StaticAnnotation

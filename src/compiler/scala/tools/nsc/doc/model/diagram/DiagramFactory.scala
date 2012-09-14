@@ -4,7 +4,7 @@ package diagram
 
 import model._
 import comment.CommentFactory
-import collection.mutable
+import scala.collection.mutable
 
 // statistics
 import  html.page.diagram.DiagramStats

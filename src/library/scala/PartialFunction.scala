@@ -211,8 +211,8 @@ object PartialFunction {
   @inline private final def checkFallback[B] = fallback_pf.asInstanceOf[PartialFunction[Any, B]]
   @inline private final def fallbackOccurred[B](x: B) = (fallback_pf eq x.asInstanceOf[AnyRef])
 
-  private final class Lifted[-A, +B] (val pf: PartialFunction[A, B]) 
-      extends runtime.AbstractFunction1[A, Option[B]] {
+  private final class Lifted[-A, +B] (val pf: PartialFunction[A, B])
+      extends scala.runtime.AbstractFunction1[A, Option[B]] {
 
     def apply(x: A): Option[B] = {
       val z = pf.applyOrElse(x, checkFallback[B])
@@ -220,7 +220,7 @@ object PartialFunction {
     }
   }
 
-  private final class Unlifted[A, B] (f: A => Option[B]) extends runtime.AbstractPartialFunction[A, B] {
+  private final class Unlifted[A, B] (f: A => Option[B]) extends scala.runtime.AbstractPartialFunction[A, B] {
     def isDefinedAt(x: A): Boolean = f(x).isDefined
 
     override def applyOrElse[A1 <: A, B1 >: B](x: A1, default: A1 => B1): B1 = {

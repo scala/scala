@@ -3,7 +3,7 @@ package scala.tools.nsc.interactive.tests.core
 case class DuplicateTestMarker(msg: String) extends Exception(msg)
 
 object TestMarker {
-  import collection.mutable.Map
+  import scala.collection.mutable.Map
   private val markers: Map[String, TestMarker] = Map.empty
 
   private def checkForDuplicate(marker: TestMarker) {

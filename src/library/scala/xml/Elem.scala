@@ -73,7 +73,7 @@ extends Node with Serializable
     throw new IllegalArgumentException("prefix of zero length, use null instead")
 
   if (scope == null)
-    throw new IllegalArgumentException("scope is null, use xml.TopScope for empty scope")
+    throw new IllegalArgumentException("scope is null, use scala.xml.TopScope for empty scope")
 
   //@todo: copy the children,
   //  setting namespace scope if necessary

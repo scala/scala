@@ -11,11 +11,11 @@ package mutable
 
 
 
-import collection.generic._
-import collection.mutable.Builder
-import collection.mutable.Cloneable
-import collection.generic.Growable
-import collection.generic.Shrinkable
+import scala.collection.generic._
+import scala.collection.mutable.Builder
+import scala.collection.mutable.Cloneable
+import scala.collection.generic.Growable
+import scala.collection.generic.Shrinkable
 
 
 
@@ -33,9 +33,9 @@ import collection.generic.Shrinkable
 trait ParMapLike[K,
                  V,
                  +Repr <: ParMapLike[K, V, Repr, Sequential] with ParMap[K, V],
-                 +Sequential <: collection.mutable.Map[K, V] with collection.mutable.MapLike[K, V, Sequential]]
-extends collection.GenMapLike[K, V, Repr]
-   with collection.parallel.ParMapLike[K, V, Repr, Sequential]
+                 +Sequential <: scala.collection.mutable.Map[K, V] with scala.collection.mutable.MapLike[K, V, Sequential]]
+extends scala.collection.GenMapLike[K, V, Repr]
+   with scala.collection.parallel.ParMapLike[K, V, Repr, Sequential]
    with Growable[(K, V)]
    with Shrinkable[K]
    with Cloneable[Repr]

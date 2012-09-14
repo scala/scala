@@ -8,11 +8,11 @@
 
 package scala.collection.mutable
 
-import collection.AbstractIterator
-import collection.Iterator
-import collection.generic._
-import annotation.tailrec
-import reflect.ClassTag
+import scala.collection.AbstractIterator
+import scala.collection.Iterator
+import scala.collection.generic._
+import scala.annotation.tailrec
+import scala.reflect.ClassTag
 
 /** A buffer that stores elements in an unrolled linked list.
  *
@@ -43,11 +43,11 @@ import reflect.ClassTag
  */
 @SerialVersionUID(1L)
 class UnrolledBuffer[T](implicit val tag: ClassTag[T])
-extends collection.mutable.AbstractBuffer[T]
-   with collection.mutable.Buffer[T]
-   with collection.mutable.BufferLike[T, UnrolledBuffer[T]]
+extends scala.collection.mutable.AbstractBuffer[T]
+   with scala.collection.mutable.Buffer[T]
+   with scala.collection.mutable.BufferLike[T, UnrolledBuffer[T]]
    with GenericClassTagTraversableTemplate[T, UnrolledBuffer]
-   with collection.mutable.Builder[T, UnrolledBuffer[T]]
+   with scala.collection.mutable.Builder[T, UnrolledBuffer[T]]
    with Serializable
 {
   import UnrolledBuffer.Unrolled
@@ -153,7 +153,7 @@ extends collection.mutable.AbstractBuffer[T]
     this
   }
 
-  def insertAll(idx: Int, elems: collection.Traversable[T]) =
+  def insertAll(idx: Int, elems: scala.collection.Traversable[T]) =
     if (idx >= 0 && idx <= sz) {
       headptr.insertAll(idx, elems, this)
       sz += elems.size
@@ -181,7 +181,7 @@ extends collection.mutable.AbstractBuffer[T]
   }
 
   override def clone(): UnrolledBuffer[T] = new UnrolledBuffer[T] ++= this
-  
+
   override def stringPrefix = "UnrolledBuffer"
 }
 
@@ -285,7 +285,7 @@ object UnrolledBuffer extends ClassTagTraversableFactory[UnrolledBuffer] {
       if (next eq null) true else false // checks if last node was thrown out
     } else false
 
-    @tailrec final def insertAll(idx: Int, t: collection.Traversable[T], buffer: UnrolledBuffer[T]): Unit = if (idx < size) {
+    @tailrec final def insertAll(idx: Int, t: scala.collection.Traversable[T], buffer: UnrolledBuffer[T]): Unit = if (idx < size) {
       // divide this node at the appropriate position and insert all into head
       // update new next
       val newnextnode = new Unrolled[T](0, new Array(array.length), null, buff)

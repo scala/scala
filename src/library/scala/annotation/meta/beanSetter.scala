@@ -10,4 +10,4 @@ package scala.annotation.meta
 /**
  * Consult the documentation in package [[scala.annotation.meta]].
  */
-final class beanSetter extends annotation.StaticAnnotation
+final class beanSetter extends scala.annotation.StaticAnnotation

@@ -4,7 +4,7 @@ package nest
 import java.io.File
 import scala.tools.nsc.io.{ Directory }
 import scala.util.Properties.setProp
-import collection.JavaConverters._
+import scala.collection.JavaConverters._
 
 object SBTRunner extends DirectRunner {
 

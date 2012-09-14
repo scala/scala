@@ -3,7 +3,7 @@ package scala.actors
 import scala.collection._
 import scala.concurrent.util.Duration
 import java.util.concurrent.TimeUnit
-import language.implicitConversions
+import scala.language.implicitConversions
 
 object StashingActor extends Combinators {
   implicit def mkBody[A](body: => A) = new InternalActor.Body[A] {

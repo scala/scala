@@ -67,26 +67,39 @@ package concurrent {
    */
   object Await {
     /**
+     * Await the "resolved" state of this Awaitable.
      * Invokes ready() on the awaitable, properly wrapped by a call to `scala.concurrent.blocking`.
-     * ready() blocks until the awaitable has completed or the timeout expires.
      *
-     * Throws a TimeoutException if the timeout expires, as that is in the contract of `Awaitable.ready`.
-     * @param awaitable   the `Awaitable` on which `ready` is to be called
-     * @param atMost      the maximum timeout for which to wait
-     * @return            the result of `awaitable.ready` which is defined to be the awaitable itself.
+     * @param awaitable
+     *        the `Awaitable` on which `ready` is to be called
+     * @param atMost
+     *        maximum wait time, which may be negative (no waiting is done),
+     *        [[Duration.Inf]] for unbounded waiting, or a finite positive
+     *        duration
+     * @return the awaitable itself
+     * @throws InterruptedException     if the wait call was interrupted
+     * @throws TimeoutException         if after waiting for the specified time this Awaitable is still not ready
+     * @throws IllegalArgumentException if `atMost` is [[Duration.Undefined]]
      */
     @throws(classOf[TimeoutException])
+    @throws(classOf[InterruptedException])
     def ready[T](awaitable: Awaitable[T], atMost: Duration): awaitable.type =
       blocking(awaitable.ready(atMost)(AwaitPermission))
     
     /**
+     * Await and return the result of this Awaitable, which is either of type T or a thrown exception (any Throwable).
      * Invokes result() on the awaitable, properly wrapped by a call to `scala.concurrent.blocking`.
-     * result() blocks until the awaitable has completed or the timeout expires.
      *
-     * Throws a TimeoutException if the timeout expires, or any exception thrown by `Awaitable.result`.
-     * @param awaitable   the `Awaitable` on which `result` is to be called
-     * @param atMost      the maximum timeout for which to wait
-     * @return            the result of `awaitable.result`
+     * @param awaitable
+     *        the `Awaitable` on which `result` is to be called
+     * @param atMost
+     *        maximum wait time, which may be negative (no waiting is done),
+     *        [[Duration.Inf]] for unbounded waiting, or a finite positive
+     *        duration
+     * @return the value if the Awaitable was successful within the specific maximum wait time
+     * @throws InterruptedException     if the wait call was interrupted
+     * @throws TimeoutException         if after waiting for the specified time this Awaitable is still not ready
+     * @throws IllegalArgumentException if `atMost` is [[Duration.Undefined]]
      */
     @throws(classOf[Exception])
     def result[T](awaitable: Awaitable[T], atMost: Duration): T =

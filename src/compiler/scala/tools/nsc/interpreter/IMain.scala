@@ -25,7 +25,7 @@ import scala.util.control.Exception.{ ultimately }
 import IMain._
 import java.util.concurrent.Future
 import typechecker.Analyzer
-import language.implicitConversions
+import scala.language.implicitConversions
 import scala.reflect.runtime.{ universe => ru }
 import scala.reflect.{ ClassTag, classTag }
 import scala.tools.reflect.StdRuntimeTags._
@@ -387,8 +387,7 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
       newSym <- req.definedSymbols get name
       oldSym <- oldReq.definedSymbols get name.companionName
     } {
-      replwarn("warning: previously defined %s is not a companion to %s.".format(
-        stripString("" + oldSym), stripString("" + newSym)))
+      exitingTyper(replwarn(s"warning: previously defined $oldSym is not a companion to $newSym."))
       replwarn("Companions must be defined together; you may wish to use :paste mode for this.")
     }
 

@@ -8,7 +8,7 @@
 
 package scala.actors
 
-import language.higherKinds
+import scala.language.higherKinds
 
 /**
  * @author Philipp Haller

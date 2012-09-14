@@ -13,7 +13,7 @@ import scala.collection.mutable.{ ListBuffer, Buffer }
 import scala.tools.nsc.symtab._
 import scala.annotation.switch
 import PartialFunction._
-import language.postfixOps
+import scala.language.postfixOps
 
 /** This class ...
  *
@@ -128,7 +128,6 @@ abstract class GenICode extends SubComponent  {
           if (staticfield != NoSymbol) {
             // in companion object accessors to @static fields, we access the static field directly
             val hostClass = m.symbol.owner.companionClass
-
             if (m.symbol.isGetter) {
               ctx1.bb.emit(LOAD_FIELD(staticfield, true) setHostClass hostClass, tree.pos)
               ctx1.bb.closeWith(RETURN(m.returnType))
@@ -1000,14 +999,16 @@ abstract class GenICode extends SubComponent  {
               fun match {
                 case Select(qual, _) =>
                   val qualSym = findHostClass(qual.tpe, sym)
-
-                  if (qualSym == ArrayClass) cm setTargetTypeKind toTypeKind(qual.tpe)
-                  else cm setHostClass qualSym
-
-                  log(
-                    if (qualSym == ArrayClass) "Stored target type kind " + toTypeKind(qual.tpe) + " for " + sym.fullName
-                    else s"Set more precise host class for ${sym.fullName} hostClass: $qualSym"
-                  )
+                  if (qualSym == ArrayClass) {
+                    val kind = toTypeKind(qual.tpe)
+                    cm setTargetTypeKind kind
+                    log(s"Stored target type kind for {$sym.fullName} as $kind")
+                  }
+                  else {
+                    cm setHostClass qualSym
+                    if (qual.tpe.typeSymbol != qualSym)
+                      log(s"Precisified host class for $sym from ${qual.tpe.typeSymbol.fullName} to ${qualSym.fullName}")
+                  }
                 case _ =>
               }
               ctx1.bb.emit(cm, tree.pos)

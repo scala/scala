@@ -13,7 +13,7 @@ import generic._
 import mutable.Builder
 import scala.util.matching.Regex
 import scala.math.ScalaNumber
-import reflect.ClassTag
+import scala.reflect.ClassTag
 
 /** A companion object for the `StringLike` containing some constants.
  *  @since 2.8
@@ -41,7 +41,7 @@ import StringLike._
  *  @define mayNotTerminateInf
  *  @define willNotTerminateInf
  */
-trait StringLike[+Repr] extends Any with collection.IndexedSeqOptimized[Char, Repr] with Ordered[String] {
+trait StringLike[+Repr] extends Any with scala.collection.IndexedSeqOptimized[Char, Repr] with Ordered[String] {
 self =>
 
   /** Creates a string builder buffer as builder for this class */

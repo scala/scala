@@ -6,7 +6,7 @@ trait X {
 
 trait Y extends X {
   trait B { type T >: String <: String }
-  lazy val x : A with B = x
+  lazy val x : A with B = {println(""); x}
   n = "foo"
 }
 

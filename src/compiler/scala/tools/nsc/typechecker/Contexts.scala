@@ -8,7 +8,7 @@ package typechecker
 
 import symtab.Flags._
 import scala.collection.mutable.{LinkedHashSet, Set}
-import annotation.tailrec
+import scala.annotation.tailrec
 
 /**
  *  @author  Martin Odersky

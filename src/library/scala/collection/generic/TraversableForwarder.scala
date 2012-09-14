@@ -11,7 +11,7 @@ package scala.collection.generic
 import scala.collection._
 import mutable.{ Buffer, StringBuilder }
 import immutable.{ List, Stream }
-import reflect.ClassTag
+import scala.reflect.ClassTag
 
 /** This trait implements a forwarder for traversable objects. It forwards
  *  all calls to a different traversable, except for:

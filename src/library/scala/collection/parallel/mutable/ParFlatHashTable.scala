@@ -9,7 +9,7 @@
 package scala.collection
 package parallel.mutable
 
-import collection.parallel.IterableSplitter
+import scala.collection.parallel.IterableSplitter
 
 /** Parallel flat hash table.
  *
@@ -19,13 +19,13 @@ import collection.parallel.IterableSplitter
  *
  *  @author Aleksandar Prokopec
  */
-trait ParFlatHashTable[T] extends collection.mutable.FlatHashTable[T] {
+trait ParFlatHashTable[T] extends scala.collection.mutable.FlatHashTable[T] {
 
   override def alwaysInitSizeMap = true
 
   abstract class ParFlatHashTableIterator(var idx: Int, val until: Int, val totalsize: Int)
   extends IterableSplitter[T] with SizeMapUtils {
-    import collection.DebugUtils._
+    import scala.collection.DebugUtils._
 
     private var traversed = 0
     private val itertable = table

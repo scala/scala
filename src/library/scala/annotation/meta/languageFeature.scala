@@ -10,4 +10,4 @@ package scala.annotation.meta
 /**
  * An annotation giving particulars for a language feature in object `scala.language`.
  */
-final class languageFeature(feature: String, enableRequired: Boolean) extends annotation.StaticAnnotation
+final class languageFeature(feature: String, enableRequired: Boolean) extends scala.annotation.StaticAnnotation

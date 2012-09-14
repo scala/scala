@@ -12,7 +12,7 @@ package scala.math
 import java.{ lang => jl }
 import java.math.{ MathContext, BigDecimal => BigDec }
 import scala.collection.immutable.NumericRange
-import language.implicitConversions
+import scala.language.implicitConversions
 
 
 /**
@@ -159,6 +159,7 @@ object BigDecimal {
  *  @author  Stephane Micheloud
  *  @version 1.0
  */
+@deprecatedInheritance("This class will me made final.", "2.10.0")
 class BigDecimal(
   val bigDecimal: BigDec,
   val mc: MathContext)

@@ -22,7 +22,7 @@ import scala.collection.parallel.Combiner
  *  @tparam Buff    the type of the buffers that contain leaf results and this combiner chains together
  */
 trait LazyCombiner[Elem, +To, Buff <: Growable[Elem] with Sizing] extends Combiner[Elem, To] {
-//self: collection.parallel.EnvironmentPassingCombiner[Elem, To] =>
+//self: scala.collection.parallel.EnvironmentPassingCombiner[Elem, To] =>
   val chain: ArrayBuffer[Buff]
   val lastbuff = chain.last
   def +=(elem: Elem) = { lastbuff += elem; this }

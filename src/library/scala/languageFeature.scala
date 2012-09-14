@@ -1,6 +1,6 @@
 package scala
 
-import annotation.meta
+import scala.annotation.meta
 
 object languageFeature {
 

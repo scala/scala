@@ -8,10 +8,10 @@
 
 package scala.util
 
-import collection.mutable.ArrayBuffer
-import collection.generic.CanBuildFrom
+import scala.collection.mutable.ArrayBuffer
+import scala.collection.generic.CanBuildFrom
 import scala.collection.immutable.{ List, Stream }
-import language.{implicitConversions, higherKinds}
+import scala.language.{implicitConversions, higherKinds}
 
 /**
  *  @author Stephane Micheloud

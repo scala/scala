@@ -18,7 +18,7 @@ import JAccessFlags._
 import JObjectType.{ JAVA_LANG_STRING, JAVA_LANG_OBJECT }
 import java.util.jar.{ JarEntry, JarOutputStream }
 import scala.tools.nsc.io.AbstractFile
-import language.postfixOps
+import scala.language.postfixOps
 
 /** This class ...
  *
@@ -122,8 +122,10 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
         inform("[running phase " + name + " on icode]")
 
       if (settings.Xdce.value)
-        for ((sym, cls) <- icodes.classes if inliner.isClosureClass(sym) && !deadCode.liveClosures(sym))
+        for ((sym, cls) <- icodes.classes if inliner.isClosureClass(sym) && !deadCode.liveClosures(sym)) {
+          log(s"Optimizer eliminated ${sym.fullNameString}")
           icodes.classes -= sym
+        }
 
       // For predictably ordered error messages.
       val sortedClasses = classes.values.toList sortBy ("" + _.symbol.fullName)

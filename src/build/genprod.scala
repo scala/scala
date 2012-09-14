@@ -6,7 +6,7 @@
 **                          |/                                          **
 \*                                                                      */
 
-import language.postfixOps
+import scala.language.postfixOps
 
 /** This program generates the ProductN, TupleN, FunctionN,
  *  and AbstractFunctionN, where 0 <= N <= MAX_ARITY.
