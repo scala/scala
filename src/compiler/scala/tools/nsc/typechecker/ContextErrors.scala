@@ -106,7 +106,7 @@ trait ContextErrors {
       else
         s"$name extends Any, not AnyRef"
     )
-    if (isPrimitiveValueType(found)) "" else "\n" +
+    if (isPrimitiveValueType(found) || isTrivialTopType(tp)) "" else "\n" +
        s"""|Note that $what.
            |Such types can participate in value classes, but instances
            |cannot appear in singleton types or in reference comparisons.""".stripMargin
