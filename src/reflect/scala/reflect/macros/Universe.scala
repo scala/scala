@@ -32,7 +32,7 @@ abstract class Universe extends scala.reflect.api.Universe {
 
     def setTypeSignature(tpe: Type): Symbol
 
-    def setAnnotations(annots: AnnotationInfo*): Symbol
+    def setAnnotations(annots: Annotation*): Symbol
 
     def setName(name: Name): Symbol
 

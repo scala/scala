@@ -255,7 +255,7 @@ trait Types extends base.Types { self: Universe =>
 
   /** The API that all annotated types support */
   trait AnnotatedTypeApi extends TypeApi { this: AnnotatedType =>
-    val annotations: List[AnnotationInfo]
+    val annotations: List[Annotation]
     val underlying: Type
     val selfsym: Symbol
   }

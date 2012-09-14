@@ -571,7 +571,7 @@ trait StdNames {
     // Compiler utilized names
 
     val AnnotatedType: NameType        = "AnnotatedType"
-    val AnnotationInfo: NameType       = "AnnotationInfo"
+    val Annotation: NameType           = "Annotation"
     val Any: NameType                  = "Any"
     val AnyVal: NameType               = "AnyVal"
     val AppliedTypeTree: NameType      = "AppliedTypeTree"
