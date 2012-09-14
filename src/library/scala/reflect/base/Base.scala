@@ -623,10 +623,6 @@ class Base extends Universe { self =>
        extends GenericApply
   object Apply extends ApplyExtractor
 
-  case class ApplyDynamic(qual: Tree, args: List[Tree])
-       extends TermTree with SymTree
-  object ApplyDynamic extends ApplyDynamicExtractor
-
   case class Super(qual: Tree, mix: TypeName) extends TermTree
   object Super extends SuperExtractor
 
@@ -725,7 +721,6 @@ class Base extends Universe { self =>
   implicit val GenericApplyTag = ClassTag[GenericApply](classOf[GenericApply])
   implicit val TypeApplyTag = ClassTag[TypeApply](classOf[TypeApply])
   implicit val ApplyTag = ClassTag[Apply](classOf[Apply])
-  implicit val ApplyDynamicTag = ClassTag[ApplyDynamic](classOf[ApplyDynamic])
   implicit val SuperTag = ClassTag[Super](classOf[Super])
   implicit val ThisTag = ClassTag[This](classOf[This])
   implicit val SelectTag = ClassTag[Select](classOf[Select])

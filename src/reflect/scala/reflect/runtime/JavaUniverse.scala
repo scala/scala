@@ -16,7 +16,7 @@ class JavaUniverse extends internal.SymbolTable with ReflectSetup with runtime.S
 
   def log(msg: => AnyRef): Unit = println(" [] "+msg)
 
-  type TreeCopier = TreeCopierOps
+  type TreeCopier = InternalTreeCopierOps
   def newStrictTreeCopier: TreeCopier = new StrictTreeCopier
   def newLazyTreeCopier: TreeCopier = new LazyTreeCopier
 
