@@ -11,7 +11,7 @@ import java.io.{ IOException, InputStream, ByteArrayInputStream }
 import java.io.{ File => JFile }
 import java.util.zip.{ ZipEntry, ZipFile, ZipInputStream }
 import scala.collection.{ immutable, mutable }
-import annotation.tailrec
+import scala.annotation.tailrec
 
 /** An abstraction for zip files and streams.  Everything is written the way
  *  it is for performance: we come through here a lot on every run.  Be careful
@@ -107,14 +107,14 @@ abstract class ZipArchive(override val file: JFile) extends AbstractFile with Eq
     // })
     dirs get path match {
       case Some(v) => v
-      case None =>           
+      case None =>
         val parent = ensureDir(dirs, dirName(path), null)
         val dir    = new DirEntry(path)
         parent.entries(baseName(path)) = dir
         dirs(path) = dir
         dir
     }
-    
+
   protected def getDir(dirs: mutable.Map[String, DirEntry], entry: ZipEntry): DirEntry = {
     if (entry.isDirectory) ensureDir(dirs, entry.getName, entry)
     else ensureDir(dirs, dirName(entry.getName), null)

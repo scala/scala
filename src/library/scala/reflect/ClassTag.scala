@@ -1,7 +1,7 @@
 package scala.reflect
 
 import java.lang.{ Class => jClass }
-import language.{implicitConversions, existentials}
+import scala.language.{implicitConversions, existentials}
 import scala.runtime.ScalaRunTime.{ arrayClass, arrayElementClass }
 
 /** A `ClassTag[T]` wraps a runtime class, which can be accessed via the `runtimeClass` method.

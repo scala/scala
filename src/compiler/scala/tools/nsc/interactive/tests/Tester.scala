@@ -9,7 +9,7 @@ package tests
 import scala.reflect.internal.util._
 import reporters._
 import io.AbstractFile
-import collection.mutable.ArrayBuffer
+import scala.collection.mutable.ArrayBuffer
 
 class Tester(ntests: Int, inputs: Array[SourceFile], settings: Settings) {
 
@@ -168,7 +168,7 @@ class Tester(ntests: Int, inputs: Array[SourceFile], settings: Settings) {
   }
 
   case class ErrorTrace(
-    sfidx: Int, changes: Seq[Change], infos: collection.Set[reporter.Info], content: Array[Char]) {
+    sfidx: Int, changes: Seq[Change], infos: scala.collection.Set[reporter.Info], content: Array[Char]) {
     override def toString =
       "Sourcefile: "+inputs(sfidx)+
       "\nChanges:\n  "+changes.mkString("\n  ")+

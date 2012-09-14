@@ -22,7 +22,7 @@ import java.util.logging.Level
  *     @elidable(123)           // annotation priority
  *     scalac -Xelide-below 456 // command line priority
  *  }}}
- *  
+ *
  *  The method call will be replaced with an expression which depends on
  *  the type of the elided expression.  In decreasing order of precedence:
  *
@@ -33,10 +33,10 @@ import java.util.logging.Level
  *    T >: Null       null
  *    T >: Nothing    Predef.???
  *  }}}
- *  
+ *
  *  Complete example:
  {{{
-   import annotation._, elidable._
+   import scala.annotation._, elidable._
    object Test extends App {
      def expensiveComputation(): Int = { Thread.sleep(1000) ; 172 }
 
@@ -62,7 +62,7 @@ import java.util.logging.Level
  *  @author   Paul Phillips
  *  @since    2.8
  */
-final class elidable(final val level: Int) extends annotation.StaticAnnotation {}
+final class elidable(final val level: Int) extends scala.annotation.StaticAnnotation {}
 
 /** This useless appearing code was necessary to allow people to use
  *  named constants for the elidable annotation.  This is what it takes

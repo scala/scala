@@ -29,9 +29,9 @@ import scala.collection.GenSeq
  *  @define Coll `mutable.ParSeq`
  *  @define coll mutable parallel sequence
  */
-trait ParSeq[T] extends collection/*.mutable*/.GenSeq[T] // was: collection.mutable.Seq[T]
+trait ParSeq[T] extends collection/*.mutable*/.GenSeq[T] // was: scala.collection.mutable.Seq[T]
                    with ParIterable[T]
-                   with collection.parallel.ParSeq[T]
+                   with scala.collection.parallel.ParSeq[T]
                    with GenericParTemplate[T, ParSeq]
                    with ParSeqLike[T, ParSeq[T], collection.mutable.Seq[T]] {
 self =>
@@ -40,7 +40,7 @@ self =>
 
   def update(i: Int, elem: T): Unit
 
-  def seq: collection.mutable.Seq[T]
+  def seq: scala.collection.mutable.Seq[T]
 
   override def toSeq: ParSeq[T] = this
 }

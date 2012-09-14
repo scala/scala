@@ -12,7 +12,7 @@ package scala.collection
 package generic
 
 import mutable.Builder
-import language.higherKinds
+import scala.language.higherKinds
 
 abstract class SetFactory[CC[X] <: Set[X] with SetLike[X, CC[X]]]
   extends GenSetFactory[CC] with GenericSeqCompanion[CC]

@@ -6,12 +6,12 @@
 package scala.tools.nsc
 package interpreter
 
-import collection.{ mutable, immutable }
+import scala.collection.{ mutable, immutable }
 import mutable.ListBuffer
-import language.implicitConversions
+import scala.language.implicitConversions
 
 class ProcessResult(val line: String) {
-  import sys.process._
+  import scala.sys.process._
   private val buffer = new ListBuffer[String]
 
   val builder  = Process(line)

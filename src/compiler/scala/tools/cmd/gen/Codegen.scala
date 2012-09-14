@@ -6,7 +6,7 @@
 package scala.tools.cmd
 package gen
 
-import language.postfixOps
+import scala.language.postfixOps
 
 class Codegen(args: List[String]) extends {
   val parsed = CodegenSpec(args: _*)

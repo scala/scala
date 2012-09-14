@@ -10,7 +10,7 @@ package scala.collection
 package immutable
 
 import generic._
-import annotation.unchecked.{ uncheckedVariance=> uV }
+import scala.annotation.unchecked.{ uncheckedVariance=> uV }
 import parallel.immutable.ParHashMap
 
 /** This class implements immutable maps using a hash trie.
@@ -72,7 +72,7 @@ class HashMap[A, +B] extends AbstractMap[A, B]
   }
 
   private[collection] def computeHash(key: A) = improve(elemHashCode(key))
-  
+
   import HashMap.{Merger, MergeFunction, liftMerger}
 
   private[collection] def get0(key: A, hash: Int, level: Int): Option[B] = None
@@ -88,22 +88,22 @@ class HashMap[A, +B] extends AbstractMap[A, B]
 
   @deprecated("Use the `merged` method instead.", "2.10.0")
   def merge[B1 >: B](that: HashMap[A, B1], mergef: MergeFunction[A, B1] = null): HashMap[A, B1] = merge0(that, 0, liftMerger(mergef))
-  
+
   /** Creates a new map which is the merge of this and the argument hash map.
-   *  
+   *
    *  Uses the specified collision resolution function if two keys are the same.
    *  The collision resolution function will always take the first argument from
    *  `this` hash map and the second from `that`.
-   *  
+   *
    *  The `merged` method is on average more performant than doing a traversal and reconstructing a
    *  new immutable hash map from scratch, or `++`.
-   *  
+   *
    *  @tparam B1      the value type of the other hash map
    *  @param that     the other hash map
    *  @param mergef   the merge function or null if the first key-value pair is to be picked
    */
   def merged[B1 >: B](that: HashMap[A, B1])(mergef: MergeFunction[A, B1]): HashMap[A, B1] = merge0(that, 0, liftMerger(mergef))
-  
+
   protected def merge0[B1 >: B](that: HashMap[A, B1], level: Int, merger: Merger[A, B1]): HashMap[A, B1] = that
 
   override def par = ParHashMap.fromTrie(this)
@@ -118,7 +118,7 @@ class HashMap[A, +B] extends AbstractMap[A, B]
  *  @since   2.3
  */
 object HashMap extends ImmutableMapFactory[HashMap] with BitOperations.Int {
-  
+
   private abstract class Merger[A, B] {
     def apply(kv1: (A, B), kv2: (A, B)): (A, B)
     def invert: Merger[A, B]
@@ -139,7 +139,7 @@ object HashMap extends ImmutableMapFactory[HashMap] with BitOperations.Int {
       def invert: Merger[A1, B1] = self
     }
   }
-  
+
   /** $mapCanBuildFromInfo */
   implicit def canBuildFrom[A, B]: CanBuildFrom[Coll, (A, B), HashMap[A, B]] = new MapCanBuildFrom[A, B]
   def empty[A, B]: HashMap[A, B] = EmptyHashMap.asInstanceOf[HashMap[A, B]]

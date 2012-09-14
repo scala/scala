@@ -9,8 +9,8 @@ package matching
 import transform.ExplicitOuter
 import ast.{ Printers, Trees }
 import java.io.{ StringWriter, PrintWriter }
-import annotation.elidable
-import language.postfixOps
+import scala.annotation.elidable
+import scala.language.postfixOps
 
 /** Ancillary bits of ParallelMatching which are better off
  *  out of the way.

@@ -13,7 +13,7 @@ import generic._
 import mutable.{Builder, StringBuilder, LazyBuilder, ListBuffer}
 import scala.annotation.tailrec
 import Stream.cons
-import language.implicitConversions
+import scala.language.implicitConversions
 
 /** The class `Stream` implements lazy lists where elements
  *  are only evaluated when they are needed. Here is an example:
@@ -631,7 +631,7 @@ self =>
    * // (5,6)
    * }}}
    */
-  override final def zip[A1 >: A, B, That](that: collection.GenIterable[B])(implicit bf: CanBuildFrom[Stream[A], (A1, B), That]): That =
+  override final def zip[A1 >: A, B, That](that: scala.collection.GenIterable[B])(implicit bf: CanBuildFrom[Stream[A], (A1, B), That]): That =
     // we assume there is no other builder factory on streams and therefore know that That = Stream[(A1, B)]
     if (isStreamBuilder(bf)) asThat(
       if (this.isEmpty || that.isEmpty) Stream.Empty

@@ -6,4 +6,4 @@
 package scala.tools.nsc
 package symtab
 
-abstract class SymbolTable extends reflect.internal.SymbolTable
+abstract class SymbolTable extends scala.reflect.internal.SymbolTable

@@ -1,6 +1,6 @@
 package scala.tools.partest
 
-import reflect.{ classTag, ClassTag }
+import scala.reflect.{ classTag, ClassTag }
 
 trait TestUtil {
   /** Given function and block of code, evaluates code block,

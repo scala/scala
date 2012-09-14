@@ -8,7 +8,7 @@ package scala.reflect.internal.util
 
 import scala.tools.nsc.io.{ AbstractFile, VirtualFile }
 import scala.collection.mutable.ArrayBuffer
-import annotation.tailrec
+import scala.annotation.tailrec
 import java.util.regex.Pattern
 import java.io.IOException
 import scala.reflect.internal.Chars._
@@ -107,15 +107,15 @@ class BatchSourceFile(val file : AbstractFile, val content0: Array[Char]) extend
   def this(sourceName: String, cs: Seq[Char])   = this(new VirtualFile(sourceName), cs.toArray)
   def this(file: AbstractFile, cs: Seq[Char])   = this(file, cs.toArray)
 
-  // If non-whitespace tokens run all the way up to EOF,  
-  // positions go wrong because the correct end of the last  
-  // token cannot be used as an index into the char array.  
-  // The least painful way to address this was to add a  
-  // newline to the array.  
-  val content = (  
-    if (content0.length == 0 || !content0.last.isWhitespace)  
-      content0 :+ '\n'  
-    else content0  
+  // If non-whitespace tokens run all the way up to EOF,
+  // positions go wrong because the correct end of the last
+  // token cannot be used as an index into the char array.
+  // The least painful way to address this was to add a
+  // newline to the array.
+  val content = (
+    if (content0.length == 0 || !content0.last.isWhitespace)
+      content0 :+ '\n'
+    else content0
   )
   val length = content.length
   def start = 0

@@ -8,10 +8,10 @@ package io
 
 import java.io.{ InputStream, OutputStream, IOException, FileNotFoundException, FileInputStream, DataOutputStream }
 import java.util.jar._
-import collection.JavaConverters._
+import scala.collection.JavaConverters._
 import Attributes.Name
 import util.ClassPath
-import language.implicitConversions
+import scala.language.implicitConversions
 
 // Attributes.Name instances:
 //

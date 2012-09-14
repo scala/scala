@@ -13,7 +13,7 @@ import util.EmptyAction
 import scala.reflect.internal.util.{Position, RangePosition, NoPosition, OffsetPosition, TransparentPosition}
 import io.{Pickler, CondPickler}
 import io.Pickler._
-import collection.mutable
+import scala.collection.mutable
 import mutable.ListBuffer
 
 trait Picklers { self: Global =>

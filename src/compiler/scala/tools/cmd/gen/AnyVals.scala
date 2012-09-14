@@ -14,7 +14,7 @@ trait AnyValReps {
   sealed abstract class AnyValNum(name: String, repr: Option[String], javaEquiv: String) extends AnyValRep(name,repr,javaEquiv) {
 
     case class Op(val op : String, val doc : String)
-    
+
     private def companionCoercions(tos: AnyValRep*) = {
       tos.toList map (to =>
         """implicit def @javaequiv@2%s(x: @name@): %s = x.to%s""".format(to.javaEquiv, to.name, to.name)
@@ -24,7 +24,7 @@ trait AnyValReps {
     def coercionComment = """
   /** Language mandated coercions from @name@ to "wider" types.%s
    */""".format(coercionCommentExtra)
-    
+
     def implicitCoercions: List[String] = {
       val coercions = this match {
         case B     => companionCoercions(S, I, L, F, D)
@@ -247,7 +247,7 @@ trait AnyValReps {
     def classDoc  = interpolate(classDocTemplate)
     def objectDoc = ""
     def mkImports = ""
-    
+
     def mkClass       = assemble("final abstract class " + name + " private extends AnyVal", classLines)
     def mkObject      = assemble("object " + name + " extends AnyValCompanion", objectLines)
     def make()    = List[String](
@@ -281,7 +281,7 @@ trait AnyValTemplates {
 %s
 package scala
 
-import language.implicitConversions
+import scala.language.implicitConversions
 
 """.trim.format(timestampString) + "\n\n")
 

@@ -10,8 +10,8 @@ package html
 import model._
 import comment._
 
-import xml.{XML, NodeSeq}
-import xml.dtd.{DocType, PublicID}
+import scala.xml.{XML, NodeSeq}
+import scala.xml.dtd.{DocType, PublicID}
 import scala.collection._
 import java.io.Writer
 
@@ -87,7 +87,7 @@ abstract class HtmlPage extends Page { thisPage =>
     case Title(in, _) => <h6>{ inlineToHtml(in) }</h6>
     case Paragraph(in) => <p>{ inlineToHtml(in) }</p>
     case Code(data) =>
-      <pre>{ SyntaxHigh(data) }</pre> //<pre>{ xml.Text(data) }</pre>
+      <pre>{ SyntaxHigh(data) }</pre> //<pre>{ scala.xml.Text(data) }</pre>
     case UnorderedList(items) =>
       <ul>{ listItemsToHtml(items) }</ul>
     case OrderedList(items, listStyle) =>
@@ -119,9 +119,9 @@ abstract class HtmlPage extends Page { thisPage =>
     case Subscript(in) => <sub>{ inlineToHtml(in) }</sub>
     case Link(raw, title) => <a href={ raw }>{ inlineToHtml(title) }</a>
     case Monospace(in) => <code>{ inlineToHtml(in) }</code>
-    case Text(text) => xml.Text(text)
+    case Text(text) => scala.xml.Text(text)
     case Summary(in) => inlineToHtml(in)
-    case HtmlTag(tag) => xml.Unparsed(tag)
+    case HtmlTag(tag) => scala.xml.Unparsed(tag)
     case EntityLink(target, link) => linkToHtml(target, link, true)
   }
 
@@ -158,11 +158,11 @@ abstract class HtmlPage extends Page { thisPage =>
       if (starts.isEmpty && (inPos == string.length))
         NodeSeq.Empty
       else if (starts.isEmpty)
-        xml.Text(string.slice(inPos, string.length))
+        scala.xml.Text(string.slice(inPos, string.length))
       else if (inPos == starts.head)
         toLinksIn(inPos, starts)
       else {
-        xml.Text(string.slice(inPos, starts.head)) ++ toLinksIn(starts.head, starts)
+        scala.xml.Text(string.slice(inPos, starts.head)) ++ toLinksIn(starts.head, starts)
       }
     }
     def toLinksIn(inPos: Int, starts: List[Int]): NodeSeq = {
@@ -173,7 +173,7 @@ abstract class HtmlPage extends Page { thisPage =>
     if (hasLinks)
       toLinksOut(0, tpe.refEntity.keySet.toList)
     else
-      xml.Text(string)
+      scala.xml.Text(string)
   }
 
   def typesToHtml(tpess: List[model.TypeEntity], hasLinks: Boolean, sep: NodeSeq): NodeSeq = tpess match {
@@ -192,10 +192,10 @@ abstract class HtmlPage extends Page { thisPage =>
       if (hasPage(dTpl)) {
         <a href={ relativeLinkTo(dTpl) } class="extype" name={ dTpl.qualifiedName }>{ if (name eq null) dTpl.name else name }</a>
       } else {
-        xml.Text(if (name eq null) dTpl.name else name)
+        scala.xml.Text(if (name eq null) dTpl.name else name)
       }
     case ndTpl: NoDocTemplate =>
-      xml.Text(if (name eq null) ndTpl.name else name)
+      scala.xml.Text(if (name eq null) ndTpl.name else name)
   }
 
   /** Returns the HTML code that represents the templates in `tpls` as a list of hyperlinked names. */

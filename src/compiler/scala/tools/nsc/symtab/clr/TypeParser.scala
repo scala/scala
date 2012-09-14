@@ -12,7 +12,7 @@ import ch.epfl.lamp.compiler.msil.{Type => MSILType, Attribute => MSILAttribute,
 import scala.collection.{ mutable, immutable }
 import scala.reflect.internal.pickling.UnPickler
 import ch.epfl.lamp.compiler.msil.Type.TMVarUsage
-import language.implicitConversions
+import scala.language.implicitConversions
 
 /**
  *  @author Nikolay Mihaylov

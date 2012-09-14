@@ -17,4 +17,4 @@ package scala.beans
  *
  *  @author Ross Judson (rjudson@managedobjects.com)
  */
-class BeanInfo extends annotation.Annotation
+class BeanInfo extends scala.annotation.Annotation

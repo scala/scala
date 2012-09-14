@@ -8,7 +8,7 @@ package transform
 
 import symtab.Flags._
 import scala.collection.{ mutable, immutable }
-import language.postfixOps
+import scala.language.postfixOps
 
 /*<export> */
 /** - uncurry all symbol and tree types (@see UnCurryPhase) -- this includes normalizing all proper types.
@@ -44,7 +44,7 @@ import language.postfixOps
  */
 /*</export> */
 abstract class UnCurry extends InfoTransform
-                          with reflect.internal.transform.UnCurry
+                          with scala.reflect.internal.transform.UnCurry
                           with TypingTransformers with ast.TreeDSL {
   val global: Global               // need to repeat here because otherwise last mixin defines global as
                                    // SymbolTable. If we had DOT this would not be an issue
@@ -684,16 +684,16 @@ abstract class UnCurry extends InfoTransform
         else
           tree
       }
-      
+
       def isThrowable(pat: Tree): Boolean = pat match {
-        case Typed(Ident(nme.WILDCARD), tpt) => 
+        case Typed(Ident(nme.WILDCARD), tpt) =>
           tpt.tpe =:= ThrowableClass.tpe
-        case Bind(_, pat) => 
+        case Bind(_, pat) =>
           isThrowable(pat)
         case _ =>
           false
       }
-      
+
       def isDefaultCatch(cdef: CaseDef) = isThrowable(cdef.pat) && cdef.guard.isEmpty
 
       def postTransformTry(tree: Try) = {
@@ -757,10 +757,10 @@ abstract class UnCurry extends InfoTransform
 
         case tree: Try =>
           postTransformTry(tree)
-          
+
         case Apply(Apply(fn, args), args1) =>
           treeCopy.Apply(tree, fn, args ::: args1)
-          
+
         case Ident(name) =>
           assert(name != tpnme.WILDCARD_STAR, tree)
           applyUnary()

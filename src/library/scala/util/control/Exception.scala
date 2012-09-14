@@ -9,10 +9,10 @@
 package scala.util
 package control
 
-import collection.immutable.List
-import reflect.{ ClassTag, classTag }
+import scala.collection.immutable.List
+import scala.reflect.{ ClassTag, classTag }
 import java.lang.reflect.InvocationTargetException
-import language.implicitConversions
+import scala.language.implicitConversions
 
 
 /** Classes representing the components of exception handling.
@@ -27,7 +27,7 @@ import language.implicitConversions
  *  }}}
  *
  *  This class differs from `scala.util.Try` in that it focuses on composing exception handlers rather than
- *  composing behavior.   All behavior should be composed first and fed to a `Catch` object using one of the 
+ *  composing behavior.   All behavior should be composed first and fed to a `Catch` object using one of the
  *  `opt` or `either` methods.
  *
  *  @author Paul Phillips
@@ -218,7 +218,7 @@ object Exception {
   }
 
   /** Private **/
-  private def wouldMatch(x: Throwable, classes: collection.Seq[Class[_]]): Boolean =
+  private def wouldMatch(x: Throwable, classes: scala.collection.Seq[Class[_]]): Boolean =
     classes exists (_ isAssignableFrom x.getClass)
 
   private def pfFromExceptions(exceptions: Class[_]*): PartialFunction[Throwable, Nothing] =

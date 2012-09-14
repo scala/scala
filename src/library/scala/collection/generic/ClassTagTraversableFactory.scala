@@ -9,8 +9,8 @@
 package scala.collection
 package generic
 
-import language.higherKinds
-import reflect.ClassTag
+import scala.language.higherKinds
+import scala.reflect.ClassTag
 
 /** A template for companion objects of `ClassTagTraversable` and
  *  subclasses thereof.

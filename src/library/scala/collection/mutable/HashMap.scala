@@ -98,12 +98,12 @@ extends AbstractMap[A, B]
   override def foreach[C](f: ((A, B)) => C): Unit = foreachEntry(e => f(e.key, e.value))
 
   /* Override to avoid tuple allocation in foreach */
-  override def keySet: collection.Set[A] = new DefaultKeySet {
+  override def keySet: scala.collection.Set[A] = new DefaultKeySet {
     override def foreach[C](f: A => C) = foreachEntry(e => f(e.key))
   }
 
   /* Override to avoid tuple allocation in foreach */
-  override def values: collection.Iterable[B] = new DefaultValuesIterable {
+  override def values: scala.collection.Iterable[B] = new DefaultValuesIterable {
     override def foreach[C](f: B => C) = foreachEntry(e => f(e.value))
   }
 

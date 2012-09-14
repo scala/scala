@@ -9,7 +9,7 @@ package matching
 import transform.ExplicitOuter
 import symtab.Flags
 import scala.collection.mutable
-import language.implicitConversions
+import scala.language.implicitConversions
 
 trait Matrix extends MatrixAdditions {
   self: ExplicitOuter with ParallelMatching =>

@@ -640,7 +640,7 @@ abstract class TypeFlowAnalysis {
             For each of them, its `lastInstruction` (after which no more typeflows are needed) is found.
 
      */
-    def reinit(m: icodes.IMethod, staleOut: List[BasicBlock], inlined: collection.Set[BasicBlock], staleIn: collection.Set[BasicBlock]) {
+    def reinit(m: icodes.IMethod, staleOut: List[BasicBlock], inlined: scala.collection.Set[BasicBlock], staleIn: scala.collection.Set[BasicBlock]) {
       if (this.method == null || this.method.symbol != m.symbol) {
         init(m)
         return
@@ -691,7 +691,7 @@ abstract class TypeFlowAnalysis {
       bs foreach enqueue
     }
 
-    private def blankOut(blocks: collection.Set[BasicBlock]) {
+    private def blankOut(blocks: scala.collection.Set[BasicBlock]) {
       blocks foreach { b =>
         in(b)  = typeFlowLattice.bottom
         out(b) = typeFlowLattice.bottom

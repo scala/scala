@@ -7,7 +7,7 @@ package scala.tools.nsc
 
 import java.io.{ File, FileOutputStream, PrintWriter, IOException, FileNotFoundException }
 import java.nio.charset.{ Charset, CharsetDecoder, IllegalCharsetNameException, UnsupportedCharsetException }
-import compat.Platform.currentTime
+import scala.compat.Platform.currentTime
 import scala.tools.util.PathResolver
 import scala.collection.{ mutable, immutable }
 import io.{ SourceReader, AbstractFile, Path }
@@ -29,8 +29,8 @@ import backend.{ ScalaPrimitives, Platform, MSILPlatform, JavaPlatform }
 import backend.jvm.{GenJVM, GenASM}
 import backend.opt.{ Inliners, InlineExceptionHandlers, ClosureElimination, DeadCodeElimination }
 import backend.icode.analysis._
-import language.postfixOps
-import reflect.internal.StdAttachments
+import scala.language.postfixOps
+import scala.reflect.internal.StdAttachments
 import scala.reflect.ClassTag
 
 class Global(var currentSettings: Settings, var reporter: Reporter)
@@ -940,7 +940,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
           reSync(RootClass, Some(classPath), Some(oldEntries), Some(newEntries), invalidated, failed)
         }
     }
-    def show(msg: String, syms: collection.Traversable[Symbol]) =
+    def show(msg: String, syms: scala.collection.Traversable[Symbol]) =
       if (syms.nonEmpty)
         informProgress(s"$msg: ${syms map (_.fullName) mkString ","}")
     show("invalidated packages", invalidated)

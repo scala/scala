@@ -205,7 +205,7 @@ package scala.sys {
   package object process extends ProcessImplicits {
     /** The arguments passed to `java` when creating this process */
     def javaVmArguments: List[String] = {
-      import collection.JavaConversions._
+      import scala.collection.JavaConversions._
 
       java.lang.management.ManagementFactory.getRuntimeMXBean().getInputArguments().toList
     }

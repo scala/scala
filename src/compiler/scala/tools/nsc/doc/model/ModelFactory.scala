@@ -154,7 +154,7 @@ class ModelFactory(val global: Global, val settings: doc.Settings) {
       if (!sym.isTrait && (sym hasFlag Flags.ABSTRACT)) fgs += Paragraph(Text("abstract"))
       /* Resetting the DEFERRED flag is a little trick here for refined types: (example from scala.collections)
        * {{{
-       *     implicit def traversable2ops[T](t: collection.GenTraversableOnce[T]) = new TraversableOps[T] {
+       *     implicit def traversable2ops[T](t: scala.collection.GenTraversableOnce[T]) = new TraversableOps[T] {
        *       def isParallel = ...
        * }}}
        * the type the method returns is TraversableOps, which has all-abstract symbols. But in reality, it couldn't have

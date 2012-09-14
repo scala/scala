@@ -10,7 +10,7 @@
 
 package scala
 
-import language.implicitConversions
+import scala.language.implicitConversions
 
 /** `Int`, a 32-bit signed integer (equivalent to Java's `int` primitive type) is a
  *  subtype of [[scala.AnyVal]]. Instances of `Int` are not

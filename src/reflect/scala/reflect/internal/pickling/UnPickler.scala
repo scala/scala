@@ -14,13 +14,13 @@ import java.lang.Double.longBitsToDouble
 import Flags._
 import PickleFormat._
 import scala.collection.{ mutable, immutable }
-import collection.mutable.ListBuffer
-import annotation.switch
+import scala.collection.mutable.ListBuffer
+import scala.annotation.switch
 
 /** @author Martin Odersky
  *  @version 1.0
  */
-abstract class UnPickler /*extends reflect.generic.UnPickler*/ {
+abstract class UnPickler /*extends scala.reflect.generic.UnPickler*/ {
   val global: SymbolTable
   import global._
 

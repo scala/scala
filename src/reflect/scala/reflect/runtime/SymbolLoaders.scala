@@ -3,7 +3,7 @@ package runtime
 
 import internal.Flags
 import java.lang.{Class => jClass, Package => jPackage}
-import collection.mutable
+import scala.collection.mutable
 
 trait SymbolLoaders { self: SymbolTable =>
 

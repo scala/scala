@@ -1,7 +1,7 @@
 package scala.reflect
 package internal
 
-import language.implicitConversions
+import scala.language.implicitConversions
 
 trait FlagSets extends api.FlagSets { self: SymbolTable =>
 

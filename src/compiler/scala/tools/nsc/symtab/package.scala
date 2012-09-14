@@ -2,6 +2,6 @@ package scala.tools.nsc
 
 package object symtab {
 
-  val Flags = reflect.internal.Flags
+  val Flags = scala.reflect.internal.Flags
 
 }

@@ -7,8 +7,8 @@ package scala.tools.nsc
 package symtab
 
 import scala.collection.{ mutable, immutable }
-import language.implicitConversions
-import language.postfixOps
+import scala.language.implicitConversions
+import scala.language.postfixOps
 
 /** Printing the symbol graph (for those symbols attached to an AST node)
  *  after each phase.

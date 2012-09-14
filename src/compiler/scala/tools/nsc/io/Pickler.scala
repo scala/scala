@@ -1,10 +1,10 @@
 package scala.tools.nsc.io
 
-import annotation.unchecked
+import scala.annotation.unchecked
 import Lexer._
 import java.io.Writer
-import language.implicitConversions
-import reflect.ClassTag
+import scala.language.implicitConversions
+import scala.reflect.ClassTag
 
 /** An abstract class for writing and reading Scala objects to and
  *  from a legible representation. The presesentation follows the following grammar:

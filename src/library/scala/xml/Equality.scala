@@ -13,7 +13,7 @@ package scala.xml
  *  all the `xml` classes go through the `xml.Equality trait`.  There are two
  *  forms of `xml` comparison.
  *
- *  1. `'''def''' strict_==(other: xml.Equality)`
+ *  1. `'''def''' strict_==(other: scala.xml.Equality)`
  *
  *  This one tries to honor the little things like symmetry and hashCode
  *  contracts.  The `equals` method routes all comparisons through this.

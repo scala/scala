@@ -18,7 +18,7 @@ import JAccessFlags._
 import JObjectType.{ JAVA_LANG_STRING, JAVA_LANG_OBJECT }
 import java.util.jar.{ JarEntry, JarOutputStream }
 import scala.tools.nsc.io.AbstractFile
-import language.postfixOps
+import scala.language.postfixOps
 
 /** This class ...
  *

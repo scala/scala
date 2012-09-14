@@ -10,7 +10,7 @@ package scala.runtime
 
 import java.util.Arrays.copyOfRange
 
-final class SeqCharSequence(val xs: collection.IndexedSeq[Char]) extends CharSequence {
+final class SeqCharSequence(val xs: scala.collection.IndexedSeq[Char]) extends CharSequence {
   def length: Int                                     = xs.length
   def charAt(index: Int): Char                        = xs(index)
   def subSequence(start: Int, end: Int): CharSequence = new SeqCharSequence(xs.slice(start, end))

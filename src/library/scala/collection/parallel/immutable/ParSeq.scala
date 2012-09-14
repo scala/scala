@@ -29,7 +29,7 @@ import scala.collection.GenSeq
  */
 trait ParSeq[+T]
 extends collection/*.immutable*/.GenSeq[T]
-   with collection.parallel.ParSeq[T]
+   with scala.collection.parallel.ParSeq[T]
    with ParIterable[T]
    with GenericParTemplate[T, ParSeq]
    with ParSeqLike[T, ParSeq[T], collection.immutable.Seq[T]]

@@ -7,10 +7,10 @@ package scala.tools.nsc
 package typechecker
 
 import symtab.Flags._
-import collection.{ mutable, immutable }
+import scala.collection.{ mutable, immutable }
 import transform.InfoTransform
 import scala.collection.mutable.ListBuffer
-import language.postfixOps
+import scala.language.postfixOps
 
 /** <p>
  *    Post-attribution checking and transformation.
@@ -38,7 +38,7 @@ import language.postfixOps
  *
  *  @todo    Check whether we always check type parameter bounds.
  */
-abstract class RefChecks extends InfoTransform with reflect.internal.transform.RefChecks {
+abstract class RefChecks extends InfoTransform with scala.reflect.internal.transform.RefChecks {
 
   val global: Global               // need to repeat here because otherwise last mixin defines global as
                                    // SymbolTable. If we had DOT this would not be an issue
@@ -509,7 +509,7 @@ abstract class RefChecks extends InfoTransform with reflect.internal.transform.R
             }
           }
         }
-        
+
         def checkOverrideDeprecated() {
           if (other.hasDeprecatedOverridingAnnotation) {
             val suffix = other.deprecatedOverridingMessage map (": " + _) getOrElse ""

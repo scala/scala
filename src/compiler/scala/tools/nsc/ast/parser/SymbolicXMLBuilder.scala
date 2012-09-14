@@ -7,11 +7,11 @@ package scala.tools.nsc
 package ast.parser
 
 import scala.collection.{ mutable, immutable }
-import xml.{ EntityRef, Text }
-import xml.XML.{ xmlns }
+import scala.xml.{ EntityRef, Text }
+import scala.xml.XML.{ xmlns }
 import symtab.Flags.MUTABLE
 import scala.reflect.internal.util.StringOps.splitWhere
-import language.implicitConversions
+import scala.language.implicitConversions
 
 /** This class builds instance of `Tree` that represent XML.
  *
@@ -144,7 +144,7 @@ abstract class SymbolicXMLBuilder(p: Parsers#Parser, preserveWS: Boolean) {
     (buf map convertToTextPat).toList
 
   def parseAttribute(pos: Position, s: String): Tree = {
-    val ts = xml.Utility.parseAttributeValue(s) map {
+    val ts = scala.xml.Utility.parseAttributeValue(s) map {
       case Text(s)      => text(pos, s)
       case EntityRef(s) => entityRef(pos, s)
     }

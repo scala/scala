@@ -9,17 +9,14 @@
 package scala.collection
 package concurrent
 
-
-
 import java.util.concurrent.atomic._
-import collection.immutable.{ ListMap => ImmutableListMap }
-import collection.parallel.mutable.ParTrieMap
-import util.hashing.Hashing
+import scala.collection.immutable.{ ListMap => ImmutableListMap }
+import scala.collection.parallel.mutable.ParTrieMap
+import scala.util.hashing.Hashing
+import scala.util.control.ControlThrowable
 import generic._
-import annotation.tailrec
-import annotation.switch
-
-
+import scala.annotation.tailrec
+import scala.annotation.switch
 
 private[collection] final class INode[K, V](bn: MainNode[K, V], g: Gen) extends INodeBase[K, V](g) {
   import INodeBase._
@@ -647,22 +644,22 @@ extends scala.collection.concurrent.Map[K, V]
   def hashing = hashingobj
   def equality = equalityobj
   @volatile var root = r
-  
+
   def this(hashf: Hashing[K], ef: Equiv[K]) = this(
     INode.newRootNode,
     AtomicReferenceFieldUpdater.newUpdater(classOf[TrieMap[K, V]], classOf[AnyRef], "root"),
     hashf,
     ef
   )
-  
+
   def this() = this(Hashing.default, Equiv.universal)
-  
+
   /* internal methods */
 
   private def writeObject(out: java.io.ObjectOutputStream) {
     out.writeObject(hashf)
     out.writeObject(ef)
-    
+
     val it = iterator
     while (it.hasNext) {
       val (k, v) = it.next()
@@ -678,7 +675,7 @@ extends scala.collection.concurrent.Map[K, V]
 
     hashingobj = in.readObject().asInstanceOf[Hashing[K]]
     equalityobj = in.readObject().asInstanceOf[Equiv[K]]
-    
+
     var obj: AnyRef = null
     do {
       obj = in.readObject()
@@ -816,7 +813,7 @@ extends scala.collection.concurrent.Map[K, V]
    *
    *  This method is used by other methods such as `size` and `iterator`.
    */
-  @tailrec final def readOnlySnapshot(): collection.Map[K, V] = {
+  @tailrec final def readOnlySnapshot(): scala.collection.Map[K, V] = {
     val r = RDCSS_READ_ROOT()
     val expmain = r.gcasRead(this)
     if (RDCSS_ROOT(r, expmain, r.copyToGen(new Gen, this))) new TrieMap(r, null, hashing, equality)
@@ -827,10 +824,10 @@ extends scala.collection.concurrent.Map[K, V]
     val r = RDCSS_READ_ROOT()
     if (!RDCSS_ROOT(r, r.gcasRead(this), INode.newRootNode[K, V])) clear()
   }
-  
+
   @inline
   def computeHash(k: K) = hashingobj.hash(k)
-  
+
   final def lookup(k: K): V = {
     val hc = computeHash(k)
     lookuphc(k, hc).asInstanceOf[V]
@@ -917,11 +914,11 @@ object TrieMap extends MutableMapFactory[TrieMap] {
   implicit def canBuildFrom[K, V]: CanBuildFrom[Coll, (K, V), TrieMap[K, V]] = new MapCanBuildFrom[K, V]
 
   def empty[K, V]: TrieMap[K, V] = new TrieMap[K, V]
-  
+
   class MangledHashing[K] extends Hashing[K] {
     def hash(k: K) = util.hashing.byteswap32(k.##)
   }
-  
+
 }
 
 
@@ -1058,7 +1055,7 @@ private[collection] class TrieMapIterator[K, V](var level: Int, private var ct: 
 }
 
 
-private[concurrent] object RestartException extends util.control.ControlThrowable
+private[concurrent] object RestartException extends ControlThrowable
 
 
 /** Only used for ctrie serialization. */
@@ -1067,7 +1064,7 @@ private[concurrent] case object TrieMapSerializationEnd
 
 
 private[concurrent] object Debug {
-  import collection._
+  import scala.collection._
 
   lazy val logbuffer = new java.util.concurrent.ConcurrentLinkedQueue[AnyRef]
 
@@ -1083,13 +1080,3 @@ private[concurrent] object Debug {
   }
 
 }
-
-
-
-
-
-
-
-
-
-

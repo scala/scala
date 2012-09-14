@@ -10,7 +10,7 @@ import scala.collection.{ mutable, immutable }
 import scala.reflect.internal.util.StringOps.{ ojoin }
 import scala.reflect.ClassTag
 import scala.reflect.runtime.{ universe => ru }
-import language.higherKinds
+import scala.language.higherKinds
 
 /** Logic related to method synthesis which involves cooperation between
  *  Namer and Typer.

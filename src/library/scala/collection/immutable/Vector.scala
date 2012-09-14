@@ -10,7 +10,7 @@ package scala.collection
 package immutable
 
 import scala.annotation.unchecked.uncheckedVariance
-import compat.Platform
+import scala.compat.Platform
 import scala.collection.generic._
 import scala.collection.mutable.Builder
 import scala.collection.parallel.immutable.ParVector
@@ -21,9 +21,9 @@ object Vector extends SeqFactory[Vector] {
   private[collection] class VectorReusableCBF extends GenericCanBuildFrom[Nothing] {
     override def apply() = newBuilder[Nothing]
   }
-  
+
   private val VectorReusableCBF: GenericCanBuildFrom[Nothing] = new VectorReusableCBF
-  
+
   @inline implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, Vector[A]] =
     VectorReusableCBF.asInstanceOf[CanBuildFrom[Coll, A, Vector[A]]]
   def newBuilder[A]: Builder[A, Vector[A]] = new VectorBuilder[A]
