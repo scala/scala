@@ -4,5 +4,5 @@ package macros
 trait Exprs {
   self: Context =>
 
-  def Expr[T: AbsTypeTag](tree: Tree): Expr[T]
+  def Expr[T: WeakTypeTag](tree: Tree): Expr[T]
 }

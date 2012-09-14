@@ -1151,7 +1151,7 @@ trait Implicits {
     private def TagSymbols =  TagMaterializers.keySet
     private val TagMaterializers = Map[Symbol, Symbol](
       ClassTagClass   -> MacroInternal_materializeClassTag,
-      AbsTypeTagClass -> MacroInternal_materializeAbsTypeTag,
+      WeakTypeTagClass -> MacroInternal_materializeWeakTypeTag,
       TypeTagClass    -> MacroInternal_materializeTypeTag
     )
 

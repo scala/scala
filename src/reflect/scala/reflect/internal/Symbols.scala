@@ -48,13 +48,13 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
 
   /** Create a new free term.  Its owner is NoSymbol.
    */
-  def newFreeTermSymbol(name: TermName, info: Type, value: => Any, flags: Long = 0L, origin: String): FreeTermSymbol =
-    new FreeTermSymbol(name, value, origin) initFlags flags setInfo info
+  def newFreeTermSymbol(name: TermName, value: => Any, flags: Long = 0L, origin: String): FreeTermSymbol =
+    new FreeTermSymbol(name, value, origin) initFlags flags
 
   /** Create a new free type.  Its owner is NoSymbol.
    */
-  def newFreeTypeSymbol(name: TypeName, info: Type, value: => Any, flags: Long = 0L, origin: String): FreeTypeSymbol =
-    new FreeTypeSymbol(name, value, origin) initFlags flags setInfo info
+  def newFreeTypeSymbol(name: TypeName, flags: Long = 0L, origin: String): FreeTypeSymbol =
+    new FreeTypeSymbol(name, origin) initFlags flags
 
   /** The original owner of a class. Used by the backend to generate
    *  EnclosingMethod attributes.
@@ -3080,9 +3080,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
   }
   implicit val FreeTermSymbolTag = ClassTag[FreeTermSymbol](classOf[FreeTermSymbol])
 
-  class FreeTypeSymbol(name0: TypeName, value0: => Any, val origin: String) extends TypeSkolem(NoSymbol, NoPosition, name0, NoSymbol) with FreeSymbol with FreeTypeSymbolApi {
-    def value = value0
-  }
+  class FreeTypeSymbol(name0: TypeName, val origin: String) extends TypeSkolem(NoSymbol, NoPosition, name0, NoSymbol) with FreeSymbol with FreeTypeSymbolApi
   implicit val FreeTypeSymbolTag = ClassTag[FreeTypeSymbol](classOf[FreeTypeSymbol])
 
   /** An object representing a missing symbol */

@@ -46,7 +46,7 @@ abstract class Universe extends Symbols
    *    def macroImpl[T](c: Context) = {
    *      ...
    *      // T here is just a type parameter, so the tree produced by reify won't be of much use in a macro expansion
-   *      // however, if T were annotated with c.AbsTypeTag (which would declare an implicit parameter for macroImpl)
+   *      // however, if T were annotated with c.WeakTypeTag (which would declare an implicit parameter for macroImpl)
    *      // then reification would substitute T with the TypeTree that was used in a TypeApply of this particular macro invocation
    *      val factory = c.reify{ new Queryable[T] }
    *      ...

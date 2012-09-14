@@ -1,2 +1,2 @@
 TypeTag[Int]
-AbsTypeTag[String]
+WeakTypeTag[String]
