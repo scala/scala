@@ -252,4 +252,14 @@ trait BufferLike[A, +This <: BufferLike[A, This] with Buffer[A]]
    */
   @migration("`--` creates a new buffer. Use `--=` to remove an element from this buffer and return that buffer itself.", "2.8.0")
   override def --(xs: GenTraversableOnce[A]): This = clone() --= xs.seq
+
+  /** Return a clone of this buffer.
+   *
+   *  @return a `Buffer` with the same elements.
+   */
+  override def clone(): This = {
+    val bf = newBuilder
+    bf ++= this
+    bf.result.asInstanceOf[This]
+  }
 }
