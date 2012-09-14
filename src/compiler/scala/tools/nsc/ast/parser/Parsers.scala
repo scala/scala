@@ -1029,7 +1029,7 @@ self =>
         val tok = in.token
         val name = ident()
         t = atPos(start) {
-          if (tok == BACKQUOTED_IDENT) Ident(name) addAttachment BackquotedIdentifierAttachment
+          if (tok == BACKQUOTED_IDENT) Ident(name) updateAttachment BackquotedIdentifierAttachment
           else Ident(name)
         }
         if (in.token == DOT) {

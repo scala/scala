@@ -143,7 +143,7 @@ trait GenSymbols {
       //    produces valid Scala code (with vals in a block depending only on lexically preceding vals)
       val reification = reificode(sym)
       import reification.{name, binding}
-      val tree = reification.tree addAttachment ReifyBindingAttachment(binding)
+      val tree = reification.tree updateAttachment ReifyBindingAttachment(binding)
       state.symtab += (sym, name, tree)
     }
     fromSymtab
