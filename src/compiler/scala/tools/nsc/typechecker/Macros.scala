@@ -49,9 +49,6 @@ trait Macros extends scala.tools.reflect.FastTrack with Traces {
   import MacrosStats._
   def globalSettings = global.settings
 
-  val globalMacroCache = collection.mutable.Map[Any, Any]()
-  val perRunMacroCache = perRunCaches.newMap[Symbol, collection.mutable.Map[Any, Any]]
-
   /** `MacroImplBinding` and its companion module are responsible for
    *  serialization/deserialization of macro def -> impl bindings.
    *
