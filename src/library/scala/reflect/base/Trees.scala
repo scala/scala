@@ -605,10 +605,30 @@ trait Trees { self: Universe =>
     def unapply(bind: Bind): Option[(Name, Tree)]
   }
 
-  /** Noone knows what this is.
-   *  It is not idempotent w.r.t typechecking.
-   *  Can we, please, remove it?
+  /** Used to represent `unapply` methods in pattern matching.
    *  Introduced by typer, eliminated by patmat/explicitouter.
+   *
+   *  For example:
+   *  {{{
+   *    2 match { case Foo(x) => x }
+   *  }}}
+   *
+   *  Is represented as:
+   *  {{{
+   *    Match(
+   *      Literal(Constant(2)),
+   *      List(
+   *        CaseDef(
+   *          UnApply(
+   *            // a dummy node that carries the type of unapplication to patmat
+   *            // the <unapply-selector> here doesn't have an underlying symbol
+   *            // it only has a type assigned, therefore after `resetAllAttrs` this tree is no longer typeable
+   *            Apply(Select(Ident(Foo), newTermName("unapply")), List(Ident(newTermName("<unapply-selector>")))),
+   *            // arguments of the unapply => nothing synthetic here
+   *            List(Bind(newTermName("x"), Ident(nme.WILDCARD)))),
+   *          EmptyTree,
+   *          Ident(newTermName("x")))))
+   *  }}}
    */
   type UnApply >: Null <: TermTree
 
