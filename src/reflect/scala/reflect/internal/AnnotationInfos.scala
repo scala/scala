@@ -65,6 +65,7 @@ trait AnnotationInfos extends api.Annotations { self: SymbolTable =>
    */
   abstract class ClassfileAnnotArg extends Product
   implicit val JavaArgumentTag = ClassTag[ClassfileAnnotArg](classOf[ClassfileAnnotArg])
+  case object UnmappableAnnotArg extends ClassfileAnnotArg
 
   /** Represents a compile-time Constant (`Boolean`, `Byte`, `Short`,
    *  `Char`, `Int`, `Long`, `Float`, `Double`, `String`, `java.lang.Class` or
