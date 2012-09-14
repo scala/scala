@@ -320,7 +320,13 @@ def unbox(x: java.lang.Object): @name@ = @unboxImpl@
 override def toString = "object scala.@name@"
 """
 
-  def nonUnitCompanions = ""  // todo
+  def nonUnitCompanions = """
+/** A highly reusable empty array, useful for avoiding
+ *  allocations when you need one.
+ *
+ *  @return     a constant 0-length Array[@name@]
+ */
+final val emptyArray = new Array[@name@](0)"""
 
   def cardinalCompanion = """
 /** The smallest value representable as a @name@.
@@ -340,9 +346,6 @@ final val MinPositiveValue = @boxed@.MIN_VALUE
 final val NaN              = @boxed@.NaN
 final val PositiveInfinity = @boxed@.POSITIVE_INFINITY
 final val NegativeInfinity = @boxed@.NEGATIVE_INFINITY
-
-@deprecated("use @name@.MinPositiveValue instead", "2.9.0")
-final val Epsilon  = MinPositiveValue
 
 /** The negative number with the greatest (finite) absolute value which is representable
  *  by a @name@.  Note that it differs from [[java.lang.@name@.MIN_VALUE]], which
