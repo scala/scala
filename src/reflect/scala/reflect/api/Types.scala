@@ -121,15 +121,6 @@ trait Types extends base.Types { self: Universe =>
      */
     def widen: Type
 
-    /** Map to a singleton type which is a subtype of this type.
-     *  The fallback implemented here gives:
-     *  {{{
-     *    T.narrow  =  (T {}).this.type
-     *  }}}
-     *  Overridden where we know more about where types come from.
-     */
-    def narrow: Type
-
     /******************* helpers *******************/
 
     /** Substitute symbols in `to` for corresponding occurrences of references to
