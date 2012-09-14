@@ -14,7 +14,7 @@ trait AnyValReps {
   sealed abstract class AnyValNum(name: String, repr: Option[String], javaEquiv: String) extends AnyValRep(name,repr,javaEquiv) {
 
     case class Op(val op : String, val doc : String)
-    
+
     private def companionCoercions(tos: AnyValRep*) = {
       tos.toList map (to =>
         """implicit def @javaequiv@2%s(x: @name@): %s = x.to%s""".format(to.javaEquiv, to.name, to.name)
@@ -24,7 +24,7 @@ trait AnyValReps {
     def coercionComment = """
   /** Language mandated coercions from @name@ to "wider" types.%s
    */""".format(coercionCommentExtra)
-    
+
     def implicitCoercions: List[String] = {
       val coercions = this match {
         case B     => companionCoercions(S, I, L, F, D)
@@ -247,7 +247,7 @@ trait AnyValReps {
     def classDoc  = interpolate(classDocTemplate)
     def objectDoc = ""
     def mkImports = ""
-    
+
     def mkClass       = assemble("final abstract class " + name + " private extends AnyVal", classLines)
     def mkObject      = assemble("object " + name + " extends AnyValCompanion", objectLines)
     def make()    = List[String](
@@ -320,7 +320,13 @@ def unbox(x: java.lang.Object): @name@ = @unboxImpl@
 override def toString = "object scala.@name@"
 """
 
-  def nonUnitCompanions = ""  // todo
+  def nonUnitCompanions = """
+/** A highly reusable empty array, useful for avoiding
+ *  allocations when you need one.
+ *
+ *  @return     a constant 0-length Array[@name@]
+ */
+final val emptyArray = new Array[@name@](0)"""
 
   def cardinalCompanion = """
 /** The smallest value representable as a @name@.
@@ -340,9 +346,6 @@ final val MinPositiveValue = @boxed@.MIN_VALUE
 final val NaN              = @boxed@.NaN
 final val PositiveInfinity = @boxed@.POSITIVE_INFINITY
 final val NegativeInfinity = @boxed@.NEGATIVE_INFINITY
-
-@deprecated("use @name@.MinPositiveValue instead", "2.9.0")
-final val Epsilon  = MinPositiveValue
 
 /** The negative number with the greatest (finite) absolute value which is representable
  *  by a @name@.  Note that it differs from [[java.lang.@name@.MIN_VALUE]], which

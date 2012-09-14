@@ -625,6 +625,14 @@ object Byte extends AnyValCompanion {
    */
   override def toString = "object scala.Byte"
 
+
+  /** A highly reusable empty array, useful for avoiding
+   *  allocations when you need one.
+   *
+   *  @return     a constant 0-length Array[Byte]
+   */
+  final val emptyArray = new Array[Byte](0)
+  
   /** Language mandated coercions from Byte to "wider" types.
    */
   implicit def byte2short(x: Byte): Short = x.toShort
