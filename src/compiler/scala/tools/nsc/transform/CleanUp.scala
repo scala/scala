@@ -594,7 +594,7 @@ abstract class CleanUp extends Transform with ast.TreeDSL {
           // create a static field in the companion class for this @static field
           val stfieldSym = linkedClass.newVariable(newTermName(name), tree.pos, STATIC | SYNTHETIC | FINAL) setInfo sym.tpe
           stfieldSym.addAnnotation(StaticClass)
-
+          
           val names = classNames.getOrElseUpdate(linkedClass, linkedClass.info.decls.collect {
             case sym if sym.name.isTermName => sym.name
           } toSet)
