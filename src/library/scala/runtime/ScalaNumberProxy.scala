@@ -9,7 +9,7 @@
 package scala.runtime
 
 import scala.collection.{ mutable, immutable }
-import math.ScalaNumericConversions
+import scala.math.ScalaNumericConversions
 import immutable.NumericRange
 import Proxy.Typed
 

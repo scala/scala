@@ -3,7 +3,7 @@ package dependencies
 
 import symtab.Flags
 
-import collection._
+import scala.collection._
 
 /** A component that describes the possible changes between successive
  *  compilations of a class.

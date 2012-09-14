@@ -7,7 +7,7 @@ package scala.reflect
 package base
 
 import java.lang.{ Class => jClass }
-import language.implicitConversions
+import scala.language.implicitConversions
 
 /**
  * Type tags encapsulate a representation of type T.

@@ -746,7 +746,7 @@ abstract class Inliners extends SubComponent {
       toBecomePublic: List[Symbol]
     )
 
-    final class CallerCalleeInfo(val caller: IMethodInfo, val inc: IMethodInfo, fresh: mutable.Map[String, Int], inlinedMethodCount: collection.Map[Symbol, Int]) {
+    final class CallerCalleeInfo(val caller: IMethodInfo, val inc: IMethodInfo, fresh: mutable.Map[String, Int], inlinedMethodCount: scala.collection.Map[Symbol, Int]) {
 
       assert(!caller.isBridge && inc.m.hasCode,
              "A guard in Inliner.analyzeClass() should have prevented from getting here.")

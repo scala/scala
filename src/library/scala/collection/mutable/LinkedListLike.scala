@@ -12,7 +12,7 @@ package scala.collection
 package mutable
 
 import generic._
-import annotation.tailrec
+import scala.annotation.tailrec
 
 /** This extensible class may be used as a basis for implementing linked
  *  list. Type variable `A` refers to the element type of the

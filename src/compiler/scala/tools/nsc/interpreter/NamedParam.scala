@@ -7,7 +7,7 @@ package scala.tools.nsc
 package interpreter
 
 import NamedParam._
-import language.implicitConversions
+import scala.language.implicitConversions
 import scala.reflect.runtime.{universe => ru}
 import scala.reflect.{ClassTag, classTag}
 

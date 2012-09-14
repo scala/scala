@@ -70,8 +70,8 @@ trait ObservableBuffer[A] extends Buffer[A] with Publisher[Message[A] with Undoa
       def undo() { throw new UnsupportedOperationException("cannot undo") }
     })
   }
-  
-  abstract override def insertAll(n: Int, elems: collection.Traversable[A]) {
+
+  abstract override def insertAll(n: Int, elems: scala.collection.Traversable[A]) {
     super.insertAll(n, elems)
     var curr = n - 1
     val msg = elems.foldLeft(new Script[A]() with Undoable {
@@ -83,5 +83,5 @@ trait ObservableBuffer[A] extends Buffer[A] with Publisher[Message[A] with Undoa
     }
     publish(msg)
   }
-  
+
 }

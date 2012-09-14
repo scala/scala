@@ -11,8 +11,8 @@ package scala.collection
 import generic._
 import mutable.{ Builder, ArrayBuffer }
 import TraversableView.NoBuilder
-import annotation.migration
-import language.implicitConversions
+import scala.annotation.migration
+import scala.language.implicitConversions
 
 trait ViewMkString[+A] {
   self: Traversable[A] =>

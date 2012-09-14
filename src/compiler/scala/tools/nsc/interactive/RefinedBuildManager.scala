@@ -220,7 +220,7 @@ class RefinedBuildManager(val settings: Settings) extends Changes with BuildMana
   }
 
   /** Return the set of source files that are invalidated by the given changes. */
-  def invalidated(files: Set[AbstractFile], changesOf: collection.Map[Symbol, List[Change]],
+  def invalidated(files: Set[AbstractFile], changesOf: scala.collection.Map[Symbol, List[Change]],
                   processed: Set[AbstractFile] = Set.empty):
     Set[AbstractFile] = {
     val buf = new mutable.HashSet[AbstractFile]

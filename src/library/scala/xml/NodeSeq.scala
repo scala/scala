@@ -8,10 +8,10 @@
 
 package scala.xml
 
-import collection.{ mutable, immutable, generic, SeqLike, AbstractSeq }
+import scala.collection.{ mutable, immutable, generic, SeqLike, AbstractSeq }
 import mutable.{ Builder, ListBuffer }
 import generic.{ CanBuildFrom }
-import language.implicitConversions
+import scala.language.implicitConversions
 
 /** This object ...
  *

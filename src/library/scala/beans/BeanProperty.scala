@@ -23,4 +23,4 @@ package scala.beans
  *  use the `scala.beans.BooleanBeanProperty` annotation instead.
  */
 @scala.annotation.meta.field
-class BeanProperty extends annotation.StaticAnnotation
+class BeanProperty extends scala.annotation.StaticAnnotation

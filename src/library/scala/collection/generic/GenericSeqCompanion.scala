@@ -10,7 +10,7 @@
 package scala.collection
 package generic
 
-import language.higherKinds
+import scala.language.higherKinds
 
 trait GenericSeqCompanion[CC[X] <: Traversable[X]]
   extends GenericCompanion[CC]

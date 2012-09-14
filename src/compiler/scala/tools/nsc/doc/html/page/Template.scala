@@ -13,7 +13,7 @@ import model.diagram._
 import diagram._
 
 import scala.xml.{ NodeSeq, Text, UnprefixedAttribute }
-import language.postfixOps
+import scala.language.postfixOps
 
 import model._
 import model.diagram._
@@ -51,7 +51,7 @@ class Template(universe: doc.Universe, generator: DiagramGenerator, tpl: DocTemp
             var hash = '{ val p = templateToPath(tpl); (p.tail.reverse ::: List(p.head.replace(".html", ""))).mkString(".") }';
             var anchor = window.location.hash;
             var anchor_opt = '';
-            if (anchor.length { scala.xml.Unparsed(">=") /* unless we use Unparsed, it gets escaped and crashes the script */ } 1) 
+            if (anchor.length { scala.xml.Unparsed(">=") /* unless we use Unparsed, it gets escaped and crashes the script */ } 1)
               anchor_opt = '@' + anchor.substring(1);
             window.location.href = url + '#' + hash + anchor_opt;
          }}
@@ -93,7 +93,7 @@ class Template(universe: doc.Universe, generator: DiagramGenerator, tpl: DocTemp
       if (tpl.isRootPackage || tpl.inTemplate.isRootPackage)
         NodeSeq.Empty
       else
-        <p id="owner">{ templatesToHtml(tpl.inTemplate.toRoot.reverse.tail, xml.Text(".")) }</p>
+        <p id="owner">{ templatesToHtml(tpl.inTemplate.toRoot.reverse.tail, scala.xml.Text(".")) }</p>
     }
 
     <body class={ if (tpl.isType) "type" else "value" }>
@@ -152,7 +152,7 @@ class Template(universe: doc.Universe, generator: DiagramGenerator, tpl: DocTemp
               <div id="ancestors">
                 <span class="filtertype">Implicitly<br/>
                 </span>
-                <ol id="implicits"> { 
+                <ol id="implicits"> {
                   tpl.conversions.map { conv =>
                     val name = conv.conversionQualifiedName
                     val hide = universe.settings.hiddenImplicits(name)
@@ -415,14 +415,14 @@ class Template(universe: doc.Universe, generator: DiagramGenerator, tpl: DocTemp
             case Nil =>
               NodeSeq.Empty
             case List(constraint) =>
-              xml.Text("This conversion will take place only if ") ++ constraintToHtml(constraint) ++ xml.Text(".")
+              scala.xml.Text("This conversion will take place only if ") ++ constraintToHtml(constraint) ++ scala.xml.Text(".")
             case List(constraint1, constraint2) =>
-              xml.Text("This conversion will take place only if ") ++ constraintToHtml(constraint1) ++
-                xml.Text(" and at the same time ") ++ constraintToHtml(constraint2) ++ xml.Text(".")
+              scala.xml.Text("This conversion will take place only if ") ++ constraintToHtml(constraint1) ++
+                scala.xml.Text(" and at the same time ") ++ constraintToHtml(constraint2) ++ scala.xml.Text(".")
             case constraints =>
               <br/> ++ "This conversion will take place only if all of the following constraints are met:" ++ <br/> ++ {
                 var index = 0
-                constraints map { constraint => xml.Text({ index += 1; index } + ". ") ++ constraintToHtml(constraint) ++ <br/> }
+                constraints map { constraint => scala.xml.Text({ index += 1; index } + ". ") ++ constraintToHtml(constraint) ++ <br/> }
               }
           }
 
@@ -440,18 +440,18 @@ class Template(universe: doc.Universe, generator: DiagramGenerator, tpl: DocTemp
                 case d: Def => d.valueParams map (_ map (_ name) mkString("(", ", ", ")")) mkString
                 case _      => "" // no parameters
               }
-              <br/> ++ xml.Text("To access this member you can use a ") ++
+              <br/> ++ scala.xml.Text("To access this member you can use a ") ++
               <a href="http://stackoverflow.com/questions/2087250/what-is-the-purpose-of-type-ascription-in-scala"
-                target="_blank">type ascription</a> ++ xml.Text(":") ++
+                target="_blank">type ascription</a> ++ scala.xml.Text(":") ++
               <br/> ++ <div class="cmt"><pre>{"(" + Template.lowerFirstLetter(tpl.name) + ": " + conv.targetType.name + ")." + mbr.name + params }</pre></div>
             }
 
             val shadowingWarning: NodeSeq =
               if (mbr.isShadowedImplicit)
-                  xml.Text("This implicitly inherited member is shadowed by one or more members in this " +
+                  scala.xml.Text("This implicitly inherited member is shadowed by one or more members in this " +
                   "class.") ++ shadowingSuggestion
               else if (mbr.isAmbiguousImplicit)
-                  xml.Text("This implicitly inherited member is ambiguous. One or more implicitly " +
+                  scala.xml.Text("This implicitly inherited member is ambiguous. One or more implicitly " +
                   "inherited members have similar signatures, so calling this member may produce an ambiguous " +
                   "implicit conversion compiler error.") ++ shadowingSuggestion
               else NodeSeq.Empty
@@ -471,7 +471,7 @@ class Template(universe: doc.Universe, generator: DiagramGenerator, tpl: DocTemp
       if (fvs.isEmpty || isReduced) NodeSeq.Empty
       else {
         <dt>Attributes</dt>
-        <dd>{ fvs map { fv => { inlineToHtml(fv.text) ++ xml.Text(" ") } } }</dd>
+        <dd>{ fvs map { fv => { inlineToHtml(fv.text) ++ scala.xml.Text(" ") } } }</dd>
       }
     }
 
@@ -480,7 +480,7 @@ class Template(universe: doc.Universe, generator: DiagramGenerator, tpl: DocTemp
       if ((inDefTpls.tail.isEmpty && (inDefTpls.head == inTpl)) || isReduced) NodeSeq.Empty
       else {
         <dt>Definition Classes</dt>
-        <dd>{ templatesToHtml(inDefTpls, xml.Text(" → ")) }</dd>
+        <dd>{ templatesToHtml(inDefTpls, scala.xml.Text(" → ")) }</dd>
       }
     }
 
@@ -628,7 +628,7 @@ class Template(universe: doc.Universe, generator: DiagramGenerator, tpl: DocTemp
         <div class="toggleContainer block">
           <span class="toggle">Linear Supertypes</span>
           <div class="superTypes hiddenContent">{
-            typesToHtml(dtpl.linearizationTypes, hasLinks = true, sep = xml.Text(", "))
+            typesToHtml(dtpl.linearizationTypes, hasLinks = true, sep = scala.xml.Text(", "))
           }</div>
         </div>
       case _ => NodeSeq.Empty
@@ -639,7 +639,7 @@ class Template(universe: doc.Universe, generator: DiagramGenerator, tpl: DocTemp
         <div class="toggleContainer block">
           <span class="toggle">Known Subclasses</span>
           <div class="subClasses hiddenContent">{
-            templatesToHtml(dtpl.allSubClasses.sortBy(_.name), xml.Text(", "))
+            templatesToHtml(dtpl.allSubClasses.sortBy(_.name), scala.xml.Text(", "))
           }</div>
         </div>
       case _ => NodeSeq.Empty
@@ -663,7 +663,7 @@ class Template(universe: doc.Universe, generator: DiagramGenerator, tpl: DocTemp
   def boundsToHtml(hi: Option[TypeEntity], lo: Option[TypeEntity], hasLinks: Boolean): NodeSeq = {
     def bound0(bnd: Option[TypeEntity], pre: String): NodeSeq = bnd match {
       case None => NodeSeq.Empty
-      case Some(tpe) => xml.Text(pre) ++ typeToHtml(tpe, hasLinks)
+      case Some(tpe) => scala.xml.Text(pre) ++ typeToHtml(tpe, hasLinks)
     }
     bound0(lo, " >: ") ++ bound0(hi, " <: ")
   }
@@ -694,7 +694,7 @@ class Template(universe: doc.Universe, generator: DiagramGenerator, tpl: DocTemp
     def inside(hasLinks: Boolean, nameLink: String = ""): NodeSeq =
       <xml:group>
       <span class="modifier_kind">
-        <span class="modifier">{ mbr.flags.map(flag => inlineToHtml(flag.text) ++ xml.Text(" ")) }</span>
+        <span class="modifier">{ mbr.flags.map(flag => inlineToHtml(flag.text) ++ scala.xml.Text(" ")) }</span>
         <span class="kind">{ kindToString(mbr) }</span>
       </span>
       <span class="symbol">
@@ -872,7 +872,7 @@ class Template(universe: doc.Universe, generator: DiagramGenerator, tpl: DocTemp
     def argumentsToHtml0(argss: List[ValueArgument]): NodeSeq = argss match {
       case Nil         => NodeSeq.Empty
       case arg :: Nil  => argumentToHtml(arg)
-      case arg :: args => argumentToHtml(arg) ++ xml.Text(", ") ++ argumentsToHtml0(args)
+      case arg :: args => argumentToHtml(arg) ++ scala.xml.Text(", ") ++ argumentsToHtml0(args)
     }
     <span class="args">({ argumentsToHtml0(argss) })</span>
   }
@@ -922,29 +922,29 @@ class Template(universe: doc.Universe, generator: DiagramGenerator, tpl: DocTemp
 
   private def constraintToHtml(constraint: Constraint): NodeSeq = constraint match {
     case ktcc: KnownTypeClassConstraint =>
-      xml.Text(ktcc.typeExplanation(ktcc.typeParamName) + " (" + ktcc.typeParamName + ": ") ++
-        templateToHtml(ktcc.typeClassEntity) ++ xml.Text(")")
+      scala.xml.Text(ktcc.typeExplanation(ktcc.typeParamName) + " (" + ktcc.typeParamName + ": ") ++
+        templateToHtml(ktcc.typeClassEntity) ++ scala.xml.Text(")")
     case tcc: TypeClassConstraint =>
-      xml.Text(tcc.typeParamName + " is ") ++
+      scala.xml.Text(tcc.typeParamName + " is ") ++
         <a href="http://stackoverflow.com/questions/2982276/what-is-a-context-bound-in-scala" target="_blank">
-        context-bounded</a> ++ xml.Text(" by " + tcc.typeClassEntity.qualifiedName + " (" + tcc.typeParamName + ": ") ++
-        templateToHtml(tcc.typeClassEntity) ++ xml.Text(")")
+        context-bounded</a> ++ scala.xml.Text(" by " + tcc.typeClassEntity.qualifiedName + " (" + tcc.typeParamName + ": ") ++
+        templateToHtml(tcc.typeClassEntity) ++ scala.xml.Text(")")
     case impl: ImplicitInScopeConstraint =>
-      xml.Text("an implicit value of type ") ++ typeToHtml(impl.implicitType, true) ++ xml.Text(" is in scope")
+      scala.xml.Text("an implicit value of type ") ++ typeToHtml(impl.implicitType, true) ++ scala.xml.Text(" is in scope")
     case eq: EqualTypeParamConstraint =>
-      xml.Text(eq.typeParamName + " is " + eq.rhs.name + " (" + eq.typeParamName + " =:= ") ++
-        typeToHtml(eq.rhs, true) ++ xml.Text(")")
+      scala.xml.Text(eq.typeParamName + " is " + eq.rhs.name + " (" + eq.typeParamName + " =:= ") ++
+        typeToHtml(eq.rhs, true) ++ scala.xml.Text(")")
     case bt: BoundedTypeParamConstraint =>
-      xml.Text(bt.typeParamName + " is a superclass of " + bt.lowerBound.name + " and a subclass of " +
+      scala.xml.Text(bt.typeParamName + " is a superclass of " + bt.lowerBound.name + " and a subclass of " +
         bt.upperBound.name + " (" + bt.typeParamName + " >: ") ++
-        typeToHtml(bt.lowerBound, true) ++ xml.Text(" <: ") ++
-        typeToHtml(bt.upperBound, true) ++ xml.Text(")")
+        typeToHtml(bt.lowerBound, true) ++ scala.xml.Text(" <: ") ++
+        typeToHtml(bt.upperBound, true) ++ scala.xml.Text(")")
     case lb: LowerBoundedTypeParamConstraint =>
-      xml.Text(lb.typeParamName + " is a superclass of " + lb.lowerBound.name + " (" + lb.typeParamName + " >: ") ++
-        typeToHtml(lb.lowerBound, true) ++ xml.Text(")")
+      scala.xml.Text(lb.typeParamName + " is a superclass of " + lb.lowerBound.name + " (" + lb.typeParamName + " >: ") ++
+        typeToHtml(lb.lowerBound, true) ++ scala.xml.Text(")")
     case ub: UpperBoundedTypeParamConstraint =>
-      xml.Text(ub.typeParamName + " is a subclass of " + ub.upperBound.name + " (" + ub.typeParamName + " <: ") ++
-        typeToHtml(ub.upperBound, true) ++ xml.Text(")")
+      scala.xml.Text(ub.typeParamName + " is a subclass of " + ub.upperBound.name + " (" + ub.typeParamName + " <: ") ++
+        typeToHtml(ub.upperBound, true) ++ scala.xml.Text(")")
   }
 
   def makeDiagramHtml(tpl: DocTemplateEntity, diagram: Option[Diagram], description: String, id: String) = {

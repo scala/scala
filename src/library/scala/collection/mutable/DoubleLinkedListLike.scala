@@ -11,7 +11,7 @@
 package scala.collection
 package mutable
 
-import annotation.migration
+import scala.annotation.migration
 
 /** This extensible class may be used as a basis for implementing double
  *  linked lists. Type variable `A` refers to the element type

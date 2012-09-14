@@ -13,7 +13,7 @@ import scala.reflect.internal.util.FakePos
 
 import dependencies._
 import io.AbstractFile
-import language.implicitConversions
+import scala.language.implicitConversions
 
 trait BuildManager {
 

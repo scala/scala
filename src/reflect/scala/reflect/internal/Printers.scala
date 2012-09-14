@@ -10,7 +10,7 @@ package internal
 
 import java.io.{ OutputStream, PrintWriter, StringWriter, Writer }
 import Flags._
-import compat.Platform.EOL
+import scala.compat.Platform.EOL
 
 trait Printers extends api.Printers { self: SymbolTable =>
 

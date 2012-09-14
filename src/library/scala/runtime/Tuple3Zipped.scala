@@ -10,7 +10,7 @@ package scala.runtime
 
 import scala.collection.{ TraversableLike, IterableLike }
 import scala.collection.generic.{ CanBuildFrom => CBF }
-import language.{ higherKinds, implicitConversions }
+import scala.language.{ higherKinds, implicitConversions }
 
 /** See comment on ZippedTraversable2. */
 trait ZippedTraversable3[+El1, +El2, +El3] extends Any {
@@ -119,7 +119,7 @@ object Tuple3Zipped {
       (implicit w1: T1 <:< CC1[El1],
                 w2: T2 <:< CC2[El2],
                 w3: T3 <:< CC3[El3],
-                bf: collection.generic.CanBuildFrom[CC1[_], (El1, El2, El3), That]
+                bf: scala.collection.generic.CanBuildFrom[CC1[_], (El1, El2, El3), That]
       ): That = {
         val buf = bf(x._1)
         val it1 = x._1.toIterator

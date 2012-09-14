@@ -9,7 +9,7 @@
 package scala.concurrent
 
 import java.lang.Thread
-import language.implicitConversions
+import scala.language.implicitConversions
 
 /** The `ThreadRunner` trait...
  *

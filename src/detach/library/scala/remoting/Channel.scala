@@ -116,7 +116,7 @@ class Channel protected (socket: Socket) {
    *         the expected type.
    */
   @throws(classOf[ChannelException])
-  def receive[T](implicit expected: reflect.ClassTag[T]): T = {
+  def receive[T](implicit expected: scala.reflect.ClassTag[T]): T = {
     val found = in.readObject().asInstanceOf[reflect.ClassTag[_]]
     info("receive: found="+found+", expected="+expected)
     import scala.reflect.ClassTag
@@ -144,11 +144,11 @@ class Channel protected (socket: Socket) {
   /** <code>?</code> method may throw either an
    *  <code>ClassNotFoundException</code> or an <code>IOException</code>.
    */
-  def ?[T](implicit t: reflect.ClassTag[T]): T = receive[T](t)
+  def ?[T](implicit t: scala.reflect.ClassTag[T]): T = receive[T](t)
 
   /** <code>send</code> method may throw an <code>IOException</code>.
    */
-  def send[T](x: T)(implicit t: reflect.ClassTag[T]) {
+  def send[T](x: T)(implicit t: scala.reflect.ClassTag[T]) {
     out writeObject t
     x match {
       case x: Unit    => // nop
@@ -168,7 +168,7 @@ class Channel protected (socket: Socket) {
 
   /** <code>!</code> method may throw an <code>IOException</code>.
    */
-  def ![T](x: T)(implicit m: reflect.ClassTag[T]) { send(x)(m) }
+  def ![T](x: T)(implicit m: scala.reflect.ClassTag[T]) { send(x)(m) }
 
   def close() {
     try { socket.close() }

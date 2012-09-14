@@ -11,7 +11,7 @@ package immutable
 
 import HashMap.{ HashTrieMap, HashMapCollision1, HashMap1 }
 import HashSet.{ HashTrieSet, HashSetCollision1, HashSet1 }
-import annotation.unchecked.{ uncheckedVariance => uV }
+import scala.annotation.unchecked.{ uncheckedVariance => uV }
 import scala.annotation.tailrec
 
 /** Abandons any pretense of type safety for speed.  You can't say I

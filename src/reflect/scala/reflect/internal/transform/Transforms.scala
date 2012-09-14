@@ -2,7 +2,7 @@ package scala.reflect
 package internal
 package transform
 
-import language.existentials
+import scala.language.existentials
 
 trait Transforms { self: SymbolTable =>
 

@@ -12,7 +12,7 @@ import scala.reflect.internal.util.OffsetPosition
 import scala.collection.mutable.ListBuffer
 import symtab.Flags
 import JavaTokens._
-import language.implicitConversions
+import scala.language.implicitConversions
 
 trait JavaParsers extends ast.parser.ParsersCommon with JavaScanners {
   val global : Global

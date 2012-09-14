@@ -10,7 +10,7 @@ import java.net.{ URI, URL }
 import java.io.{ BufferedInputStream, InputStream, PrintStream }
 import java.io.{ BufferedReader, InputStreamReader, Closeable => JCloseable }
 import scala.io.{ Codec, BufferedSource, Source }
-import collection.mutable.ArrayBuffer
+import scala.collection.mutable.ArrayBuffer
 import Path.fail
 
 /** Traits for objects which can be represented as Streams.

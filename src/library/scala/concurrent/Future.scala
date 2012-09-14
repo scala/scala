@@ -8,7 +8,7 @@
 
 package scala.concurrent
 
-import language.higherKinds
+import scala.language.higherKinds
 
 import java.util.concurrent.{ ConcurrentLinkedQueue, TimeUnit, Callable }
 import java.util.concurrent.TimeUnit.{ NANOSECONDS => NANOS, MILLISECONDS ⇒ MILLIS }
@@ -212,7 +212,7 @@ trait Future[+T] extends Awaitable[T] {
    *  this future, or the 'f' function to the failed result. If there is any non-fatal
    *  exception thrown when 's' or 'f' is applied, that exception will be propagated
    *  to the resulting future.
-   *  
+   *
    *  @param  s  function that transforms a successful result of the receiver into a
    *             successful result of the returned future
    *  @param  f  function that transforms a failure of the receiver into a failure of
@@ -428,7 +428,7 @@ trait Future[+T] extends Awaitable[T] {
    */
   def zip[U](that: Future[U]): Future[(T, U)] = {
     val p = Promise[(T, U)]()
-    
+
     this onComplete {
       case f: Failure[_] => p complete f.asInstanceOf[Failure[(T, U)]]
       case Success(r) =>
@@ -439,7 +439,7 @@ trait Future[+T] extends Awaitable[T] {
           case f => p failure f
         }
     }
-    
+
     p.future
   }
 
@@ -555,7 +555,7 @@ trait Future[+T] extends Awaitable[T] {
  *  Note: using this method yields nondeterministic dataflow programs.
  */
 object Future {
-  
+
   private[concurrent] val toBoxed = Map[Class[_], Class[_]](
     classOf[Boolean] -> classOf[java.lang.Boolean],
     classOf[Byte]    -> classOf[java.lang.Byte],
@@ -569,19 +569,19 @@ object Future {
   )
 
   /** Creates an already completed Future with the specified exception.
-   *  
+   *
    *  @tparam T       the type of the value in the future
    *  @return         the newly created `Future` object
    */
   def failed[T](exception: Throwable): Future[T] = Promise.failed(exception).future
 
   /** Creates an already completed Future with the specified result.
-   *  
+   *
    *  @tparam T       the type of the value in the future
    *  @return         the newly created `Future` object
    */
   def successful[T](result: T): Future[T] = Promise.successful(result).future
-  
+
   /** Starts an asynchronous computation and returns a `Future` object with the result of that computation.
   *
   *  The result becomes available once the asynchronous computation is completed.

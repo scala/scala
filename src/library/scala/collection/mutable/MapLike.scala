@@ -11,7 +11,7 @@ package scala.collection
 package mutable
 
 import generic._
-import annotation.{migration, bridge}
+import scala.annotation.{migration, bridge}
 import parallel.mutable.ParMap
 
 /** A template trait for mutable maps.

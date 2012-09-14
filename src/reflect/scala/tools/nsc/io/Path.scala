@@ -12,7 +12,7 @@ import java.io.{
 import java.io.{ File => JFile }
 import java.net.{ URI, URL }
 import scala.util.Random.alphanumeric
-import language.implicitConversions
+import scala.language.implicitConversions
 
 /** An abstraction for filesystem paths.  The differences between
  *  Path, File, and Directory are primarily to communicate intent.

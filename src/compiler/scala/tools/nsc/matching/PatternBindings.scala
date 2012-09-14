@@ -8,7 +8,7 @@ package matching
 
 import transform.ExplicitOuter
 import PartialFunction._
-import language.postfixOps
+import scala.language.postfixOps
 
 trait PatternBindings extends ast.TreeDSL
 {

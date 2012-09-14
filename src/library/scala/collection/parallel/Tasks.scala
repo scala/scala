@@ -16,7 +16,7 @@ import scala.concurrent.forkjoin._
 import scala.concurrent.ExecutionContext
 import scala.util.control.Breaks._
 
-import annotation.unchecked.uncheckedVariance
+import scala.annotation.unchecked.uncheckedVariance
 
 
 
@@ -534,11 +534,11 @@ trait AdaptiveWorkStealingThreadPoolTasks extends ThreadPoolTasks with AdaptiveW
 
 
 trait ExecutionContextTasks extends Tasks {
-  
+
   def executionContext = environment
-  
+
   val environment: ExecutionContext
-  
+
   // this part is a hack which allows switching
   val driver: Tasks = executionContext match {
     case eci: scala.concurrent.impl.ExecutionContextImpl => eci.executor match {
@@ -548,13 +548,13 @@ trait ExecutionContextTasks extends Tasks {
     }
     case _ => ???
   }
-  
+
   def execute[R, Tp](task: Task[R, Tp]): () => R = driver execute task
-  
+
   def executeAndWaitResult[R, Tp](task: Task[R, Tp]): R = driver executeAndWaitResult task
-  
+
   def parallelismLevel = driver.parallelismLevel
-  
+
 }
 
 

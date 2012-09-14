@@ -8,7 +8,7 @@
 
 package scala
 
-import annotation.meta._
+import scala.annotation.meta._
 
 /** An annotation that designates that a definition is deprecated.
  *  Access to the member then generates a deprecated warning.
@@ -18,4 +18,4 @@ import annotation.meta._
  *  @since  2.3
  */
 @getter @setter @beanGetter @beanSetter
-class deprecated(message: String = "", since: String = "") extends annotation.StaticAnnotation
+class deprecated(message: String = "", since: String = "") extends scala.annotation.StaticAnnotation

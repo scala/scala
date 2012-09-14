@@ -38,7 +38,7 @@ object ReflectionUtils {
   )
 
   def show(cl: ClassLoader): String = {
-    import language.reflectiveCalls
+    import scala.language.reflectiveCalls
 
     def isAbstractFileClassLoader(clazz: Class[_]): Boolean = {
       if (clazz == null) return false

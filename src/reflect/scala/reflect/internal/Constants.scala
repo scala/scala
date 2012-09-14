@@ -7,7 +7,7 @@ package scala.reflect
 package internal
 
 import java.lang.Integer.toOctalString
-import annotation.switch
+import scala.annotation.switch
 
 trait Constants extends api.Constants {
   self: SymbolTable =>

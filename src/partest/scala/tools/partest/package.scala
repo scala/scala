@@ -6,7 +6,7 @@ package scala.tools
 
 import java.io.{ FileNotFoundException, File => JFile }
 import nsc.io.{ Path, Directory, File => SFile }
-import util.{ PathResolver }
+import scala.tools.util.PathResolver
 import nsc.Properties.{ propOrElse, propOrNone, propOrEmpty }
 import scala.sys.process.javaVmArguments
 import java.util.concurrent.Callable
@@ -62,7 +62,7 @@ package object partest {
   )
 
   def allPropertiesString = {
-    import collection.JavaConversions._
+    import scala.collection.JavaConversions._
     System.getProperties.toList.sorted map { case (k, v) => "%s -> %s\n".format(k, v) } mkString ""
   }
 

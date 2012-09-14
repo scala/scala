@@ -25,7 +25,7 @@ import scala.util.control.Exception.{ ultimately }
 import IMain._
 import java.util.concurrent.Future
 import typechecker.Analyzer
-import language.implicitConversions
+import scala.language.implicitConversions
 import scala.reflect.runtime.{ universe => ru }
 import scala.reflect.{ ClassTag, classTag }
 import scala.tools.reflect.StdRuntimeTags._

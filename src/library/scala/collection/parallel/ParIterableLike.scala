@@ -24,13 +24,13 @@ import scala.collection.GenIterable
 import scala.collection.GenTraversableOnce
 import scala.collection.GenTraversable
 import immutable.HashMapCombiner
-import reflect.{ClassTag, classTag}
+import scala.reflect.{ClassTag, classTag}
 
 import java.util.concurrent.atomic.AtomicBoolean
 
-import annotation.unchecked.uncheckedVariance
-import annotation.unchecked.uncheckedStable
-import language.{ higherKinds, implicitConversions }
+import scala.annotation.unchecked.uncheckedVariance
+import scala.annotation.unchecked.uncheckedStable
+import scala.language.{ higherKinds, implicitConversions }
 
 
 /** A template trait for parallel collections of type `ParIterable[T]`.
@@ -263,7 +263,7 @@ self: ParIterableLike[T, Repr, Sequential] =>
   /** The `newBuilder` operation returns a parallel builder assigned to this collection's fork/join pool.
    *  This method forwards the call to `newCombiner`.
    */
-  //protected[this] def newBuilder: collection.mutable.Builder[T, Repr] = newCombiner
+  //protected[this] def newBuilder: scala.collection.mutable.Builder[T, Repr] = newCombiner
 
   /** Optionally reuses an existing combiner for better performance. By default it doesn't - subclasses may override this behaviour.
    *  The provided combiner `oldc` that can potentially be reused will be either some combiner from the previous computational task, or `None` if there
@@ -859,7 +859,7 @@ self: ParIterableLike[T, Repr, Sequential] =>
 
   override def toList: List[T] = seq.toList
 
-  override def toIndexedSeq: collection.immutable.IndexedSeq[T] = seq.toIndexedSeq
+  override def toIndexedSeq: scala.collection.immutable.IndexedSeq[T] = seq.toIndexedSeq
 
   override def toStream: Stream[T] = seq.toStream
 
@@ -867,7 +867,7 @@ self: ParIterableLike[T, Repr, Sequential] =>
 
   // the methods below are overridden
 
-  override def toBuffer[U >: T]: collection.mutable.Buffer[U] = seq.toBuffer // have additional, parallel buffers?
+  override def toBuffer[U >: T]: scala.collection.mutable.Buffer[U] = seq.toBuffer // have additional, parallel buffers?
 
   override def toTraversable: GenTraversable[T] = this.asInstanceOf[GenTraversable[T]]
 
@@ -1496,7 +1496,7 @@ self: ParIterableLike[T, Repr, Sequential] =>
     debugBuffer += s
   }
 
-  import collection.DebugUtils._
+  import scala.collection.DebugUtils._
   private[parallel] def printDebugBuffer() = println(buildString {
     append =>
     for (s <- debugBuffer) {

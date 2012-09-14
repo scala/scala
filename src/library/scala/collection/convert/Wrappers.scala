@@ -178,12 +178,12 @@ private[collection] trait Wrappers {
         var prev : Option[A] = None
 
         def hasNext = ui.hasNext
-        
+
         def next() = {
           val (k, v) = ui.next
           prev = Some(k)
           new ju.Map.Entry[A, B] {
-            import util.hashing.byteswap32
+            import scala.util.hashing.byteswap32
             def getKey = k
             def getValue = v
             def setValue(v1 : B) = self.put(k, v1)

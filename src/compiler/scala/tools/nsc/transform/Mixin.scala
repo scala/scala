@@ -430,7 +430,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
    *
    *  Such fields will be nulled after the initializer has memoized the lazy value.
    */
-  def singleUseFields(templ: Template): collection.Map[Symbol, List[Symbol]] = {
+  def singleUseFields(templ: Template): scala.collection.Map[Symbol, List[Symbol]] = {
     val usedIn = mutable.HashMap[Symbol, List[Symbol]]() withDefaultValue Nil
 
     object SingleUseTraverser extends Traverser {
