@@ -11,7 +11,7 @@ package convert
 
 import java.{ lang => jl, util => ju }, java.util.{ concurrent => juc }
 import Wrappers._
-import language.implicitConversions
+import scala.language.implicitConversions
 
 trait LowPriorityWrapAsScala {
   this: WrapAsScala =>

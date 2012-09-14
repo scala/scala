@@ -6,9 +6,9 @@
 package scala.tools.nsc
 package ast
 
-import compat.Platform.EOL
+import scala.compat.Platform.EOL
 import symtab.Flags._
-import language.postfixOps
+import scala.language.postfixOps
 
 /** The object `nodePrinter` converts the internal tree
  *  representation to a string.

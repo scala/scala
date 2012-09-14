@@ -9,12 +9,12 @@ package typechecker
 
 import symtab._
 import Flags.{MUTABLE, METHOD, LABEL, SYNTHETIC, ARTIFACT}
-import language.postfixOps
+import scala.language.postfixOps
 import scala.tools.nsc.transform.TypingTransformers
 import scala.tools.nsc.transform.Transform
 import scala.collection.mutable.HashSet
 import scala.collection.mutable.HashMap
-import reflect.internal.util.Statistics
+import scala.reflect.internal.util.Statistics
 import scala.reflect.internal.Types
 
 /** Translate pattern matching.
@@ -2941,7 +2941,7 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
       }
 
       // node in the tree that describes how to construct a counter-example
-      case class VariableAssignment(variable: Var, equalTo: List[Const], notEqualTo: List[Const], fields: collection.mutable.Map[Symbol, VariableAssignment]) {
+      case class VariableAssignment(variable: Var, equalTo: List[Const], notEqualTo: List[Const], fields: scala.collection.mutable.Map[Symbol, VariableAssignment]) {
         // need to prune since the model now incorporates all super types of a constant (needed for reachability)
         private lazy val uniqueEqualTo = equalTo filterNot (subsumed => equalTo.exists(better => (better ne subsumed) && instanceOfTpImplies(better.tp, subsumed.tp)))
         private lazy val prunedEqualTo = uniqueEqualTo filterNot (subsumed => variable.staticTpCheckable <:< subsumed.tp)

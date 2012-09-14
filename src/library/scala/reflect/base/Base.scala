@@ -4,7 +4,7 @@ package base
 import java.io.PrintWriter
 import scala.annotation.switch
 import scala.ref.WeakReference
-import collection.mutable
+import scala.collection.mutable
 
 class Base extends Universe { self =>
 

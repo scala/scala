@@ -34,7 +34,7 @@ trait Infrastructure {
 
   val currentMacro: Symbol = expandee.symbol
 
-  val globalCache: collection.mutable.Map[Any, Any] = universe.analyzer.globalMacroCache
+  val globalCache: scala.collection.mutable.Map[Any, Any] = universe.analyzer.globalMacroCache
 
-  val cache: collection.mutable.Map[Any, Any] = universe.analyzer.perRunMacroCache.getOrElseUpdate(currentMacro, collection.mutable.Map[Any, Any]())
+  val cache: scala.collection.mutable.Map[Any, Any] = universe.analyzer.perRunMacroCache.getOrElseUpdate(currentMacro, collection.mutable.Map[Any, Any]())
 }

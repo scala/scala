@@ -9,7 +9,7 @@
 package scala
 
 import scala.collection.immutable
-import collection.JavaConverters._
+import scala.collection.JavaConverters._
 
 /** The package object `scala.sys` contains methods for reading
  *  and altering core aspects of the virtual machine as well as the

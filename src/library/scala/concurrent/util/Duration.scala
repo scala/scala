@@ -11,7 +11,7 @@ package scala.concurrent.util
 import java.util.concurrent.TimeUnit
 import TimeUnit._
 import java.lang.{ Double => JDouble, Long => JLong }
-import language.implicitConversions
+import scala.language.implicitConversions
 
 /**
  * This class stores a deadline, as obtained via `Deadline.now` or the
@@ -100,7 +100,7 @@ object Duration {
    * Infinite inputs (and NaN) are converted into [[Duration.Inf]], [[Duration.MinusInf]] and [[Duration.Undefined]], respectively.
    *
    * @throws IllegalArgumentException if the length was finite but the resulting duration cannot be expressed as a [[FiniteDuration]]
-   */ 
+   */
   def apply(length: Double, unit: TimeUnit): Duration     = fromNanos(unit.toNanos(1) * length)
   /**
    * Construct a finite duration from the given length and time unit. The unit given is retained
@@ -117,7 +117,7 @@ object Duration {
   def apply(length: Long, unit: String): FiniteDuration   = new FiniteDuration(length,  Duration.timeUnit(unit))
 
   // Double stores 52 bits mantissa, but there is an implied '1' in front, making the limit 2^53
-  final val maxPreciseDouble = 9007199254740992d 
+  final val maxPreciseDouble = 9007199254740992d
 
   /**
    * Parse String into Duration.  Format is `"<length><unit>"`, where
@@ -183,13 +183,13 @@ object Duration {
 
   /**
    * Construct a possibly infinite or undefined Duration from the given number of nanoseconds.
-   * 
+   *
    *  - `Double.PositiveInfinity` is mapped to [[Duration.Inf]]
    *  - `Double.NegativeInfinity` is mapped to [[Duration.MinusInf]]
    *  - `Double.NaN` is mapped to [[Duration.Undefined]]
    *  - `-0d` is mapped to [[Duration.Zero]] (exactly like `0d`)
    *
-   * The semantics of the resulting Duration objects matches the semantics of their Double 
+   * The semantics of the resulting Duration objects matches the semantics of their Double
    * counterparts with respect to arithmetic operations.
    *
    * @throws IllegalArgumentException if the length was finite but the resulting duration cannot be expressed as a [[FiniteDuration]]
@@ -300,7 +300,7 @@ object Duration {
 
   /**
    * Infinite duration: greater than any other (apart from Undefined) and not equal to any other
-   * but itself. This value closely corresponds to Double.PositiveInfinity, 
+   * but itself. This value closely corresponds to Double.PositiveInfinity,
    * matching its semantics in arithmetic operations.
    */
   val Inf: Infinite = new Infinite {
@@ -316,7 +316,7 @@ object Duration {
 
   /**
    * Infinite duration: less than any other and not equal to any other
-   * but itself. This value closely corresponds to Double.NegativeInfinity, 
+   * but itself. This value closely corresponds to Double.NegativeInfinity,
    * matching its semantics in arithmetic operations.
    */
   val MinusInf: Infinite = new Infinite {
@@ -342,7 +342,7 @@ object Duration {
    * Infinite inputs (and NaN) are converted into [[Duration.Inf]], [[Duration.MinusInf]] and [[Duration.Undefined]], respectively.
    *
    * @throws IllegalArgumentException if the length was finite but the resulting duration cannot be expressed as a [[FiniteDuration]]
-   */ 
+   */
   def create(length: Double, unit: TimeUnit): Duration     = apply(length, unit)
   /**
    * Construct a finite duration from the given length and time unit, where the latter is
@@ -390,7 +390,7 @@ object Duration {
  * duration < 1.second
  * duration <= Duration.Inf
  * }}}
- * 
+ *
  * '''''Invoking inexpressible conversions (like calling `toSeconds` on an infinite duration) will throw an IllegalArgumentException.'''''
  *
  * <p/>
@@ -425,7 +425,7 @@ object Duration {
  *  - exact addition/subtraction with nanosecond resolution for finite durations, independent of the summands' magnitude
  *  - isomorphic to `java.lang.Double` when it comes to infinite or undefined values
  *
- * The conversion between Duration and Double is done using [[Duration.toUnit]] (with unit NANOSECONDS) 
+ * The conversion between Duration and Double is done using [[Duration.toUnit]] (with unit NANOSECONDS)
  * and [[Duration$.fromNanos(Double):Duration Duration.fromNanos(Double)]].
  *
  * <h2>Ordering</h2>
@@ -531,7 +531,7 @@ sealed abstract class Duration extends Serializable with Ordered[Duration] {
    */
   def /(factor: Double): Duration
   /**
-   * Return the quotient of this and that duration as floating-point number. The semantics are 
+   * Return the quotient of this and that duration as floating-point number. The semantics are
    * determined by Double as if calculating the quotient of the nanosecond lengths of both factors.
    */
   def /(other: Duration): Double
@@ -540,7 +540,7 @@ sealed abstract class Duration extends Serializable with Ordered[Duration] {
    */
   def unary_- : Duration
   /**
-   * This method returns whether this duration is finite, which is not the same as 
+   * This method returns whether this duration is finite, which is not the same as
    * `!isInfinite` for Double because this method also returns `false` for [[Duration.Undefined]].
    */
   def isFinite(): Boolean
@@ -563,7 +563,7 @@ sealed abstract class Duration extends Serializable with Ordered[Duration] {
    */
   def div(factor: Double)    = this / factor
   /**
-   * Return the quotient of this and that duration as floating-point number. The semantics are 
+   * Return the quotient of this and that duration as floating-point number. The semantics are
    * determined by Double as if calculating the quotient of the nanosecond lengths of both factors.
    */
   def div(other: Duration)   = this / other
@@ -685,7 +685,7 @@ final class FiniteDuration(val length: Long, val unit: TimeUnit) extends Duratio
     case _                 => other
   }
 
-  def *(factor: Double) = 
+  def *(factor: Double) =
     if (!factor.isInfinite) fromNanos(toNanos * factor)
     else if (factor.isNaN) Undefined
     else if ((factor > 0) ^ (this < Zero)) Inf

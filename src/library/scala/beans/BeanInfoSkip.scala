@@ -15,4 +15,4 @@ package scala.beans
  *
  *  @author Ross Judson (rjudson@managedobjects.com)
  */
-class BeanInfoSkip extends annotation.Annotation
+class BeanInfoSkip extends scala.annotation.Annotation

@@ -8,8 +8,8 @@ package internal
 
 import java.security.MessageDigest
 import Chars.isOperatorPart
-import annotation.switch
-import language.implicitConversions
+import scala.annotation.switch
+import scala.language.implicitConversions
 import scala.collection.immutable
 import scala.io.Codec
 

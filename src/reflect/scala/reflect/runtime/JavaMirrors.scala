@@ -14,12 +14,12 @@ import internal.MissingRequirementError
 import internal.pickling.ByteCodecs
 import internal.ClassfileConstants._
 import internal.pickling.UnPickler
-import collection.mutable.{ HashMap, ListBuffer }
+import scala.collection.mutable.{ HashMap, ListBuffer }
 import internal.Flags._
 //import scala.tools.nsc.util.ScalaClassLoader
 //import scala.tools.nsc.util.ScalaClassLoader._
 import ReflectionUtils.{staticSingletonInstance, innerSingletonInstance}
-import language.existentials
+import scala.language.existentials
 import scala.runtime.{ScalaRunTime, BoxesRunTime}
 import scala.reflect.internal.util.Collections._
 

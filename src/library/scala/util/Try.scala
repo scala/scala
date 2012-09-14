@@ -8,9 +8,9 @@
 
 package scala.util
 
-import collection.Seq
+import scala.collection.Seq
 import scala.util.control.NonFatal
-import language.implicitConversions
+import scala.language.implicitConversions
 
 /**
  * The `Try` type represents a computation that may either result in an exception, or return a

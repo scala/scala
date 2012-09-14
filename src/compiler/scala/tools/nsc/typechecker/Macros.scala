@@ -7,7 +7,7 @@ import scala.tools.nsc.util.ClassPath._
 import scala.reflect.runtime.ReflectionUtils
 import scala.collection.mutable.ListBuffer
 import scala.compat.Platform.EOL
-import reflect.internal.util.Statistics
+import scala.reflect.internal.util.Statistics
 import scala.reflect.macros.util._
 import java.lang.{Class => jClass}
 import java.lang.reflect.{Array => jArray, Method => jMethod}
@@ -832,7 +832,7 @@ trait Macros extends scala.tools.reflect.FastTrack with Traces {
   var hasPendingMacroExpansions = false
   private val delayed = perRunCaches.newWeakMap[Tree, collection.mutable.Set[Int]]
   private def isDelayed(expandee: Tree) = delayed contains expandee
-  private def calculateUndetparams(expandee: Tree): collection.mutable.Set[Int] =
+  private def calculateUndetparams(expandee: Tree): scala.collection.mutable.Set[Int] =
     delayed.get(expandee).getOrElse {
       val calculated = collection.mutable.Set[Symbol]()
       expandee foreach (sub => {
@@ -886,7 +886,7 @@ trait Macros extends scala.tools.reflect.FastTrack with Traces {
 }
 
 object MacrosStats {
-  import reflect.internal.TypesStats.typerNanos
+  import scala.reflect.internal.TypesStats.typerNanos
   val macroExpandCount    = Statistics.newCounter ("#macro expansions", "typer")
   val macroExpandNanos    = Statistics.newSubTimer("time spent in macroExpand", typerNanos)
 }

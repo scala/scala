@@ -1,6 +1,6 @@
 package scala.reflect.internal.util
 
-import collection.mutable
+import scala.collection.mutable
 
 object Statistics {
 

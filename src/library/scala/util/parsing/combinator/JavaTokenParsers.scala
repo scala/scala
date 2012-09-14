@@ -9,7 +9,7 @@
 
 package scala.util.parsing.combinator
 
-import annotation.migration
+import scala.annotation.migration
 
 /** `JavaTokenParsers` differs from [[scala.util.parsing.combinator.RegexParsers]]
  *  by adding the following definitions:

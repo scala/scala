@@ -5,7 +5,7 @@
 package scala.tools.nsc
 package interactive
 
-import collection.mutable.ArrayBuffer
+import scala.collection.mutable.ArrayBuffer
 import scala.reflect.internal.util.Position
 import reporters.Reporter
 

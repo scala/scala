@@ -44,7 +44,7 @@ class ReferenceIndex(letter: Char, index: doc.Index, universe: Universe) extends
           <strike>{ name }</strike>
       }</div>
       <div class="occurrences">{
-        for (owner <- occurrences) yield owner ++ xml.Text(" ")
+        for (owner <- occurrences) yield owner ++ scala.xml.Text(" ")
       }</div>
     </div>
   }

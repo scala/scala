@@ -11,13 +11,13 @@
 package scala.tools.nsc
 package typechecker
 
-import annotation.tailrec
+import scala.annotation.tailrec
 import scala.collection.{ mutable, immutable }
 import mutable.{ LinkedHashMap, ListBuffer }
 import scala.util.matching.Regex
 import symtab.Flags._
 import scala.reflect.internal.util.Statistics
-import language.implicitConversions
+import scala.language.implicitConversions
 
 /** This trait provides methods to find various kinds of implicits.
  *
@@ -1217,14 +1217,14 @@ trait Implicits {
     private val ManifestSymbols = Set[Symbol](PartialManifestClass, FullManifestClass, OptManifestClass)
 
     /** Creates a tree that calls the relevant factory method in object
-      * reflect.Manifest for type 'tp'. An EmptyTree is returned if
+      * scala.reflect.Manifest for type 'tp'. An EmptyTree is returned if
       * no manifest is found. todo: make this instantiate take type params as well?
       */
     private def manifestOfType(tp: Type, flavor: Symbol): SearchResult = {
       val full = flavor == FullManifestClass
       val opt = flavor == OptManifestClass
 
-      /** Creates a tree that calls the factory method called constructor in object reflect.Manifest */
+      /** Creates a tree that calls the factory method called constructor in object scala.reflect.Manifest */
       def manifestFactoryCall(constructor: String, tparg: Type, args: Tree*): Tree =
         if (args contains EmptyTree) EmptyTree
         else typedPos(tree.pos.focus) {
@@ -1472,7 +1472,7 @@ trait Implicits {
         interpolate(msg, Map((typeParamNames zip typeArgs): _*)) // TODO: give access to the name and type of the implicit argument, etc?
 
       def validate: Option[String] = {
-        import scala.util.matching.Regex; import collection.breakOut
+        import scala.util.matching.Regex; import scala.collection.breakOut
         // is there a shorter way to avoid the intermediate toList?
         val refs = """\$\{([^}]+)\}""".r.findAllIn(msg).matchData.map(_ group 1).toSet
         val decls = typeParamNames.toSet
@@ -1492,7 +1492,7 @@ trait Implicits {
 
 object ImplicitsStats {
 
-  import reflect.internal.TypesStats._
+  import scala.reflect.internal.TypesStats._
 
   val rawTypeImpl         = Statistics.newSubCounter ("  of which in implicits", rawTypeCount)
   val subtypeImpl         = Statistics.newSubCounter("  of which in implicit", subtypeCount)

@@ -9,7 +9,7 @@
 package scala.math
 
 import java.math.BigInteger
-import language.implicitConversions
+import scala.language.implicitConversions
 
 /**
  *  @author  Martin Odersky

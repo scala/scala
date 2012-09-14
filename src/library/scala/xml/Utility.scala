@@ -10,7 +10,7 @@ package scala.xml
 
 import scala.collection.mutable
 import parsing.XhtmlEntities
-import language.implicitConversions
+import scala.language.implicitConversions
 
 /**
  * The `Utility` object provides utility functions for processing instances

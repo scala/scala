@@ -6,7 +6,7 @@
 package scala.reflect
 package internal
 
-import annotation.{ switch, meta }
+import scala.annotation.{ switch, meta }
 import scala.collection.{ mutable, immutable }
 import Flags._
 import PartialFunction._

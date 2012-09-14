@@ -10,7 +10,7 @@
 package scala.collection
 package generic
 
-import language.higherKinds
+import scala.language.higherKinds
 
 abstract class OrderedTraversableFactory[CC[X] <: Traversable[X] with GenericOrderedTraversableTemplate[X, CC]]
 extends GenericOrderedCompanion[CC] {

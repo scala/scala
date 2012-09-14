@@ -10,8 +10,8 @@
 package scala.io
 
 import java.nio.charset.{ Charset, CharsetDecoder, CharsetEncoder, CharacterCodingException, CodingErrorAction => Action }
-import annotation.migration
-import language.implicitConversions
+import scala.annotation.migration
+import scala.language.implicitConversions
 
 // Some notes about encodings for use in refining this implementation.
 //

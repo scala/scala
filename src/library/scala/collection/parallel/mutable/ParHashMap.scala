@@ -12,12 +12,12 @@ package mutable
 
 
 
-import collection.generic._
-import collection.mutable.DefaultEntry
-import collection.mutable.HashEntry
-import collection.mutable.HashTable
-import collection.mutable.UnrolledBuffer
-import collection.parallel.Task
+import scala.collection.generic._
+import scala.collection.mutable.DefaultEntry
+import scala.collection.mutable.HashEntry
+import scala.collection.mutable.HashTable
+import scala.collection.mutable.UnrolledBuffer
+import scala.collection.parallel.Task
 
 
 
@@ -157,8 +157,8 @@ object ParHashMap extends ParMapFactory[ParHashMap] {
 
 
 private[mutable] abstract class ParHashMapCombiner[K, V](private val tableLoadFactor: Int)
-extends collection.parallel.BucketCombiner[(K, V), ParHashMap[K, V], DefaultEntry[K, V], ParHashMapCombiner[K, V]](ParHashMapCombiner.numblocks)
-   with collection.mutable.HashTable.HashUtils[K]
+extends scala.collection.parallel.BucketCombiner[(K, V), ParHashMap[K, V], DefaultEntry[K, V], ParHashMapCombiner[K, V]](ParHashMapCombiner.numblocks)
+   with scala.collection.mutable.HashTable.HashUtils[K]
 {
   private var mask = ParHashMapCombiner.discriminantmask
   private var nonmasklen = ParHashMapCombiner.nonmasklength

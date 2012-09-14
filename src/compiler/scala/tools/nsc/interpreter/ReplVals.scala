@@ -6,7 +6,7 @@
 package scala.tools.nsc
 package interpreter
 
-import language.implicitConversions
+import scala.language.implicitConversions
 import scala.reflect.base.{Universe => BaseUniverse}
 import scala.reflect.runtime.{universe => ru}
 

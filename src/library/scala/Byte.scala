@@ -10,7 +10,7 @@
 
 package scala
 
-import language.implicitConversions
+import scala.language.implicitConversions
 
 /** `Byte`, a 8-bit signed integer (equivalent to Java's `byte` primitive type) is a
  *  subtype of [[scala.AnyVal]]. Instances of `Byte` are not

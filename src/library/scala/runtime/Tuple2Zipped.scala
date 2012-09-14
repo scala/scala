@@ -10,7 +10,7 @@ package scala.runtime
 
 import scala.collection.{ TraversableLike, IterableLike }
 import scala.collection.generic.{ CanBuildFrom => CBF }
-import language.{ higherKinds, implicitConversions }
+import scala.language.{ higherKinds, implicitConversions }
 
 /** This interface is intended as a minimal interface, not complicated
  *  by the requirement to resolve type constructors, for implicit search (which only
@@ -111,7 +111,7 @@ object Tuple2Zipped {
     def invert[El1, CC1[X] <: TraversableOnce[X], El2, CC2[X] <: TraversableOnce[X], That]
       (implicit w1: T1 <:< CC1[El1],
                 w2: T2 <:< CC2[El2],
-                bf: collection.generic.CanBuildFrom[CC1[_], (El1, El2), That]
+                bf: scala.collection.generic.CanBuildFrom[CC1[_], (El1, El2), That]
       ): That = {
         val buf = bf(x._1)
         val it1 = x._1.toIterator

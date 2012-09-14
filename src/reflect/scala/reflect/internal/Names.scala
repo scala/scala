@@ -8,7 +8,7 @@ package internal
 
 import scala.io.Codec
 import java.security.MessageDigest
-import language.implicitConversions
+import scala.language.implicitConversions
 
 trait LowPriorityNames {
   self: Names =>
@@ -67,7 +67,7 @@ trait Names extends api.Names with LowPriorityNames {
     while (i < len) {
       if (nc + i == chrs.length) {
         val newchrs = new Array[Char](chrs.length * 2)
-        compat.Platform.arraycopy(chrs, 0, newchrs, 0, chrs.length)
+        scala.compat.Platform.arraycopy(chrs, 0, newchrs, 0, chrs.length)
         chrs = newchrs
       }
       chrs(nc + i) = cs(offset + i)
@@ -183,7 +183,7 @@ trait Names extends api.Names with LowPriorityNames {
 
     /** Copy bytes of this name to buffer cs, starting at position `offset`. */
     final def copyChars(cs: Array[Char], offset: Int) =
-      compat.Platform.arraycopy(chrs, index, cs, offset, len)
+      scala.compat.Platform.arraycopy(chrs, index, cs, offset, len)
 
     /** @return the ascii representation of this name */
     final def toChars: Array[Char] = {
@@ -199,7 +199,7 @@ trait Names extends api.Names with LowPriorityNames {
      */
     final def copyUTF8(bs: Array[Byte], offset: Int): Int = {
       val bytes = Codec.toUTF8(chrs, index, len)
-      compat.Platform.arraycopy(bytes, 0, bs, offset, bytes.length)
+      scala.compat.Platform.arraycopy(bytes, 0, bs, offset, bytes.length)
       offset + bytes.length
     }
 

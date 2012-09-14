@@ -26,4 +26,4 @@ package scala.annotation
  *  @author   Paul Phillips
  *  @since    2.8
  */
-final class switch extends annotation.StaticAnnotation
+final class switch extends scala.annotation.StaticAnnotation

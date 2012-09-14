@@ -144,7 +144,7 @@ object ScalaRunTime {
       dest
   }
 
-  def toArray[T](xs: collection.Seq[T]) = {
+  def toArray[T](xs: scala.collection.Seq[T]) = {
     val arr = new Array[AnyRef](xs.length)
     var i = 0
     for (x <- xs) {
@@ -250,7 +250,7 @@ object ScalaRunTime {
    *  it's performing a series of Any/Any equals comparisons anyway.
    *  See ticket #2867 for specifics.
    */
-  def sameElements(xs1: collection.Seq[Any], xs2: collection.Seq[Any]) = xs1 sameElements xs2
+  def sameElements(xs1: scala.collection.Seq[Any], xs2: scala.collection.Seq[Any]) = xs1 sameElements xs2
 
   /** Given any Scala value, convert it to a String.
    *
@@ -317,7 +317,7 @@ object ScalaRunTime {
       case x: String                    => if (x.head.isWhitespace || x.last.isWhitespace) "\"" + x + "\"" else x
       case x if useOwnToString(x)       => x.toString
       case x: AnyRef if isArray(x)      => arrayToString(x)
-      case x: collection.Map[_, _]      => x.iterator take maxElements map mapInner mkString (x.stringPrefix + "(", ", ", ")")
+      case x: scala.collection.Map[_, _]      => x.iterator take maxElements map mapInner mkString (x.stringPrefix + "(", ", ", ")")
       case x: Iterable[_]               => x.iterator take maxElements map inner mkString (x.stringPrefix + "(", ", ", ")")
       case x: Traversable[_]            => x take maxElements map inner mkString (x.stringPrefix + "(", ", ", ")")
       case x: Product1[_] if isTuple(x) => "(" + inner(x._1) + ",)" // that special trailing comma

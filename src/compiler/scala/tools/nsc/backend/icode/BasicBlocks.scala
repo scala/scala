@@ -11,7 +11,7 @@ import scala.collection.{ mutable, immutable }
 import mutable.{ ListBuffer, ArrayBuffer }
 import scala.reflect.internal.util.{ Position, NoPosition }
 import backend.icode.analysis.ProgramPoint
-import language.postfixOps
+import scala.language.postfixOps
 
 trait BasicBlocks {
   self: ICodes =>

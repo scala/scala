@@ -10,7 +10,7 @@
 package scala.actors
 package scheduler
 
-import util.Properties.{ javaVersion, javaVmVendor, isJavaAtLeast, propIsSetTo, propOrNone }
+import scala.util.Properties.{ javaVersion, javaVmVendor, isJavaAtLeast, propIsSetTo, propOrNone }
 
 /**
  * @author Erik Engbrecht

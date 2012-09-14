@@ -13,7 +13,7 @@ import scala.collection.mutable.{ ListBuffer, Buffer }
 import scala.tools.nsc.symtab._
 import scala.annotation.switch
 import PartialFunction._
-import language.postfixOps
+import scala.language.postfixOps
 
 /** This class ...
  *

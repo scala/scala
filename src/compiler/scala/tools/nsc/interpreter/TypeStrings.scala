@@ -14,7 +14,7 @@ import scala.reflect.runtime.{universe => ru}
 import scala.reflect.{ClassTag, classTag}
 import typechecker.DestructureTypes
 import scala.reflect.internal.util.StringOps.ojoin
-import language.implicitConversions
+import scala.language.implicitConversions
 
 /** A more principled system for turning types into strings.
  */

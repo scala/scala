@@ -8,7 +8,7 @@
 
 package scala
 
-import annotation.meta._
+import scala.annotation.meta._
 
 /**
  * An annotation that designates the name of the parameter to which it is
@@ -29,4 +29,4 @@ import annotation.meta._
  * @since 2.8.1
  */
 @param
-class deprecatedName(name: Symbol) extends annotation.StaticAnnotation
+class deprecatedName(name: Symbol) extends scala.annotation.StaticAnnotation

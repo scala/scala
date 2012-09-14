@@ -8,7 +8,7 @@
 
 package scala.util.continuations
 
-import annotation.{ Annotation, StaticAnnotation, TypeConstraint }
+import scala.annotation.{ Annotation, StaticAnnotation, TypeConstraint }
 
 /** This annotation is used to mark a parameter as part of a continuation
  * context.

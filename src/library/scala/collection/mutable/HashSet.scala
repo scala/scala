@@ -12,7 +12,7 @@ package scala.collection
 package mutable
 
 import generic._
-import collection.parallel.mutable.ParHashSet
+import scala.collection.parallel.mutable.ParHashSet
 
 /** This class implements mutable sets using a hashtable.
  *

@@ -6,7 +6,7 @@
 package scala.tools
 package cmd
 
-import collection.mutable.ListBuffer
+import scala.collection.mutable.ListBuffer
 import nsc.Properties.envOrNone
 
 /** Mixes in the specification trait and uses the vals therein to

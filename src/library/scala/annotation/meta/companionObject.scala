@@ -11,4 +11,4 @@ package scala.annotation.meta
  * Currently unused; intended as an annotation target for classes such as case classes
  * that automatically generate a companion object
  */
-final class companionObject extends annotation.StaticAnnotation
+final class companionObject extends scala.annotation.StaticAnnotation

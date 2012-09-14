@@ -10,9 +10,9 @@ package scala.collection
 package generic
 
 import mutable.Builder
-import annotation.unchecked.uncheckedVariance
-import language.higherKinds
-import reflect.ClassTag
+import scala.annotation.unchecked.uncheckedVariance
+import scala.language.higherKinds
+import scala.reflect.ClassTag
 
 /** This trait represents collections classes which require class
  *  tags for their element types.

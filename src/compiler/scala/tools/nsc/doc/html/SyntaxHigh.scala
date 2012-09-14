@@ -5,7 +5,7 @@
 
 package scala.tools.nsc.doc.html
 
-import xml.NodeSeq
+import scala.xml.NodeSeq
 
 /** Highlight the syntax of Scala code appearing in a `{{{` wiki block
   * (see method `HtmlPage.blockToHtml`).
@@ -281,6 +281,6 @@ private[html] object SyntaxHigh {
     }
 
     parse("", 0)
-    xml.Unparsed(out.toString)
+    scala.xml.Unparsed(out.toString)
   }
 }

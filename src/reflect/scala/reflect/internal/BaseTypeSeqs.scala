@@ -7,7 +7,7 @@ package internal
 
 // todo implement in terms of BitSet
 import scala.collection.{ mutable, immutable }
-import math.max
+import scala.math.max
 import util.Statistics
 
 /** A base type sequence (BaseTypeSeq) is an ordered sequence spanning all the base types
@@ -99,7 +99,7 @@ trait BaseTypeSeqs {
 
     def copy(head: Type, offset: Int): BaseTypeSeq = {
       val arr = new Array[Type](elems.length + offset)
-      compat.Platform.arraycopy(elems, 0, arr, offset, elems.length)
+      scala.compat.Platform.arraycopy(elems, 0, arr, offset, elems.length)
       arr(0) = head
       newBaseTypeSeq(parents, arr)
     }

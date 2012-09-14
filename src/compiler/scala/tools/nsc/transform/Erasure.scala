@@ -12,7 +12,7 @@ import symtab._
 import Flags._
 
 abstract class Erasure extends AddInterfaces
-                          with reflect.internal.transform.Erasure
+                          with scala.reflect.internal.transform.Erasure
                           with typechecker.Analyzer
                           with TypingTransformers
                           with ast.TreeDSL

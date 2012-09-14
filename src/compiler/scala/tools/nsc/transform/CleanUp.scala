@@ -9,7 +9,7 @@ package transform
 import symtab._
 import Flags._
 import scala.collection._
-import language.postfixOps
+import scala.language.postfixOps
 
 abstract class CleanUp extends Transform with ast.TreeDSL {
   import global._
@@ -351,8 +351,8 @@ abstract class CleanUp extends Transform with ast.TreeDSL {
             /** Normal non-Array call */
             def genDefaultCall = {
               // reflective method call machinery
-              val invokeName  = MethodClass.tpe member nme.invoke_                                  // reflect.Method.invoke(...)
-              def cache       = REF(reflectiveMethodCache(ad.symbol.name.toString, paramTypes)) // cache Symbol
+              val invokeName  = MethodClass.tpe member nme.invoke_                                  // scala.reflect.Method.invoke(...)
+              def cache       = REF(reflectiveMethodCache(ad.symbol.name.toString, paramTypes))     // cache Symbol
               def lookup      = Apply(cache, List(qual1() GETCLASS))                                // get Method object from cache
               def invokeArgs  = ArrayValue(TypeTree(ObjectClass.tpe), params)                       // args for invocation
               def invocation  = (lookup DOT invokeName)(qual1(), invokeArgs)                        // .invoke(qual1, ...)

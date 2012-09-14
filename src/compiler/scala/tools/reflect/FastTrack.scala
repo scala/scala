@@ -13,7 +13,7 @@ trait FastTrack {
   import global._
   import definitions._
 
-  import language.implicitConversions
+  import scala.language.implicitConversions
   private implicit def context2taggers(c0: MacroContext): Taggers { val c: c0.type } = new { val c: c0.type = c0 } with Taggers
   private implicit def context2macroimplementations(c0: MacroContext): MacroImplementations { val c: c0.type } = new { val c: c0.type = c0 } with MacroImplementations
 

@@ -12,9 +12,9 @@ import scala.collection.{ mutable, immutable, generic }
 import immutable.StringOps
 import mutable.ArrayOps
 import generic.CanBuildFrom
-import annotation.{ elidable, implicitNotFound }
-import annotation.elidable.ASSERTION
-import language.{implicitConversions, existentials}
+import scala.annotation.{ elidable, implicitNotFound }
+import scala.annotation.elidable.ASSERTION
+import scala.language.{implicitConversions, existentials}
 
 /** The `Predef` object provides definitions that are accessible in all Scala
  *  compilation units without explicit qualification.
@@ -301,7 +301,7 @@ object Predef extends LowPriorityImplicits {
   implicit def exceptionWrapper(exc: Throwable)                                 = new runtime.RichException(exc)
   implicit def tuple2ToZippedOps[T1, T2](x: (T1, T2))                           = new runtime.Tuple2Zipped.Ops(x)
   implicit def tuple3ToZippedOps[T1, T2, T3](x: (T1, T2, T3))                   = new runtime.Tuple3Zipped.Ops(x)
-  implicit def seqToCharSequence(xs: collection.IndexedSeq[Char]): CharSequence = new runtime.SeqCharSequence(xs)
+  implicit def seqToCharSequence(xs: scala.collection.IndexedSeq[Char]): CharSequence = new runtime.SeqCharSequence(xs)
   implicit def arrayToCharSequence(xs: Array[Char]): CharSequence               = new runtime.ArrayCharSequence(xs, 0, xs.length)
 
   implicit def genericArrayOps[T](xs: Array[T]): ArrayOps[T] = (xs match {

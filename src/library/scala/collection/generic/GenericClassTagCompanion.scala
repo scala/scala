@@ -10,8 +10,8 @@ package scala.collection
 package generic
 
 import mutable.Builder
-import language.higherKinds
-import reflect.ClassTag
+import scala.language.higherKinds
+import scala.reflect.ClassTag
 
 /** This class represents companions of classes which require ClassTags
  *  for their element types.

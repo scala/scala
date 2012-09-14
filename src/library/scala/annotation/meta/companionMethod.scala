@@ -12,6 +12,6 @@ package scala.annotation.meta
  * conversion method for it. Annotations `@companionClass` and `@companionMethod`
  * control where an annotation on the implicit class will go. By default, annotations
  * on an implicit class end up only on the class.
- * 
+ *
  */
-final class companionMethod extends annotation.StaticAnnotation
+final class companionMethod extends scala.annotation.StaticAnnotation

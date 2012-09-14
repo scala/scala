@@ -10,7 +10,7 @@ package page
 
 import model._
 import comment._
-import xml.{NodeSeq, Unparsed}
+import scala.xml.{NodeSeq, Unparsed}
 import java.io.File
 
 class Source(sourceFile: File) extends HtmlPage {

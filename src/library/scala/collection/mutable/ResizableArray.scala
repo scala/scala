@@ -96,7 +96,7 @@ trait ResizableArray[A] extends IndexedSeq[A]
         newsize = newsize * 2
 
       val newar: Array[AnyRef] = new Array(newsize)
-      compat.Platform.arraycopy(array, 0, newar, 0, size0)
+      scala.compat.Platform.arraycopy(array, 0, newar, 0, size0)
       array = newar
     }
   }
@@ -112,7 +112,7 @@ trait ResizableArray[A] extends IndexedSeq[A]
   /** Move parts of the array.
    */
   protected def copy(m: Int, n: Int, len: Int) {
-    compat.Platform.arraycopy(array, m, array, n, len)
+    scala.compat.Platform.arraycopy(array, m, array, n, len)
   }
 }
 

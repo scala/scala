@@ -18,4 +18,4 @@ package scala
  *  @see    [[scala.deprecatedInheritance]]
  */
 private[scala] // for the same reasons as deprecatedInheritance
-class deprecatedOverriding(message: String = "", since: String = "") extends annotation.StaticAnnotation
+class deprecatedOverriding(message: String = "", since: String = "") extends scala.annotation.StaticAnnotation

@@ -3,8 +3,7 @@ package scratchpad
 
 import java.io.Writer
 import scala.reflect.internal.util.SourceFile
-
-import reflect.internal.Chars._
+import scala.reflect.internal.Chars._
 
 object SourceInserter {
   def stripRight(cs: Array[Char]): Array[Char] = {
