@@ -20,15 +20,18 @@ abstract class Attachments { self =>
   /** Gets the underlying payload */
   def all: Set[Any] = Set.empty
 
+  private def matchesTag[T: ClassTag](datum: Any) =
+    classTag[T].runtimeClass == datum.getClass
+
   def get[T: ClassTag]: Option[T] =
-    (all find (_.getClass == classTag[T].runtimeClass)).asInstanceOf[Option[T]]
+    (all filter matchesTag[T]).headOption.asInstanceOf[Option[T]]
 
   /** Creates a copy of this attachment with its payload updated */
-  def add(attachment: Any): Attachments { type Pos = self.Pos } =
-    new NonemptyAttachments(this.pos, all + attachment)
+  def update[T: ClassTag](attachment: T): Attachments { type Pos = self.Pos } =
+    new NonemptyAttachments(this.pos, remove[T].all + attachment)
 
   def remove[T: ClassTag]: Attachments { type Pos = self.Pos } = {
-    val newAll = all filterNot (_.getClass == classTag[T].runtimeClass)
+    val newAll = all filterNot matchesTag[T]
     if (newAll.isEmpty) pos.asInstanceOf[Attachments { type Pos = self.Pos }]
     else new NonemptyAttachments(this.pos, newAll)
   }

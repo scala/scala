@@ -362,8 +362,8 @@ trait Types { self: Universe =>
    *  `selfSym` is a symbol representing the annotated type itself.
    */
   abstract class AnnotatedTypeExtractor {
-    def apply(annotations: List[AnnotationInfo], underlying: Type, selfsym: Symbol): AnnotatedType
-    def unapply(tpe: AnnotatedType): Option[(List[AnnotationInfo], Type, Symbol)]
+    def apply(annotations: List[Annotation], underlying: Type, selfsym: Symbol): AnnotatedType
+    def unapply(tpe: AnnotatedType): Option[(List[Annotation], Type, Symbol)]
   }
 
   /** The `TypeBounds` type signature is used to indicate lower and upper type bounds

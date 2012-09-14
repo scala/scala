@@ -8,7 +8,7 @@ abstract class Universe extends Symbols
                            with Names
                            with Trees
                            with Constants
-                           with AnnotationInfos
+                           with Annotations
                            with Positions
                            with Exprs
                            with TypeTags

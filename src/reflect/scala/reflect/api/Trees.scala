@@ -424,14 +424,6 @@ trait Trees extends base.Trees { self: Universe =>
   trait ApplyApi extends GenericApplyApi { this: Apply =>
   }
 
-  override type ApplyDynamic >: Null <: TermTree with SymTree with ApplyDynamicApi
-
-  /** The API that all apply dynamics support */
-  trait ApplyDynamicApi extends TermTreeApi with SymTreeApi { this: ApplyDynamic =>
-    val qual: Tree
-    val args: List[Tree]
-  }
-
   override type Super >: Null <: TermTree with SuperApi
 
   /** The API that all supers support */
@@ -586,7 +578,6 @@ trait Trees extends base.Trees { self: Universe =>
     def Typed(tree: Tree, expr: Tree, tpt: Tree): Typed
     def TypeApply(tree: Tree, fun: Tree, args: List[Tree]): TypeApply
     def Apply(tree: Tree, fun: Tree, args: List[Tree]): Apply
-    def ApplyDynamic(tree: Tree, qual: Tree, args: List[Tree]): ApplyDynamic
     def Super(tree: Tree, qual: Tree, mix: TypeName): Super
     def This(tree: Tree, qual: Name): This
     def Select(tree: Tree, qualifier: Tree, selector: Name): Select

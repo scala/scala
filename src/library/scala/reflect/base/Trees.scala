@@ -605,10 +605,30 @@ trait Trees { self: Universe =>
     def unapply(bind: Bind): Option[(Name, Tree)]
   }
 
-  /** Noone knows what this is.
-   *  It is not idempotent w.r.t typechecking.
-   *  Can we, please, remove it?
+  /** Used to represent `unapply` methods in pattern matching.
    *  Introduced by typer, eliminated by patmat/explicitouter.
+   *
+   *  For example:
+   *  {{{
+   *    2 match { case Foo(x) => x }
+   *  }}}
+   *
+   *  Is represented as:
+   *  {{{
+   *    Match(
+   *      Literal(Constant(2)),
+   *      List(
+   *        CaseDef(
+   *          UnApply(
+   *            // a dummy node that carries the type of unapplication to patmat
+   *            // the <unapply-selector> here doesn't have an underlying symbol
+   *            // it only has a type assigned, therefore after `resetAllAttrs` this tree is no longer typeable
+   *            Apply(Select(Ident(Foo), newTermName("unapply")), List(Ident(newTermName("<unapply-selector>")))),
+   *            // arguments of the unapply => nothing synthetic here
+   *            List(Bind(newTermName("x"), Ident(nme.WILDCARD)))),
+   *          EmptyTree,
+   *          Ident(newTermName("x")))))
+   *  }}}
    */
   type UnApply >: Null <: TermTree
 
@@ -969,36 +989,6 @@ trait Trees { self: Universe =>
   abstract class ApplyExtractor {
     def apply(fun: Tree, args: List[Tree]): Apply
     def unapply(apply: Apply): Option[(Tree, List[Tree])]
-  }
-
-  /** Dynamic value application.
-   *  In a dynamic application   q.f(as)
-   *   - q is stored in qual
-   *   - as is stored in args
-   *   - f is stored as the node's symbol field.
-   *  [Eugene++] what is it used for?
-   *  Introduced by erasure, eliminated by cleanup.
-   */
-  type ApplyDynamic >: Null <: TermTree with SymTree
-
-  /** A tag that preserves the identity of the `ApplyDynamic` abstract type from erasure.
-   *  Can be used for pattern matching, instance tests, serialization and likes.
-   */
-  implicit val ApplyDynamicTag: ClassTag[ApplyDynamic]
-
-  /** The constructor/deconstructor for `ApplyDynamic` instances. */
-  val ApplyDynamic: ApplyDynamicExtractor
-
-  /** An extractor class to create and pattern match with syntax `ApplyDynamic(qual, args)`.
-   *  This AST node corresponds to the following Scala code:
-   *
-   *    fun(args)
-   *
-   *  The symbol of an ApplyDynamic is the function symbol of `qual`, or NoSymbol, if there is none.
-   */
-  abstract class ApplyDynamicExtractor {
-    def apply(qual: Tree, args: List[Tree]): ApplyDynamic
-    def unapply(applyDynamic: ApplyDynamic): Option[(Tree, List[Tree])]
   }
 
   /** Super reference, qual = corresponding this reference

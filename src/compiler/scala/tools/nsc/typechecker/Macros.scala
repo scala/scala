@@ -49,9 +49,6 @@ trait Macros extends scala.tools.reflect.FastTrack with Traces {
   import MacrosStats._
   def globalSettings = global.settings
 
-  val globalMacroCache = collection.mutable.Map[Any, Any]()
-  val perRunMacroCache = perRunCaches.newMap[Symbol, collection.mutable.Map[Any, Any]]
-
   /** `MacroImplBinding` and its companion module are responsible for
    *  serialization/deserialization of macro def -> impl bindings.
    *
@@ -713,7 +710,7 @@ trait Macros extends scala.tools.reflect.FastTrack with Traces {
             if (isNullaryInvocation(expandee)) expectedTpe = expectedTpe.finalResultType
             var typechecked = typecheck("macro def return type", expanded, expectedTpe)
             typechecked = typecheck("expected type", typechecked, pt)
-            typechecked addAttachment MacroExpansionAttachment(expandee)
+            typechecked updateAttachment MacroExpansionAttachment(expandee)
           } finally {
             popMacroContext()
           }
@@ -762,7 +759,7 @@ trait Macros extends scala.tools.reflect.FastTrack with Traces {
       case (false, true) =>
         macroLogLite("macro expansion is delayed: %s".format(expandee))
         delayed += expandee -> undetparams
-        expandee addAttachment MacroRuntimeAttachment(delayed = true, typerContext = typer.context, macroContext = Some(macroArgs(typer, expandee).c))
+        expandee updateAttachment MacroRuntimeAttachment(delayed = true, typerContext = typer.context, macroContext = Some(macroArgs(typer, expandee).c))
         Delay(expandee)
       case (false, false) =>
         import typer.TyperErrorGen._

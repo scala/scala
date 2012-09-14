@@ -27,7 +27,7 @@ package reflect {
     def eval: T = {
       val factory = new ToolBoxFactory[JavaUniverse](expr.mirror.universe) { val mirror = expr.mirror.asInstanceOf[this.u.Mirror] }
       val toolBox = factory.mkToolBox()
-      toolBox.runExpr(expr.tree.asInstanceOf[toolBox.u.Tree]).asInstanceOf[T]
+      toolBox.eval(expr.tree.asInstanceOf[toolBox.u.Tree]).asInstanceOf[T]
     }
   }
 }

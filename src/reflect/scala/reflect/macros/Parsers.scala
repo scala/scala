@@ -5,7 +5,7 @@ trait Parsers {
   self: Context =>
 
   /** .. */
-  // todo. distinguish between `parseExpr` and `parse`
+  // todo. distinguish between `parse` and `parse`
   def parse(code: String): Tree
 
   /** Represents an error during parsing

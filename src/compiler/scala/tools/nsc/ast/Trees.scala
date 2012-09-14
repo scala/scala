@@ -178,7 +178,7 @@ trait Trees extends scala.reflect.internal.Trees { self: Global =>
     case _ => super.xtraverse(traverser, tree)
   }
 
-  trait TreeCopier extends super.TreeCopierOps {
+  trait TreeCopier extends super.InternalTreeCopierOps {
     def DocDef(tree: Tree, comment: DocComment, definition: Tree): DocDef
     def SelectFromArray(tree: Tree, qualifier: Tree, selector: Name, erasure: Type): SelectFromArray
     def InjectDerivedValue(tree: Tree, arg: Tree): InjectDerivedValue
