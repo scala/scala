@@ -872,13 +872,13 @@ trait Macros extends scala.tools.reflect.FastTrack with Traces {
     new Transformer {
       override def transform(tree: Tree) = super.transform(tree match {
         // todo. expansion should work from the inside out
-        case wannabe if (delayed contains wannabe) && calculateUndetparams(wannabe).isEmpty =>
-          val context = wannabe.attachments.get[MacroRuntimeAttachment].get.typerContext
-          delayed -= wannabe
+        case tree if (delayed contains tree) && calculateUndetparams(tree).isEmpty =>
+          val context = tree.attachments.get[MacroRuntimeAttachment].get.typerContext
+          delayed -= tree
           context.implicitsEnabled = typer.context.implicitsEnabled
           context.enrichmentEnabled = typer.context.enrichmentEnabled
           context.macrosEnabled = typer.context.macrosEnabled
-          macroExpand(newTyper(context), wannabe, EXPRmode, WildcardType)
+          macroExpand(newTyper(context), tree, EXPRmode, WildcardType)
         case _ =>
           tree
       })
