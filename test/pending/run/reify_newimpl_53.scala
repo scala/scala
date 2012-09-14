@@ -11,7 +11,7 @@ object Test extends App {
     }.tree
     println(code.freeTypes)
     val T = code.freeTypes(0)
-    cm.mkToolBox().runExpr(code, Map(T -> definitions.StringClass.asType))
+    cm.mkToolBox().eval(code, Map(T -> definitions.StringClass.asType))
   }
 
   new C[String]

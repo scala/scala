@@ -14,7 +14,7 @@ object Test extends App {
   val toolbox = cm.mkToolBox()
 
   val tree = tree_printf(reify("hello %s").tree, reify("world").tree)
-  val evaluated = toolbox.runExpr(tree)
+  val evaluated = toolbox.eval(tree)
   assert(output.toString() == "hello world", output.toString() +" ==     hello world")
 
   /*

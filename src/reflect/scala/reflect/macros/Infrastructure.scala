@@ -43,7 +43,7 @@ trait Infrastructure {
    *      val importer = ru.mkImporter(c.universe).asInstanceOf[ru.Importer { val from: c.universe.type }]
    *      val tree = c.resetAllAttrs(x.tree.duplicate)
    *      val imported = importer.importTree(tree)
-   *      val valueOfX = toolBox.runExpr(imported).asInstanceOf[T]
+   *      val valueOfX = toolBox.eval(imported).asInstanceOf[T]
    *      ...
    *    }
    */

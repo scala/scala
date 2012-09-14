@@ -94,7 +94,7 @@ trait NodePrinters {
       if (isExpr) {
         if (mirror contains ".getClassLoader") {
           printout += "import scala.tools.reflect.ToolBox"
-          printout += s"println(${nme.MIRROR_SHORT}.mkToolBox().runExpr(tree))"
+          printout += s"println(${nme.MIRROR_SHORT}.mkToolBox().eval(tree))"
         } else {
           printout += "println(tree)"
         }

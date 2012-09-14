@@ -12,7 +12,7 @@ trait Parsers {
     // todo. provide decent implementation
     try {
       import scala.reflect.runtime.{universe => ru}
-      val parsed = ru.rootMirror.mkToolBox().parseExpr(code)
+      val parsed = ru.rootMirror.mkToolBox().parse(code)
       val importer = universe.mkImporter(ru)
       importer.importTree(parsed)
     } catch {
