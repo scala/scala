@@ -39,11 +39,6 @@ trait Symbols extends base.Symbols { self: Universe =>
     //    def annotations: List[AnnotationInfo]
     def getAnnotations: List[AnnotationInfo]
 
-    /** Whether this symbol carries an annotation for which the given
-     *  symbol is its typeSymbol.
-     */
-    def hasAnnotation(sym: Symbol): Boolean
-
     /** For a class: the module or case class factory with the same name in the same package.
      *  For a module: the class with the same name in the same package.
      *  For all others: NoSymbol
