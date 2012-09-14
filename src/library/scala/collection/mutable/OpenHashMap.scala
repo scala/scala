@@ -195,7 +195,7 @@ extends AbstractMap[Key, Value]
     }
   }
 
-  override def clone = {
+  override def clone() = {
     val it = new OpenHashMap[Key, Value]
     foreachUndeletedEntry(entry => it.put(entry.key, entry.hash, entry.value.get));
     it

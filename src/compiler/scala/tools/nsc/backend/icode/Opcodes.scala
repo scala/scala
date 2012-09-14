@@ -128,7 +128,7 @@ trait Opcodes { self: ICodes =>
     }
 
     /** Clone this instruction. */
-    override def clone: Instruction =
+    override def clone(): Instruction =
       super.clone.asInstanceOf[Instruction]
   }
 

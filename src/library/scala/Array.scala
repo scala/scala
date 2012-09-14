@@ -511,5 +511,5 @@ final class Array[T](_length: Int) extends java.io.Serializable with java.lang.C
    *
    *  @return A clone of the Array.
    */
-  override def clone: Array[T] = throw new Error()
+  override def clone(): Array[T] = throw new Error()
 }
