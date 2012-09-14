@@ -1,10 +1,10 @@
 package scala.reflect
 package runtime
 
-/** This trait overrides methods in reflect.internal, bracketing
- *  them in synchronized { ... } to make them thread-safe
+/** Decorates selected methods of types that belong to runtime reflection universes
+ *  with synchronization facilities.
  */
-trait SynchronizedTypes extends internal.Types { self: SymbolTable =>
+trait ReflectedTypes extends internal.Types { self: SymbolTable =>
 
   // No sharing of map objects:
   override protected def commonOwnerMap = new CommonOwnerMap
@@ -80,4 +80,20 @@ trait SynchronizedTypes extends internal.Types { self: SymbolTable =>
   override protected def defineBaseTypeSeqOfTypeRef(tpe: TypeRef) =
     tpe.synchronized { super.defineBaseTypeSeqOfTypeRef(tpe) }
 
+  override protected def newBaseTypeSeq(parents: List[Type], elems: Array[Type]) =
+    new BaseTypeSeq(parents, elems) with SynchronizedBaseTypeSeq
+
+  trait SynchronizedBaseTypeSeq extends BaseTypeSeq {
+    override def apply(i: Int): Type = synchronized { super.apply(i) }
+    override def rawElem(i: Int) = synchronized { super.rawElem(i) }
+    override def typeSymbol(i: Int): Symbol = synchronized { super.typeSymbol(i) }
+    override def toList: List[Type] = synchronized { super.toList }
+    override def copy(head: Type, offset: Int): BaseTypeSeq = synchronized { super.copy(head, offset) }
+    override def map(f: Type => Type): BaseTypeSeq = synchronized { super.map(f) }
+    override def exists(p: Type => Boolean): Boolean = synchronized { super.exists(p) }
+    override lazy val maxDepth = synchronized { maxDepthOfElems }
+    override def toString = synchronized { super.toString }
+
+    override def lateMap(f: Type => Type): BaseTypeSeq = new MappedBaseTypeSeq(this, f) with SynchronizedBaseTypeSeq
+  }
 }

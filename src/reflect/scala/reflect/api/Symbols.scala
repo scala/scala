@@ -22,22 +22,7 @@ trait Symbols extends base.Symbols { self: Universe =>
 
     /** A list of annotations attached to this Symbol.
      */
-    // we cannot expose the `annotations` method because it doesn't auto-initialize a symbol (see SI-5423)
-    // there was an idea to use the `isCompilerUniverse` flag and auto-initialize symbols in `annotations` whenever this flag is false
-    // but it doesn't work, because the unpickler (that is shared between reflective universes and global universes) is very picky about initialization
-    // scala.reflect.internal.Types$TypeError: bad reference while unpickling scala.collection.immutable.Nil: type Nothing not found in scala.type not found.
-    //        at scala.reflect.internal.pickling.UnPickler$Scan.toTypeError(UnPickler.scala:836)
-    //        at scala.reflect.internal.pickling.UnPickler$Scan$LazyTypeRef.complete(UnPickler.scala:849)          // auto-initialize goes boom
-    //        at scala.reflect.internal.Symbols$Symbol.info(Symbols.scala:1140)
-    //        at scala.reflect.internal.Symbols$Symbol.initialize(Symbols.scala:1272)                              // this triggers auto-initialize
-    //        at scala.reflect.internal.Symbols$Symbol.annotations(Symbols.scala:1438)                             // unpickler first tries to get pre-existing annotations
-    //        at scala.reflect.internal.Symbols$Symbol.addAnnotation(Symbols.scala:1458)                           // unpickler tries to add the annotation being read
-    //        at scala.reflect.internal.pickling.UnPickler$Scan.readSymbolAnnotation(UnPickler.scala:489)          // unpickler detects an annotation
-    //        at scala.reflect.internal.pickling.UnPickler$Scan.run(UnPickler.scala:88)
-    //        at scala.reflect.internal.pickling.UnPickler.unpickle(UnPickler.scala:37)
-    //        at scala.reflect.runtime.JavaMirrors$JavaMirror.unpickleClass(JavaMirrors.scala:253)                 // unpickle from within a reflexive mirror
-    //    def annotations: List[AnnotationInfo]
-    def getAnnotations: List[AnnotationInfo]
+    def annotations: List[AnnotationInfo]
 
     /** Whether this symbol carries an annotation for which the given
      *  symbol is its typeSymbol.
