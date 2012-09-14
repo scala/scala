@@ -177,7 +177,7 @@ final class URLZipArchive(val url: URL) extends ZipArchive(null) {
       class FileEntry() extends Entry(zipEntry.getName) {
         override val toByteArray: Array[Byte] = {
           val len    = zipEntry.getSize().toInt
-          val arr    = new Array[Byte](len)
+          val arr    = if (len == 0) Byte.emptyArray else new Array[Byte](len)
           var offset = 0
 
           def loop() {

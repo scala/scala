@@ -33,7 +33,7 @@ class VirtualFile(val name: String, override val path: String) extends AbstractF
 
   //########################################################################
   // Private data
-  private var content = new Array[Byte](0)
+  private var content = Byte.emptyArray
 
   //########################################################################
   // Public Methods

@@ -625,6 +625,14 @@ object Int extends AnyValCompanion {
    */
   override def toString = "object scala.Int"
 
+
+  /** A highly reusable empty array, useful for avoiding
+   *  allocations when you need one.
+   *
+   *  @return     a constant 0-length Array[Int]
+   */
+  final val emptyArray = new Array[Int](0)
+  
   /** Language mandated coercions from Int to "wider" types.
    */
   implicit def int2long(x: Int): Long = x.toLong
