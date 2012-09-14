@@ -496,7 +496,6 @@ trait Namers extends MethodSynthesis {
             // for Java code importing Scala objects
             if (!nme.isModuleName(from) || isValid(nme.stripModuleSuffix(from))) {
               typer.TyperErrorGen.NotAMemberError(tree, expr, from)
-              typer.infer.setError(tree)
             }
           }
           // Setting the position at the import means that if there is

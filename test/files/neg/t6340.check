@@ -1,0 +1,10 @@
+t6340.scala:11: error: value D is not a member of object Foo
+  import Foo.{ A, B, C, D, E, X, Y, Z }
+         ^
+t6340.scala:16: error: not found: type D
+  val d = new D
+              ^
+t6340.scala:17: error: not found: type W
+  val w = new W
+              ^
+three errors found
