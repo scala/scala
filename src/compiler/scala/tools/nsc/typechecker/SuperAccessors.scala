@@ -287,16 +287,18 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
                 // FIXME - this should be unified with needsProtectedAccessor, but some
                 // subtlety which presently eludes me is foiling my attempts.
                 val shouldEnsureAccessor = (
-                  currentClass.isTrait
+                     currentClass.isTrait
                   && sym.isProtected
                   && sym.enclClass != currentClass
                   && !sym.owner.isTrait
                   && (sym.owner.enclosingPackageClass != currentClass.enclosingPackageClass)
-                  && (qual.symbol.info.member(sym.name) ne NoSymbol))
+                  && (qual.symbol.info.member(sym.name) ne NoSymbol)
+                  && !needsProtectedAccessor(sym, tree.pos))
                 if (shouldEnsureAccessor) {
                   log("Ensuring accessor for call to protected " + sym.fullLocationString + " from " + currentClass)
                   ensureAccessor(sel)
-                } else
+                }
+                else
                   mayNeedProtectedAccessor(sel, EmptyTree.asList, false)
               }
 
@@ -525,7 +527,14 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
           )
         true
       }
-      isCandidate && !host.isPackageClass && !isSelfType
+      def isJavaProtected = host.isTrait && sym.isJavaDefined && {
+        restrictionError(pos, unit,
+          s"""|$clazz accesses protected $sym inside a concrete trait method.
+              |Add an accessor in a class extending ${sym.enclClass} as a workaround.""".stripMargin
+        )
+        true
+      }
+      isCandidate && !host.isPackageClass && !isSelfType && !isJavaProtected
     }
 
     /** Return the innermost enclosing class C of referencingClass for which either
