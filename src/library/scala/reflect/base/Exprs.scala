@@ -28,19 +28,19 @@ trait Exprs { self: Universe =>
   }
 
   object Expr {
-    def apply[T: AbsTypeTag](mirror: MirrorOf[self.type], treec: TreeCreator): Expr[T] = new ExprImpl[T](mirror.asInstanceOf[Mirror], treec)
+    def apply[T: WeakTypeTag](mirror: MirrorOf[self.type], treec: TreeCreator): Expr[T] = new ExprImpl[T](mirror.asInstanceOf[Mirror], treec)
     def unapply[T](expr: Expr[T]): Option[Tree] = Some(expr.tree)
   }
 
-  private class ExprImpl[+T: AbsTypeTag](val mirror: Mirror, val treec: TreeCreator) extends Expr[T] {
+  private class ExprImpl[+T: WeakTypeTag](val mirror: Mirror, val treec: TreeCreator) extends Expr[T] {
     def in[U <: Universe with Singleton](otherMirror: MirrorOf[U]): U # Expr[T] = {
       val otherMirror1 = otherMirror.asInstanceOf[MirrorOf[otherMirror.universe.type]]
-      val tag1 = (implicitly[AbsTypeTag[T]] in otherMirror).asInstanceOf[otherMirror.universe.AbsTypeTag[T]]
+      val tag1 = (implicitly[WeakTypeTag[T]] in otherMirror).asInstanceOf[otherMirror.universe.WeakTypeTag[T]]
       otherMirror.universe.Expr[T](otherMirror1, treec)(tag1)
     }
 
     lazy val tree: Tree = treec(mirror)
-    lazy val staticType: Type = implicitly[AbsTypeTag[T]].tpe
+    lazy val staticType: Type = implicitly[WeakTypeTag[T]].tpe
     def actualType: Type = treeType(tree)
 
     def splice: T = throw new UnsupportedOperationException("""
@@ -54,11 +54,11 @@ trait Exprs { self: Universe =>
       |if you want to get a value of the underlying expression, add scala-compiler.jar to the classpath,
       |import `scala.tools.reflect.Eval` and call `<your expr>.eval` instead.""".trim.stripMargin)
 
-    private def writeReplace(): AnyRef = new SerializedExpr(treec, implicitly[AbsTypeTag[T]].in(scala.reflect.basis.rootMirror))
+    private def writeReplace(): AnyRef = new SerializedExpr(treec, implicitly[WeakTypeTag[T]].in(scala.reflect.basis.rootMirror))
   }
 }
 
-private[scala] class SerializedExpr(var treec: TreeCreator, var tag: scala.reflect.basis.AbsTypeTag[_]) extends Serializable {
+private[scala] class SerializedExpr(var treec: TreeCreator, var tag: scala.reflect.basis.WeakTypeTag[_]) extends Serializable {
   private def writeObject(out: java.io.ObjectOutputStream): Unit = {
     out.writeObject(treec)
     out.writeObject(tag)
@@ -66,7 +66,7 @@ private[scala] class SerializedExpr(var treec: TreeCreator, var tag: scala.refle
 
   private def readObject(in: java.io.ObjectInputStream): Unit = {
     treec = in.readObject().asInstanceOf[TreeCreator]
-    tag = in.readObject().asInstanceOf[scala.reflect.basis.AbsTypeTag[_]]
+    tag = in.readObject().asInstanceOf[scala.reflect.basis.WeakTypeTag[_]]
   }
 
   private def readResolve(): AnyRef = {

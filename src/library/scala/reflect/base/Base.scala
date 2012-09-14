@@ -36,10 +36,10 @@ class Base extends Universe { self =>
     def newClassSymbol(name: TypeName, pos: Position = NoPosition, flags: FlagSet = NoFlags): ClassSymbol =
       new ClassSymbol(this, name, flags)
 
-    def newFreeTermSymbol(name: TermName, info: Type, value: => Any, flags: FlagSet = NoFlags, origin: String = null) =
+    def newFreeTermSymbol(name: TermName, value: => Any, flags: FlagSet = NoFlags, origin: String = null) =
       new FreeTermSymbol(this, name, flags)
 
-    def newFreeTypeSymbol(name: TypeName, info: Type, value: => Any, flags: FlagSet = NoFlags, origin: String = null) =
+    def newFreeTypeSymbol(name: TypeName, flags: FlagSet = NoFlags, origin: String = null) =
       new FreeTypeSymbol(this, name, flags)
 
     private def kindString: String =
@@ -311,13 +311,10 @@ class Base extends Universe { self =>
         else new TypeSymbol(owner, name.toTypeName, flags)
       else new TermSymbol(owner, name.toTermName, flags)
 
-    def newFreeTerm(name: String, info: Type, value: => Any, flags: Long = 0L, origin: String = null): FreeTermSymbol =
+    def newFreeTerm(name: String, value: => Any, flags: Long = 0L, origin: String = null): FreeTermSymbol =
       new FreeTermSymbol(rootMirror.RootClass, newTermName(name), flags)
 
-    def newFreeType(name: String, info: Type, value: => Any, flags: Long = 0L, origin: String = null): FreeTypeSymbol =
-      new FreeTypeSymbol(rootMirror.RootClass, newTypeName(name), flags)
-
-    def newFreeExistential(name: String, info: Type, value: => Any, flags: Long = 0L, origin: String = null): FreeTypeSymbol =
+    def newFreeType(name: String, flags: Long = 0L, origin: String = null): FreeTypeSymbol =
       new FreeTypeSymbol(rootMirror.RootClass, newTypeName(name), flags)
 
     def setTypeSignature[S <: Symbol](sym: S, tpe: Type): S = sym

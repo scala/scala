@@ -738,7 +738,7 @@ trait ContextErrors {
         )
         val forgotten = (
           if (sym.isTerm) "splice when splicing this variable into a reifee"
-          else "c.AbsTypeTag annotation for this type parameter"
+          else "c.WeakTypeTag annotation for this type parameter"
         )
         macroExpansionError(expandee, template(sym.name.nameKind).format(sym.name + " " + sym.origin, forgotten))
       }
@@ -1234,7 +1234,7 @@ trait ContextErrors {
       message + suffix
     }
 
-    private def abbreviateCoreAliases(s: String): String = List("AbsTypeTag", "Expr").foldLeft(s)((res, x) => res.replace("c.universe." + x, "c." + x))
+    private def abbreviateCoreAliases(s: String): String = List("WeakTypeTag", "Expr").foldLeft(s)((res, x) => res.replace("c.universe." + x, "c." + x))
 
     private def showMeth(pss: List[List[Symbol]], restpe: Type, abbreviate: Boolean) = {
       var argsPart = (pss map (ps => ps map (_.defString) mkString ("(", ", ", ")"))).mkString
@@ -1313,7 +1313,7 @@ trait ContextErrors {
     // aXXX (e.g. aparams) => characteristics of the macro impl ("a" stands for "actual")
     // rXXX (e.g. rparams) => characteristics of a reference macro impl signature synthesized from the macro def ("r" stands for "reference")
 
-    def MacroImplNonTagImplicitParameters(params: List[Symbol]) = compatibilityError("macro implementations cannot have implicit parameters other than AbsTypeTag evidences")
+    def MacroImplNonTagImplicitParameters(params: List[Symbol]) = compatibilityError("macro implementations cannot have implicit parameters other than WeakTypeTag evidences")
 
     def MacroImplParamssMismatchError() = compatibilityError("number of parameter sections differ")
 

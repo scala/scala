@@ -6,7 +6,13 @@ trait StdAttachments {
 
   import global._
 
-  case class ReifyBindingAttachment(binding: Symbol)
+  case class ReifyBindingAttachment(binding: Tree)
 
-  case class ReifyAliasAttachment(binding: Symbol, alias: TermName)
+  def reifyBinding(tree: Tree): Tree =
+    tree.attachments.get[ReifyBindingAttachment] match {
+      case Some(ReifyBindingAttachment(binding)) => binding
+      case other => Ident(NoSymbol)
+    }
+
+  case class ReifyAliasAttachment(sym: Symbol, alias: TermName)
 }

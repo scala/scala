@@ -505,8 +505,8 @@ trait Definitions extends api.StandardDefinitions {
     lazy val ClassTagModule        = requiredModule[scala.reflect.ClassTag[_]]
     lazy val ClassTagClass         = requiredClass[scala.reflect.ClassTag[_]]
     lazy val TypeTagsClass         = requiredClass[scala.reflect.base.TypeTags]
-    lazy val AbsTypeTagClass       = getMemberClass(TypeTagsClass, tpnme.AbsTypeTag)
-    lazy val AbsTypeTagModule      = getMemberModule(TypeTagsClass, nme.AbsTypeTag)
+    lazy val WeakTypeTagClass       = getMemberClass(TypeTagsClass, tpnme.WeakTypeTag)
+    lazy val WeakTypeTagModule      = getMemberModule(TypeTagsClass, nme.WeakTypeTag)
     lazy val TypeTagClass          = getMemberClass(TypeTagsClass, tpnme.TypeTag)
     lazy val TypeTagModule         = getMemberModule(TypeTagsClass, nme.TypeTag)
 
@@ -527,7 +527,7 @@ trait Definitions extends api.StandardDefinitions {
     lazy val MacroImplAnnotation                 = requiredClass[scala.reflect.macros.internal.macroImpl]
     lazy val MacroInternalPackage                = getPackageObject("scala.reflect.macros.internal")
          def MacroInternal_materializeClassTag   = getMemberMethod(MacroInternalPackage, nme.materializeClassTag)
-         def MacroInternal_materializeAbsTypeTag = getMemberMethod(MacroInternalPackage, nme.materializeAbsTypeTag)
+         def MacroInternal_materializeWeakTypeTag = getMemberMethod(MacroInternalPackage, nme.materializeWeakTypeTag)
          def MacroInternal_materializeTypeTag    = getMemberMethod(MacroInternalPackage, nme.materializeTypeTag)
 
     lazy val StringContextClass                  = requiredClass[scala.StringContext]
@@ -542,8 +542,8 @@ trait Definitions extends api.StandardDefinitions {
     lazy val NoneModule: ModuleSymbol = requiredModule[scala.None.type]
     lazy val SomeModule: ModuleSymbol = requiredModule[scala.Some.type]
 
-    def compilerTypeFromTag(tt: BaseUniverse # AbsTypeTag[_]): Type = tt.in(rootMirror).tpe
-    def compilerSymbolFromTag(tt: BaseUniverse # AbsTypeTag[_]): Symbol = tt.in(rootMirror).tpe.typeSymbol
+    def compilerTypeFromTag(tt: BaseUniverse # WeakTypeTag[_]): Type = tt.in(rootMirror).tpe
+    def compilerSymbolFromTag(tt: BaseUniverse # WeakTypeTag[_]): Symbol = tt.in(rootMirror).tpe.typeSymbol
 
     // The given symbol represents either String.+ or StringAdd.+
     def isStringAddition(sym: Symbol) = sym == String_+ || sym == StringAdd_+

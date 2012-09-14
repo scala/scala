@@ -12,7 +12,8 @@ object Test extends App {
   val rupkg = cm.staticModule("scala.reflect.runtime.package")
   val rusym = build.selectTerm(rupkg, "universe")
   val NullaryMethodType(rutpe) = rusym.typeSignature
-  val ru = build.newFreeTerm("ru", rutpe, scala.reflect.runtime.universe)
+  val ru = build.newFreeTerm("ru", scala.reflect.runtime.universe)
+  build.setTypeSignature(ru, rutpe)
 
   val tree1 = Apply(Select(Ident(ru), newTermName("reify")), List(Apply(Select(Ident(newTermName("scala")), newTermName("Array")), List(Literal(Constant(2))))))
   val ttree1 = toolbox.typeCheck(tree1, withMacrosDisabled = false)
