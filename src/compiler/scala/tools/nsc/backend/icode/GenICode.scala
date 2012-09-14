@@ -121,13 +121,11 @@ abstract class GenICode extends SubComponent  {
         m.native = m.symbol.hasAnnotation(definitions.NativeAttr)
 
         if (!m.isAbstractMethod && !m.native) {
-          val staticfield = if (m.symbol.isAccessor && m.symbol.accessed.hasStaticAnnotation) {
-            val compClass = m.symbol.owner.companionClass
-            compClass.info.findMember(m.symbol.accessed.name, NoFlags, NoFlags, false)
-          } else NoSymbol
-          if (staticfield != NoSymbol) {
+          if (m.symbol.isAccessor && m.symbol.accessed.hasStaticAnnotation) {
             // in companion object accessors to @static fields, we access the static field directly
             val hostClass = m.symbol.owner.companionClass
+            val staticfield = hostClass.info.findMember(m.symbol.accessed.name, NoFlags, NoFlags, false)
+            
             if (m.symbol.isGetter) {
               ctx1.bb.emit(LOAD_FIELD(staticfield, true) setHostClass hostClass, tree.pos)
               ctx1.bb.closeWith(RETURN(m.returnType))
