@@ -1,4 +1,4 @@
 TypeTag[Int]
 TypeTag[Int]
-TypeTag[String]
+WeakTypeTag[String]
 TypeTag[Boolean]

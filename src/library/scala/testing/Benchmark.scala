@@ -8,7 +8,7 @@
 
 package scala.testing
 
-import compat.Platform
+import scala.compat.Platform
 
 /** `Benchmark` can be used to quickly turn an existing class into a
  *  benchmark. Here is a short example:

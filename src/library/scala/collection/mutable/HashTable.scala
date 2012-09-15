@@ -452,7 +452,7 @@ private[collection] object HashTable {
     val seedvalue: Int,
     val sizemap: Array[Int]
   ) {
-    import collection.DebugUtils._
+    import scala.collection.DebugUtils._
     private[collection] def debugInformation = buildString {
       append =>
       append("Hash table contents")

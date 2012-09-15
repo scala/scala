@@ -96,6 +96,9 @@ private[collection] trait Wrappers {
     def remove(i: Int) = underlying.remove(i)
     def clear() = underlying.clear()
     def result = this
+    // Note: Clone cannot just call underlying.clone because in Java, only specific collections
+    // expose clone methods.  Generically, they're protected.
+    override def clone(): JListWrapper[A] = JListWrapper(new ju.ArrayList[A](underlying))
   }
 
   class SetWrapper[A](underlying: Set[A]) extends ju.AbstractSet[A] {
@@ -149,6 +152,10 @@ private[collection] trait Wrappers {
     override def clear() = underlying.clear()
 
     override def empty = JSetWrapper(new ju.HashSet[A])
+    // Note: Clone cannot just call underlying.clone because in Java, only specific collections
+    // expose clone methods.  Generically, they're protected.
+    override def clone() =
+      new JSetWrapper[A](new ju.LinkedHashSet[A](underlying))
   }
 
   class MapWrapper[A, B](underlying: Map[A, B]) extends ju.AbstractMap[A, B] { self =>
@@ -171,12 +178,12 @@ private[collection] trait Wrappers {
         var prev : Option[A] = None
 
         def hasNext = ui.hasNext
-        
+
         def next() = {
           val (k, v) = ui.next
           prev = Some(k)
           new ju.Map.Entry[A, B] {
-            import util.hashing.byteswap32
+            import scala.util.hashing.byteswap32
             def getKey = k
             def getValue = v
             def setValue(v1 : B) = self.put(k, v1)

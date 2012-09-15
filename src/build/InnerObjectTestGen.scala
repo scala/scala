@@ -1,4 +1,4 @@
-import collection.mutable
+import scala.collection.mutable
 
 /** All contexts where objects can be embedded. */
 object Contexts extends Enumeration {

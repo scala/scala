@@ -23,7 +23,7 @@ trait Printers { self: Universe =>
 
   case class BooleanFlag(val value: Option[Boolean])
   object BooleanFlag {
-    import language.implicitConversions
+    import scala.language.implicitConversions
     implicit def booleanToBooleanFlag(value: Boolean): BooleanFlag = BooleanFlag(Some(value))
     implicit def optionToBooleanFlag(value: Option[Boolean]): BooleanFlag = BooleanFlag(value)
   }

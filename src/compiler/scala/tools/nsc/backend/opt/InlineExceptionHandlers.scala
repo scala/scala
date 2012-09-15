@@ -93,10 +93,9 @@ abstract class InlineExceptionHandlers extends SubComponent {
         val startTime = System.currentTimeMillis
         currentClass = c
 
-        log("Starting " + c)
+        debuglog("Starting InlineExceptionHandlers on " + c)
         c.methods foreach applyMethod
-
-        log("Finished " + c + "... " + (System.currentTimeMillis - startTime) + "ms")
+        debuglog("Finished InlineExceptionHandlers on " + c + "... " + (System.currentTimeMillis - startTime) + "ms")
         currentClass = null
       }
 

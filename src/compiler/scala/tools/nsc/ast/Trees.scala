@@ -15,7 +15,7 @@ import scala.reflect.internal.Flags.PRESUPER
 import scala.reflect.internal.Flags.TRAIT
 import scala.compat.Platform.EOL
 
-trait Trees extends reflect.internal.Trees { self: Global =>
+trait Trees extends scala.reflect.internal.Trees { self: Global =>
 
   def treeLine(t: Tree): String =
     if (t.pos.isDefined && t.pos.isRange) t.pos.lineContent.drop(t.pos.column - 1).take(t.pos.end - t.pos.start + 1)
@@ -48,12 +48,12 @@ trait Trees extends reflect.internal.Trees { self: Global =>
     override def isType = definition.isType
   }
 
- /** Array selection <qualifier> . <name> only used during erasure */
+ /** Array selection `<qualifier> . <name>` only used during erasure */
   case class SelectFromArray(qualifier: Tree, name: Name, erasure: Type)
        extends RefTree with TermTree
 
-  /** Derived value class injection (equivalent to: new C(arg) after easure); only used during erasure
-   *  The class C is stored as the symbol of the tree node.
+  /** Derived value class injection (equivalent to: `new C(arg)` after erasure); only used during erasure.
+   *  The class `C` is stored as a tree attachment.
    */
   case class InjectDerivedValue(arg: Tree)
        extends SymTree

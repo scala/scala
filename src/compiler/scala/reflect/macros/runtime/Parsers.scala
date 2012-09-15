@@ -1,7 +1,7 @@
 package scala.reflect.macros
 package runtime
 
-import language.existentials
+import scala.language.existentials
 import scala.tools.reflect.ToolBox
 import scala.tools.reflect.ToolBoxError
 

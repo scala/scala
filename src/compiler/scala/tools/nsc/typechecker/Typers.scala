@@ -13,10 +13,9 @@ package scala.tools.nsc
 package typechecker
 
 import scala.collection.mutable
-import scala.reflect.internal.util.BatchSourceFile
+import scala.reflect.internal.util.{ BatchSourceFile, Statistics }
 import mutable.ListBuffer
 import symtab.Flags._
-import reflect.internal.util.Statistics
 
 // Suggestion check whether we can do without priming scopes with symbols of outer scopes,
 // like the IDE does.
@@ -779,7 +778,7 @@ trait Typers extends Modes with Adaptations with Tags {
             var raw = featureDesc + " " + req + " be enabled\n" +
               "by making the implicit value language." + featureName + " visible."
             if (!(currentRun.reportedFeature contains featureTrait))
-              raw += "\nThis can be achieved by adding the import clause 'import language." + featureName + "'\n" +
+              raw += "\nThis can be achieved by adding the import clause 'import scala.language." + featureName + "'\n" +
                 "or by setting the compiler option -language:" + featureName + ".\n" +
                 "See the Scala docs for value scala.language." + featureName + " for a discussion\n" +
                 "why the feature " + req + " be explicitly enabled."
@@ -1405,14 +1404,15 @@ trait Typers extends Modes with Adaptations with Tags {
             unit.error(clazz.pos, "value class needs to have exactly one public val parameter")
         }
       }
-      body foreach {
-        case md: ModuleDef =>
-          unit.error(md.pos, "value class may not have nested module definitions")
-        case cd: ClassDef =>
-          unit.error(cd.pos, "value class may not have nested class definitions")
-        case md: DefDef if md.symbol.isConstructor && !md.symbol.isPrimaryConstructor =>
-          unit.error(md.pos, "value class may not have secondary constructors")
-        case _ =>
+
+      def valueClassMayNotHave(at: Tree, what: String) = unit.error(at.pos, s"value class may not have $what")
+      body.foreach {
+        case dd: DefDef if dd.symbol.isAuxiliaryConstructor => valueClassMayNotHave(dd, "secondary constructors")
+        case t => t.foreach {
+          case md: ModuleDef => valueClassMayNotHave(md, "nested module definitions")
+          case cd: ClassDef  => valueClassMayNotHave(cd, "nested class definitions")
+          case _             =>
+        }
       }
       for (tparam <- clazz.typeParams)
         if (tparam hasAnnotation definitions.SpecializedClass)
@@ -1576,6 +1576,12 @@ trait Typers extends Modes with Adaptations with Tags {
 
           if (psym.isFinal)
             pending += ParentFinalInheritanceError(parent, psym)
+
+          if (psym.hasDeprecatedInheritanceAnnotation) {
+            val suffix = psym.deprecatedInheritanceMessage map (": " + _) getOrElse ""
+            val msg = s"inheritance from ${psym.fullLocationString} is deprecated$suffix"
+            unit.deprecationWarning(parent.pos, msg)
+          }
 
           if (psym.isSealed && !phase.erasedTypes)
             if (context.unit.source.file == psym.sourceFile)
@@ -1868,7 +1874,7 @@ trait Typers extends Modes with Adaptations with Tags {
      *  @param rhs      ...
      */
     def computeParamAliases(clazz: Symbol, vparamss: List[List[ValDef]], rhs: Tree) {
-      log("computing param aliases for "+clazz+":"+clazz.primaryConstructor.tpe+":"+rhs)//debug
+      debuglog(s"computing param aliases for $clazz:${clazz.primaryConstructor.tpe}:$rhs")
       def decompose(call: Tree): (Tree, List[Tree]) = call match {
         case Apply(fn, args) =>
           val (superConstr, args1) = decompose(fn)
@@ -2392,7 +2398,7 @@ trait Typers extends Modes with Adaptations with Tags {
         else targs.init
 
       def mkParams(methodSym: Symbol, formals: List[Type] = deriveFormals) =
-        if (formals.isEmpty) { MissingParameterTypeAnonMatchError(tree, pt); Nil }
+        if (formals.isEmpty || !formals.forall(isFullyDefined)) { MissingParameterTypeAnonMatchError(tree, pt); Nil }
         else methodSym newSyntheticValueParams formals
 
       def mkSel(params: List[Symbol]) =
@@ -3227,7 +3233,7 @@ trait Typers extends Modes with Adaptations with Tags {
         val nbSubPats = args.length
 
         val (formals, formalsExpanded) = extractorFormalTypes(resTp, nbSubPats, fun1.symbol)
-        if (formals == null) duplErrorTree(WrongNumberArgsPatternError(tree, fun))
+        if (formals == null) duplErrorTree(WrongNumberOfArgsError(tree, fun))
         else {
           val args1 = typedArgs(args, mode, formals, formalsExpanded)
           // This used to be the following (failing) assert:
@@ -3434,7 +3440,7 @@ trait Typers extends Modes with Adaptations with Tags {
             }
 
             if (hasError) annotationError
-            else AnnotationInfo(annType, List(), nvPairs map {p => (p._1.asInstanceOf[Name], p._2.get)}).setOriginal(Apply(typedFun, args).setPos(ann.pos)) // [Eugene] why do we need this cast?
+            else AnnotationInfo(annType, List(), nvPairs map {p => (p._1, p._2.get)}).setOriginal(Apply(typedFun, args).setPos(ann.pos))
           }
         } else if (requireJava) {
           reportAnnotationError(NestedAnnotationError(ann, annType))
@@ -3813,18 +3819,23 @@ trait Typers extends Modes with Adaptations with Tags {
        *  - simplest solution: have two method calls
        *
        */
-      def mkInvoke(cxTree: Tree, tree: Tree, qual: Tree, name: Name): Option[Tree] =
+      def mkInvoke(cxTree: Tree, tree: Tree, qual: Tree, name: Name): Option[Tree] = {
+        debuglog(s"mkInvoke($cxTree, $tree, $qual, $name)")
         acceptsApplyDynamicWithType(qual, name) map { tp =>
           // tp eq NoType => can call xxxDynamic, but not passing any type args (unless specified explicitly by the user)
           // in scala-virtualized, when not NoType, tp is passed as type argument (for selection on a staged Struct)
 
-          // strip off type application -- we're not doing much with outer, so don't bother preserving cxTree's attributes etc
-          val (outer, explicitTargs) = cxTree match {
-              case TypeApply(fun, targs) => (fun, targs)
-              case Apply(TypeApply(fun, targs), args) => (Apply(fun, args), targs)
-              case t => (t, Nil)
+          // strip off type application -- we're not doing much with outer,
+          // so don't bother preserving cxTree's attributes etc
+          val cxTree1 = cxTree match {
+            case t: ValOrDefDef => t.rhs
+            case t              => t
           }
-
+          val (outer, explicitTargs) = cxTree1 match {
+            case TypeApply(fun, targs)              => (fun, targs)
+            case Apply(TypeApply(fun, targs), args) => (Apply(fun, args), targs)
+            case t                                  => (t, Nil)
+          }
           @inline def hasNamedArg(as: List[Tree]) = as.collectFirst{case AssignOrNamedArg(lhs, rhs) =>}.nonEmpty
 
           // note: context.tree includes at most one Apply node
@@ -3849,6 +3860,7 @@ trait Typers extends Modes with Adaptations with Tags {
 
           atPos(qual.pos)(Apply(tappSel, List(Literal(Constant(name.decode)))))
         }
+      }
     }
 
     @inline final def deindentTyping() = context.typingIndentLevel -= 2
@@ -4069,7 +4081,7 @@ trait Typers extends Modes with Adaptations with Tags {
             if ( !settings.XoldPatmat.value && !isPastTyper
               && thenp1.tpe.annotations.isEmpty && elsep1.tpe.annotations.isEmpty // annotated types need to be lubbed regardless (at least, continations break if you by pass them like this)
               && thenTp =:= elseTp
-               ) (thenp1.tpe, false) // use unpacked type
+               ) (thenp1.tpe.deconst, false) // use unpacked type. Important to deconst, as is done in ptOrLub, otherwise `if (???) 0 else 0` evaluates to 0 (SI-6331)
             // TODO: skolemize (lub of packed types) when that no longer crashes on files/pos/t4070b.scala
             else ptOrLub(thenp1.tpe :: elsep1.tpe :: Nil, pt)
 
@@ -5454,7 +5466,7 @@ trait Typers extends Modes with Adaptations with Tags {
       // as a compromise, context.enrichmentEnabled tells adaptToMember to go ahead and enrich,
       // but arbitrary conversions (in adapt) are disabled
       // TODO: can we achieve the pattern matching bit of the string interpolation SIP without this?
-      context.withImplicitsDisabledAllowEnrichment(typed(tree, PATTERNmode, pt))
+      typingInPattern(context.withImplicitsDisabledAllowEnrichment(typed(tree, PATTERNmode, pt)))
     }
 
     /** Types a (fully parameterized) type tree */
@@ -5559,8 +5571,8 @@ trait Typers extends Modes with Adaptations with Tags {
 }
 
 object TypersStats {
-  import reflect.internal.TypesStats._
-  import reflect.internal.BaseTypeSeqsStats._
+  import scala.reflect.internal.TypesStats._
+  import scala.reflect.internal.BaseTypeSeqsStats._
   val typedIdentCount     = Statistics.newCounter("#typechecked identifiers")
   val typedSelectCount    = Statistics.newCounter("#typechecked selections")
   val typedApplyCount     = Statistics.newCounter("#typechecked applications")

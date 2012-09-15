@@ -6,7 +6,7 @@
 package scala.reflect
 package internal
 
-import annotation.switch
+import scala.annotation.switch
 
 object ClassfileConstants {
 

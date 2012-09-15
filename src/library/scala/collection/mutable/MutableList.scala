@@ -140,6 +140,13 @@ extends AbstractSeq[A]
   }
 
   def result = this
+
+  override def clone(): MutableList[A]  = {
+    val bf = newBuilder
+    bf ++= seq
+    bf.result
+  }
+
 }
 
 

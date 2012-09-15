@@ -11,7 +11,7 @@ package scala.collection
 
 import generic._
 import mutable.{ Builder, MapBuilder }
-import annotation.{migration, bridge}
+import scala.annotation.{migration, bridge}
 import parallel.ParMap
 
 /** A template trait for maps, which associate keys with values.
@@ -226,21 +226,21 @@ self =>
    */
   def default(key: A): B =
     throw new NoSuchElementException("key not found: " + key)
-  
+
   protected class FilteredKeys(p: A => Boolean) extends AbstractMap[A, B] with DefaultMap[A, B] {
     override def foreach[C](f: ((A, B)) => C): Unit = for (kv <- self) if (p(kv._1)) f(kv)
     def iterator = self.iterator.filter(kv => p(kv._1))
     override def contains(key: A) = self.contains(key) && p(key)
     def get(key: A) = if (!p(key)) None else self.get(key)
   }
-  
+
   /** Filters this map by retaining only keys satisfying a predicate.
    *  @param  p   the predicate used to test keys
    *  @return an immutable map consisting only of those key value pairs of this map where the key satisfies
    *          the predicate `p`. The resulting map wraps the original map without copying any elements.
    */
   def filterKeys(p: A => Boolean): Map[A, B] = new FilteredKeys(p)
-  
+
   protected class MappedValues[C](f: B => C) extends AbstractMap[A, C] with DefaultMap[A, C] {
     override def foreach[D](g: ((A, C)) => D): Unit = for ((k, v) <- self) g((k, f(v)))
     def iterator = for ((k, v) <- self.iterator) yield (k, f(v))
@@ -248,7 +248,7 @@ self =>
     override def contains(key: A) = self.contains(key)
     def get(key: A) = self.get(key).map(f)
   }
-  
+
   /** Transforms this map by applying a function to every retrieved value.
    *  @param  f   the function used to transform values of this map.
    *  @return a map view which maps every key of this map

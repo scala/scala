@@ -6,7 +6,7 @@
 package scala.tools
 
 import scala.reflect.api.JavaUniverse
-import language.implicitConversions
+import scala.language.implicitConversions
 
 package object reflect extends FrontEnds {
   // [todo: can we generalize this?

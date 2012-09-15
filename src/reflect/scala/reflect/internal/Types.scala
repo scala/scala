@@ -319,25 +319,6 @@ trait Types extends api.Types { self: SymbolTable =>
     def substituteSymbols(from: List[Symbol], to: List[Symbol]): Type = substSym(from, to)
     def substituteTypes(from: List[Symbol], to: List[Type]): Type = subst(from, to)
 
-    def isConcrete = {
-      def notConcreteSym(sym: Symbol) =
-        sym.isAbstractType && !sym.isExistential
-
-      def notConcreteTpe(tpe: Type): Boolean = tpe match {
-        case ThisType(_) => false
-        case SuperType(_, _) => false
-        case SingleType(pre, sym) => notConcreteSym(sym)
-        case ConstantType(_) => false
-        case TypeRef(_, sym, args) => notConcreteSym(sym) || (args exists notConcreteTpe)
-        case RefinedType(_, _) => false
-        case ExistentialType(_, _) => false
-        case AnnotatedType(_, tp, _) => notConcreteTpe(tp)
-        case _ => true
-      }
-
-      !notConcreteTpe(this)
-    }
-
     // the only thingies that we want to splice are: 1) type parameters, 2) abstract type members
     // the thingies that we don't want to splice are: 1) concrete types (obviously), 2) existential skolems
     def isSpliceable = {
@@ -3475,9 +3456,9 @@ trait Types extends api.Types { self: SymbolTable =>
   }
 
   /** A temporary type representing the erasure of a user-defined value type.
-   *  Created during phase reasure, eliminated again in posterasure.
-   *  @param   sym The value class symbol
-   *  @param   underlying  The underlying type before erasure
+   *  Created during phase erasure, eliminated again in posterasure.
+   *
+   *  @param   original  The underlying type before erasure
    */
   abstract case class ErasedValueType(original: TypeRef) extends UniqueType {
     override def safeToString = "ErasedValueType("+original+")"
@@ -3956,13 +3937,15 @@ trait Types extends api.Types { self: SymbolTable =>
     def avoidWiden: Boolean = avoidWidening
 
     def addLoBound(tp: Type, isNumericBound: Boolean = false) {
-      if (isNumericBound && isNumericValueType(tp)) {
-        if (numlo == NoType || isNumericSubType(numlo, tp))
-          numlo = tp
-        else if (!isNumericSubType(tp, numlo))
-          numlo = numericLoBound
+      if (!lobounds.contains(tp)) {
+        if (isNumericBound && isNumericValueType(tp)) {
+          if (numlo == NoType || isNumericSubType(numlo, tp))
+            numlo = tp
+          else if (!isNumericSubType(tp, numlo))
+            numlo = numericLoBound
+        }
+        else lobounds ::= tp
       }
-      else lobounds ::= tp
     }
 
     def checkWidening(tp: Type) {
@@ -3974,14 +3957,16 @@ trait Types extends api.Types { self: SymbolTable =>
     }
 
     def addHiBound(tp: Type, isNumericBound: Boolean = false) {
-      checkWidening(tp)
-      if (isNumericBound && isNumericValueType(tp)) {
-        if (numhi == NoType || isNumericSubType(tp, numhi))
-          numhi = tp
-        else if (!isNumericSubType(numhi, tp))
-          numhi = numericHiBound
+      if (!hibounds.contains(tp)) {
+        checkWidening(tp)
+        if (isNumericBound && isNumericValueType(tp)) {
+          if (numhi == NoType || isNumericSubType(tp, numhi))
+            numhi = tp
+          else if (!isNumericSubType(numhi, tp))
+            numhi = numericHiBound
+        }
+        else hibounds ::= tp
       }
-      else hibounds ::= tp
     }
 
     def isWithinBounds(tp: Type): Boolean =

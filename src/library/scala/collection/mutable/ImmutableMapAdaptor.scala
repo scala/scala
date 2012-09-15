@@ -11,7 +11,7 @@
 package scala.collection
 package mutable
 
-import annotation.migration
+import scala.annotation.migration
 
 /** This class can be used as an adaptor to create mutable maps from
  *  immutable map implementations. Only method `empty` has
@@ -42,17 +42,17 @@ extends AbstractMap[A, B]
 
   override def isDefinedAt(key: A) = imap.isDefinedAt(key)
 
-  override def keySet: collection.Set[A] = imap.keySet
+  override def keySet: scala.collection.Set[A] = imap.keySet
 
   override def keysIterator: Iterator[A] = imap.keysIterator
 
   @migration("`keys` returns Iterable[A] rather than Iterator[A].", "2.8.0")
-  override def keys: collection.Iterable[A] = imap.keys
+  override def keys: scala.collection.Iterable[A] = imap.keys
 
   override def valuesIterator: Iterator[B] = imap.valuesIterator
 
   @migration("`values` returns Iterable[B] rather than Iterator[B].", "2.8.0")
-  override def values: collection.Iterable[B] = imap.values
+  override def values: scala.collection.Iterable[B] = imap.values
 
   def iterator: Iterator[(A, B)] = imap.iterator
 

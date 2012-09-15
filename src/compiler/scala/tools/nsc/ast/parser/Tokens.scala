@@ -6,7 +6,7 @@
 package scala.tools.nsc
 package ast.parser
 
-import annotation.switch
+import scala.annotation.switch
 
 /** Common code between JavaTokens and Tokens.  Not as much (and not as concrete)
  *  as one might like because JavaTokens for no clear reason chose new numbers for

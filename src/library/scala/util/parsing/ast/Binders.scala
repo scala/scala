@@ -10,7 +10,7 @@ package scala.util.parsing.ast
 
 import scala.collection.AbstractIterable
 import scala.collection.mutable
-import language.implicitConversions
+import scala.language.implicitConversions
 
 //DISCLAIMER: this code is highly experimental!
 

@@ -14,7 +14,6 @@ import java.util.concurrent.{ LinkedBlockingQueue, Callable, Executor, ExecutorS
 import java.util.Collection
 import scala.concurrent.forkjoin._
 import scala.concurrent.{ BlockContext, ExecutionContext, Awaitable, CanAwait, ExecutionContextExecutor, ExecutionContextExecutorService }
-import scala.concurrent.util.Duration
 import scala.util.control.NonFatal
 
 

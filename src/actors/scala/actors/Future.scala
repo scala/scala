@@ -174,7 +174,7 @@ object Futures {
    *                  or timeout + `System.currentTimeMillis()` is negative.
    */
   def awaitAll(timeout: Long, fts: Future[Any]*): List[Option[Any]] = {
-    var resultsMap: collection.mutable.Map[Int, Option[Any]] = new collection.mutable.HashMap[Int, Option[Any]]
+    var resultsMap: scala.collection.mutable.Map[Int, Option[Any]] = new collection.mutable.HashMap[Int, Option[Any]]
 
     var cnt = 0
     val mappedFts = fts.map(ft =>

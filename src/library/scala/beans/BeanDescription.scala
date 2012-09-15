@@ -15,5 +15,5 @@ package scala.beans
  *
  *  @author Ross Judson (rjudson@managedobjects.com)
  */
-class BeanDescription(val description: String) extends annotation.Annotation
+class BeanDescription(val description: String) extends scala.annotation.Annotation
 

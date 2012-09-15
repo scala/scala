@@ -11,7 +11,7 @@ package scala.collection
 import scala.reflect.ClassTag
 import scala.collection.generic.CanBuildFrom
 import scala.annotation.unchecked.{ uncheckedVariance => uV }
-import language.higherKinds
+import scala.language.higherKinds
 
 /** A template trait for all traversable-once objects which may be
  *  traversed in parallel.
@@ -507,7 +507,7 @@ trait GenTraversableOnce[+A] extends Any {
    *  $willNotTerminateInf
    *  @return a buffer containing all elements of this $coll.
    */
-  def toBuffer[A1 >: A]: collection.mutable.Buffer[A1]
+  def toBuffer[A1 >: A]: scala.collection.mutable.Buffer[A1]
 
   /** Converts this $coll to an unspecified Traversable.  Will return
    *  the same collection if this instance is already Traversable.
@@ -565,7 +565,7 @@ trait GenTraversableOnce[+A] extends Any {
   /** Converts this $coll into another by copying all elements.
    *  @tparam Col  The collection type to build.
    *  @return a new collection containing all elements of this $coll.
-   *  
+   *
    *  @usecase def to[Col[_]]: Col[A]
    *    @inheritdoc
    *    $willNotTerminateInf

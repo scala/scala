@@ -12,8 +12,8 @@ package scala.collection.parallel.mutable
 
 
 
-import collection.generic._
-import collection.parallel.Combiner
+import scala.collection.generic._
+import scala.collection.parallel.Combiner
 
 
 
@@ -29,7 +29,7 @@ import collection.parallel.Combiner
  */
 trait ParMap[K, V]
 extends collection/*.mutable*/.GenMap[K, V]
-   with collection.parallel.ParMap[K, V]
+   with scala.collection.parallel.ParMap[K, V]
    with /* mutable */ ParIterable[(K, V)]
    with GenericParMapTemplate[K, V, ParMap]
    with /* mutable */ ParMapLike[K, V, ParMap[K, V], collection.mutable.Map[K, V]]
@@ -41,7 +41,7 @@ extends collection/*.mutable*/.GenMap[K, V]
 
   override def empty: ParMap[K, V] = new ParHashMap[K, V]
 
-  def seq: collection.mutable.Map[K, V]
+  def seq: scala.collection.mutable.Map[K, V]
 
   override def updated [U >: V](key: K, value: U): ParMap[K, U] = this + ((key, value))
 
@@ -53,7 +53,7 @@ extends collection/*.mutable*/.GenMap[K, V]
    *  @param d     the function mapping keys to values, used for non-present keys
    *  @return      a wrapper of the map with a default value
    */
-  def withDefault(d: K => V): collection.parallel.mutable.ParMap[K, V] = new ParMap.WithDefault[K, V](this, d)
+  def withDefault(d: K => V): scala.collection.parallel.mutable.ParMap[K, V] = new ParMap.WithDefault[K, V](this, d)
 
   /** The same map with a given default value.
    *
@@ -62,7 +62,7 @@ extends collection/*.mutable*/.GenMap[K, V]
    *  @param d     the function mapping keys to values, used for non-present keys
    *  @return      a wrapper of the map with a default value
    */
-  def withDefaultValue(d: V): collection.parallel.mutable.ParMap[K, V] = new ParMap.WithDefault[K, V](this, x => d)
+  def withDefaultValue(d: V): scala.collection.parallel.mutable.ParMap[K, V] = new ParMap.WithDefault[K, V](this, x => d)
 
 }
 
@@ -76,7 +76,7 @@ object ParMap extends ParMapFactory[ParMap] {
   implicit def canBuildFrom[K, V]: CanCombineFrom[Coll, (K, V), ParMap[K, V]] = new CanCombineFromMap[K, V]
 
   class WithDefault[K, V](underlying: ParMap[K, V], d: K => V)
-  extends collection.parallel.ParMap.WithDefault(underlying, d) with ParMap[K, V] {
+  extends scala.collection.parallel.ParMap.WithDefault(underlying, d) with ParMap[K, V] {
     override def += (kv: (K, V)) = {underlying += kv; this}
     def -= (key: K) = {underlying -= key; this}
     override def empty = new WithDefault(underlying.empty, d)

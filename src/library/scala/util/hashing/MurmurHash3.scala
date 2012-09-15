@@ -158,7 +158,7 @@ private[hashing] class MurmurHash3 {
     finalizeHash(h, data.length)
   }
 
-  final def listHash(xs: collection.immutable.List[_], seed: Int): Int = {
+  final def listHash(xs: scala.collection.immutable.List[_], seed: Int): Int = {
     var n = 0
     var h = seed
     var elems = xs
@@ -213,45 +213,45 @@ object MurmurHash3 extends MurmurHash3 {
 
   /** To offer some potential for optimization.
    */
-  def seqHash(xs: collection.Seq[_]): Int    = xs match {
+  def seqHash(xs: scala.collection.Seq[_]): Int    = xs match {
     case xs: List[_] => listHash(xs, seqSeed)
     case xs => orderedHash(xs, seqSeed)
   }
 
-  def mapHash(xs: collection.Map[_, _]): Int = unorderedHash(xs, mapSeed)
-  def setHash(xs: collection.Set[_]): Int    = unorderedHash(xs, setSeed)
+  def mapHash(xs: scala.collection.Map[_, _]): Int = unorderedHash(xs, mapSeed)
+  def setHash(xs: scala.collection.Set[_]): Int    = unorderedHash(xs, setSeed)
 
   class ArrayHashing[@specialized T] extends Hashing[Array[T]] {
     def hash(a: Array[T]) = arrayHash(a)
   }
-  
+
   def arrayHashing[@specialized T] = new ArrayHashing[T]
-  
+
   def bytesHashing = new Hashing[Array[Byte]] {
     def hash(data: Array[Byte]) = bytesHash(data)
   }
-  
+
   def orderedHashing = new Hashing[TraversableOnce[Any]] {
     def hash(xs: TraversableOnce[Any]) = orderedHash(xs)
   }
-  
+
   def productHashing = new Hashing[Product] {
     def hash(x: Product) = productHash(x)
   }
-  
+
   def stringHashing = new Hashing[String] {
     def hash(x: String) = stringHash(x)
   }
-  
+
   def unorderedHashing = new Hashing[TraversableOnce[Any]] {
     def hash(xs: TraversableOnce[Any]) = unorderedHash(xs)
   }
-  
+
   /** All this trouble and foreach still appears faster.
    *  Leaving in place in case someone would like to investigate further.
    */
   /**
-  def linearSeqHash(xs: collection.LinearSeq[_], seed: Int): Int = {
+  def linearSeqHash(xs: scala.collection.LinearSeq[_], seed: Int): Int = {
     var n = 0
     var h = seed
     var elems = xs
@@ -263,7 +263,7 @@ object MurmurHash3 extends MurmurHash3 {
     finalizeHash(h, n)
   }
 
-  def indexedSeqHash(xs: collection.IndexedSeq[_], seed: Int): Int = {
+  def indexedSeqHash(xs: scala.collection.IndexedSeq[_], seed: Int): Int = {
     var n = 0
     var h = seed
     val len = xs.length
@@ -276,10 +276,10 @@ object MurmurHash3 extends MurmurHash3 {
   */
 
   @deprecated("Use unorderedHash", "2.10.0")
-  final def symmetricHash[T](xs: collection.GenTraversableOnce[T], seed: Int = symmetricSeed): Int =
+  final def symmetricHash[T](xs: scala.collection.GenTraversableOnce[T], seed: Int = symmetricSeed): Int =
     unorderedHash(xs.seq, seed)
 
   @deprecated("Use orderedHash", "2.10.0")
-  final def traversableHash[T](xs: collection.GenTraversableOnce[T], seed: Int = traversableSeed): Int =
+  final def traversableHash[T](xs: scala.collection.GenTraversableOnce[T], seed: Int = traversableSeed): Int =
     orderedHash(xs.seq, seed)
 }

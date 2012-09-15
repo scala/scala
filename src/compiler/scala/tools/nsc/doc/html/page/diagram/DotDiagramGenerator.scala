@@ -426,7 +426,7 @@ class DotDiagramGenerator(settings: doc.Settings) extends DiagramGenerator {
     else if (klass.contains("object")) "object"
     else ""
 
-  def getPosition(g: xml.Node, axis: String, offset: Double): Option[Double] = {
+  def getPosition(g: scala.xml.Node, axis: String, offset: Double): Option[Double] = {
     val node = g \ "a" \ "text" \ ("@" + axis)
     if (node.isEmpty)
       None

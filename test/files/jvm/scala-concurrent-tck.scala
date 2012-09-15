@@ -11,6 +11,8 @@ import scala.concurrent.{
 import scala.concurrent.{ future, promise, blocking }
 import scala.util.{ Try, Success, Failure }
 import scala.concurrent.util.Duration
+import scala.reflect.{ classTag, ClassTag }
+import scala.tools.partest.TestUtil.intercept
 
 trait TestBase {
   
@@ -19,7 +21,7 @@ trait TestBase {
     body(() => sv put true)
     sv.take(2000)
   }
-  
+
   // def assert(cond: => Boolean) {
   //   try {
   //     Predef.assert(cond)
@@ -663,6 +665,29 @@ trait FutureProjections extends TestBase {
       case nsee: NoSuchElementException => done()
     }
   }
+
+  def testAwaitPositiveDuration(): Unit = once { done =>
+    val p = Promise[Int]()
+    val f = p.future
+    future {
+      intercept[IllegalArgumentException] { Await.ready(f, Duration.Undefined) }
+      p.success(0)
+      Await.ready(f, Duration.Zero)
+      Await.ready(f, Duration(500, "ms"))
+      Await.ready(f, Duration.Inf)
+      done()
+    } onFailure { case x => throw x }
+  }
+
+  def testAwaitNegativeDuration(): Unit = once { done =>
+    val f = Promise().future
+    future {
+      intercept[TimeoutException] { Await.ready(f, Duration.Zero) }
+      intercept[TimeoutException] { Await.ready(f, Duration.MinusInf) }
+      intercept[TimeoutException] { Await.ready(f, Duration(-500, "ms")) }
+      done()
+    } onFailure { case x => throw x }
+  }
   
   testFailedFailureOnComplete()
   testFailedFailureOnSuccess()
@@ -670,6 +695,8 @@ trait FutureProjections extends TestBase {
   testFailedSuccessOnFailure()
   testFailedFailureAwait()
   testFailedSuccessAwait()
+  testAwaitPositiveDuration()
+  testAwaitNegativeDuration()
   
 }
 

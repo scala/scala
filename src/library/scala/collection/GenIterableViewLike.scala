@@ -25,6 +25,7 @@ self =>
     def iterator: Iterator[B]
     override def foreach[U](f: B => U): Unit = iterator foreach f
     override def toString = viewToString
+    override def isEmpty = !iterator.hasNext
   }
 
   trait EmptyView extends Transformed[Nothing] with super.EmptyView {

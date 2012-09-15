@@ -14,4 +14,4 @@ package scala.annotation
  *
  *  @since 2.9
  */
-final class varargs extends annotation.StaticAnnotation
+final class varargs extends scala.annotation.StaticAnnotation

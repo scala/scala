@@ -20,4 +20,4 @@ package scala
   * but it is type checked when present.
   *
   * @since 2.6 */
-class native extends annotation.StaticAnnotation {}
+class native extends scala.annotation.StaticAnnotation {}

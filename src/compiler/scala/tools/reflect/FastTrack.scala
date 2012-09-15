@@ -13,7 +13,7 @@ trait FastTrack {
   import global._
   import definitions._
 
-  import language.implicitConversions
+  import scala.language.implicitConversions
   private implicit def context2taggers(c0: MacroContext): Taggers { val c: c0.type } = new { val c: c0.type = c0 } with Taggers
   private implicit def context2macroimplementations(c0: MacroContext): MacroImplementations { val c: c0.type } = new { val c: c0.type = c0 } with MacroImplementations
 
@@ -23,7 +23,7 @@ trait FastTrack {
     def validate(c: MacroContext): Boolean = expander.isDefinedAt((c, c.expandee))
     def run(c: MacroContext): Any = {
       val result = expander((c, c.expandee))
-      c.Expr[Nothing](result)(c.AbsTypeTag.Nothing)
+      c.Expr[Nothing](result)(c.WeakTypeTag.Nothing)
     }
   }
 
@@ -31,7 +31,7 @@ trait FastTrack {
     var registry = Map[Symbol, FastTrackEntry]()
     implicit class BindTo(sym: Symbol) { def bindTo(expander: FastTrackExpander): Unit = if (sym != NoSymbol) registry += sym -> FastTrackEntry(sym, expander) }
     MacroInternal_materializeClassTag bindTo { case (c, Apply(TypeApply(_, List(tt)), List(u))) => c.materializeClassTag(u, tt.tpe) }
-    MacroInternal_materializeAbsTypeTag bindTo { case (c, Apply(TypeApply(_, List(tt)), List(u))) => c.materializeTypeTag(u, EmptyTree, tt.tpe, concrete = false) }
+    MacroInternal_materializeWeakTypeTag bindTo { case (c, Apply(TypeApply(_, List(tt)), List(u))) => c.materializeTypeTag(u, EmptyTree, tt.tpe, concrete = false) }
     MacroInternal_materializeTypeTag bindTo { case (c, Apply(TypeApply(_, List(tt)), List(u))) => c.materializeTypeTag(u, EmptyTree, tt.tpe, concrete = true) }
     BaseUniverseReify bindTo { case (c, Apply(TypeApply(_, List(tt)), List(expr))) => c.materializeExpr(c.prefix.tree, EmptyTree, expr) }
     ReflectRuntimeCurrentMirror bindTo { case (c, _) => scala.reflect.runtime.Macros.currentMirror(c).tree }

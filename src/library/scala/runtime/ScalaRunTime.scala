@@ -143,7 +143,7 @@ object ScalaRunTime {
       dest
   }
 
-  def toArray[T](xs: collection.Seq[T]) = {
+  def toArray[T](xs: scala.collection.Seq[T]) = {
     val arr = new Array[AnyRef](xs.length)
     var i = 0
     for (x <- xs) {
@@ -165,35 +165,6 @@ object ScalaRunTime {
 
   def checkInitialized[T <: AnyRef](x: T): T =
     if (x == null) throw new UninitializedError else x
-
-  abstract class Try[+A] {
-    def Catch[B >: A](handler: PartialFunction[Throwable, B]): B
-    def Finally(fin: => Unit): A
-  }
-
-  def Try[A](block: => A): Try[A] = new Try[A] with Runnable {
-    private var result: A = _
-    private var exception: Throwable =
-      try   { run() ; null }
-      catch {
-        case e: ControlThrowable  => throw e  // don't catch non-local returns etc
-        case e: Throwable         => e
-      }
-
-    def run() { result = block }
-
-    def Catch[B >: A](handler: PartialFunction[Throwable, B]): B =
-      if (exception == null) result
-      else if (handler isDefinedAt exception) handler(exception)
-      else throw exception
-
-    def Finally(fin: => Unit): A = {
-      fin
-
-      if (exception == null) result
-      else throw exception
-    }
-  }
 
   def _toString(x: Product): String =
     x.productIterator.mkString(x.productPrefix + "(", ",", ")")
@@ -278,7 +249,7 @@ object ScalaRunTime {
    *  it's performing a series of Any/Any equals comparisons anyway.
    *  See ticket #2867 for specifics.
    */
-  def sameElements(xs1: collection.Seq[Any], xs2: collection.Seq[Any]) = xs1 sameElements xs2
+  def sameElements(xs1: scala.collection.Seq[Any], xs2: scala.collection.Seq[Any]) = xs1 sameElements xs2
 
   /** Given any Scala value, convert it to a String.
    *
@@ -345,7 +316,7 @@ object ScalaRunTime {
       case x: String                    => if (x.head.isWhitespace || x.last.isWhitespace) "\"" + x + "\"" else x
       case x if useOwnToString(x)       => x.toString
       case x: AnyRef if isArray(x)      => arrayToString(x)
-      case x: collection.Map[_, _]      => x.iterator take maxElements map mapInner mkString (x.stringPrefix + "(", ", ", ")")
+      case x: scala.collection.Map[_, _]      => x.iterator take maxElements map mapInner mkString (x.stringPrefix + "(", ", ", ")")
       case x: Iterable[_]               => x.iterator take maxElements map inner mkString (x.stringPrefix + "(", ", ", ")")
       case x: Traversable[_]            => x take maxElements map inner mkString (x.stringPrefix + "(", ", ", ")")
       case x: Product1[_] if isTuple(x) => "(" + inner(x._1) + ",)" // that special trailing comma

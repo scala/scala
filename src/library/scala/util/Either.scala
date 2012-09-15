@@ -10,7 +10,7 @@
 
 package scala.util
 
-import language.implicitConversions
+import scala.language.implicitConversions
 
 /** Represents a value of one of two possible types (a disjoint union.)
  *  Instances of Either are either an instance of [[scala.util.Left]] or [[scala.util.Right]].

@@ -8,7 +8,7 @@
 
 package scala.util.parsing.input
 
-import collection.mutable.ArrayBuffer
+import scala.collection.mutable.ArrayBuffer
 
 /** `OffsetPosition` is a standard class for positions
  *   represented as offsets into a source ``document''.

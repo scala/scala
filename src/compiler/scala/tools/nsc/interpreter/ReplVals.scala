@@ -6,7 +6,7 @@
 package scala.tools.nsc
 package interpreter
 
-import language.implicitConversions
+import scala.language.implicitConversions
 import scala.reflect.base.{Universe => BaseUniverse}
 import scala.reflect.runtime.{universe => ru}
 
@@ -65,7 +65,7 @@ object ReplVals {
      *  I have this forwarder which widens the type and then cast the result back
      *  to the dependent type.
      */
-    def compilerTypeFromTag(t: BaseUniverse # AbsTypeTag[_]): Global#Type =
+    def compilerTypeFromTag(t: BaseUniverse # WeakTypeTag[_]): Global#Type =
       definitions.compilerTypeFromTag(t)
 
     class AppliedTypeFromTags(sym: Symbol) {

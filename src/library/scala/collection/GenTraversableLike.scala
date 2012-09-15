@@ -10,7 +10,7 @@ package scala.collection
 
 
 import generic._
-import annotation.migration
+import scala.annotation.migration
 
 
 /** A template trait for all traversable collections upon which operations

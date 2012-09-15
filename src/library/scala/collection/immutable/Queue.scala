@@ -11,7 +11,7 @@ package immutable
 
 import generic._
 import mutable.{ Builder, ListBuffer }
-import annotation.tailrec
+import scala.annotation.tailrec
 
 /** `Queue` objects implement data structures that allow to
  *  insert and retrieve elements in a first-in-first-out (FIFO) manner.

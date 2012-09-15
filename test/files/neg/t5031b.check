@@ -1,0 +1,5 @@
+b.scala:3: error: Companions 'class Bippy' and 'object Bippy' must be defined in same file:
+  Found in t5031b/a.scala and t5031b/b.scala
+object Bippy
+       ^
+one error found

@@ -7,7 +7,7 @@ package scala.reflect
 package internal
 
 import java.lang.Integer.toOctalString
-import annotation.switch
+import scala.annotation.switch
 
 trait Constants extends api.Constants {
   self: SymbolTable =>
@@ -31,6 +31,9 @@ trait Constants extends api.Constants {
   final val EnumTag    = 13
 
   case class Constant(value: Any) extends ConstantApi {
+    import java.lang.Double.doubleToRawLongBits
+    import java.lang.Float.floatToRawIntBits
+
     val tag: Int = value match {
       case null         => NullTag
       case x: Unit      => UnitTag
@@ -81,10 +84,10 @@ trait Constants extends api.Constants {
 
     /** We need the equals method to take account of tags as well as values.
      */
+    // !!! In what circumstance could `equalHashValue == that.equalHashValue && tag != that.tag` be true?
     override def equals(other: Any): Boolean = other match {
       case that: Constant =>
-        this.tag == that.tag &&
-        (this.value == that.value || this.isNaN && that.isNaN)
+        this.tag == that.tag && equalHashValue == that.equalHashValue
       case _ => false
     }
 
@@ -236,7 +239,30 @@ trait Constants extends api.Constants {
     def typeValue: Type     = value.asInstanceOf[Type]
     def symbolValue: Symbol = value.asInstanceOf[Symbol]
 
-    override def hashCode: Int = value.## * 41 + 17
+    /**
+     * Consider two `NaN`s to be identical, despite non-equality
+     * Consider -0d to be distinct from 0d, despite equality
+     *
+     * We use the raw versions (i.e. `floatToRawIntBits` rather than `floatToIntBits`)
+     * to avoid treating different encodings of `NaN` as the same constant.
+     * You probably can't express different `NaN` varieties as compile time
+     * constants in regular Scala code, but it is conceivable that you could
+     * conjure them with a macro.
+     */
+    private def equalHashValue: Any = value match {
+      case f: Float  => floatToRawIntBits(f)
+      case d: Double => doubleToRawLongBits(d)
+      case v         => v
+    }
+
+    override def hashCode: Int = {
+      import scala.util.hashing.MurmurHash3._
+      val seed = 17
+      var h = seed
+      h = mix(h, tag.##) // include tag in the hash, otherwise 0, 0d, 0L, 0f collide.
+      h = mix(h, equalHashValue.##)
+      finalizeHash(h, length = 2)
+    }
   }
 
   object Constant extends ConstantExtractor

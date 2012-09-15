@@ -26,10 +26,18 @@ public class Test {
     for (TimeUnit t : TimeUnit.values()) {
       for (Double n: makeNumbers()) {
         String s = "" + n + " " + t.toString().toLowerCase();
-        Duration d = Duration.create(n, t);
-        p(String.format("%25s  =>  %s", s, d));
+        String result;
+        try {
+          Duration d = Duration.create(n, t);
+          result = d.toString();
+        } catch(Exception e) {
+          result = e.getClass().toString();
+        }
+        p(String.format("%25s  =>  %s", s, result));
       }
     }
+    for (String s: new String[] {"10000000000000001 nanoseconds", "10000000000000002 nanoseconds"})
+      p(String.format("%25s  =>  %s", s, Duration.create(s)));
     for (String s: Arrays.asList("Inf", "-Inf", "+Inf", "PlusInf", "MinusInf")) {
       Duration d = Duration.create(s);
       p(String.format("%25s  =>  %s", s, d));

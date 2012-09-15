@@ -35,7 +35,7 @@ object Macros {
    *     arr
    *   }
    */
-  def arrayMacro[A:c.AbsTypeTag](c:Context)(as:c.Expr[A]*)(ct: c.Expr[ClassTag[A]]): c.Expr[Array[A]] = {
+  def arrayMacro[A:c.WeakTypeTag](c:Context)(as:c.Expr[A]*)(ct: c.Expr[ClassTag[A]]): c.Expr[Array[A]] = {
     import c.mirror._
     import c.universe._
     def const(x:Int) = Literal(Constant(x))
@@ -44,7 +44,7 @@ object Macros {
     val arr = newTermName("arr")
 
     val create = Apply(Select(ct.tree, "newArray"), List(const(n)))
-    val arrtpe = TypeTree(implicitly[c.AbsTypeTag[Array[A]]].tpe)
+    val arrtpe = TypeTree(implicitly[c.WeakTypeTag[Array[A]]].tpe)
     val valdef = ValDef(Modifiers(), arr, arrtpe, create)
 
     val updates = (0 until n).map {

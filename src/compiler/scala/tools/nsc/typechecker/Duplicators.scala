@@ -29,7 +29,7 @@ abstract class Duplicators extends Analyzer {
    *  the old class with the new class, and map symbols through the given 'env'. The
    *  environment is a map from type skolems to concrete types (see SpecializedTypes).
    */
-  def retyped(context: Context, tree: Tree, oldThis: Symbol, newThis: Symbol, env: collection.Map[Symbol, Type]): Tree = {
+  def retyped(context: Context, tree: Tree, oldThis: Symbol, newThis: Symbol, env: scala.collection.Map[Symbol, Type]): Tree = {
     if (oldThis ne newThis) {
       oldClassOwner = oldThis
       newClassOwner = newThis

@@ -89,6 +89,13 @@ extends AbstractSeq[A]
     Array.copy(array, 0, xs, start, len1)
   }
 
+  override def clone(): ArraySeq[A] = {
+    val cloned = array.clone.asInstanceOf[Array[AnyRef]]
+    new ArraySeq[A](length) {
+      override val array = cloned
+    }
+  }
+
 }
 
 /** $factoryInfo

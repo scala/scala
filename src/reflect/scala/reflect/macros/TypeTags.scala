@@ -4,6 +4,6 @@ package macros
 trait TypeTags {
   self: Context =>
 
-  def AbsTypeTag[T](tpe: Type): AbsTypeTag[T]
+  def WeakTypeTag[T](tpe: Type): WeakTypeTag[T]
   def TypeTag[T](tpe: Type): TypeTag[T]
 }

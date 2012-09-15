@@ -8,7 +8,7 @@ package internal
 
 import Flags._
 import base.Attachments
-import collection.mutable.{ListBuffer, LinkedHashSet}
+import scala.collection.mutable.{ListBuffer, LinkedHashSet}
 import util.Statistics
 
 trait Trees extends api.Trees { self: SymbolTable =>

@@ -12,7 +12,7 @@ package convert
 import java.{ lang => jl, util => ju }, java.util.{ concurrent => juc }
 import Decorators._
 import WrapAsJava._
-import language.implicitConversions
+import scala.language.implicitConversions
 
 
 /** A collection of decorators that allow to convert between

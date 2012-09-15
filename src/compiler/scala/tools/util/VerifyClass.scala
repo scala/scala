@@ -2,7 +2,7 @@ package scala.tools.util
 
 import scala.tools.nsc.io._
 import java.net.URLClassLoader
-import collection.JavaConverters._
+import scala.collection.JavaConverters._
 
 
 object VerifyClass {

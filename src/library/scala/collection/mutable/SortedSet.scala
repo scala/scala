@@ -20,7 +20,7 @@ import generic._
  * @author Lucien Pereira
  *
  */
-trait SortedSet[A] extends collection.SortedSet[A] with collection.SortedSetLike[A,SortedSet[A]]
+trait SortedSet[A] extends scala.collection.SortedSet[A] with scala.collection.SortedSetLike[A,SortedSet[A]]
   with mutable.Set[A] with mutable.SetLike[A, SortedSet[A]] {
 
   /** Needs to be overridden in subclasses. */

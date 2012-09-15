@@ -10,7 +10,7 @@ package scala.collection
 package immutable
 
 import scala.annotation.unchecked.uncheckedVariance
-import compat.Platform
+import scala.compat.Platform
 import scala.collection.generic._
 import scala.collection.mutable.Builder
 import scala.collection.parallel.immutable.ParVector
