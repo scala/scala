@@ -231,7 +231,7 @@ trait Linearizers {
       val handlersByCovered = m.exh.groupBy(_.covered)
 
       // number of basic blocks covered by the entire try-catch expression
-      def size(covered: collection.immutable.Set[BasicBlock]) = {
+      def size(covered: scala.collection.immutable.Set[BasicBlock]) = {
         val hs = handlersByCovered(covered)
         covered.size + (hs :\ 0)((h, s) => h.blocks.length + s)
       }

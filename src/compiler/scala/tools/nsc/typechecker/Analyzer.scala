@@ -6,7 +6,7 @@
 package scala.tools.nsc
 package typechecker
 
-import reflect.internal.util.Statistics
+import scala.reflect.internal.util.Statistics
 
 /** The main attribution phase.
  */
@@ -72,7 +72,7 @@ trait Analyzer extends AnyRef
   }
 
   object typerFactory extends SubComponent {
-    import reflect.internal.TypesStats.typerNanos
+    import scala.reflect.internal.TypesStats.typerNanos
     val global: Analyzer.this.global.type = Analyzer.this.global
     val phaseName = "typer"
     val runsAfter = List[String]()

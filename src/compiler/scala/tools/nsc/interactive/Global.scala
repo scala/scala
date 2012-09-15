@@ -20,7 +20,7 @@ import scala.tools.nsc.io.Pickler._
 import scala.tools.nsc.typechecker.DivergentImplicit
 import scala.annotation.tailrec
 import symtab.Flags.{ACCESSOR, PARAMACCESSOR}
-import language.implicitConversions
+import scala.language.implicitConversions
 
 /** The main class of the presentation compiler in an interactive environment such as an IDE
  */

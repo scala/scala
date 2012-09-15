@@ -14,7 +14,7 @@ package syntactical
 
 import token._
 import scala.collection.mutable
-import language.implicitConversions
+import scala.language.implicitConversions
 
 /** This component provides primitive parsers for the standard tokens defined in `StdTokens`.
 *

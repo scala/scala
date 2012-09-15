@@ -10,9 +10,9 @@ import java.io.IOException
 import scala.compat.Platform.currentTime
 import scala.tools.nsc.util.{ ClassPath }
 import classfile.ClassfileParser
-import reflect.internal.Flags._
-import reflect.internal.MissingRequirementError
-import reflect.internal.util.Statistics
+import scala.reflect.internal.Flags._
+import scala.reflect.internal.MissingRequirementError
+import scala.reflect.internal.util.Statistics
 import scala.tools.nsc.io.{ AbstractFile, MsilFile }
 
 /** This class ...
@@ -300,6 +300,6 @@ abstract class SymbolLoaders {
 }
 
 object SymbolLoadersStats {
-  import reflect.internal.TypesStats.typerNanos
+  import scala.reflect.internal.TypesStats.typerNanos
   val classReadNanos = Statistics.newSubTimer  ("time classfilereading", typerNanos)
 }

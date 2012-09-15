@@ -34,9 +34,11 @@ trait States {
     def reificationIsConcrete_=(value: Boolean): Unit = {
       _reificationIsConcrete = value
       if (!value && concrete) {
-        assert(current.isInstanceOf[Type], current)
-        val offender = current.asInstanceOf[Type]
-        CannotReifyTypeTagHavingUnresolvedTypeParameters(offender)
+        current match {
+          case tpe: Type => CannotReifyWeakType(s" having unresolved type parameter $tpe")
+          case sym: Symbol => CannotReifyWeakType(s" referring to local ${sym.kindString} ${sym.fullName}")
+          case _ => CannotReifyWeakType("")
+        }
       }
     }
     var reifyStack = reifee :: Nil

@@ -11,7 +11,7 @@ package scala.collection
 
 import generic._
 import mutable.{ Builder, SetBuilder }
-import annotation.{migration, bridge}
+import scala.annotation.{migration, bridge}
 import parallel.ParSet
 
 /** A template trait for sets.

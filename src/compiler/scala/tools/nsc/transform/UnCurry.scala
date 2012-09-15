@@ -8,7 +8,7 @@ package transform
 
 import symtab.Flags._
 import scala.collection.{ mutable, immutable }
-import language.postfixOps
+import scala.language.postfixOps
 
 /*<export> */
 /** - uncurry all symbol and tree types (@see UnCurryPhase) -- this includes normalizing all proper types.
@@ -44,7 +44,7 @@ import language.postfixOps
  */
 /*</export> */
 abstract class UnCurry extends InfoTransform
-                          with reflect.internal.transform.UnCurry
+                          with scala.reflect.internal.transform.UnCurry
                           with TypingTransformers with ast.TreeDSL {
   val global: Global               // need to repeat here because otherwise last mixin defines global as
                                    // SymbolTable. If we had DOT this would not be an issue
@@ -218,11 +218,6 @@ abstract class UnCurry extends InfoTransform
 
     /** Undo eta expansion for parameterless and nullary methods */
     def deEta(fun: Function): Tree = fun match {
-      case Function(List(), Apply(expr, List())) if treeInfo.isExprSafeToInline(expr) =>
-        if (expr hasSymbolWhich (_.isLazy))
-          fun
-        else
-          expr
       case Function(List(), expr) if isByNameRef(expr) =>
         noApply += expr
         expr
@@ -490,11 +485,7 @@ abstract class UnCurry extends InfoTransform
           arg setType functionType(Nil, arg.tpe)
         }
         else {
-          log("byname | %s | %s | %s".format(
-            arg.pos.source.path + ":" + arg.pos.line, fun.fullName,
-            if (fun.isPrivate) "private" else "")
-          )
-
+          log(s"Argument '$arg' at line ${arg.pos.safeLine} is $formal from ${fun.fullName}")
           arg match {
             // don't add a thunk for by-name argument if argument already is an application of
             // a Function0. We can then remove the application and use the existing Function0.

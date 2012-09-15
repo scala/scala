@@ -2,7 +2,7 @@ package scala.tools.nsc
 package dependencies
 
 import io.Path
-import collection._
+import scala.collection._
 import symtab.Flags
 import scala.tools.nsc.io.AbstractFile
 import scala.reflect.internal.util.SourceFile

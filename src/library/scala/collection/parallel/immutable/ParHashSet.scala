@@ -21,7 +21,7 @@ import scala.collection.generic.GenericParTemplate
 import scala.collection.generic.GenericParCompanion
 import scala.collection.generic.GenericCompanion
 import scala.collection.immutable.{ HashSet, TrieIterator }
-import collection.parallel.Task
+import scala.collection.parallel.Task
 
 
 
@@ -132,7 +132,7 @@ object ParHashSet extends ParSetFactory[ParHashSet] {
 
 
 private[immutable] abstract class HashSetCombiner[T]
-extends collection.parallel.BucketCombiner[T, ParHashSet[T], Any, HashSetCombiner[T]](HashSetCombiner.rootsize) {
+extends scala.collection.parallel.BucketCombiner[T, ParHashSet[T], Any, HashSetCombiner[T]](HashSetCombiner.rootsize) {
 //self: EnvironmentPassingCombiner[T, ParHashSet[T]] =>
   import HashSetCombiner._
   val emptyTrie = HashSet.empty[T]

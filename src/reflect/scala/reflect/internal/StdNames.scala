@@ -8,8 +8,8 @@ package internal
 
 import java.security.MessageDigest
 import Chars.isOperatorPart
-import annotation.switch
-import language.implicitConversions
+import scala.annotation.switch
+import scala.language.implicitConversions
 import scala.collection.immutable
 import scala.io.Codec
 
@@ -131,7 +131,7 @@ trait StdNames {
     final val Seq: NameType        = "Seq"
     final val Symbol: NameType     = "Symbol"
     final val ClassTag: NameType   = "ClassTag"
-    final val AbsTypeTag: NameType = "AbsTypeTag"
+    final val WeakTypeTag: NameType = "WeakTypeTag"
     final val TypeTag : NameType   = "TypeTag"
     final val Expr: NameType       = "Expr"
     final val String: NameType     = "String"
@@ -704,14 +704,13 @@ trait StdNames {
     val manifestToTypeTag: NameType    = "manifestToTypeTag"
     val map: NameType                  = "map"
     val materializeClassTag: NameType  = "materializeClassTag"
-    val materializeAbsTypeTag: NameType = "materializeAbsTypeTag"
+    val materializeWeakTypeTag: NameType = "materializeWeakTypeTag"
     val materializeTypeTag: NameType   = "materializeTypeTag"
     val mirror : NameType              = "mirror"
     val moduleClass : NameType         = "moduleClass"
     val name: NameType                 = "name"
     val ne: NameType                   = "ne"
     val newArray: NameType             = "newArray"
-    val newFreeExistential: NameType   = "newFreeExistential"
     val newFreeTerm: NameType          = "newFreeTerm"
     val newFreeType: NameType          = "newFreeType"
     val newNestedSymbol: NameType      = "newNestedSymbol"

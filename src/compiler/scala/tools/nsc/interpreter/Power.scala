@@ -13,7 +13,7 @@ import session.{ History }
 import scala.io.Codec
 import java.net.{ URL, MalformedURLException }
 import io.{ Path }
-import language.implicitConversions
+import scala.language.implicitConversions
 import scala.reflect.runtime.{universe => ru}
 import scala.reflect.{ClassTag, classTag}
 

@@ -269,8 +269,8 @@ value jZ { // after parser
 
 value jZ { // after explicitouter
   protected val $outer: D.this.type
-  val ll$D$J$$$outer(): D.this.type
-  val ll$C$I$$$outer(): C.this.type
+  val $outer(): D.this.type
+  val $outer(): C.this.type
   def thisI(): I.this.type
   def thisC(): C.this.type
   def t2(): T2
@@ -279,9 +279,9 @@ value jZ { // after explicitouter
 
 value jZ { // after erasure
   protected val $outer: ll.D
-  val ll$D$J$$$outer(): ll.D
+  val $outer(): ll.D
   protected val $outer: ll.C
-  val ll$C$I$$$outer(): ll.C
+  val $outer(): ll.C
   def thisI(): ll.C#I
   def thisC(): ll.C
   def t2(): Object
@@ -290,9 +290,9 @@ value jZ { // after erasure
 
 value jZ { // after flatten
   protected val $outer: ll.D
-  val ll$D$J$$$outer(): ll.D
+  val $outer(): ll.D
   protected val $outer: ll.C
-  val ll$C$I$$$outer(): ll.C
+  val $outer(): ll.C
   def thisI(): ll.C#C$I
   def thisC(): ll.C
   def t2(): Object

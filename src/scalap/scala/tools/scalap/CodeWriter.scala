@@ -13,7 +13,7 @@ import java.io._
 
 class CodeWriter(writer: Writer) {
 
-  private val nl = compat.Platform.EOL
+  private val nl = scala.compat.Platform.EOL
   private var step = "  "
   private var level = 0
   private var align = false

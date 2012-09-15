@@ -12,8 +12,8 @@ package scala.collection
 package generic
 
 import mutable.Builder
-import annotation.unchecked.uncheckedVariance
-import language.higherKinds
+import scala.annotation.unchecked.uncheckedVariance
+import scala.language.higherKinds
 
 /** This trait represents collections classes which require
  *  ordered element types.

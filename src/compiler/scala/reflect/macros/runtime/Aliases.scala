@@ -17,12 +17,12 @@ trait Aliases {
   override type Expr[+T] = universe.Expr[T]
   override val Expr = universe.Expr
 
-  override type AbsTypeTag[T] = universe.AbsTypeTag[T]
+  override type WeakTypeTag[T] = universe.WeakTypeTag[T]
   override type TypeTag[T] = universe.TypeTag[T]
-  override val AbsTypeTag = universe.AbsTypeTag
+  override val WeakTypeTag = universe.WeakTypeTag
   override val TypeTag = universe.TypeTag
-  override def absTypeTag[T](implicit attag: AbsTypeTag[T]) = attag
+  override def weakTypeTag[T](implicit attag: WeakTypeTag[T]) = attag
   override def typeTag[T](implicit ttag: TypeTag[T]) = ttag
-  override def absTypeOf[T](implicit attag: AbsTypeTag[T]): Type = attag.tpe
+  override def weakTypeOf[T](implicit attag: WeakTypeTag[T]): Type = attag.tpe
   override def typeOf[T](implicit ttag: TypeTag[T]): Type = ttag.tpe
 }

@@ -1,2 +1,2 @@
 TypeTag[Boolean] TypeTag[Int]
-TypeTag[Boolean] TypeTag[String]
+TypeTag[Boolean] WeakTypeTag[String]

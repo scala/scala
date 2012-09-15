@@ -77,7 +77,7 @@ object CompletionAware {
   /** Convenience factories.
    */
   def apply(terms: () => List[String]): CompletionAware = apply(terms, _ => None)
-  def apply(map: collection.Map[String, CompletionAware]): CompletionAware =
+  def apply(map: scala.collection.Map[String, CompletionAware]): CompletionAware =
     apply(() => map.keys.toList, map.get _)
 }
 

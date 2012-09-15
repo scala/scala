@@ -13,7 +13,7 @@ object HashSet {
     new HashSet[T](label, initialCapacity)
 }
 
-class HashSet[T >: Null <: AnyRef](val label: String, initialCapacity: Int) extends Set[T] with collection.generic.Clearable {
+class HashSet[T >: Null <: AnyRef](val label: String, initialCapacity: Int) extends Set[T] with scala.collection.generic.Clearable {
   private var used = 0
   private var table = new Array[AnyRef](initialCapacity)
   private def index(x: Int): Int = math.abs(x % table.length)

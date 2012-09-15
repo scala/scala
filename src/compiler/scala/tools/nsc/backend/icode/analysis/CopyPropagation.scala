@@ -200,7 +200,7 @@ abstract class CopyPropagation {
           in(b)  = lattice.bottom
           out(b) = lattice.bottom
           assert(out.contains(b), out)
-          log("Added point: " + b)
+          debuglog("CopyAnalysis added point: " + b)
         }
         m.exh foreach { e =>
           in(e.startBlock) = new copyLattice.State(copyLattice.emptyBinding, copyLattice.exceptionHandlerStack);
@@ -531,11 +531,11 @@ abstract class CopyPropagation {
         case 0 => ()
         case 1 if ctor.tpe.paramTypes.head == ctor.owner.rawowner.tpe =>
           // it's an unused outer
-          log("considering unused outer at position 0 in " + ctor.tpe.paramTypes)
+          debuglog("considering unused outer at position 0 in " + ctor.tpe.paramTypes)
           paramTypes = paramTypes.tail
           values = values.tail
         case _ =>
-          log("giving up on " + ctor + "(diff: " + diff + ")")
+          debuglog("giving up on " + ctor + "(diff: " + diff + ")")
           return bindings
       }
 
@@ -566,7 +566,7 @@ abstract class CopyPropagation {
       method.blocks map { b =>
         "\nIN(%s):\t Bindings: %s".format(b.label, in(b).bindings) +
         "\nIN(%s):\t Stack: %s".format(b.label, in(b).stack)
-      } 
+      }
     ).mkString
 
   } /* class CopyAnalysis */

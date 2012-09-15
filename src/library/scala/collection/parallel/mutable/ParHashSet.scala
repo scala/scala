@@ -10,11 +10,11 @@ package scala.collection.parallel.mutable
 
 
 
-import collection.generic._
-import collection.mutable.FlatHashTable
-import collection.parallel.Combiner
-import collection.mutable.UnrolledBuffer
-import collection.parallel.Task
+import scala.collection.generic._
+import scala.collection.mutable.FlatHashTable
+import scala.collection.parallel.Combiner
+import scala.collection.mutable.UnrolledBuffer
+import scala.collection.parallel.Task
 
 
 
@@ -88,7 +88,7 @@ extends ParSet[T]
     init(in, x => x)
   }
 
-  import collection.DebugUtils._
+  import scala.collection.DebugUtils._
   override def debugInformation = buildString {
     append =>
     append("Parallel flat hash table set")
@@ -117,8 +117,8 @@ object ParHashSet extends ParSetFactory[ParHashSet] {
 
 
 private[mutable] abstract class ParHashSetCombiner[T](private val tableLoadFactor: Int)
-extends collection.parallel.BucketCombiner[T, ParHashSet[T], Any, ParHashSetCombiner[T]](ParHashSetCombiner.numblocks)
-with collection.mutable.FlatHashTable.HashUtils[T] {
+extends scala.collection.parallel.BucketCombiner[T, ParHashSet[T], Any, ParHashSetCombiner[T]](ParHashSetCombiner.numblocks)
+with scala.collection.mutable.FlatHashTable.HashUtils[T] {
 //self: EnvironmentPassingCombiner[T, ParHashSet[T]] =>
   private var mask = ParHashSetCombiner.discriminantmask
   private var nonmasklen = ParHashSetCombiner.nonmasklength

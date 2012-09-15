@@ -8,6 +8,6 @@ import scala.reflect.ClassTag
 // todo. once we have implicit macros for tag generation, we can remove these anchors
 package object internal {
   private[scala] def materializeClassTag[T](u: BaseUniverse): ClassTag[T] = ??? // macro
-  private[scala] def materializeAbsTypeTag[T](u: BaseUniverse): u.AbsTypeTag[T] = ??? // macro
+  private[scala] def materializeWeakTypeTag[T](u: BaseUniverse): u.WeakTypeTag[T] = ??? // macro
   private[scala] def materializeTypeTag[T](u: BaseUniverse): u.TypeTag[T] = ??? // macro
 }

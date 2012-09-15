@@ -10,9 +10,9 @@ package scala.collection
 
 import mutable.{ Buffer, Builder, ListBuffer, ArrayBuffer }
 import generic.CanBuildFrom
-import annotation.unchecked.{ uncheckedVariance => uV }
-import language.{implicitConversions, higherKinds}
-import reflect.ClassTag
+import scala.annotation.unchecked.{ uncheckedVariance => uV }
+import scala.language.{implicitConversions, higherKinds}
+import scala.reflect.ClassTag
 
 /** A template trait for collections which can be traversed either once only
  *  or one or more times.
@@ -374,12 +374,12 @@ object TraversableOnce {
   implicit def alternateImplicit[A](trav: TraversableOnce[A]) = new ForceImplicitAmbiguity
   implicit def flattenTraversableOnce[A, CC[_]](travs: TraversableOnce[CC[A]])(implicit ev: CC[A] => TraversableOnce[A]) =
     new FlattenOps[A](travs map ev)
-  
+
   /* Functionality reused in Iterator.CanBuildFrom */
   private[collection] abstract class BufferedCanBuildFrom[A, Coll[X] <: TraversableOnce[X]] extends generic.CanBuildFrom[Coll[_], A, Coll[A]] {
     def bufferToColl[B](buff: ArrayBuffer[B]): Coll[B]
     def traversableToColl[B](t: GenTraversable[B]): Coll[B]
-    
+
     def newIterator: Builder[A, Coll[A]] = new ArrayBuffer[A] mapResult bufferToColl
 
     /** Creates a new builder on request of a collection.
@@ -398,7 +398,7 @@ object TraversableOnce {
      */
     def apply() = newIterator
   }
-  
+
   /** With the advent of `TraversableOnce`, it can be useful to have a builder which
    *  operates on `Iterator`s so they can be treated uniformly along with the collections.
    *  See `scala.util.Random.shuffle` or `scala.concurrent.Future.sequence` for an example.
@@ -407,10 +407,10 @@ object TraversableOnce {
     def bufferToColl[B](buff: ArrayBuffer[B]) = buff.iterator
     def traversableToColl[B](t: GenTraversable[B]) = t.seq
   }
-  
+
   /** Evidence for building collections from `TraversableOnce` collections */
   implicit def OnceCanBuildFrom[A] = new OnceCanBuildFrom[A]
-  
+
   class FlattenOps[A](travs: TraversableOnce[TraversableOnce[A]]) {
     def flatten: Iterator[A] = new AbstractIterator[A] {
       val its = travs.toIterator

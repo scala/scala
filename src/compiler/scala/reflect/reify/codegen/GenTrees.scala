@@ -124,7 +124,7 @@ trait GenTrees {
       val sym = tree.symbol
       if (reifyDebug) println("This for %s, reified as freeVar".format(sym))
       if (reifyDebug) println("Free: " + sym)
-      mirrorBuildCall(nme.Ident, reifyFreeTerm(sym, This(sym)))
+      mirrorBuildCall(nme.Ident, reifyFreeTerm(This(sym)))
     case tree @ This(_) if !tree.symbol.isLocalToReifee =>
       if (reifyDebug) println("This for %s, reified as This".format(tree.symbol))
       mirrorBuildCall(nme.This, reify(tree.symbol))

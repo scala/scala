@@ -13,4 +13,4 @@ package scala.beans
  *  named `isFieldName` instead of `getFieldName`.
  */
 @scala.annotation.meta.field
-class BooleanBeanProperty extends annotation.StaticAnnotation
+class BooleanBeanProperty extends scala.annotation.StaticAnnotation

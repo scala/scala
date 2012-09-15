@@ -9,7 +9,7 @@ package interpreter
 import scala.tools.jline._
 import scala.tools.jline.console.completer._
 import Completion._
-import collection.mutable.ListBuffer
+import scala.collection.mutable.ListBuffer
 
 // REPL completor - queries supplied interpreter for valid
 // completions based on current contents of buffer.

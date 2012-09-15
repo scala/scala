@@ -1,0 +1,16 @@
+t6258.scala:2: error: missing parameter type for expanded function
+The argument types of an anonymous function must be fully known. (SLS 8.5)
+Expected type was: PartialFunction[?, Int]
+	val f : PartialFunction[_, Int] = { case a : Int => a } // undefined param
+                                          ^
+t6258.scala:5: error: missing parameter type for expanded function
+The argument types of an anonymous function must be fully known. (SLS 8.5)
+Expected type was: PartialFunction[?,Int]
+	foo { case a : Int => a } // undefined param
+            ^
+t6258.scala:22: error: missing parameter type for expanded function
+The argument types of an anonymous function must be fully known. (SLS 8.5)
+Expected type was: PartialFunction[?,Any]
+  bar[M[Any]] (foo { // undefined param
+                   ^
+three errors found

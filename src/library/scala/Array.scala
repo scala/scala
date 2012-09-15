@@ -11,7 +11,7 @@ package scala
 import scala.collection.generic._
 import scala.collection.{ mutable, immutable }
 import mutable.{ ArrayBuilder, ArraySeq }
-import compat.Platform.arraycopy
+import scala.compat.Platform.arraycopy
 import scala.reflect.ClassTag
 import scala.runtime.ScalaRunTime.{ array_apply, array_update }
 
@@ -511,5 +511,5 @@ final class Array[T](_length: Int) extends java.io.Serializable with java.lang.C
    *
    *  @return A clone of the Array.
    */
-  override def clone: Array[T] = throw new Error()
+  override def clone(): Array[T] = throw new Error()
 }

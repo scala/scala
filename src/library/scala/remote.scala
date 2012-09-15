@@ -24,4 +24,4 @@ package scala
  * }
  * }}}
  */
-class remote extends annotation.StaticAnnotation {}
+class remote extends scala.annotation.StaticAnnotation {}

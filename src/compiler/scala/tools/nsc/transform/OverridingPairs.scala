@@ -9,7 +9,7 @@ package transform
 import scala.collection.mutable
 import symtab.Flags._
 import util.HashSet
-import annotation.tailrec
+import scala.annotation.tailrec
 
 /** A class that yields a kind of iterator (`Cursor`),
  *  which yields all pairs of overriding/overridden symbols

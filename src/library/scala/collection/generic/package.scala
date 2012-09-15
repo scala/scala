@@ -1,7 +1,7 @@
 package scala.collection
 import generic.CanBuildFrom
 
-import language.higherKinds
+import scala.language.higherKinds
 
 package object generic {
   type CanBuild[-Elem, +To] = CanBuildFrom[Nothing, Elem, To]

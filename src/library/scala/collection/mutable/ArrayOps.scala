@@ -9,7 +9,7 @@
 package scala.collection
 package mutable
 
-import compat.Platform.arraycopy
+import scala.compat.Platform.arraycopy
 import scala.reflect.ClassTag
 import scala.runtime.ScalaRunTime._
 import parallel.mutable.ParArray
@@ -62,7 +62,7 @@ trait ArrayOps[T] extends Any with ArrayLike[T, Array[T]] with CustomParalleliza
    */
   def flatten[U](implicit asTrav: T => collection.Traversable[U], m: ClassTag[U]): Array[U] = {
     val b = Array.newBuilder[U]
-    b.sizeHint(map{case is: collection.IndexedSeq[_] => is.size case _ => 0}.sum)
+    b.sizeHint(map{case is: scala.collection.IndexedSeq[_] => is.size case _ => 0}.sum)
     for (xs <- this)
       b ++= asTrav(xs)
     b.result

@@ -154,8 +154,10 @@ abstract class GenASM extends SubComponent with BytecodeWriters {
         inform("[running phase " + name + " on icode]")
 
       if (settings.Xdce.value)
-        for ((sym, cls) <- icodes.classes if inliner.isClosureClass(sym) && !deadCode.liveClosures(sym))
+        for ((sym, cls) <- icodes.classes if inliner.isClosureClass(sym) && !deadCode.liveClosures(sym)) {
+          log(s"Optimizer eliminated ${sym.fullNameString}")
           icodes.classes -= sym
+        }
 
       // For predictably ordered error messages.
       var sortedClasses = classes.values.toList sortBy ("" + _.symbol.fullName)
@@ -2042,12 +2044,12 @@ abstract class GenASM extends SubComponent with BytecodeWriters {
 
       var isModuleInitialized = false
 
-      val labels: collection.Map[BasicBlock, asm.Label] = mutable.HashMap(linearization map (_ -> new asm.Label()) : _*)
+      val labels: scala.collection.Map[BasicBlock, asm.Label] = mutable.HashMap(linearization map (_ -> new asm.Label()) : _*)
 
       val onePastLast = new asm.Label // token for the mythical instruction past the last instruction in the method being emitted
 
       // maps a BasicBlock b to the Label that corresponds to b's successor in the linearization. The last BasicBlock is mapped to the onePastLast label.
-      val linNext: collection.Map[BasicBlock, asm.Label] = {
+      val linNext: scala.collection.Map[BasicBlock, asm.Label] = {
         val result = mutable.HashMap.empty[BasicBlock, asm.Label]
         var rest = linearization
         var prev = rest.head
@@ -2225,7 +2227,7 @@ abstract class GenASM extends SubComponent with BytecodeWriters {
             }
           }
 
-          def getMerged(): collection.Map[Local, List[Interval]] = {
+          def getMerged(): scala.collection.Map[Local, List[Interval]] = {
             // TODO should but isn't: unbalanced start(s) of scope(s)
             val shouldBeEmpty = pending filter { p => val Pair(k, st) = p; st.nonEmpty };
             val merged = mutable.Map[Local, List[Interval]]()

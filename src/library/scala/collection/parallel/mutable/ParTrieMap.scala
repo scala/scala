@@ -34,7 +34,7 @@ import scala.collection.concurrent.TrieMapIterator
  *  @author Aleksandar Prokopec
  *  @since 2.10
  *  @see  [[http://docs.scala-lang.org/overviews/parallel-collections/concrete-parallel-collections.html#parallel_concurrent_tries Scala's Parallel Collections Library overview]]
- *  section on `ParTrieMap` for more information. 
+ *  section on `ParTrieMap` for more information.
  */
 final class ParTrieMap[K, V] private[collection] (private val ctrie: TrieMap[K, V])
 extends ParMap[K, V]
@@ -130,7 +130,7 @@ extends TrieMapIterator[K, V](lev, ct, mustInit)
 
   protected override def newIterator(_lev: Int, _ct: TrieMap[K, V], _mustInit: Boolean) = new ParTrieMapSplitter[K, V](_lev, _ct, _mustInit)
 
-  override def shouldSplitFurther[S](coll: collection.parallel.ParIterable[S], parallelismLevel: Int) = {
+  override def shouldSplitFurther[S](coll: scala.collection.parallel.ParIterable[S], parallelismLevel: Int) = {
     val maxsplits = 3 + Integer.highestOneBit(parallelismLevel)
     level < maxsplits
   }

@@ -5,7 +5,7 @@
 
 package scala.tools.nsc
 
-import annotation.tailrec
+import scala.annotation.tailrec
 import java.io.EOFException
 
 trait EvalLoop {

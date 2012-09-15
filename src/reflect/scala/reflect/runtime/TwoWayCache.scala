@@ -1,7 +1,7 @@
 package scala.reflect
 package runtime
 
-import collection.mutable.WeakHashMap
+import scala.collection.mutable.WeakHashMap
 import java.lang.ref.WeakReference
 
 /** A cache that maintains a bijection between Java reflection type `J`

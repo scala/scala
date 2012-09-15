@@ -8,7 +8,7 @@ package doc
 
 import java.io.File
 import java.lang.System
-import language.postfixOps
+import scala.language.postfixOps
 
 /** An extended version of compiler settings, with additional Scaladoc-specific options.
   * @param error A function that prints a string to the appropriate error stream
@@ -257,7 +257,7 @@ class Settings(error: String => Unit, val printMsg: String => Unit = println(_))
       ("scala.reflect.ClassManifest"         -> ((tparam: String) => tparam + " is accompanied by a ClassManifest, which is a runtime representation of its type that survives erasure")) +
       ("scala.reflect.OptManifest"           -> ((tparam: String) => tparam + " is accompanied by an OptManifest, which can be either a runtime representation of its type or the NoManifest, which means the runtime type is not available")) +
       ("scala.reflect.ClassTag"              -> ((tparam: String) => tparam + " is accompanied by a ClassTag, which is a runtime representation of its type that survives erasure")) +
-      ("scala.reflect.AbsTypeTag"            -> ((tparam: String) => tparam + " is accompanied by an AbsTypeTag, which is a runtime representation of its type that survives erasure")) +
+      ("scala.reflect.WeakTypeTag"            -> ((tparam: String) => tparam + " is accompanied by an WeakTypeTag, which is a runtime representation of its type that survives erasure")) +
       ("scala.reflect.base.TypeTags.TypeTag" -> ((tparam: String) => tparam + " is accompanied by a TypeTag, which is a runtime representation of its type that survives erasure"))
 
     /**

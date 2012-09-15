@@ -177,6 +177,12 @@ extends MutableList[A]
     tl.len = len - 1
     tl
   }
+
+  override def clone(): Queue[A] = {
+    val bf = newBuilder
+    bf ++= seq
+    bf.result
+  }
 }
 
 

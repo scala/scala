@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<project name="test-simple" default="compile">
+  <description>Super simple test for Scala</description>
+
+  <target name="init">
+     <!-- Define project CLASSPATH. -->
+    <property name="base.dir" value="../../.."/>
+    <property name="pack.dir" value="${base.dir}/build/pack/"/>
+    <property name="build.dir" value="classes"/>
+    <property name="src.dir" value="src"/>
+    <property name="jvmargs" value=""/>
+    <path id="scala.classpath">
+      <fileset dir="${pack.dir}/lib/"> <include name="*.jar" /> </fileset>
+    </path>
+
+    <!-- Define scala compiler, scaladoc, etc command -->
+    <taskdef resource="scala/tools/ant/antlib.xml">
+      <classpath refid="scala.classpath" />
+    </taskdef>
+  </target>
+
+  <target name="compile" depends="init">
+    <mkdir dir="${build.dir}"/>
+
+    <scalac srcdir="${src.dir}" destdir="${build.dir}"
+            classpathref="scala.classpath" fork="true" target="jvm-1.5"
+            deprecation="no" addparams="-no-specialization"
+            jvmargs="${jvmargs} -XX:+UseConcMarkSweepGC">
+      <include name="**/*.scala"/>
+    </scalac>
+  </target>
+</project>

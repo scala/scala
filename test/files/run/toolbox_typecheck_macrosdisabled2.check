@@ -1,6 +1,15 @@
 {
   val $u: ru.type = ru;
-  val $m: $u.Mirror = ru.rootMirror;
+  val $m: $u.Mirror = ru.runtimeMirror({
+  final class $anon extends scala.AnyRef {
+    def <init>(): anonymous class $anon = {
+      $anon.super.<init>();
+      ()
+    };
+    ()
+  };
+  new $anon()
+}.getClass().getClassLoader());
   $u.Expr.apply[Array[Int]]($m, {
     final class $treecreator1 extends TreeCreator {
       def <init>(): $treecreator1 = {

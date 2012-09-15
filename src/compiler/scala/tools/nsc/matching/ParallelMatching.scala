@@ -13,8 +13,8 @@ import scala.reflect.internal.util.Position
 import transform.ExplicitOuter
 import symtab.Flags
 import mutable.ListBuffer
-import annotation.elidable
-import language.postfixOps
+import scala.annotation.elidable
+import scala.language.postfixOps
 
 trait ParallelMatching extends ast.TreeDSL
       with MatchSupport

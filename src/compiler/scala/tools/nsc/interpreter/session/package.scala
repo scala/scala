@@ -5,7 +5,7 @@
 
 package scala.tools.nsc
 package interpreter
-import language.implicitConversions
+import scala.language.implicitConversions
 
 /** Files having to do with the state of a repl session:
  *  lines of text entered, types and terms defined, etc.

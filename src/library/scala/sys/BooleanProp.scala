@@ -8,7 +8,7 @@
 
 package scala.sys
 
-import language.implicitConversions
+import scala.language.implicitConversions
 
 /** A few additional conveniences for Boolean properties.
  */

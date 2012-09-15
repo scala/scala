@@ -10,7 +10,7 @@ import java.io.{ OutputStream, PrintWriter, StringWriter, Writer }
 import symtab.Flags._
 import symtab.SymbolTable
 
-trait Printers extends reflect.internal.Printers { this: Global =>
+trait Printers extends scala.reflect.internal.Printers { this: Global =>
 
   import treeInfo.{ IsTrue, IsFalse }
 

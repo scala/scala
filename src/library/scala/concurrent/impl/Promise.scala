@@ -12,7 +12,7 @@ package scala.concurrent.impl
 
 import java.util.concurrent.TimeUnit.NANOSECONDS
 import scala.concurrent.{ ExecutionContext, CanAwait, OnCompleteRunnable, TimeoutException, ExecutionException }
-import scala.concurrent.util.Duration
+import scala.concurrent.util.{ Duration, Deadline, FiniteDuration }
 import scala.annotation.tailrec
 import scala.util.control.NonFatal
 import scala.util.{ Try, Success, Failure }
@@ -64,30 +64,40 @@ private[concurrent] object Promise {
     
     protected final def tryAwait(atMost: Duration): Boolean = {
       @tailrec
-      def awaitUnsafe(waitTimeNanos: Long): Boolean = {
-        if (value.isEmpty && waitTimeNanos > 0) {
-          val ms = NANOSECONDS.toMillis(waitTimeNanos)
-          val ns = (waitTimeNanos % 1000000l).toInt // as per object.wait spec
-          val start = System.nanoTime()
-          try {
-            synchronized {
-              if (!isCompleted) wait(ms, ns) // previously - this was a `while`, ending up in an infinite loop
-            }
-          } catch {
-            case e: InterruptedException =>
-          }
+      def awaitUnsafe(deadline: Deadline, nextWait: FiniteDuration): Boolean = {
+        if (!isCompleted && nextWait > Duration.Zero) {
+          val ms = nextWait.toMillis
+          val ns = (nextWait.toNanos % 1000000l).toInt // as per object.wait spec
 
-          awaitUnsafe(waitTimeNanos - (System.nanoTime() - start))
+          synchronized { if (!isCompleted) wait(ms, ns) }
+
+          awaitUnsafe(deadline, deadline.timeLeft)
         } else
           isCompleted
       }
-      awaitUnsafe(if (atMost.isFinite) atMost.toNanos else Long.MaxValue)
+      @tailrec
+      def awaitUnbounded(): Boolean = {
+        if (isCompleted) true
+        else {
+          synchronized { if (!isCompleted) wait() }
+          awaitUnbounded()
+        }
+      }
+
+      import Duration.Undefined
+      atMost match {
+        case u if u eq Undefined => throw new IllegalArgumentException("cannot wait for Undefined period")
+        case Duration.Inf        => awaitUnbounded
+        case Duration.MinusInf   => isCompleted
+        case f: FiniteDuration   => if (f > Duration.Zero) awaitUnsafe(f.fromNow, f) else isCompleted
+      }
     }
 
     @throws(classOf[TimeoutException])
+    @throws(classOf[InterruptedException])
     def ready(atMost: Duration)(implicit permit: CanAwait): this.type =
       if (isCompleted || tryAwait(atMost)) this
-      else throw new TimeoutException("Futures timed out after [" + atMost.toMillis + "] milliseconds")
+      else throw new TimeoutException("Futures timed out after [" + atMost + "]")
 
     @throws(classOf[Exception])
     def result(atMost: Duration)(implicit permit: CanAwait): T =

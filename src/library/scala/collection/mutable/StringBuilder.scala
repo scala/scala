@@ -10,7 +10,7 @@ package scala.collection
 package mutable
 
 import java.lang.{ StringBuilder => JavaStringBuilder }
-import annotation.migration
+import scala.annotation.migration
 import immutable.StringLike
 
 /** A builder for mutable sequence of characters.  This class provides an API

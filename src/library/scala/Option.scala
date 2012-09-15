@@ -10,7 +10,7 @@ package scala
 
 object Option {
 
-  import language.implicitConversions
+  import scala.language.implicitConversions
 
   /** An implicit conversion that converts an option to an iterable value
    */

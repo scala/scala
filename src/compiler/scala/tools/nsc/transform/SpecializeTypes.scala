@@ -8,8 +8,8 @@ package transform
 
 import scala.tools.nsc.symtab.Flags
 import scala.collection.{ mutable, immutable }
-import language.postfixOps
-import language.existentials
+import scala.language.postfixOps
+import scala.language.existentials
 
 /** Specialize code on types.
  *
@@ -461,7 +461,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
     val sClassMap = anyrefSpecCache.getOrElseUpdate(sClass, mutable.Map[Symbol, Symbol]())
 
     sClassMap.getOrElseUpdate(tparam,
-      tparam.cloneSymbol(sClass, tparam.flags, (tparam.name append tpnme.SPECIALIZED_SUFFIX).asInstanceOf[Name]) // [Eugene] why do we need this cast?
+      tparam.cloneSymbol(sClass, tparam.flags, tparam.name append tpnme.SPECIALIZED_SUFFIX)
         modifyInfo (info => TypeBounds(info.bounds.lo, AnyRefClass.tpe))
     ).tpe
   }
@@ -836,12 +836,17 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
           specializingOn = specializingOn filterNot (unusedStvars contains)
         }
         for (env0 <- specializations(specializingOn) if needsSpecialization(env0, sym)) yield {
+          // !!! Can't this logic be structured so that the new symbol's name is
+          // known when the symbol is cloned? It is much cleaner not to be mutating
+          // names after the fact.  And it adds about a billion lines of
+          // "Renaming value _1 in class Tuple2 to _1$mcZ$sp" to obscure the small
+          // number of other (important) actual symbol renamings.
           val tps          = survivingParams(sym.info.typeParams, env0)
-          val specMember   = sym.cloneSymbol(owner, (sym.flags | SPECIALIZED) & ~DEFERRED)
+          val specMember   = sym.cloneSymbol(owner, (sym.flags | SPECIALIZED) & ~DEFERRED)  // <-- this needs newName = ...
           val env          = mapAnyRefsInSpecSym(env0, sym, specMember)
           val (keys, vals) = env.toList.unzip
 
-          specMember setName specializedName(sym, env)
+          specMember setName specializedName(sym, env)  // <-- but the name is calculated based on the cloned symbol
           // debuglog("%s normalizes to %s%s".format(sym, specMember,
           //   if (tps.isEmpty) "" else " with params " + tps.mkString(", ")))
 
@@ -923,7 +928,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
     val newFlags = (sym.flags | SPECIALIZED) & ~(DEFERRED | CASEACCESSOR)
     // this method properly duplicates the symbol's info
     val specname = specializedName(nameSymbol orElse sym, env)
-    ( sym.cloneSymbol(owner, newFlags, specname)
+    ( sym.cloneSymbol(owner, newFlags, newName = specname)
         modifyInfo (info => subst(env, info.asSeenFrom(owner.thisType, sym.owner)))
     )
   }
@@ -938,7 +943,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
    *
    *  this method will return List('apply$mcII$sp')
    */
-  private def specialOverrides(clazz: Symbol) = logResultIf[List[Symbol]]("specialOverrides(" + clazz + ")", _.nonEmpty) {
+  private def specialOverrides(clazz: Symbol) = logResultIf[List[Symbol]]("specialized overrides in " + clazz, _.nonEmpty) {
     /** Return the overridden symbol in syms that needs a specialized overriding symbol,
      *  together with its specialization environment. The overridden symbol may not be
      *  the closest to 'overriding', in a given hierarchy.

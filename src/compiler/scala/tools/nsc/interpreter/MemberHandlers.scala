@@ -10,7 +10,7 @@ import scala.collection.{ mutable, immutable }
 import scala.PartialFunction.cond
 import scala.reflect.internal.Chars
 import scala.reflect.internal.Flags._
-import language.implicitConversions
+import scala.language.implicitConversions
 
 trait MemberHandlers {
   val intp: IMain
