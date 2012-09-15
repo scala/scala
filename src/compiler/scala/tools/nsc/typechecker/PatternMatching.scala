@@ -1558,7 +1558,7 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
       var currId = 0
     }
     case class Test(cond: Cond, treeMaker: TreeMaker) {
-      // private val reusedBy = new collection.mutable.HashSet[Test]
+      // private val reusedBy = new scala.collection.mutable.HashSet[Test]
       var reuses: Option[Test] = None
       def registerReuseBy(later: Test): Unit = {
         assert(later.reuses.isEmpty, later.reuses)
@@ -1587,7 +1587,7 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
     case class OrCond(a: Cond, b: Cond)  extends Cond {override def toString = "("+a+") \\/ ("+ b +")"}
 
     object EqualityCond {
-      private val uniques = new collection.mutable.HashMap[(Tree, Tree), EqualityCond]
+      private val uniques = new scala.collection.mutable.HashMap[(Tree, Tree), EqualityCond]
       def apply(testedPath: Tree, rhs: Tree): EqualityCond = uniques getOrElseUpdate((testedPath, rhs), new EqualityCond(testedPath, rhs))
       def unapply(c: EqualityCond) = Some(c.testedPath, c.rhs)
     }
@@ -1596,7 +1596,7 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
     }
 
     object NonNullCond {
-      private val uniques = new collection.mutable.HashMap[Tree, NonNullCond]
+      private val uniques = new scala.collection.mutable.HashMap[Tree, NonNullCond]
       def apply(testedPath: Tree): NonNullCond = uniques getOrElseUpdate(testedPath, new NonNullCond(testedPath))
       def unapply(c: NonNullCond) = Some(c.testedPath)
     }
@@ -1605,7 +1605,7 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
     }
 
     object TypeCond {
-      private val uniques = new collection.mutable.HashMap[(Tree, Type), TypeCond]
+      private val uniques = new scala.collection.mutable.HashMap[(Tree, Type), TypeCond]
       def apply(testedPath: Tree, pt: Type): TypeCond = uniques getOrElseUpdate((testedPath, pt), new TypeCond(testedPath, pt))
       def unapply(c: TypeCond) = Some(c.testedPath, c.pt)
     }
@@ -1654,8 +1654,8 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
     // returns (tree, tests), where `tree` will be used to refer to `root` in `tests`
     class TreeMakersToConds(val root: Symbol) {
       // a variable in this set should never be replaced by a tree that "does not consist of a selection on a variable in this set" (intuitively)
-      private val pointsToBound = collection.mutable.HashSet(root)
-      private val trees         = collection.mutable.HashSet.empty[Tree]
+      private val pointsToBound = scala.collection.mutable.HashSet(root)
+      private val trees         = scala.collection.mutable.HashSet.empty[Tree]
 
       // the substitution that renames variables to variables in pointsToBound
       private var normalize: Substitution  = EmptySubstitution
@@ -1956,7 +1956,7 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
     def removeVarEq(props: List[Prop], modelNull: Boolean = false): (Prop, List[Prop]) = {
       val start = if (Statistics.canEnable) Statistics.startTimer(patmatAnaVarEq) else null
 
-      val vars = new collection.mutable.HashSet[Var]
+      val vars = new scala.collection.mutable.HashSet[Var]
 
       object gatherEqualities extends PropTraverser {
         override def apply(p: Prop) = p match {
@@ -2261,7 +2261,7 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
       def nextId = {_nextId += 1; _nextId}
 
       def resetUniques() = {_nextId = 0; uniques.clear()}
-      private val uniques = new collection.mutable.HashMap[Tree, Var]
+      private val uniques = new scala.collection.mutable.HashMap[Tree, Var]
       def apply(x: Tree): Var = uniques getOrElseUpdate(x, new Var(x, x.tpe))
     }
     class Var(val path: Tree, staticTp: Type) extends AbsVar {
@@ -2273,7 +2273,7 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
       @inline private[this] def observed = {} //canModify = Some(Thread.currentThread.getStackTrace)
 
       // don't access until all potential equalities have been registered using registerEquality
-      private[this] val symForEqualsTo = new collection.mutable.HashMap[Const, Sym]
+      private[this] val symForEqualsTo = new scala.collection.mutable.HashMap[Const, Sym]
 
       // when looking at the domain, we only care about types we can check at run time
       val staticTpCheckable: Type = checkableType(staticTp)
@@ -2386,7 +2386,7 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
  but we can safely pretend types are mutually exclusive as long as there are no counter-examples in the match we're analyzing}
 */
 
-        val excludedPair = new collection.mutable.HashSet[ExcludedPair]
+        val excludedPair = new scala.collection.mutable.HashSet[ExcludedPair]
 
         case class ExcludedPair(a: Const, b: Const) {
           override def equals(o: Any) = o match {
@@ -2440,7 +2440,7 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
       private var _nextValueId = 0
       def nextValueId = {_nextValueId += 1; _nextValueId}
 
-      private val uniques = new collection.mutable.HashMap[Type, Const]
+      private val uniques = new scala.collection.mutable.HashMap[Type, Const]
       private[SymbolicMatchAnalysis] def unique(tp: Type, mkFresh: => Const): Const =
         uniques.get(tp).getOrElse(
           uniques.find {case (oldTp, oldC) => oldTp =:= tp} match {
@@ -2454,7 +2454,7 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
               fresh
           })
 
-      private val trees = collection.mutable.HashSet.empty[Tree]
+      private val trees = scala.collection.mutable.HashSet.empty[Tree]
 
       // hashconsing trees (modulo value-equality)
       private[SymbolicMatchAnalysis] def uniqueTpForTree(t: Tree): Type =
@@ -2915,7 +2915,7 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
           case _ => varAssignment.find{case (v, a) => chop(v.path) == path}.map(_._1)
         }
 
-        private val uniques = new collection.mutable.HashMap[Var, VariableAssignment]
+        private val uniques = new scala.collection.mutable.HashMap[Var, VariableAssignment]
         private def unique(variable: Var): VariableAssignment =
           uniques.getOrElseUpdate(variable, {
             val (eqTo, neqTo) = varAssignment.getOrElse(variable, (Nil, Nil)) // TODO
@@ -3034,8 +3034,8 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
       val testss = approximateMatchConservative(prevBinder, cases)
 
       // interpret:
-      val dependencies = new collection.mutable.LinkedHashMap[Test, Set[Cond]]
-      val tested = new collection.mutable.HashSet[Cond]
+      val dependencies = new scala.collection.mutable.LinkedHashMap[Test, Set[Cond]]
+      val tested = new scala.collection.mutable.HashSet[Cond]
 
       def storeDependencies(test: Test) = {
         val cond = test.cond
@@ -3083,7 +3083,7 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
       // then, collapse these contiguous sequences of reusing tests
       // store the result of the final test and the intermediate results in hoisted mutable variables (TODO: optimize: don't store intermediate results that aren't used)
       // replace each reference to a variable originally bound by a collapsed test by a reference to the hoisted variable
-      val reused = new collection.mutable.HashMap[TreeMaker, ReusedCondTreeMaker]
+      val reused = new scala.collection.mutable.HashMap[TreeMaker, ReusedCondTreeMaker]
       var okToCall = false
       val reusedOrOrig = (tm: TreeMaker) => {assert(okToCall); reused.getOrElse(tm, tm)}
 
@@ -3317,7 +3317,7 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
 
         // requires cases.exists(isGuardedCase) (otherwise the rewrite is pointless)
         var remainingCases = cases
-        val collapsed      = collection.mutable.ListBuffer.empty[CaseDef]
+        val collapsed      = scala.collection.mutable.ListBuffer.empty[CaseDef]
 
         // when some of collapsed cases (except for the default case itself) did not include an un-guarded case
         // we'll need to emit a labeldef for the default case

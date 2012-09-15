@@ -8,10 +8,6 @@
 
 package scala.collection.parallel.mutable
 
-
-
-
-
 import scala.collection.generic.Sizing
 import scala.collection.mutable.ArraySeq
 import scala.collection.mutable.ArrayBuffer
@@ -23,14 +19,10 @@ import scala.collection.parallel.Combiner
 import scala.collection.parallel.Task
 import scala.reflect.ClassTag
 
-
-
-
 private[mutable] class DoublingUnrolledBuffer[T](implicit t: ClassTag[T]) extends UnrolledBuffer[T]()(t) {
   override def calcNextLength(sz: Int) = if (sz < 10000) sz * 2 else sz
   protected override def newUnrolled = new Unrolled[T](0, new Array[T](4), null, this)
 }
-
 
 
 /** An array combiner that uses doubling unrolled buffers to store elements. */
@@ -85,7 +77,7 @@ extends Combiner[T, ParArray[T]] {
       var pos = startpos
       var arroffset = offset
       while (totalleft > 0) {
-        val lefthere = math.min(totalleft, curr.size - pos)
+        val lefthere = scala.math.min(totalleft, curr.size - pos)
         Array.copy(curr.array, pos, array, arroffset, lefthere)
         // println("from: " + arroffset + " elems " + lefthere + " - " + pos + ", " + curr + " -> " + array.toList + " by " + this + " !! " + buff.headPtr)
         totalleft -= lefthere
@@ -107,12 +99,10 @@ extends Combiner[T, ParArray[T]] {
       val fp = howmany / 2
       List(new CopyUnrolledToArray(array, offset, fp), new CopyUnrolledToArray(array, offset + fp, howmany - fp))
     }
-    def shouldSplitFurther = howmany > collection.parallel.thresholdFromSize(size, combinerTaskSupport.parallelismLevel)
+    def shouldSplitFurther = howmany > scala.collection.parallel.thresholdFromSize(size, combinerTaskSupport.parallelismLevel)
     override def toString = "CopyUnrolledToArray(" + offset + ", " + howmany + ")"
   }
 }
-
-
 
 object UnrolledParArrayCombiner {
   def apply[T](): UnrolledParArrayCombiner[T] = new UnrolledParArrayCombiner[T] {} // was: with EnvironmentPassingCombiner[T, ParArray[T]]

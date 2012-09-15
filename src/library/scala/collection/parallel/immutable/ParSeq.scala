@@ -28,11 +28,11 @@ import scala.collection.GenSeq
  *  @define coll mutable parallel sequence
  */
 trait ParSeq[+T]
-extends collection/*.immutable*/.GenSeq[T]
+extends scala.collection/*.immutable*/.GenSeq[T]
    with scala.collection.parallel.ParSeq[T]
    with ParIterable[T]
    with GenericParTemplate[T, ParSeq]
-   with ParSeqLike[T, ParSeq[T], collection.immutable.Seq[T]]
+   with ParSeqLike[T, ParSeq[T], scala.collection.immutable.Seq[T]]
 {
   override def companion: GenericCompanion[ParSeq] with GenericParCompanion[ParSeq] = ParSeq
   override def toSeq: ParSeq[T] = this

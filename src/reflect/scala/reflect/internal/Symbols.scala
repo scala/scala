@@ -28,7 +28,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
   //protected var activeLocks = 0
 
   /** Used for debugging only */
-  //protected var lockedSyms = collection.immutable.Set[Symbol]()
+  //protected var lockedSyms = scala.collection.immutable.Set[Symbol]()
 
   /** Used to keep track of the recursion depth on locked symbols */
   private var recursionTable = immutable.Map.empty[Symbol, Int]

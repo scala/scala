@@ -70,9 +70,9 @@ abstract class ToolBoxFactory[U <: JavaUniverse](val u: U) { factorySelf =>
         }
       }
 
-      def extractFreeTerms(expr0: Tree, wrapFreeTermRefs: Boolean): (Tree, collection.mutable.LinkedHashMap[FreeTermSymbol, TermName]) = {
+      def extractFreeTerms(expr0: Tree, wrapFreeTermRefs: Boolean): (Tree, scala.collection.mutable.LinkedHashMap[FreeTermSymbol, TermName]) = {
         val freeTerms = expr0.freeTerms
-        val freeTermNames = collection.mutable.LinkedHashMap[FreeTermSymbol, TermName]()
+        val freeTermNames = scala.collection.mutable.LinkedHashMap[FreeTermSymbol, TermName]()
         freeTerms foreach (ft => {
           var name = ft.name.toString
           val namesakes = freeTerms takeWhile (_ != ft) filter (ft2 => ft != ft2 && ft.name == ft2.name)

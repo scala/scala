@@ -6,7 +6,8 @@
 **                          |/                                          **
 \*                                                                      */
 
-package scala.collection
+package scala
+package collection
 package immutable
 
 import scala.collection.generic.{ CanBuildFrom, BitOperations }
@@ -298,7 +299,7 @@ extends AbstractMap[Long, T]
       if (!hasMatch(key, prefix, mask)) join(key, LongMap.Tip(key, value), prefix, this)
       else if (zero(key, mask)) LongMap.Bin(prefix, mask, left.updateWith(key, value, f), right)
       else LongMap.Bin(prefix, mask, left, right.updateWith(key, value, f))
-    case LongMap.Tip(key2, value2) => 
+    case LongMap.Tip(key2, value2) =>
       if (key == key2) LongMap.Tip(key, f(value2, value))
       else join(key, LongMap.Tip(key, value), key2, this)
     case LongMap.Nil => LongMap.Tip(key, value)

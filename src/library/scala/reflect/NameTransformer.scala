@@ -6,7 +6,8 @@
 **                          |/                                          **
 \*                                                                      */
 
-package scala.reflect
+package scala
+package reflect
 
 /** Provides functions to encode and decode Scala symbolic names.
  *  Also provides some constants.

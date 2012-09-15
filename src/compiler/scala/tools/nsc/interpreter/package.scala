@@ -35,7 +35,7 @@ package object interpreter extends ReplConfig with ReplStrings {
 
   val IR = Results
 
-  implicit def postfixOps = language.postfixOps // make all postfix ops in this package compile without warning
+  implicit def postfixOps = scala.language.postfixOps // make all postfix ops in this package compile without warning
 
   private[interpreter] implicit def javaCharSeqCollectionToScala(xs: JCollection[_ <: CharSequence]): List[String] = {
     import scala.collection.JavaConverters._

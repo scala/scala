@@ -36,7 +36,7 @@ import scala.collection.parallel.Task
 class ParHashSet[T] private[collection] (contents: FlatHashTable.Contents[T])
 extends ParSet[T]
    with GenericParTemplate[T, ParHashSet]
-   with ParSetLike[T, ParHashSet[T], collection.mutable.HashSet[T]]
+   with ParSetLike[T, ParHashSet[T], scala.collection.mutable.HashSet[T]]
    with ParFlatHashTable[T]
    with Serializable
 {
@@ -57,7 +57,7 @@ extends ParSet[T]
 
   def clear() = clearTable()
 
-  override def seq = new collection.mutable.HashSet(hashTableContents)
+  override def seq = new scala.collection.mutable.HashSet(hashTableContents)
 
   def +=(elem: T) = {
     addEntry(elem)
@@ -310,7 +310,7 @@ with scala.collection.mutable.FlatHashTable.HashUtils[T] {
       // the total number of successfully inserted elements is adjusted accordingly
       result = (this.result._1 + that.result._1 + inserted, remainingLeftovers concat that.result._2)
     }
-    def shouldSplitFurther = howmany > collection.parallel.thresholdFromSize(ParHashMapCombiner.numblocks, combinerTaskSupport.parallelismLevel)
+    def shouldSplitFurther = howmany > scala.collection.parallel.thresholdFromSize(ParHashMapCombiner.numblocks, combinerTaskSupport.parallelismLevel)
   }
 
 }

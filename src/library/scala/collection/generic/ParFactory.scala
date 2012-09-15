@@ -24,7 +24,7 @@ abstract class ParFactory[CC[X] <: ParIterable[X] with GenericParTemplate[X, CC]
 extends GenTraversableFactory[CC]
    with GenericParCompanion[CC] {
 
-  //type EPC[T, C] = collection.parallel.EnvironmentPassingCombiner[T, C]
+  //type EPC[T, C] = scala.collection.parallel.EnvironmentPassingCombiner[T, C]
 
   /** A generic implementation of the `CanCombineFrom` trait, which forwards
    *  all calls to `apply(from)` to the `genericParBuilder` method of the $coll

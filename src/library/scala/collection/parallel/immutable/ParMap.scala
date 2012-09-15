@@ -28,11 +28,11 @@ import scala.collection.GenMapLike
  *  @since 2.9
  */
 trait ParMap[K, +V]
-extends collection/*.immutable*/.GenMap[K, V]
+extends scala.collection/*.immutable*/.GenMap[K, V]
    with GenericParMapTemplate[K, V, ParMap]
    with parallel.ParMap[K, V]
    with ParIterable[(K, V)]
-   with ParMapLike[K, V, ParMap[K, V], collection.immutable.Map[K, V]]
+   with ParMapLike[K, V, ParMap[K, V], scala.collection.immutable.Map[K, V]]
 {
 self =>
 

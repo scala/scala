@@ -6,7 +6,8 @@
 **                          |/                                          **
 \*                                                                      */
 
-package scala.util.control
+package scala
+package util.control
 
 /** A trait for exceptions which, for efficiency reasons, do not
  *  fill in the stack trace.  Stack trace suppression can be disabled

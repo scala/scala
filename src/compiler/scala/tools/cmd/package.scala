@@ -9,8 +9,8 @@ package object cmd {
   def returning[T](x: T)(f: T => Unit): T = { f(x) ; x }
 
   // make some language features in this package compile without warning
-  implicit def implicitConversions = language.implicitConversions
-  implicit def postfixOps = language.postfixOps
+  implicit def implicitConversions = scala.language.implicitConversions
+  implicit def postfixOps = scala.language.postfixOps
 
   private[cmd] def debug(msg: String) = println(msg)
 

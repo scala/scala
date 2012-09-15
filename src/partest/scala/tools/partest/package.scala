@@ -30,8 +30,8 @@ package object partest {
   implicit private[partest] def temporaryPath2File(x: Path): JFile = x.jfile
   implicit private[partest] def temporaryFile2Path(x: JFile): Path = Path(x)
 
-  implicit lazy val postfixOps = language.postfixOps
-  implicit lazy val implicitConversions = language.implicitConversions
+  implicit lazy val postfixOps = scala.language.postfixOps
+  implicit lazy val implicitConversions = scala.language.implicitConversions
 
   def timed[T](body: => T): (T, Long) = {
     val t1 = System.currentTimeMillis
@@ -75,7 +75,7 @@ package object partest {
     propOrEmpty("partest.debug") == "true"
 
 
-  import language.experimental.macros
+  import scala.language.experimental.macros
 
   /**
    * `trace("".isEmpty)` will return `true` and as a side effect print the following to standard out.
