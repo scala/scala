@@ -65,6 +65,7 @@ trait AnnotationInfos extends api.Annotations { self: SymbolTable =>
    */
   abstract class ClassfileAnnotArg extends Product
   implicit val JavaArgumentTag = ClassTag[ClassfileAnnotArg](classOf[ClassfileAnnotArg])
+  case object UnmappableAnnotArg extends ClassfileAnnotArg
 
   /** Represents a compile-time Constant (`Boolean`, `Byte`, `Short`,
    *  `Char`, `Int`, `Long`, `Float`, `Double`, `String`, `java.lang.Class` or
@@ -173,11 +174,14 @@ trait AnnotationInfos extends api.Annotations { self: SymbolTable =>
       this
     }
 
-    override def toString = (
-      atp +
-      (if (!args.isEmpty) args.mkString("(", ", ", ")") else "") +
-      (if (!assocs.isEmpty) (assocs map { case (x, y) => x+" = "+y } mkString ("(", ", ", ")")) else "")
-    )
+    override def toString = completeAnnotationToString(this)
+  }
+
+  private[scala] def completeAnnotationToString(annInfo: AnnotationInfo) = {
+    import annInfo._
+    val s_args = if (!args.isEmpty) args.mkString("(", ", ", ")") else ""
+    val s_assocs = if (!assocs.isEmpty) (assocs map { case (x, y) => x+" = "+y } mkString ("(", ", ", ")")) else ""
+    s"${atp}${s_args}${s_assocs}"
   }
 
   /** Symbol annotations parsed in `Namer` (typeCompleter of
@@ -215,7 +219,7 @@ trait AnnotationInfos extends api.Annotations { self: SymbolTable =>
    *
    *  `assocs` stores arguments to classfile annotations as name-value pairs.
    */
-  sealed abstract class AnnotationInfo extends AnnotationApi {
+  abstract class AnnotationInfo extends AnnotationApi {
     def atp: Type
     def args: List[Tree]
     def assocs: List[(Name, ClassfileAnnotArg)]
