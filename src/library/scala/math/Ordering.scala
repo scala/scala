@@ -6,7 +6,8 @@
 **                          |/                                          **
 \*                                                                      */
 
-package scala.math
+package scala
+package math
 
 import java.util.Comparator
 import scala.language.{implicitConversions, higherKinds}

@@ -137,7 +137,7 @@ trait GenSeqLike[+A, +Repr] extends Any with GenIterableLike[A, Repr] with Equal
    *
    *  @usecase def indexOf(elem: A, from: Int): Int
    *    @inheritdoc
-   *    
+   *
    *    $mayNotTerminateInf
    *
    */
@@ -465,7 +465,7 @@ trait GenSeqLike[+A, +Repr] extends Any with GenIterableLike[A, Repr] with Equal
   /** Hashcodes for $Coll produce a value from the hashcodes of all the
    *  elements of the $coll.
    */
-  override def hashCode() = util.hashing.MurmurHash3.seqHash(seq)
+  override def hashCode()= scala.util.hashing.MurmurHash3.seqHash(seq)
 
   /** The equals method for arbitrary sequences. Compares this sequence to
    *  some other object.

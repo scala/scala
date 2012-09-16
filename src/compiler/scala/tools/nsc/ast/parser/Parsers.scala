@@ -468,7 +468,7 @@ self =>
 
 /* ------------- ERROR HANDLING ------------------------------------------- */
 
-    var assumedClosingParens = collection.mutable.Map(RPAREN -> 0, RBRACKET -> 0, RBRACE -> 0)
+    var assumedClosingParens = scala.collection.mutable.Map(RPAREN -> 0, RBRACKET -> 0, RBRACE -> 0)
 
     private var inFunReturnType = false
     @inline private def fromWithinReturnType[T](body: => T): T = {

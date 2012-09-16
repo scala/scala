@@ -6,12 +6,7 @@
 **                          |/                                          **
 \*                                                                      */
 
-
 package scala.collection.parallel
-
-
-
-
 
 import scala.collection.Map
 import scala.collection.GenMap
@@ -20,10 +15,6 @@ import scala.collection.generic.ParMapFactory
 import scala.collection.generic.GenericParMapTemplate
 import scala.collection.generic.GenericParMapCompanion
 import scala.collection.generic.CanCombineFrom
-
-
-
-
 
 /** A template trait for parallel maps.
  *
@@ -75,31 +66,3 @@ object ParMap extends ParMapFactory[ParMap] {
     override def default(key: A): B = d(key)
   }
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

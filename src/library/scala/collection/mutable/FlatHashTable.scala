@@ -356,8 +356,8 @@ private[collection] object FlatHashTable {
    *
    *  See SI-5293.
    */
-  final def seedGenerator = new ThreadLocal[util.Random] {
-    override def initialValue = new util.Random
+  final def seedGenerator = new ThreadLocal[scala.util.Random] {
+    override def initialValue = new scala.util.Random
   }
 
   /** The load factor for the hash table; must be < 500 (0.5)
@@ -365,7 +365,7 @@ private[collection] object FlatHashTable {
   def defaultLoadFactor: Int = 450
   final def loadFactorDenum = 1000
 
-  def sizeForThreshold(size: Int, _loadFactor: Int) = math.max(32, (size.toLong * loadFactorDenum / _loadFactor).toInt)
+  def sizeForThreshold(size: Int, _loadFactor: Int) = scala.math.max(32, (size.toLong * loadFactorDenum / _loadFactor).toInt)
 
   def newThreshold(_loadFactor: Int, size: Int) = {
     val lf = _loadFactor
@@ -397,7 +397,7 @@ private[collection] object FlatHashTable {
       //h = h + (h << 4)
       //h ^ (h >>> 10)
 
-      val improved = util.hashing.byteswap32(hcode)
+      val improved= scala.util.hashing.byteswap32(hcode)
 
       // for the remainder, see SI-5293
       // to ensure that different bits are used for different hash tables, we have to rotate based on the seed

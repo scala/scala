@@ -3413,7 +3413,7 @@ trait Typers extends Modes with Adaptations with Tags {
               else argss.head
             val annScope = annType.decls
                 .filter(sym => sym.isMethod && !sym.isConstructor && sym.isJavaDefined)
-            val names = new collection.mutable.HashSet[Symbol]
+            val names = new scala.collection.mutable.HashSet[Symbol]
             names ++= (if (isJava) annScope.iterator
                        else typedFun.tpe.params.iterator)
             val nvPairs = args map {
@@ -3627,8 +3627,8 @@ trait Typers extends Modes with Adaptations with Tags {
           while (o != owner && o != NoSymbol && !o.hasPackageFlag) o = o.owner
           o == owner && !isVisibleParameter(sym)
         }
-      var localSyms = collection.immutable.Set[Symbol]()
-      var boundSyms = collection.immutable.Set[Symbol]()
+      var localSyms = scala.collection.immutable.Set[Symbol]()
+      var boundSyms = scala.collection.immutable.Set[Symbol]()
       def isLocal(sym: Symbol): Boolean =
         if (sym == NoSymbol || sym.isRefinementClass || sym.isLocalDummy) false
         else if (owner == NoSymbol) tree exists (defines(_, sym))

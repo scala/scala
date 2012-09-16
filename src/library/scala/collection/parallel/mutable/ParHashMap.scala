@@ -40,14 +40,14 @@ import scala.collection.parallel.Task
 class ParHashMap[K, V] private[collection] (contents: HashTable.Contents[K, DefaultEntry[K, V]])
 extends ParMap[K, V]
    with GenericParMapTemplate[K, V, ParHashMap]
-   with ParMapLike[K, V, ParHashMap[K, V], collection.mutable.HashMap[K, V]]
+   with ParMapLike[K, V, ParHashMap[K, V], scala.collection.mutable.HashMap[K, V]]
    with ParHashTable[K, DefaultEntry[K, V]]
    with Serializable
 {
 self =>
   initWithContents(contents)
 
-  type Entry = collection.mutable.DefaultEntry[K, V]
+  type Entry = scala.collection.mutable.DefaultEntry[K, V]
 
   def this() = this(null)
 
@@ -57,7 +57,7 @@ self =>
 
   protected[this] override def newCombiner = ParHashMapCombiner[K, V]
 
-  override def seq = new collection.mutable.HashMap[K, V](hashTableContents)
+  override def seq = new scala.collection.mutable.HashMap[K, V](hashTableContents)
 
   def splitter = new ParHashMapIterator(1, table.length, size, table(0).asInstanceOf[DefaultEntry[K, V]])
 
@@ -302,7 +302,7 @@ extends scala.collection.parallel.BucketCombiner[(K, V), ParHashMap[K, V], Defau
     override def merge(that: FillBlocks) {
       this.result += that.result
     }
-    def shouldSplitFurther = howmany > collection.parallel.thresholdFromSize(ParHashMapCombiner.numblocks, combinerTaskSupport.parallelismLevel)
+    def shouldSplitFurther = howmany > scala.collection.parallel.thresholdFromSize(ParHashMapCombiner.numblocks, combinerTaskSupport.parallelismLevel)
   }
 
 }

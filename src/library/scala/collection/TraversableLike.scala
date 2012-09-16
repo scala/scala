@@ -501,7 +501,7 @@ trait TraversableLike[+A, +Repr] extends Any
     else sliceWithKnownDelta(n, Int.MaxValue, -n)
 
   def slice(from: Int, until: Int): Repr =
-    sliceWithKnownBound(math.max(from, 0), until)
+    sliceWithKnownBound(scala.math.max(from, 0), until)
 
   // Precondition: from >= 0, until > 0, builder already configured for building.
   private[this] def sliceInternal(from: Int, until: Int, b: Builder[A, Repr]): Repr = {
