@@ -1116,7 +1116,8 @@ trait Definitions extends api.StandardDefinitions {
 
     /** Is symbol a phantom class for which no runtime representation exists? */
     lazy val isPhantomClass = Set[Symbol](AnyClass, AnyValClass, NullClass, NothingClass)
-    lazy val magicSymbols = List(
+    /** Lists core classes that don't have underlying bytecode, but are synthesized on-the-fly in every reflection universe */
+    lazy val syntheticCoreClasses = List(
       AnnotationDefaultAttr, // #2264
       RepeatedParamClass,
       JavaRepeatedParamClass,
@@ -1127,7 +1128,10 @@ trait Definitions extends api.StandardDefinitions {
       NullClass,
       NothingClass,
       SingletonClass,
-      EqualsPatternClass,
+      EqualsPatternClass
+    )
+    /** Lists core methods that don't have underlying bytecode, but are synthesized on-the-fly in every reflection universe */
+    lazy val syntheticCoreMethods = List(
       Any_==,
       Any_!=,
       Any_equals,
@@ -1145,10 +1149,19 @@ trait Definitions extends api.StandardDefinitions {
       Object_synchronized,
       Object_isInstanceOf,
       Object_asInstanceOf,
-      String_+,
+      String_+
+    )
+    /** Lists core classes that do have underlying bytecode, but are adjusted on-the-fly in every reflection universe */
+    lazy val hijackedCoreClasses = List(
       ComparableClass,
       JavaSerializableClass
     )
+    /** Lists symbols that are synthesized or hijacked by the compiler.
+     *
+     *  Such symbols either don't have any underlying bytecode at all ("synthesized")
+     *  or get loaded from bytecode but have their metadata adjusted ("hijacked").
+     */
+    lazy val symbolsNotPresentInBytecode = syntheticCoreClasses ++ syntheticCoreMethods ++ hijackedCoreClasses
 
     /** Is the symbol that of a parent which is added during parsing? */
     lazy val isPossibleSyntheticParent = ProductClass.toSet[Symbol] + ProductRootClass + SerializableClass
@@ -1212,7 +1225,8 @@ trait Definitions extends api.StandardDefinitions {
 
     def init() {
       if (isInitialized) return
-      val forced = magicSymbols // force initialization of every symbol that is entered as a side effect
+      // force initialization of every symbol that is synthesized or hijacked by the compiler
+      val forced = symbolsNotPresentInBytecode
       isInitialized = true
     } //init
 

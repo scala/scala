@@ -5,7 +5,8 @@ package object runtime {
   // type is api.JavaUniverse because we only want to expose the `scala.reflect.api.*` subset of reflection
   lazy val universe: api.JavaUniverse = new runtime.JavaUniverse
 
-  // implementation magically hardwired to the `currentMirror` method below
+  // implementation hardwired to the `currentMirror` method below
+  // using the mechanism implemented in `scala.tools.reflect.FastTrack`
   def currentMirror: universe.Mirror = ??? // macro
 }
 
