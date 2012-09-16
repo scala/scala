@@ -1030,6 +1030,24 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
             //assert(stat.symbol != NoSymbol, stat);//debug
             val sym = stat.symbol.lazyAccessorOrSelf
             if (sym.isLocal) {
+              if (stat.symbol.isLazy &&
+                  !(sym.ownersIterator contains currentOwner)) {
+                // the following correction needs to be made for lazy accessors, which
+                // are peculiar in that they do not show up in the tree between Typers and
+                // RefChecks. This means, we have the lazy field x$lzy in the tree
+                // and it refers to a lazy accessor, but the lazy accessor itself is not
+                // in the tree until phase RefChecks. I call these "tunelled lazy accessors".
+                // Without the correction any changeOwner call
+                // on a tree containing a tunneled lazy accessor ends up
+                // with the lazy accessor having the wrong, original owner.
+                // This was the root cause for SI-6358.
+                // Hubert: Can you add a comment why we need the tunnelling?
+                // I think we all agree we'd be better off if there was
+                // no tunnelling, but I believe there was some reason why it had to be
+                // introduced.
+                log(s"correcting owner of lazy $sym, was ${sym.owner}, now $currentOwner")
+                sym.owner = currentOwner
+              }
               currentLevel.scope.enter(sym)
               symIndex(sym) = index;
             }
