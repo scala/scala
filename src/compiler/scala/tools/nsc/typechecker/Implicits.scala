@@ -1334,7 +1334,7 @@ trait Implicits {
     def wrapResult(tree: Tree): SearchResult =
       if (tree == EmptyTree) SearchFailure else new SearchResult(tree, EmptyTreeTypeSubstituter)
 
-    /** Materializes implicits of magic types (currently, manifests and tags).
+    /** Materializes implicits of predefined types (currently, manifests and tags).
      *  Will be replaced by implicit macros once we fix them.
      */
     private def materializeImplicit(pt: Type): SearchResult =
