@@ -132,7 +132,7 @@ abstract class AddInterfaces extends InfoTransform { self: Erasure =>
    *  - for every interface member of iface: its implementation method, if one is needed
    *  - every former member of iface that is implementation only
    */
-  private class LazyImplClassType(iface: Symbol) extends LazyType {
+  private class LazyImplClassType(iface: Symbol) extends LazyType with FlagAgnosticCompleter {
     /** Compute the decls of implementation class implClass,
      *  given the decls ifaceDecls of its interface.
      */

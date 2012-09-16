@@ -44,6 +44,8 @@ trait JavaMirrors extends internal.SymbolTable with api.JavaUniverse { thisUnive
   // overriden by ReflectGlobal
   def rootClassLoader: ClassLoader = this.getClass.getClassLoader
 
+  trait JavaClassCompleter extends FlagAssigningCompleter
+
   def init() = {
     definitions.AnyValClass // force it.
 
@@ -71,7 +73,7 @@ trait JavaMirrors extends internal.SymbolTable with api.JavaUniverse { thisUnive
 
     /** The lazy type for root.
      */
-    override lazy val rootLoader = new LazyType {
+    override lazy val rootLoader = new LazyType with FlagAgnosticCompleter {
       override def complete(sym: Symbol) = sym setInfo new LazyPackageType
     }
 
@@ -609,7 +611,7 @@ trait JavaMirrors extends internal.SymbolTable with api.JavaUniverse { thisUnive
      * A completer that fills in the type of a Scala type parameter from the bounds of a Java type variable.
      *  @param   jtvar   The Java type variable
      */
-    private class TypeParamCompleter(jtvar: jTypeVariable[_ <: GenericDeclaration]) extends LazyType {
+    private class TypeParamCompleter(jtvar: jTypeVariable[_ <: GenericDeclaration]) extends LazyType with FlagAgnosticCompleter {
       override def load(sym: Symbol) = complete(sym)
       override def complete(sym: Symbol) = {
         sym setInfo TypeBounds.upper(glb(jtvar.getBounds.toList map typeToScala map objToAny))
@@ -634,7 +636,7 @@ trait JavaMirrors extends internal.SymbolTable with api.JavaUniverse { thisUnive
      *  @param   module  The Scala companion object for which info is copied
      *  @param   jclazz  The Java class
      */
-    private class FromJavaClassCompleter(clazz: Symbol, module: Symbol, jclazz: jClass[_]) extends LazyType {
+    private class FromJavaClassCompleter(clazz: Symbol, module: Symbol, jclazz: jClass[_]) extends LazyType with JavaClassCompleter with FlagAssigningCompleter {
 
       /** used to avoid cycles while initializing classes */
       private var parentsLevel = 0
@@ -710,7 +712,7 @@ trait JavaMirrors extends internal.SymbolTable with api.JavaUniverse { thisUnive
         }
       }
 
-      class LazyPolyType(override val typeParams: List[Symbol]) extends LazyType {
+      class LazyPolyType(override val typeParams: List[Symbol]) extends LazyType with FlagAgnosticCompleter {
         override def complete(sym: Symbol) {
           completeRest()
         }
