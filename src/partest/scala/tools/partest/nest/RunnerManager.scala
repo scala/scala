@@ -217,6 +217,7 @@ class RunnerManager(kind: String, val fileManager: FileManager, params: TestRunP
         "-Dpartest.output="+outDir.getAbsolutePath,
         "-Dpartest.lib="+LATEST_LIB,
         "-Dpartest.reflect="+LATEST_REFLECT,
+        "-Dpartest.comp="+LATEST_COMP,
         "-Dpartest.cwd="+outDir.getParent,
         "-Dpartest.test-path="+testFullPath,
         "-Dpartest.testname="+fileBase,

@@ -9,6 +9,7 @@ import java.lang.reflect.{
   Method => jMethod, Constructor => jConstructor, Modifier => jModifier, Field => jField,
   Member => jMember, Type => jType, TypeVariable => jTypeVariable, Array => jArray,
   GenericDeclaration, GenericArrayType, ParameterizedType, WildcardType, AnnotatedElement }
+import java.lang.annotation.{Annotation => jAnnotation}
 import java.io.IOException
 import internal.MissingRequirementError
 import internal.pickling.ByteCodecs
@@ -134,6 +135,53 @@ trait JavaMirrors extends internal.SymbolTable with api.JavaUniverse { thisUnive
     private def ErrorSetImmutableField(sym: Symbol) = throw new ScalaReflectionException(s"cannot set an immutable field ${sym.name}")
     private def ErrorNotConstructor(sym: Symbol, owner: Symbol) = throw new ScalaReflectionException(s"expected a constructor of $owner, you provided $sym")
     private def ErrorFree(member: Symbol, freeType: Symbol) = throw new ScalaReflectionException(s"cannot reflect ${member.kindString} ${member.name}, because it's a member of a weak type ${freeType.name}")
+
+    /** Helper functions for extracting typed values from a (Class[_], Any)
+     *  representing an annotation argument.
+     */
+    private object toAnnotArg {
+      val        StringClass = classOf[String]
+      val         ClassClass = classOf[jClass[_]]
+      object  PrimitiveClass { def unapply(x: jClass[_]) = x.isPrimitive }
+      object       EnumClass { def unapply(x: jClass[_]) = x.isEnum }
+      object      ArrayClass { def unapply(x: jClass[_]) = x.isArray }
+      object AnnotationClass { def unapply(x: jClass[_]) = x.isAnnotation }
+
+      object ConstantArg {
+        def enumToSymbol(enum: Enum[_]): Symbol =
+          classToScala(enum.getClass).typeSignature.declaration(enum.name: TermName)
+
+        def unapply(schemaAndValue: (jClass[_], Any)): Option[Any] = schemaAndValue match {
+          case (StringClass | PrimitiveClass(), value) => Some(value)
+          case (ClassClass, value: jClass[_])          => Some(classToScala(value).toType)
+          case (EnumClass(), value: Enum[_])           => Some(enumToSymbol(value))
+          case _                                       => None
+        }
+      }
+      def apply(schemaAndValue: (jClass[_], Any)): ClassfileAnnotArg = schemaAndValue match {
+        case ConstantArg(value)                      => LiteralAnnotArg(Constant(value))
+        case (clazz @ ArrayClass(), value: Array[_]) => ArrayAnnotArg(value map (x => apply(ScalaRunTime.arrayElementClass(clazz) -> x)))
+        case (AnnotationClass(), value: jAnnotation) => NestedAnnotArg(JavaAnnotationProxy(value))
+        case _                                       => UnmappableAnnotArg
+      }
+    }
+    private case class JavaAnnotationProxy(jann: jAnnotation) extends AnnotationInfo {
+      override val atp: Type = classToScala(jann.annotationType).toType
+      override val args: List[Tree] = Nil
+      override def original: Tree = EmptyTree
+      override def setOriginal(t: Tree): this.type = throw new Exception("setOriginal inapplicable for " + this)
+      override def pos: Position = NoPosition
+      override def setPos(pos: Position): this.type = throw new Exception("setPos inapplicable for " + this)
+      override def toString = completeAnnotationToString(this)
+
+      // todo. find out the exact order of assocs as they are written in the class file
+      // currently I'm simply sorting the methods to guarantee stability of the output
+      override lazy val assocs: List[(Name, ClassfileAnnotArg)] = (
+        jann.annotationType.getDeclaredMethods.sortBy(_.getName).toList map (m =>
+          (m.getName: TermName) -> toAnnotArg(m.getReturnType -> m.invoke(jann))
+        )
+      )
+    }
 
     def reflect[T: ClassTag](obj: T): InstanceMirror = new JavaInstanceMirror(obj)
 
@@ -572,7 +620,7 @@ trait JavaMirrors extends internal.SymbolTable with api.JavaUniverse { thisUnive
      *  Note: If `sym` is a method or constructor, its parameter annotations are copied as well.
      */
     private def copyAnnotations(sym: Symbol, jann: AnnotatedElement) {
-      // to do: implement
+      sym setAnnotations (jann.getAnnotations map JavaAnnotationProxy).toList
     }
 
     /**
@@ -611,6 +659,7 @@ trait JavaMirrors extends internal.SymbolTable with api.JavaUniverse { thisUnive
       }
 
       override def complete(sym: Symbol): Unit = {
+        if (jclazz.isEnum) throw new ScalaReflectionException("implementation restriction: Java enums are not supported")
         load(sym)
         completeRest()
       }
