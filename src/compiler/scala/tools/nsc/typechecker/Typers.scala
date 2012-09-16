@@ -1984,18 +1984,21 @@ trait Typers extends Modes with Adaptations with Tags {
         case PolyType(_, restpe)       => restpe
         case _                         => NoType
       }
-
+      def failStruct(what: String) =
+        fail(s"Parameter type in structural refinement may not refer to $what")
       for (paramType <- tp.paramTypes) {
         val sym = paramType.typeSymbol
 
         if (sym.isAbstractType) {
           if (!sym.hasTransOwner(meth.owner))
-            fail("Parameter type in structural refinement may not refer to an abstract type defined outside that refinement")
+            failStruct("an abstract type defined outside that refinement")
           else if (!sym.hasTransOwner(meth))
-            fail("Parameter type in structural refinement may not refer to a type member of that refinement")
+            failStruct("a type member of that refinement")
         }
+        if (sym.isDerivedValueClass)
+          failStruct("a user-defined value class")
         if (paramType.isInstanceOf[ThisType] && sym == meth.owner)
-          fail("Parameter type in structural refinement may not refer to the type of that refinement (self type)")
+          failStruct("the type of that refinement (self type)")
       }
     }
     def typedUseCase(useCase: UseCase) {
