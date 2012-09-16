@@ -1107,10 +1107,12 @@ trait Typers extends Modes with Adaptations with Tags {
         case _ =>
           def applyPossible = {
             def applyMeth = member(adaptToName(tree, nme.apply), nme.apply)
-            if ((mode & TAPPmode) != 0)
-              tree.tpe.typeParams.isEmpty && applyMeth.filter(!_.tpe.typeParams.isEmpty) != NoSymbol
-            else
-              applyMeth.filter(_.tpe.paramSectionCount > 0) != NoSymbol
+            dyna.acceptsApplyDynamic(tree.tpe) || (
+              if ((mode & TAPPmode) != 0)
+                tree.tpe.typeParams.isEmpty && applyMeth.filter(!_.tpe.typeParams.isEmpty) != NoSymbol
+              else
+                applyMeth.filter(_.tpe.paramSectionCount > 0) != NoSymbol
+            )
           }
           if (tree.isType)
             adaptType()
@@ -3842,11 +3844,15 @@ trait Typers extends Modes with Adaptations with Tags {
           }
           @inline def hasNamedArg(as: List[Tree]) = as.collectFirst{case AssignOrNamedArg(lhs, rhs) =>}.nonEmpty
 
+          def desugaredApply = tree match {
+            case Select(`qual`, nme.apply) => true
+            case _ => false
+          }
           // note: context.tree includes at most one Apply node
           // thus, we can't use it to detect we're going to receive named args in expressions such as:
           //   qual.sel(a)(a2, arg2 = "a2")
           val oper = outer match {
-            case Apply(`tree`, as) =>
+            case Apply(q, as) if q == tree || desugaredApply =>
               val oper =
                 if (hasNamedArg(as))  nme.applyDynamicNamed
                 else                  nme.applyDynamic
