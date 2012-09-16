@@ -170,6 +170,10 @@ trait Symbols extends base.Symbols { self: Universe =>
      */
     def isJava: Boolean
 
+    /** Does this symbol represent an implicit value, definition, class or parameter?
+     */
+    def isImplicit: Boolean
+
     /******************* helpers *******************/
 
     /** ...
@@ -221,10 +225,6 @@ trait Symbols extends base.Symbols { self: Universe =>
      *  If yes, `isMethod` is false, and the list of the enclosed alternatives can be found out via `alternatives`.
      */
     def isOverloaded   : Boolean
-
-    /** Does this symbol represent an implicit value, definition or parameter?
-     */
-    def isImplicit: Boolean
 
     /** Does this symbol represent a lazy value?
      */
