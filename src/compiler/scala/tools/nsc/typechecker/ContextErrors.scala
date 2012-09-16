@@ -720,7 +720,8 @@ trait ContextErrors {
               Some(EOL + stackTraceString(realex))
             }
           } catch {
-            // if the magic above goes boom, just fall back to uninformative, but better than nothing, getMessage
+            // the code above tries various tricks to detect the relevant portion of the stack trace
+            // if these tricks fail, just fall back to uninformative, but better than nothing, getMessage
             case NonFatal(ex) =>
               macroLogVerbose("got an exception when processing a macro generated exception\n" +
                               "offender = " + stackTraceString(realex) + "\n" +

@@ -61,6 +61,7 @@ abstract class Universe extends Symbols
    *    * Since reified trees can be compiled outside of the scope they've been created in,
    *      special measures are taken to ensure that all members accessed in the reifee remain visible
    */
-  // implementation is magically hardwired to `scala.reflect.reify.Taggers`
+  // implementation is hardwired to `scala.reflect.reify.Taggers`
+  // using the mechanism implemented in `scala.tools.reflect.FastTrack`
   def reify[T](expr: T): Expr[T] = ??? // macro
 }

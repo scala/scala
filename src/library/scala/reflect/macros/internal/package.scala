@@ -4,7 +4,8 @@ import scala.reflect.base.{Universe => BaseUniverse}
 import scala.reflect.ClassTag
 
 // anchors for materialization macros emitted during tag materialization in Implicits.scala
-// implementation is magically hardwired into `scala.reflect.reify.Taggers`
+// implementation is hardwired into `scala.reflect.reify.Taggers`
+// using the mechanism implemented in `scala.tools.reflect.FastTrack`
 // todo. once we have implicit macros for tag generation, we can remove these anchors
 package object internal {
   private[scala] def materializeClassTag[T](u: BaseUniverse): ClassTag[T] = ??? // macro
