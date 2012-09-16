@@ -9,6 +9,7 @@ import java.lang.reflect.{
   Method => jMethod, Constructor => jConstructor, Modifier => jModifier, Field => jField,
   Member => jMember, Type => jType, TypeVariable => jTypeVariable, Array => jArray,
   GenericDeclaration, GenericArrayType, ParameterizedType, WildcardType, AnnotatedElement }
+import java.lang.annotation.{Annotation => jAnnotation}
 import java.io.IOException
 import internal.MissingRequirementError
 import internal.pickling.ByteCodecs
@@ -571,8 +572,34 @@ trait JavaMirrors extends internal.SymbolTable with api.JavaUniverse { thisUnive
      *  Pre: `sym` is already initialized with a concrete type.
      *  Note: If `sym` is a method or constructor, its parameter annotations are copied as well.
      */
-    private def copyAnnotations(sym: Symbol, jann: AnnotatedElement) {
-      // to do: implement
+    private def copyAnnotations(sym: Symbol, jane: AnnotatedElement) {
+      def toAnnotationInfo(jann: jAnnotation): AnnotationInfo = AnnotationInfo(
+        classToScala(jann.annotationType).toType,
+        Nil,
+        // todo. find out the exact order of assocs as they are written in the class file
+        // currently I'm simply sorting the methods to guarantee stability of the output
+        jann.annotationType.getDeclaredMethods.sortBy(_.getName).toList map (m => {
+          def toAnnotArg(value: Any, schema: jClass[_]): ClassfileAnnotArg = {
+            def valueIsConstant =
+              schema.isPrimitive || schema == classOf[String] || schema == classOf[jClass[_]] || schema.isEnum
+
+            def valueAsConstant =
+              if (value == null) null
+              else if (schema.isPrimitive || value.getClass == classOf[String]) value
+              else if (schema == classOf[jClass[_]]) classToScala(value.asInstanceOf[jClass[_]]).toType
+              else if (schema.isEnum) classToScala(value.getClass).typeSignature.declaration(newTermName(value.asInstanceOf[Enum[_]].name))
+              else sys.error(s"not a constant: $value")
+
+            if (valueIsConstant) LiteralAnnotArg(Constant(valueAsConstant))
+            else if (schema.isArray) ArrayAnnotArg(value.asInstanceOf[Array[_]] map (x => toAnnotArg(x, ScalaRunTime.arrayElementClass(schema))))
+            else if (schema.isAnnotation) NestedAnnotArg(toAnnotationInfo(value.asInstanceOf[jAnnotation]))
+            else UnmappableAnnotArg
+          }
+
+          newTermName(m.getName) -> toAnnotArg(m.invoke(jann), m.getReturnType)
+        }))
+
+      sym setAnnotations (jane.getAnnotations map (jann => AnnotationInfo.lazily(toAnnotationInfo(jann)))).toList
     }
 
     /**
@@ -611,6 +638,7 @@ trait JavaMirrors extends internal.SymbolTable with api.JavaUniverse { thisUnive
       }
 
       override def complete(sym: Symbol): Unit = {
+        if (jclazz.isEnum) throw new ScalaReflectionException("implementation restriction: Java enums are not supported")
         load(sym)
         completeRest()
       }
