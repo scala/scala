@@ -67,7 +67,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     def isParamWithDefault: Boolean = this.hasDefault
     def isByNameParam: Boolean = this.isValueParameter && (this hasFlag BYNAMEPARAM)
     def isImplementationArtifact: Boolean = (this hasFlag BRIDGE) || (this hasFlag VBRIDGE) || (this hasFlag ARTIFACT)
-    def isJava: Boolean = this hasFlag JAVA
+    def isJava: Boolean = isJavaDefined
     def isVal: Boolean = isTerm && !isModule && !isMethod && !isMutable
     def isVar: Boolean = isTerm && !isModule && !isMethod && isMutable
 
@@ -489,14 +489,12 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     def isAliasType    = false
     def isAbstractType = false
     def isSkolem       = false
-    def isMacro        = this hasFlag MACRO
 
     /** A Type, but not a Class. */
     def isNonClassType = false
 
     /** The bottom classes are Nothing and Null, found in Definitions. */
     def isBottomClass  = false
-    def isSpecialized = this hasFlag SPECIALIZED
 
     /** These are all tests for varieties of ClassSymbol, which has these subclasses:
      *  - ModuleClassSymbol

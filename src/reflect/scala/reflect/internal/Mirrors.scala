@@ -10,7 +10,7 @@ package internal
 import Flags._
 
 trait Mirrors extends api.Mirrors {
-  self: SymbolTable =>
+  thisUniverse: SymbolTable =>
 
   override type Mirror >: Null <: RootsBase
 
@@ -70,7 +70,7 @@ trait Mirrors extends api.Mirrors {
 
     protected def mirrorMissingHook(owner: Symbol, name: Name): Symbol = NoSymbol
 
-    protected def universeMissingHook(owner: Symbol, name: Name): Symbol = self.missingHook(owner, name)
+    protected def universeMissingHook(owner: Symbol, name: Name): Symbol = thisUniverse.missingHook(owner, name)
 
     private[scala] def missingHook(owner: Symbol, name: Name): Symbol = mirrorMissingHook(owner, name) orElse universeMissingHook(owner, name)
 
