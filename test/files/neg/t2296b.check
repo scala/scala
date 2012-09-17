@@ -1,0 +1,5 @@
+S_2.scala:6: error: Implementation restriction: trait S accesses protected method foo inside a concrete trait method.
+Add an accessor in a class extending class J_1 as a workaround.
+      foo()
+      ^
+one error found
