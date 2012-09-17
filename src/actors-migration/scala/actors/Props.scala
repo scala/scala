@@ -1,4 +1,6 @@
-package scala.actors
+package scala.actors.migration
+
+import scala.actors._
 
 /**
  * ActorRef configuration object. It represents the minimal subset of Akka Props class.
