@@ -116,7 +116,7 @@ trait GenSeqLike[+A, +Repr] extends Any with GenIterableLike[A, Repr] with Equal
    *
    *  @param   elem   the element value to search for.
    *  @tparam  B      the type of the element `elem`.
-   *  @return  the index of the first element of this $coll that is equal (wrt `==`)
+   *  @return  the index of the first element of this $coll that is equal (as determined by `==`)
    *           to `elem`, or `-1`, if none exists.
    *
    *  @usecase def indexOf(elem: A): Int
@@ -132,7 +132,7 @@ trait GenSeqLike[+A, +Repr] extends Any with GenIterableLike[A, Repr] with Equal
    *  @param   elem   the element value to search for.
    *  @tparam  B      the type of the element `elem`.
    *  @param   from   the start index
-   *  @return  the index `>= from` of the first element of this $coll that is equal (wrt `==`)
+   *  @return  the index `>= from` of the first element of this $coll that is equal (as determined by `==`)
    *           to `elem`, or `-1`, if none exists.
    *
    *  @usecase def indexOf(elem: A, from: Int): Int
@@ -147,7 +147,7 @@ trait GenSeqLike[+A, +Repr] extends Any with GenIterableLike[A, Repr] with Equal
    *
    *  @param   elem   the element value to search for.
    *  @tparam  B      the type of the element `elem`.
-   *  @return  the index of the last element of this $coll that is equal (wrt `==`)
+   *  @return  the index of the last element of this $coll that is equal (as determined by `==`)
    *           to `elem`, or `-1`, if none exists.
    *
    *  @usecase def lastIndexOf(elem: A): Int
@@ -163,7 +163,7 @@ trait GenSeqLike[+A, +Repr] extends Any with GenIterableLike[A, Repr] with Equal
    *  @param   elem   the element value to search for.
    *  @param   end    the end index.
    *  @tparam  B      the type of the element `elem`.
-   *  @return  the index `<= end` of the last element of this $coll that is equal (wrt `==`)
+   *  @return  the index `<= end` of the last element of this $coll that is equal (as determined by `==`)
    *           to `elem`, or `-1`, if none exists.
    *
    *  @usecase def lastIndexOf(elem: A, end: Int): Int
