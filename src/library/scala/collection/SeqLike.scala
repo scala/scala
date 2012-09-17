@@ -6,13 +6,14 @@
 **                          |/                                          **
 \*                                                                      */
 
-package scala.collection
+package scala
+package collection
 
 import mutable.{ ListBuffer, ArraySeq }
 import immutable.{ List, Range }
 import generic._
 import parallel.ParSeq
-import scala.math.Ordering
+import scala.math.{ min, max, Ordering }
 
 /** A template trait for sequences of type `Seq[A]`
  *  $seqInfo

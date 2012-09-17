@@ -336,7 +336,7 @@ trait Macros extends scala.tools.reflect.FastTrack with Traces {
           val tsym = getMember(MacroContextClass, if (isType) tpnme.WeakTypeTag else tpnme.Expr)
           typeRef(singleType(NoPrefix, ctxParam), tsym, List(sigma(origTpe)))
         }
-      val paramCache = collection.mutable.Map[Symbol, Symbol]()
+      val paramCache = scala.collection.mutable.Map[Symbol, Symbol]()
       def param(tree: Tree): Symbol =
         paramCache.getOrElseUpdate(tree.symbol, {
           val sym = tree.symbol
@@ -827,11 +827,11 @@ trait Macros extends scala.tools.reflect.FastTrack with Traces {
    *    2) undetparams (sym.isTypeParameter && !sym.isSkolem)
    */
   var hasPendingMacroExpansions = false
-  private val delayed = perRunCaches.newWeakMap[Tree, collection.mutable.Set[Int]]
+  private val delayed = perRunCaches.newWeakMap[Tree, scala.collection.mutable.Set[Int]]
   private def isDelayed(expandee: Tree) = delayed contains expandee
   private def calculateUndetparams(expandee: Tree): scala.collection.mutable.Set[Int] =
     delayed.get(expandee).getOrElse {
-      val calculated = collection.mutable.Set[Symbol]()
+      val calculated = scala.collection.mutable.Set[Symbol]()
       expandee foreach (sub => {
         def traverse(sym: Symbol) = if (sym != null && (undetparams contains sym.id)) calculated += sym
         if (sub.symbol != null) traverse(sub.symbol)

@@ -526,8 +526,8 @@ trait Infer {
      *  and the code is not exactly readable.
      */
     object AdjustedTypeArgs {
-      val Result = collection.mutable.LinkedHashMap
-      type Result = collection.mutable.LinkedHashMap[Symbol, Option[Type]]
+      val Result = scala.collection.mutable.LinkedHashMap
+      type Result = scala.collection.mutable.LinkedHashMap[Symbol, Option[Type]]
 
       def unapply(m: Result): Some[(List[Symbol], List[Type])] = Some(toLists(
         (m collect {case (p, Some(a)) => (p, a)}).unzip  ))

@@ -1302,7 +1302,7 @@ trait Scanners extends ScannersCommon {
   }
 
   class ParensAnalyzer(unit: CompilationUnit, patches: List[BracePatch]) extends UnitScanner(unit, patches) {
-    var balance = collection.mutable.Map(RPAREN -> 0, RBRACKET -> 0, RBRACE -> 0)
+    var balance = scala.collection.mutable.Map(RPAREN -> 0, RBRACKET -> 0, RBRACE -> 0)
 
     init()
 
@@ -1317,7 +1317,7 @@ trait Scanners extends ScannersCommon {
       var lineCount = 1
       var lastOffset = 0
       var indent = 0
-      val oldBalance = collection.mutable.Map[Int, Int]()
+      val oldBalance = scala.collection.mutable.Map[Int, Int]()
       def markBalance() = for ((k, v) <- balance) oldBalance(k) = v
       markBalance()
 

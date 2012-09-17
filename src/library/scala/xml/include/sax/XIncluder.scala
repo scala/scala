@@ -62,7 +62,7 @@ class XIncluder(outs: OutputStream, encoding: String) extends ContentHandler wit
         val value = atts.getValue(i);
         // @todo Need to use character references if the encoding
         // can't support the character
-        out.write(xml.Utility.escape(value))
+        out.write(scala.xml.Utility.escape(value))
         out.write("'");
         i += 1
       }

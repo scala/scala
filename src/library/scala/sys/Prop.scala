@@ -6,7 +6,8 @@
 **                          |/                                          **
 \*                                                                      */
 
-package scala.sys
+package scala
+package sys
 
 /** A lightweight interface wrapping a property contained in some
  *  unspecified map.  Generally it'll be the system properties but this

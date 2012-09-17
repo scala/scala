@@ -7,7 +7,8 @@
 \*                                                                      */
 
 
-package scala.collection.parallel.mutable
+package scala
+package collection.parallel.mutable
 
 
 
@@ -665,7 +666,7 @@ self =>
       val fp = howmany / 2
       List(new Map(f, targetarr, offset, fp), new Map(f, targetarr, offset + fp, howmany - fp))
     }
-    def shouldSplitFurther = howmany > collection.parallel.thresholdFromSize(length, tasksupport.parallelismLevel)
+    def shouldSplitFurther = howmany > scala.collection.parallel.thresholdFromSize(length, tasksupport.parallelismLevel)
   }
 
   /* serialization */

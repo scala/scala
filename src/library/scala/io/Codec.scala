@@ -91,7 +91,7 @@ object Codec extends LowPriorityCodecImplicits {
    *  as an accident, with any anomalies considered "not a bug".
    */
   def defaultCharsetCodec                   = apply(Charset.defaultCharset)
-  def fileEncodingCodec                     = apply(util.Properties.encodingString)
+  def fileEncodingCodec                     = apply(scala.util.Properties.encodingString)
   def default                               = defaultCharsetCodec
 
   def apply(encoding: String): Codec        = new Codec(Charset forName encoding)

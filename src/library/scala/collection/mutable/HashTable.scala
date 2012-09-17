@@ -401,7 +401,7 @@ private[collection] object HashTable {
        *
        * For performance reasons, we avoid this improvement.
        * */
-      val i = util.hashing.byteswap32(hcode)
+      val i= scala.util.hashing.byteswap32(hcode)
 
       /* Jenkins hash
        * for range 0-10000, output has the msb set to zero */

@@ -6,7 +6,6 @@
 **                          |/                                          **
 \*                                                                      */
 
-
 package scala.xml
 package dtd
 
@@ -21,10 +20,10 @@ object ContentModelParser extends Scanner { // a bit too permissive concerning #
   def accept(tok: Int) = {
     if (token != tok) {
       if ((tok == STAR) && (token == END))                  // common mistake
-        sys.error("in DTDs, \n"+
+        scala.sys.error("in DTDs, \n"+
               "mixed content models must be like (#PCDATA|Name|Name|...)*");
       else
-        sys.error("expected "+token2string(tok)+
+        scala.sys.error("expected "+token2string(tok)+
               ", got unexpected token:"+token2string(token));
     }
     nextToken
@@ -45,7 +44,7 @@ object ContentModelParser extends Scanner { // a bit too permissive concerning #
     case NAME => value match {
       case "ANY"   => ANY
       case "EMPTY" => EMPTY
-      case _       => sys.error("expected ANY, EMPTY or '(' instead of " + value );
+      case _       => scala.sys.error("expected ANY, EMPTY or '(' instead of " + value );
     }
     case LPAREN =>
 
@@ -65,12 +64,12 @@ object ContentModelParser extends Scanner { // a bit too permissive concerning #
           accept( STAR );
           res
         case _ =>
-          sys.error("unexpected token:" + token2string(token) );
+          scala.sys.error("unexpected token:" + token2string(token) );
         }
       }
 
     case _ =>
-      sys.error("unexpected token:" + token2string(token) );
+      scala.sys.error("unexpected token:" + token2string(token) );
     }
   //                                  sopt ::= S?
   def sOpt() = if( token == S ) nextToken;
@@ -118,12 +117,12 @@ object ContentModelParser extends Scanner { // a bit too permissive concerning #
   def particle = token match {
     case LPAREN => nextToken; sOpt; regexp;
     case NAME   => val a = Letter(ElemName(value)); nextToken; maybeSuffix(a)
-    case _      => sys.error("expected '(' or Name, got:"+token2string(token));
+    case _      => scala.sys.error("expected '(' or Name, got:"+token2string(token));
   }
 
   //                                     atom ::= name
   def atom = token match {
     case NAME   => val a = Letter(ElemName(value)); nextToken; a
-    case _      => sys.error("expected Name, got:"+token2string(token));
+    case _      => scala.sys.error("expected Name, got:"+token2string(token));
   }
 }
