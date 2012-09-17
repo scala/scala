@@ -148,8 +148,10 @@ trait JavaMirrors extends internal.SymbolTable with api.JavaUniverse { thisUnive
       object AnnotationClass { def unapply(x: jClass[_]) = x.isAnnotation }
 
       object ConstantArg {
-        def enumToSymbol(enum: Enum[_]): Symbol =
-          classToScala(enum.getClass).typeSignature.declaration(enum.name: TermName)
+        def enumToSymbol(enum: Enum[_]): Symbol = {
+          val staticPartOfEnum = classToScala(enum.getClass).companionSymbol
+          staticPartOfEnum.typeSignature.declaration(enum.name: TermName)
+        }
 
         def unapply(schemaAndValue: (jClass[_], Any)): Option[Any] = schemaAndValue match {
           case (StringClass | PrimitiveClass(), value) => Some(value)
