@@ -320,13 +320,7 @@ def unbox(x: java.lang.Object): @name@ = @unboxImpl@
 override def toString = "object scala.@name@"
 """
 
-  def nonUnitCompanions = """
-/** A highly reusable empty array, useful for avoiding
- *  allocations when you need one.
- *
- *  @return     a constant 0-length Array[@name@]
- */
-final val emptyArray = new Array[@name@](0)"""
+  def nonUnitCompanions = ""  // todo
 
   def cardinalCompanion = """
 /** The smallest value representable as a @name@.
