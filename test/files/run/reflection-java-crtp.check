@@ -14,7 +14,7 @@ scala>     // make sure that the E's in Enum<E extends Enum<E>> are represented 
 scala>     val e1 = enum.typeParams(0).asType
 e1: reflect.runtime.universe.TypeSymbol = type E
 
-scala>     val TypeBounds(_, ExistentialType(_, TypeRef(_, _, List(TypeRef(_, e2: TypeSymbol, _))))) = e1.typeSignature
+scala>     val TypeBounds(_, TypeRef(_, _, List(TypeRef(_, e2: TypeSymbol, _)))) = e1.typeSignature
 e2: reflect.runtime.universe.TypeSymbol = type E
 
 scala>     println(e1 eq e2)

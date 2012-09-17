@@ -7,7 +7,7 @@ object Test extends ReplTest {
     val enum = typeOf[SimpleEnumeration].baseClasses(1).asClass
     // make sure that the E's in Enum<E extends Enum<E>> are represented by the same symbol
     val e1 = enum.typeParams(0).asType
-    val TypeBounds(_, ExistentialType(_, TypeRef(_, _, List(TypeRef(_, e2: TypeSymbol, _))))) = e1.typeSignature
+    val TypeBounds(_, TypeRef(_, _, List(TypeRef(_, e2: TypeSymbol, _)))) = e1.typeSignature
     println(e1 eq e2)
   """
 

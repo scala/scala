@@ -1028,7 +1028,7 @@ trait JavaMirrors extends internal.SymbolTable with api.JavaUniverse { thisUnive
         val pre = sym.owner.thisType
         val args0 = japplied.getActualTypeArguments
         val (args, bounds) = targsToScala(pre.typeSymbol, args0.toList)
-        ExistentialType(bounds, typeRef(pre, sym, args))
+        newExistentialType(bounds, typeRef(pre, sym, args))
       case jarr: GenericArrayType =>
         arrayType(typeToScala(jarr.getGenericComponentType))
       case jtvar: jTypeVariable[_] =>
