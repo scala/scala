@@ -659,7 +659,6 @@ trait JavaMirrors extends internal.SymbolTable with api.JavaUniverse { thisUnive
       }
 
       override def complete(sym: Symbol): Unit = {
-        if (jclazz.isEnum) throw new ScalaReflectionException("implementation restriction: Java enums are not supported")
         load(sym)
         completeRest()
       }
@@ -1024,10 +1023,9 @@ trait JavaMirrors extends internal.SymbolTable with api.JavaUniverse { thisUnive
           rawToExistential(typeRef(clazz.owner.thisType, clazz, List()))
         }
       case japplied: ParameterizedType =>
-        val (pre, sym) = typeToScala(japplied.getRawType) match {
-          case ExistentialType(tparams, TypeRef(pre, sym, _)) => (pre, sym)
-          case TypeRef(pre, sym, _)                           => (pre, sym)
-        }
+        // http://stackoverflow.com/questions/5767122/parameterizedtype-getrawtype-returns-j-l-r-type-not-class
+        val sym = classToScala(japplied.getRawType.asInstanceOf[jClass[_]])
+        val pre = sym.owner.thisType
         val args0 = japplied.getActualTypeArguments
         val (args, bounds) = targsToScala(pre.typeSymbol, args0.toList)
         ExistentialType(bounds, typeRef(pre, sym, args))
