@@ -241,6 +241,7 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
               && !sym.owner.isTrait
               && (sym.owner.enclosingPackageClass != currentPackage)
               && (qual.symbol.info.member(sym.name) ne NoSymbol)
+              && !needsProtectedAccessor(sym, tree.pos)
             )
             if (shouldEnsureAccessor) {
               log("Ensuring accessor for call to protected " + sym.fullLocationString + " from " + currentClass)
@@ -461,7 +462,15 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
           )
         true
       }
-      isCandidate && !host.isPackageClass && !isSelfType 
+      def isJavaProtected = host.isTrait && sym.isJavaDefined && {
+        restrictionError(pos, unit,
+          """|%s accesses protected %s inside a concrete trait method.
+             |Add an accessor in a class extending %s as a workaround.""".stripMargin.format(
+                clazz, sym, sym.enclClass)
+        )
+        true
+      }
+      isCandidate && !host.isPackageClass && !isSelfType && !isJavaProtected
     }
 
     /** Return the innermost enclosing class C of referencingClass for which either
