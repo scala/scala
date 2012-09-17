@@ -135,12 +135,5 @@ object Boolean extends AnyValCompanion {
    */
   override def toString = "object scala.Boolean"
 
-
-  /** A highly reusable empty array, useful for avoiding
-   *  allocations when you need one.
-   *
-   *  @return     a constant 0-length Array[Boolean]
-   */
-  final val emptyArray = new Array[Boolean](0)
 }
 

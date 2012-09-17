@@ -625,14 +625,6 @@ object Short extends AnyValCompanion {
    */
   override def toString = "object scala.Short"
 
-
-  /** A highly reusable empty array, useful for avoiding
-   *  allocations when you need one.
-   *
-   *  @return     a constant 0-length Array[Short]
-   */
-  final val emptyArray = new Array[Short](0)
-  
   /** Language mandated coercions from Short to "wider" types.
    */
   implicit def short2int(x: Short): Int = x.toInt

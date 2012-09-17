@@ -400,13 +400,5 @@ object Double extends AnyValCompanion {
   /** The String representation of the scala.Double companion object.
    */
   override def toString = "object scala.Double"
-
-
-  /** A highly reusable empty array, useful for avoiding
-   *  allocations when you need one.
-   *
-   *  @return     a constant 0-length Array[Double]
-   */
-  final val emptyArray = new Array[Double](0)
 }
 
