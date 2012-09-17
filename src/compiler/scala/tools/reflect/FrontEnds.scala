@@ -36,6 +36,16 @@ trait FrontEnds extends scala.reflect.api.FrontEnds {
 
     def displayPrompt(): Unit =
       frontEnd.interactive()
+
+    override def flush(): Unit = {
+      super.flush()
+      frontEnd.flush()
+    }
+
+    override def reset(): Unit = {
+      super.reset()
+      frontEnd.reset()
+    }
   }
 
   def wrapFrontEnd(frontEnd: FrontEnd): Reporter = new FrontEndToReporterProxy(frontEnd) {
