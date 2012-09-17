@@ -121,42 +121,26 @@ abstract class GenICode extends SubComponent  {
         m.native = m.symbol.hasAnnotation(definitions.NativeAttr)
 
         if (!m.isAbstractMethod && !m.native) {
-          if (m.symbol.isAccessor && m.symbol.accessed.hasStaticAnnotation) {
-            // in companion object accessors to @static fields, we access the static field directly
-            val hostClass = m.symbol.owner.companionClass
-            val staticfield = hostClass.info.findMember(m.symbol.accessed.name, NoFlags, NoFlags, false)
-            
-            if (m.symbol.isGetter) {
-              ctx1.bb.emit(LOAD_FIELD(staticfield, true) setHostClass hostClass, tree.pos)
-              ctx1.bb.closeWith(RETURN(m.returnType))
-            } else if (m.symbol.isSetter) {
-              ctx1.bb.emit(LOAD_LOCAL(m.locals.head), tree.pos)
-              ctx1.bb.emit(STORE_FIELD(staticfield, true), tree.pos)
-              ctx1.bb.closeWith(RETURN(m.returnType))
-            } else assert(false, "unreachable")
-          } else {
-            ctx1 = genLoad(rhs, ctx1, m.returnType);
+          ctx1 = genLoad(rhs, ctx1, m.returnType);
 
-            // reverse the order of the local variables, to match the source-order
-            m.locals = m.locals.reverse
+          // reverse the order of the local variables, to match the source-order
+          m.locals = m.locals.reverse
 
-            rhs match {
-              case Block(_, Return(_)) => ()
-              case Return(_) => ()
-              case EmptyTree =>
-                globalError("Concrete method has no definition: " + tree + (
-                  if (settings.debug.value) "(found: " + m.symbol.owner.info.decls.toList.mkString(", ") + ")"
-                  else "")
-                )
-              case _ =>
-                if (ctx1.bb.isEmpty)
-                  ctx1.bb.closeWith(RETURN(m.returnType), rhs.pos)
-                else
-                  ctx1.bb.closeWith(RETURN(m.returnType))
-            }
-            if (!ctx1.bb.closed) ctx1.bb.close
-            prune(ctx1.method)
+          rhs match {
+            case Block(_, Return(_)) => ()
+            case Return(_) => ()
+            case EmptyTree =>
+              globalError("Concrete method has no definition: " + tree + (
+                if (settings.debug.value) "(found: " + m.symbol.owner.info.decls.toList.mkString(", ") + ")"
+                else "")
+              )
+            case _ => if (ctx1.bb.isEmpty)
+              ctx1.bb.closeWith(RETURN(m.returnType), rhs.pos)
+            else
+              ctx1.bb.closeWith(RETURN(m.returnType))
           }
+          if (!ctx1.bb.closed) ctx1.bb.close
+          prune(ctx1.method)
         } else
           ctx1.method.setCode(NoCode)
         ctx1
@@ -897,32 +881,6 @@ abstract class GenICode extends SubComponent  {
           val ctx1 = msil_genLoadAddressOf(expr, ctx, toTypeKind(expr.tpe), butRawValueIsAlsoGoodEnough = false)
           generatedType = toTypeKind(fun.symbol.tpe.resultType)
           ctx1
-
-        case app @ Apply(fun @ Select(qual, _), args)
-        if !ctx.method.symbol.isStaticConstructor
-        && fun.symbol.isAccessor && fun.symbol.accessed.hasStaticAnnotation =>
-          // bypass the accessor to the companion object and load the static field directly
-          // the only place were this bypass is not done, is the static intializer for the static field itself
-          def genLoadApply5 = {
-          val sym = fun.symbol
-          generatedType = toTypeKind(sym.accessed.info)
-          val hostClass = qual.tpe.typeSymbol.orElse(sym.owner).companionClass
-          val staticfield = hostClass.info.findMember(sym.accessed.name, NoFlags, NoFlags, false)
-          
-          if (sym.isGetter) {
-            ctx.bb.emit(LOAD_FIELD(staticfield, true) setHostClass hostClass, tree.pos)
-            ctx
-          } else if (sym.isSetter) {
-            val ctx1 = genLoadArguments(args, sym.info.paramTypes, ctx)
-            ctx1.bb.emit(STORE_FIELD(staticfield, true), tree.pos)
-            ctx1.bb.emit(CONSTANT(Constant(false)), tree.pos)
-            ctx1
-          } else {
-            assert(false, "supposedly unreachable")
-            ctx
-          }
-          }
-          genLoadApply5
 
         case app @ Apply(fun, args) =>
           def genLoadApply6 = {
@@ -1715,12 +1673,8 @@ abstract class GenICode extends SubComponent  {
        *  backend emits them as static).
        *  No code is needed for this module symbol.
        */
-      for (
-        f <- cls.info.decls;
-        if !f.isMethod && f.isTerm && !f.isModule && !(f.owner.isModuleClass && f.hasStaticAnnotation)
-      ) {
+      for (f <- cls.info.decls ; if !f.isMethod && f.isTerm && !f.isModule)
         ctx.clazz addField new IField(f)
-      }
     }
 
     /**
