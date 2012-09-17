@@ -29,3 +29,23 @@ class V11[T](val x: List[T]) extends AnyVal // ok
 class V12[@specialized T, U](val x: (T, U)) extends AnyVal // fail
 
 class V13(x: Int) extends AnyVal // fail
+
+trait UT extends Any {
+  var z: Int   // fail
+  var zz = 123 // fail
+}
+class L(val t: Int) extends AnyVal
+class ValueMembers(val t: Int) extends AnyVal {
+  println(());
+  { println(()) }
+  55
+  var x = 7
+  x = 8
+
+  type Foo = String
+  def g1 = { lazy val x = t.toString ; x }
+  def g2 = { lazy val x = t.toString ; () => x }
+  def g3 = { def f(x: L) = x.t ; f _ }
+  def g5(x: => L) = List(x, x)
+  def g6(x: => L) = List(x, x) map (x => g3(x))
+}

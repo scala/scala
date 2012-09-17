@@ -31,7 +31,7 @@ class V7(val x: Int, private[this] val y: String) extends AnyVal // fail
 valueclasses.scala:21: error: value class needs to have exactly one public val parameter
 class V8(var x: Int) extends AnyVal // fail
       ^
-valueclasses.scala:24: error: this statement is not allowed in value class: private[this] val y: Int = V9.this.x
+valueclasses.scala:24: error: field is prohibited in value class
   val y = x    // fail
       ^
 valueclasses.scala:29: error: type parameter of value class may not be specialized
@@ -40,4 +40,29 @@ class V12[@specialized T, U](val x: (T, U)) extends AnyVal // fail
 valueclasses.scala:31: error: value class needs to have exactly one public val parameter
 class V13(x: Int) extends AnyVal // fail
       ^
-14 errors found
+valueclasses.scala:34: error: field is prohibited in universal trait extending from Any
+  var z: Int   // fail
+      ^
+valueclasses.scala:35: error: field is prohibited in universal trait extending from Any
+  var zz = 123 // fail
+      ^
+valueclasses.scala:41: warning: a pure expression does nothing in statement position; you may be omitting necessary parentheses
+  55
+  ^
+valueclasses.scala:39: error: constructor statement is prohibited in value class
+  println(());
+         ^
+valueclasses.scala:40: error: constructor statement is prohibited in value class
+  { println(()) }
+           ^
+valueclasses.scala:41: error: constructor statement is prohibited in value class
+  55
+  ^
+valueclasses.scala:42: error: field is prohibited in value class
+  var x = 7
+      ^
+valueclasses.scala:43: error: constructor statement is prohibited in value class
+  x = 8
+    ^
+one warning found
+21 errors found
