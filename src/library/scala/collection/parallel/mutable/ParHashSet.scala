@@ -158,12 +158,12 @@ with scala.collection.mutable.FlatHashTable.HashUtils[T] {
     val tbl = new FlatHashTable[T] {
       sizeMapInit(table.length)
       seedvalue = ParHashSetCombiner.this.seedvalue
+      for {
+        buffer <- buckets;
+        if buffer ne null;
+        elem <- buffer
+      } addEntry(elem.asInstanceOf[T])
     }
-    for {
-      buffer <- buckets;
-      if buffer ne null;
-      elem <- buffer
-    } tbl.addEntry(elem.asInstanceOf[T])
     tbl.hashTableContents
   }
 

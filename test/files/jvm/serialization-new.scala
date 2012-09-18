@@ -285,8 +285,8 @@ object Test3_mutable {
   import scala.reflect.ClassTag
   import scala.collection.mutable.{
     ArrayBuffer, ArrayBuilder, ArraySeq, ArrayStack, BitSet, DoubleLinkedList,
-    HashMap, HashSet, History, LinkedList, ListBuffer, Publisher, Queue,
-    Stack, StringBuilder, WrappedArray, TreeSet}
+    HashMap, HashSet, History, LinkedHashMap, LinkedHashSet, LinkedList, ListBuffer,
+    Publisher, Queue, Stack, StringBuilder, WrappedArray, TreeSet}
   import scala.collection.concurrent.TrieMap
 
   // in alphabetic order
@@ -346,6 +346,26 @@ object Test3_mutable {
     val h1 = new History[String, Int]
     val _h1: History[String, Int] = read(write(h1))
     check(h1, _h1)
+
+    // LinkedHashMap
+    { val lhm1 = new LinkedHashMap[String, Int]
+      val list = List(("Linked", 1), ("Hash", 2), ("Map", 3))
+      lhm1 ++= list.iterator
+      val _lhm1: LinkedHashMap[String, Int] = read(write(lhm1))
+      check(lhm1, _lhm1)
+      check(lhm1.toSeq, _lhm1.toSeq) // check elements order
+      check(lhm1.toSeq, list) // check elements order
+    }
+
+    // LinkedHashSet
+    { val lhs1 = new LinkedHashSet[String]
+      val list = List("layers", "buffers", "title")
+      lhs1 ++= list.iterator
+      val _lhs1: LinkedHashSet[String] = read(write(lhs1))
+      check(lhs1, _lhs1)
+      check(lhs1.toSeq, _lhs1.toSeq) // check elements order
+      check(lhs1.toSeq, list) // check elements order
+    }
 /*
     // LinkedList
     val ll1 = new LinkedList[Int](2, null)

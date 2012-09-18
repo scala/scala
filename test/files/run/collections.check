@@ -2,6 +2,10 @@
 test1: 14005
 test2: 25005003, iters = 5000
 test3: 25005003
+***** mutable.LinkedHashSet:
+test1: 14005
+test2: 25005003, iters = 5000
+test3: 25005003
 ***** immutable.Set:
 test1: 14005
 test2: 25005003, iters = 5000
@@ -15,6 +19,10 @@ test1: 14005
 test2: 25005003, iters = 5000
 test3: 25005003
 ***** mutable.HashMap:
+test1: 14005
+test2: 25005003, iters = 5000
+test3: 25005003
+***** mutable.LinkedHashMap:
 test1: 14005
 test2: 25005003, iters = 5000
 test3: 25005003
