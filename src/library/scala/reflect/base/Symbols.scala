@@ -1,9 +1,14 @@
 package scala.reflect
 package base
 
+/**
+ * Defines the type hierachy for symbols
+ *
+ * @see [[scala.reflect]] for a description on how the class hierarchy is encoded here. 
+ */
 trait Symbols { self: Universe =>
 
-  /** The abstract type of symbols representing declarations */
+  /** The type of symbols representing declarations */
   type Symbol >: Null <: SymbolBase
 
   /** A tag that preserves the identity of the `Symbol` abstract type from erasure.
@@ -11,7 +16,7 @@ trait Symbols { self: Universe =>
    */
   implicit val SymbolTag: ClassTag[Symbol]
 
-  /** The abstract type of type symbols representing type, class, and trait declarations,
+  /** The type of type symbols representing type, class, and trait declarations,
    *  as well as type parameters
    */
   type TypeSymbol >: Null <: Symbol with TypeSymbolBase
@@ -21,7 +26,7 @@ trait Symbols { self: Universe =>
    */
   implicit val TypeSymbolTag: ClassTag[TypeSymbol]
 
-  /** The abstract type of term symbols representing val, var, def, and object declarations as
+  /** The type of term symbols representing val, var, def, and object declarations as
    *  well as packages and value parameters.
    */
   type TermSymbol >: Null <: Symbol with TermSymbolBase
@@ -31,7 +36,7 @@ trait Symbols { self: Universe =>
    */
   implicit val TermSymbolTag: ClassTag[TermSymbol]
 
-  /** The abstract type of method symbols representing def declarations */
+  /** The type of method symbols representing def declarations */
   type MethodSymbol >: Null <: TermSymbol with MethodSymbolBase
 
   /** A tag that preserves the identity of the `MethodSymbol` abstract type from erasure.
@@ -39,7 +44,7 @@ trait Symbols { self: Universe =>
    */
   implicit val MethodSymbolTag: ClassTag[MethodSymbol]
 
-  /** The abstract type of module symbols representing object declarations */
+  /** The type of module symbols representing object declarations */
   type ModuleSymbol >: Null <: TermSymbol with ModuleSymbolBase
 
   /** A tag that preserves the identity of the `ModuleSymbol` abstract type from erasure.
@@ -47,7 +52,7 @@ trait Symbols { self: Universe =>
    */
   implicit val ModuleSymbolTag: ClassTag[ModuleSymbol]
 
-  /** The abstract type of class symbols representing class and trait definitions */
+  /** The type of class symbols representing class and trait definitions */
   type ClassSymbol >: Null <: TypeSymbol with ClassSymbolBase
 
   /** A tag that preserves the identity of the `ClassSymbol` abstract type from erasure.
@@ -55,7 +60,7 @@ trait Symbols { self: Universe =>
    */
   implicit val ClassSymbolTag: ClassTag[ClassSymbol]
 
-  /** The abstract type of free terms introduced by reification */
+  /** The type of free terms introduced by reification */
   type FreeTermSymbol >: Null <: TermSymbol with FreeTermSymbolBase
 
   /** A tag that preserves the identity of the `FreeTermSymbol` abstract type from erasure.
@@ -63,7 +68,7 @@ trait Symbols { self: Universe =>
    */
   implicit val FreeTermSymbolTag: ClassTag[FreeTermSymbol]
 
-  /** The abstract type of free types introduced by reification */
+  /** The type of free types introduced by reification */
   type FreeTypeSymbol >: Null <: TypeSymbol with FreeTypeSymbolBase
 
   /** A tag that preserves the identity of the `FreeTypeSymbol` abstract type from erasure.

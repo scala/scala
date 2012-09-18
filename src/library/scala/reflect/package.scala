@@ -1,5 +1,51 @@
 package scala
 
+/**
+ * The base package of Scala's reflection library.
+ *
+ * The refection library is structured according to the 'cake pattern'. The base layer 
+ * resides in package [[scala.reflect.base]] and defines an interface to the following main types:
+ *   
+ *   - [[scala.reflect.base.Types#Type Types]] represent types
+ *   - [[scala.reflect.base.Symbol#Symbol Symbols]] represent definitions
+ *   - [[scala.reflect.base.Trees#Tree Trees]] represent abstract syntax trees
+ *   - [[scala.reflect.base.Names#Name Names]] represent term and type names
+ *   - [[scala.reflect.base.AnnotationInfos#AnnotationInfo AnnotationInfos]] represent annotations
+ *   - [[scala.reflect.base.Position#Positions Positions]] represent source positions of tree nodes
+ *   - [[scala.reflect.base.FlagSets#FlagSet FlagSet]] represent sets of flags that apply to symbols and 
+ *     definition trees
+ *   - [[scala.reflect.base.Constansts#Constant Constants]] represent compile-time constants. 
+ *
+ * Each of these types are defined in their own enclosing traits, which are ultimately all inherited by class 
+ * [[scala.reflect.base.Universe Universe]]. The base universe defines a minimal interface to the above types.
+ * Universes that provide additional functionality such as deeper introspection or runtime code generation, 
+ * are defined in packages [[scala.reflect.api]] and [[scala.tools.reflect]].
+ *
+ * The cake pattern employed here requires to write certain Scala idioms with more indirections that usual. 
+ * What follows is a description of these indirections, which will help to navigate the Scaladocs easily.
+ *
+ * For instance, consider the base type of all abstract syntax trees: [[scala.reflect.base.Trees#Tree]]. 
+ * This type is not a class but is abstract and has an upper bound of [[scala.reflect.base.Trees#TreeBase]], 
+ * which is a class defining the minimal base interface for all trees. 
+ *
+ * For a more interesting tree type, consider [[scala.reflect.base.Trees#If]] representing if-expressions. 
+ * It does not come with a class `IfBase`, since it does not add anything to the interface of its upper 
+ * bound `TermTree`. However, it is defined next to a value `If` of type [[scala.reflect.base.Trees#IfExtractor]]. 
+ * This value serves as the companion object defining a factory method `apply` and a corresponding `unapply` 
+ * for pattern matching. Moreover, there is an implicit value [[scala.reflect.base.Trees#IfTag]] of type 
+ * `ClassTag[If]` that is used by the Scala compiler so that we can indeed pattern match on `If`:
+ * {{{
+ *   tree match { case ifTree: If => ... }
+ * }}} 
+ * Without the given implicit value, this pattern match would raise an "unchecked" warning at compile time
+ * since `If` is an abstract type that gets erased at runtime. See [[scala.reflect.ClassTag]] for details.
+ *
+ * To summarize: each tree type `X` (and similarly for other types such as `Type` or `Symbol`) is represented 
+ * by an abstract type `X`, optionally together with a class `XBase` that defines `X`'s' interface. 
+ * `X`'s companion object, if it exists, is represented by a value `X` that is of type `XExtractor`. 
+ * Moreover, for each type `X`, there is a value `XTag` of type `ClassTag[X]` that allows to pattern match 
+ * on `X`.
+ */
 package object reflect {
 
   lazy val basis: base.Universe = new base.Base

@@ -1,14 +1,33 @@
 package scala.reflect
 package base
 
+/**
+ * The base interface for all mirrors.
+ *
+ * @tparam U the type of the universe this mirror belongs to. 
+ * 
+ * This is defined outside the reflection universe cake pattern implementation
+ * so that it can be referenced from outside. For example TypeCreator and TreeCreator
+ * reference MirrorOf and also need to be defined outside the cake as they are
+ * used by type tags, which can be migrated between different universes and consequently
+ * cannot be bound to a fixed one.
+ *
+ * @see [[Mirrors]]
+ */
 abstract class MirrorOf[U <: base.Universe with Singleton] {
-  /** .. */
+  /** The universe this mirror belongs to. */
   val universe: U
 
-  /** .. */
+  /** The class symbol of the `_root_` package */
   def RootClass: U#ClassSymbol
+
+  /** The module symbol of the `_root_` package */
   def RootPackage: U#ModuleSymbol
+
+  /** The class symbol of the default (unnamed) package */
   def EmptyPackageClass: U#ClassSymbol
+
+  /** The module symbol of the default (unnamed) package */
   def EmptyPackage: U#ModuleSymbol
 
   /** The symbol corresponding to the globally accessible class with the

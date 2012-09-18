@@ -8,16 +8,54 @@ package base
 
 trait Exprs { self: Universe =>
 
-  /** An expression tree tagged with its type */
+  /** Expr wraps an expression tree and tags it with its type. */
   trait Expr[+T] extends Equals with Serializable {
     val mirror: Mirror
+    /**
+     * Migrates the expression into another universe given its corresponding mirror.
+     */
     def in[U <: Universe with Singleton](otherMirror: MirrorOf[U]): U # Expr[T]
 
+    /**
+     * The Scala syntax tree representing the wrapped expression.
+     */
     def tree: Tree
+    
+    /**
+     * Representation of the type of the wrapped expression tree as found via type tags.
+     */
     def staticType: Type
+    /**
+     * Representation of the type of the wrapped expression tree as found in the tree.
+     */
     def actualType: Type
 
+    /**
+     * A dummy method to mark expression splicing in reification.
+     * It should only be used within a `reify` call, which eliminates the `splice` call and embeds
+     * the wrapped tree into the reified surrounding expression. 
+     * If used alone `splice` throws an exception when called at runtime.
+     * 
+     * If you want to use an Expr in reification of some Scala code, you need to splice it in.
+     * For an expr of type `Expr[T]`, where `T` has a method `foo`, the following code
+     * {{{
+     *   reify{ expr.splice.foo }
+     * }}}
+     * uses splice to turn an expr of type Expr[T] into a value of type T in the context of `reify`.
+     * 
+     * It is equivalent to 
+     * {{{
+     *   Select( expr.tree, newTermName("foo") )
+     * }}}
+     * 
+     * The following example code however does not compile
+     * {{{
+     *   reify{ expr.foo }
+     * }}}
+     * because expr of type Expr[T] does not have a method foo. 
+     */
     def splice: T
+    // TODO: document this
     val value: T
 
     /** case class accessories */
@@ -27,6 +65,12 @@ trait Exprs { self: Universe =>
     override def toString = "Expr["+staticType+"]("+tree+")"
   }
 
+  /**
+   * Constructor/Extractor for Expr.
+   * 
+   * Can be useful, when having a tree and wanting to splice it in reify call,
+   * in which case the tree first needs to be wrapped in an expr.
+   */
   object Expr {
     def apply[T: WeakTypeTag](mirror: MirrorOf[self.type], treec: TreeCreator): Expr[T] = new ExprImpl[T](mirror.asInstanceOf[Mirror], treec)
     def unapply[T](expr: Expr[T]): Option[Tree] = Some(expr.tree)

@@ -18,24 +18,39 @@ abstract class Universe extends Symbols
                            with BuildUtils
                            with Mirrors
 {
-  /** Given an expression, generate a tree that when compiled and executed produces the original tree.
-   *  The produced tree will be bound to the Universe it was called from.
+  /** Produce the abstract syntax tree representing the given Scala expression.
+   * 
+   * For example
+   * 
+   * {{{
+   * val five = reify{ 5 }    // Literal(Constant(5))
+   * reify{ 2 + 4 }           // Apply( Select( Literal(Constant(2)), newTermName("$plus")), List( Literal(Constant(4)) ) )
+   * reify{ five.splice + 4 } // Apply( Select( Literal(Constant(5)), newTermName("$plus")), List( Literal(Constant(4)) ) )
+   * }}}
+   * 
+   * The produced tree is path dependent on the Universe `refiy` was called from.
+   * 
+   * Use [[splice]] to embed an existing expression into a reify call. Use [[Expr]] to turn a [[Tree]] into an expression that can be spliced.
+   * 
+   * == Further info and implementation details ==
+   * 
+   * `refiy` is implemented as a macro, which given an expression, generates a tree that when compiled and executed produces the original tree.
    *
-   *  For instance, given the abstract syntax tree representation of the <[ x + 1 ]> expression:
+   *  For instance in `reify{ x + 1 }` the macro `reify` receives the abstract syntax tree of `x + 1` as its argument, which is
    *
    *  {{{
    *    Apply(Select(Ident("x"), "+"), List(Literal(Constant(1))))
    *  }}}
    *
-   *  The reifier transforms it to the following expression:
+   *  and returns a tree, which produces the tree above, when compiled and executed. So in other terms, the refiy call expands to something like
    *
    *  {{{
-   *    <[
    *      val $u: u.type = u // where u is a reference to the Universe that calls the reify
    *      $u.Expr[Int]($u.Apply($u.Select($u.Ident($u.newFreeVar("x", <Int>, x), "+"), List($u.Literal($u.Constant(1))))))
-   *    ]>
    *  }}}
-   *
+   *  
+   *  ------
+   *  
    *  Reification performs expression splicing (when processing Expr.splice)
    *  and type splicing (for every type T that has a TypeTag[T] implicit in scope):
    *
@@ -54,11 +69,11 @@ abstract class Universe extends Symbols
    *  }}}
    *
    *  The transformation looks mostly straightforward, but it has its tricky parts:
-   *    * Reifier retains symbols and types defined outside the reified tree, however
+   *    - Reifier retains symbols and types defined outside the reified tree, however
    *      locally defined entities get erased and replaced with their original trees
-   *    * Free variables are detected and wrapped in symbols of the type FreeVar
-   *    * Mutable variables that are accessed from a local function are wrapped in refs
-   *    * Since reified trees can be compiled outside of the scope they've been created in,
+   *    - Free variables are detected and wrapped in symbols of the type FreeVar
+   *    - Mutable variables that are accessed from a local function are wrapped in refs
+   *    - Since reified trees can be compiled outside of the scope they've been created in,
    *      special measures are taken to ensure that all members accessed in the reifee remain visible
    */
   // implementation is hardwired to `scala.reflect.reify.Taggers`
