@@ -16,43 +16,39 @@ object Serialize {
   }
 }
 
-@serializable
 @SerialVersionUID(1L)
-class VarModel[T]( getter: => T, setter: T => Unit )
-{
+class VarModel[T](getter: => T, setter: T => Unit) extends Serializable {
   Serialize.write(getter)
   Serialize.write(setter)
 
-  def this( getter: => T ) = this( getter, null )
+  def this(getter: => T) = this(getter, null)
 
   def getObject: AnyRef = getter.asInstanceOf[AnyRef]
 
-  def setObject( v: AnyRef ) = {
-    if( setter==null )
-      throw new RuntimeException( "Tried to set readonly model!")
-    setter( v.asInstanceOf[T] )
+  def setObject(v: AnyRef) = {
+    if(setter==null)
+      throw new RuntimeException("Tried to set readonly model!")
+    setter(v.asInstanceOf[T])
   }
 
   def detach = ()
 }
 
-@serializable
 @SerialVersionUID(1L)
-class Printer( p: VarModel[String] ) {
-  def print = println( p.getObject );
+class Printer(p: VarModel[String]) extends Serializable {
+  def print = println(p.getObject)
 }
 
 class Component extends Marker { }
 
 class Form extends Component { }
 
-@serializable
 @SerialVersionUID(1L)
-class Main {
+class Main extends Serializable {
   var pass = "pass"
-  def main(args : Array[String]) : Unit = {
+  def main(args: Array[String]): Unit = {
     val f = new Form {
-      val p = new Printer( new VarModel( pass, s => pass = s ) );
+      val p = new Printer(new VarModel(pass, s => pass = s))
       p.print
     }
     ()
