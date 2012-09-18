@@ -49,7 +49,7 @@ extends AbstractMap[A, B]
   type Entry = DefaultEntry[A, B]
 
   override def empty: HashMap[A, B] = HashMap.empty[A, B]
-  override def clear() = clearTable()
+  override def clear() { clearTable() }
   override def size: Int = tableSize
 
   def this() = this(null)
@@ -57,7 +57,8 @@ extends AbstractMap[A, B]
   override def par = new ParHashMap[A, B](hashTableContents)
 
   // contains and apply overridden to avoid option allocations.
-  override def contains(key: A) = findEntry(key) != null
+  override def contains(key: A): Boolean = findEntry(key) != null
+
   override def apply(key: A): B = {
     val result = findEntry(key)
     if (result eq null) default(key)
@@ -126,7 +127,7 @@ extends AbstractMap[A, B]
     if (!isSizeMapDefined) sizeMapInitAndRebuild
   } else sizeMapDisable
 
-  protected override def createNewEntry[B1](key: A, value: B1): Entry = {
+  protected def createNewEntry[B1](key: A, value: B1): Entry = {
     new Entry(key, value.asInstanceOf[B])
   }
 

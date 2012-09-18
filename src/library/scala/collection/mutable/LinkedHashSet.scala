@@ -54,7 +54,7 @@ class LinkedHashSet[A] extends AbstractSet[A]
   @transient protected var firstEntry: Entry = null
   @transient protected var lastEntry: Entry = null
 
-  override def size = tableSize
+  override def size: Int = tableSize
 
   def contains(elem: A): Boolean = findEntry(elem) ne null
 
@@ -83,7 +83,7 @@ class LinkedHashSet[A] extends AbstractSet[A]
       else Iterator.empty.next
   }
   
-  override def foreach[U](f: A => U) = {
+  override def foreach[U](f: A => U) {
     var cur = firstEntry
     while (cur ne null) {
       f(cur.key)
@@ -99,7 +99,7 @@ class LinkedHashSet[A] extends AbstractSet[A]
     }
   }
 
-  protected override def createNewEntry[B](key: A, dummy: B): Entry = {
+  protected def createNewEntry[B](key: A, dummy: B): Entry = {
     val e = new Entry(key)
     if (firstEntry eq null) firstEntry = e
     else { lastEntry.later = e; e.earlier = lastEntry }

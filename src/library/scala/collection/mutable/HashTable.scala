@@ -155,7 +155,7 @@ trait HashTable[A, Entry >: Null <: HashEntry[A, Entry]] extends HashTable.HashU
    *  May be somewhat faster then `findEntry`/`addEntry` pair as it
    *  computes entry's hash index only once.
    *  Returns entry found in table or null.
-   *  Method `createNewEntry` must be implemented in any subclass/subtrait who calls this.
+   *  New entries are created by calling `createNewEntry` method.
    */
   protected def findOrAddEntry[B](key: A, value: B): Entry = {
     val h = index(elemHashCode(key))
@@ -164,10 +164,10 @@ trait HashTable[A, Entry >: Null <: HashEntry[A, Entry]] extends HashTable.HashU
   }
 
   /** Creates new entry to be immediately inserted into the hashtable.
-   *  This method must be implemented for any class who calls `findOrAddEntry`.
-   *  Ideally, it should be abstract, but this will break source compatibility.
+   *  This method is guaranteed to be called only once and in case that the entry
+   *  will be added. In other words, an implementation may be side-effecting.
    */
-  protected def createNewEntry[B](key: A, value: B): Entry = ???
+  protected def createNewEntry[B](key: A, value: B): Entry
 
   /** Remove entry from table if present.
    */

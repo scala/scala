@@ -129,7 +129,7 @@ class LinkedHashMap[A, B] extends AbstractMap[A, B]
       else Iterator.empty.next
   }
 
-  override def foreach[U](f: ((A, B)) => U) = {
+  override def foreach[U](f: ((A, B)) => U) {
     var cur = firstEntry
     while (cur ne null) {
       f((cur.key, cur.value))
@@ -145,7 +145,7 @@ class LinkedHashMap[A, B] extends AbstractMap[A, B]
     }
   }
 
-  protected override def createNewEntry[B1](key: A, value: B1): Entry = {
+  protected def createNewEntry[B1](key: A, value: B1): Entry = {
     val e = new Entry(key, value.asInstanceOf[B])
     if (firstEntry eq null) firstEntry = e
     else { lastEntry.later = e; e.earlier = lastEntry }

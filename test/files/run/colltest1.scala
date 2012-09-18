@@ -226,6 +226,7 @@ object Test extends App {
   setTest(mutable.Set())
   setTest(immutable.Set())
   setTest(mutable.HashSet())
+  setTest(mutable.LinkedHashSet())
   setTest(immutable.HashSet())
 
   mapTest(Map())
@@ -233,5 +234,6 @@ object Test extends App {
   mapTest(immutable.Map())
   mapTest(immutable.TreeMap())
   mutableMapTest(mutable.HashMap())
+  mutableMapTest(mutable.LinkedHashMap())
   mapTest(immutable.HashMap())
 }

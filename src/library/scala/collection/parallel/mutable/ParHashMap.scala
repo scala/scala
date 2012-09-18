@@ -67,13 +67,13 @@ self =>
 
   def get(key: K): Option[V] = {
     val e = findEntry(key)
-    if (e == null) None
+    if (e eq null) None
     else Some(e.value)
   }
 
   def put(key: K, value: V): Option[V] = {
-    val e = findEntry(key)
-    if (e == null) { addEntry(new Entry(key, value)); None }
+    val e = findOrAddEntry(key, value)
+    if (e eq null) None
     else { val v = e.value; e.value = value; Some(v) }
   }
 
@@ -86,9 +86,8 @@ self =>
   }
 
   def += (kv: (K, V)): this.type = {
-    val e = findEntry(kv._1)
-    if (e == null) addEntry(new Entry(kv._1, kv._2))
-    else e.value = kv._2
+    val e = findOrAddEntry(kv._1, kv._2)
+    if (e ne null) e.value = kv._2
     this
   }
 
@@ -103,6 +102,10 @@ self =>
       new ParHashMapIterator(idxFrom, idxUntil, totalSz, es)
   }
 
+  protected def createNewEntry[V1](key: K, value: V1): Entry = {
+    new Entry(key, value.asInstanceOf[V])
+  }
+
   private def writeObject(out: java.io.ObjectOutputStream) {
     serializeTo(out, { entry =>
       out.writeObject(entry.key)
@@ -111,7 +114,7 @@ self =>
   }
 
   private def readObject(in: java.io.ObjectInputStream) {
-    init(in, new Entry(in.readObject().asInstanceOf[K], in.readObject().asInstanceOf[V]))
+    init(in, createNewEntry(in.readObject().asInstanceOf[K], in.readObject()))
   }
 
   private[parallel] override def brokenInvariants = {
@@ -193,7 +196,9 @@ extends collection.parallel.BucketCombiner[(K, V), ParHashMap[K, V], DefaultEntr
     // construct a normal table and fill it sequentially
     // TODO parallelize by keeping separate sizemaps and merging them
     object table extends HashTable[K, DefaultEntry[K, V]] {
-      def insertEntry(e: DefaultEntry[K, V]) = if (super.findEntry(e.key) eq null) super.addEntry(e)
+      type Entry = DefaultEntry[K, V]
+      def insertEntry(e: Entry) { super.findOrAddEntry(e.key, e) }
+      def createNewEntry[E](key: K, entry: E): Entry = entry.asInstanceOf[Entry]
       sizeMapInit(table.length)
     }
     var i = 0
@@ -254,6 +259,7 @@ extends collection.parallel.BucketCombiner[(K, V), ParHashMap[K, V], DefaultEntr
         assert(h >= block * blocksize && h < (block + 1) * blocksize)
       }
     }
+    protected def createNewEntry[X](key: K, x: X) = ???
   }
 
   /* tasks */
