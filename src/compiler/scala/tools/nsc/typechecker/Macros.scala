@@ -710,7 +710,7 @@ trait Macros extends scala.tools.reflect.FastTrack with Traces {
             if (isNullaryInvocation(expandee)) expectedTpe = expectedTpe.finalResultType
             var typechecked = typecheck("macro def return type", expanded, expectedTpe)
             typechecked = typecheck("expected type", typechecked, pt)
-            typechecked updateAttachment MacroExpansionAttachment(expandee)
+            typechecked
           } finally {
             popMacroContext()
           }
@@ -776,7 +776,7 @@ trait Macros extends scala.tools.reflect.FastTrack with Traces {
               macroLogLite("" + expanded.tree + "\n" + showRaw(expanded.tree))
               val freeSyms = expanded.tree.freeTerms ++ expanded.tree.freeTypes
               freeSyms foreach (sym => MacroFreeSymbolError(expandee, sym))
-              Success(atPos(enclosingMacroPosition.focus)(expanded.tree))
+              Success(atPos(enclosingMacroPosition.focus)(expanded.tree updateAttachment MacroExpansionAttachment(expandee)))
             case _ =>
               MacroExpansionIsNotExprError(expandee, expanded)
           }
