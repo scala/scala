@@ -22,6 +22,16 @@ import scala.collection.mutable.ListBuffer
  *
  *  `args` returns the current command line arguments as an array.
  *
+ *  ==Caveats==
+ *
+ *  '''''It should be noted that this trait is implemented using the [[DelayedInit]]
+ *  functionality, which means that fields of the object will not have been initialized
+ *  before the main method has been executed.'''''
+ *
+ *  It should also be noted that the `main` method will not normally need to be overridden:
+ *  the purpose is to turn the whole class body into the “main method”. You should only
+ *  chose to override it if you know what you are doing.
+ *
  *  @author  Martin Odersky
  *  @version 2.1, 15/02/2011
  */
