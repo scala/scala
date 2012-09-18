@@ -1,2 +1,2 @@
-@serializable class A
-@serializable class B extends A
+class A extends Serializable
+class B extends A with Serializable
