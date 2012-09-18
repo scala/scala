@@ -1977,6 +1977,8 @@ trait Typers extends Modes with Adaptations with Tags {
      *    - the self-type of the refinement
      *    - a type member of the refinement
      *    - an abstract type declared outside of the refinement.
+     *    - an instance of a value class
+     *  Furthermore, the result type may not be a value class either
      */
     def checkMethodStructuralCompatible(meth: Symbol): Unit = {
       def fail(msg: String) = unit.error(meth.pos, msg)
@@ -1986,8 +1988,8 @@ trait Typers extends Modes with Adaptations with Tags {
         case PolyType(_, restpe)       => restpe
         case _                         => NoType
       }
-      def failStruct(what: String) =
-        fail(s"Parameter type in structural refinement may not refer to $what")
+      def failStruct(what: String, where: String = "Parameter") =
+        fail(s"$where type in structural refinement may not refer to $what")
       for (paramType <- tp.paramTypes) {
         val sym = paramType.typeSymbol
 
@@ -2002,7 +2004,10 @@ trait Typers extends Modes with Adaptations with Tags {
         if (paramType.isInstanceOf[ThisType] && sym == meth.owner)
           failStruct("the type of that refinement (self type)")
       }
+      if (tp.resultType.typeSymbol.isDerivedValueClass)
+        failStruct("a user-defined value class", where = "Result")
     }
+
     def typedUseCase(useCase: UseCase) {
       def stringParser(str: String): syntaxAnalyzer.Parser = {
         val file = new BatchSourceFile(context.unit.source.file, str) {
