@@ -168,6 +168,30 @@ x = History()
 y = History()
 x equals y: true, y equals x: true
 
+x = Map(Linked -> 1, Hash -> 2, Map -> 3)
+y = Map(Linked -> 1, Hash -> 2, Map -> 3)
+x equals y: true, y equals x: true
+
+x = ArrayBuffer((Linked,1), (Hash,2), (Map,3))
+y = ArrayBuffer((Linked,1), (Hash,2), (Map,3))
+x equals y: true, y equals x: true
+
+x = ArrayBuffer((Linked,1), (Hash,2), (Map,3))
+y = List((Linked,1), (Hash,2), (Map,3))
+x equals y: true, y equals x: true
+
+x = Set(layers, buffers, title)
+y = Set(layers, buffers, title)
+x equals y: true, y equals x: true
+
+x = ArrayBuffer(layers, buffers, title)
+y = ArrayBuffer(layers, buffers, title)
+x equals y: true, y equals x: true
+
+x = ArrayBuffer(layers, buffers, title)
+y = List(layers, buffers, title)
+x equals y: true, y equals x: true
+
 x = ListBuffer(white, black)
 y = ListBuffer(white, black)
 x equals y: true, y equals x: true

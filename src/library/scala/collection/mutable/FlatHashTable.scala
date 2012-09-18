@@ -44,7 +44,7 @@ trait FlatHashTable[A] extends FlatHashTable.HashUtils[A] {
    */
   @transient protected var sizemap: Array[Int] = null
 
-  @transient var seedvalue: Int = tableSizeSeed
+  @transient protected var seedvalue: Int = tableSizeSeed
 
   import HashTable.powerOfTwo
 
@@ -109,7 +109,7 @@ trait FlatHashTable[A] extends FlatHashTable.HashUtils[A] {
   }
 
   /** Finds an entry in the hash table if such an element exists. */
-  def findEntry(elem: A): Option[A] = {
+  protected def findEntry(elem: A): Option[A] = {
     var h = index(elemHashCode(elem))
     var entry = table(h)
     while (null != entry && entry != elem) {
@@ -120,7 +120,7 @@ trait FlatHashTable[A] extends FlatHashTable.HashUtils[A] {
   }
 
   /** Checks whether an element is contained in the hash table. */
-  def containsEntry(elem: A): Boolean = {
+  protected def containsEntry(elem: A): Boolean = {
     var h = index(elemHashCode(elem))
     var entry = table(h)
     while (null != entry && entry != elem) {
@@ -133,7 +133,7 @@ trait FlatHashTable[A] extends FlatHashTable.HashUtils[A] {
   /** Add entry if not yet in table.
    *  @return Returns `true` if a new entry was added, `false` otherwise.
    */
-  def addEntry(elem: A) : Boolean = {
+  protected def addEntry(elem: A) : Boolean = {
     var h = index(elemHashCode(elem))
     var entry = table(h)
     while (null != entry) {
@@ -150,7 +150,7 @@ trait FlatHashTable[A] extends FlatHashTable.HashUtils[A] {
   }
 
   /** Removes an entry from the hash table, returning an option value with the element, or `None` if it didn't exist. */
-  def removeEntry(elem: A) : Option[A] = {
+  protected def removeEntry(elem: A) : Option[A] = {
     if (tableDebug) checkConsistent()
     def precedes(i: Int, j: Int) = {
       val d = table.length >> 1
@@ -185,7 +185,7 @@ trait FlatHashTable[A] extends FlatHashTable.HashUtils[A] {
     None
   }
 
-  def iterator: Iterator[A] = new AbstractIterator[A] {
+  protected def iterator: Iterator[A] = new AbstractIterator[A] {
     private var i = 0
     def hasNext: Boolean = {
       while (i < table.length && (null == table(i))) i += 1
