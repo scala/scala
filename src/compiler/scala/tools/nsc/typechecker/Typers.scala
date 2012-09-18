@@ -1384,6 +1384,19 @@ trait Typers extends Modes with Adaptations with Tags {
       }
     }
 
+    private def validateValueClassStat(stat: Tree, where: String) = {
+      def what  = stat match {
+        case _: ValDef  => "field"
+        case _          => "constructor statement"
+      }
+      if (!treeInfo.isAllowedInUniversalTrait(stat)) {
+        unit.error(stat.pos,
+          if (stat.symbol != null && stat.symbol.isParamAccessor) s"illegal parameter for $where"
+          else s"$what is prohibited in $where"
+        )
+      }
+    }
+
     private def validateDerivedValueClass(clazz: Symbol, body: List[Tree]) = {
       if (clazz.isTrait)
         unit.error(clazz.pos, "only classes (not traits) are allowed to extend AnyVal")
@@ -1395,13 +1408,11 @@ trait Typers extends Modes with Adaptations with Tags {
           case List(acc) =>
             def isUnderlyingAcc(sym: Symbol) =
               sym == acc || acc.hasAccessorFlag && sym == acc.accessed
+
           if (acc.accessBoundary(clazz) != rootMirror.RootClass)
-              unit.error(acc.pos, "value class needs to have a publicly accessible val parameter")
-            for (stat <- body)
-              if (!treeInfo.isAllowedInUniversalTrait(stat) && !isUnderlyingAcc(stat.symbol))
-                unit.error(stat.pos,
-                  if (stat.symbol != null && (stat.symbol hasFlag PARAMACCESSOR)) "illegal parameter for value class"
-                  else "this statement is not allowed in value class: " + stat)
+            unit.error(acc.pos, "value class needs to have a publicly accessible val parameter")
+          for (stat <- body ; if !isUnderlyingAcc(stat.symbol))
+            validateValueClassStat(stat, "value class")
           case x =>
             unit.error(clazz.pos, "value class needs to have exactly one public val parameter")
         }
@@ -1661,10 +1672,10 @@ trait Typers extends Modes with Adaptations with Tags {
         _.typedTemplate(cdef.impl, parentTypes(cdef.impl))
       }
       val impl2 = finishMethodSynthesis(impl1, clazz, context)
-      if (clazz.isTrait && clazz.info.parents.nonEmpty && clazz.info.firstParent.normalize.typeSymbol == AnyClass)
+      if (clazz.isTrait && clazz.info.firstParent.typeSymbol == AnyClass) {
         for (stat <- impl2.body)
-          if (!treeInfo.isAllowedInUniversalTrait(stat))
-            unit.error(stat.pos, "this statement is not allowed in universal trait extending from class Any: "+stat)
+          validateValueClassStat(stat, "universal trait extending from Any")
+      }
       if ((clazz != ClassfileAnnotationClass) &&
           (clazz isNonBottomSubClass ClassfileAnnotationClass))
         restrictionWarning(cdef.pos, unit,

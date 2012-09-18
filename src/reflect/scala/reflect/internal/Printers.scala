@@ -215,6 +215,8 @@ trait Printers extends api.Printers { self: SymbolTable =>
           printAnnotations(tree)
           printModifiers(tree, mods)
           print(if (mods.isMutable) "var " else "val ", symName(tree, name))
+          //if (tree.symbol != NoSymbol && tree.symbol != null) // debug - turn into option?
+          //  print(s"[in ${tree.symbol.owner}]")
           printOpt(": ", tp)
           if (!mods.isDeferred)
             print(" = ", if (rhs.isEmpty) "_" else rhs)
@@ -223,6 +225,8 @@ trait Printers extends api.Printers { self: SymbolTable =>
           printAnnotations(tree)
           printModifiers(tree, mods)
           print("def " + symName(tree, name))
+          //if (tree.symbol != NoSymbol && tree.symbol != null)
+          //  print(s"[in ${tree.symbol.owner}]")
           printTypeParams(tparams); vparamss foreach printValueParams
           printOpt(": ", tp); printOpt(" = ", rhs)
 
