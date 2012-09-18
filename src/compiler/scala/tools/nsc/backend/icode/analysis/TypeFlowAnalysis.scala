@@ -480,7 +480,7 @@ abstract class TypeFlowAnalysis {
     val knownUnsafe = mutable.Set.empty[Symbol]
     val knownSafe   = mutable.Set.empty[Symbol]
     val knownNever  = mutable.Set.empty[Symbol] // `knownNever` needs be cleared only at the very end of the inlining phase (unlike `knownUnsafe` and `knownSafe`)
-    @inline final def blackballed(msym: Symbol): Boolean = { knownUnsafe(msym) || knownNever(msym) }
+    final def blackballed(msym: Symbol): Boolean = { knownUnsafe(msym) || knownNever(msym) }
 
     val relevantBBs   = mutable.Set.empty[BasicBlock]
 

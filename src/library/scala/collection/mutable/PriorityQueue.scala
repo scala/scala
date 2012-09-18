@@ -43,12 +43,12 @@ class PriorityQueue[A](implicit val ord: Ordering[A])
 {
   import ord._
 
-  private final class ResizableArrayAccess[A] extends AbstractSeq[A] with ResizableArray[A] {
-    @inline def p_size0 = size0
-    @inline def p_size0_=(s: Int) = size0 = s
-    @inline def p_array = array
-    @inline def p_ensureSize(n: Int) = super.ensureSize(n)
-    @inline def p_swap(a: Int, b: Int) = super.swap(a, b)
+  private class ResizableArrayAccess[A] extends AbstractSeq[A] with ResizableArray[A] {
+    def p_size0 = size0
+    def p_size0_=(s: Int) = size0 = s
+    def p_array = array
+    def p_ensureSize(n: Int) = super.ensureSize(n)
+    def p_swap(a: Int, b: Int) = super.swap(a, b)
   }
 
   protected[this] override def newBuilder = new PriorityQueue[A]

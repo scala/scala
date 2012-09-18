@@ -735,8 +735,8 @@ object SeqLike {
    */
   private def kmpSearch[B](S: Seq[B], m0: Int, m1: Int, W: Seq[B], n0: Int, n1: Int, forward: Boolean): Int = {
     // Check for redundant case when target has single valid element
-    @inline def clipR(x: Int, y: Int) = if (x<y) x else -1
-    @inline def clipL(x: Int, y: Int) = if (x>y) x else -1
+    def clipR(x: Int, y: Int) = if (x < y) x else -1
+    def clipL(x: Int, y: Int) = if (x > y) x else -1
 
     if (n1 == n0+1) {
       if (forward)
