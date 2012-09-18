@@ -704,15 +704,46 @@ final class FiniteDuration(val length: Long, val unit: TimeUnit) extends Duratio
     else if ((length < 0) ^ (other > Zero)) 0d
     else minusZero
 
-  // overridden methods taking FiniteDurations, so that you can calculate while statically staying finite
+  // overloaded methods taking FiniteDurations, so that you can calculate while statically staying finite
   def +(other: FiniteDuration) = add(other.length, other.unit)
   def -(other: FiniteDuration) = add(-other.length, other.unit)
   def plus(other: FiniteDuration) = this + other
   def minus(other: FiniteDuration) = this - other
-  override def div(factor: Double) = this / factor
-  override def mul(factor: Double) = this * factor
   def min(other: FiniteDuration) = if (this < other) this else other
   def max(other: FiniteDuration) = if (this > other) this else other
+
+  // overloaded methods taking Long so that you can calculate while statically staying finite
+
+  /**
+   * Return the quotient of this duration and the given integer factor.
+   *
+   * @throws ArithmeticException if the factor is 0
+   */
+  def /(factor: Long) = fromNanos(toNanos / factor)
+
+  /**
+   * Return the product of this duration and the given integer factor.
+   *
+   * @throws IllegalArgumentException if the result would overflow the range of FiniteDuration
+   */
+  def *(factor: Long) = {
+    if (length > Long.MaxValue / factor) throw new IllegalArgumentException("multiplication overflow")
+    new FiniteDuration(length * factor, unit)
+  }
+
+  /**
+   * Return the quotient of this duration and the given integer factor.
+   *
+   * @throws ArithmeticException if the factor is 0
+   */
+  def div(factor: Long) = this / factor
+
+  /**
+   * Return the product of this duration and the given integer factor.
+   *
+   * @throws IllegalArgumentException if the result would overflow the range of FiniteDuration
+   */
+  def mul(factor: Long) = this * factor
 
   def unary_- = Duration(-length, unit)
 

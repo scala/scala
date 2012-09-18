@@ -177,10 +177,17 @@ object Test extends App {
   Thread.sleep(1.second.toMillis)
   assert(dead.timeLeft < 1.second)
   assert(dead2.timeLeft < 1.second)
+
+
+  // test integer mul/div
+  500.millis * 2 mustBe 1.second
+  (500.millis * 2).unit mustBe MILLISECONDS
+  1.second / 2 mustBe 500.millis
+  (1.second / 2).unit mustBe MILLISECONDS
   
 
   // check statically retaining finite-ness
-  val finiteDuration: FiniteDuration = 1.second plus 3.seconds minus 1.millisecond min 1.second max 1.second
+  val finiteDuration: FiniteDuration = 1.second * 2 / 3 mul 5 div 4 plus 3.seconds minus 1.millisecond min 1.second max 1.second
   
 
 }
