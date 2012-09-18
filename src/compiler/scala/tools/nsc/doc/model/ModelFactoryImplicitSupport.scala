@@ -424,66 +424,52 @@ trait ModelFactoryImplicitSupport {
   /* ========================= HELPER METHODS ========================== */
   /**
    *  Computes the shadowing table for all the members in the implicit conversions
-   *  @param mbrs All template's members, including usecases and full signature members
+   *  @param members All template's members, including usecases and full signature members
    *  @param convs All the conversions the template takes part in
-   *  @param inTpl the ususal :)
+   *  @param inTpl the usual :)
    */
-  def makeShadowingTable(mbrs: List[MemberImpl],
+  def makeShadowingTable(members: List[MemberImpl],
                          convs: List[ImplicitConversionImpl],
                          inTpl: DocTemplateImpl): Map[MemberEntity, ImplicitMemberShadowing] = {
     assert(modelFinished)
 
-    var shadowingTable = Map[MemberEntity, ImplicitMemberShadowing]()
+    val shadowingTable = mutable.Map[MemberEntity, ImplicitMemberShadowing]()
+    val membersByName: Map[Name, List[MemberImpl]] = members.groupBy(_.sym.name)
+    val convsByMember = (Map.empty[MemberImpl, ImplicitConversionImpl] /: convs) {
+      case (map, conv) => map ++ conv.memberImpls.map (_ -> conv)
+    }
 
     for (conv <- convs) {
-      val otherConvs = convs.filterNot(_ == conv)
+      val otherConvMembers: Map[Name, List[MemberImpl]] = convs filterNot (_ == conv) flatMap (_.memberImpls) groupBy (_.sym.name)
 
       for (member <- conv.memberImpls) {
-        // for each member in our list
         val sym1 = member.sym
         val tpe1 = conv.toType.memberInfo(sym1)
 
-        // check if it's shadowed by a member in the original class
-        var shadowedBySyms: List[Symbol] = List()
-        for (mbr <- mbrs) {
-          val sym2 = mbr.sym
-          if (sym1.name == sym2.name) {
-            val shadowed = !settings.docImplicitsSoundShadowing.value || {
-              val tpe2 = inTpl.sym.info.memberInfo(sym2)
-              !isDistinguishableFrom(tpe1, tpe2)
-            }
-            if (shadowed)
-              shadowedBySyms ::= sym2
-          }
+        // check if it's shadowed by a member in the original class.
+        val shadowed = membersByName.get(sym1.name).toList.flatten filter { other =>
+          !settings.docImplicitsSoundShadowing.value || !isDistinguishableFrom(tpe1, inTpl.sym.info.memberInfo(other.sym))
         }
 
-        val shadowedByMembers = mbrs.filter((mb: MemberImpl) => shadowedBySyms.contains(mb.sym))
-
-        // check if it's shadowed by another member
-        var ambiguousByMembers: List[MemberEntity] = List()
-        for (conv <- otherConvs)
-          for (member2 <- conv.memberImpls) {
-            val sym2 = member2.sym
-            if (sym1.name == sym2.name) {
-              val tpe2 = conv.toType.memberInfo(sym2)
-              // Ambiguity should be an equivalence relation
-              val ambiguated = !isDistinguishableFrom(tpe1, tpe2) || !isDistinguishableFrom(tpe2, tpe1)
-              if (ambiguated)
-                ambiguousByMembers ::= member2
-            }
-          }
+        // check if it's shadowed by another conversion.
+        val ambiguous = otherConvMembers.get(sym1.name).toList.flatten filter { other =>
+          val tpe2 = convsByMember(other).toType.memberInfo(other.sym)
+          !isDistinguishableFrom(tpe1, tpe2) || !isDistinguishableFrom(tpe2, tpe1)
+        }
 
         // we finally have the shadowing info
-        val shadowing = new ImplicitMemberShadowing {
-          def shadowingMembers: List[MemberEntity] = shadowedByMembers
-          def ambiguatingMembers: List[MemberEntity] = ambiguousByMembers
-        }
+        if (!shadowed.isEmpty || !ambiguous.isEmpty) {
+          val shadowing = new ImplicitMemberShadowing {
+            def shadowingMembers: List[MemberEntity] = shadowed
+            def ambiguatingMembers: List[MemberEntity] = ambiguous
+          }
 
-        shadowingTable += (member -> shadowing)
+          shadowingTable += (member -> shadowing)
+        }
       }
     }
 
-    shadowingTable
+    shadowingTable.toMap
   }
 
 
