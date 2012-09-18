@@ -191,14 +191,19 @@ abstract class SelectiveCPSTransform extends PluginComponent with
 
           val pos = catches.head.pos
           val funSym = currentOwner.newValueParameter(pos, cpsNames.catches).setInfo(appliedType(PartialFunctionClass.tpe, List(ThrowableClass.tpe, targettp)))
+          val argSym = currentOwner.newValueParameter(pos, cpsNames.ex).setInfo(ThrowableClass.tpe)
+          val rhs = Match(Ident(argSym), catches1)
+          val fun = Function(List(ValDef(argSym)), rhs)
           val funDef = localTyper.typed(atPos(pos) {
-            ValDef(funSym, Match(EmptyTree, catches1))
+            ValDef(funSym, fun)
           })
           val expr2 = localTyper.typed(atPos(pos) {
             Apply(Select(expr1, expr1.tpe.member(cpsNames.flatMapCatch)), List(Ident(funSym)))
           })
 
           val exSym = currentOwner.newValueParameter(pos, cpsNames.ex).setInfo(ThrowableClass.tpe)
+          exSym.owner = fun.symbol
+          rhs.changeOwner(currentOwner -> fun.symbol)
 
           import CODE._
           // generate a case that is supported directly by the back-end
