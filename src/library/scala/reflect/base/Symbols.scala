@@ -238,6 +238,14 @@ trait Symbols { self: Universe =>
 
     final override def isType = true
     final override def asType = this
+    final override def isTerm = false
+    final override def asTerm = super.asTerm
+    final override def isMethod = false
+    final override def asMethod = super.asMethod
+    final override def isModule = false
+    final override def asModule = super.asModule
+    final override def isFreeTerm = false
+    final override def asFreeTerm = super.asFreeTerm
   }
 
   /** The base API that all term symbols support */
@@ -248,12 +256,23 @@ trait Symbols { self: Universe =>
 
     final override def isTerm = true
     final override def asTerm = this
+    final override def isType = false
+    final override def asType = super.asType
+    final override def isClass = false
+    final override def asClass = super.asClass
+    final override def isFreeType = false
+    final override def asFreeType = super.asFreeType
   }
 
   /** The base API that all method symbols support */
   trait MethodSymbolBase extends TermSymbolBase { this: MethodSymbol =>
     final override def isMethod = true
     final override def asMethod = this
+//  SI-6298: overriding isModule here leads to a build error (both with a final and a non-final override)
+//  final override def isModule = false // TODO uncomment as soon as 6298 has been fixed
+    final override def asModule = super.asModule
+    final override def isFreeTerm = false
+    final override def asFreeTerm = super.asFreeTerm
   }
 
   /** The base API that all module symbols support */
@@ -267,23 +286,36 @@ trait Symbols { self: Universe =>
 
     final override def isModule = true
     final override def asModule = this
+//  SI-6298: overriding isMethod here leads to a build error (both with a final and non-final override)
+//  final override def isMethod = false // TODO uncomment as soon as 6298 has been fixed
+    final override def asMethod = super.asMethod
+    final override def isFreeTerm = false
+    final override def asFreeTerm = super.asFreeTerm
   }
 
   /** The base API that all class symbols support */
   trait ClassSymbolBase extends TypeSymbolBase { this: ClassSymbol =>
     final override def isClass = true
     final override def asClass = this
+    final override def isFreeType = false
+    final override def asFreeType = super.asFreeType
   }
 
   /** The base API that all free type symbols support */
   trait FreeTypeSymbolBase extends TypeSymbolBase { this: FreeTypeSymbol =>
     final override def isFreeType = true
     final override def asFreeType = this
+    final override def isClass = false
+    final override def asClass = super.asClass
   }
 
   /** The base API that all free term symbols support */
   trait FreeTermSymbolBase extends TermSymbolBase { this: FreeTermSymbol =>
     final override def isFreeTerm = true
     final override def asFreeTerm = this
+    final override def isModule = false
+    final override def asModule = super.asModule
+    final override def isMethod = false
+    final override def asMethod = super.asMethod
   }
 }
