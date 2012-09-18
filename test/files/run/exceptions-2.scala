@@ -42,14 +42,14 @@ object NoExcep {
   def method4 = try {
     Console.println("..");
   } catch {
-    case _ => error("..");
+    case _ => sys.error("..");
   }
 }
 
 object Test {
   def nested1: Unit = try {
     try {
-      error("nnnnoooo");
+      sys.error("nnnnoooo");
     } finally {
       Console.println("Innermost finally");
     }
@@ -59,7 +59,7 @@ object Test {
 
   def nested2 =  try {
     try {
-      error("nnnnoooo");
+      sys.error("nnnnoooo");
     } finally {
       Console.println("Innermost finally");
     }
@@ -134,7 +134,7 @@ object Test {
       ()
     } finally {
       try {
-        error("a");
+        sys.error("a");
       } catch {
         case _ => Console.println("Silently ignore exception in finally");
       }

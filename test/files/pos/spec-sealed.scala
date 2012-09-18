@@ -7,8 +7,8 @@ sealed abstract class MyList[@specialized +A] {
 }
 
 case object MyNil extends MyList[Nothing] {
-  def head = error("nil")
-  def tail = error("nil")
+  def head = sys.error("nil")
+  def tail = sys.error("nil")
 }
 
 case class Cons[@specialized a](private val hd: a, tl: MyList[a]) extends MyList[a] {

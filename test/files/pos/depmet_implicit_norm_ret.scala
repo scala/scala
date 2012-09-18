@@ -19,7 +19,7 @@ object Test{
   
   trait ZipWith[S] {
     type T
-    def zipWith : S => T = error("")
+    def zipWith : S => T = sys.error("")
   }
   
   // bug: inferred return type = (Stream[A]) => java.lang.Object with Test.ZipWith[B]{type T = Stream[B]}#T

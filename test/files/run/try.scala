@@ -61,13 +61,13 @@ object Test extends AnyRef with App {
     Console.print("1 + 1 = ");
     try {
       if (true)
-        error("exit");
+        sys.error("exit");
       1+1;
       ()
     } catch {
       case _ =>
         Console.println("2");
-        error("for good");
+        sys.error("for good");
     }
     Console.println("a");
   } catch {

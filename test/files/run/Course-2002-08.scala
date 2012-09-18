@@ -33,7 +33,7 @@ object M1 {
       if (0 < amount && amount <= balance) {
         balance = balance - amount;
         balance
-      } else error("insufficient funds");
+      } else sys.error("insufficient funds");
   }
 
   def test0 = {

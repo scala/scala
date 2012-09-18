@@ -130,20 +130,6 @@ object Predef extends LowPriorityImplicits {
   // Apparently needed for the xml library
   val $scope = scala.xml.TopScope
 
-  // Deprecated
-
-  @deprecated("Use `sys.error(message)` instead", "2.9.0")
-  def error(message: String): Nothing = sys.error(message)
-
-  @deprecated("Use `sys.exit()` instead", "2.9.0")
-  def exit(): Nothing = sys.exit()
-
-  @deprecated("Use `sys.exit(status)` instead", "2.9.0")
-  def exit(status: Int): Nothing = sys.exit(status)
-
-  @deprecated("Use `formatString.format(args: _*)` or `arg.formatted(formatString)` instead", "2.9.0")
-  def format(text: String, xs: Any*) = augmentString(text).format(xs: _*)
-
   // errors and asserts -------------------------------------------------
 
   /** Tests an expression, throwing an `AssertionError` if false.

@@ -373,7 +373,7 @@ object Test extends Properties("HtmlFactory") {
     }
   }
 
-  property("SI-4714: Should decode symbolic type alias name.") = {
+  property("SI-4715: Should decode symbolic type alias name.") = {
     createTemplate("SI_4715.scala") match {
       case node: scala.xml.Node => {
         val html = node.toString

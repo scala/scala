@@ -11,9 +11,9 @@ object Test extends Properties("Either") {
   implicit def arbitraryEither[X, Y](implicit xa: Arbitrary[X], ya: Arbitrary[Y]): Arbitrary[Either[X, Y]] = 
     Arbitrary[Either[X, Y]](oneOf(arbitrary[X].map(Left(_)), arbitrary[Y].map(Right(_))))
 
-  val prop_either1 = forAll((n: Int) => Left(n).fold(x => x, b => error("fail")) == n)
+  val prop_either1 = forAll((n: Int) => Left(n).fold(x => x, b => sys.error("fail")) == n)
 
-  val prop_either2 = forAll((n: Int) => Right(n).fold(a => error("fail"), x => x) == n)
+  val prop_either2 = forAll((n: Int) => Right(n).fold(a => sys.error("fail"), x => x) == n)
 
   val prop_swap = forAll((e: Either[Int, Int]) => e match {
     case Left(a) => e.swap.right.get == a

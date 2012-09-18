@@ -9,8 +9,8 @@ object lists {
 
   def Nil[b] = new List[b] {
     def isEmpty: Boolean = true;
-    def head = error("head of Nil");
-    def tail = error("tail of Nil");
+    def head = sys.error("head of Nil");
+    def tail = sys.error("tail of Nil");
   }
 
   def Cons[c](x: c, xs: List[c]): List[c] = new List[c] {
