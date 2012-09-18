@@ -56,9 +56,9 @@ object RedBlackTree {
   def to[A: Ordering, B](tree: Tree[A, B], to: A): Tree[A, B] = blacken(doTo(tree, to))
   def until[A: Ordering, B](tree: Tree[A, B], key: A): Tree[A, B] = blacken(doUntil(tree, key))
 
-  def take[A, B](tree: Tree[A, B], n: Int): Tree[A, B] = blacken(doTake(tree, n))
-  def slice[A, B](tree: Tree[A, B], from: Int, until: Int): Tree[A, B] = blacken(doSlice(tree, from, until))
-  def drop[A, B](tree: Tree[A, B], n: Int): Tree[A, B] = blacken(doDrop(tree, n))
+  def drop[A: Ordering, B](tree: Tree[A, B], n: Int): Tree[A, B] = blacken(doDrop(tree, n))
+  def take[A: Ordering, B](tree: Tree[A, B], n: Int): Tree[A, B] = blacken(doTake(tree, n))
+  def slice[A: Ordering, B](tree: Tree[A, B], from: Int, until: Int): Tree[A, B] = blacken(doSlice(tree, from, until))
 
   def smallest[A, B](tree: Tree[A, B]): Tree[A, B] = {
     if (tree eq null) throw new NoSuchElementException("empty map")
