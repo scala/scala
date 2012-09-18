@@ -16,9 +16,8 @@ object Serialize {
   }
 }
 
-@serializable
 @SerialVersionUID(1L)
-class VarModel[T](getter: => T, setter: T => Unit) {
+class VarModel[T](getter: => T, setter: T => Unit) extends Serializable {
   Serialize.write(getter)
   Serialize.write(setter)
 
@@ -35,23 +34,20 @@ class VarModel[T](getter: => T, setter: T => Unit) {
   def detach = ()
 }
 
-@serializable
 @SerialVersionUID(1L)
-class Printer(p: VarModel[String]) {
+class Printer(p: VarModel[String]) extends Serializable {
   def print = println(p.getObject)
 }
 
-@serializable
 @SerialVersionUID(1L)
-class Component {
+class Component extends Serializable {
 }
 
 class Form extends Component {
 }
 
-@serializable
 @SerialVersionUID(1L)
-class Main {
+class Main extends Serializable {
   var pass = "pass"
   def main(args: Array[String]) {
     val f = new Form {
