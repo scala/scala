@@ -1,6 +1,6 @@
 package tools.test.osgi
 package reflection
-package allmirrors
+package basic
  
 import org.junit.Assert._
 import org.ops4j.pax.exam.CoreOptions._
@@ -42,7 +42,7 @@ class BasicReflectionTest extends ScalaOsgiHelper {
 
   @Configuration
   def config(): Array[exam.Option] = 
-    scalaBundles
+    justReflectionOptions
 
   // Ensure Pax-exam requires C/M in our module
   def dummy = {

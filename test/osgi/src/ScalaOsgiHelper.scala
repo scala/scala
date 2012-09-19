@@ -5,13 +5,31 @@ import org.ops4j.pax.exam
 import java.io.File
 
 trait ScalaOsgiHelper {
-  def scalaBundles: Array[exam.Option]  = {
+
+  private def allBundleFiles = {
     def bundleLocation = new File(sys.props.getOrElse("scala.bundle.dir", "build/osgi"))
-    def bundleFiles = bundleLocation.listFiles filter (_.getName endsWith ".jar")
-    def makeBundle(file: File): exam.Option =
+    bundleLocation.listFiles filter (_.getName endsWith ".jar")
+  }
+
+  private def filteredBundleFiles(names: String*): Array[exam.Option] =
+     for(bundle <- allBundleFiles; if names exists (bundle.getName contains))
+     yield makeBundle(bundle)
+
+  private def makeBundle(file: File): exam.Option =
       bundle(file.toURI.toASCIIString)
-    val bundles = (bundleFiles map makeBundle)
-    System.out.println(bundles)
+
+  def standardOptions: Array[exam.Option]  = {
+    val bundles = (allBundleFiles map makeBundle)
+    bundles ++ Array[exam.Option](felix(), equinox(), junitBundles())
+  }
+
+  def justReflectionOptions: Array[exam.Option]  = {
+    val bundles = filteredBundleFiles("scala-library", "scala-reflect")
+    bundles ++ Array[exam.Option](felix(), equinox(), junitBundles())
+  }
+
+  def justCoreLibraryOptions: Array[exam.Option]  = {
+    val bundles = filteredBundleFiles("scala-library")
     bundles ++ Array[exam.Option](felix(), equinox(), junitBundles())
   }
  

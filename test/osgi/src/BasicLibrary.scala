@@ -1,4 +1,5 @@
 package tools.test.osgi
+package libonly
  
 import org.junit.Assert._
 import org.ops4j.pax.exam.CoreOptions._
@@ -17,17 +18,20 @@ import org.osgi.framework.BundleContext
 
 
 
-
-
 @RunWith(classOf[JUnit4TestRunner])
 @ExamReactorStrategy(Array(classOf[AllConfinedStagedReactorFactory]))
-class BasicTest extends ScalaOsgiHelper {
+class BasicLibraryTest extends ScalaOsgiHelper {
   @Configuration
-  def config(): Array[exam.Option] = {
-    // TODO - Find scala bundles.
-    standardOptions
-  }
+  def config(): Array[exam.Option] =
+    justCoreLibraryOptions
  
   @Test
-  def everythingLoads(): Unit = ()
+  def everythingLoads(): Unit = {
+     // Note - This tests sun.misc usage.
+     import scala.concurrent._
+     import scala.concurrent.util.Duration.Inf
+     import ExecutionContext.Implicits._
+     val x = Future(2) map (_ + 1)
+     assertEquals(3, Await.result(x, Inf))
+  }
 }
