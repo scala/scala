@@ -1341,7 +1341,7 @@ trait Printers extends api.Printers { self: SymbolTable =>
       val s_flags = new scala.collection.mutable.ListBuffer[String]
       def hasFlag(left: Long, right: Long): Boolean = (left & right) != 0
       for (i <- 0 to 63 if hasFlag(flags, 1L << i))
-        s_flags += flagToString(1L << i).replace("<", "").replace(">", "").toUpperCase
+        s_flags += flagToString(1L << i).replace("<", "").replace(">", "").toUpperCase(java.util.Locale.ENGLISH)
       s_flags mkString " | "
     }
   }

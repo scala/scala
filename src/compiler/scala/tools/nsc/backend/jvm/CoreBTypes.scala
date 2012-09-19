@@ -158,7 +158,7 @@ class CoreBTypes[BTFS <: BTypesFromSymbols[_ <: Global]](val bTypes: BTFS) {
   lazy val javaUnboxMethods: Map[InternalName, MethodNameAndType] = {
     ScalaValueClassesNoUnit.map(primitive => {
       val boxed = boxedClass(primitive)
-      val name = primitive.name.toString.toLowerCase + "Value"
+      val name = primitive.name.toString.toLowerCase(java.util.Locale.ENGLISH) + "Value"
       (classBTypeFromSymbol(boxed).internalName, methodNameAndType(boxed, newTermName(name)))
     })(collection.breakOut)
   }
@@ -172,10 +172,10 @@ class CoreBTypes[BTFS <: BTypesFromSymbols[_ <: Global]](val bTypes: BTFS) {
   }
 
   // boolean2Boolean -> (Z)Ljava/lang/Boolean;
-  lazy val predefAutoBoxMethods: Map[String, MethodBType] = predefBoxingMethods((primitive, boxed) => primitive.toLowerCase + "2" + boxed)
+  lazy val predefAutoBoxMethods: Map[String, MethodBType] = predefBoxingMethods((primitive, boxed) => primitive.toLowerCase(java.util.Locale.ENGLISH) + "2" + boxed)
 
   // Boolean2boolean -> (Ljava/lang/Boolean;)Z
-  lazy val predefAutoUnboxMethods: Map[String, MethodBType] = predefBoxingMethods((primitive, boxed) => boxed + "2" + primitive.toLowerCase)
+  lazy val predefAutoUnboxMethods: Map[String, MethodBType] = predefBoxingMethods((primitive, boxed) => boxed + "2" + primitive.toLowerCase(java.util.Locale.ENGLISH))
 
   private def staticRefMethods(name: Name): Map[InternalName, MethodNameAndType] = {
     allRefClasses.map(refClass =>

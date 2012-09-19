@@ -9,24 +9,11 @@
 package scala
 package io
 
-import java.nio.charset.{ Charset, CharsetDecoder, CharsetEncoder, CharacterCodingException, CodingErrorAction => Action }
-import scala.annotation.migration
 import scala.language.implicitConversions
+import scala.annotation.migration
+import java.nio.charset.{ Charset, CharsetDecoder, CharsetEncoder, CharacterCodingException, CodingErrorAction => Action, StandardCharsets }
 
-// Some notes about encodings for use in refining this implementation.
-//
-// Emails: encoding recorded in header, e.g. Content-Type: charset= "iso-8859-1"
-// HTML: optional content-type meta tag.
-//   <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
-// XML: optional encoding parameter.
-//   <?xml version="1.0" encoding="ISO8859-1" ?>
-//
-// MacRoman vs. UTF-8: see http://osdir.com/ml/lang-jruby-devel/2009-04/msg00071.html
-// -Dfile.encoding: see http://bugs.java.com/bugdatabase/view_bug.do?bug_id=4375816
-
-/** A class for character encoding/decoding preferences.
- *
- */
+/** A class for character encoding/decoding preferences. */
 class Codec(val charSet: Charset) {
   type Configure[T] = (T => T, Boolean)
   type Handler      = CharacterCodingException => Int
@@ -77,17 +64,20 @@ trait LowPriorityCodecImplicits {
 }
 
 object Codec extends LowPriorityCodecImplicits {
-  final val ISO8859: Codec = new Codec(Charset forName "ISO-8859-1")
-  final val UTF8: Codec    = new Codec(Charset forName "UTF-8")
+  @deprecated("this method is misnamed and will be removed, use `Codec(StandardCharsets.ISO_8859_1) instead`", "2.12.0")
+  final val ISO8859: Codec = new Codec(StandardCharsets.ISO_8859_1)
+  final val UTF8: Codec    = new Codec(StandardCharsets.UTF_8)
 
-  /** Optimistically these two possible defaults will be the same thing.
+  /* Optimistically these two possible defaults will be the same thing.
    *  In practice this is not necessarily true, and in fact Sun classifies
    *  the fact that you can influence anything at all via -Dfile.encoding
    *  as an accident, with any anomalies considered "not a bug".
    */
-  def defaultCharsetCodec = apply(Charset.defaultCharset)
+  /** Always returns a UTF8 codec. */
+  def defaultCharsetCodec = UTF8
+  @deprecated("use `Codec(scala.util.Properties.encodingString)` to create a codec influenced by the `-Dfile.encoding` JVM flag", "2.12.0")
   def fileEncodingCodec   = apply(scala.util.Properties.encodingString)
-  def default             = defaultCharsetCodec
+  def default             = UTF8
 
   def apply(encoding: String): Codec        = new Codec(Charset forName encoding)
   def apply(charSet: Charset): Codec        = new Codec(charSet)

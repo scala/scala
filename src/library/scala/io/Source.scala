@@ -11,6 +11,7 @@ package io
 
 import scala.collection.AbstractIterator
 import java.io.{ FileInputStream, InputStream, PrintStream, File => JFile, Closeable }
+import java.nio.charset.StandardCharsets
 import java.net.{ URI, URL }
 
 /** This object provides convenience methods to create an iterable
@@ -109,34 +110,28 @@ object Source {
   def fromBytes(bytes: Array[Byte], enc: String): Source =
     fromBytes(bytes)(Codec(enc))
 
-  /** Create a `Source` from array of bytes, assuming
-   *  one byte per character (ISO-8859-1 encoding.)
-   */
+  /** Create a `Source` from array of bytes, assuming one byte per character (ISO-8859-1 encoding.) */
+  @deprecated("Use `fromBytes` and specify encoding explicitly.", "2.12.0")
   def fromRawBytes(bytes: Array[Byte]): Source =
-    fromString(new String(bytes, Codec.ISO8859.name))
+    fromString(new String(bytes, StandardCharsets.ISO_8859_1))
 
-  /** creates `Source` from file with given file: URI
-   */
+  /** creates `Source` from file with given file: URI */
   def fromURI(uri: URI)(implicit codec: Codec): BufferedSource =
     fromFile(new JFile(uri))(codec)
 
-  /** same as fromURL(new URL(s))(Codec(enc))
-   */
+  /** same as fromURL(new URL(s))(Codec(enc)) */
   def fromURL(s: String, enc: String): BufferedSource =
     fromURL(s)(Codec(enc))
 
-  /** same as fromURL(new URL(s))
-   */
+  /** same as fromURL(new URL(s)) */
   def fromURL(s: String)(implicit codec: Codec): BufferedSource =
     fromURL(new URL(s))(codec)
 
-  /** same as fromInputStream(url.openStream())(Codec(enc))
-   */
+  /** same as fromInputStream(url.openStream())(Codec(enc)) */
   def fromURL(url: URL, enc: String): BufferedSource =
     fromURL(url)(Codec(enc))
 
-  /** same as fromInputStream(url.openStream())(codec)
-   */
+  /** same as fromInputStream(url.openStream())(codec) */
   def fromURL(url: URL)(implicit codec: Codec): BufferedSource =
     fromInputStream(url.openStream())(codec)
 
