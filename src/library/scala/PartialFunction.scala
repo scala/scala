@@ -156,7 +156,7 @@ trait PartialFunction[-A, +B] extends (A => B) { self =>
 object PartialFunction {
   /** Composite function produced by `PartialFunction#orElse` method
    */
-  private final class OrElse[-A, +B] (f1: PartialFunction[A, B], f2: PartialFunction[A, B]) extends PartialFunction[A, B] {
+  private class OrElse[-A, +B] (f1: PartialFunction[A, B], f2: PartialFunction[A, B]) extends PartialFunction[A, B] {
     def isDefinedAt(x: A) = f1.isDefinedAt(x) || f2.isDefinedAt(x)
 
     def apply(x: A): B = f1.applyOrElse(x, f2)
@@ -175,7 +175,7 @@ object PartialFunction {
 
   /** Composite function produced by `PartialFunction#andThen` method
    */
-  private final class AndThen[-A, B, +C] (pf: PartialFunction[A, B], k: B => C) extends PartialFunction[A, C] {
+  private class AndThen[-A, B, +C] (pf: PartialFunction[A, B], k: B => C) extends PartialFunction[A, C] {
     def isDefinedAt(x: A) = pf.isDefinedAt(x)
 
     def apply(x: A): C = k(pf(x))
@@ -207,11 +207,11 @@ object PartialFunction {
    *
    *  Here `fallback_pf` is used as both unique marker object and special fallback function that returns it.
    */
-  private[this] final val fallback_pf: PartialFunction[Any, Any] = { case _ => fallback_pf }
-  @inline private final def checkFallback[B] = fallback_pf.asInstanceOf[PartialFunction[Any, B]]
-  @inline private final def fallbackOccurred[B](x: B) = (fallback_pf eq x.asInstanceOf[AnyRef])
+  private[this] val fallback_pf: PartialFunction[Any, Any] = { case _ => fallback_pf }
+  private def checkFallback[B] = fallback_pf.asInstanceOf[PartialFunction[Any, B]]
+  private def fallbackOccurred[B](x: B) = (fallback_pf eq x.asInstanceOf[AnyRef])
 
-  private final class Lifted[-A, +B] (val pf: PartialFunction[A, B])
+  private class Lifted[-A, +B] (val pf: PartialFunction[A, B])
       extends scala.runtime.AbstractFunction1[A, Option[B]] {
 
     def apply(x: A): Option[B] = {
@@ -220,7 +220,7 @@ object PartialFunction {
     }
   }
 
-  private final class Unlifted[A, B] (f: A => Option[B]) extends scala.runtime.AbstractPartialFunction[A, B] {
+  private class Unlifted[A, B] (f: A => Option[B]) extends scala.runtime.AbstractPartialFunction[A, B] {
     def isDefinedAt(x: A): Boolean = f(x).isDefined
 
     override def applyOrElse[A1 <: A, B1 >: B](x: A1, default: A1 => B1): B1 = {
@@ -241,9 +241,9 @@ object PartialFunction {
    */
   def apply[A, B](f: A => B): PartialFunction[A, B] = { case x => f(x) }
 
-  private[this] final val constFalse: Any => Boolean = { _ => false}
+  private[this] val constFalse: Any => Boolean = { _ => false}
 
-  private[this] final val empty_pf: PartialFunction[Any, Nothing] = new PartialFunction[Any, Nothing] {
+  private[this] val empty_pf: PartialFunction[Any, Nothing] = new PartialFunction[Any, Nothing] {
     def isDefinedAt(x: Any) = false
     def apply(x: Any) = throw new MatchError(x)
     override def orElse[A1, B1](that: PartialFunction[A1, B1]) = that

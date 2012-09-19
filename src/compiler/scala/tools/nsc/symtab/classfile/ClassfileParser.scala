@@ -1273,7 +1273,7 @@ abstract class ClassfileParser {
         sym.privateWithin = sym.enclosingTopLevelClass.owner
   }
 
-  @inline private def isPrivate(flags: Int)     = (flags & JAVA_ACC_PRIVATE) != 0
-  @inline private def isStatic(flags: Int)      = (flags & JAVA_ACC_STATIC) != 0
-  @inline private def hasAnnotation(flags: Int) = (flags & JAVA_ACC_ANNOTATION) != 0
+  private def isPrivate(flags: Int)     = (flags & JAVA_ACC_PRIVATE) != 0
+  private def isStatic(flags: Int)      = (flags & JAVA_ACC_STATIC) != 0
+  private def hasAnnotation(flags: Int) = (flags & JAVA_ACC_ANNOTATION) != 0
 }

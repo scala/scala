@@ -91,7 +91,7 @@ trait Typers extends Modes with Adaptations with Tags {
   //  - we may virtualize matches (if -Xexperimental and there's a suitable __match in scope)
   //  - we synthesize PartialFunction implementations for `x => x match {...}` and `match {...}` when the expected type is PartialFunction
   // this is disabled by: -Xoldpatmat or interactive compilation (we run it for scaladoc due to SI-5933)
-  @inline private def newPatternMatching = opt.virtPatmat && !forInteractive //&& !forScaladoc && (phase.id < currentRun.uncurryPhase.id)
+  private def newPatternMatching = opt.virtPatmat && !forInteractive //&& !forScaladoc && (phase.id < currentRun.uncurryPhase.id)
 
   abstract class Typer(context0: Context) extends TyperDiagnostics with Adaptation with Tag with TyperContextErrors {
     import context0.unit
@@ -478,7 +478,6 @@ trait Typers extends Modes with Adaptations with Tags {
     /** The typer for an expression, depending on where we are. If we are before a superclass
      *  call, this is a typer over a constructor context; otherwise it is the current typer.
      */
-    @inline
     final def constrTyperIf(inConstr: Boolean): Typer =
       if (inConstr) {
         assert(context.undetparams.isEmpty, context.undetparams)
@@ -1557,7 +1556,7 @@ trait Typers extends Modes with Adaptations with Tags {
      */
     def validateParentClasses(parents: List[Tree], selfType: Type) {
       val pending = ListBuffer[AbsTypeError]()
-      @inline def validateDynamicParent(parent: Symbol) =
+      def validateDynamicParent(parent: Symbol) =
         if (parent == DynamicClass) checkFeature(parent.pos, DynamicsFeature)
 
       def validateParentClass(parent: Tree, superclazz: Symbol) =
@@ -3846,7 +3845,7 @@ trait Typers extends Modes with Adaptations with Tags {
             case Apply(TypeApply(fun, targs), args) => (Apply(fun, args), targs)
             case t                                  => (t, Nil)
           }
-          @inline def hasNamedArg(as: List[Tree]) = as.collectFirst{case AssignOrNamedArg(lhs, rhs) =>}.nonEmpty
+          def hasNamedArg(as: List[Tree]) = as.collectFirst{case AssignOrNamedArg(lhs, rhs) =>}.nonEmpty
 
           def desugaredApply = tree match {
             case Select(`qual`, nme.apply) => true
@@ -3884,8 +3883,8 @@ trait Typers extends Modes with Adaptations with Tags {
       }
     }
 
-    @inline final def deindentTyping() = context.typingIndentLevel -= 2
-    @inline final def indentTyping() = context.typingIndentLevel += 2
+    final def deindentTyping() = context.typingIndentLevel -= 2
+    final def indentTyping() = context.typingIndentLevel += 2
     @inline final def printTyping(s: => String) = {
       if (printTypings)
         println(context.typingIndent + s.replaceAll("\n", "\n" + context.typingIndent))
@@ -4707,12 +4706,10 @@ trait Typers extends Modes with Adaptations with Tags {
        */
       def typedIdent(tree: Tree, name: Name): Tree = {
         var errorContainer: AbsTypeError = null
-        @inline
         def ambiguousError(msg: String) = {
           assert(errorContainer == null, "Cannot set ambiguous error twice for identifier")
           errorContainer = AmbiguousIdentError(tree, name, msg)
         }
-        @inline
         def identError(tree: AbsTypeError) = {
           assert(errorContainer == null, "Cannot set ambiguous error twice for identifier")
           errorContainer = tree

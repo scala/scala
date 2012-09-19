@@ -51,7 +51,7 @@ trait Chars {
   }
 
   /** Is character a line break? */
-  @inline def isLineBreakChar(c: Char) = (c: @switch) match {
+  def isLineBreakChar(c: Char) = (c: @switch) match {
     case LF|FF|CR|SU  => true
     case _            => false
   }
