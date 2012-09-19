@@ -1,18 +1,18 @@
 package scala.reflect
-package base
+package api
 
 /**
  * This is an internal implementation class.
  */
 trait BuildUtils { self: Universe =>
 
-  val build: BuildBase
+  val build: BuildApi
 
   // this API abstracts away the functionality necessary for reification
   // it's too gimmicky and unstructured to be exposed directly in the universe
   // but we need it in a publicly available place for reification to work
 
-  abstract class BuildBase {
+  abstract class BuildApi {
     /** Selects type symbol with given simple name `name` from the defined members of `owner`.
      */
     def selectType(owner: Symbol, name: String): TypeSymbol

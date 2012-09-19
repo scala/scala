@@ -7,7 +7,7 @@
 package scala.reflect.internal.util
 
 import scala.reflect.ClassTag
-import scala.reflect.base.Attachments
+import scala.reflect.api.Attachments
 import scala.reflect.api.PositionApi
 
 object Position {

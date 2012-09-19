@@ -1150,9 +1150,9 @@ trait Implicits {
 
     private def TagSymbols =  TagMaterializers.keySet
     private val TagMaterializers = Map[Symbol, Symbol](
-      ClassTagClass   -> MacroInternal_materializeClassTag,
-      WeakTypeTagClass -> MacroInternal_materializeWeakTypeTag,
-      TypeTagClass    -> MacroInternal_materializeTypeTag
+      ClassTagClass    -> materializeClassTag,
+      WeakTypeTagClass -> materializeWeakTypeTag,
+      TypeTagClass     -> materializeTypeTag
     )
 
     /** Creates a tree will produce a tag of the requested flavor.
@@ -1183,7 +1183,7 @@ trait Implicits {
 
       val prefix = (
         // ClassTags are not path-dependent, so their materializer doesn't care about prefixes
-        if (tagClass eq ClassTagClass) gen.mkBasisUniverseRef
+        if (tagClass eq ClassTagClass) EmptyTree
         else pre match {
           case SingleType(prePre, preSym) =>
             gen.mkAttributedRef(prePre, preSym) setType pre
@@ -1205,7 +1205,7 @@ trait Implicits {
         }
       )
       // todo. migrate hardcoded materialization in Implicits to corresponding implicit macros
-      var materializer = atPos(pos.focus)(gen.mkMethodCall(TagMaterializers(tagClass), List(tp), List(prefix)))
+      var materializer = atPos(pos.focus)(gen.mkMethodCall(TagMaterializers(tagClass), List(tp), if (prefix != EmptyTree) List(prefix) else List()))
       if (settings.XlogImplicits.value) println("materializing requested %s.%s[%s] using %s".format(pre, tagClass.name, tp, materializer))
       if (context.macrosEnabled) success(materializer)
       // don't call `failure` here. if macros are disabled, we just fail silently

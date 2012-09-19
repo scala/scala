@@ -3,21 +3,21 @@ package reflect
 
 import java.lang.{Class => jClass}
 import scala.reflect.{ClassTag, classTag}
-import scala.reflect.base.{MirrorOf, TypeCreator, Universe => BaseUniverse}
+import scala.reflect.api.{MirrorOf, TypeCreator, Universe => ApiUniverse}
 
 // [Eugene++] Before 2.10 is released, I suggest we don't rely on automated type tag generation
 // sure, it's convenient, but then refactoring reflection / reification becomes a pain
 // `ClassTag` tags are fine, because they don't need a reifier to be generated
 
 trait StdTags {
-  val u: BaseUniverse with Singleton
+  val u: ApiUniverse with Singleton
   val m: MirrorOf[u.type]
 
   lazy val tagOfListOfString: u.TypeTag[List[String]] =
     u.TypeTag[List[String]](
       m,
       new TypeCreator {
-        def apply[U <: BaseUniverse with Singleton](m: MirrorOf[U]): U # Type = {
+        def apply[U <: ApiUniverse with Singleton](m: MirrorOf[U]): U # Type = {
           val u = m.universe
           val pre = u.ThisType(m.staticPackage("scala.collection.immutable").moduleClass.asInstanceOf[u.Symbol])
           u.TypeRef(pre, u.definitions.ListClass, List(u.definitions.StringClass.toTypeConstructor))
@@ -28,7 +28,7 @@ trait StdTags {
     u.TypeTag[T](
       m,
       new TypeCreator {
-        def apply[U <: BaseUniverse with Singleton](m: MirrorOf[U]): U # Type =
+        def apply[U <: ApiUniverse with Singleton](m: MirrorOf[U]): U # Type =
           m.staticClass(classTag[T].runtimeClass.getName).toTypeConstructor.asInstanceOf[U # Type]
       })
   lazy val tagOfInt = u.TypeTag.Int

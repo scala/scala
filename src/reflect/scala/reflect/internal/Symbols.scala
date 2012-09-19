@@ -10,7 +10,6 @@ import scala.collection.{ mutable, immutable }
 import scala.collection.mutable.ListBuffer
 import util.Statistics
 import Flags._
-import base.Attachments
 import scala.annotation.tailrec
 import scala.tools.nsc.io.AbstractFile
 

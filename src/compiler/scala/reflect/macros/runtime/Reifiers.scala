@@ -13,17 +13,17 @@ trait Reifiers {
   import universe._
   import definitions._
 
-  lazy val basisUniverse: Tree = gen.mkBasisUniverseRef
-
   lazy val runtimeUniverse: Tree = gen.mkRuntimeUniverseRef
 
   def reifyTree(universe: Tree, mirror: Tree, tree: Tree): Tree = {
+    assert(ExprClass != NoSymbol)
     val result = scala.reflect.reify.`package`.reifyTree(self.universe)(callsiteTyper, universe, mirror, tree)
     logFreeVars(enclosingPosition, result)
     result
   }
 
   def reifyType(universe: Tree, mirror: Tree, tpe: Type, concrete: Boolean = false): Tree = {
+    assert(TypeTagsClass != NoSymbol)
     val result = scala.reflect.reify.`package`.reifyType(self.universe)(callsiteTyper, universe, mirror, tpe, concrete)
     logFreeVars(enclosingPosition, result)
     result

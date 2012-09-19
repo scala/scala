@@ -121,4 +121,4 @@ testing String.+: 23
 CTM
 testing Predef.classOf: class scala.ScalaReflectionException: Predef.classOf is a compile-time function, it cannot be invoked with mirrors
 testing Predef.classOf: class scala.ScalaReflectionException: scala.Predef.classOf[T]: Class[T] takes 0 arguments
-testing Universe.reify: class scala.ScalaReflectionException: scala.reflect.base.Universe.reify is a macro, i.e. a compile-time function, it cannot be invoked with mirrors
+testing Universe.reify: class scala.ScalaReflectionException: scala.reflect.api.Universe.reify is a macro, i.e. a compile-time function, it cannot be invoked with mirrors

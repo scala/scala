@@ -1,7 +1,7 @@
 package scala.reflect
-package base
+package api
 
-/** Attachments is a generalization of Position. Typically it stores a Position of a tree, but this can be extended to 
+/** Attachments is a generalization of Position. Typically it stores a Position of a tree, but this can be extended to
  *  encompass arbitrary payloads. Payloads are stored in type-indexed slots, which can be read with `get[T]` and written
  *  with `update[T]` and `remove[T]`.
  *
@@ -30,7 +30,7 @@ abstract class Attachments { self =>
     (all filter matchesTag[T]).headOption.asInstanceOf[Option[T]]
 
   /** Creates a copy of this attachment with the payload slot of T added/updated with the provided value.
-   * 
+   *
    * Replaces an existing payload of the same type, if exists.
    */
   def update[T: ClassTag](attachment: T): Attachments { type Pos = self.Pos } =
@@ -48,5 +48,3 @@ abstract class Attachments { self =>
     def withPos(newPos: Pos) = new NonemptyAttachments(newPos, all)
   }
 }
-
-

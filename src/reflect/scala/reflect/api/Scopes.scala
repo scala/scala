@@ -1,8 +1,8 @@
 package scala.reflect
-package base
+package api
 
 /**
- * Defines the type hierachy for scopes. 
+ * Defines the type hierachy for scopes.
  *
  * @see [[scala.reflect]] for a description on how the class hierarchy is encoded here.
  */
@@ -11,21 +11,21 @@ trait Scopes { self: Universe =>
   /** The base type of all scopes. A scope object generally maps names to symbols available in the current lexical scope.
    *  Scopes can be nested. This base type, however, only exposes a minimal interface, representing a scope as an iterable of symbols.
    */
-  type Scope >: Null <: ScopeBase
+  type Scope >: Null <: ScopeApi
 
-  /** The base API that all scopes support */
-  trait ScopeBase extends Iterable[Symbol]
+  /** The API that all scopes support */
+  trait ScopeApi extends Iterable[Symbol]
 
   /** A tag that preserves the identity of the `Scope` abstract type from erasure.
    *  Can be used for pattern matching, instance tests, serialization and likes.
    */
   implicit val ScopeTag: ClassTag[Scope]
 
-  /** The base type of member scopes, as in class definitions, for example. */
-  type MemberScope >: Null <: Scope with MemberScopeBase
+  /** The type of member scopes, as in class definitions, for example. */
+  type MemberScope >: Null <: Scope with MemberScopeApi
 
-  /** The base API that all member scopes support */
-  trait MemberScopeBase extends ScopeBase {
+  /** The API that all member scopes support */
+  trait MemberScopeApi extends ScopeApi {
     /** Sorts the symbols included in this scope so that:
      *    1) Symbols appear in the linearization order of their owners.
      *    2) Symbols with the same owner appear in reverse order of their declarations.

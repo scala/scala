@@ -1,7 +1,6 @@
 package scala.reflect
 
 import scala.language.implicitConversions
-import scala.reflect.base.{Universe => BaseUniverse}
 import scala.reflect.macros.{Context, ReificationError, UnexpectedReificationError}
 import scala.tools.nsc.Global
 
