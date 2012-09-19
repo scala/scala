@@ -74,17 +74,23 @@ object RedBlackTree {
     result
   }
 
-  def foreach[A, B, U](tree: Tree[A, B], f: ((A, B)) => U): Unit = if (tree ne null) {
-    if (tree.left ne null) foreach(tree.left, f)
-    f((tree.key, tree.value))
-    if (tree.right ne null) foreach(tree.right, f)
-  }
-  def foreachKey[A, U](tree: Tree[A, _], f: A => U): Unit = if (tree ne null) {
-    if (tree.left ne null) foreachKey(tree.left, f)
-    f(tree.key)
-    if (tree.right ne null) foreachKey(tree.right, f)
-  }
 
+  def foreach[A,B,U](tree:Tree[A,B], f:((A,B)) => U):Unit = if (tree ne null) _foreach(tree,f)
+
+  private[this] def _foreach[A, B, U](tree: Tree[A, B], f: ((A, B)) => U) {
+    if (tree.left ne null) _foreach(tree.left, f)
+    f((tree.key, tree.value))
+    if (tree.right ne null) _foreach(tree.right, f)
+  }
+  
+  def foreachKey[A, U](tree:Tree[A,_], f: A => U):Unit = if (tree ne null) _foreachKey(tree,f)
+
+  private[this] def _foreachKey[A, U](tree: Tree[A, _], f: A => U) {
+    if (tree.left ne null) _foreachKey(tree.left, f)
+    f((tree.key))
+    if (tree.right ne null) _foreachKey(tree.right, f)
+  }
+  
   def iterator[A, B](tree: Tree[A, B]): Iterator[(A, B)] = new EntriesIterator(tree)
   def keysIterator[A, _](tree: Tree[A, _]): Iterator[A] = new KeysIterator(tree)
   def valuesIterator[_, B](tree: Tree[_, B]): Iterator[B] = new ValuesIterator(tree)
