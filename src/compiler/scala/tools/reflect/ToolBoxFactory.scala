@@ -175,7 +175,7 @@ abstract class ToolBoxFactory[U <: JavaUniverse](val u: U) { factorySelf =>
         val thunks = freeTerms map (fte => () => fte.value) // need to be lazy in order not to distort evaluation order
         verify(expr)
 
-        def wrap(expr0: Tree): Tree = {
+        def wrap(expr0: Tree): ModuleDef = {
           val (expr, freeTerms) = extractFreeTerms(expr0, wrapFreeTermRefs = true)
 
           val (obj, mclazz) = rootMirror.EmptyPackageClass.newModuleAndClassSymbol(
@@ -213,11 +213,11 @@ abstract class ToolBoxFactory[U <: JavaUniverse](val u: U) { factorySelf =>
 
           var cleanedUp = resetLocalAttrs(moduledef)
           trace("cleaned up: ")(showAttributed(cleanedUp, true, true, settings.Yshowsymkinds.value))
-          cleanedUp
+          cleanedUp.asInstanceOf[ModuleDef]
         }
 
         val mdef = wrap(expr)
-        val pdef = PackageDef(Ident(nme.EMPTY_PACKAGE_NAME), List(mdef))
+        val pdef = PackageDef(Ident(mdef.name), List(mdef))
         val unit = new CompilationUnit(NoSourceFile)
         unit.body = pdef
 
