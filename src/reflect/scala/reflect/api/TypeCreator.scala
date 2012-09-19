@@ -1,5 +1,5 @@
 package scala.reflect
-package base
+package api
 
 /** A mirror-aware factory for types.
  *

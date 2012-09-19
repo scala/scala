@@ -1,5 +1,6 @@
 import java.io._
 import scala.reflect.runtime.universe._
+import scala.reflect.runtime.{universe => ru}
 import scala.reflect.runtime.{currentMirror => cm}
 
 object Test extends App {
@@ -13,7 +14,7 @@ object Test extends App {
 
       val fin = new ByteArrayInputStream(fout.toByteArray)
       val in = new ObjectInputStream(fin)
-      val reexpr = in.readObject().asInstanceOf[scala.reflect.basis.Expr[_]].in(cm)
+      val reexpr = in.readObject().asInstanceOf[ru.Expr[_]].in(cm)
       in.close()
       fin.close()
 

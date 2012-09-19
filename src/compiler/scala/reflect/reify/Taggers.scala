@@ -27,9 +27,9 @@ abstract class Taggers {
     NothingTpe -> nme.Nothing,
     NullTpe -> nme.Null)
 
-  def materializeClassTag(prefix: Tree, tpe: Type): Tree = {
+  def materializeClassTag(tpe: Type): Tree = {
     val tagModule = ClassTagModule
-    materializeTag(prefix, tpe, tagModule, {
+    materializeTag(EmptyTree, tpe, tagModule, {
       val erasure = c.reifyRuntimeClass(tpe, concrete = true)
       val factory = TypeApply(Select(Ident(tagModule), nme.apply), List(TypeTree(tpe)))
       Apply(factory, List(erasure))
@@ -38,13 +38,13 @@ abstract class Taggers {
 
   def materializeTypeTag(universe: Tree, mirror: Tree, tpe: Type, concrete: Boolean): Tree = {
     val tagType = if (concrete) TypeTagClass else WeakTypeTagClass
-    // what we need here is to compose a type BaseUniverse # TypeTag[$tpe]
+    // what we need here is to compose a type Universe # TypeTag[$tpe]
     // to look for an implicit that conforms to this type
     // that's why neither appliedType(tagType, List(tpe)) aka TypeRef(TypeTagsClass.thisType, tagType, List(tpe))
-    // nor TypeRef(BaseUniverseClass.thisType, tagType, List(tpe)) won't fit here
-    // scala> :type -v def foo: scala.reflect.base.Universe#TypeTag[Int] = ???
+    // nor TypeRef(ApiUniverseClass.thisType, tagType, List(tpe)) won't fit here
+    // scala> :type -v def foo: scala.reflect.api.Universe#TypeTag[Int] = ???
     // NullaryMethodType(TypeRef(pre = TypeRef(TypeSymbol(Universe)), TypeSymbol(TypeTag), args = List($tpe))))
-    val unaffiliatedTagTpe = TypeRef(BaseUniverseClass.typeConstructor, tagType, List(tpe))
+    val unaffiliatedTagTpe = TypeRef(ApiUniverseClass.typeConstructor, tagType, List(tpe))
     val unaffiliatedTag = c.inferImplicitValue(unaffiliatedTagTpe, silent = true, withMacrosDisabled = true)
     unaffiliatedTag match {
       case success if !success.isEmpty =>
