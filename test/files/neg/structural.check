@@ -1,28 +1,28 @@
 structural.scala:47: error: Parameter type in structural refinement may not refer to the type of that refinement (self type)
   val s1 = new { def f(p: this.type): Unit = () }
-                     ^
+                       ^
 structural.scala:10: error: Parameter type in structural refinement may not refer to an abstract type defined outside that refinement
     def f1[C <: Object](x: Object{ type D <: Object; def m[E >: Null <: Object](x: A): Object; val x: A }) = x.m[Tata](x.x) //fail
-                                                         ^
+                                                                                ^
 structural.scala:11: error: Parameter type in structural refinement may not refer to an abstract type defined outside that refinement
     def f2[C <: Object](x: Object{ type D <: Object; def m[E >: Null <: Object](x: B): Object; val x: B }) = x.m[Tata](x.x) //fail
-                                                         ^
+                                                                                ^
 structural.scala:12: error: Parameter type in structural refinement may not refer to an abstract type defined outside that refinement
     def f3[C <: Object](x: Object{ type D <: Object; def m[E >: Null <: Object](x: C): Object; val x: C }) = x.m[Tata](x.x) //fail
-                                                         ^
+                                                                                ^
 structural.scala:13: error: Parameter type in structural refinement may not refer to a type member of that refinement
     def f4[C <: Object](x: Object{ type D <: Object; def m[E >: Null <: Object](x: D): Object; val x: D }) = x.m[Tata](x.x) //fail
-                                                         ^
+                                                                                ^
 structural.scala:42: error: Parameter type in structural refinement may not refer to an abstract type defined outside that refinement
   type Summable[T] = { def +(v : T) : T }
-                           ^
+                             ^
 structural.scala:46: error: Parameter type in structural refinement may not refer to the type of that refinement (self type)
   type S1 = { def f(p: this.type): Unit }
-                  ^
+                    ^
 structural.scala:49: error: Parameter type in structural refinement may not refer to a type member of that refinement
   type S2 = { type T; def f(p: T): Unit }
-                          ^
+                            ^
 structural.scala:52: error: Parameter type in structural refinement may not refer to an abstract type defined outside that refinement
   def s3[U >: Null <: Object](p: { def f(p: U): Unit; def u: U }) = ()
-                                       ^
+                                         ^
 9 errors found

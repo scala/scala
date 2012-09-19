@@ -1980,32 +1980,39 @@ trait Typers extends Modes with Adaptations with Tags {
      *    - an instance of a value class
      *  Furthermore, the result type may not be a value class either
      */
-    def checkMethodStructuralCompatible(meth: Symbol): Unit = {
-      def fail(msg: String) = unit.error(meth.pos, msg)
+    def checkMethodStructuralCompatible(ddef: DefDef): Unit = {
+      val meth = ddef.symbol
+      def fail(pos: Position, msg: String) = unit.error(pos, msg)
       val tp: Type = meth.tpe match {
         case mt @ MethodType(_, _)     => mt
         case NullaryMethodType(restpe) => restpe  // TODO_NMT: drop NullaryMethodType from resultType?
         case PolyType(_, restpe)       => restpe
         case _                         => NoType
       }
-      def failStruct(what: String, where: String = "Parameter") =
-        fail(s"$where type in structural refinement may not refer to $what")
-      for (paramType <- tp.paramTypes) {
+      def nthParamPos(n: Int) = ddef.vparamss match {
+        case xs :: _ if xs.length > n => xs(n).pos
+        case _                        => meth.pos
+      }
+      def failStruct(pos: Position, what: String, where: String = "Parameter") =
+        fail(pos, s"$where type in structural refinement may not refer to $what")
+
+      foreachWithIndex(tp.paramTypes) { (paramType, idx) =>
         val sym = paramType.typeSymbol
+        def paramPos = nthParamPos(idx)
 
         if (sym.isAbstractType) {
           if (!sym.hasTransOwner(meth.owner))
-            failStruct("an abstract type defined outside that refinement")
+            failStruct(paramPos, "an abstract type defined outside that refinement")
           else if (!sym.hasTransOwner(meth))
-            failStruct("a type member of that refinement")
+            failStruct(paramPos, "a type member of that refinement")
         }
         if (sym.isDerivedValueClass)
-          failStruct("a user-defined value class")
+          failStruct(paramPos, "a user-defined value class")
         if (paramType.isInstanceOf[ThisType] && sym == meth.owner)
-          failStruct("the type of that refinement (self type)")
+          failStruct(paramPos, "the type of that refinement (self type)")
       }
       if (tp.resultType.typeSymbol.isDerivedValueClass)
-        failStruct("a user-defined value class", where = "Result")
+        failStruct(ddef.tpt.pos, "a user-defined value class", where = "Result")
     }
 
     def typedUseCase(useCase: UseCase) {
@@ -2124,7 +2131,7 @@ trait Typers extends Modes with Adaptations with Tags {
         }
       }
       if (meth.isStructuralRefinementMember)
-        checkMethodStructuralCompatible(meth)
+        checkMethodStructuralCompatible(ddef)
 
       if (meth.isImplicit && !meth.isSynthetic) meth.info.paramss match {
         case List(param) :: _ if !param.isImplicit =>
