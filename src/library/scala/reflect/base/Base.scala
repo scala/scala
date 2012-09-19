@@ -212,7 +212,6 @@ class Base extends Universe { self =>
   def newTypeName(str: String) = new TypeName(str)
 
   object nme extends TermNamesBase {
-    type NameType = TermName
     val WILDCARD             = newTermName("_")
     val CONSTRUCTOR          = newTermName("<init>")
     val ROOTPKG              = newTermName("_root_")
@@ -223,7 +222,6 @@ class Base extends Universe { self =>
   }
 
   object tpnme extends TypeNamesBase {
-    type NameType = TypeName
     val WILDCARD             = nme.WILDCARD.toTypeName
     val EMPTY                = nme.EMPTY.toTypeName
     val WILDCARD_STAR        = newTypeName("_*")

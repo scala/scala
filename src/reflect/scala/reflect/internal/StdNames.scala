@@ -206,7 +206,6 @@ trait StdNames {
   }
 
   abstract class TypeNames extends Keywords with TypeNamesApi {
-    type NameType = TypeName
     protected implicit def createNameType(name: String): TypeName = newTypeNameCached(name)
 
     final val BYNAME_PARAM_CLASS_NAME: NameType        = "<byname>"
@@ -273,7 +272,6 @@ trait StdNames {
   }
 
   abstract class TermNames extends Keywords with TermNamesApi {
-    type NameType = TermName
     protected implicit def createNameType(name: String): TermName = newTermNameCached(name)
 
     /** Base strings from which synthetic names are derived. */

@@ -27,11 +27,13 @@ trait StandardNames {
   }
 
   trait TermNamesBase extends NamesBase {
-    val CONSTRUCTOR: TermName
-    val ROOTPKG: TermName
+    type NameType = TermName
+    val CONSTRUCTOR: NameType
+    val ROOTPKG: NameType
   }
 
   trait TypeNamesBase extends NamesBase {
+    type NameType = TypeName
     val EMPTY: NameType
     val WILDCARD_STAR: NameType
   }
