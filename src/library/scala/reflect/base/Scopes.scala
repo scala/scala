@@ -1,8 +1,16 @@
 package scala.reflect
 package base
 
+/**
+ * Defines the type hierachy for scopes. 
+ *
+ * @see [[scala.reflect]] for a description on how the class hierarchy is encoded here.
+ */
 trait Scopes { self: Universe =>
 
+  /** The base type of all scopes. A scope object generally maps names to symbols available in the current lexical scope.
+   *  Scopes can be nested. This base type, however, only exposes a minimal interface, representing a scope as an iterable of symbols.
+   */
   type Scope >: Null <: ScopeBase
 
   /** The base API that all scopes support */
@@ -13,12 +21,13 @@ trait Scopes { self: Universe =>
    */
   implicit val ScopeTag: ClassTag[Scope]
 
+  /** The base type of member scopes, as in class definitions, for example. */
   type MemberScope >: Null <: Scope with MemberScopeBase
 
   /** The base API that all member scopes support */
   trait MemberScopeBase extends ScopeBase {
     /** Sorts the symbols included in this scope so that:
-     *    1) Symbols appear the linearization order of their owners.
+     *    1) Symbols appear in the linearization order of their owners.
      *    2) Symbols with the same owner appear in reverse order of their declarations.
      *    3) Synthetic members (e.g. getters/setters for vals/vars) might appear in arbitrary order.
      */
@@ -30,12 +39,12 @@ trait Scopes { self: Universe =>
    */
   implicit val MemberScopeTag: ClassTag[MemberScope]
 
-  /** Create a new scope */
+  /** Create a new scope. */
   def newScope: Scope
 
-  /** Create a new scope nested in another one with which it shares its elements */
+  /** Create a new scope nested in another one with which it shares its elements. */
   def newNestedScope(outer: Scope): Scope
 
-  /** Create a new scope with given initial elements */
+  /** Create a new scope with the given initial elements. */
   def newScopeWith(elems: Symbol*): Scope
 }
