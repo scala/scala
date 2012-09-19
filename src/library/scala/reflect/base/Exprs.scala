@@ -8,16 +8,71 @@ package base
 
 trait Exprs { self: Universe =>
 
-  /** An expression tree tagged with its type */
+  /** Expr wraps an expression tree and tags it with its type. */
   trait Expr[+T] extends Equals with Serializable {
     val mirror: Mirror
+    /**
+     * Migrates the expression into another mirror, jumping into a different universe if necessary.
+     * 
+     * This means that all symbolic references to classes/objects/packages in the expression
+     * will be re-resolved within the new mirror (typically using that mirror's classloader).
+     */
     def in[U <: Universe with Singleton](otherMirror: MirrorOf[U]): U # Expr[T]
 
+    /**
+     * The Scala syntax tree representing the wrapped expression.
+     */
     def tree: Tree
+    
+    /**
+     * Representation of the type of the wrapped expression tree as found via type tags.
+     */
     def staticType: Type
+    /**
+     * Representation of the type of the wrapped expression tree as found in the tree.
+     */
     def actualType: Type
 
+    /**
+     * A dummy method to mark expression splicing in reification.
+     * 
+     * It should only be used within a `reify` call, which eliminates the `splice` call and embeds
+     * the wrapped tree into the reified surrounding expression. 
+     * If used alone `splice` throws an exception when called at runtime.
+     * 
+     * If you want to use an Expr in reification of some Scala code, you need to splice it in.
+     * For an expr of type `Expr[T]`, where `T` has a method `foo`, the following code
+     * {{{
+     *   reify{ expr.splice.foo }
+     * }}}
+     * uses splice to turn an expr of type Expr[T] into a value of type T in the context of `reify`.
+     * 
+     * It is equivalent to 
+     * {{{
+     *   Select( expr.tree, newTermName("foo") )
+     * }}}
+     * 
+     * The following example code however does not compile
+     * {{{
+     *   reify{ expr.foo }
+     * }}}
+     * because expr of type Expr[T] itself does not have a method foo. 
+     */
     def splice: T
+    /**
+     * A dummy value to denote cross-stage path-dependent type dependencies.
+     * 
+     * For example for the following macro definition:
+     * {{{
+     * class X { type T }
+     * object Macros { def foo(x: X): x.T = macro Impls.foo_impl }
+     * }}}
+     * 
+     * The corresponding macro implementation should have the following signature (note how the return type denotes path-dependency on x):
+     * {{{
+     * object Impls { def foo_impl(c: Context)(x: c.Expr[X]): c.Expr[x.value.T] = ... }
+     * }}}
+     */
     val value: T
 
     /** case class accessories */
@@ -27,6 +82,12 @@ trait Exprs { self: Universe =>
     override def toString = "Expr["+staticType+"]("+tree+")"
   }
 
+  /**
+   * Constructor/Extractor for Expr.
+   * 
+   * Can be useful, when having a tree and wanting to splice it in reify call,
+   * in which case the tree first needs to be wrapped in an expr.
+   */
   object Expr {
     def apply[T: WeakTypeTag](mirror: MirrorOf[self.type], treec: TreeCreator): Expr[T] = new ExprImpl[T](mirror.asInstanceOf[Mirror], treec)
     def unapply[T](expr: Expr[T]): Option[Tree] = Some(expr.tree)

@@ -1,6 +1,9 @@
 package scala.reflect
 package base
 
+/**
+ * This is an internal implementation class.
+ */
 trait BuildUtils { self: Universe =>
 
   val build: BuildBase

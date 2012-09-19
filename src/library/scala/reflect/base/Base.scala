@@ -7,6 +7,9 @@ import scala.ref.WeakReference
 import scala.collection.mutable
 import scala.collection.immutable.ListMap
 
+/**
+ * This is an internal implementation class.
+ */
 class Base extends Universe { self =>
 
   private var nextId = 0

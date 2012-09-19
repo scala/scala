@@ -6,14 +6,21 @@
 package scala.reflect
 package base
 
+/**
+ * Defines standard symbols and types.
+ */
 trait StandardDefinitions {
   self: Universe =>
 
+  /** A value containing all standard defnitions. */
   val definitions: DefinitionsBase
 
+  /** Defines standard symbols (and types via its base class). */
   trait DefinitionsBase extends StandardTypes {
-    // packages
+    /** The class symbol of package `scala`. */
     def ScalaPackageClass: ClassSymbol
+
+    /** The module class symbol of package `scala`. */
     def ScalaPackage: ModuleSymbol
 
     // top types
@@ -37,36 +44,67 @@ trait StandardDefinitions {
     def DoubleClass : ClassSymbol
     def BooleanClass: ClassSymbol
 
-    // some special classes
+    /** The class symbol of class `String`. */
     def StringClass : ClassSymbol
+
+    /** The class symbol of class `Class`. */
     def ClassClass  : ClassSymbol
+
+    /** The class symbol of class `Array`. */
     def ArrayClass  : ClassSymbol
+
+    /** The class symbol of class `List`. */
     def ListClass   : ClassSymbol
 
-    // the Predef object
+    /** The module symbol of `scala.Predef`. */
     def PredefModule: ModuleSymbol
   }
 
+  /** Defines standard types. */
   trait StandardTypes {
-    // the scala value classes
+    /** The `Type` of type `Unit`. */
     val UnitTpe: Type
+
+    /** The `Type` of primitive type `Byte`. */
     val ByteTpe: Type
+
+    /** The `Type` of primitive type `Short`. */
     val ShortTpe: Type
+
+    /** The `Type` of primitive type `Char`. */
     val CharTpe: Type
+
+    /** The `Type` of primitive type `Int`. */
     val IntTpe: Type
+
+    /** The `Type` of primitive type `Long`. */
     val LongTpe: Type
+
+    /** The `Type` of primitive type `Float`. */
     val FloatTpe: Type
+
+    /** The `Type` of primitive type `Double`. */
     val DoubleTpe: Type
+
+    /** The `Type` of primitive type `Boolean`. */
     val BooleanTpe: Type
 
-    // top types
+    /** The `Type` of type `Any`. */
     val AnyTpe: Type
+
+    /** The `Type` of type `AnyVal`. */
     val AnyValTpe: Type
+
+    /** The `Type` of type `AnyRef`. */
     val AnyRefTpe: Type
+
+    /** The `Type` of type `Object`. */
     val ObjectTpe: Type
 
-    // bottom types
+    /** The `Type` of type `Nothing`. */
     val NothingTpe: Type
+
+    /** The `Type` of type `Null`. */
     val NullTpe: Type
   }
 }

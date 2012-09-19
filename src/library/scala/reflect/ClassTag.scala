@@ -5,17 +5,17 @@ import java.lang.{ Class => jClass }
 import scala.language.{implicitConversions, existentials}
 import scala.runtime.ScalaRunTime.{ arrayClass, arrayElementClass }
 
-/** A `ClassTag[T]` wraps a runtime class, which can be accessed via the `runtimeClass` method.
+/** A `ClassTag[T]` wraps a runtime class (the erasure) and can create array instances.
  *
- *  This is useful in itself, but also enables very important use case.
- *  Having this knowledge ClassTag can instantiate `Arrays`
- *  in those cases where the element type is unknown at compile time.
+ *  If an implicit value of type ClassTag[T] is requested, the compiler will create one.
+ *  The runtime class (i.e. the erasure, a java.lang.Class on the JVM) of T can be accessed
+ *  via the `runtimeClass` field. References to type parameters or abstract type members are
+ *  replaced by the concrete types if ClassTags are available for them.
+ *  
+ *  Besides accessing the erasure, a ClassTag knows how to instantiate single- and multi-
+ *  dimensional `Arrays` where the element type is unknown at compile time.
  *
- *  If an implicit value of type u.ClassTag[T] is required, the compiler will make one up on demand.
- *  The implicitly created value contains in its `runtimeClass` field the runtime class that is the result of erasing type T.
- *  In that value, any occurrences of type parameters or abstract types U which come themselves with a ClassTag
- *  are represented by the type referenced by that tag.
- *  If the type T contains unresolved references to type parameters or abstract types, a static error results.
+ * [[scala.reflect.ClassTag]] corresponds to a previous concept of [[scala.reflect.ClassManifest]].
  *
  * @see [[scala.reflect.base.TypeTags]]
  */
@@ -76,7 +76,7 @@ trait ClassTag[T] extends ClassManifestDeprecatedApis[T] with Equals with Serial
       if (conforms) Some(x.asInstanceOf[T]) else None
     }
 
-  /** case class accessories */
+  // case class accessories
   override def canEqual(x: Any) = x.isInstanceOf[ClassTag[_]]
   override def equals(x: Any) = x.isInstanceOf[ClassTag[_]] && this.runtimeClass == x.asInstanceOf[ClassTag[_]].runtimeClass
   override def hashCode = scala.runtime.ScalaRunTime.hash(runtimeClass)
@@ -88,6 +88,9 @@ trait ClassTag[T] extends ClassManifestDeprecatedApis[T] with Equals with Serial
   }
 }
 
+/**
+ * Class tags corresponding to primitive types and constructor/extractor for ClassTags.
+ */
 object ClassTag {
   private val ObjectTYPE = classOf[java.lang.Object]
   private val NothingTYPE = classOf[scala.runtime.Nothing$]

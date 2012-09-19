@@ -9,9 +9,11 @@ trait Trees { self: Universe =>
 
   /** The base API that all trees support */
   abstract class TreeBase extends Product { this: Tree =>
+    // TODO
     /** ... */
     def isDef: Boolean
 
+    // TODO
     /** ... */
     def isEmpty: Boolean
 
@@ -52,7 +54,7 @@ trait Trees { self: Universe =>
    *  Transformer found around the compiler.
    *
    *  Copying Trees should be done with care depending on whether
-   *  it need be done lazily or strictly (see LazyTreeCopier and
+   *  it needs be done lazily or strictly (see LazyTreeCopier and
    *  StrictTreeCopier) and on whether the contents of the mutable
    *  fields should be copied. The tree copiers will copy the mutable
    *  attributes to the new tree; calling Tree#duplicate will copy
@@ -67,8 +69,8 @@ trait Trees { self: Universe =>
    *
    *  SymTrees include important nodes Ident and Select, which are
    *  used as both terms and types; they are distinguishable based on
-   *  whether the Name is a TermName or TypeName.  The correct way for
-   *  to test for a type or a term (on any Tree) are the isTerm/isType
+   *  whether the Name is a TermName or TypeName.  The correct way
+   *  to test any Tree for a type or a term are the `isTerm`/`isType`
    *  methods on Tree.
    *
    *  "Others" are mostly syntactic or short-lived constructs. Examples
@@ -86,7 +88,7 @@ trait Trees { self: Universe =>
   /** The empty tree */
   val EmptyTree: Tree
 
-  /** A tree for a term.  Not all terms are TermTrees; use isTerm
+  /** A tree for a term.  Not all trees representing terms are TermTrees; use isTerm
    *  to reliably identify terms.
    */
   type TermTree >: Null <: AnyRef with Tree
@@ -96,7 +98,7 @@ trait Trees { self: Universe =>
    */
   implicit val TermTreeTag: ClassTag[TermTree]
 
-  /** A tree for a type.  Not all types are TypTrees; use isType
+  /** A tree for a type. Not all trees representing types are TypTrees; use isType
    *  to reliably identify types.
    */
   type TypTree >: Null <: AnyRef with Tree
@@ -213,7 +215,7 @@ trait Trees { self: Universe =>
 
   /** An object definition, e.g. `object Foo`.  Internally, objects are
    *  quite frequently called modules to reduce ambiguity.
-   *  Eliminated by refcheck.
+   *  Eliminated by compiler phase refcheck.
    */
   type ModuleDef >: Null <: ImplDef
 
@@ -253,8 +255,8 @@ trait Trees { self: Universe =>
    *   - immutable values, e.g. "val x"
    *   - mutable values, e.g. "var x" - the MUTABLE flag set in mods
    *   - lazy values, e.g. "lazy val x" - the LAZY flag set in mods
-   *   - method parameters, see vparamss in DefDef - the PARAM flag is set in mods
-   *   - explicit self-types, e.g. class A { self: Bar => } - !!! not sure what is set.
+   *   - method parameters, see vparamss in [[scala.reflect.base.Trees#DefDef]] - the PARAM flag is set in mods
+   *   - explicit self-types, e.g. class A { self: Bar => }
    */
   type ValDef >: Null <: ValOrDefDef
 
@@ -267,7 +269,7 @@ trait Trees { self: Universe =>
   val ValDef: ValDefExtractor
 
   /** An extractor class to create and pattern match with syntax `ValDef(mods, name, tpt, rhs)`.
-   *  This AST node corresponds to the following Scala code:
+   *  This AST node corresponds to any of the following Scala code:
    *
    *    mods `val` name: tpt = rhs
    *
@@ -275,7 +277,7 @@ trait Trees { self: Universe =>
    *
    *    mods name: tpt = rhs        // in signatures of function and method definitions
    *
-   *    self: Bar =>                // self-types (!!! not sure what is set)
+   *    self: Bar =>                // self-types
    *
    *  If the type of a value is not specified explicitly (i.e. is meant to be inferred),
    *  this is expressed by having `tpt` set to `TypeTree()` (but not to an `EmptyTree`!).
@@ -369,9 +371,12 @@ trait Trees { self: Universe =>
    *  This AST node does not have direct correspondence to Scala code.
    *  It is used for tailcalls and like.
    *  For example, while/do are desugared to label defs as follows:
-   *
+   *  {{{
    *    while (cond) body ==> LabelDef($L, List(), if (cond) { body; L$() } else ())
+   *  }}}
+   *  {{{
    *    do body while (cond) ==> LabelDef($L, List(), body; if (cond) L$() else ())
+   *  }}}
    */
   abstract class LabelDefExtractor {
     def apply(name: TermName, params: List[Ident], rhs: Tree): LabelDef
@@ -427,7 +432,7 @@ trait Trees { self: Universe =>
    *
    *    import expr.{selectors}
    *
-   *  Selectors are a list of pairs of names (from, to). // [Eugene++] obviously, they no longer are. please, document!
+   *  Selectors are a list of ImportSelectors, which conceptually are pairs of names (from, to).
    *  The last (and maybe only name) may be a nme.WILDCARD. For instance:
    *
    *    import qual.{x, y => z, _}
@@ -498,16 +503,16 @@ trait Trees { self: Universe =>
    *
    *    { stats; expr }
    *
-   *  If the block is empty, the `expr` is set to `Literal(Constant(()))`. // [Eugene++] check this
+   *  If the block is empty, the `expr` is set to `Literal(Constant(()))`.
    */
   abstract class BlockExtractor {
     def apply(stats: List[Tree], expr: Tree): Block
     def unapply(block: Block): Option[(List[Tree], Tree)]
   }
 
-  /** Case clause in a pattern match, eliminated during explicitouter
+  /** Case clause in a pattern match.
    *  (except for occurrences in switch statements).
-   *  Eliminated by patmat/explicitouter.
+   *  Eliminated by compiler phases patmat (in the new pattern matcher of 2.10) or explicitouter (in the old pre-2.10 pattern matcher)
    */
   type CaseDef >: Null <: AnyRef with Tree
 
@@ -524,17 +529,19 @@ trait Trees { self: Universe =>
    *
    *    `case` pat `if` guard => body
    *
-   *  If the guard is not present, the `guard` is set to `EmptyTree`. // [Eugene++] check this
-   *  If the body is not specified, the `body` is set to `EmptyTree`. // [Eugene++] check this
+   *  If the guard is not present, the `guard` is set to `EmptyTree`.
+   *  If the body is not specified, the `body` is set to `Literal(Constant())`
    */
   abstract class CaseDefExtractor {
     def apply(pat: Tree, guard: Tree, body: Tree): CaseDef
     def unapply(caseDef: CaseDef): Option[(Tree, Tree, Tree)]
   }
 
-  /** Alternatives of patterns, eliminated by explicitouter, except for
-   *  occurrences in encoded Switch stmt (=remaining Match(CaseDef(...)))
-   *  Eliminated by patmat/explicitouter.
+  /** Alternatives of patterns.
+   * 
+   * Eliminated by compiler phases Eliminated by compiler phases patmat (in the new pattern matcher of 2.10) or explicitouter (in the old pre-2.10 pattern matcher),
+   * except for
+   *  occurrences in encoded Switch stmt (i.e. remaining Match(CaseDef(...)))
    */
   type Alternative >: Null <: TermTree
 
@@ -557,7 +564,8 @@ trait Trees { self: Universe =>
   }
 
   /** Repetition of pattern.
-   *  Eliminated by patmat/explicitouter.
+   *  
+   *  Eliminated by compiler phases patmat (in the new pattern matcher of 2.10) or explicitouter (in the old pre-2.10 pattern matcher).
    */
   type Star >: Null <: TermTree
 
@@ -579,8 +587,9 @@ trait Trees { self: Universe =>
     def unapply(star: Star): Option[Tree]
   }
 
-  /** Bind of a variable to a rhs pattern, eliminated by explicitouter
-   *  Eliminated by patmat/explicitouter.
+  /** Bind a variable to a rhs pattern.
+   * 
+   * Eliminated by compiler phases patmat (in the new pattern matcher of 2.10) or explicitouter (in the old pre-2.10 pattern matcher).
    *
    *  @param name
    *  @param body
@@ -605,8 +614,8 @@ trait Trees { self: Universe =>
     def unapply(bind: Bind): Option[(Name, Tree)]
   }
 
-  /** Used to represent `unapply` methods in pattern matching.
-   *  Introduced by typer, eliminated by patmat/explicitouter.
+  /** 
+   * Used to represent `unapply` methods in pattern matching.
    *
    *  For example:
    *  {{{
@@ -629,6 +638,8 @@ trait Trees { self: Universe =>
    *          EmptyTree,
    *          Ident(newTermName("x")))))
    *  }}}
+   *
+   * Introduced by typer. Eliminated by compiler phases patmat (in the new pattern matcher of 2.10) or explicitouter (in the old pre-2.10 pattern matcher).
    */
   type UnApply >: Null <: TermTree
 
@@ -649,9 +660,9 @@ trait Trees { self: Universe =>
     def unapply(unApply: UnApply): Option[(Tree, List[Tree])]
   }
 
-  /** Array of expressions, needs to be translated in backend.
-   *  This AST node is used to pass arguments to vararg arguments.
-   *  Introduced by uncurry.
+  /** An array of expressions. This AST node needs to be translated in backend.
+   *  It is used to pass arguments to vararg arguments.
+   *  Introduced by compiler phase uncurry.
    */
   type ArrayValue >: Null <: TermTree
 
@@ -669,7 +680,7 @@ trait Trees { self: Universe =>
    *
    *    printf("%s%d", foo, 42)
    *
-   *  Is translated to after uncurry to:
+   *  Is translated to after compiler phase uncurry to:
    *
    *    Apply(
    *      Ident("printf"),
@@ -681,7 +692,7 @@ trait Trees { self: Universe =>
     def unapply(arrayValue: ArrayValue): Option[(Tree, List[Tree])]
   }
 
-  /** Anonymous function, eliminated by lambdalift */
+  /** Anonymous function, eliminated by compiler phase lambdalift */
   type Function >: Null <: TermTree with SymTree
 
   /** A tag that preserves the identity of the `Function` abstract type from erasure.
@@ -694,10 +705,10 @@ trait Trees { self: Universe =>
 
   /** An extractor class to create and pattern match with syntax `Function(vparams, body)`.
    *  This AST node corresponds to the following Scala code:
-   *
+   * 
    *    vparams => body
    *
-   *  The symbol of a Function is a synthetic value of name nme.ANON_FUN_NAME
+   *  The symbol of a Function is a synthetic TermSymbol.
    *  It is the owner of the function's parameters.
    */
   abstract class FunctionExtractor {
@@ -727,7 +738,7 @@ trait Trees { self: Universe =>
   }
 
   /** Either an assignment or a named argument. Only appears in argument lists,
-   *  eliminated by typecheck (doTypedApply), resurrected by reifier.
+   *  eliminated by compiler phase typecheck (doTypedApply), resurrected by reifier.
    */
   type AssignOrNamedArg >: Null <: TermTree
 
@@ -742,9 +753,13 @@ trait Trees { self: Universe =>
   /** An extractor class to create and pattern match with syntax `AssignOrNamedArg(lhs, rhs)`.
    *  This AST node corresponds to the following Scala code:
    *
-   *    @annotation(lhs = rhs)
-   *
+   *  {{{
    *    m.f(lhs = rhs)
+   *  }}}
+   *  {{{
+   *    @annotation(lhs = rhs)
+   *  }}}
+   *
    */
   abstract class AssignOrNamedArgExtractor {
     def apply(lhs: Tree, rhs: Tree): AssignOrNamedArg
@@ -767,17 +782,17 @@ trait Trees { self: Universe =>
    *
    *    `if` (cond) thenp `else` elsep
    *
-   *  If the alternative is not present, the `elsep` is set to `EmptyTree`. // [Eugene++] check this
+   *  If the alternative is not present, the `elsep` is set to `Literal(Constant(()))`.
    */
   abstract class IfExtractor {
     def apply(cond: Tree, thenp: Tree, elsep: Tree): If
     def unapply(if_ : If): Option[(Tree, Tree, Tree)]
   }
 
-  /** - Pattern matching expression  (before explicitouter)
-   *  - Switch statements            (after explicitouter)
+  /** - Pattern matching expression  (before compiler phase explicitouter before 2.10 / patmat from 2.10)
+   *  - Switch statements            (after compiler phase explicitouter before 2.10 / patmat from 2.10)
    *
-   *  After explicitouter, cases will satisfy the following constraints:
+   *  After compiler phase explicitouter before 2.10 / patmat from 2.10, cases will satisfy the following constraints:
    *
    *  - all guards are `EmptyTree`,
    *  - all patterns will be either `Literal(Constant(x:Int))`
@@ -800,7 +815,7 @@ trait Trees { self: Universe =>
    *
    *    selector `match` { cases }
    *
-   *  // [Eugene++] say something about `val (foo, bar) = baz` and likes.
+   * `Match` is also used in pattern matching assignments like `val (foo, bar) = baz`.
    */
   abstract class MatchExtractor {
     def apply(selector: Tree, cases: List[CaseDef]): Match
@@ -823,7 +838,7 @@ trait Trees { self: Universe =>
    *
    *    `return` expr
    *
-   *  The symbol of a Return node is the enclosing method
+   *  The symbol of a Return node is the enclosing method.
    */
   abstract class ReturnExtractor {
     def apply(expr: Tree): Return
@@ -846,7 +861,7 @@ trait Trees { self: Universe =>
    *
    *    `try` block `catch` { catches } `finally` finalizer
    *
-   *  If the finalizer is not present, the `finalizer` is set to `EmptyTree`. // [Eugene++] check this
+   *  If the finalizer is not present, the `finalizer` is set to `EmptyTree`.
    */
   abstract class TryExtractor {
     def apply(block: Tree, catches: List[CaseDef], finalizer: Tree): Try
@@ -875,9 +890,6 @@ trait Trees { self: Universe =>
   }
 
   /** Object instantiation
-   *  One should always use factory method below to build a user level new.
-   *
-   *  @param tpt    a class type
    */
   type New >: Null <: TermTree
 
@@ -886,7 +898,8 @@ trait Trees { self: Universe =>
    */
   implicit val NewTag: ClassTag[New]
 
-  /** The constructor/deconstructor for `New` instances. */
+  /** The constructor/deconstructor for `New` instances.
+   */
   val New: NewExtractor
 
   /** An extractor class to create and pattern match with syntax `New(tpt)`.
@@ -899,11 +912,16 @@ trait Trees { self: Universe =>
    *    (`new` tpt).<init>[targs](args)
    */
   abstract class NewExtractor {
+    /** A user level `new`.
+     *  One should always use this factory method to build a user level `new`.
+     *
+     *  @param tpt    a class type
+     */
     def apply(tpt: Tree): New
     def unapply(new_ : New): Option[Tree]
   }
 
-  /** Type annotation, eliminated by cleanup */
+  /** Type annotation, eliminated by compiler phase cleanup */
   type Typed >: Null <: TermTree
 
   /** A tag that preserves the identity of the `Typed` abstract type from erasure.
@@ -924,11 +942,7 @@ trait Trees { self: Universe =>
     def unapply(typed: Typed): Option[(Tree, Tree)]
   }
 
-  /** Common base class for Apply and TypeApply. This could in principle
-   *  be a SymTree, but whether or not a Tree is a SymTree isn't used
-   *  to settle any interesting questions, and it would add a useless
-   *  field to all the instances (useless, since GenericApply forwards to
-   *  the underlying fun.)
+  /** Common base class for Apply and TypeApply.
    */
   type GenericApply >: Null <: TermTree
 
@@ -937,11 +951,11 @@ trait Trees { self: Universe =>
    */
   implicit val GenericApplyTag: ClassTag[GenericApply]
 
-  /** Explicit type application.
-   *  @PP: All signs point toward it being a requirement that args.nonEmpty,
+  /* @PP: All signs point toward it being a requirement that args.nonEmpty,
    *  but I can't find that explicitly stated anywhere.  Unless your last name
    *  is odersky, you should probably treat it as true.
    */
+  /** Explicit type application. */
   type TypeApply >: Null <: GenericApply
 
   /** A tag that preserves the identity of the `TypeApply` abstract type from erasure.
@@ -991,8 +1005,8 @@ trait Trees { self: Universe =>
     def unapply(apply: Apply): Option[(Tree, List[Tree])]
   }
 
-  /** Super reference, qual = corresponding this reference
-   *  A super reference C.super[M] is represented as Super(This(C), M).
+  /** Super reference, where `qual` is the corresponding `this` reference.
+   *  A super reference `C.super[M]` is represented as `Super(This(C), M)`.
    */
   type Super >: Null <: TermTree
 
