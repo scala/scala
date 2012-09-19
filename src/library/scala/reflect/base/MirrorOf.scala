@@ -24,7 +24,7 @@ abstract class MirrorOf[U <: base.Universe with Singleton] {
   /** The module symbol of the `_root_` package */
   def RootPackage: U#ModuleSymbol
 
-  /** The class symbol of the default (unnamed) package */
+  /** The module class symbol of the default (unnamed) package */
   def EmptyPackageClass: U#ClassSymbol
 
   /** The module symbol of the default (unnamed) package */

@@ -28,13 +28,13 @@ abstract class Universe extends Symbols
    * reify{ five.splice + 4 } // Apply( Select( Literal(Constant(5)), newTermName("$plus")), List( Literal(Constant(4)) ) )
    * }}}
    * 
-   * The produced tree is path dependent on the Universe `refiy` was called from.
+   * The produced tree is path dependent on the Universe `reify` was called from.
    * 
-   * Use [[splice]] to embed an existing expression into a reify call. Use [[Expr]] to turn a [[Tree]] into an expression that can be spliced.
+   * Use [[scala.reflect.base.Exprs#Expr.splice]] to embed an existing expression into a reify call. Use [[Expr]] to turn a [[Tree]] into an expression that can be spliced.
    * 
    * == Further info and implementation details ==
    * 
-   * `refiy` is implemented as a macro, which given an expression, generates a tree that when compiled and executed produces the original tree.
+   * `reify` is implemented as a macro, which given an expression, generates a tree that when compiled and executed produces the original tree.
    *
    *  For instance in `reify{ x + 1 }` the macro `reify` receives the abstract syntax tree of `x + 1` as its argument, which is
    *
@@ -71,10 +71,8 @@ abstract class Universe extends Symbols
    *  The transformation looks mostly straightforward, but it has its tricky parts:
    *    - Reifier retains symbols and types defined outside the reified tree, however
    *      locally defined entities get erased and replaced with their original trees
-   *    - Free variables are detected and wrapped in symbols of the type FreeVar
+   *    - Free variables are detected and wrapped in symbols of the type `FreeTermSymbol` or `FreeTypeSymbol`
    *    - Mutable variables that are accessed from a local function are wrapped in refs
-   *    - Since reified trees can be compiled outside of the scope they've been created in,
-   *      special measures are taken to ensure that all members accessed in the reifee remain visible
    */
   // implementation is hardwired to `scala.reflect.reify.Taggers`
   // using the mechanism implemented in `scala.tools.reflect.FastTrack`

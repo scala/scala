@@ -10,8 +10,8 @@ trait Annotations { self: Universe =>
 
   /** Typed information about an annotation. It can be attached to either a symbol or an annotated type. 
    *
-   *  Annotations are either ''Scala annotations'', which conform to [[scala.annotation.Annotation]] or [[scala.annotation.StaticAnnotation]]
-   *  but not [[scala.annotation.ClassfileAnnotation]] or ''Java annotations'', which conform to [[scala.annotation.ClassfileAnnotation]].
+   *  Annotations are either ''Scala annotations'', which conform to [[scala.annotation.StaticAnnotation]]
+   *  or ''Java annotations'', which conform to [[scala.annotation.ClassfileAnnotation]].
    *  Trait `ClassfileAnnotation` is automatically added to every Java annotation by the scalac classfile parser. 
    */
   type Annotation >: Null <: AnyRef
@@ -24,17 +24,16 @@ trait Annotations { self: Universe =>
   /** The constructor/deconstructor for `Annotation` instances. */
    val Annotation: AnnotationExtractor
 
-  /** An extractor class to create and pattern match with syntax `Annotation(atp, args, javaArgs)`.
-   *  Here, `atp` is the annotation type, `args` the arguments, and `javaArgs` the annotation's key-value 
+  /** An extractor class to create and pattern match with syntax `Annotation(atp, scalaArgs, javaArgs)`.
+   *  Here, `atp` is the annotation type, `scalaArgs` the arguments, and `javaArgs` the annotation's key-value 
    *  pairs.
    *
-   *  Annotations are written to the classfile as Java annotations if `atp` conforms to 
-   *  `ClassfileAnnotation`. Annotations are pickled, i.e., written to scala symtab attribute in the classfile, 
-   *  if `atp` inherits from `StaticAnnotation` but not `ClassfileAnnotation`.
+   *  Annotations are pickled, i.e. written to scala symtab attribute in the classfile.
+   *  Annotations are written to the classfile as Java annotations if `atp` conforms to `ClassfileAnnotation`. 
    *
-   *  For Scala annotations, arguments are stored in `args` and `javaArgs` is empty. Arguments in 
-   *  `args` are represented as typed trees. Note that these trees are not transformed by any phases 
-   *  following the type-checker. For Java annotations, `args` is empty and arguments are stored in 
+   *  For Scala annotations, arguments are stored in `scalaArgs` and `javaArgs` is empty. Arguments in 
+   *  `scalaArgs` are represented as typed trees. Note that these trees are not transformed by any phases 
+   *  following the type-checker. For Java annotations, `scalaArgs` is empty and arguments are stored in 
    *  `javaArgs`. 
    */ 
   abstract class AnnotationExtractor {
@@ -85,7 +84,7 @@ trait Annotations { self: Universe =>
     def unapply(arg: ArrayArgument): Option[Array[JavaArgument]]
   }
 
-  /** A nested argument to a Java annotation as `@Nested` in `@Outer(@Nested)`.
+  /** A nested annotation argument to a Java annotation as `@Nested` in `@Outer(@Nested)`.
    */
   type NestedArgument >: Null <: AnyRef with JavaArgument
 

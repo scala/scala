@@ -37,10 +37,10 @@ trait Names {
 
   /** The base API that all names support */
   abstract class NameBase {
-    /** Checks weather the name is a a term name */
+    /** Checks wether the name is a a term name */
     def isTermName: Boolean
 
-    /** Checks weather the name is a a type name */
+    /** Checks wether the name is a a type name */
     def isTypeName: Boolean
 
     /** Returns a term name that wraps the same string as `this` */
@@ -58,11 +58,11 @@ trait Names {
    */
   def newTypeName(s: String): TypeName
 
-  /** Wraps the empty string
+  /** Wraps the empty string. Can be used as the null object for term name.
    */
   def EmptyTermName: TermName = newTermName("")
 
-  /** Wraps the empty string
+  /** Wraps the empty string. Can be used as the null object for term name.
    */
   def EmptyTypeName: TypeName = EmptyTermName.toTypeName
 }

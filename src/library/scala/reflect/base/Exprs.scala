@@ -12,7 +12,10 @@ trait Exprs { self: Universe =>
   trait Expr[+T] extends Equals with Serializable {
     val mirror: Mirror
     /**
-     * Migrates the expression into another universe given its corresponding mirror.
+     * Migrates the expression into another mirror, jumping into a different universe if necessary.
+     * 
+     * This means that all symbolic references to classes/objects/packages in the expression
+     * will be re-resolved within the new mirror (typically using that mirror's classloader).
      */
     def in[U <: Universe with Singleton](otherMirror: MirrorOf[U]): U # Expr[T]
 
@@ -32,6 +35,7 @@ trait Exprs { self: Universe =>
 
     /**
      * A dummy method to mark expression splicing in reification.
+     * 
      * It should only be used within a `reify` call, which eliminates the `splice` call and embeds
      * the wrapped tree into the reified surrounding expression. 
      * If used alone `splice` throws an exception when called at runtime.
@@ -52,10 +56,23 @@ trait Exprs { self: Universe =>
      * {{{
      *   reify{ expr.foo }
      * }}}
-     * because expr of type Expr[T] does not have a method foo. 
+     * because expr of type Expr[T] itself does not have a method foo. 
      */
     def splice: T
-    // TODO: document this
+    /**
+     * A dummy value to denote cross-stage path-dependent type dependencies.
+     * 
+     * For example for the following macro definition:
+     * {{{
+     * class X { type T }
+     * object Macros { def foo(x: X): x.T = macro Impls.foo_impl }
+     * }}}
+     * 
+     * The corresponding macro implementation should have the following signature (note how the return type denotes path-dependency on x):
+     * {{{
+     * object Impls { def foo_impl(c: Context)(x: c.Expr[X]): c.Expr[x.value.T] = ... }
+     * }}}
+     */
     val value: T
 
     /** case class accessories */

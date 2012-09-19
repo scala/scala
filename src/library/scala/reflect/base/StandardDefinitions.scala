@@ -20,7 +20,7 @@ trait StandardDefinitions {
     /** The class symbol of package `scala`. */
     def ScalaPackageClass: ClassSymbol
 
-    /** The module symbol of package `scala`. */
+    /** The module class symbol of package `scala`. */
     def ScalaPackage: ModuleSymbol
 
     // top types

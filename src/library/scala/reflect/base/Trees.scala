@@ -88,7 +88,7 @@ trait Trees { self: Universe =>
   /** The empty tree */
   val EmptyTree: Tree
 
-  /** A tree for a term.  Not all trees are TermTrees; use isTerm
+  /** A tree for a term.  Not all trees representing terms are TermTrees; use isTerm
    *  to reliably identify terms.
    */
   type TermTree >: Null <: AnyRef with Tree
@@ -98,7 +98,7 @@ trait Trees { self: Universe =>
    */
   implicit val TermTreeTag: ClassTag[TermTree]
 
-  /** A tree for a type. Not all trees are TypTrees; use isType
+  /** A tree for a type. Not all trees representing types are TypTrees; use isType
    *  to reliably identify types.
    */
   type TypTree >: Null <: AnyRef with Tree
@@ -250,7 +250,6 @@ trait Trees { self: Universe =>
    */
   implicit val ValOrDefDefTag: ClassTag[ValOrDefDef]
 
-  // FIXME: document how ValDef in self-types can be recognized. (Only private modifier is set there.)
   /** Broadly speaking, a value definition.  All these are encoded as ValDefs:
    *
    *   - immutable values, e.g. "val x"
@@ -513,7 +512,7 @@ trait Trees { self: Universe =>
 
   /** Case clause in a pattern match.
    *  (except for occurrences in switch statements).
-   *  Eliminated by compiler phases patmat/explicitouter.
+   *  Eliminated by compiler phases patmat (in the new pattern matcher of 2.10) or explicitouter (in the old pre-2.10 pattern matcher)
    */
   type CaseDef >: Null <: AnyRef with Tree
 
@@ -538,7 +537,10 @@ trait Trees { self: Universe =>
     def unapply(caseDef: CaseDef): Option[(Tree, Tree, Tree)]
   }
 
-  /** Alternatives of patterns, eliminated by compiler phases patmat/explicitouter, except for
+  /** Alternatives of patterns.
+   * 
+   * Eliminated by compiler phases Eliminated by compiler phases patmat (in the new pattern matcher of 2.10) or explicitouter (in the old pre-2.10 pattern matcher),
+   * except for
    *  occurrences in encoded Switch stmt (i.e. remaining Match(CaseDef(...)))
    */
   type Alternative >: Null <: TermTree
@@ -562,7 +564,8 @@ trait Trees { self: Universe =>
   }
 
   /** Repetition of pattern.
-   *  Eliminated by compiler phase patmat/explicitouter.
+   *  
+   *  Eliminated by compiler phases patmat (in the new pattern matcher of 2.10) or explicitouter (in the old pre-2.10 pattern matcher).
    */
   type Star >: Null <: TermTree
 
@@ -585,7 +588,8 @@ trait Trees { self: Universe =>
   }
 
   /** Bind a variable to a rhs pattern.
-   * Eliminated by compiler phase patmat/explicitouter.
+   * 
+   * Eliminated by compiler phases patmat (in the new pattern matcher of 2.10) or explicitouter (in the old pre-2.10 pattern matcher).
    *
    *  @param name
    *  @param body
@@ -610,11 +614,8 @@ trait Trees { self: Universe =>
     def unapply(bind: Bind): Option[(Name, Tree)]
   }
 
-  // TODO: evaluate if UnApply can be removed or at least moved out of reflection. 
   /** 
    * Used to represent `unapply` methods in pattern matching.
-   *
-   * Introduced by typer, eliminated by patmat/explicitouter.
    *
    *  For example:
    *  {{{
@@ -637,6 +638,8 @@ trait Trees { self: Universe =>
    *          EmptyTree,
    *          Ident(newTermName("x")))))
    *  }}}
+   *
+   * Introduced by typer. Eliminated by compiler phases patmat (in the new pattern matcher of 2.10) or explicitouter (in the old pre-2.10 pattern matcher).
    */
   type UnApply >: Null <: TermTree
 
@@ -705,7 +708,7 @@ trait Trees { self: Universe =>
    * 
    *    vparams => body
    *
-   *  The symbol of a Function is a synthetic TermSymbol having its name set to nme.ANON_FUN_NAME.
+   *  The symbol of a Function is a synthetic TermSymbol.
    *  It is the owner of the function's parameters.
    */
   abstract class FunctionExtractor {
@@ -786,10 +789,10 @@ trait Trees { self: Universe =>
     def unapply(if_ : If): Option[(Tree, Tree, Tree)]
   }
 
-  /** - Pattern matching expression  (before compiler phase explicitouter)
-   *  - Switch statements            (after compiler phase explicitouter)
+  /** - Pattern matching expression  (before compiler phase explicitouter before 2.10 / patmat from 2.10)
+   *  - Switch statements            (after compiler phase explicitouter before 2.10 / patmat from 2.10)
    *
-   *  After compiler phase explicitouter, cases will satisfy the following constraints:
+   *  After compiler phase explicitouter before 2.10 / patmat from 2.10, cases will satisfy the following constraints:
    *
    *  - all guards are `EmptyTree`,
    *  - all patterns will be either `Literal(Constant(x:Int))`
@@ -1002,9 +1005,8 @@ trait Trees { self: Universe =>
     def unapply(apply: Apply): Option[(Tree, List[Tree])]
   }
 
-  // TODO: what is it used for exactly? extend docs!
   /** Super reference, where `qual` is the corresponding `this` reference.
-   *  A super reference C.super[M] is represented as Super(This(C), M).
+   *  A super reference `C.super[M]` is represented as `Super(This(C), M)`.
    */
   type Super >: Null <: TermTree
 

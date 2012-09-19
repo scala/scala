@@ -15,9 +15,8 @@ trait Mirrors {
   /** The base type of all mirrors of this universe */
   type Mirror >: Null <: MirrorOf[self.type]
 
-  /** The roor mirror of this universe. This mirror contains standard Scala classes and types such as `Any`, `AnyRef`, `AnyVal`, 
-   *  `Nothing`, `Null`, and all classes loaded from scala-library. The root package of this mirror contains the root 
-   *  packages of all other mirrors of this universe as members.
+  /** The root mirror of this universe. This mirror contains standard Scala classes and types such as `Any`, `AnyRef`, `AnyVal`, 
+   *  `Nothing`, `Null`, and all classes loaded from scala-library, which are shared across all mirrors within the enclosing universe.
    */
   val rootMirror: Mirror
 }

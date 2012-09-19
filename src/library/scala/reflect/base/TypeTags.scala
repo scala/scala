@@ -20,16 +20,14 @@ import scala.language.implicitConversions
 /**
  * A type tag encapsulates a representation of type T.
  * 
- * Type tags replace the pre-2.10 concept of a [[scala.reflect.Manifest]] and are much better integrated with reflection.
+ * Type tags replace the pre-2.10 concept of a [[scala.reflect.Manifest]] and are integrated with reflection.
  *
  * === Overview and examples ===
  *
  * Type tags are organized in a hierarchy of three classes:
  * [[scala.reflect.ClassTag]], [[scala.reflect.base.Universe#TypeTag]] and [[scala.reflect.base.Universe#WeakTypeTag]].
  * 
- * @see scala.reflect.ClassTag
- * @see scala.reflect.base.Universe#TypeTag
- * @see scala.reflect.base.Universe#WeakTypeTag
+ * @see [[scala.reflect.ClassTag]], [[scala.reflect.base.Universe#TypeTag]], [[scala.reflect.base.Universe#WeakTypeTag]]
  *
  * Examples:
  *   {{{
@@ -82,8 +80,9 @@ import scala.language.implicitConversions
  *
  *  {{{
  *  tag.in( other_mirror )
- *  }}}  
- * 
+ *  }}}
+ *  
+ *  See [[scala.reflect.base.TypeTags#WeakTypeTag.in]]
  *
  * === WeakTypeTag vs TypeTag ===
  *
@@ -163,6 +162,9 @@ trait TypeTags { self: Universe =>
      * 
      * Type tags are path dependent on their universe. This methods allows migration
      * given the mirror corresponding to the target universe.
+     * 
+     * Migration means that all symbolic references to classes/objects/packages in the expression
+     * will be re-resolved within the new mirror (typically using that mirror's classloader).
      */
     def in[U <: Universe with Singleton](otherMirror: MirrorOf[U]): U # WeakTypeTag[T]
 
@@ -306,7 +308,7 @@ trait TypeTags { self: Universe =>
     }
   }
 
-  private class PredefTypeTag[T](_tpe: Type, copyIn: Universe => Universe # TypeTag[T]) extends TypeTagImpl[T](rootMirror, new PredefTypeCreator(copyIn)) {
+  private class PredefTypeTag[T](_tpe: Type, copyIn: Universe => Universe#TypeTag[T]) extends TypeTagImpl[T](rootMirror, new PredefTypeCreator(copyIn)) {
     override lazy val tpe: Type = _tpe
     private def writeReplace(): AnyRef = new SerializedTypeTag(tpec, concrete = true)
   }
@@ -314,6 +316,7 @@ trait TypeTags { self: Universe =>
   /**
    * Shortcut for `implicitly[WeakTypeTag[T]]`
    */
+  def weakTypeTag[T](implicit attag: WeakTypeTag[T]) = attag
 
   /**
    * Shortcut for `implicitly[TypeTag[T]]`
