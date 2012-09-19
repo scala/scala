@@ -16,5 +16,5 @@ object Test extends App {
   val macroapp = Apply(Select(Ident("Macros"), newTermName("foo")), List(Literal(Constant(42))))
   val tree = Block(macrodef, module, macroapp)
   val toolbox = cm.mkToolBox(options = "-language:experimental.macros")
-  println(toolbox.runExpr(tree))
+  println(toolbox.eval(tree))
 }

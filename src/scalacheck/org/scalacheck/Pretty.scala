@@ -96,7 +96,7 @@ object Pretty {
   }
 
   implicit def prettyTestRes(res: Test.Result) = Pretty { prms =>
-    def labels(ls: collection.immutable.Set[String]) =
+    def labels(ls: scala.collection.immutable.Set[String]) =
       if(ls.isEmpty) ""
       else "> Labels of failing property: " / ls.mkString("\n")
     val s = res.status match {

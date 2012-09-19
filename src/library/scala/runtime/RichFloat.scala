@@ -6,7 +6,8 @@
 **                          |/                                          **
 \*                                                                      */
 
-package scala.runtime
+package scala
+package runtime
 
 final class RichFloat(val self: Float) extends AnyVal with FractionalProxy[Float] {
   protected def num         = scala.math.Numeric.FloatIsFractional

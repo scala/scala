@@ -1095,7 +1095,7 @@ abstract class Erasure extends AddInterfaces
                 // println("inject derived: "+arg+" "+tpt.tpe)
                 val List(arg) = args
                 val attachment = new TypeRefAttachment(tree.tpe.asInstanceOf[TypeRef])
-                InjectDerivedValue(arg) addAttachment attachment
+                InjectDerivedValue(arg) updateAttachment attachment
               case _ =>
                 preEraseNormalApply(tree)
             }

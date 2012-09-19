@@ -11,7 +11,7 @@ object Test extends App {
   }
 
   try {
-    val dyn = cm.mkToolBox().runExpr(new Foo(10).fun.tree)
+    val dyn = cm.mkToolBox().eval(new Foo(10).fun.tree)
     val foo = dyn.asInstanceOf[Int]
     println(foo)
   } catch {

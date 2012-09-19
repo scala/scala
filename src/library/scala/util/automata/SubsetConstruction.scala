@@ -19,8 +19,8 @@ class SubsetConstruction[T <: AnyRef](val nfa: NondetWordAutom[T]) {
 
   def determinize: DetWordAutom[T] = {
     // for assigning numbers to bitsets
-    var indexMap    = collection.Map[immutable.BitSet, Int]()
-    var invIndexMap = collection.Map[Int, immutable.BitSet]()
+    var indexMap    = scala.collection.Map[immutable.BitSet, Int]()
+    var invIndexMap = scala.collection.Map[Int, immutable.BitSet]()
     var ix = 0
 
     // we compute the dfa with states = bitsets

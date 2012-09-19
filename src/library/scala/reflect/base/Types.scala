@@ -1,6 +1,14 @@
 package scala.reflect
 package base
 
+/**
+ * Defines the type hierachy for types. 
+ *
+ * Note: Because of implementation details, some type factories have return type `Type` 
+ * instead of a more precise type. 
+ *
+ * @see [[scala.reflect]] for a description on how the class hierarchy is encoded here.
+ */
 trait Types { self: Universe =>
 
   /** The type of Scala types, and also Scala type signatures.
@@ -26,14 +34,14 @@ trait Types { self: Universe =>
    */
   val NoPrefix: Type
 
-  /** The type of Scala singleton types, i.e. types that are inhabited
+  /** The type of Scala singleton types, i.e., types that are inhabited
    *  by only one nun-null value. These include types of the forms
    *  {{{
    *    C.this.type
    *    C.super.type
    *    x.type
    *  }}}
-   *  as well as constant types.
+   *  as well as [[ConstantType constant types]].
    */
   type SingletonType >: Null <: Type
 
@@ -42,8 +50,8 @@ trait Types { self: Universe =>
    */
   implicit val SingletonTypeTag: ClassTag[SingletonType]
 
-  /** The `ThisType` type describes types of the form on the left with the
-   *  correspnding ThisType representations to the right.
+  /** A singleton type that describes types of the form on the left with the
+   *  corresponding `ThisType` representation to the right:
    *  {{{
    *     C.this.type             ThisType(C)
    *  }}}
@@ -62,7 +70,10 @@ trait Types { self: Universe =>
    *  where `sym` is the class prefix of the this type.
    */
   abstract class ThisTypeExtractor {
-    def apply(sym: Symbol): Type // not ThisTypebecause of implementation details
+    /**
+     * Creates a ThisType from the given class symbol. 
+     */
+    def apply(sym: Symbol): Type
     def unapply(tpe: ThisType): Option[Symbol]
   }
 
@@ -120,7 +131,7 @@ trait Types { self: Universe =>
   }
 
   /** The `ConstantType` type is not directly written in user programs, but arises as the type of a constant.
-   *  The REPL expresses constant types like   Int(11).  Here are some constants with their types.
+   *  The REPL expresses constant types like `Int(11)`. Here are some constants with their types:
    *  {{{
    *     1           ConstantType(Constant(1))
    *     "abc"       ConstantType(Constant("abc"))
@@ -362,8 +373,8 @@ trait Types { self: Universe =>
    *  `selfSym` is a symbol representing the annotated type itself.
    */
   abstract class AnnotatedTypeExtractor {
-    def apply(annotations: List[AnnotationInfo], underlying: Type, selfsym: Symbol): AnnotatedType
-    def unapply(tpe: AnnotatedType): Option[(List[AnnotationInfo], Type, Symbol)]
+    def apply(annotations: List[Annotation], underlying: Type, selfsym: Symbol): AnnotatedType
+    def unapply(tpe: AnnotatedType): Option[(List[Annotation], Type, Symbol)]
   }
 
   /** The `TypeBounds` type signature is used to indicate lower and upper type bounds
@@ -401,7 +412,7 @@ trait Types { self: Universe =>
   val WildcardType: Type
 
   /** BoundedWildcardTypes, used only during type inference, are created in
-   *  two places that I can find:
+   *  two places:
    *
    *    1. If the expected type of an expression is an existential type,
    *       its hidden symbols are replaced with bounded wildcards.
@@ -417,8 +428,12 @@ trait Types { self: Universe =>
    */
   implicit val BoundedWildcardTypeTag: ClassTag[BoundedWildcardType]
 
+  /** The constructor/deconstructor for `BoundedWildcardType` instances. */
   val BoundedWildcardType: BoundedWildcardTypeExtractor
 
+  /** An extractor class to create and pattern match with syntax `BoundedWildcardTypeExtractor(bounds)`
+   *  with `bounds` denoting the type bounds.
+   */
   abstract class BoundedWildcardTypeExtractor {
     def apply(bounds: TypeBounds): BoundedWildcardType
     def unapply(tpe: BoundedWildcardType): Option[TypeBounds]

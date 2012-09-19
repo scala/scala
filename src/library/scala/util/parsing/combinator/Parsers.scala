@@ -178,7 +178,7 @@ trait Parsers {
 
     def filterWithError(p: Nothing => Boolean, error: Nothing => String, position: Input): ParseResult[Nothing] = this
 
-    def get: Nothing = sys.error("No result when parsing failed")
+    def get: Nothing = scala.sys.error("No result when parsing failed")
   }
   /** An extractor so `NoSuccess(msg, next)` can be used in matches. */
   object NoSuccess {

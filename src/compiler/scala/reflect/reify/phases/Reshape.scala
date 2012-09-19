@@ -250,7 +250,7 @@ trait Reshape {
 
     private def trimAccessors(deff: Tree, stats: List[Tree]): List[Tree] = {
       val symdefs = (stats collect { case vodef: ValOrDefDef => vodef } map (vodeff => vodeff.symbol -> vodeff)).toMap
-      val accessors = collection.mutable.Map[ValDef, List[DefDef]]()
+      val accessors = scala.collection.mutable.Map[ValDef, List[DefDef]]()
       stats collect { case ddef: DefDef => ddef } foreach (defdef => {
         val valdef = symdefs get defdef.symbol.accessedOrSelf collect { case vdef: ValDef => vdef } getOrElse null
         if (valdef != null) accessors(valdef) = accessors.getOrElse(valdef, Nil) :+ defdef

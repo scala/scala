@@ -109,7 +109,7 @@ object Platform {
    * `System.getProperty("line.separator")`
    * with a default value of "\n".
    */
-  val EOL = util.Properties.lineSeparator
+  val EOL = scala.util.Properties.lineSeparator
 
   /** The current time in milliseconds. The time is counted since 1 January 1970
     * UTC.

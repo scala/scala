@@ -96,7 +96,8 @@ case class StringContext(parts: String*) {
    *      string literally. This is achieved by replacing each such occurrence by the
    *      format specifier `%%`.
    */
-  // The implementation is magically hardwired into `scala.tools.reflect.MacroImplementations.macro_StringInterpolation_f`
+  // The implementation is hardwired to `scala.tools.reflect.MacroImplementations.macro_StringInterpolation_f`
+  // Using the mechanism implemented in `scala.tools.reflect.FastTrack`
   def f(args: Any*): String = ??? // macro
 }
 

@@ -40,7 +40,7 @@ trait NodePrinters {
         })
         s = s.replace("Modifiers(0L, newTypeName(\"\"), List())", "Modifiers()")
         s = """Modifiers\((\d+)[lL], newTypeName\("(.*?)"\), List\((.*?)\)\)""".r.replaceAllIn(s, m => {
-          val buf = new collection.mutable.ListBuffer[String]
+          val buf = new scala.collection.mutable.ListBuffer[String]
 
           val annotations = m.group(3)
           if (buf.nonEmpty || annotations != "")
@@ -73,10 +73,10 @@ trait NodePrinters {
         s.trim
       })
 
-      val printout = collection.mutable.ListBuffer[String]();
+      val printout = scala.collection.mutable.ListBuffer[String]();
       printout += universe.trim
       if (mirrorIsUsed) printout += mirror.replace("MirrorOf[", "scala.reflect.base.MirrorOf[").trim
-      val imports = collection.mutable.ListBuffer[String]();
+      val imports = scala.collection.mutable.ListBuffer[String]();
       imports += nme.UNIVERSE_SHORT
       // if (buildIsUsed) imports += nme.build
       if (mirrorIsUsed) imports += nme.MIRROR_SHORT
@@ -94,7 +94,7 @@ trait NodePrinters {
       if (isExpr) {
         if (mirror contains ".getClassLoader") {
           printout += "import scala.tools.reflect.ToolBox"
-          printout += s"println(${nme.MIRROR_SHORT}.mkToolBox().runExpr(tree))"
+          printout += s"println(${nme.MIRROR_SHORT}.mkToolBox().eval(tree))"
         } else {
           printout += "println(tree)"
         }

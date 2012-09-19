@@ -70,6 +70,9 @@ trait GenUtils {
   def mkList(args: List[Tree]): Tree =
     scalaFactoryCall("collection.immutable.List", args: _*)
 
+  def mkListMap(args: List[Tree]): Tree =
+    scalaFactoryCall("collection.immutable.ListMap", args: _*)
+
   /**
    * An (unreified) path that refers to definition with given fully qualified name
    *  @param mkName   Creator for last portion of name (either TermName or TypeName)

@@ -1,0 +1,28 @@
+no-implicit-to-anyref.scala:11: error: type mismatch;
+ found   : Int(1)
+ required: AnyRef
+Note: an implicit exists from scala.Int => java.lang.Integer, but
+methods inherited from Object are rendered ambiguous.  This is to avoid
+a blanket implicit which would convert any scala.Int to any AnyRef.
+You may wish to use a type ascription: `x: java.lang.Integer`.
+    1: AnyRef
+    ^
+no-implicit-to-anyref.scala:17: error: type mismatch;
+ found   : Any
+ required: AnyRef
+    (null: Any): AnyRef
+         ^
+no-implicit-to-anyref.scala:21: error: type mismatch;
+ found   : AnyVal
+ required: AnyRef
+    (0: AnyVal): AnyRef
+      ^
+no-implicit-to-anyref.scala:27: error: type mismatch;
+ found   : Test.AV
+ required: AnyRef
+Note that AV extends Any, not AnyRef.
+Such types can participate in value classes, but instances
+cannot appear in singleton types or in reference comparisons.
+    new AV(0): AnyRef
+    ^
+four errors found

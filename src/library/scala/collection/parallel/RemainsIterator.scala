@@ -190,7 +190,7 @@ private[collection] trait AugmentedIterableIterator[+T] extends RemainsIterator[
 
   def slice2combiner[U >: T, This](from: Int, until: Int, cb: Combiner[U, This]): Combiner[U, This] = {
     drop(from)
-    var left = math.max(until - from, 0)
+    var left = scala.math.max(until - from, 0)
     cb.sizeHint(left)
     while (left > 0) {
       cb += next

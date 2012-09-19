@@ -45,7 +45,7 @@ object BasicIO {
       val q = new LinkedBlockingQueue[Either[Int, T]]
       def next(): Stream[T] = q.take match {
         case Left(0)    => Stream.empty
-        case Left(code) => if (nonzeroException) sys.error("Nonzero exit code: " + code) else Stream.empty
+        case Left(code) => if (nonzeroException) scala.sys.error("Nonzero exit code: " + code) else Stream.empty
         case Right(s)   => Stream.cons(s, next)
       }
       new Streamed((s: T) => q put Right(s), code => q put Left(code), () => next())

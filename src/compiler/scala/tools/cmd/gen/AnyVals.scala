@@ -341,9 +341,6 @@ final val NaN              = @boxed@.NaN
 final val PositiveInfinity = @boxed@.POSITIVE_INFINITY
 final val NegativeInfinity = @boxed@.NEGATIVE_INFINITY
 
-@deprecated("use @name@.MinPositiveValue instead", "2.9.0")
-final val Epsilon  = MinPositiveValue
-
 /** The negative number with the greatest (finite) absolute value which is representable
  *  by a @name@.  Note that it differs from [[java.lang.@name@.MIN_VALUE]], which
  *  is the smallest positive value representable by a @name@.  In Scala that number

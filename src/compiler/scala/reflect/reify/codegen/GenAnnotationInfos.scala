@@ -50,6 +50,6 @@ trait GenAnnotationInfos {
 
     // if you reify originals of anns, you get SO when trying to reify AnnotatedTypes, so screw it - after all, it's not that important
     val reifiedAssocs = ann.assocs map (assoc => scalaFactoryCall(nme.Tuple2, reify(assoc._1), reifyClassfileAnnotArg(assoc._2)))
-    mirrorFactoryCall(nme.AnnotationInfo, reify(ann.atp), mkList(reifiedArgs), mkList(reifiedAssocs))
+    mirrorFactoryCall(nme.Annotation, reify(ann.atp), mkList(reifiedArgs), mkListMap(reifiedAssocs))
   }
 }

@@ -9,5 +9,5 @@ object Test extends App {
   val rhs = Apply(Select(Ident("Macros"), newTermName("foo")), List(Literal(Constant("hello world"))))
   val list = ValDef(NoMods, newTermName("list"), tpt, rhs)
   val tree = Block(list, Apply(Select(Ident(definitions.PredefModule), newTermName("println")), List(Ident(list.name))))
-  println(cm.mkToolBox().runExpr(tree))
+  println(cm.mkToolBox().eval(tree))
 }

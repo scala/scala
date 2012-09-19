@@ -229,7 +229,7 @@ sealed abstract class List[+A] extends AbstractSeq[A]
    *  }}}
    */
   override def slice(from: Int, until: Int): List[A] = {
-    val lo = math.max(from, 0)
+    val lo = scala.math.max(from, 0)
     if (until <= lo || isEmpty) Nil
     else this drop lo take (until - lo)
   }

@@ -1190,9 +1190,7 @@ abstract class GenASM extends SubComponent with BytecodeWriters {
           log(s"No forwarder for non-public member $m")
         else {
           log("Adding static forwarder for '%s' from %s to '%s'".format(m, jclassName, moduleClass))
-          if (m.isAccessor && m.accessed.hasStaticAnnotation) {
-            log("@static: accessor " + m + ", accessed: " + m.accessed)
-          } else addForwarder(isRemoteClass, jclass, moduleClass, m)
+          addForwarder(isRemoteClass, jclass, moduleClass, m)
         }
       }
     }
@@ -1697,7 +1695,6 @@ abstract class GenASM extends SubComponent with BytecodeWriters {
        	  jmethod = clinitMethod
           jMethodName = CLASS_CONSTRUCTOR_NAME
           jmethod.visitCode()
-          computeLocalVarsIndex(m)
        	  genCode(m, false, true)
           jmethod.visitMaxs(0, 0) // just to follow protocol, dummy arguments
           jmethod.visitEnd()

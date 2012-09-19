@@ -12,11 +12,11 @@ class LispTokenizer(s: String) extends Iterator[String] {
     while (i < s.length() && s.charAt(i) <= ' ') i += 1
     i < s.length()
   }
-  def next: String = 
+  def next: String =
     if (hasNext) {
       val start = i
       if (isDelimiter(s charAt i)) i += 1
-      else 
+      else
         do i = i + 1
         while (!isDelimiter(s charAt i))
       s.substring(start, i)
@@ -235,7 +235,7 @@ object LispCaseClasses extends Lisp {
 
   def string2lisp(s: String): Data = {
     val it = new LispTokenizer(s);
-    def parseExpr(token: String): Data = {
+    def parse(token: String): Data = {
       if (token == "(") parseList
       else if (token == ")") sys.error("unbalanced parentheses")
       else if ('0' <= token.charAt(0) && token.charAt(0) <= '9')
@@ -246,9 +246,9 @@ object LispCaseClasses extends Lisp {
     }
     def parseList: Data = {
       val token = it.next;
-      if (token == ")") NIL() else CONS(parseExpr(token), parseList)
+      if (token == ")") NIL() else CONS(parse(token), parseList)
     }
-    parseExpr(it.next)
+    parse(it.next)
   }
 
   def lisp2string(d: Data): String = d.toString();
@@ -426,7 +426,7 @@ object LispAny extends Lisp {
 
   def string2lisp(s: String): Data = {
     val it = new LispTokenizer(s);
-    def parseExpr(token: String): Data = {
+    def parse(token: String): Data = {
       if (token == "(") parseList
       else if (token == ")") sys.error("unbalanced parentheses")
       //else if (Character.isDigit(token.charAt(0)))
@@ -438,9 +438,9 @@ object LispAny extends Lisp {
     }
     def parseList: List[Data] = {
       val token = it.next;
-      if (token == ")") Nil else parseExpr(token) :: parseList
+      if (token == ")") Nil else parse(token) :: parseList
     }
-    parseExpr(it.next)
+    parse(it.next)
   }
 }
 

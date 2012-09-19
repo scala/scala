@@ -3734,12 +3734,12 @@ trait Types extends api.Types { self: SymbolTable =>
    *
    *  tpe1 where { tparams }
    *
-   *  where `tpe1` is the result of extrapolating `tpe` wrt to `tparams`.
+   *  where `tpe1` is the result of extrapolating `tpe` with respect to `tparams`.
    *  Extrapolating means that type variables in `tparams` occurring
    *  in covariant positions are replaced by upper bounds, (minus any
    *  SingletonClass markers), type variables in `tparams` occurring in
    *  contravariant positions are replaced by upper bounds, provided the
-   *  resulting type is legal wrt to stability, and does not contain any type
+   *  resulting type is legal with regard to stability, and does not contain any type
    *  variable in `tparams`.
    *
    *  The abstraction drops all type parameters that are not directly or
@@ -5735,8 +5735,8 @@ trait Types extends api.Types { self: SymbolTable =>
 
   /** Does this type have a prefix that begins with a type variable,
    *  or is it a refinement type? For type prefixes that fulfil this condition,
-   *  type selections with the same name of equal (wrt) =:= prefixes are
-   *  considered equal wrt =:=
+   *  type selections with the same name of equal (as determined by `=:=`) prefixes are
+   *  considered equal in regard to `=:=`.
    */
   def beginsWithTypeVarOrIsRefined(tp: Type): Boolean = tp match {
     case SingleType(pre, sym) =>
@@ -6385,7 +6385,7 @@ trait Types extends api.Types { self: SymbolTable =>
 
         // Produce a single type for this frontier by merging the prefixes and arguments of those
         // typerefs that share the same symbol: that symbol is the current maximal symbol for which
-        // the invariant holds, i.e., the one that conveys most information wrt subtyping. Before
+        // the invariant holds, i.e., the one that conveys most information regarding subtyping. Before
         // merging, strip targs that refer to bound tparams (when we're computing the lub of type
         // constructors.) Also filter out all types that are a subtype of some other type.
         if (isUniformFrontier) {
@@ -6434,7 +6434,7 @@ trait Types extends api.Types { self: SymbolTable =>
     loop(Nil, initialBTSes)
   }
 
-  /** The minimal symbol (wrt Symbol.isLess) of a list of types */
+  /** The minimal symbol of a list of types (as determined by `Symbol.isLess`). */
   private def minSym(tps: List[Type]): Symbol =
     (tps.head.typeSymbol /: tps.tail) {
       (sym1, tp2) => if (tp2.typeSymbol isLess sym1) tp2.typeSymbol else sym1
@@ -6560,7 +6560,7 @@ trait Types extends api.Types { self: SymbolTable =>
    *  test/continuations-neg/function3.scala goes into an infinite loop.
    *  (Even if the calls are to typeSymbolDirect.)
    */
-  def isNumericSubType(tp1: Type, tp2: Type) = (
+  def isNumericSubType(tp1: Type, tp2: Type): Boolean = (
        isNumericValueType(tp1)
     && isNumericValueType(tp2)
     && isNumericSubClass(tp1.typeSymbol, tp2.typeSymbol)
@@ -6744,7 +6744,7 @@ trait Types extends api.Types { self: SymbolTable =>
   private var globalGlbDepth = 0
   private final val globalGlbLimit = 2
 
-  /** The greatest lower bound wrt <:< of a list of types */
+  /** The greatest lower bound of a list of types (as determined by `<:<`). */
   def glb(ts: List[Type]): Type = elimSuper(ts) match {
     case List() => AnyClass.tpe
     case List(t) => t
@@ -6766,8 +6766,8 @@ trait Types extends api.Types { self: SymbolTable =>
     case ts0 => glbNorm(ts0, depth)
   }
 
-  /** The greatest lower bound wrt <:< of a list of types, which have been normalized
-   *  wrt elimSuper */
+  /** The greatest lower bound of a list of types (as determined by `<:<`), which have been normalized
+   *  with regard to `elimSuper`. */
   protected def glbNorm(ts: List[Type], depth: Int): Type = {
     def glb0(ts0: List[Type]): Type = ts0 match {
       case List() => AnyClass.tpe

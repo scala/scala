@@ -4,5 +4,5 @@ import scala.tools.reflect.ToolBox
 
 object Test extends App {
   val tb = cm.mkToolBox()
-  println(tb.runExpr(Literal(Constant(()))))
+  println(tb.eval(Literal(Constant(()))))
 }
