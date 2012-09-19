@@ -680,7 +680,7 @@ object Test extends Properties("HtmlFactory") {
 
     property("package object") = files("com/example/p1/package.html") match {
       case node: scala.xml.Node =>
-        node.toString contains "com.example.p1.package#packageObjectMethod"
+        node.toString contains "com.example.p1#packageObjectMethod"
       case _ => false
     }
 
