@@ -203,28 +203,26 @@ trait Erasure {
   def specialErasure(sym: Symbol)(tp: Type): Type =
     if (sym != NoSymbol && sym.enclClass.isJavaDefined)
       erasure(sym)(tp)
-    else if (sym.isTerm && sym.owner.isDerivedValueClass)
-      specialErasureAvoiding(sym.owner, tp)
-    else if (sym.isValue && sym.owner.isMethodWithExtension)
-      specialErasureAvoiding(sym.owner.owner, tp)
+    else if (sym.isClassConstructor)
+      specialConstructorErasure(sym.owner, tp)
     else
       specialScalaErasure(tp)
 
-  def specialErasureAvoiding(clazz: Symbol, tpe: Type): Type = {
+  def specialConstructorErasure(clazz: Symbol, tpe: Type): Type = {
     tpe match {
       case PolyType(tparams, restpe) =>
-        specialErasureAvoiding(clazz, restpe)
+        specialConstructorErasure(clazz, restpe)
       case ExistentialType(tparams, restpe) =>
-        specialErasureAvoiding(clazz, restpe)
+        specialConstructorErasure(clazz, restpe)
       case mt @ MethodType(params, restpe) =>
         MethodType(
-          cloneSymbolsAndModify(params, specialErasureAvoiding(clazz, _)),
-          if (restpe.typeSymbol == UnitClass) erasedTypeRef(UnitClass)
-          else specialErasureAvoiding(clazz, (mt.resultType(mt.paramTypes))))
+          cloneSymbolsAndModify(params, specialScalaErasure),
+          specialConstructorErasure(clazz, restpe))
       case TypeRef(pre, `clazz`, args) =>
         typeRef(pre, clazz, List())
-      case _ =>
-        specialScalaErasure(tpe)
+      case tp =>
+        assert(clazz == ArrayClass || tp.isError, s"unexpected constructor erasure $tp for $clazz")
+        specialScalaErasure(tp)
     }
   }
 
