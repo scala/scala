@@ -1,10 +1,9 @@
 /**
  *  Copyright (C) 2012 Typesafe Inc. <http://www.typesafe.com>
  */
-  
+
 import scala.concurrent.duration._
 import scala.reflect._
-import java.util.concurrent.TimeUnit._
 import scala.tools.partest.TestUtil.intercept
 
 object Test extends App {
@@ -38,7 +37,7 @@ object Test extends App {
   two / one mustBe 2
   one + zero mustBe one
   one / 1000000 mustBe 1.micro
-  
+
 
   // test infinities
 
@@ -90,7 +89,7 @@ object Test extends App {
   minf.toUnit(MINUTES) mustBe Double.NegativeInfinity
   Duration.fromNanos(Double.PositiveInfinity) mustBe inf
   Duration.fromNanos(Double.NegativeInfinity) mustBe minf
-  
+
 
   // test undefined & NaN
 
@@ -121,7 +120,7 @@ object Test extends App {
 
   undef.toUnit(DAYS) mustBe nan
   Duration.fromNanos(nan) mustBe undef
-  
+
 
   // test overflow protection
   for (unit ← Seq(DAYS, HOURS, MINUTES, SECONDS, MILLISECONDS, MICROSECONDS, NANOSECONDS)) {
@@ -152,21 +151,21 @@ object Test extends App {
   }
   intercept[IllegalArgumentException] { Duration.fromNanos(1e20) }
   intercept[IllegalArgumentException] { Duration.fromNanos(-1e20) }
-  
+
 
   // test precision
   1.second + 1.millisecond mustBe 1001.milliseconds
   100000.days + 1.nanosecond mustBe 8640000000000000001L.nanoseconds
   1.5.seconds.toSeconds mustBe 1
   (-1.5).seconds.toSeconds mustBe -1
-  
+
 
   // test unit stability
   1000.millis.unit mustBe MILLISECONDS
   (1000.millis + 0.days).unit mustBe MILLISECONDS
   1.second.unit mustBe SECONDS
   (1.second + 1.millisecond).unit mustBe MILLISECONDS
-  
+
 
   // test Deadline
   val dead = 2.seconds.fromNow
@@ -183,10 +182,10 @@ object Test extends App {
   (500.millis * 2).unit mustBe MILLISECONDS
   1.second / 2 mustBe 500.millis
   (1.second / 2).unit mustBe MILLISECONDS
-  
+
 
   // check statically retaining finite-ness
   val finiteDuration: FiniteDuration = 1.second * 2 / 3 mul 5 div 4 plus 3.seconds minus 1.millisecond min 1.second max 1.second
-  
+
 
 }

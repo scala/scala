@@ -8,81 +8,8 @@
 
 package scala.concurrent.duration
 
-import java.util.concurrent.TimeUnit
-import TimeUnit._
 import java.lang.{ Double => JDouble, Long => JLong }
 import scala.language.implicitConversions
-
-/**
- * This class stores a deadline, as obtained via `Deadline.now` or the
- * duration DSL:
- *
- * {{{
- * import scala.concurrent.util.duration._
- * 3.seconds.fromNow
- * }}}
- *
- * Its main purpose is to manage repeated attempts to achieve something (like
- * awaiting a condition) by offering the methods `hasTimeLeft` and `timeLeft`.  All
- * durations are measured according to `System.nanoTime` aka wall-time; this
- * does not take into account changes to the system clock (such as leap
- * seconds).
- */
-case class Deadline private (time: FiniteDuration) extends Ordered[Deadline] {
-  /**
-   * Return a deadline advanced (i.e. moved into the future) by the given duration.
-   */
-  def +(other: FiniteDuration): Deadline = copy(time = time + other)
-  /**
-   * Return a deadline moved backwards (i.e. towards the past) by the given duration.
-   */
-  def -(other: FiniteDuration): Deadline = copy(time = time - other)
-  /**
-   * Calculate time difference between this and the other deadline, where the result is directed (i.e. may be negative).
-   */
-  def -(other: Deadline): FiniteDuration = time - other.time
-  /**
-   * Calculate time difference between this duration and now; the result is negative if the deadline has passed.
-   *
-   * '''''Note that on some systems this operation is costly because it entails a system call.'''''
-   * Check `System.nanoTime` for your platform.
-   */
-  def timeLeft: FiniteDuration = this - Deadline.now
-  /**
-   * Determine whether the deadline still lies in the future at the point where this method is called.
-   *
-   * '''''Note that on some systems this operation is costly because it entails a system call.'''''
-   * Check `System.nanoTime` for your platform.
-   */
-  def hasTimeLeft(): Boolean = !isOverdue()
-  /**
-   * Determine whether the deadline lies in the past at the point where this method is called.
-   *
-   * '''''Note that on some systems this operation is costly because it entails a system call.'''''
-   * Check `System.nanoTime` for your platform.
-   */
-  def isOverdue(): Boolean = (time.toNanos - System.nanoTime()) < 0
-  /**
-   * The natural ordering for deadline is determined by the natural order of the underlying (finite) duration.
-   */
-  def compare(other: Deadline) = time compare other.time
-}
-
-object Deadline {
-  /**
-   * Construct a deadline due exactly at the point where this method is called. Useful for then
-   * advancing it to obtain a future deadline, or for sampling the current time exactly once and
-   * then comparing it to multiple deadlines (using subtraction).
-   */
-  def now: Deadline = Deadline(Duration(System.nanoTime, NANOSECONDS))
-
-  /**
-   * The natural ordering for deadline is determined by the natural order of the underlying (finite) duration.
-   */
-  implicit object DeadlineIsOrdered extends Ordering[Deadline] {
-    def compare(a: Deadline, b: Deadline) = a compare b
-  }
-}
 
 object Duration {
   /**
@@ -380,8 +307,7 @@ object Duration {
  * <p/>
  * Examples:
  * {{{
- * import scala.concurrent.util.Duration
- * import java.util.concurrent.TimeUnit
+ * import scala.concurrent.duration._
  *
  * val duration = Duration(100, MILLISECONDS)
  * val duration = Duration(100, "millis")
@@ -396,7 +322,7 @@ object Duration {
  * <p/>
  * Implicits are also provided for Int, Long and Double. Example usage:
  * {{{
- * import scala.concurrent.util.Duration._
+ * import scala.concurrent.duration._
  *
  * val duration = 100 millis
  * }}}
@@ -771,98 +697,4 @@ final class FiniteDuration(val length: Long, val unit: TimeUnit) extends Duratio
     case _                 => super.equals(other)
   }
   override def hashCode = toNanos.toInt
-}
-
-trait DurationConversions extends Any {
-  protected def durationIn(unit: TimeUnit): FiniteDuration
-
-  def nanoseconds  = durationIn(NANOSECONDS)
-  def nanos        = nanoseconds
-  def nanosecond   = nanoseconds
-  def nano         = nanoseconds
-
-  def microseconds = durationIn(MICROSECONDS)
-  def micros       = microseconds
-  def microsecond  = microseconds
-  def micro        = microseconds
-
-  def milliseconds = durationIn(MILLISECONDS)
-  def millis       = milliseconds
-  def millisecond  = milliseconds
-  def milli        = milliseconds
-
-  def seconds      = durationIn(SECONDS)
-  def second       = seconds
-
-  def minutes      = durationIn(MINUTES)
-  def minute       = minutes
-
-  def hours        = durationIn(HOURS)
-  def hour         = hours
-
-  def days         = durationIn(DAYS)
-  def day          = days
-
-  def nanoseconds[C, CC <: Classifier[C]](c: C)(implicit ev: CC): CC#R = ev.convert(nanoseconds)
-  def nanos[C, CC <: Classifier[C]](c: C)(implicit ev: CC): CC#R = nanoseconds(c)
-  def nanosecond[C, CC <: Classifier[C]](c: C)(implicit ev: CC): CC#R = nanoseconds(c)
-  def nano[C, CC <: Classifier[C]](c: C)(implicit ev: CC): CC#R = nanoseconds(c)
-
-  def microseconds[C, CC <: Classifier[C]](c: C)(implicit ev: CC): CC#R = ev.convert(microseconds)
-  def micros[C, CC <: Classifier[C]](c: C)(implicit ev: CC): CC#R = microseconds(c)
-  def microsecond[C, CC <: Classifier[C]](c: C)(implicit ev: CC): CC#R = microseconds(c)
-  def micro[C, CC <: Classifier[C]](c: C)(implicit ev: CC): CC#R = microseconds(c)
-
-  def milliseconds[C, CC <: Classifier[C]](c: C)(implicit ev: CC): CC#R = ev.convert(milliseconds)
-  def millis[C, CC <: Classifier[C]](c: C)(implicit ev: CC): CC#R = milliseconds(c)
-  def millisecond[C, CC <: Classifier[C]](c: C)(implicit ev: CC): CC#R = milliseconds(c)
-  def milli[C, CC <: Classifier[C]](c: C)(implicit ev: CC): CC#R = milliseconds(c)
-
-  def seconds[C, CC <: Classifier[C]](c: C)(implicit ev: CC): CC#R = ev.convert(seconds)
-  def second[C, CC <: Classifier[C]](c: C)(implicit ev: CC): CC#R = seconds(c)
-
-  def minutes[C, CC <: Classifier[C]](c: C)(implicit ev: CC): CC#R = ev.convert(minutes)
-  def minute[C, CC <: Classifier[C]](c: C)(implicit ev: CC): CC#R = minutes(c)
-
-  def hours[C, CC <: Classifier[C]](c: C)(implicit ev: CC): CC#R = ev.convert(hours)
-  def hour[C, CC <: Classifier[C]](c: C)(implicit ev: CC): CC#R = hours(c)
-
-  def days[C, CC <: Classifier[C]](c: C)(implicit ev: CC): CC#R = ev.convert(days)
-  def day[C, CC <: Classifier[C]](c: C)(implicit ev: CC): CC#R = days(c)
-}
-
-final class DurationInt(val n: Int) extends AnyVal with DurationConversions {
-  override protected def durationIn(unit: TimeUnit): FiniteDuration = Duration(n, unit)
-}
-
-final class DurationLong(val n: Long) extends AnyVal with DurationConversions {
-  override protected def durationIn(unit: TimeUnit): FiniteDuration = Duration(n, unit)
-}
-
-final class DurationDouble(val d: Double) extends AnyVal with DurationConversions {
-  override protected def durationIn(unit: TimeUnit): FiniteDuration =
-    Duration(d, unit) match {
-      case f: FiniteDuration => f
-      case _ => throw new IllegalArgumentException("Duration DSL not applicable to " + d)
-    }
-}
-
-trait Classifier[C] {
-  type R
-  def convert(d: FiniteDuration): R
-}
-
-/*
- * Avoid reflection based invocation by using non-duck type
- */
-protected[duration] class IntMult(i: Int) {
-  def *(d: Duration) = d * i
-}
-
-protected[duration] class LongMult(i: Long) {
-  def *(d: Duration) = d * i
-}
-
-protected[duration] class DoubleMult(f: Double) {
-  def *(d: Duration) = d * f
 }

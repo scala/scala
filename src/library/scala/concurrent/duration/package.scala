@@ -1,31 +1,53 @@
 package scala.concurrent
 
-import java.util.concurrent.TimeUnit
 import scala.language.implicitConversions
 
 package object duration {
-
+  // FIXME - these need documenting.
   object span
-  implicit object spanConvert extends Classifier[span.type] {
-    type R = FiniteDuration
-    def convert(d: FiniteDuration) = d
-  }
-
   object fromNow
-  implicit object fromNowConvert extends Classifier[fromNow.type] {
-    type R = Deadline
-    def convert(d: FiniteDuration) = Deadline.now + d
+
+  type TimeUnit          = java.util.concurrent.TimeUnit
+  final val DAYS         = java.util.concurrent.TimeUnit.DAYS
+  final val HOURS        = java.util.concurrent.TimeUnit.HOURS
+  final val MICROSECONDS = java.util.concurrent.TimeUnit.MICROSECONDS
+  final val MILLISECONDS = java.util.concurrent.TimeUnit.MILLISECONDS
+  final val MINUTES      = java.util.concurrent.TimeUnit.MINUTES
+  final val NANOSECONDS  = java.util.concurrent.TimeUnit.NANOSECONDS
+  final val SECONDS      = java.util.concurrent.TimeUnit.SECONDS
+
+  implicit def pairIntToDuration(p: (Int, TimeUnit)): Duration         = Duration(p._1, p._2)
+  implicit def pairLongToDuration(p: (Long, TimeUnit)): FiniteDuration = Duration(p._1, p._2)
+  implicit def durationToPair(d: Duration): (Long, TimeUnit)           = (d.length, d.unit)
+
+  implicit final class DurationInt(val n: Int) extends AnyVal with DurationConversions {
+    override protected def durationIn(unit: TimeUnit): FiniteDuration = Duration(n, unit)
   }
 
-  implicit def intToDurationInt(n: Int) = new DurationInt(n)
-  implicit def longToDurationLong(n: Long) = new DurationLong(n)
-  implicit def doubleToDurationDouble(d: Double) = new DurationDouble(d)
+  implicit final class DurationLong(val n: Long) extends AnyVal with DurationConversions {
+    override protected def durationIn(unit: TimeUnit): FiniteDuration = Duration(n, unit)
+  }
 
-  implicit def pairIntToDuration(p: (Int, TimeUnit)) = Duration(p._1, p._2)
-  implicit def pairLongToDuration(p: (Long, TimeUnit)) = Duration(p._1, p._2)
-  implicit def durationToPair(d: Duration) = (d.length, d.unit)
+  implicit final class DurationDouble(val d: Double) extends AnyVal with DurationConversions {
+    override protected def durationIn(unit: TimeUnit): FiniteDuration =
+      Duration(d, unit) match {
+        case f: FiniteDuration => f
+        case _ => throw new IllegalArgumentException("Duration DSL not applicable to " + d)
+      }
+  }
 
-  implicit def intMult(i: Int) = new IntMult(i)
-  implicit def longMult(l: Long) = new LongMult(l)
-  implicit def doubleMult(f: Double) = new DoubleMult(f)
+  /*
+   * Avoid reflection based invocation by using non-duck type
+   */
+  implicit final class IntMult(val i: Int) extends AnyVal {
+    def *(d: Duration) = d * i
+  }
+
+  implicit final class LongMult(val i: Long) extends AnyVal {
+    def *(d: Duration) = d * i
+  }
+
+  implicit final class DoubleMult(val f: Double) extends AnyVal {
+    def *(d: Duration) = d * f
+  }
 }
