@@ -67,23 +67,9 @@ class LinkedHashMap[A, B] extends AbstractMap[A, B]
   }
 
   override def put(key: A, value: B): Option[B] = {
-    val e = findEntry(key)
-    if (e == null) {
-      val e = new Entry(key, value)
-      addEntry(e)
-      updateLinkedEntries(e)
-      None
-    } else {
-      val v = e.value
-      e.value = value
-      Some(v)
-    }
-  }
-
-  private def updateLinkedEntries(e: Entry) {
-    if (firstEntry == null) firstEntry = e
-    else { lastEntry.later = e; e.earlier = lastEntry }
-    lastEntry = e
+    val e = findOrAddEntry(key, value)
+    if (e eq null) None
+    else { val v = e.value; e.value = value; Some(v) }
   }
 
   override def remove(key: A): Option[B] = {
@@ -143,7 +129,7 @@ class LinkedHashMap[A, B] extends AbstractMap[A, B]
       else Iterator.empty.next
   }
 
-  override def foreach[U](f: ((A, B)) => U) = {
+  override def foreach[U](f: ((A, B)) => U) {
     var cur = firstEntry
     while (cur ne null) {
       f((cur.key, cur.value))
@@ -151,12 +137,20 @@ class LinkedHashMap[A, B] extends AbstractMap[A, B]
     }
   }
 
-  protected override def foreachEntry[C](f: Entry => C) {
+  protected override def foreachEntry[U](f: Entry => U) {
     var cur = firstEntry
     while (cur ne null) {
       f(cur)
       cur = cur.later
     }
+  }
+
+  protected def createNewEntry[B1](key: A, value: B1): Entry = {
+    val e = new Entry(key, value.asInstanceOf[B])
+    if (firstEntry eq null) firstEntry = e
+    else { lastEntry.later = e; e.earlier = lastEntry }
+    lastEntry = e
+    e
   }
 
   override def clear() {
@@ -165,16 +159,15 @@ class LinkedHashMap[A, B] extends AbstractMap[A, B]
   }
 
   private def writeObject(out: java.io.ObjectOutputStream) {
-    serializeTo(out, _.value)
+    serializeTo(out, { entry =>
+      out.writeObject(entry.key)
+      out.writeObject(entry.value)
+    })
   }
 
   private def readObject(in: java.io.ObjectInputStream) {
     firstEntry = null
     lastEntry = null
-    init[B](in, { (key, value) =>
-      val entry = new Entry(key, value)
-      updateLinkedEntries(entry)
-      entry
-    })
+    init(in, createNewEntry(in.readObject().asInstanceOf[A], in.readObject()))
   }
 }

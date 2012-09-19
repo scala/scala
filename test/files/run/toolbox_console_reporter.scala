@@ -5,7 +5,7 @@ object Test extends App {
   // todo. and isn't affected by Console.setOut employed by partest to intercept output
 
   //val toolbox = mkToolBox(frontEnd = mkConsoleFrontEnd(), options = "-deprecation")
-  //toolbox.runExpr(reify{
+  //toolbox.eval(reify{
   //  object Utils {
   //    @deprecated("test", "2.10.0")
   //    def foo { println("hello") }

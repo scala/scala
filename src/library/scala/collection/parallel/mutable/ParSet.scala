@@ -27,11 +27,11 @@ import scala.collection.GenSet
  *  @author Aleksandar Prokopec
  */
 trait ParSet[T]
-extends collection/*.mutable*/.GenSet[T]
+extends scala.collection/*.mutable*/.GenSet[T]
    with ParIterable[T]
    with scala.collection.parallel.ParSet[T]
    with GenericParTemplate[T, ParSet]
-   with ParSetLike[T, ParSet[T], collection.mutable.Set[T]]
+   with ParSetLike[T, ParSet[T], scala.collection.mutable.Set[T]]
 {
 self =>
   override def companion: GenericCompanion[ParSet] with GenericParCompanion[ParSet] = ParSet

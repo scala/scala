@@ -18,7 +18,7 @@ trait ZippedTraversable3[+El1, +El2, +El3] extends Any {
 }
 object ZippedTraversable3 {
   implicit def zippedTraversable3ToTraversable[El1, El2, El3](zz: ZippedTraversable3[El1, El2, El3]): Traversable[(El1, El2, El3)] = {
-    new collection.AbstractTraversable[(El1, El2, El3)] {
+    new scala.collection.AbstractTraversable[(El1, El2, El3)] {
       def foreach[U](f: ((El1, El2, El3)) => U): Unit = zz foreach Function.untupled(f)
     }
   }

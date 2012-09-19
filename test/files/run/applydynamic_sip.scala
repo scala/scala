@@ -55,4 +55,12 @@ object Test extends App {
   qual.sel() = expr  // parser turns this into qual.sel.update(expr)
   qual.sel.apply(1)
   qual.sel.apply(1) = 1
+
+  qual.apply(a)
+  qual.apply[String](a)
+  qual(a)
+  qual[String](a)
+  qual[T](arg = a)
+  qual(a, arg2 = "a2")
+  qual(a) = a2
 }

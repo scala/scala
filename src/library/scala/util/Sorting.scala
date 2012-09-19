@@ -6,10 +6,11 @@
 **                          |/                                          **
 \*                                                                      */
 
-package scala.util
+package scala
+package util
 
 import scala.reflect.{ ClassTag, classTag }
-import scala.math.Ordering
+import scala.math.{ Ordering, max, min }
 
 /** The Sorting object provides functions that can sort various kinds of
   * objects. You can provide a comparison function, or you can request a sort

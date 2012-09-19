@@ -29,7 +29,7 @@ object language {
   implicit lazy val postfixOps: postfixOps = languageFeature.postfixOps
 
   /** Only where enabled, accesses to members of structural types that need
-   *  reflection are supported. Reminder: A structural type is a type of the form 
+   *  reflection are supported. Reminder: A structural type is a type of the form
    *  `Parents { Decls }` where `Decls` contains declarations of new members that do
    *  not override any member in `Parents`. To access one of these members, a
    *  reflective call is needed.
@@ -52,7 +52,7 @@ object language {
    *     implicit def stringToInt(s: String): Int = s.length
    *     implicit val conv = (s: String) => s.length
    *     implicit def listToX(xs: List[T])(implicit f: T => X): X = …
-   * 
+   *
    *  implicit values of other types are not affected, and neither are implicit
    *  classes.
    *
@@ -95,7 +95,7 @@ object language {
    *
    *  _Why keep the feature?_ Existential types are needed to make sense of Java’s wildcard
    *  types and raw types and the erased types of run-time values.
-   * 
+   *
    *  Why control it? Having complex existential types in a code base usually makes
    *  application code very brittle, with a tendency to produce type errors with
    *  obscure error messages. Therefore, going overboard with existential types
@@ -110,7 +110,7 @@ object language {
 
     /** Where enabled, macro definitions are allowed. Macro implementations and
      *  macro applications are unaffected; they can be used anywhere.
-     * 
+     *
      *  _Why introduce the feature?_ Macros promise to make the language more regular,
      *  replacing ad-hoc language constructs with a general powerful abstraction
      *  capability that can express them. Macros are also a more disciplined and

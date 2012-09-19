@@ -36,13 +36,8 @@ trait Symbols extends base.Symbols { self: Universe =>
     //        at scala.reflect.internal.pickling.UnPickler$Scan.run(UnPickler.scala:88)
     //        at scala.reflect.internal.pickling.UnPickler.unpickle(UnPickler.scala:37)
     //        at scala.reflect.runtime.JavaMirrors$JavaMirror.unpickleClass(JavaMirrors.scala:253)                 // unpickle from within a reflexive mirror
-    //    def annotations: List[AnnotationInfo]
-    def getAnnotations: List[AnnotationInfo]
-
-    /** Whether this symbol carries an annotation for which the given
-     *  symbol is its typeSymbol.
-     */
-    def hasAnnotation(sym: Symbol): Boolean
+    //    def annotations: List[Annotation]
+    def getAnnotations: List[Annotation]
 
     /** For a class: the module or case class factory with the same name in the same package.
      *  For a module: the class with the same name in the same package.
@@ -175,6 +170,10 @@ trait Symbols extends base.Symbols { self: Universe =>
      */
     def isJava: Boolean
 
+    /** Does this symbol represent an implicit value, definition, class or parameter?
+     */
+    def isImplicit: Boolean
+
     /******************* helpers *******************/
 
     /** ...
@@ -226,10 +225,6 @@ trait Symbols extends base.Symbols { self: Universe =>
      *  If yes, `isMethod` is false, and the list of the enclosed alternatives can be found out via `alternatives`.
      */
     def isOverloaded   : Boolean
-
-    /** Does this symbol represent an implicit value, definition or parameter?
-     */
-    def isImplicit: Boolean
 
     /** Does this symbol represent a lazy value?
      */

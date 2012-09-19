@@ -28,7 +28,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
   //protected var activeLocks = 0
 
   /** Used for debugging only */
-  //protected var lockedSyms = collection.immutable.Set[Symbol]()
+  //protected var lockedSyms = scala.collection.immutable.Set[Symbol]()
 
   /** Used to keep track of the recursion depth on locked symbols */
   private var recursionTable = immutable.Map.empty[Symbol, Int]
@@ -697,7 +697,6 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
       || hasAnnotation(SerializableAttr) // last part can be removed, @serializable annotation is deprecated
     )
     def hasBridgeAnnotation = hasAnnotation(BridgeClass)
-    def hasStaticAnnotation = hasAnnotation(StaticClass)
     def isDeprecated        = hasAnnotation(DeprecatedAttr)
     def deprecationMessage  = getAnnotation(DeprecatedAttr) flatMap (_ stringArg 0)
     def deprecationVersion  = getAnnotation(DeprecatedAttr) flatMap (_ stringArg 1)
@@ -1613,7 +1612,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
           setInfo (this.info cloneInfo clone)
           setAnnotations this.annotations
       )
-      this.attachments.all.foreach(clone.addAttachment)
+      this.attachments.all.foreach(clone.updateAttachment)
       if (clone.thisSym != clone)
         clone.typeOfThis = (clone.typeOfThis cloneInfo clone)
 

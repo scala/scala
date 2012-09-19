@@ -53,7 +53,7 @@ trait Commands extends Prop {
      *  takes the current abstract state as parameter and returns a boolean
      *  that says if the precondition is fulfilled or not. You can add several
      *  conditions to the precondition list */
-    val preConditions = new collection.mutable.ListBuffer[State => Boolean]
+    val preConditions = new scala.collection.mutable.ListBuffer[State => Boolean]
 
     /** Returns all postconditions merged into a single function */
     def postCondition: (State,State,Any) => Prop = (s0,s1,r) => all(postConditions.map(_.apply(s0,s1,r)): _*)
@@ -65,7 +65,7 @@ trait Commands extends Prop {
      *  method. The postcondition function should return a Boolean (or
      *  a Prop instance) that says if the condition holds or not. You can add several
      *  conditions to the postConditions list. */
-    val postConditions = new collection.mutable.ListBuffer[(State,State,Any) => Prop]
+    val postConditions = new scala.collection.mutable.ListBuffer[(State,State,Any) => Prop]
   }
 
   /** A command that binds its result for later use */

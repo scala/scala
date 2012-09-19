@@ -137,7 +137,7 @@ trait Trees extends api.Trees { self: SymbolTable =>
     override def freeTypes: List[FreeTypeSymbol] = freeSyms[FreeTypeSymbol](_.isFreeType, _.typeSymbol)
 
     private def freeSyms[S <: Symbol](isFree: Symbol => Boolean, symOfType: Type => Symbol): List[S] = {
-      val s = collection.mutable.LinkedHashSet[S]()
+      val s = scala.collection.mutable.LinkedHashSet[S]()
       def addIfFree(sym: Symbol): Unit = if (sym != null && isFree(sym)) s += sym.asInstanceOf[S]
       for (t <- this) {
         addIfFree(t.symbol)
@@ -410,9 +410,7 @@ trait Trees extends api.Trees { self: SymbolTable =>
     Apply(init, args.toList)
   }
 
-  case class ApplyDynamic(qual: Tree, args: List[Tree])
-       extends SymTree with TermTree with ApplyDynamicApi
-  object ApplyDynamic extends ApplyDynamicExtractor
+  case class ApplyDynamic(qual: Tree, args: List[Tree]) extends SymTree with TermTree
 
   case class Super(qual: Tree, mix: TypeName) extends TermTree with SuperApi {
     override def symbol: Symbol = qual.symbol
@@ -506,7 +504,12 @@ trait Trees extends api.Trees { self: SymbolTable =>
 
   def TypeTree(tp: Type): TypeTree = TypeTree() setType tp
 
-  class StrictTreeCopier extends TreeCopierOps {
+  override type TreeCopier <: InternalTreeCopierOps
+  abstract class InternalTreeCopierOps extends TreeCopierOps {
+    def ApplyDynamic(tree: Tree, qual: Tree, args: List[Tree]): ApplyDynamic
+  }
+
+  class StrictTreeCopier extends InternalTreeCopierOps {
     def ClassDef(tree: Tree, mods: Modifiers, name: Name, tparams: List[TypeDef], impl: Template) =
       new ClassDef(mods, name.toTypeName, tparams, impl).copyAttrs(tree)
     def PackageDef(tree: Tree, pid: RefTree, stats: List[Tree]) =
@@ -600,7 +603,7 @@ trait Trees extends api.Trees { self: SymbolTable =>
       new ExistentialTypeTree(tpt, whereClauses).copyAttrs(tree)
   }
 
-  class LazyTreeCopier extends TreeCopierOps {
+  class LazyTreeCopier extends InternalTreeCopierOps {
     val treeCopy: TreeCopier = newStrictTreeCopier
     def ClassDef(tree: Tree, mods: Modifiers, name: Name, tparams: List[TypeDef], impl: Template) = tree match {
       case t @ ClassDef(mods0, name0, tparams0, impl0)
@@ -1595,7 +1598,6 @@ trait Trees extends api.Trees { self: SymbolTable =>
   implicit val GenericApplyTag = ClassTag[GenericApply](classOf[GenericApply])
   implicit val TypeApplyTag = ClassTag[TypeApply](classOf[TypeApply])
   implicit val ApplyTag = ClassTag[Apply](classOf[Apply])
-  implicit val ApplyDynamicTag = ClassTag[ApplyDynamic](classOf[ApplyDynamic])
   implicit val SuperTag = ClassTag[Super](classOf[Super])
   implicit val ThisTag = ClassTag[This](classOf[This])
   implicit val SelectTag = ClassTag[Select](classOf[Select])

@@ -14,7 +14,7 @@ object Test extends App {
     val code = foo[Int]
     println(code.tree.freeTypes)
     val W = code.tree.freeTypes(2)
-    cm.mkToolBox().runExpr(code.tree, Map(W -> definitions.IntTpe))
+    cm.mkToolBox().eval(code.tree, Map(W -> definitions.IntTpe))
     println(code.eval)
   }
 }

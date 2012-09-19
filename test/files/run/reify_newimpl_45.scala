@@ -9,7 +9,7 @@ object Test extends App {
     println(code.tree.freeTypes)
     val T = code.tree.freeTypes(0)
     val tree = code.tree.substituteSymbols(List(T), List(definitions.StringClass))
-    cm.mkToolBox().runExpr(tree)
+    cm.mkToolBox().eval(tree)
   }
 
   new C[String]

@@ -46,8 +46,8 @@ trait SymbolTables {
 
     def symRef(sym: Symbol): Tree =
       symtab.get(sym) match {
-        case Some(FreeDef(_, name, binding, _, _)) => Ident(name) addAttachment binding
-        case Some(SymDef(_, name, _, _)) => Ident(name) addAttachment ReifyBindingAttachment(Ident(sym))
+        case Some(FreeDef(_, name, binding, _, _)) => Ident(name) updateAttachment binding
+        case Some(SymDef(_, name, _, _)) => Ident(name) updateAttachment ReifyBindingAttachment(Ident(sym))
         case None => EmptyTree
       }
 
@@ -86,7 +86,7 @@ trait SymbolTables {
         newTermName(fresh.newName(name))
       }
       val bindingAttachment = reification.attachments.get[ReifyBindingAttachment].get
-      add(ValDef(NoMods, freshName(name0), TypeTree(), reification) addAttachment bindingAttachment)
+      add(ValDef(NoMods, freshName(name0), TypeTree(), reification) updateAttachment bindingAttachment)
     }
 
     private def add(sym: Symbol, name: TermName): SymbolTable = {
@@ -203,7 +203,7 @@ trait SymbolTables {
             result ++= cumulativeAliases.distinct filter (alias => alias._1 == sym && alias._2 != currtab.symName(sym)) map (alias => {
               val canonicalName = currtab.symName(sym)
               val aliasName = alias._2
-              ValDef(NoMods, aliasName, TypeTree(), Ident(canonicalName)) addAttachment ReifyAliasAttachment(sym, aliasName)
+              ValDef(NoMods, aliasName, TypeTree(), Ident(canonicalName)) updateAttachment ReifyAliasAttachment(sym, aliasName)
             })
           result.toList
         })

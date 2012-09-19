@@ -43,7 +43,7 @@ trait Infrastructure {
    *      val importer = ru.mkImporter(c.universe).asInstanceOf[ru.Importer { val from: c.universe.type }]
    *      val tree = c.resetAllAttrs(x.tree.duplicate)
    *      val imported = importer.importTree(tree)
-   *      val valueOfX = toolBox.runExpr(imported).asInstanceOf[T]
+   *      val valueOfX = toolBox.eval(imported).asInstanceOf[T]
    *      ...
    *    }
    */
@@ -77,23 +77,4 @@ trait Infrastructure {
   /** Returns a macro definition which triggered this macro expansion.
    */
   val currentMacro: Symbol
-
-  // todo. redo caches as discussed on Reflecting Meeting 2012/03/29
-  // https://docs.google.com/document/d/1oUZGQpdt2qwioTlJcSt8ZFQwVLTvpxn8xa67P8OGVpU/edit
-
-  /** A cache shared by all invocations of all macros across all compilation runs.
-   *
-   *  Needs to be used with extreme care, since memory leaks here will swiftly crash the presentation compiler.
-   *  For example, Scala IDE typically launches a compiler run on every edit action so there might be hundreds of runs per minute.
-   */
-  val globalCache: scala.collection.mutable.Map[Any, Any]
-
-  /** A cache shared by all invocations of the same macro within a single compilation run.
-   *
-   *  This cache is cleared automatically after a compilation run is completed or abandoned.
-   *  It is also specific to a particular macro definition.
-   *
-   *  To share data between different macros and/or different compilation runs, use ``globalCache''.
-   */
-  val cache: scala.collection.mutable.Map[Any, Any]
 }

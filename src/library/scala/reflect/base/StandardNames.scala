@@ -11,6 +11,10 @@ package base
 //    Is it necessary to perform reflection (like ERROR or LOCAL_SUFFIX_STRING)? If yes, then it goes to api.StandardNames.
 //    Otherwise it goes nowhere - reflection API should stay minimalistic.
 
+// TODO: document better
+/**
+ * Names necessary to create Scala trees.
+ */
 trait StandardNames {
   self: Universe =>
 
