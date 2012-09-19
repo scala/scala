@@ -275,13 +275,13 @@ object Duration {
       if (factor == 0d || factor.isNaN) Undefined
       else if (factor < 0d) -this
       else this
-    def /(factor: Double): Duration =
-      if (factor.isNaN || factor.isInfinite) Undefined
-      else if ((factor compare 0d) < 0) -this
+    def /(divisor: Double): Duration =
+      if (divisor.isNaN || divisor.isInfinite) Undefined
+      else if ((divisor compare 0d) < 0) -this
       else this
-    def /(other: Duration): Double = other match {
+    def /(divisor: Duration): Double = divisor match {
       case _: Infinite => Double.NaN
-      case x           => Double.PositiveInfinity * (if ((this > Zero) ^ (other >= Zero)) -1 else 1)
+      case x           => Double.PositiveInfinity * (if ((this > Zero) ^ (divisor >= Zero)) -1 else 1)
     }
 
     final def isFinite() = false
@@ -529,12 +529,12 @@ sealed abstract class Duration extends Serializable with Ordered[Duration] {
    *
    * $ovf
    */
-  def /(factor: Double): Duration
+  def /(divisor: Double): Duration
   /**
    * Return the quotient of this and that duration as floating-point number. The semantics are
    * determined by Double as if calculating the quotient of the nanosecond lengths of both factors.
    */
-  def /(other: Duration): Double
+  def /(divisor: Duration): Double
   /**
    * Negate this duration. The only two values which are mapped to themselves are [[Duration.Zero]] and [[Duration.Undefined]].
    */
@@ -561,7 +561,7 @@ sealed abstract class Duration extends Serializable with Ordered[Duration] {
    *
    * $ovf
    */
-  def div(factor: Double)    = this / factor
+  def div(divisor: Double)    = this / divisor
   /**
    * Return the quotient of this and that duration as floating-point number. The semantics are
    * determined by Double as if calculating the quotient of the nanosecond lengths of both factors.
@@ -691,17 +691,17 @@ final class FiniteDuration(val length: Long, val unit: TimeUnit) extends Duratio
     else if ((factor > 0) ^ (this < Zero)) Inf
     else MinusInf
 
-  def /(factor: Double) =
-    if (!factor.isInfinite) fromNanos(toNanos / factor)
-    else if (factor.isNaN) Undefined
+  def /(divisor: Double) =
+    if (!divisor.isInfinite) fromNanos(toNanos / divisor)
+    else if (divisor.isNaN) Undefined
     else Zero
 
   // if this is made a constant, then scalac will elide the conditional and always return +0.0, SI-6331
   private[this] def minusZero = -0d
-  def /(other: Duration): Double =
-    if (other.isFinite) toNanos.toDouble / other.toNanos
-    else if (other eq Undefined) Double.NaN
-    else if ((length < 0) ^ (other > Zero)) 0d
+  def /(divisor: Duration): Double =
+    if (divisor.isFinite) toNanos.toDouble / divisor.toNanos
+    else if (divisor eq Undefined) Double.NaN
+    else if ((length < 0) ^ (divisor > Zero)) 0d
     else minusZero
 
   // overloaded methods taking FiniteDurations, so that you can calculate while statically staying finite
@@ -719,16 +719,33 @@ final class FiniteDuration(val length: Long, val unit: TimeUnit) extends Duratio
    *
    * @throws ArithmeticException if the factor is 0
    */
-  def /(factor: Long) = fromNanos(toNanos / factor)
+  def /(divisor: Long) = fromNanos(toNanos / divisor)
 
   /**
    * Return the product of this duration and the given integer factor.
    *
    * @throws IllegalArgumentException if the result would overflow the range of FiniteDuration
    */
-  def *(factor: Long) = {
-    if (length > Long.MaxValue / factor) throw new IllegalArgumentException("multiplication overflow")
-    new FiniteDuration(length * factor, unit)
+  def *(factor: Long) = new FiniteDuration(safeMul(length, factor), unit)
+
+  /*
+   * This method avoids the use of Long division, which saves 95% of the time spent,
+   * by checking that there are enough leading zeros so that the result has a chance
+   * to fit into a Long again; the remaining edge cases are caught by using the sign
+   * of the product for overflow detection.
+   *
+   * This method is not general purpose because it disallows the (otherwise legal)
+   * case of Long.MinValue * 1, but that is okay for use in FiniteDuration, since
+   * Long.MinValue is not a legal `length` anyway.
+   */
+  private def safeMul(_a: Long, _b: Long): Long = {
+    val a = math.abs(_a)
+    val b = math.abs(_b)
+    import java.lang.Long.{ numberOfLeadingZeros => leading }
+    if (leading(a) + leading(b) < 64) throw new IllegalArgumentException("multiplication overflow")
+    val product = a * b
+    if (product < 0) throw new IllegalArgumentException("multiplication overflow")
+    if (a == _a ^ b == _b) -product else product
   }
 
   /**
@@ -736,7 +753,7 @@ final class FiniteDuration(val length: Long, val unit: TimeUnit) extends Duratio
    *
    * @throws ArithmeticException if the factor is 0
    */
-  def div(factor: Long) = this / factor
+ def div(divisor: Long) = this / divisor
 
   /**
    * Return the product of this duration and the given integer factor.
