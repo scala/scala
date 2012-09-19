@@ -2,9 +2,6 @@ package scala
 
 package object reflect {
 
-  // should be removed once I re-deploy the starr
-  val basis: scala.reflect.base.Universe = null
-
   // in the new scheme of things ClassManifests are aliased to ClassTags
   // this is done because we want `toArray` in collections work with ClassTags
   // but changing it to use the ClassTag context bound without aliasing ClassManifest
