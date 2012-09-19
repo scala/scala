@@ -1,4 +1,4 @@
-package scala.concurrent.util
+package scala.concurrent
 
 import java.util.concurrent.TimeUnit
 import scala.language.implicitConversions

@@ -12,7 +12,7 @@ package scala.concurrent.impl
 
 import java.util.concurrent.TimeUnit.NANOSECONDS
 import scala.concurrent.{ ExecutionContext, CanAwait, OnCompleteRunnable, TimeoutException, ExecutionException }
-import scala.concurrent.util.{ Duration, Deadline, FiniteDuration }
+import scala.concurrent.duration.{ Duration, Deadline, FiniteDuration }
 import scala.annotation.tailrec
 import scala.util.control.NonFatal
 import scala.util.{ Try, Success, Failure }

@@ -6,7 +6,7 @@
 **                          |/                                          **
 \*                                                                      */
 
-package scala.concurrent.util
+package scala.concurrent.duration
 
 import java.util.concurrent.TimeUnit
 import TimeUnit._
@@ -161,11 +161,11 @@ object Duration {
   )
 
   // TimeUnit => standard label
-  protected[util] val timeUnitName: Map[TimeUnit, String] =
+  protected[duration] val timeUnitName: Map[TimeUnit, String] =
     timeUnitLabels.toMap mapValues (s => words(s).last) toMap
 
   // Label => TimeUnit
-  protected[util] val timeUnit: Map[String, TimeUnit] =
+  protected[duration] val timeUnit: Map[String, TimeUnit] =
     timeUnitLabels flatMap { case (unit, names) => expandLabels(names) map (_ -> unit) } toMap
 
   /**
@@ -774,7 +774,6 @@ final class FiniteDuration(val length: Long, val unit: TimeUnit) extends Duratio
 }
 
 trait DurationConversions extends Any {
-  import duration.Classifier
   protected def durationIn(unit: TimeUnit): FiniteDuration
 
   def nanoseconds  = durationIn(NANOSECONDS)
@@ -846,4 +845,24 @@ final class DurationDouble(val d: Double) extends AnyVal with DurationConversion
       case f: FiniteDuration => f
       case _ => throw new IllegalArgumentException("Duration DSL not applicable to " + d)
     }
+}
+
+trait Classifier[C] {
+  type R
+  def convert(d: FiniteDuration): R
+}
+
+/*
+ * Avoid reflection based invocation by using non-duck type
+ */
+protected[duration] class IntMult(i: Int) {
+  def *(d: Duration) = d * i
+}
+
+protected[duration] class LongMult(i: Long) {
+  def *(d: Duration) = d * i
+}
+
+protected[duration] class DoubleMult(f: Double) {
+  def *(d: Duration) = d * f
 }

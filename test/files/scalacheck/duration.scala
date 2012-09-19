@@ -3,7 +3,7 @@ import Prop._
 import Gen._
 import Arbitrary._
 import math._
-import concurrent.util.Duration.fromNanos
+import concurrent.duration.Duration.fromNanos
 
 object Test extends Properties("Division of Duration by Long") {
 

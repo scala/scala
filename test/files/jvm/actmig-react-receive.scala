@@ -3,7 +3,7 @@ import scala.actors.Actor._
 import scala.actors.{ Actor, StashingActor, ActorRef, Props, MigrationSystem, PoisonPill }
 import java.util.concurrent.{ TimeUnit, CountDownLatch }
 import scala.collection.mutable.ArrayBuffer
-import scala.concurrent.util.duration._
+import scala.concurrent.duration._
 import scala.concurrent.{ Promise, Await }
 
 object Test {
