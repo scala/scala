@@ -1,0 +1,7 @@
+t6385.scala:12: error: bridge generated for member method x: ()C[T] in class C
+which overrides method x: ()C[T] in trait AA
+clashes with definition of the member itself;
+both have erased type ()Object
+   def x = this
+       ^
+one error found
