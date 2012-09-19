@@ -21,10 +21,10 @@ trait Trees extends api.Trees { self: SymbolTable =>
 
     if (Statistics.canEnable) Statistics.incCounter(TreesStats.nodeByType, getClass)
 
-    @inline final override def pos: Position = rawatt.pos
+    final override def pos: Position = rawatt.pos
 
     private[this] var rawtpe: Type = _
-    @inline final def tpe = rawtpe
+    final def tpe = rawtpe
     def tpe_=(t: Type) = rawtpe = t
     def setType(tp: Type): this.type = { rawtpe = tp; this }
     def defineType(tp: Type): this.type = setType(tp)

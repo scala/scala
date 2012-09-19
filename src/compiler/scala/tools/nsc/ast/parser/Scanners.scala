@@ -182,13 +182,13 @@ trait Scanners extends ScannersCommon {
 
     /** Are we directly in a string interpolation expression?
      */
-    @inline private def inStringInterpolation =
+    private def inStringInterpolation =
       sepRegions.nonEmpty && sepRegions.head == STRINGLIT
 
     /** Are we directly in a multiline string interpolation expression?
      *  @pre inStringInterpolation
      */
-    @inline private def inMultiLineInterpolation =
+    private def inMultiLineInterpolation =
       inStringInterpolation && sepRegions.tail.nonEmpty && sepRegions.tail.head == STRINGPART
 
     /** read next token and return last offset
