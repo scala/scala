@@ -124,15 +124,11 @@ class ModelFactory(val global: Global, val settings: doc.Settings) {
     def group = comment flatMap (_.group) getOrElse "No Group"
     override def inTemplate = inTpl
     override def toRoot: List[MemberImpl] = this :: inTpl.toRoot
-    def inDefinitionTemplates = this match {
-        case mb: NonTemplateMemberEntity if (mb.useCaseOf.isDefined) =>
-          mb.useCaseOf.get.inDefinitionTemplates
-        case _ =>
-          if (inTpl == null)
-            List(makeRootPackage)
-          else
-            makeTemplate(sym.owner)::(sym.allOverriddenSymbols map { inhSym => makeTemplate(inhSym.owner) })
-      }
+    def inDefinitionTemplates =
+        if (inTpl == null)
+          List(makeRootPackage)
+        else
+          makeTemplate(sym.owner)::(sym.allOverriddenSymbols map { inhSym => makeTemplate(inhSym.owner) })
     def visibility = {
       if (sym.isPrivateLocal) PrivateInInstance()
       else if (sym.isProtectedLocal) ProtectedInInstance()
@@ -525,29 +521,25 @@ class ModelFactory(val global: Global, val settings: doc.Settings) {
            extends MemberImpl(sym, inTpl) with NonTemplateMemberEntity {
     override lazy val comment = {
       val inRealTpl =
-        /* Variable precendence order for implicitly added members: Take the variable defifinitions from ...
-         * 1. the target of the implicit conversion
-         * 2. the definition template (owner)
-         * 3. the current template
-         */
-        if (conversion.isDefined) findTemplateMaybe(conversion.get.toType.typeSymbol) match {
-          case Some(d) if d != makeRootPackage => d //in case of NoSymbol, it will give us the root package
-          case _ => findTemplateMaybe(sym.owner) match {
-            case Some(d) if d != makeRootPackage => d //in case of NoSymbol, it will give us the root package
-            case _ => inTpl
-          }
-        } else inTpl
-      if (inRealTpl != null) thisFactory.comment(sym, None, inRealTpl) else None
+        conversion.fold(Option(inTpl)) { conv =>
+          /* Variable precendence order for implicitly added members: Take the variable defifinitions from ...
+           * 1. the target of the implicit conversion
+           * 2. the definition template (owner)
+           * 3. the current template
+           */
+          findTemplateMaybe(conv.toType.typeSymbol) filterNot (_ == makeRootPackage) orElse (
+            findTemplateMaybe(sym.owner) filterNot (_ == makeRootPackage) orElse Option(inTpl)
+          )
+	}
+      inRealTpl flatMap (thisFactory.comment(sym, None, _))
     }
+
+    override def inDefinitionTemplates = useCaseOf.fold(super.inDefinitionTemplates)(_.inDefinitionTemplates)
 
     override def qualifiedName = optimize(inTemplate.qualifiedName + "#" + name)
     lazy val definitionName = {
-      // this contrived name is here just to satisfy some older tests -- if you decide to remove it, be my guest, and
-      // also remove property("package object") from test/scaladoc/scalacheck/HtmlFactoryTest.scala so you don't break
-      // the test suite...
-      val packageObject = if (inPackageObject) ".package" else ""
       val qualifiedName = conversion.fold(inDefinitionTemplates.head.qualifiedName)(_.conversionQualifiedName)
-      optimize(qualifiedName + packageObject + "#" + name)
+      optimize(qualifiedName + "#" + name)
     }
     def isBridge = sym.isBridge
     def isUseCase = useCaseOf.isDefined
@@ -781,7 +773,6 @@ class ModelFactory(val global: Global, val settings: doc.Settings) {
     }
   }
 
-  /** Get the root package */
   def makeRootPackage: PackageImpl = docTemplatesCache(RootPackage).asInstanceOf[PackageImpl]
 
   // TODO: Should be able to override the type
