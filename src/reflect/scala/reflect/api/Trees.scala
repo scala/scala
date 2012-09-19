@@ -317,14 +317,6 @@ trait Trees extends base.Trees { self: Universe =>
     val args: List[Tree]
   }
 
-  override type ArrayValue >: Null <: TermTree with ArrayValueApi
-
-  /** The API that all array values support */
-  trait ArrayValueApi extends TermTreeApi { this: ArrayValue =>
-    val elemtpt: Tree
-    val elems: List[Tree]
-  }
-
   override type Function >: Null <: TermTree with SymTree with FunctionApi
 
   /** The API that all functions support */
@@ -565,7 +557,6 @@ trait Trees extends base.Trees { self: Universe =>
     def Star(tree: Tree, elem: Tree): Star
     def Bind(tree: Tree, name: Name, body: Tree): Bind
     def UnApply(tree: Tree, fun: Tree, args: List[Tree]): UnApply
-    def ArrayValue(tree: Tree, elemtpt: Tree, trees: List[Tree]): ArrayValue
     def Function(tree: Tree, vparams: List[ValDef], body: Tree): Function
     def Assign(tree: Tree, lhs: Tree, rhs: Tree): Assign
     def AssignOrNamedArg(tree: Tree, lhs: Tree, rhs: Tree): AssignOrNamedArg

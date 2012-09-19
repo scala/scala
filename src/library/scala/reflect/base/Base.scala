@@ -571,10 +571,6 @@ class Base extends Universe { self =>
        extends TermTree
   object UnApply extends UnApplyExtractor
 
-  case class ArrayValue(elemtpt: Tree, elems: List[Tree])
-       extends TermTree
-  object ArrayValue extends ArrayValueExtractor
-
   case class Function(vparams: List[ValDef], body: Tree)
        extends TermTree with SymTree
   object Function extends FunctionExtractor
@@ -711,7 +707,6 @@ class Base extends Universe { self =>
   implicit val StarTag = ClassTag[Star](classOf[Star])
   implicit val BindTag = ClassTag[Bind](classOf[Bind])
   implicit val UnApplyTag = ClassTag[UnApply](classOf[UnApply])
-  implicit val ArrayValueTag = ClassTag[ArrayValue](classOf[ArrayValue])
   implicit val FunctionTag = ClassTag[Function](classOf[Function])
   implicit val AssignTag = ClassTag[Assign](classOf[Assign])
   implicit val AssignOrNamedArgTag = ClassTag[AssignOrNamedArg](classOf[AssignOrNamedArg])

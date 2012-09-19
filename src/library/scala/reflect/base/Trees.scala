@@ -538,7 +538,7 @@ trait Trees { self: Universe =>
   }
 
   /** Alternatives of patterns.
-   * 
+   *
    * Eliminated by compiler phases Eliminated by compiler phases patmat (in the new pattern matcher of 2.10) or explicitouter (in the old pre-2.10 pattern matcher),
    * except for
    *  occurrences in encoded Switch stmt (i.e. remaining Match(CaseDef(...)))
@@ -564,7 +564,7 @@ trait Trees { self: Universe =>
   }
 
   /** Repetition of pattern.
-   *  
+   *
    *  Eliminated by compiler phases patmat (in the new pattern matcher of 2.10) or explicitouter (in the old pre-2.10 pattern matcher).
    */
   type Star >: Null <: TermTree
@@ -588,7 +588,7 @@ trait Trees { self: Universe =>
   }
 
   /** Bind a variable to a rhs pattern.
-   * 
+   *
    * Eliminated by compiler phases patmat (in the new pattern matcher of 2.10) or explicitouter (in the old pre-2.10 pattern matcher).
    *
    *  @param name
@@ -614,7 +614,7 @@ trait Trees { self: Universe =>
     def unapply(bind: Bind): Option[(Name, Tree)]
   }
 
-  /** 
+  /**
    * Used to represent `unapply` methods in pattern matching.
    *
    *  For example:
@@ -660,38 +660,6 @@ trait Trees { self: Universe =>
     def unapply(unApply: UnApply): Option[(Tree, List[Tree])]
   }
 
-  /** An array of expressions. This AST node needs to be translated in backend.
-   *  It is used to pass arguments to vararg arguments.
-   *  Introduced by compiler phase uncurry.
-   */
-  type ArrayValue >: Null <: TermTree
-
-  /** A tag that preserves the identity of the `ArrayValue` abstract type from erasure.
-   *  Can be used for pattern matching, instance tests, serialization and likes.
-   */
-  implicit val ArrayValueTag: ClassTag[ArrayValue]
-
-  /** The constructor/deconstructor for `ArrayValue` instances. */
-  val ArrayValue: ArrayValueExtractor
-
-  /** An extractor class to create and pattern match with syntax `ArrayValue(elemtpt, elems)`.
-   *  This AST node does not have direct correspondence to Scala code,
-   *  and is used to pass arguments to vararg arguments. For instance:
-   *
-   *    printf("%s%d", foo, 42)
-   *
-   *  Is translated to after compiler phase uncurry to:
-   *
-   *    Apply(
-   *      Ident("printf"),
-   *      Literal("%s%d"),
-   *      ArrayValue(<Any>, List(Ident("foo"), Literal(42))))
-   */
-  abstract class ArrayValueExtractor {
-    def apply(elemtpt: Tree, elems: List[Tree]): ArrayValue
-    def unapply(arrayValue: ArrayValue): Option[(Tree, List[Tree])]
-  }
-
   /** Anonymous function, eliminated by compiler phase lambdalift */
   type Function >: Null <: TermTree with SymTree
 
@@ -705,7 +673,7 @@ trait Trees { self: Universe =>
 
   /** An extractor class to create and pattern match with syntax `Function(vparams, body)`.
    *  This AST node corresponds to the following Scala code:
-   * 
+   *
    *    vparams => body
    *
    *  The symbol of a Function is a synthetic TermSymbol.
