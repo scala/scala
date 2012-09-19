@@ -42,45 +42,51 @@ trait DurationConversions extends Any {
   def days         = durationIn(DAYS)
   def day          = days
 
-  def nanoseconds[C, CC <: Classifier[C]](c: C)(implicit ev: CC): CC#R = ev.convert(nanoseconds)
-  def nanos[C, CC <: Classifier[C]](c: C)(implicit ev: CC): CC#R = nanoseconds(c)
-  def nanosecond[C, CC <: Classifier[C]](c: C)(implicit ev: CC): CC#R = nanoseconds(c)
-  def nano[C, CC <: Classifier[C]](c: C)(implicit ev: CC): CC#R = nanoseconds(c)
+  def nanoseconds[C](c: C)(implicit ev: Classifier[C]): ev.R = ev.convert(nanoseconds)
+  def nanos[C](c: C)(implicit ev: Classifier[C]): ev.R = nanoseconds(c)
+  def nanosecond[C](c: C)(implicit ev: Classifier[C]): ev.R = nanoseconds(c)
+  def nano[C](c: C)(implicit ev: Classifier[C]): ev.R = nanoseconds(c)
 
-  def microseconds[C, CC <: Classifier[C]](c: C)(implicit ev: CC): CC#R = ev.convert(microseconds)
-  def micros[C, CC <: Classifier[C]](c: C)(implicit ev: CC): CC#R = microseconds(c)
-  def microsecond[C, CC <: Classifier[C]](c: C)(implicit ev: CC): CC#R = microseconds(c)
-  def micro[C, CC <: Classifier[C]](c: C)(implicit ev: CC): CC#R = microseconds(c)
+  def microseconds[C](c: C)(implicit ev: Classifier[C]): ev.R = ev.convert(microseconds)
+  def micros[C](c: C)(implicit ev: Classifier[C]): ev.R = microseconds(c)
+  def microsecond[C](c: C)(implicit ev: Classifier[C]): ev.R = microseconds(c)
+  def micro[C](c: C)(implicit ev: Classifier[C]): ev.R = microseconds(c)
 
-  def milliseconds[C, CC <: Classifier[C]](c: C)(implicit ev: CC): CC#R = ev.convert(milliseconds)
-  def millis[C, CC <: Classifier[C]](c: C)(implicit ev: CC): CC#R = milliseconds(c)
-  def millisecond[C, CC <: Classifier[C]](c: C)(implicit ev: CC): CC#R = milliseconds(c)
-  def milli[C, CC <: Classifier[C]](c: C)(implicit ev: CC): CC#R = milliseconds(c)
+  def milliseconds[C](c: C)(implicit ev: Classifier[C]): ev.R = ev.convert(milliseconds)
+  def millis[C](c: C)(implicit ev: Classifier[C]): ev.R = milliseconds(c)
+  def millisecond[C](c: C)(implicit ev: Classifier[C]): ev.R = milliseconds(c)
+  def milli[C](c: C)(implicit ev: Classifier[C]): ev.R = milliseconds(c)
 
-  def seconds[C, CC <: Classifier[C]](c: C)(implicit ev: CC): CC#R = ev.convert(seconds)
-  def second[C, CC <: Classifier[C]](c: C)(implicit ev: CC): CC#R = seconds(c)
+  def seconds[C](c: C)(implicit ev: Classifier[C]): ev.R = ev.convert(seconds)
+  def second[C](c: C)(implicit ev: Classifier[C]): ev.R = seconds(c)
 
-  def minutes[C, CC <: Classifier[C]](c: C)(implicit ev: CC): CC#R = ev.convert(minutes)
-  def minute[C, CC <: Classifier[C]](c: C)(implicit ev: CC): CC#R = minutes(c)
+  def minutes[C](c: C)(implicit ev: Classifier[C]): ev.R = ev.convert(minutes)
+  def minute[C](c: C)(implicit ev: Classifier[C]): ev.R = minutes(c)
 
-  def hours[C, CC <: Classifier[C]](c: C)(implicit ev: CC): CC#R = ev.convert(hours)
-  def hour[C, CC <: Classifier[C]](c: C)(implicit ev: CC): CC#R = hours(c)
+  def hours[C](c: C)(implicit ev: Classifier[C]): ev.R = ev.convert(hours)
+  def hour[C](c: C)(implicit ev: Classifier[C]): ev.R = hours(c)
 
-  def days[C, CC <: Classifier[C]](c: C)(implicit ev: CC): CC#R = ev.convert(days)
-  def day[C, CC <: Classifier[C]](c: C)(implicit ev: CC): CC#R = days(c)
+  def days[C](c: C)(implicit ev: Classifier[C]): ev.R = ev.convert(days)
+  def day[C](c: C)(implicit ev: Classifier[C]): ev.R = days(c)
 }
 
+/**
+ * This object just holds some cogs which make the DSL machine work, not for direct consumption.
+ */
 object DurationConversions {
   trait Classifier[C] {
     type R
     def convert(d: FiniteDuration): R
   }
+
   implicit object spanConvert extends Classifier[span.type] {
     type R = FiniteDuration
     def convert(d: FiniteDuration) = d
   }
+
   implicit object fromNowConvert extends Classifier[fromNow.type] {
     type R = Deadline
     def convert(d: FiniteDuration) = Deadline.now + d
   }
+
 }

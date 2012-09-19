@@ -186,6 +186,9 @@ object Test extends App {
 
   // check statically retaining finite-ness
   val finiteDuration: FiniteDuration = 1.second * 2 / 3 mul 5 div 4 plus 3.seconds minus 1.millisecond min 1.second max 1.second
-
+  val finite2: FiniteDuration = 2 * 1.second + 3L * 2.seconds
+  finite2 mustBe 8.seconds
+  ((2 seconds fromNow).timeLeft: FiniteDuration) < 4.seconds mustBe true
+  val finite3: FiniteDuration = 3.5 seconds span
 
 }

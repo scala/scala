@@ -77,4 +77,5 @@ object Deadline {
   implicit object DeadlineIsOrdered extends Ordering[Deadline] {
     def compare(a: Deadline, b: Deadline) = a compare b
   }
+
 }

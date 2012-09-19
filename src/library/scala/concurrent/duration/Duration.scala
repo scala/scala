@@ -12,11 +12,6 @@ import java.lang.{ Double => JDouble, Long => JLong }
 import scala.language.implicitConversions
 
 object Duration {
-  /**
-   * This implicit conversion allows the use of a Deadline in place of a Duration, which will
-   * insert the time left until the deadline in its place.
-   */
-  implicit def timeLeft(implicit d: Deadline): Duration = d.timeLeft
 
   /**
    * Construct a Duration from the given length and unit. Observe that nanosecond precision may be lost if
@@ -29,11 +24,13 @@ object Duration {
    * @throws IllegalArgumentException if the length was finite but the resulting duration cannot be expressed as a [[FiniteDuration]]
    */
   def apply(length: Double, unit: TimeUnit): Duration     = fromNanos(unit.toNanos(1) * length)
+
   /**
    * Construct a finite duration from the given length and time unit. The unit given is retained
    * throughout calculations as long as possible, so that it can be retrieved later.
    */
   def apply(length: Long, unit: TimeUnit): FiniteDuration = new FiniteDuration(length, unit)
+
   /**
    * Construct a finite duration from the given length and time unit, where the latter is
    * looked up in a list of string representation. Valid choices are:
@@ -44,7 +41,7 @@ object Duration {
   def apply(length: Long, unit: String): FiniteDuration   = new FiniteDuration(length,  Duration.timeUnit(unit))
 
   // Double stores 52 bits mantissa, but there is an implied '1' in front, making the limit 2^53
-  final val maxPreciseDouble = 9007199254740992d
+  private[this] final val maxPreciseDouble = 9007199254740992d
 
   /**
    * Parse String into Duration.  Format is `"<length><unit>"`, where
@@ -525,6 +522,7 @@ sealed abstract class Duration extends Serializable with Ordered[Duration] {
 }
 
 object FiniteDuration {
+
   implicit object FiniteDurationIsOrdered extends Ordering[FiniteDuration] {
     def compare(a: FiniteDuration, b: FiniteDuration) = a compare b
   }
