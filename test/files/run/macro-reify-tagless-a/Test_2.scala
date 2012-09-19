@@ -9,6 +9,6 @@ object Test extends App {
   val rhs = Apply(Select(Ident("Macros"), newTermName("foo")), List(Literal(Constant("hello world"))))
   val list = ValDef(NoMods, newTermName("list"), tpt, rhs)
   val tree = Block(list, Apply(Select(Ident(definitions.PredefModule), newTermName("println")), List(Ident(list.name))))
-  try cm.mkToolBox().runExpr(tree)
+  try cm.mkToolBox().eval(tree)
   catch { case ex: Throwable =>  println(ex.getMessage) }
 }

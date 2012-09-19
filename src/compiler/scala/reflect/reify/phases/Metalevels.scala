@@ -102,7 +102,7 @@ trait Metalevels {
    */
   val metalevels = new Transformer {
     var insideSplice = false
-    var inlineableBindings = collection.mutable.Map[TermName, Tree]()
+    var inlineableBindings = scala.collection.mutable.Map[TermName, Tree]()
 
     def withinSplice[T](op: => T) = {
       val old = insideSplice

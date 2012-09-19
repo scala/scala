@@ -12,7 +12,7 @@ object Test extends App {
     }
 
     val toolbox = cm.mkToolBox()
-    val dyn = toolbox.runExpr(new Foo(y).fun.tree)
+    val dyn = toolbox.eval(new Foo(y).fun.tree)
     dyn.asInstanceOf[Int => Int]
   }
 

@@ -879,9 +879,9 @@ class ModelFactory(val global: Global, val settings: doc.Settings) {
   }
 
   /** */
-  def makeAnnotation(annot: AnnotationInfo): Annotation = {
+  def makeAnnotation(annot: AnnotationInfo): scala.tools.nsc.doc.model.Annotation = {
     val aSym = annot.symbol
-    new EntityImpl(aSym, makeTemplate(aSym.owner)) with Annotation {
+    new EntityImpl(aSym, makeTemplate(aSym.owner)) with scala.tools.nsc.doc.model.Annotation {
       lazy val annotationClass =
         makeTemplate(annot.symbol)
       val arguments = { // lazy

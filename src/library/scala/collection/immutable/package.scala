@@ -69,9 +69,9 @@ package immutable {
     private def locationAfterN(n: Int) = (
       if (n > 0) {
         if (step > 0)
-          math.min(start.toLong + step.toLong * n.toLong, _last.toLong).toInt
+          scala.math.min(start.toLong + step.toLong * n.toLong, _last.toLong).toInt
         else
-          math.max(start.toLong + step.toLong * n.toLong, _last.toLong).toInt
+          scala.math.max(start.toLong + step.toLong * n.toLong, _last.toLong).toInt
       }
       else start
     )

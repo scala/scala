@@ -916,7 +916,7 @@ object TrieMap extends MutableMapFactory[TrieMap] {
   def empty[K, V]: TrieMap[K, V] = new TrieMap[K, V]
 
   class MangledHashing[K] extends Hashing[K] {
-    def hash(k: K) = util.hashing.byteswap32(k.##)
+    def hash(k: K)= scala.util.hashing.byteswap32(k.##)
   }
 
 }

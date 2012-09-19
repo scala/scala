@@ -30,7 +30,7 @@ trait CmdLineParser extends Parsers {
   trait StrOpt extends Opt[String]
 
   class OptMap {
-    private val opts = new collection.mutable.HashMap[Opt[_], Any]
+    private val opts = new scala.collection.mutable.HashMap[Opt[_], Any]
     def apply(flag: Flag): Boolean = opts.contains(flag)
     def apply[T](opt: Opt[T]): T = opts.get(opt) match {
       case None => opt.default

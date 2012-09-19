@@ -81,7 +81,7 @@ trait ResizableParArrayCombiner[T] extends LazyCombiner[T, ParArray[T], ExposedA
       val fp = howmany / 2
       List(new CopyChainToArray(array, offset, fp), new CopyChainToArray(array, offset + fp, howmany - fp))
     }
-    def shouldSplitFurther = howmany > collection.parallel.thresholdFromSize(size, combinerTaskSupport.parallelismLevel)
+    def shouldSplitFurther = howmany > scala.collection.parallel.thresholdFromSize(size, combinerTaskSupport.parallelismLevel)
   }
 }
 

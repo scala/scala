@@ -1368,7 +1368,7 @@ self: ParIterableLike[T, Repr, Sequential] =>
       val until = from + len
       val blocksize = scanBlockSize
       while (i < until) {
-        trees += scanBlock(i, math.min(blocksize, pit.remaining))
+        trees += scanBlock(i, scala.math.min(blocksize, pit.remaining))
         i += blocksize
       }
 

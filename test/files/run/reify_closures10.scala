@@ -9,5 +9,5 @@ object Test extends App {
   val code = reify{println(x + y); x + y}
 
   val toolbox = cm.mkToolBox()
-  println(toolbox.runExpr(code.tree))
+  println(toolbox.eval(code.tree))
 }

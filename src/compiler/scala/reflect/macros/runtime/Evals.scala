@@ -13,6 +13,6 @@ trait Evals {
 
   def eval[T](expr: Expr[T]): T = {
     val imported = evalImporter.importTree(expr.tree)
-    evalToolBox.runExpr(imported).asInstanceOf[T]
+    evalToolBox.eval(imported).asInstanceOf[T]
   }
 }

@@ -104,7 +104,7 @@ trait ParHashTable[K, Entry >: Null <: HashEntry[K, Entry]] extends scala.collec
         // otherwise, this is the last entry in the table - all what remains is the chain
         // so split the rest of the chain
         val arr = convertToArrayBuffer(es)
-        val arrpit = new collection.parallel.BufferSplitter[T](arr, 0, arr.length, signalDelegate)
+        val arrpit = new scala.collection.parallel.BufferSplitter[T](arr, 0, arr.length, signalDelegate)
         arrpit.split
       }
     } else Seq(this.asInstanceOf[IterRepr])

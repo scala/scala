@@ -3,7 +3,7 @@ package base
 
 trait FlagSets { self: Universe =>
 
-  /** An abstract type representing sets of flags that apply to definition trees and symbols */
+  /** An abstract type representing sets of flags (like private, final, etc.) that apply to definition trees and symbols */
   type FlagSet
 
   /** A tag that preserves the identity of the `FlagSet` abstract type from erasure.

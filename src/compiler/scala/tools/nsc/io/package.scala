@@ -11,7 +11,7 @@ import java.util.jar.{ Attributes }
 import scala.language.implicitConversions
 
 package object io {
-  implicit def postfixOps = language.postfixOps // make all postfix ops in this package compile without warning
+  implicit def postfixOps = scala.language.postfixOps // make all postfix ops in this package compile without warning
 
   type JManifest = java.util.jar.Manifest
   type JFile = java.io.File

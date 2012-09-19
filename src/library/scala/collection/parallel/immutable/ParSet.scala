@@ -20,11 +20,11 @@ import scala.collection.parallel.Combiner
  *  @define coll mutable parallel set
  */
 trait ParSet[T]
-extends collection/*.immutable*/.GenSet[T]
+extends scala.collection/*.immutable*/.GenSet[T]
    with GenericParTemplate[T, ParSet]
    with parallel.ParSet[T]
    with ParIterable[T]
-   with ParSetLike[T, ParSet[T], collection.immutable.Set[T]]
+   with ParSetLike[T, ParSet[T], scala.collection.immutable.Set[T]]
 {
 self =>
   override def empty: ParSet[T] = ParHashSet[T]()

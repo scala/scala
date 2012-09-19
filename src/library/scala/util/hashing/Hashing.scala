@@ -8,6 +8,8 @@
 
 package scala.util.hashing
 
+import scala.annotation.implicitNotFound
+
 /** `Hashing` is a trait whose instances each represent a strategy for hashing
   * instances of a type.
   *
@@ -16,27 +18,22 @@ package scala.util.hashing
   *
   * Note: when using a custom `Hashing`, make sure to use it with the `Equiv`
   * such that if any two objects are equal, then their hash codes must be equal.
-  * 
+  *
   * @since 2.10
   */
-@annotation.implicitNotFound(msg = "No implicit Hashing defined for ${T}.")
+@implicitNotFound(msg = "No implicit Hashing defined for ${T}.")
 trait Hashing[T] extends Serializable {
-  
   def hash(x: T): Int
-  
 }
 
-
 object Hashing {
-  
   final class Default[T] extends Hashing[T] {
     def hash(x: T) = x.##
   }
-  
+
   implicit def default[T] = new Default[T]
-  
+
   def fromFunction[T](f: T => Int) = new Hashing[T] {
     def hash(x: T) = f(x)
   }
-  
 }

@@ -5,7 +5,11 @@ import java.io.PrintWriter
 import scala.annotation.switch
 import scala.ref.WeakReference
 import scala.collection.mutable
+import scala.collection.immutable.ListMap
 
+/**
+ * This is an internal implementation class.
+ */
 class Base extends Universe { self =>
 
   private var nextId = 0
@@ -157,7 +161,7 @@ class Base extends Universe { self =>
   object ExistentialType extends ExistentialTypeExtractor
   implicit val ExistentialTypeTag = ClassTag[ExistentialType](classOf[ExistentialType])
 
-  case class AnnotatedType(annotations: List[AnnotationInfo], underlying: Type, selfsym: Symbol) extends Type { override def typeSymbol = underlying.typeSymbol }
+  case class AnnotatedType(annotations: List[Annotation], underlying: Type, selfsym: Symbol) extends Type { override def typeSymbol = underlying.typeSymbol }
   object AnnotatedType extends AnnotatedTypeExtractor
   implicit val AnnotatedTypeTag = ClassTag[AnnotatedType](classOf[AnnotatedType])
 
@@ -249,24 +253,24 @@ class Base extends Universe { self =>
   object Constant extends ConstantExtractor
   implicit val ConstantTag = ClassTag[Constant](classOf[Constant])
 
-  case class AnnotationInfo(atp: Type, args: List[Tree], assocs: List[(Name, ClassfileAnnotArg)])
-  object AnnotationInfo extends AnnotationInfoExtractor
-  implicit val AnnotationInfoTag = ClassTag[AnnotationInfo](classOf[AnnotationInfo])
+  case class Annotation(tpe: Type, scalaArgs: List[Tree], javaArgs: ListMap[Name, JavaArgument])
+  object Annotation extends AnnotationExtractor
+  implicit val AnnotationTag = ClassTag[Annotation](classOf[Annotation])
 
-  abstract class ClassfileAnnotArg
-  implicit val ClassfileAnnotArgTag = ClassTag[ClassfileAnnotArg](classOf[ClassfileAnnotArg])
+  abstract class JavaArgument
+  implicit val JavaArgumentTag = ClassTag[JavaArgument](classOf[JavaArgument])
 
-  case class LiteralAnnotArg(const: Constant) extends ClassfileAnnotArg
-  object LiteralAnnotArg extends LiteralAnnotArgExtractor
-  implicit val LiteralAnnotArgTag = ClassTag[LiteralAnnotArg](classOf[LiteralAnnotArg])
+  case class LiteralArgument(value: Constant) extends JavaArgument
+  object LiteralArgument extends LiteralArgumentExtractor
+  implicit val LiteralArgumentTag = ClassTag[LiteralArgument](classOf[LiteralArgument])
 
-  case class ArrayAnnotArg(args: Array[ClassfileAnnotArg]) extends ClassfileAnnotArg
-  object ArrayAnnotArg extends ArrayAnnotArgExtractor
-  implicit val ArrayAnnotArgTag = ClassTag[ArrayAnnotArg](classOf[ArrayAnnotArg])
+  case class ArrayArgument(args: Array[JavaArgument]) extends JavaArgument
+  object ArrayArgument extends ArrayArgumentExtractor
+  implicit val ArrayArgumentTag = ClassTag[ArrayArgument](classOf[ArrayArgument])
 
-  case class NestedAnnotArg(annInfo: AnnotationInfo) extends ClassfileAnnotArg
-  object NestedAnnotArg extends NestedAnnotArgExtractor
-  implicit val NestedAnnotArgTag = ClassTag[NestedAnnotArg](classOf[NestedAnnotArg])
+  case class NestedArgument(annotation: Annotation) extends JavaArgument
+  object NestedArgument extends NestedArgumentExtractor
+  implicit val NestedArgumentTag = ClassTag[NestedArgument](classOf[NestedArgument])
 
   class Position extends Attachments {
     override type Pos = Position
@@ -319,7 +323,7 @@ class Base extends Universe { self =>
 
     def setTypeSignature[S <: Symbol](sym: S, tpe: Type): S = sym
 
-    def setAnnotations[S <: Symbol](sym: S, annots: List[AnnotationInfo]): S = sym
+    def setAnnotations[S <: Symbol](sym: S, annots: List[Annotation]): S = sym
 
     def flagsFromBits(bits: Long): FlagSet = bits
 
@@ -623,10 +627,6 @@ class Base extends Universe { self =>
        extends GenericApply
   object Apply extends ApplyExtractor
 
-  case class ApplyDynamic(qual: Tree, args: List[Tree])
-       extends TermTree with SymTree
-  object ApplyDynamic extends ApplyDynamicExtractor
-
   case class Super(qual: Tree, mix: TypeName) extends TermTree
   object Super extends SuperExtractor
 
@@ -725,7 +725,6 @@ class Base extends Universe { self =>
   implicit val GenericApplyTag = ClassTag[GenericApply](classOf[GenericApply])
   implicit val TypeApplyTag = ClassTag[TypeApply](classOf[TypeApply])
   implicit val ApplyTag = ClassTag[Apply](classOf[Apply])
-  implicit val ApplyDynamicTag = ClassTag[ApplyDynamic](classOf[ApplyDynamic])
   implicit val SuperTag = ClassTag[Super](classOf[Super])
   implicit val ThisTag = ClassTag[This](classOf[This])
   implicit val SelectTag = ClassTag[Select](classOf[Select])

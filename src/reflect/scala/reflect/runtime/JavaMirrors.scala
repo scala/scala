@@ -9,6 +9,7 @@ import java.lang.reflect.{
   Method => jMethod, Constructor => jConstructor, Modifier => jModifier, Field => jField,
   Member => jMember, Type => jType, TypeVariable => jTypeVariable, Array => jArray,
   GenericDeclaration, GenericArrayType, ParameterizedType, WildcardType, AnnotatedElement }
+import java.lang.annotation.{Annotation => jAnnotation}
 import java.io.IOException
 import internal.MissingRequirementError
 import internal.pickling.ByteCodecs
@@ -23,7 +24,7 @@ import scala.language.existentials
 import scala.runtime.{ScalaRunTime, BoxesRunTime}
 import scala.reflect.internal.util.Collections._
 
-trait JavaMirrors extends internal.SymbolTable with api.JavaUniverse { self: SymbolTable =>
+trait JavaMirrors extends internal.SymbolTable with api.JavaUniverse { thisUniverse: SymbolTable =>
 
   private lazy val mirrors = new WeakHashMap[ClassLoader, WeakReference[JavaMirror]]()
 
@@ -62,9 +63,9 @@ trait JavaMirrors extends internal.SymbolTable with api.JavaUniverse { self: Sym
   class JavaMirror(owner: Symbol,
     /** Class loader that is a mastermind behind the reflexive mirror */
     val classLoader: ClassLoader
-  ) extends Roots(owner) with super.JavaMirror { wholemirror =>
+  ) extends Roots(owner) with super.JavaMirror { thisMirror =>
 
-    val universe: self.type = self
+    val universe: thisUniverse.type = thisUniverse
 
     import definitions._
 
@@ -135,6 +136,55 @@ trait JavaMirrors extends internal.SymbolTable with api.JavaUniverse { self: Sym
     private def ErrorNotConstructor(sym: Symbol, owner: Symbol) = throw new ScalaReflectionException(s"expected a constructor of $owner, you provided $sym")
     private def ErrorFree(member: Symbol, freeType: Symbol) = throw new ScalaReflectionException(s"cannot reflect ${member.kindString} ${member.name}, because it's a member of a weak type ${freeType.name}")
 
+    /** Helper functions for extracting typed values from a (Class[_], Any)
+     *  representing an annotation argument.
+     */
+    private object toAnnotArg {
+      val        StringClass = classOf[String]
+      val         ClassClass = classOf[jClass[_]]
+      object  PrimitiveClass { def unapply(x: jClass[_]) = x.isPrimitive }
+      object       EnumClass { def unapply(x: jClass[_]) = x.isEnum }
+      object      ArrayClass { def unapply(x: jClass[_]) = x.isArray }
+      object AnnotationClass { def unapply(x: jClass[_]) = x.isAnnotation }
+
+      object ConstantArg {
+        def enumToSymbol(enum: Enum[_]): Symbol = {
+          val staticPartOfEnum = classToScala(enum.getClass).companionSymbol
+          staticPartOfEnum.typeSignature.declaration(enum.name: TermName)
+        }
+
+        def unapply(schemaAndValue: (jClass[_], Any)): Option[Any] = schemaAndValue match {
+          case (StringClass | PrimitiveClass(), value) => Some(value)
+          case (ClassClass, value: jClass[_])          => Some(classToScala(value).toType)
+          case (EnumClass(), value: Enum[_])           => Some(enumToSymbol(value))
+          case _                                       => None
+        }
+      }
+      def apply(schemaAndValue: (jClass[_], Any)): ClassfileAnnotArg = schemaAndValue match {
+        case ConstantArg(value)                      => LiteralAnnotArg(Constant(value))
+        case (clazz @ ArrayClass(), value: Array[_]) => ArrayAnnotArg(value map (x => apply(ScalaRunTime.arrayElementClass(clazz) -> x)))
+        case (AnnotationClass(), value: jAnnotation) => NestedAnnotArg(JavaAnnotationProxy(value))
+        case _                                       => UnmappableAnnotArg
+      }
+    }
+    private case class JavaAnnotationProxy(jann: jAnnotation) extends AnnotationInfo {
+      override val atp: Type = classToScala(jann.annotationType).toType
+      override val args: List[Tree] = Nil
+      override def original: Tree = EmptyTree
+      override def setOriginal(t: Tree): this.type = throw new Exception("setOriginal inapplicable for " + this)
+      override def pos: Position = NoPosition
+      override def setPos(pos: Position): this.type = throw new Exception("setPos inapplicable for " + this)
+      override def toString = completeAnnotationToString(this)
+
+      // todo. find out the exact order of assocs as they are written in the class file
+      // currently I'm simply sorting the methods to guarantee stability of the output
+      override lazy val assocs: List[(Name, ClassfileAnnotArg)] = (
+        jann.annotationType.getDeclaredMethods.sortBy(_.getName).toList map (m =>
+          (m.getName: TermName) -> toAnnotArg(m.getReturnType -> m.invoke(jann))
+        )
+      )
+    }
+
     def reflect[T: ClassTag](obj: T): InstanceMirror = new JavaInstanceMirror(obj)
 
     def reflectClass(cls: ClassSymbol): ClassMirror = {
@@ -190,7 +240,7 @@ trait JavaMirrors extends internal.SymbolTable with api.JavaUniverse { self: Sym
 
     private class JavaInstanceMirror[T: ClassTag](val instance: T)
             extends InstanceMirror {
-      def symbol = wholemirror.classSymbol(preciseClass(instance))
+      def symbol = thisMirror.classSymbol(preciseClass(instance))
       def reflectField(field: TermSymbol): FieldMirror = {
         checkMemberOf(field, symbol)
         if ((field.isMethod && !field.isAccessor) || field.isModule) ErrorNotField(field)
@@ -265,14 +315,13 @@ trait JavaMirrors extends internal.SymbolTable with api.JavaUniverse { self: Sym
     // the "symbol == Any_getClass || symbol == Object_getClass" test doesn't cut it
     // because both AnyVal and its primitive descendants define their own getClass methods
     private def isGetClass(meth: MethodSymbol) = meth.name.toString == "getClass" && meth.params.flatten.isEmpty
-    private def isMagicPrimitiveMethod(meth: MethodSymbol) = meth.owner.isPrimitiveValueClass
-    private def isStringConcat(meth: MethodSymbol) = meth == String_+ || (isMagicPrimitiveMethod(meth) && meth.returnType =:= StringClass.toType)
-    lazy val magicMethodOwners = Set[Symbol](AnyClass, AnyValClass, AnyRefClass, ObjectClass, ArrayClass) ++ ScalaPrimitiveValueClasses
-    lazy val nonMagicObjectMethods = Set[Symbol](Object_clone, Object_equals, Object_finalize, Object_hashCode, Object_toString,
-                                     Object_notify, Object_notifyAll) ++ ObjectClass.info.member(nme.wait_).asTerm.alternatives.map(_.asMethod)
-    private def isMagicMethod(meth: MethodSymbol): Boolean = {
-      if (isGetClass(meth) || isStringConcat(meth) || isMagicPrimitiveMethod(meth) || meth == Predef_classOf || meth.isTermMacro) return true
-      magicMethodOwners(meth.owner) && !nonMagicObjectMethods(meth)
+    private def isStringConcat(meth: MethodSymbol) = meth == String_+ || (meth.owner.isPrimitiveValueClass && meth.returnType =:= StringClass.toType)
+    lazy val bytecodelessMethodOwners = Set[Symbol](AnyClass, AnyValClass, AnyRefClass, ObjectClass, ArrayClass) ++ ScalaPrimitiveValueClasses
+    lazy val bytecodefulObjectMethods = Set[Symbol](Object_clone, Object_equals, Object_finalize, Object_hashCode, Object_toString,
+                                        Object_notify, Object_notifyAll) ++ ObjectClass.info.member(nme.wait_).asTerm.alternatives.map(_.asMethod)
+    private def isBytecodelessMethod(meth: MethodSymbol): Boolean = {
+      if (isGetClass(meth) || isStringConcat(meth) || meth.owner.isPrimitiveValueClass || meth == Predef_classOf || meth.isTermMacro) return true
+      bytecodelessMethodOwners(meth.owner) && !bytecodefulObjectMethods(meth)
     }
 
     // unlike other mirrors, method mirrors are created by a factory
@@ -280,7 +329,7 @@ trait JavaMirrors extends internal.SymbolTable with api.JavaUniverse { self: Sym
     // therefore we move special cases into separate subclasses
     // rather than have them on a hot path them in a unified implementation of the `apply` method
     private def mkJavaMethodMirror[T: ClassTag](receiver: T, symbol: MethodSymbol): JavaMethodMirror = {
-      if (isMagicMethod(symbol)) new JavaMagicMethodMirror(receiver, symbol)
+      if (isBytecodelessMethod(symbol)) new JavaBytecodelessMethodMirror(receiver, symbol)
       else if (symbol.params.flatten exists (p => isByNameParamType(p.info))) new JavaByNameMethodMirror(receiver, symbol)
       else new JavaVanillaMethodMirror(receiver, symbol)
     }
@@ -315,11 +364,11 @@ trait JavaMirrors extends internal.SymbolTable with api.JavaUniverse { self: Sym
       }
     }
 
-    private class JavaMagicMethodMirror[T: ClassTag](val receiver: T, symbol: MethodSymbol)
+    private class JavaBytecodelessMethodMirror[T: ClassTag](val receiver: T, symbol: MethodSymbol)
             extends JavaMethodMirror(symbol) {
        def apply(args: Any*): Any = {
         // checking type conformance is too much of a hassle, so we don't do it here
-        // actually it's not even necessary, because we manually dispatch arguments to magic methods below
+        // actually it's not even necessary, because we manually dispatch arguments below
         val params = symbol.paramss.flatten
         val perfectMatch = args.length == params.length
         // todo. this doesn't account for multiple vararg parameter lists
@@ -337,36 +386,36 @@ trait JavaMirrors extends internal.SymbolTable with api.JavaUniverse { self: Sym
         def objArgs           = args.asInstanceOf[Seq[AnyRef]]
         def fail(msg: String) = throw new ScalaReflectionException(msg + ", it cannot be invoked with mirrors")
 
-        def invokeMagicPrimitiveMethod = {
+        def invokePrimitiveMethod = {
           val jmeths = classOf[BoxesRunTime].getDeclaredMethods.filter(_.getName == nme.primitiveMethodName(symbol.name).toString)
           assert(jmeths.length == 1, jmeths.toList)
           jinvoke(jmeths.head, null, objReceiver +: objArgs)
         }
 
         symbol match {
-          case Any_== | Object_==                 => ScalaRunTime.inlinedEquals(objReceiver, objArg0)
-          case Any_!= | Object_!=                 => !ScalaRunTime.inlinedEquals(objReceiver, objArg0)
-          case Any_## | Object_##                 => ScalaRunTime.hash(objReceiver)
-          case Any_equals                         => receiver.equals(objArg0)
-          case Any_hashCode                       => receiver.hashCode
-          case Any_toString                       => receiver.toString
-          case Object_eq                          => objReceiver eq objArg0
-          case Object_ne                          => objReceiver ne objArg0
-          case Object_synchronized                => objReceiver.synchronized(objArg0)
-          case sym if isGetClass(sym)             => preciseClass(receiver)
-          case Any_asInstanceOf                   => fail("Any.asInstanceOf requires a type argument")
-          case Any_isInstanceOf                   => fail("Any.isInstanceOf requires a type argument")
-          case Object_asInstanceOf                => fail("AnyRef.$asInstanceOf is an internal method")
-          case Object_isInstanceOf                => fail("AnyRef.$isInstanceOf is an internal method")
-          case Array_length                       => ScalaRunTime.array_length(objReceiver)
-          case Array_apply                        => ScalaRunTime.array_apply(objReceiver, args(0).asInstanceOf[Int])
-          case Array_update                       => ScalaRunTime.array_update(objReceiver, args(0).asInstanceOf[Int], args(1))
-          case Array_clone                        => ScalaRunTime.array_clone(objReceiver)
-          case sym if isStringConcat(sym)         => receiver.toString + objArg0
-          case sym if isMagicPrimitiveMethod(sym) => invokeMagicPrimitiveMethod
-          case sym if sym == Predef_classOf       => fail("Predef.classOf is a compile-time function")
-          case sym if sym.isTermMacro             => fail(s"${symbol.fullName} is a macro, i.e. a compile-time function")
-          case _                                  => assert(false, this)
+          case Any_== | Object_==                     => ScalaRunTime.inlinedEquals(objReceiver, objArg0)
+          case Any_!= | Object_!=                     => !ScalaRunTime.inlinedEquals(objReceiver, objArg0)
+          case Any_## | Object_##                     => ScalaRunTime.hash(objReceiver)
+          case Any_equals                             => receiver.equals(objArg0)
+          case Any_hashCode                           => receiver.hashCode
+          case Any_toString                           => receiver.toString
+          case Object_eq                              => objReceiver eq objArg0
+          case Object_ne                              => objReceiver ne objArg0
+          case Object_synchronized                    => objReceiver.synchronized(objArg0)
+          case sym if isGetClass(sym)                 => preciseClass(receiver)
+          case Any_asInstanceOf                       => fail("Any.asInstanceOf requires a type argument")
+          case Any_isInstanceOf                       => fail("Any.isInstanceOf requires a type argument")
+          case Object_asInstanceOf                    => fail("AnyRef.$asInstanceOf is an internal method")
+          case Object_isInstanceOf                    => fail("AnyRef.$isInstanceOf is an internal method")
+          case Array_length                           => ScalaRunTime.array_length(objReceiver)
+          case Array_apply                            => ScalaRunTime.array_apply(objReceiver, args(0).asInstanceOf[Int])
+          case Array_update                           => ScalaRunTime.array_update(objReceiver, args(0).asInstanceOf[Int], args(1))
+          case Array_clone                            => ScalaRunTime.array_clone(objReceiver)
+          case sym if isStringConcat(sym)             => receiver.toString + objArg0
+          case sym if sym.owner.isPrimitiveValueClass => invokePrimitiveMethod
+          case sym if sym == Predef_classOf           => fail("Predef.classOf is a compile-time function")
+          case sym if sym.isTermMacro                 => fail(s"${symbol.fullName} is a macro, i.e. a compile-time function")
+          case _                                      => assert(false, this)
         }
       }
     }
@@ -469,7 +518,7 @@ trait JavaMirrors extends internal.SymbolTable with api.JavaUniverse { self: Sym
     }
 
     private object unpickler extends UnPickler {
-      val global: self.type = self
+      val global: thisUniverse.type = thisUniverse
     }
 
     /** how connected????
@@ -573,7 +622,7 @@ trait JavaMirrors extends internal.SymbolTable with api.JavaUniverse { self: Sym
      *  Note: If `sym` is a method or constructor, its parameter annotations are copied as well.
      */
     private def copyAnnotations(sym: Symbol, jann: AnnotatedElement) {
-      // to do: implement
+      sym setAnnotations (jann.getAnnotations map JavaAnnotationProxy).toList
     }
 
     /**
@@ -616,7 +665,7 @@ trait JavaMirrors extends internal.SymbolTable with api.JavaUniverse { self: Sym
         completeRest()
       }
 
-      def completeRest(): Unit = self.synchronized {
+      def completeRest(): Unit = thisUniverse.synchronized {
         val tparams = clazz.rawInfo.typeParams
 
         val parents = try {
@@ -976,13 +1025,12 @@ trait JavaMirrors extends internal.SymbolTable with api.JavaUniverse { self: Sym
           rawToExistential(typeRef(clazz.owner.thisType, clazz, List()))
         }
       case japplied: ParameterizedType =>
-        val (pre, sym) = typeToScala(japplied.getRawType) match {
-          case ExistentialType(tparams, TypeRef(pre, sym, _)) => (pre, sym)
-          case TypeRef(pre, sym, _)                           => (pre, sym)
-        }
+        // http://stackoverflow.com/questions/5767122/parameterizedtype-getrawtype-returns-j-l-r-type-not-class
+        val sym = classToScala(japplied.getRawType.asInstanceOf[jClass[_]])
+        val pre = sym.owner.thisType
         val args0 = japplied.getActualTypeArguments
         val (args, bounds) = targsToScala(pre.typeSymbol, args0.toList)
-        ExistentialType(bounds, typeRef(pre, sym, args))
+        newExistentialType(bounds, typeRef(pre, sym, args))
       case jarr: GenericArrayType =>
         arrayType(typeToScala(jarr.getGenericComponentType))
       case jtvar: jTypeVariable[_] =>
@@ -1200,9 +1248,9 @@ trait JavaMirrors extends internal.SymbolTable with api.JavaUniverse { self: Sym
     mirrors(rootToLoader getOrElseUpdate(root, findLoader)).get.get
   }
 
-  private lazy val magicClasses: Map[(String, Name), Symbol] = {
+  private lazy val syntheticCoreClasses: Map[(String, Name), Symbol] = {
     def mapEntry(sym: Symbol): ((String, Name), Symbol) = (sym.owner.fullName, sym.name) -> sym
-    Map() ++ (definitions.magicSymbols filter (_.isType) map mapEntry)
+    Map() ++ (definitions.syntheticCoreClasses map mapEntry)
   }
 
   /** 1. If `owner` is a package class (but not the empty package) and `name` is a term name, make a new package
@@ -1221,9 +1269,12 @@ trait JavaMirrors extends internal.SymbolTable with api.JavaUniverse { self: Sym
       if (name.isTermName && !owner.isEmptyPackageClass)
         return mirror.makeScalaPackage(
           if (owner.isRootSymbol) name.toString else owner.fullName+"."+name)
-      magicClasses get (owner.fullName, name) match {
+      syntheticCoreClasses get (owner.fullName, name) match {
         case Some(tsym) =>
-          owner.info.decls enter tsym
+          // synthetic core classes are only present in root mirrors
+          // because Definitions.scala, which initializes and enters them, only affects rootMirror
+          // therefore we need to enter them manually for non-root mirrors
+          if (mirror ne thisUniverse.rootMirror) owner.info.decls enter tsym
           return tsym
         case None =>
       }

@@ -8,7 +8,8 @@
 
 
 
-package scala.collection
+package scala
+package collection
 package immutable
 
 /** Old base class that was used by previous implementations of `TreeMaps` and `TreeSets`.

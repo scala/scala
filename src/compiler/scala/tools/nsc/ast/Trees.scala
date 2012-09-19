@@ -178,7 +178,7 @@ trait Trees extends scala.reflect.internal.Trees { self: Global =>
     case _ => super.xtraverse(traverser, tree)
   }
 
-  trait TreeCopier extends super.TreeCopierOps {
+  trait TreeCopier extends super.InternalTreeCopierOps {
     def DocDef(tree: Tree, comment: DocComment, definition: Tree): DocDef
     def SelectFromArray(tree: Tree, qualifier: Tree, selector: Name, erasure: Type): SelectFromArray
     def InjectDerivedValue(tree: Tree, arg: Tree): InjectDerivedValue
@@ -281,7 +281,7 @@ trait Trees extends scala.reflect.internal.Trees { self: Global =>
     val trace = scala.tools.nsc.util.trace when debug
 
     val locals = util.HashSet[Symbol](8)
-    val orderedLocals = collection.mutable.ListBuffer[Symbol]()
+    val orderedLocals = scala.collection.mutable.ListBuffer[Symbol]()
     def registerLocal(sym: Symbol) {
       if (sym != null && sym != NoSymbol) {
         if (debug && !(locals contains sym)) orderedLocals append sym

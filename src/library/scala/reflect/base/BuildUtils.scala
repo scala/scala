@@ -1,6 +1,9 @@
 package scala.reflect
 package base
 
+/**
+ * This is an internal implementation class.
+ */
 trait BuildUtils { self: Universe =>
 
   val build: BuildBase
@@ -49,7 +52,7 @@ trait BuildUtils { self: Universe =>
 
     /** Set symbol's annotations to given annotations `annots`.
      */
-    def setAnnotations[S <: Symbol](sym: S, annots: List[AnnotationInfo]): S
+    def setAnnotations[S <: Symbol](sym: S, annots: List[Annotation]): S
 
     def flagsFromBits(bits: Long): FlagSet
 

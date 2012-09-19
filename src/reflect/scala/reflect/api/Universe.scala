@@ -14,4 +14,4 @@ abstract class Universe extends base.Universe
                            with StandardDefinitions
                            with StandardNames
                            with Importers
-                           with AnnotationInfos
+                           with Annotations

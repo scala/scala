@@ -6,7 +6,8 @@
 **                          |/                                          **
 \*                                                                      */
 
-package scala.collection
+package scala
+package collection
 
 import mutable.ArrayBuffer
 import scala.annotation.migration
@@ -758,7 +759,7 @@ trait Iterator[+A] extends TraversableOnce[A] {
    *
    *  @param elem  the element to test.
    *  @return     `true` if this iterator produces some value that is
-   *               is equal (wrt `==`) to `elem`, `false` otherwise.
+   *               is equal (as determined by `==`) to `elem`, `false` otherwise.
    *  @note        Reuse: $consumesIterator
    */
   def contains(elem: Any): Boolean = exists(_ == elem)

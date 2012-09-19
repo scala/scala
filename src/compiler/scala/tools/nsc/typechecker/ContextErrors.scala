@@ -106,7 +106,7 @@ trait ContextErrors {
       else
         s"$name extends Any, not AnyRef"
     )
-    if (isPrimitiveValueType(found)) "" else "\n" +
+    if (isPrimitiveValueType(found) || isTrivialTopType(tp)) "" else "\n" +
        s"""|Note that $what.
            |Such types can participate in value classes, but instances
            |cannot appear in singleton types or in reference comparisons.""".stripMargin
@@ -512,8 +512,15 @@ trait ContextErrors {
       def ApplyWithoutArgsError(tree: Tree, fun: Tree) =
         NormalTypeError(tree, fun.tpe+" does not take parameters")
 
+      // Dynamic
       def DynamicVarArgUnsupported(tree: Tree, name: String) =
         issueNormalTypeError(tree, name+ " does not support passing a vararg parameter")
+
+      def DynamicRewriteError(tree: Tree, err: AbsTypeError) = {
+        issueTypeError(PosAndMsgTypeError(err.errPos, err.errMsg +
+            s"\nerror after rewriting to $tree\npossible cause: maybe a wrong Dynamic method signature?"))
+        setError(tree)
+      }
 
       //checkClassType
       def TypeNotAStablePrefixError(tpt: Tree, pre: Type) = {
@@ -714,7 +721,8 @@ trait ContextErrors {
               Some(EOL + stackTraceString(realex))
             }
           } catch {
-            // if the magic above goes boom, just fall back to uninformative, but better than nothing, getMessage
+            // the code above tries various tricks to detect the relevant portion of the stack trace
+            // if these tricks fail, just fall back to uninformative, but better than nothing, getMessage
             case NonFatal(ex) =>
               macroLogVerbose("got an exception when processing a macro generated exception\n" +
                               "offender = " + stackTraceString(realex) + "\n" +

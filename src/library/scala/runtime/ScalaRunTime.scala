@@ -6,7 +6,8 @@
 **                          |/                                          **
 \*                                                                      */
 
-package scala.runtime
+package scala
+package runtime
 
 import scala.collection.{ Seq, IndexedSeq, TraversableView, AbstractIterator }
 import scala.collection.mutable.WrappedArray
@@ -15,6 +16,7 @@ import scala.collection.generic.{ Sorted }
 import scala.reflect.{ ClassTag, classTag }
 import scala.util.control.ControlThrowable
 import scala.xml.{ Node, MetaData }
+import java.lang.{ Class => jClass }
 
 import java.lang.Double.doubleToLongBits
 import java.lang.reflect.{ Modifier, Method => JMethod }
@@ -27,10 +29,10 @@ object ScalaRunTime {
   def isArray(x: Any, atLevel: Int = 1): Boolean =
     x != null && isArrayClass(x.getClass, atLevel)
 
-  private def isArrayClass(clazz: Class[_], atLevel: Int): Boolean =
+  private def isArrayClass(clazz: jClass[_], atLevel: Int): Boolean =
     clazz.isArray && (atLevel == 1 || isArrayClass(clazz.getComponentType, atLevel - 1))
 
-  def isValueClass(clazz: Class[_]) = clazz.isPrimitive()
+  def isValueClass(clazz: jClass[_]) = clazz.isPrimitive()
   def isTuple(x: Any) = x != null && tupleNames(x.getClass.getName)
   def isAnyVal(x: Any) = x match {
     case _: Byte | _: Short | _: Char | _: Int | _: Long | _: Float | _: Double | _: Boolean | _: Unit => true
@@ -49,7 +51,7 @@ object ScalaRunTime {
 
   /** Return the class object representing an array with element class `clazz`.
    */
-  def arrayClass(clazz: Class[_]): Class[_] = {
+  def arrayClass(clazz: jClass[_]): jClass[_] = {
     // newInstance throws an exception if the erasure is Void.TYPE. see SI-5680
     if (clazz == java.lang.Void.TYPE) classOf[Array[Unit]]
     else java.lang.reflect.Array.newInstance(clazz, 0).getClass
@@ -57,18 +59,19 @@ object ScalaRunTime {
 
   /** Return the class object representing elements in arrays described by a given schematic.
    */
-  def arrayElementClass(schematic: Any): Class[_] = schematic match {
-    case cls: Class[_] => cls.getComponentType
+  def arrayElementClass(schematic: Any): jClass[_] = schematic match {
+    case cls: jClass[_]   => cls.getComponentType
     case tag: ClassTag[_] => tag.runtimeClass
-    case _ => throw new UnsupportedOperationException("unsupported schematic %s (%s)".format(schematic, if (schematic == null) "null" else schematic.getClass))
+    case _                =>
+      throw new UnsupportedOperationException(s"unsupported schematic $schematic (${schematic.getClass})")
   }
 
   /** Return the class object representing an unboxed value type,
    *  e.g. classOf[int], not classOf[java.lang.Integer].  The compiler
    *  rewrites expressions like 5.getClass to come here.
    */
-  def anyValClass[T <: AnyVal : ClassTag](value: T): Class[T] =
-    classTag[T].runtimeClass.asInstanceOf[Class[T]]
+  def anyValClass[T <: AnyVal : ClassTag](value: T): jClass[T] =
+    classTag[T].runtimeClass.asInstanceOf[jClass[T]]
 
   /** Retrieve generic array element */
   def array_apply(xs: AnyRef, idx: Int): Any = xs match {

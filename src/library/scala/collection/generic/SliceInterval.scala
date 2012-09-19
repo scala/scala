@@ -32,7 +32,7 @@ private[collection] class SliceInterval private (val from: Int, val until: Int) 
    */
   def recalculate(_from: Int, _until: Int): SliceInterval = {
     val lo    = _from max 0
-    val elems = math.min(_until - lo, width)
+    val elems = scala.math.min(_until - lo, width)
     val start = from + lo
 
     if (elems <= 0) new SliceInterval(from, from)

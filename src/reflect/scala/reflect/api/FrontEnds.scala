@@ -24,7 +24,7 @@ trait FrontEnds {
     def hasWarnings = WARNING.count > 0
 
     case class Info(val pos: Position, val msg: String, val severity: Severity)
-    val infos = new collection.mutable.LinkedHashSet[Info]
+    val infos = new scala.collection.mutable.LinkedHashSet[Info]
 
     /** Handles incoming info */
     def log(pos: Position, msg: String, severity: Severity) {

@@ -246,7 +246,6 @@ trait StdNames {
     final val BeanPropertyAnnot: NameType = "BeanProperty"
     final val BooleanBeanPropertyAnnot: NameType = "BooleanBeanProperty"
     final val bridgeAnnot: NameType = "bridge"
-    final val staticAnnot: NameType = "static"
 
     // Classfile Attributes
     final val AnnotationDefaultATTR: NameType      = "AnnotationDefault"
@@ -571,7 +570,7 @@ trait StdNames {
     // Compiler utilized names
 
     val AnnotatedType: NameType        = "AnnotatedType"
-    val AnnotationInfo: NameType       = "AnnotationInfo"
+    val Annotation: NameType           = "Annotation"
     val Any: NameType                  = "Any"
     val AnyVal: NameType               = "AnyVal"
     val AppliedTypeTree: NameType      = "AppliedTypeTree"
