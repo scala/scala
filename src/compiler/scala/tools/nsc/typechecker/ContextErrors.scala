@@ -515,8 +515,15 @@ trait ContextErrors {
       def ApplyWithoutArgsError(tree: Tree, fun: Tree) =
         NormalTypeError(tree, fun.tpe+" does not take parameters")
 
+      // Dynamic
       def DynamicVarArgUnsupported(tree: Tree, name: String) =
         issueNormalTypeError(tree, name+ " does not support passing a vararg parameter")
+
+      def DynamicRewriteError(tree: Tree, err: AbsTypeError) = {
+        issueTypeError(PosAndMsgTypeError(err.errPos, err.errMsg +
+            s"\nerror after rewriting to $tree\npossible cause: maybe a wrong Dynamic method signature?"))
+        setError(tree)
+      }
 
       //checkClassType
       def TypeNotAStablePrefixError(tpt: Tree, pre: Type) = {
