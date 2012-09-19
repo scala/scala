@@ -240,10 +240,10 @@ class Settings(error: String => Unit, val printMsg: String => Unit = println(_))
     if (docSkipPackages.value == "")
       Set[String]()
     else
-      docSkipPackages.value.toLowerCase.split(':').toSet
+      docSkipPackages.value.toLowerCase(java.util.Locale.ENGLISH).split(':').toSet
 
   def skipPackage(qname: String) =
-    skipPackageNames(qname.toLowerCase)
+    skipPackageNames(qname.toLowerCase(java.util.Locale.ENGLISH))
 
   lazy val hiddenImplicits: Set[String] = {
     if (docImplicitsHide.value.isEmpty) hardcoded.commonConversionTargets
@@ -333,7 +333,7 @@ class Settings(error: String => Unit, val printMsg: String => Unit = println(_))
      *  but showing priority in scaladoc would make no sense -- so we have to manually remove the conversions that we
      *  know will never get a chance to kick in. Anyway, DIRTY DIRTY DIRTY! */
     def valueClassFilter(value: String, conversionName: String): Boolean = {
-      val valueName = value.toLowerCase
+      val valueName = value.toLowerCase(java.util.Locale.ENGLISH)
       val otherValues = valueClassList.filterNot(_ == valueName)
 
       for (prefix <- valueClassFilterPrefixes)
