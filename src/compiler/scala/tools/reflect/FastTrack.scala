@@ -30,13 +30,10 @@ trait FastTrack {
   lazy val fastTrack: Map[Symbol, FastTrackEntry] = {
     var registry = Map[Symbol, FastTrackEntry]()
     implicit class BindTo(sym: Symbol) { def bindTo(expander: FastTrackExpander): Unit = if (sym != NoSymbol) registry += sym -> FastTrackEntry(sym, expander) }
-    MacroInternal_materializeClassTag bindTo { case (c, Apply(TypeApply(_, List(tt)), List(u))) => c.materializeClassTag(u, tt.tpe) }
-    materializeClassTag bindTo { case (c, Apply(TypeApply(_, List(tt)), List(u))) => c.materializeClassTag(u, tt.tpe) }
-    MacroInternal_materializeWeakTypeTag bindTo { case (c, Apply(TypeApply(_, List(tt)), List(u))) => c.materializeTypeTag(u, EmptyTree, tt.tpe, concrete = false) }
+    materializeClassTag bindTo { case (c, Apply(TypeApply(_, List(tt)), List())) => c.materializeClassTag(tt.tpe) }
     materializeWeakTypeTag bindTo { case (c, Apply(TypeApply(_, List(tt)), List(u))) => c.materializeTypeTag(u, EmptyTree, tt.tpe, concrete = false) }
-    MacroInternal_materializeTypeTag bindTo { case (c, Apply(TypeApply(_, List(tt)), List(u))) => c.materializeTypeTag(u, EmptyTree, tt.tpe, concrete = true) }
     materializeTypeTag bindTo { case (c, Apply(TypeApply(_, List(tt)), List(u))) => c.materializeTypeTag(u, EmptyTree, tt.tpe, concrete = true) }
-    BaseUniverseReify bindTo { case (c, Apply(TypeApply(_, List(tt)), List(expr))) => c.materializeExpr(c.prefix.tree, EmptyTree, expr) }
+    ApiUniverseReify bindTo { case (c, Apply(TypeApply(_, List(tt)), List(expr))) => c.materializeExpr(c.prefix.tree, EmptyTree, expr) }
     ReflectRuntimeCurrentMirror bindTo { case (c, _) => scala.reflect.runtime.Macros.currentMirror(c).tree }
     StringContext_f bindTo { case (c, app@Apply(Select(Apply(_, parts), _), args)) => c.macro_StringInterpolation_f(parts, args, app.pos) }
     registry

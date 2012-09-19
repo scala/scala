@@ -633,7 +633,6 @@ trait StdNames {
     val asInstanceOf_Ob : NameType     = "$asInstanceOf"
     val assert_ : NameType             = "assert"
     val assume_ : NameType             = "assume"
-    val basis : NameType               = "basis"
     val box: NameType                  = "box"
     val build : NameType               = "build"
     val bytes: NameType                = "bytes"

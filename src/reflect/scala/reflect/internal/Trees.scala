@@ -7,7 +7,6 @@ package scala.reflect
 package internal
 
 import Flags._
-import base.Attachments
 import scala.collection.mutable.{ListBuffer, LinkedHashSet}
 import util.Statistics
 

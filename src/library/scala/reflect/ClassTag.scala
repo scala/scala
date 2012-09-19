@@ -11,13 +11,13 @@ import scala.runtime.ScalaRunTime.{ arrayClass, arrayElementClass }
  *  The runtime class (i.e. the erasure, a java.lang.Class on the JVM) of T can be accessed
  *  via the `runtimeClass` field. References to type parameters or abstract type members are
  *  replaced by the concrete types if ClassTags are available for them.
- *  
+ *
  *  Besides accessing the erasure, a ClassTag knows how to instantiate single- and multi-
  *  dimensional `Arrays` where the element type is unknown at compile time.
  *
  * [[scala.reflect.ClassTag]] corresponds to a previous concept of [[scala.reflect.ClassManifest]].
  *
- * @see [[scala.reflect.base.TypeTags]]
+ * @see [[scala.reflect.api.TypeTags]]
  */
 @scala.annotation.implicitNotFound(msg = "No ClassTag available for ${T}")
 trait ClassTag[T] extends ClassManifestDeprecatedApis[T] with Equals with Serializable {

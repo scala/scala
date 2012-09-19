@@ -1,11 +1,11 @@
 package scala.reflect
-package base
+package api
 
 /**
  * The base interface for all mirrors.
  *
- * @tparam U the type of the universe this mirror belongs to. 
- * 
+ * @tparam U the type of the universe this mirror belongs to.
+ *
  * This is defined outside the reflection universe cake pattern implementation
  * so that it can be referenced from outside. For example TypeCreator and TreeCreator
  * reference MirrorOf and also need to be defined outside the cake as they are
@@ -14,7 +14,7 @@ package base
  *
  * @see [[Mirrors]]
  */
-abstract class MirrorOf[U <: base.Universe with Singleton] {
+abstract class MirrorOf[U <: Universe with Singleton] {
   /** The universe this mirror belongs to. */
   val universe: U
 

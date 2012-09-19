@@ -5,7 +5,7 @@
 
 package scala
 package reflect
-package base
+package api
 
 import java.lang.{ Class => jClass }
 import scala.language.implicitConversions
@@ -19,15 +19,15 @@ import scala.language.implicitConversions
  */
 /**
  * A type tag encapsulates a representation of type T.
- * 
+ *
  * Type tags replace the pre-2.10 concept of a [[scala.reflect.Manifest]] and are integrated with reflection.
  *
  * === Overview and examples ===
  *
  * Type tags are organized in a hierarchy of three classes:
- * [[scala.reflect.ClassTag]], [[scala.reflect.base.Universe#TypeTag]] and [[scala.reflect.base.Universe#WeakTypeTag]].
- * 
- * @see [[scala.reflect.ClassTag]], [[scala.reflect.base.Universe#TypeTag]], [[scala.reflect.base.Universe#WeakTypeTag]]
+ * [[scala.reflect.ClassTag]], [[scala.reflect.api.Universe#TypeTag]] and [[scala.reflect.api.Universe#WeakTypeTag]].
+ *
+ * @see [[scala.reflect.ClassTag]], [[scala.reflect.api.Universe#TypeTag]], [[scala.reflect.api.Universe#WeakTypeTag]]
  *
  * Examples:
  *   {{{
@@ -72,17 +72,17 @@ import scala.language.implicitConversions
  *   }}}
  *
  *
- * [[scala.reflect.base.Universe#TypeTag]] and [[scala.reflect.base.Universe#WeakTypeTag]] are path dependent on their universe.
+ * [[scala.reflect.api.Universe#TypeTag]] and [[scala.reflect.api.Universe#WeakTypeTag]] are path dependent on their universe.
  *
  * The default universe is [[scala.reflect.runtime.universe]]
- * 
+ *
  * Type tags can be migrated to another universe given the corresponding mirror using
  *
  *  {{{
  *  tag.in( other_mirror )
  *  }}}
- *  
- *  See [[scala.reflect.base.TypeTags#WeakTypeTag.in]]
+ *
+ *  See [[scala.reflect.api.TypeTags#WeakTypeTag.in]]
  *
  * === WeakTypeTag vs TypeTag ===
  *
@@ -98,9 +98,9 @@ import scala.language.implicitConversions
  *     def apply[T: WeakTypeTag](name: String, x: T): NamedParam = new Typed[T](name, x)
  *   }
  * }}}
- * 
+ *
  * This fragment of the Scala REPL implementation defines a `bind` function that carries a named value along with its type
- * into the heart of the REPL. Using a [[scala.reflect.base.Universe#WeakTypeTag]] here is reasonable, because it is desirable
+ * into the heart of the REPL. Using a [[scala.reflect.api.Universe#WeakTypeTag]] here is reasonable, because it is desirable
  * to work with all types, even if they are type parameters or abstract type members.
  *
  * However if any of the three `WeakTypeTag` context bounds is omitted, the resulting code will be incorrect,
@@ -147,9 +147,9 @@ trait TypeTags { self: Universe =>
    * they are used to embed the concrete types into the WeakTypeTag. Otherwise the WeakTypeTag will contain a reference
    * to an abstract type. This behavior can be useful, when one expects T to be possibly partially abstract, but
    * requires special care to handle this case. If however T is expected to be fully known, use
-   * [[scala.reflect.base.Universe#TypeTag]] instead, which statically guarantees this property.
+   * [[scala.reflect.api.Universe#TypeTag]] instead, which statically guarantees this property.
    *
-   * @see [[scala.reflect.base.TypeTags]]
+   * @see [[scala.reflect.api.TypeTags]]
    */
   @annotation.implicitNotFound(msg = "No WeakTypeTag available for ${T}")
   trait WeakTypeTag[T] extends Equals with Serializable {
@@ -159,10 +159,10 @@ trait TypeTags { self: Universe =>
     val mirror: Mirror
     /**
      * Migrates type tag to another universe.
-     * 
+     *
      * Type tags are path dependent on their universe. This methods allows migration
      * given the mirror corresponding to the target universe.
-     * 
+     *
      * Migration means that all symbolic references to classes/objects/packages in the expression
      * will be re-resolved within the new mirror (typically using that mirror's classloader).
      */
@@ -234,11 +234,11 @@ trait TypeTags { self: Universe =>
   }
 
   /**
-   * A `TypeTag` is a [[scala.reflect.base.Universe#WeakTypeTag]] with the additional
+   * A `TypeTag` is a [[scala.reflect.api.Universe#WeakTypeTag]] with the additional
    * static guarantee that all type references are concrete, i.e. it does <b>not</b> contain any references to
    * unresolved type parameters or abstract types.
    *
-   * @see [[scala.reflect.base.TypeTags]]
+   * @see [[scala.reflect.api.TypeTags]]
    */
   @annotation.implicitNotFound(msg = "No TypeTag available for ${T}")
   trait TypeTag[T] extends WeakTypeTag[T] with Equals with Serializable {
@@ -347,9 +347,8 @@ private[scala] class SerializedTypeTag(var tpec: TypeCreator, var concrete: Bool
   }
 
   private def readResolve(): AnyRef = {
-    import scala.reflect.basis._
+    import scala.reflect.runtime.universe._
     if (concrete) TypeTag(rootMirror, tpec)
     else WeakTypeTag(rootMirror, tpec)
   }
 }
-  

@@ -101,11 +101,11 @@ trait Reshape {
             // hence we cannot reify references to them, because noone will be able to see them later
             // when implicit macros are fixed, these sneaky macros will move to corresponding companion objects
             // of, say, ClassTag or TypeTag
-            case Apply(TypeApply(_, List(tt)), _) if original.symbol == MacroInternal_materializeClassTag =>
+            case Apply(TypeApply(_, List(tt)), _) if original.symbol == materializeClassTag =>
               gen.mkNullaryCall(Predef_implicitly, List(appliedType(ClassTagClass, tt.tpe)))
-            case Apply(TypeApply(_, List(tt)), List(pre)) if original.symbol == MacroInternal_materializeWeakTypeTag =>
+            case Apply(TypeApply(_, List(tt)), List(pre)) if original.symbol == materializeWeakTypeTag =>
               gen.mkNullaryCall(Predef_implicitly, List(typeRef(pre.tpe, WeakTypeTagClass, List(tt.tpe))))
-            case Apply(TypeApply(_, List(tt)), List(pre)) if original.symbol == MacroInternal_materializeTypeTag =>
+            case Apply(TypeApply(_, List(tt)), List(pre)) if original.symbol == materializeTypeTag =>
               gen.mkNullaryCall(Predef_implicitly, List(typeRef(pre.tpe, TypeTagClass, List(tt.tpe))))
             case _ =>
               original

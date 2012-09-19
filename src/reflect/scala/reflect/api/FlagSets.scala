@@ -3,9 +3,15 @@ package api
 
 import scala.language.implicitConversions
 
-trait FlagSets extends base.FlagSets { self: Universe =>
+trait FlagSets { self: Universe =>
 
+  /** An abstract type representing sets of flags (like private, final, etc.) that apply to definition trees and symbols */
   type FlagSet
+
+  /** A tag that preserves the identity of the `FlagSet` abstract type from erasure.
+   *  Can be used for pattern matching, instance tests, serialization and likes.
+   */
+  implicit val FlagSetTag: ClassTag[FlagSet]
 
   trait FlagOps extends Any {
     def | (right: FlagSet): FlagSet
@@ -99,4 +105,7 @@ trait FlagSets extends base.FlagSets { self: Universe =>
     /** Flag indicating that tree represents a variable or a member initialized to the default value */
     val DEFAULTINIT: FlagSet
   }
+
+  /** The empty set of flags */
+  val NoFlags: FlagSet
 }
