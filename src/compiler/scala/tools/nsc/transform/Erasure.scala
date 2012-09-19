@@ -429,6 +429,14 @@ abstract class Erasure extends AddInterfaces
              |both have erased type ${afterPostErasure(bridge.tpe)}""".stripMargin)
       }
       for (bc <- root.baseClasses) {
+        if (settings.debug.value)
+          afterPostErasure(println(
+            s"""check bridge overrides in $bc
+            ${bc.info.nonPrivateDecl(bridge.name)}
+            ${site.memberType(bridge)}
+            ${site.memberType(bc.info.nonPrivateDecl(bridge.name) orElse IntClass)}
+            ${(bridge.matchingSymbol(bc, site))}""".stripMargin))
+
         def overriddenBy(sym: Symbol) =
           sym.matchingSymbol(bc, site).alternatives filter (sym => !sym.isBridge)
         for (overBridge <- afterPostErasure(overriddenBy(bridge))) {
@@ -1046,7 +1054,7 @@ abstract class Erasure extends AddInterfaces
           preEraseIsInstanceOf
         } else if (fn.symbol.owner.isRefinementClass && !fn.symbol.isOverridingSymbol) {
           ApplyDynamic(qualifier, args) setSymbol fn.symbol setPos tree.pos
-        } else if (fn.symbol.isMethodWithExtension) {
+        } else if (fn.symbol.isMethodWithExtension && !fn.symbol.tpe.isErroneous) {
           Apply(gen.mkAttributedRef(extensionMethods.extensionMethod(fn.symbol)), qualifier :: args)
         } else {
           tree

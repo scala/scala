@@ -70,7 +70,8 @@ abstract class ExtensionMethods extends Transform with TypingTransformers {
     val companionInfo = imeth.owner.companionModule.info
     val candidates = extensionNames(imeth) map (companionInfo.decl(_))
     val matching = candidates filter (alt => normalize(alt.tpe, imeth.owner) matches imeth.tpe)
-    assert(matching.nonEmpty, "no extension method found for "+imeth+" among "+candidates+"/"+extensionNames(imeth))
+    assert(matching.nonEmpty,
+      s"no extension method found for $imeth:${imeth.tpe}+among ${candidates map (c => c.name+":"+c.tpe)} / ${extensionNames(imeth)}")
     matching.head
   }
 
