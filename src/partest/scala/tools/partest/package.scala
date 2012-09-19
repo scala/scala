@@ -93,11 +93,34 @@ package object partest {
   import scala.reflect.macros.Context
   def traceImpl[A: c.WeakTypeTag](c: Context)(a: c.Expr[A]): c.Expr[A] = {
     import c.universe._
-    val exprCode = c.literal(show(a.tree))
-    val exprType = c.literal(show(a.actualType))
-    reify {
-      println(s"trace> ${exprCode.splice}\nres: ${exprType.splice} = ${a.splice}\n")
-      a.splice
-    }
+    import definitions._
+
+    // xeno.by: reify shouldn't be used explicitly before the final release of 2.10.0,
+    // because this impairs reflection refactorings
+    //
+    // val exprCode = c.literal(show(a.tree))
+    // val exprType = c.literal(show(a.actualType))
+    // reify {
+    //   println(s"trace> ${exprCode.splice}\nres: ${exprType.splice} = ${a.splice}\n")
+    //   a.splice
+    // }
+
+    c.Expr(Block(
+      List(Apply(
+        Select(Ident(PredefModule), newTermName("println")),
+        List(Apply(
+          Select(Apply(
+            Select(Ident(ScalaPackage), newTermName("StringContext")),
+            List(
+              Literal(Constant("trace> ")),
+              Literal(Constant("\\nres: ")),
+              Literal(Constant(" = ")),
+              Literal(Constant("\\n")))),
+          newTermName("s")),
+          List(
+            Literal(Constant(show(a.tree))),
+            Literal(Constant(show(a.actualType))),
+            a.tree))))),
+      a.tree))
   }
 }

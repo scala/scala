@@ -9,4 +9,7 @@ package object api {
   type Attachments = base.Attachments
 
   type MirrorOf[U <: base.Universe with Singleton] = base.MirrorOf[U]
+
+  private[scala] def materializeWeakTypeTag[T](u: base.Universe): u.WeakTypeTag[T] = ??? // macro
+  private[scala] def materializeTypeTag[T](u: base.Universe): u.TypeTag[T] = ??? // macro
 }

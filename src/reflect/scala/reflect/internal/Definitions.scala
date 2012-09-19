@@ -485,6 +485,7 @@ trait Definitions extends api.StandardDefinitions {
     // scala.reflect
     lazy val ReflectPackage              = requiredModule[scala.reflect.`package`.type]
          def ReflectBasis                = getMemberValue(ReflectPackage, nme.basis)
+    lazy val ReflectApiPackage           = getPackageObjectIfDefined("scala.reflect.api") // defined in scala-reflect.jar, so we need to be careful
     lazy val ReflectRuntimePackage       = getPackageObjectIfDefined("scala.reflect.runtime") // defined in scala-reflect.jar, so we need to be careful
          def ReflectRuntimeUniverse      = if (ReflectRuntimePackage != NoSymbol) getMemberValue(ReflectRuntimePackage, nme.universe) else NoSymbol
          def ReflectRuntimeCurrentMirror = if (ReflectRuntimePackage != NoSymbol) getMemberMethod(ReflectRuntimePackage, nme.currentMirror) else NoSymbol
@@ -509,6 +510,9 @@ trait Definitions extends api.StandardDefinitions {
     lazy val WeakTypeTagModule      = getMemberModule(TypeTagsClass, nme.WeakTypeTag)
     lazy val TypeTagClass          = getMemberClass(TypeTagsClass, tpnme.TypeTag)
     lazy val TypeTagModule         = getMemberModule(TypeTagsClass, nme.TypeTag)
+         def materializeClassTag    = getMemberMethod(ReflectPackage, nme.materializeClassTag)
+         def materializeWeakTypeTag = if (ReflectApiPackage != NoSymbol) getMemberMethod(ReflectApiPackage, nme.materializeWeakTypeTag) else NoSymbol
+         def materializeTypeTag     = if (ReflectApiPackage != NoSymbol) getMemberMethod(ReflectApiPackage, nme.materializeTypeTag) else NoSymbol
 
     lazy val BaseUniverseClass     = requiredClass[scala.reflect.base.Universe]
          def BaseUniverseReify     = getMemberMethod(BaseUniverseClass, nme.reify)
