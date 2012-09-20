@@ -1388,6 +1388,32 @@ trait Typers extends Modes with Adaptations with Tags {
       }
     }
 
+    private def checkEphemeral(clazz: Symbol, body: List[Tree]) = {
+      val isValueClass = !clazz.isTrait
+      for (stat <- body) {
+        def notAllowed(what: String) = {
+          val where = if (clazz.isTrait) "universal trait extending from class Any" else "value class"
+          unit.error(stat.pos, s"$what is not allowed in $where")
+        }
+         stat match {
+          case _: Import | _: TypeDef | _: ClassDef | EmptyTree => // OK
+          case DefDef(_, name, _, _, _, _) =>
+            if (stat.symbol.isAuxiliaryConstructor)
+              notAllowed("secondary constructor")
+            else if (isValueClass && (name == nme.equals_ || name == nme.hashCode_))
+              notAllowed(s"redefinition of $name method")
+            else if (stat.symbol != null && (stat.symbol hasFlag PARAMACCESSOR))
+              notAllowed("additional parameter")
+          case _: ValDef =>
+            notAllowed("field definition")
+          case _: ModuleDef =>
+            notAllowed("nested object")
+          case _ =>
+            notAllowed("this statement")
+        }
+      }
+    }
+
     private def validateDerivedValueClass(clazz: Symbol, body: List[Tree]) = {
       if (clazz.isTrait)
         unit.error(clazz.pos, "only classes (not traits) are allowed to extend AnyVal")
@@ -1395,7 +1421,7 @@ trait Typers extends Modes with Adaptations with Tags {
         unit.error(clazz.pos, "value class may not be a "+
           (if (clazz.owner.isTerm) "local class" else "member of another class"))
       if (!clazz.isPrimitiveValueClass) {
-        clazz.info.decls.toList.filter(acc => acc.isMethod && (acc hasFlag PARAMACCESSOR)) match {
+        clazz.info.decls.toList.filter(acc => acc.isMethod && acc.isParamAccessor) match {
           case List(acc) =>
             def isUnderlyingAcc(sym: Symbol) =
               sym == acc || acc.hasAccessorFlag && sym == acc.accessed
@@ -1403,25 +1429,12 @@ trait Typers extends Modes with Adaptations with Tags {
               unit.error(acc.pos, "value class needs to have a publicly accessible val parameter")
             else if (acc.tpe.typeSymbol.isDerivedValueClass)
               unit.error(acc.pos, "value class may not wrap another user-defined value class")
-            for (stat <- body)
-              if (!treeInfo.isAllowedInUniversalTrait(stat) && !isUnderlyingAcc(stat.symbol))
-                unit.error(stat.pos,
-                  if (stat.symbol != null && (stat.symbol hasFlag PARAMACCESSOR)) "illegal parameter for value class"
-                  else "this statement is not allowed in value class: " + stat)
+            checkEphemeral(clazz, body filterNot (stat => isUnderlyingAcc(stat.symbol)))
           case x =>
             unit.error(clazz.pos, "value class needs to have exactly one public val parameter")
         }
       }
 
-      def valueClassMayNotHave(at: Tree, what: String) = unit.error(at.pos, s"value class may not have $what")
-      body.foreach {
-        case dd: DefDef if dd.symbol.isAuxiliaryConstructor => valueClassMayNotHave(dd, "secondary constructors")
-        case t => t.foreach {
-          case md: ModuleDef => valueClassMayNotHave(md, "nested module definitions")
-          case cd: ClassDef  => valueClassMayNotHave(cd, "nested class definitions")
-          case _             =>
-        }
-      }
       for (tparam <- clazz.typeParams)
         if (tparam hasAnnotation definitions.SpecializedClass)
           unit.error(tparam.pos, "type parameter of value class may not be specialized")
@@ -1668,9 +1681,7 @@ trait Typers extends Modes with Adaptations with Tags {
       }
       val impl2 = finishMethodSynthesis(impl1, clazz, context)
       if (clazz.isTrait && clazz.info.parents.nonEmpty && clazz.info.firstParent.normalize.typeSymbol == AnyClass)
-        for (stat <- impl2.body)
-          if (!treeInfo.isAllowedInUniversalTrait(stat))
-            unit.error(stat.pos, "this statement is not allowed in universal trait extending from class Any: "+stat)
+        checkEphemeral(clazz, impl2.body)
       if ((clazz != ClassfileAnnotationClass) &&
           (clazz isNonBottomSubClass ClassfileAnnotationClass))
         restrictionWarning(cdef.pos, unit,
