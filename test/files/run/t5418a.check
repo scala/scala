@@ -1,0 +1,1 @@
+Expr[Class[_ <: java.lang.Object]](new Object().getClass())
