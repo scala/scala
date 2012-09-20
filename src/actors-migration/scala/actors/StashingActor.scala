@@ -1,7 +1,7 @@
 package scala.actors
 
 import scala.collection._
-import scala.concurrent.util.Duration
+import scala.concurrent.duration.Duration
 import java.util.concurrent.TimeUnit
 import scala.language.implicitConversions
 

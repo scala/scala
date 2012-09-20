@@ -2,8 +2,8 @@
 
 
 import scala.concurrent._
-import scala.concurrent.util.duration._
-import scala.concurrent.util.Duration.Inf
+import scala.concurrent.duration._
+import scala.concurrent.duration.Duration.Inf
 import scala.collection._
 import scala.runtime.NonLocalReturnControl
 import scala.util.{Try,Success,Failure}
