@@ -1,7 +1,7 @@
 package scala.reflect
 package runtime
 
-import scala.tools.nsc.io.AbstractFile
+import scala.reflect.io.AbstractFile
 
 trait SynchronizedSymbols extends internal.Symbols { self: SymbolTable =>
 

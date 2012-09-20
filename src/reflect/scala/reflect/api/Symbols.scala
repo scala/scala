@@ -210,7 +210,7 @@ trait Symbols { self: Universe =>
     /** Source file if this symbol is created during this compilation run,
      *  or a class file if this symbol is loaded from a *.class or *.jar.
      */
-    def associatedFile: scala.tools.nsc.io.AbstractFile
+    def associatedFile: scala.reflect.io.AbstractFile
 
     /** A list of annotations attached to this Symbol.
      */

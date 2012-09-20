@@ -3,7 +3,7 @@
  * @author Paul Phillips
  */
 
-package scala.tools.nsc
+package scala.reflect
 package io
 
 import java.io.{
@@ -27,8 +27,9 @@ import scala.language.implicitConversions
  *
  *  @author  Paul Phillips
  *  @since   2.8
+ *  
+ *  ''Note:  This library is considered experimental and should not be used unless you know what you are doing.''
  */
-
 object Path {
   def isExtensionJarOrZip(jfile: JFile): Boolean = isExtensionJarOrZip(jfile.getName)
   def isExtensionJarOrZip(name: String): Boolean = {
@@ -83,6 +84,8 @@ import Path._
 
 /** The Path constructor is private so we can enforce some
  *  semantics regarding how a Path might relate to the world.
+ *  
+ *  ''Note:  This library is considered experimental and should not be used unless you know what you are doing.''
  */
 class Path private[io] (val jfile: JFile) {
   val separator = java.io.File.separatorChar

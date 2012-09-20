@@ -3,7 +3,7 @@
  * @author Paul Phillips
  */
 
-package scala.tools.nsc
+package scala.reflect
 package io
 
 import java.net.{ URI, URL }
@@ -17,12 +17,15 @@ import Path.fail
  *
  *  @author Paul Phillips
  *  @since  2.8
+ *  
+ *  ''Note:  This library is considered experimental and should not be used unless you know what you are doing.''
  */
-
 object Streamable {
   /** Traits which can be viewed as a sequence of bytes.  Source types
    *  which know their length should override def length: Long for more
    *  efficient method implementations.
+   *  
+   *  ''Note:  This library is considered experimental and should not be used unless you know what you are doing.''
    */
   trait Bytes {
     def inputStream(): InputStream
@@ -66,6 +69,8 @@ object Streamable {
   }
 
   /** For objects which can be viewed as Chars.
+   * 
+   * ''Note:  This library is considered experimental and should not be used unless you know what you are doing.''
    */
   trait Chars extends Bytes {
     /** Calls to methods requiring byte<->char transformations should be offered

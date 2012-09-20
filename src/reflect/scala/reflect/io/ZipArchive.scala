@@ -3,7 +3,7 @@
  * @author  Paul Phillips
  */
 
-package scala.tools.nsc
+package scala.reflect
 package io
 
 import java.net.URL
@@ -20,6 +20,8 @@ import scala.annotation.tailrec
  *  @author  Philippe Altherr (original version)
  *  @author  Paul Phillips (this one)
  *  @version 2.0,
+ *  
+ *  ''Note:  This library is considered experimental and should not be used unless you know what you are doing.''
  */
 object ZipArchive {
   def fromPath(path: String): FileZipArchive = fromFile(new JFile(path))
@@ -57,7 +59,7 @@ object ZipArchive {
   }
 }
 import ZipArchive._
-
+/** ''Note:  This library is considered experimental and should not be used unless you know what you are doing.'' */
 abstract class ZipArchive(override val file: JFile) extends AbstractFile with Equals {
   self =>
 
@@ -78,13 +80,14 @@ abstract class ZipArchive(override val file: JFile) extends AbstractFile with Eq
     }
   }
   def deepIterator = walkIterator(iterator)
-
+  /** ''Note:  This library is considered experimental and should not be used unless you know what you are doing.'' */
   sealed abstract class Entry(path: String) extends VirtualFile(baseName(path), path) {
     // have to keep this name for compat with sbt's compiler-interface
     def getArchive: ZipFile = null
     override def underlyingSource = Some(self)
     override def toString = self.path + "(" + path + ")"
   }
+  /** ''Note:  This library is considered experimental and should not be used unless you know what you are doing.'' */
   class DirEntry(path: String) extends Entry(path) {
     val entries = mutable.HashMap[String, Entry]()
 
@@ -120,7 +123,7 @@ abstract class ZipArchive(override val file: JFile) extends AbstractFile with Eq
     else ensureDir(dirs, dirName(entry.getName), null)
   }
 }
-
+/** ''Note:  This library is considered experimental and should not be used unless you know what you are doing.'' */
 final class FileZipArchive(file: JFile) extends ZipArchive(file) {
   def iterator: Iterator[Entry] = {
     val zipFile = new ZipFile(file)
@@ -161,7 +164,7 @@ final class FileZipArchive(file: JFile) extends ZipArchive(file) {
     case _                 => false
   }
 }
-
+/** ''Note:  This library is considered experimental and should not be used unless you know what you are doing.'' */
 final class URLZipArchive(val url: URL) extends ZipArchive(null) {
   def iterator: Iterator[Entry] = {
     val root     = new DirEntry("/")

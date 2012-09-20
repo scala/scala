@@ -4,12 +4,12 @@
  */
 
 
-package scala.tools.nsc
+package scala.reflect
 package io
 
 import java.io.{ FileInputStream, FileOutputStream, IOException }
 import PartialFunction._
-
+/** ''Note:  This library is considered experimental and should not be used unless you know what you are doing.'' */
 object PlainFile {
   /**
    * If the specified File exists, returns an abstract file backed
@@ -20,7 +20,7 @@ object PlainFile {
     else if (file.isFile) new PlainFile(file)
     else null
 }
-
+/** ''Note:  This library is considered experimental and should not be used unless you know what you are doing.'' */
 class PlainDirectory(givenPath: Directory) extends PlainFile(givenPath) {
   override def isDirectory = true
   override def iterator = givenPath.list filter (_.exists) map (x => new PlainFile(x))
@@ -28,6 +28,8 @@ class PlainDirectory(givenPath: Directory) extends PlainFile(givenPath) {
 }
 
 /** This class implements an abstract file backed by a File.
+ * 
+ * ''Note:  This library is considered experimental and should not be used unless you know what you are doing.''
  */
 class PlainFile(val givenPath: Path) extends AbstractFile {
   assert(path ne null)
