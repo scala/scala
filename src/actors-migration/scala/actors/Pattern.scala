@@ -17,9 +17,9 @@ class AskableActorRef(val ar: ActorRef) extends ActorRef {
 
   def !(message: Any)(implicit sender: ActorRef = null): Unit = ar.!(message)(sender)
 
-  def ?(message: Any)(timeout: Timeout): Future[Any] = ar.?(message, timeout.duration)
+  def ?(message: Any)(implicit timeout: Timeout): scala.concurrent.Future[Any] = ar.?(message, timeout.duration)
 
-  private[actors] def ?(message: Any, timeout: Duration): Future[Any] = ar.?(message, timeout)
+  private[actors] def ?(message: Any, timeout: Duration): scala.concurrent.Future[Any] = ar.?(message, timeout)
 
   def forward(message: Any) = ar.forward(message)
 
