@@ -4,7 +4,7 @@
  */
 
 
-package scala.tools.nsc
+package scala.reflect
 package io
 
 import java.io.{ FileOutputStream, IOException, InputStream, OutputStream, BufferedOutputStream }
@@ -13,6 +13,10 @@ import java.net.URL
 import scala.collection.mutable.ArrayBuffer
 
 /**
+ * An abstraction over files for use in the reflection/compiler libraries.
+ * 
+ * ''Note:  This library is considered experimental and should not be used unless you know what you are doing.''
+ *  
  * @author Philippe Altherr
  * @version 1.0, 23/03/2004
  */
@@ -81,6 +85,8 @@ object AbstractFile {
  *   all other cases, the class <code>SourceFile</code> is used, which honors
  *   <code>global.settings.encoding.value</code>.
  * </p>
+ * 
+ * ''Note:  This library is considered experimental and should not be used unless you know what you are doing.''
  */
 abstract class AbstractFile extends Iterable[AbstractFile] {
 

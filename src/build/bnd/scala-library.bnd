@@ -1,0 +1,6 @@
+Bundle-Name: Scala Standard Library
+Bundle-SymbolicName: org.scala-lang.scala-library
+ver: @VERSION@
+Bundle-Version: ${ver}
+Export-Package: *;version=${ver}
+Import-Package: sun.misc;resolution:=optional, *

@@ -7,7 +7,7 @@
 \*                                                                      */
 
 
-package scala.tools.nsc
+package scala.reflect
 package io
 
 import java.io.{
@@ -17,7 +17,9 @@ import java.io.{ File => JFile }
 import java.nio.channels.{ Channel, FileChannel }
 import scala.io.Codec
 import scala.language.{reflectiveCalls, implicitConversions}
-
+/**
+ * ''Note:  This library is considered experimental and should not be used unless you know what you are doing.''
+ */
 object File {
   def pathSeparator = java.io.File.pathSeparator
   def separator = java.io.File.separator
@@ -74,6 +76,8 @@ import Path._
  *
  *  @author  Paul Phillips
  *  @since   2.8
+ *  
+ *  ''Note:  This is library is considered experimental and should not be used unless you know what you are doing.''
  */
 class File(jfile: JFile)(implicit constructorCodec: Codec) extends Path(jfile) with Streamable.Chars {
   override val creationCodec = constructorCodec

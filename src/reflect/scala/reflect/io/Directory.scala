@@ -6,11 +6,13 @@
 **                          |/                                          **
 \*                                                                      */
 
-package scala.tools.nsc
+package scala.reflect
 package io
 
 import java.io.{ File => JFile }
-
+/**
+ * ''Note:  This library is considered experimental and should not be used unless you know what you are doing.''
+ */
 object Directory {
   import scala.util.Properties.{ tmpDir, userHome, userDir }
 
@@ -34,6 +36,8 @@ import Path._
  *
  *  @author  Paul Phillips
  *  @since   2.8
+ *  
+ *  ''Note:  This is library is considered experimental and should not be used unless you know what you are doing.''
  */
 class Directory(jfile: JFile) extends Path(jfile) {
   override def toAbsolute: Directory = if (isAbsolute) this else super.toAbsolute.toDirectory

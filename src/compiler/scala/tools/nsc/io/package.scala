@@ -11,6 +11,23 @@ import java.util.jar.{ Attributes }
 import scala.language.implicitConversions
 
 package object io {
+  // Forwarders from scala.reflect.io
+  type AbstractFile = scala.reflect.io.AbstractFile
+  val AbstractFile = scala.reflect.io.AbstractFile
+  type Directory = scala.reflect.io.Directory
+  val Directory = scala.reflect.io.Directory
+  type File = scala.reflect.io.File
+  val File = scala.reflect.io.File
+  type Path = scala.reflect.io.Path
+  val Path = scala.reflect.io.Path
+  type PlainFile = scala.reflect.io.PlainFile
+  val PlainFile = scala.reflect.io.PlainFile
+  val Streamable = scala.reflect.io.Streamable
+  type VirtualDirectory = scala.reflect.io.VirtualDirectory
+  type VirtualFile = scala.reflect.io.VirtualFile
+  val ZipArchive = scala.reflect.io.ZipArchive
+  type ZipArchive = scala.reflect.io.ZipArchive
+  
   implicit def postfixOps = scala.language.postfixOps // make all postfix ops in this package compile without warning
 
   type JManifest = java.util.jar.Manifest

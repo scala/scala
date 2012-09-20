@@ -2,7 +2,7 @@
  * Copyright 2005-2012 LAMP/EPFL
  */
 
-package scala.tools.nsc
+package scala.reflect
 package io
 
 import scala.collection.mutable
@@ -11,6 +11,8 @@ import scala.collection.mutable
  * An in-memory directory.
  *
  * @author Lex Spoon
+ * 
+ * ''Note:  This library is considered experimental and should not be used unless you know what you are doing.''
  */
 class VirtualDirectory(val name: String, maybeContainer: Option[VirtualDirectory])
 extends AbstractFile {

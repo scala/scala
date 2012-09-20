@@ -11,7 +11,7 @@ import scala.collection.mutable.ListBuffer
 import util.Statistics
 import Flags._
 import scala.annotation.tailrec
-import scala.tools.nsc.io.AbstractFile
+import scala.reflect.io.AbstractFile
 
 trait Symbols extends api.Symbols { self: SymbolTable =>
   import definitions._

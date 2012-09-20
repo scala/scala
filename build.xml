@@ -22,7 +22,7 @@ END-USER TARGETS
   <target name="clean" depends="quick.clean"
     description="Removes binaries of compiler and library. Distributions are untouched."/>
 
-  <target name="test" depends="test.done"
+  <target name="test" depends="test.done, osgi.test"
     description="Runs test suite and bootstrapping test on Scala compiler and library."/>
 
   <target name="test-opt"
@@ -217,6 +217,7 @@ PROPERTIES
   <property name="build-palo.dir" value="${build.dir}/palo"/>
   <property name="build-quick.dir" value="${build.dir}/quick"/>
   <property name="build-pack.dir" value="${build.dir}/pack"/>
+  <property name="build-osgi.dir" value="${build.dir}/osgi"/>
   <property name="build-strap.dir" value="${build.dir}/strap"/>
   <property name="build-docs.dir" value="${build.dir}/scaladoc"/>
   <property name="build-libs.dir" value="${build.dir}/libs"/>
@@ -276,6 +277,28 @@ INITIALISATION
     <path id="maven-ant-tasks.classpath" path="${lib.dir}/ant/maven-ant-tasks-2.1.1.jar" />
     <typedef resource="org/apache/maven/artifact/ant/antlib.xml" uri="urn:maven-artifact-ant" classpathref="maven-ant-tasks.classpath" />
 
+    <property name="init.maven.tasks.finished" value="true" />
+  </target>
+
+  <target name="init.extra.tasks" depends="init.maven.tasks" unless="init.extra.tasks.finished">
+    <artifact:dependencies pathId="extra.tasks.classpath" filesetId="extra.tasks.fileset">
+      <dependency groupId="biz.aQute" artifactId="bnd" version="1.50.0"/>
+    </artifact:dependencies>
+    <!-- Pax runner -->
+    <property name="pax.exam.version" value="2.5.0"/>
+    <artifact:dependencies pathId="pax.exam.classpath" filesetId="pax.exam.fileset">
+      <dependency groupId="org.ops4j.pax.exam" artifactId="pax-exam-container-native" version="${pax.exam.version}"/>
+      <dependency groupId="org.ops4j.pax.exam" artifactId="pax-exam-junit4" version="${pax.exam.version}"/>
+      <dependency groupId="org.ops4j.pax.exam" artifactId="pax-exam-link-assembly" version="${pax.exam.version}"/>
+      <dependency groupId="org.ops4j.pax.url" artifactId="pax-url-aether" version="1.4.0"/>
+      <dependency groupId="org.ops4j.pax.swissbox" artifactId="pax-swissbox-framework" version="1.5.1"/>
+      <dependency groupId="ch.qos.logback" artifactId="logback-core" version="0.9.20"/>
+      <dependency groupId="ch.qos.logback" artifactId="logback-classic" version="0.9.20"/>
+      <dependency groupId="junit" artifactId="junit" version="4.10"/>
+      <dependency groupId="org.apache.felix" artifactId="org.apache.felix.framework" version="3.2.2"/>
+    </artifact:dependencies>
+    <!-- BND support -->
+    <typedef resource="aQute/bnd/ant/taskdef.properties" classpathref="extra.tasks.classpath" />
     <property name="init.maven.tasks.finished" value="true" />
   </target>
 
@@ -400,7 +423,7 @@ INITIALISATION
      </echo>
   </target>
 
-  <target name="init" depends="init.jars, init.maven.jars, init.version.done, init.fail.bad.jdk, init.warn.jdk7">
+  <target name="init" depends="init.jars, init.maven.jars, init.version.done, init.fail.bad.jdk, init.warn.jdk7, init.extra.tasks">
     <property name="scalac.args.always" value="-Yreify-copypaste" />
   <!-- scalac.args.optimise is selectively overridden in certain antcall tasks. -->
     <property name="scalac.args.optimise" value=""/>
@@ -1673,6 +1696,139 @@ PACKED QUICK BUILD (PACK)
   </target>
 
 <!-- ===========================================================================
+OSGi Artifacts
+============================================================================ -->
+
+  <target name="osgi.init" depends="pack.done">
+    <mkdir dir="${build-osgi.dir}"/>
+
+    <property name="osgi.test.src" value="${partest.dir}/osgi/src"/>
+    <property name="osgi.test.classes" value="${build-osgi.dir}/classes"/>
+
+    <!-- simplify fixing pom versions -->
+    <macrodef name="make-bundle">
+      <attribute name="name" />
+      <attribute name="version" />
+      <sequential>
+        <copy file="${src.dir}/build/bnd/@{name}.bnd" tofile="${build-osgi.dir}/@{name}.bnd" overwrite="true">
+          <filterset>
+            <filter token="VERSION" value="@{version}" />
+          </filterset>
+        </copy>
+        <bnd classpath="${build-pack.dir}/lib/@{name}.jar"
+             eclipse="false"
+             failok="false"
+             exceptions="true"
+             files="${build-osgi.dir}/@{name}.bnd"
+             output="${build-osgi.dir}"/>
+      </sequential>
+    </macrodef>
+    <macrodef name="make-plugin-bundle">
+      <attribute name="name" />
+      <attribute name="version" />
+      <sequential>
+        <copy file="${src.dir}/build/bnd/@{name}.bnd" tofile="${build-osgi.dir}/@{name}.bnd" overwrite="true">
+          <filterset>
+            <filter token="VERSION" value="@{version}" />
+          </filterset>
+        </copy>
+        <bnd classpath="${build-pack.dir}/misc/scala-devel/plugins/@{name}.jar"
+             eclipse="false"
+             failok="false"
+             exceptions="true"
+             files="${build-osgi.dir}/@{name}.bnd"
+             output="${build-osgi.dir}"/>
+      </sequential>
+    </macrodef>
+    <uptodate property="osgi.bundles.available" targetfile="${build-osgi.dir}/bundles.complete">
+      <srcfiles dir="${basedir}">
+        <include name="build.xml"/>
+        <include name="src/build/bnd/*.bnd"/>
+      </srcfiles>
+    </uptodate>
+  </target>
+
+  <target name="osgi.bundles" depends="osgi.init" unless="osgi.bundles.available">
+    <stopwatch name="osgi.bundle.timer"/>  
+    <make-bundle name="scala-library" version="${osgi.version.number}" />
+    <make-bundle name="scala-actors" version="${osgi.version.number}" />
+    <make-bundle name="scala-actors-migration" version="${osgi.version.number}" />
+    <make-bundle name="scala-reflect" version="${osgi.version.number}" />
+    <make-bundle name="scala-compiler" version="${osgi.version.number}" />
+    <make-plugin-bundle name="continuations" version="${osgi.version.number}" />
+    <touch file="${build-osgi.dir}/bundles.complete" verbose="no"/>
+    <stopwatch name="osgi.bundle.timer" action="total"/>   
+  </target>
+
+  <target name="osgi.bundles.swing" depends="osgi.init" if="has.java6" unless="osgi.bundles.available">
+    <!-- TODO - only if JDK6 -->
+    <make-bundle name="scala-swing" version="${osgi.version.number}"/>
+  </target>
+
+  <target name="osgi.done" depends="osgi.bundles, osgi.bundles.swing"/>
+
+  <target name="osgi.test.init" depends="osgi.done">
+    <path id="osgi.bundle.classpath">
+      <pathelement location="${build-osgi.dir}/org.scala-lang.scala-library.jar"/>
+      <pathelement location="${build-osgi.dir}/org.scala-lang.scala-reflect.jar"/>
+      <pathelement location="${build-osgi.dir}/org.scala-lang.scala-compiler.jar"/>
+      <pathelement location="${build-osgi.dir}/org.scala-lang.scala-actors.jar"/>
+      <pathelement location="${build-osgi.dir}/org.scala-lang.scala-actors-migration.jar"/>
+    </path>
+
+    <uptodate property="osgi.test.available" targetfile="${build-osgi.dir}/test-compile.complete">
+      <srcfiles dir="${osgi.test.src}">
+        <include name="**/*.scala"/>
+      </srcfiles>
+    </uptodate>
+  </target>
+
+  <target name="osgi.test.comp" depends="osgi.test.init, quick.done" unless="osgi.test.available">
+    <stopwatch name="osgi.test.comp.timer"/>
+    <mkdir dir="${osgi.test.classes}"/>
+    <scalacfork
+      destdir="${osgi.test.classes}"
+      compilerpathref="quick.classpath"
+      params="${scalac.args.quick}"
+      srcdir="${osgi.test.src}"
+      jvmargs="${scalacfork.jvmargs}">
+      <include name="**/*.scala"/>
+      <compilationpath>
+        <pathelement location="${osgi.test.classes}"/>
+        <path refid="osgi.bundle.classpath"/>
+        <path refid="pax.exam.classpath"/>
+        <path refid="forkjoin.classpath"/>
+      </compilationpath>
+    </scalacfork>
+    <touch file="${build-osgi.dir}/test-compile.complete" verbose="no"/>
+    <stopwatch name="osgi.test.comp.timer" action="total"/>   
+  </target>
+
+  <target name="osgi.test" depends="osgi.test.comp">
+    <stopwatch name="osgi.test.timer"/>
+    <mkdir dir="${osgi.test.classes}"/>
+    <junit fork="yes" haltonfailure="yes">
+      <classpath>
+        <pathelement location="${osgi.test.classes}"/>
+        <path refid="osgi.bundle.classpath"/>
+        <path refid="pax.exam.classpath"/>
+        <path refid="forkjoin.classpath"/>
+      </classpath>
+      <batchtest fork="yes" todir="${build-osgi.dir}">
+        <fileset dir="${osgi.test.classes}">
+          <include name="**/*Test.class"/>
+        </fileset>
+      </batchtest>
+      <formatter type="brief" usefile="false" />
+    </junit>
+    <stopwatch name="osgi.test.timer" action="total"/>   
+  </target>
+
+  <target name="osgi.clean">
+    <delete dir="${build-osgi.dir}" includeemptydirs="yes" quiet="yes" failonerror="no"/>
+  </target>
+
+<!-- ===========================================================================
 BOOTSTRAPPING BUILD (STRAP)
 ============================================================================ -->
 
@@ -2553,9 +2709,24 @@ BOOTRAPING TEST AND TEST SUITE
 DISTRIBUTION
 ============================================================================ -->
 
-  <target name="dist.start" depends="pack.done">
+  <target name="dist.start" depends="pack.done, osgi.done">
     <property name="dist.name" value="scala-${version.number}"/>
     <property name="dist.dir" value="${dists.dir}/${dist.name}"/>
+
+    <macrodef name="copy-bundle">
+      <attribute name="name" />
+      <sequential>
+        <copy file="${build-osgi.dir}/org.scala-lang.@{name}.jar" 
+          tofile="${dist.dir}/lib/@{name}.jar"/>
+      </sequential>
+    </macrodef>
+    <macrodef name="copy-plugin-bundle">
+      <attribute name="name" />
+      <sequential>
+        <copy file="${build-osgi.dir}/org.scala-lang.plugins.@{name}.jar" 
+          tofile="${dist.dir}/misc/scala-devel/plugins/@{name}.jar"/>
+      </sequential>
+    </macrodef>
   </target>
 
   <target name="dist.base" depends="dist.start">
@@ -2564,6 +2735,13 @@ DISTRIBUTION
       <fileset dir="${build-pack.dir}/lib"/>
     </copy>
     <mkdir dir="${dist.dir}/bin"/>
+    <!-- TODO - Stop being inefficient and don't copy OSGi bundles overtop other jars. -->
+    <copy-bundle name="scala-library"/>
+    <copy-bundle name="scala-reflect"/>
+    <copy-bundle name="scala-swing"/>
+    <copy-bundle name="scala-actors"/>
+    <copy-bundle name="scala-actors-migration"/>
+    <copy-bundle name="scala-compiler"/>
     <copy toDir="${dist.dir}/bin">
       <fileset dir="${build-pack.dir}/bin"/>
     </copy>
@@ -2573,9 +2751,7 @@ DISTRIBUTION
     <chmod perm="ugo+rx" file="${dist.dir}/bin/fsc"/>
     <chmod perm="ugo+rx" file="${dist.dir}/bin/scalap"/>
     <mkdir dir="${dist.dir}/misc/scala-devel/plugins"/>
-    <copy toDir="${dist.dir}/misc/scala-devel/plugins">
-      <fileset dir="${build-pack.dir}/misc/scala-devel/plugins"/>
-    </copy>
+    <copy-plugin-bundle name="continuations"/>
   </target>
 
   <target name="dist.doc" depends="dist.base, docs.done">
@@ -2663,7 +2839,7 @@ TEST AND DISTRIBUTION BUNDLE (ALL)
 
   <target name="all.done" depends="dist.done, test.done"/>
 
-  <target name="all.clean" depends="locker.clean, docs.clean, dist.clean, sbt.clean"/>
+  <target name="all.clean" depends="locker.clean, docs.clean, dist.clean, sbt.clean, osgi.clean"/>
 
 <!-- ===========================================================================
 STABLE REFERENCE (STARR)
