@@ -104,8 +104,11 @@ abstract class OverridingPairs {
 
     /** A map from baseclasses of <base> to ints, with smaller ints meaning lower in
      *  linearization order.
+     *  symbols that are not baseclasses map to -1.
      */
-    private val index = new mutable.HashMap[Symbol, Int]
+    private val index = new mutable.HashMap[Symbol, Int] {
+      override def default(key: Symbol) = -1
+    }
 
     // Note: overridingPairs can be called at odd instances by the Eclipse plugin
     // Soemtimes symbols are not yet defined and we get missing keys.
@@ -133,28 +136,30 @@ abstract class OverridingPairs {
     { for (i <- List.range(0, size))
         subParents(i) = new BitSet(size);
       for (p <- parents) {
-        index get p.typeSymbol match {
-          case Some(pIndex) =>
-            for (bc <- p.baseClasses)
-              if (p.baseType(bc) =:= self.baseType(bc))
-                index get bc match {
-                  case Some(bcIndex) =>
-                    include(subParents(bcIndex), pIndex)
-                  case None =>
-                }
-              else debuglog("SKIPPING "+p+" -> "+p.baseType(bc)+" / "+self.baseType(bc)+" from "+base)
-          case None =>
-        }
+        val pIndex = index(p.typeSymbol)
+        if (pIndex >= 0)
+          for (bc <- p.baseClasses)
+            if (p.baseType(bc) =:= self.baseType(bc)) {
+              val bcIndex = index(bc)
+              if (bcIndex >= 0)
+                include(subParents(bcIndex), pIndex)
+            }
       }
    }
 
     /** Do `sym1` and `sym2` have a common subclass in `parents`?
      *  In that case we do not follow their overriding pairs
      */
-    private def hasCommonParentAsSubclass(sym1: Symbol, sym2: Symbol) = (
-      for (index1 <- index get sym1.owner ; index2 <- index get sym2.owner) yield
-        intersectionContainsElementLeq(subParents(index1), subParents(index2), index1 min index2)
-    ).exists(_ == true)
+    private def hasCommonParentAsSubclass(sym1: Symbol, sym2: Symbol) = {
+      val index1 = index(sym1.owner)
+      (index1 >= 0) && {
+        val index2 = index(sym2.owner)
+        (index2 >= 0) && {
+          intersectionContainsElementLeq(
+            subParents(index1), subParents(index2), index1 min index2)
+        }
+      }
+    }
 
     /** The scope entries that have already been visited as overridden
      *  (maybe excluded because of hasCommonParentAsSubclass).
