@@ -1,11 +1,24 @@
 package scala.reflect
 package api
 
-trait Positions extends base.Positions {
+/**
+ * Defines the type hierachy for positions.
+ *
+ * @see [[scala.reflect]] for a description on how the class hierarchy is encoded here.
+ */
+trait Positions {
   self: Universe =>
 
   /** .. */
   type Position >: Null <: PositionApi { type Pos = Position }
+
+  /** A tag that preserves the identity of the `Position` abstract type from erasure.
+   *  Can be used for pattern matching, instance tests, serialization and likes.
+   */
+  implicit val PositionTag: ClassTag[Position]
+
+  /** A special "missing" position. */
+  val NoPosition: Position
 
   /** Assigns a given position to all position-less nodes of a given AST.
    */

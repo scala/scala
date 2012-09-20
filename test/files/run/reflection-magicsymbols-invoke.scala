@@ -90,5 +90,5 @@ object Test extends App {
   println("============\nCTM")
   test(PredefModule.moduleClass.typeSignature, Predef, "classOf")
   test(PredefModule.moduleClass.typeSignature, Predef, "classOf", typeOf[String])
-  test(typeOf[scala.reflect.base.Universe], scala.reflect.runtime.universe, "reify", "2")
+  test(typeOf[scala.reflect.api.Universe], scala.reflect.runtime.universe, "reify", "2")
 }

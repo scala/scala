@@ -7,7 +7,6 @@ package scala.reflect
 package internal
 
 import Flags._
-import base.Attachments
 import scala.collection.mutable.{ListBuffer, LinkedHashSet}
 import util.Statistics
 
@@ -21,10 +20,10 @@ trait Trees extends api.Trees { self: SymbolTable =>
 
     if (Statistics.canEnable) Statistics.incCounter(TreesStats.nodeByType, getClass)
 
-    @inline final override def pos: Position = rawatt.pos
+    final override def pos: Position = rawatt.pos
 
     private[this] var rawtpe: Type = _
-    @inline final def tpe = rawtpe
+    final def tpe = rawtpe
     def tpe_=(t: Type) = rawtpe = t
     def setType(tp: Type): this.type = { rawtpe = tp; this }
     def defineType(tp: Type): this.type = setType(tp)
@@ -328,9 +327,23 @@ trait Trees extends api.Trees { self: SymbolTable =>
        extends TermTree with UnApplyApi
   object UnApply extends UnApplyExtractor
 
-  case class ArrayValue(elemtpt: Tree, elems: List[Tree])
-       extends TermTree with ArrayValueApi
-  object ArrayValue extends ArrayValueExtractor
+  /** An array of expressions. This AST node needs to be translated in backend.
+   *  It is used to pass arguments to vararg arguments.
+   *  Introduced by compiler phase uncurry.
+   *
+   *  This AST node does not have direct correspondence to Scala code,
+   *  and is used to pass arguments to vararg arguments. For instance:
+   *
+   *    printf("%s%d", foo, 42)
+   *
+   *  Is translated to after compiler phase uncurry to:
+   *
+   *    Apply(
+   *      Ident("printf"),
+   *      Literal("%s%d"),
+   *      ArrayValue(<Any>, List(Ident("foo"), Literal(42))))
+   */
+  case class ArrayValue(elemtpt: Tree, elems: List[Tree]) extends TermTree
 
   case class Function(vparams: List[ValDef], body: Tree)
        extends SymTree with TermTree with FunctionApi
@@ -507,6 +520,7 @@ trait Trees extends api.Trees { self: SymbolTable =>
   override type TreeCopier <: InternalTreeCopierOps
   abstract class InternalTreeCopierOps extends TreeCopierOps {
     def ApplyDynamic(tree: Tree, qual: Tree, args: List[Tree]): ApplyDynamic
+    def ArrayValue(tree: Tree, elemtpt: Tree, trees: List[Tree]): ArrayValue
   }
 
   class StrictTreeCopier extends InternalTreeCopierOps {
@@ -1584,7 +1598,6 @@ trait Trees extends api.Trees { self: SymbolTable =>
   implicit val StarTag = ClassTag[Star](classOf[Star])
   implicit val BindTag = ClassTag[Bind](classOf[Bind])
   implicit val UnApplyTag = ClassTag[UnApply](classOf[UnApply])
-  implicit val ArrayValueTag = ClassTag[ArrayValue](classOf[ArrayValue])
   implicit val FunctionTag = ClassTag[Function](classOf[Function])
   implicit val AssignTag = ClassTag[Assign](classOf[Assign])
   implicit val AssignOrNamedArgTag = ClassTag[AssignOrNamedArg](classOf[AssignOrNamedArg])

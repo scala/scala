@@ -6,7 +6,7 @@
 
 package scala.reflect.internal.util
 
-import scala.tools.nsc.io.{ AbstractFile, VirtualFile }
+import scala.reflect.io.{ AbstractFile, VirtualFile }
 import scala.collection.mutable.ArrayBuffer
 import scala.annotation.tailrec
 import java.util.regex.Pattern

@@ -1,0 +1,6 @@
+Bundle-Name: Scala Reflect
+Bundle-SymbolicName: org.scala-lang.scala-reflect
+ver: @VERSION@
+Bundle-Version: ${ver}
+Export-Package: *;version=${ver}
+Import-Package: scala.tools.nsc;resolution:=optional, *

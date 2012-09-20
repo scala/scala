@@ -5,7 +5,7 @@
 
 package scala.tools.partest
 
-import scala.reflect.{basis => rb}
+import scala.reflect.runtime.{universe => ru}
 import scala.tools.nsc._
 
 /** For testing compiler internals directly.
@@ -34,7 +34,7 @@ abstract class CompilerTest extends DirectTest {
   // Utility functions
 
   class MkType(sym: Symbol) {
-    def apply[M](implicit t: rb.TypeTag[M]): Type =
+    def apply[M](implicit t: ru.TypeTag[M]): Type =
       if (sym eq NoSymbol) NoType
       else appliedType(sym, compilerTypeFromTag(t))
   }

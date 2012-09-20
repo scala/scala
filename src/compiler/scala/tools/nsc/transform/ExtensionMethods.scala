@@ -70,7 +70,8 @@ abstract class ExtensionMethods extends Transform with TypingTransformers {
     val companionInfo = imeth.owner.companionModule.info
     val candidates = extensionNames(imeth) map (companionInfo.decl(_))
     val matching = candidates filter (alt => normalize(alt.tpe, imeth.owner) matches imeth.tpe)
-    assert(matching.nonEmpty, "no extension method found for "+imeth+" among "+candidates+"/"+extensionNames(imeth))
+    assert(matching.nonEmpty,
+      s"no extension method found for $imeth:${imeth.tpe}+among ${candidates map (c => c.name+":"+c.tpe)} / ${extensionNames(imeth)}")
     matching.head
   }
 
@@ -135,7 +136,9 @@ abstract class ExtensionMethods extends Transform with TypingTransformers {
       tree match {
         case Template(_, _, _) =>
           if (currentOwner.isDerivedValueClass) {
-            checkNonCyclic(currentOwner.pos, Set(), currentOwner)
+          /* This is currently redundant since value classes may not
+             wrap over other value classes anyway.
+            checkNonCyclic(currentOwner.pos, Set(), currentOwner) */
             extensionDefs(currentOwner.companionModule) = new mutable.ListBuffer[Tree]
             currentOwner.primaryConstructor.makeNotPrivate(NoSymbol)
             super.transform(tree)

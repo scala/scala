@@ -8,7 +8,7 @@
 
 package scala.actors.migration
 
-import scala.concurrent.util.Duration
+import scala.concurrent.duration.Duration
 import java.util.concurrent.TimeUnit
 import scala.language.implicitConversions
 

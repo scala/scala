@@ -1,7 +1,6 @@
 package scala.reflect
 
 import scala.language.implicitConversions
-import scala.reflect.base.{Universe => BaseUniverse}
 import scala.reflect.macros.{Context, ReificationError, UnexpectedReificationError}
 import scala.tools.nsc.Global
 
@@ -73,7 +72,7 @@ package object reify {
   def reifyEnclosingRuntimeClass(global: Global)(typer0: global.analyzer.Typer): global.Tree = {
     import global._
     import definitions._
-    def isThisInScope = typer0.context.enclosingContextChain exists (_.tree.isInstanceOf[Template])
+    def isThisInScope = typer0.context.enclosingContextChain exists (_.tree.isInstanceOf[ImplDef])
     if (isThisInScope) {
       val enclosingClasses = typer0.context.enclosingContextChain map (_.tree) collect { case classDef: ClassDef => classDef }
       val classInScope = enclosingClasses.headOption getOrElse EmptyTree

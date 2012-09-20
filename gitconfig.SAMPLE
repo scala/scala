@@ -1,0 +1,8 @@
+# With something like this in .git/config or ~/.gitconfig
+# you can diff class files and jar files.
+[diff "class"]
+  textconv = tools/class-dump
+  cachetextconv = true
+[diff "jar"]
+  textconv = tools/jar-dump
+  cachetextconv = true

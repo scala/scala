@@ -8,15 +8,11 @@
 
 package scala.concurrent.impl
 
-
-
-import java.util.concurrent.TimeUnit.NANOSECONDS
 import scala.concurrent.{ ExecutionContext, CanAwait, OnCompleteRunnable, TimeoutException, ExecutionException }
-import scala.concurrent.util.{ Duration, Deadline, FiniteDuration }
+import scala.concurrent.duration.{ Duration, Deadline, FiniteDuration, NANOSECONDS }
 import scala.annotation.tailrec
 import scala.util.control.NonFatal
 import scala.util.{ Try, Success, Failure }
-
 
 private[concurrent] trait Promise[T] extends scala.concurrent.Promise[T] with scala.concurrent.Future[T] {
   def future: this.type = this
@@ -48,7 +44,7 @@ private[concurrent] object Promise {
     case Failure(t) => resolver(t)
     case _          => source
   }
-  
+
   private def resolver[T](throwable: Throwable): Try[T] = throwable match {
     case t: scala.runtime.NonLocalReturnControl[_] => Success(t.value.asInstanceOf[T])
     case t: scala.util.control.ControlThrowable    => Failure(new ExecutionException("Boxed ControlThrowable", t))
@@ -56,12 +52,12 @@ private[concurrent] object Promise {
     case e: Error                                  => Failure(new ExecutionException("Boxed Error", e))
     case t                                         => Failure(t)
   }
-  
+
   /** Default promise implementation.
    */
   class DefaultPromise[T] extends AbstractPromise with Promise[T] { self =>
     updateState(null, Nil) // Start at "No callbacks"
-    
+
     protected final def tryAwait(atMost: Duration): Boolean = {
       @tailrec
       def awaitUnsafe(deadline: Deadline, nextWait: FiniteDuration): Boolean = {

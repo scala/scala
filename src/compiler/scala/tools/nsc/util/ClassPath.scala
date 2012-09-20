@@ -160,9 +160,9 @@ object ClassPath {
     override def isValidName(name: String) = !isTraitImplementation(name)
   }
 
-  @inline private def endsClass(s: String) = s.length > 6 && s.substring(s.length - 6) == ".class"
-  @inline private def endsScala(s: String) = s.length > 6 && s.substring(s.length - 6) == ".scala"
-  @inline private def endsJava(s: String)  = s.length > 5 && s.substring(s.length - 5) == ".java"
+  private def endsClass(s: String) = s.length > 6 && s.substring(s.length - 6) == ".class"
+  private def endsScala(s: String) = s.length > 6 && s.substring(s.length - 6) == ".scala"
+  private def endsJava(s: String)  = s.length > 5 && s.substring(s.length - 5) == ".java"
 
   /** From the source file to its identifier.
    */
