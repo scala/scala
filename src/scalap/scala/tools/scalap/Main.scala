@@ -97,9 +97,14 @@ class Main {
    */
   def process(args: Arguments, path: ClassPath[AbstractFile])(classname: String): Unit = {
     // find the classfile
-    val encName = NameTransformer.encode(
-      if (classname == "scala.AnyRef") "java.lang.Object"
-      else classname)
+    val encName = classname match {
+      case "scala.AnyRef" => "java.lang.Object"
+      case _ =>
+        // we have to encode every fragment of a name separately, otherwise the NameTransformer
+        // will encode using unicode escaping dot separators as well
+        // we can afford allocations because this is not a performance critical code
+        classname.split('.').map(NameTransformer.encode).mkString(".")
+    }
     val cls = path.findClass(encName)
     if (cls.isDefined && cls.get.binary.isDefined) {
       val cfile = cls.get.binary.get
