@@ -1,0 +1,7 @@
+t6337.scala:10: error: value class may not wrap another user-defined value class
+class X[T](val i: XX[T]) extends AnyVal
+               ^
+t6337.scala:20: error: value class may not wrap another user-defined value class
+class X1[T](val i: XX1[T]) extends AnyVal
+                ^
+two errors found
