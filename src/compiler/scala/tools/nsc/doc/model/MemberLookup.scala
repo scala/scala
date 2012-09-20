@@ -35,7 +35,16 @@ trait MemberLookup {
 
     // (3) Look at external links
     if (linkTo.isEmpty) {
-      // TODO: IF THIS IS THE ROOT PACKAGE, LOOK AT EXTERNAL LINKS
+      val name = members.mkString(".")
+      try {
+        // Only create a link if the class with the specified name is found. so a template
+        // is really created in some project.
+        rootMirror.getClass(name: TypeName)
+        for (link <- findExternalLink(name))
+          linkTo ::= link
+      } catch {
+        case _: MissingRequirementError =>
+      }
     }
 
     // (4) if we still haven't found anything, create a tooltip, if we found too many, report

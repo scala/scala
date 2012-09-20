@@ -138,7 +138,8 @@ abstract class HtmlPage extends Page { thisPage =>
         <span class="extmbr" name={ mbr.qualifiedName }>{ inlineToHtml(text) }</span>
     case Tooltip(tooltip) =>
       <span class="extype" name={ tooltip }>{ inlineToHtml(text) }</span>
-    // TODO: add case LinkToExternal here
+    case LinkToExternal(name, url) =>
+      <a href={ url } class="extype" name={ name }>{ inlineToHtml(text) }</a>
     case NoLink =>
       inlineToHtml(text)
   }
