@@ -3,7 +3,7 @@ package scala.actors.migration
 import scala.actors._
 import scala.actors.Actor._
 import scala.collection._
-import scala.concurrent.util.Duration
+import scala.concurrent.duration.Duration
 import java.util.concurrent.TimeUnit
 import scala.language.implicitConversions
 

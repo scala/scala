@@ -272,9 +272,6 @@ abstract class TreeGen extends macros.TreeBuilder {
   def mkOr(tree1: Tree, tree2: Tree): Tree =
     Apply(Select(tree1, Boolean_or), List(tree2))
 
-  def mkBasisUniverseRef: Tree =
-    mkAttributedRef(ReflectBasis) setType singleType(ReflectBasis.owner.thisPrefix, ReflectBasis)
-
   def mkRuntimeUniverseRef: Tree = {
     assert(ReflectRuntimeUniverse != NoSymbol)
     mkAttributedRef(ReflectRuntimeUniverse) setType singleType(ReflectRuntimeUniverse.owner.thisPrefix, ReflectRuntimeUniverse)

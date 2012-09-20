@@ -4,7 +4,7 @@ import scala.{specialized => spec}
 
 import language.experimental.macros
 
-import scala.reflect.{ClassTag, TypeTag}
+import scala.reflect.ClassTag
 import scala.reflect.macros.Context
 
 object Macros {

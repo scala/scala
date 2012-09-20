@@ -834,7 +834,6 @@ trait ContextErrors {
       }
 
       // side-effect on the tree, break the overloaded type cycle in infer
-      @inline
       private def setErrorOnLastTry(lastTry: Boolean, tree: Tree) = if (lastTry) setError(tree)
       
       def NoBestMethodAlternativeError(tree: Tree, argtpes: List[Type], pt: Type, lastTry: Boolean) = {

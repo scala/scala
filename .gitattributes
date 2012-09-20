@@ -1,0 +1,26 @@
+# These files are text and should be normalized (convert crlf => lf)
+*.c       text
+*.check   text
+*.css     text
+*.html    text
+*.java    text
+*.js      text
+*.sbt     text
+*.scala   text
+*.sh      text
+*.txt     text
+*.xml     text
+
+# Windows-specific files get windows endings
+*.bat     eol=crlf
+*.cmd     eol=crlf
+*-windows.tmpl eol=crlf
+
+# Some binary file types for completeness
+# (binary is a macro for -text -diff)
+*.dll     binary
+*.gif     binary
+*.jpg     binary
+*.png     binary
+*.class   -text diff=class
+*.jar     -text diff=jar

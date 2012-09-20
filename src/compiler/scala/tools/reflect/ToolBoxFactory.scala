@@ -14,7 +14,6 @@ import java.lang.{Class => jClass}
 import scala.compat.Platform.EOL
 import scala.reflect.NameTransformer
 import scala.reflect.api.JavaUniverse
-import scala.reflect.base.MirrorOf
 
 abstract class ToolBoxFactory[U <: JavaUniverse](val u: U) { factorySelf =>
 
@@ -70,6 +69,14 @@ abstract class ToolBoxFactory[U <: JavaUniverse](val u: U) { factorySelf =>
         }
       }
 
+      def wrapIntoTerm(tree: Tree): Tree =
+        if (!tree.isTerm) Block(List(tree), Literal(Constant(()))) else tree
+
+      def unwrapFromTerm(tree: Tree): Tree = tree match {
+        case Block(List(tree), Literal(Constant(()))) => tree
+        case tree => tree
+      }
+
       def extractFreeTerms(expr0: Tree, wrapFreeTermRefs: Boolean): (Tree, scala.collection.mutable.LinkedHashMap[FreeTermSymbol, TermName]) = {
         val freeTerms = expr0.freeTerms
         val freeTermNames = scala.collection.mutable.LinkedHashMap[FreeTermSymbol, TermName]()
@@ -102,7 +109,7 @@ abstract class ToolBoxFactory[U <: JavaUniverse](val u: U) { factorySelf =>
         // need to wrap the expr, because otherwise you won't be able to typecheck macros against something that contains free vars
         var (expr, freeTerms) = extractFreeTerms(expr0, wrapFreeTermRefs = false)
         val dummies = freeTerms.map{ case (freeTerm, name) => ValDef(NoMods, name, TypeTree(freeTerm.info), Select(Ident(PredefModule), newTermName("$qmark$qmark$qmark"))) }.toList
-        expr = Block(dummies, expr)
+        expr = Block(dummies, wrapIntoTerm(expr))
 
         // [Eugene] how can we implement that?
         // !!! Why is this is in the empty package? If it's only to make
@@ -111,7 +118,7 @@ abstract class ToolBoxFactory[U <: JavaUniverse](val u: U) { factorySelf =>
         val ownerClass    = rootMirror.EmptyPackageClass.newClassSymbol(newTypeName("<expression-owner>"))
         build.setTypeSignature(ownerClass, ClassInfoType(List(ObjectClass.tpe), newScope, ownerClass))
         val owner         = ownerClass.newLocalDummy(expr.pos)
-        var currentTyper  = typer.atOwner(expr, owner)
+        var currentTyper  = analyzer.newTyper(analyzer.rootContext(NoCompilationUnit, EmptyTree).make(expr, owner))
         val wrapper1      = if (!withImplicitViewsDisabled) (currentTyper.context.withImplicitsEnabled[Tree] _) else (currentTyper.context.withImplicitsDisabled[Tree] _)
         val wrapper2      = if (!withMacrosDisabled) (currentTyper.context.withMacrosEnabled[Tree] _) else (currentTyper.context.withMacrosDisabled[Tree] _)
         def wrapper       (tree: => Tree) = wrapper1(wrapper2(tree))
@@ -137,6 +144,7 @@ abstract class ToolBoxFactory[U <: JavaUniverse](val u: U) { factorySelf =>
             }
         }.transform(unwrapped)
         new TreeTypeSubstituter(dummies1 map (_.symbol), dummies1 map (dummy => SingleType(NoPrefix, invertedIndex(dummy.symbol.name)))).traverse(unwrapped)
+        unwrapped = if (expr0.isTerm) unwrapped else unwrapFromTerm(unwrapped)
         unwrapped
       }
 
@@ -170,7 +178,9 @@ abstract class ToolBoxFactory[U <: JavaUniverse](val u: U) { factorySelf =>
             }
           })
 
-      def compile(expr: Tree): () => Any = {
+      def compile(expr0: Tree): () => Any = {
+        val expr = wrapIntoTerm(expr0)
+
         val freeTerms = expr.freeTerms // need to calculate them here, because later on they will be erased
         val thunks = freeTerms map (fte => () => fte.value) // need to be lazy in order not to distort evaluation order
         verify(expr)

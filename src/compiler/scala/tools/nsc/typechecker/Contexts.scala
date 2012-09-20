@@ -487,7 +487,7 @@ trait Contexts { self: Analyzer =>
       lastAccessCheckDetails = ""
       // Console.println("isAccessible(%s, %s, %s)".format(sym, pre, superAccess))
 
-      @inline def accessWithinLinked(ab: Symbol) = {
+      def accessWithinLinked(ab: Symbol) = {
         val linked = ab.linkedClassOfClass
         // don't have access if there is no linked class
         // (before adding the `ne NoSymbol` check, this was a no-op when linked eq NoSymbol,

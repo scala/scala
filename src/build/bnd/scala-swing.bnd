@@ -1,0 +1,5 @@
+Bundle-Name: Scala Swing
+Bundle-SymbolicName: org.scala-lang.scala-swing
+ver: @VERSION@
+Bundle-Version: ${ver}
+Export-Package: *;version=${ver}

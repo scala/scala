@@ -10,7 +10,7 @@ import scala.concurrent.{
 }
 import scala.concurrent.{ future, promise, blocking }
 import scala.util.{ Try, Success, Failure }
-import scala.concurrent.util.Duration
+import scala.concurrent.duration.Duration
 import scala.reflect.{ classTag, ClassTag }
 import scala.tools.partest.TestUtil.intercept
 

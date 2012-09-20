@@ -2,7 +2,7 @@ package a {
   case class Meter(underlying: Double) extends AnyVal with _root_.b.Printable {
     def + (other: Meter): Meter =
       new Meter(this.underlying + other.underlying)
-    def / (other: Meter): Double = this.underlying / other.underlying
+    def / (other: Meter)(implicit dummy: Meter.MeterArg = null): Double = this.underlying / other.underlying
     def / (factor: Double): Meter = new Meter(this.underlying / factor)
     def < (other: Meter): Boolean = this.underlying < other.underlying
     def toFoot: Foot = new Foot(this.underlying * 0.3048)
@@ -10,6 +10,8 @@ package a {
   }
 
   object Meter extends (Double => Meter) {
+
+    private[a] trait MeterArg
 
     implicit val boxings = new BoxingConversions[Meter, Double] {
       def box(x: Double) = new Meter(x)
@@ -77,7 +79,7 @@ object Test extends App {
     println(m)
     foo(arr)
   }
-  // 
+  //
   // { println("testing wrapped arrays")
   //   import collection.mutable.FlatArray
   //   val arr = FlatArray(x, y + x)

@@ -3,7 +3,7 @@
 
 import scala.collection._
 import scala.concurrent._
-import scala.concurrent.util.Duration
+import scala.concurrent.duration.Duration
 import java.util.concurrent.{ TimeoutException, CountDownLatch, TimeUnit }
 
 

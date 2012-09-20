@@ -229,11 +229,9 @@ abstract class GenASM extends SubComponent with BytecodeWriters {
     binarynme.RuntimeNull.toString()    -> RuntimeNullClass
   )
 
-  private def mkFlags(args: Int*) = args.foldLeft(0)(_ | _)
-
-  @inline final private def hasPublicBitSet(flags: Int) = ((flags & asm.Opcodes.ACC_PUBLIC) != 0)
-
-  @inline final private def isRemote(s: Symbol) = (s hasAnnotation RemoteAttr)
+  private def mkFlags(args: Int*)         = args.foldLeft(0)(_ | _)
+  private def hasPublicBitSet(flags: Int) = (flags & asm.Opcodes.ACC_PUBLIC) != 0
+  private def isRemote(s: Symbol)         = s hasAnnotation RemoteAttr
 
   /**
    * Return the Java modifiers for the given symbol.
@@ -386,8 +384,7 @@ abstract class GenASM extends SubComponent with BytecodeWriters {
     fcs
   }
 
-  @inline final private def jvmWiseLUB(a: Symbol, b: Symbol): Symbol = {
-
+  private def jvmWiseLUB(a: Symbol, b: Symbol): Symbol = {
     assert(a.isClass)
     assert(b.isClass)
 
@@ -1544,7 +1541,7 @@ abstract class GenASM extends SubComponent with BytecodeWriters {
     var jmethod: asm.MethodVisitor = _
     var jMethodName: String = _
 
-    @inline final def emit(opc: Int) { jmethod.visitInsn(opc) }
+    final def emit(opc: Int) { jmethod.visitInsn(opc) }
 
     def genMethod(m: IMethod, isJInterface: Boolean) {
 
@@ -1781,7 +1778,7 @@ abstract class GenASM extends SubComponent with BytecodeWriters {
         else             { jmethod.visitLdcInsn(cst) }
       }
 
-      @inline final def boolconst(b: Boolean) { iconst(if(b) 1 else 0) }
+      final def boolconst(b: Boolean) { iconst(if(b) 1 else 0) }
 
       def iconst(cst: Int) {
         if (cst >= -1 && cst <= 5) {
@@ -1847,44 +1844,44 @@ abstract class GenASM extends SubComponent with BytecodeWriters {
       }
 
 
-      @inline def load( idx: Int, tk: TypeKind) { emitVarInsn(Opcodes.ILOAD,  idx, tk) }
-      @inline def store(idx: Int, tk: TypeKind) { emitVarInsn(Opcodes.ISTORE, idx, tk) }
+      def load( idx: Int, tk: TypeKind) { emitVarInsn(Opcodes.ILOAD,  idx, tk) }
+      def store(idx: Int, tk: TypeKind) { emitVarInsn(Opcodes.ISTORE, idx, tk) }
 
-      @inline def aload( tk: TypeKind) { emitTypeBased(aloadOpcodes,  tk) }
-      @inline def astore(tk: TypeKind) { emitTypeBased(astoreOpcodes, tk) }
+      def aload( tk: TypeKind) { emitTypeBased(aloadOpcodes,  tk) }
+      def astore(tk: TypeKind) { emitTypeBased(astoreOpcodes, tk) }
 
-      @inline def neg(tk: TypeKind) { emitPrimitive(negOpcodes, tk) }
-      @inline def add(tk: TypeKind) { emitPrimitive(addOpcodes, tk) }
-      @inline def sub(tk: TypeKind) { emitPrimitive(subOpcodes, tk) }
-      @inline def mul(tk: TypeKind) { emitPrimitive(mulOpcodes, tk) }
-      @inline def div(tk: TypeKind) { emitPrimitive(divOpcodes, tk) }
-      @inline def rem(tk: TypeKind) { emitPrimitive(remOpcodes, tk) }
+      def neg(tk: TypeKind) { emitPrimitive(negOpcodes, tk) }
+      def add(tk: TypeKind) { emitPrimitive(addOpcodes, tk) }
+      def sub(tk: TypeKind) { emitPrimitive(subOpcodes, tk) }
+      def mul(tk: TypeKind) { emitPrimitive(mulOpcodes, tk) }
+      def div(tk: TypeKind) { emitPrimitive(divOpcodes, tk) }
+      def rem(tk: TypeKind) { emitPrimitive(remOpcodes, tk) }
 
-      @inline def invokespecial(owner: String, name: String, desc: String) {
+      def invokespecial(owner: String, name: String, desc: String) {
         jmethod.visitMethodInsn(Opcodes.INVOKESPECIAL, owner, name, desc)
       }
-      @inline def invokestatic(owner: String, name: String, desc: String) {
+      def invokestatic(owner: String, name: String, desc: String) {
         jmethod.visitMethodInsn(Opcodes.INVOKESTATIC, owner, name, desc)
       }
-      @inline def invokeinterface(owner: String, name: String, desc: String) {
+      def invokeinterface(owner: String, name: String, desc: String) {
         jmethod.visitMethodInsn(Opcodes.INVOKEINTERFACE, owner, name, desc)
       }
-      @inline def invokevirtual(owner: String, name: String, desc: String) {
+      def invokevirtual(owner: String, name: String, desc: String) {
         jmethod.visitMethodInsn(Opcodes.INVOKEVIRTUAL, owner, name, desc)
       }
 
-      @inline def goTo(label: asm.Label) { jmethod.visitJumpInsn(Opcodes.GOTO, label) }
-      @inline def emitIF(cond: TestOp, label: asm.Label)      { jmethod.visitJumpInsn(cond.opcodeIF,     label) }
-      @inline def emitIF_ICMP(cond: TestOp, label: asm.Label) { jmethod.visitJumpInsn(cond.opcodeIFICMP, label) }
-      @inline def emitIF_ACMP(cond: TestOp, label: asm.Label) {
+      def goTo(label: asm.Label) { jmethod.visitJumpInsn(Opcodes.GOTO, label) }
+      def emitIF(cond: TestOp, label: asm.Label)      { jmethod.visitJumpInsn(cond.opcodeIF,     label) }
+      def emitIF_ICMP(cond: TestOp, label: asm.Label) { jmethod.visitJumpInsn(cond.opcodeIFICMP, label) }
+      def emitIF_ACMP(cond: TestOp, label: asm.Label) {
         assert((cond == EQ) || (cond == NE), cond)
         val opc = (if(cond == EQ) Opcodes.IF_ACMPEQ else Opcodes.IF_ACMPNE)
         jmethod.visitJumpInsn(opc, label)
       }
-      @inline def emitIFNONNULL(label: asm.Label) { jmethod.visitJumpInsn(Opcodes.IFNONNULL, label) }
-      @inline def emitIFNULL   (label: asm.Label) { jmethod.visitJumpInsn(Opcodes.IFNULL,    label) }
+      def emitIFNONNULL(label: asm.Label) { jmethod.visitJumpInsn(Opcodes.IFNONNULL, label) }
+      def emitIFNULL   (label: asm.Label) { jmethod.visitJumpInsn(Opcodes.IFNULL,    label) }
 
-      @inline def emitRETURN(tk: TypeKind) {
+      def emitRETURN(tk: TypeKind) {
         if(tk == UNIT) { jmethod.visitInsn(Opcodes.RETURN) }
         else           { emitTypeBased(returnOpcodes, tk)      }
       }
@@ -2161,8 +2158,8 @@ abstract class GenASM extends SubComponent with BytecodeWriters {
         case class LocVarEntry(local: Local, start: asm.Label, end: asm.Label) // start is inclusive while end exclusive.
 
         case class Interval(lstart: asm.Label, lend: asm.Label) {
-          @inline final def start = lstart.getOffset
-          @inline final def end   = lend.getOffset
+          final def start = lstart.getOffset
+          final def end   = lend.getOffset
 
           def precedes(that: Interval): Boolean = { this.end < that.start }
 
@@ -2952,7 +2949,7 @@ abstract class GenASM extends SubComponent with BytecodeWriters {
     //   indexOf(local)
     // }
 
-    @inline final def indexOf(local: Local): Int = {
+    final def indexOf(local: Local): Int = {
       assert(local.index >= 0, "Invalid index for: " + local + "{" + local.## + "}: ")
       local.index
     }

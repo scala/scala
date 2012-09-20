@@ -14,12 +14,12 @@ trait Extractors {
   //   val $u: reflect.runtime.universe.type = scala.reflect.runtime.`package`.universe;
   //   val $m: $u.Mirror = $u.runtimeMirror(Test.this.getClass().getClassLoader());
   //   $u.Expr[List[Int]]($m, {
-  //     final class $treecreator1 extends scala.reflect.base.TreeCreator {
+  //     final class $treecreator1 extends scala.reflect.api.TreeCreator {
   //       def <init>(): $treecreator1 = {
   //         $treecreator1.super.<init>();
   //         ()
   //       };
-  //       def apply[U >: Nothing <: scala.reflect.base.Universe with Singleton]($m$untyped: scala.reflect.base.MirrorOf[U]): U#Tree = {
+  //       def apply[U >: Nothing <: scala.reflect.api.Universe with Singleton]($m$untyped: scala.reflect.api.MirrorOf[U]): U#Tree = {
   //         val $u: U = $m$untyped.universe;
   //         val $m: $u.Mirror = $m$untyped.asInstanceOf[$u.Mirror];
   //         $u.Apply($u.Select($u.Select($u.build.This($m.staticPackage("scala.collection.immutable").moduleClass), $u.newTermName("List")), $u.newTermName("apply")), List($u.Literal($u.Constant(1)), $u.Literal($u.Constant(2))))
@@ -27,12 +27,12 @@ trait Extractors {
   //     };
   //     new $treecreator1()
   //   })($u.TypeTag[List[Int]]($m, {
-  //     final class $typecreator1 extends scala.reflect.base.TypeCreator {
+  //     final class $typecreator1 extends scala.reflect.api.TypeCreator {
   //       def <init>(): $typecreator1 = {
   //         $typecreator1.super.<init>();
   //         ()
   //       };
-  //       def apply[U >: Nothing <: scala.reflect.base.Universe with Singleton]($m$untyped: scala.reflect.base.MirrorOf[U]): U#Type = {
+  //       def apply[U >: Nothing <: scala.reflect.api.Universe with Singleton]($m$untyped: scala.reflect.api.MirrorOf[U]): U#Type = {
   //         val $u: U = $m$untyped.universe;
   //         val $m: $u.Mirror = $m$untyped.asInstanceOf[$u.Mirror];
   //         $u.TypeRef($u.ThisType($m.staticPackage("scala.collection.immutable").moduleClass), $m.staticClass("scala.collection.immutable.List"), List($m.staticClass("scala.Int").toTypeConstructor))
@@ -45,8 +45,8 @@ trait Extractors {
   private def mkCreator(flavor: TypeName, symtab: SymbolTable, rtree: Tree): Tree = {
     val tparamu = newTypeName("U")
     val (reifierBase, reifierName, reifierTpt, reifierUniverse) = flavor match {
-      case tpnme.REIFY_TYPECREATOR_PREFIX => (TypeCreatorClass, nme.apply, SelectFromTypeTree(Ident(tparamu), tpnme.Type), BaseUniverseClass)
-      case tpnme.REIFY_TREECREATOR_PREFIX => (TreeCreatorClass, nme.apply, SelectFromTypeTree(Ident(tparamu), tpnme.Tree), BaseUniverseClass)
+      case tpnme.REIFY_TYPECREATOR_PREFIX => (TypeCreatorClass, nme.apply, SelectFromTypeTree(Ident(tparamu), tpnme.Type), ApiUniverseClass)
+      case tpnme.REIFY_TREECREATOR_PREFIX => (TreeCreatorClass, nme.apply, SelectFromTypeTree(Ident(tparamu), tpnme.Tree), ApiUniverseClass)
       case _ => throw new Error(s"unexpected flavor $flavor")
     }
     val reifierBody = {

@@ -250,15 +250,15 @@ class Settings(error: String => Unit, val printMsg: String => Unit = println(_))
      *  the function result should be a humanly-understandable description of the type class
      */
     val knownTypeClasses: Map[String, String => String] = Map() +
-      ("scala.math.Numeric"                  -> ((tparam: String) => tparam + " is a numeric class, such as Int, Long, Float or Double")) +
-      ("scala.math.Integral"                 -> ((tparam: String) => tparam + " is an integral numeric class, such as Int or Long")) +
-      ("scala.math.Fractional"               -> ((tparam: String) => tparam + " is a fractional numeric class, such as Float or Double")) +
-      ("scala.reflect.Manifest"              -> ((tparam: String) => tparam + " is accompanied by a Manifest, which is a runtime representation of its type that survives erasure")) +
-      ("scala.reflect.ClassManifest"         -> ((tparam: String) => tparam + " is accompanied by a ClassManifest, which is a runtime representation of its type that survives erasure")) +
-      ("scala.reflect.OptManifest"           -> ((tparam: String) => tparam + " is accompanied by an OptManifest, which can be either a runtime representation of its type or the NoManifest, which means the runtime type is not available")) +
-      ("scala.reflect.ClassTag"              -> ((tparam: String) => tparam + " is accompanied by a ClassTag, which is a runtime representation of its type that survives erasure")) +
-      ("scala.reflect.WeakTypeTag"            -> ((tparam: String) => tparam + " is accompanied by an WeakTypeTag, which is a runtime representation of its type that survives erasure")) +
-      ("scala.reflect.base.TypeTags.TypeTag" -> ((tparam: String) => tparam + " is accompanied by a TypeTag, which is a runtime representation of its type that survives erasure"))
+      ("scala.math.Numeric"                     -> ((tparam: String) => tparam + " is a numeric class, such as Int, Long, Float or Double")) +
+      ("scala.math.Integral"                    -> ((tparam: String) => tparam + " is an integral numeric class, such as Int or Long")) +
+      ("scala.math.Fractional"                  -> ((tparam: String) => tparam + " is a fractional numeric class, such as Float or Double")) +
+      ("scala.reflect.Manifest"                 -> ((tparam: String) => tparam + " is accompanied by a Manifest, which is a runtime representation of its type that survives erasure")) +
+      ("scala.reflect.ClassManifest"            -> ((tparam: String) => tparam + " is accompanied by a ClassManifest, which is a runtime representation of its type that survives erasure")) +
+      ("scala.reflect.OptManifest"              -> ((tparam: String) => tparam + " is accompanied by an OptManifest, which can be either a runtime representation of its type or the NoManifest, which means the runtime type is not available")) +
+      ("scala.reflect.ClassTag"                 -> ((tparam: String) => tparam + " is accompanied by a ClassTag, which is a runtime representation of its type that survives erasure")) +
+      ("scala.reflect.api.TypeTags.WeakTypeTag" -> ((tparam: String) => tparam + " is accompanied by an WeakTypeTag, which is a runtime representation of its type that survives erasure")) +
+      ("scala.reflect.api.TypeTags.TypeTag"     -> ((tparam: String) => tparam + " is accompanied by a TypeTag, which is a runtime representation of its type that survives erasure"))
 
     /**
      * Set of classes to exclude from index and diagrams

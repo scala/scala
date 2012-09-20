@@ -1,0 +1,5 @@
+Bundle-Name: Scala Actors Migration
+Bundle-SymbolicName: org.scala-lang.scala-actors-migration
+ver: @VERSION@
+Bundle-Version: ${ver}
+Export-Package: *;version=${ver}

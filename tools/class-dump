@@ -1,0 +1,6 @@
+#!/bin/sh
+#
+
+JAVAP_OPTS="-private"
+
+[[ -n "$1" ]] && ( cd "$(dirname "$1")" && javap $JAVAP_OPTS "$(basename "${1%%.class}")" )
