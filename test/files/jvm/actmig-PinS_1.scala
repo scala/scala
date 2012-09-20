@@ -1,5 +1,5 @@
 import scala.actors._
-import scala.concurrent.util.duration._
+import scala.concurrent.duration._
 import scala.concurrent.{ Promise, Await }
 
 object SillyActor {
