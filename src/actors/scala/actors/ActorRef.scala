@@ -2,6 +2,8 @@ package scala.actors
 
 import java.util.concurrent.TimeoutException
 import scala.concurrent.util.Duration
+import scala.concurrent.Promise
+import scala.concurrent.ExecutionContext.Implicits.global
 
 /**
  * Trait used for migration of Scala actors to Akka.
@@ -90,10 +92,14 @@ private[actors] final class InternalActorRef(override val actor: InternalActor) 
    */
   override private[actors] def ?(message: Any, timeout: Duration): scala.concurrent.Future[Any] = {
     val dur = if (timeout.isFinite()) timeout.toMillis else (java.lang.Long.MAX_VALUE >> 2)
-    val replyPromise = scala.concurrent.Promise[Any]
-    val scalaFut = actor !? (dur, message) match {
-      case Some(x) => replyPromise success x
-      case None => replyPromise failure new AskTimeoutException("? operation timed out.")
+    val replyPromise = Promise[Any]
+    scala.concurrent.future {
+      scala.concurrent.blocking {
+        actor !? (dur, message)
+      } match {
+        case Some(x) => replyPromise success x
+        case None => replyPromise failure new AskTimeoutException("? operation timed out.")
+      }
     }
     replyPromise.future
   }

@@ -6,7 +6,7 @@ import scala.language.implicitConversions
 
 object pattern {
 
-  implicit def askSupport(ar: ActorRef): AskableActorRef =
+  implicit def ask(ar: ActorRef): AskableActorRef =
     new AskableActorRef(ar)
 }
 
