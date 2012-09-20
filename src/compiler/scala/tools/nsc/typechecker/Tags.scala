@@ -59,11 +59,14 @@ trait Tags {
      *           EmptyTree if `concrete` is true and the result contains unresolved (i.e. not spliced) type parameters and abstract type members.
      *           EmptyTree if `allowMaterialization` is false, and there is no array tag in scope.
      */
-    def resolveTypeTag(pos: Position, pre: Type, tp: Type, concrete: Boolean, allowMaterialization: Boolean = true): Tree = {
-      val tagSym = if (concrete) TypeTagClass else WeakTypeTagClass
-      val tagTp =  if (pre == NoType) TypeRef(ApiUniverseClass.toTypeConstructor, tagSym, List(tp)) else singleType(pre, pre member tagSym.name)
-      val taggedTp = appliedType(tagTp, List(tp))
-      resolveTag(pos, taggedTp, allowMaterialization)
-    }
+    def resolveTypeTag(pos: Position, pre: Type, tp: Type, concrete: Boolean, allowMaterialization: Boolean = true): Tree =
+      // if someone requests a type tag, but scala-reflect.jar isn't on the library classpath, then bail
+      if (pre == NoType && ApiUniverseClass == NoSymbol) EmptyTree
+      else {
+        val tagSym = if (concrete) TypeTagClass else WeakTypeTagClass
+        val tagTp =  if (pre == NoType) TypeRef(ApiUniverseClass.toTypeConstructor, tagSym, List(tp)) else singleType(pre, pre member tagSym.name)
+        val taggedTp = appliedType(tagTp, List(tp))
+        resolveTag(pos, taggedTp, allowMaterialization)
+      }
   }
 }
