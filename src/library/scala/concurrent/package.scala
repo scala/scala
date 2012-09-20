@@ -8,7 +8,7 @@
 
 package scala
 
-import scala.concurrent.util.Duration
+import scala.concurrent.duration.Duration
 import scala.annotation.implicitNotFound
 
 /** This package object contains primitives for concurrent and parallel programming.

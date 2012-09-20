@@ -3,7 +3,7 @@ import scala.actors.Actor._
 import scala.actors._
 import scala.util._
 import java.util.concurrent.{ TimeUnit, CountDownLatch }
-import scala.concurrent.util.Duration
+import scala.concurrent.duration.Duration
 import scala.actors.pattern._
 
 object Test {

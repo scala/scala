@@ -10,7 +10,7 @@ package scala.concurrent
 
 
 
-import scala.concurrent.util.Duration
+import scala.concurrent.duration.Duration
 
 
 
