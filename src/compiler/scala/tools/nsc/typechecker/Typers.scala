@@ -1197,7 +1197,7 @@ trait Typers extends Modes with Adaptations with Tags {
 
                 val found = tree.tpe
                 if (!found.isErroneous && !pt.isErroneous) {
-                  if (!context.reportErrors && isPastTyper) {
+                  if ((!context.reportErrors && isPastTyper) || tree.attachments.get[MacroExpansionAttachment].isDefined) {
                     val (bound, req) = pt match {
                       case ExistentialType(qs, tpe) => (qs, tpe)
                       case _ => (Nil, pt)
@@ -1229,6 +1229,17 @@ trait Typers extends Modes with Adaptations with Tags {
                       // to do this (I have already sunk 3 full days with in the end futile attempts
                       // to consistently transform skolems and fix 6029), I'd like to
                       // investigate ways to avoid skolems completely.
+                      //
+                      // upd. The same problem happens when we try to typecheck the result of macro expansion against its expected type
+                      // (which is the return type of the macro definition instantiated in the context of expandee):
+                      //
+                      //   Test.scala:2: error: type mismatch;
+                      //     found   : $u.Expr[Class[_ <: Object]]
+                      //     required: reflect.runtime.universe.Expr[Class[?0(in value <local Test>)]] where type ?0(in value <local Test>) <: Object
+                      //     scala.reflect.runtime.universe.reify(new Object().getClass)
+                      //                                         ^
+                      // Therefore following Martin's advice I use this logic to recover from skolem errors after macro expansions
+                      // (by adding the ` || tree.attachments.get[MacroExpansionAttachment].isDefined` clause to the conditional above).
                       //
                       log("recovering from existential or skolem type error in tree \n" + tree + "\nwith type " + tree.tpe + "\n expected type = " + pt + "\n context = " + context.tree)
                       return adapt(tree, mode, deriveTypeWithWildcards(boundOrSkolems)(pt))
