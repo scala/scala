@@ -14,7 +14,7 @@ trait Enclosures {
   // vals are eager to simplify debugging
   // after all we wouldn't save that much time by making them lazy
   val macroApplication: Tree                 = expandee
-  val enclosingClass: Tree                   = site.enclClass.tree
+  val enclosingClass: Tree                   = enclTrees collectFirst { case x: ImplDef => x } getOrElse EmptyTree
   val enclosingImplicits: List[(Type, Tree)] = site.openImplicits
   val enclosingMacros: List[Context]         = this :: universe.analyzer.openMacros // include self
   val enclosingMethod: Tree                  = site.enclMethod.tree
