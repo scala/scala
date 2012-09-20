@@ -1405,8 +1405,10 @@ trait Typers extends Modes with Adaptations with Tags {
           case List(acc) =>
             def isUnderlyingAcc(sym: Symbol) =
               sym == acc || acc.hasAccessorFlag && sym == acc.accessed
-          if (acc.accessBoundary(clazz) != rootMirror.RootClass)
+            if (acc.accessBoundary(clazz) != rootMirror.RootClass)
               unit.error(acc.pos, "value class needs to have a publicly accessible val parameter")
+            else if (acc.tpe.typeSymbol.isDerivedValueClass)
+              unit.error(acc.pos, "value class may not wrap another user-defined value class")
             for (stat <- body)
               if (!treeInfo.isAllowedInUniversalTrait(stat) && !isUnderlyingAcc(stat.symbol))
                 unit.error(stat.pos,
