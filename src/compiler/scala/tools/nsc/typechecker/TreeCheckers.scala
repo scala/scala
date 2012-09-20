@@ -242,7 +242,7 @@ abstract class TreeCheckers extends Analyzer {
               }
             }
           case ValDef(_, _, _, _) =>
-            if (sym.hasGetter && !sym.isOuterField) {
+            if (sym.hasGetter && !sym.isOuterField && !sym.isOuterAccessor) {
               assertFn(sym.getter(sym.owner) != NoSymbol, ownerstr(sym) + " has getter but cannot be found. " + sym.ownerChain)
             }
           case Apply(fn, args) =>
