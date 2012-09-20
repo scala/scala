@@ -1,10 +1,16 @@
+# fallback on built-in heuristics
+# this must be first so later entries will override it
+* text=auto
+
 # These files are text and should be normalized (convert crlf => lf)
 *.c       text
 *.check   text
 *.css     text
+*.flags   text
 *.html    text
 *.java    text
 *.js      text
+*.policy  text
 *.sbt     text
 *.scala   text
 *.sh      text
