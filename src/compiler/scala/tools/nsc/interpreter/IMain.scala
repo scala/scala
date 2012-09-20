@@ -262,7 +262,10 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
   protected def newCompiler(settings: Settings, reporter: Reporter): ReplGlobal = {
     settings.outputDirs setSingleOutput virtualDirectory
     settings.exposeEmptyPackage.value = true
-    new Global(settings, reporter) with ReplGlobal
+    if (settings.Yrangepos.value)
+      new Global(settings, reporter) with ReplGlobal with interactive.RangePositions
+    else
+      new Global(settings, reporter) with ReplGlobal
   }
 
   /** Parent classloader.  Overridable. */
