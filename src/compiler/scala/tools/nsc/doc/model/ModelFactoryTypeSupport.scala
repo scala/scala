@@ -30,7 +30,7 @@ trait ModelFactoryTypeSupport {
   import definitions.{ ObjectClass, NothingClass, AnyClass, AnyValClass, AnyRefClass }
   import rootMirror.{ RootPackage, RootClass, EmptyPackage }
 
-  protected var typeCache = new mutable.LinkedHashMap[Type, TypeEntity]
+  protected val typeCache = new mutable.LinkedHashMap[Type, TypeEntity]
 
   /** */
   def makeType(aType: Type, inTpl: TemplateImpl): TypeEntity = {
@@ -77,7 +77,8 @@ trait ModelFactoryTypeSupport {
           // ===> in such cases we have two options:
           // (0) if there's no inheritance taking place (Enum#Value) we can link to the template directly
           // (1) if we generate the doc template for Day, we can link to the correct member
-          // (2) if we don't generate the doc template, we should at least indicate the correct prefix in the tooltip
+          // (2) If the symbol comes from an external library for which we know the documentation URL, point to it.
+          // (3) if we don't generate the doc template, we should at least indicate the correct prefix in the tooltip
           val bSym = normalizeTemplate(aSym)
           val owner =
             if ((preSym != NoSymbol) &&                  /* it needs a prefix */
@@ -87,20 +88,27 @@ trait ModelFactoryTypeSupport {
             else
               bSym.owner
 
-          val bTpl = findTemplateMaybe(bSym)
           val link =
-            if (owner == bSym.owner && bTpl.isDefined)
-              // (0) the owner's class is linked AND has a template - lovely
-              LinkToTpl(bTpl.get)
-            else {
-              val oTpl = findTemplateMaybe(owner)
-              val bMbr = oTpl.map(findMember(bSym, _))
-              if (oTpl.isDefined && bMbr.isDefined && bMbr.get.isDefined)
-                // (1) the owner's class
-                LinkToMember(bMbr.get.get, oTpl.get) //ugh
-              else
-                // (2) if we still couldn't find the owner, show a tooltip with the qualified name
-                Tooltip(makeQualifiedName(bSym))
+            findTemplateMaybe(bSym) match {
+              case Some(bTpl) if owner == bSym.owner =>
+                // (0) the owner's class is linked AND has a template - lovely
+                LinkToTpl(bTpl)
+              case _ =>
+                val oTpl = findTemplateMaybe(owner)
+                (oTpl, oTpl flatMap (findMember(bSym, _))) match {
+                  case (Some(oTpl), Some(bMbr)) =>
+                    // (1) the owner's class
+                    LinkToMember(bMbr, oTpl)
+                  case _ =>
+                    val name = makeQualifiedName(bSym)
+                    if (!bSym.owner.isPackage)
+                      Tooltip(name)
+                    else
+                      findExternalLink(name).getOrElse (
+                        // (3) if we couldn't find neither the owner nor external URL to link to, show a tooltip with the qualified name
+                        Tooltip(name)
+                      )
+                }
             }
 
           // SI-4360 Showing prefixes when necessary
@@ -308,16 +316,8 @@ trait ModelFactoryTypeSupport {
 
     // SI-4360: Entity caching depends on both the type AND the template it's in, as the prefixes might change for the
     // same type based on the template the type is shown in.
-    if (settings.docNoPrefixes.value) {
-      val cached = typeCache.get(aType)
-      cached match {
-        case Some(typeEntity) =>
-          typeEntity
-        case None =>
-          val typeEntity = createTypeEntity
-          typeCache += aType -> typeEntity
-          typeEntity
-      }
-    } else createTypeEntity
+    if (settings.docNoPrefixes.value)
+      typeCache.getOrElseUpdate(aType, createTypeEntity)
+    else createTypeEntity
   }
 }

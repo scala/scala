@@ -1067,5 +1067,12 @@ class ModelFactory(val global: Global, val settings: doc.Settings) {
     (settings.docExpandAllTypes.value && (bSym.sourceFile != null)) ||
     { val rawComment = global.expandedDocComment(bSym, inTpl.sym)
       rawComment.contains("@template") || rawComment.contains("@documentable") }
+
+  def findExternalLink(name: String): Option[LinkTo] =
+    settings.extUrlMapping find {
+      case (pkg, _) => name startsWith pkg
+    } map {
+      case (_, url) => LinkToExternal(name, url + "#" + name)
+    }
 }
 
