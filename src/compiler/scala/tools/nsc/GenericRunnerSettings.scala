@@ -39,7 +39,4 @@ class GenericRunnerSettings(error: String => Unit) extends Settings(error) {
   val nc = BooleanSetting(
       "-nc",
       "do not use the fsc compilation daemon") withAbbreviation "-nocompdaemon"
-
-  @deprecated("Use `nc` instead", "2.9.0") def nocompdaemon = nc
-  @deprecated("Use `save` instead", "2.9.0") def savecompiled = save
 }

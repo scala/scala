@@ -1743,12 +1743,9 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
   // deprecated method: but I see no simple way out, so I leave it for now.
   def forJVM           = settings.target.value startsWith "jvm"
   override def forMSIL = settings.target.value startsWith "msil"
-  def forInteractive   = onlyPresentation
-  def forScaladoc      = onlyPresentation
+  def forInteractive   = false
+  def forScaladoc      = false
   def createJavadoc    = false
-
-  @deprecated("Use forInteractive or forScaladoc, depending on what you're after", "2.9.0")
-  def onlyPresentation = false
 }
 
 object Global {
