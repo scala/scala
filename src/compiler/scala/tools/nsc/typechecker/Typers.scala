@@ -1425,9 +1425,6 @@ trait Typers extends Modes with Adaptations with Tags {
             //see https://issues.scala-lang.org/browse/SI-6463
             case _: ClassDef =>
               implRestriction(tree, "nested class")
-            case x: ValDef if x.mods.isLazy =>
-              //see https://issues.scala-lang.org/browse/SI-6358
-              implRestriction(tree, "lazy val")
             case _ =>
           }
           super.traverse(tree)
@@ -1907,7 +1904,7 @@ trait Typers extends Modes with Adaptations with Tags {
 
       val rhs1 =
         if (vdef.rhs.isEmpty) {
-          if (sym.isVariable && sym.owner.isTerm && !isPastTyper)
+          if (sym.isVariable && sym.owner.isTerm && !sym.isLazy && !isPastTyper)
             LocalVarUninitializedError(vdef)
           vdef.rhs
         } else {
@@ -2333,9 +2330,15 @@ trait Typers extends Modes with Adaptations with Tags {
             case _ =>
           }
         }
-        val stats1 = typedStats(block.stats, context.owner)
+        val stats1 = if (isPastTyper) block.stats else
+          block.stats.flatMap(stat => stat match {
+            case vd@ValDef(_, _, _, _) if vd.symbol.isLazy =>
+              namer.addDerivedTrees(Typer.this, vd)
+            case _ => stat::Nil
+            })
+        val stats2 = typedStats(stats1, context.owner)
         val expr1 = typed(block.expr, mode & ~(FUNmode | QUALmode), pt)
-        treeCopy.Block(block, stats1, expr1)
+        treeCopy.Block(block, stats2, expr1)
           .setType(if (treeInfo.isExprSafeToInline(block)) expr1.tpe else expr1.tpe.deconst)
       } finally {
         // enable escaping privates checking from the outside and recycle

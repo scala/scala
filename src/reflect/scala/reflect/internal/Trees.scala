@@ -179,9 +179,12 @@ trait Trees extends api.Trees { self: SymbolTable =>
       new ForeachPartialTreeTraverser(pf).traverse(this)
     }
 
-    def changeOwner(pairs: (Symbol, Symbol)*): Tree = {
+    def changeOwner(pairs: (Symbol, Symbol)*): Tree =
+      changeOwner(false, pairs: _*)
+
+    def changeOwner(followModuleClass: Boolean, pairs: (Symbol, Symbol)*): Tree = {
       pairs.foldLeft(this) { case (t, (oldOwner, newOwner)) =>
-        new ChangeOwnerTraverser(oldOwner, newOwner) apply t
+        new ChangeOwnerTraverser(oldOwner, newOwner, followModuleClass) apply t
       }
     }
 
@@ -1310,7 +1313,11 @@ trait Trees extends api.Trees { self: SymbolTable =>
     }
   }
 
-  class ChangeOwnerTraverser(val oldowner: Symbol, val newowner: Symbol) extends Traverser {
+  class ChangeOwnerTraverser(val oldowner: Symbol, val newowner: Symbol, followModuleClass: Boolean = false) extends Traverser {
+    def changeSymboOwnerIfCorrect(sym: Symbol) = {
+      if (sym != NoSymbol && sym.owner == oldowner) 
+        sym.owner = newowner
+    }
     def changeOwner(tree: Tree) = tree match {
       case Return(expr) =>
         if (tree.symbol == oldowner) {
@@ -1323,9 +1330,8 @@ trait Trees extends api.Trees { self: SymbolTable =>
           }
         }
       case _: DefTree | _: Function =>
-        if (tree.symbol != NoSymbol && tree.symbol.owner == oldowner) {
-          tree.symbol.owner = newowner
-        }
+        changeSymboOwnerIfCorrect(tree.symbol)
+        if (followModuleClass) changeSymboOwnerIfCorrect(tree.symbol.moduleClass)
       case _ =>
     }
     override def traverse(tree: Tree) {

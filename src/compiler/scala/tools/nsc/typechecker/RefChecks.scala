@@ -1014,15 +1014,18 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
     private def enterSyms(stats: List[Tree]) {
       var index = -1
       for (stat <- stats) {
-        index = index + 1;
+        index = index + 1
+        def enterSym(sym: Symbol) = if (sym.isLocal) {
+          currentLevel.scope.enter(sym)
+          symIndex(sym) = index
+        }
+
         stat match {
+          case DefDef(_, _, _, _, _, _) if stat.symbol.isLazy                 =>
+            enterSym(stat.symbol)
           case ClassDef(_, _, _, _) | DefDef(_, _, _, _, _, _) | ModuleDef(_, _, _) | ValDef(_, _, _, _) =>
             //assert(stat.symbol != NoSymbol, stat);//debug
-            val sym = stat.symbol.lazyAccessorOrSelf
-            if (sym.isLocal) {
-              currentLevel.scope.enter(sym)
-              symIndex(sym) = index;
-            }
+            enterSym(stat.symbol.lazyAccessorOrSelf)
           case _ =>
         }
       }
@@ -1287,34 +1290,6 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
       })
     }
 
-    /** Implements lazy value accessors:
-     *    - for lazy values of type Unit and all lazy fields inside traits,
-     *      the rhs is the initializer itself
-     *    - for all other lazy values z the accessor is a block of this form:
-     *      { z = <rhs>; z } where z can be an identifier or a field.
-     */
-    private def makeLazyAccessor(tree: Tree, rhs: Tree): List[Tree] = {
-      val vsym        = tree.symbol
-      assert(vsym.isTerm, vsym)
-      val hasUnitType = vsym.tpe.typeSymbol == UnitClass
-      val lazySym     = vsym.lazyAccessor
-      assert(lazySym != NoSymbol, vsym)
-
-      // for traits, this is further transformed in mixins
-      val body = (
-        if (tree.symbol.owner.isTrait || hasUnitType) rhs
-        else gen.mkAssignAndReturn(vsym, rhs)
-      )
-      val lazyDef = atPos(tree.pos)(DefDef(lazySym, body.changeOwner(vsym -> lazySym)))
-      debuglog("Created lazy accessor: " + lazyDef)
-
-      if (hasUnitType) List(typed(lazyDef))
-      else List(
-        typed(ValDef(vsym)),
-        exitingRefchecks(typed(lazyDef))
-      )
-    }
-
     def transformStat(tree: Tree, index: Int): List[Tree] = tree match {
       case t if treeInfo.isSelfConstrCall(t) =>
         assert(index == 0, index)
@@ -1327,8 +1302,7 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
       case ModuleDef(_, _, _) => eliminateModuleDefs(tree)
       case ValDef(_, _, _, _) =>
         val tree1 @ ValDef(_, _, _, rhs) = transform(tree) // important to do before forward reference check
-        if (tree.symbol.isLazy)
-          makeLazyAccessor(tree, rhs)
+        if (tree1.symbol.isLazy) tree1 :: Nil
         else {
           val lazySym = tree.symbol.lazyAccessorOrSelf
           if (lazySym.isLocal && index <= currentLevel.maxindex) {
