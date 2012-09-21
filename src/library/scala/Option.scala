@@ -196,7 +196,7 @@ sealed abstract class Option[+A] extends Product with Serializable {
   /** Necessary to keep $option from being implicitly converted to
    *  [[scala.collection.Iterable]] in `for` comprehensions.
    */
-  def withFilter(p: A => Boolean): WithFilter = new WithFilter(p)
+  @inline final def withFilter(p: A => Boolean): WithFilter = new WithFilter(p)
 
   /** We need a whole WithFilter class to honor the "doesn't create a new
    *  collection" contract even though it seems unlikely to matter much in a
@@ -255,7 +255,7 @@ sealed abstract class Option[+A] extends Product with Serializable {
    *  @return the result of applying `pf` to this $option's
    *  value (if possible), or $none.
    */
-  def collect[B](pf: PartialFunction[A, B]): Option[B] =
+  @inline final def collect[B](pf: PartialFunction[A, B]): Option[B] =
     if (!isEmpty && pf.isDefinedAt(this.get)) Some(pf(this.get)) else None
 
   /** Returns this $option if it is nonempty,

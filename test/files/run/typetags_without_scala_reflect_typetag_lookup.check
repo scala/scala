@@ -1,0 +1,3 @@
+newSource1:9: error: could not find implicit value for evidence parameter of type reflect.runtime.package.universe.TypeTag[Int]
+      Library.foo[Int]
+                 ^

@@ -1,10 +1,7 @@
 package scala.tools
 package reflect
 
-import scala.reflect.api.Universe
-import scala.reflect.base.MirrorOf
-
-trait ToolBox[U <: Universe] {
+trait ToolBox[U <: scala.reflect.api.Universe] {
 
   /** Underlying universe of a ToolBox
    */

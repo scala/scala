@@ -2,5 +2,5 @@ package scala.reflect
 
 package object macros {
 
-  type MirrorOf[U <: base.Universe with Singleton] = base.MirrorOf[U]
+  type MirrorOf[U <: scala.reflect.api.Universe with Singleton] = scala.reflect.api.MirrorOf[U]
 }

@@ -23,7 +23,7 @@ object Vector extends IndexedSeqFactory[Vector] {
   implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, Vector[A]] =
     ReusableCBF.asInstanceOf[GenericCanBuildFrom[A]]
   private[immutable] val NIL = new Vector[Nothing](0, 0, 0)
-  @inline override def empty[A]: Vector[A] = NIL
+  override def empty[A]: Vector[A] = NIL
 }
 
 // in principle, most members should be private. however, access privileges must
@@ -88,7 +88,7 @@ override def companion: GenericCompanion[Vector] = Vector
     if (s.depth > 1) s.gotoPos(startIndex, startIndex ^ focus)
   }
 
-  @inline override def iterator: VectorIterator[A] = {
+  override def iterator: VectorIterator[A] = {
     val s = new VectorIterator[A](startIndex, endIndex)
     initIterator(s)
     s
@@ -114,16 +114,6 @@ override def companion: GenericCompanion[Vector] = Vector
   // In principle, escape analysis could even remove the iterator/builder allocations and do it
   // with local variables exclusively. But we're not quite there yet ...
 
-  @deprecated("this method is experimental and will be removed in a future release", "2.8.0")
-  @inline def foreachFast[U](f: A => U): Unit = iterator.foreachFast(f)
-  @deprecated("this method is experimental and will be removed in a future release", "2.8.0")
-  @inline def mapFast[B, That](f: A => B)(implicit bf: CanBuildFrom[Vector[A], B, That]): That = {
-    val b = bf(repr)
-    foreachFast(x => b += f(x))
-    b.result
-  }
-
-
   def apply(index: Int): A = {
     val idx = checkRangeConvert(index)
     //println("get elem: "+index + "/"+idx + "(focus:" +focus+" xor:"+(idx^focus)+" depth:"+depth+")")
@@ -141,15 +131,15 @@ override def companion: GenericCompanion[Vector] = Vector
 
   // SeqLike api
 
-  @inline override def updated[B >: A, That](index: Int, elem: B)(implicit bf: CanBuildFrom[Vector[A], B, That]): That =
+  override def updated[B >: A, That](index: Int, elem: B)(implicit bf: CanBuildFrom[Vector[A], B, That]): That =
     if (bf eq IndexedSeq.ReusableCBF) updateAt(index, elem).asInstanceOf[That] // just ignore bf
     else super.updated(index, elem)(bf)
 
-  @inline override def +:[B >: A, That](elem: B)(implicit bf: CanBuildFrom[Vector[A], B, That]): That =
+  override def +:[B >: A, That](elem: B)(implicit bf: CanBuildFrom[Vector[A], B, That]): That =
     if (bf eq IndexedSeq.ReusableCBF) appendFront(elem).asInstanceOf[That] // just ignore bf
     else super.+:(elem)(bf)
 
-  @inline override def :+[B >: A, That](elem: B)(implicit bf: CanBuildFrom[Vector[A], B, That]): That =
+  override def :+[B >: A, That](elem: B)(implicit bf: CanBuildFrom[Vector[A], B, That]): That =
     if (bf eq IndexedSeq.ReusableCBF) appendBack(elem).asInstanceOf[That] // just ignore bf
     else super.:+(elem)(bf)
 
@@ -687,9 +677,6 @@ extends AbstractIterator[A]
     v.initFrom(this)
     v
   }
-
-  @deprecated("this method is experimental and will be removed in a future release", "2.8.0")
-  @inline def foreachFast[U](f: A =>  U) { while (hasNext) f(next()) }
 }
 
 

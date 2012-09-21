@@ -207,12 +207,12 @@ object ScalaRunTime {
   // Note that these are the implementations called by ##, so they
   // must not call ## themselves.
 
-  @inline def hash(x: Any): Int =
+  def hash(x: Any): Int =
     if (x == null) 0
     else if (x.isInstanceOf[java.lang.Number]) BoxesRunTime.hashFromNumber(x.asInstanceOf[java.lang.Number])
     else x.hashCode
 
-  @inline def hash(dv: Double): Int = {
+  def hash(dv: Double): Int = {
     val iv = dv.toInt
     if (iv == dv) return iv
 
@@ -222,7 +222,7 @@ object ScalaRunTime {
     val fv = dv.toFloat
     if (fv == dv) fv.hashCode else dv.hashCode
   }
-  @inline def hash(fv: Float): Int = {
+  def hash(fv: Float): Int = {
     val iv = fv.toInt
     if (iv == fv) return iv
 
@@ -230,22 +230,22 @@ object ScalaRunTime {
     if (lv == fv) return hash(lv)
     else fv.hashCode
   }
-  @inline def hash(lv: Long): Int = {
+  def hash(lv: Long): Int = {
     val low = lv.toInt
     val lowSign = low >>> 31
     val high = (lv >>> 32).toInt
     low ^ (high + lowSign)
   }
-  @inline def hash(x: Number): Int  = runtime.BoxesRunTime.hashFromNumber(x)
+  def hash(x: Number): Int  = runtime.BoxesRunTime.hashFromNumber(x)
 
   // The remaining overloads are here for completeness, but the compiler
   // inlines these definitions directly so they're not generally used.
-  @inline def hash(x: Int): Int = x
-  @inline def hash(x: Short): Int = x.toInt
-  @inline def hash(x: Byte): Int = x.toInt
-  @inline def hash(x: Char): Int = x.toInt
-  @inline def hash(x: Boolean): Int = if (x) true.hashCode else false.hashCode
-  @inline def hash(x: Unit): Int = 0
+  def hash(x: Int): Int = x
+  def hash(x: Short): Int = x.toInt
+  def hash(x: Byte): Int = x.toInt
+  def hash(x: Char): Int = x.toInt
+  def hash(x: Boolean): Int = if (x) true.hashCode else false.hashCode
+  def hash(x: Unit): Int = 0
 
   /** A helper method for constructing case class equality methods,
    *  because existential types get in the way of a clean outcome and

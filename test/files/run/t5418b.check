@@ -1,0 +1,2 @@
+new Object().getClass()
+TypeRef(ThisType(java.lang), java.lang.Class, List(TypeRef(NoPrefix, newTypeName("?0"), List())))

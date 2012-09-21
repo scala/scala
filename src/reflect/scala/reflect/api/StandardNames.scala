@@ -5,26 +5,40 @@
 package scala.reflect
 package api
 
-// Q: I have a pretty name. Where do I put it - into base.StandardNames or into api.StandardNames?
-// A: <see base.StandardNames>
+// Q: I have a pretty name. Can I put it here?
+// A: Is it necessary to construct trees (like EMPTY or WILDCARD_STAR)? If yes, then sure.
+//    Is it necessary to perform reflection (like ERROR or LOCAL_SUFFIX_STRING)? If yes, then sure.
+//    Otherwise you'd better not - reflection API should stay minimalistic.
 
-trait StandardNames extends base.StandardNames {
+// TODO: document better
+/**
+ * Names necessary to create Scala trees.
+ */
+trait StandardNames {
   self: Universe =>
 
   val nme: TermNamesApi
   val tpnme: TypeNamesApi
 
-  trait NamesApi extends NamesBase {
+  trait NamesApi {
+    type NameType >: Null <: Name
+    val WILDCARD: NameType
     val ROOT: NameType
     val EMPTY: NameType
     val ERROR: NameType
     val PACKAGE: NameType
   }
 
-  trait TermNamesApi extends NamesApi with TermNamesBase {
+  trait TermNamesApi extends NamesApi {
+    type NameType = TermName
+    val CONSTRUCTOR: NameType
+    val ROOTPKG: NameType
     val LOCAL_SUFFIX_STRING: String
   }
 
-  trait TypeNamesApi extends NamesApi with TypeNamesBase {
+  trait TypeNamesApi extends NamesApi {
+    type NameType = TypeName
+    val EMPTY: NameType
+    val WILDCARD_STAR: NameType
   }
 }

@@ -387,8 +387,8 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
     def translatePattern(patBinder: Symbol, patTree: Tree): List[TreeMaker] = {
       // a list of TreeMakers that encode `patTree`, and a list of arguments for recursive invocations of `translatePattern` to encode its subpatterns
       type TranslationStep = (List[TreeMaker], List[(Symbol, Tree)])
-      @inline def withSubPats(treeMakers: List[TreeMaker], subpats: (Symbol, Tree)*): TranslationStep = (treeMakers, subpats.toList)
-      @inline def noFurtherSubPats(treeMakers: TreeMaker*): TranslationStep = (treeMakers.toList, Nil)
+      def withSubPats(treeMakers: List[TreeMaker], subpats: (Symbol, Tree)*): TranslationStep = (treeMakers, subpats.toList)
+      def noFurtherSubPats(treeMakers: TreeMaker*): TranslationStep = (treeMakers.toList, Nil)
 
       val pos = patTree.pos
 
@@ -860,7 +860,7 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
         // since about half of the typedSubst's end up being no-ops, the check below shaves off 5% of the time spent in typedSubst
         if (!tree.exists { case i@Ident(_) => from contains i.symbol case _ => false}) tree
         else (new Transformer {
-          @inline private def typedIfOrigTyped(to: Tree, origTp: Type): Tree =
+          private def typedIfOrigTyped(to: Tree, origTp: Type): Tree =
             if (origTp == null || origTp == NoType) to
             // important: only type when actually substing and when original tree was typed
             // (don't need to use origTp as the expected type, though, and can't always do this anyway due to unknown type params stemming from polymorphic extractors)
@@ -1208,7 +1208,7 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
           else typeTest(testedBinder, expectedTp)
 
         // propagate expected type
-        @inline def expTp(t: Tree): t.type = t setType expectedTp
+        def expTp(t: Tree): t.type = t setType expectedTp
 
         // true when called to type-test the argument to an extractor
         // don't do any fancy equality checking, just test the type
@@ -1694,8 +1694,8 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
       final def binderToUniqueTree(b: Symbol) =
         unique(accumSubst(normalize(CODE.REF(b))), b.tpe)
 
-      @inline def /\(conds: Iterable[Cond]) = if (conds.isEmpty) TrueCond else conds.reduceLeft(AndCond(_, _))
-      @inline def \/(conds: Iterable[Cond]) = if (conds.isEmpty) FalseCond else conds.reduceLeft(OrCond(_, _))
+      def /\(conds: Iterable[Cond]) = if (conds.isEmpty) TrueCond else conds.reduceLeft(AndCond(_, _))
+      def \/(conds: Iterable[Cond]) = if (conds.isEmpty) FalseCond else conds.reduceLeft(OrCond(_, _))
 
       // note that the sequencing of operations is important: must visit in same order as match execution
       // binderToUniqueTree uses the type of the first symbol that was encountered as the type for all future binders
@@ -1903,8 +1903,8 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
     private def nextSymId = {_symId += 1; _symId}; private var _symId = 0
 
 
-    @inline def /\(props: Iterable[Prop]) = if (props.isEmpty) True else props.reduceLeft(And(_, _))
-    @inline def \/(props: Iterable[Prop]) = if (props.isEmpty) False else props.reduceLeft(Or(_, _))
+    def /\(props: Iterable[Prop]) = if (props.isEmpty) True else props.reduceLeft(And(_, _))
+    def \/(props: Iterable[Prop]) = if (props.isEmpty) False else props.reduceLeft(Or(_, _))
 
 
     trait PropTraverser {
@@ -1980,7 +1980,7 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
       val pure = props map rewriteEqualsToProp.apply
 
       var eqAxioms: Prop = True
-      @inline def addAxiom(p: Prop) = eqAxioms = And(eqAxioms, p)
+      def addAxiom(p: Prop) = eqAxioms = And(eqAxioms, p)
 
       patmatDebug("removeVarEq vars: "+ vars)
       vars.foreach { v =>
@@ -2051,7 +2051,7 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
     // a clause is a disjunction of distinct literals
     type Clause = Set[Lit]
     def clause(l: Lit*): Clause = l.toSet
-    @inline private def merge(a: Clause, b: Clause) = a ++ b
+    private def merge(a: Clause, b: Clause) = a ++ b
 
     type Lit
     def Lit(sym: Sym, pos: Boolean = true): Lit
@@ -2189,8 +2189,8 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
       findAllModels(f, Nil)
     }
 
-    @inline private def withLit(res: Model, l: Lit): Model = if (res eq NoModel) NoModel else res + (l.sym -> l.pos)
-    @inline private def dropUnit(f: Formula, unitLit: Lit) = {
+    private def withLit(res: Model, l: Lit): Model = if (res eq NoModel) NoModel else res + (l.sym -> l.pos)
+    private def dropUnit(f: Formula, unitLit: Lit) = {
       val negated = -unitLit
       // drop entire clauses that are trivially true
       // (i.e., disjunctions that contain the literal we're making true in the returned model),
@@ -2268,9 +2268,9 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
       private[this] val id: Int = Var.nextId
 
       // private[this] var canModify: Option[Array[StackTraceElement]] = None
-      @inline private[this] def ensureCanModify = {} //if (canModify.nonEmpty) patmatDebug("BUG!"+ this +" modified after having been observed: "+ canModify.get.mkString("\n"))
+      private[this] def ensureCanModify = {} //if (canModify.nonEmpty) patmatDebug("BUG!"+ this +" modified after having been observed: "+ canModify.get.mkString("\n"))
 
-      @inline private[this] def observed = {} //canModify = Some(Thread.currentThread.getStackTrace)
+      private[this] def observed = {} //canModify = Some(Thread.currentThread.getStackTrace)
 
       // don't access until all potential equalities have been registered using registerEquality
       private[this] val symForEqualsTo = new scala.collection.mutable.HashMap[Const, Sym]
@@ -2735,7 +2735,7 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
     // a type is "uncheckable" (for exhaustivity) if we don't statically know its subtypes (i.e., it's unsealed)
     // we consider tuple types with at least one component of a checkable type as a checkable type
     def uncheckableType(tp: Type): Boolean = {
-      @inline def tupleComponents(tp: Type) = tp.normalize.typeArgs
+      def tupleComponents(tp: Type) = tp.normalize.typeArgs
       val checkable = (
            (isTupleType(tp) && tupleComponents(tp).exists(tp => !uncheckableType(tp)))
         || enumerateSubtypes(tp).nonEmpty)
@@ -2868,7 +2868,7 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
     case object WildcardExample extends CounterExample { override def toString = "_" }
     case object NoExample extends CounterExample { override def toString = "??" }
 
-    @inline def modelToVarAssignment(model: Model): Map[Var, (Seq[Const], Seq[Const])] =
+    def modelToVarAssignment(model: Model): Map[Var, (Seq[Const], Seq[Const])] =
       model.toSeq.groupBy{f => f match {case (sym, value) => sym.variable} }.mapValues{ xs =>
         val (trues, falses) = xs.partition(_._2)
         (trues map (_._1.const), falses map (_._1.const))
@@ -2974,7 +2974,7 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
                         (  uniqueEqualTo.nonEmpty
                         || (fields.nonEmpty && prunedEqualTo.isEmpty && notEqualTo.isEmpty)) =>
 
-                @inline def args(brevity: Boolean = beBrief) = {
+                def args(brevity: Boolean = beBrief) = {
                   // figure out the constructor arguments from the field assignment
                   val argLen = (caseFieldAccs.length min ctorParams.length)
 

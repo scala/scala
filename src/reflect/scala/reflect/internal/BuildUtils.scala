@@ -3,9 +3,9 @@ package internal
 
 import Flags._
 
-trait BuildUtils extends base.BuildUtils { self: SymbolTable =>
+trait BuildUtils { self: SymbolTable =>
 
-  class BuildImpl extends BuildBase {
+  class BuildImpl extends BuildApi {
 
     def selectType(owner: Symbol, name: String): TypeSymbol =
       select(owner, newTypeName(name)).asType
@@ -64,5 +64,5 @@ trait BuildUtils extends base.BuildUtils { self: SymbolTable =>
     def setSymbol[T <: Tree](tree: T, sym: Symbol): T = { tree.setSymbol(sym); tree }
   }
 
-  val build: BuildBase = new BuildImpl
+  val build: BuildApi = new BuildImpl
 }

@@ -10,9 +10,8 @@ import scala.collection.{ mutable, immutable }
 import scala.collection.mutable.ListBuffer
 import util.Statistics
 import Flags._
-import base.Attachments
 import scala.annotation.tailrec
-import scala.tools.nsc.io.AbstractFile
+import scala.reflect.io.AbstractFile
 
 trait Symbols extends api.Symbols { self: SymbolTable =>
   import definitions._
@@ -346,7 +345,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     // don't test directly -- use isGADTSkolem
     // used to single out a gadt skolem symbol in deskolemizeGADT
     // gadtskolems are created in adaptConstrPattern and removed at the end of typedCase
-    @inline final protected[Symbols] def GADT_SKOLEM_FLAGS = CASEACCESSOR | SYNTHETIC
+    final protected[Symbols] def GADT_SKOLEM_FLAGS = CASEACCESSOR | SYNTHETIC
 
     // flags set up to maintain TypeSkolem's invariant: origin.isInstanceOf[Symbol] == !hasFlag(EXISTENTIAL)
     // GADT_SKOLEM_FLAGS (== CASEACCESSOR | SYNTHETIC) used to single this symbol out in deskolemizeGADT
@@ -586,11 +585,11 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
       && owner.isPackageClass
       && nme.isReplWrapperName(name)
     )
-    @inline final def getFlag(mask: Long): Long = flags & mask
+    final def getFlag(mask: Long): Long = flags & mask
     /** Does symbol have ANY flag in `mask` set? */
-    @inline final def hasFlag(mask: Long): Boolean = (flags & mask) != 0
+    final def hasFlag(mask: Long): Boolean = (flags & mask) != 0
     /** Does symbol have ALL the flags in `mask` set? */
-    @inline final def hasAllFlags(mask: Long): Boolean = (flags & mask) == mask
+    final def hasAllFlags(mask: Long): Boolean = (flags & mask) == mask
 
     def setFlag(mask: Long): this.type   = { _rawflags |= mask ; this }
     def resetFlag(mask: Long): this.type = { _rawflags &= ~mask ; this }

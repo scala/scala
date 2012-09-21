@@ -4445,7 +4445,7 @@ trait Types extends api.Types { self: SymbolTable =>
     var capturedSkolems: List[Symbol] = List()
     var capturedParams: List[Symbol] = List()
 
-    @inline private def skipPrefixOf(pre: Type, clazz: Symbol) = (
+    private def skipPrefixOf(pre: Type, clazz: Symbol) = (
       (pre eq NoType) || (pre eq NoPrefix) || !isPossiblePrefix(clazz)
     )
     override def mapOver(tree: Tree, giveup: ()=>Nothing): Tree = {
@@ -5133,9 +5133,9 @@ trait Types extends api.Types { self: SymbolTable =>
         // in addition to making subtyping "more correct" for type vars,
         // it should avoid the stackoverflow that's been plaguing us (https://groups.google.com/d/topic/scala-internals/2gHzNjtB4xA/discussion)
         // this method is only called when subtyping hits a recursion threshold (subsametypeRecursions >= LogPendingSubTypesThreshold)
-        @inline def suspend(tp: Type) =
+        def suspend(tp: Type) =
           if (tp.isGround) null else suspendTypeVarsInType(tp)
-        @inline def revive(suspension: List[TypeVar]) =
+        def revive(suspension: List[TypeVar]) =
           if (suspension ne null) suspension foreach (_.suspended = false)
 
         val suspensions = Array(tp1, stp.tp1, tp2, stp.tp2) map suspend
@@ -5637,7 +5637,7 @@ trait Types extends api.Types { self: SymbolTable =>
       case _: SingletonType =>
         tp2 match {
           case _: SingletonType =>
-            @inline def chaseDealiasedUnderlying(tp: Type): Type = {
+            def chaseDealiasedUnderlying(tp: Type): Type = {
               var origin = tp
               var next = origin.underlying.dealias
               while (next.isInstanceOf[SingletonType]) {

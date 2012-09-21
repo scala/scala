@@ -75,7 +75,7 @@ trait NodePrinters {
 
       val printout = scala.collection.mutable.ListBuffer[String]();
       printout += universe.trim
-      if (mirrorIsUsed) printout += mirror.replace("MirrorOf[", "scala.reflect.base.MirrorOf[").trim
+      if (mirrorIsUsed) printout += mirror.replace("MirrorOf[", "scala.reflect.api.MirrorOf[").trim
       val imports = scala.collection.mutable.ListBuffer[String]();
       imports += nme.UNIVERSE_SHORT
       // if (buildIsUsed) imports += nme.build

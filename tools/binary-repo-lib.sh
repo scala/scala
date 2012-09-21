@@ -191,7 +191,7 @@ pullJarFileToCache() {
   if [[ ! -f "$cache_loc" ]]; then
     # Note: After we follow up with JFrog, we should check the more stable raw file server first
     # before hitting the more flaky artifactory.
-    curlDownload $cache_loc ${remote_urlpush}/${uri}
+    curlDownload $cache_loc ${remote_urlget}/${uri}
     if test "$(checkJarSha "$cache_loc" "$sha")" != "OK"; then
       echo "Trouble downloading $uri.  Please try pull-binary-libs again when your internet connection is stable."
       exit 2
