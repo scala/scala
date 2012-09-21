@@ -94,6 +94,7 @@ abstract class LazyVals extends Transform with TypingTransformers with ast.TreeD
               } else
                 sym.owner
             }
+            debuglog(s"determined enclosing class/dummy/method for lazy val as $enclosingClassOrDummyOrMethod given symbol $sym")
             val idx = lazyVals(enclosingClassOrDummyOrMethod)
             lazyVals(enclosingClassOrDummyOrMethod) = idx + 1
             val (rhs1, sDef) = mkLazyDef(enclosingClassOrDummyOrMethod, transform(rhs), idx, sym)
@@ -194,6 +195,7 @@ abstract class LazyVals extends Transform with TypingTransformers with ast.TreeD
       val defSym = clazz.newMethod(nme.newLazyValSlowComputeName(lzyVal.name), lzyVal.pos, STABLE | PRIVATE)
       defSym setInfo MethodType(List(), lzyVal.tpe.resultType)
       defSym.owner = lzyVal.owner
+      debuglog(s"crete slow compute path $defSym with owner ${defSym.owner} for lazy val $lzyVal")
       if (bitmaps.contains(lzyVal))
         bitmaps(lzyVal).map(_.owner = defSym)
       val rhs: Tree = (gen.mkSynchronizedCheck(clazz, cond, syncBody, stats)).changeOwner(currentOwner -> defSym)
@@ -248,6 +250,7 @@ abstract class LazyVals extends Transform with TypingTransformers with ast.TreeD
 
       def mkBlock(stmt: Tree) = BLOCK(stmt, mkSetFlag(bitmapSym, mask, bitmapRef), UNIT)
 
+      debuglog(s"create complete lazy def in $methOrClass for $lazyVal")
       val (block, res) = tree match {
         case Block(List(assignment), res) if !lazyUnit(lazyVal) =>
           (mkBlock(assignment),  res)
