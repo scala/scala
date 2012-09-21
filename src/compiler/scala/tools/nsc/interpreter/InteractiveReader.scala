@@ -51,7 +51,5 @@ object InteractiveReader {
     }
 
   def apply(): InteractiveReader = SimpleReader()
-  @deprecated("Use `apply` instead.", "2.9.0")
-  def createDefault(): InteractiveReader = apply()
 }
 
