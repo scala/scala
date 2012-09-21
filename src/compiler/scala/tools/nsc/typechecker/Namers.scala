@@ -113,10 +113,8 @@ trait Namers extends MethodSynthesis {
       || (context.unit.isJava)
     )
     def noFinishGetterSetter(vd: ValDef) = (
-         vd.mods.isPrivateLocal
-      || vd.symbol.isModuleVar
-      || vd.symbol.isLazy
-    )
+         (vd.mods.isPrivateLocal && !vd.mods.isLazy) // all lazy vals need accessors, even private[this]
+      || vd.symbol.isModuleVar)
 
     def setPrivateWithin[T <: Symbol](tree: Tree, sym: T, mods: Modifiers): T =
       if (sym.isPrivateLocal || !mods.hasAccessBoundary) sym

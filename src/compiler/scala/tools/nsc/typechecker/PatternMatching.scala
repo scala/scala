@@ -1376,10 +1376,6 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
             t.symbol.owner = currentOwner
           case d : DefTree if (d.symbol != NoSymbol) && ((d.symbol.owner == NoSymbol) || (d.symbol.owner == origOwner)) => // don't indiscriminately change existing owners! (see e.g., pos/t3440, pos/t3534, pos/unapplyContexts2)
             patmatDebug("def: "+ (d, d.symbol.ownerChain, currentOwner.ownerChain))
-            if(d.symbol.isLazy) { // for lazy val's accessor -- is there no tree??
-              assert(d.symbol.lazyAccessor != NoSymbol && d.symbol.lazyAccessor.owner == d.symbol.owner, d.symbol.lazyAccessor)
-              d.symbol.lazyAccessor.owner = currentOwner
-            }
             if(d.symbol.moduleClass ne NoSymbol)
               d.symbol.moduleClass.owner = currentOwner
 
