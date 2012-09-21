@@ -25,12 +25,6 @@ object BigDecimal {
   private val maxCached = 512
   val defaultMathContext = MathContext.DECIMAL128
 
-  @deprecated("Use Long.MinValue", "2.9.0")
-  val MinLong = new BigDecimal(BigDec valueOf Long.MinValue, defaultMathContext)
-
-  @deprecated("Use Long.MaxValue", "2.9.0")
-  val MaxLong = new BigDecimal(BigDec valueOf Long.MaxValue, defaultMathContext)
-
   /** Cache ony for defaultMathContext using BigDecimals in a small range. */
   private lazy val cache = new Array[BigDecimal](maxCached - minCached + 1)
 
