@@ -1,0 +1,71 @@
+#!/usr/bin/env bash
+#
+# wrapper around partest for fine-grained test selection via ack
+
+args="$@"
+
+pathMatches () {
+  ack --noenv --files-with-matches "$@" test/files
+
+  for p in $(find test/files/* -print); do
+    [[ $p =~ $1 ]] && echo "$p"
+  done
+}
+
+testIds () {
+  pathMatches "$@" | \
+  perl -pe 's#^(test/files/[^/]+/[^/.]+).*$#$1#' | \
+  sort -u
+}
+testPaths () {
+  for id in "$@"; do
+    if [[ -d $id ]]; then
+      echo $id
+    elif [[ -f ${id}.scala ]]; then
+      echo "${id}.scala"
+    else
+      echo >&2 "No test corresponds to $id"
+    fi
+  done
+}
+
+[[ $# -gt 0 ]] || {
+  cat <<EOM
+Usage: $0 <regex> [ack options]
+
+Given a regular expression (and optionally, any arguments accepted by ack)
+runs all the tests for which any associated file matches the regex.  Associated
+files include .check and .flags files.  Tests in directories will match if any
+file matches.  A file can match the regex by its contents or by its name.
+
+You must have ack installed: http://betterthangrep.com/ack-standalone
+
+Examples:
+
+  % tools/partest-ack monad
+  Found 4 tests matching 'ack monad'
+
+  Testing individual files
+  testing: [...]/files/pos/tcpoly_boundedmonad.scala                    [  OK  ]
+  testing: [...]/files/pos/tcpoly_ticket2096.scala                      [  OK  ]
+  testing: [...]/files/run/tcpoly_monads.scala                          [  OK  ]
+  testing: [...]/files/presentation/callcc-interpreter                  [  OK  ]
+
+  % tools/partest-ack monad -i  # -i == ignore case
+  Found 12 tests matching 'ack monad -i'
+
+  Testing individual files
+  [etc]
+EOM
+
+  exit 0
+}
+
+paths=$(testPaths $(testIds "$@"))
+if [[ -z $paths ]]; then
+  echo >&2 "No matching tests."
+else
+  count=$(echo $(echo "$paths" | wc -w))
+  echo "Found $count tests matching 'ack $@'"
+  test/partest $paths
+fi
