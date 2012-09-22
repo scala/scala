@@ -161,6 +161,9 @@ trait Namers extends MethodSynthesis {
       else innerNamer
     }
 
+    // FIXME - this logic needs to be thoroughly explained
+    // and justified.  I know it's wrong with repect to package
+    // objects, but I think it's also wrong in other ways.
     protected def conflict(newS: Symbol, oldS: Symbol) = (
        (   !oldS.isSourceMethod
         || nme.isSetterName(newS.name)
@@ -188,6 +191,19 @@ trait Namers extends MethodSynthesis {
 
     /** Enter symbol into given scope and return symbol itself */
     def enterInScope(sym: Symbol, scope: Scope): Symbol = {
+      // FIXME - this is broken in a number of ways.
+      //
+      // 1) If "sym" allows overloading, that is not itself sufficient to skip
+      // the check, because "prev.sym" also must allow overloading.
+      //
+      // 2) There is nothing which reconciles a package's scope with
+      // the package object's scope.  This is the source of many bugs
+      // with e.g. defining a case class in a package object.  When
+      // compiling against classes, the class symbol is created in the
+      // package and in the package object, and the conflict is undetected.
+      // There is also a non-deterministic outcome for situations like
+      // an object with the same name as a method in the package object.
+
       // allow for overloaded methods
       if (!allowsOverload(sym)) {
         val prev = scope.lookupEntry(sym.name)
