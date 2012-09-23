@@ -7,5 +7,5 @@ final class table extends annotation.StaticAnnotation
 
 object Test extends App {
   val s = cm.classSymbol(classOf[A])
-  println(s.getAnnotations)
+  println(s.annotations)
 }
