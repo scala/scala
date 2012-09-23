@@ -576,7 +576,8 @@ trait Printers extends api.Printers { self: SymbolTable =>
               case _ => // do nothing
             })
         case sym: Symbol =>
-          if (sym.isStatic && (sym.isClass || sym.isModule)) print(sym.fullName)
+          if (sym == NoSymbol) print("NoSymbol")
+          else if (sym.isStatic && (sym.isClass || sym.isModule)) print(sym.fullName)
           else print(sym.name)
           if (printIds) print("#", sym.id)
           if (printKinds) print("#", sym.abbreviatedKindString)
