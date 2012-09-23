@@ -73,13 +73,8 @@ trait Constants extends api.Constants {
       case DoubleTag  => DoubleClass.tpe
       case StringTag  => StringClass.tpe
       case NullTag    => NullClass.tpe
-      case ClazzTag   => ClassType(value.asInstanceOf[Type])
-      case EnumTag    =>
-        // given (in java): "class A { enum E { VAL1 } }"
-        //  - symbolValue: the symbol of the actual enumeration value (VAL1)
-        //  - .owner: the ModuleClasSymbol of the enumeration (object E)
-        //  - .linkedClassOfClass: the ClassSymbol of the enumeration (class E)
-        symbolValue.owner.linkedClassOfClass.tpe
+      case ClazzTag   => ClassType(typeValue)
+      case EnumTag    => EnumType(symbolValue)
     }
 
     /** We need the equals method to take account of tags as well as values.
