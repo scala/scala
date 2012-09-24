@@ -1236,16 +1236,9 @@ trait JavaMirrors extends internal.SymbolTable with api.JavaUniverse { thisUnive
   override def scopeTransform(owner: Symbol)(op: => Scope): Scope =
     if (owner.isPackageClass) owner.info.decls else op
 
-  private lazy val rootToLoader = new WeakHashMap[Symbol, ClassLoader]
-
-  override def mirrorThatLoaded(sym: Symbol): Mirror = {
-    val root = sym.enclosingRootClass
-    def findLoader = {
-      val loaders = (mirrors collect { case (cl, ref) if ref.get.get.RootClass == root => cl })
-      assert(loaders.nonEmpty, sym)
-      loaders.head
-    }
-    mirrors(rootToLoader getOrElseUpdate(root, findLoader)).get.get
+  override def mirrorThatLoaded(sym: Symbol): Mirror = sym.enclosingRootClass match {
+    case root: RootSymbol => root.mirror
+    case _ => abort(s"${sym}.enclosingRootClass = ${sym.enclosingRootClass}, which is not a RootSymbol")
   }
 
   private lazy val syntheticCoreClasses: Map[(String, Name), Symbol] = {

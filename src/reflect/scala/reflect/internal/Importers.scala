@@ -1,6 +1,8 @@
 package scala.reflect
 package internal
+
 import scala.collection.mutable.WeakHashMap
+import scala.ref.WeakReference
 
 // SI-6241: move importers to a mirror
 trait Importers extends api.Importers { self: SymbolTable =>
@@ -26,8 +28,20 @@ trait Importers extends api.Importers { self: SymbolTable =>
 
     val from: SymbolTable
 
-    lazy val symMap: WeakHashMap[from.Symbol, Symbol] = new WeakHashMap
-    lazy val tpeMap: WeakHashMap[from.Type, Type] = new WeakHashMap
+    protected lazy val symMap = new Cache[from.Symbol, Symbol]()
+    protected lazy val tpeMap = new Cache[from.Type, Type]()
+    protected class Cache[K <: AnyRef, V <: AnyRef] extends WeakHashMap[K, WeakReference[V]] {
+      def weakGet(key: K): Option[V] = this get key flatMap WeakReference.unapply
+      def weakUpdate(key: K, value: V) = this.update(key, WeakReference(value))
+      def weakGetOrElseUpdate(key: K)(value: => V): V =
+        weakGet(key) match {
+          case Some(result) => result
+          case None =>
+            val result = value
+            this(key) = WeakReference(result)
+            result
+        }
+    }
 
     // fixups and maps prevent stackoverflows in importer
     var pendingSyms = 0
@@ -44,8 +58,10 @@ trait Importers extends api.Importers { self: SymbolTable =>
 
     object reverse extends from.StandardImporter {
       val from: self.type = self
-      for ((fromsym, mysym) <- StandardImporter.this.symMap) symMap += ((mysym, fromsym))
-      for ((fromtpe, mytpe) <- StandardImporter.this.tpeMap) tpeMap += ((mytpe, fromtpe))
+      // FIXME this and reverse should be constantly kept in sync
+      // not just synced once upon the first usage of reverse
+      for ((fromsym, WeakReference(mysym)) <- StandardImporter.this.symMap) symMap += ((mysym, WeakReference(fromsym)))
+      for ((fromtpe, WeakReference(mytpe)) <- StandardImporter.this.tpeMap) tpeMap += ((mytpe, WeakReference(fromtpe)))
     }
 
     // todo. careful import of positions
@@ -53,70 +69,70 @@ trait Importers extends api.Importers { self: SymbolTable =>
       pos.asInstanceOf[Position]
 
     def importSymbol(sym0: from.Symbol): Symbol = {
-      def doImport(sym: from.Symbol): Symbol = {
-        if (symMap.contains(sym))
-          return symMap(sym)
-
-        val myowner = importSymbol(sym.owner)
-        val mypos   = importPosition(sym.pos)
-        val myname  = importName(sym.name).toTermName
-        val myflags = sym.flags
-        def linkReferenced(mysym: TermSymbol, x: from.TermSymbol, op: from.Symbol => Symbol): Symbol = {
-          symMap(x) = mysym
-          mysym.referenced = op(x.referenced)
-          mysym
-        }
-        val mysym = sym match {
-          case x: from.MethodSymbol =>
-            linkReferenced(myowner.newMethod(myname, mypos, myflags), x, importSymbol)
-          case x: from.ModuleSymbol =>
-            linkReferenced(myowner.newModuleSymbol(myname, mypos, myflags), x, importSymbol)
-          case x: from.FreeTermSymbol =>
-            newFreeTermSymbol(importName(x.name).toTermName, x.value, x.flags, x.origin) setInfo importType(x.info)
-          case x: from.FreeTypeSymbol =>
-            newFreeTypeSymbol(importName(x.name).toTypeName, x.flags, x.origin)
-          case x: from.TermSymbol =>
-            linkReferenced(myowner.newValue(myname, mypos, myflags), x, importSymbol)
-          case x: from.TypeSkolem =>
-            val origin = x.unpackLocation match {
-              case null           => null
-              case y: from.Tree   => importTree(y)
-              case y: from.Symbol => importSymbol(y)
+      def doImport(sym: from.Symbol): Symbol =
+        symMap weakGet sym match {
+          case Some(result) => result
+          case _ =>
+            val myowner = importSymbol(sym.owner)
+            val mypos   = importPosition(sym.pos)
+            val myname  = importName(sym.name).toTermName
+            val myflags = sym.flags
+            def linkReferenced(mysym: TermSymbol, x: from.TermSymbol, op: from.Symbol => Symbol): Symbol = {
+              symMap.weakUpdate(x, mysym)
+              mysym.referenced = op(x.referenced)
+              mysym
             }
-            myowner.newTypeSkolemSymbol(myname.toTypeName, origin, mypos, myflags)
-          case x: from.ModuleClassSymbol =>
-            val mysym = myowner.newModuleClass(myname.toTypeName, mypos, myflags)
-            symMap(x) = mysym
-            mysym.sourceModule = importSymbol(x.sourceModule)
-            mysym
-          case x: from.ClassSymbol =>
-            val mysym = myowner.newClassSymbol(myname.toTypeName, mypos, myflags)
-            symMap(x) = mysym
-            if (sym.thisSym != sym) {
-              mysym.typeOfThis = importType(sym.typeOfThis)
-              mysym.thisSym setName importName(sym.thisSym.name)
+            val mysym = sym match {
+              case x: from.MethodSymbol =>
+                linkReferenced(myowner.newMethod(myname, mypos, myflags), x, importSymbol)
+              case x: from.ModuleSymbol =>
+                linkReferenced(myowner.newModuleSymbol(myname, mypos, myflags), x, importSymbol)
+              case x: from.FreeTermSymbol =>
+                newFreeTermSymbol(importName(x.name).toTermName, x.value, x.flags, x.origin) setInfo importType(x.info)
+              case x: from.FreeTypeSymbol =>
+                newFreeTypeSymbol(importName(x.name).toTypeName, x.flags, x.origin)
+              case x: from.TermSymbol =>
+                linkReferenced(myowner.newValue(myname, mypos, myflags), x, importSymbol)
+              case x: from.TypeSkolem =>
+                val origin = x.unpackLocation match {
+                  case null           => null
+                  case y: from.Tree   => importTree(y)
+                  case y: from.Symbol => importSymbol(y)
+                }
+                myowner.newTypeSkolemSymbol(myname.toTypeName, origin, mypos, myflags)
+              case x: from.ModuleClassSymbol =>
+                val mysym = myowner.newModuleClass(myname.toTypeName, mypos, myflags)
+                symMap.weakUpdate(x, mysym)
+                mysym.sourceModule = importSymbol(x.sourceModule)
+                mysym
+              case x: from.ClassSymbol =>
+                val mysym = myowner.newClassSymbol(myname.toTypeName, mypos, myflags)
+                symMap.weakUpdate(x, mysym)
+                if (sym.thisSym != sym) {
+                  mysym.typeOfThis = importType(sym.typeOfThis)
+                  mysym.thisSym setName importName(sym.thisSym.name)
+                }
+                mysym
+              case x: from.TypeSymbol =>
+                myowner.newTypeSymbol(myname.toTypeName, mypos, myflags)
             }
-            mysym
-          case x: from.TypeSymbol =>
-            myowner.newTypeSymbol(myname.toTypeName, mypos, myflags)
-        }
-        symMap(sym) = mysym
-        mysym setFlag Flags.LOCKED
-        mysym setInfo {
-          val mytypeParams = sym.typeParams map importSymbol
-          new LazyPolyType(mytypeParams) {
-            override def complete(s: Symbol) {
-              val result = sym.info match {
-                case from.PolyType(_, res) => res
-                case result => result
+            symMap.weakUpdate(sym, mysym)
+            mysym setFlag Flags.LOCKED
+            mysym setInfo {
+              val mytypeParams = sym.typeParams map importSymbol
+              new LazyPolyType(mytypeParams) {
+                override def complete(s: Symbol) {
+                  val result = sym.info match {
+                    case from.PolyType(_, res) => res
+                    case result => result
+                  }
+                  s setInfo GenPolyType(mytypeParams, importType(result))
+                  s setAnnotations (sym.annotations map importAnnotationInfo)
+                }
               }
-              s setInfo GenPolyType(mytypeParams, importType(result))
-              s setAnnotations (sym.annotations map importAnnotationInfo)
             }
-          }
-        }
-        mysym resetFlag Flags.LOCKED
-      } // end doImport
+            mysym resetFlag Flags.LOCKED
+        } // end doImport
 
       def importOrRelink: Symbol = {
         val sym = sym0 // makes sym visible in the debugger
@@ -186,14 +202,10 @@ trait Importers extends api.Importers { self: SymbolTable =>
       } // end importOrRelink
 
       val sym = sym0
-      if (symMap contains sym) {
-        symMap(sym)
-      } else {
+      symMap.weakGetOrElseUpdate(sym) {
         pendingSyms += 1
-
-        try {
-          symMap getOrElseUpdate (sym, importOrRelink)
-        } finally {
+        try importOrRelink
+        finally {
           pendingSyms -= 1
           tryFixup()
         }
@@ -258,14 +270,10 @@ trait Importers extends api.Importers { self: SymbolTable =>
       def importOrRelink: Type =
         doImport(tpe)
 
-      if (tpeMap contains tpe) {
-        tpeMap(tpe)
-      } else {
+      tpeMap.weakGetOrElseUpdate(tpe) {
         pendingTpes += 1
-
-        try {
-          tpeMap getOrElseUpdate (tpe, importOrRelink)
-        } finally {
+        try importOrRelink
+        finally {
           pendingTpes -= 1
           tryFixup()
         }
