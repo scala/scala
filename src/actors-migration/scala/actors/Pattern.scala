@@ -1,7 +1,8 @@
-package scala.actors
+package scala.actors.migration
 
+import scala.actors._
 import scala.concurrent.duration.Duration
-import scala.language.implicitConversions
+import language.implicitConversions
 
 object pattern {
 

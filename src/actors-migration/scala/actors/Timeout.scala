@@ -6,7 +6,7 @@
 **                          |/                                          **
 \*                                                                      */
 
-package scala.actors
+package scala.actors.migration
 
 import scala.concurrent.duration.Duration
 import java.util.concurrent.TimeUnit
