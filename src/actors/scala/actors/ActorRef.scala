@@ -2,6 +2,8 @@ package scala.actors
 
 import java.util.concurrent.TimeoutException
 import scala.concurrent.duration.Duration
+import scala.concurrent.Promise
+import scala.concurrent.ExecutionContext.Implicits.global
 
 /**
  * Trait used for migration of Scala actors to Akka.
@@ -28,7 +30,7 @@ trait ActorRef {
   /**
    * Sends a message asynchronously, returning a future which may eventually hold the reply.
    */
-  private[actors] def ?(message: Any, timeout: Duration): Future[Any]
+  private[actors] def ?(message: Any, timeout: Duration): scala.concurrent.Future[Any]
 
   /**
    * Forwards the message and passes the original sender actor as the sender.
@@ -43,7 +45,7 @@ trait ActorRef {
 
 private[actors] class OutputChannelRef(val actor: OutputChannel[Any]) extends ActorRef {
 
-  override private[actors] def ?(message: Any, timeout: Duration): Future[Any] =
+  override private[actors] def ?(message: Any, timeout: Duration): scala.concurrent.Future[Any] =
     throw new UnsupportedOperationException("Output channel does not support ?")
 
   /**
@@ -88,14 +90,19 @@ private[actors] final class InternalActorRef(override val actor: InternalActor) 
   /**
    * Sends a message asynchronously, returning a future which may eventually hold the reply.
    */
-  override private[actors] def ?(message: Any, timeout: Duration): Future[Any] =
-    Futures.future {
-      val dur = if (timeout.isFinite()) timeout.toMillis else (java.lang.Long.MAX_VALUE >> 2)
-      actor !? (dur, message) match {
-        case Some(x) => x
-        case None => new AskTimeoutException("? operation timed out.")
+  override private[actors] def ?(message: Any, timeout: Duration): scala.concurrent.Future[Any] = {
+    val dur = if (timeout.isFinite()) timeout.toMillis else (java.lang.Long.MAX_VALUE >> 2)
+    val replyPromise = Promise[Any]
+    scala.concurrent.future {
+      scala.concurrent.blocking {
+        actor !? (dur, message)
+      } match {
+        case Some(x) => replyPromise success x
+        case None => replyPromise failure new AskTimeoutException("? operation timed out.")
       }
     }
+    replyPromise.future
+  }
 
   override def !(message: Any)(implicit sender: ActorRef = null): Unit =
     if (message == PoisonPill)
