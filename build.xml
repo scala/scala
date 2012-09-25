@@ -2322,6 +2322,7 @@ DOCUMENTATION
         <include name="swing/**"/>
         <include name="actors/**"/>
         <include name="actors-migration/**"/>
+        <include name="reflect/**"/>
       </source-includes>
     </doc-uptodate-check>
   </target>
