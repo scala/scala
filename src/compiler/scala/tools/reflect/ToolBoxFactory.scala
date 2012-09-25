@@ -46,23 +46,6 @@ abstract class ToolBoxFactory[U <: JavaUniverse](val u: U) { factorySelf =>
         newTermName("__wrapper$" + wrapCount + "$" + java.util.UUID.randomUUID.toString.replace("-", ""))
       }
 
-      // should be called after every use of ToolBoxGlobal in order to prevent leaks
-      // there's the `withCleanupCaches` method defined below, which provides a convenient interface for that
-      def cleanupCaches(): Unit = {
-        lub(List(IntTpe, IntTpe)) // indirectly clears lubResults and glbResults
-                                  // I didn't want to turn those caches from private to protected
-                                  // in order not to screw up the performance
-        perRunCaches.clearAll()
-        undoLog.clear()
-        analyzer.lastTreeToTyper = EmptyTree
-        lastSeenSourceFile = NoSourceFile
-        lastSeenContext = null
-      }
-
-      def withCleanupCaches[T](body: => T): T =
-        try body
-        finally cleanupCaches()
-
       def verify(expr: Tree): Unit = {
         // Previously toolboxes used to typecheck their inputs before compiling.
         // Actually, the initial demo by Martin first typechecked the reified tree,
@@ -354,7 +337,7 @@ abstract class ToolBoxFactory[U <: JavaUniverse](val u: U) { factorySelf =>
     lazy val importer = compiler.mkImporter(u)
     lazy val exporter = importer.reverse
 
-    def typeCheck(tree: u.Tree, expectedType: u.Type, silent: Boolean = false, withImplicitViewsDisabled: Boolean = false, withMacrosDisabled: Boolean = false): u.Tree = compiler.withCleanupCaches {
+    def typeCheck(tree: u.Tree, expectedType: u.Type, silent: Boolean = false, withImplicitViewsDisabled: Boolean = false, withMacrosDisabled: Boolean = false): u.Tree = {
       if (compiler.settings.verbose.value) println("importing "+tree+", expectedType = "+expectedType)
       var ctree: compiler.Tree = importer.importTree(tree)
       var cexpectedType: compiler.Type = importer.importType(expectedType)
@@ -374,7 +357,7 @@ abstract class ToolBoxFactory[U <: JavaUniverse](val u: U) { factorySelf =>
       inferImplicit(tree, viewTpe, isView = true, silent = silent, withMacrosDisabled = withMacrosDisabled, pos = pos)
     }
 
-    private def inferImplicit(tree: u.Tree, pt: u.Type, isView: Boolean, silent: Boolean, withMacrosDisabled: Boolean, pos: u.Position): u.Tree = compiler.withCleanupCaches {
+    private def inferImplicit(tree: u.Tree, pt: u.Type, isView: Boolean, silent: Boolean, withMacrosDisabled: Boolean, pos: u.Position): u.Tree = {
       if (compiler.settings.verbose.value) println("importing "+pt, ", tree = "+tree+", pos = "+pos)
       var ctree: compiler.Tree = importer.importTree(tree)
       var cpt: compiler.Type = importer.importType(pt)
