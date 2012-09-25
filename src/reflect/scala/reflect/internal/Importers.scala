@@ -33,14 +33,6 @@ trait Importers extends api.Importers { self: SymbolTable =>
     protected class Cache[K <: AnyRef, V <: AnyRef] extends WeakHashMap[K, WeakReference[V]] {
       def weakGet(key: K): Option[V] = this get key flatMap WeakReference.unapply
       def weakUpdate(key: K, value: V) = this.update(key, WeakReference(value))
-      def weakGetOrElseUpdate(key: K)(value: => V): V =
-        weakGet(key) match {
-          case Some(result) => result
-          case None =>
-            val result = value
-            this(key) = WeakReference(result)
-            result
-        }
     }
 
     // fixups and maps prevent stackoverflows in importer
@@ -202,13 +194,18 @@ trait Importers extends api.Importers { self: SymbolTable =>
       } // end importOrRelink
 
       val sym = sym0
-      symMap.weakGetOrElseUpdate(sym) {
-        pendingSyms += 1
-        try importOrRelink
-        finally {
-          pendingSyms -= 1
-          tryFixup()
-        }
+      symMap.weakGet(sym) match {
+        case Some(result) => result
+        case None =>
+          pendingSyms += 1
+          try {
+            val result = importOrRelink
+            symMap.weakUpdate(sym, result)
+            result
+          } finally {
+            pendingSyms -= 1
+            tryFixup()
+          }
       }
     }
 
@@ -270,13 +267,18 @@ trait Importers extends api.Importers { self: SymbolTable =>
       def importOrRelink: Type =
         doImport(tpe)
 
-      tpeMap.weakGetOrElseUpdate(tpe) {
-        pendingTpes += 1
-        try importOrRelink
-        finally {
-          pendingTpes -= 1
-          tryFixup()
-        }
+      tpeMap.weakGet(tpe) match {
+        case Some(result) => result
+        case None =>
+          pendingTpes += 1
+          try {
+            val result = importOrRelink
+            tpeMap.weakUpdate(tpe, result)
+            result
+          } finally {
+            pendingTpes -= 1
+            tryFixup()
+          }
       }
     }
 
