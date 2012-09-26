@@ -207,7 +207,8 @@ class ModelFactory(val global: Global, val settings: doc.Settings) {
       ((!sym.isTrait && ((sym hasFlag Flags.ABSTRACT) || (sym hasFlag Flags.DEFERRED)) && (!isImplicitlyInherited)) ||
       sym.isAbstractClass || sym.isAbstractType) && !sym.isSynthetic
     def isTemplate = false
-    lazy val signature = {
+    def signature = externalSignature(sym)
+    lazy val signatureCompat = {
 
       def defParams(mbr: Any): String = mbr match {
         case d: MemberEntity with Def =>
@@ -1067,5 +1068,17 @@ class ModelFactory(val global: Global, val settings: doc.Settings) {
     (settings.docExpandAllTypes.value && (bSym.sourceFile != null)) ||
     { val rawComment = global.expandedDocComment(bSym, inTpl.sym)
       rawComment.contains("@template") || rawComment.contains("@documentable") }
+
+  def findExternalLink(name: String): Option[LinkTo] =
+    settings.extUrlMapping find {
+      case (pkg, _) => name startsWith pkg
+    } map {
+      case (_, url) => LinkToExternal(name, url + "#" + name)
+    }
+
+  def externalSignature(sym: Symbol) = {
+    sym.info // force it, otherwise we see lazy types
+    (sym.nameString + sym.signatureString).replaceAll("\\s", "")
+  }
 }
 
