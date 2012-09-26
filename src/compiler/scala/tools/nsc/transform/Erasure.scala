@@ -663,7 +663,7 @@ abstract class Erasure extends AddInterfaces
     /** Generate a synthetic cast operation from tree.tpe to pt.
      *  @pre pt eq pt.normalize
      */
-    private def cast(tree: Tree, pt: Type): Tree = {
+    private def cast(tree: Tree, pt: Type): Tree = logResult(s"cast($tree, $pt)") {
       if (pt.typeSymbol == UnitClass) {
         // See SI-4731 for one example of how this occurs.
         log("Attempted to cast to Unit: " + tree)

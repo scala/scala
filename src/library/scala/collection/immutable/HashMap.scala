@@ -120,7 +120,7 @@ class HashMap[A, +B] extends AbstractMap[A, B]
  */
 object HashMap extends ImmutableMapFactory[HashMap] with BitOperations.Int {
 
-  private abstract class Merger[A, B] {
+  private[collection] abstract class Merger[A, B] {
     def apply(kv1: (A, B), kv2: (A, B)): (A, B)
     def invert: Merger[A, B]
   }
@@ -197,7 +197,7 @@ object HashMap extends ImmutableMapFactory[HashMap] with BitOperations.Int {
     //     }
     //   }
 
-    override def updated0[B1 >: B](key: A, hash: Int, level: Int, value: B1, kv: (A, B1), merger: Merger[A, B1]): HashMap[A, B1] =
+    private[collection] override def updated0[B1 >: B](key: A, hash: Int, level: Int, value: B1, kv: (A, B1), merger: Merger[A, B1]): HashMap[A, B1] =
       if (hash == this.hash && key == this.key ) {
         if (merger eq null) {
           if (this.value.asInstanceOf[AnyRef] eq value.asInstanceOf[AnyRef]) this
@@ -238,7 +238,7 @@ object HashMap extends ImmutableMapFactory[HashMap] with BitOperations.Int {
     override def get0(key: A, hash: Int, level: Int): Option[B] =
       if (hash == this.hash) kvs.get(key) else None
 
-    override def updated0[B1 >: B](key: A, hash: Int, level: Int, value: B1, kv: (A, B1), merger: Merger[A, B1]): HashMap[A, B1] =
+    private[collection] override def updated0[B1 >: B](key: A, hash: Int, level: Int, value: B1, kv: (A, B1), merger: Merger[A, B1]): HashMap[A, B1] =
       if (hash == this.hash) {
         if ((merger eq null) || !kvs.contains(key)) new HashMapCollision1(hash, kvs.updated(key, value))
         else new HashMapCollision1(hash, kvs + merger((key, kvs(key)), kv))
@@ -316,7 +316,7 @@ object HashMap extends ImmutableMapFactory[HashMap] with BitOperations.Int {
         None
     }
 
-    override def updated0[B1 >: B](key: A, hash: Int, level: Int, value: B1, kv: (A, B1), merger: Merger[A, B1]): HashMap[A, B1] = {
+    private[collection] override def updated0[B1 >: B](key: A, hash: Int, level: Int, value: B1, kv: (A, B1), merger: Merger[A, B1]): HashMap[A, B1] = {
       val index = (hash >>> level) & 0x1f
       val mask = (1 << index)
       val offset = Integer.bitCount(bitmap & (mask-1))
