@@ -10,6 +10,5 @@ case class Props(creator: () ⇒ InternalActor, dispatcher: String) {
   /**
    * Returns a new Props with the specified creator set
    */
-  def withCreator(c: ⇒ InternalActor) = copy(creator = () ⇒ c)
-
+  final def withCreator(c: ⇒ InternalActor) = copy(creator = () ⇒ c)
 }

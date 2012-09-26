@@ -98,7 +98,7 @@ trait JavaMirrors extends internal.SymbolTable with api.JavaUniverse { thisUnive
     private val fieldCache = new TwoWayCache[jField, TermSymbol]
     private val tparamCache = new TwoWayCache[jTypeVariable[_ <: GenericDeclaration], TypeSymbol]
 
-    def toScala[J: HasJavaClass, S](cache: TwoWayCache[J, S], key: J)(body: (JavaMirror, J) => S): S =
+    private[runtime] def toScala[J: HasJavaClass, S](cache: TwoWayCache[J, S], key: J)(body: (JavaMirror, J) => S): S =
       cache.toScala(key){
         val jclazz = implicitly[HasJavaClass[J]] getClazz key
         body(mirrorDefining(jclazz), key)
