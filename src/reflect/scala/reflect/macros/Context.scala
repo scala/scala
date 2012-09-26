@@ -10,7 +10,7 @@ trait Context extends Aliases
                  with Names
                  with Reifiers
                  with FrontEnds
-                 with Settings
+                 with Infrastructure
                  with Typers
                  with Parsers
                  with Evals

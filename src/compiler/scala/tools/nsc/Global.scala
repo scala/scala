@@ -1230,8 +1230,6 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
     /** Has any macro expansion used a fallback during this run? */
     var seenMacroExpansionsFallingBack = false
 
-    val classPath: List[java.net.URL] = Global.this.classPath.asURLs
-
     /** To be initialized from firstPhase. */
     private var terminalPhase: Phase = NoPhase
 
@@ -1329,7 +1327,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
           }
       }
       for (fullname <- toReload)
-        Global.this.classPath.findClass(fullname) match {
+        classPath.findClass(fullname) match {
           case Some(classRep) =>
             if (settings.verbose.value) inform("[reset] reinit "+fullname)
             loaders.initializeFromClassPath(root, classRep)

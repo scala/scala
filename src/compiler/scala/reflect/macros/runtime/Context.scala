@@ -9,7 +9,7 @@ abstract class Context extends scala.reflect.macros.Context
                          with Names
                          with Reifiers
                          with FrontEnds
-                         with Settings
+                         with Infrastructure
                          with Typers
                          with Parsers
                          with Evals
