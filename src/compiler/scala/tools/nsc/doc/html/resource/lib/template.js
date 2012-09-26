@@ -2,6 +2,22 @@
 // code by Gilles Dubochet with contributions by Pedro Furlanetto
 
 $(document).ready(function(){
+
+    // Escapes special characters and returns a valid jQuery selector
+    function escapeJquery(str){
+        return str.replace(/([;&,\.\+\*\~':"\!\^#$%@\[\]\(\)=>\|])/g, '\\$1');
+    }
+
+    // highlight and jump to selected member
+    if (window.location.hash) {
+      var temp = window.location.hash.replace('#', '');
+      var elem = '#'+escapeJquery(temp);
+
+      window.scrollTo(0, 0);
+      $(elem).parent().effect("highlight", {color: "#FFCC85"}, 3000);
+      $('html,body').animate({scrollTop:$(elem).parent().offset().top}, 1000);
+    }
+    
     var isHiddenClass = function (name) {
         return name == 'scala.Any' ||
                name == 'scala.AnyRef';
@@ -101,6 +117,12 @@ $(document).ready(function(){
         $("#linearization li.in").removeClass("in").addClass("out");
         $("#linearization li:first").removeClass("out").addClass("in");
         $("#implicits li.in").removeClass("in").addClass("out");
+
+        if ($(this).hasClass("out") && $("#mbrsel > div[id=ancestors] > ol > li.showall").hasClass("in")) {
+            $(this).removeClass("out").addClass("in");
+            $("#mbrsel > div[id=ancestors] > ol > li.showall").removeClass("in").addClass("out");
+        }
+
         filter();
     })
     $("#mbrsel > div[id=ancestors] > ol > li.showall").click(function() {
@@ -115,6 +137,11 @@ $(document).ready(function(){
             return ! isHidden(this);
         });
         filteredImplicits.removeClass("out").addClass("in");
+
+        if ($(this).hasClass("out") && $("#mbrsel > div[id=ancestors] > ol > li.hideall").hasClass("in")) {
+            $(this).removeClass("out").addClass("in");
+            $("#mbrsel > div[id=ancestors] > ol > li.hideall").removeClass("in").addClass("out");
+        }
 
         filter();
     });
