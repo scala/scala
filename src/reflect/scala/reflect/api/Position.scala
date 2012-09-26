@@ -50,12 +50,12 @@ trait Position extends Attachments {
   type Pos >: Null <: Position
 
   /** Java file corresponding to the source file of this position.
+   *
+   *  The return type is [[scala.reflect.io.AbstractFile]], which belongs to an experimental part of Scala reflection.
+   *  It should not be used unless you know what you are doing. In subsequent releases, this API will be refined
+   *  and exposed as a part of scala.reflect.api.
    */
-  def fileInfo: java.io.File
-
-  /** Content of the source file that contains this position.
-   */
-  def fileContent: Array[Char]
+  def source: scala.reflect.internal.util.SourceFile
 
   /** Is this position neither a NoPosition nor a FakePosition?
    *  If isDefined is true, offset and source are both defined.
