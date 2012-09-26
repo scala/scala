@@ -6,7 +6,6 @@ package macros
 // the full context should include all traits from scala.reflect.macros (and probably reside in scala-compiler.jar)
 
 trait Context extends Aliases
-                 with CapturedVariables
                  with Enclosures
                  with Infrastructure
                  with Names
