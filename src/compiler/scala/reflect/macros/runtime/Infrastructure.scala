@@ -6,19 +6,9 @@ import scala.tools.nsc.util.ScalaClassLoader
 trait Infrastructure {
   self: Context =>
 
-  val forJVM: Boolean = universe.forJVM
-
-  val forMSIL: Boolean = universe.forMSIL
-
-  val forInteractive: Boolean = universe.forInteractive
-
-  val forScaladoc: Boolean = universe.forScaladoc
-
   val currentRun: Run = universe.currentRun
 
-  val libraryClassPath: List[java.net.URL] = universe.classPath.asURLs
-
-  lazy val libraryClassLoader: ClassLoader = universe.analyzer.macroClassloader
+  val currentClassPath: List[java.net.URL] = universe.classPath.asURLs
 
   type Run = universe.Run
 
@@ -31,6 +21,4 @@ trait Infrastructure {
   object CompilationUnit extends CompilationUnitExtractor {
     def unapply(compilationUnit: CompilationUnit): Option[(java.io.File, Array[Char], Tree)] = Some((compilationUnit.source.file.file, compilationUnit.source.content, compilationUnit.body))
   }
-
-  val currentMacro: Symbol = expandee.symbol
 }

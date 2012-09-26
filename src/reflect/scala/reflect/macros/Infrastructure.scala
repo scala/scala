@@ -4,50 +4,13 @@ package macros
 trait Infrastructure {
   self: Context =>
 
-  /** Determines whether the compiler expanding a macro targets JVM.
-   */
-  val forJVM: Boolean
-
-  /** Determines whether the compiler expanding a macro targets CLR.
-   */
-  val forMSIL: Boolean
-
-  /** Determines whether the compiler expanding a macro is a presentation compiler.
-   */
-  val forInteractive: Boolean
-
-  /** Determines whether the compiler expanding a macro is a Scaladoc compiler.
-   */
-  val forScaladoc: Boolean
-
   /** Exposes current compilation run.
    */
   val currentRun: Run
 
-  /** Exposes library classpath.
+  /** Exposes current classpath.
    */
-  val libraryClassPath: List[java.net.URL]
-
-  /** Exposes a classloader that corresponds to the library classpath.
-   *
-   *  With this classloader you can perform on-the-fly evaluation of macro arguments.
-   *  For example, consider this code snippet:
-   *
-   *    def staticEval[T](x: T) = macro staticEval[T]
-   *
-   *    def staticEval[T](c: Context)(x: c.Expr[T]) = {
-   *      import scala.reflect.runtime.{universe => ru}
-   *      val mirror = ru.runtimeMirror(c.libraryClassLoader)
-   *      import scala.tools.reflect.ToolBox
-   *      val toolBox = mirror.mkToolBox()
-   *      val importer = ru.mkImporter(c.universe).asInstanceOf[ru.Importer { val from: c.universe.type }]
-   *      val tree = c.resetAllAttrs(x.tree.duplicate)
-   *      val imported = importer.importTree(tree)
-   *      val valueOfX = toolBox.eval(imported).asInstanceOf[T]
-   *      ...
-   *    }
-   */
-  def libraryClassLoader: ClassLoader
+  val currentClassPath: List[java.net.URL]
 
   /** As seen by macro API, compilation run is an opaque type that can be deconstructed into:
    *    1) Current compilation unit
@@ -73,8 +36,4 @@ trait Infrastructure {
   abstract class CompilationUnitExtractor {
     def unapply(compilationUnit: CompilationUnit): Option[(java.io.File, Array[Char], Tree)]
   }
-
-  /** Returns a macro definition which triggered this macro expansion.
-   */
-  val currentMacro: Symbol
 }
