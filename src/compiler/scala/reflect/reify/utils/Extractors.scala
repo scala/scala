@@ -114,7 +114,7 @@ trait Extractors {
             case Select(Select(_, tagFlavor), _) => tagFlavor
             case Select(_, tagFlavor) => tagFlavor
           }
-          Some(universe, mirror, SymbolTable(symbolTable1 ++ symbolTable2), rtree, ttpe.tpe, rtpe, tagFlavor == nme.TypeTag)
+          Some((universe, mirror, SymbolTable(symbolTable1 ++ symbolTable2), rtree, ttpe.tpe, rtpe, tagFlavor == nme.TypeTag))
       case _ =>
         None
     }
@@ -139,7 +139,7 @@ trait Extractors {
             case Select(Select(_, tagFlavor), _) => tagFlavor
             case Select(_, tagFlavor) => tagFlavor
           }
-          Some(universe, mirror, SymbolTable(symtab), ttpe.tpe, rtpe, tagFlavor == nme.TypeTag)
+          Some((universe, mirror, SymbolTable(symtab), ttpe.tpe, rtpe, tagFlavor == nme.TypeTag))
       case _ =>
         None
     }
@@ -160,9 +160,9 @@ trait Extractors {
   object FreeDef {
     def unapply(tree: Tree): Option[(Tree, TermName, Tree, Long, String)] = tree match {
       case FreeTermDef(uref, name, binding, flags, origin) =>
-        Some(uref, name, binding, flags, origin)
+        Some((uref, name, binding, flags, origin))
       case FreeTypeDef(uref, name, binding, flags, origin) =>
-        Some(uref, name, binding, flags, origin)
+        Some((uref, name, binding, flags, origin))
       case _ =>
         None
     }
@@ -207,7 +207,7 @@ trait Extractors {
     def unapply(tree: Tree): Option[(Tree, TermName)] = tree match {
       case Apply(Select(Select(uref @ Ident(_), build), ident), List(Ident(name: TermName)))
       if build == nme.build && ident == nme.Ident && name.startsWith(nme.REIFY_FREE_PREFIX) =>
-        Some(uref, name)
+        Some((uref, name))
       case _ =>
         None
     }
@@ -226,7 +226,7 @@ trait Extractors {
             Literal(Constant(isClass: Boolean)))))
       if uref1.name == nme.UNIVERSE_SHORT && build1 == nme.build && newNestedSymbol == nme.newNestedSymbol &&
          uref2.name == nme.UNIVERSE_SHORT && build2 == nme.build && flagsFromBits == nme.flagsFromBits =>
-        Some(uref1, name, flags, isClass)
+        Some((uref1, name, flags, isClass))
       case _ =>
         None
     }

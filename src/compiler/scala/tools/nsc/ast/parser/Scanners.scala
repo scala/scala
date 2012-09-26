@@ -360,7 +360,7 @@ trait Scanners extends ScannersCommon {
           if (ch == '"' && token == IDENTIFIER)
             token = INTERPOLATIONID
         case '<' => // is XMLSTART?
-          def fetchLT = {
+          def fetchLT() = {
             val last = if (charOffset >= 2) buf(charOffset - 2) else ' '
             nextChar()
             last match {
@@ -389,7 +389,7 @@ trait Scanners extends ScannersCommon {
             getOperatorRest()
           }
         case '0' =>
-          def fetchZero = {
+          def fetchZero() = {
             putChar(ch)
             nextChar()
             if (ch == 'x' || ch == 'X') {
@@ -416,7 +416,7 @@ trait Scanners extends ScannersCommon {
         case '`' =>
           getBackquotedIdent()
         case '\"' =>
-          def fetchDoubleQuote = {
+          def fetchDoubleQuote() = {
             if (token == INTERPOLATIONID) {
               nextRawChar()
               if (ch == '\"') {
@@ -452,7 +452,7 @@ trait Scanners extends ScannersCommon {
           }
           fetchDoubleQuote
         case '\'' =>
-          def fetchSingleQuote = {
+          def fetchSingleQuote() = {
             nextChar()
             if (isIdentifierStart(ch))
               charLitOr(getIdentRest)
@@ -500,7 +500,7 @@ trait Scanners extends ScannersCommon {
             nextChar()
           }
         case _ =>
-          def fetchOther = {
+          def fetchOther() = {
             if (ch == '\u21D2') {
               nextChar(); token = ARROW
             } else if (ch == '\u2190') {
