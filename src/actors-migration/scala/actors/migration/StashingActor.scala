@@ -18,7 +18,7 @@ trait StashingActor extends InternalActor {
   type Receive = PartialFunction[Any, Unit]
 
   // checks if StashingActor is created within the actorOf block
-  creationCheck;
+  creationCheck()
 
   private[actors] val ref = new InternalActorRef(this)
 
@@ -112,8 +112,7 @@ trait StashingActor extends InternalActor {
   /*
    * Checks that StashingActor can be created only by MigrationSystem.actorOf method.
    */
-  private[this] def creationCheck = {
-
+  private[this] def creationCheck(): Unit = {
     // creation check (see ActorRef)
     val context = MigrationSystem.contextStack.get
     if (context.isEmpty)

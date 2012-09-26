@@ -107,7 +107,7 @@ private[concurrent] object Promise {
       case _ => None
     }
 
-    override def isCompleted(): Boolean = getState match { // Cheaper than boxing result into Option due to "def value"
+    override def isCompleted: Boolean = getState match { // Cheaper than boxing result into Option due to "def value"
       case _: Try[_] => true
       case _ => false
     }
@@ -156,7 +156,7 @@ private[concurrent] object Promise {
 
     val value = Some(resolveTry(suppliedValue))
 
-    override def isCompleted(): Boolean = true
+    override def isCompleted: Boolean = true
 
     def tryComplete(value: Try[T]): Boolean = false
 

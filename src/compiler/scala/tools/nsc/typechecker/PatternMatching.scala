@@ -1864,7 +1864,7 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
       def registerEquality(c: Const): Unit
 
       // call this to indicate null is part of the domain
-      def registerNull: Unit
+      def registerNull(): Unit
 
       // can this variable be null?
       def mayBeNull: Boolean
@@ -2279,7 +2279,7 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
       val staticTpCheckable: Type = checkableType(staticTp)
 
       private[this] var _mayBeNull = false
-      def registerNull: Unit = { ensureCanModify; if (NullTp <:< staticTpCheckable) _mayBeNull = true }
+      def registerNull(): Unit = { ensureCanModify; if (NullTp <:< staticTpCheckable) _mayBeNull = true }
       def mayBeNull: Boolean = _mayBeNull
 
       // case None => domain is unknown,

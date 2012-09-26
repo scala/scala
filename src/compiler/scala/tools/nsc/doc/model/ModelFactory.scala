@@ -403,7 +403,7 @@ class ModelFactory(val global: Global, val settings: doc.Settings) {
      * This is the final point in the core model creation: no DocTemplates are created after the model has finished, but
      * inherited templates and implicit members are added to the members at this point.
      */
-    def completeModel: Unit = {
+    def completeModel(): Unit = {
       // DFS completion
       // since alias types and abstract types have no own members, there's no reason for them to call completeModel
       if (!sym.isAliasType && !sym.isAbstractType)
