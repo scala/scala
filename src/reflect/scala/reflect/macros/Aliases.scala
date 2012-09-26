@@ -13,6 +13,8 @@ trait Aliases {
   type Position = universe.Position
   type Scope = universe.Scope
   type Modifiers = universe.Modifiers
+  type Run = universe.Run
+  type CompilationUnit = universe.CompilationUnit
 
   type Expr[+T] = universe.Expr[T]
   val Expr = universe.Expr

@@ -4,8 +4,7 @@ object Macros {
   def impl(c: Context): c.Expr[Unit] = {
     // we're macros, so we can reflect against our source path
     // so we don't need any partests to clean up after us!
-    val c.CompilationUnit(file, _, _) = c.enclosingUnit
-    val dir = file.getCanonicalFile.getParentFile
+    val dir = c.enclosingUnit.source.file.file.getCanonicalFile.getParentFile
     def normalizePaths(s: String) = {
       val base = (dir.getCanonicalPath + java.io.File.separator).replace('\\', '/')
       var regex = """\Q%s\E""" format base
