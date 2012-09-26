@@ -14,8 +14,6 @@ abstract class Context extends scala.reflect.macros.Context
                          with Settings
                          with Typers
                          with Parsers
-                         with Exprs
-                         with TypeTags
                          with Evals
                          with ExprUtils
                          with Traces {

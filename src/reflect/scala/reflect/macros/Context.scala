@@ -15,8 +15,6 @@ trait Context extends Aliases
                  with Settings
                  with Typers
                  with Parsers
-                 with Exprs
-                 with TypeTags
                  with Evals
                  with ExprUtils {
 
