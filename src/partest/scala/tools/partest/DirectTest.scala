@@ -37,7 +37,7 @@ abstract class DirectTest extends App {
   }
   // new compiler
   def newCompiler(args: String*): Global = {
-    val settings = newSettings((CommandLineParser tokenize extraSettings) ++ args.toList)
+    val settings = newSettings((CommandLineParser tokenize ("-d \"" + testOutput.path + "\" " + extraSettings)) ++ args.toList)
     if (settings.Yrangepos.value) new Global(settings) with interactive.RangePositions
     else new Global(settings)
   }
