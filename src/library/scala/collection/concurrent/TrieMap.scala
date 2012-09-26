@@ -920,11 +920,11 @@ object TrieMap extends MutableMapFactory[TrieMap] {
 
 
 private[collection] class TrieMapIterator[K, V](var level: Int, private var ct: TrieMap[K, V], mustInit: Boolean = true) extends Iterator[(K, V)] {
-  var stack = new Array[Array[BasicNode]](7)
-  var stackpos = new Array[Int](7)
-  var depth = -1
-  var subiter: Iterator[(K, V)] = null
-  var current: KVNode[K, V] = null
+  private var stack = new Array[Array[BasicNode]](7)
+  private var stackpos = new Array[Int](7)
+  private var depth = -1
+  private var subiter: Iterator[(K, V)] = null
+  private var current: KVNode[K, V] = null
 
   if (mustInit) initialize()
 
