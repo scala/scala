@@ -572,7 +572,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
     val runsRightAfter = None
   } with Inliners
 
-  // phaseName = "inlineExceptionHandlers"
+  // phaseName = "inlinehandlers"
   object inlineExceptionHandlers extends {
     val global: Global.this.type = Global.this
     val runsAfter = List("inliner")
@@ -582,7 +582,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
   // phaseName = "closelim"
   object closureElimination extends {
     val global: Global.this.type = Global.this
-    val runsAfter = List("inlineExceptionHandlers")
+    val runsAfter = List("inlinehandlers")
     val runsRightAfter = None
   } with ClosureElimination
 
@@ -724,13 +724,41 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
 
   /** A description of the phases that will run */
   def phaseDescriptions: String = {
-    val width = phaseNames map (_.length) max
-    val fmt   = "%" + width + "s  %2s  %s\n"
+    val Limit   = 16    // phase names should not be absurdly long
+    val MaxCol  = 80    // because some of us edit on green screens
+    val maxName = (0 /: phaseNames)(_ max _.length)
+    val width   = maxName min Limit
+    val maxDesc = MaxCol - (width + 6)  // descriptions not novels
+    val fmt     = if (settings.verbose.value) s"%${maxName}s  %2s  %s%n"
+                  else s"%${width}.${width}s  %2s  %.${maxDesc}s%n"
 
     val line1 = fmt.format("phase name", "id", "description")
     val line2 = fmt.format("----------", "--", "-----------")
+
+    // built-in string precision merely truncates
+    import java.util.{ Formattable, FormattableFlags, Formatter }
+    def fmtable(s: String) = new Formattable {
+      override def formatTo(formatter: Formatter, flags: Int, width: Int, precision: Int) {
+        val p = elliptically(s, precision)
+        val w = if (width > 0 && p.length < width) {
+          import FormattableFlags.LEFT_JUSTIFY
+          val leftly = (flags & LEFT_JUSTIFY) == LEFT_JUSTIFY
+          val sb = new StringBuilder
+          def pad() = 1 to width - p.length foreach (_ => sb.append(' '))
+          if (!leftly) pad()
+          sb.append(p)
+          if (leftly) pad()
+          sb.toString
+        } else p
+        formatter.out.append(w)
+      }
+    }
+    def elliptically(s: String, max: Int) =
+      if (max < 0 || s.length <= max) s
+      else if (max < 4) s.take(max)
+      else s.take(max - 3) + "..."
     val descs = phaseDescriptors.zipWithIndex map {
-      case (ph, idx) => fmt.format(ph.phaseName, idx + 1, phasesDescMap(ph))
+      case (ph, idx) => fmt.format(fmtable(ph.phaseName), idx + 1, fmtable(phasesDescMap(ph)))
     }
     line1 :: line2 :: descs mkString
   }
@@ -1302,7 +1330,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
     val cleanupPhase                 = phaseNamed("cleanup")
     val icodePhase                   = phaseNamed("icode")
     val inlinerPhase                 = phaseNamed("inliner")
-    val inlineExceptionHandlersPhase = phaseNamed("inlineExceptionHandlers")
+    val inlineExceptionHandlersPhase = phaseNamed("inlinehandlers")
     val closelimPhase                = phaseNamed("closelim")
     val dcePhase                     = phaseNamed("dce")
     // val jvmPhase                     = phaseNamed("jvm")

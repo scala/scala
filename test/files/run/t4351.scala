@@ -1,7 +1,8 @@
 object Test {
   def main(args: Array[String]): Unit = {
-    try new BooleanPropImpl() value
+    try new BooleanPropImpl().value
     catch {
+      // was: StackOverflowError
       case e: RuntimeException => println("runtime exception")
     }
   }
