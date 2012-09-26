@@ -79,7 +79,6 @@ trait Checkable {
        sym.isTypeParameterOrSkolem             // dummy
     || (sym.name.toTermName == nme.WILDCARD)   // _
     || nme.isVariableName(sym.name)            // type variable
-    || (sym == NonLocalReturnControlClass)     // synthetic
   )
   private def isUnwarnableTypeArg(arg: Type) = (
        isUnwarnableTypeArgSymbol(arg.typeSymbolDirect)   // has to be direct: see pos/t1439
@@ -97,19 +96,13 @@ trait Checkable {
     tps filterNot isUnwarnableTypeArg
   }
 
-  private def isReifiableArray(tp: Type): Boolean = tp match {
-    case TypeRef(_, ArrayClass, arg :: Nil) => isReifiableArray(arg)
-    case TypeRef(_, sym, args)              => isUnwarnableTypeArg(tp) || (!sym.isAbstractType && args.isEmpty)
-    case _                                  => false
-  }
-
   private class CheckabilityChecker(val X: Type, val P: Type) {
     def Xsym = X.typeSymbol
     def Psym = P.typeSymbol
     def XR   = propagateKnownTypes(X, Psym)
     def P1   = X matchesPattern P
     def P2   = CheckabilityChecker.isNeverSubType(X, P)
-    def P3   = Psym.isClass && ((XR matchesPattern P) || isReifiableArray(P) || P.typeArgs.forall(isUnwarnableTypeArg))
+    def P3   = Psym.isClass && (XR matchesPattern P)
     def P4   = !(P1 || P2 || P3)
 
     def summaryString = f"""
