@@ -14,7 +14,7 @@ trait SymbolLoaders { self: SymbolTable =>
    *  by unpickling information from the corresponding Java class. If no Java class
    *  is found, a package is created instead.
    */
-  class TopClassCompleter(clazz: Symbol, module: Symbol) extends SymLoader {
+  class TopClassCompleter(clazz: Symbol, module: Symbol) extends SymLoader with FlagAssigningCompleter {
 //    def makePackage() {
 //      println("wrong guess; making package "+clazz)
 //      val ptpe = newPackageType(module.moduleClass)
@@ -80,7 +80,7 @@ trait SymbolLoaders { self: SymbolTable =>
 
   /** The type completer for packages.
    */
-  class LazyPackageType extends LazyType {
+  class LazyPackageType extends LazyType with FlagAgnosticCompleter {
     override def complete(sym: Symbol) {
       assert(sym.isPackageClass)
       sym setInfo new ClassInfoType(List(), new PackageScope(sym), sym)

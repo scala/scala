@@ -844,7 +844,7 @@ abstract class ClassfileParser {
     GenPolyType(ownTypeParams, tpe)
   } // sigToType
 
-  class TypeParamsType(override val typeParams: List[Symbol]) extends LazyType {
+  class TypeParamsType(override val typeParams: List[Symbol]) extends LazyType with FlagAgnosticCompleter {
     override def complete(sym: Symbol) { throw new AssertionError("cyclic type dereferencing") }
   }
 
@@ -1228,7 +1228,7 @@ abstract class ClassfileParser {
     }
   }
 
-  class LazyAliasType(alias: Symbol) extends LazyType {
+  class LazyAliasType(alias: Symbol) extends LazyType with FlagAgnosticCompleter {
     override def complete(sym: Symbol) {
       sym setInfo createFromClonedSymbols(alias.initialize.typeParams, alias.tpe)(typeFun)
     }

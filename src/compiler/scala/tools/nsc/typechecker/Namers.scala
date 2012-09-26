@@ -1506,7 +1506,7 @@ trait Namers extends MethodSynthesis {
 
   /** A class representing a lazy type with known type parameters.
    */
-  class PolyTypeCompleter(tparams: List[TypeDef], restp: TypeCompleter, owner: Tree, ctx: Context) extends LockingTypeCompleter {
+  class PolyTypeCompleter(tparams: List[TypeDef], restp: TypeCompleter, owner: Tree, ctx: Context) extends LockingTypeCompleter with FlagAgnosticCompleter {
     private val ownerSym    = owner.symbol
     override val typeParams = tparams map (_.symbol) //@M
     override val tree       = restp.tree
