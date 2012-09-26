@@ -5,7 +5,6 @@ import scala.tools.nsc.Global
 
 abstract class Context extends scala.reflect.macros.Context
                          with Aliases
-                         with Infrastructure
                          with Enclosures
                          with Names
                          with Reifiers

@@ -7,7 +7,6 @@ package macros
 
 trait Context extends Aliases
                  with Enclosures
-                 with Infrastructure
                  with Names
                  with Reifiers
                  with FrontEnds

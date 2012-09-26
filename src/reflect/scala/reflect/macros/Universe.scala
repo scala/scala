@@ -135,6 +135,9 @@ abstract class Universe extends scala.reflect.api.Universe {
 
     /** All units of work comprising this compilation run. */
     def units: Iterator[CompilationUnit]
+
+    /** Classpath of this compilation run. */
+    def classPath: List[java.net.URL]
   }
 
   type CompilationUnit <: CompilationUnitContextApi
