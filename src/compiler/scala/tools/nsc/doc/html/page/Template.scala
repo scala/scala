@@ -41,7 +41,7 @@ class Template(universe: doc.Universe, generator: DiagramGenerator, tpl: DocTemp
       <script type="text/javascript" src={ relativeLinkTo{List("jquery-ui.js", "lib")} }></script>
       <script type="text/javascript" src={ relativeLinkTo{List("template.js", "lib")} }></script>
       <script type="text/javascript" src={ relativeLinkTo{List("tools.tooltip.js", "lib")} }></script>
-      { if (universe.settings.docDiagrams.isSetByUser) {
+      { if (universe.settings.docDiagrams.value) {
       <script type="text/javascript" src={ relativeLinkTo{List("modernizr.custom.js", "lib")} }></script>
       <script type="text/javascript" src={ relativeLinkTo{List("diagrams.js", "lib")} } id="diagrams-js"></script>
       } else NodeSeq.Empty }
@@ -289,6 +289,7 @@ class Template(universe: doc.Universe, generator: DiagramGenerator, tpl: DocTemp
       fullComment={ if(memberComment.filter(_.label=="div").isEmpty) "no" else "yes" }
       group={ mbr.group }>
       <a id={ mbr.signature }/>
+      <a id={ mbr.signatureCompat }/>
       { signature(mbr, false) }
       { memberComment }
     </li>
@@ -645,17 +646,28 @@ class Template(universe: doc.Universe, generator: DiagramGenerator, tpl: DocTemp
       case _ => NodeSeq.Empty
     }
 
-    val typeHierarchy = if (s.docDiagrams.isSetByUser) mbr match {
-      case dtpl: DocTemplateEntity if isSelf && !isReduced =>
-        makeDiagramHtml(dtpl, dtpl.inheritanceDiagram, "Type Hierarchy", "inheritance-diagram")
-      case _ => NodeSeq.Empty
-    } else NodeSeq.Empty // diagrams not generated
+    def createDiagram(f: DocTemplateEntity => Option[Diagram], description: String, id: String): NodeSeq =
+      if (s.docDiagrams.value) mbr match {
+        case dtpl: DocTemplateEntity if isSelf && !isReduced =>
+          val diagram = f(dtpl)
+          if (diagram.isDefined) {
+            val s = universe.settings
+            val diagramSvg = generator.generate(diagram.get, tpl, this)
+            if (diagramSvg != NodeSeq.Empty) {
+              <div class="toggleContainer block diagram-container" id={ id + "-container"}>
+                <span class="toggle diagram-link">{ description }</span>
+                <a href="http://docs.scala-lang.org/overviews/scaladoc/usage.html#diagrams" target="_blank" class="diagram-help">Learn more about scaladoc diagrams</a>
+                <div class="diagram" id={ id }>{
+                  diagramSvg
+                }</div>
+              </div>
+            } else NodeSeq.Empty
+          } else NodeSeq.Empty
+        case _ => NodeSeq.Empty
+      } else NodeSeq.Empty // diagrams not generated
 
-    val contentHierarchy = if (s.docDiagrams.isSetByUser) mbr match {
-      case dtpl: DocTemplateEntity if isSelf && !isReduced =>
-        makeDiagramHtml(dtpl, dtpl.contentDiagram, "Content Hierarchy", "content-diagram")
-      case _ => NodeSeq.Empty
-    } else NodeSeq.Empty // diagrams not generated
+    val typeHierarchy = createDiagram(_.inheritanceDiagram, "Type Hierarchy", "inheritance-diagram")
+    val contentHierarchy = createDiagram(_.contentDiagram, "Content Hierarchy", "content-diagram")
 
     memberComment ++ paramComments ++ attributesBlock ++ linearization ++ subclasses ++ typeHierarchy ++ contentHierarchy
   }
@@ -945,22 +957,6 @@ class Template(universe: doc.Universe, generator: DiagramGenerator, tpl: DocTemp
     case ub: UpperBoundedTypeParamConstraint =>
       scala.xml.Text(ub.typeParamName + " is a subclass of " + ub.upperBound.name + " (" + ub.typeParamName + " <: ") ++
         typeToHtml(ub.upperBound, true) ++ scala.xml.Text(")")
-  }
-
-  def makeDiagramHtml(tpl: DocTemplateEntity, diagram: Option[Diagram], description: String, id: String) = {
-    if (diagram.isDefined) {
-      val s = universe.settings
-      val diagramSvg = generator.generate(diagram.get, tpl, this)
-      if (diagramSvg != NodeSeq.Empty) {
-        <div class="toggleContainer block diagram-container" id={ id + "-container"}>
-          <span class="toggle diagram-link">{ description }</span>
-          <a href="http://docs.scala-lang.org/overviews/scaladoc/usage.html#diagrams" target="_blank" class="diagram-help">Learn more about scaladoc diagrams</a>
-          <div class="diagram" id={ id }>{
-            diagramSvg
-          }</div>
-        </div>
-      } else NodeSeq.Empty
-    } else NodeSeq.Empty
   }
 }
 
