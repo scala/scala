@@ -1469,7 +1469,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     def makeSerializable() {
       info match {
         case ci @ ClassInfoType(_, _, _) =>
-          updateInfo(ci.copy(parents = ci.parents :+ SerializableClass.tpe))
+          setInfo(ci.copy(parents = ci.parents :+ SerializableClass.tpe))
         case i =>
           abort("Only ClassInfoTypes can be made serializable: "+ i)
       }
