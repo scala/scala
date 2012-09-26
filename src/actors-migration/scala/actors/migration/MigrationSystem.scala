@@ -1,10 +1,11 @@
-package scala.actors
+package scala.actors.migration
 
+import scala.actors._
 import scala.collection._
 
 object MigrationSystem {
 
-  private[actors] val contextStack = new ThreadLocal[immutable.Stack[Boolean]] {
+  private[migration] val contextStack = new ThreadLocal[immutable.Stack[Boolean]] {
     override def initialValue() = immutable.Stack[Boolean]()
   }
 

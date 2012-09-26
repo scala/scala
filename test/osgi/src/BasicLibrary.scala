@@ -29,7 +29,7 @@ class BasicLibraryTest extends ScalaOsgiHelper {
   def everythingLoads(): Unit = {
      // Note - This tests sun.misc usage.
      import scala.concurrent._
-     import scala.concurrent.util.Duration.Inf
+     import scala.concurrent.duration.Duration.Inf
      import ExecutionContext.Implicits._
      val x = Future(2) map (_ + 1)
      assertEquals(3, Await.result(x, Inf))
