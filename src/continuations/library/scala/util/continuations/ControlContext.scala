@@ -101,7 +101,7 @@ final class ControlContext[+A,-B,+C](val fun: (A => B, Exception => B) => C, val
   @noinline final def map[A1](f: A => A1): ControlContext[A1,B,C] = {
     if (fun eq null)
       try {
-        new ControlContext(null, f(x)) // TODO: only alloc if f(x) != x
+        new ControlContext[A1,B,C](null, f(x)) // TODO: only alloc if f(x) != x
       } catch {
         case ex: Exception =>
           new ControlContext((k: A1 => B, thr: Exception => B) => thr(ex).asInstanceOf[C], null.asInstanceOf[A1])
