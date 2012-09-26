@@ -10,4 +10,28 @@ unchecked3.scala:28: error: non-variable type argument Int in type pattern A2[In
 unchecked3.scala:32: error: non-variable type argument Int in type pattern B2[_,Int] is unchecked since it is eliminated by erasure
   /*   warn */ def twotypes5[T](x: A2[T]) = x match { case _: B2[_, Int] => true }
                                                               ^
-four errors found
+unchecked3.scala:40: error: non-variable type argument String in type pattern Array[List[String]] is unchecked since it is eliminated by erasure
+    /*   warn */ case _: Array[List[String]]         => ()
+                         ^
+unchecked3.scala:43: error: non-variable type argument String in type pattern Array[Array[List[String]]] is unchecked since it is eliminated by erasure
+    /*   warn */ case _: Array[Array[List[String]]]  => ()
+                         ^
+unchecked3.scala:50: error: non-variable type argument String in type pattern Array[List[String]] is unchecked since it is eliminated by erasure
+    /*   warn */ case _: Array[List[String]]         => ()
+                         ^
+unchecked3.scala:53: error: non-variable type argument String in type pattern Array[Array[List[String]]] is unchecked since it is eliminated by erasure
+    /*   warn */ case _: Array[Array[List[String]]]  => ()
+                         ^
+unchecked3.scala:60: error: non-variable type argument String in type pattern Array[List[String]] is unchecked since it is eliminated by erasure
+    /*   warn */ case _: Array[List[String]]        => ()
+                         ^
+unchecked3.scala:62: error: non-variable type argument Array[String] in type pattern Array[List[Array[String]]] is unchecked since it is eliminated by erasure
+    /*   warn */ case _: Array[List[Array[String]]] => ()
+                         ^
+unchecked3.scala:63: error: non-variable type argument String in type pattern Array[Array[List[String]]] is unchecked since it is eliminated by erasure
+    /*   warn */ case _: Array[Array[List[String]]] => ()
+                         ^
+unchecked3.scala:75: error: abstract type A in type pattern Set[Q.this.A] is unchecked since it is eliminated by erasure
+      /*   warn */ case xs: Set[A]  => xs.head
+                            ^
+12 errors found

@@ -31,3 +31,53 @@ object MiscUnchecked {
   /* nowarn */ def twotypes4[T](x: A2[T]) = x match { case _: B2[T, _] => true }
   /*   warn */ def twotypes5[T](x: A2[T]) = x match { case _: B2[_, Int] => true }
 }
+
+object Arrays {
+  def f1(x: Any) = x match {
+    /* nowarn */ case _: Array[Int]                  => ()
+    /* nowarn */ case _: Array[Boolean]              => ()
+    /* nowarn */ case _: Array[String]               => ()
+    /*   warn */ case _: Array[List[String]]         => ()
+    /* nowarn */ case _: Array[Array[String]]        => ()
+    /* nowarn */ case _: Array[Array[Array[String]]] => ()
+    /*   warn */ case _: Array[Array[List[String]]]  => ()
+  }
+
+  def f2(x: Array[_]) = x match {
+    /* nowarn */ case _: Array[Int]                  => ()
+    /* nowarn */ case _: Array[Boolean]              => ()
+    /* nowarn */ case _: Array[String]               => ()
+    /*   warn */ case _: Array[List[String]]         => ()
+    /* nowarn */ case _: Array[Array[String]]        => ()
+    /* nowarn */ case _: Array[Array[Array[String]]] => ()
+    /*   warn */ case _: Array[Array[List[String]]]  => ()
+  }
+
+  def f3[T](x: Array[T]) = x match {
+    /* nowarn */ case _: Array[Int]                 => ()
+    /* nowarn */ case _: Array[Boolean]             => ()
+    /* nowarn */ case _: Array[String]              => ()
+    /*   warn */ case _: Array[List[String]]        => ()
+    /* nowarn */ case _: Array[Array[String]]       => ()
+    /*   warn */ case _: Array[List[Array[String]]] => ()
+    /*   warn */ case _: Array[Array[List[String]]] => ()
+  }
+}
+
+object Matching {
+  class Q {
+    type A
+    type B <: A
+
+    def f(xs: Traversable[B]) = xs match {
+      /* nowarn */ case xs: List[A] => xs.head
+      /* nowarn */ case xs: Seq[B]  => xs.head
+      /*   warn */ case xs: Set[A]  => xs.head
+    }
+    def f2[T <: B](xs: Traversable[T]) = xs match {
+      /* nowarn */ case xs: List[B with T] => xs.head
+      /* nowarn */ case xs: Seq[A]         => xs.head
+      /* nowarn */ case xs: Set[T]         => xs.head
+    }
+  }
+}
