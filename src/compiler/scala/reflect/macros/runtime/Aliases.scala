@@ -10,7 +10,7 @@ trait Aliases {
   override type TermName = universe.TermName
   override type TypeName = universe.TypeName
   override type Tree = universe.Tree
-  // override type Position = universe.Position
+  override type Position = universe.Position
   override type Scope = universe.Scope
   override type Modifiers = universe.Modifiers
 

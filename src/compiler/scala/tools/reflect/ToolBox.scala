@@ -15,6 +15,9 @@ trait ToolBox[U <: scala.reflect.api.Universe] {
    *
    *  Accumulates and displays warnings and errors, can drop to interactive mode (if supported).
    *  The latter can be useful to study the typechecker or to debug complex macros.
+   *
+   *  [[scala.tools.reflect]] provides two predefined front ends that can be created using
+   *  [[scala.tools.reflect.mkSilentFrontEnd]] and [[scala.tools.reflect.mkConsoleFrontEnd]].
    */
   def frontEnd: FrontEnd
 

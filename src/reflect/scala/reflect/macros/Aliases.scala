@@ -10,7 +10,7 @@ trait Aliases {
   type TermName = universe.TermName
   type TypeName = universe.TypeName
   type Tree = universe.Tree
-  // type Position = universe.Position
+  type Position = universe.Position
   type Scope = universe.Scope
   type Modifiers = universe.Modifiers
 
