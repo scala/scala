@@ -1750,7 +1750,7 @@ self =>
             in.nextToken()
             if (in.token == SUBTYPE || in.token == SUPERTYPE) wildcardType(start)
             else atPos(start) { Bind(tpnme.WILDCARD, EmptyTree) }
-          case IDENTIFIER if treeInfo.isVariableName(in.name) =>
+          case IDENTIFIER if nme.isVariableName(in.name) =>
             atPos(start) { Bind(identForType(), EmptyTree) }
           case _ =>
             typ()
