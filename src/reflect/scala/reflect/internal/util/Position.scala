@@ -8,7 +8,6 @@ package scala.reflect.internal.util
 
 import scala.reflect.ClassTag
 import scala.reflect.api.Attachments
-import scala.reflect.api.PositionApi
 
 object Position {
   val tabInc = 8
@@ -36,7 +35,7 @@ object Position {
   }
 }
 
-abstract class Position extends PositionApi { self =>
+abstract class Position extends scala.reflect.api.Position { self =>
 
   type Pos = Position
 

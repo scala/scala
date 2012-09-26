@@ -1,8 +1,6 @@
 package scala.reflect
 package macros
 
-import scala.reflect.api.PositionApi
-
 trait Reifiers {
   self: Context =>
 
@@ -83,6 +81,6 @@ trait Reifiers {
 
 // made these guys non path-dependent, otherwise exception handling quickly becomes a mess
 
-case class ReificationError(val pos: PositionApi, val msg: String) extends Throwable(msg)
+case class ReificationError(val pos: scala.reflect.api.Position, val msg: String) extends Throwable(msg)
 
-case class UnexpectedReificationError(val pos: PositionApi, val msg: String, val cause: Throwable = null) extends Throwable(msg, cause)
+case class UnexpectedReificationError(val pos: scala.reflect.api.Position, val msg: String, val cause: Throwable = null) extends Throwable(msg, cause)
