@@ -4,16 +4,11 @@ package macros
 trait Reifiers {
   self: Context =>
 
-  /** Reification prefix that refers to the runtime reflexive universe, ``scala.reflect.runtime.universe''.
-   *  Providing it for the ``prefix'' parameter of ``reifyTree'' or ``reifyType'' will create a full-fledged tree that can be inspected at runtime.
-   */
-  val runtimeUniverse: Tree
-
   /** Given a tree, generate a tree that when compiled and executed produces the original tree.
    *  For more information and examples see the documentation for ``Universe.reify''.
    *
    *  The produced tree will be bound to the specified ``universe'' and ``mirror''.
-   *  Possible values for ``universe'' include ``runtimeUniverse''.
+   *  Possible values for ``universe'' include ``universe.treeBuild.mkRuntimeUniverseRef''.
    *  Possible values for ``mirror'' include ``EmptyTree'' (in that case the reifier will automatically pick an appropriate mirror).
    *
    *  This function is deeply connected to ``Universe.reify'', a macro that reifies arbitrary expressions into runtime trees.

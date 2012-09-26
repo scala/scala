@@ -53,4 +53,7 @@ abstract class TreeBuilder {
   def mkMethodCall(receiver: Tree, method: Symbol, targs: List[Type], args: List[Tree]): Tree
   def mkMethodCall(target: Tree, targs: List[Type], args: List[Tree]): Tree
   def mkNullaryCall(method: Symbol, targs: List[Type]): Tree
+
+  /** A tree that refers to the runtime reflexive universe, ``scala.reflect.runtime.universe''. */
+  def mkRuntimeUniverseRef: Tree
 }
