@@ -3445,6 +3445,16 @@ trait Types extends api.Types { self: SymbolTable =>
     override def kind = "LazyType"
   }
 
+  /** A marker trait representing an as-yet unevaluated type
+   *  which doesn't assign flags to the underlying symbol.
+   */
+  trait FlagAgnosticCompleter extends LazyType
+
+  /** A marker trait representing an as-yet unevaluated type
+   *  which assigns flags to the underlying symbol.
+   */
+  trait FlagAssigningCompleter extends LazyType
+
   abstract class LazyPolyType(override val typeParams: List[Symbol]) extends LazyType {
     override def safeToString =
       (if (typeParams.isEmpty) "" else typeParamsString(this)) + super.safeToString

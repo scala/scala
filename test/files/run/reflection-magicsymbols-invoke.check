@@ -90,7 +90,7 @@ method $asInstanceOf: [T0]()T0
 method $isInstanceOf: [T0]()Boolean
 method ==: (x$1: Any)Boolean
 method ==: (x$1: AnyRef)Boolean
-method apply: (i: <?>)T
+method apply: (i: Int)T
 method asInstanceOf: [T0]=> T0
 method clone: ()Array[T]
 method eq: (x$1: AnyRef)Boolean
@@ -105,7 +105,7 @@ method notify: ()Unit
 method notifyAll: ()Unit
 method synchronized: [T0](x$1: T0)T0
 method toString: ()java.lang.String
-method update: (i: <?>, x: <?>)Unit
+method update: (i: Int, x: T)Unit
 method wait: ()Unit
 method wait: (x$1: Long)Unit
 method wait: (x$1: Long, x$2: Int)Unit

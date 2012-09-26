@@ -104,7 +104,7 @@ trait Importers extends api.Importers { self: SymbolTable =>
         mysym setFlag Flags.LOCKED
         mysym setInfo {
           val mytypeParams = sym.typeParams map importSymbol
-          new LazyPolyType(mytypeParams) {
+          new LazyPolyType(mytypeParams) with FlagAgnosticCompleter {
             override def complete(s: Symbol) {
               val result = sym.info match {
                 case from.PolyType(_, res) => res

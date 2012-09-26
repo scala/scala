@@ -99,6 +99,7 @@ trait HasFlags {
   def isLabel            = hasAllFlags(LABEL | METHOD) && !hasAccessorFlag
   def isLazy             = hasFlag(LAZY)
   def isLifted           = hasFlag(LIFTED)
+  def isMacro            = hasFlag(MACRO)
   def isMutable          = hasFlag(MUTABLE)
   def isOverride         = hasFlag(OVERRIDE)
   def isParamAccessor    = hasFlag(PARAMACCESSOR)
@@ -109,6 +110,7 @@ trait HasFlags {
   def isProtectedLocal   = hasAllFlags(ProtectedLocal)
   def isPublic           = hasNoFlags(PRIVATE | PROTECTED) && !hasAccessBoundary
   def isSealed           = hasFlag(SEALED)
+  def isSpecialized      = hasFlag(SPECIALIZED)
   def isSuperAccessor    = hasFlag(SUPERACCESSOR)
   def isSynthetic        = hasFlag(SYNTHETIC)
   def isTrait            = hasFlag(TRAIT) && !hasFlag(PARAM)
