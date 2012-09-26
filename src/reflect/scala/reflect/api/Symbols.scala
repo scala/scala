@@ -86,10 +86,10 @@ trait Symbols { self: Universe =>
      *  that directly contains the current symbol's definition.
      *  The `NoSymbol` symbol does not have an owner, and calling this method
      *  on one causes an internal error.
-     *  The owner of the Scala root class [[scala.reflect.api.MirrorOf.RootClass]]
-     *  and the Scala root object [[scala.reflect.api.MirrorOf.RootPackage]] is `NoSymbol`.
+     *  The owner of the Scala root class [[scala.reflect.api.Mirror.RootClass]]
+     *  and the Scala root object [[scala.reflect.api.Mirror.RootPackage]] is `NoSymbol`.
      *  Every other symbol has a chain of owners that ends in
-     *  [[scala.reflect.api.MirrorOf.RootClass]].
+     *  [[scala.reflect.api.Mirror.RootClass]].
      */
     def owner: Symbol
 

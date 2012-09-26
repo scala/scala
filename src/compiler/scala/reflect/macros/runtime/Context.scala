@@ -22,7 +22,7 @@ abstract class Context extends scala.reflect.macros.Context
 
   val universe: Global
 
-  val mirror: MirrorOf[universe.type] = universe.rootMirror
+  val mirror: scala.reflect.api.Mirror[universe.type] = universe.rootMirror
 
   val callsiteTyper: universe.analyzer.Typer
 

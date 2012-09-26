@@ -22,5 +22,5 @@ package api
  * `TreeCreator` can't have a functional type, so it's implemented as class with an apply method.
  */
 abstract class TreeCreator {
-  def apply[U <: Universe with Singleton](m: MirrorOf[U]): U # Tree
+  def apply[U <: Universe with Singleton](m: scala.reflect.api.Mirror[U]): U # Tree
 }

@@ -24,7 +24,7 @@ trait Context extends Aliases
   val universe: Universe
 
   /** The mirror of the compile-time universe */
-  val mirror: MirrorOf[universe.type]
+  val mirror: scala.reflect.api.Mirror[universe.type]
 
   /** The type of the prefix tree from which the macro is selected */
   type PrefixType

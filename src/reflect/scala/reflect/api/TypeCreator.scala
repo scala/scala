@@ -22,5 +22,5 @@ package api
  * `TypeCreator` can't have a functional type, so it's implemented as class with an apply method.
  */
 abstract class TypeCreator {
-  def apply[U <: Universe with Singleton](m: MirrorOf[U]): U # Type
+  def apply[U <: Universe with Singleton](m: scala.reflect.api.Mirror[U]): U # Type
 }
