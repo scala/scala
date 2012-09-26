@@ -106,7 +106,7 @@ trait Plugins {
    * @see phasesSet
    */
   protected def computePluginPhases(): Unit =
-    phasesSet ++= (plugins flatMap (_.components))
+    for (p <- plugins; c <- p.components) addToPhasesSet(c, c.description)
 
   /** Summary of the options for all loaded plugins */
   def pluginOptionsHelp: String =

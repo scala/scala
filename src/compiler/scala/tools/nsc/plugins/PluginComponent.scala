@@ -22,4 +22,7 @@ abstract class PluginComponent extends SubComponent {
    * but can override it */
   val runsRightAfter: Option[String] = None
 
+  /** Useful for -Xshow-phases. */
+  def description: String = ""
+
 }
