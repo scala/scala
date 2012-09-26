@@ -150,7 +150,7 @@ trait DiagramFactory extends DiagramDirectiveParser {
         if (nodesShown.isEmpty)
           None
         else {
-          val nodes = nodesAll.filter(nodesShown.contains(_)).map(mapNodes(_))
+          val nodes = nodesAll.filter(nodesShown.contains(_)).flatMap(mapNodes.get(_))
           val edges = edgesAll.map(pair => (mapNodes(pair._1), pair._2.map(mapNodes(_)))).filterNot(pair => pair._2.isEmpty)
           val diagram =
             // TODO: Everyone should be able to use the @{inherit,content}Diagram annotation to change the diagrams.
