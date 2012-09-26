@@ -11,6 +11,7 @@ trait MemberLookup {
   thisFactory: ModelFactory =>
 
   import global._
+  import rootMirror.RootPackage, rootMirror.EmptyPackage
 
   def makeEntityLink(title: Inline, pos: Position, query: String, inTplOpt: Option[DocTemplateImpl]) =
     new EntityLink(title) { lazy val link = memberLookup(pos, query, inTplOpt) }
@@ -21,22 +22,43 @@ trait MemberLookup {
     var members = breakMembers(query)
     //println(query + " => " + members)
 
-    // (1) Lookup in the root package, as most of the links are qualified
-    var linkTo: List[LinkTo] = lookupInRootPackage(pos, members)
+    // (1) First look in the root package, as most of the links are qualified
+    val fromRoot = lookupInRootPackage(pos, members)
 
-    // (2) Recursively go into each
-    if (inTplOpt.isDefined) {
-      var currentTpl = inTplOpt.get
-      while (currentTpl != null && !currentTpl.isRootPackage && (linkTo.isEmpty)) {
-        linkTo = lookupInTemplate(pos, members, currentTpl)
-        currentTpl = currentTpl.inTemplate
-      }
+    // (2) Or recursively go into each containing template.
+    val fromParents = inTplOpt.fold(Stream.empty[DocTemplateImpl]) { tpl =>
+      Stream.iterate(tpl)(_.inTemplate)
+    }.takeWhile (tpl => tpl != null && !tpl.isRootPackage).map { tpl =>
+      lookupInTemplate(pos, members, tpl.asInstanceOf[EntityImpl].sym)
     }
 
-    // (3) Look at external links
-    if (linkTo.isEmpty) {
-      // TODO: IF THIS IS THE ROOT PACKAGE, LOOK AT EXTERNAL LINKS
+    val syms = (fromRoot +: fromParents) find (!_.isEmpty) getOrElse Nil
+    val linkTo = createLinks(syms) match {
+      case Nil if !syms.isEmpty =>
+        // (3) Look at external links
+        syms.flatMap { case (sym, owner) =>
+
+          // reconstruct the original link
+          def linkName(sym: Symbol) = {
+            def isRoot(s: Symbol) = s.isRootSymbol || s.isEmptyPackage || s.isEmptyPackageClass
+            def nameString(s: Symbol) = s.nameString + (if ((s.isModule || s.isModuleClass) && !s.isPackage) "$" else "")
+            val packageSuffix = if (sym.isPackage) ".package" else ""
+
+            sym.ownerChain.reverse.filterNot(isRoot(_)).map(nameString(_)).mkString(".") + packageSuffix
+          }
+
+          if (sym.isClass || sym.isModule || sym.isTrait || sym.isPackage)
+            findExternalLink(linkName(sym))
+          else if (owner.isClass || owner.isModule || owner.isTrait || owner.isPackage)
+            findExternalLink(linkName(owner) + "@" + externalSignature(sym))
+          else
+            None
+        }
+      case links => links
     }
+
+    //println(createLinks(syms))
+    //println(linkTo)
 
     // (4) if we still haven't found anything, create a tooltip, if we found too many, report
     if (linkTo.isEmpty){
@@ -97,9 +119,23 @@ trait MemberLookup {
   private object OnlyType extends SearchStrategy
   private object OnlyTerm extends SearchStrategy
 
-  private def lookupInRootPackage(pos: Position, members: List[String]) = lookupInTemplate(pos, members, makeRootPackage)
+  private def lookupInRootPackage(pos: Position, members: List[String]) =
+    if (members.length == 1)
+      lookupInTemplate(pos, members, EmptyPackage) ::: lookupInTemplate(pos, members, RootPackage)
+    else
+      lookupInTemplate(pos, members, RootPackage)
 
-  private def lookupInTemplate(pos: Position, members: List[String], inTpl: DocTemplateImpl): List[LinkTo] = {
+  private def createLinks(syms: List[(Symbol, Symbol)]): List[LinkTo] =
+    syms.flatMap { case (sym, owner) =>
+      if (sym.isClass || sym.isModule || sym.isTrait || sym.isPackage)
+        findTemplateMaybe(sym) map (LinkToTpl(_))
+      else
+        findTemplateMaybe(owner) flatMap { inTpl =>
+          inTpl.members find (_.asInstanceOf[EntityImpl].sym == sym) map (LinkToMember(_, inTpl))
+        }
+    }
+
+  private def lookupInTemplate(pos: Position, members: List[String], container: Symbol): List[(Symbol, Symbol)] = {
     // Maintaining compatibility with previous links is a bit tricky here:
     // we have a preference for term names for all terms except for the last, where we prefer a class:
     // How to do this:
@@ -108,53 +144,56 @@ trait MemberLookup {
     //     * we look for terms with the last member's name
     //     * we look for types with the same name, all the way up
     val result = members match {
-      case Nil =>
-        Nil
+      case Nil => Nil
       case mbrName::Nil =>
-        var members = lookupInTemplate(pos, mbrName, inTpl, OnlyType)
-        if (members.isEmpty)
-          members = lookupInTemplate(pos, mbrName, inTpl, OnlyTerm)
-
-        members.map(_ match {
-          case tpl: DocTemplateEntity => LinkToTpl(tpl)
-          case mbr => LinkToMember(mbr, inTpl)
-        })
+        var syms = lookupInTemplate(pos, mbrName, container, OnlyType) map ((_, container))
+        if (syms.isEmpty)
+          syms = lookupInTemplate(pos, mbrName, container, OnlyTerm) map ((_, container))
+        syms
 
       case tplName::rest =>
+        def completeSearch(syms: List[Symbol]) =
+          syms filter {sym => sym.isPackage || sym.isClass || sym.isModule} flatMap (lookupInTemplate(pos, rest, _))
 
-        def completeSearch(mbrs: List[MemberImpl]) =
-          mbrs.collect({case d:DocTemplateImpl => d}).flatMap(tpl => lookupInTemplate(pos, rest, tpl))
-
-        var members = completeSearch(lookupInTemplate(pos, tplName, inTpl, OnlyTerm))
-        if (members.isEmpty)
-          members = completeSearch(lookupInTemplate(pos, tplName, inTpl, OnlyType))
-
-        members
+        completeSearch(lookupInTemplate(pos, tplName, container, OnlyTerm)) match {
+          case Nil => completeSearch(lookupInTemplate(pos, tplName, container, OnlyType))
+          case syms => syms
+      }
     }
-    //println("lookupInTemplate(" + members + ", " + inTpl + ") => " + result)
+    //println("lookupInTemplate(" + members + ", " + container + ") => " + result)
     result
   }
 
-  private def lookupInTemplate(pos: Position, member: String, inTpl: DocTemplateImpl, strategy: SearchStrategy): List[MemberImpl] = {
+  private def lookupInTemplate(pos: Position, member: String, container: Symbol, strategy: SearchStrategy): List[Symbol] = {
     val name = member.stripSuffix("$").stripSuffix("!").stripSuffix("*")
+    def signatureMatch(sym: Symbol): Boolean = externalSignature(sym).startsWith(name)
+
+    // We need to cleanup the bogus classes created by the .class file parser. For example, [[scala.Predef]] resolves
+    // to (bogus) class scala.Predef loaded by the class loader -- which we need to eliminate by looking at the info
+    // and removing NoType classes
+    def cleanupBogusClasses(syms: List[Symbol]) = { syms.filter(_.info != NoType) }
+
+    def syms(name: Name) = container.info.nonPrivateMember(name).alternatives
+    def termSyms = cleanupBogusClasses(syms(newTermName(name)))
+    def typeSyms = cleanupBogusClasses(syms(newTypeName(name)))
+
     val result = if (member.endsWith("$"))
-      inTpl.members.filter(mbr => (mbr.name == name) && (mbr.isTerm))
+      termSyms
     else if (member.endsWith("!"))
-      inTpl.members.filter(mbr => (mbr.name == name) && (mbr.isType))
+      typeSyms
     else if (member.endsWith("*"))
-      inTpl.members.filter(mbr => (mbr.signature.startsWith(name)))
-    else {
+      cleanupBogusClasses(container.info.nonPrivateDecls) filter signatureMatch
+    else
       if (strategy == BothTypeAndTerm)
-        inTpl.members.filter(_.name == name)
+        termSyms ::: typeSyms
       else if (strategy == OnlyType)
-        inTpl.members.filter(mbr => (mbr.name == name) && (mbr.isType))
+        typeSyms
       else if (strategy == OnlyTerm)
-        inTpl.members.filter(mbr => (mbr.name == name) && (mbr.isTerm))
+        termSyms
       else
         Nil
-    }
 
-    //println("lookupInTemplate(" + member + ", " + inTpl + ") => " + result)
+    //println("lookupInTemplate(" + member + ", " + container + ") => " + result)
     result
   }
 
@@ -170,7 +209,11 @@ trait MemberLookup {
       if ((query.charAt(index) == '.' || query.charAt(index) == '#') &&
           ((index == 0) || (query.charAt(index-1) != '\\'))) {
 
-        members ::= query.substring(last_index, index).replaceAll("\\\\([#\\.])", "$1")
+        val member = query.substring(last_index, index).replaceAll("\\\\([#\\.])", "$1")
+        // we want to allow javadoc-style links [[#member]] -- which requires us to remove empty members from the first
+        // elemnt in the list
+        if ((member != "") || (!members.isEmpty))
+          members ::= member
         last_index = index + 1
       }
       index += 1

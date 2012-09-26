@@ -196,6 +196,9 @@ trait MemberEntity extends Entity {
   /** The identity of this member, used for linking */
   def signature: String
 
+  /** Compatibility signature, will be removed from future versions */
+  def signatureCompat: String
+
   /** Indicates whether the member is inherited by implicit conversion */
   def isImplicitlyInherited: Boolean
 
