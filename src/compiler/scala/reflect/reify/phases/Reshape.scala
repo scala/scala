@@ -297,7 +297,7 @@ trait Reshape {
           val vdef1 = ValDef(mods2, name1, tpt, rhs)
           if (reifyDebug) println("resetting visibility of field: %s => %s".format(vdef, vdef1))
           Some(vdef1) // no copyAttrs here, because new ValDef and old symbols are now out of sync
-        case ddef @ DefDef(mods, name, tparams, vparamss, tpt, rhs) if !ddef.mods.isLazy =>
+        case ddef: DefDef if !ddef.mods.isLazy =>
           // lazy val accessors are removed in reshapeLazyVals
           // as they are needed to recreate lazy vals
           if (accessors.values.exists(_.contains(ddef))) {
@@ -319,7 +319,7 @@ trait Reshape {
       // lazy valdef and defdef are in the same block.
       // only that valdef needs to have its rhs rebuilt from defdef
       stats flatMap (stat => stat match {
-        case vdef @ ValDef(mods0, name0, tpt0, rhs0) if vdef.symbol.isLazy =>
+        case vdef: ValDef if vdef.symbol.isLazy =>
           if (reifyDebug) println(s"reconstructing original lazy value for $vdef")
           val ddefSym = vdef.symbol.lazyAccessor
           val vdef1 = lazyvaldefs.get(ddefSym) match {
@@ -331,7 +331,7 @@ trait Reshape {
           }
           if (reifyDebug) println(s"reconstructed lazy val is $vdef1")
           vdef1::Nil
-        case ddef @ DefDef(mods0, name0, _, _, tpt0, rhs0) if ddef.symbol.isLazy =>
+        case ddef: DefDef if ddef.symbol.isLazy =>
           def hasUnitType(sym: Symbol) = (sym.tpe.typeSymbol == UnitClass) && sym.tpe.annotations.isEmpty
           if (hasUnitType(ddef.symbol)) {
             // since lazy values of type Unit don't have val's
