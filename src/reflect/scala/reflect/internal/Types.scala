@@ -225,6 +225,7 @@ trait Types extends api.Types { self: SymbolTable =>
     override def isErroneous = underlying.isErroneous
     override def isStable: Boolean = underlying.isStable
     override def isVolatile = underlying.isVolatile
+    override def isValueType = underlying.isValueType
     override def finalResultType = underlying.finalResultType
     override def paramSectionCount = underlying.paramSectionCount
     override def paramss = underlying.paramss
@@ -345,6 +346,15 @@ trait Types extends api.Types { self: SymbolTable =>
      *  T_i (i > 1) is an abstract type.
      */
     def isVolatile: Boolean = false
+
+    /** Is this type a value type in SLS sense (as in 3.2 Value Types)?
+     *
+     *  The type is a value type if it denotes a set of Scala values
+     *  E.g. TypeRef(<scala>, <Int>, Nil) is a value type,
+     *  NothingTpe is a value type as well (it denotes a set of values, even though the set is empty).
+     *  To the contrast, PolyTypes and MethodTypes aren't value types.
+     */
+    def isValueType: Boolean = false
 
     /** Is this type guaranteed not to have `null` as a value? */
     def isNotNull: Boolean = false
@@ -1392,6 +1402,7 @@ trait Types extends api.Types { self: SymbolTable =>
     override def typeSymbol = sym
     override def underlying: Type = sym.typeOfThis
     override def isVolatile = false
+    override def isValueType = !sym.isPackageClass && !isHigherKinded
     override def isHigherKinded = sym.isRefinementClass && underlying.isHigherKinded
     override def prefixString =
       if (settings.debug.value) sym.nameString + ".this."
@@ -1424,6 +1435,7 @@ trait Types extends api.Types { self: SymbolTable =>
       toBoolean(trivial)
     }
     override def isGround = sym.isPackageClass || pre.isGround
+    override def isValueType = !sym.isPackage
 
     // override def isNullable = underlying.isNullable
     override def isNotNull = underlying.isNotNull
@@ -1738,6 +1750,8 @@ trait Types extends api.Types { self: SymbolTable =>
       !phase.erasedTypes
     )
 
+    override def isValueType = parents forall (_.isValueType)
+
     override def typeParams =
       if (isHigherKinded) firstParent.typeParams
       else super.typeParams
@@ -2009,6 +2023,7 @@ trait Types extends api.Types { self: SymbolTable =>
     override def underlying: Type = value.tpe
     assert(underlying.typeSymbol != UnitClass)
     override def isTrivial: Boolean = true
+    override def isValueType = true
     override def isNotNull = value.value != null
     override def deconst: Type = underlying
     override def safeToString: String =
@@ -2362,6 +2377,7 @@ trait Types extends api.Types { self: SymbolTable =>
     override def baseClasses      = thisInfo.baseClasses
     override def baseTypeSeqDepth = baseTypeSeq.maxDepth
     override def isStable         = (sym eq NothingClass) || (sym eq SingletonClass)
+    override def isValueType      = !sym.isPackageClass && !isHigherKinded
     override def prefix           = pre
     override def termSymbol       = super.termSymbol
     override def termSymbolDirect = super.termSymbol

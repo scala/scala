@@ -92,11 +92,26 @@ trait Extractors {
     Block(List(universeAlias, mirrorAlias), wrappee)
   }
 
+  private def mkTarg(tpe: Type): Tree = {
+    // if we're reifying a MethodType, we can't use it as a type argument for TypeTag ctor
+    // http://groups.google.com/group/scala-internals/browse_thread/thread/2d7bb85bfcdb2e2
+    //
+    // this was the initial version:
+    // val guineaPig = Apply(TypeApply(Select(Select(gen.mkRuntimeUniverseRef, nme.TypeTag), nme.apply), List(TypeTree(tpe))), List(Literal(Constant(null)), Literal(Constant(null))))
+    // val isGoodTpe = typer.silent(_.typed(guineaPig)) match { case analyzer.SilentResultValue(_) => true; case _ => false }
+    // TypeTree(if (isGoodTpe) tpe else AnyTpe)
+    //
+    // because of https://issues.scala-lang.org/browse/SI-6425, reifications might be created for null tpes
+    // we're in lockdown mode for 2.10.0-RC1, so I won't be fixing the underlying bug
+    // therefore we need to allow for null tpes here
+    TypeTree(if (tpe == null || tpe.isValueType) tpe else AnyTpe)
+  }
+
   object ReifiedTree {
     def apply(universe: Tree, mirror: Tree, symtab: SymbolTable, rtree: Tree, tpe: Type, rtpe: Tree, concrete: Boolean): Tree = {
       val tagFactory = if (concrete) nme.TypeTag else nme.WeakTypeTag
-      val tagCtor = TypeApply(Select(Select(Ident(nme.UNIVERSE_SHORT), tagFactory), nme.apply), List(TypeTree(tpe)))
-      val exprCtor = TypeApply(Select(Select(Ident(nme.UNIVERSE_SHORT), nme.Expr), nme.apply), List(TypeTree(tpe)))
+      val tagCtor = TypeApply(Select(Select(Ident(nme.UNIVERSE_SHORT), tagFactory), nme.apply), List(mkTarg(tpe)))
+      val exprCtor = TypeApply(Select(Select(Ident(nme.UNIVERSE_SHORT), nme.Expr), nme.apply), List(mkTarg(tpe)))
       val tagArgs = List(Ident(nme.MIRROR_SHORT), mkCreator(tpnme.REIFY_TYPECREATOR_PREFIX, symtab, rtpe))
       val unwrapped = Apply(Apply(exprCtor, List(Ident(nme.MIRROR_SHORT), mkCreator(tpnme.REIFY_TREECREATOR_PREFIX, symtab, rtree))), List(Apply(tagCtor, tagArgs)))
       mkWrapper(universe, mirror, unwrapped)
@@ -123,7 +138,7 @@ trait Extractors {
   object ReifiedType {
     def apply(universe: Tree, mirror: Tree, symtab: SymbolTable, tpe: Type, rtpe: Tree, concrete: Boolean) = {
       val tagFactory = if (concrete) nme.TypeTag else nme.WeakTypeTag
-      val ctor = TypeApply(Select(Select(Ident(nme.UNIVERSE_SHORT), tagFactory), nme.apply), List(TypeTree(tpe)))
+      val ctor = TypeApply(Select(Select(Ident(nme.UNIVERSE_SHORT), tagFactory), nme.apply), List(mkTarg(tpe)))
       val args = List(Ident(nme.MIRROR_SHORT), mkCreator(tpnme.REIFY_TYPECREATOR_PREFIX, symtab, rtpe))
       val unwrapped = Apply(ctor, args)
       mkWrapper(universe, mirror, unwrapped)
