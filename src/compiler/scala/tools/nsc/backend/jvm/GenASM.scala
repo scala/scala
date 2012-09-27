@@ -604,11 +604,18 @@ abstract class GenASM extends SubComponent with BytecodeWriters {
         val internalName = cachedJN.toString()
         val trackedSym = jsymbol(sym)
         reverseJavaName.get(internalName) match {
-          case None         =>
+          case Some(oldsym) if oldsym.exists && trackedSym.exists =>
+            assert(
+              // In contrast, neither NothingClass nor NullClass show up bytecode-level.
+              (oldsym == trackedSym) || (oldsym == RuntimeNothingClass) || (oldsym == RuntimeNullClass),
+              s"""|Different class symbols have the same bytecode-level internal name:
+                  |     name: $internalName
+                  |   oldsym: ${oldsym.fullNameString}
+                  |  tracked: ${trackedSym.fullNameString}
+              """.stripMargin
+            )
+          case _ =>
             reverseJavaName.put(internalName, trackedSym)
-          case Some(oldsym) =>
-            assert((oldsym == trackedSym) || (oldsym == RuntimeNothingClass) || (oldsym == RuntimeNullClass), // In contrast, neither NothingClass nor NullClass show up bytecode-level.
-                   "how can getCommonSuperclass() do its job if different class symbols get the same bytecode-level internal name: " + internalName)
         }
       }
 
