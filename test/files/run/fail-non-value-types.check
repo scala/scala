@@ -1,0 +1,2 @@
+[B, That](f: A => B)(implicit cbf: ImaginaryCanBuildFrom[CompletelyIndependentList.this.Repr,B,That])That
+()CompletelyIndependentList[A]

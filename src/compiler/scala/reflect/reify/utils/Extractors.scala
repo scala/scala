@@ -92,13 +92,12 @@ trait Extractors {
     Block(List(universeAlias, mirrorAlias), wrappee)
   }
 
-  private def mkTarg(tpe: Type): Tree = {
-    // if we're reifying a MethodType, we can't use it as a type argument for TypeTag ctor
-    // http://groups.google.com/group/scala-internals/browse_thread/thread/2d7bb85bfcdb2e2
-    val guineaPig = Apply(TypeApply(Select(Select(gen.mkRuntimeUniverseRef, nme.TypeTag), nme.apply), List(TypeTree(tpe))), List(Literal(Constant(null)), Literal(Constant(null))))
-    val isGoodTpe = typer.silent(_.typed(guineaPig)) match { case analyzer.SilentResultValue(_) => true; case _ => false }
-    TypeTree(if (isGoodTpe) tpe else AnyTpe)
-  }
+  // if we're reifying a MethodType, we can't use it as a type argument for TypeTag ctor
+  // http://groups.google.com/group/scala-internals/browse_thread/thread/2d7bb85bfcdb2e2
+  private def mkTarg(tpe: Type): Tree = (
+    if ((tpe eq null) || !isUseableAsTypeArg(tpe)) TypeTree(AnyTpe)
+    else TypeTree(tpe)
+  )
 
   object ReifiedTree {
     def apply(universe: Tree, mirror: Tree, symtab: SymbolTable, rtree: Tree, tpe: Type, rtpe: Tree, concrete: Boolean): Tree = {
