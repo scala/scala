@@ -454,21 +454,30 @@ trait MethodSynthesis {
      *      { z = <rhs>; z } where z can be an identifier or a field.
      */
     case class LazyValGetter(tree: ValDef) extends BaseGetter(tree) {
+      class ChangeOwnerAndModuleClassTraverser(oldowner: Symbol, newowner: Symbol)
+        extends ChangeOwnerTraverser(oldowner, newowner) {
+        
+        override def traverse(tree: Tree) {
+          tree match {
+            case _: DefTree => change(tree.symbol.moduleClass)
+            case _          =>
+          }
+          super.traverse(tree)
+        }
+      }
+
       // todo: in future this should be enabled but now other phases still depend on the flag for various reasons
       //override def flagsMask = (super.flagsMask & ~LAZY)
       override def derivedSym = basisSym.lazyAccessor
       override def derivedTree: DefDef = {
         val ValDef(_, _, tpt0, rhs0) = tree
-        val rhs1 = transformed.get(rhs0) match {
-          case Some(rhs) => rhs
-          case None      => rhs0
-        }
+        val rhs1 = transformed.getOrElse(rhs0, rhs0)
         val body = (
           if (tree.symbol.owner.isTrait || hasUnitType(basisSym)) rhs1
           else gen.mkAssignAndReturn(basisSym, rhs1)
         )
         derivedSym.setPos(tree.pos) // cannot set it at createAndEnterSymbol because basisSym can possible stil have NoPosition
-        val ddefRes = atPos(tree.pos)(DefDef(derivedSym, body.changeOwner(followModuleClass = true, basisSym -> derivedSym)))
+        val ddefRes = atPos(tree.pos)(DefDef(derivedSym, new ChangeOwnerAndModuleClassTraverser(basisSym, derivedSym)(body)))
         // ValDef will have its position focused whereas DefDef will have original correct rangepos
         // ideally positions would be correct at the creation time but lazy vals are really a special case
         // here so for the sake of keeping api clean we fix positions manually in LazyValGetter

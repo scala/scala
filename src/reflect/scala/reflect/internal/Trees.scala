@@ -178,12 +178,9 @@ trait Trees extends api.Trees { self: SymbolTable =>
       new ForeachPartialTreeTraverser(pf).traverse(this)
     }
 
-    def changeOwner(pairs: (Symbol, Symbol)*): Tree =
-      changeOwner(false, pairs: _*)
-
-    def changeOwner(followModuleClass: Boolean, pairs: (Symbol, Symbol)*): Tree = {
+    def changeOwner(pairs: (Symbol, Symbol)*): Tree = {
       pairs.foldLeft(this) { case (t, (oldOwner, newOwner)) =>
-        new ChangeOwnerTraverser(oldOwner, newOwner, followModuleClass) apply t
+        new ChangeOwnerTraverser(oldOwner, newOwner) apply t
       }
     }
 
@@ -1302,29 +1299,27 @@ trait Trees extends api.Trees { self: SymbolTable =>
     }
   }
 
-  class ChangeOwnerTraverser(val oldowner: Symbol, val newowner: Symbol, followModuleClass: Boolean = false) extends Traverser {
-    def changeSymboOwnerIfCorrect(sym: Symbol) = {
+  class ChangeOwnerTraverser(val oldowner: Symbol, val newowner: Symbol) extends Traverser {
+    final def change(sym: Symbol) = {
       if (sym != NoSymbol && sym.owner == oldowner) 
         sym.owner = newowner
     }
-    def changeOwner(tree: Tree) = tree match {
-      case Return(expr) =>
-        if (tree.symbol == oldowner) {
-          // SI-5612
-          if (newowner hasTransOwner oldowner)
-            log("NOT changing owner of %s because %s is nested in %s".format(tree, newowner, oldowner))
-          else {
-            log("changing owner of %s: %s => %s".format(tree, oldowner, newowner))
-            tree.symbol = newowner
-          }
-        }
-      case _: DefTree | _: Function =>
-        changeSymboOwnerIfCorrect(tree.symbol)
-        if (followModuleClass) changeSymboOwnerIfCorrect(tree.symbol.moduleClass)
-      case _ =>
-    }
     override def traverse(tree: Tree) {
-      changeOwner(tree)
+      tree match {
+        case _: Return =>
+          if (tree.symbol == oldowner) {
+            // SI-5612
+            if (newowner hasTransOwner oldowner)
+              log("NOT changing owner of %s because %s is nested in %s".format(tree, newowner, oldowner))
+            else {
+              log("changing owner of %s: %s => %s".format(tree, oldowner, newowner))
+              tree.symbol = newowner
+            }
+          }
+        case _: DefTree | _: Function =>
+          change(tree.symbol)
+        case _ =>
+      }
       super.traverse(tree)
     }
   }
