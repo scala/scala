@@ -23,8 +23,8 @@ import Checkability._
  *     [P3] X <: P if some runtime test is true
  *     [P4] X cannot be checked against P
  *
- *  The first two cases correspond to those when there is enough static
- *  information to say X <: P or that !(X <: P) for all X and P.
+ *  The first two cases correspond to those when there is enough
+ *  static information to say X <: P or that (x ∈ X) ⇒ (x ∉ P).
  *  The fourth case includes unknown abstract types or structural
  *  refinements appearing within a pattern.
  *
@@ -51,6 +51,7 @@ trait Checkable {
 
   import global._
   import definitions._
+  import CheckabilityChecker.{ isNeverSubType, isNeverSubClass }
 
   /** The applied type of class 'to' after inferring anything
    *  possible from the knowledge that 'to' must also be of the
@@ -100,15 +101,16 @@ trait Checkable {
     def Xsym = X.typeSymbol
     def Psym = P.typeSymbol
     def XR   = propagateKnownTypes(X, Psym)
+    // sadly the spec says (new java.lang.Boolean(true)).isInstanceOf[scala.Boolean]
     def P1   = X matchesPattern P
-    def P2   = CheckabilityChecker.isNeverSubType(X, P)
+    def P2   = !Psym.isPrimitiveValueClass && isNeverSubType(X, P)
     def P3   = Psym.isClass && (XR matchesPattern P)
     def P4   = !(P1 || P2 || P3)
 
     def summaryString = f"""
       |Checking checkability of (x: $X) against pattern $P
       |[P1] $P1%-6s X <: P             // $X  <: $P
-      |[P2] $P2%-6s X !<: P            // $X !<: $P for all X, P
+      |[P2] $P2%-6s x ∉ P              // (x ∈ $X) ⇒ (x ∉ $P)
       |[P3] $P3%-6s XR <: P            // $XR <: $P
       |[P4] $P4%-6s None of the above  // !(P1 || P2 || P3)
     """.stripMargin.trim
@@ -137,7 +139,8 @@ trait Checkable {
       opt getOrElse NoType
     }
 
-    def neverMatches = result == StaticallyFalse
+    def neverSubClass = isNeverSubClass(Xsym, Psym)
+    def neverMatches  = result == StaticallyFalse
     def isUncheckable = result == Uncheckable
     def uncheckableMessage = uncheckableType match {
       case NoType                                   => "something"
@@ -150,28 +153,42 @@ trait Checkable {
   /** X, P, [P1], etc. are all explained at the top of the file.
    */
   private object CheckabilityChecker {
-    /** Given classes A and B, can it be shown A is never a subclass of B?
+    /** A knowable class is one which is either effectively final
+     *  itself, or sealed with only knowable children.
      */
-    private def isNeverSubClass(sym1: Symbol, sym2: Symbol) = /*logResult(s"isNeverSubClass($sym1, $sym2)")*/(
+    def isKnowable(sym: Symbol): Boolean = /*logResult(s"isKnowable($sym)")*/(
+         sym.initialize.isEffectivelyFinal  // pesky .initialize requirement, or we receive lies about isSealed
+      || sym.isSealed && (sym.children forall isKnowable)
+    )
+    def knownSubclasses(sym: Symbol): List[Symbol] = /*logResult(s"knownSubclasses($sym)")*/(sym :: {
+      if (sym.isSealed) sym.children.toList flatMap knownSubclasses
+      else Nil
+    })
+    def excludable(s1: Symbol, s2: Symbol) = /*logResult(s"excludable($s1, $s2)")*/(
+         isKnowable(s1)
+      && !(s2 isSubClass s1)
+      && knownSubclasses(s1).forall(child => !(child isSubClass s2))
+    )
+
+    /** Given classes A and B, can it be shown that nothing which is
+     *  an A will ever be a subclass of something which is a B? This
+     *  entails not only showing that !(A isSubClass B) but that the
+     *  same is true of all their subclasses.  Restated for symmetry:
+     *  the same value cannot be a member of both A and B.
+     *
+     *   1) A must not be a subclass of B, nor B of A (the trivial check)
+     *   2) One of A or B must be completely knowable (see isKnowable)
+     *   3) Assuming A is knowable, the proposition is true if
+     *      !(A' isSubClass B) for all A', where A' is a subclass of A.
+     *
+     *  Due to symmetry, the last condition applies as well in reverse.
+     */
+    def isNeverSubClass(sym1: Symbol, sym2: Symbol) = /*logResult(s"isNeverSubClass($sym1, $sym2)")*/(
          sym1.isClass
       && sym2.isClass
-      && !(sym1 isSubClass sym2)
-      && (
-        // If B is final, A can only be a subclass of B if it is B itself.
-        // Therefore, A <: B is impossible unless B <: A.
-        if (sym2.isEffectivelyFinal)
-          !(sym2 isSubClass sym1)
-        // If A is final but B is not, a subclass relationship can
-        // still be ruled out if B is sealed and A is not a subclass of
-        // any of B's sealed children.
-        else (
-             sym1.isEffectivelyFinal
-          && sym2.isSealed
-          && sym2.children.forall(child => !(sym1 isSubClass child))
-        )
-      )
+      && (excludable(sym1, sym2) || excludable(sym2, sym1))
     )
-    private def isNeverSubArgs(tps1: List[Type], tps2: List[Type], tparams: List[Symbol]): Boolean = /*logResult(s"isNeverSubArgs($tps1, $tps2, $tparams)")*/{
+    private def isNeverSubArgs(tps1: List[Type], tps2: List[Type], tparams: List[Symbol]): Boolean = /*logResult(s"isNeverSubArgs($tps1, $tps2, $tparams)")*/ {
       def isNeverSubArg(t1: Type, t2: Type, variance: Int) = {
         if (variance > 0) isNeverSubType(t2, t1)
         else if (variance < 0) isNeverSubType(t1, t2)
@@ -189,7 +206,7 @@ trait Checkable {
         false
     }
     // Important to dealias at any entry point (this is the only one at this writing.)
-    private def isNeverSubType(tp1: Type, tp2: Type): Boolean = /*logResult(s"isNeverSubType($tp1, $tp2)")*/((tp1.dealias, tp2.dealias) match {
+    def isNeverSubType(tp1: Type, tp2: Type): Boolean = /*logResult(s"isNeverSubType($tp1, $tp2)")*/((tp1.dealias, tp2.dealias) match {
       case (TypeRef(_, sym1, args1), TypeRef(_, sym2, args2)) =>
         isNeverSubClass(sym1, sym2) || {
           (sym1 isSubClass sym2) && {
@@ -208,11 +225,13 @@ trait Checkable {
      *  Kind of stuck right now because they just pass us the one tree.
      *  TODO: Eliminate inPattern, canRemedy, which have no place here.
      */
-    def checkCheckable(tree: Tree, P0: Type, X: Type, inPattern: Boolean, canRemedy: Boolean = false) {
+    def checkCheckable(tree: Tree, P0: Type, X0: Type, inPattern: Boolean, canRemedy: Boolean = false) {
       def where = if (inPattern) "pattern " else ""
 
       // singleton types not considered here
       val P = P0.widen
+      val X = X0.widen
+
       P match {
         // Prohibit top-level type tests for these, but they are ok nested (e.g. case Foldable[Nothing] => ... )
         case TypeRef(_, NothingClass | NullClass | AnyValClass, _) =>
@@ -221,10 +240,12 @@ trait Checkable {
         case TypeRef(_, sym, _) if sym.isAbstractType && canRemedy =>
           ;
         case _ =>
-          val checker = new CheckabilityChecker(X.widen, P)
+          val checker = new CheckabilityChecker(X, P)
           log(checker.summaryString)
-          if (checker.neverMatches)
-            getContext.unit.warning(tree.pos, s"fruitless type test: a $X can never be a $P (but still might match its erasure)")
+          if (checker.neverMatches) {
+            val addendum = if (checker.neverSubClass) "" else " (but still might match its erasure)"
+            getContext.unit.warning(tree.pos, s"fruitless type test: a value of type $X cannot also be a $P$addendum")
+          }
           else if (checker.isUncheckable) {
             val msg = (
               if (checker.uncheckableType =:= P) s"abstract type $where$P"
