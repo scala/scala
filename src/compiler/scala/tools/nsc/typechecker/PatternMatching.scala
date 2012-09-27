@@ -1589,7 +1589,7 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
     object EqualityCond {
       private val uniques = new scala.collection.mutable.HashMap[(Tree, Tree), EqualityCond]
       def apply(testedPath: Tree, rhs: Tree): EqualityCond = uniques getOrElseUpdate((testedPath, rhs), new EqualityCond(testedPath, rhs))
-      def unapply(c: EqualityCond) = Some(c.testedPath, c.rhs)
+      def unapply(c: EqualityCond) = Some((c.testedPath, c.rhs))
     }
     class EqualityCond(val testedPath: Tree, val rhs: Tree) extends Cond {
       override def toString = testedPath +" == "+ rhs +"#"+ id
@@ -1607,7 +1607,7 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
     object TypeCond {
       private val uniques = new scala.collection.mutable.HashMap[(Tree, Type), TypeCond]
       def apply(testedPath: Tree, pt: Type): TypeCond = uniques getOrElseUpdate((testedPath, pt), new TypeCond(testedPath, pt))
-      def unapply(c: TypeCond) = Some(c.testedPath, c.pt)
+      def unapply(c: TypeCond) = Some((c.testedPath, c.pt))
     }
     class TypeCond(val testedPath: Tree, val pt: Type) extends Cond {
       override def toString = testedPath +" : "+ pt +"#"+ id
@@ -1645,7 +1645,7 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
 
       def unapply(xtm: ExtractorTreeMaker): Option[(Tree, Symbol)] = xtm match {
         case ExtractorTreeMaker(extractor, None, nextBinder) if irrefutableExtractorType(extractor.tpe) =>
-          Some(extractor, nextBinder)
+          Some((extractor, nextBinder))
         case _ =>
           None
       }
@@ -1864,7 +1864,7 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
       def registerEquality(c: Const): Unit
 
       // call this to indicate null is part of the domain
-      def registerNull: Unit
+      def registerNull(): Unit
 
       // can this variable be null?
       def mayBeNull: Boolean
@@ -2279,7 +2279,7 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
       val staticTpCheckable: Type = checkableType(staticTp)
 
       private[this] var _mayBeNull = false
-      def registerNull: Unit = { ensureCanModify; if (NullTp <:< staticTpCheckable) _mayBeNull = true }
+      def registerNull(): Unit = { ensureCanModify; if (NullTp <:< staticTpCheckable) _mayBeNull = true }
       def mayBeNull: Boolean = _mayBeNull
 
       // case None => domain is unknown,
@@ -2676,7 +2676,7 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
         case UnitClass =>
           Some(List(UnitClass.tpe))
         case BooleanClass =>
-          Some(List(ConstantType(Constant(true)), ConstantType(Constant(false))))
+          Some((List(ConstantType(Constant(true)), ConstantType(Constant(false)))))
         // TODO case _ if tp.isTupleType => // recurse into component types
         case modSym: ModuleClassSymbol =>
           Some(List(tp))

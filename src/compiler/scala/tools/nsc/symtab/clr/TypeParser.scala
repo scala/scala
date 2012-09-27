@@ -64,7 +64,7 @@ abstract class TypeParser {
     busy = false
   }
 
-  class TypeParamsType(override val typeParams: List[Symbol]) extends LazyType {
+  class TypeParamsType(override val typeParams: List[Symbol]) extends LazyType with FlagAgnosticCompleter {
     override def complete(sym: Symbol) { throw new AssertionError("cyclic type dereferencing") }
   }
 

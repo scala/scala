@@ -354,7 +354,7 @@ trait Macros extends scala.tools.reflect.FastTrack with Traces {
     macroTraceVerbose("tparams are: ")(tparams)
     macroTraceVerbose("vparamss are: ")(vparamss)
     macroTraceVerbose("retTpe is: ")(retTpe)
-    macroTraceVerbose("macroImplSig is: ")(paramss, implRetTpe)
+    macroTraceVerbose("macroImplSig is: ")((paramss, implRetTpe))
   }
 
   /** Verifies that the body of a macro def typechecks to a reference to a static public non-overloaded method,

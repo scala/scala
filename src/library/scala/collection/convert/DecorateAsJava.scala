@@ -313,6 +313,6 @@ trait DecorateAsJava {
    * @return An object with an `asJava` method that returns a Java
    *         `ConcurrentMap` view of the argument.
    */
-  implicit def asJavaConcurrentMapConverter[A, B](m: concurrent.Map[A, B]): AsJava[juc.ConcurrentMap[A, B]] =
-    new AsJava(asJavaConcurrentMap(m))
+  implicit def mapAsJavaConcurrentMapConverter[A, B](m: concurrent.Map[A, B]): AsJava[juc.ConcurrentMap[A, B]] =
+    new AsJava(mapAsJavaConcurrentMap(m))
 }

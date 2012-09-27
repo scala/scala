@@ -1,4 +1,9 @@
 package a {
+  abstract class BoxingConversions[Boxed, Unboxed] {
+    def box(x: Unboxed): Boxed
+    def unbox(x: Boxed): Unboxed
+  }
+
   case class Meter(underlying: Double) extends AnyVal with _root_.b.Printable {
     def + (other: Meter): Meter =
       new Meter(this.underlying + other.underlying)

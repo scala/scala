@@ -3,8 +3,8 @@ Bar, t=TypeRef, s=type Bar
 Test.ToS, t=RefinedType, s=f3
 Test.ToS, t=RefinedType, s=f4
 Test.ToS, t=RefinedType, s=f5
-() => Test.ToS, t=TypeRef, s=class Function0
-() => Test.ToS, t=TypeRef, s=class Function0
+() => Test.ToS, t=TypeRef, s=trait Function0
+() => Test.ToS, t=TypeRef, s=trait Function0
 $anon, t=TypeRef, s=type $anon
 $anon, t=TypeRef, s=type $anon
 List[java.lang.Object{type T1}#T1], t=TypeRef, s=class List
@@ -15,8 +15,8 @@ Bar, t=TypeRef, s=type Bar
 Test.ToS, t=RefinedType, s=g3
 Test.ToS, t=RefinedType, s=g4
 Test.ToS, t=RefinedType, s=g5
-() => Test.ToS, t=TypeRef, s=class Function0
-() => Test.ToS, t=TypeRef, s=class Function0
+() => Test.ToS, t=TypeRef, s=trait Function0
+() => Test.ToS, t=TypeRef, s=trait Function0
 $anon, t=TypeRef, s=type $anon
 $anon, t=TypeRef, s=type $anon
 List[java.lang.Object{type T1}#T1], t=TypeRef, s=class List

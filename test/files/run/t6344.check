@@ -1,0 +1,132 @@
+C0
+public int C0.v1(int)
+public <A> int C0.v1(int)
+public int C0.v3()
+public <A> int C0.v3()
+public int C0.v4(int,scala.collection.immutable.List)
+public <A> int C0.v4(int,scala.collection.immutable.List<Val<A>>)
+public scala.collection.immutable.List C0.v2()
+public <A> scala.collection.immutable.List<Val<A>> C0.v2()
+
+C1
+public java.lang.Object C1.v1(java.lang.Object)
+public <A> java.lang.Object C1.v1(java.lang.Object)
+public java.lang.Object C1.v3()
+public <A> java.lang.Object C1.v3()
+public java.lang.Object C1.v4(java.lang.Object,scala.collection.immutable.List)
+public <A> java.lang.Object C1.v4(java.lang.Object,scala.collection.immutable.List<java.lang.Object>)
+public scala.collection.immutable.List C1.v2()
+public <A> scala.collection.immutable.List<java.lang.Object> C1.v2()
+
+C2
+public java.lang.String C2.v1(java.lang.String)
+public <A> java.lang.String C2.v1(java.lang.String)
+public java.lang.String C2.v3()
+public <A> java.lang.String C2.v3()
+public java.lang.String C2.v4(java.lang.String,scala.collection.immutable.List)
+public <A> java.lang.String C2.v4(java.lang.String,scala.collection.immutable.List<java.lang.String>)
+public scala.collection.immutable.List C2.v2()
+public <A> scala.collection.immutable.List<java.lang.String> C2.v2()
+
+C3
+public java.lang.Object C3.v1(java.lang.Object)
+public A C3.v1(A)
+public java.lang.Object C3.v3()
+public A C3.v3()
+public java.lang.Object C3.v4(java.lang.Object,scala.collection.immutable.List)
+public A C3.v4(A,scala.collection.immutable.List<A>)
+public java.lang.Object C3.x()
+public A C3.x()
+public scala.collection.immutable.List C3.v2()
+public scala.collection.immutable.List<A> C3.v2()
+
+C4
+public java.lang.Integer C4.v1(java.lang.Integer)
+public int C4.v1(int)
+public java.lang.Integer C4.v3()
+public int C4.v3()
+public java.lang.Integer C4.v4(java.lang.Integer,scala.collection.immutable.List)
+public int C4.v4(int,scala.collection.immutable.List<ValA<java.lang.Object>>)
+public scala.collection.immutable.List C4.v2()
+public scala.collection.immutable.List<ValA<java.lang.Object>> C4.v2()
+
+C4B
+public java.lang.String C4B.v1(java.lang.String)
+public java.lang.String C4B.v1(java.lang.String)
+public java.lang.String C4B.v3()
+public java.lang.String C4B.v3()
+public java.lang.String C4B.v4(java.lang.String,scala.collection.immutable.List)
+public java.lang.String C4B.v4(java.lang.String,scala.collection.immutable.List<java.lang.String>)
+public scala.collection.immutable.List C4B.v2()
+public scala.collection.immutable.List<java.lang.String> C4B.v2()
+
+C5
+public double C5.f2(int,java.lang.Object,java.lang.String,double)
+public double C5.f2(int,java.lang.Object,java.lang.String,double)
+public int C5.f3(java.lang.Integer)
+public int C5.f3(int)
+public int C5.f4(java.lang.Integer)
+public int C5.f4(int)
+public int C5.f5(java.lang.Integer)
+public int C5.f5(int)
+public java.lang.Object C5.f1(int,java.lang.Object,java.lang.String,java.lang.Object)
+public <A> A C5.f1(int,java.lang.Object,java.lang.String,A)
+
+C6
+public java.lang.Object C6.f1(int,java.lang.Object,java.lang.String,java.lang.Object)
+public A C6.f1(int,java.lang.Object,java.lang.String,A)
+
+C7
+public java.lang.Integer C7.f1(int,java.lang.Object,java.lang.String,java.lang.Integer)
+public int C7.f1(int,java.lang.Object,java.lang.String,int)
+public java.lang.Object C7.f1(int,java.lang.Object,java.lang.String,java.lang.Object)
+public java.lang.Object C7.f1(int,java.lang.Object,java.lang.String,java.lang.Object)
+
+Gen
+public abstract Gen Gen.plus(Gen,Gen)
+public abstract Gen<A> Gen.plus(Gen<A>,Gen<A>)
+public abstract java.lang.Object Gen.x()
+public abstract A Gen.x()
+
+ValueInt
+public Gen ValueInt.plus(Gen,Gen)
+public Gen<java.lang.Object> ValueInt.plus(Gen<java.lang.Object>,Gen<java.lang.Object>)
+public boolean ValueInt.equals(java.lang.Object)
+public boolean ValueInt.equals(java.lang.Object)
+public int ValueInt.hashCode()
+public int ValueInt.hashCode()
+public int ValueInt.iplus(int,int)
+public int ValueInt.iplus(int,int)
+public int ValueInt.x()
+public int ValueInt.x()
+public java.lang.Object ValueInt.x()
+public java.lang.Object ValueInt.x()
+public static Gen ValueInt.extension$plus(int,Gen,Gen)
+public static Gen<java.lang.Object> ValueInt.extension$plus(int,Gen<java.lang.Object>,Gen<java.lang.Object>)
+public static boolean ValueInt.extension$equals(int,java.lang.Object)
+public static boolean ValueInt.extension$equals(int,java.lang.Object)
+public static int ValueInt.extension$hashCode(int)
+public static int ValueInt.extension$hashCode(int)
+public static int ValueInt.extension$iplus(int,int,int)
+public static int ValueInt.extension$iplus(int,int,int)
+
+RefInt
+public Gen RefInt.plus(Gen,Gen)
+public Gen<java.lang.Object> RefInt.plus(Gen<java.lang.Object>,Gen<java.lang.Object>)
+public RefInt RefInt.rplus(RefInt,RefInt)
+public RefInt RefInt.rplus(RefInt,RefInt)
+public int RefInt.x()
+public int RefInt.x()
+public java.lang.Object RefInt.x()
+public java.lang.Object RefInt.x()
+
+RefInteger
+public Gen RefInteger.plus(Gen,Gen)
+public Gen<java.lang.Integer> RefInteger.plus(Gen<java.lang.Integer>,Gen<java.lang.Integer>)
+public RefInteger RefInteger.bplus(RefInteger,RefInteger)
+public RefInteger RefInteger.bplus(RefInteger,RefInteger)
+public java.lang.Integer RefInteger.x()
+public java.lang.Integer RefInteger.x()
+public java.lang.Object RefInteger.x()
+public java.lang.Object RefInteger.x()
+

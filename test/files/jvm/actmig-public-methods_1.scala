@@ -1,11 +1,18 @@
+/**
+ * NOTE: Code snippets from this test are included in the Actor Migration Guide. In case you change
+ * code in these tests prior to the 2.10.0 release please send the notification to @vjovanov.
+ */
 import scala.collection.mutable.ArrayBuffer
 import scala.actors.Actor._
 import scala.actors._
 import scala.actors.migration._
 import scala.util._
+import scala.concurrent._
+import scala.concurrent.duration._
 import java.util.concurrent.{ TimeUnit, CountDownLatch }
-import scala.concurrent.duration.Duration
+import scala.concurrent.duration._
 import scala.actors.migration.pattern._
+import scala.concurrent.ExecutionContext.Implicits.global
 
 object Test {
   val NUMBER_OF_TESTS = 6
@@ -40,45 +47,53 @@ object Test {
 
     respActor ! "bang"
 
-    implicit val timeout = Timeout(Duration(500, TimeUnit.MILLISECONDS))
-    val msg = ("bang qmark", 0L)
-    val res1 = respActor.?(msg)(Timeout(Duration.Inf))
-    append(res1().toString)
-    latch.countDown()
-
-    val msg1 = ("bang qmark", 1L)
-    val res2 = respActor.?(msg1)(Timeout(Duration(500, TimeUnit.MILLISECONDS)))
-    append((res2() match {
-      case x: AskTimeoutException => None
-      case v => Some(v)
-    }).toString)
-    latch.countDown()
-
-    // this one should time out
-    val msg11 = ("bang qmark", 500L)
-    val res21 = respActor.?(msg11)(Timeout(Duration(1, TimeUnit.MILLISECONDS)))
-    append((res21() match {
-      case x: AskTimeoutException => None
-      case v => Some(v)
-    }).toString)
-    latch.countDown()
-
-    val msg2 = ("bang qmark in future", 0L)
-    val fut1 = respActor.?(msg2)(Duration.Inf)
-    append(fut1().toString())
-    latch.countDown()
-
-    val handler: PartialFunction[Any, String] = {
-      case x: String => x.toString
+    {
+      val msg = ("bang qmark", 0L)
+      val res = respActor.?(msg)(Timeout(Duration.Inf))
+      append(Await.result(res, Duration.Inf).toString)
+      latch.countDown()
     }
 
-    val msg3 = ("typed bang qmark in future", 0L)
-    val fut2 = (respActor.?(msg3)(Duration.Inf))
-    append(Futures.future { handler.apply(fut2()) }().toString)
-    latch.countDown()
+    {
+      val msg = ("bang qmark", 1L)
+      val res = respActor.?(msg)(Timeout(5 seconds))
+
+      val promise = Promise[Option[Any]]()
+      res.onComplete(v => promise.success(v.toOption))
+      append(Await.result(promise.future, Duration.Inf).toString)
+
+      latch.countDown()
+    }
+
+    {
+      val msg = ("bang qmark", 5000L)
+      val res = respActor.?(msg)(Timeout(1 millisecond))
+      val promise = Promise[Option[Any]]()
+      res.onComplete(v => promise.success(v.toOption))
+      append(Await.result(promise.future, Duration.Inf).toString)
+      latch.countDown()
+    }
+
+    {
+      val msg = ("bang bang in the future", 0L)
+      val fut = respActor.?(msg)(Timeout(Duration.Inf))
+      append(Await.result(fut, Duration.Inf).toString)
+      latch.countDown()
+    }
+
+    {
+      val handler: PartialFunction[Any, String] = {
+        case x: String => x
+      }
+
+      val msg = ("typed bang bang in the future", 0L)
+      val fut = (respActor.?(msg)(Timeout(Duration.Inf)))
+      append((Await.result(fut.map(handler), Duration.Inf)).toString)
+      latch.countDown()
+    }
 
     // output
-    latch.await(200, TimeUnit.MILLISECONDS)
+    latch.await(10, TimeUnit.SECONDS)
     if (latch.getCount() > 0) {
       println("Error: Tasks have not finished!!!")
     }

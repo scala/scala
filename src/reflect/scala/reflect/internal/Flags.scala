@@ -309,6 +309,12 @@ class Flags extends ModifierFlags {
   /** These flags are pickled */
   final val PickledFlags  = InitialFlags & ~FlagsNotPickled
 
+  /** If we have a top-level class or module
+   *  and someone asks us for a flag not in TopLevelPickledFlags,
+   *  then we don't need unpickling to give a definite answer.
+   */
+  final val TopLevelPickledFlags = PickledFlags & ~(MODULE | METHOD | PACKAGE | PARAM | EXISTENTIAL)
+
   def getterFlags(fieldFlags: Long): Long = ACCESSOR + (
     if ((fieldFlags & MUTABLE) != 0) fieldFlags & ~MUTABLE & ~PRESUPER
     else fieldFlags & ~PRESUPER | STABLE

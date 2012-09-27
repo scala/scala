@@ -716,6 +716,13 @@ trait Definitions extends api.StandardDefinitions {
       if (phase.erasedTypes || forMSIL) ClassClass.tpe
       else appliedType(ClassClass, arg)
 
+    def EnumType(sym: Symbol) =
+      // given (in java): "class A { enum E { VAL1 } }"
+      //  - sym: the symbol of the actual enumeration value (VAL1)
+      //  - .owner: the ModuleClassSymbol of the enumeration (object E)
+      //  - .linkedClassOfClass: the ClassSymbol of the enumeration (class E)
+      sym.owner.linkedClassOfClass.tpe
+
     def vmClassType(arg: Type): Type = ClassType(arg)
     def vmSignature(sym: Symbol, info: Type): String = signature(info)    // !!!
 

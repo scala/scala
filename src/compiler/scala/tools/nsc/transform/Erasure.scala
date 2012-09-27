@@ -225,6 +225,24 @@ abstract class Erasure extends AddInterfaces
             } else {
               boxedSig(tp)
             }
+          def classSig = {
+            val preRebound = pre.baseType(sym.owner) // #2585
+            dotCleanup(
+              (
+                if (needsJavaSig(preRebound)) {
+                  val s = jsig(preRebound, existentiallyBound)
+                  if (s.charAt(0) == 'L') s.substring(0, s.length - 1) + "." + sym.javaSimpleName
+                  else fullNameInSig(sym)
+                }
+                else fullNameInSig(sym)
+              ) + (
+                if (args.isEmpty) "" else
+                "<"+(args map argSig).mkString+">"
+              ) + (
+                ";"
+              )
+            )
+          }
 
           // If args isEmpty, Array is being used as a type constructor
           if (sym == ArrayClass && args.nonEmpty) {
@@ -248,25 +266,21 @@ abstract class Erasure extends AddInterfaces
             else if (sym == UnitClass) jsig(BoxedUnitClass.tpe)
             else abbrvTag(sym).toString
           }
-          else if (sym.isClass) {
-            val preRebound = pre.baseType(sym.owner) // #2585
-            dotCleanup(
-              (
-                if (needsJavaSig(preRebound)) {
-                  val s = jsig(preRebound, existentiallyBound)
-                  if (s.charAt(0) == 'L') s.substring(0, s.length - 1) + "." + sym.javaSimpleName
-                  else fullNameInSig(sym)
-                }
-                else fullNameInSig(sym)
-              ) + (
-                if (args.isEmpty) "" else
-                "<"+(args map argSig).mkString+">"
-              ) + (
-                ";"
-              )
-            )
+          else if (sym.isDerivedValueClass) {
+            val unboxed     = sym.derivedValueClassUnbox.info.finalResultType
+            val unboxedSeen = (tp memberType sym.derivedValueClassUnbox).finalResultType
+            def unboxedMsg  = if (unboxed == unboxedSeen) "" else s", seen within ${sym.simpleName} as $unboxedSeen"
+            logResult(s"Erasure of value class $sym (underlying type $unboxed$unboxedMsg) is") {
+              if (isPrimitiveValueType(unboxedSeen) && !primitiveOK)
+                classSig
+              else
+                jsig(unboxedSeen, existentiallyBound, toplevel, primitiveOK)
+            }
           }
-          else jsig(erasure(sym0)(tp), existentiallyBound, toplevel, primitiveOK)
+          else if (sym.isClass)
+            classSig
+          else
+            jsig(erasure(sym0)(tp), existentiallyBound, toplevel, primitiveOK)
         case PolyType(tparams, restpe) =>
           assert(tparams.nonEmpty)
           val poly = if (toplevel) polyParamSig(tparams) else ""
@@ -649,7 +663,7 @@ abstract class Erasure extends AddInterfaces
     /** Generate a synthetic cast operation from tree.tpe to pt.
      *  @pre pt eq pt.normalize
      */
-    private def cast(tree: Tree, pt: Type): Tree = {
+    private def cast(tree: Tree, pt: Type): Tree = logResult(s"cast($tree, $pt)") {
       if (pt.typeSymbol == UnitClass) {
         // See SI-4731 for one example of how this occurs.
         log("Attempted to cast to Unit: " + tree)

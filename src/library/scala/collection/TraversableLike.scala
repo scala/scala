@@ -40,7 +40,7 @@ import scala.language.higherKinds
  *  a non-strict collection class may defer computation of some of their
  *  elements until after the instance is available as a value.
  *  A typical example of a non-strict collection class is a
- *  [[scala.collection.immutable/Stream]].
+ *  [[scala.collection.immutable.Stream]].
  *  A more general class of examples are `TraversableViews`.
  *
  *  If a collection is an instance of an ordered collection class, traversing
