@@ -23,9 +23,10 @@ case class Utils[C <: Context]( c:C ) {
 object QueryableMacros{
   def _helper[C <: Context,S:c.WeakTypeTag]( c:C )( name:String, projection:c.Expr[_] ) = {
     import c.universe._
+    import treeBuild._
     val element_type = implicitly[c.WeakTypeTag[S]].tpe
     val foo = c.Expr[ru.Expr[Queryable[S]]](
-    c.reifyTree( c.runtimeUniverse, EmptyTree, c.typeCheck(
+    c.reifyTree( mkRuntimeUniverseRef, EmptyTree, c.typeCheck(
       Utils[c.type](c).removeDoubleReify(
         Apply(Select(c.prefix.tree, newTermName( name )), List( projection.tree ))
        ).asInstanceOf[Tree]
