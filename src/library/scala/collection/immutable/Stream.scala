@@ -422,6 +422,9 @@ self =>
    * // produces: 10, 10, 11, 10, 11, 11, 10, 11, 11, 12, 10, 11, 11, 12, 13
    * }}}
    *
+   * ''Note:''  Currently `flatMap` will evaluate as much of the Stream as needed
+   * until it finds a non-empty element for the head, which is non-lazy.
+   *
    * @tparam B The element type of the returned collection '''That'''.
    * @param f  the function to apply on each element.
    * @return  `f(a,,0,,) ::: ... ::: f(a,,n,,)` if

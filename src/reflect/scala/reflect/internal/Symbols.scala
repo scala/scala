@@ -55,6 +55,16 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
   def newFreeTypeSymbol(name: TypeName, flags: Long = 0L, origin: String): FreeTypeSymbol =
     new FreeTypeSymbol(name, origin) initFlags flags
 
+  /** Determines whether the given information request should trigger the given symbol's completer.
+   *  See comments to `Symbol.needsInitialize` for details.
+   */
+  protected def shouldTriggerCompleter(symbol: Symbol, completer: Type, isFlagRelated: Boolean, mask: Long) =
+    completer match {
+      case null => false
+      case _: FlagAgnosticCompleter => !isFlagRelated
+      case _ => abort(s"unsupported completer: $completer of class ${if (completer != null) completer.getClass else null} for symbol ${symbol.fullName}")
+    }
+
   /** The original owner of a class. Used by the backend to generate
    *  EnclosingMethod attributes.
    */
@@ -67,7 +77,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     def isParamWithDefault: Boolean = this.hasDefault
     def isByNameParam: Boolean = this.isValueParameter && (this hasFlag BYNAMEPARAM)
     def isImplementationArtifact: Boolean = (this hasFlag BRIDGE) || (this hasFlag VBRIDGE) || (this hasFlag ARTIFACT)
-    def isJava: Boolean = this hasFlag JAVA
+    def isJava: Boolean = isJavaDefined
     def isVal: Boolean = isTerm && !isModule && !isMethod && !isMutable
     def isVar: Boolean = isTerm && !isModule && !isMethod && isMutable
 
@@ -88,7 +98,6 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     def toTypeIn(site: Type): Type = site.memberType(this)
     def toTypeConstructor: Type = typeConstructor
     def setTypeSignature(tpe: Type): this.type = { setInfo(tpe); this }
-    def getAnnotations: List[AnnotationInfo] = { initialize; annotations }
     def setAnnotations(annots: AnnotationInfo*): this.type = { setAnnotations(annots.toList); this }
 
     def getter: Symbol = getter(owner)
@@ -218,9 +227,10 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
       val m = newModuleSymbol(clazz.name.toTermName, clazz.pos, MODULE | newFlags)
       connectModuleToClass(m, clazz.asInstanceOf[ClassSymbol])
     }
-    final def newModule(name: TermName, pos: Position = NoPosition, newFlags: Long = 0L): ModuleSymbol = {
-      val m     = newModuleSymbol(name, pos, newFlags | MODULE)
-      val clazz = newModuleClass(name.toTypeName, pos, m getFlag ModuleToClassFlags)
+    final def newModule(name: TermName, pos: Position = NoPosition, newFlags0: Long = 0L): ModuleSymbol = {
+      val newFlags = newFlags0 | MODULE
+      val m = newModuleSymbol(name, pos, newFlags)
+      val clazz = newModuleClass(name.toTypeName, pos, newFlags & ModuleToClassFlags)
       connectModuleToClass(m, clazz)
     }
 
@@ -238,9 +248,10 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     final def newModuleSymbol(name: TermName, pos: Position = NoPosition, newFlags: Long = 0L): ModuleSymbol =
       newTermSymbol(name, pos, newFlags).asInstanceOf[ModuleSymbol]
 
-    final def newModuleAndClassSymbol(name: Name, pos: Position, flags: FlagSet): (ModuleSymbol, ClassSymbol) = {
-      val m =  newModuleSymbol(name, pos, flags | MODULE)
-      val c = newModuleClass(name.toTypeName, pos, m getFlag ModuleToClassFlags)
+    final def newModuleAndClassSymbol(name: Name, pos: Position, flags0: FlagSet): (ModuleSymbol, ClassSymbol) = {
+      val flags = flags0 | MODULE
+      val m = newModuleSymbol(name, pos, flags)
+      val c = newModuleClass(name.toTypeName, pos, flags & ModuleToClassFlags)
       connectModuleToClass(m, c)
       (m, c)
     }
@@ -489,14 +500,12 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     def isAliasType    = false
     def isAbstractType = false
     def isSkolem       = false
-    def isMacro        = this hasFlag MACRO
 
     /** A Type, but not a Class. */
     def isNonClassType = false
 
     /** The bottom classes are Nothing and Null, found in Definitions. */
     def isBottomClass  = false
-    def isSpecialized = this hasFlag SPECIALIZED
 
     /** These are all tests for varieties of ClassSymbol, which has these subclasses:
      *  - ModuleClassSymbol
@@ -585,11 +594,20 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
       && owner.isPackageClass
       && nme.isReplWrapperName(name)
     )
-    final def getFlag(mask: Long): Long = flags & mask
+    final def getFlag(mask: Long): Long = {
+      if (!isCompilerUniverse && needsInitialize(isFlagRelated = true, mask = mask)) initialize
+      flags & mask
+    }
     /** Does symbol have ANY flag in `mask` set? */
-    final def hasFlag(mask: Long): Boolean = (flags & mask) != 0
+    final def hasFlag(mask: Long): Boolean = {
+      if (!isCompilerUniverse && needsInitialize(isFlagRelated = true, mask = mask)) initialize
+      (flags & mask) != 0
+    }
     /** Does symbol have ALL the flags in `mask` set? */
-    final def hasAllFlags(mask: Long): Boolean = (flags & mask) == mask
+    final def hasAllFlags(mask: Long): Boolean = {
+      if (!isCompilerUniverse && needsInitialize(isFlagRelated = true, mask = mask)) initialize
+      (flags & mask) == mask
+    }
 
     def setFlag(mask: Long): this.type   = { _rawflags |= mask ; this }
     def resetFlag(mask: Long): this.type = { _rawflags &= ~mask ; this }
@@ -1146,7 +1164,10 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     /** See comment in HasFlags for how privateWithin combines with flags.
      */
     private[this] var _privateWithin: Symbol = _
-    def privateWithin = _privateWithin
+    def privateWithin = {
+      if (!isCompilerUniverse && needsInitialize(isFlagRelated = false, mask = 0)) initialize
+      _privateWithin
+    }
     def privateWithin_=(sym: Symbol) { _privateWithin = sym }
     def setPrivateWithin(sym: Symbol): this.type = { privateWithin_=(sym) ; this }
 
@@ -1337,6 +1358,46 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
       this
     }
 
+    /** Called when the programmer requests information that might require initialization of the underlying symbol.
+     *
+     *  `isFlagRelated` and `mask` describe the nature of this information.
+     *  isFlagRelated = true means that the programmer needs particular bits in flags.
+     *  isFlagRelated = false means that the request is unrelated to flags (annotations or privateWithin).
+     *
+     *  In our current architecture, symbols for top-level classes and modules
+     *  are created as dummies. Package symbols just call newClass(name) or newModule(name) and
+     *  consider their job done.
+     *
+     *  In order for such a dummy to provide meaningful info (e.g. a list of its members),
+     *  it needs to go through unpickling. Unpickling is a process of reading Scala metadata
+     *  from ScalaSignature annotations and assigning it to symbols and types.
+     *
+     *  A single unpickling session takes a top-level class or module, parses the ScalaSignature annotation
+     *  and then reads metadata for the unpicklee, its companion (if any) and all their members recursively
+     *  (i.e. the pickle not only contains info about directly nested classes/modules, but also about
+     *  classes/modules nested into those and so on).
+     *
+     *  Unpickling is triggered automatically whenever typeSignature (info in compiler parlance) is called.
+     *  This happens because package symbols assign completer thunks to the dummies they create.
+     *  Therefore metadata loading happens lazily and transparently.
+     *
+     *  Almost transparently. Unfortunately metadata isn't limited to just signatures (i.e. lists of members).
+     *  It also includes flags (which determine e.g. whether a class is sealed or not), annotations and privateWithin.
+     *  This gives rise to unpleasant effects like in SI-6277, when a flag test called on an uninitialize symbol
+     *  produces incorrect results.
+     *
+     *  One might think that the solution is simple: automatically call the completer whenever one needs
+     *  flags, annotations and privateWithin - just like it's done for typeSignature. Unfortunately, this
+     *  leads to weird crashes in scalac, and currently we can't attempt to fix the core of the compiler
+     *  risk stability a few weeks before the final release.
+     *
+     *  However we do need to fix this for runtime reflection, since it's not something we'd like to
+     *  expose to reflection users. Therefore a proposed solution is to check whether we're in a
+     *  runtime reflection universe and if yes then to commence initialization.
+     */
+    protected def needsInitialize(isFlagRelated: Boolean, mask: Long) =
+      !isInitialized && (flags & LOCKED) == 0 && shouldTriggerCompleter(this, if (infos ne null) infos.info else null, isFlagRelated, mask)
+
     /** Was symbol's type updated during given phase? */
     final def isUpdatedAt(pid: Phase#Id): Boolean = {
       assert(isCompilerUniverse)
@@ -1482,7 +1543,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     def makeSerializable() {
       info match {
         case ci @ ClassInfoType(_, _, _) =>
-          updateInfo(ci.copy(parents = ci.parents :+ SerializableClass.tpe))
+          setInfo(ci.copy(parents = ci.parents :+ SerializableClass.tpe))
         case i =>
           abort("Only ClassInfoTypes can be made serializable: "+ i)
       }
@@ -1504,8 +1565,10 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     /** After the typer phase (before, look at the definition's Modifiers), contains
      *  the annotations attached to member a definition (class, method, type, field).
      */
-    def annotations: List[AnnotationInfo] =
+    def annotations: List[AnnotationInfo] = {
+      if (!isCompilerUniverse && needsInitialize(isFlagRelated = false, mask = 0)) initialize
       _annotations
+    }
 
     def setAnnotations(annots: List[AnnotationInfo]): this.type = {
       _annotations = annots

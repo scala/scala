@@ -2020,45 +2020,10 @@ trait Types extends api.Types { self: SymbolTable =>
     override def kind = "ConstantType"
   }
 
-  final class UniqueConstantType(value: Constant) extends ConstantType(value) {
-    /** Save the type of `value`. For Java enums, it depends on finding the linked class,
-     *  which might not be found after `flatten`. */
-    private lazy val _tpe: Type = value.tpe
-    override def underlying: Type = _tpe
-  }
+  final class UniqueConstantType(value: Constant) extends ConstantType(value)
 
   object ConstantType extends ConstantTypeExtractor {
-    def apply(value: Constant): ConstantType = {
-      val tpe = new UniqueConstantType(value)
-      if (value.tag == ClazzTag) {
-        // if we carry a classOf, we might be in trouble
-        // http://groups.google.com/group/scala-internals/browse_thread/thread/45185b341aeb6a30
-        // I don't have time for a thorough fix, so I put a hacky workaround here
-        val alreadyThere = uniques findEntry tpe
-        if ((alreadyThere ne null) && (alreadyThere ne tpe) && (alreadyThere.toString != tpe.toString)) {
-          // we need to remove a stale type that has the same hashcode as we do
-          // HashSet doesn't support removal, and this makes our task non-trivial
-          // also we cannot simply recreate it, because that'd skew hashcodes (that change over time, omg!)
-          // the only solution I can see is getting into the underlying array and sneakily manipulating it
-          val ftable = uniques.getClass.getDeclaredFields().find(f => f.getName endsWith "table").get
-          ftable.setAccessible(true)
-          val table = ftable.get(uniques).asInstanceOf[Array[AnyRef]]
-          def overwrite(hc: Int, x: Type) {
-            def index(x: Int): Int = math.abs(x % table.length)
-            var h = index(hc)
-            var entry = table(h)
-            while (entry ne null) {
-              if (x == entry)
-                table(h) = x
-              h = index(h + 1)
-              entry = table(h)
-            }
-          }
-          overwrite(tpe.##, tpe)
-        }
-      }
-      unique(tpe).asInstanceOf[ConstantType]
-    }
+    def apply(value: Constant) = unique(new UniqueConstantType(value))
   }
 
   /* Syncnote: The `volatile` var and `pendingVolatiles` mutable set need not be protected
@@ -3481,6 +3446,16 @@ trait Types extends api.Types { self: SymbolTable =>
     override def safeToString = "<?>"
     override def kind = "LazyType"
   }
+
+  /** A marker trait representing an as-yet unevaluated type
+   *  which doesn't assign flags to the underlying symbol.
+   */
+  trait FlagAgnosticCompleter extends LazyType
+
+  /** A marker trait representing an as-yet unevaluated type
+   *  which assigns flags to the underlying symbol.
+   */
+  trait FlagAssigningCompleter extends LazyType
 
   abstract class LazyPolyType(override val typeParams: List[Symbol]) extends LazyType {
     override def safeToString =
