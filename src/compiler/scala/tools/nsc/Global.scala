@@ -1079,12 +1079,12 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
    *  of what file was being compiled when it broke.  Since I really
    *  really want to know, this hack.
    */
-  private var lastSeenSourceFile: SourceFile = NoSourceFile
+  protected var lastSeenSourceFile: SourceFile = NoSourceFile
 
   /** Let's share a lot more about why we crash all over the place.
    *  People will be very grateful.
    */
-  private var lastSeenContext: analyzer.Context = null
+  protected var lastSeenContext: analyzer.Context = null
 
   /** The currently active run
    */
