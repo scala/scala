@@ -253,12 +253,6 @@ trait Typers extends Modes with Adaptations with Tags {
         result
       }
     }
-    def isNonRefinementClassType(tpe: Type) = tpe match {
-      case SingleType(_, sym) => sym.isModuleClass
-      case TypeRef(_, sym, _) => sym.isClass && !sym.isRefinementClass
-      case ErrorType          => true
-      case _                  => false
-    }
     private def errorNotClass(tpt: Tree, found: Type)  = { ClassTypeRequiredError(tpt, found); false }
     private def errorNotStable(tpt: Tree, found: Type) = { TypeNotAStablePrefixError(tpt, found); false }
 
