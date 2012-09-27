@@ -67,6 +67,17 @@ trait Checkable {
       val tps1 = (from baseType bc).typeArgs
       val tps2 = (tvarType baseType bc).typeArgs
       (tps1, tps2).zipped foreach (_ =:= _)
+      // Alternate, variance respecting formulation causes
+      // neg/unchecked3.scala to fail (abstract types).  TODO -
+      // figure it out. It seems there is more work to do if I
+      // allow for variance, because the constraints accumulate
+      // as bounds and "tvar.instValid" is false.
+      //
+      // foreach3(tps1, tps2, bc.typeParams)((tp1, tp2, tparam) =>
+      //   if (tparam.initialize.isCovariant) tp1 <:< tp2
+      //   else if (tparam.isContravariant) tp2 <:< tp1
+      //   else tp1 =:= tp2
+      // )
     }
 
     val resArgs = tparams zip tvars map {
@@ -77,14 +88,15 @@ trait Checkable {
   }
 
   private def isUnwarnableTypeArgSymbol(sym: Symbol) = (
-       sym.isTypeParameterOrSkolem             // dummy
+       sym.isTypeParameter                     // dummy
     || (sym.name.toTermName == nme.WILDCARD)   // _
     || nme.isVariableName(sym.name)            // type variable
   )
   private def isUnwarnableTypeArg(arg: Type) = (
-       isUnwarnableTypeArgSymbol(arg.typeSymbolDirect)   // has to be direct: see pos/t1439
-    || (arg hasAnnotation UncheckedClass)                // @unchecked T
+       uncheckedOk(arg)                                 // @unchecked T
+    || isUnwarnableTypeArgSymbol(arg.typeSymbolDirect)  // has to be direct: see pos/t1439
   )
+  private def uncheckedOk(tp: Type) = tp hasAnnotation UncheckedClass
 
   private def typeArgsInTopLevelType(tp: Type): List[Type] = {
     val tps = tp match {
@@ -104,7 +116,7 @@ trait Checkable {
     // sadly the spec says (new java.lang.Boolean(true)).isInstanceOf[scala.Boolean]
     def P1   = X matchesPattern P
     def P2   = !Psym.isPrimitiveValueClass && isNeverSubType(X, P)
-    def P3   = Psym.isClass && (XR matchesPattern P)
+    def P3   = isNonRefinementClassType(P) && (XR matchesPattern P)
     def P4   = !(P1 || P2 || P3)
 
     def summaryString = f"""
@@ -226,6 +238,7 @@ trait Checkable {
      *  TODO: Eliminate inPattern, canRemedy, which have no place here.
      */
     def checkCheckable(tree: Tree, P0: Type, X0: Type, inPattern: Boolean, canRemedy: Boolean = false) {
+      if (uncheckedOk(P0)) return
       def where = if (inPattern) "pattern " else ""
 
       // singleton types not considered here
@@ -239,6 +252,9 @@ trait Checkable {
         // If top-level abstract types can be checked using a classtag extractor, don't warn about them
         case TypeRef(_, sym, _) if sym.isAbstractType && canRemedy =>
           ;
+        // Matching on types like case _: AnyRef { def bippy: Int } => doesn't work -- yet.
+        case RefinedType(_, decls) if !decls.isEmpty =>
+          getContext.unit.warning(tree.pos, s"a pattern match on a refinement type is unchecked")
         case _ =>
           val checker = new CheckabilityChecker(X, P)
           log(checker.summaryString)
