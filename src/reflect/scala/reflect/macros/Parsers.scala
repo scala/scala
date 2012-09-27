@@ -5,14 +5,10 @@ trait Parsers {
   self: Context =>
 
   /** .. */
-  // todo. distinguish between `parse` and `parse`
+  // todo. distinguish between parsing an expression and parsing arbitrary code
+  // for example, parsing in expression mode will fail on packages
   def parse(code: String): Tree
-
-  /** Represents an error during parsing
-   */
-  type ParseError <: Throwable
-  val ParseError: ParseErrorExtractor
-  abstract class ParseErrorExtractor {
-    def unapply(error: ParseError): Option[(Position, String)]
-  }
 }
+
+// should be path-dependent, otherwise exception handling becomes a mess
+case class ParseError(val pos: scala.reflect.api.Position, val msg: String) extends Throwable(msg)

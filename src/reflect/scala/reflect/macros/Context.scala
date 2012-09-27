@@ -6,17 +6,13 @@ package macros
 // the full context should include all traits from scala.reflect.macros (and probably reside in scala-compiler.jar)
 
 trait Context extends Aliases
-                 with CapturedVariables
                  with Enclosures
-                 with Infrastructure
                  with Names
                  with Reifiers
                  with FrontEnds
-                 with Settings
+                 with Infrastructure
                  with Typers
                  with Parsers
-                 with Exprs
-                 with TypeTags
                  with Evals
                  with ExprUtils {
 
@@ -24,7 +20,7 @@ trait Context extends Aliases
   val universe: Universe
 
   /** The mirror of the compile-time universe */
-  val mirror: MirrorOf[universe.type]
+  val mirror: universe.Mirror
 
   /** The type of the prefix tree from which the macro is selected */
   type PrefixType

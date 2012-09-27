@@ -7,7 +7,7 @@ trait JavaUniverse extends Universe with Mirrors { self =>
 
   override type Mirror >: Null <: JavaMirror
 
-  trait JavaMirror extends MirrorOf[self.type] with RuntimeMirror {
+  trait JavaMirror extends scala.reflect.api.Mirror[self.type] with RuntimeMirror {
     val classLoader: ClassLoader
     override def toString = s"JavaMirror with ${runtime.ReflectionUtils.show(classLoader)}"
   }
@@ -23,7 +23,7 @@ trait JavaUniverse extends Universe with Mirrors { self =>
 
   override def manifestToTypeTag[T](mirror0: Any, manifest: Manifest[T]): Universe # TypeTag[T] =
     TypeTag(mirror0.asInstanceOf[Mirror], new TypeCreator {
-      def apply[U <: Universe with Singleton](mirror: MirrorOf[U]): U # Type = {
+      def apply[U <: Universe with Singleton](mirror: scala.reflect.api.Mirror[U]): U # Type = {
         mirror.universe match {
           case ju: JavaUniverse =>
             val jm = mirror.asInstanceOf[ju.Mirror]

@@ -8,13 +8,13 @@ package api
  *
  * This is defined outside the reflection universe cake pattern implementation
  * so that it can be referenced from outside. For example TypeCreator and TreeCreator
- * reference MirrorOf and also need to be defined outside the cake as they are
+ * reference Mirror and also need to be defined outside the cake as they are
  * used by type tags, which can be migrated between different universes and consequently
  * cannot be bound to a fixed one.
  *
  * @see [[Mirrors]]
  */
-abstract class MirrorOf[U <: Universe with Singleton] {
+abstract class Mirror[U <: Universe with Singleton] {
   /** The universe this mirror belongs to. */
   val universe: U
 

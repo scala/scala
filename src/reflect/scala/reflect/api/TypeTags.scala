@@ -154,19 +154,17 @@ trait TypeTags { self: Universe =>
   @annotation.implicitNotFound(msg = "No WeakTypeTag available for ${T}")
   trait WeakTypeTag[T] extends Equals with Serializable {
     /**
-     * Mirror corresponding to the universe of this WeakTypeTag.
+     * Underlying mirror of this type tag.
      */
     val mirror: Mirror
+
     /**
-     * Migrates type tag to another universe.
-     *
-     * Type tags are path dependent on their universe. This methods allows migration
-     * given the mirror corresponding to the target universe.
+     * Migrates the expression into another mirror, jumping into a different universe if necessary.
      *
      * Migration means that all symbolic references to classes/objects/packages in the expression
      * will be re-resolved within the new mirror (typically using that mirror's classloader).
      */
-    def in[U <: Universe with Singleton](otherMirror: MirrorOf[U]): U # WeakTypeTag[T]
+    def in[U <: Universe with Singleton](otherMirror: scala.reflect.api.Mirror[U]): U # WeakTypeTag[T]
 
     /**
      * Reflective representation of type T.
@@ -201,7 +199,7 @@ trait TypeTags { self: Universe =>
     val Null    : WeakTypeTag[scala.Null]       = TypeTag.Null
 
 
-    def apply[T](mirror1: MirrorOf[self.type], tpec1: TypeCreator): WeakTypeTag[T] =
+    def apply[T](mirror1: scala.reflect.api.Mirror[self.type], tpec1: TypeCreator): WeakTypeTag[T] =
       tpec1(mirror1) match {
         case ByteTpe    => WeakTypeTag.Byte.asInstanceOf[WeakTypeTag[T]]
         case ShortTpe   => WeakTypeTag.Short.asInstanceOf[WeakTypeTag[T]]
@@ -226,8 +224,8 @@ trait TypeTags { self: Universe =>
 
   private class WeakTypeTagImpl[T](val mirror: Mirror, val tpec: TypeCreator) extends WeakTypeTag[T] {
     lazy val tpe: Type = tpec(mirror)
-    def in[U <: Universe with Singleton](otherMirror: MirrorOf[U]): U # WeakTypeTag[T] = {
-      val otherMirror1 = otherMirror.asInstanceOf[MirrorOf[otherMirror.universe.type]]
+    def in[U <: Universe with Singleton](otherMirror: scala.reflect.api.Mirror[U]): U # WeakTypeTag[T] = {
+      val otherMirror1 = otherMirror.asInstanceOf[scala.reflect.api.Mirror[otherMirror.universe.type]]
       otherMirror.universe.WeakTypeTag[T](otherMirror1, tpec)
     }
     private def writeReplace(): AnyRef = new SerializedTypeTag(tpec, concrete = false)
@@ -245,7 +243,7 @@ trait TypeTags { self: Universe =>
     /**
      * @inheritdoc
      */
-    override def in[U <: Universe with Singleton](otherMirror: MirrorOf[U]): U # TypeTag[T]
+    override def in[U <: Universe with Singleton](otherMirror: scala.reflect.api.Mirror[U]): U # TypeTag[T]
 
     // case class accessories
     override def canEqual(x: Any) = x.isInstanceOf[TypeTag[_]]
@@ -271,7 +269,7 @@ trait TypeTags { self: Universe =>
     val Nothing: TypeTag[scala.Nothing]    = new PredefTypeTag[scala.Nothing]    (NothingTpe, _.TypeTag.Nothing)
     val Null:    TypeTag[scala.Null]       = new PredefTypeTag[scala.Null]       (NullTpe,    _.TypeTag.Null)
 
-    def apply[T](mirror1: MirrorOf[self.type], tpec1: TypeCreator): TypeTag[T] =
+    def apply[T](mirror1: scala.reflect.api.Mirror[self.type], tpec1: TypeCreator): TypeTag[T] =
       tpec1(mirror1) match {
         case ByteTpe    => TypeTag.Byte.asInstanceOf[TypeTag[T]]
         case ShortTpe   => TypeTag.Short.asInstanceOf[TypeTag[T]]
@@ -295,15 +293,15 @@ trait TypeTags { self: Universe =>
   }
 
   private class TypeTagImpl[T](mirror: Mirror, tpec: TypeCreator) extends WeakTypeTagImpl[T](mirror, tpec) with TypeTag[T] {
-    override def in[U <: Universe with Singleton](otherMirror: MirrorOf[U]): U # TypeTag[T] = {
-      val otherMirror1 = otherMirror.asInstanceOf[MirrorOf[otherMirror.universe.type]]
+    override def in[U <: Universe with Singleton](otherMirror: scala.reflect.api.Mirror[U]): U # TypeTag[T] = {
+      val otherMirror1 = otherMirror.asInstanceOf[scala.reflect.api.Mirror[otherMirror.universe.type]]
       otherMirror.universe.TypeTag[T](otherMirror1, tpec)
     }
     private def writeReplace(): AnyRef = new SerializedTypeTag(tpec, concrete = true)
   }
 
   private class PredefTypeCreator[T](copyIn: Universe => Universe#TypeTag[T]) extends TypeCreator {
-    def apply[U <: Universe with Singleton](m: MirrorOf[U]): U # Type = {
+    def apply[U <: Universe with Singleton](m: scala.reflect.api.Mirror[U]): U # Type = {
       copyIn(m.universe).asInstanceOf[U # TypeTag[T]].tpe
     }
   }

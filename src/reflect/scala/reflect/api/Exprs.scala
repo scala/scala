@@ -12,14 +12,18 @@ trait Exprs { self: Universe =>
 
   /** Expr wraps an expression tree and tags it with its type. */
   trait Expr[+T] extends Equals with Serializable {
+    /**
+     * Underlying mirror of this expr.
+     */
     val mirror: Mirror
+
     /**
      * Migrates the expression into another mirror, jumping into a different universe if necessary.
      *
      * This means that all symbolic references to classes/objects/packages in the expression
      * will be re-resolved within the new mirror (typically using that mirror's classloader).
      */
-    def in[U <: Universe with Singleton](otherMirror: MirrorOf[U]): U # Expr[T]
+    def in[U <: Universe with Singleton](otherMirror: scala.reflect.api.Mirror[U]): U # Expr[T]
 
     /**
      * The Scala syntax tree representing the wrapped expression.
@@ -91,13 +95,13 @@ trait Exprs { self: Universe =>
    * in which case the tree first needs to be wrapped in an expr.
    */
   object Expr {
-    def apply[T: WeakTypeTag](mirror: MirrorOf[self.type], treec: TreeCreator): Expr[T] = new ExprImpl[T](mirror.asInstanceOf[Mirror], treec)
+    def apply[T: WeakTypeTag](mirror: scala.reflect.api.Mirror[self.type], treec: TreeCreator): Expr[T] = new ExprImpl[T](mirror.asInstanceOf[Mirror], treec)
     def unapply[T](expr: Expr[T]): Option[Tree] = Some(expr.tree)
   }
 
   private class ExprImpl[+T: WeakTypeTag](val mirror: Mirror, val treec: TreeCreator) extends Expr[T] {
-    def in[U <: Universe with Singleton](otherMirror: MirrorOf[U]): U # Expr[T] = {
-      val otherMirror1 = otherMirror.asInstanceOf[MirrorOf[otherMirror.universe.type]]
+    def in[U <: Universe with Singleton](otherMirror: scala.reflect.api.Mirror[U]): U # Expr[T] = {
+      val otherMirror1 = otherMirror.asInstanceOf[scala.reflect.api.Mirror[otherMirror.universe.type]]
       val tag1 = (implicitly[WeakTypeTag[T]] in otherMirror).asInstanceOf[otherMirror.universe.WeakTypeTag[T]]
       otherMirror.universe.Expr[T](otherMirror1, treec)(tag1)
     }

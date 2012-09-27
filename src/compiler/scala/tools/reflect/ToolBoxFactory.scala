@@ -334,7 +334,7 @@ abstract class ToolBoxFactory[U <: JavaUniverse](val u: U) { factorySelf =>
         val errorFn: String => Unit = msg => frontEnd.log(scala.reflect.internal.util.NoPosition, msg, frontEnd.ERROR)
         val command = new CompilerCommand(arguments.toList, errorFn)
         command.settings.outputDirs setSingleOutput virtualDirectory
-        val instance = new ToolBoxGlobal(command.settings, new FrontEndToReporterProxy(frontEnd) { val settings = command.settings })
+        val instance = new ToolBoxGlobal(command.settings, frontEndToReporter(frontEnd, command.settings))
         if (frontEnd.hasErrors) {
           var msg = "reflective compilation has failed: cannot initialize the compiler: " + EOL + EOL
           msg += frontEnd.infos map (_.msg) mkString EOL

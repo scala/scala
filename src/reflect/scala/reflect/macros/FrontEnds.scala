@@ -1,17 +1,8 @@
 package scala.reflect
 package macros
 
-trait FrontEnds extends scala.reflect.api.FrontEnds {
+trait FrontEnds {
   self: Context =>
-
-  import mirror._
-
-  type Position = universe.Position
-
-  /** Exposes means to control the compiler UI */
-  def frontEnd: FrontEnd
-  def setFrontEnd(frontEnd: FrontEnd): this.type
-  def withFrontEnd[T](frontEnd: FrontEnd)(op: => T): T
 
   /** For sending a message which should not be labeled as a warning/error,
    *  but also shouldn't require -verbose to be visible.
@@ -36,7 +27,4 @@ trait FrontEnds extends scala.reflect.api.FrontEnds {
    *  Use ``enclosingPosition'' if you're in doubt what position to pass to ``pos''.
    */
   def abort(pos: Position, msg: String): Nothing
-
-  /** Drops into interactive mode if supported by the compiler UI */
-  def interactive(): Unit
 }
