@@ -1,6 +1,9 @@
 package scala.reflect
 package runtime
 
+import scala.collection.mutable.WeakHashMap
+import java.lang.ref.WeakReference
+
 /** This trait overrides methods in reflect.internal, bracketing
  *  them in synchronized { ... } to make them thread-safe
  */
@@ -11,7 +14,26 @@ trait SynchronizedTypes extends internal.Types { self: SymbolTable =>
 
   private object uniqueLock
 
-  override def unique[T <: Type](tp: T): T = uniqueLock.synchronized { super.unique(tp) }
+  private val uniques = WeakHashMap[Type, WeakReference[Type]]()
+  override def unique[T <: Type](tp: T): T = uniqueLock.synchronized {
+    // we need to have weak uniques for runtime reflection
+    // because unlike the normal compiler universe, reflective universe isn't organized in runs
+    // therefore perRunCaches can grow infinitely large
+    //
+    // despite that toolbox universes are decorated, toolboxes are compilers,
+    // i.e. they have their caches cleaned up automatically on per-run basis,
+    // therefore they should use vanilla uniques, which are faster
+    if (!isCompilerUniverse) {
+      val result = if (uniques contains tp) uniques(tp).get else null
+      if (result ne null) result.asInstanceOf[T]
+      else {
+        uniques(tp) = new WeakReference(tp)
+        tp
+      }
+    } else {
+      super.unique(tp)
+    }
+  }
 
   class SynchronizedUndoLog extends UndoLog {
     private val actualLock = new java.util.concurrent.locks.ReentrantLock

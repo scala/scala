@@ -1,0 +1,30 @@
+Type in expressions to have them evaluated.
+Type :help for more information.
+
+scala> 
+
+scala> :power
+** Power User mode enabled - BEEP WHIR GYVE **
+** :phase has been set to 'typer'.          **
+** scala.tools.nsc._ has been imported      **
+** global._, definitions._ also imported    **
+** Try  :help, :vals, power.<tab>           **
+
+scala> val s = transformedType(StringClass.toType).asInstanceOf[Type]
+s: $r.intp.global.Type = String
+
+scala> { println(exitingPhase(currentRun.erasurePhase)(ConstantType(Constant(s)))) }
+Class[String](classOf[java.lang.String])
+
+scala> { exitingPhase(currentRun.erasurePhase)(println(ConstantType(Constant(s)))) }
+Class(classOf[java.lang.String])
+
+scala> { ConstantType(Constant(s)); println(exitingPhase(currentRun.erasurePhase)(ConstantType(Constant(s)))); }
+Class[String](classOf[java.lang.String])
+
+scala> { ConstantType(Constant(s)); exitingPhase(currentRun.erasurePhase)(println(ConstantType(Constant(s)))); }
+Class(classOf[java.lang.String])
+
+scala> 
+
+scala> 

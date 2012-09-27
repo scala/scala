@@ -391,7 +391,7 @@ trait Names extends api.Names with LowPriorityNames {
       newTermName(cs, 0, len)
     }
 
-    /** TODO - reconcile/fix that encode returns a Name but
+    /* TODO - reconcile/fix that encode returns a Name but
      *  decode returns a String.
      */
 

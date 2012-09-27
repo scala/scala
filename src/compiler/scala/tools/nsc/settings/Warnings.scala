@@ -18,6 +18,7 @@ trait Warnings {
   // These warnings are all so noisy as to be useless in their
   // present form, but have the potential to offer useful info.
   protected def allWarnings = lintWarnings ++ List(
+    warnDeadCode,
     warnSelectNullable,
     warnValueDiscard,
     warnNumericWiden
@@ -25,7 +26,7 @@ trait Warnings {
   // These warnings should be pretty quiet unless you're doing
   // something inadvisable.
   protected def lintWarnings = List(
-    warnDeadCode,
+    // warnDeadCode,
     warnInaccessible,
     warnNullaryOverride,
     warnNullaryUnit,

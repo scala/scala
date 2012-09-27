@@ -23,13 +23,13 @@ trait Infrastructure {
   type Run = universe.Run
 
   object Run extends RunExtractor {
-    def unapply(run: Run): Option[(CompilationUnit, List[CompilationUnit])] = Some(run.currentUnit, run.units.toList)
+    def unapply(run: Run): Option[(CompilationUnit, List[CompilationUnit])] = Some((run.currentUnit, run.units.toList))
   }
 
   type CompilationUnit = universe.CompilationUnit
 
   object CompilationUnit extends CompilationUnitExtractor {
-    def unapply(compilationUnit: CompilationUnit): Option[(java.io.File, Array[Char], Tree)] = Some(compilationUnit.source.file.file, compilationUnit.source.content, compilationUnit.body)
+    def unapply(compilationUnit: CompilationUnit): Option[(java.io.File, Array[Char], Tree)] = Some((compilationUnit.source.file.file, compilationUnit.source.content, compilationUnit.body))
   }
 
   val currentMacro: Symbol = expandee.symbol
