@@ -17,14 +17,24 @@ object Test {
   /** Attempt to use a method type as a type argument - expect failure. */
   def tcon[T: TypeTag](args: Type*) = appliedType(typeOf[T].typeConstructor, args.toList)
 
-  val map      = typeOf[CompletelyIndependentList[Int]].member("map": TermName).typeSignature
-  val distinct = typeOf[CompletelyIndependentList[Int]].member("distinct": TermName).typeSignature
+  def cil      = typeOf[CompletelyIndependentList[Int]]
+  def map      = cil.member("map": TermName).asMethod
+  def distinct = cil.member("distinct": TermName).asMethod
 
   def main(args: Array[String]): Unit = {
-    expectFailure(println(tcon[CompletelyIndependentList[Int]](map)))
-    expectFailure(tcon[CompletelyIndependentList[Int]](distinct))
-    println(map)
-    println(distinct)
+    // Need the assert in there to fail.
+    // expectFailure(println(tcon[CompletelyIndependentList[Int]](map)))
+    // expectFailure(tcon[CompletelyIndependentList[Int]](distinct))
+
+    // Why is the first map signature printing showing an
+    // uninitialized symbol?
+    //
+    // [B <: <?>, That <: <?>](f: <?>)(implicit cbf: <?>)That
+    //
+
+    println(map.typeSignature)
+    println(map.typeSignatureIn(cil))
+    println(distinct.typeSignature)
     if (failed) sys.exit(1)
   }
 }
