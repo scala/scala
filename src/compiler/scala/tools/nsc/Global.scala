@@ -1158,7 +1158,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
 
   /** A Run is a single execution of the compiler on a sets of units
    */
-  class Run {
+  class Run extends RunContextApi {
     /** Have been running into too many init order issues with Run
      *  during erroneous conditions.  Moved all these vals up to the
      *  top of the file so at least they're not trivially null.

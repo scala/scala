@@ -2,7 +2,7 @@ unchecked.scala:18: warning: non-variable type argument String in type pattern I
     case xs: Iterable[String] => xs.head // unchecked
              ^
 unchecked.scala:22: warning: non-variable type argument Any in type pattern Set[Any] is unchecked since it is eliminated by erasure
-    case xs: Set[Any]    => xs.head // unchecked
+    case xs: Set[Any] => xs.head // unchecked
              ^
 unchecked.scala:26: warning: non-variable type argument Any in type pattern Map[Any,Any] is unchecked since it is eliminated by erasure
     case xs: Map[Any, Any] => xs.head // unchecked

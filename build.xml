@@ -1749,7 +1749,7 @@ OSGi Artifacts
   </target>
 
   <target name="osgi.bundles" depends="osgi.init" unless="osgi.bundles.available">
-    <stopwatch name="osgi.bundle.timer"/>  
+    <stopwatch name="osgi.bundle.timer"/>
     <make-bundle name="scala-library" version="${osgi.version.number}" />
     <make-bundle name="scala-actors" version="${osgi.version.number}" />
     <make-bundle name="scala-actors-migration" version="${osgi.version.number}" />
@@ -1757,7 +1757,7 @@ OSGi Artifacts
     <make-bundle name="scala-compiler" version="${osgi.version.number}" />
     <make-plugin-bundle name="continuations" version="${osgi.version.number}" />
     <touch file="${build-osgi.dir}/bundles.complete" verbose="no"/>
-    <stopwatch name="osgi.bundle.timer" action="total"/>   
+    <stopwatch name="osgi.bundle.timer" action="total"/>
   </target>
 
   <target name="osgi.bundles.swing" depends="osgi.init" if="has.java6" unless="osgi.bundles.available">
@@ -1801,7 +1801,7 @@ OSGi Artifacts
       </compilationpath>
     </scalacfork>
     <touch file="${build-osgi.dir}/test-compile.complete" verbose="no"/>
-    <stopwatch name="osgi.test.comp.timer" action="total"/>   
+    <stopwatch name="osgi.test.comp.timer" action="total"/>
   </target>
 
   <target name="osgi.test" depends="osgi.test.comp">
@@ -1821,7 +1821,7 @@ OSGi Artifacts
       </batchtest>
       <formatter type="brief" usefile="false" />
     </junit>
-    <stopwatch name="osgi.test.timer" action="total"/>   
+    <stopwatch name="osgi.test.timer" action="total"/>
   </target>
 
   <target name="osgi.clean">
@@ -2322,6 +2322,7 @@ DOCUMENTATION
         <include name="swing/**"/>
         <include name="actors/**"/>
         <include name="actors-migration/**"/>
+        <include name="reflect/**"/>
       </source-includes>
     </doc-uptodate-check>
   </target>
@@ -2336,7 +2337,7 @@ DOCUMENTATION
       docfooter="epfl"
       docsourceurl="${scaladoc.url}€{FILE_PATH}.scala#L1"
       docUncompilable="${src.dir}/library-aux"
-      skipPackages="scala.reflect.macros.internal"
+      skipPackages="scala.reflect.macros.internal:scala.reflect.internal:scala.reflect.runtime:scala.reflect.io"
       sourcepath="${src.dir}"
       classpathref="pack.classpath"
       addparams="${scalac.args.all}"
@@ -2716,14 +2717,14 @@ DISTRIBUTION
     <macrodef name="copy-bundle">
       <attribute name="name" />
       <sequential>
-        <copy file="${build-osgi.dir}/org.scala-lang.@{name}.jar" 
+        <copy file="${build-osgi.dir}/org.scala-lang.@{name}.jar"
           tofile="${dist.dir}/lib/@{name}.jar"/>
       </sequential>
     </macrodef>
     <macrodef name="copy-plugin-bundle">
       <attribute name="name" />
       <sequential>
-        <copy file="${build-osgi.dir}/org.scala-lang.plugins.@{name}.jar" 
+        <copy file="${build-osgi.dir}/org.scala-lang.plugins.@{name}.jar"
           tofile="${dist.dir}/misc/scala-devel/plugins/@{name}.jar"/>
       </sequential>
     </macrodef>

@@ -247,7 +247,7 @@ abstract class TreeInfo {
 
   /** Is tree a variable pattern? */
   def isVarPattern(pat: Tree): Boolean = pat match {
-    case x: Ident           => !x.isBackquoted && isVariableName(x.name)
+    case x: Ident           => !x.isBackquoted && nme.isVariableName(x.name)
     case _                  => false
   }
   def isDeprecatedIdentifier(tree: Tree): Boolean = tree match {
@@ -311,14 +311,6 @@ abstract class TreeInfo {
 
   /** Is name a left-associative operator? */
   def isLeftAssoc(operator: Name) = operator.nonEmpty && (operator.endChar != ':')
-
-  private val reserved = Set[Name](nme.false_, nme.true_, nme.null_)
-
-  /** Is name a variable name? */
-  def isVariableName(name: Name): Boolean = {
-    val first = name.startChar
-    ((first.isLower && first.isLetter) || first == '_') && !reserved(name)
-  }
 
   /** Is tree a `this` node which belongs to `enclClass`? */
   def isSelf(tree: Tree, enclClass: Symbol): Boolean = tree match {

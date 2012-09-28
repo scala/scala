@@ -19,7 +19,7 @@ trait Mirrors extends api.Mirrors {
   // if there are any symbols created by that mirror
   trait RootSymbol extends Symbol { def mirror: Mirror }
 
-  abstract class RootsBase(rootOwner: Symbol) extends MirrorOf[Mirrors.this.type] { thisMirror =>
+  abstract class RootsBase(rootOwner: Symbol) extends scala.reflect.api.Mirror[Mirrors.this.type] { thisMirror =>
 
     protected[scala] def rootLoader: LazyType
 

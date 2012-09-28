@@ -21,7 +21,7 @@ trait Patterns extends ast.TreeDSL {
   import definitions._
   import CODE._
   import Debug._
-  import treeInfo.{ unbind, isStar, isVarPattern, isVariableName }
+  import treeInfo.{ unbind, isStar, isVarPattern }
 
   type PatternMatch       = MatchMatrix#PatternMatch
   private type PatternVar = MatrixContext#PatternVar
@@ -366,7 +366,7 @@ trait Patterns extends ast.TreeDSL {
     lazy val Select(qualifier, name) = select
     def pathSegments = getPathSegments(tree)
     def backticked: Option[String] = qualifier match {
-      case _: This if isVariableName(name)  => Some("`%s`".format(name))
+      case _: This if nme.isVariableName(name)  => Some("`%s`".format(name))
       case _                                => None
     }
     override def covers(sym: Symbol) = newMatchesPattern(sym, tree.tpe)
@@ -388,11 +388,11 @@ trait Patterns extends ast.TreeDSL {
     lazy val UnApply(unfn, args) = tree
     lazy val Apply(fn, _) = unfn
     lazy val MethodType(List(arg, _*), _) = fn.tpe
-    
+
     // Covers if the symbol matches the unapply method's argument type,
     // and the return type of the unapply is Some.
     override def covers(sym: Symbol) = newMatchesPattern(sym, arg.tpe)
-    
+
     // TODO: for alwaysCovers:
     //   fn.tpe.finalResultType.typeSymbol == SomeClass
 
@@ -451,7 +451,7 @@ trait Patterns extends ast.TreeDSL {
         (sym.tpe.baseTypeSeq exists (_ matchesPattern pattp))
       }
     }
-    
+
     def    sym  = tree.symbol
     def    tpe  = tree.tpe
     def isEmpty = tree.isEmpty

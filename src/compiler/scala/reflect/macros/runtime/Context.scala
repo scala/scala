@@ -5,24 +5,20 @@ import scala.tools.nsc.Global
 
 abstract class Context extends scala.reflect.macros.Context
                          with Aliases
-                         with CapturedVariables
-                         with Infrastructure
                          with Enclosures
                          with Names
                          with Reifiers
                          with FrontEnds
-                         with Settings
+                         with Infrastructure
                          with Typers
                          with Parsers
-                         with Exprs
-                         with TypeTags
                          with Evals
                          with ExprUtils
                          with Traces {
 
   val universe: Global
 
-  val mirror: MirrorOf[universe.type] = universe.rootMirror
+  val mirror: universe.Mirror = universe.rootMirror
 
   val callsiteTyper: universe.analyzer.Typer
 

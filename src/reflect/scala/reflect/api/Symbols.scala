@@ -86,10 +86,10 @@ trait Symbols { self: Universe =>
      *  that directly contains the current symbol's definition.
      *  The `NoSymbol` symbol does not have an owner, and calling this method
      *  on one causes an internal error.
-     *  The owner of the Scala root class [[scala.reflect.api.MirrorOf.RootClass]]
-     *  and the Scala root object [[scala.reflect.api.MirrorOf.RootPackage]] is `NoSymbol`.
+     *  The owner of the Scala root class [[scala.reflect.api.Mirror.RootClass]]
+     *  and the Scala root object [[scala.reflect.api.Mirror.RootPackage]] is `NoSymbol`.
      *  Every other symbol has a chain of owners that ends in
-     *  [[scala.reflect.api.MirrorOf.RootClass]].
+     *  [[scala.reflect.api.Mirror.RootClass]].
      */
     def owner: Symbol
 
@@ -209,6 +209,10 @@ trait Symbols { self: Universe =>
 
     /** Source file if this symbol is created during this compilation run,
      *  or a class file if this symbol is loaded from a *.class or *.jar.
+     *
+     *  The return type is [[scala.reflect.io.AbstractFile]], which belongs to an experimental part of Scala reflection.
+     *  It should not be used unless you know what you are doing. In subsequent releases, this API will be refined
+     *  and exposed as a part of scala.reflect.api.
      */
     def associatedFile: scala.reflect.io.AbstractFile
 

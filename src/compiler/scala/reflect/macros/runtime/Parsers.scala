@@ -10,6 +10,7 @@ trait Parsers {
 
   def parse(code: String): Tree =
     // todo. provide decent implementation
+    // see `Typers.typedUseCase` for details
     try {
       import scala.reflect.runtime.{universe => ru}
       val parsed = ru.rootMirror.mkToolBox().parse(code)
@@ -17,9 +18,7 @@ trait Parsers {
       importer.importTree(parsed)
     } catch {
       case ToolBoxError(msg, cause) =>
+        // todo. provide a position
         throw new ParseError(universe.NoPosition, msg)
     }
-
-  case class ParseError(val pos: Position, val msg: String) extends Throwable(msg)
-  object ParseError extends ParseErrorExtractor
 }
