@@ -132,7 +132,7 @@ trait Implicits {
   }
 
   /* Map a polytype to one in which all type parameters and argument-dependent types are replaced by wildcards.
-   * Consider `implicit def b(implicit x: A): x.T = error("")`. We need to approximate DebruijnIndex types
+   * Consider `implicit def b(implicit x: A): x.T = error("")`. We need to approximate debruijn index types
    * when checking whether `b` is a valid implicit, as we haven't even searched a value for the implicit arg `x`,
    * so we have to approximate (otherwise it is excluded a priori).
    */

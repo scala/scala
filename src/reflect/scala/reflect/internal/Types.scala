@@ -68,8 +68,6 @@ import util.ThreeValues._
     // a type variable
     // Replace occurrences of type parameters with type vars, where
     // inst is the instantiation and constr is a list of bounds.
-  case DeBruijnIndex(level, index)
-    // for dependent method types: a type referring to a method parameter.
   case ErasedValueType(clazz, underlying)
     // only used during erasure of derived value classes.
 */
@@ -3403,23 +3401,6 @@ trait Types extends api.Types { self: SymbolTable =>
     override def safeToString: String = name.toString +": "+ tp
   }
 
-  /** A De Bruijn index referring to a previous type argument. Only used
-   *  as a serialization format.
-   */
-  case class DeBruijnIndex(level: Int, idx: Int, args: List[Type]) extends Type {
-    override def safeToString: String = "De Bruijn index("+level+","+idx+")"
-  }
-
-  /** A binder defining data associated with De Bruijn indices. Only used
-   *  as a serialization format.
-   */
-  case class DeBruijnBinder(pnames: List[Name], ptypes: List[Type], restpe: Type) extends Type {
-    override def safeToString = {
-      val kind = if (pnames.head.isTypeName) "poly" else "method"
-      "De Bruijn "+kind+"("+(pnames mkString ",")+";"+(ptypes mkString ",")+";"+restpe+")"
-    }
-  }
-
   /** A temporary type representing the erasure of a user-defined value type.
    *  Created during phase erasure, eliminated again in posterasure.
    *
@@ -3813,50 +3794,6 @@ trait Types extends api.Types { self: SymbolTable =>
     }
   }
 
-  object toDeBruijn extends TypeMap {
-    private var paramStack: List[List[Symbol]] = Nil
-    def mkDebruijnBinder(params: List[Symbol], restpe: Type) = {
-      paramStack = params :: paramStack
-      try {
-        DeBruijnBinder(params map (_.name), params map (p => this(p.info)), this(restpe))
-      } finally paramStack = paramStack.tail
-    }
-    def apply(tp: Type): Type = tp match {
-      case PolyType(tparams, restpe) =>
-        mkDebruijnBinder(tparams, restpe)
-      case MethodType(params, restpe) =>
-        mkDebruijnBinder(params, restpe)
-      case TypeRef(NoPrefix, sym, args) =>
-        val level = paramStack indexWhere (_ contains sym)
-        if (level < 0) mapOver(tp)
-        else DeBruijnIndex(level, paramStack(level) indexOf sym, args mapConserve this)
-      case _ =>
-        mapOver(tp)
-    }
-  }
-
-  def fromDeBruijn(owner: Symbol) = new TypeMap {
-    private var paramStack: List[List[Symbol]] = Nil
-    def apply(tp: Type): Type = tp match {
-      case DeBruijnBinder(pnames, ptypes, restpe) =>
-        val isType = pnames.head.isTypeName
-        val newParams = for (name <- pnames) yield
-          if (isType) owner.newTypeParameter(name.toTypeName)
-          else owner.newValueParameter(name.toTermName)
-        paramStack = newParams :: paramStack
-        try {
-          foreach2(newParams, ptypes)((p, t) => p setInfo this(t))
-          val restpe1 = this(restpe)
-          if (isType) PolyType(newParams, restpe1)
-          else MethodType(newParams, restpe1)
-        } finally paramStack = paramStack.tail
-      case DeBruijnIndex(level, idx, args) =>
-        TypeRef(NoPrefix, paramStack(level)(idx), args map this)
-      case _ =>
-        mapOver(tp)
-    }
-  }
-
 // Hash consing --------------------------------------------------------------
 
   private val initialUniquesCapacity = 4096
@@ -4163,10 +4100,6 @@ trait Types extends api.Types { self: SymbolTable =>
         if ((annots1 eq annots) && (atp1 eq atp)) tp
         else if (annots1.isEmpty) atp1
         else AnnotatedType(annots1, atp1, selfsym)
-      case DeBruijnIndex(shift, idx, args) =>
-        val args1 = args mapConserve this
-        if (args1 eq args) tp
-        else DeBruijnIndex(shift, idx, args1)
 /*
       case ErrorType => tp
       case WildcardType => tp
