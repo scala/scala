@@ -1710,7 +1710,8 @@ trait Types extends api.Types { self: SymbolTable =>
   object baseClassesCycleMonitor {
     private var open: List[Symbol] = Nil
     @inline private def cycleLog(msg: => String) {
-      Console.err.println(msg)
+      if (settings.debug.value)
+        Console.err.println(msg)
     }
     def size = open.size
     def push(clazz: Symbol) {

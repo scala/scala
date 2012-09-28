@@ -1398,9 +1398,9 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
       if (!isInitialized) info
       this
     }
-    def maybeInitialize: this.type = {
-      try initialize
-      catch { case _: CyclicReference => debuglog("Encountering cycle in maybe-initialization of $this") ; this }
+    def maybeInitialize = {
+      try   { initialize ; true }
+      catch { case _: CyclicReference => debuglog("Hit cycle in maybeInitialize of $this") ; false }
     }
 
     /** Called when the programmer requests information that might require initialization of the underlying symbol.
