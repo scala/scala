@@ -4,7 +4,7 @@ object Macros {
   def impl(c: Context) = {
     import c.universe._
     val Apply(fun, args) = c.enclosingImplicits(0)._2
-    val fileName = fun.pos.fileInfo.getName
+    val fileName = fun.pos.source.file.file.getName
     val line = fun.pos.line
     val charOffset = fun.pos.point
     c.universe.reify { SourceLocation(c.literal(fileName).splice, c.literal(line).splice, c.literal(charOffset).splice) }

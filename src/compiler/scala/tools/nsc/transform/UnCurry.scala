@@ -185,7 +185,7 @@ abstract class UnCurry extends InfoTransform
      *    try {
      *      body
      *    } catch {
-     *      case ex: NonLocalReturnControl[_] =>
+     *      case ex: NonLocalReturnControl[T @unchecked] =>
      *        if (ex.key().eq(key)) ex.value()
      *        else throw ex
      *    }
@@ -195,7 +195,8 @@ abstract class UnCurry extends InfoTransform
       localTyper typed {
         val extpe   = nonLocalReturnExceptionType(meth.tpe.finalResultType)
         val ex      = meth.newValue(nme.ex, body.pos) setInfo extpe
-        val pat     = gen.mkBindForCase(ex, NonLocalReturnControlClass, List(meth.tpe.finalResultType))
+        val argType = meth.tpe.finalResultType withAnnotation (AnnotationInfo marker UncheckedClass.tpe)
+        val pat     = gen.mkBindForCase(ex, NonLocalReturnControlClass, List(argType))
         val rhs = (
           IF   ((ex DOT nme.key)() OBJ_EQ Ident(key))
           THEN ((ex DOT nme.value)())

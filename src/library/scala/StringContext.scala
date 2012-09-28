@@ -8,10 +8,43 @@
 
 package scala
 
-/** A class to support string interpolation.
- *  This class supports string interpolation as outlined in Scala SIP-11.
- *  It needs to be fully documented once the SIP is accepted.
+/** This class provides the basic mechanism to do String Interpolation.  
+ * String Interpolation allows users
+ * to embed variable references directly in *processed* string literals.
+ * Here's an example:
+ * {{{
+ *   val name = "James"
+ *   println(s"Hello, $name")  // Hello, James
+ * }}}
  *
+ * Any processed string literal is rewritten as an instantiation and
+ * method call against this class.   For example:
+ * {{{
+ *   s"Hello, $name"
+ * }}}
+ *
+ * is rewritten to be:
+ *
+ * {{{
+ *   new StringContext("Hello, ", "").s(name)
+ * }}}
+ *
+ * By default, this class provides the `raw`, `s` and `f` methods as
+ * available interpolators.
+ *
+ * To provide your own string interpolator, create an implicit class
+ * which adds a method to `StringContext`.  Here's an example:
+ * {{{
+ *    implicit class JsonHelper(val sc: StringContext) extends AnyVal {
+ *     def json(args: Any*): JSONObject = ...
+ *    }
+ *    val x: JSONObject = json"{ a: $a }"
+ * }}}
+ *
+ *  Here the `JsonHelper` extenion class implicitly adds the `json` method to
+ *  `StringContext` which can be used for `json` string literals.
+ *
+ *  @since 2.10.0
  *  @param   parts  The parts that make up the interpolated string,
  *                  without the expressions that get inserted by interpolation.
  */
@@ -33,6 +66,20 @@ case class StringContext(parts: String*) {
    *
    *  It inserts its arguments between corresponding parts of the string context.
    *  It also treats standard escape sequences as defined in the Scala specification.
+   *  Here's an example of usage:
+   *  {{{
+   *    val name = "James"
+   *    println(s"Hello, $name")  // Hello, James
+   *  }}}
+   *  In this example, the expression $name is replaced with the `toString` of the
+   *  variable `name`.  
+   *  The `s` interpolator can take the `toString` of any arbitrary expression within
+   *  a `${}` block, for example:
+   *  {{{
+   *    println(s"1 + 1 = ${1 + 1}")
+   *  }}}
+   *  will print the string `1 + 1 = 2`.
+   *
    *  @param `args` The arguments to be inserted into the resulting string.
    *  @throws An `IllegalArgumentException`
    *          if the number of `parts` in the enclosing `StringContext` does not exceed
@@ -47,6 +94,9 @@ case class StringContext(parts: String*) {
    *  It inserts its arguments between corresponding parts of the string context.
    *  As opposed to the simple string interpolator `s`, this one does not treat
    *  standard escape sequences as defined in the Scala specification.
+   *
+   *  For example, the raw processed string `raw"a\nb"` is equal to the scala string `"a\\nb"`.
+   *
    *  @param `args` The arguments to be inserted into the resulting string.
    *  @throws An `IllegalArgumentException`
    *          if the number of `parts` in the enclosing `StringContext` does not exceed
@@ -76,6 +126,13 @@ case class StringContext(parts: String*) {
    *  that starts with a formatting specifier, the expression is formatted according to that
    *  specifier. All specifiers allowed in Java format strings are handled, and in the same
    *  way they are treated in Java.
+   *
+   *  For example:
+   *  {{{
+   *    val height = 1.9d
+   *    val name = "James"
+   *    println(f"$name%s is $height%2.2f meters tall")  // James is 1.90 meters tall
+   *  }}}
    *
    *  @param `args` The arguments to be inserted into the resulting string.
    *  @throws An `IllegalArgumentException`

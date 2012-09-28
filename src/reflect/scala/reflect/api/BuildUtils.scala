@@ -4,7 +4,7 @@ package api
 /**
  * This is an internal implementation class.
  */
-trait BuildUtils { self: Universe =>
+private[reflect] trait BuildUtils { self: Universe =>
 
   val build: BuildApi
 

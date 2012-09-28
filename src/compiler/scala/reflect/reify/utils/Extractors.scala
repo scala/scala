@@ -19,7 +19,7 @@ trait Extractors {
   //         $treecreator1.super.<init>();
   //         ()
   //       };
-  //       def apply[U >: Nothing <: scala.reflect.api.Universe with Singleton]($m$untyped: scala.reflect.api.MirrorOf[U]): U#Tree = {
+  //       def apply[U >: Nothing <: scala.reflect.api.Universe with Singleton]($m$untyped: scala.reflect.api.Mirror[U]): U#Tree = {
   //         val $u: U = $m$untyped.universe;
   //         val $m: $u.Mirror = $m$untyped.asInstanceOf[$u.Mirror];
   //         $u.Apply($u.Select($u.Select($u.build.This($m.staticPackage("scala.collection.immutable").moduleClass), $u.newTermName("List")), $u.newTermName("apply")), List($u.Literal($u.Constant(1)), $u.Literal($u.Constant(2))))
@@ -32,7 +32,7 @@ trait Extractors {
   //         $typecreator1.super.<init>();
   //         ()
   //       };
-  //       def apply[U >: Nothing <: scala.reflect.api.Universe with Singleton]($m$untyped: scala.reflect.api.MirrorOf[U]): U#Type = {
+  //       def apply[U >: Nothing <: scala.reflect.api.Universe with Singleton]($m$untyped: scala.reflect.api.Mirror[U]): U#Type = {
   //         val $u: U = $m$untyped.universe;
   //         val $m: $u.Mirror = $m$untyped.asInstanceOf[$u.Mirror];
   //         $u.TypeRef($u.ThisType($m.staticPackage("scala.collection.immutable").moduleClass), $m.staticClass("scala.collection.immutable.List"), List($m.staticClass("scala.Int").toTypeConstructor))
@@ -81,7 +81,7 @@ trait Extractors {
         DefDef(NoMods,
           reifierName,
           List(TypeDef(Modifiers(PARAM), tparamu, List(), TypeBoundsTree(Ident(NothingClass), CompoundTypeTree(Template(List(Ident(reifierUniverse), Ident(SingletonClass)), emptyValDef, List()))))),
-          List(List(ValDef(Modifiers(PARAM), nme.MIRROR_UNTYPED, AppliedTypeTree(Ident(MirrorOfClass), List(Ident(tparamu))), EmptyTree))),
+          List(List(ValDef(Modifiers(PARAM), nme.MIRROR_UNTYPED, AppliedTypeTree(Ident(MirrorClass), List(Ident(tparamu))), EmptyTree))),
           reifierTpt, reifierBody))))
     Block(tpec, ApplyConstructor(Ident(tpec.name), List()))
   }

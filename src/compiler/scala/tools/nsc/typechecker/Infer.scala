@@ -17,7 +17,7 @@ import scala.annotation.tailrec
  *  @author Martin Odersky
  *  @version 1.0
  */
-trait Infer {
+trait Infer extends Checkable {
   self: Analyzer =>
 
   import global._
@@ -253,7 +253,7 @@ trait Infer {
   private val stdErrorValue = stdErrorClass.newErrorValue(nme.ERROR)
 
   /** The context-dependent inferencer part */
-  class Inferencer(context: Context) extends InferencerContextErrors {
+  class Inferencer(context: Context) extends InferencerContextErrors with InferCheckable {
     import InferErrorGen._
 
     /* -- Error Messages --------------------------------------------------- */
@@ -1361,99 +1361,6 @@ trait Infer {
       check(tp, Nil)
     }
 
-    // if top-level abstract types can be checked using a classtag extractor, don't warn about them
-    def checkCheckable(tree: Tree, typeToTest: Type, typeEnsured: Type, inPattern: Boolean, canRemedy: Boolean = false) = {
-      log(s"checkCheckable($tree, $typeToTest, $typeEnsured, inPattern = $inPattern, canRemedy = $canRemedy")
-
-      sealed abstract class TypeConformance(check: (Type, Type) => Boolean) {
-        def apply(t1: Type, t2: Type): Boolean = check(t1, t2) && {
-          log(s"Skipping unchecked for statically verifiable condition $t1 ${this} $t2")
-          true
-        }
-      }
-      // I tried to use varianceInType to track the variance implications
-      // but I could not make it work.
-      case object =:= extends TypeConformance(_ =:= _)
-      case object <:< extends TypeConformance(_ <:< _)
-      case object >:> extends TypeConformance((t1, t2) => t2 <:< t1)
-      case object =!= extends TypeConformance((t1, t2) => false)
-
-      var bound: List[Symbol] = Nil
-      var warningMessages: List[String] = Nil
-
-      def isLocalBinding(sym: Symbol) = (
-        sym.isAbstractType && (
-             (bound contains sym)
-          || (sym.name == tpnme.WILDCARD)
-          || {
-            val e = context.scope.lookupEntry(sym.name)
-            (e ne null) && e.sym == sym && !e.sym.isTypeParameterOrSkolem && e.owner == context.scope
-          }
-        )
-      )
-      def check(tp0: Type, pt: Type, conformance: TypeConformance): Boolean = {
-        val tp = tp0.normalize
-        // Set the warning message to be issued when the top-level call fails.
-        def warn(what: String): Boolean = {
-          warningMessages ::= what
-          false
-        }
-        def checkArg(param: Symbol, arg: Type) = {
-          def conforms = (
-            if (param.isCovariant) <:<
-            else if (param.isContravariant) >:>
-            else =:=
-          )
-          (arg hasAnnotation UncheckedClass) || {
-            arg.withoutAnnotations match {
-              case TypeRef(_, sym, args) =>
-                (    isLocalBinding(sym)
-                  || arg.typeSymbol.isTypeParameterOrSkolem
-                  || (sym.name == tpnme.WILDCARD) // avoid spurious warnings on HK types
-                  || check(arg, param.tpeHK, conforms)
-                  || warn("non-variable type argument " + arg)
-                )
-              case _ =>
-                warn("non-variable type argument " + arg)
-            }
-          }
-        }
-
-        // Checking if pt (the expected type of the pattern, and the type
-        // we are guaranteed) conforms to tp (the type expressed in the pattern's
-        // type test.) If it does, then even if the type being checked for appears
-        // to be uncheckable, it is not a warning situation, because it is indeed
-        // checked: not at runtime, but statically.
-        conformance.apply(pt, tp) || (tp match {
-          case SingleType(pre, _)                           => check(pre, pt, =:=)
-          case ExistentialType(quantified, tp1)             => bound :::= quantified ; check(tp1, pt, <:<)
-          case ThisType(_) | NoPrefix                       => true
-          case RefinedType(parents, decls) if decls.isEmpty => parents forall (p => check(p, pt, <:<))
-          case RefinedType(_, _)                            => warn("refinement " + tp)
-          case TypeRef(_, ArrayClass, arg :: Nil)           => check(arg, NoType, =!=)
-          case TypeRef(_, NonLocalReturnControlClass, _)    => true // no way to suppress unchecked warnings on try/catch
-          // we only use the extractor for top-level type tests, type arguments remain unchecked
-          case TypeRef(_, sym, _) if sym.isAbstractType     => isLocalBinding(sym) || canRemedy || warn("abstract type " + tp)
-          case TypeRef(_, _, Nil)                           => false // leaf node
-          case TypeRef(pre, sym, args)                      => forall2(sym.typeParams, args)(checkArg) && check(pre, pt.prefix, =:=)
-          case _                                            => warn("type " + tp)
-        })
-      }
-      typeToTest match {
-        // Prohibit top-level type tests for these, but they are
-        // acceptable nested (e.g. case Foldable[Nothing] => ... )
-        case TypeRef(_, NothingClass | NullClass | AnyValClass, _) =>
-          TypePatternOrIsInstanceTestError(tree, typeToTest)
-        case _ =>
-          def where = ( if (inPattern) "pattern " else "" ) + typeToTest
-          if (check(typeToTest, typeEnsured, =:=)) ()
-          // Note that this is a regular warning, not an uncheckedWarning,
-          // which is now the province of such notifications as "pattern matcher
-          // exceeded its analysis budget."
-          else warningMessages foreach (m =>
-            context.unit.warning(tree.pos, s"$m in type $where is unchecked since it is eliminated by erasure"))
-      }
-    }
 
     /** Type intersection of simple type tp1 with general type tp2.
      *  The result eliminates some redundancies.

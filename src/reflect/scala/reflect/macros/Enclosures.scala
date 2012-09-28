@@ -47,4 +47,8 @@ trait Enclosures {
   /** Compilation unit that contains this macro application.
    */
   val enclosingUnit: CompilationUnit
+
+  /** Compilation run that contains this macro application.
+   */
+  val enclosingRun: Run
 }
