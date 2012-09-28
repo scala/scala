@@ -30,7 +30,7 @@ trait AnnotationInfos extends api.Annotations { self: SymbolTable =>
     /** Symbols of any @throws annotations on this symbol.
      */
     def throwsAnnotations(): List[Symbol] = annotations collect {
-      case AnnotationInfo(tp, Literal(Constant(tpe: Type)) :: Nil, _) if tp.typeSymbol == ThrowsClass => tpe.typeSymbol
+      case ThrownException(exc) => exc
     }
 
     /** Tests for, get, or remove an annotation */
@@ -325,4 +325,23 @@ trait AnnotationInfos extends api.Annotations { self: SymbolTable =>
   implicit val AnnotationTag = ClassTag[AnnotationInfo](classOf[AnnotationInfo])
 
   object UnmappableAnnotation extends CompleteAnnotationInfo(NoType, Nil, Nil)
+  
+  /** Extracts symbol of thrown exception from AnnotationInfo.
+    * 
+    * Supports both “old-style” `@throws(classOf[Exception])`
+    * as well as “new-stye” `@throws[Exception]("cause")` annotations.
+    */
+  object ThrownException {
+    def unapply(ann: AnnotationInfo): Option[Symbol] = 
+      ann match {
+        case AnnotationInfo(tpe, _, _) if tpe.typeSymbol != ThrowsClass =>
+          None
+        // old-style: @throws(classOf[Exception]) (which is throws[T](classOf[Exception]))
+        case AnnotationInfo(_, List(Literal(Constant(tpe: Type))), _) =>
+          Some(tpe.typeSymbol)
+        // new-style: @throws[Exception], @throws[Exception]("cause")
+        case AnnotationInfo(TypeRef(_, _, args), _, _) =>
+          Some(args.head.typeSymbol)
+      }
+  }
 }
