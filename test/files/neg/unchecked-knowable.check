@@ -1,0 +1,4 @@
+unchecked-knowable.scala:17: error: fruitless type test: a value of type Bippy cannot also be a A1
+  /*   warn */ (new Bippy).isInstanceOf[A1]
+                                       ^
+one error found

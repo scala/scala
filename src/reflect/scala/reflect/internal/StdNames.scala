@@ -346,6 +346,16 @@ trait StdNames {
     def isSingletonName(name: Name)         = name endsWith SINGLETON_SUFFIX
     def isModuleName(name: Name)            = name endsWith MODULE_SUFFIX_NAME
 
+    /** Is name a variable name? */
+    def isVariableName(name: Name): Boolean = {
+      val first = name.startChar
+      (    ((first.isLower && first.isLetter) || first == '_')
+        && (name != nme.false_)
+        && (name != nme.true_)
+        && (name != nme.null_)
+      )
+    }
+
     def isDeprecatedIdentifierName(name: Name) = name.toTermName match {
       case nme.`then` | nme.`macro` => true
       case _                        => false

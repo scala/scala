@@ -12,7 +12,7 @@ object Dingus {
 object Test {
   val x1 = new A
   val x2 = new A
-  
+
   val x3 = new { self =>
     override def equals(other : Any) = other match {
       case that: self.type    => true
@@ -20,7 +20,7 @@ object Test {
     }
   }
   val x4 = new { self =>
-    def f(x: Any) = x match {
+    def f(x: Any): Int = x match {
       case _: x1.type     => 1
       case _: x2.type     => 2
       case _: x3.type     => 3
@@ -35,11 +35,11 @@ object Test {
     assert(x1 != x2)
     assert(x1 != ())
     assert(x2 != x1)
-    
+
     assert(x3 == x3)
     assert(x3 != x2)
     assert(x2 != x3)
-    
+
     List(x1, x2, x3, x4, Dingus) map x4.f foreach println
   }
 }
