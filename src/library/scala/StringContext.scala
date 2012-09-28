@@ -97,6 +97,13 @@ case class StringContext(parts: String*) {
    *
    *  For example, the raw processed string `raw"a\nb"` is equal to the scala string `"a\\nb"`.
    *
+   *  ''Note:'' Even when using the raw interpolator, Scala will preprocess unicode escapes.
+   *  For example: 
+   *  {{{
+   *    scala> raw"\u0123"
+   *    res0: String = ģ
+   *  }}}
+   *
    *  @param `args` The arguments to be inserted into the resulting string.
    *  @throws An `IllegalArgumentException`
    *          if the number of `parts` in the enclosing `StringContext` does not exceed
