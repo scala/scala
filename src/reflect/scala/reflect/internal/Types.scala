@@ -5732,6 +5732,13 @@ trait Types extends api.Types { self: SymbolTable =>
     case _ => false
   }
 
+  def isNonRefinementClassType(tpe: Type) = tpe match {
+    case SingleType(_, sym) => sym.isModuleClass
+    case TypeRef(_, sym, _) => sym.isClass && !sym.isRefinementClass
+    case ErrorType          => true
+    case _                  => false
+  }
+
   // @assume tp1.isHigherKinded || tp2.isHigherKinded
   def isHKSubType0(tp1: Type, tp2: Type, depth: Int): Boolean = (
     tp1.typeSymbol == NothingClass
