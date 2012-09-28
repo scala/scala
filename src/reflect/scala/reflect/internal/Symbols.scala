@@ -2999,7 +2999,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     }
 
     override def derivedValueClassUnbox =
-      (info.decl(nme.unbox)) orElse
+      // (info.decl(nme.unbox)) orElse      uncomment once we accept unbox methods
       (info.decls.find(_ hasAllFlags PARAMACCESSOR | METHOD) getOrElse
        NoSymbol)
 
