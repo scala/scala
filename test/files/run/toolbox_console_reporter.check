@@ -1,0 +1,8 @@
+hello
+============compiler console=============
+warning: method foo in object Utils is deprecated: test
+
+=========================================
+============compiler messages============
+Info(NoPosition,method foo in object Utils is deprecated: test,WARNING)
+=========================================

@@ -1,27 +1,8 @@
 package scala.reflect.macros
 package runtime
 
-trait FrontEnds extends scala.tools.reflect.FrontEnds {
+trait FrontEnds {
   self: Context =>
-
-  import universe._
-  import mirror._
-
-  override type Position = universe.Position
-
-  def frontEnd: FrontEnd = wrapReporter(universe.reporter)
-
-  def setFrontEnd(frontEnd: FrontEnd): this.type = {
-    universe.reporter = wrapFrontEnd(frontEnd)
-    this
-  }
-
-  def withFrontEnd[T](frontEnd: FrontEnd)(op: => T): T = {
-    val old = universe.reporter
-    setFrontEnd(frontEnd)
-    try op
-    finally universe.reporter = old
-  }
 
   def echo(pos: Position, msg: String): Unit = universe.reporter.echo(pos, msg)
 
@@ -36,9 +17,4 @@ trait FrontEnds extends scala.tools.reflect.FrontEnds {
   def error(pos: Position, msg: String): Unit = callsiteTyper.context.error(pos, msg)
 
   def abort(pos: Position, msg: String): Nothing = throw new AbortMacroException(pos, msg)
-
-  def interactive(): Unit = universe.reporter match {
-    case reporter: scala.tools.nsc.reporters.AbstractReporter => reporter.displayPrompt()
-    case _ => ()
-  }
 }

@@ -19,5 +19,6 @@ trait Enclosures {
   val enclosingMacros: List[Context]         = this :: universe.analyzer.openMacros // include self
   val enclosingMethod: Tree                  = site.enclMethod.tree
   val enclosingPosition: Position            = if (enclPoses.isEmpty) NoPosition else enclPoses.head.pos
-  val enclosingUnit: CompilationUnit         = currentRun.currentUnit
+  val enclosingUnit: CompilationUnit         = universe.currentRun.currentUnit
+  val enclosingRun: Run                      = universe.currentRun
 }
