@@ -1,0 +1,4 @@
+t5314-return-reset.scala:14: error: return expression not allowed, since method calls CPS method
+      if (rnd.nextInt(100) > 50) return 5 // not allowed, since method is calling `reset`
+                                 ^
+one error found

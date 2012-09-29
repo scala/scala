@@ -1,0 +1,1 @@
+[B, That](f: Int => B)(implicit bf: scala.collection.generic.CanBuildFrom[List[Int],B,That])That

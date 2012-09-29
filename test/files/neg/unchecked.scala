@@ -19,8 +19,8 @@ object Test {
     case _                    => 0
   }
   def f3(x: Any) = x match {
-    case xs: Set[Any]    => xs.head // unchecked
-    case _                    => 0
+    case xs: Set[Any] => xs.head // unchecked
+    case _            => 0
   }
   def f4(x: Any) = x match {
     case xs: Map[Any, Any] => xs.head // unchecked

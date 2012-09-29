@@ -175,6 +175,20 @@ trait Collections {
     }
     false
   }
+  final def exists3[A, B, C](xs1: List[A], xs2: List[B], xs3: List[C])(f: (A, B, C) => Boolean): Boolean = {
+    var ys1 = xs1
+    var ys2 = xs2
+    var ys3 = xs3
+    while (!ys1.isEmpty && !ys2.isEmpty && !ys3.isEmpty) {
+      if (f(ys1.head, ys2.head, ys3.head))
+        return true
+
+      ys1 = ys1.tail
+      ys2 = ys2.tail
+      ys3 = ys3.tail
+    }
+    false
+  }
   final def forall2[A, B](xs1: List[A], xs2: List[B])(f: (A, B) => Boolean): Boolean = {
     var ys1 = xs1
     var ys2 = xs2

@@ -47,6 +47,13 @@ trait AnnotationCheckers {
      *  before. If the implementing class cannot do the adaptiong, it
      *  should return the tree unchanged.*/
     def adaptAnnotations(tree: Tree, mode: Int, pt: Type): Tree = tree
+
+    /** Adapt the type of a return expression. The decision of an annotation checker
+     *  whether the type should be adapted is based on the type of the expression
+     *  which is returned, as well as the result type of the method (pt).
+     *  By default, this method simply returns the passed `default` type.
+     */
+    def adaptTypeOfReturn(tree: Tree, pt: Type, default: => Type): Type = default
   }
 
   // Syncnote: Annotation checkers inaccessible to reflection, so no sync in var necessary.
@@ -117,5 +124,24 @@ trait AnnotationCheckers {
   def adaptAnnotations(tree: Tree, mode: Int, pt: Type): Tree = {
     annotationCheckers.foldLeft(tree)((tree, checker) =>
       checker.adaptAnnotations(tree, mode, pt))
+  }
+
+  /** Let a registered annotation checker adapt the type of a return expression.
+   *  Annotation checkers that cannot do the adaptation should simply return
+   *  the `default` argument.
+   *  
+   *  Note that the result is undefined if more than one annotation checker
+   *  returns an adapted type which is not a subtype of `default`.
+   */
+  def adaptTypeOfReturn(tree: Tree, pt: Type, default: => Type): Type = {
+    val adaptedTypes = annotationCheckers flatMap { checker =>
+      val adapted = checker.adaptTypeOfReturn(tree, pt, default)
+      if (!(adapted <:< default)) List(adapted)
+      else List()
+    }
+    adaptedTypes match {
+      case fst :: _ => fst
+      case List() => default
+    }
   }
 }
