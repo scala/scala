@@ -28,7 +28,7 @@ object Test {
 
   def main(args: Array[String]) = {
 
-    val respActor = MigrationSystem.actorOf(Props(() => actor {
+    val respActor = ActorDSL.actor(actor {
       loop {
         react {
           case (x: String, time: Long) =>
@@ -41,7 +41,7 @@ object Test {
             exit()
         }
       }
-    }, "akka.actor.default-stash-dispatcher"))
+    })
 
     toStop += respActor
 

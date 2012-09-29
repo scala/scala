@@ -110,18 +110,18 @@ trait StashingActor extends InternalActor {
   private[actors] var behaviorStack = immutable.Stack[PartialFunction[Any, Unit]]()
 
   /*
-   * Checks that StashingActor can be created only by MigrationSystem.actorOf method.
+   * Checks that StashingActor instances can only be created using the ActorDSL.
    */
   private[this] def creationCheck(): Unit = {
     // creation check (see ActorRef)
-    val context = MigrationSystem.contextStack.get
+    val context = ActorDSL.contextStack.get
     if (context.isEmpty)
-      throw new RuntimeException("In order to create StashingActor one must use actorOf.")
+      throw new RuntimeException("In order to create a StashingActor one must use the ActorDSL object")
     else {
       if (!context.head)
-        throw new RuntimeException("Only one actor can be created per actorOf call.")
+        throw new RuntimeException("Cannot create more than one actor")
       else
-        MigrationSystem.contextStack.set(context.push(false))
+        ActorDSL.contextStack.set(context.push(false))
     }
 
   }
