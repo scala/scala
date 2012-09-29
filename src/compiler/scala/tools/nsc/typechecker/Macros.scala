@@ -315,7 +315,7 @@ trait Macros extends scala.tools.reflect.FastTrack with Traces {
                 case _ =>
                   pre
               }
-              TypeRef(pre1, sym, args map mapOver)
+              typeRef(apply(pre1), sym, mapOverArgs(args, sym.typeParams))
             case _ =>
               mapOver(tp)
           }
