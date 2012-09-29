@@ -1617,14 +1617,14 @@ trait Types extends api.Types { self: SymbolTable =>
   }
 
   protected def computeBaseClasses(tpe: Type): List[Symbol] = {
-    def csym = tpe.typeSymbol
-    csym :: {
-      if (tpe.parents.isEmpty || csym.hasFlag(PACKAGE)) Nil
+    val parents = tpe.parents // adriaan says tpe.parents does work sometimes, so call it only once
+    val baseTail = (
+      if (parents.isEmpty || parents.head.isInstanceOf[PackageTypeRef]) Nil
       else {
         //Console.println("computing base classes of " + typeSymbol + " at phase " + phase);//DEBUG
         // optimized, since this seems to be performance critical
-        val superclazz = tpe.firstParent
-        var mixins     = tpe.parents.tail
+        val superclazz = parents.head // parents.isEmpty was already excluded
+        var mixins     = parents.tail
         val sbcs       = superclazz.baseClasses
         var bcs        = sbcs
         def isNew(clazz: Symbol): Boolean = (
@@ -1644,7 +1644,8 @@ trait Types extends api.Types { self: SymbolTable =>
         }
         bcs
       }
-    }
+    )
+    tpe.typeSymbol :: baseTail
   }
 
   protected def defineBaseTypeSeqOfCompoundType(tpe: CompoundType) = {

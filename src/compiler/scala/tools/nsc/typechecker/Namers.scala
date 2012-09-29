@@ -729,6 +729,10 @@ trait Namers extends MethodSynthesis {
     def monoTypeCompleter(tree: Tree) = mkTypeCompleter(tree) { sym =>
       // this early test is there to avoid infinite baseTypes when
       // adding setters and getters --> bug798
+      // It is a def in an attempt to provide some insulation against
+      // uninitialized symbols misleading us. It is not a certainty
+      // this accomplishes anything, but performance is a non-consideration
+      // on these flag checks so it can't hurt.
       def needsCycleCheck = sym.isNonClassType && !sym.isParameter && !sym.isExistential
       logAndValidate(sym) {
         val tp = typeSig(tree)
