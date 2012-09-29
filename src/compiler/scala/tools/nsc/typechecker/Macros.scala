@@ -300,53 +300,51 @@ trait Macros extends scala.tools.reflect.FastTrack with Traces {
   private def macroImplSig(macroDef: Symbol, tparams: List[TypeDef], vparamss: List[List[ValDef]], retTpe: Type): (List[List[Symbol]], Type) = {
     // had to move method's body to an object because of the recursive dependencies between sigma and param
     object SigGenerator {
-      def sigma(tpe: Type): Type = {
-        class SigmaTypeMap extends TypeMap {
-          def apply(tp: Type): Type = tp match {
-            case TypeRef(pre, sym, args) =>
-              val pre1 = pre match {
-                case ThisType(sym) if sym == macroDef.owner =>
-                  SingleType(SingleType(SingleType(NoPrefix, ctxParam), MacroContextPrefix), ExprValue)
-                case SingleType(NoPrefix, sym) =>
-                  mfind(vparamss)(_.symbol == sym) match {
-                    case Some(macroDefParam) => SingleType(SingleType(NoPrefix, param(macroDefParam)), ExprValue)
-                    case _ => pre
-                  }
-                case _ =>
-                  pre
-              }
-              TypeRef(pre1, sym, args map mapOver)
-            case _ =>
-              mapOver(tp)
-          }
-        }
+      def WeakTagClass   = getMember(MacroContextClass, tpnme.WeakTypeTag)
+      def ExprClass      = getMember(MacroContextClass, tpnme.Expr)
+      val cache          = scala.collection.mutable.Map[Symbol, Symbol]()
+      val ctxParam       = makeParam(nme.macroContext, macroDef.pos, MacroContextClass.tpe, SYNTHETIC)
+      val paramss        = List(ctxParam) :: mmap(vparamss)(param)
+      val implReturnType = typeRef(singleType(NoPrefix, ctxParam), ExprClass, List(sigma(retTpe)))
 
-        new SigmaTypeMap() apply tpe
+      object SigmaTypeMap extends TypeMap {
+        def mapPrefix(pre: Type) = pre match {
+          case ThisType(sym) if sym == macroDef.owner =>
+            singleType(singleType(singleType(NoPrefix, ctxParam), MacroContextPrefix), ExprValue)
+          case SingleType(NoPrefix, sym) =>
+            mfind(vparamss)(_.symbol == sym).fold(pre)(p => singleType(singleType(NoPrefix, param(p)), ExprValue))
+          case _ =>
+            mapOver(pre)
+        }
+        def apply(tp: Type): Type = tp match {
+          case TypeRef(pre, sym, args) =>
+            val pre1  = mapPrefix(pre)
+            val args1 = mapOverArgs(args, sym.typeParams)
+            if ((pre eq pre1) && (args eq args1)) tp
+            else typeRef(pre1, sym, args1)
+          case _ =>
+            mapOver(tp)
+        }
       }
+      def sigma(tpe: Type): Type = SigmaTypeMap(tpe)
 
-      def makeParam(name: Name, pos: Position, tpe: Type, flags: Long = 0L) =
+      def makeParam(name: Name, pos: Position, tpe: Type, flags: Long) =
         macroDef.newValueParameter(name, pos, flags) setInfo tpe
-      val ctxParam = makeParam(nme.macroContext, macroDef.pos, MacroContextClass.tpe, SYNTHETIC)
-      def implType(isType: Boolean, origTpe: Type): Type =
-        if (isRepeatedParamType(origTpe))
-          appliedType(
-            RepeatedParamClass.typeConstructor,
-            List(implType(isType, sigma(origTpe.typeArgs.head))))
-        else {
-          val tsym = getMember(MacroContextClass, if (isType) tpnme.WeakTypeTag else tpnme.Expr)
-          typeRef(singleType(NoPrefix, ctxParam), tsym, List(sigma(origTpe)))
-        }
-      val paramCache = scala.collection.mutable.Map[Symbol, Symbol]()
-      def param(tree: Tree): Symbol =
-        paramCache.getOrElseUpdate(tree.symbol, {
-          val sym = tree.symbol
-          val sigParam = makeParam(sym.name, sym.pos, implType(sym.isType, sym.tpe))
-          if (sym.isSynthetic) sigParam.flags |= SYNTHETIC
-          sigParam
-        })
+      def implType(isType: Boolean, origTpe: Type): Type = {
+        def tsym = if (isType) WeakTagClass else ExprClass
+        def targ = origTpe.typeArgs.headOption getOrElse NoType
 
-      val paramss = List(ctxParam) :: mmap(vparamss)(param)
-      val implRetTpe = typeRef(singleType(NoPrefix, ctxParam), getMember(MacroContextClass, tpnme.Expr), List(sigma(retTpe)))
+        if (isRepeatedParamType(origTpe))
+          scalaRepeatedType(implType(isType, sigma(targ)))
+        else
+          typeRef(singleType(NoPrefix, ctxParam), tsym, List(sigma(origTpe)))
+      }
+      def param(tree: Tree): Symbol = (
+        cache.getOrElseUpdate(tree.symbol, {
+          val sym = tree.symbol
+          makeParam(sym.name, sym.pos, implType(sym.isType, sym.tpe), sym getFlag SYNTHETIC)
+        })
+      )
     }
 
     import SigGenerator._
@@ -354,7 +352,7 @@ trait Macros extends scala.tools.reflect.FastTrack with Traces {
     macroTraceVerbose("tparams are: ")(tparams)
     macroTraceVerbose("vparamss are: ")(vparamss)
     macroTraceVerbose("retTpe is: ")(retTpe)
-    macroTraceVerbose("macroImplSig is: ")((paramss, implRetTpe))
+    macroTraceVerbose("macroImplSig is: ")((paramss, implReturnType))
   }
 
   /** Verifies that the body of a macro def typechecks to a reference to a static public non-overloaded method,
