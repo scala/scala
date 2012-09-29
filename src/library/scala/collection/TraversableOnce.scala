@@ -128,10 +128,8 @@ trait TraversableOnce[+A] extends Any with GenTraversableOnce[A] {
    *  @example    `Seq("a", 1, 5L).collectFirst({ case x: Int => x*10 }) = Some(10)`
    */
   def collectFirst[B](pf: PartialFunction[A, B]): Option[B] = {
-    for (x <- self.toIterator) { // make sure to use an iterator or `seq`
-      if (pf isDefinedAt x)
-        return Some(pf(x))
-    }
+    // make sure to use an iterator or `seq`
+    self.toIterator.foreach(pf.runWith(b => return Some(b)))
     None
   }
 
