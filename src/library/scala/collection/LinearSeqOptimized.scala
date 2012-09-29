@@ -66,7 +66,7 @@ trait LinearSeqOptimized[+A, +Repr <: LinearSeqOptimized[A, Repr]] extends Linea
   def forall(p: A => Boolean): Boolean = {
     var these = this
     while (!these.isEmpty) {
-      if (!p(these.head)) return false
+      if (!p(these.head)) false
       these = these.tail
     }
     true
@@ -76,7 +76,7 @@ trait LinearSeqOptimized[+A, +Repr <: LinearSeqOptimized[A, Repr]] extends Linea
   def exists(p: A => Boolean): Boolean = {
     var these = this
     while (!these.isEmpty) {
-      if (p(these.head)) return true
+      if (p(these.head)) true
       these = these.tail
     }
     false
@@ -86,7 +86,7 @@ trait LinearSeqOptimized[+A, +Repr <: LinearSeqOptimized[A, Repr]] extends Linea
   def contains[A1 >: A](elem: A1): Boolean = {
     var these = this
     while (!these.isEmpty) {
-      if (these.head == elem) return true
+      if (these.head == elem) true
       these = these.tail
     }
     false
@@ -96,7 +96,7 @@ trait LinearSeqOptimized[+A, +Repr <: LinearSeqOptimized[A, Repr]] extends Linea
   def find(p: A => Boolean): Option[A] = {
     var these = this
     while (!these.isEmpty) {
-      if (p(these.head)) return Some(these.head)
+      if (p(these.head)) Some(these.head)
       these = these.tail
     }
     None
@@ -194,7 +194,7 @@ trait LinearSeqOptimized[+A, +Repr <: LinearSeqOptimized[A, Repr]] extends Linea
     var these: Repr = repr
     var count = from max 0
     if (until <= count)
-      return newBuilder.result
+      newBuilder.result
 
     val b = newBuilder
     var sliceElems = until - count
@@ -277,8 +277,7 @@ trait LinearSeqOptimized[+A, +Repr <: LinearSeqOptimized[A, Repr]] extends Linea
     var these = this drop from
     while (these.nonEmpty) {
       if (p(these.head))
-        return i
-
+        i
       i += 1
       these = these.tail
     }
