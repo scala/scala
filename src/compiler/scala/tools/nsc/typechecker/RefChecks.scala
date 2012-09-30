@@ -60,23 +60,8 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
     super.transformInfo(sym, tp)
   }
 
-  val toJavaRepeatedParam = new TypeMap {
-    def apply(tp: Type) = tp match {
-      case TypeRef(pre, RepeatedParamClass, args) =>
-        typeRef(pre, JavaRepeatedParamClass, args)
-      case _ =>
-        mapOver(tp)
-    }
-  }
-
-  val toScalaRepeatedParam = new TypeMap {
-    def apply(tp: Type): Type = tp match {
-      case TypeRef(pre, JavaRepeatedParamClass, args) =>
-        typeRef(pre, RepeatedParamClass, args)
-      case _ =>
-        mapOver(tp)
-    }
-  }
+  val toJavaRepeatedParam  = new SubstSymMap(RepeatedParamClass -> JavaRepeatedParamClass)
+  val toScalaRepeatedParam = new SubstSymMap(JavaRepeatedParamClass -> RepeatedParamClass)
 
   def accessFlagsToString(sym: Symbol) = flagsToString(
     sym getFlag (PRIVATE | PROTECTED),
@@ -1483,8 +1468,11 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
     }
     private def isRepeatedParamArg(tree: Tree) = currentApplication match {
       case Apply(fn, args) =>
-        !args.isEmpty && (args.last eq tree) &&
-        fn.tpe.params.length == args.length && isRepeatedParamType(fn.tpe.params.last.tpe)
+        (    args.nonEmpty
+          && (args.last eq tree)
+          && (fn.tpe.params.length == args.length)
+          && isRepeatedParamType(fn.tpe.params.last.tpe)
+        )
       case _ =>
         false
     }

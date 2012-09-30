@@ -4988,7 +4988,7 @@ trait Typers extends Modes with Adaptations with Tags {
             val tree3 = stabilize(tree2, pre2, mode, pt)
             // SI-5967 Important to replace param type A* with Seq[A] when seen from from a reference, to avoid
             //         inference errors in pattern matching.
-            tree3 setType dropRepeatedParamType(tree3.tpe)
+            tree3 setType dropIllegalStarTypes(tree3.tpe)
           }
         }
       }

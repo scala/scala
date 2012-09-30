@@ -118,7 +118,7 @@ trait EtaExpansion { self: Analyzer =>
             val origTpe = sym.tpe
             val isRepeated = definitions.isRepeatedParamType(origTpe)
             // SI-4176 Don't leak A* in eta-expanded function types. See t4176b.scala
-            val droppedStarTpe = if (settings.etaExpandKeepsStar.value) origTpe else dropRepeatedParamType(origTpe)
+            val droppedStarTpe = if (settings.etaExpandKeepsStar.value) origTpe else dropIllegalStarTypes(origTpe)
             val valDef = ValDef(Modifiers(SYNTHETIC | PARAM), sym.name.toTermName, TypeTree(droppedStarTpe), EmptyTree)
             (valDef, isRepeated)
         }
