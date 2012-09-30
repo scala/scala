@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2011 LAMP/EPFL
+ * Copyright 2005-2012 LAMP/EPFL
  * @author  Paul Phillips
  */
 
@@ -64,7 +64,7 @@ trait Property extends Reference {
     propertiesToOptions(loadProperties(file))
 
   def propertiesToOptions(props: java.util.Properties): List[String] = {
-    import collection.JavaConversions._
+    import scala.collection.JavaConversions._
     propertiesToOptions(props.toList)
   }
   def propertiesToOptions(props: List[(String, String)]) = props flatMap propMapper

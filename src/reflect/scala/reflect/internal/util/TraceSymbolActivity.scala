@@ -2,7 +2,7 @@ package scala.reflect.internal
 package util
 
 import scala.collection.{ mutable, immutable }
-import language.postfixOps
+import scala.language.postfixOps
 
 trait TraceSymbolActivity {
   val global: SymbolTable
@@ -108,12 +108,12 @@ trait TraceSymbolActivity {
     sym.name.decode + "#" + sym.id
   }
 
-  private def freq[T, U](xs: collection.Traversable[T])(fn: T => U): List[(U, Int)] = {
+  private def freq[T, U](xs: scala.collection.Traversable[T])(fn: T => U): List[(U, Int)] = {
     val ys = xs groupBy fn mapValues (_.size)
     ys.toList sortBy (-_._2)
   }
 
-  private def showMapFreq[T](xs: collection.Map[T, Traversable[_]])(showFn: T => String) {
+  private def showMapFreq[T](xs: scala.collection.Map[T, Traversable[_]])(showFn: T => String) {
     xs.mapValues(_.size).toList.sortBy(-_._2) take 100 foreach { case (k, size) =>
       show(size, showFn(k))
     }

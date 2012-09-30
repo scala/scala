@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2011 LAMP/EPFL
+ * Copyright 2005-2012 LAMP/EPFL
  * Copyright 2007 Google Inc. All Rights Reserved.
  * Author: bqe@google.com (Burak Emir)
  */
@@ -13,8 +13,8 @@ import scala.reflect.internal.util.Position
 import transform.ExplicitOuter
 import symtab.Flags
 import mutable.ListBuffer
-import annotation.elidable
-import language.postfixOps
+import scala.annotation.elidable
+import scala.language.postfixOps
 
 trait ParallelMatching extends ast.TreeDSL
       with MatchSupport

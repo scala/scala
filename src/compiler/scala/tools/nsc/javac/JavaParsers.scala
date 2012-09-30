@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2011 LAMP/EPFL
+ * Copyright 2005-2012 LAMP/EPFL
  * @author  Martin Odersky
  */
 //todo: allow infix type patterns
@@ -12,7 +12,7 @@ import scala.reflect.internal.util.OffsetPosition
 import scala.collection.mutable.ListBuffer
 import symtab.Flags
 import JavaTokens._
-import language.implicitConversions
+import scala.language.implicitConversions
 
 trait JavaParsers extends ast.parser.ParsersCommon with JavaScanners {
   val global : Global
@@ -551,7 +551,7 @@ trait JavaParsers extends ast.parser.ParsersCommon with JavaScanners {
               if (parentToken == AT && in.token == DEFAULT) {
                 val annot =
                   atPos(pos) {
-                    New(Select(scalaDot(nme.runtime), tpnme.AnnotationDefaultATTR), List(List()))
+                    New(Select(scalaDot(nme.runtime), tpnme.AnnotationDefaultATTR), ListOfNil)
                   }
                 mods1 = mods1 withAnnotations List(annot)
                 skipTo(SEMI)
@@ -640,7 +640,7 @@ trait JavaParsers extends ast.parser.ParsersCommon with JavaScanners {
 
     def importCompanionObject(cdef: ClassDef): Tree =
       atPos(cdef.pos) {
-        Import(Ident(cdef.name.toTermName), List(ImportSelector(nme.WILDCARD, -1, null, -1)))
+        Import(Ident(cdef.name.toTermName), ImportSelector.wildList)
       }
 
     // Importing the companion object members cannot be done uncritically: see
@@ -841,7 +841,7 @@ trait JavaParsers extends ast.parser.ParsersCommon with JavaScanners {
       val predefs = List(
         DefDef(
           Modifiers(Flags.JAVA | Flags.STATIC), nme.values, List(),
-          List(List()),
+          ListOfNil,
           arrayOf(enumType),
           blankExpr),
         DefDef(

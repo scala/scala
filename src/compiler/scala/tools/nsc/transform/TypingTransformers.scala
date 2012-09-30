@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2011 LAMP/EPFL
+ * Copyright 2005-2012 LAMP/EPFL
  * @author Martin Odersky
  */
 
@@ -25,19 +25,14 @@ trait TypingTransformers {
     protected var curTree: Tree = _
     protected def typedPos(pos: Position)(tree: Tree) = localTyper typed { atPos(pos)(tree) }
 
-    /** a typer for each enclosing class */
-    val typers: mutable.Map[Symbol, analyzer.Typer] = new mutable.HashMap
-
-    override def atOwner[A](owner: Symbol)(trans: => A): A = atOwner(curTree, owner)(trans)
+    override final def atOwner[A](owner: Symbol)(trans: => A): A = atOwner(curTree, owner)(trans)
 
     def atOwner[A](tree: Tree, owner: Symbol)(trans: => A): A = {
       val savedLocalTyper = localTyper
 //      println("transformer atOwner: " + owner + " isPackage? " + owner.isPackage)
       localTyper = localTyper.atOwner(tree, if (owner.isModule) owner.moduleClass else owner)
-      typers += Pair(owner, localTyper)
       val result = super.atOwner(owner)(trans)
       localTyper = savedLocalTyper
-      typers -= owner
       result
     }
 

@@ -1,12 +1,12 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2011 LAMP/EPFL
+ * Copyright 2005-2012 LAMP/EPFL
  * @author  Paul Phillips
  */
 
 package scala.tools
 package cmd
 
-import collection.mutable.ListBuffer
+import scala.collection.mutable.ListBuffer
 import nsc.Properties.envOrNone
 
 /** Mixes in the specification trait and uses the vals therein to

@@ -1,0 +1,4 @@
+t6074.scala:5: error: constructor A in class A cannot be accessed in object T
+  def t = new A()
+          ^
+one error found

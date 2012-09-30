@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2011 LAMP/EPFL
+ * Copyright 2005-2012 LAMP/EPFL
  * @author Alexander Spoon
  */
 
@@ -23,7 +23,7 @@ import scala.reflect.NameTransformer._
 import util.ScalaClassLoader
 import ScalaClassLoader._
 import scala.tools.util._
-import language.{implicitConversions, existentials}
+import scala.language.{implicitConversions, existentials}
 import scala.reflect.{ClassTag, classTag}
 import scala.tools.reflect.StdRuntimeTags._
 
@@ -438,7 +438,10 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
   }
 
   private def warningsCommand(): Result = {
-    intp.lastWarnings foreach { case (pos, msg) => intp.reporter.warning(pos, msg) }
+    if (intp.lastWarnings.isEmpty)
+      "Can't find any cached warnings."
+    else
+      intp.lastWarnings foreach { case (pos, msg) => intp.reporter.warning(pos, msg) }
   }
 
   private def javapCommand(line: String): Result = {
@@ -836,7 +839,7 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
     addThunk({
       import scala.tools.nsc.io._
       import Properties.userHome
-      import compat.Platform.EOL
+      import scala.compat.Platform.EOL
       val autorun = replProps.replAutorunCode.option flatMap (f => io.File(f).safeSlurp())
       if (autorun.isDefined) intp.quietRun(autorun.get)
     })

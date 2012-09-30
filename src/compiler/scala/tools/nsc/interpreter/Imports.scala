@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2011 LAMP/EPFL
+ * Copyright 2005-2012 LAMP/EPFL
  * @author  Paul Phillips
  */
 
@@ -23,7 +23,7 @@ trait Imports {
     val hd :: tl = sym.fullName.split('.').toList map newTermName
     val tree = Import(
       tl.foldLeft(Ident(hd): Tree)((x, y) => Select(x, y)),
-      List(ImportSelector(nme.WILDCARD, -1, null, -1))
+      ImportSelector.wildList
     )
     tree setSymbol sym
     new ImportHandler(tree)
@@ -191,5 +191,5 @@ trait Imports {
     prevRequestList flatMap (req => req.handlers map (req -> _))
 
   private def membersAtPickler(sym: Symbol): List[Symbol] =
-    enteringPickler(sym.info.nonPrivateMembers)
+    enteringPickler(sym.info.nonPrivateMembers.toList)
 }

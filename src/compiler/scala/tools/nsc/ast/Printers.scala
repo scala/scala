@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2011 LAMP/EPFL
+ * Copyright 2005-2012 LAMP/EPFL
  * @author  Martin Odersky
  */
 
@@ -10,7 +10,7 @@ import java.io.{ OutputStream, PrintWriter, StringWriter, Writer }
 import symtab.Flags._
 import symtab.SymbolTable
 
-trait Printers extends reflect.internal.Printers { this: Global =>
+trait Printers extends scala.reflect.internal.Printers { this: Global =>
 
   import treeInfo.{ IsTrue, IsFalse }
 
@@ -278,6 +278,7 @@ trait Printers extends reflect.internal.Printers { this: Global =>
 
   def asString(t: Tree): String = render(t, newStandardTreePrinter, settings.printtypes.value, settings.uniqid.value, settings.Yshowsymkinds.value)
   def asCompactString(t: Tree): String = render(t, newCompactTreePrinter, settings.printtypes.value, settings.uniqid.value, settings.Yshowsymkinds.value)
+  def asCompactDebugString(t: Tree): String = render(t, newCompactTreePrinter, true, true, true)
 
   def newStandardTreePrinter(writer: PrintWriter): TreePrinter = new TreePrinter(writer)
   def newStandardTreePrinter(stream: OutputStream): TreePrinter = newStandardTreePrinter(new PrintWriter(stream))

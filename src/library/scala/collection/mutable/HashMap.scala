@@ -49,7 +49,7 @@ extends AbstractMap[A, B]
   type Entry = DefaultEntry[A, B]
 
   override def empty: HashMap[A, B] = HashMap.empty[A, B]
-  override def clear() = clearTable()
+  override def clear() { clearTable() }
   override def size: Int = tableSize
 
   def this() = this(null)
@@ -57,22 +57,23 @@ extends AbstractMap[A, B]
   override def par = new ParHashMap[A, B](hashTableContents)
 
   // contains and apply overridden to avoid option allocations.
-  override def contains(key: A) = findEntry(key) != null
+  override def contains(key: A): Boolean = findEntry(key) != null
+
   override def apply(key: A): B = {
     val result = findEntry(key)
-    if (result == null) default(key)
+    if (result eq null) default(key)
     else result.value
   }
 
   def get(key: A): Option[B] = {
     val e = findEntry(key)
-    if (e == null) None
+    if (e eq null) None
     else Some(e.value)
   }
 
   override def put(key: A, value: B): Option[B] = {
-    val e = findEntry(key)
-    if (e == null) { addEntry(new Entry(key, value)); None }
+    val e = findOrAddEntry(key, value)
+    if (e eq null) None
     else { val v = e.value; e.value = value; Some(v) }
   }
 
@@ -85,9 +86,8 @@ extends AbstractMap[A, B]
   }
 
   def += (kv: (A, B)): this.type = {
-    val e = findEntry(kv._1)
-    if (e == null) addEntry(new Entry(kv._1, kv._2))
-    else e.value = kv._2
+    val e = findOrAddEntry(kv._1, kv._2)
+    if (e ne null) e.value = kv._2
     this
   }
 
@@ -98,12 +98,12 @@ extends AbstractMap[A, B]
   override def foreach[C](f: ((A, B)) => C): Unit = foreachEntry(e => f(e.key, e.value))
 
   /* Override to avoid tuple allocation in foreach */
-  override def keySet: collection.Set[A] = new DefaultKeySet {
+  override def keySet: scala.collection.Set[A] = new DefaultKeySet {
     override def foreach[C](f: A => C) = foreachEntry(e => f(e.key))
   }
 
   /* Override to avoid tuple allocation in foreach */
-  override def values: collection.Iterable[B] = new DefaultValuesIterable {
+  override def values: scala.collection.Iterable[B] = new DefaultValuesIterable {
     override def foreach[C](f: B => C) = foreachEntry(e => f(e.value))
   }
 
@@ -127,12 +127,19 @@ extends AbstractMap[A, B]
     if (!isSizeMapDefined) sizeMapInitAndRebuild
   } else sizeMapDisable
 
+  protected def createNewEntry[B1](key: A, value: B1): Entry = {
+    new Entry(key, value.asInstanceOf[B])
+  }
+
   private def writeObject(out: java.io.ObjectOutputStream) {
-    serializeTo(out, _.value)
+    serializeTo(out, { entry =>
+      out.writeObject(entry.key)
+      out.writeObject(entry.value)
+    })
   }
 
   private def readObject(in: java.io.ObjectInputStream) {
-    init[B](in, new Entry(_, _))
+    init(in, createNewEntry(in.readObject().asInstanceOf[A], in.readObject()))
   }
 
 }

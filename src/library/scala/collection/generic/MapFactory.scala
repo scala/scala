@@ -11,7 +11,7 @@ package generic
 
 
 import mutable.{Builder, MapBuilder}
-import language.higherKinds
+import scala.language.higherKinds
 
 /** A template for companion objects of `Map` and subclasses thereof.
  *

@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2011 LAMP/EPFL
+ * Copyright 2005-2012 LAMP/EPFL
  * @author Burak Emir
  */
 
@@ -7,11 +7,11 @@ package scala.tools.nsc
 package ast.parser
 
 import scala.collection.{ mutable, immutable }
-import xml.{ EntityRef, Text }
-import xml.XML.{ xmlns }
+import scala.xml.{ EntityRef, Text }
+import scala.xml.XML.{ xmlns }
 import symtab.Flags.MUTABLE
 import scala.reflect.internal.util.StringOps.splitWhere
-import language.implicitConversions
+import scala.language.implicitConversions
 
 /** This class builds instance of `Tree` that represent XML.
  *
@@ -144,7 +144,7 @@ abstract class SymbolicXMLBuilder(p: Parsers#Parser, preserveWS: Boolean) {
     (buf map convertToTextPat).toList
 
   def parseAttribute(pos: Position, s: String): Tree = {
-    val ts = xml.Utility.parseAttributeValue(s) map {
+    val ts = scala.xml.Utility.parseAttributeValue(s) map {
       case Text(s)      => text(pos, s)
       case EntityRef(s) => entityRef(pos, s)
     }
@@ -162,7 +162,7 @@ abstract class SymbolicXMLBuilder(p: Parsers#Parser, preserveWS: Boolean) {
 
   /** could optimize if args.length == 0, args.length == 1 AND args(0) is <: Node. */
   def makeXMLseq(pos: Position, args: Seq[Tree]) = {
-    val buffer = ValDef(NoMods, _buf, TypeTree(), New(_scala_xml_NodeBuffer, List(Nil)))
+    val buffer = ValDef(NoMods, _buf, TypeTree(), New(_scala_xml_NodeBuffer, ListOfNil))
     val applies = args filterNot isEmptyText map (t => Apply(Select(Ident(_buf), _plus), List(t)))
 
     atPos(pos)( Block(buffer :: applies.toList, Ident(_buf)) )

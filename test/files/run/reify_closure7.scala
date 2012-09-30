@@ -19,7 +19,7 @@ object Test extends App {
 
     if (clo == null) {
       val toolbox = cm.mkToolBox()
-      val dyn = toolbox.runExpr(fun.tree)
+      val dyn = toolbox.eval(fun.tree)
       clo = dyn.asInstanceOf[Int => Int]
     }
 

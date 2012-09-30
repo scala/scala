@@ -8,9 +8,9 @@ trait StdAttachments {
    * Common code between reflect-internal Symbol and Tree related to Attachments.
    */
   trait Attachable {
-    protected var rawatt: base.Attachments { type Pos = Position } = NoPosition
+    protected var rawatt: scala.reflect.api.Attachments { type Pos = Position } = NoPosition
     def attachments = rawatt
-    def addAttachment(attachment: Any): this.type = { rawatt = rawatt.add(attachment); this }
+    def updateAttachment[T: ClassTag](attachment: T): this.type = { rawatt = rawatt.update(attachment); this }
     def removeAttachment[T: ClassTag]: this.type = { rawatt = rawatt.remove[T]; this }
 
     // cannot be final due to SynchronizedSymbols

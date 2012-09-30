@@ -1,30 +1,30 @@
 true
-ClassTag[byte]
+Byte
 true
-ClassTag[short]
+Short
 true
-ClassTag[char]
+Char
 true
-ClassTag[int]
+Int
 true
-ClassTag[long]
+Long
 true
-ClassTag[float]
+Float
 true
-ClassTag[double]
+Double
 true
-ClassTag[boolean]
+Boolean
 true
-ClassTag[void]
+Unit
 true
-ClassTag[class java.lang.Object]
+Any
 true
-ClassTag[class java.lang.Object]
+AnyVal
 true
-ClassTag[class java.lang.Object]
+Object
 true
-ClassTag[class java.lang.Object]
+Object
 true
-ClassTag[class scala.runtime.Null$]
+Null
 true
-ClassTag[class scala.runtime.Nothing$]
+Nothing

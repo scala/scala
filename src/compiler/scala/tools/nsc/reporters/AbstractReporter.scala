@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2002-2011 LAMP/EPFL
+ * Copyright 2002-2012 LAMP/EPFL
  * @author Martin Odersky
  */
 
@@ -29,11 +29,7 @@ abstract class AbstractReporter extends Reporter {
   private def noWarnings  = settings.nowarnings.value
   private def isPromptSet = settings.prompt.value
 
-  protected def info0(pos: Position, msg: String, _severity: Severity, force: Boolean) {
-    val severity =
-      if (settings.fatalWarnings.value && _severity == WARNING) ERROR
-      else _severity
-
+  protected def info0(pos: Position, msg: String, severity: Severity, force: Boolean) {
     if (severity == INFO) {
       if (isVerbose || force) {
         severity.count += 1

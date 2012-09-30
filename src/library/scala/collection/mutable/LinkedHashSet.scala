@@ -15,10 +15,9 @@ import generic._
 /** This class implements mutable sets using a hashtable.
  *  The iterator and all traversal methods of this class visit elements in the order they were inserted.
  *
- *  $cannotStoreNull
- *
  *  @author  Matthias Zenger
  *  @author  Martin Odersky
+ *  @author  Pavel Pavlov
  *  @version 2.0, 31/12/2006
  *  @since   1
  *
@@ -43,46 +42,82 @@ class LinkedHashSet[A] extends AbstractSet[A]
                           with Set[A]
                           with GenericSetTemplate[A, LinkedHashSet]
                           with SetLike[A, LinkedHashSet[A]]
-                          with FlatHashTable[A]
+                          with HashTable[A, LinkedHashSet.Entry[A]]
                           with Serializable
 {
   override def companion: GenericCompanion[LinkedHashSet] = LinkedHashSet
 
-  @transient private[this] var ordered = new ListBuffer[A]
+  type Entry = LinkedHashSet.Entry[A]
 
-  override def size = tableSize
+  @transient protected var firstEntry: Entry = null
+  @transient protected var lastEntry: Entry = null
 
-  def contains(elem: A): Boolean = containsEntry(elem)
+  override def size: Int = tableSize
+
+  def contains(elem: A): Boolean = findEntry(elem) ne null
 
   def += (elem: A): this.type = { add(elem); this }
   def -= (elem: A): this.type = { remove(elem); this }
 
-  override def add(elem: A): Boolean =
-    if (addEntry(elem)) { ordered += elem; true }
-    else false
+  override def add(elem: A): Boolean = findOrAddEntry(elem, null) eq null
 
-  override def remove(elem: A): Boolean =
-    removeEntry(elem) match {
-      case None => false
-      case _ => ordered -= elem; true
+  override def remove(elem: A): Boolean = {
+    val e = removeEntry(elem)
+    if (e eq null) false
+    else {
+      if (e.earlier eq null) firstEntry = e.later
+      else e.earlier.later = e.later
+      if (e.later eq null) lastEntry = e.earlier
+      else e.later.earlier = e.earlier
+      true
     }
-
-  override def clear() {
-    ordered.clear()
-    clearTable()
   }
 
-  override def iterator: Iterator[A] = ordered.iterator
+  def iterator: Iterator[A] = new AbstractIterator[A] {
+    private var cur = firstEntry
+    def hasNext = cur ne null
+    def next =
+      if (hasNext) { val res = cur.key; cur = cur.later; res }
+      else Iterator.empty.next
+  }
+  
+  override def foreach[U](f: A => U) {
+    var cur = firstEntry
+    while (cur ne null) {
+      f(cur.key)
+      cur = cur.later
+    }
+  }
 
-  override def foreach[U](f: A => U) = ordered foreach f
+  protected override def foreachEntry[U](f: Entry => U) {
+    var cur = firstEntry
+    while (cur ne null) {
+      f(cur)
+      cur = cur.later
+    }
+  }
 
-  private def writeObject(s: java.io.ObjectOutputStream) {
-    serializeTo(s)
+  protected def createNewEntry[B](key: A, dummy: B): Entry = {
+    val e = new Entry(key)
+    if (firstEntry eq null) firstEntry = e
+    else { lastEntry.later = e; e.earlier = lastEntry }
+    lastEntry = e
+    e
+  }
+
+  override def clear() {
+    clearTable()
+    firstEntry = null
+  }
+
+  private def writeObject(out: java.io.ObjectOutputStream) {
+    serializeTo(out, { e => out.writeObject(e.key) })
   }
 
   private def readObject(in: java.io.ObjectInputStream) {
-    ordered = new ListBuffer[A]
-    init(in, ordered += _)
+    firstEntry = null
+    lastEntry = null
+    init(in, createNewEntry(in.readObject().asInstanceOf[A], null))
   }
 }
 
@@ -93,5 +128,13 @@ class LinkedHashSet[A] extends AbstractSet[A]
 object LinkedHashSet extends MutableSetFactory[LinkedHashSet] {
   implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, LinkedHashSet[A]] = setCanBuildFrom[A]
   override def empty[A]: LinkedHashSet[A] = new LinkedHashSet[A]
+
+  /** Class for the linked hash set entry, used internally.
+   *  @since 2.10
+   */
+  private[scala] final class Entry[A](val key: A) extends HashEntry[A, Entry[A]] with Serializable {
+    var earlier: Entry[A] = null
+    var later: Entry[A] = null
+  }
 }
 

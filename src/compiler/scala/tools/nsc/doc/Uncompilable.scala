@@ -1,12 +1,12 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2011 LAMP/EPFL
+ * Copyright 2005-2012 LAMP/EPFL
  * @author Paul Phillips
  */
 
 package scala.tools.nsc
 package doc
-import language.implicitConversions
-import language.postfixOps
+import scala.language.implicitConversions
+import scala.language.postfixOps
 
 /** Some glue between DocParser (which reads source files which can't be compiled)
  *  and the scaladoc model.

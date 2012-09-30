@@ -1,30 +1,49 @@
 class C {
-  val foo = 1
-  def bar = 2
+  val foo = 11
+  def bar = 12
+  val quux = 13
+  def baz = 14
   class C { override def toString = "CC" }
   object O { override def toString = "CO" }
+  override def toString = "an instance of class C"
 }
 
-class D {
-  val foo = 3
-  def bar = 4
-  class C { override def toString = "DC" }
-  object O { override def toString = "DO" }
+class D extends C {
+  override val foo = 21
+  override def bar = 22
+  override def toString = "an instance of class D"
+}
+
+class E {
+  val foo = 31
+  def bar = 32
+  val quux = 33
+  def baz = 34
+  class C { override def toString = "EC" }
+  object O { override def toString = "EO" }
+  override def toString = "an instance of class E"
 }
 
 object Test extends App {
   import scala.reflect.runtime.universe._
   import scala.reflect.runtime.{currentMirror => cm}
-  val im = cm.reflect(new C)
+  val im = cm.reflect(new D)
 
   def test(tpe: Type): Unit = {
     def failsafe(action: => Any): Any = try action catch { case ex: Throwable => ex.toString }
-    println("field: " + failsafe(im.reflectField(tpe.member(newTermName("foo")).asTermSymbol).get))
-    println("method: " + failsafe(im.reflectMethod(tpe.member(newTermName("bar")).asMethodSymbol)()))
-    println("class: " + failsafe(im.reflectClass(tpe.member(newTypeName("C")).asClassSymbol).reflectConstructor(typeOf[C].member(newTypeName("C")).asClassSymbol.typeSignature.member(newTermName("<init>")).asMethodSymbol)()))
-    println("object: " + failsafe(im.reflectModule(tpe.member(newTermName("O")).asModuleSymbol).instance))
+    println(s"=========members of ${tpe.typeSymbol.name} in a mirror of D=========")
+    println("field #1: " + failsafe(im.reflectField(tpe.member(newTermName("foo")).asTerm).get))
+    println("method #1: " + failsafe(im.reflectMethod(tpe.member(newTermName("bar")).asMethod)()))
+    println("field #2: " + failsafe(im.reflectField(tpe.member(newTermName("quux")).asTerm).get))
+    println("method #2: " + failsafe(im.reflectMethod(tpe.member(newTermName("baz")).asMethod)()))
+    println("constructor #1: " + failsafe(cm.reflectClass(im.symbol).reflectConstructor(tpe.member(newTermName("bar")).asMethod)()))
+    println("constructor #2: " + failsafe(cm.reflectClass(im.symbol).reflectConstructor(tpe.member(newTermName("<init>")).asMethod)()))
+    println("class: " + failsafe(im.reflectClass(tpe.member(newTypeName("C")).asClass).reflectConstructor(typeOf[C].member(newTypeName("C")).asClass.typeSignature.member(newTermName("<init>")).asMethod)()))
+    println("object: " + failsafe(im.reflectModule(tpe.member(newTermName("O")).asModule).instance))
+    println()
   }
 
   test(typeOf[C])
   test(typeOf[D])
+  test(typeOf[E])
 }

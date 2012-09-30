@@ -1,4 +1,4 @@
-import scala.reflect.makro.{Context => Ctx}
+import scala.reflect.macros.{Context => Ctx}
 
 object Macros extends ImplContainer {
   def foo(x: Any) = macro Impls.foo

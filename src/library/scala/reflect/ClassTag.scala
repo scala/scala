@@ -1,24 +1,25 @@
-package scala.reflect
+package scala
+package reflect
 
 import java.lang.{ Class => jClass }
-import language.{implicitConversions, existentials}
-import scala.runtime.ScalaRunTime.arrayClass
+import scala.language.{implicitConversions, existentials}
+import scala.runtime.ScalaRunTime.{ arrayClass, arrayElementClass }
 
-/** A `ClassTag[T]` wraps a runtime class, which can be accessed via the `runtimeClass` method.
+/** A `ClassTag[T]` wraps a runtime class (the erasure) and can create array instances.
  *
- *  This is useful in itself, but also enables very important use case.
- *  Having this knowledge ClassTag can instantiate `Arrays`
- *  in those cases where the element type is unknown at compile time.
+ *  If an implicit value of type ClassTag[T] is requested, the compiler will create one.
+ *  The runtime class (i.e. the erasure, a java.lang.Class on the JVM) of T can be accessed
+ *  via the `runtimeClass` field. References to type parameters or abstract type members are
+ *  replaced by the concrete types if ClassTags are available for them.
  *
- *  If an implicit value of type u.ClassTag[T] is required, the compiler will make one up on demand.
- *  The implicitly created value contains in its `runtimeClass` field the runtime class that is the result of erasing type T.
- *  In that value, any occurrences of type parameters or abstract types U which come themselves with a ClassTag
- *  are represented by the type referenced by that tag.
- *  If the type T contains unresolved references to type parameters or abstract types, a static error results.
+ *  Besides accessing the erasure, a ClassTag knows how to instantiate single- and multi-
+ *  dimensional `Arrays` where the element type is unknown at compile time.
  *
- * @see [[scala.reflect.base.TypeTags]]
+ * [[scala.reflect.ClassTag]] corresponds to a previous concept of [[scala.reflect.ClassManifest]].
+ *
+ * @see [[scala.reflect.api.TypeTags]]
  */
-@annotation.implicitNotFound(msg = "No ClassTag available for ${T}")
+@scala.annotation.implicitNotFound(msg = "No ClassTag available for ${T}")
 trait ClassTag[T] extends ClassManifestDeprecatedApis[T] with Equals with Serializable {
   // please, don't add any APIs here, like it was with `newWrappedArray` and `newArrayBuilder`
   // class tags, and all tags in general, should be as minimalistic as possible
@@ -54,35 +55,62 @@ trait ClassTag[T] extends ClassManifestDeprecatedApis[T] with Equals with Serial
    * `SomeExtractor(...)` is turned into `ct(SomeExtractor(...))` if `T` in `SomeExtractor.unapply(x: T)`
    * is uncheckable, but we have an instance of `ClassTag[T]`.
    */
-  def unapply(x: Any): Option[T] = if (x != null && runtimeClass.isAssignableFrom(x.getClass)) Some(x.asInstanceOf[T]) else None
+  def unapply(x: Any): Option[T] = unapply_impl(x)
+  def unapply(x: Byte): Option[T] = unapply_impl(x)
+  def unapply(x: Short): Option[T] = unapply_impl(x)
+  def unapply(x: Char): Option[T] = unapply_impl(x)
+  def unapply(x: Int): Option[T] = unapply_impl(x)
+  def unapply(x: Long): Option[T] = unapply_impl(x)
+  def unapply(x: Float): Option[T] = unapply_impl(x)
+  def unapply(x: Double): Option[T] = unapply_impl(x)
+  def unapply(x: Boolean): Option[T] = unapply_impl(x)
+  def unapply(x: Unit): Option[T] = unapply_impl(x)
 
-  /** case class accessories */
+  private def unapply_impl[U: ClassTag](x: U): Option[T] =
+    if (x == null) None
+    else {
+      val staticClass = classTag[U].runtimeClass
+      val dynamicClass = x.getClass
+      val effectiveClass = if (staticClass.isPrimitive) staticClass else dynamicClass
+      val conforms = runtimeClass.isAssignableFrom(effectiveClass)
+      if (conforms) Some(x.asInstanceOf[T]) else None
+    }
+
+  // case class accessories
   override def canEqual(x: Any) = x.isInstanceOf[ClassTag[_]]
   override def equals(x: Any) = x.isInstanceOf[ClassTag[_]] && this.runtimeClass == x.asInstanceOf[ClassTag[_]].runtimeClass
   override def hashCode = scala.runtime.ScalaRunTime.hash(runtimeClass)
-  override def toString = "ClassTag[" + runtimeClass + "]"
+  override def toString = {
+    def prettyprint(clazz: jClass[_]): String =
+      if (clazz.isArray) s"Array[${prettyprint(arrayElementClass(clazz))}]" else
+      clazz.getName
+    prettyprint(runtimeClass)
+  }
 }
 
+/**
+ * Class tags corresponding to primitive types and constructor/extractor for ClassTags.
+ */
 object ClassTag {
+  private val ObjectTYPE = classOf[java.lang.Object]
   private val NothingTYPE = classOf[scala.runtime.Nothing$]
   private val NullTYPE = classOf[scala.runtime.Null$]
-  private val ObjectTYPE = classOf[java.lang.Object]
 
-  val Byte    : ClassTag[scala.Byte]       = new ClassTag[scala.Byte]{ def runtimeClass = java.lang.Byte.TYPE; private def readResolve() = ClassTag.Byte }
-  val Short   : ClassTag[scala.Short]      = new ClassTag[scala.Short]{ def runtimeClass = java.lang.Short.TYPE; private def readResolve() = ClassTag.Short }
-  val Char    : ClassTag[scala.Char]       = new ClassTag[scala.Char]{ def runtimeClass = java.lang.Character.TYPE; private def readResolve() = ClassTag.Char }
-  val Int     : ClassTag[scala.Int]        = new ClassTag[scala.Int]{ def runtimeClass = java.lang.Integer.TYPE; private def readResolve() = ClassTag.Int }
-  val Long    : ClassTag[scala.Long]       = new ClassTag[scala.Long]{ def runtimeClass = java.lang.Long.TYPE; private def readResolve() = ClassTag.Long }
-  val Float   : ClassTag[scala.Float]      = new ClassTag[scala.Float]{ def runtimeClass = java.lang.Float.TYPE; private def readResolve() = ClassTag.Float }
-  val Double  : ClassTag[scala.Double]     = new ClassTag[scala.Double]{ def runtimeClass = java.lang.Double.TYPE; private def readResolve() = ClassTag.Double }
-  val Boolean : ClassTag[scala.Boolean]    = new ClassTag[scala.Boolean]{ def runtimeClass = java.lang.Boolean.TYPE; private def readResolve() = ClassTag.Boolean }
-  val Unit    : ClassTag[scala.Unit]       = new ClassTag[scala.Unit]{ def runtimeClass = java.lang.Void.TYPE; private def readResolve() = ClassTag.Unit }
-  val Any     : ClassTag[scala.Any]        = new ClassTag[scala.Any]{ def runtimeClass = ObjectTYPE; private def readResolve() = ClassTag.Any }
-  val Object  : ClassTag[java.lang.Object] = new ClassTag[java.lang.Object]{ def runtimeClass = ObjectTYPE; private def readResolve() = ClassTag.Object }
-  val AnyVal  : ClassTag[scala.AnyVal]     = ClassTag.Object.asInstanceOf[ClassTag[scala.AnyVal]]
-  val AnyRef  : ClassTag[scala.AnyRef]     = ClassTag.Object.asInstanceOf[ClassTag[scala.AnyRef]]
-  val Nothing : ClassTag[scala.Nothing]    = new ClassTag[scala.Nothing]{ def runtimeClass = NothingTYPE; private def readResolve() = ClassTag.Nothing }
-  val Null    : ClassTag[scala.Null]       = new ClassTag[scala.Null]{ def runtimeClass = NullTYPE; private def readResolve() = ClassTag.Null }
+  val Byte    : ClassTag[scala.Byte]       = Manifest.Byte
+  val Short   : ClassTag[scala.Short]      = Manifest.Short
+  val Char    : ClassTag[scala.Char]       = Manifest.Char
+  val Int     : ClassTag[scala.Int]        = Manifest.Int
+  val Long    : ClassTag[scala.Long]       = Manifest.Long
+  val Float   : ClassTag[scala.Float]      = Manifest.Float
+  val Double  : ClassTag[scala.Double]     = Manifest.Double
+  val Boolean : ClassTag[scala.Boolean]    = Manifest.Boolean
+  val Unit    : ClassTag[scala.Unit]       = Manifest.Unit
+  val Any     : ClassTag[scala.Any]        = Manifest.Any
+  val Object  : ClassTag[java.lang.Object] = Manifest.Object
+  val AnyVal  : ClassTag[scala.AnyVal]     = Manifest.AnyVal
+  val AnyRef  : ClassTag[scala.AnyRef]     = Manifest.AnyRef
+  val Nothing : ClassTag[scala.Nothing]    = Manifest.Nothing
+  val Null    : ClassTag[scala.Null]       = Manifest.Null
 
   def apply[T](runtimeClass1: jClass[_]): ClassTag[T] =
     runtimeClass1 match {
@@ -96,6 +124,8 @@ object ClassTag {
       case java.lang.Boolean.TYPE   => ClassTag.Boolean.asInstanceOf[ClassTag[T]]
       case java.lang.Void.TYPE      => ClassTag.Unit.asInstanceOf[ClassTag[T]]
       case ObjectTYPE               => ClassTag.Object.asInstanceOf[ClassTag[T]]
+      case NothingTYPE              => ClassTag.Nothing.asInstanceOf[ClassTag[T]]
+      case NullTYPE                 => ClassTag.Null.asInstanceOf[ClassTag[T]]
       case _                        => new ClassTag[T]{ def runtimeClass = runtimeClass1 }
     }
 

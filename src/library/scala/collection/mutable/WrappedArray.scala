@@ -75,7 +75,7 @@ extends AbstractSeq[T]
   override def stringPrefix = "WrappedArray"
 
   /** Clones this object, including the underlying Array. */
-  override def clone: WrappedArray[T] = WrappedArray make array.clone()
+  override def clone(): WrappedArray[T] = WrappedArray make array.clone()
 
   /** Creates new builder for this collection ==> move to subclasses
    */

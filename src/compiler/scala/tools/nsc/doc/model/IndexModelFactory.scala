@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2007-2011 LAMP/EPFL
+ * Copyright 2007-2012 LAMP/EPFL
  * @author  Pedro Furlanetto
  */
 
@@ -8,7 +8,6 @@ package doc
 package model
 
 import scala.collection._
-import language.reflectiveCalls
 
 object IndexModelFactory {
 

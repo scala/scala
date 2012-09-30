@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2011 LAMP/EPFL
+ * Copyright 2005-2012 LAMP/EPFL
  * @author  Paul Phillips
  */
 
@@ -14,4 +14,6 @@ package object nsc {
 
   type MissingRequirementError = scala.reflect.internal.MissingRequirementError
   val MissingRequirementError = scala.reflect.internal.MissingRequirementError
+
+  val ListOfNil = List(Nil)
 }

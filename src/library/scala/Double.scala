@@ -10,7 +10,7 @@
 
 package scala
 
-import language.implicitConversions
+import scala.language.implicitConversions
 
 /** `Double`, a 64-bit IEEE-754 floating point number (equivalent to Java's `double` primitive type) is a
  *  subtype of [[scala.AnyVal]]. Instances of `Double` are not

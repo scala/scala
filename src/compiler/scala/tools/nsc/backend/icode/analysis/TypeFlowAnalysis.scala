@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2011 LAMP/EPFL
+ * Copyright 2005-2012 LAMP/EPFL
  * @author  Martin Odersky
  */
 
@@ -470,6 +470,8 @@ abstract class TypeFlowAnalysis {
 
     val isOnWatchlist = mutable.Set.empty[Instruction]
 
+    val warnIfInlineFails = mutable.Set.empty[opcodes.CALL_METHOD] // cache for a given IMethod (ie cleared on Inliner.analyzeMethod).
+
     /* Each time CallerCalleeInfo.isSafeToInline determines a concrete callee is unsafe to inline in the current caller,
        the fact is recorded in this TFA instance for the purpose of avoiding devoting processing to that callsite next time.
        The condition of "being unsafe to inline in the current caller" sticks across inlinings and TFA re-inits
@@ -478,7 +480,7 @@ abstract class TypeFlowAnalysis {
     val knownUnsafe = mutable.Set.empty[Symbol]
     val knownSafe   = mutable.Set.empty[Symbol]
     val knownNever  = mutable.Set.empty[Symbol] // `knownNever` needs be cleared only at the very end of the inlining phase (unlike `knownUnsafe` and `knownSafe`)
-    @inline final def blackballed(msym: Symbol): Boolean = { knownUnsafe(msym) || knownNever(msym) }
+    final def blackballed(msym: Symbol): Boolean = { knownUnsafe(msym) || knownNever(msym) }
 
     val relevantBBs   = mutable.Set.empty[BasicBlock]
 
@@ -510,6 +512,7 @@ abstract class TypeFlowAnalysis {
       // initially populate the watchlist with all callsites standing a chance of being inlined
       isOnWatchlist.clear()
       relevantBBs.clear()
+      warnIfInlineFails.clear()
         /* TODO Do we want to perform inlining in non-finally exception handlers?
          * Seems counterproductive (the larger the method the less likely it will be JITed.
          * It's not that putting on radar only `linearizer linearizeAt (m, m.startBlock)` makes for much shorter inlining times (a minor speedup nonetheless)
@@ -533,11 +536,11 @@ abstract class TypeFlowAnalysis {
 
     private def putOnRadar(blocks: Traversable[BasicBlock]) {
       for(bb <- blocks) {
-        val preCands = bb.toList collect {
-          case cm : opcodes.CALL_METHOD
-            if isPreCandidate(cm) /* && !isReceiverKnown(cm) */
-          => cm
+        val calls = bb.toList collect { case cm : opcodes.CALL_METHOD => cm }
+        for(c <- calls; if(inliner.hasInline(c.method))) {
+           warnIfInlineFails += c
         }
+        val preCands = calls filter isPreCandidate
         isOnWatchlist ++= preCands
       }
       relevantBBs ++= blocks
@@ -637,7 +640,7 @@ abstract class TypeFlowAnalysis {
             For each of them, its `lastInstruction` (after which no more typeflows are needed) is found.
 
      */
-    def reinit(m: icodes.IMethod, staleOut: List[BasicBlock], inlined: collection.Set[BasicBlock], staleIn: collection.Set[BasicBlock]) {
+    def reinit(m: icodes.IMethod, staleOut: List[BasicBlock], inlined: scala.collection.Set[BasicBlock], staleIn: scala.collection.Set[BasicBlock]) {
       if (this.method == null || this.method.symbol != m.symbol) {
         init(m)
         return
@@ -688,7 +691,7 @@ abstract class TypeFlowAnalysis {
       bs foreach enqueue
     }
 
-    private def blankOut(blocks: collection.Set[BasicBlock]) {
+    private def blankOut(blocks: scala.collection.Set[BasicBlock]) {
       blocks foreach { b =>
         in(b)  = typeFlowLattice.bottom
         out(b) = typeFlowLattice.bottom
@@ -733,7 +736,13 @@ abstract class TypeFlowAnalysis {
               val succs = point.successors filter relevantBBs
               succs foreach { p =>
                 assert((p.predecessors filter isOnPerimeter).isEmpty)
-                val updated = lattice.lub(List(output, in(p)), p.exceptionHandlerStart)
+                val existing = in(p)
+                // TODO move the following assertion to typeFlowLattice.lub2 for wider applicability (ie MethodTFA in addition to MTFAGrowable).
+                assert(existing == lattice.bottom ||
+                       p.exceptionHandlerStart    ||
+                       (output.stack.length == existing.stack.length),
+                       "Trying to merge non-bottom type-stacks with different stack heights. For a possible cause see SI-6157.")
+                val updated = lattice.lub(List(output, existing), p.exceptionHandlerStart)
                 if(updated != in(p)) {
                   in(p) = updated
                   enqueue(p)

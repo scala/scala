@@ -61,5 +61,6 @@ object Test extends App {
   }
   t3954
 
-  new TestSet(HashSet.empty, new scala.collection.mutable.LinkedHashSet)
+  new TestSet(HashSet.empty, new LinkedHashSet)
+  new TestSet(new ImmutableSetAdaptor(collection.immutable.Set.empty[Int]), new LinkedHashSet)
 }

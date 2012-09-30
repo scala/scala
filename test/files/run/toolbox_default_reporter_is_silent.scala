@@ -5,7 +5,7 @@ import scala.tools.reflect.ToolBox
 
 object Test extends App {
   val toolbox = cm.mkToolBox()
-  toolbox.runExpr(reify{
+  toolbox.eval(reify{
     object Utils {
       @deprecated("test", "2.10.0")
       def foo { println("hello") }

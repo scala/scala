@@ -1,0 +1,2 @@
+java.io.NotSerializableException: scala.reflect.api.TypeTags$PredefTypeCreator
+java.io.NotSerializableException: Test$$typecreator1$1

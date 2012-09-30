@@ -106,10 +106,12 @@ object Test extends App {
   }
 
   test("mutable.HashSet", new mutable.HashSet[Int], 5000)
+  test("mutable.LinkedHashSet", new mutable.LinkedHashSet[Int], 5000)
   test("immutable.Set", immutable.Set[Int](), 5000)
   test("immutable.ListSet", new immutable.ListSet[Int], 5000)
   test("immutable.TreeSet", new immutable.TreeSet[Int], 5000)
   test("mutable.HashMap", new mutable.HashMap[Int, Int], 5000)
+  test("mutable.LinkedHashMap", new mutable.LinkedHashMap[Int, Int], 5000)
   test("immutable.Map", immutable.Map[Int, Int](), 5000)
   test("immutable.TreeMap", new immutable.TreeMap[Int, Int], 5000)
   test("immutable.ListMap", new immutable.ListMap[Int, Int], 3000)

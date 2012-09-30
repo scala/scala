@@ -1,0 +1,4 @@
+t6283.scala:1: error: `abstract' modifier cannot be used with value classes
+abstract class Funky(val i: Int) extends AnyVal
+               ^
+one error found

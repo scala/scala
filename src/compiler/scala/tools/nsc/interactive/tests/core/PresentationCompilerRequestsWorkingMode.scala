@@ -36,7 +36,7 @@ trait PresentationCompilerRequestsWorkingMode extends TestResources {
 
   /** Return all positions of the given str in the given source file. */
   private def positionsOf(source: SourceFile, str: String): Seq[Position] = {
-    val buf = new collection.mutable.ListBuffer[Position]
+    val buf = new scala.collection.mutable.ListBuffer[Position]
     var pos = source.content.indexOfSlice(str)
     while (pos >= 0) {
       buf += source.position(pos - 1) // we need the position before the first character of this marker
@@ -44,7 +44,7 @@ trait PresentationCompilerRequestsWorkingMode extends TestResources {
     }
     buf.toList
   }
-    
+
   private def withResponse[T](pos: Position, response: Response[T])(f: (Position, T) => Unit) {
     /** Return the filename:line:col version of this position. */
     def showPos(pos: Position): String =

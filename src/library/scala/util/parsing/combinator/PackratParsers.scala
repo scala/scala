@@ -11,7 +11,7 @@ package scala.util.parsing.combinator
 import scala.util.parsing.combinator._
 import scala.util.parsing.input.{ Reader, Position }
 import scala.collection.mutable
-import language.implicitConversions
+import scala.language.implicitConversions
 
 /**
  *  `PackratParsers` is a component that extends the parser combinators

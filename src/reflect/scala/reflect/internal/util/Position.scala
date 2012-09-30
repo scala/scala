@@ -1,14 +1,13 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2011 LAMP/EPFL
+ * Copyright 2005-2012 LAMP/EPFL
  * @author  Martin Odersky
  *
  */
 
 package scala.reflect.internal.util
 
-import reflect.ClassTag
-import reflect.base.Attachments
-import reflect.api.PositionApi
+import scala.reflect.ClassTag
+import scala.reflect.api.Attachments
 
 object Position {
   val tabInc = 8
@@ -36,23 +35,13 @@ object Position {
   }
 }
 
-abstract class Position extends PositionApi { self =>
+abstract class Position extends scala.reflect.api.Position { self =>
 
   type Pos = Position
 
   def pos: Position = this
 
   def withPos(newPos: Position): Attachments { type Pos = self.Pos } = newPos
-
-  /** Java file corresponding to the source file of this position.
-   */
-  // necessary for conformance with scala.reflect.api.Position
-  def fileInfo: java.io.File = source.file.file
-
-  /** Contents of the source file that contains this position.
-   */
-  // necessary for conformance with scala.reflect.api.Position
-  def fileContent: Array[Char] = source.content
 
   /** An optional value containing the source file referred to by this position, or
    *  None if not defined.

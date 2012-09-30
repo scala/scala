@@ -1,11 +1,11 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2011 LAMP/EPFL
+ * Copyright 2005-2012 LAMP/EPFL
  * @author  Martin Odersky
  */
 
 package scala.tools.nsc
 
-import annotation.tailrec
+import scala.annotation.tailrec
 import java.io.EOFException
 
 trait EvalLoop {

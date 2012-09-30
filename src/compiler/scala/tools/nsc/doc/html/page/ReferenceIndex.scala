@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2007-2011 LAMP/EPFL
+ * Copyright 2007-2012 LAMP/EPFL
  * @author  Pedro Furlanetto
  */
 
@@ -44,7 +44,7 @@ class ReferenceIndex(letter: Char, index: doc.Index, universe: Universe) extends
           <strike>{ name }</strike>
       }</div>
       <div class="occurrences">{
-        for (owner <- occurrences) yield owner ++ xml.Text(" ")
+        for (owner <- occurrences) yield owner ++ scala.xml.Text(" ")
       }</div>
     </div>
   }

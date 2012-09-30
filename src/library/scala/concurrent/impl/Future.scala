@@ -12,7 +12,7 @@ package scala.concurrent.impl
 
 import scala.concurrent.ExecutionContext
 import scala.util.control.NonFatal
-
+import scala.util.{Try, Success, Failure}
 
 
 private[concurrent] object Future {
@@ -21,7 +21,7 @@ private[concurrent] object Future {
 
     override def run() = {
       promise complete {
-        try Right(body) catch { case NonFatal(e) => Left(e) }
+        try Success(body) catch { case NonFatal(e) => Failure(e) }
       }
     }
   }

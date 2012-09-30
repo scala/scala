@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2011 LAMP/EPFL
+ * Copyright 2005-2012 LAMP/EPFL
  * @author  Martin Odersky
  */
 
@@ -11,7 +11,7 @@ import scala.reflect.internal.util._
 import scala.reflect.internal.Chars._
 import JavaTokens._
 import scala.annotation.switch
-import language.implicitConversions
+import scala.language.implicitConversions
 
 // Todo merge these better with Scanners
 trait JavaScanners extends ast.parser.ScannersCommon {

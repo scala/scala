@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2011 LAMP/EPFL
+ * Copyright 2005-2012 LAMP/EPFL
  * @author Paul Phillips
  */
 
@@ -9,7 +9,7 @@ package interpreter
 import scala.tools.jline._
 import scala.tools.jline.console.completer._
 import Completion._
-import collection.mutable.ListBuffer
+import scala.collection.mutable.ListBuffer
 
 // REPL completor - queries supplied interpreter for valid
 // completions based on current contents of buffer.
@@ -52,10 +52,10 @@ class JLineCompletion(val intp: IMain) extends Completion with CompletionOutput 
 
     // XXX we'd like to say "filterNot (_.isDeprecated)" but this causes the
     // compiler to crash for reasons not yet known.
-    def members     = exitingTyper((effectiveTp.nonPrivateMembers ++ anyMembers) filter (_.isPublic))
-    def methods     = members filter (_.isMethod)
-    def packages    = members filter (_.isPackage)
-    def aliases     = members filter (_.isAliasType)
+    def members     = exitingTyper((effectiveTp.nonPrivateMembers.toList ++ anyMembers) filter (_.isPublic))
+    def methods     = members.toList filter (_.isMethod)
+    def packages    = members.toList filter (_.isPackage)
+    def aliases     = members.toList filter (_.isAliasType)
 
     def memberNames   = members map tos
     def methodNames   = methods map tos

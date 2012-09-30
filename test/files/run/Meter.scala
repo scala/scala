@@ -1,8 +1,13 @@
 package a {
+  abstract class BoxingConversions[Boxed, Unboxed] {
+    def box(x: Unboxed): Boxed
+    def unbox(x: Boxed): Unboxed
+  }
+
   class Meter(val underlying: Double) extends AnyVal with _root_.b.Printable {
     def + (other: Meter): Meter =
       new Meter(this.underlying + other.underlying)
-    def / (other: Meter): Double = this.underlying / other.underlying
+    def / (other: Meter)(implicit dummy: Meter.MeterArg = null): Double = this.underlying / other.underlying
     def / (factor: Double): Meter = new Meter(this.underlying / factor)
     def < (other: Meter): Boolean = this.underlying < other.underlying
     def toFoot: Foot = new Foot(this.underlying * 0.3048)
@@ -11,6 +16,8 @@ package a {
   }
 
   object Meter extends (Double => Meter) {
+
+    private[a] trait MeterArg
 
     def apply(x: Double): Meter = new Meter(x)
 
@@ -80,7 +87,7 @@ object Test extends App {
     println(m)
     foo(arr)
   }
-  // 
+  //
   // { println("testing wrapped arrays")
   //   import collection.mutable.FlatArray
   //   val arr = FlatArray(x, y + x)

@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2011 LAMP/EPFL
+ * Copyright 2005-2012 LAMP/EPFL
  * @author  Paul Phillips
  */
 
@@ -15,7 +15,7 @@ trait AbsSettings extends scala.reflect.internal.settings.AbsSettings {
   type Setting <: AbsSetting      // Fix to the concrete Setting type
   type ResultOfTryToSet           // List[String] in mutable, (Settings, List[String]) in immutable
   def errorFn: String => Unit
-  protected def allSettings: collection.Set[Setting]
+  protected def allSettings: scala.collection.Set[Setting]
 
   // settings minus internal usage settings
   def visibleSettings = allSettings filterNot (_.isInternalOnly)

@@ -10,8 +10,8 @@
 package scala.io
 
 import java.nio.charset.{ Charset, CharsetDecoder, CharsetEncoder, CharacterCodingException, CodingErrorAction => Action }
-import annotation.migration
-import language.implicitConversions
+import scala.annotation.migration
+import scala.language.implicitConversions
 
 // Some notes about encodings for use in refining this implementation.
 //
@@ -91,7 +91,7 @@ object Codec extends LowPriorityCodecImplicits {
    *  as an accident, with any anomalies considered "not a bug".
    */
   def defaultCharsetCodec                   = apply(Charset.defaultCharset)
-  def fileEncodingCodec                     = apply(util.Properties.encodingString)
+  def fileEncodingCodec                     = apply(scala.util.Properties.encodingString)
   def default                               = defaultCharsetCodec
 
   def apply(encoding: String): Codec        = new Codec(Charset forName encoding)

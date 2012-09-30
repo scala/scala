@@ -43,9 +43,9 @@ import scala.collection.parallel.immutable.ParRange
  */
 @SerialVersionUID(7618862778670199309L)
 class Range(val start: Int, val end: Int, val step: Int)
-extends collection.AbstractSeq[Int]
+extends scala.collection.AbstractSeq[Int]
    with IndexedSeq[Int]
-   with collection.CustomParallelizable[Int, ParRange]
+   with scala.collection.CustomParallelizable[Int, ParRange]
    with Serializable
 {
   override def par = new ParRange(this)
@@ -78,19 +78,19 @@ extends collection.AbstractSeq[Int]
   final val terminalElement = start + numRangeElements * step
 
   override def last = if (isEmpty) Nil.last else lastElement
-  
+
   override def min[A1 >: Int](implicit ord: Ordering[A1]): Int =
     if (ord eq Ordering.Int) {
       if (step > 0) start
       else last
     } else super.min(ord)
-  
-  override def max[A1 >: Int](implicit ord: Ordering[A1]): Int = 
+
+  override def max[A1 >: Int](implicit ord: Ordering[A1]): Int =
     if (ord eq Ordering.Int) {
       if (step > 0) last
       else start
     } else super.max(ord)
-  
+
   protected def copy(start: Int, end: Int, step: Int): Range = new Range(start, end, step)
 
   /** Create a new range with the `start` and `end` values of this range and
@@ -127,7 +127,7 @@ extends collection.AbstractSeq[Int]
     }
   }
 
-  @inline final def apply(idx: Int): Int = {
+  final def apply(idx: Int): Int = {
     validateMaxLength()
     if (idx < 0 || idx >= numRangeElements) throw new IndexOutOfBoundsException(idx.toString)
     else start + (step * idx)
@@ -346,11 +346,11 @@ object Range {
   /** Make an inclusive range from `start` to `end` with given step value.
    * @note step != 0
    */
-  @inline def inclusive(start: Int, end: Int, step: Int): Range.Inclusive = new Inclusive(start, end, step)
+  def inclusive(start: Int, end: Int, step: Int): Range.Inclusive = new Inclusive(start, end, step)
 
   /** Make an inclusive range from `start` to `end` with step value 1.
    */
-  @inline def inclusive(start: Int, end: Int): Range.Inclusive = new Inclusive(start, end, 1)
+  def inclusive(start: Int, end: Int): Range.Inclusive = new Inclusive(start, end, 1)
 
   // BigInt and Long are straightforward generic ranges.
   object BigInt {

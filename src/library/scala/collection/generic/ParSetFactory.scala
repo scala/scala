@@ -8,11 +8,11 @@
 
 package scala.collection.generic
 
-import collection.mutable.Builder
-import collection.parallel.Combiner
-import collection.parallel.ParSet
-import collection.parallel.ParSetLike
-import language.higherKinds
+import scala.collection.mutable.Builder
+import scala.collection.parallel.Combiner
+import scala.collection.parallel.ParSet
+import scala.collection.parallel.ParSetLike
+import scala.language.higherKinds
 
 /**
  *  @author Aleksandar Prokopec

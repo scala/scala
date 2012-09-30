@@ -13,7 +13,7 @@ import generic._
 import mutable.ListBuffer
 import immutable.List
 import scala.util.control.Breaks._
-import annotation.tailrec
+import scala.annotation.tailrec
 
 /** A template trait for linear sequences of type `LinearSeq[A]`.
  *
@@ -50,7 +50,7 @@ trait LinearSeqLike[+A, +Repr <: LinearSeqLike[A, Repr]] extends SeqLike[A, Repr
 
   def seq: LinearSeq[A]
 
-  override def hashCode() = util.hashing.MurmurHash3.seqHash(seq) // TODO - can we get faster via "linearSeqHash" ?
+  override def hashCode()= scala.util.hashing.MurmurHash3.seqHash(seq) // TODO - can we get faster via "linearSeqHash" ?
 
   override /*IterableLike*/
   def iterator: Iterator[A] = new AbstractIterator[A] {

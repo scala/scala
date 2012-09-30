@@ -1,11 +1,11 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2011 LAMP/EPFL
+ * Copyright 2005-2012 LAMP/EPFL
  * @author Paul Phillips
  */
 
 package scala.tools.nsc
 package interpreter
-import language.implicitConversions
+import scala.language.implicitConversions
 
 /** Files having to do with the state of a repl session:
  *  lines of text entered, types and terms defined, etc.

@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2011 LAMP/EPFL
+ * Copyright 2005-2012 LAMP/EPFL
  * @author  Martin Odersky
  */
 package scala.reflect.reify
@@ -23,6 +23,7 @@ trait NodePrinters {
       // depended upon.  Of more fragile code I cannot conceive.
       // @Eugene: This stuff is only needed to debug-print out reifications in human-readable format
       // Rolling a full-fledged, robust TreePrinter would be several times more code.
+      // Also as of late we have tests that ensure that UX won't be broken by random changes to the reifier.
       val lines = (tree.toString.split(EOL) drop 1 dropRight 1).toList splitAt 2
       var (List(universe, mirror), reification) = lines
       reification = (for (line <- reification) yield {
@@ -39,7 +40,7 @@ trait NodePrinters {
         })
         s = s.replace("Modifiers(0L, newTypeName(\"\"), List())", "Modifiers()")
         s = """Modifiers\((\d+)[lL], newTypeName\("(.*?)"\), List\((.*?)\)\)""".r.replaceAllIn(s, m => {
-          val buf = new collection.mutable.ListBuffer[String]
+          val buf = new scala.collection.mutable.ListBuffer[String]
 
           val annotations = m.group(3)
           if (buf.nonEmpty || annotations != "")
@@ -72,10 +73,10 @@ trait NodePrinters {
         s.trim
       })
 
-      val printout = collection.mutable.ListBuffer[String]();
+      val printout = scala.collection.mutable.ListBuffer[String]();
       printout += universe.trim
-      if (mirrorIsUsed) printout += mirror.replace("MirrorOf[", "scala.reflect.base.MirrorOf[").trim
-      val imports = collection.mutable.ListBuffer[String]();
+      if (mirrorIsUsed) printout += mirror.replace("Mirror[", "scala.reflect.api.Mirror[").trim
+      val imports = scala.collection.mutable.ListBuffer[String]();
       imports += nme.UNIVERSE_SHORT
       // if (buildIsUsed) imports += nme.build
       if (mirrorIsUsed) imports += nme.MIRROR_SHORT
@@ -93,7 +94,7 @@ trait NodePrinters {
       if (isExpr) {
         if (mirror contains ".getClassLoader") {
           printout += "import scala.tools.reflect.ToolBox"
-          printout += s"println(${nme.MIRROR_SHORT}.mkToolBox().runExpr(tree))"
+          printout += s"println(${nme.MIRROR_SHORT}.mkToolBox().eval(tree))"
         } else {
           printout += "println(tree)"
         }

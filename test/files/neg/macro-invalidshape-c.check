@@ -1,6 +1,9 @@
-Macros_Test_2.scala:2: error: macro body has wrong shape:
- required: macro <reference to implementation object>.<implementation method name>
- or      : macro <implementation method name>
+Macros_Test_2.scala:2: warning: a pure expression does nothing in statement position; you may be omitting necessary parentheses
   def foo(x: Any) = macro {2; Impls.foo}
-      ^
+                           ^
+Macros_Test_2.scala:2: error: missing arguments for method foo in object Impls;
+follow this method with `_' if you want to treat it as a partially applied function
+  def foo(x: Any) = macro {2; Impls.foo}
+                                    ^
+one warning found
 one error found

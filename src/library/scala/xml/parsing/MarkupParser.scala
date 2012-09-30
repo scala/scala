@@ -56,7 +56,7 @@ trait MarkupParser extends MarkupParserCommon with TokenTests
 
   // See ticket #3720 for motivations.
   private class WithLookAhead(underlying: Source) extends Source {
-    private val queue = collection.mutable.Queue[Char]()
+    private val queue = scala.collection.mutable.Queue[Char]()
     def lookahead(): BufferedIterator[Char] = {
       val iter = queue.iterator ++ new Iterator[Char] {
         def hasNext = underlying.hasNext
@@ -897,7 +897,7 @@ trait MarkupParser extends MarkupParserCommon with TokenTests
       new PublicID(pubID, sysID)
     } else {
       reportSyntaxError("PUBLIC or SYSTEM expected");
-      sys.error("died parsing notationdecl")
+      scala.sys.error("died parsing notationdecl")
     }
     xSpaceOpt
     xToken('>')

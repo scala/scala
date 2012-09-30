@@ -36,7 +36,7 @@ import generic._
  *  @define willNotTerminateInf
  *  @define mayNotTerminateInf
  */
-trait IndexedSeqLike[A, +Repr] extends scala.collection.IndexedSeqLike[A, Repr] { self =>
+trait IndexedSeqLike[A, +Repr] extends Any with scala.collection.IndexedSeqLike[A, Repr] { self =>
 
   override protected[this] def thisCollection: IndexedSeq[A] = this.asInstanceOf[IndexedSeq[A]]
   override protected[this] def toCollection(repr: Repr): IndexedSeq[A] = repr.asInstanceOf[IndexedSeq[A]]
@@ -53,6 +53,7 @@ trait IndexedSeqLike[A, +Repr] extends scala.collection.IndexedSeqLike[A, Repr] 
    */
   override def view = new IndexedSeqView[A, Repr] {
     protected lazy val underlying = self.repr
+    override def isEmpty = self.isEmpty
     override def iterator = self.iterator
     override def length = self.length
     override def apply(idx: Int) = self.apply(idx)

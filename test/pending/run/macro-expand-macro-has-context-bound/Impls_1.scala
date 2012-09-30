@@ -1,4 +1,4 @@
-import scala.reflect.makro.{Context => Ctx}
+import scala.reflect.macros.{Context => Ctx}
 
 object Impls {
   def foo[U](c: Ctx)(x: c.Expr[U])(evidence: c.Expr[Numeric[U]]) = {

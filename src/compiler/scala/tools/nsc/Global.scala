@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2011 LAMP/EPFL
+ * Copyright 2005-2012 LAMP/EPFL
  * @author  Martin Odersky
  */
 
@@ -7,13 +7,13 @@ package scala.tools.nsc
 
 import java.io.{ File, FileOutputStream, PrintWriter, IOException, FileNotFoundException }
 import java.nio.charset.{ Charset, CharsetDecoder, IllegalCharsetNameException, UnsupportedCharsetException }
-import compat.Platform.currentTime
+import scala.compat.Platform.currentTime
 import scala.tools.util.PathResolver
 import scala.collection.{ mutable, immutable }
 import io.{ SourceReader, AbstractFile, Path }
 import reporters.{ Reporter, ConsoleReporter }
 import util.{ Exceptional, ClassPath, MergedClassPath, StatisticsInfo, ScalaClassLoader, returning }
-import scala.reflect.internal.util.{ NoPosition, SourceFile, NoSourceFile, BatchSourceFile, ScriptSourceFile }
+import scala.reflect.internal.util.{ NoPosition, OffsetPosition, SourceFile, NoSourceFile, BatchSourceFile, ScriptSourceFile }
 import scala.reflect.internal.pickling.{ PickleBuffer, PickleFormat }
 import symtab.{ Flags, SymbolTable, SymbolLoaders, SymbolTrackers }
 import symtab.classfile.Pickler
@@ -28,8 +28,8 @@ import backend.{ ScalaPrimitives, Platform, MSILPlatform, JavaPlatform }
 import backend.jvm.{GenJVM, GenASM}
 import backend.opt.{ Inliners, InlineExceptionHandlers, ClosureElimination, DeadCodeElimination }
 import backend.icode.analysis._
-import language.postfixOps
-import reflect.internal.StdAttachments
+import scala.language.postfixOps
+import scala.reflect.internal.StdAttachments
 import scala.reflect.ClassTag
 
 class Global(var currentSettings: Settings, var reporter: Reporter)
@@ -41,8 +41,6 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
     with Printers
     with DocComments
     with Positions { self =>
-
-  // [Eugene++] would love to find better homes for the new things dumped into Global
 
   // the mirror --------------------------------------------------
 
@@ -61,26 +59,19 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
   }
   def RootClass: ClassSymbol = rootMirror.RootClass
   def EmptyPackageClass: ClassSymbol = rootMirror.EmptyPackageClass
-  // [Eugene++] this little inconvenience gives us precise types for Expr.mirror and TypeTag.mirror
-  // by the way, is it possible to define variant type members?
-
-  override def settings = currentSettings
 
   import definitions.findNamedMember
   def findMemberFromRoot(fullName: Name): Symbol = rootMirror.findMemberFromRoot(fullName)
 
   // alternate constructors ------------------------------------------
 
+  override def settings = currentSettings
+
   def this(reporter: Reporter) =
     this(new Settings(err => reporter.error(null, err)), reporter)
 
   def this(settings: Settings) =
     this(settings, new ConsoleReporter(settings))
-
-  // fulfilling requirements
-  // Renamed AbstractFile to AbstractFileType for backward compatibility:
-  // it is difficult for sbt to work around the ambiguity errors which result.
-  type AbstractFileType = scala.tools.nsc.io.AbstractFile
 
   def mkAttributedQualifier(tpe: Type, termSym: Symbol): Tree = gen.mkAttributedQualifier(tpe, termSym)
 
@@ -104,11 +95,23 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
   /** Generate ASTs */
   type TreeGen = scala.tools.nsc.ast.TreeGen
 
+  /** Tree generation, usually based on existing symbols. */
   override object gen extends {
     val global: Global.this.type = Global.this
   } with TreeGen {
     def mkAttributedCast(tree: Tree, pt: Type): Tree =
       typer.typed(mkCast(tree, pt))
+  }
+
+  /** Trees fresh from the oven, mostly for use by the parser. */
+  object treeBuilder extends {
+    val global: Global.this.type = Global.this
+  } with TreeBuilder {
+    def freshName(prefix: String): Name               = freshTermName(prefix)
+    def freshTermName(prefix: String): TermName       = currentUnit.freshTermName(prefix)
+    def freshTypeName(prefix: String): TypeName       = currentUnit.freshTypeName(prefix)
+    def o2p(offset: Int): Position                    = new OffsetPosition(currentUnit.source, offset)
+    def r2p(start: Int, mid: Int, end: Int): Position = rangePos(currentUnit.source, start, mid, end)
   }
 
   /** Fold constants */
@@ -219,10 +222,10 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
 
   // not deprecated yet, but a method called "error" imported into
   // nearly every trait really must go.  For now using globalError.
-  def error(msg: String)       = globalError(msg)
-  def globalError(msg: String) = reporter.error(NoPosition, msg)
-  def inform(msg: String)      = reporter.echo(msg)
-  def warning(msg: String)     =
+  def error(msg: String)                = globalError(msg)
+  def inform(msg: String)               = reporter.echo(msg)
+  override def globalError(msg: String) = reporter.error(NoPosition, msg)
+  override def warning(msg: String)     =
     if (settings.fatalWarnings.value) globalError(msg)
     else reporter.warning(NoPosition, msg)
 
@@ -274,9 +277,8 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
     log("Running operation '%s' after every phase.\n".format(msg) + describeAfterEveryPhase(op))
   }
 
-  def shouldLogAtThisPhase = (
-       (settings.log.isSetByUser)
-    && ((settings.log containsPhase globalPhase) || (settings.log containsPhase phase))
+  override def shouldLogAtThisPhase = settings.log.isSetByUser && (
+    (settings.log containsPhase globalPhase) || (settings.log containsPhase phase)
   )
   // Over 200 closure objects are eliminated by inlining this.
   @inline final def log(msg: => AnyRef) {
@@ -827,8 +829,6 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
   /** Is given package class a system package class that cannot be invalidated?
    */
   private def isSystemPackageClass(pkg: Symbol) =
-    // [Eugene++ to Martin] please, verify
-// was:    pkg == definitions.RootClass ||
     pkg == RootClass ||
     pkg == definitions.ScalaPackageClass || {
       val pkgname = pkg.fullName
@@ -891,12 +891,10 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
             else new MergedClassPath(elems, classPath.context)
           val oldEntries = mkClassPath(subst.keys)
           val newEntries = mkClassPath(subst.values)
-          // [Eugene++ to Martin] please, verify
-// was:          reSync(definitions.RootClass, Some(classPath), Some(oldEntries), Some(newEntries), invalidated, failed)
           reSync(RootClass, Some(classPath), Some(oldEntries), Some(newEntries), invalidated, failed)
         }
     }
-    def show(msg: String, syms: collection.Traversable[Symbol]) =
+    def show(msg: String, syms: scala.collection.Traversable[Symbol]) =
       if (syms.nonEmpty)
         informProgress(s"$msg: ${syms map (_.fullName) mkString ","}")
     show("invalidated packages", invalidated)
@@ -952,8 +950,6 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
       invalidateOrRemove(root)
     } else {
       if (classesFound) {
-        // [Eugene++ to Martin] please, verify
-// was:        if (root.isRoot) invalidateOrRemove(definitions.EmptyPackageClass)
         if (root.isRoot) invalidateOrRemove(EmptyPackageClass)
         else failed += root
       }
@@ -1037,12 +1033,12 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
    *  of what file was being compiled when it broke.  Since I really
    *  really want to know, this hack.
    */
-  private var lastSeenSourceFile: SourceFile = NoSourceFile
+  protected var lastSeenSourceFile: SourceFile = NoSourceFile
 
   /** Let's share a lot more about why we crash all over the place.
    *  People will be very grateful.
    */
-  private var lastSeenContext: analyzer.Context = null
+  protected var lastSeenContext: analyzer.Context = null
 
   /** The currently active run
    */
@@ -1052,6 +1048,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
 
   // TODO - trim these to the absolute minimum.
   @inline final def exitingErasure[T](op: => T): T        = exitingPhase(currentRun.erasurePhase)(op)
+  @inline final def exitingPostErasure[T](op: => T): T    = exitingPhase(currentRun.posterasurePhase)(op)
   @inline final def exitingExplicitOuter[T](op: => T): T  = exitingPhase(currentRun.explicitouterPhase)(op)
   @inline final def exitingFlatten[T](op: => T): T        = exitingPhase(currentRun.flattenPhase)(op)
   @inline final def exitingIcode[T](op: => T): T          = exitingPhase(currentRun.icodePhase)(op)
@@ -1161,7 +1158,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
 
   /** A Run is a single execution of the compiler on a sets of units
    */
-  class Run {
+  class Run extends RunContextApi {
     /** Have been running into too many init order issues with Run
      *  during erroneous conditions.  Moved all these vals up to the
      *  top of the file so at least they're not trivially null.
@@ -1184,8 +1181,8 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
 
     var reportedFeature = Set[Symbol]()
 
-    /** A flag whether macro expansions failed */
-    var macroExpansionFailed = false
+    /** Has any macro expansion used a fallback during this run? */
+    var seenMacroExpansionsFallingBack = false
 
     /** To be initialized from firstPhase. */
     private var terminalPhase: Phase = NoPhase
@@ -1361,6 +1358,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
     val specializePhase              = phaseNamed("specialize")
     val explicitouterPhase           = phaseNamed("explicitouter")
     val erasurePhase                 = phaseNamed("erasure")
+    val posterasurePhase             = phaseNamed("posterasure")
     // val lazyvalsPhase                = phaseNamed("lazyvals")
     val lambdaliftPhase              = phaseNamed("lambdalift")
     // val constructorsPhase            = phaseNamed("constructors")
@@ -1481,6 +1479,9 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
     }
 
     def reportCompileErrors() {
+      if (!reporter.hasErrors && reporter.hasWarnings && settings.fatalWarnings.value)
+        globalError("No warnings can be incurred under -Xfatal-warnings.")
+
       if (reporter.hasErrors) {
         for ((sym, file) <- symSource.iterator) {
           sym.reset(new loaders.SourcefileLoader(file))
@@ -1491,7 +1492,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
       else {
         allConditionalWarnings foreach (_.summarize)
 
-        if (macroExpansionFailed)
+        if (seenMacroExpansionsFallingBack)
           warning("some macros could not be expanded and code fell back to overridden methods;"+
                   "\nrecompiling with generated classfiles on the classpath might help.")
         // todo: migrationWarnings

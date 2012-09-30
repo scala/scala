@@ -10,11 +10,11 @@ package scala.collection.parallel.mutable
 
 
 
-import collection.generic._
-import collection.mutable.FlatHashTable
-import collection.parallel.Combiner
-import collection.mutable.UnrolledBuffer
-import collection.parallel.Task
+import scala.collection.generic._
+import scala.collection.mutable.FlatHashTable
+import scala.collection.parallel.Combiner
+import scala.collection.mutable.UnrolledBuffer
+import scala.collection.parallel.Task
 
 
 
@@ -36,7 +36,7 @@ import collection.parallel.Task
 class ParHashSet[T] private[collection] (contents: FlatHashTable.Contents[T])
 extends ParSet[T]
    with GenericParTemplate[T, ParHashSet]
-   with ParSetLike[T, ParHashSet[T], collection.mutable.HashSet[T]]
+   with ParSetLike[T, ParHashSet[T], scala.collection.mutable.HashSet[T]]
    with ParFlatHashTable[T]
    with Serializable
 {
@@ -57,7 +57,7 @@ extends ParSet[T]
 
   def clear() = clearTable()
 
-  override def seq = new collection.mutable.HashSet(hashTableContents)
+  override def seq = new scala.collection.mutable.HashSet(hashTableContents)
 
   def +=(elem: T) = {
     addEntry(elem)
@@ -88,7 +88,7 @@ extends ParSet[T]
     init(in, x => x)
   }
 
-  import collection.DebugUtils._
+  import scala.collection.DebugUtils._
   override def debugInformation = buildString {
     append =>
     append("Parallel flat hash table set")
@@ -117,8 +117,8 @@ object ParHashSet extends ParSetFactory[ParHashSet] {
 
 
 private[mutable] abstract class ParHashSetCombiner[T](private val tableLoadFactor: Int)
-extends collection.parallel.BucketCombiner[T, ParHashSet[T], Any, ParHashSetCombiner[T]](ParHashSetCombiner.numblocks)
-with collection.mutable.FlatHashTable.HashUtils[T] {
+extends scala.collection.parallel.BucketCombiner[T, ParHashSet[T], Any, ParHashSetCombiner[T]](ParHashSetCombiner.numblocks)
+with scala.collection.mutable.FlatHashTable.HashUtils[T] {
 //self: EnvironmentPassingCombiner[T, ParHashSet[T]] =>
   private var mask = ParHashSetCombiner.discriminantmask
   private var nonmasklen = ParHashSetCombiner.nonmasklength
@@ -158,12 +158,12 @@ with collection.mutable.FlatHashTable.HashUtils[T] {
     val tbl = new FlatHashTable[T] {
       sizeMapInit(table.length)
       seedvalue = ParHashSetCombiner.this.seedvalue
+      for {
+        buffer <- buckets;
+        if buffer ne null;
+        elem <- buffer
+      } addEntry(elem.asInstanceOf[T])
     }
-    for {
-      buffer <- buckets;
-      if buffer ne null;
-      elem <- buffer
-    } tbl.addEntry(elem.asInstanceOf[T])
     tbl.hashTableContents
   }
 
@@ -310,7 +310,7 @@ with collection.mutable.FlatHashTable.HashUtils[T] {
       // the total number of successfully inserted elements is adjusted accordingly
       result = (this.result._1 + that.result._1 + inserted, remainingLeftovers concat that.result._2)
     }
-    def shouldSplitFurther = howmany > collection.parallel.thresholdFromSize(ParHashMapCombiner.numblocks, combinerTaskSupport.parallelismLevel)
+    def shouldSplitFurther = howmany > scala.collection.parallel.thresholdFromSize(ParHashMapCombiner.numblocks, combinerTaskSupport.parallelismLevel)
   }
 
 }

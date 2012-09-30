@@ -1,2 +1,2 @@
-AbsTypeTag[T]
-AbsTypeTag[List[T]]
+WeakTypeTag[T]
+WeakTypeTag[List[T]]

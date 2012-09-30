@@ -11,7 +11,7 @@ package scala.collection
 
 import generic._
 import mutable.{ Builder, SetBuilder }
-import annotation.{migration, bridge}
+import scala.annotation.{migration, bridge}
 import parallel.ParSet
 
 /** A template trait for sets.
@@ -78,7 +78,7 @@ self =>
 
   protected[this] override def parCombiner = ParSet.newCombiner[A]
 
-  /** Overridden for efficiency. */
+  /* Overridden for efficiency. */
   override def toSeq: Seq[A] = toBuffer[A]
   override def toBuffer[A1 >: A]: mutable.Buffer[A1] = {
     val result = new mutable.ArrayBuffer[A1](size)

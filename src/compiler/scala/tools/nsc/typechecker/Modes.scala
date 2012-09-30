@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2011 LAMP/EPFL
+ * Copyright 2005-2012 LAMP/EPFL
  * @author  Martin Odersky
  */
 
@@ -85,6 +85,10 @@ trait Modes {
   /** TYPEPATmode is set when we are typing a type in a pattern.
    */
   final val TYPEPATmode   = 0x10000
+
+  /** RETmode is set when we are typing a return expression.
+   */
+  final val RETmode       = 0x20000
 
   final private val StickyModes   = EXPRmode | PATTERNmode | TYPEmode | ALTmode
 

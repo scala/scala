@@ -101,11 +101,11 @@ trait Reshape {
             // hence we cannot reify references to them, because noone will be able to see them later
             // when implicit macros are fixed, these sneaky macros will move to corresponding companion objects
             // of, say, ClassTag or TypeTag
-            case Apply(TypeApply(_, List(tt)), _) if original.symbol == MacroInternal_materializeClassTag =>
+            case Apply(TypeApply(_, List(tt)), _) if original.symbol == materializeClassTag =>
               gen.mkNullaryCall(Predef_implicitly, List(appliedType(ClassTagClass, tt.tpe)))
-            case Apply(TypeApply(_, List(tt)), List(pre)) if original.symbol == MacroInternal_materializeAbsTypeTag =>
-              gen.mkNullaryCall(Predef_implicitly, List(typeRef(pre.tpe, AbsTypeTagClass, List(tt.tpe))))
-            case Apply(TypeApply(_, List(tt)), List(pre)) if original.symbol == MacroInternal_materializeTypeTag =>
+            case Apply(TypeApply(_, List(tt)), List(pre)) if original.symbol == materializeWeakTypeTag =>
+              gen.mkNullaryCall(Predef_implicitly, List(typeRef(pre.tpe, WeakTypeTagClass, List(tt.tpe))))
+            case Apply(TypeApply(_, List(tt)), List(pre)) if original.symbol == materializeTypeTag =>
               gen.mkNullaryCall(Predef_implicitly, List(typeRef(pre.tpe, TypeTagClass, List(tt.tpe))))
             case _ =>
               original
@@ -248,10 +248,9 @@ trait Reshape {
       New(TypeTree(ann.atp) setOriginal extractOriginal(ann.original), List(args))
     }
 
-    // [Eugene] is this implemented correctly?
     private def trimAccessors(deff: Tree, stats: List[Tree]): List[Tree] = {
       val symdefs = (stats collect { case vodef: ValOrDefDef => vodef } map (vodeff => vodeff.symbol -> vodeff)).toMap
-      val accessors = collection.mutable.Map[ValDef, List[DefDef]]()
+      val accessors = scala.collection.mutable.Map[ValDef, List[DefDef]]()
       stats collect { case ddef: DefDef => ddef } foreach (defdef => {
         val valdef = symdefs get defdef.symbol.accessedOrSelf collect { case vdef: ValDef => vdef } getOrElse null
         if (valdef != null) accessors(valdef) = accessors.getOrElse(valdef, Nil) :+ defdef
@@ -287,7 +286,7 @@ trait Reshape {
           val name1 = nme.dropLocalSuffix(name)
           val vdef1 = ValDef(mods2, name1, tpt, rhs)
           if (reifyDebug) println("resetting visibility of field: %s => %s".format(vdef, vdef1))
-          Some(vdef1) // no copyAttrs here, because new ValDef and old symbols are not out of sync
+          Some(vdef1) // no copyAttrs here, because new ValDef and old symbols are now out of sync
         case ddef @ DefDef(mods, name, tparams, vparamss, tpt, rhs) =>
           if (accessors.values.exists(_.contains(ddef))) {
             if (reifyDebug) println("discarding accessor method: " + ddef)

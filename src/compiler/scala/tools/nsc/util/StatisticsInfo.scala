@@ -1,18 +1,18 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2011 LAMP/EPFL
+ * Copyright 2005-2012 LAMP/EPFL
  * @author  Martin Odersky
  */
 
 package scala.tools.nsc
 package util
 
-import reflect.internal.util.Statistics
+import scala.reflect.internal.util.Statistics
 
 abstract class StatisticsInfo {
 
   val global: Global
   import global._
-  import reflect.internal.TreesStats.nodeByType
+  import scala.reflect.internal.TreesStats.nodeByType
 
   val phasesShown = List("parser", "typer", "patmat", "erasure", "cleanup")
 

@@ -1,2 +1,2 @@
 TypeTag[Int]
-AbsTypeTag[List[Int]]
+WeakTypeTag[List[Int]]

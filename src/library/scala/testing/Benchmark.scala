@@ -8,7 +8,7 @@
 
 package scala.testing
 
-import compat.Platform
+import scala.compat.Platform
 
 /** `Benchmark` can be used to quickly turn an existing class into a
  *  benchmark. Here is a short example:
@@ -33,6 +33,7 @@ import compat.Platform
  *
  *  @author Iulian Dragos, Burak Emir
  */
+@deprecated("This class will be removed.", "2.10.0")
 trait Benchmark {
 
   /** this method should be implemented by the concrete benchmark.

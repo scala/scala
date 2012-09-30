@@ -1,16 +1,16 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2011 LAMP/EPFL
+ * Copyright 2005-2012 LAMP/EPFL
  * @author  Martin Odersky
  */
 
-// [Eugene++ to Martin] we need to unify this prettyprinter with NodePrinters
+// todo. we need to unify this prettyprinter with NodePrinters
 
 package scala.reflect
 package internal
 
 import java.io.{ OutputStream, PrintWriter, StringWriter, Writer }
 import Flags._
-import compat.Platform.EOL
+import scala.compat.Platform.EOL
 
 trait Printers extends api.Printers { self: SymbolTable =>
 
@@ -174,12 +174,7 @@ trait Printers extends api.Printers { self: SymbolTable =>
     }
 
     def printAnnotations(tree: Tree) {
-      if (!isCompilerUniverse && tree.symbol != null && tree.symbol != NoSymbol)
-        // [Eugene++] todo. this is not 100% correct, but is necessary for sane printing
-        // the problem is that getting annotations doesn't automatically initialize the symbol
-        // so we might easily print something as if it doesn't have annotations, whereas it does
-        tree.symbol.initialize
-
+      // SI-5885: by default this won't print annotations of not yet initialized symbols
       val annots = tree.symbol.annotations match {
         case Nil  => tree.asInstanceOf[MemberDef].mods.annotations
         case anns => anns
@@ -585,7 +580,7 @@ trait Printers extends api.Printers { self: SymbolTable =>
           else print(sym.name)
           if (printIds) print("#", sym.id)
           if (printKinds) print("#", sym.abbreviatedKindString)
-          if (printMirrors) print("%M", footnotes.put[MirrorOf[_]](mirrorThatLoaded(sym)))
+          if (printMirrors) print("%M", footnotes.put[scala.reflect.api.Mirror[_]](mirrorThatLoaded(sym)))
         case NoType =>
           print("NoType")
         case NoPrefix =>
@@ -614,7 +609,7 @@ trait Printers extends api.Printers { self: SymbolTable =>
       if (depth == 0 && !printingFootnotes) {
         printingFootnotes = true
         footnotes.print[Type](this)
-        footnotes.print[MirrorOf[_]](this)
+        footnotes.print[scala.reflect.api.Mirror[_]](this)
         printingFootnotes = false
       }
     }
@@ -669,8 +664,9 @@ trait Printers extends api.Printers { self: SymbolTable =>
   def show(flags: FlagSet): String = {
     if (flags == NoFlags) nme.NoFlags.toString
     else {
-      val s_flags = new collection.mutable.ListBuffer[String]
-      for (i <- 0 to 63 if (flags containsAll (1L << i)))
+      val s_flags = new scala.collection.mutable.ListBuffer[String]
+      def hasFlag(left: Long, right: Long): Boolean = (left & right) != 0
+      for (i <- 0 to 63 if hasFlag(flags, 1L << i))
         s_flags += flagToString(1L << i).replace("<", "").replace(">", "").toUpperCase
       s_flags mkString " | "
     }

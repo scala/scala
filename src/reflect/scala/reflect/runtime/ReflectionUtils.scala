@@ -1,12 +1,12 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2011 LAMP/EPFL
+ * Copyright 2005-2012 LAMP/EPFL
  * @author  Paul Phillips
  */
 
 package scala.reflect.runtime
 
 import java.lang.{Class => jClass}
-import java.lang.reflect.{ InvocationTargetException, UndeclaredThrowableException }
+import java.lang.reflect.{ Method, InvocationTargetException, UndeclaredThrowableException }
 
 /** A few java-reflection oriented utility functions useful during reflection bootstrapping.
  */
@@ -38,7 +38,7 @@ object ReflectionUtils {
   )
 
   def show(cl: ClassLoader): String = {
-    import language.reflectiveCalls
+    import scala.language.reflectiveCalls
 
     def isAbstractFileClassLoader(clazz: Class[_]): Boolean = {
       if (clazz == null) return false
@@ -49,7 +49,7 @@ object ReflectionUtils {
       case cl: java.net.URLClassLoader =>
         (cl.getURLs mkString ",")
       case cl if cl != null && isAbstractFileClassLoader(cl.getClass) =>
-        cl.asInstanceOf[{val root: scala.reflect.internal.AbstractFileApi}].root.canonicalPath
+        cl.asInstanceOf[{val root: scala.reflect.io.AbstractFile}].root.canonicalPath
       case null =>
         inferBootClasspath
       case _ =>
@@ -63,25 +63,25 @@ object ReflectionUtils {
     }
   }
 
-  def singletonInstance(cl: ClassLoader, className: String): AnyRef = {
+  def staticSingletonInstance(cl: ClassLoader, className: String): AnyRef = {
     val name = if (className endsWith "$") className else className + "$"
     val clazz = java.lang.Class.forName(name, true, cl)
-    val singleton = clazz getField "MODULE$" get null
-    singleton
+    staticSingletonInstance(clazz)
   }
 
-  // Retrieves the MODULE$ field for the given class name.
-  def singletonInstanceOpt(cl: ClassLoader, className: String): Option[AnyRef] =
-    try Some(singletonInstance(cl, className))
-    catch { case _: ClassNotFoundException  => None }
+  def staticSingletonInstance(clazz: Class[_]): AnyRef = clazz getField "MODULE$" get null
 
-  def invokeFactory(cl: ClassLoader, className: String, methodName: String, args: AnyRef*): AnyRef = {
-    val singleton = singletonInstance(cl, className)
-    val method = singleton.getClass.getMethod(methodName, classOf[ClassLoader])
-    method.invoke(singleton, args: _*)
+  def innerSingletonInstance(outer: AnyRef, className: String): AnyRef = {
+    val accessorName = if (className endsWith "$") className.substring(0, className.length - 1) else className
+    def singletonAccessor(clazz: Class[_]): Option[Method] =
+      if (clazz == null) None
+      else {
+        val declaredAccessor = clazz.getDeclaredMethods.filter(_.getName == accessorName).headOption
+        declaredAccessor orElse singletonAccessor(clazz.getSuperclass)
+      }
+
+    val accessor = singletonAccessor(outer.getClass) getOrElse { throw new NoSuchMethodException(s"${outer.getClass.getName}.$accessorName") }
+    accessor setAccessible true
+    accessor invoke outer
   }
-
-  def invokeFactoryOpt(cl: ClassLoader, className: String, methodName: String, args: AnyRef*): Option[AnyRef] =
-    try Some(invokeFactory(cl, className, methodName, args: _*))
-    catch { case _: ClassNotFoundException  => None }
 }

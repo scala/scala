@@ -1,0 +1,13 @@
+t5878.scala:1: error: value class may not wrap another user-defined value class
+case class Foo(x: Bar) extends AnyVal
+               ^
+t5878.scala:2: error: value class may not wrap another user-defined value class
+case class Bar(x: Foo) extends AnyVal
+               ^
+t5878.scala:4: error: value class may not wrap another user-defined value class
+class Foo1(val x: Bar1) extends AnyVal
+               ^
+t5878.scala:5: error: value class may not wrap another user-defined value class
+class Bar1(val x: Foo1) extends AnyVal
+               ^
+four errors found

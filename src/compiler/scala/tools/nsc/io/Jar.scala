@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2011 LAMP/EPFL
+ * Copyright 2005-2012 LAMP/EPFL
  * @author  Paul Phillips
  */
 
@@ -8,10 +8,10 @@ package io
 
 import java.io.{ InputStream, OutputStream, IOException, FileNotFoundException, FileInputStream, DataOutputStream }
 import java.util.jar._
-import collection.JavaConverters._
+import scala.collection.JavaConverters._
 import Attributes.Name
 import util.ClassPath
-import language.implicitConversions
+import scala.language.implicitConversions
 
 // Attributes.Name instances:
 //

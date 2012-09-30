@@ -1,4 +1,14 @@
+t3692-new.scala:14: warning: non-variable type argument Int in type pattern Map[Int,Int] is unchecked since it is eliminated by erasure
+      case m0: Map[Int, Int] => new java.util.HashMap[Integer, Integer]
+               ^
+t3692-new.scala:15: warning: non-variable type argument Int in type pattern Map[Int,V] is unchecked since it is eliminated by erasure
+      case m1: Map[Int, V] => new java.util.HashMap[Integer, V]
+               ^
+t3692-new.scala:16: warning: non-variable type argument Int in type pattern Map[T,Int] is unchecked since it is eliminated by erasure
+      case m2: Map[T, Int] => new java.util.HashMap[T, Integer]
+               ^
 t3692-new.scala:16: error: unreachable code
       case m2: Map[T, Int] => new java.util.HashMap[T, Integer]
                               ^
+three warnings found
 one error found

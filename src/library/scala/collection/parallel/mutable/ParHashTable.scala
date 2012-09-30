@@ -13,8 +13,8 @@ package parallel.mutable
 
 
 
-import collection.mutable.HashEntry
-import collection.parallel.IterableSplitter
+import scala.collection.mutable.HashEntry
+import scala.collection.parallel.IterableSplitter
 
 
 
@@ -22,7 +22,7 @@ import collection.parallel.IterableSplitter
  *  enriching the data structure by fulfilling certain requirements
  *  for their parallel construction and iteration.
  */
-trait ParHashTable[K, Entry >: Null <: HashEntry[K, Entry]] extends collection.mutable.HashTable[K, Entry] {
+trait ParHashTable[K, Entry >: Null <: HashEntry[K, Entry]] extends scala.collection.mutable.HashTable[K, Entry] {
 
   override def alwaysInitSizeMap = true
 
@@ -104,7 +104,7 @@ trait ParHashTable[K, Entry >: Null <: HashEntry[K, Entry]] extends collection.m
         // otherwise, this is the last entry in the table - all what remains is the chain
         // so split the rest of the chain
         val arr = convertToArrayBuffer(es)
-        val arrpit = new collection.parallel.BufferSplitter[T](arr, 0, arr.length, signalDelegate)
+        val arrpit = new scala.collection.parallel.BufferSplitter[T](arr, 0, arr.length, signalDelegate)
         arrpit.split
       }
     } else Seq(this.asInstanceOf[IterRepr])

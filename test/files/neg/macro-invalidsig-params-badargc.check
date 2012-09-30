@@ -1,6 +1,6 @@
 Impls_Macros_1.scala:8: error: macro implementation has wrong shape:
- required: (c: scala.reflect.makro.Context)(x: c.Expr[Int]): c.Expr[Any]
- found   : (c: scala.reflect.makro.Context)(x: c.Expr[Int], y: c.Expr[Int]): Nothing
+ required: (c: scala.reflect.macros.Context)(x: c.Expr[Int]): c.Expr[Any]
+ found   : (c: scala.reflect.macros.Context)(x: c.Expr[Int], y: c.Expr[Int]): Nothing
 parameter lists have different length, found extra parameter y: c.Expr[Int]
   def foo(x: Int) = macro Impls.foo
                                 ^

@@ -11,7 +11,7 @@ object Test extends ReplTest {
     |def im: InstanceMirror = cm.reflect(new X)
     |val cs: ClassSymbol = im.symbol
     |val ts: Type = cs.typeSignature
-    |val ms: MethodSymbol = ts.declaration(newTermName("methodIntIntInt")).asMethodSymbol
+    |val ms: MethodSymbol = ts.declaration(newTermName("methodIntIntInt")).asMethod
     |val MethodType( _, t1 ) = ms.typeSignature
     |val t2 = typeOf[scala.Int]
     |t1 == t2

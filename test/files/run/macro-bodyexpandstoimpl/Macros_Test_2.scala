@@ -1,4 +1,4 @@
-import scala.reflect.makro.{Context => Ctx}
+import scala.reflect.macros.{Context => Ctx}
 
 object Macros {
   def foo(x: Int) = macro Impls.refToFoo(42)

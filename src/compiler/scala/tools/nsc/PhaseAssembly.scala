@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2007-2011 LAMP/EPFL
+ * Copyright 2007-2012 LAMP/EPFL
  * @author Anders Bach Nielsen
  * @version 1.0
  */
@@ -8,7 +8,7 @@ package scala.tools.nsc
 
 import java.io.{ BufferedWriter, FileWriter }
 import scala.collection.mutable
-import language.postfixOps
+import scala.language.postfixOps
 
 /**
  * PhaseAssembly

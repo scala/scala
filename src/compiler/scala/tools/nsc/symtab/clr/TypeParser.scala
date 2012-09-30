@@ -1,5 +1,5 @@
 /* NSC -- new scala compiler
- * Copyright 2004-2011 LAMP/EPFL
+ * Copyright 2004-2012 LAMP/EPFL
  */
 
 package scala.tools.nsc
@@ -12,7 +12,7 @@ import ch.epfl.lamp.compiler.msil.{Type => MSILType, Attribute => MSILAttribute,
 import scala.collection.{ mutable, immutable }
 import scala.reflect.internal.pickling.UnPickler
 import ch.epfl.lamp.compiler.msil.Type.TMVarUsage
-import language.implicitConversions
+import scala.language.implicitConversions
 
 /**
  *  @author Nikolay Mihaylov
@@ -64,7 +64,7 @@ abstract class TypeParser {
     busy = false
   }
 
-  class TypeParamsType(override val typeParams: List[Symbol]) extends LazyType {
+  class TypeParamsType(override val typeParams: List[Symbol]) extends LazyType with FlagAgnosticCompleter {
     override def complete(sym: Symbol) { throw new AssertionError("cyclic type dereferencing") }
   }
 

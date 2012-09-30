@@ -128,7 +128,7 @@ private[process] trait ProcessBuilderImpl {
       val code   = this ! BasicIO(withIn, buffer, log)
 
       if (code == 0) buffer.toString
-      else sys.error("Nonzero exit value: " + code)
+      else scala.sys.error("Nonzero exit value: " + code)
     }
 
     private[this] def lines(

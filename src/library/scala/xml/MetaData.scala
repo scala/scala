@@ -9,7 +9,7 @@
 package scala.xml
 
 import Utility.sbToString
-import annotation.tailrec
+import scala.annotation.tailrec
 import scala.collection.{ AbstractIterable, Iterator }
 
 /**

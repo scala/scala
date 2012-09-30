@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2011 LAMP/EPFL
+ * Copyright 2005-2012 LAMP/EPFL
  * @author Paul Phillips
  */
 
@@ -77,7 +77,7 @@ object CompletionAware {
   /** Convenience factories.
    */
   def apply(terms: () => List[String]): CompletionAware = apply(terms, _ => None)
-  def apply(map: collection.Map[String, CompletionAware]): CompletionAware =
+  def apply(map: scala.collection.Map[String, CompletionAware]): CompletionAware =
     apply(() => map.keys.toList, map.get _)
 }
 

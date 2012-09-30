@@ -13,7 +13,7 @@ import generic._
 import mutable.{Builder, StringBuilder, LazyBuilder, ListBuffer}
 import scala.annotation.tailrec
 import Stream.cons
-import language.implicitConversions
+import scala.language.implicitConversions
 
 /** The class `Stream` implements lazy lists where elements
  *  are only evaluated when they are needed. Here is an example:
@@ -422,6 +422,9 @@ self =>
    * // produces: 10, 10, 11, 10, 11, 11, 10, 11, 11, 12, 10, 11, 11, 12, 13
    * }}}
    *
+   * ''Note:''  Currently `flatMap` will evaluate as much of the Stream as needed
+   * until it finds a non-empty element for the head, which is non-lazy.
+   *
    * @tparam B The element type of the returned collection '''That'''.
    * @param f  the function to apply on each element.
    * @return  `f(a,,0,,) ::: ... ::: f(a,,n,,)` if
@@ -479,22 +482,40 @@ self =>
   final class StreamWithFilter(p: A => Boolean) extends WithFilter(p) {
 
     override def map[B, That](f: A => B)(implicit bf: CanBuildFrom[Stream[A], B, That]): That = {
-      def tailMap = asStream[B](tail withFilter p map f)
-      if (isStreamBuilder(bf)) asThat(
-        if (isEmpty) Stream.Empty
-        else if (p(head)) cons(f(head), tailMap)
-        else tailMap
-      )
+      def tailMap(coll: Stream[A]): Stream[B] = {
+        var head: A = null.asInstanceOf[A]
+        var tail: Stream[A] = coll
+        while (true) {
+          if (tail.isEmpty)
+            return Stream.Empty
+          head = tail.head
+          tail = tail.tail
+          if (p(head))
+            return cons(f(head), tailMap(tail))
+        }
+        throw new RuntimeException()
+      }
+
+      if (isStreamBuilder(bf)) asThat(tailMap(Stream.this))
       else super.map(f)(bf)
     }
 
     override def flatMap[B, That](f: A => GenTraversableOnce[B])(implicit bf: CanBuildFrom[Stream[A], B, That]): That = {
-      def tailFlatMap = asStream[B](tail withFilter p flatMap f)
-      if (isStreamBuilder(bf)) asThat(
-        if (isEmpty) Stream.Empty
-        else if (p(head)) f(head).toStream append tailFlatMap
-        else tailFlatMap
-      )
+      def tailFlatMap(coll: Stream[A]): Stream[B] = {
+        var head: A = null.asInstanceOf[A]
+        var tail: Stream[A] = coll
+        while (true) {
+          if (tail.isEmpty)
+            return Stream.Empty
+          head = tail.head
+          tail = tail.tail
+          if (p(head))
+            return f(head).toStream append tailFlatMap(tail)
+        }
+        throw new RuntimeException()
+      }
+
+      if (isStreamBuilder(bf)) asThat(tailFlatMap(Stream.this))
       else super.flatMap(f)(bf)
     }
 
@@ -613,7 +634,7 @@ self =>
    * // (5,6)
    * }}}
    */
-  override final def zip[A1 >: A, B, That](that: collection.GenIterable[B])(implicit bf: CanBuildFrom[Stream[A], (A1, B), That]): That =
+  override final def zip[A1 >: A, B, That](that: scala.collection.GenIterable[B])(implicit bf: CanBuildFrom[Stream[A], (A1, B), That]): That =
     // we assume there is no other builder factory on streams and therefore know that That = Stream[(A1, B)]
     if (isStreamBuilder(bf)) asThat(
       if (this.isEmpty || that.isEmpty) Stream.Empty
@@ -916,6 +937,7 @@ self =>
 
   override def view = new StreamView[A, Stream[A]] {
     protected lazy val underlying = self.repr
+    override def isEmpty = self.isEmpty
     override def iterator = self.iterator
     override def length = self.length
     override def apply(idx: Int) = self.apply(idx)

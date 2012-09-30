@@ -6,13 +6,14 @@
 **                          |/                                          **
 \*                                                                      */
 
-package scala.collection
+package scala
+package collection
 
 import mutable.{ ListBuffer, ArraySeq }
 import immutable.{ List, Range }
 import generic._
 import parallel.ParSeq
-import scala.math.Ordering
+import scala.math.{ min, max, Ordering }
 
 /** A template trait for sequences of type `Seq[A]`
  *  $seqInfo
@@ -91,6 +92,8 @@ trait SeqLike[+A, +Repr] extends Any with IterableLike[A, Repr] with GenSeqLike[
     }
     i - len
   }
+
+  override /*IterableLike*/ def isEmpty: Boolean = lengthCompare(0) == 0
 
   /** The size of this $coll, equivalent to `length`.
    *
@@ -383,7 +386,7 @@ trait SeqLike[+A, +Repr] extends Any with IterableLike[A, Repr] with GenSeqLike[
    *  @return     `true` if this $coll has an element that is equal (as
    *              determined by `==`) to `elem`, `false` otherwise.
    */
-  def contains(elem: Any): Boolean = exists (_ == elem)
+  def contains[A1 >: A](elem: A1): Boolean = exists (_ == elem)
 
   /** Produces a new sequence which contains all elements of this $coll and also all elements of
    *  a given sequence. `xs union ys`  is equivalent to `xs ++ ys`.
@@ -627,6 +630,7 @@ trait SeqLike[+A, +Repr] extends Any with IterableLike[A, Repr] with GenSeqLike[
 
   override def view = new SeqView[A, Repr] {
     protected lazy val underlying = self.repr
+    override def isEmpty = self.isEmpty
     override def iterator = self.iterator
     override def length = self.length
     override def apply(idx: Int) = self.apply(idx)
@@ -731,8 +735,8 @@ object SeqLike {
    */
   private def kmpSearch[B](S: Seq[B], m0: Int, m1: Int, W: Seq[B], n0: Int, n1: Int, forward: Boolean): Int = {
     // Check for redundant case when target has single valid element
-    @inline def clipR(x: Int, y: Int) = if (x<y) x else -1
-    @inline def clipL(x: Int, y: Int) = if (x>y) x else -1
+    def clipR(x: Int, y: Int) = if (x < y) x else -1
+    def clipL(x: Int, y: Int) = if (x > y) x else -1
 
     if (n1 == n0+1) {
       if (forward)
@@ -852,7 +856,7 @@ object SeqLike {
   /** Finds a particular index at which one sequence occurs in another sequence.
    *  Like `indexOf`, but finds the latest occurrence rather than earliest.
    *
-   *  @see  [[scala.collection.SeqLike], method `indexOf`
+   *  @see  [[scala.collection.SeqLike]], method `indexOf`
    */
   def lastIndexOf[B](
     source: Seq[B], sourceOffset: Int, sourceCount: Int,

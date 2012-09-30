@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2011 LAMP/EPFL
+ * Copyright 2005-2012 LAMP/EPFL
  * @author  Paul Phillips
  */
 
@@ -14,7 +14,7 @@ import java.net.URL
 import scala.reflect.runtime.ReflectionUtils.unwrapHandler
 import ScalaClassLoader._
 import scala.util.control.Exception.{ catching }
-import language.implicitConversions
+import scala.language.implicitConversions
 import scala.reflect.{ ClassTag, classTag }
 
 trait HasClassPath {

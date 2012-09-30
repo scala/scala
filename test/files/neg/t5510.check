@@ -13,7 +13,7 @@ t5510.scala:5: error: unclosed string literal
 t5510.scala:6: error: unclosed multi-line string literal
   val s5 = ""s""" $s1 $s2 s"
                          ^
-t5510.scala:7: error: '}' expected but eof found.
+t5510.scala:7: error: unclosed multi-line string literal
 }
  ^
 6 errors found

@@ -1,5 +1,10 @@
+lubs.scala:10: error: type mismatch;
+ found   : test1.A[test1.A[Object]]
+ required: test1.A[test1.A[test1.A[Any]]]
+  val x3: A[A[A[Any]]] = f
+                         ^
 lubs.scala:11: error: type mismatch;
- found   : test1.A[test1.A[test1.A[Any]]]
+ found   : test1.A[test1.A[Object]]
  required: test1.A[test1.A[test1.A[test1.A[Any]]]]
   val x4: A[A[A[A[Any]]]] = f
                             ^
@@ -13,4 +18,4 @@ lubs.scala:25: error: type mismatch;
  required: test2.A{type T >: Null <: test2.A{type T >: Null <: test2.A{type T >: Null <: test2.A}}}
   val x4: A { type T >: Null <: A { type T >: Null <: A { type T >: Null <: A } } } = f
                                                                                       ^
-three errors found
+four errors found

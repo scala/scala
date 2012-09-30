@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2011 LAMP/EPFL
+ * Copyright 2005-2012 LAMP/EPFL
  * @author Martin Odersky
  */
 
@@ -46,13 +46,13 @@ abstract class ExplicitOuter extends InfoTransform
   private def haveSameOuter(parent: Type, clazz: Symbol) = parent match {
     case TypeRef(pre, sym, _)   =>
       val owner = clazz.owner
-      
+
       //println(s"have same outer $parent $clazz $sym ${sym.owner} $owner $pre")
 
       sym.isClass && owner.isClass &&
-      (owner isSubClass sym.owner) && 
+      (owner isSubClass sym.owner) &&
       owner.thisType =:= pre
-       
+
     case _                      => false
   }
 
@@ -95,7 +95,7 @@ abstract class ExplicitOuter extends InfoTransform
     else findOrElse(clazz.info.decls)(_.outerSource == clazz)(NoSymbol)
   }
   def newOuterAccessor(clazz: Symbol) = {
-    val accFlags = SYNTHETIC | HIDDEN | METHOD | STABLE | ( if (clazz.isTrait) DEFERRED else 0 )
+    val accFlags = SYNTHETIC | ARTIFACT | METHOD | STABLE | ( if (clazz.isTrait) DEFERRED else 0 )
     val sym      = clazz.newMethod(nme.OUTER, clazz.pos, accFlags)
     val restpe   = if (clazz.isTrait) clazz.outerClass.tpe else clazz.outerClass.thisType
 
@@ -104,7 +104,7 @@ abstract class ExplicitOuter extends InfoTransform
     sym setInfo MethodType(Nil, restpe)
   }
   def newOuterField(clazz: Symbol) = {
-    val accFlags = SYNTHETIC | HIDDEN | PARAMACCESSOR | ( if (clazz.isEffectivelyFinal) PrivateLocal else PROTECTED )
+    val accFlags = SYNTHETIC | ARTIFACT | PARAMACCESSOR | ( if (clazz.isEffectivelyFinal) PrivateLocal else PROTECTED )
     val sym      = clazz.newValue(nme.OUTER_LOCAL, clazz.pos, accFlags)
 
     sym setInfo clazz.outerClass.thisType
@@ -416,7 +416,7 @@ abstract class ExplicitOuter extends InfoTransform
 
       val (checkExhaustive, requireSwitch) = nselector match {
         case Typed(nselector1, tpt) =>
-          val unchecked = treeInfo.isUncheckedAnnotation(tpt.tpe)
+          val unchecked = tpt.tpe hasAnnotation UncheckedClass
           if (unchecked)
             nselector = nselector1
 
@@ -497,8 +497,12 @@ abstract class ExplicitOuter extends InfoTransform
           else atPos(tree.pos)(outerPath(outerValue, currentClass.outerClass, sym)) // (5)
 
         case Select(qual, name) =>
-          if (currentClass != sym.owner) // (3)
+          // make not private symbol acessed from inner classes, as well as
+          // symbols accessed from @inline methods
+          if (currentClass != sym.owner ||
+              (sym.owner.enclMethod hasAnnotation ScalaInlineClass))
             sym.makeNotPrivate(sym.owner)
+
           val qsym = qual.tpe.widen.typeSymbol
           if (sym.isProtected && //(4)
               (qsym.isTrait || !(qual.isInstanceOf[Super] || (qsym isSubClass currentClass))))

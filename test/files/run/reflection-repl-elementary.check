@@ -1,0 +1,9 @@
+Type in expressions to have them evaluated.
+Type :help for more information.
+
+scala> 
+
+scala> scala.reflect.runtime.universe.typeOf[List[Nothing]]
+res0: reflect.runtime.universe.Type = scala.List[Nothing]
+
+scala> 

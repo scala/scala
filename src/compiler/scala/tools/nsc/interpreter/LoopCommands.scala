@@ -1,17 +1,17 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2011 LAMP/EPFL
+ * Copyright 2005-2012 LAMP/EPFL
  * @author  Paul Phillips
  */
 
 package scala.tools.nsc
 package interpreter
 
-import collection.{ mutable, immutable }
+import scala.collection.{ mutable, immutable }
 import mutable.ListBuffer
-import language.implicitConversions
+import scala.language.implicitConversions
 
 class ProcessResult(val line: String) {
-  import sys.process._
+  import scala.sys.process._
   private val buffer = new ListBuffer[String]
 
   val builder  = Process(line)

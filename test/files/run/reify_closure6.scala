@@ -17,7 +17,7 @@ object Test extends App {
     }}
 
     val toolbox = cm.mkToolBox()
-    val dyn = toolbox.runExpr(fun.tree)
+    val dyn = toolbox.eval(fun.tree)
     dyn.asInstanceOf[Int => Int]
   }
 

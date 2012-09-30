@@ -1,0 +1,2 @@
+java.io.NotSerializableException: Test$$typecreator1$1
+java.io.NotSerializableException: Test$$typecreator2$1

@@ -19,5 +19,5 @@ object Test extends App {
   println(ttree.toString)
 
   // test 3: import and compile
-  toolbox.runExpr(tree)
+  toolbox.eval(tree)
 }

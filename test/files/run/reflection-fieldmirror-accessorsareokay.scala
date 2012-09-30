@@ -13,8 +13,8 @@ object Test extends App {
 
   def test(f: Symbol) = {
     try {
-      val fm: FieldMirror = im.reflectField(f.asTermSymbol)
-      println(fm.symbol.isVariable)
+      val fm: FieldMirror = im.reflectField(f.asTerm)
+      println(fm.symbol.isVar)
       println(fm.get)
       fm.set(2)
       println(fm.get)
@@ -24,6 +24,6 @@ object Test extends App {
     }
   }
 
-  test(cs.typeSignature.declaration(newTermName("x")).asTermSymbol)
-  test(cs.typeSignature.declaration(newTermName("x_$eq")).asTermSymbol)
+  test(cs.typeSignature.declaration(newTermName("x")).asTerm)
+  test(cs.typeSignature.declaration(newTermName("x_$eq")).asTerm)
 }

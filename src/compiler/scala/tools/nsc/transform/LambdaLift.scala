@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2011 LAMP/EPFL
+ * Copyright 2005-2012 LAMP/EPFL
  * @author
  */
 
@@ -154,7 +154,7 @@ abstract class LambdaLift extends InfoTransform {
     private def markCalled(sym: Symbol, owner: Symbol) {
       debuglog("mark called: " + sym + " of " + sym.owner + " is called by " + owner)
       symSet(called, owner) addEntry sym
-      if (sym.enclClass != owner.enclClass) calledFromInner addEntry sym
+      if (sym.enclClass != owner.enclClass) calledFromInner += sym
     }
 
     /** The traverse function */

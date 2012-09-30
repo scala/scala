@@ -1,5 +1,7 @@
-b.scala:3: error: match may not be exhaustive.
+b.scala:3: warning: match may not be exhaustive.
 It would fail on the following input: (_ : C)
   def f = (null: T) match {
                ^
+error: No warnings can be incurred under -Xfatal-warnings.
+one warning found
 one error found

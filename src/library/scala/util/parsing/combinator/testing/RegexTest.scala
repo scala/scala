@@ -3,7 +3,7 @@ package scala.util.parsing.combinator.testing
 
 import scala.util.parsing.combinator._
 import scala.util.parsing.input._
-import language.postfixOps
+import scala.language.postfixOps
 
 @deprecated("This class will be removed", "2.10.0")
 case class Ident(s: String)

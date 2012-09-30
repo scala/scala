@@ -1,0 +1,12 @@
+unchecked-suppress.scala:4: warning: non-variable type argument Int in type pattern Set[Int] is unchecked since it is eliminated by erasure
+    case xs: Set[Int]                              => xs.head   // unchecked
+             ^
+unchecked-suppress.scala:5: warning: non-variable type argument String in type pattern Map[String @unchecked,String] is unchecked since it is eliminated by erasure
+    case xs: Map[String @unchecked, String]        => xs.head   // one unchecked, one okay
+             ^
+unchecked-suppress.scala:7: warning: non-variable type argument Int in type pattern (Int, Int) => Int is unchecked since it is eliminated by erasure
+    case f: ((Int, Int) => Int)                    =>           // unchecked
+                        ^
+error: No warnings can be incurred under -Xfatal-warnings.
+three warnings found
+one error found

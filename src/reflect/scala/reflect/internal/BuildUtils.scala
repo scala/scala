@@ -3,16 +3,16 @@ package internal
 
 import Flags._
 
-trait BuildUtils extends base.BuildUtils { self: SymbolTable =>
+trait BuildUtils { self: SymbolTable =>
 
-  class BuildImpl extends BuildBase {
+  class BuildImpl extends BuildApi {
 
     def selectType(owner: Symbol, name: String): TypeSymbol =
-      select(owner, newTypeName(name)).asTypeSymbol
+      select(owner, newTypeName(name)).asType
 
     def selectTerm(owner: Symbol, name: String): TermSymbol = {
-      val result = select(owner, newTermName(name)).asTermSymbol
-      if (result.isOverloaded) result.suchThat(!_.isMethod).asTermSymbol
+      val result = select(owner, newTermName(name)).asTerm
+      if (result.isOverloaded) result.suchThat(!_.isMethod).asTerm
       else result
     }
 
@@ -26,18 +26,15 @@ trait BuildUtils extends base.BuildUtils { self: SymbolTable =>
 
     def selectOverloadedMethod(owner: Symbol, name: String, index: Int): MethodSymbol = {
       val result = owner.info.decl(newTermName(name)).alternatives(index)
-      if (result ne NoSymbol) result.asMethodSymbol
+      if (result ne NoSymbol) result.asMethod
       else MissingRequirementError.notFound("overloaded method %s #%d in %s".format(name, index, owner.fullName))
     }
 
-    def newFreeTerm(name: String, info: Type, value: => Any, flags: Long = 0L, origin: String = null): FreeTermSymbol =
-      newFreeTermSymbol(newTermName(name), info, value, flags, origin)
+    def newFreeTerm(name: String, value: => Any, flags: Long = 0L, origin: String = null): FreeTermSymbol =
+      newFreeTermSymbol(newTermName(name), value, flags, origin)
 
-    def newFreeType(name: String, info: Type, value: => Any, flags: Long = 0L, origin: String = null): FreeTypeSymbol =
-      newFreeTypeSymbol(newTypeName(name), info, value, (if (flags == 0L) PARAM else flags) | DEFERRED, origin)
-
-    def newFreeExistential(name: String, info: Type, value: => Any, flags: Long = 0L, origin: String = null): FreeTypeSymbol =
-      newFreeTypeSymbol(newTypeName(name), info, value, (if (flags == 0L) EXISTENTIAL else flags) | DEFERRED, origin)
+    def newFreeType(name: String, flags: Long = 0L, origin: String = null): FreeTypeSymbol =
+      newFreeTypeSymbol(newTypeName(name), flags, origin)
 
     def newNestedSymbol(owner: Symbol, name: Name, pos: Position, flags: Long, isClass: Boolean): Symbol =
       owner.newNestedSymbol(name, pos, flags, isClass)
@@ -67,5 +64,5 @@ trait BuildUtils extends base.BuildUtils { self: SymbolTable =>
     def setSymbol[T <: Tree](tree: T, sym: Symbol): T = { tree.setSymbol(sym); tree }
   }
 
-  val build: BuildBase = new BuildImpl
+  val build: BuildApi = new BuildImpl
 }

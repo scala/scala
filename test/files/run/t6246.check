@@ -1,0 +1,90 @@
+runtimeClass = byte, toString = Byte
+true
+true
+true
+false
+true
+false
+false
+false
+false
+runtimeClass = short, toString = Short
+true
+true
+true
+false
+true
+false
+false
+false
+false
+runtimeClass = char, toString = Char
+true
+true
+true
+false
+true
+false
+false
+false
+false
+runtimeClass = int, toString = Int
+true
+true
+true
+false
+true
+false
+false
+false
+false
+runtimeClass = long, toString = Long
+true
+true
+true
+false
+true
+false
+false
+false
+false
+runtimeClass = float, toString = Float
+true
+true
+true
+false
+true
+false
+false
+false
+false
+runtimeClass = double, toString = Double
+true
+true
+true
+false
+true
+false
+false
+false
+false
+runtimeClass = void, toString = Unit
+true
+true
+true
+false
+true
+false
+false
+false
+false
+runtimeClass = boolean, toString = Boolean
+true
+true
+true
+false
+true
+false
+false
+false
+false

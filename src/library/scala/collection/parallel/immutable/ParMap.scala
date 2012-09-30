@@ -28,11 +28,11 @@ import scala.collection.GenMapLike
  *  @since 2.9
  */
 trait ParMap[K, +V]
-extends collection/*.immutable*/.GenMap[K, V]
+extends scala.collection/*.immutable*/.GenMap[K, V]
    with GenericParMapTemplate[K, V, ParMap]
    with parallel.ParMap[K, V]
    with ParIterable[(K, V)]
-   with ParMapLike[K, V, ParMap[K, V], collection.immutable.Map[K, V]]
+   with ParMapLike[K, V, ParMap[K, V], scala.collection.immutable.Map[K, V]]
 {
 self =>
 
@@ -56,7 +56,7 @@ self =>
    *  @param d     the function mapping keys to values, used for non-present keys
    *  @return      a wrapper of the map with a default value
    */
-  def withDefault[U >: V](d: K => U): collection.parallel.immutable.ParMap[K, U] = new ParMap.WithDefault[K, U](this, d)
+  def withDefault[U >: V](d: K => U): scala.collection.parallel.immutable.ParMap[K, U] = new ParMap.WithDefault[K, U](this, d)
 
   /** The same map with a given default value.
    *
@@ -65,7 +65,7 @@ self =>
    *  @param d     the function mapping keys to values, used for non-present keys
    *  @return      a wrapper of the map with a default value
    */
-  def withDefaultValue[U >: V](d: U): collection.parallel.immutable.ParMap[K, U] = new ParMap.WithDefault[K, U](this, x => d)
+  def withDefaultValue[U >: V](d: U): scala.collection.parallel.immutable.ParMap[K, U] = new ParMap.WithDefault[K, U](this, x => d)
 
 }
 
@@ -79,7 +79,7 @@ object ParMap extends ParMapFactory[ParMap] {
   implicit def canBuildFrom[K, V]: CanCombineFrom[Coll, (K, V), ParMap[K, V]] = new CanCombineFromMap[K, V]
 
   class WithDefault[K, +V](underlying: ParMap[K, V], d: K => V)
-  extends collection.parallel.ParMap.WithDefault[K, V](underlying, d) with ParMap[K, V] {
+  extends scala.collection.parallel.ParMap.WithDefault[K, V](underlying, d) with ParMap[K, V] {
     override def empty = new WithDefault(underlying.empty, d)
     override def updated[U >: V](key: K, value: U): WithDefault[K, U] = new WithDefault[K, U](underlying.updated[U](key, value), d)
     override def + [U >: V](kv: (K, U)): WithDefault[K, U] = updated(kv._1, kv._2)

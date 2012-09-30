@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2011 LAMP/EPFL
+ * Copyright 2005-2012 LAMP/EPFL
  * @author  Martin Odersky
  */
 
@@ -8,7 +8,7 @@ package doc
 
 import java.io.File
 import java.lang.System
-import language.postfixOps
+import scala.language.postfixOps
 
 /** An extended version of compiler settings, with additional Scaladoc-specific options.
   * @param error A function that prints a string to the appropriate error stream
@@ -111,6 +111,12 @@ class Settings(error: String => Unit, val printMsg: String => Unit = println(_))
     "only use it if you haven't defined usecase for implicitly inherited members."
   )
 
+  val docImplicitsHide = MultiStringSetting (
+	  "-implicits-hide",
+    "implicit(s)",
+    "Hide the members inherited by the given comma separated, fully qualified implicit conversions. Add dot (.) to include default conversions."
+  )
+
   val docDiagrams = BooleanSetting (
     "-diagrams",
     "Create inheritance diagrams for classes, traits and packages."
@@ -188,6 +194,12 @@ class Settings(error: String => Unit, val printMsg: String => Unit = println(_))
     "Expand all type aliases and abstract types into full template pages. (locally this can be done with the @template annotation)"
   )
 
+  val docExternalUrls = MultiStringSetting (
+    "-external-urls",
+    "externalUrl(s)",
+    "comma-separated list of package_names=doc_URL for external dependencies, where package names are ':'-separated"
+  )
+
   val docGroups = BooleanSetting (
     "-groups",
     "Group similar functions together (based on the @group annotation)"
@@ -203,7 +215,7 @@ class Settings(error: String => Unit, val printMsg: String => Unit = println(_))
     docformat, doctitle, docfooter, docversion, docUncompilable, docsourceurl, docgenerator, docRootContent, useStupidTypes,
     docDiagrams, docDiagramsDebug, docDiagramsDotPath,
     docDiagramsDotTimeout, docDiagramsDotRestart,
-    docImplicits, docImplicitsDebug, docImplicitsShowAll,
+    docImplicits, docImplicitsDebug, docImplicitsShowAll, docImplicitsHide,
     docDiagramsMaxNormalClasses, docDiagramsMaxImplicitClasses,
     docNoPrefixes, docNoLinkWarnings, docRawOutput, docSkipPackages,
     docExpandAllTypes, docGroups
@@ -224,6 +236,30 @@ class Settings(error: String => Unit, val printMsg: String => Unit = println(_))
   def skipPackage(qname: String) =
     skipPackageNames(qname.toLowerCase)
 
+  lazy val hiddenImplicits: Set[String] = {
+    if (docImplicitsHide.value.isEmpty) hardcoded.commonConversionTargets
+    else docImplicitsHide.value.toSet flatMap { name: String =>
+      if(name == ".") hardcoded.commonConversionTargets
+      else Set(name)
+    }
+  }
+
+  // TODO: Enable scaladoc to scoop up the package list from another scaladoc site, just as javadoc does
+  //   -external-urls 'http://www.scala-lang.org/archives/downloads/distrib/files/nightly/docs/library'
+  // should trigger scaldoc to fetch the package-list file. The steps necessary:
+  // 1 - list all packages generated in scaladoc in the package-list file, exactly as javadoc:
+  //     see http://docs.oracle.com/javase/6/docs/api/package-list for http://docs.oracle.com/javase/6/docs/api
+  // 2 - download the file and add the packages to the list
+  lazy val extUrlMapping: Map[String, String] = (Map.empty[String, String] /: docExternalUrls.value) {
+    case (map, binding) =>
+      val idx = binding indexOf "="
+      val pkgs = binding substring (0, idx) split ":"
+      var url = binding substring (idx + 1)
+      val index = "/index.html"
+      url = if (url.endsWith(index)) url else url + index
+      map ++ (pkgs map (_ -> url))
+  }
+
   /**
    *  This is the hardcoded area of Scaladoc. This is where "undesirable" stuff gets eliminated. I know it's not pretty,
    *  but ultimately scaladoc has to be useful. :)
@@ -236,15 +272,15 @@ class Settings(error: String => Unit, val printMsg: String => Unit = println(_))
      *  the function result should be a humanly-understandable description of the type class
      */
     val knownTypeClasses: Map[String, String => String] = Map() +
-      ("scala.math.Numeric"                  -> ((tparam: String) => tparam + " is a numeric class, such as Int, Long, Float or Double")) +
-      ("scala.math.Integral"                 -> ((tparam: String) => tparam + " is an integral numeric class, such as Int or Long")) +
-      ("scala.math.Fractional"               -> ((tparam: String) => tparam + " is a fractional numeric class, such as Float or Double")) +
-      ("scala.reflect.Manifest"              -> ((tparam: String) => tparam + " is accompanied by a Manifest, which is a runtime representation of its type that survives erasure")) +
-      ("scala.reflect.ClassManifest"         -> ((tparam: String) => tparam + " is accompanied by a ClassManifest, which is a runtime representation of its type that survives erasure")) +
-      ("scala.reflect.OptManifest"           -> ((tparam: String) => tparam + " is accompanied by an OptManifest, which can be either a runtime representation of its type or the NoManifest, which means the runtime type is not available")) +
-      ("scala.reflect.ClassTag"              -> ((tparam: String) => tparam + " is accompanied by a ClassTag, which is a runtime representation of its type that survives erasure")) +
-      ("scala.reflect.AbsTypeTag"            -> ((tparam: String) => tparam + " is accompanied by an AbsTypeTag, which is a runtime representation of its type that survives erasure")) +
-      ("scala.reflect.base.TypeTags.TypeTag" -> ((tparam: String) => tparam + " is accompanied by a TypeTag, which is a runtime representation of its type that survives erasure"))
+      ("scala.math.Numeric"                     -> ((tparam: String) => tparam + " is a numeric class, such as Int, Long, Float or Double")) +
+      ("scala.math.Integral"                    -> ((tparam: String) => tparam + " is an integral numeric class, such as Int or Long")) +
+      ("scala.math.Fractional"                  -> ((tparam: String) => tparam + " is a fractional numeric class, such as Float or Double")) +
+      ("scala.reflect.Manifest"                 -> ((tparam: String) => tparam + " is accompanied by a Manifest, which is a runtime representation of its type that survives erasure")) +
+      ("scala.reflect.ClassManifest"            -> ((tparam: String) => tparam + " is accompanied by a ClassManifest, which is a runtime representation of its type that survives erasure")) +
+      ("scala.reflect.OptManifest"              -> ((tparam: String) => tparam + " is accompanied by an OptManifest, which can be either a runtime representation of its type or the NoManifest, which means the runtime type is not available")) +
+      ("scala.reflect.ClassTag"                 -> ((tparam: String) => tparam + " is accompanied by a ClassTag, which is a runtime representation of its type that survives erasure")) +
+      ("scala.reflect.api.TypeTags.WeakTypeTag" -> ((tparam: String) => tparam + " is accompanied by an WeakTypeTag, which is a runtime representation of its type that survives erasure")) +
+      ("scala.reflect.api.TypeTags.TypeTag"     -> ((tparam: String) => tparam + " is accompanied by a TypeTag, which is a runtime representation of its type that survives erasure"))
 
     /**
      * Set of classes to exclude from index and diagrams
@@ -264,7 +300,7 @@ class Settings(error: String => Unit, val printMsg: String => Unit = println(_))
     }
 
     /** Common conversion targets that affect any class in Scala */
-    val commonConversionTargets = List(
+    val commonConversionTargets = Set(
       "scala.Predef.any2stringfmt",
       "scala.Predef.any2stringadd",
       "scala.Predef.any2ArrowAssoc",

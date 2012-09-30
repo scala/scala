@@ -1,6 +1,6 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2011 LAMP/EPFL
- * Copyright 2005-2011 LAMP/EPFL
+ * Copyright 2005-2012 LAMP/EPFL
+ * Copyright 2005-2012 LAMP/EPFL
  * @author  Martin Odersky
  */
 
@@ -10,11 +10,16 @@ package internal
 import Flags._
 
 trait Mirrors extends api.Mirrors {
-  self: SymbolTable =>
+  thisUniverse: SymbolTable =>
 
   override type Mirror >: Null <: RootsBase
 
-  abstract class RootsBase(rootOwner: Symbol) extends MirrorOf[Mirrors.this.type] { thisMirror =>
+  // root symbols hold a strong reference to the enclosing mirror
+  // this prevents the mirror from being collected
+  // if there are any symbols created by that mirror
+  trait RootSymbol extends Symbol { def mirror: Mirror }
+
+  abstract class RootsBase(rootOwner: Symbol) extends scala.reflect.api.Mirror[Mirrors.this.type] { thisMirror =>
 
     protected[scala] def rootLoader: LazyType
 
@@ -70,7 +75,7 @@ trait Mirrors extends api.Mirrors {
 
     protected def mirrorMissingHook(owner: Symbol, name: Name): Symbol = NoSymbol
 
-    protected def universeMissingHook(owner: Symbol, name: Name): Symbol = self.missingHook(owner, name)
+    protected def universeMissingHook(owner: Symbol, name: Name): Symbol = thisUniverse.missingHook(owner, name)
 
     private[scala] def missingHook(owner: Symbol, name: Name): Symbol = mirrorMissingHook(owner, name) orElse universeMissingHook(owner, name)
 
@@ -247,14 +252,15 @@ trait Mirrors extends api.Mirrors {
     // is very beneficial for a handful of bootstrap symbols to have
     // first class identities
     sealed trait WellKnownSymbol extends Symbol {
-      this initFlags TopLevelCreationFlags
+      this initFlags (TopLevelCreationFlags | STATIC)
     }
     // Features common to RootClass and RootPackage, the roots of all
     // type and term symbols respectively.
-    sealed trait RootSymbol extends WellKnownSymbol {
+    sealed trait RootSymbol extends WellKnownSymbol with thisUniverse.RootSymbol {
       final override def isRootSymbol = true
       override def owner              = rootOwner
       override def typeOfThis         = thisSym.tpe
+      def mirror                      = thisMirror.asInstanceOf[Mirror]
     }
 
     // This is the package _root_.  The actual root cannot be referenced at
@@ -276,7 +282,6 @@ trait Mirrors extends api.Mirrors {
 
       override def isRoot            = true
       override def isEffectiveRoot   = true
-      override def isStatic          = true
       override def isNestedClass     = false
     }
     // The empty package, which holds all top level types without given packages.

@@ -1,12 +1,12 @@
 /* NEST (New Scala Test)
- * Copyright 2007-2011 LAMP/EPFL
+ * Copyright 2007-2012 LAMP/EPFL
  * @author  Paul Phillips
  */
 
 package scala.tools.cmd
 package gen
 
-import language.postfixOps
+import scala.language.postfixOps
 
 class Codegen(args: List[String]) extends {
   val parsed = CodegenSpec(args: _*)

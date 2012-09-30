@@ -3,24 +3,24 @@ package reflect
 
 import java.lang.{Class => jClass}
 import scala.reflect.{ClassTag, classTag}
-import scala.reflect.base.{MirrorOf, TypeCreator, Universe => BaseUniverse}
+import scala.reflect.api.{Mirror, TypeCreator, Universe => ApiUniverse}
 
 // [Eugene++] Before 2.10 is released, I suggest we don't rely on automated type tag generation
 // sure, it's convenient, but then refactoring reflection / reification becomes a pain
 // `ClassTag` tags are fine, because they don't need a reifier to be generated
 
 trait StdTags {
-  val u: BaseUniverse with Singleton
-  val m: MirrorOf[u.type]
+  val u: ApiUniverse with Singleton
+  val m: Mirror[u.type]
 
   lazy val tagOfListOfString: u.TypeTag[List[String]] =
     u.TypeTag[List[String]](
       m,
       new TypeCreator {
-        def apply[U <: BaseUniverse with Singleton](m: MirrorOf[U]): U # Type = {
+        def apply[U <: ApiUniverse with Singleton](m: Mirror[U]): U # Type = {
           val u = m.universe
           val pre = u.ThisType(m.staticPackage("scala.collection.immutable").moduleClass.asInstanceOf[u.Symbol])
-          u.TypeRef(pre, u.definitions.ListClass, List(u.definitions.StringClass.asTypeConstructor))
+          u.TypeRef(pre, u.definitions.ListClass, List(u.definitions.StringClass.toTypeConstructor))
         }
       })
 
@@ -28,8 +28,8 @@ trait StdTags {
     u.TypeTag[T](
       m,
       new TypeCreator {
-        def apply[U <: BaseUniverse with Singleton](m: MirrorOf[U]): U # Type =
-          m.staticClass(classTag[T].runtimeClass.getName).asTypeConstructor.asInstanceOf[U # Type]
+        def apply[U <: ApiUniverse with Singleton](m: Mirror[U]): U # Type =
+          m.staticClass(classTag[T].runtimeClass.getName).toTypeConstructor.asInstanceOf[U # Type]
       })
   lazy val tagOfInt = u.TypeTag.Int
   lazy val tagOfString = tagOfStaticClass[String]
@@ -52,7 +52,7 @@ object StdRuntimeTags extends StdTags {
 }
 
 abstract class StdContextTags extends StdTags {
-  val tc: scala.reflect.makro.Context
+  val tc: scala.reflect.macros.Context
   val u: tc.universe.type = tc.universe
   val m = tc.mirror
 }

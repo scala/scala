@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2011 LAMP/EPFL
+ * Copyright 2005-2012 LAMP/EPFL
  * @author  Martin Odersky
  */
 
@@ -18,7 +18,7 @@ import scala.concurrent.Lock
 import scala.text._
 import symtab.Flags._
 import symtab.SymbolTable
-import language.implicitConversions
+import scala.language.implicitConversions
 
 /**
  * Tree browsers can show the AST in a graphical and interactive

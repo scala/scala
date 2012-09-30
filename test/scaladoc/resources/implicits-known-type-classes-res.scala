@@ -6,7 +6,8 @@ package scala.test.scaladoc.implicits.typeclasses {
   class A[T]
   object A {
     import language.implicitConversions
-    import scala.reflect.{ClassTag, TypeTag}
+    import scala.reflect.ClassTag
+    import scala.reflect.runtime.universe.TypeTag
     implicit def convertNumeric       [T: Numeric]       (a: A[T]) = new B(implicitly[Numeric[T]])
     implicit def convertIntegral      [T: Integral]      (a: A[T]) = new B(implicitly[Integral[T]])
     implicit def convertFractional    [T: Fractional]    (a: A[T]) = new B(implicitly[Fractional[T]])

@@ -11,11 +11,11 @@ package scala.tools.ant.sabbus
 
 import java.net.URL
 
-object Compilers extends collection.DefaultMap[String, Compiler] {
+object Compilers extends scala.collection.DefaultMap[String, Compiler] {
 
   val debug = false
 
-  private val container = new collection.mutable.HashMap[String, Compiler]
+  private val container = new scala.collection.mutable.HashMap[String, Compiler]
 
   def iterator = container.iterator
 

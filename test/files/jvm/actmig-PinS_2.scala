@@ -1,5 +1,10 @@
-import scala.actors.{ MigrationSystem, StashingActor, ActorRef, Props, Exit }
-import scala.concurrent.util.duration._
+/**
+ * NOTE: Code snippets from this test are included in the Actor Migration Guide. In case you change
+ * code in these tests prior to the 2.10.0 release please send the notification to @vjovanov.
+ */
+import scala.actors._
+import scala.actors.migration._
+import scala.concurrent.duration._
 import scala.concurrent.{ Promise, Await }
 
 object SillyActor {

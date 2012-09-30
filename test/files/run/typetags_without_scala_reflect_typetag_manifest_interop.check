@@ -1,0 +1,3 @@
+newSource1:9: error: No Manifest available for App.this.T.
+      manifest[T]
+              ^

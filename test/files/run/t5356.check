@@ -1,6 +1,6 @@
-1 scala.runtime.RichInt
-1 scala.runtime.RichInt
+1 java.lang.Integer
+1 java.lang.Integer
 1 scala.math.BigInt
-1 scala.runtime.RichDouble
-1 scala.runtime.RichFloat
+1 java.lang.Double
+1 java.lang.Float
 1

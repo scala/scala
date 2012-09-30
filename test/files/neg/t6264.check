@@ -1,0 +1,6 @@
+t6264.scala:3: warning: non-variable type argument Tuple1[_] in type Tuple2[_, Tuple1[_]] is unchecked since it is eliminated by erasure
+    x.isInstanceOf[Tuple2[_, Tuple1[_]]]
+                  ^
+error: No warnings can be incurred under -Xfatal-warnings.
+one warning found
+one error found

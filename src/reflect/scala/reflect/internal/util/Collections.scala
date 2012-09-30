@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2011 LAMP/EPFL
+ * Copyright 2005-2012 LAMP/EPFL
  * @author  Paul Phillips
  */
 
@@ -69,7 +69,7 @@ trait Collections {
     }
     lb.toList
   }
-  
+
   final def flatCollect[A, B](elems: List[A])(pf: PartialFunction[A, Traversable[B]]): List[B] = {
     val lb = new ListBuffer[B]
     for (x <- elems ; if pf isDefinedAt x)
@@ -104,7 +104,7 @@ trait Collections {
       index += 1
     }
   }
-  
+
   // @inline
   final def findOrElse[A](xs: TraversableOnce[A])(p: A => Boolean)(orElse: => A): A = {
     xs find p getOrElse orElse
@@ -172,6 +172,20 @@ trait Collections {
 
       ys1 = ys1.tail
       ys2 = ys2.tail
+    }
+    false
+  }
+  final def exists3[A, B, C](xs1: List[A], xs2: List[B], xs3: List[C])(f: (A, B, C) => Boolean): Boolean = {
+    var ys1 = xs1
+    var ys2 = xs2
+    var ys3 = xs3
+    while (!ys1.isEmpty && !ys2.isEmpty && !ys3.isEmpty) {
+      if (f(ys1.head, ys2.head, ys3.head))
+        return true
+
+      ys1 = ys1.tail
+      ys2 = ys2.tail
+      ys3 = ys3.tail
     }
     false
   }

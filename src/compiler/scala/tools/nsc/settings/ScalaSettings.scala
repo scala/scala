@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2011 LAMP/EPFL
+ * Copyright 2005-2012 LAMP/EPFL
  * @author  Martin Odersky
  */
 // $Id$
@@ -8,10 +8,10 @@ package scala.tools
 package nsc
 package settings
 
-import annotation.elidable
+import scala.annotation.elidable
 import scala.tools.util.PathResolver.Defaults
 import scala.collection.mutable
-import language.{implicitConversions, existentials}
+import scala.language.{implicitConversions, existentials}
 
 trait ScalaSettings extends AbsScalaSettings
                        with StandardScalaSettings
@@ -205,8 +205,6 @@ trait ScalaSettings extends AbsScalaSettings
 
   // Feature extensions
   val XmacroSettings          = MultiStringSetting("-Xmacro-settings", "option", "Custom settings for macros.")
-  val XmacroPrimaryClasspath  = PathSetting("-Xmacro-primary-classpath", "Classpath to load macros implementations from, defaults to compilation classpath (aka \"library classpath\".", "")
-  val XmacroFallbackClasspath = PathSetting("-Xmacro-fallback-classpath", "Classpath to load macros implementations from if they cannot be loaded from library classpath.", "")
 
   /**
    * IDE-specific settings

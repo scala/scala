@@ -1,13 +1,13 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2011 LAMP/EPFL
+ * Copyright 2005-2012 LAMP/EPFL
  * @author  Martin Odersky
  */
 
 package scala.tools.nsc
 
 import symtab.Flags
-import reflect.internal.util.TableDef
-import language.postfixOps
+import scala.reflect.internal.util.TableDef
+import scala.language.postfixOps
 
 object Phases {
   val MaxPhases = 64

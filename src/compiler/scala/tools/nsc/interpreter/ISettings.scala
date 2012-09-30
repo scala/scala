@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2011 LAMP/EPFL
+ * Copyright 2005-2012 LAMP/EPFL
  * @author Alexander Spoon
  */
 
@@ -44,7 +44,7 @@ class ISettings(intp: IMain) {
   }
   def deprecation: Boolean = intp.settings.deprecation.value
 
-  def allSettings = Map(
+  def allSettings = Map[String, Any](
     "maxPrintString" -> maxPrintString,
     "maxAutoprintCompletion" -> maxAutoprintCompletion,
     "unwrapStrings" -> unwrapStrings,

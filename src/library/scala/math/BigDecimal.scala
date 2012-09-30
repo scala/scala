@@ -12,7 +12,7 @@ package scala.math
 import java.{ lang => jl }
 import java.math.{ MathContext, BigDecimal => BigDec }
 import scala.collection.immutable.NumericRange
-import language.implicitConversions
+import scala.language.implicitConversions
 
 
 /**
@@ -159,6 +159,7 @@ object BigDecimal {
  *  @author  Stephane Micheloud
  *  @version 1.0
  */
+@deprecatedInheritance("This class will me made final.", "2.10.0")
 class BigDecimal(
   val bigDecimal: BigDec,
   val mc: MathContext)
@@ -211,7 +212,7 @@ extends ScalaNumber with ScalaNumericConversions with Serializable {
     catch { case _: ArithmeticException => false }
   }
 
-  protected[math] def isWhole = (this remainder 1) == BigDecimal(0)
+  def isWhole() = (this remainder 1) == BigDecimal(0)
   def underlying = bigDecimal
 
   /** Compares this BigDecimal with the specified BigDecimal for equality.

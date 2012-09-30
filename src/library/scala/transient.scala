@@ -10,7 +10,7 @@
 
 package scala
 
-import annotation.meta._
+import scala.annotation.meta._
 
 @field
-class transient extends annotation.StaticAnnotation
+class transient extends scala.annotation.StaticAnnotation

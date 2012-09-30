@@ -1,0 +1,7 @@
+valueclasses-pavlov.scala:8: error: double definition:
+method foo:(x: Box2)String and
+method foo:(x: String)String at line 7
+have same type after erasure: (x: String)String
+  def foo(x: Box2) = "foo(Box2): ok"
+      ^
+one error found

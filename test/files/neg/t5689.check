@@ -1,6 +1,6 @@
 t5689.scala:4: error: macro implementation has wrong shape:
- required: (c: scala.reflect.makro.Context)(i: c.Expr[Double]): c.Expr[String]
- found   : (c: scala.reflect.makro.Context)(i: c.Expr[Double]): c.Expr[Int]
+ required: (c: scala.reflect.macros.Context)(i: c.Expr[Double]): c.Expr[String]
+ found   : (c: scala.reflect.macros.Context)(i: c.Expr[Double]): c.Expr[Int]
 type mismatch for return type: c.Expr[Int] does not conform to c.Expr[String]
   def returnsString(i: Double): String = macro returnsIntImpl
                                                ^

@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2011 LAMP/EPFL
+ * Copyright 2005-2012 LAMP/EPFL
  * @author  Paul Phillips
  */
 package scala.tools.nsc
@@ -10,7 +10,7 @@ import scala.collection.{ mutable, immutable }
 import scala.reflect.internal.util.StringOps.{ ojoin }
 import scala.reflect.ClassTag
 import scala.reflect.runtime.{ universe => ru }
-import language.higherKinds
+import scala.language.higherKinds
 
 /** Logic related to method synthesis which involves cooperation between
  *  Namer and Typer.
@@ -31,7 +31,6 @@ trait MethodSynthesis {
       else DefDef(sym, body)
 
     def applyTypeInternal(tags: List[TT[_]]): Type = {
-      // [Eugene++ to Paul] needs review!!
       val symbols = tags map compilerSymbolFromTag
       val container :: args = symbols
       val tparams = container.typeConstructor.typeParams
@@ -53,28 +52,18 @@ trait MethodSynthesis {
       applyTypeInternal(List(t1))
 
     def applyType[CC[X1], X1](implicit t1: TT[CC[_]], t2: TT[X1]): Type =
-      applyTypeInternal(List[TT[_]](t1, t2))
+      applyTypeInternal(List(t1, t2))
 
     def applyType[CC[X1, X2], X1, X2](implicit t1: TT[CC[_,_]], t2: TT[X1], t3: TT[X2]): Type =
-    // [Eugene++] without an explicit type annotation for List, we get this:
-    // [scalacfork] C:\Projects\KeplerUnderRefactoring\src\compiler\scala\tools\nsc\typechecker\MethodSynthesis.scala:59: error: no type parameters for method apply: (xs: A*)List[A] in object List exist so that it can be applied to arguments (scala.tools.nsc.typechecker.MethodSynthesis.synthesisUtil.TT[CC[_, _]], scala.tools.nsc.typechecker.MethodSynthesis.synthesisUtil.TT[X1], scala.tools.nsc.typechecker.MethodSynthesis.synthesisUtil.TT[X2])
-    // [scalacfork]  --- because ---
-    // [scalacfork] undetermined type
-    // [scalacfork]       applyTypeInternal(List(t1, t2, t3))
-      applyTypeInternal(List[TT[_]](t1, t2, t3))
+      applyTypeInternal(List(t1, t2, t3))
 
     def applyType[CC[X1, X2, X3], X1, X2, X3](implicit t1: TT[CC[_,_,_]], t2: TT[X1], t3: TT[X2], t4: TT[X3]): Type =
-      applyTypeInternal(List[TT[_]](t1, t2, t3, t4))
+      applyTypeInternal(List(t1, t2, t3, t4))
 
-    // [Martin->Eugene]  !!! reinstantiate when typeables are in.
-    // [Eugene++->Martin] now this compiles, will soon check it out
     def newMethodType[F](owner: Symbol)(implicit t: TT[F]): Type = {
       val fnSymbol = compilerSymbolFromTag(t)
-      assert(fnSymbol isSubClass FunctionClass(t.tpe.typeArguments.size - 1), (owner, t))
-      // [Eugene++ to Paul] needs review!!
-      // val symbols = m.typeArguments map (m => manifestToSymbol(m))
-      // val formals = symbols.init map (_.typeConstructor)
       val formals = compilerTypeFromTag(t).typeArguments
+      assert(fnSymbol isSubClass FunctionClass(formals.size - 1), (owner, t))
       val params  = owner newSyntheticValueParams formals
       MethodType(params, formals.last)
     }
@@ -253,7 +242,7 @@ trait MethodSynthesis {
             abort("No synthetics for " + meth + ": synthetics contains " + context.unit.synthetics.keys.mkString(", "))
         }
       case _ =>
-        List(stat)
+        stat :: Nil
       }
 
     def standardAccessors(vd: ValDef): List[DerivedFromValDef] = (
@@ -380,7 +369,7 @@ trait MethodSynthesis {
     }
 
     /** A synthetic method which performs the implicit conversion implied by
-     *  the declaration of an implicit class.  Yet to be written.
+     *  the declaration of an implicit class.
      */
     case class ImplicitClassWrapper(tree: ClassDef) extends DerivedFromClassDef {
       def completer(sym: Symbol): Type = ??? // not needed
@@ -388,7 +377,7 @@ trait MethodSynthesis {
       def derivedSym: Symbol = {
         // Only methods will do! Don't want to pick up any stray
         // companion objects of the same name.
-        val result = enclClass.info decl name suchThat (_.isMethod)
+        val result = enclClass.info decl name suchThat (x => x.isMethod && x.isSynthetic)
         assert(result != NoSymbol, "not found: "+name+" in "+enclClass+" "+enclClass.info.decls)
         result
       }
@@ -502,7 +491,7 @@ trait MethodSynthesis {
       // Derives a tree without attempting to use the original tree's symbol.
       override def derivedTree = {
         atPos(tree.pos.focus) {
-          DefDef(derivedMods, name, Nil, List(Nil), tree.tpt.duplicate,
+          DefDef(derivedMods, name, Nil, ListOfNil, tree.tpt.duplicate,
             if (isDeferred) EmptyTree else Select(This(owner), tree.name)
           )
         }

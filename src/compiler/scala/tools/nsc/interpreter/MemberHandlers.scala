@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2011 LAMP/EPFL
+ * Copyright 2005-2012 LAMP/EPFL
  * @author  Martin Odersky
  */
 
@@ -9,7 +9,8 @@ package interpreter
 import scala.collection.{ mutable, immutable }
 import scala.PartialFunction.cond
 import scala.reflect.internal.Chars
-import language.implicitConversions
+import scala.reflect.internal.Flags._
+import scala.language.implicitConversions
 
 trait MemberHandlers {
   val intp: IMain
@@ -126,7 +127,7 @@ trait MemberHandlers {
 
   class DefHandler(member: DefDef) extends MemberDefHandler(member) {
     private def vparamss = member.vparamss
-    private def isMacro = member.mods.hasFlag(scala.reflect.internal.Flags.MACRO)
+    private def isMacro = member.symbol hasFlag MACRO
     // true if not a macro and 0-arity
     override def definesValue = !isMacro && flattensToEmpty(vparamss)
     override def resultExtractionCode(req: Request) =
@@ -211,7 +212,7 @@ trait MemberHandlers {
       enteringPickler(individualNames map (targetType nonPrivateMember _))
 
     lazy val wildcardSymbols: List[Symbol] =
-      if (importsWildcard) enteringPickler(targetType.nonPrivateMembers)
+      if (importsWildcard) enteringPickler(targetType.nonPrivateMembers.toList)
       else Nil
 
     /** Complete list of names imported by a wildcard */

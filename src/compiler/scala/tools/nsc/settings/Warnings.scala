@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2011 LAMP/EPFL
+ * Copyright 2005-2012 LAMP/EPFL
  * @author  Paul Phillips
  */
 
@@ -18,6 +18,7 @@ trait Warnings {
   // These warnings are all so noisy as to be useless in their
   // present form, but have the potential to offer useful info.
   protected def allWarnings = lintWarnings ++ List(
+    warnDeadCode,
     warnSelectNullable,
     warnValueDiscard,
     warnNumericWiden
@@ -25,11 +26,12 @@ trait Warnings {
   // These warnings should be pretty quiet unless you're doing
   // something inadvisable.
   protected def lintWarnings = List(
-    warnDeadCode,
+    // warnDeadCode,
     warnInaccessible,
     warnNullaryOverride,
     warnNullaryUnit,
-    warnAdaptedArgs
+    warnAdaptedArgs,
+    warnInferAny
   )
 
   // Warning groups.
@@ -52,6 +54,7 @@ trait Warnings {
   val warnInaccessible     = BooleanSetting   ("-Ywarn-inaccessible", "Warn about inaccessible types in method signatures.")
   val warnNullaryOverride  = BooleanSetting   ("-Ywarn-nullary-override",
     "Warn when non-nullary overrides nullary, e.g. `def foo()` over `def foo`.")
+  val warnInferAny         = BooleanSetting   ("-Ywarn-infer-any", "Warn when a type argument is inferred to be `Any`.")
 
   // Backward compatibility.
   def Xwarnfatal    = fatalWarnings

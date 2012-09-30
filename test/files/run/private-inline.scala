@@ -30,7 +30,7 @@ final class A {
 }
 
 object Test {
-  def methodClasses = List("f1a", "f1b", "f2a", "f2b") map ("A$$anonfun$" + _ + "$1")
+  def methodClasses = List("f1a", "f2a") map ("A$$anonfun$" + _ + "$1")
   
   def main(args: Array[String]): Unit = {
     val a = new A

@@ -1,13 +1,13 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2011 LAMP/EPFL
+ * Copyright 2005-2012 LAMP/EPFL
  * @author Paul Phillips
  */
 
 package scala.tools.nsc
 package interpreter
 
-import language.implicitConversions
-import scala.reflect.base.{Universe => BaseUniverse}
+import scala.language.implicitConversions
+import scala.reflect.api.{Universe => ApiUniverse}
 import scala.reflect.runtime.{universe => ru}
 
 /** A class which the repl utilizes to expose predefined objects.
@@ -65,7 +65,7 @@ object ReplVals {
      *  I have this forwarder which widens the type and then cast the result back
      *  to the dependent type.
      */
-    def compilerTypeFromTag(t: BaseUniverse # AbsTypeTag[_]): Global#Type =
+    def compilerTypeFromTag(t: ApiUniverse # WeakTypeTag[_]): Global#Type =
       definitions.compilerTypeFromTag(t)
 
     class AppliedTypeFromTags(sym: Symbol) {

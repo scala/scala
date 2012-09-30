@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2011 LAMP/EPFL
+ * Copyright 2005-2012 LAMP/EPFL
  * @author  Martin Odersky
  */
 
@@ -17,7 +17,7 @@ abstract class TreeInfo {
   val global: SymbolTable
 
   import global._
-  import definitions.{ isVarArgsList, isCastSymbol, ThrowableClass, TupleClass }
+  import definitions.{ isVarArgsList, isCastSymbol, ThrowableClass, TupleClass, MacroContextClass, MacroContextPrefixType }
 
   /* Does not seem to be used. Not sure what it does anyway.
   def isOwnerDefinition(tree: Tree): Boolean = tree match {
@@ -67,7 +67,7 @@ abstract class TreeInfo {
 
   /** Is tree an expression which can be inlined without affecting program semantics?
    *
-   *  Note that this is not called "isExprSafeToInline" since purity (lack of side-effects)
+   *  Note that this is not called "isExprPure" since purity (lack of side-effects)
    *  is not the litmus test.  References to modules and lazy vals are side-effecting,
    *  both because side-effecting code may be executed and because the first reference
    *  takes a different code path than all to follow; but they are safe to inline
@@ -236,7 +236,7 @@ abstract class TreeInfo {
     case _ =>
       tree
   }
-  
+
   /** Is tree a self or super constructor call? */
   def isSelfOrSuperConstrCall(tree: Tree) = {
     // stripNamedApply for SI-3584: adaptToImplicitMethod in Typers creates a special context
@@ -247,7 +247,7 @@ abstract class TreeInfo {
 
   /** Is tree a variable pattern? */
   def isVarPattern(pat: Tree): Boolean = pat match {
-    case x: Ident           => !x.isBackquoted && isVariableName(x.name)
+    case x: Ident           => !x.isBackquoted && nme.isVariableName(x.name)
     case _                  => false
   }
   def isDeprecatedIdentifier(tree: Tree): Boolean = tree match {
@@ -312,22 +312,11 @@ abstract class TreeInfo {
   /** Is name a left-associative operator? */
   def isLeftAssoc(operator: Name) = operator.nonEmpty && (operator.endChar != ':')
 
-  private val reserved = Set[Name](nme.false_, nme.true_, nme.null_)
-
-  /** Is name a variable name? */
-  def isVariableName(name: Name): Boolean = {
-    val first = name.startChar
-    ((first.isLower && first.isLetter) || first == '_') && !reserved(name)
-  }
-
   /** Is tree a `this` node which belongs to `enclClass`? */
   def isSelf(tree: Tree, enclClass: Symbol): Boolean = tree match {
     case This(_) => tree.symbol == enclClass
     case _ => false
   }
-
-  /** a Match(Typed(_, tpt), _) is unchecked if isUncheckedAnnotation(tpt.tpe) */
-  def isUncheckedAnnotation(tpe: Type) = tpe hasAnnotation definitions.UncheckedClass
 
   /** a Match(Typed(_, tpt), _) must be translated into a switch if isSwitchAnnotation(tpt.tpe) */
   def isSwitchAnnotation(tpe: Type) = tpe hasAnnotation definitions.SwitchClass
@@ -375,6 +364,13 @@ abstract class TreeInfo {
     case _                       => EmptyTree
   }
 
+  /** If this tree represents a type application the type arguments. Otherwise Nil.
+   */
+  def typeArguments(tree: Tree): List[Tree] = tree match {
+    case TypeApply(_, targs) => targs
+    case _                   => Nil
+  }
+
   /** If this tree has type parameters, those.  Otherwise Nil.
    */
   def typeParameters(tree: Tree): List[TypeDef] = tree match {
@@ -405,11 +401,15 @@ abstract class TreeInfo {
   def catchesThrowable(cdef: CaseDef) = catchesAllOf(cdef, ThrowableClass.tpe)
 
   /** Does this CaseDef catch everything of a certain Type? */
-  def catchesAllOf(cdef: CaseDef, threshold: Type) =
-    isDefaultCase(cdef) || (cdef.guard.isEmpty && (unbind(cdef.pat) match {
-      case Typed(Ident(nme.WILDCARD), tpt)  => (tpt.tpe != null) && (threshold <:< tpt.tpe)
-      case _                                => false
-    }))
+  def catchesAllOf(cdef: CaseDef, threshold: Type) = {
+    def unbound(t: Tree) = t.symbol == null || t.symbol == NoSymbol
+    cdef.guard.isEmpty && (unbind(cdef.pat) match {
+      case Ident(nme.WILDCARD)       => true
+      case i@Ident(name)             => unbound(i)
+      case Typed(_, tpt)             => (tpt.tpe != null) && (threshold <:< tpt.tpe)
+      case _                         => false
+    })
+  }
 
   /** Is this pattern node a catch-all or type-test pattern? */
   def isCatchCase(cdef: CaseDef) = cdef match {
@@ -464,6 +464,16 @@ abstract class TreeInfo {
     case _        => false
   }
 
+
+  // used in the symbols for labeldefs and valdefs emitted by the pattern matcher
+  // tailcalls, cps,... use this flag combination to detect translated matches
+  // TODO: move to Flags
+  final val SYNTH_CASE_FLAGS  = CASE | SYNTHETIC
+
+  def isSynthCaseSymbol(sym: Symbol) = sym hasAllFlags SYNTH_CASE_FLAGS
+  def hasSynthCaseSymbol(t: Tree)    = t.symbol != null && isSynthCaseSymbol(t.symbol)
+
+
   /** The method part of an application node
    */
   def methPart(tree: Tree): Tree = tree match {
@@ -507,20 +517,18 @@ abstract class TreeInfo {
    */
   def noPredefImportForUnit(body: Tree) = {
     // Top-level definition whose leading imports include Predef.
-    def containsLeadingPredefImport(defs: List[Tree]): Boolean = defs match {
-      case PackageDef(_, defs1) :: _ => containsLeadingPredefImport(defs1)
-      case Import(expr, _) :: rest   => isReferenceToPredef(expr) || containsLeadingPredefImport(rest)
-      case _                         => false
+    def isLeadingPredefImport(defn: Tree): Boolean = defn match {
+      case PackageDef(_, defs1) => defs1 exists isLeadingPredefImport
+      case Import(expr, _)      => isReferenceToPredef(expr)
+      case _                    => false
     }
-
     // Compilation unit is class or object 'name' in package 'scala'
     def isUnitInScala(tree: Tree, name: Name) = tree match {
       case PackageDef(Ident(nme.scala_), defs) => firstDefinesClassOrObject(defs, name)
       case _                                   => false
     }
 
-    (  isUnitInScala(body, nme.Predef)
-    || containsLeadingPredefImport(List(body)))
+    isUnitInScala(body, nme.Predef) || isLeadingPredefImport(body)
   }
 
   def isAbsTypeDef(tree: Tree) = tree match {
@@ -577,4 +585,24 @@ abstract class TreeInfo {
   object DynamicUpdate extends DynamicApplicationExtractor(_ == nme.updateDynamic)
   object DynamicApplication extends DynamicApplicationExtractor(isApplyDynamicName)
   object DynamicApplicationNamed extends DynamicApplicationExtractor(_ == nme.applyDynamicNamed)
+
+  object MacroImplReference {
+    private def refPart(tree: Tree): Tree = tree match {
+      case TypeApply(fun, _) => refPart(fun)
+      case ref: RefTree => ref
+      case _ => EmptyTree
+    }
+
+    def unapply(tree: Tree) = refPart(tree) match {
+      case ref: RefTree => Some((ref.qualifier.symbol, ref.symbol, typeArguments(tree)))
+      case _            => None
+    }
+  }
+
+  def isNullaryInvocation(tree: Tree): Boolean =
+    tree.symbol != null && tree.symbol.isMethod && (tree match {
+      case TypeApply(fun, _) => isNullaryInvocation(fun)
+      case tree: RefTree => true
+      case _ => false
+    })
 }

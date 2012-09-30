@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2011 LAMP/EPFL
+ * Copyright 2005-2012 LAMP/EPFL
  * @author Paul Phillips
  */
 
@@ -9,7 +9,7 @@ import java.io.{ OutputStream, PrintStream, ByteArrayOutputStream, PrintWriter, 
 
 package object util {
 
-  implicit def postfixOps = language.postfixOps // make all postfix ops in this package compile without warning
+  implicit def postfixOps = scala.language.postfixOps // make all postfix ops in this package compile without warning
 
   // forwarder for old code that builds against 2.9 and 2.10
   val Chars = scala.reflect.internal.Chars

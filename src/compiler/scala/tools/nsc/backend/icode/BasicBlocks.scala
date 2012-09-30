@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2011 LAMP/EPFL
+ * Copyright 2005-2012 LAMP/EPFL
  * @author  Martin Odersky
  */
 
@@ -11,7 +11,7 @@ import scala.collection.{ mutable, immutable }
 import mutable.{ ListBuffer, ArrayBuffer }
 import scala.reflect.internal.util.{ Position, NoPosition }
 import backend.icode.analysis.ProgramPoint
-import language.postfixOps
+import scala.language.postfixOps
 
 trait BasicBlocks {
   self: ICodes =>
@@ -19,6 +19,12 @@ trait BasicBlocks {
   import opcodes._
   import global.{ ifDebug, settings, log, nme }
   import nme.isExceptionResultName
+
+  /** Override Array creation for efficiency (to not go through reflection). */
+  private implicit val instructionTag: scala.reflect.ClassTag[Instruction] = new scala.reflect.ClassTag[Instruction] {
+    def runtimeClass: java.lang.Class[Instruction] = classOf[Instruction]
+    final override def newArray(len: Int): Array[Instruction] = new Array[Instruction](len)
+  }
 
   object NoBasicBlock extends BasicBlock(-1, null)
 
@@ -36,10 +42,14 @@ trait BasicBlocks {
 
     private final class SuccessorList() {
       private var successors: List[BasicBlock] = Nil
+      /** This method is very hot! Handle with care. */
       private def updateConserve() {
-        var lb: ListBuffer[BasicBlock] = null
-        var matches = 0
-        var remaining = successors
+        var lb: ListBuffer[BasicBlock]              = null
+        var matches                                 = 0
+        var remaining                               = successors
+        val direct                                  = directSuccessors
+        var scratchHandlers: List[ExceptionHandler] = method.exh
+        var scratchBlocks: List[BasicBlock]         = direct
 
         def addBlock(bb: BasicBlock) {
           if (matches < 0)
@@ -54,25 +64,27 @@ trait BasicBlocks {
           }
         }
 
-        // exceptionSuccessors
-        method.exh foreach { handler =>
-          if (handler covers outer)
-            addBlock(handler.startBlock)
+        while (scratchBlocks ne Nil) {
+          addBlock(scratchBlocks.head)
+          scratchBlocks = scratchBlocks.tail
         }
-        // directSuccessors
-        val direct = directSuccessors
-        direct foreach addBlock
-
         /** Return a list of successors for 'b' that come from exception handlers
          *  covering b's (non-exceptional) successors. These exception handlers
          *  might not cover 'b' itself. This situation corresponds to an
          *  exception being thrown as the first thing of one of b's successors.
          */
-        method.exh foreach { handler =>
-          direct foreach { block =>
-            if (handler covers block)
+        while (scratchHandlers ne Nil) {
+          val handler = scratchHandlers.head
+          if (handler covers outer)
+            addBlock(handler.startBlock)
+
+          scratchBlocks = direct
+          while (scratchBlocks ne Nil) {
+            if (handler covers scratchBlocks.head)
               addBlock(handler.startBlock)
+            scratchBlocks = scratchBlocks.tail
           }
+          scratchHandlers = scratchHandlers.tail
         }
         // Blocks did not align: create a new list.
         if (matches < 0)
@@ -95,7 +107,7 @@ trait BasicBlocks {
     }
 
     /** Flags of this basic block. */
-    private var flags: Int = 0
+    private[this] var flags: Int = 0
 
     /** Does this block have the given flag? */
     def hasFlag(flag: Int): Boolean = (flags & flag) != 0

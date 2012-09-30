@@ -167,7 +167,7 @@ package object continuations {
   }
 
   def shiftUnitR[A,B](x: A): ControlContext[A,B,B] = {
-    new ControlContext(null, x)
+    new ControlContext[A, B, B](null, x)
   }
 
   /**

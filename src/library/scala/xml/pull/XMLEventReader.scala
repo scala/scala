@@ -24,7 +24,7 @@ import scala.xml.parsing.{ ExternalSources, MarkupHandler, MarkupParser }
  *  @author Paul Phillips
  */
 class XMLEventReader(src: Source)
-extends collection.AbstractIterator[XMLEvent]
+extends scala.collection.AbstractIterator[XMLEvent]
    with ProducerConsumerIterator[XMLEvent] {
 
   // We implement a pull parser as an iterator, but since we may be operating on

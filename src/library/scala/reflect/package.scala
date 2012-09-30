@@ -2,8 +2,6 @@ package scala
 
 package object reflect {
 
-  lazy val basis: base.Universe = new base.Base
-
   // in the new scheme of things ClassManifests are aliased to ClassTags
   // this is done because we want `toArray` in collections work with ClassTags
   // but changing it to use the ClassTag context bound without aliasing ClassManifest
@@ -42,13 +40,12 @@ package object reflect {
   val Manifest = ManifestFactory
 
   def classTag[T](implicit ctag: ClassTag[T]) = ctag
-  // typeTag incantation is defined inside scala.reflect.basis and scala.reflect.runtime.universe
 
-  // ClassTag class is defined in ClassTag.scala
-  type TypeTag[T]        = scala.reflect.basis.TypeTag[T]
-
-  // ClassTag object is defined in ClassTag.scala
-  lazy val TypeTag       = scala.reflect.basis.TypeTag
+  // anchor for the class tag materialization macro emitted during tag materialization in Implicits.scala
+  // implementation is hardwired into `scala.reflect.reify.Taggers`
+  // using the mechanism implemented in `scala.tools.reflect.FastTrack`
+  // todo. once we have implicit macros for tag generation, we can remove this anchor
+  private[scala] def materializeClassTag[T](): ClassTag[T] = ??? // macro
 
   @deprecated("Use `@scala.beans.BeanDescription` instead", "2.10.0")
   type BeanDescription = scala.beans.BeanDescription

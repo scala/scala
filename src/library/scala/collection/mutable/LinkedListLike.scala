@@ -12,7 +12,7 @@ package scala.collection
 package mutable
 
 import generic._
-import annotation.tailrec
+import scala.annotation.tailrec
 
 /** This extensible class may be used as a basis for implementing linked
  *  list. Type variable `A` refers to the element type of the
@@ -179,5 +179,15 @@ trait LinkedListLike[A, This <: Seq[A] with LinkedListLike[A, This]] extends Seq
       f(these.elem)
       these = these.next
     }
+  }
+
+  /** Return a clone of this list.
+   *
+   *  @return a `LinkedList` with the same elements.
+   */
+  override def clone(): This = {
+    val bf = newBuilder
+    bf ++= this
+    bf.result
   }
 }

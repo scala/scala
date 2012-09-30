@@ -12,9 +12,9 @@ import scala.collection.{ mutable, immutable, generic }
 import immutable.StringOps
 import mutable.ArrayOps
 import generic.CanBuildFrom
-import annotation.{ elidable, implicitNotFound }
-import annotation.elidable.ASSERTION
-import language.{implicitConversions, existentials}
+import scala.annotation.{ elidable, implicitNotFound }
+import scala.annotation.elidable.ASSERTION
+import scala.language.{implicitConversions, existentials}
 
 /** The `Predef` object provides definitions that are accessible in all Scala
  *  compilation units without explicit qualification.
@@ -115,8 +115,11 @@ object Predef extends LowPriorityImplicits {
   @deprecated("This notion doesn't have a corresponding concept in 2.10, because scala.reflect.runtime.universe.TypeTag can capture arbitrary types. Use type tags instead of manifests, and there will be no need in opt manifests.", "2.10.0")
   val NoManifest        = scala.reflect.NoManifest
 
+  @deprecated("Use scala.reflect.classTag[T] and scala.reflect.runtime.universe.typeTag[T] instead", "2.10.0")
   def manifest[T](implicit m: Manifest[T])           = m
+  @deprecated("Use scala.reflect.classTag[T] instead", "2.10.0")
   def classManifest[T](implicit m: ClassManifest[T]) = m
+  @deprecated("This notion doesn't have a corresponding concept in 2.10, because scala.reflect.runtime.universe.TypeTag can capture arbitrary types. Use type tags instead of manifests, and there will be no need in opt manifests.", "2.10.0")
   def optManifest[T](implicit m: OptManifest[T])     = m
 
   // Minor variations on identity functions
@@ -298,7 +301,7 @@ object Predef extends LowPriorityImplicits {
   implicit def exceptionWrapper(exc: Throwable)                                 = new runtime.RichException(exc)
   implicit def tuple2ToZippedOps[T1, T2](x: (T1, T2))                           = new runtime.Tuple2Zipped.Ops(x)
   implicit def tuple3ToZippedOps[T1, T2, T3](x: (T1, T2, T3))                   = new runtime.Tuple3Zipped.Ops(x)
-  implicit def seqToCharSequence(xs: collection.IndexedSeq[Char]): CharSequence = new runtime.SeqCharSequence(xs)
+  implicit def seqToCharSequence(xs: scala.collection.IndexedSeq[Char]): CharSequence = new runtime.SeqCharSequence(xs)
   implicit def arrayToCharSequence(xs: Array[Char]): CharSequence               = new runtime.ArrayCharSequence(xs, 0, xs.length)
 
   implicit def genericArrayOps[T](xs: Array[T]): ArrayOps[T] = (xs match {

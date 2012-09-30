@@ -35,8 +35,8 @@ trait ParSetLike[T,
                  +Repr <: ParSetLike[T, Repr, Sequential] with ParSet[T],
                  +Sequential <: mutable.Set[T] with mutable.SetLike[T, Sequential]]
 extends GenSetLike[T, Repr]
-   with collection.parallel.ParIterableLike[T, Repr, Sequential]
-   with collection.parallel.ParSetLike[T, Repr, Sequential]
+   with scala.collection.parallel.ParIterableLike[T, Repr, Sequential]
+   with scala.collection.parallel.ParSetLike[T, Repr, Sequential]
    with Growable[T]
    with Shrinkable[T]
    with Cloneable[Repr]

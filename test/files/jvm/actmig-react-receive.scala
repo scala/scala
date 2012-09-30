@@ -1,9 +1,14 @@
-import scala.actors.MigrationSystem._
+/**
+ * NOTE: Code snippets from this test are included in the Actor Migration Guide. In case you change
+ * code in these tests prior to the 2.10.0 release please send the notification to @vjovanov.
+ */
+import scala.actors.migration.MigrationSystem._
 import scala.actors.Actor._
-import scala.actors.{ Actor, StashingActor, ActorRef, Props, MigrationSystem, PoisonPill }
+import scala.actors._
+import scala.actors.migration._
 import java.util.concurrent.{ TimeUnit, CountDownLatch }
 import scala.collection.mutable.ArrayBuffer
-import scala.concurrent.util.duration._
+import scala.concurrent.duration._
 import scala.concurrent.{ Promise, Await }
 
 object Test {

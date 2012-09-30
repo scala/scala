@@ -1,0 +1,15 @@
+deadline-inf-illegal.scala:5: error: value fromNow is not a member of scala.concurrent.duration.Duration
+  d.fromNow
+    ^
+deadline-inf-illegal.scala:6: error: type mismatch;
+ found   : scala.concurrent.duration.Duration
+ required: scala.concurrent.duration.FiniteDuration
+  Deadline.now + d
+                 ^
+deadline-inf-illegal.scala:7: error: overloaded method value - with alternatives:
+  (other: scala.concurrent.duration.Deadline)scala.concurrent.duration.FiniteDuration <and>
+  (other: scala.concurrent.duration.FiniteDuration)scala.concurrent.duration.Deadline
+ cannot be applied to (scala.concurrent.duration.Duration)
+  Deadline.now - d
+               ^
+three errors found

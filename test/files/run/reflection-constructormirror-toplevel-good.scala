@@ -13,7 +13,7 @@ class Foo{
   val classTag = implicitly[ClassTag[R]]
   val cl = classTag.runtimeClass.getClassLoader
   val cm = runtimeMirror(cl)
-  val constructor = expectedType.tpe.member( nme.CONSTRUCTOR ).asMethodSymbol
+  val constructor = expectedType.tpe.member( nme.CONSTRUCTOR ).asMethod
   val sig = constructor.typeSignature
   val sym = cm.classSymbol( classTag.runtimeClass )
   val cls = cm.reflectClass( sym )

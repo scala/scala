@@ -1,4 +1,4 @@
-import scala.reflect.makro.{Context => Ctx}
+import scala.reflect.macros.{Context => Ctx}
 
 object Impls {
   def impl(c: Ctx)(tag: String, x: c.Expr[_]) = {

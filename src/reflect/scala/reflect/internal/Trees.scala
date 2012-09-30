@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2011 LAMP/EPFL
+ * Copyright 2005-2012 LAMP/EPFL
  * @author  Martin Odersky
  */
 
@@ -7,8 +7,7 @@ package scala.reflect
 package internal
 
 import Flags._
-import base.Attachments
-import collection.mutable.{ListBuffer, LinkedHashSet}
+import scala.collection.mutable.{ListBuffer, LinkedHashSet}
 import util.Statistics
 
 trait Trees extends api.Trees { self: SymbolTable =>
@@ -19,17 +18,17 @@ trait Trees extends api.Trees { self: SymbolTable =>
     val id = nodeCount // TODO: add to attachment?
     nodeCount += 1
 
-    Statistics.incCounter(TreesStats.nodeByType, getClass)
+    if (Statistics.canEnable) Statistics.incCounter(TreesStats.nodeByType, getClass)
 
-    @inline final override def pos: Position = rawatt.pos
+    final override def pos: Position = rawatt.pos
 
     private[this] var rawtpe: Type = _
-    @inline final def tpe = rawtpe
+    final def tpe = rawtpe
     def tpe_=(t: Type) = rawtpe = t
     def setType(tp: Type): this.type = { rawtpe = tp; this }
     def defineType(tp: Type): this.type = setType(tp)
 
-    def symbol: Symbol = null
+    def symbol: Symbol = null //!!!OPT!!! symbol is about 3% of hot compile times -- megamorphic dispatch?
     def symbol_=(sym: Symbol) { throw new UnsupportedOperationException("symbol_= inapplicable for " + this) }
     def setSymbol(sym: Symbol): this.type = { symbol = sym; this }
     def hasSymbol = false
@@ -137,7 +136,7 @@ trait Trees extends api.Trees { self: SymbolTable =>
     override def freeTypes: List[FreeTypeSymbol] = freeSyms[FreeTypeSymbol](_.isFreeType, _.typeSymbol)
 
     private def freeSyms[S <: Symbol](isFree: Symbol => Boolean, symOfType: Type => Symbol): List[S] = {
-      val s = collection.mutable.LinkedHashSet[S]()
+      val s = scala.collection.mutable.LinkedHashSet[S]()
       def addIfFree(sym: Symbol): Unit = if (sym != null && isFree(sym)) s += sym.asInstanceOf[S]
       for (t <- this) {
         addIfFree(t.symbol)
@@ -160,7 +159,7 @@ trait Trees extends api.Trees { self: SymbolTable =>
       new ThisSubstituter(clazz, to) transform this
 
     def hasSymbolWhich(f: Symbol => Boolean) =
-      hasSymbol && symbol != null && f(symbol)
+      (symbol ne null) && (symbol ne NoSymbol) && f(symbol)
 
     def isErroneous = (tpe ne null) && tpe.isErroneous
     def isTyped     = (tpe ne null) && !tpe.isErroneous
@@ -210,7 +209,7 @@ trait Trees extends api.Trees { self: SymbolTable =>
 
   trait TypTree extends Tree with TypTreeApi
 
-  trait SymTree extends Tree with SymTreeContextApi {
+  abstract class SymTree extends Tree with SymTreeContextApi {
     override def hasSymbol = true
     override var symbol: Symbol = NoSymbol
   }
@@ -230,6 +229,7 @@ trait Trees extends api.Trees { self: SymbolTable =>
   }
 
   case object EmptyTree extends TermTree {
+    val asList = List(this)
     super.tpe_=(NoType)
     override def tpe_=(t: Type) =
       if (t != NoType) throw new UnsupportedOperationException("tpe_=("+t+") inapplicable for <empty>")
@@ -290,7 +290,10 @@ trait Trees extends api.Trees { self: SymbolTable =>
   object LabelDef extends LabelDefExtractor
 
   case class ImportSelector(name: Name, namePos: Int, rename: Name, renamePos: Int) extends ImportSelectorApi
-  object ImportSelector extends ImportSelectorExtractor
+  object ImportSelector extends ImportSelectorExtractor {
+    val wild     = ImportSelector(nme.WILDCARD, -1, null, -1)
+    val wildList = List(wild)
+  }
 
   case class Import(expr: Tree, selectors: List[ImportSelector])
        extends SymTree with ImportApi
@@ -324,12 +327,26 @@ trait Trees extends api.Trees { self: SymbolTable =>
        extends TermTree with UnApplyApi
   object UnApply extends UnApplyExtractor
 
-  case class ArrayValue(elemtpt: Tree, elems: List[Tree])
-       extends TermTree with ArrayValueApi
-  object ArrayValue extends ArrayValueExtractor
+  /** An array of expressions. This AST node needs to be translated in backend.
+   *  It is used to pass arguments to vararg arguments.
+   *  Introduced by compiler phase uncurry.
+   *
+   *  This AST node does not have direct correspondence to Scala code,
+   *  and is used to pass arguments to vararg arguments. For instance:
+   *
+   *    printf("%s%d", foo, 42)
+   *
+   *  Is translated to after compiler phase uncurry to:
+   *
+   *    Apply(
+   *      Ident("printf"),
+   *      Literal("%s%d"),
+   *      ArrayValue(<Any>, List(Ident("foo"), Literal(42))))
+   */
+  case class ArrayValue(elemtpt: Tree, elems: List[Tree]) extends TermTree
 
   case class Function(vparams: List[ValDef], body: Tree)
-       extends TermTree with SymTree with FunctionApi
+       extends SymTree with TermTree with FunctionApi
   object Function extends FunctionExtractor
 
   case class Assign(lhs: Tree, rhs: Tree)
@@ -349,7 +366,7 @@ trait Trees extends api.Trees { self: SymbolTable =>
   object Match extends MatchExtractor
 
   case class Return(expr: Tree)
-       extends TermTree with SymTree with ReturnApi
+       extends SymTree with TermTree with ReturnApi
   object Return extends ReturnExtractor
 
   case class Try(block: Tree, catches: List[CaseDef], finalizer: Tree)
@@ -396,9 +413,17 @@ trait Trees extends api.Trees { self: SymbolTable =>
 
   def ApplyConstructor(tpt: Tree, args: List[Tree]) = Apply(Select(New(tpt), nme.CONSTRUCTOR), args)
 
-  case class ApplyDynamic(qual: Tree, args: List[Tree])
-       extends TermTree with SymTree with ApplyDynamicApi
-  object ApplyDynamic extends ApplyDynamicExtractor
+  // Creates a constructor call from the constructor symbol.  This is
+  // to avoid winding up with an OverloadedType for the constructor call.
+  def NewFromConstructor(constructor: Symbol, args: Tree*) = {
+    assert(constructor.isConstructor, constructor)
+    val instance = New(TypeTree(constructor.owner.tpe))
+    val init     = Select(instance, nme.CONSTRUCTOR) setSymbol constructor
+
+    Apply(init, args.toList)
+  }
+
+  case class ApplyDynamic(qual: Tree, args: List[Tree]) extends SymTree with TermTree
 
   case class Super(qual: Tree, mix: TypeName) extends TermTree with SuperApi {
     override def symbol: Symbol = qual.symbol
@@ -407,7 +432,7 @@ trait Trees extends api.Trees { self: SymbolTable =>
   object Super extends SuperExtractor
 
   case class This(qual: TypeName)
-        extends TermTree with SymTree with ThisApi
+        extends SymTree with TermTree with ThisApi
   object This extends ThisExtractor
 
   case class Select(qualifier: Tree, name: Name)
@@ -443,7 +468,7 @@ trait Trees extends api.Trees { self: SymbolTable =>
   object SingletonTypeTree extends SingletonTypeTreeExtractor
 
   case class SelectFromTypeTree(qualifier: Tree, name: TypeName)
-       extends TypTree with RefTree with SelectFromTypeTreeApi
+       extends RefTree with TypTree with SelectFromTypeTreeApi
   object SelectFromTypeTree extends SelectFromTypeTreeExtractor
 
   case class CompoundTypeTree(templ: Template)
@@ -492,7 +517,13 @@ trait Trees extends api.Trees { self: SymbolTable =>
 
   def TypeTree(tp: Type): TypeTree = TypeTree() setType tp
 
-  class StrictTreeCopier extends TreeCopierOps {
+  override type TreeCopier <: InternalTreeCopierOps
+  abstract class InternalTreeCopierOps extends TreeCopierOps {
+    def ApplyDynamic(tree: Tree, qual: Tree, args: List[Tree]): ApplyDynamic
+    def ArrayValue(tree: Tree, elemtpt: Tree, trees: List[Tree]): ArrayValue
+  }
+
+  class StrictTreeCopier extends InternalTreeCopierOps {
     def ClassDef(tree: Tree, mods: Modifiers, name: Name, tparams: List[TypeDef], impl: Template) =
       new ClassDef(mods, name.toTypeName, tparams, impl).copyAttrs(tree)
     def PackageDef(tree: Tree, pid: RefTree, stats: List[Tree]) =
@@ -586,7 +617,7 @@ trait Trees extends api.Trees { self: SymbolTable =>
       new ExistentialTypeTree(tpt, whereClauses).copyAttrs(tree)
   }
 
-  class LazyTreeCopier extends TreeCopierOps {
+  class LazyTreeCopier extends InternalTreeCopierOps {
     val treeCopy: TreeCopier = newStrictTreeCopier
     def ClassDef(tree: Tree, mods: Modifiers, name: Name, tparams: List[TypeDef], impl: Template) = tree match {
       case t @ ClassDef(mods0, name0, tparams0, impl0)
@@ -979,12 +1010,7 @@ trait Trees extends api.Trees { self: SymbolTable =>
    */
   def New(tpt: Tree, argss: List[List[Tree]]): Tree = argss match {
     case Nil        => ApplyConstructor(tpt, Nil)
-    case xs :: rest => {
-      def mkApply(fun: Tree, args: List[Tree]) = Apply(fun, args)
-      rest.foldLeft(ApplyConstructor(tpt, xs): Tree)(mkApply)
-      // [Eugene++] no longer compiles after I moved the `Apply` case class here
-      // rest.foldLeft(ApplyConstructor(tpt, xs): Tree)(Apply)
-    }
+    case xs :: rest => rest.foldLeft(ApplyConstructor(tpt, xs): Tree)(Apply.apply)
   }
 
   /** 0-1 argument list new, based on a type.
@@ -1024,14 +1050,14 @@ trait Trees extends api.Trees { self: SymbolTable =>
     }
   }
 
-    
+
   /** Delegate for a TypeTree symbol. This operation is unsafe because
    *  it may trigger type checking when forcing the type symbol of the
    *  underlying type.
    */
   protected def typeTreeSymbol(tree: TypeTree): Symbol =
     if (tree.tpe == null) null else tree.tpe.typeSymbol
-  
+
   // --- generic traversers and transformers
 
   override protected def itraverse(traverser: Traverser, tree: Tree): Unit = {
@@ -1146,29 +1172,25 @@ trait Trees extends api.Trees { self: SymbolTable =>
     }
   }
 
+  //OPT ordered according to frequency to speed it up.
   override protected def itransform(transformer: Transformer, tree: Tree): Tree = {
     import transformer._
     val treeCopy = transformer.treeCopy
+
+    // begin itransform
     tree match {
-      case EmptyTree =>
-        tree
-      case PackageDef(pid, stats) =>
-        treeCopy.PackageDef(
-          tree, transform(pid).asInstanceOf[RefTree],
-          atOwner(mclass(tree.symbol)) {
-            transformStats(stats, currentOwner)
-          }
-        )
-      case ClassDef(mods, name, tparams, impl) =>
-        atOwner(tree.symbol) {
-          treeCopy.ClassDef(tree, transformModifiers(mods), name,
-                            transformTypeDefs(tparams), transformTemplate(impl))
-        }
-      case ModuleDef(mods, name, impl) =>
-        atOwner(mclass(tree.symbol)) {
-          treeCopy.ModuleDef(tree, transformModifiers(mods),
-                             name, transformTemplate(impl))
-        }
+      case Ident(name) =>
+        treeCopy.Ident(tree, name)
+      case Select(qualifier, selector) =>
+        treeCopy.Select(tree, transform(qualifier), selector)
+      case Apply(fun, args) =>
+        treeCopy.Apply(tree, transform(fun), transformTrees(args))
+      case TypeTree() =>
+        treeCopy.TypeTree(tree)
+      case Literal(value) =>
+        treeCopy.Literal(tree, value)
+      case This(qual) =>
+        treeCopy.This(tree, qual)
       case ValDef(mods, name, tpt, rhs) =>
         atOwner(tree.symbol) {
           treeCopy.ValDef(tree, transformModifiers(mods),
@@ -1180,6 +1202,56 @@ trait Trees extends api.Trees { self: SymbolTable =>
                           transformTypeDefs(tparams), transformValDefss(vparamss),
                           transform(tpt), transform(rhs))
         }
+      case Block(stats, expr) =>
+        treeCopy.Block(tree, transformStats(stats, currentOwner), transform(expr))
+      case If(cond, thenp, elsep) =>
+        treeCopy.If(tree, transform(cond), transform(thenp), transform(elsep))
+      case CaseDef(pat, guard, body) =>
+        treeCopy.CaseDef(tree, transform(pat), transform(guard), transform(body))
+      case TypeApply(fun, args) =>
+        treeCopy.TypeApply(tree, transform(fun), transformTrees(args))
+      case AppliedTypeTree(tpt, args) =>
+        treeCopy.AppliedTypeTree(tree, transform(tpt), transformTrees(args))
+      case Bind(name, body) =>
+        treeCopy.Bind(tree, name, transform(body))
+      case Function(vparams, body) =>
+        atOwner(tree.symbol) {
+          treeCopy.Function(tree, transformValDefs(vparams), transform(body))
+        }
+      case Match(selector, cases) =>
+        treeCopy.Match(tree, transform(selector), transformCaseDefs(cases))
+      case New(tpt) =>
+        treeCopy.New(tree, transform(tpt))
+      case Assign(lhs, rhs) =>
+        treeCopy.Assign(tree, transform(lhs), transform(rhs))
+      case AssignOrNamedArg(lhs, rhs) =>
+        treeCopy.AssignOrNamedArg(tree, transform(lhs), transform(rhs))
+      case Try(block, catches, finalizer) =>
+        treeCopy.Try(tree, transform(block), transformCaseDefs(catches), transform(finalizer))
+      case EmptyTree =>
+        tree
+      case Throw(expr) =>
+        treeCopy.Throw(tree, transform(expr))
+      case Super(qual, mix) =>
+        treeCopy.Super(tree, transform(qual), mix)
+      case TypeBoundsTree(lo, hi) =>
+        treeCopy.TypeBoundsTree(tree, transform(lo), transform(hi))
+      case Typed(expr, tpt) =>
+        treeCopy.Typed(tree, transform(expr), transform(tpt))
+      case Import(expr, selectors) =>
+        treeCopy.Import(tree, transform(expr), selectors)
+      case Template(parents, self, body) =>
+        treeCopy.Template(tree, transformTrees(parents), transformValDef(self), transformStats(body, tree.symbol))
+      case ClassDef(mods, name, tparams, impl) =>
+        atOwner(tree.symbol) {
+          treeCopy.ClassDef(tree, transformModifiers(mods), name,
+                            transformTypeDefs(tparams), transformTemplate(impl))
+        }
+      case ModuleDef(mods, name, impl) =>
+        atOwner(mclass(tree.symbol)) {
+          treeCopy.ModuleDef(tree, transformModifiers(mods),
+                             name, transformTemplate(impl))
+        }
       case TypeDef(mods, name, tparams, rhs) =>
         atOwner(tree.symbol) {
           treeCopy.TypeDef(tree, transformModifiers(mods), name,
@@ -1187,66 +1259,13 @@ trait Trees extends api.Trees { self: SymbolTable =>
         }
       case LabelDef(name, params, rhs) =>
         treeCopy.LabelDef(tree, name, transformIdents(params), transform(rhs)) //bq: Martin, once, atOwner(...) works, also change `LamdaLifter.proxy'
-      case Import(expr, selectors) =>
-        treeCopy.Import(tree, transform(expr), selectors)
-      case Template(parents, self, body) =>
-        treeCopy.Template(tree, transformTrees(parents), transformValDef(self), transformStats(body, tree.symbol))
-      case Block(stats, expr) =>
-        treeCopy.Block(tree, transformStats(stats, currentOwner), transform(expr))
-      case CaseDef(pat, guard, body) =>
-        treeCopy.CaseDef(tree, transform(pat), transform(guard), transform(body))
-      case Alternative(trees) =>
-        treeCopy.Alternative(tree, transformTrees(trees))
-      case Star(elem) =>
-        treeCopy.Star(tree, transform(elem))
-      case Bind(name, body) =>
-        treeCopy.Bind(tree, name, transform(body))
-      case UnApply(fun, args) =>
-        treeCopy.UnApply(tree, fun, transformTrees(args)) // bq: see test/.../unapplyContexts2.scala
-      case ArrayValue(elemtpt, trees) =>
-        treeCopy.ArrayValue(tree, transform(elemtpt), transformTrees(trees))
-      case Function(vparams, body) =>
-        atOwner(tree.symbol) {
-          treeCopy.Function(tree, transformValDefs(vparams), transform(body))
-        }
-      case Assign(lhs, rhs) =>
-        treeCopy.Assign(tree, transform(lhs), transform(rhs))
-      case AssignOrNamedArg(lhs, rhs) =>
-        treeCopy.AssignOrNamedArg(tree, transform(lhs), transform(rhs))
-      case If(cond, thenp, elsep) =>
-        treeCopy.If(tree, transform(cond), transform(thenp), transform(elsep))
-      case Match(selector, cases) =>
-        treeCopy.Match(tree, transform(selector), transformCaseDefs(cases))
-      case Return(expr) =>
-        treeCopy.Return(tree, transform(expr))
-      case Try(block, catches, finalizer) =>
-        treeCopy.Try(tree, transform(block), transformCaseDefs(catches), transform(finalizer))
-      case Throw(expr) =>
-        treeCopy.Throw(tree, transform(expr))
-      case New(tpt) =>
-        treeCopy.New(tree, transform(tpt))
-      case Typed(expr, tpt) =>
-        treeCopy.Typed(tree, transform(expr), transform(tpt))
-      case TypeApply(fun, args) =>
-        treeCopy.TypeApply(tree, transform(fun), transformTrees(args))
-      case Apply(fun, args) =>
-        treeCopy.Apply(tree, transform(fun), transformTrees(args))
-      case ApplyDynamic(qual, args) =>
-        treeCopy.ApplyDynamic(tree, transform(qual), transformTrees(args))
-      case Super(qual, mix) =>
-        treeCopy.Super(tree, transform(qual), mix)
-      case This(qual) =>
-        treeCopy.This(tree, qual)
-      case Select(qualifier, selector) =>
-        treeCopy.Select(tree, transform(qualifier), selector)
-      case Ident(name) =>
-        treeCopy.Ident(tree, name)
-      case ReferenceToBoxed(idt) =>
-        treeCopy.ReferenceToBoxed(tree, transform(idt) match { case idt1: Ident => idt1 })
-      case Literal(value) =>
-        treeCopy.Literal(tree, value)
-      case TypeTree() =>
-        treeCopy.TypeTree(tree)
+      case PackageDef(pid, stats) =>
+        treeCopy.PackageDef(
+          tree, transform(pid).asInstanceOf[RefTree],
+          atOwner(mclass(tree.symbol)) {
+            transformStats(stats, currentOwner)
+          }
+        )
       case Annotated(annot, arg) =>
         treeCopy.Annotated(tree, transform(annot), transform(arg))
       case SingletonTypeTree(ref) =>
@@ -1255,18 +1274,28 @@ trait Trees extends api.Trees { self: SymbolTable =>
         treeCopy.SelectFromTypeTree(tree, transform(qualifier), selector)
       case CompoundTypeTree(templ) =>
         treeCopy.CompoundTypeTree(tree, transformTemplate(templ))
-      case AppliedTypeTree(tpt, args) =>
-        treeCopy.AppliedTypeTree(tree, transform(tpt), transformTrees(args))
-      case TypeBoundsTree(lo, hi) =>
-        treeCopy.TypeBoundsTree(tree, transform(lo), transform(hi))
       case ExistentialTypeTree(tpt, whereClauses) =>
         treeCopy.ExistentialTypeTree(tree, transform(tpt), transformTrees(whereClauses))
+      case Return(expr) =>
+        treeCopy.Return(tree, transform(expr))
+      case Alternative(trees) =>
+        treeCopy.Alternative(tree, transformTrees(trees))
+      case Star(elem) =>
+        treeCopy.Star(tree, transform(elem))
+      case UnApply(fun, args) =>
+        treeCopy.UnApply(tree, fun, transformTrees(args)) // bq: see test/.../unapplyContexts2.scala
+      case ArrayValue(elemtpt, trees) =>
+        treeCopy.ArrayValue(tree, transform(elemtpt), transformTrees(trees))
+      case ApplyDynamic(qual, args) =>
+        treeCopy.ApplyDynamic(tree, transform(qual), transformTrees(args))
+      case ReferenceToBoxed(idt) =>
+        treeCopy.ReferenceToBoxed(tree, transform(idt) match { case idt1: Ident => idt1 })
       case _ =>
         xtransform(transformer, tree)
     }
   }
 
-  private def mclass(sym: Symbol) = sym map (_.asModuleSymbol.moduleClass)
+  private def mclass(sym: Symbol) = sym map (_.asModule.moduleClass)
 
   // --- specific traversers and transformers
 
@@ -1541,6 +1570,8 @@ trait Trees extends api.Trees { self: SymbolTable =>
       sys.error("Not a LabelDef: " + t + "/" + t.getClass)
   }
 
+// -------------- Classtags --------------------------------------------------------
+
   implicit val TreeTag = ClassTag[Tree](classOf[Tree])
   implicit val TermTreeTag = ClassTag[TermTree](classOf[TermTree])
   implicit val TypTreeTag = ClassTag[TypTree](classOf[TypTree])
@@ -1567,7 +1598,6 @@ trait Trees extends api.Trees { self: SymbolTable =>
   implicit val StarTag = ClassTag[Star](classOf[Star])
   implicit val BindTag = ClassTag[Bind](classOf[Bind])
   implicit val UnApplyTag = ClassTag[UnApply](classOf[UnApply])
-  implicit val ArrayValueTag = ClassTag[ArrayValue](classOf[ArrayValue])
   implicit val FunctionTag = ClassTag[Function](classOf[Function])
   implicit val AssignTag = ClassTag[Assign](classOf[Assign])
   implicit val AssignOrNamedArgTag = ClassTag[AssignOrNamedArg](classOf[AssignOrNamedArg])
@@ -1581,7 +1611,6 @@ trait Trees extends api.Trees { self: SymbolTable =>
   implicit val GenericApplyTag = ClassTag[GenericApply](classOf[GenericApply])
   implicit val TypeApplyTag = ClassTag[TypeApply](classOf[TypeApply])
   implicit val ApplyTag = ClassTag[Apply](classOf[Apply])
-  implicit val ApplyDynamicTag = ClassTag[ApplyDynamic](classOf[ApplyDynamic])
   implicit val SuperTag = ClassTag[Super](classOf[Super])
   implicit val ThisTag = ClassTag[This](classOf[This])
   implicit val SelectTag = ClassTag[Select](classOf[Select])

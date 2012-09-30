@@ -6,10 +6,11 @@
 **                          |/                                          **
 \*                                                                      */
 
-package scala.collection
+package scala
+package collection
 
 import mutable.ArrayBuffer
-import annotation.migration
+import scala.annotation.migration
 import immutable.Stream
 import scala.collection.generic.CanBuildFrom
 import scala.annotation.unchecked.{ uncheckedVariance => uV }
@@ -393,7 +394,7 @@ trait Iterator[+A] extends TraversableOnce[A] {
 
     def next() = if (hasNext) { hdDefined = false; hd } else empty.next()
   }
-  
+
   /** Tests whether every element of this iterator relates to the
    *  corresponding element of another collection by satisfying a test predicate.
    *
@@ -758,7 +759,7 @@ trait Iterator[+A] extends TraversableOnce[A] {
    *
    *  @param elem  the element to test.
    *  @return     `true` if this iterator produces some value that is
-   *               is equal (wrt `==`) to `elem`, `false` otherwise.
+   *               is equal (as determined by `==`) to `elem`, `false` otherwise.
    *  @note        Reuse: $consumesIterator
    */
   def contains(elem: Any): Boolean = exists(_ == elem)
@@ -1140,7 +1141,7 @@ trait Iterator[+A] extends TraversableOnce[A] {
   def toStream: Stream[A] =
     if (self.hasNext) Stream.cons(self.next, self.toStream)
     else Stream.empty[A]
-  
+
 
   /** Converts this iterator to a string.
    *

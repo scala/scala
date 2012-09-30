@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2011 LAMP/EPFL
+ * Copyright 2005-2012 LAMP/EPFL
  * @author  Martin Odersky
  */
 
@@ -23,7 +23,7 @@ trait CompilationUnits { self: Global =>
   /** One unit of compilation that has been submitted to the compiler.
     * It typically corresponds to a single file of source code.  It includes
     * error-reporting hooks.  */
-  class CompilationUnit(val source: SourceFile) {
+  class CompilationUnit(val source: SourceFile) extends CompilationUnitContextApi {
 
     /** the fresh name creator */
     var fresh: FreshNameCreator = new FreshNameCreator.Default

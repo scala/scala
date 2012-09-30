@@ -26,8 +26,8 @@ import scala.collection.GenIterable
  *  @author Aleksandar Prokopec
  *  @since 2.9
  */
-trait ParIterable[T] extends collection/*.mutable*/.GenIterable[T]
-                        with collection.parallel.ParIterable[T]
+trait ParIterable[T] extends scala.collection/*.mutable*/.GenIterable[T]
+                        with scala.collection.parallel.ParIterable[T]
                         with GenericParTemplate[T, ParIterable]
                         with ParIterableLike[T, ParIterable[T], Iterable[T]]
                         with Mutable {
@@ -39,7 +39,7 @@ trait ParIterable[T] extends collection/*.mutable*/.GenIterable[T]
 
   override def toSeq: ParSeq[T] = toParCollection[T, ParSeq[T]](() => ParSeq.newCombiner[T])
 
-  def seq: collection.mutable.Iterable[T]
+  def seq: scala.collection.mutable.Iterable[T]
 }
 
 /** $factoryInfo

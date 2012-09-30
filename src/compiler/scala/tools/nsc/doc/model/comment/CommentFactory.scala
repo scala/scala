@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2007-2011 LAMP/EPFL
+ * Copyright 2007-2012 LAMP/EPFL
  * @author  Manohar Jonnalagedda
  */
 
@@ -13,7 +13,7 @@ import scala.collection._
 import scala.util.matching.Regex
 import scala.annotation.switch
 import scala.reflect.internal.util.{NoPosition, Position}
-import language.postfixOps
+import scala.language.postfixOps
 
 /** The comment parser transforms raw comment strings into `Comment` objects.
   * Call `parse` to run the parser. Note that the parser is stateless and
@@ -660,7 +660,7 @@ trait CommentFactory { thisFactory: ModelFactory with CommentFactory with Member
         else if (check(",,")) subscript()
         else if (check("[[")) link()
         else {
-          readUntil { char == safeTagMarker || check("''") || char == '`' || check("__") || char == '^' || check(",,") || check("[[") || check("{{") || isInlineEnd || checkParaEnded || char == endOfLine }
+          readUntil { char == safeTagMarker || check("''") || char == '`' || check("__") || char == '^' || check(",,") || check("[[") || isInlineEnd || checkParaEnded || char == endOfLine }
           Text(getRead())
         }
       }
@@ -760,7 +760,7 @@ trait CommentFactory { thisFactory: ModelFactory with CommentFactory with Member
     }
 
     def link(): Inline = {
-      val SchemeUri = """([^:]+:.*)""".r
+      val SchemeUri = """([a-z]+:.*)""".r
       jump("[[")
       var parens = 1
       readUntil { parens += 1; !check("[") }

@@ -1,7 +1,7 @@
 package scala.reflect.reify
 
-import scala.reflect.makro.ReificationError
-import scala.reflect.makro.UnexpectedReificationError
+import scala.reflect.macros.ReificationError
+import scala.reflect.macros.UnexpectedReificationError
 
 trait Errors {
   self: Reifier =>
@@ -27,8 +27,8 @@ trait Errors {
     throw new ReificationError(defaultErrorPosition, msg)
   }
 
-  def CannotReifyTypeTagHavingUnresolvedTypeParameters(tpe: Type) = {
-    val msg = "cannot reify TypeTag having unresolved type parameter %s".format(tpe)
+  def CannotReifyWeakType(details: Any) = {
+    val msg = "cannot create a TypeTag" + details
     throw new ReificationError(defaultErrorPosition, msg)
   }
 

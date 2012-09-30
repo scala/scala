@@ -54,14 +54,20 @@ object Instrumentation {
   def startProfiling(): Unit = Profiler.startProfiling()
   def stopProfiling(): Unit = Profiler.stopProfiling()
   def resetProfiling(): Unit = Profiler.resetProfiling()
+  def isProfiling(): Boolean = Profiler.isProfiling()
 
   def getStatistics: Statistics = {
-    Profiler.stopProfiling()
+    val isProfiling = Profiler.isProfiling()
+    if (isProfiling) {
+      Profiler.stopProfiling()
+    }
     val stats = Profiler.getStatistics().asScala.toSeq.map {
       case (trace, count) => MethodCallTrace(trace.className, trace.methodName, trace.methodDescriptor) -> count.intValue
     }
     val res = Map(stats: _*)
-    Profiler.startProfiling()
+    if (isProfiling) {
+      Profiler.startProfiling()
+    }
     res
   }
 

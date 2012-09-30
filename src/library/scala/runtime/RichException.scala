@@ -8,7 +8,7 @@
 
 package scala.runtime
 
-import compat.Platform.EOL
+import scala.compat.Platform.EOL
 
 final class RichException(exc: Throwable) {
   def getStackTraceString = exc.getStackTrace().mkString("", EOL, EOL)

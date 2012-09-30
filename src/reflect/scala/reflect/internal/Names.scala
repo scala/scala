@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2011 LAMP/EPFL
+ * Copyright 2005-2012 LAMP/EPFL
  * @author  Martin Odersky
  */
 
@@ -8,7 +8,7 @@ package internal
 
 import scala.io.Codec
 import java.security.MessageDigest
-import language.implicitConversions
+import scala.language.implicitConversions
 
 trait LowPriorityNames {
   self: Names =>
@@ -67,7 +67,7 @@ trait Names extends api.Names with LowPriorityNames {
     while (i < len) {
       if (nc + i == chrs.length) {
         val newchrs = new Array[Char](chrs.length * 2)
-        compat.Platform.arraycopy(chrs, 0, newchrs, 0, chrs.length)
+        scala.compat.Platform.arraycopy(chrs, 0, newchrs, 0, chrs.length)
         chrs = newchrs
       }
       chrs(nc + i) = cs(offset + i)
@@ -149,11 +149,15 @@ trait Names extends api.Names with LowPriorityNames {
     type ThisNameType >: Null <: Name
     protected[this] def thisName: ThisNameType
 
+    // Note that "Name with ThisNameType" should be redundant
+    // because ThisNameType <: Name, but due to SI-6161 the
+    // compile loses track of this fact.
+
     /** Index into name table */
     def start: Int = index
 
     /** The next name in the same hash bucket. */
-    def next: ThisNameType
+    def next: Name with ThisNameType
 
     /** The length of this name. */
     final def length: Int = len
@@ -169,17 +173,17 @@ trait Names extends api.Names with LowPriorityNames {
     def bothNames: List[Name] = List(toTermName, toTypeName)
 
     /** Return the subname with characters from from to to-1. */
-    def subName(from: Int, to: Int): ThisNameType
+    def subName(from: Int, to: Int): Name with ThisNameType
 
     /** Return a new name of the same variety. */
-    def newName(str: String): ThisNameType
+    def newName(str: String): Name with ThisNameType
 
     /** Return a new name based on string transformation. */
-    def mapName(f: String => String): ThisNameType = newName(f(toString))
+    def mapName(f: String => String): Name with ThisNameType = newName(f(toString))
 
     /** Copy bytes of this name to buffer cs, starting at position `offset`. */
     final def copyChars(cs: Array[Char], offset: Int) =
-      compat.Platform.arraycopy(chrs, index, cs, offset, len)
+      scala.compat.Platform.arraycopy(chrs, index, cs, offset, len)
 
     /** @return the ascii representation of this name */
     final def toChars: Array[Char] = {
@@ -195,7 +199,7 @@ trait Names extends api.Names with LowPriorityNames {
      */
     final def copyUTF8(bs: Array[Byte], offset: Int): Int = {
       val bytes = Codec.toUTF8(chrs, index, len)
-      compat.Platform.arraycopy(bytes, 0, bs, offset, bytes.length)
+      scala.compat.Platform.arraycopy(bytes, 0, bs, offset, bytes.length)
       offset + bytes.length
     }
 
@@ -387,7 +391,7 @@ trait Names extends api.Names with LowPriorityNames {
       newTermName(cs, 0, len)
     }
 
-    /** TODO - reconcile/fix that encode returns a Name but
+    /* TODO - reconcile/fix that encode returns a Name but
      *  decode returns a String.
      */
 
@@ -415,9 +419,6 @@ trait Names extends api.Names with LowPriorityNames {
       }
       else toString
     }
-    
-    @inline
-    final def fingerPrint: Long = (1L << start)
 
     /** TODO - find some efficiency. */
     def append(ch: Char)        = newName("" + this + ch)

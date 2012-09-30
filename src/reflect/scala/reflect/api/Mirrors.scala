@@ -1,23 +1,31 @@
 package scala.reflect
 package api
 
+/**
+ * Defines a type hierarchy for mirrors.
+ *
+ * Every universe has one or more mirrors. A mirror defines a hierarchy of symbols starting with the root package `_root_`
+ * and provides methods to locate and define classes and singleton objects in that hierarchy.
+ *
+ * On the JVM, there is a one to one correspondance between class loaders and mirrors.
+ */
 trait Mirrors { self: Universe =>
+
+  /** The base type of all mirrors of this universe.
+   *
+   *  This abstract type conforms the base interface for all mirrors defined in [[scala.reflect.api.Mirror]]
+   *  and is gradually refined in specific universes (e.g. `Mirror` of a [[scala.reflect.api.JavaUniverse]] is capable of reflection).
+   */
+  type Mirror >: Null <: scala.reflect.api.Mirror[self.type]
+
+  /** The root mirror of this universe. This mirror contains standard Scala classes and types such as `Any`, `AnyRef`, `AnyVal`,
+   *  `Nothing`, `Null`, and all classes loaded from scala-library, which are shared across all mirrors within the enclosing universe.
+   */
+  val rootMirror: Mirror
 
   type RuntimeClass >: Null
 
-  // [Eugene] also, it might make sense to provide shortcuts for the API
-  //
-  // for example, right now to invoke the same method for several different instances, you need:
-  // 1) get the method symbol
-  // 2) get the instance mirror for every instance
-  // 3) call reflectMethod on the instance mirrors for every instance
-  // 4) call apply for every instance (okay, this can be united with step #3, but still)
-  //
-  // I have several suggestions that we can discuss later:
-  // 1) For every `reflectXXX(sym: Symbol): XXXMirror`, add `reflectXXX(name: String, types: Type*): XXXMirror` and `reflectXXXs(): List[XXXMirror]`
-  // 2) Provide a way to skip obtaining InstanceMirror (step #2 in the outline provided above)
-
-  // [Eugene] another improvement would be have mirrors reproduce the structure of the reflection domain
+  // todo. an improvement might be having mirrors reproduce the structure of the reflection domain
   // e.g. a ClassMirror could also have a list of fields, methods, constructors and so on
   // read up more on the proposed design in "Reflecting Scala" by Y. Coppel
 
@@ -33,8 +41,16 @@ trait Mirrors { self: Universe =>
     /** Reflects against a field symbol and returns a mirror
      *  that can be used to get and, if appropriate, set the value of the field.
      *
+     *  FieldMirrors are the only way to get at private[this] vals and vars and
+     *  might be useful to inspect the data of underlying Java fields.
+     *  For all other uses, it's better to go through the fields accessor.
+     *
+     *  In particular, there should be no need to ever access a field mirror
+     *  when reflecting on just the public members of a class or trait.
+     *  Note also that only accessor MethodMirrors, but not FieldMirrors will accurately reflect overriding behavior.
+     *
      *  To get a field symbol by the name of the field you would like to reflect,
-     *  use `<this mirror>.symbol.typeSignature.member(newTermName(<name of the field>)).asTermSymbol`.
+     *  use `<this mirror>.symbol.typeSignature.member(newTermName(<name of the field>)).asTerm.accessed`.
      *  For further information about member lookup refer to `Symbol.typeSignature`.
      *
      *  The input symbol can be either private or non-private (Scala reflection transparently deals with visibility).
@@ -54,7 +70,7 @@ trait Mirrors { self: Universe =>
      *  that can be used to invoke the method provided.
      *
      *  To get a method symbol by the name of the method you would like to reflect,
-     *  use `<this mirror>.symbol.typeSignature.member(newTermName(<name of the method>)).asMethodSymbol`.
+     *  use `<this mirror>.symbol.typeSignature.member(newTermName(<name of the method>)).asMethod`.
      *  For further information about member lookup refer to `Symbol.typeSignature`.
      *
      *  The input symbol can be either private or non-private (Scala reflection transparently deals with visibility).
@@ -66,7 +82,7 @@ trait Mirrors { self: Universe =>
      *  that can be used to create instances of the class, inspect its companion object or perform further reflections.
      *
      *  To get a class symbol by the name of the class you would like to reflect,
-     *  use `<this mirror>.symbol.typeSignature.member(newTypeName(<name of the class>)).asClassSymbol`.
+     *  use `<this mirror>.symbol.typeSignature.member(newTypeName(<name of the class>)).asClass`.
      *  For further information about member lookup refer to `Symbol.typeSignature`.
      *
      *  The input symbol can be either private or non-private (Scala reflection transparently deals with visibility).
@@ -78,7 +94,7 @@ trait Mirrors { self: Universe =>
      *  that can be used to get the instance of the object or inspect its companion class.
      *
      *  To get a module symbol by the name of the object you would like to reflect,
-     *  use `<this mirror>.symbol.typeSignature.member(newTermName(<name of the object>)).asModuleSymbol`.
+     *  use `<this mirror>.symbol.typeSignature.member(newTermName(<name of the object>)).asModule`.
      *  For further information about member lookup refer to `Symbol.typeSignature`.
      *
      *  The input symbol can be either private or non-private (Scala reflection transparently deals with visibility).
@@ -91,7 +107,7 @@ trait Mirrors { self: Universe =>
   trait FieldMirror {
 
     /** The object containing the field */
-    def receiver: AnyRef
+    def receiver: Any
 
     /** The field symbol representing the field.
      *
@@ -107,6 +123,10 @@ trait Mirrors { self: Universe =>
      *  Scala reflection uses reflection capabilities of the underlying platform,
      *  so `FieldMirror.get` might throw platform-specific exceptions associated
      *  with getting a field or invoking a getter method of the field.
+     *
+     *  If `symbol` represents a field of a base class with respect to the class of the receiver,
+     *  and this base field is overriden in the class of the receiver, then this method will retrieve
+     *  the value of the base field. To achieve overriding behavior, use reflectMethod on an accessor.
      */
     def get: Any
 
@@ -117,6 +137,10 @@ trait Mirrors { self: Universe =>
      *  Scala reflection uses reflection capabilities of the underlying platform,
      *  so `FieldMirror.get` might throw platform-specific exceptions associated
      *  with setting a field or invoking a setter method of the field.
+     *
+     *  If `symbol` represents a field of a base class with respect to the class of the receiver,
+     *  and this base field is overriden in the class of the receiver, then this method will set
+     *  the value of the base field. To achieve overriding behavior, use reflectMethod on an accessor.
      */
     def set(value: Any): Unit
   }
@@ -125,7 +149,7 @@ trait Mirrors { self: Universe =>
   trait MethodMirror {
 
     /** The receiver object of the method */
-    def receiver: AnyRef
+    def receiver: Any
 
     /** The method symbol representing the method */
     def symbol: MethodSymbol
@@ -146,7 +170,7 @@ trait Mirrors { self: Universe =>
     def runtimeClass: RuntimeClass
 
     /** True if the mirror represents the static part
-     *  if a runtime class or the companion object of a Scala class.
+     *  of a runtime class or the companion object of a Scala class.
      *  One has:
      *
      *    this.isStatic == this.isInstanceOf[ModuleMirror]
@@ -188,7 +212,7 @@ trait Mirrors { self: Universe =>
      *  Otherwise, if the mirror represents the static part of a runtime class, the
      *  mirror representing the instance part of the same class.
      */
-    def companion: Option[ClassMirror]
+    override def companion: Option[ClassMirror]
   }
 
   /** A mirror that reflects the instance parts of a runtime class */
@@ -201,7 +225,7 @@ trait Mirrors { self: Universe =>
      *  that can be used to invoke it and construct instances of this mirror's symbols.
      *
      *  To get a constructor symbol you would like to reflect,
-     *  use `<this mirror>.symbol.typeSignature.member(nme.CONSTRUCTOR).asMethodSymbol`.
+     *  use `<this mirror>.symbol.typeSignature.member(nme.CONSTRUCTOR).asMethod`.
      *  For further information about member lookup refer to `Symbol.typeSignature`.
      *
      *  The input symbol can be either private or non-private (Scala reflection transparently deals with visibility).
@@ -215,18 +239,20 @@ trait Mirrors { self: Universe =>
      *  Otherwise, if the mirror represents a runtime instance class, a mirror representing the static
      *  part of the same class.
      */
-    def companion: Option[ModuleMirror]
+    override def companion: Option[ModuleMirror]
   }
 
   /** A mirror that reflects instances and static classes */
-  trait ReflectiveMirror extends MirrorOf[Mirrors.this.type] {
+  trait ReflectiveMirror extends scala.reflect.api.Mirror[Mirrors.this.type] {
 
     /** A reflective mirror for the given object.
      *
      *  Such a mirror can be used to further reflect against the members of the object
      *  to get/set fields, invoke methods and inspect inner classes and objects.
      */
-    def reflect(obj: Any): InstanceMirror
+    // we need a ClassTag here to preserve boxity of primitives
+    // the class tag lets us tell apart `mirror.reflect(2)` and `mirror.reflect(new Integer(2))`
+    def reflect[T: ClassTag](obj: T): InstanceMirror
 
     /** Reflects against a static class symbol and returns a mirror
      *  that can be used to create instances of the class, inspect its companion object or perform further reflections.

@@ -11,9 +11,9 @@
 package scala.xml
 package dtd
 
-import util.regexp.WordExp
-import util.automata._
-import Utility.sbToString
+import scala.util.regexp.WordExp
+import scala.util.automata._
+import scala.xml.Utility.sbToString
 import PartialFunction._
 
 object ContentModel extends WordExp {

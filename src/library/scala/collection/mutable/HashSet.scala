@@ -12,7 +12,7 @@ package scala.collection
 package mutable
 
 import generic._
-import collection.parallel.mutable.ParHashSet
+import scala.collection.parallel.mutable.ParHashSet
 
 /** This class implements mutable sets using a hashtable.
  *
@@ -53,7 +53,7 @@ extends AbstractSet[A]
 
   override def companion: GenericCompanion[HashSet] = HashSet
 
-  override def size = tableSize
+  override def size: Int = tableSize
 
   def contains(elem: A): Boolean = containsEntry(elem)
 
@@ -67,7 +67,9 @@ extends AbstractSet[A]
 
   override def remove(elem: A): Boolean = removeEntry(elem).isDefined
 
-  override def clear() = clearTable()
+  override def clear() { clearTable() }
+
+  override def iterator: Iterator[A] = super[FlatHashTable].iterator
 
   override def foreach[U](f: A =>  U) {
     var i = 0

@@ -6,7 +6,7 @@
 package scala.tools.nsc
 package typechecker
 
-import language.implicitConversions
+import scala.language.implicitConversions
 
 /** A generic means of breaking down types into their subcomponents.
  *  Types are decomposed top down, and recognizable substructure is
@@ -39,7 +39,7 @@ trait DestructureTypes {
 
     private implicit def liftToTerm(name: String): TermName = newTermName(name)
 
-    private val openSymbols = collection.mutable.Set[Symbol]()
+    private val openSymbols = scala.collection.mutable.Set[Symbol]()
 
     private def nodeList[T](elems: List[T], mkNode: T => Node): Node =
       if (elems.isEmpty) wrapEmpty else list(elems map mkNode)

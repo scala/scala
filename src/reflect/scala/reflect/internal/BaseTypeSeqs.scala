@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2011 LAMP/EPFL
+ * Copyright 2005-2012 LAMP/EPFL
  * @author  Martin Odersky
  */
 package scala.reflect
@@ -7,7 +7,7 @@ package internal
 
 // todo implement in terms of BitSet
 import scala.collection.{ mutable, immutable }
-import math.max
+import scala.math.max
 import util.Statistics
 
 /** A base type sequence (BaseTypeSeq) is an ordered sequence spanning all the base types
@@ -39,8 +39,8 @@ trait BaseTypeSeqs {
    */
   class BaseTypeSeq protected[BaseTypeSeqs] (private[BaseTypeSeqs] val parents: List[Type], private[BaseTypeSeqs] val elems: Array[Type]) {
   self =>
-    Statistics.incCounter(baseTypeSeqCount)
-    Statistics.incCounter(baseTypeSeqLenTotal, elems.length)
+    if (Statistics.canEnable) Statistics.incCounter(baseTypeSeqCount)
+    if (Statistics.canEnable) Statistics.incCounter(baseTypeSeqLenTotal, elems.length)
 
     /** The number of types in the sequence */
     def length: Int = elems.length
@@ -99,7 +99,7 @@ trait BaseTypeSeqs {
 
     def copy(head: Type, offset: Int): BaseTypeSeq = {
       val arr = new Array[Type](elems.length + offset)
-      compat.Platform.arraycopy(elems, 0, arr, offset, elems.length)
+      scala.compat.Platform.arraycopy(elems, 0, arr, offset, elems.length)
       arr(0) = head
       newBaseTypeSeq(parents, arr)
     }

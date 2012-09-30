@@ -59,12 +59,12 @@ trait TryStandard {
 
 	def testRescueSuccess(): Unit = {
 		val t = Success(1)
-		t.rescue{ case x => assert(false); Try() }
+		t.recoverWith{ case x => assert(false); Try() }
 	}
 
 	def testRescueFailure(): Unit = {
 		val t = Failure(new Exception("foo"))
-		val n = t.rescue{ case x => Try(1) }
+		val n = t.recoverWith{ case x => Try(1) }
 		assert(n.get == 1)
 	}
 
@@ -103,6 +103,20 @@ trait TryStandard {
 		}
 	}
 
+	def testSuccessTransform(): Unit = {
+		val s = Success(1)
+		val succ = (x: Int) => Success(x * 10)
+		val fail = (x: Throwable) => Success(0)
+		assert(s.transform(succ, fail).get == 10)
+	}
+
+	def testFailureTransform(): Unit = {
+		val f = Failure(new Exception("foo"))
+		val succ = (x: Int) => Success(x * 10)
+		val fail = (x: Throwable) => Success(0)
+		assert(f.transform(succ, fail).get == 0)
+	}
+
 	testForeachSuccess()
 	testForeachFailure()
 	testFlatMapSuccess()
@@ -119,132 +133,12 @@ trait TryStandard {
 	testFlattenSuccess()
 	testFailedSuccess()
 	testFailedFailure()
-}
-
-// tests that implicit conversions from Try to Either behave as expected
-trait TryImplicitConversionTry2Either {
-
-	def testTry2RightMap(): Unit = {
-		val t = Success(1)
-		val n = t.right.map(x => x * 100)
-		assert(n == Right(100))
-	}
-
-	def testTry2LeftMap(): Unit = {
-		val e = new Exception("foo")
-		val t = Failure(e)
-		val n = t.left.map(x => x)
-		assert(n == Left(e))
-	}
-
-	def testTry2FoldSuccess(): Unit = {
-		val t = Success(1)
-		val n = t.fold(x => assert(false), y => y * 200)
-		assert(n == 200)
-	}
-
-	def testTry2FoldFailure(): Unit = {
-		val e = new Exception("foo")
-		val t = Failure(e)
-		val n = t.fold(x => x, y => assert(false))
-		assert(n == e)
-	}
-
-	def testTry2SwapSuccess(): Unit = {
-		val t = Success(1)
-		val n = t.swap
-		assert(n == Left(1))
-	}
-
-	def testTry2SwapFailure(): Unit = {
-		val e = new Exception("foo")
-		val t = Failure(e)
-		val n = t.swap
-		assert(n == Right(e))
-	}
-
-	// def testTry2MergeSucccess(): Unit = {
-	// 	val t: Try[Int] = Success(1)
-	// 	val n = (t: Either[Any, Any]).t.merge // connecting two implicit conversions
-	// 	assert(n == 1)
-	// }
-
-	// def testTry2MergeFailure(): Unit = {
-	// 	val e = new Exception("foo")
-	// 	val t = Failure(e)
-	// 	val n = (t: Either[Any, Any]).merge // connecting two implicit conversions
-	// 	assert(n == e)
-	// }
-
-	testTry2RightMap()
-	testTry2LeftMap()
-	testTry2FoldSuccess()
-	testTry2FoldFailure()
-	testTry2SwapSuccess()
-	testTry2SwapFailure()
-	// testTry2MergeSucccess()
-	// testTry2MergeFailure()
-}
-
-// tests that implicit conversions from Either to Try behave as expected
-trait TryImplicitConversionEither2Try {
-
-	def testRight2FilterSuccessTrue(): Unit = {
-	  def expectsTry[U <% Try[Int]](rght: U): Try[Int] = {
-			val n = rght.filter(x => x > 0) // this should be converted to a Try
-			n
-	  }
-		val r = Right(1)
-    val n = expectsTry(r)
-		assert(n == Success(1))
-	}
-
-	def testRight2FilterSuccessFalse(): Unit = {
-	  def expectsTry[U <% Try[Int]](rght: U): Try[Int] = {
-			val n = rght.filter(x => x < 0) // this should be converted to a Try
-			n
-	  }
-		val r = Right(1)
-    val n = expectsTry(r)
-    n match {
-	case Failure(e: NoSuchElementException) => assert(true)
-	case _ => assert(false)
-    }
-	}
-
-	def testLeft2FilterFailure(): Unit = {
-	  def expectsTry[U <% Try[Int]](rght: U): Try[Int] = {
-			val n = rght.filter(x => x > 0) // this should be converted to a Try
-			n
-	  }
-		val r = Left(new Exception("foo"))
-    val n = expectsTry(r)
-    n match {
-	case Failure(e: Exception) => assert(true)
-	case _ => assert(false)
-    }
-	}
-
-	def testRight2GetSuccess(): Unit = {
-	  def expectsTry[U <% Try[Int]](rght: U): Int = {
-			val n = rght.get // this should be converted to a Try
-			n
-	  }
-		val r = Right(1)
-    val n = expectsTry(r)
-    assert(n == 1)
-	}
-
-	testRight2FilterSuccessTrue()
-	testRight2FilterSuccessFalse()
-	testLeft2FilterFailure()
-	testRight2GetSuccess()
+	testSuccessTransform()
+	testFailureTransform()
 }
 
 object Test
 extends App
-with TryStandard
-with TryImplicitConversionTry2Either
-with TryImplicitConversionEither2Try {
+with TryStandard {
   System.exit(0)
 }

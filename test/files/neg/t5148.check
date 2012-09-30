@@ -1,2 +1,3 @@
-error: bad reference while unpickling Imports.class: term memberHandlers not found in scala.tools.nsc.interpreter.IMain
-one error found
+error: bad symbolic reference to value global in class IMain - referenced from t5148.scala (a classfile may be missing)
+error: bad symbolic reference to value memberHandlers in class IMain - referenced from t5148.scala (a classfile may be missing)
+two errors found

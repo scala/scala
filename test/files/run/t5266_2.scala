@@ -11,6 +11,6 @@ object Test extends App {
   };
 
   val toolbox = cm.mkToolBox()
-  val evaluated = toolbox.runExpr(code.tree)
+  val evaluated = toolbox.eval(code.tree)
   println("evaluated = " + evaluated)
 }

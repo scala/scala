@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2011 LAMP/EPFL
+ * Copyright 2005-2012 LAMP/EPFL
  * @author  Iulian Dragos
  */
 
@@ -18,7 +18,7 @@ import JAccessFlags._
 import JObjectType.{ JAVA_LANG_STRING, JAVA_LANG_OBJECT }
 import java.util.jar.{ JarEntry, JarOutputStream }
 import scala.tools.nsc.io.AbstractFile
-import language.postfixOps
+import scala.language.postfixOps
 
 /** This class ...
  *
@@ -122,8 +122,10 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
         inform("[running phase " + name + " on icode]")
 
       if (settings.Xdce.value)
-        for ((sym, cls) <- icodes.classes if inliner.isClosureClass(sym) && !deadCode.liveClosures(sym))
+        for ((sym, cls) <- icodes.classes if inliner.isClosureClass(sym) && !deadCode.liveClosures(sym)) {
+          log(s"Optimizer eliminated ${sym.fullNameString}")
           icodes.classes -= sym
+        }
 
       // For predictably ordered error messages.
       val sortedClasses = classes.values.toList sortBy ("" + _.symbol.fullName)
@@ -728,7 +730,7 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
       // generic information could disappear as a consequence of a seemingly
       // unrelated change.
          settings.Ynogenericsig.value
-      || sym.isHidden
+      || sym.isArtifact
       || sym.isLiftedMethod
       || sym.isBridge
       || (sym.ownerChain exists (_.isImplClass))
@@ -866,7 +868,7 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
 
     def genField(f: IField) {
       debuglog("Adding field: " + f.symbol.fullName)
-      
+
       val jfield = jclass.addNewField(
         javaFieldFlags(f.symbol),
         javaName(f.symbol),
@@ -1021,8 +1023,6 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
 
        	  method = m
        	  jmethod = clinitMethod
-          
-          computeLocalVarsIndex(m)
        	  genCode(m)
        	case None =>
           legacyStaticInitializer(cls, clinit)
@@ -1116,7 +1116,7 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
         linkedClass.info.members collect { case sym if sym.name.isTermName => sym.name } toSet
       }
       debuglog("Potentially conflicting names for forwarders: " + conflictingNames)
-      
+
       for (m <- moduleClass.info.membersBasedOnFlags(ExcludedForwarderFlags, Flags.METHOD)) {
         if (m.isType || m.isDeferred || (m.owner eq ObjectClass) || m.isConstructor)
           debuglog("No forwarder for '%s' from %s to '%s'".format(m, className, moduleClass))
@@ -1124,9 +1124,7 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
           log("No forwarder for " + m + " due to conflict with " + linkedClass.info.member(m.name))
         else {
           log("Adding static forwarder for '%s' from %s to '%s'".format(m, className, moduleClass))
-          if (m.isAccessor && m.accessed.hasStaticAnnotation) {
-            log("@static: accessor " + m + ", accessed: " + m.accessed)
-          } else addForwarder(jclass, moduleClass, m)
+          addForwarder(jclass, moduleClass, m)
         }
       }
     }
@@ -1308,7 +1306,7 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
                                 jclass.getType())
           }
         }
-         
+
         style match {
           case Static(true)                         => dbg("invokespecial");    jcode.emitINVOKESPECIAL(jowner, jname, jtype)
           case Static(false)                        => dbg("invokestatic");      jcode.emitINVOKESTATIC(jowner, jname, jtype)
@@ -1815,7 +1813,7 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
      *  Synthetic locals are skipped. All variables are method-scoped.
      */
     private def genLocalVariableTable(m: IMethod, jcode: JCode) {
-      val vars = m.locals filterNot (_.sym.isHidden)
+      val vars = m.locals filterNot (_.sym.isArtifact)
       if (vars.isEmpty) return
 
       val pool = jclass.getConstantPool
@@ -1889,7 +1887,7 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
      */
     def computeLocalVarsIndex(m: IMethod) {
       var idx = if (m.symbol.isStaticMember) 0 else 1;
-      
+
       for (l <- m.params) {
         debuglog("Index value for " + l + "{" + l.## + "}: " + idx)
         l.index = idx
@@ -1960,7 +1958,7 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
     // Nested objects won't receive ACC_FINAL in order to allow for their overriding.
 
     val finalFlag = (
-         (sym.hasFlag(Flags.FINAL) || isTopLevelModule(sym))
+         (((sym.rawflags & Flags.FINAL) != 0) || isTopLevelModule(sym))
       && !sym.enclClass.isInterface
       && !sym.isClassConstructor
       && !sym.isMutable   // lazy vals and vars both
@@ -1977,7 +1975,7 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
       if (finalFlag && !sym.hasAbstractFlag) ACC_FINAL else 0,
       if (sym.isStaticMember) ACC_STATIC else 0,
       if (sym.isBridge) ACC_BRIDGE | ACC_SYNTHETIC else 0,
-      if (sym.isHidden) ACC_SYNTHETIC else 0,
+      if (sym.isArtifact) ACC_SYNTHETIC else 0,
       if (sym.isClass && !sym.isInterface) ACC_SUPER else 0,
       if (sym.isVarargsMethod) ACC_VARARGS else 0,
       if (sym.hasFlag(Flags.SYNCHRONIZED)) JAVA_ACC_SYNCHRONIZED else 0

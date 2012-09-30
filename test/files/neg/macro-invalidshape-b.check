@@ -1,6 +1,5 @@
 Macros_Test_2.scala:2: error: macro body has wrong shape:
- required: macro <reference to implementation object>.<implementation method name>
- or      : macro <implementation method name>
+ required: macro [<implementation object>].<method name>[[<type args>]]
   def foo(x: Any) = macro Impls.foo(null)(null)
       ^
 one error found

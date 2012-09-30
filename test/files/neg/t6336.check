@@ -1,0 +1,7 @@
+t6336.scala:3: error: Parameter type in structural refinement may not refer to a user-defined value class
+    val a = new { def y[T](x: X[T]) = x.i }
+                           ^
+t6336.scala:4: error: Result type in structural refinement may not refer to a user-defined value class
+    val b = new { def y[T](x: T): X[T] = new X(2) }
+                                  ^
+two errors found

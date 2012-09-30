@@ -9,7 +9,7 @@
 
 package scala.util.parsing.combinator
 
-import language.implicitConversions
+import scala.language.implicitConversions
 
 /** This object contains implicit conversions that come in handy when using the `^^` combinator.
  *

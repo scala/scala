@@ -32,6 +32,9 @@ package mutable
  *  @tparam A     type of the elements contained in this hash table.
  */
 trait HashTable[A, Entry >: Null <: HashEntry[A, Entry]] extends HashTable.HashUtils[A] {
+  // Replacing Entry type parameter by abstract type member here allows to not expose to public
+  // implementation-specific entry classes such as `DefaultEntry` or `LinkedEntry`.
+  // However, I'm afraid it's too late now for such breaking change.
   import HashTable._
 
   @transient protected var _loadFactor = defaultLoadFactor
@@ -52,7 +55,7 @@ trait HashTable[A, Entry >: Null <: HashEntry[A, Entry]] extends HashTable.HashU
    */
   @transient protected var sizemap: Array[Int] = null
 
-  @transient var seedvalue: Int = tableSizeSeed
+  @transient protected var seedvalue: Int = tableSizeSeed
 
   protected def tableSizeSeed = Integer.bitCount(table.length - 1)
 
@@ -75,11 +78,10 @@ trait HashTable[A, Entry >: Null <: HashEntry[A, Entry]] extends HashTable.HashU
   }
 
   /**
-   * Initializes the collection from the input stream. `f` will be called for each key/value pair
-   * read from the input stream in the order determined by the stream. This is useful for
-   * structures where iteration order is important (e.g. LinkedHashMap).
+   * Initializes the collection from the input stream. `readEntry` will be called for each
+   * entry to be read from the input stream.
    */
-  private[collection] def init[B](in: java.io.ObjectInputStream, f: (A, B) => Entry) {
+  private[collection] def init(in: java.io.ObjectInputStream, readEntry: => Entry) {
     in.defaultReadObject
 
     _loadFactor = in.readInt()
@@ -100,35 +102,34 @@ trait HashTable[A, Entry >: Null <: HashEntry[A, Entry]] extends HashTable.HashU
 
     var index = 0
     while (index < size) {
-      addEntry(f(in.readObject().asInstanceOf[A], in.readObject().asInstanceOf[B]))
+      addEntry(readEntry)
       index += 1
     }
   }
 
   /**
    * Serializes the collection to the output stream by saving the load factor, collection
-   * size, collection keys and collection values. `value` is responsible for providing a value
-   * from an entry.
+   * size and collection entries. `writeEntry` is responsible for writing an entry to the stream.
    *
-   * `foreach` determines the order in which the key/value pairs are saved to the stream. To
+   * `foreachEntry` determines the order in which the key/value pairs are saved to the stream. To
    * deserialize, `init` should be used.
    */
-  private[collection] def serializeTo[B](out: java.io.ObjectOutputStream, value: Entry => B) {
+  private[collection] def serializeTo(out: java.io.ObjectOutputStream, writeEntry: Entry => Unit) {
     out.defaultWriteObject
     out.writeInt(_loadFactor)
     out.writeInt(tableSize)
     out.writeInt(seedvalue)
     out.writeBoolean(isSizeMapDefined)
-    foreachEntry { entry =>
-      out.writeObject(entry.key)
-      out.writeObject(value(entry))
-    }
+
+    foreachEntry(writeEntry)
   }
 
   /** Find entry with given key in table, null if not found.
    */
-  protected def findEntry(key: A): Entry = {
-    val h = index(elemHashCode(key))
+  protected def findEntry(key: A): Entry =
+    findEntry0(key, index(elemHashCode(key)))
+
+  private[this] def findEntry0(key: A, h: Int): Entry = {
     var e = table(h).asInstanceOf[Entry]
     while (e != null && !elemEquals(e.key, key)) e = e.next
     e
@@ -138,7 +139,10 @@ trait HashTable[A, Entry >: Null <: HashEntry[A, Entry]] extends HashTable.HashU
    *  pre: no entry with same key exists
    */
   protected def addEntry(e: Entry) {
-    val h = index(elemHashCode(e.key))
+    addEntry0(e, index(elemHashCode(e.key)))
+  }
+
+  private[this] def addEntry0(e: Entry, h: Int) {
     e.next = table(h).asInstanceOf[Entry]
     table(h) = e
     tableSize = tableSize + 1
@@ -146,6 +150,24 @@ trait HashTable[A, Entry >: Null <: HashEntry[A, Entry]] extends HashTable.HashU
     if (tableSize > threshold)
       resize(2 * table.length)
   }
+
+  /** Find entry with given key in table, or add new one if not found.
+   *  May be somewhat faster then `findEntry`/`addEntry` pair as it
+   *  computes entry's hash index only once.
+   *  Returns entry found in table or null.
+   *  New entries are created by calling `createNewEntry` method.
+   */
+  protected def findOrAddEntry[B](key: A, value: B): Entry = {
+    val h = index(elemHashCode(key))
+    val e = findEntry0(key, h)
+    if (e ne null) e else { addEntry0(createNewEntry(key, value), h); null }
+  }
+
+  /** Creates new entry to be immediately inserted into the hashtable.
+   *  This method is guaranteed to be called only once and in case that the entry
+   *  will be added. In other words, an implementation may be side-effecting.
+   */
+  protected def createNewEntry[B](key: A, value: B): Entry
 
   /** Remove entry from table if present.
    */
@@ -195,7 +217,7 @@ trait HashTable[A, Entry >: Null <: HashEntry[A, Entry]] extends HashTable.HashU
   }
 
   /** Avoid iterator for a 2x faster traversal. */
-  protected def foreachEntry[C](f: Entry => C) {
+  protected def foreachEntry[U](f: Entry => U) {
     val iterTable = table
     var idx       = lastPopulatedIndex
     var es        = iterTable(idx)
@@ -401,7 +423,7 @@ private[collection] object HashTable {
        *
        * For performance reasons, we avoid this improvement.
        * */
-      val i = util.hashing.byteswap32(hcode)
+      val i= scala.util.hashing.byteswap32(hcode)
 
       /* Jenkins hash
        * for range 0-10000, output has the msb set to zero */
@@ -452,7 +474,7 @@ private[collection] object HashTable {
     val seedvalue: Int,
     val sizemap: Array[Int]
   ) {
-    import collection.DebugUtils._
+    import scala.collection.DebugUtils._
     private[collection] def debugInformation = buildString {
       append =>
       append("Hash table contents")

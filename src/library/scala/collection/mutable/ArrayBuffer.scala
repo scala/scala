@@ -66,7 +66,7 @@ class ArrayBuffer[A](override protected val initialSize: Int)
   override def sizeHint(len: Int) {
     if (len > size && len >= 1) {
       val newarray = new Array[AnyRef](len)
-      compat.Platform.arraycopy(array, 0, newarray, 0, size0)
+      scala.compat.Platform.arraycopy(array, 0, newarray, 0, size0)
       array = newarray
     }
   }
@@ -93,7 +93,7 @@ class ArrayBuffer[A](override protected val initialSize: Int)
    *  @return      the updated buffer.
    */
   override def ++=(xs: TraversableOnce[A]): this.type = xs match {
-    case v: collection.IndexedSeqLike[_, _] =>
+    case v: scala.collection.IndexedSeqLike[_, _] =>
       val n = v.length
       ensureSize(size0 + n)
       v.copyToArray(array.asInstanceOf[scala.Array[Any]], size0, n)
@@ -168,12 +168,6 @@ class ArrayBuffer[A](override protected val initialSize: Int)
     remove(n, 1)
     result
   }
-
-  /** Return a clone of this buffer.
-   *
-   *  @return an `ArrayBuffer` with the same elements.
-   */
-  override def clone(): ArrayBuffer[A] = new ArrayBuffer[A] ++= this
 
   def result: ArrayBuffer[A] = this
 

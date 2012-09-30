@@ -1,0 +1,15 @@
+t5762.scala:6: warning: non-variable type argument Int in type pattern D[Int] is unchecked since it is eliminated by erasure
+    case _: D[Int]    if bippy => 1
+            ^
+t5762.scala:7: warning: non-variable type argument String in type pattern D[String] is unchecked since it is eliminated by erasure
+    case _: D[String]          => 2
+            ^
+t5762.scala:20: warning: non-variable type argument D[Int] in type pattern D[D[Int]] is unchecked since it is eliminated by erasure
+    case _: D[D[Int]]    if bippy => 1
+            ^
+t5762.scala:21: warning: non-variable type argument D[String] in type pattern D[D[String]] is unchecked since it is eliminated by erasure
+    case _: D[D[String]]          => 2
+            ^
+error: No warnings can be incurred under -Xfatal-warnings.
+four warnings found
+one error found

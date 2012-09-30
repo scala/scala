@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2009-2011 Scxala Solutions and LAMP/EPFL
+ * Copyright 2009-2012 Scala Solutions and LAMP/EPFL
  * @author Iulian Dragos
  * @author Hubert Plocinicak
  */
@@ -13,7 +13,7 @@ import scala.reflect.internal.util.FakePos
 
 import dependencies._
 import io.AbstractFile
-import language.implicitConversions
+import scala.language.implicitConversions
 
 trait BuildManager {
 

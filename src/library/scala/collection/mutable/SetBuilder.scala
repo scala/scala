@@ -19,7 +19,7 @@ import generic._
  *  @param empty   The empty element of the collection.
  *  @since 2.8
  */
-class SetBuilder[A, Coll <: collection.Set[A] with collection.SetLike[A, Coll]](empty: Coll) extends Builder[A, Coll] {
+class SetBuilder[A, Coll <: scala.collection.Set[A] with scala.collection.SetLike[A, Coll]](empty: Coll) extends Builder[A, Coll] {
   protected var elems: Coll = empty
   def +=(x: A): this.type = { elems = elems + x; this }
   def clear() { elems = empty }

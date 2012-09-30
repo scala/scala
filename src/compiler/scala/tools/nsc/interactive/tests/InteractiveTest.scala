@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2009-2011 Scala Solutions and LAMP/EPFL
+ * Copyright 2009-2012 Scala Solutions and LAMP/EPFL
  * @author Martin Odersky
  */
 package scala.tools.nsc
@@ -15,7 +15,7 @@ import scala.annotation.migration
 import scala.reflect.internal.util.Position
 import scala.reflect.internal.util.SourceFile
 
-import collection.mutable.ListBuffer
+import scala.collection.mutable.ListBuffer
 
 /** A base class for writing interactive compiler tests.
  *

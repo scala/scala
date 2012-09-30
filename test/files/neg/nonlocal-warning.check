@@ -1,0 +1,9 @@
+nonlocal-warning.scala:4: warning: This catches all Throwables. If this is really intended, use `case x : Throwable` to clear this warning.
+    catch { case x => 11 }
+                 ^
+nonlocal-warning.scala:2: warning: catch block may intercept non-local return from method foo
+  def foo(l: List[Int]): Int = {
+                               ^
+error: No warnings can be incurred under -Xfatal-warnings.
+two warnings found
+one error found

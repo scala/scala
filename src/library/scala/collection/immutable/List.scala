@@ -13,7 +13,7 @@ package immutable
 
 import generic._
 import mutable.{Builder, ListBuffer}
-import annotation.tailrec
+import scala.annotation.tailrec
 import java.io._
 
 /** A class for immutable linked lists representing ordered collections
@@ -152,7 +152,7 @@ sealed abstract class List[+A] extends AbstractSeq[A]
    *  @usecase def mapConserve(f: A => A): List[A]
    *    @inheritdoc
    */
-  def mapConserve[B >: A <: AnyRef](f: A => B): List[B] = {
+  @inline final def mapConserve[B >: A <: AnyRef](f: A => B): List[B] = {
     @tailrec
     def loop(mapped: ListBuffer[B], unchanged: List[A], pending: List[A]): List[B] =
       if (pending.isEmpty) {
@@ -229,7 +229,7 @@ sealed abstract class List[+A] extends AbstractSeq[A]
    *  }}}
    */
   override def slice(from: Int, until: Int): List[A] = {
-    val lo = math.max(from, 0)
+    val lo = scala.math.max(from, 0)
     if (until <= lo || isEmpty) Nil
     else this drop lo take (until - lo)
   }
@@ -257,7 +257,7 @@ sealed abstract class List[+A] extends AbstractSeq[A]
     (b.toList, these)
   }
 
-  override def takeWhile(p: A => Boolean): List[A] = {
+  @inline final override def takeWhile(p: A => Boolean): List[A] = {
     val b = new ListBuffer[A]
     var these = this
     while (!these.isEmpty && p(these.head)) {
@@ -267,7 +267,7 @@ sealed abstract class List[+A] extends AbstractSeq[A]
     b.toList
   }
 
-  override def dropWhile(p: A => Boolean): List[A] = {
+  @inline final override def dropWhile(p: A => Boolean): List[A] = {
     @tailrec
     def loop(xs: List[A]): List[A] =
       if (xs.isEmpty || !p(xs.head)) xs
@@ -276,7 +276,7 @@ sealed abstract class List[+A] extends AbstractSeq[A]
     loop(this)
   }
 
-  override def span(p: A => Boolean): (List[A], List[A]) = {
+  @inline final override def span(p: A => Boolean): (List[A], List[A]) = {
     val b = new ListBuffer[A]
     var these = this
     while (!these.isEmpty && p(these.head)) {
@@ -284,6 +284,16 @@ sealed abstract class List[+A] extends AbstractSeq[A]
       these = these.tail
     }
     (b.toList, these)
+  }
+
+  // Overridden with an implementation identical to the inherited one (at this time)
+  // solely so it can be finalized and thus inlinable.
+  @inline final override def foreach[U](f: A => U) {
+    var these = this
+    while (!these.isEmpty) {
+      f(these.head)
+      these = these.tail
+    }
   }
 
   override def reverse: List[A] = {
@@ -321,7 +331,7 @@ case object Nil extends List[Nothing] {
     throw new UnsupportedOperationException("tail of empty list")
   // Removal of equals method here might lead to an infinite recursion similar to IntMap.equals.
   override def equals(that: Any) = that match {
-    case that1: collection.GenSeq[_] => that1.isEmpty
+    case that1: scala.collection.GenSeq[_] => that1.isEmpty
     case _ => false
   }
 }
@@ -378,7 +388,6 @@ final case class ::[B](private var hd: B, private[scala] var tl: List[B]) extend
     while (!xs.isEmpty) { out.writeObject(xs.head); xs = xs.tail }
     out.writeObject(ListSerializeEnd)
   }
-
 }
 
 /** $factoryInfo

@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2011 LAMP/EPFL
+ * Copyright 2005-2012 LAMP/EPFL
  * @author Martin Odersky
  */
 package scala.tools.nsc
@@ -27,9 +27,6 @@ abstract class ExtensionMethods extends Transform with TypingTransformers {
 
   /** the following two members override abstract members in Transform */
   val phaseName: String = "extmethods"
-
-  /** The following flags may be set by this phase: */
-  override def phaseNewFlags: Long = notPRIVATE
 
   def newTransformer(unit: CompilationUnit): Transformer =
     new Extender(unit)
@@ -73,7 +70,8 @@ abstract class ExtensionMethods extends Transform with TypingTransformers {
     val companionInfo = imeth.owner.companionModule.info
     val candidates = extensionNames(imeth) map (companionInfo.decl(_))
     val matching = candidates filter (alt => normalize(alt.tpe, imeth.owner) matches imeth.tpe)
-    assert(matching.nonEmpty, "no extension method found for "+imeth+" among "+candidates+"/"+extensionNames(imeth))
+    assert(matching.nonEmpty,
+      s"no extension method found for $imeth:${imeth.tpe}+among ${candidates map (c => c.name+":"+c.tpe)} / ${extensionNames(imeth)}")
     matching.head
   }
 
@@ -105,8 +103,17 @@ abstract class ExtensionMethods extends Transform with TypingTransformers {
 
     private val extensionDefs = mutable.Map[Symbol, mutable.ListBuffer[Tree]]()
 
+    def checkNonCyclic(pos: Position, seen: Set[Symbol], clazz: Symbol): Unit =
+      if (seen contains clazz)
+        unit.error(pos, "value class may not unbox to itself")
+      else {
+        val unboxed = erasure.underlyingOfValueClass(clazz).typeSymbol
+        if (unboxed.isDerivedValueClass) checkNonCyclic(pos, seen + clazz, unboxed)
+      }
+
     def extensionMethInfo(extensionMeth: Symbol, origInfo: Type, clazz: Symbol): Type = {
-      var newTypeParams = cloneSymbolsAtOwner(clazz.typeParams, extensionMeth)
+      // No variance for method type parameters
+      var newTypeParams = cloneSymbolsAtOwner(clazz.typeParams, extensionMeth) map (_ resetFlag COVARIANT | CONTRAVARIANT)
       val thisParamType = appliedType(clazz.typeConstructor, newTypeParams map (_.tpeHK))
       val thisParam     = extensionMeth.newValueParameter(nme.SELF, extensionMeth.pos) setInfo thisParamType
       def transform(clonedType: Type): Type = clonedType match {
@@ -129,6 +136,9 @@ abstract class ExtensionMethods extends Transform with TypingTransformers {
       tree match {
         case Template(_, _, _) =>
           if (currentOwner.isDerivedValueClass) {
+          /* This is currently redundant since value classes may not
+             wrap over other value classes anyway.
+            checkNonCyclic(currentOwner.pos, Set(), currentOwner) */
             extensionDefs(currentOwner.companionModule) = new mutable.ListBuffer[Tree]
             currentOwner.primaryConstructor.makeNotPrivate(NoSymbol)
             super.transform(tree)

@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2011 LAMP/EPFL
+ * Copyright 2005-2012 LAMP/EPFL
  * @author  Martin Odersky
  */
 
@@ -8,7 +8,7 @@ package typechecker
 
 import symtab.Flags._
 import scala.collection.mutable.{LinkedHashSet, Set}
-import annotation.tailrec
+import scala.annotation.tailrec
 
 /**
  *  @author  Martin Odersky
@@ -26,6 +26,13 @@ trait Contexts { self: Analyzer =>
     override def enclosingContextChain: List[Context] = Nil
     override def implicitss: List[List[ImplicitInfo]] = Nil
     override def toString = "NoContext"
+  }
+  private object RootImports {
+    import definitions._
+    // Possible lists of root imports
+    val javaList         = JavaLangPackage :: Nil
+    val javaAndScalaList = JavaLangPackage :: ScalaPackage :: Nil
+    val completeList     = JavaLangPackage :: ScalaPackage :: PredefModule :: Nil
   }
 
   private val startContext = {
@@ -46,13 +53,12 @@ trait Contexts { self: Analyzer =>
    *    among its leading imports, or if the tree is [[scala.Predef]], `Predef` is not imported.
    */
   protected def rootImports(unit: CompilationUnit): List[Symbol] = {
-    import definitions._
-    assert(isDefinitionsInitialized, "definitions uninitialized")
+    assert(definitions.isDefinitionsInitialized, "definitions uninitialized")
 
     if (settings.noimports.value) Nil
-    else if (unit.isJava) List(JavaLangPackage)
-    else if (settings.nopredef.value || treeInfo.noPredefImportForUnit(unit.body)) List(JavaLangPackage, ScalaPackage)
-    else List(JavaLangPackage, ScalaPackage, PredefModule)
+    else if (unit.isJava) RootImports.javaList
+    else if (settings.nopredef.value || treeInfo.noPredefImportForUnit(unit.body)) RootImports.javaAndScalaList
+    else RootImports.completeList
   }
 
   def rootContext(unit: CompilationUnit): Context             = rootContext(unit, EmptyTree, false)
@@ -360,7 +366,7 @@ trait Contexts { self: Analyzer =>
 
     private def unitError(pos: Position, msg: String) =
       unit.error(pos, if (checking) "\n**** ERROR DURING INTERNAL CHECKING ****\n" + msg else msg)
-    
+
     @inline private def issueCommon(err: AbsTypeError)(pf: PartialFunction[AbsTypeError, Unit]) {
       debugwarn("issue error: " + err.errMsg)
       if (settings.Yissuedebug.value) (new Exception).printStackTrace()
@@ -481,7 +487,7 @@ trait Contexts { self: Analyzer =>
       lastAccessCheckDetails = ""
       // Console.println("isAccessible(%s, %s, %s)".format(sym, pre, superAccess))
 
-      @inline def accessWithinLinked(ab: Symbol) = {
+      def accessWithinLinked(ab: Symbol) = {
         val linked = ab.linkedClassOfClass
         // don't have access if there is no linked class
         // (before adding the `ne NoSymbol` check, this was a no-op when linked eq NoSymbol,
@@ -552,7 +558,6 @@ trait Contexts { self: Analyzer =>
         (  (ab.isTerm || ab == rootMirror.RootClass)
         || (accessWithin(ab) || accessWithinLinked(ab)) &&
              (  !sym.hasLocalFlag
-             || sym.owner.isImplClass // allow private local accesses to impl classes
              || sym.isProtected && isSubThisType(pre, sym.owner)
              || pre =:= sym.owner.thisType
              )
@@ -612,8 +617,8 @@ trait Contexts { self: Analyzer =>
         (e ne null) && (e.owner == scope)
       })
 
-    private def collectImplicits(syms: List[Symbol], pre: Type, imported: Boolean = false): List[ImplicitInfo] =
-      for (sym <- syms if isQualifyingImplicit(sym.name, sym, pre, imported)) yield
+    private def collectImplicits(syms: Scope, pre: Type, imported: Boolean = false): List[ImplicitInfo] =
+      for (sym <- syms.toList if isQualifyingImplicit(sym.name, sym, pre, imported)) yield
         new ImplicitInfo(sym.name, pre, sym)
 
     private def collectImplicitImports(imp: ImportInfo): List[ImplicitInfo] = {
@@ -658,7 +663,7 @@ trait Contexts { self: Analyzer =>
             }
           } else if (scope != nextOuter.scope && !owner.isPackageClass) {
             debuglog("collect local implicits " + scope.toList)//DEBUG
-            collectImplicits(scope.toList, NoPrefix)
+            collectImplicits(scope, NoPrefix)
           } else if (imports != nextOuter.imports) {
             assert(imports.tail == nextOuter.imports, (imports, nextOuter.imports))
             collectImplicitImports(imports.head)
@@ -726,7 +731,7 @@ trait Contexts { self: Analyzer =>
       result
     }
 
-    def allImportedSymbols: List[Symbol] =
+    def allImportedSymbols: Iterable[Symbol] =
       qual.tpe.members flatMap (transformImport(tree.selectors, _))
 
     private def transformImport(selectors: List[ImportSelector], sym: Symbol): List[Symbol] = selectors match {

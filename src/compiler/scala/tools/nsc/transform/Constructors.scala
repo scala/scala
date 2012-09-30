@@ -1,5 +1,5 @@
 /*  NSC -- new Scala compiler
- * Copyright 2005-2011 LAMP/EPFL
+ * Copyright 2005-2012 LAMP/EPFL
  * @author
  */
 
@@ -129,7 +129,7 @@ abstract class Constructors extends Transform with ast.TreeDSL {
 
         if (from.name != nme.OUTER) result
         else localTyper.typedPos(to.pos) {
-          IF (from OBJ_EQ NULL) THEN Throw(NullPointerExceptionClass.tpe) ELSE result
+          IF (from OBJ_EQ NULL) THEN Throw(NewFromConstructor(NPEConstructor)) ELSE result
         }
       }
 
@@ -186,15 +186,12 @@ abstract class Constructors extends Transform with ast.TreeDSL {
           // before the superclass constructor call, otherwise it goes after.
           // Lazy vals don't get the assignment in the constructor.
           if (!stat.symbol.tpe.isInstanceOf[ConstantType]) {
-            if (stat.symbol.hasStaticAnnotation) {
-              debuglog("@static annotated field initialization skipped.")
-              defBuf += deriveValDef(stat)(tree => tree)
-            } else if (rhs != EmptyTree && !stat.symbol.isLazy) {
+            if (rhs != EmptyTree && !stat.symbol.isLazy) {
               val rhs1 = intoConstructor(stat.symbol, rhs);
               (if (canBeMoved(stat)) constrPrefixBuf else constrStatBuf) += mkAssign(
                 stat.symbol, rhs1)
-              defBuf += deriveValDef(stat)(_ => EmptyTree)
             }
+            defBuf += deriveValDef(stat)(_ => EmptyTree)
           }
         case ClassDef(_, _, _, _) =>
           // classes are treated recursively, and left in the template
@@ -506,14 +503,14 @@ abstract class Constructors extends Transform with ast.TreeDSL {
 
             val applyMethodDef = DefDef(
               sym = applyMethod,
-              vparamss = List(List()),
+              vparamss = ListOfNil,
               rhs = Block(applyMethodStats, gen.mkAttributedRef(BoxedUnit_UNIT)))
 
             ClassDef(
               sym = closureClass,
               constrMods = Modifiers(0),
               vparamss = List(List(outerFieldDef)),
-              argss = List(List()),
+              argss = ListOfNil,
               body = List(applyMethodDef),
               superPos = impl.pos)
           }

@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2011 LAMP/EPFL
+ * Copyright 2005-2012 LAMP/EPFL
  * @author  Martin Odersky
  */
 
@@ -242,7 +242,7 @@ abstract class TreeCheckers extends Analyzer {
               }
             }
           case ValDef(_, _, _, _) =>
-            if (sym.hasGetter && !sym.isOuterField) {
+            if (sym.hasGetter && !sym.isOuterField && !sym.isOuterAccessor) {
               assertFn(sym.getter(sym.owner) != NoSymbol, ownerstr(sym) + " has getter but cannot be found. " + sym.ownerChain)
             }
           case Apply(fn, args) =>
@@ -278,7 +278,7 @@ abstract class TreeCheckers extends Analyzer {
               def cond(s: Symbol) = !s.isTerm || s.isMethod || s == sym.owner
 
               if (sym.owner != currentOwner) {
-                val expected = currentOwner.ownerChain find (x => cond(x)) getOrElse fail("DefTree can't find owner: ")
+                val expected = currentOwner.ownerChain find (x => cond(x)) getOrElse { fail("DefTree can't find owner: ") ; NoSymbol }
                 if (sym.owner != expected)
                   fail("""|
                           | currentOwner chain: %s

@@ -1,13 +1,13 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2011 LAMP/EPFL
+ * Copyright 2005-2012 LAMP/EPFL
  * @author  Martin Odersky
  */
 
 package scala.tools.nsc
 package ast
 
-import reflect.internal.HasFlags
-import reflect.internal.Flags._
+import scala.reflect.internal.HasFlags
+import scala.reflect.internal.Flags._
 import symtab._
 
 /** This class ...
@@ -15,7 +15,7 @@ import symtab._
  *  @author Martin Odersky
  *  @version 1.0
  */
-abstract class TreeInfo extends reflect.internal.TreeInfo {
+abstract class TreeInfo extends scala.reflect.internal.TreeInfo {
   val global: Global
   import global._
 
