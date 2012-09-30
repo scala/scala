@@ -7114,6 +7114,14 @@ trait Types extends api.Types { self: SymbolTable =>
     }
   }
 
+  def isJavaVarargsAncestor(clazz: Symbol) = (
+       clazz.isClass
+    && clazz.isJavaDefined
+    && (clazz.info.nonPrivateDecls exists isJavaVarArgsMethod)
+  )
+  def inheritsJavaVarArgsMethod(clazz: Symbol) =
+    clazz.thisType.baseClasses exists isJavaVarargsAncestor
+
   /** All types in list must be polytypes with type parameter lists of
    *  same length as tparams.
    *  Returns list of list of bounds infos, where corresponding type
@@ -7225,6 +7233,12 @@ trait Types extends api.Types { self: SymbolTable =>
     if (ps exists typeIsSubTypeOfSerializable) ps.toList
     else (ps :+ SerializableClass.tpe).toList
   )
+
+  /** Members of the given class, other than those inherited
+   *  from Any or AnyRef.
+   */
+  def nonTrivialMembers(clazz: Symbol): Iterable[Symbol] =
+    clazz.info.members filterNot (sym => sym.owner == ObjectClass || sym.owner == AnyClass)
 
   def objToAny(tp: Type): Type =
     if (!phase.erasedTypes && tp.typeSymbol == ObjectClass) AnyClass.tpe
