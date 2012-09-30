@@ -56,12 +56,18 @@ final class ListBuffer[A]
   import scala.collection.Traversable
   import scala.collection.immutable.ListSerializeEnd
 
+  /** Expected invariants:
+   *  If start.isEmpty, last0 == null
+   *  If start.nonEmpty, last0 != null
+   *  If len == 0, start.isEmpty
+   *  If len > 0, start.nonEmpty
+   */
   private var start: List[A] = Nil
   private var last0: ::[A] = _
   private var exported: Boolean = false
   private var len = 0
 
-  protected def underlying: immutable.Seq[A] = start
+  protected def underlying: List[A] = start
 
   private def writeObject(out: ObjectOutputStream) {
     // write start
@@ -133,7 +139,7 @@ final class ListBuffer[A]
       if (exported) copy()
       if (n == 0) {
         val newElem = new :: (x, start.tail);
-        if (last0 eq start) {
+        if ((last0 eq null) || (last0 eq start)) {
           last0 = newElem
         }
         start = newElem
@@ -162,7 +168,7 @@ final class ListBuffer[A]
    */
   def += (x: A): this.type = {
     if (exported) copy()
-    if (start.isEmpty) {
+    if (isEmpty) {
       last0 = new :: (x, Nil)
       start = last0
     } else {
@@ -184,6 +190,7 @@ final class ListBuffer[A]
    */
   def clear() {
     start = Nil
+    last0 = null
     exported = false
     len = 0
   }
@@ -197,7 +204,7 @@ final class ListBuffer[A]
   def +=: (x: A): this.type = {
     if (exported) copy()
     val newElem = new :: (x, start)
-    if (start.isEmpty) last0 = newElem
+    if (isEmpty) last0 = newElem
     start = newElem
     len += 1
     this
@@ -219,7 +226,7 @@ final class ListBuffer[A]
       if (n == 0) {
         while (!elems.isEmpty) {
           val newElem = new :: (elems.head, start)
-          if (start.isEmpty) last0 = newElem
+          if (isEmpty) last0 = newElem
           start = newElem
           elems = elems.tail
         }
@@ -241,6 +248,15 @@ final class ListBuffer[A]
       case ex: Exception =>
         throw new IndexOutOfBoundsException(n.toString())
     }
+  }
+
+  /** Reduce the length of the buffer, and null out last0
+   *  if this reduces the length to 0.
+   */
+  private def reduceLengthBy(num: Int) {
+    len -= num
+    if (len <= 0)   // obviously shouldn't be < 0, but still better not to leak
+      last0 = null
   }
 
   /** Removes a given number of elements on a given index position. May take
@@ -274,7 +290,7 @@ final class ListBuffer[A]
         c -= 1
       }
     }
-    len -= count1
+    reduceLengthBy(count1)
   }
 
 // Implementation of abstract method in Builder
@@ -285,7 +301,7 @@ final class ListBuffer[A]
    *  copied lazily, the first time it is mutated.
    */
   override def toList: List[A] = {
-    exported = !start.isEmpty
+    exported = !isEmpty
     start
   }
 
@@ -296,7 +312,7 @@ final class ListBuffer[A]
    *  @param xs   the list to which elements are prepended
    */
   def prependToList(xs: List[A]): List[A] = {
-    if (start.isEmpty) xs
+    if (isEmpty) xs
     else {
       if (exported) copy()
       last0.tl = xs
@@ -331,7 +347,7 @@ final class ListBuffer[A]
       if (last0 eq cursor.tail) last0 = cursor.asInstanceOf[::[A]]
       cursor.asInstanceOf[::[A]].tl = cursor.tail.tail
     }
-    len -= 1
+    reduceLengthBy(1)
     old
   }
 
@@ -343,11 +359,12 @@ final class ListBuffer[A]
    */
   override def -= (elem: A): this.type = {
     if (exported) copy()
-    if (start.isEmpty) {}
+    if (isEmpty) {}
     else if (start.head == elem) {
       start = start.tail
-      len -= 1
-    } else {
+      reduceLengthBy(1)
+    }
+    else {
       var cursor = start
       while (!cursor.tail.isEmpty && cursor.tail.head != elem) {
         cursor = cursor.tail
@@ -357,7 +374,7 @@ final class ListBuffer[A]
         if (z.tl == last0)
           last0 = z
         z.tl = cursor.tail.tail
-        len -= 1
+        reduceLengthBy(1)
       }
     }
     this
@@ -397,6 +414,7 @@ final class ListBuffer[A]
 
   /** Copy contents of this buffer */
   private def copy() {
+    if (isEmpty) return
     var cursor = start
     val limit = last0.tail
     clear()
