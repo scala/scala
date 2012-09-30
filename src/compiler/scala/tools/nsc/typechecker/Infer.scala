@@ -1578,10 +1578,10 @@ trait Infer extends Checkable {
         }
         // Drop those that use a default; keep those that use vararg/tupling conversion.
         mtypes exists (t =>
-          !t.typeSymbol.hasDefaultFlag && {
-            compareLengths(t.params, argtpes) < 0 ||  // tupling (*)
-            hasExactlyNumParams(t, argtpes.length)    // same nb or vararg
-          }
+          !t.typeSymbol.hasDefaultFlag && (
+               compareLengths(t.params, argtpes) < 0  // tupling (*)
+            || hasExactlyNumParams(t, argtpes.length) // same nb or vararg
+          )
         )
         // (*) more arguments than parameters, but still applicable: tupling conversion works.
         //     todo: should not return "false" when paramTypes = (Unit) no argument is given
@@ -1608,15 +1608,18 @@ trait Infer extends Checkable {
       case OverloadedType(pre, alts) =>
         val pt = if (pt0.typeSymbol == UnitClass) WildcardType else pt0
         tryTwice { isSecondTry =>
-          debuglog("infer method alt "+ tree.symbol +" with alternatives "+
-                (alts map pre.memberType) +", argtpes = "+ argtpes +", pt = "+ pt)
+          debuglog(s"infer method alt ${tree.symbol} with alternatives ${alts map pre.memberType} argtpes=$argtpes pt=$pt")
 
-          val applicable = resolveOverloadedMethod(argtpes, {
-            alts filter { alt =>
-              inSilentMode(context)(isApplicable(undetparams, followApply(pre.memberType(alt)), argtpes, pt)) &&
-              (!varArgsOnly || isVarArgsList(alt.tpe.params))
-            }
-          })
+          def varargsApplicableCheck(alt: Symbol) = !varArgsOnly || (
+               isVarArgsList(alt.tpe.params)
+            && (argtpes.size >= alt.tpe.params.size) // must be checked now due to SI-5859
+          )
+          val applicable = resolveOverloadedMethod(argtpes,
+            alts filter (alt =>
+                 varargsApplicableCheck(alt)
+              && inSilentMode(context)(isApplicable(undetparams, followApply(pre memberType alt), argtpes, pt))
+            )
+          )
 
           def improves(sym1: Symbol, sym2: Symbol) = {
             // util.trace("improve "+sym1+sym1.locationString+" on "+sym2+sym2.locationString)

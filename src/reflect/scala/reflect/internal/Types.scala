@@ -3848,12 +3848,16 @@ trait Types extends api.Types { self: SymbolTable =>
   //   This is the specified behavior.
   protected def etaExpandKeepsStar = false
 
+  /** Turn any T* types into Seq[T] except when
+   *  in method parameter position.
+   */
   object dropRepeatedParamType extends TypeMap {
     def apply(tp: Type): Type = tp match {
       case MethodType(params, restpe) =>
-        MethodType(params, apply(restpe))
-      case PolyType(tparams, restpe) =>
-        PolyType(tparams, apply(restpe))
+        // Not mapping over params
+        val restpe1 = apply(restpe)
+        if (restpe eq restpe1) tp
+        else MethodType(params, restpe1)
       case TypeRef(_, RepeatedParamClass, arg :: Nil) =>
         seqType(arg)
       case _ =>
@@ -4668,6 +4672,8 @@ trait Types extends api.Types { self: SymbolTable =>
 
   /** A map to implement the `substSym` method. */
   class SubstSymMap(from: List[Symbol], to: List[Symbol]) extends SubstMap(from, to) {
+    def this(pairs: (Symbol, Symbol)*) = this(pairs.toList.map(_._1), pairs.toList.map(_._2))
+
     protected def toType(fromtp: Type, sym: Symbol) = fromtp match {
       case TypeRef(pre, _, args) => copyTypeRef(fromtp, pre, sym, args)
       case SingleType(pre, _) => singleType(pre, sym)
