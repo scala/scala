@@ -5,7 +5,6 @@
 import scala.collection.mutable.ArrayBuffer
 import scala.actors.Actor._
 import scala.actors._
-import scala.actors.migration.MigrationSystem
 import scala.util.continuations._
 import java.util.concurrent.{ TimeUnit, CountDownLatch }
 
