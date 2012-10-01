@@ -13,7 +13,7 @@ object StashingActor extends Combinators {
   }
 }
 
-@deprecated("Scala Actors are being removed from the standard library. Please refer to the migration guide.", "2.10")
+@deprecated("Scala Actors are being removed from the standard library. Please refer to the migration guide.", "2.10.0")
 trait StashingActor extends InternalActor {
   type Receive = PartialFunction[Any, Unit]
 
