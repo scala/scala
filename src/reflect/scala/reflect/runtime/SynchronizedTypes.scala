@@ -24,7 +24,8 @@ trait SynchronizedTypes extends internal.Types { self: SymbolTable =>
     // i.e. they have their caches cleaned up automatically on per-run basis,
     // therefore they should use vanilla uniques, which are faster
     if (!isCompilerUniverse) {
-      val result = if (uniques contains tp) uniques(tp).get else null
+      val inCache = uniques get tp
+      val result = if (inCache.isDefined) inCache.get.get else null
       if (result ne null) result.asInstanceOf[T]
       else {
         uniques(tp) = new WeakReference(tp)
