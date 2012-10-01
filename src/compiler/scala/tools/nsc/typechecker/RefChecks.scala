@@ -913,7 +913,6 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
           case NoPrefix =>
           case ThisType(_) =>
           case ConstantType(_) =>
-          // case DeBruijnIndex(_, _) =>
           case SingleType(pre, sym) =>
             validateVariance(pre, variance)
           case TypeRef(pre, sym, args) =>

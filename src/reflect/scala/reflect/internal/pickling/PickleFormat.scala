@@ -56,7 +56,7 @@ object PickleFormat {
  *                  | 42 ANNOTATEDtpe len_Nat [sym_Ref /* no longer needed */] tpe_Ref {annotinfo_Ref}
  *                  | 43 ANNOTINFO len_Nat AnnotInfoBody
  *                  | 44 ANNOTARGARRAY len_Nat {constAnnotArg_Ref}
- *                  | 47 DEBRUIJNINDEXtpe len_Nat level_Nat index_Nat
+ *                  | 47 DEBRUIJNINDEXtpe len_Nat level_Nat index_Nat /* no longer needed */
  *                  | 48 EXISTENTIALtpe len_Nat type_Ref {symbol_Ref}
  *                  | 49 TREE len_Nat 1 EMPTYtree
  *                  | 49 TREE len_Nat 2 PACKAGEtree type_Ref sym_Ref mods_Ref name_Ref {tree_Ref}
@@ -161,7 +161,7 @@ object PickleFormat {
   final val ANNOTARGARRAY = 44
 
   final val SUPERtpe = 46
-  final val DEBRUIJNINDEXtpe = 47
+  final val DEBRUIJNINDEXtpe = 47   // no longer generated
   final val EXISTENTIALtpe = 48
 
   final val TREE = 49      // prefix code that means a tree is coming
