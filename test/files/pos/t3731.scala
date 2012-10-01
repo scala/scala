@@ -1,6 +1,6 @@
 object Test{
   trait ZW[S]{type T}
-  def ZipWith[S, M <: ZW[S]]: M#T = error("ZW")
+  def ZipWith[S, M <: ZW[S]]: M#T = sys.error("ZW")
 
   // meh must be parameterised to force an asSeenFrom that 
   // duplicates the refinement in the TR's pre without updating its sym

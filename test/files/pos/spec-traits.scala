@@ -23,7 +23,7 @@ class Bug3307 {
   trait T[X]
 
 class Bug3301 {
-  def t[A]: T[A] = error("stub")
+  def t[A]: T[A] = sys.error("stub")
 
   () => {
     type X = Int

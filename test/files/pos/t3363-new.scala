@@ -9,7 +9,7 @@ object TestCase {
         //if you inherit from MapOps[T] instead of MapOps[F] then code compiles fine
         implicit def map2ops[T,F](fs: Map[T,F]) = new MapOps[F] {
           //if you remove this line, then code compiles
-      lazy val m: TypeTag[T] = error("just something to make it compile")
+      lazy val m: TypeTag[T] = sys.error("just something to make it compile")
       def is(xs: List[T]) = List(xs)
     }
 

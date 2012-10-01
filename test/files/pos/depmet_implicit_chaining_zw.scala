@@ -3,7 +3,7 @@ trait Succ[N]
 
 trait ZipWith[N, S] {
   type T
-  val x: T = error("")
+  val x: T = sys.error("")
 }
 
 object ZipWith {

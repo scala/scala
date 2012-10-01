@@ -14,12 +14,12 @@ trait Test {
   class MList[T](el: T) extends Monad[T, List, Any] {
     def flatMap[S <: RBound[S], RContainer[x <: RBound[x]], RBound[_],  
             Result[x <: RBound[x]] <: Monad[x, RContainer, RBound]]
-            (f: T => Result[S]): Result[S] = error("foo")
+            (f: T => Result[S]): Result[S] = sys.error("foo")
     def flatMap[S <: RBound[S], RContainer[x <: RBound[x]], RBound[_],  
             Result[x <: RBound[x]] <: Monad[x, RContainer, RBound]]
-            (f: T => Result[S], foo: String): Result[S]  = error("foo")
+            (f: T => Result[S], foo: String): Result[S]  = sys.error("foo")
     def flatMap[S]
-            (f: T => List[S], foo: Int): List[S]  = error("foo")              
+            (f: T => List[S], foo: Int): List[S]  = sys.error("foo")              
   }
   val l: MList[String] = moo.flatMap[String, List, Any, MList]((x: Int) => new MList("String"))
 }

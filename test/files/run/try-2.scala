@@ -19,14 +19,14 @@ object Test {
     try {
       Console.println("Nothin");
     } catch {
-      case _ => error("Bad, bad, lama!");
+      case _ => sys.error("Bad, bad, lama!");
     }
 
   def tryAllAll: Unit = 
     try {
       throw new Error();
     } catch {
-      case _ => error("Bad, bad, lama!");
+      case _ => sys.error("Bad, bad, lama!");
     }
 
   def tryUnitUnit: Unit = 

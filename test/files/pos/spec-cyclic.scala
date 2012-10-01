@@ -24,7 +24,7 @@ trait JclSorted[K,A] extends ColSorted[K,A] with JclRanged[K,A]
 trait JclSortedMap[K,E] extends ColSortedMap[K,E] with JclMap[K,E] with JclSorted[K,Tuple2[K,E]]
 
 class Foo[A, B] extends JclSortedMap[A, B] {
-  def apply(x: A): B = error("NYI")
+  def apply(x: A): B = sys.error("NYI")
 }
 
 class Bar {

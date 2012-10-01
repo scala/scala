@@ -68,14 +68,6 @@ abstract class Position {
 }
 
 object Position extends Position {
-  /** The undefined position */
-  @deprecated("This will be removed", "2.9.0")
-  final val NOPOS = 0
-
-  /** The first position in a source file */
-  @deprecated("This will be removed", "2.9.0")
-  final val FIRSTPOS = encode(1, 1)
-
   def checkInput(line: Int, column: Int) {
     if (line < 0)
       throw new IllegalArgumentException(line + " < 0")

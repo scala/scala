@@ -124,7 +124,6 @@ abstract class GenMSIL extends SubComponent {
 
     // Scala attributes
     // symtab.Definitions -> object (singleton..)
-    val SerializableAttr = definitions.SerializableAttr.tpe
     val CloneableAttr    = definitions.CloneableAttr.tpe
     val TransientAtt     = definitions.TransientAttr.tpe
     // remoting: the architectures are too different, no mapping (no portable code
@@ -1633,18 +1632,6 @@ abstract class GenMSIL extends SubComponent {
       mf = mf | (if (sym hasFlag Flags.ABSTRACT) TypeAttributes.Abstract else 0)
       mf = mf | (if (sym.isTrait && !sym.isImplClass) TypeAttributes.Interface else TypeAttributes.Class)
       mf = mf | (if (sym isFinal) TypeAttributes.Sealed else 0)
-
-      sym.annotations foreach { a => a match {
-        case AnnotationInfo(SerializableAttr, _, _) =>
-          // TODO: add the Serializable TypeAttribute also if the annotation
-          // System.SerializableAttribute is present (.net annotation, not scala)
-          //  Best way to do it: compare with
-          //  definitions.getClass("System.SerializableAttribute").tpe
-          //  when frontend available
-          mf = mf | TypeAttributes.Serializable
-        case _ => ()
-      }}
-
       mf
       // static: not possible (or?)
     }
