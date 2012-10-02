@@ -4578,7 +4578,7 @@ trait Typers extends Modes with Adaptations with Tags {
           // xml member to StringContext, which in turn has an unapply[Seq] method)
           if (name != nme.CONSTRUCTOR && inExprModeOr(mode, PATTERNmode)) {
             val qual1 = adaptToMemberWithArgs(tree, qual, name, mode, true, true)
-            if (qual1 ne qual)
+            if ((qual1 ne qual) && !qual1.isErrorTyped)
               return typed(treeCopy.Select(tree, qual1, name), mode, pt)
           }
           NoSymbol
