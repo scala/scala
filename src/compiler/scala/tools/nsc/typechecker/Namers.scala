@@ -800,7 +800,7 @@ trait Namers extends MethodSynthesis {
           false
       }
 
-      val tpe1 = dropRepeatedParamType(tpe.deconst)
+      val tpe1 = dropIllegalStarTypes(tpe.deconst)
       val tpe2 = tpe1.widen
 
       // This infers Foo.type instead of "object Foo"
