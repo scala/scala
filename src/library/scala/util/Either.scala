@@ -221,7 +221,7 @@ object Either {
       case Right(a) => a
     }
   }
-  @deprecated("use MergeableEither instead", "2.10")
+  @deprecated("use MergeableEither instead", "2.10.0")
   def either2mergeable[A](x: Either[A, A]): MergeableEither[A] = new MergeableEither(x)
 
   /**

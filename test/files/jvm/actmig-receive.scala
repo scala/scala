@@ -2,7 +2,6 @@
  * NOTE: Code snippets from this test are included in the Actor Migration Guide. In case you change
  * code in these tests prior to the 2.10.0 release please send the notification to @vjovanov.
  */
-import scala.actors.migration.MigrationSystem._
 import scala.actors.Actor._
 import scala.actors._
 import scala.actors.migration._
