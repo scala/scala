@@ -59,7 +59,7 @@ class Elem(
   val child: Node*)
 extends Node with Serializable
 {
-  @deprecated("This constructor is retained for backward compatibility. Please use the primary constructor, which lets you specify your own preference for `minimizeEmpty`.", "2.10")
+  @deprecated("This constructor is retained for backward compatibility. Please use the primary constructor, which lets you specify your own preference for `minimizeEmpty`.", "2.10.0")
   def this(prefix: String, label: String, attributes: MetaData, scope: NamespaceBinding, child: Node*) = {
     this(prefix, label, attributes, scope, child.isEmpty, child: _*)
   }

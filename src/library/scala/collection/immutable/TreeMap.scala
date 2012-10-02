@@ -51,7 +51,7 @@ class TreeMap[A, +B] private (tree: RB.Tree[A, B])(implicit val ordering: Orderi
      with MapLike[A, B, TreeMap[A, B]]
      with Serializable {
 
-  @deprecated("use `ordering.lt` instead", "2.10")
+  @deprecated("use `ordering.lt` instead", "2.10.0")
   def isSmaller(x: A, y: A) = ordering.lt(x, y)
 
   override protected[this] def newBuilder : Builder[(A, B), TreeMap[A, B]] =
