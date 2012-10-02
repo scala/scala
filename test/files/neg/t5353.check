@@ -1,0 +1,4 @@
+t5353.scala:2: error: this type parameter must be specified
+  def f(x: Boolean) = if (x) Array("abc") else Array()
+                                                    ^
+one error found
