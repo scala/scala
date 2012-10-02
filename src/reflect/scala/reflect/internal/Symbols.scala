@@ -1186,16 +1186,33 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
       }
     }
 
-    /** Get type. The type of a symbol is:
-     *  for a type symbol, the type corresponding to the symbol itself,
-     *    @M you should use tpeHK for a type symbol with type parameters if
-     *       the kind of the type need not be *, as tpe introduces dummy arguments
-     *       to generate a type of kind *
-     *  for a term symbol, its usual type.
+    /** Get type. The type of a term symbol is its usual type.
+     *  For a type symbol with no type parameters, it is the type corresponding to the symbol
+     *  itself. For a type symbol with type parameters, you
+     *  must determine whether you want tpeHK or tpe_*.  If you
+     *  call .tpe on such a symbol, you may trigger an assertion.
      *  See the tpe/tpeHK overrides in TypeSymbol for more.
      */
     def tpe: Type = info
+
+    /** The type of this symbol, with any unapplied type parameters
+     *  remaining unapplied (which means the type constructor.)
+     *  It may be of any kind.
+     */
     def tpeHK: Type = tpe
+
+    /** The type of this symbol, guaranteed to be of kind *.
+     *  If there are unapplied type parameters, they will be
+     *  substituted with dummy type arguments derived from the
+     *  type parameters.  Such types are not valid in a general
+     *  sense and will cause difficult-to-find bugs if allowed
+     *  to roam free.
+     *
+     *  You must call tpe_* explicitly to obtain these types,
+     *  at which point you are responsible for them as if it they
+     *  were your own minor children.
+     */
+    def tpe_* : Type = tpe
 
     /** Get type info associated with symbol at current phase, after
      *  ensuring that symbol is initialized (i.e. type is completed).
@@ -2688,20 +2705,27 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
      *    tsym.tpe  = TypeRef(NoPrefix, T, List())
      *  }}}
      */
-    override def tpe: Type = {
+    override def tpe: Type    = tpeOfKind(kindStar = false)
+    override def tpe_* : Type = tpeOfKind(kindStar = true)
+
+    private def tpeOfKind(kindStar: Boolean): Type = {
       if (tpeCache eq NoType) throw CyclicReference(this, typeConstructor)
       if (tpePeriod != currentPeriod) {
         if (isValid(tpePeriod)) {
           tpePeriod = currentPeriod
-        } else {
+        }
+        else {
           if (isInitialized) tpePeriod = currentPeriod
           tpeCache = NoType
-          val targs =
-            if (phase.erasedTypes && this != ArrayClass) List()
-            else unsafeTypeParams map (_.typeConstructor)
-            //@M! use typeConstructor to generate dummy type arguments,
-            // sym.tpe should not be called on a symbol that's supposed to be a higher-kinded type
-            // memberType should be used instead, that's why it uses tpeHK and not tpe
+          val targs = (
+            if (phase.erasedTypes && this != ArrayClass) Nil
+            else unsafeTypeParams map (_.typeConstructor) match {
+              case dummies if dummies.nonEmpty && settings.debug.value && !kindStar =>
+                printCaller(s"""Call to ${this.tpe} with unapplied ${dummies mkString ", "}: call tpe_* or tpeHK""")(dummies)
+              case dummies =>
+                dummies
+            }
+          )
           tpeCache = newTypeRef(targs)
         }
       }
