@@ -205,11 +205,8 @@ abstract class UnCurry extends InfoTransform
         val keyDef   = ValDef(key, New(ObjectClass.tpe))
         val tryCatch = Try(body, pat -> rhs)
 
-        body foreach {
-          case Try(t, catches, _) if catches exists treeInfo.catchesThrowable =>
-            unit.warning(body.pos, "catch block may intercept non-local return from " + meth)
-          case _ =>
-        }
+        for (Try(t, catches, _) <- body ; cdef <- catches ; if treeInfo catchesThrowable cdef)
+          unit.warning(body.pos, "catch block may intercept non-local return from " + meth)
 
         Block(List(keyDef), tryCatch)
       }
@@ -691,16 +688,16 @@ abstract class UnCurry extends InfoTransform
         else
           tree
       }
-      
+
       def isThrowable(pat: Tree): Boolean = pat match {
-        case Typed(Ident(nme.WILDCARD), tpt) => 
+        case Typed(Ident(nme.WILDCARD), tpt) =>
           tpt.tpe =:= ThrowableClass.tpe
-        case Bind(_, pat) => 
+        case Bind(_, pat) =>
           isThrowable(pat)
         case _ =>
           false
       }
-      
+
       def isDefaultCatch(cdef: CaseDef) = isThrowable(cdef.pat) && cdef.guard.isEmpty
 
       def postTransformTry(tree: Try) = {
@@ -764,10 +761,10 @@ abstract class UnCurry extends InfoTransform
 
         case tree: Try =>
           postTransformTry(tree)
-          
+
         case Apply(Apply(fn, args), args1) =>
           treeCopy.Apply(tree, fn, args ::: args1)
-          
+
         case Ident(name) =>
           assert(name != tpnme.WILDCARD_STAR, tree)
           applyUnary()
