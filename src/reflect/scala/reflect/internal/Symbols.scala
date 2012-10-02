@@ -642,7 +642,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     final def isStaticModule = isModule && isStatic && !isMethod
     final def isThisSym = isTerm && owner.thisSym == this
     final def isError = hasFlag(IS_ERROR)
-    final def isErroneous = isError || isInitialized && tpe.isErroneous
+    final def isErroneous = isError || isInitialized && tpe_*.isErroneous
 
     def isHigherOrderTypeParameter = owner.isTypeParameterOrSkolem
 
@@ -1739,7 +1739,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     def thisSym: Symbol = this
 
     /** The type of `this` in a class, or else the type of the symbol itself. */
-    def typeOfThis = thisSym.tpe
+    def typeOfThis = thisSym.tpe_*
 
     /** If symbol is a class, the type <code>this.type</code> in this class,
      * otherwise <code>NoPrefix</code>.

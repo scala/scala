@@ -56,7 +56,7 @@ abstract class SelectiveCPSTransform extends PluginComponent with
       case _ =>
         getExternalAnswerTypeAnn(tp) match {
           case Some((res, outer)) =>
-            appliedType(Context.tpe, List(removeAllCPSAnnotations(tp), res, outer))
+            appliedType(Context.tpeHK, List(removeAllCPSAnnotations(tp), res, outer))
           case _ =>
             removeAllCPSAnnotations(tp)
         }
@@ -107,7 +107,7 @@ abstract class SelectiveCPSTransform extends PluginComponent with
                 TypeApply(funR, List(targs(0), targs(1))).setType(appliedType(funR.tpe,
                     List(targs(0).tpe, targs(1).tpe))),
                 args.map(transform(_))
-            ).setType(appliedType(Context.tpe, List(targs(0).tpe,targs(1).tpe,targs(1).tpe)))
+            ).setType(appliedType(Context.tpeHK, List(targs(0).tpe,targs(1).tpe,targs(1).tpe)))
           }
 
         case Apply(TypeApply(fun, targs), args)
@@ -192,7 +192,7 @@ abstract class SelectiveCPSTransform extends PluginComponent with
           val targettp = transformCPSType(tree.tpe)
 
           val pos = catches.head.pos
-          val funSym = currentOwner.newValueParameter(cpsNames.catches, pos).setInfo(appliedType(PartialFunctionClass.tpe, List(ThrowableClass.tpe, targettp)))
+          val funSym = currentOwner.newValueParameter(cpsNames.catches, pos).setInfo(appliedType(PartialFunctionClass, ThrowableClass.tpe, targettp))
           val funDef = localTyper.typed(atPos(pos) {
             ValDef(funSym, Match(EmptyTree, catches1))
           })

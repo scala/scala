@@ -96,7 +96,7 @@ abstract class CPSAnnotationChecker extends CPSUtils with Modes {
       if (!cpsEnabled) return bounds
 
       val anyAtCPS = newCpsParamsMarker(NothingClass.tpe, AnyClass.tpe)
-      if (isFunctionType(tparams.head.owner.tpe) || isPartialFunctionType(tparams.head.owner.tpe)) {
+      if (isFunctionType(tparams.head.owner.tpe_*) || isPartialFunctionType(tparams.head.owner.tpe_*)) {
         vprintln("function bound: " + tparams.head.owner.tpe + "/"+bounds+"/"+targs)
         if (hasCpsParamTypes(targs.last))
           bounds.reverse match {
@@ -356,7 +356,7 @@ abstract class CPSAnnotationChecker extends CPSUtils with Modes {
         global.globalError("not a single cps annotation: " + xs)
         xs(0)
     }
-    
+
     def emptyOrSingleList(xs: List[AnnotationInfo]) = if (xs.isEmpty) Nil else List(single(xs))
 
     def transChildrenInOrder(tree: Tree, tpe: Type, childTrees: List[Tree], byName: List[Tree]) = {

@@ -69,7 +69,7 @@ trait Erasure {
   //
   // This requires that cls.isClass.
   protected def rebindInnerClass(pre: Type, cls: Symbol): Type = {
-    if (cls.owner.isClass) cls.owner.tpe else pre // why not cls.isNestedClass?
+    if (cls.owner.isClass) cls.owner.tpe_* else pre // why not cls.isNestedClass?
   }
 
   def unboxDerivedValueClassMethod(clazz: Symbol): Symbol =

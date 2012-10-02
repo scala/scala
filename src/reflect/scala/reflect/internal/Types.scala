@@ -735,6 +735,7 @@ trait Types extends api.Types { self: SymbolTable =>
      *  }}}
      */
     def memberInfo(sym: Symbol): Type = {
+      require(sym ne NoSymbol, this)
       sym.info.asSeenFrom(this, sym.owner)
     }
 
@@ -1403,7 +1404,7 @@ trait Types extends api.Types { self: SymbolTable =>
 
   object ThisType extends ThisTypeExtractor {
     def apply(sym: Symbol): Type =
-      if (phase.erasedTypes) sym.tpe
+      if (phase.erasedTypes) sym.tpe_*
       else unique(new UniqueThisType(sym))
   }
 
@@ -1633,7 +1634,7 @@ trait Types extends api.Types { self: SymbolTable =>
           val paramToVarMap = varToParamMap map (_.swap)
           val varToParam = new TypeMap {
             def apply(tp: Type) = varToParamMap get tp match {
-              case Some(sym) => sym.tpe
+              case Some(sym) => sym.tpe_*
               case _ => mapOver(tp)
             }
           }
@@ -1652,7 +1653,7 @@ trait Types extends api.Types { self: SymbolTable =>
             tpe.baseTypeSeqCache = undetBaseTypeSeq
             tpe.baseTypeSeqCache =
               if (tpe.typeSymbol.isRefinementClass)
-                tpe.memo(compoundBaseTypeSeq(tpe))(_.baseTypeSeq updateHead tpe.typeSymbol.tpe)
+                tpe.memo(compoundBaseTypeSeq(tpe))(_.baseTypeSeq updateHead tpe.typeSymbol.tpe_*)
               else
                 compoundBaseTypeSeq(tpe)
           } finally {

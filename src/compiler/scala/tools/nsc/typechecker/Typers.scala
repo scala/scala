@@ -327,7 +327,7 @@ trait Typers extends Modes with Adaptations with Tags {
     }
 
     def checkNonCyclic(sym: Symbol) {
-      if (!checkNonCyclic(sym.pos, sym.tpe)) sym.setInfo(ErrorType)
+      if (!checkNonCyclic(sym.pos, sym.tpe_*)) sym.setInfo(ErrorType)
     }
 
     def checkNonCyclic(defn: Tree, tpt: Tree) {
@@ -1460,7 +1460,7 @@ trait Typers extends Modes with Adaptations with Tags {
         val supertparams = if (supertpt.hasSymbol) supertpt.symbol.typeParams else List()
         var supertpe = supertpt.tpe
         if (!supertparams.isEmpty)
-          supertpe = PolyType(supertparams, appliedType(supertpe, supertparams map (_.tpeHK)))
+          supertpe = PolyType(supertparams, appliedType(supertpe.typeConstructor, supertparams map (_.tpeHK)))
 
         // A method to replace a super reference by a New in a supercall
         def transformSuperCall(scall: Tree): Tree = (scall: @unchecked) match {
@@ -1820,7 +1820,7 @@ trait Typers extends Modes with Adaptations with Tags {
         }
       }
 
-      treeCopy.Template(templ, parents1, self1, body1) setType clazz.tpe
+      treeCopy.Template(templ, parents1, self1, body1) setType clazz.tpe_*
     }
 
     /** Remove definition annotations from modifiers (they have been saved
@@ -3490,7 +3490,7 @@ trait Typers extends Modes with Adaptations with Tags {
             // sometimes does. The problem is that "self" ident's within
             // annot.constr will retain the old symbol from the previous typing.
             val func     = Function(funcparm :: Nil, ann.duplicate)
-            val funcType = appliedType(FunctionClass(1), selfsym.info, annClass.tpe)
+            val funcType = appliedType(FunctionClass(1), selfsym.info, annClass.tpe_*)
             val Function(arg :: Nil, rhs) = typed(func, mode, funcType)
 
             rhs.substituteSymbols(arg.symbol :: Nil, selfsym :: Nil)
@@ -4016,7 +4016,7 @@ trait Typers extends Modes with Adaptations with Tags {
             if (name != tpnme.WILDCARD) namer.enterInScope(sym)
             else context.scope.enter(sym)
 
-            tree setSymbol sym setType sym.tpe
+            tree setSymbol sym setType sym.tpeHK
 
           case name: TermName  =>
             val sym =
@@ -4215,7 +4215,7 @@ trait Typers extends Modes with Adaptations with Tags {
           NotAMemberError(tpt, TypeTree(tp), nme.CONSTRUCTOR)
           setError(tpt)
         }
-        else if (!(  tp == sym.thisSym.tpe // when there's no explicit self type -- with (#3612) or without self variable
+        else if (!(  tp == sym.thisSym.tpe_* // when there's no explicit self type -- with (#3612) or without self variable
                      // sym.thisSym.tpe == tp.typeOfThis (except for objects)
                   || narrowRhs(tp) <:< tp.typeOfThis
                   || phase.erasedTypes

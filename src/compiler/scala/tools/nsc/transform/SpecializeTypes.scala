@@ -588,7 +588,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
           res
         }
 
-        var parents = List(applyContext(enteringTyper(clazz.tpe)))
+        var parents = List(applyContext(enteringTyper(clazz.tpe_*)))
         // log("!!! Parents: " + parents + ", sym: " + parents.map(_.typeSymbol))
         if (parents.head.typeSymbol.isTrait)
           parents = parents.head.parents.head :: parents
@@ -1150,7 +1150,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
 
   private def subst(env: TypeEnv)(decl: Symbol): Symbol =
     decl modifyInfo (info =>
-      if (decl.isConstructor) MethodType(subst(env, info).params, decl.owner.tpe)
+      if (decl.isConstructor) MethodType(subst(env, info).params, decl.owner.tpe_*)
       else subst(env, info)
     )
 

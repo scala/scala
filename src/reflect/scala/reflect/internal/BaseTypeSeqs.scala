@@ -158,7 +158,7 @@ trait BaseTypeSeqs {
     val parents = tp.parents
 //    Console.println("computing baseTypeSeq of " + tsym.tpe + " " + parents)//DEBUG
     val buf = new mutable.ListBuffer[Type]
-    buf += tsym.tpe
+    buf += tsym.tpe_*
     var btsSize = 1
     if (parents.nonEmpty) {
       val nparents = parents.length
