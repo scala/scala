@@ -2625,16 +2625,13 @@ trait Typers extends Modes with Adaptations with Tags {
               if (context.retyping) context.scope enter vparam.symbol
               vparam.symbol
             }
-            val vparams = fun.vparams mapConserve (typedValDef)
-    //        for (vparam <- vparams) {
-    //          checkNoEscaping.locals(context.scope, WildcardType, vparam.tpt); ()
-    //        }
+            val vparams = fun.vparams mapConserve typedValDef
             val formals = vparamSyms map (_.tpe)
-            val body1 = typed(fun.body, respt)
-            val restpe = packedType(body1, fun.symbol).deconst.resultType
-            val funtpe = typeRef(clazz.tpe.prefix, clazz, formals :+ restpe)
-    //        body = checkNoEscaping.locals(context.scope, restpe, body)
-            treeCopy.Function(fun, vparams, body1).setType(funtpe)
+            val body1   = typed(fun.body, respt)
+            val restpe  = packedType(body1, fun.symbol).deconst.resultType
+            val funtpe  = appliedType(clazz, formals :+ restpe: _*)
+
+            treeCopy.Function(fun, vparams, body1) setType funtpe
         }
       }
     }
@@ -3480,35 +3477,23 @@ trait Typers extends Modes with Adaptations with Tags {
             // local dummy fixes SI-5544
             val localTyper = newTyper(context.make(ann, context.owner.newLocalDummy(ann.pos)))
             localTyper.typed(ann, mode, annClass.tpe)
-          } else {
-            // Since a selfsym is supplied, the annotation should have
-            // an extra "self" identifier in scope for type checking.
-            // This is implemented by wrapping the rhs
-            // in a function like "self => rhs" during type checking,
-            // and then stripping the "self =>" and substituting
-            // in the supplied selfsym.
+          }
+          else {
+            // Since a selfsym is supplied, the annotation should have an extra
+            // "self" identifier in scope for type checking. This is implemented
+            // by wrapping the rhs in a function like "self => rhs" during type
+            // checking, and then stripping the "self =>" and substituting in
+            // the supplied selfsym.
             val funcparm = ValDef(NoMods, nme.self, TypeTree(selfsym.info), EmptyTree)
-            val func = Function(List(funcparm), ann.duplicate)
-                                         // The .duplicate of annot.constr
-                                         // deals with problems that
-                                         // accur if this annotation is
-                                         // later typed again, which
-                                         // the compiler sometimes does.
-                                         // The problem is that "self"
-                                         // ident's within annot.constr
-                                         // will retain the old symbol
-                                         // from the previous typing.
-            val fun1clazz = FunctionClass(1)
-            val funcType = typeRef(fun1clazz.tpe.prefix,
-                                   fun1clazz,
-                                   List(selfsym.info, annClass.tpe))
+            // The .duplicate of annot.constr deals with problems that accur
+            // if this annotation is later typed again, which the compiler
+            // sometimes does. The problem is that "self" ident's within
+            // annot.constr will retain the old symbol from the previous typing.
+            val func     = Function(funcparm :: Nil, ann.duplicate)
+            val funcType = appliedType(FunctionClass(1), selfsym.info, annClass.tpe)
+            val Function(arg :: Nil, rhs) = typed(func, mode, funcType)
 
-            (typed(func, mode, funcType): @unchecked) match {
-              case t @ Function(List(arg), rhs) =>
-                val subs =
-                  new TreeSymSubstituter(List(arg.symbol),List(selfsym))
-                subs(rhs)
-            }
+            rhs.substituteSymbols(arg.symbol :: Nil, selfsym :: Nil)
           }
 
           def annInfo(t: Tree): AnnotationInfo = t match {
