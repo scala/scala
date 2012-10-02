@@ -918,5 +918,11 @@ trait Parsers {
   trait OnceParser[+T] extends Parser[T] {
     override def ~ [U](p: => Parser[U]): Parser[~[T, U]]
       = OnceParser{ (for(a <- this; b <- commit(p)) yield new ~(a,b)).named("~") }
+
+    override def ~>[U](p: => Parser[U]): Parser[U]
+      = OnceParser{ (for(a <- this; b <- commit(p)) yield b).named("~>") }
+
+    override def <~[U](p: => Parser[U]): Parser[T]
+      = OnceParser{ (for(a <- this; b <- commit(p)) yield a).named("<~") }
   }
 }
