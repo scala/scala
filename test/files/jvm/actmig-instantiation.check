@@ -1,5 +1,5 @@
-OK error: java.lang.RuntimeException: In order to create StashingActor one must use actorOf.
-OK error: java.lang.RuntimeException: Only one actor can be created per actorOf call.
+OK error: java.lang.RuntimeException: In order to create a StashingActor one must use the ActorDSL object
+OK error: java.lang.RuntimeException: Cannot create more than one actor
 0
 100
 200
