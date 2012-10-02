@@ -37,7 +37,7 @@ trait Show {
     }
   }
 
-  @deprecated("use SymApply instead", "2.10")
+  @deprecated("use SymApply instead", "2.10.0")
   def symApply(sym: Symbol): SymApply = new SymApply(sym)
 
   /** Apply method with name of given symbol `f` to given arguments and return
