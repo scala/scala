@@ -35,7 +35,7 @@ trait ScratchPadMaker { self: Global =>
 
     private def literal(str: String) = "\"\"\""+str+"\"\"\""
 
-    private val prologue = "import scala.runtime.WorksheetSupport._; def main(args: Array[String])=$execute{"
+    private val prologue = ";import scala.runtime.WorksheetSupport._; def main(args: Array[String])=$execute{"
 
     private val epilogue = "}"
 
@@ -117,12 +117,13 @@ trait ScratchPadMaker { self: Global =>
         super.traverse(tree)
       case ModuleDef(_, name, Template(_, _, body)) =>
         val topLevel = objectName.isEmpty
-        if (topLevel) objectName = tree.symbol.fullName
-        body foreach traverseStat
-        if (skipped != 0) { // don't issue prologue and epilogue if there are no instrumented statements
-          applyPendingPatches(skipped)
-          if (topLevel)
+        if (topLevel) {
+          objectName = tree.symbol.fullName
+          body foreach traverseStat
+          if (skipped != 0) { // don't issue prologue and epilogue if there are no instrumented statements
+            applyPendingPatches(skipped)
             patches += Patch(skipped, epilogue)
+          }
         }
       case _ =>
     }
