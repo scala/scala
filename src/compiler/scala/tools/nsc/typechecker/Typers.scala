@@ -3298,12 +3298,13 @@ trait Typers extends Modes with Adaptations with Tags {
       // println(util.Position.formatMessage(uncheckedPattern.pos, "made unchecked type test into a checked one", true))
 
       val args = List(uncheckedPattern)
+      val app  = atPos(uncheckedPattern.pos)(Apply(classTagExtractor, args))
       // must call doTypedUnapply directly, as otherwise we get undesirable rewrites
       // and re-typechecks of the target of the unapply call in PATTERNmode,
       // this breaks down when the classTagExtractor (which defineds the unapply member) is not a simple reference to an object,
       // but an arbitrary tree as is the case here
-      doTypedUnapply(Apply(classTagExtractor, args), classTagExtractor, classTagExtractor, args, PATTERNmode, pt)
-      }
+      doTypedUnapply(app, classTagExtractor, classTagExtractor, args, PATTERNmode, pt)
+    }
 
     // if there's a ClassTag that allows us to turn the unchecked type test for `pt` into a checked type test
     // return the corresponding extractor (an instance of ClassTag[`pt`])
