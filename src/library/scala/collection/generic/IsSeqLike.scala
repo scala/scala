@@ -30,7 +30,7 @@ package generic
   *    // == List(2, 4)
   * }}}
   *
-  * @see [[scala.collection.generic.Seq]]
+  * @see [[scala.collection.Seq]]
   * @see [[scala.collection.generic.IsTraversableLike]]
   */
 trait IsSeqLike[Repr] {
