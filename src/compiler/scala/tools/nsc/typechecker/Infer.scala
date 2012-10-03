@@ -1625,6 +1625,23 @@ trait Infer extends Checkable {
         tryTwice { isSecondTry =>
           debuglog(s"infer method alt ${tree.symbol} with alternatives ${alts map pre.memberType} argtpes=$argtpes pt=$pt")
 
+        /** Consider the following example from SI-5859
+          *
+          *    def f(xs: List[Int], ys: AnyRef*) = ()
+          *    def f(xs: AnyRef*) = ()
+          *
+          *  Now if you call f like this:
+          *
+          *  f(Nil: _*)
+          *
+          * Without `(argtpes.size >= alt.tpe.params.size)`, this would conclude you were calling the first one,
+          * because Nil is a List[Int] and the method is varargs and you are passing a varargs star.
+          * Yet, despite all those things being true, that's the wrong method.
+          *
+          * So, `(argtpes.size >= alt.tpe.params.size)` checks whether the method should even be considered
+          * (which, in this case, it should not -- there is only one argument, and it has a varargs star,
+          *  so there is no way to call a method which has a non-varargs parameter before its varargs part.)
+          */
           def varargsApplicableCheck(alt: Symbol) = !varArgsOnly || (
                isVarArgsList(alt.tpe.params)
             && (argtpes.size >= alt.tpe.params.size) // must be checked now due to SI-5859
