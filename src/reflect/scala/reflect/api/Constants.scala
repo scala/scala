@@ -37,7 +37,6 @@ trait Constants {
   abstract class ConstantApi {
     val value: Any
     def tpe: Type
-    def isNaN: Boolean
 
     def booleanValue: Boolean
     def byteValue: Byte
@@ -50,7 +49,5 @@ trait Constants {
     def stringValue: String
     def typeValue: Type
     def symbolValue: Symbol
-
-    def convertTo(pt: Type): Constant
   }
 }
