@@ -446,8 +446,7 @@ private[reflect] trait JavaMirrors extends internal.SymbolTable with api.JavaUni
             extends TemplateMirror {
       def outer: AnyRef
       def erasure: ClassSymbol
-      lazy val runtimeClass = classToJava(erasure)
-      lazy val signature = typeToScala(runtimeClass)
+      lazy val signature = typeToScala(classToJava(erasure))
     }
 
     private class JavaClassMirror(val outer: AnyRef, val symbol: ClassSymbol)
@@ -457,10 +456,6 @@ private[reflect] trait JavaMirrors extends internal.SymbolTable with api.JavaUni
       def reflectConstructor(constructor: MethodSymbol) = {
         checkConstructorOf(constructor, symbol)
         new JavaConstructorMirror(outer, constructor)
-      }
-      def companion: Option[ModuleMirror] = symbol.companionModule match {
-       case module: ModuleSymbol => Some(new JavaModuleMirror(outer, module))
-       case _ => None
       }
       override def toString = s"class mirror for ${symbol.fullName} (bound to $outer)"
     }
@@ -475,10 +470,6 @@ private[reflect] trait JavaMirrors extends internal.SymbolTable with api.JavaUni
         else
           if (outer == null) staticSingletonInstance(classToJava(symbol.moduleClass.asClass))
           else innerSingletonInstance(outer, symbol.name)
-      }
-      def companion: Option[ClassMirror] = symbol.companionClass match {
-        case cls: ClassSymbol => Some(new JavaClassMirror(outer, cls))
-        case _ => None
       }
       override def toString = s"module mirror for ${symbol.fullName} (bound to $outer)"
     }
