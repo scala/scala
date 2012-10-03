@@ -189,6 +189,13 @@ class Regex(regex: String, groupNames: String*) extends Serializable {
   }
   protected def runMatcher(m: Matcher) = m.matches()
 
+  /** Tries to match target (whole match) and returns, if this was successful.
+   *
+   *  @param s The string to match
+   *  @return  True, if the given string matches the pattern. False otherwise.
+   */
+  def matches(s: String) = runMatcher(pattern matcher s)
+
   /** Return all matches of this regexp in given character sequence as a [[scala.util.matching.Regex.MatchIterator]],
    *  which is a special [[scala.collection.Iterator]] that returns the
    *  matched strings, but can also be converted into a normal iterator
