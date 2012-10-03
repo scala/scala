@@ -184,7 +184,7 @@ trait TraversableOnce[+A] extends Any with GenTraversableOnce[A] {
 
   def fold[A1 >: A](z: A1)(op: (A1, A1) => A1): A1 = foldLeft(z)(op)
 
-  def aggregate[B](z: B)(seqop: (B, A) => B, combop: (B, B) => B): B = foldLeft(z)(seqop)
+  def aggregate[B](z: =>B)(seqop: (B, A) => B, combop: (B, B) => B): B = foldLeft(z)(seqop)
 
   def sum[B >: A](implicit num: Numeric[B]): B = foldLeft(num.zero)(num.plus)
 
