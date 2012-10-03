@@ -99,9 +99,6 @@ trait Trees { self: Universe =>
      */
     def symbol: Symbol
 
-    /** ... */
-    def hasSymbol: Boolean
-
     /** Provides an alternate if tree is empty
      *  @param  alt  The alternate tree
      *  @return If this tree is non empty, this tree, otherwise `alt`.
