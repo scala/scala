@@ -8,7 +8,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
 /**
  * Trait used for migration of Scala actors to Akka.
  */
-@deprecated("ActorRef ought to be used only with the Actor Migration Kit.")
+@deprecated("ActorRef ought to be used only with the Actor Migration Kit.", "2.10.0")
 trait ActorRef {
 
   /**

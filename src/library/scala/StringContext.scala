@@ -8,7 +8,7 @@
 
 package scala
 
-/** This class provides the basic mechanism to do String Interpolation.  
+/** This class provides the basic mechanism to do String Interpolation.
  * String Interpolation allows users
  * to embed variable references directly in *processed* string literals.
  * Here's an example:
@@ -26,7 +26,7 @@ package scala
  * is rewritten to be:
  *
  * {{{
- *   new StringContext("Hello, ", "").s(name)
+ *   StringContext("Hello, ", "").s(name)
  * }}}
  *
  * By default, this class provides the `raw`, `s` and `f` methods as
@@ -36,7 +36,7 @@ package scala
  * which adds a method to `StringContext`.  Here's an example:
  * {{{
  *    implicit class JsonHelper(val sc: StringContext) extends AnyVal {
- *     def json(args: Any*): JSONObject = ...
+ *      def json(args: Any*): JSONObject = ...
  *    }
  *    val x: JSONObject = json"{ a: $a }"
  * }}}
@@ -72,7 +72,7 @@ case class StringContext(parts: String*) {
    *    println(s"Hello, $name")  // Hello, James
    *  }}}
    *  In this example, the expression $name is replaced with the `toString` of the
-   *  variable `name`.  
+   *  variable `name`.
    *  The `s` interpolator can take the `toString` of any arbitrary expression within
    *  a `${}` block, for example:
    *  {{{
@@ -96,6 +96,13 @@ case class StringContext(parts: String*) {
    *  standard escape sequences as defined in the Scala specification.
    *
    *  For example, the raw processed string `raw"a\nb"` is equal to the scala string `"a\\nb"`.
+   *
+   *  ''Note:'' Even when using the raw interpolator, Scala will preprocess unicode escapes.
+   *  For example:
+   *  {{{
+   *    scala> raw"\u0123"
+   *    res0: String = ģ
+   *  }}}
    *
    *  @param `args` The arguments to be inserted into the resulting string.
    *  @throws An `IllegalArgumentException`

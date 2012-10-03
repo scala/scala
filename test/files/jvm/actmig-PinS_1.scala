@@ -9,7 +9,7 @@ import scala.concurrent.{ Promise, Await }
 
 object SillyActor {
   val startPromise = Promise[Boolean]()
-  val ref = MigrationSystem.actorOf(Props(() => new SillyActor, "akka.actor.default-stash-dispatcher"))
+  val ref = ActorDSL.actor(new SillyActor)
 }
 
 /* PinS, Listing 32.1: A simple actor
@@ -27,7 +27,7 @@ class SillyActor extends Actor {
 
 object SeriousActor {
   val startPromise = Promise[Boolean]()
-  val ref = MigrationSystem.actorOf(Props(() => new SeriousActor, "akka.actor.default-stash-dispatcher"))
+  val ref = ActorDSL.actor(new SeriousActor)
 }
 
 class SeriousActor extends Actor {
@@ -72,7 +72,7 @@ object Test extends App {
 
   /* PinS, Listing 32.2: An actor that calls receive
    */
-  def makeEchoActor(): ActorRef = MigrationSystem.actorOf(Props(() => new Actor {
+  def makeEchoActor(): ActorRef = ActorDSL.actor(new Actor {
     def act() {
       while (true) {
         receive {
@@ -83,20 +83,20 @@ object Test extends App {
         }
       }
     }
-  }, "akka.actor.default-stash-dispatcher"))
+  })
 
   /* PinS, page 696
    */
-  def makeIntActor(): ActorRef = MigrationSystem.actorOf(Props(() => new Actor {
+  def makeIntActor(): ActorRef = ActorDSL.actor(new Actor {
     def act() {
       receive {
         case x: Int => // I only want Ints
           println("Got an Int: " + x)
       }
     }
-  }, "akka.actor.default-stash-dispatcher"))
+  })
 
-  MigrationSystem.actorOf(Props(() => new Actor {
+  ActorDSL.actor(new Actor {
     def act() {
       trapExit = true
       link(SillyActor.ref)
@@ -109,15 +109,14 @@ object Test extends App {
             case Exit(_: SeriousActor, _) =>
               val seriousPromise2 = Promise[Boolean]()
               // PinS, page 694
-              val seriousActor2 = MigrationSystem.actorOf(Props(() =>
+              val seriousActor2 = ActorDSL.actor(
                 new Actor {
                   def act() {
                     for (i <- 1 to 5)
                       println("That is the question.")
                     seriousPromise2.success(true)
                   }
-                }
-              , "akka.actor.default-stash-dispatcher"))
+                })
 
               Await.ready(seriousPromise2.future, 5 seconds)
               val echoActor = makeEchoActor()
@@ -136,5 +135,5 @@ object Test extends App {
           }
       }
     }
-  }, "akka.actor.default-stash-dispatcher"))
+  })
 }

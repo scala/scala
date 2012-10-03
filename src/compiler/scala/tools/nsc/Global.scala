@@ -1001,7 +1001,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
    *
    *  @param    sym A class symbol, object symbol, package, or package class.
    */
-  @deprecated("use invalidateClassPathEntries instead")
+  @deprecated("use invalidateClassPathEntries instead", "2.10.0")
   def clearOnNextRun(sym: Symbol) = false
     /* To try out clearOnNext run on the scala.tools.nsc project itself
      * replace `false` above with the following code
@@ -1259,7 +1259,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
     /** Reset all classes contained in current project, as determined by
      *  the clearOnNextRun hook
      */
-    @deprecated("use invalidateClassPathEntries instead")
+    @deprecated("use invalidateClassPathEntries instead", "2.10.0")
     def resetProjectClasses(root: Symbol): Unit = try {
       def unlink(sym: Symbol) =
         if (sym != NoSymbol) root.info.decls.unlink(sym)

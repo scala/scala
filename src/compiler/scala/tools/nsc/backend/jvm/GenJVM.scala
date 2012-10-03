@@ -606,11 +606,10 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
       // put some random value; the actual number is determined at the end
       buf putShort 0xbaba.toShort
 
-      for (AnnotationInfo(tp, List(exc), _) <- excs.distinct if tp.typeSymbol == ThrowsClass) {
-        val Literal(const) = exc
+      for (ThrownException(exc) <- excs.distinct) {
         buf.putShort(
           cpool.addClass(
-            javaName(const.typeValue.typeSymbol)).shortValue)
+            javaName(exc)).shortValue)
         nattr += 1
       }
 

@@ -839,15 +839,10 @@ abstract class GenASM extends SubComponent with BytecodeWriters {
      *
      * The contents of that attribute are determined by the `String[] exceptions` argument to ASM's ClassVisitor.visitMethod()
      * This method returns such list of internal names.
-     *
      */
-    def getExceptions(excs: List[AnnotationInfo]): List[String] = {
-      for (AnnotationInfo(tp, List(exc), _) <- excs.distinct if tp.typeSymbol == ThrowsClass)
-      yield {
-        val Literal(const) = exc
-        javaName(const.typeValue.typeSymbol)
-      }
-    }
+    def getExceptions(excs: List[AnnotationInfo]): List[String] =
+      for (ThrownException(exc) <- excs.distinct)
+      yield javaName(exc)
 
     /** Whether an annotation should be emitted as a Java annotation
      *   .initialize: if 'annot' is read from pickle, atp might be un-initialized
