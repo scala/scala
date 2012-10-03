@@ -427,17 +427,17 @@ trait Importers extends api.Importers { self: SymbolTable =>
       }
       addFixup({
         if (mytree != null) {
-          val mysym = if (tree.hasSymbol) importSymbol(tree.symbol) else NoSymbol
+          val mysym = if (tree.hasSymbolField) importSymbol(tree.symbol) else NoSymbol
           val mytpe = importType(tree.tpe)
 
           mytree match {
             case mytt: TypeTree =>
               val tt = tree.asInstanceOf[from.TypeTree]
-              if (mytree.hasSymbol) mytt.symbol = mysym
+              if (mytree.hasSymbolField) mytt.symbol = mysym
               if (tt.wasEmpty) mytt.defineType(mytpe) else mytt.setType(mytpe)
               if (tt.original != null) mytt.setOriginal(importTree(tt.original))
             case _ =>
-              if (mytree.hasSymbol) mytree.symbol = importSymbol(tree.symbol)
+              if (mytree.hasSymbolField) mytree.symbol = importSymbol(tree.symbol)
               mytree.tpe = importType(tree.tpe)
           }
         }

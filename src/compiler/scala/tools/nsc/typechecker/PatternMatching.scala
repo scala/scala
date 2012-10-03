@@ -2547,7 +2547,7 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
             }
 
           val toString =
-            if (p.hasSymbol && p.symbol.isStable) p.symbol.name.toString // tp.toString
+            if (p.hasSymbolField && p.symbol.isStable) p.symbol.name.toString // tp.toString
             else p.toString //+"#"+ id
 
           Const.unique(narrowTp, new ValueConst(narrowTp, checkableType(wideTp), toString)) // must make wide type checkable so that it is comparable to types from TypeConst

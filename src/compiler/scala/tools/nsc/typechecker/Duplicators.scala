@@ -233,7 +233,7 @@ abstract class Duplicators extends Analyzer {
     override def typed(tree: Tree, mode: Int, pt: Type): Tree = {
       debuglog("typing " + tree + ": " + tree.tpe + ", " + tree.getClass)
       val origtreesym = tree.symbol
-      if (tree.hasSymbol && tree.symbol != NoSymbol
+      if (tree.hasSymbolField && tree.symbol != NoSymbol
           && !tree.symbol.isLabel  // labels cannot be retyped by the type checker as LabelDef has no ValDef/return type trees
           && invalidSyms.isDefinedAt(tree.symbol)) {
         debuglog("removed symbol " + tree.symbol)
@@ -403,7 +403,7 @@ abstract class Duplicators extends Analyzer {
         case _ =>
           debuglog("Duplicators default case: " + tree.summaryString)
           debuglog(" ---> " + tree)
-          if (tree.hasSymbol && tree.symbol != NoSymbol && (tree.symbol.owner == definitions.AnyClass)) {
+          if (tree.hasSymbolField && tree.symbol != NoSymbol && (tree.symbol.owner == definitions.AnyClass)) {
             tree.symbol = NoSymbol // maybe we can find a more specific member in a subclass of Any (see AnyVal members, like ==)
           }
           val ntree = castType(tree, pt)

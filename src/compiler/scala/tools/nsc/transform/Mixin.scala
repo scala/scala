@@ -438,7 +438,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
         tree match {
           case Assign(lhs, rhs) => traverse(rhs) // assignments don't count
           case _ =>
-            if (tree.hasSymbol && tree.symbol != NoSymbol) {
+            if (tree.hasSymbolField && tree.symbol != NoSymbol) {
               val sym = tree.symbol
               if ((sym.hasAccessorFlag || (sym.isTerm && !sym.isMethod))
                   && sym.isPrivate
@@ -804,7 +804,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
 	   */
 	  class TreeSymSubstituterWithCopying(from: List[Symbol], to: List[Symbol]) extends TreeSymSubstituter(from, to) {
 	    override def transform(tree: Tree): Tree =
-	      if (tree.hasSymbol && from.contains(tree.symbol))
+	      if (tree.hasSymbolField && from.contains(tree.symbol))
 	        super.transform(tree.duplicate)
 	      else super.transform(tree.duplicate)
 

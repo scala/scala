@@ -341,7 +341,7 @@ trait Trees extends scala.reflect.internal.Trees { self: Global =>
                 tree
               case _ =>
                 val dupl = tree.duplicate
-                if (tree.hasSymbol && (!localOnly || (locals contains tree.symbol)) && !(keepLabels && tree.symbol.isLabel))
+                if (tree.hasSymbolField && (!localOnly || (locals contains tree.symbol)) && !(keepLabels && tree.symbol.isLabel))
                   dupl.symbol = NoSymbol
                 dupl.tpe = null
                 dupl
