@@ -1,0 +1,10 @@
+[1.9] parsed: ((((<%~List( ))~hi)~List( ))~%>)
+[1.7] error: string matching regex `\w+' expected but `%' found
+
+<%    %>
+      ^
+[1.9] parsed: hi
+[1.7] error: string matching regex `\w+' expected but `%' found
+
+<%    %>
+      ^
