@@ -28,7 +28,7 @@ trait SymbolTables {
       symtab.get(sym) match {
         case Some(FreeDef(_, name, _, _, _)) => name
         case Some(SymDef(_, name, _, _)) => name
-        case None => EmptyTermName
+        case None => nme.EMPTY
       }
 
     def symAliases(sym: Symbol): List[TermName] =

@@ -75,12 +75,4 @@ trait Names {
   /** Creates a new type name.
    */
   def newTypeName(s: String): TypeName
-
-  /** Wraps the empty string. Can be used as the null object for term name.
-   */
-  def EmptyTermName: TermName = newTermName("")
-
-  /** Wraps the empty string. Can be used as the null object for type name.
-   */
-  def EmptyTypeName: TypeName = EmptyTermName.toTypeName
 }

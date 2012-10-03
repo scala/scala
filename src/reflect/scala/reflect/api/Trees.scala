@@ -1967,12 +1967,12 @@ trait Trees { self: Universe =>
   val Modifiers: ModifiersCreator
 
   abstract class ModifiersCreator {
-    def apply(): Modifiers = Modifiers(NoFlags, EmptyTypeName, List())
+    def apply(): Modifiers = Modifiers(NoFlags, tpnme.EMPTY, List())
     def apply(flags: FlagSet, privateWithin: Name, annotations: List[Tree]): Modifiers
   }
 
   def Modifiers(flags: FlagSet, privateWithin: Name): Modifiers = Modifiers(flags, privateWithin, List())
-  def Modifiers(flags: FlagSet): Modifiers = Modifiers(flags, EmptyTypeName)
+  def Modifiers(flags: FlagSet): Modifiers = Modifiers(flags, tpnme.EMPTY)
 
   /** ... */
   lazy val NoMods = Modifiers()
