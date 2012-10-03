@@ -2,7 +2,6 @@
  * NOTE: Code snippets from this test are included in the Actor Migration Guide. In case you change
  * code in these tests prior to the 2.10.0 release please send the notification to @vjovanov.
  */
-import scala.actors.migration.MigrationSystem._
 import scala.actors.Actor._
 import scala.actors._
 import scala.actors.migration._
@@ -27,7 +26,7 @@ object Test {
       }
     }
 
-    val myActor = MigrationSystem.actorOf(Props(() => new StashingActor {
+    val myActor = ActorDSL.actor(new StashingActor {
       context.setReceiveTimeout(1 millisecond)
       def receive = {
         case ReceiveTimeout =>
@@ -37,7 +36,7 @@ object Test {
         case _ =>
           println("Should not occur.")
       }
-    }, "default-stashing-dispatcher"))
+    })
   }
 
   def main(args: Array[String]) = {

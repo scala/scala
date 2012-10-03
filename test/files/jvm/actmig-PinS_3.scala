@@ -7,10 +7,9 @@ import scala.actors.migration._
 import scala.concurrent.duration._
 import scala.concurrent.{ Promise, Await }
 
-
 object SillyActor {
   val startPromise = Promise[Boolean]()
-  val ref = MigrationSystem.actorOf(Props(() => new SillyActor, "default-stash-dispatcher"))
+  val ref = ActorDSL.actor(new SillyActor)
 }
 
 /* PinS, Listing 32.1: A simple actor
@@ -32,7 +31,7 @@ class SillyActor extends StashingActor {
 
 object SeriousActor {
   val startPromise = Promise[Boolean]()
-  val ref = MigrationSystem.actorOf(Props(() => new SeriousActor, "default-stash-dispatcher"))
+  val ref = ActorDSL.actor(new SeriousActor)
 }
 
 class SeriousActor extends StashingActor {
@@ -48,7 +47,7 @@ class SeriousActor extends StashingActor {
 /* PinS, Listing 32.3: An actor that calls react
  */
 object NameResolver {
-  val ref = MigrationSystem.actorOf(Props(() => new NameResolver, "default-stash-dispatcher"))
+  val ref = ActorDSL.actor(new NameResolver)
 }
 
 class NameResolver extends StashingActor {
@@ -78,7 +77,7 @@ object Test extends App {
 
   /* PinS, Listing 32.2: An actor that calls receive
    */
-  def makeEchoActor(): ActorRef = MigrationSystem.actorOf(Props(() => new StashingActor {
+  def makeEchoActor(): ActorRef = ActorDSL.actor(new StashingActor {
 
     def receive = { // how to handle receive
       case 'stop =>
@@ -86,11 +85,11 @@ object Test extends App {
       case msg =>
         println("received message: " + msg)
     }
-  }, "default-stash-dispatcher"))
+  })
 
   /* PinS, page 696
    */
-  def makeIntActor(): ActorRef = MigrationSystem.actorOf(Props(() => new StashingActor {
+  def makeIntActor(): ActorRef = ActorDSL.actor(new StashingActor {
 
     def receive = {
       case x: Int => // I only want Ints
@@ -99,9 +98,9 @@ object Test extends App {
         context.stop(self)
       case _ => stash()
     }
-  }, "default-stash-dispatcher"))
+  })
 
-  MigrationSystem.actorOf(Props(() => new StashingActor {
+  ActorDSL.actor(new StashingActor {
     val silly = SillyActor.ref
 
     override def preStart() {
@@ -119,7 +118,7 @@ object Test extends App {
           case Terminated(`serious`) =>
             val seriousPromise2 = Promise[Boolean]()
             // PinS, page 694
-            val seriousActor2 = MigrationSystem.actorOf(Props(() => {
+            val seriousActor2 = ActorDSL.actor(
               new StashingActor {
 
                 def receive = { case _ => context.stop(self) }
@@ -130,8 +129,7 @@ object Test extends App {
                   seriousPromise2.success(true)
                   context.stop(self)
                 }
-              }
-            }, "default-stash-dispatcher"))
+              })
 
             Await.ready(seriousPromise2.future, 5 seconds)
             val echoActor = makeEchoActor()
@@ -162,5 +160,5 @@ object Test extends App {
         println("Stash 3 " + m)
         stash(m)
     }
-  }, "default-stash-dispatcher"))
+  })
 }

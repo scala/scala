@@ -14,7 +14,7 @@ package scala
  * {{{
  * class Reader(fname: String) {
  *   private val in = new BufferedReader(new FileReader(fname))
- *   @throws(classOf[IOException])
+ *   @throws[IOException]("if the file doesn't exist")
  *   def read() = in.read()
  * }
  * }}}
@@ -23,4 +23,6 @@ package scala
  * @version 1.0, 19/05/2006
  * @since   2.1
  */
-class throws(clazz: Class[_]) extends scala.annotation.StaticAnnotation
+class throws[T <: Throwable](cause: String = "") extends scala.annotation.StaticAnnotation {
+  def this(clazz: Class[T]) = this()
+}

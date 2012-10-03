@@ -31,7 +31,7 @@ abstract class BitSet extends scala.collection.AbstractSet[Int]
                          with Serializable {
   override def empty = BitSet.empty
 
-  @deprecated("Use BitSet.fromBitMask[NoCopy] instead of fromArray", "2.10")
+  @deprecated("Use BitSet.fromBitMask[NoCopy] instead of fromArray", "2.10.0")
   def fromArray(elems: Array[Long]): BitSet = fromBitMaskNoCopy(elems)
 
   protected def fromBitMaskNoCopy(elems: Array[Long]): BitSet = BitSet.fromBitMaskNoCopy(elems)
@@ -82,7 +82,7 @@ object BitSet extends BitSetFactory[BitSet] {
   implicit def canBuildFrom: CanBuildFrom[BitSet, Int, BitSet] = bitsetCanBuildFrom
 
   /** A bitset containing all the bits in an array */
-  @deprecated("Use fromBitMask[NoCopy] instead of fromArray", "2.10")
+  @deprecated("Use fromBitMask[NoCopy] instead of fromArray", "2.10.0")
   def fromArray(elems: Array[Long]): BitSet = fromBitMaskNoCopy(elems)
 
   /** A bitset containing all the bits in an array */

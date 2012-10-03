@@ -957,7 +957,7 @@ trait Definitions extends api.StandardDefinitions {
     lazy val ScalaNoInlineClass         = requiredClass[scala.noinline]
     lazy val SerialVersionUIDAttr       = requiredClass[scala.SerialVersionUID]
     lazy val SpecializedClass           = requiredClass[scala.specialized]
-    lazy val ThrowsClass                = requiredClass[scala.throws]
+    lazy val ThrowsClass                = requiredClass[scala.throws[_]]
     lazy val TransientAttr              = requiredClass[scala.transient]
     lazy val UncheckedClass             = requiredClass[scala.unchecked]
     lazy val UnspecializedClass         = requiredClass[scala.annotation.unspecialized]
