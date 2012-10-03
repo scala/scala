@@ -39,7 +39,7 @@ object Searching {
       * The sequence should be sorted with the same `Ordering` before calling; otherwise,
       * the results are undefined.
       *
-      * @see [[scala.math.IndexedSeq]]
+      * @see [[scala.collection.IndexedSeq]]
       * @see [[scala.math.Ordering]]
       * @see [[scala.collection.SeqLike]], method `sorted`
       *
@@ -63,7 +63,7 @@ object Searching {
       * The sequence should be sorted with the same `Ordering` before calling; otherwise,
       * the results are undefined.
       *
-      * @see [[scala.math.IndexedSeq]]
+      * @see [[scala.collection.IndexedSeq]]
       * @see [[scala.math.Ordering]]
       * @see [[scala.collection.SeqLike]], method `sorted`
       *
