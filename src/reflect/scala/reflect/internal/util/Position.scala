@@ -7,7 +7,7 @@
 package scala.reflect.internal.util
 
 import scala.reflect.ClassTag
-import scala.reflect.api.Attachments
+import scala.reflect.macros.Attachments
 
 object Position {
   val tabInc = 8

@@ -7,7 +7,7 @@ abstract class Universe extends scala.reflect.api.Universe {
 
   trait AttachableApi {
     /** ... */
-    def attachments: scala.reflect.api.Attachments { type Pos = Position }
+    def attachments: Attachments { type Pos = Position }
 
     /** ... */
     def updateAttachment[T: ClassTag](attachment: T): AttachableApi.this.type

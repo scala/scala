@@ -1,6 +1,8 @@
 package scala.reflect
 package api
 
+import scala.reflect.macros.Attachments
+
 /** The Position class and its subclasses represent positions of ASTs and symbols.
  *  Except for NoPosition and FakePos, every position refers to a SourceFile
  *  and to an offset in the sourcefile (its `point`). For batch compilation,

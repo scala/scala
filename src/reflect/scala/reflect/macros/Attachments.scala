@@ -1,12 +1,20 @@
 package scala.reflect
-package api
+package macros
 
-/** Attachments is a generalization of Position. Typically it stores a Position of a tree, but this can be extended to
+/** Attachments provide a way to associate custom metadata with symbols and trees.
+ *
+ *  Along with `symbol` and `tpe`, which represent core metadata of trees, each tree
+ *  carries the `attachments` field that can store other metadata: compiler-defined (e.g. positions) or user-defined.
+ *  Same story is true for symbols, which also have extensible metadata by the virtue
+ *  of the same `attachments` field.
+ *
+ *  Typically attachments just store a [[scala.reflect.api.Position]], but they can be extended to
  *  encompass arbitrary payloads. Payloads are stored in type-indexed slots, which can be read with `get[T]` and written
  *  with `update[T]` and `remove[T]`.
  *
- *  Attachments always carry positions because we don't want to introduce an additional field for attachments in `Tree`
- *  imposing an unnecessary memory tax because of something that will not be used in most cases.
+ *  This API doesn't have much use in the runtime reflection API (the [[scala.reflect.api]] package), but it might be of help
+ *  for macro writers, providing a way to coordinate multiple macros operating on the same code. Therefore the `attachments`
+ *  field is only declared in trees and symbols belonging to [[scala.reflect.macros.Universe]].
  */
 abstract class Attachments { self =>
 
@@ -30,8 +38,7 @@ abstract class Attachments { self =>
     (all filter matchesTag[T]).headOption.asInstanceOf[Option[T]]
 
   /** Creates a copy of this attachment with the payload slot of T added/updated with the provided value.
-   *
-   * Replaces an existing payload of the same type, if exists.
+   *  Replaces an existing payload of the same type, if exists.
    */
   def update[T: ClassTag](attachment: T): Attachments { type Pos = self.Pos } =
     new NonemptyAttachments(this.pos, remove[T].all + attachment)
