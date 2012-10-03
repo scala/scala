@@ -516,7 +516,7 @@ trait Infer extends Checkable {
       val tvars = tparams map freshVar
       if (isConservativelyCompatible(restpe.instantiateTypeParams(tparams, tvars), pt))
         map2(tparams, tvars)((tparam, tvar) =>
-          instantiateToBound(tvar, inferVariance(formals, restpe)(tparam)))
+          instantiateToBound(tvar, varianceInTypes(formals)(tparam)))
       else
         tvars map (tvar => WildcardType)
     }
@@ -646,9 +646,8 @@ trait Infer extends Checkable {
             "argument expression's type is not compatible with formal parameter type" + foundReqMsg(tp1, pt1))
         }
       }
-
       val targs = solvedTypes(
-        tvars, tparams, tparams map inferVariance(formals, restpe),
+        tvars, tparams, tparams map varianceInTypes(formals),
         false, lubDepth(formals) max lubDepth(argtpes)
       )
       // Can warn about inferring Any/AnyVal as long as they don't appear
@@ -671,16 +670,6 @@ trait Infer extends Checkable {
         )
       }
       adjustTypeArgs(tparams, tvars, targs, restpe)
-    }
-
-    /** Determine which variance to assume for the type paraneter. We first chose the variance
-     *  that minimizes any formal parameters. If that is still undetermined, because the type parameter
-     *  does not appear as a formal parameter type, then we pick the variance so that it minimizes the
-     *  method's result type instead.
-     */
-    private def inferVariance(formals: List[Type], restpe: Type)(tparam: Symbol): Int = {
-      val v = varianceInTypes(formals)(tparam)
-      if (v != VarianceFlags) v else varianceInType(restpe)(tparam)
     }
 
     private[typechecker] def followApply(tp: Type): Type = tp match {

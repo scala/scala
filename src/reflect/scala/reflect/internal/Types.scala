@@ -3599,9 +3599,20 @@ trait Types extends api.Types { self: SymbolTable =>
 */
 
   /** A creator for type applications */
-  def appliedType(tycon: Type, args: List[Type]): Type =
-    if (args.isEmpty) tycon //@M! `if (args.isEmpty) tycon' is crucial (otherwise we create new types in phases after typer and then they don't get adapted (??))
-    else tycon match {
+  def appliedType(tycon: Type, args: List[Type]): Type = {
+    if (args.isEmpty)
+      return tycon //@M! `if (args.isEmpty) tycon' is crucial (otherwise we create new types in phases after typer and then they don't get adapted (??))
+
+    /** Disabled - causes cycles in tcpoly tests. */
+    if (false && isDefinitionsInitialized) {
+      assert(isUseableAsTypeArgs(args), {
+        val tapp_s = s"""$tycon[${args mkString ", "}]"""
+        val arg_s  = args filterNot isUseableAsTypeArg map (t => t + "/" + t.getClass) mkString ", "
+        s"$tapp_s includes illegal type argument $arg_s"
+      })
+    }
+
+    tycon match {
       case TypeRef(pre, sym @ (NothingClass|AnyClass), _) => copyTypeRef(tycon, pre, sym, Nil)   //@M drop type args to Any/Nothing
       case TypeRef(pre, sym, _)                           => copyTypeRef(tycon, pre, sym, args)
       case PolyType(tparams, restpe)                      => restpe.instantiateTypeParams(tparams, args)
@@ -3615,6 +3626,7 @@ trait Types extends api.Types { self: SymbolTable =>
       case WildcardType                                   => tycon // needed for neg/t0226
       case _                                              => abort(debugString(tycon))
     }
+  }
 
   /** Very convenient. */
   def appliedType(tyconSym: Symbol, args: Type*): Type =
@@ -5672,6 +5684,99 @@ trait Types extends api.Types { self: SymbolTable =>
     case ConstantType(_) => true
     case _ => false
   }
+
+  /** This is defined and named as it is because the goal is to exclude source
+   *  level types which are not value types (e.g. MethodType) without excluding
+   *  necessary internal types such as WildcardType.  There are also non-value
+   *  types which can be used as type arguments (e.g. type constructors.)
+   */
+  def isUseableAsTypeArg(tp: Type) = (
+       isInternalTypeUsedAsTypeArg(tp)  // the subset of internal types which can be type args
+    || isHKTypeRef(tp)                  // not a value type, but ok as a type arg
+    || isValueElseNonValue(tp)          // otherwise only value types
+  )
+
+  private def isHKTypeRef(tp: Type) = tp match {
+    case TypeRef(_, sym, Nil) => tp.isHigherKinded
+    case _                    => false
+  }
+  @tailrec final def isUseableAsTypeArgs(tps: List[Type]): Boolean = tps match {
+    case Nil     => true
+    case x :: xs => isUseableAsTypeArg(x) && isUseableAsTypeArgs(xs)
+  }
+
+  /** The "third way", types which are neither value types nor
+   *  non-value types as defined in the SLS, further divided into
+   *  types which are used internally in type applications and
+   *  types which are not.
+   */
+  private def isInternalTypeNotUsedAsTypeArg(tp: Type): Boolean = tp match {
+    case AntiPolyType(pre, targs)            => true
+    case ClassInfoType(parents, defs, clazz) => true
+    case ErasedValueType(tref)               => true
+    case NoPrefix                            => true
+    case NoType                              => true
+    case SuperType(thistpe, supertpe)        => true
+    case TypeBounds(lo, hi)                  => true
+    case _                                   => false
+  }
+  private def isInternalTypeUsedAsTypeArg(tp: Type): Boolean = tp match {
+    case WildcardType           => true
+    case BoundedWildcardType(_) => true
+    case ErrorType              => true
+    case _: TypeVar             => true
+    case _                      => false
+  }
+  private def isAlwaysValueType(tp: Type) = tp match {
+    case RefinedType(_, _)       => true
+    case ExistentialType(_, _)   => true
+    case ConstantType(_)         => true
+    case _                       => false
+  }
+  private def isAlwaysNonValueType(tp: Type) = tp match {
+    case OverloadedType(_, _)          => true
+    case NullaryMethodType(_)          => true
+    case MethodType(_, _)              => true
+    case PolyType(_, MethodType(_, _)) => true
+    case _                             => false
+  }
+  /** Should be called only with types for which a clear true/false answer
+   *  can be given: true == value type, false == non-value type.  Otherwise,
+   *  an exception is thrown.
+   */
+  private def isValueElseNonValue(tp: Type): Boolean = tp match {
+    case tp if isAlwaysValueType(tp)           => true
+    case tp if isAlwaysNonValueType(tp)        => false
+    case AnnotatedType(_, underlying, _)       => isValueElseNonValue(underlying)
+    case SingleType(_, sym)                    => sym.isValue           // excludes packages and statics
+    case TypeRef(_, _, _) if tp.isHigherKinded => false                 // excludes type constructors
+    case ThisType(sym)                         => !sym.isPackageClass   // excludes packages
+    case TypeRef(_, sym, _)                    => !sym.isPackageClass   // excludes packages
+    case PolyType(_, _)                        => true                  // poly-methods excluded earlier
+    case tp                                    => sys.error("isValueElseNonValue called with third-way type " + tp)
+  }
+
+  /** SLS 3.2, Value Types
+   *  Is the given type definitely a value type? A true result means
+   *  it verifiably is, but a false result does not mean it is not,
+   *  only that it cannot be assured.  To avoid false positives, this
+   *  defaults to false, but since Type is not sealed, one should take
+   *  a false answer with a grain of salt.  This method may be primarily
+   *  useful as documentation; it is likely that !isNonValueType(tp)
+   *  will serve better than isValueType(tp).
+   */
+  def isValueType(tp: Type) = isValueElseNonValue(tp)
+
+  /** SLS 3.3, Non-Value Types
+   *  Is the given type definitely a non-value type, as defined in SLS 3.3?
+   *  The specification-enumerated non-value types are method types, polymorphic
+   *  method types, and type constructors.  Supplements to the specified set of
+   *  non-value types include: types which wrap non-value symbols (packages
+   *  abd statics), overloaded types. Varargs and by-name types T* and (=>T) are
+   *  not designated non-value types because there is code which depends on using
+   *  them as type arguments, but their precise status is unclear.
+   */
+  def isNonValueType(tp: Type) = !isValueElseNonValue(tp)
 
   def isNonRefinementClassType(tpe: Type) = tpe match {
     case SingleType(_, sym) => sym.isModuleClass

@@ -845,7 +845,7 @@ class ModelFactory(val global: Global, val settings: doc.Settings) {
     inTpl.members.find(_.sym == aSym)
   }
 
-  @deprecated("2.10", "Use findLinkTarget instead!")
+  @deprecated("Use `findLinkTarget` instead.", "2.10.0")
   def findTemplate(query: String): Option[DocTemplateImpl] = {
     assert(modelFinished)
     docTemplatesCache.values find { (tpl: DocTemplateImpl) => tpl.qualifiedName == query && !packageDropped(tpl) && !tpl.isObject }

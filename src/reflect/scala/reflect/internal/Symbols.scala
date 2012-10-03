@@ -91,8 +91,8 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     def module                            = sourceModule
     def thisPrefix: Type                  = thisType
     def selfType: Type                    = typeOfThis
-    def typeSignature: Type               = info
-    def typeSignatureIn(site: Type): Type = site memberInfo this
+    def typeSignature: Type               = { fullyInitializeSymbol(this); info }
+    def typeSignatureIn(site: Type): Type = { fullyInitializeSymbol(this); site memberInfo this }
 
     def toType: Type = tpe
     def toTypeIn(site: Type): Type = site.memberType(this)
@@ -2973,7 +2973,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     }
 
     override def derivedValueClassUnbox =
-      (info.decl(nme.unbox)) orElse
+      // (info.decl(nme.unbox)) orElse      uncomment once we accept unbox methods
       (info.decls.find(_ hasAllFlags PARAMACCESSOR | METHOD) getOrElse
        NoSymbol)
 
