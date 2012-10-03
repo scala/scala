@@ -1,7 +1,9 @@
-t5882.scala:4: error: nested object is not allowed in value class
+t5882.scala:4: error: implementation restriction: nested class is not allowed in value class
+This restriction is planned to be removed in subsequent releases.
   case class Scope()
              ^
-t5882.scala:5: error: nested object is not allowed in value class
+t5882.scala:5: error: implementation restriction: nested object is not allowed in value class
+This restriction is planned to be removed in subsequent releases.
   object Bar
          ^
 two errors found

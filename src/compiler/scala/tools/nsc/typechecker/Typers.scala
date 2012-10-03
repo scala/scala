@@ -1389,25 +1389,63 @@ trait Typers extends Modes with Adaptations with Tags {
     }
 
     private def checkEphemeral(clazz: Symbol, body: List[Tree]) = {
+      // NOTE: Code appears to be messy in this method for good reason: it clearly
+      // communicates the fact that it implements rather ad-hoc, arbitrary and
+      // non-regular set of rules that identify features that interact badly with
+      // value classes. This code can be cleaned up a lot once implementation
+      // restrictions are addressed.
       val isValueClass = !clazz.isTrait
-      for (stat <- body) {
-        def notAllowed(what: String) = {
-          val where = if (clazz.isTrait) "universal trait extending from class Any" else "value class"
-          unit.error(stat.pos, s"$what is not allowed in $where")
+      def where = if (isValueClass) "value class" else "universal trait extending from class Any"
+      def implRestriction(tree: Tree, what: String) =
+        unit.error(tree.pos, s"implementation restriction: $what is not allowed in $where" +
+           "\nThis restriction is planned to be removed in subsequent releases.")
+      /**
+       * Deeply traverses the tree in search of constructs that are not allowed
+       * in value classes (at any nesting level).
+       *
+       * All restrictions this object imposes are probably not fundamental but require
+       * fair amount of work and testing. We are conservative for now when it comes
+       * to allowing language features to interact with value classes.
+       *  */
+      object checkEphemeralDeep extends Traverser {
+        override def traverse(tree: Tree): Unit = if (isValueClass) {
+          tree match {
+            case _: ModuleDef =>
+              //see https://issues.scala-lang.org/browse/SI-6359
+              implRestriction(tree, "nested object")
+            //see https://issues.scala-lang.org/browse/SI-6444
+            //see https://issues.scala-lang.org/browse/SI-6463
+            case _: ClassDef =>
+              implRestriction(tree, "nested class")
+            case x: ValDef if x.mods.isLazy =>
+              //see https://issues.scala-lang.org/browse/SI-6358
+              implRestriction(tree, "lazy val")
+            case _ =>
+          }
+          super.traverse(tree)
         }
-         stat match {
-          case _: Import | _: TypeDef | _: ClassDef | EmptyTree => // OK
-          case DefDef(_, name, _, _, _, _) =>
+      }
+      for (stat <- body) {
+        def notAllowed(what: String) = unit.error(stat.pos, s"$what is not allowed in $where")
+        stat match {
+          // see https://issues.scala-lang.org/browse/SI-6444
+          // see https://issues.scala-lang.org/browse/SI-6463
+          case ClassDef(mods, _, _, _) if isValueClass =>
+            implRestriction(stat, s"nested ${ if (mods.isTrait) "trait" else "class" }")
+          case _: Import | _: ClassDef | _: TypeDef | EmptyTree => // OK
+          case DefDef(_, name, _, _, _, rhs) =>
             if (stat.symbol.isAuxiliaryConstructor)
               notAllowed("secondary constructor")
             else if (isValueClass && (name == nme.equals_ || name == nme.hashCode_))
-              notAllowed(s"redefinition of $name method")
-            else if (stat.symbol != null && (stat.symbol hasFlag PARAMACCESSOR))
+              notAllowed(s"redefinition of $name method. See SIP-15, criterion 4.")
+            else if (stat.symbol != null && stat.symbol.isParamAccessor)
               notAllowed("additional parameter")
+            checkEphemeralDeep.traverse(rhs)
           case _: ValDef =>
             notAllowed("field definition")
           case _: ModuleDef =>
-            notAllowed("nested object")
+            //see https://issues.scala-lang.org/browse/SI-6359
+            implRestriction(stat, "nested object")
           case _ =>
             notAllowed("this statement")
         }
