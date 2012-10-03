@@ -3,6 +3,12 @@ import scala.reflect.runtime.universe.definitions._
 import scala.reflect.runtime.{currentMirror => cm}
 import scala.reflect.ClassTag
 
+package scala {
+  object ExceptionUtils {
+    def unwrapThrowable(ex: Throwable): Throwable = scala.reflect.runtime.ReflectionUtils.unwrapThrowable(ex)
+  }
+}
+
 object Test extends App {
   def key(sym: Symbol) = {
     sym match {
@@ -35,7 +41,7 @@ object Test extends App {
         println(s"[${result.getClass}] =======> $result")
       } catch {
         case ex: Throwable =>
-          val realex = scala.reflect.runtime.ReflectionUtils.unwrapThrowable(ex)
+          val realex = scala.ExceptionUtils.unwrapThrowable(ex)
           println(realex.getClass + ": " + realex.getMessage)
       }
     val meth = tpe.declaration(newTermName(method).encodedName.toTermName)

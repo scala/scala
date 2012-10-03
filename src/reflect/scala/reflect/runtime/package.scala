@@ -11,7 +11,7 @@ package object runtime {
 }
 
 package runtime {
-  object Macros {
+  private[scala] object Macros {
     def currentMirror(c: scala.reflect.macros.Context): c.Expr[universe.Mirror] = {
       import c.universe._
       val runtimeClass = c.reifyEnclosingRuntimeClass

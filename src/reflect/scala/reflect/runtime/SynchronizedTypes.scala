@@ -7,7 +7,7 @@ import java.lang.ref.WeakReference
 /** This trait overrides methods in reflect.internal, bracketing
  *  them in synchronized { ... } to make them thread-safe
  */
-trait SynchronizedTypes extends internal.Types { self: SymbolTable =>
+private[reflect] trait SynchronizedTypes extends internal.Types { self: SymbolTable =>
 
   // No sharing of map objects:
   override protected def commonOwnerMap = new CommonOwnerMap

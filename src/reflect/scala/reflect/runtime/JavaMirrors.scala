@@ -24,7 +24,7 @@ import scala.language.existentials
 import scala.runtime.{ScalaRunTime, BoxesRunTime}
 import scala.reflect.internal.util.Collections._
 
-trait JavaMirrors extends internal.SymbolTable with api.JavaUniverse { thisUniverse: SymbolTable =>
+private[reflect] trait JavaMirrors extends internal.SymbolTable with api.JavaUniverse { thisUniverse: SymbolTable =>
 
   private lazy val mirrors = new WeakHashMap[ClassLoader, WeakReference[JavaMirror]]()
 
@@ -1279,6 +1279,6 @@ trait JavaMirrors extends internal.SymbolTable with api.JavaUniverse { thisUnive
   }
 }
 
-class ReflectError(msg: String) extends java.lang.Error(msg)
+private[reflect] class ReflectError(msg: String) extends java.lang.Error(msg)
 
-class HasJavaClass[J](val getClazz: J => java.lang.Class[_])
+private[reflect] class HasJavaClass[J](val getClazz: J => java.lang.Class[_])
