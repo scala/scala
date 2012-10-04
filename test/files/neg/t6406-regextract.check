@@ -1,0 +1,6 @@
+t6406-regextract.scala:4: warning: method unapplySeq in class Regex is deprecated: Extracting a match result from anything but a CharSequence or Match is deprecated
+  List(1) collect { case r(i) => i }
+                         ^
+error: No warnings can be incurred under -Xfatal-warnings.
+one warning found
+one error found
