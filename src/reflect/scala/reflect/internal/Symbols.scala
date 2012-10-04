@@ -8,7 +8,7 @@ package internal
 
 import scala.collection.{ mutable, immutable }
 import scala.collection.mutable.ListBuffer
-import util.Statistics
+import util.{ Statistics, shortClassOfInstance }
 import Flags._
 import scala.annotation.tailrec
 import scala.reflect.io.AbstractFile
@@ -182,7 +182,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
       if (isGADTSkolem) " (this is a GADT skolem)"
       else ""
 
-    def shortSymbolClass = getClass.getName.split('.').last.stripPrefix("Symbols$")
+    def shortSymbolClass = shortClassOfInstance(this)
     def symbolCreationString: String = (
       "%s%25s | %-40s | %s".format(
         if (settings.uniqid.value) "%06d | ".format(id) else "",

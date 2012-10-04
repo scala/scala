@@ -34,6 +34,14 @@ trait StringOps {
       s.substring(0, idx + 1)
     }
   }
+  def longestCommonPrefix(xs: List[String]): String = {
+    if (xs.isEmpty || xs.contains("")) ""
+    else xs.head.head match {
+      case ch =>
+        if (xs.tail forall (_.head == ch)) "" + ch + longestCommonPrefix(xs map (_.tail))
+        else ""
+    }
+  }
 
   def decompose(str: String, sep: Char): List[String] = {
     def ws(start: Int): List[String] =

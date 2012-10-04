@@ -10,6 +10,7 @@ import scala.tools.jline._
 import scala.tools.jline.console.completer._
 import Completion._
 import scala.collection.mutable.ListBuffer
+import scala.reflect.internal.util.StringOps.longestCommonPrefix
 
 // REPL completor - queries supplied interpreter for valid
 // completions based on current contents of buffer.
@@ -301,16 +302,6 @@ class JLineCompletion(val intp: IMain) extends Completion with CompletionOutput 
     def isConsecutiveTabs(buf: String, cursor: Int) =
       cursor == lastCursor && buf == lastBuf
 
-    // Longest common prefix
-    def commonPrefix(xs: List[String]): String = {
-      if (xs.isEmpty || xs.contains("")) ""
-      else xs.head.head match {
-        case ch =>
-          if (xs.tail forall (_.head == ch)) "" + ch + commonPrefix(xs map (_.tail))
-          else ""
-      }
-    }
-
     // This is jline's entry point for completion.
     override def complete(buf: String, cursor: Int): Candidates = {
       verbosity = if (isConsecutiveTabs(buf, cursor)) verbosity + 1 else 0
@@ -324,7 +315,7 @@ class JLineCompletion(val intp: IMain) extends Completion with CompletionOutput 
         val newCursor =
           if (winners contains "") p.cursor
           else {
-            val advance = commonPrefix(winners)
+            val advance = longestCommonPrefix(winners)
             lastCursor = p.position + advance.length
             lastBuf = (buf take p.position) + advance
             repldbg("tryCompletion(%s, _) lastBuf = %s, lastCursor = %s, p.position = %s".format(
