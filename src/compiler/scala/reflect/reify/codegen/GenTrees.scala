@@ -64,7 +64,7 @@ trait GenTrees {
 
     // usually we don't reify symbols/types, because they can be re-inferred during subsequent reflective compilation
     // however, reification of AnnotatedTypes is special. see ``reifyType'' to find out why.
-    if (reifyTreeSymbols && tree.hasSymbol) {
+    if (reifyTreeSymbols && tree.hasSymbolField) {
       if (reifyDebug) println("reifying symbol %s for tree %s".format(tree.symbol, tree))
       rtree = mirrorBuildCall(nme.setSymbol, rtree, reify(tree.symbol))
     }
@@ -86,8 +86,8 @@ trait GenTrees {
 
         // see ``Metalevels'' for more info about metalevel breaches
         // and about how we deal with splices that contain them
-        val isMetalevelBreach = splicee exists (sub => sub.hasSymbol && sub.symbol != NoSymbol && sub.symbol.metalevel > 0)
-        val isRuntimeEval = splicee exists (sub => sub.hasSymbol && sub.symbol == ExprSplice)
+        val isMetalevelBreach = splicee exists (sub => sub.hasSymbolField && sub.symbol != NoSymbol && sub.symbol.metalevel > 0)
+        val isRuntimeEval = splicee exists (sub => sub.hasSymbolField && sub.symbol == ExprSplice)
         if (isMetalevelBreach || isRuntimeEval) {
           // we used to convert dynamic splices into runtime evals transparently, but we no longer do that
           // why? see comments in ``Metalevels''

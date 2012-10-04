@@ -68,7 +68,7 @@ abstract class Pickler extends SubComponent {
           return
         }
 
-        if (!t.isDef && t.hasSymbol && t.symbol.isTermMacro) {
+        if (!t.isDef && t.hasSymbolField && t.symbol.isTermMacro) {
           unit.error(t.pos, t.symbol.typeParams.length match {
             case 0 => "macro has not been expanded"
             case 1 => "this type parameter must be specified"
@@ -235,7 +235,7 @@ abstract class Pickler extends SubComponent {
     private def putTree(tree: Tree): Unit = if (putEntry(tree)) {
       if (tree != EmptyTree)
         putType(tree.tpe)
-      if (tree.hasSymbol)
+      if (tree.hasSymbolField)
         putSymbol(tree.symbol)
 
       tree match {
