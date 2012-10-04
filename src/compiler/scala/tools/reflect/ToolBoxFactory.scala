@@ -102,7 +102,7 @@ abstract class ToolBoxFactory[U <: JavaUniverse](val u: U) { factorySelf =>
         })
         var expr = new Transformer {
           override def transform(tree: Tree): Tree =
-            if (tree.hasSymbol && tree.symbol.isFreeTerm) {
+            if (tree.hasSymbolField && tree.symbol.isFreeTerm) {
               tree match {
                 case Ident(_) =>
                   val freeTermRef = Ident(freeTermNames(tree.symbol.asFreeTerm))

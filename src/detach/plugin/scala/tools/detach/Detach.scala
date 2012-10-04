@@ -206,7 +206,7 @@ abstract class Detach extends PluginComponent
             symSet(capturedObjects, owner) += qsym
 
           case Select(qual, name)
-          if (qual.hasSymbol &&
+          if (qual.hasSymbolField &&
               (sym.owner != owner) &&
               !(sym.ownerChain contains ScalaPackageClass) &&
               !(sym.owner hasFlag JAVA)) =>
@@ -284,7 +284,7 @@ abstract class Detach extends PluginComponent
         def isOuter(sym: Symbol): Boolean =
           sym.isOuterAccessor ||
           sym.name.endsWith(nme.OUTER/*, nme.OUTER.length*/)
-        if (tree.hasSymbol && isOuter(tree.symbol)) subst(from, to)
+        if (tree.hasSymbolField && isOuter(tree.symbol)) subst(from, to)
         super.traverse(tree)
       }
     }
@@ -293,7 +293,7 @@ abstract class Detach extends PluginComponent
     private class TreeTypeRefSubstituter(clazz: Symbol) extends Traverser {
       override def traverse(tree: Tree) {
         val sym = tree.symbol
-        if (tree.hasSymbol && isRefClass(sym.tpe) &&
+        if (tree.hasSymbolField && isRefClass(sym.tpe) &&
            (sym.owner.enclClass == clazz) &&
            (sym.isValueParameter || sym.hasFlag(PARAMACCESSOR))) {
           sym setInfo mkRemoteRefClass(sym.tpe)
@@ -329,7 +329,7 @@ abstract class Detach extends PluginComponent
       }
       val map = new mutable.HashMap[Symbol, Symbol]
       override def traverse(tree: Tree) {
-        if (tree.hasSymbol && tree.symbol != NoSymbol) {
+        if (tree.hasSymbolField && tree.symbol != NoSymbol) {
           val sym = tree.symbol
           if (sym.owner == from) {
             val sym1 = map get sym match {
@@ -369,7 +369,7 @@ abstract class Detach extends PluginComponent
       def removeAccessors(tree: Tree): Tree = tree match {
         case Apply(fun, _) =>
           removeAccessors(fun)
-        case Select(qual, _) if tree.hasSymbol && tree.symbol.isOuterAccessor =>
+        case Select(qual, _) if tree.hasSymbolField && tree.symbol.isOuterAccessor =>
           removeAccessors(qual)
         case _ =>
           tree
@@ -382,7 +382,7 @@ abstract class Detach extends PluginComponent
         // transforms field assignment $outer.i$1.elem=..
         // into setter $outer.i$1_=(..)
         case Assign(lhs @ Select(qual1 @ Select(qual, name), name1), rhs)
-        if qual1.hasSymbol && !qual1.symbol.isPrivateLocal &&
+        if qual1.hasSymbolField && !qual1.symbol.isPrivateLocal &&
            isRemoteRefClass(qual1.tpe) =>
           if (DEBUG)
             println("\nTreeAccessorSubstituter: Assign1\n\tqual1="+qual1+", sel.tpe="+lhs.tpe+
@@ -398,7 +398,7 @@ abstract class Detach extends PluginComponent
         // transforms local assignment this.x$1.elem=..
         // into setter method this.x$1_=(..)
         case Assign(lhs @ Select(qual, name), rhs)
-        if qual.hasSymbol && qual.symbol.isPrivateLocal &&
+        if qual.hasSymbolField && qual.symbol.isPrivateLocal &&
            isRemoteRefClass(qual.tpe) =>
           if (DEBUG)
             println("\nTreeAccessorSubstituter: Assign2"+
@@ -412,7 +412,7 @@ abstract class Detach extends PluginComponent
           Apply(fun, List(super.transform(rhs))) setType lhs.tpe
 
         case Assign(Select(qual, name), rhs)
-        if qual.hasSymbol && (objs contains qual.symbol) =>
+        if qual.hasSymbolField && (objs contains qual.symbol) =>
           val sym = qual.symbol
           val proxy = proxySyms(objs indexOf sym)
           if (DEBUG)
@@ -461,7 +461,7 @@ abstract class Detach extends PluginComponent
 
         // transforms field $outer.name$1 into getter method $outer.name$1()
         case Select(qual @ Select(_, name1), name)
-        if qual.hasSymbol && name1.endsWith(nme.OUTER/*, nme.OUTER.length*/) &&
+        if qual.hasSymbolField && name1.endsWith(nme.OUTER/*, nme.OUTER.length*/) &&
            !tree.symbol.isMethod =>
           if (DEBUG)
             println("\nTreeAccessorSubstituter: Select0\n\tqual="+qual+
@@ -500,7 +500,7 @@ abstract class Detach extends PluginComponent
         // transforms field access $outer.i$1.elem
         // into invocation of getter method $outer.i$1()
         case Select(qual @ Select(qual1, name1), name)
-        if qual.hasSymbol && !qual.symbol.isPrivateLocal &&
+        if qual.hasSymbolField && !qual.symbol.isPrivateLocal &&
            isRemoteRefClass(qual.tpe) =>
           if (DEBUG)
             println("\nTreeAccessorSubstituter: Select2\n\tqual="+qual+
@@ -513,7 +513,7 @@ abstract class Detach extends PluginComponent
         // transforms local access this.i$1.elem
         // into invocation of getter method this.i$1()
         case Select(qual, name)
-        if qual.hasSymbol && qual.symbol.isPrivateLocal &&
+        if qual.hasSymbolField && qual.symbol.isPrivateLocal &&
            isRemoteRefClass(qual.tpe) =>
           if (DEBUG)
             println("\nTreeAccessorSubstituter: Select3\n\tqual="+qual+
@@ -523,7 +523,7 @@ abstract class Detach extends PluginComponent
           Apply(fun, List()) setType tree.tpe
 
         case Select(qual, name)
-        if qual.hasSymbol && (objs contains qual.symbol) =>
+        if qual.hasSymbolField && (objs contains qual.symbol) =>
           if (DEBUG)
             println("\nTreeAccessorSubstituter: Select4\n\tqual="+qual+
                     ", qual.tpe="+qual.tpe+", name="+name)//debug
