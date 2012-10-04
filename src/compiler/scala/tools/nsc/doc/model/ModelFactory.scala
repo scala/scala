@@ -170,7 +170,11 @@ class ModelFactory(val global: Global, val settings: doc.Settings) {
           case (None, None) => Body(Nil)
         })
       else
-        comment flatMap { _.deprecated }
+        // Only construct the comment if the word is mentioned.
+        if (global.rawDocComment(sym).contains("deprecated"))
+          comment flatMap { _.deprecated }
+        else
+          None
     def migration =
       if(sym.hasMigrationAnnotation)
         Some((sym.migrationMessage, sym.migrationVersion) match {
