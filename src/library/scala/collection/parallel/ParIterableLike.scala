@@ -433,12 +433,13 @@ self: ParIterableLike[T, Repr, Sequential] =>
    *  @tparam S        the type of accumulated results
    *  @param z         the initial value for the accumulated result of the partition - this
    *                   will typically be the neutral element for the `seqop` operator (e.g.
-   *                   `Nil` for list concatenation or `0` for summation)
+   *                   `Nil` for list concatenation or `0` for summation) and may be evaluated
+   *                   more than once
    *  @param seqop     an operator used to accumulate results within a partition
    *  @param combop    an associative operator used to combine results from different partitions
    */
-  def aggregate[S](z: S)(seqop: (S, T) => S, combop: (S, S) => S): S = {
-    tasksupport.executeAndWaitResult(new Aggregate(z, seqop, combop, splitter))
+  def aggregate[S](z: =>S)(seqop: (S, T) => S, combop: (S, S) => S): S = {
+    tasksupport.executeAndWaitResult(new Aggregate(() => z, seqop, combop, splitter))
   }
 
   def foldLeft[S](z: S)(op: (S, T) => S): S = seq.foldLeft(z)(op)
@@ -1006,10 +1007,10 @@ self: ParIterableLike[T, Repr, Sequential] =>
     override def merge(that: Fold[U]) = result = op(result, that.result)
   }
 
-  protected[this] class Aggregate[S](z: S, seqop: (S, T) => S, combop: (S, S) => S, protected[this] val pit: IterableSplitter[T])
+  protected[this] class Aggregate[S](z: () => S, seqop: (S, T) => S, combop: (S, S) => S, protected[this] val pit: IterableSplitter[T])
   extends Accessor[S, Aggregate[S]] {
     @volatile var result: S = null.asInstanceOf[S]
-    def leaf(prevr: Option[S]) = result = pit.foldLeft(z)(seqop)
+    def leaf(prevr: Option[S]) = result = pit.foldLeft(z())(seqop)
     protected[this] def newSubtask(p: IterableSplitter[T]) = new Aggregate(z, seqop, combop, p)
     override def merge(that: Aggregate[S]) = result = combop(result, that.result)
   }
