@@ -3,16 +3,15 @@ package api
 
 /**
  * The base interface for all mirrors.
+ * See [[scala.reflect.api.package the overview page]] for a description of mirrors and infomation on getting started with Scala reflection API.
  *
- * @tparam U the type of the universe this mirror belongs to.
- *
- * This is defined outside the reflection universe cake pattern implementation
- * so that it can be referenced from outside. For example TypeCreator and TreeCreator
+ * Note. Mirror is defined outside [[scala.reflect.api.Universe the Scala reflection cake]],
+ * so that it can be referenced from outside. For example [[scala.reflect.api.TypeCreator]] and [[scala.reflect.api.TreeCreator]]
  * reference Mirror and also need to be defined outside the cake as they are
  * used by type tags, which can be migrated between different universes and consequently
  * cannot be bound to a fixed one.
  *
- * @see [[Mirrors]]
+ * @tparam U the type of the universe this mirror belongs to.
  */
 abstract class Mirror[U <: Universe with Singleton] {
   /** The universe this mirror belongs to. */

@@ -1,41 +1,70 @@
 package scala.reflect
 package api
 
-/** A trait that manages names.
+/** A slice of [[scala.reflect.api.Universe the Scala reflection cake]] that defines names and operations on them.
+ *  See [[scala.reflect.api.Universe]] for a description of how the reflection API is encoded with the cake pattern.
  *
- *  @see TermName
- *  @see TypeName
+ *  Scala has separate namespaces for term names and type names. For example it is possible to have
+ *  a class named `C` and an object named `C` declared in the same lexical scope.
+ *
+ *  Therefore the Scala reflection API models names using strongly-typed objects rather than strings:
+ *  [[scala.reflect.api.Names#TermName]] and [[scala.reflect.api.Names#TypeName]].
+ *
+ *  A Name wraps a string as the name for either a type ([[TypeName]]) of a term ([[TermName]]).
+ *  Two names are equal, if the wrapped string are equal and they are either both `TypeName` or both `TermName`.
+ *  The same string can co-exist as a `TypeName` and a `TermName`, but they would not be equal.
+ *  Names are interned. That is, for two names `name1` and `name2`, `name1 == name2` implies `name1 eq name2`.
+ *  Name instances also can perform mangling and unmangling of symbolic names.
+ *
+ *  === Examples ===
+ *
+ *  To search for the `map` method declared in the `List` class, one uses
+ *  `typeOf[List[_]].member(newTermName("map"))` to explicitly specify that a term is looked up.
+ *
+ *  An alternative notation makes use of implicit conversions from `String` to `TermName` and `TypeName`:
+ *  `typeOf[List[_]].member("map": TermName)`. Note that there's no implicit conversion from `String` to `Name`,
+ *  because it would be unclear whether such a conversion should produce a term name or a type name.
+ *
+ *  Finally some names that bear special meaning for the compiler are defined in [[scala.reflect.api.StandardNames]].
+ *  For example, `WILDCARD` represents `_` and `CONSTRUCTOR` represents the standard JVM name for constructors, `<init>`.
+ *  Prefer using such constants instead of spelling the names out explicitly.
  */
 trait Names {
-  // Intentionally no implicit from String => Name.
+  /** An implicit conversion from String to TermName.
+   *  Enables an alternative notation `"map": TermName` as opposed to `newTermName("map")`.
+   */
   implicit def stringToTermName(s: String): TermName = newTermName(s)
+
+  /** An implicit conversion from String to TypeName.
+   *  Enables an alternative notation `"List": TypeName` as opposed to `newTypeName("List")`.
+   */
   implicit def stringToTypeName(s: String): TypeName = newTypeName(s)
 
-  /**
-   * The abstract type of names
-   *
-   * A Name wraps a string as the name for either a type ([[TypeName]]) of a term ([[TermName]]).
-   * Two names are equal, if the wrapped string are equal and they are either both `TypeName` or both `TermName`.
-   * The same string can co-exist as a `TypeName` and a `TermName`, but they would not be equal.
-   * Names are interned. That is, for two names `name11 and `name2`,
-   *  `name1 == name2` implies `name1 eq name2`.
-   *
-   *  One of the reasons for the existence of names rather than plain strings is being more explicit about what is a name and if it represents a type or a term.
-   */
+  /** The abstract type of names. */
   type Name >: Null <: NameApi
+
+  /** A tag that preserves the identity of the `Name` abstract type from erasure.
+   *  Can be used for pattern matching, instance tests, serialization and likes.
+   */
   implicit val NameTag: ClassTag[Name]
 
-  /** The abstract type of names representing terms */
+  /** The abstract type of names representing terms. */
   type TypeName >: Null <: Name
+
+  /** A tag that preserves the identity of the `TypeName` abstract type from erasure.
+   *  Can be used for pattern matching, instance tests, serialization and likes.
+   */
   implicit val TypeNameTag: ClassTag[TypeName]
 
-  /** The abstract type of names representing types */
+  /** The abstract type of names representing types. */
   type TermName >: Null <: Name
+
+  /** A tag that preserves the identity of the `TermName` abstract type from erasure.
+   *  Can be used for pattern matching, instance tests, serialization and likes.
+   */
   implicit val TermNameTag: ClassTag[TermName]
 
-  /** The API of names that's supported on reflect mirror via an
-   *  implicit conversion in reflect.ops
-   */
+  /** The API of Name instances. */
   abstract class NameApi {
     /** Checks wether the name is a a term name */
     def isTermName: Boolean

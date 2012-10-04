@@ -1,15 +1,17 @@
 package scala.reflect
 package api
 
-/**
- * Defines the type hierachy for positions.
+/** A slice of [[scala.reflect.api.Universe the Scala reflection cake]] that defines positions and operations on them.
+ *  See [[scala.reflect.api.Universe]] for a description of how the reflection API is encoded with the cake pattern.
  *
- * @see [[scala.reflect]] for a description on how the class hierarchy is encoded here.
+ *  The main documentation entry about positions is located at [[scala.reflect.api.Position]].
  */
 trait Positions {
   self: Universe =>
 
-  /** .. */
+  /** Defines a universe-specific notion of positions.
+   *  The main documentation entry about positions is located at [[scala.reflect.api.Position]].
+   */
   type Position >: Null <: scala.reflect.api.Position { type Pos = Position }
 
   /** A tag that preserves the identity of the `Position` abstract type from erasure.

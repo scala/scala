@@ -17,17 +17,16 @@ import scala.language.implicitConversions
  * [Chris++] tag.in(some mirror) or expr.in(some mirror)  (does not work for tag and exprs in macros)
  * Backwards compat item1: [Eugene++] it might be useful, though, to guard against abstractness of the incoming type.
  */
-/**
- * A type tag encapsulates a representation of type T.
+/** A slice of [[scala.reflect.api.Universe the Scala reflection cake]] that defines type tags and operations on them.
+ *  See [[scala.reflect.api.Universe]] for a description of how the reflection API is encoded with the cake pattern.
  *
+ * A type tag encapsulates a representation of type T.
  * Type tags replace the pre-2.10 concept of a [[scala.reflect.Manifest]] and are integrated with reflection.
  *
  * === Overview and examples ===
  *
  * Type tags are organized in a hierarchy of three classes:
  * [[scala.reflect.ClassTag]], [[scala.reflect.api.Universe#TypeTag]] and [[scala.reflect.api.Universe#WeakTypeTag]].
- *
- * @see [[scala.reflect.ClassTag]], [[scala.reflect.api.Universe#TypeTag]], [[scala.reflect.api.Universe#WeakTypeTag]]
  *
  * Examples:
  *   {{{
@@ -117,23 +116,31 @@ import scala.language.implicitConversions
  * The previous notion of a [[scala.reflect.ClassManifest]] corresponds to a scala.reflect.ClassTag,
  * The previous notion of a [[scala.reflect.Manifest]] corresponds to scala.reflect.runtime.universe.TypeTag,
  *
- * In Scala 2.10, manifests are deprecated, so it's advisable to migrate them to tags,
- * because manifests will probably be removed in the next major release.
+ * In Scala 2.10 class manifests are deprecated, and manifests are planned to be deprecated in one of the
+ * subsequent point releases. Therefore it's advisable to migrate manifests to tags.
  *
- * In most cases it will be enough to replace ClassManifest with ClassTag and Manifest with TypeTag.
+ * In most cases it is enough to replace `ClassManifest` with `ClassTag` and `Manifest` with `TypeTag`.
  * There are however a few caveats:
  *
- * 1) The notion of OptManifest is no longer supported. Tags can reify arbitrary types, so they are always available.
+ * 1) Tags don't support the notion of `OptManifest`. Tags can reify arbitrary types, so they are always available.
  *
- * 2) There's no equivalent for AnyValManifest. Consider comparing your tag with one of the base tags
+ * 2) There's no equivalent for `AnyValManifest`. Consider comparing your tag with one of the base tags
  *    (defined in the corresponding companion objects) to find out whether it represents a primitive value class.
- *    You can also use `<tag>.tpe.typeSymbol.isPrimitiveValueClass` for that purpose (requires scala-reflect.jar).
+ *    You can also use `<tag>.tpe.typeSymbol.isPrimitiveValueClass`.
  *
  * 3) There's no replacement for factory methods defined in `ClassManifest` and `Manifest` companion objects.
  *    Consider assembling corresponding types using the reflection APIs provided by Java (for classes) and Scala (for types).
  *
  * 4) Certain manifest functions (such as `<:<`, `>:>` and `typeArguments`) weren't included in the tag API.
  *    Consider using the reflection APIs provided by Java (for classes) and Scala (for types) instead.
+ *
+ *  === Known issues ===
+ *
+ *  Type tags are marked as serializable, but this functionality is not yet implemented.
+ *  An issue tracker entry: [[https://issues.scala-lang.org/browse/SI-5919 https://issues.scala-lang.org/browse/SI-5919]]
+ *  has been created to track the implementation of this feature.
+ *
+ * @see [[scala.reflect.ClassTag]], [[scala.reflect.api.Universe#TypeTag]], [[scala.reflect.api.Universe#WeakTypeTag]]
  */
 trait TypeTags { self: Universe =>
 
@@ -171,10 +178,16 @@ trait TypeTags { self: Universe =>
      */
     def tpe: Type
 
-    // case class accessories
+    /** TODO how do I doc this? */
     override def canEqual(x: Any) = x.isInstanceOf[WeakTypeTag[_]]
+
+    /** TODO how do I doc this? */
     override def equals(x: Any) = x.isInstanceOf[WeakTypeTag[_]] && this.mirror == x.asInstanceOf[WeakTypeTag[_]].mirror && this.tpe == x.asInstanceOf[WeakTypeTag[_]].tpe
+
+    /** TODO how do I doc this? */
     override def hashCode = mirror.hashCode * 31 + tpe.hashCode
+
+    /** TODO how do I doc this? */
     override def toString = "WeakTypeTag[" + tpe + "]"
   }
 
@@ -245,13 +258,22 @@ trait TypeTags { self: Universe =>
      */
     override def in[U <: Universe with Singleton](otherMirror: scala.reflect.api.Mirror[U]): U # TypeTag[T]
 
-    // case class accessories
+    /** TODO how do I doc this? */
     override def canEqual(x: Any) = x.isInstanceOf[TypeTag[_]]
+
+    /** TODO how do I doc this? */
     override def equals(x: Any) = x.isInstanceOf[TypeTag[_]] && this.mirror == x.asInstanceOf[TypeTag[_]].mirror && this.tpe == x.asInstanceOf[TypeTag[_]].tpe
+
+    /** TODO how do I doc this? */
     override def hashCode = mirror.hashCode * 31 + tpe.hashCode
+
+    /** TODO how do I doc this? */
     override def toString = "TypeTag[" + tpe + "]"
   }
 
+  /**
+   * Type tags corresponding to primitive types and constructor/extractor for WeakTypeTags.
+   */
   object TypeTag {
     val Byte:    TypeTag[scala.Byte]       = new PredefTypeTag[scala.Byte]       (ByteTpe,    _.TypeTag.Byte)
     val Short:   TypeTag[scala.Short]      = new PredefTypeTag[scala.Short]      (ShortTpe,   _.TypeTag.Short)

@@ -1,18 +1,33 @@
 package scala.reflect
 package macros
 
+/** The refinement of [[scala.reflect.api.Universe]] for the use by macro writers.
+ *
+ *  This universe provides mutability for reflection artifacts (e.g. macros can change types of compiler trees,
+ *  add annotation to symbols representing definitions, etc) and exposes some internal compiler functionality
+ *  such as `Symbol.deSkolemize` or `Tree.attachments`.
+ */
 abstract class Universe extends scala.reflect.api.Universe {
 
+  /** A factory that encapsulates common tree-building functions. */
   val treeBuild: TreeBuilder { val global: Universe.this.type }
 
+  /** The API of reflection artifacts that support [[scala.reflect.macros.Attachments]].
+   *  These artifacts are trees and symbols.
+   */
   trait AttachableApi {
-    /** ... */
+    /** The attachment of the reflection artifact. */
     def attachments: Attachments { type Pos = Position }
 
-    /** ... */
+    /** Updates the attachment with the payload slot of T added/updated with the provided value.
+     *  Replaces an existing payload of the same type, if exists.
+     *  Returns the reflection artifact itself.
+     */
     def updateAttachment[T: ClassTag](attachment: T): AttachableApi.this.type
 
-    /** ... */
+    /** Update the attachment with the payload of the given class type `T` removed.
+     *  Returns the reflection artifact itself.
+     */
     def removeAttachment[T: ClassTag]: AttachableApi.this.type
   }
 
@@ -24,18 +39,43 @@ abstract class Universe extends scala.reflect.api.Universe {
    */
   trait SymbolContextApi extends SymbolApi with AttachableApi { self: Symbol =>
 
+    /** If this symbol is a skolem, its corresponding type parameter, otherwise the symbol itself.
+     *
+     *  [[https://groups.google.com/forum/#!msg/scala-internals/0j8laVNTQsI/kRXMF_c8bGsJ To quote Martin Odersky]],
+     *  skolems are synthetic type "constants" that are copies of existentially bound or universally
+     *  bound type variables. E.g. if one is inside the right-hand side of a method:
+     *
+     *  {{{
+     *  def foo[T](x: T) = ... foo[List[T]]....
+     *  }}}
+     *
+     *  the skolem named `T` refers to the unknown type instance of `T` when `foo` is called. It needs to be different
+     *  from the type parameter because in a recursive call as in the `foo[List[T]]` above the type parameter gets
+     *  substituted with `List[T]`, but the ''type skolem'' stays what it is.
+     *
+     *  The other form of skolem is an ''existential skolem''. Say one has a function
+     *
+     *  {{{
+     *  def bar(xs: List[T] forSome { type T }) = xs.head
+     *  }}}
+     *
+     *  then each occurrence of `xs` on the right will have type `List[T']` where `T'` is a fresh copy of `T`.
+     */
     def deSkolemize: Symbol
 
-    /** The position of this symbol
-     */
+    /** The position of this symbol. */
     def pos: Position
 
+    /** Sets the `typeSignature` of the symbol. */
     def setTypeSignature(tpe: Type): Symbol
 
+    /** Sets the `annotations` of the symbol. */
     def setAnnotations(annots: Annotation*): Symbol
 
+    /** Sets the `name` of the symbol. */
     def setName(name: Name): Symbol
 
+    /** Sets the `privateWithin` of the symbol. */
     def setPrivateWithin(sym: Symbol): Symbol
   }
 
@@ -47,17 +87,16 @@ abstract class Universe extends scala.reflect.api.Universe {
    */
   trait TreeContextApi extends TreeApi with AttachableApi { self: Tree =>
 
-    /** ... */
+    /** Sets the `pos` of the tree. Returns `Unit`. */
     def pos_=(pos: Position): Unit
 
-    /** ... */
+    /** Sets the `pos` of the tree. Returns the tree itself. */
     def setPos(newpos: Position): Tree
 
-    /** ... */
+    /** Sets the `tpe` of the tree. Returns `Unit`. */
     def tpe_=(t: Type): Unit
 
-    /** Set tpe to give `tp` and return this.
-     */
+    /** Sets the `tpe` of the tree. Returns the tree itself. */
     def setType(tp: Type): Tree
 
     /** Like `setType`, but if this is a previously empty TypeTree that
@@ -79,34 +118,40 @@ abstract class Universe extends scala.reflect.api.Universe {
      */
     def defineType(tp: Type): Tree
 
-    /** ... */
+    /** Sets the `symbol` of the tree. Returns `Unit`. */
     def symbol_=(sym: Symbol): Unit
 
-    /** ... */
+    /** Sets the `symbol` of the tree. Returns the tree itself. */
     def setSymbol(sym: Symbol): Tree
   }
 
+  /** @inheritdoc */
   override type SymTree >: Null <: Tree with SymTreeContextApi
 
   /** The extended API of sym trees that's supported in macro context universes
    */
   trait SymTreeContextApi extends SymTreeApi { this: SymTree =>
+    /** Sets the `symbol` field of the sym tree. */
     var symbol: Symbol
   }
 
+  /** @inheritdoc */
   override type TypeTree >: Null <: TypTree with TypeTreeContextApi
 
   /** The extended API of sym trees that's supported in macro context universes
    */
   trait TypeTreeContextApi extends TypeTreeApi { this: TypeTree =>
+    /** Sets the `original` field of the type tree. */
     def setOriginal(tree: Tree): this.type
   }
 
+  /** @inheritdoc */
   override type Ident >: Null <: RefTree with IdentContextApi
 
   /** The extended API of idents that's supported in macro context universes
    */
   trait IdentContextApi extends IdentApi { this: Ident =>
+    /** Was this ident created from a backquoted identifier? */
     def isBackquoted: Boolean
   }
 
@@ -123,6 +168,7 @@ abstract class Universe extends scala.reflect.api.Universe {
    */
   def capturedVariableType(vble: Symbol): Type
 
+  /** The type of compilation runs. */
   type Run <: RunContextApi
 
   /** Compilation run uniquely identifies current invocation of the compiler
@@ -137,6 +183,7 @@ abstract class Universe extends scala.reflect.api.Universe {
     def units: Iterator[CompilationUnit]
   }
 
+  /** The type of compilation units. */
   type CompilationUnit <: CompilationUnitContextApi
 
   /** Compilation unit describes a unit of work of the compilation run.

@@ -1,6 +1,9 @@
 package scala.reflect
 package macros
 
+/** A slice of [[scala.reflect.macros.Context the Scala macros context]] that
+ *  partially exposes the type checker to macro writers.
+ */
 trait Typers {
   self: Context =>
 

@@ -1,10 +1,19 @@
 package scala.reflect
 
+/** Entry points into runtime reflection.
+ *  See [[scala.reflect.api.package the overview page]] for details on how to use them.
+ */
 package object runtime {
 
-  // type is api.JavaUniverse because we only want to expose the `scala.reflect.api.*` subset of reflection
+  /** The entry point into runtime reflection.
+   *  See [[scala.reflect.api.package the overview page]] for details on how to use it.
+   */
   lazy val universe: api.JavaUniverse = new runtime.JavaUniverse
 
+  /** The runtime reflection mirror that corresponds to the current lexical context.
+   *  Is typically equivalent to `universe.runtimeMirror(getClass.getClassLoader)` invoked at the call site.
+   *  See [[scala.reflect.api.package the overview page]] for details on how to use it.
+   */
   // implementation hardwired to the `currentMirror` method below
   // using the mechanism implemented in `scala.tools.reflect.FastTrack`
   def currentMirror: universe.Mirror = ??? // macro

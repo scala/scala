@@ -5,52 +5,226 @@
 package scala.reflect
 package api
 
-// Syncnote: Trees are currently not thread-safe.
+/** A slice of [[scala.reflect.api.Universe the Scala reflection cake]] that defines trees and operations on them.
+ *  See [[scala.reflect.api.Universe]] for a description of how the reflection API is encoded with the cake pattern.
+ *
+ *  Tree is the basis for scala's abstract syntax. The nodes are
+ *  implemented as case classes, and the parameters which initialize
+ *  a given tree are immutable: however trees have several mutable
+ *  fields which are manipulated in the course of typechecking,
+ *  including `pos`, `symbol`, and `tpe`.
+ *
+ *  Newly instantiated trees have `tpe` set to null (though it
+ *  may be set immediately thereafter depending on how it is
+ *  constructed.) When a tree is passed to the typechecker
+ *  (via toolboxes in runtime reflection or using
+ *  [[scala.reflect.macros.Context#typeCheck]] in comple-time reflection)
+ *  under normal circumstances the `tpe` must be
+ *  `null` or the typechecker will ignore it. Furthermore, the typechecker is not
+ *  required to return the same tree it was passed.
+ *
+ *  Trees can be easily traversed with e.g. `foreach` on the root node;
+ *  for a more nuanced traversal, subclass `Traverser`. Transformations
+ *  are done by subclassing `Transformer`.
+ *
+ *  Copying Trees should be done with care depending on whether
+ *  it needs be done lazily or strictly (see [[scala.reflect.api.Trees#newLazyTreeCopier]] and
+ *  [[scala.reflect.api.Trees#newStrictTreeCopier]]) and on whether the contents of the mutable
+ *  fields should be copied. The tree copiers will copy the mutable
+ *  attributes to the new tree. A shortcut way of copying trees is [[scala.reflect.api.Trees#Tree#duplicate]]
+ *  which uses a strict copier.
+ *
+ *  Trees can be coarsely divided into four mutually exclusive categories:
+ *
+ *  - Subclasses of `TermTree`, representing terms
+ *  - Subclasses of `TypTree`, representing types.  Note that is `TypTree`, not `TypeTree`.
+ *  - Subclasses of `SymTree`, which either define or reference symbols.
+ *  - Other trees, which have none of those as superclasses.
+ *
+ *  `SymTrees` include important nodes `Ident` (which represent references to identifiers)
+ *  and `Select` (which represent member selection). These nodes can be used as both terms and types;
+ *  they are distinguishable based on whether their underlying [[scala.reflect.api.Names#Name]]
+ *  is a `TermName` or `TypeName`.  The correct way to test any Tree for a type or a term are the `isTerm`/`isType`
+ *  methods on Tree.
+ *
+ *  "Others" are mostly syntactic or short-lived constructs. Take, for example,
+ *  `CaseDef`, which wraps individual match cases: such nodes are neither terms nor types,
+ *  nor do they carry a symbol.
+ *
+ *  === How to get a tree that corresponds to a snippet of Scala code? ===
+ *
+ *  With the introduction of compile-time metaprogramming and runtime compilation in Scala 2.10.0,
+ *  quite often it becomes necessary to convert Scala code into corresponding trees.
+ *
+ *  The simplest was to do that is to use [[scala.reflect.api.Universe#reify]].
+ *  The `reify` method takes an valid Scala expression (i.e. it has to be well-formed
+ *  with respect to syntax and has to typecheck, which means no unresolved free variables).
+ *  and produces a tree that represents the input.
+ *
+ *  {{{
+ *  scala> import scala.reflect.runtime.universe._
+ *  import scala.reflect.runtime.universe._
+ *
+ *  // trying to reify a snippet that doesn't typecheck
+ *  // leads to a compilation error
+ *  scala> reify(x + 2)
+ *  <console>:31: error: not found: value x
+ *                reify(x + 2)
+ *                      ^
+ *
+ *  scala> val x = 2
+ *  x: Int = 2
+ *
+ *  // now when the variable x is in the scope
+ *  // we can successfully reify the expression `x + 2`
+ *  scala> val expr = reify(x + 2)
+ *  expr: reflect.runtime.universe.Expr[Int] = Expr[Int](x.$plus(2))
+ *
+ *  // the result of reification is of type Expr
+ *  // exprs are thin wrappers over trees
+ *  scala> expr.tree
+ *  res2: reflect.runtime.universe.Tree = x.$plus(2)
+ *
+ *  // we can see that the expression `x + 2`
+ *  // is internally represented as an instance of the `Apply` case class
+ *  scala> res2.getClass.toString
+ *  res3: String = class scala.reflect.internal.Trees$Apply
+ *
+ *  // when it comes to inspecting the structure of the trees,
+ *  // the default implementation of `toString` doesn't help much
+ *  // the solution is discussed in one of the next sections
+ *  }}}
+ *
+ *  The alternative way of getting an AST of a snippet of Scala code
+ *  is having it parsed by a toolbox (see [[scala.reflect.api.package the overview page]]
+ *  for more information about toolboxes):
+ *  {{{
+ *  scala> import scala.reflect.runtime.universe._
+ *  import scala.reflect.runtime.universe._
+ *
+ *  scala> import scala.reflect.runtime.{currentMirror => cm}
+ *  import scala.reflect.runtime.{currentMirror=>cm}
+ *
+ *  scala> import scala.tools.reflect.ToolBox // requires scala-compiler.jar
+ *  import scala.tools.reflect.ToolBox
+ *
+ *  scala> val tb = cm.mkToolBox()
+ *  tb: scala.tools.reflect.ToolBox[reflect.runtime.universe.type] = ...
+ *
+ *  scala> tb.parse("x + 2")
+ *  res0: tb.u.Tree = x.$plus(2)
+ *  }}}
+ *
+ *  === How to evaluate a tree? ===
+ *
+ *  Once there's a way to get a tree that represents Scala code, the next question
+ *  is how to evaluate it. The answer to this question depends on what flavor of reflection is used:
+ *  runtime reflection or compile-time reflection (macros).
+ *
+ *  Within runtime reflection, evaluation can be carried out using toolboxes.
+ *  To create a toolbox one wraps a classloader in a mirror and then uses the mirror
+ *  to instantiate a toolbox. Later on the underlying classloader will be used to map
+ *  symbolic names (such as `List`) to underlying classes of the platform
+ *  (see [[scala.reflect.api.package the overview page]] for more information about universes,
+ *  mirrors and toolboxes):
+ *
+ *  {{{
+ *  scala> import scala.reflect.runtime.universe._
+ *  import scala.reflect.runtime.universe._
+ *
+ *  scala> import scala.tools.reflect.ToolBox // requires scala-compiler.jar
+ *  import scala.tools.reflect.ToolBox
+ *
+ *  scala> val mirror = runtimeMirror(getClass.getClassLoader)
+ *  mirror: reflect.runtime.universe.Mirror = JavaMirror with ...
+ *
+ *  scala> val tb = mirror.mkToolBox()
+ *  tb: scala.tools.reflect.ToolBox[reflect.runtime.universe.type] = ...
+ *
+ *  scala> tb.eval(tb.parse("2 + 2"))
+ *  res0: Int = 4
+ *  }}}
+ *
+ *  At compile-time, [[scala.reflect.macros.Context]] provides the [[scala.reflect.macros.Evals#eval]] method,
+ *  which doesn't require manual instantiation of mirrors and toolboxes and potentially will have better performance
+ *  (at the moment it still creates toolboxes under the cover, but in later releases it might be optimized
+ *  to reuse the infrastructure of already running compiler).
+ *
+ *  Behind the scenes tree evaluation launches the entire compilation pipeline and creates an in-memory virtual directory
+ *  that holds the resulting class files (that's why it requires scala-compiler.jar when used with runtime reflection).
+ *  This means that the tree being evaluated should be valid Scala code (e.g. it shouldn't contain type errors).
+ *
+ *  Quite often though there is a need to evaluate code in some predefined context. For example, one might want to use a dictionary
+ *  that maps names to values as an environment for the code being evaluated. This isn't supported out of the box,
+ *  but nevertheless this scenario is possible to implement. See a [[http://stackoverflow.com/questions/12122939 Stack Overflow topic]]
+ *  for more details.
+ *
+ *  === How to get an internal representation of a tree? ===
+ *
+ *  The `toString` method on trees is designed to print a close-to-Scala representation
+ *  of the code that a given tree represents. This is usually convenient, but sometimes
+ *  one would like to look under the covers and see what exactly are the AST nodes that
+ *  constitute a certain tree.
+ *
+ *  Scala reflection provides a way to dig deeper through [[scala.reflect.api.Printers]]
+ *  and their `showRaw` method. Refer to the page linked above for a series of detailed
+ *  examples.
+ *
+ *  {{{
+ *  scala> import scala.reflect.runtime.universe._
+ *  import scala.reflect.runtime.universe._
+ *
+ *  scala> def tree = reify{ final class C { def x = 2 } }.tree
+ *  tree: reflect.runtime.universe.Tree
+ *
+ *  // show displays prettified representation of reflection artifacts
+ *  // which is typically close to Scala code, but sometimes not quite
+ *  // (e.g. here the constructor is shown in a desugared way)
+ *  scala> show(tree)
+ *  res0: String =
+ *  {
+ *    final class C extends AnyRef {
+ *      def <init>() = {
+ *        super.<init>();
+ *        ()
+ *      };
+ *      def x = 2
+ *    };
+ *    ()
+ *  }
+ *
+ *  // showRaw displays internal structure of a given reflection object
+ *  // trees and types (type examples are shown below) are case classes
+ *  // so they are shown in a form that's almost copy/pasteable
+ *  //
+ *  // almost copy/pasteable, but not completely - that's because of symbols
+ *  // there's no good way to get a roundtrip-surviving representation of symbols
+ *  // in general case, therefore only symbol names are shown (e.g. take a look at AnyRef)
+ *  //
+ *  // in such a representation, it's impossible to distinguish Idents/Selects
+ *  // that have underlying symbols vs ones that don't have symbols, because in both cases
+ *  // only names will be printed
+ *  //
+ *  // to overcome this limitation, use `printIds` and `printKinds` - optional parameters
+ *  // of the `showRaw` method (example is shown on the scala.reflect.api.Printers doc page)
+ *  scala> showRaw(tree)
+ *  res1: String = Block(List(
+ *    ClassDef(Modifiers(FINAL), newTypeName("C"), List(), Template(
+ *      List(Ident(newTypeName("AnyRef"))),
+ *      emptyValDef,
+ *      List(
+ *        DefDef(Modifiers(), nme.CONSTRUCTOR, List(), List(List()), TypeTree(),
+ *          Block(List(
+ *            Apply(Select(Super(This(tpnme.EMPTY), tpnme.EMPTY), nme.CONSTRUCTOR), List())),
+ *            Literal(Constant(())))),
+ *        DefDef(Modifiers(), newTermName("x"), List(), List(), TypeTree(),
+ *          Literal(Constant(2))))))),
+ *    Literal(Constant(())))
+ *  }}}
+ */
 trait Trees { self: Universe =>
 
-  /** Tree is the basis for scala's abstract syntax. The nodes are
-   *  implemented as case classes, and the parameters which initialize
-   *  a given tree are immutable: however Trees have several mutable
-   *  fields which are manipulated in the course of typechecking,
-   *  including pos, symbol, and tpe.
-   *
-   *  Newly instantiated trees have tpe set to null (though it
-   *  may be set immediately thereafter depending on how it is
-   *  constructed.) When a tree is passed to the typer, typically via
-   *  `typer.typed(tree)`, under normal circumstances the tpe must be
-   *  null or the typer will ignore it. Furthermore, the typer is not
-   *  required to return the same tree it was passed.
-   *
-   *  Trees can be easily traversed with e.g. foreach on the root node;
-   *  for a more nuanced traversal, subclass Traverser. Transformations
-   *  can be considerably trickier: see the numerous subclasses of
-   *  Transformer found around the compiler.
-   *
-   *  Copying Trees should be done with care depending on whether
-   *  it needs be done lazily or strictly (see LazyTreeCopier and
-   *  StrictTreeCopier) and on whether the contents of the mutable
-   *  fields should be copied. The tree copiers will copy the mutable
-   *  attributes to the new tree; calling Tree#duplicate will copy
-   *  symbol and tpe, but all the positions will be focused.
-   *
-   *  Trees can be coarsely divided into four mutually exclusive categories:
-   *
-   *  - TermTrees, representing terms
-   *  - TypTrees, representing types.  Note that is `TypTree`, not `TypeTree`.
-   *  - SymTrees, which may represent types or terms.
-   *  - Other Trees, which have none of those as parents.
-   *
-   *  SymTrees include important nodes Ident and Select, which are
-   *  used as both terms and types; they are distinguishable based on
-   *  whether the Name is a TermName or TypeName.  The correct way
-   *  to test any Tree for a type or a term are the `isTerm`/`isType`
-   *  methods on Tree.
-   *
-   *  "Others" are mostly syntactic or short-lived constructs. Examples
-   *  include CaseDef, which wraps individual match cases: they are
-   *  neither terms nor types, nor do they carry a symbol. Another
-   *  example is Parens, which is eliminated during parsing.
-   */
+  /** The type of Scala abstract syntax trees. */
   type Tree >: Null <: TreeApi
 
   /** A tag that preserves the identity of the `Tree` abstract type from erasure.
@@ -58,14 +232,17 @@ trait Trees { self: Universe =>
    */
   implicit val TreeTag: ClassTag[Tree]
 
-  /** The API that all trees support */
+  /** The API that all trees support.
+   *  The main source of information about trees is the [[scala.reflect.api.Trees]] page.
+   */
   trait TreeApi extends Product { this: Tree =>
-    // TODO
-    /** ... */
+    /** Does this tree represent a definition? (of a method, of a class, etc) */
     def isDef: Boolean
 
-    // TODO
-    /** ... */
+    /** Is this tree one of the empty trees?
+     *  Empty trees are: the `EmptyTree` null object, `TypeTree` instances that don't carry a type
+     *  and the special `emptyValDef` singleton.
+     */
     def isEmpty: Boolean
 
     /** The canonical way to test if a Tree represents a term.
@@ -76,26 +253,29 @@ trait Trees { self: Universe =>
      */
     def isType: Boolean
 
-    /** ... */
+    /** Position of the tree. */
     def pos: Position
 
-    /** ... */
+    /** Type of the tree.
+     *
+     *  Upon creation most trees have their `tpe` set to `null`.
+     *  Types are typically assigned to trees during typechecking.
+     */
     def tpe: Type
 
-    /** Note that symbol is fixed as null at this level.  In SymTrees,
-     *  it is overridden and implemented with a var, initialized to NoSymbol.
+    /** Symbol of the tree.
      *
-     *  Trees which are not SymTrees but which carry symbols do so by
+     *  For most trees symbol is `null`. In `SymTree`s,
+     *  it is overridden and implemented with a var, initialized to `NoSymbol`.
+     *
+     *  Trees which are not `SymTree`s but which carry symbols do so by
      *  overriding `def symbol` to forward it elsewhere.  Examples:
      *
-     *    Super(qual, _)              // has qual's symbol
-     *    Apply(fun, args)            // has fun's symbol
-     *    TypeApply(fun, args)        // has fun's symbol
-     *    AppliedTypeTree(tpt, args)  // has tpt's symbol
-     *    TypeTree(tpe)               // has tpe's typeSymbol, if tpe != null
-     *
-     *  Attempting to set the symbol of a Tree which does not support
-     *  it will induce an exception.
+     *    - `Super(qual, _)`              has `qual`'s symbol,
+     *    - `Apply(fun, args)`            has `fun`'s symbol,
+     *    - `TypeApply(fun, args)`        has `fun`'s symbol,
+     *    - `AppliedTypeTree(tpt, args)`  has `tpt`'s symbol,
+     *    - `TypeTree(tpe)`               has `tpe`'s `typeSymbol`, if `tpe != null`.
      */
     def symbol: Symbol
 
@@ -217,6 +397,7 @@ trait Trees { self: Universe =>
 
   /** The API that all sym trees support */
   trait SymTreeApi extends TreeApi { this: SymTree =>
+    /** @inheritdoc */
     def symbol: Symbol
   }
 
@@ -231,6 +412,9 @@ trait Trees { self: Universe =>
 
   /** The API that all name trees support */
   trait NameTreeApi extends TreeApi { this: NameTree =>
+    /** The underlying name.
+     *  For example, the `<List>` part of `Ident("List": TermName)`.
+     */
     def name: Name
   }
 
@@ -247,7 +431,13 @@ trait Trees { self: Universe =>
 
   /** The API that all ref trees support */
   trait RefTreeApi extends SymTreeApi with NameTreeApi { this: RefTree =>
-    def qualifier: Tree    // empty for Idents
+    /** The qualifier of the reference.
+     *  For example, the `<scala>` part of `Select("scala": TermName, "List": TermName)`.
+     *  `EmptyTree` for `Ident` instances.
+     */
+    def qualifier: Tree
+
+    /** @inheritdoc */
     def name: Name
   }
 
@@ -262,6 +452,7 @@ trait Trees { self: Universe =>
 
   /** The API that all def trees support */
   trait DefTreeApi extends SymTreeApi with NameTreeApi { this: DefTree =>
+    /** @inheritdoc */
     def name: Name
   }
 
@@ -277,6 +468,7 @@ trait Trees { self: Universe =>
 
   /** The API that all member defs support */
   trait MemberDefApi extends DefTreeApi { this: MemberDef =>
+    /** Modifiers of the declared member. */
     def mods: Modifiers
   }
 
@@ -304,7 +496,10 @@ trait Trees { self: Universe =>
 
   /** The API that all package defs support */
   trait PackageDefApi extends MemberDefApi { this: PackageDef =>
+    /** The (possibly, fully-qualified) name of the package. */
     val pid: RefTree
+
+    /** Body of the package definition. */
     val stats: List[Tree]
   }
 
@@ -319,6 +514,7 @@ trait Trees { self: Universe =>
 
   /** The API that all impl defs support */
   trait ImplDefApi extends MemberDefApi { this: ImplDef =>
+    /** The body of the definition. */
     val impl: Template
   }
 
@@ -350,9 +546,16 @@ trait Trees { self: Universe =>
 
   /** The API that all class defs support */
   trait ClassDefApi extends ImplDefApi { this: ClassDef =>
+    /** @inheritdoc */
     val mods: Modifiers
+
+    /** The name of the class. */
     val name: TypeName
+
+    /** The type parameters of the class. */
     val tparams: List[TypeDef]
+
+    /** @inheritdoc */
     val impl: Template
   }
 
@@ -386,8 +589,13 @@ trait Trees { self: Universe =>
 
   /** The API that all module defs support */
   trait ModuleDefApi extends ImplDefApi { this: ModuleDef =>
+    /** @inheritdoc */
     val mods: Modifiers
+
+    /** The name of the module. */
     val name: TermName
+
+    /** @inheritdoc */
     val impl: Template
   }
 
@@ -402,8 +610,18 @@ trait Trees { self: Universe =>
 
   /** The API that all val defs and def defs support */
   trait ValOrDefDefApi extends MemberDefApi { this: ValOrDefDef =>
+    /** @inheritdoc */
     def name: Name // can't be a TermName because macros can be type names.
+
+    /** The type ascribed to the definition.
+     *  An empty `TypeTree` if the type hasn't been specified explicitly
+     *  and is supposed to be inferred.
+     */
     def tpt: Tree
+
+    /** The body of the definition.
+     *  The `EmptyTree` is the body is empty (e.g. for abstract members).
+     */
     def rhs: Tree
   }
 
@@ -446,9 +664,16 @@ trait Trees { self: Universe =>
 
   /** The API that all val defs support */
   trait ValDefApi extends ValOrDefDefApi { this: ValDef =>
+    /** @inheritdoc */
     val mods: Modifiers
+
+    /** @inheritdoc */
     val name: TermName
+
+    /** @inheritdoc */
     val tpt: Tree
+
+    /** @inheritdoc */
     val rhs: Tree
   }
 
@@ -480,11 +705,22 @@ trait Trees { self: Universe =>
 
   /** The API that all def defs support */
   trait DefDefApi extends ValOrDefDefApi { this: DefDef =>
+    /** @inheritdoc */
     val mods: Modifiers
+
+    /** @inheritdoc */
     val name: Name
+
+    /** The type parameters of the method. */
     val tparams: List[TypeDef]
+
+    /** The parameter lists of the method. */
     val vparamss: List[List[ValDef]]
+
+    /** @inheritdoc */
     val tpt: Tree
+
+    /** @inheritdoc */
     val rhs: Tree
   }
 
@@ -519,9 +755,18 @@ trait Trees { self: Universe =>
 
   /** The API that all type defs support */
   trait TypeDefApi extends MemberDefApi { this: TypeDef =>
+    /** @inheritdoc */
     val mods: Modifiers
+
+    /** @inheritdoc */
     val name: TypeName
+
+    /** The type parameters of this type definition. */
     val tparams: List[TypeDef]
+
+    /** The body of the definition.
+     *  The `EmptyTree` is the body is empty (e.g. for abstract type members).
+     */
     val rhs: Tree
   }
 
@@ -568,8 +813,17 @@ trait Trees { self: Universe =>
 
   /** The API that all label defs support */
   trait LabelDefApi extends DefTreeApi with TermTreeApi { this: LabelDef =>
+    /** @inheritdoc */
     val name: TermName
+
+    /** Label's parameters - names that can be used in the body of the label.
+     *  See the example for [[scala.reflect.api.Trees#LabelDefExtractor]].
+     */
     val params: List[Ident]
+
+    /** The body of the label.
+     *  See the example for [[scala.reflect.api.Trees#LabelDefExtractor]].
+     */
     val rhs: Tree
   }
 
@@ -604,9 +858,22 @@ trait Trees { self: Universe =>
 
   /** The API that all import selectors support */
   trait ImportSelectorApi { this: ImportSelector =>
+    /** The imported name. */
     val name: Name
+
+    /** Offset of the position of the importing part of the selector in the source file.
+     *  Is equal to -1 is the position is unknown.
+     */
     val namePos: Int
+
+    /** The name the import is renamed to.
+     *  Is equal to `name` if it's not a renaming import.
+     */
     val rename: Name
+
+    /** Offset of the position of the renaming part of the selector in the source file.
+     *  Is equal to -1 is the position is unknown.
+     */
     val renamePos: Int
   }
 
@@ -649,7 +916,14 @@ trait Trees { self: Universe =>
 
   /** The API that all imports support */
   trait ImportApi extends SymTreeApi { this: Import =>
+    /** The qualifier of the import.
+     *  See the example for [[scala.reflect.api.Trees#ImportExtractor]].
+     */
     val expr: Tree
+
+    /** The selectors of the import.
+     *  See the example for [[scala.reflect.api.Trees#ImportExtractor]].
+     */
     val selectors: List[ImportSelector]
   }
 
@@ -693,8 +967,16 @@ trait Trees { self: Universe =>
 
   /** The API that all templates support */
   trait TemplateApi extends SymTreeApi { this: Template =>
+    /** Superclasses of the template. */
     val parents: List[Tree]
+
+    /** Self type of the template.
+     *  Is equal to `emptyValDef` if the self type is not specified.
+     */
     val self: ValDef
+
+    /** Body of the template.
+     */
     val body: List[Tree]
   }
 
@@ -723,7 +1005,12 @@ trait Trees { self: Universe =>
 
   /** The API that all blocks support */
   trait BlockApi extends TermTreeApi { this: Block =>
+    /** All, but the last, expressions in the block.
+     *  Can very well be an empty list.
+     */
     val stats: List[Tree]
+
+    /** The last expression in the block. */
     val expr: Tree
   }
 
@@ -756,8 +1043,17 @@ trait Trees { self: Universe =>
 
   /** The API that all case defs support */
   trait CaseDefApi extends TreeApi { this: CaseDef =>
+    /** The pattern of the pattern matching clause. */
     val pat: Tree
+
+    /** The guard of the pattern matching clause.
+     *  Is equal to `EmptyTree` if the guard is not specified.
+     */
     val guard: Tree
+
+    /** The body of the pattern matching clause.
+     *  Is equal to `Literal(Constant())` if the body is not specified.
+     */
     val body: Tree
   }
 
@@ -789,6 +1085,7 @@ trait Trees { self: Universe =>
 
   /** The API that all alternatives support */
   trait AlternativeApi extends TermTreeApi { this: Alternative =>
+    /** Alternatives of the pattern matching clause. */
     val trees: List[Tree]
   }
 
@@ -818,6 +1115,7 @@ trait Trees { self: Universe =>
 
   /** The API that all stars support */
   trait StarApi extends TermTreeApi { this: Star =>
+    /** The quantified pattern. */
     val elem: Tree
   }
 
@@ -850,7 +1148,15 @@ trait Trees { self: Universe =>
 
   /** The API that all binds support */
   trait BindApi extends DefTreeApi { this: Bind =>
+    /** The name that can be used to refer to this fragment of the matched expression.
+     *  The `list` part of the `list @ List(x, y)`.
+     */
     val name: Name
+
+    /** The pattern that represents this fragment of the matched expression.
+     *  The `List(x, y)` part of the `list @ List(x, y)`.
+     *  Is equal to `EmptyTree` if the pattern is not specified as in `case x => x`.
+     */
     val body: Tree
   }
 
@@ -902,7 +1208,14 @@ trait Trees { self: Universe =>
 
   /** The API that all unapplies support */
   trait UnApplyApi extends TermTreeApi { this: UnApply =>
+    /** A dummy node that carries the type of unapplication.
+     *  See the example for [[scala.reflect.api.Trees#UnApplyExtractor]].
+     */
     val fun: Tree
+
+    /** The arguments of the unapplication.
+     *  See the example for [[scala.reflect.api.Trees#UnApplyExtractor]].
+     */
     val args: List[Tree]
   }
 
@@ -932,7 +1245,12 @@ trait Trees { self: Universe =>
 
   /** The API that all functions support */
   trait FunctionApi extends TermTreeApi with SymTreeApi { this: Function =>
+    /** The list of parameters of the function.
+     */
     val vparams: List[ValDef]
+
+    /** The body of the function.
+     */
     val body: Tree
   }
 
@@ -959,7 +1277,12 @@ trait Trees { self: Universe =>
 
   /** The API that all assigns support */
   trait AssignApi extends TermTreeApi { this: Assign =>
+    /** The left-hand side of the assignment.
+     */
     val lhs: Tree
+
+    /** The right-hand side of the assignment.
+     */
     val rhs: Tree
   }
 
@@ -994,7 +1317,12 @@ trait Trees { self: Universe =>
 
   /** The API that all assigns support */
   trait AssignOrNamedArgApi extends TermTreeApi { this: AssignOrNamedArg =>
+    /** The left-hand side of the expression.
+     */
     val lhs: Tree
+
+    /** The right-hand side of the expression.
+     */
     val rhs: Tree
   }
 
@@ -1023,8 +1351,17 @@ trait Trees { self: Universe =>
 
   /** The API that all ifs support */
   trait IfApi extends TermTreeApi { this: If =>
+    /** The condition of the if.
+     */
     val cond: Tree
+
+    /** The main branch of the if.
+     */
     val thenp: Tree
+
+    /** The alternative of the if.
+     *  Is equal to `Literal(Constant(()))` if not specified.
+     */
     val elsep: Tree
   }
 
@@ -1063,7 +1400,10 @@ trait Trees { self: Universe =>
 
   /** The API that all matches support */
   trait MatchApi extends TermTreeApi { this: Match =>
+    /** The scrutinee of the pattern match. */
     val selector: Tree
+
+    /** The arms of the pattern match. */
     val cases: List[CaseDef]
   }
 
@@ -1092,10 +1432,11 @@ trait Trees { self: Universe =>
 
   /** The API that all returns support */
   trait ReturnApi extends TermTreeApi { this: Return =>
+    /** The returned expression. */
     val expr: Tree
   }
 
-  /** [Eugene++] comment me! */
+  /** TODO comment me! */
   type Try >: Null <: TermTree with TryApi
 
   /** A tag that preserves the identity of the `Try` abstract type from erasure.
@@ -1120,8 +1461,13 @@ trait Trees { self: Universe =>
 
   /** The API that all tries support */
   trait TryApi extends TermTreeApi { this: Try =>
+    /** The protected block. */
     val block: Tree
+
+    /** The `catch` pattern-matching clauses of the try. */
     val catches: List[CaseDef]
+
+    /** The `finally` part of the try. */
     val finalizer: Tree
   }
 
@@ -1148,6 +1494,7 @@ trait Trees { self: Universe =>
 
   /** The API that all tries support */
   trait ThrowApi extends TermTreeApi { this: Throw =>
+    /** The thrown expression. */
     val expr: Tree
   }
 
@@ -1185,6 +1532,9 @@ trait Trees { self: Universe =>
 
   /** The API that all news support */
   trait NewApi extends TermTreeApi { this: New =>
+    /** The tree that represents the type being instantiated.
+     *  See the example for [[scala.reflect.api.Trees#NewExtractor]].
+     */
     val tpt: Tree
   }
 
@@ -1211,7 +1561,10 @@ trait Trees { self: Universe =>
 
   /** The API that all typeds support */
   trait TypedApi extends TermTreeApi { this: Typed =>
+    /** The expression being ascribed with the type. */
     val expr: Tree
+
+    /** The type being ascribed to the expression. */
     val tpt: Tree
   }
 
@@ -1226,7 +1579,10 @@ trait Trees { self: Universe =>
 
   /** The API that all applies support */
   trait GenericApplyApi extends TermTreeApi { this: GenericApply =>
+    /** The target of the application. */
     val fun: Tree
+
+    /** The arguments of the application. */
     val args: List[Tree]
   }
 
@@ -1326,7 +1682,14 @@ trait Trees { self: Universe =>
 
   /** The API that all supers support */
   trait SuperApi extends TermTreeApi { this: Super =>
+    /** The qualifier of the `super` expression.
+     *  See the example for [[scala.reflect.api.Trees#SuperExtractor]].
+     */
     val qual: Tree
+
+    /** The selector of the `super` expression.
+     *  See the example for [[scala.reflect.api.Trees#SuperExtractor]].
+     */
     val mix: TypeName
   }
 
@@ -1348,8 +1711,6 @@ trait Trees { self: Universe =>
    *
    *  The symbol of a This is the class to which the this refers.
    *  For instance in C.this, it would be C.
-   *
-   *  If `mix` is empty, then ???
    */
   abstract class ThisExtractor {
     def apply(qual: TypeName): This
@@ -1358,6 +1719,9 @@ trait Trees { self: Universe =>
 
   /** The API that all thises support */
   trait ThisApi extends TermTreeApi with SymTreeApi { this: This =>
+    /** The qualifier of the `this` expression.
+     *  For an unqualified `this` refers to the enclosing class.
+     */
     val qual: TypeName
   }
 
@@ -1384,7 +1748,10 @@ trait Trees { self: Universe =>
 
   /** The API that all selects support */
   trait SelectApi extends RefTreeApi { this: Select =>
+    /** @inheritdoc */
     val qualifier: Tree
+
+    /** @inheritdoc */
     val name: Name
   }
 
@@ -1414,6 +1781,7 @@ trait Trees { self: Universe =>
 
   /** The API that all idents support */
   trait IdentApi extends RefTreeApi { this: Ident =>
+    /** @inheritdoc */
     val name: Name
   }
 
@@ -1460,6 +1828,7 @@ trait Trees { self: Universe =>
 
   /** The API that all references support */
   trait ReferenceToBoxedApi extends TermTreeApi { this: ReferenceToBoxed =>
+    /** The underlying reference. */
     val ident: Tree
   }
 
@@ -1486,6 +1855,7 @@ trait Trees { self: Universe =>
 
   /** The API that all literals support */
   trait LiteralApi extends TermTreeApi { this: Literal =>
+    /** The compile-time constant underlying the literal. */
     val value: Constant
   }
 
@@ -1517,7 +1887,10 @@ trait Trees { self: Universe =>
 
   /** The API that all annotateds support */
   trait AnnotatedApi extends TreeApi { this: Annotated =>
+    /** The annotation. */
     val annot: Tree
+
+    /** The annotee. */
     val arg: Tree
   }
 
@@ -1544,6 +1917,7 @@ trait Trees { self: Universe =>
 
   /** The API that all singleton type trees support */
   trait SingletonTypeTreeApi extends TypTreeApi { this: SingletonTypeTree =>
+    /** The underlying reference. */
     val ref: Tree
   }
 
@@ -1573,7 +1947,10 @@ trait Trees { self: Universe =>
 
   /** The API that all selects from type trees support */
   trait SelectFromTypeTreeApi extends TypTreeApi with RefTreeApi { this: SelectFromTypeTree =>
+    /** @inheritdoc */
     val qualifier: Tree
+
+    /** @inheritdoc */
     val name: TypeName
   }
 
@@ -1600,6 +1977,7 @@ trait Trees { self: Universe =>
 
   /** The API that all compound type trees support */
   trait CompoundTypeTreeApi extends TypTreeApi { this: CompoundTypeTree =>
+    /** The template of the compound type - represents the parents, the optional self-type and the optional definitions. */
     val templ: Template
   }
 
@@ -1626,7 +2004,10 @@ trait Trees { self: Universe =>
 
   /** The API that all applied type trees support */
   trait AppliedTypeTreeApi extends TypTreeApi { this: AppliedTypeTree =>
+    /** The target of the application. */
     val tpt: Tree
+
+    /** The arguments of the application. */
     val args: List[Tree]
   }
 
@@ -1653,11 +2034,18 @@ trait Trees { self: Universe =>
 
   /** The API that all type bound trees support */
   trait TypeBoundsTreeApi extends TypTreeApi { this: TypeBoundsTree =>
+    /** The lower bound.
+     *  Is equal to `Ident(<scala.Nothing>)` if not specified explicitly.
+     */
     val lo: Tree
+
+    /** The upper bound.
+     *  Is equal to `Ident(<scala.Any>)` if not specified explicitly.
+     */
     val hi: Tree
   }
 
-  /** Document me! */
+  /** TODO Document me! */
   type ExistentialTypeTree >: Null <: TypTree with ExistentialTypeTreeApi
 
   /** A tag that preserves the identity of the `ExistentialTypeTree` abstract type from erasure.
@@ -1680,7 +2068,10 @@ trait Trees { self: Universe =>
 
   /** The API that all existential type trees support */
   trait ExistentialTypeTreeApi extends TypTreeApi { this: ExistentialTypeTree =>
+    /** The underlying type of the existential type. */
     val tpt: Tree
+
+    /** The clauses of the definition of the existential type. */
     val whereClauses: List[Tree]
   }
 
@@ -1710,6 +2101,9 @@ trait Trees { self: Universe =>
 
   /** The API that all type trees support */
   trait TypeTreeApi extends TypTreeApi { this: TypeTree =>
+    /** The precursor of this tree.
+     *  Is equal to `EmptyTree` if this type tree doesn't have precursors.
+     */
     def original: Tree
   }
 
@@ -1722,50 +2116,73 @@ trait Trees { self: Universe =>
 
 // ---------------------- factories ----------------------------------------------
 
-  /** @param sym       the class symbol
-   *  @param impl      the implementation template
+  /** A factory method for `ClassDef` nodes.
    */
   def ClassDef(sym: Symbol, impl: Template): ClassDef
 
-  /**
-   *  @param sym       the class symbol
-   *  @param impl      the implementation template
+  /** A factory method for `ModuleDef` nodes.
    */
   def ModuleDef(sym: Symbol, impl: Template): ModuleDef
 
+  /** A factory method for `ValDef` nodes.
+   */
   def ValDef(sym: Symbol, rhs: Tree): ValDef
 
+  /** A factory method for `ValDef` nodes.
+   */
   def ValDef(sym: Symbol): ValDef
 
+  /** A factory method for `ValDef` nodes.
+   */
   def DefDef(sym: Symbol, mods: Modifiers, vparamss: List[List[ValDef]], rhs: Tree): DefDef
 
+  /** A factory method for `ValDef` nodes.
+   */
   def DefDef(sym: Symbol, vparamss: List[List[ValDef]], rhs: Tree): DefDef
 
+  /** A factory method for `ValDef` nodes.
+   */
   def DefDef(sym: Symbol, mods: Modifiers, rhs: Tree): DefDef
 
+  /** A factory method for `ValDef` nodes.
+   */
   def DefDef(sym: Symbol, rhs: Tree): DefDef
 
+  /** A factory method for `ValDef` nodes.
+   */
   def DefDef(sym: Symbol, rhs: List[List[Symbol]] => Tree): DefDef
 
-  /** A TypeDef node which defines given `sym` with given tight hand side `rhs`. */
+  /** A factory method for `TypeDef` nodes.
+   */
   def TypeDef(sym: Symbol, rhs: Tree): TypeDef
 
-  /** A TypeDef node which defines abstract type or type parameter for given `sym` */
+  /** A factory method for `TypeDef` nodes.
+   */
   def TypeDef(sym: Symbol): TypeDef
 
+  /** A factory method for `LabelDef` nodes.
+   */
   def LabelDef(sym: Symbol, params: List[Symbol], rhs: Tree): LabelDef
 
-  /** Block factory that flattens directly nested blocks.
+  /** A factory method for `Block` nodes.
+   *  Flattens directly nested blocks.
    */
   def Block(stats: Tree*): Block
 
-  /** casedef shorthand */
+  /** A factory method for `CaseDef` nodes.
+   */
   def CaseDef(pat: Tree, body: Tree): CaseDef
 
+  /** A factory method for `Bind` nodes.
+   */
   def Bind(sym: Symbol, body: Tree): Bind
 
+  /** A factory method for `Try` nodes.
+   */
   def Try(body: Tree, cases: (Tree, Tree)*): Try
 
+  /** A factory method for `Throw` nodes.
+   */
   def Throw(tpe: Type, args: Tree*): Throw
 
   /** Factory method for object creation `new tpt(args_1)...(args_n)`
@@ -1777,96 +2194,295 @@ trait Trees { self: Universe =>
    */
   def New(tpe: Type, args: Tree*): Tree
 
+  /** 0-1 argument list new, based on a symbol.
+   */
   def New(sym: Symbol, args: Tree*): Tree
 
+  /** A factory method for `Apply` nodes.
+   */
   def Apply(sym: Symbol, args: Tree*): Tree
 
+  /** 0-1 argument list new, based on a type tree.
+   */
   def ApplyConstructor(tpt: Tree, args: List[Tree]): Tree
 
+  /** A factory method for `Super` nodes.
+   */
   def Super(sym: Symbol, mix: TypeName): Tree
 
+  /** A factory method for `This` nodes.
+   */
   def This(sym: Symbol): Tree
 
+  /** A factory method for `Select` nodes.
+   *  The string `name` argument is assumed to represent a [[scala.reflect.api.Names#TermName].
+   */
   def Select(qualifier: Tree, name: String): Select
 
+  /** A factory method for `Select` nodes.
+   */
   def Select(qualifier: Tree, sym: Symbol): Select
 
+  /** A factory method for `Ident` nodes.
+   */
   def Ident(name: String): Ident
 
+  /** A factory method for `Ident` nodes.
+   */
   def Ident(sym: Symbol): Ident
 
+  /** A factory method for `TypeTree` nodes.
+   */
   def TypeTree(tp: Type): TypeTree
 
 // ---------------------- copying ------------------------------------------------
 
-  /** The standard (lazy) tree copier
+  /** The type of standard (lazy) tree copiers.
    */
   type TreeCopier <: TreeCopierOps
+
+  /** The standard (lazy) tree copier.
+   */
   val treeCopy: TreeCopier = newLazyTreeCopier
 
+  /** Creates a strict tree copier.
+   */
   def newStrictTreeCopier: TreeCopier
+
+  /** Creates a lazy tree copier.
+   */
   def newLazyTreeCopier: TreeCopier
 
-  /** The API of a tree copier
-   *  tree copiers are made available by an implicit conversion in reflect.ops
+  /** The API of a tree copier.
    */
   abstract class TreeCopierOps {
+    /** Creates a `ClassDef` node from the given components, having a given `tree` as a prototype.
+     *  Having a tree as a prototype means that the tree's attachments, type and symbol will be copied into the result.
+     */
     def ClassDef(tree: Tree, mods: Modifiers, name: Name, tparams: List[TypeDef], impl: Template): ClassDef
+
+    /** Creates a `PackageDef` node from the given components, having a given `tree` as a prototype.
+     *  Having a tree as a prototype means that the tree's attachments, type and symbol will be copied into the result.
+     */
     def PackageDef(tree: Tree, pid: RefTree, stats: List[Tree]): PackageDef
+
+    /** Creates a `ModuleDef` node from the given components, having a given `tree` as a prototype.
+     *  Having a tree as a prototype means that the tree's attachments, type and symbol will be copied into the result.
+     */
     def ModuleDef(tree: Tree, mods: Modifiers, name: Name, impl: Template): ModuleDef
+
+    /** Creates a `ValDef` node from the given components, having a given `tree` as a prototype.
+     *  Having a tree as a prototype means that the tree's attachments, type and symbol will be copied into the result.
+     */
     def ValDef(tree: Tree, mods: Modifiers, name: Name, tpt: Tree, rhs: Tree): ValDef
+
+    /** Creates a `DefDef` node from the given components, having a given `tree` as a prototype.
+     *  Having a tree as a prototype means that the tree's attachments, type and symbol will be copied into the result.
+     */
     def DefDef(tree: Tree, mods: Modifiers, name: Name, tparams: List[TypeDef], vparamss: List[List[ValDef]], tpt: Tree, rhs: Tree): DefDef
+
+    /** Creates a `TypeDef` node from the given components, having a given `tree` as a prototype.
+     *  Having a tree as a prototype means that the tree's attachments, type and symbol will be copied into the result.
+     */
     def TypeDef(tree: Tree, mods: Modifiers, name: Name, tparams: List[TypeDef], rhs: Tree): TypeDef
+
+    /** Creates a `LabelDef` node from the given components, having a given `tree` as a prototype.
+     *  Having a tree as a prototype means that the tree's attachments, type and symbol will be copied into the result.
+     */
     def LabelDef(tree: Tree, name: Name, params: List[Ident], rhs: Tree): LabelDef
+
+    /** Creates a `Import` node from the given components, having a given `tree` as a prototype.
+     *  Having a tree as a prototype means that the tree's attachments, type and symbol will be copied into the result.
+     */
     def Import(tree: Tree, expr: Tree, selectors: List[ImportSelector]): Import
+
+    /** Creates a `Template` node from the given components, having a given `tree` as a prototype.
+     *  Having a tree as a prototype means that the tree's attachments, type and symbol will be copied into the result.
+     */
     def Template(tree: Tree, parents: List[Tree], self: ValDef, body: List[Tree]): Template
+
+    /** Creates a `Block` node from the given components, having a given `tree` as a prototype.
+     *  Having a tree as a prototype means that the tree's attachments, type and symbol will be copied into the result.
+     */
     def Block(tree: Tree, stats: List[Tree], expr: Tree): Block
+
+    /** Creates a `CaseDef` node from the given components, having a given `tree` as a prototype.
+     *  Having a tree as a prototype means that the tree's attachments, type and symbol will be copied into the result.
+     */
     def CaseDef(tree: Tree, pat: Tree, guard: Tree, body: Tree): CaseDef
+
+    /** Creates a `Alternative` node from the given components, having a given `tree` as a prototype.
+     *  Having a tree as a prototype means that the tree's attachments, type and symbol will be copied into the result.
+     */
     def Alternative(tree: Tree, trees: List[Tree]): Alternative
+
+    /** Creates a `Star` node from the given components, having a given `tree` as a prototype.
+     *  Having a tree as a prototype means that the tree's attachments, type and symbol will be copied into the result.
+     */
     def Star(tree: Tree, elem: Tree): Star
+
+    /** Creates a `Bind` node from the given components, having a given `tree` as a prototype.
+     *  Having a tree as a prototype means that the tree's attachments, type and symbol will be copied into the result.
+     */
     def Bind(tree: Tree, name: Name, body: Tree): Bind
+
+    /** Creates a `UnApply` node from the given components, having a given `tree` as a prototype.
+     *  Having a tree as a prototype means that the tree's attachments, type and symbol will be copied into the result.
+     */
     def UnApply(tree: Tree, fun: Tree, args: List[Tree]): UnApply
+
+    /** Creates a `Function` node from the given components, having a given `tree` as a prototype.
+     *  Having a tree as a prototype means that the tree's attachments, type and symbol will be copied into the result.
+     */
     def Function(tree: Tree, vparams: List[ValDef], body: Tree): Function
+
+    /** Creates a `Assign` node from the given components, having a given `tree` as a prototype.
+     *  Having a tree as a prototype means that the tree's attachments, type and symbol will be copied into the result.
+     */
     def Assign(tree: Tree, lhs: Tree, rhs: Tree): Assign
+
+    /** Creates a `AssignOrNamedArg` node from the given components, having a given `tree` as a prototype.
+     *  Having a tree as a prototype means that the tree's attachments, type and symbol will be copied into the result.
+     */
     def AssignOrNamedArg(tree: Tree, lhs: Tree, rhs: Tree): AssignOrNamedArg
+
+    /** Creates a `If` node from the given components, having a given `tree` as a prototype.
+     *  Having a tree as a prototype means that the tree's attachments, type and symbol will be copied into the result.
+     */
     def If(tree: Tree, cond: Tree, thenp: Tree, elsep: Tree): If
+
+    /** Creates a `Match` node from the given components, having a given `tree` as a prototype.
+     *  Having a tree as a prototype means that the tree's attachments, type and symbol will be copied into the result.
+     */
     def Match(tree: Tree, selector: Tree, cases: List[CaseDef]): Match
+
+    /** Creates a `Return` node from the given components, having a given `tree` as a prototype.
+     *  Having a tree as a prototype means that the tree's attachments, type and symbol will be copied into the result.
+     */
     def Return(tree: Tree, expr: Tree): Return
+
+    /** Creates a `Try` node from the given components, having a given `tree` as a prototype.
+     *  Having a tree as a prototype means that the tree's attachments, type and symbol will be copied into the result.
+     */
     def Try(tree: Tree, block: Tree, catches: List[CaseDef], finalizer: Tree): Try
+
+    /** Creates a `Throw` node from the given components, having a given `tree` as a prototype.
+     *  Having a tree as a prototype means that the tree's attachments, type and symbol will be copied into the result.
+     */
     def Throw(tree: Tree, expr: Tree): Throw
+
+    /** Creates a `New` node from the given components, having a given `tree` as a prototype.
+     *  Having a tree as a prototype means that the tree's attachments, type and symbol will be copied into the result.
+     */
     def New(tree: Tree, tpt: Tree): New
+
+    /** Creates a `Typed` node from the given components, having a given `tree` as a prototype.
+     *  Having a tree as a prototype means that the tree's attachments, type and symbol will be copied into the result.
+     */
     def Typed(tree: Tree, expr: Tree, tpt: Tree): Typed
+
+    /** Creates a `TypeApply` node from the given components, having a given `tree` as a prototype.
+     *  Having a tree as a prototype means that the tree's attachments, type and symbol will be copied into the result.
+     */
     def TypeApply(tree: Tree, fun: Tree, args: List[Tree]): TypeApply
+
+    /** Creates a `Apply` node from the given components, having a given `tree` as a prototype.
+     *  Having a tree as a prototype means that the tree's attachments, type and symbol will be copied into the result.
+     */
     def Apply(tree: Tree, fun: Tree, args: List[Tree]): Apply
+
+    /** Creates a `Super` node from the given components, having a given `tree` as a prototype.
+     *  Having a tree as a prototype means that the tree's attachments, type and symbol will be copied into the result.
+     */
     def Super(tree: Tree, qual: Tree, mix: TypeName): Super
+
+    /** Creates a `This` node from the given components, having a given `tree` as a prototype.
+     *  Having a tree as a prototype means that the tree's attachments, type and symbol will be copied into the result.
+     */
     def This(tree: Tree, qual: Name): This
+
+    /** Creates a `Select` node from the given components, having a given `tree` as a prototype.
+     *  Having a tree as a prototype means that the tree's attachments, type and symbol will be copied into the result.
+     */
     def Select(tree: Tree, qualifier: Tree, selector: Name): Select
+
+    /** Creates a `Ident` node from the given components, having a given `tree` as a prototype.
+     *  Having a tree as a prototype means that the tree's attachments, type and symbol will be copied into the result.
+     */
     def Ident(tree: Tree, name: Name): Ident
+
+    /** Creates a `ReferenceToBoxed` node from the given components, having a given `tree` as a prototype.
+     *  Having a tree as a prototype means that the tree's attachments, type and symbol will be copied into the result.
+     */
     def ReferenceToBoxed(tree: Tree, idt: Ident): ReferenceToBoxed
+
+    /** Creates a `Literal` node from the given components, having a given `tree` as a prototype.
+     *  Having a tree as a prototype means that the tree's attachments, type and symbol will be copied into the result.
+     */
     def Literal(tree: Tree, value: Constant): Literal
+
+    /** Creates a `TypeTree` node from the given components, having a given `tree` as a prototype.
+     *  Having a tree as a prototype means that the tree's attachments, type and symbol will be copied into the result.
+     */
     def TypeTree(tree: Tree): TypeTree
+
+    /** Creates a `Annotated` node from the given components, having a given `tree` as a prototype.
+     *  Having a tree as a prototype means that the tree's attachments, type and symbol will be copied into the result.
+     */
     def Annotated(tree: Tree, annot: Tree, arg: Tree): Annotated
+
+    /** Creates a `SingletonTypeTree` node from the given components, having a given `tree` as a prototype.
+     *  Having a tree as a prototype means that the tree's attachments, type and symbol will be copied into the result.
+     */
     def SingletonTypeTree(tree: Tree, ref: Tree): SingletonTypeTree
+
+    /** Creates a `SelectFromTypeTree` node from the given components, having a given `tree` as a prototype.
+     *  Having a tree as a prototype means that the tree's attachments, type and symbol will be copied into the result.
+     */
     def SelectFromTypeTree(tree: Tree, qualifier: Tree, selector: Name): SelectFromTypeTree
+
+    /** Creates a `CompoundTypeTree` node from the given components, having a given `tree` as a prototype.
+     *  Having a tree as a prototype means that the tree's attachments, type and symbol will be copied into the result.
+     */
     def CompoundTypeTree(tree: Tree, templ: Template): CompoundTypeTree
+
+    /** Creates a `AppliedTypeTree` node from the given components, having a given `tree` as a prototype.
+     *  Having a tree as a prototype means that the tree's attachments, type and symbol will be copied into the result.
+     */
     def AppliedTypeTree(tree: Tree, tpt: Tree, args: List[Tree]): AppliedTypeTree
+
+    /** Creates a `TypeBoundsTree` node from the given components, having a given `tree` as a prototype.
+     *  Having a tree as a prototype means that the tree's attachments, type and symbol will be copied into the result.
+     */
     def TypeBoundsTree(tree: Tree, lo: Tree, hi: Tree): TypeBoundsTree
+
+    /** Creates a `ExistentialTypeTree` node from the given components, having a given `tree` as a prototype.
+     *  Having a tree as a prototype means that the tree's attachments, type and symbol will be copied into the result.
+     */
     def ExistentialTypeTree(tree: Tree, tpt: Tree, whereClauses: List[Tree]): ExistentialTypeTree
   }
 
 // ---------------------- traversing and transforming ------------------------------
 
+  /** A class that implement a default tree traversal strategy: breadth-first component-wise.
+   */
   class Traverser {
     protected[scala] var currentOwner: Symbol = rootMirror.RootClass
 
+    /** Traverses a single tree. */
     def traverse(tree: Tree): Unit = itraverse(this, tree)
 
+    /** Traverses a list of trees. */
     def traverseTrees(trees: List[Tree]) {
       trees foreach traverse
     }
+
+    /** Traverses a list of lists of trees. */
     def traverseTreess(treess: List[List[Tree]]) {
       treess foreach traverseTrees
     }
+
+    /** Traverses a list of trees with a given owner symbol. */
     def traverseStats(stats: List[Tree], exprOwner: Symbol) {
       stats foreach (stat =>
         if (exprOwner != currentOwner) atOwner(exprOwner)(traverse(stat))
@@ -1874,6 +2490,7 @@ trait Trees { self: Universe =>
       )
     }
 
+    /** Performs a traversal with a given owner symbol. */
     def atOwner(owner: Symbol)(traverse: => Unit) {
       val prevOwner = currentOwner
       currentOwner = owner
@@ -1886,49 +2503,78 @@ trait Trees { self: Universe =>
     def apply[T <: Tree](tree: T): T = { traverse(tree); tree }
   }
 
+  /** Delegates the traversal strategy to [[scala.reflect.internal.Trees]],
+   *  because pattern matching on abstract types we have here degrades performance.
+   */
   protected def itraverse(traverser: Traverser, tree: Tree): Unit = throw new MatchError(tree)
 
+  /** Provides an extension hook for the traversal strategy.
+   *  Future-proofs against new node types.
+   */
   protected def xtraverse(traverser: Traverser, tree: Tree): Unit = throw new MatchError(tree)
 
+  /** A class that implement a default tree transformation strategy: breadth-first component-wise cloning.
+   */
   abstract class Transformer {
+    /** The underlying tree copier. */
     val treeCopy: TreeCopier = newLazyTreeCopier
+
+    /** The current owner symbol. */
     protected[scala] var currentOwner: Symbol = rootMirror.RootClass
+
+    /** The enclosing method of the currently transformed tree. */
     protected def currentMethod = {
       def enclosingMethod(sym: Symbol): Symbol =
         if (sym.isMethod || sym == NoSymbol) sym else enclosingMethod(sym.owner)
       enclosingMethod(currentOwner)
     }
+
+    /** The enclosing class of the currently transformed tree. */
     protected def currentClass = {
       def enclosingClass(sym: Symbol): Symbol =
         if (sym.isClass || sym == NoSymbol) sym else enclosingClass(sym.owner)
       enclosingClass(currentOwner)
     }
+
 //    protected def currentPackage = currentOwner.enclosingTopLevelClass.owner
+
+    /** Transforms a single tree. */
     def transform(tree: Tree): Tree = itransform(this, tree)
 
-    def transformTrees(trees: List[Tree]): List[Tree] =
-        trees mapConserve (transform(_))
+    /** Transforms a list of trees. */
+    def transformTrees(trees: List[Tree]): List[Tree] = trees mapConserve (transform(_))
+
+    /** Transforms a `Template`. */
     def transformTemplate(tree: Template): Template =
       transform(tree: Tree).asInstanceOf[Template]
+    /** Transforms a list of `TypeDef` trees. */
     def transformTypeDefs(trees: List[TypeDef]): List[TypeDef] =
       trees mapConserve (tree => transform(tree).asInstanceOf[TypeDef])
+    /** Transforms a `ValDef`. */
     def transformValDef(tree: ValDef): ValDef =
       if (tree.isEmpty) tree else transform(tree).asInstanceOf[ValDef]
+    /** Transforms a list of `ValDef` nodes. */
     def transformValDefs(trees: List[ValDef]): List[ValDef] =
       trees mapConserve (transformValDef(_))
+    /** Transforms a list of lists of `ValDef` nodes. */
     def transformValDefss(treess: List[List[ValDef]]): List[List[ValDef]] =
       treess mapConserve (transformValDefs(_))
+    /** Transforms a list of `CaseDef` nodes. */
     def transformCaseDefs(trees: List[CaseDef]): List[CaseDef] =
       trees mapConserve (tree => transform(tree).asInstanceOf[CaseDef])
+    /** Transforms a list of `Ident` nodes. */
     def transformIdents(trees: List[Ident]): List[Ident] =
       trees mapConserve (tree => transform(tree).asInstanceOf[Ident])
+    /** Traverses a list of trees with a given owner symbol. */
     def transformStats(stats: List[Tree], exprOwner: Symbol): List[Tree] =
       stats mapConserve (stat =>
         if (exprOwner != currentOwner && stat.isTerm) atOwner(exprOwner)(transform(stat))
         else transform(stat)) filter (EmptyTree != _)
+    /** Transforms `Modifiers`. */
     def transformModifiers(mods: Modifiers): Modifiers =
       mods.mapAnnotations(transformTrees)
 
+    /** Transforms a tree with a given owner symbol. */
     def atOwner[A](owner: Symbol)(trans: => A): A = {
       val prevOwner = currentOwner
       currentOwner = owner
@@ -1938,12 +2584,17 @@ trait Trees { self: Universe =>
     }
   }
 
+  /** Delegates the transformation strategy to [[scala.reflect.internal.Trees]],
+   *  because pattern matching on abstract types we have here degrades performance.
+   */
   protected def itransform(transformer: Transformer, tree: Tree): Tree = throw new MatchError(tree)
 
+  /** Provides an extension hook for the transformation strategy.
+   *  Future-proofs against new node types.
+   */
   protected def xtransform(transformer: Transformer, tree: Tree): Tree = throw new MatchError(tree)
 
-
-  /** ... */
+  /** The type of tree modifiers. */
   type Modifiers >: Null <: AnyRef with ModifiersApi
 
   /** A tag that preserves the identity of the `Modifiers` abstract type from erasure.
@@ -1951,26 +2602,49 @@ trait Trees { self: Universe =>
    */
   implicit val ModifiersTag: ClassTag[Modifiers]
 
-  /** ... */
+  /** The API that all Modifiers support */
   abstract class ModifiersApi {
-    def flags: FlagSet // default: NoFlags
+    /** The underlying flags of the enclosing definition.
+     *  Is equal to `NoFlags` if none are specified explicitly.
+     */
+    def flags: FlagSet
+
     def hasFlag(flag: FlagSet): Boolean
-    def privateWithin: Name  // default: EmptyTypeName
-    def annotations: List[Tree] // default: List()
+
+    /** The visibility scope of the enclosing definition.
+     *  Is equal to `tpnme.EMPTY` if none is specified explicitly.
+     */
+    def privateWithin: Name
+
+    /** The annotations of the enclosing definition.
+     *  Empty list if none are specified explicitly.
+     */
+    def annotations: List[Tree]
+
+    /** Creates a new instance of `Modifiers` with
+     *  the annotations transformed according to the given function.
+     */
     def mapAnnotations(f: List[Tree] => List[Tree]): Modifiers =
       Modifiers(flags, privateWithin, f(annotations))
   }
 
+  /** The constructor/deconstructor for `Modifiers` instances. */
   val Modifiers: ModifiersCreator
 
+  /** An extractor class to create and pattern match with syntax `Modifiers(flags, privateWithin, annotations)`.
+   *  Modifiers encapsulate flags, visibility annotations and Scala annotations for member definitions.
+   */
   abstract class ModifiersCreator {
     def apply(): Modifiers = Modifiers(NoFlags, tpnme.EMPTY, List())
     def apply(flags: FlagSet, privateWithin: Name, annotations: List[Tree]): Modifiers
   }
 
+  /** The factory for `Modifiers` instances. */
   def Modifiers(flags: FlagSet, privateWithin: Name): Modifiers = Modifiers(flags, privateWithin, List())
+
+  /** The factory for `Modifiers` instances. */
   def Modifiers(flags: FlagSet): Modifiers = Modifiers(flags, tpnme.EMPTY)
 
-  /** ... */
+  /** An empty `Modifiers` object: no flags, empty visibility annotation and no Scala annotations. */
   lazy val NoMods = Modifiers()
 }

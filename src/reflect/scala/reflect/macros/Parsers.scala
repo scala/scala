@@ -1,12 +1,16 @@
 package scala.reflect
 package macros
 
+/** A slice of [[scala.reflect.macros.Context the Scala macros context]] that
+ *  exposes functions to parse strings with Scala code into trees.
+ */
 trait Parsers {
   self: Context =>
 
-  /** .. */
-  // todo. distinguish between parsing an expression and parsing arbitrary code
-  // for example, parsing in expression mode will fail on packages
+  /** Parses a string with a Scala expression into an abstract syntax tree.
+   *  Only works for expressions, i.e. parsing a package declaration will fail.
+   *  @throws [[scala.reflect.macros.ParseException]]
+   */
   def parse(code: String): Tree
 }
 

@@ -8,9 +8,38 @@ package api
 
 import scala.reflect.runtime.{universe => ru}
 
+/** A slice of [[scala.reflect.api.Universe the Scala reflection cake]] that defines strongly-typed tree wrappers and operations on them.
+ *  See [[scala.reflect.api.Universe]] for a description of how the reflection API is encoded with the cake pattern.
+ *
+ *  Expr wraps an abstract syntax tree ([[scala.reflect.api.Trees#Tree]]) and tags it with its type ([[scala.reflect.api.Types#Type]]).
+ *
+ *  Usually exprs are created via [[scala.reflect.api.Universe#reify]], in which case a compiler
+ *  produces a [[scala.reflect.api.TreeCreator]] for the provided expression and also
+ *  creates a complementary [[scala.reflect.api.TypeTags#WeakTypeTag]] that corresponds to the type of that expression.
+ *
+ *  Thanks to using TreeCreators, exprs are essentially tree factories, capable of instantiating
+ *  themselves in any universe and mirror. This is achieved by the `in` method, which performs
+ *  migration of a given expression to another mirror. Migration means that all symbolic references
+ *  to classes/objects/packages in the expression are re-resolved within the new mirror
+ *  (typically using that mirror's classloader). Default universe of an expr is typically
+ *  [[scala.reflect.runtime.package#universe]], default mirror is typically [[scala.reflect.runtime.package#currentMirror]].
+ *
+ *  Exprs can also be created manually, but then the burden of providing a TreeCreator lies on the programmer.
+ *  However, on the one hand, manual creation is very rarely needed when working with runtime reflection,
+ *  while, on the other hand, compile-time reflection via macros provides an easier way to instantiate exprs,
+ *  described in [[scala.reflect.macros.Aliases]].
+ *
+ *  === Known issues ===
+ *
+ *  Exprs are marked as serializable, but this functionality is not yet implemented.
+ *  An issue tracker entry: [[https://issues.scala-lang.org/browse/SI-5919 https://issues.scala-lang.org/browse/SI-5919]]
+ *  has been created to track the implementation of this feature.
+ */
 trait Exprs { self: Universe =>
 
-  /** Expr wraps an expression tree and tags it with its type. */
+  /** Expr wraps an abstract syntax tree and tags it with its type.
+   *  The main source of information about exprs is the [[scala.reflect.api.Exprs]] page.
+   */
   trait Expr[+T] extends Equals with Serializable {
     /**
      * Underlying mirror of this expr.
@@ -19,23 +48,24 @@ trait Exprs { self: Universe =>
 
     /**
      * Migrates the expression into another mirror, jumping into a different universe if necessary.
-     *
-     * This means that all symbolic references to classes/objects/packages in the expression
-     * will be re-resolved within the new mirror (typically using that mirror's classloader).
      */
     def in[U <: Universe with Singleton](otherMirror: scala.reflect.api.Mirror[U]): U # Expr[T]
 
     /**
-     * The Scala syntax tree representing the wrapped expression.
+     * The Scala abstract syntax tree representing the wrapped expression.
      */
     def tree: Tree
 
     /**
-     * Representation of the type of the wrapped expression tree as found via type tags.
+     * Type of the wrapped expression tree as provided during creation.
+     *
+     * When exprs are created by the compiler, `staticType` represents
+     * a statically known type of the tree as calculated at that point by the compiler.
      */
     def staticType: Type
+
     /**
-     * Representation of the type of the wrapped expression tree as found in the tree.
+     * Type of the wrapped expression tree as found in the underlying tree.
      */
     def actualType: Type
 
@@ -65,6 +95,7 @@ trait Exprs { self: Universe =>
      * because expr of type Expr[T] itself does not have a method foo.
      */
     def splice: T
+
     /**
      * A dummy value to denote cross-stage path-dependent type dependencies.
      *
@@ -81,10 +112,16 @@ trait Exprs { self: Universe =>
      */
     val value: T
 
-    /** case class accessories */
+    /** TODO how do I doc this? */
     override def canEqual(x: Any) = x.isInstanceOf[Expr[_]]
+
+    /** TODO how do I doc this? */
     override def equals(x: Any) = x.isInstanceOf[Expr[_]] && this.mirror == x.asInstanceOf[Expr[_]].mirror && this.tree == x.asInstanceOf[Expr[_]].tree
+
+    /** TODO how do I doc this? */
     override def hashCode = mirror.hashCode * 31 + tree.hashCode
+
+    /** TODO how do I doc this? */
     override def toString = "Expr["+staticType+"]("+tree+")"
   }
 
@@ -93,6 +130,8 @@ trait Exprs { self: Universe =>
    *
    * Can be useful, when having a tree and wanting to splice it in reify call,
    * in which case the tree first needs to be wrapped in an expr.
+
+   * The main source of information about exprs is the [[scala.reflect.api.Exprs]] page.
    */
   object Expr {
     def apply[T: WeakTypeTag](mirror: scala.reflect.api.Mirror[self.type], treec: TreeCreator): Expr[T] = new ExprImpl[T](mirror.asInstanceOf[Mirror], treec)

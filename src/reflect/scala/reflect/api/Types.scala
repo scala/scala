@@ -1,13 +1,104 @@
 package scala.reflect
 package api
 
-/**
- * Defines the type hierachy for types.
+/** A slice of [[scala.reflect.api.Universe the Scala reflection cake]] that defines types and operations on them.
+ *  See [[scala.reflect.api.Universe]] for a description of how the reflection API is encoded with the cake pattern.
  *
- * Note: Because of implementation details, some type factories have return type `Type`
- * instead of a more precise type.
+ *  While [[scala.reflect.api.Symbols symbols]] establish the structure of the program by representing the hierarchy
+ *  of definitions, types bring meaning to symbols. A type is not, say, `Int` -- that's just its symbol
+ *  (assuming we are talking about `scala.Int`, and not just the name). A type is the information about all members
+ *  that compose that thing: methods, fields, type parameters, nested classes and traits, etc. If a symbol represents
+ *  a definition, a type represents the whole structure of that definition. It is the union of all definitions that
+ *  compose a class, the description of what goes into a method and what comes out, etc.
  *
- * @see [[scala.reflect]] for a description on how the class hierarchy is encoded here.
+ *  === Instantiating types ===
+ *
+ *  There are three ways to instantiate types. The simplest one involves the [[scala.reflect.api.TypeTags#typeOf]] method,
+ *  which takes a type argument and produces a `Type` instance that represents that argument. For example, `typeOf[List[Int]]`
+ *  produces a [[scala.reflect.api.Types#TypeRef]], which corresponds to a type `List` applied to a type argument `Int`.
+ *  When type parameters are involved (as, for example, in `typeOf[List[A]]`), `typeOf` won't work, and one should use
+ *  [[scala.reflect.api.TypeTags#weakTypeOf]] instead. Refer to [[scala.reflect.api.TypeTags the type tags page]] to find out
+ *  more about this distinction.
+ *
+ *  `typeOf` requires spelling out a type explicitly, but there's also a way to capture types implicitly with the [[scala.reflect.api.TypeTag#TypeTag]]
+ *  context bound. Once a type parameter `T` is annotated with the `TypeTag` context bound, the for each usage of the enclosing class or method,
+ *  the compiler will automatically produce a `Type` evidence, available via `typeTag[T]`. For example, inside a method
+ *  `def test[T: TypeTag](x: T) = ...` one can use `typeTag[T]` to obtain the information about the exact type of `x` passed into that method.
+ *  Similarly to the situation `typeOf`, sometimes `typeTag` does not work, and one has to use `weakTypeTag`.
+ *  [[scala.reflect.api.TypeTags The type tags page]] tells more about this feature.
+ *
+ *  Finally types can be instantiated manually using factory methods such as `typeRef` or `polyType`.
+ *  This is necessary only in cases when `typeOf` or `typeTag` cannot be applied, because the type cannot be spelt out
+ *  in a Scala snippet, usually when writing macros. Manual construction requires deep knowledge of Scala compiler internals
+ *  and shouldn't be used, when there are other alternatives available.
+ *
+ *  === Using types ===
+ *
+ *  Arguably the most useful application of types is looking up members. Every type has `members` and `declarations` methods (along with
+ *  their singular counterparts `member` and `declaration`), which provide the list of definitions associated with that type.
+ *  For example, to look up the `map` method of `List`, one could write `typeOf[List[_]].member("map": TermName)`, getting a `MethodSymbol`
+ *
+ *  Another popular use case is doing subtype tests. Types expose `<:<` and `weak_<:<` methods for that purpose. The latter is
+ *  an extension of the former - it also works with numeric types (for example, `Int <:< Long` is false, but `Int weak_<:< Long` is true).
+ *  Unlike the subtype tests implemented by manifests, tests provided by `Type`s are aware of all the intricacies of the Scala type system
+ *  and work correctly even for involved types.
+ *
+ *  Finally a word must be said about equality of types. Due to an implementation detail, the vanilla `==` method should not be used
+ *  to compare types for equality, as it might work in some circumstances and fizzle under conditions that are slightly different.
+ *  Instead one should always use the `=:=` method. As an added bonus, `=:=` also knows about type aliases, e.g.
+ *  `typeOf[scala.List[_]] =:= typeOf[scala.collection.immutable.List[_]]`.
+ *
+ *  === Exploring types ===
+ *
+ *  {{{
+ *  scala> import scala.reflect.runtime.universe._
+ *  import scala.reflect.runtime.universe._
+ *
+ *  scala> typeOf[List[_]].members.sorted take 5 foreach println
+ *  constructor List
+ *  method companion
+ *  method ::
+ *  method :::
+ *  method reverse_:::
+ *
+ *  scala> def test[T: TypeTag](x: T) = s"I've been called for an x typed as ${typeOf[T]}"
+ *  test: [T](x: T)(implicit evidence$1: reflect.runtime.universe.TypeTag[T])String
+ *
+ *  scala> test(2)
+ *  res0 @ 3fc80fae: String = I've been called for an x typed as Int
+ *
+ *  scala> test(List(2, "x"))
+ *  res1 @ 10139edf: String = I've been called for an x typed as List[Any]
+ *  }}}
+ *
+ *  === How to get an internal representation of a type? ===
+ *
+ *  The `toString` method on types is designed to print a close-to-Scala representation
+ *  of the code that a given type represents. This is usually convenient, but sometimes
+ *  one would like to look under the covers and see what exactly are the elements that
+ *  constitute a certain type.
+ *
+ *  Scala reflection provides a way to dig deeper through [[scala.reflect.api.Printers]]
+ *  and their `showRaw` method. Refer to the page linked above for a series of detailed
+ *  examples.
+ *
+ *  {{{
+ *  scala> import scala.reflect.runtime.universe._
+ *  import scala.reflect.runtime.universe._
+ *
+ *  scala> def tpe = typeOf[{ def x: Int; val y: List[Int] }]
+ *  tpe: reflect.runtime.universe.Type
+ *
+ *  scala> show(tpe)
+ *  res0: String = scala.AnyRef{def x: Int; val y: scala.List[Int]}
+ *
+ *  scala> showRaw(tpe)
+ *  res1: String = RefinedType(
+ *    List(TypeRef(ThisType(scala), newTypeName("AnyRef"), List())),
+ *    Scope(
+ *      newTermName("x"),
+ *      newTermName("y")))
+ *  }}}
  */
 trait Types { self: Universe =>
 
@@ -31,7 +122,8 @@ trait Types { self: Universe =>
    */
   val NoPrefix: Type
 
-  /** The API of types
+  /** The API of types.
+   *  The main source of information about types is the [[scala.reflect.api.Types]] page.
    */
   abstract class TypeApi {
     /** The term symbol associated with the type, or `NoSymbol` for types
@@ -221,8 +313,11 @@ trait Types { self: Universe =>
     def unapply(tpe: ThisType): Option[Symbol]
   }
 
-  /** The API that all this types support */
+  /** The API that all this types support.
+   *  The main source of information about types is the [[scala.reflect.api.Types]] page.
+   */
   trait ThisTypeApi extends TypeApi { this: ThisType =>
+    /** The underlying class symbol. */
     val sym: Symbol
   }
 
@@ -253,9 +348,14 @@ trait Types { self: Universe =>
     def unapply(tpe: SingleType): Option[(Type, Symbol)]
   }
 
-  /** The API that all single types support */
+  /** The API that all single types support.
+   *  The main source of information about types is the [[scala.reflect.api.Types]] page.
+   */
   trait SingleTypeApi extends TypeApi { this: SingleType =>
+    /** The type of the qualifier. */
     val pre: Type
+
+    /** The underlying symbol. */
     val sym: Symbol
   }
   /** The `SuperType` type is not directly written, but arises when `C.super` is used
@@ -284,9 +384,18 @@ trait Types { self: Universe =>
     def unapply(tpe: SuperType): Option[(Type, Type)]
   }
 
-  /** The API that all super types support */
+  /** The API that all super types support.
+   *  The main source of information about types is the [[scala.reflect.api.Types]] page.
+   */
   trait SuperTypeApi extends TypeApi { this: SuperType =>
+    /** The type of the qualifier.
+     *  See the example for [[scala.reflect.api.Trees#SuperExtractor]].
+     */
     val thistpe: Type
+
+    /** The type of the selector.
+     *  See the example for [[scala.reflect.api.Trees#SuperExtractor]].
+     */
     val supertpe: Type
   }
   /** The `ConstantType` type is not directly written in user programs, but arises as the type of a constant.
@@ -314,8 +423,11 @@ trait Types { self: Universe =>
     def unapply(tpe: ConstantType): Option[Constant]
   }
 
-  /** The API that all constant types support */
+  /** The API that all constant types support.
+   *  The main source of information about types is the [[scala.reflect.api.Types]] page.
+   */
   trait ConstantTypeApi extends TypeApi { this: ConstantType =>
+    /** The compile-time constant underlying this type. */
     val value: Constant
   }
 
@@ -350,10 +462,21 @@ trait Types { self: Universe =>
     def unapply(tpe: TypeRef): Option[(Type, Symbol, List[Type])]
   }
 
-  /** The API that all type refs support */
+  /** The API that all type refs support.
+   *  The main source of information about types is the [[scala.reflect.api.Types]] page.
+   */
   trait TypeRefApi extends TypeApi { this: TypeRef =>
+    /** The prefix of the type reference.
+     *  Is equal to `NoPrefix` if the prefix is not applicable.
+     */
     val pre: Type
+
+    /** The underlying symbol of the type reference. */
     val sym: Symbol
+
+    /** The arguments of the type reference.
+     *  Is equal to `Nil` if the arguments are not provided.
+     */
     val args: List[Type]
   }
 
@@ -398,9 +521,14 @@ trait Types { self: Universe =>
     def unapply(tpe: RefinedType): Option[(List[Type], Scope)]
   }
 
-  /** The API that all refined types support */
+  /** The API that all refined types support.
+   *  The main source of information about types is the [[scala.reflect.api.Types]] page.
+   */
   trait RefinedTypeApi extends TypeApi { this: RefinedType =>
+    /** The superclasses of the type. */
     val parents: List[Type]
+
+    /** The scope that holds the definitions comprising the type. */
     val decls: Scope
   }
 
@@ -434,10 +562,17 @@ trait Types { self: Universe =>
     def unapply(tpe: ClassInfoType): Option[(List[Type], Scope, Symbol)]
   }
 
-  /** The API that all class info types support */
+  /** The API that all class info types support.
+   *  The main source of information about types is the [[scala.reflect.api.Types]] page.
+   */
   trait ClassInfoTypeApi extends TypeApi { this: ClassInfoType =>
+    /** The superclasses of the class type. */
     val parents: List[Type]
+
+    /** The scope that holds the definitions comprising the class type. */
     val decls: Scope
+
+    /** The symbol underlying the class type. */
     val typeSymbol: Symbol
   }
 
@@ -472,9 +607,14 @@ trait Types { self: Universe =>
     def unapply(tpe: MethodType): Option[(List[Symbol], Type)]
   }
 
-  /** The API that all method types support */
+  /** The API that all method types support.
+   *  The main source of information about types is the [[scala.reflect.api.Types]] page.
+   */
   trait MethodTypeApi extends TypeApi { this: MethodType =>
+    /** The symbols that correspond to the parameters of the method. */
     val params: List[Symbol]
+
+    /** The result type of the method. */
     val resultType: Type
   }
 
@@ -499,8 +639,11 @@ trait Types { self: Universe =>
     def unapply(tpe: NullaryMethodType): Option[(Type)]
   }
 
-  /** The API that all nullary method types support */
+  /** The API that all nullary method types support.
+   *  The main source of information about types is the [[scala.reflect.api.Types]] page.
+   */
   trait NullaryMethodTypeApi extends TypeApi { this: NullaryMethodType =>
+    /** The result type of the method. */
     val resultType: Type
   }
 
@@ -526,9 +669,14 @@ trait Types { self: Universe =>
     def unapply(tpe: PolyType): Option[(List[Symbol], Type)]
   }
 
-  /** The API that all polymorphic types support */
+  /** The API that all polymorphic types support.
+   *  The main source of information about types is the [[scala.reflect.api.Types]] page.
+   */
   trait PolyTypeApi extends TypeApi { this: PolyType =>
+    /** The symbols corresponding to the type parameters. */
     val typeParams: List[Symbol]
+
+    /** The underlying type. */
     val resultType: Type
   }
 
@@ -555,9 +703,14 @@ trait Types { self: Universe =>
     def unapply(tpe: ExistentialType): Option[(List[Symbol], Type)]
   }
 
-  /** The API that all existential types support */
+  /** The API that all existential types support.
+   *  The main source of information about types is the [[scala.reflect.api.Types]] page.
+   */
   trait ExistentialTypeApi extends TypeApi { this: ExistentialType =>
+    /** The symbols corresponding to the `forSome` clauses of the existential type. */
     val quantified: List[Symbol]
+
+    /** The underlying type of the existential type. */
     val underlying: Type
   }
 
@@ -584,10 +737,17 @@ trait Types { self: Universe =>
     def unapply(tpe: AnnotatedType): Option[(List[Annotation], Type, Symbol)]
   }
 
-  /** The API that all annotated types support */
+  /** The API that all annotated types support.
+   *  The main source of information about types is the [[scala.reflect.api.Types]] page.
+   */
   trait AnnotatedTypeApi extends TypeApi { this: AnnotatedType =>
+    /** The annotations. */
     val annotations: List[Annotation]
+
+    /** The annotee. */
     val underlying: Type
+
+    /** A symbol that represents the annotated type itself. */
     val selfsym: Symbol
   }
 
@@ -620,9 +780,18 @@ trait Types { self: Universe =>
     def unapply(tpe: TypeBounds): Option[(Type, Type)]
   }
 
-  /** The API that all type bounds support */
+  /** The API that all type bounds support.
+   *  The main source of information about types is the [[scala.reflect.api.Types]] page.
+   */
   trait TypeBoundsApi extends TypeApi { this: TypeBounds =>
+    /** The lower bound.
+     *  Is equal to `definitions.NothingTpe` if not specified explicitly.
+     */
     val lo: Type
+
+    /** The upper bound.
+     *  Is equal to `definitions.AnyTpe` if not specified explicitly.
+     */
     val hi: Type
   }
 
@@ -659,8 +828,11 @@ trait Types { self: Universe =>
     def unapply(tpe: BoundedWildcardType): Option[TypeBounds]
   }
 
-  /** The API that all this types support */
+  /** The API that all this types support.
+   *  The main source of information about types is the [[scala.reflect.api.Types]] page.
+   */
   trait BoundedWildcardTypeApi extends TypeApi { this: BoundedWildcardType =>
+    /** Type bounds for the wildcard type. */
     val bounds: TypeBounds
   }
 

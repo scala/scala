@@ -3,52 +3,59 @@ package api
 
 import scala.reflect.macros.Attachments
 
-/** The Position class and its subclasses represent positions of ASTs and symbols.
- *  Except for NoPosition and FakePos, every position refers to a SourceFile
- *  and to an offset in the sourcefile (its `point`). For batch compilation,
- *  that's all. For interactive IDE's there are also RangePositions
- *  and TransparentPositions. A RangePosition indicates a start and an end
- *  in addition to its point. TransparentPositions are a subclass of RangePositions.
+/** Position instances represent positions of ASTs and symbols.
+ *
+ *  === Position in runtime reflection ===
+ *
+ *  Except for [[scala.reflect.api.Positions#NoPosition], every position refers to a source file (`source`)
+ *  and to an offset in the sourcefile (its `point`).
+ *
+ *  === Positions in compile-time reflection ===
+ *
+ *  For interactive IDE's there are also range positions
+ *  and transparent positions. A range position indicates a `start` and an `end`
+ *  in addition to its point. Transparent positions subclass range positions.
  *  Range positions that are not transparent are called opaque.
  *  Trees with RangePositions need to satisfy the following invariants.
  *
- *  INV1: A tree with an offset position never contains a child
+ *  - INV1: A tree with an offset position never contains a child
  *        with a range position
- *  INV2: If the child of a tree with a range position also has a range position,
+ *  - INV2: If the child of a tree with a range position also has a range position,
  *        then the child's range is contained in the parent's range.
- *  INV3: Opaque range positions of children of the same node are non-overlapping
+ *  - INV3: Opaque range positions of children of the same node are non-overlapping
  *        (this means their overlap is at most a single point).
  *
  *  The following tests are useful on positions:
- *
- *  pos.isDefined     true if position is not a NoPosition nor a FakePosition
- *  pos.isRange       true if position is a range
- *  pos.isOpaqueRange true if position is an opaque range
- *
- *  The following accessor methods are provided:
- *
- *  pos.source        The source file of the position, which must be defined
- *  pos.point         The offset of the position's point, which must be defined
- *  pos.start         The start of the position, which must be a range
- *  pos.end           The end of the position, which must be a range
+ *  `pos.isDefined`     true if position is not a NoPosition,
+ *  `pos.isRange`       true if position is a range,
+ *  `pos.isOpaqueRange` true if position is an opaque range,
  *
  *  There are also convenience methods, such as
- *
- *  pos.startOrPoint
- *  pos.endOrPoint
- *  pos.pointOrElse(default)
- *
+ *  `pos.startOrPoint`,
+ *  `pos.endOrPoint`,
+ *  `pos.pointOrElse(default)`.
  *  These are less strict about the kind of position on which they can be applied.
  *
  *  The following conversion methods are often used:
+ *  `pos.focus`           converts a range position to an offset position, keeping its point;
+ *                        returns all other positions unchanged,
+ *  `pos.makeTransparent` converts an opaque range position into a transparent one.
+ *                        returns all other positions unchanged.
  *
- *  pos.focus           converts a range position to an offset position, keeping its point;
- *                      returns all other positions unchanged.
- *  pos.makeTransparent converts an opaque range position into a transparent one.
- *                      returns all other positions unchanged.
+ *  === Known issues ===
+ *
+ *  As it currently stands, positions cannot be created by a programmer - they only get emitted by the compiler
+ *  and can only be reused in compile-time macro universes.
+ *
+ *  Also positions are neither pickled (i.e. saved for runtime reflection using standard means of scalac) nor
+ *  reified (i.e. saved for runtime reflection using the [[scala.reflect.api.Universe#reify]] macro).
+ *
+ *  This API is considered to be a candidate for redesign. It is quite probable that in future releases of the reflection API
+ *  positions will undergo a dramatic rehash.
  */
 trait Position extends Attachments {
 
+  /** @inheritdoc */
   type Pos >: Null <: Position
 
   /** Java file corresponding to the source file of this position.

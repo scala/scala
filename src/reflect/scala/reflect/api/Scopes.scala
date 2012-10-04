@@ -1,16 +1,24 @@
 package scala.reflect
 package api
 
-/**
- * Defines the type hierachy for scopes.
+/** A slice of [[scala.reflect.api.Universe the Scala reflection cake]] that defines scopes and operations on them.
+ *  See [[scala.reflect.api.Universe]] for a description of how the reflection API is encoded with the cake pattern.
  *
- * @see [[scala.reflect]] for a description on how the class hierarchy is encoded here.
+ *  A scope object generally maps names to symbols available in some lexical scope.
+ *  Scopes can be nested. The base type exposed to the reflection API, however,
+ *  only exposes a minimal interface, representing a scope as an iterable of symbols.
+ *
+ *  For rare occasions when it is necessary to create a scope manually,
+ *  e.g. to populate members of [[scala.reflect.api.Types#RefinedType]],
+ *  there is the `newScopeWith` function.
+ *
+ *  Additional functionality is exposed in member scopes that are returned by
+ *  `members` and `declarations` defined in [[scala.reflect.api.Types#TypeApi]].
+ *  Such scopes support the `sorted` method, which sorts members in declaration order.
  */
 trait Scopes { self: Universe =>
 
-  /** The base type of all scopes. A scope object generally maps names to symbols available in the current lexical scope.
-   *  Scopes can be nested. This base type, however, only exposes a minimal interface, representing a scope as an iterable of symbols.
-   */
+  /** The base type of all scopes. */
   type Scope >: Null <: ScopeApi
 
   /** The API that all scopes support */
