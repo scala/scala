@@ -30,8 +30,8 @@ trait Infer extends Checkable {
   private def assertNonCyclic(tvar: TypeVar) =
     assert(tvar.constr.inst != tvar, tvar.origin)
 
-  /** The formal parameter types corresponding to <code>formals</code>.
-   *  If <code>formals</code> has a repeated last parameter, a list of
+  /** The formal parameter types corresponding to `formals`.
+   *  If `formals` has a repeated last parameter, a list of
    *  (nargs - params.length + 1) copies of its type is returned.
    *  By-name types are replaced with their underlying type.
    *
@@ -295,8 +295,8 @@ trait Infer extends Checkable {
 
     /* -- Tests & Checks---------------------------------------------------- */
 
-    /** Check that <code>sym</code> is defined and accessible as a member of
-     *  tree <code>site</code> with type <code>pre</code> in current context.
+    /** Check that `sym` is defined and accessible as a member of
+     *  tree `site` with type `pre` in current context.
      *
      * Note: pre is not refchecked -- moreover, refchecking the resulting tree may not refcheck pre,
      *       since pre may not occur in its type (callers should wrap the result in a TypeTreeWithDeferredRefCheck)
@@ -438,9 +438,9 @@ trait Infer extends Checkable {
     }
 
     /** Return inferred type arguments of polymorphic expression, given
-     *  its type parameters and result type and a prototype <code>pt</code>.
+     *  its type parameters and result type and a prototype `pt`.
      *  If no minimal type variables exist that make the
-     *  instantiated type a subtype of <code>pt</code>, return null.
+     *  instantiated type a subtype of `pt`, return null.
      *
      *  @param tparams ...
      *  @param restpe  ...
@@ -472,7 +472,7 @@ trait Infer extends Checkable {
 
     /** Return inferred proto-type arguments of function, given
     *  its type and value parameters and result type, and a
-    *  prototype <code>pt</code> for the function result.
+    *  prototype `pt` for the function result.
     *  Type arguments need to be either determined precisely by
     *  the prototype, or they are maximized, if they occur only covariantly
     *  in the value parameter list.
@@ -565,7 +565,7 @@ trait Infer extends Checkable {
      *
      * Rewrite for repeated param types:  Map T* entries to Seq[T].
      *  @return map from tparams to inferred arg, if inference was successful, tparams that map to None are considered left undetermined
-     *    type parameters that are inferred as `scala.Nothing` and that are not covariant in <code>restpe</code> are taken to be undetermined
+     *    type parameters that are inferred as `scala.Nothing` and that are not covariant in `restpe` are taken to be undetermined
      */
     def adjustTypeArgs(tparams: List[Symbol], tvars: List[TypeVar], targs: List[Type], restpe: Type = WildcardType): AdjustedTypeArgs.Result  = {
       val buf = AdjustedTypeArgs.Result.newBuilder[Symbol, Option[Type]]
@@ -593,7 +593,7 @@ trait Infer extends Checkable {
 
     /** Return inferred type arguments, given type parameters, formal parameters,
     *  argument types, result type and expected result type.
-    *  If this is not possible, throw a <code>NoInstance</code> exception.
+    *  If this is not possible, throw a `NoInstance` exception.
     *  Undetermined type arguments are represented by `definitions.NothingClass.tpe`.
     *  No check that inferred parameters conform to their bounds is made here.
     *
@@ -858,7 +858,7 @@ trait Infer extends Checkable {
       } else res1
     }
 
-    /** Is type <code>ftpe1</code> strictly more specific than type <code>ftpe2</code>
+    /** Is type `ftpe1` strictly more specific than type `ftpe2`
      *  when both are alternatives in an overloaded function?
      *  @see SLS (sec:overloading-resolution)
      *
@@ -1124,8 +1124,8 @@ trait Infer extends Checkable {
       }
     }
 
-    /** Substitute free type variables <code>undetparams</code> of application
-     *  <code>fn(args)</code>, given prototype <code>pt</code>.
+    /** Substitute free type variables `undetparams` of application
+     *  `fn(args)`, given prototype `pt`.
      *
      *  @param fn          fn: the function that needs to be instantiated.
      *  @param undetparams the parameters that need to be determined
@@ -1178,8 +1178,8 @@ trait Infer extends Checkable {
 
     def widen(tp: Type): Type = abstractTypesToBounds(tp)
 
-    /** Substitute free type variables <code>undetparams</code> of type constructor
-     *  <code>tree</code> in pattern, given prototype <code>pt</code>.
+    /** Substitute free type variables `undetparams` of type constructor
+     *  `tree` in pattern, given prototype `pt`.
      *
      *  @param tree        the constuctor that needs to be instantiated
      *  @param undetparams the undetermined type parameters
@@ -1489,8 +1489,8 @@ trait Infer extends Checkable {
         }
 */
 
-    /** Assign <code>tree</code> the symbol and type of the alternative which
-     *  matches prototype <code>pt</code>, if it exists.
+    /** Assign `tree` the symbol and type of the alternative which
+     *  matches prototype `pt`, if it exists.
      *  If several alternatives match `pt`, take parameterless one.
      *  If no alternative matches `pt`, take the parameterless one anyway.
      */
@@ -1593,8 +1593,8 @@ trait Infer extends Checkable {
       }
     }
 
-    /** Assign <code>tree</code> the type of an alternative which is applicable
-     *  to <code>argtpes</code>, and whose result type is compatible with `pt`.
+    /** Assign `tree` the type of an alternative which is applicable
+     *  to `argtpes`, and whose result type is compatible with `pt`.
      *  If several applicable alternatives exist, drop the alternatives which use
      *  default arguments, then select the most specialized one.
      *  If no applicable alternative exists, and pt != WildcardType, try again
@@ -1686,8 +1686,8 @@ trait Infer extends Checkable {
       else infer(true)
     }
 
-    /** Assign <code>tree</code> the type of all polymorphic alternatives
-     *  with <code>nparams</code> as the number of type parameters, if it exists.
+    /** Assign `tree` the type of all polymorphic alternatives
+     *  with `nparams` as the number of type parameters, if it exists.
      *  If no such polymorphic alternative exist, error.
      *
      *  @param tree ...
